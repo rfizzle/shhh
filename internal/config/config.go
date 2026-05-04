@@ -29,6 +29,7 @@ type ProviderDetail struct {
 	APIKey  string `toml:"api_key"`
 	Model   string `toml:"model"`
 	BaseURL string `toml:"base_url"`
+	Name    string `toml:"name"`
 }
 
 type BehaviorConfig struct {
@@ -70,6 +71,15 @@ func (c Config) ProviderModel(name string) string {
 		return c.Provider.OpenRouter.Model
 	case "openai-compatible":
 		return c.Provider.OpenAICompat.Model
+	}
+	return ""
+}
+
+// ProviderName returns the custom display name for the named provider, or empty string.
+func (c Config) ProviderName(name string) string {
+	switch normalizeProvider(name) {
+	case "openai-compatible":
+		return c.Provider.OpenAICompat.Name
 	}
 	return ""
 }
@@ -127,6 +137,8 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Provider.OpenAICompat.Model = value
 	case "provider.openai_compatible.base_url":
 		cfg.Provider.OpenAICompat.BaseURL = value
+	case "provider.openai_compatible.name":
+		cfg.Provider.OpenAICompat.Name = value
 	case "behavior.silent_mode":
 		cfg.Behavior.SilentMode = value == "true"
 	case "behavior.shell":

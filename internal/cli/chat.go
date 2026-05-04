@@ -43,6 +43,7 @@ func newChatCmd() *cobra.Command {
 				APIKey:  resolved.APIKey,
 				Model:   resolved.Model,
 				BaseURL: cfg.ProviderBaseURL(resolved.Provider),
+				Name:    cfg.ProviderName(resolved.Provider),
 			})
 			if err != nil {
 				return err

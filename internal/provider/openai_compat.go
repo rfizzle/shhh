@@ -16,6 +16,7 @@ type OpenAICompat struct {
 	client  *openai.Client
 	model   string
 	baseURL string
+	name    string
 }
 
 func NewOpenAICompat(opts ResolveOpts) (*OpenAICompat, error) {
@@ -23,12 +24,15 @@ func NewOpenAICompat(opts ResolveOpts) (*OpenAICompat, error) {
 	model := first(opts.Model, os.Getenv("SHHH_COMPAT_MODEL"), defaultCompatModel)
 	key := first(opts.APIKey, os.Getenv("SHHH_COMPAT_API_KEY"))
 
+	name := first(opts.Name, os.Getenv("SHHH_COMPAT_NAME"), "openai-compatible")
+
 	cfg := openai.DefaultConfig(key)
 	cfg.BaseURL = baseURL
 	return &OpenAICompat{
 		client:  openai.NewClientWithConfig(cfg),
 		model:   model,
 		baseURL: baseURL,
+		name:    name,
 	}, nil
 }
 
@@ -45,10 +49,10 @@ func NewOpenAICompatWith(client *openai.Client, model, baseURL string) *OpenAICo
 	if model == "" {
 		model = defaultCompatModel
 	}
-	return &OpenAICompat{client: client, model: model, baseURL: baseURL}
+	return &OpenAICompat{client: client, model: model, baseURL: baseURL, name: "openai-compatible"}
 }
 
-func (o *OpenAICompat) Name() string { return "openai-compatible" }
+func (o *OpenAICompat) Name() string { return o.name }
 
 func (o *OpenAICompat) StreamCompletion(ctx context.Context, messages []Message, opts CompletionOpts) (<-chan StreamEvent, error) {
 	model := o.model

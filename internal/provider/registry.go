@@ -9,6 +9,7 @@ type ResolveOpts struct {
 	APIKey  string
 	Model   string
 	BaseURL string
+	Name    string
 }
 
 type Factory func(ResolveOpts) (Provider, error)
