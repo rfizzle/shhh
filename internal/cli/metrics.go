@@ -1,0 +1,63 @@
+package cli
+
+import (
+	"fmt"
+	"os"
+	"text/tabwriter"
+
+	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/spf13/cobra"
+)
+
+func newMetricsCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "metrics",
+		Short: "Show provider usage metrics",
+		Long:  "Display summary statistics for each provider and model you've used.",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			db, err := storage.Open()
+			if err != nil {
+				return fmt.Errorf("open database: %w", err)
+			}
+			defer db.Close()
+
+			summary, err := db.MetricsSummary()
+			if err != nil {
+				return fmt.Errorf("query metrics: %w", err)
+			}
+
+			if len(summary) == 0 {
+				fmt.Println("No usage data yet. Generate some commands first!")
+				return nil
+			}
+
+			w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
+			fmt.Fprintln(w, "PROVIDER\tMODEL\tCOUNT\tSUCCESS\tAVG TTFT\tP95 TTFT\tAVG TOTAL\tP95 TOTAL")
+			for _, m := range summary {
+				fmt.Fprintf(w, "%s\t%s\t%d\t%s\t%s\t%s\t%s\t%s\n",
+					m.Provider,
+					m.Model,
+					m.Count,
+					fmtPct(m.SuccessRate),
+					fmtMs(m.AvgTTFT),
+					fmtMs(m.P95TTFT),
+					fmtMs(m.AvgDuration),
+					fmtMs(m.P95Duration),
+				)
+			}
+			return w.Flush()
+		},
+	}
+}
+
+func fmtMs(v *float64) string {
+	if v == nil {
+		return "-"
+	}
+	return fmt.Sprintf("%.0fms", *v)
+}
+
+func fmtPct(v float64) string {
+	return fmt.Sprintf("%.0f%%", v*100)
+}

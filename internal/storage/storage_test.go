@@ -1,8 +1,10 @@
 package storage
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -216,5 +218,121 @@ func TestDeleteChat_NotFound(t *testing.T) {
 	err := db.DeleteChat("nonexistent")
 	if err == nil {
 		t.Fatal("expected error for nonexistent chat")
+	}
+}
+
+func TestRecordRequest(t *testing.T) {
+	db := openTestDB(t)
+
+	ttft := 150 * time.Millisecond
+	dur := 2 * time.Second
+	if err := db.RecordRequest(RequestRecord{
+		Provider: "openai",
+		Model:    "gpt-4o",
+		Prompt:   "list files",
+		Command:  "ls -la",
+		Action:   "run",
+		TTFT:     &ttft,
+		Duration: &dur,
+		Success:  true,
+	}); err != nil {
+		t.Fatalf("record: %v", err)
+	}
+
+	var count int
+	db.sql.QueryRow(`SELECT COUNT(*) FROM requests`).Scan(&count)
+	if count != 1 {
+		t.Fatalf("expected 1 request, got %d", count)
+	}
+}
+
+func TestMetricsSummary(t *testing.T) {
+	db := openTestDB(t)
+
+	ttft1 := 100 * time.Millisecond
+	dur1 := 1 * time.Second
+	ttft2 := 200 * time.Millisecond
+	dur2 := 3 * time.Second
+
+	for _, r := range []RequestRecord{
+		{Provider: "openai", Model: "gpt-4o", Prompt: "p1", Command: "c1", Action: "run", TTFT: &ttft1, Duration: &dur1, Success: true},
+		{Provider: "openai", Model: "gpt-4o", Prompt: "p2", Command: "c2", Action: "copy", TTFT: &ttft2, Duration: &dur2, Success: true},
+		{Provider: "gemini", Model: "gemini-2.5-flash", Prompt: "p3", Command: "c3", Action: "run", TTFT: &ttft1, Duration: &dur1, Success: false},
+	} {
+		if err := db.RecordRequest(r); err != nil {
+			t.Fatalf("record: %v", err)
+		}
+	}
+
+	summary, err := db.MetricsSummary()
+	if err != nil {
+		t.Fatalf("summary: %v", err)
+	}
+	if len(summary) != 2 {
+		t.Fatalf("expected 2 groups, got %d", len(summary))
+	}
+
+	for _, m := range summary {
+		if m.Provider == "openai" {
+			if m.Count != 2 {
+				t.Fatalf("openai count: want 2, got %d", m.Count)
+			}
+			if m.SuccessRate != 1.0 {
+				t.Fatalf("openai success rate: want 1.0, got %f", m.SuccessRate)
+			}
+		}
+		if m.Provider == "gemini" {
+			if m.Count != 1 {
+				t.Fatalf("gemini count: want 1, got %d", m.Count)
+			}
+			if m.SuccessRate != 0.0 {
+				t.Fatalf("gemini success rate: want 0.0, got %f", m.SuccessRate)
+			}
+		}
+	}
+}
+
+func TestInstrumentStream(t *testing.T) {
+	events := make(chan provider.StreamEvent, 3)
+	events <- provider.StreamEvent{Token: "hello"}
+	events <- provider.StreamEvent{Token: " world"}
+	events <- provider.StreamEvent{Done: true}
+	close(events)
+
+	out, metrics := InstrumentStream(events)
+
+	var tokens []string
+	for ev := range out {
+		if ev.Token != "" {
+			tokens = append(tokens, ev.Token)
+		}
+	}
+
+	if len(tokens) != 2 {
+		t.Fatalf("expected 2 tokens, got %d", len(tokens))
+	}
+	if metrics.TTFT == nil {
+		t.Fatal("expected TTFT to be set")
+	}
+	if metrics.Duration == nil {
+		t.Fatal("expected Duration to be set")
+	}
+	if !metrics.Success {
+		t.Fatal("expected success=true")
+	}
+}
+
+func TestInstrumentStream_Error(t *testing.T) {
+	events := make(chan provider.StreamEvent, 1)
+	events <- provider.StreamEvent{Err: fmt.Errorf("api error"), Done: true}
+	close(events)
+
+	out, metrics := InstrumentStream(events)
+
+	for range out {
+	}
+
+	if metrics.Success {
+		t.Fatal("expected success=false on error")
 	}
 }

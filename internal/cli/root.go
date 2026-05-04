@@ -17,6 +17,7 @@ import (
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/shell"
+	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui"
 	"github.com/spf13/cobra"
 )
@@ -118,6 +119,11 @@ func NewRootCmd() *cobra.Command {
 
 			compOpts := provider.CompletionOpts{Model: resolved.Model}
 
+			db, _ := storage.Open()
+			if db != nil {
+				defer db.Close()
+			}
+
 			ctx, cancel := context.WithCancel(cmd.Context())
 			defer cancel()
 
@@ -125,6 +131,9 @@ func NewRootCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+
+			var metrics *storage.StreamMetrics
+			events, metrics = storage.InstrumentStream(events)
 
 			newStream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 				sCtx, sCancel := context.WithCancel(cmd.Context())
@@ -159,6 +168,32 @@ func NewRootCmd() *cobra.Command {
 
 			result := finalModel.(ui.GenerateModel).Result()
 
+			if db != nil {
+				actionName := ""
+				switch result.Action {
+				case ui.ActionRun:
+					actionName = "run"
+				case ui.ActionCopy:
+					actionName = "copy"
+				case ui.ActionRevise:
+					actionName = "revise"
+				case ui.ActionEdit:
+					actionName = "edit"
+				case ui.ActionCancel:
+					actionName = "cancel"
+				}
+				_ = db.RecordRequest(storage.RequestRecord{
+					Provider: p.Name(),
+					Model:    resolved.Model,
+					Prompt:   userPrompt,
+					Command:  result.Command,
+					Action:   actionName,
+					TTFT:     metrics.TTFT,
+					Duration: metrics.Duration,
+					Success:  metrics.Success,
+				})
+			}
+
 			if result.Err != nil {
 				return result.Err
 			}
@@ -190,6 +225,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newInitCmd())
 	cmd.AddCommand(newConfigCmd())
 	cmd.AddCommand(newChatCmd())
+	cmd.AddCommand(newMetricsCmd())
 
 	return cmd
 }
