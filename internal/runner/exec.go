@@ -6,6 +6,8 @@ import (
 	"os/signal"
 	"path/filepath"
 	"syscall"
+
+	"github.com/rfizzle/shhh/internal/history"
 )
 
 func Run(command string) (exitCode int) {
@@ -37,5 +39,8 @@ func Run(command string) (exitCode int) {
 		}
 		return 1
 	}
+
+	go history.Append(filepath.Base(sh), command)
+
 	return 0
 }
