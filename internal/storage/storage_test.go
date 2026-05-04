@@ -336,3 +336,37 @@ func TestInstrumentStream_Error(t *testing.T) {
 		t.Fatal("expected success=false on error")
 	}
 }
+
+func TestListHistory(t *testing.T) {
+	db := openTestDB(t)
+
+	dur := 1 * time.Second
+	for _, r := range []RequestRecord{
+		{Provider: "openai", Model: "gpt-4o", Prompt: "list files", Command: "ls -la", Action: "run", Duration: &dur, Success: true},
+		{Provider: "openai", Model: "gpt-4o", Prompt: "disk usage", Command: "du -sh *", Action: "copy", Duration: &dur, Success: true},
+		{Provider: "gemini", Model: "flash", Prompt: "find port", Command: "lsof -i :8080", Action: "run", Duration: &dur, Success: true},
+	} {
+		if err := db.RecordRequest(r); err != nil {
+			t.Fatalf("record: %v", err)
+		}
+	}
+
+	entries, err := db.ListHistory(HistoryFilter{Limit: 10})
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if len(entries) != 3 {
+		t.Fatalf("expected 3, got %d", len(entries))
+	}
+
+	filtered, err := db.ListHistory(HistoryFilter{Search: "port", Limit: 10})
+	if err != nil {
+		t.Fatalf("search: %v", err)
+	}
+	if len(filtered) != 1 {
+		t.Fatalf("expected 1 search result, got %d", len(filtered))
+	}
+	if filtered[0].Command != "lsof -i :8080" {
+		t.Fatalf("unexpected command: %q", filtered[0].Command)
+	}
+}

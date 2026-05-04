@@ -226,6 +226,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newConfigCmd())
 	cmd.AddCommand(newChatCmd())
 	cmd.AddCommand(newMetricsCmd())
+	cmd.AddCommand(newHistoryCmd())
 
 	return cmd
 }
