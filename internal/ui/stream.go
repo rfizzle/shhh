@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"context"
+
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -12,26 +14,30 @@ type doneMsg struct{}
 type streamErrMsg struct{ err error }
 
 type StreamModel struct {
-	events  <-chan provider.StreamEvent
-	spinner spinner.Model
-	output  string
-	done    bool
-	err     error
+	events    <-chan provider.StreamEvent
+	cancel    context.CancelFunc
+	spinner   spinner.Model
+	output    string
+	done      bool
+	cancelled bool
+	err       error
 }
 
-func NewStreamModel(events <-chan provider.StreamEvent) StreamModel {
+func NewStreamModel(events <-chan provider.StreamEvent, cancel context.CancelFunc) StreamModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 	return StreamModel{
 		events:  events,
+		cancel:  cancel,
 		spinner: s,
 	}
 }
 
-func (m StreamModel) Output() string { return m.output }
-func (m StreamModel) Done() bool     { return m.done }
-func (m StreamModel) Err() error     { return m.err }
+func (m StreamModel) Output() string    { return m.output }
+func (m StreamModel) Done() bool        { return m.done }
+func (m StreamModel) Cancelled() bool   { return m.cancelled }
+func (m StreamModel) Err() error        { return m.err }
 
 func (m StreamModel) Init() tea.Cmd {
 	return tea.Batch(m.spinner.Tick, m.waitForEvent())
@@ -39,11 +45,24 @@ func (m StreamModel) Init() tea.Cmd {
 
 func (m StreamModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "q", "esc":
+			if !m.done {
+				m.cancel()
+				m.cancelled = true
+				m.done = true
+				m.output = StripFences(m.output)
+				return m, nil
+			}
+		}
+		return m, nil
 	case tokenMsg:
 		m.output += string(msg)
 		return m, m.waitForEvent()
 	case doneMsg:
 		m.done = true
+		m.output = StripFences(m.output)
 		return m, nil
 	case streamErrMsg:
 		m.err = msg.err

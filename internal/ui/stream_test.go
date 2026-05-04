@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -8,6 +9,13 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/provider"
 )
+
+func noopCancel() {}
+
+func testCancel() (context.CancelFunc, *bool) {
+	called := false
+	return func() { called = true }, &called
+}
 
 func makeEvents(tokens ...string) <-chan provider.StreamEvent {
 	ch := make(chan provider.StreamEvent, len(tokens)+1)
@@ -28,7 +36,7 @@ func makeErrorEvents(err error) <-chan provider.StreamEvent {
 
 func TestStreamModel_SpinnerBeforeFirstToken(t *testing.T) {
 	ch := make(chan provider.StreamEvent, 1)
-	m := NewStreamModel(ch)
+	m := NewStreamModel(ch, noopCancel)
 
 	view := m.View()
 	if !strings.Contains(view, "Thinking") {
@@ -39,7 +47,7 @@ func TestStreamModel_SpinnerBeforeFirstToken(t *testing.T) {
 
 func TestStreamModel_RendersTokens(t *testing.T) {
 	events := makeEvents("ls ", "-la")
-	m := NewStreamModel(events)
+	m := NewStreamModel(events, noopCancel)
 
 	// Drain two token messages
 	cmd := m.waitForEvent()
@@ -62,7 +70,7 @@ func TestStreamModel_RendersTokens(t *testing.T) {
 
 func TestStreamModel_DoneAfterStream(t *testing.T) {
 	events := makeEvents("echo hi")
-	m := NewStreamModel(events)
+	m := NewStreamModel(events, noopCancel)
 
 	var model tea.Model = m
 
@@ -86,7 +94,7 @@ func TestStreamModel_DoneAfterStream(t *testing.T) {
 func TestStreamModel_ErrorSetsState(t *testing.T) {
 	expected := errors.New("API rate limited")
 	events := makeErrorEvents(expected)
-	m := NewStreamModel(events)
+	m := NewStreamModel(events, noopCancel)
 
 	cmd := m.waitForEvent()
 	model, _ := m.Update(cmd())
@@ -103,7 +111,7 @@ func TestStreamModel_ErrorSetsState(t *testing.T) {
 func TestStreamModel_ErrorView(t *testing.T) {
 	expected := errors.New("connection refused")
 	events := makeErrorEvents(expected)
-	m := NewStreamModel(events)
+	m := NewStreamModel(events, noopCancel)
 
 	cmd := m.waitForEvent()
 	model, _ := m.Update(cmd())
@@ -116,7 +124,7 @@ func TestStreamModel_ErrorView(t *testing.T) {
 
 func TestStreamModel_ViewShowsOutputAfterTokens(t *testing.T) {
 	events := makeEvents("find . -name '*.go'")
-	m := NewStreamModel(events)
+	m := NewStreamModel(events, noopCancel)
 
 	cmd := m.waitForEvent()
 	model, _ := m.Update(cmd())
@@ -133,7 +141,7 @@ func TestStreamModel_ViewShowsOutputAfterTokens(t *testing.T) {
 func TestStreamModel_ClosedChannelTriggersDone(t *testing.T) {
 	ch := make(chan provider.StreamEvent)
 	close(ch)
-	m := NewStreamModel(ch)
+	m := NewStreamModel(ch, noopCancel)
 
 	cmd := m.waitForEvent()
 	model, _ := m.Update(cmd())
@@ -142,4 +150,126 @@ func TestStreamModel_ClosedChannelTriggersDone(t *testing.T) {
 	if !sm.Done() {
 		t.Error("expected done when channel is closed")
 	}
+}
+
+func TestStreamModel_EscCancelsStream(t *testing.T) {
+	ch := make(chan provider.StreamEvent, 2)
+	ch <- provider.StreamEvent{Token: "partial"}
+	cancel, called := testCancel()
+	m := NewStreamModel(ch, cancel)
+
+	// Receive one token
+	var model tea.Model = m
+	cmd := model.(StreamModel).waitForEvent()
+	model, _ = model.(StreamModel).Update(cmd())
+
+	// Press Esc
+	model, _ = model.(StreamModel).Update(tea.KeyMsg{Type: tea.KeyEscape})
+
+	sm := model.(StreamModel)
+	if !sm.Done() {
+		t.Error("expected done after Esc")
+	}
+	if !sm.Cancelled() {
+		t.Error("expected cancelled flag after Esc")
+	}
+	if !*called {
+		t.Error("expected cancel function to be called")
+	}
+	close(ch)
+}
+
+func TestStreamModel_QCancelsStream(t *testing.T) {
+	ch := make(chan provider.StreamEvent, 1)
+	cancel, called := testCancel()
+	m := NewStreamModel(ch, cancel)
+
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+
+	sm := model.(StreamModel)
+	if !sm.Done() {
+		t.Error("expected done after q")
+	}
+	if !sm.Cancelled() {
+		t.Error("expected cancelled flag after q")
+	}
+	if !*called {
+		t.Error("expected cancel function to be called")
+	}
+	close(ch)
+}
+
+func TestStreamModel_KeyIgnoredAfterDone(t *testing.T) {
+	events := makeEvents("echo hi")
+	cancel, called := testCancel()
+	m := NewStreamModel(events, cancel)
+
+	var model tea.Model = m
+	// Token
+	cmd := model.(StreamModel).waitForEvent()
+	model, _ = model.(StreamModel).Update(cmd())
+	// Done
+	cmd = model.(StreamModel).waitForEvent()
+	model, _ = model.(StreamModel).Update(cmd())
+
+	// Press q after already done — should not call cancel
+	model, _ = model.(StreamModel).Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
+
+	sm := model.(StreamModel)
+	if sm.Cancelled() {
+		t.Error("should not set cancelled when already done")
+	}
+	if *called {
+		t.Error("cancel should not be called when already done")
+	}
+}
+
+func TestStreamModel_StripsMarkdownOnDone(t *testing.T) {
+	events := makeEvents("```bash\nls -la\n```")
+	m := NewStreamModel(events, noopCancel)
+
+	var model tea.Model = m
+	cmd := model.(StreamModel).waitForEvent()
+	model, _ = model.(StreamModel).Update(cmd())
+	cmd = model.(StreamModel).waitForEvent()
+	model, _ = model.(StreamModel).Update(cmd())
+
+	sm := model.(StreamModel)
+	if sm.Output() != "ls -la" {
+		t.Errorf("expected fences stripped, got %q", sm.Output())
+	}
+}
+
+func TestStreamModel_StripsInlineBackticksOnDone(t *testing.T) {
+	events := makeEvents("`docker ps -a`")
+	m := NewStreamModel(events, noopCancel)
+
+	var model tea.Model = m
+	cmd := model.(StreamModel).waitForEvent()
+	model, _ = model.(StreamModel).Update(cmd())
+	cmd = model.(StreamModel).waitForEvent()
+	model, _ = model.(StreamModel).Update(cmd())
+
+	sm := model.(StreamModel)
+	if sm.Output() != "docker ps -a" {
+		t.Errorf("expected backticks stripped, got %q", sm.Output())
+	}
+}
+
+func TestStreamModel_StripsOnCancel(t *testing.T) {
+	ch := make(chan provider.StreamEvent, 1)
+	ch <- provider.StreamEvent{Token: "```\npartial"}
+	m := NewStreamModel(ch, noopCancel)
+
+	var model tea.Model = m
+	cmd := model.(StreamModel).waitForEvent()
+	model, _ = model.(StreamModel).Update(cmd())
+
+	model, _ = model.(StreamModel).Update(tea.KeyMsg{Type: tea.KeyEscape})
+
+	sm := model.(StreamModel)
+	if sm.Output() != "partial" {
+		t.Errorf("expected fences stripped on cancel, got %q", sm.Output())
+	}
+	close(ch)
 }
