@@ -29,6 +29,7 @@ const inputHeight = 3
 const headerHeight = 1
 const dividerHeight = 1
 const chromeHeight = headerHeight + dividerHeight + dividerHeight
+const horizontalPadding = 2
 
 type tokenMsg string
 type doneMsg struct{}
@@ -119,16 +120,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		m.input.SetWidth(msg.Width)
+		contentWidth := msg.Width - horizontalPadding*2
+		m.input.SetWidth(contentWidth)
 		vpHeight := m.viewportHeight()
 
 		if !m.ready {
-			m.viewport = viewport.New(msg.Width, vpHeight)
+			m.viewport = viewport.New(contentWidth, vpHeight)
 			m.viewport.MouseWheelEnabled = true
 			m.viewport.SetContent(m.renderHistory())
 			m.ready = true
 		} else {
-			m.viewport.Width = msg.Width
+			m.viewport.Width = contentWidth
 			m.viewport.Height = vpHeight
 			m.viewport.SetContent(m.renderHistory())
 		}
@@ -180,7 +182,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					Content: text,
 				})
 				m.history.WriteString(userStyle.Render("You") + "\n")
-				m.history.WriteString(m.wordWrap(text, m.width) + "\n\n")
+				m.history.WriteString(m.wordWrap(text, m.contentWidth()) + "\n\n")
 				m.state = stateStreaming
 				m.streaming = ""
 				m.atBottom = true
@@ -198,7 +200,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Content: text,
 		})
 		m.history.WriteString(userStyle.Render("You") + "\n")
-		m.history.WriteString(m.wordWrap(text, m.width) + "\n\n")
+		m.history.WriteString(m.wordWrap(text, m.contentWidth()) + "\n\n")
 		m.state = stateStreaming
 		m.streaming = ""
 		m.atBottom = true
@@ -272,11 +274,13 @@ func (m Model) View() string {
 		return "Initializing…"
 	}
 
+	contentWidth := m.width - horizontalPadding*2
+
 	header := headerStyle.Render(" shhh chat") +
 		headerHintStyle.Render("  Ctrl+D to exit")
-	header += strings.Repeat(" ", max(0, m.width-lipgloss.Width(header)))
+	header += strings.Repeat(" ", max(0, contentWidth-lipgloss.Width(header)))
 
-	topDivider := dividerStyle(m.width)
+	topDivider := dividerStyle(contentWidth)
 
 	var body string
 	if m.state == stateStreaming && m.streaming == "" {
@@ -285,9 +289,10 @@ func (m Model) View() string {
 		body = m.viewport.View()
 	}
 
-	bottomDivider := dividerStyle(m.width)
+	bottomDivider := dividerStyle(contentWidth)
 
-	return header + "\n" + topDivider + "\n" + body + "\n" + bottomDivider + "\n" + m.input.View()
+	content := header + "\n" + topDivider + "\n" + body + "\n" + bottomDivider + "\n" + m.input.View()
+	return lipgloss.NewStyle().Padding(0, horizontalPadding).Render(content)
 }
 
 func (m Model) requestStream() tea.Cmd {
@@ -332,7 +337,7 @@ func (m *Model) executeToolCalls(calls []provider.ToolCall) {
 
 	if m.streaming != "" {
 		m.history.WriteString(assistantStyle.Render("Assistant") + "\n")
-		m.history.WriteString(highlightCode(m.wordWrap(m.streaming, m.width)) + "\n\n")
+		m.history.WriteString(highlightCode(m.wordWrap(m.streaming, m.contentWidth())) + "\n\n")
 	}
 
 	for _, tc := range calls {
@@ -414,7 +419,7 @@ func (m *Model) finishStreaming() {
 			Content: m.streaming,
 		})
 		m.history.WriteString(assistantStyle.Render("Assistant") + "\n")
-		m.history.WriteString(highlightCode(m.wordWrap(m.streaming, m.width)) + "\n\n")
+		m.history.WriteString(highlightCode(m.wordWrap(m.streaming, m.contentWidth())) + "\n\n")
 	}
 	m.streaming = ""
 	m.events = nil
@@ -429,9 +434,13 @@ func (m Model) renderHistory() string {
 	s := m.history.String()
 	if m.state == stateStreaming && m.streaming != "" {
 		s += assistantStyle.Render("Assistant") + "\n"
-		s += highlightCode(m.wordWrap(m.streaming, m.width))
+		s += highlightCode(m.wordWrap(m.streaming, m.contentWidth()))
 	}
 	return s
+}
+
+func (m Model) contentWidth() int {
+	return m.width - horizontalPadding*2
 }
 
 func (m Model) viewportHeight() int {
@@ -518,11 +527,11 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 			switch msg.Role {
 			case provider.RoleUser:
 				m.history.WriteString(userStyle.Render("You") + "\n")
-				m.history.WriteString(m.wordWrap(msg.Content, m.width) + "\n\n")
+				m.history.WriteString(m.wordWrap(msg.Content, m.contentWidth()) + "\n\n")
 			case provider.RoleAssistant:
 				if msg.Content != "" {
 					m.history.WriteString(assistantStyle.Render("Assistant") + "\n")
-					m.history.WriteString(highlightCode(m.wordWrap(msg.Content, m.width)) + "\n\n")
+					m.history.WriteString(highlightCode(m.wordWrap(msg.Content, m.contentWidth())) + "\n\n")
 				}
 				for _, tc := range msg.ToolCalls {
 					var result string

@@ -56,8 +56,8 @@ func TestWindowResize_SetsReady(t *testing.T) {
 	if model.width != 100 || model.height != 40 {
 		t.Fatalf("unexpected dimensions: %dx%d", model.width, model.height)
 	}
-	if model.viewport.Width != 100 {
-		t.Fatalf("viewport width should be 100, got %d", model.viewport.Width)
+	if model.viewport.Width != 100-horizontalPadding*2 {
+		t.Fatalf("viewport width should be %d, got %d", 100-horizontalPadding*2, model.viewport.Width)
 	}
 	expectedVPHeight := 40 - inputHeight - chromeHeight
 	if model.viewport.Height != expectedVPHeight {
@@ -75,8 +75,8 @@ func TestWindowResize_Subsequent(t *testing.T) {
 	updated2, _ := model.Update(tea.WindowSizeMsg{Width: 60, Height: 20})
 	model2 := updated2.(Model)
 
-	if model2.viewport.Width != 60 {
-		t.Fatalf("viewport width should update to 60, got %d", model2.viewport.Width)
+	if model2.viewport.Width != 60-horizontalPadding*2 {
+		t.Fatalf("viewport width should update to %d, got %d", 60-horizontalPadding*2, model2.viewport.Width)
 	}
 	expectedH := 20 - inputHeight - chromeHeight
 	if model2.viewport.Height != expectedH {
