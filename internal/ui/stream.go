@@ -39,6 +39,11 @@ func (m StreamModel) Done() bool        { return m.done }
 func (m StreamModel) Cancelled() bool   { return m.cancelled }
 func (m StreamModel) Err() error        { return m.err }
 
+func (m StreamModel) WithOutput(s string) StreamModel {
+	m.output = s
+	return m
+}
+
 func (m StreamModel) Init() tea.Cmd {
 	return tea.Batch(m.spinner.Tick, m.waitForEvent())
 }

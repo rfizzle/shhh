@@ -579,6 +579,163 @@ func TestGenerate_ReviseStreamErrorQuitsWithError(t *testing.T) {
 	}
 }
 
+func TestGenerate_EditOpensTextInput(t *testing.T) {
+	events := makeEvents("ls")
+	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m = drainStream(m, 2)
+
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+	m = model.(GenerateModel)
+
+	if m.Phase() != phaseEdit {
+		t.Errorf("expected phaseEdit, got %v", m.Phase())
+	}
+}
+
+func TestGenerate_EditPrePopulatesCommand(t *testing.T) {
+	events := makeEvents("ls -la")
+	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m = drainStream(m, 2)
+
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+	m = model.(GenerateModel)
+
+	view := m.View()
+	if !strings.Contains(view, "ls -la") {
+		t.Errorf("expected command pre-populated in edit view, got: %q", view)
+	}
+	if !strings.Contains(view, "Edit") {
+		t.Error("expected 'Edit' label in edit view")
+	}
+}
+
+func TestGenerate_EditEscReturnsToAction(t *testing.T) {
+	events := makeEvents("ls")
+	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m = drainStream(m, 2)
+
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+	m = model.(GenerateModel)
+
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	m = model.(GenerateModel)
+
+	if m.Phase() != phaseAction {
+		t.Errorf("expected phaseAction after Esc, got %v", m.Phase())
+	}
+	if m.stream.Output() != "ls" {
+		t.Errorf("expected original command unchanged after Esc, got %q", m.stream.Output())
+	}
+}
+
+func TestGenerate_EditSubmitUpdatesCommand(t *testing.T) {
+	initial := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "list files"},
+	}
+	events := makeEvents("ls")
+	m := NewGenerateModel(events, noopCancel, initial, nil)
+	m = drainStream(m, 2)
+
+	// Enter edit
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+	m = model.(GenerateModel)
+
+	// Clear and type new command (select all not available, so we manipulate directly)
+	// The text input has "ls" pre-populated; type " -la" to append
+	for _, r := range " -la" {
+		model, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+		m = model.(GenerateModel)
+	}
+
+	// Submit
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = model.(GenerateModel)
+
+	if m.Phase() != phaseAction {
+		t.Errorf("expected phaseAction after edit submit, got %v", m.Phase())
+	}
+	if m.stream.Output() != "ls -la" {
+		t.Errorf("expected edited command 'ls -la', got %q", m.stream.Output())
+	}
+}
+
+func TestGenerate_EditUpdatesMessages(t *testing.T) {
+	initial := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "list files"},
+	}
+	events := makeEvents("ls")
+	m := NewGenerateModel(events, noopCancel, initial, nil)
+	m = drainStream(m, 2)
+
+	// Enter edit and append
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+	m = model.(GenerateModel)
+	for _, r := range " -la" {
+		model, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+		m = model.(GenerateModel)
+	}
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = model.(GenerateModel)
+
+	msgs := m.Messages()
+	if len(msgs) != 3 {
+		t.Fatalf("expected 3 messages, got %d", len(msgs))
+	}
+	if msgs[2].Content != "ls -la" {
+		t.Errorf("expected assistant message updated to 'ls -la', got %q", msgs[2].Content)
+	}
+}
+
+func TestGenerate_EditedCommandFlowsToResult(t *testing.T) {
+	events := makeEvents("ls")
+	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m = drainStream(m, 2)
+
+	// Edit
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+	m = model.(GenerateModel)
+	for _, r := range " -la" {
+		model, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+		m = model.(GenerateModel)
+	}
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = model.(GenerateModel)
+
+	// Now select Run — result should have the edited command
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
+	m = model.(GenerateModel)
+
+	if m.Result().Command != "ls -la" {
+		t.Errorf("expected 'ls -la' in result, got %q", m.Result().Command)
+	}
+}
+
+func TestGenerate_EditEmptyIgnored(t *testing.T) {
+	events := makeEvents("ls")
+	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m = drainStream(m, 2)
+
+	// Enter edit
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+	m = model.(GenerateModel)
+
+	// Clear the input by pressing backspace twice
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyBackspace})
+	m = model.(GenerateModel)
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyBackspace})
+	m = model.(GenerateModel)
+
+	// Submit empty
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = model.(GenerateModel)
+
+	if m.Phase() != phaseEdit {
+		t.Errorf("expected to stay in phaseEdit on empty submit, got %v", m.Phase())
+	}
+}
+
 func TestGenerate_MultipleRevisionsWork(t *testing.T) {
 	revision := 0
 	responses := []string{"ls", "ls -l", "ls -la"}

@@ -134,11 +134,26 @@ func TestActionBar_ViewShowsAllOptions(t *testing.T) {
 	if !strings.Contains(view, "Copy") {
 		t.Error("expected 'Copy' in view")
 	}
+	if !strings.Contains(view, "Edit") {
+		t.Error("expected 'Edit' in view")
+	}
 	if !strings.Contains(view, "Revise") {
 		t.Error("expected 'Revise' in view")
 	}
 	if !strings.Contains(view, "Cancel") {
 		t.Error("expected 'Cancel' in view")
+	}
+}
+
+func TestActionBar_ShortcutE(t *testing.T) {
+	m := NewActionBarModel()
+	m, cmd := updateBar(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
+	if m.Selected() != ActionEdit {
+		t.Errorf("expected ActionEdit, got %v", m.Selected())
+	}
+	msg := cmd()
+	if sel, ok := msg.(ActionSelectedMsg); !ok || sel.Action != ActionEdit {
+		t.Errorf("expected ActionSelectedMsg{ActionEdit}, got %v", msg)
 	}
 }
 
@@ -174,6 +189,9 @@ func TestActionBar_ViewShowsShortcuts(t *testing.T) {
 	}
 	if !strings.Contains(view, "(c)") {
 		t.Error("expected '(c)' shortcut in view")
+	}
+	if !strings.Contains(view, "(e)") {
+		t.Error("expected '(e)' shortcut in view")
 	}
 	if !strings.Contains(view, "(v)") {
 		t.Error("expected '(v)' shortcut in view")
