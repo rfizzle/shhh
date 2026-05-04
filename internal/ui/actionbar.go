@@ -14,6 +14,7 @@ const (
 	ActionRevise
 	ActionCancel
 	ActionEdit
+	ActionExplain
 )
 
 type ActionSelectedMsg struct {
@@ -30,6 +31,7 @@ var actions = []actionItem{
 	{"Run", "r", ActionRun},
 	{"Copy", "c", ActionCopy},
 	{"Edit", "e", ActionEdit},
+	{"Explain", "x", ActionExplain},
 	{"Revise", "v", ActionRevise},
 	{"Cancel", "esc", ActionCancel},
 }
@@ -86,6 +88,9 @@ func (m ActionBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "v":
 			m.selected = ActionRevise
 			return m, func() tea.Msg { return ActionSelectedMsg{Action: ActionRevise} }
+		case "x":
+			m.selected = ActionExplain
+			return m, func() tea.Msg { return ActionSelectedMsg{Action: ActionExplain} }
 		case "esc", "q":
 			m.selected = ActionCancel
 			return m, func() tea.Msg { return ActionSelectedMsg{Action: ActionCancel} }

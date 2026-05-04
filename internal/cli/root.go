@@ -17,6 +17,8 @@ var version = "dev"
 func NewRootCmd() *cobra.Command {
 	var flags resolve.Opts
 	var inlineMode bool
+	var explainMode bool
+	var silentMode bool
 
 	cmd := &cobra.Command{
 		Use:     "shhh [prompt]",
@@ -87,6 +89,8 @@ func NewRootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&flags.FlagModel, "model", "", "model name to use")
 	cmd.PersistentFlags().StringVar(&flags.FlagAPIKey, "api-key", "", "API key (overrides env var)")
 	cmd.Flags().BoolVar(&inlineMode, "inline", false, "output only the raw command (for shell integration)")
+	cmd.Flags().BoolVarP(&explainMode, "explain", "e", false, "automatically explain the generated command")
+	cmd.Flags().BoolVarP(&silentMode, "silent", "s", false, "suppress explanation output")
 
 	cmd.AddCommand(newInitCmd())
 

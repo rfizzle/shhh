@@ -15,6 +15,10 @@ OS: %s
 Cwd: %s`, info.Shell, os, info.Cwd)
 }
 
+func BuildExplain() string {
+	return "Explain this shell command concisely. Break down each part (flags, pipes, redirections). Be brief — a few lines, not paragraphs."
+}
+
 func friendlyOS(goos string) string {
 	switch goos {
 	case "darwin":

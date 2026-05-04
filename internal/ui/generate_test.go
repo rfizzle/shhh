@@ -23,7 +23,7 @@ func drainStream(m GenerateModel, events int) GenerateModel {
 
 func TestGenerate_StartsInStreamingPhase(t *testing.T) {
 	events := makeEvents("ls")
-	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m := NewGenerateModel(events, noopCancel, nil, nil, nil)
 
 	if m.Phase() != phaseStreaming {
 		t.Errorf("expected phaseStreaming, got %v", m.Phase())
@@ -32,7 +32,7 @@ func TestGenerate_StartsInStreamingPhase(t *testing.T) {
 
 func TestGenerate_TransitionsToActionOnDone(t *testing.T) {
 	events := makeEvents("ls -la")
-	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m := NewGenerateModel(events, noopCancel, nil, nil, nil)
 
 	// token + done
 	m = drainStream(m, 2)
@@ -44,7 +44,7 @@ func TestGenerate_TransitionsToActionOnDone(t *testing.T) {
 
 func TestGenerate_ActionBarAppearsInView(t *testing.T) {
 	events := makeEvents("echo hello")
-	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m := NewGenerateModel(events, noopCancel, nil, nil, nil)
 	m = drainStream(m, 2)
 
 	view := m.View()
@@ -58,7 +58,7 @@ func TestGenerate_ActionBarAppearsInView(t *testing.T) {
 
 func TestGenerate_SelectRunReturnsResult(t *testing.T) {
 	events := makeEvents("rm -rf /tmp/test")
-	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m := NewGenerateModel(events, noopCancel, nil, nil, nil)
 	m = drainStream(m, 2)
 
 	// Press 'r'
@@ -85,7 +85,7 @@ func TestGenerate_SelectRunReturnsResult(t *testing.T) {
 
 func TestGenerate_SelectCopyReturnsResult(t *testing.T) {
 	events := makeEvents("docker ps")
-	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m := NewGenerateModel(events, noopCancel, nil, nil, nil)
 	m = drainStream(m, 2)
 
 	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'c'}})
@@ -102,7 +102,7 @@ func TestGenerate_SelectCopyReturnsResult(t *testing.T) {
 
 func TestGenerate_SelectCancelReturnsResult(t *testing.T) {
 	events := makeEvents("whoami")
-	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m := NewGenerateModel(events, noopCancel, nil, nil, nil)
 	m = drainStream(m, 2)
 
 	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyEscape})
@@ -118,7 +118,7 @@ func TestGenerate_CancelDuringStreamQuitsImmediately(t *testing.T) {
 	ch := make(chan provider.StreamEvent, 2)
 	ch <- provider.StreamEvent{Token: "partial"}
 	cancel, called := testCancel()
-	m := NewGenerateModel(ch, cancel, nil, nil)
+	m := NewGenerateModel(ch, cancel, nil, nil, nil)
 
 	// Receive token
 	cmd := m.stream.waitForEvent()
@@ -148,7 +148,7 @@ func TestGenerate_CancelDuringStreamQuitsImmediately(t *testing.T) {
 
 func TestGenerate_ErrorDuringStreamQuitsImmediately(t *testing.T) {
 	events := makeErrorEvents(errTest)
-	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m := NewGenerateModel(events, noopCancel, nil, nil, nil)
 
 	cmd := m.stream.waitForEvent()
 	model, quitCmd := m.Update(cmd())
@@ -169,7 +169,7 @@ func TestGenerate_ErrorDuringStreamQuitsImmediately(t *testing.T) {
 
 func TestGenerate_StripsMarkdownBeforeActionBar(t *testing.T) {
 	events := makeEvents("```bash\nfind . -name '*.log'\n```")
-	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m := NewGenerateModel(events, noopCancel, nil, nil, nil)
 	m = drainStream(m, 2)
 
 	// Command should be stripped by the time action bar appears
@@ -183,7 +183,7 @@ func TestGenerate_StripsMarkdownBeforeActionBar(t *testing.T) {
 
 func TestGenerate_NavigateThenEnter(t *testing.T) {
 	events := makeEvents("pwd")
-	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m := NewGenerateModel(events, noopCancel, nil, nil, nil)
 	m = drainStream(m, 2)
 
 	// Navigate right to Copy, then Enter
@@ -199,7 +199,7 @@ func TestGenerate_NavigateThenEnter(t *testing.T) {
 
 func TestGenerate_ReviseOpensTextInput(t *testing.T) {
 	events := makeEvents("ls")
-	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m := NewGenerateModel(events, noopCancel, nil, nil, nil)
 	m = drainStream(m, 2)
 
 	// Press 'v' to revise
@@ -213,7 +213,7 @@ func TestGenerate_ReviseOpensTextInput(t *testing.T) {
 
 func TestGenerate_ReviseEscReturnsToAction(t *testing.T) {
 	events := makeEvents("ls")
-	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m := NewGenerateModel(events, noopCancel, nil, nil, nil)
 	m = drainStream(m, 2)
 
 	// Enter revise
@@ -231,7 +231,7 @@ func TestGenerate_ReviseEscReturnsToAction(t *testing.T) {
 
 func TestGenerate_ReviseSubmitWithoutStreamFuncQuits(t *testing.T) {
 	events := makeEvents("ls")
-	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m := NewGenerateModel(events, noopCancel, nil, nil, nil)
 	m = drainStream(m, 2)
 
 	// Enter revise
@@ -267,7 +267,7 @@ func TestGenerate_ReviseSubmitWithoutStreamFuncQuits(t *testing.T) {
 
 func TestGenerate_ReviseEmptyIgnored(t *testing.T) {
 	events := makeEvents("ls")
-	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m := NewGenerateModel(events, noopCancel, nil, nil, nil)
 	m = drainStream(m, 2)
 
 	// Enter revise
@@ -285,7 +285,7 @@ func TestGenerate_ReviseEmptyIgnored(t *testing.T) {
 
 func TestGenerate_ReviseViewShowsFeedbackPrompt(t *testing.T) {
 	events := makeEvents("echo hi")
-	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m := NewGenerateModel(events, noopCancel, nil, nil, nil)
 	m = drainStream(m, 2)
 
 	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
@@ -306,7 +306,7 @@ func TestGenerate_MessagesPreservedFromConstructor(t *testing.T) {
 		{Role: provider.RoleUser, Content: "list files"},
 	}
 	events := makeEvents("ls")
-	m := NewGenerateModel(events, noopCancel, initial, nil)
+	m := NewGenerateModel(events, noopCancel, initial, nil, nil)
 
 	msgs := m.Messages()
 	if len(msgs) != 2 {
@@ -326,7 +326,7 @@ func TestGenerate_MessagesNotAliased(t *testing.T) {
 		{Role: provider.RoleUser, Content: "user prompt"},
 	}
 	events := makeEvents("ls")
-	m := NewGenerateModel(events, noopCancel, initial, nil)
+	m := NewGenerateModel(events, noopCancel, initial, nil, nil)
 
 	initial[1].Content = "mutated"
 	if m.Messages()[1].Content == "mutated" {
@@ -340,7 +340,7 @@ func TestGenerate_AssistantAppendedOnStreamComplete(t *testing.T) {
 		{Role: provider.RoleUser, Content: "list files"},
 	}
 	events := makeEvents("ls -la")
-	m := NewGenerateModel(events, noopCancel, initial, nil)
+	m := NewGenerateModel(events, noopCancel, initial, nil, nil)
 	m = drainStream(m, 2)
 
 	msgs := m.Messages()
@@ -361,7 +361,7 @@ func TestGenerate_ReviseAppendsFeedbackToMessages(t *testing.T) {
 		{Role: provider.RoleUser, Content: "list files"},
 	}
 	events := makeEvents("ls")
-	m := NewGenerateModel(events, noopCancel, initial, nil)
+	m := NewGenerateModel(events, noopCancel, initial, nil, nil)
 	m = drainStream(m, 2)
 
 	// Enter revise
@@ -397,7 +397,7 @@ func TestGenerate_ReviseEscDoesNotAppendMessage(t *testing.T) {
 		{Role: provider.RoleUser, Content: "list files"},
 	}
 	events := makeEvents("ls")
-	m := NewGenerateModel(events, noopCancel, initial, nil)
+	m := NewGenerateModel(events, noopCancel, initial, nil, nil)
 	m = drainStream(m, 2)
 
 	// Enter revise then cancel
@@ -432,7 +432,7 @@ func TestGenerate_ReviseRestreamsWithNewResponse(t *testing.T) {
 		{Role: provider.RoleUser, Content: "list files"},
 	}
 	events := makeEvents("ls")
-	m := NewGenerateModel(events, noopCancel, initial, mockNewStream("ls -la"))
+	m := NewGenerateModel(events, noopCancel, initial, mockNewStream("ls -la"), nil)
 	m = drainStream(m, 2)
 
 	// Enter revise, type feedback, submit
@@ -468,7 +468,7 @@ func TestGenerate_ReviseUpdatesCommandInResult(t *testing.T) {
 		{Role: provider.RoleUser, Content: "list files"},
 	}
 	events := makeEvents("ls")
-	m := NewGenerateModel(events, noopCancel, initial, mockNewStream("ls -la"))
+	m := NewGenerateModel(events, noopCancel, initial, mockNewStream("ls -la"), nil)
 	m = drainStream(m, 2)
 
 	// Revise
@@ -494,7 +494,7 @@ func TestGenerate_ReviseMessagesAccumulate(t *testing.T) {
 		{Role: provider.RoleUser, Content: "list files"},
 	}
 	events := makeEvents("ls")
-	m := NewGenerateModel(events, noopCancel, initial, mockNewStream("ls -la"))
+	m := NewGenerateModel(events, noopCancel, initial, mockNewStream("ls -la"), nil)
 	m = drainStream(m, 2)
 
 	// Revise
@@ -527,7 +527,7 @@ func TestGenerate_ReviseMessagesAccumulate(t *testing.T) {
 
 func TestGenerate_ReviseActionBarReappearsAfterRestream(t *testing.T) {
 	events := makeEvents("ls")
-	m := NewGenerateModel(events, noopCancel, nil, mockNewStream("ls -la"))
+	m := NewGenerateModel(events, noopCancel, nil, mockNewStream("ls -la"), nil)
 	m = drainStream(m, 2)
 
 	// Revise
@@ -552,7 +552,7 @@ func TestGenerate_ReviseStreamErrorQuitsWithError(t *testing.T) {
 	failStream := func(messages []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 		return nil, nil, errors.New("API error")
 	}
-	m := NewGenerateModel(events, noopCancel, nil, failStream)
+	m := NewGenerateModel(events, noopCancel, nil, failStream, nil)
 	m = drainStream(m, 2)
 
 	// Revise
@@ -581,7 +581,7 @@ func TestGenerate_ReviseStreamErrorQuitsWithError(t *testing.T) {
 
 func TestGenerate_EditOpensTextInput(t *testing.T) {
 	events := makeEvents("ls")
-	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m := NewGenerateModel(events, noopCancel, nil, nil, nil)
 	m = drainStream(m, 2)
 
 	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
@@ -594,7 +594,7 @@ func TestGenerate_EditOpensTextInput(t *testing.T) {
 
 func TestGenerate_EditPrePopulatesCommand(t *testing.T) {
 	events := makeEvents("ls -la")
-	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m := NewGenerateModel(events, noopCancel, nil, nil, nil)
 	m = drainStream(m, 2)
 
 	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
@@ -611,7 +611,7 @@ func TestGenerate_EditPrePopulatesCommand(t *testing.T) {
 
 func TestGenerate_EditEscReturnsToAction(t *testing.T) {
 	events := makeEvents("ls")
-	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m := NewGenerateModel(events, noopCancel, nil, nil, nil)
 	m = drainStream(m, 2)
 
 	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
@@ -634,7 +634,7 @@ func TestGenerate_EditSubmitUpdatesCommand(t *testing.T) {
 		{Role: provider.RoleUser, Content: "list files"},
 	}
 	events := makeEvents("ls")
-	m := NewGenerateModel(events, noopCancel, initial, nil)
+	m := NewGenerateModel(events, noopCancel, initial, nil, nil)
 	m = drainStream(m, 2)
 
 	// Enter edit
@@ -666,7 +666,7 @@ func TestGenerate_EditUpdatesMessages(t *testing.T) {
 		{Role: provider.RoleUser, Content: "list files"},
 	}
 	events := makeEvents("ls")
-	m := NewGenerateModel(events, noopCancel, initial, nil)
+	m := NewGenerateModel(events, noopCancel, initial, nil, nil)
 	m = drainStream(m, 2)
 
 	// Enter edit and append
@@ -690,7 +690,7 @@ func TestGenerate_EditUpdatesMessages(t *testing.T) {
 
 func TestGenerate_EditedCommandFlowsToResult(t *testing.T) {
 	events := makeEvents("ls")
-	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m := NewGenerateModel(events, noopCancel, nil, nil, nil)
 	m = drainStream(m, 2)
 
 	// Edit
@@ -714,7 +714,7 @@ func TestGenerate_EditedCommandFlowsToResult(t *testing.T) {
 
 func TestGenerate_EditEmptyIgnored(t *testing.T) {
 	events := makeEvents("ls")
-	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m := NewGenerateModel(events, noopCancel, nil, nil, nil)
 	m = drainStream(m, 2)
 
 	// Enter edit
@@ -749,7 +749,7 @@ func TestGenerate_MultipleRevisionsWork(t *testing.T) {
 		{Role: provider.RoleUser, Content: "list files"},
 	}
 	events := makeEvents(responses[0])
-	m := NewGenerateModel(events, noopCancel, initial, multiStream)
+	m := NewGenerateModel(events, noopCancel, initial, multiStream, nil)
 	m = drainStream(m, 2)
 
 	// First revision
@@ -787,5 +787,126 @@ func TestGenerate_MultipleRevisionsWork(t *testing.T) {
 	m = model.(GenerateModel)
 	if m.Result().Command != "ls -la" {
 		t.Errorf("expected final command 'ls -la', got %q", m.Result().Command)
+	}
+}
+
+func mockExplainStream(tokens ...string) ExplainStreamFunc {
+	return func(command string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		return makeEvents(tokens...), noopCancel, nil
+	}
+}
+
+func drainExplainStream(m GenerateModel, events int) GenerateModel {
+	for i := 0; i < events; i++ {
+		cmd := m.explainStream.waitForEvent()
+		model, _ := m.Update(cmd())
+		m = model.(GenerateModel)
+	}
+	return m
+}
+
+func TestGenerate_ExplainOpensExplainPhase(t *testing.T) {
+	events := makeEvents("ls -la")
+	m := NewGenerateModel(events, noopCancel, nil, nil, mockExplainStream("lists files"))
+	m = drainStream(m, 2)
+
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
+	m = model.(GenerateModel)
+
+	if m.Phase() != phaseExplain {
+		t.Errorf("expected phaseExplain, got %v", m.Phase())
+	}
+}
+
+func TestGenerate_ExplainStreamsAndReturnsToAction(t *testing.T) {
+	events := makeEvents("ls -la")
+	m := NewGenerateModel(events, noopCancel, nil, nil, mockExplainStream("lists files in detail"))
+	m = drainStream(m, 2)
+
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
+	m = model.(GenerateModel)
+
+	// Drain explain stream (token + done)
+	m = drainExplainStream(m, 2)
+
+	if m.Phase() != phaseAction {
+		t.Errorf("expected phaseAction after explain completes, got %v", m.Phase())
+	}
+}
+
+func TestGenerate_ExplainViewShowsExplanation(t *testing.T) {
+	events := makeEvents("ls -la")
+	m := NewGenerateModel(events, noopCancel, nil, nil, mockExplainStream("lists files"))
+	m = drainStream(m, 2)
+
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
+	m = model.(GenerateModel)
+
+	// Receive token
+	cmd := m.explainStream.waitForEvent()
+	model, _ = m.Update(cmd())
+	m = model.(GenerateModel)
+
+	view := m.View()
+	if !strings.Contains(view, "Explanation") {
+		t.Error("expected 'Explanation' label in explain view")
+	}
+	if !strings.Contains(view, "lists files") {
+		t.Error("expected explanation text in view")
+	}
+}
+
+func TestGenerate_ExplainPersistsAfterReturn(t *testing.T) {
+	events := makeEvents("ls -la")
+	m := NewGenerateModel(events, noopCancel, nil, nil, mockExplainStream("lists files in detail"))
+	m = drainStream(m, 2)
+
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
+	m = model.(GenerateModel)
+	m = drainExplainStream(m, 2)
+
+	// Now in phaseAction — explanation should still be visible
+	view := m.View()
+	if !strings.Contains(view, "lists files in detail") {
+		t.Error("expected explanation to persist in action bar view")
+	}
+	if !strings.Contains(view, "Run") {
+		t.Error("expected action bar visible after explain")
+	}
+}
+
+func TestGenerate_ExplainNilFuncIgnored(t *testing.T) {
+	events := makeEvents("ls")
+	m := NewGenerateModel(events, noopCancel, nil, nil, nil)
+	m = drainStream(m, 2)
+
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
+	m = model.(GenerateModel)
+
+	// Should stay in phaseAction since no explain func
+	if m.Phase() != phaseAction {
+		t.Errorf("expected phaseAction when explain func is nil, got %v", m.Phase())
+	}
+}
+
+func TestGenerate_ExplainDoesNotAffectResult(t *testing.T) {
+	events := makeEvents("docker ps")
+	m := NewGenerateModel(events, noopCancel, nil, nil, mockExplainStream("shows running containers"))
+	m = drainStream(m, 2)
+
+	// Explain
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
+	m = model.(GenerateModel)
+	m = drainExplainStream(m, 2)
+
+	// Now run
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
+	m = model.(GenerateModel)
+
+	if m.Result().Command != "docker ps" {
+		t.Errorf("expected 'docker ps', got %q", m.Result().Command)
+	}
+	if m.Result().Action != ActionRun {
+		t.Errorf("expected ActionRun, got %v", m.Result().Action)
 	}
 }

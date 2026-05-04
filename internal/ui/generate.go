@@ -16,20 +16,25 @@ const (
 	phaseAction
 	phaseRevise
 	phaseEdit
+	phaseExplain
 	phaseDone
 )
 
 type NewStreamFunc func(messages []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error)
 
+type ExplainStreamFunc func(command string) (<-chan provider.StreamEvent, context.CancelFunc, error)
+
 type GenerateModel struct {
-	stream      StreamModel
-	actionBar   ActionBarModel
-	reviseInput textinput.Model
-	editInput   textinput.Model
-	messages    []provider.Message
-	newStream   NewStreamFunc
-	phase       phase
-	result      GenerateResult
+	stream        StreamModel
+	actionBar     ActionBarModel
+	reviseInput   textinput.Model
+	editInput     textinput.Model
+	explainStream StreamModel
+	messages      []provider.Message
+	newStream     NewStreamFunc
+	newExplain    ExplainStreamFunc
+	phase         phase
+	result        GenerateResult
 }
 
 type GenerateResult struct {
@@ -40,7 +45,7 @@ type GenerateResult struct {
 	Err       error
 }
 
-func NewGenerateModel(events <-chan provider.StreamEvent, cancel context.CancelFunc, messages []provider.Message, newStream NewStreamFunc) GenerateModel {
+func NewGenerateModel(events <-chan provider.StreamEvent, cancel context.CancelFunc, messages []provider.Message, newStream NewStreamFunc, newExplain ExplainStreamFunc) GenerateModel {
 	ti := textinput.New()
 	ti.Placeholder = "Describe what to change…"
 	ti.CharLimit = 500
@@ -55,6 +60,7 @@ func NewGenerateModel(events <-chan provider.StreamEvent, cancel context.CancelF
 		editInput:   ei,
 		messages:    msgs,
 		newStream:   newStream,
+		newExplain:  newExplain,
 		phase:       phaseStreaming,
 	}
 }
@@ -77,6 +83,8 @@ func (m GenerateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateRevise(msg)
 	case phaseEdit:
 		return m.updateEdit(msg)
+	case phaseExplain:
+		return m.updateExplain(msg)
 	}
 	return m, nil
 }
@@ -118,6 +126,20 @@ func (m GenerateModel) updateAction(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.editInput.Cursor.BlinkCmd()
 	}
 
+	if m.actionBar.Selected() == ActionExplain {
+		m.actionBar = m.actionBar.Reset()
+		if m.newExplain == nil {
+			return m, nil
+		}
+		events, cancel, err := m.newExplain(m.stream.Output())
+		if err != nil {
+			return m, func() tea.Msg { return explainErrMsg{err: err} }
+		}
+		m.explainStream = NewStreamModel(events, cancel)
+		m.phase = phaseExplain
+		return m, m.explainStream.Init()
+	}
+
 	if m.actionBar.Selected() == ActionRevise {
 		m.phase = phaseRevise
 		m.reviseInput.Reset()
@@ -138,6 +160,7 @@ func (m GenerateModel) updateAction(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 type reviseErrMsg struct{ err error }
+type explainErrMsg struct{ err error }
 
 func (m GenerateModel) updateRevise(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
@@ -210,20 +233,67 @@ func (m GenerateModel) updateEdit(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+func (m GenerateModel) updateExplain(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		if m.explainStream.Done() {
+			m.phase = phaseAction
+			return m, nil
+		}
+		switch msg.String() {
+		case "q", "esc":
+			m.explainStream.cancel()
+			m.phase = phaseAction
+			return m, nil
+		}
+		return m, nil
+	case explainErrMsg:
+		m.explainStream = m.explainStream.WithOutput("Error: " + msg.err.Error())
+		m.explainStream.done = true
+		m.phase = phaseAction
+		return m, nil
+	}
+	updated, cmd := m.explainStream.Update(msg)
+	m.explainStream = updated.(StreamModel)
+	if m.explainStream.Done() {
+		m.phase = phaseAction
+		return m, nil
+	}
+	return m, cmd
+}
+
 var editPromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("250")).MarginTop(1)
 
 var revisePromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("250")).MarginTop(1)
+var explainLabelStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("250")).MarginTop(1).Bold(true)
+var explainBodyStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
+
+func (m GenerateModel) viewExplanation() string {
+	if m.explainStream.output == "" && !m.explainStream.done {
+		return ""
+	}
+	return "\n" + explainLabelStyle.Render("Explanation:") + "\n" + explainBodyStyle.Render(m.explainStream.output)
+}
 
 func (m GenerateModel) View() string {
+	explanation := m.viewExplanation()
 	switch m.phase {
 	case phaseStreaming:
 		return m.stream.View()
 	case phaseAction:
-		return m.stream.View() + "\n" + m.actionBar.View()
+		return m.stream.View() + explanation + "\n" + m.actionBar.View()
 	case phaseEdit:
 		return editPromptStyle.Render("Edit: ") + m.editInput.View()
 	case phaseRevise:
 		return m.stream.View() + "\n" + revisePromptStyle.Render("Feedback: ") + m.reviseInput.View()
+	case phaseExplain:
+		view := m.stream.View() + "\n" + explainLabelStyle.Render("Explanation:")
+		if m.explainStream.output == "" && !m.explainStream.done {
+			view += " " + m.explainStream.spinner.View()
+		} else {
+			view += "\n" + explainBodyStyle.Render(m.explainStream.output)
+		}
+		return view
 	default:
 		return m.stream.View()
 	}
