@@ -21,11 +21,10 @@ func TestActionBar_InitialState(t *testing.T) {
 
 func TestActionBar_RightNavWraps(t *testing.T) {
 	m := NewActionBarModel()
-	// cursor starts at 0 (Run)
-	m, _ = updateBar(m, tea.KeyMsg{Type: tea.KeyRight})
-	m, _ = updateBar(m, tea.KeyMsg{Type: tea.KeyRight})
-	// cursor at 2 (Cancel), one more wraps to 0
-	m, _ = updateBar(m, tea.KeyMsg{Type: tea.KeyRight})
+	// cursor starts at 0 (Run), advance through all items to wrap
+	for range actions {
+		m, _ = updateBar(m, tea.KeyMsg{Type: tea.KeyRight})
+	}
 	// Verify by pressing Enter — should select Run (index 0)
 	_, cmd := updateBar(m, tea.KeyMsg{Type: tea.KeyEnter})
 	msg := cmd()
@@ -135,8 +134,35 @@ func TestActionBar_ViewShowsAllOptions(t *testing.T) {
 	if !strings.Contains(view, "Copy") {
 		t.Error("expected 'Copy' in view")
 	}
+	if !strings.Contains(view, "Revise") {
+		t.Error("expected 'Revise' in view")
+	}
 	if !strings.Contains(view, "Cancel") {
 		t.Error("expected 'Cancel' in view")
+	}
+}
+
+func TestActionBar_ShortcutV(t *testing.T) {
+	m := NewActionBarModel()
+	m, cmd := updateBar(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	if m.Selected() != ActionRevise {
+		t.Errorf("expected ActionRevise, got %v", m.Selected())
+	}
+	msg := cmd()
+	if sel, ok := msg.(ActionSelectedMsg); !ok || sel.Action != ActionRevise {
+		t.Errorf("expected ActionSelectedMsg{ActionRevise}, got %v", msg)
+	}
+}
+
+func TestActionBar_Reset(t *testing.T) {
+	m := NewActionBarModel()
+	m, _ = updateBar(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
+	if m.Selected() != ActionRun {
+		t.Fatal("precondition: expected ActionRun")
+	}
+	m = m.Reset()
+	if m.Selected() != ActionNone {
+		t.Errorf("expected ActionNone after reset, got %v", m.Selected())
 	}
 }
 
@@ -148,6 +174,9 @@ func TestActionBar_ViewShowsShortcuts(t *testing.T) {
 	}
 	if !strings.Contains(view, "(c)") {
 		t.Error("expected '(c)' shortcut in view")
+	}
+	if !strings.Contains(view, "(v)") {
+		t.Error("expected '(v)' shortcut in view")
 	}
 	if !strings.Contains(view, "(esc)") {
 		t.Error("expected '(esc)' shortcut in view")

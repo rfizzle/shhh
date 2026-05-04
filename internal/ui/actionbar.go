@@ -11,6 +11,7 @@ const (
 	ActionNone Action = iota
 	ActionRun
 	ActionCopy
+	ActionRevise
 	ActionCancel
 )
 
@@ -27,6 +28,7 @@ type actionItem struct {
 var actions = []actionItem{
 	{"Run", "r", ActionRun},
 	{"Copy", "c", ActionCopy},
+	{"Revise", "v", ActionRevise},
 	{"Cancel", "esc", ActionCancel},
 }
 
@@ -40,6 +42,12 @@ func NewActionBarModel() ActionBarModel {
 }
 
 func (m ActionBarModel) Selected() Action { return m.selected }
+
+func (m ActionBarModel) Reset() ActionBarModel {
+	m.selected = ActionNone
+	m.cursor = 0
+	return m
+}
 
 func (m ActionBarModel) Init() tea.Cmd {
 	return nil
@@ -70,6 +78,9 @@ func (m ActionBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "c":
 			m.selected = ActionCopy
 			return m, func() tea.Msg { return ActionSelectedMsg{Action: ActionCopy} }
+		case "v":
+			m.selected = ActionRevise
+			return m, func() tea.Msg { return ActionSelectedMsg{Action: ActionRevise} }
 		case "esc", "q":
 			m.selected = ActionCancel
 			return m, func() tea.Msg { return ActionSelectedMsg{Action: ActionCancel} }

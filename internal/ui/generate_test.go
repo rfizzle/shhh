@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"context"
 	"errors"
 	"strings"
 	"testing"
@@ -22,7 +23,7 @@ func drainStream(m GenerateModel, events int) GenerateModel {
 
 func TestGenerate_StartsInStreamingPhase(t *testing.T) {
 	events := makeEvents("ls")
-	m := NewGenerateModel(events, noopCancel)
+	m := NewGenerateModel(events, noopCancel, nil, nil)
 
 	if m.Phase() != phaseStreaming {
 		t.Errorf("expected phaseStreaming, got %v", m.Phase())
@@ -31,7 +32,7 @@ func TestGenerate_StartsInStreamingPhase(t *testing.T) {
 
 func TestGenerate_TransitionsToActionOnDone(t *testing.T) {
 	events := makeEvents("ls -la")
-	m := NewGenerateModel(events, noopCancel)
+	m := NewGenerateModel(events, noopCancel, nil, nil)
 
 	// token + done
 	m = drainStream(m, 2)
@@ -43,7 +44,7 @@ func TestGenerate_TransitionsToActionOnDone(t *testing.T) {
 
 func TestGenerate_ActionBarAppearsInView(t *testing.T) {
 	events := makeEvents("echo hello")
-	m := NewGenerateModel(events, noopCancel)
+	m := NewGenerateModel(events, noopCancel, nil, nil)
 	m = drainStream(m, 2)
 
 	view := m.View()
@@ -57,7 +58,7 @@ func TestGenerate_ActionBarAppearsInView(t *testing.T) {
 
 func TestGenerate_SelectRunReturnsResult(t *testing.T) {
 	events := makeEvents("rm -rf /tmp/test")
-	m := NewGenerateModel(events, noopCancel)
+	m := NewGenerateModel(events, noopCancel, nil, nil)
 	m = drainStream(m, 2)
 
 	// Press 'r'
@@ -84,7 +85,7 @@ func TestGenerate_SelectRunReturnsResult(t *testing.T) {
 
 func TestGenerate_SelectCopyReturnsResult(t *testing.T) {
 	events := makeEvents("docker ps")
-	m := NewGenerateModel(events, noopCancel)
+	m := NewGenerateModel(events, noopCancel, nil, nil)
 	m = drainStream(m, 2)
 
 	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'c'}})
@@ -101,7 +102,7 @@ func TestGenerate_SelectCopyReturnsResult(t *testing.T) {
 
 func TestGenerate_SelectCancelReturnsResult(t *testing.T) {
 	events := makeEvents("whoami")
-	m := NewGenerateModel(events, noopCancel)
+	m := NewGenerateModel(events, noopCancel, nil, nil)
 	m = drainStream(m, 2)
 
 	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyEscape})
@@ -117,7 +118,7 @@ func TestGenerate_CancelDuringStreamQuitsImmediately(t *testing.T) {
 	ch := make(chan provider.StreamEvent, 2)
 	ch <- provider.StreamEvent{Token: "partial"}
 	cancel, called := testCancel()
-	m := NewGenerateModel(ch, cancel)
+	m := NewGenerateModel(ch, cancel, nil, nil)
 
 	// Receive token
 	cmd := m.stream.waitForEvent()
@@ -147,7 +148,7 @@ func TestGenerate_CancelDuringStreamQuitsImmediately(t *testing.T) {
 
 func TestGenerate_ErrorDuringStreamQuitsImmediately(t *testing.T) {
 	events := makeErrorEvents(errTest)
-	m := NewGenerateModel(events, noopCancel)
+	m := NewGenerateModel(events, noopCancel, nil, nil)
 
 	cmd := m.stream.waitForEvent()
 	model, quitCmd := m.Update(cmd())
@@ -168,7 +169,7 @@ func TestGenerate_ErrorDuringStreamQuitsImmediately(t *testing.T) {
 
 func TestGenerate_StripsMarkdownBeforeActionBar(t *testing.T) {
 	events := makeEvents("```bash\nfind . -name '*.log'\n```")
-	m := NewGenerateModel(events, noopCancel)
+	m := NewGenerateModel(events, noopCancel, nil, nil)
 	m = drainStream(m, 2)
 
 	// Command should be stripped by the time action bar appears
@@ -182,7 +183,7 @@ func TestGenerate_StripsMarkdownBeforeActionBar(t *testing.T) {
 
 func TestGenerate_NavigateThenEnter(t *testing.T) {
 	events := makeEvents("pwd")
-	m := NewGenerateModel(events, noopCancel)
+	m := NewGenerateModel(events, noopCancel, nil, nil)
 	m = drainStream(m, 2)
 
 	// Navigate right to Copy, then Enter
@@ -193,5 +194,441 @@ func TestGenerate_NavigateThenEnter(t *testing.T) {
 
 	if m.Result().Action != ActionCopy {
 		t.Errorf("expected ActionCopy after nav+enter, got %v", m.Result().Action)
+	}
+}
+
+func TestGenerate_ReviseOpensTextInput(t *testing.T) {
+	events := makeEvents("ls")
+	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m = drainStream(m, 2)
+
+	// Press 'v' to revise
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	m = model.(GenerateModel)
+
+	if m.Phase() != phaseRevise {
+		t.Errorf("expected phaseRevise, got %v", m.Phase())
+	}
+}
+
+func TestGenerate_ReviseEscReturnsToAction(t *testing.T) {
+	events := makeEvents("ls")
+	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m = drainStream(m, 2)
+
+	// Enter revise
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	m = model.(GenerateModel)
+
+	// Press Esc to cancel revision
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	m = model.(GenerateModel)
+
+	if m.Phase() != phaseAction {
+		t.Errorf("expected phaseAction after Esc, got %v", m.Phase())
+	}
+}
+
+func TestGenerate_ReviseSubmitWithoutStreamFuncQuits(t *testing.T) {
+	events := makeEvents("ls")
+	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m = drainStream(m, 2)
+
+	// Enter revise
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	m = model.(GenerateModel)
+
+	// Type feedback
+	for _, r := range "add -la flag" {
+		model, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+		m = model.(GenerateModel)
+	}
+
+	// Submit — no newStream func, so it falls back to quit
+	model, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = model.(GenerateModel)
+
+	if m.Phase() != phaseDone {
+		t.Errorf("expected phaseDone, got %v", m.Phase())
+	}
+	r := m.Result()
+	if r.Action != ActionRevise {
+		t.Errorf("expected ActionRevise, got %v", r.Action)
+	}
+	if r.Feedback != "add -la flag" {
+		t.Errorf("expected feedback 'add -la flag', got %q", r.Feedback)
+	}
+
+	msg := cmd()
+	if _, ok := msg.(tea.QuitMsg); !ok {
+		t.Errorf("expected tea.QuitMsg, got %T", msg)
+	}
+}
+
+func TestGenerate_ReviseEmptyIgnored(t *testing.T) {
+	events := makeEvents("ls")
+	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m = drainStream(m, 2)
+
+	// Enter revise
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	m = model.(GenerateModel)
+
+	// Submit empty
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = model.(GenerateModel)
+
+	if m.Phase() != phaseRevise {
+		t.Errorf("expected to stay in phaseRevise on empty submit, got %v", m.Phase())
+	}
+}
+
+func TestGenerate_ReviseViewShowsFeedbackPrompt(t *testing.T) {
+	events := makeEvents("echo hi")
+	m := NewGenerateModel(events, noopCancel, nil, nil)
+	m = drainStream(m, 2)
+
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	m = model.(GenerateModel)
+
+	view := m.View()
+	if !strings.Contains(view, "Feedback") {
+		t.Error("expected 'Feedback' label in revise view")
+	}
+	if !strings.Contains(view, "echo hi") {
+		t.Error("expected command still visible during revision")
+	}
+}
+
+func TestGenerate_MessagesPreservedFromConstructor(t *testing.T) {
+	initial := []provider.Message{
+		{Role: provider.RoleSystem, Content: "You are a shell assistant."},
+		{Role: provider.RoleUser, Content: "list files"},
+	}
+	events := makeEvents("ls")
+	m := NewGenerateModel(events, noopCancel, initial, nil)
+
+	msgs := m.Messages()
+	if len(msgs) != 2 {
+		t.Fatalf("expected 2 initial messages, got %d", len(msgs))
+	}
+	if msgs[0].Role != provider.RoleSystem {
+		t.Errorf("expected system role, got %v", msgs[0].Role)
+	}
+	if msgs[1].Content != "list files" {
+		t.Errorf("expected 'list files', got %q", msgs[1].Content)
+	}
+}
+
+func TestGenerate_MessagesNotAliased(t *testing.T) {
+	initial := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "user prompt"},
+	}
+	events := makeEvents("ls")
+	m := NewGenerateModel(events, noopCancel, initial, nil)
+
+	initial[1].Content = "mutated"
+	if m.Messages()[1].Content == "mutated" {
+		t.Error("expected constructor to copy messages, not alias the slice")
+	}
+}
+
+func TestGenerate_AssistantAppendedOnStreamComplete(t *testing.T) {
+	initial := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "list files"},
+	}
+	events := makeEvents("ls -la")
+	m := NewGenerateModel(events, noopCancel, initial, nil)
+	m = drainStream(m, 2)
+
+	msgs := m.Messages()
+	if len(msgs) != 3 {
+		t.Fatalf("expected 3 messages after stream, got %d", len(msgs))
+	}
+	if msgs[2].Role != provider.RoleAssistant {
+		t.Errorf("expected assistant role, got %v", msgs[2].Role)
+	}
+	if msgs[2].Content != "ls -la" {
+		t.Errorf("expected 'ls -la', got %q", msgs[2].Content)
+	}
+}
+
+func TestGenerate_ReviseAppendsFeedbackToMessages(t *testing.T) {
+	initial := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "list files"},
+	}
+	events := makeEvents("ls")
+	m := NewGenerateModel(events, noopCancel, initial, nil)
+	m = drainStream(m, 2)
+
+	// Enter revise
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	m = model.(GenerateModel)
+
+	// Type and submit feedback
+	for _, r := range "add -la" {
+		model, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+		m = model.(GenerateModel)
+	}
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = model.(GenerateModel)
+
+	msgs := m.Messages()
+	if len(msgs) != 4 {
+		t.Fatalf("expected 4 messages after revise, got %d", len(msgs))
+	}
+	if msgs[2].Role != provider.RoleAssistant {
+		t.Errorf("expected assistant at index 2, got %v", msgs[2].Role)
+	}
+	if msgs[3].Role != provider.RoleUser {
+		t.Errorf("expected user at index 3, got %v", msgs[3].Role)
+	}
+	if msgs[3].Content != "add -la" {
+		t.Errorf("expected feedback 'add -la', got %q", msgs[3].Content)
+	}
+}
+
+func TestGenerate_ReviseEscDoesNotAppendMessage(t *testing.T) {
+	initial := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "list files"},
+	}
+	events := makeEvents("ls")
+	m := NewGenerateModel(events, noopCancel, initial, nil)
+	m = drainStream(m, 2)
+
+	// Enter revise then cancel
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	m = model.(GenerateModel)
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	m = model.(GenerateModel)
+
+	msgs := m.Messages()
+	if len(msgs) != 3 {
+		t.Fatalf("expected 3 messages (no feedback added on Esc), got %d", len(msgs))
+	}
+}
+
+func mockNewStream(tokens ...string) NewStreamFunc {
+	return func(messages []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		return makeEvents(tokens...), noopCancel, nil
+	}
+}
+
+func typeKeys(m GenerateModel, s string) GenerateModel {
+	for _, r := range s {
+		model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+		m = model.(GenerateModel)
+	}
+	return m
+}
+
+func TestGenerate_ReviseRestreamsWithNewResponse(t *testing.T) {
+	initial := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "list files"},
+	}
+	events := makeEvents("ls")
+	m := NewGenerateModel(events, noopCancel, initial, mockNewStream("ls -la"))
+	m = drainStream(m, 2)
+
+	// Enter revise, type feedback, submit
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	m = model.(GenerateModel)
+	m = typeKeys(m, "add -la")
+	model, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = model.(GenerateModel)
+
+	if m.Phase() != phaseStreaming {
+		t.Fatalf("expected phaseStreaming after revise submit, got %v", m.Phase())
+	}
+
+	// Init should return a batch command
+	if cmd == nil {
+		t.Fatal("expected Init cmd from new stream")
+	}
+
+	// Drain the new stream (token + done)
+	m = drainStream(m, 2)
+
+	if m.Phase() != phaseAction {
+		t.Errorf("expected phaseAction after re-stream, got %v", m.Phase())
+	}
+	if m.stream.Output() != "ls -la" {
+		t.Errorf("expected new command 'ls -la', got %q", m.stream.Output())
+	}
+}
+
+func TestGenerate_ReviseUpdatesCommandInResult(t *testing.T) {
+	initial := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "list files"},
+	}
+	events := makeEvents("ls")
+	m := NewGenerateModel(events, noopCancel, initial, mockNewStream("ls -la"))
+	m = drainStream(m, 2)
+
+	// Revise
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	m = model.(GenerateModel)
+	m = typeKeys(m, "add -la")
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = model.(GenerateModel)
+	m = drainStream(m, 2)
+
+	// Now select Run — result should have the NEW command
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
+	m = model.(GenerateModel)
+
+	if m.Result().Command != "ls -la" {
+		t.Errorf("expected revised command 'ls -la', got %q", m.Result().Command)
+	}
+}
+
+func TestGenerate_ReviseMessagesAccumulate(t *testing.T) {
+	initial := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "list files"},
+	}
+	events := makeEvents("ls")
+	m := NewGenerateModel(events, noopCancel, initial, mockNewStream("ls -la"))
+	m = drainStream(m, 2)
+
+	// Revise
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	m = model.(GenerateModel)
+	m = typeKeys(m, "add -la")
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = model.(GenerateModel)
+
+	// After submit, before re-stream completes: sys, user, assistant("ls"), user("add -la")
+	msgs := m.Messages()
+	if len(msgs) != 4 {
+		t.Fatalf("expected 4 messages before re-stream, got %d", len(msgs))
+	}
+
+	// Drain re-stream — assistant("ls -la") appended
+	m = drainStream(m, 2)
+
+	msgs = m.Messages()
+	if len(msgs) != 5 {
+		t.Fatalf("expected 5 messages after re-stream, got %d", len(msgs))
+	}
+	if msgs[4].Role != provider.RoleAssistant {
+		t.Errorf("expected assistant at index 4, got %v", msgs[4].Role)
+	}
+	if msgs[4].Content != "ls -la" {
+		t.Errorf("expected 'ls -la', got %q", msgs[4].Content)
+	}
+}
+
+func TestGenerate_ReviseActionBarReappearsAfterRestream(t *testing.T) {
+	events := makeEvents("ls")
+	m := NewGenerateModel(events, noopCancel, nil, mockNewStream("ls -la"))
+	m = drainStream(m, 2)
+
+	// Revise
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	m = model.(GenerateModel)
+	m = typeKeys(m, "fix it")
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = model.(GenerateModel)
+	m = drainStream(m, 2)
+
+	view := m.View()
+	if !strings.Contains(view, "Run") {
+		t.Error("expected action bar visible after re-stream")
+	}
+	if !strings.Contains(view, "ls -la") {
+		t.Error("expected new command visible after re-stream")
+	}
+}
+
+func TestGenerate_ReviseStreamErrorQuitsWithError(t *testing.T) {
+	events := makeEvents("ls")
+	failStream := func(messages []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		return nil, nil, errors.New("API error")
+	}
+	m := NewGenerateModel(events, noopCancel, nil, failStream)
+	m = drainStream(m, 2)
+
+	// Revise
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	m = model.(GenerateModel)
+	m = typeKeys(m, "try again")
+	model, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = model.(GenerateModel)
+
+	// The cmd carries the error as a reviseErrMsg
+	model, quitCmd := m.Update(cmd())
+	m = model.(GenerateModel)
+
+	if m.Phase() != phaseDone {
+		t.Errorf("expected phaseDone after stream error, got %v", m.Phase())
+	}
+	if m.Result().Err == nil {
+		t.Error("expected error in result")
+	}
+
+	msg := quitCmd()
+	if _, ok := msg.(tea.QuitMsg); !ok {
+		t.Errorf("expected tea.QuitMsg, got %T", msg)
+	}
+}
+
+func TestGenerate_MultipleRevisionsWork(t *testing.T) {
+	revision := 0
+	responses := []string{"ls", "ls -l", "ls -la"}
+	multiStream := func(messages []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		revision++
+		return makeEvents(responses[revision]), noopCancel, nil
+	}
+
+	initial := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "list files"},
+	}
+	events := makeEvents(responses[0])
+	m := NewGenerateModel(events, noopCancel, initial, multiStream)
+	m = drainStream(m, 2)
+
+	// First revision
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	m = model.(GenerateModel)
+	m = typeKeys(m, "add -l")
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = model.(GenerateModel)
+	m = drainStream(m, 2)
+
+	if m.stream.Output() != "ls -l" {
+		t.Errorf("expected 'ls -l' after first revision, got %q", m.stream.Output())
+	}
+
+	// Second revision
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	m = model.(GenerateModel)
+	m = typeKeys(m, "also add -a")
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = model.(GenerateModel)
+	m = drainStream(m, 2)
+
+	if m.stream.Output() != "ls -la" {
+		t.Errorf("expected 'ls -la' after second revision, got %q", m.stream.Output())
+	}
+
+	// Messages: sys, user, asst("ls"), user("add -l"), asst("ls -l"), user("also add -a"), asst("ls -la")
+	msgs := m.Messages()
+	if len(msgs) != 7 {
+		t.Fatalf("expected 7 messages after two revisions, got %d", len(msgs))
+	}
+
+	// Select Run — should get final command
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
+	m = model.(GenerateModel)
+	if m.Result().Command != "ls -la" {
+		t.Errorf("expected final command 'ls -la', got %q", m.Result().Command)
 	}
 }

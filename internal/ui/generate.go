@@ -3,7 +3,9 @@ package ui
 import (
 	"context"
 
+	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -12,33 +14,49 @@ type phase int
 const (
 	phaseStreaming phase = iota
 	phaseAction
+	phaseRevise
 	phaseDone
 )
 
+type NewStreamFunc func(messages []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error)
+
 type GenerateModel struct {
-	stream    StreamModel
-	actionBar ActionBarModel
-	phase     phase
-	result    GenerateResult
+	stream      StreamModel
+	actionBar   ActionBarModel
+	reviseInput textinput.Model
+	messages    []provider.Message
+	newStream   NewStreamFunc
+	phase       phase
+	result      GenerateResult
 }
 
 type GenerateResult struct {
 	Command   string
 	Action    Action
+	Feedback  string
 	Cancelled bool
 	Err       error
 }
 
-func NewGenerateModel(events <-chan provider.StreamEvent, cancel context.CancelFunc) GenerateModel {
+func NewGenerateModel(events <-chan provider.StreamEvent, cancel context.CancelFunc, messages []provider.Message, newStream NewStreamFunc) GenerateModel {
+	ti := textinput.New()
+	ti.Placeholder = "Describe what to change…"
+	ti.CharLimit = 500
+	msgs := make([]provider.Message, len(messages))
+	copy(msgs, messages)
 	return GenerateModel{
-		stream:    NewStreamModel(events, cancel),
-		actionBar: NewActionBarModel(),
-		phase:     phaseStreaming,
+		stream:      NewStreamModel(events, cancel),
+		actionBar:   NewActionBarModel(),
+		reviseInput: ti,
+		messages:    msgs,
+		newStream:   newStream,
+		phase:       phaseStreaming,
 	}
 }
 
-func (m GenerateModel) Result() GenerateResult { return m.result }
-func (m GenerateModel) Phase() phase           { return m.phase }
+func (m GenerateModel) Result() GenerateResult      { return m.result }
+func (m GenerateModel) Phase() phase                { return m.phase }
+func (m GenerateModel) Messages() []provider.Message { return m.messages }
 
 func (m GenerateModel) Init() tea.Cmd {
 	return m.stream.Init()
@@ -50,6 +68,8 @@ func (m GenerateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateStreaming(msg)
 	case phaseAction:
 		return m.updateAction(msg)
+	case phaseRevise:
+		return m.updateRevise(msg)
 	}
 	return m, nil
 }
@@ -68,6 +88,10 @@ func (m GenerateModel) updateStreaming(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, tea.Quit
 		}
+		m.messages = append(m.messages, provider.Message{
+			Role:    provider.RoleAssistant,
+			Content: m.stream.Output(),
+		})
 		m.phase = phaseAction
 		return m, nil
 	}
@@ -77,6 +101,14 @@ func (m GenerateModel) updateStreaming(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m GenerateModel) updateAction(msg tea.Msg) (tea.Model, tea.Cmd) {
 	updated, cmd := m.actionBar.Update(msg)
 	m.actionBar = updated.(ActionBarModel)
+
+	if m.actionBar.Selected() == ActionRevise {
+		m.phase = phaseRevise
+		m.reviseInput.Reset()
+		m.reviseInput.Focus()
+		m.actionBar = m.actionBar.Reset()
+		return m, m.reviseInput.Cursor.BlinkCmd()
+	}
 
 	if m.actionBar.Selected() != ActionNone {
 		m.phase = phaseDone
@@ -89,12 +121,62 @@ func (m GenerateModel) updateAction(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
+type reviseErrMsg struct{ err error }
+
+func (m GenerateModel) updateRevise(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.Type {
+		case tea.KeyEnter:
+			feedback := m.reviseInput.Value()
+			if feedback == "" {
+				return m, nil
+			}
+			m.messages = append(m.messages, provider.Message{
+				Role:    provider.RoleUser,
+				Content: feedback,
+			})
+			if m.newStream == nil {
+				m.phase = phaseDone
+				m.result = GenerateResult{
+					Command:  m.stream.Output(),
+					Action:   ActionRevise,
+					Feedback: feedback,
+				}
+				return m, tea.Quit
+			}
+			events, cancel, err := m.newStream(m.messages)
+			if err != nil {
+				return m, func() tea.Msg { return reviseErrMsg{err: err} }
+			}
+			m.stream = NewStreamModel(events, cancel)
+			m.phase = phaseStreaming
+			return m, m.stream.Init()
+		case tea.KeyEscape:
+			m.phase = phaseAction
+			m.reviseInput.Blur()
+			return m, nil
+		}
+	case reviseErrMsg:
+		m.phase = phaseDone
+		m.result = GenerateResult{Err: msg.err}
+		return m, tea.Quit
+	}
+	var cmd tea.Cmd
+	m.reviseInput, cmd = m.reviseInput.Update(msg)
+	return m, cmd
+}
+
+var revisePromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("250")).MarginTop(1)
+
 func (m GenerateModel) View() string {
 	switch m.phase {
 	case phaseStreaming:
 		return m.stream.View()
 	case phaseAction:
 		return m.stream.View() + "\n" + m.actionBar.View()
+	case phaseRevise:
+		return m.stream.View() + "\n" + revisePromptStyle.Render("Feedback: ") + m.reviseInput.View()
 	default:
 		return m.stream.View()
 	}
