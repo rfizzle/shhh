@@ -13,10 +13,11 @@ If the task requires multiple commands, output each command on its own line. Do 
 For single-command tasks, output a single line.
 
 %s
+%s
 
 Shell: %s
 OS: %s
-Cwd: %s`, shellSyntaxRules(info.Shell), info.Shell, os, info.Cwd)
+Cwd: %s`, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), info.Shell, os, info.Cwd)
 }
 
 func BuildChat(info shell.Info) string {
@@ -26,10 +27,11 @@ When suggesting commands, format them in markdown code blocks. Explain briefly w
 You can suggest multi-step solutions and answer follow-up questions.
 
 %s
+%s
 
 Shell: %s
 OS: %s
-Cwd: %s`, shellSyntaxRules(info.Shell), info.Shell, os, info.Cwd)
+Cwd: %s`, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), info.Shell, os, info.Cwd)
 }
 
 func BuildExplain() string {
@@ -58,6 +60,13 @@ func shellSyntaxRules(sh string) string {
 	default:
 		return `Generate POSIX-compatible shell syntax.`
 	}
+}
+
+func sudoRules(isRoot bool) string {
+	if isRoot {
+		return "The user is running as root. Do not prefix commands with sudo."
+	}
+	return "The user is NOT root. Prefix commands with sudo when they require elevated privileges (e.g. writing to /usr/local/bin, /etc, managing system services, installing system packages, binding to privileged ports)."
 }
 
 func friendlyOS(goos string) string {

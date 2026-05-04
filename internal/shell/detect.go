@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 )
 
 type Info struct {
@@ -11,6 +12,7 @@ type Info struct {
 	OS    string
 	Arch  string
 	Cwd   string
+	IsRoot bool
 }
 
 func Detect() Info {
@@ -21,10 +23,16 @@ func Detect() Info {
 
 	cwd, _ := os.Getwd()
 
+	uid, _ := strconv.Atoi(os.Getenv("EUID"))
+	if uid != 0 {
+		uid = os.Getuid()
+	}
+
 	return Info{
-		Shell: filepath.Base(sh),
-		OS:    runtime.GOOS,
-		Arch:  runtime.GOARCH,
-		Cwd:   cwd,
+		Shell:  filepath.Base(sh),
+		OS:     runtime.GOOS,
+		Arch:   runtime.GOARCH,
+		Cwd:    cwd,
+		IsRoot: uid == 0,
 	}
 }
