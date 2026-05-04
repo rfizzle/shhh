@@ -17,12 +17,12 @@ type Config struct {
 }
 
 type ProviderConfig struct {
-	Default        string         `toml:"default"`
-	Model          string         `toml:"model"`
-	OpenAI         ProviderDetail `toml:"openai"`
-	Gemini         ProviderDetail `toml:"gemini"`
-	OpenRouter     ProviderDetail `toml:"openrouter"`
-	OpenAICompat   ProviderDetail `toml:"openai_compatible"`
+	Default      string         `toml:"default"`
+	Model        string         `toml:"model"`
+	OpenAI       ProviderDetail `toml:"openai"`
+	Gemini       ProviderDetail `toml:"gemini"`
+	OpenRouter   ProviderDetail `toml:"openrouter"`
+	OpenAICompat ProviderDetail `toml:"openai_compatible"`
 }
 
 type ProviderDetail struct {

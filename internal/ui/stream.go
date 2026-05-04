@@ -33,10 +33,10 @@ func NewStreamModel(events <-chan provider.StreamEvent, cancel context.CancelFun
 	}
 }
 
-func (m StreamModel) Output() string    { return m.output }
-func (m StreamModel) Done() bool        { return m.done }
-func (m StreamModel) Cancelled() bool   { return m.cancelled }
-func (m StreamModel) Err() error        { return m.err }
+func (m StreamModel) Output() string  { return m.output }
+func (m StreamModel) Done() bool      { return m.done }
+func (m StreamModel) Cancelled() bool { return m.cancelled }
+func (m StreamModel) Err() error      { return m.err }
 
 func (m StreamModel) WithOutput(s string) StreamModel {
 	m.output = s

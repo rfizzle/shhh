@@ -41,12 +41,12 @@ type GenerateModel struct {
 }
 
 type GenerateResult struct {
-	Command    string
-	Action     Action
-	Feedback   string
-	SaveName   string
-	Cancelled  bool
-	Err        error
+	Command   string
+	Action    Action
+	Feedback  string
+	SaveName  string
+	Cancelled bool
+	Err       error
 }
 
 func NewGenerateModel(events <-chan provider.StreamEvent, cancel context.CancelFunc, messages []provider.Message, newStream NewStreamFunc, newExplain ExplainStreamFunc) GenerateModel {
@@ -73,8 +73,8 @@ func NewGenerateModel(events <-chan provider.StreamEvent, cancel context.CancelF
 	}
 }
 
-func (m GenerateModel) Result() GenerateResult      { return m.result }
-func (m GenerateModel) Phase() phase                { return m.phase }
+func (m GenerateModel) Result() GenerateResult       { return m.result }
+func (m GenerateModel) Phase() phase                 { return m.phase }
 func (m GenerateModel) Messages() []provider.Message { return m.messages }
 
 func (m GenerateModel) Init() tea.Cmd {
@@ -309,7 +309,6 @@ func (m GenerateModel) updateExplain(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	return m, cmd
 }
-
 
 func IsMultiCommand(output string) bool {
 	return len(SplitCommands(output)) > 1

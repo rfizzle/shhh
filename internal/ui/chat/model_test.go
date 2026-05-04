@@ -812,8 +812,8 @@ func TestFormatToolArgs(t *testing.T) {
 			contains: []string{"path=file.go", "start_line=10"},
 		},
 		{
-			name:  "invalid json returns raw",
-			input: `not json`,
+			name:     "invalid json returns raw",
+			input:    `not json`,
 			contains: []string{"not json"},
 		},
 	}

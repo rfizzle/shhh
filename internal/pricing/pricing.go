@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	pricingURL     = "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
-	cacheFile      = "model_prices.json"
-	recheckAfter   = 24 * time.Hour
+	pricingURL   = "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json"
+	cacheFile    = "model_prices.json"
+	recheckAfter = 24 * time.Hour
 )
 
 type ModelPricing struct {

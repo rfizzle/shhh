@@ -536,4 +536,3 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		return false, ""
 	}
 }
-

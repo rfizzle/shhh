@@ -9,13 +9,13 @@ import (
 )
 
 var (
-	CommandStyle     lipgloss.Style
-	ErrorStyle       lipgloss.Style
-	SpinnerStyle     lipgloss.Style
-	ActiveStyle      lipgloss.Style
-	InactiveStyle    lipgloss.Style
-	BarStyle         lipgloss.Style
-	EditPromptStyle  lipgloss.Style
+	CommandStyle      lipgloss.Style
+	ErrorStyle        lipgloss.Style
+	SpinnerStyle      lipgloss.Style
+	ActiveStyle       lipgloss.Style
+	InactiveStyle     lipgloss.Style
+	BarStyle          lipgloss.Style
+	EditPromptStyle   lipgloss.Style
 	RevisePromptStyle lipgloss.Style
 	ExplainLabelStyle lipgloss.Style
 	ExplainBodyStyle  lipgloss.Style

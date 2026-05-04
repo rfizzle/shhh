@@ -125,9 +125,9 @@ func TestLoadFrom_InvalidTOML(t *testing.T) {
 func TestProviderAPIKey(t *testing.T) {
 	cfg := Config{
 		Provider: ProviderConfig{
-			OpenAI:     ProviderDetail{APIKey: "sk-openai"},
-			Gemini:     ProviderDetail{APIKey: "ai-gemini"},
-			OpenRouter: ProviderDetail{APIKey: "sk-or-test"},
+			OpenAI:       ProviderDetail{APIKey: "sk-openai"},
+			Gemini:       ProviderDetail{APIKey: "ai-gemini"},
+			OpenRouter:   ProviderDetail{APIKey: "sk-or-test"},
 			OpenAICompat: ProviderDetail{APIKey: "local"},
 		},
 	}

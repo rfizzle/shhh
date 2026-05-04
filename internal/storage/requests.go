@@ -3,16 +3,16 @@ package storage
 import "time"
 
 type RequestRecord struct {
-	Provider   string
-	Model      string
-	Prompt     string
-	Command    string
-	Action     string
-	TTFT       *time.Duration
-	Duration   *time.Duration
-	TokensIn   *int64
-	TokensOut  *int64
-	Success    bool
+	Provider  string
+	Model     string
+	Prompt    string
+	Command   string
+	Action    string
+	TTFT      *time.Duration
+	Duration  *time.Duration
+	TokensIn  *int64
+	TokensOut *int64
+	Success   bool
 }
 
 func (db *DB) RecordRequest(r RequestRecord) error {
@@ -39,15 +39,15 @@ func (db *DB) RecordRequest(r RequestRecord) error {
 }
 
 type ProviderMetrics struct {
-	Provider      string
-	Model         string
-	Count         int
-	SuccessRate   float64
-	AvgTTFT       *float64
-	P95TTFT       *float64
-	AvgDuration   *float64
-	P95Duration   *float64
-	TotalTokensIn *int64
+	Provider       string
+	Model          string
+	Count          int
+	SuccessRate    float64
+	AvgTTFT        *float64
+	P95TTFT        *float64
+	AvgDuration    *float64
+	P95Duration    *float64
+	TotalTokensIn  *int64
 	TotalTokensOut *int64
 }
 

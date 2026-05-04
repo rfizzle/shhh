@@ -76,4 +76,3 @@ func newInitCmd() *cobra.Command {
 	}
 	return cmd
 }
-
