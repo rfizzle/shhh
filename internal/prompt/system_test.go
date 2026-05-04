@@ -66,7 +66,7 @@ func TestBuild_Terse(t *testing.T) {
 	got := Build(info)
 
 	lines := strings.Split(strings.TrimSpace(got), "\n")
-	if len(lines) > 10 {
+	if len(lines) > 20 {
 		t.Errorf("prompt should be terse, got %d lines:\n%s", len(lines), got)
 	}
 }

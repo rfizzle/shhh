@@ -14,10 +14,11 @@ For single-command tasks, output a single line.
 
 %s
 %s
+%s
 
 Shell: %s
 OS: %s
-Cwd: %s`, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), info.Shell, os, info.Cwd)
+Cwd: %s`, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), osRules(info.OS), info.Shell, os, info.Cwd)
 }
 
 func BuildChat(info shell.Info) string {
@@ -35,6 +36,7 @@ You have read-only access to the filesystem through your tools: read_file, list_
 # Shell commands
 %s
 %s
+%s
 When suggesting commands, use markdown code blocks with the shell language tag. For multi-step procedures, number the steps. Always warn before suggesting destructive operations (rm -rf, overwriting files, dropping databases, force-pushing, etc.) and include what would be lost.
 
 # Response style
@@ -49,7 +51,7 @@ When suggesting commands, use markdown code blocks with the shell language tag. 
 - When asked about files or code in the current directory, use your tools to read the actual content before answering.
 - When debugging, gather information first (read logs, check file contents) before suggesting fixes.
 - If a question is ambiguous, give your best answer and note the assumption rather than asking a clarifying question — the user can redirect.
-- Respect the user's skill level: if they use technical terms correctly, respond at that level. Don't over-explain fundamentals unless asked.`, info.Shell, os, info.Cwd, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot))
+- Respect the user's skill level: if they use technical terms correctly, respond at that level. Don't over-explain fundamentals unless asked.`, info.Shell, os, info.Cwd, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), osRules(info.OS))
 }
 
 func BuildExplain() string {
@@ -85,6 +87,25 @@ func sudoRules(isRoot bool) string {
 		return "The user is running as root. Do not prefix commands with sudo."
 	}
 	return "The user is NOT root. Prefix commands with sudo when they require elevated privileges (e.g. writing to /usr/local/bin, /etc, managing system services, installing system packages, binding to privileged ports)."
+}
+
+func osRules(goos string) string {
+	switch goos {
+	case "darwin":
+		return `IMPORTANT: This is macOS, which uses BSD command-line tools (not GNU coreutils).
+- ps: use BSD flags only (e.g. ps -eo, ps -p PID). No GNU long options (--pid, --no-headers).
+- sed: use -i '' for in-place editing (not -i alone).
+- grep: -P (perl regex) is not available; use -E for extended regex.
+- date: BSD date syntax (e.g. date -v+1d, not date -d "+1 day").
+- stat: use stat -f (not stat -c).
+- readlink: use readlink with no -f; for canonical paths use realpath or python.
+- xargs: does not support -d; use tr + xargs or -0 with null delimiters.
+- ls: no --color=auto; color is enabled via -G or CLICOLOR=1.`
+	case "linux":
+		return `This is Linux with GNU coreutils. Use GNU-style flags (long options like --no-headers are supported).`
+	default:
+		return ""
+	}
 }
 
 func friendlyOS(goos string) string {
