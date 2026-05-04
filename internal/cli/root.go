@@ -2,15 +2,22 @@ package cli
 
 import (
 	"bufio"
+	"context"
 	"fmt"
 	"os"
 	"strings"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mattn/go-isatty"
+	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/config"
-	"github.com/rfizzle/shhh/internal/raw"
+	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/raw"
 	"github.com/rfizzle/shhh/internal/resolve"
+	"github.com/rfizzle/shhh/internal/runner"
+	"github.com/rfizzle/shhh/internal/shell"
+	"github.com/rfizzle/shhh/internal/ui"
 	"github.com/spf13/cobra"
 )
 
@@ -47,7 +54,7 @@ func NewRootCmd() *cobra.Command {
 			stdinIsTTY := isatty.IsTerminal(os.Stdin.Fd()) || isatty.IsCygwinTerminal(os.Stdin.Fd())
 			pipeMode := rawMode || !stdinIsTTY
 
-			var prompt string
+			var userPrompt string
 			switch {
 			case !stdinIsTTY && len(args) == 0:
 				scanner := bufio.NewScanner(os.Stdin)
@@ -58,12 +65,12 @@ func NewRootCmd() *cobra.Command {
 				if err := scanner.Err(); err != nil {
 					return fmt.Errorf("reading stdin: %w", err)
 				}
-				prompt = strings.TrimSpace(strings.Join(lines, "\n"))
-				if prompt == "" {
+				userPrompt = strings.TrimSpace(strings.Join(lines, "\n"))
+				if userPrompt == "" {
 					return fmt.Errorf("no prompt provided on stdin")
 				}
 			case len(args) > 0:
-				prompt = strings.Join(args, " ")
+				userPrompt = strings.Join(args, " ")
 			default:
 				return cmd.Help()
 			}
@@ -90,7 +97,7 @@ func NewRootCmd() *cobra.Command {
 				err := raw.Run(cmd.Context(), raw.Opts{
 					Provider: p,
 					Model:    resolved.Model,
-					Prompt:   prompt,
+					Prompt:   userPrompt,
 					Stdout:   os.Stdout,
 					Stderr:   os.Stderr,
 				})
@@ -101,8 +108,75 @@ func NewRootCmd() *cobra.Command {
 				return nil
 			}
 
-			// Normal TUI mode — will be wired in a future story
-			return fmt.Errorf("interactive mode not yet wired in root command — use --inline for now")
+			info := shell.Detect()
+			sysPrompt := prompt.Build(info)
+
+			messages := []provider.Message{
+				{Role: provider.RoleSystem, Content: sysPrompt},
+				{Role: provider.RoleUser, Content: userPrompt},
+			}
+
+			compOpts := provider.CompletionOpts{Model: resolved.Model}
+
+			ctx, cancel := context.WithCancel(cmd.Context())
+			defer cancel()
+
+			events, err := p.StreamCompletion(ctx, messages, compOpts)
+			if err != nil {
+				return err
+			}
+
+			newStream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+				sCtx, sCancel := context.WithCancel(cmd.Context())
+				ev, sErr := p.StreamCompletion(sCtx, msgs, compOpts)
+				if sErr != nil {
+					sCancel()
+					return nil, nil, sErr
+				}
+				return ev, sCancel, nil
+			}
+
+			newExplain := func(command string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+				eCtx, eCancel := context.WithCancel(cmd.Context())
+				eMsgs := []provider.Message{
+					{Role: provider.RoleSystem, Content: prompt.BuildExplain()},
+					{Role: provider.RoleUser, Content: command},
+				}
+				ev, eErr := p.StreamCompletion(eCtx, eMsgs, compOpts)
+				if eErr != nil {
+					eCancel()
+					return nil, nil, eErr
+				}
+				return ev, eCancel, nil
+			}
+
+			model := ui.NewGenerateModel(events, cancel, messages, newStream, newExplain)
+			program := tea.NewProgram(model)
+			finalModel, err := program.Run()
+			if err != nil {
+				return err
+			}
+
+			result := finalModel.(ui.GenerateModel).Result()
+
+			if result.Err != nil {
+				return result.Err
+			}
+
+			switch result.Action {
+			case ui.ActionRun:
+				code := runner.Run(result.Command)
+				os.Exit(code)
+			case ui.ActionCopy:
+				cr := clipboard.Copy(result.Command)
+				if cr.Warning != "" {
+					fmt.Fprintln(os.Stderr, cr.Warning)
+				} else {
+					fmt.Fprintln(os.Stderr, "Copied to clipboard.")
+				}
+			}
+
+			return nil
 		},
 	}
 
