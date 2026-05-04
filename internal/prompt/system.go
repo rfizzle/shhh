@@ -15,6 +15,17 @@ OS: %s
 Cwd: %s`, info.Shell, os, info.Cwd)
 }
 
+func BuildChat(info shell.Info) string {
+	os := friendlyOS(info.OS)
+	return fmt.Sprintf(`You are a helpful shell assistant. Help the user accomplish tasks via shell commands.
+When suggesting commands, format them in markdown code blocks. Explain briefly what each command does.
+You can suggest multi-step solutions and answer follow-up questions.
+
+Shell: %s
+OS: %s
+Cwd: %s`, info.Shell, os, info.Cwd)
+}
+
 func BuildExplain() string {
 	return "Explain this shell command concisely. Break down each part (flags, pipes, redirections). Be brief — a few lines, not paragraphs."
 }

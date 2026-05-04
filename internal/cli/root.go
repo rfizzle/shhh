@@ -189,6 +189,7 @@ func NewRootCmd() *cobra.Command {
 
 	cmd.AddCommand(newInitCmd())
 	cmd.AddCommand(newConfigCmd())
+	cmd.AddCommand(newChatCmd())
 
 	return cmd
 }
