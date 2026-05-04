@@ -5,7 +5,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -26,7 +25,7 @@ type StreamModel struct {
 func NewStreamModel(events <-chan provider.StreamEvent, cancel context.CancelFunc) StreamModel {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
-	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+	s.Style = SpinnerStyle
 	return StreamModel{
 		events:  events,
 		cancel:  cancel,
@@ -84,16 +83,14 @@ func (m StreamModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-var commandStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("10"))
-
 func (m StreamModel) View() string {
 	if m.err != nil {
-		return lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Render("Error: " + m.err.Error())
+		return ErrorStyle.Render("Error: " + m.err.Error())
 	}
 	if m.output == "" && !m.done {
 		return m.spinner.View() + " Thinking…"
 	}
-	return commandStyle.Render(m.output)
+	return CommandStyle.Render(m.output)
 }
 
 func (m StreamModel) waitForEvent() tea.Cmd {

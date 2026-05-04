@@ -5,7 +5,6 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -262,17 +261,12 @@ func (m GenerateModel) updateExplain(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, cmd
 }
 
-var editPromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("250")).MarginTop(1)
-
-var revisePromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("250")).MarginTop(1)
-var explainLabelStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("250")).MarginTop(1).Bold(true)
-var explainBodyStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
 
 func (m GenerateModel) viewExplanation() string {
 	if m.explainStream.output == "" && !m.explainStream.done {
 		return ""
 	}
-	return "\n" + explainLabelStyle.Render("Explanation:") + "\n" + explainBodyStyle.Render(m.explainStream.output)
+	return "\n" + ExplainLabelStyle.Render("Explanation:") + "\n" + ExplainBodyStyle.Render(m.explainStream.output)
 }
 
 func (m GenerateModel) View() string {
@@ -283,15 +277,15 @@ func (m GenerateModel) View() string {
 	case phaseAction:
 		return m.stream.View() + explanation + "\n" + m.actionBar.View()
 	case phaseEdit:
-		return editPromptStyle.Render("Edit: ") + m.editInput.View()
+		return EditPromptStyle.Render("Edit: ") + m.editInput.View()
 	case phaseRevise:
-		return m.stream.View() + "\n" + revisePromptStyle.Render("Feedback: ") + m.reviseInput.View()
+		return m.stream.View() + "\n" + RevisePromptStyle.Render("Feedback: ") + m.reviseInput.View()
 	case phaseExplain:
-		view := m.stream.View() + "\n" + explainLabelStyle.Render("Explanation:")
+		view := m.stream.View() + "\n" + ExplainLabelStyle.Render("Explanation:")
 		if m.explainStream.output == "" && !m.explainStream.done {
 			view += " " + m.explainStream.spinner.View()
 		} else {
-			view += "\n" + explainBodyStyle.Render(m.explainStream.output)
+			view += "\n" + ExplainBodyStyle.Render(m.explainStream.output)
 		}
 		return view
 	default:

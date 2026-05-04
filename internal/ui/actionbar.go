@@ -99,21 +99,15 @@ func (m ActionBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-var (
-	activeStyle   = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("15")).Background(lipgloss.Color("62")).Padding(0, 1)
-	inactiveStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("250")).Padding(0, 1)
-	barStyle      = lipgloss.NewStyle().MarginTop(1)
-)
-
 func (m ActionBarModel) View() string {
 	var items []string
 	for i, a := range actions {
 		label := a.label + " (" + a.shortcut + ")"
 		if i == m.cursor {
-			items = append(items, activeStyle.Render(label))
+			items = append(items, ActiveStyle.Render(label))
 		} else {
-			items = append(items, inactiveStyle.Render(label))
+			items = append(items, InactiveStyle.Render(label))
 		}
 	}
-	return barStyle.Render(lipgloss.JoinHorizontal(lipgloss.Center, items...))
+	return BarStyle.Render(lipgloss.JoinHorizontal(lipgloss.Center, items...))
 }
