@@ -8,10 +8,10 @@ import (
 )
 
 type Info struct {
-	Shell string
-	OS    string
-	Arch  string
-	Cwd   string
+	Shell  string
+	OS     string
+	Arch   string
+	Cwd    string
 	IsRoot bool
 }
 
