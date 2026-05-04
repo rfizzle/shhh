@@ -18,13 +18,13 @@ func TestInitZsh_OutputsSnippet(t *testing.T) {
 	}
 
 	output := out.String()
-	if !strings.Contains(output, "bindkey '^K' _shhh_inline") {
+	if !strings.Contains(output, "bindkey '^K' _shhh_raw") {
 		t.Error("expected zsh snippet to contain bindkey for Ctrl+K")
 	}
-	if !strings.Contains(output, "shhh --inline") {
-		t.Error("expected zsh snippet to call shhh --inline")
+	if !strings.Contains(output, "shhh --raw") {
+		t.Error("expected zsh snippet to call shhh --raw")
 	}
-	if !strings.Contains(output, "zle -N _shhh_inline") {
+	if !strings.Contains(output, "zle -N _shhh_raw") {
 		t.Error("expected zsh snippet to register ZLE widget")
 	}
 	if !strings.Contains(output, "BUFFER=") {

@@ -1,4 +1,4 @@
-package inline
+package raw
 
 import (
 	"bytes"
@@ -48,8 +48,8 @@ func TestRun_OutputsCommand(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if stdout.String() != "ls -la" {
-		t.Errorf("got %q, want %q", stdout.String(), "ls -la")
+	if stdout.String() != "ls -la\n" {
+		t.Errorf("got %q, want %q", stdout.String(), "ls -la\n")
 	}
 }
 
@@ -74,8 +74,8 @@ func TestRun_StripsFences(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if stdout.String() != "find . -name '*.go'" {
-		t.Errorf("got %q, want %q", stdout.String(), "find . -name '*.go'")
+	if stdout.String() != "find . -name '*.go'\n" {
+		t.Errorf("got %q, want %q", stdout.String(), "find . -name '*.go'\n")
 	}
 }
 

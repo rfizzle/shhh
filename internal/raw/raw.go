@@ -1,4 +1,4 @@
-package inline
+package raw
 
 import (
 	"context"
@@ -48,6 +48,6 @@ func Run(ctx context.Context, opts Opts) error {
 	}
 
 	result := strings.TrimSpace(ui.StripFences(output.String()))
-	fmt.Fprint(opts.Stdout, result)
+	fmt.Fprintln(opts.Stdout, result)
 	return nil
 }

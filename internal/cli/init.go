@@ -9,17 +9,17 @@ import (
 const zshSnippet = `# shhh shell integration
 # Add to ~/.zshrc: eval "$(shhh init zsh)"
 
-_shhh_inline() {
+_shhh_raw() {
   local result
-  result=$(shhh --inline "$BUFFER" 2>/dev/null)
+  result=$(shhh --raw "$BUFFER" 2>/dev/null)
   if [[ -n "$result" ]]; then
     BUFFER="$result"
     CURSOR=${#BUFFER}
   fi
   zle redisplay
 }
-zle -N _shhh_inline
-bindkey '^K' _shhh_inline
+zle -N _shhh_raw
+bindkey '^K' _shhh_raw
 `
 
 func newInitCmd() *cobra.Command {
