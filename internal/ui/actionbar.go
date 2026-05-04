@@ -15,6 +15,8 @@ const (
 	ActionCancel
 	ActionEdit
 	ActionExplain
+	ActionRunAll
+	ActionRunStep
 )
 
 type ActionSelectedMsg struct {
@@ -27,7 +29,7 @@ type actionItem struct {
 	action   Action
 }
 
-var actions = []actionItem{
+var singleActions = []actionItem{
 	{"Run", "r", ActionRun},
 	{"Copy", "c", ActionCopy},
 	{"Edit", "e", ActionEdit},
@@ -36,9 +38,19 @@ var actions = []actionItem{
 	{"Cancel", "esc", ActionCancel},
 }
 
+var multiActions = []actionItem{
+	{"Run all", "r", ActionRunAll},
+	{"Step-by-step", "s", ActionRunStep},
+	{"Copy", "c", ActionCopy},
+	{"Edit", "e", ActionEdit},
+	{"Revise", "v", ActionRevise},
+	{"Cancel", "esc", ActionCancel},
+}
+
 type ActionBarModel struct {
 	cursor   int
 	selected Action
+	multi    bool
 }
 
 func NewActionBarModel() ActionBarModel {
@@ -46,6 +58,18 @@ func NewActionBarModel() ActionBarModel {
 }
 
 func (m ActionBarModel) Selected() Action { return m.selected }
+
+func (m ActionBarModel) SetMulti(multi bool) ActionBarModel {
+	m.multi = multi
+	return m
+}
+
+func (m ActionBarModel) actions() []actionItem {
+	if m.multi {
+		return multiActions
+	}
+	return singleActions
+}
 
 func (m ActionBarModel) Reset() ActionBarModel {
 	m.selected = ActionNone
@@ -58,40 +82,34 @@ func (m ActionBarModel) Init() tea.Cmd {
 }
 
 func (m ActionBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	items := m.actions()
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "left", "shift+tab":
 			m.cursor--
 			if m.cursor < 0 {
-				m.cursor = len(actions) - 1
+				m.cursor = len(items) - 1
 			}
 			return m, nil
 		case "right", "tab":
 			m.cursor++
-			if m.cursor >= len(actions) {
+			if m.cursor >= len(items) {
 				m.cursor = 0
 			}
 			return m, nil
 		case "enter":
-			m.selected = actions[m.cursor].action
+			m.selected = items[m.cursor].action
 			return m, func() tea.Msg { return ActionSelectedMsg{Action: m.selected} }
-		case "r":
-			m.selected = ActionRun
-			return m, func() tea.Msg { return ActionSelectedMsg{Action: ActionRun} }
-		case "c":
-			m.selected = ActionCopy
-			return m, func() tea.Msg { return ActionSelectedMsg{Action: ActionCopy} }
-		case "e":
-			m.selected = ActionEdit
-			return m, func() tea.Msg { return ActionSelectedMsg{Action: ActionEdit} }
-		case "v":
-			m.selected = ActionRevise
-			return m, func() tea.Msg { return ActionSelectedMsg{Action: ActionRevise} }
-		case "x":
-			m.selected = ActionExplain
-			return m, func() tea.Msg { return ActionSelectedMsg{Action: ActionExplain} }
-		case "esc", "q":
+		}
+		for _, a := range items {
+			if msg.String() == a.shortcut {
+				m.selected = a.action
+				action := a.action
+				return m, func() tea.Msg { return ActionSelectedMsg{Action: action} }
+			}
+		}
+		if msg.String() == "esc" || msg.String() == "q" {
 			m.selected = ActionCancel
 			return m, func() tea.Msg { return ActionSelectedMsg{Action: ActionCancel} }
 		}
@@ -100,14 +118,15 @@ func (m ActionBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m ActionBarModel) View() string {
-	var items []string
-	for i, a := range actions {
+	items := m.actions()
+	var rendered []string
+	for i, a := range items {
 		label := a.label + " (" + a.shortcut + ")"
 		if i == m.cursor {
-			items = append(items, ActiveStyle.Render(label))
+			rendered = append(rendered, ActiveStyle.Render(label))
 		} else {
-			items = append(items, InactiveStyle.Render(label))
+			rendered = append(rendered, InactiveStyle.Render(label))
 		}
 	}
-	return BarStyle.Render(lipgloss.JoinHorizontal(lipgloss.Center, items...))
+	return BarStyle.Render(lipgloss.JoinHorizontal(lipgloss.Center, rendered...))
 }

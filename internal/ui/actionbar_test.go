@@ -22,7 +22,7 @@ func TestActionBar_InitialState(t *testing.T) {
 func TestActionBar_RightNavWraps(t *testing.T) {
 	m := NewActionBarModel()
 	// cursor starts at 0 (Run), advance through all items to wrap
-	for range actions {
+	for range singleActions {
 		m, _ = updateBar(m, tea.KeyMsg{Type: tea.KeyRight})
 	}
 	// Verify by pressing Enter — should select Run (index 0)

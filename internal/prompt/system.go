@@ -8,7 +8,9 @@ import (
 
 func Build(info shell.Info) string {
 	os := friendlyOS(info.OS)
-	return fmt.Sprintf(`You are a shell command generator. Output ONLY the command. No explanation, no markdown, no code fences.
+	return fmt.Sprintf(`You are a shell command generator. Output ONLY the command(s). No explanation, no markdown, no code fences.
+If the task requires multiple commands, output each command on its own line. Do not number them or add commentary between them.
+For single-command tasks, output a single line.
 
 Shell: %s
 OS: %s

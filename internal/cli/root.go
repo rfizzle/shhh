@@ -173,6 +173,10 @@ func NewRootCmd() *cobra.Command {
 				switch result.Action {
 				case ui.ActionRun:
 					actionName = "run"
+				case ui.ActionRunAll:
+					actionName = "run-all"
+				case ui.ActionRunStep:
+					actionName = "run-step"
 				case ui.ActionCopy:
 					actionName = "copy"
 				case ui.ActionRevise:
@@ -202,6 +206,32 @@ func NewRootCmd() *cobra.Command {
 			case ui.ActionRun:
 				code := runner.Run(result.Command)
 				os.Exit(code)
+			case ui.ActionRunAll:
+				cmds := ui.SplitCommands(result.Command)
+				for _, c := range cmds {
+					code := runner.Run(c)
+					if code != 0 {
+						os.Exit(code)
+					}
+				}
+			case ui.ActionRunStep:
+				cmds := ui.SplitCommands(result.Command)
+				reader := bufio.NewReader(os.Stdin)
+				for i, c := range cmds {
+					fmt.Fprintf(os.Stderr, "Step %d/%d: %s\n", i+1, len(cmds), c)
+					fmt.Fprint(os.Stderr, "Run? [Y/n] ")
+					input, _ := reader.ReadString('\n')
+					input = strings.TrimSpace(strings.ToLower(input))
+					if input == "n" || input == "no" {
+						fmt.Fprintln(os.Stderr, "Skipped remaining steps.")
+						break
+					}
+					code := runner.Run(c)
+					if code != 0 {
+						fmt.Fprintf(os.Stderr, "Step %d exited with code %d. Stop.\n", i+1, code)
+						os.Exit(code)
+					}
+				}
 			case ui.ActionCopy:
 				cr := clipboard.Copy(result.Command)
 				if cr.Warning != "" {

@@ -2,6 +2,8 @@ package ui
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
@@ -106,6 +108,7 @@ func (m GenerateModel) updateStreaming(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Role:    provider.RoleAssistant,
 			Content: m.stream.Output(),
 		})
+		m.actionBar = m.actionBar.SetMulti(IsMultiCommand(m.stream.Output()))
 		m.phase = phaseAction
 		return m, nil
 	}
@@ -147,11 +150,13 @@ func (m GenerateModel) updateAction(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.reviseInput.Cursor.BlinkCmd()
 	}
 
-	if m.actionBar.Selected() != ActionNone {
+	sel := m.actionBar.Selected()
+	if sel == ActionRun || sel == ActionRunAll || sel == ActionRunStep ||
+		sel == ActionCopy || sel == ActionCancel {
 		m.phase = phaseDone
 		m.result = GenerateResult{
 			Command: m.stream.Output(),
-			Action:  m.actionBar.Selected(),
+			Action:  sel,
 		}
 		return m, tea.Quit
 	}
@@ -262,6 +267,37 @@ func (m GenerateModel) updateExplain(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 
+func IsMultiCommand(output string) bool {
+	return len(SplitCommands(output)) > 1
+}
+
+func SplitCommands(output string) []string {
+	raw := strings.TrimSpace(output)
+	if raw == "" {
+		return nil
+	}
+	var cmds []string
+	for _, line := range strings.Split(raw, "\n") {
+		line = strings.TrimSpace(line)
+		if line != "" {
+			cmds = append(cmds, line)
+		}
+	}
+	return cmds
+}
+
+func formatMultiCommand(output string) string {
+	cmds := SplitCommands(output)
+	if len(cmds) <= 1 {
+		return output
+	}
+	var b strings.Builder
+	for i, cmd := range cmds {
+		b.WriteString(fmt.Sprintf("  %d. %s\n", i+1, cmd))
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
 func (m GenerateModel) viewExplanation() string {
 	if m.explainStream.output == "" && !m.explainStream.done {
 		return ""
@@ -275,7 +311,11 @@ func (m GenerateModel) View() string {
 	case phaseStreaming:
 		return m.stream.View()
 	case phaseAction:
-		return m.stream.View() + explanation + "\n" + m.actionBar.View()
+		view := m.stream.View()
+		if IsMultiCommand(m.stream.Output()) {
+			view = CommandStyle.Render(formatMultiCommand(m.stream.Output()))
+		}
+		return view + explanation + "\n" + m.actionBar.View()
 	case phaseEdit:
 		return EditPromptStyle.Render("Edit: ") + m.editInput.View()
 	case phaseRevise:
