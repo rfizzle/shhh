@@ -24,9 +24,6 @@ func TestResolve_Defaults(t *testing.T) {
 	if r.Model != DefaultModel {
 		t.Errorf("expected model %q, got %q", DefaultModel, r.Model)
 	}
-	if r.APIKey != "" {
-		t.Errorf("expected empty API key, got %q", r.APIKey)
-	}
 }
 
 func TestResolve_ConfigOverridesDefaults(t *testing.T) {
@@ -35,16 +32,12 @@ func TestResolve_ConfigOverridesDefaults(t *testing.T) {
 	r := Resolve(Opts{
 		ConfigProvider: "gemini",
 		ConfigModel:    "gemini-2.5-flash",
-		ConfigAPIKey:   "ai-config-key",
 	})
 	if r.Provider != "gemini" {
 		t.Errorf("expected provider 'gemini', got %q", r.Provider)
 	}
 	if r.Model != "gemini-2.5-flash" {
 		t.Errorf("expected model 'gemini-2.5-flash', got %q", r.Model)
-	}
-	if r.APIKey != "ai-config-key" {
-		t.Errorf("expected API key 'ai-config-key', got %q", r.APIKey)
 	}
 }
 
@@ -102,28 +95,14 @@ func TestResolve_FlagsOverrideConfig(t *testing.T) {
 	r := Resolve(Opts{
 		FlagProvider:   "openai",
 		FlagModel:      "gpt-4o-mini",
-		FlagAPIKey:     "sk-flag",
 		ConfigProvider: "gemini",
 		ConfigModel:    "gemini-2.5-flash",
-		ConfigAPIKey:   "ai-config",
 	})
 	if r.Provider != "openai" {
 		t.Errorf("expected provider 'openai', got %q", r.Provider)
 	}
 	if r.Model != "gpt-4o-mini" {
 		t.Errorf("expected model 'gpt-4o-mini', got %q", r.Model)
-	}
-	if r.APIKey != "sk-flag" {
-		t.Errorf("expected API key 'sk-flag', got %q", r.APIKey)
-	}
-}
-
-func TestResolve_FlagAPIKey(t *testing.T) {
-	clearEnv(t)
-
-	r := Resolve(Opts{FlagAPIKey: "sk-test-123"})
-	if r.APIKey != "sk-test-123" {
-		t.Errorf("expected API key 'sk-test-123', got %q", r.APIKey)
 	}
 }
 
@@ -187,14 +166,5 @@ func TestResolve_GlobalModelUsedWhenNoProviderModel(t *testing.T) {
 	})
 	if r.Model != "gpt-4o" {
 		t.Errorf("expected global config model 'gpt-4o', got %q", r.Model)
-	}
-}
-
-func TestResolve_ConfigAPIKeyUsedWhenNoFlag(t *testing.T) {
-	clearEnv(t)
-
-	r := Resolve(Opts{ConfigAPIKey: "cfg-key"})
-	if r.APIKey != "cfg-key" {
-		t.Errorf("expected API key 'cfg-key', got %q", r.APIKey)
 	}
 }

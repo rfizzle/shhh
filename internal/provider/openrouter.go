@@ -21,13 +21,13 @@ type OpenRouter struct {
 }
 
 func NewOpenRouter(opts ResolveOpts) (*OpenRouter, error) {
-	key := first(opts.APIKey, os.Getenv("OPENROUTER_API_KEY"))
+	key := first(opts.APIKey, os.Getenv("SHHH_API_KEY"), os.Getenv("OPENROUTER_API_KEY"), opts.ConfigAPIKey)
 	if key == "" {
-		return nil, fmt.Errorf("OPENROUTER_API_KEY is not set")
+		return nil, fmt.Errorf("SHHH_API_KEY or OPENROUTER_API_KEY is not set")
 	}
 
 	model := first(opts.Model, defaultOpenRouterModel)
-	baseURL := first(opts.BaseURL, defaultOpenRouterBaseURL)
+	baseURL := first(opts.BaseURL, os.Getenv("SHHH_BASE_URL"), opts.ConfigBaseURL, defaultOpenRouterBaseURL)
 
 	cfg := openai.DefaultConfig(key)
 	cfg.BaseURL = baseURL
@@ -93,7 +93,7 @@ func (o *OpenRouter) StreamCompletion(ctx context.Context, messages []Message, o
 }
 
 var (
-	ErrOpenRouterUnauthorized = fmt.Errorf("invalid API key — check OPENROUTER_API_KEY")
+	ErrOpenRouterUnauthorized = fmt.Errorf("invalid API key — check SHHH_API_KEY or OPENROUTER_API_KEY")
 	ErrOpenRouterRateLimited  = fmt.Errorf("rate limited — try again shortly")
 )
 

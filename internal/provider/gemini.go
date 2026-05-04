@@ -19,9 +19,9 @@ type Gemini struct {
 }
 
 func NewGemini(opts ResolveOpts) (*Gemini, error) {
-	key := first(opts.APIKey, os.Getenv("GEMINI_API_KEY"))
+	key := first(opts.APIKey, os.Getenv("SHHH_API_KEY"), os.Getenv("GEMINI_API_KEY"), opts.ConfigAPIKey)
 	if key == "" {
-		return nil, fmt.Errorf("GEMINI_API_KEY is not set")
+		return nil, fmt.Errorf("SHHH_API_KEY or GEMINI_API_KEY is not set")
 	}
 
 	model := first(opts.Model, defaultGeminiModel)
@@ -190,7 +190,7 @@ func jsonSchemaToAny(raw json.RawMessage) any {
 }
 
 var (
-	ErrGeminiUnauthorized = fmt.Errorf("invalid API key — check GEMINI_API_KEY")
+	ErrGeminiUnauthorized = fmt.Errorf("invalid API key — check SHHH_API_KEY or GEMINI_API_KEY")
 	ErrGeminiRateLimited  = fmt.Errorf("rate limited — try again shortly")
 )
 

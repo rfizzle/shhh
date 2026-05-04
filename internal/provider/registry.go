@@ -10,6 +10,10 @@ type ResolveOpts struct {
 	Model   string
 	BaseURL string
 	Name    string
+
+	ConfigAPIKey  string
+	ConfigBaseURL string
+	ConfigName    string
 }
 
 type Factory func(ResolveOpts) (Provider, error)

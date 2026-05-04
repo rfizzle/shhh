@@ -15,18 +15,21 @@ const (
 )
 
 type OpenAI struct {
-	client *openai.Client
-	model  string
+	client   *openai.Client
+	model    string
+	classify func(error) error
 }
 
-func NewOpenAI() (*OpenAI, error) {
-	key := os.Getenv("OPENAI_API_KEY")
+func NewOpenAI(opts ResolveOpts) (*OpenAI, error) {
+	key := first(opts.APIKey, os.Getenv("SHHH_API_KEY"), os.Getenv("OPENAI_API_KEY"), opts.ConfigAPIKey)
 	if key == "" {
-		return nil, fmt.Errorf("OPENAI_API_KEY is not set")
+		return nil, fmt.Errorf("SHHH_API_KEY or OPENAI_API_KEY is not set")
 	}
+	model := first(opts.Model, defaultOpenAIModel)
 	return &OpenAI{
-		client: openai.NewClient(key),
-		model:  defaultOpenAIModel,
+		client:   openai.NewClient(key),
+		model:    model,
+		classify: newClassifyError("SHHH_API_KEY or OPENAI_API_KEY"),
 	}, nil
 }
 
@@ -34,7 +37,7 @@ func NewOpenAIWithConfig(client *openai.Client, model string) *OpenAI {
 	if model == "" {
 		model = defaultOpenAIModel
 	}
-	return &OpenAI{client: client, model: model}
+	return &OpenAI{client: client, model: model, classify: newClassifyError("OPENAI_API_KEY")}
 }
 
 func (o *OpenAI) Name() string { return "openai" }
@@ -65,10 +68,10 @@ func (o *OpenAI) StreamCompletion(ctx context.Context, messages []Message, opts 
 
 	stream, err := o.client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
-		return nil, classifyError(err)
+		return nil, o.classify(err)
 	}
 
-	return streamOpenAIToolCalls(stream, classifyError), nil
+	return streamOpenAIToolCalls(stream, o.classify), nil
 }
 
 func toOpenAITools(tools []Tool) []openai.Tool {
@@ -114,34 +117,36 @@ func toOpenAIMessages(msgs []Message) []openai.ChatCompletionMessage {
 }
 
 var (
-	ErrUnauthorized = errors.New("invalid API key — check OPENAI_API_KEY")
+	ErrUnauthorized = errors.New("invalid API key")
 	ErrRateLimited  = errors.New("rate limited — try again shortly")
 )
 
-func classifyError(err error) error {
-	var apiErr *openai.APIError
-	if errors.As(err, &apiErr) {
-		switch apiErr.HTTPStatusCode {
-		case http.StatusUnauthorized:
-			return fmt.Errorf("%w: %s", ErrUnauthorized, apiErr.Message)
-		case http.StatusTooManyRequests:
-			return fmt.Errorf("%w: %s", ErrRateLimited, apiErr.Message)
+func newClassifyError(keyHint string) func(error) error {
+	return func(err error) error {
+		var apiErr *openai.APIError
+		if errors.As(err, &apiErr) {
+			switch apiErr.HTTPStatusCode {
+			case http.StatusUnauthorized:
+				return fmt.Errorf("%w — check %s: %s", ErrUnauthorized, keyHint, apiErr.Message)
+			case http.StatusTooManyRequests:
+				return fmt.Errorf("%w: %s", ErrRateLimited, apiErr.Message)
+			}
 		}
-	}
-	var reqErr *openai.RequestError
-	if errors.As(err, &reqErr) {
-		switch reqErr.HTTPStatusCode {
-		case http.StatusUnauthorized:
-			return fmt.Errorf("%w", ErrUnauthorized)
-		case http.StatusTooManyRequests:
-			return fmt.Errorf("%w", ErrRateLimited)
+		var reqErr *openai.RequestError
+		if errors.As(err, &reqErr) {
+			switch reqErr.HTTPStatusCode {
+			case http.StatusUnauthorized:
+				return fmt.Errorf("%w — check %s", ErrUnauthorized, keyHint)
+			case http.StatusTooManyRequests:
+				return fmt.Errorf("%w", ErrRateLimited)
+			}
 		}
+		return err
 	}
-	return err
 }
 
 func init() {
 	Register("openai", func(opts ResolveOpts) (Provider, error) {
-		return NewOpenAI()
+		return NewOpenAI(opts)
 	})
 }

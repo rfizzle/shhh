@@ -33,8 +33,9 @@ func TestOpenAI_DefaultModel(t *testing.T) {
 }
 
 func TestNewOpenAI_MissingKey(t *testing.T) {
+	t.Setenv("SHHH_API_KEY", "")
 	t.Setenv("OPENAI_API_KEY", "")
-	_, err := NewOpenAI()
+	_, err := NewOpenAI(ResolveOpts{})
 	if err == nil {
 		t.Fatal("expected error for missing API key")
 	}
@@ -269,8 +270,9 @@ func TestToOpenAIMessages_MultipleToolCalls(t *testing.T) {
 }
 
 func TestClassifyError_GenericError(t *testing.T) {
+	classify := newClassifyError("TEST_KEY")
 	err := fmt.Errorf("some network error")
-	got := classifyError(err)
+	got := classify(err)
 	if got != err {
 		t.Errorf("expected original error returned, got %v", got)
 	}

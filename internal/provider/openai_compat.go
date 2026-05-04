@@ -13,26 +13,28 @@ const (
 )
 
 type OpenAICompat struct {
-	client  *openai.Client
-	model   string
-	baseURL string
-	name    string
+	client   *openai.Client
+	model    string
+	baseURL  string
+	name     string
+	classify func(error) error
 }
 
 func NewOpenAICompat(opts ResolveOpts) (*OpenAICompat, error) {
-	baseURL := first(opts.BaseURL, os.Getenv("SHHH_COMPAT_BASE_URL"), defaultCompatBaseURL)
-	model := first(opts.Model, os.Getenv("SHHH_COMPAT_MODEL"), defaultCompatModel)
-	key := first(opts.APIKey, os.Getenv("SHHH_COMPAT_API_KEY"))
+	baseURL := first(opts.BaseURL, os.Getenv("SHHH_BASE_URL"), opts.ConfigBaseURL, defaultCompatBaseURL)
+	model := first(opts.Model, defaultCompatModel)
+	key := first(opts.APIKey, os.Getenv("SHHH_API_KEY"), opts.ConfigAPIKey)
 
-	name := first(opts.Name, os.Getenv("SHHH_COMPAT_NAME"), "openai-compatible")
+	name := first(opts.Name, opts.ConfigName, "openai-compatible")
 
 	cfg := openai.DefaultConfig(key)
 	cfg.BaseURL = baseURL
 	return &OpenAICompat{
-		client:  openai.NewClientWithConfig(cfg),
-		model:   model,
-		baseURL: baseURL,
-		name:    name,
+		client:   openai.NewClientWithConfig(cfg),
+		model:    model,
+		baseURL:  baseURL,
+		name:     name,
+		classify: newClassifyError("SHHH_API_KEY"),
 	}, nil
 }
 
@@ -49,7 +51,7 @@ func NewOpenAICompatWith(client *openai.Client, model, baseURL string) *OpenAICo
 	if model == "" {
 		model = defaultCompatModel
 	}
-	return &OpenAICompat{client: client, model: model, baseURL: baseURL, name: "openai-compatible"}
+	return &OpenAICompat{client: client, model: model, baseURL: baseURL, name: "openai-compatible", classify: newClassifyError("SHHH_API_KEY")}
 }
 
 func (o *OpenAICompat) Name() string { return o.name }
@@ -80,10 +82,10 @@ func (o *OpenAICompat) StreamCompletion(ctx context.Context, messages []Message,
 
 	stream, err := o.client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
-		return nil, classifyError(err)
+		return nil, o.classify(err)
 	}
 
-	return streamOpenAIToolCalls(stream, classifyError), nil
+	return streamOpenAIToolCalls(stream, o.classify), nil
 }
 
 func init() {

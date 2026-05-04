@@ -41,6 +41,7 @@ func TestOpenRouter_DefaultModel(t *testing.T) {
 }
 
 func TestNewOpenRouter_MissingKey(t *testing.T) {
+	t.Setenv("SHHH_API_KEY", "")
 	t.Setenv("OPENROUTER_API_KEY", "")
 	os.Unsetenv("OPENROUTER_API_KEY")
 	_, err := NewOpenRouter(ResolveOpts{})

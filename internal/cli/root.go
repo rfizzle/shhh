@@ -47,7 +47,6 @@ func NewRootCmd() *cobra.Command {
 
 			resolved := resolve.Resolve(flags)
 			flags.ConfigProviderModel = cfg.ProviderModel(resolved.Provider)
-			flags.ConfigAPIKey = cfg.ProviderAPIKey(resolved.Provider)
 
 			cmd.SetContext(withConfig(cmd.Context(), cfg))
 			return nil
@@ -80,17 +79,13 @@ func NewRootCmd() *cobra.Command {
 			cfg := ConfigFrom(cmd.Context())
 
 			resolved := resolve.Resolve(flags)
-			resolved.APIKey = resolve.First(
-				flags.FlagAPIKey,
-				cfg.ProviderAPIKey(resolved.Provider),
-				"",
-			)
 
 			p, err := provider.Resolve(resolved.Provider, provider.ResolveOpts{
-				APIKey:  resolved.APIKey,
-				Model:   resolved.Model,
-				BaseURL: cfg.ProviderBaseURL(resolved.Provider),
-				Name:    cfg.ProviderName(resolved.Provider),
+				APIKey:        flags.FlagAPIKey,
+				Model:         resolved.Model,
+				ConfigAPIKey:  cfg.ProviderAPIKey(resolved.Provider),
+				ConfigBaseURL: cfg.ProviderBaseURL(resolved.Provider),
+				ConfigName:    cfg.ProviderName(resolved.Provider),
 			})
 			if err != nil {
 				return err
