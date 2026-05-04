@@ -10,6 +10,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/shell"
+	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/spf13/cobra"
@@ -68,7 +69,15 @@ func newChatCmd() *cobra.Command {
 				return ev, cancel, nil
 			}
 
-			model := chat.New(messages, stream).WithToolExecutor(tools.Execute)
+			db, err := storage.Open()
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "warning: chat persistence unavailable: %v\n", err)
+			}
+			if db != nil {
+				defer db.Close()
+			}
+
+			model := chat.New(messages, stream).WithToolExecutor(tools.Execute).WithDB(db)
 			program := tea.NewProgram(model, tea.WithAltScreen(), tea.WithMouseCellMotion())
 			if _, err := program.Run(); err != nil {
 				fmt.Fprintln(os.Stderr, "error:", err)

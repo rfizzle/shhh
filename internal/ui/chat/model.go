@@ -12,7 +12,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/rfizzle/shhh/internal/provider"
-	"github.com/rfizzle/shhh/internal/ui/chat/store"
+	"github.com/rfizzle/shhh/internal/storage"
 )
 
 type StreamFunc func([]provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error)
@@ -45,6 +45,7 @@ type Model struct {
 	messages []provider.Message
 	stream   StreamFunc
 	executor ToolExecutor
+	db       *storage.DB
 
 	viewport viewport.Model
 	input    textarea.Model
@@ -88,6 +89,11 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 
 func (m Model) WithToolExecutor(executor ToolExecutor) Model {
 	m.executor = executor
+	return m
+}
+
+func (m Model) WithDB(db *storage.DB) Model {
+	m.db = db
 	return m
 }
 
@@ -455,13 +461,17 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		return false, ""
 	}
 
+	if m.db == nil {
+		return false, ""
+	}
+
 	switch parts[0] {
 	case "/save":
 		name := "unnamed"
 		if len(parts) > 1 {
 			name = strings.Join(parts[1:], " ")
 		}
-		if err := store.Save(name, m.messages); err != nil {
+		if err := m.db.SaveChat(name, m.messages); err != nil {
 			return true, "Error saving: " + err.Error()
 		}
 		return true, fmt.Sprintf("Chat saved as %q", name)
@@ -471,7 +481,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 			return true, "Usage: /load <name>"
 		}
 		name := strings.Join(parts[1:], " ")
-		msgs, err := store.Load(name)
+		msgs, err := m.db.LoadChat(name)
 		if err != nil {
 			return true, "Error: " + err.Error()
 		}
@@ -507,7 +517,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		return true, fmt.Sprintf("Loaded chat %q (%d messages)", name, len(msgs))
 
 	case "/chats":
-		entries, err := store.List()
+		entries, err := m.db.ListChats()
 		if err != nil {
 			return true, "Error: " + err.Error()
 		}
