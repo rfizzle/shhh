@@ -36,6 +36,22 @@ _shhh_raw() {
 bind -x '"\C-k": _shhh_raw'
 `
 
+const fishSnippet = `# shhh shell integration
+# Add to ~/.config/fish/config.fish: shhh init fish | source
+
+function _shhh_raw
+  set -l buf (commandline)
+  if test -n "$buf"
+    set -l result (shhh --raw "$buf" 2>/dev/null)
+    if test -n "$result"
+      commandline -r -- "$result"
+      commandline -f end-of-line
+    end
+  end
+end
+bind \ck _shhh_raw
+`
+
 func newInitCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init <shell>",
@@ -50,8 +66,11 @@ func newInitCmd() *cobra.Command {
 			case "bash":
 				fmt.Fprint(cmd.OutOrStdout(), bashSnippet)
 				return nil
+			case "fish":
+				fmt.Fprint(cmd.OutOrStdout(), fishSnippet)
+				return nil
 			default:
-				return fmt.Errorf("unsupported shell: %q (supported: zsh, bash)", args[0])
+				return fmt.Errorf("unsupported shell: %q (supported: zsh, bash, fish)", args[0])
 			}
 		},
 	}

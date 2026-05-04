@@ -92,6 +92,46 @@ func TestInitBash_Idempotent(t *testing.T) {
 	}
 }
 
+func TestInitFish_OutputsSnippet(t *testing.T) {
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"init", "fish"})
+
+	err := cmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := out.String()
+	if !strings.Contains(output, `bind \ck _shhh_raw`) {
+		t.Error("expected fish snippet to contain bind \\ck for Ctrl+K")
+	}
+	if !strings.Contains(output, "shhh --raw") {
+		t.Error("expected fish snippet to call shhh --raw")
+	}
+	if !strings.Contains(output, "commandline") {
+		t.Error("expected fish snippet to use commandline builtin")
+	}
+}
+
+func TestInitFish_Idempotent(t *testing.T) {
+	cmd1 := NewRootCmd()
+	cmd2 := NewRootCmd()
+	var out1, out2 bytes.Buffer
+	cmd1.SetOut(&out1)
+	cmd2.SetOut(&out2)
+	cmd1.SetArgs([]string{"init", "fish"})
+	cmd2.SetArgs([]string{"init", "fish"})
+
+	cmd1.Execute()
+	cmd2.Execute()
+
+	if out1.String() != out2.String() {
+		t.Error("expected identical output on repeated calls (idempotent)")
+	}
+}
+
 func TestInit_UnsupportedShell(t *testing.T) {
 	cmd := NewRootCmd()
 	cmd.SetArgs([]string{"init", "powershell"})
