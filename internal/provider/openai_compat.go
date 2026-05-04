@@ -2,8 +2,6 @@ package provider
 
 import (
 	"context"
-	"errors"
-	"io"
 	"os"
 
 	openai "github.com/sashabaranov/go-openai"
@@ -69,36 +67,19 @@ func (o *OpenAICompat) StreamCompletion(ctx context.Context, messages []Message,
 	if opts.MaxTokens > 0 {
 		req.MaxTokens = opts.MaxTokens
 	}
+	if len(opts.Tools) > 0 {
+		req.Tools = toOpenAITools(opts.Tools)
+		if opts.ToolChoice != "" {
+			req.ToolChoice = opts.ToolChoice
+		}
+	}
 
 	stream, err := o.client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
 		return nil, classifyError(err)
 	}
 
-	ch := make(chan StreamEvent)
-	go func() {
-		defer close(ch)
-		defer stream.Close()
-		for {
-			resp, err := stream.Recv()
-			if errors.Is(err, io.EOF) {
-				ch <- StreamEvent{Done: true}
-				return
-			}
-			if err != nil {
-				ch <- StreamEvent{Err: classifyError(err), Done: true}
-				return
-			}
-			if len(resp.Choices) > 0 {
-				delta := resp.Choices[0].Delta.Content
-				if delta != "" {
-					ch <- StreamEvent{Token: delta}
-				}
-			}
-		}
-	}()
-
-	return ch, nil
+	return streamOpenAIToolCalls(stream, classifyError), nil
 }
 
 func init() {

@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -15,6 +16,7 @@ import (
 )
 
 type StreamFunc func([]provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error)
+type ToolExecutor func(name string, args json.RawMessage) (string, error)
 
 type state int
 
@@ -35,10 +37,14 @@ type streamStartedMsg struct {
 	events <-chan provider.StreamEvent
 	cancel context.CancelFunc
 }
+type toolCallsMsg struct {
+	calls []provider.ToolCall
+}
 
 type Model struct {
 	messages []provider.Message
 	stream   StreamFunc
+	executor ToolExecutor
 
 	viewport viewport.Model
 	input    textarea.Model
@@ -77,6 +83,11 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 		state:    stateInput,
 		atBottom: true,
 	}
+}
+
+func (m Model) WithToolExecutor(executor ToolExecutor) Model {
+	m.executor = executor
+	return m
 }
 
 func (m Model) Messages() []provider.Message { return m.messages }
@@ -180,6 +191,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 		return m, nil
 
+	case toolCallsMsg:
+		m.executeToolCalls(msg.calls)
+		m.viewport.SetContent(m.renderHistory())
+		m.viewport.GotoBottom()
+		return m, m.requestStream()
+
 	case streamErrMsg:
 		m.history.WriteString(errorStyle.Render("Error: "+msg.err.Error()) + "\n\n")
 		m.streaming = ""
@@ -261,11 +278,99 @@ func waitForEvent(events <-chan provider.StreamEvent) tea.Cmd {
 		if ev.Err != nil {
 			return streamErrMsg{err: ev.Err}
 		}
+		if len(ev.ToolCalls) > 0 {
+			return toolCallsMsg{calls: ev.ToolCalls}
+		}
 		if ev.Done {
 			return doneMsg{}
 		}
 		return tokenMsg(ev.Token)
 	}
+}
+
+func (m *Model) executeToolCalls(calls []provider.ToolCall) {
+	assistantMsg := provider.Message{
+		Role:      provider.RoleAssistant,
+		Content:   m.streaming,
+		ToolCalls: calls,
+	}
+	m.messages = append(m.messages, assistantMsg)
+
+	if m.streaming != "" {
+		m.history.WriteString(assistantStyle.Render("Assistant") + "\n")
+		m.history.WriteString(highlightCode(m.wordWrap(m.streaming, m.width)) + "\n\n")
+	}
+
+	for _, tc := range calls {
+		var result string
+		if m.executor != nil {
+			out, err := m.executor(tc.Name, json.RawMessage(tc.Arguments))
+			if err != nil {
+				result = "error: " + err.Error()
+			} else {
+				result = out
+			}
+		} else {
+			result = "error: no tool executor configured"
+		}
+
+		m.messages = append(m.messages, provider.Message{
+			Role:       provider.RoleTool,
+			Content:    result,
+			ToolCallID: tc.ID,
+		})
+
+		m.history.WriteString(m.renderToolBlock(tc.Name, tc.Arguments, result))
+	}
+
+	m.streaming = ""
+	m.events = nil
+	m.cancel = nil
+}
+
+const maxToolResultLines = 8
+
+func (m Model) renderToolBlock(name, args, result string) string {
+	border := toolBorderStyle.Render("│")
+
+	var block strings.Builder
+	block.WriteString(border + " " + toolStyle.Render("⚙ "+name) + " " + toolArgsStyle.Render(formatToolArgs(args)) + "\n")
+
+	display := truncateLines(result, maxToolResultLines)
+	for _, line := range strings.Split(display, "\n") {
+		block.WriteString(border + " " + toolResultStyle.Render(line) + "\n")
+	}
+	block.WriteString("\n")
+	return block.String()
+}
+
+func formatToolArgs(raw string) string {
+	var m map[string]any
+	if err := json.Unmarshal([]byte(raw), &m); err != nil {
+		return raw
+	}
+	var parts []string
+	for k, v := range m {
+		switch val := v.(type) {
+		case string:
+			parts = append(parts, k+"="+val)
+		default:
+			b, _ := json.Marshal(val)
+			parts = append(parts, k+"="+string(b))
+		}
+	}
+	return strings.Join(parts, " ")
+}
+
+func truncateLines(s string, max int) string {
+	lines := strings.Split(s, "\n")
+	if len(lines) <= max {
+		return s
+	}
+	truncated := strings.Join(lines[:max], "\n")
+	remaining := len(lines) - max
+	truncated += fmt.Sprintf("\n… (%d more lines)", remaining)
+	return truncated
 }
 
 func (m *Model) finishStreaming() {
@@ -371,14 +476,31 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		}
 		m.messages = msgs
 		m.history.Reset()
-		for _, msg := range msgs {
+		for i, msg := range msgs {
 			switch msg.Role {
 			case provider.RoleUser:
 				m.history.WriteString(userStyle.Render("You") + "\n")
 				m.history.WriteString(m.wordWrap(msg.Content, m.width) + "\n\n")
 			case provider.RoleAssistant:
-				m.history.WriteString(assistantStyle.Render("Assistant") + "\n")
-				m.history.WriteString(highlightCode(m.wordWrap(msg.Content, m.width)) + "\n\n")
+				if msg.Content != "" {
+					m.history.WriteString(assistantStyle.Render("Assistant") + "\n")
+					m.history.WriteString(highlightCode(m.wordWrap(msg.Content, m.width)) + "\n\n")
+				}
+				for _, tc := range msg.ToolCalls {
+					var result string
+					if i+1 < len(msgs) {
+						for _, next := range msgs[i+1:] {
+							if next.Role == provider.RoleTool && next.ToolCallID == tc.ID {
+								result = next.Content
+								break
+							}
+							if next.Role != provider.RoleTool {
+								break
+							}
+						}
+					}
+					m.history.WriteString(m.renderToolBlock(tc.Name, tc.Arguments, result))
+				}
 			}
 		}
 		return true, fmt.Sprintf("Loaded chat %q (%d messages)", name, len(msgs))

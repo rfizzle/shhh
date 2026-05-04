@@ -1,9 +1,12 @@
 package provider
 
 import (
+	"encoding/json"
 	"errors"
 	"os"
 	"testing"
+
+	"google.golang.org/genai"
 )
 
 func TestGemini_Name(t *testing.T) {
@@ -100,6 +103,174 @@ func TestToGeminiContents_NoSystem(t *testing.T) {
 	}
 	if len(contents) != 1 {
 		t.Fatalf("expected 1 content entry, got %d", len(contents))
+	}
+}
+
+func TestToGeminiContents_AssistantToolCalls(t *testing.T) {
+	msgs := []Message{
+		{Role: RoleUser, Content: "read my file"},
+		{
+			Role: RoleAssistant,
+			ToolCalls: []ToolCall{
+				{ID: "call_1", Name: "read_file", Arguments: `{"path":"/tmp/test.go"}`},
+			},
+		},
+		{
+			Role:       RoleTool,
+			Content:    "package main",
+			ToolCallID: "read_file",
+		},
+	}
+
+	contents, _ := toGeminiContents(msgs)
+
+	if len(contents) != 3 {
+		t.Fatalf("expected 3 content entries, got %d", len(contents))
+	}
+
+	// Assistant with function call
+	assistant := contents[1]
+	if assistant.Role != "model" {
+		t.Errorf("expected role 'model', got %q", assistant.Role)
+	}
+	if len(assistant.Parts) != 1 {
+		t.Fatalf("expected 1 part (function call only, no text), got %d", len(assistant.Parts))
+	}
+	fc := assistant.Parts[0].FunctionCall
+	if fc == nil {
+		t.Fatal("expected FunctionCall part")
+	}
+	if fc.Name != "read_file" {
+		t.Errorf("expected function name 'read_file', got %q", fc.Name)
+	}
+	if fc.Args["path"] != "/tmp/test.go" {
+		t.Errorf("expected path arg '/tmp/test.go', got %v", fc.Args["path"])
+	}
+
+	// Tool result
+	toolResult := contents[2]
+	if toolResult.Role != "function" {
+		t.Errorf("expected role 'function', got %q", toolResult.Role)
+	}
+	fr := toolResult.Parts[0].FunctionResponse
+	if fr == nil {
+		t.Fatal("expected FunctionResponse part")
+	}
+	if fr.Name != "read_file" {
+		t.Errorf("expected function name 'read_file', got %q", fr.Name)
+	}
+	if fr.Response["result"] != "package main" {
+		t.Errorf("expected result 'package main', got %v", fr.Response["result"])
+	}
+}
+
+func TestToGeminiContents_AssistantTextAndToolCall(t *testing.T) {
+	msgs := []Message{
+		{
+			Role:    RoleAssistant,
+			Content: "Let me check that file.",
+			ToolCalls: []ToolCall{
+				{Name: "read_file", Arguments: `{"path":"main.go"}`},
+			},
+		},
+	}
+
+	contents, _ := toGeminiContents(msgs)
+
+	if len(contents) != 1 {
+		t.Fatalf("expected 1 content entry, got %d", len(contents))
+	}
+	if len(contents[0].Parts) != 2 {
+		t.Fatalf("expected 2 parts (text + function call), got %d", len(contents[0].Parts))
+	}
+	if contents[0].Parts[0].Text != "Let me check that file." {
+		t.Errorf("expected text part, got %q", contents[0].Parts[0].Text)
+	}
+	if contents[0].Parts[1].FunctionCall == nil {
+		t.Fatal("expected FunctionCall in second part")
+	}
+}
+
+func TestToGeminiTools(t *testing.T) {
+	tools := []Tool{
+		{Name: "read_file", Description: "Read a file", Parameters: json.RawMessage(`{"type":"object","properties":{"path":{"type":"string"}},"required":["path"]}`)},
+		{Name: "list_directory", Description: "List a directory", Parameters: json.RawMessage(`{"type":"object","properties":{"path":{"type":"string"}}}`)},
+	}
+
+	result := toGeminiTools(tools)
+	if len(result) != 1 {
+		t.Fatalf("expected 1 genai.Tool (with multiple declarations), got %d", len(result))
+	}
+	decls := result[0].FunctionDeclarations
+	if len(decls) != 2 {
+		t.Fatalf("expected 2 function declarations, got %d", len(decls))
+	}
+	if decls[0].Name != "read_file" {
+		t.Errorf("expected name 'read_file', got %q", decls[0].Name)
+	}
+	if decls[0].Description != "Read a file" {
+		t.Errorf("expected description 'Read a file', got %q", decls[0].Description)
+	}
+	if decls[0].ParametersJsonSchema == nil {
+		t.Error("expected non-nil ParametersJsonSchema")
+	}
+	if decls[1].Name != "list_directory" {
+		t.Errorf("expected name 'list_directory', got %q", decls[1].Name)
+	}
+}
+
+func TestToGeminiTools_NilParameters(t *testing.T) {
+	tools := []Tool{
+		{Name: "no_params", Description: "No parameters"},
+	}
+	result := toGeminiTools(tools)
+	decls := result[0].FunctionDeclarations
+	if decls[0].ParametersJsonSchema != nil {
+		t.Errorf("expected nil ParametersJsonSchema for empty params, got %v", decls[0].ParametersJsonSchema)
+	}
+}
+
+func TestToGeminiToolConfig(t *testing.T) {
+	tests := []struct {
+		choice string
+		want   string
+	}{
+		{"auto", string(genai.FunctionCallingConfigModeAuto)},
+		{"any", string(genai.FunctionCallingConfigModeAny)},
+		{"required", string(genai.FunctionCallingConfigModeAny)},
+		{"none", string(genai.FunctionCallingConfigModeNone)},
+		{"unknown", string(genai.FunctionCallingConfigModeAuto)},
+	}
+	for _, tt := range tests {
+		t.Run(tt.choice, func(t *testing.T) {
+			cfg := toGeminiToolConfig(tt.choice)
+			if cfg == nil || cfg.FunctionCallingConfig == nil {
+				t.Fatal("expected non-nil ToolConfig with FunctionCallingConfig")
+			}
+			got := string(cfg.FunctionCallingConfig.Mode)
+			if got != tt.want {
+				t.Errorf("choice %q: expected mode %q, got %q", tt.choice, tt.want, got)
+			}
+		})
+	}
+}
+
+func TestJsonSchemaToAny(t *testing.T) {
+	raw := json.RawMessage(`{"type":"object","properties":{"path":{"type":"string"}}}`)
+	result := jsonSchemaToAny(raw)
+	m, ok := result.(map[string]any)
+	if !ok {
+		t.Fatalf("expected map[string]any, got %T", result)
+	}
+	if m["type"] != "object" {
+		t.Errorf("expected type 'object', got %v", m["type"])
+	}
+}
+
+func TestJsonSchemaToAny_Empty(t *testing.T) {
+	result := jsonSchemaToAny(nil)
+	if result != nil {
+		t.Errorf("expected nil for empty input, got %v", result)
 	}
 }
 

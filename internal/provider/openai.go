@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 
@@ -57,45 +56,59 @@ func (o *OpenAI) StreamCompletion(ctx context.Context, messages []Message, opts 
 	if opts.MaxTokens > 0 {
 		req.MaxTokens = opts.MaxTokens
 	}
+	if len(opts.Tools) > 0 {
+		req.Tools = toOpenAITools(opts.Tools)
+		if opts.ToolChoice != "" {
+			req.ToolChoice = opts.ToolChoice
+		}
+	}
 
 	stream, err := o.client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
 		return nil, classifyError(err)
 	}
 
-	ch := make(chan StreamEvent)
-	go func() {
-		defer close(ch)
-		defer stream.Close()
-		for {
-			resp, err := stream.Recv()
-			if errors.Is(err, io.EOF) {
-				ch <- StreamEvent{Done: true}
-				return
-			}
-			if err != nil {
-				ch <- StreamEvent{Err: classifyError(err), Done: true}
-				return
-			}
-			if len(resp.Choices) > 0 {
-				delta := resp.Choices[0].Delta.Content
-				if delta != "" {
-					ch <- StreamEvent{Token: delta}
-				}
-			}
-		}
-	}()
+	return streamOpenAIToolCalls(stream, classifyError), nil
+}
 
-	return ch, nil
+func toOpenAITools(tools []Tool) []openai.Tool {
+	out := make([]openai.Tool, len(tools))
+	for i, t := range tools {
+		out[i] = openai.Tool{
+			Type: openai.ToolTypeFunction,
+			Function: &openai.FunctionDefinition{
+				Name:        t.Name,
+				Description: t.Description,
+				Parameters:  t.Parameters,
+			},
+		}
+	}
+	return out
 }
 
 func toOpenAIMessages(msgs []Message) []openai.ChatCompletionMessage {
 	out := make([]openai.ChatCompletionMessage, len(msgs))
 	for i, m := range msgs {
-		out[i] = openai.ChatCompletionMessage{
+		msg := openai.ChatCompletionMessage{
 			Role:    string(m.Role),
 			Content: m.Content,
 		}
+		if len(m.ToolCalls) > 0 {
+			for _, tc := range m.ToolCalls {
+				msg.ToolCalls = append(msg.ToolCalls, openai.ToolCall{
+					ID:   tc.ID,
+					Type: openai.ToolTypeFunction,
+					Function: openai.FunctionCall{
+						Name:      tc.Name,
+						Arguments: tc.Arguments,
+					},
+				})
+			}
+		}
+		if m.ToolCallID != "" {
+			msg.ToolCallID = m.ToolCallID
+		}
+		out[i] = msg
 	}
 	return out
 }

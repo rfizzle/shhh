@@ -10,6 +10,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/shell"
+	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/spf13/cobra"
 )
@@ -48,7 +49,11 @@ func newChatCmd() *cobra.Command {
 				{Role: provider.RoleSystem, Content: sysPrompt},
 			}
 
-			compOpts := provider.CompletionOpts{Model: resolved.Model}
+			compOpts := provider.CompletionOpts{
+				Model:      resolved.Model,
+				Tools:      tools.Definitions(),
+				ToolChoice: "auto",
+			}
 
 			stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 				ctx, cancel := context.WithCancel(cmd.Context())
@@ -60,7 +65,7 @@ func newChatCmd() *cobra.Command {
 				return ev, cancel, nil
 			}
 
-			model := chat.New(messages, stream)
+			model := chat.New(messages, stream).WithToolExecutor(tools.Execute)
 			program := tea.NewProgram(model, tea.WithAltScreen(), tea.WithMouseCellMotion())
 			if _, err := program.Run(); err != nil {
 				fmt.Fprintln(os.Stderr, "error:", err)

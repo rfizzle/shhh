@@ -1,6 +1,9 @@
 package provider
 
-import "context"
+import (
+	"context"
+	"encoding/json"
+)
 
 type Role string
 
@@ -8,23 +11,41 @@ const (
 	RoleSystem    Role = "system"
 	RoleUser      Role = "user"
 	RoleAssistant Role = "assistant"
+	RoleTool      Role = "tool"
 )
 
 type Message struct {
-	Role    Role
-	Content string
+	Role       Role
+	Content    string
+	ToolCalls  []ToolCall
+	ToolCallID string
+}
+
+type Tool struct {
+	Name        string
+	Description string
+	Parameters  json.RawMessage
+}
+
+type ToolCall struct {
+	ID        string
+	Name      string
+	Arguments string
 }
 
 type StreamEvent struct {
-	Token string
-	Done  bool
-	Err   error
+	Token     string
+	ToolCalls []ToolCall
+	Done      bool
+	Err       error
 }
 
 type CompletionOpts struct {
 	Model       string
 	Temperature *float64
 	MaxTokens   int
+	Tools       []Tool
+	ToolChoice  string
 }
 
 type Provider interface {
