@@ -39,20 +39,22 @@ func (db *DB) RecordRequest(r RequestRecord) error {
 }
 
 type ProviderMetrics struct {
-	Provider    string
-	Model       string
-	Count       int
-	SuccessRate float64
-	AvgTTFT     *float64
-	P95TTFT     *float64
-	AvgDuration *float64
-	P95Duration *float64
+	Provider      string
+	Model         string
+	Count         int
+	SuccessRate   float64
+	AvgTTFT       *float64
+	P95TTFT       *float64
+	AvgDuration   *float64
+	P95Duration   *float64
+	TotalTokensIn *int64
+	TotalTokensOut *int64
 }
 
 func (db *DB) MetricsSummary() ([]ProviderMetrics, error) {
 	rows, err := db.sql.Query(`
 		WITH ranked AS (
-			SELECT provider, model, success, ttft_ms, duration_ms,
+			SELECT provider, model, success, ttft_ms, duration_ms, tokens_in, tokens_out,
 			       PERCENT_RANK() OVER (PARTITION BY provider, model ORDER BY ttft_ms) AS ttft_rank,
 			       PERCENT_RANK() OVER (PARTITION BY provider, model ORDER BY duration_ms) AS dur_rank
 			FROM requests
@@ -64,7 +66,9 @@ func (db *DB) MetricsSummary() ([]ProviderMetrics, error) {
 			AVG(ttft_ms) as avg_ttft,
 			MAX(CASE WHEN ttft_rank >= 0.95 THEN ttft_ms END) as p95_ttft,
 			AVG(duration_ms) as avg_duration,
-			MAX(CASE WHEN dur_rank >= 0.95 THEN duration_ms END) as p95_duration
+			MAX(CASE WHEN dur_rank >= 0.95 THEN duration_ms END) as p95_duration,
+			SUM(tokens_in) as total_tokens_in,
+			SUM(tokens_out) as total_tokens_out
 		FROM ranked
 		GROUP BY provider, model
 		ORDER BY count DESC`)
@@ -79,6 +83,7 @@ func (db *DB) MetricsSummary() ([]ProviderMetrics, error) {
 		if err := rows.Scan(
 			&m.Provider, &m.Model, &m.Count, &m.SuccessRate,
 			&m.AvgTTFT, &m.P95TTFT, &m.AvgDuration, &m.P95Duration,
+			&m.TotalTokensIn, &m.TotalTokensOut,
 		); err != nil {
 			return nil, err
 		}
