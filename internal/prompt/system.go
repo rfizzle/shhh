@@ -67,6 +67,7 @@ func shellSyntaxRules(sh string) string {
 - Conditionals: if/else/end (not if/then/fi)
 - Loops: for x in items; ...; end (not do/done)
 - Command substitution: (command) (not $(command) or backticks)
+- NEVER put (command) in command position (start of a pipeline). Wrong: (grep foo bar) | head. Right: grep foo bar | head. Use begin; ...; end for grouping: begin; cmd1; cmd2; end | pipe
 - Logical operators: ; and / ; or (not && or ||)
 - No function keyword needed: function name; ...; end
 - String escaping: single quotes or backslash (no $'...' ANSI-C quoting)
