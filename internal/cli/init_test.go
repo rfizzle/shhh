@@ -49,6 +49,49 @@ func TestInitZsh_Idempotent(t *testing.T) {
 	}
 }
 
+func TestInitBash_OutputsSnippet(t *testing.T) {
+	cmd := NewRootCmd()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetArgs([]string{"init", "bash"})
+
+	err := cmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	output := out.String()
+	if !strings.Contains(output, `bind -x '"\C-k": _shhh_raw'`) {
+		t.Error("expected bash snippet to contain bind -x for Ctrl+K")
+	}
+	if !strings.Contains(output, "shhh --raw") {
+		t.Error("expected bash snippet to call shhh --raw")
+	}
+	if !strings.Contains(output, "READLINE_LINE") {
+		t.Error("expected bash snippet to use READLINE_LINE")
+	}
+	if !strings.Contains(output, "READLINE_POINT") {
+		t.Error("expected bash snippet to use READLINE_POINT")
+	}
+}
+
+func TestInitBash_Idempotent(t *testing.T) {
+	cmd1 := NewRootCmd()
+	cmd2 := NewRootCmd()
+	var out1, out2 bytes.Buffer
+	cmd1.SetOut(&out1)
+	cmd2.SetOut(&out2)
+	cmd1.SetArgs([]string{"init", "bash"})
+	cmd2.SetArgs([]string{"init", "bash"})
+
+	cmd1.Execute()
+	cmd2.Execute()
+
+	if out1.String() != out2.String() {
+		t.Error("expected identical output on repeated calls (idempotent)")
+	}
+}
+
 func TestInit_UnsupportedShell(t *testing.T) {
 	cmd := NewRootCmd()
 	cmd.SetArgs([]string{"init", "powershell"})
