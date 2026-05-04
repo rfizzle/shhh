@@ -2,86 +2,46 @@ package chat
 
 import (
 	"strings"
+	"sync"
 
-	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/glamour"
 )
 
 var (
-	codeBlockStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("229")).
-			Background(lipgloss.Color("236"))
-	codeBlockLangStyle = lipgloss.NewStyle().
-				Foreground(lipgloss.Color("241")).
-				Italic(true)
-	inlineCodeStyle = lipgloss.NewStyle().
-			Foreground(lipgloss.Color("229")).
-			Background(lipgloss.Color("236"))
+	rendererMu    sync.Mutex
+	cachedWidth   int
+	cachedRenderer *glamour.TermRenderer
 )
 
-func highlightCode(text string) string {
-	lines := strings.Split(text, "\n")
-	var result strings.Builder
-	inBlock := false
-	var blockLines []string
-	var lang string
-
-	for _, line := range lines {
-		if !inBlock && strings.HasPrefix(line, "```") {
-			inBlock = true
-			lang = strings.TrimPrefix(line, "```")
-			lang = strings.TrimSpace(lang)
-			blockLines = nil
-			continue
-		}
-		if inBlock && strings.HasPrefix(line, "```") {
-			if lang != "" {
-				result.WriteString(codeBlockLangStyle.Render(lang) + "\n")
-			}
-			for _, bl := range blockLines {
-				result.WriteString(codeBlockStyle.Render(bl) + "\n")
-			}
-			inBlock = false
-			lang = ""
-			continue
-		}
-		if inBlock {
-			blockLines = append(blockLines, line)
-			continue
-		}
-		result.WriteString(highlightInlineCode(line) + "\n")
+func getRenderer(width int) *glamour.TermRenderer {
+	rendererMu.Lock()
+	defer rendererMu.Unlock()
+	if cachedRenderer != nil && cachedWidth == width {
+		return cachedRenderer
 	}
-
-	// Unclosed fence — render what we have as a code block (streaming mid-block)
-	if inBlock {
-		if lang != "" {
-			result.WriteString(codeBlockLangStyle.Render(lang) + "\n")
-		}
-		for _, bl := range blockLines {
-			result.WriteString(codeBlockStyle.Render(bl) + "\n")
-		}
+	r, err := glamour.NewTermRenderer(
+		glamour.WithStylePath("dark"),
+		glamour.WithWordWrap(width),
+	)
+	if err != nil {
+		return nil
 	}
-
-	return strings.TrimRight(result.String(), "\n")
+	cachedRenderer = r
+	cachedWidth = width
+	return r
 }
 
-func highlightInlineCode(line string) string {
-	var result strings.Builder
-	for {
-		start := strings.Index(line, "`")
-		if start == -1 {
-			result.WriteString(line)
-			break
-		}
-		end := strings.Index(line[start+1:], "`")
-		if end == -1 {
-			result.WriteString(line)
-			break
-		}
-		end += start + 1
-		result.WriteString(line[:start])
-		code := line[start+1 : end]
-		result.WriteString(inlineCodeStyle.Render(code))
-		line = line[end+1:]
+func renderMarkdown(text string, width int) string {
+	if width <= 0 {
+		width = 80
 	}
-	return result.String()
+	r := getRenderer(width)
+	if r == nil {
+		return text
+	}
+	out, err := r.Render(text)
+	if err != nil {
+		return text
+	}
+	return strings.TrimSpace(out)
 }

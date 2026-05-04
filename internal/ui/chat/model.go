@@ -337,7 +337,7 @@ func (m *Model) executeToolCalls(calls []provider.ToolCall) {
 
 	if m.streaming != "" {
 		m.history.WriteString(assistantStyle.Render("Assistant") + "\n")
-		m.history.WriteString(highlightCode(m.wordWrap(m.streaming, m.contentWidth())) + "\n\n")
+		m.history.WriteString(renderMarkdown(m.streaming, m.contentWidth()) + "\n\n")
 	}
 
 	for _, tc := range calls {
@@ -419,7 +419,7 @@ func (m *Model) finishStreaming() {
 			Content: m.streaming,
 		})
 		m.history.WriteString(assistantStyle.Render("Assistant") + "\n")
-		m.history.WriteString(highlightCode(m.wordWrap(m.streaming, m.contentWidth())) + "\n\n")
+		m.history.WriteString(renderMarkdown(m.streaming, m.contentWidth()) + "\n\n")
 	}
 	m.streaming = ""
 	m.events = nil
@@ -434,7 +434,7 @@ func (m Model) renderHistory() string {
 	s := m.history.String()
 	if m.state == stateStreaming && m.streaming != "" {
 		s += assistantStyle.Render("Assistant") + "\n"
-		s += highlightCode(m.wordWrap(m.streaming, m.contentWidth()))
+		s += renderMarkdown(m.streaming, m.contentWidth())
 	}
 	return s
 }
@@ -531,7 +531,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 			case provider.RoleAssistant:
 				if msg.Content != "" {
 					m.history.WriteString(assistantStyle.Render("Assistant") + "\n")
-					m.history.WriteString(highlightCode(m.wordWrap(msg.Content, m.contentWidth())) + "\n\n")
+					m.history.WriteString(renderMarkdown(msg.Content, m.contentWidth()) + "\n\n")
 				}
 				for _, tc := range msg.ToolCalls {
 					var result string
