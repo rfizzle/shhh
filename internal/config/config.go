@@ -77,6 +77,8 @@ func (c Config) ProviderModel(name string) string {
 // ProviderBaseURL returns the base URL for the named provider, or empty string.
 func (c Config) ProviderBaseURL(name string) string {
 	switch normalizeProvider(name) {
+	case "openrouter":
+		return c.Provider.OpenRouter.BaseURL
 	case "openai-compatible":
 		return c.Provider.OpenAICompat.BaseURL
 	}
