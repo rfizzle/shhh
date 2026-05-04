@@ -77,6 +77,7 @@ var menuItems = []menuItem{
 	{"provider.model", "Default model"},
 	{"provider.openai.api_key", "OpenAI API key"},
 	{"provider.gemini.api_key", "Gemini API key"},
+	{"provider.gemini.model", "Gemini model"},
 	{"provider.openrouter.api_key", "OpenRouter API key"},
 	{"provider.openai_compatible.base_url", "OpenAI-compatible base URL"},
 	{"provider.openai_compatible.api_key", "OpenAI-compatible API key"},
@@ -169,6 +170,8 @@ func (m configModel) currentValue() string {
 		return m.cfg.Provider.OpenAI.APIKey
 	case "provider.gemini.api_key":
 		return m.cfg.Provider.Gemini.APIKey
+	case "provider.gemini.model":
+		return m.cfg.Provider.Gemini.Model
 	case "provider.openrouter.api_key":
 		return m.cfg.Provider.OpenRouter.APIKey
 	case "provider.openai_compatible.base_url":
@@ -213,6 +216,8 @@ func (m configModel) valueForItem(key string) string {
 		return m.cfg.Provider.OpenAI.APIKey
 	case "provider.gemini.api_key":
 		return m.cfg.Provider.Gemini.APIKey
+	case "provider.gemini.model":
+		return m.cfg.Provider.Gemini.Model
 	case "provider.openrouter.api_key":
 		return m.cfg.Provider.OpenRouter.APIKey
 	case "provider.openai_compatible.base_url":
