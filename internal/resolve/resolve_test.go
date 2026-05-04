@@ -153,6 +153,43 @@ func TestResolve_EmptyFlagsFallThrough(t *testing.T) {
 	}
 }
 
+func TestResolve_ProviderModelOverridesGlobalModel(t *testing.T) {
+	clearEnv(t)
+
+	r := Resolve(Opts{
+		ConfigProvider:      "gemini",
+		ConfigModel:         "gpt-4o",
+		ConfigProviderModel: "gemini-2.5-pro",
+	})
+	if r.Model != "gemini-2.5-pro" {
+		t.Errorf("expected per-provider model 'gemini-2.5-pro', got %q", r.Model)
+	}
+}
+
+func TestResolve_FlagModelOverridesProviderModel(t *testing.T) {
+	clearEnv(t)
+
+	r := Resolve(Opts{
+		FlagModel:           "gpt-4o-mini",
+		ConfigProviderModel: "gemini-2.5-pro",
+		ConfigModel:         "gpt-4o",
+	})
+	if r.Model != "gpt-4o-mini" {
+		t.Errorf("expected flag model 'gpt-4o-mini', got %q", r.Model)
+	}
+}
+
+func TestResolve_GlobalModelUsedWhenNoProviderModel(t *testing.T) {
+	clearEnv(t)
+
+	r := Resolve(Opts{
+		ConfigModel: "gpt-4o",
+	})
+	if r.Model != "gpt-4o" {
+		t.Errorf("expected global config model 'gpt-4o', got %q", r.Model)
+	}
+}
+
 func TestResolve_ConfigAPIKeyUsedWhenNoFlag(t *testing.T) {
 	clearEnv(t)
 

@@ -46,6 +46,7 @@ func NewRootCmd() *cobra.Command {
 			flags.ConfigModel = cfg.Provider.Model
 
 			resolved := resolve.Resolve(flags)
+			flags.ConfigProviderModel = cfg.ProviderModel(resolved.Provider)
 			flags.ConfigAPIKey = cfg.ProviderAPIKey(resolved.Provider)
 
 			cmd.SetContext(withConfig(cmd.Context(), cfg))

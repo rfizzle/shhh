@@ -31,6 +31,8 @@ func newChatCmd() *cobra.Command {
 			flags.ConfigModel = cfg.Provider.Model
 
 			resolved := resolve.Resolve(flags)
+			flags.ConfigProviderModel = cfg.ProviderModel(resolved.Provider)
+			resolved = resolve.Resolve(flags)
 			resolved.APIKey = resolve.First(
 				flags.FlagAPIKey,
 				cfg.ProviderAPIKey(resolved.Provider),

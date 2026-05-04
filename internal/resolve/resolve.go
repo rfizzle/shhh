@@ -12,9 +12,10 @@ type Opts struct {
 	FlagModel    string
 	FlagAPIKey   string
 
-	ConfigProvider string
-	ConfigModel    string
-	ConfigAPIKey   string
+	ConfigProvider      string
+	ConfigModel         string
+	ConfigProviderModel string
+	ConfigAPIKey        string
 }
 
 type Resolved struct {
@@ -26,7 +27,7 @@ type Resolved struct {
 func Resolve(opts Opts) Resolved {
 	return Resolved{
 		Provider: First(opts.FlagProvider, os.Getenv("SHHH_PROVIDER"), opts.ConfigProvider, DefaultProvider),
-		Model:    First(opts.FlagModel, os.Getenv("SHHH_MODEL"), opts.ConfigModel, DefaultModel),
+		Model:    First(opts.FlagModel, os.Getenv("SHHH_MODEL"), opts.ConfigProviderModel, opts.ConfigModel, DefaultModel),
 		APIKey:   First(opts.FlagAPIKey, opts.ConfigAPIKey, ""),
 	}
 }
