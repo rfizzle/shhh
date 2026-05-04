@@ -26,6 +26,9 @@ func newChatCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := ConfigFrom(cmd.Context())
 
+			flags.ConfigProvider = cfg.Provider.Default
+			flags.ConfigModel = cfg.Provider.Model
+
 			resolved := resolve.Resolve(flags)
 			resolved.APIKey = resolve.First(
 				flags.FlagAPIKey,
