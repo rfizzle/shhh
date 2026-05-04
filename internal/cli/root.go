@@ -54,7 +54,11 @@ func NewRootCmd() *cobra.Command {
 				"",
 			)
 
-			p, err := provider.Resolve(resolved.Provider)
+			p, err := provider.Resolve(resolved.Provider, provider.ResolveOpts{
+				APIKey:  resolved.APIKey,
+				Model:   resolved.Model,
+				BaseURL: cfg.ProviderBaseURL(resolved.Provider),
+			})
 			if err != nil {
 				return err
 			}

@@ -14,7 +14,7 @@ func (s *stubProvider) StreamCompletion(_ context.Context, _ []Message, _ Comple
 func (s *stubProvider) Name() string { return "stub" }
 
 func TestResolve_Registered(t *testing.T) {
-	Register("stub", func() (Provider, error) {
+	Register("stub", func(ResolveOpts) (Provider, error) {
 		return &stubProvider{}, nil
 	})
 	t.Cleanup(func() { delete(registry, "stub") })
@@ -36,7 +36,7 @@ func TestResolve_Unknown(t *testing.T) {
 }
 
 func TestResolve_UnderscoreNormalization(t *testing.T) {
-	Register("my-provider", func() (Provider, error) {
+	Register("my-provider", func(ResolveOpts) (Provider, error) {
 		return &stubProvider{}, nil
 	})
 	t.Cleanup(func() { delete(registry, "my-provider") })
@@ -51,8 +51,8 @@ func TestResolve_UnderscoreNormalization(t *testing.T) {
 }
 
 func TestAvailable(t *testing.T) {
-	Register("a", func() (Provider, error) { return &stubProvider{}, nil })
-	Register("b", func() (Provider, error) { return &stubProvider{}, nil })
+	Register("a", func(ResolveOpts) (Provider, error) { return &stubProvider{}, nil })
+	Register("b", func(ResolveOpts) (Provider, error) { return &stubProvider{}, nil })
 	t.Cleanup(func() { delete(registry, "a"); delete(registry, "b") })
 
 	names := Available()

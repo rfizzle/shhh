@@ -5,7 +5,13 @@ import (
 	"strings"
 )
 
-type Factory func() (Provider, error)
+type ResolveOpts struct {
+	APIKey  string
+	Model   string
+	BaseURL string
+}
+
+type Factory func(ResolveOpts) (Provider, error)
 
 var registry = map[string]Factory{}
 
@@ -17,12 +23,16 @@ func normalizeName(name string) string {
 	return strings.ReplaceAll(name, "_", "-")
 }
 
-func Resolve(name string) (Provider, error) {
+func Resolve(name string, opts ...ResolveOpts) (Provider, error) {
 	f, ok := registry[normalizeName(name)]
 	if !ok {
 		return nil, fmt.Errorf("unknown provider: %q", name)
 	}
-	return f()
+	var o ResolveOpts
+	if len(opts) > 0 {
+		o = opts[0]
+	}
+	return f(o)
 }
 
 func Available() []string {

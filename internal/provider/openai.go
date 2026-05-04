@@ -128,7 +128,7 @@ func classifyError(err error) error {
 }
 
 func init() {
-	Register("openai", func() (Provider, error) {
+	Register("openai", func(opts ResolveOpts) (Provider, error) {
 		return NewOpenAI()
 	})
 }

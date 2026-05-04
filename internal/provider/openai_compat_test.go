@@ -37,7 +37,7 @@ func TestNewOpenAICompat_Defaults(t *testing.T) {
 	t.Setenv("SHHH_COMPAT_MODEL", "")
 	t.Setenv("SHHH_COMPAT_API_KEY", "")
 
-	p, err := NewOpenAICompat()
+	p, err := NewOpenAICompat(ResolveOpts{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -54,7 +54,7 @@ func TestNewOpenAICompat_EnvOverrides(t *testing.T) {
 	t.Setenv("SHHH_COMPAT_MODEL", "mistral")
 	t.Setenv("SHHH_COMPAT_API_KEY", "my-key")
 
-	p, err := NewOpenAICompat()
+	p, err := NewOpenAICompat(ResolveOpts{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -66,9 +66,28 @@ func TestNewOpenAICompat_EnvOverrides(t *testing.T) {
 	}
 }
 
+func TestNewOpenAICompat_OptsOverrideEnvAndDefaults(t *testing.T) {
+	t.Setenv("SHHH_COMPAT_BASE_URL", "http://env-host:9999/v1")
+	t.Setenv("SHHH_COMPAT_MODEL", "env-model")
+
+	p, err := NewOpenAICompat(ResolveOpts{
+		BaseURL: "http://config-host:1234/v1",
+		Model:   "config-model",
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if p.baseURL != "http://config-host:1234/v1" {
+		t.Errorf("expected config base URL, got %q", p.baseURL)
+	}
+	if p.model != "config-model" {
+		t.Errorf("expected config model, got %q", p.model)
+	}
+}
+
 func TestNewOpenAICompat_NoKeyRequired(t *testing.T) {
 	t.Setenv("SHHH_COMPAT_API_KEY", "")
-	_, err := NewOpenAICompat()
+	_, err := NewOpenAICompat(ResolveOpts{})
 	if err != nil {
 		t.Fatalf("compat provider should not require an API key, got: %v", err)
 	}

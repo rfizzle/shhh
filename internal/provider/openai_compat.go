@@ -20,16 +20,10 @@ type OpenAICompat struct {
 	baseURL string
 }
 
-func NewOpenAICompat() (*OpenAICompat, error) {
-	baseURL := os.Getenv("SHHH_COMPAT_BASE_URL")
-	if baseURL == "" {
-		baseURL = defaultCompatBaseURL
-	}
-	model := os.Getenv("SHHH_COMPAT_MODEL")
-	if model == "" {
-		model = defaultCompatModel
-	}
-	key := os.Getenv("SHHH_COMPAT_API_KEY")
+func NewOpenAICompat(opts ResolveOpts) (*OpenAICompat, error) {
+	baseURL := first(opts.BaseURL, os.Getenv("SHHH_COMPAT_BASE_URL"), defaultCompatBaseURL)
+	model := first(opts.Model, os.Getenv("SHHH_COMPAT_MODEL"), defaultCompatModel)
+	key := first(opts.APIKey, os.Getenv("SHHH_COMPAT_API_KEY"))
 
 	cfg := openai.DefaultConfig(key)
 	cfg.BaseURL = baseURL
@@ -38,6 +32,15 @@ func NewOpenAICompat() (*OpenAICompat, error) {
 		model:   model,
 		baseURL: baseURL,
 	}, nil
+}
+
+func first(vals ...string) string {
+	for _, v := range vals {
+		if v != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 func NewOpenAICompatWith(client *openai.Client, model, baseURL string) *OpenAICompat {
@@ -99,7 +102,7 @@ func (o *OpenAICompat) StreamCompletion(ctx context.Context, messages []Message,
 }
 
 func init() {
-	Register("openai-compatible", func() (Provider, error) {
-		return NewOpenAICompat()
+	Register("openai-compatible", func(opts ResolveOpts) (Provider, error) {
+		return NewOpenAICompat(opts)
 	})
 }

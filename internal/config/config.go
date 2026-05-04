@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 )
@@ -38,9 +39,13 @@ type AppearanceConfig struct {
 	AccentColor string `toml:"accent_color"`
 }
 
+func normalizeProvider(name string) string {
+	return strings.ReplaceAll(name, "_", "-")
+}
+
 // ProviderAPIKey returns the API key for the named provider, or empty string.
 func (c Config) ProviderAPIKey(name string) string {
-	switch name {
+	switch normalizeProvider(name) {
 	case "openai":
 		return c.Provider.OpenAI.APIKey
 	case "gemini":
@@ -55,7 +60,7 @@ func (c Config) ProviderAPIKey(name string) string {
 
 // ProviderModel returns the per-provider model override, or empty string.
 func (c Config) ProviderModel(name string) string {
-	switch name {
+	switch normalizeProvider(name) {
 	case "openai":
 		return c.Provider.OpenAI.Model
 	case "gemini":
@@ -70,7 +75,7 @@ func (c Config) ProviderModel(name string) string {
 
 // ProviderBaseURL returns the base URL for the named provider, or empty string.
 func (c Config) ProviderBaseURL(name string) string {
-	switch name {
+	switch normalizeProvider(name) {
 	case "openai-compatible":
 		return c.Provider.OpenAICompat.BaseURL
 	}
