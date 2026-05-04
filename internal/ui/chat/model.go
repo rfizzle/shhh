@@ -52,17 +52,17 @@ type Model struct {
 	input    textarea.Model
 	spinner  spinner.Model
 
-	history   *strings.Builder
-	streaming string
-	events    <-chan provider.StreamEvent
-	cancel    context.CancelFunc
-	state     state
-	width     int
-	height    int
-	ready          bool
-	atBottom       bool
-	quitting       bool
-	initialPrompt  string
+	history       *strings.Builder
+	streaming     string
+	events        <-chan provider.StreamEvent
+	cancel        context.CancelFunc
+	state         state
+	width         int
+	height        int
+	ready         bool
+	atBottom      bool
+	quitting      bool
+	initialPrompt string
 }
 
 func New(initialMessages []provider.Message, stream StreamFunc) Model {
