@@ -80,7 +80,7 @@ func newChatCmd() *cobra.Command {
 			if len(args) > 0 {
 				model = model.WithInitialPrompt(args[0])
 			}
-			program := tea.NewProgram(model, tea.WithAltScreen(), tea.WithMouseCellMotion())
+			program := tea.NewProgram(model, tea.WithAltScreen())
 			if _, err := program.Run(); err != nil {
 				fmt.Fprintln(os.Stderr, "error:", err)
 				os.Exit(1)
