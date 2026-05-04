@@ -50,7 +50,7 @@ type Model struct {
 	input    textarea.Model
 	spinner  spinner.Model
 
-	history   strings.Builder
+	history   *strings.Builder
 	streaming string
 	events    <-chan provider.StreamEvent
 	cancel    context.CancelFunc
@@ -80,6 +80,7 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 		stream:   stream,
 		input:    ta,
 		spinner:  s,
+		history:  &strings.Builder{},
 		state:    stateInput,
 		atBottom: true,
 	}
