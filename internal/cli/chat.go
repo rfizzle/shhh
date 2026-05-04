@@ -20,10 +20,10 @@ func newChatCmd() *cobra.Command {
 	var flags resolve.Opts
 
 	cmd := &cobra.Command{
-		Use:   "chat",
+		Use:   "chat [prompt]",
 		Short: "Start an interactive chat session",
 		Long:  "Open a multi-turn conversation with the LLM to explore complex tasks iteratively.",
-		Args:  cobra.NoArgs,
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := ConfigFrom(cmd.Context())
 
@@ -78,6 +78,9 @@ func newChatCmd() *cobra.Command {
 			}
 
 			model := chat.New(messages, stream).WithToolExecutor(tools.Execute).WithDB(db)
+			if len(args) > 0 {
+				model = model.WithInitialPrompt(args[0])
+			}
 			program := tea.NewProgram(model, tea.WithAltScreen(), tea.WithMouseCellMotion())
 			if _, err := program.Run(); err != nil {
 				fmt.Fprintln(os.Stderr, "error:", err)

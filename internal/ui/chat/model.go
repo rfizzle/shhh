@@ -40,6 +40,7 @@ type streamStartedMsg struct {
 type toolCallsMsg struct {
 	calls []provider.ToolCall
 }
+type initialPromptMsg struct{}
 
 type Model struct {
 	messages []provider.Message
@@ -58,9 +59,10 @@ type Model struct {
 	state     state
 	width     int
 	height    int
-	ready     bool
-	atBottom  bool
-	quitting  bool
+	ready          bool
+	atBottom       bool
+	quitting       bool
+	initialPrompt  string
 }
 
 func New(initialMessages []provider.Message, stream StreamFunc) Model {
@@ -97,10 +99,19 @@ func (m Model) WithDB(db *storage.DB) Model {
 	return m
 }
 
+func (m Model) WithInitialPrompt(prompt string) Model {
+	m.initialPrompt = prompt
+	return m
+}
+
 func (m Model) Messages() []provider.Message { return m.messages }
 
 func (m Model) Init() tea.Cmd {
-	return tea.Batch(textarea.Blink, m.spinner.Tick)
+	cmds := []tea.Cmd{textarea.Blink, m.spinner.Tick}
+	if m.initialPrompt != "" {
+		cmds = append(cmds, func() tea.Msg { return initialPromptMsg{} })
+	}
+	return tea.Batch(cmds...)
 }
 
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -178,6 +189,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, m.requestStream()
 			}
 		}
+
+	case initialPromptMsg:
+		text := m.initialPrompt
+		m.initialPrompt = ""
+		m.messages = append(m.messages, provider.Message{
+			Role:    provider.RoleUser,
+			Content: text,
+		})
+		m.history.WriteString(userStyle.Render("You") + "\n")
+		m.history.WriteString(m.wordWrap(text, m.width) + "\n\n")
+		m.state = stateStreaming
+		m.streaming = ""
+		m.atBottom = true
+		m.viewport.SetContent(m.renderHistory())
+		m.viewport.GotoBottom()
+		return m, m.requestStream()
 
 	case streamStartedMsg:
 		m.events = msg.events
