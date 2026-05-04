@@ -29,6 +29,42 @@ func TestResolve_Defaults(t *testing.T) {
 	}
 }
 
+func TestResolve_ConfigOverridesDefaults(t *testing.T) {
+	clearEnv(t)
+
+	r := Resolve(Opts{
+		ConfigProvider: "gemini",
+		ConfigModel:    "gemini-2.5-flash",
+		ConfigAPIKey:   "ai-config-key",
+	})
+	if r.Provider != "gemini" {
+		t.Errorf("expected provider 'gemini', got %q", r.Provider)
+	}
+	if r.Model != "gemini-2.5-flash" {
+		t.Errorf("expected model 'gemini-2.5-flash', got %q", r.Model)
+	}
+	if r.APIKey != "ai-config-key" {
+		t.Errorf("expected API key 'ai-config-key', got %q", r.APIKey)
+	}
+}
+
+func TestResolve_EnvOverridesConfig(t *testing.T) {
+	clearEnv(t)
+	os.Setenv("SHHH_PROVIDER", "openai-compatible")
+	os.Setenv("SHHH_MODEL", "llama3")
+
+	r := Resolve(Opts{
+		ConfigProvider: "gemini",
+		ConfigModel:    "gemini-2.5-flash",
+	})
+	if r.Provider != "openai-compatible" {
+		t.Errorf("expected provider 'openai-compatible', got %q", r.Provider)
+	}
+	if r.Model != "llama3" {
+		t.Errorf("expected model 'llama3', got %q", r.Model)
+	}
+}
+
 func TestResolve_EnvOverridesDefaults(t *testing.T) {
 	clearEnv(t)
 	os.Setenv("SHHH_PROVIDER", "openai-compatible")
@@ -57,6 +93,28 @@ func TestResolve_FlagsOverrideEnv(t *testing.T) {
 	}
 	if r.Model != "gpt-4o-mini" {
 		t.Errorf("expected model 'gpt-4o-mini', got %q", r.Model)
+	}
+}
+
+func TestResolve_FlagsOverrideConfig(t *testing.T) {
+	clearEnv(t)
+
+	r := Resolve(Opts{
+		FlagProvider:   "openai",
+		FlagModel:      "gpt-4o-mini",
+		FlagAPIKey:     "sk-flag",
+		ConfigProvider: "gemini",
+		ConfigModel:    "gemini-2.5-flash",
+		ConfigAPIKey:   "ai-config",
+	})
+	if r.Provider != "openai" {
+		t.Errorf("expected provider 'openai', got %q", r.Provider)
+	}
+	if r.Model != "gpt-4o-mini" {
+		t.Errorf("expected model 'gpt-4o-mini', got %q", r.Model)
+	}
+	if r.APIKey != "sk-flag" {
+		t.Errorf("expected API key 'sk-flag', got %q", r.APIKey)
 	}
 }
 
@@ -92,5 +150,14 @@ func TestResolve_EmptyFlagsFallThrough(t *testing.T) {
 	}
 	if r.Model != DefaultModel {
 		t.Errorf("expected default model, got %q", r.Model)
+	}
+}
+
+func TestResolve_ConfigAPIKeyUsedWhenNoFlag(t *testing.T) {
+	clearEnv(t)
+
+	r := Resolve(Opts{ConfigAPIKey: "cfg-key"})
+	if r.APIKey != "cfg-key" {
+		t.Errorf("expected API key 'cfg-key', got %q", r.APIKey)
 	}
 }
