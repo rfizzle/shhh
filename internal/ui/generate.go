@@ -18,6 +18,7 @@ const (
 	phaseRevise
 	phaseEdit
 	phaseExplain
+	phaseSave
 	phaseDone
 )
 
@@ -30,6 +31,7 @@ type GenerateModel struct {
 	actionBar     ActionBarModel
 	reviseInput   textinput.Model
 	editInput     textinput.Model
+	saveInput     textinput.Model
 	explainStream StreamModel
 	messages      []provider.Message
 	newStream     NewStreamFunc
@@ -39,11 +41,12 @@ type GenerateModel struct {
 }
 
 type GenerateResult struct {
-	Command   string
-	Action    Action
-	Feedback  string
-	Cancelled bool
-	Err       error
+	Command    string
+	Action     Action
+	Feedback   string
+	SaveName   string
+	Cancelled  bool
+	Err        error
 }
 
 func NewGenerateModel(events <-chan provider.StreamEvent, cancel context.CancelFunc, messages []provider.Message, newStream NewStreamFunc, newExplain ExplainStreamFunc) GenerateModel {
@@ -52,6 +55,9 @@ func NewGenerateModel(events <-chan provider.StreamEvent, cancel context.CancelF
 	ti.CharLimit = 500
 	ei := textinput.New()
 	ei.CharLimit = 1000
+	si := textinput.New()
+	si.Placeholder = "Snippet name…"
+	si.CharLimit = 100
 	msgs := make([]provider.Message, len(messages))
 	copy(msgs, messages)
 	return GenerateModel{
@@ -59,6 +65,7 @@ func NewGenerateModel(events <-chan provider.StreamEvent, cancel context.CancelF
 		actionBar:   NewActionBarModel(),
 		reviseInput: ti,
 		editInput:   ei,
+		saveInput:   si,
 		messages:    msgs,
 		newStream:   newStream,
 		newExplain:  newExplain,
@@ -84,10 +91,39 @@ func (m GenerateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateRevise(msg)
 	case phaseEdit:
 		return m.updateEdit(msg)
+	case phaseSave:
+		return m.updateSave(msg)
 	case phaseExplain:
 		return m.updateExplain(msg)
 	}
 	return m, nil
+}
+
+func (m GenerateModel) updateSave(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.Type {
+		case tea.KeyEnter:
+			name := strings.TrimSpace(m.saveInput.Value())
+			if name == "" {
+				return m, nil
+			}
+			m.phase = phaseDone
+			m.result = GenerateResult{
+				Command:  m.stream.Output(),
+				Action:   ActionSave,
+				SaveName: name,
+			}
+			return m, tea.Quit
+		case tea.KeyEscape:
+			m.saveInput.Blur()
+			m.phase = phaseAction
+			return m, nil
+		}
+	}
+	var cmd tea.Cmd
+	m.saveInput, cmd = m.saveInput.Update(msg)
+	return m, cmd
 }
 
 func (m GenerateModel) updateStreaming(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -140,6 +176,14 @@ func (m GenerateModel) updateAction(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.explainStream = NewStreamModel(events, cancel)
 		m.phase = phaseExplain
 		return m, m.explainStream.Init()
+	}
+
+	if m.actionBar.Selected() == ActionSave {
+		m.phase = phaseSave
+		m.saveInput.Reset()
+		m.saveInput.Focus()
+		m.actionBar = m.actionBar.Reset()
+		return m, m.saveInput.Cursor.BlinkCmd()
 	}
 
 	if m.actionBar.Selected() == ActionRevise {
@@ -318,6 +362,8 @@ func (m GenerateModel) View() string {
 		return view + explanation + "\n" + m.actionBar.View()
 	case phaseEdit:
 		return EditPromptStyle.Render("Edit: ") + m.editInput.View()
+	case phaseSave:
+		return m.stream.View() + "\n" + RevisePromptStyle.Render("Snippet name: ") + m.saveInput.View()
 	case phaseRevise:
 		return m.stream.View() + "\n" + RevisePromptStyle.Render("Feedback: ") + m.reviseInput.View()
 	case phaseExplain:

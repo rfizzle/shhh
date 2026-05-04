@@ -370,3 +370,83 @@ func TestListHistory(t *testing.T) {
 		t.Fatalf("unexpected command: %q", filtered[0].Command)
 	}
 }
+
+func TestSaveAndListSnippets(t *testing.T) {
+	db := openTestDB(t)
+
+	if err := db.SaveSnippet("deploy", "kubectl apply -f deploy.yaml"); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	if err := db.SaveSnippet("logs", "kubectl logs -f app"); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+
+	snippets, err := db.ListSnippets()
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if len(snippets) != 2 {
+		t.Fatalf("expected 2 snippets, got %d", len(snippets))
+	}
+}
+
+func TestGetSnippet(t *testing.T) {
+	db := openTestDB(t)
+
+	if err := db.SaveSnippet("test", "echo hello"); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+
+	s, err := db.GetSnippet("test")
+	if err != nil {
+		t.Fatalf("get: %v", err)
+	}
+	if s.Command != "echo hello" {
+		t.Fatalf("expected 'echo hello', got %q", s.Command)
+	}
+}
+
+func TestGetSnippet_NotFound(t *testing.T) {
+	db := openTestDB(t)
+
+	_, err := db.GetSnippet("nope")
+	if err == nil {
+		t.Fatal("expected error")
+	}
+}
+
+func TestDeleteSnippet(t *testing.T) {
+	db := openTestDB(t)
+
+	if err := db.SaveSnippet("rm-me", "echo bye"); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+
+	if err := db.DeleteSnippet("rm-me"); err != nil {
+		t.Fatalf("delete: %v", err)
+	}
+
+	_, err := db.GetSnippet("rm-me")
+	if err == nil {
+		t.Fatal("expected error after delete")
+	}
+}
+
+func TestSaveSnippet_Overwrite(t *testing.T) {
+	db := openTestDB(t)
+
+	if err := db.SaveSnippet("up", "v1"); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	if err := db.SaveSnippet("up", "v2"); err != nil {
+		t.Fatalf("overwrite: %v", err)
+	}
+
+	s, err := db.GetSnippet("up")
+	if err != nil {
+		t.Fatalf("get: %v", err)
+	}
+	if s.Command != "v2" {
+		t.Fatalf("expected 'v2', got %q", s.Command)
+	}
+}

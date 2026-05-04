@@ -17,6 +17,7 @@ const (
 	ActionExplain
 	ActionRunAll
 	ActionRunStep
+	ActionSave
 )
 
 type ActionSelectedMsg struct {
@@ -32,6 +33,7 @@ type actionItem struct {
 var singleActions = []actionItem{
 	{"Run", "r", ActionRun},
 	{"Copy", "c", ActionCopy},
+	{"Save", "s", ActionSave},
 	{"Edit", "e", ActionEdit},
 	{"Explain", "x", ActionExplain},
 	{"Revise", "v", ActionRevise},
@@ -40,8 +42,9 @@ var singleActions = []actionItem{
 
 var multiActions = []actionItem{
 	{"Run all", "r", ActionRunAll},
-	{"Step-by-step", "s", ActionRunStep},
+	{"Step-by-step", "t", ActionRunStep},
 	{"Copy", "c", ActionCopy},
+	{"Save", "s", ActionSave},
 	{"Edit", "e", ActionEdit},
 	{"Revise", "v", ActionRevise},
 	{"Cancel", "esc", ActionCancel},

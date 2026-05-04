@@ -183,6 +183,8 @@ func NewRootCmd() *cobra.Command {
 					actionName = "revise"
 				case ui.ActionEdit:
 					actionName = "edit"
+				case ui.ActionSave:
+					actionName = "save"
 				case ui.ActionCancel:
 					actionName = "cancel"
 				}
@@ -232,6 +234,14 @@ func NewRootCmd() *cobra.Command {
 						os.Exit(code)
 					}
 				}
+			case ui.ActionSave:
+				if db != nil && result.SaveName != "" {
+					if err := db.SaveSnippet(result.SaveName, result.Command); err != nil {
+						fmt.Fprintf(os.Stderr, "Error saving snippet: %v\n", err)
+					} else {
+						fmt.Fprintf(os.Stderr, "Saved snippet %q.\n", result.SaveName)
+					}
+				}
 			case ui.ActionCopy:
 				cr := clipboard.Copy(result.Command)
 				if cr.Warning != "" {
@@ -257,6 +267,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newChatCmd())
 	cmd.AddCommand(newMetricsCmd())
 	cmd.AddCommand(newHistoryCmd())
+	cmd.AddCommand(newSnippetsCmd())
 
 	return cmd
 }
