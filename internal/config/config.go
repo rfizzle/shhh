@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -98,6 +99,69 @@ func LoadFrom(paths ...string) (Config, error) {
 		return cfg, nil
 	}
 	return Config{}, nil
+}
+
+func Set(cfg *Config, key, value string) error {
+	switch key {
+	case "provider.default":
+		cfg.Provider.Default = value
+	case "provider.model":
+		cfg.Provider.Model = value
+	case "provider.openai.api_key":
+		cfg.Provider.OpenAI.APIKey = value
+	case "provider.openai.model":
+		cfg.Provider.OpenAI.Model = value
+	case "provider.gemini.api_key":
+		cfg.Provider.Gemini.APIKey = value
+	case "provider.gemini.model":
+		cfg.Provider.Gemini.Model = value
+	case "provider.openrouter.api_key":
+		cfg.Provider.OpenRouter.APIKey = value
+	case "provider.openrouter.model":
+		cfg.Provider.OpenRouter.Model = value
+	case "provider.openai_compatible.api_key":
+		cfg.Provider.OpenAICompat.APIKey = value
+	case "provider.openai_compatible.model":
+		cfg.Provider.OpenAICompat.Model = value
+	case "provider.openai_compatible.base_url":
+		cfg.Provider.OpenAICompat.BaseURL = value
+	case "behavior.silent_mode":
+		cfg.Behavior.SilentMode = value == "true"
+	case "behavior.shell":
+		cfg.Behavior.Shell = value
+	case "appearance.accent_color":
+		cfg.Appearance.AccentColor = value
+	default:
+		return fmt.Errorf("unknown config key: %s", key)
+	}
+	return nil
+}
+
+func Save(cfg Config) error {
+	p := WritePath()
+	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
+		return err
+	}
+	f, err := os.Create(p)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	return toml.NewEncoder(f).Encode(cfg)
+}
+
+func WritePath() string {
+	paths := Paths()
+	for _, p := range paths {
+		if _, err := os.Stat(p); err == nil {
+			return p
+		}
+	}
+	if len(paths) > 0 {
+		return paths[0]
+	}
+	home, _ := os.UserHomeDir()
+	return filepath.Join(home, ".config", "shhh", "config.toml")
 }
 
 // Paths returns config file paths in search order (highest priority first).

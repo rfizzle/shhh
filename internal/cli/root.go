@@ -188,6 +188,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.Flags().BoolVarP(&silentMode, "silent", "s", false, "suppress explanation output")
 
 	cmd.AddCommand(newInitCmd())
+	cmd.AddCommand(newConfigCmd())
 
 	return cmd
 }
