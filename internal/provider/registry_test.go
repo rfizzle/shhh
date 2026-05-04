@@ -35,6 +35,21 @@ func TestResolve_Unknown(t *testing.T) {
 	}
 }
 
+func TestResolve_UnderscoreNormalization(t *testing.T) {
+	Register("my-provider", func() (Provider, error) {
+		return &stubProvider{}, nil
+	})
+	t.Cleanup(func() { delete(registry, "my-provider") })
+
+	p, err := Resolve("my_provider")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if p.Name() != "stub" {
+		t.Errorf("expected name 'stub', got %q", p.Name())
+	}
+}
+
 func TestAvailable(t *testing.T) {
 	Register("a", func() (Provider, error) { return &stubProvider{}, nil })
 	Register("b", func() (Provider, error) { return &stubProvider{}, nil })

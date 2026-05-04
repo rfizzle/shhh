@@ -1,6 +1,9 @@
 package provider
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Factory func() (Provider, error)
 
@@ -10,8 +13,12 @@ func Register(name string, f Factory) {
 	registry[name] = f
 }
 
+func normalizeName(name string) string {
+	return strings.ReplaceAll(name, "_", "-")
+}
+
 func Resolve(name string) (Provider, error) {
-	f, ok := registry[name]
+	f, ok := registry[normalizeName(name)]
 	if !ok {
 		return nil, fmt.Errorf("unknown provider: %q", name)
 	}
