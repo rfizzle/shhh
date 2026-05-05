@@ -75,14 +75,14 @@ type menuItem struct {
 var menuItems = []menuItem{
 	{"provider.default", "Default provider"},
 	{"provider.model", "Default model"},
-	{"provider.openai.api_key", "OpenAI API key"},
-	{"provider.gemini.api_key", "Gemini API key"},
-	{"provider.gemini.model", "Gemini model"},
-	{"provider.openrouter.api_key", "OpenRouter API key"},
-	{"provider.openrouter.model", "OpenRouter model"},
-	{"provider.openai_compatible.base_url", "OpenAI-compatible base URL"},
-	{"provider.openai_compatible.api_key", "OpenAI-compatible API key"},
+	{"provider.api_key", "API key"},
+	{"provider.base_url", "Base URL"},
+	{"provider.name", "Display name"},
 	{"behavior.silent_mode", "Silent mode"},
+	{"behavior.shell", "Shell override"},
+	{"behavior.safety_warnings", "Safety warnings"},
+	{"behavior.system_prompt_extra", "Extra system prompt"},
+	{"appearance.accent_color", "Accent color"},
 }
 
 type configModel struct {
@@ -161,33 +161,7 @@ func (m configModel) updateEdit(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m configModel) currentValue() string {
-	item := menuItems[m.cursor]
-	switch item.key {
-	case "provider.default":
-		return m.cfg.Provider.Default
-	case "provider.model":
-		return m.cfg.Provider.Model
-	case "provider.openai.api_key":
-		return m.cfg.Provider.OpenAI.APIKey
-	case "provider.gemini.api_key":
-		return m.cfg.Provider.Gemini.APIKey
-	case "provider.gemini.model":
-		return m.cfg.Provider.Gemini.Model
-	case "provider.openrouter.api_key":
-		return m.cfg.Provider.OpenRouter.APIKey
-	case "provider.openrouter.model":
-		return m.cfg.Provider.OpenRouter.Model
-	case "provider.openai_compatible.base_url":
-		return m.cfg.Provider.OpenAICompat.BaseURL
-	case "provider.openai_compatible.api_key":
-		return m.cfg.Provider.OpenAICompat.APIKey
-	case "behavior.silent_mode":
-		if m.cfg.Behavior.SilentMode {
-			return "true"
-		}
-		return "false"
-	}
-	return ""
+	return m.currentValueForKey(menuItems[m.cursor].key)
 }
 
 func maskKey(s string) string {
@@ -199,7 +173,7 @@ func maskKey(s string) string {
 
 func (m configModel) displayValue(idx int) string {
 	item := menuItems[idx]
-	val := m.valueForItem(item.key)
+	val := m.currentValueForKey(item.key)
 	if val == "" {
 		return "(not set)"
 	}
@@ -209,31 +183,37 @@ func (m configModel) displayValue(idx int) string {
 	return val
 }
 
-func (m configModel) valueForItem(key string) string {
+func (m configModel) currentValueForKey(key string) string {
 	switch key {
 	case "provider.default":
 		return m.cfg.Provider.Default
 	case "provider.model":
 		return m.cfg.Provider.Model
-	case "provider.openai.api_key":
-		return m.cfg.Provider.OpenAI.APIKey
-	case "provider.gemini.api_key":
-		return m.cfg.Provider.Gemini.APIKey
-	case "provider.gemini.model":
-		return m.cfg.Provider.Gemini.Model
-	case "provider.openrouter.api_key":
-		return m.cfg.Provider.OpenRouter.APIKey
-	case "provider.openrouter.model":
-		return m.cfg.Provider.OpenRouter.Model
-	case "provider.openai_compatible.base_url":
-		return m.cfg.Provider.OpenAICompat.BaseURL
-	case "provider.openai_compatible.api_key":
-		return m.cfg.Provider.OpenAICompat.APIKey
+	case "provider.api_key":
+		return m.cfg.Provider.APIKey
+	case "provider.base_url":
+		return m.cfg.Provider.BaseURL
+	case "provider.name":
+		return m.cfg.Provider.Name
 	case "behavior.silent_mode":
 		if m.cfg.Behavior.SilentMode {
 			return "true"
 		}
 		return "false"
+	case "behavior.shell":
+		return m.cfg.Behavior.Shell
+	case "behavior.safety_warnings":
+		if m.cfg.Behavior.SafetyWarnings == nil {
+			return "true"
+		}
+		if *m.cfg.Behavior.SafetyWarnings {
+			return "true"
+		}
+		return "false"
+	case "behavior.system_prompt_extra":
+		return m.cfg.Behavior.SystemPromptExtra
+	case "appearance.accent_color":
+		return m.cfg.Appearance.AccentColor
 	}
 	return ""
 }

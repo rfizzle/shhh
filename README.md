@@ -62,7 +62,7 @@ Or set values directly:
 
 ```bash
 shhh config set provider.default openrouter
-shhh config set provider.openrouter.api_key sk-or-...
+shhh config set provider.api_key sk-or-...
 ```
 
 Config file location:
@@ -74,40 +74,51 @@ Config file location:
 ```toml
 [provider]
 default = "openai"
-model = "gpt-4o"
-
-[provider.openai]
 api_key = "sk-..."
+```
 
-[provider.gemini]
-api_key = "AI..."
-model = "gemini-2.5-flash"
+A more complete example:
 
-[provider.openrouter]
-api_key = "sk-or-..."
+```toml
+[provider]
+default = "openrouter"
 model = "anthropic/claude-sonnet-4-6"
-
-[provider.openai_compatible]
-base_url = "http://localhost:11434/v1"
-model = "llama3"
-name = "Ollama"
+api_key = "sk-or-..."
 
 [behavior]
-silent_mode = false
-shell = ""
+safety_warnings = true
+system_prompt_extra = "Prefer ripgrep over grep. Use docker compose for services."
 
 [appearance]
 accent_color = "cyan"
 ```
 
+### Config keys
+
+| Key | Description |
+|---|---|
+| `provider.default` | Provider name |
+| `provider.model` | Model to use |
+| `provider.api_key` | API key |
+| `provider.base_url` | Base URL override (each provider has its own default) |
+| `provider.name` | Custom display name |
+| `behavior.silent_mode` | Suppress explanation output |
+| `behavior.shell` | Override detected shell |
+| `behavior.safety_warnings` | Warn before destructive commands (default: true) |
+| `behavior.context_max_tokens` | Max tokens for stdin context (default: 8000) |
+| `behavior.system_prompt_extra` | Extra text appended to the system prompt |
+| `appearance.accent_color` | TUI accent color |
+
 ## Providers
 
-| Provider | Name | Default Model |
-|---|---|---|
-| OpenAI | `openai` | `gpt-4o` |
-| Google Gemini | `gemini` | `gemini-2.5-flash` |
-| OpenRouter | `openrouter` | `anthropic/claude-sonnet-4-6` |
-| OpenAI-Compatible (Ollama, vLLM, LM Studio, etc.) | `openai-compatible` | `llama3` |
+| Provider | Name | Default Model | Default Base URL |
+|---|---|---|---|
+| OpenAI | `openai` | `gpt-4o` | `https://api.openai.com/v1` |
+| Google Gemini | `gemini` | `gemini-2.5-flash` | Google AI API |
+| OpenRouter | `openrouter` | `anthropic/claude-sonnet-4-6` | `https://openrouter.ai/api/v1` |
+| OpenAI-Compatible | `openai-compatible` | `llama3` | `http://localhost:11434/v1` |
+
+Each provider picks a fast, capable default model. Override with `provider.model` in config or `SHHH_MODEL` env var.
 
 ## Environment Variables
 
@@ -122,6 +133,8 @@ accent_color = "cyan"
 
 ### Provider-Specific Fallbacks
 
+These are checked when `SHHH_API_KEY` is not set:
+
 | Variable | Provider |
 |---|---|
 | `OPENAI_API_KEY` | OpenAI |
@@ -131,7 +144,7 @@ accent_color = "cyan"
 ### Precedence
 
 ```
-CLI flag > SHHH_* env var > Provider-specific env var > Config file > Default
+CLI flag > SHHH_* env var > Provider-specific env var > Config file > Provider default
 ```
 
 ## Usage
@@ -166,6 +179,12 @@ echo "list all docker containers" | shhh
 shhh --raw "find large files" | sh
 ```
 
+When both stdin content and arguments are provided, the stdin is injected as context:
+
+```bash
+cat error.log | shhh "explain this error"
+```
+
 ### Explain a command
 
 ```bash
@@ -189,6 +208,16 @@ shhh init fish | source
 
 Type a description on your command line, press Ctrl+K, and it's replaced with the generated command.
 
+### Project context
+
+Create a `.shhh` file in your project root to give shhh context about your project's tooling and conventions:
+
+```bash
+shhh init --project
+```
+
+The contents of `.shhh` are appended to the system prompt when running shhh from that directory (or any subdirectory).
+
 ## Commands
 
 | Command | Description |
@@ -198,6 +227,7 @@ Type a description on your command line, press Ctrl+K, and it's replaced with th
 | `shhh config` | Interactive configuration wizard |
 | `shhh config set <key> <value>` | Set a config value |
 | `shhh init <shell>` | Output shell integration snippet |
+| `shhh init --project` | Create a `.shhh` project context file |
 | `shhh history` | Browse past prompts and commands |
 | `shhh metrics` | Show provider usage statistics |
 | `shhh snippets` | List saved command snippets |
@@ -205,6 +235,7 @@ Type a description on your command line, press Ctrl+K, and it's replaced with th
 | `shhh snippets copy <name>` | Copy a snippet to clipboard |
 | `shhh snippets show <name>` | Display a snippet |
 | `shhh snippets delete <name>` | Delete a snippet |
+| `shhh completion <shell>` | Generate shell completion script |
 
 ### Flags
 
@@ -216,6 +247,15 @@ Type a description on your command line, press Ctrl+K, and it's replaced with th
 | `--raw` | Force pipe mode (no TUI) |
 | `-e, --explain` | Automatically explain the generated command |
 | `-s, --silent` | Suppress explanation output |
+| `--version` | Print version |
+
+## Safety Warnings
+
+shhh detects potentially destructive commands (recursive deletes, force pushes, disk writes, etc.) and prompts for confirmation before execution. Disable with:
+
+```bash
+shhh config set behavior.safety_warnings false
+```
 
 ## Data Storage
 

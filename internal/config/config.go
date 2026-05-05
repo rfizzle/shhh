@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 
 	"github.com/BurntSushi/toml"
 )
@@ -17,17 +16,9 @@ type Config struct {
 }
 
 type ProviderConfig struct {
-	Default      string         `toml:"default"`
-	Model        string         `toml:"model"`
-	OpenAI       ProviderDetail `toml:"openai"`
-	Gemini       ProviderDetail `toml:"gemini"`
-	OpenRouter   ProviderDetail `toml:"openrouter"`
-	OpenAICompat ProviderDetail `toml:"openai_compatible"`
-}
-
-type ProviderDetail struct {
-	APIKey  string `toml:"api_key"`
+	Default string `toml:"default"`
 	Model   string `toml:"model"`
+	APIKey  string `toml:"api_key"`
 	BaseURL string `toml:"base_url"`
 	Name    string `toml:"name"`
 }
@@ -60,58 +51,19 @@ func (c Config) EffectiveContextMaxTokens() int {
 	return DefaultContextMaxTokens
 }
 
-func normalizeProvider(name string) string {
-	return strings.ReplaceAll(name, "_", "-")
+// ProviderAPIKey returns the configured API key.
+func (c Config) ProviderAPIKey() string {
+	return c.Provider.APIKey
 }
 
-// ProviderAPIKey returns the API key for the named provider, or empty string.
-func (c Config) ProviderAPIKey(name string) string {
-	switch normalizeProvider(name) {
-	case "openai":
-		return c.Provider.OpenAI.APIKey
-	case "gemini":
-		return c.Provider.Gemini.APIKey
-	case "openrouter":
-		return c.Provider.OpenRouter.APIKey
-	case "openai-compatible":
-		return c.Provider.OpenAICompat.APIKey
-	}
-	return ""
+// ProviderBaseURL returns the configured base URL.
+func (c Config) ProviderBaseURL() string {
+	return c.Provider.BaseURL
 }
 
-// ProviderModel returns the per-provider model override, or empty string.
-func (c Config) ProviderModel(name string) string {
-	switch normalizeProvider(name) {
-	case "openai":
-		return c.Provider.OpenAI.Model
-	case "gemini":
-		return c.Provider.Gemini.Model
-	case "openrouter":
-		return c.Provider.OpenRouter.Model
-	case "openai-compatible":
-		return c.Provider.OpenAICompat.Model
-	}
-	return ""
-}
-
-// ProviderName returns the custom display name for the named provider, or empty string.
-func (c Config) ProviderName(name string) string {
-	switch normalizeProvider(name) {
-	case "openai-compatible":
-		return c.Provider.OpenAICompat.Name
-	}
-	return ""
-}
-
-// ProviderBaseURL returns the base URL for the named provider, or empty string.
-func (c Config) ProviderBaseURL(name string) string {
-	switch normalizeProvider(name) {
-	case "openrouter":
-		return c.Provider.OpenRouter.BaseURL
-	case "openai-compatible":
-		return c.Provider.OpenAICompat.BaseURL
-	}
-	return ""
+// ProviderDisplayName returns the configured custom display name.
+func (c Config) ProviderDisplayName() string {
+	return c.Provider.Name
 }
 
 func Load() (Config, error) {
@@ -138,26 +90,12 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Provider.Default = value
 	case "provider.model":
 		cfg.Provider.Model = value
-	case "provider.openai.api_key":
-		cfg.Provider.OpenAI.APIKey = value
-	case "provider.openai.model":
-		cfg.Provider.OpenAI.Model = value
-	case "provider.gemini.api_key":
-		cfg.Provider.Gemini.APIKey = value
-	case "provider.gemini.model":
-		cfg.Provider.Gemini.Model = value
-	case "provider.openrouter.api_key":
-		cfg.Provider.OpenRouter.APIKey = value
-	case "provider.openrouter.model":
-		cfg.Provider.OpenRouter.Model = value
-	case "provider.openai_compatible.api_key":
-		cfg.Provider.OpenAICompat.APIKey = value
-	case "provider.openai_compatible.model":
-		cfg.Provider.OpenAICompat.Model = value
-	case "provider.openai_compatible.base_url":
-		cfg.Provider.OpenAICompat.BaseURL = value
-	case "provider.openai_compatible.name":
-		cfg.Provider.OpenAICompat.Name = value
+	case "provider.api_key":
+		cfg.Provider.APIKey = value
+	case "provider.base_url":
+		cfg.Provider.BaseURL = value
+	case "provider.name":
+		cfg.Provider.Name = value
 	case "behavior.silent_mode":
 		cfg.Behavior.SilentMode = value == "true"
 	case "behavior.shell":

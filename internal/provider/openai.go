@@ -20,14 +20,21 @@ type OpenAI struct {
 	classify func(error) error
 }
 
+const defaultOpenAIBaseURL = "https://api.openai.com/v1"
+
 func NewOpenAI(opts ResolveOpts) (*OpenAI, error) {
 	key := first(opts.APIKey, os.Getenv("SHHH_API_KEY"), os.Getenv("OPENAI_API_KEY"), opts.ConfigAPIKey)
 	if key == "" {
 		return nil, fmt.Errorf("SHHH_API_KEY or OPENAI_API_KEY is not set")
 	}
 	model := first(opts.Model, defaultOpenAIModel)
+	baseURL := first(opts.BaseURL, os.Getenv("SHHH_BASE_URL"), opts.ConfigBaseURL, defaultOpenAIBaseURL)
+
+	cfg := openai.DefaultConfig(key)
+	cfg.BaseURL = baseURL
+
 	return &OpenAI{
-		client:   openai.NewClient(key),
+		client:   openai.NewClientWithConfig(cfg),
 		model:    model,
 		classify: newClassifyError("SHHH_API_KEY or OPENAI_API_KEY"),
 	}, nil

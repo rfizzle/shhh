@@ -2,19 +2,22 @@ package resolve
 
 import "os"
 
-const (
-	DefaultProvider = "openai"
-	DefaultModel    = "gpt-4o"
-)
+const DefaultProvider = "openai"
+
+var defaultModels = map[string]string{
+	"openai":          "gpt-4o",
+	"gemini":          "gemini-2.5-flash",
+	"openrouter":      "anthropic/claude-sonnet-4-6",
+	"openai-compatible": "llama3",
+}
 
 type Opts struct {
 	FlagProvider string
 	FlagModel    string
 	FlagAPIKey   string
 
-	ConfigProvider      string
-	ConfigModel         string
-	ConfigProviderModel string
+	ConfigProvider string
+	ConfigModel    string
 }
 
 type Resolved struct {
@@ -23,10 +26,16 @@ type Resolved struct {
 }
 
 func Resolve(opts Opts) Resolved {
+	provider := First(opts.FlagProvider, os.Getenv("SHHH_PROVIDER"), opts.ConfigProvider, DefaultProvider)
+	model := First(opts.FlagModel, os.Getenv("SHHH_MODEL"), opts.ConfigModel, defaultModels[provider])
 	return Resolved{
-		Provider: First(opts.FlagProvider, os.Getenv("SHHH_PROVIDER"), opts.ConfigProvider, DefaultProvider),
-		Model:    First(opts.FlagModel, os.Getenv("SHHH_MODEL"), opts.ConfigProviderModel, opts.ConfigModel, DefaultModel),
+		Provider: provider,
+		Model:    model,
 	}
+}
+
+func DefaultModel(provider string) string {
+	return defaultModels[provider]
 }
 
 func First(values ...string) string {

@@ -21,8 +21,8 @@ func TestResolve_Defaults(t *testing.T) {
 	if r.Provider != DefaultProvider {
 		t.Errorf("expected provider %q, got %q", DefaultProvider, r.Provider)
 	}
-	if r.Model != DefaultModel {
-		t.Errorf("expected model %q, got %q", DefaultModel, r.Model)
+	if r.Model != "gpt-4o" {
+		t.Errorf("expected model 'gpt-4o', got %q", r.Model)
 	}
 }
 
@@ -127,44 +127,50 @@ func TestResolve_EmptyFlagsFallThrough(t *testing.T) {
 	if r.Provider != "openrouter" {
 		t.Errorf("expected provider 'openrouter' from env, got %q", r.Provider)
 	}
-	if r.Model != DefaultModel {
-		t.Errorf("expected default model, got %q", r.Model)
+	if r.Model != "anthropic/claude-sonnet-4-6" {
+		t.Errorf("expected default openrouter model, got %q", r.Model)
 	}
 }
 
-func TestResolve_ProviderModelOverridesGlobalModel(t *testing.T) {
+func TestResolve_DefaultModelMatchesProvider(t *testing.T) {
 	clearEnv(t)
 
-	r := Resolve(Opts{
-		ConfigProvider:      "gemini",
-		ConfigModel:         "gpt-4o",
-		ConfigProviderModel: "gemini-2.5-pro",
-	})
-	if r.Model != "gemini-2.5-pro" {
-		t.Errorf("expected per-provider model 'gemini-2.5-pro', got %q", r.Model)
+	tests := []struct {
+		provider string
+		model    string
+	}{
+		{"openai", "gpt-4o"},
+		{"gemini", "gemini-2.5-flash"},
+		{"openrouter", "anthropic/claude-sonnet-4-6"},
+		{"openai-compatible", "llama3"},
+	}
+	for _, tt := range tests {
+		r := Resolve(Opts{ConfigProvider: tt.provider})
+		if r.Model != tt.model {
+			t.Errorf("provider %q: expected model %q, got %q", tt.provider, tt.model, r.Model)
+		}
 	}
 }
 
-func TestResolve_FlagModelOverridesProviderModel(t *testing.T) {
-	clearEnv(t)
-
-	r := Resolve(Opts{
-		FlagModel:           "gpt-4o-mini",
-		ConfigProviderModel: "gemini-2.5-pro",
-		ConfigModel:         "gpt-4o",
-	})
-	if r.Model != "gpt-4o-mini" {
-		t.Errorf("expected flag model 'gpt-4o-mini', got %q", r.Model)
-	}
-}
-
-func TestResolve_GlobalModelUsedWhenNoProviderModel(t *testing.T) {
+func TestResolve_ConfigModelUsed(t *testing.T) {
 	clearEnv(t)
 
 	r := Resolve(Opts{
 		ConfigModel: "gpt-4o",
 	})
 	if r.Model != "gpt-4o" {
-		t.Errorf("expected global config model 'gpt-4o', got %q", r.Model)
+		t.Errorf("expected config model 'gpt-4o', got %q", r.Model)
+	}
+}
+
+func TestResolve_FlagModelOverridesConfigModel(t *testing.T) {
+	clearEnv(t)
+
+	r := Resolve(Opts{
+		FlagModel:   "gpt-4o-mini",
+		ConfigModel: "gpt-4o",
+	})
+	if r.Model != "gpt-4o-mini" {
+		t.Errorf("expected flag model 'gpt-4o-mini', got %q", r.Model)
 	}
 }

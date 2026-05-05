@@ -32,15 +32,13 @@ func newChatCmd() *cobra.Command {
 			flags.ConfigModel = cfg.Provider.Model
 
 			resolved := resolve.Resolve(flags)
-			flags.ConfigProviderModel = cfg.ProviderModel(resolved.Provider)
-			resolved = resolve.Resolve(flags)
 
 			p, err := provider.Resolve(resolved.Provider, provider.ResolveOpts{
 				APIKey:        flags.FlagAPIKey,
 				Model:         resolved.Model,
-				ConfigAPIKey:  cfg.ProviderAPIKey(resolved.Provider),
-				ConfigBaseURL: cfg.ProviderBaseURL(resolved.Provider),
-				ConfigName:    cfg.ProviderName(resolved.Provider),
+				ConfigAPIKey:  cfg.ProviderAPIKey(),
+				ConfigBaseURL: cfg.ProviderBaseURL(),
+				ConfigName:    cfg.ProviderDisplayName(),
 			})
 			if err != nil {
 				return err

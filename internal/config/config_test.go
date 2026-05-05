@@ -23,14 +23,9 @@ func TestLoadFrom_FullConfig(t *testing.T) {
 [provider]
 default = "openai"
 model = "gpt-4o"
-
-[provider.openai]
 api_key = "sk-test-key"
-
-[provider.openai_compatible]
-api_key = "local-key"
 base_url = "http://localhost:11434/v1"
-model = "llama3"
+name = "Ollama"
 
 [behavior]
 silent_mode = true
@@ -54,14 +49,14 @@ accent_color = "magenta"
 	if cfg.Provider.Model != "gpt-4o" {
 		t.Errorf("provider.model = %q, want %q", cfg.Provider.Model, "gpt-4o")
 	}
-	if cfg.Provider.OpenAI.APIKey != "sk-test-key" {
-		t.Errorf("provider.openai.api_key = %q, want %q", cfg.Provider.OpenAI.APIKey, "sk-test-key")
+	if cfg.Provider.APIKey != "sk-test-key" {
+		t.Errorf("provider.api_key = %q, want %q", cfg.Provider.APIKey, "sk-test-key")
 	}
-	if cfg.Provider.OpenAICompat.BaseURL != "http://localhost:11434/v1" {
-		t.Errorf("provider.openai_compatible.base_url = %q, want %q", cfg.Provider.OpenAICompat.BaseURL, "http://localhost:11434/v1")
+	if cfg.Provider.BaseURL != "http://localhost:11434/v1" {
+		t.Errorf("provider.base_url = %q, want %q", cfg.Provider.BaseURL, "http://localhost:11434/v1")
 	}
-	if cfg.Provider.OpenAICompat.Model != "llama3" {
-		t.Errorf("provider.openai_compatible.model = %q, want %q", cfg.Provider.OpenAICompat.Model, "llama3")
+	if cfg.Provider.Name != "Ollama" {
+		t.Errorf("provider.name = %q, want %q", cfg.Provider.Name, "Ollama")
 	}
 	if !cfg.Behavior.SilentMode {
 		t.Error("behavior.silent_mode = false, want true")
@@ -125,61 +120,35 @@ func TestLoadFrom_InvalidTOML(t *testing.T) {
 func TestProviderAPIKey(t *testing.T) {
 	cfg := Config{
 		Provider: ProviderConfig{
-			OpenAI:       ProviderDetail{APIKey: "sk-openai"},
-			Gemini:       ProviderDetail{APIKey: "ai-gemini"},
-			OpenRouter:   ProviderDetail{APIKey: "sk-or-test"},
-			OpenAICompat: ProviderDetail{APIKey: "local"},
+			APIKey: "sk-test-key",
 		},
 	}
 
-	tests := []struct {
-		name string
-		want string
-	}{
-		{"openai", "sk-openai"},
-		{"gemini", "ai-gemini"},
-		{"openrouter", "sk-or-test"},
-		{"openai-compatible", "local"},
-		{"unknown", ""},
+	if got := cfg.ProviderAPIKey(); got != "sk-test-key" {
+		t.Errorf("ProviderAPIKey() = %q, want %q", got, "sk-test-key")
 	}
-	for _, tt := range tests {
-		if got := cfg.ProviderAPIKey(tt.name); got != tt.want {
-			t.Errorf("ProviderAPIKey(%q) = %q, want %q", tt.name, got, tt.want)
-		}
+
+	empty := Config{}
+	if got := empty.ProviderAPIKey(); got != "" {
+		t.Errorf("ProviderAPIKey() on empty config = %q, want empty", got)
 	}
 }
 
-func TestProviderModel(t *testing.T) {
-	cfg := Config{
-		Provider: ProviderConfig{
-			OpenAI:       ProviderDetail{Model: "gpt-4o-mini"},
-			OpenAICompat: ProviderDetail{Model: "llama3"},
-		},
-	}
-
-	if got := cfg.ProviderModel("openai"); got != "gpt-4o-mini" {
-		t.Errorf("ProviderModel(openai) = %q, want %q", got, "gpt-4o-mini")
-	}
-	if got := cfg.ProviderModel("openai-compatible"); got != "llama3" {
-		t.Errorf("ProviderModel(openai-compatible) = %q, want %q", got, "llama3")
-	}
-	if got := cfg.ProviderModel("unknown"); got != "" {
-		t.Errorf("ProviderModel(unknown) = %q, want empty", got)
-	}
-}
 
 func TestProviderBaseURL(t *testing.T) {
 	cfg := Config{
 		Provider: ProviderConfig{
-			OpenAICompat: ProviderDetail{BaseURL: "http://localhost:11434/v1"},
+			BaseURL: "http://localhost:11434/v1",
 		},
 	}
 
-	if got := cfg.ProviderBaseURL("openai-compatible"); got != "http://localhost:11434/v1" {
-		t.Errorf("got %q, want %q", got, "http://localhost:11434/v1")
+	if got := cfg.ProviderBaseURL(); got != "http://localhost:11434/v1" {
+		t.Errorf("ProviderBaseURL() = %q, want %q", got, "http://localhost:11434/v1")
 	}
-	if got := cfg.ProviderBaseURL("openai"); got != "" {
-		t.Errorf("ProviderBaseURL(openai) = %q, want empty", got)
+
+	empty := Config{}
+	if got := empty.ProviderBaseURL(); got != "" {
+		t.Errorf("ProviderBaseURL() on empty config = %q, want empty", got)
 	}
 }
 
