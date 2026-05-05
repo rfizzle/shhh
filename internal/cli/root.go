@@ -11,6 +11,7 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/raw"
@@ -107,12 +108,14 @@ func NewRootCmd() *cobra.Command {
 				return err
 			}
 
+			promptExtra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra, project.FindContext())
+
 			if pipeMode {
 				err := raw.Run(cmd.Context(), raw.Opts{
 					Provider:          p,
 					Model:             resolved.Model,
 					Prompt:            userPrompt,
-					SystemPromptExtra: cfg.Behavior.SystemPromptExtra,
+					SystemPromptExtra: promptExtra,
 					Stdout:            os.Stdout,
 					Stderr:            os.Stderr,
 				})
@@ -124,7 +127,7 @@ func NewRootCmd() *cobra.Command {
 			}
 
 			info := shell.Detect()
-			sysPrompt := prompt.Build(info, cfg.Behavior.SystemPromptExtra)
+			sysPrompt := prompt.Build(info, promptExtra)
 
 			messages := []provider.Message{
 				{Role: provider.RoleSystem, Content: sysPrompt},

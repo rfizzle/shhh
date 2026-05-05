@@ -6,6 +6,7 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
@@ -46,7 +47,8 @@ func newChatCmd() *cobra.Command {
 			}
 
 			info := shell.Detect()
-			sysPrompt := prompt.BuildChat(info, cfg.Behavior.SystemPromptExtra)
+			promptExtra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra, project.FindContext())
+			sysPrompt := prompt.BuildChat(info, promptExtra)
 
 			messages := []provider.Message{
 				{Role: provider.RoleSystem, Content: sysPrompt},

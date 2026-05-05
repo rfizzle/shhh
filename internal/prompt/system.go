@@ -2,6 +2,7 @@ package prompt
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/rfizzle/shhh/internal/shell"
 )
@@ -60,6 +61,16 @@ When suggesting commands, use markdown code blocks with the shell language tag. 
 		base += "\n\n" + extra[0]
 	}
 	return base
+}
+
+func CombineExtra(parts ...string) string {
+	var out []string
+	for _, p := range parts {
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return strings.Join(out, "\n\n")
 }
 
 func BuildExplain() string {

@@ -2,6 +2,8 @@ package cli
 
 import (
 	"bytes"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -149,5 +151,45 @@ func TestInit_NoArgs(t *testing.T) {
 	err := cmd.Execute()
 	if err == nil {
 		t.Fatal("expected error when no shell argument provided")
+	}
+}
+
+func TestInitProject_CreatesFile(t *testing.T) {
+	dir := t.TempDir()
+	orig, _ := os.Getwd()
+	os.Chdir(dir)
+	defer os.Chdir(orig)
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"init", "--project"})
+
+	err := cmd.Execute()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(dir, ".shhh"))
+	if err != nil {
+		t.Fatalf("expected .shhh file to exist: %v", err)
+	}
+	if !strings.Contains(string(data), "project-local context") {
+		t.Error("expected .shhh to contain template content")
+	}
+}
+
+func TestInitProject_AlreadyExists(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, ".shhh"), []byte("existing"), 0o644)
+
+	orig, _ := os.Getwd()
+	os.Chdir(dir)
+	defer os.Chdir(orig)
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"init", "--project"})
+
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatal("expected error when .shhh already exists")
 	}
 }

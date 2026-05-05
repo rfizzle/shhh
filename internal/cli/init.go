@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -55,13 +56,34 @@ end
 bind \ck _shhh_raw
 `
 
+const projectTemplate = `# .shhh — project-local context for shhh
+# This file is appended to the LLM system prompt when running shhh
+# from this directory (or any subdirectory). Use it to describe your
+# project's tooling, conventions, and common workflows.
+
+# Examples:
+# - This project uses Docker Compose for services (docker compose up -d)
+# - Run tests with: make test
+# - Deployed via Terraform in infra/
+# - Prefer ripgrep (rg) over grep
+# - Database migrations: goose -dir migrations up
+`
+
 func newInitCmd() *cobra.Command {
+	var projectMode bool
+
 	cmd := &cobra.Command{
-		Use:   "init <shell>",
-		Short: "Output shell integration snippet",
-		Long:  "Print a shell snippet to stdout for eval in your rc file.",
-		Args:  cobra.ExactArgs(1),
+		Use:   "init [shell]",
+		Short: "Output shell integration snippet or scaffold project config",
+		Long:  "Print a shell snippet to stdout for eval in your rc file, or create a .shhh project file with --project.",
+		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
+			if projectMode {
+				return initProject()
+			}
+			if len(args) == 0 {
+				return fmt.Errorf("specify a shell (zsh, bash, fish) or use --project")
+			}
 			switch args[0] {
 			case "zsh":
 				fmt.Fprint(cmd.OutOrStdout(), zshSnippet)
@@ -77,5 +99,13 @@ func newInitCmd() *cobra.Command {
 			}
 		},
 	}
+	cmd.Flags().BoolVar(&projectMode, "project", false, "create a .shhh project context file in the current directory")
 	return cmd
+}
+
+func initProject() error {
+	if _, err := os.Stat(".shhh"); err == nil {
+		return fmt.Errorf(".shhh already exists in the current directory")
+	}
+	return os.WriteFile(".shhh", []byte(projectTemplate), 0o644)
 }
