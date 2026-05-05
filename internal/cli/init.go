@@ -8,6 +8,7 @@ import (
 
 const zshSnippet = `# shhh shell integration
 # Add to ~/.zshrc: eval "$(shhh init zsh)"
+# For completions: shhh completion zsh > "${fpath[1]}/_shhh"
 
 _shhh_raw() {
   local result
@@ -24,6 +25,7 @@ bindkey '^K' _shhh_raw
 
 const bashSnippet = `# shhh shell integration
 # Add to ~/.bashrc: eval "$(shhh init bash)"
+# For completions: source <(shhh completion bash)
 
 _shhh_raw() {
   local result
@@ -38,6 +40,7 @@ bind -x '"\C-k": _shhh_raw'
 
 const fishSnippet = `# shhh shell integration
 # Add to ~/.config/fish/config.fish: shhh init fish | source
+# For completions: shhh completion fish > ~/.config/fish/completions/shhh.fish
 
 function _shhh_raw
   set -l buf (commandline)
