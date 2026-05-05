@@ -10,11 +10,19 @@ $ shhh find all go files changed in the last week
 
 ## Install
 
+### Homebrew
+
+```bash
+brew install rfizzle/tap/shhh
+```
+
+### Go
+
 ```bash
 go install github.com/rfizzle/shhh/cmd/shhh@latest
 ```
 
-Or build from source:
+### Build from source
 
 ```bash
 git clone https://github.com/rfizzle/shhh.git
