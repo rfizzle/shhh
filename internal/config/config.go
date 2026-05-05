@@ -37,6 +37,7 @@ type BehaviorConfig struct {
 	Shell            string `toml:"shell"`
 	ContextMaxTokens int    `toml:"context_max_tokens"`
 	SafetyWarnings   *bool  `toml:"safety_warnings"`
+	SystemPromptExtra string `toml:"system_prompt_extra"`
 }
 
 type AppearanceConfig struct {
@@ -168,6 +169,8 @@ func Set(cfg *Config, key, value string) error {
 	case "behavior.safety_warnings":
 		v := value == "true"
 		cfg.Behavior.SafetyWarnings = &v
+	case "behavior.system_prompt_extra":
+		cfg.Behavior.SystemPromptExtra = value
 	case "appearance.accent_color":
 		cfg.Appearance.AccentColor = value
 	default:

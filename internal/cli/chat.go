@@ -46,7 +46,7 @@ func newChatCmd() *cobra.Command {
 			}
 
 			info := shell.Detect()
-			sysPrompt := prompt.BuildChat(info)
+			sysPrompt := prompt.BuildChat(info, cfg.Behavior.SystemPromptExtra)
 
 			messages := []provider.Message{
 				{Role: provider.RoleSystem, Content: sysPrompt},

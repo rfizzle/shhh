@@ -109,11 +109,12 @@ func NewRootCmd() *cobra.Command {
 
 			if pipeMode {
 				err := raw.Run(cmd.Context(), raw.Opts{
-					Provider: p,
-					Model:    resolved.Model,
-					Prompt:   userPrompt,
-					Stdout:   os.Stdout,
-					Stderr:   os.Stderr,
+					Provider:          p,
+					Model:             resolved.Model,
+					Prompt:            userPrompt,
+					SystemPromptExtra: cfg.Behavior.SystemPromptExtra,
+					Stdout:            os.Stdout,
+					Stderr:            os.Stderr,
 				})
 				if err != nil {
 					fmt.Fprintln(os.Stderr, "error:", err)
@@ -123,7 +124,7 @@ func NewRootCmd() *cobra.Command {
 			}
 
 			info := shell.Detect()
-			sysPrompt := prompt.Build(info)
+			sysPrompt := prompt.Build(info, cfg.Behavior.SystemPromptExtra)
 
 			messages := []provider.Message{
 				{Role: provider.RoleSystem, Content: sysPrompt},

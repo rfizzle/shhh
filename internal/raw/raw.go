@@ -13,16 +13,17 @@ import (
 )
 
 type Opts struct {
-	Provider provider.Provider
-	Model    string
-	Prompt   string
-	Stdout   io.Writer
-	Stderr   io.Writer
+	Provider          provider.Provider
+	Model             string
+	Prompt            string
+	SystemPromptExtra string
+	Stdout            io.Writer
+	Stderr            io.Writer
 }
 
 func Run(ctx context.Context, opts Opts) error {
 	info := shell.Detect()
-	sysPrompt := prompt.Build(info)
+	sysPrompt := prompt.Build(info, opts.SystemPromptExtra)
 
 	messages := []provider.Message{
 		{Role: provider.RoleSystem, Content: sysPrompt},

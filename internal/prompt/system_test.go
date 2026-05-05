@@ -80,6 +80,40 @@ func TestBuild_UnknownOS(t *testing.T) {
 	}
 }
 
+func TestBuild_WithExtra(t *testing.T) {
+	info := shell.Info{Shell: "zsh", OS: "darwin", Cwd: "/tmp"}
+	got := Build(info, "Always use ripgrep instead of grep")
+
+	if !strings.Contains(got, "Always use ripgrep instead of grep") {
+		t.Error("expected extra prompt to be appended")
+	}
+	if !strings.Contains(got, "Shell: zsh") {
+		t.Error("expected base prompt to still be present")
+	}
+}
+
+func TestBuild_WithEmptyExtra(t *testing.T) {
+	info := shell.Info{Shell: "zsh", OS: "darwin", Cwd: "/tmp"}
+	withEmpty := Build(info, "")
+	without := Build(info)
+
+	if withEmpty != without {
+		t.Error("empty extra should produce same result as no extra")
+	}
+}
+
+func TestBuildChat_WithExtra(t *testing.T) {
+	info := shell.Info{Shell: "bash", OS: "linux", Cwd: "/home/user"}
+	got := BuildChat(info, "Prefer explaining with examples")
+
+	if !strings.Contains(got, "Prefer explaining with examples") {
+		t.Error("expected extra prompt to be appended to chat prompt")
+	}
+	if !strings.Contains(got, "technical assistant") {
+		t.Error("expected base chat prompt to still be present")
+	}
+}
+
 func TestFriendlyOS(t *testing.T) {
 	tests := []struct {
 		goos string

@@ -6,9 +6,9 @@ import (
 	"github.com/rfizzle/shhh/internal/shell"
 )
 
-func Build(info shell.Info) string {
+func Build(info shell.Info, extra ...string) string {
 	os := friendlyOS(info.OS)
-	return fmt.Sprintf(`You are a shell command generator. Output ONLY the command(s). No explanation, no markdown, no code fences.
+	base := fmt.Sprintf(`You are a shell command generator. Output ONLY the command(s). No explanation, no markdown, no code fences.
 If the task requires multiple commands, output each command on its own line. Do not number them or add commentary between them.
 For single-command tasks, output a single line.
 
@@ -19,11 +19,15 @@ For single-command tasks, output a single line.
 Shell: %s
 OS: %s
 Cwd: %s`, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), osRules(info.OS), info.Shell, os, info.Cwd)
+	if len(extra) > 0 && extra[0] != "" {
+		base += "\n\n" + extra[0]
+	}
+	return base
 }
 
-func BuildChat(info shell.Info) string {
+func BuildChat(info shell.Info, extra ...string) string {
 	os := friendlyOS(info.OS)
-	return fmt.Sprintf(`You are a technical assistant running inside a terminal session. You help with shell commands, code, debugging, system administration, and general programming questions.
+	base := fmt.Sprintf(`You are a technical assistant running inside a terminal session. You help with shell commands, code, debugging, system administration, and general programming questions.
 
 # Environment
 Shell: %s
@@ -52,6 +56,10 @@ When suggesting commands, use markdown code blocks with the shell language tag. 
 - When debugging, gather information first (read logs, check file contents) before suggesting fixes.
 - If a question is ambiguous, give your best answer and note the assumption rather than asking a clarifying question — the user can redirect.
 - Respect the user's skill level: if they use technical terms correctly, respond at that level. Don't over-explain fundamentals unless asked.`, info.Shell, os, info.Cwd, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), osRules(info.OS))
+	if len(extra) > 0 && extra[0] != "" {
+		base += "\n\n" + extra[0]
+	}
+	return base
 }
 
 func BuildExplain() string {
