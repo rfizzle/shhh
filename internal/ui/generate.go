@@ -7,6 +7,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/rfizzle/shhh/internal/preflight"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -26,18 +27,22 @@ type NewStreamFunc func(messages []provider.Message) (<-chan provider.StreamEven
 
 type ExplainStreamFunc func(command string) (<-chan provider.StreamEvent, context.CancelFunc, error)
 
+const maxPreflightRetries = 2
+
 type GenerateModel struct {
-	stream        StreamModel
-	actionBar     ActionBarModel
-	reviseInput   textinput.Model
-	editInput     textinput.Model
-	saveInput     textinput.Model
-	explainStream StreamModel
-	messages      []provider.Message
-	newStream     NewStreamFunc
-	newExplain    ExplainStreamFunc
-	phase         phase
-	result        GenerateResult
+	stream           StreamModel
+	actionBar        ActionBarModel
+	reviseInput      textinput.Model
+	editInput        textinput.Model
+	saveInput        textinput.Model
+	explainStream    StreamModel
+	messages         []provider.Message
+	newStream        NewStreamFunc
+	newExplain       ExplainStreamFunc
+	phase            phase
+	result           GenerateResult
+	shell            string
+	preflightRetries int
 }
 
 type GenerateResult struct {
@@ -49,7 +54,7 @@ type GenerateResult struct {
 	Err       error
 }
 
-func NewGenerateModel(events <-chan provider.StreamEvent, cancel context.CancelFunc, messages []provider.Message, newStream NewStreamFunc, newExplain ExplainStreamFunc) GenerateModel {
+func NewGenerateModel(events <-chan provider.StreamEvent, cancel context.CancelFunc, messages []provider.Message, newStream NewStreamFunc, newExplain ExplainStreamFunc, shell string) GenerateModel {
 	ti := textinput.New()
 	ti.Placeholder = "Describe what to change…"
 	ti.CharLimit = 500
@@ -70,6 +75,7 @@ func NewGenerateModel(events <-chan provider.StreamEvent, cancel context.CancelF
 		newStream:   newStream,
 		newExplain:  newExplain,
 		phase:       phaseStreaming,
+		shell:       shell,
 	}
 }
 
@@ -140,11 +146,37 @@ func (m GenerateModel) updateStreaming(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, tea.Quit
 		}
+
+		output := m.stream.Output()
+
+		if m.shell != "" && m.preflightRetries < maxPreflightRetries && m.newStream != nil {
+			check := preflight.Check(output, m.shell)
+			if !check.OK {
+				m.preflightRetries++
+				correction := fmt.Sprintf(
+					"That command has errors:\n%s\n\nPlease fix and output only the corrected command(s).",
+					strings.Join(check.Errors, "\n"),
+				)
+				m.messages = append(m.messages,
+					provider.Message{Role: provider.RoleAssistant, Content: output},
+					provider.Message{Role: provider.RoleUser, Content: correction},
+				)
+				events, cancel, err := m.newStream(m.messages)
+				if err != nil {
+					m.phase = phaseDone
+					m.result = GenerateResult{Err: err}
+					return m, tea.Quit
+				}
+				m.stream = NewStreamModel(events, cancel)
+				return m, m.stream.Init()
+			}
+		}
+
 		m.messages = append(m.messages, provider.Message{
 			Role:    provider.RoleAssistant,
-			Content: m.stream.Output(),
+			Content: output,
 		})
-		m.actionBar = m.actionBar.SetMulti(IsMultiCommand(m.stream.Output()))
+		m.actionBar = m.actionBar.SetMulti(IsMultiCommand(output))
 		m.phase = phaseAction
 		return m, nil
 	}

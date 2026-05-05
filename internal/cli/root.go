@@ -156,7 +156,7 @@ func NewRootCmd() *cobra.Command {
 				return ev, eCancel, nil
 			}
 
-			model := ui.NewGenerateModel(events, cancel, messages, newStream, newExplain)
+			model := ui.NewGenerateModel(events, cancel, messages, newStream, newExplain, info.Shell)
 			program := tea.NewProgram(model)
 			finalModel, err := program.Run()
 			if err != nil {
