@@ -226,7 +226,7 @@ func TestRecordRequest(t *testing.T) {
 
 	ttft := 150 * time.Millisecond
 	dur := 2 * time.Second
-	if err := db.RecordRequest(RequestRecord{
+	if _, err := db.RecordRequest(RequestRecord{
 		Provider: "openai",
 		Model:    "gpt-4o",
 		Prompt:   "list files",
@@ -246,6 +246,53 @@ func TestRecordRequest(t *testing.T) {
 	}
 }
 
+func TestRecordExitCode(t *testing.T) {
+	db := openTestDB(t)
+
+	dur := 1 * time.Second
+	id, err := db.RecordRequest(RequestRecord{
+		Provider: "openai",
+		Model:    "gpt-4o",
+		Prompt:   "list files",
+		Command:  "ls -la",
+		Action:   "run",
+		Duration: &dur,
+		Success:  true,
+	})
+	if err != nil {
+		t.Fatalf("record: %v", err)
+	}
+
+	if err := db.RecordExitCode(id, 0); err != nil {
+		t.Fatalf("record exit code: %v", err)
+	}
+
+	var exitCode *int
+	db.sql.QueryRow(`SELECT exit_code FROM requests WHERE id = ?`, id).Scan(&exitCode)
+	if exitCode == nil || *exitCode != 0 {
+		t.Fatalf("expected exit_code 0, got %v", exitCode)
+	}
+
+	id2, _ := db.RecordRequest(RequestRecord{
+		Provider: "openai",
+		Model:    "gpt-4o",
+		Prompt:   "bad command",
+		Command:  "false",
+		Action:   "run",
+		Duration: &dur,
+		Success:  true,
+	})
+	if err := db.RecordExitCode(id2, 1); err != nil {
+		t.Fatalf("record exit code: %v", err)
+	}
+
+	var exitCode2 *int
+	db.sql.QueryRow(`SELECT exit_code FROM requests WHERE id = ?`, id2).Scan(&exitCode2)
+	if exitCode2 == nil || *exitCode2 != 1 {
+		t.Fatalf("expected exit_code 1, got %v", exitCode2)
+	}
+}
+
 func TestMetricsSummary(t *testing.T) {
 	db := openTestDB(t)
 
@@ -259,7 +306,7 @@ func TestMetricsSummary(t *testing.T) {
 		{Provider: "openai", Model: "gpt-4o", Prompt: "p2", Command: "c2", Action: "copy", TTFT: &ttft2, Duration: &dur2, Success: true},
 		{Provider: "gemini", Model: "gemini-2.5-flash", Prompt: "p3", Command: "c3", Action: "run", TTFT: &ttft1, Duration: &dur1, Success: false},
 	} {
-		if err := db.RecordRequest(r); err != nil {
+		if _, err := db.RecordRequest(r); err != nil {
 			t.Fatalf("record: %v", err)
 		}
 	}
@@ -346,7 +393,7 @@ func TestListHistory(t *testing.T) {
 		{Provider: "openai", Model: "gpt-4o", Prompt: "disk usage", Command: "du -sh *", Action: "copy", Duration: &dur, Success: true},
 		{Provider: "gemini", Model: "flash", Prompt: "find port", Command: "lsof -i :8080", Action: "run", Duration: &dur, Success: true},
 	} {
-		if err := db.RecordRequest(r); err != nil {
+		if _, err := db.RecordRequest(r); err != nil {
 			t.Fatalf("record: %v", err)
 		}
 	}

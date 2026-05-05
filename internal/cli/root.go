@@ -165,6 +165,7 @@ func NewRootCmd() *cobra.Command {
 
 			result := finalModel.(ui.GenerateModel).Result()
 
+			var requestID int64
 			if db != nil {
 				actionName := ""
 				switch result.Action {
@@ -185,7 +186,7 @@ func NewRootCmd() *cobra.Command {
 				case ui.ActionCancel:
 					actionName = "cancel"
 				}
-				_ = db.RecordRequest(storage.RequestRecord{
+				requestID, _ = db.RecordRequest(storage.RequestRecord{
 					Provider: p.Name(),
 					Model:    resolved.Model,
 					Prompt:   userPrompt,
@@ -204,14 +205,23 @@ func NewRootCmd() *cobra.Command {
 			switch result.Action {
 			case ui.ActionRun:
 				code := runner.Run(result.Command)
+				if db != nil && requestID > 0 {
+					_ = db.RecordExitCode(requestID, code)
+				}
 				os.Exit(code)
 			case ui.ActionRunAll:
 				cmds := ui.SplitCommands(result.Command)
 				for _, c := range cmds {
 					code := runner.Run(c)
 					if code != 0 {
+						if db != nil && requestID > 0 {
+							_ = db.RecordExitCode(requestID, code)
+						}
 						os.Exit(code)
 					}
+				}
+				if db != nil && requestID > 0 {
+					_ = db.RecordExitCode(requestID, 0)
 				}
 			case ui.ActionRunStep:
 				cmds := ui.SplitCommands(result.Command)
@@ -228,8 +238,14 @@ func NewRootCmd() *cobra.Command {
 					code := runner.Run(c)
 					if code != 0 {
 						fmt.Fprintf(os.Stderr, "Step %d exited with code %d. Stop.\n", i+1, code)
+						if db != nil && requestID > 0 {
+							_ = db.RecordExitCode(requestID, code)
+						}
 						os.Exit(code)
 					}
+				}
+				if db != nil && requestID > 0 {
+					_ = db.RecordExitCode(requestID, 0)
 				}
 			case ui.ActionSave:
 				if db != nil && result.SaveName != "" {

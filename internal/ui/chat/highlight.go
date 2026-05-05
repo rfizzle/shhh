@@ -8,8 +8,8 @@ import (
 )
 
 var (
-	rendererMu    sync.Mutex
-	cachedWidth   int
+	rendererMu     sync.Mutex
+	cachedWidth    int
 	cachedRenderer *glamour.TermRenderer
 )
 

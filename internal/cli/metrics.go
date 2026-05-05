@@ -36,13 +36,15 @@ func newMetricsCmd() *cobra.Command {
 			prices, _ := pricing.Load()
 
 			w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-			fmt.Fprintln(w, "PROVIDER\tMODEL\tCOUNT\tSUCCESS\tAVG TTFT\tP95 TTFT\tAVG TOTAL\tP95 TOTAL\tTOKENS IN\tTOKENS OUT\tEST. COST")
+			fmt.Fprintln(w, "PROVIDER\tMODEL\tCOUNT\tSUCCESS\tEXEC\tEXEC OK\tAVG TTFT\tP95 TTFT\tAVG TOTAL\tP95 TOTAL\tTOKENS IN\tTOKENS OUT\tEST. COST")
 			for _, m := range summary {
-				fmt.Fprintf(w, "%s\t%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
+				fmt.Fprintf(w, "%s\t%s\t%d\t%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
 					m.Provider,
 					m.Model,
 					m.Count,
 					fmtPct(m.SuccessRate),
+					m.ExecCount,
+					fmtPctPtr(m.ExecSuccessRate),
 					fmtMs(m.AvgTTFT),
 					fmtMs(m.P95TTFT),
 					fmtMs(m.AvgDuration),
@@ -66,6 +68,13 @@ func fmtMs(v *float64) string {
 
 func fmtPct(v float64) string {
 	return fmt.Sprintf("%.0f%%", v*100)
+}
+
+func fmtPctPtr(v *float64) string {
+	if v == nil {
+		return "-"
+	}
+	return fmt.Sprintf("%.0f%%", *v*100)
 }
 
 func fmtTokens(v *int64) string {
