@@ -47,17 +47,17 @@ func (db *DB) RecordExitCode(requestID int64, exitCode int) error {
 }
 
 type ProviderMetrics struct {
-	Provider       string
-	Model          string
-	Count          int
-	SuccessRate    float64
-	AvgTTFT        *float64
-	P95TTFT        *float64
-	AvgDuration    *float64
-	P95Duration    *float64
-	TotalTokensIn  *int64
-	TotalTokensOut *int64
-	ExecCount      int
+	Provider        string
+	Model           string
+	Count           int
+	SuccessRate     float64
+	AvgTTFT         *float64
+	P95TTFT         *float64
+	AvgDuration     *float64
+	P95Duration     *float64
+	TotalTokensIn   *int64
+	TotalTokensOut  *int64
+	ExecCount       int
 	ExecSuccessRate *float64
 }
 

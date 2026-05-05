@@ -17,6 +17,7 @@ import (
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/shell"
+	"github.com/rfizzle/shhh/internal/stdin"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui"
 	"github.com/spf13/cobra"
@@ -53,10 +54,24 @@ func NewRootCmd() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			stdinIsTTY := isatty.IsTerminal(os.Stdin.Fd()) || isatty.IsCygwinTerminal(os.Stdin.Fd())
-			pipeMode := rawMode || !stdinIsTTY
+
+			cfg := ConfigFrom(cmd.Context())
+			maxChars := cfg.EffectiveContextMaxTokens() * 4
 
 			var userPrompt string
+			var pipeMode bool
+
 			switch {
+			case !stdinIsTTY && len(args) > 0:
+				stdinContent, err := stdin.Read(os.Stdin, maxChars)
+				if err != nil {
+					return err
+				}
+				userPrompt = strings.Join(args, " ")
+				if stdinContent != "" {
+					userPrompt = stdin.FormatPromptWithContext(userPrompt, stdinContent)
+				}
+				pipeMode = rawMode
 			case !stdinIsTTY && len(args) == 0:
 				scanner := bufio.NewScanner(os.Stdin)
 				var lines []string
@@ -70,13 +85,13 @@ func NewRootCmd() *cobra.Command {
 				if userPrompt == "" {
 					return fmt.Errorf("no prompt provided on stdin")
 				}
+				pipeMode = true
 			case len(args) > 0:
 				userPrompt = strings.Join(args, " ")
+				pipeMode = rawMode
 			default:
 				return cmd.Help()
 			}
-
-			cfg := ConfigFrom(cmd.Context())
 
 			resolved := resolve.Resolve(flags)
 

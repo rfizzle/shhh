@@ -33,12 +33,22 @@ type ProviderDetail struct {
 }
 
 type BehaviorConfig struct {
-	SilentMode bool   `toml:"silent_mode"`
-	Shell      string `toml:"shell"`
+	SilentMode       bool   `toml:"silent_mode"`
+	Shell            string `toml:"shell"`
+	ContextMaxTokens int    `toml:"context_max_tokens"`
 }
 
 type AppearanceConfig struct {
 	AccentColor string `toml:"accent_color"`
+}
+
+const DefaultContextMaxTokens = 8000
+
+func (c Config) EffectiveContextMaxTokens() int {
+	if c.Behavior.ContextMaxTokens > 0 {
+		return c.Behavior.ContextMaxTokens
+	}
+	return DefaultContextMaxTokens
 }
 
 func normalizeProvider(name string) string {
@@ -143,6 +153,10 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Behavior.SilentMode = value == "true"
 	case "behavior.shell":
 		cfg.Behavior.Shell = value
+	case "behavior.context_max_tokens":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Behavior.ContextMaxTokens = n
 	case "appearance.accent_color":
 		cfg.Appearance.AccentColor = value
 	default:

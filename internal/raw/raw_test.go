@@ -115,3 +115,55 @@ func TestRun_ProviderInitError(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 }
+
+func TestRun_ContextInPrompt(t *testing.T) {
+	p := &capturingProvider{
+		events: []provider.StreamEvent{
+			{Token: "grep error app.log"},
+			{Done: true},
+		},
+	}
+
+	prompt := "<context>\nERROR: something broke at line 42\nWARNING: disk full\n</context>\n\nfix this error"
+
+	var stdout bytes.Buffer
+	err := Run(context.Background(), Opts{
+		Provider: p,
+		Model:    "test-model",
+		Prompt:   prompt,
+		Stdout:   &stdout,
+		Stderr:   io.Discard,
+	})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if len(p.messages) < 2 {
+		t.Fatalf("expected at least 2 messages, got %d", len(p.messages))
+	}
+
+	userMsg := p.messages[1]
+	if userMsg.Role != provider.RoleUser {
+		t.Errorf("expected user role, got %s", userMsg.Role)
+	}
+	if userMsg.Content != prompt {
+		t.Errorf("expected context in user message, got %q", userMsg.Content)
+	}
+}
+
+type capturingProvider struct {
+	events   []provider.StreamEvent
+	messages []provider.Message
+}
+
+func (c *capturingProvider) Name() string { return "capturing" }
+
+func (c *capturingProvider) StreamCompletion(_ context.Context, msgs []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	c.messages = msgs
+	ch := make(chan provider.StreamEvent, len(c.events))
+	for _, ev := range c.events {
+		ch <- ev
+	}
+	close(ch)
+	return ch, nil
+}
