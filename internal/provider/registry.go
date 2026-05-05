@@ -16,12 +16,26 @@ type ResolveOpts struct {
 	ConfigName    string
 }
 
+type ProviderDefaults struct {
+	Model   string
+	BaseURL string
+}
+
 type Factory func(ResolveOpts) (Provider, error)
 
 var registry = map[string]Factory{}
+var defaults = map[string]ProviderDefaults{}
 
 func Register(name string, f Factory) {
 	registry[name] = f
+}
+
+func RegisterDefaults(name string, d ProviderDefaults) {
+	defaults[name] = d
+}
+
+func Defaults(name string) ProviderDefaults {
+	return defaults[normalizeName(name)]
 }
 
 func normalizeName(name string) string {

@@ -2,10 +2,12 @@ package cli
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/spf13/cobra"
 )
 
@@ -65,6 +67,7 @@ type configPhase int
 const (
 	configPhaseMenu configPhase = iota
 	configPhaseEdit
+	configPhaseSelect
 )
 
 type menuItem struct {
@@ -86,11 +89,13 @@ var menuItems = []menuItem{
 }
 
 type configModel struct {
-	cfg    config.Config
-	cursor int
-	phase  configPhase
-	input  string
-	saved  bool
+	cfg     config.Config
+	cursor  int
+	phase   configPhase
+	input   string
+	saved   bool
+	options []string
+	optIdx  int
 }
 
 func newConfigModel(cfg config.Config) configModel {
@@ -105,8 +110,22 @@ func (m configModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateMenu(msg)
 	case configPhaseEdit:
 		return m.updateEdit(msg)
+	case configPhaseSelect:
+		return m.updateSelect(msg)
 	}
 	return m, nil
+}
+
+func (m configModel) optionsForKey(key string) []string {
+	switch key {
+	case "provider.default":
+		opts := provider.Available()
+		sort.Strings(opts)
+		return opts
+	case "behavior.silent_mode", "behavior.safety_warnings":
+		return []string{"true", "false"}
+	}
+	return nil
 }
 
 func (m configModel) updateMenu(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -122,8 +141,22 @@ func (m configModel) updateMenu(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cursor++
 			}
 		case "enter":
-			m.phase = configPhaseEdit
-			m.input = m.currentValue()
+			key := menuItems[m.cursor].key
+			if opts := m.optionsForKey(key); opts != nil {
+				m.phase = configPhaseSelect
+				m.options = opts
+				m.optIdx = 0
+				current := m.currentValue()
+				for i, o := range opts {
+					if o == current {
+						m.optIdx = i
+						break
+					}
+				}
+			} else {
+				m.phase = configPhaseEdit
+				m.input = m.currentValue()
+			}
 		case "q", "esc":
 			return m, tea.Quit
 		}
@@ -160,6 +193,33 @@ func (m configModel) updateEdit(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+func (m configModel) updateSelect(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "up", "k":
+			if m.optIdx > 0 {
+				m.optIdx--
+			}
+		case "down", "j":
+			if m.optIdx < len(m.options)-1 {
+				m.optIdx++
+			}
+		case "enter":
+			_ = config.Set(&m.cfg, menuItems[m.cursor].key, m.options[m.optIdx])
+			if err := config.Save(m.cfg); err == nil {
+				m.saved = true
+			}
+			m.phase = configPhaseMenu
+			return m, nil
+		case "esc":
+			m.phase = configPhaseMenu
+			return m, nil
+		}
+	}
+	return m, nil
+}
+
 func (m configModel) currentValue() string {
 	return m.currentValueForKey(menuItems[m.cursor].key)
 }
@@ -171,10 +231,24 @@ func maskKey(s string) string {
 	return s[:3] + "..." + strings.Repeat("*", 3)
 }
 
+func (m configModel) defaultForKey(key string) string {
+	d := provider.Defaults(m.cfg.Provider.Default)
+	switch key {
+	case "provider.model":
+		return d.Model
+	case "provider.base_url":
+		return d.BaseURL
+	}
+	return ""
+}
+
 func (m configModel) displayValue(idx int) string {
 	item := menuItems[idx]
 	val := m.currentValueForKey(item.key)
 	if val == "" {
+		if def := m.defaultForKey(item.key); def != "" {
+			return fmt.Sprintf("(default: %s)", def)
+		}
 		return "(not set)"
 	}
 	if strings.HasSuffix(item.key, "api_key") {
@@ -240,7 +314,21 @@ func (m configModel) View() string {
 			display = strings.Repeat("*", len(m.input)-1) + string(m.input[len(m.input)-1])
 		}
 		b.WriteString(fmt.Sprintf("> %s█\n", display))
+		if def := m.defaultForKey(item.key); def != "" && m.input == "" {
+			b.WriteString(fmt.Sprintf("  default: %s\n", def))
+		}
 		b.WriteString("\nenter save · esc cancel")
+	case configPhaseSelect:
+		item := menuItems[m.cursor]
+		b.WriteString(fmt.Sprintf("Select: %s\n\n", item.label))
+		for i, opt := range m.options {
+			cursor := "  "
+			if i == m.optIdx {
+				cursor = "> "
+			}
+			b.WriteString(fmt.Sprintf("%s%s\n", cursor, opt))
+		}
+		b.WriteString("\n↑/↓ navigate · enter select · esc cancel")
 	}
 
 	return b.String()

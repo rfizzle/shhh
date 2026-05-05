@@ -92,4 +92,8 @@ func init() {
 	Register("openai-compatible", func(opts ResolveOpts) (Provider, error) {
 		return NewOpenAICompat(opts)
 	})
+	RegisterDefaults("openai-compatible", ProviderDefaults{
+		Model:   defaultCompatModel,
+		BaseURL: defaultCompatBaseURL,
+	})
 }

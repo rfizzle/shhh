@@ -123,4 +123,8 @@ func init() {
 	Register("openrouter", func(opts ResolveOpts) (Provider, error) {
 		return NewOpenRouter(opts)
 	})
+	RegisterDefaults("openrouter", ProviderDefaults{
+		Model:   defaultOpenRouterModel,
+		BaseURL: defaultOpenRouterBaseURL,
+	})
 }

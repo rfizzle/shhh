@@ -216,4 +216,7 @@ func init() {
 	Register("gemini", func(opts ResolveOpts) (Provider, error) {
 		return NewGemini(opts)
 	})
+	RegisterDefaults("gemini", ProviderDefaults{
+		Model: defaultGeminiModel,
+	})
 }

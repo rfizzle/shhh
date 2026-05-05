@@ -156,4 +156,8 @@ func init() {
 	Register("openai", func(opts ResolveOpts) (Provider, error) {
 		return NewOpenAI(opts)
 	})
+	RegisterDefaults("openai", ProviderDefaults{
+		Model:   defaultOpenAIModel,
+		BaseURL: defaultOpenAIBaseURL,
+	})
 }
