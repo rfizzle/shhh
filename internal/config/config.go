@@ -36,6 +36,7 @@ type BehaviorConfig struct {
 	SilentMode       bool   `toml:"silent_mode"`
 	Shell            string `toml:"shell"`
 	ContextMaxTokens int    `toml:"context_max_tokens"`
+	SafetyWarnings   *bool  `toml:"safety_warnings"`
 }
 
 type AppearanceConfig struct {
@@ -43,6 +44,13 @@ type AppearanceConfig struct {
 }
 
 const DefaultContextMaxTokens = 8000
+
+func (c Config) SafetyWarningsEnabled() bool {
+	if c.Behavior.SafetyWarnings == nil {
+		return true
+	}
+	return *c.Behavior.SafetyWarnings
+}
 
 func (c Config) EffectiveContextMaxTokens() int {
 	if c.Behavior.ContextMaxTokens > 0 {
@@ -157,6 +165,9 @@ func Set(cfg *Config, key, value string) error {
 		n := 0
 		fmt.Sscanf(value, "%d", &n)
 		cfg.Behavior.ContextMaxTokens = n
+	case "behavior.safety_warnings":
+		v := value == "true"
+		cfg.Behavior.SafetyWarnings = &v
 	case "appearance.accent_color":
 		cfg.Appearance.AccentColor = value
 	default:

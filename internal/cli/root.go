@@ -16,6 +16,7 @@ import (
 	"github.com/rfizzle/shhh/internal/raw"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/runner"
+	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/stdin"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -215,6 +216,25 @@ func NewRootCmd() *cobra.Command {
 
 			if result.Err != nil {
 				return result.Err
+			}
+
+			if cfg.SafetyWarningsEnabled() {
+				if result.Action == ui.ActionRun || result.Action == ui.ActionRunAll || result.Action == ui.ActionRunStep {
+					if warnings := safety.Check(result.Command); len(warnings) > 0 {
+						fmt.Fprintln(os.Stderr, "\n⚠ Safety warning:")
+						for _, w := range warnings {
+							fmt.Fprintf(os.Stderr, "  • %s\n", w.Risk)
+						}
+						fmt.Fprint(os.Stderr, "\nProceed? [y/N] ")
+						reader := bufio.NewReader(os.Stdin)
+						input, _ := reader.ReadString('\n')
+						input = strings.TrimSpace(strings.ToLower(input))
+						if input != "y" && input != "yes" {
+							fmt.Fprintln(os.Stderr, "Aborted.")
+							return nil
+						}
+					}
+				}
 			}
 
 			switch result.Action {
