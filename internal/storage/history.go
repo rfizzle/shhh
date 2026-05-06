@@ -52,6 +52,11 @@ func (db *DB) ListHistory(f HistoryFilter) ([]HistoryEntry, error) {
 	return rows_result, err
 }
 
+func (db *DB) DeleteHistoryEntry(id int64) error {
+	_, err := db.sql.Exec(`DELETE FROM requests WHERE id = ?`, id)
+	return err
+}
+
 func scanHistory(rows interface {
 	Next() bool
 	Scan(...any) error
