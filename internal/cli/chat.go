@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/chat"
+	"github.com/rfizzle/shhh/internal/update"
 	"github.com/spf13/cobra"
 )
 
@@ -80,6 +81,9 @@ func newChatCmd() *cobra.Command {
 			prices, _ := pricing.Load()
 
 			model := chat.New(messages, stream).WithToolExecutor(tools.Execute).WithDB(db).WithPricing(prices, resolved.Model)
+			if r := update.CheckCached(version); r != nil {
+				model = model.WithUpdateNotice("update: " + r.Latest)
+			}
 			if len(args) > 0 {
 				model = model.WithInitialPrompt(args[0])
 			}

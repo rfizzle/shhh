@@ -22,6 +22,7 @@ import (
 	"github.com/rfizzle/shhh/internal/stdin"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui"
+	"github.com/rfizzle/shhh/internal/update"
 	"github.com/spf13/cobra"
 )
 
@@ -49,6 +50,9 @@ func NewRootCmd() *cobra.Command {
 			flags.ConfigModel = cfg.Provider.Model
 
 			cmd.SetContext(withConfig(cmd.Context(), cfg))
+
+			update.BackgroundCheck(version)
+
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -325,5 +329,15 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newSnippetsCmd())
 	cmd.AddCommand(newCompletionCmd(cmd))
 
+	cmd.SetVersionTemplate(versionTemplate())
+
 	return cmd
+}
+
+func versionTemplate() string {
+	base := "shhh version {{.Version}}\n"
+	if r := update.Check(version); r != nil {
+		base += fmt.Sprintf("Update available: %s → %s (brew upgrade shhh)\n", r.Current, r.Latest)
+	}
+	return base
 }

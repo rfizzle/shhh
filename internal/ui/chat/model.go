@@ -72,6 +72,7 @@ type Model struct {
 	TotalTokensOut int64
 	prices         *pricing.Table
 	modelName      string
+	updateNotice   string
 }
 
 func New(initialMessages []provider.Message, stream StreamFunc) Model {
@@ -116,6 +117,11 @@ func (m Model) WithInitialPrompt(prompt string) Model {
 func (m Model) WithPricing(prices *pricing.Table, modelName string) Model {
 	m.prices = prices
 	m.modelName = modelName
+	return m
+}
+
+func (m Model) WithUpdateNotice(notice string) Model {
+	m.updateNotice = notice
 	return m
 }
 
@@ -294,6 +300,9 @@ func (m Model) View() string {
 
 	header := headerStyle.Render(" shhh chat") +
 		headerHintStyle.Render("  Ctrl+D to exit")
+	if m.updateNotice != "" {
+		header += "  " + updateNoticeStyle.Render(m.updateNotice)
+	}
 	header += strings.Repeat(" ", max(0, contentWidth-lipgloss.Width(header)))
 
 	topDivider := dividerStyle(contentWidth)
