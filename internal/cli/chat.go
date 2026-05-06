@@ -6,6 +6,7 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -76,7 +77,9 @@ func newChatCmd() *cobra.Command {
 				defer db.Close()
 			}
 
-			model := chat.New(messages, stream).WithToolExecutor(tools.Execute).WithDB(db)
+			prices, _ := pricing.Load()
+
+			model := chat.New(messages, stream).WithToolExecutor(tools.Execute).WithDB(db).WithPricing(prices, resolved.Model)
 			if len(args) > 0 {
 				model = model.WithInitialPrompt(args[0])
 			}

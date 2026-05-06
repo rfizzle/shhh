@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 )
@@ -28,7 +29,8 @@ const (
 const inputHeight = 3
 const headerHeight = 1
 const dividerHeight = 1
-const chromeHeight = headerHeight + dividerHeight + dividerHeight
+const statusBarHeight = 1
+const chromeHeight = headerHeight + dividerHeight + dividerHeight + statusBarHeight
 const horizontalPadding = 2
 
 type tokenMsg string
@@ -68,6 +70,8 @@ type Model struct {
 
 	TotalTokensIn  int64
 	TotalTokensOut int64
+	prices         *pricing.Table
+	modelName      string
 }
 
 func New(initialMessages []provider.Message, stream StreamFunc) Model {
@@ -106,6 +110,12 @@ func (m Model) WithDB(db *storage.DB) Model {
 
 func (m Model) WithInitialPrompt(prompt string) Model {
 	m.initialPrompt = prompt
+	return m
+}
+
+func (m Model) WithPricing(prices *pricing.Table, modelName string) Model {
+	m.prices = prices
+	m.modelName = modelName
 	return m
 }
 
@@ -296,8 +306,9 @@ func (m Model) View() string {
 	}
 
 	bottomDivider := dividerStyle(contentWidth)
+	statusBar := m.renderStatusBar(contentWidth)
 
-	content := header + "\n" + topDivider + "\n" + body + "\n" + bottomDivider + "\n" + m.input.View()
+	content := header + "\n" + topDivider + "\n" + body + "\n" + bottomDivider + "\n" + statusBar + "\n" + m.input.View()
 	return lipgloss.NewStyle().Padding(0, horizontalPadding).Render(content)
 }
 
@@ -438,6 +449,34 @@ func (m *Model) finishStreaming() {
 	m.events = nil
 	m.cancel = nil
 	m.state = stateInput
+}
+
+func (m Model) renderStatusBar(width int) string {
+	if m.TotalTokensIn == 0 && m.TotalTokensOut == 0 {
+		return statusBarStyle.Render(strings.Repeat(" ", width))
+	}
+
+	tokens := fmt.Sprintf("↑%d ↓%d", m.TotalTokensIn, m.TotalTokensOut)
+
+	var cost string
+	if m.prices != nil && m.modelName != "" {
+		inCost, outCost, found := m.prices.Cost(m.modelName, m.TotalTokensIn, m.TotalTokensOut)
+		if found {
+			total := inCost + outCost
+			if total < 0.01 {
+				cost = fmt.Sprintf("  $%.4f", total)
+			} else {
+				cost = fmt.Sprintf("  $%.2f", total)
+			}
+		}
+	}
+
+	info := tokens + cost
+	pad := width - lipgloss.Width(info)
+	if pad < 0 {
+		pad = 0
+	}
+	return statusBarStyle.Render(info + strings.Repeat(" ", pad))
 }
 
 func (m Model) renderHistory() string {

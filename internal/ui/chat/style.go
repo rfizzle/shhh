@@ -14,4 +14,5 @@ var (
 	toolArgsStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
 	toolResultStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
 	toolBorderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
+	statusBarStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("243"))
 )
