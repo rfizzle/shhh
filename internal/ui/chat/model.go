@@ -32,7 +32,7 @@ const chromeHeight = headerHeight + dividerHeight + dividerHeight
 const horizontalPadding = 2
 
 type tokenMsg string
-type doneMsg struct{}
+type doneMsg struct{ usage *provider.Usage }
 type streamErrMsg struct{ err error }
 type streamStartedMsg struct {
 	events <-chan provider.StreamEvent
@@ -40,6 +40,7 @@ type streamStartedMsg struct {
 }
 type toolCallsMsg struct {
 	calls []provider.ToolCall
+	usage *provider.Usage
 }
 type initialPromptMsg struct{}
 
@@ -64,6 +65,9 @@ type Model struct {
 	atBottom      bool
 	quitting      bool
 	initialPrompt string
+
+	TotalTokensIn  int64
+	TotalTokensOut int64
 }
 
 func New(initialMessages []provider.Message, stream StreamFunc) Model {
@@ -222,12 +226,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, waitForEvent(m.events)
 
 	case doneMsg:
+		m.accumulateUsage(msg.usage)
 		m.finishStreaming()
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
 		return m, nil
 
 	case toolCallsMsg:
+		m.accumulateUsage(msg.usage)
 		m.executeToolCalls(msg.calls)
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
@@ -318,10 +324,10 @@ func waitForEvent(events <-chan provider.StreamEvent) tea.Cmd {
 			return streamErrMsg{err: ev.Err}
 		}
 		if len(ev.ToolCalls) > 0 {
-			return toolCallsMsg{calls: ev.ToolCalls}
+			return toolCallsMsg{calls: ev.ToolCalls, usage: ev.Usage}
 		}
 		if ev.Done {
-			return doneMsg{}
+			return doneMsg{usage: ev.Usage}
 		}
 		return tokenMsg(ev.Token)
 	}
@@ -410,6 +416,13 @@ func truncateLines(s string, max int) string {
 	remaining := len(lines) - max
 	truncated += fmt.Sprintf("\n… (%d more lines)", remaining)
 	return truncated
+}
+
+func (m *Model) accumulateUsage(u *provider.Usage) {
+	if u != nil {
+		m.TotalTokensIn += int64(u.PromptTokens)
+		m.TotalTokensOut += int64(u.CompletionTokens)
+	}
 }
 
 func (m *Model) finishStreaming() {

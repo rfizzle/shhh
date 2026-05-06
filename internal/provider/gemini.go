@@ -68,12 +68,22 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 	go func() {
 		defer close(ch)
 		var toolCalls []ToolCall
+		var usage *Usage
 		for resp, err := range g.client.Models.GenerateContentStream(ctx, model, contents, config) {
 			if err != nil {
 				ch <- StreamEvent{Err: classifyGeminiError(err), Done: true}
 				return
 			}
-			if resp != nil && len(resp.Candidates) > 0 {
+			if resp == nil {
+				continue
+			}
+			if resp.UsageMetadata != nil {
+				usage = &Usage{
+					PromptTokens:     int(resp.UsageMetadata.PromptTokenCount),
+					CompletionTokens: int(resp.UsageMetadata.CandidatesTokenCount),
+				}
+			}
+			if len(resp.Candidates) > 0 {
 				candidate := resp.Candidates[0]
 				if candidate.Content != nil {
 					for _, part := range candidate.Content.Parts {
@@ -93,9 +103,9 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 			}
 		}
 		if len(toolCalls) > 0 {
-			ch <- StreamEvent{ToolCalls: toolCalls, Done: true}
+			ch <- StreamEvent{ToolCalls: toolCalls, Usage: usage, Done: true}
 		} else {
-			ch <- StreamEvent{Done: true}
+			ch <- StreamEvent{Usage: usage, Done: true}
 		}
 	}()
 

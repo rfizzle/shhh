@@ -19,14 +19,15 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 		defer close(ch)
 		defer stream.Close()
 		toolArgs := map[int]*toolCallAccumulator{}
+		var usage *Usage
 
 		for {
 			resp, err := stream.Recv()
 			if errors.Is(err, io.EOF) {
 				if len(toolArgs) > 0 {
-					ch <- StreamEvent{ToolCalls: buildToolCalls(toolArgs), Done: true}
+					ch <- StreamEvent{ToolCalls: buildToolCalls(toolArgs), Usage: usage, Done: true}
 				} else {
-					ch <- StreamEvent{Done: true}
+					ch <- StreamEvent{Usage: usage, Done: true}
 				}
 				return
 			}
@@ -34,6 +35,14 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 				ch <- StreamEvent{Err: classify(err), Done: true}
 				return
 			}
+
+			if resp.Usage != nil {
+				usage = &Usage{
+					PromptTokens:     resp.Usage.PromptTokens,
+					CompletionTokens: resp.Usage.CompletionTokens,
+				}
+			}
+
 			if len(resp.Choices) == 0 {
 				continue
 			}
@@ -65,7 +74,7 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 			}
 
 			if choice.FinishReason == "tool_calls" {
-				ch <- StreamEvent{ToolCalls: buildToolCalls(toolArgs), Done: true}
+				ch <- StreamEvent{ToolCalls: buildToolCalls(toolArgs), Usage: usage, Done: true}
 				return
 			}
 		}

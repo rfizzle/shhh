@@ -66,6 +66,9 @@ func (o *OpenAICompat) StreamCompletion(ctx context.Context, messages []Message,
 		Model:    model,
 		Messages: toOpenAIMessages(messages),
 		Stream:   true,
+		StreamOptions: &openai.StreamOptions{
+			IncludeUsage: true,
+		},
 	}
 	if opts.Temperature != nil {
 		req.Temperature = float32(*opts.Temperature)

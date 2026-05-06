@@ -7,9 +7,11 @@ import (
 )
 
 type StreamMetrics struct {
-	TTFT     *time.Duration
-	Duration *time.Duration
-	Success  bool
+	TTFT      *time.Duration
+	Duration  *time.Duration
+	TokensIn  *int64
+	TokensOut *int64
+	Success   bool
 }
 
 func InstrumentStream(events <-chan provider.StreamEvent) (<-chan provider.StreamEvent, *StreamMetrics) {
@@ -29,6 +31,12 @@ func InstrumentStream(events <-chan provider.StreamEvent) (<-chan provider.Strea
 				dur := time.Since(start)
 				metrics.Duration = &dur
 				metrics.Success = ev.Err == nil
+			}
+			if ev.Usage != nil {
+				in := int64(ev.Usage.PromptTokens)
+				out := int64(ev.Usage.CompletionTokens)
+				metrics.TokensIn = &in
+				metrics.TokensOut = &out
 			}
 			out <- ev
 		}

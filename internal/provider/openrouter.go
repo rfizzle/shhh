@@ -70,6 +70,9 @@ func (o *OpenRouter) StreamCompletion(ctx context.Context, messages []Message, o
 		Model:    model,
 		Messages: toOpenAIMessages(messages),
 		Stream:   true,
+		StreamOptions: &openai.StreamOptions{
+			IncludeUsage: true,
+		},
 	}
 	if opts.Temperature != nil {
 		req.Temperature = float32(*opts.Temperature)

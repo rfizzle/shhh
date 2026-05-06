@@ -33,9 +33,15 @@ type ToolCall struct {
 	Arguments string
 }
 
+type Usage struct {
+	PromptTokens     int
+	CompletionTokens int
+}
+
 type StreamEvent struct {
 	Token     string
 	ToolCalls []ToolCall
+	Usage     *Usage
 	Done      bool
 	Err       error
 }

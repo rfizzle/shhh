@@ -204,14 +204,16 @@ func NewRootCmd() *cobra.Command {
 					actionName = "cancel"
 				}
 				requestID, _ = db.RecordRequest(storage.RequestRecord{
-					Provider: p.Name(),
-					Model:    resolved.Model,
-					Prompt:   userPrompt,
-					Command:  result.Command,
-					Action:   actionName,
-					TTFT:     metrics.TTFT,
-					Duration: metrics.Duration,
-					Success:  metrics.Success,
+					Provider:  p.Name(),
+					Model:     resolved.Model,
+					Prompt:    userPrompt,
+					Command:   result.Command,
+					Action:    actionName,
+					TTFT:      metrics.TTFT,
+					Duration:  metrics.Duration,
+					TokensIn:  metrics.TokensIn,
+					TokensOut: metrics.TokensOut,
+					Success:   metrics.Success,
 				})
 			}
 
