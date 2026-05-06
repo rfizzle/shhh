@@ -1,6 +1,9 @@
 package storage
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type HistoryEntry struct {
 	ID        int64
@@ -55,6 +58,23 @@ func (db *DB) ListHistory(f HistoryFilter) ([]HistoryEntry, error) {
 func (db *DB) DeleteHistoryEntry(id int64) error {
 	_, err := db.sql.Exec(`DELETE FROM requests WHERE id = ?`, id)
 	return err
+}
+
+func (db *DB) PurgeOldHistory(retentionDays int) (int64, error) {
+	cutoff := time.Now().UTC().AddDate(0, 0, -retentionDays).Format(time.RFC3339Nano)
+	res, err := db.sql.Exec(`DELETE FROM requests WHERE created_at < ?`, cutoff)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
+}
+
+func (db *DB) ClearAllHistory() (int64, error) {
+	res, err := db.sql.Exec(`DELETE FROM requests`)
+	if err != nil {
+		return 0, fmt.Errorf("clear history: %w", err)
+	}
+	return res.RowsAffected()
 }
 
 func scanHistory(rows interface {

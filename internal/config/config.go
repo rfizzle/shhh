@@ -13,6 +13,7 @@ type Config struct {
 	Provider   ProviderConfig   `toml:"provider"`
 	Behavior   BehaviorConfig   `toml:"behavior"`
 	Appearance AppearanceConfig `toml:"appearance"`
+	History    HistoryConfig    `toml:"history"`
 }
 
 type ProviderConfig struct {
@@ -35,6 +36,12 @@ type AppearanceConfig struct {
 	AccentColor string `toml:"accent_color"`
 }
 
+type HistoryConfig struct {
+	RetentionDays int `toml:"retention_days"`
+}
+
+const DefaultRetentionDays = 90
+
 const DefaultContextMaxTokens = 8000
 
 func (c Config) SafetyWarningsEnabled() bool {
@@ -49,6 +56,13 @@ func (c Config) EffectiveContextMaxTokens() int {
 		return c.Behavior.ContextMaxTokens
 	}
 	return DefaultContextMaxTokens
+}
+
+func (c Config) EffectiveRetentionDays() int {
+	if c.History.RetentionDays > 0 {
+		return c.History.RetentionDays
+	}
+	return DefaultRetentionDays
 }
 
 // ProviderAPIKey returns the configured API key.
@@ -111,6 +125,10 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Behavior.SystemPromptExtra = value
 	case "appearance.accent_color":
 		cfg.Appearance.AccentColor = value
+	case "history.retention_days":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.History.RetentionDays = n
 	default:
 		return fmt.Errorf("unknown config key: %s", key)
 	}

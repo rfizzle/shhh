@@ -62,6 +62,46 @@ func newHistoryCmd() *cobra.Command {
 	cmd.Flags().IntVarP(&limit, "limit", "n", 50, "max entries to show")
 	cmd.Flags().BoolVar(&table, "table", false, "show table view instead of interactive browser")
 
+	cmd.AddCommand(newHistoryClearCmd())
+
+	return cmd
+}
+
+func newHistoryClearCmd() *cobra.Command {
+	var yes bool
+
+	cmd := &cobra.Command{
+		Use:   "clear",
+		Short: "Delete all history entries",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if !yes {
+				fmt.Print("Delete all history entries? [y/N] ")
+				var confirm string
+				fmt.Scanln(&confirm)
+				if confirm != "y" && confirm != "Y" {
+					fmt.Println("Cancelled.")
+					return nil
+				}
+			}
+
+			db, err := storage.Open()
+			if err != nil {
+				return fmt.Errorf("open database: %w", err)
+			}
+			defer db.Close()
+
+			n, err := db.ClearAllHistory()
+			if err != nil {
+				return err
+			}
+			fmt.Printf("Deleted %d entries.\n", n)
+			return nil
+		},
+	}
+
+	cmd.Flags().BoolVarP(&yes, "yes", "y", false, "skip confirmation prompt")
+
 	return cmd
 }
 

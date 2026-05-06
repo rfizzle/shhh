@@ -53,6 +53,13 @@ func NewRootCmd() *cobra.Command {
 
 			update.BackgroundCheck(version)
 
+			go func() {
+				if db, err := storage.Open(); err == nil {
+					db.PurgeOldHistory(cfg.EffectiveRetentionDays())
+					db.Close()
+				}
+			}()
+
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
