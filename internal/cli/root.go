@@ -291,6 +291,10 @@ func NewRootCmd() *cobra.Command {
 						fmt.Fprintf(os.Stderr, "Error saving snippet: %v\n", err)
 					} else {
 						fmt.Fprintf(os.Stderr, "Saved snippet %q.\n", result.SaveName)
+						if desc := generateDescription(cmd.Context(), p, result.Command); desc != "" {
+							_ = db.UpdateSnippetDescription(result.SaveName, desc)
+							fmt.Fprintf(os.Stderr, "Description: %s\n", desc)
+						}
 					}
 				}
 			case ui.ActionCopy:

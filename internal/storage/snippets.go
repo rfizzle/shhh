@@ -7,11 +7,12 @@ import (
 )
 
 type Snippet struct {
-	ID        int64
-	Name      string
-	Command   string
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	ID          int64
+	Name        string
+	Command     string
+	Description string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
 }
 
 func (db *DB) SaveSnippet(name, command string) error {
@@ -35,7 +36,7 @@ func (db *DB) SaveSnippet(name, command string) error {
 
 func (db *DB) ListSnippets() ([]Snippet, error) {
 	rows, err := db.sql.Query(
-		`SELECT id, name, command, created_at, updated_at FROM snippets ORDER BY updated_at DESC`,
+		`SELECT id, name, command, description, created_at, updated_at FROM snippets ORDER BY updated_at DESC`,
 	)
 	if err != nil {
 		return nil, err
@@ -48,7 +49,7 @@ func (db *DB) ListSnippets() ([]Snippet, error) {
 			s                    Snippet
 			createdAt, updatedAt string
 		)
-		if err := rows.Scan(&s.ID, &s.Name, &s.Command, &createdAt, &updatedAt); err != nil {
+		if err := rows.Scan(&s.ID, &s.Name, &s.Command, &s.Description, &createdAt, &updatedAt); err != nil {
 			return nil, err
 		}
 		s.CreatedAt, _ = time.Parse(time.RFC3339Nano, createdAt)
@@ -64,8 +65,8 @@ func (db *DB) GetSnippet(name string) (Snippet, error) {
 		createdAt, updatedAt string
 	)
 	err := db.sql.QueryRow(
-		`SELECT id, name, command, created_at, updated_at FROM snippets WHERE name = ?`, name,
-	).Scan(&s.ID, &s.Name, &s.Command, &createdAt, &updatedAt)
+		`SELECT id, name, command, description, created_at, updated_at FROM snippets WHERE name = ?`, name,
+	).Scan(&s.ID, &s.Name, &s.Command, &s.Description, &createdAt, &updatedAt)
 	if err == sql.ErrNoRows {
 		return Snippet{}, fmt.Errorf("snippet %q not found", name)
 	}
@@ -75,6 +76,32 @@ func (db *DB) GetSnippet(name string) (Snippet, error) {
 	s.CreatedAt, _ = time.Parse(time.RFC3339Nano, createdAt)
 	s.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updatedAt)
 	return s, nil
+}
+
+func (db *DB) UpdateSnippetDescription(name, description string) error {
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	res, err := db.sql.Exec(`UPDATE snippets SET description = ?, updated_at = ? WHERE name = ?`, description, now, name)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("snippet %q not found", name)
+	}
+	return nil
+}
+
+func (db *DB) RenameSnippet(oldName, newName string) error {
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	res, err := db.sql.Exec(`UPDATE snippets SET name = ?, updated_at = ? WHERE name = ?`, newName, now, oldName)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("snippet %q not found", oldName)
+	}
+	return nil
 }
 
 func (db *DB) DeleteSnippet(name string) error {
