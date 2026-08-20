@@ -111,6 +111,7 @@ type Model struct {
 
 	TotalTokensIn  int64
 	TotalTokensOut int64
+	contextTokens  int64
 	prices         *pricing.Table
 	modelName      string
 	updateNotice   string
@@ -518,6 +519,9 @@ func (m *Model) accumulateUsage(u *provider.Usage) {
 	if u != nil {
 		m.TotalTokensIn += int64(u.PromptTokens)
 		m.TotalTokensOut += int64(u.CompletionTokens)
+		// The latest request's prompt plus its completion is what the next
+		// request will roughly carry as context.
+		m.contextTokens = int64(u.PromptTokens) + int64(u.CompletionTokens)
 	}
 }
 
@@ -585,31 +589,43 @@ func (m Model) renderEntry(e entry, width int) string {
 }
 
 func (m Model) renderStatusBar(width int) string {
-	if m.TotalTokensIn == 0 && m.TotalTokensOut == 0 {
-		return statusBarStyle.Render(strings.Repeat(" ", width))
-	}
+	var left string
+	if m.TotalTokensIn != 0 || m.TotalTokensOut != 0 {
+		left = fmt.Sprintf("↑%d ↓%d", m.TotalTokensIn, m.TotalTokensOut)
 
-	tokens := fmt.Sprintf("↑%d ↓%d", m.TotalTokensIn, m.TotalTokensOut)
-
-	var cost string
-	if m.prices != nil && m.modelName != "" {
-		inCost, outCost, found := m.prices.Cost(m.modelName, m.TotalTokensIn, m.TotalTokensOut)
-		if found {
-			total := inCost + outCost
-			if total < 0.01 {
-				cost = fmt.Sprintf("  $%.4f", total)
-			} else {
-				cost = fmt.Sprintf("  $%.2f", total)
+		if m.prices != nil && m.modelName != "" {
+			inCost, outCost, found := m.prices.Cost(m.modelName, m.TotalTokensIn, m.TotalTokensOut)
+			if found {
+				total := inCost + outCost
+				if total < 0.01 {
+					left += fmt.Sprintf("  $%.4f", total)
+				} else {
+					left += fmt.Sprintf("  $%.2f", total)
+				}
 			}
+		}
+		if m.contextTokens > 0 {
+			left += "  ctx ~" + formatTokenCount(m.contextTokens)
 		}
 	}
 
-	info := tokens + cost
-	pad := width - lipgloss.Width(info)
+	right := m.modelName
+	pad := width - lipgloss.Width(left) - lipgloss.Width(right)
+	if pad < 1 {
+		right = ""
+		pad = width - lipgloss.Width(left)
+	}
 	if pad < 0 {
 		pad = 0
 	}
-	return statusBarStyle.Render(info + strings.Repeat(" ", pad))
+	return statusBarStyle.Render(left + strings.Repeat(" ", pad) + right)
+}
+
+func formatTokenCount(n int64) string {
+	if n < 1000 {
+		return fmt.Sprintf("%d", n)
+	}
+	return fmt.Sprintf("%.1fk", float64(n)/1000)
 }
 
 func (m *Model) renderHistory() string {
@@ -692,6 +708,13 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 	}
 
 	switch parts[0] {
+	case "/help":
+		return true, helpText()
+
+	case "/clear", "/new":
+		m.clearConversation()
+		return true, "Started a new conversation."
+
 	case "/save":
 		if m.db == nil {
 			return true, "Chat persistence is unavailable."
@@ -740,8 +763,40 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		return true, strings.TrimRight(sb.String(), "\n")
 
 	default:
+		// A lone "/word" is almost certainly a mistyped command; a path like
+		// /etc/hosts contains another slash and falls through to the LLM.
+		if strings.HasPrefix(parts[0], "/") && !strings.Contains(parts[0][1:], "/") {
+			return true, fmt.Sprintf("Unknown command %s. Type /help for available commands.", parts[0])
+		}
 		return false, ""
 	}
+}
+
+func helpText() string {
+	return strings.TrimSpace(`Commands:
+  /help          Show this help
+  /clear         Start a new conversation (also /new)
+  /save [name]   Save this chat
+  /load <name>   Load a saved chat
+  /chats         List saved chats
+  /exit          Quit (also /quit, /q)
+
+Keys:
+  Enter          Send message        Alt+Enter    Insert newline
+  Ctrl+C         Cancel response (or quit when idle)
+  Ctrl+D         Quit
+  PgUp/PgDn      Scroll history`)
+}
+
+// clearConversation drops everything except the system prompt.
+func (m *Model) clearConversation() {
+	if len(m.messages) > 0 && m.messages[0].Role == provider.RoleSystem {
+		m.messages = m.messages[:1:1]
+	} else {
+		m.messages = nil
+	}
+	m.resetTranscript()
+	m.contextTokens = 0
 }
 
 // loadConversation replaces the current conversation and rebuilds the

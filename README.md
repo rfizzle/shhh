@@ -170,6 +170,19 @@ shhh chat "help me debug this failing test"
 
 Chat mode has access to read-only tools: `read_file`, `list_directory`, and `search`.
 
+The status bar shows token usage, estimated cost, the current context size, and the active model.
+
+Slash commands inside a chat session:
+
+| Command | Description |
+|---|---|
+| `/help` | Show commands and keybindings |
+| `/clear` | Start a new conversation (also `/new`) |
+| `/save [name]` | Save this chat |
+| `/load <name>` | Load a saved chat |
+| `/chats` | List saved chats |
+| `/exit` | Quit (also `/quit`, `/q`, Ctrl+D) |
+
 ### Pipe mode
 
 Use in scripts or pipelines — activated when stdin is not a TTY or with `--raw`:

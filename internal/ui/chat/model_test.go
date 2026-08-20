@@ -1059,3 +1059,82 @@ func TestCancelDuringToolRun_IgnoresStaleResults(t *testing.T) {
 		t.Fatal("stale tool results should not trigger a re-stream")
 	}
 }
+
+func TestSlashHelp_ListsCommands(t *testing.T) {
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, mockStream)
+
+	handled, result := m.handleSlashCommand("/help")
+	if !handled {
+		t.Fatal("/help should be handled")
+	}
+	for _, want := range []string{"/save", "/load", "/chats", "/clear", "/exit"} {
+		if !strings.Contains(result, want) {
+			t.Errorf("help should mention %s", want)
+		}
+	}
+}
+
+func TestSlashClear_ResetsConversation(t *testing.T) {
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "hi"},
+		{Role: provider.RoleAssistant, Content: "hello"},
+	}
+	m := New(msgs, mockStream)
+	m.appendEntry(entry{kind: entryUser, text: "hi"})
+	m.appendEntry(entry{kind: entryAssistant, text: "hello"})
+	m.contextTokens = 500
+
+	handled, _ := m.handleSlashCommand("/clear")
+	if !handled {
+		t.Fatal("/clear should be handled")
+	}
+	if len(m.messages) != 1 || m.messages[0].Role != provider.RoleSystem {
+		t.Fatalf("expected only system message to survive /clear, got %d messages", len(m.messages))
+	}
+	if len(m.transcript) != 0 {
+		t.Fatal("transcript should be empty after /clear")
+	}
+	if m.contextTokens != 0 {
+		t.Fatal("context estimate should reset after /clear")
+	}
+}
+
+func TestSlashUnknown_Handled(t *testing.T) {
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, mockStream)
+
+	handled, result := m.handleSlashCommand("/bogus")
+	if !handled {
+		t.Fatal("unknown slash command should be intercepted")
+	}
+	if !strings.Contains(result, "/help") {
+		t.Fatalf("unknown-command message should point at /help, got %q", result)
+	}
+
+	// A path is not a command.
+	if handled, _ := m.handleSlashCommand("/etc/hosts is weird"); handled {
+		t.Fatal("a path should fall through to the LLM")
+	}
+}
+
+func TestStatusBar_ShowsModelAndContext(t *testing.T) {
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, mockStream).WithPricing(nil, "gpt-4o")
+	m.accumulateUsage(&provider.Usage{PromptTokens: 1200, CompletionTokens: 300})
+
+	bar := m.renderStatusBar(80)
+	if !strings.Contains(bar, "gpt-4o") {
+		t.Error("status bar should show model name")
+	}
+	if !strings.Contains(bar, "ctx ~1.5k") {
+		t.Errorf("status bar should show context estimate, got %q", bar)
+	}
+
+	// Model name shows even before any usage arrives.
+	empty := New(msgs, mockStream).WithPricing(nil, "gpt-4o")
+	if !strings.Contains(empty.renderStatusBar(80), "gpt-4o") {
+		t.Error("status bar should show model name before first response")
+	}
+}
