@@ -95,6 +95,11 @@ type Model struct {
 	cachedWidth  int
 	cachedCount  int
 
+	// Input recall: inputHistory holds previously submitted inputs;
+	// historyIdx == len(inputHistory) means "not browsing".
+	inputHistory []string
+	historyIdx   int
+
 	streaming     string
 	events        <-chan provider.StreamEvent
 	cancel        context.CancelFunc
@@ -212,14 +217,46 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.viewport.GotoBottom()
 				return m, nil
 			}
+			if strings.TrimSpace(m.input.Value()) != "" {
+				m.input.Reset()
+				m.historyIdx = len(m.inputHistory)
+				return m, nil
+			}
 			m.quitting = true
 			return m, tea.Quit
+		case "esc":
+			if m.state == stateInput {
+				m.input.Reset()
+				m.historyIdx = len(m.inputHistory)
+				return m, nil
+			}
+		case "up":
+			if m.state == stateInput && len(m.inputHistory) > 0 &&
+				(m.browsingHistory() || strings.TrimSpace(m.input.Value()) == "") {
+				if m.historyIdx > 0 {
+					m.historyIdx--
+					m.input.SetValue(m.inputHistory[m.historyIdx])
+				}
+				return m, nil
+			}
+		case "down":
+			if m.state == stateInput && m.browsingHistory() {
+				m.historyIdx++
+				if m.historyIdx >= len(m.inputHistory) {
+					m.historyIdx = len(m.inputHistory)
+					m.input.Reset()
+				} else {
+					m.input.SetValue(m.inputHistory[m.historyIdx])
+				}
+				return m, nil
+			}
 		case "enter":
 			if m.state == stateInput {
 				text := strings.TrimSpace(m.input.Value())
 				if text == "" {
 					return m, nil
 				}
+				m.recordInput(text)
 				if text == "/exit" || text == "/quit" || text == "/q" {
 					m.quitting = true
 					if m.cancel != nil {
@@ -324,6 +361,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	var cmds []tea.Cmd
 	if m.state == stateInput {
+		// Any other keypress while browsing input history turns the recalled
+		// text into a fresh draft.
+		if _, ok := msg.(tea.KeyMsg); ok {
+			m.historyIdx = len(m.inputHistory)
+		}
 		var cmd tea.Cmd
 		m.input, cmd = m.input.Update(msg)
 		cmds = append(cmds, cmd)
@@ -335,6 +377,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	m.atBottom = m.viewport.AtBottom()
 
 	return m, tea.Batch(cmds...)
+}
+
+func (m Model) browsingHistory() bool {
+	return m.historyIdx < len(m.inputHistory)
+}
+
+func (m *Model) recordInput(text string) {
+	if n := len(m.inputHistory); n == 0 || m.inputHistory[n-1] != text {
+		m.inputHistory = append(m.inputHistory, text)
+	}
+	m.historyIdx = len(m.inputHistory)
 }
 
 func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
@@ -783,7 +836,9 @@ func helpText() string {
 
 Keys:
   Enter          Send message        Alt+Enter    Insert newline
-  Ctrl+C         Cancel response (or quit when idle)
+  Up/Down        Recall previous inputs (when the input is empty)
+  Esc            Clear the input
+  Ctrl+C         Cancel response / clear input / quit
   Ctrl+D         Quit
   PgUp/PgDn      Scroll history`)
 }

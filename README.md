@@ -183,6 +183,8 @@ Slash commands inside a chat session:
 | `/chats` | List saved chats |
 | `/exit` | Quit (also `/quit`, `/q`, Ctrl+D) |
 
+Press Up/Down in an empty input to recall previous messages, Esc to clear the input, and Ctrl+C to cancel a streaming response (or clear the input / quit when idle). Type `/help` in a session for the full list.
+
 ### Pipe mode
 
 Use in scripts or pipelines — activated when stdin is not a TTY or with `--raw`:

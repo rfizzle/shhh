@@ -1138,3 +1138,107 @@ func TestStatusBar_ShowsModelAndContext(t *testing.T) {
 		t.Error("status bar should show model name before first response")
 	}
 }
+
+func sendText(t *testing.T, m Model, text string) Model {
+	t.Helper()
+	m.input.SetValue(text)
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	return updated.(Model)
+}
+
+func TestInputHistory_RecallWithArrows(t *testing.T) {
+	stream := multiTokenStream("ok")
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, stream)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updated.(Model)
+
+	m = sendText(t, m, "first question")
+	updated, _ = m.Update(doneMsg{})
+	m = updated.(Model)
+	m = sendText(t, m, "second question")
+	updated, _ = m.Update(doneMsg{})
+	m = updated.(Model)
+
+	// Up recalls most recent first.
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyUp})
+	m = updated.(Model)
+	if m.input.Value() != "second question" {
+		t.Fatalf("expected 'second question', got %q", m.input.Value())
+	}
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyUp})
+	m = updated.(Model)
+	if m.input.Value() != "first question" {
+		t.Fatalf("expected 'first question', got %q", m.input.Value())
+	}
+
+	// Down walks forward and clears past the newest entry.
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	m = updated.(Model)
+	if m.input.Value() != "second question" {
+		t.Fatalf("expected 'second question' going down, got %q", m.input.Value())
+	}
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	m = updated.(Model)
+	if m.input.Value() != "" {
+		t.Fatalf("expected empty input past newest entry, got %q", m.input.Value())
+	}
+}
+
+func TestInputHistory_UpIgnoredWhenDraftPresent(t *testing.T) {
+	stream := multiTokenStream("ok")
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, stream)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updated.(Model)
+
+	m = sendText(t, m, "earlier input")
+	updated, _ = m.Update(doneMsg{})
+	m = updated.(Model)
+
+	m.input.SetValue("my draft")
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyUp})
+	m = updated.(Model)
+	if m.input.Value() != "my draft" {
+		t.Fatalf("up with a non-empty draft should not clobber it, got %q", m.input.Value())
+	}
+}
+
+func TestEsc_ClearsInput(t *testing.T) {
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, mockStream)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updated.(Model)
+
+	m.input.SetValue("half-typed thought")
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	m = updated.(Model)
+	if m.input.Value() != "" {
+		t.Fatalf("Esc should clear input, got %q", m.input.Value())
+	}
+}
+
+func TestCtrlC_ClearsNonEmptyInputBeforeQuitting(t *testing.T) {
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, mockStream)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updated.(Model)
+
+	m.input.SetValue("oops")
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	m = updated.(Model)
+	if m.quitting {
+		t.Fatal("Ctrl+C with a draft should clear it, not quit")
+	}
+	if m.input.Value() != "" {
+		t.Fatalf("Ctrl+C should clear the draft, got %q", m.input.Value())
+	}
+	_ = cmd
+
+	// Second Ctrl+C on the now-empty input quits.
+	updated, cmd = m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	m = updated.(Model)
+	if !m.quitting || cmd == nil {
+		t.Fatal("Ctrl+C on empty input should quit")
+	}
+}
