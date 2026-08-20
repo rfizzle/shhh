@@ -1645,3 +1645,70 @@ func TestSlashLoad_NoArg_ListsChats(t *testing.T) {
 		t.Fatalf("bare /load should list chats with usage hint, got %q", result)
 	}
 }
+
+func TestSlashModel_ShowsCurrentModel(t *testing.T) {
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, mockStream).WithPricing(nil, "gpt-4o")
+
+	handled, result := m.handleSlashCommand("/model")
+	if !handled {
+		t.Fatal("/model should be handled")
+	}
+	if !strings.Contains(result, "gpt-4o") || !strings.Contains(result, "Usage: /model <name>") {
+		t.Fatalf("bare /model should show current model and usage, got %q", result)
+	}
+}
+
+func TestSlashModel_Switches(t *testing.T) {
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	var switched string
+	m := New(msgs, mockStream).
+		WithPricing(nil, "gpt-4o").
+		WithModelSwitcher(func(name string) { switched = name })
+
+	handled, result := m.handleSlashCommand("/model claude-opus-5")
+	if !handled || !strings.Contains(result, "Switched model to claude-opus-5") {
+		t.Fatalf("expected switch confirmation, got handled=%v result=%q", handled, result)
+	}
+	if switched != "claude-opus-5" {
+		t.Fatalf("switch callback should receive the new model, got %q", switched)
+	}
+	if m.modelName != "claude-opus-5" {
+		t.Fatalf("status-bar model name should update, got %q", m.modelName)
+	}
+	if !strings.Contains(m.renderStatusBar(80), "claude-opus-5") {
+		t.Fatal("status bar should show the new model")
+	}
+}
+
+func TestSlashModel_EdgeCases(t *testing.T) {
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+
+	// No switcher configured.
+	m := New(msgs, mockStream).WithPricing(nil, "gpt-4o")
+	if handled, result := m.handleSlashCommand("/model gpt-5"); !handled || !strings.Contains(result, "not available") {
+		t.Fatalf("expected 'not available' without a switcher, got %q", result)
+	}
+	if m.modelName != "gpt-4o" {
+		t.Fatal("model name must not change without a switcher")
+	}
+
+	calls := 0
+	m = m.WithModelSwitcher(func(string) { calls++ })
+
+	// Same model is a no-op.
+	if _, result := m.handleSlashCommand("/model gpt-4o"); !strings.Contains(result, "Already using") {
+		t.Fatalf("expected 'Already using', got %q", result)
+	}
+	if calls != 0 {
+		t.Fatal("switching to the current model should not invoke the callback")
+	}
+
+	// Spaces are rejected.
+	if _, result := m.handleSlashCommand("/model two words"); !strings.Contains(result, "cannot contain spaces") {
+		t.Fatalf("expected spaces rejection, got %q", result)
+	}
+	if calls != 0 {
+		t.Fatal("invalid input should not invoke the callback")
+	}
+}

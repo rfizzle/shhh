@@ -104,6 +104,7 @@ type Model struct {
 	db       *storage.DB
 	copyFn   func(string) clipboard.Result
 	runFn    func(context.Context, string) (string, int)
+	switchFn func(string)
 
 	viewport viewport.Model
 	input    textarea.Model
@@ -180,6 +181,13 @@ func (m Model) WithToolExecutor(executor ToolExecutor) Model {
 // WithRunner enables /run with the given command executor.
 func (m Model) WithRunner(run func(context.Context, string) (string, int)) Model {
 	m.runFn = run
+	return m
+}
+
+// WithModelSwitcher enables /model <name>; fn must make subsequent stream
+// requests use the given model.
+func (m Model) WithModelSwitcher(fn func(string)) Model {
+	m.switchFn = fn
 	return m
 }
 
@@ -1090,6 +1098,27 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		m.clearConversation()
 		return true, "Started a new conversation."
 
+	case "/model":
+		if len(parts) < 2 {
+			if m.modelName != "" {
+				return true, fmt.Sprintf("Current model: %s\nUsage: /model <name>", m.modelName)
+			}
+			return true, "Usage: /model <name>"
+		}
+		if m.switchFn == nil {
+			return true, "Model switching is not available in this session."
+		}
+		if len(parts) > 2 {
+			return true, "Model names cannot contain spaces. Usage: /model <name>"
+		}
+		name := parts[1]
+		if name == m.modelName {
+			return true, fmt.Sprintf("Already using %s.", name)
+		}
+		m.switchFn(name)
+		m.modelName = name
+		return true, fmt.Sprintf("Switched model to %s.", name)
+
 	case "/copy":
 		text := m.lastAssistantText()
 		if text == "" {
@@ -1185,6 +1214,7 @@ func helpText() string {
   /clear         Start a new conversation (also /new)
   /copy [code]   Copy the last response (or just its code blocks)
   /run [n]       Run a code block from the last response (with confirmation)
+  /model [name]  Show or switch the model for this session
   /save [name]   Save this chat
   /load <name>   Load a saved chat
   /chats         List saved chats

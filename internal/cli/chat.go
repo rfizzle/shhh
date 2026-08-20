@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sync"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mattn/go-isatty"
@@ -66,9 +67,18 @@ func newChatCmd() *cobra.Command {
 				ToolChoice: "auto",
 			}
 
+			// /model switches this mid-session; the stream closure runs in a
+			// background goroutine, so guard the read.
+			var modelMu sync.Mutex
+			currentModel := resolved.Model
+
 			stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 				ctx, cancel := context.WithCancel(cmd.Context())
-				ev, sErr := p.StreamCompletion(ctx, msgs, compOpts)
+				opts := compOpts
+				modelMu.Lock()
+				opts.Model = currentModel
+				modelMu.Unlock()
+				ev, sErr := p.StreamCompletion(ctx, msgs, opts)
 				if sErr != nil {
 					cancel()
 					return nil, nil, sErr
@@ -90,7 +100,12 @@ func newChatCmd() *cobra.Command {
 				WithToolExecutor(tools.Execute).
 				WithDB(db).
 				WithPricing(prices, resolved.Model).
-				WithRunner(runner.RunCapture)
+				WithRunner(runner.RunCapture).
+				WithModelSwitcher(func(name string) {
+					modelMu.Lock()
+					currentModel = name
+					modelMu.Unlock()
+				})
 
 			if continueLast || resumePick {
 				if db == nil {
