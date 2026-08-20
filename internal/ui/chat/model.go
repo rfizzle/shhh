@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -84,6 +85,7 @@ type Model struct {
 	stream   StreamFunc
 	executor ToolExecutor
 	db       *storage.DB
+	copyFn   func(string) clipboard.Result
 
 	viewport viewport.Model
 	input    textarea.Model
@@ -142,6 +144,7 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 		spinner:  s,
 		state:    stateInput,
 		atBottom: true,
+		copyFn:   clipboard.Copy,
 	}
 }
 
@@ -768,6 +771,26 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		m.clearConversation()
 		return true, "Started a new conversation."
 
+	case "/copy":
+		text := m.lastAssistantText()
+		if text == "" {
+			return true, "Nothing to copy yet."
+		}
+		what := "response"
+		if len(parts) > 1 && parts[1] == "code" {
+			blocks := extractCodeBlocks(text)
+			if len(blocks) == 0 {
+				return true, "No code blocks in the last response."
+			}
+			text = strings.Join(blocks, "\n")
+			what = "code"
+		}
+		cr := m.copyFn(text)
+		if cr.Warning != "" {
+			return true, cr.Warning
+		}
+		return true, "Copied last " + what + " to clipboard."
+
 	case "/save":
 		if m.db == nil {
 			return true, "Chat persistence is unavailable."
@@ -825,10 +848,22 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 	}
 }
 
+// lastAssistantText returns the content of the most recent assistant message
+// that has any text.
+func (m Model) lastAssistantText() string {
+	for i := len(m.messages) - 1; i >= 0; i-- {
+		if m.messages[i].Role == provider.RoleAssistant && m.messages[i].Content != "" {
+			return m.messages[i].Content
+		}
+	}
+	return ""
+}
+
 func helpText() string {
 	return strings.TrimSpace(`Commands:
   /help          Show this help
   /clear         Start a new conversation (also /new)
+  /copy [code]   Copy the last response (or just its code blocks)
   /save [name]   Save this chat
   /load <name>   Load a saved chat
   /chats         List saved chats

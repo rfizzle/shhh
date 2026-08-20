@@ -178,6 +178,7 @@ Slash commands inside a chat session:
 |---|---|
 | `/help` | Show commands and keybindings |
 | `/clear` | Start a new conversation (also `/new`) |
+| `/copy [code]` | Copy the last response (or just its code blocks) |
 | `/save [name]` | Save this chat |
 | `/load <name>` | Load a saved chat |
 | `/chats` | List saved chats |
