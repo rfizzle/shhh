@@ -1,8 +1,11 @@
 package runner
 
 import (
+	"context"
 	"os"
+	"strings"
 	"testing"
+	"time"
 )
 
 func TestRun_SuccessfulCommand(t *testing.T) {
@@ -52,5 +55,34 @@ func TestRun_InvalidCommand(t *testing.T) {
 	code := Run("command_that_does_not_exist_xyz")
 	if code == 0 {
 		t.Error("expected non-zero exit code for invalid command")
+	}
+}
+
+func TestRunCapture_CapturesOutputAndExitCode(t *testing.T) {
+	out, code := RunCapture(context.Background(), "echo captured; exit 3")
+	if !strings.Contains(out, "captured") {
+		t.Errorf("expected output captured, got %q", out)
+	}
+	if code != 3 {
+		t.Errorf("expected exit code 3, got %d", code)
+	}
+}
+
+func TestRunCapture_CombinesStderr(t *testing.T) {
+	out, code := RunCapture(context.Background(), "echo oops 1>&2")
+	if !strings.Contains(out, "oops") {
+		t.Errorf("expected stderr captured, got %q", out)
+	}
+	if code != 0 {
+		t.Errorf("expected exit code 0, got %d", code)
+	}
+}
+
+func TestRunCapture_ContextCancelKills(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+	defer cancel()
+	_, code := RunCapture(ctx, "sleep 5")
+	if code == 0 {
+		t.Error("killed command should not report success")
 	}
 }

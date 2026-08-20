@@ -1242,3 +1242,153 @@ func TestCtrlC_ClearsNonEmptyInputBeforeQuitting(t *testing.T) {
 		t.Fatal("Ctrl+C on empty input should quit")
 	}
 }
+
+func runCapableModel(response string) Model {
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "how?"},
+		{Role: provider.RoleAssistant, Content: response},
+	}
+	m := New(msgs, mockStream).WithRunner(func(ctx context.Context, cmd string) (string, int) {
+		return "ran: " + cmd, 0
+	})
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	return updated.(Model)
+}
+
+func TestRun_SingleBlock_ConfirmAndExecute(t *testing.T) {
+	m := runCapableModel("Do this:\n```bash\necho hi\n```")
+
+	m = sendText(t, m, "/run")
+	if m.state != stateConfirmRun {
+		t.Fatalf("expected confirm state, got %d", m.state)
+	}
+	if m.pendingRun != "echo hi" {
+		t.Fatalf("expected pending 'echo hi', got %q", m.pendingRun)
+	}
+	view := m.View()
+	if !strings.Contains(view, "echo hi") || !strings.Contains(view, "[y/N]") {
+		t.Fatal("confirm prompt should show the command and y/N")
+	}
+
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	m = updated.(Model)
+	if m.state != stateRunningCmd {
+		t.Fatalf("expected running state, got %d", m.state)
+	}
+	if cmd == nil {
+		t.Fatal("expected run cmd")
+	}
+
+	var done cmdDoneMsg
+	// tea.Batch wraps cmds; find the cmdDoneMsg among them.
+	found := false
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(cmdDoneMsg); ok {
+			done = msg
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("expected cmdDoneMsg from run cmd")
+	}
+	if done.output != "ran: echo hi" || done.exitCode != 0 {
+		t.Fatalf("unexpected run result: %+v", done)
+	}
+
+	updated, _ = m.Update(done)
+	m = updated.(Model)
+	if m.state != stateInput {
+		t.Fatal("should return to input after command completes")
+	}
+	last := m.Messages()[len(m.Messages())-1]
+	if last.Role != provider.RoleUser || !strings.Contains(last.Content, "ran: echo hi") {
+		t.Fatalf("command output should be recorded in conversation, got %+v", last)
+	}
+	if !strings.Contains(last.Content, "Exit code: 0") {
+		t.Fatal("conversation record should include the exit code")
+	}
+}
+
+func unwrapBatch(cmd tea.Cmd) []tea.Cmd {
+	msg := cmd()
+	if batch, ok := msg.(tea.BatchMsg); ok {
+		return batch
+	}
+	return []tea.Cmd{func() tea.Msg { return msg }}
+}
+
+func TestRun_Declined(t *testing.T) {
+	m := runCapableModel("```bash\nrm -rf /tmp/x\n```")
+	m = sendText(t, m, "/run")
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+	m = updated.(Model)
+
+	if m.state != stateInput {
+		t.Fatal("declining should return to input")
+	}
+	if m.pendingRun != "" {
+		t.Fatal("pending command should be cleared")
+	}
+	// Nothing was appended to the conversation.
+	if len(m.Messages()) != 3 {
+		t.Fatalf("declined run should not touch messages, got %d", len(m.Messages()))
+	}
+}
+
+func TestRun_ConfirmShowsSafetyWarning(t *testing.T) {
+	m := runCapableModel("```bash\nrm -rf /\n```")
+	m = sendText(t, m, "/run")
+	if m.state != stateConfirmRun {
+		t.Fatalf("expected confirm state, got %d", m.state)
+	}
+	if !strings.Contains(m.View(), "⚠") {
+		t.Fatal("dangerous command should show a safety warning in the confirm prompt")
+	}
+}
+
+func TestRun_MultipleBlocks_RequiresIndex(t *testing.T) {
+	m := runCapableModel("First:\n```bash\necho one\n```\nSecond:\n```bash\necho two\n```")
+
+	m = sendText(t, m, "/run")
+	if m.state != stateInput {
+		t.Fatal("ambiguous /run should stay in input state")
+	}
+	if len(m.transcript) == 0 || !strings.Contains(m.transcript[len(m.transcript)-1].text, "/run <n>") {
+		t.Fatal("expected a numbered list asking for /run <n>")
+	}
+
+	m = sendText(t, m, "/run 2")
+	if m.state != stateConfirmRun || m.pendingRun != "echo two" {
+		t.Fatalf("expected confirm of 'echo two', got state=%d pending=%q", m.state, m.pendingRun)
+	}
+}
+
+func TestRun_NoBlocks(t *testing.T) {
+	m := runCapableModel("no code here, sorry")
+	m = sendText(t, m, "/run")
+	if m.state != stateInput {
+		t.Fatal("should stay in input state")
+	}
+	if len(m.transcript) == 0 || !strings.Contains(m.transcript[len(m.transcript)-1].text, "No code blocks") {
+		t.Fatal("expected 'No code blocks' message")
+	}
+}
+
+func TestRun_NoRunner(t *testing.T) {
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleAssistant, Content: "```bash\nls\n```"},
+	}
+	m := New(msgs, mockStream)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updated.(Model)
+
+	m = sendText(t, m, "/run")
+	if m.state != stateInput {
+		t.Fatal("should stay in input state without a runner")
+	}
+	if len(m.transcript) == 0 || !strings.Contains(m.transcript[len(m.transcript)-1].text, "not available") {
+		t.Fatal("expected 'not available' message")
+	}
+}

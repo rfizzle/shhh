@@ -1,6 +1,8 @@
 package runner
 
 import (
+	"context"
+	"errors"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -43,4 +45,26 @@ func Run(command string) (exitCode int) {
 	go history.Append(filepath.Base(sh), command)
 
 	return 0
+}
+
+// RunCapture executes command through the user's shell with stdout and stderr
+// captured instead of inherited, for callers that display the output
+// themselves (e.g. the chat TUI). Cancelling the context kills the command;
+// a non-exit failure (including a kill) reports exit code -1.
+func RunCapture(ctx context.Context, command string) (output string, exitCode int) {
+	sh := os.Getenv("SHELL")
+	if sh == "" {
+		sh = "/bin/sh"
+	}
+
+	cmd := exec.CommandContext(ctx, filepath.Clean(sh), "-c", command)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			return string(out), exitErr.ExitCode()
+		}
+		return string(out), -1
+	}
+	return string(out), 0
 }

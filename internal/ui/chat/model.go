@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/spinner"
@@ -14,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/storage"
 )
 
@@ -25,6 +27,8 @@ type state int
 const (
 	stateInput state = iota
 	stateStreaming
+	stateConfirmRun
+	stateRunningCmd
 )
 
 const inputHeight = 3
@@ -58,6 +62,12 @@ type toolResultsMsg struct {
 	runID   int
 	results []toolExecution
 }
+type cmdDoneMsg struct {
+	runID    int
+	command  string
+	output   string
+	exitCode int
+}
 type initialPromptMsg struct{}
 
 type entryKind int
@@ -68,6 +78,7 @@ const (
 	entryTool
 	entrySystem
 	entryError
+	entryCommand
 )
 
 // entry is one transcript item, stored raw so the history can be re-rendered
@@ -78,6 +89,7 @@ type entry struct {
 	toolName   string
 	toolArgs   string
 	toolResult string
+	exitCode   int
 }
 
 type Model struct {
@@ -86,6 +98,7 @@ type Model struct {
 	executor ToolExecutor
 	db       *storage.DB
 	copyFn   func(string) clipboard.Result
+	runFn    func(context.Context, string) (string, int)
 
 	viewport viewport.Model
 	input    textarea.Model
@@ -109,6 +122,8 @@ type Model struct {
 	runID         int
 	runningTools  bool
 	pendingCalls  []provider.ToolCall
+	pendingRun    string
+	runCancel     context.CancelFunc
 	width         int
 	height        int
 	ready         bool
@@ -150,6 +165,12 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 
 func (m Model) WithToolExecutor(executor ToolExecutor) Model {
 	m.executor = executor
+	return m
+}
+
+// WithRunner enables /run with the given command executor.
+func (m Model) WithRunner(run func(context.Context, string) (string, int)) Model {
+	m.runFn = run
 	return m
 }
 
@@ -206,14 +227,26 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
+		if m.state == stateConfirmRun {
+			return m.updateConfirmRun(msg)
+		}
 		switch msg.String() {
 		case "ctrl+d":
 			m.quitting = true
 			if m.cancel != nil {
 				m.cancel()
 			}
+			if m.runCancel != nil {
+				m.runCancel()
+			}
 			return m, tea.Quit
 		case "ctrl+c":
+			if m.state == stateRunningCmd {
+				if m.runCancel != nil {
+					m.runCancel()
+				}
+				return m, nil
+			}
 			if m.state == stateStreaming {
 				m.cancelStreaming()
 				m.viewport.SetContent(m.renderHistory())
@@ -266,6 +299,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 						m.cancel()
 					}
 					return m, tea.Quit
+				}
+				if parts := strings.Fields(text); len(parts) > 0 && parts[0] == "/run" {
+					m.input.Reset()
+					result, entersConfirm := m.startRun(parts)
+					if !entersConfirm {
+						m.appendEntry(entry{kind: entrySystem, text: result})
+					}
+					m.viewport.SetContent(m.renderHistory())
+					m.viewport.GotoBottom()
+					return m, nil
 				}
 				if handled, result := m.handleSlashCommand(text); handled {
 					m.input.Reset()
@@ -344,6 +387,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 		return m, m.requestStream()
 
+	case cmdDoneMsg:
+		if msg.runID != m.runID || m.state != stateRunningCmd {
+			return m, nil
+		}
+		m.runCancel = nil
+		m.state = stateInput
+		out := strings.TrimRight(msg.output, "\n")
+		m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out, exitCode: msg.exitCode})
+		m.messages = append(m.messages, provider.Message{
+			Role:    provider.RoleUser,
+			Content: commandContextMessage(msg.command, out, msg.exitCode),
+		})
+		m.viewport.SetContent(m.renderHistory())
+		m.viewport.GotoBottom()
+		return m, nil
+
 	case streamErrMsg:
 		m.appendEntry(entry{kind: entryError, text: msg.err.Error()})
 		m.streaming = ""
@@ -355,7 +414,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case spinner.TickMsg:
-		if m.state == stateStreaming && m.streaming == "" {
+		if (m.state == stateStreaming && m.streaming == "") || m.state == stateRunningCmd {
 			var cmd tea.Cmd
 			m.spinner, cmd = m.spinner.Update(msg)
 			return m, cmd
@@ -427,21 +486,130 @@ func (m Model) View() string {
 	topDivider := dividerStyle(contentWidth)
 
 	var body string
-	if m.state == stateStreaming && m.streaming == "" {
+	switch {
+	case m.state == stateStreaming && m.streaming == "":
 		label := "Thinking…"
 		if m.runningTools {
 			label = "Running tools…"
 		}
 		body = m.viewport.View() + "\n" + m.spinner.View() + " " + label
-	} else {
+	case m.state == stateRunningCmd:
+		body = m.viewport.View() + "\n" + m.spinner.View() + " Running command…"
+	default:
 		body = m.viewport.View()
 	}
 
 	bottomDivider := dividerStyle(contentWidth)
 	statusBar := m.renderStatusBar(contentWidth)
 
-	content := header + "\n" + topDivider + "\n" + body + "\n" + bottomDivider + "\n" + statusBar + "\n" + m.input.View()
+	inputView := m.input.View()
+	if m.state == stateConfirmRun {
+		inputView = m.renderRunConfirm()
+	}
+
+	content := header + "\n" + topDivider + "\n" + body + "\n" + bottomDivider + "\n" + statusBar + "\n" + inputView
 	return lipgloss.NewStyle().Padding(0, horizontalPadding).Render(content)
+}
+
+// startRun resolves which code block from the last response to execute.
+// It returns either a message for the transcript, or entersConfirm=true after
+// switching to the confirmation state.
+func (m *Model) startRun(parts []string) (result string, entersConfirm bool) {
+	if m.runFn == nil {
+		return "Command execution is not available in this session.", false
+	}
+	blocks := extractCodeBlocks(m.lastAssistantText())
+	if len(blocks) == 0 {
+		return "No code blocks in the last response to run.", false
+	}
+	idx := 0
+	if len(parts) > 1 {
+		n, err := strconv.Atoi(parts[1])
+		if err != nil || n < 1 || n > len(blocks) {
+			return fmt.Sprintf("Usage: /run [1-%d]", len(blocks)), false
+		}
+		idx = n - 1
+	} else if len(blocks) > 1 {
+		var sb strings.Builder
+		fmt.Fprintf(&sb, "The last response has %d code blocks:\n", len(blocks))
+		for i, b := range blocks {
+			fmt.Fprintf(&sb, "  %d. %s\n", i+1, firstLine(b))
+		}
+		sb.WriteString("Pick one with /run <n>.")
+		return sb.String(), false
+	}
+	m.pendingRun = blocks[idx]
+	m.state = stateConfirmRun
+	return "", true
+}
+
+func (m Model) updateConfirmRun(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "y", "Y", "enter":
+		return m.executeRun()
+	case "n", "N", "esc", "ctrl+c":
+		m.pendingRun = ""
+		m.state = stateInput
+		m.appendEntry(entry{kind: entrySystem, text: "Run cancelled."})
+		m.viewport.SetContent(m.renderHistory())
+		m.viewport.GotoBottom()
+		return m, nil
+	case "ctrl+d":
+		m.quitting = true
+		return m, tea.Quit
+	}
+	return m, nil
+}
+
+func (m Model) executeRun() (tea.Model, tea.Cmd) {
+	command := m.pendingRun
+	m.pendingRun = ""
+	m.state = stateRunningCmd
+	ctx, cancel := context.WithCancel(context.Background())
+	m.runCancel = cancel
+	runID := m.runID
+	runFn := m.runFn
+	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
+		out, code := runFn(ctx, command)
+		return cmdDoneMsg{runID: runID, command: command, output: out, exitCode: code}
+	})
+}
+
+func (m Model) renderRunConfirm() string {
+	lines := []string{userStyle.Render("Run: ") + firstLine(m.pendingRun)}
+	if warnings := safety.Check(m.pendingRun); len(warnings) > 0 {
+		var risks []string
+		for _, w := range warnings {
+			risks = append(risks, w.Risk)
+		}
+		lines = append(lines, errorStyle.Render("⚠ "+strings.Join(risks, "; ")))
+	}
+	lines = append(lines, systemMsgStyle.Render("Run this command? [y/N]"))
+	for len(lines) < inputHeight {
+		lines = append(lines, "")
+	}
+	return strings.Join(lines[:inputHeight], "\n")
+}
+
+// commandContextMessage is appended to the conversation (as the user) so the
+// model can see what a /run produced, without triggering a response.
+func commandContextMessage(command, output string, exitCode int) string {
+	const maxLen = 4000
+	if len(output) > maxLen {
+		output = output[:maxLen] + "\n… (output truncated)"
+	}
+	if strings.TrimSpace(output) == "" {
+		output = "(no output)"
+	}
+	return fmt.Sprintf("I ran this command:\n```\n%s\n```\nExit code: %d\nOutput:\n```\n%s\n```", command, exitCode, output)
+}
+
+func firstLine(s string) string {
+	s = strings.TrimSpace(s)
+	if i := strings.IndexByte(s, '\n'); i >= 0 {
+		return s[:i] + " …"
+	}
+	return s
 }
 
 func (m Model) requestStream() tea.Cmd {
@@ -542,6 +710,20 @@ func (m Model) renderToolBlock(name, args, result string) string {
 	return block.String()
 }
 
+func (m Model) renderCommandBlock(e entry) string {
+	border := toolBorderStyle.Render("│")
+
+	var block strings.Builder
+	block.WriteString(border + " " + toolStyle.Render("$ "+firstLine(e.text)) + " " + toolArgsStyle.Render(fmt.Sprintf("(exit %d)", e.exitCode)) + "\n")
+	if strings.TrimSpace(e.toolResult) != "" {
+		for _, line := range strings.Split(truncateLines(e.toolResult, maxToolResultLines), "\n") {
+			block.WriteString(border + " " + toolResultStyle.Render(line) + "\n")
+		}
+	}
+	block.WriteString("\n")
+	return block.String()
+}
+
 func formatToolArgs(raw string) string {
 	var m map[string]any
 	if err := json.Unmarshal([]byte(raw), &m); err != nil {
@@ -636,6 +818,8 @@ func (m Model) renderEntry(e entry, width int) string {
 		return assistantStyle.Render("Assistant") + "\n" + renderMarkdown(e.text, width) + "\n\n"
 	case entryTool:
 		return m.renderToolBlock(e.toolName, e.toolArgs, e.toolResult)
+	case entryCommand:
+		return m.renderCommandBlock(e)
 	case entrySystem:
 		return systemMsgStyle.Render(e.text) + "\n\n"
 	case entryError:
@@ -864,6 +1048,7 @@ func helpText() string {
   /help          Show this help
   /clear         Start a new conversation (also /new)
   /copy [code]   Copy the last response (or just its code blocks)
+  /run [n]       Run a code block from the last response (with confirmation)
   /save [name]   Save this chat
   /load <name>   Load a saved chat
   /chats         List saved chats
