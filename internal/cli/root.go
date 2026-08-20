@@ -322,7 +322,7 @@ func NewRootCmd() *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().StringVar(&flags.FlagProvider, "provider", "", "LLM provider (openai, gemini, openrouter, openai-compatible)")
+	cmd.PersistentFlags().StringVar(&flags.FlagProvider, "provider", "", "LLM provider (openai, anthropic, gemini, openrouter, openai-compatible)")
 	cmd.PersistentFlags().StringVar(&flags.FlagModel, "model", "", "model name to use")
 	cmd.PersistentFlags().StringVar(&flags.FlagAPIKey, "api-key", "", "API key (overrides env var)")
 	cmd.Flags().BoolVar(&rawMode, "raw", false, "force pipe mode: raw command output, no TUI")

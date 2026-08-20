@@ -114,6 +114,7 @@ accent_color = "cyan"
 | Provider | Name | Default Model | Default Base URL |
 |---|---|---|---|
 | OpenAI | `openai` | `gpt-4o` | `https://api.openai.com/v1` |
+| Anthropic | `anthropic` | `claude-opus-5` | Anthropic API |
 | Google Gemini | `gemini` | `gemini-2.5-flash` | Google AI API |
 | OpenRouter | `openrouter` | `anthropic/claude-sonnet-4-6` | `https://openrouter.ai/api/v1` |
 | OpenAI-Compatible | `openai-compatible` | `llama3` | `http://localhost:11434/v1` |
@@ -138,6 +139,7 @@ These are checked when `SHHH_API_KEY` is not set:
 | Variable | Provider |
 |---|---|
 | `OPENAI_API_KEY` | OpenAI |
+| `ANTHROPIC_API_KEY` | Anthropic |
 | `GEMINI_API_KEY` | Gemini |
 | `OPENROUTER_API_KEY` | OpenRouter |
 
