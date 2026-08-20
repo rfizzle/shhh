@@ -20,6 +20,10 @@ import (
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
+// AutosaveName is the reserved chat-session slot that always mirrors the most
+// recent conversation, used by `shhh chat --continue`.
+const AutosaveName = "(last session)"
+
 type StreamFunc func([]provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error)
 type ToolExecutor func(name string, args json.RawMessage) (string, error)
 
@@ -200,6 +204,37 @@ func (m Model) WithUpdateNotice(notice string) Model {
 	return m
 }
 
+// WithResumedMessages replaces the conversation with a previously saved one
+// and rebuilds the transcript from it.
+func (m Model) WithResumedMessages(msgs []provider.Message) Model {
+	m.loadConversation(msgs)
+	return m
+}
+
+// autosaveCmd persists the conversation to the autosave slot in the
+// background. Returns nil when there is no DB or nothing beyond the system
+// prompt to save.
+func (m Model) autosaveCmd() tea.Cmd {
+	if m.db == nil || len(m.messages) <= 1 {
+		return nil
+	}
+	db := m.db
+	msgs := make([]provider.Message, len(m.messages))
+	copy(msgs, m.messages)
+	return func() tea.Msg {
+		_ = db.SaveChat(AutosaveName, msgs)
+		return nil
+	}
+}
+
+// quitCmd quits, autosaving first when possible.
+func (m Model) quitCmd() tea.Cmd {
+	if save := m.autosaveCmd(); save != nil {
+		return tea.Sequence(save, tea.Quit)
+	}
+	return tea.Quit
+}
+
 func (m Model) Messages() []provider.Message { return m.messages }
 
 func (m Model) Init() tea.Cmd {
@@ -244,7 +279,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.runCancel != nil {
 				m.runCancel()
 			}
-			return m, tea.Quit
+			return m, m.quitCmd()
 		case "ctrl+c":
 			if m.state == stateRunningCmd {
 				if m.runCancel != nil {
@@ -256,7 +291,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.cancelStreaming()
 				m.viewport.SetContent(m.renderHistory())
 				m.viewport.GotoBottom()
-				return m, nil
+				return m, m.autosaveCmd()
 			}
 			if strings.TrimSpace(m.input.Value()) != "" {
 				m.input.Reset()
@@ -264,7 +299,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			m.quitting = true
-			return m, tea.Quit
+			return m, m.quitCmd()
 		case "esc":
 			if m.state == stateInput {
 				m.input.Reset()
@@ -303,7 +338,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					if m.cancel != nil {
 						m.cancel()
 					}
-					return m, tea.Quit
+					return m, m.quitCmd()
 				}
 				if parts := strings.Fields(text); len(parts) > 0 && parts[0] == "/run" {
 					m.input.Reset()
@@ -353,7 +388,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.finishStreaming()
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
-		return m, nil
+		return m, m.autosaveCmd()
 
 	case toolCallsMsg:
 		m.accumulateUsage(msg.usage)
@@ -436,7 +471,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		})
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
-		return m, nil
+		return m, m.autosaveCmd()
 
 	case streamErrMsg:
 		m.appendEntry(entry{kind: entryError, text: msg.err.Error()})
@@ -446,7 +481,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.state = stateInput
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
-		return m, nil
+		return m, m.autosaveCmd()
 
 	case spinner.TickMsg:
 		if (m.state == stateStreaming && m.streaming == "") || m.state == stateRunningCmd {
@@ -607,7 +642,7 @@ func (m Model) updateConfirmRun(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case "ctrl+d":
 		m.quitting = true
-		return m, tea.Quit
+		return m, m.quitCmd()
 	}
 	return m, nil
 }
@@ -1093,7 +1128,8 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 			return true, "Chat persistence is unavailable."
 		}
 		if len(parts) < 2 {
-			return true, "Usage: /load <name>"
+			_, listing := m.handleSlashCommand("/chats")
+			return true, listing + "\n\nUsage: /load <name>"
 		}
 		name := strings.Join(parts[1:], " ")
 		msgs, err := m.db.LoadChat(name)

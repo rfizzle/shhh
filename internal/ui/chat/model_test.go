@@ -9,6 +9,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/storage"
 )
 
 func mockStream(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
@@ -1548,5 +1549,99 @@ func TestExecTool_InvalidArgsSkipped(t *testing.T) {
 	}
 	if m.state != stateStreaming || restream == nil {
 		t.Fatal("stream should resume after skipping the invalid call")
+	}
+}
+
+func TestAutosave_AfterExchange(t *testing.T) {
+	db, err := storage.OpenPath(t.TempDir() + "/test.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, multiTokenStream("hi there")).WithDB(db)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updated.(Model)
+
+	m = sendText(t, m, "hello")
+	updated, _ = m.Update(tokenMsg{text: "hi there"})
+	m = updated.(Model)
+	updated, save := m.Update(doneMsg{})
+	m = updated.(Model)
+
+	if save == nil {
+		t.Fatal("doneMsg should return an autosave cmd")
+	}
+	save() // run the autosave
+
+	saved, err := db.LoadChat(AutosaveName)
+	if err != nil {
+		t.Fatalf("expected autosave slot to exist: %v", err)
+	}
+	if len(saved) != 3 || saved[2].Content != "hi there" {
+		t.Fatalf("autosave should contain the full exchange, got %d messages", len(saved))
+	}
+}
+
+func TestAutosave_NilWithoutDBOrContent(t *testing.T) {
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, mockStream)
+	if m.autosaveCmd() != nil {
+		t.Fatal("no DB → no autosave cmd")
+	}
+
+	db, err := storage.OpenPath(t.TempDir() + "/test.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	m = m.WithDB(db)
+	if m.autosaveCmd() != nil {
+		t.Fatal("system-prompt-only conversation should not autosave")
+	}
+}
+
+func TestWithResumedMessages_RebuildsTranscript(t *testing.T) {
+	saved := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "old question"},
+		{Role: provider.RoleAssistant, Content: "old answer"},
+	}
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
+		WithResumedMessages(saved)
+
+	if len(m.Messages()) != 3 {
+		t.Fatalf("expected 3 resumed messages, got %d", len(m.Messages()))
+	}
+	if len(m.transcript) != 2 {
+		t.Fatalf("expected 2 transcript entries (user+assistant), got %d", len(m.transcript))
+	}
+	m.width = 100
+	history := stripANSI(m.renderHistory())
+	if !strings.Contains(history, "old question") || !strings.Contains(history, "old answer") {
+		t.Fatal("resumed conversation should render in history")
+	}
+}
+
+func TestSlashLoad_NoArg_ListsChats(t *testing.T) {
+	db, err := storage.OpenPath(t.TempDir() + "/test.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	if err := db.SaveChat("my-session", []provider.Message{{Role: provider.RoleUser, Content: "x"}}); err != nil {
+		t.Fatal(err)
+	}
+
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, mockStream).WithDB(db)
+
+	handled, result := m.handleSlashCommand("/load")
+	if !handled {
+		t.Fatal("/load should be handled")
+	}
+	if !strings.Contains(result, "my-session") || !strings.Contains(result, "Usage: /load <name>") {
+		t.Fatalf("bare /load should list chats with usage hint, got %q", result)
 	}
 }

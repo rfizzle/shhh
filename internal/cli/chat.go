@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/ui/browse"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/update"
 	"github.com/spf13/cobra"
@@ -22,6 +23,8 @@ import (
 
 func newChatCmd() *cobra.Command {
 	var flags resolve.Opts
+	var continueLast bool
+	var resumePick bool
 
 	cmd := &cobra.Command{
 		Use:   "chat [prompt]",
@@ -86,6 +89,37 @@ func newChatCmd() *cobra.Command {
 				WithDB(db).
 				WithPricing(prices, resolved.Model).
 				WithRunner(runner.RunCapture)
+
+			if continueLast || resumePick {
+				if db == nil {
+					return fmt.Errorf("chat persistence is unavailable, cannot resume")
+				}
+				name := chat.AutosaveName
+				if resumePick {
+					picked, err := pickSavedChat(db)
+					if err != nil {
+						return err
+					}
+					if picked == "" {
+						return nil
+					}
+					name = picked
+				}
+				resumed, err := db.LoadChat(name)
+				if err != nil {
+					if continueLast {
+						fmt.Fprintln(os.Stderr, "No previous session found, starting fresh.")
+					} else {
+						return err
+					}
+				} else {
+					// Refresh the system prompt so shell/cwd context is current.
+					if len(resumed) > 0 && resumed[0].Role == provider.RoleSystem {
+						resumed[0].Content = sysPrompt
+					}
+					model = model.WithResumedMessages(resumed)
+				}
+			}
 			if r := update.CheckCached(version); r != nil {
 				model = model.WithUpdateNotice("update: " + r.Latest)
 			}
@@ -103,9 +137,47 @@ func newChatCmd() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().BoolVarP(&continueLast, "continue", "c", false, "resume the most recent chat session")
+	cmd.Flags().BoolVarP(&resumePick, "resume", "r", false, "pick a saved chat to resume")
 	cmd.Flags().StringVar(&flags.FlagProvider, "provider", "", "LLM provider")
 	cmd.Flags().StringVar(&flags.FlagModel, "model", "", "model name to use")
 	cmd.Flags().StringVar(&flags.FlagAPIKey, "api-key", "", "API key (overrides env var)")
 
 	return cmd
+}
+
+// pickSavedChat shows the saved-chat picker and returns the chosen session
+// name, or "" if the user backed out.
+func pickSavedChat(db *storage.DB) (string, error) {
+	entries, err := db.ListChats()
+	if err != nil {
+		return "", err
+	}
+	if len(entries) == 0 {
+		fmt.Fprintln(os.Stderr, "No saved chats yet.")
+		return "", nil
+	}
+
+	items := make([]browse.Item, len(entries))
+	for i, e := range entries {
+		items[i] = browse.Item{
+			ID:      e.Name,
+			Title:   e.Name,
+			Preview: fmt.Sprintf("%d turns, %s", e.Turns, e.UpdatedAt.Local().Format("Jan 2 15:04")),
+			Detail: fmt.Sprintf("Name:     %s\nTurns:    %d\nUpdated:  %s",
+				e.Name, e.Turns, e.UpdatedAt.Local().Format("2006-01-02 15:04:05")),
+		}
+	}
+
+	model := browse.New(items, []browse.ActionDef{{Label: "Open", Shortcut: "o"}})
+	p := tea.NewProgram(model, tea.WithAltScreen())
+	result, err := p.Run()
+	if err != nil {
+		return "", err
+	}
+	m := result.(browse.Model)
+	if m.Result == nil {
+		return "", nil
+	}
+	return m.Result.Item.ID, nil
 }

@@ -166,7 +166,11 @@ Multi-turn conversations with file and directory access:
 ```bash
 shhh chat
 shhh chat "help me debug this failing test"
+shhh chat --continue     # resume the most recent session
+shhh chat --resume       # pick a saved chat to resume
 ```
+
+Every session is autosaved after each exchange (to the `(last session)` slot), so `--continue` always picks up where you left off. Use `/save <name>` inside a session to keep a conversation permanently.
 
 Chat mode has read-only tools (`read_file`, `list_directory`, `search`) plus `execute_command`, which lets the assistant propose shell commands: each one is shown to you with safety warnings and only runs after you approve it with `y`.
 
@@ -241,6 +245,8 @@ The contents of `.shhh` are appended to the system prompt when running shhh from
 |---|---|
 | `shhh [prompt]` | Generate a shell command |
 | `shhh chat [prompt]` | Start an interactive chat session |
+| `shhh chat --continue` | Resume the most recent chat session |
+| `shhh chat --resume` | Pick a saved chat to resume |
 | `shhh config` | Interactive configuration wizard |
 | `shhh config set <key> <value>` | Set a config value |
 | `shhh init <shell>` | Output shell integration snippet |
