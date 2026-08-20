@@ -46,6 +46,56 @@ func (db *DB) RecordExitCode(requestID int64, exitCode int) error {
 	return err
 }
 
+type UnratedRequest struct {
+	ID        int64
+	CreatedAt time.Time
+	Prompt    string
+	Command   string
+	Action    string
+	ExitCode  *int64
+}
+
+// ListUnrated returns recent requests that produced a command the user acted
+// on but hasn't rated yet, newest first.
+func (db *DB) ListUnrated(limit int) ([]UnratedRequest, error) {
+	rows, err := db.sql.Query(
+		`SELECT id, created_at, prompt, command, action, exit_code
+		 FROM requests
+		 WHERE rating IS NULL
+		   AND command != ''
+		   AND action IN ('run', 'run-all', 'run-step', 'copy', 'edit', 'save')
+		 ORDER BY id DESC
+		 LIMIT ?`, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []UnratedRequest
+	for rows.Next() {
+		var (
+			r         UnratedRequest
+			createdAt string
+		)
+		if err := rows.Scan(&r.ID, &createdAt, &r.Prompt, &r.Command, &r.Action, &r.ExitCode); err != nil {
+			return nil, err
+		}
+		r.CreatedAt, _ = time.Parse("2006-01-02T15:04:05.000Z", createdAt)
+		out = append(out, r)
+	}
+	return out, rows.Err()
+}
+
+// RateRequest records a thumbs-up (true) or thumbs-down (false) for a request.
+func (db *DB) RateRequest(id int64, up bool) error {
+	rating := 0
+	if up {
+		rating = 1
+	}
+	_, err := db.sql.Exec(`UPDATE requests SET rating = ? WHERE id = ?`, rating, id)
+	return err
+}
+
 type ProviderMetrics struct {
 	Provider        string
 	Model           string
@@ -59,12 +109,14 @@ type ProviderMetrics struct {
 	TotalTokensOut  *int64
 	ExecCount       int
 	ExecSuccessRate *float64
+	RatedCount      int
+	RatingRate      *float64
 }
 
 func (db *DB) MetricsSummary() ([]ProviderMetrics, error) {
 	rows, err := db.sql.Query(`
 		WITH ranked AS (
-			SELECT provider, model, success, ttft_ms, duration_ms, tokens_in, tokens_out, exit_code,
+			SELECT provider, model, success, ttft_ms, duration_ms, tokens_in, tokens_out, exit_code, rating,
 			       PERCENT_RANK() OVER (PARTITION BY provider, model ORDER BY ttft_ms) AS ttft_rank,
 			       PERCENT_RANK() OVER (PARTITION BY provider, model ORDER BY duration_ms) AS dur_rank
 			FROM requests
@@ -80,7 +132,9 @@ func (db *DB) MetricsSummary() ([]ProviderMetrics, error) {
 			SUM(tokens_in) as total_tokens_in,
 			SUM(tokens_out) as total_tokens_out,
 			COUNT(exit_code) as exec_count,
-			AVG(CASE WHEN exit_code IS NOT NULL THEN CAST(CASE WHEN exit_code = 0 THEN 1 ELSE 0 END AS REAL) END) as exec_success_rate
+			AVG(CASE WHEN exit_code IS NOT NULL THEN CAST(CASE WHEN exit_code = 0 THEN 1 ELSE 0 END AS REAL) END) as exec_success_rate,
+			COUNT(rating) as rated_count,
+			AVG(CAST(rating AS REAL)) as rating_rate
 		FROM ranked
 		GROUP BY provider, model
 		ORDER BY count DESC`)
@@ -97,6 +151,7 @@ func (db *DB) MetricsSummary() ([]ProviderMetrics, error) {
 			&m.AvgTTFT, &m.P95TTFT, &m.AvgDuration, &m.P95Duration,
 			&m.TotalTokensIn, &m.TotalTokensOut,
 			&m.ExecCount, &m.ExecSuccessRate,
+			&m.RatedCount, &m.RatingRate,
 		); err != nil {
 			return nil, err
 		}

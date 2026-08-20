@@ -261,6 +261,7 @@ The contents of `.shhh` are appended to the system prompt when running shhh from
 | `shhh init --project` | Create a `.shhh` project context file |
 | `shhh history` | Browse past prompts and commands |
 | `shhh metrics` | Show provider usage statistics |
+| `shhh rate` | Rate recent commands (feeds accuracy metrics) |
 | `shhh snippets` | List saved command snippets |
 | `shhh snippets run <name>` | Execute a saved snippet |
 | `shhh snippets copy <name>` | Copy a snippet to clipboard |

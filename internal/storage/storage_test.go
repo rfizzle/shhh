@@ -497,3 +497,61 @@ func TestSaveSnippet_Overwrite(t *testing.T) {
 		t.Fatalf("expected 'v2', got %q", s.Command)
 	}
 }
+
+func TestRating_Flow(t *testing.T) {
+	db := openTestDB(t)
+
+	id1, err := db.RecordRequest(RequestRecord{Provider: "openai", Model: "gpt-4o", Prompt: "list files", Command: "ls", Action: "run"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	id2, err := db.RecordRequest(RequestRecord{Provider: "openai", Model: "gpt-4o", Prompt: "copy stuff", Command: "cp a b", Action: "copy"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Cancelled request should never show up for rating.
+	if _, err := db.RecordRequest(RequestRecord{Provider: "openai", Model: "gpt-4o", Prompt: "nope", Command: "rm -rf /", Action: "cancel"}); err != nil {
+		t.Fatal(err)
+	}
+
+	unrated, err := db.ListUnrated(10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(unrated) != 2 {
+		t.Fatalf("expected 2 unrated, got %d", len(unrated))
+	}
+	if unrated[0].ID != id2 {
+		t.Errorf("expected newest first, got id %d", unrated[0].ID)
+	}
+
+	if err := db.RateRequest(id1, true); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.RateRequest(id2, false); err != nil {
+		t.Fatal(err)
+	}
+
+	unrated, err = db.ListUnrated(10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(unrated) != 0 {
+		t.Fatalf("expected 0 unrated after rating, got %d", len(unrated))
+	}
+
+	summary, err := db.MetricsSummary()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(summary) != 1 {
+		t.Fatalf("expected 1 metrics row, got %d", len(summary))
+	}
+	m := summary[0]
+	if m.RatedCount != 2 {
+		t.Errorf("expected 2 rated, got %d", m.RatedCount)
+	}
+	if m.RatingRate == nil || *m.RatingRate != 0.5 {
+		t.Errorf("expected 50%% rating rate, got %v", m.RatingRate)
+	}
+}

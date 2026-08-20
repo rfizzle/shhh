@@ -47,6 +47,8 @@ var migrations = []string{
 	`ALTER TABLE requests ADD COLUMN exit_code INTEGER;`,
 
 	`ALTER TABLE snippets ADD COLUMN description TEXT NOT NULL DEFAULT '';`,
+
+	`ALTER TABLE requests ADD COLUMN rating INTEGER;`,
 }
 
 func (db *DB) migrate() error {
