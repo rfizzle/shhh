@@ -276,9 +276,88 @@ Mode segment states (auto-mode/S-059/S-060):
 Context meter: 8-cell bar, green → yellow (214) at 70% → red (9) at 90%,
 matching S-055's warning thresholds. Percent shown beside it.
 
+The agents segment carries a badge when any child is blocked on the user:
+`◇ 2 agents ⚠1` (⚠ count red (9)). It is also a jump target — `ctrl+a`
+opens the Agent Manager (§9).
+
 ---
 
-## 9. Palette
+## 9. Agent Manager (view, manage, steer sub-agents)
+
+Sub-agents are managed with **the same capability as the orchestrator**:
+every child has a full transcript rendered with the same components, an
+input box that steers it, its own approval flow, and its own mode —
+the attached view *is* the chat surface, pointed at a child.
+
+### 9a. Agent list (`/agents` or `ctrl+a`)
+
+```
+┌─ Agents ─────────────────────────────────────────────────────────┐
+│ ❯ ● orchestrator                     round 7 · ctx 62% · $0.14   │
+│   ◇ researcher-1  auth flow survey   9 tools · running…    $0.02 │
+│   ◇ writer-1      extract agent loop ⚠ waiting approval    $0.05 │
+│   ✓ researcher-2  db schema map      done · 14 tools       $0.03 │
+│   ✗ writer-2      port fish rules    failed · round limit  $0.01 │
+│                                                                  │
+│ enter attach · x cancel · X kill · esc back                      │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+- One row per agent: state glyph (`●` current, `◇` running (12), `✓`
+  done (10), `✗` failed (9)), name, task label, live status, spend.
+- `⚠ waiting approval` rows are red-accented and sort to the top below
+  the orchestrator. `x` cancels the agent's current turn; `X` kills the
+  agent (inline confirm, §5).
+- The list is a live view — statuses update while it is open.
+
+### 9b. Attached view
+
+Attaching replaces the whole surface with the child's session, breadcrumb
+in the header, and returns on `esc`:
+
+```
+ shhh code · orchestrator ▸ writer-1          esc detach · ctrl+a agents
+────────────────────────────────────────────────────────────────────────
+ │ ⚙ read    internal/ui/chat/model.go:700–780   81 lines        0.0s
+ │ ✎ edit    internal/agent/loop.go              +34 −6 · approved
+ │ ▸ $ go test ./internal/agent/...              running…        3s
+ │     ok  github.com/rfizzle/shhh/internal/agent
+────────────────────────────────────────────────────────────────────────
+⏵⏵ accept edits · round 3/25 · ctx ▰▰▰▱▱▱▱▱ 31% · $0.05 · writer-1
+> hold off on model.go — loop.go only for now▌
+```
+
+Equal capability, concretely:
+
+| Action | Mechanism (same as orchestrator) |
+|---|---|
+| Steer | type + enter — queued mid-turn steering (S-058 semantics) |
+| Approve/deny | approval cards render here when attached |
+| Change mode | Shift+Tab — clamped to the parent's ceiling; over-limit choices are shown disabled |
+| Cancel turn | Ctrl+C |
+| Kill agent | `/exit` in the child, or `X` from the list |
+| Inspect | focus mode, `/diff`, `/stats` — all scoped to the child |
+
+- The child keeps working while you watch; attach is observation +
+  steering, never a pause.
+- Breadcrumb nests if agents spawn agents (`orchestrator ▸ writer-1 ▸
+  helper`); `esc` pops one level.
+
+### 9c. Approval routing (detached)
+
+A child's approval requests never wait invisibly:
+
+- **Default — unified queue:** child approvals join the orchestrator's
+  approval queue, the card title prefixed with the agent:
+  `┌─ writer-1 ▸ Approve edit · internal/agent/loop.go ─┐`. Answering
+  there resumes the child; `[g]` on the card jumps into the attached
+  view instead.
+- The cockpit badge (`◇ 2 agents ⚠1`) and the agent list mark whoever is
+  blocked, so a parked approval is always visible from anywhere.
+
+---
+
+## 10. Palette
 
 Additions on top of the existing `style.go` values (256-color):
 
@@ -296,11 +375,18 @@ Additions on top of the existing `style.go` values (256-color):
 
 ---
 
-## 10. Implementation Notes
+## 11. Implementation Notes
 
 - New package `internal/ui/components`: one file per component
   (`approval.go`, `diff.go`, `selector.go`, `multiselect.go`,
-  `noteselect.go`, `confirm.go`, `activityrow.go`, `cockpit.go`).
+  `noteselect.go`, `confirm.go`, `activityrow.go`, `cockpit.go`,
+  `agentlist.go`).
+- The attached view (§9b) is not a new surface: the chat `Model` renders
+  whichever agent is "focused", and every agent (orchestrator included)
+  is an `internal/agent` instance with its own transcript, approval
+  queue, and mode. Attach = switch focused agent; the orchestrator is
+  simply the root of that list. This falls out of the S-056 extraction
+  and is the strongest reason to keep it clean.
 - Components are plain state + two methods, not full Bubble Tea models:
   `Update(tea.KeyMsg) (done bool, result any)` and `View(width int)
   string`. The chat `Model` owns them via states (as `stateConfirmRun`
