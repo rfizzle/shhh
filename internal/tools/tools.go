@@ -28,6 +28,30 @@ func Definitions() []provider.Tool {
 	return tools
 }
 
+// ExecCommandName is the tool the chat UI intercepts for user approval; it is
+// deliberately not executable through Execute.
+const ExecCommandName = "execute_command"
+
+func ExecCommandTool() provider.Tool {
+	return provider.Tool{
+		Name:        ExecCommandName,
+		Description: "Execute a shell command on the user's machine. The user is shown the command and must approve it before it runs; a declined call returns an error result. Returns combined stdout/stderr and the exit code.",
+		Parameters: json.RawMessage(`{
+			"type": "object",
+			"properties": {
+				"command": {"type": "string", "description": "The shell command to run"}
+			},
+			"required": ["command"]
+		}`),
+	}
+}
+
+// DefinitionsWithExec returns the read-only tool definitions plus the
+// user-approved execute_command tool.
+func DefinitionsWithExec() []provider.Tool {
+	return append(Definitions(), ExecCommandTool())
+}
+
 func Execute(name string, args json.RawMessage) (string, error) {
 	for _, d := range ReadOnly() {
 		if d.Tool.Name == name {

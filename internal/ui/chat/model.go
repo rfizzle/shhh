@@ -17,6 +17,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 type StreamFunc func([]provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error)
@@ -115,21 +116,25 @@ type Model struct {
 	inputHistory []string
 	historyIdx   int
 
-	streaming     string
-	events        <-chan provider.StreamEvent
-	cancel        context.CancelFunc
-	state         state
-	runID         int
-	runningTools  bool
-	pendingCalls  []provider.ToolCall
-	pendingRun    string
-	runCancel     context.CancelFunc
-	width         int
-	height        int
-	ready         bool
-	atBottom      bool
-	quitting      bool
-	initialPrompt string
+	streaming    string
+	events       <-chan provider.StreamEvent
+	cancel       context.CancelFunc
+	state        state
+	runID        int
+	runningTools bool
+	pendingCalls []provider.ToolCall
+	pendingRun   string
+	runCancel    context.CancelFunc
+	// Queue of execute_command tool calls awaiting user approval; the head is
+	// mirrored in pendingExecCall while its confirm prompt is showing.
+	execQueue       []provider.ToolCall
+	pendingExecCall *provider.ToolCall
+	width           int
+	height          int
+	ready           bool
+	atBottom        bool
+	quitting        bool
+	initialPrompt   string
 
 	TotalTokensIn  int64
 	TotalTokensOut int64
@@ -363,18 +368,30 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.streaming = ""
 		m.events = nil
 		m.cancel = nil
-		m.runningTools = true
-		m.pendingCalls = msg.calls
+		var readonly, execs []provider.ToolCall
+		for _, tc := range msg.calls {
+			if tc.Name == tools.ExecCommandName && m.runFn != nil {
+				execs = append(execs, tc)
+			} else {
+				readonly = append(readonly, tc)
+			}
+		}
+		m.execQueue = execs
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
-		return m, m.execToolsCmd(msg.calls)
+		if len(readonly) > 0 {
+			m.runningTools = true
+			m.pendingCalls = msg.calls
+			return m, m.execToolsCmd(readonly)
+		}
+		m.pendingCalls = execs
+		return m.advanceExecQueue()
 
 	case toolResultsMsg:
 		if msg.runID != m.runID || m.state != stateStreaming {
 			return m, nil
 		}
 		m.runningTools = false
-		m.pendingCalls = nil
 		for _, r := range msg.results {
 			m.messages = append(m.messages, provider.Message{
 				Role:       provider.RoleTool,
@@ -383,8 +400,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			})
 			m.appendEntry(entry{kind: entryTool, toolName: r.call.Name, toolArgs: r.call.Arguments, toolResult: r.result})
 		}
+		m.pendingCalls = m.execQueue
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
+		if len(m.execQueue) > 0 {
+			return m.advanceExecQueue()
+		}
 		return m, m.requestStream()
 
 	case cmdDoneMsg:
@@ -392,9 +413,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.runCancel = nil
-		m.state = stateInput
 		out := strings.TrimRight(msg.output, "\n")
 		m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out, exitCode: msg.exitCode})
+		if m.pendingExecCall != nil {
+			tc := *m.pendingExecCall
+			m.pendingExecCall = nil
+			m.messages = append(m.messages, provider.Message{
+				Role:       provider.RoleTool,
+				Content:    execToolResult(out, msg.exitCode),
+				ToolCallID: tc.ID,
+			})
+			m.execQueue = m.execQueue[1:]
+			m.pendingCalls = m.execQueue
+			m.viewport.SetContent(m.renderHistory())
+			m.viewport.GotoBottom()
+			return m.advanceExecQueue()
+		}
+		m.state = stateInput
 		m.messages = append(m.messages, provider.Message{
 			Role:    provider.RoleUser,
 			Content: commandContextMessage(msg.command, out, msg.exitCode),
@@ -548,7 +583,23 @@ func (m Model) updateConfirmRun(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "y", "Y", "enter":
 		return m.executeRun()
 	case "n", "N", "esc", "ctrl+c":
+		command := m.pendingRun
 		m.pendingRun = ""
+		if m.pendingExecCall != nil {
+			tc := *m.pendingExecCall
+			m.pendingExecCall = nil
+			m.messages = append(m.messages, provider.Message{
+				Role:       provider.RoleTool,
+				Content:    "error: the user declined to run this command",
+				ToolCallID: tc.ID,
+			})
+			m.execQueue = m.execQueue[1:]
+			m.pendingCalls = m.execQueue
+			m.appendEntry(entry{kind: entrySystem, text: "Declined: " + firstLine(command)})
+			m.viewport.SetContent(m.renderHistory())
+			m.viewport.GotoBottom()
+			return m.advanceExecQueue()
+		}
 		m.state = stateInput
 		m.appendEntry(entry{kind: entrySystem, text: "Run cancelled."})
 		m.viewport.SetContent(m.renderHistory())
@@ -559,6 +610,49 @@ func (m Model) updateConfirmRun(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 	return m, nil
+}
+
+// advanceExecQueue shows the confirm prompt for the next queued
+// execute_command call, or resumes the model stream once the queue is empty.
+func (m Model) advanceExecQueue() (tea.Model, tea.Cmd) {
+	if len(m.execQueue) == 0 {
+		m.pendingCalls = nil
+		m.state = stateStreaming
+		m.streaming = ""
+		return m, m.requestStream()
+	}
+	tc := m.execQueue[0]
+	var args struct {
+		Command string `json:"command"`
+	}
+	if err := json.Unmarshal([]byte(tc.Arguments), &args); err != nil || strings.TrimSpace(args.Command) == "" {
+		m.execQueue = m.execQueue[1:]
+		m.pendingCalls = m.execQueue
+		m.messages = append(m.messages, provider.Message{
+			Role:       provider.RoleTool,
+			Content:    "error: invalid command arguments",
+			ToolCallID: tc.ID,
+		})
+		m.appendEntry(entry{kind: entrySystem, text: "Skipped a tool call with invalid arguments."})
+		m.viewport.SetContent(m.renderHistory())
+		m.viewport.GotoBottom()
+		return m.advanceExecQueue()
+	}
+	m.pendingExecCall = &tc
+	m.pendingRun = args.Command
+	m.state = stateConfirmRun
+	return m, nil
+}
+
+func execToolResult(output string, exitCode int) string {
+	const maxLen = 4000
+	if len(output) > maxLen {
+		output = output[:maxLen] + "\n… (output truncated)"
+	}
+	if strings.TrimSpace(output) == "" {
+		output = "(no output)"
+	}
+	return fmt.Sprintf("exit code: %d\noutput:\n%s", exitCode, output)
 }
 
 func (m Model) executeRun() (tea.Model, tea.Cmd) {
@@ -576,7 +670,11 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 }
 
 func (m Model) renderRunConfirm() string {
-	lines := []string{userStyle.Render("Run: ") + firstLine(m.pendingRun)}
+	label := "Run: "
+	if m.pendingExecCall != nil {
+		label = "Assistant wants to run: "
+	}
+	lines := []string{userStyle.Render(label) + firstLine(m.pendingRun)}
 	if warnings := safety.Check(m.pendingRun); len(warnings) > 0 {
 		var risks []string
 		for _, w := range warnings {
@@ -797,6 +895,8 @@ func (m *Model) cancelStreaming() {
 		m.runningTools = false
 		m.pendingCalls = nil
 	}
+	m.execQueue = nil
+	m.pendingExecCall = nil
 	m.finishStreaming()
 }
 

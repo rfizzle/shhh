@@ -168,7 +168,7 @@ shhh chat
 shhh chat "help me debug this failing test"
 ```
 
-Chat mode has access to read-only tools: `read_file`, `list_directory`, and `search`.
+Chat mode has read-only tools (`read_file`, `list_directory`, `search`) plus `execute_command`, which lets the assistant propose shell commands: each one is shown to you with safety warnings and only runs after you approve it with `y`.
 
 The status bar shows token usage, estimated cost, the current context size, and the active model.
 

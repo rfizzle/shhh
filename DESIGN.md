@@ -36,6 +36,8 @@ Implementation per shell:
 
 Multi-turn conversational session. Useful for exploratory tasks ("how do I set up a cron job that...").
 
+The assistant has read-only filesystem tools (`read_file`, `list_directory`, `search`) that run automatically, and an `execute_command` tool that requires per-command user approval: the command is shown with safety warnings and runs only after the user confirms. Users can also run code blocks from a response themselves with `/run`, and command output is fed back into the conversation either way.
+
 ### 1d. Pipe / Non-Interactive Mode
 
 When stdin is not a TTY, shhh reads the prompt from stdin and writes only the raw command to stdout — no chrome, no interactivity. Enables composition:

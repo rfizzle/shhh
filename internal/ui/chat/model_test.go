@@ -1392,3 +1392,161 @@ func TestRun_NoRunner(t *testing.T) {
 		t.Fatal("expected 'not available' message")
 	}
 }
+
+func TestExecTool_ApprovalFlow(t *testing.T) {
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "create a file"},
+	}
+	m := New(msgs, mockStream).WithRunner(func(ctx context.Context, cmd string) (string, int) {
+		return "done: " + cmd, 0
+	})
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updated.(Model)
+	m.state = stateStreaming
+
+	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_1", Name: "execute_command", Arguments: `{"command":"touch /tmp/x"}`},
+	}})
+	m = updated.(Model)
+
+	if m.state != stateConfirmRun {
+		t.Fatalf("exec tool call should enter confirm state, got %d", m.state)
+	}
+	if !strings.Contains(m.View(), "Assistant wants to run") {
+		t.Fatal("confirm prompt should say the assistant is asking")
+	}
+
+	// Approve.
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	m = updated.(Model)
+	if m.state != stateRunningCmd {
+		t.Fatalf("expected running state, got %d", m.state)
+	}
+	var done cmdDoneMsg
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(cmdDoneMsg); ok {
+			done = msg
+		}
+	}
+	updated, restream := m.Update(done)
+	m = updated.(Model)
+
+	// Result recorded as a tool message, then the stream resumes.
+	var toolMsg *provider.Message
+	for i := range m.Messages() {
+		if m.Messages()[i].Role == provider.RoleTool {
+			toolMsg = &m.Messages()[i]
+		}
+	}
+	if toolMsg == nil || toolMsg.ToolCallID != "call_1" {
+		t.Fatal("expected tool result message for call_1")
+	}
+	if !strings.Contains(toolMsg.Content, "done: touch /tmp/x") || !strings.Contains(toolMsg.Content, "exit code: 0") {
+		t.Fatalf("tool result should carry output and exit code, got %q", toolMsg.Content)
+	}
+	if m.state != stateStreaming {
+		t.Fatalf("expected stream to resume after tool result, got state %d", m.state)
+	}
+	if restream == nil {
+		t.Fatal("expected re-stream cmd after exec tool completes")
+	}
+}
+
+func TestExecTool_Declined(t *testing.T) {
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "wipe it"},
+	}
+	m := New(msgs, mockStream).WithRunner(func(ctx context.Context, cmd string) (string, int) {
+		t.Fatal("runner must not be called on decline")
+		return "", 0
+	})
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updated.(Model)
+	m.state = stateStreaming
+
+	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_1", Name: "execute_command", Arguments: `{"command":"rm -rf /"}`},
+	}})
+	m = updated.(Model)
+
+	updated, restream := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+	m = updated.(Model)
+
+	last := m.Messages()[len(m.Messages())-1]
+	if last.Role != provider.RoleTool || !strings.Contains(last.Content, "declined") {
+		t.Fatalf("declined call should produce an error tool result, got %+v", last)
+	}
+	if m.state != stateStreaming || restream == nil {
+		t.Fatal("stream should resume after decline so the model can react")
+	}
+}
+
+func TestExecTool_MixedWithReadOnly(t *testing.T) {
+	executor := func(name string, args json.RawMessage) (string, error) {
+		return "read result", nil
+	}
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "check then fix"},
+	}
+	m := New(msgs, mockStream).WithToolExecutor(executor).
+		WithRunner(func(ctx context.Context, cmd string) (string, int) { return "ok", 0 })
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updated.(Model)
+	m.state = stateStreaming
+
+	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_r", Name: "read_file", Arguments: `{"path":"a.go"}`},
+		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
+	}})
+	m = updated.(Model)
+
+	// Read-only tools run first, asynchronously.
+	if !m.runningTools {
+		t.Fatal("read-only calls should run first")
+	}
+	res := cmd()
+	updated, _ = m.Update(res)
+	m = updated.(Model)
+
+	// Then the exec call asks for approval.
+	if m.state != stateConfirmRun || m.pendingRun != "echo hi" {
+		t.Fatalf("expected confirm for exec call after read-only results, got state=%d pending=%q", m.state, m.pendingRun)
+	}
+	// The read-only result must already be recorded for call_r.
+	foundRead := false
+	for _, msg := range m.Messages() {
+		if msg.Role == provider.RoleTool && msg.ToolCallID == "call_r" && msg.Content == "read result" {
+			foundRead = true
+		}
+	}
+	if !foundRead {
+		t.Fatal("read-only tool result should be recorded before approval prompt")
+	}
+}
+
+func TestExecTool_InvalidArgsSkipped(t *testing.T) {
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "go"},
+	}
+	m := New(msgs, mockStream).WithRunner(func(ctx context.Context, cmd string) (string, int) { return "", 0 })
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updated.(Model)
+	m.state = stateStreaming
+
+	updated, restream := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_1", Name: "execute_command", Arguments: `not json`},
+	}})
+	m = updated.(Model)
+
+	last := m.Messages()[len(m.Messages())-1]
+	if last.Role != provider.RoleTool || !strings.Contains(last.Content, "invalid") {
+		t.Fatalf("invalid args should produce an error tool result, got %+v", last)
+	}
+	if m.state != stateStreaming || restream == nil {
+		t.Fatal("stream should resume after skipping the invalid call")
+	}
+}

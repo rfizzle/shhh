@@ -57,7 +57,7 @@ func newChatCmd() *cobra.Command {
 
 			compOpts := provider.CompletionOpts{
 				Model:      resolved.Model,
-				Tools:      tools.Definitions(),
+				Tools:      tools.DefinitionsWithExec(),
 				ToolChoice: "auto",
 			}
 
