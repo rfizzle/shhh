@@ -966,3 +966,51 @@ func TestGenerate_PreflightSkippedWithEmptyShell(t *testing.T) {
 		t.Errorf("expected phaseAction (no preflight with empty shell), got %v", m.Phase())
 	}
 }
+
+func TestGenerate_AutoExplainEntersExplainPhase(t *testing.T) {
+	events := makeEvents("ls -la")
+	m := NewGenerateModel(events, noopCancel, nil, nil, mockExplainStream("lists files"), "").WithAutoExplain(true)
+	m = drainStream(m, 2)
+
+	if m.Phase() != phaseExplain {
+		t.Errorf("expected phaseExplain after stream completes with auto-explain, got %v", m.Phase())
+	}
+}
+
+func TestGenerate_AutoExplainStreamsThenShowsActionBar(t *testing.T) {
+	events := makeEvents("ls -la")
+	m := NewGenerateModel(events, noopCancel, nil, nil, mockExplainStream("lists files in detail"), "").WithAutoExplain(true)
+	m = drainStream(m, 2)
+	m = drainExplainStream(m, 2)
+
+	if m.Phase() != phaseAction {
+		t.Errorf("expected phaseAction after auto-explain completes, got %v", m.Phase())
+	}
+	view := m.View()
+	if !strings.Contains(view, "lists files in detail") {
+		t.Error("expected explanation text to persist in action view")
+	}
+	if !strings.Contains(view, "Run") {
+		t.Error("expected action bar visible after auto-explain")
+	}
+}
+
+func TestGenerate_AutoExplainWithoutExplainFuncFallsBackToAction(t *testing.T) {
+	events := makeEvents("ls -la")
+	m := NewGenerateModel(events, noopCancel, nil, nil, nil, "").WithAutoExplain(true)
+	m = drainStream(m, 2)
+
+	if m.Phase() != phaseAction {
+		t.Errorf("expected phaseAction when no explain func configured, got %v", m.Phase())
+	}
+}
+
+func TestGenerate_AutoExplainDisabledGoesStraightToAction(t *testing.T) {
+	events := makeEvents("ls -la")
+	m := NewGenerateModel(events, noopCancel, nil, nil, mockExplainStream("lists files"), "")
+	m = drainStream(m, 2)
+
+	if m.Phase() != phaseAction {
+		t.Errorf("expected phaseAction without auto-explain, got %v", m.Phase())
+	}
+}

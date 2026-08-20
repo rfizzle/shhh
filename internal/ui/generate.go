@@ -43,6 +43,7 @@ type GenerateModel struct {
 	result           GenerateResult
 	shell            string
 	preflightRetries int
+	autoExplain      bool
 }
 
 type GenerateResult struct {
@@ -77,6 +78,13 @@ func NewGenerateModel(events <-chan provider.StreamEvent, cancel context.CancelF
 		phase:       phaseStreaming,
 		shell:       shell,
 	}
+}
+
+// WithAutoExplain makes the model stream an explanation automatically each
+// time a command finishes generating, before showing the action bar.
+func (m GenerateModel) WithAutoExplain(on bool) GenerateModel {
+	m.autoExplain = on
+	return m
 }
 
 func (m GenerateModel) Result() GenerateResult       { return m.result }
@@ -178,6 +186,15 @@ func (m GenerateModel) updateStreaming(msg tea.Msg) (tea.Model, tea.Cmd) {
 		})
 		m.actionBar = m.actionBar.SetMulti(IsMultiCommand(output))
 		m.phase = phaseAction
+		if m.autoExplain && m.newExplain != nil {
+			events, cancel, err := m.newExplain(output)
+			if err != nil {
+				return m, nil
+			}
+			m.explainStream = NewStreamModel(events, cancel)
+			m.phase = phaseExplain
+			return m, m.explainStream.Init()
+		}
 		return m, nil
 	}
 	return m, cmd

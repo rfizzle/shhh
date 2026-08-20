@@ -184,7 +184,8 @@ func NewRootCmd() *cobra.Command {
 				return ev, eCancel, nil
 			}
 
-			model := ui.NewGenerateModel(events, cancel, messages, newStream, newExplain, info.Shell)
+			autoExplain := explainMode && !silentMode && !cfg.Behavior.SilentMode
+			model := ui.NewGenerateModel(events, cancel, messages, newStream, newExplain, info.Shell).WithAutoExplain(autoExplain)
 			program := tea.NewProgram(model)
 			finalModel, err := program.Run()
 			if err != nil {
@@ -321,7 +322,7 @@ func NewRootCmd() *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().StringVar(&flags.FlagProvider, "provider", "", "LLM provider (openai, openai-compatible)")
+	cmd.PersistentFlags().StringVar(&flags.FlagProvider, "provider", "", "LLM provider (openai, gemini, openrouter, openai-compatible)")
 	cmd.PersistentFlags().StringVar(&flags.FlagModel, "model", "", "model name to use")
 	cmd.PersistentFlags().StringVar(&flags.FlagAPIKey, "api-key", "", "API key (overrides env var)")
 	cmd.Flags().BoolVar(&rawMode, "raw", false, "force pipe mode: raw command output, no TUI")

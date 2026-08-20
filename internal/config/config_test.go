@@ -134,7 +134,6 @@ func TestProviderAPIKey(t *testing.T) {
 	}
 }
 
-
 func TestProviderBaseURL(t *testing.T) {
 	cfg := Config{
 		Provider: ProviderConfig{

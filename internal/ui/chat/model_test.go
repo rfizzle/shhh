@@ -3,6 +3,7 @@ package chat
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 
@@ -743,7 +744,7 @@ func TestToolCallLoop_TextBeforeToolCall(t *testing.T) {
 
 func TestToolCallLoop_ExecutorError(t *testing.T) {
 	executor := func(name string, args json.RawMessage) (string, error) {
-		return "", json.Unmarshal([]byte("invalid"), nil)
+		return "", errors.New("executor failed")
 	}
 
 	msgs := []provider.Message{

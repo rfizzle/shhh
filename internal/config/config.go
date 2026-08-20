@@ -25,10 +25,10 @@ type ProviderConfig struct {
 }
 
 type BehaviorConfig struct {
-	SilentMode       bool   `toml:"silent_mode"`
-	Shell            string `toml:"shell"`
-	ContextMaxTokens int    `toml:"context_max_tokens"`
-	SafetyWarnings   *bool  `toml:"safety_warnings"`
+	SilentMode        bool   `toml:"silent_mode"`
+	Shell             string `toml:"shell"`
+	ContextMaxTokens  int    `toml:"context_max_tokens"`
+	SafetyWarnings    *bool  `toml:"safety_warnings"`
 	SystemPromptExtra string `toml:"system_prompt_extra"`
 }
 
