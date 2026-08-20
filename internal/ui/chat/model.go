@@ -33,7 +33,12 @@ const statusBarHeight = 1
 const chromeHeight = headerHeight + dividerHeight + dividerHeight + statusBarHeight
 const horizontalPadding = 2
 
-type tokenMsg string
+type tokenMsg struct {
+	text string
+	// final carries a terminal event (doneMsg, streamErrMsg, toolCallsMsg)
+	// that arrived in the same batch, so it isn't lost when tokens are drained.
+	final tea.Msg
+}
 type doneMsg struct{ usage *provider.Usage }
 type streamErrMsg struct{ err error }
 type streamStartedMsg struct {
@@ -44,7 +49,35 @@ type toolCallsMsg struct {
 	calls []provider.ToolCall
 	usage *provider.Usage
 }
+type toolExecution struct {
+	call   provider.ToolCall
+	result string
+}
+type toolResultsMsg struct {
+	runID   int
+	results []toolExecution
+}
 type initialPromptMsg struct{}
+
+type entryKind int
+
+const (
+	entryUser entryKind = iota
+	entryAssistant
+	entryTool
+	entrySystem
+	entryError
+)
+
+// entry is one transcript item, stored raw so the history can be re-rendered
+// at any width (e.g. after a terminal resize).
+type entry struct {
+	kind       entryKind
+	text       string
+	toolName   string
+	toolArgs   string
+	toolResult string
+}
 
 type Model struct {
 	messages []provider.Message
@@ -56,11 +89,19 @@ type Model struct {
 	input    textarea.Model
 	spinner  spinner.Model
 
-	history       *strings.Builder
+	transcript []entry
+	// Incremental render cache: entries [0, cachedCount) rendered at cachedWidth.
+	cachedRender string
+	cachedWidth  int
+	cachedCount  int
+
 	streaming     string
 	events        <-chan provider.StreamEvent
 	cancel        context.CancelFunc
 	state         state
+	runID         int
+	runningTools  bool
+	pendingCalls  []provider.ToolCall
 	width         int
 	height        int
 	ready         bool
@@ -93,7 +134,6 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 		stream:   stream,
 		input:    ta,
 		spinner:  s,
-		history:  &strings.Builder{},
 		state:    stateInput,
 		atBottom: true,
 	}
@@ -166,10 +206,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		case "ctrl+c":
 			if m.state == stateStreaming {
-				if m.cancel != nil {
-					m.cancel()
-				}
-				m.finishStreaming()
+				m.cancelStreaming()
 				m.viewport.SetContent(m.renderHistory())
 				m.viewport.GotoBottom()
 				return m, nil
@@ -191,42 +228,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				if handled, result := m.handleSlashCommand(text); handled {
 					m.input.Reset()
-					m.history.WriteString(systemMsgStyle.Render(result) + "\n\n")
+					m.appendEntry(entry{kind: entrySystem, text: result})
 					m.viewport.SetContent(m.renderHistory())
 					m.viewport.GotoBottom()
 					return m, nil
 				}
 				m.input.Reset()
-				m.messages = append(m.messages, provider.Message{
-					Role:    provider.RoleUser,
-					Content: text,
-				})
-				m.history.WriteString(userStyle.Render("You") + "\n")
-				m.history.WriteString(m.wordWrap(text, m.contentWidth()) + "\n\n")
-				m.state = stateStreaming
-				m.streaming = ""
-				m.atBottom = true
-				m.viewport.SetContent(m.renderHistory())
-				m.viewport.GotoBottom()
-				return m, m.requestStream()
+				return m.sendUserMessage(text)
 			}
 		}
 
 	case initialPromptMsg:
 		text := m.initialPrompt
 		m.initialPrompt = ""
-		m.messages = append(m.messages, provider.Message{
-			Role:    provider.RoleUser,
-			Content: text,
-		})
-		m.history.WriteString(userStyle.Render("You") + "\n")
-		m.history.WriteString(m.wordWrap(text, m.contentWidth()) + "\n\n")
-		m.state = stateStreaming
-		m.streaming = ""
-		m.atBottom = true
-		m.viewport.SetContent(m.renderHistory())
-		m.viewport.GotoBottom()
-		return m, m.requestStream()
+		return m.sendUserMessage(text)
 
 	case streamStartedMsg:
 		m.events = msg.events
@@ -234,10 +249,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, waitForEvent(m.events)
 
 	case tokenMsg:
-		m.streaming += string(msg)
+		m.streaming += msg.text
 		m.viewport.SetContent(m.renderHistory())
 		if m.atBottom {
 			m.viewport.GotoBottom()
+		}
+		if msg.final != nil {
+			return m.Update(msg.final)
 		}
 		return m, waitForEvent(m.events)
 
@@ -250,13 +268,43 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case toolCallsMsg:
 		m.accumulateUsage(msg.usage)
-		m.executeToolCalls(msg.calls)
+		m.messages = append(m.messages, provider.Message{
+			Role:      provider.RoleAssistant,
+			Content:   m.streaming,
+			ToolCalls: msg.calls,
+		})
+		if m.streaming != "" {
+			m.appendEntry(entry{kind: entryAssistant, text: m.streaming})
+		}
+		m.streaming = ""
+		m.events = nil
+		m.cancel = nil
+		m.runningTools = true
+		m.pendingCalls = msg.calls
+		m.viewport.SetContent(m.renderHistory())
+		m.viewport.GotoBottom()
+		return m, m.execToolsCmd(msg.calls)
+
+	case toolResultsMsg:
+		if msg.runID != m.runID || m.state != stateStreaming {
+			return m, nil
+		}
+		m.runningTools = false
+		m.pendingCalls = nil
+		for _, r := range msg.results {
+			m.messages = append(m.messages, provider.Message{
+				Role:       provider.RoleTool,
+				Content:    r.result,
+				ToolCallID: r.call.ID,
+			})
+			m.appendEntry(entry{kind: entryTool, toolName: r.call.Name, toolArgs: r.call.Arguments, toolResult: r.result})
+		}
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
 		return m, m.requestStream()
 
 	case streamErrMsg:
-		m.history.WriteString(errorStyle.Render("Error: "+msg.err.Error()) + "\n\n")
+		m.appendEntry(entry{kind: entryError, text: msg.err.Error()})
 		m.streaming = ""
 		m.events = nil
 		m.cancel = nil
@@ -288,6 +336,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
+func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
+	m.messages = append(m.messages, provider.Message{
+		Role:    provider.RoleUser,
+		Content: text,
+	})
+	m.appendEntry(entry{kind: entryUser, text: text})
+	m.state = stateStreaming
+	m.streaming = ""
+	m.atBottom = true
+	m.viewport.SetContent(m.renderHistory())
+	m.viewport.GotoBottom()
+	return m, m.requestStream()
+}
+
 func (m Model) View() string {
 	if m.quitting {
 		return ""
@@ -309,7 +371,11 @@ func (m Model) View() string {
 
 	var body string
 	if m.state == stateStreaming && m.streaming == "" {
-		body = m.viewport.View() + "\n" + m.spinner.View() + " Thinking…"
+		label := "Thinking…"
+		if m.runningTools {
+			label = "Running tools…"
+		}
+		body = m.viewport.View() + "\n" + m.spinner.View() + " " + label
 	} else {
 		body = m.viewport.View()
 	}
@@ -334,63 +400,73 @@ func (m Model) requestStream() tea.Cmd {
 	}
 }
 
+func (m Model) execToolsCmd(calls []provider.ToolCall) tea.Cmd {
+	executor := m.executor
+	runID := m.runID
+	return func() tea.Msg {
+		results := make([]toolExecution, 0, len(calls))
+		for _, tc := range calls {
+			var result string
+			if executor != nil {
+				out, err := executor(tc.Name, json.RawMessage(tc.Arguments))
+				if err != nil {
+					result = "error: " + err.Error()
+				} else {
+					result = out
+				}
+			} else {
+				result = "error: no tool executor configured"
+			}
+			results = append(results, toolExecution{call: tc, result: result})
+		}
+		return toolResultsMsg{runID: runID, results: results}
+	}
+}
+
+// waitForEvent reads the next stream event. If it is a token, any further
+// tokens already buffered on the channel are drained into a single batch so
+// the UI re-renders once per batch instead of once per token.
 func waitForEvent(events <-chan provider.StreamEvent) tea.Cmd {
 	return func() tea.Msg {
 		ev, ok := <-events
 		if !ok {
 			return doneMsg{}
 		}
-		if ev.Err != nil {
-			return streamErrMsg{err: ev.Err}
+		if final := terminalMsg(ev); final != nil {
+			return final
 		}
-		if len(ev.ToolCalls) > 0 {
-			return toolCallsMsg{calls: ev.ToolCalls, usage: ev.Usage}
+		var batch strings.Builder
+		batch.WriteString(ev.Token)
+		for {
+			select {
+			case ev, ok := <-events:
+				if !ok {
+					return tokenMsg{text: batch.String(), final: doneMsg{}}
+				}
+				if final := terminalMsg(ev); final != nil {
+					return tokenMsg{text: batch.String(), final: final}
+				}
+				batch.WriteString(ev.Token)
+			default:
+				return tokenMsg{text: batch.String()}
+			}
 		}
-		if ev.Done {
-			return doneMsg{usage: ev.Usage}
-		}
-		return tokenMsg(ev.Token)
 	}
 }
 
-func (m *Model) executeToolCalls(calls []provider.ToolCall) {
-	assistantMsg := provider.Message{
-		Role:      provider.RoleAssistant,
-		Content:   m.streaming,
-		ToolCalls: calls,
+// terminalMsg converts a non-token stream event into its message, or returns
+// nil for a plain token event.
+func terminalMsg(ev provider.StreamEvent) tea.Msg {
+	if ev.Err != nil {
+		return streamErrMsg{err: ev.Err}
 	}
-	m.messages = append(m.messages, assistantMsg)
-
-	if m.streaming != "" {
-		m.history.WriteString(assistantStyle.Render("Assistant") + "\n")
-		m.history.WriteString(renderMarkdown(m.streaming, m.contentWidth()) + "\n\n")
+	if len(ev.ToolCalls) > 0 {
+		return toolCallsMsg{calls: ev.ToolCalls, usage: ev.Usage}
 	}
-
-	for _, tc := range calls {
-		var result string
-		if m.executor != nil {
-			out, err := m.executor(tc.Name, json.RawMessage(tc.Arguments))
-			if err != nil {
-				result = "error: " + err.Error()
-			} else {
-				result = out
-			}
-		} else {
-			result = "error: no tool executor configured"
-		}
-
-		m.messages = append(m.messages, provider.Message{
-			Role:       provider.RoleTool,
-			Content:    result,
-			ToolCallID: tc.ID,
-		})
-
-		m.history.WriteString(m.renderToolBlock(tc.Name, tc.Arguments, result))
+	if ev.Done {
+		return doneMsg{usage: ev.Usage}
 	}
-
-	m.streaming = ""
-	m.events = nil
-	m.cancel = nil
+	return nil
 }
 
 const maxToolResultLines = 8
@@ -451,13 +527,61 @@ func (m *Model) finishStreaming() {
 			Role:    provider.RoleAssistant,
 			Content: m.streaming,
 		})
-		m.history.WriteString(assistantStyle.Render("Assistant") + "\n")
-		m.history.WriteString(renderMarkdown(m.streaming, m.contentWidth()) + "\n\n")
+		m.appendEntry(entry{kind: entryAssistant, text: m.streaming})
 	}
 	m.streaming = ""
 	m.events = nil
 	m.cancel = nil
 	m.state = stateInput
+}
+
+// cancelStreaming aborts an in-flight response or tool run. Any pending tool
+// calls get synthetic error results so the conversation stays well-formed for
+// the next request.
+func (m *Model) cancelStreaming() {
+	if m.cancel != nil {
+		m.cancel()
+	}
+	m.runID++
+	if m.runningTools {
+		for _, tc := range m.pendingCalls {
+			m.messages = append(m.messages, provider.Message{
+				Role:       provider.RoleTool,
+				Content:    "error: cancelled by user",
+				ToolCallID: tc.ID,
+			})
+			m.appendEntry(entry{kind: entryTool, toolName: tc.Name, toolArgs: tc.Arguments, toolResult: "cancelled by user"})
+		}
+		m.runningTools = false
+		m.pendingCalls = nil
+	}
+	m.finishStreaming()
+}
+
+func (m *Model) appendEntry(e entry) {
+	m.transcript = append(m.transcript, e)
+}
+
+func (m *Model) resetTranscript() {
+	m.transcript = nil
+	m.cachedRender = ""
+	m.cachedCount = 0
+}
+
+func (m Model) renderEntry(e entry, width int) string {
+	switch e.kind {
+	case entryUser:
+		return userStyle.Render("You") + "\n" + m.wordWrap(e.text, width) + "\n\n"
+	case entryAssistant:
+		return assistantStyle.Render("Assistant") + "\n" + renderMarkdown(e.text, width) + "\n\n"
+	case entryTool:
+		return m.renderToolBlock(e.toolName, e.toolArgs, e.toolResult)
+	case entrySystem:
+		return systemMsgStyle.Render(e.text) + "\n\n"
+	case entryError:
+		return errorStyle.Render("Error: "+e.text) + "\n\n"
+	}
+	return ""
 }
 
 func (m Model) renderStatusBar(width int) string {
@@ -488,14 +612,23 @@ func (m Model) renderStatusBar(width int) string {
 	return statusBarStyle.Render(info + strings.Repeat(" ", pad))
 }
 
-func (m Model) renderHistory() string {
-	if m.history.Len() == 0 && m.state != stateStreaming {
+func (m *Model) renderHistory() string {
+	if len(m.transcript) == 0 && m.state != stateStreaming {
 		return welcomeStyle.Render("Type a message to start chatting.")
 	}
-	s := m.history.String()
+	w := m.contentWidth()
+	if w != m.cachedWidth {
+		m.cachedWidth = w
+		m.cachedRender = ""
+		m.cachedCount = 0
+	}
+	for ; m.cachedCount < len(m.transcript); m.cachedCount++ {
+		m.cachedRender += m.renderEntry(m.transcript[m.cachedCount], w)
+	}
+	s := m.cachedRender
 	if m.state == stateStreaming && m.streaming != "" {
 		s += assistantStyle.Render("Assistant") + "\n"
-		s += renderMarkdown(m.streaming, m.contentWidth())
+		s += renderMarkdown(m.streaming, w)
 	}
 	return s
 }
@@ -558,12 +691,11 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		return false, ""
 	}
 
-	if m.db == nil {
-		return false, ""
-	}
-
 	switch parts[0] {
 	case "/save":
+		if m.db == nil {
+			return true, "Chat persistence is unavailable."
+		}
 		name := "unnamed"
 		if len(parts) > 1 {
 			name = strings.Join(parts[1:], " ")
@@ -574,6 +706,9 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		return true, fmt.Sprintf("Chat saved as %q", name)
 
 	case "/load":
+		if m.db == nil {
+			return true, "Chat persistence is unavailable."
+		}
 		if len(parts) < 2 {
 			return true, "Usage: /load <name>"
 		}
@@ -582,38 +717,13 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		if err != nil {
 			return true, "Error: " + err.Error()
 		}
-		m.messages = msgs
-		m.history.Reset()
-		for i, msg := range msgs {
-			switch msg.Role {
-			case provider.RoleUser:
-				m.history.WriteString(userStyle.Render("You") + "\n")
-				m.history.WriteString(m.wordWrap(msg.Content, m.contentWidth()) + "\n\n")
-			case provider.RoleAssistant:
-				if msg.Content != "" {
-					m.history.WriteString(assistantStyle.Render("Assistant") + "\n")
-					m.history.WriteString(renderMarkdown(msg.Content, m.contentWidth()) + "\n\n")
-				}
-				for _, tc := range msg.ToolCalls {
-					var result string
-					if i+1 < len(msgs) {
-						for _, next := range msgs[i+1:] {
-							if next.Role == provider.RoleTool && next.ToolCallID == tc.ID {
-								result = next.Content
-								break
-							}
-							if next.Role != provider.RoleTool {
-								break
-							}
-						}
-					}
-					m.history.WriteString(m.renderToolBlock(tc.Name, tc.Arguments, result))
-				}
-			}
-		}
+		m.loadConversation(msgs)
 		return true, fmt.Sprintf("Loaded chat %q (%d messages)", name, len(msgs))
 
 	case "/chats":
+		if m.db == nil {
+			return true, "Chat persistence is unavailable."
+		}
 		entries, err := m.db.ListChats()
 		if err != nil {
 			return true, "Error: " + err.Error()
@@ -631,5 +741,37 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 
 	default:
 		return false, ""
+	}
+}
+
+// loadConversation replaces the current conversation and rebuilds the
+// transcript from the stored messages.
+func (m *Model) loadConversation(msgs []provider.Message) {
+	m.messages = msgs
+	m.resetTranscript()
+	for i, msg := range msgs {
+		switch msg.Role {
+		case provider.RoleUser:
+			m.appendEntry(entry{kind: entryUser, text: msg.Content})
+		case provider.RoleAssistant:
+			if msg.Content != "" {
+				m.appendEntry(entry{kind: entryAssistant, text: msg.Content})
+			}
+			for _, tc := range msg.ToolCalls {
+				var result string
+				if i+1 < len(msgs) {
+					for _, next := range msgs[i+1:] {
+						if next.Role == provider.RoleTool && next.ToolCallID == tc.ID {
+							result = next.Content
+							break
+						}
+						if next.Role != provider.RoleTool {
+							break
+						}
+					}
+				}
+				m.appendEntry(entry{kind: entryTool, toolName: tc.Name, toolArgs: tc.Arguments, toolResult: result})
+			}
+		}
 	}
 }

@@ -168,7 +168,7 @@ func TestMultiTurn_MessageAccumulation(t *testing.T) {
 	m = updated.(Model)
 
 	// Simulate token arrival
-	updated, _ = m.Update(tokenMsg("world"))
+	updated, _ = m.Update(tokenMsg{text: "world"})
 	m = updated.(Model)
 
 	if m.streaming != "world" {
@@ -226,7 +226,7 @@ func TestMultiTurn_SecondExchange(t *testing.T) {
 	updated, _ = m.Update(streamStartedMsg{events: events, cancel: cancel})
 	m = updated.(Model)
 
-	updated, _ = m.Update(tokenMsg("first response"))
+	updated, _ = m.Update(tokenMsg{text: "first response"})
 	m = updated.(Model)
 	updated, _ = m.Update(doneMsg{})
 	m = updated.(Model)
@@ -244,7 +244,7 @@ func TestMultiTurn_SecondExchange(t *testing.T) {
 	updated, _ = m.Update(streamStartedMsg{events: events, cancel: cancel})
 	m = updated.(Model)
 
-	updated, _ = m.Update(tokenMsg("second response"))
+	updated, _ = m.Update(tokenMsg{text: "second response"})
 	m = updated.(Model)
 	updated, _ = m.Update(doneMsg{})
 	m = updated.(Model)
@@ -288,19 +288,19 @@ func TestStreaming_TokenByToken(t *testing.T) {
 	m = updated.(Model)
 
 	// Token by token
-	updated, _ = m.Update(tokenMsg("one"))
+	updated, _ = m.Update(tokenMsg{text: "one"})
 	m = updated.(Model)
 	if m.streaming != "one" {
 		t.Fatalf("after first token, expected 'one', got %q", m.streaming)
 	}
 
-	updated, _ = m.Update(tokenMsg(" two"))
+	updated, _ = m.Update(tokenMsg{text: " two"})
 	m = updated.(Model)
 	if m.streaming != "one two" {
 		t.Fatalf("after second token, expected 'one two', got %q", m.streaming)
 	}
 
-	updated, _ = m.Update(tokenMsg(" three"))
+	updated, _ = m.Update(tokenMsg{text: " three"})
 	m = updated.(Model)
 	if m.streaming != "one two three" {
 		t.Fatalf("after third token, expected 'one two three', got %q", m.streaming)
@@ -331,7 +331,7 @@ func TestStreaming_CancelPreservesPartial(t *testing.T) {
 	m = updated.(Model)
 
 	// Receive one token, then cancel
-	updated, _ = m.Update(tokenMsg("partial"))
+	updated, _ = m.Update(tokenMsg{text: "partial"})
 	m = updated.(Model)
 
 	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
@@ -462,7 +462,7 @@ func TestExit_CtrlC_DuringStreaming_DoesNotQuit(t *testing.T) {
 	updated, _ = m.Update(streamStartedMsg{events: events, cancel: cancel})
 	m = updated.(Model)
 
-	updated, _ = m.Update(tokenMsg("partial"))
+	updated, _ = m.Update(tokenMsg{text: "partial"})
 	m = updated.(Model)
 
 	// Ctrl+C during streaming cancels but does not quit
@@ -589,6 +589,23 @@ func TestRequestStream_SendsFullConversation(t *testing.T) {
 	}
 }
 
+// execToolLoop feeds a toolCallsMsg through the async tool-execution flow:
+// Update returns a cmd that runs the tools, whose toolResultsMsg is fed back.
+func execToolLoop(t *testing.T, m Model, msg toolCallsMsg) (Model, tea.Cmd) {
+	t.Helper()
+	updated, cmd := m.Update(msg)
+	m = updated.(Model)
+	if cmd == nil {
+		t.Fatal("expected tool execution cmd")
+	}
+	res := cmd()
+	if _, ok := res.(toolResultsMsg); !ok {
+		t.Fatalf("expected toolResultsMsg, got %T", res)
+	}
+	updated, cmd = m.Update(res)
+	return updated.(Model), cmd
+}
+
 func TestToolCallLoop_SingleToolCall(t *testing.T) {
 	callCount := 0
 	stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
@@ -634,10 +651,10 @@ func TestToolCallLoop_SingleToolCall(t *testing.T) {
 	m = updated.(Model)
 
 	// waitForEvent yields toolCallsMsg
-	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	var cmd tea.Cmd
+	m, cmd = execToolLoop(t, m, toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_1", Name: "read_file", Arguments: `{"path":"test.go"}`},
 	}})
-	m = updated.(Model)
 
 	// Should have: system, user, assistant(tool calls), tool result
 	if len(m.Messages()) != 4 {
@@ -687,11 +704,10 @@ func TestToolCallLoop_MultipleToolCalls(t *testing.T) {
 	m = updated.(Model)
 	m.state = stateStreaming
 
-	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	m, _ = execToolLoop(t, m, toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_1", Name: "read_file", Arguments: `{"path":"a.go"}`},
 		{ID: "call_2", Name: "list_directory", Arguments: `{"path":"."}`},
 	}})
-	m = updated.(Model)
 
 	// system, user, assistant(2 tool calls), tool_result_1, tool_result_2
 	if len(m.Messages()) != 5 {
@@ -727,10 +743,9 @@ func TestToolCallLoop_TextBeforeToolCall(t *testing.T) {
 	m.state = stateStreaming
 	m.streaming = "Let me check that."
 
-	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	m, _ = execToolLoop(t, m, toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_1", Name: "read_file", Arguments: `{"path":"x.go"}`},
 	}})
-	m = updated.(Model)
 
 	// The assistant message should contain both text and tool calls
 	assistant := m.Messages()[2]
@@ -757,10 +772,9 @@ func TestToolCallLoop_ExecutorError(t *testing.T) {
 	m = updated.(Model)
 	m.state = stateStreaming
 
-	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	m, _ = execToolLoop(t, m, toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_1", Name: "bad_tool", Arguments: `{}`},
 	}})
-	m = updated.(Model)
 
 	// Tool result should contain error prefix
 	toolResult := m.Messages()[3]
@@ -780,10 +794,9 @@ func TestToolCallLoop_NoExecutor(t *testing.T) {
 	m = updated.(Model)
 	m.state = stateStreaming
 
-	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+	m, _ = execToolLoop(t, m, toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_1", Name: "read_file", Arguments: `{"path":"x"}`},
 	}})
-	m = updated.(Model)
 
 	toolResult := m.Messages()[3]
 	if !strings.Contains(toolResult.Content, "no tool executor") {
@@ -912,5 +925,137 @@ func TestWaitForEvent_ToolCalls(t *testing.T) {
 	}
 	if tcMsg.calls[0].Name != "search" {
 		t.Errorf("expected name 'search', got %q", tcMsg.calls[0].Name)
+	}
+}
+
+func TestResize_RewrapsHistory(t *testing.T) {
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, mockStream)
+
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 30})
+	m = updated.(Model)
+
+	long := strings.Repeat("word ", 30) // ~150 chars, wraps differently at each width
+	m.appendEntry(entry{kind: entryUser, text: strings.TrimSpace(long)})
+
+	wide := m.renderHistory()
+	updated, _ = m.Update(tea.WindowSizeMsg{Width: 40, Height: 30})
+	m = updated.(Model)
+	narrow := m.renderHistory()
+
+	if wide == narrow {
+		t.Fatal("history should re-wrap after resize")
+	}
+	for _, line := range strings.Split(narrow, "\n") {
+		if lipglossWidth(line) > 40 {
+			t.Fatalf("line exceeds narrow width after resize: %q", line)
+		}
+	}
+}
+
+func lipglossWidth(s string) int {
+	w := 0
+	for _, line := range strings.Split(s, "\n") {
+		if l := len([]rune(line)); l > w {
+			w = l
+		}
+	}
+	return w
+}
+
+func TestWaitForEvent_BatchesBufferedTokens(t *testing.T) {
+	ch := make(chan provider.StreamEvent, 4)
+	ch <- provider.StreamEvent{Token: "a"}
+	ch <- provider.StreamEvent{Token: "b"}
+	ch <- provider.StreamEvent{Token: "c"}
+	ch <- provider.StreamEvent{Done: true}
+	close(ch)
+
+	msg := waitForEvent(ch)()
+	tm, ok := msg.(tokenMsg)
+	if !ok {
+		t.Fatalf("expected tokenMsg, got %T", msg)
+	}
+	if tm.text != "abc" {
+		t.Fatalf("expected batched 'abc', got %q", tm.text)
+	}
+	if _, ok := tm.final.(doneMsg); !ok {
+		t.Fatalf("expected final doneMsg carried with batch, got %T", tm.final)
+	}
+}
+
+func TestWaitForEvent_BatchDeliveredThroughUpdate(t *testing.T) {
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, mockStream)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updated.(Model)
+	m.state = stateStreaming
+
+	updated, _ = m.Update(tokenMsg{text: "abc", final: doneMsg{}})
+	m = updated.(Model)
+
+	if m.state != stateInput {
+		t.Fatal("carried doneMsg should finish streaming")
+	}
+	if got := m.Messages()[len(m.Messages())-1].Content; got != "abc" {
+		t.Fatalf("expected assistant content 'abc', got %q", got)
+	}
+}
+
+func TestSlashCommand_NoDB_StillHandled(t *testing.T) {
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, mockStream)
+
+	for _, cmd := range []string{"/save x", "/load x", "/chats"} {
+		handled, result := m.handleSlashCommand(cmd)
+		if !handled {
+			t.Fatalf("%s should be handled even without a DB (not sent to the LLM)", cmd)
+		}
+		if !strings.Contains(result, "unavailable") {
+			t.Fatalf("%s should report persistence unavailable, got %q", cmd, result)
+		}
+	}
+}
+
+func TestCancelDuringToolRun_IgnoresStaleResults(t *testing.T) {
+	executor := func(name string, args json.RawMessage) (string, error) {
+		return "slow result", nil
+	}
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "hi"},
+	}
+	m := New(msgs, mockStream).WithToolExecutor(executor)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updated.(Model)
+	m.state = stateStreaming
+
+	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_1", Name: "read_file", Arguments: `{"path":"x"}`},
+	}})
+	m = updated.(Model)
+
+	// User cancels while the tool is still running.
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	m = updated.(Model)
+
+	if m.state != stateInput {
+		t.Fatal("cancel during tool run should return to input")
+	}
+	// Pending call must have a synthetic result so the conversation stays valid.
+	last := m.Messages()[len(m.Messages())-1]
+	if last.Role != provider.RoleTool || last.ToolCallID != "call_1" {
+		t.Fatalf("expected synthetic tool result for pending call, got role=%s id=%s", last.Role, last.ToolCallID)
+	}
+	before := len(m.Messages())
+
+	// The stale result arrives after cancel and must be ignored.
+	updated, restream := m.Update(cmd())
+	m = updated.(Model)
+	if len(m.Messages()) != before {
+		t.Fatal("stale tool results should be ignored after cancel")
+	}
+	if restream != nil {
+		t.Fatal("stale tool results should not trigger a re-stream")
 	}
 }
