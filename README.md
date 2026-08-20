@@ -172,6 +172,12 @@ shhh chat --resume       # pick a saved chat to resume
 
 Every session is autosaved after each exchange (to the `(last session)` slot), so `--continue` always picks up where you left off. Use `/save <name>` inside a session to keep a conversation permanently.
 
+You can also pipe context into a chat — it's attached to your first message:
+
+```bash
+cat error.log | shhh chat "why is this failing?"
+```
+
 Chat mode has read-only tools (`read_file`, `list_directory`, `search`) plus `execute_command`, which lets the assistant propose shell commands: each one is shown to you with safety warnings and only runs after you approve it with `y`.
 
 The status bar shows token usage, estimated cost, the current context size, and the active model.

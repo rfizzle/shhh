@@ -6,6 +6,7 @@ import (
 	"os"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
@@ -13,6 +14,7 @@ import (
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/shell"
+	"github.com/rfizzle/shhh/internal/stdin"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/browse"
@@ -123,10 +125,40 @@ func newChatCmd() *cobra.Command {
 			if r := update.CheckCached(version); r != nil {
 				model = model.WithUpdateNotice("update: " + r.Latest)
 			}
+
+			initialPrompt := ""
 			if len(args) > 0 {
-				model = model.WithInitialPrompt(args[0])
+				initialPrompt = args[0]
 			}
-			program := tea.NewProgram(model, tea.WithAltScreen())
+
+			// Piped stdin becomes context for the first message; the TUI then
+			// reads keys from the terminal directly.
+			programOpts := []tea.ProgramOption{tea.WithAltScreen()}
+			stdinIsTTY := isatty.IsTerminal(os.Stdin.Fd()) || isatty.IsCygwinTerminal(os.Stdin.Fd())
+			if !stdinIsTTY {
+				maxChars := cfg.EffectiveContextMaxTokens() * 4
+				content, err := stdin.Read(os.Stdin, maxChars)
+				if err != nil {
+					return err
+				}
+				if content != "" {
+					if initialPrompt == "" {
+						initialPrompt = "Take a look at this."
+					}
+					initialPrompt = stdin.FormatPromptWithContext(initialPrompt, content)
+				}
+				tty, err := os.Open("/dev/tty")
+				if err != nil {
+					return fmt.Errorf("chat needs a terminal for input: %w", err)
+				}
+				defer tty.Close()
+				programOpts = append(programOpts, tea.WithInput(tty))
+			}
+			if initialPrompt != "" {
+				model = model.WithInitialPrompt(initialPrompt)
+			}
+
+			program := tea.NewProgram(model, programOpts...)
 			if _, err := program.Run(); err != nil {
 				fmt.Fprintln(os.Stderr, "error:", err)
 				os.Exit(1)
