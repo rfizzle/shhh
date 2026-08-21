@@ -34,7 +34,7 @@ func newCodeCmd() *cobra.Command {
 				continueLast: continueLast,
 				resumePick:   resumePick,
 			}
-			if printMode || popts.json {
+			if printMode || popts.json || popts.sandbox {
 				return runPrintSession(cmd, args, session, popts)
 			}
 			return runChatSession(cmd, args, session)
@@ -50,6 +50,7 @@ func newCodeCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&popts.json, "json", false, "with --print, emit a structured JSON transcript instead of streaming text (implies --print)")
 	cmd.Flags().BoolVar(&popts.yes, "yes", false, "with --print, auto-approve file edits and commands (safety-flagged commands stay denied)")
 	cmd.Flags().StringArrayVar(&popts.allow, "allow", nil, "with --print, auto-approve commands matching this prefix (repeatable; extends the config allowlist)")
+	cmd.Flags().BoolVar(&popts.sandbox, "sandbox", false, "run approved commands inside a disposable container sandbox; needs a configured digest-pinned image (implies --print)")
 
 	cmd.AddCommand(newCodeDoctorCmd())
 
@@ -57,13 +58,14 @@ func newCodeCmd() *cobra.Command {
 }
 
 // newCodeDoctorCmd reports the process-containment mechanism and resolved
-// policy (S-062): which wrapper is available (and why not, when none is), the
-// profile, and the write grants and deny mask agent commands run under.
+// policy (S-062) plus container-sandbox status (S-063): which wrapper and
+// engine are available (and why not, when none is), the isolation-level
+// ladder, the image policy, and owned sandbox containers.
 func newCodeDoctorCmd() *cobra.Command {
 	return &cobra.Command{
 		Use:   "doctor",
-		Short: "Report command-containment (sandbox) status",
-		Long:  "Show which OS-level containment mechanism wraps agent-executed commands, or why none is available, plus the resolved write grants and deny mask.",
+		Short: "Report command-containment and container-sandbox status",
+		Long:  "Show which OS-level containment mechanism wraps agent-executed commands and which container engine can run sandboxes, or why not, plus the resolved policy and owned sandbox containers.",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := ConfigFrom(cmd.Context())
@@ -71,7 +73,10 @@ func newCodeDoctorCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			reconcileOwnedSandboxes()
 			fmt.Fprintln(cmd.OutOrStdout(), sandbox.Report(sandbox.Detect(), policy))
+			fmt.Fprintln(cmd.OutOrStdout())
+			fmt.Fprintln(cmd.OutOrStdout(), containerReport(cfg))
 			return nil
 		},
 	}

@@ -12,6 +12,10 @@ type Containment struct {
 	Run    func(context.Context, string) (string, int)
 	Status string
 	Report string
+	// Manage handles the /sandbox subcommands (doctor, list, status,
+	// destroy, prune) for container sandboxes (S-063) and returns the text to
+	// show. Nil means container sandbox management is not wired up.
+	Manage func(args []string) string
 }
 
 // WithContainment wires the containment setup into the session.

@@ -1354,13 +1354,22 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		return true, fmt.Sprintf("Mode set to %s — %s.", mode, mode.Describe())
 
 	case "/sandbox":
-		if len(parts) > 2 || (len(parts) == 2 && parts[1] != "doctor") {
-			return true, "Usage: /sandbox [doctor]"
+		args := parts[1:]
+		if len(args) == 0 {
+			args = []string{"doctor"}
 		}
-		if m.containment.Report == "" {
-			return true, "Command containment is not configured in this session."
+		if m.containment.Manage != nil {
+			return true, m.containment.Manage(args)
 		}
-		return true, m.containment.Report
+		// No manager wired (older sessions/tests): doctor falls back to the
+		// static report; everything else is unavailable.
+		if len(args) == 1 && args[0] == "doctor" {
+			if m.containment.Report == "" {
+				return true, "Command containment is not configured in this session."
+			}
+			return true, m.containment.Report
+		}
+		return true, "Container sandbox management is unavailable in this session."
 
 	case "/plan":
 		if len(parts) < 2 || parts[1] != "save" {
@@ -1475,7 +1484,7 @@ func helpText() string {
   /model [name]  Show or switch the model for this session
   /mode [name]   Show or set the permission mode (manual, accept-edits, auto, plan)
   /mode why      Show the latest auto-mode denial's reason
-  /sandbox       Show command-containment status (also: /sandbox doctor)
+  /sandbox       Containment status and container sandboxes (doctor|list|status|destroy <id>|prune)
   /plan save [name]  Save the last plan/response to .shhh/plans/
   /compact       Summarize the conversation and continue from the summary
   /save [name]   Save this chat

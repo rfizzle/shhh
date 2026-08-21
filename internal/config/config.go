@@ -32,6 +32,27 @@ type SandboxConfig struct {
 	// WriteExtra paths are writable inside containment, in addition to the
 	// workspace, scratch, and toolchain caches.
 	WriteExtra []string `toml:"write_extra"`
+	// ContainerEngine forces the container-sandbox engine ("podman" or
+	// "docker"); empty auto-detects, preferring a rootless engine.
+	ContainerEngine string `toml:"container_engine"`
+	// ContainerImage is the digest-pinned image (name@sha256:…) sandbox
+	// containers run; container sandboxes are unavailable until it is set.
+	ContainerImage string `toml:"container_image"`
+	// ImageAllowlist, when set, restricts sandbox images to these
+	// digest-pinned references.
+	ImageAllowlist []string `toml:"image_allowlist"`
+	// ContainerMemory / ContainerCPUs / ContainerPids are the sandbox
+	// resource ceilings (defaults: 2g, 2, 256).
+	ContainerMemory string `toml:"container_memory"`
+	ContainerCPUs   string `toml:"container_cpus"`
+	ContainerPids   int    `toml:"container_pids"`
+	// ContainerTTLHours is how long a sandbox container may live before
+	// startup reconciliation reaps it (default 24).
+	ContainerTTLHours int `toml:"container_ttl_hours"`
+	// RequireIsolation refuses sandbox creation below this verified level
+	// ("process", "container", or "vm"); an unverifiable requirement fails
+	// creation instead of downgrading. Empty requires none.
+	RequireIsolation string `toml:"require_isolation"`
 }
 
 type ProviderConfig struct {
@@ -193,6 +214,26 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Sandbox.DenyExtra = splitList(value)
 	case "sandbox.write_extra":
 		cfg.Sandbox.WriteExtra = splitList(value)
+	case "sandbox.container_engine":
+		cfg.Sandbox.ContainerEngine = value
+	case "sandbox.container_image":
+		cfg.Sandbox.ContainerImage = value
+	case "sandbox.image_allowlist":
+		cfg.Sandbox.ImageAllowlist = splitList(value)
+	case "sandbox.container_memory":
+		cfg.Sandbox.ContainerMemory = value
+	case "sandbox.container_cpus":
+		cfg.Sandbox.ContainerCPUs = value
+	case "sandbox.container_pids":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Sandbox.ContainerPids = n
+	case "sandbox.container_ttl_hours":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Sandbox.ContainerTTLHours = n
+	case "sandbox.require_isolation":
+		cfg.Sandbox.RequireIsolation = value
 	case "appearance.accent_color":
 		cfg.Appearance.AccentColor = value
 	case "history.retention_days":

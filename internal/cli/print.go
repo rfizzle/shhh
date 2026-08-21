@@ -22,9 +22,10 @@ import (
 // (S-057). The default is maximally safe: every approval-gated tool call is
 // denied; --yes and --allow opt in explicitly.
 type printOpts struct {
-	json  bool
-	yes   bool
-	allow []string
+	json    bool
+	yes     bool
+	allow   []string
+	sandbox bool
 }
 
 // runPrintSession runs the agent loop to completion without the TUI:
@@ -67,8 +68,18 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 
 	// Headless approved commands run contained when a mechanism is available
 	// (S-062) — there is no human watching, so containment matters most here.
+	// --sandbox goes further (S-063): a disposable container is created for
+	// the run and approved commands exec inside it; if the sandbox cannot be
+	// created and verified, the run fails instead of downgrading.
 	run := runner.RunCapture
-	if containment, err := buildContainment(cfg); err != nil {
+	if opts.sandbox {
+		srun, cleanup, err := startSandbox(cmd.Context(), cfg)
+		if err != nil {
+			return fmt.Errorf("sandbox: %w", err)
+		}
+		defer cleanup()
+		run = srun
+	} else if containment, err := buildContainment(cfg); err != nil {
 		return err
 	} else if containment.Run != nil {
 		run = containment.Run

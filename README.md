@@ -119,6 +119,14 @@ accent_color = "cyan"
 | `sandbox.profile` | Containment profile for assistant commands: `workspace` (network preserved, default) or `workspace-netless` |
 | `sandbox.deny_extra` | Extra paths masked from contained commands (the built-in mask — `~/.ssh`, `~/.aws`, `~/.config/gh`, shhh's own config/state dirs — cannot be disabled) |
 | `sandbox.write_extra` | Extra writable paths inside containment (beyond the workspace, scratch, and toolchain caches) |
+| `sandbox.container_engine` | Force the container-sandbox engine (`podman` or `docker`); empty auto-detects, preferring a rootless engine |
+| `sandbox.container_image` | Digest-pinned image (`name@sha256:…`) for container sandboxes; required before `--sandbox` works |
+| `sandbox.image_allowlist` | When set, restricts sandbox images to these digest-pinned references |
+| `sandbox.container_memory` | Sandbox memory ceiling (default: `2g`) |
+| `sandbox.container_cpus` | Sandbox CPU ceiling (default: `2`) |
+| `sandbox.container_pids` | Sandbox process-count ceiling (default: 256) |
+| `sandbox.container_ttl_hours` | Hours before an owned sandbox container is reaped at startup (default: 24) |
+| `sandbox.require_isolation` | Minimum verified isolation level for sandbox runs (`process`, `container`, or `vm`); an unverifiable requirement fails creation instead of downgrading |
 | `appearance.accent_color` | TUI accent color |
 
 ## Providers
@@ -199,6 +207,8 @@ How much gets approved automatically is governed by a permission mode, cycled wi
 In auto mode the classifier (the session model by default, `behavior.classifier_model` to override) judges each remaining tool call against your recent conversation and either runs it, refuses it with a reason the model sees, or falls back to asking you. Every classifier failure — timeout, invalid response, request error — fails closed to a prompt, never to an allow, and safety-flagged commands prompt you even when the classifier approves. The status bar shows `✦ checking` while a decision is in flight, classifier tokens count toward the session totals, and `/mode why` shows the latest denial's reason.
 
 Assistant commands additionally run inside OS-level process containment when a mechanism is available — bubblewrap on Linux (unprivileged user namespaces are probed first), Seatbelt on macOS (deprecated by Apple but functional). Contained commands can write only to the workspace, scratch space, and toolchain caches, and a deny mask that cannot be disabled hides `~/.ssh`, `~/.aws`, `~/.config/gh`, and shhh's own config and state directories (masked paths read as empty and outrank any write grant). The exec confirm prompt shows the containment state, `shhh code doctor` (or `/sandbox` in a session) reports the mechanism and resolved policy, and a policy that can't be enforced faithfully fails the command rather than running it bare. `/run` — your own command — is never contained.
+
+For long or unsupervised runs, `shhh code -p --sandbox` goes a step further and execs approved commands inside a disposable container: Podman or Docker is auto-detected (rootless preferred and reported), the image must be digest-pinned and pass the configured allowlist, and the container gets exactly one writable mount (the workspace), no host environment or credentials, all capabilities dropped, and memory/CPU/pid ceilings. Isolation reporting is honest — `process < container < vm`, each level verified or explained — and a required level that can't be verified (`sandbox.require_isolation`) fails creation rather than silently downgrading. Every container shhh creates is recorded durably; records are reconciled at session start, containers past their TTL are reaped, and `/sandbox list|status|destroy <id>|prune|doctor` manages them in-session.
 
 The status bar shows token usage, estimated cost, the current context size, and the active model. The context indicator changes color as the conversation approaches the model's context window (from the pricing table when known); past that threshold, the oldest tool results are automatically elided from the conversation before the next request.
 

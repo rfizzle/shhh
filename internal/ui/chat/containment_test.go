@@ -182,4 +182,39 @@ func TestSandboxSlashCommandShowsReport(t *testing.T) {
 	if !handled || !strings.Contains(out, "not configured") {
 		t.Fatalf("/sandbox without containment should say so, got %q", out)
 	}
+
+	// Management subcommands need the wired manager (S-063).
+	handled, out = m.handleSlashCommand("/sandbox list")
+	if !handled || !strings.Contains(out, "unavailable") {
+		t.Fatalf("/sandbox list without a manager should say it is unavailable, got %q", out)
+	}
+}
+
+func TestSandboxSlashCommandDispatchesToManager(t *testing.T) {
+	var got [][]string
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
+		WithContainment(Containment{
+			Report: "proc report",
+			Manage: func(args []string) string {
+				got = append(got, args)
+				return "managed: " + strings.Join(args, " ")
+			},
+		})
+
+	for input, wantArgs := range map[string]string{
+		"/sandbox":             "doctor",
+		"/sandbox doctor":      "doctor",
+		"/sandbox list":        "list",
+		"/sandbox status":      "status",
+		"/sandbox destroy abc": "destroy abc",
+		"/sandbox prune":       "prune",
+	} {
+		handled, out := m.handleSlashCommand(input)
+		if !handled || out != "managed: "+wantArgs {
+			t.Errorf("%s = %q (handled=%v), want dispatch of %q", input, out, handled, wantArgs)
+		}
+	}
+	if len(got) != 6 {
+		t.Errorf("manager should have been called 6 times, got %d", len(got))
+	}
 }
