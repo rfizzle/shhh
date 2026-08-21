@@ -9,9 +9,11 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // GatedPreview describes what an approval-gated tool call is about to do, for
@@ -45,10 +47,10 @@ const (
 type approvalRequest struct {
 	call    provider.ToolCall
 	kind    approvalKind
-	command string     // approvalExec: the command handed to the runner
-	title   string     // action headline, e.g. "edit main.go"
-	diff    []diffLine // approvalDiff: the change to show
-	summary string     // one-line description for transcript entries
+	command string      // approvalExec: the command handed to the runner
+	title   string      // action headline, e.g. "edit main.go"
+	hunks   []diff.Hunk // approvalDiff: the change to show
+	summary string      // one-line description for transcript entries
 }
 
 // approvedToolDoneMsg carries the executor result of an approved non-exec
@@ -112,7 +114,7 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 			call:    tc,
 			kind:    approvalDiff,
 			title:   title,
-			diff:    unifiedDiff(mut.OldText, mut.NewText),
+			hunks:   diff.Compute(mut.OldText, mut.NewText),
 			summary: title,
 		}, nil
 	}
@@ -130,7 +132,7 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 			call:    tc,
 			kind:    approvalDiff,
 			title:   title,
-			diff:    unifiedDiff(p.OldText, p.NewText),
+			hunks:   diff.Compute(p.OldText, p.NewText),
 			summary: title,
 		}, nil
 	}
@@ -307,58 +309,68 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 	})
 }
 
-// confirmLines builds the confirm prompt for the pending approval (or a /run
-// confirmation), one rendered row per element.
-func (m Model) confirmLines() []string {
-	if m.pendingApproval != nil && m.pendingApproval.kind != approvalExec {
-		return m.approvalPreviewLines()
-	}
-	label := "Run: "
-	if m.pendingApproval != nil {
-		label = "Assistant wants to run: "
-	}
-	lines := []string{userStyle.Render(label) + firstLine(m.pendingRun)}
-	warnings := safety.Check(m.pendingRun)
-	if len(warnings) > 0 {
-		var risks []string
-		for _, w := range warnings {
-			risks = append(risks, w.Risk)
-		}
-		lines = append(lines, errorStyle.Render("⚠ "+strings.Join(risks, "; ")))
-	}
-	// Containment state (S-062): before approving, the user sees whether the
-	// assistant's command will run wrapped or bare. /run stays uncontained and
-	// shows nothing.
-	if m.pendingApproval != nil && m.containment.Status != "" {
-		lines = append(lines, systemMsgStyle.Render("⛨ "+m.containment.Status))
-	}
-	// [a] is offered only for assistant commands without safety warnings:
-	// flagged actions can never be blanket-approved, and /run stays manual.
-	prompt := "Run this command? [y/N]"
-	if m.pendingApproval != nil && len(warnings) == 0 {
-		prompt = "Run this command? [y/n/a]  (a: always allow commands this session)"
-	}
-	lines = append(lines, systemMsgStyle.Render(prompt))
-	return lines
-}
-
-// approvalPreviewLines renders the diff or generic preview for the pending
-// non-exec approval.
-func (m Model) approvalPreviewLines() []string {
+// approvalCard assembles the components.ApprovalCard (DESIGN-TUI.md §2) for
+// the pending approval or /run confirmation. Both the confirm prompt's
+// rendering and its key handling flow through this one card.
+func (m Model) approvalCard() *components.ApprovalCard {
+	card := &components.ApprovalCard{MaxLines: m.maxConfirmPanelHeight()}
 	req := m.pendingApproval
-	lines := []string{userStyle.Render("Assistant wants to " + req.title)}
+
+	if req == nil || req.kind == approvalExec {
+		card.Variant = components.ApprovalCommand
+		card.Title = "Approve command"
+		card.Question = "Run this command?"
+		if req != nil {
+			card.Headline = "Assistant wants to run: " + firstLine(m.pendingRun)
+		} else {
+			card.Headline = "Run: " + firstLine(m.pendingRun)
+		}
+		if warnings := safety.Check(m.pendingRun); len(warnings) > 0 {
+			var risks []string
+			for _, w := range warnings {
+				risks = append(risks, w.Risk)
+			}
+			card.Warnings = []string{strings.Join(risks, "; ")}
+		}
+		// Containment state (S-062): before approving, the user sees whether
+		// the assistant's command will run wrapped or bare. /run stays
+		// uncontained and shows nothing.
+		if req != nil && m.containment.Status != "" {
+			card.Containment = m.containment.Status
+		}
+		// [a] is offered only for assistant commands without safety warnings:
+		// flagged actions can never be blanket-approved, and /run stays
+		// manual.
+		if req != nil && len(card.Warnings) == 0 {
+			card.AllowAlways = true
+			card.AlwaysHint = "a: always allow commands this session"
+		}
+		return card
+	}
+
+	card.Headline = "Assistant wants to " + req.title
 	switch req.kind {
 	case approvalDiff:
-		maxDiff := m.maxConfirmPanelHeight() - 2 // title + prompt rows
-		lines = append(lines, renderDiffLines(req.diff, m.contentWidth(), maxDiff)...)
-		lines = append(lines, systemMsgStyle.Render("Apply this change? [y/n/a]  (a: always allow edits this session)"))
+		card.Variant = components.ApprovalEdit
+		card.Title = "Approve edit"
+		card.Hunks = req.hunks
+		card.Question = "Apply this change?"
+		card.AllowAlways = true
+		card.AlwaysHint = "a: always allow edits this session"
 	default:
-		if req.summary != "" && req.summary != req.title {
-			lines = append(lines, toolArgsStyle.Render(clipLine(firstLine(req.summary), m.contentWidth())))
+		card.Variant = components.ApprovalGeneric
+		card.Title = "Approve tool"
+		card.Question = "Allow this?"
+		if req.summary != req.title {
+			card.Summary = firstLine(req.summary)
 		}
-		lines = append(lines, systemMsgStyle.Render("Allow this? [y/N]"))
 	}
-	return lines
+	return card
+}
+
+// confirmLines renders the approval card, one row per element.
+func (m Model) confirmLines() []string {
+	return strings.Split(m.approvalCard().View(m.contentWidth()), "\n")
 }
 
 // renderConfirm renders the confirm prompt padded to the bottom panel height.

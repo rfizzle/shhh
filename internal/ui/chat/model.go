@@ -17,9 +17,9 @@ import (
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
-	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // AutosaveName is the reserved chat-session slot that always mirrors the most
@@ -47,6 +47,10 @@ const (
 	// statePlanApprove: a completed planning response is awaiting the user's
 	// decision — execute, keep planning, or reject (S-061).
 	statePlanApprove
+	// stateFocus: focus mode (S-076, DESIGN-TUI.md §7) — j/k moves a
+	// selection cursor over expandable transcript rows, enter
+	// expands/collapses in place, esc returns to the input.
+	stateFocus
 )
 
 const inputHeight = 3
@@ -111,6 +115,9 @@ type entry struct {
 	toolArgs   string
 	toolResult string
 	exitCode   int
+	// expanded shows the full tool/command output instead of the truncated
+	// block; toggled from focus mode (S-076).
+	expanded bool
 }
 
 type Model struct {
@@ -165,6 +172,9 @@ type Model struct {
 	lastDenial string
 	// planChoice is the focused row of the plan-approval prompt (S-061).
 	planChoice int
+	// focusIdx is the transcript index of the row selected in focus mode
+	// (S-076).
+	focusIdx int
 	// containment wraps assistant commands in OS-level process containment
 	// when a mechanism is available (S-062).
 	containment Containment
@@ -349,6 +359,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.state == statePlanApprove {
 			return m.updatePlanApprove(msg)
 		}
+		if m.state == stateFocus {
+			return m.updateFocus(msg)
+		}
 		switch msg.String() {
 		case "ctrl+d":
 			m.quitting = true
@@ -396,6 +409,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Cycle the permission mode (S-059); the status bar reflects it.
 			m.mode = agent.NextMode(m.modeCycle, m.mode)
 			return m, nil
+		case "ctrl+e":
+			// Focus mode (S-076): navigate and expand transcript rows.
+			if m.state == stateInput {
+				return m.enterFocusMode()
+			}
 		case "esc":
 			// The input is live in every non-confirm state (S-058), so esc
 			// always clears the draft.
@@ -717,6 +735,8 @@ func (m Model) View() string {
 		inputView = m.renderConfirm()
 	case statePlanApprove:
 		inputView = m.renderPlanApprove()
+	case stateFocus:
+		inputView = m.renderFocusHint()
 	}
 
 	content := header + "\n" + topDivider + "\n" + body + "\n" + bottomDivider + "\n" + statusBar + "\n" + inputView
@@ -755,27 +775,39 @@ func (m *Model) startRun(parts []string) (result string, entersConfirm bool) {
 	return "", true
 }
 
+// updateConfirmRun routes confirm-prompt keys through the approval card
+// (S-076); the card's y/n/esc semantics match the original prompt, and [a]
+// (S-054) is offered only where a session grant is allowed.
 func (m Model) updateConfirmRun(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-	case "y", "Y", "enter":
+	if msg.String() == "ctrl+d" {
+		m.quitting = true
+		return m, m.quitCmd()
+	}
+	done, result := m.approvalCard().Update(msg)
+	if !done {
+		return m, nil
+	}
+	switch result {
+	case components.ApprovalApprove:
 		if m.pendingApproval != nil && m.pendingApproval.kind != approvalExec {
 			return m.executeApprovedTool()
 		}
 		return m.executeRun()
-	case "a", "A":
+	case components.ApprovalAlways:
 		// Approve and auto-allow this category for the session (S-054).
-		// Safety-flagged commands, generic gated tools, and /run keep asking.
+		// Safety-flagged commands, generic gated tools, and /run keep asking
+		// (the card offers [a] only where a grant is allowed).
 		if req := m.pendingApproval; req != nil {
-			switch {
-			case req.kind == approvalExec && len(safety.Check(req.command)) == 0:
+			switch req.kind {
+			case approvalExec:
 				m.allowAllCommands = true
 				return m.executeRun()
-			case req.kind == approvalDiff:
+			case approvalDiff:
 				m.allowAllEdits = true
 				return m.executeApprovedTool()
 			}
 		}
-	case "n", "N", "esc", "ctrl+c":
+	case components.ApprovalDeny:
 		if m.pendingApproval != nil {
 			return m.declineApproval()
 		}
@@ -786,9 +818,6 @@ func (m Model) updateConfirmRun(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
 		return m, nil
-	case "ctrl+d":
-		m.quitting = true
-		return m, m.quitCmd()
 	}
 	return m, nil
 }
@@ -947,12 +976,21 @@ func terminalMsg(ev provider.StreamEvent) tea.Msg {
 const maxToolResultLines = 8
 
 func (m Model) renderToolBlock(name, args, result string) string {
+	return m.renderToolBlockLimited(name, args, result, maxToolResultLines)
+}
+
+// renderToolBlockLimited renders a tool block truncated to limit result
+// lines; limit <= 0 shows everything (focus-mode expansion, S-076).
+func (m Model) renderToolBlockLimited(name, args, result string, limit int) string {
 	border := toolBorderStyle.Render("│")
 
 	var block strings.Builder
 	block.WriteString(border + " " + toolStyle.Render("⚙ "+name) + " " + toolArgsStyle.Render(formatToolArgs(args)) + "\n")
 
-	display := truncateLines(result, maxToolResultLines)
+	display := result
+	if limit > 0 {
+		display = truncateLines(result, limit)
+	}
 	for _, line := range strings.Split(display, "\n") {
 		block.WriteString(border + " " + toolResultStyle.Render(line) + "\n")
 	}
@@ -966,7 +1004,11 @@ func (m Model) renderCommandBlock(e entry) string {
 	var block strings.Builder
 	block.WriteString(border + " " + toolStyle.Render("$ "+firstLine(e.text)) + " " + toolArgsStyle.Render(fmt.Sprintf("(exit %d)", e.exitCode)) + "\n")
 	if strings.TrimSpace(e.toolResult) != "" {
-		for _, line := range strings.Split(truncateLines(e.toolResult, maxToolResultLines), "\n") {
+		display := e.toolResult
+		if !e.expanded {
+			display = truncateLines(e.toolResult, maxToolResultLines)
+		}
+		for _, line := range strings.Split(display, "\n") {
 			block.WriteString(border + " " + toolResultStyle.Render(line) + "\n")
 		}
 	}
@@ -1139,6 +1181,13 @@ func (m *Model) appendEntry(e entry) {
 
 func (m *Model) resetTranscript() {
 	m.transcript = nil
+	m.invalidateRenderCache()
+}
+
+// invalidateRenderCache forces the next renderHistory to re-render every
+// entry (used when an entry's rendering changes in place, e.g. focus-mode
+// expansion).
+func (m *Model) invalidateRenderCache() {
 	m.cachedRender = ""
 	m.cachedCount = 0
 }
@@ -1150,7 +1199,11 @@ func (m Model) renderEntry(e entry, width int) string {
 	case entryAssistant:
 		return assistantStyle.Render("Assistant") + "\n" + renderMarkdown(e.text, width) + "\n\n"
 	case entryTool:
-		return m.renderToolBlock(e.toolName, e.toolArgs, e.toolResult)
+		limit := maxToolResultLines
+		if e.expanded {
+			limit = 0
+		}
+		return m.renderToolBlockLimited(e.toolName, e.toolArgs, e.toolResult, limit)
 	case entryCommand:
 		return m.renderCommandBlock(e)
 	case entrySystem:
@@ -1238,6 +1291,12 @@ func formatTokenCount(n int64) string {
 func (m *Model) renderHistory() string {
 	if len(m.transcript) == 0 && m.state != stateStreaming {
 		return welcomeStyle.Render("Type a message to start chatting.")
+	}
+	if m.state == stateFocus {
+		// Focus mode renders fresh with the selection gutter, bypassing the
+		// incremental cache.
+		content, _, _ := m.renderFocusHistory()
+		return content
 	}
 	w := m.contentWidth()
 	if w != m.cachedWidth {
@@ -1515,6 +1574,7 @@ Keys:
                  (while the agent is working, Enter queues a steering message
                   that joins the conversation before the next model request)
   Up/Down        Recall previous inputs (when the input is empty)
+  Ctrl+E         Focus mode: select tool/command rows (j/k), expand/collapse (Enter), Esc back
   Esc            Clear the input
   Ctrl+C         Cancel response / clear input / quit
   Ctrl+D         Quit

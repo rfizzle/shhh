@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/term"
 	"github.com/muesli/termenv"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 var (
@@ -42,18 +43,21 @@ func InitStyles() {
 		padding = 0
 	}
 
-	CommandStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("10"))
-	ErrorStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("9"))
-	SpinnerStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+	// Colors come from the shared components.Palette (S-076) so the generate
+	// and chat UIs use identical tokens.
+	p := components.Palette
+	CommandStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Add)
+	ErrorStyle = lipgloss.NewStyle().Foreground(p.Del)
+	SpinnerStyle = lipgloss.NewStyle().Foreground(p.Spin)
 
-	ActiveStyle = lipgloss.NewStyle().Bold(true).Foreground(lipgloss.Color("15")).Background(lipgloss.Color("62")).Padding(0, padding)
-	InactiveStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("250")).Padding(0, padding)
+	ActiveStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Bright).Background(p.FocusBg).Padding(0, padding)
+	InactiveStyle = lipgloss.NewStyle().Foreground(p.Subtle).Padding(0, padding)
 	BarStyle = lipgloss.NewStyle().MarginTop(1)
 
-	EditPromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("250")).MarginTop(1)
-	RevisePromptStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("250")).MarginTop(1)
-	ExplainLabelStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("250")).MarginTop(1).Bold(true)
-	ExplainBodyStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("252"))
+	EditPromptStyle = lipgloss.NewStyle().Foreground(p.Subtle).MarginTop(1)
+	RevisePromptStyle = lipgloss.NewStyle().Foreground(p.Subtle).MarginTop(1)
+	ExplainLabelStyle = lipgloss.NewStyle().Foreground(p.Subtle).MarginTop(1).Bold(true)
+	ExplainBodyStyle = lipgloss.NewStyle().Foreground(p.Body)
 }
 
 func init() {
