@@ -31,7 +31,7 @@ func TestDefinitionsFull_ContainsAllToolsets(t *testing.T) {
 	for _, d := range DefinitionsFull() {
 		names[d.Name] = true
 	}
-	want := []string{"read_file", "list_directory", "search", ExecCommandName, WriteFileName, EditFileName}
+	want := []string{"read_file", "list_directory", "search", "glob", ExecCommandName, WriteFileName, EditFileName}
 	for _, n := range want {
 		if !names[n] {
 			t.Errorf("DefinitionsFull missing tool: %s", n)

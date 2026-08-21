@@ -10,14 +10,14 @@ import (
 
 func TestDefinitions(t *testing.T) {
 	defs := Definitions()
-	if len(defs) != 3 {
-		t.Fatalf("expected 3 tool definitions, got %d", len(defs))
+	if len(defs) != 4 {
+		t.Fatalf("expected 4 tool definitions, got %d", len(defs))
 	}
 	names := map[string]bool{}
 	for _, d := range defs {
 		names[d.Name] = true
 	}
-	for _, want := range []string{"read_file", "list_directory", "search"} {
+	for _, want := range []string{"read_file", "list_directory", "search", "glob"} {
 		if !names[want] {
 			t.Errorf("missing tool definition: %s", want)
 		}

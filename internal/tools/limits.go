@@ -16,8 +16,15 @@ const (
 	// cannot dominate a search result.
 	MaxSearchLineBytes = 400
 
+	// MaxSearchFileBytes caps the size of a file the pure-Go search fallback
+	// will read; larger files are skipped (ripgrep bounds its own reads).
+	MaxSearchFileBytes = 1 << 20
+
 	// MaxListEntries caps how many entries list_directory returns.
 	MaxListEntries = 500
+
+	// MaxGlobResults caps how many file paths glob returns.
+	MaxGlobResults = 500
 
 	// MaxExecOutputBytes caps captured command output embedded in tool
 	// results and /run context messages.
