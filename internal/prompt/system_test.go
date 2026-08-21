@@ -114,6 +114,52 @@ func TestBuildChat_WithExtra(t *testing.T) {
 	}
 }
 
+func TestBuildAgent_AgentInstructions(t *testing.T) {
+	info := shell.Info{Shell: "bash", OS: "linux", Cwd: "/home/user/project"}
+	got := BuildAgent(info)
+
+	for _, want := range []string{
+		"coding agent",
+		"use them proactively",
+		"Read a file before editing",
+		"verify your changes",
+		"Keep going",
+		"write_file and edit_file rather than pasting code blocks",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("expected agent prompt to contain %q, got:\n%s", want, got)
+		}
+	}
+}
+
+func TestBuildAgent_ContainsEnvironment(t *testing.T) {
+	info := shell.Info{Shell: "zsh", OS: "darwin", Cwd: "/Users/me/proj"}
+	got := BuildAgent(info)
+
+	if !strings.Contains(got, "Shell: zsh") {
+		t.Errorf("expected agent prompt to contain shell name, got:\n%s", got)
+	}
+	if !strings.Contains(got, "OS: macOS") {
+		t.Errorf("expected agent prompt to contain OS, got:\n%s", got)
+	}
+	if !strings.Contains(got, "Cwd: /Users/me/proj") {
+		t.Errorf("expected agent prompt to contain cwd, got:\n%s", got)
+	}
+}
+
+func TestBuildAgent_WithExtra(t *testing.T) {
+	info := shell.Info{Shell: "bash", OS: "linux", Cwd: "/home/user"}
+	got := BuildAgent(info, "This repo uses make test.")
+
+	if !strings.Contains(got, "This repo uses make test.") {
+		t.Error("expected extra prompt to be appended to agent prompt")
+	}
+
+	if withEmpty := BuildAgent(info, ""); withEmpty != BuildAgent(info) {
+		t.Error("empty extra should produce same result as no extra")
+	}
+}
+
 func TestFriendlyOS(t *testing.T) {
 	tests := []struct {
 		goos string

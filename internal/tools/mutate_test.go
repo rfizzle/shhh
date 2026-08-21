@@ -26,6 +26,22 @@ func TestMutating_Definitions(t *testing.T) {
 	}
 }
 
+func TestDefinitionsFull_ContainsAllToolsets(t *testing.T) {
+	names := map[string]bool{}
+	for _, d := range DefinitionsFull() {
+		names[d.Name] = true
+	}
+	want := []string{"read_file", "list_directory", "search", ExecCommandName, WriteFileName, EditFileName}
+	for _, n := range want {
+		if !names[n] {
+			t.Errorf("DefinitionsFull missing tool: %s", n)
+		}
+	}
+	if len(names) != len(want) {
+		t.Errorf("DefinitionsFull has %d unique tools, want %d", len(names), len(want))
+	}
+}
+
 func TestExecute_RefusesMutatingTools(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "blocked.txt")

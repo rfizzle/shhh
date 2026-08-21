@@ -332,6 +332,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newInitCmd())
 	cmd.AddCommand(newConfigCmd())
 	cmd.AddCommand(newChatCmd())
+	cmd.AddCommand(newCodeCmd())
 	cmd.AddCommand(newMetricsCmd())
 	cmd.AddCommand(newRateCmd())
 	cmd.AddCommand(newHistoryCmd())

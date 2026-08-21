@@ -134,6 +134,7 @@ type Model struct {
 	approvalQueue   []provider.ToolCall
 	pendingApproval *approvalRequest
 	gatedTools      map[string]GatedPreviewFunc
+	title           string
 	width           int
 	height          int
 	ready           bool
@@ -188,6 +189,13 @@ func (m Model) WithRunner(run func(context.Context, string) (string, int)) Model
 // requests use the given model.
 func (m Model) WithModelSwitcher(fn func(string)) Model {
 	m.switchFn = fn
+	return m
+}
+
+// WithTitle overrides the header title (default "shhh chat"), so `shhh code`
+// can reuse the TUI under its own name.
+func (m Model) WithTitle(title string) Model {
+	m.title = title
 	return m
 }
 
@@ -572,7 +580,11 @@ func (m Model) View() string {
 
 	contentWidth := m.width - horizontalPadding*2
 
-	header := headerStyle.Render(" shhh chat") +
+	title := m.title
+	if title == "" {
+		title = "shhh chat"
+	}
+	header := headerStyle.Render(" "+title) +
 		headerHintStyle.Render("  Ctrl+D to exit")
 	if m.updateNotice != "" {
 		header += "  " + updateNoticeStyle.Render(m.updateNotice)

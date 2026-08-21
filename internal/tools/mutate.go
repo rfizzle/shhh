@@ -24,6 +24,18 @@ func Mutating() []Definition {
 	return []Definition{writeFile, editFile}
 }
 
+// DefinitionsFull returns the complete agent toolset: read-only tools, the
+// user-approved execute_command, and the approval-gated file-modification
+// tools. This is what `shhh code` registers; `shhh chat` stays on
+// DefinitionsWithExec.
+func DefinitionsFull() []provider.Tool {
+	defs := DefinitionsWithExec()
+	for _, d := range Mutating() {
+		defs = append(defs, d.Tool)
+	}
+	return defs
+}
+
 // IsMutating reports whether name is a file-modification tool that must go
 // through the user approval queue before it runs.
 func IsMutating(name string) bool {
