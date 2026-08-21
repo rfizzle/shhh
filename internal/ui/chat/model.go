@@ -16,6 +16,7 @@ import (
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // AutosaveName is the reserved chat-session slot that always mirrors the most
@@ -681,9 +682,8 @@ func (m Model) updateConfirmRun(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func execToolResult(output string, exitCode int) string {
-	const maxLen = 4000
-	if len(output) > maxLen {
-		output = output[:maxLen] + "\n… (output truncated)"
+	if cut, truncated := tools.TruncateOutput(output, tools.MaxExecOutputBytes); truncated {
+		output = cut + "\n… (output truncated)"
 	}
 	if strings.TrimSpace(output) == "" {
 		output = "(no output)"
@@ -709,9 +709,8 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 // commandContextMessage is appended to the conversation (as the user) so the
 // model can see what a /run produced, without triggering a response.
 func commandContextMessage(command, output string, exitCode int) string {
-	const maxLen = 4000
-	if len(output) > maxLen {
-		output = output[:maxLen] + "\n… (output truncated)"
+	if cut, truncated := tools.TruncateOutput(output, tools.MaxExecOutputBytes); truncated {
+		output = cut + "\n… (output truncated)"
 	}
 	if strings.TrimSpace(output) == "" {
 		output = "(no output)"

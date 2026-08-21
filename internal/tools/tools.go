@@ -67,7 +67,7 @@ func Execute(name string, args json.RawMessage) (string, error) {
 var readFile = Definition{
 	Tool: provider.Tool{
 		Name:        "read_file",
-		Description: "Read the contents of a file. Returns the file content as text.",
+		Description: "Read the contents of a file. Returns the file content as text. Large files are truncated with a notice; use start_line/end_line to page through the rest.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {
@@ -101,21 +101,45 @@ func executeReadFile(raw json.RawMessage) (string, error) {
 		return "", fmt.Errorf("cannot read file: %w", err)
 	}
 
-	content := string(data)
+	lines := strings.Split(string(data), "\n")
+	total := len(lines)
+	start := 1
+	end := total
 	if args.StartLine > 0 || args.EndLine > 0 {
-		lines := strings.Split(content, "\n")
-		start := args.StartLine
-		if start < 1 {
-			start = 1
+		if args.StartLine > 1 {
+			start = args.StartLine
 		}
-		end := args.EndLine
-		if end < 1 || end > len(lines) {
-			end = len(lines)
+		if args.EndLine > 0 && args.EndLine < end {
+			end = args.EndLine
 		}
-		if start > len(lines) {
-			return "", fmt.Errorf("start_line %d exceeds file length (%d lines)", start, len(lines))
+		if start > total {
+			return "", fmt.Errorf("start_line %d exceeds file length (%d lines)", start, total)
 		}
-		content = strings.Join(lines[start-1:end], "\n")
+		if end < start {
+			return "", fmt.Errorf("end_line %d is before start_line %d", end, start)
+		}
+	}
+	selected := lines[start-1 : end]
+
+	truncated := false
+	if len(selected) > MaxReadFileLines {
+		selected = selected[:MaxReadFileLines]
+		truncated = true
+	}
+	content := strings.Join(selected, "\n")
+	if cut, wasCut := TruncateOutput(content, MaxReadFileBytes); wasCut {
+		// Drop the trailing partial line so the paging notice counts whole
+		// lines — unless the cut landed inside the only line we have.
+		if i := strings.LastIndexByte(cut, '\n'); i > 0 {
+			cut = cut[:i]
+		}
+		content = cut
+		truncated = true
+	}
+	if truncated {
+		shown := strings.Count(content, "\n") + 1
+		lastLine := start + shown - 1
+		content += fmt.Sprintf("\n… (truncated: showing lines %d-%d of %d; call read_file again with start_line=%d to continue)", start, lastLine, total, lastLine+1)
 	}
 
 	return content, nil
@@ -161,6 +185,10 @@ func executeListDirectory(raw json.RawMessage) (string, error) {
 	err := walkDir(args.Path, "", args.Depth, &lines)
 	if err != nil {
 		return "", err
+	}
+	if len(lines) > MaxListEntries {
+		lines = lines[:MaxListEntries]
+		return strings.Join(lines, "\n") + fmt.Sprintf("\n… (truncated at %d entries; list a subdirectory or use a smaller depth to see more)", MaxListEntries), nil
 	}
 	return strings.Join(lines, "\n"), nil
 }
@@ -208,8 +236,6 @@ type searchArgs struct {
 	Path    string `json:"path"`
 }
 
-const maxSearchResults = 50
-
 func executeSearch(raw json.RawMessage) (string, error) {
 	var args searchArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
@@ -247,7 +273,7 @@ func executeSearch(raw json.RawMessage) (string, error) {
 				}
 				return nil
 			}
-			if len(results) >= maxSearchResults {
+			if len(results) >= MaxSearchResults {
 				return filepath.SkipAll
 			}
 			if isBinary(path) {
@@ -265,8 +291,8 @@ func executeSearch(raw json.RawMessage) (string, error) {
 		return "No matches found.", nil
 	}
 	out := strings.Join(results, "\n")
-	if len(results) >= maxSearchResults {
-		out += fmt.Sprintf("\n... (truncated at %d results)", maxSearchResults)
+	if len(results) >= MaxSearchResults {
+		out += fmt.Sprintf("\n… (truncated at %d results; narrow the pattern or path to see more)", MaxSearchResults)
 	}
 	return out, nil
 }
@@ -278,11 +304,15 @@ func searchFile(path, pattern string, results []string) ([]string, error) {
 	}
 	lines := strings.Split(string(data), "\n")
 	for i, line := range lines {
-		if len(results) >= maxSearchResults {
+		if len(results) >= MaxSearchResults {
 			break
 		}
 		if strings.Contains(strings.ToLower(line), pattern) {
-			results = append(results, fmt.Sprintf("%s:%d: %s", path, i+1, strings.TrimRight(line, "\r")))
+			line = strings.TrimRight(line, "\r")
+			if len(line) > MaxSearchLineBytes {
+				line = cutUTF8(line, MaxSearchLineBytes) + " … (line truncated)"
+			}
+			results = append(results, fmt.Sprintf("%s:%d: %s", path, i+1, line))
 		}
 	}
 	return results, nil
