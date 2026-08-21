@@ -151,6 +151,9 @@ type Model struct {
 	// turn; a fresh user message resets it.
 	toolRounds    int
 	maxToolRounds int
+	// compacting marks an in-flight /compact request (S-055): the streamed
+	// response is a summary handled by finishCompact, not conversation text.
+	compacting    bool
 	title         string
 	width         int
 	height        int
@@ -397,6 +400,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.viewport.GotoBottom()
 					return m, nil
 				}
+				if text == "/compact" {
+					m.input.Reset()
+					return m.startCompact()
+				}
 				if handled, result := m.handleSlashCommand(text); handled {
 					m.input.Reset()
 					m.appendEntry(entry{kind: entrySystem, text: result})
@@ -432,6 +439,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case doneMsg:
 		m.accumulateUsage(msg.usage)
+		if m.compacting {
+			return m.finishCompact()
+		}
 		m.finishStreaming()
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
@@ -439,6 +449,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case toolCallsMsg:
 		m.accumulateUsage(msg.usage)
+		if m.compacting {
+			return m.abortCompact()
+		}
 		m.toolRounds++
 		m.messages = append(m.messages, provider.Message{
 			Role:      provider.RoleAssistant,
@@ -541,6 +554,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case streamErrMsg:
 		m.appendEntry(entry{kind: entryError, text: msg.err.Error()})
+		m.compacting = false
 		m.streaming = ""
 		m.events = nil
 		m.cancel = nil
@@ -595,6 +609,7 @@ func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
 		Content: text,
 	})
 	m.appendEntry(entry{kind: entryUser, text: text})
+	m.trimForRequest()
 	m.state = stateStreaming
 	m.streaming = ""
 	m.atBottom = true
@@ -630,7 +645,10 @@ func (m Model) View() string {
 	switch {
 	case m.state == stateStreaming && m.streaming == "":
 		label := "Thinking…"
-		if m.runningTools {
+		switch {
+		case m.compacting:
+			label = "Compacting…"
+		case m.runningTools:
 			label = "Running tools…"
 		}
 		body = m.viewport.View() + "\n" + m.spinner.View() + " " + label
@@ -788,6 +806,7 @@ func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
 	}
 	m.state = stateStreaming
 	m.streaming = ""
+	m.trimForRequest()
 	m.syncViewportHeight()
 	return m, m.requestStream()
 }
@@ -795,6 +814,12 @@ func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
 func (m Model) requestStream() tea.Cmd {
 	msgs := make([]provider.Message, len(m.messages))
 	copy(msgs, m.messages)
+	return m.requestStreamFor(msgs)
+}
+
+// requestStreamFor starts a stream over an explicit message list (callers
+// pass a copy so in-flight requests are immune to later mutation).
+func (m Model) requestStreamFor(msgs []provider.Message) tea.Cmd {
 	stream := m.stream
 	return func() tea.Msg {
 		events, cancel, err := stream(msgs)
@@ -944,6 +969,17 @@ func (m *Model) accumulateUsage(u *provider.Usage) {
 }
 
 func (m *Model) finishStreaming() {
+	if m.compacting {
+		// A cancelled compaction discards the partial summary and keeps the
+		// conversation unchanged (the success path goes through finishCompact).
+		m.compacting = false
+		m.streaming = ""
+		m.events = nil
+		m.cancel = nil
+		m.state = stateInput
+		m.appendEntry(entry{kind: entrySystem, text: "Compaction cancelled; conversation unchanged."})
+		return
+	}
 	if m.streaming != "" {
 		m.messages = append(m.messages, provider.Message{
 			Role:    provider.RoleAssistant,
@@ -1011,43 +1047,42 @@ func (m Model) renderEntry(e entry, width int) string {
 }
 
 func (m Model) renderStatusBar(width int) string {
-	var left string
+	var parts []string
 	if m.TotalTokensIn != 0 || m.TotalTokensOut != 0 {
-		left = fmt.Sprintf("↑%d ↓%d", m.TotalTokensIn, m.TotalTokensOut)
+		usage := fmt.Sprintf("↑%d ↓%d", m.TotalTokensIn, m.TotalTokensOut)
 
 		if m.prices != nil && m.modelName != "" {
 			inCost, outCost, found := m.prices.Cost(m.modelName, m.TotalTokensIn, m.TotalTokensOut)
 			if found {
 				total := inCost + outCost
 				if total < 0.01 {
-					left += fmt.Sprintf("  $%.4f", total)
+					usage += fmt.Sprintf("  $%.4f", total)
 				} else {
-					left += fmt.Sprintf("  $%.2f", total)
+					usage += fmt.Sprintf("  $%.2f", total)
 				}
 			}
 		}
+		parts = append(parts, statusBarStyle.Render(usage))
 		if m.contextTokens > 0 {
-			left += "  ctx ~" + formatTokenCount(m.contextTokens)
+			parts = append(parts, m.renderContextIndicator())
 		}
 	}
 
 	// Round counter shows only mid-turn, so long tool loops are visible.
 	if m.toolRounds > 0 && m.state != stateInput {
-		if left != "" {
-			left += "  "
-		}
-		left += fmt.Sprintf("round %d", m.toolRounds)
+		parts = append(parts, statusBarStyle.Render(fmt.Sprintf("round %d", m.toolRounds)))
 	}
 
 	// Active approval policy (S-054); absent in the default ask-everything state.
 	if p := m.policyLabel(); p != "" {
-		if left != "" {
-			left += "  "
-		}
-		left += p
+		parts = append(parts, statusBarStyle.Render(p))
 	}
 
-	right := m.modelName
+	left := strings.Join(parts, "  ")
+	right := ""
+	if m.modelName != "" {
+		right = statusBarStyle.Render(m.modelName)
+	}
 	pad := width - lipgloss.Width(left) - lipgloss.Width(right)
 	if pad < 1 {
 		right = ""
@@ -1056,7 +1091,20 @@ func (m Model) renderStatusBar(width int) string {
 	if pad < 0 {
 		pad = 0
 	}
-	return statusBarStyle.Render(left + strings.Repeat(" ", pad) + right)
+	return left + strings.Repeat(" ", pad) + right
+}
+
+// renderContextIndicator shows the estimated context size, changing color as
+// it approaches the trim threshold (S-055).
+func (m Model) renderContextIndicator() string {
+	s := "ctx ~" + formatTokenCount(m.contextTokens)
+	switch m.contextSeverity() {
+	case 2:
+		return ctxAlertStyle.Render(s)
+	case 1:
+		return ctxWarnStyle.Render(s)
+	}
+	return statusBarStyle.Render(s)
 }
 
 func formatTokenCount(n int64) string {
@@ -1270,6 +1318,7 @@ func helpText() string {
   /copy [code]   Copy the last response (or just its code blocks)
   /run [n]       Run a code block from the last response (with confirmation)
   /model [name]  Show or switch the model for this session
+  /compact       Summarize the conversation and continue from the summary
   /save [name]   Save this chat
   /load <name>   Load a saved chat
   /chats         List saved chats

@@ -21,10 +21,17 @@ const (
 type ModelPricing struct {
 	InputCostPerToken  float64 `json:"input_cost_per_token"`
 	OutputCostPerToken float64 `json:"output_cost_per_token"`
+	MaxInputTokens     int64   `json:"max_input_tokens"`
 }
 
 type Table struct {
 	models map[string]ModelPricing
+}
+
+// NewTable builds a table from explicit per-model entries, for tests and
+// offline use.
+func NewTable(models map[string]ModelPricing) *Table {
+	return &Table{models: models}
 }
 
 func Load() (*Table, error) {
@@ -47,12 +54,22 @@ func Load() (*Table, error) {
 
 func (t *Table) Cost(model string, tokensIn, tokensOut int64) (inputCost, outputCost float64, found bool) {
 	p, ok := t.lookup(model)
-	if !ok {
+	if !ok || (p.InputCostPerToken == 0 && p.OutputCostPerToken == 0) {
 		return 0, 0, false
 	}
 	return float64(tokensIn) * p.InputCostPerToken,
 		float64(tokensOut) * p.OutputCostPerToken,
 		true
+}
+
+// ContextWindow returns the model's context window (max input tokens) when
+// the table knows it.
+func (t *Table) ContextWindow(model string) (int64, bool) {
+	p, ok := t.lookup(model)
+	if !ok || p.MaxInputTokens <= 0 {
+		return 0, false
+	}
+	return p.MaxInputTokens, true
 }
 
 func (t *Table) lookup(model string) (ModelPricing, bool) {
@@ -120,7 +137,7 @@ func loadFromFile(path string) (*Table, error) {
 		if err := json.Unmarshal(val, &p); err != nil {
 			continue
 		}
-		if p.InputCostPerToken > 0 || p.OutputCostPerToken > 0 {
+		if p.InputCostPerToken > 0 || p.OutputCostPerToken > 0 || p.MaxInputTokens > 0 {
 			models[key] = p
 		}
 	}

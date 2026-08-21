@@ -185,7 +185,7 @@ cat error.log | shhh chat "why is this failing?"
 
 Chat mode has read-only tools (`read_file`, `list_directory`, `search`) plus `execute_command`, which lets the assistant propose shell commands: each one is shown to you with safety warnings and only runs after you approve it with `y`.
 
-The status bar shows token usage, estimated cost, the current context size, and the active model.
+The status bar shows token usage, estimated cost, the current context size, and the active model. The context indicator changes color as the conversation approaches the model's context window (from the pricing table when known); past that threshold, the oldest tool results are automatically elided from the conversation before the next request.
 
 Slash commands inside a chat session:
 
@@ -196,6 +196,7 @@ Slash commands inside a chat session:
 | `/copy [code]` | Copy the last response (or just its code blocks) |
 | `/run [n]` | Run a code block from the last response (asks for confirmation, shows safety warnings; output goes back into the conversation) |
 | `/model [name]` | Show or switch the model mid-session (same provider) |
+| `/compact` | Summarize the conversation via the model and continue from the summary (frees context) |
 | `/save [name]` | Save this chat |
 | `/load <name>` | Load a saved chat |
 | `/chats` | List saved chats |

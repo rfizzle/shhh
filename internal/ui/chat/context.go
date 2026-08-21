@@ -1,0 +1,216 @@
+package chat
+
+// Context management (S-055). Phase 1 trims: before each stream request, when
+// the estimated context exceeds the trim threshold, the oldest tool results
+// are replaced with a short placeholder while user/assistant text is kept.
+// Phase 2 compacts: /compact asks the provider for a summary of the
+// conversation and restarts the message list from it.
+
+import (
+	"fmt"
+	"strings"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/rfizzle/shhh/internal/provider"
+)
+
+// DefaultContextWindow is the conservative context size (in tokens) assumed
+// when the pricing table doesn't know the model's real window.
+const DefaultContextWindow = 32768
+
+const (
+	// trimThresholdPercent of the context window is where trimming starts
+	// and where the status bar ctx indicator turns alert-colored.
+	trimThresholdPercent = 80
+	// warnThresholdPercent is where the ctx indicator turns warning-colored.
+	warnThresholdPercent = 60
+)
+
+// elidedResult replaces trimmed tool results in the conversation.
+const elidedResult = "[result elided]"
+
+// estimatedBytesPerToken is the rough chars→tokens heuristic used when the
+// provider hasn't reported real usage.
+const estimatedBytesPerToken = 4
+
+// compactInstruction is sent as the final user message of a /compact request.
+const compactInstruction = "Summarize this conversation so it can be continued from the summary alone. " +
+	"Capture the user's goals, key facts and decisions, work completed, current state, and open tasks. " +
+	"Reply with only the summary text."
+
+func estimateTokens(s string) int64 {
+	return int64(len(s) / estimatedBytesPerToken)
+}
+
+func estimateMessageTokens(msgs []provider.Message) int64 {
+	var n int64
+	for _, msg := range msgs {
+		n += estimateTokens(msg.Content)
+		for _, tc := range msg.ToolCalls {
+			n += estimateTokens(tc.Arguments)
+		}
+	}
+	return n
+}
+
+// contextWindow is the model's context size from the pricing table, or
+// DefaultContextWindow when unknown.
+func (m Model) contextWindow() int64 {
+	if m.prices != nil && m.modelName != "" {
+		if w, ok := m.prices.ContextWindow(m.modelName); ok {
+			return w
+		}
+	}
+	return DefaultContextWindow
+}
+
+func (m Model) trimThreshold() int64 {
+	return m.contextWindow() * trimThresholdPercent / 100
+}
+
+func (m Model) warnThreshold() int64 {
+	return m.contextWindow() * warnThresholdPercent / 100
+}
+
+// contextSeverity classifies how close the context estimate is to the trim
+// threshold: 0 normal, 1 approaching (warn), 2 at or over the threshold.
+func (m Model) contextSeverity() int {
+	switch {
+	case m.contextTokens >= m.trimThreshold():
+		return 2
+	case m.contextTokens >= m.warnThreshold():
+		return 1
+	}
+	return 0
+}
+
+// estimatedContextTokens prefers the provider-reported context size and falls
+// back to a character-based estimate before any usage has arrived (e.g. a
+// freshly resumed session).
+func (m Model) estimatedContextTokens() int64 {
+	if m.contextTokens > 0 {
+		return m.contextTokens
+	}
+	return estimateMessageTokens(m.messages)
+}
+
+// trimContext elides the oldest tool results until the context estimate is
+// back under the trim threshold, returning how many were elided. Messages at
+// or after the last user message (the current turn) are never touched, and
+// user/assistant text is always kept.
+func (m *Model) trimContext() int {
+	threshold := m.trimThreshold()
+	est := m.estimatedContextTokens()
+	if est <= threshold {
+		return 0
+	}
+	lastUser := 0
+	for i := len(m.messages) - 1; i >= 0; i-- {
+		if m.messages[i].Role == provider.RoleUser {
+			lastUser = i
+			break
+		}
+	}
+	elided := 0
+	for i := 0; i < lastUser && est > threshold; i++ {
+		msg := &m.messages[i]
+		if msg.Role != provider.RoleTool || msg.Content == elidedResult {
+			continue
+		}
+		est -= estimateTokens(msg.Content) - estimateTokens(elidedResult)
+		msg.Content = elidedResult
+		elided++
+	}
+	if elided > 0 {
+		m.contextTokens = est
+	}
+	return elided
+}
+
+// trimForRequest trims ahead of a stream request and notes it in the
+// transcript when anything was elided.
+func (m *Model) trimForRequest() {
+	n := m.trimContext()
+	if n == 0 {
+		return
+	}
+	m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
+		"Context trimmed: %d older tool result(s) elided.", n)})
+	m.viewport.SetContent(m.renderHistory())
+	m.viewport.GotoBottom()
+}
+
+// startCompact asks the provider to summarize the conversation; the response
+// is handled by finishCompact instead of joining the conversation.
+func (m Model) startCompact() (tea.Model, tea.Cmd) {
+	if len(m.messages) <= 1 {
+		m.appendEntry(entry{kind: entrySystem, text: "Nothing to compact yet."})
+		m.viewport.SetContent(m.renderHistory())
+		m.viewport.GotoBottom()
+		return m, nil
+	}
+	m.compacting = true
+	m.state = stateStreaming
+	m.streaming = ""
+	m.atBottom = true
+	m.appendEntry(entry{kind: entrySystem, text: "Compacting conversation…"})
+	m.viewport.SetContent(m.renderHistory())
+	m.viewport.GotoBottom()
+	msgs := make([]provider.Message, len(m.messages), len(m.messages)+1)
+	copy(msgs, m.messages)
+	msgs = append(msgs, provider.Message{Role: provider.RoleUser, Content: compactInstruction})
+	return m, tea.Batch(m.spinner.Tick, m.requestStreamFor(msgs))
+}
+
+// finishCompact restarts the message list from the streamed summary: system
+// prompt plus one user message carrying the summary. An empty summary leaves
+// the conversation unchanged.
+func (m Model) finishCompact() (tea.Model, tea.Cmd) {
+	summary := strings.TrimSpace(m.streaming)
+	m.compacting = false
+	m.streaming = ""
+	m.events = nil
+	m.cancel = nil
+	m.state = stateInput
+	if summary == "" {
+		m.appendEntry(entry{kind: entryError, text: "compaction produced no summary; conversation unchanged"})
+		m.viewport.SetContent(m.renderHistory())
+		m.viewport.GotoBottom()
+		return m, nil
+	}
+	rebuilt := make([]provider.Message, 0, 2)
+	if len(m.messages) > 0 && m.messages[0].Role == provider.RoleSystem {
+		rebuilt = append(rebuilt, m.messages[0])
+	}
+	rebuilt = append(rebuilt, provider.Message{Role: provider.RoleUser, Content: compactContextMessage(summary)})
+	m.messages = rebuilt
+	m.toolRounds = 0
+	m.contextTokens = estimateMessageTokens(rebuilt)
+	m.resetTranscript()
+	m.appendEntry(entry{kind: entrySystem, text: "Conversation compacted; continuing from this summary:"})
+	m.appendEntry(entry{kind: entryAssistant, text: summary})
+	m.viewport.SetContent(m.renderHistory())
+	m.viewport.GotoBottom()
+	return m, m.autosaveCmd()
+}
+
+// abortCompact abandons a compaction that didn't produce a plain text
+// summary (the model answered with tool calls), leaving the conversation
+// unchanged.
+func (m Model) abortCompact() (tea.Model, tea.Cmd) {
+	m.compacting = false
+	m.streaming = ""
+	m.events = nil
+	m.cancel = nil
+	m.state = stateInput
+	m.appendEntry(entry{kind: entryError, text: "compaction failed: the model responded with tool calls; conversation unchanged"})
+	m.viewport.SetContent(m.renderHistory())
+	m.viewport.GotoBottom()
+	return m, nil
+}
+
+// compactContextMessage is the user-role message that carries the summary
+// into the restarted conversation.
+func compactContextMessage(summary string) string {
+	return "Summary of the conversation so far (earlier messages were compacted):\n\n" + summary
+}

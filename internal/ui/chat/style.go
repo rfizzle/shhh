@@ -15,6 +15,8 @@ var (
 	toolResultStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
 	toolBorderStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
 	statusBarStyle    = lipgloss.NewStyle().Foreground(lipgloss.Color("243"))
+	ctxWarnStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("214"))
+	ctxAlertStyle     = lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Bold(true)
 	updateNoticeStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("214"))
 	diffAddStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
 	diffDelStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("9"))

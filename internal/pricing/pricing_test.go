@@ -78,3 +78,46 @@ func TestShouldRefresh(t *testing.T) {
 		t.Error("expected no refresh for fresh file")
 	}
 }
+
+func TestContextWindow(t *testing.T) {
+	table := NewTable(map[string]ModelPricing{
+		"gpt-4o":         {InputCostPerToken: 0.0000025, MaxInputTokens: 128000},
+		"openai/gpt-4.1": {MaxInputTokens: 1047576},
+		"no-window":      {InputCostPerToken: 0.000001},
+	})
+
+	if w, ok := table.ContextWindow("gpt-4o"); !ok || w != 128000 {
+		t.Fatalf("exact match: want 128000, got %d (found=%v)", w, ok)
+	}
+	if w, ok := table.ContextWindow("gpt-4.1"); !ok || w != 1047576 {
+		t.Fatalf("suffix match: want 1047576, got %d (found=%v)", w, ok)
+	}
+	if _, ok := table.ContextWindow("no-window"); ok {
+		t.Fatal("a model without max_input_tokens should report no window")
+	}
+	if _, ok := table.ContextWindow("unknown"); ok {
+		t.Fatal("an unknown model should report no window")
+	}
+}
+
+func TestLoadFromFile_ContextWindowOnlyEntry(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "prices.json")
+	// Free/local models carry a context window but zero cost; they must be
+	// kept for ContextWindow while Cost still reports not-found.
+	data := `{"ollama/llama3": {"max_input_tokens": 8192}}`
+	if err := os.WriteFile(path, []byte(data), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	table, err := loadFromFile(path)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if w, ok := table.ContextWindow("ollama/llama3"); !ok || w != 8192 {
+		t.Fatalf("want window 8192, got %d (found=%v)", w, ok)
+	}
+	if _, _, found := table.Cost("ollama/llama3", 1, 1); found {
+		t.Fatal("zero-cost entries should not report a cost")
+	}
+}
