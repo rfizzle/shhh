@@ -1712,3 +1712,128 @@ func TestSlashModel_EdgeCases(t *testing.T) {
 		t.Fatal("invalid input should not invoke the callback")
 	}
 }
+
+func TestMaxToolRounds_Default(t *testing.T) {
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, mockStream)
+	if got := m.effectiveMaxToolRounds(); got != DefaultMaxToolRounds {
+		t.Fatalf("default cap should be %d, got %d", DefaultMaxToolRounds, got)
+	}
+	if got := m.WithMaxToolRounds(0).effectiveMaxToolRounds(); got != DefaultMaxToolRounds {
+		t.Fatalf("zero should keep the default cap, got %d", got)
+	}
+	if got := m.WithMaxToolRounds(5).effectiveMaxToolRounds(); got != 5 {
+		t.Fatalf("configured cap should win, got %d", got)
+	}
+}
+
+func TestToolLoop_StopsAtRoundCap(t *testing.T) {
+	executor := func(name string, args json.RawMessage) (string, error) {
+		return "result", nil
+	}
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "go"},
+	}
+	m := New(msgs, mockStream).WithToolExecutor(executor).WithMaxToolRounds(2)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updated.(Model)
+	m.state = stateStreaming
+
+	// Round 1: under the cap, the loop re-streams.
+	var cmd tea.Cmd
+	m, cmd = execToolLoop(t, m, toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_1", Name: "read_file", Arguments: `{"path":"a.go"}`},
+	}})
+	if m.state != stateStreaming {
+		t.Fatalf("round 1 should stay streaming, got state %d", m.state)
+	}
+	if cmd == nil {
+		t.Fatal("round 1 should return a re-stream cmd")
+	}
+
+	// Round 2 hits the cap: the loop pauses and control returns to the user.
+	m, cmd = execToolLoop(t, m, toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_2", Name: "read_file", Arguments: `{"path":"b.go"}`},
+	}})
+	if m.state != stateInput {
+		t.Fatalf("cap should return control to the user, got state %d", m.state)
+	}
+	if cmd != nil {
+		t.Fatal("no re-stream cmd at the cap (autosave is nil without a DB)")
+	}
+	last := m.Messages()[len(m.Messages())-1]
+	if last.Role != provider.RoleTool || last.ToolCallID != "call_2" {
+		t.Fatalf("conversation must stay well-formed at the cap, last message: %+v", last)
+	}
+	notice := m.transcript[len(m.transcript)-1]
+	if notice.kind != entrySystem || !strings.Contains(notice.text, "Paused after 2 tool rounds") {
+		t.Fatalf("expected a round-cap notice, got %+v", notice)
+	}
+
+	// A fresh user message resets the counter and streams again.
+	m = sendText(t, m, "continue")
+	if m.toolRounds != 0 {
+		t.Fatalf("fresh input should reset the round counter, got %d", m.toolRounds)
+	}
+	if m.state != stateStreaming {
+		t.Fatalf("fresh input should resume streaming, got state %d", m.state)
+	}
+}
+
+func TestToolLoop_RoundCapAfterApprovedCommand(t *testing.T) {
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "list files"},
+	}
+	m := New(msgs, mockStream).
+		WithRunner(func(ctx context.Context, cmd string) (string, int) { return "ok", 0 }).
+		WithMaxToolRounds(1)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updated.(Model)
+	m.state = stateStreaming
+
+	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_1", Name: "execute_command", Arguments: `{"command":"ls"}`},
+	}})
+	m = updated.(Model)
+	if m.state != stateConfirmRun {
+		t.Fatalf("expected confirm state, got %d", m.state)
+	}
+
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	m = updated.(Model)
+	var done cmdDoneMsg
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(cmdDoneMsg); ok {
+			done = msg
+		}
+	}
+	updated, restream := m.Update(done)
+	m = updated.(Model)
+
+	if m.state != stateInput {
+		t.Fatalf("cap should pause the loop after the approved command, got state %d", m.state)
+	}
+	if restream != nil {
+		t.Fatal("no re-stream cmd at the cap (autosave is nil without a DB)")
+	}
+	last := m.Messages()[len(m.Messages())-1]
+	if last.Role != provider.RoleTool || last.ToolCallID != "call_1" {
+		t.Fatalf("expected the command's tool result last, got %+v", last)
+	}
+}
+
+func TestStatusBar_ShowsRoundCounter(t *testing.T) {
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, mockStream)
+	m.toolRounds = 7
+	m.state = stateStreaming
+	if !strings.Contains(m.renderStatusBar(80), "round 7") {
+		t.Fatal("status bar should show the round counter mid-turn")
+	}
+	m.state = stateInput
+	if strings.Contains(m.renderStatusBar(80), "round") {
+		t.Fatal("status bar should hide the round counter between turns")
+	}
+}

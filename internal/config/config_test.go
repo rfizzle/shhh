@@ -69,6 +69,36 @@ accent_color = "magenta"
 	}
 }
 
+func TestSet_MaxToolRounds(t *testing.T) {
+	var cfg Config
+	if err := Set(&cfg, "behavior.max_tool_rounds", "40"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Behavior.MaxToolRounds != 40 {
+		t.Errorf("behavior.max_tool_rounds = %d, want 40", cfg.Behavior.MaxToolRounds)
+	}
+}
+
+func TestLoadFrom_MaxToolRounds(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+	content := `
+[behavior]
+max_tool_rounds = 10
+`
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := LoadFrom(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Behavior.MaxToolRounds != 10 {
+		t.Errorf("behavior.max_tool_rounds = %d, want 10", cfg.Behavior.MaxToolRounds)
+	}
+}
+
 func TestLoadFrom_FirstFileWins(t *testing.T) {
 	dir := t.TempDir()
 	first := filepath.Join(dir, "first.toml")

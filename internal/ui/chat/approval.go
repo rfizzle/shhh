@@ -149,10 +149,7 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	if len(m.approvalQueue) == 0 {
 		m.pendingCalls = nil
-		m.state = stateStreaming
-		m.streaming = ""
-		m.syncViewportHeight()
-		return m, m.requestStream()
+		return m.resumeToolLoop()
 	}
 	tc := m.approvalQueue[0]
 	req, err := m.buildApprovalRequest(tc)

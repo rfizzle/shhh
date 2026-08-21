@@ -23,6 +23,11 @@ import (
 // recent conversation, used by `shhh chat --continue`.
 const AutosaveName = "(last session)"
 
+// DefaultMaxToolRounds bounds how many consecutive tool-call rounds one user
+// turn may trigger before the loop pauses for fresh input
+// (behavior.max_tool_rounds overrides it).
+const DefaultMaxToolRounds = 25
+
 type StreamFunc func([]provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error)
 type ToolExecutor func(name string, args json.RawMessage) (string, error)
 
@@ -135,13 +140,17 @@ type Model struct {
 	approvalQueue   []provider.ToolCall
 	pendingApproval *approvalRequest
 	gatedTools      map[string]GatedPreviewFunc
-	title           string
-	width           int
-	height          int
-	ready           bool
-	atBottom        bool
-	quitting        bool
-	initialPrompt   string
+	// Iteration guard: toolRounds counts tool-call rounds in the current user
+	// turn; a fresh user message resets it.
+	toolRounds    int
+	maxToolRounds int
+	title         string
+	width         int
+	height        int
+	ready         bool
+	atBottom      bool
+	quitting      bool
+	initialPrompt string
 
 	TotalTokensIn  int64
 	TotalTokensOut int64
@@ -219,6 +228,20 @@ func (m Model) WithPricing(prices *pricing.Table, modelName string) Model {
 func (m Model) WithUpdateNotice(notice string) Model {
 	m.updateNotice = notice
 	return m
+}
+
+// WithMaxToolRounds overrides the per-turn tool-round cap; n <= 0 keeps
+// DefaultMaxToolRounds.
+func (m Model) WithMaxToolRounds(n int) Model {
+	m.maxToolRounds = n
+	return m
+}
+
+func (m Model) effectiveMaxToolRounds() int {
+	if m.maxToolRounds > 0 {
+		return m.maxToolRounds
+	}
+	return DefaultMaxToolRounds
 }
 
 // WithResumedMessages replaces the conversation with a previously saved one
@@ -409,6 +432,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case toolCallsMsg:
 		m.accumulateUsage(msg.usage)
+		m.toolRounds++
 		m.messages = append(m.messages, provider.Message{
 			Role:      provider.RoleAssistant,
 			Content:   m.streaming,
@@ -458,7 +482,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if len(m.approvalQueue) > 0 {
 			return m.advanceApprovalQueue()
 		}
-		return m, m.requestStream()
+		return m.resumeToolLoop()
 
 	case cmdDoneMsg:
 		if msg.runID != m.runID || m.state != stateRunningCmd {
@@ -558,6 +582,7 @@ func (m *Model) recordInput(text string) {
 }
 
 func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
+	m.toolRounds = 0
 	m.messages = append(m.messages, provider.Message{
 		Role:    provider.RoleUser,
 		Content: text,
@@ -724,6 +749,27 @@ func firstLine(s string) string {
 		return s[:i] + " …"
 	}
 	return s
+}
+
+// resumeToolLoop requests the next model response after a round of tool
+// results — unless this turn has hit the tool-round cap, in which case the
+// loop pauses and control returns to the user (a fresh message continues the
+// conversation and resets the counter).
+func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
+	if m.toolRounds >= m.effectiveMaxToolRounds() {
+		m.state = stateInput
+		m.syncViewportHeight()
+		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
+			"Paused after %d tool rounds this turn. Send a message (e.g. \"continue\") to keep going.",
+			m.toolRounds)})
+		m.viewport.SetContent(m.renderHistory())
+		m.viewport.GotoBottom()
+		return m, m.autosaveCmd()
+	}
+	m.state = stateStreaming
+	m.streaming = ""
+	m.syncViewportHeight()
+	return m, m.requestStream()
 }
 
 func (m Model) requestStream() tea.Cmd {
@@ -963,6 +1009,14 @@ func (m Model) renderStatusBar(width int) string {
 		if m.contextTokens > 0 {
 			left += "  ctx ~" + formatTokenCount(m.contextTokens)
 		}
+	}
+
+	// Round counter shows only mid-turn, so long tool loops are visible.
+	if m.toolRounds > 0 && m.state != stateInput {
+		if left != "" {
+			left += "  "
+		}
+		left += fmt.Sprintf("round %d", m.toolRounds)
 	}
 
 	right := m.modelName
@@ -1211,6 +1265,7 @@ func (m *Model) clearConversation() {
 	}
 	m.resetTranscript()
 	m.contextTokens = 0
+	m.toolRounds = 0
 }
 
 // loadConversation replaces the current conversation and rebuilds the

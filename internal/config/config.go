@@ -28,6 +28,7 @@ type BehaviorConfig struct {
 	SilentMode        bool   `toml:"silent_mode"`
 	Shell             string `toml:"shell"`
 	ContextMaxTokens  int    `toml:"context_max_tokens"`
+	MaxToolRounds     int    `toml:"max_tool_rounds"`
 	SafetyWarnings    *bool  `toml:"safety_warnings"`
 	SystemPromptExtra string `toml:"system_prompt_extra"`
 }
@@ -118,6 +119,10 @@ func Set(cfg *Config, key, value string) error {
 		n := 0
 		fmt.Sscanf(value, "%d", &n)
 		cfg.Behavior.ContextMaxTokens = n
+	case "behavior.max_tool_rounds":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Behavior.MaxToolRounds = n
 	case "behavior.safety_warnings":
 		v := value == "true"
 		cfg.Behavior.SafetyWarnings = &v

@@ -106,6 +106,7 @@ accent_color = "cyan"
 | `behavior.shell` | Override detected shell |
 | `behavior.safety_warnings` | Warn before destructive commands (default: true) |
 | `behavior.context_max_tokens` | Max tokens for stdin context (default: 8000) |
+| `behavior.max_tool_rounds` | Max consecutive tool-call rounds per chat turn (default: 25) |
 | `behavior.system_prompt_extra` | Extra text appended to the system prompt |
 | `appearance.accent_color` | TUI accent color |
 
