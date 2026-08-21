@@ -15,9 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
-	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/storage"
-	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // AutosaveName is the reserved chat-session slot that always mirrors the most
@@ -130,10 +128,12 @@ type Model struct {
 	pendingCalls []provider.ToolCall
 	pendingRun   string
 	runCancel    context.CancelFunc
-	// Queue of execute_command tool calls awaiting user approval; the head is
-	// mirrored in pendingExecCall while its confirm prompt is showing.
-	execQueue       []provider.ToolCall
-	pendingExecCall *provider.ToolCall
+	// Queue of approval-gated tool calls (execute_command plus any tool
+	// registered via WithGatedTools) awaiting user approval; the head is
+	// mirrored in pendingApproval while its confirm prompt is showing.
+	approvalQueue   []provider.ToolCall
+	pendingApproval *approvalRequest
+	gatedTools      map[string]GatedPreviewFunc
 	width           int
 	height          int
 	ready           bool
@@ -411,24 +411,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.streaming = ""
 		m.events = nil
 		m.cancel = nil
-		var readonly, execs []provider.ToolCall
+		var auto, gated []provider.ToolCall
 		for _, tc := range msg.calls {
-			if tc.Name == tools.ExecCommandName && m.runFn != nil {
-				execs = append(execs, tc)
+			if m.requiresApproval(tc.Name) {
+				gated = append(gated, tc)
 			} else {
-				readonly = append(readonly, tc)
+				auto = append(auto, tc)
 			}
 		}
-		m.execQueue = execs
+		m.approvalQueue = gated
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
-		if len(readonly) > 0 {
+		if len(auto) > 0 {
 			m.runningTools = true
 			m.pendingCalls = msg.calls
-			return m, m.execToolsCmd(readonly)
+			return m, m.execToolsCmd(auto)
 		}
-		m.pendingCalls = execs
-		return m.advanceExecQueue()
+		m.pendingCalls = gated
+		return m.advanceApprovalQueue()
 
 	case toolResultsMsg:
 		if msg.runID != m.runID || m.state != stateStreaming {
@@ -443,11 +443,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			})
 			m.appendEntry(entry{kind: entryTool, toolName: r.call.Name, toolArgs: r.call.Arguments, toolResult: r.result})
 		}
-		m.pendingCalls = m.execQueue
+		m.pendingCalls = m.approvalQueue
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
-		if len(m.execQueue) > 0 {
-			return m.advanceExecQueue()
+		if len(m.approvalQueue) > 0 {
+			return m.advanceApprovalQueue()
 		}
 		return m, m.requestStream()
 
@@ -458,19 +458,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.runCancel = nil
 		out := strings.TrimRight(msg.output, "\n")
 		m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out, exitCode: msg.exitCode})
-		if m.pendingExecCall != nil {
-			tc := *m.pendingExecCall
-			m.pendingExecCall = nil
+		if m.pendingApproval != nil {
+			req := m.pendingApproval
+			m.pendingApproval = nil
 			m.messages = append(m.messages, provider.Message{
 				Role:       provider.RoleTool,
 				Content:    execToolResult(out, msg.exitCode),
-				ToolCallID: tc.ID,
+				ToolCallID: req.call.ID,
 			})
-			m.execQueue = m.execQueue[1:]
-			m.pendingCalls = m.execQueue
+			m.approvalQueue = m.approvalQueue[1:]
+			m.pendingCalls = m.approvalQueue
 			m.viewport.SetContent(m.renderHistory())
 			m.viewport.GotoBottom()
-			return m.advanceExecQueue()
+			return m.advanceApprovalQueue()
 		}
 		m.state = stateInput
 		m.messages = append(m.messages, provider.Message{
@@ -480,6 +480,24 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
 		return m, m.autosaveCmd()
+
+	case approvedToolDoneMsg:
+		if msg.runID != m.runID || m.state != stateRunningCmd || m.pendingApproval == nil {
+			return m, nil
+		}
+		req := m.pendingApproval
+		m.pendingApproval = nil
+		m.messages = append(m.messages, provider.Message{
+			Role:       provider.RoleTool,
+			Content:    msg.result,
+			ToolCallID: req.call.ID,
+		})
+		m.appendEntry(entry{kind: entryTool, toolName: req.call.Name, toolArgs: req.call.Arguments, toolResult: msg.result})
+		m.approvalQueue = m.approvalQueue[1:]
+		m.pendingCalls = m.approvalQueue
+		m.viewport.SetContent(m.renderHistory())
+		m.viewport.GotoBottom()
+		return m.advanceApprovalQueue()
 
 	case streamErrMsg:
 		m.appendEntry(entry{kind: entryError, text: msg.err.Error()})
@@ -572,7 +590,11 @@ func (m Model) View() string {
 		}
 		body = m.viewport.View() + "\n" + m.spinner.View() + " " + label
 	case m.state == stateRunningCmd:
-		body = m.viewport.View() + "\n" + m.spinner.View() + " Running command…"
+		label := "Running command…"
+		if m.pendingApproval != nil && m.pendingApproval.kind != approvalExec {
+			label = "Applying changes…"
+		}
+		body = m.viewport.View() + "\n" + m.spinner.View() + " " + label
 	default:
 		body = m.viewport.View()
 	}
@@ -582,7 +604,7 @@ func (m Model) View() string {
 
 	inputView := m.input.View()
 	if m.state == stateConfirmRun {
-		inputView = m.renderRunConfirm()
+		inputView = m.renderConfirm()
 	}
 
 	content := header + "\n" + topDivider + "\n" + body + "\n" + bottomDivider + "\n" + statusBar + "\n" + inputView
@@ -624,26 +646,17 @@ func (m *Model) startRun(parts []string) (result string, entersConfirm bool) {
 func (m Model) updateConfirmRun(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "y", "Y", "enter":
+		if m.pendingApproval != nil && m.pendingApproval.kind != approvalExec {
+			return m.executeApprovedTool()
+		}
 		return m.executeRun()
 	case "n", "N", "esc", "ctrl+c":
-		command := m.pendingRun
-		m.pendingRun = ""
-		if m.pendingExecCall != nil {
-			tc := *m.pendingExecCall
-			m.pendingExecCall = nil
-			m.messages = append(m.messages, provider.Message{
-				Role:       provider.RoleTool,
-				Content:    "error: the user declined to run this command",
-				ToolCallID: tc.ID,
-			})
-			m.execQueue = m.execQueue[1:]
-			m.pendingCalls = m.execQueue
-			m.appendEntry(entry{kind: entrySystem, text: "Declined: " + firstLine(command)})
-			m.viewport.SetContent(m.renderHistory())
-			m.viewport.GotoBottom()
-			return m.advanceExecQueue()
+		if m.pendingApproval != nil {
+			return m.declineApproval()
 		}
+		m.pendingRun = ""
 		m.state = stateInput
+		m.syncViewportHeight()
 		m.appendEntry(entry{kind: entrySystem, text: "Run cancelled."})
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
@@ -652,38 +665,6 @@ func (m Model) updateConfirmRun(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.quitting = true
 		return m, m.quitCmd()
 	}
-	return m, nil
-}
-
-// advanceExecQueue shows the confirm prompt for the next queued
-// execute_command call, or resumes the model stream once the queue is empty.
-func (m Model) advanceExecQueue() (tea.Model, tea.Cmd) {
-	if len(m.execQueue) == 0 {
-		m.pendingCalls = nil
-		m.state = stateStreaming
-		m.streaming = ""
-		return m, m.requestStream()
-	}
-	tc := m.execQueue[0]
-	var args struct {
-		Command string `json:"command"`
-	}
-	if err := json.Unmarshal([]byte(tc.Arguments), &args); err != nil || strings.TrimSpace(args.Command) == "" {
-		m.execQueue = m.execQueue[1:]
-		m.pendingCalls = m.execQueue
-		m.messages = append(m.messages, provider.Message{
-			Role:       provider.RoleTool,
-			Content:    "error: invalid command arguments",
-			ToolCallID: tc.ID,
-		})
-		m.appendEntry(entry{kind: entrySystem, text: "Skipped a tool call with invalid arguments."})
-		m.viewport.SetContent(m.renderHistory())
-		m.viewport.GotoBottom()
-		return m.advanceExecQueue()
-	}
-	m.pendingExecCall = &tc
-	m.pendingRun = args.Command
-	m.state = stateConfirmRun
 	return m, nil
 }
 
@@ -702,6 +683,7 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	command := m.pendingRun
 	m.pendingRun = ""
 	m.state = stateRunningCmd
+	m.syncViewportHeight()
 	ctx, cancel := context.WithCancel(context.Background())
 	m.runCancel = cancel
 	runID := m.runID
@@ -710,26 +692,6 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 		out, code := runFn(ctx, command)
 		return cmdDoneMsg{runID: runID, command: command, output: out, exitCode: code}
 	})
-}
-
-func (m Model) renderRunConfirm() string {
-	label := "Run: "
-	if m.pendingExecCall != nil {
-		label = "Assistant wants to run: "
-	}
-	lines := []string{userStyle.Render(label) + firstLine(m.pendingRun)}
-	if warnings := safety.Check(m.pendingRun); len(warnings) > 0 {
-		var risks []string
-		for _, w := range warnings {
-			risks = append(risks, w.Risk)
-		}
-		lines = append(lines, errorStyle.Render("⚠ "+strings.Join(risks, "; ")))
-	}
-	lines = append(lines, systemMsgStyle.Render("Run this command? [y/N]"))
-	for len(lines) < inputHeight {
-		lines = append(lines, "")
-	}
-	return strings.Join(lines[:inputHeight], "\n")
 }
 
 // commandContextMessage is appended to the conversation (as the user) so the
@@ -938,8 +900,8 @@ func (m *Model) cancelStreaming() {
 		m.runningTools = false
 		m.pendingCalls = nil
 	}
-	m.execQueue = nil
-	m.pendingExecCall = nil
+	m.approvalQueue = nil
+	m.pendingApproval = nil
 	m.finishStreaming()
 }
 
@@ -1037,7 +999,7 @@ func (m Model) contentWidth() int {
 }
 
 func (m Model) viewportHeight() int {
-	h := m.height - inputHeight - chromeHeight
+	h := m.height - m.bottomPanelHeight() - chromeHeight
 	if h < 1 {
 		return 1
 	}
