@@ -15,9 +15,11 @@ var (
 	toolResultStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("245"))
 	toolBorderStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("241"))
 	statusBarStyle  = lipgloss.NewStyle().Foreground(lipgloss.Color("243"))
-	// Permission-mode segment (DESIGN-TUI.md §8): permissive vs gated modes.
+	// Permission-mode segment (DESIGN-TUI.md §8): permissive vs gated modes,
+	// plus the classifier's in-flight indicator (S-060).
 	modePermissiveStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("10"))
 	modeGatedStyle      = lipgloss.NewStyle().Foreground(lipgloss.Color("214"))
+	modeCheckingStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 	ctxWarnStyle        = lipgloss.NewStyle().Foreground(lipgloss.Color("214"))
 	ctxAlertStyle       = lipgloss.NewStyle().Foreground(lipgloss.Color("9")).Bold(true)
 	updateNoticeStyle   = lipgloss.NewStyle().Foreground(lipgloss.Color("214"))

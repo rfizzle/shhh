@@ -1,0 +1,255 @@
+package agent
+
+import (
+	"context"
+	"errors"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/rfizzle/shhh/internal/provider"
+)
+
+// fakeClassifierProvider scripts StreamCompletion responses for the decision
+// pipeline tests.
+type fakeClassifierProvider struct {
+	fn    func(attempt int, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error)
+	calls int
+}
+
+func (f *fakeClassifierProvider) StreamCompletion(ctx context.Context, msgs []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	f.calls++
+	return f.fn(f.calls, opts)
+}
+
+func (f *fakeClassifierProvider) Name() string { return "fake" }
+
+func eventsOf(evs ...provider.StreamEvent) <-chan provider.StreamEvent {
+	ch := make(chan provider.StreamEvent, len(evs))
+	for _, ev := range evs {
+		ch <- ev
+	}
+	close(ch)
+	return ch
+}
+
+func decisionCall(args string) provider.StreamEvent {
+	return provider.StreamEvent{
+		ToolCalls: []provider.ToolCall{{ID: "d1", Name: DecisionToolName, Arguments: args}},
+		Usage:     &provider.Usage{PromptTokens: 100, CompletionTokens: 20},
+		Done:      true,
+	}
+}
+
+func testRequest() ClassifierRequest {
+	return ClassifierRequest{
+		Tool:      "execute_command",
+		Arguments: `{"command":"go test ./..."}`,
+		CWD:       "/work",
+		Recent: []provider.Message{
+			{Role: provider.RoleSystem, Content: "sys"},
+			{Role: provider.RoleUser, Content: "run the tests"},
+		},
+	}
+}
+
+func TestClassifier_ToolCallAllow(t *testing.T) {
+	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		return eventsOf(decisionCall(`{"decision":"allow","reason":"runs the requested tests"}`)), nil
+	}}
+	v := NewClassifier(p, ClassifierConfig{Model: "m"}).Judge(context.Background(), testRequest())
+	if v.Decision != Allow || v.Failed {
+		t.Fatalf("expected a clean allow, got %+v", v)
+	}
+	if v.Reason != "runs the requested tests" {
+		t.Fatalf("reason = %q", v.Reason)
+	}
+	if v.Usage.PromptTokens != 100 || v.Usage.CompletionTokens != 20 {
+		t.Fatalf("usage should be captured, got %+v", v.Usage)
+	}
+	if p.calls != 1 {
+		t.Fatalf("expected one attempt, got %d", p.calls)
+	}
+}
+
+func TestClassifier_ToolCallDeny(t *testing.T) {
+	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		return eventsOf(decisionCall(`{"decision":"DENY","reason":"user said read only"}`)), nil
+	}}
+	v := NewClassifier(p, ClassifierConfig{Model: "m"}).Judge(context.Background(), testRequest())
+	if v.Decision != Deny || v.Failed || v.Reason != "user said read only" {
+		t.Fatalf("expected a clean deny, got %+v", v)
+	}
+}
+
+func TestClassifier_TextFallbacks(t *testing.T) {
+	cases := []struct {
+		text   string
+		want   Decision
+		reason string
+	}{
+		{`{"decision":"deny","reason":"out of scope"}`, Deny, "out of scope"},
+		{"```json\n{\"decision\":\"allow\",\"reason\":\"fine\"}\n```", Allow, "fine"},
+		{"The verdict follows. {\"decision\":\"deny\",\"reason\":\"nope\"} Thanks.", Deny, "nope"},
+		{"ALLOW: matches the request", Allow, "matches the request"},
+		{"deny - touches credentials", Deny, "touches credentials"},
+		{"DENY", Deny, "the action is not safe to run automatically"},
+	}
+	for _, c := range cases {
+		p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+			return eventsOf(provider.StreamEvent{Token: c.text, Done: true}), nil
+		}}
+		v := NewClassifier(p, ClassifierConfig{Model: "m"}).Judge(context.Background(), testRequest())
+		if v.Decision != c.want || v.Failed || v.Reason != c.reason {
+			t.Errorf("text %q: got %+v, want %v %q", c.text, v, c.want, c.reason)
+		}
+	}
+}
+
+func TestClassifier_InvalidResponseRetriesThenFailsClosed(t *testing.T) {
+	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		return eventsOf(provider.StreamEvent{Token: "I am not sure what to do here.", Done: true}), nil
+	}}
+	v := NewClassifier(p, ClassifierConfig{Model: "m", Retries: 2}).Judge(context.Background(), testRequest())
+	if v.Decision != Ask || !v.Failed {
+		t.Fatalf("invalid responses must fail closed to Ask, got %+v", v)
+	}
+	if !strings.Contains(v.Reason, "invalid decision") {
+		t.Fatalf("reason should mention the invalid decision, got %q", v.Reason)
+	}
+	if p.calls != 3 {
+		t.Fatalf("expected retries+1 = 3 attempts, got %d", p.calls)
+	}
+}
+
+func TestClassifier_RequestErrorFailsClosed(t *testing.T) {
+	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		return nil, errors.New("401 unauthorized")
+	}}
+	v := NewClassifier(p, ClassifierConfig{Model: "m", Retries: 1}).Judge(context.Background(), testRequest())
+	if v.Decision != Ask || !v.Failed || !strings.Contains(v.Reason, "401 unauthorized") {
+		t.Fatalf("request failures must fail closed with the error, got %+v", v)
+	}
+	if p.calls != 2 {
+		t.Fatalf("failed requests should still be retried, got %d attempts", p.calls)
+	}
+}
+
+func TestClassifier_StreamErrorFailsClosed(t *testing.T) {
+	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		return eventsOf(provider.StreamEvent{Err: errors.New("connection reset")}), nil
+	}}
+	v := NewClassifier(p, ClassifierConfig{Model: "m"}).Judge(context.Background(), testRequest())
+	if v.Decision != Ask || !v.Failed || !strings.Contains(v.Reason, "connection reset") {
+		t.Fatalf("stream errors must fail closed, got %+v", v)
+	}
+}
+
+func TestClassifier_TimeoutFailsClosed(t *testing.T) {
+	// A provider that ignores cancellation and never sends anything.
+	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		return make(chan provider.StreamEvent), nil
+	}}
+	c := NewClassifier(p, ClassifierConfig{Model: "m", Timeout: 20 * time.Millisecond, Retries: 1})
+	v := c.Judge(context.Background(), testRequest())
+	if v.Decision != Ask || !v.Failed {
+		t.Fatalf("timeouts must fail closed to Ask, got %+v", v)
+	}
+	if p.calls != 2 {
+		t.Fatalf("a timed-out attempt should be retried, got %d attempts", p.calls)
+	}
+}
+
+func TestClassifier_SessionCancelStopsRetries(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		return make(chan provider.StreamEvent), nil
+	}}
+	v := NewClassifier(p, ClassifierConfig{Model: "m", Retries: 3}).Judge(ctx, testRequest())
+	if v.Decision != Ask || !v.Failed {
+		t.Fatalf("a cancelled session must fail closed, got %+v", v)
+	}
+	if p.calls > 1 {
+		t.Fatalf("session cancellation must not retry, got %d attempts", p.calls)
+	}
+}
+
+func TestClassifier_NotConfiguredFailsClosed(t *testing.T) {
+	cases := map[string]*Classifier{
+		"nil classifier": nil,
+		"nil provider":   NewClassifier(nil, ClassifierConfig{Model: "m"}),
+		"no model":       NewClassifier(&fakeClassifierProvider{}, ClassifierConfig{}),
+	}
+	for name, c := range cases {
+		v := c.Judge(context.Background(), testRequest())
+		if v.Decision != Ask || !v.Failed || !strings.Contains(v.Reason, "not configured") {
+			t.Errorf("%s: must fail closed as unconfigured, got %+v", name, v)
+		}
+	}
+}
+
+func TestClassifier_UsageAccumulatesAcrossAttempts(t *testing.T) {
+	p := &fakeClassifierProvider{fn: func(attempt int, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		if attempt == 1 {
+			return eventsOf(provider.StreamEvent{
+				Token: "unparseable",
+				Usage: &provider.Usage{PromptTokens: 50, CompletionTokens: 5},
+				Done:  true,
+			}), nil
+		}
+		return eventsOf(decisionCall(`{"decision":"allow","reason":"ok"}`)), nil
+	}}
+	v := NewClassifier(p, ClassifierConfig{Model: "m", Retries: 1}).Judge(context.Background(), testRequest())
+	if v.Decision != Allow {
+		t.Fatalf("second attempt should succeed, got %+v", v)
+	}
+	if v.Usage.PromptTokens != 150 || v.Usage.CompletionTokens != 25 {
+		t.Fatalf("usage should sum across attempts, got %+v", v.Usage)
+	}
+}
+
+func TestResolveAuto_Backstop(t *testing.T) {
+	flagged := Action{Kind: ActionCommand, Command: "git reset --hard", SafetyFlagged: true}
+	plain := Action{Kind: ActionCommand, Command: "go test"}
+
+	if d, _ := ResolveAuto(plain, ClassifierVerdict{Decision: Allow, Reason: "ok"}); d != Allow {
+		t.Fatal("a clean allow should pass through")
+	}
+	if d, reason := ResolveAuto(flagged, ClassifierVerdict{Decision: Allow, Reason: "ok"}); d != Ask || !strings.Contains(reason, "safety-flagged") {
+		t.Fatalf("safety-flagged actions must ask even after classifier ALLOW, got %v %q", d, reason)
+	}
+	if d, reason := ResolveAuto(flagged, ClassifierVerdict{Decision: Deny, Reason: "no"}); d != Deny || reason != "no" {
+		t.Fatal("deny passes through with the classifier's reason")
+	}
+	if d, _ := ResolveAuto(plain, ClassifierVerdict{Decision: Ask, Reason: "unavailable", Failed: true}); d != Ask {
+		t.Fatal("a failed-closed verdict stays an Ask")
+	}
+}
+
+func TestRecentContext_Bounds(t *testing.T) {
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "system prompt"},
+		{Role: provider.RoleUser, Content: "first"},
+		{Role: provider.RoleTool, Content: "tool output", ToolCallID: "t1"},
+		{Role: provider.RoleAssistant, Content: "working on it"},
+		{Role: provider.RoleUser, Content: "second"},
+	}
+	got := RecentContext(msgs, 2, 1000)
+	if strings.Contains(got, "system prompt") || strings.Contains(got, "tool output") {
+		t.Fatalf("system and tool messages must be excluded, got %q", got)
+	}
+	if strings.Contains(got, "first") {
+		t.Fatalf("only the last 2 messages should survive, got %q", got)
+	}
+	if !strings.Contains(got, "[Assistant]\nworking on it") || !strings.Contains(got, "[User]\nsecond") {
+		t.Fatalf("recent messages should be labeled by role, got %q", got)
+	}
+
+	long := RecentContext([]provider.Message{
+		{Role: provider.RoleUser, Content: strings.Repeat("x", 500) + "TAIL"},
+	}, 10, 100)
+	if len(long) > 100 || !strings.HasSuffix(long, "TAIL") || !strings.HasPrefix(long, "[earlier context omitted]") {
+		t.Fatalf("oversized context must keep the tail under the cap, got %d chars: %q", len(long), long)
+	}
+}

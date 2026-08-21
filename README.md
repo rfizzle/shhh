@@ -111,6 +111,10 @@ accent_color = "cyan"
 | `behavior.command_allowlist` | Command prefixes auto-approved in chat/code sessions (e.g. `["git status", "go test"]`); safety-flagged commands always prompt |
 | `behavior.default_mode` | Permission mode sessions start in: `manual` (default), `accept-edits`, `auto`, or `plan` |
 | `behavior.mode_cycle` | Shift+Tab mode order (default: `["manual", "accept-edits", "auto", "plan"]`) |
+| `behavior.classifier_model` | Model auto mode's permission classifier uses (default: the session model) |
+| `behavior.classifier_timeout_seconds` | Timeout per classifier request (default: 30) |
+| `behavior.classifier_max_tokens` | Max tokens for the classifier's response (default: 1024) |
+| `behavior.classifier_retries` | Extra attempts before a failed classifier check falls back to prompting (default: 1) |
 | `behavior.system_prompt_extra` | Extra text appended to the system prompt |
 | `appearance.accent_color` | TUI accent color |
 
@@ -187,7 +191,9 @@ cat error.log | shhh chat "why is this failing?"
 
 Chat mode has read-only tools (`read_file`, `list_directory`, `search`) plus `execute_command`, which lets the assistant propose shell commands: each one is shown to you with safety warnings and only runs after you approve it with `y`.
 
-How much gets approved automatically is governed by a permission mode, cycled with Shift+Tab or set with `/mode <name>`: **manual** prompts for every consequential tool call (the default), **accept-edits** auto-applies file edits but still prompts for commands, **auto** additionally runs allowlisted commands, and **plan** is read-only — edits and commands are refused. Read-only tools never prompt in any mode, and safety-flagged commands always ask. The status bar always shows the active mode; `behavior.default_mode` and `behavior.mode_cycle` configure the starting mode and cycle order.
+How much gets approved automatically is governed by a permission mode, cycled with Shift+Tab or set with `/mode <name>`: **manual** prompts for every consequential tool call (the default), **accept-edits** auto-applies file edits but still prompts for commands, **auto** additionally runs allowlisted commands and sends everything else to an LLM permission classifier, and **plan** is read-only — edits and commands are refused. Read-only tools never prompt in any mode, and safety-flagged commands always ask. The status bar always shows the active mode; `behavior.default_mode` and `behavior.mode_cycle` configure the starting mode and cycle order.
+
+In auto mode the classifier (the session model by default, `behavior.classifier_model` to override) judges each remaining tool call against your recent conversation and either runs it, refuses it with a reason the model sees, or falls back to asking you. Every classifier failure — timeout, invalid response, request error — fails closed to a prompt, never to an allow, and safety-flagged commands prompt you even when the classifier approves. The status bar shows `✦ checking` while a decision is in flight, classifier tokens count toward the session totals, and `/mode why` shows the latest denial's reason.
 
 The status bar shows token usage, estimated cost, the current context size, and the active model. The context indicator changes color as the conversation approaches the model's context window (from the pricing table when known); past that threshold, the oldest tool results are automatically elided from the conversation before the next request.
 

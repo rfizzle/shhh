@@ -1,8 +1,10 @@
 package chat
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -184,6 +186,74 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
+	}
+	// In auto mode the classifier (S-060) judges what the static policy would
+	// ask about — except safety-flagged actions, which always prompt the human.
+	if m.mode == agent.ModeAuto && m.classifier != nil && !approvalAction(req).SafetyFlagged {
+		return m.startClassifierCheck(req)
+	}
+	m.state = stateConfirmRun
+	m.syncViewportHeight()
+	return m, nil
+}
+
+// startClassifierCheck sends the pending approval to the auto-mode permission
+// classifier in the background (S-060); the verdict arrives as
+// classifierDoneMsg.
+func (m Model) startClassifierCheck(req *approvalRequest) (tea.Model, tea.Cmd) {
+	m.state = stateClassifying
+	m.syncViewportHeight()
+	ctx, cancel := context.WithCancel(context.Background())
+	m.classifierCancel = cancel
+	classifier := m.classifier
+	runID := m.agent.RunID()
+	cwd, _ := os.Getwd()
+	creq := agent.ClassifierRequest{
+		Tool:      req.call.Name,
+		Arguments: req.call.Arguments,
+		CWD:       cwd,
+		Recent:    m.agent.RequestMessages(),
+	}
+	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
+		return classifierDoneMsg{runID: runID, verdict: classifier.Judge(ctx, creq)}
+	})
+}
+
+// finishClassifierCheck applies the classifier's verdict to the pending
+// approval: allow executes it, deny refuses it with the reason as the tool
+// result, and a failed check falls back to asking the user (fail closed).
+func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.Cmd) {
+	// Classifier spend counts toward the session totals.
+	m.TotalTokensIn += int64(v.Usage.PromptTokens)
+	m.TotalTokensOut += int64(v.Usage.CompletionTokens)
+
+	req := m.pendingApproval
+	elapsed := fmt.Sprintf("%.1fs", v.Elapsed.Seconds())
+	switch decision, reason := agent.ResolveAuto(approvalAction(req), v); decision {
+	case agent.Allow:
+		m.appendEntry(entry{kind: entrySystem, text: "Auto-approved (classifier, " + elapsed + "): " + req.summary})
+		m.viewport.SetContent(m.renderHistory())
+		m.viewport.GotoBottom()
+		if req.kind == approvalExec {
+			return m.executeRun()
+		}
+		return m.executeApprovedTool()
+	case agent.Deny:
+		m.lastDenial = req.summary + " — " + reason
+		m.pendingApproval = nil
+		m.pendingRun = ""
+		m.agent.ResolveApproval("error: auto mode denied this tool call: " + reason)
+		m.appendEntry(entry{kind: entrySystem, text: "Refused (classifier, " + elapsed + "): " + req.summary + " — " + reason + " (/mode why)"})
+		m.viewport.SetContent(m.renderHistory())
+		m.viewport.GotoBottom()
+		return m.advanceApprovalQueue()
+	}
+	// Ask: the classifier failed closed or the safety backstop fired — the
+	// user decides, never a silent allow.
+	if v.Failed {
+		m.appendEntry(entry{kind: entrySystem, text: "Classifier unavailable (" + v.Reason + "); asking you instead."})
+		m.viewport.SetContent(m.renderHistory())
+		m.viewport.GotoBottom()
 	}
 	m.state = stateConfirmRun
 	m.syncViewportHeight()

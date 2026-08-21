@@ -10,8 +10,8 @@ import (
 
 // Session approval policy: the permission mode (S-059) decides how each
 // approval-gated tool call is handled — manual prompts for everything,
-// accept-edits auto-allows file edits, auto defers to policy (allowlist rules
-// until the S-060 classifier lands), and plan is read-only. The S-054
+// accept-edits auto-allows file edits, auto defers to policy (allowlist
+// rules, then the S-060 LLM classifier), and plan is read-only. The S-054
 // internals still apply inside the prompting modes: [a] on a confirm prompt
 // auto-allows the rest of that category for the session, and a config
 // allowlist (behavior.command_allowlist) pre-approves specific commands.
@@ -47,27 +47,35 @@ func (m Model) modePolicy() agent.ModePolicy {
 	}
 }
 
-// policyDecision returns the mode verdict for an approval request and, when
-// allowed, the reason shown in the transcript.
-func (m Model) policyDecision(req *approvalRequest) (agent.Decision, string) {
-	action := agent.Action{Kind: agent.ActionOther}
+// approvalAction classifies an approval request for mode and classifier
+// decisions.
+func approvalAction(req *approvalRequest) agent.Action {
 	switch req.kind {
 	case approvalExec:
-		action = agent.Action{
+		return agent.Action{
 			Kind:          agent.ActionCommand,
 			Command:       req.command,
 			SafetyFlagged: len(safety.Check(req.command)) > 0,
 		}
 	case approvalDiff:
-		action = agent.Action{Kind: agent.ActionEdit}
+		return agent.Action{Kind: agent.ActionEdit}
 	}
-	return m.modePolicy().Decide(action)
+	return agent.Action{Kind: agent.ActionOther}
+}
+
+// policyDecision returns the mode verdict for an approval request and, when
+// allowed, the reason shown in the transcript.
+func (m Model) policyDecision(req *approvalRequest) (agent.Decision, string) {
+	return m.modePolicy().Decide(approvalAction(req))
 }
 
 // modeSegment is the always-present status bar segment for the active
 // permission mode (DESIGN-TUI.md §8): permissive modes render ⏵⏵, gated
-// modes ⏸.
+// modes ⏸, and an in-flight classifier check renders ✦ checking (S-060).
 func (m Model) modeSegment() string {
+	if m.state == stateClassifying {
+		return modeCheckingStyle.Render("✦ checking")
+	}
 	name := strings.ReplaceAll(m.mode.String(), "-", " ")
 	switch m.mode {
 	case agent.ModeAcceptEdits, agent.ModeAuto:
@@ -90,7 +98,7 @@ func (m Model) modeStatus() string {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "Mode: %s — %s.\n", m.mode, m.mode.Describe())
 	sb.WriteString("Cycle (Shift+Tab): " + strings.Join(names, " → ") + "\n")
-	sb.WriteString("Set with /mode <manual|accept-edits|auto|plan>.")
+	sb.WriteString("Set with /mode <manual|accept-edits|auto|plan>; /mode why shows the latest auto-mode denial.")
 	return sb.String()
 }
 

@@ -3,6 +3,7 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 )
 
@@ -273,5 +274,31 @@ func TestPaths_IncludesDotConfig(t *testing.T) {
 	}
 	if !found {
 		t.Errorf("Paths() should include a .../shhh/config.toml path, got %v", ps)
+	}
+}
+
+func TestSet_ClassifierConfig(t *testing.T) {
+	var cfg Config
+	if err := Set(&cfg, "behavior.classifier_model", "gpt-5-mini"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Behavior.ClassifierModel != "gpt-5-mini" {
+		t.Errorf("behavior.classifier_model = %q, want gpt-5-mini", cfg.Behavior.ClassifierModel)
+	}
+	for key, want := range map[string]int{
+		"behavior.classifier_timeout_seconds": 15,
+		"behavior.classifier_max_tokens":      512,
+		"behavior.classifier_retries":         2,
+	} {
+		if err := Set(&cfg, key, "0"); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if err := Set(&cfg, key, strconv.Itoa(want)); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+	}
+	if cfg.Behavior.ClassifierTimeoutSeconds != 15 || cfg.Behavior.ClassifierMaxTokens != 512 || cfg.Behavior.ClassifierRetries != 2 {
+		t.Errorf("classifier settings = %d/%d/%d, want 15/512/2",
+			cfg.Behavior.ClassifierTimeoutSeconds, cfg.Behavior.ClassifierMaxTokens, cfg.Behavior.ClassifierRetries)
 	}
 }

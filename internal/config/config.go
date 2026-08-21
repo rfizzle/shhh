@@ -43,6 +43,16 @@ type BehaviorConfig struct {
 	// ModeCycle overrides the Shift+Tab mode order (same names as
 	// DefaultMode). Empty means manual → accept-edits → auto → plan.
 	ModeCycle []string `toml:"mode_cycle"`
+	// ClassifierModel is the model auto mode's permission classifier uses
+	// (S-060). Empty means the session model.
+	ClassifierModel string `toml:"classifier_model"`
+	// ClassifierTimeoutSeconds bounds each classifier request (default 30).
+	ClassifierTimeoutSeconds int `toml:"classifier_timeout_seconds"`
+	// ClassifierMaxTokens caps the classifier's response (default 1024).
+	ClassifierMaxTokens int `toml:"classifier_max_tokens"`
+	// ClassifierRetries is how many extra attempts an invalid or failed
+	// classifier response gets before failing closed (default 1).
+	ClassifierRetries int `toml:"classifier_retries"`
 }
 
 type AppearanceConfig struct {
@@ -146,6 +156,20 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Behavior.DefaultMode = value
 	case "behavior.mode_cycle":
 		cfg.Behavior.ModeCycle = splitList(value)
+	case "behavior.classifier_model":
+		cfg.Behavior.ClassifierModel = value
+	case "behavior.classifier_timeout_seconds":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Behavior.ClassifierTimeoutSeconds = n
+	case "behavior.classifier_max_tokens":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Behavior.ClassifierMaxTokens = n
+	case "behavior.classifier_retries":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Behavior.ClassifierRetries = n
 	case "appearance.accent_color":
 		cfg.Appearance.AccentColor = value
 	case "history.retention_days":

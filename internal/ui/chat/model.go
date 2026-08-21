@@ -40,6 +40,9 @@ const (
 	stateStreaming
 	stateConfirmRun
 	stateRunningCmd
+	// stateClassifying: the auto-mode permission classifier (S-060) is
+	// deciding whether the pending approval may run without a prompt.
+	stateClassifying
 )
 
 const inputHeight = 3
@@ -76,6 +79,13 @@ type cmdDoneMsg struct {
 	exitCode int
 }
 type initialPromptMsg struct{}
+
+// classifierDoneMsg carries the auto-mode classifier's verdict for the
+// pending approval (S-060).
+type classifierDoneMsg struct {
+	runID   int
+	verdict agent.ClassifierVerdict
+}
 
 type entryKind int
 
@@ -143,6 +153,12 @@ type Model struct {
 	allowAllEdits    bool
 	allowAllCommands bool
 	commandAllowlist []string
+	// Auto mode's LLM permission classifier (S-060): judges gated calls the
+	// static policy would ask about; nil falls back to asking the user.
+	classifier       *agent.Classifier
+	classifierCancel context.CancelFunc
+	// lastDenial is the most recent auto-mode denial, shown by /mode why.
+	lastDenial string
 	// compacting marks an in-flight /compact request (S-055): the streamed
 	// response is a summary handled by finishCompact, not conversation text.
 	compacting bool
@@ -234,6 +250,14 @@ func (m Model) WithUpdateNotice(notice string) Model {
 	return m
 }
 
+// WithClassifier enables auto mode's LLM permission classifier (S-060):
+// gated calls the static policy would ask about are judged by it instead;
+// its failures fall back to asking the user.
+func (m Model) WithClassifier(c *agent.Classifier) Model {
+	m.classifier = c
+	return m
+}
+
 // WithMaxToolRounds overrides the per-turn tool-round cap; n <= 0 keeps
 // DefaultMaxToolRounds.
 func (m Model) WithMaxToolRounds(n int) Model {
@@ -319,8 +343,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.runCancel != nil {
 				m.runCancel()
 			}
+			if m.classifierCancel != nil {
+				m.classifierCancel()
+			}
 			return m, m.quitCmd()
 		case "ctrl+c":
+			if m.state == stateClassifying {
+				// Skip the classifier check and ask the user directly.
+				if m.classifierCancel != nil {
+					m.classifierCancel()
+					m.classifierCancel = nil
+				}
+				m.state = stateConfirmRun
+				m.syncViewportHeight()
+				return m, nil
+			}
 			if m.state == stateRunningCmd {
 				if m.runCancel != nil {
 					m.runCancel()
@@ -371,7 +408,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		case "enter":
-			if m.state == stateStreaming || m.state == stateRunningCmd {
+			if m.state == stateStreaming || m.state == stateRunningCmd || m.state == stateClassifying {
 				return m.queueSteering()
 			}
 			if m.state == stateInput {
@@ -523,6 +560,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
 
+	case classifierDoneMsg:
+		if msg.runID != m.agent.RunID() || m.state != stateClassifying || m.pendingApproval == nil {
+			return m, nil
+		}
+		m.classifierCancel = nil
+		return m.finishClassifierCheck(msg.verdict)
+
 	case streamErrMsg:
 		m.appendEntry(entry{kind: entryError, text: msg.err.Error()})
 		m.compacting = false
@@ -536,7 +580,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.autosaveCmd()
 
 	case spinner.TickMsg:
-		if (m.state == stateStreaming && m.streaming == "") || m.state == stateRunningCmd {
+		if (m.state == stateStreaming && m.streaming == "") || m.state == stateRunningCmd || m.state == stateClassifying {
 			var cmd tea.Cmd
 			m.spinner, cmd = m.spinner.Update(msg)
 			return m, cmd
@@ -628,6 +672,8 @@ func (m Model) View() string {
 			label = "Applying changes…"
 		}
 		body = m.viewport.View() + "\n" + m.spinner.View() + " " + label
+	case m.state == stateClassifying:
+		body = m.viewport.View() + "\n" + m.spinner.View() + " Checking permission…"
 	default:
 		body = m.viewport.View()
 	}
@@ -1257,7 +1303,13 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 			return true, m.modeStatus()
 		}
 		if len(parts) > 2 {
-			return true, "Usage: /mode [manual|accept-edits|auto|plan]"
+			return true, "Usage: /mode [manual|accept-edits|auto|plan|why]"
+		}
+		if parts[1] == "why" {
+			if m.lastDenial == "" {
+				return true, "No auto-mode denials this session."
+			}
+			return true, "Last auto-mode denial:\n  " + m.lastDenial
 		}
 		mode, err := agent.ParseMode(parts[1])
 		if err != nil {
@@ -1364,6 +1416,7 @@ func helpText() string {
   /run [n]       Run a code block from the last response (with confirmation)
   /model [name]  Show or switch the model for this session
   /mode [name]   Show or set the permission mode (manual, accept-edits, auto, plan)
+  /mode why      Show the latest auto-mode denial's reason
   /compact       Summarize the conversation and continue from the summary
   /save [name]   Save this chat
   /load <name>   Load a saved chat

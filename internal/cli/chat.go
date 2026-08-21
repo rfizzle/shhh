@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mattn/go-isatty"
@@ -74,6 +75,7 @@ func newChatCmd() *cobra.Command {
 // closure over the session's provider.
 type sessionEnv struct {
 	cfg         config.Config
+	prov        provider.Provider
 	modelName   string
 	sysPrompt   string
 	messages    []provider.Message
@@ -136,6 +138,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession) (*sessionEnv, erro
 
 	return &sessionEnv{
 		cfg:       cfg,
+		prov:      p,
 		modelName: resolved.Model,
 		sysPrompt: sysPrompt,
 		messages:  messages,
@@ -178,6 +181,19 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		return fmt.Errorf("config behavior.mode_cycle: %w", err)
 	}
 
+	// Auto mode's permission classifier (S-060) reuses the session provider;
+	// behavior.classifier_model overrides the model (default: session model).
+	classifierModel := cfg.Behavior.ClassifierModel
+	if classifierModel == "" {
+		classifierModel = env.modelName
+	}
+	classifier := agent.NewClassifier(env.prov, agent.ClassifierConfig{
+		Model:     classifierModel,
+		Timeout:   time.Duration(cfg.Behavior.ClassifierTimeoutSeconds) * time.Second,
+		MaxTokens: cfg.Behavior.ClassifierMaxTokens,
+		Retries:   cfg.Behavior.ClassifierRetries,
+	})
+
 	model := chat.New(env.messages, env.stream).
 		WithTitle(session.title).
 		WithToolExecutor(tools.Execute).
@@ -187,6 +203,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithMaxToolRounds(cfg.Behavior.MaxToolRounds).
 		WithCommandAllowlist(cfg.Behavior.CommandAllowlist).
 		WithApprovalMode(mode, cycle).
+		WithClassifier(classifier).
 		WithModelSwitcher(env.switchModel)
 
 	if session.continueLast || session.resumePick {

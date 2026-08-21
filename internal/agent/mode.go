@@ -21,9 +21,9 @@ const (
 	// ModeAcceptEdits auto-allows file edits; commands and other external
 	// actions still prompt.
 	ModeAcceptEdits
-	// ModeAuto defers to policy: the LLM classifier when enabled (S-060),
-	// else allowlist rules — edits apply, allowlisted commands run, anything
-	// else asks.
+	// ModeAuto defers to policy: edits apply and allowlisted commands run;
+	// anything else is judged by the LLM classifier (S-060) when configured,
+	// else asks. Classifier failures fall back to asking, never allowing.
 	ModeAuto
 	// ModePlan is read-only: gated calls are refused with a result telling
 	// the model it is in plan mode (the full planning flow is S-061).
@@ -49,7 +49,7 @@ func (m Mode) Describe() string {
 	case ModeAcceptEdits:
 		return "file edits apply without prompts; commands and other actions ask"
 	case ModeAuto:
-		return "edits apply; allowlisted commands run; anything else asks"
+		return "edits apply; allowlisted commands run; the classifier judges the rest (or asks)"
 	case ModePlan:
 		return "read-only — file edits and commands are refused"
 	default:
