@@ -99,6 +99,45 @@ max_tool_rounds = 10
 	}
 }
 
+func TestSet_CommandAllowlist(t *testing.T) {
+	var cfg Config
+	if err := Set(&cfg, "behavior.command_allowlist", "git status, go test ,"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	got := cfg.Behavior.CommandAllowlist
+	if len(got) != 2 || got[0] != "git status" || got[1] != "go test" {
+		t.Errorf("behavior.command_allowlist = %v, want [git status, go test]", got)
+	}
+
+	if err := Set(&cfg, "behavior.command_allowlist", ""); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(cfg.Behavior.CommandAllowlist) != 0 {
+		t.Errorf("empty value should clear the allowlist, got %v", cfg.Behavior.CommandAllowlist)
+	}
+}
+
+func TestLoadFrom_CommandAllowlist(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+	content := `
+[behavior]
+command_allowlist = ["git status", "go test"]
+`
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := LoadFrom(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	got := cfg.Behavior.CommandAllowlist
+	if len(got) != 2 || got[0] != "git status" || got[1] != "go test" {
+		t.Errorf("behavior.command_allowlist = %v, want [git status, go test]", got)
+	}
+}
+
 func TestLoadFrom_FirstFileWins(t *testing.T) {
 	dir := t.TempDir()
 	first := filepath.Join(dir, "first.toml")

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/BurntSushi/toml"
 )
@@ -31,6 +32,10 @@ type BehaviorConfig struct {
 	MaxToolRounds     int    `toml:"max_tool_rounds"`
 	SafetyWarnings    *bool  `toml:"safety_warnings"`
 	SystemPromptExtra string `toml:"system_prompt_extra"`
+	// CommandAllowlist entries auto-approve matching agent commands in chat
+	// sessions ("go test" approves "go test ./..."); safety-flagged commands
+	// always prompt regardless. Empty (the default) means every command asks.
+	CommandAllowlist []string `toml:"command_allowlist"`
 }
 
 type AppearanceConfig struct {
@@ -128,6 +133,14 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Behavior.SafetyWarnings = &v
 	case "behavior.system_prompt_extra":
 		cfg.Behavior.SystemPromptExtra = value
+	case "behavior.command_allowlist":
+		var list []string
+		for _, part := range strings.Split(value, ",") {
+			if p := strings.TrimSpace(part); p != "" {
+				list = append(list, p)
+			}
+		}
+		cfg.Behavior.CommandAllowlist = list
 	case "appearance.accent_color":
 		cfg.Appearance.AccentColor = value
 	case "history.retention_days":

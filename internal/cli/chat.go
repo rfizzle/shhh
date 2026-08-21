@@ -137,6 +137,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithPricing(prices, resolved.Model).
 		WithRunner(runner.RunCapture).
 		WithMaxToolRounds(cfg.Behavior.MaxToolRounds).
+		WithCommandAllowlist(cfg.Behavior.CommandAllowlist).
 		WithModelSwitcher(func(name string) {
 			modelMu.Lock()
 			currentModel = name

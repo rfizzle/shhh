@@ -73,8 +73,8 @@ func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 	if !strings.Contains(view, "@@") {
 		t.Fatal("diff preview should include a hunk header")
 	}
-	if !strings.Contains(view, "[y/N]") {
-		t.Fatal("confirm prompt should offer y/N")
+	if !strings.Contains(view, "[y/n/a]") {
+		t.Fatal("confirm prompt should offer y/n/a")
 	}
 
 	// Approve.

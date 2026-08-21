@@ -170,6 +170,17 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	if req.kind == approvalExec {
 		m.pendingRun = req.command
 	}
+	// Session policy (S-054): an always-allowed category or an allowlisted
+	// command skips the prompt; safety-flagged commands never do.
+	if reason, ok := m.policyAllows(req); ok {
+		m.appendEntry(entry{kind: entrySystem, text: "Auto-approved (" + reason + "): " + req.summary})
+		m.viewport.SetContent(m.renderHistory())
+		m.viewport.GotoBottom()
+		if req.kind == approvalExec {
+			return m.executeRun()
+		}
+		return m.executeApprovedTool()
+	}
 	m.state = stateConfirmRun
 	m.syncViewportHeight()
 	return m, nil
@@ -239,14 +250,21 @@ func (m Model) confirmLines() []string {
 		label = "Assistant wants to run: "
 	}
 	lines := []string{userStyle.Render(label) + firstLine(m.pendingRun)}
-	if warnings := safety.Check(m.pendingRun); len(warnings) > 0 {
+	warnings := safety.Check(m.pendingRun)
+	if len(warnings) > 0 {
 		var risks []string
 		for _, w := range warnings {
 			risks = append(risks, w.Risk)
 		}
 		lines = append(lines, errorStyle.Render("⚠ "+strings.Join(risks, "; ")))
 	}
-	lines = append(lines, systemMsgStyle.Render("Run this command? [y/N]"))
+	// [a] is offered only for assistant commands without safety warnings:
+	// flagged actions can never be blanket-approved, and /run stays manual.
+	prompt := "Run this command? [y/N]"
+	if m.pendingApproval != nil && len(warnings) == 0 {
+		prompt = "Run this command? [y/n/a]  (a: always allow commands this session)"
+	}
+	lines = append(lines, systemMsgStyle.Render(prompt))
 	return lines
 }
 
@@ -259,7 +277,7 @@ func (m Model) approvalPreviewLines() []string {
 	case approvalDiff:
 		maxDiff := m.maxConfirmPanelHeight() - 2 // title + prompt rows
 		lines = append(lines, renderDiffLines(req.diff, m.contentWidth(), maxDiff)...)
-		lines = append(lines, systemMsgStyle.Render("Apply this change? [y/N]"))
+		lines = append(lines, systemMsgStyle.Render("Apply this change? [y/n/a]  (a: always allow edits this session)"))
 	default:
 		if req.summary != "" && req.summary != req.title {
 			lines = append(lines, toolArgsStyle.Render(clipLine(firstLine(req.summary), m.contentWidth())))

@@ -88,6 +88,7 @@ api_key = "sk-or-..."
 [behavior]
 safety_warnings = true
 system_prompt_extra = "Prefer ripgrep over grep. Use docker compose for services."
+command_allowlist = ["git status", "go test"]
 
 [appearance]
 accent_color = "cyan"
@@ -107,6 +108,7 @@ accent_color = "cyan"
 | `behavior.safety_warnings` | Warn before destructive commands (default: true) |
 | `behavior.context_max_tokens` | Max tokens for stdin context (default: 8000) |
 | `behavior.max_tool_rounds` | Max consecutive tool-call rounds per chat turn (default: 25) |
+| `behavior.command_allowlist` | Command prefixes auto-approved in chat/code sessions (e.g. `["git status", "go test"]`); safety-flagged commands always prompt |
 | `behavior.system_prompt_extra` | Extra text appended to the system prompt |
 | `appearance.accent_color` | TUI accent color |
 

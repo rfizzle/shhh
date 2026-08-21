@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -140,6 +141,12 @@ type Model struct {
 	approvalQueue   []provider.ToolCall
 	pendingApproval *approvalRequest
 	gatedTools      map[string]GatedPreviewFunc
+	// Session approval policy (S-054): [a] on a confirm prompt promotes its
+	// category to auto-approval; commandAllowlist comes from config. The
+	// default is everything prompts.
+	allowAllEdits    bool
+	allowAllCommands bool
+	commandAllowlist []string
 	// Iteration guard: toolRounds counts tool-call rounds in the current user
 	// turn; a fresh user message resets it.
 	toolRounds    int
@@ -688,6 +695,19 @@ func (m Model) updateConfirmRun(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m.executeApprovedTool()
 		}
 		return m.executeRun()
+	case "a", "A":
+		// Approve and auto-allow this category for the session (S-054).
+		// Safety-flagged commands, generic gated tools, and /run keep asking.
+		if req := m.pendingApproval; req != nil {
+			switch {
+			case req.kind == approvalExec && len(safety.Check(req.command)) == 0:
+				m.allowAllCommands = true
+				return m.executeRun()
+			case req.kind == approvalDiff:
+				m.allowAllEdits = true
+				return m.executeApprovedTool()
+			}
+		}
 	case "n", "N", "esc", "ctrl+c":
 		if m.pendingApproval != nil {
 			return m.declineApproval()
@@ -1019,6 +1039,14 @@ func (m Model) renderStatusBar(width int) string {
 		left += fmt.Sprintf("round %d", m.toolRounds)
 	}
 
+	// Active approval policy (S-054); absent in the default ask-everything state.
+	if p := m.policyLabel(); p != "" {
+		if left != "" {
+			left += "  "
+		}
+		left += p
+	}
+
 	right := m.modelName
 	pad := width - lipgloss.Width(left) - lipgloss.Width(right)
 	if pad < 1 {
@@ -1119,7 +1147,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 
 	switch parts[0] {
 	case "/help":
-		return true, helpText()
+		return true, helpText() + "\n\n" + m.policyHelp()
 
 	case "/clear", "/new":
 		m.clearConversation()
@@ -1253,7 +1281,8 @@ Keys:
   Esc            Clear the input
   Ctrl+C         Cancel response / clear input / quit
   Ctrl+D         Quit
-  PgUp/PgDn      Scroll history`)
+  PgUp/PgDn      Scroll history
+  y/n/a          Approval prompts: allow / deny / always allow this session`)
 }
 
 // clearConversation drops everything except the system prompt.

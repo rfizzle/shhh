@@ -1,0 +1,288 @@
+package chat
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/rfizzle/shhh/internal/provider"
+)
+
+func TestAllowlistMatches(t *testing.T) {
+	allowlist := []string{"git status", "go test", ""}
+	cases := []struct {
+		command string
+		want    bool
+	}{
+		{"git status", true},
+		{"git  status", true}, // extra whitespace between words
+		{"go test ./...", true},
+		{"go testx", false},
+		{"git", false},         // shorter than the entry
+		{"gitk status", false}, // first word differs
+		{"echo hi", false},
+		{"git status; rm -rf ~", false},         // chained command
+		{"go test && cat ~/.ssh/id_rsa", false}, // chained command
+		{"go test | tee out", false},            // pipe
+		{"go test $(evil)", false},              // substitution
+		{"git status\nrm -rf ~", false},         // newline
+	}
+	for _, c := range cases {
+		if got := allowlistMatches(allowlist, c.command); got != c.want {
+			t.Errorf("allowlistMatches(%q) = %v, want %v", c.command, got, c.want)
+		}
+	}
+	if allowlistMatches(nil, "git status") {
+		t.Error("empty allowlist must not match anything")
+	}
+}
+
+// execModel is gatedModel plus a runner that records executed commands.
+func execModel(t *testing.T, ran *[]string) Model {
+	t.Helper()
+	m := gatedModel(t, nil, nil)
+	return m.WithRunner(func(ctx context.Context, cmd string) (string, int) {
+		*ran = append(*ran, cmd)
+		return "ok", 0
+	})
+}
+
+// driveCmdDone extracts the cmdDoneMsg produced by an exec approval cmd.
+func driveCmdDone(t *testing.T, cmd tea.Cmd) cmdDoneMsg {
+	t.Helper()
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(cmdDoneMsg); ok {
+			return msg
+		}
+	}
+	t.Fatal("expected cmdDoneMsg from the exec cmd")
+	return cmdDoneMsg{}
+}
+
+func TestPolicy_AllowlistAutoApprovesCommand(t *testing.T) {
+	var ran []string
+	m := execModel(t, &ran).WithCommandAllowlist([]string{"echo"})
+
+	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
+	}})
+	m = updated.(Model)
+
+	if m.state != stateRunningCmd {
+		t.Fatalf("allowlisted command should run without a prompt, got state %d", m.state)
+	}
+	updated, restream := m.Update(driveCmdDone(t, cmd))
+	m = updated.(Model)
+	if len(ran) != 1 || ran[0] != "echo hi" {
+		t.Fatalf("expected the command to run once, got %v", ran)
+	}
+	last := m.Messages()[len(m.Messages())-1]
+	if last.Role != provider.RoleTool || last.ToolCallID != "call_x" || !strings.Contains(last.Content, "exit code: 0") {
+		t.Fatalf("expected a tool result for the auto-approved command, got %+v", last)
+	}
+	if m.state != stateStreaming || restream == nil {
+		t.Fatal("stream should resume after the auto-approved command completes")
+	}
+	found := false
+	for _, e := range m.transcript {
+		if e.kind == entrySystem && strings.Contains(e.text, "Auto-approved (allowlist): echo hi") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("transcript should note the allowlist auto-approval")
+	}
+}
+
+func TestPolicy_ChainedCommandNotAutoApproved(t *testing.T) {
+	var ran []string
+	m := execModel(t, &ran).WithCommandAllowlist([]string{"echo"})
+
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi && cat secrets.txt"}`},
+	}})
+	m = updated.(Model)
+
+	if m.state != stateConfirmRun {
+		t.Fatalf("chained command must still prompt, got state %d", m.state)
+	}
+	if len(ran) != 0 {
+		t.Fatal("nothing should run before approval")
+	}
+}
+
+func TestPolicy_FlaggedCommandAlwaysPrompts(t *testing.T) {
+	var ran []string
+	m := execModel(t, &ran).WithCommandAllowlist([]string{"git"})
+	m.allowAllCommands = true
+
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"git reset --hard"}`},
+	}})
+	m = updated.(Model)
+
+	if m.state != stateConfirmRun {
+		t.Fatalf("safety-flagged command must prompt regardless of policy, got state %d", m.state)
+	}
+	view := m.View()
+	if strings.Contains(view, "[y/n/a]") {
+		t.Fatal("flagged command must not offer the always-allow option")
+	}
+	if !strings.Contains(view, "[y/N]") {
+		t.Fatal("flagged command should offer plain y/N")
+	}
+
+	// 'a' is ignored on a flagged command.
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	m = updated.(Model)
+	if m.state != stateConfirmRun || len(ran) != 0 {
+		t.Fatal("'a' must not approve a safety-flagged command")
+	}
+}
+
+func TestPolicy_AlwaysAllowCommandsViaKey(t *testing.T) {
+	var ran []string
+	m := execModel(t, &ran)
+
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_1", Name: "execute_command", Arguments: `{"command":"echo one"}`},
+		{ID: "call_2", Name: "execute_command", Arguments: `{"command":"echo two"}`},
+	}})
+	m = updated.(Model)
+
+	if m.state != stateConfirmRun {
+		t.Fatalf("first command should prompt, got state %d", m.state)
+	}
+	if !strings.Contains(m.View(), "[y/n/a]") {
+		t.Fatal("unflagged command prompt should offer y/n/a")
+	}
+
+	// 'a' approves this command and every later one this session.
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	m = updated.(Model)
+	if !m.allowAllCommands {
+		t.Fatal("'a' should set the session command policy")
+	}
+	updated, cmd = m.Update(driveCmdDone(t, cmd))
+	m = updated.(Model)
+	if m.state != stateRunningCmd {
+		t.Fatalf("second command should auto-run without a prompt, got state %d", m.state)
+	}
+	updated, restream := m.Update(driveCmdDone(t, cmd))
+	m = updated.(Model)
+	if len(ran) != 2 || ran[0] != "echo one" || ran[1] != "echo two" {
+		t.Fatalf("both commands should have run in order, got %v", ran)
+	}
+	if m.state != stateStreaming || restream == nil {
+		t.Fatal("stream should resume once the queue drains")
+	}
+}
+
+func TestPolicy_AlwaysAllowEditsViaKey(t *testing.T) {
+	m := gatedModel(t, nil, nil)
+	dir := t.TempDir()
+	first := filepath.Join(dir, "a.txt")
+	second := filepath.Join(dir, "b.txt")
+
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_1", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":"one\n"}`, first)},
+		{ID: "call_2", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":"two\n"}`, second)},
+	}})
+	m = updated.(Model)
+
+	if m.state != stateConfirmRun {
+		t.Fatalf("first edit should prompt, got state %d", m.state)
+	}
+	if !strings.Contains(m.View(), "always allow edits") {
+		t.Fatal("edit prompt should offer the always-allow option")
+	}
+
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	m = updated.(Model)
+	if !m.allowAllEdits {
+		t.Fatal("'a' should set the session edit policy")
+	}
+	var done approvedToolDoneMsg
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(approvedToolDoneMsg); ok {
+			done = msg
+		}
+	}
+	updated, cmd = m.Update(done)
+	m = updated.(Model)
+	if m.state != stateRunningCmd {
+		t.Fatalf("second edit should auto-run without a prompt, got state %d", m.state)
+	}
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(approvedToolDoneMsg); ok {
+			done = msg
+		}
+	}
+	updated, _ = m.Update(done)
+	m = updated.(Model)
+
+	for _, p := range []string{first, second} {
+		if _, err := os.Stat(p); err != nil {
+			t.Fatalf("expected %s to be written: %v", p, err)
+		}
+	}
+	found := false
+	for _, e := range m.transcript {
+		if e.kind == entrySystem && strings.Contains(e.text, "Auto-approved (session policy): write "+second) {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("transcript should note the session-policy auto-approval")
+	}
+}
+
+func TestPolicy_GenericGatedToolAlwaysPrompts(t *testing.T) {
+	executor := func(name string, args json.RawMessage) (string, error) { return "ok", nil }
+	m := gatedModel(t, executor, map[string]GatedPreviewFunc{
+		"my_tool": func(raw json.RawMessage) (GatedPreview, error) {
+			return GatedPreview{Summary: "do the thing"}, nil
+		},
+	})
+	m.allowAllEdits = true
+	m.allowAllCommands = true
+
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_g", Name: "my_tool", Arguments: `{}`},
+	}})
+	m = updated.(Model)
+
+	if m.state != stateConfirmRun {
+		t.Fatalf("generic gated tool must always prompt, got state %d", m.state)
+	}
+	if !strings.Contains(m.View(), "[y/N]") {
+		t.Fatal("generic approval keeps plain y/N")
+	}
+}
+
+func TestPolicy_StatusBarAndHelpReflectPolicy(t *testing.T) {
+	m := gatedModel(t, nil, nil)
+	if m.policyLabel() != "" {
+		t.Fatalf("default policy should show no status segment, got %q", m.policyLabel())
+	}
+	_, help := m.handleSlashCommand("/help")
+	if !strings.Contains(help, "Approval policy:") || !strings.Contains(help, "edits:     ask") {
+		t.Fatalf("/help should describe the default ask-everything policy, got:\n%s", help)
+	}
+
+	m.allowAllEdits = true
+	m = m.WithCommandAllowlist([]string{"git status"})
+	if !strings.Contains(m.renderStatusBar(80), "auto: edits+allowlist") {
+		t.Fatalf("status bar should show the active policy, got %q", m.renderStatusBar(80))
+	}
+	_, help = m.handleSlashCommand("/help")
+	if !strings.Contains(help, "edits:     auto-allow (this session)") ||
+		!strings.Contains(help, "1 command pattern(s)") {
+		t.Fatalf("/help should reflect the loosened policy, got:\n%s", help)
+	}
+}
