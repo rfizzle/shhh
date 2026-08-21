@@ -1,6 +1,10 @@
 package tools
 
-import "unicode/utf8"
+import (
+	"fmt"
+	"strings"
+	"unicode/utf8"
+)
 
 // Tool output caps (S-051). Every limit on how much a tool may feed back into
 // the model's context lives here, so there is one place to tune them.
@@ -39,6 +43,20 @@ func TruncateOutput(s string, max int) (string, bool) {
 		return s, false
 	}
 	return cutUTF8(s, max), true
+}
+
+// FormatExecResult formats a command's captured output and exit code as the
+// tool result for an approved execute_command call, applying the shared
+// output cap. Both the chat TUI and headless print mode record this format.
+func FormatExecResult(output string, exitCode int) string {
+	output = strings.TrimRight(output, "\n")
+	if cut, truncated := TruncateOutput(output, MaxExecOutputBytes); truncated {
+		output = cut + "\n… (output truncated)"
+	}
+	if strings.TrimSpace(output) == "" {
+		output = "(no output)"
+	}
+	return fmt.Sprintf("exit code: %d\noutput:\n%s", exitCode, output)
 }
 
 // cutUTF8 truncates s to at most max bytes, dropping any trailing partial

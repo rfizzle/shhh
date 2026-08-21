@@ -8,6 +8,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mattn/go-isatty"
+	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
@@ -67,7 +69,19 @@ func newChatCmd() *cobra.Command {
 	return cmd
 }
 
-func runChatSession(cmd *cobra.Command, args []string, session chatSession) error {
+// sessionEnv is the provider-and-prompt setup shared by the interactive chat
+// TUI and headless print mode: resolved model, initial messages, and a stream
+// closure over the session's provider.
+type sessionEnv struct {
+	cfg         config.Config
+	modelName   string
+	sysPrompt   string
+	messages    []provider.Message
+	stream      agent.StreamFunc
+	switchModel func(string)
+}
+
+func buildSessionEnv(cmd *cobra.Command, session chatSession) (*sessionEnv, error) {
 	cfg := ConfigFrom(cmd.Context())
 
 	flags := session.flags
@@ -84,7 +98,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		ConfigName:    cfg.ProviderDisplayName(),
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	info := shell.Detect()
@@ -120,6 +134,27 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		return ev, cancel, nil
 	}
 
+	return &sessionEnv{
+		cfg:       cfg,
+		modelName: resolved.Model,
+		sysPrompt: sysPrompt,
+		messages:  messages,
+		stream:    stream,
+		switchModel: func(name string) {
+			modelMu.Lock()
+			currentModel = name
+			modelMu.Unlock()
+		},
+	}, nil
+}
+
+func runChatSession(cmd *cobra.Command, args []string, session chatSession) error {
+	env, err := buildSessionEnv(cmd, session)
+	if err != nil {
+		return err
+	}
+	cfg := env.cfg
+
 	db, err := storage.Open()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "warning: chat persistence unavailable: %v\n", err)
@@ -130,19 +165,15 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 
 	prices, _ := pricing.Load()
 
-	model := chat.New(messages, stream).
+	model := chat.New(env.messages, env.stream).
 		WithTitle(session.title).
 		WithToolExecutor(tools.Execute).
 		WithDB(db).
-		WithPricing(prices, resolved.Model).
+		WithPricing(prices, env.modelName).
 		WithRunner(runner.RunCapture).
 		WithMaxToolRounds(cfg.Behavior.MaxToolRounds).
 		WithCommandAllowlist(cfg.Behavior.CommandAllowlist).
-		WithModelSwitcher(func(name string) {
-			modelMu.Lock()
-			currentModel = name
-			modelMu.Unlock()
-		})
+		WithModelSwitcher(env.switchModel)
 
 	if session.continueLast || session.resumePick {
 		if db == nil {
@@ -169,7 +200,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		} else {
 			// Refresh the system prompt so shell/cwd context is current.
 			if len(resumed) > 0 && resumed[0].Role == provider.RoleSystem {
-				resumed[0].Content = sysPrompt
+				resumed[0].Content = env.sysPrompt
 			}
 			model = model.WithResumedMessages(resumed)
 		}

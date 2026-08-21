@@ -689,13 +689,7 @@ func (m Model) updateConfirmRun(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func execToolResult(output string, exitCode int) string {
-	if cut, truncated := tools.TruncateOutput(output, tools.MaxExecOutputBytes); truncated {
-		output = cut + "\n… (output truncated)"
-	}
-	if strings.TrimSpace(output) == "" {
-		output = "(no output)"
-	}
-	return fmt.Sprintf("exit code: %d\noutput:\n%s", exitCode, output)
+	return tools.FormatExecResult(output, exitCode)
 }
 
 func (m Model) executeRun() (tea.Model, tea.Cmd) {

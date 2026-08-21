@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/safety"
 )
 
@@ -45,35 +46,12 @@ func (m Model) policyAllows(req *approvalRequest) (reason string, ok bool) {
 	return "", false
 }
 
-// allowlistUnsafe are shell metacharacters that could chain a second command
-// onto an allowlisted prefix (e.g. "git status; rm -rf ~" prefix-matching the
-// entry "git status"), so commands containing any of them always prompt.
-const allowlistUnsafe = ";&|`$()<>\n"
-
 // allowlistMatches reports whether command's leading words exactly match all
-// words of some allowlist entry ("go test" matches "go test ./...").
+// words of some allowlist entry ("go test" matches "go test ./..."). The
+// matching lives in internal/agent so headless print mode applies the same
+// policy.
 func allowlistMatches(allowlist []string, command string) bool {
-	if strings.ContainsAny(command, allowlistUnsafe) {
-		return false
-	}
-	words := strings.Fields(command)
-	for _, entry := range allowlist {
-		pattern := strings.Fields(entry)
-		if len(pattern) == 0 || len(pattern) > len(words) {
-			continue
-		}
-		match := true
-		for i, w := range pattern {
-			if words[i] != w {
-				match = false
-				break
-			}
-		}
-		if match {
-			return true
-		}
-	}
-	return false
+	return agent.AllowlistMatches(allowlist, command)
 }
 
 // policyLabel is the status bar segment for the active approval policy;
