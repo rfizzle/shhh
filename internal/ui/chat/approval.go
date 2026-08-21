@@ -64,9 +64,13 @@ func (m Model) WithGatedTools(previews map[string]GatedPreviewFunc) Model {
 }
 
 // requiresApproval reports whether a tool call must go through the approval
-// queue instead of the auto-run executor path.
+// queue instead of the auto-run executor path. File-modification tools are
+// always gated, mirroring how execute_command is intercepted.
 func (m Model) requiresApproval(name string) bool {
 	if name == tools.ExecCommandName && m.runFn != nil {
+		return true
+	}
+	if tools.IsMutating(name) {
 		return true
 	}
 	_, ok := m.gatedTools[name]
@@ -90,9 +94,24 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 		}, nil
 	}
 
+	// A registered preview overrides the built-in mutating-tool handling.
 	preview, ok := m.gatedTools[tc.Name]
 	if !ok {
-		return nil, fmt.Errorf("tool %s cannot be approved in this session", tc.Name)
+		if !tools.IsMutating(tc.Name) {
+			return nil, fmt.Errorf("tool %s cannot be approved in this session", tc.Name)
+		}
+		mut, err := tools.PreviewMutation(tc.Name, json.RawMessage(tc.Arguments))
+		if err != nil {
+			return nil, fmt.Errorf("invalid arguments: %w", err)
+		}
+		title := mut.Action + " " + mut.Path
+		return &approvalRequest{
+			call:    tc,
+			kind:    approvalDiff,
+			title:   title,
+			diff:    unifiedDiff(mut.OldText, mut.NewText),
+			summary: title,
+		}, nil
 	}
 	p, err := preview(json.RawMessage(tc.Arguments))
 	if err != nil {
@@ -187,9 +206,15 @@ func (m Model) declineApproval() (tea.Model, tea.Cmd) {
 func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 	m.state = stateRunningCmd
 	m.syncViewportHeight()
-	executor := m.executor
 	runID := m.runID
 	call := m.pendingApproval.call
+	// Built-in mutating tools run through their own dispatcher; the session
+	// executor (the auto-run read-only path) never learns them. A registered
+	// gated tool keeps the session executor.
+	executor := m.executor
+	if _, registered := m.gatedTools[call.Name]; !registered && tools.IsMutating(call.Name) {
+		executor = tools.ExecuteMutating
+	}
 	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
 		var result string
 		if executor != nil {

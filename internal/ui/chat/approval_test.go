@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -240,6 +242,115 @@ func TestGatedTool_GenericPreview(t *testing.T) {
 	}
 	if !strings.Contains(view, "[y/N]") {
 		t.Fatal("generic approval should offer y/N")
+	}
+}
+
+// The real write_file/edit_file tools are intercepted natively (S-049): no
+// registration needed, diff preview from disk, execution via ExecuteMutating
+// rather than the session's auto-run executor.
+func TestMutatingTool_WriteApprovedThroughQueue(t *testing.T) {
+	executor := func(name string, args json.RawMessage) (string, error) {
+		t.Errorf("session executor must not run mutating tool %s", name)
+		return "", nil
+	}
+	m := gatedModel(t, executor, nil)
+	path := filepath.Join(t.TempDir(), "hello.txt")
+
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_w", Name: "write_file",
+			Arguments: fmt.Sprintf(`{"path":%q,"content":"hello\n"}`, path)},
+	}})
+	m = updated.(Model)
+
+	if m.state != stateConfirmRun || m.pendingApproval == nil || m.pendingApproval.kind != approvalDiff {
+		t.Fatalf("write_file should enter diff approval, got state=%d", m.state)
+	}
+	if _, err := os.Stat(path); !os.IsNotExist(err) {
+		t.Fatal("file must not exist before approval")
+	}
+	view := m.View()
+	if !strings.Contains(view, "Assistant wants to write") || !strings.Contains(view, "+hello") {
+		t.Fatal("confirm prompt should show the write action and diff")
+	}
+
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	m = updated.(Model)
+	var done approvedToolDoneMsg
+	found := false
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(approvedToolDoneMsg); ok {
+			done = msg
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("expected approvedToolDoneMsg from the approval cmd")
+	}
+	data, err := os.ReadFile(path)
+	if err != nil || string(data) != "hello\n" {
+		t.Fatalf("approved write should create the file: content=%q err=%v", data, err)
+	}
+
+	updated, _ = m.Update(done)
+	m = updated.(Model)
+	last := m.Messages()[len(m.Messages())-1]
+	if last.Role != provider.RoleTool || last.ToolCallID != "call_w" || !strings.Contains(last.Content, "Created") {
+		t.Fatalf("tool result should confirm the write, got %+v", last)
+	}
+}
+
+func TestMutatingTool_EditDeclinedLeavesFileUntouched(t *testing.T) {
+	m := gatedModel(t, nil, nil)
+	path := filepath.Join(t.TempDir(), "code.go")
+	if err := os.WriteFile(path, []byte("alpha\nbeta\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_e", Name: "edit_file",
+			Arguments: fmt.Sprintf(`{"path":%q,"old_text":"beta","new_text":"delta"}`, path)},
+	}})
+	m = updated.(Model)
+
+	if m.state != stateConfirmRun || m.pendingApproval == nil || m.pendingApproval.kind != approvalDiff {
+		t.Fatalf("edit_file should enter diff approval, got state=%d", m.state)
+	}
+	view := m.View()
+	if !strings.Contains(view, "-beta") || !strings.Contains(view, "+delta") {
+		t.Fatal("confirm prompt should diff the edit")
+	}
+
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+	m = updated.(Model)
+	data, _ := os.ReadFile(path)
+	if string(data) != "alpha\nbeta\n" {
+		t.Fatal("declined edit must leave the file untouched")
+	}
+	last := m.Messages()[len(m.Messages())-1]
+	if last.Role != provider.RoleTool || last.ToolCallID != "call_e" || !strings.Contains(last.Content, "declined") {
+		t.Fatalf("declined edit should produce an error tool result, got %+v", last)
+	}
+}
+
+func TestMutatingTool_InvalidEditSkippedWithError(t *testing.T) {
+	m := gatedModel(t, nil, nil)
+	path := filepath.Join(t.TempDir(), "code.go")
+	if err := os.WriteFile(path, []byte("alpha\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	updated, restream := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_e", Name: "edit_file",
+			Arguments: fmt.Sprintf(`{"path":%q,"old_text":"missing","new_text":"x"}`, path)},
+	}})
+	m = updated.(Model)
+
+	last := m.Messages()[len(m.Messages())-1]
+	if last.Role != provider.RoleTool || !strings.Contains(last.Content, "not found") {
+		t.Fatalf("no-match edit should produce an error tool result, got %+v", last)
+	}
+	if m.state != stateStreaming || restream == nil {
+		t.Fatal("stream should resume so the model can correct the edit")
 	}
 }
 

@@ -52,6 +52,9 @@ func DefinitionsWithExec() []provider.Tool {
 	return append(Definitions(), ExecCommandTool())
 }
 
+// Execute dispatches an auto-run tool call. Only read-only tools are
+// reachable here: mutating tools (Mutating) and execute_command must go
+// through user approval and are deliberately unknown to this path.
 func Execute(name string, args json.RawMessage) (string, error) {
 	for _, d := range ReadOnly() {
 		if d.Tool.Name == name {
