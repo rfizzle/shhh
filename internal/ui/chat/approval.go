@@ -287,13 +287,19 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 	call := m.pendingApproval.call
 	// Built-in mutating tools run through their own dispatcher; the session
 	// executor (the auto-run read-only path) never learns them. A registered
-	// gated tool keeps the session executor.
+	// gated tool keeps the session executor. The session executor is already
+	// wrapped by the reduction pipeline (S-064), so only the direct mutating
+	// dispatch reduces here.
 	_, registered := m.gatedTools[call.Name]
 	mutating := !registered && tools.IsMutating(call.Name)
+	reduce := m.evidence.Reduce
 	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
 		var result string
 		if mutating {
 			result = agent.ExecuteWith(tools.ExecuteMutating, call)
+			if reduce != nil {
+				result = reduce(call.Name, result)
+			}
 		} else {
 			result = a.ExecuteCall(call)
 		}

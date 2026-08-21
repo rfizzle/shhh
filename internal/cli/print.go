@@ -10,6 +10,7 @@ import (
 
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/safety"
@@ -33,6 +34,14 @@ type printOpts struct {
 // replaces the streamed text with a structured transcript on stdout. The
 // returned error drives the process exit code.
 func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opts printOpts) error {
+	// Tool-output reduction (S-064), mirroring the interactive session: bulky
+	// results are reduced with the originals retrievable via the evidence
+	// tool.
+	red := openEvidence()
+	if red != nil {
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), evidence.ToolDefinition())
+	}
+
 	env, err := buildSessionEnv(cmd, session)
 	if err != nil {
 		return err
@@ -86,14 +95,18 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	}
 
 	a := agent.New(env.messages, env.stream)
-	a.SetExecutor(tools.Execute)
+	if red != nil {
+		a.SetExecutor(red.WrapExecutor(tools.Execute))
+	} else {
+		a.SetExecutor(tools.Execute)
+	}
 	a.SetMaxRounds(cfg.Behavior.MaxToolRounds)
 
 	var usage provider.Usage
 	h := &agent.Headless{
 		Agent:   a,
 		Gate:    headlessGate,
-		Resolve: headlessApprover(cmd.Context(), opts, allowlist, run),
+		Resolve: headlessApprover(cmd.Context(), opts, allowlist, run, red),
 		OnToolCall: func(tc provider.ToolCall) {
 			fmt.Fprintf(os.Stderr, "» %s %s\n", tc.Name, clipActivityLine(tc.Arguments))
 		},
@@ -131,8 +144,9 @@ func headlessGate(name string) bool {
 
 // headlessApprover resolves approval-gated tool calls without a prompt:
 // policy decides. Safety-flagged commands are always denied — there is no
-// human to confirm them in a headless run.
-func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, run func(context.Context, string) (string, int)) func(provider.ToolCall) string {
+// human to confirm them in a headless run. Approved results run through the
+// reduction pipeline (red is nil-safe) like every other tool result.
+func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, run func(context.Context, string) (string, int), red *evidence.Reducer) func(provider.ToolCall) string {
 	return func(tc provider.ToolCall) string {
 		if tc.Name == tools.ExecCommandName {
 			var args struct {
@@ -150,13 +164,13 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 			}
 			if opts.yes || agent.AllowlistMatches(allowlist, args.Command) {
 				out, code := run(ctx, args.Command)
-				return tools.FormatExecResult(out, code)
+				return tools.FormatExecResult(red.Process(tools.ExecCommandName, out), code)
 			}
 			return "error: command not approved: headless mode denies commands by default (run with --yes or --allow)"
 		}
 		if tools.IsMutating(tc.Name) {
 			if opts.yes {
-				return agent.ExecuteWith(tools.ExecuteMutating, tc)
+				return red.Process(tc.Name, agent.ExecuteWith(tools.ExecuteMutating, tc))
 			}
 			return "error: file modification not approved: headless mode denies edits by default (run with --yes)"
 		}

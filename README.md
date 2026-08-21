@@ -210,6 +210,8 @@ Assistant commands additionally run inside OS-level process containment when a m
 
 For long or unsupervised runs, `shhh code -p --sandbox` goes a step further and execs approved commands inside a disposable container: Podman or Docker is auto-detected (rootless preferred and reported), the image must be digest-pinned and pass the configured allowlist, and the container gets exactly one writable mount (the workspace), no host environment or credentials, all capabilities dropped, and memory/CPU/pid ceilings. Isolation reporting is honest — `process < container < vm`, each level verified or explained — and a required level that can't be verified (`sandbox.require_isolation`) fails creation rather than silently downgrading. Every container shhh creates is recorded durably; records are reconciled at session start, containers past their TTL are reaped, and `/sandbox list|status|destroy <id>|prune|doctor` manages them in-session.
 
+Bulky tool results are reduced before the model sees them: output over a size threshold is deterministically cut to a verbatim head and tail plus any flagged lines (errors, panics, test failures) from the elided middle, with terminal control sequences stripped. Small results pass through untouched. Each reduced result carries an opaque evidence id, and the full original is kept under shhh's state dir (user-only permissions, per-session, pruned after a week) where the model can retrieve it with the `evidence` tool — `info`, paged `read`, or literal `search`. The transcript shows exactly the reduced view the model got, and `/evidence` in a session shows store size and reduction stats (`/evidence purge` deletes the stored originals).
+
 The status bar shows token usage, estimated cost, the current context size, and the active model. The context indicator changes color as the conversation approaches the model's context window (from the pricing table when known); past that threshold, the oldest tool results are automatically elided from the conversation before the next request.
 
 Slash commands inside a chat session:
@@ -222,6 +224,7 @@ Slash commands inside a chat session:
 | `/run [n]` | Run a code block from the last response (asks for confirmation, shows safety warnings; output goes back into the conversation) |
 | `/model [name]` | Show or switch the model mid-session (same provider) |
 | `/compact` | Summarize the conversation via the model and continue from the summary (frees context) |
+| `/evidence [purge]` | Tool-output evidence store: reduction stats and size; `purge` deletes the stored originals |
 | `/save [name]` | Save this chat |
 | `/load <name>` | Load a saved chat |
 | `/chats` | List saved chats |

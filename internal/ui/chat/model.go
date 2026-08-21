@@ -168,6 +168,9 @@ type Model struct {
 	// containment wraps assistant commands in OS-level process containment
 	// when a mechanism is available (S-062).
 	containment Containment
+	// evidence reduces bulky tool results and keeps the originals
+	// retrievable (S-064).
+	evidence Evidence
 	// compacting marks an in-flight /compact request (S-055): the streamed
 	// response is a summary handled by finishCompact, not conversation text.
 	compacting bool
@@ -545,6 +548,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.runCancel = nil
 		out := strings.TrimRight(msg.output, "\n")
+		// Assistant command output goes through the reduction pipeline
+		// (S-064) before both the transcript entry and the tool result, so
+		// the user sees exactly what the model got. /run — the user's own
+		// command — stays unreduced.
+		if m.pendingApproval != nil {
+			out = m.reduceResult(tools.ExecCommandName, out)
+		}
 		m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out, exitCode: msg.exitCode})
 		if m.pendingApproval != nil {
 			m.pendingApproval = nil
@@ -1371,6 +1381,12 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		}
 		return true, "Container sandbox management is unavailable in this session."
 
+	case "/evidence":
+		if m.evidence.Manage == nil {
+			return true, "The evidence store is unavailable in this session."
+		}
+		return true, m.evidence.Manage(parts[1:])
+
 	case "/plan":
 		if len(parts) < 2 || parts[1] != "save" {
 			return true, "Usage: /plan save [name]"
@@ -1485,6 +1501,7 @@ func helpText() string {
   /mode [name]   Show or set the permission mode (manual, accept-edits, auto, plan)
   /mode why      Show the latest auto-mode denial's reason
   /sandbox       Containment status and container sandboxes (doctor|list|status|destroy <id>|prune)
+  /evidence      Tool-output evidence store: reduction stats and size (purge to clear)
   /plan save [name]  Save the last plan/response to .shhh/plans/
   /compact       Summarize the conversation and continue from the summary
   /save [name]   Save this chat

@@ -11,6 +11,7 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
@@ -152,6 +153,14 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession) (*sessionEnv, erro
 }
 
 func runChatSession(cmd *cobra.Command, args []string, session chatSession) error {
+	// Tool-output reduction (S-064): bulky tool results are reduced before
+	// the model sees them, with the originals retrievable via the evidence
+	// tool. No store means no reduction and no evidence tool.
+	red := openEvidence()
+	if red != nil {
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), evidence.ToolDefinition())
+	}
+
 	env, err := buildSessionEnv(cmd, session)
 	if err != nil {
 		return err
@@ -201,9 +210,14 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		return err
 	}
 
+	executor := agent.ToolExecutor(tools.Execute)
+	if red != nil {
+		executor = red.WrapExecutor(tools.Execute)
+	}
+
 	model := chat.New(env.messages, env.stream).
 		WithTitle(session.title).
-		WithToolExecutor(tools.Execute).
+		WithToolExecutor(executor).
 		WithDB(db).
 		WithPricing(prices, env.modelName).
 		WithRunner(runner.RunCapture).
@@ -213,6 +227,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithApprovalMode(mode, cycle).
 		WithClassifier(classifier).
 		WithModelSwitcher(env.switchModel)
+	if red != nil {
+		model = model.WithEvidence(chat.Evidence{Reduce: red.Process, Manage: evidenceManager(red)})
+	}
 
 	if session.continueLast || session.resumePick {
 		if db == nil {
