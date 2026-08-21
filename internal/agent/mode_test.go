@@ -93,11 +93,39 @@ func TestModePolicy_Decide(t *testing.T) {
 		{"plan denies commands", ModePolicy{Mode: ModePlan, AllowCommands: true, CommandAllowlist: []string{"go test"}}, cmd, Deny, "plan mode"},
 		{"plan denies flagged commands", ModePolicy{Mode: ModePlan}, flagged, Deny, "plan mode"},
 		{"plan denies other tools", ModePolicy{Mode: ModePlan}, other, Deny, "plan mode"},
+		{"plan allows inspection commands", ModePolicy{Mode: ModePlan}, Action{Kind: ActionCommand, Command: "git status"}, Allow, "plan mode inspection"},
+		{"plan denies flagged inspection commands", ModePolicy{Mode: ModePlan}, Action{Kind: ActionCommand, Command: "git diff", SafetyFlagged: true}, Deny, "plan mode"},
 	}
 	for _, c := range cases {
 		got, reason := c.policy.Decide(c.action)
 		if got != c.want || reason != c.reason {
 			t.Errorf("%s: Decide = %v %q, want %v %q", c.name, got, reason, c.want, c.reason)
+		}
+	}
+}
+
+func TestPlanInspectionAllowed(t *testing.T) {
+	cases := []struct {
+		command string
+		want    bool
+	}{
+		{"git status", true},
+		{"git log --oneline -5", true},
+		{"ls -la internal", true},
+		{"cat go.mod", true},
+		{"rg TODO internal", true},
+		{"go list ./...", true},
+		{"go test ./...", false},            // runs code, not inspection
+		{"rm -rf /tmp/x", false},            // not on the list
+		{"find . -delete", false},           // can mutate, deliberately excluded
+		{"cat go.mod > /tmp/out", false},    // redirection
+		{"git status; rm -rf ~", false},     // chaining
+		{"ls $(evil)", false},               // substitution
+		{"git diff | tee patch.txt", false}, // pipe
+	}
+	for _, c := range cases {
+		if got := PlanInspectionAllowed(c.command); got != c.want {
+			t.Errorf("PlanInspectionAllowed(%q) = %v, want %v", c.command, got, c.want)
 		}
 	}
 }

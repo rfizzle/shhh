@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/pricing"
+	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -43,6 +44,9 @@ const (
 	// stateClassifying: the auto-mode permission classifier (S-060) is
 	// deciding whether the pending approval may run without a prompt.
 	stateClassifying
+	// statePlanApprove: a completed planning response is awaiting the user's
+	// decision — execute, keep planning, or reject (S-061).
+	statePlanApprove
 )
 
 const inputHeight = 3
@@ -159,6 +163,8 @@ type Model struct {
 	classifierCancel context.CancelFunc
 	// lastDenial is the most recent auto-mode denial, shown by /mode why.
 	lastDenial string
+	// planChoice is the focused row of the plan-approval prompt (S-061).
+	planChoice int
 	// compacting marks an in-flight /compact request (S-055): the streamed
 	// response is a summary handled by finishCompact, not conversation text.
 	compacting bool
@@ -334,6 +340,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.state == stateConfirmRun {
 			return m.updateConfirmRun(msg)
 		}
+		if m.state == statePlanApprove {
+			return m.updatePlanApprove(msg)
+		}
 		switch msg.String() {
 		case "ctrl+d":
 			m.quitting = true
@@ -476,11 +485,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.compacting {
 			return m.finishCompact()
 		}
+		hadText := m.streaming != ""
 		m.finishStreaming()
 		// A steering message queued while the model was responding becomes the
 		// next user turn immediately (S-058).
 		if cmd := m.dispatchSteering(); cmd != nil {
 			return m, cmd
+		}
+		// A completed planning response gets the plan-approval prompt (S-061).
+		if m.mode == agent.ModePlan && hadText {
+			m.state = statePlanApprove
+			m.planChoice = 0
+			m.syncViewportHeight()
 		}
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
@@ -589,8 +605,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	var cmds []tea.Cmd
 	// The input stays live while the agent streams or runs tools so the user
-	// can type a steering message (S-058); only the confirm prompt takes over.
-	if m.state != stateConfirmRun {
+	// can type a steering message (S-058); only the confirm and plan-approval
+	// prompts take over.
+	if m.state != stateConfirmRun && m.state != statePlanApprove {
 		// Any other keypress while browsing input history turns the recalled
 		// text into a fresh draft.
 		if _, ok := msg.(tea.KeyMsg); ok {
@@ -682,8 +699,11 @@ func (m Model) View() string {
 	statusBar := m.renderStatusBar(contentWidth)
 
 	inputView := m.input.View()
-	if m.state == stateConfirmRun {
+	switch m.state {
+	case stateConfirmRun:
 		inputView = m.renderConfirm()
+	case statePlanApprove:
+		inputView = m.renderPlanApprove()
 	}
 
 	content := header + "\n" + topDivider + "\n" + body + "\n" + bottomDivider + "\n" + statusBar + "\n" + inputView
@@ -829,7 +849,14 @@ func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
 }
 
 func (m Model) requestStream() tea.Cmd {
-	return m.requestStreamFor(m.agent.RequestMessages())
+	msgs := m.agent.RequestMessages()
+	// Plan mode injects planning instructions into the request's system
+	// prompt (S-061); the stored conversation stays untouched, so leaving
+	// plan mode stops the injection.
+	if m.mode == agent.ModePlan && len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
+		msgs[0].Content += "\n\n" + prompt.PlanModeInstructions
+	}
+	return m.requestStreamFor(msgs)
 }
 
 // requestStreamFor starts a stream over an explicit message list (callers
@@ -1318,6 +1345,20 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		m.mode = mode
 		return true, fmt.Sprintf("Mode set to %s — %s.", mode, mode.Describe())
 
+	case "/plan":
+		if len(parts) < 2 || parts[1] != "save" {
+			return true, "Usage: /plan save [name]"
+		}
+		planText := m.lastAssistantText()
+		if strings.TrimSpace(planText) == "" {
+			return true, "No plan to save yet — there is no assistant response."
+		}
+		path, err := savePlan(planText, strings.Join(parts[2:], "-"))
+		if err != nil {
+			return true, "Error saving plan: " + err.Error()
+		}
+		return true, "Plan saved to " + path
+
 	case "/copy":
 		text := m.lastAssistantText()
 		if text == "" {
@@ -1417,6 +1458,7 @@ func helpText() string {
   /model [name]  Show or switch the model for this session
   /mode [name]   Show or set the permission mode (manual, accept-edits, auto, plan)
   /mode why      Show the latest auto-mode denial's reason
+  /plan save [name]  Save the last plan/response to .shhh/plans/
   /compact       Summarize the conversation and continue from the summary
   /save [name]   Save this chat
   /load <name>   Load a saved chat

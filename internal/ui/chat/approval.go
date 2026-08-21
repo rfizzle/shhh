@@ -360,12 +360,17 @@ func (m Model) renderConfirm() string {
 }
 
 // bottomPanelHeight is how many rows the bottom panel currently occupies; the
-// confirm prompt may grow beyond the input's fixed height for diff previews.
+// confirm and plan-approval prompts may grow beyond the input's fixed height.
 func (m Model) bottomPanelHeight() int {
-	if m.state == stateConfirmRun {
-		if n := len(m.confirmLines()); n > inputHeight {
-			return min(n, m.maxConfirmPanelHeight())
-		}
+	var lines []string
+	switch m.state {
+	case stateConfirmRun:
+		lines = m.confirmLines()
+	case statePlanApprove:
+		lines = m.planApproveLines()
+	}
+	if n := len(lines); n > inputHeight {
+		return min(n, m.maxConfirmPanelHeight())
 	}
 	return inputHeight
 }

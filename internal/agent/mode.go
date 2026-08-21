@@ -25,8 +25,9 @@ const (
 	// anything else is judged by the LLM classifier (S-060) when configured,
 	// else asks. Classifier failures fall back to asking, never allowing.
 	ModeAuto
-	// ModePlan is read-only: gated calls are refused with a result telling
-	// the model it is in plan mode (the full planning flow is S-061).
+	// ModePlan is read-only research (S-061): file edits and non-inspection
+	// commands are refused with a result telling the model it is in plan
+	// mode; shell access is restricted to the inspection allowlist.
 	ModePlan
 )
 
@@ -51,7 +52,7 @@ func (m Mode) Describe() string {
 	case ModeAuto:
 		return "edits apply; allowlisted commands run; the classifier judges the rest (or asks)"
 	case ModePlan:
-		return "read-only — file edits and commands are refused"
+		return "read-only research — edits and non-inspection commands are refused"
 	default:
 		return "every consequential tool call asks"
 	}
@@ -161,10 +162,32 @@ type ModePolicy struct {
 	CommandAllowlist []string
 }
 
+// PlanInspectionCommands is the built-in allowlist of read-only shell
+// commands plan mode still runs (S-061): pure inspection, nothing that can
+// write, delete, or execute further commands. Matching goes through
+// AllowlistMatches, so chained or redirected commands never qualify.
+func PlanInspectionCommands() []string {
+	return []string{
+		"ls", "pwd", "cat", "head", "tail", "wc", "file", "stat", "tree", "du",
+		"grep", "rg", "which",
+		"git status", "git log", "git diff", "git show", "git blame", "git ls-files",
+		"go version", "go env", "go list", "go doc",
+	}
+}
+
+// PlanInspectionAllowed reports whether a command is on plan mode's
+// inspection allowlist.
+func PlanInspectionAllowed(command string) bool {
+	return AllowlistMatches(PlanInspectionCommands(), command)
+}
+
 // Decide returns the verdict for one gated action and, for Allow, the reason
 // shown in the transcript ("session policy", "allowlist", "auto mode", …).
 func (p ModePolicy) Decide(a Action) (Decision, string) {
 	if p.Mode == ModePlan {
+		if a.Kind == ActionCommand && !a.SafetyFlagged && PlanInspectionAllowed(a.Command) {
+			return Allow, "plan mode inspection"
+		}
 		return Deny, "plan mode"
 	}
 	if a.SafetyFlagged {

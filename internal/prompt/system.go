@@ -104,6 +104,16 @@ Make changes with write_file and edit_file rather than pasting code blocks into 
 	return base
 }
 
+// PlanModeInstructions is appended to the system prompt while the session is
+// in plan mode (S-061): research read-only, present a plan, and wait for the
+// user's decision instead of implementing.
+const PlanModeInstructions = `# Plan mode
+You are in plan mode: a read-only research phase. Your job is to produce a concrete implementation plan, not to make changes.
+- Research with the read-only tools (read_file, list_directory, search, glob) and read-only inspection commands (e.g. git status, git diff, ls); file edits and any other commands are disabled and will be refused.
+- When you have enough context, present the plan as a normal response: the steps in order, the files you would change, and how you would verify the result.
+- Do not start implementing, and do not include full file contents or large code blocks — the plan describes the changes.
+- After you present the plan, the user decides: approve it (this session then continues straight into execution), keep planning (they send feedback to refine it), or reject it.`
+
 func CombineExtra(parts ...string) string {
 	var out []string
 	for _, p := range parts {
