@@ -165,6 +165,9 @@ type Model struct {
 	lastDenial string
 	// planChoice is the focused row of the plan-approval prompt (S-061).
 	planChoice int
+	// containment wraps assistant commands in OS-level process containment
+	// when a mechanism is available (S-062).
+	containment Containment
 	// compacting marks an in-flight /compact request (S-055): the streamed
 	// response is a summary handled by finishCompact, not conversation text.
 	compacting bool
@@ -793,6 +796,11 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	m.runCancel = cancel
 	runID := m.agent.RunID()
 	runFn := m.runFn
+	// Assistant commands run contained when a mechanism is available (S-062);
+	// /run — the user's own command — stays on the plain runner.
+	if m.pendingApproval != nil && m.containment.Run != nil {
+		runFn = m.containment.Run
+	}
 	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
 		out, code := runFn(ctx, command)
 		return cmdDoneMsg{runID: runID, command: command, output: out, exitCode: code}
@@ -1345,6 +1353,15 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		m.mode = mode
 		return true, fmt.Sprintf("Mode set to %s — %s.", mode, mode.Describe())
 
+	case "/sandbox":
+		if len(parts) > 2 || (len(parts) == 2 && parts[1] != "doctor") {
+			return true, "Usage: /sandbox [doctor]"
+		}
+		if m.containment.Report == "" {
+			return true, "Command containment is not configured in this session."
+		}
+		return true, m.containment.Report
+
 	case "/plan":
 		if len(parts) < 2 || parts[1] != "save" {
 			return true, "Usage: /plan save [name]"
@@ -1458,6 +1475,7 @@ func helpText() string {
   /model [name]  Show or switch the model for this session
   /mode [name]   Show or set the permission mode (manual, accept-edits, auto, plan)
   /mode why      Show the latest auto-mode denial's reason
+  /sandbox       Show command-containment status (also: /sandbox doctor)
   /plan save [name]  Save the last plan/response to .shhh/plans/
   /compact       Summarize the conversation and continue from the summary
   /save [name]   Save this chat

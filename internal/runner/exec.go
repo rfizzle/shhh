@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/rfizzle/shhh/internal/history"
@@ -65,6 +66,27 @@ func RunCapture(ctx context.Context, command string) (output string, exitCode in
 			return string(out), exitErr.ExitCode()
 		}
 		return string(out), -1
+	}
+	return string(out), 0
+}
+
+// RunCaptureArgv executes an explicit argv (no shell) with output captured,
+// for pre-built invocations like sandbox-wrapped commands (S-062). A spawn
+// failure — e.g. the containment binary vanished — reports the error in the
+// output with exit code -1, so the command fails visibly instead of running
+// bare.
+func RunCaptureArgv(ctx context.Context, argv []string) (output string, exitCode int) {
+	if len(argv) == 0 {
+		return "error: empty command", -1
+	}
+	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			return string(out), exitErr.ExitCode()
+		}
+		return strings.TrimSpace(string(out) + "\nerror: " + err.Error()), -1
 	}
 	return string(out), 0
 }

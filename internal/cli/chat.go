@@ -194,12 +194,20 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		Retries:   cfg.Behavior.ClassifierRetries,
 	})
 
+	// Process containment (S-062): assistant commands run wrapped when a
+	// mechanism is available; the confirm prompt shows the state either way.
+	containment, err := buildContainment(cfg)
+	if err != nil {
+		return err
+	}
+
 	model := chat.New(env.messages, env.stream).
 		WithTitle(session.title).
 		WithToolExecutor(tools.Execute).
 		WithDB(db).
 		WithPricing(prices, env.modelName).
 		WithRunner(runner.RunCapture).
+		WithContainment(containment).
 		WithMaxToolRounds(cfg.Behavior.MaxToolRounds).
 		WithCommandAllowlist(cfg.Behavior.CommandAllowlist).
 		WithApprovalMode(mode, cycle).

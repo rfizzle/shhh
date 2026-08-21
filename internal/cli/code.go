@@ -1,8 +1,11 @@
 package cli
 
 import (
+	"fmt"
+
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/resolve"
+	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/spf13/cobra"
 )
@@ -48,5 +51,28 @@ func newCodeCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&popts.yes, "yes", false, "with --print, auto-approve file edits and commands (safety-flagged commands stay denied)")
 	cmd.Flags().StringArrayVar(&popts.allow, "allow", nil, "with --print, auto-approve commands matching this prefix (repeatable; extends the config allowlist)")
 
+	cmd.AddCommand(newCodeDoctorCmd())
+
 	return cmd
+}
+
+// newCodeDoctorCmd reports the process-containment mechanism and resolved
+// policy (S-062): which wrapper is available (and why not, when none is), the
+// profile, and the write grants and deny mask agent commands run under.
+func newCodeDoctorCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "doctor",
+		Short: "Report command-containment (sandbox) status",
+		Long:  "Show which OS-level containment mechanism wraps agent-executed commands, or why none is available, plus the resolved write grants and deny mask.",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			cfg := ConfigFrom(cmd.Context())
+			policy, err := sandboxPolicy(cfg)
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), sandbox.Report(sandbox.Detect(), policy))
+			return nil
+		},
+	}
 }

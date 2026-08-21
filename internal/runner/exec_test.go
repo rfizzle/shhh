@@ -86,3 +86,30 @@ func TestRunCapture_ContextCancelKills(t *testing.T) {
 		t.Error("killed command should not report success")
 	}
 }
+
+func TestRunCaptureArgv_RunsExplicitArgv(t *testing.T) {
+	out, code := RunCaptureArgv(context.Background(), []string{"/bin/sh", "-c", "echo wrapped; exit 4"})
+	if !strings.Contains(out, "wrapped") {
+		t.Errorf("expected output captured, got %q", out)
+	}
+	if code != 4 {
+		t.Errorf("expected exit code 4, got %d", code)
+	}
+}
+
+func TestRunCaptureArgv_MissingBinaryFailsVisibly(t *testing.T) {
+	out, code := RunCaptureArgv(context.Background(), []string{"/nonexistent/bwrap-xyz", "true"})
+	if code != -1 {
+		t.Errorf("expected exit code -1 for a vanished binary, got %d", code)
+	}
+	if !strings.Contains(out, "error:") {
+		t.Errorf("spawn failure should be reported in the output, got %q", out)
+	}
+}
+
+func TestRunCaptureArgv_EmptyArgv(t *testing.T) {
+	out, code := RunCaptureArgv(context.Background(), nil)
+	if code != -1 || !strings.Contains(out, "error") {
+		t.Errorf("empty argv should fail, got %q code %d", out, code)
+	}
+}

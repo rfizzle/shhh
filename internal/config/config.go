@@ -13,8 +13,25 @@ import (
 type Config struct {
 	Provider   ProviderConfig   `toml:"provider"`
 	Behavior   BehaviorConfig   `toml:"behavior"`
+	Sandbox    SandboxConfig    `toml:"sandbox"`
 	Appearance AppearanceConfig `toml:"appearance"`
 	History    HistoryConfig    `toml:"history"`
+}
+
+// SandboxConfig tunes process containment for agent-executed commands
+// (S-062). The built-in deny mask (~/.ssh, ~/.aws, ~/.config/gh, shhh's own
+// config and state dirs) is deliberately not configurable — it cannot be
+// disabled, only extended.
+type SandboxConfig struct {
+	// Profile is "workspace" (network preserved, the default) or
+	// "workspace-netless".
+	Profile string `toml:"profile"`
+	// DenyExtra paths join the built-in deny mask; contained commands see
+	// them as empty.
+	DenyExtra []string `toml:"deny_extra"`
+	// WriteExtra paths are writable inside containment, in addition to the
+	// workspace, scratch, and toolchain caches.
+	WriteExtra []string `toml:"write_extra"`
 }
 
 type ProviderConfig struct {
@@ -170,6 +187,12 @@ func Set(cfg *Config, key, value string) error {
 		n := 0
 		fmt.Sscanf(value, "%d", &n)
 		cfg.Behavior.ClassifierRetries = n
+	case "sandbox.profile":
+		cfg.Sandbox.Profile = value
+	case "sandbox.deny_extra":
+		cfg.Sandbox.DenyExtra = splitList(value)
+	case "sandbox.write_extra":
+		cfg.Sandbox.WriteExtra = splitList(value)
 	case "appearance.accent_color":
 		cfg.Appearance.AccentColor = value
 	case "history.retention_days":

@@ -65,6 +65,15 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	allowlist := append([]string{}, cfg.Behavior.CommandAllowlist...)
 	allowlist = append(allowlist, opts.allow...)
 
+	// Headless approved commands run contained when a mechanism is available
+	// (S-062) — there is no human watching, so containment matters most here.
+	run := runner.RunCapture
+	if containment, err := buildContainment(cfg); err != nil {
+		return err
+	} else if containment.Run != nil {
+		run = containment.Run
+	}
+
 	a := agent.New(env.messages, env.stream)
 	a.SetExecutor(tools.Execute)
 	a.SetMaxRounds(cfg.Behavior.MaxToolRounds)
@@ -73,7 +82,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	h := &agent.Headless{
 		Agent:   a,
 		Gate:    headlessGate,
-		Resolve: headlessApprover(cmd.Context(), opts, allowlist, runner.RunCapture),
+		Resolve: headlessApprover(cmd.Context(), opts, allowlist, run),
 		OnToolCall: func(tc provider.ToolCall) {
 			fmt.Fprintf(os.Stderr, "» %s %s\n", tc.Name, clipActivityLine(tc.Arguments))
 		},

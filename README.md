@@ -116,6 +116,9 @@ accent_color = "cyan"
 | `behavior.classifier_max_tokens` | Max tokens for the classifier's response (default: 1024) |
 | `behavior.classifier_retries` | Extra attempts before a failed classifier check falls back to prompting (default: 1) |
 | `behavior.system_prompt_extra` | Extra text appended to the system prompt |
+| `sandbox.profile` | Containment profile for assistant commands: `workspace` (network preserved, default) or `workspace-netless` |
+| `sandbox.deny_extra` | Extra paths masked from contained commands (the built-in mask — `~/.ssh`, `~/.aws`, `~/.config/gh`, shhh's own config/state dirs — cannot be disabled) |
+| `sandbox.write_extra` | Extra writable paths inside containment (beyond the workspace, scratch, and toolchain caches) |
 | `appearance.accent_color` | TUI accent color |
 
 ## Providers
@@ -194,6 +197,8 @@ Chat mode has read-only tools (`read_file`, `list_directory`, `search`) plus `ex
 How much gets approved automatically is governed by a permission mode, cycled with Shift+Tab or set with `/mode <name>`: **manual** prompts for every consequential tool call (the default), **accept-edits** auto-applies file edits but still prompts for commands, **auto** additionally runs allowlisted commands and sends everything else to an LLM permission classifier, and **plan** is read-only — edits and commands are refused. Read-only tools never prompt in any mode, and safety-flagged commands always ask. The status bar always shows the active mode; `behavior.default_mode` and `behavior.mode_cycle` configure the starting mode and cycle order.
 
 In auto mode the classifier (the session model by default, `behavior.classifier_model` to override) judges each remaining tool call against your recent conversation and either runs it, refuses it with a reason the model sees, or falls back to asking you. Every classifier failure — timeout, invalid response, request error — fails closed to a prompt, never to an allow, and safety-flagged commands prompt you even when the classifier approves. The status bar shows `✦ checking` while a decision is in flight, classifier tokens count toward the session totals, and `/mode why` shows the latest denial's reason.
+
+Assistant commands additionally run inside OS-level process containment when a mechanism is available — bubblewrap on Linux (unprivileged user namespaces are probed first), Seatbelt on macOS (deprecated by Apple but functional). Contained commands can write only to the workspace, scratch space, and toolchain caches, and a deny mask that cannot be disabled hides `~/.ssh`, `~/.aws`, `~/.config/gh`, and shhh's own config and state directories (masked paths read as empty and outrank any write grant). The exec confirm prompt shows the containment state, `shhh code doctor` (or `/sandbox` in a session) reports the mechanism and resolved policy, and a policy that can't be enforced faithfully fails the command rather than running it bare. `/run` — your own command — is never contained.
 
 The status bar shows token usage, estimated cost, the current context size, and the active model. The context indicator changes color as the conversation approaches the model's context window (from the pricing table when known); past that threshold, the oldest tool results are automatically elided from the conversation before the next request.
 

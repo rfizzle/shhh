@@ -320,6 +320,12 @@ func (m Model) confirmLines() []string {
 		}
 		lines = append(lines, errorStyle.Render("⚠ "+strings.Join(risks, "; ")))
 	}
+	// Containment state (S-062): before approving, the user sees whether the
+	// assistant's command will run wrapped or bare. /run stays uncontained and
+	// shows nothing.
+	if m.pendingApproval != nil && m.containment.Status != "" {
+		lines = append(lines, systemMsgStyle.Render("⛨ "+m.containment.Status))
+	}
 	// [a] is offered only for assistant commands without safety warnings:
 	// flagged actions can never be blanket-approved, and /run stays manual.
 	prompt := "Run this command? [y/N]"

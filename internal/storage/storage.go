@@ -48,6 +48,12 @@ func (db *DB) SQL() *sql.DB {
 	return db.sql
 }
 
+// Dir returns shhh's data directory without creating it, so other packages
+// (e.g. the sandbox deny mask) can reference the state location.
+func Dir() (string, error) {
+	return dataDir()
+}
+
 func dataDir() (string, error) {
 	if runtime.GOOS == "darwin" {
 		home, err := os.UserHomeDir()
