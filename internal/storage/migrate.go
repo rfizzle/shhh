@@ -49,6 +49,32 @@ var migrations = []string{
 	`ALTER TABLE snippets ADD COLUMN description TEXT NOT NULL DEFAULT '';`,
 
 	`ALTER TABLE requests ADD COLUMN rating INTEGER;`,
+
+	`CREATE TABLE IF NOT EXISTS agent_sessions (
+		id         INTEGER PRIMARY KEY,
+		started_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+		ended_at   TEXT,
+		kind       TEXT NOT NULL DEFAULT '',
+		provider   TEXT NOT NULL,
+		model      TEXT NOT NULL,
+		turns      INTEGER NOT NULL DEFAULT 0,
+		tokens_in  INTEGER NOT NULL DEFAULT 0,
+		tokens_out INTEGER NOT NULL DEFAULT 0,
+		est_cost   REAL NOT NULL DEFAULT 0
+	);
+
+	CREATE TABLE IF NOT EXISTS agent_events (
+		id          INTEGER PRIMARY KEY,
+		session_id  INTEGER NOT NULL REFERENCES agent_sessions(id) ON DELETE CASCADE,
+		created_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+		kind        TEXT NOT NULL,
+		tool        TEXT NOT NULL DEFAULT '',
+		duration_ms INTEGER,
+		outcome     TEXT NOT NULL DEFAULT '',
+		reason      TEXT NOT NULL DEFAULT ''
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_agent_events_session ON agent_events(session_id);`,
 }
 
 func (db *DB) migrate() error {

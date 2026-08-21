@@ -1,0 +1,148 @@
+package cli
+
+import (
+	"bytes"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/rfizzle/shhh/internal/pricing"
+	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/spf13/cobra"
+)
+
+func TestParseObserveWindow(t *testing.T) {
+	for _, valid := range []string{"7d", "30d", "1d"} {
+		if _, err := parseObserveWindow(valid); err != nil {
+			t.Errorf("parseObserveWindow(%q) unexpected error: %v", valid, err)
+		}
+	}
+	for _, invalid := range []string{"", "d", "0d", "-3d", "7h", "week"} {
+		if _, err := parseObserveWindow(invalid); err == nil {
+			t.Errorf("parseObserveWindow(%q) should fail", invalid)
+		}
+	}
+
+	since, err := parseObserveWindow("7d")
+	if err != nil {
+		t.Fatalf("parse 7d: %v", err)
+	}
+	expected := time.Now().AddDate(0, 0, -7)
+	if diff := since.Sub(expected); diff < -time.Minute || diff > time.Minute {
+		t.Fatalf("7d cutoff off by %v", diff)
+	}
+}
+
+func TestObserveRecorder_RoundTrip(t *testing.T) {
+	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer db.Close()
+
+	prices := pricing.NewTable(map[string]pricing.ModelPricing{
+		"gpt-test": {InputCostPerToken: 0.001, OutputCostPerToken: 0.002},
+	})
+	rec := startObserveRecorder(db, "code", "openai", "gpt-test", prices)
+	if rec == nil {
+		t.Fatal("expected a recorder")
+	}
+
+	rec.usage(2, 100, 50)
+	rec.toolCall("read_file", 5*time.Millisecond, "ok")
+	rec.decision("deny", "plan-mode")
+	rec.end()
+
+	since := time.Now().Add(-time.Hour)
+	sessions, err := db.AgentSessions(since, 10)
+	if err != nil {
+		t.Fatalf("sessions: %v", err)
+	}
+	if len(sessions) != 1 {
+		t.Fatalf("expected 1 session, got %d", len(sessions))
+	}
+	s := sessions[0]
+	if s.Kind != "code" || s.Turns != 2 || s.TokensIn != 100 || s.TokensOut != 50 {
+		t.Fatalf("unexpected session: %+v", s)
+	}
+	wantCost := 100*0.001 + 50*0.002
+	if s.Cost != wantCost {
+		t.Fatalf("expected cost %v, got %v", wantCost, s.Cost)
+	}
+	if s.EndedAt == nil {
+		t.Fatal("expected session to be ended")
+	}
+
+	toolMix, err := db.AgentToolMix(since)
+	if err != nil {
+		t.Fatalf("tool mix: %v", err)
+	}
+	if len(toolMix) != 1 || toolMix[0].Tool != "read_file" || toolMix[0].Count != 1 {
+		t.Fatalf("unexpected tool mix: %+v", toolMix)
+	}
+
+	decisions, err := db.AgentDecisions(since)
+	if err != nil {
+		t.Fatalf("decisions: %v", err)
+	}
+	if len(decisions) != 1 || decisions[0].Decision != "deny" || decisions[0].Reason != "plan-mode" {
+		t.Fatalf("unexpected decisions: %+v", decisions)
+	}
+}
+
+func TestRenderObserveDashboard_Sections(t *testing.T) {
+	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer db.Close()
+
+	id, err := db.StartAgentSession("code", "anthropic", "test-model")
+	if err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	if err := db.UpdateAgentSession(id, 4, 152000, 8300, 0.58); err != nil {
+		t.Fatalf("update session: %v", err)
+	}
+	ms := int64(42)
+	if err := db.RecordAgentEvent(id, storage.AgentEventTool, "read_file", &ms, "ok", ""); err != nil {
+		t.Fatalf("record tool event: %v", err)
+	}
+	if err := db.RecordAgentEvent(id, storage.AgentEventDecision, "", nil, "deny", "classifier"); err != nil {
+		t.Fatalf("record decision event: %v", err)
+	}
+	if err := db.EndAgentSession(id); err != nil {
+		t.Fatalf("end session: %v", err)
+	}
+
+	var buf bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetOut(&buf)
+	if err := renderObserveDashboard(cmd, db, "30d", time.Now().Add(-time.Hour)); err != nil {
+		t.Fatalf("render dashboard: %v", err)
+	}
+	out := buf.String()
+	for _, want := range []string{
+		"Usage by day:", "Usage by model:", "Tool mix:", "Approval decisions:", "Recent sessions:",
+		"anthropic", "test-model", "read_file", "deny", "classifier", "152000", "8300", "$0.58", "code",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("dashboard missing %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestObserveRecorder_NilSafe(t *testing.T) {
+	var rec *observeRecorder
+	rec.usage(1, 1, 1)
+	rec.toolCall("read_file", time.Millisecond, "ok")
+	rec.decision("allow", "user")
+	rec.end()
+	if obs := rec.observer(); obs.Usage != nil || obs.ToolCall != nil || obs.Decision != nil {
+		t.Fatal("nil recorder should produce a zero observer")
+	}
+	if r := startObserveRecorder(nil, "chat", "p", "m", nil); r != nil {
+		t.Fatal("nil db should produce a nil recorder")
+	}
+}

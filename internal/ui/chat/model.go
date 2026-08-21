@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
 	"github.com/charmbracelet/bubbles/textarea"
@@ -85,6 +86,7 @@ type cmdDoneMsg struct {
 	command  string
 	output   string
 	exitCode int
+	duration time.Duration
 }
 type initialPromptMsg struct{}
 
@@ -184,6 +186,11 @@ type Model struct {
 	// compacting marks an in-flight /compact request (S-055): the streamed
 	// response is a summary handled by finishCompact, not conversation text.
 	compacting bool
+	// observer receives content-free session events for observability
+	// (S-065); turnCount and toolDefTokens feed it and /stats.
+	observer      Observer
+	turnCount     int64
+	toolDefTokens int64
 	// steering holds messages typed while the agent is working (S-058); they
 	// are injected as user messages before the next stream request.
 	steering      []string
@@ -551,6 +558,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.agent.RecordAutoResults(msg.results)
 		for _, r := range msg.results {
+			m.recordToolEvent(r.Call.Name, r.Duration, outcomeFromResult(r.Result))
 			m.appendEntry(entry{kind: entryTool, toolName: r.Call.Name, toolArgs: r.Call.Arguments, toolResult: r.Result})
 		}
 		m.viewport.SetContent(m.renderHistory())
@@ -572,6 +580,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// command — stays unreduced.
 		if m.pendingApproval != nil {
 			out = m.reduceResult(tools.ExecCommandName, out)
+			outcome := outcomeOK
+			if msg.exitCode != 0 {
+				outcome = outcomeError
+			}
+			m.recordToolEvent(tools.ExecCommandName, msg.duration, outcome)
 		}
 		m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out, exitCode: msg.exitCode})
 		if m.pendingApproval != nil {
@@ -602,6 +615,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		req := m.pendingApproval
 		m.pendingApproval = nil
 		m.agent.ResolveApproval(msg.result)
+		m.recordToolEvent(req.call.Name, msg.duration, outcomeFromResult(msg.result))
 		m.appendEntry(entry{kind: entryTool, toolName: req.call.Name, toolArgs: req.call.Arguments, toolResult: msg.result})
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
@@ -669,6 +683,7 @@ func (m *Model) recordInput(text string) {
 }
 
 func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
+	m.turnCount++
 	m.agent.StartTurn(text)
 	m.appendEntry(entry{kind: entryUser, text: text})
 	m.trimForRequest()
@@ -789,6 +804,9 @@ func (m Model) updateConfirmRun(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	switch result {
 	case components.ApprovalApprove:
+		if m.pendingApproval != nil {
+			m.recordDecision(decisionAllow, "user")
+		}
 		if m.pendingApproval != nil && m.pendingApproval.kind != approvalExec {
 			return m.executeApprovedTool()
 		}
@@ -800,9 +818,11 @@ func (m Model) updateConfirmRun(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if req := m.pendingApproval; req != nil {
 			switch req.kind {
 			case approvalExec:
+				m.recordDecision(decisionAllow, "user-always")
 				m.allowAllCommands = true
 				return m.executeRun()
 			case approvalDiff:
+				m.recordDecision(decisionAllow, "user-always")
 				m.allowAllEdits = true
 				return m.executeApprovedTool()
 			}
@@ -841,8 +861,9 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 		runFn = m.containment.Run
 	}
 	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
+		start := time.Now()
 		out, code := runFn(ctx, command)
-		return cmdDoneMsg{runID: runID, command: command, output: out, exitCode: code}
+		return cmdDoneMsg{runID: runID, command: command, output: out, exitCode: code, duration: time.Since(start)}
 	})
 }
 
@@ -1052,6 +1073,7 @@ func (m *Model) accumulateUsage(u *provider.Usage) {
 		// The latest request's prompt plus its completion is what the next
 		// request will roughly carry as context.
 		m.contextTokens = int64(u.PromptTokens) + int64(u.CompletionTokens)
+		m.notifyUsage()
 	}
 }
 
@@ -1139,6 +1161,7 @@ func (m *Model) injectSteering() bool {
 		m.agent.Append(provider.Message{Role: provider.RoleUser, Content: text})
 		m.appendEntry(entry{kind: entryUser, text: text})
 	}
+	m.turnCount += int64(len(m.steering))
 	m.steering = nil
 	m.agent.ResetRounds()
 	return true
@@ -1422,6 +1445,9 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		m.mode = mode
 		return true, fmt.Sprintf("Mode set to %s — %s.", mode, mode.Describe())
 
+	case "/stats":
+		return true, m.statsReport()
+
 	case "/sandbox":
 		args := parts[1:]
 		if len(args) == 0 {
@@ -1559,6 +1585,7 @@ func helpText() string {
   /model [name]  Show or switch the model for this session
   /mode [name]   Show or set the permission mode (manual, accept-edits, auto, plan)
   /mode why      Show the latest auto-mode denial's reason
+  /stats         Context occupancy breakdown and cumulative session spend
   /sandbox       Containment status and container sandboxes (doctor|list|status|destroy <id>|prune)
   /evidence      Tool-output evidence store: reduction stats and size (purge to clear)
   /plan save [name]  Save the last plan/response to .shhh/plans/

@@ -28,6 +28,7 @@ func newCodeCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			session := chatSession{
 				title:        "shhh code",
+				kind:         "code",
 				buildPrompt:  prompt.BuildAgent,
 				toolDefs:     tools.DefinitionsFull(),
 				flags:        &flags,

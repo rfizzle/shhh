@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -56,8 +57,9 @@ type approvalRequest struct {
 // approvedToolDoneMsg carries the executor result of an approved non-exec
 // tool call.
 type approvedToolDoneMsg struct {
-	runID  int
-	result string
+	runID    int
+	result   string
+	duration time.Duration
 }
 
 // WithGatedTools registers tools that must be approved by the user before
@@ -173,6 +175,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	// safety-flagged commands always prompt.
 	switch decision, reason := m.policyDecision(req); decision {
 	case agent.Allow:
+		m.recordDecision(decisionAllow, reasonCode(reason))
 		m.appendEntry(entry{kind: entrySystem, text: "Auto-approved (" + reason + "): " + req.summary})
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
@@ -181,6 +184,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 		}
 		return m.executeApprovedTool()
 	case agent.Deny:
+		m.recordDecision(decisionDeny, reasonCode(reason))
 		m.pendingApproval = nil
 		m.pendingRun = ""
 		m.agent.ResolveApproval(agent.PlanModeResult)
@@ -194,6 +198,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	if m.mode == agent.ModeAuto && m.classifier != nil && !approvalAction(req).SafetyFlagged {
 		return m.startClassifierCheck(req)
 	}
+	m.recordDecision(decisionAsk, askReason(approvalAction(req)))
 	m.state = stateConfirmRun
 	m.syncViewportHeight()
 	return m, nil
@@ -228,11 +233,13 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 	// Classifier spend counts toward the session totals.
 	m.TotalTokensIn += int64(v.Usage.PromptTokens)
 	m.TotalTokensOut += int64(v.Usage.CompletionTokens)
+	m.notifyUsage()
 
 	req := m.pendingApproval
 	elapsed := fmt.Sprintf("%.1fs", v.Elapsed.Seconds())
 	switch decision, reason := agent.ResolveAuto(approvalAction(req), v); decision {
 	case agent.Allow:
+		m.recordDecision(decisionAllow, "classifier")
 		m.appendEntry(entry{kind: entrySystem, text: "Auto-approved (classifier, " + elapsed + "): " + req.summary})
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
@@ -241,6 +248,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		}
 		return m.executeApprovedTool()
 	case agent.Deny:
+		m.recordDecision(decisionDeny, "classifier")
 		m.lastDenial = req.summary + " — " + reason
 		m.pendingApproval = nil
 		m.pendingRun = ""
@@ -253,9 +261,12 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 	// Ask: the classifier failed closed or the safety backstop fired — the
 	// user decides, never a silent allow.
 	if v.Failed {
+		m.recordDecision(decisionAsk, "classifier-failed")
 		m.appendEntry(entry{kind: entrySystem, text: "Classifier unavailable (" + v.Reason + "); asking you instead."})
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
+	} else {
+		m.recordDecision(decisionAsk, "safety")
 	}
 	m.state = stateConfirmRun
 	m.syncViewportHeight()
@@ -265,6 +276,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 // declineApproval records an error tool result for the pending call and moves
 // on to the next queued approval.
 func (m Model) declineApproval() (tea.Model, tea.Cmd) {
+	m.recordDecision(decisionDeny, "user")
 	req := m.pendingApproval
 	m.pendingApproval = nil
 	m.pendingRun = ""
@@ -297,6 +309,7 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 	reduce := m.evidence.Reduce
 	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
 		var result string
+		start := time.Now()
 		if mutating {
 			result = agent.ExecuteWith(tools.ExecuteMutating, call)
 			if reduce != nil {
@@ -305,7 +318,7 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 		} else {
 			result = a.ExecuteCall(call)
 		}
-		return approvedToolDoneMsg{runID: runID, result: result}
+		return approvedToolDoneMsg{runID: runID, result: result, duration: time.Since(start)}
 	})
 }
 

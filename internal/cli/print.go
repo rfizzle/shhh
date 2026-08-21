@@ -7,14 +7,17 @@ import (
 	"io"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/stdin"
+	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/spf13/cobra"
 )
@@ -102,22 +105,40 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	}
 	a.SetMaxRounds(cfg.Behavior.MaxToolRounds)
 
+	// Session observability (S-065): headless runs record the same
+	// content-free events as interactive sessions; failure just disables
+	// recording. Tool calls are strictly sequential here, so one start
+	// timestamp is enough for durations.
+	db, _ := storage.Open()
+	if db != nil {
+		defer db.Close()
+	}
+	prices, _ := pricing.Load()
+	recorder := startObserveRecorder(db, "print", env.prov.Name(), env.modelName, prices)
+	defer recorder.end()
+
 	var usage provider.Usage
+	var callStart time.Time
 	h := &agent.Headless{
 		Agent:   a,
 		Gate:    headlessGate,
-		Resolve: headlessApprover(cmd.Context(), opts, allowlist, run, red),
+		Resolve: headlessApprover(cmd.Context(), opts, allowlist, run, red, recorder.decision),
 		OnToolCall: func(tc provider.ToolCall) {
+			callStart = time.Now()
 			fmt.Fprintf(os.Stderr, "» %s %s\n", tc.Name, clipActivityLine(tc.Arguments))
 		},
 		OnToolResult: func(tc provider.ToolCall, result string) {
+			outcome := "ok"
 			if strings.HasPrefix(result, "error:") {
+				outcome = "error"
 				fmt.Fprintf(os.Stderr, "  ↳ %s\n", clipActivityLine(result))
 			}
+			recorder.toolCall(tc.Name, time.Since(callStart), outcome)
 		},
 		OnUsage: func(u *provider.Usage) {
 			usage.PromptTokens += u.PromptTokens
 			usage.CompletionTokens += u.CompletionTokens
+			recorder.usage(1, int64(usage.PromptTokens), int64(usage.CompletionTokens))
 		},
 	}
 	if !opts.json {
@@ -145,8 +166,15 @@ func headlessGate(name string) bool {
 // headlessApprover resolves approval-gated tool calls without a prompt:
 // policy decides. Safety-flagged commands are always denied — there is no
 // human to confirm them in a headless run. Approved results run through the
-// reduction pipeline (red is nil-safe) like every other tool result.
-func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, run func(context.Context, string) (string, int), red *evidence.Reducer) func(provider.ToolCall) string {
+// reduction pipeline (red is nil-safe) like every other tool result. Each
+// verdict is reported to record (nil-safe) as a content-free decision event
+// (S-065).
+func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, run func(context.Context, string) (string, int), red *evidence.Reducer, record func(decision, reason string)) func(provider.ToolCall) string {
+	note := func(decision, reason string) {
+		if record != nil {
+			record(decision, reason)
+		}
+	}
 	return func(tc provider.ToolCall) string {
 		if tc.Name == tools.ExecCommandName {
 			var args struct {
@@ -160,18 +188,27 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 				for _, w := range warnings {
 					risks = append(risks, w.Risk)
 				}
+				note("deny", "safety")
 				return "error: command denied (" + strings.Join(risks, "; ") + "); safety-flagged commands require interactive approval"
 			}
 			if opts.yes || agent.AllowlistMatches(allowlist, args.Command) {
+				if opts.yes {
+					note("allow", "headless-yes")
+				} else {
+					note("allow", "allowlist")
+				}
 				out, code := run(ctx, args.Command)
 				return tools.FormatExecResult(red.Process(tools.ExecCommandName, out), code)
 			}
+			note("deny", "headless-default")
 			return "error: command not approved: headless mode denies commands by default (run with --yes or --allow)"
 		}
 		if tools.IsMutating(tc.Name) {
 			if opts.yes {
+				note("allow", "headless-yes")
 				return red.Process(tc.Name, agent.ExecuteWith(tools.ExecuteMutating, tc))
 			}
+			note("deny", "headless-default")
 			return "error: file modification not approved: headless mode denies edits by default (run with --yes)"
 		}
 		return "error: tool " + tc.Name + " cannot be approved in this session"

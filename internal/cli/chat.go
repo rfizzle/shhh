@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"sync"
@@ -32,7 +33,9 @@ import (
 // `shhh code` run the same Bubble Tea model and differ only in system prompt,
 // registered toolset, and title.
 type chatSession struct {
-	title        string
+	title string
+	// kind labels recorded observability sessions (S-065): "chat" or "code".
+	kind         string
 	buildPrompt  func(shell.Info, ...string) string
 	toolDefs     []provider.Tool
 	flags        *resolve.Opts
@@ -53,6 +56,7 @@ func newChatCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runChatSession(cmd, args, chatSession{
 				title:        "shhh chat",
+				kind:         "chat",
 				buildPrompt:  prompt.BuildChat,
 				toolDefs:     tools.DefinitionsWithExec(),
 				flags:        &flags,
@@ -215,8 +219,15 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		executor = red.WrapExecutor(tools.Execute)
 	}
 
+	// Session observability (S-065): content-free events (usage, tool calls,
+	// mode decisions) are recorded to storage; failure just disables recording.
+	recorder := startObserveRecorder(db, session.kind, env.prov.Name(), env.modelName, prices)
+	defer recorder.end()
+
 	model := chat.New(env.messages, env.stream).
 		WithTitle(session.title).
+		WithObserver(recorder.observer()).
+		WithToolTokenEstimate(estimateToolDefTokens(session.toolDefs)).
 		WithToolExecutor(executor).
 		WithDB(db).
 		WithPricing(prices, env.modelName).
@@ -305,6 +316,16 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 
 	fmt.Fprintln(os.Stderr, "Chat session ended.")
 	return nil
+}
+
+// estimateToolDefTokens roughly estimates the context cost of the registered
+// tool definitions, for /stats' occupancy breakdown (S-065).
+func estimateToolDefTokens(defs []provider.Tool) int64 {
+	b, err := json.Marshal(defs)
+	if err != nil {
+		return 0
+	}
+	return agent.EstimateTokens(string(b))
 }
 
 // pickSavedChat shows the saved-chat picker and returns the chosen session

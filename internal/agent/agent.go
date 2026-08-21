@@ -8,6 +8,7 @@ package agent
 import (
 	"context"
 	"encoding/json"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -23,10 +24,12 @@ type ToolExecutor func(name string, args json.RawMessage) (string, error)
 // execute_command, mutating tools, and registered gated tools).
 type ApprovalGate func(name string) bool
 
-// ToolResult pairs an executed tool call with its result text.
+// ToolResult pairs an executed tool call with its result text and how long
+// the call took (zero when the call never ran, e.g. a cancellation).
 type ToolResult struct {
-	Call   provider.ToolCall
-	Result string
+	Call     provider.ToolCall
+	Result   string
+	Duration time.Duration
 }
 
 // DefaultMaxToolRounds bounds how many consecutive tool-call rounds one user
@@ -159,7 +162,9 @@ func (a *Agent) BeginToolRound(text string, calls []provider.ToolCall, gate Appr
 func (a *Agent) ExecuteCalls(calls []provider.ToolCall) []ToolResult {
 	results := make([]ToolResult, 0, len(calls))
 	for _, tc := range calls {
-		results = append(results, ToolResult{Call: tc, Result: a.ExecuteCall(tc)})
+		start := time.Now()
+		result := a.ExecuteCall(tc)
+		results = append(results, ToolResult{Call: tc, Result: result, Duration: time.Since(start)})
 	}
 	return results
 }

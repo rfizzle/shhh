@@ -334,6 +334,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newChatCmd())
 	cmd.AddCommand(newCodeCmd())
 	cmd.AddCommand(newMetricsCmd())
+	cmd.AddCommand(newObserveCmd())
 	cmd.AddCommand(newRateCmd())
 	cmd.AddCommand(newHistoryCmd())
 	cmd.AddCommand(newSnippetsCmd())
