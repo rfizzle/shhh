@@ -1839,3 +1839,186 @@ func TestStatusBar_ShowsRoundCounter(t *testing.T) {
 		t.Fatal("status bar should hide the round counter between turns")
 	}
 }
+
+// steeringModel is a streaming-state model ready to receive steering input.
+func steeringModel(t *testing.T, stream StreamFunc) Model {
+	t.Helper()
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, stream)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updated.(Model)
+	return sendText(t, m, "do the task")
+}
+
+func TestSteering_EnterQueuesWhileStreaming(t *testing.T) {
+	m := steeringModel(t, mockStream)
+	if m.state != stateStreaming {
+		t.Fatalf("expected stateStreaming, got %d", m.state)
+	}
+
+	before := len(m.Messages())
+	m = sendText(t, m, "also update the docs")
+
+	if len(m.steering) != 1 || m.steering[0] != "also update the docs" {
+		t.Fatalf("expected one queued steering message, got %v", m.steering)
+	}
+	if m.input.Value() != "" {
+		t.Fatal("queueing should clear the input")
+	}
+	if len(m.Messages()) != before {
+		t.Fatal("queued steering must not join the conversation until the round completes")
+	}
+	if !strings.Contains(m.renderStatusBar(80), "queued 1") {
+		t.Fatal("status bar should show the queued steering count")
+	}
+}
+
+func TestSteering_InputStaysLiveWhileStreaming(t *testing.T) {
+	m := steeringModel(t, mockStream)
+
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("hi")})
+	m = updated.(Model)
+
+	if m.input.Value() != "hi" {
+		t.Fatalf("input should accept typing while streaming, got %q", m.input.Value())
+	}
+}
+
+func TestSteering_InjectedBeforeNextStreamRequest(t *testing.T) {
+	executor := func(name string, args json.RawMessage) (string, error) {
+		return "result", nil
+	}
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "go"},
+	}
+	m := New(msgs, mockStream).WithToolExecutor(executor)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updated.(Model)
+	m.state = stateStreaming
+	m.steering = []string{"focus on the tests"}
+
+	var cmd tea.Cmd
+	m, cmd = execToolLoop(t, m, toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_1", Name: "read_file", Arguments: `{"path":"a.go"}`},
+	}})
+
+	// system, user, assistant(tool call), tool result, steering user message
+	last := m.Messages()[len(m.Messages())-1]
+	if last.Role != provider.RoleUser || last.Content != "focus on the tests" {
+		t.Fatalf("steering should be injected as a user message after the tool round, got %+v", last)
+	}
+	if m.Messages()[len(m.Messages())-2].Role != provider.RoleTool {
+		t.Fatal("steering must come after the round's tool results")
+	}
+	if len(m.steering) != 0 {
+		t.Fatal("queue should be empty after injection")
+	}
+	if m.agent.Rounds() != 0 {
+		t.Fatalf("steering is fresh user input and should reset the round counter, got %d", m.agent.Rounds())
+	}
+	if m.state != stateStreaming || cmd == nil {
+		t.Fatal("the loop should continue streaming with the steering message in context")
+	}
+	if m.transcript[len(m.transcript)-1].kind != entryUser {
+		t.Fatal("the injected steering message should appear in the transcript")
+	}
+}
+
+func TestSteering_LiftsRoundCap(t *testing.T) {
+	executor := func(name string, args json.RawMessage) (string, error) {
+		return "result", nil
+	}
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "go"},
+	}
+	m := New(msgs, mockStream).WithToolExecutor(executor).WithMaxToolRounds(1)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updated.(Model)
+	m.state = stateStreaming
+	m.steering = []string{"keep going"}
+
+	var cmd tea.Cmd
+	m, cmd = execToolLoop(t, m, toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_1", Name: "read_file", Arguments: `{"path":"a.go"}`},
+	}})
+
+	if m.state != stateStreaming || cmd == nil {
+		t.Fatalf("steering should lift the round cap and keep the loop going, got state %d", m.state)
+	}
+}
+
+func TestSteering_SentAfterDone(t *testing.T) {
+	m := steeringModel(t, multiTokenStream("ok"))
+	m = sendText(t, m, "one more thing")
+
+	updated, cmd := m.Update(doneMsg{})
+	m = updated.(Model)
+
+	if m.state != stateStreaming {
+		t.Fatalf("queued steering should start the next turn after done, got state %d", m.state)
+	}
+	if cmd == nil {
+		t.Fatal("expected a stream request cmd for the steering turn")
+	}
+	last := m.Messages()[len(m.Messages())-1]
+	if last.Role != provider.RoleUser || last.Content != "one more thing" {
+		t.Fatalf("expected the steering message as the new user turn, got %+v", last)
+	}
+}
+
+func TestSteering_CtrlCRestoresQueueToInput(t *testing.T) {
+	m := steeringModel(t, mockStream)
+	m = sendText(t, m, "queued while working")
+
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	m = updated.(Model)
+
+	if m.state != stateInput {
+		t.Fatal("Ctrl+C must keep its hard-cancel semantics")
+	}
+	if len(m.steering) != 0 {
+		t.Fatal("cancel should drain the steering queue")
+	}
+	if m.input.Value() != "queued while working" {
+		t.Fatalf("cancel should return the queued text to the input, got %q", m.input.Value())
+	}
+}
+
+func TestSteering_StreamErrorRestoresQueueToInput(t *testing.T) {
+	m := steeringModel(t, mockStream)
+	m = sendText(t, m, "queued while working")
+
+	updated, _ := m.Update(streamErrMsg{err: errors.New("boom")})
+	m = updated.(Model)
+
+	if m.state != stateInput {
+		t.Fatal("stream error should return to input")
+	}
+	if m.input.Value() != "queued while working" {
+		t.Fatalf("stream error should return the queued text to the input, got %q", m.input.Value())
+	}
+}
+
+func TestSteering_SlashCommandNotQueued(t *testing.T) {
+	m := steeringModel(t, mockStream)
+	m = sendText(t, m, "/compact")
+
+	if len(m.steering) != 0 {
+		t.Fatalf("slash commands must not queue as steering, got %v", m.steering)
+	}
+	notice := m.transcript[len(m.transcript)-1]
+	if notice.kind != entrySystem || !strings.Contains(notice.text, "/compact") {
+		t.Fatalf("expected a system notice about the rejected command, got %+v", notice)
+	}
+}
+
+func TestSteering_QuitCommandStillQuits(t *testing.T) {
+	m := steeringModel(t, mockStream)
+	m = sendText(t, m, "/exit")
+
+	if !m.quitting {
+		t.Fatal("/exit should quit even while the agent is working")
+	}
+}

@@ -142,7 +142,10 @@ type Model struct {
 	commandAllowlist []string
 	// compacting marks an in-flight /compact request (S-055): the streamed
 	// response is a summary handled by finishCompact, not conversation text.
-	compacting    bool
+	compacting bool
+	// steering holds messages typed while the agent is working (S-058); they
+	// are injected as user messages before the next stream request.
+	steering      []string
 	title         string
 	width         int
 	height        int
@@ -335,11 +338,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			return m, m.quitCmd()
 		case "esc":
-			if m.state == stateInput {
-				m.input.Reset()
-				m.historyIdx = len(m.inputHistory)
-				return m, nil
-			}
+			// The input is live in every non-confirm state (S-058), so esc
+			// always clears the draft.
+			m.input.Reset()
+			m.historyIdx = len(m.inputHistory)
+			return m, nil
 		case "up":
 			if m.state == stateInput && len(m.inputHistory) > 0 &&
 				(m.browsingHistory() || strings.TrimSpace(m.input.Value()) == "") {
@@ -361,6 +364,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		case "enter":
+			if m.state == stateStreaming || m.state == stateRunningCmd {
+				return m.queueSteering()
+			}
 			if m.state == stateInput {
 				text := strings.TrimSpace(m.input.Value())
 				if text == "" {
@@ -427,6 +433,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.finishCompact()
 		}
 		m.finishStreaming()
+		// A steering message queued while the model was responding becomes the
+		// next user turn immediately (S-058).
+		if cmd := m.dispatchSteering(); cmd != nil {
+			return m, cmd
+		}
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
 		return m, m.autosaveCmd()
@@ -484,6 +495,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Role:    provider.RoleUser,
 			Content: commandContextMessage(msg.command, out, msg.exitCode),
 		})
+		// A message typed while the /run command executed is sent now, with
+		// the command context already in the conversation (S-058).
+		if cmd := m.dispatchSteering(); cmd != nil {
+			return m, cmd
+		}
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
 		return m, m.autosaveCmd()
@@ -507,6 +523,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.events = nil
 		m.cancel = nil
 		m.state = stateInput
+		m.restoreSteering()
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
 		return m, m.autosaveCmd()
@@ -520,7 +537,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 
 	var cmds []tea.Cmd
-	if m.state == stateInput {
+	// The input stays live while the agent streams or runs tools so the user
+	// can type a steering message (S-058); only the confirm prompt takes over.
+	if m.state != stateConfirmRun {
 		// Any other keypress while browsing input history turns the recalled
 		// text into a fresh draft.
 		if _, ok := msg.(tea.KeyMsg); ok {
@@ -732,6 +751,13 @@ func firstLine(s string) string {
 // loop pauses and control returns to the user (a fresh message continues the
 // conversation and resets the counter).
 func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
+	// Steering messages queued mid-turn join the conversation here, between
+	// tool rounds, so the model sees them on its next request (S-058). They
+	// count as fresh user input, so they also lift a hit round cap.
+	if m.injectSteering() {
+		m.viewport.SetContent(m.renderHistory())
+		m.viewport.GotoBottom()
+	}
 	if m.agent.CapReached() {
 		m.state = stateInput
 		m.syncViewportHeight()
@@ -926,6 +952,87 @@ func (m *Model) cancelStreaming() {
 	}
 	m.pendingApproval = nil
 	m.finishStreaming()
+	m.restoreSteering()
+}
+
+// queueSteering handles Enter while the agent is working (S-058): the typed
+// text is queued and injected as a user message before the next stream
+// request. Quit commands still quit; other slash commands cannot run mid-turn.
+func (m Model) queueSteering() (tea.Model, tea.Cmd) {
+	text := strings.TrimSpace(m.input.Value())
+	if text == "" {
+		return m, nil
+	}
+	if text == "/exit" || text == "/quit" || text == "/q" {
+		m.quitting = true
+		if m.cancel != nil {
+			m.cancel()
+		}
+		if m.runCancel != nil {
+			m.runCancel()
+		}
+		return m, m.quitCmd()
+	}
+	// Same mistyped-command heuristic as handleSlashCommand: a lone "/word"
+	// is a command, which cannot run while the agent is working; a path like
+	// /etc/hosts contains another slash and queues as steering text.
+	if parts := strings.Fields(text); strings.HasPrefix(parts[0], "/") && !strings.Contains(parts[0][1:], "/") {
+		m.appendEntry(entry{kind: entrySystem, text: "Commands can't run while the agent is working; " + parts[0] + " was not queued."})
+		m.viewport.SetContent(m.renderHistory())
+		m.viewport.GotoBottom()
+		return m, nil
+	}
+	m.recordInput(text)
+	m.input.Reset()
+	m.steering = append(m.steering, text)
+	return m, nil
+}
+
+// injectSteering appends queued steering messages to the conversation and
+// transcript as user messages, reporting whether any were queued. Steering is
+// fresh user input, so it resets the tool-round counter (S-053 semantics).
+func (m *Model) injectSteering() bool {
+	if len(m.steering) == 0 {
+		return false
+	}
+	for _, text := range m.steering {
+		m.agent.Append(provider.Message{Role: provider.RoleUser, Content: text})
+		m.appendEntry(entry{kind: entryUser, text: text})
+	}
+	m.steering = nil
+	m.agent.ResetRounds()
+	return true
+}
+
+// dispatchSteering turns queued steering messages into a fresh user turn once
+// the current turn has ended: it injects them and opens the next stream.
+// Returns nil when nothing was queued.
+func (m *Model) dispatchSteering() tea.Cmd {
+	if !m.injectSteering() {
+		return nil
+	}
+	m.state = stateStreaming
+	m.streaming = ""
+	m.atBottom = true
+	m.trimForRequest()
+	m.viewport.SetContent(m.renderHistory())
+	m.viewport.GotoBottom()
+	return tea.Batch(m.spinner.Tick, m.requestStream(), m.autosaveCmd())
+}
+
+// restoreSteering returns queued-but-uninjected steering messages to the input
+// when a turn ends abnormally (cancel, stream error), so nothing typed is
+// silently lost.
+func (m *Model) restoreSteering() {
+	if len(m.steering) == 0 {
+		return
+	}
+	parts := m.steering
+	if cur := m.input.Value(); strings.TrimSpace(cur) != "" {
+		parts = append(parts, cur)
+	}
+	m.input.SetValue(strings.Join(parts, "\n"))
+	m.steering = nil
 }
 
 func (m *Model) appendEntry(e entry) {
@@ -981,6 +1088,11 @@ func (m Model) renderStatusBar(width int) string {
 	// Round counter shows only mid-turn, so long tool loops are visible.
 	if m.agent.Rounds() > 0 && m.state != stateInput {
 		parts = append(parts, statusBarStyle.Render(fmt.Sprintf("round %d", m.agent.Rounds())))
+	}
+
+	// Steering messages waiting to be injected (S-058).
+	if n := len(m.steering); n > 0 {
+		parts = append(parts, statusBarStyle.Render(fmt.Sprintf("queued %d", n)))
 	}
 
 	// Active approval policy (S-054); absent in the default ask-everything state.
@@ -1237,6 +1349,8 @@ func helpText() string {
 
 Keys:
   Enter          Send message        Alt+Enter    Insert newline
+                 (while the agent is working, Enter queues a steering message
+                  that joins the conversation before the next model request)
   Up/Down        Recall previous inputs (when the input is empty)
   Esc            Clear the input
   Ctrl+C         Cancel response / clear input / quit
