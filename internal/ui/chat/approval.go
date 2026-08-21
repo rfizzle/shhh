@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -147,20 +148,13 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 // approval-gated tool call, or resumes the model stream once the queue is
 // empty.
 func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
-	if len(m.approvalQueue) == 0 {
-		m.pendingCalls = nil
+	tc, ok := m.agent.NextApproval()
+	if !ok {
 		return m.resumeToolLoop()
 	}
-	tc := m.approvalQueue[0]
 	req, err := m.buildApprovalRequest(tc)
 	if err != nil {
-		m.approvalQueue = m.approvalQueue[1:]
-		m.pendingCalls = m.approvalQueue
-		m.messages = append(m.messages, provider.Message{
-			Role:       provider.RoleTool,
-			Content:    "error: " + err.Error(),
-			ToolCallID: tc.ID,
-		})
+		m.agent.ResolveApproval("error: " + err.Error())
 		m.appendEntry(entry{kind: entrySystem, text: "Skipped a tool call with invalid arguments."})
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
@@ -196,13 +190,7 @@ func (m Model) declineApproval() (tea.Model, tea.Cmd) {
 	if req.kind == approvalExec {
 		content = "error: the user declined to run this command"
 	}
-	m.messages = append(m.messages, provider.Message{
-		Role:       provider.RoleTool,
-		Content:    content,
-		ToolCallID: req.call.ID,
-	})
-	m.approvalQueue = m.approvalQueue[1:]
-	m.pendingCalls = m.approvalQueue
+	m.agent.ResolveApproval(content)
 	m.appendEntry(entry{kind: entrySystem, text: "Declined: " + req.summary})
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()
@@ -214,26 +202,20 @@ func (m Model) declineApproval() (tea.Model, tea.Cmd) {
 func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 	m.state = stateRunningCmd
 	m.syncViewportHeight()
-	runID := m.runID
+	a := m.agent
+	runID := a.RunID()
 	call := m.pendingApproval.call
 	// Built-in mutating tools run through their own dispatcher; the session
 	// executor (the auto-run read-only path) never learns them. A registered
 	// gated tool keeps the session executor.
-	executor := m.executor
-	if _, registered := m.gatedTools[call.Name]; !registered && tools.IsMutating(call.Name) {
-		executor = tools.ExecuteMutating
-	}
+	_, registered := m.gatedTools[call.Name]
+	mutating := !registered && tools.IsMutating(call.Name)
 	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
 		var result string
-		if executor != nil {
-			out, err := executor(call.Name, json.RawMessage(call.Arguments))
-			if err != nil {
-				result = "error: " + err.Error()
-			} else {
-				result = out
-			}
+		if mutating {
+			result = agent.ExecuteWith(tools.ExecuteMutating, call)
 		} else {
-			result = "error: no tool executor configured"
+			result = a.ExecuteCall(call)
 		}
 		return approvedToolDoneMsg{runID: runID, result: result}
 	})

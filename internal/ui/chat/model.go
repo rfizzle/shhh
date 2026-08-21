@@ -12,6 +12,7 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -27,10 +28,10 @@ const AutosaveName = "(last session)"
 // DefaultMaxToolRounds bounds how many consecutive tool-call rounds one user
 // turn may trigger before the loop pauses for fresh input
 // (behavior.max_tool_rounds overrides it).
-const DefaultMaxToolRounds = 25
+const DefaultMaxToolRounds = agent.DefaultMaxToolRounds
 
-type StreamFunc func([]provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error)
-type ToolExecutor func(name string, args json.RawMessage) (string, error)
+type StreamFunc = agent.StreamFunc
+type ToolExecutor = agent.ToolExecutor
 
 type state int
 
@@ -64,13 +65,9 @@ type toolCallsMsg struct {
 	calls []provider.ToolCall
 	usage *provider.Usage
 }
-type toolExecution struct {
-	call   provider.ToolCall
-	result string
-}
 type toolResultsMsg struct {
 	runID   int
-	results []toolExecution
+	results []agent.ToolResult
 }
 type cmdDoneMsg struct {
 	runID    int
@@ -103,9 +100,10 @@ type entry struct {
 }
 
 type Model struct {
-	messages []provider.Message
-	stream   StreamFunc
-	executor ToolExecutor
+	// agent owns the loop state (message list, stream requests, tool
+	// dispatch, approval queue, iteration guard); the Model is one front-end
+	// driving it (S-056).
+	agent    *agent.Agent
 	db       *storage.DB
 	copyFn   func(string) clipboard.Result
 	runFn    func(context.Context, string) (string, int)
@@ -126,19 +124,14 @@ type Model struct {
 	inputHistory []string
 	historyIdx   int
 
-	streaming    string
-	events       <-chan provider.StreamEvent
-	cancel       context.CancelFunc
-	state        state
-	runID        int
-	runningTools bool
-	pendingCalls []provider.ToolCall
-	pendingRun   string
-	runCancel    context.CancelFunc
-	// Queue of approval-gated tool calls (execute_command plus any tool
-	// registered via WithGatedTools) awaiting user approval; the head is
-	// mirrored in pendingApproval while its confirm prompt is showing.
-	approvalQueue   []provider.ToolCall
+	streaming  string
+	events     <-chan provider.StreamEvent
+	cancel     context.CancelFunc
+	state      state
+	pendingRun string
+	runCancel  context.CancelFunc
+	// Head of the agent's approval queue while its confirm prompt is showing,
+	// with everything needed to preview and execute it.
 	pendingApproval *approvalRequest
 	gatedTools      map[string]GatedPreviewFunc
 	// Session approval policy (S-054): [a] on a confirm prompt promotes its
@@ -147,10 +140,6 @@ type Model struct {
 	allowAllEdits    bool
 	allowAllCommands bool
 	commandAllowlist []string
-	// Iteration guard: toolRounds counts tool-call rounds in the current user
-	// turn; a fresh user message resets it.
-	toolRounds    int
-	maxToolRounds int
 	// compacting marks an in-flight /compact request (S-055): the streamed
 	// response is a summary handled by finishCompact, not conversation text.
 	compacting    bool
@@ -184,8 +173,7 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 
 	return Model{
-		messages: initialMessages,
-		stream:   stream,
+		agent:    agent.New(initialMessages, stream),
 		input:    ta,
 		spinner:  s,
 		state:    stateInput,
@@ -195,7 +183,7 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 }
 
 func (m Model) WithToolExecutor(executor ToolExecutor) Model {
-	m.executor = executor
+	m.agent.SetExecutor(executor)
 	return m
 }
 
@@ -243,15 +231,12 @@ func (m Model) WithUpdateNotice(notice string) Model {
 // WithMaxToolRounds overrides the per-turn tool-round cap; n <= 0 keeps
 // DefaultMaxToolRounds.
 func (m Model) WithMaxToolRounds(n int) Model {
-	m.maxToolRounds = n
+	m.agent.SetMaxRounds(n)
 	return m
 }
 
 func (m Model) effectiveMaxToolRounds() int {
-	if m.maxToolRounds > 0 {
-		return m.maxToolRounds
-	}
-	return DefaultMaxToolRounds
+	return m.agent.MaxRounds()
 }
 
 // WithResumedMessages replaces the conversation with a previously saved one
@@ -265,12 +250,11 @@ func (m Model) WithResumedMessages(msgs []provider.Message) Model {
 // background. Returns nil when there is no DB or nothing beyond the system
 // prompt to save.
 func (m Model) autosaveCmd() tea.Cmd {
-	if m.db == nil || len(m.messages) <= 1 {
+	if m.db == nil || len(m.agent.Messages()) <= 1 {
 		return nil
 	}
 	db := m.db
-	msgs := make([]provider.Message, len(m.messages))
-	copy(msgs, m.messages)
+	msgs := m.agent.RequestMessages()
 	return func() tea.Msg {
 		_ = db.SaveChat(AutosaveName, msgs)
 		return nil
@@ -285,7 +269,7 @@ func (m Model) quitCmd() tea.Cmd {
 	return tea.Quit
 }
 
-func (m Model) Messages() []provider.Message { return m.messages }
+func (m Model) Messages() []provider.Message { return m.agent.Messages() }
 
 func (m Model) Init() tea.Cmd {
 	cmds := []tea.Cmd{textarea.Blink, m.spinner.Tick}
@@ -452,81 +436,51 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.compacting {
 			return m.abortCompact()
 		}
-		m.toolRounds++
-		m.messages = append(m.messages, provider.Message{
-			Role:      provider.RoleAssistant,
-			Content:   m.streaming,
-			ToolCalls: msg.calls,
-		})
+		auto, _ := m.agent.BeginToolRound(m.streaming, msg.calls, m.requiresApproval)
 		if m.streaming != "" {
 			m.appendEntry(entry{kind: entryAssistant, text: m.streaming})
 		}
 		m.streaming = ""
 		m.events = nil
 		m.cancel = nil
-		var auto, gated []provider.ToolCall
-		for _, tc := range msg.calls {
-			if m.requiresApproval(tc.Name) {
-				gated = append(gated, tc)
-			} else {
-				auto = append(auto, tc)
-			}
-		}
-		m.approvalQueue = gated
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
 		if len(auto) > 0 {
-			m.runningTools = true
-			m.pendingCalls = msg.calls
 			return m, m.execToolsCmd(auto)
 		}
-		m.pendingCalls = gated
 		return m.advanceApprovalQueue()
 
 	case toolResultsMsg:
-		if msg.runID != m.runID || m.state != stateStreaming {
+		if msg.runID != m.agent.RunID() || m.state != stateStreaming {
 			return m, nil
 		}
-		m.runningTools = false
+		m.agent.RecordAutoResults(msg.results)
 		for _, r := range msg.results {
-			m.messages = append(m.messages, provider.Message{
-				Role:       provider.RoleTool,
-				Content:    r.result,
-				ToolCallID: r.call.ID,
-			})
-			m.appendEntry(entry{kind: entryTool, toolName: r.call.Name, toolArgs: r.call.Arguments, toolResult: r.result})
+			m.appendEntry(entry{kind: entryTool, toolName: r.Call.Name, toolArgs: r.Call.Arguments, toolResult: r.Result})
 		}
-		m.pendingCalls = m.approvalQueue
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
-		if len(m.approvalQueue) > 0 {
+		if m.agent.QueuedApprovals() > 0 {
 			return m.advanceApprovalQueue()
 		}
 		return m.resumeToolLoop()
 
 	case cmdDoneMsg:
-		if msg.runID != m.runID || m.state != stateRunningCmd {
+		if msg.runID != m.agent.RunID() || m.state != stateRunningCmd {
 			return m, nil
 		}
 		m.runCancel = nil
 		out := strings.TrimRight(msg.output, "\n")
 		m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out, exitCode: msg.exitCode})
 		if m.pendingApproval != nil {
-			req := m.pendingApproval
 			m.pendingApproval = nil
-			m.messages = append(m.messages, provider.Message{
-				Role:       provider.RoleTool,
-				Content:    execToolResult(out, msg.exitCode),
-				ToolCallID: req.call.ID,
-			})
-			m.approvalQueue = m.approvalQueue[1:]
-			m.pendingCalls = m.approvalQueue
+			m.agent.ResolveApproval(execToolResult(out, msg.exitCode))
 			m.viewport.SetContent(m.renderHistory())
 			m.viewport.GotoBottom()
 			return m.advanceApprovalQueue()
 		}
 		m.state = stateInput
-		m.messages = append(m.messages, provider.Message{
+		m.agent.Append(provider.Message{
 			Role:    provider.RoleUser,
 			Content: commandContextMessage(msg.command, out, msg.exitCode),
 		})
@@ -535,19 +489,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.autosaveCmd()
 
 	case approvedToolDoneMsg:
-		if msg.runID != m.runID || m.state != stateRunningCmd || m.pendingApproval == nil {
+		if msg.runID != m.agent.RunID() || m.state != stateRunningCmd || m.pendingApproval == nil {
 			return m, nil
 		}
 		req := m.pendingApproval
 		m.pendingApproval = nil
-		m.messages = append(m.messages, provider.Message{
-			Role:       provider.RoleTool,
-			Content:    msg.result,
-			ToolCallID: req.call.ID,
-		})
+		m.agent.ResolveApproval(msg.result)
 		m.appendEntry(entry{kind: entryTool, toolName: req.call.Name, toolArgs: req.call.Arguments, toolResult: msg.result})
-		m.approvalQueue = m.approvalQueue[1:]
-		m.pendingCalls = m.approvalQueue
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
@@ -603,11 +551,7 @@ func (m *Model) recordInput(text string) {
 }
 
 func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
-	m.toolRounds = 0
-	m.messages = append(m.messages, provider.Message{
-		Role:    provider.RoleUser,
-		Content: text,
-	})
+	m.agent.StartTurn(text)
 	m.appendEntry(entry{kind: entryUser, text: text})
 	m.trimForRequest()
 	m.state = stateStreaming
@@ -648,7 +592,7 @@ func (m Model) View() string {
 		switch {
 		case m.compacting:
 			label = "Compacting…"
-		case m.runningTools:
+		case m.agent.Executing():
 			label = "Running tools…"
 		}
 		body = m.viewport.View() + "\n" + m.spinner.View() + " " + label
@@ -761,7 +705,7 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	m.syncViewportHeight()
 	ctx, cancel := context.WithCancel(context.Background())
 	m.runCancel = cancel
-	runID := m.runID
+	runID := m.agent.RunID()
 	runFn := m.runFn
 	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
 		out, code := runFn(ctx, command)
@@ -794,12 +738,12 @@ func firstLine(s string) string {
 // loop pauses and control returns to the user (a fresh message continues the
 // conversation and resets the counter).
 func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
-	if m.toolRounds >= m.effectiveMaxToolRounds() {
+	if m.agent.CapReached() {
 		m.state = stateInput
 		m.syncViewportHeight()
 		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
 			"Paused after %d tool rounds this turn. Send a message (e.g. \"continue\") to keep going.",
-			m.toolRounds)})
+			m.agent.Rounds())})
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
 		return m, m.autosaveCmd()
@@ -812,17 +756,15 @@ func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
 }
 
 func (m Model) requestStream() tea.Cmd {
-	msgs := make([]provider.Message, len(m.messages))
-	copy(msgs, m.messages)
-	return m.requestStreamFor(msgs)
+	return m.requestStreamFor(m.agent.RequestMessages())
 }
 
 // requestStreamFor starts a stream over an explicit message list (callers
 // pass a copy so in-flight requests are immune to later mutation).
 func (m Model) requestStreamFor(msgs []provider.Message) tea.Cmd {
-	stream := m.stream
+	a := m.agent
 	return func() tea.Msg {
-		events, cancel, err := stream(msgs)
+		events, cancel, err := a.Stream(msgs)
 		if err != nil {
 			return streamErrMsg{err: err}
 		}
@@ -831,25 +773,10 @@ func (m Model) requestStreamFor(msgs []provider.Message) tea.Cmd {
 }
 
 func (m Model) execToolsCmd(calls []provider.ToolCall) tea.Cmd {
-	executor := m.executor
-	runID := m.runID
+	a := m.agent
+	runID := a.RunID()
 	return func() tea.Msg {
-		results := make([]toolExecution, 0, len(calls))
-		for _, tc := range calls {
-			var result string
-			if executor != nil {
-				out, err := executor(tc.Name, json.RawMessage(tc.Arguments))
-				if err != nil {
-					result = "error: " + err.Error()
-				} else {
-					result = out
-				}
-			} else {
-				result = "error: no tool executor configured"
-			}
-			results = append(results, toolExecution{call: tc, result: result})
-		}
-		return toolResultsMsg{runID: runID, results: results}
+		return toolResultsMsg{runID: runID, results: a.ExecuteCalls(calls)}
 	}
 }
 
@@ -981,7 +908,7 @@ func (m *Model) finishStreaming() {
 		return
 	}
 	if m.streaming != "" {
-		m.messages = append(m.messages, provider.Message{
+		m.agent.Append(provider.Message{
 			Role:    provider.RoleAssistant,
 			Content: m.streaming,
 		})
@@ -1000,20 +927,9 @@ func (m *Model) cancelStreaming() {
 	if m.cancel != nil {
 		m.cancel()
 	}
-	m.runID++
-	if m.runningTools {
-		for _, tc := range m.pendingCalls {
-			m.messages = append(m.messages, provider.Message{
-				Role:       provider.RoleTool,
-				Content:    "error: cancelled by user",
-				ToolCallID: tc.ID,
-			})
-			m.appendEntry(entry{kind: entryTool, toolName: tc.Name, toolArgs: tc.Arguments, toolResult: "cancelled by user"})
-		}
-		m.runningTools = false
-		m.pendingCalls = nil
+	for _, tc := range m.agent.CancelTurn() {
+		m.appendEntry(entry{kind: entryTool, toolName: tc.Name, toolArgs: tc.Arguments, toolResult: "cancelled by user"})
 	}
-	m.approvalQueue = nil
 	m.pendingApproval = nil
 	m.finishStreaming()
 }
@@ -1069,8 +985,8 @@ func (m Model) renderStatusBar(width int) string {
 	}
 
 	// Round counter shows only mid-turn, so long tool loops are visible.
-	if m.toolRounds > 0 && m.state != stateInput {
-		parts = append(parts, statusBarStyle.Render(fmt.Sprintf("round %d", m.toolRounds)))
+	if m.agent.Rounds() > 0 && m.state != stateInput {
+		parts = append(parts, statusBarStyle.Render(fmt.Sprintf("round %d", m.agent.Rounds())))
 	}
 
 	// Active approval policy (S-054); absent in the default ask-everything state.
@@ -1250,7 +1166,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		if len(parts) > 1 {
 			name = strings.Join(parts[1:], " ")
 		}
-		if err := m.db.SaveChat(name, m.messages); err != nil {
+		if err := m.db.SaveChat(name, m.agent.Messages()); err != nil {
 			return true, "Error saving: " + err.Error()
 		}
 		return true, fmt.Sprintf("Chat saved as %q", name)
@@ -1303,9 +1219,10 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 // lastAssistantText returns the content of the most recent assistant message
 // that has any text.
 func (m Model) lastAssistantText() string {
-	for i := len(m.messages) - 1; i >= 0; i-- {
-		if m.messages[i].Role == provider.RoleAssistant && m.messages[i].Content != "" {
-			return m.messages[i].Content
+	msgs := m.agent.Messages()
+	for i := len(msgs) - 1; i >= 0; i-- {
+		if msgs[i].Role == provider.RoleAssistant && msgs[i].Content != "" {
+			return msgs[i].Content
 		}
 	}
 	return ""
@@ -1336,20 +1253,21 @@ Keys:
 
 // clearConversation drops everything except the system prompt.
 func (m *Model) clearConversation() {
-	if len(m.messages) > 0 && m.messages[0].Role == provider.RoleSystem {
-		m.messages = m.messages[:1:1]
+	msgs := m.agent.Messages()
+	if len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
+		m.agent.SetMessages(msgs[:1:1])
 	} else {
-		m.messages = nil
+		m.agent.SetMessages(nil)
 	}
 	m.resetTranscript()
 	m.contextTokens = 0
-	m.toolRounds = 0
+	m.agent.ResetRounds()
 }
 
 // loadConversation replaces the current conversation and rebuilds the
 // transcript from the stored messages.
 func (m *Model) loadConversation(msgs []provider.Message) {
-	m.messages = msgs
+	m.agent.SetMessages(msgs)
 	m.resetTranscript()
 	for i, msg := range msgs {
 		switch msg.Role {

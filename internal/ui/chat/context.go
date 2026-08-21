@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -27,30 +28,15 @@ const (
 )
 
 // elidedResult replaces trimmed tool results in the conversation.
-const elidedResult = "[result elided]"
-
-// estimatedBytesPerToken is the rough chars→tokens heuristic used when the
-// provider hasn't reported real usage.
-const estimatedBytesPerToken = 4
+const elidedResult = agent.ElidedResult
 
 // compactInstruction is sent as the final user message of a /compact request.
 const compactInstruction = "Summarize this conversation so it can be continued from the summary alone. " +
 	"Capture the user's goals, key facts and decisions, work completed, current state, and open tasks. " +
 	"Reply with only the summary text."
 
-func estimateTokens(s string) int64 {
-	return int64(len(s) / estimatedBytesPerToken)
-}
-
 func estimateMessageTokens(msgs []provider.Message) int64 {
-	var n int64
-	for _, msg := range msgs {
-		n += estimateTokens(msg.Content)
-		for _, tc := range msg.ToolCalls {
-			n += estimateTokens(tc.Arguments)
-		}
-	}
-	return n
+	return agent.EstimateMessageTokens(msgs)
 }
 
 // contextWindow is the model's context size from the pricing table, or
@@ -91,36 +77,14 @@ func (m Model) estimatedContextTokens() int64 {
 	if m.contextTokens > 0 {
 		return m.contextTokens
 	}
-	return estimateMessageTokens(m.messages)
+	return estimateMessageTokens(m.agent.Messages())
 }
 
 // trimContext elides the oldest tool results until the context estimate is
-// back under the trim threshold, returning how many were elided. Messages at
-// or after the last user message (the current turn) are never touched, and
-// user/assistant text is always kept.
+// back under the trim threshold, returning how many were elided. The message
+// surgery itself lives with the agent's message list.
 func (m *Model) trimContext() int {
-	threshold := m.trimThreshold()
-	est := m.estimatedContextTokens()
-	if est <= threshold {
-		return 0
-	}
-	lastUser := 0
-	for i := len(m.messages) - 1; i >= 0; i-- {
-		if m.messages[i].Role == provider.RoleUser {
-			lastUser = i
-			break
-		}
-	}
-	elided := 0
-	for i := 0; i < lastUser && est > threshold; i++ {
-		msg := &m.messages[i]
-		if msg.Role != provider.RoleTool || msg.Content == elidedResult {
-			continue
-		}
-		est -= estimateTokens(msg.Content) - estimateTokens(elidedResult)
-		msg.Content = elidedResult
-		elided++
-	}
+	elided, est := m.agent.TrimOldToolResults(m.estimatedContextTokens(), m.trimThreshold())
 	if elided > 0 {
 		m.contextTokens = est
 	}
@@ -143,7 +107,7 @@ func (m *Model) trimForRequest() {
 // startCompact asks the provider to summarize the conversation; the response
 // is handled by finishCompact instead of joining the conversation.
 func (m Model) startCompact() (tea.Model, tea.Cmd) {
-	if len(m.messages) <= 1 {
+	if len(m.agent.Messages()) <= 1 {
 		m.appendEntry(entry{kind: entrySystem, text: "Nothing to compact yet."})
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
@@ -156,9 +120,7 @@ func (m Model) startCompact() (tea.Model, tea.Cmd) {
 	m.appendEntry(entry{kind: entrySystem, text: "Compacting conversation…"})
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()
-	msgs := make([]provider.Message, len(m.messages), len(m.messages)+1)
-	copy(msgs, m.messages)
-	msgs = append(msgs, provider.Message{Role: provider.RoleUser, Content: compactInstruction})
+	msgs := append(m.agent.RequestMessages(), provider.Message{Role: provider.RoleUser, Content: compactInstruction})
 	return m, tea.Batch(m.spinner.Tick, m.requestStreamFor(msgs))
 }
 
@@ -179,12 +141,12 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	rebuilt := make([]provider.Message, 0, 2)
-	if len(m.messages) > 0 && m.messages[0].Role == provider.RoleSystem {
-		rebuilt = append(rebuilt, m.messages[0])
+	if msgs := m.agent.Messages(); len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
+		rebuilt = append(rebuilt, msgs[0])
 	}
 	rebuilt = append(rebuilt, provider.Message{Role: provider.RoleUser, Content: compactContextMessage(summary)})
-	m.messages = rebuilt
-	m.toolRounds = 0
+	m.agent.SetMessages(rebuilt)
+	m.agent.ResetRounds()
 	m.contextTokens = estimateMessageTokens(rebuilt)
 	m.resetTranscript()
 	m.appendEntry(entry{kind: entrySystem, text: "Conversation compacted; continuing from this summary:"})

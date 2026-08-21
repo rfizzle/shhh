@@ -74,13 +74,13 @@ func TestTrimContext_ElidesOldestToolResults(t *testing.T) {
 	if n != 1 {
 		t.Fatalf("want 1 elided result, got %d", n)
 	}
-	if m.messages[3].Content != elidedResult {
-		t.Fatalf("old tool result should be elided, got %q", m.messages[3].Content)
+	if m.Messages()[3].Content != elidedResult {
+		t.Fatalf("old tool result should be elided, got %q", m.Messages()[3].Content)
 	}
-	if m.messages[6].Content != "recent result" {
+	if m.Messages()[6].Content != "recent result" {
 		t.Fatal("current-turn tool results must be protected")
 	}
-	if m.messages[1].Content != "q1" || m.messages[4].Content != "answer 1" {
+	if m.Messages()[1].Content != "q1" || m.Messages()[4].Content != "answer 1" {
 		t.Fatal("user/assistant text must be kept")
 	}
 	if m.contextTokens >= 30000 {
@@ -100,7 +100,7 @@ func TestTrimContext_NoopUnderThreshold(t *testing.T) {
 	if n := m.trimContext(); n != 0 {
 		t.Fatalf("under the threshold nothing should be trimmed, got %d", n)
 	}
-	if m.messages[2].Content != "small result" {
+	if m.Messages()[2].Content != "small result" {
 		t.Fatal("tool result should be untouched under the threshold")
 	}
 }
@@ -116,8 +116,8 @@ func TestSendUserMessage_TrimsAndNotes(t *testing.T) {
 
 	m = sendText(t, m, "next question")
 
-	if m.messages[2].Content != elidedResult {
-		t.Fatalf("old tool result should be elided before the request, got %d chars", len(m.messages[2].Content))
+	if m.Messages()[2].Content != elidedResult {
+		t.Fatalf("old tool result should be elided before the request, got %d chars", len(m.Messages()[2].Content))
 	}
 	var noted bool
 	for _, e := range m.transcript {
@@ -198,19 +198,19 @@ func TestCompact_RestartsFromSummary(t *testing.T) {
 	if len(gotReq) != 4 || gotReq[3].Content != compactInstruction {
 		t.Fatalf("summarize request should be conversation + instruction, got %d messages", len(gotReq))
 	}
-	if len(m.messages) != 2 {
-		t.Fatalf("conversation should restart as system + summary, got %d messages", len(m.messages))
+	if len(m.Messages()) != 2 {
+		t.Fatalf("conversation should restart as system + summary, got %d messages", len(m.Messages()))
 	}
-	if m.messages[0].Role != provider.RoleSystem || m.messages[0].Content != "sys" {
+	if m.Messages()[0].Role != provider.RoleSystem || m.Messages()[0].Content != "sys" {
 		t.Fatal("system prompt must survive compaction")
 	}
-	if m.messages[1].Role != provider.RoleUser || !strings.Contains(m.messages[1].Content, "the summary") {
-		t.Fatalf("summary message missing, got %+v", m.messages[1])
+	if m.Messages()[1].Role != provider.RoleUser || !strings.Contains(m.Messages()[1].Content, "the summary") {
+		t.Fatalf("summary message missing, got %+v", m.Messages()[1])
 	}
 	if m.compacting || m.state != stateInput {
 		t.Fatalf("compaction should finish back at input, compacting=%v state=%d", m.compacting, m.state)
 	}
-	if want := estimateMessageTokens(m.messages); m.contextTokens != want {
+	if want := estimateMessageTokens(m.Messages()); m.contextTokens != want {
 		t.Fatalf("context estimate should reset to %d, got %d", want, m.contextTokens)
 	}
 	last := m.transcript[len(m.transcript)-1]
@@ -249,8 +249,8 @@ func TestCompact_EmptySummaryKeepsConversation(t *testing.T) {
 
 	m = driveCompact(t, m)
 
-	if len(m.messages) != 2 || m.messages[1].Content != "question" {
-		t.Fatalf("empty summary must leave the conversation unchanged, got %+v", m.messages)
+	if len(m.Messages()) != 2 || m.Messages()[1].Content != "question" {
+		t.Fatalf("empty summary must leave the conversation unchanged, got %+v", m.Messages())
 	}
 	last := m.transcript[len(m.transcript)-1]
 	if last.kind != entryError || !strings.Contains(last.text, "no summary") {
@@ -274,8 +274,8 @@ func TestCompact_CancelKeepsConversation(t *testing.T) {
 	if m.compacting || m.state != stateInput {
 		t.Fatalf("cancel should abort compaction, compacting=%v state=%d", m.compacting, m.state)
 	}
-	if len(m.messages) != 2 || m.messages[1].Content != "question" {
-		t.Fatalf("cancel must leave the conversation unchanged, got %+v", m.messages)
+	if len(m.Messages()) != 2 || m.Messages()[1].Content != "question" {
+		t.Fatalf("cancel must leave the conversation unchanged, got %+v", m.Messages())
 	}
 	var cancelled bool
 	for _, e := range m.transcript {
@@ -305,8 +305,8 @@ func TestCompact_ToolCallsAbort(t *testing.T) {
 	if m.compacting || m.state != stateInput {
 		t.Fatalf("tool calls should abort compaction, compacting=%v state=%d", m.compacting, m.state)
 	}
-	if len(m.messages) != 2 || m.messages[1].Content != "question" {
-		t.Fatalf("aborted compaction must leave the conversation unchanged, got %+v", m.messages)
+	if len(m.Messages()) != 2 || m.Messages()[1].Content != "question" {
+		t.Fatalf("aborted compaction must leave the conversation unchanged, got %+v", m.Messages())
 	}
 	last := m.transcript[len(m.transcript)-1]
 	if last.kind != entryError || !strings.Contains(last.text, "compaction failed") {

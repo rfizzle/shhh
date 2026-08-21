@@ -1091,8 +1091,8 @@ func TestSlashClear_ResetsConversation(t *testing.T) {
 	if !handled {
 		t.Fatal("/clear should be handled")
 	}
-	if len(m.messages) != 1 || m.messages[0].Role != provider.RoleSystem {
-		t.Fatalf("expected only system message to survive /clear, got %d messages", len(m.messages))
+	if len(m.Messages()) != 1 || m.Messages()[0].Role != provider.RoleSystem {
+		t.Fatalf("expected only system message to survive /clear, got %d messages", len(m.Messages()))
 	}
 	if len(m.transcript) != 0 {
 		t.Fatal("transcript should be empty after /clear")
@@ -1505,7 +1505,7 @@ func TestExecTool_MixedWithReadOnly(t *testing.T) {
 	m = updated.(Model)
 
 	// Read-only tools run first, asynchronously.
-	if !m.runningTools {
+	if !m.agent.Executing() {
 		t.Fatal("read-only calls should run first")
 	}
 	res := cmd()
@@ -1773,8 +1773,8 @@ func TestToolLoop_StopsAtRoundCap(t *testing.T) {
 
 	// A fresh user message resets the counter and streams again.
 	m = sendText(t, m, "continue")
-	if m.toolRounds != 0 {
-		t.Fatalf("fresh input should reset the round counter, got %d", m.toolRounds)
+	if m.agent.Rounds() != 0 {
+		t.Fatalf("fresh input should reset the round counter, got %d", m.agent.Rounds())
 	}
 	if m.state != stateStreaming {
 		t.Fatalf("fresh input should resume streaming, got state %d", m.state)
@@ -1827,7 +1827,9 @@ func TestToolLoop_RoundCapAfterApprovedCommand(t *testing.T) {
 func TestStatusBar_ShowsRoundCounter(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream)
-	m.toolRounds = 7
+	for i := 0; i < 7; i++ {
+		m.agent.BeginToolRound("", nil, nil)
+	}
 	m.state = stateStreaming
 	if !strings.Contains(m.renderStatusBar(80), "round 7") {
 		t.Fatal("status bar should show the round counter mid-turn")
