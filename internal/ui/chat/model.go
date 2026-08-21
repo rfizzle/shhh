@@ -134,9 +134,12 @@ type Model struct {
 	// with everything needed to preview and execute it.
 	pendingApproval *approvalRequest
 	gatedTools      map[string]GatedPreviewFunc
-	// Session approval policy (S-054): [a] on a confirm prompt promotes its
-	// category to auto-approval; commandAllowlist comes from config. The
-	// default is everything prompts.
+	// Session approval policy: the permission mode (S-059) plus the S-054
+	// internals it builds on — [a] on a confirm prompt promotes its category
+	// to auto-approval, commandAllowlist comes from config. The default is
+	// manual mode: everything prompts.
+	mode             agent.Mode
+	modeCycle        []agent.Mode
 	allowAllEdits    bool
 	allowAllCommands bool
 	commandAllowlist []string
@@ -337,6 +340,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.quitting = true
 			return m, m.quitCmd()
+		case "shift+tab":
+			// Cycle the permission mode (S-059); the status bar reflects it.
+			m.mode = agent.NextMode(m.modeCycle, m.mode)
+			return m, nil
 		case "esc":
 			// The input is live in every non-confirm state (S-058), so esc
 			// always clears the draft.
@@ -1064,7 +1071,8 @@ func (m Model) renderEntry(e entry, width int) string {
 }
 
 func (m Model) renderStatusBar(width int) string {
-	var parts []string
+	// The active permission mode is always visible (S-059).
+	parts := []string{m.modeSegment()}
 	if m.TotalTokensIn != 0 || m.TotalTokensOut != 0 {
 		usage := fmt.Sprintf("↑%d ↓%d", m.TotalTokensIn, m.TotalTokensOut)
 
@@ -1244,6 +1252,20 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		m.modelName = name
 		return true, fmt.Sprintf("Switched model to %s.", name)
 
+	case "/mode":
+		if len(parts) < 2 {
+			return true, m.modeStatus()
+		}
+		if len(parts) > 2 {
+			return true, "Usage: /mode [manual|accept-edits|auto|plan]"
+		}
+		mode, err := agent.ParseMode(parts[1])
+		if err != nil {
+			return true, "Error: " + err.Error()
+		}
+		m.mode = mode
+		return true, fmt.Sprintf("Mode set to %s — %s.", mode, mode.Describe())
+
 	case "/copy":
 		text := m.lastAssistantText()
 		if text == "" {
@@ -1341,6 +1363,7 @@ func helpText() string {
   /copy [code]   Copy the last response (or just its code blocks)
   /run [n]       Run a code block from the last response (with confirmation)
   /model [name]  Show or switch the model for this session
+  /mode [name]   Show or set the permission mode (manual, accept-edits, auto, plan)
   /compact       Summarize the conversation and continue from the summary
   /save [name]   Save this chat
   /load <name>   Load a saved chat
@@ -1349,6 +1372,7 @@ func helpText() string {
 
 Keys:
   Enter          Send message        Alt+Enter    Insert newline
+  Shift+Tab      Cycle the permission mode
                  (while the agent is working, Enter queues a steering message
                   that joins the conversation before the next model request)
   Up/Down        Recall previous inputs (when the input is empty)

@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -262,6 +263,215 @@ func TestPolicy_GenericGatedToolAlwaysPrompts(t *testing.T) {
 	}
 	if !strings.Contains(m.View(), "[y/N]") {
 		t.Fatal("generic approval keeps plain y/N")
+	}
+}
+
+func TestMode_AcceptEditsAutoAppliesEditsButPromptsCommands(t *testing.T) {
+	var ran []string
+	m := execModel(t, &ran)
+	m.mode = agent.ModeAcceptEdits
+	path := filepath.Join(t.TempDir(), "a.txt")
+
+	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_w", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":"one\n"}`, path)},
+	}})
+	m = updated.(Model)
+	if m.state != stateRunningCmd {
+		t.Fatalf("accept-edits should apply the edit without a prompt, got state %d", m.state)
+	}
+	var done approvedToolDoneMsg
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(approvedToolDoneMsg); ok {
+			done = msg
+		}
+	}
+	updated, _ = m.Update(done)
+	m = updated.(Model)
+	if _, err := os.Stat(path); err != nil {
+		t.Fatalf("expected the file to be written: %v", err)
+	}
+	found := false
+	for _, e := range m.transcript {
+		if e.kind == entrySystem && strings.Contains(e.text, "Auto-approved (accept-edits mode): write "+path) {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("transcript should note the accept-edits auto-approval")
+	}
+
+	// Commands still prompt in accept-edits.
+	m.state = stateStreaming
+	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_c", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
+	}})
+	m = updated.(Model)
+	if m.state != stateConfirmRun {
+		t.Fatalf("accept-edits must still prompt for commands, got state %d", m.state)
+	}
+	if len(ran) != 0 {
+		t.Fatal("no command should run before approval")
+	}
+}
+
+func TestMode_AutoAllowsEditsAndAllowlistedCommands(t *testing.T) {
+	var ran []string
+	m := execModel(t, &ran).WithCommandAllowlist([]string{"echo"})
+	m.mode = agent.ModeAuto
+
+	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
+	}})
+	m = updated.(Model)
+	if m.state != stateRunningCmd {
+		t.Fatalf("auto mode should run the allowlisted command, got state %d", m.state)
+	}
+	updated, _ = m.Update(driveCmdDone(t, cmd))
+	m = updated.(Model)
+	if len(ran) != 1 || ran[0] != "echo hi" {
+		t.Fatalf("expected the command to run, got %v", ran)
+	}
+
+	// An unlisted command still asks in auto mode (no classifier yet, S-060).
+	m.state = stateStreaming
+	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_y", Name: "execute_command", Arguments: `{"command":"ls -la"}`},
+	}})
+	m = updated.(Model)
+	if m.state != stateConfirmRun {
+		t.Fatalf("auto mode must prompt for unlisted commands, got state %d", m.state)
+	}
+}
+
+func TestMode_AutoFlaggedCommandStillPrompts(t *testing.T) {
+	var ran []string
+	m := execModel(t, &ran).WithCommandAllowlist([]string{"git"})
+	m.mode = agent.ModeAuto
+	m.allowAllCommands = true
+
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"git reset --hard"}`},
+	}})
+	m = updated.(Model)
+	if m.state != stateConfirmRun || len(ran) != 0 {
+		t.Fatalf("safety-flagged command must prompt in auto mode, got state %d", m.state)
+	}
+}
+
+func TestMode_PlanRefusesGatedCalls(t *testing.T) {
+	var ran []string
+	m := execModel(t, &ran).WithCommandAllowlist([]string{"echo"})
+	m.mode = agent.ModePlan
+	m.allowAllEdits = true
+	m.allowAllCommands = true
+	path := filepath.Join(t.TempDir(), "a.txt")
+
+	updated, restream := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_w", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":"one\n"}`, path)},
+		{ID: "call_c", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
+	}})
+	m = updated.(Model)
+
+	if len(ran) != 0 {
+		t.Fatal("plan mode must not run commands")
+	}
+	if _, err := os.Stat(path); err == nil {
+		t.Fatal("plan mode must not write files")
+	}
+	msgs := m.Messages()
+	refused := 0
+	for _, msg := range msgs {
+		if msg.Role == provider.RoleTool && strings.Contains(msg.Content, "plan mode") {
+			refused++
+		}
+	}
+	if refused != 2 {
+		t.Fatalf("both calls should get plan-mode refusal results, got %d", refused)
+	}
+	found := 0
+	for _, e := range m.transcript {
+		if e.kind == entrySystem && strings.HasPrefix(e.text, "Refused (plan mode):") {
+			found++
+		}
+	}
+	if found != 2 {
+		t.Fatalf("transcript should note both refusals, got %d", found)
+	}
+	if m.state != stateStreaming || restream == nil {
+		t.Fatal("the loop should resume so the model sees the refusals")
+	}
+}
+
+func TestMode_ReadOnlyToolsBypassApprovalInPlanMode(t *testing.T) {
+	m := gatedModel(t, nil, nil)
+	m.mode = agent.ModePlan
+	for _, name := range []string{"read_file", "list_directory", "search", "glob"} {
+		if m.requiresApproval(name) {
+			t.Errorf("read-only tool %s must never be approval-gated", name)
+		}
+	}
+}
+
+func TestMode_ShiftTabCyclesAndStatusBarShowsMode(t *testing.T) {
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, mockStream)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m = updated.(Model)
+
+	if !strings.Contains(m.renderStatusBar(80), "⏸ manual") {
+		t.Fatalf("status bar should show the default manual mode, got %q", m.renderStatusBar(80))
+	}
+
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyShiftTab})
+	m = updated.(Model)
+	if m.mode != agent.ModeAcceptEdits {
+		t.Fatalf("shift+tab should cycle manual → accept-edits, got %v", m.mode)
+	}
+	if !strings.Contains(m.renderStatusBar(80), "⏵⏵ accept edits") {
+		t.Fatalf("status bar should show the permissive mode, got %q", m.renderStatusBar(80))
+	}
+
+	// A configured cycle is honored, wrapping around.
+	m = m.WithApprovalMode(agent.ModeManual, []agent.Mode{agent.ModeManual, agent.ModePlan})
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyShiftTab})
+	m = updated.(Model)
+	if m.mode != agent.ModePlan {
+		t.Fatalf("configured cycle should go manual → plan, got %v", m.mode)
+	}
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyShiftTab})
+	m = updated.(Model)
+	if m.mode != agent.ModeManual {
+		t.Fatalf("configured cycle should wrap plan → manual, got %v", m.mode)
+	}
+}
+
+func TestMode_SlashModeShowsAndSets(t *testing.T) {
+	m := gatedModel(t, nil, nil)
+
+	_, status := m.handleSlashCommand("/mode")
+	if !strings.Contains(status, "Mode: manual") || !strings.Contains(status, "manual → accept-edits → auto → plan") {
+		t.Fatalf("/mode should show the current mode and cycle, got %q", status)
+	}
+
+	handled, result := m.handleSlashCommand("/mode auto")
+	if !handled || !strings.Contains(result, "Mode set to auto") {
+		t.Fatalf("/mode auto should set the mode, got %q", result)
+	}
+	if m.mode != agent.ModeAuto {
+		t.Fatalf("mode should be auto after /mode auto, got %v", m.mode)
+	}
+
+	_, bad := m.handleSlashCommand("/mode yolo")
+	if !strings.Contains(bad, "unknown mode") {
+		t.Fatalf("/mode with an unknown name should error, got %q", bad)
+	}
+	if m.mode != agent.ModeAuto {
+		t.Fatal("an invalid /mode must not change the mode")
+	}
+
+	_, help := m.handleSlashCommand("/help")
+	if !strings.Contains(help, "mode:      auto") {
+		t.Fatalf("/help should show the active mode, got:\n%s", help)
 	}
 }
 

@@ -164,9 +164,11 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	if req.kind == approvalExec {
 		m.pendingRun = req.command
 	}
-	// Session policy (S-054): an always-allowed category or an allowlisted
-	// command skips the prompt; safety-flagged commands never do.
-	if reason, ok := m.policyAllows(req); ok {
+	// Mode policy (S-059, absorbing S-054): the permissive modes and session
+	// grants skip the prompt, plan mode refuses the call outright, and
+	// safety-flagged commands always prompt.
+	switch decision, reason := m.policyDecision(req); decision {
+	case agent.Allow:
 		m.appendEntry(entry{kind: entrySystem, text: "Auto-approved (" + reason + "): " + req.summary})
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
@@ -174,6 +176,14 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 			return m.executeRun()
 		}
 		return m.executeApprovedTool()
+	case agent.Deny:
+		m.pendingApproval = nil
+		m.pendingRun = ""
+		m.agent.ResolveApproval(agent.PlanModeResult)
+		m.appendEntry(entry{kind: entrySystem, text: "Refused (" + reason + "): " + req.summary})
+		m.viewport.SetContent(m.renderHistory())
+		m.viewport.GotoBottom()
+		return m.advanceApprovalQueue()
 	}
 	m.state = stateConfirmRun
 	m.syncViewportHeight()

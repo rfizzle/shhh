@@ -36,6 +36,13 @@ type BehaviorConfig struct {
 	// sessions ("go test" approves "go test ./..."); safety-flagged commands
 	// always prompt regardless. Empty (the default) means every command asks.
 	CommandAllowlist []string `toml:"command_allowlist"`
+	// DefaultMode is the permission mode agent sessions start in: "manual",
+	// "accept-edits", "auto", or "plan". Empty means manual (everything
+	// prompts).
+	DefaultMode string `toml:"default_mode"`
+	// ModeCycle overrides the Shift+Tab mode order (same names as
+	// DefaultMode). Empty means manual → accept-edits → auto → plan.
+	ModeCycle []string `toml:"mode_cycle"`
 }
 
 type AppearanceConfig struct {
@@ -134,13 +141,11 @@ func Set(cfg *Config, key, value string) error {
 	case "behavior.system_prompt_extra":
 		cfg.Behavior.SystemPromptExtra = value
 	case "behavior.command_allowlist":
-		var list []string
-		for _, part := range strings.Split(value, ",") {
-			if p := strings.TrimSpace(part); p != "" {
-				list = append(list, p)
-			}
-		}
-		cfg.Behavior.CommandAllowlist = list
+		cfg.Behavior.CommandAllowlist = splitList(value)
+	case "behavior.default_mode":
+		cfg.Behavior.DefaultMode = value
+	case "behavior.mode_cycle":
+		cfg.Behavior.ModeCycle = splitList(value)
 	case "appearance.accent_color":
 		cfg.Appearance.AccentColor = value
 	case "history.retention_days":
@@ -151,6 +156,18 @@ func Set(cfg *Config, key, value string) error {
 		return fmt.Errorf("unknown config key: %s", key)
 	}
 	return nil
+}
+
+// splitList parses a comma-separated config value into its non-empty,
+// trimmed entries; an empty value clears the list.
+func splitList(value string) []string {
+	var list []string
+	for _, part := range strings.Split(value, ",") {
+		if p := strings.TrimSpace(part); p != "" {
+			list = append(list, p)
+		}
+	}
+	return list
 }
 
 func Save(cfg Config) error {

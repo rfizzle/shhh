@@ -109,6 +109,8 @@ accent_color = "cyan"
 | `behavior.context_max_tokens` | Max tokens for stdin context (default: 8000) |
 | `behavior.max_tool_rounds` | Max consecutive tool-call rounds per chat turn (default: 25) |
 | `behavior.command_allowlist` | Command prefixes auto-approved in chat/code sessions (e.g. `["git status", "go test"]`); safety-flagged commands always prompt |
+| `behavior.default_mode` | Permission mode sessions start in: `manual` (default), `accept-edits`, `auto`, or `plan` |
+| `behavior.mode_cycle` | Shift+Tab mode order (default: `["manual", "accept-edits", "auto", "plan"]`) |
 | `behavior.system_prompt_extra` | Extra text appended to the system prompt |
 | `appearance.accent_color` | TUI accent color |
 
@@ -184,6 +186,8 @@ cat error.log | shhh chat "why is this failing?"
 ```
 
 Chat mode has read-only tools (`read_file`, `list_directory`, `search`) plus `execute_command`, which lets the assistant propose shell commands: each one is shown to you with safety warnings and only runs after you approve it with `y`.
+
+How much gets approved automatically is governed by a permission mode, cycled with Shift+Tab or set with `/mode <name>`: **manual** prompts for every consequential tool call (the default), **accept-edits** auto-applies file edits but still prompts for commands, **auto** additionally runs allowlisted commands, and **plan** is read-only — edits and commands are refused. Read-only tools never prompt in any mode, and safety-flagged commands always ask. The status bar always shows the active mode; `behavior.default_mode` and `behavior.mode_cycle` configure the starting mode and cycle order.
 
 The status bar shows token usage, estimated cost, the current context size, and the active model. The context indicator changes color as the conversation approaches the model's context window (from the pricing table when known); past that threshold, the oldest tool results are automatically elided from the conversation before the next request.
 

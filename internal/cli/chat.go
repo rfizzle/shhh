@@ -165,6 +165,19 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 
 	prices, _ := pricing.Load()
 
+	// Permission mode (S-059): starting mode and Shift+Tab cycle come from
+	// config; the default is manual (everything prompts).
+	mode := agent.ModeManual
+	if s := cfg.Behavior.DefaultMode; s != "" {
+		if mode, err = agent.ParseMode(s); err != nil {
+			return fmt.Errorf("config behavior.default_mode: %w", err)
+		}
+	}
+	cycle, err := agent.ParseCycle(cfg.Behavior.ModeCycle)
+	if err != nil {
+		return fmt.Errorf("config behavior.mode_cycle: %w", err)
+	}
+
 	model := chat.New(env.messages, env.stream).
 		WithTitle(session.title).
 		WithToolExecutor(tools.Execute).
@@ -173,6 +186,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithRunner(runner.RunCapture).
 		WithMaxToolRounds(cfg.Behavior.MaxToolRounds).
 		WithCommandAllowlist(cfg.Behavior.CommandAllowlist).
+		WithApprovalMode(mode, cycle).
 		WithModelSwitcher(env.switchModel)
 
 	if session.continueLast || session.resumePick {

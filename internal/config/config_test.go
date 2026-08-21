@@ -117,6 +117,48 @@ func TestSet_CommandAllowlist(t *testing.T) {
 	}
 }
 
+func TestSet_ModeConfig(t *testing.T) {
+	var cfg Config
+	if err := Set(&cfg, "behavior.default_mode", "accept-edits"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Behavior.DefaultMode != "accept-edits" {
+		t.Errorf("behavior.default_mode = %q, want accept-edits", cfg.Behavior.DefaultMode)
+	}
+	if err := Set(&cfg, "behavior.mode_cycle", "manual, auto ,"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	got := cfg.Behavior.ModeCycle
+	if len(got) != 2 || got[0] != "manual" || got[1] != "auto" {
+		t.Errorf("behavior.mode_cycle = %v, want [manual, auto]", got)
+	}
+}
+
+func TestLoadFrom_ModeConfig(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+	content := `
+[behavior]
+default_mode = "auto"
+mode_cycle = ["manual", "accept-edits"]
+`
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg, err := LoadFrom(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Behavior.DefaultMode != "auto" {
+		t.Errorf("behavior.default_mode = %q, want auto", cfg.Behavior.DefaultMode)
+	}
+	got := cfg.Behavior.ModeCycle
+	if len(got) != 2 || got[0] != "manual" || got[1] != "accept-edits" {
+		t.Errorf("behavior.mode_cycle = %v, want [manual, accept-edits]", got)
+	}
+}
+
 func TestLoadFrom_CommandAllowlist(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.toml")
