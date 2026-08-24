@@ -389,3 +389,41 @@ func TestGatedTool_LargeDiffTruncatedAndPanelGrows(t *testing.T) {
 		t.Fatalf("viewport should restore after decline: got %d, want %d", m.viewport.Height, normalHeight)
 	}
 }
+
+func TestMutatingTool_HookAppendsDiagnosticsToResult(t *testing.T) {
+	m := gatedModel(t, nil, nil)
+	m = m.WithMutationHook(func(name string, args json.RawMessage, result string) string {
+		if name != "write_file" {
+			t.Errorf("hook should see the mutating tool name, got %q", name)
+		}
+		return result + "\n\nDiagnostics (fake) for hello.go:\nhello.go:1:1 error: boom"
+	})
+	path := filepath.Join(t.TempDir(), "hello.go")
+
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_w", Name: "write_file",
+			Arguments: fmt.Sprintf(`{"path":%q,"content":"package main\n"}`, path)},
+	}})
+	m = updated.(Model)
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	m = updated.(Model)
+
+	var done approvedToolDoneMsg
+	found := false
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(approvedToolDoneMsg); ok {
+			done = msg
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("expected approvedToolDoneMsg from the approval cmd")
+	}
+	updated, _ = m.Update(done)
+	m = updated.(Model)
+	last := m.Messages()[len(m.Messages())-1]
+	if last.Role != provider.RoleTool || !strings.Contains(last.Content, "Created") ||
+		!strings.Contains(last.Content, "Diagnostics (fake)") {
+		t.Fatalf("tool result should carry write confirmation plus hook diagnostics, got %+v", last)
+	}
+}

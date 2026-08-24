@@ -379,3 +379,19 @@ search_api_key = "bsk-abc"
 		t.Errorf("web config = %+v", cfg.Web)
 	}
 }
+
+func TestSet_LSPConfig(t *testing.T) {
+	var cfg Config
+	if err := Set(&cfg, "lsp.disabled", "true"); err != nil {
+		t.Fatal(err)
+	}
+	if err := Set(&cfg, "lsp.request_timeout_seconds", "20"); err != nil {
+		t.Fatal(err)
+	}
+	if err := Set(&cfg, "lsp.diagnostics_timeout_seconds", "5"); err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.LSP.Disabled || cfg.LSP.RequestTimeoutSeconds != 20 || cfg.LSP.DiagnosticsTimeoutSeconds != 5 {
+		t.Fatalf("lsp config not applied: %+v", cfg.LSP)
+	}
+}

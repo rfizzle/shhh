@@ -35,6 +35,7 @@ func newCodeCmd() *cobra.Command {
 				continueLast: continueLast,
 				resumePick:   resumePick,
 				web:          openWebTools(ConfigFrom(cmd.Context())),
+				lsp:          openLSP(ConfigFrom(cmd.Context())),
 				gate:         true,
 			}
 			if printMode || popts.json || popts.sandbox {

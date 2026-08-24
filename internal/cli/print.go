@@ -20,6 +20,7 @@ import (
 	"github.com/rfizzle/shhh/internal/stdin"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/web"
 	"github.com/spf13/cobra"
 )
@@ -50,6 +51,13 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// stays approval-gated, which headless resolves via --yes.
 	if session.web != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.web.Definitions()...)
+	}
+	// LSP integration (S-071), mirroring the interactive session: navigation
+	// tools when a server was detected, after-edit diagnostics on approved
+	// edits, shutdown with the run.
+	if session.lsp != nil {
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.lsp.Definitions()...)
+		defer session.lsp.Close()
 	}
 	// Quality gate (S-067), mirroring the interactive session: auto-run — the
 	// model only ever names a suite from the trusted config.
@@ -118,6 +126,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if session.web != nil {
 		baseExecutor = session.web.WrapExecutor(tools.Execute)
 	}
+	if session.lsp != nil {
+		baseExecutor = session.lsp.WrapExecutor(baseExecutor)
+	}
 	if qgate != nil {
 		baseExecutor = qgate.WrapExecutor(baseExecutor)
 	}
@@ -149,7 +160,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	h := &agent.Headless{
 		Agent:   a,
 		Gate:    gate,
-		Resolve: headlessApprover(cmd.Context(), opts, allowlist, run, red, recorder.decision, session.web),
+		Resolve: headlessApprover(cmd.Context(), opts, allowlist, run, red, recorder.decision, session.web, lspMutationHook(session.lsp)),
 		OnToolCall: func(tc provider.ToolCall) {
 			callStart = time.Now()
 			fmt.Fprintf(os.Stderr, "» %s %s\n", tc.Name, clipActivityLine(tc.Arguments))
@@ -196,7 +207,7 @@ func headlessGate(name string) bool {
 // reduction pipeline (red is nil-safe) like every other tool result. Each
 // verdict is reported to record (nil-safe) as a content-free decision event
 // (S-065).
-func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, run func(context.Context, string) (string, int), red *evidence.Reducer, record func(decision, reason string), webTools *web.Toolset) func(provider.ToolCall) string {
+func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, run func(context.Context, string) (string, int), red *evidence.Reducer, record func(decision, reason string), webTools *web.Toolset, mutationHook chat.MutationHook) func(provider.ToolCall) string {
 	note := func(decision, reason string) {
 		if record != nil {
 			record(decision, reason)
@@ -243,7 +254,11 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 		if tools.IsMutating(tc.Name) {
 			if opts.yes {
 				note("allow", "headless-yes")
-				return red.Process(tc.Name, agent.ExecuteWith(tools.ExecuteMutating, tc))
+				result := agent.ExecuteWith(tools.ExecuteMutating, tc)
+				if mutationHook != nil {
+					result = mutationHook(tc.Name, json.RawMessage(tc.Arguments), result)
+				}
+				return red.Process(tc.Name, result)
 			}
 			note("deny", "headless-default")
 			return "error: file modification not approved: headless mode denies edits by default (run with --yes)"

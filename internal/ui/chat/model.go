@@ -187,6 +187,9 @@ type Model struct {
 	// evidence reduces bulky tool results and keeps the originals
 	// retrievable (S-064).
 	evidence Evidence
+	// mutationHook post-processes applied file-modification results before
+	// reduction — e.g. appending language-server diagnostics (S-071).
+	mutationHook MutationHook
 	// gate backs the /gate quality-gate command (S-067).
 	gate Gate
 	// memory backs /memory and the remember-tool confirm flow (S-070);

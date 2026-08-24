@@ -15,8 +15,25 @@ type Config struct {
 	Behavior   BehaviorConfig   `toml:"behavior"`
 	Sandbox    SandboxConfig    `toml:"sandbox"`
 	Web        WebConfig        `toml:"web"`
+	LSP        LSPConfig        `toml:"lsp"`
 	Appearance AppearanceConfig `toml:"appearance"`
 	History    HistoryConfig    `toml:"history"`
+}
+
+// LSPConfig tunes the language-server integration (S-071) `shhh code` uses
+// for after-edit diagnostics and the definition/references tools. Servers are
+// auto-detected on PATH (gopls, rust-analyzer, typescript-language-server,
+// pyright); none found means the integration is a clean no-op.
+type LSPConfig struct {
+	// Disabled turns the LSP integration off entirely: no servers started, no
+	// navigation tools registered, no after-edit diagnostics.
+	Disabled bool `toml:"disabled"`
+	// RequestTimeoutSeconds bounds each server request, including the
+	// initialize handshake (default 15).
+	RequestTimeoutSeconds int `toml:"request_timeout_seconds"`
+	// DiagnosticsTimeoutSeconds is how long an applied edit waits for fresh
+	// diagnostics before giving up quietly (default 3).
+	DiagnosticsTimeoutSeconds int `toml:"diagnostics_timeout_seconds"`
 }
 
 // WebConfig tunes the guarded web tools (S-066) `shhh code` registers.
@@ -312,6 +329,16 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Web.SearchProvider = value
 	case "web.search_api_key":
 		cfg.Web.SearchAPIKey = value
+	case "lsp.disabled":
+		cfg.LSP.Disabled = value == "true"
+	case "lsp.request_timeout_seconds":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.LSP.RequestTimeoutSeconds = n
+	case "lsp.diagnostics_timeout_seconds":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.LSP.DiagnosticsTimeoutSeconds = n
 	case "appearance.accent_color":
 		cfg.Appearance.AccentColor = value
 	case "history.retention_days":

@@ -13,6 +13,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/project"
@@ -48,6 +49,10 @@ type chatSession struct {
 	// web is the guarded web toolset (S-066); nil leaves the web tools
 	// unregistered (`shhh chat` today).
 	web *web.Toolset
+	// lsp is the language-server toolset (S-071): after-edit diagnostics plus
+	// the definition/references tools; nil (no servers detected, or disabled)
+	// is a clean no-op. `shhh code` only.
+	lsp *lsp.Toolset
 	// gate registers the quality-gate tool and /gate command (S-067);
 	// `shhh code` only.
 	gate bool
@@ -189,6 +194,12 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if session.web != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.web.Definitions()...)
 	}
+	// LSP integration (S-071): definition/references tools when a language
+	// server was detected; servers start lazily and shut down with the session.
+	if session.lsp != nil {
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.lsp.Definitions()...)
+		defer session.lsp.Close()
+	}
 	// Quality gate (S-067): the model can run the project's own checks by
 	// suite name; command text only ever comes from trusted config.
 	var gate *quality.Runner
@@ -272,6 +283,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if session.web != nil {
 		baseExecutor = session.web.WrapExecutor(tools.Execute)
 	}
+	if session.lsp != nil {
+		baseExecutor = session.lsp.WrapExecutor(baseExecutor)
+	}
 	if gate != nil {
 		baseExecutor = gate.WrapExecutor(baseExecutor)
 	}
@@ -312,6 +326,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithGitSnapshots(gitSnapshot)
 	if red != nil {
 		model = model.WithEvidence(chat.Evidence{Reduce: red.Process, Manage: evidenceManager(red)})
+	}
+	if session.lsp != nil {
+		model = model.WithMutationHook(lspMutationHook(session.lsp))
 	}
 	if gate != nil {
 		model = model.WithGate(chat.Gate{Manage: gateManager(gate)})

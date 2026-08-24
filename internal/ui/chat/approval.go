@@ -66,6 +66,19 @@ type approvedToolDoneMsg struct {
 	duration time.Duration
 }
 
+// MutationHook post-processes an applied file-modification tool result before
+// it is reduced and recorded — the LSP integration (S-071) uses it to append
+// fresh diagnostics for the touched file so the model can self-correct in the
+// same round. It runs off the UI goroutine and must return promptly (its own
+// waits are bounded).
+type MutationHook func(name string, args json.RawMessage, result string) string
+
+// WithMutationHook installs the post-mutation result hook.
+func (m Model) WithMutationHook(hook MutationHook) Model {
+	m.mutationHook = hook
+	return m
+}
+
 // WithGatedTools registers tools that must be approved by the user before
 // they run through the tool executor; each entry builds the confirm-prompt
 // preview for its tool. Gated tools never run via the auto-run path.
@@ -336,11 +349,15 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 	_, registered := m.gatedTools[call.Name]
 	mutating := !registered && tools.IsMutating(call.Name)
 	reduce := m.evidence.Reduce
+	hook := m.mutationHook
 	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
 		var result string
 		start := time.Now()
 		if mutating {
 			result = agent.ExecuteWith(tools.ExecuteMutating, call)
+			if hook != nil {
+				result = hook(call.Name, json.RawMessage(call.Arguments), result)
+			}
 			if reduce != nil {
 				result = reduce(call.Name, result)
 			}
