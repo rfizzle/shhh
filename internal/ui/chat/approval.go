@@ -324,8 +324,18 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 
 // approvalCard assembles the components.ApprovalCard (DESIGN-TUI.md §2) for
 // the pending approval or /run confirmation. Both the confirm prompt's
-// rendering and its key handling flow through this one card.
+// rendering and its key handling flow through this one card. While the user
+// is attached to a child, the orchestrator's own card is labeled so it is
+// never mistaken for the focused agent's (S-077).
 func (m Model) approvalCard() *components.ApprovalCard {
+	card := m.buildApprovalCard()
+	if m.attachedTo != "" {
+		card.Title = "orchestrator ▸ " + card.Title
+	}
+	return card
+}
+
+func (m Model) buildApprovalCard() *components.ApprovalCard {
 	card := &components.ApprovalCard{MaxLines: m.maxConfirmPanelHeight()}
 	req := m.pendingApproval
 
@@ -406,7 +416,9 @@ func (m Model) bottomPanelHeight() int {
 	case statePlanApprove:
 		lines = m.planApproveLines()
 	default:
-		if ask := m.activeChildAsk(); ask != nil {
+		if m.agentList != nil {
+			lines = m.agentListLines()
+		} else if ask := m.activeChildAsk(); ask != nil {
 			lines = m.childAskLines(ask)
 		}
 	}

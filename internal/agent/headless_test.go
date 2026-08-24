@@ -6,6 +6,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -205,5 +206,91 @@ func TestHeadlessRun_UsageReported(t *testing.T) {
 	}
 	if got.PromptTokens != 10 || got.CompletionTokens != 5 {
 		t.Fatalf("usage not surfaced, got %+v", got)
+	}
+}
+
+func TestHeadlessRun_SteerInjectedBetweenRounds(t *testing.T) {
+	a := New(nil, scriptedStream(t,
+		toolCallRound(provider.ToolCall{ID: "c1", Name: "search"}),
+		doneRound("done"),
+	))
+	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "r", nil })
+
+	queued := []string{"focus on x"}
+	h := &Headless{Agent: a, Steer: func() []string {
+		out := queued
+		queued = nil
+		return out
+	}}
+	final, err := h.Run("go")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if final != "done" {
+		t.Fatalf("final = %q, want %q", final, "done")
+	}
+	// The steering message joins the conversation after the round's results
+	// and before the final response, and it resets the round counter.
+	steerIdx, toolIdx := -1, -1
+	for i, m := range a.Messages() {
+		if m.Role == provider.RoleUser && m.Content == "focus on x" {
+			steerIdx = i
+		}
+		if m.Role == provider.RoleTool {
+			toolIdx = i
+		}
+	}
+	if steerIdx == -1 {
+		t.Fatal("steering message not injected")
+	}
+	if steerIdx < toolIdx {
+		t.Fatalf("steering injected before the round's results (steer=%d tool=%d)", steerIdx, toolIdx)
+	}
+	if a.Rounds() != 0 {
+		t.Fatalf("steering must reset the round counter, got %d", a.Rounds())
+	}
+}
+
+func TestHeadlessRun_InterruptCancelsTurn(t *testing.T) {
+	// The stream blocks until its cancel func fires, like a real provider.
+	stream := func([]provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		ch := make(chan provider.StreamEvent)
+		ctx, cancel := context.WithCancel(context.Background())
+		go func() {
+			<-ctx.Done()
+			close(ch)
+		}()
+		return ch, cancel, nil
+	}
+	a := New(nil, stream)
+	h := &Headless{Agent: a}
+
+	done := make(chan struct{})
+	var runErr error
+	go func() {
+		_, runErr = h.Run("go")
+		close(done)
+	}()
+	time.Sleep(20 * time.Millisecond)
+	h.Interrupt()
+	select {
+	case <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("Run did not return after Interrupt")
+	}
+	if !errors.Is(runErr, ErrInterrupted) {
+		t.Fatalf("expected ErrInterrupted, got %v", runErr)
+	}
+	// The conversation stays well-formed: no assistant message owes results.
+	for _, m := range a.Messages() {
+		if m.Role == provider.RoleAssistant && len(m.ToolCalls) > 0 {
+			t.Fatal("interrupted run must not leave dangling tool calls")
+		}
+	}
+	// A fresh Run works after an interrupt.
+	a2 := New(nil, scriptedStream(t, doneRound("ok")))
+	h.Agent = a2
+	if final, err := h.Run("again"); err != nil || final != "ok" {
+		t.Fatalf("Run after Interrupt = %q, %v", final, err)
 	}
 }

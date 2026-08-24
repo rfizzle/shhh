@@ -57,6 +57,9 @@ type ApprovalCard struct {
 	// AllowAlways offers [a] with AlwaysHint describing the session grant.
 	AllowAlways bool
 	AlwaysHint  string
+	// ExtraHints are additional key hints the host handles itself (e.g.
+	// "g: attach to writer-1" on a routed child approval, S-077).
+	ExtraHints []string
 	// MaxLines bounds the card's total height, frame included; the diff body
 	// shrinks to fit. 0 means unbounded.
 	MaxLines int
@@ -97,7 +100,7 @@ func (c *ApprovalCard) View(width int) string {
 			hint += "  (" + c.AlwaysHint + ")"
 		}
 	}
-	hints := hintRows([]string{hint}, width)
+	hints := hintRows(append([]string{hint}, c.ExtraHints...), width)
 
 	switch c.Variant {
 	case ApprovalEdit:

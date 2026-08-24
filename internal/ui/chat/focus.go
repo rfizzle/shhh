@@ -18,10 +18,11 @@ func expandable(e entry) bool {
 	return e.kind == entryTool || e.kind == entryCommand
 }
 
-// expandableIndices lists the transcript indices focus mode can select.
+// expandableIndices lists the transcript indices focus mode can select,
+// scoped to whichever agent's transcript the surface renders (S-077).
 func (m Model) expandableIndices() []int {
 	var idxs []int
-	for i, e := range m.transcript {
+	for i, e := range *m.entries() {
 		if expandable(e) {
 			idxs = append(idxs, i)
 		}
@@ -33,7 +34,12 @@ func (m Model) expandableIndices() []int {
 func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 	idxs := m.expandableIndices()
 	if len(idxs) == 0 {
-		m.appendEntry(entry{kind: entrySystem, text: "Nothing to focus yet — tool and command rows become expandable."})
+		const notice = "Nothing to focus yet — tool and command rows become expandable."
+		if m.attachedTo != "" {
+			m.noteChild(m.attachedTo, notice)
+		} else {
+			m.appendEntry(entry{kind: entrySystem, text: notice})
+		}
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
 		return m, nil
@@ -60,7 +66,10 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.moveFocus(-1)
 		return m, nil
 	case "enter":
-		m.transcript[m.focusIdx].expanded = !m.transcript[m.focusIdx].expanded
+		es := *m.entries()
+		if m.focusIdx >= 0 && m.focusIdx < len(es) {
+			es[m.focusIdx].expanded = !es[m.focusIdx].expanded
+		}
 		m.refreshFocusView()
 		return m, nil
 	}
@@ -113,7 +122,7 @@ func (m *Model) renderFocusHistory() (content string, selStart, selCount int) {
 	w := m.contentWidth()
 	var b strings.Builder
 	line := 0
-	for i, e := range m.transcript {
+	for i, e := range *m.entries() {
 		var block string
 		if expandable(e) {
 			block = gutterPrefix(m.renderEntry(e, w-2), i == m.focusIdx)

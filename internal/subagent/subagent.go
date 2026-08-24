@@ -67,6 +67,7 @@ const (
 	StateQueued State = iota
 	StateRunning
 	StateBlocked // waiting on the parent user's approval
+	StateIdle    // turn cancelled; waiting for a steering message (S-077)
 	StateDone
 	StateFailed
 )
@@ -79,6 +80,8 @@ func (s State) String() string {
 		return "running"
 	case StateBlocked:
 		return "blocked"
+	case StateIdle:
+		return "idle"
 	case StateDone:
 		return "done"
 	default:
@@ -96,6 +99,30 @@ type Status struct {
 	ToolCalls int
 	TokensIn  int64
 	TokensOut int64
+}
+
+// EntryKind tags one child transcript entry (S-077): the attached view
+// renders a child's session with the same components as the orchestrator's.
+type EntryKind int
+
+const (
+	EntryUser EntryKind = iota
+	EntryAssistant
+	EntryTool
+	EntrySystem
+)
+
+// TranscriptEntry is one item of a child's live transcript. Entries are
+// append-only; a tool entry is appended when the call starts (Pending) and
+// completed in place when its result lands, so indices stay stable for the
+// front-end's expansion state.
+type TranscriptEntry struct {
+	Kind    EntryKind
+	Text    string // user / assistant / system entries
+	Tool    string // EntryTool: tool name
+	Args    string // EntryTool: raw arguments
+	Result  string // EntryTool: result text
+	Pending bool   // EntryTool: still executing or awaiting approval
 }
 
 // Env is everything a child needs to run, assembled by the CLI so this
@@ -219,22 +246,26 @@ func (a *Ask) Answered() (approved, ok bool) {
 // live status.
 type child struct {
 	name      string
+	parent    string // spawning agent's name; "" means the orchestrator
 	role      Role
 	task      string
 	root      string // working directory (worktree subdir for writers)
 	worktree  string // worktree top dir; "" for researchers
 	repoTop   string // parent repo toplevel; "" for researchers
-	mode      agent.Mode
 	maxTokens int64
 
-	ctx    context.Context
-	cancel context.CancelFunc
-	agent  *agent.Agent
-	env    Env
-	rec    Recorder
-	done   chan struct{}
+	ctx      context.Context
+	cancel   context.CancelFunc
+	agent    *agent.Agent
+	headless *agent.Headless
+	env      Env
+	rec      Recorder
+	done     chan struct{}
+	// steerWake nudges an idle child that new steering arrived (buffered 1).
+	steerWake chan struct{}
 
 	mu        sync.Mutex
+	mode      agent.Mode
 	state     State
 	detail    string
 	toolCalls int
@@ -243,6 +274,14 @@ type child struct {
 	budgetHit bool
 	report    string
 	patchNote string
+	// Live session surface (S-077): transcript entries, the in-flight
+	// assistant text, queued steering messages, and the current turn's
+	// interrupt channel.
+	transcript []TranscriptEntry
+	streaming  string
+	steering   []string
+	intCh      chan struct{}
+	intClosed  bool
 }
 
 func (c *child) set(state State, detail string) {
@@ -265,6 +304,86 @@ func (c *child) status() Status {
 		TokensIn:  c.tokensIn,
 		TokensOut: c.tokensOut,
 	}
+}
+
+// appendEntry adds one transcript entry.
+func (c *child) appendEntry(e TranscriptEntry) {
+	c.mu.Lock()
+	c.transcript = append(c.transcript, e)
+	c.mu.Unlock()
+}
+
+// flushStreaming commits accumulated streamed text as an assistant entry.
+func (c *child) flushStreaming() {
+	c.mu.Lock()
+	if c.streaming != "" {
+		c.transcript = append(c.transcript, TranscriptEntry{Kind: EntryAssistant, Text: c.streaming})
+		c.streaming = ""
+	}
+	c.mu.Unlock()
+}
+
+// beginToolEntry appends a pending tool entry, flushing any streamed text
+// first (the round's assistant text precedes its calls), and returns its
+// index for settleToolEntry.
+func (c *child) beginToolEntry(tool, args string) int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.streaming != "" {
+		c.transcript = append(c.transcript, TranscriptEntry{Kind: EntryAssistant, Text: c.streaming})
+		c.streaming = ""
+	}
+	c.transcript = append(c.transcript, TranscriptEntry{Kind: EntryTool, Tool: tool, Args: args, Pending: true})
+	return len(c.transcript) - 1
+}
+
+// settleToolEntry records a pending tool entry's result in place.
+func (c *child) settleToolEntry(idx int, result string) {
+	c.mu.Lock()
+	if idx >= 0 && idx < len(c.transcript) {
+		c.transcript[idx].Result = result
+		c.transcript[idx].Pending = false
+	}
+	c.mu.Unlock()
+}
+
+// drainSteering pops all queued steering messages, appending each to the
+// transcript as a user entry (they join the conversation now).
+func (c *child) drainSteering() []string {
+	c.mu.Lock()
+	msgs := c.steering
+	c.steering = nil
+	for _, msg := range msgs {
+		c.transcript = append(c.transcript, TranscriptEntry{Kind: EntryUser, Text: msg})
+	}
+	c.mu.Unlock()
+	return msgs
+}
+
+// beginTurn arms a fresh interrupt channel for the next h.Run.
+func (c *child) beginTurn() {
+	c.mu.Lock()
+	c.intCh = make(chan struct{})
+	c.intClosed = false
+	c.mu.Unlock()
+}
+
+// interruptTurn closes the current turn's interrupt channel (idempotent),
+// unblocking any approval wait.
+func (c *child) interruptTurn() {
+	c.mu.Lock()
+	if c.intCh != nil && !c.intClosed {
+		close(c.intCh)
+		c.intClosed = true
+	}
+	c.mu.Unlock()
+}
+
+// interruptCh is the current turn's interrupt channel (nil before any turn).
+func (c *child) interruptCh() <-chan struct{} {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.intCh
 }
 
 // addUsage accumulates provider-reported usage and reports whether the
@@ -338,7 +457,17 @@ func (s *Supervisor) childMode(c *child) agent.Mode {
 	s.mu.Lock()
 	ceiling := s.parentMode
 	s.mu.Unlock()
-	return agent.ClampMode(c.mode, ceiling)
+	c.mu.Lock()
+	mode := c.mode
+	c.mu.Unlock()
+	return agent.ClampMode(mode, ceiling)
+}
+
+// ParentMode is the current mode ceiling children are clamped to.
+func (s *Supervisor) ParentMode() agent.Mode {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.parentMode
 }
 
 // Snapshot returns every child's live status in spawn order.
@@ -359,7 +488,7 @@ func (s *Supervisor) Snapshot() []Status {
 func (s *Supervisor) ActiveCounts() (active, blocked int) {
 	for _, st := range s.Snapshot() {
 		switch st.State {
-		case StateQueued, StateRunning:
+		case StateQueued, StateRunning, StateIdle:
 			active++
 		case StateBlocked:
 			active++
@@ -367,6 +496,195 @@ func (s *Supervisor) ActiveCounts() (active, blocked int) {
 		}
 	}
 	return active, blocked
+}
+
+// lookup resolves a child by name.
+func (s *Supervisor) lookup(name string) (*child, error) {
+	s.mu.Lock()
+	c, ok := s.byName[name]
+	s.mu.Unlock()
+	if !ok {
+		return nil, fmt.Errorf("no agent named %q", name)
+	}
+	return c, nil
+}
+
+// Get returns one child's live status.
+func (s *Supervisor) Get(name string) (Status, bool) {
+	c, err := s.lookup(name)
+	if err != nil {
+		return Status{}, false
+	}
+	return c.status(), true
+}
+
+// Parent returns the name of the agent that spawned name ("" means the
+// orchestrator), for breadcrumbs and esc-pops (S-077).
+func (s *Supervisor) Parent(name string) (string, bool) {
+	c, err := s.lookup(name)
+	if err != nil {
+		return "", false
+	}
+	return c.parent, true
+}
+
+// Transcript snapshots a child's live transcript for rendering.
+func (s *Supervisor) Transcript(name string) []TranscriptEntry {
+	c, err := s.lookup(name)
+	if err != nil {
+		return nil
+	}
+	c.mu.Lock()
+	out := make([]TranscriptEntry, len(c.transcript))
+	copy(out, c.transcript)
+	c.mu.Unlock()
+	return out
+}
+
+// StreamingText is the child's in-flight assistant text, for live rendering.
+func (s *Supervisor) StreamingText(name string) string {
+	c, err := s.lookup(name)
+	if err != nil {
+		return ""
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.streaming
+}
+
+// Note appends a front-end entry (scoped command output, mode changes) to a
+// child's transcript so it survives attach/detach.
+func (s *Supervisor) Note(name string, e TranscriptEntry) error {
+	c, err := s.lookup(name)
+	if err != nil {
+		return err
+	}
+	c.appendEntry(e)
+	s.emitUpdate(c)
+	return nil
+}
+
+// Steer queues a message for a child (S-077, S-058 semantics): injected
+// before its next stream request when running, or starting a fresh turn when
+// the child is idle after a cancelled turn. Finished children cannot be
+// steered.
+func (s *Supervisor) Steer(name, text string) error {
+	c, err := s.lookup(name)
+	if err != nil {
+		return err
+	}
+	c.mu.Lock()
+	switch c.state {
+	case StateDone, StateFailed:
+		state := c.state
+		c.mu.Unlock()
+		return fmt.Errorf("agent %s has finished (%s); nothing to steer", name, state)
+	}
+	c.steering = append(c.steering, text)
+	c.mu.Unlock()
+	select {
+	case c.steerWake <- struct{}{}:
+	default:
+	}
+	s.emitUpdate(c)
+	return nil
+}
+
+// QueuedSteering is how many steering messages wait to join the child's
+// conversation, for the attached status bar.
+func (s *Supervisor) QueuedSteering(name string) int {
+	c, err := s.lookup(name)
+	if err != nil {
+		return 0
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return len(c.steering)
+}
+
+// CancelTurn interrupts a child's current turn (S-077): the in-flight stream
+// aborts, outstanding calls get synthetic results, and the child parks idle
+// awaiting steering — Ctrl+C semantics without killing the agent.
+func (s *Supervisor) CancelTurn(name string) error {
+	c, err := s.lookup(name)
+	if err != nil {
+		return err
+	}
+	c.mu.Lock()
+	state := c.state
+	h := c.headless
+	c.mu.Unlock()
+	switch state {
+	case StateRunning, StateBlocked:
+	default:
+		return fmt.Errorf("agent %s has no turn in progress (%s)", name, state)
+	}
+	c.interruptTurn()
+	if h != nil {
+		h.Interrupt()
+	}
+	return nil
+}
+
+// Kill cancels a child outright: its context is cancelled, its run finishes
+// as failed/cancelled with a well-formed conversation, and (for writers) its
+// worktree is removed. The transcript stays inspectable.
+func (s *Supervisor) Kill(name string) error {
+	c, err := s.lookup(name)
+	if err != nil {
+		return err
+	}
+	c.mu.Lock()
+	state := c.state
+	c.mu.Unlock()
+	switch state {
+	case StateDone, StateFailed:
+		return fmt.Errorf("agent %s has already finished (%s)", name, state)
+	}
+	c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Killed by the user."})
+	c.cancel()
+	return nil
+}
+
+// AgentMode is the child's effective (ceiling-clamped) permission mode.
+func (s *Supervisor) AgentMode(name string) (agent.Mode, bool) {
+	c, err := s.lookup(name)
+	if err != nil {
+		return agent.ModeManual, false
+	}
+	return s.childMode(c), true
+}
+
+// SetAgentMode sets a child's permission mode, clamped to the parent
+// ceiling; the effective mode is returned.
+func (s *Supervisor) SetAgentMode(name string, mode agent.Mode) (agent.Mode, error) {
+	c, err := s.lookup(name)
+	if err != nil {
+		return agent.ModeManual, err
+	}
+	s.mu.Lock()
+	ceiling := s.parentMode
+	s.mu.Unlock()
+	eff := agent.ClampMode(mode, ceiling)
+	c.mu.Lock()
+	c.mode = eff
+	c.mu.Unlock()
+	s.emitUpdate(c)
+	return eff, nil
+}
+
+// WorktreeDiff returns a writer child's cumulative patch against its
+// worktree base, for the attached /diff command. Researchers share the real
+// workspace and have nothing scoped to diff.
+func (s *Supervisor) WorktreeDiff(name string) (string, error) {
+	c, err := s.lookup(name)
+	if err != nil {
+		return "", err
+	}
+	if c.worktree == "" {
+		return "", fmt.Errorf("agent %s has no isolated workspace (%s role) — nothing to diff", name, c.role)
+	}
+	return worktreePatch(c.worktree)
 }
 
 // CancelAll cancels every child; blocked approval waits unblock and each
@@ -479,6 +797,7 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 		agent:     a,
 		env:       env,
 		done:      make(chan struct{}),
+		steerWake: make(chan struct{}, 1),
 		state:     StateQueued,
 		detail:    "queued",
 	}
@@ -531,11 +850,21 @@ func (s *Supervisor) run(c *child) {
 	c.set(StateRunning, "running")
 	s.emitUpdate(c)
 
+	// pendingEntry tracks the transcript index of the tool call in flight, so
+	// its result lands on the same row (calls within a child are sequential).
+	pendingEntry := -1
 	h := &agent.Headless{
 		Agent: c.agent,
 		Gate:  func(name string) bool { return c.env.Gated[name] },
 		Resolve: func(tc provider.ToolCall) string {
 			return s.resolveGated(c, tc)
+		},
+		Steer: func() []string {
+			msgs := c.drainSteering()
+			if len(msgs) > 0 {
+				s.emitUpdate(c)
+			}
+			return msgs
 		},
 		OnUsage: func(u *provider.Usage) {
 			if c.addUsage(u) {
@@ -546,7 +875,14 @@ func (s *Supervisor) run(c *child) {
 				c.rec.Usage(1, st.TokensIn, st.TokensOut)
 			}
 		},
+		OnText: func(text string) {
+			c.mu.Lock()
+			c.streaming += text
+			c.mu.Unlock()
+			s.emitUpdate(c)
+		},
 		OnToolCall: func(tc provider.ToolCall) {
+			pendingEntry = c.beginToolEntry(tc.Name, tc.Arguments)
 			c.mu.Lock()
 			c.toolCalls++
 			n := c.toolCalls
@@ -555,6 +891,7 @@ func (s *Supervisor) run(c *child) {
 			s.emitUpdate(c)
 		},
 		OnToolResult: func(tc provider.ToolCall, result string) {
+			c.settleToolEntry(pendingEntry, result)
 			if c.rec.ToolCall != nil {
 				outcome := "ok"
 				if strings.HasPrefix(result, "error:") {
@@ -562,29 +899,103 @@ func (s *Supervisor) run(c *child) {
 				}
 				c.rec.ToolCall(tc.Name, outcome)
 			}
+			s.emitUpdate(c)
 		},
 	}
+	c.mu.Lock()
+	c.headless = h
+	c.mu.Unlock()
 
-	report, err := h.Run(c.task)
-	if err != nil {
+	// The turn loop (S-077): a cancelled turn parks the child idle until a
+	// steering message starts the next one; kill (context cancellation) ends
+	// the loop from any point.
+	turn := c.task
+	c.appendEntry(TranscriptEntry{Kind: EntryUser, Text: turn})
+	for {
+		c.beginTurn()
+		report, err := h.Run(turn)
+		c.flushStreaming()
+
+		if err == nil && c.ctx.Err() != nil {
+			// A killed child whose provider closed the stream quietly must
+			// never report success.
+			c.agent.CancelTurn()
+			c.set(StateFailed, "cancelled")
+			s.emit(Event{Kind: EventDone, Status: c.status()})
+			return
+		}
+
+		if err == nil {
+			c.mu.Lock()
+			c.report = report
+			tools := c.toolCalls
+			c.mu.Unlock()
+
+			// Steering that arrived during the final stream becomes the next
+			// turn instead of being dropped (the TUI's dispatchSteering
+			// semantics, S-058).
+			if msgs := c.drainSteering(); len(msgs) > 0 {
+				turn = strings.Join(msgs, "\n\n")
+				c.set(StateRunning, "running")
+				s.emitUpdate(c)
+				continue
+			}
+
+			if c.role == RoleWriter {
+				s.reviewPatch(c)
+				c.mu.Lock()
+				note := c.patchNote
+				c.mu.Unlock()
+				if note != "" {
+					c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: note})
+				}
+			}
+
+			c.set(StateDone, fmt.Sprintf("done · %d tools", tools))
+			s.emit(Event{Kind: EventDone, Status: c.status()})
+			return
+		}
+
+		if errors.Is(err, agent.ErrInterrupted) && c.ctx.Err() == nil {
+			// Turn cancelled by the user: the conversation is already
+			// well-formed (synthetic results); wait for steering or a kill.
+			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Turn cancelled — send a message to continue."})
+			c.set(StateIdle, "idle · turn cancelled")
+			s.emitUpdate(c)
+			next, ok := s.awaitSteering(c)
+			if !ok {
+				c.set(StateFailed, "cancelled")
+				s.emit(Event{Kind: EventDone, Status: c.status()})
+				return
+			}
+			turn = next
+			c.set(StateRunning, "running")
+			s.emitUpdate(c)
+			continue
+		}
+
 		// Keep the child's conversation well-formed for inspection.
 		c.agent.CancelTurn()
 		c.set(StateFailed, s.failReason(c, err))
 		s.emit(Event{Kind: EventDone, Status: c.status()})
 		return
 	}
+}
 
-	c.mu.Lock()
-	c.report = report
-	tools := c.toolCalls
-	c.mu.Unlock()
-
-	if c.role == RoleWriter {
-		s.reviewPatch(c)
+// awaitSteering blocks an idle child until steering arrives (ok=true, with
+// the joined message that starts the next turn) or the child is killed.
+// Queued messages were already added to the transcript by drainSteering.
+func (s *Supervisor) awaitSteering(c *child) (string, bool) {
+	for {
+		select {
+		case <-c.steerWake:
+			if msgs := c.drainSteering(); len(msgs) > 0 {
+				return strings.Join(msgs, "\n\n"), true
+			}
+		case <-c.ctx.Done():
+			return "", false
+		}
 	}
-
-	c.set(StateDone, fmt.Sprintf("done · %d tools", tools))
-	s.emit(Event{Kind: EventDone, Status: c.status()})
 }
 
 func (s *Supervisor) failReason(c *child, err error) string {
@@ -695,7 +1106,8 @@ func (s *Supervisor) buildAsk(c *child, name string, rooted json.RawMessage, act
 }
 
 // await routes one ask to the parent and blocks the child until the user
-// answers or the child is cancelled; ok is false on cancellation.
+// answers or the child is cancelled (killed, or its turn interrupted); ok is
+// false on cancellation.
 func (s *Supervisor) await(c *child, ask *Ask) (approved, ok bool) {
 	c.set(StateBlocked, "waiting approval: "+ask.Title)
 	s.emit(Event{Kind: EventAsk, Ask: ask, Status: c.status()})
@@ -704,6 +1116,8 @@ func (s *Supervisor) await(c *child, ask *Ask) (approved, ok bool) {
 		c.set(StateRunning, "running")
 		s.emitUpdate(c)
 		return v, true
+	case <-c.interruptCh():
+		return false, false
 	case <-c.ctx.Done():
 		return false, false
 	}

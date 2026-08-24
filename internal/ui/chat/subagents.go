@@ -23,6 +23,7 @@ type subagentEventMsg struct{ ev subagent.Event }
 // its events and keeps its parent-mode ceiling current.
 func (m Model) WithSubagents(sup *subagent.Supervisor) Model {
 	m.subagents = sup
+	m.childViews = map[string]*childView{}
 	sup.SetParentMode(m.mode)
 	return m
 }
@@ -54,6 +55,8 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 	case subagent.EventAsk:
 		m.childAsks = append(m.childAsks, ev.Ask)
 	case subagent.EventDone:
+		// A finished child can no longer act on its asks (S-077).
+		m.purgeChildAsks(ev.Status.Name)
 		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("Agent %s: %s", ev.Status.Name, ev.Status.Detail)})
 	}
 	m.syncViewportHeight()
@@ -64,9 +67,10 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 	return m, listenSubagents(m.subagents.Events())
 }
 
-// activeChildAsk is the routed approval currently presentable: the head of
-// the queue, deferred while the parent's own prompts or focus mode hold the
-// bottom panel.
+// activeChildAsk is the routed approval currently presentable: deferred
+// while the parent's own prompts, focus mode, or the agent list hold the
+// bottom panel; attached, only the focused child's asks render in place
+// (S-077) — the rest stay visible via the badge and agent list.
 func (m Model) activeChildAsk() *subagent.Ask {
 	if len(m.childAsks) == 0 {
 		return nil
@@ -75,11 +79,24 @@ func (m Model) activeChildAsk() *subagent.Ask {
 	case stateConfirmRun, statePlanApprove, stateFocus:
 		return nil
 	}
+	if m.agentList != nil {
+		return nil
+	}
+	if m.attachedTo != "" {
+		for _, ask := range m.childAsks {
+			if ask.Agent == m.attachedTo {
+				return ask
+			}
+		}
+		return nil
+	}
 	return m.childAsks[0]
 }
 
 // updateChildAsk routes keys to the presented child approval card. Its esc/n
 // path declines — a routed request is never silently dropped or auto-denied.
+// Detached, [g] jumps into the agent's attached view instead of answering
+// (DESIGN-TUI.md §9c).
 func (m Model) updateChildAsk(msg tea.KeyMsg, ask *subagent.Ask) (tea.Model, tea.Cmd) {
 	if msg.String() == "ctrl+d" {
 		m.quitting = true
@@ -92,11 +109,20 @@ func (m Model) updateChildAsk(msg tea.KeyMsg, ask *subagent.Ask) (tea.Model, tea
 		}
 		return m, m.quitCmd()
 	}
+	if msg.String() == "g" && m.attachedTo != ask.Agent {
+		m.attach(ask.Agent)
+		return m, nil
+	}
 	done, result := m.childAskCard(ask).Update(msg)
 	if !done {
 		return m, nil
 	}
-	m.childAsks = m.childAsks[1:]
+	for i, queued := range m.childAsks {
+		if queued == ask {
+			m.childAsks = append(m.childAsks[:i], m.childAsks[i+1:]...)
+			break
+		}
+	}
 	approved := result == components.ApprovalApprove
 	ask.Respond(approved)
 	verdict := "Declined"
@@ -111,13 +137,21 @@ func (m Model) updateChildAsk(msg tea.KeyMsg, ask *subagent.Ask) (tea.Model, tea
 }
 
 // childAskCard builds the approval card for a routed child request, title
-// prefixed with the agent name (DESIGN-TUI.md §9c).
+// prefixed with the agent name (DESIGN-TUI.md §9c). Attached to that agent,
+// the prefix drops (the breadcrumb already names it) — detached, [g] offers
+// the jump into its view.
 func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
 	card := &components.ApprovalCard{MaxLines: m.maxConfirmPanelHeight()}
+	prefix := ask.Agent + " ▸ "
+	if m.attachedTo == ask.Agent {
+		prefix = ""
+	} else {
+		card.ExtraHints = []string{"g: attach to " + ask.Agent}
+	}
 	switch ask.Kind {
 	case subagent.AskCommand:
 		card.Variant = components.ApprovalCommand
-		card.Title = ask.Agent + " ▸ Approve command"
+		card.Title = prefix + "Approve command"
 		card.Headline = ask.Agent + " wants to " + ask.Title
 		card.Question = "Run this command?"
 		if len(ask.Warnings) > 0 {
@@ -125,19 +159,19 @@ func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
 		}
 	case subagent.AskEdit:
 		card.Variant = components.ApprovalEdit
-		card.Title = ask.Agent + " ▸ Approve edit"
+		card.Title = prefix + "Approve edit"
 		card.Headline = ask.Agent + " wants to " + ask.Title
 		card.Hunks = ask.Hunks
 		card.Question = "Apply this change in the agent's workspace?"
 	case subagent.AskPatch:
 		card.Variant = components.ApprovalEdit
-		card.Title = ask.Agent + " ▸ Apply patch"
+		card.Title = prefix + "Apply patch"
 		card.Headline = ask.Agent + " finished and wants to " + ask.Title
 		card.Hunks = ask.Hunks
 		card.Question = "Apply the agent's patch to your workspace?"
 	default:
 		card.Variant = components.ApprovalGeneric
-		card.Title = ask.Agent + " ▸ Approve tool"
+		card.Title = prefix + "Approve tool"
 		card.Headline = ask.Agent + " wants to " + ask.Title
 		card.Summary = firstLine(ask.Summary)
 		card.Question = "Allow this?"
@@ -194,8 +228,12 @@ func (m Model) activeAgentStatuses() []subagent.Status {
 	return out
 }
 
-// agentRowsHeight is how many lines the progress rows currently occupy.
+// agentRowsHeight is how many lines the progress rows currently occupy; the
+// rows hide while the agent list or an attached view covers them (S-077).
 func (m Model) agentRowsHeight() int {
+	if m.attachedTo != "" || m.agentList != nil {
+		return 0
+	}
 	n := len(m.activeAgentStatuses())
 	if n == 0 {
 		return 0

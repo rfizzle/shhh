@@ -198,6 +198,17 @@ type Model struct {
 	// their approval requests routed into this session's approval surface.
 	subagents *subagent.Supervisor
 	childAsks []*subagent.Ask
+	// Sub-agent management and steering (S-077): attachedTo focuses the chat
+	// surface on a child ("" = orchestrator); childViews holds each child's
+	// mirrored transcript and scroll state so attach/detach loses nothing;
+	// agentList is the open agent manager, killConfirm/killTarget its armed
+	// inline kill confirmation.
+	attachedTo  string
+	childViews  map[string]*childView
+	parentView  viewState
+	agentList   *components.AgentList
+	killConfirm *components.Confirm
+	killTarget  string
 	// steering holds messages typed while the agent is working (S-058); they
 	// are injected as user messages before the next stream request.
 	steering      []string
@@ -379,6 +390,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.state == stateFocus {
 			return m.updateFocus(msg)
 		}
+		// The agent manager list (S-077) takes over the bottom panel and keys.
+		if m.agentList != nil {
+			return m.updateAgentList(msg)
+		}
 		// A child agent's routed approval takes over the bottom panel (S-068);
 		// it defers to the parent's own prompts above.
 		if ask := m.activeChildAsk(); ask != nil {
@@ -399,6 +414,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, m.quitCmd()
 		case "ctrl+c":
+			// While attached, Ctrl+C acts on the child: cancel its turn (S-077).
+			if m.attachedTo != "" {
+				return m.attachedCancel()
+			}
 			if m.state == stateClassifying {
 				// Skip the classifier check and ask the user directly.
 				if m.classifierCancel != nil {
@@ -429,17 +448,33 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			return m, m.quitCmd()
 		case "shift+tab":
-			// Cycle the permission mode (S-059); the status bar reflects it.
+			// Cycle the permission mode (S-059); attached, it cycles the
+			// child's mode clamped to the orchestrator's ceiling (S-077).
+			if m.attachedTo != "" {
+				return m.cycleAttachedMode()
+			}
 			m.applyMode(agent.NextMode(m.modeCycle, m.mode))
 			return m, nil
+		case "ctrl+a":
+			// Agent manager (S-077); without a supervisor the key keeps its
+			// textarea meaning (line start).
+			if m.subagents != nil {
+				return m.openAgentList()
+			}
 		case "ctrl+e":
-			// Focus mode (S-076): navigate and expand transcript rows.
+			// Focus mode (S-076): navigate and expand transcript rows; scoped
+			// to whichever agent is focused (S-077).
 			if m.state == stateInput {
 				return m.enterFocusMode()
 			}
 		case "esc":
 			// The input is live in every non-confirm state (S-058), so esc
-			// always clears the draft.
+			// clears the draft; attached with an empty draft it pops one
+			// breadcrumb level (S-077).
+			if m.attachedTo != "" && strings.TrimSpace(m.input.Value()) == "" {
+				m.detachOne()
+				return m, nil
+			}
 			m.input.Reset()
 			m.historyIdx = len(m.inputHistory)
 			return m, nil
@@ -464,6 +499,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		case "enter":
+			// While attached, Enter acts on the child: scoped commands and
+			// mid-turn steering (S-077).
+			if m.attachedTo != "" {
+				return m.attachedSubmit()
+			}
 			if m.state == stateStreaming || m.state == stateRunningCmd || m.state == stateClassifying {
 				return m.queueSteering()
 			}
@@ -473,6 +513,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m, nil
 				}
 				m.recordInput(text)
+				if text == "/agents" {
+					m.input.Reset()
+					return m.openAgentList()
+				}
 				if text == "/exit" || text == "/quit" || text == "/q" {
 					m.quitting = true
 					if m.cancel != nil {
@@ -728,10 +772,17 @@ func (m Model) View() string {
 	if title == "" {
 		title = "shhh chat"
 	}
-	header := headerStyle.Render(" "+title) +
-		headerHintStyle.Render("  Ctrl+D to exit")
-	if m.updateNotice != "" {
-		header += "  " + updateNoticeStyle.Render(m.updateNotice)
+	var header string
+	if m.attachedTo != "" {
+		// Attached view (S-077): breadcrumb header with the detach hints.
+		header = headerStyle.Render(" "+title) +
+			headerHintStyle.Render("  "+m.breadcrumb()+"   esc detach · ctrl+a agents")
+	} else {
+		header = headerStyle.Render(" "+title) +
+			headerHintStyle.Render("  Ctrl+D to exit")
+		if m.updateNotice != "" {
+			header += "  " + updateNoticeStyle.Render(m.updateNotice)
+		}
 	}
 	header += strings.Repeat(" ", max(0, contentWidth-lipgloss.Width(header)))
 
@@ -739,6 +790,10 @@ func (m Model) View() string {
 
 	var body string
 	switch {
+	case m.attachedTo != "":
+		// The attached child's session fills the surface; its liveness shows
+		// in the child-scoped status bar, not a parent spinner.
+		body = m.viewport.View()
 	case m.state == stateStreaming && m.streaming == "":
 		label := "Thinking…"
 		switch {
@@ -761,9 +816,11 @@ func (m Model) View() string {
 	}
 
 	// Working sub-agents render as compact progress rows above the divider
-	// (S-068).
-	if rows := m.renderAgentRows(contentWidth); rows != "" {
-		body += "\n" + rows
+	// (S-068); hidden while the agent list or an attached view covers them.
+	if m.agentRowsHeight() > 0 {
+		if rows := m.renderAgentRows(contentWidth); rows != "" {
+			body += "\n" + rows
+		}
 	}
 
 	bottomDivider := dividerStyle(contentWidth)
@@ -777,6 +834,10 @@ func (m Model) View() string {
 		inputView = m.renderPlanApprove()
 	case stateFocus:
 		inputView = m.renderFocusHint()
+	}
+	// The agent manager list takes the bottom panel while open (S-077).
+	if m.agentList != nil {
+		inputView = m.renderAgentList()
 	}
 	// A child agent's routed approval takes over the bottom panel when the
 	// parent's own prompts aren't using it (S-068).
@@ -1270,6 +1331,10 @@ func (m Model) renderEntry(e entry, width int) string {
 }
 
 func (m Model) renderStatusBar(width int) string {
+	// Attached, the status bar scopes to the focused child (S-077).
+	if m.attachedTo != "" && m.subagents != nil {
+		return m.renderChildStatusBar(width)
+	}
 	// The active permission mode is always visible (S-059).
 	parts := []string{m.modeSegment()}
 	if m.TotalTokensIn != 0 || m.TotalTokensOut != 0 {
@@ -1349,14 +1414,19 @@ func formatTokenCount(n int64) string {
 }
 
 func (m *Model) renderHistory() string {
-	if len(m.transcript) == 0 && m.state != stateStreaming {
-		return welcomeStyle.Render("Type a message to start chatting.")
-	}
 	if m.state == stateFocus {
 		// Focus mode renders fresh with the selection gutter, bypassing the
-		// incremental cache.
+		// incremental cache; it scopes to whichever agent is focused (S-077).
 		content, _, _ := m.renderFocusHistory()
 		return content
+	}
+	// Attached view (S-077): the focused child's session, rendered fresh from
+	// the supervisor's live transcript (the parent's cache is untouched).
+	if m.attachedTo != "" && m.subagents != nil {
+		return m.renderAttachedHistory()
+	}
+	if len(m.transcript) == 0 && m.state != stateStreaming {
+		return welcomeStyle.Render("Type a message to start chatting.")
 	}
 	w := m.contentWidth()
 	if w != m.cachedWidth {
@@ -1632,6 +1702,7 @@ func helpText() string {
   /sandbox       Containment status and container sandboxes (doctor|list|status|destroy <id>|prune)
   /evidence      Tool-output evidence store: reduction stats and size (purge to clear)
   /gate          Quality gate: run [suite] starts the project's checks in the background, result shows the verdict
+  /agents        Agent manager: attach, steer, cancel, kill sub-agents (also Ctrl+A)
   /plan save [name]  Save the last plan/response to .shhh/plans/
   /compact       Summarize the conversation and continue from the summary
   /save [name]   Save this chat
@@ -1646,6 +1717,9 @@ Keys:
                   that joins the conversation before the next model request)
   Up/Down        Recall previous inputs (when the input is empty)
   Ctrl+E         Focus mode: select tool/command rows (j/k), expand/collapse (Enter), Esc back
+  Ctrl+A         Agent manager: enter attaches to an agent's session, x cancels
+                 its turn, X kills it; attached, typing steers the agent,
+                 Shift+Tab sets its mode (clamped), Esc detaches
   Esc            Clear the input
   Ctrl+C         Cancel response / clear input / quit
   Ctrl+D         Quit

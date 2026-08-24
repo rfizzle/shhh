@@ -343,3 +343,271 @@ func TestParseSpawnArgsClampsBudgets(t *testing.T) {
 		t.Fatalf("defaults not applied: %d %d", args.maxRounds, args.maxTokens)
 	}
 }
+
+// waitState polls until the named child reaches the wanted state.
+func waitState(t *testing.T, sup *Supervisor, name string, want State) {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		if st, ok := sup.Get(name); ok && st.State == want {
+			return
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	st, _ := sup.Get(name)
+	t.Fatalf("agent %s never reached %s (last: %s)", name, want, st.State)
+}
+
+// resumableEnv blocks the first stream until cancelled (respecting the
+// per-request cancel func, like a real provider), then serves scripted final
+// responses.
+func resumableEnv(finals ...string) EnvFactory {
+	var mu sync.Mutex
+	first := true
+	return func(ctx context.Context, role Role, root string) (Env, error) {
+		stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+			mu.Lock()
+			if first {
+				first = false
+				mu.Unlock()
+				ch := make(chan provider.StreamEvent)
+				sctx, cancel := context.WithCancel(ctx)
+				go func() {
+					<-sctx.Done()
+					close(ch)
+				}()
+				return ch, cancel, nil
+			}
+			var text string
+			if len(finals) > 0 {
+				text = finals[0]
+				finals = finals[1:]
+			}
+			mu.Unlock()
+			ch := make(chan provider.StreamEvent, 2)
+			ch <- provider.StreamEvent{Token: text}
+			ch <- provider.StreamEvent{Done: true}
+			close(ch)
+			_, cancel := context.WithCancel(context.Background())
+			return ch, cancel, nil
+		}
+		return Env{SystemPrompt: "sys", Stream: stream}, nil
+	}
+}
+
+func transcriptHas(entries []TranscriptEntry, kind EntryKind, substr string) bool {
+	for _, e := range entries {
+		if e.Kind != kind {
+			continue
+		}
+		if strings.Contains(e.Text, substr) || strings.Contains(e.Result, substr) || strings.Contains(e.Tool, substr) {
+			return true
+		}
+	}
+	return false
+}
+
+func TestCancelTurnIdleThenSteerResumes(t *testing.T) {
+	sup := New(context.Background(), Options{Root: t.TempDir(), NewEnv: resumableEnv("resumed and finished")})
+	t.Cleanup(sup.Close)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"long survey"}`)
+
+	waitState(t, sup, "researcher-1", StateRunning)
+	if err := sup.CancelTurn("researcher-1"); err != nil {
+		t.Fatal(err)
+	}
+	waitState(t, sup, "researcher-1", StateIdle)
+	if err := sup.CancelTurn("researcher-1"); err == nil {
+		t.Fatal("cancelling an idle turn must error")
+	}
+
+	if err := sup.Steer("researcher-1", "continue please"); err != nil {
+		t.Fatal(err)
+	}
+	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+	if !strings.Contains(report, "resumed and finished") {
+		t.Fatalf("steering after a cancelled turn should resume, got: %s", report)
+	}
+
+	entries := sup.Transcript("researcher-1")
+	if !transcriptHas(entries, EntryUser, "long survey") {
+		t.Fatal("transcript missing the task entry")
+	}
+	if !transcriptHas(entries, EntrySystem, "Turn cancelled") {
+		t.Fatal("transcript missing the cancellation note")
+	}
+	if !transcriptHas(entries, EntryUser, "continue please") {
+		t.Fatal("transcript missing the steering entry")
+	}
+	if !transcriptHas(entries, EntryAssistant, "resumed and finished") {
+		t.Fatal("transcript missing the final assistant entry")
+	}
+
+	if err := sup.Steer("researcher-1", "too late"); err == nil {
+		t.Fatal("steering a finished agent must error")
+	}
+}
+
+func TestKillFailsChildAndKeepsTranscript(t *testing.T) {
+	sup := New(context.Background(), Options{Root: t.TempDir(), NewEnv: resumableEnv()})
+	t.Cleanup(sup.Close)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"long survey"}`)
+
+	waitState(t, sup, "researcher-1", StateRunning)
+	if err := sup.Kill("researcher-1"); err != nil {
+		t.Fatal(err)
+	}
+	waitState(t, sup, "researcher-1", StateFailed)
+	if st, _ := sup.Get("researcher-1"); st.Detail != "cancelled" {
+		t.Fatalf("unexpected detail: %s", st.Detail)
+	}
+	if !transcriptHas(sup.Transcript("researcher-1"), EntrySystem, "Killed by the user") {
+		t.Fatal("transcript missing the kill note")
+	}
+	if err := sup.Kill("researcher-1"); err == nil {
+		t.Fatal("killing a finished agent must error")
+	}
+}
+
+func TestTranscriptRecordsToolRounds(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{
+		{text: "let me look", calls: []provider.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"x"}`}}},
+		{text: "all done"},
+	}}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey"}`)
+	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+
+	entries := sup.Transcript("researcher-1")
+	if !transcriptHas(entries, EntryUser, "survey") {
+		t.Fatal("missing task entry")
+	}
+	if !transcriptHas(entries, EntryAssistant, "let me look") {
+		t.Fatal("missing per-round assistant text")
+	}
+	if !transcriptHas(entries, EntryTool, "auto:read_file") {
+		t.Fatal("missing settled tool entry")
+	}
+	for _, e := range entries {
+		if e.Kind == EntryTool && e.Pending {
+			t.Fatal("tool entry left pending after its result")
+		}
+	}
+	if !transcriptHas(entries, EntryAssistant, "all done") {
+		t.Fatal("missing final assistant entry")
+	}
+	if sup.StreamingText("researcher-1") != "" {
+		t.Fatal("streaming text must be flushed at completion")
+	}
+}
+
+func TestSetAgentModeClampedToCeiling(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{{text: "done"}}}
+	sup := newTestSupervisor(t, env) // parent ceiling defaults to manual
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"x"}`)
+
+	eff, err := sup.SetAgentMode("researcher-1", agent.ModeAuto)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if eff != agent.ModeManual {
+		t.Fatalf("mode not clamped to the manual ceiling, got %s", eff)
+	}
+	sup.SetParentMode(agent.ModeAuto)
+	eff, err = sup.SetAgentMode("researcher-1", agent.ModeAcceptEdits)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if eff != agent.ModeAcceptEdits {
+		t.Fatalf("mode under the ceiling must stick, got %s", eff)
+	}
+	if got, ok := sup.AgentMode("researcher-1"); !ok || got != agent.ModeAcceptEdits {
+		t.Fatalf("AgentMode = %s, %v", got, ok)
+	}
+}
+
+func TestNoteQueuedSteeringAndWorktreeDiff(t *testing.T) {
+	sup := New(context.Background(), Options{Root: t.TempDir(), NewEnv: resumableEnv()})
+	t.Cleanup(sup.Close)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"x"}`)
+	waitState(t, sup, "researcher-1", StateRunning)
+
+	if err := sup.Note("researcher-1", TranscriptEntry{Kind: EntrySystem, Text: "a scoped note"}); err != nil {
+		t.Fatal(err)
+	}
+	if !transcriptHas(sup.Transcript("researcher-1"), EntrySystem, "a scoped note") {
+		t.Fatal("note not appended")
+	}
+	if err := sup.Note("ghost", TranscriptEntry{}); err == nil {
+		t.Fatal("noting an unknown agent must error")
+	}
+
+	if err := sup.Steer("researcher-1", "queued mid-turn"); err != nil {
+		t.Fatal(err)
+	}
+	if n := sup.QueuedSteering("researcher-1"); n != 1 {
+		t.Fatalf("QueuedSteering = %d, want 1", n)
+	}
+
+	if _, err := sup.WorktreeDiff("researcher-1"); err == nil {
+		t.Fatal("researchers have no isolated workspace to diff")
+	}
+
+	if p, ok := sup.Parent("researcher-1"); !ok || p != "" {
+		t.Fatalf("Parent = %q, %v; want orchestrator", p, ok)
+	}
+}
+
+func TestSteerDuringFinalStreamStartsNextTurn(t *testing.T) {
+	started := make(chan struct{})
+	release := make(chan struct{})
+	var turnCount atomic.Int32
+	factory := func(ctx context.Context, role Role, root string) (Env, error) {
+		stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+			n := turnCount.Add(1)
+			ch := make(chan provider.StreamEvent, 2)
+			if n == 1 {
+				go func() {
+					close(started)
+					select {
+					case <-release:
+					case <-ctx.Done():
+						close(ch)
+						return
+					}
+					ch <- provider.StreamEvent{Token: "first done"}
+					ch <- provider.StreamEvent{Done: true}
+					close(ch)
+				}()
+			} else {
+				ch <- provider.StreamEvent{Token: "second done"}
+				ch <- provider.StreamEvent{Done: true}
+				close(ch)
+			}
+			_, cancel := context.WithCancel(context.Background())
+			return ch, cancel, nil
+		}
+		return Env{SystemPrompt: "sys", Stream: stream}, nil
+	}
+	sup := New(context.Background(), Options{Root: t.TempDir(), NewEnv: factory})
+	t.Cleanup(sup.Close)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"x"}`)
+
+	<-started
+	if err := sup.Steer("researcher-1", "one more thing"); err != nil {
+		t.Fatal(err)
+	}
+	close(release)
+
+	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+	if !strings.Contains(report, "second done") {
+		t.Fatalf("steering during the final stream must start a fresh turn, got: %s", report)
+	}
+	entries := sup.Transcript("researcher-1")
+	if !transcriptHas(entries, EntryAssistant, "first done") || !transcriptHas(entries, EntryAssistant, "second done") {
+		t.Fatal("transcript missing one of the turns' assistant entries")
+	}
+	if !transcriptHas(entries, EntryUser, "one more thing") {
+		t.Fatal("transcript missing the steering entry")
+	}
+}
