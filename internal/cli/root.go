@@ -338,6 +338,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newRateCmd())
 	cmd.AddCommand(newHistoryCmd())
 	cmd.AddCommand(newSnippetsCmd())
+	cmd.AddCommand(newMemoryCmd())
 	cmd.AddCommand(newCompletionCmd(cmd))
 
 	cmd.SetVersionTemplate(versionTemplate())

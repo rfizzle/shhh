@@ -79,6 +79,18 @@ var migrations = []string{
 	`ALTER TABLE agent_sessions ADD COLUMN parent_id INTEGER REFERENCES agent_sessions(id);`,
 
 	`ALTER TABLE chat_sessions ADD COLUMN parent_id INTEGER REFERENCES chat_sessions(id) ON DELETE SET NULL;`,
+
+	`CREATE TABLE IF NOT EXISTS memories (
+		id         INTEGER PRIMARY KEY,
+		scope      TEXT NOT NULL,
+		kind       TEXT NOT NULL,
+		text       TEXT NOT NULL,
+		provenance TEXT NOT NULL,
+		created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+		updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_memories_scope ON memories(scope);`,
 }
 
 func (db *DB) migrate() error {

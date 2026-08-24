@@ -113,6 +113,15 @@ type BehaviorConfig struct {
 	// ClassifierRetries is how many extra attempts an invalid or failed
 	// classifier response gets before failing closed (default 1).
 	ClassifierRetries int `toml:"classifier_retries"`
+	// MemoryDisabled turns off durable memory (S-070): no memories are
+	// injected into the system prompt and the remember tool is not registered.
+	MemoryDisabled bool `toml:"memory_disabled"`
+	// MemoryMaxEntries caps how many memories are injected per session
+	// (default 20).
+	MemoryMaxEntries int `toml:"memory_max_entries"`
+	// MemoryMaxTokens is the hard token budget for the injected memory block
+	// (default 1200).
+	MemoryMaxTokens int `toml:"memory_max_tokens"`
 }
 
 type AppearanceConfig struct {
@@ -127,6 +136,11 @@ const DefaultRetentionDays = 90
 
 const DefaultContextMaxTokens = 8000
 
+const (
+	DefaultMemoryMaxEntries = 20
+	DefaultMemoryMaxTokens  = 1200
+)
+
 func (c Config) SafetyWarningsEnabled() bool {
 	if c.Behavior.SafetyWarnings == nil {
 		return true
@@ -139,6 +153,20 @@ func (c Config) EffectiveContextMaxTokens() int {
 		return c.Behavior.ContextMaxTokens
 	}
 	return DefaultContextMaxTokens
+}
+
+func (c Config) EffectiveMemoryMaxEntries() int {
+	if c.Behavior.MemoryMaxEntries > 0 {
+		return c.Behavior.MemoryMaxEntries
+	}
+	return DefaultMemoryMaxEntries
+}
+
+func (c Config) EffectiveMemoryMaxTokens() int {
+	if c.Behavior.MemoryMaxTokens > 0 {
+		return c.Behavior.MemoryMaxTokens
+	}
+	return DefaultMemoryMaxTokens
 }
 
 func (c Config) EffectiveRetentionDays() int {
@@ -230,6 +258,16 @@ func Set(cfg *Config, key, value string) error {
 		n := 0
 		fmt.Sscanf(value, "%d", &n)
 		cfg.Behavior.ClassifierRetries = n
+	case "behavior.memory_disabled":
+		cfg.Behavior.MemoryDisabled = value == "true"
+	case "behavior.memory_max_entries":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Behavior.MemoryMaxEntries = n
+	case "behavior.memory_max_tokens":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Behavior.MemoryMaxTokens = n
 	case "sandbox.profile":
 		cfg.Sandbox.Profile = value
 	case "sandbox.deny_extra":

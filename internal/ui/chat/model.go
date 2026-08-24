@@ -189,6 +189,10 @@ type Model struct {
 	evidence Evidence
 	// gate backs the /gate quality-gate command (S-067).
 	gate Gate
+	// memory backs /memory and the remember-tool confirm flow (S-070);
+	// memoryAsk is the open memory prompt while a proposal awaits the user.
+	memory    Memory
+	memoryAsk *components.NoteSelect
 	// compacting marks an in-flight /compact request (S-055): the streamed
 	// response is a summary handled by finishCompact, not conversation text.
 	compacting bool
@@ -914,6 +918,10 @@ func (m Model) updateConfirmRun(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.quitting = true
 		return m, m.quitCmd()
 	}
+	// A memory proposal (S-070) confirms through its own prompt, not the card.
+	if m.memoryAsk != nil {
+		return m.updateMemoryAsk(msg)
+	}
 	done, result := m.approvalCard().Update(msg)
 	if !done {
 		return m, nil
@@ -1231,6 +1239,7 @@ func (m *Model) cancelStreaming() {
 		m.appendEntry(entry{kind: entryTool, toolName: tc.Name, toolArgs: tc.Arguments, toolResult: "cancelled by user"})
 	}
 	m.pendingApproval = nil
+	m.memoryAsk = nil
 	m.finishStreaming()
 	m.restoreSteering()
 }
@@ -1611,6 +1620,12 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		}
 		return true, m.gate.Manage(parts[1:])
 
+	case "/memory":
+		if m.memory.Manage == nil {
+			return true, "Durable memory is unavailable in this session."
+		}
+		return true, m.memory.Manage(parts[1:])
+
 	case "/plan":
 		if len(parts) < 2 || parts[1] != "save" {
 			return true, "Usage: /plan save [name]"
@@ -1759,6 +1774,7 @@ func helpText() string {
   /sandbox       Containment status and container sandboxes (doctor|list|status|destroy <id>|prune)
   /evidence      Tool-output evidence store: reduction stats and size (purge to clear)
   /gate          Quality gate: run [suite] starts the project's checks in the background, result shows the verdict
+  /memory        Durable memories: list (default) · add [global] [kind] <text> · forget <id>
   /agents        Agent manager: attach, steer, cancel, kill sub-agents (also Ctrl+A)
   /plan save [name]  Save the last plan/response to .shhh/plans/
   /compact       Summarize the conversation and continue from the summary

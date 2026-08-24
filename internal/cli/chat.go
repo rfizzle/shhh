@@ -13,6 +13,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
@@ -53,6 +54,13 @@ type chatSession struct {
 	// agents registers the sub-agent orchestration tools and supervisor
 	// (S-068); `shhh code` interactive sessions only.
 	agents bool
+	// memory enables durable memory (S-070): bounded recall into the system
+	// prompt plus the confirm-gated remember tool; `shhh code` interactive
+	// sessions only (headless runs have nobody to confirm a proposal).
+	memory bool
+	// promptExtra is appended to the system prompt after config and project
+	// context (e.g. the recalled-memory block).
+	promptExtra string
 }
 
 func newChatCmd() *cobra.Command {
@@ -121,7 +129,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession) (*sessionEnv, erro
 	}
 
 	info := shell.Detect()
-	promptExtra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra, project.FindContext())
+	promptExtra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra, project.FindContext(), session.promptExtra)
 	sysPrompt := session.buildPrompt(info, promptExtra)
 
 	messages := []provider.Message{
@@ -197,12 +205,6 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions()...)
 	}
 
-	env, err := buildSessionEnv(cmd, session)
-	if err != nil {
-		return err
-	}
-	cfg := env.cfg
-
 	db, err := storage.Open()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "warning: chat persistence unavailable: %v\n", err)
@@ -210,6 +212,26 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if db != nil {
 		defer db.Close()
 	}
+
+	// Durable memory (S-070): recalled entries join the system prompt under a
+	// hard entry/token budget — cited by id, zero model calls — and the
+	// remember tool lets the model propose new ones, each confirmed by the
+	// user before it persists.
+	var mem *memory.Store
+	if session.memory && db != nil && !ConfigFrom(cmd.Context()).Behavior.MemoryDisabled {
+		mem = openMemoryStore(db)
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), memory.ToolDefinition())
+		memCfg := ConfigFrom(cmd.Context())
+		if entries, recallErr := mem.Recall(memCfg.EffectiveMemoryMaxEntries(), int64(memCfg.EffectiveMemoryMaxTokens())); recallErr == nil {
+			session.promptExtra = prompt.CombineExtra(session.promptExtra, memory.PromptBlock(entries))
+		}
+	}
+
+	env, err := buildSessionEnv(cmd, session)
+	if err != nil {
+		return err
+	}
+	cfg := env.cfg
 
 	prices, _ := pricing.Load()
 
@@ -293,6 +315,13 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	}
 	if gate != nil {
 		model = model.WithGate(chat.Gate{Manage: gateManager(gate)})
+	}
+	if mem != nil {
+		model = model.WithMemory(chat.Memory{
+			Manage:       memoryManager(mem),
+			Save:         memorySaver(mem),
+			ProjectScope: mem.Project(),
+		})
 	}
 	// web_fetch and spawn_agent go through the approval queue as generic
 	// external actions: manual and accept-edits prompt, auto defers to the

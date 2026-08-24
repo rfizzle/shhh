@@ -40,9 +40,11 @@ func newCodeCmd() *cobra.Command {
 			if printMode || popts.json || popts.sandbox {
 				return runPrintSession(cmd, args, session, popts)
 			}
-			// Sub-agent orchestration (S-068) is interactive-only: approvals
-			// route to the user, which headless print mode cannot do.
+			// Sub-agent orchestration (S-068) and durable memory (S-070) are
+			// interactive-only: approvals and memory confirmations route to
+			// the user, which headless print mode cannot do.
 			session.agents = true
+			session.memory = true
 			return runChatSession(cmd, args, session)
 		},
 	}

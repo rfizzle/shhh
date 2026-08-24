@@ -303,6 +303,30 @@ func TestSet_ClassifierConfig(t *testing.T) {
 	}
 }
 
+func TestSet_MemoryConfig(t *testing.T) {
+	var cfg Config
+	if cfg.EffectiveMemoryMaxEntries() != DefaultMemoryMaxEntries || cfg.EffectiveMemoryMaxTokens() != DefaultMemoryMaxTokens {
+		t.Errorf("zero config should fall back to defaults, got %d/%d",
+			cfg.EffectiveMemoryMaxEntries(), cfg.EffectiveMemoryMaxTokens())
+	}
+	for key, value := range map[string]string{
+		"behavior.memory_disabled":    "true",
+		"behavior.memory_max_entries": "5",
+		"behavior.memory_max_tokens":  "300",
+	} {
+		if err := Set(&cfg, key, value); err != nil {
+			t.Fatalf("Set(%s): %v", key, err)
+		}
+	}
+	if !cfg.Behavior.MemoryDisabled {
+		t.Error("behavior.memory_disabled should be set")
+	}
+	if cfg.EffectiveMemoryMaxEntries() != 5 || cfg.EffectiveMemoryMaxTokens() != 300 {
+		t.Errorf("memory bounds = %d/%d, want 5/300",
+			cfg.EffectiveMemoryMaxEntries(), cfg.EffectiveMemoryMaxTokens())
+	}
+}
+
 func TestSet_WebConfig(t *testing.T) {
 	var cfg Config
 	for key, value := range map[string]string{

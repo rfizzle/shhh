@@ -115,6 +115,9 @@ accent_color = "cyan"
 | `behavior.classifier_timeout_seconds` | Timeout per classifier request (default: 30) |
 | `behavior.classifier_max_tokens` | Max tokens for the classifier's response (default: 1024) |
 | `behavior.classifier_retries` | Extra attempts before a failed classifier check falls back to prompting (default: 1) |
+| `behavior.memory_disabled` | Turn off durable memory: no recall injection, no `remember` tool (default: false) |
+| `behavior.memory_max_entries` | Max memories injected into the system prompt per session (default: 20) |
+| `behavior.memory_max_tokens` | Hard token budget for the injected memory block (default: 1200) |
 | `behavior.system_prompt_extra` | Extra text appended to the system prompt |
 | `sandbox.profile` | Containment profile for assistant commands: `workspace` (network preserved, default) or `workspace-netless` |
 | `sandbox.deny_extra` | Extra paths masked from contained commands (the built-in mask — `~/.ssh`, `~/.aws`, `~/.config/gh`, shhh's own config/state dirs — cannot be disabled) |
@@ -235,6 +238,8 @@ For long or unsupervised runs, `shhh code -p --sandbox` goes a step further and 
 
 Bulky tool results are reduced before the model sees them: output over a size threshold is deterministically cut to a verbatim head and tail plus any flagged lines (errors, panics, test failures) from the elided middle, with terminal control sequences stripped. Small results pass through untouched. Each reduced result carries an opaque evidence id, and the full original is kept under shhh's state dir (user-only permissions, per-session, pruned after a week) where the model can retrieve it with the `evidence` tool — `info`, paged `read`, or literal `search`. The transcript shows exactly the reduced view the model got, and `/evidence` in a session shows store size and reduction stats (`/evidence purge` deletes the stored originals).
 
+`shhh code` sessions also remember across sessions: durable memories — preferences, project conventions, corrections, lessons — live in shhh's local SQLite storage, scoped globally or to the current project (the repository root). A bounded selection (project entries first, hard entry and token caps, no model calls) is injected into the system prompt with each entry cited by id, so a wrong memory is easy to find and delete. The trust rule is absolute: you can add memories directly (`/memory add` or `shhh memory add` — your own words persist as-is), but when the *agent* proposes one through its `remember` tool, a confirm prompt always appears — pick the scope (project or global), optionally amend the entry with a note, or decline — in every permission mode, with no auto-approval and no classifier override, because memory an agent writes to itself is an injection surface. `behavior.memory_disabled`, `behavior.memory_max_entries`, and `behavior.memory_max_tokens` tune it.
+
 A wrong turn costs one command, not the session: a checkpoint is recorded at the start of every user turn, and `/rewind` (interactive picker, or `/rewind <n>` directly) truncates the conversation back to just before a chosen turn. The abandoned tail is never lost — it's kept as a **branch** of the current session, and `/branches` lists the session's branch family and switches between them (the working conversation is saved before every switch, and `/save`/`/load` work on any branch). Rewind is honest about its scope: it restores conversation state only — files on disk are untouched, and the rewind message says so — and each checkpoint records the git HEAD and dirty status at the time, so the message can tell you when the working tree or HEAD has diverged since.
 
 The status bar shows token usage, estimated cost, the current context size, and the active model. The context indicator changes color as the conversation approaches the model's context window (from the pricing table when known); past that threshold, the oldest tool results are automatically elided from the conversation before the next request.
@@ -251,6 +256,7 @@ Slash commands inside a chat session:
 | `/compact` | Summarize the conversation via the model and continue from the summary (frees context) |
 | `/evidence [purge]` | Tool-output evidence store: reduction stats and size; `purge` deletes the stored originals |
 | `/gate run [suite]`, `/gate result` | Quality gate (`shhh code`): run a named suite of the project's own checks in the background, then show the verdict (marked stale if the tree changed) |
+| `/memory` | Durable memories (`shhh code`): `list` (default), `add [global] [kind] <text>`, `forget <id>` |
 | `/rewind [n]` | Rewind to before a user turn (bare `/rewind` opens a picker); the abandoned tail is kept as a branch. Conversation only — files are not restored |
 | `/branches [n]` | List this session's branches, or switch to one (current work is saved first) |
 | `/save [name]` | Save this chat |
@@ -328,6 +334,9 @@ The contents of `.shhh` are appended to the system prompt when running shhh from
 | `shhh snippets copy <name>` | Copy a snippet to clipboard |
 | `shhh snippets show <name>` | Display a snippet |
 | `shhh snippets delete <name>` | Delete a snippet |
+| `shhh memory list` | List durable memories (current project + global) |
+| `shhh memory add [--global] [--kind k] <text>` | Add a memory (preference, convention, correction, lesson) |
+| `shhh memory forget <id>` | Delete a memory by id |
 | `shhh completion <shell>` | Generate shell completion script |
 
 ### Flags

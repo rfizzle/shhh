@@ -11,6 +11,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -41,6 +42,7 @@ const (
 	approvalExec    approvalKind = iota // one-line command + safety warnings
 	approvalDiff                        // colored unified diff of a file write/edit
 	approvalGeneric                     // one-line summary of the tool call
+	approvalMemory                      // memory proposal (S-070): scope selector with optional note
 )
 
 // approvalRequest is the head of the approval queue: one tool call awaiting
@@ -52,6 +54,8 @@ type approvalRequest struct {
 	title   string      // action headline, e.g. "edit main.go"
 	hunks   []diff.Hunk // approvalDiff: the change to show
 	summary string      // one-line description for transcript entries
+	// memoryDraft is the proposed entry for approvalMemory (S-070).
+	memoryDraft memory.Draft
 }
 
 // approvedToolDoneMsg carries the executor result of an approved non-exec
@@ -80,6 +84,11 @@ func (m Model) requiresApproval(name string) bool {
 	if tools.IsMutating(name) {
 		return true
 	}
+	// remember (S-070) is always gated: agent-proposed memories persist only
+	// after explicit user confirmation.
+	if name == memory.RememberToolName {
+		return true
+	}
 	_, ok := m.gatedTools[name]
 	return ok
 }
@@ -99,6 +108,12 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 			command: args.Command,
 			summary: firstLine(args.Command),
 		}, nil
+	}
+
+	// Memory proposals get the scope-selector prompt, never a generic card
+	// (S-070).
+	if tc.Name == memory.RememberToolName {
+		return m.buildMemoryApproval(tc)
 	}
 
 	// A registered preview overrides the built-in mutating-tool handling.
@@ -169,6 +184,17 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	m.pendingApproval = req
 	if req.kind == approvalExec {
 		m.pendingRun = req.command
+	}
+	// Agent-proposed memories (S-070) always require explicit user
+	// confirmation: no mode, session grant, or classifier can wave one
+	// through. Plan mode falls through to the policy below, which refuses the
+	// write like any other.
+	if req.kind == approvalMemory && m.mode != agent.ModePlan {
+		m.recordDecision(decisionAsk, "memory")
+		m.openMemoryAsk(req)
+		m.state = stateConfirmRun
+		m.syncViewportHeight()
+		return m, nil
 	}
 	// Mode policy (S-059, absorbing S-054): the permissive modes and session
 	// grants skip the prompt, plan mode refuses the call outright, and
@@ -281,8 +307,11 @@ func (m Model) declineApproval() (tea.Model, tea.Cmd) {
 	m.pendingApproval = nil
 	m.pendingRun = ""
 	content := "error: the user declined this tool call"
-	if req.kind == approvalExec {
+	switch req.kind {
+	case approvalExec:
 		content = "error: the user declined to run this command"
+	case approvalMemory:
+		content = "error: the user declined to save this memory; do not re-propose it this session"
 	}
 	m.agent.ResolveApproval(content)
 	m.appendEntry(entry{kind: entrySystem, text: "Declined: " + req.summary})
@@ -391,8 +420,12 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 	return card
 }
 
-// confirmLines renders the approval card, one row per element.
+// confirmLines renders the approval card — or the memory prompt (S-070) when
+// one is showing — one row per element.
 func (m Model) confirmLines() []string {
+	if m.memoryAsk != nil {
+		return m.memoryAskLines()
+	}
 	return strings.Split(m.approvalCard().View(m.contentWidth()), "\n")
 }
 
