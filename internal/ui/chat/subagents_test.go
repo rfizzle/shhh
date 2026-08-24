@@ -136,8 +136,8 @@ func TestAgentRowsAndBadge(t *testing.T) {
 	if !strings.Contains(view, "researcher-1") {
 		t.Fatalf("view missing the agent progress row:\n%s", view)
 	}
-	if badge := m.agentBadge(); !strings.Contains(badge, "1 agent") {
-		t.Fatalf("unexpected badge: %q", badge)
+	if bar := m.renderStatusBar(120); !strings.Contains(bar, "1 agent") {
+		t.Fatalf("status bar missing the agent badge: %q", bar)
 	}
 	if m.agentRowsHeight() != 1 {
 		t.Fatalf("agentRowsHeight = %d, want 1", m.agentRowsHeight())

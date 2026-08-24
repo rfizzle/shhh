@@ -34,6 +34,10 @@ type Cockpit struct {
 	Round string
 	// CtxPct drives the 8-cell context meter; negative hides it.
 	CtxPct int
+	// WarnPct/AlertPct override the meter's warning-color thresholds (0 keeps
+	// the defaults), so the host can match its own trim warnings (S-055).
+	WarnPct  int
+	AlertPct int
 	// Tokens is the usage segment ("↑41.2k ↓9.8k"); Spend the cost ("$0.14").
 	Tokens string
 	Spend  string
@@ -62,14 +66,21 @@ func (c Cockpit) modeSegment() string {
 
 // ctxMeter renders the context occupancy bar with its warning colors.
 func (c Cockpit) ctxMeter() string {
+	warn, alert := ctxWarnPct, ctxAlertPct
+	if c.WarnPct > 0 {
+		warn = c.WarnPct
+	}
+	if c.AlertPct > 0 {
+		alert = c.AlertPct
+	}
 	pct := min(max(c.CtxPct, 0), 100)
 	filled := pct * ctxBarCells / 100
 	bar := fmt.Sprintf("ctx %s%s %d%%",
 		strings.Repeat("▰", filled), strings.Repeat("▱", ctxBarCells-filled), pct)
 	switch {
-	case pct >= ctxAlertPct:
+	case pct >= alert:
 		return errStyle.Bold(true).Render(bar)
-	case pct >= ctxWarnPct:
+	case pct >= warn:
 		return accentStyle.Render(bar)
 	default:
 		return statusStyle.Render(bar)

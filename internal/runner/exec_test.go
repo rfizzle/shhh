@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -111,5 +112,59 @@ func TestRunCaptureArgv_EmptyArgv(t *testing.T) {
 	out, code := RunCaptureArgv(context.Background(), nil)
 	if code != -1 || !strings.Contains(out, "error") {
 		t.Errorf("empty argv should fail, got %q code %d", out, code)
+	}
+}
+
+func TestRunCaptureTail_ReportsLinesAndCapturesAll(t *testing.T) {
+	var mu sync.Mutex
+	var lines []string
+	out, code := RunCaptureTail(context.Background(), "printf 'one\\ntwo\\n'; printf 'errline\\n' >&2", func(l string) {
+		mu.Lock()
+		lines = append(lines, l)
+		mu.Unlock()
+	})
+	if code != 0 {
+		t.Fatalf("expected exit 0, got %d (%q)", code, out)
+	}
+	if !strings.Contains(out, "one") || !strings.Contains(out, "two") || !strings.Contains(out, "errline") {
+		t.Fatalf("combined output should be captured, got %q", out)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	joined := strings.Join(lines, "|")
+	if !strings.Contains(joined, "one") || !strings.Contains(joined, "two") {
+		t.Fatalf("completed lines should be reported as they appear, got %q", joined)
+	}
+}
+
+func TestRunCaptureTail_ExitCodeAndNilCallback(t *testing.T) {
+	out, code := RunCaptureTail(context.Background(), "echo boom; exit 3", nil)
+	if code != 3 || !strings.Contains(out, "boom") {
+		t.Fatalf("want boom/3, got %q code %d", out, code)
+	}
+}
+
+func TestRunCaptureArgvTail_EmptyArgv(t *testing.T) {
+	out, code := RunCaptureArgvTail(context.Background(), nil, nil)
+	if code != -1 || !strings.Contains(out, "error") {
+		t.Fatalf("empty argv should fail, got %q code %d", out, code)
+	}
+}
+
+func TestRunCaptureArgvTail_RunsExplicitArgv(t *testing.T) {
+	var mu sync.Mutex
+	var lines []string
+	out, code := RunCaptureArgvTail(context.Background(), []string{"/bin/sh", "-c", "echo wrapped"}, func(l string) {
+		mu.Lock()
+		lines = append(lines, l)
+		mu.Unlock()
+	})
+	if code != 0 || !strings.Contains(out, "wrapped") {
+		t.Fatalf("want wrapped/0, got %q code %d", out, code)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if len(lines) == 0 || lines[0] != "wrapped" {
+		t.Fatalf("expected the completed line reported, got %v", lines)
 	}
 }

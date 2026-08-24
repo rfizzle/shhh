@@ -126,6 +126,9 @@ type entry struct {
 	toolArgs   string
 	toolResult string
 	exitCode   int
+	// duration is how long the tool call or command ran, shown on its
+	// activity row (S-075); zero hides it.
+	duration time.Duration
 	// expanded shows the full tool/command output instead of the truncated
 	// block; toggled from focus mode (S-076).
 	expanded bool
@@ -165,6 +168,14 @@ type Model struct {
 	state      state
 	pendingRun string
 	runCancel  context.CancelFunc
+	// Compact activity feed (S-075): verbosity is the feed's default density
+	// (/ui verbosity); tailRunFn is the tail-capable command runner, and
+	// runningCommand/runStart/runTail drive the live row while a command runs.
+	verbosity      verbosity
+	tailRunFn      TailFunc
+	runningCommand string
+	runStart       time.Time
+	runTail        *commandTail
 	// Head of the agent's approval queue while its confirm prompt is showing,
 	// with everything needed to preview and execute it.
 	pendingApproval *approvalRequest
@@ -281,6 +292,7 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 		input:       ta,
 		spinner:     s,
 		state:       stateInput,
+		verbosity:   verbosityMed,
 		atBottom:    true,
 		copyFn:      clipboard.Copy,
 		sessionName: AutosaveName,
@@ -672,7 +684,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.agent.RecordAutoResults(msg.results)
 		for _, r := range msg.results {
 			m.recordToolEvent(r.Call.Name, r.Duration, outcomeFromResult(r.Result))
-			m.appendEntry(entry{kind: entryTool, toolName: r.Call.Name, toolArgs: r.Call.Arguments, toolResult: r.Result})
+			m.appendEntry(entry{kind: entryTool, toolName: r.Call.Name, toolArgs: r.Call.Arguments, toolResult: r.Result, duration: r.Duration})
 		}
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
@@ -686,6 +698,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.runCancel = nil
+		m.runningCommand = ""
+		m.runTail = nil
+		m.runStart = time.Time{}
 		out := strings.TrimRight(msg.output, "\n")
 		// Assistant command output goes through the reduction pipeline
 		// (S-064) before both the transcript entry and the tool result, so
@@ -699,7 +714,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.recordToolEvent(tools.ExecCommandName, msg.duration, outcome)
 		}
-		m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out, exitCode: msg.exitCode})
+		m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out, exitCode: msg.exitCode, duration: msg.duration})
 		if m.pendingApproval != nil {
 			m.pendingApproval = nil
 			m.agent.ResolveApproval(execToolResult(out, msg.exitCode))
@@ -742,7 +757,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				Syntax:   diffSyntax(req.path),
 			}})
 		} else {
-			m.appendEntry(entry{kind: entryTool, toolName: req.call.Name, toolArgs: req.call.Arguments, toolResult: msg.result})
+			m.appendEntry(entry{kind: entryTool, toolName: req.call.Name, toolArgs: req.call.Arguments, toolResult: msg.result, duration: msg.duration})
 		}
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
@@ -876,11 +891,13 @@ func (m Model) View() string {
 		}
 		body = m.viewport.View() + "\n" + m.spinner.View() + " " + label
 	case m.state == stateRunningCmd:
-		label := "Running command…"
 		if m.pendingApproval != nil && m.pendingApproval.kind != approvalExec {
-			label = "Applying changes…"
+			body = m.viewport.View() + "\n" + m.spinner.View() + " Applying changes…"
+		} else {
+			// The running command renders as a live activity row whose tail is
+			// its last output line (S-075); spinner ticks keep it fresh.
+			body = m.viewport.View() + "\n" + m.runningCommandRow(contentWidth)
 		}
-		body = m.viewport.View() + "\n" + m.spinner.View() + " " + label
 	case m.state == stateClassifying:
 		body = m.viewport.View() + "\n" + m.spinner.View() + " Checking permission…"
 	default:
@@ -1032,19 +1049,32 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	command := m.pendingRun
 	m.pendingRun = ""
 	m.state = stateRunningCmd
+	m.runningCommand = command
+	m.runStart = time.Now()
+	tail := &commandTail{}
+	m.runTail = tail
 	m.syncViewportHeight()
 	ctx, cancel := context.WithCancel(context.Background())
 	m.runCancel = cancel
 	runID := m.agent.RunID()
 	runFn := m.runFn
+	tailFn := m.tailRunFn
 	// Assistant commands run contained when a mechanism is available (S-062);
 	// /run — the user's own command — stays on the plain runner.
 	if m.pendingApproval != nil && m.containment.Run != nil {
 		runFn = m.containment.Run
+		tailFn = m.containment.TailRun
 	}
 	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
 		start := time.Now()
-		out, code := runFn(ctx, command)
+		var out string
+		var code int
+		// The tail-capable runner feeds the live row (S-075) when wired.
+		if tailFn != nil {
+			out, code = tailFn(ctx, command, tail.Set)
+		} else {
+			out, code = runFn(ctx, command)
+		}
 		return cmdDoneMsg{runID: runID, command: command, output: out, exitCode: code, duration: time.Since(start)}
 	})
 }
@@ -1176,48 +1206,9 @@ func terminalMsg(ev provider.StreamEvent) tea.Msg {
 	return nil
 }
 
+// maxToolResultLines bounds an activity row's detail view when it isn't
+// explicitly expanded (failed-row auto-expansion, high verbosity).
 const maxToolResultLines = 8
-
-func (m Model) renderToolBlock(name, args, result string) string {
-	return m.renderToolBlockLimited(name, args, result, maxToolResultLines)
-}
-
-// renderToolBlockLimited renders a tool block truncated to limit result
-// lines; limit <= 0 shows everything (focus-mode expansion, S-076).
-func (m Model) renderToolBlockLimited(name, args, result string, limit int) string {
-	border := toolBorderStyle.Render("│")
-
-	var block strings.Builder
-	block.WriteString(border + " " + toolStyle.Render("⚙ "+name) + " " + toolArgsStyle.Render(formatToolArgs(args)) + "\n")
-
-	display := result
-	if limit > 0 {
-		display = truncateLines(result, limit)
-	}
-	for _, line := range strings.Split(display, "\n") {
-		block.WriteString(border + " " + toolResultStyle.Render(line) + "\n")
-	}
-	block.WriteString("\n")
-	return block.String()
-}
-
-func (m Model) renderCommandBlock(e entry) string {
-	border := toolBorderStyle.Render("│")
-
-	var block strings.Builder
-	block.WriteString(border + " " + toolStyle.Render("$ "+firstLine(e.text)) + " " + toolArgsStyle.Render(fmt.Sprintf("(exit %d)", e.exitCode)) + "\n")
-	if strings.TrimSpace(e.toolResult) != "" {
-		display := e.toolResult
-		if !e.expanded {
-			display = truncateLines(e.toolResult, maxToolResultLines)
-		}
-		for _, line := range strings.Split(display, "\n") {
-			block.WriteString(border + " " + toolResultStyle.Render(line) + "\n")
-		}
-	}
-	block.WriteString("\n")
-	return block.String()
-}
 
 func formatToolArgs(raw string) string {
 	var m map[string]any
@@ -1235,17 +1226,6 @@ func formatToolArgs(raw string) string {
 		}
 	}
 	return strings.Join(parts, " ")
-}
-
-func truncateLines(s string, max int) string {
-	lines := strings.Split(s, "\n")
-	if len(lines) <= max {
-		return s
-	}
-	truncated := strings.Join(lines[:max], "\n")
-	remaining := len(lines) - max
-	truncated += fmt.Sprintf("\n… (%d more lines)", remaining)
-	return truncated
 }
 
 func (m *Model) accumulateUsage(u *provider.Usage) {
@@ -1407,14 +1387,9 @@ func (m Model) renderEntry(e entry, width int) string {
 		return userStyle.Render("You") + "\n" + m.wordWrap(e.text, width) + "\n\n"
 	case entryAssistant:
 		return assistantStyle.Render("Assistant") + "\n" + renderMarkdown(e.text, width) + "\n\n"
-	case entryTool:
-		limit := maxToolResultLines
-		if e.expanded {
-			limit = 0
-		}
-		return m.renderToolBlockLimited(e.toolName, e.toolArgs, e.toolResult, limit)
-	case entryCommand:
-		return m.renderCommandBlock(e)
+	case entryTool, entryCommand:
+		// Compact one-row activity rendering (S-075); focus mode expands it.
+		return m.activityRowFor(e).View(width) + "\n"
 	case entryDiff:
 		if e.diff == nil {
 			return ""
@@ -1433,80 +1408,59 @@ func (m Model) renderEntry(e entry, width int) string {
 	return ""
 }
 
+// renderStatusBar renders the cockpit rail (S-075, DESIGN-TUI.md §8): the
+// active mode, tool-round counter, context occupancy meter (colored at the
+// S-055 thresholds), usage and spend, queued steering, policy grants, and the
+// sub-agent badge, with the model name right-aligned and dropped first when
+// narrow.
 func (m Model) renderStatusBar(width int) string {
 	// Attached, the status bar scopes to the focused child (S-077).
 	if m.attachedTo != "" && m.subagents != nil {
 		return m.renderChildStatusBar(width)
 	}
-	// The active permission mode is always visible (S-059).
-	parts := []string{m.modeSegment()}
-	if m.TotalTokensIn != 0 || m.TotalTokensOut != 0 {
-		usage := fmt.Sprintf("↑%d ↓%d", m.TotalTokensIn, m.TotalTokensOut)
-
-		if m.prices != nil && m.modelName != "" {
-			inCost, outCost, found := m.prices.Cost(m.modelName, m.TotalTokensIn, m.TotalTokensOut)
-			if found {
-				total := inCost + outCost
-				if total < 0.01 {
-					usage += fmt.Sprintf("  $%.4f", total)
-				} else {
-					usage += fmt.Sprintf("  $%.2f", total)
-				}
-			}
-		}
-		parts = append(parts, statusBarStyle.Render(usage))
-		if m.contextTokens > 0 {
-			parts = append(parts, m.renderContextIndicator())
+	c := components.Cockpit{
+		CtxPct:   -1,
+		WarnPct:  warnThresholdPercent,
+		AlertPct: trimThresholdPercent,
+		Model:    m.modelName,
+	}
+	if m.state == stateClassifying {
+		c.Mode, c.ModeKind = "checking", components.CockpitChecking
+	} else {
+		c.Mode = strings.ReplaceAll(m.mode.String(), "-", " ")
+		switch m.mode {
+		case agent.ModeAcceptEdits, agent.ModeAuto:
+			c.ModeKind = components.CockpitPermissive
+		default:
+			c.ModeKind = components.CockpitGated
 		}
 	}
-
 	// Round counter shows only mid-turn, so long tool loops are visible.
 	if m.agent.Rounds() > 0 && m.state != stateInput {
-		parts = append(parts, statusBarStyle.Render(fmt.Sprintf("round %d", m.agent.Rounds())))
+		c.Round = fmt.Sprintf("round %d/%d", m.agent.Rounds(), m.effectiveMaxToolRounds())
 	}
-
+	if m.TotalTokensIn != 0 || m.TotalTokensOut != 0 {
+		c.Tokens = fmt.Sprintf("↑%s ↓%s", formatTokenCount(m.TotalTokensIn), formatTokenCount(m.TotalTokensOut))
+		if label := m.spendLabel(m.TotalTokensIn, m.TotalTokensOut); strings.HasPrefix(label, "$") {
+			c.Spend = label
+		}
+		if m.contextTokens > 0 {
+			c.CtxPct = int(m.contextTokens * 100 / m.contextWindow())
+		}
+	}
 	// Steering messages waiting to be injected (S-058).
 	if n := len(m.steering); n > 0 {
-		parts = append(parts, statusBarStyle.Render(fmt.Sprintf("queued %d", n)))
+		c.Extra = append(c.Extra, fmt.Sprintf("queued %d", n))
 	}
-
-	// Working sub-agents, with blocked-on-approval count (S-068).
-	if badge := m.agentBadge(); badge != "" {
-		parts = append(parts, badge)
-	}
-
 	// Active approval policy (S-054); absent in the default ask-everything state.
 	if p := m.policyLabel(); p != "" {
-		parts = append(parts, statusBarStyle.Render(p))
+		c.Extra = append(c.Extra, p)
 	}
-
-	left := strings.Join(parts, "  ")
-	right := ""
-	if m.modelName != "" {
-		right = statusBarStyle.Render(m.modelName)
+	// Working sub-agents, with blocked-on-approval count (S-068).
+	if m.subagents != nil {
+		c.Agents, c.AgentsBlocked = m.subagents.ActiveCounts()
 	}
-	pad := width - lipgloss.Width(left) - lipgloss.Width(right)
-	if pad < 1 {
-		right = ""
-		pad = width - lipgloss.Width(left)
-	}
-	if pad < 0 {
-		pad = 0
-	}
-	return left + strings.Repeat(" ", pad) + right
-}
-
-// renderContextIndicator shows the estimated context size, changing color as
-// it approaches the trim threshold (S-055).
-func (m Model) renderContextIndicator() string {
-	s := "ctx ~" + formatTokenCount(m.contextTokens)
-	switch m.contextSeverity() {
-	case 2:
-		return ctxAlertStyle.Render(s)
-	case 1:
-		return ctxWarnStyle.Render(s)
-	}
-	return statusBarStyle.Render(s)
+	return c.View(width)
 }
 
 func formatTokenCount(n int64) string {
@@ -1657,6 +1611,9 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 
 	case "/stats":
 		return true, m.statsReport()
+
+	case "/ui":
+		return true, m.uiCommand(parts)
 
 	case "/sandbox":
 		args := parts[1:]
@@ -1845,6 +1802,8 @@ func helpText() string {
   /mode [name]   Show or set the permission mode (manual, accept-edits, auto, plan)
   /mode why      Show the latest auto-mode denial's reason
   /stats         Context occupancy breakdown and cumulative session spend
+  /ui            Activity feed density: /ui verbosity <low|med|high>
+                 (low hides counts, med collapses rows, high expands rows)
   /sandbox       Containment status and container sandboxes (doctor|list|status|destroy <id>|prune)
   /evidence      Tool-output evidence store: reduction stats and size (purge to clear)
   /gate          Quality gate: run [suite] starts the project's checks in the background, result shows the verdict

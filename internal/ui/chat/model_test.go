@@ -845,65 +845,6 @@ func TestFormatToolArgs(t *testing.T) {
 	}
 }
 
-func TestTruncateLines(t *testing.T) {
-	short := "line1\nline2\nline3"
-	if got := truncateLines(short, 8); got != short {
-		t.Errorf("short input should not be truncated, got %q", got)
-	}
-
-	long := "1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n11"
-	got := truncateLines(long, 8)
-	if !strings.Contains(got, "3 more lines") {
-		t.Errorf("expected truncation message, got %q", got)
-	}
-	lines := strings.Split(got, "\n")
-	if lines[0] != "1" || lines[7] != "8" {
-		t.Errorf("first 8 lines should be preserved, got %q", got)
-	}
-}
-
-func TestRenderToolBlock_HasBorder(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
-	m.width = 80
-
-	block := m.renderToolBlock("read_file", `{"path":"main.go"}`, "package main")
-	if !strings.Contains(block, "read_file") {
-		t.Error("block should contain tool name")
-	}
-	if !strings.Contains(block, "path=main.go") {
-		t.Error("block should contain formatted args")
-	}
-	if !strings.Contains(block, "package main") {
-		t.Error("block should contain result")
-	}
-	// Every line should start with the border character
-	for _, line := range strings.Split(strings.TrimRight(block, "\n"), "\n") {
-		if line == "" {
-			continue
-		}
-		if !strings.Contains(line, "│") {
-			t.Errorf("expected border character in line %q", line)
-		}
-	}
-}
-
-func TestRenderToolBlock_TruncatesLongResult(t *testing.T) {
-	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
-	m.width = 80
-
-	var longResult strings.Builder
-	for i := 0; i < 20; i++ {
-		longResult.WriteString("line " + strings.Repeat("x", 10) + "\n")
-	}
-
-	block := m.renderToolBlock("search", `{"pattern":"x"}`, longResult.String())
-	if !strings.Contains(block, "more lines") {
-		t.Error("long result should be truncated with '... more lines' message")
-	}
-}
-
 func TestWaitForEvent_ToolCalls(t *testing.T) {
 	ch := make(chan provider.StreamEvent, 1)
 	ch <- provider.StreamEvent{
@@ -1125,12 +1066,16 @@ func TestStatusBar_ShowsModelAndContext(t *testing.T) {
 	m := New(msgs, mockStream).WithPricing(nil, "gpt-4o")
 	m.accumulateUsage(&provider.Usage{PromptTokens: 1200, CompletionTokens: 300})
 
-	bar := m.renderStatusBar(80)
+	bar := m.renderStatusBar(120)
 	if !strings.Contains(bar, "gpt-4o") {
 		t.Error("status bar should show model name")
 	}
-	if !strings.Contains(bar, "ctx ~1.5k") {
-		t.Errorf("status bar should show context estimate, got %q", bar)
+	// 1500 of the default 32768-token window ≈ 4% on the context meter.
+	if !strings.Contains(bar, "ctx ") || !strings.Contains(bar, "4%") {
+		t.Errorf("status bar should show the context meter, got %q", bar)
+	}
+	if !strings.Contains(bar, "↑1.2k ↓300") {
+		t.Errorf("status bar should show the usage segment, got %q", bar)
 	}
 
 	// Model name shows even before any usage arrives.

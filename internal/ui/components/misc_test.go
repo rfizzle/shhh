@@ -64,6 +64,23 @@ func TestCockpit_Segments(t *testing.T) {
 	}
 }
 
+func TestCockpit_CtxMeterFillAndThresholds(t *testing.T) {
+	c := Cockpit{Mode: "manual", ModeKind: CockpitGated, CtxPct: 50}
+	if view := c.View(120); !strings.Contains(view, "▰▰▰▰▱▱▱▱ 50%") {
+		t.Fatalf("50%% should fill 4 of 8 cells:\n%s", view)
+	}
+	hidden := Cockpit{Mode: "manual", ModeKind: CockpitGated, CtxPct: -1}
+	if view := hidden.View(120); strings.Contains(view, "ctx") {
+		t.Fatalf("a negative CtxPct hides the meter:\n%s", view)
+	}
+	// Host-supplied thresholds (S-055 trim warnings) override the defaults
+	// without changing the bar's content.
+	overridden := Cockpit{Mode: "manual", ModeKind: CockpitGated, CtxPct: 65, WarnPct: 60, AlertPct: 80}
+	if view := overridden.View(120); !strings.Contains(view, "65%") {
+		t.Fatalf("overridden thresholds keep the meter rendering:\n%s", view)
+	}
+}
+
 func TestCockpit_DropsRightSideWhenNarrow(t *testing.T) {
 	c := Cockpit{Mode: "manual", ModeKind: CockpitGated, CtxPct: 42,
 		Tokens: "↑41.2k ↓9.8k", Spend: "$0.14", Model: "claude-sonnet-5"}

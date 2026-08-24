@@ -18,16 +18,13 @@ var (
 	welcomeStyle    = lipgloss.NewStyle().Foreground(components.Palette.Dim).Italic(true)
 	toolStyle       = lipgloss.NewStyle().Foreground(components.Palette.Accent)
 	toolArgsStyle   = lipgloss.NewStyle().Foreground(components.Palette.Dim)
-	toolResultStyle = lipgloss.NewStyle().Foreground(components.Palette.Dimmer)
-	toolBorderStyle = lipgloss.NewStyle().Foreground(components.Palette.Dim)
 	statusBarStyle  = lipgloss.NewStyle().Foreground(components.Palette.Status)
-	// Permission-mode segment (DESIGN-TUI.md §8): permissive vs gated modes,
-	// plus the classifier's in-flight indicator (S-060).
+	// Permission-mode segment (DESIGN-TUI.md §8): permissive vs gated modes
+	// (the orchestrator's bar renders through components.Cockpit; these back
+	// the child-scoped bar, S-077).
 	modePermissiveStyle = lipgloss.NewStyle().Foreground(components.Palette.Add)
 	modeGatedStyle      = lipgloss.NewStyle().Foreground(components.Palette.Accent)
-	modeCheckingStyle   = lipgloss.NewStyle().Foreground(components.Palette.Spin)
-	ctxWarnStyle        = lipgloss.NewStyle().Foreground(components.Palette.Accent)
-	ctxAlertStyle       = lipgloss.NewStyle().Foreground(components.Palette.Del).Bold(true)
+	ctxAlertStyle       = lipgloss.NewStyle().Bold(true).Foreground(components.Palette.Del)
 	updateNoticeStyle   = lipgloss.NewStyle().Foreground(components.Palette.Accent)
 	// Focused row of the plan-approval prompt (DESIGN-TUI.md §4a).
 	planSelectedStyle = lipgloss.NewStyle().Bold(true).Background(components.Palette.FocusBg)

@@ -353,6 +353,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithDB(db).
 		WithPricing(prices, env.modelName).
 		WithRunner(runner.RunCapture).
+		WithTailRunner(runner.RunCaptureTail).
 		WithContainment(containment).
 		WithMaxToolRounds(cfg.Behavior.MaxToolRounds).
 		WithCommandAllowlist(cfg.Behavior.CommandAllowlist).

@@ -63,6 +63,13 @@ func buildContainment(cfg config.Config) (chat.Containment, error) {
 		}
 		return runner.RunCaptureArgv(ctx, argv)
 	}
+	c.TailRun = func(ctx context.Context, command string, onLine func(string)) (string, int) {
+		argv, err := sandbox.Wrap(avail, policy, command)
+		if err != nil {
+			return "sandbox: " + err.Error(), -1
+		}
+		return runner.RunCaptureArgvTail(ctx, argv, onLine)
+	}
 	return c, nil
 }
 

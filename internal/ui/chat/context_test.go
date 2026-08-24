@@ -48,12 +48,12 @@ func TestContextSeverity_Thresholds(t *testing.T) {
 		t.Fatalf("at trim threshold want severity 2, got %d", got)
 	}
 
-	if bar := m.renderStatusBar(80); strings.Contains(bar, "ctx ~") {
-		t.Fatal("ctx indicator should not show before any usage totals")
+	if bar := m.renderStatusBar(120); strings.Contains(bar, "ctx ") {
+		t.Fatal("ctx meter should not show before any usage totals")
 	}
 	m.TotalTokensIn = 100
-	if bar := m.renderStatusBar(80); !strings.Contains(bar, "ctx ~") {
-		t.Fatal("status bar should show the ctx indicator")
+	if bar := m.renderStatusBar(120); !strings.Contains(bar, "ctx ") || !strings.Contains(bar, "%") {
+		t.Fatalf("status bar should show the ctx meter, got %q", bar)
 	}
 }
 

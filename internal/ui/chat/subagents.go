@@ -277,26 +277,6 @@ func (m Model) renderAgentRows(width int) string {
 	return strings.Join(rows, "\n")
 }
 
-// agentBadge is the status bar segment for working children (`◇ 2 agents
-// ⚠1`); empty when none are active.
-func (m Model) agentBadge() string {
-	if m.subagents == nil {
-		return ""
-	}
-	active, blocked := m.subagents.ActiveCounts()
-	if active == 0 {
-		return ""
-	}
-	label := fmt.Sprintf("◇ %d agent", active)
-	if active != 1 {
-		label += "s"
-	}
-	if blocked > 0 {
-		return ctxAlertStyle.Render(fmt.Sprintf("%s ⚠%d", label, blocked))
-	}
-	return statusBarStyle.Render(label)
-}
-
 // joinRow left-aligns left and right within width, clipping left when needed.
 func joinRow(left, right string, width int) string {
 	gap := width - lipgloss.Width(left) - lipgloss.Width(right)

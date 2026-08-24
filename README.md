@@ -253,7 +253,9 @@ A wrong turn costs one command, not the session: a checkpoint is recorded at the
 
 Reviewing the agent's edits is a first-class surface, not raw text. Every diff — the approval preview and the transcript row an applied edit leaves behind — renders with syntax highlighting (by file type, with add/remove coloring layered over it), line numbers, and background-tinted intraline emphasis on the changed span of a modified line. An applied edit lands in the transcript as one collapsed row (`✎ edit path  +12 −4 · 2 hunks`); in focus mode (Ctrl+E), Enter expands it in place to a bounded unified view, and Enter again opens it full screen — scroll with `j`/`k`, jump hunks with `n`/`p`, and toggle a side-by-side layout with `s` (automatic on terminals ≥ 120 columns). The approval card offers the same full view with `d`. `/diff` shows the cumulative session diff — `git diff` against the workspace state the session started from — full screen with per-file sections.
 
-The status bar shows token usage, estimated cost, the current context size, and the active model. The context indicator changes color as the conversation approaches the model's context window (from the pricing table when known); past that threshold, the oldest tool results are automatically elided from the conversation before the next request.
+Tool activity renders as a compact feed, not walls of output: every tool call and command is one row — glyph, action, key argument, outcome, and useful counts (`⚙ read main.go:10–20  81 lines  0.1s`, `$ go test ./...  ok  12s`) — with raw output never shown by default. Focus mode (Ctrl+E, then Enter) expands a row in place; failed rows auto-expand to a bounded view with the error first, and a running command shows a live tail of its last output line right in the row while it executes. `/ui verbosity <low|med|high>` changes the default density: `low` hides the counts, `med` collapses rows, `high` renders every row expanded.
+
+The status bar is a cockpit rail of session vitals: the active permission mode, the tool-round counter mid-turn (`round 7/25`), a context occupancy meter (`ctx ▰▰▰▰▰▱▱▱ 62%`) that changes color at the same thresholds that trigger automatic trimming, token usage and estimated cost, the running sub-agent count with a blocked badge, and the active model (dropped first when the terminal narrows). Past the trim threshold, the oldest tool results are automatically elided from the conversation before the next request.
 
 Slash commands inside a chat session:
 
@@ -268,6 +270,7 @@ Slash commands inside a chat session:
 | `/evidence [purge]` | Tool-output evidence store: reduction stats and size; `purge` deletes the stored originals |
 | `/gate run [suite]`, `/gate result` | Quality gate (`shhh code`): run a named suite of the project's own checks in the background, then show the verdict (marked stale if the tree changed) |
 | `/diff` | Cumulative session diff, full screen: `git diff` against the session's starting state (git repos only) |
+| `/ui verbosity <v>` | Activity feed density: `low` hides counts, `med` collapses rows, `high` expands rows |
 | `/memory` | Durable memories (`shhh code`): `list` (default), `add [global] [kind] <text>`, `forget <id>` |
 | `/ps` | List the long-running processes this session owns (`shhh code`): state, pid, uptime, command |
 | `/rewind [n]` | Rewind to before a user turn (bare `/rewind` opens a picker); the abandoned tail is kept as a branch. Conversation only — files are not restored |

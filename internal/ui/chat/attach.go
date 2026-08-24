@@ -75,7 +75,7 @@ func convertChildEntry(te subagent.TranscriptEntry) entry {
 	case subagent.EntryTool:
 		result := te.Result
 		if te.Pending {
-			result = "running…"
+			result = pendingToolResult
 		}
 		return entry{kind: entryTool, toolName: te.Tool, toolArgs: te.Args, toolResult: result}
 	default:

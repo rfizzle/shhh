@@ -78,22 +78,6 @@ func (m Model) policyDecision(req *approvalRequest) (agent.Decision, string) {
 	return m.modePolicy().Decide(approvalAction(req))
 }
 
-// modeSegment is the always-present status bar segment for the active
-// permission mode (DESIGN-TUI.md §8): permissive modes render ⏵⏵, gated
-// modes ⏸, and an in-flight classifier check renders ✦ checking (S-060).
-func (m Model) modeSegment() string {
-	if m.state == stateClassifying {
-		return modeCheckingStyle.Render("✦ checking")
-	}
-	name := strings.ReplaceAll(m.mode.String(), "-", " ")
-	switch m.mode {
-	case agent.ModeAcceptEdits, agent.ModeAuto:
-		return modePermissiveStyle.Render("⏵⏵ " + name)
-	default:
-		return modeGatedStyle.Render("⏸ " + name)
-	}
-}
-
 // modeStatus describes the active mode and cycle for /mode with no argument.
 func (m Model) modeStatus() string {
 	cycle := m.modeCycle

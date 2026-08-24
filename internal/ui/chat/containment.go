@@ -9,9 +9,12 @@ import "context"
 // one-line state shown on the exec confirm prompt, and Report is the full
 // doctor text behind /sandbox.
 type Containment struct {
-	Run    func(context.Context, string) (string, int)
-	Status string
-	Report string
+	Run func(context.Context, string) (string, int)
+	// TailRun is Run with live per-line output reporting for the activity
+	// feed's running row (S-075); nil runs contained commands with no tail.
+	TailRun func(ctx context.Context, command string, onLine func(string)) (string, int)
+	Status  string
+	Report  string
 	// Manage handles the /sandbox subcommands (doctor, list, status,
 	// destroy, prune) for container sandboxes (S-063) and returns the text to
 	// show. Nil means container sandbox management is not wired up.
