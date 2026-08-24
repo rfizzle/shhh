@@ -29,6 +29,9 @@ const (
 	// ApprovalAlways approves and auto-allows the category for the session
 	// (a, only when AllowAlways is set).
 	ApprovalAlways
+	// ApprovalFullDiff opens the full-screen diff view (d, only when
+	// FullDiff is set); the host returns to the card afterwards (S-074).
+	ApprovalFullDiff
 )
 
 // ApprovalCard is the single surface for every approval-gated action. One
@@ -48,8 +51,12 @@ type ApprovalCard struct {
 	// Containment describes the process-containment state, rendered as a ⛨
 	// row when set.
 	Containment string
-	// Hunks is the edit variant's diff body.
-	Hunks []diff.Hunk
+	// Hunks is the edit variant's diff body; Syntax highlights its lines
+	// (S-074).
+	Hunks  []diff.Hunk
+	Syntax Syntax
+	// FullDiff offers [d] to open the diff full screen (S-074).
+	FullDiff bool
 	// Summary is the generic variant's one-line description.
 	Summary string
 	// Question is the decision prompt, e.g. "Run this command?".
@@ -76,6 +83,10 @@ func (c *ApprovalCard) Update(msg tea.KeyMsg) (done bool, result any) {
 		if c.AllowAlways {
 			return true, ApprovalAlways
 		}
+	case "d", "D":
+		if c.FullDiff {
+			return true, ApprovalFullDiff
+		}
 	case "n", "N", "esc", "ctrl+c":
 		return true, ApprovalDeny
 	}
@@ -100,6 +111,9 @@ func (c *ApprovalCard) View(width int) string {
 			hint += "  (" + c.AlwaysHint + ")"
 		}
 	}
+	if c.FullDiff {
+		hint += "  (d: full diff)"
+	}
 	hints := hintRows(append([]string{hint}, c.ExtraHints...), width)
 
 	switch c.Variant {
@@ -111,7 +125,8 @@ func (c *ApprovalCard) View(width int) string {
 		if c.MaxLines > 0 {
 			budget = max(c.MaxLines-2-len(rows)-len(hints)-1, 1)
 		}
-		rows = append(rows, UnifiedLines(c.Hunks, inner, UnifiedOpts{MaxLines: budget})...)
+		rows = append(rows, UnifiedLines(c.Hunks, inner,
+			UnifiedOpts{LineNumbers: true, Emphasis: true, MaxLines: budget, Syntax: c.Syntax})...)
 		rows = append(rows, stats)
 	case ApprovalGeneric:
 		if c.Summary != "" && c.Summary != c.Headline {

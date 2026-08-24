@@ -89,3 +89,37 @@ func TestRenderMarkdown_MultipleFences(t *testing.T) {
 		t.Fatal("second block content should be present")
 	}
 }
+
+func TestDiffSyntax_GoFile(t *testing.T) {
+	syntax := diffSyntax("internal/agent/loop.go")
+	if syntax == nil {
+		t.Fatal("a .go path should get a highlighter")
+	}
+	line := "func main() {\treturn}"
+	segs := syntax(line)
+	if segs == nil {
+		t.Fatal("expected segments for a Go line")
+	}
+	var b strings.Builder
+	for _, s := range segs {
+		b.WriteString(s.Text)
+	}
+	if b.String() != line {
+		t.Fatalf("segments must reconstruct the line exactly: %q != %q", b.String(), line)
+	}
+	colored := false
+	for _, s := range segs {
+		if s.Color != "" {
+			colored = true
+		}
+	}
+	if !colored {
+		t.Fatal("a Go keyword line should get at least one colored segment")
+	}
+}
+
+func TestDiffSyntax_UnknownExtension(t *testing.T) {
+	if syntax := diffSyntax("notes.unknownext"); syntax != nil {
+		t.Fatal("an unrecognized extension should disable highlighting")
+	}
+}

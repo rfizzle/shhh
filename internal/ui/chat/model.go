@@ -53,6 +53,9 @@ const (
 	// selection cursor over expandable transcript rows, enter
 	// expands/collapses in place, esc returns to the input.
 	stateFocus
+	// stateDiffFull: a diff is showing full screen (S-074, DESIGN-TUI.md
+	// §3c) — from a transcript edit row, an approval's [d], or /diff.
+	stateDiffFull
 	// stateRewindPick: the interactive /rewind checkpoint picker is showing
 	// (S-069).
 	stateRewindPick
@@ -110,6 +113,8 @@ const (
 	entrySystem
 	entryError
 	entryCommand
+	// entryDiff: an applied edit/write rendered as a diff row (S-074).
+	entryDiff
 )
 
 // entry is one transcript item, stored raw so the history can be re-rendered
@@ -124,6 +129,9 @@ type entry struct {
 	// expanded shows the full tool/command output instead of the truncated
 	// block; toggled from focus mode (S-076).
 	expanded bool
+	// diff is the entryDiff viewer (S-074); a pointer so focus-mode
+	// expansion state survives re-renders.
+	diff *components.DiffView
 }
 
 type Model struct {
@@ -230,6 +238,12 @@ type Model struct {
 	sessionName  string
 	rewindSelect *components.Select
 	gitSnapshot  func() GitSnapshot
+	// Rich diff rendering (S-074): fullDiff is the viewer showing full
+	// screen, diffReturn where esc goes back to, sessionDiff the /diff
+	// source (git diff against the session's starting state).
+	fullDiff    *components.DiffView
+	diffReturn  state
+	sessionDiff func() (string, error)
 	// steering holds messages typed while the agent is working (S-058); they
 	// are injected as user messages before the next stream request.
 	steering      []string
@@ -403,6 +417,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyMsg:
+		if m.state == stateDiffFull {
+			return m.updateDiffFull(msg)
+		}
 		if m.state == stateConfirmRun {
 			return m.updateConfirmRun(msg)
 		}
@@ -569,6 +586,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.input.Reset()
 					return m.openRewindPick()
 				}
+				if text == "/diff" {
+					// The cumulative session diff, full screen (S-074).
+					m.input.Reset()
+					return m.openSessionDiff()
+				}
 				if handled, result := m.handleSlashCommand(text); handled {
 					m.input.Reset()
 					m.appendEntry(entry{kind: entrySystem, text: result})
@@ -707,7 +729,21 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.pendingApproval = nil
 		m.agent.ResolveApproval(msg.result)
 		m.recordToolEvent(req.call.Name, msg.duration, outcomeFromResult(msg.result))
-		m.appendEntry(entry{kind: entryTool, toolName: req.call.Name, toolArgs: req.call.Arguments, toolResult: msg.result})
+		// An applied edit lands in the transcript as a collapsed diff row
+		// (S-074, DESIGN-TUI.md §3a); failures keep the plain tool block so
+		// the error text stays visible.
+		if req.kind == approvalDiff && len(req.hunks) > 0 && outcomeFromResult(msg.result) == outcomeOK {
+			m.appendEntry(entry{kind: entryDiff, diff: &components.DiffView{
+				Path:     req.path,
+				Verb:     req.verb,
+				Hunks:    req.hunks,
+				Mode:     components.DiffCollapsed,
+				MaxLines: maxDiffExpandedLines,
+				Syntax:   diffSyntax(req.path),
+			}})
+		} else {
+			m.appendEntry(entry{kind: entryTool, toolName: req.call.Name, toolArgs: req.call.Arguments, toolResult: msg.result})
+		}
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
@@ -822,6 +858,10 @@ func (m Model) View() string {
 
 	var body string
 	switch {
+	case m.state == stateDiffFull && m.fullDiff != nil:
+		// The full-screen diff takes over the viewport (S-074, §3c).
+		m.fullDiff.Height = m.viewportHeight()
+		body = m.fullDiff.View(contentWidth)
 	case m.attachedTo != "":
 		// The attached child's session fills the surface; its liveness shows
 		// in the child-scoped status bar, not a parent spinner.
@@ -868,6 +908,8 @@ func (m Model) View() string {
 		inputView = m.renderRewindPick()
 	case stateFocus:
 		inputView = m.renderFocusHint()
+	case stateDiffFull:
+		inputView = m.renderDiffFullHint()
 	}
 	// The agent manager list takes the bottom panel while open (S-077).
 	if m.agentList != nil {
@@ -940,6 +982,17 @@ func (m Model) updateConfirmRun(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m.executeApprovedTool()
 		}
 		return m.executeRun()
+	case components.ApprovalFullDiff:
+		// [d] opens the pending edit full screen (S-074); esc returns here
+		// with the approval still pending.
+		if req := m.pendingApproval; req != nil && req.kind == approvalDiff {
+			return m.openDiffFull(&components.DiffView{
+				Path:   req.path,
+				Verb:   req.verb,
+				Hunks:  req.hunks,
+				Syntax: diffSyntax(req.path),
+			}, stateConfirmRun)
+		}
 	case components.ApprovalAlways:
 		// Approve and auto-allow this category for the session (S-054).
 		// Safety-flagged commands, generic gated tools, and /run keep asking
@@ -1362,6 +1415,16 @@ func (m Model) renderEntry(e entry, width int) string {
 		return m.renderToolBlockLimited(e.toolName, e.toolArgs, e.toolResult, limit)
 	case entryCommand:
 		return m.renderCommandBlock(e)
+	case entryDiff:
+		if e.diff == nil {
+			return ""
+		}
+		// While its full-screen view is showing, the transcript behind keeps
+		// the bounded expanded form.
+		if e.diff.Mode == components.DiffFull {
+			return strings.Join(e.diff.ExpandedLines(width), "\n") + "\n\n"
+		}
+		return e.diff.View(width) + "\n\n"
 	case entrySystem:
 		return systemMsgStyle.Render(e.text) + "\n\n"
 	case entryError:
@@ -1789,6 +1852,8 @@ func helpText() string {
   /memory        Durable memories: list (default) · add [global] [kind] <text> · forget <id>
   /agents        Agent manager: attach, steer, cancel, kill sub-agents (also Ctrl+A)
   /plan save [name]  Save the last plan/response to .shhh/plans/
+  /diff          Show the cumulative session diff full screen (git diff
+                 against the session's starting state; git repos only)
   /compact       Summarize the conversation and continue from the summary
   /rewind [n]    Rewind to before a user turn (bare /rewind picks interactively);
                  the abandoned tail is kept as a branch. Conversation only —
@@ -1805,7 +1870,8 @@ Keys:
                  (while the agent is working, Enter queues a steering message
                   that joins the conversation before the next model request)
   Up/Down        Recall previous inputs (when the input is empty)
-  Ctrl+E         Focus mode: select tool/command rows (j/k), expand/collapse (Enter), Esc back
+  Ctrl+E         Focus mode: select tool/command/diff rows (j/k), expand/collapse (Enter), Esc back
+                 (Enter on an edit row cycles collapsed → expanded → full-screen diff)
   Ctrl+A         Agent manager: enter attaches to an agent's session, x cancels
                  its turn, X kills it; attached, typing steers the agent,
                  Shift+Tab sets its mode (clamped), Esc detaches

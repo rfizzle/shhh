@@ -67,7 +67,8 @@ func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 	if !strings.Contains(view, "Assistant wants to write main.go") {
 		t.Fatal("confirm prompt should describe the file action")
 	}
-	if !strings.Contains(view, "+line two") {
+	// Diff previews carry line numbers (S-074, DESIGN-TUI.md §2b).
+	if !strings.Contains(view, "+ 2  line two") {
 		t.Fatal("confirm prompt should show the added line as a diff")
 	}
 	if !strings.Contains(view, "@@") {
@@ -269,7 +270,7 @@ func TestMutatingTool_WriteApprovedThroughQueue(t *testing.T) {
 		t.Fatal("file must not exist before approval")
 	}
 	view := m.View()
-	if !strings.Contains(view, "Assistant wants to write") || !strings.Contains(view, "+hello") {
+	if !strings.Contains(view, "Assistant wants to write") || !strings.Contains(view, "+ 1  hello") {
 		t.Fatal("confirm prompt should show the write action and diff")
 	}
 
@@ -316,7 +317,7 @@ func TestMutatingTool_EditDeclinedLeavesFileUntouched(t *testing.T) {
 		t.Fatalf("edit_file should enter diff approval, got state=%d", m.state)
 	}
 	view := m.View()
-	if !strings.Contains(view, "-beta") || !strings.Contains(view, "+delta") {
+	if !strings.Contains(view, "- 2  beta") || !strings.Contains(view, "+ 2  delta") {
 		t.Fatal("confirm prompt should diff the edit")
 	}
 

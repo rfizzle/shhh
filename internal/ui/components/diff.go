@@ -27,6 +27,18 @@ const (
 // switches to side-by-side automatically.
 const sideBySideMinWidth = 120
 
+// Segment is one syntax-colored span of a source line. Color is a terminal
+// color ("#rrggbb" or an ANSI index); empty means the default foreground.
+type Segment struct {
+	Text  string
+	Color string
+}
+
+// Syntax styles one raw source line as colored segments (S-074); nil renders
+// plain diff colors. Segments must concatenate back to the input line — a
+// mismatch falls back to plain rendering.
+type Syntax func(line string) []Segment
+
 // DiffView renders one file's hunks in collapsed, expanded, or full-screen
 // form. It is a plain-state component: the host owns it and routes keys to
 // Update while it is focused.
@@ -35,6 +47,14 @@ type DiffView struct {
 	Verb  string // row glyph verb, e.g. "edit", "write"
 	Hunks []diff.Hunk
 	Mode  DiffMode
+	// Syntax highlights this file's lines; nil renders plain diff colors.
+	Syntax Syntax
+	// Files renders a multi-file patch in the full-screen view (the /diff
+	// session diff, S-074); when set, Path is just the header label and
+	// Hunks is ignored.
+	Files []diff.File
+	// SyntaxFor resolves a per-file highlighter for multi-file views.
+	SyntaxFor func(path string) Syntax
 	// MaxLines bounds the expanded view's body (0 = unbounded).
 	MaxLines int
 	// Height is the full-screen view's row budget, including header and
@@ -43,6 +63,11 @@ type DiffView struct {
 	SideBySide bool
 	// Offset is the first visible body row of the full-screen view.
 	Offset int
+	// Full-screen body cache: rendering (with syntax highlighting) is only
+	// redone when the width or layout changes, so scrolling stays cheap.
+	cachedBody      []string
+	cachedBodyWidth int
+	cachedBodySBS   bool
 }
 
 // Update handles keys while the viewer is focused. done reports that the
@@ -100,16 +125,19 @@ func (d *DiffView) View(width int) string {
 	}
 }
 
-// statsLabel is the "+N −M · H hunks" summary present in every form.
+// statsLabel is the "+N −M · H hunks" summary present in every form; a
+// multi-file view counts files instead.
 func (d *DiffView) statsLabel() string {
-	adds, dels := diff.Stats(d.Hunks)
-	label := fmt.Sprintf("+%d −%d", adds, dels)
-	if n := len(d.Hunks); n == 1 {
-		label += " · 1 hunk"
-	} else {
-		label += fmt.Sprintf(" · %d hunks", n)
+	if len(d.Files) > 0 {
+		var adds, dels int
+		for _, f := range d.Files {
+			a, x := diff.Stats(f.Hunks)
+			adds, dels = adds+a, dels+x
+		}
+		return fmt.Sprintf("+%d −%d · %s", adds, dels, plural(len(d.Files), "file"))
 	}
-	return label
+	adds, dels := diff.Stats(d.Hunks)
+	return fmt.Sprintf("+%d −%d · %s", adds, dels, plural(len(d.Hunks), "hunk"))
 }
 
 // RowView is the collapsed one-row transcript form (§3a).
@@ -136,6 +164,9 @@ type UnifiedOpts struct {
 	// MaxLines bounds the output; the last row becomes a truncation notice
 	// when lines were dropped. 0 means unbounded.
 	MaxLines int
+	// Syntax highlights line text, with diff coloring layered over it
+	// (DESIGN-TUI.md §3b); nil keeps plain diff colors.
+	Syntax Syntax
 }
 
 // UnifiedLines renders hunks as colored unified-diff rows. An empty diff
@@ -153,7 +184,7 @@ func UnifiedLines(hunks []diff.Hunk, width int, opts UnifiedOpts) []string {
 	for _, h := range hunks {
 		rows = append(rows, hunkStyle.Render(clip(h.Header(), width)))
 		for _, l := range h.Lines {
-			rows = append(rows, renderUnifiedLine(l, width, numWidth, opts.Emphasis))
+			rows = append(rows, renderUnifiedLine(l, width, numWidth, opts))
 		}
 	}
 	if opts.MaxLines > 0 && len(rows) > opts.MaxLines {
@@ -176,12 +207,13 @@ func (d *DiffView) ExpandedLines(width int) []string {
 		body = 0
 	}
 	return append([]string{head},
-		UnifiedLines(d.Hunks, width, UnifiedOpts{LineNumbers: true, Emphasis: true, MaxLines: body})...)
+		UnifiedLines(d.Hunks, width, UnifiedOpts{LineNumbers: true, Emphasis: true, MaxLines: body, Syntax: d.Syntax})...)
 }
 
 // renderUnifiedLine renders one diff line: marker, optional line number, text
-// with tab expansion and optional intraline emphasis.
-func renderUnifiedLine(l diff.Line, width, numWidth int, emphasis bool) string {
+// with tab expansion, syntax highlighting when available, and optional
+// intraline emphasis.
+func renderUnifiedLine(l diff.Line, width, numWidth int, opts UnifiedOpts) string {
 	marker := " "
 	style, emphStyle := contextStyle, contextStyle
 	switch l.Kind {
@@ -202,7 +234,20 @@ func renderUnifiedLine(l diff.Line, width, numWidth int, emphasis bool) string {
 
 	text := strings.ReplaceAll(l.Text, "\t", "    ")
 	avail := width - lipgloss.Width(prefix)
-	if !emphasis || len(l.Emph) == 0 {
+
+	// Tab expansion shifts offsets; only lines without tabs keep exact spans.
+	var span *diff.Span
+	if opts.Emphasis && len(l.Emph) > 0 && !strings.ContainsRune(l.Text, '\t') {
+		span = &l.Emph[0]
+	}
+
+	if opts.Syntax != nil {
+		if out, ok := renderSyntaxLine(prefix, text, avail, l.Kind, span, opts.Syntax); ok {
+			return out
+		}
+	}
+
+	if span == nil {
 		return style.Render(clip(prefix+text, width))
 	}
 
@@ -214,12 +259,7 @@ func renderUnifiedLine(l diff.Line, width, numWidth int, emphasis bool) string {
 		r = r[:avail-1]
 		clipped = true
 	}
-	span := l.Emph[0]
 	s, e := min(span.Start, len(r)), min(span.End, len(r))
-	// Tab expansion shifts offsets; only lines without tabs keep exact spans.
-	if strings.ContainsRune(l.Text, '\t') {
-		s, e = 0, 0
-	}
 	var b strings.Builder
 	b.WriteString(style.Render(prefix + string(r[:s])))
 	if e > s {
@@ -232,19 +272,121 @@ func renderUnifiedLine(l diff.Line, width, numWidth int, emphasis bool) string {
 	return b.String()
 }
 
+// renderSyntaxLine renders the diff coloring layered over syntax highlighting
+// (DESIGN-TUI.md §3b): the marker keeps the kind's color, the line number is
+// gray, the text keeps its syntax foregrounds, and the emphasis span gets a
+// background tint so syntax colors survive. ok=false falls back to plain
+// rendering when the segments don't reconstruct the line.
+func renderSyntaxLine(prefix, text string, avail int, kind diff.Kind, span *diff.Span, syntax Syntax) (string, bool) {
+	segs := syntax(text)
+	if segs == nil {
+		return "", false
+	}
+	total := 0
+	for _, s := range segs {
+		total += len(s.Text)
+	}
+	if total != len(text) {
+		return "", false
+	}
+
+	kindStyle := contextStyle
+	var emphBg lipgloss.Color
+	switch kind {
+	case diff.Add:
+		kindStyle, emphBg = addStyle, Palette.AddBg
+	case diff.Del:
+		kindStyle, emphBg = delStyle, Palette.DelBg
+	}
+
+	var b strings.Builder
+	// The marker is ASCII, so byte slicing is safe.
+	b.WriteString(kindStyle.Render(prefix[:1]))
+	if len(prefix) > 1 {
+		b.WriteString(dimStyle.Render(prefix[1:]))
+	}
+
+	limit := len([]rune(text))
+	clipped := false
+	if avail > 0 && limit > avail {
+		limit = avail - 1
+		clipped = true
+	}
+
+	pos := 0 // rune position within text
+	for _, seg := range segs {
+		if pos >= limit {
+			break
+		}
+		sr := []rune(seg.Text)
+		if pos+len(sr) > limit {
+			sr = sr[:limit-pos]
+		}
+		st := kindStyle
+		if kind == diff.Context {
+			st = lipgloss.NewStyle()
+		}
+		if seg.Color != "" {
+			st = lipgloss.NewStyle().Foreground(lipgloss.Color(seg.Color))
+		}
+		s, e := 0, 0
+		if span != nil {
+			s = min(max(span.Start-pos, 0), len(sr))
+			e = min(max(span.End-pos, 0), len(sr))
+		}
+		if e > s {
+			b.WriteString(st.Render(string(sr[:s])))
+			b.WriteString(st.Background(emphBg).Render(string(sr[s:e])))
+			b.WriteString(st.Render(string(sr[e:])))
+		} else if len(sr) > 0 {
+			b.WriteString(st.Render(string(sr)))
+		}
+		pos += len([]rune(seg.Text))
+	}
+	if clipped {
+		b.WriteString(kindStyle.Render("…"))
+	}
+	return b.String(), true
+}
+
+// diffSection is one file of the full-screen body; single-file views have
+// one unlabeled section.
+type diffSection struct {
+	path   string
+	binary bool
+	hunks  []diff.Hunk
+	syntax Syntax
+}
+
+// sections normalizes the single-file and multi-file forms.
+func (d *DiffView) sections() []diffSection {
+	if len(d.Files) == 0 {
+		return []diffSection{{hunks: d.Hunks, syntax: d.fileSyntax(d.Path, d.Syntax)}}
+	}
+	out := make([]diffSection, 0, len(d.Files))
+	for _, f := range d.Files {
+		out = append(out, diffSection{path: f.Path, binary: f.Binary, hunks: f.Hunks, syntax: d.fileSyntax(f.Path, nil)})
+	}
+	return out
+}
+
+func (d *DiffView) fileSyntax(path string, explicit Syntax) Syntax {
+	if explicit != nil {
+		return explicit
+	}
+	if d.SyntaxFor != nil {
+		return d.SyntaxFor(path)
+	}
+	return nil
+}
+
 // fullView is the full-screen rendering (§3c): header, scrollable body,
 // footer hint. Side-by-side when toggled or the terminal is wide enough.
 func (d *DiffView) fullView(width int) string {
 	header := padRight(" "+d.Path, max(0, width-lipgloss.Width(d.statsLabel()))) + dimStyle.Render(d.statsLabel())
 	footer := hintStyle.Render("diff · j/k scroll · n/p hunk · s side-by-side · esc back")
 
-	var body []string
-	if d.sideBySideActive(width) {
-		body = d.sideBySideLines(width)
-	} else {
-		body = UnifiedLines(d.Hunks, width, UnifiedOpts{LineNumbers: true, Emphasis: true})
-	}
-
+	body := d.fullBody(width)
 	rows := d.bodyHeight()
 	d.Offset = clampOffset(d.Offset, len(body), rows)
 	end := min(d.Offset+rows, len(body))
@@ -255,6 +397,34 @@ func (d *DiffView) fullView(width int) string {
 		out = append(out, "")
 	}
 	return strings.Join(append(out, footer), "\n")
+}
+
+// fullBody renders (and caches) the full-screen body rows, so scrolling a
+// syntax-highlighted diff doesn't re-highlight every line per keypress.
+func (d *DiffView) fullBody(width int) []string {
+	sbs := d.sideBySideActive(width)
+	if d.cachedBody != nil && d.cachedBodyWidth == width && d.cachedBodySBS == sbs {
+		return d.cachedBody
+	}
+	var rows []string
+	for _, sec := range d.sections() {
+		if sec.path != "" {
+			adds, dels := diff.Stats(sec.hunks)
+			rows = append(rows, clip(accentStyle.Render("─ "+sec.path)+"  "+dimStyle.Render(fmt.Sprintf("+%d −%d", adds, dels)), width))
+		}
+		switch {
+		case sec.binary:
+			rows = append(rows, hintStyle.Render("(binary file differs)"))
+		case len(sec.hunks) == 0:
+			rows = append(rows, hintStyle.Render("(no textual changes)"))
+		case sbs:
+			rows = append(rows, sideBySideHunks(sec.hunks, width)...)
+		default:
+			rows = append(rows, UnifiedLines(sec.hunks, width, UnifiedOpts{LineNumbers: true, Emphasis: true, Syntax: sec.syntax})...)
+		}
+	}
+	d.cachedBody, d.cachedBodyWidth, d.cachedBodySBS = rows, width, sbs
+	return rows
 }
 
 // bodyHeight is how many body rows the full-screen view shows.
@@ -275,37 +445,57 @@ func clampOffset(offset, total, visible int) int {
 	return max(0, min(offset, total-visible))
 }
 
-// fullBodyLen is the total body row count of the current full-screen layout,
-// computed at a nominal width (row counts don't depend on width).
+// fullBodyLen is the total body row count of the current full-screen layout;
+// row counts don't depend on width.
 func (d *DiffView) fullBodyLen() int {
-	if d.SideBySide {
-		return len(d.sideBySideLines(sideBySideMinWidth))
-	}
 	n := 0
-	for _, h := range d.Hunks {
-		n += 1 + len(h.Lines)
+	for _, sec := range d.sections() {
+		if sec.path != "" {
+			n++
+		}
+		if sec.binary || len(sec.hunks) == 0 {
+			n++
+			continue
+		}
+		for _, h := range sec.hunks {
+			n += 1 + d.hunkRows(h)
+		}
 	}
 	return n
 }
 
-// jumpHunk scrolls to the start of the next (+1) or previous (-1) hunk.
-func (d *DiffView) jumpHunk(dir int) {
-	starts := make([]int, 0, len(d.Hunks))
-	row := 0
-	for _, h := range d.Hunks {
-		starts = append(starts, row)
-		row += 1 + len(h.Lines)
-	}
+// hunkRows is one hunk's body row count in the current layout (header line
+// excluded).
+func (d *DiffView) hunkRows(h diff.Hunk) int {
 	if d.SideBySide {
-		// Side-by-side rows don't map 1:1 to unified rows; rebuild the starts
-		// from the paired layout.
-		starts = starts[:0]
-		row = 0
-		for _, h := range d.Hunks {
+		return len(pairHunkRows(h))
+	}
+	return len(h.Lines)
+}
+
+// hunkStarts lists each hunk header's body row across all sections.
+func (d *DiffView) hunkStarts() []int {
+	var starts []int
+	row := 0
+	for _, sec := range d.sections() {
+		if sec.path != "" {
+			row++
+		}
+		if sec.binary || len(sec.hunks) == 0 {
+			row++
+			continue
+		}
+		for _, h := range sec.hunks {
 			starts = append(starts, row)
-			row += 1 + len(pairHunkRows(h))
+			row += 1 + d.hunkRows(h)
 		}
 	}
+	return starts
+}
+
+// jumpHunk scrolls to the start of the next (+1) or previous (-1) hunk.
+func (d *DiffView) jumpHunk(dir int) {
+	starts := d.hunkStarts()
 	if dir > 0 {
 		for _, s := range starts {
 			if s > d.Offset {
@@ -367,13 +557,13 @@ func pairHunkRows(h diff.Hunk) []pairedRow {
 	return rows
 }
 
-// sideBySideLines renders all hunks as two panes separated by a divider;
+// sideBySideHunks renders hunks as two panes separated by a divider;
 // truncated cells end with … (§3c).
-func (d *DiffView) sideBySideLines(width int) []string {
+func sideBySideHunks(hunks []diff.Hunk, width int) []string {
 	pane := max((width-3)/2, 8)
 	divider := dimStyle.Render(" │ ")
 	var out []string
-	for _, h := range d.Hunks {
+	for _, h := range hunks {
 		out = append(out, hunkStyle.Render(clip(h.Header(), width)))
 		for _, row := range pairHunkRows(h) {
 			out = append(out, padRight(sideCell(row.old, pane, true), pane)+divider+sideCell(row.new, pane, false))

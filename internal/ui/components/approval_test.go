@@ -78,10 +78,34 @@ func TestApprovalCard_EditVariantShowsDiffAndStats(t *testing.T) {
 		Question: "Apply this change?",
 	}
 	view := c.View(80)
-	for _, want := range []string{"@@", "-b", "+c", "+d", "+2 −1 · 1 hunk"} {
+	// The diff body carries line numbers (S-074, DESIGN-TUI.md §2b).
+	for _, want := range []string{"@@", "- 2  b", "+ 2  c", "+ 3  d", "+2 −1 · 1 hunk"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("edit card should contain %q:\n%s", want, view)
 		}
+	}
+}
+
+func TestApprovalCard_FullDiffKey(t *testing.T) {
+	c := &ApprovalCard{
+		Variant:  ApprovalEdit,
+		Title:    "Approve edit",
+		Hunks:    diff.Compute("a\n", "b\n"),
+		Question: "Apply this change?",
+		FullDiff: true,
+	}
+	if !strings.Contains(c.View(80), "d: full diff") {
+		t.Fatal("card should hint the full-diff key when FullDiff is set")
+	}
+	done, result := c.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	if !done || result != ApprovalFullDiff {
+		t.Fatalf("d should request the full diff, got done=%v result=%v", done, result)
+	}
+
+	// Without FullDiff, d is unrecognized and the card keeps waiting.
+	c.FullDiff = false
+	if done, _ := c.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}}); done {
+		t.Fatal("d should be ignored when FullDiff is off")
 	}
 }
 

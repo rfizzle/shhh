@@ -1,10 +1,14 @@
 package cli
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
+	"os/exec"
+	"strings"
 	"sync"
 	"time"
 
@@ -355,7 +359,8 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithApprovalMode(mode, cycle).
 		WithClassifier(classifier).
 		WithModelSwitcher(env.switchModel).
-		WithGitSnapshots(gitSnapshot)
+		WithGitSnapshots(gitSnapshot).
+		WithSessionDiff(sessionDiffFn())
 	if red != nil {
 		model = model.WithEvidence(chat.Evidence{Reduce: red.Process, Manage: evidenceManager(red)})
 	}
@@ -484,6 +489,29 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 func gitSnapshot() chat.GitSnapshot {
 	fp := quality.TakeFingerprint(".")
 	return chat.GitSnapshot{Repo: fp.Repo, Head: fp.Head, StatusHash: fp.StatusHash, DirtyPaths: fp.DirtyPaths}
+}
+
+// sessionDiffFn wires /diff (S-074): the HEAD captured at session start
+// becomes the base the cumulative workspace diff is taken against. Returns
+// nil outside a git repository, which disables the command.
+func sessionDiffFn() func() (string, error) {
+	fp := quality.TakeFingerprint(".")
+	if !fp.Repo || fp.Head == "" {
+		return nil
+	}
+	base := fp.Head
+	return func() (string, error) {
+		cmd := exec.Command("git", "diff", base)
+		var out, stderr bytes.Buffer
+		cmd.Stdout, cmd.Stderr = &out, &stderr
+		if err := cmd.Run(); err != nil {
+			if msg := strings.TrimSpace(stderr.String()); msg != "" {
+				return "", errors.New(msg)
+			}
+			return "", err
+		}
+		return out.String(), nil
+	}
 }
 
 // estimateToolDefTokens roughly estimates the context cost of the registered

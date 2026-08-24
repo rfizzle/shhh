@@ -10,12 +10,13 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // expandable reports whether a transcript entry has bounded output that focus
 // mode can expand.
 func expandable(e entry) bool {
-	return e.kind == entryTool || e.kind == entryCommand
+	return e.kind == entryTool || e.kind == entryCommand || e.kind == entryDiff
 }
 
 // expandableIndices lists the transcript indices focus mode can select,
@@ -68,7 +69,16 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "enter":
 		es := *m.entries()
 		if m.focusIdx >= 0 && m.focusIdx < len(es) {
-			es[m.focusIdx].expanded = !es[m.focusIdx].expanded
+			if d := es[m.focusIdx].diff; d != nil {
+				// A diff row cycles collapsed → expanded → full screen
+				// (S-074, DESIGN-TUI.md §3b).
+				d.Update(msg)
+				if d.Mode == components.DiffFull {
+					return m.openDiffFull(d, stateFocus)
+				}
+			} else {
+				es[m.focusIdx].expanded = !es[m.focusIdx].expanded
+			}
 		}
 		m.refreshFocusView()
 		return m, nil

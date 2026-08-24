@@ -53,6 +53,8 @@ type approvalRequest struct {
 	kind    approvalKind
 	command string      // approvalExec: the command handed to the runner; also set for a process start (S-073) so mode policy treats it as a command
 	title   string      // action headline, e.g. "edit main.go"
+	verb    string      // approvalDiff: the action verb, e.g. "edit"
+	path    string      // approvalDiff: the file being modified
 	hunks   []diff.Hunk // approvalDiff: the change to show
 	summary string      // one-line description for transcript entries
 	// memoryDraft is the proposed entry for approvalMemory (S-070).
@@ -167,6 +169,8 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 			call:    tc,
 			kind:    approvalDiff,
 			title:   title,
+			verb:    mut.Action,
+			path:    mut.Path,
 			hunks:   diff.Compute(mut.OldText, mut.NewText),
 			summary: title,
 		}, nil
@@ -185,6 +189,8 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 			call:    tc,
 			kind:    approvalDiff,
 			title:   title,
+			verb:    action,
+			path:    p.Path,
 			hunks:   diff.Compute(p.OldText, p.NewText),
 			summary: title,
 		}, nil
@@ -446,9 +452,11 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		card.Variant = components.ApprovalEdit
 		card.Title = "Approve edit"
 		card.Hunks = req.hunks
+		card.Syntax = diffSyntax(req.path)
+		card.FullDiff = len(req.hunks) > 0
 		card.Question = "Apply this change?"
 		card.AllowAlways = true
-		card.AlwaysHint = "a: always allow edits this session"
+		card.AlwaysHint = "a: always allow edits"
 	default:
 		card.Variant = components.ApprovalGeneric
 		card.Title = "Approve tool"

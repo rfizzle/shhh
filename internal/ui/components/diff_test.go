@@ -158,6 +158,84 @@ func TestUnifiedLines_IntralineEmphasisKeepsText(t *testing.T) {
 	}
 }
 
+// fakeSyntax colors every rune-run of letters, leaving the rest default, and
+// reconstructs the input exactly.
+func fakeSyntax(line string) []Segment {
+	var segs []Segment
+	cur := Segment{}
+	flush := func() {
+		if cur.Text != "" {
+			segs = append(segs, cur)
+			cur = Segment{}
+		}
+	}
+	for _, r := range line {
+		color := ""
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
+			color = "#ff0000"
+		}
+		if color != cur.Color {
+			flush()
+			cur.Color = color
+		}
+		cur.Text += string(r)
+	}
+	flush()
+	return segs
+}
+
+func TestUnifiedLines_SyntaxKeepsTextAndNumbers(t *testing.T) {
+	hunks := diff.Compute("return nil\n", "return err\n")
+	lines := UnifiedLines(hunks, 80, UnifiedOpts{LineNumbers: true, Emphasis: true, Syntax: fakeSyntax})
+	joined := stripANSI(strings.Join(lines, "\n"))
+	if !strings.Contains(joined, "- 1  return nil") || !strings.Contains(joined, "+ 1  return err") {
+		t.Fatalf("syntax rendering must preserve text, markers, and line numbers:\n%s", joined)
+	}
+}
+
+func TestUnifiedLines_SyntaxClipsWithEllipsis(t *testing.T) {
+	hunks := diff.Compute("", "abcdefghijklmnopqrstuvwxyz\n")
+	lines := UnifiedLines(hunks, 12, UnifiedOpts{Syntax: fakeSyntax})
+	joined := stripANSI(strings.Join(lines, "\n"))
+	if !strings.Contains(joined, "…") {
+		t.Fatalf("overlong syntax lines should clip with an ellipsis:\n%s", joined)
+	}
+	if strings.Contains(joined, "z") {
+		t.Fatalf("clipped tail should not render:\n%s", joined)
+	}
+}
+
+func TestUnifiedLines_SyntaxMismatchFallsBack(t *testing.T) {
+	bad := func(string) []Segment { return []Segment{{Text: "wrong"}} }
+	hunks := diff.Compute("a\n", "b\n")
+	lines := UnifiedLines(hunks, 80, UnifiedOpts{Syntax: bad})
+	joined := stripANSI(strings.Join(lines, "\n"))
+	if !strings.Contains(joined, "-a") || !strings.Contains(joined, "+b") {
+		t.Fatalf("segments that don't reconstruct the line must fall back to plain rendering:\n%s", joined)
+	}
+}
+
+func TestDiffView_MultiFileFullView(t *testing.T) {
+	files := []diff.File{
+		{Path: "a.go", Hunks: diff.Compute("x\n", "y\n")},
+		{Path: "img.png", Binary: true},
+		{Path: "b.go", Hunks: diff.Compute("1\n2\n", "1\n3\n")},
+	}
+	v := &DiffView{Path: "session diff", Files: files, Mode: DiffFull, Height: 30}
+	view := stripANSI(v.View(100))
+	v.Height = 6 // shrink so the body scrolls and hunk jumps move the offset
+	for _, want := range []string{"session diff", "─ a.go", "─ b.go", "(binary file differs)", "· 3 files"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("multi-file full view should contain %q:\n%s", want, view)
+		}
+	}
+	// n jumps across files to the second textual hunk.
+	v.Update(key("n"))
+	if v.Offset == 0 {
+		t.Fatal("n should jump to the next hunk across files")
+	}
+}
+
 // stripANSI removes escape sequences so tests can assert on plain text.
 func stripANSI(s string) string {
 	var b strings.Builder

@@ -251,6 +251,8 @@ A wrong turn costs one command, not the session: a checkpoint is recorded at the
 
 `shhh code` sessions also see their code the way an editor does, through the project's own language server. Common servers are auto-detected on PATH — `gopls`, `rust-analyzer`, `typescript-language-server`, `pyright` — and started lazily the first time a file they own is touched; no server on PATH is simply a no-op. After every applied `write_file`/`edit_file`, fresh diagnostics for the touched file are appended to the tool result (bounded, errors first), so the model sees the type error it just introduced and fixes it in the same round. The model also gets `definition` and `references` tools — point at a symbol occurrence by file, line, and identifier text and get bounded `file:line` answers — steering it away from grep when it needs actual semantics. Servers are owned by the session (shut down when it ends), every request is bounded by a timeout so a hung server can't wedge the agent loop, and `lsp.disabled = true` turns the whole thing off.
 
+Reviewing the agent's edits is a first-class surface, not raw text. Every diff — the approval preview and the transcript row an applied edit leaves behind — renders with syntax highlighting (by file type, with add/remove coloring layered over it), line numbers, and background-tinted intraline emphasis on the changed span of a modified line. An applied edit lands in the transcript as one collapsed row (`✎ edit path  +12 −4 · 2 hunks`); in focus mode (Ctrl+E), Enter expands it in place to a bounded unified view, and Enter again opens it full screen — scroll with `j`/`k`, jump hunks with `n`/`p`, and toggle a side-by-side layout with `s` (automatic on terminals ≥ 120 columns). The approval card offers the same full view with `d`. `/diff` shows the cumulative session diff — `git diff` against the workspace state the session started from — full screen with per-file sections.
+
 The status bar shows token usage, estimated cost, the current context size, and the active model. The context indicator changes color as the conversation approaches the model's context window (from the pricing table when known); past that threshold, the oldest tool results are automatically elided from the conversation before the next request.
 
 Slash commands inside a chat session:
@@ -265,6 +267,7 @@ Slash commands inside a chat session:
 | `/compact` | Summarize the conversation via the model and continue from the summary (frees context) |
 | `/evidence [purge]` | Tool-output evidence store: reduction stats and size; `purge` deletes the stored originals |
 | `/gate run [suite]`, `/gate result` | Quality gate (`shhh code`): run a named suite of the project's own checks in the background, then show the verdict (marked stale if the tree changed) |
+| `/diff` | Cumulative session diff, full screen: `git diff` against the session's starting state (git repos only) |
 | `/memory` | Durable memories (`shhh code`): `list` (default), `add [global] [kind] <text>`, `forget <id>` |
 | `/ps` | List the long-running processes this session owns (`shhh code`): state, pid, uptime, command |
 | `/rewind [n]` | Rewind to before a user turn (bare `/rewind` opens a picker); the abandoned tail is kept as a branch. Conversation only — files are not restored |
