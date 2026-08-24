@@ -26,6 +26,7 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/browse"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/update"
+	"github.com/rfizzle/shhh/internal/web"
 	"github.com/spf13/cobra"
 )
 
@@ -41,6 +42,9 @@ type chatSession struct {
 	flags        *resolve.Opts
 	continueLast bool
 	resumePick   bool
+	// web is the guarded web toolset (S-066); nil leaves the web tools
+	// unregistered (`shhh chat` today).
+	web *web.Toolset
 }
 
 func newChatCmd() *cobra.Command {
@@ -164,6 +168,11 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if red != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), evidence.ToolDefinition())
 	}
+	// Guarded web tools (S-066): web_fetch (approval-gated as an external
+	// action) and, when a search key is configured, web_search.
+	if session.web != nil {
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.web.Definitions()...)
+	}
 
 	env, err := buildSessionEnv(cmd, session)
 	if err != nil {
@@ -214,9 +223,13 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		return err
 	}
 
-	executor := agent.ToolExecutor(tools.Execute)
+	baseExecutor := agent.ToolExecutor(tools.Execute)
+	if session.web != nil {
+		baseExecutor = session.web.WrapExecutor(tools.Execute)
+	}
+	executor := baseExecutor
 	if red != nil {
-		executor = red.WrapExecutor(tools.Execute)
+		executor = red.WrapExecutor(baseExecutor)
 	}
 
 	// Session observability (S-065): content-free events (usage, tool calls,
@@ -240,6 +253,20 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithModelSwitcher(env.switchModel)
 	if red != nil {
 		model = model.WithEvidence(chat.Evidence{Reduce: red.Process, Manage: evidenceManager(red)})
+	}
+	// web_fetch goes through the approval queue as a generic external action:
+	// manual and accept-edits prompt, auto defers to the classifier (S-060).
+	if session.web != nil {
+		webTools := session.web
+		model = model.WithGatedTools(map[string]chat.GatedPreviewFunc{
+			web.FetchToolName: func(args json.RawMessage) (chat.GatedPreview, error) {
+				summary, err := webTools.FetchSummary(args)
+				if err != nil {
+					return chat.GatedPreview{}, err
+				}
+				return chat.GatedPreview{Action: "fetch", Summary: summary}, nil
+			},
+		})
 	}
 
 	if session.continueLast || session.resumePick {

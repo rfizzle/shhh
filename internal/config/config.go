@@ -14,8 +14,30 @@ type Config struct {
 	Provider   ProviderConfig   `toml:"provider"`
 	Behavior   BehaviorConfig   `toml:"behavior"`
 	Sandbox    SandboxConfig    `toml:"sandbox"`
+	Web        WebConfig        `toml:"web"`
 	Appearance AppearanceConfig `toml:"appearance"`
 	History    HistoryConfig    `toml:"history"`
+}
+
+// WebConfig tunes the guarded web tools (S-066) `shhh code` registers.
+type WebConfig struct {
+	// AllowPrivate permits fetching private, loopback, link-local, and CGNAT
+	// addresses (for intranet or local-dev targets) and lifts the 80/443 port
+	// allowlist. Cloud metadata endpoints stay blocked regardless.
+	AllowPrivate bool `toml:"allow_private"`
+	// FetchMaxBytes is the download ceiling per fetch (default 2 MiB).
+	FetchMaxBytes int64 `toml:"fetch_max_bytes"`
+	// FetchTimeoutSeconds bounds one fetch including redirects and the body
+	// read (default 30).
+	FetchTimeoutSeconds int `toml:"fetch_timeout_seconds"`
+	// CacheTTLMinutes is how long a cached response stays fresh (default 60).
+	CacheTTLMinutes int `toml:"cache_ttl_minutes"`
+	// SearchProvider names the web_search backend; "brave" (the default) is
+	// the only provider so far.
+	SearchProvider string `toml:"search_provider"`
+	// SearchAPIKey enables the web_search tool; without it the tool is not
+	// registered.
+	SearchAPIKey string `toml:"search_api_key"`
 }
 
 // SandboxConfig tunes process containment for agent-executed commands
@@ -234,6 +256,24 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Sandbox.ContainerTTLHours = n
 	case "sandbox.require_isolation":
 		cfg.Sandbox.RequireIsolation = value
+	case "web.allow_private":
+		cfg.Web.AllowPrivate = value == "true"
+	case "web.fetch_max_bytes":
+		var n int64
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Web.FetchMaxBytes = n
+	case "web.fetch_timeout_seconds":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Web.FetchTimeoutSeconds = n
+	case "web.cache_ttl_minutes":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Web.CacheTTLMinutes = n
+	case "web.search_provider":
+		cfg.Web.SearchProvider = value
+	case "web.search_api_key":
+		cfg.Web.SearchAPIKey = value
 	case "appearance.accent_color":
 		cfg.Appearance.AccentColor = value
 	case "history.retention_days":

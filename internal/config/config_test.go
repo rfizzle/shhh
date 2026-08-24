@@ -302,3 +302,56 @@ func TestSet_ClassifierConfig(t *testing.T) {
 			cfg.Behavior.ClassifierTimeoutSeconds, cfg.Behavior.ClassifierMaxTokens, cfg.Behavior.ClassifierRetries)
 	}
 }
+
+func TestSet_WebConfig(t *testing.T) {
+	var cfg Config
+	for key, value := range map[string]string{
+		"web.allow_private":         "true",
+		"web.fetch_max_bytes":       "1048576",
+		"web.fetch_timeout_seconds": "10",
+		"web.cache_ttl_minutes":     "30",
+		"web.search_provider":       "brave",
+		"web.search_api_key":        "bsk-test",
+	} {
+		if err := Set(&cfg, key, value); err != nil {
+			t.Fatalf("Set(%s): %v", key, err)
+		}
+	}
+	if !cfg.Web.AllowPrivate {
+		t.Error("web.allow_private not set")
+	}
+	if cfg.Web.FetchMaxBytes != 1048576 {
+		t.Errorf("web.fetch_max_bytes = %d", cfg.Web.FetchMaxBytes)
+	}
+	if cfg.Web.FetchTimeoutSeconds != 10 || cfg.Web.CacheTTLMinutes != 30 {
+		t.Errorf("web timings = %d/%d, want 10/30", cfg.Web.FetchTimeoutSeconds, cfg.Web.CacheTTLMinutes)
+	}
+	if cfg.Web.SearchProvider != "brave" || cfg.Web.SearchAPIKey != "bsk-test" {
+		t.Errorf("web search = %q/%q", cfg.Web.SearchProvider, cfg.Web.SearchAPIKey)
+	}
+}
+
+func TestLoadFrom_WebConfig(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+	content := `
+[web]
+allow_private = true
+fetch_max_bytes = 4194304
+fetch_timeout_seconds = 20
+cache_ttl_minutes = 15
+search_provider = "brave"
+search_api_key = "bsk-abc"
+`
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := LoadFrom(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !cfg.Web.AllowPrivate || cfg.Web.FetchMaxBytes != 4194304 || cfg.Web.FetchTimeoutSeconds != 20 ||
+		cfg.Web.CacheTTLMinutes != 15 || cfg.Web.SearchProvider != "brave" || cfg.Web.SearchAPIKey != "bsk-abc" {
+		t.Errorf("web config = %+v", cfg.Web)
+	}
+}

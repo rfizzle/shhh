@@ -34,6 +34,7 @@ func newCodeCmd() *cobra.Command {
 				flags:        &flags,
 				continueLast: continueLast,
 				resumePick:   resumePick,
+				web:          openWebTools(ConfigFrom(cmd.Context())),
 			}
 			if printMode || popts.json || popts.sandbox {
 				return runPrintSession(cmd, args, session, popts)

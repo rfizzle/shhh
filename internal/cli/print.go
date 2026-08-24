@@ -19,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/stdin"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/web"
 	"github.com/spf13/cobra"
 )
 
@@ -43,6 +44,11 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	red := openEvidence()
 	if red != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), evidence.ToolDefinition())
+	}
+	// Guarded web tools (S-066), mirroring the interactive session; web_fetch
+	// stays approval-gated, which headless resolves via --yes.
+	if session.web != nil {
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.web.Definitions()...)
 	}
 
 	env, err := buildSessionEnv(cmd, session)
@@ -98,10 +104,14 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	}
 
 	a := agent.New(env.messages, env.stream)
+	baseExecutor := agent.ToolExecutor(tools.Execute)
+	if session.web != nil {
+		baseExecutor = session.web.WrapExecutor(tools.Execute)
+	}
 	if red != nil {
-		a.SetExecutor(red.WrapExecutor(tools.Execute))
+		a.SetExecutor(red.WrapExecutor(baseExecutor))
 	} else {
-		a.SetExecutor(tools.Execute)
+		a.SetExecutor(baseExecutor)
 	}
 	a.SetMaxRounds(cfg.Behavior.MaxToolRounds)
 
@@ -119,10 +129,14 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 
 	var usage provider.Usage
 	var callStart time.Time
+	gate := headlessGate
+	if session.web != nil {
+		gate = func(name string) bool { return headlessGate(name) || name == web.FetchToolName }
+	}
 	h := &agent.Headless{
 		Agent:   a,
-		Gate:    headlessGate,
-		Resolve: headlessApprover(cmd.Context(), opts, allowlist, run, red, recorder.decision),
+		Gate:    gate,
+		Resolve: headlessApprover(cmd.Context(), opts, allowlist, run, red, recorder.decision, session.web),
 		OnToolCall: func(tc provider.ToolCall) {
 			callStart = time.Now()
 			fmt.Fprintf(os.Stderr, "» %s %s\n", tc.Name, clipActivityLine(tc.Arguments))
@@ -169,13 +183,23 @@ func headlessGate(name string) bool {
 // reduction pipeline (red is nil-safe) like every other tool result. Each
 // verdict is reported to record (nil-safe) as a content-free decision event
 // (S-065).
-func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, run func(context.Context, string) (string, int), red *evidence.Reducer, record func(decision, reason string)) func(provider.ToolCall) string {
+func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, run func(context.Context, string) (string, int), red *evidence.Reducer, record func(decision, reason string), webTools *web.Toolset) func(provider.ToolCall) string {
 	note := func(decision, reason string) {
 		if record != nil {
 			record(decision, reason)
 		}
 	}
 	return func(tc provider.ToolCall) string {
+		// web_fetch is an external action (S-066): --yes opts in, the default
+		// denies like every other gated call.
+		if webTools != nil && tc.Name == web.FetchToolName {
+			if opts.yes {
+				note("allow", "headless-yes")
+				return red.Process(tc.Name, agent.ExecuteWith(webTools.Execute, tc))
+			}
+			note("deny", "headless-default")
+			return "error: web fetch not approved: headless mode denies external actions by default (run with --yes)"
+		}
 		if tc.Name == tools.ExecCommandName {
 			var args struct {
 				Command string `json:"command"`
