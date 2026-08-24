@@ -129,3 +129,23 @@ func TestPlanInspectionAllowed(t *testing.T) {
 		}
 	}
 }
+
+func TestClampMode(t *testing.T) {
+	cases := []struct {
+		mode, ceiling, want Mode
+	}{
+		{ModeAuto, ModeAuto, ModeAuto},
+		{ModeAuto, ModeAcceptEdits, ModeAcceptEdits},
+		{ModeAuto, ModeManual, ModeManual},
+		{ModeAuto, ModePlan, ModePlan},
+		{ModeAcceptEdits, ModeAuto, ModeAcceptEdits},
+		{ModeManual, ModeAcceptEdits, ModeManual},
+		{ModePlan, ModeAuto, ModePlan},
+		{ModeManual, ModePlan, ModePlan},
+	}
+	for _, c := range cases {
+		if got := ClampMode(c.mode, c.ceiling); got != c.want {
+			t.Errorf("ClampMode(%v, %v) = %v, want %v", c.mode, c.ceiling, got, c.want)
+		}
+	}
+}

@@ -111,6 +111,30 @@ func NextMode(cycle []Mode, current Mode) Mode {
 	return cycle[0]
 }
 
+// permissiveness ranks modes for ClampMode: plan is the most restrictive,
+// auto the most permissive.
+func permissiveness(m Mode) int {
+	switch m {
+	case ModePlan:
+		return 0
+	case ModeAcceptEdits:
+		return 2
+	case ModeAuto:
+		return 3
+	default: // ModeManual
+		return 1
+	}
+}
+
+// ClampMode caps mode at ceiling: a sub-agent can never run in a more
+// permissive mode than its parent (S-068).
+func ClampMode(mode, ceiling Mode) Mode {
+	if permissiveness(mode) > permissiveness(ceiling) {
+		return ceiling
+	}
+	return mode
+}
+
 // ActionKind classifies an approval-gated tool call for mode decisions.
 type ActionKind int
 

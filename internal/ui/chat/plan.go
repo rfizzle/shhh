@@ -79,7 +79,7 @@ func (m Model) selectPlanOption(idx int) (tea.Model, tea.Cmd) {
 // switches to the chosen one and the approval message becomes the next user
 // turn, with the plan already in context.
 func (m Model) approvePlan(execMode agent.Mode) (tea.Model, tea.Cmd) {
-	m.mode = execMode
+	m.applyMode(execMode)
 	m.state = stateStreaming
 	m.streaming = ""
 	m.atBottom = true

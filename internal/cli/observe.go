@@ -41,6 +41,37 @@ func startObserveRecorder(db *storage.DB, kind, provider, model string, prices *
 	return &observeRecorder{db: db, id: id, prices: prices, model: model}
 }
 
+// startChildObserveRecorder opens a sub-agent's session row linked to its
+// parent session (S-068); failures disable recording for that child only.
+func startChildObserveRecorder(db *storage.DB, kind, provider, model string, prices *pricing.Table, parentID int64) *observeRecorder {
+	if db == nil {
+		return nil
+	}
+	id, err := db.StartChildAgentSession(parentID, kind, provider, model)
+	if err != nil {
+		return nil
+	}
+	return &observeRecorder{db: db, id: id, prices: prices, model: model}
+}
+
+// sessionID is the recorder's session row id (0 when recording is disabled),
+// used to link child sessions to their parent.
+func (r *observeRecorder) sessionID() int64 {
+	if r == nil {
+		return 0
+	}
+	return r.id
+}
+
+// toolCallOutcome records a tool event without a duration, for sub-agent
+// runners that don't time individual calls.
+func (r *observeRecorder) toolCallOutcome(tool, outcome string) {
+	if r == nil {
+		return
+	}
+	_ = r.db.RecordAgentEvent(r.id, storage.AgentEventTool, tool, nil, outcome, "")
+}
+
 // observer adapts the recorder to the chat TUI's observability hooks.
 func (r *observeRecorder) observer() chat.Observer {
 	if r == nil {

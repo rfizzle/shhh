@@ -19,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -193,6 +194,10 @@ type Model struct {
 	observer      Observer
 	turnCount     int64
 	toolDefTokens int64
+	// subagents supervises spawned child agents (S-068); childAsks queues
+	// their approval requests routed into this session's approval surface.
+	subagents *subagent.Supervisor
+	childAsks []*subagent.Ask
 	// steering holds messages typed while the agent is working (S-058); they
 	// are injected as user messages before the next stream request.
 	steering      []string
@@ -337,6 +342,9 @@ func (m Model) Init() tea.Cmd {
 	if m.initialPrompt != "" {
 		cmds = append(cmds, func() tea.Msg { return initialPromptMsg{} })
 	}
+	if m.subagents != nil {
+		cmds = append(cmds, listenSubagents(m.subagents.Events()))
+	}
 	return tea.Batch(cmds...)
 }
 
@@ -371,9 +379,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.state == stateFocus {
 			return m.updateFocus(msg)
 		}
+		// A child agent's routed approval takes over the bottom panel (S-068);
+		// it defers to the parent's own prompts above.
+		if ask := m.activeChildAsk(); ask != nil {
+			return m.updateChildAsk(msg, ask)
+		}
 		switch msg.String() {
 		case "ctrl+d":
 			m.quitting = true
+			m.cancelSubagents()
 			if m.cancel != nil {
 				m.cancel()
 			}
@@ -416,7 +430,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, m.quitCmd()
 		case "shift+tab":
 			// Cycle the permission mode (S-059); the status bar reflects it.
-			m.mode = agent.NextMode(m.modeCycle, m.mode)
+			m.applyMode(agent.NextMode(m.modeCycle, m.mode))
 			return m, nil
 		case "ctrl+e":
 			// Focus mode (S-076): navigate and expand transcript rows.
@@ -630,6 +644,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.classifierCancel = nil
 		return m.finishClassifierCheck(msg.verdict)
 
+	case subagentEventMsg:
+		return m.handleSubagentEvent(msg.ev)
+
 	case streamErrMsg:
 		m.appendEntry(entry{kind: entryError, text: msg.err.Error()})
 		m.compacting = false
@@ -743,6 +760,12 @@ func (m Model) View() string {
 		body = m.viewport.View()
 	}
 
+	// Working sub-agents render as compact progress rows above the divider
+	// (S-068).
+	if rows := m.renderAgentRows(contentWidth); rows != "" {
+		body += "\n" + rows
+	}
+
 	bottomDivider := dividerStyle(contentWidth)
 	statusBar := m.renderStatusBar(contentWidth)
 
@@ -754,6 +777,11 @@ func (m Model) View() string {
 		inputView = m.renderPlanApprove()
 	case stateFocus:
 		inputView = m.renderFocusHint()
+	}
+	// A child agent's routed approval takes over the bottom panel when the
+	// parent's own prompts aren't using it (S-068).
+	if ask := m.activeChildAsk(); ask != nil {
+		inputView = m.renderChildAsk(ask)
 	}
 
 	content := header + "\n" + topDivider + "\n" + body + "\n" + bottomDivider + "\n" + statusBar + "\n" + inputView
@@ -1111,6 +1139,8 @@ func (m *Model) cancelStreaming() {
 	if m.cancel != nil {
 		m.cancel()
 	}
+	// Ctrl+C cancels the whole child tree with the turn (S-068).
+	m.cancelSubagents()
 	for _, tc := range m.agent.CancelTurn() {
 		m.appendEntry(entry{kind: entryTool, toolName: tc.Name, toolArgs: tc.Arguments, toolResult: "cancelled by user"})
 	}
@@ -1272,6 +1302,11 @@ func (m Model) renderStatusBar(width int) string {
 		parts = append(parts, statusBarStyle.Render(fmt.Sprintf("queued %d", n)))
 	}
 
+	// Working sub-agents, with blocked-on-approval count (S-068).
+	if badge := m.agentBadge(); badge != "" {
+		parts = append(parts, badge)
+	}
+
 	// Active approval policy (S-054); absent in the default ask-everything state.
 	if p := m.policyLabel(); p != "" {
 		parts = append(parts, statusBarStyle.Render(p))
@@ -1345,7 +1380,7 @@ func (m Model) contentWidth() int {
 }
 
 func (m Model) viewportHeight() int {
-	h := m.height - m.bottomPanelHeight() - chromeHeight
+	h := m.height - m.bottomPanelHeight() - chromeHeight - m.agentRowsHeight()
 	if h < 1 {
 		return 1
 	}
@@ -1444,7 +1479,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		if err != nil {
 			return true, "Error: " + err.Error()
 		}
-		m.mode = mode
+		m.applyMode(mode)
 		return true, fmt.Sprintf("Mode set to %s — %s.", mode, mode.Describe())
 
 	case "/stats":

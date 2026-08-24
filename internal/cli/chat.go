@@ -23,6 +23,7 @@ import (
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/stdin"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/browse"
 	"github.com/rfizzle/shhh/internal/ui/chat"
@@ -49,6 +50,9 @@ type chatSession struct {
 	// gate registers the quality-gate tool and /gate command (S-067);
 	// `shhh code` only.
 	gate bool
+	// agents registers the sub-agent orchestration tools and supervisor
+	// (S-068); `shhh code` interactive sessions only.
+	agents bool
 }
 
 func newChatCmd() *cobra.Command {
@@ -186,6 +190,12 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if gate != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), quality.ToolDefinition())
 	}
+	// Sub-agent orchestration (S-068): spawn_agent (approval-gated) and
+	// agent_report join the toolset; the supervisor itself is built once the
+	// provider is resolved.
+	if session.agents {
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions()...)
+	}
 
 	env, err := buildSessionEnv(cmd, session)
 	if err != nil {
@@ -253,6 +263,16 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	recorder := startObserveRecorder(db, session.kind, env.prov.Name(), env.modelName, prices)
 	defer recorder.end()
 
+	// Sub-agent supervisor (S-068): spawn_agent and agent_report short-circuit
+	// on the executor chain; Close cancels the child tree and removes
+	// leftover worktrees when the session ends.
+	var sup *subagent.Supervisor
+	if session.agents {
+		sup = buildSupervisor(cmd.Context(), cfg, session, env, red, recorder, db, prices)
+		executor = sup.WrapExecutor(executor)
+		defer sup.Close()
+	}
+
 	model := chat.New(env.messages, env.stream).
 		WithTitle(session.title).
 		WithObserver(recorder.observer()).
@@ -273,19 +293,32 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if gate != nil {
 		model = model.WithGate(chat.Gate{Manage: gateManager(gate)})
 	}
-	// web_fetch goes through the approval queue as a generic external action:
-	// manual and accept-edits prompt, auto defers to the classifier (S-060).
+	// web_fetch and spawn_agent go through the approval queue as generic
+	// external actions: manual and accept-edits prompt, auto defers to the
+	// classifier (S-060).
+	gatedPreviews := map[string]chat.GatedPreviewFunc{}
 	if session.web != nil {
 		webTools := session.web
-		model = model.WithGatedTools(map[string]chat.GatedPreviewFunc{
-			web.FetchToolName: func(args json.RawMessage) (chat.GatedPreview, error) {
-				summary, err := webTools.FetchSummary(args)
-				if err != nil {
-					return chat.GatedPreview{}, err
-				}
-				return chat.GatedPreview{Action: "fetch", Summary: summary}, nil
-			},
-		})
+		gatedPreviews[web.FetchToolName] = func(args json.RawMessage) (chat.GatedPreview, error) {
+			summary, err := webTools.FetchSummary(args)
+			if err != nil {
+				return chat.GatedPreview{}, err
+			}
+			return chat.GatedPreview{Action: "fetch", Summary: summary}, nil
+		}
+	}
+	if sup != nil {
+		gatedPreviews[subagent.SpawnToolName] = func(args json.RawMessage) (chat.GatedPreview, error) {
+			summary, err := subagent.SpawnSummary(args)
+			if err != nil {
+				return chat.GatedPreview{}, err
+			}
+			return chat.GatedPreview{Action: "spawn", Summary: summary}, nil
+		}
+		model = model.WithSubagents(sup)
+	}
+	if len(gatedPreviews) > 0 {
+		model = model.WithGatedTools(gatedPreviews)
 	}
 
 	if session.continueLast || session.resumePick {

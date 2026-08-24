@@ -75,6 +75,8 @@ var migrations = []string{
 	);
 
 	CREATE INDEX IF NOT EXISTS idx_agent_events_session ON agent_events(session_id);`,
+
+	`ALTER TABLE agent_sessions ADD COLUMN parent_id INTEGER REFERENCES agent_sessions(id);`,
 }
 
 func (db *DB) migrate() error {

@@ -33,6 +33,23 @@ func (db *DB) StartAgentSession(kind, provider, model string) (int64, error) {
 	return res.LastInsertId()
 }
 
+// StartChildAgentSession opens a session row linked to a parent session, so
+// sub-agent spend is attributable (S-068). A non-positive parentID records an
+// unlinked session.
+func (db *DB) StartChildAgentSession(parentID int64, kind, provider, model string) (int64, error) {
+	if parentID <= 0 {
+		return db.StartAgentSession(kind, provider, model)
+	}
+	res, err := db.sql.Exec(
+		`INSERT INTO agent_sessions (kind, provider, model, parent_id) VALUES (?, ?, ?, ?)`,
+		kind, provider, model, parentID,
+	)
+	if err != nil {
+		return 0, err
+	}
+	return res.LastInsertId()
+}
+
 // UpdateAgentSession sets a session's cumulative totals (idempotent: callers
 // pass running totals, not deltas).
 func (db *DB) UpdateAgentSession(id, turns, tokensIn, tokensOut int64, estCost float64) error {
@@ -247,6 +264,7 @@ type AgentExportSession struct {
 	TokensIn  int64              `json:"tokens_in"`
 	TokensOut int64              `json:"tokens_out"`
 	EstCost   float64            `json:"est_cost"`
+	ParentID  *int64             `json:"parent_id,omitempty"`
 	Events    []AgentExportEvent `json:"events,omitempty"`
 }
 
@@ -264,7 +282,7 @@ type AgentExportEvent struct {
 // cutoff, oldest first, for `shhh observe export`.
 func (db *DB) ExportAgentObservability(since time.Time) ([]AgentExportSession, error) {
 	rows, err := db.sql.Query(
-		`SELECT id, started_at, ended_at, kind, provider, model, turns, tokens_in, tokens_out, est_cost
+		`SELECT id, started_at, ended_at, kind, provider, model, turns, tokens_in, tokens_out, est_cost, parent_id
 		 FROM agent_sessions WHERE started_at >= ? ORDER BY started_at`, observeCutoff(since))
 	if err != nil {
 		return nil, err
@@ -275,7 +293,7 @@ func (db *DB) ExportAgentObservability(since time.Time) ([]AgentExportSession, e
 	for rows.Next() {
 		var s AgentExportSession
 		if err := rows.Scan(&s.ID, &s.StartedAt, &s.EndedAt, &s.Kind, &s.Provider, &s.Model,
-			&s.Turns, &s.TokensIn, &s.TokensOut, &s.EstCost); err != nil {
+			&s.Turns, &s.TokensIn, &s.TokensOut, &s.EstCost, &s.ParentID); err != nil {
 			return nil, err
 		}
 		sessions = append(sessions, s)

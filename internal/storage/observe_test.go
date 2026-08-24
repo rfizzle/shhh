@@ -153,3 +153,57 @@ func TestAgentObservability_WindowCutoff(t *testing.T) {
 		t.Fatalf("past cutoff should include the session, got %d", len(sessions))
 	}
 }
+
+func TestStartChildAgentSession_LinksParent(t *testing.T) {
+	db := openTestDB(t)
+
+	parentID, err := db.StartAgentSession("code", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start parent: %v", err)
+	}
+	childID, err := db.StartChildAgentSession(parentID, "writer", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start child: %v", err)
+	}
+	if childID == parentID {
+		t.Fatal("child must be its own session row")
+	}
+	if err := db.UpdateAgentSession(childID, 1, 500, 100, 0.01); err != nil {
+		t.Fatalf("update child: %v", err)
+	}
+
+	sessions, err := db.ExportAgentObservability(time.Now().Add(-time.Hour))
+	if err != nil {
+		t.Fatalf("export: %v", err)
+	}
+	var foundChild, foundParent bool
+	for _, s := range sessions {
+		switch s.ID {
+		case childID:
+			foundChild = true
+			if s.ParentID == nil || *s.ParentID != parentID {
+				t.Fatalf("child parent_id = %v, want %d", s.ParentID, parentID)
+			}
+			if s.Kind != "writer" {
+				t.Fatalf("child kind = %q", s.Kind)
+			}
+		case parentID:
+			foundParent = true
+			if s.ParentID != nil {
+				t.Fatal("parent must have no parent_id")
+			}
+		}
+	}
+	if !foundChild || !foundParent {
+		t.Fatalf("export missing sessions: child=%v parent=%v", foundChild, foundParent)
+	}
+
+	// A non-positive parent records an unlinked session.
+	looseID, err := db.StartChildAgentSession(0, "researcher", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start unlinked: %v", err)
+	}
+	if looseID <= 0 {
+		t.Fatal("unlinked session not created")
+	}
+}

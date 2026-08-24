@@ -177,3 +177,38 @@ func TestFriendlyOS(t *testing.T) {
 		}
 	}
 }
+
+func TestBuildResearcher_Instructions(t *testing.T) {
+	info := shell.Info{Shell: "bash", OS: "linux", Cwd: "/home/user/project"}
+	got := BuildResearcher(info, "EXTRA CONTEXT")
+
+	for _, want := range []string{
+		"research sub-agent",
+		"cannot edit files or run commands",
+		"last message IS the deliverable",
+		"Cwd: /home/user/project",
+		"EXTRA CONTEXT",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("expected researcher prompt to contain %q, got:\n%s", want, got)
+		}
+	}
+}
+
+func TestBuildWriter_Instructions(t *testing.T) {
+	info := shell.Info{Shell: "bash", OS: "linux", Cwd: "/tmp/worktree/proj"}
+	got := BuildWriter(info, "EXTRA CONTEXT")
+
+	for _, want := range []string{
+		"ISOLATED COPY",
+		"single patch",
+		"write_file and edit_file",
+		"last message IS the deliverable",
+		"Cwd: /tmp/worktree/proj",
+		"EXTRA CONTEXT",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("expected writer prompt to contain %q, got:\n%s", want, got)
+		}
+	}
+}

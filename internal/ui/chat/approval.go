@@ -405,6 +405,10 @@ func (m Model) bottomPanelHeight() int {
 		lines = m.confirmLines()
 	case statePlanApprove:
 		lines = m.planApproveLines()
+	default:
+		if ask := m.activeChildAsk(); ask != nil {
+			lines = m.childAskLines(ask)
+		}
 	}
 	if n := len(lines); n > inputHeight {
 		return min(n, m.maxConfirmPanelHeight())

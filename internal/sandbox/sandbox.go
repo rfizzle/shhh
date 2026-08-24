@@ -49,6 +49,10 @@ type Policy struct {
 	Profile    Profile
 	DenyExtra  []string
 	WriteExtra []string
+	// Cwd is the directory the contained command starts in; empty means the
+	// current process directory (sub-agents run in their own worktree,
+	// S-068).
+	Cwd string
 	// ReadOnlyWorkspace withholds the workspace write grant, for callers that
 	// must run commands read-only (the quality gate, S-067). Scratch and
 	// toolchain-cache paths stay writable so builds and test runners keep
@@ -196,7 +200,13 @@ func resolvePolicy(p Policy) (spec, error) {
 		return spec{}, fmt.Errorf("wrap unsupported: cannot resolve workspace %s: %v", p.Workspace, err)
 	}
 	s.workspace = ws
-	if cwd, err := os.Getwd(); err == nil {
+	if p.Cwd != "" {
+		cwd, err := resolvePath(p.Cwd)
+		if err != nil {
+			return spec{}, fmt.Errorf("wrap unsupported: cannot resolve cwd %s: %v", p.Cwd, err)
+		}
+		s.cwd = cwd
+	} else if cwd, err := os.Getwd(); err == nil {
 		s.cwd = cwd
 	}
 

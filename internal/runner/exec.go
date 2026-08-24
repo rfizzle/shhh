@@ -75,11 +75,40 @@ func RunCapture(ctx context.Context, command string) (output string, exitCode in
 // failure — e.g. the containment binary vanished — reports the error in the
 // output with exit code -1, so the command fails visibly instead of running
 // bare.
+// RunCaptureIn is RunCapture with an explicit working directory, for
+// sub-agent commands that must run inside their own workspace (S-068).
+func RunCaptureIn(ctx context.Context, dir, command string) (output string, exitCode int) {
+	sh := os.Getenv("SHELL")
+	if sh == "" {
+		sh = "/bin/sh"
+	}
+
+	cmd := exec.CommandContext(ctx, filepath.Clean(sh), "-c", command)
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			return string(out), exitErr.ExitCode()
+		}
+		return strings.TrimSpace(string(out) + "\nerror: " + err.Error()), -1
+	}
+	return string(out), 0
+}
+
 func RunCaptureArgv(ctx context.Context, argv []string) (output string, exitCode int) {
+	return RunCaptureArgvIn(ctx, "", argv)
+}
+
+// RunCaptureArgvIn is RunCaptureArgv with an explicit working directory
+// (empty keeps the process cwd), for sandbox-wrapped sub-agent commands whose
+// mechanism does not chdir itself (S-068).
+func RunCaptureArgvIn(ctx context.Context, dir string, argv []string) (output string, exitCode int) {
 	if len(argv) == 0 {
 		return "error: empty command", -1
 	}
 	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
+	cmd.Dir = dir
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		var exitErr *exec.ExitError
