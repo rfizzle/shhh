@@ -6,6 +6,7 @@ import (
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/sandbox"
+	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/spf13/cobra"
 )
@@ -36,6 +37,7 @@ func newCodeCmd() *cobra.Command {
 				resumePick:   resumePick,
 				web:          openWebTools(ConfigFrom(cmd.Context())),
 				lsp:          openLSP(ConfigFrom(cmd.Context())),
+				structural:   structural.Detect(),
 				gate:         true,
 			}
 			if printMode || popts.json || popts.sandbox {

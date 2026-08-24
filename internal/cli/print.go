@@ -59,6 +59,11 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.lsp.Definitions()...)
 		defer session.lsp.Close()
 	}
+	// Structural code tools (S-072), mirroring the interactive session:
+	// read-only wrappers, each registered only when its binary is on PATH.
+	if session.structural != nil {
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.structural.Definitions()...)
+	}
 	// Quality gate (S-067), mirroring the interactive session: auto-run — the
 	// model only ever names a suite from the trusted config.
 	var qgate *quality.Runner
@@ -128,6 +133,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	}
 	if session.lsp != nil {
 		baseExecutor = session.lsp.WrapExecutor(baseExecutor)
+	}
+	if session.structural != nil {
+		baseExecutor = session.structural.WrapExecutor(baseExecutor)
 	}
 	if qgate != nil {
 		baseExecutor = qgate.WrapExecutor(baseExecutor)

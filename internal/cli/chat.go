@@ -25,6 +25,7 @@ import (
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/stdin"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/browse"
@@ -53,6 +54,10 @@ type chatSession struct {
 	// the definition/references tools; nil (no servers detected, or disabled)
 	// is a clean no-op. `shhh code` only.
 	lsp *lsp.Toolset
+	// structural wraps external code tools (S-072: fd, ast-grep, sd, tokei,
+	// jaq), each registered only when its binary is on PATH; nil leaves them
+	// unregistered. `shhh code` only.
+	structural *structural.Toolset
 	// gate registers the quality-gate tool and /gate command (S-067);
 	// `shhh code` only.
 	gate bool
@@ -200,6 +205,11 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.lsp.Definitions()...)
 		defer session.lsp.Close()
 	}
+	// Structural code tools (S-072): fd, ast-grep, sd, tokei, jaq — read-only
+	// wrappers, each registered only when its binary is on PATH.
+	if session.structural != nil {
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.structural.Definitions()...)
+	}
 	// Quality gate (S-067): the model can run the project's own checks by
 	// suite name; command text only ever comes from trusted config.
 	var gate *quality.Runner
@@ -285,6 +295,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	}
 	if session.lsp != nil {
 		baseExecutor = session.lsp.WrapExecutor(baseExecutor)
+	}
+	if session.structural != nil {
+		baseExecutor = session.structural.WrapExecutor(baseExecutor)
 	}
 	if gate != nil {
 		baseExecutor = gate.WrapExecutor(baseExecutor)
