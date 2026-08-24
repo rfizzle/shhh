@@ -401,3 +401,116 @@ Additions on top of the existing `style.go` values (256-color):
   TUIs stay visually consistent.
 - Every component takes an explicit width and handles < 60 columns by
   stacking rather than truncating hints.
+
+---
+
+## 12. Input Frame & Rails (command center, S-082)
+
+The prompt surface — where the user types and reads session vitals — is a
+rounded-corner frame whose borders carry information instead of being dead
+lines. It is the presentation-only spirit of the pi cockpit spec
+(`agent-ui/COCKPIT_SPEC.md` §2/§3/§6/§8) applied to shhh's bottom panel: it
+changes chrome, never behavior. The §8 cockpit segments and palette are
+re-homed into the frame's rails; the free-floating §8 bar remains the
+fallback for takeover surfaces and sub-`minCardWidth` terminals.
+
+### 12a. Anatomy
+
+- **Top rail** (top border): session identity on the left — the title, plus
+  the attached-child breadcrumb (S-077) — and the live activity state on the
+  right: a spinner + `WORKING` while streaming, running tools, or checking
+  permission; dim `idle` otherwise.
+- **Prompt gutter** replacing the placeholder sentence: `❯` idle, `▸` while
+  the agent works (typed text becomes steering, S-058), and the child's name
+  (`writer-1 ❯`) while attached. Wrapped input lines indent under it.
+- **Vitals rail**: the §8 cockpit segments (mode, round counter, context
+  meter, tokens, spend, agents, model) attached to the frame — a dedicated
+  `├─ ─┤` rail in the wide layout, folded into the bottom border otherwise.
+- **Bottom rail** (bottom border): contextual key hints that swap by state —
+  idle `enter send · / commands · shift+tab mode`, working `enter queues
+  steering · ctrl+c cancel`, attached `esc detach · ctrl+a agents` — absorbing
+  the old header hint text and the textarea placeholder.
+- **Notice rail**: one plain line above the frame that exists only while
+  there is something to say — update notice, queued steering count, blocked
+  sub-agents, the latest auto-mode denial — and disappears when clear
+  (COCKPIT_SPEC.md §6 alert-rail pattern).
+
+### 12b. Layout modes (COCKPIT_SPEC.md §3)
+
+Widths are content columns (terminal minus horizontal padding).
+
+**wide** (≥ 110): two rails below the input — vitals junction + hints:
+
+```
+╭─ shhh code ─────────────────────────────────────────────────────── ⠋ WORKING ─╮
+│ ▸ and add a regression test for the parser▌                                   │
+│                                                                               │
+│                                                                               │
+├─ ⏵⏵ accept edits · round 7/25 · ctx ▰▰▰▰▰▱▱▱ 62% · ↑41.2k ↓9.8k · $0.14 · gpt-5.2 ─┤
+╰─ enter queues steering · ctrl+c cancel ───────────────────────────────────────╯
+```
+
+**compact** (70–109): one rail — vitals fold into the bottom border, hints
+drop (attached, the detach hints move to the top rail's right side):
+
+```
+╭─ shhh chat ──────────────────────────────────────────────────────── idle ─╮
+│ ❯ ▌                                                                       │
+│                                                                           │
+│                                                                           │
+╰─ ⏸ manual · ctx ▰▰▰▱▱▱▱▱ 31% · ↑12.0k ↓3.4k · $0.05 ──────────── gpt-5.2 ─╯
+```
+
+**narrow** (< 70): minimal rail — identity drops from the top rail and the
+vitals keep only the never-dropped fields:
+
+```
+╭──────────────────────────────── idle ─╮
+│ ❯ ▌                                   │
+│                                       │
+│                                       │
+╰─ ⏸ manual · ctx ▰▰▰▱▱▱▱▱ 31% · $0.05 ─╯
+```
+
+Below `minCardWidth` (12) the surface degrades to plain rows: the old
+divider + §8 status bar + bare input.
+
+**Field-drop order** when a rail overflows (or the layout narrows): model /
+provider detail first, then token counts, then round counter / extras /
+idle-agent count. Context pressure, spend, and error/blocked state are never
+the first fields removed; the mode segment is never dropped.
+
+### 12c. Mode-aware accent (COCKPIT_SPEC.md §8)
+
+The frame border color reflects the permission mode — add (10) for the
+permissive modes, accent (214) for the gated ones, spin (205) while the
+auto-mode classifier is checking. Attached, it reflects the child's mode.
+Every state keeps its textual glyph (`⏵⏵`/`⏸`/`✦` in the vitals, `WORKING`/
+`idle` on the top rail), so meaning never depends on color alone.
+
+### 12d. Attached (S-077)
+
+```
+╭─ shhh code · orchestrator ▸ writer-1 ───────── esc detach · ctrl+a agents ─╮
+│ writer-1 ❯ hold off on model.go▌                                           │
+│                                                                            │
+│                                                                            │
+╰─ ⏵⏵ accept edits · round 3 · running… · $0.05 ──────────────── writer-1 ───╯
+```
+
+The vitals scope to the child (its mode, detail, spend, queued steering,
+name); the notice rail is orchestrator-scoped and hides while attached.
+
+### 12e. Interplay and layout accounting
+
+- The completion menu (S-078) renders inside the frame, under the input
+  rows; the confirm-panel height cap bounds input + menu as before.
+- Takeover surfaces — approval/plan cards, pickers, the agent list, routed
+  child asks, focus/diff hint bars — replace the framed input wholesale and
+  keep the divider + §8 status bar stack, so their geometry is unchanged.
+- The frame's top and bottom borders occupy the rows the bottom divider and
+  status bar otherwise use, so `chromeHeight` stays constant in the compact
+  and narrow layouts; the wide vitals rail and the notice rail are accounted
+  separately (`frameExtraHeight`) when sizing the viewport.
+- The frame is rebuilt every render and never enters the transcript render
+  cache, so resize just works.

@@ -198,6 +198,9 @@ type Model struct {
 	classifierCancel context.CancelFunc
 	// lastDenial is the most recent auto-mode denial, shown by /mode why.
 	lastDenial string
+	// denialNotice mirrors lastDenial on the notice rail (S-082) until the
+	// next user turn clears it.
+	denialNotice string
 	// planChoice is the focused row of the plan-approval prompt (S-061).
 	planChoice int
 	// focusIdx is the transcript index of the row selected in focus mode
@@ -293,7 +296,10 @@ type Model struct {
 
 func New(initialMessages []provider.Message, stream StreamFunc) Model {
 	ta := textarea.New()
-	ta.Placeholder = "Ask something... (Enter to send, Alt+Enter for newline)"
+	// No placeholder sentence and no per-line prompt: the command-center
+	// frame's gutter glyph and bottom-rail hints carry that (S-082).
+	ta.Placeholder = ""
+	ta.Prompt = ""
 	ta.Focus()
 	ta.CharLimit = 0
 	ta.SetHeight(inputHeight)
@@ -430,7 +436,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.width = msg.Width
 		m.height = msg.Height
 		contentWidth := msg.Width - horizontalPadding*2
-		m.input.SetWidth(contentWidth)
+		m.syncInputWidth()
 		vpHeight := m.viewportHeight()
 
 		if !m.ready {
@@ -849,7 +855,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.autosaveCmd()
 
 	case spinner.TickMsg:
-		if (m.state == stateStreaming && m.streaming == "") || m.state == stateRunningCmd || m.state == stateClassifying {
+		// frameWorking keeps the top rail's WORKING spinner animated for the
+		// whole turn (S-082), including while streamed text is rendering and
+		// while an attached child works.
+		if m.frameWorking() || (m.state == stateStreaming && m.streaming == "") || m.state == stateRunningCmd || m.state == stateClassifying {
 			var cmd tea.Cmd
 			m.spinner, cmd = m.spinner.Update(msg)
 			return m, cmd
@@ -899,6 +908,9 @@ func (m *Model) recordInput(text string) {
 
 func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
 	m.turnCount++
+	// A fresh user turn clears the notice rail's denial alert (S-082);
+	// lastDenial stays for /mode why.
+	m.denialNotice = ""
 	m.recordCheckpoint(text)
 	m.agent.StartTurn(text)
 	m.appendEntry(entry{kind: entryUser, text: text})
@@ -925,17 +937,13 @@ func (m Model) View() string {
 	if title == "" {
 		title = "shhh chat"
 	}
-	var header string
-	if m.attachedTo != "" {
-		// Attached view (S-077): breadcrumb header with the detach hints.
-		header = headerStyle.Render(" "+title) +
-			headerHintStyle.Render("  "+m.breadcrumb()+"   esc detach · ctrl+a agents")
-	} else {
-		header = headerStyle.Render(" "+title) +
-			headerHintStyle.Render("  Ctrl+D to exit")
-		if m.updateNotice != "" {
-			header += "  " + updateNoticeStyle.Render(m.updateNotice)
-		}
+	// The header carries only the title (S-082): the static key hint moved
+	// into the frame's contextual bottom rail, the update notice onto the
+	// notice rail, and the attached breadcrumb onto the frame's top rail.
+	header := headerStyle.Render(" " + title)
+	if m.attachedTo != "" && !m.frameShowing() {
+		// A takeover surface while attached keeps the breadcrumb visible.
+		header += headerHintStyle.Render("  " + m.breadcrumb())
 	}
 	header += strings.Repeat(" ", max(0, contentWidth-lipgloss.Width(header)))
 
@@ -982,40 +990,46 @@ func (m Model) View() string {
 		}
 	}
 
-	bottomDivider := dividerStyle(contentWidth)
-	statusBar := m.renderStatusBar(contentWidth)
+	// The command-center frame is the default bottom panel (S-082,
+	// DESIGN-TUI.md §12); takeover surfaces replace it wholesale and keep the
+	// divider + status-bar stack, as does the sub-minFrameWidth plain layout.
+	var bottom string
+	if m.frameShowing() {
+		bottom = m.renderPromptFrame()
+	} else {
+		inputView := m.input.View()
+		// The slash-command completion menu renders under the input (S-078);
+		// the takeover surfaces below replace it wholesale.
+		if m.completionActive() && m.attachedTo == "" && m.agentList == nil && m.activeChildAsk() == nil {
+			inputView += "\n" + strings.Join(m.completionMenuLines(), "\n")
+		}
+		switch m.state {
+		case stateConfirmRun:
+			inputView = m.renderConfirm()
+		case statePlanApprove:
+			inputView = m.renderPlanApprove()
+		case stateRewindPick:
+			inputView = m.renderRewindPick()
+		case statePick:
+			inputView = m.renderPick()
+		case stateFocus:
+			inputView = m.renderFocusHint()
+		case stateDiffFull:
+			inputView = m.renderDiffFullHint()
+		}
+		// The agent manager list takes the bottom panel while open (S-077).
+		if m.agentList != nil {
+			inputView = m.renderAgentList()
+		}
+		// A child agent's routed approval takes over the bottom panel when the
+		// parent's own prompts aren't using it (S-068).
+		if ask := m.activeChildAsk(); ask != nil {
+			inputView = m.renderChildAsk(ask)
+		}
+		bottom = dividerStyle(contentWidth) + "\n" + m.renderStatusBar(contentWidth) + "\n" + inputView
+	}
 
-	inputView := m.input.View()
-	// The slash-command completion menu renders under the input (S-078); the
-	// takeover surfaces below replace it wholesale.
-	if m.completionActive() && m.attachedTo == "" && m.agentList == nil && m.activeChildAsk() == nil {
-		inputView += "\n" + strings.Join(m.completionMenuLines(), "\n")
-	}
-	switch m.state {
-	case stateConfirmRun:
-		inputView = m.renderConfirm()
-	case statePlanApprove:
-		inputView = m.renderPlanApprove()
-	case stateRewindPick:
-		inputView = m.renderRewindPick()
-	case statePick:
-		inputView = m.renderPick()
-	case stateFocus:
-		inputView = m.renderFocusHint()
-	case stateDiffFull:
-		inputView = m.renderDiffFullHint()
-	}
-	// The agent manager list takes the bottom panel while open (S-077).
-	if m.agentList != nil {
-		inputView = m.renderAgentList()
-	}
-	// A child agent's routed approval takes over the bottom panel when the
-	// parent's own prompts aren't using it (S-068).
-	if ask := m.activeChildAsk(); ask != nil {
-		inputView = m.renderChildAsk(ask)
-	}
-
-	content := header + "\n" + topDivider + "\n" + body + "\n" + bottomDivider + "\n" + statusBar + "\n" + inputView
+	content := header + "\n" + topDivider + "\n" + body + "\n" + bottom
 	return lipgloss.NewStyle().Padding(0, horizontalPadding).Render(content)
 }
 
@@ -1357,6 +1371,8 @@ func (m *Model) cancelStreaming() {
 	m.memoryAsk = nil
 	m.finishStreaming()
 	m.restoreSteering()
+	// Restored steering empties the queue: the notice rail may shrink (S-082).
+	m.syncViewportHeight()
 }
 
 // queueSteering handles Enter while the agent is working (S-058): the typed
@@ -1389,6 +1405,8 @@ func (m Model) queueSteering() (tea.Model, tea.Cmd) {
 	m.recordInput(text)
 	m.input.Reset()
 	m.steering = append(m.steering, text)
+	// The queued count surfaces on the notice rail (S-082).
+	m.syncViewportHeight()
 	return m, nil
 }
 
@@ -1406,7 +1424,9 @@ func (m *Model) injectSteering() bool {
 	}
 	m.turnCount += int64(len(m.steering))
 	m.steering = nil
+	m.denialNotice = ""
 	m.agent.ResetRounds()
+	m.syncViewportHeight()
 	return true
 }
 
@@ -1495,6 +1515,13 @@ func (m Model) renderStatusBar(width int) string {
 	if m.attachedTo != "" && m.subagents != nil {
 		return m.renderChildStatusBar(width)
 	}
+	return m.cockpitData(true).View(width)
+}
+
+// cockpitData assembles the cockpit segments (§8). The frame's vitals rail
+// (S-082) omits the queued-steering extra — the notice rail carries it — so
+// includeQueued is false there.
+func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 	c := components.Cockpit{
 		CtxPct:   -1,
 		WarnPct:  warnThresholdPercent,
@@ -1526,7 +1553,7 @@ func (m Model) renderStatusBar(width int) string {
 		}
 	}
 	// Steering messages waiting to be injected (S-058).
-	if n := len(m.steering); n > 0 {
+	if n := len(m.steering); n > 0 && includeQueued {
 		c.Extra = append(c.Extra, fmt.Sprintf("queued %d", n))
 	}
 	// Active approval policy (S-054); absent in the default ask-everything state.
@@ -1537,7 +1564,7 @@ func (m Model) renderStatusBar(width int) string {
 	if m.subagents != nil {
 		c.Agents, c.AgentsBlocked = m.subagents.ActiveCounts()
 	}
-	return c.View(width)
+	return c
 }
 
 func formatTokenCount(n int64) string {
@@ -1584,7 +1611,7 @@ func (m Model) contentWidth() int {
 }
 
 func (m Model) viewportHeight() int {
-	h := m.height - m.bottomPanelHeight() - chromeHeight - m.agentRowsHeight()
+	h := m.height - m.bottomPanelHeight() - chromeHeight - m.agentRowsHeight() - m.frameExtraHeight()
 	if h < 1 {
 		return 1
 	}

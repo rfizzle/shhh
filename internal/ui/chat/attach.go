@@ -151,6 +151,9 @@ func (m *Model) attach(name string) {
 	m.agentList = nil
 	m.killConfirm = nil
 	m.killTarget = ""
+	// The prompt gutter shows the child's name while attached (S-082), so the
+	// textarea re-fits around it.
+	m.syncInputWidth()
 	m.syncViewportHeight()
 	m.viewport.SetContent(m.renderHistory())
 	m.restoreScroll()

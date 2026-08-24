@@ -318,6 +318,8 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 	case agent.Deny:
 		m.recordDecision(decisionDeny, "classifier")
 		m.lastDenial = req.summary + " — " + reason
+		// Surfaces on the notice rail until the next user turn (S-082).
+		m.denialNotice = req.summary
 		m.pendingApproval = nil
 		m.pendingRun = ""
 		m.agent.ResolveApproval("error: auto mode denied this tool call: " + reason)

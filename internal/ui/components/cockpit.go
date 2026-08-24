@@ -97,6 +97,82 @@ func (c Cockpit) agentsSegment() string {
 	return seg
 }
 
+// Rail drop ranks (S-082, DESIGN-TUI.md §12b): when a frame rail overflows,
+// the highest rank present is dropped first. Model/provider detail goes
+// first, then token counts; context pressure, spend, and error/blocked state
+// are never the first fields removed, and the mode segment is never dropped.
+const (
+	RailKeep   = iota // mode — never dropped
+	RailVital         // context meter, spend, blocked-agent state
+	RailNormal        // round counter, extras, idle agent count
+	RailTokens        // token counts — dropped second
+	RailDetail        // model/provider detail — dropped first
+)
+
+// RailSegment is one cockpit segment prepared for embedding in a frame rail
+// (S-082): the styled text plus its drop rank.
+type RailSegment struct {
+	Text string
+	Drop int
+}
+
+// RailSegments returns the cockpit's segments in display order with their
+// drop ranks, for hosts that embed the §8 segments into frame rails (S-082)
+// instead of rendering the free-floating bar.
+func (c Cockpit) RailSegments() []RailSegment {
+	segs := []RailSegment{{Text: c.modeSegment(), Drop: RailKeep}}
+	if c.Round != "" {
+		segs = append(segs, RailSegment{Text: statusStyle.Render(c.Round), Drop: RailNormal})
+	}
+	if c.CtxPct >= 0 {
+		segs = append(segs, RailSegment{Text: c.ctxMeter(), Drop: RailVital})
+	}
+	if c.Tokens != "" {
+		segs = append(segs, RailSegment{Text: statusStyle.Render(c.Tokens), Drop: RailTokens})
+	}
+	if c.Spend != "" {
+		segs = append(segs, RailSegment{Text: statusStyle.Render(c.Spend), Drop: RailVital})
+	}
+	for _, e := range c.Extra {
+		segs = append(segs, RailSegment{Text: statusStyle.Render(e), Drop: RailNormal})
+	}
+	if c.Agents > 0 {
+		drop := RailNormal
+		if c.AgentsBlocked > 0 {
+			drop = RailVital
+		}
+		segs = append(segs, RailSegment{Text: c.agentsSegment(), Drop: drop})
+	}
+	if c.Model != "" {
+		segs = append(segs, RailSegment{Text: statusStyle.Render(c.Model), Drop: RailDetail})
+	}
+	return segs
+}
+
+// FitRail joins segments with sep, dropping the rightmost segment of the
+// highest drop rank until the rail fits the width. The last survivor is
+// clipped when it alone overflows.
+func FitRail(segs []RailSegment, sep string, width int) string {
+	kept := append([]RailSegment(nil), segs...)
+	for {
+		parts := make([]string, len(kept))
+		for i, s := range kept {
+			parts[i] = s.Text
+		}
+		joined := strings.Join(parts, sep)
+		if lipgloss.Width(joined) <= width || len(kept) <= 1 {
+			return clip(joined, width)
+		}
+		worstIdx, worst := 0, -1
+		for i, s := range kept {
+			if s.Drop >= worst {
+				worst, worstIdx = s.Drop, i
+			}
+		}
+		kept = append(kept[:worstIdx], kept[worstIdx+1:]...)
+	}
+}
+
 // View assembles the rail, dropping the right side first and then trailing
 // left segments when the width runs out.
 func (c Cockpit) View(width int) string {
