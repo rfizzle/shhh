@@ -60,6 +60,15 @@ func approvalAction(req *approvalRequest) agent.Action {
 	case approvalDiff:
 		return agent.Action{Kind: agent.ActionEdit}
 	}
+	// A generic approval carrying a command — a process start (S-073) — is
+	// judged as a command: allowlist entries apply and safety flags stick.
+	if req.command != "" {
+		return agent.Action{
+			Kind:          agent.ActionCommand,
+			Command:       req.command,
+			SafetyFlagged: len(safety.Check(req.command)) > 0,
+		}
+	}
 	return agent.Action{Kind: agent.ActionOther}
 }
 

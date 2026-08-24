@@ -406,7 +406,7 @@ func TestMode_ReadOnlyToolsBypassApprovalInPlanMode(t *testing.T) {
 	m := gatedModel(t, nil, nil)
 	m.mode = agent.ModePlan
 	for _, name := range []string{"read_file", "list_directory", "search", "glob"} {
-		if m.requiresApproval(name) {
+		if m.requiresApproval(provider.ToolCall{Name: name}) {
 			t.Errorf("read-only tool %s must never be approval-gated", name)
 		}
 	}

@@ -16,6 +16,7 @@ import (
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/pricing"
+	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -61,6 +62,10 @@ type chatSession struct {
 	// gate registers the quality-gate tool and /gate command (S-067);
 	// `shhh code` only.
 	gate bool
+	// processes registers the long-running process supervisor (S-073): the
+	// process tool (start approval-gated) and the /ps command; `shhh code`
+	// only. Session end terminates every owned process tree.
+	processes bool
 	// agents registers the sub-agent orchestration tools and supervisor
 	// (S-068); `shhh code` interactive sessions only.
 	agents bool
@@ -225,6 +230,17 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if session.agents {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions()...)
 	}
+	// Long-running process supervisor (S-073): the process tool (start goes
+	// through the approval queue like any command) plus /ps; Close terminates
+	// every owned process tree when the session ends, however it ends.
+	var procSup *process.Supervisor
+	if session.processes {
+		procSup = openProcessSupervisor(red)
+	}
+	if procSup != nil {
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), process.Definition())
+		defer procSup.Close()
+	}
 
 	db, err := storage.Open()
 	if err != nil {
@@ -302,6 +318,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if gate != nil {
 		baseExecutor = gate.WrapExecutor(baseExecutor)
 	}
+	if procSup != nil {
+		baseExecutor = procSup.WrapExecutor(baseExecutor)
+	}
 	executor := baseExecutor
 	if red != nil {
 		executor = red.WrapExecutor(baseExecutor)
@@ -345,6 +364,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	}
 	if gate != nil {
 		model = model.WithGate(chat.Gate{Manage: gateManager(gate)})
+	}
+	if procSup != nil {
+		model = model.WithProcesses(chat.Processes{Manage: processManager(procSup)})
 	}
 	if mem != nil {
 		model = model.WithMemory(chat.Memory{

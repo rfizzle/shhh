@@ -192,6 +192,8 @@ type Model struct {
 	mutationHook MutationHook
 	// gate backs the /gate quality-gate command (S-067).
 	gate Gate
+	// processes backs /ps and process-start approval gating (S-073).
+	processes Processes
 	// memory backs /memory and the remember-tool confirm flow (S-070);
 	// memoryAsk is the open memory prompt while a proposal awaits the user.
 	memory    Memory
@@ -1623,6 +1625,12 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		}
 		return true, m.gate.Manage(parts[1:])
 
+	case "/ps":
+		if m.processes.Manage == nil {
+			return true, "The process supervisor is unavailable in this session."
+		}
+		return true, m.processes.Manage(parts[1:])
+
 	case "/memory":
 		if m.memory.Manage == nil {
 			return true, "Durable memory is unavailable in this session."
@@ -1777,6 +1785,7 @@ func helpText() string {
   /sandbox       Containment status and container sandboxes (doctor|list|status|destroy <id>|prune)
   /evidence      Tool-output evidence store: reduction stats and size (purge to clear)
   /gate          Quality gate: run [suite] starts the project's checks in the background, result shows the verdict
+  /ps            List the long-running processes this session owns (process tool)
   /memory        Durable memories: list (default) · add [global] [kind] <text> · forget <id>
   /agents        Agent manager: attach, steer, cancel, kill sub-agents (also Ctrl+A)
   /plan save [name]  Save the last plan/response to .shhh/plans/

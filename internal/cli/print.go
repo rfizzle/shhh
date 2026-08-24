@@ -13,6 +13,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/pricing"
+	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/runner"
@@ -72,6 +73,17 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	}
 	if qgate != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), quality.ToolDefinition())
+	}
+	// Long-running process supervisor (S-073), mirroring the interactive
+	// session: start stays approval-gated (resolved via --yes/--allow), and
+	// Close terminates every owned process tree when the run ends.
+	var procSup *process.Supervisor
+	if session.processes {
+		procSup = openProcessSupervisor(red)
+	}
+	if procSup != nil {
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), process.Definition())
+		defer procSup.Close()
 	}
 
 	env, err := buildSessionEnv(cmd, session)
@@ -140,6 +152,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if qgate != nil {
 		baseExecutor = qgate.WrapExecutor(baseExecutor)
 	}
+	if procSup != nil {
+		baseExecutor = procSup.WrapExecutor(baseExecutor)
+	}
 	if red != nil {
 		a.SetExecutor(red.WrapExecutor(baseExecutor))
 	} else {
@@ -161,14 +176,22 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 
 	var usage provider.Usage
 	var callStart time.Time
-	gate := headlessGate
-	if session.web != nil {
-		gate = func(name string) bool { return headlessGate(name) || name == web.FetchToolName }
+	webTools := session.web
+	gate := func(tc provider.ToolCall) bool {
+		if webTools != nil && tc.Name == web.FetchToolName {
+			return true
+		}
+		// The process tool (S-073) gates on its arguments: only start needs
+		// approval; status/read/input/stop auto-run.
+		if procSup != nil && tc.Name == process.ToolName {
+			return process.NeedsApproval(json.RawMessage(tc.Arguments))
+		}
+		return headlessGate(tc.Name)
 	}
 	h := &agent.Headless{
 		Agent:   a,
 		Gate:    gate,
-		Resolve: headlessApprover(cmd.Context(), opts, allowlist, run, red, recorder.decision, session.web, lspMutationHook(session.lsp)),
+		Resolve: headlessApprover(cmd.Context(), opts, allowlist, run, red, recorder.decision, session.web, procSup, lspMutationHook(session.lsp)),
 		OnToolCall: func(tc provider.ToolCall) {
 			callStart = time.Now()
 			fmt.Fprintf(os.Stderr, "» %s %s\n", tc.Name, clipActivityLine(tc.Arguments))
@@ -215,7 +238,7 @@ func headlessGate(name string) bool {
 // reduction pipeline (red is nil-safe) like every other tool result. Each
 // verdict is reported to record (nil-safe) as a content-free decision event
 // (S-065).
-func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, run func(context.Context, string) (string, int), red *evidence.Reducer, record func(decision, reason string), webTools *web.Toolset, mutationHook chat.MutationHook) func(provider.ToolCall) string {
+func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, run func(context.Context, string) (string, int), red *evidence.Reducer, record func(decision, reason string), webTools *web.Toolset, procSup *process.Supervisor, mutationHook chat.MutationHook) func(provider.ToolCall) string {
 	note := func(decision, reason string) {
 		if record != nil {
 			record(decision, reason)
@@ -231,6 +254,34 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 			}
 			note("deny", "headless-default")
 			return "error: web fetch not approved: headless mode denies external actions by default (run with --yes)"
+		}
+		// A process start (S-073) is approved like a command: safety-flagged
+		// commands are always denied headless; --yes or an allowlist match
+		// opts in.
+		if procSup != nil && tc.Name == process.ToolName {
+			_, command, err := process.StartSummary(json.RawMessage(tc.Arguments))
+			if err != nil {
+				return "error: " + err.Error()
+			}
+			if warnings := safety.Check(command); len(warnings) > 0 {
+				risks := make([]string, 0, len(warnings))
+				for _, w := range warnings {
+					risks = append(risks, w.Risk)
+				}
+				note("deny", "safety")
+				return "error: process start denied (" + strings.Join(risks, "; ") + "); safety-flagged commands require interactive approval"
+			}
+			if opts.yes || agent.AllowlistMatches(allowlist, command) {
+				if opts.yes {
+					note("allow", "headless-yes")
+				} else {
+					note("allow", "allowlist")
+				}
+				exec := func(_ string, args json.RawMessage) (string, error) { return procSup.Execute(args) }
+				return red.Process(tc.Name, agent.ExecuteWith(exec, tc))
+			}
+			note("deny", "headless-default")
+			return "error: process start not approved: headless mode denies commands by default (run with --yes or --allow)"
 		}
 		if tc.Name == tools.ExecCommandName {
 			var args struct {

@@ -12,6 +12,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/memory"
+	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -50,7 +51,7 @@ const (
 type approvalRequest struct {
 	call    provider.ToolCall
 	kind    approvalKind
-	command string      // approvalExec: the command handed to the runner
+	command string      // approvalExec: the command handed to the runner; also set for a process start (S-073) so mode policy treats it as a command
 	title   string      // action headline, e.g. "edit main.go"
 	hunks   []diff.Hunk // approvalDiff: the change to show
 	summary string      // one-line description for transcript entries
@@ -90,19 +91,24 @@ func (m Model) WithGatedTools(previews map[string]GatedPreviewFunc) Model {
 // requiresApproval reports whether a tool call must go through the approval
 // queue instead of the auto-run executor path. File-modification tools are
 // always gated, mirroring how execute_command is intercepted.
-func (m Model) requiresApproval(name string) bool {
-	if name == tools.ExecCommandName && m.runFn != nil {
+func (m Model) requiresApproval(tc provider.ToolCall) bool {
+	if tc.Name == tools.ExecCommandName && m.runFn != nil {
 		return true
 	}
-	if tools.IsMutating(name) {
+	if tools.IsMutating(tc.Name) {
 		return true
 	}
 	// remember (S-070) is always gated: agent-proposed memories persist only
 	// after explicit user confirmation.
-	if name == memory.RememberToolName {
+	if tc.Name == memory.RememberToolName {
 		return true
 	}
-	_, ok := m.gatedTools[name]
+	// The process tool (S-073) gates on its arguments: start launches a
+	// command and needs approval; status/read/input/stop auto-run.
+	if m.processes.Manage != nil && tc.Name == process.ToolName {
+		return process.NeedsApproval(json.RawMessage(tc.Arguments))
+	}
+	_, ok := m.gatedTools[tc.Name]
 	return ok
 }
 
@@ -127,6 +133,23 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 	// (S-070).
 	if tc.Name == memory.RememberToolName {
 		return m.buildMemoryApproval(tc)
+	}
+
+	// A process start (S-073) is approved like a command: the card shows the
+	// command text, and mode policy treats it as one (allowlist, safety).
+	if m.processes.Manage != nil && tc.Name == process.ToolName {
+		name, command, err := process.StartSummary(json.RawMessage(tc.Arguments))
+		if err != nil {
+			return nil, err
+		}
+		title := "start process " + name
+		return &approvalRequest{
+			call:    tc,
+			kind:    approvalGeneric,
+			title:   title,
+			command: command,
+			summary: title + ": " + firstLine(command),
+		}, nil
 	}
 
 	// A registered preview overrides the built-in mutating-tool handling.
@@ -432,6 +455,17 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		card.Question = "Allow this?"
 		if req.summary != req.title {
 			card.Summary = firstLine(req.summary)
+		}
+		// A process start carries a command (S-073): show its safety risks
+		// like the exec card does.
+		if req.command != "" {
+			if warnings := safety.Check(req.command); len(warnings) > 0 {
+				var risks []string
+				for _, w := range warnings {
+					risks = append(risks, w.Risk)
+				}
+				card.Warnings = []string{strings.Join(risks, "; ")}
+			}
 		}
 	}
 	return card

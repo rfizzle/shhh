@@ -855,7 +855,7 @@ func (s *Supervisor) run(c *child) {
 	pendingEntry := -1
 	h := &agent.Headless{
 		Agent: c.agent,
-		Gate:  func(name string) bool { return c.env.Gated[name] },
+		Gate:  func(tc provider.ToolCall) bool { return c.env.Gated[tc.Name] },
 		Resolve: func(tc provider.ToolCall) string {
 			return s.resolveGated(c, tc)
 		},

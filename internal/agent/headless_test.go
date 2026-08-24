@@ -115,7 +115,7 @@ func TestHeadlessRun_GatedCallResolved(t *testing.T) {
 
 	h := &Headless{
 		Agent: a,
-		Gate:  func(name string) bool { return name == "execute_command" },
+		Gate:  func(tc provider.ToolCall) bool { return tc.Name == "execute_command" },
 		Resolve: func(tc provider.ToolCall) string {
 			return "error: the user declined this tool call"
 		},
@@ -144,7 +144,7 @@ func TestHeadlessRun_NilResolveDeclines(t *testing.T) {
 		toolCallRound(provider.ToolCall{ID: "c1", Name: "write_file"}),
 		doneRound("ok"),
 	))
-	h := &Headless{Agent: a, Gate: func(string) bool { return true }}
+	h := &Headless{Agent: a, Gate: func(provider.ToolCall) bool { return true }}
 
 	if _, err := h.Run("go"); err != nil {
 		t.Fatalf("unexpected error: %v", err)

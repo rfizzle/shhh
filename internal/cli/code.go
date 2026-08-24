@@ -39,6 +39,7 @@ func newCodeCmd() *cobra.Command {
 				lsp:          openLSP(ConfigFrom(cmd.Context())),
 				structural:   structural.Detect(),
 				gate:         true,
+				processes:    true,
 			}
 			if printMode || popts.json || popts.sandbox {
 				return runPrintSession(cmd, args, session, popts)

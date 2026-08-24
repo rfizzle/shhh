@@ -54,7 +54,7 @@ func TestBeginToolRound_SplitsByGate(t *testing.T) {
 		{ID: "c2", Name: "execute_command"},
 		{ID: "c3", Name: "search"},
 	}
-	gate := func(name string) bool { return name == "execute_command" }
+	gate := func(tc provider.ToolCall) bool { return tc.Name == "execute_command" }
 
 	auto, gated := a.BeginToolRound("checking", calls, gate)
 	if len(auto) != 2 || auto[0].ID != "c1" || auto[1].ID != "c3" {
@@ -117,7 +117,7 @@ func TestRecordAutoResults_AppendsAndOwesQueue(t *testing.T) {
 		{ID: "c1", Name: "read_file"},
 		{ID: "c2", Name: "execute_command"},
 	}
-	auto, _ := a.BeginToolRound("", calls, func(name string) bool { return name == "execute_command" })
+	auto, _ := a.BeginToolRound("", calls, func(tc provider.ToolCall) bool { return tc.Name == "execute_command" })
 
 	a.RecordAutoResults([]ToolResult{{Call: auto[0], Result: "contents"}})
 	if a.Executing() {
@@ -138,7 +138,7 @@ func TestResolveApproval_PopsInOrder(t *testing.T) {
 		{ID: "c1", Name: "execute_command"},
 		{ID: "c2", Name: "write_file"},
 	}
-	a.BeginToolRound("", calls, func(string) bool { return true })
+	a.BeginToolRound("", calls, func(provider.ToolCall) bool { return true })
 
 	head, ok := a.NextApproval()
 	if !ok || head.ID != "c1" {
@@ -177,7 +177,7 @@ func TestCancelTurn_SyntheticResultsWhileExecuting(t *testing.T) {
 		{ID: "c1", Name: "read_file"},
 		{ID: "c2", Name: "execute_command"},
 	}
-	a.BeginToolRound("", calls, func(name string) bool { return name == "execute_command" })
+	a.BeginToolRound("", calls, func(tc provider.ToolCall) bool { return tc.Name == "execute_command" })
 	runBefore := a.RunID()
 
 	cancelled := a.CancelTurn()

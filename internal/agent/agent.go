@@ -21,8 +21,10 @@ type ToolExecutor func(name string, args json.RawMessage) (string, error)
 
 // ApprovalGate reports whether a tool call must be approved by the user
 // before it may run. The front-end implements it (the chat TUI gates
-// execute_command, mutating tools, and registered gated tools).
-type ApprovalGate func(name string) bool
+// execute_command, mutating tools, and registered gated tools). The gate sees
+// the whole call, so a tool can gate on its arguments (the process tool gates
+// only its start action, S-073).
+type ApprovalGate func(tc provider.ToolCall) bool
 
 // ToolResult pairs an executed tool call with its result text and how long
 // the call took (zero when the call never ran, e.g. a cancellation).
@@ -141,7 +143,7 @@ func (a *Agent) BeginToolRound(text string, calls []provider.ToolCall, gate Appr
 		ToolCalls: calls,
 	})
 	for _, tc := range calls {
-		if gate != nil && gate(tc.Name) {
+		if gate != nil && gate(tc) {
 			gated = append(gated, tc)
 		} else {
 			auto = append(auto, tc)
