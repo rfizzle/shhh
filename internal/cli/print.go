@@ -14,6 +14,7 @@ import (
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/stdin"
@@ -49,6 +50,15 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// stays approval-gated, which headless resolves via --yes.
 	if session.web != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.web.Definitions()...)
+	}
+	// Quality gate (S-067), mirroring the interactive session: auto-run — the
+	// model only ever names a suite from the trusted config.
+	var qgate *quality.Runner
+	if session.gate {
+		qgate = openQualityGate(ConfigFrom(cmd.Context()), red)
+	}
+	if qgate != nil {
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), quality.ToolDefinition())
 	}
 
 	env, err := buildSessionEnv(cmd, session)
@@ -107,6 +117,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	baseExecutor := agent.ToolExecutor(tools.Execute)
 	if session.web != nil {
 		baseExecutor = session.web.WrapExecutor(tools.Execute)
+	}
+	if qgate != nil {
+		baseExecutor = qgate.WrapExecutor(baseExecutor)
 	}
 	if red != nil {
 		a.SetExecutor(red.WrapExecutor(baseExecutor))

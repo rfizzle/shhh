@@ -49,6 +49,11 @@ type Policy struct {
 	Profile    Profile
 	DenyExtra  []string
 	WriteExtra []string
+	// ReadOnlyWorkspace withholds the workspace write grant, for callers that
+	// must run commands read-only (the quality gate, S-067). Scratch and
+	// toolchain-cache paths stay writable so builds and test runners keep
+	// working.
+	ReadOnlyWorkspace bool
 }
 
 // Availability reports whether a containment mechanism can wrap commands on
@@ -90,6 +95,29 @@ func Wrap(avail Availability, p Policy, command string) ([]string, error) {
 		return bwrapArgv(s, command), nil
 	case "sandbox-exec":
 		return seatbeltArgv(s, command), nil
+	}
+	return nil, fmt.Errorf("wrap unsupported: unknown mechanism %q", avail.Mechanism)
+}
+
+// WrapArgv is Wrap for callers that already hold a resolved argv (the quality
+// gate's trusted checks, S-067): the argv runs directly under containment
+// with no shell in between, so its elements are never parsed or re-quoted.
+func WrapArgv(avail Availability, p Policy, argv []string) ([]string, error) {
+	if len(argv) == 0 {
+		return nil, fmt.Errorf("wrap unsupported: empty argv")
+	}
+	if !avail.OK {
+		return nil, fmt.Errorf("wrap unsupported: %s", avail.Detail)
+	}
+	s, err := resolvePolicy(p)
+	if err != nil {
+		return nil, err
+	}
+	switch avail.Mechanism {
+	case "bwrap":
+		return append(bwrapPrefix(s), argv...), nil
+	case "sandbox-exec":
+		return append(seatbeltPrefix(s), argv...), nil
 	}
 	return nil, fmt.Errorf("wrap unsupported: unknown mechanism %q", avail.Mechanism)
 }
@@ -183,7 +211,9 @@ func resolvePolicy(p Policy) (spec, error) {
 			s.write = append(s.write, rp)
 		}
 	}
-	addWrite(ws)
+	if !p.ReadOnlyWorkspace {
+		addWrite(ws)
+	}
 	for _, w := range defaultWritePaths() {
 		addWrite(w)
 	}

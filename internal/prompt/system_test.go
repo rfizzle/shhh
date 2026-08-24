@@ -125,6 +125,7 @@ func TestBuildAgent_AgentInstructions(t *testing.T) {
 		"verify your changes",
 		"Keep going",
 		"write_file and edit_file rather than pasting code blocks",
+		"quality_gate tool is available, run it before declaring a task complete",
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("expected agent prompt to contain %q, got:\n%s", want, got)

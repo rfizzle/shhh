@@ -17,6 +17,7 @@ import (
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/shell"
@@ -45,6 +46,9 @@ type chatSession struct {
 	// web is the guarded web toolset (S-066); nil leaves the web tools
 	// unregistered (`shhh chat` today).
 	web *web.Toolset
+	// gate registers the quality-gate tool and /gate command (S-067);
+	// `shhh code` only.
+	gate bool
 }
 
 func newChatCmd() *cobra.Command {
@@ -173,6 +177,15 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if session.web != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.web.Definitions()...)
 	}
+	// Quality gate (S-067): the model can run the project's own checks by
+	// suite name; command text only ever comes from trusted config.
+	var gate *quality.Runner
+	if session.gate {
+		gate = openQualityGate(ConfigFrom(cmd.Context()), red)
+	}
+	if gate != nil {
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), quality.ToolDefinition())
+	}
 
 	env, err := buildSessionEnv(cmd, session)
 	if err != nil {
@@ -227,6 +240,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if session.web != nil {
 		baseExecutor = session.web.WrapExecutor(tools.Execute)
 	}
+	if gate != nil {
+		baseExecutor = gate.WrapExecutor(baseExecutor)
+	}
 	executor := baseExecutor
 	if red != nil {
 		executor = red.WrapExecutor(baseExecutor)
@@ -253,6 +269,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithModelSwitcher(env.switchModel)
 	if red != nil {
 		model = model.WithEvidence(chat.Evidence{Reduce: red.Process, Manage: evidenceManager(red)})
+	}
+	if gate != nil {
+		model = model.WithGate(chat.Gate{Manage: gateManager(gate)})
 	}
 	// web_fetch goes through the approval queue as a generic external action:
 	// manual and accept-edits prompt, auto defers to the classifier (S-060).

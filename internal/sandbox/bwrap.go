@@ -28,11 +28,12 @@ func detectBwrap() Availability {
 	return Availability{Mechanism: "bwrap", OK: true, Detail: "bubblewrap with unprivileged user namespaces"}
 }
 
-// bwrapArgv builds the bubblewrap invocation: the whole filesystem read-only,
-// write grants bound over it, and the deny masks mounted last so they outrank
-// every grant — masked directories read as empty tmpfs, masked files as
-// /dev/null. Stdio is inherited and the exit code passes through.
-func bwrapArgv(s spec, command string) []string {
+// bwrapPrefix builds the bubblewrap invocation up to the contained command:
+// the whole filesystem read-only, write grants bound over it, and the deny
+// masks mounted last so they outrank every grant — masked directories read as
+// empty tmpfs, masked files as /dev/null. Stdio is inherited and the exit
+// code passes through.
+func bwrapPrefix(s spec) []string {
 	argv := []string{"bwrap", "--ro-bind", "/", "/", "--dev", "/dev", "--proc", "/proc"}
 	for _, w := range s.write {
 		argv = append(argv, "--bind", w, w)
@@ -50,7 +51,13 @@ func bwrapArgv(s spec, command string) []string {
 	if s.cwd != "" {
 		argv = append(argv, "--chdir", s.cwd)
 	}
-	return append(argv, "--", s.shell, "-c", command)
+	return append(argv, "--")
+}
+
+// bwrapArgv runs a shell command string contained: it rides as one argv
+// element after `sh -c`, never parsed or re-quoted.
+func bwrapArgv(s spec, command string) []string {
+	return append(bwrapPrefix(s), s.shell, "-c", command)
 }
 
 // probeLine bounds probe output to one short line for the availability report.

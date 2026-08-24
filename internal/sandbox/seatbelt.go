@@ -49,8 +49,14 @@ func seatbeltProfile(s spec) string {
 	return b.String()
 }
 
+// seatbeltPrefix builds the sandbox-exec invocation up to the contained
+// command.
+func seatbeltPrefix(s spec) []string {
+	return []string{seatbeltPath, "-p", seatbeltProfile(s)}
+}
+
 func seatbeltArgv(s spec, command string) []string {
-	return []string{seatbeltPath, "-p", seatbeltProfile(s), s.shell, "-c", command}
+	return append(seatbeltPrefix(s), s.shell, "-c", command)
 }
 
 // sbplQuote renders a path as an SBPL string literal.

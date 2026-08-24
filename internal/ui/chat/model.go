@@ -183,6 +183,8 @@ type Model struct {
 	// evidence reduces bulky tool results and keeps the originals
 	// retrievable (S-064).
 	evidence Evidence
+	// gate backs the /gate quality-gate command (S-067).
+	gate Gate
 	// compacting marks an in-flight /compact request (S-055): the streamed
 	// response is a summary handled by finishCompact, not conversation text.
 	compacting bool
@@ -1472,6 +1474,12 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		}
 		return true, m.evidence.Manage(parts[1:])
 
+	case "/gate":
+		if m.gate.Manage == nil {
+			return true, "The quality gate is unavailable in this session."
+		}
+		return true, m.gate.Manage(parts[1:])
+
 	case "/plan":
 		if len(parts) < 2 || parts[1] != "save" {
 			return true, "Usage: /plan save [name]"
@@ -1588,6 +1596,7 @@ func helpText() string {
   /stats         Context occupancy breakdown and cumulative session spend
   /sandbox       Containment status and container sandboxes (doctor|list|status|destroy <id>|prune)
   /evidence      Tool-output evidence store: reduction stats and size (purge to clear)
+  /gate          Quality gate: run [suite] starts the project's checks in the background, result shows the verdict
   /plan save [name]  Save the last plan/response to .shhh/plans/
   /compact       Summarize the conversation and continue from the summary
   /save [name]   Save this chat

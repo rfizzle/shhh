@@ -218,6 +218,21 @@ For long or unsupervised runs, `shhh code -p --sandbox` goes a step further and 
 
 `shhh code` sessions can also research the web through a guarded client. `web_fetch` retrieves a public http/https URL — HTML is reduced to bounded readable text (title, description, main content), JSON and plain text pass through bounded, and the result cites the final URL — while an SSRF guard blocks private, loopback, link-local, CGNAT, and cloud-metadata addresses (DNS answers are pinned and the connected address re-verified, so rebinding tricks don't help), redirects are re-validated per hop with credential headers stripped cross-origin, and byte/time ceilings bound every request. Fetching counts as an external action: manual and accept-edits modes prompt for it, auto mode sends it to the classifier. Responses are cached on disk (content-addressed, TTL-pruned, `web.cache_ttl_minutes`), and `web.allow_private = true` opts intranet/local-dev targets in (metadata endpoints stay blocked regardless). `web_search` is registered only when `web.search_api_key` is configured (Brave Search); without a key the model doesn't see the tool.
 
+`shhh code` sessions can also verify their work with the repository's own checks through a quality gate. Named suites of checks live in the workspace's trusted `.shhh/quality.json` — each check is a resolved executable plus an argv array, run as-is with no shell — and the model's `quality_gate` tool can only ever name a suite, never supply command text (`/gate run [suite]` and `/gate result` expose the same path to you, with the run happening in the background). Checks run with time, output, and concurrency ceilings, contained by the same OS-level mechanism as assistant commands with a **read-only workspace** by default (a suite sets `"allow_write": true` to opt out; scratch and toolchain caches stay writable either way), and each check's bounded output lands in the evidence store. Every result is fingerprinted against git HEAD plus the porcelain status: a result over a tree that has since changed reports **stale** instead of silently passing, and the verdicts are exactly `pass`, `fail`, `blocked`, or `cancelled` — blocked and cancelled are never a pass. Example config:
+
+```json
+{
+  "suites": {
+    "default": {
+      "checks": [
+        {"name": "vet", "exe": "go", "args": ["vet", "./..."]},
+        {"name": "test", "exe": "go", "args": ["test", "./..."]}
+      ]
+    }
+  }
+}
+```
+
 Bulky tool results are reduced before the model sees them: output over a size threshold is deterministically cut to a verbatim head and tail plus any flagged lines (errors, panics, test failures) from the elided middle, with terminal control sequences stripped. Small results pass through untouched. Each reduced result carries an opaque evidence id, and the full original is kept under shhh's state dir (user-only permissions, per-session, pruned after a week) where the model can retrieve it with the `evidence` tool — `info`, paged `read`, or literal `search`. The transcript shows exactly the reduced view the model got, and `/evidence` in a session shows store size and reduction stats (`/evidence purge` deletes the stored originals).
 
 The status bar shows token usage, estimated cost, the current context size, and the active model. The context indicator changes color as the conversation approaches the model's context window (from the pricing table when known); past that threshold, the oldest tool results are automatically elided from the conversation before the next request.
@@ -233,6 +248,7 @@ Slash commands inside a chat session:
 | `/model [name]` | Show or switch the model mid-session (same provider) |
 | `/compact` | Summarize the conversation via the model and continue from the summary (frees context) |
 | `/evidence [purge]` | Tool-output evidence store: reduction stats and size; `purge` deletes the stored originals |
+| `/gate run [suite]`, `/gate result` | Quality gate (`shhh code`): run a named suite of the project's own checks in the background, then show the verdict (marked stale if the tree changed) |
 | `/save [name]` | Save this chat |
 | `/load <name>` | Load a saved chat |
 | `/chats` | List saved chats |
