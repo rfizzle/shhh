@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"golang.org/x/mod/semver"
 )
 
 const (
@@ -78,9 +80,9 @@ func BackgroundCheck(currentVersion string) {
 }
 
 func compareVersions(current, latest string) *Result {
-	c := strings.TrimPrefix(current, "v")
-	l := strings.TrimPrefix(latest, "v")
-	if c == l || l == "" {
+	c := "v" + strings.TrimPrefix(current, "v")
+	l := "v" + strings.TrimPrefix(latest, "v")
+	if !semver.IsValid(c) || !semver.IsValid(l) || semver.Compare(l, c) <= 0 {
 		return nil
 	}
 	return &Result{
