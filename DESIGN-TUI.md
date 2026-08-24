@@ -504,7 +504,9 @@ name); the notice rail is orchestrator-scoped and hides while attached.
 ### 12e. Interplay and layout accounting
 
 - The completion menu (S-078) renders inside the frame, under the input
-  rows; the confirm-panel height cap bounds input + menu as before.
+  rows; the confirm-panel height cap bounds input + menu as before. It stays
+  open past the command name for argument values (S-079), re-filtering on the
+  token under the cursor.
 - Takeover surfaces — approval/plan cards, pickers, the agent list, routed
   child asks, focus/diff hint bars — replace the framed input wholesale and
   keep the divider + §8 status bar stack, so their geometry is unchanged.

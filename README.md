@@ -257,6 +257,8 @@ Tool activity renders as a compact feed, not walls of output: every tool call an
 
 The status bar is a cockpit rail of session vitals: the active permission mode, the tool-round counter mid-turn (`round 7/25`), a context occupancy meter (`ctx ▰▰▰▰▰▱▱▱ 62%`) that changes color at the same thresholds that trigger automatic trimming, token usage and estimated cost, the running sub-agent count with a blocked badge, and the active model (dropped first when the terminal narrows). Past the trim threshold, the oldest tool results are automatically elided from the conversation before the next request.
 
+Typing `/` in the input opens a completion menu over the commands this session actually has wired — ↑↓ moves, Tab completes, Enter runs the highlighted command, Esc dismisses. Completion continues past the command name: subcommands (`/memory add`, `/sandbox prune`, `/ui verbosity high`) and known values (saved chat names for `/load`, branch names for `/branches`, the model catalog for `/model`, turn numbers for `/rewind`) complete the same way, filtered on the token under the cursor.
+
 Slash commands inside a chat session:
 
 | Command | Description |

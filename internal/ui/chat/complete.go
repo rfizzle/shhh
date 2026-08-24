@@ -6,7 +6,11 @@ package chat
 // derived from a single command registry filtered by what this session
 // actually has wired (no /save without a DB, no /agents without a
 // supervisor), so it never offers a command that would answer "unavailable".
-// Argument-level completion (subcommand names, branch/chat names) is S-079.
+//
+// Completion continues past the command name (S-079): each registry row
+// carries argument specs — static subcommand lists, or dynamic sources read
+// once when the menu opens on that position — and the menu re-filters on the
+// token under the cursor. See completeargs.go.
 
 import (
 	"fmt"
@@ -26,6 +30,21 @@ type slashCommand struct {
 	desc    string
 	aliases []string
 	enabled func(*Model) bool
+	// argSpecs describes the command's positional arguments (S-079), one
+	// spec per position; positions past the list are free-form and get no
+	// menu.
+	argSpecs []argSpec
+}
+
+// completionItem is one menu row: either a command name (the args column
+// holds its hint) or a value for the argument under the cursor. name is what
+// tab writes into the input; space asks for a trailing space because more
+// can follow.
+type completionItem struct {
+	name  string
+	args  string
+	desc  string
+	space bool
 }
 
 // slashCommands is the completion registry, in menu order. Descriptions are
@@ -33,35 +52,67 @@ type slashCommand struct {
 var slashCommands = []slashCommand{
 	{name: "/help", desc: "Show commands, keys, and the approval policy"},
 	{name: "/clear", aliases: []string{"/new"}, desc: "Start a new conversation"},
-	{name: "/copy", args: "[code]", desc: "Copy the last response (or just its code blocks)"},
+	{name: "/copy", args: "[code]", desc: "Copy the last response (or just its code blocks)",
+		argSpecs: staticArgs(argOption{"code", "Only the code blocks"})},
 	{name: "/run", args: "[n]", desc: "Run a code block from the last response",
 		enabled: func(m *Model) bool { return m.runFn != nil }},
-	{name: "/model", args: "[name]", desc: "Switch the model (bare /model opens a picker)"},
-	{name: "/mode", args: "[name|why]", desc: "Set the permission mode (bare /mode opens a picker)"},
+	{name: "/model", args: "[name]", desc: "Switch the model (bare /model opens a picker)",
+		argSpecs: []argSpec{{dynamic: modelArgs, fuzzy: true}}},
+	{name: "/mode", args: "[name|why]", desc: "Set the permission mode (bare /mode opens a picker)",
+		argSpecs: []argSpec{{dynamic: modeArgs}}},
 	{name: "/stats", desc: "Context occupancy and session spend"},
-	{name: "/ui", args: "verbosity <low|med|high>", desc: "Activity feed density"},
-	{name: "/sandbox", args: "[doctor|list|status|destroy|prune]", desc: "Containment status and container sandboxes"},
+	{name: "/ui", args: "verbosity <low|med|high>", desc: "Activity feed density",
+		argSpecs: []argSpec{
+			{options: []argOption{{"verbosity", "Activity feed density"}}},
+			{after: []string{"verbosity"}, options: []argOption{
+				{"low", "Counts hidden"},
+				{"med", "Rows collapsed"},
+				{"high", "Rows expanded"},
+			}},
+		}},
+	{name: "/sandbox", args: "[doctor|list|status|destroy|prune]", desc: "Containment status and container sandboxes",
+		argSpecs: staticArgs(
+			argOption{"doctor", "Report containment support"},
+			argOption{"list", "List container sandboxes"},
+			argOption{"status", "This session's sandbox"},
+			argOption{"destroy", "Destroy a sandbox by id"},
+			argOption{"prune", "Remove stopped sandboxes"},
+		)},
 	{name: "/evidence", args: "[purge]", desc: "Tool-output evidence store",
-		enabled: func(m *Model) bool { return m.evidence.Manage != nil }},
+		enabled:  func(m *Model) bool { return m.evidence.Manage != nil },
+		argSpecs: staticArgs(argOption{"purge", "Delete stored tool output"})},
 	{name: "/gate", args: "[run|result]", desc: "Run the project's quality gate",
-		enabled: func(m *Model) bool { return m.gate.Manage != nil }},
+		enabled: func(m *Model) bool { return m.gate.Manage != nil },
+		argSpecs: staticArgs(
+			argOption{"run", "Run the gate suites"},
+			argOption{"result", "Show the last result"},
+		)},
 	{name: "/ps", desc: "List session-owned long-running processes",
 		enabled: func(m *Model) bool { return m.processes.Manage != nil }},
 	{name: "/memory", args: "[list|add|forget]", desc: "Durable memories",
-		enabled: func(m *Model) bool { return m.memory.Manage != nil }},
+		enabled: func(m *Model) bool { return m.memory.Manage != nil },
+		argSpecs: staticArgs(
+			argOption{"list", "Show stored memories"},
+			argOption{"add", "Remember something"},
+			argOption{"forget", "Drop a memory by id"},
+		)},
 	{name: "/agents", desc: "Agent manager: attach, steer, cancel, kill (Ctrl+A)",
 		enabled: func(m *Model) bool { return m.subagents != nil }},
-	{name: "/plan", args: "save [name]", desc: "Save the last plan/response to .shhh/plans/"},
+	{name: "/plan", args: "save [name]", desc: "Save the last plan/response to .shhh/plans/",
+		argSpecs: staticArgs(argOption{"save", "Write it to .shhh/plans/"})},
 	{name: "/diff", desc: "Cumulative session diff, full screen",
 		enabled: func(m *Model) bool { return m.sessionDiff != nil }},
 	{name: "/compact", desc: "Summarize the conversation and continue from the summary"},
-	{name: "/rewind", args: "[n]", desc: "Rewind to before a user turn (bare /rewind picks)"},
+	{name: "/rewind", args: "[n]", desc: "Rewind to before a user turn (bare /rewind picks)",
+		argSpecs: []argSpec{{dynamic: checkpointArgs}}},
 	{name: "/branches", args: "[n|name]", desc: "List or switch this session's branches",
-		enabled: func(m *Model) bool { return m.db != nil }},
+		enabled:  func(m *Model) bool { return m.db != nil },
+		argSpecs: []argSpec{{dynamic: branchArgs, fuzzy: true}}},
 	{name: "/save", args: "[name]", desc: "Save this chat",
 		enabled: func(m *Model) bool { return m.db != nil }},
 	{name: "/load", args: "<name>", desc: "Load a saved chat",
-		enabled: func(m *Model) bool { return m.db != nil }},
+		enabled:  func(m *Model) bool { return m.db != nil },
+		argSpecs: []argSpec{{dynamic: chatArgs, fuzzy: true}}},
 	{name: "/chats", desc: "List saved chats",
 		enabled: func(m *Model) bool { return m.db != nil }},
 	{name: "/exit", aliases: []string{"/quit", "/q"}, desc: "Quit (also /quit, /q)"},
@@ -102,9 +153,8 @@ func (m *Model) syncCompletions() {
 		m.completeDismissedFor = ""
 	}
 	if m.state != stateInput || m.attachedTo != "" || m.agentList != nil || m.activeChildAsk() != nil ||
-		!strings.HasPrefix(val, "/") || strings.ContainsAny(val, " \t\n") || val == m.completeDismissedFor {
-		m.completions = nil
-		m.completeFor = ""
+		!strings.HasPrefix(val, "/") || strings.ContainsAny(val, "\t\n") || val == m.completeDismissedFor {
+		m.clearCompletions()
 		return
 	}
 
@@ -113,29 +163,27 @@ func (m *Model) syncCompletions() {
 		prev = m.completions[m.completeIdx].name
 	}
 
-	// Exact name match ranks first so typing "/mode" in full never leaves
-	// "/model" (or any longer sibling) highlighted.
-	var matches []slashCommand
-	for _, c := range slashCommands {
-		if c.enabled != nil && !c.enabled(m) {
-			continue
-		}
-		if !c.matches(val) {
-			continue
-		}
-		if c.name == val {
-			matches = append([]slashCommand{c}, matches...)
-		} else {
-			matches = append(matches, c)
-		}
+	prior, token, start, end := tokenAtCursor(val, m.inputCursor())
+	var matches []completionItem
+	if len(prior) == 0 {
+		matches = m.commandMatches(token)
+	} else {
+		matches = m.argumentMatches(prior, token)
+	}
+	if len(matches) == 0 {
+		m.clearCompletions()
+		return
 	}
 
 	m.completions = matches
 	m.completeFor = val
+	m.completeArg = len(prior) > 0
+	m.completeStart = start
+	m.completeEnd = end
 	m.completeIdx = 0
 	// Keep the arrowed-to row focused across keystrokes — unless the typed
-	// text now names a command exactly, which always wins the focus.
-	if len(matches) == 0 || matches[0].name != val {
+	// text now names a candidate exactly, which always wins the focus.
+	if matches[0].name != token {
 		for i, c := range matches {
 			if c.name == prev {
 				m.completeIdx = i
@@ -143,6 +191,61 @@ func (m *Model) syncCompletions() {
 			}
 		}
 	}
+}
+
+// commandMatches are the available commands whose name or an alias starts
+// with the typed token. An exact name match ranks first so typing "/mode" in
+// full never leaves "/model" (or any longer sibling) highlighted.
+func (m *Model) commandMatches(token string) []completionItem {
+	var matches []completionItem
+	for _, c := range slashCommands {
+		if c.enabled != nil && !c.enabled(m) {
+			continue
+		}
+		if !c.matches(token) {
+			continue
+		}
+		item := completionItem{name: c.name, args: c.args, desc: c.desc, space: c.args != ""}
+		if c.name == token {
+			matches = append([]completionItem{item}, matches...)
+		} else {
+			matches = append(matches, item)
+		}
+	}
+	return matches
+}
+
+// argumentMatches are the candidates for the argument under the cursor:
+// prior[0] names the command, and the remaining prior tokens fix the
+// position. Free-form positions (a chat name to save, a memory body) have no
+// spec and so no menu (S-079).
+func (m *Model) argumentMatches(prior []string, token string) []completionItem {
+	c, ok := lookupCommand(m, prior[0])
+	if !ok {
+		return nil
+	}
+	spec, ok := argSpecFor(c, len(prior)-1, prior)
+	if !ok {
+		return nil
+	}
+	opts := filterArgs(m.argCandidates(c.name, len(prior)-1, spec), token, spec.fuzzy)
+	// A trailing space only helps when another argument can follow.
+	more := len(c.argSpecs) > len(prior)
+	items := make([]completionItem, len(opts))
+	for i, o := range opts {
+		items[i] = completionItem{name: o.value, desc: o.desc, space: more}
+	}
+	return items
+}
+
+// clearCompletions hides the menu and drops the dynamic-source cache, so the
+// next menu re-reads branch and chat names rather than showing stale ones.
+func (m *Model) clearCompletions() {
+	m.completions = nil
+	m.completeFor = ""
+	m.completeArg = false
+	m.argCache = nil
+	m.argCacheFor = ""
 }
 
 // completionActive reports whether the menu applies to the input right now; a
@@ -155,21 +258,31 @@ func (m Model) completionActive() bool {
 
 // dismissCompletions hides the menu until the input text changes again (esc).
 func (m *Model) dismissCompletions() {
-	m.completeDismissedFor = m.completeFor
-	m.completions = nil
-	m.completeFor = ""
+	dismissed := m.completeFor
+	m.clearCompletions()
+	m.completeDismissedFor = dismissed
 }
 
-// acceptCompletion writes the focused command into the input (tab); commands
-// that take arguments get a trailing space so the user can keep typing.
+// acceptCompletion writes the focused candidate into the input (tab),
+// replacing only the token under the cursor (S-079). Candidates that can be
+// followed by more text get a trailing space so the user can keep typing.
 func (m *Model) acceptCompletion() {
 	c := m.completions[m.completeIdx]
+	r := []rune(m.input.Value())
+	start, end := m.completeStart, min(m.completeEnd, len(r))
 	text := c.name
-	if c.args != "" {
-		text += " "
+	cursor := start + len([]rune(text))
+	if c.space {
+		if end < len(r) && r[end] == ' ' {
+			// Step over the space that is already there rather than doubling it.
+			cursor++
+		} else {
+			text += " "
+			cursor = start + len([]rune(text))
+		}
 	}
-	m.input.SetValue(text)
-	m.input.CursorEnd()
+	m.input.SetValue(string(r[:start]) + text + string(r[end:]))
+	m.input.SetCursor(cursor)
 	m.syncCompletions()
 }
 
@@ -229,7 +342,7 @@ func (m Model) completionMenuLines() []string {
 }
 
 // plainCommandLabel is the unstyled name+args column used for alignment.
-func plainCommandLabel(c slashCommand) string {
+func plainCommandLabel(c completionItem) string {
 	if c.args == "" {
 		return c.name
 	}

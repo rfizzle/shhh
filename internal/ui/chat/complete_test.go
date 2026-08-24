@@ -55,10 +55,11 @@ func TestCompletion_NoMenuForUnknownCommand(t *testing.T) {
 	}
 }
 
-func TestCompletion_HiddenAfterSpace(t *testing.T) {
-	m := typeChars(t, readyModel(t), "/copy code")
+func TestCompletion_HiddenForFreeFormArgument(t *testing.T) {
+	// /plan's second position is a free-form file name: no spec, no menu.
+	m := typeChars(t, readyModel(t), "/plan save nam")
 	if m.completionActive() {
-		t.Fatal("the menu should hide once arguments are being typed")
+		t.Fatal("a free-form argument should not open the menu")
 	}
 }
 

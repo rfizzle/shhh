@@ -265,10 +265,20 @@ type Model struct {
 	// list for the input value completeFor (a mismatch means stale → hidden),
 	// completeIdx the focused row, and completeDismissedFor the input value
 	// esc dismissed the menu for (typing anything else re-opens it).
-	completions          []slashCommand
+	// Argument-level completion (S-079) adds the token span being completed
+	// (completeStart/completeEnd, rune offsets into the input), completeArg
+	// to say the focused row is an argument value rather than a command
+	// name, and argCache so a command's dynamic sources (branch names, saved
+	// chats) are read once per menu rather than once per keystroke.
+	completions          []completionItem
 	completeFor          string
 	completeIdx          int
 	completeDismissedFor string
+	completeStart        int
+	completeEnd          int
+	completeArg          bool
+	argCache             map[int][]argOption
+	argCacheFor          string
 	// Interactive slash-command pickers (S-078): picker is the open select
 	// card, pickerApply consumes the chosen index and returns the transcript
 	// note; modelOptions is the /model picker's model catalog.
@@ -616,9 +626,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.state == stateInput {
 				text := strings.TrimSpace(m.input.Value())
 				// With the completion menu open, enter runs the highlighted
-				// command rather than the raw prefix (S-078).
+				// command rather than the raw prefix (S-078); on an argument
+				// row it completes the token first and runs the whole line
+				// (S-079).
 				if m.completionActive() {
-					text = m.completions[m.completeIdx].name
+					if m.completeArg {
+						m.acceptCompletion()
+						text = strings.TrimSpace(m.input.Value())
+					} else {
+						text = m.completions[m.completeIdx].name
+					}
 				}
 				if text == "" {
 					return m, nil
