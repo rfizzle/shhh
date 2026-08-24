@@ -84,6 +84,7 @@ func (m Model) approvePlan(execMode agent.Mode) (tea.Model, tea.Cmd) {
 	m.streaming = ""
 	m.atBottom = true
 	m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("Plan approved — executing in %s mode.", execMode)})
+	m.recordCheckpoint(planApprovedMessage)
 	m.agent.StartTurn(planApprovedMessage)
 	m.appendEntry(entry{kind: entryUser, text: planApprovedMessage})
 	m.trimForRequest()

@@ -235,6 +235,8 @@ For long or unsupervised runs, `shhh code -p --sandbox` goes a step further and 
 
 Bulky tool results are reduced before the model sees them: output over a size threshold is deterministically cut to a verbatim head and tail plus any flagged lines (errors, panics, test failures) from the elided middle, with terminal control sequences stripped. Small results pass through untouched. Each reduced result carries an opaque evidence id, and the full original is kept under shhh's state dir (user-only permissions, per-session, pruned after a week) where the model can retrieve it with the `evidence` tool — `info`, paged `read`, or literal `search`. The transcript shows exactly the reduced view the model got, and `/evidence` in a session shows store size and reduction stats (`/evidence purge` deletes the stored originals).
 
+A wrong turn costs one command, not the session: a checkpoint is recorded at the start of every user turn, and `/rewind` (interactive picker, or `/rewind <n>` directly) truncates the conversation back to just before a chosen turn. The abandoned tail is never lost — it's kept as a **branch** of the current session, and `/branches` lists the session's branch family and switches between them (the working conversation is saved before every switch, and `/save`/`/load` work on any branch). Rewind is honest about its scope: it restores conversation state only — files on disk are untouched, and the rewind message says so — and each checkpoint records the git HEAD and dirty status at the time, so the message can tell you when the working tree or HEAD has diverged since.
+
 The status bar shows token usage, estimated cost, the current context size, and the active model. The context indicator changes color as the conversation approaches the model's context window (from the pricing table when known); past that threshold, the oldest tool results are automatically elided from the conversation before the next request.
 
 Slash commands inside a chat session:
@@ -249,6 +251,8 @@ Slash commands inside a chat session:
 | `/compact` | Summarize the conversation via the model and continue from the summary (frees context) |
 | `/evidence [purge]` | Tool-output evidence store: reduction stats and size; `purge` deletes the stored originals |
 | `/gate run [suite]`, `/gate result` | Quality gate (`shhh code`): run a named suite of the project's own checks in the background, then show the verdict (marked stale if the tree changed) |
+| `/rewind [n]` | Rewind to before a user turn (bare `/rewind` opens a picker); the abandoned tail is kept as a branch. Conversation only — files are not restored |
+| `/branches [n]` | List this session's branches, or switch to one (current work is saved first) |
 | `/save [name]` | Save this chat |
 | `/load <name>` | Load a saved chat |
 | `/chats` | List saved chats |

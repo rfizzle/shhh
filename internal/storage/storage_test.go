@@ -555,3 +555,145 @@ func TestRating_Flow(t *testing.T) {
 		t.Errorf("expected 50%% rating rate, got %v", m.RatingRate)
 	}
 }
+
+func TestSaveChatBranch_LinksParent(t *testing.T) {
+	db := openTestDB(t)
+
+	root := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "one"},
+	}
+	tail := append(append([]provider.Message{}, root...),
+		provider.Message{Role: provider.RoleUser, Content: "two"},
+		provider.Message{Role: provider.RoleAssistant, Content: "reply"},
+	)
+
+	if err := db.SaveChat("main", root); err != nil {
+		t.Fatalf("save root: %v", err)
+	}
+	if err := db.SaveChatBranch("main", "main@turn2", tail); err != nil {
+		t.Fatalf("save branch: %v", err)
+	}
+
+	loaded, err := db.LoadChat("main@turn2")
+	if err != nil {
+		t.Fatalf("load branch: %v", err)
+	}
+	if len(loaded) != 4 {
+		t.Fatalf("expected 4 branch messages, got %d", len(loaded))
+	}
+
+	branches, err := db.ListChatBranches("main")
+	if err != nil {
+		t.Fatalf("list branches: %v", err)
+	}
+	if len(branches) != 2 {
+		t.Fatalf("expected 2 family members, got %d", len(branches))
+	}
+	if branches[0].Name != "main" || branches[0].Parent != "" {
+		t.Fatalf("expected root first with no parent, got %+v", branches[0])
+	}
+	if branches[1].Name != "main@turn2" || branches[1].Parent != "main" {
+		t.Fatalf("expected branch linked to main, got %+v", branches[1])
+	}
+	if branches[1].Turns != 2 {
+		t.Fatalf("expected 2 user turns on the branch, got %d", branches[1].Turns)
+	}
+}
+
+func TestSaveChatBranch_CreatesMissingParent(t *testing.T) {
+	db := openTestDB(t)
+
+	tail := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "hello"},
+	}
+	if err := db.SaveChatBranch("never-saved", "never-saved@turn1", tail); err != nil {
+		t.Fatalf("save branch: %v", err)
+	}
+
+	branches, err := db.ListChatBranches("never-saved@turn1")
+	if err != nil {
+		t.Fatalf("list branches: %v", err)
+	}
+	if len(branches) != 2 {
+		t.Fatalf("expected parent + branch, got %d", len(branches))
+	}
+	if branches[0].Name != "never-saved" {
+		t.Fatalf("expected empty parent session created, got %+v", branches[0])
+	}
+}
+
+func TestListChatBranches_FromBranchFindsWholeFamily(t *testing.T) {
+	db := openTestDB(t)
+
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "hi"},
+	}
+	if err := db.SaveChat("root", msgs); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveChatBranch("root", "root@a", msgs); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveChatBranch("root@a", "root@a@b", msgs); err != nil {
+		t.Fatal(err)
+	}
+	// An unrelated session must not appear in the family.
+	if err := db.SaveChat("other", msgs); err != nil {
+		t.Fatal(err)
+	}
+
+	branches, err := db.ListChatBranches("root@a@b")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(branches) != 3 {
+		t.Fatalf("expected 3 family members from a leaf, got %d: %+v", len(branches), branches)
+	}
+	for _, b := range branches {
+		if b.Name == "other" {
+			t.Fatal("unrelated session leaked into the family")
+		}
+	}
+}
+
+func TestListChatBranches_UnknownName(t *testing.T) {
+	db := openTestDB(t)
+
+	branches, err := db.ListChatBranches("nope")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(branches) != 0 {
+		t.Fatalf("expected empty family, got %d", len(branches))
+	}
+}
+
+func TestSaveChat_PreservesParentOnOverwrite(t *testing.T) {
+	db := openTestDB(t)
+
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "hi"},
+	}
+	if err := db.SaveChat("root", msgs); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.SaveChatBranch("root", "root@a", msgs); err != nil {
+		t.Fatal(err)
+	}
+	// Re-saving the branch (e.g. before a /branches switch) must keep the link.
+	if err := db.SaveChat("root@a", append(msgs, provider.Message{Role: provider.RoleUser, Content: "more"})); err != nil {
+		t.Fatal(err)
+	}
+
+	branches, err := db.ListChatBranches("root@a")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(branches) != 2 || branches[1].Parent != "root" {
+		t.Fatalf("parent link lost on overwrite: %+v", branches)
+	}
+}

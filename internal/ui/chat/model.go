@@ -53,6 +53,9 @@ const (
 	// selection cursor over expandable transcript rows, enter
 	// expands/collapses in place, esc returns to the input.
 	stateFocus
+	// stateRewindPick: the interactive /rewind checkpoint picker is showing
+	// (S-069).
+	stateRewindPick
 )
 
 const inputHeight = 3
@@ -209,6 +212,15 @@ type Model struct {
 	agentList   *components.AgentList
 	killConfirm *components.Confirm
 	killTarget  string
+	// Session branching and rewind (S-069): checkpoints mark each user turn's
+	// start; sessionName is the storage slot rewind branches hang off (set by
+	// /save, /load, and branch switches); rewindSelect is the open /rewind
+	// picker; gitSnapshot records the workspace git state per checkpoint when
+	// wired.
+	checkpoints  []checkpoint
+	sessionName  string
+	rewindSelect *components.Select
+	gitSnapshot  func() GitSnapshot
 	// steering holds messages typed while the agent is working (S-058); they
 	// are injected as user messages before the next stream request.
 	steering      []string
@@ -242,12 +254,13 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
 
 	return Model{
-		agent:    agent.New(initialMessages, stream),
-		input:    ta,
-		spinner:  s,
-		state:    stateInput,
-		atBottom: true,
-		copyFn:   clipboard.Copy,
+		agent:       agent.New(initialMessages, stream),
+		input:       ta,
+		spinner:     s,
+		state:       stateInput,
+		atBottom:    true,
+		copyFn:      clipboard.Copy,
+		sessionName: AutosaveName,
 	}
 }
 
@@ -386,6 +399,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.state == statePlanApprove {
 			return m.updatePlanApprove(msg)
+		}
+		if m.state == stateRewindPick {
+			return m.updateRewindPick(msg)
 		}
 		if m.state == stateFocus {
 			return m.updateFocus(msg)
@@ -537,6 +553,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if text == "/compact" {
 					m.input.Reset()
 					return m.startCompact()
+				}
+				if text == "/rewind" {
+					// Bare /rewind opens the checkpoint picker (S-069); the
+					// numbered form goes through handleSlashCommand.
+					m.input.Reset()
+					return m.openRewindPick()
 				}
 				if handled, result := m.handleSlashCommand(text); handled {
 					m.input.Reset()
@@ -747,6 +769,7 @@ func (m *Model) recordInput(text string) {
 
 func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
 	m.turnCount++
+	m.recordCheckpoint(text)
 	m.agent.StartTurn(text)
 	m.appendEntry(entry{kind: entryUser, text: text})
 	m.trimForRequest()
@@ -832,6 +855,8 @@ func (m Model) View() string {
 		inputView = m.renderConfirm()
 	case statePlanApprove:
 		inputView = m.renderPlanApprove()
+	case stateRewindPick:
+		inputView = m.renderRewindPick()
 	case stateFocus:
 		inputView = m.renderFocusHint()
 	}
@@ -1251,6 +1276,7 @@ func (m *Model) injectSteering() bool {
 		return false
 	}
 	for _, text := range m.steering {
+		m.recordCheckpoint(text)
 		m.agent.Append(provider.Message{Role: provider.RoleUser, Content: text})
 		m.appendEntry(entry{kind: entryUser, text: text})
 	}
@@ -1599,6 +1625,34 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		}
 		return true, "Plan saved to " + path
 
+	case "/rewind":
+		// Only the numbered form arrives here; bare /rewind opens the picker
+		// from the enter handler (S-069).
+		if len(m.checkpoints) == 0 {
+			return true, "No checkpoints to rewind to yet."
+		}
+		if len(parts) != 2 {
+			return true, fmt.Sprintf("Usage: /rewind [<turn 1-%d>] — bare /rewind opens the picker", len(m.checkpoints))
+		}
+		n, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return true, fmt.Sprintf("Usage: /rewind [<turn 1-%d>]", len(m.checkpoints))
+		}
+		return true, m.rewindToTurn(n)
+
+	case "/branches":
+		if m.db == nil {
+			return true, "Chat persistence is unavailable."
+		}
+		branches, err := m.db.ListChatBranches(m.sessionName)
+		if err != nil {
+			return true, "Error: " + err.Error()
+		}
+		if len(parts) == 1 {
+			return true, m.listBranches(branches)
+		}
+		return true, m.switchBranch(branches, strings.Join(parts[1:], " "))
+
 	case "/copy":
 		text := m.lastAssistantText()
 		if text == "" {
@@ -1630,6 +1684,8 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		if err := m.db.SaveChat(name, m.agent.Messages()); err != nil {
 			return true, "Error saving: " + err.Error()
 		}
+		// Future rewind branches hang off the named session (S-069).
+		m.sessionName = name
 		return true, fmt.Sprintf("Chat saved as %q", name)
 
 	case "/load":
@@ -1646,6 +1702,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 			return true, "Error: " + err.Error()
 		}
 		m.loadConversation(msgs)
+		m.sessionName = name
 		return true, fmt.Sprintf("Loaded chat %q (%d messages)", name, len(msgs))
 
 	case "/chats":
@@ -1705,6 +1762,10 @@ func helpText() string {
   /agents        Agent manager: attach, steer, cancel, kill sub-agents (also Ctrl+A)
   /plan save [name]  Save the last plan/response to .shhh/plans/
   /compact       Summarize the conversation and continue from the summary
+  /rewind [n]    Rewind to before a user turn (bare /rewind picks interactively);
+                 the abandoned tail is kept as a branch. Conversation only —
+                 files on disk are not restored.
+  /branches [n]  List this session's branches, or switch to one
   /save [name]   Save this chat
   /load <name>   Load a saved chat
   /chats         List saved chats
@@ -1736,6 +1797,7 @@ func (m *Model) clearConversation() {
 		m.agent.SetMessages(nil)
 	}
 	m.resetTranscript()
+	m.checkpoints = nil
 	m.contextTokens = 0
 	m.agent.ResetRounds()
 }
@@ -1745,6 +1807,7 @@ func (m *Model) clearConversation() {
 func (m *Model) loadConversation(msgs []provider.Message) {
 	m.agent.SetMessages(msgs)
 	m.resetTranscript()
+	m.checkpoints = checkpointsFromMessages(msgs)
 	for i, msg := range msgs {
 		switch msg.Role {
 		case provider.RoleUser:

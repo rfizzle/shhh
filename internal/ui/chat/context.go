@@ -149,6 +149,9 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	m.agent.ResetRounds()
 	m.contextTokens = estimateMessageTokens(rebuilt)
 	m.resetTranscript()
+	// Pre-compaction checkpoints point into the discarded conversation;
+	// rebuild them from what remains (S-069).
+	m.checkpoints = checkpointsFromMessages(rebuilt)
 	m.appendEntry(entry{kind: entrySystem, text: "Conversation compacted; continuing from this summary:"})
 	m.appendEntry(entry{kind: entryAssistant, text: summary})
 	m.viewport.SetContent(m.renderHistory())

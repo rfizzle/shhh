@@ -286,7 +286,8 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithCommandAllowlist(cfg.Behavior.CommandAllowlist).
 		WithApprovalMode(mode, cycle).
 		WithClassifier(classifier).
-		WithModelSwitcher(env.switchModel)
+		WithModelSwitcher(env.switchModel).
+		WithGitSnapshots(gitSnapshot)
 	if red != nil {
 		model = model.WithEvidence(chat.Evidence{Reduce: red.Process, Manage: evidenceManager(red)})
 	}
@@ -395,6 +396,13 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 
 	fmt.Fprintln(os.Stderr, "Chat session ended.")
 	return nil
+}
+
+// gitSnapshot captures the workspace's git state for rewind checkpoints
+// (S-069), so /rewind can report what diverged since a checkpoint.
+func gitSnapshot() chat.GitSnapshot {
+	fp := quality.TakeFingerprint(".")
+	return chat.GitSnapshot{Repo: fp.Repo, Head: fp.Head, StatusHash: fp.StatusHash, DirtyPaths: fp.DirtyPaths}
 }
 
 // estimateToolDefTokens roughly estimates the context cost of the registered
