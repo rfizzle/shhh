@@ -59,6 +59,9 @@ const (
 	// stateRewindPick: the interactive /rewind checkpoint picker is showing
 	// (S-069).
 	stateRewindPick
+	// statePick: a generic slash-command picker (/model, /mode) is showing
+	// (S-078).
+	statePick
 )
 
 const inputHeight = 3
@@ -255,6 +258,20 @@ type Model struct {
 	fullDiff    *components.DiffView
 	diffReturn  state
 	sessionDiff func() (string, error)
+	// Slash-command completion (S-078): completions is the filtered candidate
+	// list for the input value completeFor (a mismatch means stale → hidden),
+	// completeIdx the focused row, and completeDismissedFor the input value
+	// esc dismissed the menu for (typing anything else re-opens it).
+	completions          []slashCommand
+	completeFor          string
+	completeIdx          int
+	completeDismissedFor string
+	// Interactive slash-command pickers (S-078): picker is the open select
+	// card, pickerApply consumes the chosen index and returns the transcript
+	// note; modelOptions is the /model picker's model catalog.
+	picker       *components.Select
+	pickerApply  func(*Model, int) string
+	modelOptions []string
 	// steering holds messages typed while the agent is working (S-058); they
 	// are injected as user messages before the next stream request.
 	steering      []string
@@ -441,6 +458,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.state == stateRewindPick {
 			return m.updateRewindPick(msg)
 		}
+		if m.state == statePick {
+			return m.updatePick(msg)
+		}
 		if m.state == stateFocus {
 			return m.updateFocus(msg)
 		}
@@ -522,6 +542,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m.enterFocusMode()
 			}
 		case "esc":
+			// With the completion menu open, esc only dismisses the menu; the
+			// draft survives and further typing re-opens it (S-078).
+			if m.completionActive() {
+				m.dismissCompletions()
+				m.syncViewportHeight()
+				return m, nil
+			}
 			// The input is live in every non-confirm state (S-058), so esc
 			// clears the draft; attached with an empty draft it pops one
 			// breadcrumb level (S-077).
@@ -532,7 +559,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.input.Reset()
 			m.historyIdx = len(m.inputHistory)
 			return m, nil
+		case "tab":
+			// Tab writes the focused completion into the input (S-078).
+			if m.completionActive() {
+				m.acceptCompletion()
+				m.syncViewportHeight()
+				return m, nil
+			}
 		case "up":
+			if m.completionActive() {
+				if m.completeIdx > 0 {
+					m.completeIdx--
+				}
+				return m, nil
+			}
 			if m.state == stateInput && len(m.inputHistory) > 0 &&
 				(m.browsingHistory() || strings.TrimSpace(m.input.Value()) == "") {
 				if m.historyIdx > 0 {
@@ -542,6 +582,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		case "down":
+			if m.completionActive() {
+				if m.completeIdx < len(m.completions)-1 {
+					m.completeIdx++
+				}
+				return m, nil
+			}
 			if m.state == stateInput && m.browsingHistory() {
 				m.historyIdx++
 				if m.historyIdx >= len(m.inputHistory) {
@@ -563,6 +609,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if m.state == stateInput {
 				text := strings.TrimSpace(m.input.Value())
+				// With the completion menu open, enter runs the highlighted
+				// command rather than the raw prefix (S-078).
+				if m.completionActive() {
+					text = m.completions[m.completeIdx].name
+				}
 				if text == "" {
 					return m, nil
 				}
@@ -602,6 +653,18 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					// The cumulative session diff, full screen (S-074).
 					m.input.Reset()
 					return m.openSessionDiff()
+				}
+				if text == "/model" && m.canPickModel() {
+					// Bare /model opens the model picker (S-078); the named
+					// form and sessions without a catalog go through
+					// handleSlashCommand.
+					m.input.Reset()
+					return m.openModelPick()
+				}
+				if text == "/mode" {
+					// Bare /mode opens the mode picker (S-078).
+					m.input.Reset()
+					return m.openModePick()
 				}
 				if handled, result := m.handleSlashCommand(text); handled {
 					m.input.Reset()
@@ -806,6 +869,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		var cmd tea.Cmd
 		m.input, cmd = m.input.Update(msg)
 		cmds = append(cmds, cmd)
+		// Keystrokes may have changed the input: refresh the slash-command
+		// completion menu, and resize the viewport when it appears/disappears
+		// (S-078).
+		if _, ok := msg.(tea.KeyMsg); ok {
+			m.syncCompletions()
+			m.syncViewportHeight()
+		}
 	}
 
 	var cmd tea.Cmd
@@ -916,6 +986,11 @@ func (m Model) View() string {
 	statusBar := m.renderStatusBar(contentWidth)
 
 	inputView := m.input.View()
+	// The slash-command completion menu renders under the input (S-078); the
+	// takeover surfaces below replace it wholesale.
+	if m.completionActive() && m.attachedTo == "" && m.agentList == nil && m.activeChildAsk() == nil {
+		inputView += "\n" + strings.Join(m.completionMenuLines(), "\n")
+	}
 	switch m.state {
 	case stateConfirmRun:
 		inputView = m.renderConfirm()
@@ -923,6 +998,8 @@ func (m Model) View() string {
 		inputView = m.renderPlanApprove()
 	case stateRewindPick:
 		inputView = m.renderRewindPick()
+	case statePick:
+		inputView = m.renderPick()
 	case stateFocus:
 		inputView = m.renderFocusHint()
 	case stateDiffFull:
@@ -1798,8 +1875,9 @@ func helpText() string {
   /clear         Start a new conversation (also /new)
   /copy [code]   Copy the last response (or just its code blocks)
   /run [n]       Run a code block from the last response (with confirmation)
-  /model [name]  Show or switch the model for this session
-  /mode [name]   Show or set the permission mode (manual, accept-edits, auto, plan)
+  /model [name]  Switch the model (bare /model opens an interactive picker)
+  /mode [name]   Set the permission mode (manual, accept-edits, auto, plan);
+                 bare /mode opens an interactive picker
   /mode why      Show the latest auto-mode denial's reason
   /stats         Context occupancy breakdown and cumulative session spend
   /ui            Activity feed density: /ui verbosity <low|med|high>
@@ -1825,6 +1903,8 @@ func helpText() string {
 
 Keys:
   Enter          Send message        Alt+Enter    Insert newline
+  Tab            Complete a slash command (typing / opens the menu;
+                 ↑↓ move, Enter runs the highlighted command, Esc dismisses)
   Shift+Tab      Cycle the permission mode
                  (while the agent is working, Enter queues a steering message
                   that joins the conversation before the next model request)

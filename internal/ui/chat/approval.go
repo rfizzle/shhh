@@ -509,11 +509,16 @@ func (m Model) bottomPanelHeight() int {
 		lines = m.planApproveLines()
 	case stateRewindPick:
 		lines = m.rewindPickLines()
+	case statePick:
+		lines = m.pickerLines()
 	default:
 		if m.agentList != nil {
 			lines = m.agentListLines()
 		} else if ask := m.activeChildAsk(); ask != nil {
 			lines = m.childAskLines(ask)
+		} else if m.completionActive() && m.attachedTo == "" {
+			// The completion menu extends the input area (S-078).
+			return min(inputHeight+len(m.completionMenuLines()), m.maxConfirmPanelHeight())
 		}
 	}
 	if n := len(lines); n > inputHeight {

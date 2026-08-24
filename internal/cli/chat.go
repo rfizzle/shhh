@@ -360,6 +360,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithApprovalMode(mode, cycle).
 		WithClassifier(classifier).
 		WithModelSwitcher(env.switchModel).
+		WithModelOptions(provider.KnownModels(env.prov.Name())).
 		WithGitSnapshots(gitSnapshot).
 		WithSessionDiff(sessionDiffFn())
 	if red != nil {
