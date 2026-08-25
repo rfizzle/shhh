@@ -184,38 +184,142 @@ type ModePolicy struct {
 	AllowCommands bool
 	// CommandAllowlist entries pre-approve matching commands (config).
 	CommandAllowlist []string
+	// ReadOnlyExtra extends the built-in read-only command allowlist
+	// (behavior.read_only_commands).
+	ReadOnlyExtra []string
+	// ReadOnlyDisabled turns off the built-in read-only allowlist, so
+	// inspection commands prompt like anything else
+	// (behavior.read_only_auto = false).
+	ReadOnlyDisabled bool
 }
 
-// PlanInspectionCommands is the built-in allowlist of read-only shell
-// commands plan mode still runs (S-061): pure inspection, nothing that can
-// write, delete, or execute further commands. Matching goes through
-// AllowlistMatches, so chained or redirected commands never qualify.
-func PlanInspectionCommands() []string {
-	return []string{
-		"ls", "pwd", "cat", "head", "tail", "wc", "file", "stat", "tree", "du",
-		"grep", "rg", "which",
-		"git status", "git log", "git diff", "git show", "git blame", "git ls-files",
-		"go version", "go env", "go list", "go doc",
+// readOnly reports whether a command auto-runs as pure inspection.
+func (p ModePolicy) readOnly(a Action) bool {
+	if p.ReadOnlyDisabled || a.Kind != ActionCommand || a.SafetyFlagged {
+		return false
 	}
+	return ReadOnlyAllowed(a.Command, p.ReadOnlyExtra)
+}
+
+// ReadOnlyCommands is the built-in allowlist of inspection commands that run
+// without a prompt in every mode: pure reads, nothing that can write, delete,
+// or execute further commands or code. Matching goes through AllowlistMatches,
+// so chained or redirected commands never qualify, and a safety-flagged
+// command is never matched against it at all.
+//
+// Entries are deliberately conservative. Anything that compiles or runs
+// project code (go build, go test, go vet, make, npm run) stays out: it
+// executes the repository's own code, which is not a read.
+func ReadOnlyCommands() []string {
+	return []string{
+		// Filesystem inspection.
+		"ls", "pwd", "cat", "head", "tail", "wc", "file", "stat", "tree", "du",
+		"realpath", "basename", "dirname", "readlink",
+		// Search.
+		"grep", "rg", "find", "fd", "which", "type",
+		// Text shaping over piped-in content is out (it needs a pipe, which
+		// AllowlistMatches rejects anyway); these are read-only on their own.
+		"diff", "cmp", "sort", "uniq", "cut", "column",
+		// Git inspection.
+		"git status", "git log", "git diff", "git show", "git blame",
+		"git ls-files", "git branch", "git remote -v", "git describe",
+		"git rev-parse", "git shortlog", "git tag -l", "git stash list",
+		// Toolchain inspection (no compilation, no execution).
+		"go version", "go env", "go list", "go doc", "go mod graph", "go mod why",
+		"node --version", "npm ls", "python --version", "python3 --version",
+		"cargo --version", "rustc --version",
+		// Environment.
+		"whoami", "hostname", "uname", "date", "env", "printenv", "id",
+	}
+}
+
+// PlanInspectionCommands is the read-only allowlist under its plan-mode name
+// (S-061); plan mode grants exactly the same set.
+func PlanInspectionCommands() []string { return ReadOnlyCommands() }
+
+// readOnlyGuards names the flags that turn an otherwise read-only command
+// into one that writes, deletes, or executes something else. A command whose
+// prefix matches a key and that carries any of its flags is not read-only,
+// however innocent the rest of it looks ("find . -delete").
+var readOnlyGuards = map[string][]string{
+	"find":       {"-delete", "-exec", "-execdir", "-ok", "-okdir", "-fls", "-fprint", "-fprint0", "-fprintf"},
+	"fd":         {"-x", "-X", "--exec", "--exec-batch"},
+	"sort":       {"-o", "--output"},
+	"tree":       {"-o"},
+	"git branch": {"-d", "-D", "-m", "-M", "-c", "-C", "--delete", "--move", "--copy", "--set-upstream-to", "-u", "--unset-upstream", "--edit-description"},
+	// env with operands runs a command; bare env just prints the environment.
+	"env": {},
+}
+
+// guardedReadOnly applies readOnlyGuards to a command already known to match
+// the built-in allowlist.
+func guardedReadOnly(command string) bool {
+	words := strings.Fields(command)
+	for prefix, banned := range readOnlyGuards {
+		pattern := strings.Fields(prefix)
+		if len(pattern) > len(words) {
+			continue
+		}
+		match := true
+		for i, w := range pattern {
+			if words[i] != w {
+				match = false
+				break
+			}
+		}
+		if !match {
+			continue
+		}
+		rest := words[len(pattern):]
+		// A guard with no banned flags allows only the bare command.
+		if len(banned) == 0 && len(rest) > 0 {
+			return false
+		}
+		for _, w := range rest {
+			for _, b := range banned {
+				if w == b || strings.HasPrefix(w, b+"=") {
+					return false
+				}
+			}
+		}
+	}
+	return true
+}
+
+// ReadOnlyAllowed reports whether a command is a built-in read-only
+// inspection command, or matches one of the caller's extra entries. Extra
+// entries are the user's own call and skip the built-in flag guards.
+func ReadOnlyAllowed(command string, extra []string) bool {
+	if AllowlistMatches(ReadOnlyCommands(), command) && guardedReadOnly(command) {
+		return true
+	}
+	return len(extra) > 0 && AllowlistMatches(extra, command)
 }
 
 // PlanInspectionAllowed reports whether a command is on plan mode's
 // inspection allowlist.
 func PlanInspectionAllowed(command string) bool {
-	return AllowlistMatches(PlanInspectionCommands(), command)
+	return ReadOnlyAllowed(command, nil)
 }
 
 // Decide returns the verdict for one gated action and, for Allow, the reason
 // shown in the transcript ("session policy", "allowlist", "auto mode", …).
 func (p ModePolicy) Decide(a Action) (Decision, string) {
 	if p.Mode == ModePlan {
-		if a.Kind == ActionCommand && !a.SafetyFlagged && PlanInspectionAllowed(a.Command) {
+		// Plan mode grants inspection even with the read-only allowlist
+		// disabled: read-only is the whole point of the mode.
+		if a.Kind == ActionCommand && !a.SafetyFlagged && ReadOnlyAllowed(a.Command, p.ReadOnlyExtra) {
 			return Allow, "plan mode inspection"
 		}
 		return Deny, "plan mode"
 	}
 	if a.SafetyFlagged {
 		return Ask, ""
+	}
+	// Inspection commands never prompt, in any mode: they cannot change
+	// anything, and prompting for them is the bulk of the noise.
+	if p.readOnly(a) {
+		return Allow, "read-only"
 	}
 	switch a.Kind {
 	case ActionEdit:

@@ -18,6 +18,7 @@ type Config struct {
 	LSP        LSPConfig        `toml:"lsp"`
 	Appearance AppearanceConfig `toml:"appearance"`
 	History    HistoryConfig    `toml:"history"`
+	Agents     AgentsConfig     `toml:"agents"`
 }
 
 // LSPConfig tunes the language-server integration (S-071) `shhh code` uses
@@ -113,6 +114,14 @@ type BehaviorConfig struct {
 	// sessions ("go test" approves "go test ./..."); safety-flagged commands
 	// always prompt regardless. Empty (the default) means every command asks.
 	CommandAllowlist []string `toml:"command_allowlist"`
+	// ReadOnlyCommands extends the built-in inspection allowlist that runs
+	// without prompting in every mode (agent.ReadOnlyCommands). Entries are
+	// the user's own call: they skip the built-in flag guards.
+	ReadOnlyCommands []string `toml:"read_only_commands"`
+	// ReadOnlyAuto controls whether the built-in inspection allowlist
+	// auto-runs (default true). Setting it false makes reads prompt like
+	// anything else; plan mode still inspects.
+	ReadOnlyAuto *bool `toml:"read_only_auto"`
 	// DefaultMode is the permission mode agent sessions start in: "manual",
 	// "accept-edits", "auto", or "plan". Empty means manual (everything
 	// prompts).
@@ -141,6 +150,46 @@ type BehaviorConfig struct {
 	MemoryMaxTokens int `toml:"memory_max_tokens"`
 }
 
+// AgentsConfig configures sub-agent (S-068) defaults: which model children
+// run and per-role overrides. A model of "inherit" (or empty) means the
+// session's own model, so one setting moves parent and children together.
+type AgentsConfig struct {
+	// Model is the default model for every sub-agent.
+	Model string `toml:"model"`
+	// Profiles override per role ("researcher", "writer"), keyed by role name.
+	Profiles map[string]AgentProfile `toml:"profiles"`
+	// MaxConcurrent bounds simultaneously running children (default 3).
+	MaxConcurrent int `toml:"max_concurrent"`
+}
+
+// AgentProfile is one role's overrides.
+type AgentProfile struct {
+	Model string `toml:"model"`
+}
+
+// InheritModel is the model name that defers to the session model.
+const InheritModel = "inherit"
+
+// AgentModel resolves the model for a sub-agent role: the role profile wins,
+// then the agents-wide default, then the session model. "inherit" at any
+// level falls through to the session model.
+func (c Config) AgentModel(role, sessionModel string) string {
+	for _, candidate := range []string{c.Agents.Profiles[role].Model, c.Agents.Model} {
+		candidate = strings.TrimSpace(candidate)
+		switch {
+		case candidate == "":
+			continue // unset: fall through to the next level
+		case strings.EqualFold(candidate, InheritModel):
+			// An explicit "inherit" pins that level to the session model
+			// rather than deferring to a broader default.
+			return sessionModel
+		default:
+			return candidate
+		}
+	}
+	return sessionModel
+}
+
 type AppearanceConfig struct {
 	AccentColor string `toml:"accent_color"`
 }
@@ -157,6 +206,15 @@ const (
 	DefaultMemoryMaxEntries = 20
 	DefaultMemoryMaxTokens  = 1200
 )
+
+// ReadOnlyAutoEnabled reports whether the built-in inspection allowlist
+// auto-runs (the default).
+func (c Config) ReadOnlyAutoEnabled() bool {
+	if c.Behavior.ReadOnlyAuto == nil {
+		return true
+	}
+	return *c.Behavior.ReadOnlyAuto
+}
 
 func (c Config) SafetyWarningsEnabled() bool {
 	if c.Behavior.SafetyWarnings == nil {
@@ -257,6 +315,25 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Behavior.SystemPromptExtra = value
 	case "behavior.command_allowlist":
 		cfg.Behavior.CommandAllowlist = splitList(value)
+	case "behavior.read_only_commands":
+		cfg.Behavior.ReadOnlyCommands = splitList(value)
+	case "behavior.read_only_auto":
+		v := value == "true"
+		cfg.Behavior.ReadOnlyAuto = &v
+	case "agents.model":
+		cfg.Agents.Model = value
+	case "agents.max_concurrent":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Agents.MaxConcurrent = n
+	case "agents.researcher_model", "agents.writer_model":
+		role := strings.TrimSuffix(strings.TrimPrefix(key, "agents."), "_model")
+		if cfg.Agents.Profiles == nil {
+			cfg.Agents.Profiles = map[string]AgentProfile{}
+		}
+		p := cfg.Agents.Profiles[role]
+		p.Model = value
+		cfg.Agents.Profiles[role] = p
 	case "behavior.default_mode":
 		cfg.Behavior.DefaultMode = value
 	case "behavior.mode_cycle":

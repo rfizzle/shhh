@@ -610,6 +610,12 @@ func (m Model) childStatsReport(name string) string {
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "%s (%s) — %s\n", st.Name, st.Role, st.Detail)
 	fmt.Fprintf(&sb, "  task:       %s\n", firstLine(st.Task))
+	if st.Model != "" {
+		fmt.Fprintf(&sb, "  model:      %s\n", st.Model)
+	}
+	if len(st.Paths) > 0 {
+		fmt.Fprintf(&sb, "  paths:      %s\n", strings.Join(st.Paths, ", "))
+	}
 	fmt.Fprintf(&sb, "  mode:       %s (ceiling: %s)\n", mode, m.subagents.ParentMode())
 	fmt.Fprintf(&sb, "  tool calls: %d\n", st.ToolCalls)
 	spend := fmt.Sprintf("  spend:      ↑%s ↓%s tokens", formatTokenCount(st.TokensIn), formatTokenCount(st.TokensOut))

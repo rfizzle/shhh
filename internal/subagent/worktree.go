@@ -176,6 +176,22 @@ func PatchHunks(patch string) (hunks []diff.Hunk, files int) {
 	return hunks, files
 }
 
+// PatchFiles lists the workspace-relative paths a unified git patch touches.
+func PatchFiles(patch string) []string {
+	var files []string
+	seen := map[string]bool{}
+	for _, line := range strings.Split(patch, "\n") {
+		if !strings.HasPrefix(line, "diff --git ") {
+			continue
+		}
+		if p := parseGitDiffPath(line); p != "" && !seen[p] {
+			seen[p] = true
+			files = append(files, p)
+		}
+	}
+	return files
+}
+
 // parseGitDiffPath extracts the b/ path from a "diff --git a/x b/x" line.
 func parseGitDiffPath(line string) string {
 	rest := strings.TrimPrefix(line, "diff --git ")

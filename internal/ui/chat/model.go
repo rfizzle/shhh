@@ -202,10 +202,16 @@ type Model struct {
 	allowAllEdits    bool
 	allowAllCommands bool
 	commandAllowlist []string
+	// Read-only inspection commands auto-run in every mode; config can extend
+	// the built-in list or turn it off entirely.
+	readOnlyExtra    []string
+	readOnlyDisabled bool
 	// Auto mode's LLM permission classifier (S-060): judges gated calls the
 	// static policy would ask about; nil falls back to asking the user.
 	classifier       *agent.Classifier
 	classifierCancel context.CancelFunc
+	// defaults are the persisted model defaults /model default writes.
+	defaults Defaults
 	// lastDenial is the most recent auto-mode denial, shown by /mode why.
 	lastDenial string
 	// denialNotice mirrors lastDenial on the notice rail (S-082) until the
@@ -1170,10 +1176,12 @@ func (m Model) updateConfirmRun(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			case approvalExec:
 				m.recordDecision(decisionAllow, "user-always")
 				m.allowAllCommands = true
+				m.syncChildGrants()
 				return m.executeRun()
 			case approvalDiff:
 				m.recordDecision(decisionAllow, "user-always")
 				m.allowAllEdits = true
+				m.syncChildGrants()
 				return m.executeApprovedTool()
 			}
 		}
@@ -1773,15 +1781,20 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 	case "/model":
 		if len(parts) < 2 {
 			if m.modelName != "" {
-				return true, fmt.Sprintf("Current model: %s\nUsage: /model <name>", m.modelName)
+				return true, fmt.Sprintf("Current model: %s\n%s", m.modelName, modelUsage)
 			}
-			return true, "Usage: /model <name>"
+			return true, modelUsage
+		}
+		// /model default [name] and /model agents [name] persist a default to
+		// the config file instead of switching this session only (S-086).
+		if parts[1] == "default" || parts[1] == "agents" {
+			return true, m.setModelDefault(parts[1], parts[2:])
 		}
 		if m.switchFn == nil {
 			return true, "Model switching is not available in this session."
 		}
 		if len(parts) > 2 {
-			return true, "Model names cannot contain spaces. Usage: /model <name>"
+			return true, "Model names cannot contain spaces. " + modelUsage
 		}
 		name := parts[1]
 		if name == m.modelName {
@@ -1789,7 +1802,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		}
 		m.switchFn(name)
 		m.modelName = name
-		return true, fmt.Sprintf("Switched model to %s.", name)
+		return true, fmt.Sprintf("Switched model to %s. (/model default %s makes it the default for new sessions.)", name, name)
 
 	case "/mode":
 		if len(parts) < 2 {
@@ -2007,6 +2020,9 @@ func helpText() string {
   /copy [code]   Copy the last response (or just its code blocks)
   /run [n]       Run a code block from the last response (with confirmation)
   /model [name]  Switch the model (bare /model opens an interactive picker)
+  /model default [name]   Show or persist the default model for new sessions
+  /model agents [name]    Show or persist the model sub-agents run on
+                 ("inherit" follows the session model)
   /mode [name]   Set the permission mode (manual, accept-edits, auto, plan);
                  bare /mode opens an interactive picker
   /mode why      Show the latest auto-mode denial's reason

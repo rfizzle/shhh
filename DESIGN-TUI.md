@@ -356,6 +356,30 @@ A child's approval requests never wait invisibly:
 - The cockpit badge (`◇ 2 agents ⚠1`) and the agent list mark whoever is
   blocked, so a parked approval is always visible from anywhere.
 
+### 9d. Inherited permission state (S-086)
+
+A child decides with the parent's policy, not a fresh one: its mode is
+clamped to the parent's, and it inherits the session grants (`[a]`), the
+command allowlist, the read-only inspection list, and — in auto mode —
+the same classifier the parent uses. Without the classifier, an auto-mode
+session still stopped once per child command; with it, children are as
+quiet as the orchestrator. Auto-approvals and classifier denials are
+written into the child's own transcript, so the attached view shows why
+nothing was asked.
+
+### 9e. Writer scope (S-086)
+
+Writers already cannot overwrite each other (worktree per child, patch
+reviewed on the way in). What can still collide is two patches over the
+same file:
+
+- `spawn_agent` takes optional `paths` — the globs a writer intends to
+  change. A second writer whose claim overlaps a live one is refused at
+  spawn, with the holder named.
+- A declared scope is passed into the writer's system prompt.
+- A patch touching files another agent's applied patch already changed
+  renders a `⚠` warning row on the apply card.
+
 ---
 
 ## 10. Palette

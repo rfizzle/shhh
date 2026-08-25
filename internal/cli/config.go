@@ -333,3 +333,19 @@ func (m configModel) View() string {
 
 	return b.String()
 }
+
+// configWriter persists one config key from an interactive session (/model
+// default, /model agents). It re-reads the file first so a concurrent edit
+// elsewhere is not clobbered by this session's stale copy.
+func configWriter() func(key, value string) error {
+	return func(key, value string) error {
+		cfg, err := config.Load()
+		if err != nil {
+			return err
+		}
+		if err := config.Set(&cfg, key, value); err != nil {
+			return err
+		}
+		return config.Save(cfg)
+	}
+}

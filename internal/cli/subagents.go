@@ -12,6 +12,7 @@ import (
 	"context"
 	"encoding/json"
 	"os"
+	"strings"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
@@ -31,13 +32,15 @@ import (
 
 // buildSupervisor assembles the session's sub-agent supervisor.
 func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession, env *sessionEnv,
-	red *evidence.Reducer, recorder *observeRecorder, db *storage.DB, prices *pricing.Table) *subagent.Supervisor {
+	red *evidence.Reducer, recorder *observeRecorder, db *storage.DB, prices *pricing.Table,
+	classifier *agent.Classifier) *subagent.Supervisor {
 	root, err := os.Getwd()
 	if err != nil {
 		root = "."
 	}
 
-	newEnv := func(cctx context.Context, role subagent.Role, croot string) (subagent.Env, error) {
+	newEnv := func(cctx context.Context, spec subagent.Spec) (subagent.Env, error) {
+		role, croot := spec.Role, spec.Root
 		info := shell.Detect()
 		info.Cwd = croot
 		extra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra, project.FindContext())
@@ -48,6 +51,12 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		switch role {
 		case subagent.RoleWriter:
 			sysPrompt = prompt.BuildWriter(info, extra)
+			// A writer that declared a scope is told about it: other agents
+			// may be changing the rest of the repository at the same time.
+			if len(spec.Paths) > 0 {
+				sysPrompt += "\n\n# Scope\nYour changes are scoped to: " + strings.Join(spec.Paths, ", ") +
+					". Other agents may be working elsewhere in the repository at the same time. Keep every change inside your scope; if the task appears to need a change outside it, describe that in your report instead of making it."
+			}
 			defs = tools.DefinitionsFull()
 			gated[tools.ExecCommandName] = true
 			gated[tools.WriteFileName] = true
@@ -82,10 +91,17 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		}
 
 		streamDefs := defs
+		// The child's model is resolved by the supervisor (spawn argument →
+		// role profile → agents.model → session model); an empty one here
+		// would mean no resolution ran, so fall back to the session model.
+		childModel := spec.Model
+		if childModel == "" {
+			childModel = env.modelName
+		}
 		stream := agent.StreamFunc(func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			sctx, cancel := context.WithCancel(cctx)
 			ev, sErr := env.prov.StreamCompletion(sctx, msgs, provider.CompletionOpts{
-				Model:      env.modelName,
+				Model:      childModel,
 				Tools:      streamDefs,
 				ToolChoice: "auto",
 			})
@@ -114,6 +130,18 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			return subagent.Recorder{Usage: r.usage, ToolCall: r.toolCallOutcome, End: r.end}
 		},
 		CommandAllowlist: cfg.Behavior.CommandAllowlist,
+		ReadOnlyExtra:    cfg.Behavior.ReadOnlyCommands,
+		ReadOnlyDisabled: !cfg.ReadOnlyAutoEnabled(),
+		// Children get the same auto-mode classifier the parent uses, so an
+		// auto-mode session does not turn into one prompt per child command.
+		Classifier: classifier,
+		ModelFor: func(role subagent.Role, requested string) string {
+			if requested != "" {
+				return requested
+			}
+			return cfg.AgentModel(string(role), env.modelName)
+		},
+		MaxConcurrent: cfg.Agents.MaxConcurrent,
 	})
 }
 

@@ -358,7 +358,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// leftover worktrees when the session ends.
 	var sup *subagent.Supervisor
 	if session.agents {
-		sup = buildSupervisor(cmd.Context(), cfg, session, env, red, recorder, db, prices)
+		sup = buildSupervisor(cmd.Context(), cfg, session, env, red, recorder, db, prices, classifier)
 		executor = sup.WrapExecutor(executor)
 		defer sup.Close()
 	}
@@ -375,6 +375,12 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithContainment(containment).
 		WithMaxToolRounds(cfg.Behavior.MaxToolRounds).
 		WithCommandAllowlist(cfg.Behavior.CommandAllowlist).
+		WithReadOnlyCommands(cfg.Behavior.ReadOnlyCommands, !cfg.ReadOnlyAutoEnabled()).
+		WithDefaults(chat.Defaults{
+			Model:      cfg.Provider.Model,
+			AgentModel: cfg.Agents.Model,
+			Write:      configWriter(),
+		}).
 		WithApprovalMode(mode, cycle).
 		WithClassifier(classifier).
 		WithModelSwitcher(env.switchModel).

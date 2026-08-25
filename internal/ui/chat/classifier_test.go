@@ -67,7 +67,7 @@ func TestClassifierFlow_AllowRunsCommand(t *testing.T) {
 	m := classifierModel(t, &ran, &verdictProvider{decision: "allow", reason: "runs the requested check"})
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
-		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"ls -la"}`},
+		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"go test ./..."}`},
 	}})
 	m = updated.(Model)
 	if m.state != stateClassifying {
@@ -87,7 +87,7 @@ func TestClassifierFlow_AllowRunsCommand(t *testing.T) {
 	}
 	updated, restream := m.Update(driveCmdDone(t, cmd))
 	m = updated.(Model)
-	if len(ran) != 1 || ran[0] != "ls -la" {
+	if len(ran) != 1 || ran[0] != "go test ./..." {
 		t.Fatalf("expected the command to run, got %v", ran)
 	}
 	if m.state != stateStreaming || restream == nil {
@@ -95,7 +95,7 @@ func TestClassifierFlow_AllowRunsCommand(t *testing.T) {
 	}
 	found := false
 	for _, e := range m.transcript {
-		if e.kind == entrySystem && strings.Contains(e.text, "Auto-approved (classifier") && strings.Contains(e.text, "ls -la") {
+		if e.kind == entrySystem && strings.Contains(e.text, "Auto-approved (classifier") && strings.Contains(e.text, "go test ./...") {
 			found = true
 		}
 	}
@@ -109,7 +109,7 @@ func TestClassifierFlow_DenyRefusesAndModeWhyExplains(t *testing.T) {
 	m := classifierModel(t, &ran, &verdictProvider{decision: "deny", reason: "user asked for read-only work"})
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
-		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"ls -la"}`},
+		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"go test ./..."}`},
 	}})
 	m = updated.(Model)
 	updated, restream := m.Update(driveClassifierDone(t, cmd))
@@ -138,7 +138,7 @@ func TestClassifierFlow_FailureFallsBackToPrompt(t *testing.T) {
 	m := classifierModel(t, &ran, &verdictProvider{err: errors.New("api down")})
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
-		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"ls -la"}`},
+		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"go test ./..."}`},
 	}})
 	m = updated.(Model)
 	updated, _ = m.Update(driveClassifierDone(t, cmd))
@@ -184,7 +184,7 @@ func TestClassifierFlow_CtrlCFallsBackToPrompt(t *testing.T) {
 	m := classifierModel(t, &ran, &verdictProvider{decision: "allow", reason: "ok"})
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
-		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"ls -la"}`},
+		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"go test ./..."}`},
 	}})
 	m = updated.(Model)
 	if m.state != stateClassifying {

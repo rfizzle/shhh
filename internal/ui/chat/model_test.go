@@ -1731,7 +1731,7 @@ func TestToolLoop_RoundCapAfterApprovedCommand(t *testing.T) {
 	m.state = stateStreaming
 
 	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
-		{ID: "call_1", Name: "execute_command", Arguments: `{"command":"ls"}`},
+		{ID: "call_1", Name: "execute_command", Arguments: `{"command":"go build ./..."}`},
 	}})
 	m = updated.(Model)
 	if m.state != stateConfirmRun {

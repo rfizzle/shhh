@@ -395,3 +395,53 @@ func TestSet_LSPConfig(t *testing.T) {
 		t.Fatalf("lsp config not applied: %+v", cfg.LSP)
 	}
 }
+
+func TestAgentModelResolution(t *testing.T) {
+	cfg := Config{}
+	if got := cfg.AgentModel("writer", "session-model"); got != "session-model" {
+		t.Errorf("unset config should inherit the session model, got %q", got)
+	}
+	cfg.Agents.Model = "agents-default"
+	if got := cfg.AgentModel("writer", "session-model"); got != "agents-default" {
+		t.Errorf("agents.model should apply, got %q", got)
+	}
+	cfg.Agents.Profiles = map[string]AgentProfile{"researcher": {Model: "cheap-model"}}
+	if got := cfg.AgentModel("researcher", "session-model"); got != "cheap-model" {
+		t.Errorf("the role profile should win, got %q", got)
+	}
+	if got := cfg.AgentModel("writer", "session-model"); got != "agents-default" {
+		t.Errorf("a role without a profile falls back to agents.model, got %q", got)
+	}
+	// "inherit" at any level falls through to the session model.
+	cfg.Agents.Profiles["writer"] = AgentProfile{Model: "inherit"}
+	if got := cfg.AgentModel("writer", "session-model"); got != "session-model" {
+		t.Errorf("inherit should fall through to the session model, got %q", got)
+	}
+}
+
+func TestSetAgentAndReadOnlyKeys(t *testing.T) {
+	var cfg Config
+	for _, kv := range [][2]string{
+		{"agents.model", "haiku"},
+		{"agents.researcher_model", "tiny"},
+		{"agents.max_concurrent", "5"},
+		{"behavior.read_only_commands", "make lint, bazel query"},
+		{"behavior.read_only_auto", "false"},
+	} {
+		if err := Set(&cfg, kv[0], kv[1]); err != nil {
+			t.Fatalf("Set(%q): %v", kv[0], err)
+		}
+	}
+	if cfg.Agents.Model != "haiku" || cfg.Agents.Profiles["researcher"].Model != "tiny" {
+		t.Errorf("agent models not set: %+v", cfg.Agents)
+	}
+	if cfg.Agents.MaxConcurrent != 5 {
+		t.Errorf("max_concurrent = %d, want 5", cfg.Agents.MaxConcurrent)
+	}
+	if len(cfg.Behavior.ReadOnlyCommands) != 2 {
+		t.Errorf("read_only_commands = %v", cfg.Behavior.ReadOnlyCommands)
+	}
+	if cfg.ReadOnlyAutoEnabled() {
+		t.Error("read_only_auto=false should disable the built-in list")
+	}
+}

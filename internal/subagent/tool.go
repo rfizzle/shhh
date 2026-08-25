@@ -6,7 +6,9 @@ package subagent
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -35,6 +37,8 @@ func Definitions() []provider.Tool {
 					"role": {"type": "string", "enum": ["researcher", "writer"], "description": "Toolset scope for the agent"},
 					"task": {"type": "string", "description": "Complete, self-contained task prompt for the agent"},
 					"name": {"type": "string", "description": "Optional short name (letters, digits, dashes); auto-generated like researcher-1 when omitted"},
+					"paths": {"type": "array", "items": {"type": "string"}, "description": "For writers: the paths or globs this agent may change (e.g. [\"internal/ui/**\", \"README.md\"]). Two concurrent writers may not claim overlapping paths — declare them whenever you fan out more than one writer, so their patches cannot collide.", "maxItems": 32},
+					"model": {"type": "string", "description": "Optional model for this agent (defaults to the configured agent model, else the session model). Use a smaller, cheaper model for wide mechanical work and the session model for reasoning-heavy work."},
 					"max_rounds": {"type": "integer", "description": "Optional tool-round budget (default 25, max 50)"},
 					"max_tokens": {"type": "integer", "description": "Optional token budget, prompt+completion (default 200000)"}
 				},
@@ -56,16 +60,23 @@ func Definitions() []provider.Tool {
 }
 
 type spawnArgs struct {
-	Role      string `json:"role"`
-	Task      string `json:"task"`
-	Name      string `json:"name"`
-	MaxRounds int    `json:"max_rounds"`
-	MaxTokens int64  `json:"max_tokens"`
+	Role      string   `json:"role"`
+	Task      string   `json:"task"`
+	Name      string   `json:"name"`
+	Model     string   `json:"model"`
+	Paths     []string `json:"paths"`
+	MaxRounds int      `json:"max_rounds"`
+	MaxTokens int64    `json:"max_tokens"`
 
 	role      Role
+	paths     []string
 	maxRounds int
 	maxTokens int64
 }
+
+// maxClaimedPaths bounds a writer's declared scope; a claim longer than this
+// is a sign the model is listing files instead of scoping work.
+const maxClaimedPaths = 32
 
 var validName = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9-]{0,23}$`)
 
@@ -86,6 +97,23 @@ func parseSpawnArgs(raw json.RawMessage) (spawnArgs, error) {
 	}
 	if args.Name != "" && !validName.MatchString(args.Name) {
 		return args, fmt.Errorf("invalid name %q (letters, digits, dashes; max 24 chars)", args.Name)
+	}
+	args.Model = strings.TrimSpace(args.Model)
+	for _, raw := range args.Paths {
+		p := strings.TrimSpace(raw)
+		if p == "" {
+			continue
+		}
+		if filepath.IsAbs(p) || strings.Contains(p, "..") {
+			return args, fmt.Errorf("path %q must be relative to the workspace and cannot contain ..", raw)
+		}
+		args.paths = append(args.paths, filepath.ToSlash(p))
+	}
+	if len(args.paths) > maxClaimedPaths {
+		return args, fmt.Errorf("too many paths (%d; max %d) — claim directories, not individual files", len(args.paths), maxClaimedPaths)
+	}
+	if args.role != RoleWriter && len(args.paths) > 0 {
+		return args, errors.New("paths apply to writer agents only; a researcher changes nothing")
 	}
 	args.maxRounds = args.MaxRounds
 	switch {
@@ -117,5 +145,13 @@ func SpawnSummary(raw json.RawMessage) (string, error) {
 	if len(task) > 120 {
 		task = task[:120] + "…"
 	}
-	return fmt.Sprintf("%s agent (max %d rounds, ~%s tokens) — %s", args.role, args.maxRounds, formatTokens(args.maxTokens), task), nil
+	scope := ""
+	if len(args.paths) > 0 {
+		scope = " in " + strings.Join(args.paths, ", ")
+	}
+	model := ""
+	if args.Model != "" {
+		model = ", " + args.Model
+	}
+	return fmt.Sprintf("%s agent%s (max %d rounds, ~%s tokens)%s — %s", args.role, model, args.maxRounds, formatTokens(args.maxTokens), scope, task), nil
 }

@@ -13,6 +13,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -94,6 +95,8 @@ type Status struct {
 	Name      string
 	Role      Role
 	Task      string
+	Model     string
+	Paths     []string
 	State     State
 	Detail    string
 	ToolCalls int
@@ -146,9 +149,21 @@ type Env struct {
 	Gated map[string]bool
 }
 
+// Spec is everything the CLI needs to build one child's runtime: its role,
+// its working directory, and the model it runs on (already resolved by the
+// supervisor's ModelFor).
+type Spec struct {
+	Role  Role
+	Root  string
+	Model string
+	// Paths is the writer's declared write scope, so its prompt can say what
+	// it may touch while other agents work elsewhere; nil means unscoped.
+	Paths []string
+}
+
 // EnvFactory builds a child's Env; ctx is the child's context (cancelling it
-// must abort the child's streams) and root its working directory.
-type EnvFactory func(ctx context.Context, role Role, root string) (Env, error)
+// must abort the child's streams).
+type EnvFactory func(ctx context.Context, spec Spec) (Env, error)
 
 // Recorder receives a child's content-free observability events (S-065); any
 // callback may be nil.
@@ -169,6 +184,20 @@ type Options struct {
 	// CommandAllowlist is the parent's config allowlist, inherited by
 	// children (inheriting it keeps the child at most as permissive).
 	CommandAllowlist []string
+	// ReadOnlyExtra and ReadOnlyDisabled mirror the parent's read-only
+	// inspection allowlist settings, so a child's reads are as quiet as the
+	// parent's.
+	ReadOnlyExtra    []string
+	ReadOnlyDisabled bool
+	// Classifier judges, in auto mode, what the static policy would ask about
+	// — the same S-060 path the parent uses. Nil routes those calls to the
+	// user instead, which is what made auto-mode children prompt for every
+	// command they ran.
+	Classifier *agent.Classifier
+	// ModelFor resolves a child's model from its role and the model the
+	// spawn call asked for (empty when it asked for none). Nil means every
+	// child runs on the session model.
+	ModelFor func(role Role, requested string) string
 	// MaxConcurrent bounds simultaneously running children; <= 0 uses
 	// DefaultMaxConcurrent.
 	MaxConcurrent int
@@ -249,9 +278,11 @@ type child struct {
 	parent    string // spawning agent's name; "" means the orchestrator
 	role      Role
 	task      string
-	root      string // working directory (worktree subdir for writers)
-	worktree  string // worktree top dir; "" for researchers
-	repoTop   string // parent repo toplevel; "" for researchers
+	model     string   // the model this child runs on
+	paths     []string // declared write scope (writers); nil means unscoped
+	root      string   // working directory (worktree subdir for writers)
+	worktree  string   // worktree top dir; "" for researchers
+	repoTop   string   // parent repo toplevel; "" for researchers
 	maxTokens int64
 
 	ctx      context.Context
@@ -298,6 +329,8 @@ func (c *child) status() Status {
 		Name:      c.name,
 		Role:      c.role,
 		Task:      c.task,
+		Model:     c.model,
+		Paths:     c.paths,
 		State:     c.state,
 		Detail:    c.detail,
 		ToolCalls: c.toolCalls,
@@ -412,11 +445,19 @@ type Supervisor struct {
 	events chan Event
 	sem    chan struct{}
 
-	mu         sync.Mutex
-	children   []*child
-	byName     map[string]*child
-	counters   map[Role]int
-	parentMode agent.Mode
+	mu       sync.Mutex
+	children []*child
+	byName   map[string]*child
+	counters map[Role]int
+	// parentMode is the ceiling children are clamped to; parentEdits and
+	// parentCommands are the parent's session grants ([a] on a prompt),
+	// which children inherit for the same reason they inherit the mode.
+	parentMode     agent.Mode
+	parentEdits    bool
+	parentCommands bool
+	// appliedFiles records which agent's patch last landed each file, so a
+	// later patch touching the same file is flagged before it is applied.
+	appliedFiles map[string]string
 
 	wg        sync.WaitGroup
 	closeOnce sync.Once
@@ -430,14 +471,15 @@ func New(ctx context.Context, opts Options) *Supervisor {
 	}
 	sctx, cancel := context.WithCancel(ctx)
 	return &Supervisor{
-		opts:       opts,
-		ctx:        sctx,
-		cancel:     cancel,
-		events:     make(chan Event, 64),
-		sem:        make(chan struct{}, opts.MaxConcurrent),
-		byName:     map[string]*child{},
-		counters:   map[Role]int{},
-		parentMode: agent.ModeManual,
+		opts:         opts,
+		ctx:          sctx,
+		cancel:       cancel,
+		events:       make(chan Event, 64),
+		sem:          make(chan struct{}, opts.MaxConcurrent),
+		byName:       map[string]*child{},
+		counters:     map[Role]int{},
+		parentMode:   agent.ModeManual,
+		appliedFiles: map[string]string{},
 	}
 }
 
@@ -451,6 +493,32 @@ func (s *Supervisor) SetParentMode(m agent.Mode) {
 	s.mu.Lock()
 	s.parentMode = m
 	s.mu.Unlock()
+}
+
+// SetParentGrants records the parent's session grants ([a] on a confirm
+// prompt): a category the user waved through for the session is waved through
+// for children too, so one grant is not re-asked once per agent.
+func (s *Supervisor) SetParentGrants(edits, commands bool) {
+	s.mu.Lock()
+	s.parentEdits, s.parentCommands = edits, commands
+	s.mu.Unlock()
+}
+
+// childPolicy assembles the approval policy one child decides with: its
+// clamped mode, the parent's session grants and command allowlist, and the
+// read-only inspection settings.
+func (s *Supervisor) childPolicy(c *child) agent.ModePolicy {
+	s.mu.Lock()
+	edits, commands := s.parentEdits, s.parentCommands
+	s.mu.Unlock()
+	return agent.ModePolicy{
+		Mode:             s.childMode(c),
+		AllowEdits:       edits,
+		AllowCommands:    commands,
+		CommandAllowlist: s.opts.CommandAllowlist,
+		ReadOnlyExtra:    s.opts.ReadOnlyExtra,
+		ReadOnlyDisabled: s.opts.ReadOnlyDisabled,
+	}
 }
 
 func (s *Supervisor) childMode(c *child) agent.Mode {
@@ -761,6 +829,21 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 	mode := s.parentMode
 	s.mu.Unlock()
 
+	// Writers work in isolated worktrees, so they cannot overwrite each
+	// other's files — but two patches over the same file conflict when they
+	// land. A declared scope is refused up front rather than discovered at
+	// apply time.
+	if args.role == RoleWriter {
+		if holder, claim, clash := s.claimConflict(args.paths); clash {
+			return "", fmt.Errorf("%s already claims %s, which overlaps this agent's paths; wait for it with agent_report, or narrow the paths so the two do not share files", holder, claim)
+		}
+	}
+
+	model := args.Model
+	if s.opts.ModelFor != nil {
+		model = s.opts.ModelFor(args.role, args.Model)
+	}
+
 	root := s.opts.Root
 	worktree, repoTop := "", ""
 	if args.role == RoleWriter {
@@ -771,7 +854,7 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 	}
 
 	cctx, cancel := context.WithCancel(s.ctx)
-	env, err := s.opts.NewEnv(cctx, args.role, root)
+	env, err := s.opts.NewEnv(cctx, Spec{Role: args.role, Root: root, Model: model, Paths: args.paths})
 	if err != nil {
 		cancel()
 		if worktree != "" {
@@ -787,6 +870,8 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 		name:      name,
 		role:      args.role,
 		task:      args.Task,
+		model:     model,
+		paths:     args.paths,
 		root:      root,
 		worktree:  worktree,
 		repoTop:   repoTop,
@@ -819,9 +904,77 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 	note := ""
 	if args.role == RoleWriter {
 		note = " It edits an isolated copy of the workspace; its changes come back as a single patch the user reviews."
+		if len(args.paths) > 0 {
+			note += " It claims " + strings.Join(args.paths, ", ") + "; another writer cannot claim overlapping paths while it runs."
+		} else {
+			note += " It declared no paths, so nothing stops a second writer from touching the same files — pass paths when you fan out writers."
+		}
 	}
-	return fmt.Sprintf("Spawned %s (%s, max %d rounds, ~%s token budget).%s It works in the background: call agent_report with name=%q in a later step to wait for and collect its final report, or agent_report with no arguments for a status overview.",
-		name, args.role, args.maxRounds, formatTokens(args.maxTokens), note, name), nil
+	modelNote := ""
+	if model != "" {
+		modelNote = ", " + model
+	}
+	return fmt.Sprintf("Spawned %s (%s%s, max %d rounds, ~%s token budget).%s It works in the background: call agent_report with name=%q in a later step to wait for and collect its final report, or agent_report with no arguments for a status overview.",
+		name, args.role, modelNote, args.maxRounds, formatTokens(args.maxTokens), note, name), nil
+}
+
+// claimConflict reports whether a writer's declared paths overlap those of a
+// live writer. Two claims that both declare paths and share any file are a
+// conflict; an undeclared claim conflicts with nothing (it is flagged at
+// patch time instead), so existing callers keep working.
+func (s *Supervisor) claimConflict(paths []string) (holder, claim string, conflict bool) {
+	if len(paths) == 0 {
+		return "", "", false
+	}
+	s.mu.Lock()
+	kids := make([]*child, len(s.children))
+	copy(kids, s.children)
+	s.mu.Unlock()
+	for _, c := range kids {
+		st := c.status()
+		if st.Role != RoleWriter || len(st.Paths) == 0 {
+			continue
+		}
+		switch st.State {
+		case StateDone, StateFailed:
+			continue
+		}
+		for _, theirs := range st.Paths {
+			for _, ours := range paths {
+				if pathsOverlap(ours, theirs) {
+					return st.Name, theirs, true
+				}
+			}
+		}
+	}
+	return "", "", false
+}
+
+// pathsOverlap reports whether two path claims can name the same file. Each
+// claim is reduced to the literal prefix before its first wildcard; claims
+// overlap when either prefix contains the other, which is deliberately
+// generous — a false conflict costs one sequenced agent, a missed one costs
+// a mangled patch.
+func pathsOverlap(a, b string) bool {
+	pa, pb := literalPrefix(a), literalPrefix(b)
+	return strings.HasPrefix(pa, pb) || strings.HasPrefix(pb, pa)
+}
+
+// literalPrefix trims a glob to the part before its first wildcard and
+// normalizes it to a comparable form.
+func literalPrefix(p string) string {
+	p = strings.TrimPrefix(strings.TrimSpace(filepath.ToSlash(p)), "./")
+	if i := strings.IndexAny(p, "*?["); i >= 0 {
+		p = p[:i]
+		// Back off to the last complete segment so "internal/u*" cannot
+		// match "internal/ui" by accident.
+		if j := strings.LastIndex(p, "/"); j >= 0 {
+			p = p[:j+1]
+		} else {
+			p = ""
+		}
+	}
+	return p
 }
 
 // run drives one child to completion on its own goroutine.
@@ -1027,11 +1180,25 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 	if actionErr != nil {
 		return "error: " + actionErr.Error()
 	}
-	policy := agent.ModePolicy{Mode: s.childMode(c), CommandAllowlist: s.opts.CommandAllowlist}
-	decision, _ := policy.Decide(action)
-	switch decision {
-	case agent.Deny:
+	policy := s.childPolicy(c)
+	title := askTitle(tc.Name, action)
+	decision, reason := policy.Decide(action)
+	// The static policy denies only in plan mode, which refuses the call with
+	// the result that tells the model why nothing ran.
+	if decision == agent.Deny {
 		return agent.PlanModeResult
+	}
+	if decision == agent.Ask {
+		var denial string
+		decision, reason, denial = s.classify(c, policy.Mode, tc, action)
+		if decision == agent.Deny {
+			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Refused (" + reason + "): " + title + " — " + denial})
+			return "error: auto mode denied this tool call: " + denial
+		}
+	}
+	switch decision {
+	case agent.Allow:
+		c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Auto-approved (" + reason + "): " + title})
 	case agent.Ask:
 		ask, askErr := s.buildAsk(c, tc.Name, rooted, action)
 		if askErr != nil {
@@ -1057,6 +1224,56 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 		return tools.FormatExecResult(out, code)
 	}
 	return agent.ExecuteWith(c.env.ExecuteGated, provider.ToolCall{ID: tc.ID, Name: tc.Name, Arguments: string(rooted)})
+}
+
+// classify runs the auto-mode permission classifier (S-060) for a call the
+// static policy would have asked about, giving children the same treatment
+// the parent gets. Anything other than auto mode, a missing classifier, or a
+// safety-flagged action leaves the decision at Ask — the classifier can only
+// ever remove a prompt it is allowed to remove, never add permission.
+// It returns the decision, the short label for the child's transcript, and —
+// for a denial — the reason the model is told.
+func (s *Supervisor) classify(c *child, mode agent.Mode, tc provider.ToolCall, action agent.Action) (decision agent.Decision, label, denial string) {
+	if mode != agent.ModeAuto || s.opts.Classifier == nil || action.SafetyFlagged {
+		return agent.Ask, "", ""
+	}
+	v := s.opts.Classifier.Judge(c.ctx, agent.ClassifierRequest{
+		Tool:      tc.Name,
+		Arguments: tc.Arguments,
+		CWD:       c.root,
+		Recent:    c.agent.RequestMessages(),
+	})
+	// Classifier spend is the child's spend: it counts toward the child's
+	// token budget, and exhausting it cancels the child like any other
+	// overrun.
+	if c.addUsage(&v.Usage) {
+		c.cancel()
+	}
+	if c.rec.Usage != nil {
+		st := c.status()
+		c.rec.Usage(0, st.TokensIn, st.TokensOut)
+	}
+	verdict, reason := agent.ResolveAuto(action, v)
+	elapsed := fmt.Sprintf("classifier, %.1fs", v.Elapsed.Seconds())
+	switch {
+	case verdict == agent.Allow:
+		return agent.Allow, elapsed, ""
+	case verdict == agent.Deny:
+		return agent.Deny, elapsed, reason
+	case v.Failed:
+		// Fails closed: the user decides, and sees why they were asked.
+		c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Classifier unavailable (" + v.Reason + "); asking the user instead."})
+	}
+	return agent.Ask, "", ""
+}
+
+// askTitle is the one-line description of a gated call for the child's own
+// transcript.
+func askTitle(name string, action agent.Action) string {
+	if action.Kind == agent.ActionCommand {
+		return "run " + firstLine(action.Command)
+	}
+	return "use " + name
 }
 
 // actionFor classifies a gated call for the mode policy.
@@ -1145,6 +1362,13 @@ func (s *Supervisor) reviewPatch(c *child) {
 	title := fmt.Sprintf("apply patch (+%d −%d, %d file(s))", adds, dels, files)
 	ask := NewAsk(c.name, AskPatch, title)
 	ask.Hunks = hunks
+	// Two writers can hold the same file in separate worktrees; the collision
+	// only becomes visible when the second patch lands on top of the first.
+	// Say so on the card, before it is applied.
+	touched := PatchFiles(patch)
+	if clashes := s.patchClashes(c.name, touched); len(clashes) > 0 {
+		ask.Warnings = append(ask.Warnings, "overwrites changes already applied by "+strings.Join(clashes, ", "))
+	}
 
 	note := ""
 	approved, ok := s.await(c, ask)
@@ -1157,12 +1381,40 @@ func (s *Supervisor) reviewPatch(c *child) {
 		if applyErr := applyPatch(c.repoTop, patch); applyErr != nil {
 			note = "the patch failed to apply cleanly: " + firstLine(applyErr.Error()) + savedPatchNote(c.name, patch)
 		} else {
+			s.recordApplied(c.name, touched)
 			note = fmt.Sprintf("patch applied to the workspace (+%d −%d, %d file(s))", adds, dels, files)
 		}
 	}
 	c.mu.Lock()
 	c.patchNote = note
 	c.mu.Unlock()
+}
+
+// patchClashes names the other agents whose applied patches already touched
+// any of these files, most recent writer per file.
+func (s *Supervisor) patchClashes(name string, files []string) []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var out []string
+	seen := map[string]bool{}
+	for _, f := range files {
+		other := s.appliedFiles[f]
+		if other == "" || other == name || seen[other] {
+			continue
+		}
+		seen[other] = true
+		out = append(out, other+" ("+f+")")
+	}
+	return out
+}
+
+// recordApplied remembers which agent's patch last touched each file.
+func (s *Supervisor) recordApplied(name string, files []string) {
+	s.mu.Lock()
+	for _, f := range files {
+		s.appliedFiles[f] = name
+	}
+	s.mu.Unlock()
 }
 
 // savedPatchNote persists an unapplied patch so nothing is lost, returning
@@ -1221,7 +1473,14 @@ func (s *Supervisor) statusOverview() string {
 	}
 	var sb strings.Builder
 	for _, st := range statuses {
-		fmt.Fprintf(&sb, "%s (%s): %s — %s\n", st.Name, st.Role, st.Detail, firstLine(st.Task))
+		label := string(st.Role)
+		if st.Model != "" {
+			label += ", " + st.Model
+		}
+		if len(st.Paths) > 0 {
+			label += "; " + strings.Join(st.Paths, ", ")
+		}
+		fmt.Fprintf(&sb, "%s (%s): %s — %s\n", st.Name, label, st.Detail, firstLine(st.Task))
 	}
 	return strings.TrimRight(sb.String(), "\n")
 }

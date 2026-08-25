@@ -25,7 +25,17 @@ func (m Model) WithSubagents(sup *subagent.Supervisor) Model {
 	m.subagents = sup
 	m.childViews = map[string]*childView{}
 	sup.SetParentMode(m.mode)
+	sup.SetParentGrants(m.allowAllEdits, m.allowAllCommands)
 	return m
+}
+
+// syncChildGrants pushes the session's [a] grants down to the supervisor: a
+// category the user waved through for the session is waved through for
+// children too, instead of being re-asked once per agent.
+func (m *Model) syncChildGrants() {
+	if m.subagents != nil {
+		m.subagents.SetParentGrants(m.allowAllEdits, m.allowAllCommands)
+	}
 }
 
 // applyMode changes the session's permission mode, keeping the sub-agent
@@ -169,6 +179,11 @@ func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
 		card.Headline = ask.Agent + " finished and wants to " + ask.Title
 		card.Hunks = ask.Hunks
 		card.Question = "Apply the agent's patch to your workspace?"
+		// A patch over files another agent already changed is the one case
+		// where two isolated writers can still collide (S-086).
+		if len(ask.Warnings) > 0 {
+			card.Warnings = []string{strings.Join(ask.Warnings, "; ")}
+		}
 	default:
 		card.Variant = components.ApprovalGeneric
 		card.Title = prefix + "Approve tool"

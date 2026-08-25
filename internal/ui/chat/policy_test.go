@@ -335,7 +335,7 @@ func TestMode_AutoAllowsEditsAndAllowlistedCommands(t *testing.T) {
 	// An unlisted command still asks in auto mode (no classifier yet, S-060).
 	m.state = stateStreaming
 	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
-		{ID: "call_y", Name: "execute_command", Arguments: `{"command":"ls -la"}`},
+		{ID: "call_y", Name: "execute_command", Arguments: `{"command":"go test ./..."}`},
 	}})
 	m = updated.(Model)
 	if m.state != stateConfirmRun {
@@ -494,5 +494,82 @@ func TestPolicy_StatusBarAndHelpReflectPolicy(t *testing.T) {
 	if !strings.Contains(help, "edits:     auto-allow (this session)") ||
 		!strings.Contains(help, "1 command pattern(s)") {
 		t.Fatalf("/help should reflect the loosened policy, got:\n%s", help)
+	}
+}
+
+func TestReadOnlyCommandRunsWithoutPrompt(t *testing.T) {
+	var ran []string
+	m := execModel(t, &ran)
+	m.mode = agent.ModeManual
+	m.state = stateStreaming
+
+	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_ro", Name: "execute_command", Arguments: `{"command":"git status"}`},
+	}})
+	m = updated.(Model)
+	if m.state != stateRunningCmd {
+		t.Fatalf("an inspection command should run without prompting, got state %d", m.state)
+	}
+	updated, _ = m.Update(driveCmdDone(t, cmd))
+	m = updated.(Model)
+	if len(ran) != 1 || ran[0] != "git status" {
+		t.Fatalf("expected the inspection command to run, got %v", ran)
+	}
+	found := false
+	for _, e := range m.transcript {
+		if e.kind == entrySystem && strings.Contains(e.text, "Auto-approved (read-only)") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("the transcript should say why the command ran")
+	}
+}
+
+func TestReadOnlyAutoDisabledPrompts(t *testing.T) {
+	var ran []string
+	m := execModel(t, &ran).WithReadOnlyCommands(nil, true)
+	m.mode = agent.ModeManual
+	m.state = stateStreaming
+
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_ro", Name: "execute_command", Arguments: `{"command":"git status"}`},
+	}})
+	if updated.(Model).state != stateConfirmRun {
+		t.Fatal("read_only_auto=false should restore the prompt")
+	}
+}
+
+func TestModelDefaults(t *testing.T) {
+	var wrote [][2]string
+	m := New(nil, mockStream).WithDefaults(Defaults{
+		Model: "gpt-4o",
+		Write: func(key, value string) error {
+			wrote = append(wrote, [2]string{key, value})
+			return nil
+		},
+	})
+	m.modelName = "gpt-4o"
+
+	if _, out := m.handleSlashCommand("/model default"); !strings.Contains(out, "gpt-4o") {
+		t.Fatalf("bare /model default should report the setting, got %q", out)
+	}
+	if _, out := m.handleSlashCommand("/model agents"); !strings.Contains(out, "not set") {
+		t.Fatalf("an unset agent model should say so, got %q", out)
+	}
+	if _, out := m.handleSlashCommand("/model default o3"); !strings.Contains(out, "o3") {
+		t.Fatalf("unexpected output: %q", out)
+	}
+	if _, out := m.handleSlashCommand("/model agents claude-haiku-4-5"); !strings.Contains(out, "claude-haiku-4-5") {
+		t.Fatalf("unexpected output: %q", out)
+	}
+	want := [][2]string{{"provider.model", "o3"}, {"agents.model", "claude-haiku-4-5"}}
+	if len(wrote) != 2 || wrote[0] != want[0] || wrote[1] != want[1] {
+		t.Fatalf("persisted %v, want %v", wrote, want)
+	}
+	// A session with no writer says so instead of pretending it stuck.
+	plain := New(nil, mockStream)
+	if _, out := plain.handleSlashCommand("/model default o3"); !strings.Contains(out, "cannot write") {
+		t.Fatalf("expected a not-persisted notice, got %q", out)
 	}
 }

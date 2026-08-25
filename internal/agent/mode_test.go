@@ -149,3 +149,60 @@ func TestClampMode(t *testing.T) {
 		}
 	}
 }
+
+func TestReadOnlyAllowed_Guards(t *testing.T) {
+	cases := []struct {
+		command string
+		want    bool
+	}{
+		{"find . -name '*.go'", true},
+		{"find . -delete", false},
+		{"find . -exec rm {} ;", false},
+		{"fd --extension go", true},
+		{"fd -x rm", false},
+		{"sort go.mod", true},
+		{"sort -o out.txt go.mod", false},
+		{"tree internal", true},
+		{"tree -o out.html", false},
+		{"git branch", true},
+		{"git branch --list", true},
+		{"git branch -D master", false},
+		{"env", true},
+		{"env FOO=bar rm -rf /", false},
+		{"whoami", true},
+	}
+	for _, c := range cases {
+		if got := ReadOnlyAllowed(c.command, nil); got != c.want {
+			t.Errorf("ReadOnlyAllowed(%q) = %v, want %v", c.command, got, c.want)
+		}
+	}
+	// Extra entries are the user's own call and bypass the built-in guards.
+	if !ReadOnlyAllowed("make lint", []string{"make lint"}) {
+		t.Error("extra entries should be honored")
+	}
+}
+
+func TestDecide_ReadOnlyNeverPrompts(t *testing.T) {
+	inspect := Action{Kind: ActionCommand, Command: "git status"}
+	for _, mode := range []Mode{ModeManual, ModeAcceptEdits, ModeAuto} {
+		p := ModePolicy{Mode: mode}
+		if got, reason := p.Decide(inspect); got != Allow || reason != "read-only" {
+			t.Errorf("%s: inspection should auto-run, got %v %q", mode, got, reason)
+		}
+	}
+	// Safety-flagged commands still ask, even if they look like inspection.
+	flagged := Action{Kind: ActionCommand, Command: "cat /etc/shadow", SafetyFlagged: true}
+	if got, _ := (ModePolicy{Mode: ModeManual}).Decide(flagged); got != Ask {
+		t.Errorf("safety-flagged inspection should ask, got %v", got)
+	}
+	// Disabling the built-in list restores prompting.
+	off := ModePolicy{Mode: ModeManual, ReadOnlyDisabled: true}
+	if got, _ := off.Decide(inspect); got != Ask {
+		t.Errorf("read_only_auto=false should prompt, got %v", got)
+	}
+	// Plan mode grants inspection regardless of the toggle.
+	plan := ModePolicy{Mode: ModePlan, ReadOnlyDisabled: true}
+	if got, reason := plan.Decide(inspect); got != Allow || reason != "plan mode inspection" {
+		t.Errorf("plan mode should still inspect, got %v %q", got, reason)
+	}
+}

@@ -26,6 +26,15 @@ func (m Model) WithCommandAllowlist(list []string) Model {
 	return m
 }
 
+// WithReadOnlyCommands configures the read-only inspection allowlist: extra
+// entries beyond the built-in list, and whether the built-in list auto-runs
+// at all (behavior.read_only_commands / behavior.read_only_auto).
+func (m Model) WithReadOnlyCommands(extra []string, disabled bool) Model {
+	m.readOnlyExtra = extra
+	m.readOnlyDisabled = disabled
+	return m
+}
+
 // WithApprovalMode sets the session's starting permission mode and the
 // Shift+Tab cycle order (S-059); an empty cycle keeps the default order.
 func (m Model) WithApprovalMode(mode agent.Mode, cycle []agent.Mode) Model {
@@ -44,6 +53,8 @@ func (m Model) modePolicy() agent.ModePolicy {
 		AllowEdits:       m.allowAllEdits,
 		AllowCommands:    m.allowAllCommands,
 		CommandAllowlist: m.commandAllowlist,
+		ReadOnlyExtra:    m.readOnlyExtra,
+		ReadOnlyDisabled: m.readOnlyDisabled,
 	}
 }
 
@@ -129,6 +140,15 @@ func (m Model) policyHelp() string {
 	sb.WriteString("  commands:  " + status(m.allowAllCommands) + "\n")
 	if n := len(m.commandAllowlist); n > 0 {
 		fmt.Fprintf(&sb, "  allowlist: %d command pattern(s) from config auto-approve\n", n)
+	}
+	if m.readOnlyDisabled {
+		sb.WriteString("  read-only: prompts (behavior.read_only_auto = false)\n")
+	} else {
+		fmt.Fprintf(&sb, "  read-only: %d inspection command(s) run without asking", len(agent.ReadOnlyCommands())+len(m.readOnlyExtra))
+		sb.WriteString(" (ls, cat, grep, git status, …)\n")
+	}
+	if m.subagents != nil {
+		sb.WriteString("  sub-agents inherit this mode, these grants, and the classifier.\n")
 	}
 	sb.WriteString("  Safety-flagged commands always ask.")
 	return sb.String()

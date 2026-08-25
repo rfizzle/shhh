@@ -90,6 +90,12 @@ safety_warnings = true
 system_prompt_extra = "Prefer ripgrep over grep. Use docker compose for services."
 command_allowlist = ["git status", "go test"]
 
+[agents]
+model = "inherit"                     # sub-agents follow the session model
+
+[agents.profiles.researcher]
+model = "anthropic/claude-haiku-4-5"  # cheap and fast for parallel search
+
 [appearance]
 accent_color = "cyan"
 ```
@@ -109,6 +115,8 @@ accent_color = "cyan"
 | `behavior.context_max_tokens` | Max tokens for stdin context (default: 8000) |
 | `behavior.max_tool_rounds` | Max consecutive tool-call rounds per chat turn (default: 25) |
 | `behavior.command_allowlist` | Command prefixes auto-approved in chat/code sessions (e.g. `["git status", "go test"]`); safety-flagged commands always prompt |
+| `behavior.read_only_commands` | Extra command prefixes treated as read-only inspection (they run without prompting in every mode, alongside the built-in list) |
+| `behavior.read_only_auto` | Whether built-in inspection commands run without prompting (default: true); `false` makes reads prompt like anything else |
 | `behavior.default_mode` | Permission mode sessions start in: `manual` (default), `accept-edits`, `auto`, or `plan` |
 | `behavior.mode_cycle` | Shift+Tab mode order (default: `["manual", "accept-edits", "auto", "plan"]`) |
 | `behavior.classifier_model` | Model auto mode's permission classifier uses (default: the session model) |
@@ -119,6 +127,9 @@ accent_color = "cyan"
 | `behavior.memory_max_entries` | Max memories injected into the system prompt per session (default: 20) |
 | `behavior.memory_max_tokens` | Hard token budget for the injected memory block (default: 1200) |
 | `behavior.system_prompt_extra` | Extra text appended to the system prompt |
+| `agents.model` | Model sub-agents run on (default: the session model); `"inherit"` follows the session model explicitly |
+| `agents.profiles.<role>.model` | Per-role override, `<role>` being `researcher` or `writer` (also settable as `agents.researcher_model` / `agents.writer_model`) |
+| `agents.max_concurrent` | Sub-agents running at once; further spawns queue (default: 3) |
 | `sandbox.profile` | Containment profile for assistant commands: `workspace` (network preserved, default) or `workspace-netless` |
 | `sandbox.deny_extra` | Extra paths masked from contained commands (the built-in mask — `~/.ssh`, `~/.aws`, `~/.config/gh`, shhh's own config/state dirs — cannot be disabled) |
 | `sandbox.write_extra` | Extra writable paths inside containment (beyond the workspace, scratch, and toolchain caches) |
@@ -298,6 +309,8 @@ Chat mode has read-only tools (`read_file`, `list_directory`, `search`) plus `ex
 
 How much gets approved automatically is governed by a permission mode, cycled with Shift+Tab or set with `/mode <name>`: **manual** prompts for every consequential tool call (the default), **accept-edits** auto-applies file edits but still prompts for commands, **auto** additionally runs allowlisted commands and sends everything else to an LLM permission classifier, and **plan** is read-only — edits and commands are refused. Read-only tools never prompt in any mode, and safety-flagged commands always ask. The status bar always shows the active mode; `behavior.default_mode` and `behavior.mode_cycle` configure the starting mode and cycle order.
 
+Inspection commands never prompt either, in any mode. A built-in allowlist of commands that cannot change anything — `ls`, `cat`, `head`, `grep`, `rg`, `find`, `git status`/`log`/`diff`/`show`/`blame`, `go list`/`env`/`doc`, `whoami`, and similar — runs straight through, so reading the repository costs no approvals. The list is conservative by construction: anything that compiles or runs project code (`go build`, `go test`, `make`, `npm run`) is *not* on it, flags that turn a read into a write are excluded per command (`find -delete`, `find -exec`, `sort -o`, `git branch -D`, `env CMD…`), any redirection, pipe, chaining, or command substitution disqualifies the whole command, and a safety-flagged command is never matched against it. `behavior.read_only_commands` adds your own entries; `behavior.read_only_auto = false` turns the built-in list off entirely (plan mode still inspects).
+
 In auto mode the classifier (the session model by default, `behavior.classifier_model` to override) judges each remaining tool call against your recent conversation and either runs it, refuses it with a reason the model sees, or falls back to asking you. Every classifier failure — timeout, invalid response, request error — fails closed to a prompt, never to an allow, and safety-flagged commands prompt you even when the classifier approves. The status bar shows `✦ checking` while a decision is in flight, classifier tokens count toward the session totals, and `/mode why` shows the latest denial's reason.
 
 Assistant commands additionally run inside OS-level process containment when a mechanism is available — bubblewrap on Linux (unprivileged user namespaces are probed first), Seatbelt on macOS (deprecated by Apple but functional). Contained commands can write only to the workspace, scratch space, and toolchain caches, and a deny mask that cannot be disabled hides `~/.ssh`, `~/.aws`, `~/.config/gh`, and shhh's own config and state directories (masked paths read as empty and outrank any write grant). The exec confirm prompt shows the containment state, `shhh code doctor` (or `/sandbox` in a session) reports the mechanism and resolved policy, and a policy that can't be enforced faithfully fails the command rather than running it bare. `/run` — your own command — is never contained.
@@ -331,6 +344,14 @@ A wrong turn costs one command, not the session: a checkpoint is recorded at the
 
 `shhh code` sessions can also manage named long-running processes — dev servers, watchers, test runners — through the `process` tool: start one (approved like any command, with safety warnings, allowlist matching, and mode policy applying to the command text), probe it with `status`, page through its captured output with `read`, feed its stdin with `input`, and tear it down with `stop`. Each process runs in its own process group with its working directory contained to the workspace and an environment of exactly `PATH` and `HOME` plus whatever vars the agent passes explicitly (which can never shadow those two). Recent stdout/stderr live in bounded ring buffers for paged reads, the full log (bounded) lands in the evidence store when the process ends, and `/ps` lists everything the session owns. `stop`, session end, cancel, and quit all terminate the full process tree — no orphans.
 
+`shhh code` can delegate scoped work to background **sub-agents**. The model spawns them with `spawn_agent` (you approve each spawn) in one of two roles: a **researcher** gets read-only tools plus the web against the real workspace, and a **writer** gets the full toolset against an *isolated git worktree* — its changes never touch your checkout directly, they come back as a single patch you review and apply. `/agents` (or Ctrl+A) is the agent manager: attach to a child's live session, steer it mid-run, cancel a turn, or kill it; `agent_report` collects a child's final report.
+
+Sub-agents inherit the parent session's permission state rather than re-litigating it. A child is clamped to your mode — it can never be more permissive than you are — and it inherits your session grants (`[a]` on a prompt), your command allowlist, the read-only inspection list, and, in auto mode, the same permission classifier the parent uses. That last one matters in practice: without it, an auto-mode session still stopped to ask about every command its children ran. Safety-flagged commands still prompt, plan mode still refuses, and every child approval is routed to you labeled with the agent's name.
+
+Which model a child runs on is configurable: `agents.model` sets the default for every sub-agent, `agents.profiles.<role>.model` overrides it per role (a cheap, fast model for wide research fan-out; the session model for writing code), and a `spawn_agent` call may name a `model` explicitly for one child. `"inherit"` at either level means the session model. `/model default <name>` persists the session default to your config file, and `/model agents <name>` persists the sub-agent model — both without leaving the session.
+
+Concurrent writers can't overwrite each other (separate worktrees, reviewed patches), but two patches over the same file still conflict. A writer spawn may declare `paths` — the globs it intends to change — and the supervisor refuses a second writer whose claim overlaps a live one, telling the model to sequence the work or narrow its scope instead. A declared scope is passed into the writer's own prompt, and when a patch touches files another agent's applied patch already changed, the approval card says so before you apply it.
+
 `shhh code` sessions also see their code the way an editor does, through the project's own language server. Common servers are auto-detected on PATH — `gopls`, `rust-analyzer`, `typescript-language-server`, `pyright` — and started lazily the first time a file they own is touched; no server on PATH is simply a no-op. After every applied `write_file`/`edit_file`, fresh diagnostics for the touched file are appended to the tool result (bounded, errors first), so the model sees the type error it just introduced and fixes it in the same round. The model also gets `definition` and `references` tools — point at a symbol occurrence by file, line, and identifier text and get bounded `file:line` answers — steering it away from grep when it needs actual semantics. Servers are owned by the session (shut down when it ends), every request is bounded by a timeout so a hung server can't wedge the agent loop, and `lsp.disabled = true` turns the whole thing off.
 
 Reviewing the agent's edits is a first-class surface, not raw text. Every diff — the approval preview and the transcript row an applied edit leaves behind — renders with syntax highlighting (by file type, with add/remove coloring layered over it), line numbers, and background-tinted intraline emphasis on the changed span of a modified line. An applied edit lands in the transcript as one collapsed row (`✎ edit path  +12 −4 · 2 hunks`); in focus mode (Ctrl+E), Enter expands it in place to a bounded unified view, and Enter again opens it full screen — scroll with `j`/`k`, jump hunks with `n`/`p`, and toggle a side-by-side layout with `s` (automatic on terminals ≥ 120 columns). The approval card offers the same full view with `d`. `/diff` shows the cumulative session diff — `git diff` against the workspace state the session started from — full screen with per-file sections.
@@ -352,6 +373,8 @@ Slash commands inside a chat session:
 | `/copy [code]` | Copy the last response (or just its code blocks) |
 | `/run [n]` | Run a code block from the last response (asks for confirmation, shows safety warnings; output goes back into the conversation). Bare `/run` opens a picker when the response holds several blocks |
 | `/model [name]` | Show or switch the model mid-session (same provider) |
+| `/model default [name]` | Show or persist the default model for new sessions (`provider.model`) |
+| `/model agents [name]` | Show or persist the model sub-agents run on (`agents.model`; `inherit` follows the session) |
 | `/compact` | Summarize the conversation via the model and continue from the summary (frees context) |
 | `/evidence [purge]` | Tool-output evidence store: reduction stats and size; `purge` deletes the stored originals |
 | `/gate run [suite]`, `/gate result` | Quality gate (`shhh code`): run a named suite of the project's own checks in the background, then show the verdict (marked stale if the tree changed) |

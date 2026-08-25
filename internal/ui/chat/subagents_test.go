@@ -16,7 +16,7 @@ import (
 // blockingEnv builds children whose stream blocks until the child context is
 // cancelled, so tests can observe a "running" child deterministically.
 func blockingEnv() subagent.EnvFactory {
-	return func(ctx context.Context, role subagent.Role, root string) (subagent.Env, error) {
+	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
 		stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			ch := make(chan provider.StreamEvent)
 			go func() {

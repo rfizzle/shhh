@@ -37,7 +37,7 @@ type scriptedEnv struct {
 }
 
 func (s *scriptedEnv) factory() EnvFactory {
-	return func(ctx context.Context, role Role, root string) (Env, error) {
+	return func(ctx context.Context, spec Spec) (Env, error) {
 		stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			if ctx.Err() != nil {
 				return nil, nil, ctx.Err()
@@ -364,7 +364,7 @@ func waitState(t *testing.T, sup *Supervisor, name string, want State) {
 func resumableEnv(finals ...string) EnvFactory {
 	var mu sync.Mutex
 	first := true
-	return func(ctx context.Context, role Role, root string) (Env, error) {
+	return func(ctx context.Context, spec Spec) (Env, error) {
 		stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			mu.Lock()
 			if first {
@@ -562,7 +562,7 @@ func TestSteerDuringFinalStreamStartsNextTurn(t *testing.T) {
 	started := make(chan struct{})
 	release := make(chan struct{})
 	var turnCount atomic.Int32
-	factory := func(ctx context.Context, role Role, root string) (Env, error) {
+	factory := func(ctx context.Context, spec Spec) (Env, error) {
 		stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			n := turnCount.Add(1)
 			ch := make(chan provider.StreamEvent, 2)
@@ -609,5 +609,225 @@ func TestSteerDuringFinalStreamStartsNextTurn(t *testing.T) {
 	}
 	if !transcriptHas(entries, EntryUser, "one more thing") {
 		t.Fatal("transcript missing the steering entry")
+	}
+}
+
+// spawnRaw calls spawn_agent and returns its error instead of failing.
+func spawnRaw(sup *Supervisor, args string) (string, error) {
+	exec := sup.WrapExecutor(func(string, json.RawMessage) (string, error) {
+		return "", errors.New("unexpected passthrough")
+	})
+	return exec(SpawnToolName, json.RawMessage(args))
+}
+
+// verdictProvider answers every classifier request with a scripted decision.
+type verdictProvider struct {
+	decision string
+	reason   string
+	calls    atomic.Int32
+}
+
+func (p *verdictProvider) StreamCompletion(ctx context.Context, msgs []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	p.calls.Add(1)
+	ch := make(chan provider.StreamEvent, 1)
+	ch <- provider.StreamEvent{
+		ToolCalls: []provider.ToolCall{{
+			ID:        "d1",
+			Name:      agent.DecisionToolName,
+			Arguments: `{"decision":"` + p.decision + `","reason":"` + p.reason + `"}`,
+		}},
+		Done: true,
+	}
+	close(ch)
+	return ch, nil
+}
+
+func (p *verdictProvider) Name() string { return "verdict" }
+
+// TestChildReadOnlyCommandNeverAsks: inspection commands auto-run for a child
+// in the strictest prompting mode, exactly as they do for the parent.
+func TestChildReadOnlyCommandNeverAsks(t *testing.T) {
+	env := &scriptedEnv{
+		steps:   gatedCommandSteps("git status"),
+		gated:   map[string]bool{tools.ExecCommandName: true},
+		execOut: "clean",
+	}
+	sup := newTestSupervisor(t, env)
+	sup.SetParentMode(agent.ModeManual)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"check the tree"}`)
+
+	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+	if !strings.Contains(report, "task complete") {
+		t.Fatalf("unexpected report: %s", report)
+	}
+	if !env.ranCommand.Load() {
+		t.Fatal("a read-only command should run without asking the user")
+	}
+}
+
+// TestChildAutoModeUsesClassifier: in auto mode a child's unlisted command is
+// judged by the same classifier the parent uses, instead of prompting.
+func TestChildAutoModeUsesClassifier(t *testing.T) {
+	env := &scriptedEnv{
+		steps:   gatedCommandSteps("go test ./..."),
+		gated:   map[string]bool{tools.ExecCommandName: true},
+		execOut: "PASS",
+	}
+	judge := &verdictProvider{decision: "allow", reason: "runs the requested tests"}
+	sup := New(context.Background(), Options{
+		Root:       t.TempDir(),
+		NewEnv:     env.factory(),
+		Classifier: agent.NewClassifier(judge, agent.ClassifierConfig{Model: "judge"}),
+	})
+	t.Cleanup(sup.Close)
+	sup.SetParentMode(agent.ModeAuto)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"run the tests"}`)
+
+	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+	if !strings.Contains(report, "task complete") {
+		t.Fatalf("unexpected report: %s", report)
+	}
+	if !env.ranCommand.Load() {
+		t.Fatal("the classifier approved the command; it should have run")
+	}
+	if judge.calls.Load() == 0 {
+		t.Fatal("the child should consult the classifier in auto mode")
+	}
+	var noted bool
+	for _, e := range sup.Transcript("researcher-1") {
+		if e.Kind == EntrySystem && strings.Contains(e.Text, "Auto-approved (classifier") {
+			noted = true
+		}
+	}
+	if !noted {
+		t.Fatal("the child transcript should record the classifier approval")
+	}
+}
+
+// TestChildClassifierDenyRefusesWithoutAsking: a denial comes back as a tool
+// error, never as a prompt.
+func TestChildClassifierDenyRefusesWithoutAsking(t *testing.T) {
+	env := &scriptedEnv{
+		steps: gatedCommandSteps("go install ./cmd/tool"),
+		gated: map[string]bool{tools.ExecCommandName: true},
+	}
+	judge := &verdictProvider{decision: "deny", reason: "installing tools was not requested"}
+	sup := New(context.Background(), Options{
+		Root:       t.TempDir(),
+		NewEnv:     env.factory(),
+		Classifier: agent.NewClassifier(judge, agent.ClassifierConfig{Model: "judge"}),
+	})
+	t.Cleanup(sup.Close)
+	sup.SetParentMode(agent.ModeAuto)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"install something"}`)
+
+	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+	if env.ranCommand.Load() {
+		t.Fatal("a denied command must not run")
+	}
+}
+
+// TestParentGrantsReachChildren: a session grant ([a]) the user gave the
+// parent is not re-asked once per child.
+func TestParentGrantsReachChildren(t *testing.T) {
+	env := &scriptedEnv{
+		steps:   gatedCommandSteps("go test ./..."),
+		gated:   map[string]bool{tools.ExecCommandName: true},
+		execOut: "PASS",
+	}
+	sup := newTestSupervisor(t, env)
+	sup.SetParentMode(agent.ModeManual)
+	sup.SetParentGrants(false, true)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"run the tests"}`)
+
+	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+	if !env.ranCommand.Load() {
+		t.Fatal("a session command grant should carry into children")
+	}
+}
+
+// TestChildModelResolution: ModelFor picks the child's model, a spawn
+// argument overrides it, and the choice reaches both the Env and the roster.
+func TestChildModelResolution(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{{text: "done"}, {text: "done"}}}
+	var seen []string
+	var mu sync.Mutex
+	base := env.factory()
+	sup := New(context.Background(), Options{
+		Root: t.TempDir(),
+		NewEnv: func(ctx context.Context, spec Spec) (Env, error) {
+			mu.Lock()
+			seen = append(seen, spec.Model)
+			mu.Unlock()
+			return base(ctx, spec)
+		},
+		ModelFor: func(role Role, requested string) string {
+			if requested != "" {
+				return requested
+			}
+			return "role-default"
+		},
+	})
+	t.Cleanup(sup.Close)
+
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"a"}`)
+	out := execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"b","model":"tiny-model"}`)
+	if !strings.Contains(out, "tiny-model") {
+		t.Fatalf("the spawn result should name the model: %s", out)
+	}
+	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+	execTool(t, sup, ReportToolName, `{"name":"researcher-2"}`)
+
+	mu.Lock()
+	defer mu.Unlock()
+	if len(seen) != 2 || seen[0] != "role-default" || seen[1] != "tiny-model" {
+		t.Fatalf("models handed to the env factory = %v, want [role-default tiny-model]", seen)
+	}
+	if st, ok := sup.Get("researcher-2"); !ok || st.Model != "tiny-model" {
+		t.Fatalf("roster should record the child's model, got %+v", st)
+	}
+}
+
+// TestWriterPathClaimsConflict: two live writers cannot claim overlapping
+// paths, so their patches cannot collide.
+func TestWriterPathClaimsConflict(t *testing.T) {
+	repo := initTestRepo(t)
+	env := &scriptedEnv{steps: []streamStep{{text: "done"}, {text: "done"}, {text: "done"}}}
+	sup := New(context.Background(), Options{Root: repo, NewEnv: env.factory()})
+	t.Cleanup(sup.Close)
+
+	if _, err := spawnRaw(sup, `{"role":"writer","task":"a","paths":["internal/ui/**"]}`); err != nil {
+		t.Fatalf("first writer should spawn: %v", err)
+	}
+	_, err := spawnRaw(sup, `{"role":"writer","task":"b","paths":["internal/ui/chat/model.go"]}`)
+	if err == nil || !strings.Contains(err.Error(), "already claims") {
+		t.Fatalf("an overlapping claim should be refused, got %v", err)
+	}
+	// A disjoint claim is fine.
+	if _, err := spawnRaw(sup, `{"role":"writer","task":"c","paths":["docs/**"]}`); err != nil {
+		t.Fatalf("a disjoint claim should spawn: %v", err)
+	}
+	// Paths are for writers only.
+	if _, err := spawnRaw(sup, `{"role":"researcher","task":"d","paths":["docs/**"]}`); err == nil {
+		t.Fatal("a researcher may not claim paths")
+	}
+}
+
+func TestPathsOverlap(t *testing.T) {
+	cases := []struct {
+		a, b string
+		want bool
+	}{
+		{"internal/ui/**", "internal/ui/chat/model.go", true},
+		{"internal/ui/chat/**", "internal/ui/**", true},
+		{"internal/ui/**", "internal/agent/**", false},
+		{"README.md", "README.md", true},
+		{"docs/a.md", "docs/b.md", false},
+		{"./docs/**", "docs/guide.md", true},
+	}
+	for _, c := range cases {
+		if got := pathsOverlap(c.a, c.b); got != c.want {
+			t.Errorf("pathsOverlap(%q, %q) = %v, want %v", c.a, c.b, got, c.want)
+		}
 	}
 }
