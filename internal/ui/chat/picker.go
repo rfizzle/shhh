@@ -7,8 +7,9 @@ package chat
 // generic statePick surface, so the session pickers built on it (/load,
 // /chats, /branches — S-080) only need options and an apply function.
 //
-// The session pickers (S-080) open only when there is something to pick: no
-// database, a read error, or an empty list falls through to the text message
+// The session pickers (S-080) and the /run code-block picker (S-081) open
+// only when there is something to pick: no database, a read error, an empty
+// list, or a lone code block falls through to the text message
 // handleSlashCommand has always printed.
 
 import (
@@ -63,8 +64,12 @@ func (m Model) updatePick(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.syncViewportHeight()
 		return m, nil
 	}
-	note := apply(&m, sel.Index)
-	m.appendEntry(entry{kind: entrySystem, text: note})
+	// An apply that hands the session to another surface — the /run picker
+	// into the confirm prompt (S-081) — returns no note and keeps the state
+	// it set instead of stateInput.
+	if note := apply(&m, sel.Index); note != "" {
+		m.appendEntry(entry{kind: entrySystem, text: note})
+	}
 	m.syncViewportHeight()
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()
@@ -229,4 +234,75 @@ func (m Model) openBranchPick() (tea.Model, tea.Cmd, bool) {
 		return m.switchToBranch(branches[idx].Name)
 	})
 	return model, cmd, true
+}
+
+// --- run picker (S-081) ---------------------------------------------------
+
+// runPreviewMax bounds the description row's flattened block preview so a
+// long block does not build a string the card only clips away.
+const runPreviewMax = 160
+
+// openRunPick opens the code-block picker behind bare /run when the last
+// response holds more than one block. Selecting a block hands off to the
+// existing confirm-run flow — safety warnings and y/n/a semantics unchanged.
+// It reports false when there is nothing to pick (no runner, no blocks, or a
+// single block), leaving the caller on the direct startRun path.
+func (m Model) openRunPick() (tea.Model, tea.Cmd, bool) {
+	if m.runFn == nil {
+		return m, nil, false
+	}
+	blocks := extractCodeBlockInfo(m.lastAssistantText())
+	if len(blocks) < 2 {
+		return m, nil, false
+	}
+	opts := make([]components.SelectOption, len(blocks))
+	for i, b := range blocks {
+		// A one-line block's preview is just its label again, so it gets no
+		// description row.
+		desc := runPickPreview(b.body)
+		if desc == blockHead(b.body) {
+			desc = ""
+		}
+		opts[i] = components.SelectOption{Label: runPickLabel(b), Desc: desc}
+	}
+	model, cmd := m.openPicker("Run a code block", opts, 0, func(m *Model, idx int) string {
+		m.pendingRun = blocks[idx].body
+		m.state = stateConfirmRun
+		return ""
+	})
+	return model, cmd, true
+}
+
+// runPickLabel is a block's picker row: its first line, then the fence's
+// language tag when it carried one, then how many lines it holds.
+func runPickLabel(b codeBlock) string {
+	head := blockHead(b.body)
+	if head == "" {
+		head = "(empty block)"
+	}
+	n := blockLines(b.body)
+	meta := fmt.Sprintf("%d lines", n)
+	if n == 1 {
+		meta = "1 line"
+	}
+	if b.lang != "" {
+		meta = b.lang + " · " + meta
+	}
+	return head + "  ·  " + meta
+}
+
+// runPickPreview flattens a block onto the description row: blank lines
+// dropped, line breaks shown as ⏎, capped at runPreviewMax.
+func runPickPreview(body string) string {
+	var parts []string
+	for _, line := range strings.Split(body, "\n") {
+		if trimmed := strings.TrimSpace(line); trimmed != "" {
+			parts = append(parts, trimmed)
+		}
+	}
+	preview := strings.Join(parts, " ⏎ ")
+	if r := []rune(preview); len(r) > runPreviewMax {
+		preview = strings.TrimRight(string(r[:runPreviewMax]), " ") + " …"
+	}
+	return preview
 }

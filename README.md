@@ -259,7 +259,7 @@ The status bar is a cockpit rail of session vitals: the active permission mode, 
 
 Typing `/` in the input opens a completion menu over the commands this session actually has wired — ↑↓ moves, Tab completes, Enter runs the highlighted command, Esc dismisses. Completion continues past the command name: subcommands (`/memory add`, `/sandbox prune`, `/ui verbosity high`) and known values (saved chat names for `/load`, branch names for `/branches`, the model catalog for `/model`, turn numbers for `/rewind`) complete the same way, filtered on the token under the cursor.
 
-Where a command's argument is really a choice from a known set, the bare command opens a select list instead of printing usage text: `/model` and `/mode` over the model catalog and the mode cycle, `/rewind` over the session's checkpoints, and `/load` / `/chats` over the saved chats (turn count and last-written time on each row) and `/branches` over the session's branch family (current branch marked and focused, each row naming its parent). ↑↓ moves, Enter applies, Esc cancels. With nothing to pick — no saved chats, no branches yet — the command keeps its plain text answer rather than opening an empty list.
+Where a command's argument is really a choice from a known set, the bare command opens a select list instead of printing usage text: `/model` and `/mode` over the model catalog and the mode cycle, `/rewind` over the session's checkpoints, and `/load` / `/chats` over the saved chats (turn count and last-written time on each row) and `/branches` over the session's branch family (current branch marked and focused, each row naming its parent). `/run` joins them when the last response holds several code blocks: each row shows the block's first line, its language, and how many lines it holds, with a flattened preview underneath, and picking one drops into the usual confirmation with its safety warnings intact. ↑↓ moves, Enter applies, Esc cancels. With nothing to pick — no saved chats, no branches yet, a single code block — the command keeps its plain text answer or its direct path rather than opening a one-row list.
 
 Slash commands inside a chat session:
 
@@ -268,7 +268,7 @@ Slash commands inside a chat session:
 | `/help` | Show commands and keybindings |
 | `/clear` | Start a new conversation (also `/new`) |
 | `/copy [code]` | Copy the last response (or just its code blocks) |
-| `/run [n]` | Run a code block from the last response (asks for confirmation, shows safety warnings; output goes back into the conversation) |
+| `/run [n]` | Run a code block from the last response (asks for confirmation, shows safety warnings; output goes back into the conversation). Bare `/run` opens a picker when the response holds several blocks |
 | `/model [name]` | Show or switch the model mid-session (same provider) |
 | `/compact` | Summarize the conversation via the model and continue from the summary (frees context) |
 | `/evidence [purge]` | Tool-output evidence store: reduction stats and size; `purge` deletes the stored originals |

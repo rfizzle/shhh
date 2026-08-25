@@ -28,6 +28,45 @@ func TestExtractCodeBlocks_None(t *testing.T) {
 	}
 }
 
+func TestExtractCodeBlockInfo_LanguageTags(t *testing.T) {
+	text := "```bash\nls -la\n```\n```\necho hi\n```\n~~~python title=x\nprint(1)\n~~~"
+	blocks := extractCodeBlockInfo(text)
+	if len(blocks) != 3 {
+		t.Fatalf("expected 3 blocks, got %d: %v", len(blocks), blocks)
+	}
+	want := []codeBlock{
+		{lang: "bash", body: "ls -la"},
+		{lang: "", body: "echo hi"},
+		{lang: "python", body: "print(1)"},
+	}
+	for i, w := range want {
+		if blocks[i] != w {
+			t.Errorf("block %d: got %+v, want %+v", i, blocks[i], w)
+		}
+	}
+}
+
+func TestBlockHeadAndLines(t *testing.T) {
+	cases := []struct {
+		body string
+		head string
+		n    int
+	}{
+		{"", "", 0},
+		{"\n\n", "", 0},
+		{"ls -la", "ls -la", 1},
+		{"  \n  echo hi\necho bye\n", "echo hi", 3},
+	}
+	for _, c := range cases {
+		if got := blockHead(c.body); got != c.head {
+			t.Errorf("blockHead(%q) = %q, want %q", c.body, got, c.head)
+		}
+		if got := blockLines(c.body); got != c.n {
+			t.Errorf("blockLines(%q) = %d, want %d", c.body, got, c.n)
+		}
+	}
+}
+
 func TestExtractCodeBlocks_UnclosedFence(t *testing.T) {
 	blocks := extractCodeBlocks("```bash\nls -la")
 	if len(blocks) != 0 {

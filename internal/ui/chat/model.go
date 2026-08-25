@@ -654,6 +654,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				if parts := strings.Fields(text); len(parts) > 0 && parts[0] == "/run" {
 					m.input.Reset()
+					// Bare /run with several code blocks opens the picker
+					// (S-081); one block, /run <n>, and every no-op case go
+					// straight to startRun.
+					if len(parts) == 1 {
+						if picked, cmd, ok := m.openRunPick(); ok {
+							return picked, cmd
+						}
+					}
 					result, entersConfirm := m.startRun(parts)
 					if !entersConfirm {
 						m.appendEntry(entry{kind: entrySystem, text: result})
@@ -1069,7 +1077,8 @@ func (m Model) View() string {
 
 // startRun resolves which code block from the last response to execute.
 // It returns either a message for the transcript, or entersConfirm=true after
-// switching to the confirmation state.
+// switching to the confirmation state. Bare /run takes the first block: the
+// several-blocks case is routed to the picker (S-081) before it gets here.
 func (m *Model) startRun(parts []string) (result string, entersConfirm bool) {
 	if m.runFn == nil {
 		return "Command execution is not available in this session.", false
@@ -1085,14 +1094,6 @@ func (m *Model) startRun(parts []string) (result string, entersConfirm bool) {
 			return fmt.Sprintf("Usage: /run [1-%d]", len(blocks)), false
 		}
 		idx = n - 1
-	} else if len(blocks) > 1 {
-		var sb strings.Builder
-		fmt.Fprintf(&sb, "The last response has %d code blocks:\n", len(blocks))
-		for i, b := range blocks {
-			fmt.Fprintf(&sb, "  %d. %s\n", i+1, firstLine(b))
-		}
-		sb.WriteString("Pick one with /run <n>.")
-		return sb.String(), false
 	}
 	m.pendingRun = blocks[idx]
 	m.state = stateConfirmRun

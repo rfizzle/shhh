@@ -1293,16 +1293,8 @@ func TestRun_ConfirmShowsSafetyWarning(t *testing.T) {
 	}
 }
 
-func TestRun_MultipleBlocks_RequiresIndex(t *testing.T) {
+func TestRun_MultipleBlocks_NumberedFormIsDirect(t *testing.T) {
 	m := runCapableModel("First:\n```bash\necho one\n```\nSecond:\n```bash\necho two\n```")
-
-	m = sendText(t, m, "/run")
-	if m.state != stateInput {
-		t.Fatal("ambiguous /run should stay in input state")
-	}
-	if len(m.transcript) == 0 || !strings.Contains(m.transcript[len(m.transcript)-1].text, "/run <n>") {
-		t.Fatal("expected a numbered list asking for /run <n>")
-	}
 
 	m = sendText(t, m, "/run 2")
 	if m.state != stateConfirmRun || m.pendingRun != "echo two" {

@@ -357,3 +357,153 @@ func TestBranchPick_NoDBKeepsTextMessage(t *testing.T) {
 		t.Fatalf("expected the persistence-unavailable notice, got %q", last.text)
 	}
 }
+
+// --- run picker (S-081) ---------------------------------------------------
+
+const twoBlockResponse = "First:\n```bash\necho one\n```\nThen:\n```python\nprint(\"a\")\nprint(\"b\")\n```"
+
+func TestRunPick_MultipleBlocksOpensPicker(t *testing.T) {
+	m := runCapableModel(twoBlockResponse)
+	m = sendText(t, m, "/run")
+
+	if m.state != statePick || m.picker == nil {
+		t.Fatalf("bare /run with several blocks should open the picker, got state=%d", m.state)
+	}
+	if len(m.picker.Options) != 2 {
+		t.Fatalf("expected a row per block, got %d", len(m.picker.Options))
+	}
+	if m.picker.Focus != 0 {
+		t.Fatalf("the first block should be focused, got %d", m.picker.Focus)
+	}
+	first := m.picker.Options[0].Label
+	if !strings.HasPrefix(first, "echo one") || !strings.Contains(first, "bash") || !strings.Contains(first, "1 line") {
+		t.Fatalf("row should carry first line, language, and line count, got %q", first)
+	}
+	if m.picker.Options[0].Desc != "" {
+		t.Fatalf("a one-line block's preview repeats its label, so it gets no description, got %q", m.picker.Options[0].Desc)
+	}
+	second := m.picker.Options[1]
+	if !strings.Contains(second.Label, "python") || !strings.Contains(second.Label, "2 lines") {
+		t.Fatalf("second row should be a 2-line python block, got %q", second.Label)
+	}
+	if !strings.Contains(second.Desc, `print("a") ⏎ print("b")`) {
+		t.Fatalf("description should preview the block, got %q", second.Desc)
+	}
+}
+
+func TestRunPick_SelectingEntersConfirm(t *testing.T) {
+	m := runCapableModel(twoBlockResponse)
+	m = sendText(t, m, "/run")
+	m = focusPick(t, m, 1)
+
+	if m.state != stateConfirmRun {
+		t.Fatalf("selecting a block should enter the confirm flow, got state=%d", m.state)
+	}
+	if m.pendingRun != "print(\"a\")\nprint(\"b\")" {
+		t.Fatalf("expected the second block pending, got %q", m.pendingRun)
+	}
+	if m.picker != nil {
+		t.Fatal("the picker should be dismissed once a block is chosen")
+	}
+	for _, e := range m.transcript {
+		if e.kind == entrySystem && e.text == "" {
+			t.Fatal("handing off to the confirm prompt should not append an empty note")
+		}
+	}
+	if !strings.Contains(m.View(), "Approve command") {
+		t.Fatal("the confirm card should render after selecting")
+	}
+}
+
+func TestRunPick_SelectedBlockKeepsSafetyWarnings(t *testing.T) {
+	m := runCapableModel("Safe:\n```bash\necho hi\n```\nNot:\n```bash\nrm -rf /\n```")
+	m = sendText(t, m, "/run")
+	m = focusPick(t, m, 1)
+
+	if m.state != stateConfirmRun {
+		t.Fatalf("expected confirm state, got %d", m.state)
+	}
+	if !strings.Contains(m.View(), "⚠") {
+		t.Fatal("a dangerous picked block should still show its safety warning")
+	}
+}
+
+func TestRunPick_EscReturnsToInputWithoutRunning(t *testing.T) {
+	m := runCapableModel(twoBlockResponse)
+	m = sendText(t, m, "/run")
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = updated.(Model)
+
+	if m.state != stateInput || m.picker != nil {
+		t.Fatalf("esc should dismiss the picker, got state=%d", m.state)
+	}
+	if m.pendingRun != "" {
+		t.Fatalf("esc should not stage a command, got %q", m.pendingRun)
+	}
+}
+
+func TestRunPick_SingleBlockGoesStraightToConfirm(t *testing.T) {
+	m := runCapableModel("Do this:\n```bash\necho hi\n```")
+	m = sendText(t, m, "/run")
+
+	if m.state != stateConfirmRun || m.picker != nil {
+		t.Fatalf("one block should skip the picker, got state=%d", m.state)
+	}
+	if m.pendingRun != "echo hi" {
+		t.Fatalf("expected 'echo hi' pending, got %q", m.pendingRun)
+	}
+}
+
+func TestRunPick_NumberedFormSkipsPicker(t *testing.T) {
+	m := runCapableModel(twoBlockResponse)
+	m = sendText(t, m, "/run 1")
+
+	if m.state != stateConfirmRun || m.picker != nil {
+		t.Fatalf("/run <n> should skip the picker, got state=%d", m.state)
+	}
+	if m.pendingRun != "echo one" {
+		t.Fatalf("expected 'echo one' pending, got %q", m.pendingRun)
+	}
+}
+
+func TestRunPick_NoRunnerKeepsTextMessage(t *testing.T) {
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleAssistant, Content: twoBlockResponse},
+	}
+	updated, _ := New(msgs, mockStream).Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	m := updated.(Model)
+
+	m = sendText(t, m, "/run")
+	if m.state != stateInput || m.picker != nil {
+		t.Fatalf("no runner should keep the text path, got state=%d", m.state)
+	}
+	if last := m.transcript[len(m.transcript)-1]; !strings.Contains(last.text, "not available") {
+		t.Fatalf("expected the 'not available' message, got %q", last.text)
+	}
+}
+
+func TestRunPick_UntaggedFenceAndBlankBlock(t *testing.T) {
+	m := runCapableModel("```\nls\n```\nand\n```\n\n```")
+	m = sendText(t, m, "/run")
+
+	if m.picker == nil {
+		t.Fatal("expected the picker to open")
+	}
+	if strings.Contains(m.picker.Options[0].Label, "·  ·") {
+		t.Fatalf("an untagged fence should not leave an empty language slot, got %q", m.picker.Options[0].Label)
+	}
+	if !strings.HasPrefix(m.picker.Options[1].Label, "(empty block)") {
+		t.Fatalf("an empty block needs a placeholder label, got %q", m.picker.Options[1].Label)
+	}
+}
+
+func TestRunPickPreview_CapsLongBlocks(t *testing.T) {
+	preview := runPickPreview(strings.Repeat("x", runPreviewMax*2))
+	if r := []rune(preview); len(r) > runPreviewMax+2 {
+		t.Fatalf("preview should be capped, got %d runes", len(r))
+	}
+	if !strings.HasSuffix(preview, "…") {
+		t.Fatalf("a capped preview should end in an ellipsis, got %q", preview)
+	}
+}
