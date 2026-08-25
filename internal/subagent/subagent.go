@@ -213,6 +213,10 @@ const (
 	EventAsk
 	// EventDone marks a child finished (done or failed).
 	EventDone
+	// EventPatch reports a child's patch landing in the parent's workspace,
+	// with both sides of every file it touched, so the parent can record it
+	// in the session changeset (S-097).
+	EventPatch
 )
 
 // Event is one supervisor notification for the parent front-end.
@@ -220,6 +224,25 @@ type Event struct {
 	Kind   EventKind
 	Ask    *Ask
 	Status Status
+	Patch  *PatchApplied
+}
+
+// PatchApplied is what a child's applied patch changed, file by file. The
+// parent's changeset store is the only reader: a child's edits happen in an
+// isolated worktree, so this — the moment the patch lands on the real
+// checkout — is when the session actually changed.
+type PatchApplied struct {
+	Agent string
+	Files []PatchedFile
+}
+
+// PatchedFile is one file of an applied patch, read from the real checkout
+// either side of `git apply`. Exists distinguishes an empty file from one the
+// patch created or removed.
+type PatchedFile struct {
+	Path                      string
+	Before, After             string
+	BeforeExists, AfterExists bool
 }
 
 // AskKind selects the approval card a routed request renders with.
@@ -1378,10 +1401,23 @@ func (s *Supervisor) reviewPatch(c *child) {
 	case !approved:
 		note = "the user declined the patch; no files were changed" + savedPatchNote(c.name, patch)
 	default:
+		// Both sides are read around `git apply`, in the real checkout: the
+		// child's own worktree edits never touched these files, so this is
+		// the only place the session can see what its workspace lost and
+		// gained (S-097).
+		before := readSides(c.repoTop, touched)
 		if applyErr := applyPatch(c.repoTop, patch); applyErr != nil {
 			note = "the patch failed to apply cleanly: " + firstLine(applyErr.Error()) + savedPatchNote(c.name, patch)
 		} else {
 			s.recordApplied(c.name, touched)
+			s.emit(Event{
+				Kind:   EventPatch,
+				Status: c.status(),
+				Patch: &PatchApplied{
+					Agent: c.name,
+					Files: patchedFiles(s.opts.Root, c.repoTop, touched, before, readSides(c.repoTop, touched)),
+				},
+			})
 			note = fmt.Sprintf("patch applied to the workspace (+%d −%d, %d file(s))", adds, dels, files)
 		}
 	}

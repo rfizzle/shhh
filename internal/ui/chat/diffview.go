@@ -5,10 +5,11 @@ package chat
 // session diff.
 
 import (
+	"fmt"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -17,14 +18,15 @@ import (
 // screen from focus mode.
 const maxDiffExpandedLines = 20
 
-// maxSessionDiffBytes bounds how large a /diff patch is parsed and rendered.
-const maxSessionDiffBytes = 4 << 20
-
-// WithSessionDiff wires /diff: fn returns the cumulative git diff of the
-// workspace against the session's starting state. Leave unset (nil) when the
-// workspace is not a git repository.
-func (m Model) WithSessionDiff(fn func() (string, error)) Model {
-	m.sessionDiff = fn
+// WithChangeset wires the per-turn changeset store and the git tracker that
+// answers whether a file was tracked when it was edited (S-097). Every
+// session has a store already; this replaces it — with a different bound, or
+// with the tracker a workspace inside a repository deserves.
+func (m Model) WithChangeset(store *changeset.Store, tracker *changeset.Tracker) Model {
+	if store != nil {
+		m.changes = store
+	}
+	m.tracker = tracker
 	return m
 }
 
@@ -36,27 +38,51 @@ func (m Model) systemNotice(text string) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// openSessionDiff shows the cumulative session diff full screen (/diff).
+// openSessionDiff shows the cumulative session diff full screen (/diff). It
+// reads the session's own changeset (S-097) rather than shelling out to git,
+// so it says the same thing in a directory that was never a repository — and
+// it says what this session changed, not what the working tree happens to
+// hold.
 func (m Model) openSessionDiff() (tea.Model, tea.Cmd) {
-	if m.sessionDiff == nil {
-		return m.systemNotice("The session diff is only available inside a git repository.")
-	}
-	patch, err := m.sessionDiff()
-	if err != nil {
-		return m.systemNotice("Error reading the session diff: " + err.Error())
-	}
-	if len(patch) > maxSessionDiffBytes {
-		return m.systemNotice("The session diff is too large to render here; use git diff directly.")
-	}
-	files := diff.ParsePatch(patch)
+	files := m.changes.Session()
 	if len(files) == 0 {
-		return m.systemNotice("No changes since the session started.")
+		return m.systemNotice(sessionDiffEmptyNotice(m.changes))
+	}
+	label := fmt.Sprintf("session diff · %d file(s)", len(files))
+	if dropped := m.changes.Evicted(); len(dropped) > 0 {
+		label += fmt.Sprintf(" · %d earlier turn(s) dropped", len(dropped))
 	}
 	return m.openDiffFull(&components.DiffView{
-		Path:      "session diff",
+		Path:      label,
 		Files:     files,
 		SyntaxFor: diffSyntax,
 	}, stateInput)
+}
+
+// sessionDiffEmptyNotice distinguishes a session that changed nothing from
+// one whose records were evicted — the second is a gap, not a quiet session.
+func sessionDiffEmptyNotice(store *changeset.Store) string {
+	if dropped := store.Evicted(); len(dropped) > 0 {
+		return fmt.Sprintf("No changes are still recorded: %d earlier turn(s) were dropped to stay inside the changeset store's size limit.", len(dropped))
+	}
+	return "No files have been changed this session."
+}
+
+// noteEvictedTurns says which turns the changeset store dropped to stay
+// inside its bound. Eviction costs the session its ability to review or undo
+// those turns, so it is a line in the transcript rather than a silent drop
+// (S-097).
+func (m *Model) noteEvictedTurns(evicted []int64) {
+	if len(evicted) == 0 {
+		return
+	}
+	labels := make([]string, len(evicted))
+	for i, n := range evicted {
+		labels[i] = fmt.Sprintf("%d", n)
+	}
+	m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
+		"The changeset store is full: turn %s dropped. Those turns can no longer be reviewed or undone.",
+		strings.Join(labels, ", "))})
 }
 
 // openDiffFull takes the given viewer full screen; esc returns to ret.

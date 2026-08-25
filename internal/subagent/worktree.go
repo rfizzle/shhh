@@ -109,6 +109,50 @@ func applyPatch(repoTop, patch string) error {
 	return nil
 }
 
+// fileSide is a file as it was at one moment: content, and whether it was
+// there at all.
+type fileSide struct {
+	text   string
+	exists bool
+}
+
+// readSides reads the given repo-relative paths from the real checkout,
+// reporting a missing file as absent rather than as an error — a patch that
+// creates a file has no before-content, and that is the fact the changeset
+// record needs (S-097).
+func readSides(repoTop string, paths []string) map[string]fileSide {
+	out := make(map[string]fileSide, len(paths))
+	for _, p := range paths {
+		if data, err := os.ReadFile(filepath.Join(repoTop, p)); err == nil {
+			out[p] = fileSide{text: string(data), exists: true}
+		} else {
+			out[p] = fileSide{}
+		}
+	}
+	return out
+}
+
+// patchedFiles pairs the reads taken either side of `git apply` into one
+// record per file; a file the patch created or removed is carried by its
+// Exists flags. Patch paths are relative to the repository top, which is not
+// where the session is standing when it was started from a subdirectory — so
+// each one is re-expressed against the session's own root, the way every
+// other path the user sees is.
+func patchedFiles(root, repoTop string, paths []string, before, after map[string]fileSide) []PatchedFile {
+	out := make([]PatchedFile, 0, len(paths))
+	for _, p := range paths {
+		b, a := before[p], after[p]
+		out = append(out, PatchedFile{
+			Path:         displayPath(root, filepath.Join(repoTop, p)),
+			Before:       b.text,
+			BeforeExists: b.exists,
+			After:        a.text,
+			AfterExists:  a.exists,
+		})
+	}
+	return out
+}
+
 var hunkHeaderRe = regexp.MustCompile(`^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@`)
 
 // PatchHunks parses a unified git patch into diff.Hunk values for the

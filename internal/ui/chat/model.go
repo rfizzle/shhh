@@ -14,6 +14,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/prompt"
@@ -299,11 +300,15 @@ type Model struct {
 	rewindSelect *components.Select
 	gitSnapshot  func() GitSnapshot
 	// Rich diff rendering (S-074): fullDiff is the viewer showing full
-	// screen, diffReturn where esc goes back to, sessionDiff the /diff
-	// source (git diff against the session's starting state).
-	fullDiff    *components.DiffView
-	diffReturn  state
-	sessionDiff func() (string, error)
+	// screen, diffReturn where esc goes back to.
+	fullDiff   *components.DiffView
+	diffReturn state
+	// Per-turn changeset store (S-097): changes records every applied edit
+	// with the content on both sides, keyed by turn, and is what /diff
+	// renders; tracker answers whether git knew about a file when it was
+	// edited, and is nil outside a repository.
+	changes *changeset.Store
+	tracker *changeset.Tracker
 	// Slash-command completion (S-078): completions is the filtered candidate
 	// list for the input value completeFor (a mismatch means stale → hidden),
 	// completeIdx the focused row, and completeDismissedFor the input value
@@ -386,13 +391,16 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 	s := components.NewSpinnerModel()
 
 	return Model{
-		agent:       agent.New(initialMessages, stream),
-		input:       ta,
-		spinner:     s,
-		state:       stateInput,
-		verbosity:   verbosityNormal,
-		atBottom:    true,
-		copyFn:      clipboard.Copy,
+		agent:     agent.New(initialMessages, stream),
+		input:     ta,
+		spinner:   s,
+		state:     stateInput,
+		verbosity: verbosityNormal,
+		atBottom:  true,
+		copyFn:    clipboard.Copy,
+		// Every session records what it changes; WithChangeset swaps in a
+		// store with a different bound or a git tracker (S-097).
+		changes:     changeset.New(changeset.DefaultMaxBytes),
 		sessionName: AutosaveName,
 	}
 }
@@ -829,6 +837,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.pendingApproval = nil
 		m.agent.ResolveApproval(msg.result)
 		m.recordToolEvent(req.call.Name, msg.duration, outcomeFromResult(msg.result))
+		m.noteEvictedTurns(msg.evicted)
 		// An applied edit lands in the transcript as a collapsed diff row
 		// (S-074, DESIGN-TUI.md §3a); failures keep the plain tool block so
 		// the error text stays visible.
@@ -1983,8 +1992,8 @@ func helpText() string {
   /attach [name] Attach to an agent's session and steer it (bare /attach lists)
   /detach        Back to your own session (also Esc while attached)
   /plan save [name]  Save the last plan/response to .shhh/plans/
-  /diff          Show the cumulative session diff full screen (git diff
-                 against the session's starting state; git repos only)
+  /diff          Show what this session changed, full screen — read from the
+                 session's own changeset, so it works outside a git repository
   /compact       Summarize the conversation and continue from the summary
   /rewind [n]    Rewind to before a user turn (bare /rewind picks interactively);
                  the abandoned tail is kept as a branch. Conversation only —

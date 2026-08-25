@@ -12,6 +12,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -68,6 +69,8 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 		// A finished child can no longer act on its asks (S-077).
 		m.purgeChildAsks(ev.Status.Name)
 		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("Agent %s: %s", ev.Status.Name, ev.Status.Detail)})
+	case subagent.EventPatch:
+		m.recordChildPatch(ev.Patch)
 	}
 	m.syncViewport()
 	m.viewport.SetContent(m.renderHistory())
@@ -75,6 +78,30 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 	}
 	return m, listenSubagents(m.subagents.Events())
+}
+
+// recordChildPatch files a child's applied patch in the session changeset
+// (S-097). A child edits inside its own worktree, so the patch landing on the
+// real checkout is the moment this session changed — and the record says
+// which agent's work it was.
+func (m *Model) recordChildPatch(p *subagent.PatchApplied) {
+	if p == nil {
+		return
+	}
+	var evicted []int64
+	for _, f := range p.Files {
+		evicted = append(evicted, m.changes.Add(m.turnCount, changeset.Record{
+			Path:         f.Path,
+			Before:       f.Before,
+			After:        f.After,
+			BeforeExists: f.BeforeExists,
+			AfterExists:  f.AfterExists,
+			Agent:        p.Agent,
+			Origin:       changeset.ChildPatch,
+			Track:        m.tracker.Track(f.Path),
+		})...)
+	}
+	m.noteEvictedTurns(evicted)
 }
 
 // activeChildAsk is the routed approval currently presentable: deferred

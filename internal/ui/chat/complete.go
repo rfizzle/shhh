@@ -141,7 +141,7 @@ var slashCommands = []slashCommand{
 	{name: "/plan", args: "save [name]", desc: "Save the last plan/response to .shhh/plans/",
 		argSpecs: staticArgs(argOption{"save", "Write it to .shhh/plans/"})},
 	{name: "/diff", desc: "Cumulative session diff, full screen",
-		enabled: func(m *Model) bool { return m.sessionDiff != nil }},
+		enabled: func(m *Model) bool { return m.changes != nil }},
 	{name: "/compact", desc: "Summarize the conversation and continue from the summary",
 		idleOnly: "it rewrites the conversation into a summary"},
 	{name: "/rewind", args: "[n]", desc: "Rewind to before a user turn (bare /rewind picks)",

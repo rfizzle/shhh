@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -171,30 +172,14 @@ func TestApprovalFullDiff_RoundTrips(t *testing.T) {
 	}
 }
 
-func TestSessionDiff_Unavailable(t *testing.T) {
+func TestSessionDiff_ReadsTheChangesetWithoutGit(t *testing.T) {
+	// No git wiring, no tracker: /diff is the session's own record, so it
+	// works in a directory that was never a repository (S-097).
 	m := gatedModel(t, nil, nil)
-	m.state = stateInput
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = updated.(Model) // consume no-op enter on the empty input
-	m.input.SetValue("/diff")
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = updated.(Model)
-	found := false
-	for _, e := range m.transcript {
-		if e.kind == entrySystem && strings.Contains(e.text, "only available inside a git repository") {
-			found = true
-		}
-	}
-	if !found {
-		t.Fatal("/diff without git wiring should say it is unavailable")
-	}
-}
-
-func TestSessionDiff_OpensFullScreen(t *testing.T) {
-	patch := "diff --git a/a.go b/a.go\n" +
-		"--- a/a.go\n+++ b/a.go\n" +
-		"@@ -1,1 +1,1 @@\n-old\n+new\n"
-	m := gatedModel(t, nil, nil).WithSessionDiff(func() (string, error) { return patch, nil })
+	m.changes.Add(1, changeset.Record{
+		Path: "a.go", Before: "old\n", After: "new\n",
+		BeforeExists: true, AfterExists: true, Track: changeset.TrackUnknown,
+	})
 	m.state = stateInput
 	m.input.SetValue("/diff")
 	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
@@ -216,8 +201,27 @@ func TestSessionDiff_OpensFullScreen(t *testing.T) {
 	}
 }
 
+func TestSessionDiff_SpansEveryTurn(t *testing.T) {
+	m := gatedModel(t, nil, nil)
+	m.changes.Add(1, changeset.Record{Path: "a.go", Before: "one\n", After: "one\ntwo\n", BeforeExists: true, AfterExists: true})
+	m.changes.Add(2, changeset.Record{Path: "a.go", Before: "one\ntwo\n", After: "one\ntwo\nthree\n", BeforeExists: true, AfterExists: true})
+	m.state = stateInput
+	m.input.SetValue("/diff")
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(Model)
+	if m.fullDiff == nil {
+		t.Fatal("/diff should open with the cumulative session change")
+	}
+	view := m.View()
+	for _, want := range []string{"two", "three"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the session diff should span both turns, missing %q:\n%s", want, view)
+		}
+	}
+}
+
 func TestSessionDiff_Empty(t *testing.T) {
-	m := gatedModel(t, nil, nil).WithSessionDiff(func() (string, error) { return "", nil })
+	m := gatedModel(t, nil, nil)
 	m.state = stateInput
 	m.input.SetValue("/diff")
 	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
@@ -227,11 +231,33 @@ func TestSessionDiff_Empty(t *testing.T) {
 	}
 	found := false
 	for _, e := range m.transcript {
-		if e.kind == entrySystem && strings.Contains(e.text, "No changes since the session started") {
+		if e.kind == entrySystem && strings.Contains(e.text, "No files have been changed this session") {
 			found = true
 		}
 	}
 	if !found {
 		t.Fatal("an empty session diff should note there are no changes")
+	}
+}
+
+// An evicted turn is a gap in the record, not a quiet session, and /diff says
+// which of the two it is (S-097).
+func TestSessionDiff_EvictedSaysSo(t *testing.T) {
+	m := gatedModel(t, nil, nil)
+	store := changeset.New(64)
+	big := strings.Repeat("x\n", 200)
+	store.Add(1, changeset.Record{Path: "a.go", After: big, AfterExists: true})
+	store.Add(2, changeset.Record{Path: "b.go", After: big, AfterExists: true})
+	m = m.WithChangeset(store, nil)
+
+	m.state = stateInput
+	m.input.SetValue("/diff")
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(Model)
+	if m.fullDiff == nil {
+		t.Fatal("the surviving turn should still render")
+	}
+	if !strings.Contains(m.View(), "dropped") {
+		t.Fatalf("the session diff should say earlier turns were dropped:\n%s", m.View())
 	}
 }

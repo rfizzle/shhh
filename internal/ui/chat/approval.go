@@ -10,6 +10,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/process"
@@ -57,6 +58,10 @@ type approvalRequest struct {
 	path    string      // approvalDiff: the file being modified
 	hunks   []diff.Hunk // approvalDiff: the change to show
 	summary string      // one-line description for transcript entries
+	// auto marks a call the session approved on the user's behalf — mode
+	// policy, a session grant, or the auto-mode classifier. It is what the
+	// changeset record's origin says afterwards (S-097).
+	auto bool
 	// memoryDraft is the proposed entry for approvalMemory (S-070).
 	memoryDraft memory.Draft
 }
@@ -67,6 +72,10 @@ type approvedToolDoneMsg struct {
 	runID    int
 	result   string
 	duration time.Duration
+	// evicted names the turns the changeset write dropped to stay inside its
+	// bound, so the session can say so rather than losing them silently
+	// (S-097).
+	evicted []int64
 }
 
 // MutationHook post-processes an applied file-modification tool result before
@@ -244,6 +253,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	switch decision, reason := m.policyDecision(req); decision {
 	case agent.Allow:
 		m.recordDecision(decisionAllow, reasonCode(reason))
+		req.auto = true
 		m.appendEntry(entry{kind: entrySystem, text: "Auto-approved (" + reason + "): " + req.summary})
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
@@ -308,6 +318,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 	switch decision, reason := agent.ResolveAuto(approvalAction(req), v); decision {
 	case agent.Allow:
 		m.recordDecision(decisionAllow, "classifier")
+		req.auto = true
 		m.appendEntry(entry{kind: entrySystem, text: "Auto-approved (classifier, " + elapsed + "): " + req.summary})
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
@@ -397,8 +408,14 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 	mutating := !registered && tools.IsMutating(call.Name)
 	reduce := m.evidence.Reduce
 	hook := m.mutationHook
+	// The changeset record is taken around the call, on this goroutine: the
+	// file as it is now, then the file the call leaves behind (S-097). Both
+	// reads happen next to the write, so a file that changed underneath the
+	// approval preview is recorded as it really was, not as it was previewed.
+	record := m.changeRecorder()
 	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
 		var result string
+		before := record.before()
 		start := time.Now()
 		if mutating {
 			result = agent.ExecuteWith(tools.ExecuteMutating, call)
@@ -411,8 +428,93 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 		} else {
 			result = a.ExecuteCall(call)
 		}
-		return approvedToolDoneMsg{runID: runID, result: result, duration: time.Since(start)}
+		evicted := record.after(before)
+		return approvedToolDoneMsg{runID: runID, result: result, duration: time.Since(start), evicted: evicted}
 	})
+}
+
+// changeRecording captures one approved file modification for the changeset
+// store. It is built on the UI goroutine and used on the executor's, which is
+// why it carries plain values and a store that locks.
+type changeRecording struct {
+	store   *changeset.Store
+	tracker *changeset.Tracker
+	turn    int64
+	path    string
+	origin  changeset.Origin
+}
+
+// changeRecorder describes what this approval would record. A call with no
+// file behind it (a command, a memory, a generic tool) records nothing.
+func (m Model) changeRecorder() changeRecording {
+	req := m.pendingApproval
+	if req == nil || req.kind != approvalDiff || req.path == "" {
+		return changeRecording{}
+	}
+	origin := changeset.Approved
+	if req.auto {
+		origin = changeset.AutoApproved
+	}
+	return changeRecording{
+		store:   m.changes,
+		tracker: m.tracker,
+		turn:    m.turnCount,
+		path:    req.path,
+		origin:  origin,
+	}
+}
+
+// fileState is a file as it was at one moment: content, and whether it was
+// there at all.
+type fileState struct {
+	text   string
+	exists bool
+	track  changeset.Tracking
+}
+
+// before reads the file the approved call is about to modify, along with
+// whether git knew about it — the input to the reversibility line elsewhere
+// in the UI.
+func (c changeRecording) before() fileState {
+	if c.path == "" {
+		return fileState{}
+	}
+	st := readFileState(c.path)
+	st.track = c.tracker.Track(c.path)
+	return st
+}
+
+// after records what the call actually left behind and returns the turns
+// evicted by the write. The gate is the content, not the tool's own account
+// of itself: a call that changed nothing records nothing, and a call that
+// changed a file records it whatever it went on to report. Undo depends on
+// the store knowing everything the workspace lost.
+func (c changeRecording) after(before fileState) []int64 {
+	if c.path == "" {
+		return nil
+	}
+	now := readFileState(c.path)
+	return c.store.Add(c.turn, changeset.Record{
+		Path:         c.path,
+		Before:       before.text,
+		After:        now.text,
+		BeforeExists: before.exists,
+		AfterExists:  now.exists,
+		Agent:        changeset.MainAgent,
+		Origin:       c.origin,
+		Track:        before.track,
+	})
+}
+
+// readFileState reads a file, reporting a missing one as absent rather than
+// as an error: a write that creates a file has no before-content, and that is
+// the fact the record needs.
+func readFileState(path string) fileState {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fileState{}
+	}
+	return fileState{text: string(data), exists: true}
 }
 
 // approvalCard assembles the components.ApprovalCard (DESIGN-TUI.md §2) for

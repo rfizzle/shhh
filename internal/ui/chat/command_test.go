@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 )
@@ -122,8 +123,9 @@ func TestCompletionMenu_HidesIdleOnlyCommandsWhileWorking(t *testing.T) {
 func TestSurface_TurnKeepsRunningUnderneath(t *testing.T) {
 	executor := func(name string, args json.RawMessage) (string, error) { return "read 3 lines", nil }
 	m := gatedModel(t, executor, nil)
-	m = m.WithSessionDiff(func() (string, error) {
-		return "diff --git a/x.go b/x.go\n--- a/x.go\n+++ b/x.go\n@@ -1 +1,2 @@\n one\n+two\n", nil
+	m.changes.Add(1, changeset.Record{
+		Path: "x.go", Before: "one\n", After: "one\ntwo\n",
+		BeforeExists: true, AfterExists: true,
 	})
 
 	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{

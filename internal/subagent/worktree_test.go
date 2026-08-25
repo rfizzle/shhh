@@ -148,3 +148,44 @@ func TestAddWorktreeNeedsGitRepo(t *testing.T) {
 		t.Fatal("expected an error outside a git repository")
 	}
 }
+
+// The changeset records a child's patch by reading the real checkout either
+// side of the apply, and the paths it reports are relative to the session's
+// root — not to the repository top, which is a different place whenever the
+// session was started from a subdirectory (S-097).
+func TestPatchedFiles_SidesAndSessionRelativePaths(t *testing.T) {
+	repoTop := t.TempDir()
+	root := filepath.Join(repoTop, "sub")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	before := map[string]fileSide{
+		"sub/edited.go": {text: "one\n", exists: true},
+		"sub/added.go":  {},
+		"gone.go":       {text: "bye\n", exists: true},
+	}
+	after := map[string]fileSide{
+		"sub/edited.go": {text: "one\ntwo\n", exists: true},
+		"sub/added.go":  {text: "new\n", exists: true},
+		"gone.go":       {},
+	}
+	files := patchedFiles(root, repoTop, []string{"sub/edited.go", "sub/added.go", "gone.go"}, before, after)
+	if len(files) != 3 {
+		t.Fatalf("expected 3 files, got %d", len(files))
+	}
+	if files[0].Path != "edited.go" {
+		t.Fatalf("a path under the session root should be relative to it, got %q", files[0].Path)
+	}
+	if files[0].Before != "one\n" || files[0].After != "one\ntwo\n" {
+		t.Fatalf("both sides should survive, got %+v", files[0])
+	}
+	if files[1].BeforeExists || !files[1].AfterExists {
+		t.Fatalf("a file the patch created should read as created, got %+v", files[1])
+	}
+	if !files[2].BeforeExists || files[2].AfterExists {
+		t.Fatalf("a file the patch removed should read as removed, got %+v", files[2])
+	}
+	if files[2].Path != filepath.Join(repoTop, "gone.go") {
+		t.Fatalf("a path outside the session root stays absolute, got %q", files[2].Path)
+	}
+}
