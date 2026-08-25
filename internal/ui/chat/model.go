@@ -350,15 +350,19 @@ type Model struct {
 	turnEnded     time.Time
 	turnTokensIn  int64
 	turnTokensOut int64
+	// contextTokens is what the provider last reported the request carrying;
+	// zero means nothing has been reported about the current message list, so
+	// the accounting estimates instead and says so (S-093).
 	contextTokens int64
-	// contextBurn is the last few rounds' context estimates — the series
-	// behind the rail's burn sparkline (S-092), bounded to the sparkline's
-	// cell count. The full per-turn usage ring, with category accounting, is
-	// S-093.
-	contextBurn  []float64
-	prices       *pricing.Table
-	modelName    string
-	updateNotice string
+	// vitals is the session's per-turn usage history and the burn series
+	// behind the rail's sparkline (S-093); projectTokens is the estimated
+	// size of the project context inside the system prompt, which the
+	// occupancy breakdown names separately.
+	vitals        vitals
+	projectTokens int64
+	prices        *pricing.Table
+	modelName     string
+	updateNotice  string
 }
 
 func New(initialMessages []provider.Message, stream StreamFunc) Model {
@@ -921,6 +925,7 @@ func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
 	m.turnCount++
 	m.turnStarted, m.turnEnded = time.Now(), time.Time{}
 	m.turnTokensIn, m.turnTokensOut = 0, 0
+	m.vitals.startTurn()
 	// A fresh user turn clears the notice rail's denial alert (S-082);
 	// lastDenial stays for /mode why.
 	m.denialNotice = ""
@@ -1339,21 +1344,19 @@ func formatToolArgs(raw string) string {
 	return strings.Join(parts, " ")
 }
 
+// accumulateUsage folds one request's usage into the session vitals and
+// reads the running totals back out, so the rail, the cockpit and /stats all
+// quote the same numbers from one place (S-093).
 func (m *Model) accumulateUsage(u *provider.Usage) {
-	if u != nil {
-		m.TotalTokensIn += int64(u.PromptTokens)
-		m.TotalTokensOut += int64(u.CompletionTokens)
-		m.turnTokensIn += int64(u.PromptTokens)
-		m.turnTokensOut += int64(u.CompletionTokens)
-		// The latest request's prompt plus its completion is what the next
-		// request will roughly carry as context.
-		m.contextTokens = int64(u.PromptTokens) + int64(u.CompletionTokens)
-		m.contextBurn = append(m.contextBurn, float64(m.contextTokens))
-		if n := len(m.contextBurn); n > contextBurnSamples {
-			m.contextBurn = m.contextBurn[n-contextBurnSamples:]
-		}
-		m.notifyUsage()
+	if u == nil {
+		return
 	}
+	cost, priced := m.usageCost(*u)
+	m.vitals.record(*u, cost, priced)
+	m.TotalTokensIn, m.TotalTokensOut = m.vitals.totalIn, m.vitals.totalOut
+	m.turnTokensIn, m.turnTokensOut = m.vitals.current.In, m.vitals.current.Out
+	m.contextTokens = m.vitals.lastContext
+	m.notifyUsage()
 }
 
 func (m *Model) finishStreaming() {
@@ -1567,8 +1570,8 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 		if label := m.spendLabel(m.TotalTokensIn, m.TotalTokensOut); strings.HasPrefix(label, "$") {
 			c.Spend = label
 		}
-		if m.contextTokens > 0 {
-			c.CtxPct = int(m.contextTokens * 100 / m.contextWindow())
+		if tokens := m.estimatedContextTokens(); tokens > 0 {
+			c.CtxPct = int(tokens * 100 / m.contextWindow())
 		}
 	}
 	// Steering messages waiting to be injected (S-058).
@@ -2024,7 +2027,7 @@ func (m *Model) clearConversation() {
 	m.resetTranscript()
 	m.checkpoints = nil
 	m.contextTokens = 0
-	m.contextBurn = nil
+	m.vitals.reset()
 	m.agent.ResetRounds()
 }
 

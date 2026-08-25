@@ -36,6 +36,10 @@ type ToolCall struct {
 type Usage struct {
 	PromptTokens     int
 	CompletionTokens int
+	// CachedTokens is the part of PromptTokens the provider served from its
+	// prompt cache, when it reports one; zero means "not reported", not
+	// "nothing cached" (S-093).
+	CachedTokens int
 }
 
 type StreamEvent struct {

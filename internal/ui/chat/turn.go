@@ -46,6 +46,10 @@ func (m *Model) setTurnState(s state) {
 	// freezes at what the turn took instead of counting on (S-092).
 	if s == stateInput && m.working() && !m.turnStarted.IsZero() {
 		m.turnEnded = time.Now()
+		// The turn's usage joins the session's history with its wall time
+		// (S-093), which is why the ring is closed here and not on the
+		// last usage report — a turn is more than its final request.
+		m.vitals.endTurn(m.turnEnded.Sub(m.turnStarted))
 	}
 	if m.state.isSurface() {
 		m.turnBack = s

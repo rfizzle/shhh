@@ -1052,7 +1052,7 @@ today's single-pane layout is untouched (§8c).
 | THIS TURN | step progress meter, `step 3 of 4`, tool count, elapsed |
 | CHANGES | `+N −M` total, one row per changed file with its rail and glyph, failing-test state, `[v] review · [u] undo turn` |
 | AGENTS | running children — lane meter, steps, spend, current target and tool count |
-| CONTEXT | percent of the window, meter, tokens, the per-round burn sparkline |
+| CONTEXT | percent of the window, meter, tokens, the per-round burn sparkline (or `estimated`) |
 | SPEND | turn total split main / children, model, session total |
 
 ### 15b. Rules
@@ -1069,6 +1069,13 @@ today's single-pane layout is untouched (§8c).
   dismissal.
 - Transcript wrapping uses the reduced 93-column pane width, not the terminal
   width.
+- **A number nobody reported says so.** Occupancy is provider-reported where
+  a response carried usage, and the session's own estimate everywhere else —
+  before the first response, after a trim, after `/compact` or a rewind. An
+  estimate prefixes its token count with `~` and writes `estimated` where the
+  burn sparkline would go, so the hedge survives a monochrome terminal. The
+  meter and its percentage are unchanged: an estimate is still the best
+  number there is, it is just not a measurement.
 
 The vitals rail on the frame (§12) stays as it is. The inspector rail is
 turn-scoped and historical; the vitals rail is session-scoped and live. They

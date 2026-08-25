@@ -198,29 +198,29 @@ func (m Model) inspectorAgents() []components.InspectorAgent {
 
 // inspectorContext reports occupancy against the model's window, with the
 // same thresholds the status bar and S-055's trim warnings use, plus the
-// per-round burn behind the sparkline. A session with fewer than two rounds
-// reported has no trend, and the row is then omitted rather than drawn flat.
+// per-round burn behind the sparkline (S-093). A session with fewer than two
+// rounds reported has no trend, and the row says the number is an estimate
+// rather than drawing a flat line.
 func (m Model) inspectorContext() *components.InspectorContext {
-	tokens := m.estimatedContextTokens()
+	b := m.contextAccounting()
+	tokens := b.total()
 	if tokens <= 0 {
 		return nil
 	}
 	window := m.contextWindow()
 	c := components.InspectorContext{
-		Pct:      int(tokens * 100 / window),
-		Tokens:   tokens,
-		Window:   window,
-		WarnPct:  warnThresholdPercent,
-		AlertPct: trimThresholdPercent,
+		Pct:       int(tokens * 100 / window),
+		Tokens:    tokens,
+		Window:    window,
+		WarnPct:   warnThresholdPercent,
+		AlertPct:  trimThresholdPercent,
+		Estimated: !b.Reported,
 	}
 	if m.TotalTokensIn != 0 || m.TotalTokensOut != 0 {
 		c.Tokens1 = "↑" + formatTokenCount(m.TotalTokensIn)
 		c.Tokens2 = "↓" + formatTokenCount(m.TotalTokensOut)
 	}
-	// One sample is a dot, not a trend.
-	if len(m.contextBurn) > 1 {
-		c.Burn = m.contextBurn
-	}
+	c.Burn = m.vitals.series()
 	return &c
 }
 

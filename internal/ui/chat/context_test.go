@@ -210,8 +210,11 @@ func TestCompact_RestartsFromSummary(t *testing.T) {
 	if m.compacting || m.state != stateInput {
 		t.Fatalf("compaction should finish back at input, compacting=%v state=%d", m.compacting, m.state)
 	}
-	if want := estimateMessageTokens(m.Messages()); m.contextTokens != want {
-		t.Fatalf("context estimate should reset to %d, got %d", want, m.contextTokens)
+	if m.contextTokens != 0 {
+		t.Fatalf("the pre-compaction report describes a discarded conversation, got %d", m.contextTokens)
+	}
+	if want := estimateMessageTokens(m.Messages()); m.estimatedContextTokens() != want {
+		t.Fatalf("context estimate should reset to %d, got %d", want, m.estimatedContextTokens())
 	}
 	last := m.transcript[len(m.transcript)-1]
 	if last.kind != entryAssistant || last.text != "the summary" {

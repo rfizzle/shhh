@@ -106,6 +106,7 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 		usage := &Usage{
 			PromptTokens:     int(accumulated.Usage.InputTokens),
 			CompletionTokens: int(accumulated.Usage.OutputTokens),
+			CachedTokens:     int(accumulated.Usage.CacheReadInputTokens),
 		}
 
 		var toolCalls []ToolCall

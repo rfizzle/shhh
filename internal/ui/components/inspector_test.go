@@ -28,6 +28,26 @@ func fullRail() InspectorRail {
 	}
 }
 
+// A context nobody vouched for says so, in a word and not just a sigil, so
+// the claim survives a monochrome terminal (S-093).
+func TestInspectorContext_EstimatedSaysSo(t *testing.T) {
+	r := InspectorRail{Context: &InspectorContext{
+		Pct: 41, Tokens: 82000, Window: 200000, Estimated: true,
+	}}
+	view := stripANSI(r.View(InspectorWidth, 0))
+	for _, want := range []string{"CONTEXT", "41% of 200k", "~82k", "estimated"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("an estimated context should show %q:\n%s", want, view)
+		}
+	}
+	// A reported one states the number plainly, with no hedge.
+	reported := InspectorRail{Context: &InspectorContext{Pct: 41, Tokens: 82000, Window: 200000}}
+	view = stripANSI(reported.View(InspectorWidth, 0))
+	if strings.Contains(view, "estimated") || strings.Contains(view, "~82k") {
+		t.Fatalf("a reported context should not hedge:\n%s", view)
+	}
+}
+
 func TestInspectorRail_BlockOrderAndContents(t *testing.T) {
 	view := stripANSI(fullRail().View(InspectorWidth, 0))
 	for _, want := range []string{
@@ -213,8 +233,8 @@ func TestInspectorElapsedAndTokens(t *testing.T) {
 		{900 * time.Millisecond, "0.9s"}, {12 * time.Second, "12s"},
 		{64 * time.Second, "1m 04s"}, {2 * time.Hour, "120m 00s"},
 	} {
-		if got := inspectorElapsed(c.d); got != c.want {
-			t.Fatalf("inspectorElapsed(%s) = %q, want %q", c.d, got, c.want)
+		if got := FormatElapsed(c.d); got != c.want {
+			t.Fatalf("FormatElapsed(%s) = %q, want %q", c.d, got, c.want)
 		}
 	}
 	for _, c := range []struct {

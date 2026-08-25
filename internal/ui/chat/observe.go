@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // Observer receives content-free session events. Any callback may be nil.
@@ -110,65 +110,61 @@ func (m *Model) recordDecision(decision, reason string) {
 	}
 }
 
-// contextBreakdown is the /stats occupancy estimate: how the conversation's
-// token budget splits across the system prompt, tool definitions, user and
-// assistant messages, and tool results.
-type contextBreakdown struct {
-	System      int64
-	Tools       int64
-	Messages    int64
-	ToolResults int64
-}
-
-func (b contextBreakdown) total() int64 {
-	return b.System + b.Tools + b.Messages + b.ToolResults
-}
-
-func (m Model) contextBreakdown() contextBreakdown {
-	b := contextBreakdown{Tools: m.toolDefTokens}
-	for i, msg := range m.agent.Messages() {
-		switch {
-		case i == 0 && msg.Role == provider.RoleSystem:
-			b.System += agent.EstimateTokens(msg.Content)
-		case msg.Role == provider.RoleTool:
-			b.ToolResults += agent.EstimateTokens(msg.Content)
-		default:
-			b.Messages += agent.EstimateTokens(msg.Content)
-			for _, tc := range msg.ToolCalls {
-				b.Messages += agent.EstimateTokens(tc.Arguments)
-			}
-		}
-	}
-	return b
-}
+// The context occupancy breakdown itself lives with the rest of the session
+// vitals (S-093, vitals.go), so /stats and the inspector rail quote one
+// source rather than two estimates that drift.
 
 // statsReport renders /stats: the current session's context occupancy
-// breakdown and cumulative spend.
+// breakdown and cumulative spend, from the same accounting the inspector
+// rail reads (S-093).
 func (m Model) statsReport() string {
-	b := m.contextBreakdown()
+	b := m.contextAccounting()
+	source := "estimated"
+	if b.Reported {
+		source = "provider-reported"
+	}
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "Context occupancy (~%s estimated of %s window):\n",
-		formatTokenCount(b.total()), formatTokenCount(m.contextWindow()))
-	fmt.Fprintf(&sb, "  system prompt     ~%s\n", formatTokenCount(b.System))
-	fmt.Fprintf(&sb, "  tool definitions  ~%s\n", formatTokenCount(b.Tools))
-	fmt.Fprintf(&sb, "  messages          ~%s\n", formatTokenCount(b.Messages))
-	fmt.Fprintf(&sb, "  tool results      ~%s\n", formatTokenCount(b.ToolResults))
-	if m.contextTokens > 0 {
-		fmt.Fprintf(&sb, "  last request carried ~%s (provider-reported)\n", formatTokenCount(m.contextTokens))
+	fmt.Fprintf(&sb, "Context occupancy (~%s of %s window, %s):\n",
+		formatTokenCount(b.total()), formatTokenCount(m.contextWindow()), source)
+	for _, row := range []struct {
+		label  string
+		tokens int64
+		always bool
+	}{
+		{"system prompt", b.System, true},
+		{"project context", b.Project, false},
+		{"tool definitions", b.Tools, true},
+		{"messages", b.Messages, true},
+		{"tool results", b.ToolResults, true},
+	} {
+		if row.tokens == 0 && !row.always {
+			continue
+		}
+		fmt.Fprintf(&sb, "  %-17s ~%s\n", row.label, formatTokenCount(row.tokens))
 	}
 
-	spend := fmt.Sprintf("Session spend: ↑%s ↓%s tokens", formatTokenCount(m.TotalTokensIn), formatTokenCount(m.TotalTokensOut))
-	if m.prices != nil && m.modelName != "" {
-		if inCost, outCost, found := m.prices.Cost(m.modelName, m.TotalTokensIn, m.TotalTokensOut); found {
-			total := inCost + outCost
-			if total < 0.01 {
-				spend += fmt.Sprintf("  $%.4f", total)
-			} else {
-				spend += fmt.Sprintf("  $%.2f", total)
-			}
-		}
+	spend := fmt.Sprintf("Session spend: ↑%s ↓%s tokens",
+		formatTokenCount(m.vitals.totalIn), formatTokenCount(m.vitals.totalOut))
+	if m.vitals.totalCached > 0 {
+		spend += fmt.Sprintf(" (%s cached)", formatTokenCount(m.vitals.totalCached))
+	}
+	if m.vitals.priced {
+		spend += "  " + formatCost(m.vitals.totalCost)
 	}
 	sb.WriteString(spend + "\n")
 	fmt.Fprintf(&sb, "Turns: %d", m.turnCount)
+	if t, ok := m.vitals.lastTurn(); ok {
+		fmt.Fprintf(&sb, " · last turn ↑%s ↓%s in %s",
+			formatTokenCount(t.In), formatTokenCount(t.Out), components.FormatElapsed(t.Elapsed))
+	}
 	return sb.String()
+}
+
+// formatCost is the shared dollar format: four decimals below a cent, two
+// above, so a cheap session is not reported as $0.00.
+func formatCost(v float64) string {
+	if v < 0.01 {
+		return fmt.Sprintf("$%.4f", v)
+	}
+	return fmt.Sprintf("$%.2f", v)
 }

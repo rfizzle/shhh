@@ -61,32 +61,34 @@ func (m Model) warnThreshold() int64 {
 // contextSeverity classifies how close the context estimate is to the trim
 // threshold: 0 normal, 1 approaching (warn), 2 at or over the threshold.
 func (m Model) contextSeverity() int {
+	tokens := m.estimatedContextTokens()
 	switch {
-	case m.contextTokens >= m.trimThreshold():
+	case tokens >= m.trimThreshold():
 		return 2
-	case m.contextTokens >= m.warnThreshold():
+	case tokens >= m.warnThreshold():
 		return 1
 	}
 	return 0
 }
 
-// estimatedContextTokens prefers the provider-reported context size and falls
-// back to a character-based estimate before any usage has arrived (e.g. a
-// freshly resumed session).
+// estimatedContextTokens is what the next request will carry: the provider's
+// reported size when one has arrived, else the category accounting's own
+// estimate (S-093). Every surface reads it through contextAccounting, so the
+// rails, /stats and the trim thresholds cannot quote different numbers.
 func (m Model) estimatedContextTokens() int64 {
-	if m.contextTokens > 0 {
-		return m.contextTokens
-	}
-	return estimateMessageTokens(m.agent.Messages())
+	return m.contextAccounting().total()
 }
 
 // trimContext elides the oldest tool results until the context estimate is
 // back under the trim threshold, returning how many were elided. The message
 // surgery itself lives with the agent's message list.
 func (m *Model) trimContext() int {
-	elided, est := m.agent.TrimOldToolResults(m.estimatedContextTokens(), m.trimThreshold())
+	elided, _ := m.agent.TrimOldToolResults(m.estimatedContextTokens(), m.trimThreshold())
 	if elided > 0 {
-		m.contextTokens = est
+		// What the provider reported described the untrimmed conversation, so
+		// it no longer describes anything: the accounting re-derives the size
+		// from the messages that remain, and says it is estimating (S-093).
+		m.contextTokens = 0
 	}
 	return elided
 }
@@ -147,9 +149,10 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	rebuilt = append(rebuilt, provider.Message{Role: provider.RoleUser, Content: compactContextMessage(summary)})
 	m.agent.SetMessages(rebuilt)
 	m.agent.ResetRounds()
-	m.contextTokens = estimateMessageTokens(rebuilt)
+	// Nothing has been reported about the rebuilt conversation yet.
+	m.contextTokens = 0
 	// The burn series described the conversation that was just discarded.
-	m.contextBurn = nil
+	m.vitals.clearBurn()
 	m.resetTranscript()
 	// Pre-compaction checkpoints point into the discarded conversation;
 	// rebuild them from what remains (S-069).

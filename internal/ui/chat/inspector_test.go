@@ -283,7 +283,7 @@ func TestInspectorContext_BurnSparkline(t *testing.T) {
 	for i := 0; i < 12; i++ {
 		m.accumulateUsage(&provider.Usage{PromptTokens: 1000 * (i + 1), CompletionTokens: 100})
 	}
-	if got := len(m.contextBurn); got != contextBurnSamples {
+	if got := len(m.vitals.burn); got != contextBurnSamples {
 		t.Fatalf("the burn series is bounded to %d samples, got %d", contextBurnSamples, got)
 	}
 	rail := m.inspectorData()
@@ -296,8 +296,8 @@ func TestInspectorContext_BurnSparkline(t *testing.T) {
 	}
 	// A cleared conversation has no history to plot.
 	m.clearConversation()
-	if len(m.contextBurn) != 0 {
-		t.Fatalf("/clear resets the burn series: %+v", m.contextBurn)
+	if len(m.vitals.burn) != 0 {
+		t.Fatalf("/clear resets the burn series: %+v", m.vitals.burn)
 	}
 }
 

@@ -81,6 +81,7 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 				usage = &Usage{
 					PromptTokens:     int(resp.UsageMetadata.PromptTokenCount),
 					CompletionTokens: int(resp.UsageMetadata.CandidatesTokenCount),
+					CachedTokens:     int(resp.UsageMetadata.CachedContentTokenCount),
 				}
 			}
 			if len(resp.Candidates) > 0 {

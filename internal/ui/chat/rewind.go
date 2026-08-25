@@ -153,7 +153,8 @@ func (m *Model) rewindToTurn(n int) string {
 	kept := append([]checkpoint(nil), m.checkpoints[:n-1]...)
 	m.loadConversation(full[:cp.index])
 	m.checkpoints = kept
-	m.contextTokens = estimateMessageTokens(m.agent.Messages())
+	// The rewound conversation is not the one the provider reported on.
+	m.contextTokens = 0
 	m.agent.ResetRounds()
 
 	lines := []string{
@@ -281,7 +282,7 @@ func (m *Model) switchToBranch(target string) string {
 	}
 	m.loadConversation(msgs)
 	m.sessionName = target
-	m.contextTokens = estimateMessageTokens(msgs)
+	m.contextTokens = 0
 	m.agent.ResetRounds()
 	return fmt.Sprintf("Switched to branch %q (%d messages).", target, len(msgs))
 }

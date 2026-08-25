@@ -74,7 +74,8 @@ func TestOpenAIResponses_StreamsText(t *testing.T) {
 		`data: {"type":"response.created"}`,
 		`data: {"type":"response.output_text.delta","delta":"Hello"}`,
 		`data: {"type":"response.output_text.delta","delta":", world"}`,
-		`data: {"type":"response.completed","response":{"status":"completed","output":[],"usage":{"input_tokens":11,"output_tokens":3}}}`,
+		`data: {"type":"response.completed","response":{"status":"completed","output":[],` +
+			`"usage":{"input_tokens":11,"output_tokens":3,"input_tokens_details":{"cached_tokens":7}}}}`,
 	}, nil)
 
 	p := newTestResponses(srv.URL, "gpt-5.6-terra")
@@ -92,7 +93,7 @@ func TestOpenAIResponses_StreamsText(t *testing.T) {
 	if len(calls) != 0 {
 		t.Fatalf("expected no tool calls, got %v", calls)
 	}
-	if usage == nil || usage.PromptTokens != 11 || usage.CompletionTokens != 3 {
+	if usage == nil || usage.PromptTokens != 11 || usage.CompletionTokens != 3 || usage.CachedTokens != 7 {
 		t.Fatalf("unexpected usage: %+v", usage)
 	}
 }

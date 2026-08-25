@@ -136,13 +136,17 @@ func modelListerFor(p provider.Provider) func(context.Context) ([]string, error)
 }
 
 type sessionEnv struct {
-	cfg         config.Config
-	prov        provider.Provider
-	modelName   string
-	sysPrompt   string
-	messages    []provider.Message
-	stream      agent.StreamFunc
-	switchModel func(string)
+	cfg       config.Config
+	prov      provider.Provider
+	modelName string
+	sysPrompt string
+	// projectTokens is the estimated context cost of the project context
+	// injected into the system prompt, which /stats and the inspector rail
+	// name as its own occupancy category (S-093).
+	projectTokens int64
+	messages      []provider.Message
+	stream        agent.StreamFunc
+	switchModel   func(string)
 }
 
 func buildSessionEnv(cmd *cobra.Command, session chatSession) (*sessionEnv, error) {
@@ -166,7 +170,8 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession) (*sessionEnv, erro
 	}
 
 	info := shell.Detect()
-	promptExtra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra, project.FindContext(), session.promptExtra)
+	projectContext := project.FindContext()
+	promptExtra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra, projectContext, session.promptExtra)
 	sysPrompt := session.buildPrompt(info, promptExtra)
 
 	messages := []provider.Message{
@@ -199,12 +204,13 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession) (*sessionEnv, erro
 	}
 
 	return &sessionEnv{
-		cfg:       cfg,
-		prov:      p,
-		modelName: resolved.Model,
-		sysPrompt: sysPrompt,
-		messages:  messages,
-		stream:    stream,
+		cfg:           cfg,
+		prov:          p,
+		modelName:     resolved.Model,
+		sysPrompt:     sysPrompt,
+		projectTokens: agent.EstimateTokens(projectContext),
+		messages:      messages,
+		stream:        stream,
 		switchModel: func(name string) {
 			modelMu.Lock()
 			currentModel = name
@@ -367,6 +373,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithTitle(session.title).
 		WithObserver(recorder.observer()).
 		WithToolTokenEstimate(estimateToolDefTokens(session.toolDefs)).
+		WithProjectContextTokens(env.projectTokens).
 		WithToolExecutor(executor).
 		WithDB(db).
 		WithPricing(prices, env.modelName).

@@ -52,8 +52,11 @@ type responseOutputItem struct {
 }
 
 type responseUsage struct {
-	InputTokens  int `json:"input_tokens"`
-	OutputTokens int `json:"output_tokens"`
+	InputTokens        int `json:"input_tokens"`
+	OutputTokens       int `json:"output_tokens"`
+	InputTokensDetails struct {
+		CachedTokens int `json:"cached_tokens"`
+	} `json:"input_tokens_details"`
 }
 
 type responseError struct {
@@ -109,6 +112,7 @@ func streamResponses(body io.ReadCloser, classify func(error) error) <-chan Stre
 					usage = &Usage{
 						PromptTokens:     ev.Response.Usage.InputTokens,
 						CompletionTokens: ev.Response.Usage.OutputTokens,
+						CachedTokens:     ev.Response.Usage.InputTokensDetails.CachedTokens,
 					}
 				}
 				calls := toolCallsFromOutput(ev.Response.Output)

@@ -88,13 +88,18 @@ type InspectorContext struct {
 	Pct              int
 	Tokens, Window   int64
 	Tokens1, Tokens2 string // the ↑in and ↓out labels
-	// Burn is the per-round context series behind the sparkline; empty until
-	// the session keeps that history (S-093), and the row is then omitted
-	// rather than drawn flat.
+	// Burn is the per-round context series behind the sparkline, fed from the
+	// session's vitals history (S-093). One sample is a dot, not a trend, so
+	// the host sends nothing until it has two and the row says "estimated"
+	// instead of drawing a flat line.
 	Burn []float64
 	// WarnPct/AlertPct override the meter's threshold colors (0 keeps the
 	// defaults), so the rail matches the host's own trim warnings.
 	WarnPct, AlertPct int
+	// Estimated says the occupancy is the host's own estimate rather than a
+	// provider-reported size, and the block says so in words (S-093) — a
+	// number nobody vouched for should not look like one that was.
+	Estimated bool
 }
 
 // InspectorSpend is the SPEND block: this turn's cost, how it split between
@@ -244,7 +249,7 @@ func (r InspectorRail) turnBlock(width int) (railBlock, bool) {
 		elapsed = "total"
 	}
 	b.rows = append(b.rows, indentRow(dimStyle.Render(fmt.Sprintf("%s · %s %s",
-		plural(t.Tools, "tool"), inspectorElapsed(t.Elapsed), elapsed)), width))
+		plural(t.Tools, "tool"), FormatElapsed(t.Elapsed), elapsed)), width))
 	return b, true
 }
 
@@ -306,15 +311,24 @@ func (r InspectorRail) contextBlock(width int) (railBlock, bool) {
 	style := ctxStyle(pct, c.WarnPct, c.AlertPct)
 	b := railBlock{heading: railHeading("CONTEXT",
 		style.Render(fmt.Sprintf("%d%% of %s", pct, formatTokens(c.Window))), style, width)}
-	b.rows = append(b.rows, railRow(style.Render(meterCells(pct, inspectorCtxCells)),
-		style.Render(formatTokens(c.Tokens)), width, inspectorIndent))
-	tokens := strings.TrimSpace(c.Tokens1 + " " + c.Tokens2)
-	spark := ""
-	if len(c.Burn) > 0 {
-		spark = dimmerStyle.Render(sparkCells(c.Burn, inspectorSparkCell)) + " " + dimStyle.Render("per round")
+	count := formatTokens(c.Tokens)
+	if c.Estimated {
+		count = "~" + count
 	}
-	if spark != "" || tokens != "" {
-		b.rows = append(b.rows, railRow(spark, dimStyle.Render(tokens), width, inspectorIndent))
+	b.rows = append(b.rows, railRow(style.Render(meterCells(pct, inspectorCtxCells)),
+		style.Render(count), width, inspectorIndent))
+	tokens := strings.TrimSpace(c.Tokens1 + " " + c.Tokens2)
+	lead := ""
+	switch {
+	case len(c.Burn) > 0:
+		lead = dimmerStyle.Render(sparkCells(c.Burn, inspectorSparkCell)) + " " + dimStyle.Render("per round")
+	case c.Estimated:
+		// No series yet and no reported size: the block still has to say
+		// where its number came from.
+		lead = dimStyle.Render("estimated")
+	}
+	if lead != "" || tokens != "" {
+		b.rows = append(b.rows, railRow(lead, dimStyle.Render(tokens), width, inspectorIndent))
 	}
 	return b, true
 }
@@ -429,9 +443,10 @@ func ctxStyle(pct, warn, alert int) lipgloss.Style {
 	}
 }
 
-// inspectorElapsed is the rail's wall-clock format: seconds under a minute,
-// "1m 04s" above it.
-func inspectorElapsed(d time.Duration) string {
+// FormatElapsed is the shared wall-clock format: seconds under a minute,
+// "1m 04s" above it. One implementation, so the rail and /stats cannot
+// report the same duration two ways.
+func FormatElapsed(d time.Duration) string {
 	if d < time.Minute {
 		if d < 10*time.Second {
 			return fmt.Sprintf("%.1fs", d.Seconds())

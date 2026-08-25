@@ -41,6 +41,9 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 					PromptTokens:     resp.Usage.PromptTokens,
 					CompletionTokens: resp.Usage.CompletionTokens,
 				}
+				if d := resp.Usage.PromptTokensDetails; d != nil {
+					usage.CachedTokens = d.CachedTokens
+				}
 			}
 
 			if len(resp.Choices) == 0 {

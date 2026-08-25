@@ -293,11 +293,7 @@ func (m Model) spendLabel(in, out int64) string {
 	}
 	if m.prices != nil && m.modelName != "" {
 		if inCost, outCost, found := m.prices.Cost(m.modelName, in, out); found {
-			total := inCost + outCost
-			if total < 0.01 {
-				return fmt.Sprintf("$%.4f", total)
-			}
-			return fmt.Sprintf("$%.2f", total)
+			return formatCost(inCost + outCost)
 		}
 	}
 	return "~" + formatTokenCount(in+out) + " tok"
