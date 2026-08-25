@@ -114,7 +114,7 @@ func (m Model) startCompact() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	m.compacting = true
-	m.state = stateStreaming
+	m.setTurnState(stateStreaming)
 	m.streaming = ""
 	m.atBottom = true
 	m.appendEntry(entry{kind: entrySystem, text: "Compacting conversation…"})
@@ -133,7 +133,7 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	m.streaming = ""
 	m.events = nil
 	m.cancel = nil
-	m.state = stateInput
+	m.setTurnState(stateInput)
 	if summary == "" {
 		m.appendEntry(entry{kind: entryError, text: "compaction produced no summary; conversation unchanged"})
 		m.viewport.SetContent(m.renderHistory())
@@ -167,7 +167,7 @@ func (m Model) abortCompact() (tea.Model, tea.Cmd) {
 	m.streaming = ""
 	m.events = nil
 	m.cancel = nil
-	m.state = stateInput
+	m.setTurnState(stateInput)
 	m.appendEntry(entry{kind: entryError, text: "compaction failed: the model responded with tool calls; conversation unchanged"})
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()

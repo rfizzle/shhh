@@ -45,7 +45,7 @@ func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 		return m, nil
 	}
-	m.state = stateFocus
+	m.enterSurface(stateFocus)
 	m.focusIdx = idxs[len(idxs)-1]
 	m.refreshFocusView()
 	return m, nil
@@ -92,8 +92,9 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 // exitFocusMode returns to the input, keeping expansion state; the render
 // cache is rebuilt without the selection gutter.
 func (m Model) exitFocusMode() (tea.Model, tea.Cmd) {
-	m.state = stateInput
+	m.leaveSurface()
 	m.invalidateRenderCache()
+	m.syncViewportHeight()
 	m.viewport.SetContent(m.renderHistory())
 	return m, nil
 }

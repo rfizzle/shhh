@@ -109,7 +109,7 @@ func (m Model) frameWorking() bool {
 		st, ok := m.subagents.Get(m.attachedTo)
 		return ok && st.State == subagent.StateRunning
 	}
-	switch m.state {
+	switch m.turnState() {
 	case stateStreaming, stateRunningCmd, stateClassifying:
 		return true
 	}
@@ -121,7 +121,7 @@ func (m Model) frameWorking() bool {
 // classifier is checking. Attached, it reflects the child's mode. The mode
 // glyphs in the vitals keep meaning independent of color.
 func (m Model) frameAccentStyle() lipgloss.Style {
-	if m.state == stateClassifying {
+	if m.turnState() == stateClassifying {
 		return frameAccentChecking
 	}
 	mode := m.mode
@@ -167,8 +167,14 @@ func (m Model) frameHints() string {
 	switch {
 	case m.attachedTo != "":
 		hints = []string{"esc detach", "ctrl+a agents"}
-	case m.state == stateStreaming, m.state == stateRunningCmd, m.state == stateClassifying:
-		hints = []string{"enter queues steering", "ctrl+c cancel"}
+	case m.working():
+		// Commands run mid-turn now (S-087), so the working rail says so;
+		// with children in flight the agent manager is the first thing to
+		// reach for.
+		hints = []string{"enter queues steering", "/ commands", "ctrl+c cancel"}
+		if active, _ := m.activeAgents(); active > 0 {
+			hints = []string{"enter queues steering", "ctrl+a agents", "/ commands", "ctrl+c cancel"}
+		}
 	default:
 		hints = []string{"enter send", "/ commands", "shift+tab mode"}
 	}

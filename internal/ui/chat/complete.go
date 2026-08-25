@@ -34,6 +34,31 @@ type slashCommand struct {
 	// spec per position; positions past the list are free-form and get no
 	// menu.
 	argSpecs []argSpec
+	// idleOnly is why the command needs the session's own turn to be
+	// finished — it rewrites or replaces the conversation the agent is
+	// working in. Empty means it runs while the agent works (S-087), which
+	// is the default: inspecting and steering a running session is the point
+	// of having one. An idle-only command drops out of the menu for the
+	// duration, the way an unwired one never appears at all.
+	idleOnly string
+}
+
+// idleOnlyReason reports why a command cannot run mid-turn, if it cannot.
+func idleOnlyReason(name string) (string, bool) {
+	for _, c := range slashCommands {
+		if c.idleOnly == "" {
+			continue
+		}
+		if c.name == name {
+			return c.idleOnly, true
+		}
+		for _, a := range c.aliases {
+			if a == name {
+				return c.idleOnly, true
+			}
+		}
+	}
+	return "", false
 }
 
 // completionItem is one menu row: either a command name (the args column
@@ -51,13 +76,16 @@ type completionItem struct {
 // deliberately shorter than /help's — they share a row with the name.
 var slashCommands = []slashCommand{
 	{name: "/help", desc: "Show commands, keys, and the approval policy"},
-	{name: "/clear", aliases: []string{"/new"}, desc: "Start a new conversation"},
+	{name: "/clear", aliases: []string{"/new"}, desc: "Start a new conversation",
+		idleOnly: "it starts a new conversation"},
 	{name: "/copy", args: "[code]", desc: "Copy the last response (or just its code blocks)",
 		argSpecs: staticArgs(argOption{"code", "Only the code blocks"})},
 	{name: "/run", args: "[n]", desc: "Run a code block from the last response",
-		enabled: func(m *Model) bool { return m.runFn != nil }},
+		enabled:  func(m *Model) bool { return m.runFn != nil },
+		idleOnly: "it runs a command in this session"},
 	{name: "/model", args: "[name]", desc: "Switch the model (bare /model opens a picker)",
-		argSpecs: []argSpec{{dynamic: modelArgs, fuzzy: true}}},
+		argSpecs: []argSpec{{dynamic: modelArgs, fuzzy: true}},
+		idleOnly: "it switches the model the running turn is using"},
 	{name: "/mode", args: "[name|why]", desc: "Set the permission mode (bare /mode opens a picker)",
 		argSpecs: []argSpec{{dynamic: modeArgs}}},
 	{name: "/stats", desc: "Context occupancy and session spend"},
@@ -98,23 +126,33 @@ var slashCommands = []slashCommand{
 		)},
 	{name: "/agents", desc: "Agent manager: attach, steer, cancel, kill (Ctrl+A)",
 		enabled: func(m *Model) bool { return m.subagents != nil }},
+	{name: "/attach", args: "[name]", desc: "Attach to an agent's session and steer it",
+		enabled:  func(m *Model) bool { return m.subagents != nil },
+		argSpecs: []argSpec{{dynamic: agentArgs, fuzzy: true}}},
+	{name: "/detach", desc: "Back to the orchestrator (also esc)",
+		enabled: func(m *Model) bool { return m.subagents != nil && m.attachedTo != "" }},
 	{name: "/plan", args: "save [name]", desc: "Save the last plan/response to .shhh/plans/",
 		argSpecs: staticArgs(argOption{"save", "Write it to .shhh/plans/"})},
 	{name: "/diff", desc: "Cumulative session diff, full screen",
 		enabled: func(m *Model) bool { return m.sessionDiff != nil }},
-	{name: "/compact", desc: "Summarize the conversation and continue from the summary"},
+	{name: "/compact", desc: "Summarize the conversation and continue from the summary",
+		idleOnly: "it rewrites the conversation into a summary"},
 	{name: "/rewind", args: "[n]", desc: "Rewind to before a user turn (bare /rewind picks)",
-		argSpecs: []argSpec{{dynamic: checkpointArgs}}},
+		argSpecs: []argSpec{{dynamic: checkpointArgs}},
+		idleOnly: "it rewinds the conversation"},
 	{name: "/branches", args: "[n|name]", desc: "Switch this session's branches (bare /branches picks)",
 		enabled:  func(m *Model) bool { return m.db != nil },
-		argSpecs: []argSpec{{dynamic: branchArgs, fuzzy: true}}},
+		argSpecs: []argSpec{{dynamic: branchArgs, fuzzy: true}},
+		idleOnly: "it switches the conversation to another branch"},
 	{name: "/save", args: "[name]", desc: "Save this chat",
 		enabled: func(m *Model) bool { return m.db != nil }},
 	{name: "/load", args: "[name]", desc: "Load a saved chat (bare /load picks)",
 		enabled:  func(m *Model) bool { return m.db != nil },
-		argSpecs: []argSpec{{dynamic: chatArgs, fuzzy: true}}},
+		argSpecs: []argSpec{{dynamic: chatArgs, fuzzy: true}},
+		idleOnly: "it replaces the conversation"},
 	{name: "/chats", desc: "Saved chats — enter to load",
-		enabled: func(m *Model) bool { return m.db != nil }},
+		enabled:  func(m *Model) bool { return m.db != nil },
+		idleOnly: "it opens the picker that replaces the conversation"},
 	{name: "/exit", aliases: []string{"/quit", "/q"}, desc: "Quit (also /quit, /q)"},
 }
 
@@ -152,7 +190,7 @@ func (m *Model) syncCompletions() {
 	if m.completeDismissedFor != "" && val != m.completeDismissedFor {
 		m.completeDismissedFor = ""
 	}
-	if m.state != stateInput || m.attachedTo != "" || m.agentList != nil || m.activeChildAsk() != nil ||
+	if !m.inputLive() || m.attachedTo != "" || m.agentList != nil || m.activeChildAsk() != nil ||
 		!strings.HasPrefix(val, "/") || strings.ContainsAny(val, "\t\n") || val == m.completeDismissedFor {
 		m.clearCompletions()
 		return
@@ -200,6 +238,11 @@ func (m *Model) commandMatches(token string) []completionItem {
 	var matches []completionItem
 	for _, c := range slashCommands {
 		if c.enabled != nil && !c.enabled(m) {
+			continue
+		}
+		// A command that needs an idle session is unavailable, not hidden
+		// forever: it comes back when the turn ends (S-087).
+		if c.idleOnly != "" && m.working() {
 			continue
 		}
 		if !c.matches(token) {
@@ -252,7 +295,7 @@ func (m *Model) clearCompletions() {
 // stale menu (the input changed through a path that skipped syncCompletions,
 // e.g. a reset) deactivates itself because completeFor no longer matches.
 func (m Model) completionActive() bool {
-	return m.state == stateInput && len(m.completions) > 0 &&
+	return m.inputLive() && len(m.completions) > 0 &&
 		m.completeFor != "" && m.completeFor == m.input.Value()
 }
 

@@ -344,7 +344,9 @@ A wrong turn costs one command, not the session: a checkpoint is recorded at the
 
 `shhh code` sessions can also manage named long-running processes — dev servers, watchers, test runners — through the `process` tool: start one (approved like any command, with safety warnings, allowlist matching, and mode policy applying to the command text), probe it with `status`, page through its captured output with `read`, feed its stdin with `input`, and tear it down with `stop`. Each process runs in its own process group with its working directory contained to the workspace and an environment of exactly `PATH` and `HOME` plus whatever vars the agent passes explicitly (which can never shadow those two). Recent stdout/stderr live in bounded ring buffers for paged reads, the full log (bounded) lands in the evidence store when the process ends, and `/ps` lists everything the session owns. `stop`, session end, cancel, and quit all terminate the full process tree — no orphans.
 
-`shhh code` can delegate scoped work to background **sub-agents**. The model spawns them with `spawn_agent` (you approve each spawn) in one of two roles: a **researcher** gets read-only tools plus the web against the real workspace, and a **writer** gets the full toolset against an *isolated git worktree* — its changes never touch your checkout directly, they come back as a single patch you review and apply. `/agents` (or Ctrl+A) is the agent manager: attach to a child's live session, steer it mid-run, cancel a turn, or kill it; `agent_report` collects a child's final report.
+`shhh code` can delegate scoped work to background **sub-agents**. The model spawns them with `spawn_agent` (you approve each spawn) in one of two roles: a **researcher** gets read-only tools plus the web against the real workspace, and a **writer** gets the full toolset against an *isolated git worktree* — its changes never touch your checkout directly, they come back as a single patch you review and apply. `/agents` (or Ctrl+A) is the agent manager: attach to a child's live session, steer it mid-run, cancel a turn, or kill it; `/attach <name>` jumps straight into one and `/detach` (or Esc) comes back; `agent_report` collects a child's final report.
+
+All of that works **while the turn is in flight**, which is the only time sub-agents exist: commands run mid-turn, not just between turns. Type `/agents`, `/attach writer-1`, `/stats`, `/diff`, `/mode auto`, `/ps` — or open focus mode with Ctrl+E — while the agent works, and the turn keeps streaming underneath; plain text still queues as a steering message. The exceptions are the handful of commands that would rewrite or replace the conversation the agent is working in — `/clear`, `/compact`, `/rewind`, `/branches`, `/load`, `/chats`, `/model`, `/run` — which say what they'd disturb and wait for the turn to end (Ctrl+C ends it now). They drop out of the completion menu for the duration rather than failing when you pick them.
 
 Sub-agents inherit the parent session's permission state rather than re-litigating it. A child is clamped to your mode — it can never be more permissive than you are — and it inherits your session grants (`[a]` on a prompt), your command allowlist, the read-only inspection list, and, in auto mode, the same permission classifier the parent uses. That last one matters in practice: without it, an auto-mode session still stopped to ask about every command its children ran. Safety-flagged commands still prompt, plan mode still refuses, and every child approval is routed to you labeled with the agent's name.
 
@@ -379,6 +381,8 @@ Slash commands inside a chat session:
 | `/evidence [purge]` | Tool-output evidence store: reduction stats and size; `purge` deletes the stored originals |
 | `/gate run [suite]`, `/gate result` | Quality gate (`shhh code`): run a named suite of the project's own checks in the background, then show the verdict (marked stale if the tree changed) |
 | `/diff` | Cumulative session diff, full screen: `git diff` against the session's starting state (git repos only) |
+| `/agents` | Agent manager (also Ctrl+A): attach, steer, cancel a turn, kill — live while the parent turn runs |
+| `/attach [name]` | Attach to a sub-agent's session and steer it (bare `/attach` opens the manager); `/detach` returns |
 | `/ui verbosity <v>` | Activity feed density: `low` hides counts, `med` collapses rows, `high` expands rows |
 | `/memory` | Durable memories (`shhh code`): `list` (default), `add [global] [kind] <text>`, `forget <id>` |
 | `/ps` | List the long-running processes this session owns (`shhh code`): state, pid, uptime, command |
@@ -389,7 +393,7 @@ Slash commands inside a chat session:
 | `/chats` | Saved chats — the same picker; Enter loads |
 | `/exit` | Quit (also `/quit`, `/q`, Ctrl+D) |
 
-Press Up/Down in an empty input to recall previous messages, Esc to clear the input, and Ctrl+C to cancel a streaming response (or clear the input / quit when idle). Type `/help` in a session for the full list.
+Press Up/Down in an empty input to recall previous messages, Esc to clear the input, and Ctrl+C to cancel a streaming response (or clear the input / quit when idle). Commands run while the agent is working, except the ones that rewrite the running conversation. Type `/help` in a session for the full list.
 
 ### Pipe mode
 

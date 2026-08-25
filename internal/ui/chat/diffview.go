@@ -65,7 +65,7 @@ func (m Model) openDiffFull(d *components.DiffView, ret state) (tea.Model, tea.C
 	d.Offset = 0
 	m.fullDiff = d
 	m.diffReturn = ret
-	m.state = stateDiffFull
+	m.enterSurface(stateDiffFull)
 	return m, nil
 }
 
@@ -96,7 +96,14 @@ func (m Model) updateDiffFull(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 // from — the confirm prompt, focus mode, or the input.
 func (m Model) closeDiffFull() (tea.Model, tea.Cmd) {
 	m.fullDiff = nil
-	m.state = m.diffReturn
+	// A diff opened from focus mode goes back to it; anything else hands the
+	// screen back to the turn, which may have moved on while it was up
+	// (S-087).
+	if m.diffReturn.isSurface() {
+		m.state = m.diffReturn
+	} else {
+		m.leaveSurface()
+	}
 	m.diffReturn = stateInput
 	// A transcript diff row's mode may have changed while full screen.
 	m.invalidateRenderCache()

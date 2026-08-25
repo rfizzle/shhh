@@ -175,10 +175,15 @@ type Model struct {
 	inputHistory []string
 	historyIdx   int
 
-	streaming  string
-	events     <-chan provider.StreamEvent
-	cancel     context.CancelFunc
+	streaming string
+	events    <-chan provider.StreamEvent
+	cancel    context.CancelFunc
+	// state is the current surface: the stage of the session's own turn, or
+	// a transient view borrowing the screen. turnBack parks the turn's stage
+	// while a surface has it, so the turn keeps running underneath (S-087,
+	// turn.go).
 	state      state
+	turnBack   state
 	pendingRun string
 	runCancel  context.CancelFunc
 	// Compact activity feed (S-075): verbosity is the feed's default density
@@ -578,8 +583,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case "ctrl+e":
 			// Focus mode (S-076): navigate and expand transcript rows; scoped
-			// to whichever agent is focused (S-077).
-			if m.state == stateInput {
+			// to whichever agent is focused (S-077). It reads the transcript
+			// without touching the conversation, so it opens over a running
+			// turn too — the turn keeps streaming underneath (S-087).
+			if m.inputLive() {
 				return m.enterFocusMode()
 			}
 		case "esc":
@@ -645,110 +652,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.attachedTo != "" {
 				return m.attachedSubmit()
 			}
-			if m.state == stateStreaming || m.state == stateRunningCmd || m.state == stateClassifying {
-				return m.queueSteering()
-			}
-			if m.state == stateInput {
-				text := strings.TrimSpace(m.input.Value())
-				// With the completion menu open, enter runs the highlighted
-				// command rather than the raw prefix (S-078); on an argument
-				// row it completes the token first and runs the whole line
-				// (S-079).
-				if m.completionActive() {
-					if m.completeArg {
-						m.acceptCompletion()
-						text = strings.TrimSpace(m.input.Value())
-					} else {
-						text = m.completions[m.completeIdx].name
-					}
-				}
-				if text == "" {
-					return m, nil
-				}
-				m.recordInput(text)
-				if text == "/agents" {
-					m.input.Reset()
-					return m.openAgentList()
-				}
-				if text == "/exit" || text == "/quit" || text == "/q" {
-					m.quitting = true
-					if m.cancel != nil {
-						m.cancel()
-					}
-					return m, m.quitCmd()
-				}
-				if parts := strings.Fields(text); len(parts) > 0 && parts[0] == "/run" {
-					m.input.Reset()
-					// Bare /run with several code blocks opens the picker
-					// (S-081); one block, /run <n>, and every no-op case go
-					// straight to startRun.
-					if len(parts) == 1 {
-						if picked, cmd, ok := m.openRunPick(); ok {
-							return picked, cmd
-						}
-					}
-					result, entersConfirm := m.startRun(parts)
-					if !entersConfirm {
-						m.appendEntry(entry{kind: entrySystem, text: result})
-					}
-					m.viewport.SetContent(m.renderHistory())
-					m.viewport.GotoBottom()
-					return m, nil
-				}
-				if text == "/compact" {
-					m.input.Reset()
-					return m.startCompact()
-				}
-				if text == "/rewind" {
-					// Bare /rewind opens the checkpoint picker (S-069); the
-					// numbered form goes through handleSlashCommand.
-					m.input.Reset()
-					return m.openRewindPick()
-				}
-				if text == "/diff" {
-					// The cumulative session diff, full screen (S-074).
-					m.input.Reset()
-					return m.openSessionDiff()
-				}
-				if text == "/model" && m.canPickModel() {
-					// Bare /model opens the model picker (S-078); the named
-					// form and sessions with nothing to pick go through
-					// handleSlashCommand. A provider that can enumerate its
-					// endpoint is queried first (S-083).
-					m.input.Reset()
-					return m.startModelPick()
-				}
-				if text == "/mode" {
-					// Bare /mode opens the mode picker (S-078).
-					m.input.Reset()
-					return m.openModePick()
-				}
-				if text == "/load" || text == "/chats" {
-					// Bare /load and /chats open the saved-chat picker
-					// (S-080); with nothing saved they fall through to the
-					// text message below. /load <name> is unchanged.
-					m.input.Reset()
-					if picked, cmd, ok := m.openChatPick(); ok {
-						return picked, cmd
-					}
-				}
-				if text == "/branches" {
-					// Bare /branches opens the branch picker (S-080); a
-					// session with no branch family falls through.
-					m.input.Reset()
-					if picked, cmd, ok := m.openBranchPick(); ok {
-						return picked, cmd
-					}
-				}
-				if handled, result := m.handleSlashCommand(text); handled {
-					m.input.Reset()
-					m.appendEntry(entry{kind: entrySystem, text: result})
-					m.viewport.SetContent(m.renderHistory())
-					m.viewport.GotoBottom()
-					return m, nil
-				}
-				m.input.Reset()
-				return m.sendUserMessage(text)
+			// One submit path for every state that keeps the input live
+			// (S-087, command.go): commands run, plain text is a message when
+			// idle and steering while the agent works.
+			if m.inputLive() {
+				return m.submitInput()
 			}
 		}
 
@@ -787,7 +695,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		// A completed planning response gets the plan-approval prompt (S-061).
 		if m.mode == agent.ModePlan && hadText {
-			m.state = statePlanApprove
+			m.setTurnState(statePlanApprove)
 			m.planChoice = 0
 			m.syncViewportHeight()
 		}
@@ -815,7 +723,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.advanceApprovalQueue()
 
 	case toolResultsMsg:
-		if msg.runID != m.agent.RunID() || m.state != stateStreaming {
+		if msg.runID != m.agent.RunID() || m.turnState() != stateStreaming {
 			return m, nil
 		}
 		m.agent.RecordAutoResults(msg.results)
@@ -831,7 +739,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.resumeToolLoop()
 
 	case cmdDoneMsg:
-		if msg.runID != m.agent.RunID() || m.state != stateRunningCmd {
+		if msg.runID != m.agent.RunID() || m.turnState() != stateRunningCmd {
 			return m, nil
 		}
 		m.runCancel = nil
@@ -859,7 +767,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport.GotoBottom()
 			return m.advanceApprovalQueue()
 		}
-		m.state = stateInput
+		m.setTurnState(stateInput)
 		m.agent.Append(provider.Message{
 			Role:    provider.RoleUser,
 			Content: commandContextMessage(msg.command, out, msg.exitCode),
@@ -874,7 +782,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.autosaveCmd()
 
 	case approvedToolDoneMsg:
-		if msg.runID != m.agent.RunID() || m.state != stateRunningCmd || m.pendingApproval == nil {
+		if msg.runID != m.agent.RunID() || m.turnState() != stateRunningCmd || m.pendingApproval == nil {
 			return m, nil
 		}
 		req := m.pendingApproval
@@ -901,7 +809,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.advanceApprovalQueue()
 
 	case classifierDoneMsg:
-		if msg.runID != m.agent.RunID() || m.state != stateClassifying || m.pendingApproval == nil {
+		if msg.runID != m.agent.RunID() || m.turnState() != stateClassifying || m.pendingApproval == nil {
 			return m, nil
 		}
 		m.classifierCancel = nil
@@ -919,7 +827,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.streaming = ""
 		m.events = nil
 		m.cancel = nil
-		m.state = stateInput
+		m.setTurnState(stateInput)
 		m.restoreSteering()
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
@@ -929,7 +837,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// frameWorking keeps the top rail's WORKING spinner animated for the
 		// whole turn (S-082), including while streamed text is rendering and
 		// while an attached child works.
-		if m.frameWorking() || (m.state == stateStreaming && m.streaming == "") || m.state == stateRunningCmd || m.state == stateClassifying || m.state == stateModelList {
+		if m.frameWorking() || (m.turnState() == stateStreaming && m.streaming == "") || m.turnState() == stateRunningCmd || m.turnState() == stateClassifying || m.state == stateModelList {
 			var cmd tea.Cmd
 			m.spinner, cmd = m.spinner.Update(msg)
 			return m, cmd
@@ -986,7 +894,7 @@ func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
 	m.agent.StartTurn(text)
 	m.appendEntry(entry{kind: entryUser, text: text})
 	m.trimForRequest()
-	m.state = stateStreaming
+	m.setTurnState(stateStreaming)
 	m.streaming = ""
 	m.atBottom = true
 	m.viewport.SetContent(m.renderHistory())
@@ -1127,7 +1035,7 @@ func (m *Model) startRun(parts []string) (result string, entersConfirm bool) {
 		idx = n - 1
 	}
 	m.pendingRun = blocks[idx]
-	m.state = stateConfirmRun
+	m.setTurnState(stateConfirmRun)
 	return "", true
 }
 
@@ -1190,7 +1098,7 @@ func (m Model) updateConfirmRun(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m.declineApproval()
 		}
 		m.pendingRun = ""
-		m.state = stateInput
+		m.setTurnState(stateInput)
 		m.syncViewportHeight()
 		m.appendEntry(entry{kind: entrySystem, text: "Run cancelled."})
 		m.viewport.SetContent(m.renderHistory())
@@ -1207,7 +1115,7 @@ func execToolResult(output string, exitCode int) string {
 func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	command := m.pendingRun
 	m.pendingRun = ""
-	m.state = stateRunningCmd
+	m.setTurnState(stateRunningCmd)
 	m.runningCommand = command
 	m.runStart = time.Now()
 	tail := &commandTail{}
@@ -1271,7 +1179,7 @@ func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 	}
 	if m.agent.CapReached() {
-		m.state = stateInput
+		m.setTurnState(stateInput)
 		m.syncViewportHeight()
 		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
 			"Paused after %d tool rounds this turn. Send a message (e.g. \"continue\") to keep going.",
@@ -1280,7 +1188,7 @@ func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 		return m, m.autosaveCmd()
 	}
-	m.state = stateStreaming
+	m.setTurnState(stateStreaming)
 	m.streaming = ""
 	m.trimForRequest()
 	m.syncViewportHeight()
@@ -1406,7 +1314,7 @@ func (m *Model) finishStreaming() {
 		m.streaming = ""
 		m.events = nil
 		m.cancel = nil
-		m.state = stateInput
+		m.setTurnState(stateInput)
 		m.appendEntry(entry{kind: entrySystem, text: "Compaction cancelled; conversation unchanged."})
 		return
 	}
@@ -1420,7 +1328,7 @@ func (m *Model) finishStreaming() {
 	m.streaming = ""
 	m.events = nil
 	m.cancel = nil
-	m.state = stateInput
+	m.setTurnState(stateInput)
 }
 
 // cancelStreaming aborts an in-flight response or tool run. Any pending tool
@@ -1441,41 +1349,6 @@ func (m *Model) cancelStreaming() {
 	m.restoreSteering()
 	// Restored steering empties the queue: the notice rail may shrink (S-082).
 	m.syncViewportHeight()
-}
-
-// queueSteering handles Enter while the agent is working (S-058): the typed
-// text is queued and injected as a user message before the next stream
-// request. Quit commands still quit; other slash commands cannot run mid-turn.
-func (m Model) queueSteering() (tea.Model, tea.Cmd) {
-	text := strings.TrimSpace(m.input.Value())
-	if text == "" {
-		return m, nil
-	}
-	if text == "/exit" || text == "/quit" || text == "/q" {
-		m.quitting = true
-		if m.cancel != nil {
-			m.cancel()
-		}
-		if m.runCancel != nil {
-			m.runCancel()
-		}
-		return m, m.quitCmd()
-	}
-	// Same mistyped-command heuristic as handleSlashCommand: a lone "/word"
-	// is a command, which cannot run while the agent is working; a path like
-	// /etc/hosts contains another slash and queues as steering text.
-	if parts := strings.Fields(text); strings.HasPrefix(parts[0], "/") && !strings.Contains(parts[0][1:], "/") {
-		m.appendEntry(entry{kind: entrySystem, text: "Commands can't run while the agent is working; " + parts[0] + " was not queued."})
-		m.viewport.SetContent(m.renderHistory())
-		m.viewport.GotoBottom()
-		return m, nil
-	}
-	m.recordInput(text)
-	m.input.Reset()
-	m.steering = append(m.steering, text)
-	// The queued count surfaces on the notice rail (S-082).
-	m.syncViewportHeight()
-	return m, nil
 }
 
 // injectSteering appends queued steering messages to the conversation and
@@ -1505,7 +1378,7 @@ func (m *Model) dispatchSteering() tea.Cmd {
 	if !m.injectSteering() {
 		return nil
 	}
-	m.state = stateStreaming
+	m.setTurnState(stateStreaming)
 	m.streaming = ""
 	m.atBottom = true
 	m.trimForRequest()
@@ -1623,7 +1496,7 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 		AlertPct: trimThresholdPercent,
 		Model:    m.modelName,
 	}
-	if m.state == stateClassifying {
+	if m.turnState() == stateClassifying {
 		c.Mode, c.ModeKind = "checking", components.CockpitChecking
 	} else {
 		c.Mode = strings.ReplaceAll(m.mode.String(), "-", " ")
@@ -1635,7 +1508,7 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 		}
 	}
 	// Round counter shows only mid-turn, so long tool loops are visible.
-	if m.agent.Rounds() > 0 && m.state != stateInput {
+	if m.agent.Rounds() > 0 && m.turnState() != stateInput {
 		c.Round = fmt.Sprintf("round %d/%d", m.agent.Rounds(), m.effectiveMaxToolRounds())
 	}
 	if m.TotalTokensIn != 0 || m.TotalTokensOut != 0 {
@@ -1681,7 +1554,7 @@ func (m *Model) renderHistory() string {
 	if m.attachedTo != "" && m.subagents != nil {
 		return m.renderAttachedHistory()
 	}
-	if len(m.transcript) == 0 && m.state != stateStreaming {
+	if len(m.transcript) == 0 && m.turnState() != stateStreaming {
 		return welcomeStyle.Render("Type a message to start chatting.")
 	}
 	w := m.contentWidth()
@@ -1702,7 +1575,7 @@ func (m *Model) renderHistory() string {
 		m.cachedRender += block
 	}
 	s := m.cachedRender
-	if m.state == stateStreaming && m.streaming != "" {
+	if m.turnState() == stateStreaming && m.streaming != "" {
 		if s != "" && len(m.transcript) > 0 {
 			s += separatorBefore(m.transcript[len(m.transcript)-1], entry{kind: entryAssistant})
 		}
@@ -2035,6 +1908,8 @@ func helpText() string {
   /ps            List the long-running processes this session owns (process tool)
   /memory        Durable memories: list (default) · add [global] [kind] <text> · forget <id>
   /agents        Agent manager: attach, steer, cancel, kill sub-agents (also Ctrl+A)
+  /attach [name] Attach to an agent's session and steer it (bare /attach lists)
+  /detach        Back to your own session (also Esc while attached)
   /plan save [name]  Save the last plan/response to .shhh/plans/
   /diff          Show the cumulative session diff full screen (git diff
                  against the session's starting state; git repos only)
@@ -2048,6 +1923,11 @@ func helpText() string {
   /chats         Saved chats — opens the same picker; enter loads
   /exit          Quit (also /quit, /q)
 
+Commands run while the agent is working — including while sub-agents are in
+flight, which is the only time they exist. The exceptions are the ones that
+rewrite or replace the running conversation (/clear, /compact, /rewind,
+/branches, /load, /chats, /model, /run); they say so and wait for the turn.
+
 Keys:
   Enter          Send message        Alt+Enter    Insert newline
   Tab            Complete a slash command (typing / opens the menu;
@@ -2057,7 +1937,8 @@ Keys:
                   that joins the conversation before the next model request)
   Up/Down        Recall previous inputs (when the input is empty)
   Ctrl+E         Focus mode: select tool/command/diff rows (j/k), expand/collapse (Enter), Esc back
-                 (Enter on an edit row cycles collapsed → expanded → full-screen diff)
+                 (Enter on an edit row cycles collapsed → expanded → full-screen diff;
+                  opens over a running turn, which keeps streaming underneath)
   Ctrl+A         Agent manager: enter attaches to an agent's session, x cancels
                  its turn, X kills it; attached, typing steers the agent,
                  Shift+Tab sets its mode (clamped), Esc detaches

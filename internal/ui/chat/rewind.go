@@ -91,7 +91,7 @@ func (m Model) openRewindPick() (tea.Model, tea.Cmd) {
 		Options:  opts,
 		MaxLines: m.maxConfirmPanelHeight(),
 	}
-	m.state = stateRewindPick
+	m.enterSurface(stateRewindPick)
 	m.syncViewportHeight()
 	return m, nil
 }
@@ -109,7 +109,7 @@ func (m Model) updateRewindPick(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	sel := result.(components.SelectResult)
 	turn := len(m.checkpoints) - sel.Index // options are latest-first
 	m.rewindSelect = nil
-	m.state = stateInput
+	m.leaveSurface()
 	if sel.Canceled {
 		m.syncViewportHeight()
 		return m, nil

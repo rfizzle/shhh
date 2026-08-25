@@ -474,8 +474,14 @@ func (m Model) attachedCommand(parts []string) (tea.Model, tea.Cmd) {
 		m.attachedModeCommand(parts)
 	case "/agents":
 		return m.openAgentList()
+	case "/attach":
+		// Hop straight to another agent without going through the list
+		// (S-087); bare /attach opens it.
+		return m.attachCommand(parts)
+	case "/detach":
+		m.detachOne()
 	default:
-		m.noteChild(name, "Commands while attached: /stats, /diff, /mode [name], /agents, /exit (kill this agent). Plain text steers the agent; esc detaches.")
+		m.noteChild(name, "Commands while attached: /stats, /diff, /mode [name], /agents, /attach <name>, /detach, /exit (kill this agent). Plain text steers the agent; esc detaches.")
 	}
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()

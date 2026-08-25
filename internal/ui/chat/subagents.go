@@ -78,15 +78,19 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 }
 
 // activeChildAsk is the routed approval currently presentable: deferred
-// while the parent's own prompts, focus mode, or the agent list hold the
-// bottom panel; attached, only the focused child's asks render in place
-// (S-077) — the rest stay visible via the badge and agent list.
+// while the parent's own prompts, a surface (focus mode, a full-screen diff,
+// a picker), or the agent list hold the bottom panel; attached, only the
+// focused child's asks render in place (S-077) — the rest stay visible via
+// the badge and agent list.
 func (m Model) activeChildAsk() *subagent.Ask {
 	if len(m.childAsks) == 0 {
 		return nil
 	}
+	if m.state.isSurface() {
+		return nil
+	}
 	switch m.state {
-	case stateConfirmRun, statePlanApprove, stateFocus:
+	case stateConfirmRun, statePlanApprove:
 		return nil
 	}
 	if m.agentList != nil {
@@ -123,6 +127,11 @@ func (m Model) updateChildAsk(msg tea.KeyMsg, ask *subagent.Ask) (tea.Model, tea
 		m.attach(ask.Agent)
 		return m, nil
 	}
+	// The manager is reachable from a routed approval too (S-087): the card
+	// steps aside while the list is open and comes back when it closes.
+	if msg.String() == "ctrl+a" {
+		return m.openAgentList()
+	}
 	done, result := m.childAskCard(ask).Update(msg)
 	if !done {
 		return m, nil
@@ -156,7 +165,7 @@ func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
 	if m.attachedTo == ask.Agent {
 		prefix = ""
 	} else {
-		card.ExtraHints = []string{"g: attach to " + ask.Agent}
+		card.ExtraHints = []string{"g: attach to " + ask.Agent, "ctrl+a: agents"}
 	}
 	switch ask.Kind {
 	case subagent.AskCommand:

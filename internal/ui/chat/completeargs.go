@@ -16,6 +16,7 @@ import (
 	"unicode"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/subagent"
 )
 
 // argOption is one candidate for an argument position: the value written
@@ -210,6 +211,28 @@ func modeArgs(m *Model) []argOption {
 		out = append(out, argOption{value: mode.String(), desc: desc})
 	}
 	return append(out, argOption{value: "why", desc: "Explain the last approval decision"})
+}
+
+// agentArgs offers this session's sub-agents for /attach, blocked ones
+// first — those are the agents waiting on the user (S-087).
+func agentArgs(m *Model) []argOption {
+	if m.subagents == nil {
+		return nil
+	}
+	var blocked, rest []argOption
+	for _, st := range m.subagents.Snapshot() {
+		opt := argOption{value: st.Name, desc: st.Detail}
+		if st.State == subagent.StateBlocked {
+			blocked = append(blocked, opt)
+		} else {
+			rest = append(rest, opt)
+		}
+	}
+	out := append(blocked, rest...)
+	if m.attachedTo != "" {
+		out = append(out, argOption{value: "orchestrator", desc: "back to your own session"})
+	}
+	return out
 }
 
 // checkpointArgs offers the rewind turn numbers, latest first.

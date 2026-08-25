@@ -126,12 +126,22 @@ func TestFocusMode_NoExpandableRows(t *testing.T) {
 	}
 }
 
-func TestFocusMode_OnlyFromInputState(t *testing.T) {
+// Focus mode reads the transcript; it borrows the screen from a running turn
+// rather than being refused while one is in flight (S-087).
+func TestFocusMode_OpensOverAWorkingTurn(t *testing.T) {
 	m := focusModel(t)
 	m.state = stateStreaming
 	updated, _ := m.Update(ctrlE())
 	m = updated.(Model)
+	if m.state != stateFocus {
+		t.Fatalf("ctrl+e should open focus mode while the agent works, got state %d", m.state)
+	}
+	if m.turnState() != stateStreaming || !m.working() {
+		t.Fatalf("the turn must keep running underneath, got turn state %d", m.turnState())
+	}
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = updated.(Model)
 	if m.state != stateStreaming {
-		t.Fatalf("ctrl+e must not hijack a working agent, got state %d", m.state)
+		t.Fatalf("esc should hand the screen back to the running turn, got state %d", m.state)
 	}
 }

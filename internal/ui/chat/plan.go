@@ -80,7 +80,7 @@ func (m Model) selectPlanOption(idx int) (tea.Model, tea.Cmd) {
 // turn, with the plan already in context.
 func (m Model) approvePlan(execMode agent.Mode) (tea.Model, tea.Cmd) {
 	m.applyMode(execMode)
-	m.state = stateStreaming
+	m.setTurnState(stateStreaming)
 	m.streaming = ""
 	m.atBottom = true
 	m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("Plan approved — executing in %s mode.", execMode)})
@@ -97,7 +97,7 @@ func (m Model) approvePlan(execMode agent.Mode) (tea.Model, tea.Cmd) {
 // keepPlanning dismisses the prompt so the user can send feedback; the
 // session stays in plan mode.
 func (m Model) keepPlanning() (tea.Model, tea.Cmd) {
-	m.state = stateInput
+	m.setTurnState(stateInput)
 	m.syncViewportHeight()
 	m.appendEntry(entry{kind: entrySystem, text: "Keep planning — describe what to change and the agent will revise the plan."})
 	m.viewport.SetContent(m.renderHistory())
@@ -108,7 +108,7 @@ func (m Model) keepPlanning() (tea.Model, tea.Cmd) {
 // rejectPlan discards the prompt; the session stays in plan mode and the plan
 // remains in the transcript for reference.
 func (m Model) rejectPlan() (tea.Model, tea.Cmd) {
-	m.state = stateInput
+	m.setTurnState(stateInput)
 	m.syncViewportHeight()
 	m.appendEntry(entry{kind: entrySystem, text: "Plan rejected. Still in plan mode — give new directions, or switch modes with Shift+Tab or /mode."})
 	m.viewport.SetContent(m.renderHistory())

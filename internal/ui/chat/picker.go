@@ -41,7 +41,7 @@ func (m Model) openPicker(title string, opts []components.SelectOption, focus in
 		MaxLines: m.maxConfirmPanelHeight(),
 	}
 	m.pickerApply = apply
-	m.state = statePick
+	m.enterSurface(statePick)
 	m.syncViewportHeight()
 	return m, nil
 }
@@ -60,7 +60,7 @@ func (m Model) updatePick(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	apply := m.pickerApply
 	m.picker = nil
 	m.pickerApply = nil
-	m.state = stateInput
+	m.leaveSurface()
 	if sel.Canceled {
 		m.syncViewportHeight()
 		return m, nil
@@ -138,7 +138,7 @@ func (m Model) startModelPick() (tea.Model, tea.Cmd) {
 	lister := m.modelLister
 	ctx, cancel := context.WithCancel(context.Background())
 	m.modelListCancel = cancel
-	m.state = stateModelList
+	m.enterSurface(stateModelList)
 	m.syncViewportHeight()
 	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
 		names, err := lister(ctx)
@@ -162,7 +162,7 @@ func (m Model) updateModelList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.modelListCancel()
 			m.modelListCancel = nil
 		}
-		m.state = stateInput
+		m.leaveSurface()
 		m.syncViewportHeight()
 		return m, nil
 	}
@@ -179,7 +179,7 @@ func (m Model) finishModelList(msg modelListMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	m.modelListCancel = nil
-	m.state = stateInput
+	m.leaveSurface()
 	switch {
 	case msg.err != nil:
 		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("Could not list models: %v", msg.err)})
@@ -356,7 +356,7 @@ func (m Model) openRunPick() (tea.Model, tea.Cmd, bool) {
 	}
 	model, cmd := m.openPicker("Run a code block", opts, 0, func(m *Model, idx int) string {
 		m.pendingRun = blocks[idx].body
-		m.state = stateConfirmRun
+		m.setTurnState(stateConfirmRun)
 		return ""
 	})
 	return model, cmd, true

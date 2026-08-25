@@ -234,7 +234,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	if req.kind == approvalMemory && m.mode != agent.ModePlan {
 		m.recordDecision(decisionAsk, "memory")
 		m.openMemoryAsk(req)
-		m.state = stateConfirmRun
+		m.setTurnState(stateConfirmRun)
 		m.syncViewportHeight()
 		return m, nil
 	}
@@ -267,7 +267,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 		return m.startClassifierCheck(req)
 	}
 	m.recordDecision(decisionAsk, askReason(approvalAction(req)))
-	m.state = stateConfirmRun
+	m.setTurnState(stateConfirmRun)
 	m.syncViewportHeight()
 	return m, nil
 }
@@ -276,7 +276,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 // classifier in the background (S-060); the verdict arrives as
 // classifierDoneMsg.
 func (m Model) startClassifierCheck(req *approvalRequest) (tea.Model, tea.Cmd) {
-	m.state = stateClassifying
+	m.setTurnState(stateClassifying)
 	m.syncViewportHeight()
 	ctx, cancel := context.WithCancel(context.Background())
 	m.classifierCancel = cancel
@@ -338,7 +338,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 	} else {
 		m.recordDecision(decisionAsk, "safety")
 	}
-	m.state = stateConfirmRun
+	m.setTurnState(stateConfirmRun)
 	m.syncViewportHeight()
 	return m, nil
 }
@@ -367,7 +367,7 @@ func (m Model) declineApproval() (tea.Model, tea.Cmd) {
 // executeApprovedTool runs an approved non-exec tool call through the tool
 // executor in the background; the result arrives as approvedToolDoneMsg.
 func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
-	m.state = stateRunningCmd
+	m.setTurnState(stateRunningCmd)
 	m.syncViewportHeight()
 	a := m.agent
 	runID := a.RunID()

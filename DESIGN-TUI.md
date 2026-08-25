@@ -340,7 +340,8 @@ Equal capability, concretely:
 | Inspect | focus mode, `/diff`, `/stats` — all scoped to the child |
 
 - The child keeps working while you watch; attach is observation +
-  steering, never a pause.
+  steering, never a pause. So does the *parent* — attaching from inside a
+  running orchestrator turn is the normal case (§9f).
 - Breadcrumb nests if agents spawn agents (`orchestrator ▸ writer-1 ▸
   helper`); `esc` pops one level.
 
@@ -379,6 +380,30 @@ same file:
 - A declared scope is passed into the writer's system prompt.
 - A patch touching files another agent's applied patch already changed
   renders a `⚠` warning row on the apply card.
+
+### 9f. Reachable while the turn runs (S-087)
+
+Children only exist *inside* a parent turn, so a manager you can only open
+between turns is a manager you can never open. Every surface in §9 — the
+list, the attached view, the routed approval card — opens over a running
+turn, and so does every command that leaves the conversation alone:
+
+```
+⏵⏵ auto · round 7 · ◇ 2 agents ⚠1 · $0.14
+▸ /attach writer-1▌            enter queues steering · ctrl+a agents · / commands · ctrl+c cancel
+```
+
+- The turn's stage (streaming, running a command, classifying) and the
+  surface on screen are separate state: a surface *borrows* the screen, the
+  turn keeps streaming underneath and keeps routing its own results.
+- Live mid-turn: `/agents`, `/attach <name>`, `/detach`, `/stats`, `/diff`,
+  `/mode`, `/ui`, `/ps`, `/memory`, `/gate`, `/sandbox`, `/evidence`,
+  `/copy`, `/plan save`, `/save`, `/help`, `/exit` — plus Ctrl+E focus mode
+  and Ctrl+A. Plain text still queues as steering (S-058).
+- Idle-only: `/clear`, `/compact`, `/rewind`, `/branches`, `/load`,
+  `/chats`, `/model`, `/run` — they rewrite or replace the conversation the
+  agent is working in. They name what they'd disturb and wait, and they drop
+  out of the completion menu for the duration rather than failing on pick.
 
 ---
 
@@ -472,7 +497,7 @@ Widths are content columns (terminal minus horizontal padding).
 │                                                                               │
 │                                                                               │
 ├─ ⏵⏵ accept edits · round 7/25 · ctx ▰▰▰▰▰▱▱▱ 62% · ↑41.2k ↓9.8k · $0.14 · gpt-5.2 ─┤
-╰─ enter queues steering · ctrl+c cancel ───────────────────────────────────────╯
+╰─ enter queues steering · / commands · ctrl+c cancel ──────────────────────────╯
 ```
 
 **compact** (70–109): one rail — vitals fold into the bottom border, hints
