@@ -155,3 +155,37 @@ func SpawnSummary(raw json.RawMessage) (string, error) {
 	}
 	return fmt.Sprintf("%s agent%s (max %d rounds, ~%s tokens)%s — %s", args.role, model, args.maxRounds, formatTokens(args.maxTokens), scope, task), nil
 }
+
+// Spawn is what spawning a child would cost, for the approval card's
+// blast-radius block (S-101): the scope it may change, whether its work
+// reaches the checkout without another decision, and its token ceiling.
+type Spawn struct {
+	// Scope is the paths a writer claimed, or the phrase for a child that
+	// changes nothing.
+	Scope string
+	// Writer marks a child that produces a patch; a researcher never does.
+	Writer bool
+	// Budget is the child's round and token ceiling.
+	Budget string
+}
+
+// SpawnPlan describes a spawn_agent call the way its approval card needs it.
+func SpawnPlan(raw json.RawMessage) (Spawn, error) {
+	args, err := parseSpawnArgs(raw)
+	if err != nil {
+		return Spawn{}, err
+	}
+	p := Spawn{
+		Writer: args.role == RoleWriter,
+		Budget: fmt.Sprintf("max %d rounds, ~%s tokens", args.maxRounds, formatTokens(args.maxTokens)),
+	}
+	switch {
+	case len(args.paths) > 0:
+		p.Scope = strings.Join(args.paths, ", ")
+	case p.Writer:
+		p.Scope = "unknown — this writer claimed no paths"
+	default:
+		p.Scope = "nothing — a researcher reads and reports"
+	}
+	return p, nil
+}

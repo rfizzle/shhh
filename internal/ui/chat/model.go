@@ -224,6 +224,10 @@ type Model struct {
 	turnBack   state
 	pendingRun string
 	runCancel  context.CancelFunc
+	// pendingBlast is the approval card's blast-radius block for the decision
+	// showing now (S-101), resolved once when the confirm is armed because it
+	// reads the filesystem and git.
+	pendingBlast blastRadius
 	// Compact activity feed (S-075): verbosity is the feed's default density
 	// (/ui verbosity); tailRunFn is the tail-capable command runner, and
 	// runningCommand/runStart/runTail drive the live row while a command runs.
@@ -1148,6 +1152,7 @@ func (m *Model) startRun(parts []string) (result string, entersConfirm bool) {
 		idx = n - 1
 	}
 	m.pendingRun = blocks[idx]
+	m.pendingBlast = m.resolveRadius(nil)
 	m.setTurnState(stateConfirmRun)
 	return "", true
 }

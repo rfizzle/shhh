@@ -123,6 +123,50 @@ func (t *Toolset) FetchSummary(args json.RawMessage) (string, error) {
 	return "GET " + a.URL, nil
 }
 
+// FetchPlan is what a fetch would do, for the approval card's blast-radius
+// block (S-101). shhh cannot resolve an outbound request the way it resolves
+// a shell command's paths, so the toolset that owns the request states it.
+type FetchPlan struct {
+	// Host is the domain the request leaves for.
+	Host string
+	// Sends is what goes out with it — deliberately a short, complete
+	// sentence, because "what does this leak" is the question the field
+	// exists to answer.
+	Sends string
+	// Receives is what comes back and where it lands.
+	Receives string
+}
+
+// FetchPlan validates fetch arguments and describes the request they would
+// make. It reports the same errors FetchSummary does, over the same
+// validation, so a call that previews cleanly is one that could run.
+func (t *Toolset) FetchPlan(args json.RawMessage) (FetchPlan, error) {
+	var a fetchArgs
+	if err := json.Unmarshal(args, &a); err != nil {
+		return FetchPlan{}, fmt.Errorf("invalid arguments: %w", err)
+	}
+	target, err := t.Fetcher.Policy.ValidateURL(a.URL)
+	if err != nil {
+		return FetchPlan{}, err
+	}
+	return FetchPlan{
+		Host:     target.Host,
+		Sends:    "the URL and a " + userAgent + " user-agent",
+		Receives: fmt.Sprintf("page text into the conversation, bounded to %s", formatBytes(t.Fetcher.maxBody())),
+	}, nil
+}
+
+// formatBytes renders a ceiling in whole units.
+func formatBytes(n int64) string {
+	switch {
+	case n >= 1<<20:
+		return fmt.Sprintf("%d MB", n/(1<<20))
+	case n >= 1<<10:
+		return fmt.Sprintf("%d KB", n/(1<<10))
+	}
+	return fmt.Sprintf("%d B", n)
+}
+
 func (t *Toolset) executeFetch(args json.RawMessage) (string, error) {
 	var a fetchArgs
 	if err := json.Unmarshal(args, &a); err != nil {

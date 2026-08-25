@@ -15,7 +15,6 @@ import (
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
-	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -29,6 +28,21 @@ type GatedPreview struct {
 	OldText string
 	NewText string
 	Summary string
+	// Fields is the tool's own blast-radius block (S-101) — a fetch states
+	// its domain and what it sends, a spawn states the scope it claims. shhh
+	// cannot resolve these from the arguments the way it resolves a shell
+	// command's paths, so the tool that owns them supplies them.
+	Fields []GatedField
+}
+
+// GatedField is one row of a tool's blast-radius block.
+type GatedField struct {
+	Label  string
+	Value  string
+	Detail string
+	// Open marks a value that leaves something open — an outbound request, a
+	// writable scope — so the card can colour it and rate the card by it.
+	Open bool
 }
 
 // GatedPreviewFunc builds the confirm-prompt preview for one tool call's
@@ -58,6 +72,9 @@ type approvalRequest struct {
 	path    string      // approvalDiff: the file being modified
 	hunks   []diff.Hunk // approvalDiff: the change to show
 	summary string      // one-line description for transcript entries
+	// fields is a gated tool's own blast-radius block (S-101), from its
+	// GatedPreview.
+	fields []GatedField
 	// auto marks a call the session approved on the user's behalf — mode
 	// policy, a session grant, or the auto-mode classifier. It is what the
 	// changeset record's origin says afterwards (S-097).
@@ -202,6 +219,7 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 			path:    p.Path,
 			hunks:   diff.Compute(p.OldText, p.NewText),
 			summary: title,
+			fields:  p.Fields,
 		}, nil
 	}
 	summary := p.Summary
@@ -213,6 +231,7 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 		kind:    approvalGeneric,
 		title:   "use " + tc.Name,
 		summary: summary,
+		fields:  p.Fields,
 	}, nil
 }
 
@@ -236,6 +255,9 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	if req.kind == approvalExec {
 		m.pendingRun = req.command
 	}
+	// The blast radius is resolved once here, not inside View: it stats the
+	// filesystem and asks git about the paths it found (S-101).
+	m.pendingBlast = m.resolveRadius(req)
 	// Agent-proposed memories (S-070) always require explicit user
 	// confirmation: no mode, session grant, or classifier can wave one
 	// through. Plan mode falls through to the policy below, which refuses the
@@ -533,6 +555,10 @@ func (m Model) approvalCard() *components.ApprovalCard {
 func (m Model) buildApprovalCard() *components.ApprovalCard {
 	card := &components.ApprovalCard{MaxLines: m.maxConfirmPanelHeight()}
 	req := m.pendingApproval
+	// The blast-radius block, resolved when the decision was armed (S-101).
+	// It also carries the safety risks, so the card states severity and
+	// warnings from one source rather than two.
+	m.pendingBlast.applyTo(card)
 
 	if req == nil || req.kind == approvalExec {
 		card.Variant = components.ApprovalCommand
@@ -543,22 +569,10 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		} else {
 			card.Headline = "Run: " + firstLine(m.pendingRun)
 		}
-		if warnings := safety.Check(m.pendingRun); len(warnings) > 0 {
-			var risks []string
-			for _, w := range warnings {
-				risks = append(risks, w.Risk)
-			}
-			card.Warnings = []string{strings.Join(risks, "; ")}
-		}
-		// Containment state (S-062): before approving, the user sees whether
-		// the assistant's command will run wrapped or bare. /run stays
-		// uncontained and shows nothing.
-		if req != nil && m.containment.Status != "" {
-			card.Containment = m.containment.Status
-		}
 		// [a] is offered only for assistant commands without safety warnings:
 		// flagged actions can never be blanket-approved, and /run stays
-		// manual.
+		// manual. The card says why it is missing rather than omitting it
+		// silently (S-101).
 		if req != nil && len(card.Warnings) == 0 {
 			card.AllowAlways = true
 			card.AlwaysHint = "a: always allow commands this session"
@@ -584,19 +598,22 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		if req.summary != req.title {
 			card.Summary = firstLine(req.summary)
 		}
-		// A process start carries a command (S-073): show its safety risks
-		// like the exec card does.
-		if req.command != "" {
-			if warnings := safety.Check(req.command); len(warnings) > 0 {
-				var risks []string
-				for _, w := range warnings {
-					risks = append(risks, w.Risk)
-				}
-				card.Warnings = []string{strings.Join(risks, "; ")}
-			}
-		}
 	}
 	return card
+}
+
+// applyTo puts the resolved block onto the card: the severity word and the
+// border that reinforces it, the risks, the fields, the containment chip, and
+// the two lines that explain what the keys do not.
+func (b blastRadius) applyTo(card *components.ApprovalCard) {
+	card.Severity = b.severity
+	card.Fields = b.fields
+	card.Chip, card.Uncontained = b.chip, b.uncontained
+	card.SafeDefault, card.Footnote = b.safe, b.footnote
+	card.Reversibility = b.reversibility
+	if len(b.risks) > 0 {
+		card.Warnings = []string{strings.Join(b.risks, "; ")}
+	}
 }
 
 // confirmLines renders the approval card — or the memory prompt (S-070) when

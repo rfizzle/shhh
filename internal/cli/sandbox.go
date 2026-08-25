@@ -53,9 +53,16 @@ func buildContainment(cfg config.Config) (chat.Containment, error) {
 	}
 	if !avail.OK {
 		c.Status = "unconfined — " + avail.Detail
+		c.Detail = avail.Detail
+		// Nothing wraps the command, so nothing restricts what it reaches:
+		// the approval card says so rather than reporting the profile's
+		// answer, which is not in force (S-101).
+		c.Network = true
 		return c, nil
 	}
 	c.Status = fmt.Sprintf("contained: %s (%s profile)", avail.Mechanism, policy.Profile)
+	c.Mechanism, c.Profile = avail.Mechanism, string(policy.Profile)
+	c.Network = policy.Profile != sandbox.ProfileWorkspaceNetless
 	c.Run = func(ctx context.Context, command string) (string, int) {
 		argv, err := sandbox.Wrap(avail, policy, command)
 		if err != nil {

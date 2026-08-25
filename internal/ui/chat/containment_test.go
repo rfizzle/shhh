@@ -28,10 +28,13 @@ func containedModel(t *testing.T, bare, contained *[]string, status string) Mode
 				*contained = append(*contained, cmd)
 				return "contained", 0
 			},
-			Status: status,
-			Report: "Command containment:\n  mechanism: bwrap",
+			Status:    status,
+			Mechanism: "bwrap",
+			Profile:   "workspace",
+			Network:   true,
+			Report:    "Command containment:\n  mechanism: bwrap",
 		})
-	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
 	return m
@@ -53,8 +56,14 @@ func TestConfirmPromptShowsContainmentState(t *testing.T) {
 	if m.state != stateConfirmRun {
 		t.Fatalf("expected confirm state, got %d", m.state)
 	}
-	if !strings.Contains(m.View(), "contained: bwrap (workspace profile)") {
-		t.Fatal("confirm prompt should show the containment state")
+	// The containment state rides the card's title rail as a chip, and the
+	// profile's network answer is a field of its own (S-101).
+	view := m.View()
+	if !strings.Contains(view, "⛨ bwrap · workspace") {
+		t.Fatalf("confirm prompt should carry the containment chip:\n%s", view)
+	}
+	if !strings.Contains(view, "the workspace profile allows network access") {
+		t.Fatalf("confirm prompt should say what the profile allows:\n%s", view)
 	}
 }
 
@@ -69,14 +78,23 @@ func TestConfirmPromptShowsUnconfinedState(t *testing.T) {
 			bare = append(bare, cmd)
 			return "bare", 0
 		}).
-		WithContainment(Containment{Status: "unconfined — bubblewrap (bwrap) not found on PATH"})
-	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+		WithContainment(Containment{
+			Status:  "unconfined — bubblewrap (bwrap) not found on PATH",
+			Detail:  "bubblewrap (bwrap) not found on PATH",
+			Network: true,
+		})
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 120, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
 	m = runExecApproval(t, m)
 
-	if !strings.Contains(m.View(), "unconfined — bubblewrap") {
-		t.Fatal("confirm prompt should say the command runs unconfined and why")
+	// An uncontained action promotes ⚠ UNCONTAINED into the title, explains the
+	// missing mechanism, and offers the doctor that expands on it (S-101).
+	view := m.View()
+	for _, want := range []string{"⚠ UNCONTAINED", "bubblewrap (bwrap) not found on PATH", "/sandbox doctor"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("uncontained confirm prompt should contain %q:\n%s", want, view)
+		}
 	}
 
 	// With no containment runner, approval falls through to the plain runner.

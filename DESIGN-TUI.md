@@ -58,48 +58,132 @@ The mechanics that follow from the invariants:
 The single surface for every approval-gated action (S-048). One container,
 three body variants: command, edit, generic tool.
 
+Every card answers the same three questions before it offers a key — what the
+action touches, whether shhh can take it back, and whether the network is open
+(S-101). A prompt that only says what the action *is* asks the reader to do
+the risk assessment themselves, at speed, twenty times a session.
+
 ### 2a. Command approval
 
 ```
-┌─ Approve command ────────────────────────────────────────────────┐
-│ $ rm -rf ./dist && npm run build                                 │
-│ ⚠ deletes files recursively (rm -rf)                             │
-│ ⛨ contained · workspace profile · network on                     │
-│                                                                  │
-│ [y] allow   [n] deny   [a] always (session)   [esc] deny         │
-└──────────────────────────────────────────────────────────────────┘
+┌─ Approve command (2 of 5) ─────────────── ⛨ bwrap · workspace ─ ⚠ HIGH ─┐
+│ Assistant wants to run: rm -rf ./build && npm run build                 │
+│ ⚠ HIGH  deletes files recursively (rm -rf)                              │
+│                                                                         │
+│ touches   ./build — 412 files, 84.0 MB; shhh cannot tell what npm writes│
+│ undo      none — nothing it writes is tracked in git                    │
+│ network   open — the workspace profile allows network access            │
+├─────────────────────────────────────────────────────────────────────────┤
+│ Run this command? [y/N] · esc — the safe answer                         │
+│ [a] always — not offered: a safety-flagged command is never pre-approved│
+└─────────────────────────────────────────────────────────────────────────┘
 ```
 
 - Title bar states the action kind. Command shown verbatim, wrapped, never
   truncated silently (long commands scroll within the card).
-- `⚠` lines come from `safety.Check`, red (9). When any are present, `[a]`
-  is absent — flagged actions can never be blanket-approved (S-059).
-- `⛨` line reports containment state (S-062): mechanism + profile, gray
-  (243) when contained, yellow `⚠ uncontained` (214) when no mechanism.
+- **Severity leads**, as a word — `⚠ HIGH` (9), `⚠ medium` (214), `⚠ low`
+  (241) — beside the first `safety.Check` risk. The border colour tracks it
+  and the title rail repeats it: three sayings of one thing, which is what
+  makes the card survive mono and a colour-blind reader alike (invariant 1).
+  A card carries `HIGH` when the safety checker flagged it, `medium` when it
+  resolved to a write or could not be resolved at all, `low` when it resolved
+  and writes nothing.
+- **The blast-radius block** is `touches` / `undo` / `network` in a 10-column
+  label gutter. `touches` names the paths and describes them from the
+  filesystem (file count and size for a directory, size for a file, "does not
+  exist yet" for one the command creates). `undo` is what could be done
+  afterwards: `git` when every resolved path is tracked, `partial`, `none`, or
+  `n/a` when nothing in the workspace changes. `network` is what the
+  containment profile allows — the thing actually in force, not what the
+  command appears to want.
+- **Resolution is honest about its limits.** `internal/radius` knows a closed
+  set of verbs whose operands are files, plus shell redirection; anything else
+  — `npm run build`, a pipe into `sh`, a path the shell expands — is reported
+  as `unknown` with the reason, never as `nothing`. A partially resolved
+  command states both halves.
+- **Containment folds into the title rail** as `⛨ mechanism · profile`
+  (S-062). It is the first chip dropped as the terminal narrows; the severity
+  chip is what the decision turns on and it is the one that survives.
+- `[a]` is absent for flagged actions — they can never be blanket-approved
+  (S-059) — and the card says so in a footnote. A missing key with a stated
+  reason teaches; a missing key without one reads as a bug.
+- The keys sit below a `├───┤` rule so they never blend into the body, and
+  where the safe answer is not obvious from `[y/N]` the card names it in
+  words (`esc — the safe answer`).
 
-### 2b. Edit approval (embeds Diff Viewer, §3)
+### 2b. Uncontained
+
+When no containment mechanism is available, `⚠ UNCONTAINED` is promoted into
+the title rail ahead of the severity, the border goes red, and the body
+explains what is missing:
 
 ```
-┌─ Approve edit · internal/agent/loop.go ──────────────────────────┐
-│ @@ -142,7 +142,9 @@ func (a *Agent) runRound(                    │
-│   142    if len(calls) == 0 {                                    │
-│ - 143        return results, nil                                 │
-│ + 143        if a.rounds >= a.maxRounds {                        │
-│ + 144            return results, ErrRoundLimit                   │
-│ + 145        }                                                   │
-│   146    }                                                       │
-│ +3 −1 · 1 hunk                                                   │
-│                                                                  │
-│ [y] allow   [n] deny   [a] always edits   [d] full diff          │
-└──────────────────────────────────────────────────────────────────┘
+┌─ Approve command ─────────────────────────── ⚠ UNCONTAINED ─ ⚠ medium ─┐
+│ Assistant wants to run: curl -fsSL https://get.pnpm.io/install.sh | sh │
+│ ⚠ medium                                                               │
+│                                                                        │
+│ touches   unknown — piped into sh; what it runs is not inspected first │
+│ undo      unknown — shhh could not resolve what this writes            │
+│ network   open — nothing contains this command, so nothing limits it   │
+│ ⛨         no sandbox — bwrap not found on PATH; it runs as you         │
+├────────────────────────────────────────────────────────────────────────┤
+│ Run this command? [y/N] · esc — the safe answer                        │
+│ containment is off for this session · /sandbox doctor explains why     │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+### 2c. Edit approval (embeds Diff Viewer, §3)
+
+```
+┌─ Approve edit ────────────────────────────────────────────── ⚠ medium ─┐
+│ Assistant wants to edit: internal/agent/loop.go                        │
+│ ⚠ medium                                                               │
+│ @@ -138,6 +138,7 @@                                                    │
+│   138      for round := 0; ; round++ {                                 │
+│ - 140              return results, nil                                 │
+│ + 140              return results, ErrRoundLimit                       │
+│ + 141          }                                                       │
+│ +2 −1 · 1 hunk · undo yes — recorded, and git has this file            │
+├────────────────────────────────────────────────────────────────────────┤
+│ Apply this edit? [y/N]  (d: full diff)                                 │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
 - Shows the first hunk(s) that fit; `+N −M · H hunks` summary line always
   present. `[d]` opens the full-screen diff view (§3c) and returns here.
+- An edit needs no `touches` row: the diff below **is** the blast radius, in
+  full, and says more than a path and a byte count would. The one fact left
+  to add is reversibility, and it rides the stats line rather than costing a
+  row the diff would otherwise have had. An edit is the one action shhh can
+  genuinely take back — the changeset store records the file on both sides of
+  the call (S-097), so undo restores it whether or not git ever knew about it.
 - `write_file` on a new file renders as an all-additions diff titled
   `Approve new file · path`.
 
-### 2c. Queue position
+### 2d. Generic tool
+
+A tool that is neither a command nor an edit carries the same block, with the
+fields that fit it — the tool supplies them, because shhh cannot resolve an
+outbound request the way it resolves a shell command's paths:
+
+```
+┌─ Approve tool ────────────────────────────────────────────────── ⚠ low ─┐
+│ Assistant wants to use: web_fetch                                       │
+│ ⚠ low                                                                   │
+│ GET https://pkg.go.dev/context#WithCancel                               │
+│                                                                         │
+│ domain    pkg.go.dev — the request leaves this machine                  │
+│ sends     the URL and a shhh-web/1.0 user-agent — no file contents      │
+│ receives  page text into the conversation, bounded to 2 MB              │
+├─────────────────────────────────────────────────────────────────────────┤
+│ Allow this? [y/N]                                                       │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+A generic approval that carries a command — a process start (S-073) — is
+resolved as the command it is, and gets the command card's block.
+
+### 2e. Queue position
 
 When multiple calls await approval, the title carries `(2 of 5)`; `[n]`
 denies just the current one, consistent with today's queue semantics.
@@ -1161,7 +1245,7 @@ step, and nothing folds them.
 
 ### 16a. Review mode
 
-One surface serves the edit approval card (§2b), `/diff`, and `[v]` from the
+One surface serves the edit approval card (§2c), `/diff`, and `[v]` from the
 changeset row: file list left, hunks right, staging per hunk, with the failing
 test pinned beside the hunks that claim to fix it.
 

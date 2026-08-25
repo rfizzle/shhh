@@ -174,7 +174,30 @@ func monoFixtures() []monoSurface {
 				c.Warnings = []string{"deletes files recursively (rm -rf)"}
 			})},
 			{"contained", card(func(c *ApprovalCard) {
-				c.Containment = "contained · workspace profile · network on"
+				c.Chip = "⛨ bwrap · workspace"
+			})},
+			{"uncontained", card(func(c *ApprovalCard) {
+				c.Uncontained = true
+			})},
+		}},
+		{"approval severity", []monoState{
+			{"unrated", card(func(c *ApprovalCard) {})},
+			{"low", card(func(c *ApprovalCard) { c.Severity = SeverityLow })},
+			{"medium", card(func(c *ApprovalCard) { c.Severity = SeverityMedium })},
+			{"high", card(func(c *ApprovalCard) { c.Severity = SeverityHigh })},
+		}},
+		{"approval radius field", []monoState{
+			{"neutral", card(func(c *ApprovalCard) {
+				c.Fields = []CardField{{Label: "undo", Value: "partial", Tone: ToneNeutral}}
+			})},
+			{"safe", card(func(c *ApprovalCard) {
+				c.Fields = []CardField{{Label: "undo", Value: "git", Tone: ToneSafe}}
+			})},
+			{"open", card(func(c *ApprovalCard) {
+				c.Fields = []CardField{{Label: "network", Value: "open", Tone: ToneOpen}}
+			})},
+			{"risk", card(func(c *ApprovalCard) {
+				c.Fields = []CardField{{Label: "undo", Value: "none", Tone: ToneRisk}}
 			})},
 		}},
 		{"approval variant", []monoState{

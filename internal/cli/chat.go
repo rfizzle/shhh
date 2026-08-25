@@ -422,7 +422,17 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			if err != nil {
 				return chat.GatedPreview{}, err
 			}
-			return chat.GatedPreview{Action: "fetch", Summary: summary}, nil
+			// The card's blast-radius block for an outbound request (S-101):
+			// where it goes, what leaves with it, what comes back.
+			plan, err := webTools.FetchPlan(args)
+			if err != nil {
+				return chat.GatedPreview{}, err
+			}
+			return chat.GatedPreview{Action: "fetch", Summary: summary, Fields: []chat.GatedField{
+				{Label: "domain", Value: plan.Host, Detail: "the request leaves this machine", Open: true},
+				{Label: "sends", Value: plan.Sends, Detail: "no file contents, no credentials"},
+				{Label: "receives", Value: plan.Receives, Detail: "it counts against the context window"},
+			}}, nil
 		}
 	}
 	if sup != nil {
@@ -431,7 +441,21 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			if err != nil {
 				return chat.GatedPreview{}, err
 			}
-			return chat.GatedPreview{Action: "spawn", Summary: summary}, nil
+			plan, err := subagent.SpawnPlan(args)
+			if err != nil {
+				return chat.GatedPreview{}, err
+			}
+			// A child edits in its own worktree; nothing reaches the checkout
+			// until its patch is approved on a card of its own (S-101).
+			undo := "the child changes nothing on this checkout"
+			if plan.Writer {
+				undo = "its patch is a decision of its own before anything lands"
+			}
+			return chat.GatedPreview{Action: "spawn", Summary: summary, Fields: []chat.GatedField{
+				{Label: "touches", Value: plan.Scope, Detail: "in its own worktree, not this checkout", Open: plan.Writer},
+				{Label: "undo", Value: "reviewed", Detail: undo},
+				{Label: "budget", Value: plan.Budget, Detail: "counted in the session totals"},
+			}}, nil
 		}
 		model = model.WithSubagents(sup)
 	}

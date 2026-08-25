@@ -15,6 +15,15 @@ type Containment struct {
 	TailRun func(ctx context.Context, command string, onLine func(string)) (string, int)
 	Status  string
 	Report  string
+	// Mechanism, Profile and Network are the same state in the pieces the
+	// approval card's blast-radius block needs (S-101): the chip on the title
+	// rail, and the honest answer to "is the network open". An empty
+	// Mechanism means nothing is containing assistant commands, and Detail is
+	// then why — the text /sandbox doctor expands on.
+	Mechanism string
+	Profile   string
+	Network   bool
+	Detail    string
 	// Manage handles the /sandbox subcommands (doctor, list, status,
 	// destroy, prune) for container sandboxes (S-063) and returns the text to
 	// show. Nil means container sandbox management is not wired up.

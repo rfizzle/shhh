@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/rfizzle/shhh/internal/diff"
 )
 
@@ -34,6 +35,92 @@ const (
 	ApprovalFullDiff
 )
 
+// Severity is how much the pending action could cost, led with as a word
+// rather than carried by the border colour alone (S-101, DESIGN-TUI.md
+// invariant 1). The border tracks it as reinforcement.
+type Severity int
+
+const (
+	// SeverityNone leaves the card unrated: the plain gray frame.
+	SeverityNone Severity = iota
+	SeverityLow
+	SeverityMedium
+	SeverityHigh
+)
+
+// Word is the severity as the card prints it. HIGH is shouted because it is
+// the one level where the reader is meant to stop.
+func (s Severity) Word() string {
+	switch s {
+	case SeverityLow:
+		return "⚠ low"
+	case SeverityMedium:
+		return "⚠ medium"
+	case SeverityHigh:
+		return "⚠ HIGH"
+	}
+	return ""
+}
+
+// border is the frame colour that reinforces the severity word.
+func (s Severity) border() lipgloss.Style {
+	switch s {
+	case SeverityHigh:
+		return delStyle
+	case SeverityMedium:
+		return accentStyle
+	}
+	return borderStyle
+}
+
+// FieldTone colours a blast-radius field's value. The tone never carries the
+// meaning on its own — the value is always a word — it only makes the row
+// findable at a glance.
+type FieldTone int
+
+const (
+	// ToneNeutral is a plain statement of fact.
+	ToneNeutral FieldTone = iota
+	// ToneSafe marks the reassuring answer: undo is possible, network closed.
+	ToneSafe
+	// ToneOpen marks a door left open: the network is reachable.
+	ToneOpen
+	// ToneRisk marks the answer that should give the reader pause: nothing
+	// can be undone, nothing is containing this.
+	ToneRisk
+)
+
+func (t FieldTone) style() lipgloss.Style {
+	switch t {
+	case ToneSafe:
+		return addStyle
+	case ToneOpen:
+		return accentStyle
+	case ToneRisk:
+		return delStyle
+	}
+	return bodyStyle
+}
+
+// CardField is one row of the blast-radius block: what the action touches,
+// whether it can be taken back, whether the network is open — or, on a
+// generic tool card, the equivalent facts for that tool.
+type CardField struct {
+	// Label is the field name, left-aligned in its own column.
+	Label string
+	// Value is the answer in one or two words. It is never a colour alone.
+	Value string
+	// Detail qualifies the value and is the first thing dropped when the
+	// terminal is too narrow to carry both.
+	Detail string
+	Tone   FieldTone
+}
+
+// fieldLabelWidth is the blast-radius block's label column, matching the
+// `touches / undo / network` gutter in the Approvals artboard of the shhh
+// Design System project.
+const fieldLabelWidth = 10
+
 // ApprovalCard is the single surface for every approval-gated action. One
 // container, three body variants.
 type ApprovalCard struct {
@@ -44,19 +131,30 @@ type ApprovalCard struct {
 	QueuePos string
 	// Headline is the first body row, e.g. "Assistant wants to run: go test".
 	Headline string
+	// Severity leads the card as a word and rides the top border as the last
+	// chip; it also picks the border colour (S-101).
+	Severity Severity
 	// Warnings are safety.Check risks, rendered as ⚠ rows; when present the
 	// caller must not set AllowAlways (flagged actions are never
 	// blanket-approved).
 	Warnings []string
-	// Containment describes the process-containment state, rendered as a ⛨
-	// row when set.
-	Containment string
+	// Chip is the containment state folded into the title rail, e.g.
+	// "⛨ bwrap · workspace" (S-101). Uncontained replaces it with
+	// "⚠ UNCONTAINED" and promotes it ahead of the severity chip.
+	Chip        string
+	Uncontained bool
+	// Fields is the blast-radius block under the headline: what the action
+	// touches, whether it can be undone, whether the network is open.
+	Fields []CardField
 	// Hunks is the edit variant's diff body; Syntax highlights its lines
 	// (S-074).
 	Hunks  []diff.Hunk
 	Syntax Syntax
 	// FullDiff offers [d] to open the diff full screen (S-074).
 	FullDiff bool
+	// Reversibility rides the edit variant's stats line (S-101): whether the
+	// change can be taken back, stated where it costs the diff no rows.
+	Reversibility string
 	// Summary is the generic variant's one-line description.
 	Summary string
 	// Question is the decision prompt, e.g. "Run this command?".
@@ -67,6 +165,13 @@ type ApprovalCard struct {
 	// ExtraHints are additional key hints the host handles itself (e.g.
 	// "g: attach to writer-1" on a routed child approval, S-077).
 	ExtraHints []string
+	// SafeDefault names the safe answer in words, for the cards where it is
+	// not obvious from the keys — e.g. "esc — the safe answer".
+	SafeDefault string
+	// Footnote says why a key the reader might expect is absent. A missing
+	// key with a stated reason teaches; a missing key without one reads as a
+	// bug.
+	Footnote string
 	// MaxLines bounds the card's total height, frame included; the diff body
 	// shrinks to fit. 0 means unbounded.
 	MaxLines int
@@ -97,11 +202,22 @@ func (c *ApprovalCard) Update(msg tea.KeyMsg) (done bool, result any) {
 func (c *ApprovalCard) View(width int) string {
 	inner := width - cardFrameWidth
 	rows := []string{headlineStyle.Render(c.Headline)}
-	for _, w := range c.Warnings {
-		rows = append(rows, warnStyle.Render("⚠ "+w))
+	// Severity leads the body, as a word beside the first risk. The border
+	// and the title chip say the same thing again, which is what makes the
+	// card survive mono and a colour-blind reader alike.
+	rows = append(rows, c.severityRows()...)
+	// The generic variant's one-liner belongs with the headline it qualifies,
+	// above the blast-radius block rather than below it.
+	if c.Variant == ApprovalGeneric && c.Summary != "" && c.Summary != c.Headline {
+		rows = append(rows, dimStyle.Render(clip(c.Summary, inner)))
 	}
-	if c.Containment != "" {
-		rows = append(rows, shieldStyle.Render("⛨ "+c.Containment))
+	if len(c.Fields) > 0 {
+		if len(rows) > 1 {
+			rows = append(rows, "")
+		}
+		for _, f := range c.Fields {
+			rows = append(rows, f.render(inner))
+		}
 	}
 
 	hint := c.Question + " [y/N]"
@@ -114,12 +230,24 @@ func (c *ApprovalCard) View(width int) string {
 	if c.FullDiff {
 		hint += "  (d: full diff)"
 	}
-	hints := hintRows(append([]string{hint}, c.ExtraHints...), width)
+	segments := append([]string{hint}, c.ExtraHints...)
+	if c.SafeDefault != "" {
+		segments = append(segments, c.SafeDefault)
+	}
+	hints := hintRows(segments, width)
+	if c.Footnote != "" {
+		hints = append(hints, dimStyle.Render(clip(c.Footnote, inner)))
+	}
+	// The keys sit below a rule so they never blend into the body (S-101).
+	hints = append([]string{cardRule}, hints...)
 
-	switch c.Variant {
-	case ApprovalEdit:
+	if c.Variant == ApprovalEdit {
 		adds, dels := diff.Stats(c.Hunks)
-		stats := dimStyle.Render(fmt.Sprintf("+%d −%d · %s", adds, dels, plural(len(c.Hunks), "hunk")))
+		line := fmt.Sprintf("+%d −%d · %s", adds, dels, plural(len(c.Hunks), "hunk"))
+		if c.Reversibility != "" {
+			line += " · " + c.Reversibility
+		}
+		stats := dimStyle.Render(line)
 		// Frame (2) plus the fixed rows bound how much diff fits.
 		budget := 0
 		if c.MaxLines > 0 {
@@ -128,10 +256,6 @@ func (c *ApprovalCard) View(width int) string {
 		rows = append(rows, UnifiedLines(c.Hunks, inner,
 			UnifiedOpts{LineNumbers: true, Emphasis: true, MaxLines: budget, Syntax: c.Syntax})...)
 		rows = append(rows, stats)
-	case ApprovalGeneric:
-		if c.Summary != "" && c.Summary != c.Headline {
-			rows = append(rows, dimStyle.Render(clip(c.Summary, inner)))
-		}
 	}
 	rows = append(rows, hints...)
 
@@ -139,7 +263,72 @@ func (c *ApprovalCard) View(width int) string {
 	if c.QueuePos != "" {
 		title += " (" + c.QueuePos + ")"
 	}
-	return renderCard(title, rows, width)
+	style := c.Severity.border()
+	if c.Uncontained {
+		style = delStyle
+	}
+	return renderChromeCard(cardChrome{title: title, chips: c.chips(), style: &style}, rows, width)
+}
+
+// severityRows are the ⚠ rows: the severity word leads the first risk, and
+// further risks follow it. A rated card with no risks still states its level,
+// because the word is what the border colour means.
+func (c *ApprovalCard) severityRows() []string {
+	word := c.Severity.Word()
+	if word == "" {
+		var rows []string
+		for _, w := range c.Warnings {
+			rows = append(rows, warnStyle.Render("⚠ "+w))
+		}
+		return rows
+	}
+	style := warnStyle
+	if c.Severity == SeverityLow {
+		style = dimStyle
+	}
+	var rows []string
+	if len(c.Warnings) == 0 {
+		return append(rows, style.Render(word))
+	}
+	rows = append(rows, style.Render(word+"  ")+dimStyle.Render(c.Warnings[0]))
+	for _, w := range c.Warnings[1:] {
+		rows = append(rows, warnStyle.Render("⚠ "+w))
+	}
+	return rows
+}
+
+// chips are the labels riding the top border, in drop order: the containment
+// state goes first so it is the one shed on a narrow terminal, and the
+// severity chip — the thing the decision turns on — is last and survives.
+func (c *ApprovalCard) chips() []string {
+	var chips []string
+	switch {
+	case c.Uncontained:
+		chips = append(chips, "⚠ UNCONTAINED")
+	case c.Chip != "":
+		chips = append(chips, c.Chip)
+	}
+	if word := c.Severity.Word(); word != "" {
+		chips = append(chips, word)
+	}
+	return chips
+}
+
+// render lays one blast-radius field into its label column. The detail is
+// dropped rather than clipped when the terminal cannot carry it, so what is
+// left is a whole statement instead of half of one.
+func (f CardField) render(inner int) string {
+	label := padRight(f.Label, fieldLabelWidth-1) + " "
+	value := f.Tone.style().Render(f.Value)
+	head := dimStyle.Render(label) + value
+	if f.Detail == "" {
+		return head
+	}
+	detail := " — " + f.Detail
+	if lipgloss.Width(head)+lipgloss.Width(detail) > inner {
+		return head
+	}
+	return head + dimmerStyle.Render(detail)
 }
 
 // plural renders "1 hunk" / "3 hunks".

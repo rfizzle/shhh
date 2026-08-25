@@ -12,20 +12,41 @@
 · variant · command, always-allow offered
 ┌─ Approve command ────────────────────────────────────────────────────────────┐
 │ Assistant wants to run: go test ./internal/agent/...                         │
+├──────────────────────────────────────────────────────────────────────────────┤
 │ Run this command? [y/n/a]  (a: always allow commands this session)           │
 └──────────────────────────────────────────────────────────────────────────────┘
 
-· variant · command, flagged and contained
-┌─ Approve command (2 of 5) ───────────────────────────────────────────────────┐
-│ Assistant wants to run: rm -rf ./build                                       │
-│ ⚠ deletes files recursively (rm -rf)                                         │
-│ ⛨ contained · workspace profile · network on                                 │
-│ Run this command? [y/N]                                                      │
+· variant · command, flagged, contained, blast radius
+┌─ Approve command (2 of 5) ───────────────────── ⛨ bwrap · workspace ─ ⚠ HIGH ┐
+│ Assistant wants to run: rm -rf ./build && npm run build                      │
+│ ⚠ HIGH  deletes files recursively (rm -rf)                                   │
+│                                                                              │
+│ touches   ./build — 412 files, 84.0 MB; shhh cannot tell what npm writes     │
+│ undo      none — nothing it writes is tracked in git                         │
+│ network   open — the workspace profile allows network access                 │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Run this command? [y/N] · esc — the safe answer                              │
+│ [a] always — not offered: a safety-flagged command is never pre-approved     │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+· variant · command, uncontained
+┌─ Approve command ────────────────────────────────── ⚠ UNCONTAINED ─ ⚠ medium ┐
+│ Assistant wants to run: curl -fsSL https://get.pnpm.io/install.sh | sh       │
+│ ⚠ medium                                                                     │
+│                                                                              │
+│ touches   unknown — piped into sh; what it runs is not inspected first       │
+│ undo      unknown — shhh could not resolve what this writes                  │
+│ network   open                                                               │
+│ ⛨         no sandbox                                                         │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Run this command? [y/N] · esc — the safe answer                              │
+│ containment is off for this session · /sandbox doctor explains why           │
 └──────────────────────────────────────────────────────────────────────────────┘
 
 · variant · edit, diff body
-┌─ Approve edit ───────────────────────────────────────────────────────────────┐
+┌─ Approve edit ───────────────────────────────────────────────────── ⚠ medium ┐
 │ Assistant wants to edit: internal/agent/loop.go                              │
+│ ⚠ medium                                                                     │
 │ @@ -138,6 +138,7 @@                                                          │
 │   138      for round := 0; ; round++ {                                       │
 │   139          if round >= a.maxRounds {                                     │
@@ -34,14 +55,21 @@
 │ + 141          }                                                             │
 │   142          }                                                             │
 │   143      }                                                                 │
-│ +2 −1 · 1 hunk                                                               │
+│ +2 −1 · 1 hunk · undo yes — recorded, and git has this file                  │
+├──────────────────────────────────────────────────────────────────────────────┤
 │ Apply this edit? [y/N]  (d: full diff)                                       │
 └──────────────────────────────────────────────────────────────────────────────┘
 
 · variant · generic
-┌─ Approve tool ───────────────────────────────────────────────────────────────┐
+┌─ Approve tool ──────────────────────────────────────────────────────── ⚠ low ┐
 │ Assistant wants to use: web_fetch                                            │
-│ fetch https://example.com/spec                                               │
+│ ⚠ low                                                                        │
+│ GET https://pkg.go.dev/context#WithCancel                                    │
+│                                                                              │
+│ domain    pkg.go.dev — the request leaves this machine                       │
+│ sends     the URL and a shhh-web/1.0 user-agent                              │
+│ receives  page text into the conversation, bounded to 2 MB                   │
+├──────────────────────────────────────────────────────────────────────────────┤
 │ Allow this call? [y/N]                                                       │
 └──────────────────────────────────────────────────────────────────────────────┘
 
@@ -49,35 +77,63 @@
 · variant · command, always-allow offered
 ␛[38;5;244m┌─ Approve command ────────────────────────────────────────────────────────────┐␛[0m
 ␛[38;5;244m│␛[0m ␛[1;38;5;254mAssistant wants to run: go test ./internal/agent/...␛[0m                         ␛[38;5;244m│␛[0m
+␛[38;5;244m├──────────────────────────────────────────────────────────────────────────────┤␛[0m
 ␛[38;5;244m│␛[0m ␛[3;38;5;244mRun this command? [y/n/a]  (a: always allow commands this session)␛[0m           ␛[38;5;244m│␛[0m
 ␛[38;5;244m└──────────────────────────────────────────────────────────────────────────────┘␛[0m
 
-· variant · command, flagged and contained
-␛[38;5;244m┌─ Approve command (2 of 5) ───────────────────────────────────────────────────┐␛[0m
-␛[38;5;244m│␛[0m ␛[1;38;5;254mAssistant wants to run: rm -rf ./build␛[0m                                       ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m ␛[38;5;254m⚠ deletes files recursively (rm -rf)␛[0m                                         ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m ␛[38;5;244m⛨ contained · workspace profile · network on␛[0m                                 ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m ␛[3;38;5;244mRun this command? [y/N]␛[0m                                                      ␛[38;5;244m│␛[0m
-␛[38;5;244m└──────────────────────────────────────────────────────────────────────────────┘␛[0m
+· variant · command, flagged, contained, blast radius
+␛[38;5;254m┌─ Approve command (2 of 5) ───────────────────── ⛨ bwrap · workspace ─ ⚠ HIGH ┐␛[0m
+␛[38;5;254m│␛[0m ␛[1;38;5;254mAssistant wants to run: rm -rf ./build && npm run build␛[0m                      ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m ␛[38;5;254m⚠ HIGH  ␛[0m␛[38;5;244mdeletes files recursively (rm -rf)␛[0m                                   ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m                                                                              ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m ␛[38;5;244mtouches   ␛[0m␛[38;5;254m./build␛[0m␛[38;5;244m — 412 files, 84.0 MB; shhh cannot tell what npm writes␛[0m     ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m ␛[38;5;244mundo      ␛[0m␛[38;5;254mnone␛[0m␛[38;5;244m — nothing it writes is tracked in git␛[0m                         ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m ␛[38;5;244mnetwork   ␛[0m␛[38;5;254mopen␛[0m␛[38;5;244m — the workspace profile allows network access␛[0m                 ␛[38;5;254m│␛[0m
+␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[0m
+␛[38;5;254m│␛[0m ␛[3;38;5;244mRun this command? [y/N] · esc — the safe answer␛[0m                              ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m ␛[38;5;244m[a] always — not offered: a safety-flagged command is never pre-approved␛[0m     ␛[38;5;254m│␛[0m
+␛[38;5;254m└──────────────────────────────────────────────────────────────────────────────┘␛[0m
+
+· variant · command, uncontained
+␛[38;5;254m┌─ Approve command ────────────────────────────────── ⚠ UNCONTAINED ─ ⚠ medium ┐␛[0m
+␛[38;5;254m│␛[0m ␛[1;38;5;254mAssistant wants to run: curl -fsSL https://get.pnpm.io/install.sh | sh␛[0m       ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m ␛[38;5;254m⚠ medium␛[0m                                                                     ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m                                                                              ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m ␛[38;5;244mtouches   ␛[0m␛[38;5;254munknown␛[0m␛[38;5;244m — piped into sh; what it runs is not inspected first␛[0m       ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m ␛[38;5;244mundo      ␛[0m␛[38;5;254munknown␛[0m␛[38;5;244m — shhh could not resolve what this writes␛[0m                  ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m ␛[38;5;244mnetwork   ␛[0m␛[38;5;254mopen␛[0m                                                               ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m ␛[38;5;244m⛨         ␛[0m␛[38;5;254mno sandbox␛[0m                                                         ␛[38;5;254m│␛[0m
+␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[0m
+␛[38;5;254m│␛[0m ␛[3;38;5;244mRun this command? [y/N] · esc — the safe answer␛[0m                              ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m ␛[38;5;244mcontainment is off for this session · /sandbox doctor explains why␛[0m           ␛[38;5;254m│␛[0m
+␛[38;5;254m└──────────────────────────────────────────────────────────────────────────────┘␛[0m
 
 · variant · edit, diff body
-␛[38;5;244m┌─ Approve edit ───────────────────────────────────────────────────────────────┐␛[0m
-␛[38;5;244m│␛[0m ␛[1;38;5;254mAssistant wants to edit: internal/agent/loop.go␛[0m                              ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m ␛[38;5;254m@@ -138,6 +138,7 @@␛[0m                                                          ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m ␛[38;5;244m  138      for round := 0; ; round++ {␛[0m                                       ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m ␛[38;5;244m  139          if round >= a.maxRounds {␛[0m                                     ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m ␛[38;5;254m- 140              return results, nil␛[0m                                       ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m ␛[38;5;254m+ 140              return results, ErrRoundLimit␛[0m                             ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m ␛[38;5;254m+ 141          }␛[0m                                                             ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m ␛[38;5;244m  142          }␛[0m                                                             ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m ␛[38;5;244m  143      }␛[0m                                                                 ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m ␛[38;5;244m+2 −1 · 1 hunk␛[0m                                                               ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m ␛[3;38;5;244mApply this edit? [y/N]  (d: full diff)␛[0m                                       ␛[38;5;244m│␛[0m
-␛[38;5;244m└──────────────────────────────────────────────────────────────────────────────┘␛[0m
+␛[38;5;254m┌─ Approve edit ───────────────────────────────────────────────────── ⚠ medium ┐␛[0m
+␛[38;5;254m│␛[0m ␛[1;38;5;254mAssistant wants to edit: internal/agent/loop.go␛[0m                              ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m ␛[38;5;254m⚠ medium␛[0m                                                                     ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m ␛[38;5;254m@@ -138,6 +138,7 @@␛[0m                                                          ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m ␛[38;5;244m  138      for round := 0; ; round++ {␛[0m                                       ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m ␛[38;5;244m  139          if round >= a.maxRounds {␛[0m                                     ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m ␛[38;5;254m- 140              return results, nil␛[0m                                       ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m ␛[38;5;254m+ 140              return results, ErrRoundLimit␛[0m                             ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m ␛[38;5;254m+ 141          }␛[0m                                                             ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m ␛[38;5;244m  142          }␛[0m                                                             ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m ␛[38;5;244m  143      }␛[0m                                                                 ␛[38;5;254m│␛[0m
+␛[38;5;254m│␛[0m ␛[38;5;244m+2 −1 · 1 hunk · undo yes — recorded, and git has this file␛[0m                  ␛[38;5;254m│␛[0m
+␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[0m
+␛[38;5;254m│␛[0m ␛[3;38;5;244mApply this edit? [y/N]  (d: full diff)␛[0m                                       ␛[38;5;254m│␛[0m
+␛[38;5;254m└──────────────────────────────────────────────────────────────────────────────┘␛[0m
 
 · variant · generic
-␛[38;5;244m┌─ Approve tool ───────────────────────────────────────────────────────────────┐␛[0m
+␛[38;5;244m┌─ Approve tool ──────────────────────────────────────────────────────── ⚠ low ┐␛[0m
 ␛[38;5;244m│␛[0m ␛[1;38;5;254mAssistant wants to use: web_fetch␛[0m                                            ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m ␛[38;5;244mfetch https://example.com/spec␛[0m                                               ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m ␛[38;5;244m⚠ low␛[0m                                                                        ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m ␛[38;5;244mGET https://pkg.go.dev/context#WithCancel␛[0m                                    ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m                                                                              ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m ␛[38;5;244mdomain    ␛[0m␛[38;5;254mpkg.go.dev␛[0m␛[38;5;244m — the request leaves this machine␛[0m                       ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m ␛[38;5;244msends     ␛[0m␛[38;5;254mthe URL and a shhh-web/1.0 user-agent␛[0m                              ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m ␛[38;5;244mreceives  ␛[0m␛[38;5;254mpage text into the conversation, bounded to 2 MB␛[0m                   ␛[38;5;244m│␛[0m
+␛[38;5;244m├──────────────────────────────────────────────────────────────────────────────┤␛[0m
 ␛[38;5;244m│␛[0m ␛[3;38;5;244mAllow this call? [y/N]␛[0m                                                       ␛[38;5;244m│␛[0m
 ␛[38;5;244m└──────────────────────────────────────────────────────────────────────────────┘␛[0m

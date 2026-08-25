@@ -356,6 +356,7 @@ func (m Model) openRunPick() (tea.Model, tea.Cmd, bool) {
 	}
 	model, cmd := m.openPicker("Run a code block", opts, 0, func(m *Model, idx int) string {
 		m.pendingRun = blocks[idx].body
+		m.pendingBlast = m.resolveRadius(nil)
 		m.setTurnState(stateConfirmRun)
 		return ""
 	})

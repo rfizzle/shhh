@@ -208,23 +208,51 @@ func TestGolden_ApprovalCard(t *testing.T) {
 			{Label: "variant · command, always-allow offered", View: card(func(c *ApprovalCard) {
 				c.AllowAlways, c.AlwaysHint = true, "a: always allow commands this session"
 			})},
-			{Label: "variant · command, flagged and contained", View: card(func(c *ApprovalCard) {
+			{Label: "variant · command, flagged, contained, blast radius", View: card(func(c *ApprovalCard) {
 				c.QueuePos = "2 of 5"
-				c.Headline = "Assistant wants to run: rm -rf ./build"
+				c.Headline = "Assistant wants to run: rm -rf ./build && npm run build"
+				c.Severity = SeverityHigh
 				c.Warnings = []string{"deletes files recursively (rm -rf)"}
-				c.Containment = "contained · workspace profile · network on"
+				c.Chip = "⛨ bwrap · workspace"
+				c.Fields = []CardField{
+					{Label: "touches", Value: "./build", Detail: "412 files, 84.0 MB; shhh cannot tell what npm writes"},
+					{Label: "undo", Value: "none", Detail: "nothing it writes is tracked in git", Tone: ToneRisk},
+					{Label: "network", Value: "open", Detail: "the workspace profile allows network access", Tone: ToneOpen},
+				}
+				c.SafeDefault = "esc — the safe answer"
+				c.Footnote = "[a] always — not offered: a safety-flagged command is never pre-approved"
+			})},
+			{Label: "variant · command, uncontained", View: card(func(c *ApprovalCard) {
+				c.Headline = "Assistant wants to run: curl -fsSL https://get.pnpm.io/install.sh | sh"
+				c.Severity, c.Uncontained = SeverityMedium, true
+				c.Fields = []CardField{
+					{Label: "touches", Value: "unknown", Detail: "piped into sh; what it runs is not inspected first", Tone: ToneRisk},
+					{Label: "undo", Value: "unknown", Detail: "shhh could not resolve what this writes", Tone: ToneRisk},
+					{Label: "network", Value: "open", Detail: "nothing contains this command, so nothing limits what it reaches", Tone: ToneOpen},
+					{Label: "⛨", Value: "no sandbox", Detail: "bubblewrap (bwrap) not found on PATH; the command runs as you", Tone: ToneRisk},
+				}
+				c.SafeDefault = "esc — the safe answer"
+				c.Footnote = "containment is off for this session · /sandbox doctor explains why"
 			})},
 			{Label: "variant · edit, diff body", View: card(func(c *ApprovalCard) {
 				c.Variant, c.Title = ApprovalEdit, "Approve edit"
 				c.Headline = "Assistant wants to edit: internal/agent/loop.go"
 				c.Question = "Apply this edit?"
+				c.Severity = SeverityMedium
 				c.Hunks, c.FullDiff = goldenHunks(), true
+				c.Reversibility = "undo yes — recorded, and git has this file"
 			})},
 			{Label: "variant · generic", View: card(func(c *ApprovalCard) {
 				c.Variant, c.Title = ApprovalGeneric, "Approve tool"
 				c.Headline = "Assistant wants to use: web_fetch"
-				c.Summary = "fetch https://example.com/spec"
+				c.Summary = "GET https://pkg.go.dev/context#WithCancel"
 				c.Question = "Allow this call?"
+				c.Severity = SeverityLow
+				c.Fields = []CardField{
+					{Label: "domain", Value: "pkg.go.dev", Detail: "the request leaves this machine", Tone: ToneOpen},
+					{Label: "sends", Value: "the URL and a shhh-web/1.0 user-agent", Detail: "no file contents, no credentials"},
+					{Label: "receives", Value: "page text into the conversation, bounded to 2 MB", Detail: "it counts against the context window"},
+				}
 			})},
 		}
 	})
