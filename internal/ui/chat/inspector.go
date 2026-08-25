@@ -34,7 +34,12 @@ const (
 	contextBurnSamples = 8
 )
 
-var paneDividerStyle = lipgloss.NewStyle().Foreground(components.Palette.Dim)
+var paneDividerStyle lipgloss.Style
+
+// applyInspectorStyles rebuilds the pane divider from the palette (S-095).
+func applyInspectorStyles(p components.ColorTokens) {
+	paneDividerStyle = lipgloss.NewStyle().Foreground(p.Dim)
+}
 
 // twoPane reports whether the surface is split. Width is the first condition;
 // a takeover surface (or an attached child's session, which is a different

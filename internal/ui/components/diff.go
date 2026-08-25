@@ -278,6 +278,12 @@ func renderUnifiedLine(l diff.Line, width, numWidth int, opts UnifiedOpts) strin
 // background tint so syntax colors survive. ok=false falls back to plain
 // rendering when the segments don't reconstruct the line.
 func renderSyntaxLine(prefix, text string, avail int, kind diff.Kind, span *diff.Span, syntax Syntax) (string, bool) {
+	// Syntax colours come from a chroma theme, not from Palette, so mono mode
+	// cannot strip them — it declines them instead and the line renders with
+	// the plain +/- diff styling (S-095).
+	if Mono() {
+		return "", false
+	}
 	segs := syntax(text)
 	if segs == nil {
 		return "", false

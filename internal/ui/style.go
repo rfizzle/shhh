@@ -24,6 +24,10 @@ var (
 )
 
 func InitStyles() {
+	// components already switched the palette to its two greys for these
+	// (S-095); dropping the profile to Ascii on top of that is the stricter
+	// reading NO_COLOR asks for — no ANSI colour at all, bold and glyphs
+	// intact.
 	noColor := os.Getenv("NO_COLOR") != ""
 	dumbTerm := os.Getenv("TERM") == "dumb"
 
@@ -60,4 +64,7 @@ func InitStyles() {
 
 func init() {
 	InitStyles()
+	// The one-shot generate UI honours the mono swap through the same shared
+	// palette the chat TUI uses (S-095).
+	components.OnPaletteChange(InitStyles)
 }

@@ -318,19 +318,75 @@ func (m Model) runningCommandRow(width int) string {
 	return row.View(width)
 }
 
-// uiCommand handles /ui: showing and setting the activity feed's verbosity.
+// uiCommand handles /ui: the activity feed's verbosity and mono conformance.
 func (m *Model) uiCommand(parts []string) string {
-	if len(parts) == 1 || (len(parts) == 2 && parts[1] == "verbosity") {
-		return fmt.Sprintf("Activity feed verbosity: %s.\nLayout: %s.\nUsage: /ui verbosity <low|normal|high> — low shows step headers only, normal folds read-only groups, high expands every row.", m.verbosity, m.inspectorStatus())
+	if len(parts) == 1 {
+		return fmt.Sprintf("Activity feed verbosity: %s.\nMonochrome: %s.\nLayout: %s.\nUsage: /ui verbosity <low|normal|high> · /ui mono <on|off>", m.verbosity, monoStatus(), m.inspectorStatus())
 	}
-	if len(parts) != 3 || parts[1] != "verbosity" {
-		return "Usage: /ui verbosity <low|normal|high>"
+	switch parts[1] {
+	case "verbosity":
+		if len(parts) == 2 {
+			return fmt.Sprintf("Activity feed verbosity: %s.\nUsage: /ui verbosity <low|normal|high> — low shows step headers only, normal folds read-only groups, high expands every row.", m.verbosity)
+		}
+		if len(parts) != 3 {
+			return "Usage: /ui verbosity <low|normal|high>"
+		}
+		v, err := parseVerbosity(parts[2])
+		if err != nil {
+			return "Error: " + err.Error()
+		}
+		m.verbosity = v
+		m.invalidateRenderCache()
+		return fmt.Sprintf("Activity feed verbosity set to %s.", v)
+	case "mono":
+		return m.monoCommand(parts)
 	}
-	v, err := parseVerbosity(parts[2])
-	if err != nil {
-		return "Error: " + err.Error()
+	return "Usage: /ui verbosity <low|normal|high> · /ui mono <on|off>"
+}
+
+// monoStatus describes the current monochrome state, naming the environment
+// when it is what turned mono on.
+func monoStatus() string {
+	switch {
+	case components.MonoForced():
+		return "on (NO_COLOR)"
+	case components.Mono():
+		return "on"
 	}
-	m.verbosity = v
+	return "off"
+}
+
+// monoCommand handles /ui mono: strip every surface to the two greys of
+// DESIGN-TUI.md's first invariant, so that a state distinguished only by
+// colour becomes visibly wrong (S-095). NO_COLOR and TERM=dumb turn it on for
+// the whole session and it cannot be turned back off from inside — the
+// environment asked, not the user.
+func (m *Model) monoCommand(parts []string) string {
+	if len(parts) == 2 {
+		return fmt.Sprintf("Monochrome: %s.\nUsage: /ui mono <on|off> — strips every surface to two greys; glyphs, words and layout carry the states.", monoStatus())
+	}
+	if len(parts) != 3 {
+		return "Usage: /ui mono <on|off>"
+	}
+	var on bool
+	switch parts[2] {
+	case "on", "true", "yes":
+		on = true
+	case "off", "false", "no":
+		on = false
+	default:
+		return fmt.Sprintf("Error: unknown mono setting %q (on, off)", parts[2])
+	}
+	if !on && components.MonoForced() {
+		return "Monochrome is on because NO_COLOR is set in this environment; it cannot be turned off from here."
+	}
+	if on == components.Mono() {
+		return fmt.Sprintf("Monochrome already %s.", monoStatus())
+	}
+	components.SetMono(on)
 	m.invalidateRenderCache()
-	return fmt.Sprintf("Activity feed verbosity set to %s.", v)
+	if on {
+		return "Monochrome on — every surface renders in two greys."
+	}
+	return "Monochrome off — the full palette is back."
 }

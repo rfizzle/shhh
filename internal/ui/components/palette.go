@@ -41,8 +41,14 @@ type ColorTokens struct {
 	Body    lipgloss.Color // 252 ordinary body text
 }
 
-// Palette is the one shared token set.
-var Palette = ColorTokens{
+// Palette is the live token set: the full palette above, or the two-grey
+// mono palette while mono conformance is on (S-095, mono.go). Every style in
+// the product reads it through the vars below, which applyPalette rebuilds
+// whenever the palette is swapped.
+var Palette = FullPalette
+
+// FullPalette is the 256-color token set — the palette unless mono is on.
+var FullPalette = ColorTokens{
 	Add:     lipgloss.Color("10"),
 	Del:     lipgloss.Color("9"),
 	AddBg:   lipgloss.Color("22"),
@@ -60,26 +66,52 @@ var Palette = ColorTokens{
 	Body:    lipgloss.Color("252"),
 }
 
-// Styles shared by the components in this package.
+// Styles shared by the components in this package. They are rebuilt by
+// applyPalette rather than initialized in place, so swapping the palette at
+// runtime (/ui mono) reaches every surface.
 var (
-	borderStyle   = lipgloss.NewStyle().Foreground(Palette.Dim)
-	headlineStyle = lipgloss.NewStyle().Bold(true).Foreground(Palette.Info)
-	hintStyle     = lipgloss.NewStyle().Foreground(Palette.Dim).Italic(true)
-	warnStyle     = lipgloss.NewStyle().Foreground(Palette.Del)
-	shieldStyle   = lipgloss.NewStyle().Foreground(Palette.Status)
-	dimStyle      = lipgloss.NewStyle().Foreground(Palette.Dim)
-	dimmerStyle   = lipgloss.NewStyle().Foreground(Palette.Dimmer)
-	focusRowStyle = lipgloss.NewStyle().Bold(true).Background(Palette.FocusBg)
-	addStyle      = lipgloss.NewStyle().Foreground(Palette.Add)
-	delStyle      = lipgloss.NewStyle().Foreground(Palette.Del)
-	addEmphStyle  = lipgloss.NewStyle().Foreground(Palette.Add).Background(Palette.AddBg)
-	delEmphStyle  = lipgloss.NewStyle().Foreground(Palette.Del).Background(Palette.DelBg)
-	hunkStyle     = lipgloss.NewStyle().Foreground(Palette.Hunk)
-	contextStyle  = lipgloss.NewStyle().Foreground(Palette.Dimmer)
-	accentStyle   = lipgloss.NewStyle().Foreground(Palette.Accent)
-	infoStyle     = lipgloss.NewStyle().Foreground(Palette.Info)
-	errStyle      = lipgloss.NewStyle().Foreground(Palette.Del)
-	spinTextStyle = lipgloss.NewStyle().Foreground(Palette.Spin)
-	statusStyle   = lipgloss.NewStyle().Foreground(Palette.Status)
-	bodyStyle     = lipgloss.NewStyle().Foreground(Palette.Body)
+	borderStyle   lipgloss.Style
+	headlineStyle lipgloss.Style
+	hintStyle     lipgloss.Style
+	warnStyle     lipgloss.Style
+	shieldStyle   lipgloss.Style
+	dimStyle      lipgloss.Style
+	dimmerStyle   lipgloss.Style
+	focusRowStyle lipgloss.Style
+	addStyle      lipgloss.Style
+	delStyle      lipgloss.Style
+	addEmphStyle  lipgloss.Style
+	delEmphStyle  lipgloss.Style
+	hunkStyle     lipgloss.Style
+	contextStyle  lipgloss.Style
+	accentStyle   lipgloss.Style
+	infoStyle     lipgloss.Style
+	errStyle      lipgloss.Style
+	spinTextStyle lipgloss.Style
+	statusStyle   lipgloss.Style
+	bodyStyle     lipgloss.Style
 )
+
+// applyPalette rebuilds every style in this package from the current Palette.
+func applyPalette() {
+	borderStyle = lipgloss.NewStyle().Foreground(Palette.Dim)
+	headlineStyle = lipgloss.NewStyle().Bold(true).Foreground(Palette.Info)
+	hintStyle = lipgloss.NewStyle().Foreground(Palette.Dim).Italic(true)
+	warnStyle = lipgloss.NewStyle().Foreground(Palette.Del)
+	shieldStyle = lipgloss.NewStyle().Foreground(Palette.Status)
+	dimStyle = lipgloss.NewStyle().Foreground(Palette.Dim)
+	dimmerStyle = lipgloss.NewStyle().Foreground(Palette.Dimmer)
+	focusRowStyle = lipgloss.NewStyle().Bold(true).Background(Palette.FocusBg)
+	addStyle = lipgloss.NewStyle().Foreground(Palette.Add)
+	delStyle = lipgloss.NewStyle().Foreground(Palette.Del)
+	addEmphStyle = lipgloss.NewStyle().Foreground(Palette.Add).Background(Palette.AddBg)
+	delEmphStyle = lipgloss.NewStyle().Foreground(Palette.Del).Background(Palette.DelBg)
+	hunkStyle = lipgloss.NewStyle().Foreground(Palette.Hunk)
+	contextStyle = lipgloss.NewStyle().Foreground(Palette.Dimmer)
+	accentStyle = lipgloss.NewStyle().Foreground(Palette.Accent)
+	infoStyle = lipgloss.NewStyle().Foreground(Palette.Info)
+	errStyle = lipgloss.NewStyle().Foreground(Palette.Del)
+	spinTextStyle = lipgloss.NewStyle().Foreground(Palette.Spin)
+	statusStyle = lipgloss.NewStyle().Foreground(Palette.Status)
+	bodyStyle = lipgloss.NewStyle().Foreground(Palette.Body)
+}

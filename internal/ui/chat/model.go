@@ -1705,7 +1705,7 @@ func (m Model) wordWrap(text string, width int) string {
 
 func dividerStyle(width int) string {
 	return lipgloss.NewStyle().
-		Foreground(lipgloss.Color("241")).
+		Foreground(components.Palette.Dim).
 		Render(strings.Repeat("─", width))
 }
 

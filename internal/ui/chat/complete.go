@@ -89,13 +89,20 @@ var slashCommands = []slashCommand{
 	{name: "/mode", args: "[name|why]", desc: "Set the permission mode (bare /mode opens a picker)",
 		argSpecs: []argSpec{{dynamic: modeArgs}}},
 	{name: "/stats", desc: "Context occupancy and session spend"},
-	{name: "/ui", args: "verbosity <low|normal|high>", desc: "Activity feed density",
+	{name: "/ui", args: "verbosity <low|normal|high> | mono <on|off>", desc: "Activity feed density and monochrome mode",
 		argSpecs: []argSpec{
-			{options: []argOption{{"verbosity", "Activity feed density"}}},
+			{options: []argOption{
+				{"verbosity", "Activity feed density"},
+				{"mono", "Strip every surface to two greys"},
+			}},
 			{after: []string{"verbosity"}, options: []argOption{
 				{"low", "Step headers only"},
 				{"normal", "Read-only calls folded"},
 				{"high", "Every row expanded"},
+			}},
+			{after: []string{"mono"}, options: []argOption{
+				{"on", "Two greys — glyphs and words carry every state"},
+				{"off", "The full palette"},
 			}},
 		}},
 	{name: "/sandbox", args: "[doctor|list|status|destroy|prune]", desc: "Containment status and container sandboxes",
@@ -161,11 +168,19 @@ var slashCommands = []slashCommand{
 const maxCompletionRows = 6
 
 var (
-	completeFocusStyle = lipgloss.NewStyle().Bold(true).Background(components.Palette.FocusBg)
-	completeArgsStyle  = lipgloss.NewStyle().Foreground(components.Palette.Dim)
-	completeDescStyle  = lipgloss.NewStyle().Foreground(components.Palette.Dim)
-	completeHintStyle  = lipgloss.NewStyle().Foreground(components.Palette.Dim).Italic(true)
+	completeFocusStyle lipgloss.Style
+	completeArgsStyle  lipgloss.Style
+	completeDescStyle  lipgloss.Style
+	completeHintStyle  lipgloss.Style
 )
+
+// applyCompleteStyles rebuilds the menu's styles from the palette (S-095).
+func applyCompleteStyles(p components.ColorTokens) {
+	completeFocusStyle = lipgloss.NewStyle().Bold(true).Background(p.FocusBg)
+	completeArgsStyle = lipgloss.NewStyle().Foreground(p.Dim)
+	completeDescStyle = lipgloss.NewStyle().Foreground(p.Dim)
+	completeHintStyle = lipgloss.NewStyle().Foreground(p.Dim).Italic(true)
+}
 
 // matchesCommand reports whether the typed token ("/mo") is a prefix of the
 // command's name or one of its aliases.
@@ -272,8 +287,9 @@ func (m *Model) argumentMatches(prior []string, token string) []completionItem {
 		return nil
 	}
 	opts := filterArgs(m.argCandidates(c.name, len(prior)-1, spec), token, spec.fuzzy)
-	// A trailing space only helps when another argument can follow.
-	more := len(c.argSpecs) > len(prior)
+	// A trailing space only helps when another argument can follow — counted
+	// in positions, since gated alternatives share one.
+	more := argPositions(c) > len(prior)
 	items := make([]completionItem, len(opts))
 	for i, o := range opts {
 		items[i] = completionItem{name: o.value, desc: o.desc, space: more}

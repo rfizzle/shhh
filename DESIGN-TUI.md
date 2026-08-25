@@ -709,6 +709,34 @@ divider above the key row. The input frame (§12) uses the rounded `╭ ╮ ╰ 
 because it is a persistent surface rather than something that interrupts —
 the corner shape alone says which kind of thing you are looking at.
 
+### 10f. Monochrome (S-095)
+
+The first invariant is checked, not asserted. `NO_COLOR`, `TERM=dumb` and
+`/ui mono on` swap `components.Palette` for the two greys of
+`tokens/colors.css`, and every surface follows because every surface reads
+its colours from that one token set — the component styles, the chat and
+generate style files, and the saved-chat browser rebuild themselves on the
+swap rather than capturing colours once at init.
+
+| Mono token | 256 | Design token | Takes over from |
+|---|---|---|---|
+| mono-fg | 254 | `--mono-fg` | add, del, accent, info, hunk, spin, bright, body |
+| mono-dim | 244 | `--mono-dim` | dim, dimmer, status, subtle |
+| mono-bg | 237 | `--mono-bg` | focusBg, addBg, delBg |
+
+Bold, glyphs and layout are untouched — only hue goes. The two colour
+sources the palette does not own are declined rather than recoloured: the
+diff renderer drops chroma highlighting, and assistant prose renders through
+glamour's `ascii` theme, which writes emphasis as `**` instead of as colour.
+`NO_COLOR` additionally drops the terminal profile to `termenv.Ascii`, which
+flattens even the two greys — the stricter reading that convention asks for.
+
+The check itself lives in `internal/ui/components/mono_test.go`: it renders
+every state of every surface with mono on, strips the ANSI, and fails when
+two states collapse to the same text. A state that was only ever a hue apart
+from another is a failing test, not a review comment. The design-system
+project ships the same check as `guidelines/mono-check.html`.
+
 ---
 
 ## 11. Implementation Notes

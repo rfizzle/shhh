@@ -38,6 +38,22 @@ type argSpec struct {
 	fuzzy   bool
 }
 
+// argPositions counts the argument positions a command has. A run of
+// consecutive gated specs is a set of alternatives for one position, not one
+// position each, so the count is not simply len(argSpecs) — /ui has two
+// positions across three specs.
+func argPositions(c slashCommand) int {
+	n, prevGated := 0, false
+	for _, s := range c.argSpecs {
+		gated := len(s.after) > 0
+		if !gated || !prevGated {
+			n++
+		}
+		prevGated = gated
+	}
+	return n
+}
+
 // staticArgs is the common case: one position with a fixed candidate list.
 func staticArgs(opts ...argOption) []argSpec {
 	return []argSpec{{options: opts}}
@@ -65,18 +81,29 @@ func lookupCommand(m *Model, name string) (slashCommand, bool) {
 // argSpecFor returns the spec for argument position pos of cmd, given the
 // tokens already typed. It reports false when the position is free-form (a
 // chat name, a memory body) or gated on a different preceding token.
+//
+// Several gated specs may share one position: /ui's second argument is a
+// verbosity level after "verbosity" and an on/off after "mono" (S-095), so a
+// gate that does not match falls through to the next alternative instead of
+// ending the search.
 func argSpecFor(c slashCommand, pos int, prior []string) (argSpec, bool) {
 	if pos < 0 || pos >= len(c.argSpecs) {
 		return argSpec{}, false
 	}
 	spec := c.argSpecs[pos]
-	if len(spec.after) > 0 {
-		prev := prior[len(prior)-1]
-		if !containsString(spec.after, prev) {
-			return argSpec{}, false
+	if len(spec.after) == 0 {
+		return spec, true
+	}
+	if len(prior) == 0 {
+		return argSpec{}, false
+	}
+	prev := prior[len(prior)-1]
+	for _, alt := range c.argSpecs[pos:] {
+		if len(alt.after) > 0 && containsString(alt.after, prev) {
+			return alt, true
 		}
 	}
-	return spec, true
+	return argSpec{}, false
 }
 
 // argCandidates resolves a position's candidates, reading a dynamic source

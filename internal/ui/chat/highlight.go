@@ -15,17 +15,30 @@ import (
 var (
 	rendererMu     sync.Mutex
 	cachedWidth    int
+	cachedMono     bool
 	cachedRenderer *glamour.TermRenderer
 )
+
+// markdownStyle is the glamour style the transcript renders assistant prose
+// with. Mono mode (S-095) swaps the coloured "dark" theme for "ascii", which
+// marks emphasis, headings and code with characters instead of colour — the
+// invariant applied to prose: the ** stays when the colour goes.
+func markdownStyle() string {
+	if components.Mono() {
+		return "ascii"
+	}
+	return "dark"
+}
 
 func getRenderer(width int) *glamour.TermRenderer {
 	rendererMu.Lock()
 	defer rendererMu.Unlock()
-	if cachedRenderer != nil && cachedWidth == width {
+	mono := components.Mono()
+	if cachedRenderer != nil && cachedWidth == width && cachedMono == mono {
 		return cachedRenderer
 	}
 	r, err := glamour.NewTermRenderer(
-		glamour.WithStylePath("dark"),
+		glamour.WithStylePath(markdownStyle()),
 		glamour.WithWordWrap(width),
 	)
 	if err != nil {
@@ -33,6 +46,7 @@ func getRenderer(width int) *glamour.TermRenderer {
 	}
 	cachedRenderer = r
 	cachedWidth = width
+	cachedMono = mono
 	return r
 }
 
@@ -58,6 +72,12 @@ const diffSyntaxStyle = "monokai"
 // diffSyntax returns a per-line syntax highlighter for path, or nil when no
 // lexer matches (the diff then renders with plain diff colors).
 func diffSyntax(path string) components.Syntax {
+	// Chroma's colours are not the product's palette, so mono mode declines
+	// highlighting outright and the diff renders in its plain +/- styling
+	// (S-095).
+	if components.Mono() {
+		return nil
+	}
 	lexer := lexers.Match(filepath.Base(path))
 	if lexer == nil {
 		return nil

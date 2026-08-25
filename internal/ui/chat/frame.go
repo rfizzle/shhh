@@ -54,18 +54,32 @@ func frameLayoutFor(width int) frameLayout {
 	}
 }
 
+// Frame styles, rebuilt from the palette by applyFrameStyles (S-095).
 var (
-	frameAccentPermissive = lipgloss.NewStyle().Foreground(components.Palette.Add)
-	frameAccentGated      = lipgloss.NewStyle().Foreground(components.Palette.Accent)
-	frameAccentChecking   = lipgloss.NewStyle().Foreground(components.Palette.Spin)
-	frameIdleStyle        = lipgloss.NewStyle().Foreground(components.Palette.Dim)
-	frameWorkingStyle     = lipgloss.NewStyle().Bold(true).Foreground(components.Palette.Spin)
-	frameHintStyle        = lipgloss.NewStyle().Foreground(components.Palette.Dim).Italic(true)
-	gutterIdleStyle       = lipgloss.NewStyle().Bold(true).Foreground(components.Palette.Info)
-	gutterWorkStyle       = lipgloss.NewStyle().Bold(true).Foreground(components.Palette.Spin)
-	noticeInfoStyle       = lipgloss.NewStyle().Foreground(components.Palette.Info)
-	noticeAlertStyle      = lipgloss.NewStyle().Foreground(components.Palette.Del)
+	frameAccentPermissive lipgloss.Style
+	frameAccentGated      lipgloss.Style
+	frameAccentChecking   lipgloss.Style
+	frameIdleStyle        lipgloss.Style
+	frameWorkingStyle     lipgloss.Style
+	frameHintStyle        lipgloss.Style
+	gutterIdleStyle       lipgloss.Style
+	gutterWorkStyle       lipgloss.Style
+	noticeInfoStyle       lipgloss.Style
+	noticeAlertStyle      lipgloss.Style
 )
+
+func applyFrameStyles(p components.ColorTokens) {
+	frameAccentPermissive = lipgloss.NewStyle().Foreground(p.Add)
+	frameAccentGated = lipgloss.NewStyle().Foreground(p.Accent)
+	frameAccentChecking = lipgloss.NewStyle().Foreground(p.Spin)
+	frameIdleStyle = lipgloss.NewStyle().Foreground(p.Dim)
+	frameWorkingStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Spin)
+	frameHintStyle = lipgloss.NewStyle().Foreground(p.Dim).Italic(true)
+	gutterIdleStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Info)
+	gutterWorkStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Spin)
+	noticeInfoStyle = lipgloss.NewStyle().Foreground(p.Info)
+	noticeAlertStyle = lipgloss.NewStyle().Foreground(p.Del)
+}
 
 func (m Model) frameLayout() frameLayout { return frameLayoutFor(m.contentWidth()) }
 
