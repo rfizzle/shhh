@@ -153,6 +153,45 @@ func TestGolden_ActivityRows(t *testing.T) {
 // TestGolden_ApprovalCard captures the decision surface's variants (§4): the
 // command card plain and flagged, the edit card carrying its diff, and the
 // generic card.
+// TestGolden_TurnClose captures the rows a turn ends with (§16, S-098): the
+// three-row close, the one-row close of a turn that changed nothing, and the
+// two ways a turn can stop early.
+func TestGolden_TurnClose(t *testing.T) {
+	captureGolden(t, "turn-close", "turn close rows", goldenWidths, func(width int) []golden.Panel {
+		closed := func(mut func(*TurnClose)) string {
+			c := TurnClose{
+				Steps: 4, Tools: 18, Elapsed: "1m 04s", Spend: "$0.14", Note: "round 7/25",
+				Changes: &TurnChanges{
+					Files: 3, Added: 30, Removed: 4,
+					Keys: []TurnKey{{Key: "[v]", Label: "review"}, {Key: "[u]", Label: "undo turn"}},
+					Note: "all tracked in git",
+				},
+				Checks: &TurnChecks{Label: "go test ./internal/agent/...", Counts: "41 packages · 12.8s"},
+			}
+			mut(&c)
+			return c.View(width)
+		}
+		return []golden.Panel{
+			{Label: "done · changed · checked", View: closed(func(c *TurnClose) {})},
+			{Label: "done · checks failing", View: closed(func(c *TurnClose) { c.Checks.Failed = true })},
+			{Label: "done · nothing changed", View: closed(func(c *TurnClose) {
+				c.Changes, c.Checks = nil, nil
+			})},
+			{Label: "cancelled · reports what it changed before stopping", View: closed(func(c *TurnClose) {
+				c.State, c.Checks = TurnCancelled, nil
+				c.Steps, c.Tools, c.Elapsed = 2, 5, "8.1s"
+			})},
+			{Label: "failed · the stream broke", View: closed(func(c *TurnClose) {
+				c.State, c.Changes, c.Checks = TurnFailed, nil, nil
+				c.Steps, c.Tools, c.Elapsed, c.Spend = 1, 2, "3.4s", "~1.2k tok"
+			})},
+			{Label: "unpriced · tokens, never a made-up zero", View: closed(func(c *TurnClose) {
+				c.Spend, c.Changes, c.Checks = "~48.1k tok", nil, nil
+			})},
+		}
+	})
+}
+
 func TestGolden_ApprovalCard(t *testing.T) {
 	captureGolden(t, "approval-card", "approval card", goldenWidths, func(width int) []golden.Panel {
 		card := func(mut func(*ApprovalCard)) string {

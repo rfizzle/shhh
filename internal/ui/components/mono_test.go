@@ -96,6 +96,14 @@ func monoFixtures() []monoSurface {
 		return Meter{Pct: pct, Cells: MeterCellsVitals, Tone: MeterPressure, Label: "ctx"}.View()
 	}
 
+	// The close rows hold their stats constant so that only the state itself
+	// is left to tell them apart (S-098, §16).
+	closed := func(mut func(*TurnClose)) string {
+		c := TurnClose{Steps: 4, Tools: 18, Elapsed: "1m 04s"}
+		mut(&c)
+		return c.View(w)
+	}
+
 	return []monoSurface{
 		{"cockpit mode segment", []monoState{
 			// The mode word is held constant on purpose: the glyph has to
@@ -164,6 +172,24 @@ func monoFixtures() []monoSurface {
 			{"blocked", agents(AgentBlocked, "working")},
 			{"done", agents(AgentDone, "working")},
 			{"failed", agents(AgentFailed, "working")},
+		}},
+		{"turn close state", []monoState{
+			{"done", closed(func(c *TurnClose) {})},
+			{"cancelled", closed(func(c *TurnClose) { c.State = TurnCancelled })},
+			{"failed", closed(func(c *TurnClose) { c.State = TurnFailed })},
+		}},
+		{"turn close verdict", []monoState{
+			{"nothing changed", closed(func(c *TurnClose) {})},
+			{"changed", closed(func(c *TurnClose) {
+				c.Changes = &TurnChanges{Files: 3, Added: 30, Removed: 4,
+					Keys: []TurnKey{{Key: "[v]", Label: "review"}}}
+			})},
+			{"checks passing", closed(func(c *TurnClose) {
+				c.Checks = &TurnChecks{Label: "go test ./...", Counts: "41 packages"}
+			})},
+			{"checks failing", closed(func(c *TurnClose) {
+				c.Checks = &TurnChecks{Failed: true, Label: "go test ./...", Counts: "41 packages"}
+			})},
 		}},
 		{"context meter pressure", []monoState{
 			{"healthy", meter(40)},

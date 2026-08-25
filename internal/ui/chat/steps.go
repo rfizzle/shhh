@@ -381,14 +381,14 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 		units = append(units, unit{idx: idx, sepBefore: sepBefore, sepAfter: sepAfter, text: text})
 	}
 	entryWidth := func(e entry) int {
-		if focus && expandable(e) {
+		if focus && selectable(e) {
 			return width - components.GridPointerWidth
 		}
 		return width
 	}
 	addEntry := func(i int) {
 		e := es[i]
-		add(i, e, e, m.renderEntry(e, entryWidth(e)), expandable(e))
+		add(i, e, e, m.renderEntry(e, entryWidth(e)), selectable(e))
 	}
 
 	if blk.step == nil {

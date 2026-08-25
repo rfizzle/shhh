@@ -50,6 +50,10 @@ func (m *Model) setTurnState(s state) {
 		// (S-093), which is why the ring is closed here and not on the
 		// last usage report — a turn is more than its final request.
 		m.vitals.endTurn(m.turnEnded.Sub(m.turnStarted))
+		// And the turn closes with what it did (S-098). It happens here for
+		// the same reason: every path back to the input passes through this
+		// one transition, so no turn can end without a summary.
+		m.appendTurnClose()
 	}
 	if m.state.isSurface() {
 		m.turnBack = s

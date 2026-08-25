@@ -482,3 +482,60 @@ func TestTailExcerpt(t *testing.T) {
 		t.Fatalf("tailExcerpt = %q", got)
 	}
 }
+
+// Summarize reads back what Format writes (S-098): the round trip is the
+// point, so the fixtures here are real runs rather than hand-typed strings.
+func TestSummarize_RoundTripsAFormattedResult(t *testing.T) {
+	ws := t.TempDir()
+	writeConfig(t, ws, `{"suites": {
+		"good": {"checks": [{"name": "ok", "exe": "sh", "args": ["-c", "echo fine"]}]},
+		"bad": {"checks": [
+			{"name": "ok", "exe": "sh", "args": ["-c", "echo fine"]},
+			{"name": "boom", "exe": "sh", "args": ["-c", "exit 3"]}
+		]}
+	}}`)
+	r := &Runner{Workspace: ws}
+
+	res := mustRun(t, r, "good")
+	s, ok := Summarize(res.Format(res.Fingerprint))
+	if !ok {
+		t.Fatal("a formatted pass should summarize")
+	}
+	if s.Suite != "good" || s.Verdict != VerdictPass || !s.OK() {
+		t.Fatalf("pass summary = %+v", s)
+	}
+	if s.Passed != 1 || s.Total != 1 || s.Duration == "" {
+		t.Fatalf("the tally and duration should survive the round trip: %+v", s)
+	}
+
+	res = mustRun(t, r, "bad")
+	if s, _ = Summarize(res.Format(res.Fingerprint)); s.Verdict != VerdictFail || s.Passed != 1 || s.Total != 2 || s.OK() {
+		t.Fatalf("fail summary = %+v", s)
+	}
+}
+
+func TestSummarize_AStalePassIsNotAPass(t *testing.T) {
+	res := &Result{
+		Suite: "default", Verdict: VerdictPass, ChangedDuringRun: true,
+		Checks: []CheckResult{{Name: "ok"}},
+	}
+	s, ok := Summarize(res.Format(res.Fingerprint))
+	if !ok || !s.Stale {
+		t.Fatalf("a verdict the run disowned is stale, got %+v (ok=%v)", s, ok)
+	}
+	if s.OK() {
+		t.Fatal("a stale pass must not read as green")
+	}
+}
+
+func TestSummarize_RejectsAnythingElse(t *testing.T) {
+	for _, in := range []string{
+		"", "error: no such tool",
+		"No gate runs this session yet. Suites are defined in .shhh/quality.json.",
+		"A gate run (suite \"default\") is in progress; ask again shortly.",
+	} {
+		if s, ok := Summarize(in); ok {
+			t.Errorf("Summarize(%q) should report false, got %+v", in, s)
+		}
+	}
+}

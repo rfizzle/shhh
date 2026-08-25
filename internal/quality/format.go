@@ -2,6 +2,8 @@ package quality
 
 import (
 	"fmt"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -70,4 +72,45 @@ func formatCheck(c CheckResult) string {
 
 func roundDuration(d time.Duration) string {
 	return d.Round(100 * time.Millisecond).String()
+}
+
+// Summary is what a caller can learn from a formatted result without holding
+// the Result itself: which suite ran, its verdict, the check tally and
+// whether the verdict still applies to the tree. It is parsed here, beside
+// Format, so the one place that writes the string is the one place that reads
+// it back (S-098).
+type Summary struct {
+	Suite         string
+	Verdict       Verdict
+	Passed, Total int
+	Duration      string
+	// Stale marks a verdict the run itself disowned — the tree moved under
+	// it. A stale pass is not a pass.
+	Stale bool
+}
+
+// OK reports a verdict a caller may treat as green: a pass over the tree it
+// actually ran against.
+func (s Summary) OK() bool { return s.Verdict == VerdictPass && !s.Stale }
+
+var summaryPattern = regexp.MustCompile(
+	`^Quality gate "([^"]*)": ([A-Z]+)(?: — (\d+)/(\d+) checks passed \(([^)]*)\))?`)
+
+// Summarize reads back a result rendered by Format. It reports false for
+// anything else — a status line, an error, a tool result from elsewhere — so
+// a caller never has to guess whether the gate is what it is looking at.
+func Summarize(result string) (Summary, bool) {
+	m := summaryPattern.FindStringSubmatch(strings.SplitN(result, "\n", 2)[0])
+	if m == nil {
+		return Summary{}, false
+	}
+	s := Summary{
+		Suite:    m[1],
+		Verdict:  Verdict(strings.ToLower(m[2])),
+		Duration: m[5],
+		Stale:    strings.Contains(result, "\nSTALE:"),
+	}
+	s.Passed, _ = strconv.Atoi(m[3])
+	s.Total, _ = strconv.Atoi(m[4])
+	return s, true
 }

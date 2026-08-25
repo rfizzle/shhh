@@ -1122,14 +1122,34 @@ whether the tests still pass.
 
 ```
  ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14                   round 7/25
-▎✎ 3 files changed +30 −4 · [v] review · [u] undo        nothing committed
- ✓ go test ./... passing · 41 packages · 12.8s                   [t] rerun
+▎✎ 3 files changed +30 −4 · [v] review · [u] undo turn   all tracked in git
+ ✓ go test ./... passing · 41 packages · 12.8s
 ```
 
 The changed-files row carries the mutation rail (§14) — at a glance the close
 of a turn looks like the rows that produced it. Close rows start at the rail
 column rather than the pointer column (§6a): they belong to the turn, not to a
-step, and nothing folds or selects them.
+step, and nothing folds them.
+
+- The right-hand field annotates the row and is the first thing to drop as
+  the terminal narrows: the round counter beside the summary, and beside the
+  changed files what git knew about them when they were written — `all
+  tracked in git`, `2 tracked · 1 new`, or `no git here`, which is not the
+  same claim as untracked (S-097). Turning that into a claim about what can
+  be taken back is the approval card's blast-radius line (S-101), not this
+  row's job.
+- A stat the session cannot report is left out rather than reported as a
+  zero: a turn that called nothing says no step or tool count, and an
+  unpriced turn reports its tokens, never a made-up zero (§15b).
+- A turn that changed nothing is the first row alone. A turn you cancelled
+  reads `⊘ Cancelled`, one whose stream broke reads `✗ Failed`, and both
+  still carry the changed-files row for what landed before they stopped.
+- The verdict row is one row however many checks ran: several runs collapse
+  to `✗ checks failing · 2 of 3 passing` rather than one row each. The row
+  answers "does it still build", not "what did you run".
+- Nothing about the block is a takeover. The rows are transcript entries and
+  the keys they offer are handled by focus mode on the row (§7), so the input
+  keeps every other key.
 
 ### 16a. Review mode
 

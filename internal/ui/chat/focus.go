@@ -19,6 +19,13 @@ func expandable(e entry) bool {
 	return e.kind == entryTool || e.kind == entryCommand || e.kind == entryDiff
 }
 
+// selectable reports whether focus mode can put its cursor on an entry. It is
+// expandable plus the rows that offer keys without expanding: a turn's close
+// block is passive, but [v] and [u] are handled on it (S-098, §16).
+func selectable(e entry) bool {
+	return expandable(e) || e.kind == entryTurnClose
+}
+
 // expandableIndices lists the transcript indices focus mode can select,
 // scoped to whichever agent's transcript the surface renders (S-077). Step
 // headers are targets too (S-090, §7): j/k steps between headers and rows
@@ -36,7 +43,7 @@ func (m Model) expandableIndices() []int {
 			// A folded group offers its group row, not the rows inside it
 			// (S-091, §13c).
 			for _, sl := range m.stepSlots(es, blk.step.start, blk.step.end) {
-				if expandable(es[sl.idx]) {
+				if selectable(es[sl.idx]) {
 					idxs = append(idxs, sl.idx)
 				}
 			}
@@ -44,7 +51,7 @@ func (m Model) expandableIndices() []int {
 		}
 		start, end := blk.members()
 		for i := start; i < end; i++ {
-			if expandable(es[i]) {
+			if selectable(es[i]) {
 				idxs = append(idxs, i)
 			}
 		}
@@ -87,6 +94,24 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "k", "up":
 		m.moveFocus(-1)
 		return m, nil
+	case reviewKey, undoKey:
+		// The offers on a turn's changeset row (S-098, §16). They are
+		// handled here rather than globally, so the input keeps both keys.
+		if e, ok := m.focusedClose(); ok {
+			if e.close.Changes == nil {
+				return m, nil
+			}
+			if msg.String() == reviewKey {
+				return m.reviewTurn(e.turn)
+			}
+			// The notice lands in the transcript behind focus mode, which
+			// keeps the screen: the cursor stays on the row it was on.
+			updated, cmd := m.undoTurn(e.turn)
+			next := updated.(Model)
+			next.refreshFocusView()
+			return next, cmd
+		}
+		return m, nil
 	case "enter":
 		es := *m.entries()
 		if m.focusIdx >= 0 && m.focusIdx < len(es) {
@@ -122,6 +147,20 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	var cmd tea.Cmd
 	m.viewport, cmd = m.viewport.Update(msg)
 	return m, cmd
+}
+
+// focusedClose returns the turn-close entry the cursor is on, if it is on
+// one. The close rows live in the session's own transcript, so an attached
+// child's feed never offers them (S-077).
+func (m Model) focusedClose() (entry, bool) {
+	if m.attachedTo != "" || m.focusIdx < 0 || m.focusIdx >= len(m.transcript) {
+		return entry{}, false
+	}
+	e := m.transcript[m.focusIdx]
+	if e.kind != entryTurnClose || e.close == nil {
+		return entry{}, false
+	}
+	return e, true
 }
 
 // exitFocusMode returns to the input, keeping expansion state; the render
@@ -211,6 +250,12 @@ func gutterPrefix(block string, selected bool) string {
 
 // renderFocusHint replaces the input area while focus mode is active.
 func (m Model) renderFocusHint() string {
-	hint := systemMsgStyle.Render("focus · j/k select row · enter expand/collapse · esc back")
+	keys := "enter expand/collapse"
+	// On a turn's close rows there is nothing to expand; what the row offers
+	// is what the hint says (S-098).
+	if e, ok := m.focusedClose(); ok && e.close.Changes != nil {
+		keys = reviewKey + " review · " + undoKey + " undo turn"
+	}
+	hint := systemMsgStyle.Render("focus · j/k select row · " + keys + " · esc back")
 	return hint + strings.Repeat("\n", inputHeight-1)
 }

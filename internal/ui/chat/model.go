@@ -129,6 +129,8 @@ const (
 	entryCommand
 	// entryDiff: an applied edit/write rendered as a diff row (S-074).
 	entryDiff
+	// entryTurnClose: the rows a finished turn ends with (S-098).
+	entryTurnClose
 )
 
 // entry is one transcript item, stored raw so the history can be re-rendered
@@ -149,6 +151,11 @@ type entry struct {
 	// diff is the entryDiff viewer (S-074); a pointer so focus-mode
 	// expansion state survives re-renders.
 	diff *components.DiffView
+	// close is the entryTurnClose block (S-098): the raw counts a turn ended
+	// with, so the rows re-render at any width like every other entry, and
+	// turn is the turn it closed — what [v] and [u] act on.
+	close *components.TurnClose
+	turn  int64
 	// deniedBy names who refused the call — decidedByYou for a decline at the
 	// card, decidedByAuto for a rule — and renders the row as ⊘ rather than ✗
 	// (S-089, DESIGN-TUI.md §6d). Empty when nothing was refused.
@@ -355,8 +362,13 @@ type Model struct {
 	// Current-turn accounting for the inspector rail's THIS TURN and SPEND
 	// blocks (S-092): when the turn started, when it finished (zero while it
 	// runs), and what it has spent.
-	turnStarted   time.Time
-	turnEnded     time.Time
+	turnStarted time.Time
+	turnEnded   time.Time
+	// turnOpen marks a turn the user started and that has not yet closed, so
+	// the close rows are appended once, for a real turn (S-098); turnOutcome
+	// is how it ended.
+	turnOpen      bool
+	turnOutcome   components.TurnState
 	turnTokensIn  int64
 	turnTokensOut int64
 	// contextTokens is what the provider last reported the request carrying;
@@ -876,6 +888,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.streaming = ""
 		m.events = nil
 		m.cancel = nil
+		// The close rows say the turn broke, and still report what it
+		// changed before it stopped (S-098).
+		m.turnOutcome = components.TurnFailed
 		m.setTurnState(stateInput)
 		m.restoreSteering()
 		m.viewport.SetContent(m.renderHistory())
@@ -938,6 +953,7 @@ func (m *Model) recordInput(text string) {
 func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
 	m.turnCount++
 	m.turnStarted, m.turnEnded = time.Now(), time.Time{}
+	m.turnOpen, m.turnOutcome = true, components.TurnDone
 	m.turnTokensIn, m.turnTokensOut = 0, 0
 	m.vitals.startTurn()
 	// A fresh user turn clears the notice rail's denial alert (S-082);
@@ -1242,11 +1258,11 @@ func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 	}
 	if m.agent.CapReached() {
-		m.setTurnState(stateInput)
-		m.syncViewport()
 		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
 			"Paused after %d tool rounds this turn. Send a message (e.g. \"continue\") to keep going.",
 			m.agent.Rounds())})
+		m.setTurnState(stateInput)
+		m.syncViewport()
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
 		return m, m.autosaveCmd()
@@ -1381,8 +1397,8 @@ func (m *Model) finishStreaming() {
 		m.streaming = ""
 		m.events = nil
 		m.cancel = nil
-		m.setTurnState(stateInput)
 		m.appendEntry(entry{kind: entrySystem, text: "Compaction cancelled; conversation unchanged."})
+		m.setTurnState(stateInput)
 		return
 	}
 	if m.streaming != "" {
@@ -1412,6 +1428,8 @@ func (m *Model) cancelStreaming() {
 	}
 	m.pendingApproval = nil
 	m.memoryAsk = nil
+	// Ctrl+C is a cancellation, and the close rows say so (S-098).
+	m.turnOutcome = components.TurnCancelled
 	m.finishStreaming()
 	m.restoreSteering()
 	// Restored steering empties the queue: the notice rail may shrink (S-082).
@@ -1500,6 +1518,11 @@ func (m Model) renderEntry(e entry, width int) string {
 	case entryTool, entryCommand:
 		// Compact one-row activity rendering (S-075); focus mode expands it.
 		return m.activityRowFor(e).View(width) + "\n"
+	case entryTurnClose:
+		if e.close == nil {
+			return ""
+		}
+		return e.close.View(width) + "\n"
 	case entryDiff:
 		if e.diff == nil {
 			return ""
@@ -1523,7 +1546,7 @@ func (m Model) renderEntry(e entry, width int) string {
 // lines — rather than as a row in the compact activity feed (§6).
 func entryIsBlock(e entry) bool {
 	switch e.kind {
-	case entryUser, entryAssistant, entryDiff:
+	case entryUser, entryAssistant, entryDiff, entryTurnClose:
 		return true
 	case entrySystem, entryError:
 		return strings.Contains(strings.TrimSpace(e.text), "\n")
@@ -2043,6 +2066,9 @@ func (m *Model) clearConversation() {
 	m.contextTokens = 0
 	m.vitals.reset()
 	m.agent.ResetRounds()
+	// The turn's accounting started over, so there is no longer a turn to
+	// close with a summary either (S-098).
+	m.turnOpen = false
 }
 
 // loadConversation replaces the current conversation and rebuilds the

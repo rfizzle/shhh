@@ -60,9 +60,9 @@ func captureGolden(t *testing.T, name, surface string, widths []int, panels func
 }
 
 // goldenTranscript is a two-step turn: a batch that read and searched, then a
-// batch that edited and broke a test. It is the steps fixture with a folded
-// read-only run added, so the outline, the group row and a failing step all
-// appear in one capture.
+// batch that edited and broke a test, and the rows it closes with. It is the
+// steps fixture with a folded read-only run added, so the outline, the group
+// row, a failing step and the turn close (S-098) all appear in one capture.
 func goldenTranscript() []entry {
 	return []entry{
 		{kind: entryUser, text: "fix the round limit"},
@@ -80,6 +80,17 @@ func goldenTranscript() []entry {
 			toolResult: "edited", duration: 1100 * time.Millisecond},
 		{kind: entryCommand, text: "go test ./internal/agent/...",
 			toolResult: "--- FAIL: TestRoundLimit", exitCode: 1, duration: 21400 * time.Millisecond},
+		{kind: entryTurnClose, close: &components.TurnClose{
+			Steps: 2, Tools: 6, Elapsed: "24.7s", Spend: "$0.14", Note: "round 2/25",
+			Changes: &components.TurnChanges{
+				Files: 1, Added: 12, Removed: 4,
+				Keys: []components.TurnKey{{Key: "[v]", Label: "review"}, {Key: "[u]", Label: "undo turn"}},
+				Note: "all tracked in git",
+			},
+			Checks: &components.TurnChecks{
+				Failed: true, Label: "go test ./internal/agent/...", Counts: "exit 1 · 21s",
+			},
+		}},
 	}
 }
 

@@ -172,8 +172,8 @@ func (m Model) abortCompact() (tea.Model, tea.Cmd) {
 	m.streaming = ""
 	m.events = nil
 	m.cancel = nil
-	m.setTurnState(stateInput)
 	m.appendEntry(entry{kind: entryError, text: "compaction failed: the model responded with tool calls; conversation unchanged"})
+	m.setTurnState(stateInput)
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()
 	return m, nil
