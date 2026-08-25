@@ -89,19 +89,9 @@ func (m *Model) renderAttachedHistory() string {
 	cv := m.syncChildView(m.attachedTo)
 	w := m.contentWidth()
 	var b strings.Builder
-	var prev entry
-	havePrev := false
-	for _, e := range cv.entries {
-		block := m.renderEntry(e, w)
-		if block == "" {
-			continue
-		}
-		if havePrev {
-			b.WriteString(separatorBefore(prev, e))
-		}
-		b.WriteString(block)
-		prev, havePrev = e, true
-	}
+	// A child's transcript groups into steps like the parent's (S-090).
+	body, prev, havePrev := joinUnits(m.transcriptUnits(cv.entries, w, false, -1), entry{}, false)
+	b.WriteString(body)
 	if s := m.subagents.StreamingText(m.attachedTo); s != "" {
 		if havePrev {
 			b.WriteString(separatorBefore(prev, entry{kind: entryAssistant}))

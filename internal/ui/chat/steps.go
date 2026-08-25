@@ -1,0 +1,430 @@
+package chat
+
+// Step outline (S-090, DESIGN-TUI.md §13): consecutive tool calls fold under
+// numbered steps, so a forty-tool turn reads as an outline instead of a
+// scrolling feed. The grouping is a layer over the entry list — the agent
+// already emits ordered tool results, and inventing a step protocol on the
+// wire would couple every provider to the UI (§13a). Plan mode (S-104) is the
+// one place a step list is authoritative; until it feeds one in, every step is
+// inferred from the assistant prose immediately preceding a batch of calls,
+// and a turn with no discernible steps renders exactly as it did before — a
+// flat list, no empty group chrome.
+
+import (
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/charmbracelet/lipgloss"
+	"github.com/rfizzle/shhh/internal/ui/components"
+)
+
+// stepState is a step's state (§13b). It follows its rows: running while any
+// call is in flight, failed once one broke, done otherwise. Queued is the
+// declared-but-not-started state a plan's steps arrive in (S-104).
+type stepState int
+
+const (
+	stepQueued  stepState = iota // · declared, not started; duration —
+	stepRunning                  // ▸ a call is in flight
+	stepDone                     // ✓ finished with nothing to report
+	stepFailed                   // ✗ finished, contained a failure
+)
+
+// foldState is your override of a step's automatic folding. It lives on the
+// entry that titles the step, so steps themselves hold no layout state and
+// re-render from stored raw entries on resize (§13b).
+type foldState int
+
+const (
+	foldAuto   foldState = iota // open while running or broken, folded once done
+	foldOpen                    // you unfolded it
+	foldClosed                  // you folded it
+)
+
+// stepTitleMaxRunes bounds what counts as a title: one short line of prose.
+// Longer prose is an explanation, not a heading, and keeps its own block —
+// the outline titles a step, it never swallows text (invariant 4).
+const stepTitleMaxRunes = 120
+
+// stepOrdinalWidth keeps titles on one column for the first 99 steps.
+const stepOrdinalWidth = 2
+
+// stepGroup is one titled run of consecutive activity entries: the assistant
+// entry at titleIdx heads it, and members [start,end) are the calls it made.
+type stepGroup struct {
+	ordinal  int
+	titleIdx int
+	title    string
+	start    int
+	end      int
+}
+
+// transcriptBlock is one renderable unit of history: a step, or a lone entry
+// that belongs to no step. Blocks tile the transcript in order.
+type transcriptBlock struct {
+	start int
+	end   int
+	step  *stepGroup
+	// last marks the final block, the only one a turn can still add to.
+	last bool
+}
+
+// members is the range of entries a block renders as activity rows — a step's
+// calls, or the lone entry itself.
+func (b transcriptBlock) members() (int, int) {
+	if b.step != nil {
+		return b.step.start, b.step.end
+	}
+	return b.start, b.end
+}
+
+// isActivityEntry reports whether an entry is one of the calls a step groups.
+func isActivityEntry(e entry) bool {
+	switch e.kind {
+	case entryTool, entryCommand, entryDiff:
+		return true
+	}
+	return false
+}
+
+// isStepMember reports whether an entry belongs inside a step. One-line
+// notices (an approval, an auto-allow) are part of the batch they sit in;
+// anything that reads as a standalone block ends the step.
+func isStepMember(e entry) bool {
+	return isActivityEntry(e) || (!entryIsBlock(e) && e.kind != entryAssistant)
+}
+
+// stepTitle reports the title an assistant entry offers a step, if any.
+func stepTitle(e entry) (string, bool) {
+	if e.kind != entryAssistant {
+		return "", false
+	}
+	t := strings.TrimSpace(e.text)
+	if t == "" || strings.Contains(t, "\n") || len([]rune(t)) > stepTitleMaxRunes {
+		return "", false
+	}
+	return t, true
+}
+
+// stepBlocks tiles the entries into blocks: a step wherever a one-line
+// assistant title is followed by at least one call, a lone entry everywhere
+// else. The scan is left to right, so a block that already has a successor
+// can never change — which is what lets renderHistory keep caching.
+func stepBlocks(es []entry) []transcriptBlock {
+	var blocks []transcriptBlock
+	ordinal := 0
+	for i := 0; i < len(es); {
+		if title, ok := stepTitle(es[i]); ok {
+			j := i + 1
+			for j < len(es) && isStepMember(es[j]) {
+				j++
+			}
+			// Trailing notices belong to whatever comes next, not to this
+			// step: a step ends on its last call.
+			for j > i+1 && !isActivityEntry(es[j-1]) {
+				j--
+			}
+			if j > i+1 {
+				ordinal++
+				blocks = append(blocks, transcriptBlock{start: i, end: j, step: &stepGroup{
+					ordinal: ordinal, titleIdx: i, title: title, start: i + 1, end: j,
+				}})
+				i = j
+				continue
+			}
+		}
+		blocks = append(blocks, transcriptBlock{start: i, end: i + 1})
+		i++
+	}
+	if len(blocks) > 0 {
+		blocks[len(blocks)-1].last = true
+	}
+	return blocks
+}
+
+// stepBlockAt returns the block whose step is titled by the entry at idx.
+func stepBlockAt(es []entry, idx int) (transcriptBlock, bool) {
+	for _, blk := range stepBlocks(es) {
+		if blk.step != nil && blk.step.titleIdx == idx {
+			return blk, true
+		}
+	}
+	return transcriptBlock{}, false
+}
+
+// stepStats reads a step's state, tool count and duration off its rows. The
+// duration is the sum of what the calls took — entries carry no wall clock,
+// and the sum is the honest number for "how long this step cost".
+func (m Model) stepStats(g *stepGroup, es []entry) (state stepState, tools int, d time.Duration) {
+	if g.end <= g.start {
+		return stepQueued, 0, 0
+	}
+	var running, failed bool
+	for _, e := range es[g.start:g.end] {
+		if !isActivityEntry(e) {
+			continue
+		}
+		tools++
+		d += e.duration
+		if e.kind == entryDiff {
+			continue
+		}
+		row := m.activityRowFor(e)
+		switch {
+		case row.State == components.ActivityRunning:
+			running = true
+		case row.Failed():
+			failed = true
+		}
+	}
+	switch {
+	case running:
+		return stepRunning, tools, d
+	case failed:
+		return stepFailed, tools, d
+	}
+	return stepDone, tools, d
+}
+
+// stepFolded decides whether a step shows only its header. A step is open
+// while it runs and collapses when it finishes — except one that contains a
+// failure, because a failure you have to scroll to find is a failure you will
+// miss (§13b). Your own fold overrides both.
+func (m Model) stepFolded(g *stepGroup, es []entry, state stepState) bool {
+	switch es[g.titleIdx].stepFold {
+	case foldOpen:
+		return false
+	case foldClosed:
+		return true
+	}
+	if m.verbosity == verbosityHigh {
+		return false
+	}
+	return state == stepDone
+}
+
+// toggleStepFold flips a step between folded and open, recording the choice
+// on the entry that titles it.
+func (m *Model) toggleStepFold(idx int) {
+	es := *m.entries()
+	blk, ok := stepBlockAt(es, idx)
+	if !ok {
+		return
+	}
+	if m.headerFor(blk, es).Folded {
+		es[idx].stepFold = foldOpen
+	} else {
+		es[idx].stepFold = foldClosed
+	}
+}
+
+// stepHeader is one step's line: fold state, ordinal, title, a faint rule
+// stretching to the stats, state glyph, tool count and duration (§13).
+type stepHeader struct {
+	Ordinal  int
+	Title    string
+	State    stepState
+	Tools    int
+	Duration time.Duration
+	Folded   bool
+}
+
+// tones are the header's per-state colors, following the design system's
+// StepGroup component: the pointer and the duration go spin while the step
+// runs and the title brightens with it, a queued step is dim throughout, and
+// a finished step is ordinary body text under a faint rule.
+func (h stepHeader) tones() (ptr, title, dur lipgloss.Style) {
+	switch h.State {
+	case stepRunning:
+		return stepRunStyle, stepLiveTitleStyle, stepRunStyle
+	case stepQueued:
+		return stepDimStyle, stepDimStyle, stepDimStyle
+	}
+	return stepDimStyle, stepTitleStyle, stepStatsStyle
+}
+
+// glyph is the state glyph and its color (§13b).
+func (h stepHeader) glyph() string {
+	switch h.State {
+	case stepRunning:
+		return stepRunStyle.Render("▸")
+	case stepFailed:
+		return stepFailStyle.Render("✗")
+	case stepQueued:
+		return stepDimStyle.Render("·")
+	}
+	return stepDoneStyle.Render("✓")
+}
+
+// countLabel names what the step holds, in words, so the glyph never carries
+// the state alone (invariant 1).
+func (h stepHeader) countLabel() string {
+	switch {
+	case h.State == stepQueued:
+		return components.OutcomeQueued
+	case h.Tools == 1:
+		return "1 tool"
+	}
+	return fmt.Sprintf("%d tools", h.Tools)
+}
+
+// durationText is the header's duration: blank under 0.5s like every other
+// row, — for a step that never ran.
+func (h stepHeader) durationText() string {
+	if h.State == stepQueued {
+		return components.NoDuration
+	}
+	return activityDuration(h.Duration)
+}
+
+// View renders the header at the given width, on the §6a grid: the title
+// starts in the verb column and the duration is the same right-aligned
+// 6-column field the rows use, so the outline and the feed share one edge.
+func (h stepHeader) View(width int) string {
+	fold := "▾"
+	switch {
+	case h.State == stepQueued:
+		fold = "·"
+	case h.Folded:
+		fold = "▸"
+	}
+	ord := strconv.Itoa(h.Ordinal)
+	if len(ord) < stepOrdinalWidth {
+		ord += strings.Repeat(" ", stepOrdinalWidth-len(ord))
+	}
+	ptrStyle, titleStyle, durStyle := h.tones()
+	leadW := components.GridPointerWidth + len(ord) + 1
+	lead := ptrStyle.Render(fold) + " " + titleStyle.Render(ord) + " "
+
+	label := h.countLabel()
+	stats := h.glyph() + " " + stepStatsStyle.Render(label)
+	statsW := lipgloss.Width(label) + 2
+
+	// The rule takes what the title leaves; the title clips before the rule
+	// disappears, because the stats are the reason to read the header.
+	fixed := leadW + statsW + components.GridDurationWidth + 3
+	title := clipRow(h.Title, width-fixed)
+	rule := width - leadW - lipgloss.Width(title) - statsW - components.GridDurationWidth - 2
+	if rule < 1 {
+		rule = 1
+	}
+	line := lead + titleStyle.Render(title) + " " +
+		stepRuleStyle.Render(strings.Repeat("─", rule)) + " " +
+		stats + stepDurationField(h.durationText(), durStyle)
+	return strings.TrimRight(line, " ")
+}
+
+// stepDurationField right-aligns the duration in the grid's 6 columns; the
+// field is reserved even when blank so headers and rows line up.
+func stepDurationField(d string, style lipgloss.Style) string {
+	w := components.GridDurationWidth
+	if d == "" {
+		return strings.Repeat(" ", w)
+	}
+	d = clipRow(d, w)
+	return strings.Repeat(" ", w-lipgloss.Width(d)) + style.Render(d)
+}
+
+// headerFor builds the header for a step from its rows.
+func (m Model) headerFor(blk transcriptBlock, es []entry) stepHeader {
+	g := blk.step
+	state, tools, d := m.stepStats(g, es)
+	// The live step — the last block while the turn is still working — is
+	// running even though every row in it has landed: a call joins the
+	// transcript only once it finishes, so the rows alone never say "busy".
+	if state == stepDone && blk.last && m.turnState() != stateInput {
+		state = stepRunning
+	}
+	return stepHeader{
+		Ordinal:  g.ordinal,
+		Title:    g.title,
+		State:    state,
+		Tools:    tools,
+		Duration: d,
+		Folded:   m.stepFolded(g, es, state),
+	}
+}
+
+// unit is one addressable piece of rendered history: a step header, or a
+// single entry's block. Focus mode selects units, so the plain, focus and
+// attached renderers all walk the same list.
+type unit struct {
+	// idx is the transcript index the unit is anchored to — the entry it
+	// renders, or the entry that titles the step it heads.
+	idx int
+	// sepBefore and sepAfter decide spacing on each side (separatorBefore).
+	// They differ for a header: it takes a block's air above and a feed row's
+	// tightness below, so its rows sit directly under it.
+	sepBefore entry
+	sepAfter  entry
+	text      string
+}
+
+// blockUnits renders one block. In focus mode selectable units render two
+// columns narrower and carry the gutter, with the pointer on the selected one.
+func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool, focusIdx int) []unit {
+	var units []unit
+	add := func(idx int, sepBefore, sepAfter entry, text string, selectable bool) {
+		if text == "" {
+			return
+		}
+		if focus && selectable {
+			text = gutterPrefix(text, idx == focusIdx)
+		}
+		units = append(units, unit{idx: idx, sepBefore: sepBefore, sepAfter: sepAfter, text: text})
+	}
+	entryWidth := func(e entry) int {
+		if focus && expandable(e) {
+			return width - components.GridPointerWidth
+		}
+		return width
+	}
+	addEntry := func(i int) {
+		e := es[i]
+		add(i, e, e, m.renderEntry(e, entryWidth(e)), expandable(e))
+	}
+
+	if blk.step == nil {
+		addEntry(blk.start)
+		return units
+	}
+	g := blk.step
+	headerWidth := width
+	if focus {
+		headerWidth -= components.GridPointerWidth
+	}
+	header := m.headerFor(blk, es)
+	add(g.titleIdx, entry{kind: entryAssistant}, entry{kind: entryTool}, header.View(headerWidth)+"\n", true)
+	if header.Folded {
+		return units
+	}
+	for i := g.start; i < g.end; i++ {
+		addEntry(i)
+	}
+	return units
+}
+
+// transcriptUnits renders every block of a transcript in order.
+func (m Model) transcriptUnits(es []entry, width int, focus bool, focusIdx int) []unit {
+	var units []unit
+	for _, blk := range stepBlocks(es) {
+		units = append(units, m.blockUnits(blk, es, width, focus, focusIdx)...)
+	}
+	return units
+}
+
+// joinUnits concatenates units with the spacing rhythm of separatorBefore,
+// continuing from prev when the caller has already emitted something.
+func joinUnits(units []unit, prev entry, havePrev bool) (string, entry, bool) {
+	var b strings.Builder
+	for _, u := range units {
+		if havePrev {
+			b.WriteString(separatorBefore(prev, u.sepBefore))
+		}
+		b.WriteString(u.text)
+		prev, havePrev = u.sepAfter, true
+	}
+	return b.String(), prev, havePrev
+}

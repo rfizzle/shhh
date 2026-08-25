@@ -276,3 +276,16 @@ func (r ActivityRow) View(width int) string {
 func indented(s string, indent, width int) string {
 	return strings.Repeat(" ", indent) + dimmerStyle.Render(clip(s, max(width-indent, 1)))
 }
+
+// The step outline (§13) draws its headers on this same grid but lives in
+// internal/ui/chat, because it groups history rather than rendering a widget
+// (§11). These are the fields it needs; the widths stay declared here so a
+// grid change remains a one-line change.
+const (
+	// GridPointerWidth is the fold-state/focus column.
+	GridPointerWidth = ptrWidth
+	// GridVerbColumn is where a row's verb — and a step's title — starts.
+	GridVerbColumn = ptrWidth + railWidth + glyphWidth
+	// GridDurationWidth is the right-aligned duration field.
+	GridDurationWidth = durWidth
+)

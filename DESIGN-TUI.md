@@ -718,8 +718,9 @@ the corner shape alone says which kind of thing you are looking at.
   `noteselect.go`, `confirm.go`, `activityrow.go`, `cockpit.go`,
   `agentlist.go`, `frame.go`). The v2 surfaces add `meter.go` (§10c),
   `inspector.go` (§15) and `review.go` (§16); the step outline (§13) is a
-  layer over the entry list in `internal/ui/chat/activity.go`, not a
-  component, because it groups history rather than rendering a widget.
+  layer over the entry list in `internal/ui/chat/steps.go`, beside the
+  activity feed and not a component, because it groups history rather than
+  rendering a widget.
 - The column grid (§6a) lives in one place — field widths are constants in
   `activityrow.go` and every surface that draws a transcript row uses them,
   so a grid change is a one-line change.
@@ -897,7 +898,7 @@ stretching to the right-hand stats, tool count and duration.
   today — a flat list of rows, no empty group chrome.
 
 The grouping is a layer over the existing entry list in
-`internal/ui/chat/activity.go`, not a wire protocol. The agent already emits
+`internal/ui/chat/steps.go`, not a wire protocol. The agent already emits
 ordered tool results; inventing a step message would couple every provider to
 the UI for nothing.
 

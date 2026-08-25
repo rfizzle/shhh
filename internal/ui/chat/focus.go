@@ -20,12 +20,25 @@ func expandable(e entry) bool {
 }
 
 // expandableIndices lists the transcript indices focus mode can select,
-// scoped to whichever agent's transcript the surface renders (S-077).
+// scoped to whichever agent's transcript the surface renders (S-077). Step
+// headers are targets too (S-090, §7): j/k steps between headers and rows
+// alike, and a folded step offers only its header, since its rows are not on
+// screen to select.
 func (m Model) expandableIndices() []int {
+	es := *m.entries()
 	var idxs []int
-	for i, e := range *m.entries() {
-		if expandable(e) {
-			idxs = append(idxs, i)
+	for _, blk := range stepBlocks(es) {
+		if blk.step != nil {
+			idxs = append(idxs, blk.step.titleIdx)
+			if m.headerFor(blk, es).Folded {
+				continue
+			}
+		}
+		start, end := blk.members()
+		for i := start; i < end; i++ {
+			if expandable(es[i]) {
+				idxs = append(idxs, i)
+			}
 		}
 	}
 	return idxs
@@ -69,6 +82,13 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "enter":
 		es := *m.entries()
 		if m.focusIdx >= 0 && m.focusIdx < len(es) {
+			if _, ok := stepBlockAt(es, m.focusIdx); ok {
+				// Enter on a step header folds or unfolds the whole group in
+				// place (S-090, §13b).
+				m.toggleStepFold(m.focusIdx)
+				m.refreshFocusView()
+				return m, nil
+			}
 			if d := es[m.focusIdx].diff; d != nil {
 				// A diff row cycles collapsed → expanded → full screen
 				// (S-074, DESIGN-TUI.md §3b).
@@ -131,33 +151,26 @@ func (m *Model) refreshFocusView() {
 // first line and line count for scrolling. It bypasses the incremental cache.
 func (m *Model) renderFocusHistory() (content string, selStart, selCount int) {
 	w := m.contentWidth()
+	es := *m.entries()
 	var b strings.Builder
 	line := 0
 	var prev entry
 	havePrev := false
-	for i, e := range *m.entries() {
-		var block string
-		if expandable(e) {
-			block = gutterPrefix(m.renderEntry(e, w-2), i == m.focusIdx)
-		} else {
-			block = m.renderEntry(e, w)
-		}
-		// The separator counts toward the line total before the block starts,
+	for _, u := range m.transcriptUnits(es, w, true, m.focusIdx) {
+		// The separator counts toward the line total before the unit starts,
 		// so the gutter pointer and scrolling stay aligned.
-		if havePrev && block != "" {
-			sep := separatorBefore(prev, e)
+		if havePrev {
+			sep := separatorBefore(prev, u.sepBefore)
 			b.WriteString(sep)
 			line += strings.Count(sep, "\n")
 		}
-		n := strings.Count(block, "\n")
-		if i == m.focusIdx {
+		n := strings.Count(u.text, "\n")
+		if u.idx == m.focusIdx {
 			selStart, selCount = line, n
 		}
-		b.WriteString(block)
+		b.WriteString(u.text)
 		line += n
-		if block != "" {
-			prev, havePrev = e, true
-		}
+		prev, havePrev = u.sepAfter, true
 	}
 	return b.String(), selStart, selCount
 }

@@ -154,6 +154,10 @@ type entry struct {
 	deniedBy string
 	// denyRule names the rule behind an auto denial, e.g. "plan mode".
 	denyRule string
+	// stepFold is your fold override for the step this entry titles (S-090,
+	// DESIGN-TUI.md §13b); steps keep no layout state of their own, so it
+	// lives on the raw entry and survives a resize.
+	stepFold foldState
 }
 
 type Model struct {
@@ -171,10 +175,15 @@ type Model struct {
 	spinner  spinner.Model
 
 	transcript []entry
-	// Incremental render cache: entries [0, cachedCount) rendered at cachedWidth.
+	// Incremental render cache: entries [0, cachedCount) rendered at
+	// cachedWidth, always a whole number of step blocks (S-090). cachedSep is
+	// the last cached unit's spacing entry, so the tail joins on the same
+	// rhythm.
 	cachedRender string
 	cachedWidth  int
 	cachedCount  int
+	cachedSep    entry
+	cachedHasSep bool
 
 	// Input recall: inputHistory holds previously submitted inputs;
 	// historyIdx == len(inputHistory) means "not browsing".
@@ -1423,6 +1432,7 @@ func (m *Model) resetTranscript() {
 func (m *Model) invalidateRenderCache() {
 	m.cachedRender = ""
 	m.cachedCount = 0
+	m.cachedSep, m.cachedHasSep = entry{}, false
 }
 
 // renderEntry renders one entry's own lines, always ending in exactly one
@@ -1566,24 +1576,37 @@ func (m *Model) renderHistory() string {
 	w := m.contentWidth()
 	if w != m.cachedWidth {
 		m.cachedWidth = w
-		m.cachedRender = ""
-		m.cachedCount = 0
+		m.invalidateRenderCache()
 	}
-	for ; m.cachedCount < len(m.transcript); m.cachedCount++ {
-		e := m.transcript[m.cachedCount]
-		block := m.renderEntry(e, w)
-		if block == "" {
+	// History renders as step blocks (S-090, §13). Every block but the last
+	// is frozen — the grouping scan is left to right, so a block that already
+	// has a successor can never change — and only the last one re-renders
+	// each frame, because a running step's header restates its count and
+	// duration as rows land.
+	blocks := stepBlocks(m.transcript)
+	for bi := 0; bi+1 < len(blocks); bi++ {
+		blk := blocks[bi]
+		if blk.end <= m.cachedCount {
 			continue
 		}
-		if m.cachedRender != "" {
-			m.cachedRender += separatorBefore(m.transcript[m.cachedCount-1], e)
-		}
+		block, prev, have := joinUnits(m.blockUnits(blk, m.transcript, w, false, -1), m.cachedSep, m.cachedHasSep)
 		m.cachedRender += block
+		m.cachedSep, m.cachedHasSep = prev, have
+		m.cachedCount = blk.end
 	}
 	s := m.cachedRender
+	prev, havePrev := m.cachedSep, m.cachedHasSep
+	for _, blk := range blocks {
+		if blk.end <= m.cachedCount {
+			continue
+		}
+		var block string
+		block, prev, havePrev = joinUnits(m.blockUnits(blk, m.transcript, w, false, -1), prev, havePrev)
+		s += block
+	}
 	if m.turnState() == stateStreaming && m.streaming != "" {
-		if s != "" && len(m.transcript) > 0 {
-			s += separatorBefore(m.transcript[len(m.transcript)-1], entry{kind: entryAssistant})
+		if havePrev {
+			s += separatorBefore(prev, entry{kind: entryAssistant})
 		}
 		s += assistantStyle.Render("Assistant") + "\n"
 		s += renderMarkdown(m.streaming, w)

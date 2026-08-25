@@ -30,4 +30,14 @@ var (
 	planSelectedStyle = lipgloss.NewStyle().Bold(true).Background(components.Palette.FocusBg)
 	// Focus-mode gutter pointer on the selected transcript row (§7).
 	focusMarkerStyle = lipgloss.NewStyle().Bold(true).Foreground(components.Palette.Accent)
+	// Step outline (S-090, §13): the header's title, ordinal, faint rule and
+	// stats, plus one style per state glyph — done, failed, running, queued.
+	stepTitleStyle     = lipgloss.NewStyle().Foreground(components.Palette.Body)
+	stepLiveTitleStyle = lipgloss.NewStyle().Foreground(components.Palette.Bright)
+	stepRuleStyle      = lipgloss.NewStyle().Foreground(components.Palette.Dim)
+	stepStatsStyle     = lipgloss.NewStyle().Foreground(components.Palette.Dim)
+	stepDimStyle       = lipgloss.NewStyle().Foreground(components.Palette.Dim)
+	stepDoneStyle      = lipgloss.NewStyle().Foreground(components.Palette.Add)
+	stepFailStyle      = lipgloss.NewStyle().Foreground(components.Palette.Del)
+	stepRunStyle       = lipgloss.NewStyle().Foreground(components.Palette.Spin)
 )
