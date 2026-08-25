@@ -4,12 +4,17 @@ package chat
 // components.Select in the bottom panel instead of printing usage text: ↑↓
 // moves, enter applies, esc cancels. The argument forms (/model <name>,
 // /mode <name>) keep their direct handleSlashCommand paths. Both share one
-// generic statePick surface, so future pickers (/load, /branches — S-080)
-// only need options and an apply function.
+// generic statePick surface, so the session pickers built on it (/load,
+// /chats, /branches — S-080) only need options and an apply function.
+//
+// The session pickers (S-080) open only when there is something to pick: no
+// database, a read error, or an empty list falls through to the text message
+// handleSlashCommand has always printed.
 
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -157,4 +162,71 @@ func (m Model) openModePick() (tea.Model, tea.Cmd) {
 		m.applyMode(mode)
 		return fmt.Sprintf("Mode set to %s — %s.", mode, mode.Describe())
 	})
+}
+
+// --- session pickers (S-080) ----------------------------------------------
+
+// sessionDesc is the description row shared by every saved-chat and branch
+// listing: how many turns it holds and when it was last written.
+func sessionDesc(turns int, updated time.Time) string {
+	return fmt.Sprintf("%d turns, %s", turns, updated.Local().Format("Jan 2 15:04"))
+}
+
+// openChatPick opens the saved-chat picker behind bare /load and /chats:
+// enter loads the highlighted chat, esc keeps the current one. It reports
+// false when there is nothing to pick, leaving the caller on the text path.
+func (m Model) openChatPick() (tea.Model, tea.Cmd, bool) {
+	if m.db == nil {
+		return m, nil, false
+	}
+	entries, err := m.db.ListChats()
+	if err != nil || len(entries) == 0 {
+		return m, nil, false
+	}
+	opts := make([]components.SelectOption, len(entries))
+	focus := 0
+	for i, e := range entries {
+		label := e.Name
+		if e.Name == m.sessionName {
+			label += "  (current)"
+			focus = i
+		}
+		opts[i] = components.SelectOption{Label: label, Desc: sessionDesc(e.Turns, e.UpdatedAt)}
+	}
+	model, cmd := m.openPicker("Load a saved chat", opts, focus, func(m *Model, idx int) string {
+		return m.loadChatByName(entries[idx].Name)
+	})
+	return model, cmd, true
+}
+
+// openBranchPick opens the branch picker behind bare /branches, focused on
+// the current branch. Selecting one switches to it with the usual
+// save-the-current-branch-first semantics. It reports false when the session
+// has no branch family to pick from.
+func (m Model) openBranchPick() (tea.Model, tea.Cmd, bool) {
+	if m.db == nil {
+		return m, nil, false
+	}
+	branches, err := m.db.ListChatBranches(m.sessionName)
+	if err != nil || len(branches) < 2 {
+		return m, nil, false
+	}
+	opts := make([]components.SelectOption, len(branches))
+	focus := 0
+	for i, b := range branches {
+		label := b.Name
+		if b.Name == m.sessionName {
+			label += "  (current)"
+			focus = i
+		}
+		desc := sessionDesc(b.Turns, b.UpdatedAt)
+		if b.Parent != "" {
+			desc += fmt.Sprintf(" · branch of %q", b.Parent)
+		}
+		opts[i] = components.SelectOption{Label: label, Desc: desc}
+	}
+	model, cmd := m.openPicker("Switch branch", opts, focus, func(m *Model, idx int) string {
+		return m.switchToBranch(branches[idx].Name)
+	})
+	return model, cmd, true
 }

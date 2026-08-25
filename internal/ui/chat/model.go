@@ -689,6 +689,23 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.input.Reset()
 					return m.openModePick()
 				}
+				if text == "/load" || text == "/chats" {
+					// Bare /load and /chats open the saved-chat picker
+					// (S-080); with nothing saved they fall through to the
+					// text message below. /load <name> is unchanged.
+					m.input.Reset()
+					if picked, cmd, ok := m.openChatPick(); ok {
+						return picked, cmd
+					}
+				}
+				if text == "/branches" {
+					// Bare /branches opens the branch picker (S-080); a
+					// session with no branch family falls through.
+					m.input.Reset()
+					if picked, cmd, ok := m.openBranchPick(); ok {
+						return picked, cmd
+					}
+				}
 				if handled, result := m.handleSlashCommand(text); handled {
 					m.input.Reset()
 					m.appendEntry(entry{kind: entrySystem, text: result})
@@ -1860,17 +1877,12 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 			return true, "Chat persistence is unavailable."
 		}
 		if len(parts) < 2 {
+			// Only reached when there is nothing to pick; otherwise bare
+			// /load opens the picker from the enter handler (S-080).
 			_, listing := m.handleSlashCommand("/chats")
 			return true, listing + "\n\nUsage: /load <name>"
 		}
-		name := strings.Join(parts[1:], " ")
-		msgs, err := m.db.LoadChat(name)
-		if err != nil {
-			return true, "Error: " + err.Error()
-		}
-		m.loadConversation(msgs)
-		m.sessionName = name
-		return true, fmt.Sprintf("Loaded chat %q (%d messages)", name, len(msgs))
+		return true, m.loadChatByName(strings.Join(parts[1:], " "))
 
 	case "/chats":
 		if m.db == nil {
@@ -1886,8 +1898,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		var sb strings.Builder
 		sb.WriteString("Saved chats:\n")
 		for _, e := range entries {
-			sb.WriteString(fmt.Sprintf("  %s  (%d turns, %s)\n",
-				e.Name, e.Turns, e.UpdatedAt.Format("Jan 2 15:04")))
+			sb.WriteString(fmt.Sprintf("  %s  (%s)\n", e.Name, sessionDesc(e.Turns, e.UpdatedAt)))
 		}
 		return true, strings.TrimRight(sb.String(), "\n")
 
@@ -1899,6 +1910,18 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		}
 		return false, ""
 	}
+}
+
+// loadChatByName replaces the working conversation with a saved chat. Both
+// /load <name> and the /load picker (S-080) come through here.
+func (m *Model) loadChatByName(name string) string {
+	msgs, err := m.db.LoadChat(name)
+	if err != nil {
+		return "Error: " + err.Error()
+	}
+	m.loadConversation(msgs)
+	m.sessionName = name
+	return fmt.Sprintf("Loaded chat %q (%d messages)", name, len(msgs))
 }
 
 // lastAssistantText returns the content of the most recent assistant message
@@ -1939,10 +1962,10 @@ func helpText() string {
   /rewind [n]    Rewind to before a user turn (bare /rewind picks interactively);
                  the abandoned tail is kept as a branch. Conversation only —
                  files on disk are not restored.
-  /branches [n]  List this session's branches, or switch to one
+  /branches [n]  Switch this session's branches (bare /branches opens a picker)
   /save [name]   Save this chat
-  /load <name>   Load a saved chat
-  /chats         List saved chats
+  /load [name]   Load a saved chat (bare /load opens a picker)
+  /chats         Saved chats — opens the same picker; enter loads
   /exit          Quit (also /quit, /q)
 
 Keys:

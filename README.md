@@ -259,6 +259,8 @@ The status bar is a cockpit rail of session vitals: the active permission mode, 
 
 Typing `/` in the input opens a completion menu over the commands this session actually has wired — ↑↓ moves, Tab completes, Enter runs the highlighted command, Esc dismisses. Completion continues past the command name: subcommands (`/memory add`, `/sandbox prune`, `/ui verbosity high`) and known values (saved chat names for `/load`, branch names for `/branches`, the model catalog for `/model`, turn numbers for `/rewind`) complete the same way, filtered on the token under the cursor.
 
+Where a command's argument is really a choice from a known set, the bare command opens a select list instead of printing usage text: `/model` and `/mode` over the model catalog and the mode cycle, `/rewind` over the session's checkpoints, and `/load` / `/chats` over the saved chats (turn count and last-written time on each row) and `/branches` over the session's branch family (current branch marked and focused, each row naming its parent). ↑↓ moves, Enter applies, Esc cancels. With nothing to pick — no saved chats, no branches yet — the command keeps its plain text answer rather than opening an empty list.
+
 Slash commands inside a chat session:
 
 | Command | Description |
@@ -276,10 +278,10 @@ Slash commands inside a chat session:
 | `/memory` | Durable memories (`shhh code`): `list` (default), `add [global] [kind] <text>`, `forget <id>` |
 | `/ps` | List the long-running processes this session owns (`shhh code`): state, pid, uptime, command |
 | `/rewind [n]` | Rewind to before a user turn (bare `/rewind` opens a picker); the abandoned tail is kept as a branch. Conversation only — files are not restored |
-| `/branches [n]` | List this session's branches, or switch to one (current work is saved first) |
+| `/branches [n]` | Switch this session's branches (bare `/branches` opens a picker; current work is saved first) |
 | `/save [name]` | Save this chat |
-| `/load <name>` | Load a saved chat |
-| `/chats` | List saved chats |
+| `/load [name]` | Load a saved chat (bare `/load` opens a picker) |
+| `/chats` | Saved chats — the same picker; Enter loads |
 | `/exit` | Quit (also `/quit`, `/q`, Ctrl+D) |
 
 Press Up/Down in an empty input to recall previous messages, Esc to clear the input, and Ctrl+C to cancel a streaming response (or clear the input / quit when idle). Type `/help` in a session for the full list.

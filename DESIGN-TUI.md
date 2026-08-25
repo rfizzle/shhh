@@ -134,7 +134,8 @@ Truncated cells end with `…`; the pane divider is gray (241).
 
 ### 4a. Single-select
 
-Used by: plan approval (S-061), `/run` block picker, `/mode` menu,
+Used by: plan approval (S-061), `/run` block picker, `/mode` and `/model`
+menus, the session pickers (`/load`, `/chats`, `/branches` — S-080),
 model-asked structured questions.
 
 ```

@@ -235,7 +235,7 @@ func branchArgs(m *Model) []argOption {
 	}
 	out := make([]argOption, 0, len(branches))
 	for _, b := range branches {
-		desc := fmt.Sprintf("%d turns, %s", b.Turns, b.UpdatedAt.Format("Jan 2 15:04"))
+		desc := sessionDesc(b.Turns, b.UpdatedAt)
 		if b.Name == m.sessionName {
 			desc = "current — " + desc
 		}
@@ -255,10 +255,7 @@ func chatArgs(m *Model) []argOption {
 	}
 	out := make([]argOption, 0, len(entries))
 	for _, e := range entries {
-		out = append(out, argOption{
-			value: e.Name,
-			desc:  fmt.Sprintf("%d turns, %s", e.Turns, e.UpdatedAt.Format("Jan 2 15:04")),
-		})
+		out = append(out, argOption{value: e.Name, desc: sessionDesc(e.Turns, e.UpdatedAt)})
 	}
 	return out
 }

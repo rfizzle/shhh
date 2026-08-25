@@ -232,16 +232,15 @@ func (m Model) listBranches(branches []storage.ChatBranch) string {
 		if b.Parent != "" {
 			parent = fmt.Sprintf("  (branch of %q)", b.Parent)
 		}
-		sb.WriteString(fmt.Sprintf("%s %d. %s  (%d turns, %s)%s\n",
-			marker, i+1, b.Name, b.Turns, b.UpdatedAt.Local().Format("Jan 2 15:04"), parent))
+		sb.WriteString(fmt.Sprintf("%s %d. %s  (%s)%s\n",
+			marker, i+1, b.Name, sessionDesc(b.Turns, b.UpdatedAt), parent))
 	}
 	sb.WriteString("Switch with /branches <n>.")
 	return sb.String()
 }
 
-// switchBranch saves the current conversation to its own slot (nothing is
-// lost on switch), then loads the chosen branch — by list number or exact
-// name — as the working conversation.
+// switchBranch resolves the /branches argument — a list number or an exact
+// name — to a branch and switches to it.
 func (m *Model) switchBranch(branches []storage.ChatBranch, arg string) string {
 	target := ""
 	if n, err := strconv.Atoi(arg); err == nil {
@@ -260,6 +259,14 @@ func (m *Model) switchBranch(branches []storage.ChatBranch, arg string) string {
 			return fmt.Sprintf("No branch %q in this session's family.", arg)
 		}
 	}
+	return m.switchToBranch(target)
+}
+
+// switchToBranch saves the current conversation to its own slot (nothing is
+// lost on switch), then loads the named branch as the working conversation.
+// The /branches picker (S-080) selects a branch by name, so it comes here
+// directly rather than through switchBranch's number-or-name resolution.
+func (m *Model) switchToBranch(target string) string {
 	if target == m.sessionName {
 		return fmt.Sprintf("Already on %q.", target)
 	}
