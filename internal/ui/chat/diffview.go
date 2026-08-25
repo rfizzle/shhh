@@ -107,7 +107,7 @@ func (m Model) closeDiffFull() (tea.Model, tea.Cmd) {
 	m.diffReturn = stateInput
 	// A transcript diff row's mode may have changed while full screen.
 	m.invalidateRenderCache()
-	m.syncViewportHeight()
+	m.syncViewport()
 	switch m.state {
 	case stateFocus:
 		m.refreshFocusView()

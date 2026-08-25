@@ -42,7 +42,7 @@ func (m Model) openPicker(title string, opts []components.SelectOption, focus in
 	}
 	m.pickerApply = apply
 	m.enterSurface(statePick)
-	m.syncViewportHeight()
+	m.syncViewport()
 	return m, nil
 }
 
@@ -62,7 +62,7 @@ func (m Model) updatePick(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	m.pickerApply = nil
 	m.leaveSurface()
 	if sel.Canceled {
-		m.syncViewportHeight()
+		m.syncViewport()
 		return m, nil
 	}
 	// An apply that hands the session to another surface — the /run picker
@@ -71,7 +71,7 @@ func (m Model) updatePick(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if note := apply(&m, sel.Index); note != "" {
 		m.appendEntry(entry{kind: entrySystem, text: note})
 	}
-	m.syncViewportHeight()
+	m.syncViewport()
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()
 	return m, nil
@@ -139,7 +139,7 @@ func (m Model) startModelPick() (tea.Model, tea.Cmd) {
 	ctx, cancel := context.WithCancel(context.Background())
 	m.modelListCancel = cancel
 	m.enterSurface(stateModelList)
-	m.syncViewportHeight()
+	m.syncViewport()
 	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
 		names, err := lister(ctx)
 		return modelListMsg{names: names, err: err}
@@ -163,7 +163,7 @@ func (m Model) updateModelList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.modelListCancel = nil
 		}
 		m.leaveSurface()
-		m.syncViewportHeight()
+		m.syncViewport()
 		return m, nil
 	}
 	return m, nil
@@ -197,7 +197,7 @@ func (m Model) finishModelList(msg modelListMsg) (tea.Model, tea.Cmd) {
 	if ok, note := m.handleSlashCommand("/model"); ok {
 		m.appendEntry(entry{kind: entrySystem, text: note})
 	}
-	m.syncViewportHeight()
+	m.syncViewport()
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()
 	return m, nil

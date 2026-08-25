@@ -235,7 +235,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 		m.recordDecision(decisionAsk, "memory")
 		m.openMemoryAsk(req)
 		m.setTurnState(stateConfirmRun)
-		m.syncViewportHeight()
+		m.syncViewport()
 		return m, nil
 	}
 	// Mode policy (S-059, absorbing S-054): the permissive modes and session
@@ -268,7 +268,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	}
 	m.recordDecision(decisionAsk, askReason(approvalAction(req)))
 	m.setTurnState(stateConfirmRun)
-	m.syncViewportHeight()
+	m.syncViewport()
 	return m, nil
 }
 
@@ -277,7 +277,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 // classifierDoneMsg.
 func (m Model) startClassifierCheck(req *approvalRequest) (tea.Model, tea.Cmd) {
 	m.setTurnState(stateClassifying)
-	m.syncViewportHeight()
+	m.syncViewport()
 	ctx, cancel := context.WithCancel(context.Background())
 	m.classifierCancel = cancel
 	classifier := m.classifier
@@ -339,7 +339,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		m.recordDecision(decisionAsk, "safety")
 	}
 	m.setTurnState(stateConfirmRun)
-	m.syncViewportHeight()
+	m.syncViewport()
 	return m, nil
 }
 
@@ -384,7 +384,7 @@ func deniedEntry(req *approvalRequest, decider, rule string, elapsed time.Durati
 // executor in the background; the result arrives as approvedToolDoneMsg.
 func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 	m.setTurnState(stateRunningCmd)
-	m.syncViewportHeight()
+	m.syncViewport()
 	a := m.agent
 	runID := a.RunID()
 	call := m.pendingApproval.call
@@ -553,13 +553,18 @@ func (m Model) maxConfirmPanelHeight() int {
 
 // syncViewportHeight resizes the viewport when the bottom panel grows or
 // shrinks (e.g. a diff preview replacing the input area).
-func (m *Model) syncViewportHeight() {
+func (m *Model) syncViewport() {
 	if !m.ready {
 		return
 	}
-	if h := m.viewportHeight(); h != m.viewport.Height {
-		m.viewport.Height = h
-		m.viewport.SetContent(m.renderHistory())
-		m.viewport.GotoBottom()
+	// Both dimensions can move without a resize: the chrome takes rows as
+	// surfaces open and close, and the inspector rail takes columns whenever
+	// the pane split toggles (S-092).
+	h, w := m.viewportHeight(), m.transcriptWidth()
+	if h == m.viewport.Height && w == m.viewport.Width {
+		return
 	}
+	m.viewport.Height, m.viewport.Width = h, w
+	m.viewport.SetContent(m.renderHistory())
+	m.viewport.GotoBottom()
 }

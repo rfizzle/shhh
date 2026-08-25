@@ -148,6 +148,8 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	m.agent.SetMessages(rebuilt)
 	m.agent.ResetRounds()
 	m.contextTokens = estimateMessageTokens(rebuilt)
+	// The burn series described the conversation that was just discarded.
+	m.contextBurn = nil
 	m.resetTranscript()
 	// Pre-compaction checkpoints point into the discarded conversation;
 	// rebuild them from what remains (S-069).

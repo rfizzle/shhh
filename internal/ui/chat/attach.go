@@ -87,7 +87,7 @@ func convertChildEntry(te subagent.TranscriptEntry) entry {
 // in-flight assistant text.
 func (m *Model) renderAttachedHistory() string {
 	cv := m.syncChildView(m.attachedTo)
-	w := m.contentWidth()
+	w := m.transcriptWidth()
 	var b strings.Builder
 	// A child's transcript groups into steps like the parent's (S-090).
 	body, prev, havePrev := joinUnits(m.transcriptUnits(cv.entries, w, false, -1), entry{}, false)
@@ -157,7 +157,7 @@ func (m *Model) attach(name string) {
 	// The prompt gutter shows the child's name while attached (S-082), so the
 	// textarea re-fits around it.
 	m.syncInputWidth()
-	m.syncViewportHeight()
+	m.syncViewport()
 	m.viewport.SetContent(m.renderHistory())
 	m.restoreScroll()
 }
@@ -215,7 +215,7 @@ func (m Model) openAgentList() (tea.Model, tea.Cmd) {
 	m.agentList = &components.AgentList{MaxLines: m.maxConfirmPanelHeight()}
 	rows, _ := m.buildAgentRows()
 	m.agentList.Rows = rows
-	m.syncViewportHeight()
+	m.syncViewport()
 	return m, nil
 }
 
@@ -359,7 +359,7 @@ func (m Model) updateAgentList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				m.purgeChildAsks(target)
 			}
 		}
-		m.syncViewportHeight()
+		m.syncViewport()
 		return m, nil
 	}
 
@@ -375,7 +375,7 @@ func (m Model) updateAgentList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if done && res.Action == components.AgentBack {
 		m.agentList = nil
-		m.syncViewportHeight()
+		m.syncViewport()
 		return m, nil
 	}
 	if res.Index < 0 || res.Index >= len(names) {
@@ -386,7 +386,7 @@ func (m Model) updateAgentList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case components.AgentAttach:
 		if name == m.attachedTo {
 			m.agentList = nil
-			m.syncViewportHeight()
+			m.syncViewport()
 			return m, nil
 		}
 		m.attach(name)
@@ -414,7 +414,7 @@ func (m Model) updateAgentList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		m.killConfirm = &components.Confirm{Prompt: "Kill " + name + "? Its turn is cancelled and its isolated workspace is discarded."}
 		m.killTarget = name
-		m.syncViewportHeight()
+		m.syncViewport()
 		return m, nil
 	}
 	return m, nil

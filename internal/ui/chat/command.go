@@ -47,7 +47,7 @@ func (m Model) submitInput() (tea.Model, tea.Cmd) {
 		// before the next model request (S-058).
 		m.steering = append(m.steering, text)
 		// The queued count surfaces on the notice rail (S-082).
-		m.syncViewportHeight()
+		m.syncViewport()
 		return m, nil
 	}
 	return m.sendUserMessage(text)

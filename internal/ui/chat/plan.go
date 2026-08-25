@@ -88,7 +88,7 @@ func (m Model) approvePlan(execMode agent.Mode) (tea.Model, tea.Cmd) {
 	m.agent.StartTurn(planApprovedMessage)
 	m.appendEntry(entry{kind: entryUser, text: planApprovedMessage})
 	m.trimForRequest()
-	m.syncViewportHeight()
+	m.syncViewport()
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()
 	return m, tea.Batch(m.spinner.Tick, m.requestStream(), m.autosaveCmd())
@@ -98,7 +98,7 @@ func (m Model) approvePlan(execMode agent.Mode) (tea.Model, tea.Cmd) {
 // session stays in plan mode.
 func (m Model) keepPlanning() (tea.Model, tea.Cmd) {
 	m.setTurnState(stateInput)
-	m.syncViewportHeight()
+	m.syncViewport()
 	m.appendEntry(entry{kind: entrySystem, text: "Keep planning — describe what to change and the agent will revise the plan."})
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()
@@ -109,7 +109,7 @@ func (m Model) keepPlanning() (tea.Model, tea.Cmd) {
 // remains in the transcript for reference.
 func (m Model) rejectPlan() (tea.Model, tea.Cmd) {
 	m.setTurnState(stateInput)
-	m.syncViewportHeight()
+	m.syncViewport()
 	m.appendEntry(entry{kind: entrySystem, text: "Plan rejected. Still in plan mode — give new directions, or switch modes with Shift+Tab or /mode."})
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()

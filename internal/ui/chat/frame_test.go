@@ -124,7 +124,7 @@ func TestFrame_NoticeRailAppearsAndCounts(t *testing.T) {
 	}
 
 	m = m.WithUpdateNotice("update: v9.9.9")
-	m.syncViewportHeight()
+	m.syncViewport()
 	if !strings.Contains(stripANSI(m.View()), "update: v9.9.9") {
 		t.Fatal("the notice rail should carry the update notice")
 	}
@@ -157,7 +157,7 @@ func TestFrame_TakeoverKeepsPlainStack(t *testing.T) {
 	m := frameModel(t, 100, 40)
 	m.pendingRun = "echo hi"
 	m.state = stateConfirmRun
-	m.syncViewportHeight()
+	m.syncViewport()
 	view := stripANSI(m.View())
 	if strings.Contains(view, "╭─ shhh chat") {
 		t.Fatalf("takeover surfaces must replace the frame:\n%s", view)

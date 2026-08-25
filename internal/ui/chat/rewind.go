@@ -92,7 +92,7 @@ func (m Model) openRewindPick() (tea.Model, tea.Cmd) {
 		MaxLines: m.maxConfirmPanelHeight(),
 	}
 	m.enterSurface(stateRewindPick)
-	m.syncViewportHeight()
+	m.syncViewport()
 	return m, nil
 }
 
@@ -111,12 +111,12 @@ func (m Model) updateRewindPick(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	m.rewindSelect = nil
 	m.leaveSurface()
 	if sel.Canceled {
-		m.syncViewportHeight()
+		m.syncViewport()
 		return m, nil
 	}
 	note := m.rewindToTurn(turn)
 	m.appendEntry(entry{kind: entrySystem, text: note})
-	m.syncViewportHeight()
+	m.syncViewport()
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()
 	return m, m.autosaveCmd()

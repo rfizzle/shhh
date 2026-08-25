@@ -129,7 +129,7 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 func (m Model) exitFocusMode() (tea.Model, tea.Cmd) {
 	m.leaveSurface()
 	m.invalidateRenderCache()
-	m.syncViewportHeight()
+	m.syncViewport()
 	m.viewport.SetContent(m.renderHistory())
 	return m, nil
 }
@@ -165,7 +165,9 @@ func (m *Model) refreshFocusView() {
 // expandable rows (❯ on the selected one) and reports the selected block's
 // first line and line count for scrolling. It bypasses the incremental cache.
 func (m *Model) renderFocusHistory() (content string, selStart, selCount int) {
-	w := m.contentWidth()
+	// Focus mode is a way of reading the transcript, not a takeover surface,
+	// so it wraps to the transcript pane like the ordinary feed (S-092).
+	w := m.transcriptWidth()
 	es := *m.entries()
 	var b strings.Builder
 	line := 0

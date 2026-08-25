@@ -81,4 +81,5 @@ var (
 	errStyle      = lipgloss.NewStyle().Foreground(Palette.Del)
 	spinTextStyle = lipgloss.NewStyle().Foreground(Palette.Spin)
 	statusStyle   = lipgloss.NewStyle().Foreground(Palette.Status)
+	bodyStyle     = lipgloss.NewStyle().Foreground(Palette.Body)
 )

@@ -343,10 +343,22 @@ type Model struct {
 
 	TotalTokensIn  int64
 	TotalTokensOut int64
-	contextTokens  int64
-	prices         *pricing.Table
-	modelName      string
-	updateNotice   string
+	// Current-turn accounting for the inspector rail's THIS TURN and SPEND
+	// blocks (S-092): when the turn started, when it finished (zero while it
+	// runs), and what it has spent.
+	turnStarted   time.Time
+	turnEnded     time.Time
+	turnTokensIn  int64
+	turnTokensOut int64
+	contextTokens int64
+	// contextBurn is the last few rounds' context estimates — the series
+	// behind the rail's burn sparkline (S-092), bounded to the sparkline's
+	// cell count. The full per-turn usage ring, with category accounting, is
+	// S-093.
+	contextBurn  []float64
+	prices       *pricing.Table
+	modelName    string
+	updateNotice string
 }
 
 func New(initialMessages []provider.Message, stream StreamFunc) Model {
@@ -490,17 +502,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		contentWidth := msg.Width - horizontalPadding*2
 		m.syncInputWidth()
+		// The transcript wraps to its pane, which is narrower than the content
+		// width while the inspector rail shows (S-092).
+		paneWidth := m.transcriptWidth()
 		vpHeight := m.viewportHeight()
 
 		if !m.ready {
-			m.viewport = viewport.New(contentWidth, vpHeight)
+			m.viewport = viewport.New(paneWidth, vpHeight)
 			m.viewport.MouseWheelEnabled = true
 			m.viewport.SetContent(m.renderHistory())
 			m.ready = true
 		} else {
-			m.viewport.Width = contentWidth
+			m.viewport.Width = paneWidth
 			m.viewport.Height = vpHeight
 			m.viewport.SetContent(m.renderHistory())
 		}
@@ -563,7 +577,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.classifierCancel = nil
 				}
 				m.state = stateConfirmRun
-				m.syncViewportHeight()
+				m.syncViewport()
 				return m, nil
 			}
 			if m.state == stateRunningCmd {
@@ -612,7 +626,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// draft survives and further typing re-opens it (S-078).
 			if m.completionActive() {
 				m.dismissCompletions()
-				m.syncViewportHeight()
+				m.syncViewport()
 				return m, nil
 			}
 			// The input is live in every non-confirm state (S-058), so esc
@@ -629,7 +643,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Tab writes the focused completion into the input (S-078).
 			if m.completionActive() {
 				m.acceptCompletion()
-				m.syncViewportHeight()
+				m.syncViewport()
 				return m, nil
 			}
 		case "up":
@@ -715,7 +729,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.mode == agent.ModePlan && hadText {
 			m.setTurnState(statePlanApprove)
 			m.planChoice = 0
-			m.syncViewportHeight()
+			m.syncViewport()
 		}
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
@@ -880,7 +894,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// (S-078).
 		if _, ok := msg.(tea.KeyMsg); ok {
 			m.syncCompletions()
-			m.syncViewportHeight()
+			m.syncViewport()
 		}
 	}
 
@@ -905,6 +919,8 @@ func (m *Model) recordInput(text string) {
 
 func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
 	m.turnCount++
+	m.turnStarted, m.turnEnded = time.Now(), time.Time{}
+	m.turnTokensIn, m.turnTokensOut = 0, 0
 	// A fresh user turn clears the notice rail's denial alert (S-082);
 	// lastDenial stays for /mode why.
 	m.denialNotice = ""
@@ -929,6 +945,9 @@ func (m Model) View() string {
 	}
 
 	contentWidth := m.width - horizontalPadding*2
+	// The body renders into the transcript pane; the header, divider and the
+	// prompt frame span both panes (S-092, §15).
+	paneWidth := m.transcriptWidth()
 
 	title := m.title
 	if title == "" {
@@ -951,7 +970,7 @@ func (m Model) View() string {
 	case m.state == stateDiffFull && m.fullDiff != nil:
 		// The full-screen diff takes over the viewport (S-074, §3c).
 		m.fullDiff.Height = m.viewportHeight()
-		body = m.fullDiff.View(contentWidth)
+		body = m.fullDiff.View(paneWidth)
 	case m.attachedTo != "":
 		// The attached child's session fills the surface; its liveness shows
 		// in the child-scoped status bar, not a parent spinner.
@@ -971,7 +990,7 @@ func (m Model) View() string {
 		} else {
 			// The running command renders as a live activity row whose tail is
 			// its last output line (S-075); spinner ticks keep it fresh.
-			body = m.viewport.View() + "\n" + m.runningCommandRow(contentWidth)
+			body = m.viewport.View() + "\n" + m.runningCommandRow(paneWidth)
 		}
 	case m.state == stateClassifying:
 		body = m.viewport.View() + "\n" + m.spinner.View() + " Checking permission…"
@@ -984,9 +1003,16 @@ func (m Model) View() string {
 	// Working sub-agents render as compact progress rows above the divider
 	// (S-068); hidden while the agent list or an attached view covers them.
 	if m.agentRowsHeight() > 0 {
-		if rows := m.renderAgentRows(contentWidth); rows != "" {
+		if rows := m.renderAgentRows(paneWidth); rows != "" {
 			body += "\n" + rows
 		}
+	}
+
+	// Past 130 content columns the body shares its rows with the inspector
+	// rail (S-092, §15); the split is horizontal only, so the row budget the
+	// chrome accounting handed out is unchanged.
+	if m.twoPane() {
+		body = m.splitPanes(body)
 	}
 
 	// The command-center frame is the default bottom panel (S-082,
@@ -1117,7 +1143,7 @@ func (m Model) updateConfirmRun(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		m.pendingRun = ""
 		m.setTurnState(stateInput)
-		m.syncViewportHeight()
+		m.syncViewport()
 		m.appendEntry(entry{kind: entrySystem, text: "Run cancelled."})
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
@@ -1138,7 +1164,7 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	m.runStart = time.Now()
 	tail := &commandTail{}
 	m.runTail = tail
-	m.syncViewportHeight()
+	m.syncViewport()
 	ctx, cancel := context.WithCancel(context.Background())
 	m.runCancel = cancel
 	runID := m.agent.RunID()
@@ -1198,7 +1224,7 @@ func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
 	}
 	if m.agent.CapReached() {
 		m.setTurnState(stateInput)
-		m.syncViewportHeight()
+		m.syncViewport()
 		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
 			"Paused after %d tool rounds this turn. Send a message (e.g. \"continue\") to keep going.",
 			m.agent.Rounds())})
@@ -1209,7 +1235,7 @@ func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
 	m.setTurnState(stateStreaming)
 	m.streaming = ""
 	m.trimForRequest()
-	m.syncViewportHeight()
+	m.syncViewport()
 	return m, m.requestStream()
 }
 
@@ -1317,9 +1343,15 @@ func (m *Model) accumulateUsage(u *provider.Usage) {
 	if u != nil {
 		m.TotalTokensIn += int64(u.PromptTokens)
 		m.TotalTokensOut += int64(u.CompletionTokens)
+		m.turnTokensIn += int64(u.PromptTokens)
+		m.turnTokensOut += int64(u.CompletionTokens)
 		// The latest request's prompt plus its completion is what the next
 		// request will roughly carry as context.
 		m.contextTokens = int64(u.PromptTokens) + int64(u.CompletionTokens)
+		m.contextBurn = append(m.contextBurn, float64(m.contextTokens))
+		if n := len(m.contextBurn); n > contextBurnSamples {
+			m.contextBurn = m.contextBurn[n-contextBurnSamples:]
+		}
 		m.notifyUsage()
 	}
 }
@@ -1366,7 +1398,7 @@ func (m *Model) cancelStreaming() {
 	m.finishStreaming()
 	m.restoreSteering()
 	// Restored steering empties the queue: the notice rail may shrink (S-082).
-	m.syncViewportHeight()
+	m.syncViewport()
 }
 
 // injectSteering appends queued steering messages to the conversation and
@@ -1385,7 +1417,7 @@ func (m *Model) injectSteering() bool {
 	m.steering = nil
 	m.denialNotice = ""
 	m.agent.ResetRounds()
-	m.syncViewportHeight()
+	m.syncViewport()
 	return true
 }
 
@@ -1576,7 +1608,7 @@ func (m *Model) renderHistory() string {
 	if len(m.transcript) == 0 && m.turnState() != stateStreaming {
 		return welcomeStyle.Render("Type a message to start chatting.")
 	}
-	w := m.contentWidth()
+	w := m.transcriptWidth()
 	if w != m.cachedWidth {
 		m.cachedWidth = w
 		m.invalidateRenderCache()
@@ -1932,7 +1964,7 @@ func helpText() string {
                  bare /mode opens an interactive picker
   /mode why      Show the latest auto-mode denial's reason
   /stats         Context occupancy breakdown and cumulative session spend
-  /ui            Activity feed density: /ui verbosity <low|normal|high>
+  /ui            Activity feed density and pane layout: /ui verbosity <low|normal|high>
                  (low hides counts, med collapses rows, high expands rows)
   /sandbox       Containment status and container sandboxes (doctor|list|status|destroy <id>|prune)
   /evidence      Tool-output evidence store: reduction stats and size (purge to clear)
@@ -1992,6 +2024,7 @@ func (m *Model) clearConversation() {
 	m.resetTranscript()
 	m.checkpoints = nil
 	m.contextTokens = 0
+	m.contextBurn = nil
 	m.agent.ResetRounds()
 }
 

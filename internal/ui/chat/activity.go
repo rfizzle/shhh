@@ -321,7 +321,7 @@ func (m Model) runningCommandRow(width int) string {
 // uiCommand handles /ui: showing and setting the activity feed's verbosity.
 func (m *Model) uiCommand(parts []string) string {
 	if len(parts) == 1 || (len(parts) == 2 && parts[1] == "verbosity") {
-		return fmt.Sprintf("Activity feed verbosity: %s.\nUsage: /ui verbosity <low|normal|high> — low shows step headers only, normal folds read-only groups, high expands every row.", m.verbosity)
+		return fmt.Sprintf("Activity feed verbosity: %s.\nLayout: %s.\nUsage: /ui verbosity <low|normal|high> — low shows step headers only, normal folds read-only groups, high expands every row.", m.verbosity, m.inspectorStatus())
 	}
 	if len(parts) != 3 || parts[1] != "verbosity" {
 		return "Usage: /ui verbosity <low|normal|high>"

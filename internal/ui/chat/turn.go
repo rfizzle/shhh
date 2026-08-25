@@ -1,5 +1,7 @@
 package chat
 
+import "time"
+
 // Turn state and surfaces (S-087).
 //
 // Two different things used to share Model.state: what the session's own
@@ -40,6 +42,11 @@ func (m Model) turnState() state {
 // screen instead of closing it: a turn that finishes (or asks for approval)
 // while the user is reading a diff waits for them to come back.
 func (m *Model) setTurnState(s state) {
+	// A turn going idle stamps its end, so the inspector rail's elapsed time
+	// freezes at what the turn took instead of counting on (S-092).
+	if s == stateInput && m.working() && !m.turnStarted.IsZero() {
+		m.turnEnded = time.Now()
+	}
 	if m.state.isSurface() {
 		m.turnBack = s
 		return
