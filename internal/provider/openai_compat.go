@@ -54,6 +54,17 @@ func NewOpenAICompatWith(client *openai.Client, model, baseURL string) *OpenAICo
 	return &OpenAICompat{client: client, model: model, baseURL: baseURL, name: "openai-compatible", classify: newClassifyError("SHHH_API_KEY")}
 }
 
+// NewOpenAICompatNamed builds a compat provider over an already-configured
+// client under a caller-chosen name, for gateway profiles
+// (internal/profile) that supply their own transport.
+func NewOpenAICompatNamed(client *openai.Client, model, baseURL, name string) *OpenAICompat {
+	p := NewOpenAICompatWith(client, model, baseURL)
+	if name != "" {
+		p.name = name
+	}
+	return p
+}
+
 func (o *OpenAICompat) Name() string { return o.name }
 
 // ListModels enumerates whatever the endpoint hosts (GET {base_url}/models).

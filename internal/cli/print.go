@@ -12,7 +12,6 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/evidence"
-	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
@@ -170,7 +169,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if db != nil {
 		defer db.Close()
 	}
-	prices, _ := pricing.Load()
+	prices := loadPricing()
 	recorder := startObserveRecorder(db, "print", env.prov.Name(), env.modelName, prices)
 	defer recorder.end()
 

@@ -11,6 +11,7 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/profile"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -44,6 +45,17 @@ func NewRootCmd() *cobra.Command {
 			cfg, err := config.Load()
 			if err != nil {
 				return err
+			}
+
+			// Gateway profiles register as providers before anything
+			// resolves one, so `--provider <name>` and provider.default work
+			// the same as a built-in. A malformed profile is reported and
+			// skipped rather than taking the session down; `shhh providers`
+			// shows the details.
+			profiles, profileErrs := profile.Load(profile.Dirs(config.Paths()))
+			profile.Register(profiles)
+			for _, perr := range profileErrs {
+				fmt.Fprintf(os.Stderr, "shhh: provider profile: %v\n", perr)
 			}
 
 			flags.ConfigProvider = cfg.Provider.Default
@@ -339,6 +351,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newHistoryCmd())
 	cmd.AddCommand(newSnippetsCmd())
 	cmd.AddCommand(newMemoryCmd())
+	cmd.AddCommand(newProvidersCmd())
 	cmd.AddCommand(newCompletionCmd(cmd))
 
 	cmd.SetVersionTemplate(versionTemplate())

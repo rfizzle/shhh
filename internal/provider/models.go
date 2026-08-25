@@ -41,6 +41,17 @@ var knownModels = map[string][]string{
 	},
 }
 
+// RegisterModels adds a catalog for a provider registered at runtime — a
+// gateway profile declaring what it hosts (internal/profile). It replaces any
+// existing catalog for that name.
+func RegisterModels(name string, models []string) {
+	if len(models) == 0 {
+		delete(knownModels, normalizeName(name))
+		return
+	}
+	knownModels[normalizeName(name)] = append([]string(nil), models...)
+}
+
 // KnownModels returns the curated model names for a registered provider, or
 // nil when the provider's models can't be known ahead of time.
 func KnownModels(name string) []string {

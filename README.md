@@ -155,6 +155,68 @@ Each provider picks a fast, capable default model. Override with `provider.model
 
 The OpenAI-shaped providers (`openai`, `openrouter`, `openai-compatible`) can enumerate their endpoint: the first bare `/model` of a session queries `GET {base_url}/models` and offers what actually answers there, filtered to the chat-capable ids. That is the only way to know the catalog of a local runtime or a private gateway — Ollama, vLLM, LiteLLM — where the curated list is necessarily empty. The query is lazy (nothing runs until you ask), bounded at 10 seconds, cached for the session, and cancellable with Esc; an endpoint that refuses falls back to the curated catalog and says why.
 
+## Gateway profiles
+
+A private or self-hosted gateway is OpenAI-compatible in shape but rarely in detail: one rejects a parameter the upstream forbids, another hands back an id that must not be echoed to it, a third publishes its catalog at a path of its own. Those are per-deployment facts that change without warning, and they have no business living in provider code. A **profile** puts them in your config, where fixing one is an edit instead of a release.
+
+Drop a TOML file in `<config-dir>/providers/` — `~/.config/shhh/providers/gateway.toml`, or the `Application Support` equivalent on macOS. The filename is the provider name unless the file sets one, and the profile registers exactly like a built-in: `--provider gateway`, `provider.default = "gateway"`, `SHHH_PROVIDER=gateway`.
+
+```toml
+name        = "gateway"
+api         = "openai-chat"            # or "anthropic-messages"
+base_url    = "https://llm-gateway.internal/v1"
+api_key_env = "GATEWAY_API_KEY"        # or api_key = "..." for a literal
+models_path = "/v1/models/simple"      # optional: a non-standard catalog endpoint
+
+[headers]
+X-Title = "shhh"
+
+[[models]]
+id             = "gemini-3.1-pro"
+context_window = 1048576
+max_tokens     = 65536
+cost           = { input = 2.0, output = 12.0, cache_read = 0.2 }
+
+[[rewrite]]
+when  = { model = "gemini-*" }
+op    = "cut-at"
+path  = "messages[].tool_calls[].id"
+value = "__thought__"
+note  = "The gateway appends __thought__<base64> to tool-call ids; the upstream rejects the fabricated ones when they come back."
+```
+
+`shhh providers` lists what resolves on this machine and checks each profile: where it points, whether its key is actually exported, what it declares, and what its rules do — including the `note` on each, because a profile outlives the memory of the incident that caused it.
+
+### Model metadata
+
+Declared models seed the `/model` picker before discovery runs, and supply what a catalog endpoint returning bare ids cannot: pricing for the spend meter, `context_window` for the context gauge. Costs are in dollars per million tokens, the unit model cards publish. Anything you leave out falls back to the public pricing table shhh already downloads (LiteLLM's `model_prices_and_context_window.json`, refreshed daily), so a profile only has to declare what that table gets wrong or has never heard of — `shhh providers` marks each model `profile`, `public table`, or `unpriced`. `cache_read` and `cache_write` are accepted and reported but not yet billed: shhh's usage accounting has no cached-token counters. `max_tokens` is metadata only — shhh does not add it to requests; a gateway that needs it set can get it from a `set-default` rule.
+
+### Rewrite rules
+
+Each rule names a place in the JSON on the wire and an edit to make there. Rules run in file order, so a later rule sees an earlier rule's edit, and they are written against the wire format rather than against shhh's own types — a field shhh doesn't model is still reachable.
+
+| Field | Meaning |
+|---|---|
+| `when.model` | Glob narrowing the rule to some models (`"gemini-*"`); omit to match every request |
+| `direction` | `request` (default) or `response` — response rules run on a JSON body and on each streamed `data:` event |
+| `path` | Dotted keys, with `[]` for "every element of this array": `top_p`, `chat_template_kwargs.enable_thinking`, `messages[].tool_calls[].id` |
+| `op` | The edit (below) |
+| `value` | The operand: what to set, cut at, or trim |
+| `to` | The second operand: the new key for `rename`, the replacement for `replace` |
+| `note` | Why the quirk exists; printed back by `shhh providers` |
+
+| Op | Effect |
+|---|---|
+| `delete` | Remove the field — a parameter the upstream rejects |
+| `set` | Set it, replacing any value |
+| `set-default` | Set it only when absent or null |
+| `rename` | Move it to `to` within the same object |
+| `cut-at` | Truncate a string at the first occurrence of `value` |
+| `trim-prefix` / `trim-suffix` | Remove `value` from either end of a string |
+| `replace` | Replace every `value` in a string with `to` |
+
+A path that matches nothing is not an error — a rule with nothing to do does nothing, which is what lets one profile cover a conversation where only some messages carry tool calls. A rule that can't work at all (an unknown op, a `set` with no value, a malformed glob) is refused at load, naming the file and the rule index, and that profile alone is skipped: one bad file never takes the session down.
+
 ## Environment Variables
 
 ### Universal
@@ -359,6 +421,7 @@ The contents of `.shhh` are appended to the system prompt when running shhh from
 | `shhh memory list` | List durable memories (current project + global) |
 | `shhh memory add [--global] [--kind k] <text>` | Add a memory (preference, convention, correction, lesson) |
 | `shhh memory forget <id>` | Delete a memory by id |
+| `shhh providers` | List providers and check gateway profiles |
 | `shhh completion <shell>` | Generate shell completion script |
 
 ### Flags

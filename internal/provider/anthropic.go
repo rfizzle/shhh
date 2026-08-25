@@ -40,6 +40,13 @@ func NewAnthropic(opts ResolveOpts) (*Anthropic, error) {
 	}, nil
 }
 
+// NewAnthropicWith builds a provider over an already-configured client, for
+// gateway profiles (internal/profile) that supply their own base URL, auth,
+// and HTTP transport.
+func NewAnthropicWith(client anthropic.Client, model string) *Anthropic {
+	return &Anthropic{client: client, model: first(model, defaultAnthropicModel)}
+}
+
 func (a *Anthropic) Name() string { return "anthropic" }
 
 func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, opts CompletionOpts) (<-chan StreamEvent, error) {

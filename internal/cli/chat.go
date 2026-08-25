@@ -19,7 +19,6 @@ import (
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/memory"
-	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
@@ -293,7 +292,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	}
 	cfg := env.cfg
 
-	prices, _ := pricing.Load()
+	prices := loadPricing()
 
 	// Permission mode (S-059): starting mode and Shift+Tab cycle come from
 	// config; the default is manual (everything prompts).

@@ -33,7 +33,7 @@ func newMetricsCmd() *cobra.Command {
 				return nil
 			}
 
-			prices, _ := pricing.Load()
+			prices := loadPricing()
 
 			w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
 			fmt.Fprintln(w, "PROVIDER\tMODEL\tCOUNT\tSUCCESS\tEXEC\tEXEC OK\tRATED\tRATED OK\tAVG TTFT\tP95 TTFT\tAVG TOTAL\tP95 TOTAL\tTOKENS IN\tTOKENS OUT\tEST. COST")

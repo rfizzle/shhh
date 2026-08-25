@@ -52,6 +52,36 @@ func Load() (*Table, error) {
 	return loadFromFile(path)
 }
 
+// Overlay adds entries that take precedence over the downloaded table. It is
+// how a gateway profile's declared costs and context windows reach the spend
+// meter: the public table stays the fallback for every model the profile
+// does not describe.
+func (t *Table) Overlay(models map[string]ModelPricing) {
+	if t == nil || len(models) == 0 {
+		return
+	}
+	if t.models == nil {
+		t.models = map[string]ModelPricing{}
+	}
+	for name, p := range models {
+		existing, ok := t.models[name]
+		if !ok {
+			t.models[name] = p
+			continue
+		}
+		// A profile may describe only part of a model — prices but no
+		// context window, or the reverse; keep what it leaves out.
+		if p.InputCostPerToken == 0 && p.OutputCostPerToken == 0 {
+			p.InputCostPerToken = existing.InputCostPerToken
+			p.OutputCostPerToken = existing.OutputCostPerToken
+		}
+		if p.MaxInputTokens == 0 {
+			p.MaxInputTokens = existing.MaxInputTokens
+		}
+		t.models[name] = p
+	}
+}
+
 func (t *Table) Cost(model string, tokensIn, tokensOut int64) (inputCost, outputCost float64, found bool) {
 	p, ok := t.lookup(model)
 	if !ok || (p.InputCostPerToken == 0 && p.OutputCostPerToken == 0) {
