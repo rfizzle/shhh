@@ -1538,12 +1538,16 @@ func (m *Model) invalidateRenderCache() {
 	m.cachedCount = 0
 }
 
+// renderEntry renders one entry's own lines, always ending in exactly one
+// newline and never in a trailing blank line. Spacing between entries is not
+// an entry's business — separatorBefore owns it, so every caller that
+// concatenates entries gets the same rhythm.
 func (m Model) renderEntry(e entry, width int) string {
 	switch e.kind {
 	case entryUser:
-		return userStyle.Render("You") + "\n" + m.wordWrap(e.text, width) + "\n\n"
+		return userStyle.Render("You") + "\n" + m.wordWrap(e.text, width) + "\n"
 	case entryAssistant:
-		return assistantStyle.Render("Assistant") + "\n" + renderMarkdown(e.text, width) + "\n\n"
+		return assistantStyle.Render("Assistant") + "\n" + renderMarkdown(e.text, width) + "\n"
 	case entryTool, entryCommand:
 		// Compact one-row activity rendering (S-075); focus mode expands it.
 		return m.activityRowFor(e).View(width) + "\n"
@@ -1554,13 +1558,36 @@ func (m Model) renderEntry(e entry, width int) string {
 		// While its full-screen view is showing, the transcript behind keeps
 		// the bounded expanded form.
 		if e.diff.Mode == components.DiffFull {
-			return strings.Join(e.diff.ExpandedLines(width), "\n") + "\n\n"
+			return strings.Join(e.diff.ExpandedLines(width), "\n") + "\n"
 		}
-		return e.diff.View(width) + "\n\n"
+		return e.diff.View(width) + "\n"
 	case entrySystem:
-		return systemMsgStyle.Render(e.text) + "\n\n"
+		return systemMsgStyle.Render(e.text) + "\n"
 	case entryError:
-		return errorStyle.Render("Error: "+e.text) + "\n\n"
+		return errorStyle.Render("Error: "+e.text) + "\n"
+	}
+	return ""
+}
+
+// entryIsBlock reports whether an entry reads as a standalone block — a
+// conversational turn, a diff, or a notice long enough to wrap onto its own
+// lines — rather than as a row in the compact activity feed (§6).
+func entryIsBlock(e entry) bool {
+	switch e.kind {
+	case entryUser, entryAssistant, entryDiff:
+		return true
+	case entrySystem, entryError:
+		return strings.Contains(strings.TrimSpace(e.text), "\n")
+	}
+	return false
+}
+
+// separatorBefore returns the spacing between two adjacent entries: one blank
+// line whenever either side is a block, and nothing between feed rows, so
+// activity rows and one-line notices pack tight while turns keep their air.
+func separatorBefore(prev, cur entry) string {
+	if entryIsBlock(prev) || entryIsBlock(cur) {
+		return "\n"
 	}
 	return ""
 }
@@ -1656,10 +1683,21 @@ func (m *Model) renderHistory() string {
 		m.cachedCount = 0
 	}
 	for ; m.cachedCount < len(m.transcript); m.cachedCount++ {
-		m.cachedRender += m.renderEntry(m.transcript[m.cachedCount], w)
+		e := m.transcript[m.cachedCount]
+		block := m.renderEntry(e, w)
+		if block == "" {
+			continue
+		}
+		if m.cachedRender != "" {
+			m.cachedRender += separatorBefore(m.transcript[m.cachedCount-1], e)
+		}
+		m.cachedRender += block
 	}
 	s := m.cachedRender
 	if m.state == stateStreaming && m.streaming != "" {
+		if s != "" && len(m.transcript) > 0 {
+			s += separatorBefore(m.transcript[len(m.transcript)-1], entry{kind: entryAssistant})
+		}
 		s += assistantStyle.Render("Assistant") + "\n"
 		s += renderMarkdown(m.streaming, w)
 	}

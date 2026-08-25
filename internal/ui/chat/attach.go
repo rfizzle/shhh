@@ -89,10 +89,23 @@ func (m *Model) renderAttachedHistory() string {
 	cv := m.syncChildView(m.attachedTo)
 	w := m.contentWidth()
 	var b strings.Builder
+	var prev entry
+	havePrev := false
 	for _, e := range cv.entries {
-		b.WriteString(m.renderEntry(e, w))
+		block := m.renderEntry(e, w)
+		if block == "" {
+			continue
+		}
+		if havePrev {
+			b.WriteString(separatorBefore(prev, e))
+		}
+		b.WriteString(block)
+		prev, havePrev = e, true
 	}
 	if s := m.subagents.StreamingText(m.attachedTo); s != "" {
+		if havePrev {
+			b.WriteString(separatorBefore(prev, entry{kind: entryAssistant}))
+		}
 		b.WriteString(assistantStyle.Render("Assistant") + "\n" + renderMarkdown(s, w))
 	}
 	if b.Len() == 0 {

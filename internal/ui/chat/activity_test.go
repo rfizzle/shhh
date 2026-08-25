@@ -271,3 +271,72 @@ func TestActivityArg_Fallbacks(t *testing.T) {
 		t.Fatalf("plain read shows the path, got %q", got)
 	}
 }
+
+// TestTranscriptSpacing_UniformRhythm pins the transcript's vertical rhythm:
+// one-line notices sit flush against the activity rows they belong to, and
+// blocks (turns, diffs, multi-line notices) get exactly one blank line on
+// either side — never zero, never two.
+func TestTranscriptSpacing_UniformRhythm(t *testing.T) {
+	m := activityModel(t)
+	row := func(name string) entry {
+		return entry{kind: entryTool, toolName: name, toolArgs: `{"name":"agent-4"}`,
+			toolResult: "ok", duration: 120 * time.Millisecond}
+	}
+	m.transcript = []entry{
+		{kind: entryUser, text: "Do the same again"},
+		{kind: entrySystem, text: "Auto-approved (classifier, 3.4s): writer agent"},
+		row("spawn_agent"),
+		{kind: entrySystem, text: "Approved agent-4 ▸ run echo hello"},
+		row("agent_report"),
+		{kind: entrySystem, text: "Multi-line notice:\n  second line"},
+		{kind: entryAssistant, text: "Done."},
+	}
+	lines := strings.Split(strings.TrimRight(stripANSI(m.renderHistory()), "\n"), "\n")
+
+	blank := func(i int) bool { return strings.TrimSpace(lines[i]) == "" }
+	var blanks []int
+	for i := range lines {
+		if blank(i) {
+			blanks = append(blanks, i)
+			if i > 0 && blank(i-1) {
+				t.Fatalf("two blank lines in a row at %d:\n%s", i, strings.Join(lines, "\n"))
+			}
+		}
+	}
+	if len(blanks) == 0 {
+		t.Fatalf("blocks should be separated by blank lines:\n%s", strings.Join(lines, "\n"))
+	}
+
+	// The feed — notice, row, notice, row — packs tight with no gaps.
+	feed := []string{"Auto-approved", "◇ agent", "Approved agent-4", "agent_report"}
+	start := -1
+	for i, line := range lines {
+		if strings.Contains(line, feed[0]) {
+			start = i
+			break
+		}
+	}
+	if start < 0 {
+		t.Fatalf("first notice missing:\n%s", strings.Join(lines, "\n"))
+	}
+	for off, want := range feed {
+		if got := lines[start+off]; !strings.Contains(got, want) {
+			t.Fatalf("feed line %d should contain %q, got %q:\n%s",
+				off, want, got, strings.Join(lines, "\n"))
+		}
+	}
+
+	// Blocks keep their air: a blank line before "You" is impossible (it leads
+	// the transcript), but every later block header has one above it.
+	for _, header := range []string{"Multi-line notice:", "Assistant"} {
+		for i, line := range lines {
+			if strings.HasPrefix(strings.TrimSpace(line), header) {
+				if i == 0 || !blank(i-1) {
+					t.Fatalf("%q should have one blank line above it:\n%s",
+						header, strings.Join(lines, "\n"))
+				}
+				break
+			}
+		}
+	}
+}

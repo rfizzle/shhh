@@ -132,6 +132,8 @@ func (m *Model) renderFocusHistory() (content string, selStart, selCount int) {
 	w := m.contentWidth()
 	var b strings.Builder
 	line := 0
+	var prev entry
+	havePrev := false
 	for i, e := range *m.entries() {
 		var block string
 		if expandable(e) {
@@ -139,12 +141,22 @@ func (m *Model) renderFocusHistory() (content string, selStart, selCount int) {
 		} else {
 			block = m.renderEntry(e, w)
 		}
+		// The separator counts toward the line total before the block starts,
+		// so the gutter pointer and scrolling stay aligned.
+		if havePrev && block != "" {
+			sep := separatorBefore(prev, e)
+			b.WriteString(sep)
+			line += strings.Count(sep, "\n")
+		}
 		n := strings.Count(block, "\n")
 		if i == m.focusIdx {
 			selStart, selCount = line, n
 		}
 		b.WriteString(block)
 		line += n
+		if block != "" {
+			prev, havePrev = e, true
+		}
 	}
 	return b.String(), selStart, selCount
 }
