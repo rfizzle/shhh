@@ -512,6 +512,20 @@ make fmt        # Format code
 make build-all  # Cross-compile for darwin/linux (amd64/arm64)
 ```
 
+The TUI surfaces are pinned by golden-file renders under
+`internal/ui/components/testdata/golden` and `internal/ui/chat/testdata/golden`:
+each activity row kind and state, the approval card's variants, the diff
+viewer's three modes, the agent list, the inspector rail, the transcript's step
+outline, and the prompt frame in all four layout modes — captured at 60, 80,
+110 and 130 columns, in colour and in monochrome. Each file holds the render
+twice: once with ANSI stripped, so the columns are readable in a diff, and once
+with the escapes kept (`ESC` written as `␛`), so a changed colour assignment
+shows up too. When a layout change is intended, regenerate them:
+
+```bash
+go test ./internal/ui/components ./internal/ui/chat -update-golden
+```
+
 ## License
 
 MIT
