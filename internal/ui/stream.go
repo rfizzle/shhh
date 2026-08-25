@@ -6,6 +6,7 @@ import (
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 type tokenMsg string
@@ -23,9 +24,9 @@ type StreamModel struct {
 }
 
 func NewStreamModel(events <-chan provider.StreamEvent, cancel context.CancelFunc) StreamModel {
-	s := spinner.New()
-	s.Spinner = spinner.Dot
-	s.Style = SpinnerStyle
+	// The frame set and its cadence belong to components (S-094), so the
+	// one-shot UI spins exactly like the chat surface does.
+	s := components.NewSpinnerModel()
 	return StreamModel{
 		events:  events,
 		cancel:  cancel,

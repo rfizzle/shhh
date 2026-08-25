@@ -716,7 +716,9 @@ the corner shape alone says which kind of thing you are looking at.
 - Package `internal/ui/components`: one file per component
   (`approval.go`, `diff.go`, `selector.go`, `multiselect.go`,
   `noteselect.go`, `confirm.go`, `activityrow.go`, `cockpit.go`,
-  `agentlist.go`, `frame.go`). The v2 surfaces add `meter.go` (§10c),
+  `agentlist.go`, `frame.go`). The v2 surfaces add `meters.go` (§10c —
+  `Meter`, `Sparkline`, `Spinner`, and the frame set every animating host
+  ticks),
   `inspector.go` (§15) and `review.go` (§16); the step outline (§13) is a
   layer over the entry list in `internal/ui/chat/steps.go`, beside the
   activity feed and not a component, because it groups history rather than

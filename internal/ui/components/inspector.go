@@ -33,10 +33,11 @@ const (
 	// inspectorIndent is the two columns every block heading and row starts
 	// at; a changed-file row spends the third on the mutation rail (§14).
 	inspectorIndent = 2
-	// Meter and sparkline cell counts (§15a).
-	inspectorTurnCells = 22
-	inspectorCtxCells  = 22
-	inspectorSparkCell = 8
+	// Meter and sparkline cell counts (§15a) — the shared roles from §10c,
+	// so the rail's runs are the same runs every other surface draws.
+	inspectorTurnCells = MeterCellsRail
+	inspectorCtxCells  = MeterCellsRail
+	inspectorSparkCell = SparkCells
 )
 
 // InspectorTurn is the THIS TURN block: how far through its steps the turn is,
@@ -75,11 +76,15 @@ type InspectorChanges struct {
 // when the child declared a step count; without one the row shows its tool
 // count rather than a fabricated ratio (S-094).
 type InspectorAgent struct {
-	Name    string
-	Detail  string
-	Spend   string
-	Tools   int
-	Blocked bool
+	Name   string
+	Detail string
+	Spend  string
+	Tools  int
+	// Step and Steps drive the five-cell lane meter. Steps == 0 means the
+	// child declared no total, so the lane shows the spinner beside what it
+	// is doing instead of a bar drawn against a denominator nobody supplied.
+	Step, Steps int
+	Blocked     bool
 }
 
 // InspectorContext is the CONTEXT block: occupancy of the model's window,
@@ -120,6 +125,10 @@ type InspectorRail struct {
 	Agents  []InspectorAgent
 	Context *InspectorContext
 	Spend   *InspectorSpend
+	// Frame is the host's spinner frame index, for the lanes of children that
+	// declared no step count. The rail stays passive: it animates nothing, it
+	// just draws the frame it is handed.
+	Frame int
 }
 
 // Empty reports whether every block is omitted, so the host can skip the
@@ -231,18 +240,16 @@ func (r InspectorRail) turnBlock(width int) (railBlock, bool) {
 		return railBlock{}, false
 	}
 	meta := ""
-	switch {
-	case t.Steps > 0:
-		meta = fmt.Sprintf("step %d of %d", min(t.Step, t.Steps), t.Steps)
-	case t.Step > 0:
+	if t.Steps <= 0 && t.Step > 0 {
 		// Steps observed, none declared: the ordinal is true, the ratio would
 		// not be, so no denominator and no meter (S-094).
 		meta = fmt.Sprintf("step %d", t.Step)
 	}
 	b := railBlock{heading: railHeading("THIS TURN", meta, dimStyle, width)}
-	if t.Steps > 0 {
-		pct := min(t.Step, t.Steps) * 100 / t.Steps
-		b.rows = append(b.rows, indentRow(spinTextStyle.Render(meterCells(pct, inspectorTurnCells)), width))
+	if m, ok := StepMeter(t.Step, t.Steps, inspectorTurnCells, t.Running); ok {
+		// The count sits beside the bar rather than in the heading, because a
+		// bar is never the only carrier of its value (§10c).
+		b.rows = append(b.rows, indentRow(m.View(), width))
 	}
 	elapsed := "elapsed"
 	if !t.Running {
@@ -288,15 +295,29 @@ func (r InspectorRail) agentsBlock(width int) (railBlock, bool) {
 			glyph = errStyle.Render("⚠")
 		}
 		b.rows = append(b.rows, railRow(glyph+" "+bodyStyle.Render(a.Name), dimStyle.Render(a.Spend), width, inspectorIndent))
-		detail := a.Detail
-		if a.Tools > 0 {
-			if detail != "" {
-				detail += " · "
+		var parts []string
+		switch m, ok := AgentMeter(a.Step, a.Steps); {
+		case ok:
+			// A declared step count earns a bar; the lane is info whatever
+			// the child's health, and states its count beside it (§10c).
+			parts = append(parts, m.View())
+			if a.Detail != "" {
+				parts = append(parts, dimmerStyle.Render(a.Detail))
 			}
-			detail += plural(a.Tools, "tool")
+		case a.Detail == "":
+		case a.Blocked:
+			// A blocked lane is not running, so it gets no motion either.
+			parts = append(parts, dimmerStyle.Render(a.Detail))
+		default:
+			// No declared total: motion beside the word naming what is
+			// running, never a fabricated ratio (S-094).
+			parts = append(parts, Spinner{Frame: r.Frame, Label: a.Detail}.View())
 		}
-		if detail != "" {
-			b.rows = append(b.rows, railRow(dimmerStyle.Render(detail), "", width, inspectorIndent+2))
+		if a.Tools > 0 {
+			parts = append(parts, dimmerStyle.Render(plural(a.Tools, "tool")))
+		}
+		if len(parts) > 0 {
+			b.rows = append(b.rows, railRow(strings.Join(parts, dimmerStyle.Render(" · ")), "", width, inspectorIndent+2))
 		}
 	}
 	return b, true
@@ -308,20 +329,23 @@ func (r InspectorRail) contextBlock(width int) (railBlock, bool) {
 		return railBlock{}, false
 	}
 	pct := min(max(c.Pct, 0), 100)
-	style := ctxStyle(pct, c.WarnPct, c.AlertPct)
+	meter := Meter{Pct: pct, Cells: inspectorCtxCells, Tone: MeterPressure,
+		Warn: c.WarnPct, Alert: c.AlertPct}
+	style := meter.Style()
 	b := railBlock{heading: railHeading("CONTEXT",
 		style.Render(fmt.Sprintf("%d%% of %s", pct, formatTokens(c.Window))), style, width)}
 	count := formatTokens(c.Tokens)
 	if c.Estimated {
 		count = "~" + count
 	}
-	b.rows = append(b.rows, railRow(style.Render(meterCells(pct, inspectorCtxCells)),
-		style.Render(count), width, inspectorIndent))
+	// The bar's number is the token count at the rail's right edge, in the
+	// meter's own colour — the bar never carries the value alone (§10c).
+	b.rows = append(b.rows, railRow(meter.Bar(), style.Render(count), width, inspectorIndent))
 	tokens := strings.TrimSpace(c.Tokens1 + " " + c.Tokens2)
 	lead := ""
 	switch {
 	case len(c.Burn) > 0:
-		lead = dimmerStyle.Render(sparkCells(c.Burn, inspectorSparkCell)) + " " + dimStyle.Render("per round")
+		lead = Sparkline{Values: c.Burn, Cells: inspectorSparkCell}.View() + " " + dimStyle.Render("per round")
 	case c.Estimated:
 		// No series yet and no reported size: the block still has to say
 		// where its number came from.
@@ -383,64 +407,6 @@ func railRow(left, right string, width, indent int) string {
 // indentRow is railRow with nothing on the right.
 func indentRow(s string, width int) string {
 	return railRow(s, "", width, inspectorIndent)
-}
-
-// meterCells renders the ▰/▱ run for a percentage. The bar is never the only
-// carrier of the value — every caller states the number beside it (§10c).
-func meterCells(pct, cells int) string {
-	pct = min(max(pct, 0), 100)
-	filled := pct * cells / 100
-	if filled == 0 && pct > 0 {
-		// A non-zero percentage always shows at least one cell: an empty bar
-		// beside "1%" reads as nothing running.
-		filled = 1
-	}
-	return strings.Repeat("▰", filled) + strings.Repeat("▱", cells-filled)
-}
-
-// sparkCells renders the last cells values of a series as a ▁▂▃▄▅▆▇█ run,
-// scaled to the series' own maximum.
-func sparkCells(series []float64, cells int) string {
-	if len(series) == 0 {
-		return ""
-	}
-	if len(series) > cells {
-		series = series[len(series)-cells:]
-	}
-	ramp := []rune("▁▂▃▄▅▆▇█")
-	maxV := series[0]
-	for _, v := range series {
-		if v > maxV {
-			maxV = v
-		}
-	}
-	var b strings.Builder
-	for _, v := range series {
-		idx := 0
-		if maxV > 0 {
-			idx = int(v / maxV * float64(len(ramp)-1))
-		}
-		b.WriteRune(ramp[min(max(idx, 0), len(ramp)-1)])
-	}
-	return b.String()
-}
-
-// ctxStyle colors the context meter and its number together (§10c).
-func ctxStyle(pct, warn, alert int) lipgloss.Style {
-	if warn <= 0 {
-		warn = ctxWarnPct
-	}
-	if alert <= 0 {
-		alert = ctxAlertPct
-	}
-	switch {
-	case pct >= alert:
-		return errStyle
-	case pct >= warn:
-		return accentStyle
-	default:
-		return addStyle
-	}
 }
 
 // FormatElapsed is the shared wall-clock format: seconds under a minute,

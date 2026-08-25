@@ -17,13 +17,6 @@ const (
 	CockpitChecking                      // ✦ classifier deciding
 )
 
-// Context-meter warning thresholds, matching S-055's trim warnings.
-const (
-	ctxWarnPct  = 70
-	ctxAlertPct = 90
-	ctxBarCells = 8
-)
-
 // Cockpit is the status-bar rail of session vitals (§8). It is a passive
 // renderer: the host feeds it current values and renders View every frame.
 // When the bar overflows, right-side segments drop first.
@@ -32,7 +25,7 @@ type Cockpit struct {
 	ModeKind CockpitMode
 	// Round is the tool-round counter segment ("round 7/25"); empty hides it.
 	Round string
-	// CtxPct drives the 8-cell context meter; negative hides it.
+	// CtxPct drives the 8-cell context meter (§10c); negative hides it.
 	CtxPct int
 	// WarnPct/AlertPct override the meter's warning-color thresholds (0 keeps
 	// the defaults), so the host can match its own trim warnings (S-055).
@@ -64,27 +57,18 @@ func (c Cockpit) modeSegment() string {
 	}
 }
 
-// ctxMeter renders the context occupancy bar with its warning colors.
+// ctxMeter renders the context occupancy bar with its warning colors — the
+// shared Meter (S-094), so the vitals rail and the inspector rail cannot
+// report the same pressure two ways.
 func (c Cockpit) ctxMeter() string {
-	warn, alert := ctxWarnPct, ctxAlertPct
-	if c.WarnPct > 0 {
-		warn = c.WarnPct
-	}
-	if c.AlertPct > 0 {
-		alert = c.AlertPct
-	}
-	pct := min(max(c.CtxPct, 0), 100)
-	filled := pct * ctxBarCells / 100
-	bar := fmt.Sprintf("ctx %s%s %d%%",
-		strings.Repeat("▰", filled), strings.Repeat("▱", ctxBarCells-filled), pct)
-	switch {
-	case pct >= alert:
-		return errStyle.Bold(true).Render(bar)
-	case pct >= warn:
-		return accentStyle.Render(bar)
-	default:
-		return statusStyle.Render(bar)
-	}
+	return Meter{
+		Pct:   c.CtxPct,
+		Cells: MeterCellsVitals,
+		Tone:  MeterPressure,
+		Label: "ctx",
+		Warn:  c.WarnPct,
+		Alert: c.AlertPct,
+	}.View()
 }
 
 // agentsSegment renders the sub-agent count with the blocked badge, which

@@ -12,7 +12,6 @@ import (
 var (
 	CommandStyle      lipgloss.Style
 	ErrorStyle        lipgloss.Style
-	SpinnerStyle      lipgloss.Style
 	ActiveStyle       lipgloss.Style
 	InactiveStyle     lipgloss.Style
 	BarStyle          lipgloss.Style
@@ -48,7 +47,6 @@ func InitStyles() {
 	p := components.Palette
 	CommandStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Add)
 	ErrorStyle = lipgloss.NewStyle().Foreground(p.Del)
-	SpinnerStyle = lipgloss.NewStyle().Foreground(p.Spin)
 
 	ActiveStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Bright).Background(p.FocusBg).Padding(0, padding)
 	InactiveStyle = lipgloss.NewStyle().Foreground(p.Subtle).Padding(0, padding)

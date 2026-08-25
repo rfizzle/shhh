@@ -100,6 +100,42 @@ func TestInspectorRail_OmitsEmptyBlocks(t *testing.T) {
 	}
 }
 
+func TestInspectorRail_AgentLaneOnlyMetersDeclaredSteps(t *testing.T) {
+	// No declared step count: the lane moves rather than drawing a ratio
+	// nobody supplied (S-094).
+	r := InspectorRail{
+		Agents: []InspectorAgent{{Name: "writer-1", Detail: "editing docs/loop.md", Tools: 4}},
+		Frame:  2,
+	}
+	view := stripANSI(r.View(InspectorWidth, 0))
+	if strings.Contains(view, "▰") {
+		t.Fatalf("no bar without a declared step count:\n%s", view)
+	}
+	if !strings.Contains(view, "⠹ editing docs/loop.md") {
+		t.Fatalf("the spinner names what is running:\n%s", view)
+	}
+	// A declared count earns the five-cell lane meter, and the meter states
+	// the count beside it.
+	r.Agents[0].Step, r.Agents[0].Steps = 2, 4
+	view = stripANSI(r.View(InspectorWidth, 0))
+	if !strings.Contains(view, "▰▰▱▱▱ step 2 of 4") {
+		t.Fatalf("a declared count draws the lane meter:\n%s", view)
+	}
+	if strings.Contains(view, "⠹") {
+		t.Fatalf("a lane with a bar does not also spin:\n%s", view)
+	}
+	// A child waiting on the user is not running, so it gets neither.
+	r.Agents[0].Step, r.Agents[0].Steps = 0, 0
+	r.Agents[0].Blocked = true
+	view = stripANSI(r.View(InspectorWidth, 0))
+	if strings.Contains(view, "⠹") || strings.Contains(view, "▰") {
+		t.Fatalf("a blocked lane shows no motion and no bar:\n%s", view)
+	}
+	if !strings.Contains(view, "⚠ writer-1") {
+		t.Fatalf("a blocked lane says so:\n%s", view)
+	}
+}
+
 func TestInspectorRail_RowsFitTheWidth(t *testing.T) {
 	long := fullRail()
 	long.Changes.Files = append(long.Changes.Files, InspectorFile{
@@ -173,55 +209,6 @@ func TestInspectorRail_NoDeclaredStepsNoRatio(t *testing.T) {
 	done := InspectorRail{Turn: &InspectorTurn{Tools: 1, Elapsed: time.Second}}
 	if !strings.Contains(stripANSI(done.View(InspectorWidth, 0)), "1 tool · 1.0s total") {
 		t.Fatalf("a finished turn reports a total:\n%s", done.View(InspectorWidth, 0))
-	}
-}
-
-func TestMeterCells(t *testing.T) {
-	cases := []struct {
-		pct, cells, filled int
-	}{
-		{0, 22, 0}, {1, 22, 1}, {50, 22, 11}, {99, 22, 21}, {100, 22, 22},
-		{-5, 8, 0}, {150, 8, 8},
-	}
-	for _, c := range cases {
-		bar := meterCells(c.pct, c.cells)
-		if got := strings.Count(bar, "▰"); got != c.filled {
-			t.Fatalf("meterCells(%d, %d) filled %d cells, want %d (%q)", c.pct, c.cells, got, c.filled, bar)
-		}
-		if got := len([]rune(bar)); got != c.cells {
-			t.Fatalf("meterCells(%d, %d) is %d cells wide", c.pct, c.cells, got)
-		}
-	}
-}
-
-func TestSparkCells(t *testing.T) {
-	if got := sparkCells(nil, 8); got != "" {
-		t.Fatalf("an empty series renders nothing, got %q", got)
-	}
-	if got := sparkCells([]float64{3, 3, 3}, 8); got != "███" {
-		t.Fatalf("a flat series is flat at the top, got %q", got)
-	}
-	if got := sparkCells([]float64{0, 4}, 8); got != "▁█" {
-		t.Fatalf("a series scales to its own maximum, got %q", got)
-	}
-	if got := sparkCells([]float64{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, 8); len([]rune(got)) != 8 {
-		t.Fatalf("a long series keeps its last 8 cells, got %q", got)
-	}
-}
-
-func TestInspectorContextThresholds(t *testing.T) {
-	// The bar and the number turn together (§10c), so one style decides both.
-	for _, c := range []struct {
-		pct  int
-		want lipgloss.Color
-	}{{40, Palette.Add}, {62, Palette.Accent}, {95, Palette.Del}} {
-		if got := ctxStyle(c.pct, 60, 80).GetForeground(); got != c.want {
-			t.Fatalf("context at %d%% uses %v, want %v", c.pct, got, c.want)
-		}
-	}
-	// Zero thresholds keep the cockpit's defaults.
-	if got := ctxStyle(75, 0, 0).GetForeground(); got != Palette.Accent {
-		t.Fatalf("default thresholds: 75%% should warn, got %v", got)
 	}
 }
 

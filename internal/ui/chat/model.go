@@ -176,6 +176,10 @@ type Model struct {
 	viewport viewport.Model
 	input    textarea.Model
 	spinner  spinner.Model
+	// spinFrame counts spinner ticks for the passive surfaces that draw a
+	// frame themselves rather than animating one (the inspector rail's agent
+	// lanes, S-094).
+	spinFrame int
 
 	transcript []entry
 	// Incremental render cache: entries [0, cachedCount) rendered at
@@ -377,9 +381,9 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 	ta.ShowLineNumbers = false
 	ta.KeyMap.InsertNewline.SetKeys("alt+enter")
 
-	s := spinner.New()
-	s.Spinner = spinner.Dot
-	s.Style = lipgloss.NewStyle().Foreground(lipgloss.Color("205"))
+	// One frame set, one cadence, one colour, shared with the one-shot UI
+	// (S-094).
+	s := components.NewSpinnerModel()
 
 	return Model{
 		agent:       agent.New(initialMessages, stream),
@@ -876,6 +880,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.frameWorking() || (m.turnState() == stateStreaming && m.streaming == "") || m.turnState() == stateRunningCmd || m.turnState() == stateClassifying || m.state == stateModelList {
 			var cmd tea.Cmd
 			m.spinner, cmd = m.spinner.Update(msg)
+			m.spinFrame++
 			return m, cmd
 		}
 	}

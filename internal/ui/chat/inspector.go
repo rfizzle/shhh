@@ -110,6 +110,7 @@ func (m Model) inspectorData() components.InspectorRail {
 		Agents:  m.inspectorAgents(),
 		Context: m.inspectorContext(),
 		Spend:   m.inspectorSpend(),
+		Frame:   m.spinFrame,
 	}
 }
 
