@@ -3,11 +3,40 @@
 > Visual components for the coding-agent TUI (`shhh chat` / `shhh code`).
 > Companion to DESIGN.md. Implemented per backlog story S-076; consumed by
 > S-048 (approvals), S-061 (plan mode), S-070 (memory), S-074 (diffs),
-> S-075 (activity feed & cockpit).
+> S-075 (activity feed & cockpit), S-082 (input frame).
+>
+> **v2 — S-088.** §6, §8 and §10 are rewritten and §13–§17 added, so the file
+> describes one grammar rather than a record of how it grew. The source is the
+> `shhh Design System` project in Claude Design (projectId
+> `8bd9b60d-8d86-403e-a591-c15a9ebccfd9`, readable with the DesignSync tool):
+> `tokens/terminal.css` for the column grid, `tokens/colors.css` for the
+> palette, `guidelines/` for the rules, `ui_kits/cockpit/` for the artboards
+> (`Main`, `Steps`, `Changeset`, `Edges`, `Sheet`). E-013 through E-018
+> implement it; nothing below exists until a story builds it.
+
+---
+
+## Invariants
+
+Four rules, checked before anything else. A surface that breaks one of them is
+wrong even when it looks right.
+
+1. **Colour never carries meaning alone.** Every state pairs its colour with a
+   glyph or a word, so a monochrome terminal (or `NO_COLOR`) loses decoration,
+   never information.
+2. **Weight tracks risk.** A read is chrome, a mutation carries a rail (§14),
+   a decision gets a card (§2). Never the reverse — a card for a read is as
+   wrong as a bare row for `rm -rf`.
+3. **Esc is always the safe answer**, and a surface says so whenever the safe
+   answer is not obvious (`[esc] leave review, change nothing`).
+4. **Fold, never hide.** A collapsed group still counts what it swallowed
+   (`▸ ⚙ 6 reads · 2 searches`). Nothing is dropped to save space.
 
 ---
 
 ## 1. Principles
+
+The mechanics that follow from the invariants:
 
 - **One interaction panel.** Components that need keys render in the bottom
   panel, replacing the input textarea while active — exactly how
@@ -15,14 +44,12 @@
   The panel may grow to at most 40% of terminal height; the viewport shrinks
   to make room and restores on dismissal.
 - **Transcript entries are passive.** Anything rendered into history (diff
-  blocks, activity rows) is stored raw and re-rendered on resize, following
-  the existing `entry`/`renderHistory` cache design. Only the *selected* row
-  responds to keys, via a lightweight focus mode (§7).
-- **Never color alone.** Every state pairs color with a glyph or text
-  (`✓ ✗ ⚠ ⏵ ⏸ ✦ ❯ ▸ ✎`), so monochrome terminals stay usable.
-- **Esc always dismisses / declines safely.** No component makes Esc do
-  something destructive.
-- **Reuse the palette** (§8). No new colors without adding them there.
+  blocks, activity rows, step headers) is stored raw and re-rendered on
+  resize, following the existing `entry`/`renderHistory` cache design. Only
+  the *selected* row responds to keys, via focus mode (§7).
+- **One grid.** Every transcript row lands on the column grid in §6a. A
+  surface that needs a field the grid does not have is a card, not a row.
+- **Reuse the palette** (§10). No new colors without adding them there.
 
 ---
 
@@ -86,21 +113,21 @@ denies just the current one, consistent with today's queue semantics.
 Applied edits land in history as one row (activity-row grammar, §6):
 
 ```
-│ ✎ edit internal/ui/chat/model.go        +12 −4 · 2 hunks   [enter] expand
+  ▎✎ edit    internal/ui/chat/model.go   +12 −4 · 2 hunks · [enter] expand
 ```
 
 ### 3b. Expanded unified view (in transcript, bounded height)
 
 ```
-│ ✎ internal/ui/chat/model.go                          +12 −4 · 2 hunks
-│ @@ -358,6 +358,10 @@ case toolCallsMsg:
-│    358   m.accumulateUsage(msg.usage)
-│ +  359   if m.rounds >= m.maxRounds {
-│ +  360       return m.stopAtRoundLimit()
-│ +  361   }
-│    362   m.messages = append(m.messages, provider.Message{
-│ @@ -401,3 +405,5 @@ case toolResultsMsg:
-│ …8 more lines · [enter] full view · [enter again] collapse
+  ▎✎ edit    internal/ui/chat/model.go              +12 −4 · 2 hunks  1.1s
+    @@ -358,6 +358,10 @@ case toolCallsMsg:
+      358   m.accumulateUsage(msg.usage)
+    +  359   if m.rounds >= m.maxRounds {
+    +  360       return m.stopAtRoundLimit()
+    +  361   }
+      362   m.messages = append(m.messages, provider.Message{
+    @@ -401,3 +405,5 @@ case toolResultsMsg:
+    …8 more lines · [enter] full view · [enter again] collapse
 ```
 
 - Syntax highlighting via the existing `highlight.go` (chroma), then diff
@@ -219,67 +246,238 @@ Discard 14 unsaved turns and start a new conversation?  [y/N]
 
 ---
 
-## 6. Activity Rows (compact feed)
+## 6. Activity Rows (the column grid)
 
-Grammar for every tool call in the transcript (S-075):
-`glyph name key-arg → outcome · counts · duration`.
+Every line of activity — tool call, command, sub-agent, folded group, recovery
+row (§17) — is the same row. Fixing the fields is what lets a reader scan one
+column instead of parsing sentences.
+
+### 6a. The grid (normative)
+
+Widths are character cells and match `tokens/terminal.css` in the design-system
+project field for field (`.ptr .rail .gl .verb .dur .ln .ind1 .ind2 .ind3`).
+Nothing in the transcript may invent a width.
+
+| Field | Width | Content |
+|---|---|---|
+| pointer | 2 | fold state `▾`/`▸`, focus cursor `❯`; blank otherwise |
+| mutation rail | 1 | `▎` when the row changed the machine (§14); blank otherwise |
+| glyph | 2 | the kind of act (6b), or the state that overrides it (6d) |
+| verb | 8 | closed vocabulary (6c), left-aligned, space-padded |
+| target | grows | path, command, query, agent name — clips, never wraps |
+| outcome | right-aligned | closed vocabulary and counts (6d); never wraps |
+| duration | 6 | right-aligned; omitted under 0.5s, `—` when it never ran |
+| line numbers | 5 | right-aligned, dim — diff and detail bodies only |
+| detail indent | 2 / 4 / 6 | row body, detail body, nested detail |
 
 ```
-│ ⚙ search  advanceExecQueue              3 matches          0.1s
-│ ⚙ read    model.go:580–660              81 lines           0.0s
-│ ▸ $ go test ./internal/agent/...        running…           4s
-│     ok  github.com/rfizzle/shhh/internal/agent  0.31s
-│ ✎ edit    internal/agent/loop.go        +12 −4 · approved
-│ ✗ $ go vet ./...                        exit 1             0.8s
-│ ◇ agent   researcher: find auth flows   running… 2 tools   12s
+❯ ▎✎ edit    internal/agent/loop.go                 +12 −4 · 2 hunks  1.1s
+┬ ┬┬ ┬       ┬                                      ┬               ┬
+│ ││ │       │                                      │               ╰ duration · 6ch, right-aligned
+│ ││ │       │                                      ╰ outcome · right-aligned, never wraps, never clipped
+│ ││ │       ╰ target · grows to fill the row; clips with … , never wraps
+│ ││ ╰ verb · 8ch, from a closed vocabulary
+│ │╰ glyph · 2ch, the kind of act
+│ ╰ mutation rail · 1ch, present only when this row changed the machine (§14)
+╰ pointer · 2ch, fold state (▾ ▸) and focus (❯)
 ```
 
-- Glyphs: `⚙` read-only tool (214), `$` command, `✎` edit/write, `✗`
-  failure (9), `▸` running (spinner replaces it while animating), `◇`
-  sub-agent (12).
-- A running command shows a **live tail**: its last output line, gray
-  (245), indented beneath the row; replaced by the outcome on exit.
-- Failed rows auto-expand to their bounded detail (error lines first —
-  evidence-store view from S-064). Successful rows stay collapsed.
-- `/ui verbosity high` renders all rows expanded; `low` hides counts.
+Three rules follow from fixed widths:
+
+- **The target is the only field that grows.** When the row is too narrow for
+  target and outcome together, the target clips with `…`
+  (`internal/ui/chat/mod…go`); the outcome never clips, because the outcome is
+  the reason to read the row.
+- **Duration is a field, not a suffix.** Under 0.5s it renders blank rather
+  than `0.0s` — a column of zeroes is noise. A call that never ran renders `—`.
+- **Detail bodies indent, they do not re-grid.** Tool output, live tails and
+  offered keys sit at indent 2/4/6 in dimmer (245) and carry no fields.
+
+### 6b. Kinds
+
+The glyph says what kind of act the row is; the verb says which one.
+
+```
+   ⚙ read    internal/ui/chat/model.go                     412 lines  0.4s
+   ⚙ search  ErrRoundLimit ./internal               6 hits · 4 files  0.3s
+   ⚙ glob    internal/**/*_test.go                          24 files  0.1s
+   ⚙ lsp     refs Agent.runRound                    9 refs · 3 files  0.6s
+   ⚙ web     pkg.go.dev/context#WithCancel             4.1kB fetched  1.2s
+  ▎✎ edit    internal/agent/loop.go                 +12 −4 · 2 hunks  1.1s
+  ▎✎ write   internal/agent/errors.go            new file · 34 lines  0.3s
+  ▎✎ patch   sd ErrRoundLimit → RoundsExhausted      4 files · +9 −9  0.8s
+  ▎$ run     go build ./cmd/shhh                              exit 0  4.8s
+  ▎✎ memory  agent tests live in ./internal/agent    saved · project  0.1s
+   ◇ spawn   writer-1 · document the sentinel                started  0.2s
+   ◇ agent   writer-1 · document the sentinel            ▸ 2/5 steps   12s
+```
+
+| Glyph | Kind | Colour |
+|---|---|---|
+| `⚙` | read-only tool | accent (214) |
+| `✎` | edit, write, patch, memory — anything that persists | accent (214) |
+| `$` | shell command | accent (214) |
+| `◇` | sub-agent (spawned, mirrored, reporting) | info (12) |
+
+Five different reads share one glyph on purpose: the verb, not the colour,
+says which read it was, and `⚙` never mutates.
+
+### 6c. Verbs (closed vocabulary)
+
+Thirteen verbs. A tool that maps onto none of them is a bug in this table, not
+a fourteenth verb.
+
+| Verb | Tools |
+|---|---|
+| `read` | `read_file`, `list_directory`, `evidence` |
+| `search` | `search`, `ast_grep`, `jaq`, `tokei` |
+| `glob` | `glob`, `fd` |
+| `lsp` | `definition`, `references` |
+| `web` | `web_fetch`, `web_search` |
+| `edit` | `edit_file` |
+| `write` | `write_file` |
+| `patch` | `sd` — structural find-and-replace across many files |
+| `run` | `execute_command`, `process`, `quality_gate` |
+| `memory` | `remember` |
+| `spawn` | `spawn_agent` — one child |
+| `fan-out` | `spawn_agent` — a batch spawned in one round |
+| `agent` | a child's mirrored row in the parent transcript (S-077), `agent_report` |
+
+This supersedes the ad-hoc `activityVerbs` map: `list_directory` becomes
+`read`, `web_fetch`/`web_search` both become `web` (the target says which),
+and `quality_gate` becomes `run`. An unmapped tool name renders as itself,
+clipped to 8 columns, and is a signal that this table is stale.
+
+Recovery rows (§17) use `model`, `stream` and `rounds` in the same column.
+They are not tool calls, which is why they are named separately here rather
+than smuggled into the tool vocabulary.
+
+### 6d. States and outcomes (closed vocabulary)
+
+The state glyph overrides the kind glyph; the outcome names it in words, so
+neither depends on the other.
+
+```
+   · read    internal/agent/round.go                          queued     —
+   ▸ run     go test ./internal/agent/...                   running…    3s
+    ok    shhh/internal/agent/session   0.092s
+   ✓ read    internal/agent/loop.go                        218 lines  0.4s
+   ✓ read    internal/ui/chat/model.go      auto-allowed · read-only  0.2s
+  ▎✎ edit    internal/agent/loop.go          +12 −4 · approved · you  1.1s
+  ▎✗ run     go test ./internal/agent/...         exit 1 · 1 failing 21.4s
+    --- FAIL: TestRoundLimit (0.03s)
+      loop_test.go:142: got ErrRoundLimit, want ErrRoundsExhausted
+    [enter] expand · [r] rerun · [f] open loop_test.go:142
+  ▎⊘ edit    go.mod              denied · you · [w] why · [e] revise     —
+  ▎⊘ run     rm -rf ./dist                 denied · auto · /mode why     —
+   ✦ run     gofmt -w internal/agent/loop.go                checking  0.4s
+```
+
+| Outcome | Glyph | Colour | Meaning |
+|---|---|---|---|
+| `queued` | `·` | dim (241) | accepted, not started; duration `—` |
+| `running…` | `▸` (spinner while animating) | spin (205) | in flight |
+| `checking` | `✦` | spin (205) | the auto-mode classifier is deciding |
+| `ok`, `exit 0` | `✓` | add (10) | finished with nothing to report |
+| `exit N`, `N failing` | `✗` | del (9) | the call failed |
+| `approved · you` | kind glyph | add (10) | you allowed it at the card |
+| `auto-allowed · <why>` | kind glyph | dim (241) | policy allowed it without asking |
+| `denied · you` | `⊘` | dim (241) | your preference — offers `[w] why · [e] revise` |
+| `denied · auto` | `⊘` | del (9) | a rule — names the rule, offers `/mode why` |
+| counts | kind glyph | dimmer (245) | see below |
+
+Two denials, two colours, two words: `⊘ denied · you` is a preference and
+`⊘ denied · auto` is a rule. Both keep the `⊘` glyph, so "you said no" is
+never confused with `✗` "it failed".
+
+Counts are the outcome when there is nothing else to say, and each verb has
+one shape: `218 lines`, `6 hits · 4 files`, `24 files`, `9 refs · 3 files`,
+`4.1kB fetched`, `+12 −4 · 2 hunks`, `new file · 34 lines`,
+`4 files · +9 −9`, `saved · project`, `▸ 2/5 steps`.
+
+- Failed rows auto-expand to their bounded detail, error lines first
+  (evidence-store view, S-064), and offer their keys underneath. Successful
+  rows never auto-expand.
+- A running command shows a **live tail** — its last output line at indent 2,
+  dimmer (245) — replaced by the outcome on exit.
+- Rows group under steps (§13) and fold by verbosity (§13c).
 
 ---
 
 ## 7. Focus Mode (expanding history)
 
 `ctrl+e` (or click) enters focus mode: the viewport gets a selection
-cursor on expandable rows (`❯` in the gutter), `j/k` moves between them,
-`enter` expands/collapses in place, `esc` returns to the input. This is
-the one mechanism behind "[enter] expand" everywhere in the transcript,
-so the input textarea keeps all other keys.
+cursor on expandable rows (`❯` in the pointer column, §6a), `j/k` moves
+between them, `enter` expands/collapses in place, `esc` returns to the input.
+This is the one mechanism behind "[enter] expand" everywhere in the
+transcript, so the input textarea keeps all other keys.
+
+Step headers (§13) are selection targets too: `j/k` steps between headers and
+rows alike, and `enter` on a header folds or unfolds the whole group. Focus
+mode is therefore also how the outline is navigated — no second key set.
 
 ---
 
-## 8. Cockpit Rail (status bar v2)
+## 8. Vitals (session state)
 
-Extends the current status bar; degrades by dropping right-side segments
-first when narrow (existing behavior):
+The vitals are the session's standing answer to *what mode am I in, how much
+context is left, what has this cost*. They are one vocabulary with three
+homes: the frame's rails (§12, where they normally live), the free-floating
+status bar (the fallback below `minCardWidth` and under takeover surfaces),
+and the inspector rail's CONTEXT and SPEND blocks (§15, turn-scoped).
 
 ```
-──────────────────────────────────────────────────────────────────────
-⏵⏵ accept edits · round 7/25 · ctx ▰▰▰▰▰▱▱▱ 62% · ↑41.2k ↓9.8k · $0.14 · gpt-5.2
+──────────────────────────────────────────────────────────────────────────
+⏵⏵ auto · round 7/25 · ctx ▰▰▰▰▰▱▱▱ 62% · ↑41.2k ↓9.8k · $0.14 · ◇1 · gpt-5.2
 ```
 
-Mode segment states (auto-mode/S-059/S-060):
+### 8a. Segments
 
 | Segment | Meaning |
 |---|---|
-| `⏵⏵ auto` / `⏵⏵ accept edits` (10) | permissive modes |
-| `⏸ plan` / `⏸ manual` (214) | gated modes |
-| `✦ checking` (205, spinner) | classifier deciding |
-| `◇ 2 agents` (12) | running sub-agents |
+| `⏵⏵ auto` / `⏵⏵ accept edits` (add 10) | permissive modes |
+| `⏸ plan` / `⏸ manual` (accent 214) | gated modes |
+| `✦ checking` (spin 205, spinner) | the auto-mode classifier is deciding |
+| `round 7/25` (dim 241) | rounds used of the limit; §17 recovers the ceiling |
+| `ctx ▰▰▰▰▰▱▱▱ 62%` | context meter (§10c) — bar and number share a colour |
+| `↑41.2k ↓9.8k` (dim 241) | tokens in / out this session |
+| `$0.14` (body 252) | spend |
+| `◇ 2 agents ⚠1` (info 12, badge del 9) | running children, badge when one is blocked |
+| `gpt-5.2` (dim 241) | model |
 
-Context meter: 8-cell bar, green → yellow (214) at 70% → red (9) at 90%,
-matching S-055's warning thresholds. Percent shown beside it.
+The agents segment is a jump target: `ctrl+a` opens the Agent Manager (§9).
+Every segment keeps a glyph or a word, so colour is never the carrier.
 
-The agents segment carries a badge when any child is blocked on the user:
-`◇ 2 agents ⚠1` (⚠ count red (9)). It is also a jump target — `ctrl+a`
-opens the Agent Manager (§9).
+### 8b. Field-drop order (normative)
+
+When the rail overflows, fields leave in this order:
+
+```
+model / provider detail  →  token counts  →  round counter  →  extras
+```
+
+Never dropped: the mode segment, context pressure, spend, and any blocked or
+failed state. A rail that has run out of room shows fewer facts, never
+truncated ones:
+
+```
+⏵⏵ auto · round 7/25 · ctx ▰▰▰▰▰▱▱▱ 62% · ↑41.2k ↓9.8k · $0.14 · ◇1 · gpt-5.2
+⏵⏵ auto · 7/25 · ctx ▰▰▰▰▰▱▱▱ 62% · $0.14
+⏵⏵ ctx 62% · $0.14
+```
+
+### 8c. Width ladder (normative)
+
+Content columns — the terminal minus horizontal padding. One ladder for the
+whole surface; §12b and §15 are the two ends of it.
+
+| Columns | Layout |
+|---|---|
+| ≥ 130 | two panes — 93-column transcript + `│` + 46-column inspector rail (§15) |
+| 110–129 | one pane, vitals on their own rail inside the input frame (§12b wide) |
+| 70–109 | one pane, vitals folded into the frame's bottom border (§12b compact) |
+| < 70 | minimal — mode, context and spend only (§12b narrow) |
+| < 12 | no frame — divider, this status bar, and a bare `❯` prompt |
 
 ---
 
@@ -319,10 +517,10 @@ in the header, and returns on `esc`:
 ```
  shhh code · orchestrator ▸ writer-1          esc detach · ctrl+a agents
 ────────────────────────────────────────────────────────────────────────
- │ ⚙ read    internal/ui/chat/model.go:700–780   81 lines        0.0s
- │ ✎ edit    internal/agent/loop.go              +34 −6 · approved
- │ ▸ $ go test ./internal/agent/...              running…        3s
- │     ok  github.com/rfizzle/shhh/internal/agent
+    ⚙ read    internal/ui/chat/model.go:700–780                  81 lines
+   ▎✎ edit    internal/agent/loop.go              +34 −6 · approved  1.4s
+   ▎▸ run     go test ./internal/agent/...                 running…    3s
+       ok  github.com/rfizzle/shhh/internal/agent
 ────────────────────────────────────────────────────────────────────────
 ⏵⏵ accept edits · round 3/25 · ctx ▰▰▰▱▱▱▱▱ 31% · $0.05 · writer-1
 > hold off on model.go — loop.go only for now▌
@@ -407,30 +605,124 @@ turn, and so does every command that leaves the conversation alone:
 
 ---
 
-## 10. Palette
+## 10. Palette, Meters & Drawing Kit
 
-Additions on top of the existing `style.go` values (256-color):
+### 10a. Palette (normative assignments)
 
-| Token | Color | Use |
+`components.Palette` and `tokens/colors.css` hold the same tokens; the work of
+S-088 was giving each one exactly one job. The token set is unchanged — no
+colour was added or removed — so any screen can be checked against this table
+in a minute.
+
+| Token | 256 | Design token | Job |
+|---|---|---|---|
+| add | 10 | `--ansi-add` | diff additions, `✓`, `[x]`, permissive mode, staged hunks, healthy context |
+| del | 9 | `--ansi-del` | diff deletions, `✗`, failures, blocked agents, a rule's denial, ctx ≥ 90% |
+| accent | 214 | `--ansi-accent` | tool glyphs, `⚠` warnings, gated modes, ctx ≥ 70%, **and the mutation rail (§14)** |
+| info | 12 | `--ansi-info` | sub-agents, block headings — **and every key the interface offers** (`[enter]`, `[v]`, `/mode why`) |
+| hunk | 14 | `--ansi-hunk` | `@@` hunk headers and nothing else |
+| spin | 205 | `--ansi-spin` | **anything in motion** — spinner frames, `▸ running…`, `✦ checking`, the current step's meter cell, the working prompt gutter |
+| focusBg | 62 | `--ansi-focus-bg` | selected row background, the cursor block |
+| addBg / delBg | 22 / 52 | `--ansi-add-bg` / `--ansi-del-bg` | intraline diff emphasis |
+| dimmer | 245 | `--ansi-dimmer` | tool output, live tails, detail bodies, sparklines |
+| dim | 241 | `--ansi-dim` | chrome, counts, hints, faint rules, empty meter cells — most of the screen |
+| status | 243 | `--ansi-status` | status text, the `⛨` containment line |
+| bright | 15 | `--ansi-bright` | headings, the focused row's text |
+| body | 252 | `--ansi-body` | ordinary body text |
+| subtle | 250 | — | inactive labels in the generate UI only; no design-system counterpart |
+
+Three assignments carry the redesign, and are the ones to check first:
+**spin means motion and only motion**, **accent additionally means the
+mutation rail**, and **info marks every key the interface offers** — if a key
+is written in any other colour, the interface is not offering it.
+
+`tokens/colors.css` also defines canvas-only shades (`--screen`, `--page`,
+`--rule-faint`, `--meter-empty`, `--win-*`) that exist so the artboards can be
+drawn in a browser. They have no ANSI counterpart: in the terminal the screen
+is the terminal's own background, and faint rules and empty meter cells (`▱`)
+are dim (241).
+
+### 10b. Backgrounds
+
+Exactly three background tints exist. Anything else is a bug.
+
+| Tint | Token | Use |
 |---|---|---|
-| add | 10 | diff additions, `[x]`, permissive mode |
-| del | 9 | diff deletions, errors, required-note, ctx ≥90% |
-| addBg / delBg | 22 / 52 | intraline emphasis backgrounds |
-| hunk | 14 | `@@` hunk headers |
-| accent | 214 | tool glyphs, warnings, gated modes, ctx ≥70% |
-| info | 12 | sub-agents, user accents |
-| focusBg | 62 | selected option/row background |
-| dim / dimmer | 241 / 245 | chrome, counts, live tail |
-| spin | 205 | spinners, `✦ checking` |
+| selection | focusBg (62) | the focused row, the cursor block |
+| addition | addBg (22) | the changed span inside an added line |
+| deletion | delBg (52) | the changed span inside a removed line |
+
+The diff tints emphasise a *span within a line* so syntax colours survive
+underneath; they never fill a whole row.
+
+### 10c. Meters
+
+Block meters only — `▰` filled, `▱` empty. Never a bar element, never a
+percentage without its bar, never a bar without its number.
+
+| Meter | Cells | Colour |
+|---|---|---|
+| context | 8 in the vitals rail, 22 in the inspector rail and the context card | add (10) below 70%, accent (214) at ≥ 70%, del (9) at ≥ 90% — the bar and the number turn together |
+| step progress | 22 | completed steps add (10), the running step spin (205), the rest dim (241) |
+| agent progress | 5 | always info (12) — an agent lane is never colour-coded by health |
+| countdown | 20 | accent (214), draining right to left (`retry in 38s`, §17) |
+
+```
+▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱   ctx 62%     healthy · add
+▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱   ctx 78%     ≥70% · accent, and the number turns too
+▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱   ctx 94%     ≥90% · del, and the card in §17b interrupts
+▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱   step 3 of 4 done in add, the running step in spin
+▰▰▰▱▱                    ◇ writer-1  agent lanes are always info
+```
+
+**Sparkline.** `▁▂▃▄▅▆▇█`, eight cells, dimmer (245), never coloured — tokens
+per round over the last eight rounds (`▁▂▃▃▄▅▅▆`). It is a shape, not a
+measurement; the numbers beside it are the measurement.
+
+**Spinner.** `⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧` at 80ms a frame, spin (205). It is the only
+animation in the product. Anything else that wants to move gets a meter.
+
+### 10d. Glyphs
+
+Meaning lives here; colour only reinforces it. The set is closed.
+
+| Glyph | Meaning | Glyph | Meaning |
+|---|---|---|---|
+| `⚙` | read-only tool | `✓` | done |
+| `✎` | edit / write / persist | `✗` | failed |
+| `$` | shell command | `▸` | running, or folded |
+| `◇` | sub-agent | `▾` | expanded |
+| `▎` | this row changed the machine | `·` | queued |
+| `❯` | you, and the cursor | `⊘` | denied / skipped |
+| `⏵⏵` | permissive mode | `⚠` | risk, or a recoverable stall |
+| `⏸` | gated mode | `⛨` | containment |
+| `✦` | the classifier is deciding | `@@` | hunk header (hunk 14) |
+
+### 10e. Drawing kit
+
+```
+▎ ▌ ▁▂▃▄▅▆▇█ ▰ ▱ · ─ │ ╭ ╮ ╯ ╰ ├ ┤ ┬ ┴ ┌ ┐ └ ┘
+```
+
+Takeover cards (§2, §9a, §17) use the square corners `┌ ┐ └ ┘` with a `├ ┤`
+divider above the key row. The input frame (§12) uses the rounded `╭ ╮ ╰ ╯`
+because it is a persistent surface rather than something that interrupts —
+the corner shape alone says which kind of thing you are looking at.
 
 ---
 
 ## 11. Implementation Notes
 
-- New package `internal/ui/components`: one file per component
+- Package `internal/ui/components`: one file per component
   (`approval.go`, `diff.go`, `selector.go`, `multiselect.go`,
   `noteselect.go`, `confirm.go`, `activityrow.go`, `cockpit.go`,
-  `agentlist.go`).
+  `agentlist.go`, `frame.go`). The v2 surfaces add `meter.go` (§10c),
+  `inspector.go` (§15) and `review.go` (§16); the step outline (§13) is a
+  layer over the entry list in `internal/ui/chat/activity.go`, not a
+  component, because it groups history rather than rendering a widget.
+- The column grid (§6a) lives in one place — field widths are constants in
+  `activityrow.go` and every surface that draws a transcript row uses them,
+  so a grid change is a one-line change.
 - The attached view (§9b) is not a new surface: the chat `Model` renders
   whichever agent is "focused", and every agent (orchestrator included)
   is an `internal/agent` instance with its own transcript, approval
@@ -487,7 +779,9 @@ fallback for takeover surfaces and sub-`minCardWidth` terminals.
 
 ### 12b. Layout modes (COCKPIT_SPEC.md §3)
 
-Widths are content columns (terminal minus horizontal padding).
+Widths are content columns (terminal minus horizontal padding); these are the
+lower three rungs of the §8c ladder. At ≥ 130 the frame keeps its **wide**
+layout and spans both panes of the two-pane cockpit (§15).
 
 **wide** (≥ 110): two rails below the input — vitals junction + hints:
 
@@ -566,3 +860,386 @@ name); the notice rail is orchestrator-scoped and hides while attached.
   separately (`frameExtraHeight`) when sizing the viewport.
 - The frame is rebuilt every render and never enters the transcript render
   cache, so resize just works.
+
+---
+
+## 13. Step Outline (S-090, S-091)
+
+A forty-tool turn is four lines until you ask for more. A step is a titled
+group of consecutive tool calls: ordinal, state glyph, title, a faint rule
+stretching to the right-hand stats, tool count and duration.
+
+```
+▾ 1  Locate the round accounting ───────────────────────── ✓ 4 tools  6.2s
+   ⚙ read    internal/agent/loop.go                        218 lines  0.4s
+   ⚙ search  ErrRoundLimit ./internal               6 hits · 4 files  0.3s
+
+▾ 2  Thread the sentinel through the loop ──────────────── ✗ 9 tools 38.1s
+   ▸ ⚙       6 reads · 2 searches                     [enter] expand  3.9s
+  ▎✎ edit    internal/agent/loop.go      +12 −4 · 2 hunks · approved  1.1s
+  ▎✗ run     go test ./internal/agent/...         exit 1 · 1 failing 21.4s
+    --- FAIL: TestRoundLimit (0.03s)
+
+▸ 3  Re-run the agent suite ────────────────────────────── ▸ 3 tools  ⠋ 3s
+   ▸ run     go test ./internal/agent/...                   running…    3s
+    ok    shhh/internal/agent/tool      0.184s
+
+· 4  Report what changed ────────────────────────────────── · queued     —
+```
+
+### 13a. Where steps come from
+
+- **Declared.** Plan mode (S-104) produces an ordered list; those steps are
+  authoritative and the outline mirrors them, including the ones not started.
+- **Inferred.** Otherwise the assistant prose immediately preceding a batch of
+  tool calls becomes the step title.
+- **Neither.** A turn with no discernible steps renders exactly as it does
+  today — a flat list of rows, no empty group chrome.
+
+The grouping is a layer over the existing entry list in
+`internal/ui/chat/activity.go`, not a wire protocol. The agent already emits
+ordered tool results; inventing a step message would couple every provider to
+the UI for nothing.
+
+### 13b. State and folding
+
+| Glyph | State |
+|---|---|
+| `▸` | running (the ordinal's rule stats show the spinner and elapsed) |
+| `✓` | complete |
+| `✗` | complete, contained a failure |
+| `·` | declared but not started; duration `—` |
+
+- A step is **open while running** and collapses to its header on completion —
+  except a step containing a failure, which stays open, because a failure you
+  have to scroll to find is a failure you will miss.
+- `▾`/`▸` in the pointer column mark expanded and folded. Focus mode (§7)
+  moves between step headers as well as rows; `enter` folds or unfolds in
+  place.
+- Steps re-render from stored raw entries on resize, following the
+  `entry`/`renderHistory` cache design — they hold no layout state.
+
+### 13c. Verbosity (`/ui verbosity`)
+
+Three levels, three distinct meanings — today the flag only toggles row
+detail. The setting persists per session and appears as argument values in the
+completion menu (S-079).
+
+```
+── /ui verbosity low ─────────────────────────────────────────────────────
+▸ 1  Locate the round accounting ───────────────────────── ✓ 4 tools  6.2s
+▸ 2  Thread the sentinel through the loop ──────────────── ✗ 9 tools 38.1s
+▸ 3  Re-run the agent suite ────────────────────────────── ▸ 3 tools  ⠋ 3s
+
+── /ui verbosity normal ──────────────────────────────────────────────────
+▾ 2  Thread the sentinel through the loop ──────────────── ✗ 9 tools 38.1s
+   ▸ ⚙       6 reads · 2 searches                     [enter] expand  3.9s
+  ▎✎ edit    internal/agent/loop.go                 +12 −4 · 2 hunks  1.1s
+  ▎✗ run     go test ./internal/agent/...         exit 1 · 1 failing 21.4s
+
+── /ui verbosity high ────────────────────────────────────────────────────
+   ⚙ read    internal/agent/loop.go                        218 lines  0.4s
+   ⚙ read    internal/agent/round.go                        96 lines  0.2s
+   ⚙ search  ErrRoundLimit ./internal               6 hits · 4 files  0.3s
+    internal/agent/loop.go:88      return ErrRoundLimit
+    internal/ui/chat/model.go:301  case errors.Is(err, ErrRoundLim…
+```
+
+| Level | Shows |
+|---|---|
+| `low` | step headers only |
+| `normal` | headers, with consecutive read-only calls folded into one counted row |
+| `high` | every row expanded with its bounded detail body |
+
+The folded group row obeys invariant 4: it always states what it swallowed
+(`▸ ⚙ 6 reads · 2 searches`, 3.9s of it) and expanding restores the individual
+rows in place. **Mutations, failures and sub-agent rows are never folded into
+a group** — the whole point of the fold is that it only ever hides chrome.
+
+---
+
+## 14. The Mutation Rail
+
+One column, one glyph, one question: *did this row change my machine?*
+
+```
+   ⚙ read    internal/agent/loop.go
+  ▎✎ edit    internal/agent/loop.go
+  ▎$ run     go build ./cmd/shhh
+   ◇ agent   writer-1 · document the sentinel
+  ▎⊘ run     rm -rf ./dist
+```
+
+The rail occupies gutter column 3 (§6a) on every row that **wrote to disk, ran
+a command, or was denied**; read-only rows leave it blank. Scrolling a long
+transcript, the eye follows a rail down the gutter instead of reading rows
+left to right.
+
+- **Commands always carry it.** shhh cannot know whether a command wrote
+  something, so it assumes the worst. A `go build` and a `go test` are marked
+  alike; the artboards' own examples vary on this and the conservative reading
+  is the one that holds.
+- **Denials carry it** because a denial is a decision you made, and the point
+  of the rail is to find the moments that mattered. `⊘` plus the word already
+  says nothing happened (§6d).
+- **Sub-agent rows do not.** A child's own transcript carries its own rails; a
+  mirrored `◇ agent` row in the parent is a status report, not an act.
+- **Colour:** accent (214) for a mutation. A row that **failed keeps a del (9)
+  rail for the rest of the session**, so scrolling back finds the break
+  without hunting for it.
+- The rail is one character wide and never widens, indents, or nests. Detail
+  bodies under a railed row do not repeat it.
+
+The rail is invariant 2 made visible: a read is chrome, a mutation carries a
+rail, a decision gets a card.
+
+---
+
+## 15. Inspector Rail (two-pane cockpit, S-092)
+
+Past 130 content columns the transcript stops being the whole screen. A
+46-column rail on the right answers the three standing questions — what is it
+doing, what has it changed, what is it costing — so you stop running `/stats`
+and `/diff` to recover what the session already knows.
+
+```
+┌───────────── 93 columns ─────────────┐ │ ┌───── 46 columns ─────┐
+│ transcript — steps, rows, details    │ │ │ THIS TURN            │
+│ wraps to 93, not to terminal width   │ │ │ CHANGES              │
+│ takeover surfaces span both panes    │ │ │ AGENTS               │
+│ and hide the rail while they show    │ │ │ CONTEXT              │
+│                                      │ │ │ SPEND                │
+└──────────────────────────────────────┘ │ └──────────────────────┘
+                                         ╰ one │ column, dim (241),
+                                           full viewport height
+```
+
+The split is horizontal only: `chromeHeight` and `syncViewportHeight`
+accounting are unchanged, and the input frame (§12) spans both panes because
+steering is a session-level act. Below 130 the rail is dropped entirely and
+today's single-pane layout is untouched (§8c).
+
+### 15a. Blocks
+
+```
+  THIS TURN                        step 3 of 4
+  ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱
+  18 tools · 1m 04s elapsed
+
+  CHANGES                               +30 −4
+  ▎✎ agent/loop.go                      +18 −3
+  ▎✎ ui/chat/model.go                    +9 −1
+  ▎✎ agent/errors.go                     +3 −0
+   ✗ 1 test failing             TestRoundLimit
+  [v] review · [u] undo turn
+
+  AGENTS                             1 running
+  ◇ writer-1                 ▰▰▰▱▱ 2/5 · $0.02
+    docs/loop.md · 4 tools
+
+  CONTEXT                          62% of 200k
+  ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱                  124k
+  ▁▂▃▃▄▅▅▆ per round              ↑41.2k ↓9.8k
+
+  SPEND                                  $0.14
+  gpt-5.2 · $0.12 main · $0.02 ◇
+  session total $1.86
+```
+
+| Block | Contents |
+|---|---|
+| THIS TURN | step progress meter, `step 3 of 4`, tool count, elapsed |
+| CHANGES | `+N −M` total, one row per changed file with its rail and glyph, failing-test state, `[v] review · [u] undo turn` |
+| AGENTS | running children — lane meter, steps, spend, current target and tool count |
+| CONTEXT | percent of the window, meter, tokens, the per-round burn sparkline |
+| SPEND | turn total split main / children, model, session total |
+
+### 15b. Rules
+
+- **Blocks with nothing to say are omitted, not rendered empty.** A session
+  with no children has no AGENTS heading at all.
+- **The rail never scrolls.** When it does not fit the viewport it truncates
+  its longest block first, and the block says so rather than silently ending.
+- **The rail is passive**, like `components.Cockpit` — fed by the host model,
+  no keys, no state, no goroutines. The keys it prints (`[v]`, `[u]`) are
+  handled by the host.
+- **Takeover surfaces span the full width and hide the rail** — approval
+  cards, pickers, review mode (§16), the agent list — and restore it on
+  dismissal.
+- Transcript wrapping uses the reduced 93-column pane width, not the terminal
+  width.
+
+The vitals rail on the frame (§12) stays as it is. The inspector rail is
+turn-scoped and historical; the vitals rail is session-scoped and live. They
+overlap only on context and spend, which is deliberate — those are the two
+numbers you want without moving your eyes.
+
+---
+
+## 16. Changeset & Review (E-014: S-097–S-100)
+
+The question after an agent stops is never "what did it say", it is "what did
+it change". So a turn closes with three rows: what it did, what changed, and
+whether the tests still pass.
+
+```
+ ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14                   round 7/25
+▎✎ 3 files changed +30 −4 · [v] review · [u] undo        nothing committed
+ ✓ go test ./... passing · 41 packages · 12.8s                   [t] rerun
+```
+
+The changed-files row carries the mutation rail (§14) — at a glance the close
+of a turn looks like the rows that produced it. Close rows start at the rail
+column rather than the pointer column (§6a): they belong to the turn, not to a
+step, and nothing folds or selects them.
+
+### 16a. Review mode
+
+One surface serves the edit approval card (§2b), `/diff`, and `[v]` from the
+changeset row: file list left, hunks right, staging per hunk, with the failing
+test pinned beside the hunks that claim to fix it.
+
+```
+REVIEW turn 7          2 of 3 staged     │ internal/agent/loop.go  2 hunks · +18 −3 · ✓ staged
+──────────────────────────────────────── │ @@ -84,9 +84,14 @@ func (a *Agent) runRound(...)
+[x] ✎ agent/loop.go             +18 −3   │     84    if a.round >= a.maxRounds {
+[x] ✎ ui/chat/model.go           +9 −1   │   −  85        return ErrRoundLimit
+[ ] ✎ agent/errors.go            +3 −0   │   +  85        return &RoundsExhausted{Round: a.round,
+──────────────────────────────────────── │   +  86            Max: a.maxRounds}
+✗ go test ./internal/agent/...           │     86    }
+  --- FAIL: TestRoundLimit (0.03s)       │     87    a.round++
+  loop_test.go:142                       │ @@ -131,4 +136,9 @@ func (a *Agent) Run(...)
+  staged hunks claim the fix · [r] rerun │    136        if err := a.runRound(ctx); err != nil {
+──────────────────────────────────────── │   −  137            return err
+⛨ nothing is committed                   │   +  137            var ex *RoundsExhausted
+  undo restores from git stash           │   +  138            if errors.As(err, &ex) {
+                                         │   +  139            return a.ui.OfferMoreRounds(ex)
+─────────────────────────────────────────────────────────────────────────────────────────────────
+[space] stage hunk · [s] file · [A] all · [enter] apply 2 files · [esc] leave
+```
+
+- `[space]` stages the hunk under the cursor, `[s]` the whole file, `[A]`
+  everything; `[enter]` applies what is staged. `[esc]` leaves review having
+  changed nothing, and the surface says so.
+- Nothing is committed by review — `⛨ nothing is committed` is always on
+  screen, and `[u] undo turn` restores from the turn's `git stash` entry.
+- Unified is the default; `[\]` toggles side-by-side (§3c) for the case where
+  a line moved rather than changed.
+- Review is a takeover surface: full width, rail hidden (§15b), `esc` returns.
+
+The point is that review is a **place you can return to**. Diffs used to
+appear inside the approval prompt and nowhere else, so after approving you had
+no way back to what you agreed to.
+
+---
+
+## 17. Recovery States (E-016: S-105–S-109)
+
+Most of a tool's reputation is made in its failures. These paths used to be a
+Go error on stderr and a dead session. Every one of them is an ordinary
+activity row plus one offered key; only two earn a card, because only two stop
+the session dead.
+
+### 17a. Failures are rows, not modals
+
+```
+   ✗ model   gpt-5.2 · 401 unauthorized         key ···4f9c rejected  0.3s
+    the key loaded from the macOS keychain, added 4 Mar
+    [k] replace it · [o] switch to ollama · nothing in the turn was lost
+
+   ⚠ model   rate limited · 40k tok/min tier            retry in 38s     —
+    ▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱  waiting · round 7 resumes where it stopped
+    [m] finish this turn on gpt-5.2-mini · [esc] stop and keep the 3 edits
+
+   ⚠ stream  dropped mid-reply · 1,204 tokens kept           partial   11s
+    "…so I'll thread the sentinel through runRound and then
+    [enter] continue from here · [r] ask again · the partial reply stays
+
+   ⚠ rounds  25 of 25 used · ErrRoundsExhausted              stopped 4m12s
+    3 files changed +30 −4 · the suite has not been re-run since
+    [v] review what it did · [+10] ten more rounds · [u] undo the turn
+```
+
+Four failures, four offered keys, one shape. The verbs `model`, `stream` and
+`rounds` occupy the same 8-column field as tool verbs (§6c) and the rows obey
+the same grid, so a failure reads as part of the turn rather than an
+interruption of it.
+
+- **Nothing in the turn is lost.** The three edits survive a rate limit, the
+  partial reply survives a dropped stream, and each row says so in words.
+- `⚠` (accent 214) is a recoverable stall — it will resume or you can steer
+  it. `✗` (del 9) is a call that failed. The distinction is the whole reason
+  both exist.
+- The countdown meter (§10c) drains right to left while a retry waits.
+- Offered keys are info (12) and sit at indent 2 under the row.
+
+### 17b. The two cards
+
+A card is warranted only when the session cannot continue without an answer.
+
+```
+┌─ No model provider configured ─────────────────────────────────────────┐
+│ shhh looked in four places:                                            │
+│   ✗ env       OPENAI_API_KEY, ANTHROPIC_API_KEY — unset                │
+│   ✗ config    ~/.shhh/config.toml — no [provider] block                │
+│   ✓ keychain  one entry: openai (added 4 Mar)                          │
+│   ✓ local     ollama on :11434 — llama-3.3-70b, no tool use            │
+│                                                                        │
+│ the keychain entry failed to decrypt — that is the likely fix          │
+├────────────────────────────────────────────────────────────────────────┤
+│ [enter] setup wizard   [p] paste a key   [o] use the local model       │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+The card names **every place shhh looked and what it found there**, then says
+which one is the likely fix. A missing-key message that does not say where it
+looked is a message that cannot be acted on.
+
+```
+┌─ Context is nearly full · 94% · 188k / 200k ───────────────────────────┐
+│ ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱                                                 │
+│                                                                        │
+│ 88k  tool output — mostly go test runs, 6 of them                      │
+│ 54k  files read — 14 files, loop.go read 4 times                       │
+│ 31k  the conversation                                                  │
+│ 15k  memory and system                                                 │
+│                                                                        │
+│ compacting keeps the plan, the 3 changed files and the failing test    │
+│ and drops the older tool output — recovers about 96k (48%)             │
+├────────────────────────────────────────────────────────────────────────┤
+│ [enter] compact now   [n] new session   [esc] keep going               │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+This is the only place in the product that itemises token spend, because it is
+the only place where you can act on it. The categories come from S-093's
+accounting — tool output, files read, the conversation, memory and system —
+and the card states what compacting will keep, what it will drop, and how much
+that recovers. `[esc]` keeps going: invariant 3 holds even at 94%.
+
+### 17c. First contact
+
+A first launch in a repo shhh has never seen already knows the repo, and
+offers work rather than a blank prompt:
+
+```
+shhh 0.9.4                                          [?] keys · [q] quit
+──────────────────────────────────────────────────────────────────────
+
+~/src/shhh · go 1.24 · git main · 3 files changed · no .shhh/memory.md
+
+Some things worth doing first:
+  ▸ pick up loop-refactor — 3 files changed, 1 test failing, 4m ago
+  ⚙ explain what changed in the working tree — reads only, no writes
+  ⚙ run go test ./... and triage the failures — one approval, then it
+    reports back
+
+[↑↓] choose · [enter] start · or just type what you want
+```
+
+- The header line is what shhh already knows: path, toolchain, branch, dirty
+  state, package count, whether a project memory exists.
+- Suggestions are ordered by what the working tree suggests — an unfinished
+  branch first, then read-only offers, then one that needs a single approval.
+  Each says what it will cost you in permission.
+- Typing anything dismisses the list. It is a starting point, not a wizard.

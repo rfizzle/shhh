@@ -9,25 +9,36 @@ package components
 
 import "github.com/charmbracelet/lipgloss"
 
-// ColorTokens is the shared 256-color palette (DESIGN-TUI.md §10) promoted
+// ColorTokens is the shared 256-color palette (DESIGN-TUI.md §10a) promoted
 // from the chat and generate style files, so every TUI surface uses identical
 // tokens. No new colors without adding them here.
+//
+// The assignments below are reconciled with tokens/colors.css in the shhh
+// Design System project (S-088): same token set, one documented job each.
+// Three of them carry the redesign — Spin means anything in motion and only
+// that, Accent additionally means the mutation rail, and Info marks every key
+// the interface offers, so a key written in any other color is not an offer.
+//
+// colors.css also defines canvas-only shades (--screen, --page, --rule-faint,
+// --meter-empty, --win-*) that let the artboards be drawn in a browser. They
+// have no ANSI counterpart: in the terminal the screen is the terminal's own
+// background, and faint rules and empty meter cells (▱) are Dim.
 type ColorTokens struct {
-	Add     lipgloss.Color // diff additions, [x], permissive mode, success
-	Del     lipgloss.Color // diff deletions, errors, required-note, ctx ≥90%
-	AddBg   lipgloss.Color // intraline emphasis background for additions
-	DelBg   lipgloss.Color // intraline emphasis background for deletions
-	Hunk    lipgloss.Color // @@ hunk headers
-	Accent  lipgloss.Color // tool glyphs, warnings, gated modes, ctx ≥70%
-	Info    lipgloss.Color // sub-agents, user accents
-	FocusBg lipgloss.Color // selected option/row background
-	Dim     lipgloss.Color // chrome, counts, hints
-	Dimmer  lipgloss.Color // tool results, live tail
-	Spin    lipgloss.Color // spinners, ✦ checking
-	Status  lipgloss.Color // status bar text, containment line
-	Bright  lipgloss.Color // headers, focused-row foreground
-	Subtle  lipgloss.Color // inactive labels (generate UI)
-	Body    lipgloss.Color // explanation body text (generate UI)
+	Add     lipgloss.Color // 10  diff additions, ✓, [x], permissive mode, staged hunks, healthy context
+	Del     lipgloss.Color // 9   diff deletions, ✗, failures, blocked agents, a rule's denial, ctx ≥90%
+	AddBg   lipgloss.Color // 22  intraline emphasis background for additions
+	DelBg   lipgloss.Color // 52  intraline emphasis background for deletions
+	Hunk    lipgloss.Color // 14  @@ hunk headers and nothing else
+	Accent  lipgloss.Color // 214 tool glyphs, ⚠ warnings, gated modes, ctx ≥70%, and the mutation rail (§14)
+	Info    lipgloss.Color // 12  sub-agents, block headings, and every key the interface offers
+	FocusBg lipgloss.Color // 62  selected option/row background, the cursor block
+	Dim     lipgloss.Color // 241 chrome, counts, hints, faint rules, empty meter cells
+	Dimmer  lipgloss.Color // 245 tool output, live tails, detail bodies, sparklines
+	Spin    lipgloss.Color // 205 anything in motion — spinner frames, ▸ running…, ✦ checking
+	Status  lipgloss.Color // 243 status text, the ⛨ containment line
+	Bright  lipgloss.Color // 15  headings, the focused row's text
+	Subtle  lipgloss.Color // 250 inactive labels (generate UI); no design-system counterpart
+	Body    lipgloss.Color // 252 ordinary body text
 }
 
 // Palette is the one shared token set.
