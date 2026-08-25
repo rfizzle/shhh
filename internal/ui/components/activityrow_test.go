@@ -218,3 +218,37 @@ func runeIndex(haystack, needle string) int {
 	}
 	return len([]rune(haystack[:i]))
 }
+
+func TestActivityGroup_FoldsOnTheSameGrid(t *testing.T) {
+	row := ActivityRow{Kind: ActivityTool, Verb: "read", Target: "internal/agent/loop.go",
+		Counts: "218 lines", Duration: "0.6s"}
+	group := ActivityGroup{Label: "6 reads · 2 searches", Duration: "3.9s"}
+
+	for _, width := range []int{60, 80, 120} {
+		line := stripANSI(group.View(width))
+		if w := len([]rune(line)); w > width {
+			t.Fatalf("width %d: group row overflows to %d cells: %q", width, w, line)
+		}
+		// The fold state takes the glyph column and ⚙ the verb column, so the
+		// group's label starts where a row's target does (§13c).
+		_, rail, _, rest := fieldsOf(t, group.View(width))
+		if strings.TrimSpace(rail) != "" {
+			t.Fatalf("a fold changed nothing, so it carries no mutation rail: %q", line)
+		}
+		if !strings.HasPrefix(rest, "6 reads") {
+			t.Fatalf("width %d: the label should start in the target column: %q", width, rest)
+		}
+		// It states what it swallowed and what that cost, and offers the key
+		// that brings the rows back (invariant 4).
+		for _, want := range []string{"▸", "⚙", GroupExpandKey, "3.9s"} {
+			if !strings.Contains(line, want) {
+				t.Fatalf("width %d: group row should contain %q: %q", width, want, line)
+			}
+		}
+		// Both lines end on the same right edge, so a fold does not break the
+		// duration column the feed is scanned down.
+		if got, want := len([]rune(line)), len([]rune(stripANSI(row.View(width)))); got != want {
+			t.Fatalf("width %d: group row ends at %d, rows at %d", width, got, want)
+		}
+	}
+}

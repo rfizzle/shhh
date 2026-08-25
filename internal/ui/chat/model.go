@@ -158,6 +158,9 @@ type entry struct {
 	// DESIGN-TUI.md §13b); steps keep no layout state of their own, so it
 	// lives on the raw entry and survives a resize.
 	stepFold foldState
+	// groupFold is the same override for the folded run of read-only calls
+	// this entry heads (S-091, §13c).
+	groupFold foldState
 }
 
 type Model struct {
@@ -367,7 +370,7 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 		input:       ta,
 		spinner:     s,
 		state:       stateInput,
-		verbosity:   verbosityMed,
+		verbosity:   verbosityNormal,
 		atBottom:    true,
 		copyFn:      clipboard.Copy,
 		sessionName: AutosaveName,
@@ -1929,7 +1932,7 @@ func helpText() string {
                  bare /mode opens an interactive picker
   /mode why      Show the latest auto-mode denial's reason
   /stats         Context occupancy breakdown and cumulative session spend
-  /ui            Activity feed density: /ui verbosity <low|med|high>
+  /ui            Activity feed density: /ui verbosity <low|normal|high>
                  (low hides counts, med collapses rows, high expands rows)
   /sandbox       Containment status and container sandboxes (doctor|list|status|destroy <id>|prune)
   /evidence      Tool-output evidence store: reduction stats and size (purge to clear)

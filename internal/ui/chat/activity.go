@@ -26,13 +26,15 @@ import (
 	"github.com/rfizzle/shhh/internal/web"
 )
 
-// verbosity is the activity feed's default rendering density: low hides
-// counts, med collapses rows, high renders every row expanded.
+// verbosity is the activity feed's default density, and the three levels have
+// three distinct meanings (S-091, DESIGN-TUI.md §13c): low shows step headers
+// only, normal folds a step's consecutive read-only calls into one counted
+// row, high expands every row with its bounded detail body.
 type verbosity int
 
 const (
 	verbosityLow verbosity = iota
-	verbosityMed
+	verbosityNormal
 	verbosityHigh
 )
 
@@ -43,19 +45,19 @@ func (v verbosity) String() string {
 	case verbosityHigh:
 		return "high"
 	}
-	return "med"
+	return "normal"
 }
 
 func parseVerbosity(s string) (verbosity, error) {
 	switch s {
 	case "low":
 		return verbosityLow, nil
-	case "med", "medium":
-		return verbosityMed, nil
+	case "normal", "norm", "med", "medium":
+		return verbosityNormal, nil
 	case "high":
 		return verbosityHigh, nil
 	}
-	return verbosityMed, fmt.Errorf("unknown verbosity %q (low, med, high)", s)
+	return verbosityNormal, fmt.Errorf("unknown verbosity %q (low, normal, high)", s)
 }
 
 // TailFunc runs a command like the plain runner while reporting each completed
@@ -319,10 +321,10 @@ func (m Model) runningCommandRow(width int) string {
 // uiCommand handles /ui: showing and setting the activity feed's verbosity.
 func (m *Model) uiCommand(parts []string) string {
 	if len(parts) == 1 || (len(parts) == 2 && parts[1] == "verbosity") {
-		return fmt.Sprintf("Activity feed verbosity: %s.\nUsage: /ui verbosity <low|med|high> — low hides counts, med collapses rows, high expands rows.", m.verbosity)
+		return fmt.Sprintf("Activity feed verbosity: %s.\nUsage: /ui verbosity <low|normal|high> — low shows step headers only, normal folds read-only groups, high expands every row.", m.verbosity)
 	}
 	if len(parts) != 3 || parts[1] != "verbosity" {
-		return "Usage: /ui verbosity <low|med|high>"
+		return "Usage: /ui verbosity <low|normal|high>"
 	}
 	v, err := parseVerbosity(parts[2])
 	if err != nil {

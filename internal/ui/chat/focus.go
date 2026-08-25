@@ -33,6 +33,14 @@ func (m Model) expandableIndices() []int {
 			if m.headerFor(blk, es).Folded {
 				continue
 			}
+			// A folded group offers its group row, not the rows inside it
+			// (S-091, §13c).
+			for _, sl := range m.stepSlots(es, blk.step.start, blk.step.end) {
+				if expandable(es[sl.idx]) {
+					idxs = append(idxs, sl.idx)
+				}
+			}
+			continue
 		}
 		start, end := blk.members()
 		for i := start; i < end; i++ {
@@ -86,6 +94,13 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				// Enter on a step header folds or unfolds the whole group in
 				// place (S-090, §13b).
 				m.toggleStepFold(m.focusIdx)
+				m.refreshFocusView()
+				return m, nil
+			}
+			if m.groupAnchor(es, m.focusIdx) {
+				// Enter on a folded group restores its rows in place, and
+				// folds them back again (S-091, §13c).
+				m.toggleGroupFold(m.focusIdx)
 				m.refreshFocusView()
 				return m, nil
 			}

@@ -89,13 +89,13 @@ var slashCommands = []slashCommand{
 	{name: "/mode", args: "[name|why]", desc: "Set the permission mode (bare /mode opens a picker)",
 		argSpecs: []argSpec{{dynamic: modeArgs}}},
 	{name: "/stats", desc: "Context occupancy and session spend"},
-	{name: "/ui", args: "verbosity <low|med|high>", desc: "Activity feed density",
+	{name: "/ui", args: "verbosity <low|normal|high>", desc: "Activity feed density",
 		argSpecs: []argSpec{
 			{options: []argOption{{"verbosity", "Activity feed density"}}},
 			{after: []string{"verbosity"}, options: []argOption{
-				{"low", "Counts hidden"},
-				{"med", "Rows collapsed"},
-				{"high", "Rows expanded"},
+				{"low", "Step headers only"},
+				{"normal", "Read-only calls folded"},
+				{"high", "Every row expanded"},
 			}},
 		}},
 	{name: "/sandbox", args: "[doctor|list|status|destroy|prune]", desc: "Containment status and container sandboxes",

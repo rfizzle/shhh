@@ -199,8 +199,13 @@ func (m Model) stepFolded(g *stepGroup, es []entry, state stepState) bool {
 	case foldClosed:
 		return true
 	}
-	if m.verbosity == verbosityHigh {
+	switch m.verbosity {
+	case verbosityHigh:
 		return false
+	case verbosityLow:
+		// Headers only (§13c): at low every step is folded, a broken one
+		// included — you asked for the outline, and the ✗ is on the header.
+		return true
 	}
 	return state == stepDone
 }
@@ -400,8 +405,15 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 	if header.Folded {
 		return units
 	}
-	for i := g.start; i < g.end; i++ {
-		addEntry(i)
+	// A step's rows render through its slots, so a folded run of read-only
+	// calls arrives as one counted group row (S-091, §13c).
+	for _, sl := range m.stepSlots(es, g.start, g.end) {
+		if !sl.group {
+			addEntry(sl.idx)
+			continue
+		}
+		e := es[sl.idx]
+		add(sl.idx, e, es[sl.idx+sl.span-1], m.groupRowFor(es, sl).View(entryWidth(e))+"\n", true)
 	}
 	return units
 }

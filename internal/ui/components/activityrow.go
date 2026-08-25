@@ -220,8 +220,8 @@ func (r ActivityRow) outcomeField() string {
 // durationField right-aligns the duration in its 6 columns. The field is
 // reserved even when blank so outcomes line up down the transcript; the
 // trailing blank is trimmed off the rendered line.
-func (r ActivityRow) durationField() string {
-	d := clip(r.Duration, durWidth)
+func durationField(d string) string {
+	d = clip(d, durWidth)
 	pad := durWidth - lipgloss.Width(d)
 	if pad < 0 {
 		pad = 0
@@ -232,27 +232,30 @@ func (r ActivityRow) durationField() string {
 	return strings.Repeat(" ", pad) + dimmerStyle.Render(d)
 }
 
-// View renders the row (plus tail and detail lines) at the given width.
-func (r ActivityRow) View(width int) string {
-	lead := r.pointer() + r.railCell() + r.glyph() + r.verbField()
-	outcome := r.outcomeField()
+// gridLine assembles one line on the §6a grid: a lead already padded to
+// leadWidth, then the target, the outcome field and the duration. The target
+// grows into whatever the fixed fields leave and clips with … so the outcome
+// never has to — it is the reason to read the line. Both the activity row and
+// the folded group row are this shape, which is why they line up.
+func gridLine(lead, target, outcome, duration string, width int) string {
 	outW := lipgloss.Width(outcome)
-
-	// The target grows into whatever the fixed fields leave, and clips with …
-	// so the outcome never has to.
 	sep := 0
 	if outW > 0 {
 		sep = 2
 	}
-	target := clip(r.Target, width-leadWidth-durWidth-outW-sep)
-	targetW := lipgloss.Width(target)
-
-	pad := width - leadWidth - targetW - outW - durWidth
+	target = clip(target, width-leadWidth-durWidth-outW-sep)
+	pad := width - leadWidth - lipgloss.Width(target) - outW - durWidth
 	if pad < sep {
 		pad = sep
 	}
-	row := lead + dimStyle.Render(target) + strings.Repeat(" ", pad) + outcome + r.durationField()
-	lines := []string{strings.TrimRight(row, " ")}
+	line := lead + dimStyle.Render(target) + strings.Repeat(" ", pad) + outcome + durationField(duration)
+	return strings.TrimRight(line, " ")
+}
+
+// View renders the row (plus tail and detail lines) at the given width.
+func (r ActivityRow) View(width int) string {
+	lead := r.pointer() + r.railCell() + r.glyph() + r.verbField()
+	lines := []string{gridLine(lead, r.Target, r.outcomeField(), r.Duration, width)}
 
 	if r.State == ActivityRunning && r.Tail != "" {
 		lines = append(lines, indented(r.Tail, tailIndent, width))
@@ -275,6 +278,33 @@ func (r ActivityRow) View(width int) string {
 // Detail bodies indent, they do not re-grid (§6a).
 func indented(s string, indent, width int) string {
 	return strings.Repeat(" ", indent) + dimmerStyle.Render(clip(s, max(width-indent, 1)))
+}
+
+// GroupExpandKey is the offer a folded group row makes; every key the
+// interface offers is info (§10a).
+const GroupExpandKey = "[enter] expand"
+
+// ActivityGroup is the folded group row (§13c): the one line a run of
+// consecutive read-only calls collapses into at normal verbosity. It folds,
+// it never hides (invariant 4) — the label states what it swallowed and the
+// duration states what that cost, so nothing is dropped to save space.
+//
+// It sits on the same §6a grid as a row, shifted by one field: the fold state
+// takes the glyph column and the kind glyph ⚙ takes the verb column, so the
+// line reads as chrome about rows rather than as a call of its own.
+type ActivityGroup struct {
+	// Label counts the swallowed rows by kind, e.g. "6 reads · 2 searches".
+	Label string
+	// Duration is the summed 6-column field, blank under 0.5s like a row's.
+	Duration string
+}
+
+// View renders the group row at the given width.
+func (g ActivityGroup) View(width int) string {
+	lead := strings.Repeat(" ", ptrWidth+railWidth) +
+		dimStyle.Render("▸") + " " +
+		dimStyle.Render("⚙") + strings.Repeat(" ", verbWidth-1)
+	return gridLine(lead, g.Label, infoStyle.Render(GroupExpandKey), g.Duration, width)
 }
 
 // The step outline (§13) draws its headers on this same grid but lives in

@@ -213,7 +213,7 @@ func TestSlashUI_VerbositySetting(t *testing.T) {
 	m := activityModel(t)
 
 	handled, result := m.handleSlashCommand("/ui")
-	if !handled || !strings.Contains(result, "med") {
+	if !handled || !strings.Contains(result, "normal") {
 		t.Fatalf("bare /ui should show the current verbosity, got %q", result)
 	}
 

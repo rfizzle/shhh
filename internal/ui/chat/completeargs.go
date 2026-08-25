@@ -28,7 +28,7 @@ type argOption struct {
 
 // argSpec describes one positional argument. options is the static list;
 // dynamic (when set) replaces it and is resolved lazily. after gates the
-// position on the preceding token, so "/ui verbosity <low|med|high>" is two
+// position on the preceding token, so "/ui verbosity <low|normal|high>" is two
 // plain specs rather than a special case. fuzzy allows subsequence matching
 // for lists the user cannot be expected to type from the front.
 type argSpec struct {
