@@ -149,11 +149,29 @@ accent_color = "cyan"
 | Anthropic | `anthropic` | `claude-opus-5` | Anthropic API |
 | Google Gemini | `gemini` | `gemini-2.5-flash` | Google AI API |
 | OpenRouter | `openrouter` | `anthropic/claude-sonnet-4-6` | `https://openrouter.ai/api/v1` |
+| OpenAI Responses | `openai-responses` | `gpt-4.1` | `https://api.openai.com/v1` |
 | OpenAI-Compatible | `openai-compatible` | `llama3` | `http://localhost:11434/v1` |
 
 Each provider picks a fast, capable default model. Override with `provider.model` in config or `SHHH_MODEL` env var.
 
-The OpenAI-shaped providers (`openai`, `openrouter`, `openai-compatible`) can enumerate their endpoint: the first bare `/model` of a session queries `GET {base_url}/models` and offers what actually answers there, filtered to the chat-capable ids. That is the only way to know the catalog of a local runtime or a private gateway — Ollama, vLLM, LiteLLM — where the curated list is necessarily empty. The query is lazy (nothing runs until you ask), bounded at 10 seconds, cached for the session, and cancellable with Esc; an endpoint that refuses falls back to the curated catalog and says why.
+`openai` and `openai-responses` are two dialects of the same API. Chat completions (`openai`) is the older, wider-supported shape; the Responses API (`openai-responses`) is what the reasoning families are served through, and what gateways route them to. The conversation goes up as a flat list of typed items rather than messages with attached tool calls, the system prompt travels as `instructions`, and `store` is off — shhh sends the whole conversation each turn, so there is nothing to gain from server-side retention. If a model 404s or complains about its input shape on one, try the other.
+
+Reasoning models reject a sampling temperature and take their effort setting in a `reasoning` block that a vanilla request has no field for. Both are one rewrite rule each on a gateway profile:
+
+```toml
+[[rewrite]]
+when  = { model = "gpt-5*" }
+op    = "set"
+path  = "reasoning.effort"
+value = "high"
+
+[[rewrite]]
+when = { model = "gpt-5*" }
+op   = "delete"
+path = "temperature"
+```
+
+The OpenAI-shaped providers (`openai`, `openai-responses`, `openrouter`, `openai-compatible`) can enumerate their endpoint: the first bare `/model` of a session queries `GET {base_url}/models` and offers what actually answers there, filtered to the chat-capable ids. That is the only way to know the catalog of a local runtime or a private gateway — Ollama, vLLM, LiteLLM — where the curated list is necessarily empty. The query is lazy (nothing runs until you ask), bounded at 10 seconds, cached for the session, and cancellable with Esc; an endpoint that refuses falls back to the curated catalog and says why.
 
 ## Gateway profiles
 
@@ -163,7 +181,7 @@ Drop a TOML file in `<config-dir>/providers/` — `~/.config/shhh/providers/gate
 
 ```toml
 name        = "gateway"
-api         = "openai-chat"            # or "anthropic-messages"
+api         = "openai-chat"            # or "openai-responses" / "anthropic-messages"
 base_url    = "https://llm-gateway.internal/v1"
 api_key_env = "GATEWAY_API_KEY"        # or api_key = "..." for a literal
 models_path = "/v1/models/simple"      # optional: a non-standard catalog endpoint
@@ -208,14 +226,14 @@ Each rule names a place in the JSON on the wire and an edit to make there. Rules
 | Op | Effect |
 |---|---|
 | `delete` | Remove the field — a parameter the upstream rejects |
-| `set` | Set it, replacing any value |
-| `set-default` | Set it only when absent or null |
+| `set` | Set it, replacing any value; builds the objects on the way to it, so a rule can add a parameter the request has no place for |
+| `set-default` | Set it only when absent or null; also builds missing objects |
 | `rename` | Move it to `to` within the same object |
 | `cut-at` | Truncate a string at the first occurrence of `value` |
 | `trim-prefix` / `trim-suffix` | Remove `value` from either end of a string |
 | `replace` | Replace every `value` in a string with `to` |
 
-A path that matches nothing is not an error — a rule with nothing to do does nothing, which is what lets one profile cover a conversation where only some messages carry tool calls. A rule that can't work at all (an unknown op, a `set` with no value, a malformed glob) is refused at load, naming the file and the rule index, and that profile alone is skipped: one bad file never takes the session down.
+A path that matches nothing is not an error — a rule with nothing to do does nothing, which is what lets one profile cover a conversation where only some messages carry tool calls. Only `set` and `set-default` create anything; the ops that edit an existing value never invent one, and none of them invent an array. A rule that can't work at all (an unknown op, a `set` with no value, a malformed glob) is refused at load, naming the file and the rule index, and that profile alone is skipped: one bad file never takes the session down.
 
 ## Environment Variables
 

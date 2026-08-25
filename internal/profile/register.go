@@ -76,6 +76,9 @@ func New(p Profile, opts provider.ResolveOpts) (provider.Provider, error) {
 	httpClient := &http.Client{Transport: NewTransport(p, nil)}
 
 	switch p.API {
+	case APIOpenAIResponses:
+		inner := provider.NewOpenAIResponsesWith(httpClient, key, baseURL, opts.Model, p.Name)
+		return &responsesProfile{OpenAIResponses: inner, profile: p, client: httpClient}, nil
 	case APIAnthropicMessage:
 		inner := provider.NewAnthropicWith(anthropic.NewClient(
 			option.WithAPIKey(key),
@@ -106,6 +109,21 @@ func (o *openAIProfile) ListModels(ctx context.Context) ([]string, error) {
 		return o.OpenAICompat.ListModels(ctx)
 	}
 	return listFrom(ctx, o.client, o.profile)
+}
+
+// responsesProfile is a profile-backed openai-responses provider, with the
+// same catalog override the chat dialect gets.
+type responsesProfile struct {
+	*provider.OpenAIResponses
+	profile Profile
+	client  *http.Client
+}
+
+func (r *responsesProfile) ListModels(ctx context.Context) ([]string, error) {
+	if r.profile.ModelsPath == "" {
+		return r.OpenAIResponses.ListModels(ctx)
+	}
+	return listFrom(ctx, r.client, r.profile)
 }
 
 // anthropicProfile is a profile-backed anthropic-messages provider. The

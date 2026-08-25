@@ -28,6 +28,14 @@ var knownModels = map[string][]string{
 		"o3",
 		"o4-mini",
 	},
+	// The Responses API serves the reasoning families; the chat-completions
+	// models are reachable through it too.
+	"openai-responses": {
+		"gpt-4.1",
+		"gpt-4.1-mini",
+		"o3",
+		"o4-mini",
+	},
 	"gemini": {
 		"gemini-2.5-pro",
 		"gemini-2.5-flash",

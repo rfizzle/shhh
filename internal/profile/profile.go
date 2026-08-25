@@ -45,6 +45,7 @@ import (
 // shhh already has; the profile supplies the endpoint and the quirks.
 const (
 	APIOpenAIChat       = "openai-chat"
+	APIOpenAIResponses  = "openai-responses"
 	APIAnthropicMessage = "anthropic-messages"
 )
 
@@ -54,8 +55,8 @@ type Profile struct {
 	// Name is the provider name to register — what `--provider` and
 	// `provider.default` accept, and what the session displays.
 	Name string `toml:"name"`
-	// API is the wire dialect: "openai-chat" (default) or
-	// "anthropic-messages".
+	// API is the wire dialect: "openai-chat" (default), "openai-responses",
+	// or "anthropic-messages".
 	API string `toml:"api"`
 	// BaseURL is the endpoint root, including any version or dialect path
 	// segment the gateway expects ("…/v1", "…/anthropic").
@@ -217,9 +218,10 @@ func (p *Profile) Validate() error {
 	switch p.API {
 	case "":
 		p.API = APIOpenAIChat
-	case APIOpenAIChat, APIAnthropicMessage:
+	case APIOpenAIChat, APIOpenAIResponses, APIAnthropicMessage:
 	default:
-		return fmt.Errorf("api %q is not supported (want %q or %q)", p.API, APIOpenAIChat, APIAnthropicMessage)
+		return fmt.Errorf("api %q is not supported (want %q, %q, or %q)",
+			p.API, APIOpenAIChat, APIOpenAIResponses, APIAnthropicMessage)
 	}
 	if p.APIKey != "" && p.APIKeyEnv != "" {
 		return fmt.Errorf("set api_key or api_key_env, not both")

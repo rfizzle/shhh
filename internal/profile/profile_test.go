@@ -2,6 +2,8 @@ package profile
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -365,5 +367,79 @@ func TestDirs_SitBesideEachConfigFile(t *testing.T) {
 	want := []string{filepath.Join("/a/shhh", "providers"), filepath.Join("/b/shhh", "providers")}
 	if len(got) != len(want) || got[0] != want[0] || got[1] != want[1] {
 		t.Fatalf("got %v, want %v", got, want)
+	}
+}
+
+// --- the Responses dialect --------------------------------------------------
+
+func TestNew_ResponsesDialect(t *testing.T) {
+	var got map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/v1/responses" {
+			t.Errorf("expected the responses endpoint, got %q", r.URL.Path)
+		}
+		_ = json.NewDecoder(r.Body).Decode(&got)
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "data: {\"type\":\"response.output_text.delta\",\"delta\":\"ok\"}\n\n")
+		fmt.Fprint(w, "data: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\"}}\n\n")
+	}))
+	defer srv.Close()
+
+	p := Profile{
+		Name:    "gateway",
+		API:     APIOpenAIResponses,
+		BaseURL: srv.URL + "/v1",
+		APIKey:  "k",
+		Headers: map[string]string{"X-Title": "shhh"},
+		Rewrite: []Rule{
+			// A reasoning model needs an effort setting the vanilla request
+			// has no place for, and rejects the temperature it never asked
+			// for. Both are profile edits, not provider code.
+			{When: Match{Model: "gpt-5*"}, Direction: DirectionRequest, Op: OpSet, Path: "reasoning.effort", Value: "high"},
+			{When: Match{Model: "gpt-5*"}, Direction: DirectionRequest, Op: OpDelete, Path: "temperature"},
+		},
+	}
+	prov, err := New(p, provider.ResolveOpts{Model: "gpt-5.6-terra"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if prov.Name() != "gateway" {
+		t.Fatalf("expected the profile's name, got %q", prov.Name())
+	}
+
+	temp := 0.5
+	ch, err := prov.StreamCompletion(context.Background(), []provider.Message{
+		{Role: provider.RoleUser, Content: "hi"},
+	}, provider.CompletionOpts{Temperature: &temp})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	var text string
+	for ev := range ch {
+		if ev.Err != nil {
+			t.Fatalf("unexpected stream error: %v", ev.Err)
+		}
+		text += ev.Token
+	}
+	if text != "ok" {
+		t.Fatalf("expected the streamed token, got %q", text)
+	}
+	if _, present := got["temperature"]; present {
+		t.Fatal("the rule should have removed temperature before it reached the gateway")
+	}
+	reasoning, ok := got["reasoning"].(map[string]any)
+	if !ok || reasoning["effort"] != "high" {
+		t.Fatalf("the rule should have added the reasoning block, got %v", got["reasoning"])
+	}
+}
+
+func TestValidate_AcceptsTheResponsesDialect(t *testing.T) {
+	path := writeProfile(t, t.TempDir(), "gw.toml", "base_url = \"https://gw.example/v1\"\napi = \"openai-responses\"")
+	p, err := LoadFile(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if p.API != APIOpenAIResponses {
+		t.Fatalf("unexpected dialect: %q", p.API)
 	}
 }

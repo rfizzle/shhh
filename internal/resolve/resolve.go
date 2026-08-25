@@ -6,6 +6,7 @@ const DefaultProvider = "openai"
 
 var defaultModels = map[string]string{
 	"openai":            "gpt-4o",
+	"openai-responses":  "gpt-4.1",
 	"anthropic":         "claude-opus-5",
 	"gemini":            "gemini-2.5-flash",
 	"openrouter":        "anthropic/claude-sonnet-4-6",

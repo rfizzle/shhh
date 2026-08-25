@@ -245,3 +245,64 @@ func TestParsePath(t *testing.T) {
 		}
 	}
 }
+
+func TestApply_SetBuildsMissingObjects(t *testing.T) {
+	// A reasoning model's effort setting has nowhere to live in a vanilla
+	// request, so `set` builds the path it needs.
+	rule := Rule{Op: OpSet, Path: "reasoning.effort", Value: "high"}
+	if err := rule.validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	body := decode(t, `{"model":"gpt-5.6-terra"}`)
+	if edits := Apply([]Rule{rule}, DirectionRequest, "gpt-5.6-terra", body); edits != 1 {
+		t.Fatalf("expected one edit, got %d", edits)
+	}
+	if got := encode(t, body); got != `{"model":"gpt-5.6-terra","reasoning":{"effort":"high"}}` {
+		t.Fatalf("unexpected body: %s", got)
+	}
+}
+
+func TestApply_SetDoesNotClobberAWrongTypedValue(t *testing.T) {
+	rule := Rule{Op: OpSet, Path: "reasoning.effort", Value: "high"}
+	if err := rule.validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	body := decode(t, `{"reasoning":"none"}`)
+	if edits := Apply([]Rule{rule}, DirectionRequest, "m", body); edits != 0 {
+		t.Fatalf("a scalar in the way should stop the rule, got %d edits", edits)
+	}
+	if got := encode(t, body); got != `{"reasoning":"none"}` {
+		t.Fatalf("the existing value should survive, got %s", got)
+	}
+}
+
+func TestApply_EditingOpsNeverCreate(t *testing.T) {
+	for _, rule := range []Rule{
+		{Op: OpDelete, Path: "reasoning.effort"},
+		{Op: OpCutAt, Path: "reasoning.effort", Value: "x"},
+		{Op: OpRename, Path: "reasoning.effort", To: "level"},
+	} {
+		if err := rule.validate(); err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		body := decode(t, `{"model":"m"}`)
+		if edits := Apply([]Rule{rule}, DirectionRequest, "m", body); edits != 0 {
+			t.Fatalf("%s should not create anything, got %d edits", rule.Op, edits)
+		}
+		if got := encode(t, body); got != `{"model":"m"}` {
+			t.Fatalf("%s left something behind: %s", rule.Op, got)
+		}
+	}
+}
+
+func TestApply_SetDefaultBuildsMissingObjects(t *testing.T) {
+	rule := Rule{Op: OpSetDefault, Path: "chat_template_kwargs.enable_thinking", Value: false}
+	if err := rule.validate(); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	body := decode(t, `{}`)
+	Apply([]Rule{rule}, DirectionRequest, "m", body)
+	if got := encode(t, body); got != `{"chat_template_kwargs":{"enable_thinking":false}}` {
+		t.Fatalf("unexpected body: %s", got)
+	}
+}

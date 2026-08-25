@@ -129,14 +129,19 @@ func Apply(rules []Rule, direction, model string, body map[string]any) int {
 	return edits
 }
 
-// apply walks the rule's path and edits every node it reaches.
+// apply walks the rule's path and edits every node it reaches. The ops that
+// add a field build the objects on the way to it, so a rule can introduce a
+// parameter the vanilla request has no place for — `reasoning.effort` on a
+// request that carries no reasoning block. The ops that edit an existing
+// value never create anything: a rule that finds nothing does nothing.
 func (r Rule) apply(body map[string]any) int {
 	segments := parsePath(r.Path)
 	if len(segments) == 0 {
 		return 0
 	}
+	create := r.Op == OpSet || r.Op == OpSetDefault
 	edits := 0
-	walk(body, segments[:len(segments)-1], func(obj map[string]any) {
+	walk(body, segments[:len(segments)-1], create, func(obj map[string]any) {
 		edits += r.edit(obj, segments[len(segments)-1].key)
 	})
 	return edits
@@ -225,7 +230,11 @@ func parsePath(p string) []segment {
 
 // walk visits every object reachable through the given path prefix, calling
 // fn on each. Missing keys and unexpected types end that branch quietly.
-func walk(node any, segments []segment, fn func(map[string]any)) {
+// With create set, a missing object along the way is built rather than
+// ending the branch; an existing value of the wrong type is still left
+// alone, and a missing array is never invented — there is no way to know how
+// many elements a rule meant.
+func walk(node any, segments []segment, create bool, fn func(map[string]any)) {
 	obj, ok := node.(map[string]any)
 	if !ok {
 		return
@@ -236,11 +245,15 @@ func walk(node any, segments []segment, fn func(map[string]any)) {
 	}
 	seg := segments[0]
 	child, present := obj[seg.key]
-	if !present {
-		return
+	if !present || child == nil {
+		if !create || seg.array {
+			return
+		}
+		child = map[string]any{}
+		obj[seg.key] = child
 	}
 	if !seg.array {
-		walk(child, segments[1:], fn)
+		walk(child, segments[1:], create, fn)
 		return
 	}
 	items, ok := child.([]any)
@@ -248,6 +261,6 @@ func walk(node any, segments []segment, fn func(map[string]any)) {
 		return
 	}
 	for _, item := range items {
-		walk(item, segments[1:], fn)
+		walk(item, segments[1:], create, fn)
 	}
 }
