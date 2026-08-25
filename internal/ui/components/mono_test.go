@@ -81,6 +81,14 @@ func monoFixtures() []monoSurface {
 		return c.View(w)
 	}
 
+	// The strip's three row states, held to one label and one rating so that
+	// only the state itself is left to tell them apart (S-102, §2e).
+	queued := func(current bool, mut func(*QueueItem)) string {
+		it := QueueItem{Number: 2, Label: "go test ./internal/agent/...", Severity: SeverityLow}
+		mut(&it)
+		return it.render(w, current)
+	}
+
 	agents := func(state AgentState, status string) string {
 		l := AgentList{Rows: []AgentRow{{State: state, Name: "writer-1", Task: "docs", Status: status}}}
 		return l.View(w)
@@ -208,6 +216,13 @@ func monoFixtures() []monoSurface {
 			{"generic", card(func(c *ApprovalCard) {
 				c.Variant, c.Title, c.Summary = ApprovalGeneric, "Approve tool", "fetch https://example.com"
 			})},
+		}},
+		{"queue strip row", []monoState{
+			// Current, waiting, and in the batch: three rows that have to
+			// read as three with every hue stripped out.
+			{"current", queued(true, func(it *QueueItem) {})},
+			{"waiting", queued(false, func(it *QueueItem) {})},
+			{"in the batch", queued(false, func(it *QueueItem) { it.Batch = true })},
 		}},
 		{"staged checkbox", []monoState{
 			{"unstaged", staged(false)},

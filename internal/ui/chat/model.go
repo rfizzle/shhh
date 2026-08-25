@@ -228,6 +228,16 @@ type Model struct {
 	// showing now (S-101), resolved once when the confirm is armed because it
 	// reads the filesystem and git.
 	pendingBlast blastRadius
+	// The approval queue made visible (S-102): pendingQueue is the strip
+	// above the card, pendingBatch the queued call IDs [A] would answer with
+	// the current one, and batchApproved those an earlier [A] already
+	// answered — they run when they reach the head instead of asking again.
+	// approvalTotal is how many decisions this tool round queued, so the
+	// card can say "2 of 5" once two have been answered.
+	pendingQueue  components.QueueStrip
+	pendingBatch  []string
+	batchApproved map[string]bool
+	approvalTotal int
 	// Compact activity feed (S-075): verbosity is the feed's default density
 	// (/ui verbosity); tailRunFn is the tail-capable command runner, and
 	// runningCommand/runStart/runTail drive the live row while a command runs.
@@ -798,7 +808,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.compacting {
 			return m.abortCompact()
 		}
-		auto, _ := m.agent.BeginToolRound(m.streaming, msg.calls, m.requiresApproval)
+		auto, gated := m.agent.BeginToolRound(m.streaming, msg.calls, m.requiresApproval)
+		m.approvalTotal = len(gated)
 		if m.streaming != "" {
 			m.appendEntry(entry{kind: entryAssistant, text: m.streaming})
 		}
@@ -1153,6 +1164,7 @@ func (m *Model) startRun(parts []string) (result string, entersConfirm bool) {
 	}
 	m.pendingRun = blocks[idx]
 	m.pendingBlast = m.resolveRadius(nil)
+	m.clearQueueStrip()
 	m.setTurnState(stateConfirmRun)
 	return "", true
 }
@@ -1192,6 +1204,18 @@ func (m Model) updateConfirmRun(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				Hunks:  req.hunks,
 				Syntax: diffSyntax(req.path),
 			}, stateConfirmRun)
+		}
+	case components.ApprovalBatch:
+		// [A] answers this decision and every queued decision the session
+		// would classify the same way (S-102). Membership was on the strip
+		// before the key applied it, and a flagged action was never in it.
+		if req := m.pendingApproval; req != nil && len(m.pendingBatch) > 0 {
+			m.approveBatch()
+			m.recordDecision(decisionAllow, "user-batch")
+			if req.kind == approvalExec {
+				return m.executeRun()
+			}
+			return m.executeApprovedTool()
 		}
 	case components.ApprovalAlways:
 		// Approve and auto-allow this category for the session (S-054).
@@ -1467,6 +1491,10 @@ func (m *Model) cancelStreaming() {
 	}
 	m.pendingApproval = nil
 	m.memoryAsk = nil
+	// The queue the strip described is gone with the turn, and so is every
+	// batch grant made against it (S-102).
+	m.clearQueueStrip()
+	m.batchApproved, m.approvalTotal = nil, 0
 	// Ctrl+C is a cancellation, and the close rows say so (S-098).
 	m.turnOutcome = components.TurnCancelled
 	m.finishStreaming()

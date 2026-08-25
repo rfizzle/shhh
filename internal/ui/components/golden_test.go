@@ -13,6 +13,7 @@ package components
 import (
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -208,6 +209,12 @@ func TestGolden_ApprovalCard(t *testing.T) {
 			{Label: "variant · command, always-allow offered", View: card(func(c *ApprovalCard) {
 				c.AllowAlways, c.AlwaysHint = true, "a: always allow commands this session"
 			})},
+			{Label: "variant · command, a batch waiting behind it", View: card(func(c *ApprovalCard) {
+				c.QueuePos = "1 of 5"
+				c.AllowAlways, c.AlwaysHint = true, "a: always allow commands this session"
+				c.Batch, c.BatchHint = true, "A: approve 3 like this"
+				c.Severity = SeverityLow
+			})},
 			{Label: "variant · command, flagged, contained, blast radius", View: card(func(c *ApprovalCard) {
 				c.QueuePos = "2 of 5"
 				c.Headline = "Assistant wants to run: rm -rf ./build && npm run build"
@@ -253,6 +260,36 @@ func TestGolden_ApprovalCard(t *testing.T) {
 					{Label: "sends", Value: "the URL and a shhh-web/1.0 user-agent", Detail: "no file contents, no credentials"},
 					{Label: "receives", Value: "page text into the conversation, bounded to 2 MB", Detail: "it counts against the context window"},
 				}
+			})},
+		}
+	})
+}
+
+// TestGolden_QueueStrip captures the stack above the card (§2e): the full
+// list, the bounded list with its overflow count, and a queue with no batch
+// in it at all.
+func TestGolden_QueueStrip(t *testing.T) {
+	captureGolden(t, "queue-strip", "approval queue strip", goldenWidths, func(width int) []golden.Panel {
+		items := []QueueItem{
+			{Number: 1, Label: "go test ./internal/agent/...", Severity: SeverityLow, Batch: true},
+			{Number: 2, Label: "npm run build", Severity: SeverityLow, Batch: true},
+			{Number: 3, Label: "edit internal/ui/chat/model.go", Detail: "+9 −1", Severity: SeverityMedium},
+			{Number: 4, Label: "rm -rf ./dist", Severity: SeverityHigh},
+			{Number: 5, Label: "write docs/loop.md", Detail: "+12 −0", Severity: SeverityMedium},
+		}
+		strip := func(mut func(*QueueStrip)) string {
+			q := QueueStrip{Items: append([]QueueItem(nil), items...), Note: "[A] answers the 3 marked"}
+			mut(&q)
+			return strings.Join(q.View(width), "\n")
+		}
+		return []golden.Panel{
+			{Label: "five pending · two behind the current one join the batch", View: strip(func(q *QueueStrip) {})},
+			{Label: "bounded · the rest are counted, not dropped", View: strip(func(q *QueueStrip) {
+				q.MaxRows = 3
+				q.Items[4].Batch = true
+			})},
+			{Label: "no batch · nothing behind it is the same kind", View: strip(func(q *QueueStrip) {
+				q.Items[0].Batch, q.Items[1].Batch, q.Note = false, false, ""
 			})},
 		}
 	})

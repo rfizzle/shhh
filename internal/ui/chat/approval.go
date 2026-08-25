@@ -265,9 +265,21 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	if req.kind == approvalMemory && m.mode != agent.ModePlan {
 		m.recordDecision(decisionAsk, "memory")
 		m.openMemoryAsk(req)
-		m.setTurnState(stateConfirmRun)
-		m.syncViewport()
+		m.armConfirm(req)
 		return m, nil
+	}
+	// A decision an earlier [A] already answered (S-102) runs when its turn
+	// comes, without asking again.
+	if m.takeBatchApproval(req) {
+		m.recordDecision(decisionAllow, "user-batch")
+		req.auto = true
+		m.appendEntry(entry{kind: entrySystem, text: "Approved with the batch: " + req.summary})
+		m.viewport.SetContent(m.renderHistory())
+		m.viewport.GotoBottom()
+		if req.kind == approvalExec {
+			return m.executeRun()
+		}
+		return m.executeApprovedTool()
 	}
 	// Mode policy (S-059, absorbing S-054): the permissive modes and session
 	// grants skip the prompt, plan mode refuses the call outright, and
@@ -299,8 +311,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 		return m.startClassifierCheck(req)
 	}
 	m.recordDecision(decisionAsk, askReason(approvalAction(req)))
-	m.setTurnState(stateConfirmRun)
-	m.syncViewport()
+	m.armConfirm(req)
 	return m, nil
 }
 
@@ -371,8 +382,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 	} else {
 		m.recordDecision(decisionAsk, "safety")
 	}
-	m.setTurnState(stateConfirmRun)
-	m.syncViewport()
+	m.armConfirm(req)
 	return m, nil
 }
 
@@ -555,6 +565,12 @@ func (m Model) approvalCard() *components.ApprovalCard {
 func (m Model) buildApprovalCard() *components.ApprovalCard {
 	card := &components.ApprovalCard{MaxLines: m.maxConfirmPanelHeight()}
 	req := m.pendingApproval
+	// Where this decision sits in the round, and the key that answers the
+	// rest of its category along with it (S-102).
+	card.QueuePos = m.queuePosition()
+	if card.Batch = len(m.pendingBatch) > 0; card.Batch {
+		card.BatchHint = fmt.Sprintf("A: approve %d like this", len(m.pendingBatch)+1)
+	}
 	// The blast-radius block, resolved when the decision was armed (S-101).
 	// It also carries the safety risks, so the card states severity and
 	// warnings from one source rather than two.
@@ -619,10 +635,13 @@ func (b blastRadius) applyTo(card *components.ApprovalCard) {
 // confirmLines renders the approval card — or the memory prompt (S-070) when
 // one is showing — one row per element.
 func (m Model) confirmLines() []string {
+	width := m.contentWidth()
+	// The queue strip (S-102) sits above whichever surface is asking.
+	strip := m.pendingQueue.View(width)
 	if m.memoryAsk != nil {
-		return m.memoryAskLines()
+		return append(strip, m.memoryAskLines()...)
 	}
-	return strings.Split(m.approvalCard().View(m.contentWidth()), "\n")
+	return append(strip, strings.Split(m.approvalCard().View(width), "\n")...)
 }
 
 // renderConfirm renders the confirm prompt padded to the bottom panel height.
@@ -639,9 +658,10 @@ func (m Model) renderConfirm() string {
 // confirm and plan-approval prompts may grow beyond the input's fixed height.
 func (m Model) bottomPanelHeight() int {
 	var lines []string
+	bound := m.maxConfirmPanelHeight()
 	switch m.state {
 	case stateConfirmRun:
-		lines = m.confirmLines()
+		lines, bound = m.confirmLines(), m.confirmPanelBound()
 	case statePlanApprove:
 		lines = m.planApproveLines()
 	case stateRewindPick:
@@ -661,7 +681,7 @@ func (m Model) bottomPanelHeight() int {
 		}
 	}
 	if n := len(lines); n > inputHeight {
-		return min(n, m.maxConfirmPanelHeight())
+		return min(n, bound)
 	}
 	return inputHeight
 }

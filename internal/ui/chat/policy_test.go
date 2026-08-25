@@ -159,8 +159,10 @@ func TestPolicy_AlwaysAllowCommandsViaKey(t *testing.T) {
 	if m.state != stateConfirmRun {
 		t.Fatalf("first command should prompt, got state %d", m.state)
 	}
-	if !strings.Contains(m.View(), "[y/n/a]") {
-		t.Fatal("unflagged command prompt should offer y/n/a")
+	// The second queued command puts a batch behind the card, so [A] joins
+	// the keys (S-102).
+	if !strings.Contains(m.View(), "[y/n/a/A]") {
+		t.Fatal("unflagged command prompt with a queue behind it should offer y/n/a/A")
 	}
 
 	// 'a' approves this command and every later one this session.

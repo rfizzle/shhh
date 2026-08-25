@@ -16,6 +16,15 @@
 │ Run this command? [y/n/a]  (a: always allow commands this session)           │
 └──────────────────────────────────────────────────────────────────────────────┘
 
+· variant · command, a batch waiting behind it
+┌─ Approve command (1 of 5) ──────────────────────────────────────────── ⚠ low ┐
+│ Assistant wants to run: go test ./internal/agent/...                         │
+│ ⚠ low                                                                        │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Run this command? [y/n/a/A]  (a: always allow commands this session)         │
+│ A: approve 3 like this                                                       │
+└──────────────────────────────────────────────────────────────────────────────┘
+
 · variant · command, flagged, contained, blast radius
 ┌─ Approve command (2 of 5) ───────────────────── ⛨ bwrap · workspace ─ ⚠ HIGH ┐
 │ Assistant wants to run: rm -rf ./build && npm run build                      │
@@ -79,6 +88,15 @@
 ␛[38;5;244m│␛[0m ␛[1;38;5;254mAssistant wants to run: go test ./internal/agent/...␛[0m                         ␛[38;5;244m│␛[0m
 ␛[38;5;244m├──────────────────────────────────────────────────────────────────────────────┤␛[0m
 ␛[38;5;244m│␛[0m ␛[3;38;5;244mRun this command? [y/n/a]  (a: always allow commands this session)␛[0m           ␛[38;5;244m│␛[0m
+␛[38;5;244m└──────────────────────────────────────────────────────────────────────────────┘␛[0m
+
+· variant · command, a batch waiting behind it
+␛[38;5;244m┌─ Approve command (1 of 5) ──────────────────────────────────────────── ⚠ low ┐␛[0m
+␛[38;5;244m│␛[0m ␛[1;38;5;254mAssistant wants to run: go test ./internal/agent/...␛[0m                         ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m ␛[38;5;244m⚠ low␛[0m                                                                        ␛[38;5;244m│␛[0m
+␛[38;5;244m├──────────────────────────────────────────────────────────────────────────────┤␛[0m
+␛[38;5;244m│␛[0m ␛[3;38;5;244mRun this command? [y/n/a/A]  (a: always allow commands this session)␛[0m         ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m ␛[3;38;5;244mA: approve 3 like this␛[0m                                                       ␛[38;5;244m│␛[0m
 ␛[38;5;244m└──────────────────────────────────────────────────────────────────────────────┘␛[0m
 
 · variant · command, flagged, contained, blast radius

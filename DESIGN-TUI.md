@@ -183,10 +183,44 @@ outbound request the way it resolves a shell command's paths:
 A generic approval that carries a command — a process start (S-073) — is
 resolved as the command it is, and gets the command card's block.
 
-### 2e. Queue position
+### 2e. Queue strip and batch approval
 
-When multiple calls await approval, the title carries `(2 of 5)`; `[n]`
-denies just the current one, consistent with today's queue semantics.
+Five separate cards, one after the other, is how you train someone to hit
+enter without reading. When more than one call awaits approval the card gets a
+strip above it listing the stack in the order it will be asked (S-102):
+
+```
+  ●○○○○  5 pending  ·  [A] answers the 3 marked
+  ▸ 1 go test ./internal/agent/...                          ⚠ low  [A]
+    2 npm run build                                         ⚠ low  [A]
+    3 edit internal/ui/chat/model.go                  +9 −1  ⚠ medium
+    4 rm -rf ./dist                                         ⚠ HIGH
+    5 write docs/loop.md                             +12 −0  ⚠ low  [A]
+┌─ Approve command (1 of 5) ───────────────── ⛨ bwrap · workspace ─ ⚠ low ─┐
+```
+
+- One dot per decision still waiting, the current one filled; the title
+  carries `(1 of 5)`, which the dots — drawn over what is left — cannot say.
+- Items keep the number they had when the round queued them, so an item's
+  number does not move as the ones ahead of it are answered.
+- `[A]` approves the current action and every queued action the session would
+  classify the same way, with the count on the key (`A: approve 3 like this`).
+  "The same way" is the category the `[a]` session grant would use, read from
+  one matcher — commands with commands, edits with edits.
+- Membership is a `[A]` mark on the row, stated before the key applies it, and
+  never a colour. What the strip cannot fit is counted on a final row —
+  `… 3 more, 1 marked` — never dropped.
+- A safety-flagged action is in no batch: it is taken out and asked on its
+  own, whatever else is queued. So is anything the session grants do not
+  cover.
+- `[A]` is not a session grant. It answers the decisions on the strip and
+  nothing the model asks for afterwards; each member is still re-checked
+  against the mode and the safety checker as it reaches the head of the queue.
+- `[n]` denies just the current one, consistent with today's queue semantics.
+- The strip's rows sit above the card rather than inside its 40% bound: taking
+  them out of the card would spend the decision's own space on the list of
+  decisions. The strip itself is bounded — six rows, fewer on a short
+  terminal.
 
 ---
 

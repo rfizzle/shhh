@@ -33,6 +33,9 @@ const (
 	// ApprovalFullDiff opens the full-screen diff view (d, only when
 	// FullDiff is set); the host returns to the card afterwards (S-074).
 	ApprovalFullDiff
+	// ApprovalBatch approves this action and every queued action the session
+	// would classify the same way (A, only when Batch is set — S-102).
+	ApprovalBatch
 )
 
 // Severity is how much the pending action could cost, led with as a word
@@ -162,6 +165,12 @@ type ApprovalCard struct {
 	// AllowAlways offers [a] with AlwaysHint describing the session grant.
 	AllowAlways bool
 	AlwaysHint  string
+	// Batch offers [A]: this action and every queued action the session
+	// would classify the same way, answered together (S-102). BatchHint
+	// states the count on the key, because a key that answers an unstated
+	// number of decisions is not an offer.
+	Batch     bool
+	BatchHint string
 	// ExtraHints are additional key hints the host handles itself (e.g.
 	// "g: attach to writer-1" on a routed child approval, S-077).
 	ExtraHints []string
@@ -184,7 +193,16 @@ func (c *ApprovalCard) Update(msg tea.KeyMsg) (done bool, result any) {
 	switch msg.String() {
 	case "y", "Y", "enter":
 		return true, ApprovalApprove
-	case "a", "A":
+	case "a":
+		if c.AllowAlways {
+			return true, ApprovalAlways
+		}
+	// [A] is the queue's key when there is a queue behind the card, and
+	// otherwise stays the shifted spelling of [a] it has always been.
+	case "A":
+		if c.Batch {
+			return true, ApprovalBatch
+		}
 		if c.AllowAlways {
 			return true, ApprovalAlways
 		}
@@ -220,12 +238,9 @@ func (c *ApprovalCard) View(width int) string {
 		}
 	}
 
-	hint := c.Question + " [y/N]"
-	if c.AllowAlways {
-		hint = c.Question + " [y/n/a]"
-		if c.AlwaysHint != "" {
-			hint += "  (" + c.AlwaysHint + ")"
-		}
+	hint := c.Question + " " + c.keys()
+	if c.AllowAlways && c.AlwaysHint != "" {
+		hint += "  (" + c.AlwaysHint + ")"
 	}
 	if c.FullDiff {
 		hint += "  (d: full diff)"
@@ -235,6 +250,12 @@ func (c *ApprovalCard) View(width int) string {
 		segments = append(segments, c.SafeDefault)
 	}
 	hints := hintRows(segments, width)
+	// [A] gets a row of its own rather than a place in the joined run: the
+	// count is the whole offer, and on an 80-column terminal a joined run is
+	// exactly where it would be clipped away.
+	if c.Batch && c.BatchHint != "" {
+		hints = append(hints, hintStyle.Render(clip(c.BatchHint, inner)))
+	}
 	if c.Footnote != "" {
 		hints = append(hints, dimStyle.Render(clip(c.Footnote, inner)))
 	}
@@ -268,6 +289,25 @@ func (c *ApprovalCard) View(width int) string {
 		style = delStyle
 	}
 	return renderChromeCard(cardChrome{title: title, chips: c.chips(), style: &style}, rows, width)
+}
+
+// keys is the decision prompt's key list. [a] appears only where a session
+// grant is allowed and [A] only where there is a queue behind the card, so
+// the list is always exactly what the card will answer to.
+func (c *ApprovalCard) keys() string {
+	keys := "y/N"
+	if c.AllowAlways {
+		keys = "y/n/a"
+	}
+	if c.Batch {
+		// The capital N means "this is the default"; beside a capital A it
+		// would only read as a second key, so the batch spelling drops it.
+		if !c.AllowAlways {
+			keys = "y/n"
+		}
+		keys += "/A"
+	}
+	return "[" + keys + "]"
 }
 
 // severityRows are the ⚠ rows: the severity word leads the first risk, and

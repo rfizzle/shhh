@@ -206,6 +206,13 @@ func (a *Agent) RecordAutoResults(results []ToolResult) {
 // QueuedApprovals is how many tool calls are waiting for approval.
 func (a *Agent) QueuedApprovals() int { return len(a.queue) }
 
+// PendingApprovals is the approval queue in the order it will be asked,
+// head first. It is what the queue strip and batch approval read (S-102);
+// the slice is a copy, so reading it can never reorder what the agent pops.
+func (a *Agent) PendingApprovals() []provider.ToolCall {
+	return append([]provider.ToolCall(nil), a.queue...)
+}
+
 // NextApproval is the head of the approval queue, if any.
 func (a *Agent) NextApproval() (provider.ToolCall, bool) {
 	if len(a.queue) == 0 {
