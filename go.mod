@@ -16,6 +16,7 @@ require (
 	github.com/muesli/termenv v0.16.0
 	github.com/sashabaranov/go-openai v1.41.2
 	github.com/spf13/cobra v1.10.2
+	golang.org/x/mod v0.33.0
 	golang.org/x/net v0.41.0
 	google.golang.org/genai v1.55.0
 	modernc.org/sqlite v1.50.0
@@ -71,7 +72,6 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.yaml.in/yaml/v4 v4.0.0-rc.2 // indirect
 	golang.org/x/crypto v0.40.0 // indirect
-	golang.org/x/mod v0.33.0 // indirect
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/sys v0.42.0 // indirect
 	golang.org/x/term v0.36.0 // indirect
