@@ -1,5 +1,13 @@
 package provider
 
+import (
+	"context"
+	"sort"
+	"strings"
+
+	openai "github.com/sashabaranov/go-openai"
+)
+
 // knownModels is the curated per-provider model catalog backing the /model
 // interactive picker. It is a convenience list, not a gate — /model <name>
 // accepts any name, and providers registered without a catalog (e.g.
@@ -41,4 +49,72 @@ func KnownModels(name string) []string {
 		return nil
 	}
 	return append([]string(nil), models...)
+}
+
+// ModelLister is implemented by providers whose endpoint can enumerate the
+// models it actually hosts — the OpenAI GET /v1/models shape. It backs the
+// interactive /model picker for endpoints the curated catalog can't know:
+// Ollama, vLLM, LiteLLM, and other openai-compatible gateways.
+type ModelLister interface {
+	ListModels(ctx context.Context) ([]string, error)
+}
+
+// listOpenAIModels enumerates an openai-compatible endpoint's models, sorted
+// and filtered to the chat-capable ones.
+func listOpenAIModels(ctx context.Context, c *openai.Client) ([]string, error) {
+	list, err := c.ListModels(ctx)
+	if err != nil {
+		return nil, err
+	}
+	names := make([]string, 0, len(list.Models))
+	for _, mdl := range list.Models {
+		if mdl.ID != "" {
+			names = append(names, mdl.ID)
+		}
+	}
+	names = chatModels(names)
+	sort.Strings(names)
+	return names, nil
+}
+
+// nonChatMarkers are id fragments belonging to families that can't serve a
+// chat completion. The big hosted catalogs list embeddings, speech, and image
+// models next to the chat ones; local runtimes list embedding models too.
+var nonChatMarkers = []string{
+	"embed",
+	"whisper",
+	"tts",
+	"audio",
+	"speech",
+	"transcribe",
+	"dall-e",
+	"moderation",
+	"image",
+	"rerank",
+	"stable-diffusion",
+	"clip",
+}
+
+// chatModels drops the ids that name a non-chat family. A filter that would
+// empty the list is discarded instead — an unfamiliar naming scheme should
+// leave the user with every model, not none.
+func chatModels(names []string) []string {
+	kept := make([]string, 0, len(names))
+	for _, name := range names {
+		lower := strings.ToLower(name)
+		drop := false
+		for _, marker := range nonChatMarkers {
+			if strings.Contains(lower, marker) {
+				drop = true
+				break
+			}
+		}
+		if !drop {
+			kept = append(kept, name)
+		}
+	}
+	if len(kept) == 0 {
+		return names
+	}
+	return kept
 }

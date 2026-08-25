@@ -117,6 +117,25 @@ func newChatCmd() *cobra.Command {
 // sessionEnv is the provider-and-prompt setup shared by the interactive chat
 // TUI and headless print mode: resolved model, initial messages, and a stream
 // closure over the session's provider.
+// modelListTimeout bounds the /model picker's live catalog query (S-083); a
+// gateway that is slow or down should cost the user a beat, not the session.
+const modelListTimeout = 10 * time.Second
+
+// modelListerFor adapts a provider that can enumerate its endpoint into the
+// chat model's lazy lister. Providers without the capability return nil, and
+// the picker keeps the curated catalog.
+func modelListerFor(p provider.Provider) func(context.Context) ([]string, error) {
+	lister, ok := p.(provider.ModelLister)
+	if !ok {
+		return nil
+	}
+	return func(ctx context.Context) ([]string, error) {
+		ctx, cancel := context.WithTimeout(ctx, modelListTimeout)
+		defer cancel()
+		return lister.ListModels(ctx)
+	}
+}
+
 type sessionEnv struct {
 	cfg         config.Config
 	prov        provider.Provider
@@ -361,6 +380,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithClassifier(classifier).
 		WithModelSwitcher(env.switchModel).
 		WithModelOptions(provider.KnownModels(env.prov.Name())).
+		WithModelLister(modelListerFor(env.prov)).
 		WithGitSnapshots(gitSnapshot).
 		WithSessionDiff(sessionDiffFn())
 	if red != nil {

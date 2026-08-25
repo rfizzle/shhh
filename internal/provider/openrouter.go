@@ -60,6 +60,12 @@ func NewOpenRouterWith(client *openai.Client, model string) *OpenRouter {
 
 func (o *OpenRouter) Name() string { return "openrouter" }
 
+// ListModels enumerates OpenRouter's catalog from GET /v1/models — hundreds
+// of ids, so the picker shows them filtered to the chat-capable ones.
+func (o *OpenRouter) ListModels(ctx context.Context) ([]string, error) {
+	return listOpenAIModels(ctx, o.client)
+}
+
 func (o *OpenRouter) StreamCompletion(ctx context.Context, messages []Message, opts CompletionOpts) (<-chan StreamEvent, error) {
 	model := o.model
 	if opts.Model != "" {

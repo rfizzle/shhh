@@ -1,6 +1,8 @@
 package chat
 
 import (
+	"context"
+	"errors"
 	"strings"
 	"testing"
 
@@ -505,5 +507,221 @@ func TestRunPickPreview_CapsLongBlocks(t *testing.T) {
 	}
 	if !strings.HasSuffix(preview, "…") {
 		t.Fatalf("a capped preview should end in an ellipsis, got %q", preview)
+	}
+}
+
+// --- live model discovery (S-083) -----------------------------------------
+
+// listerModel is a session whose provider can enumerate its endpoint, with no
+// curated catalog — the openai-compatible case the picker could not serve.
+func listerModel(t *testing.T, fn func(context.Context) ([]string, error)) Model {
+	t.Helper()
+	return readyModel(t).
+		WithModelSwitcher(func(string) {}).
+		WithPricing(nil, "llama3").
+		WithModelLister(fn)
+}
+
+// runBatch executes a command, flattening one level of tea.Batch, and returns
+// the messages it produced.
+func runBatch(cmd tea.Cmd) []tea.Msg {
+	if cmd == nil {
+		return nil
+	}
+	msg := cmd()
+	batch, ok := msg.(tea.BatchMsg)
+	if !ok {
+		return []tea.Msg{msg}
+	}
+	var out []tea.Msg
+	for _, c := range batch {
+		if c != nil {
+			out = append(out, c())
+		}
+	}
+	return out
+}
+
+func TestModelList_BareModelQueriesTheProvider(t *testing.T) {
+	called := 0
+	m := listerModel(t, func(context.Context) ([]string, error) {
+		called++
+		return []string{"llama3", "qwen3:8b"}, nil
+	})
+
+	m.input.SetValue("/model")
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(Model)
+	if m.state != stateModelList {
+		t.Fatalf("bare /model should query the provider first, got state %v", m.state)
+	}
+
+	var listed tea.Msg
+	for _, msg := range runBatch(cmd) {
+		if _, ok := msg.(modelListMsg); ok {
+			listed = msg
+		}
+	}
+	if listed == nil {
+		t.Fatal("the query should produce a modelListMsg")
+	}
+	if called != 1 {
+		t.Fatalf("expected one query, got %d", called)
+	}
+
+	updated, _ = m.Update(listed)
+	m = updated.(Model)
+	if m.state != statePick || m.picker == nil {
+		t.Fatalf("the discovered models should open the picker, got state %v", m.state)
+	}
+	if len(m.picker.Options) != 2 {
+		t.Fatalf("expected both discovered models, got %d", len(m.picker.Options))
+	}
+}
+
+func TestModelList_QueriedOncePerSession(t *testing.T) {
+	called := 0
+	m := listerModel(t, func(context.Context) ([]string, error) {
+		called++
+		return []string{"llama3", "qwen3:8b"}, nil
+	})
+
+	m.input.SetValue("/model")
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(Model)
+	runBatch(cmd)
+	updated, _ = m.Update(modelListMsg{names: []string{"llama3", "qwen3:8b"}})
+	m = updated.(Model)
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = updated.(Model)
+
+	m.input.SetValue("/model")
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(Model)
+
+	if m.state != statePick {
+		t.Fatalf("the cached list should open the picker directly, got state %v", m.state)
+	}
+	if called != 1 {
+		t.Fatalf("the endpoint should be queried once per session, got %d", called)
+	}
+}
+
+func TestModelList_ErrorFallsBackToUsageText(t *testing.T) {
+	m := listerModel(t, func(context.Context) ([]string, error) {
+		return nil, errors.New("connection refused")
+	})
+
+	m.input.SetValue("/model")
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(Model)
+	updated, _ = m.Update(modelListMsg{err: errors.New("connection refused")})
+	m = updated.(Model)
+
+	if m.state != stateInput || m.picker != nil {
+		t.Fatalf("a failed query should return to the input, got state %v", m.state)
+	}
+	texts := []string{
+		m.transcript[len(m.transcript)-2].text,
+		m.transcript[len(m.transcript)-1].text,
+	}
+	if !strings.Contains(texts[0], "Could not list models: connection refused") {
+		t.Fatalf("the failure should be reported, got %q", texts[0])
+	}
+	if !strings.Contains(texts[1], "Current model: llama3") {
+		t.Fatalf("expected the usage text fallback, got %q", texts[1])
+	}
+}
+
+func TestModelList_ErrorKeepsCuratedCatalog(t *testing.T) {
+	m := readyModel(t).
+		WithModelSwitcher(func(string) {}).
+		WithPricing(nil, "gpt-4o").
+		WithModelOptions([]string{"gpt-4o", "o3"}).
+		WithModelLister(func(context.Context) ([]string, error) {
+			return nil, errors.New("timeout")
+		})
+
+	m.input.SetValue("/model")
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(Model)
+	updated, _ = m.Update(modelListMsg{err: errors.New("timeout")})
+	m = updated.(Model)
+
+	if m.state != statePick || m.picker == nil {
+		t.Fatalf("the curated catalog should still open the picker, got state %v", m.state)
+	}
+	if len(m.picker.Options) != 2 {
+		t.Fatalf("expected the curated entries, got %d", len(m.picker.Options))
+	}
+}
+
+func TestModelList_EmptyEndpointReportsIt(t *testing.T) {
+	m := listerModel(t, func(context.Context) ([]string, error) { return nil, nil })
+
+	m.input.SetValue("/model")
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(Model)
+	updated, _ = m.Update(modelListMsg{})
+	m = updated.(Model)
+
+	if m.state != stateInput {
+		t.Fatalf("an empty list has nothing to pick, got state %v", m.state)
+	}
+	if !strings.Contains(m.transcript[len(m.transcript)-2].text, "no models") {
+		t.Fatalf("the empty result should be reported, got %q", m.transcript[len(m.transcript)-2].text)
+	}
+}
+
+func TestModelList_EscCancelsTheQuery(t *testing.T) {
+	m := listerModel(t, func(ctx context.Context) ([]string, error) {
+		<-ctx.Done()
+		return nil, ctx.Err()
+	})
+
+	m.input.SetValue("/model")
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(Model)
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	m = updated.(Model)
+
+	if m.state != stateInput {
+		t.Fatalf("esc should abandon the query, got state %v", m.state)
+	}
+	// A late result from the abandoned query must not open a picker.
+	updated, _ = m.Update(modelListMsg{names: []string{"a", "b"}})
+	m = updated.(Model)
+	if m.state != stateInput || m.picker != nil {
+		t.Fatal("a late result should be ignored")
+	}
+}
+
+func TestModelList_WithoutASwitcherStaysOnText(t *testing.T) {
+	m := readyModel(t).
+		WithPricing(nil, "llama3").
+		WithModelLister(func(context.Context) ([]string, error) {
+			t.Fatal("a session that cannot switch models should not query")
+			return nil, nil
+		})
+
+	m.input.SetValue("/model")
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(Model)
+	if m.state != stateInput {
+		t.Fatalf("expected the text path, got state %v", m.state)
+	}
+}
+
+func TestModelList_RendersSpinnerWhileQuerying(t *testing.T) {
+	m := listerModel(t, func(ctx context.Context) ([]string, error) {
+		<-ctx.Done()
+		return nil, ctx.Err()
+	})
+
+	m.input.SetValue("/model")
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(Model)
+	if !strings.Contains(m.View(), "Listing models…") {
+		t.Fatal("the query should show its own status line")
 	}
 }

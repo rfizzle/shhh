@@ -153,6 +153,8 @@ accent_color = "cyan"
 
 Each provider picks a fast, capable default model. Override with `provider.model` in config or `SHHH_MODEL` env var.
 
+The OpenAI-shaped providers (`openai`, `openrouter`, `openai-compatible`) can enumerate their endpoint: the first bare `/model` of a session queries `GET {base_url}/models` and offers what actually answers there, filtered to the chat-capable ids. That is the only way to know the catalog of a local runtime or a private gateway — Ollama, vLLM, LiteLLM — where the curated list is necessarily empty. The query is lazy (nothing runs until you ask), bounded at 10 seconds, cached for the session, and cancellable with Esc; an endpoint that refuses falls back to the curated catalog and says why.
+
 ## Environment Variables
 
 ### Universal
@@ -259,7 +261,7 @@ The status bar is a cockpit rail of session vitals: the active permission mode, 
 
 Typing `/` in the input opens a completion menu over the commands this session actually has wired — ↑↓ moves, Tab completes, Enter runs the highlighted command, Esc dismisses. Completion continues past the command name: subcommands (`/memory add`, `/sandbox prune`, `/ui verbosity high`) and known values (saved chat names for `/load`, branch names for `/branches`, the model catalog for `/model`, turn numbers for `/rewind`) complete the same way, filtered on the token under the cursor.
 
-Where a command's argument is really a choice from a known set, the bare command opens a select list instead of printing usage text: `/model` and `/mode` over the model catalog and the mode cycle, `/rewind` over the session's checkpoints, and `/load` / `/chats` over the saved chats (turn count and last-written time on each row) and `/branches` over the session's branch family (current branch marked and focused, each row naming its parent). `/run` joins them when the last response holds several code blocks: each row shows the block's first line, its language, and how many lines it holds, with a flattened preview underneath, and picking one drops into the usual confirmation with its safety warnings intact. ↑↓ moves, Enter applies, Esc cancels. With nothing to pick — no saved chats, no branches yet, a single code block — the command keeps its plain text answer or its direct path rather than opening a one-row list.
+Where a command's argument is really a choice from a known set, the bare command opens a select list instead of printing usage text: `/model` and `/mode` over the model catalog (live from the provider's endpoint where it has one) and the mode cycle, `/rewind` over the session's checkpoints, and `/load` / `/chats` over the saved chats (turn count and last-written time on each row) and `/branches` over the session's branch family (current branch marked and focused, each row naming its parent). `/run` joins them when the last response holds several code blocks: each row shows the block's first line, its language, and how many lines it holds, with a flattened preview underneath, and picking one drops into the usual confirmation with its safety warnings intact. ↑↓ moves, Enter applies, Esc cancels. With nothing to pick — no saved chats, no branches yet, a single code block — the command keeps its plain text answer or its direct path rather than opening a one-row list.
 
 Slash commands inside a chat session:
 

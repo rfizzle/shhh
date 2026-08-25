@@ -56,6 +56,17 @@ func NewOpenAICompatWith(client *openai.Client, model, baseURL string) *OpenAICo
 
 func (o *OpenAICompat) Name() string { return o.name }
 
+// ListModels enumerates whatever the endpoint hosts (GET {base_url}/models).
+// This is the only way to know an openai-compatible endpoint's catalog, so
+// the /model picker leans on it rather than on a curated list.
+func (o *OpenAICompat) ListModels(ctx context.Context) ([]string, error) {
+	names, err := listOpenAIModels(ctx, o.client)
+	if err != nil {
+		return nil, o.classify(err)
+	}
+	return names, nil
+}
+
 func (o *OpenAICompat) StreamCompletion(ctx context.Context, messages []Message, opts CompletionOpts) (<-chan StreamEvent, error) {
 	model := o.model
 	if opts.Model != "" {

@@ -13,6 +13,7 @@ package chat
 // handleSlashCommand has always printed.
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -109,9 +110,97 @@ func (m Model) modelPickChoices() []string {
 }
 
 // canPickModel reports whether bare /model should open the picker rather
-// than fall back to the usage text.
+// than fall back to the usage text: either the catalog already offers a
+// choice, or the provider can enumerate its endpoint for one (S-083).
 func (m Model) canPickModel() bool {
-	return m.switchFn != nil && len(m.modelPickChoices()) > 1
+	if m.switchFn == nil {
+		return false
+	}
+	return len(m.modelPickChoices()) > 1 || (m.modelLister != nil && !m.modelListed)
+}
+
+// WithModelLister wires live model discovery for providers that can
+// enumerate their endpoint (provider.ModelLister). Bare /model queries it
+// once per session — lazily, so a slow or unreachable endpoint costs nothing
+// until the user asks — and the result replaces the curated catalog.
+func (m Model) WithModelLister(fn func(context.Context) ([]string, error)) Model {
+	m.modelLister = fn
+	return m
+}
+
+// startModelPick is the bare-/model entry point: it queries the provider for
+// its model list when one is available and not yet fetched, and otherwise
+// opens the picker straight away.
+func (m Model) startModelPick() (tea.Model, tea.Cmd) {
+	if m.modelLister == nil || m.modelListed {
+		return m.openModelPick()
+	}
+	lister := m.modelLister
+	ctx, cancel := context.WithCancel(context.Background())
+	m.modelListCancel = cancel
+	m.state = stateModelList
+	m.syncViewportHeight()
+	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
+		names, err := lister(ctx)
+		return modelListMsg{names: names, err: err}
+	})
+}
+
+// updateModelList routes keys while the model list is in flight: esc (or
+// ctrl+c) abandons the query and returns to the input.
+func (m Model) updateModelList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+d":
+		m.quitting = true
+		if m.modelListCancel != nil {
+			m.modelListCancel()
+			m.modelListCancel = nil
+		}
+		return m, m.quitCmd()
+	case "esc", "ctrl+c":
+		if m.modelListCancel != nil {
+			m.modelListCancel()
+			m.modelListCancel = nil
+		}
+		m.state = stateInput
+		m.syncViewportHeight()
+		return m, nil
+	}
+	return m, nil
+}
+
+// finishModelList opens the picker over the discovered models. A failed or
+// empty query keeps the curated catalog, and says so — for an
+// openai-compatible endpoint that catalog is empty, so the note is the whole
+// answer and there is no picker to open.
+func (m Model) finishModelList(msg modelListMsg) (tea.Model, tea.Cmd) {
+	if m.state != stateModelList {
+		// The query was abandoned (esc) or the session moved on.
+		return m, nil
+	}
+	m.modelListCancel = nil
+	m.state = stateInput
+	switch {
+	case msg.err != nil:
+		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("Could not list models: %v", msg.err)})
+	case len(msg.names) == 0:
+		m.modelListed = true
+		m.appendEntry(entry{kind: entrySystem, text: "The provider reported no models."})
+	default:
+		m.modelListed = true
+		m.modelOptions = msg.names
+	}
+	if len(m.modelPickChoices()) > 1 {
+		return m.openModelPick()
+	}
+	// Nothing to pick from: fall back to the text /model has always printed.
+	if ok, note := m.handleSlashCommand("/model"); ok {
+		m.appendEntry(entry{kind: entrySystem, text: note})
+	}
+	m.syncViewportHeight()
+	m.viewport.SetContent(m.renderHistory())
+	m.viewport.GotoBottom()
+	return m, nil
 }
 
 // openModelPick opens the interactive /model picker, focused on the current

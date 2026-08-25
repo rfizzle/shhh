@@ -49,6 +49,15 @@ func NewOpenAIWithConfig(client *openai.Client, model string) *OpenAI {
 
 func (o *OpenAI) Name() string { return "openai" }
 
+// ListModels enumerates the account's models from GET /v1/models.
+func (o *OpenAI) ListModels(ctx context.Context) ([]string, error) {
+	names, err := listOpenAIModels(ctx, o.client)
+	if err != nil {
+		return nil, o.classify(err)
+	}
+	return names, nil
+}
+
 func (o *OpenAI) StreamCompletion(ctx context.Context, messages []Message, opts CompletionOpts) (<-chan StreamEvent, error) {
 	model := o.model
 	if opts.Model != "" {

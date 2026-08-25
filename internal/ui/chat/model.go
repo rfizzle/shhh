@@ -62,6 +62,9 @@ const (
 	// statePick: a generic slash-command picker (/model, /mode) is showing
 	// (S-078).
 	statePick
+	// stateModelList: bare /model is querying the provider's /v1/models
+	// endpoint before opening the picker (S-083); esc cancels back to input.
+	stateModelList
 )
 
 const inputHeight = 3
@@ -99,6 +102,13 @@ type cmdDoneMsg struct {
 	duration time.Duration
 }
 type initialPromptMsg struct{}
+
+// modelListMsg carries the provider's live model list back to the /model
+// picker (S-083); err falls the session back to the curated catalog.
+type modelListMsg struct {
+	names []string
+	err   error
+}
 
 // classifierDoneMsg carries the auto-mode classifier's verdict for the
 // pending approval (S-060).
@@ -285,6 +295,12 @@ type Model struct {
 	picker       *components.Select
 	pickerApply  func(*Model, int) string
 	modelOptions []string
+	// Live model discovery (S-083): modelLister queries the provider's
+	// /v1/models endpoint for endpoints no curated catalog can cover, and the
+	// result replaces modelOptions for the rest of the session.
+	modelLister     func(context.Context) ([]string, error)
+	modelListCancel context.CancelFunc
+	modelListed     bool
 	// steering holds messages typed while the agent is working (S-058); they
 	// are injected as user messages before the next stream request.
 	steering      []string
@@ -476,6 +492,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.state == statePick {
 			return m.updatePick(msg)
+		}
+		if m.state == stateModelList {
+			return m.updateModelList(msg)
 		}
 		if m.state == stateFocus {
 			return m.updateFocus(msg)
@@ -687,10 +706,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				if text == "/model" && m.canPickModel() {
 					// Bare /model opens the model picker (S-078); the named
-					// form and sessions without a catalog go through
-					// handleSlashCommand.
+					// form and sessions with nothing to pick go through
+					// handleSlashCommand. A provider that can enumerate its
+					// endpoint is queried first (S-083).
 					m.input.Reset()
-					return m.openModelPick()
+					return m.startModelPick()
 				}
 				if text == "/mode" {
 					// Bare /mode opens the mode picker (S-078).
@@ -881,6 +901,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.classifierCancel = nil
 		return m.finishClassifierCheck(msg.verdict)
 
+	case modelListMsg:
+		return m.finishModelList(msg)
+
 	case subagentEventMsg:
 		return m.handleSubagentEvent(msg.ev)
 
@@ -900,7 +923,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// frameWorking keeps the top rail's WORKING spinner animated for the
 		// whole turn (S-082), including while streamed text is rendering and
 		// while an attached child works.
-		if m.frameWorking() || (m.state == stateStreaming && m.streaming == "") || m.state == stateRunningCmd || m.state == stateClassifying {
+		if m.frameWorking() || (m.state == stateStreaming && m.streaming == "") || m.state == stateRunningCmd || m.state == stateClassifying || m.state == stateModelList {
 			var cmd tea.Cmd
 			m.spinner, cmd = m.spinner.Update(msg)
 			return m, cmd
@@ -1020,6 +1043,8 @@ func (m Model) View() string {
 		}
 	case m.state == stateClassifying:
 		body = m.viewport.View() + "\n" + m.spinner.View() + " Checking permission…"
+	case m.state == stateModelList:
+		body = m.viewport.View() + "\n" + m.spinner.View() + " Listing models…"
 	default:
 		body = m.viewport.View()
 	}
