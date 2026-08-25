@@ -1150,6 +1150,14 @@ step, and nothing folds them.
 - Nothing about the block is a takeover. The rows are transcript entries and
   the keys they offer are handled by focus mode on the row (§7), so the input
   keeps every other key.
+- `[u]` (and `/undo [turn]`) puts the turn's files back from the same records,
+  and asks first — an inline confirm (§5) stating what it would restore and
+  what it would delete. A file that changed since the turn is named on the
+  confirm and left alone by the default answer; `[f]` is the deliberate second
+  answer that overwrites it. Esc declines and writes nothing. The undo is
+  recorded as a changeset of its own, so it closes with its own row, reviews
+  with `[v]`, and can itself be undone. A turn whose records were evicted from
+  the bounded store is refused with that as the reason (S-097).
 
 ### 16a. Review mode
 
@@ -1180,7 +1188,9 @@ REVIEW turn 7          2 of 3 staged     │ internal/agent/loop.go  2 hunks · 
   everything; `[enter]` applies what is staged. `[esc]` leaves review having
   changed nothing, and the surface says so.
 - Nothing is committed by review — `⛨ nothing is committed` is always on
-  screen, and `[u] undo turn` restores from the turn's `git stash` entry.
+  screen, and `[u] undo turn` restores from the turn's own changeset records
+  (S-100), never from git: undo has to work in a directory that was never a
+  repository, and it must not touch your index or your stash.
 - Unified is the default; `[\]` toggles side-by-side (§3c) for the case where
   a line moved rather than changed.
 - Review is a takeover surface: full width, rail hidden (§15b), `esc` returns.

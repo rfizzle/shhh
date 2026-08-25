@@ -70,6 +70,10 @@ const (
 	// and hunk pane of what a turn changed, with staging per hunk. A
 	// takeover: full width, the rail hidden, esc returns.
 	stateReview
+	// stateUndoConfirm: the inline confirm an undo asks through (S-100,
+	// §5) — what it would restore, what has drifted since, and esc to
+	// decline. It borrows the bottom panel, not the transcript.
+	stateUndoConfirm
 )
 
 const inputHeight = 3
@@ -320,6 +324,12 @@ type Model struct {
 	review       *components.ReviewView
 	reviewTurnN  int64
 	reviewReturn state
+	// Undo (S-100): undoAsk is the confirm while it is up, undoPlan what it
+	// would do to the workspace (read once, when the confirm was offered),
+	// and undoReturn where declining hands the screen back to.
+	undoAsk    *components.UndoConfirm
+	undoPlan   changeset.UndoPlan
+	undoReturn state
 	// Per-turn changeset store (S-097): changes records every applied edit
 	// with the content on both sides, keyed by turn, and is what /diff
 	// renders; tracker answers whether git knew about a file when it was
@@ -579,6 +589,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.state == stateReview {
 			return m.updateReview(msg)
+		}
+		if m.state == stateUndoConfirm {
+			return m.updateUndoConfirm(msg)
 		}
 		if m.state == stateFocus {
 			return m.updateFocus(msg)
@@ -1095,6 +1108,8 @@ func (m Model) View() string {
 			inputView = m.renderDiffFullHint()
 		case stateReview:
 			inputView = m.renderReviewHint()
+		case stateUndoConfirm:
+			inputView = m.renderUndoConfirm()
 		}
 		// The agent manager list takes the bottom panel while open (S-077).
 		if m.agentList != nil {
@@ -2039,6 +2054,9 @@ func helpText() string {
   /review [turn] Review what a turn changed: file list, hunks, staging per
                  hunk (bare reviews the last turn that changed anything).
                  Also [v] on a turn's changeset row. Nothing is applied.
+  /undo [turn]   Put back what a turn changed, from the session's own records
+                 (not git). Asks first, names anything that changed since,
+                 and is itself recorded as a turn. Also [u] on the row.
   /compact       Summarize the conversation and continue from the summary
   /rewind [n]    Rewind to before a user turn (bare /rewind picks interactively);
                  the abandoned tail is kept as a branch. Conversation only —

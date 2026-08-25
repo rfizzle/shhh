@@ -114,6 +114,12 @@ func monoFixtures() []monoSurface {
 		return v.View(w)
 	}
 
+	// The undo confirm holds its counts constant so that only drift is left
+	// to tell the states apart (S-100, §5).
+	undo := func(drifted []string) string {
+		return UndoConfirm{Turn: 7, Restores: 2, Removes: 1, Drifted: drifted}.View(w)
+	}
+
 	// The close rows hold their stats constant so that only the state itself
 	// is left to tell them apart (S-098, §16).
 	closed := func(mut func(*TurnClose)) string {
@@ -222,6 +228,11 @@ func monoFixtures() []monoSurface {
 			{"checks failing", review([]bool{true, true}, func(v *ReviewView) {
 				v.Verdict = &ReviewVerdict{Failed: true, Label: "go test ./..."}
 			})},
+		}},
+		{"undo drift", []monoState{
+			{"clean", undo(nil)},
+			{"drifted", undo([]string{"internal/agent/loop.go"})},
+			{"drifted twice", undo([]string{"internal/agent/loop.go", "internal/ui/chat/model.go"})},
 		}},
 		{"context meter pressure", []monoState{
 			{"healthy", meter(40)},

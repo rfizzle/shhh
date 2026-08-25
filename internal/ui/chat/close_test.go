@@ -274,11 +274,19 @@ func TestTurnClose_ReachableFromFocusMode(t *testing.T) {
 		t.Fatalf("the surface should name the turn it is reviewing, got %q", review.review.Title)
 	}
 
+	// [u] arms the undo confirm (S-100) over the row that offered it: the
+	// prompt borrows the bottom panel and nothing is written until it is
+	// answered.
 	updated, _ = m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(undoKey)})
 	undo := updated.(Model)
-	last := undo.transcript[len(undo.transcript)-1]
-	if last.kind != entrySystem || !strings.Contains(last.text, "still recorded") {
-		t.Fatalf("[u] should say where undo stands, got %v %q", last.kind, last.text)
+	if undo.state != stateUndoConfirm || undo.undoAsk == nil {
+		t.Fatalf("[u] should ask before it writes, got state %v", undo.state)
+	}
+	if undo.undoReturn != stateFocus {
+		t.Fatalf("esc should come back to the row that offered it, got %v", undo.undoReturn)
+	}
+	if prompt := ansi.Strip(undo.renderUndoConfirm()); !strings.Contains(prompt, "Undo turn 1?") {
+		t.Fatalf("the confirm should name the turn, got %q", prompt)
 	}
 }
 

@@ -106,12 +106,10 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				// esc comes back here, to the row that offered it.
 				return m.openReview(e.turn)
 			}
-			// The notice lands in the transcript behind focus mode, which
-			// keeps the screen: the cursor stays on the row it was on.
-			updated, cmd := m.undoTurn(e.turn, nil)
-			next := updated.(Model)
-			next.refreshFocusView()
-			return next, cmd
+			// Undo asks before it writes (S-100). The confirm borrows the
+			// bottom panel and focus mode keeps the screen, so the cursor
+			// stays on the row that offered it and esc comes back here.
+			return m.undoTurn(e.turn, nil)
 		}
 		return m, nil
 	case "enter":

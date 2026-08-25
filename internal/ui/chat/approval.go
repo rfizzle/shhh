@@ -631,6 +631,8 @@ func (m Model) bottomPanelHeight() int {
 		lines = m.rewindPickLines()
 	case statePick:
 		lines = m.pickerLines()
+	case stateUndoConfirm:
+		lines = m.undoConfirmLines()
 	default:
 		if m.agentList != nil {
 			lines = m.agentListLines()

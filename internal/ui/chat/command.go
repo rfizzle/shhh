@@ -139,6 +139,11 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		// most recent turn that changed anything.
 		return m.reviewCommand(parts)
 
+	case name == "/undo":
+		// Put a turn's edits back from the session's own records (S-100);
+		// bare takes the most recent turn that changed anything.
+		return m.undoCommand(parts)
+
 	case text == "/model" && m.canPickModel():
 		// Bare /model opens the model picker (S-078); the named form and
 		// sessions with nothing to pick go through handleSlashCommand. A

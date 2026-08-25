@@ -98,10 +98,10 @@ func TestReview_EscChangesNothing(t *testing.T) {
 	}
 }
 
-// Enter hands the staged selection to the undo path, which is where undo
-// lands in S-100. Nothing is applied here, and the notice names what was
-// selected rather than pretending it acted.
-func TestReview_EnterReportsWhatUndoWouldRestore(t *testing.T) {
+// Enter hands the staged selection to the undo path (S-100). Review itself
+// applies nothing: what enter does is arm the undo confirm, and the file is
+// untouched until that confirm is answered.
+func TestReview_EnterHandsTheSelectionToUndo(t *testing.T) {
 	m, path := reviewModel(t)
 	before, err := os.ReadFile(path)
 	if err != nil {
@@ -114,12 +114,11 @@ func TestReview_EnterReportsWhatUndoWouldRestore(t *testing.T) {
 	if m.state == stateReview {
 		t.Fatal("enter with a staged selection should leave the surface")
 	}
-	last := m.transcript[len(m.transcript)-1]
-	if last.kind != entrySystem || !strings.Contains(last.text, path) {
-		t.Fatalf("the notice should name the staged file, got %v %q", last.kind, last.text)
+	if m.state != stateUndoConfirm || m.undoAsk == nil {
+		t.Fatalf("enter should arm the undo confirm, got state %v", m.state)
 	}
-	if !strings.Contains(last.text, "not wired up yet") {
-		t.Fatalf("undo is S-100's work and the notice should say so, got %q", last.text)
+	if got := undoPlanPaths(m.undoPlan); len(got) != 1 || got[0] != path {
+		t.Fatalf("the plan should cover the staged file, got %v", got)
 	}
 	after, err := os.ReadFile(path)
 	if err != nil {
