@@ -5,45 +5,6 @@ import (
 	"testing"
 )
 
-func TestActivityRow_Collapsed(t *testing.T) {
-	r := ActivityRow{Kind: ActivityTool, Name: "search", Arg: "advanceExecQueue",
-		Counts: "3 matches", Duration: "0.1s", Detail: []string{"model.go:152"}}
-	view := r.View(80)
-	if strings.Contains(view, "model.go:152") {
-		t.Fatalf("collapsed row must not show detail:\n%s", view)
-	}
-	for _, want := range []string{"⚙", "search", "advanceExecQueue", "3 matches", "0.1s"} {
-		if !strings.Contains(view, want) {
-			t.Fatalf("row should contain %q:\n%s", want, view)
-		}
-	}
-}
-
-func TestActivityRow_ExpandedAndFailed(t *testing.T) {
-	r := ActivityRow{Kind: ActivityCommand, Name: "go vet ./...", Outcome: "exit 1",
-		Failed: true, Detail: []string{"vet: unreachable code"}}
-	view := r.View(80)
-	if !strings.Contains(view, "✗") || !strings.Contains(view, "vet: unreachable code") {
-		t.Fatalf("failed rows auto-expand with the error glyph:\n%s", view)
-	}
-
-	r = ActivityRow{Kind: ActivityEdit, Name: "loop.go", Outcome: "+12 −4",
-		Expanded: true, Detail: []string{"hunk 1", "hunk 2"}, MaxDetail: 1}
-	view = r.View(80)
-	if !strings.Contains(view, "hunk 1") || strings.Contains(view, "hunk 2") {
-		t.Fatalf("expanded detail should respect MaxDetail:\n%s", view)
-	}
-}
-
-func TestActivityRow_RunningTail(t *testing.T) {
-	r := ActivityRow{Kind: ActivityCommand, Name: "go test ./...", Running: true,
-		Outcome: "running…", Tail: "ok  internal/agent  0.31s"}
-	view := r.View(80)
-	if !strings.Contains(view, "▸") || !strings.Contains(view, "ok  internal/agent") {
-		t.Fatalf("running rows show the live tail:\n%s", view)
-	}
-}
-
 func TestCockpit_Segments(t *testing.T) {
 	c := Cockpit{Mode: "accept edits", ModeKind: CockpitPermissive, Round: "round 7/25",
 		CtxPct: 62, Tokens: "↑41.2k ↓9.8k", Spend: "$0.14", Model: "gpt-5.2",

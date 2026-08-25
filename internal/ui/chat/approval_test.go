@@ -136,12 +136,16 @@ func TestGatedTool_Declined(t *testing.T) {
 	}
 	found := false
 	for _, e := range m.transcript {
-		if e.kind == entrySystem && strings.Contains(e.text, "Declined: write main.go") {
+		if e.kind == entryTool && e.toolName == "write_file" && e.deniedBy == decidedByYou {
 			found = true
 		}
 	}
 	if !found {
 		t.Fatal("transcript should note the declined action")
+	}
+	view := stripANSI(m.renderHistory())
+	if !strings.Contains(view, "⊘") || !strings.Contains(view, "denied · you") {
+		t.Fatalf("a decline renders as a ⊘ row naming you as the decider:\n%s", view)
 	}
 }
 

@@ -14,9 +14,16 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/lsp"
+	"github.com/rfizzle/shhh/internal/memory"
+	"github.com/rfizzle/shhh/internal/process"
+	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/web"
 )
 
 // verbosity is the activity feed's default rendering density: low hides
@@ -86,16 +93,45 @@ func (t *commandTail) Line() string {
 // (S-077); the activity row renders it as running.
 const pendingToolResult = "running…"
 
-// activityVerbs maps tool names onto the short action shown in the row.
+// cancelledToolResult is the synthetic result left on a tool call abandoned
+// when the turn was cancelled.
+const cancelledToolResult = "cancelled by user"
+
+// The deciders named on a denied row (§6d): your preference, or a rule.
+const (
+	decidedByYou  = "you"
+	decidedByAuto = "auto"
+)
+
+// activityVerbs is the one table mapping tool names onto the closed verb
+// vocabulary of DESIGN-TUI.md §6c — read, search, glob, lsp, web, edit,
+// write, patch, run, memory, spawn, fan-out, agent. A tool that maps onto
+// none of them is a hole in this table, not a fourteenth verb: it renders as
+// itself, clipped to the verb column, which is the signal that the table is
+// stale.
 var activityVerbs = map[string]string{
-	"read_file":            "read",
-	"list_directory":       "list",
-	"write_file":           "write",
-	"edit_file":            "edit",
-	"web_fetch":            "fetch",
-	"web_search":           "web",
-	"quality_gate":         "gate",
-	subagent.SpawnToolName: "agent",
+	"read_file":                "read",
+	"list_directory":           "read",
+	evidence.ToolName:          "read",
+	"search":                   "search",
+	structural.AstGrepToolName: "search",
+	structural.JaqToolName:     "search",
+	structural.TokeiToolName:   "search",
+	"glob":                     "glob",
+	structural.FdToolName:      "glob",
+	lsp.DefinitionToolName:     "lsp",
+	lsp.ReferencesToolName:     "lsp",
+	web.FetchToolName:          "web",
+	web.SearchToolName:         "web",
+	"edit_file":                "edit",
+	"write_file":               "write",
+	structural.SdToolName:      "patch",
+	tools.ExecCommandName:      "run",
+	process.ToolName:           "run",
+	quality.ToolName:           "run",
+	memory.RememberToolName:    "memory",
+	subagent.SpawnToolName:     "spawn",
+	subagent.ReportToolName:    "agent",
 }
 
 func activityVerb(tool string) string {
@@ -103,6 +139,21 @@ func activityVerb(tool string) string {
 		return v
 	}
 	return tool
+}
+
+// activityKind picks the row's glyph and, with it, whether the row carries
+// the mutation rail (§6b, §14): ⚙ reads, $ commands, ✎ anything that
+// persists, ◇ sub-agents.
+func activityKind(tool string) components.ActivityKind {
+	switch {
+	case tool == subagent.SpawnToolName || tool == subagent.ReportToolName:
+		return components.ActivitySubagent
+	case tool == tools.ExecCommandName || tool == process.ToolName || tool == quality.ToolName:
+		return components.ActivityCommand
+	case tools.IsMutating(tool) || tool == memory.RememberToolName || tool == structural.SdToolName:
+		return components.ActivityEdit
+	}
+	return components.ActivityTool
 }
 
 // activityArgKeys is the priority order for picking a tool call's key argument.
@@ -167,6 +218,15 @@ func formatDuration(d time.Duration) string {
 	return fmt.Sprintf("%ds", int(d.Seconds()))
 }
 
+// activityDuration renders the row's duration field (§6a). Under 0.5s it is
+// blank rather than 0.0s: a column of zeroes down the feed is noise.
+func activityDuration(d time.Duration) string {
+	if d < 500*time.Millisecond {
+		return ""
+	}
+	return formatDuration(d)
+}
+
 // activityRowFor builds the compact row for a tool or command entry (§6).
 // Collapsed rows never show output; focus-mode expansion shows the full
 // stored result (already bounded upstream by S-051/S-064), failed rows and
@@ -175,47 +235,62 @@ func (m Model) activityRowFor(e entry) components.ActivityRow {
 	row := components.ActivityRow{
 		Expanded:  e.expanded || m.verbosity == verbosityHigh,
 		MaxDetail: maxToolResultLines,
+		Duration:  activityDuration(e.duration),
 	}
 	if e.expanded {
 		row.MaxDetail = 0
 	}
-	if e.duration > 0 {
-		row.Duration = formatDuration(e.duration)
-	}
 	result := e.toolResult
 	if e.kind == entryCommand {
 		row.Kind = components.ActivityCommand
-		row.Name = firstLine(e.text)
+		row.Verb = "run"
+		row.Target = firstLine(e.text)
 		if e.exitCode != 0 {
-			row.Failed = true
-			row.Outcome = fmt.Sprintf("exit %d", e.exitCode)
+			row.State = components.ActivityFailed
+			row.Outcome = components.OutcomeExit(e.exitCode)
 		} else {
-			row.Outcome = "ok"
+			row.Outcome = components.OutcomeOK
 		}
 	} else {
+		row.Kind = activityKind(e.toolName)
+		row.Verb = activityVerb(e.toolName)
+		row.Target = activityArg(e.toolName, e.toolArgs)
 		switch {
-		case e.toolName == subagent.SpawnToolName:
-			row.Kind = components.ActivitySubagent
-		case tools.IsMutating(e.toolName):
-			row.Kind = components.ActivityEdit
-		default:
-			row.Kind = components.ActivityTool
-		}
-		row.Name = activityVerb(e.toolName)
-		row.Arg = activityArg(e.toolName, e.toolArgs)
-		switch {
+		case e.deniedBy != "":
+			// A refusal is not a failure: ⊘ and the decider's name say the
+			// call never ran, and the duration field says so too (§6d).
+			row.State = components.ActivityDenied
+			row.ByRule = e.deniedBy != decidedByYou
+			row.Outcome = components.OutcomeBy(components.OutcomeDenied, e.deniedBy)
+			if e.denyRule != "" {
+				row.Outcome += " · " + e.denyRule
+			}
+			if row.ByRule {
+				row.Keys = "/mode why"
+			}
+			if row.Duration == "" {
+				row.Duration = components.NoDuration
+			}
+			result = ""
 		case result == pendingToolResult:
-			row.Running = true
-			row.Outcome = pendingToolResult
+			row.State = components.ActivityRunning
+			row.Outcome = components.OutcomeRunning
+			result = ""
+		case result == cancelledToolResult:
+			// Ctrl+C during a turn: you stopped it, so it reads as your
+			// refusal rather than as a break.
+			row.State = components.ActivityDenied
+			row.Outcome = components.OutcomeBy(components.OutcomeDenied, decidedByYou)
+			row.Duration = components.NoDuration
 			result = ""
 		case strings.HasPrefix(result, "error:"):
-			row.Failed = true
+			row.State = components.ActivityFailed
 			row.Outcome = "error"
 		}
 	}
 	if strings.TrimSpace(result) != "" {
 		row.Detail = strings.Split(strings.TrimRight(result, "\n"), "\n")
-		if !row.Failed && m.verbosity != verbosityLow {
+		if !row.Failed() && m.verbosity != verbosityLow {
 			row.Counts = activityCounts(e.toolName, result)
 		}
 	}
@@ -227,12 +302,13 @@ func (m Model) activityRowFor(e entry) components.ActivityRow {
 func (m Model) runningCommandRow(width int) string {
 	row := components.ActivityRow{
 		Kind:    components.ActivityCommand,
-		Name:    firstLine(m.runningCommand),
-		Running: true,
-		Outcome: "running…",
+		State:   components.ActivityRunning,
+		Verb:    "run",
+		Target:  firstLine(m.runningCommand),
+		Outcome: components.OutcomeRunning,
 	}
 	if !m.runStart.IsZero() {
-		row.Duration = formatDuration(time.Since(m.runStart))
+		row.Duration = activityDuration(time.Since(m.runStart))
 	}
 	if m.runTail != nil {
 		row.Tail = m.runTail.Line()

@@ -390,12 +390,18 @@ func TestMode_PlanRefusesGatedCalls(t *testing.T) {
 	}
 	found := 0
 	for _, e := range m.transcript {
-		if e.kind == entrySystem && strings.HasPrefix(e.text, "Refused (plan mode):") {
+		if e.kind == entryTool && e.deniedBy == decidedByAuto && e.denyRule == "plan mode" {
 			found++
 		}
 	}
 	if found != 2 {
 		t.Fatalf("transcript should note both refusals, got %d", found)
+	}
+	view := stripANSI(m.renderHistory())
+	for _, want := range []string{"⊘", "denied · auto · plan mode", "/mode why"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("a rule's refusal names the rule and offers its key, want %q:\n%s", want, view)
+		}
 	}
 	if m.state != stateStreaming || restream == nil {
 		t.Fatal("the loop should resume so the model sees the refusals")

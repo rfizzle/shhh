@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // activityModel builds a ready model for feed-rendering tests.
@@ -30,10 +31,19 @@ func TestActivityRow_CollapsedNeverShowsOutput(t *testing.T) {
 	if strings.Contains(view, "package main") {
 		t.Fatalf("collapsed rows must not show raw output:\n%s", view)
 	}
-	for _, want := range []string{"⚙", "read", "main.go:10–20", "2 lines", "0.1s"} {
+	for _, want := range []string{"⚙", "read", "main.go:10–20", "2 lines"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("row should contain %q:\n%s", want, view)
 		}
+	}
+	// Under 0.5s the duration field stays blank rather than spending a
+	// column on 0.1s (§6a).
+	if strings.Contains(view, "0.1s") {
+		t.Fatalf("sub-0.5s calls omit their duration:\n%s", view)
+	}
+	e.duration = 700 * time.Millisecond
+	if slow := stripANSI(m.renderEntry(e, 80)); !strings.Contains(slow, "0.7s") {
+		t.Fatalf("a call worth timing keeps its duration:\n%s", slow)
 	}
 	if lines := strings.Split(strings.TrimRight(view, "\n"), "\n"); len(lines) != 1 {
 		t.Fatalf("collapsed rendering should be one row, got %d lines:\n%s", len(lines), view)
@@ -64,6 +74,69 @@ func TestActivityRow_ToolNounsAndKinds(t *testing.T) {
 	}
 	if !strings.Contains(child, "running…") {
 		t.Fatalf("pending child calls render as running:\n%s", child)
+	}
+}
+
+// TestActivityVerbs_ClosedVocabulary pins the §6c table: every tool this
+// session can call maps onto one of the thirteen verbs, and an unmapped name
+// falls through as itself — the signal that the table is stale.
+func TestActivityVerbs_ClosedVocabulary(t *testing.T) {
+	closed := map[string]bool{"read": true, "search": true, "glob": true, "lsp": true,
+		"web": true, "edit": true, "write": true, "patch": true, "run": true,
+		"memory": true, "spawn": true, "fan-out": true, "agent": true}
+	for tool, verb := range activityVerbs {
+		if !closed[verb] {
+			t.Fatalf("%s maps onto %q, which is not one of the thirteen verbs", tool, verb)
+		}
+	}
+	for tool, want := range map[string]string{
+		"list_directory": "read", "ast_grep": "search", "fd": "glob",
+		"references": "lsp", "web_fetch": "web", "web_search": "web",
+		"sd": "patch", "quality_gate": "run", "process": "run",
+		"remember": "memory", "spawn_agent": "spawn", "agent_report": "agent",
+	} {
+		if got := activityVerb(tool); got != want {
+			t.Fatalf("%s should render as %q, got %q", tool, want, got)
+		}
+	}
+	if got := activityVerb("mystery_tool"); got != "mystery_tool" {
+		t.Fatalf("an unmapped tool renders as itself, got %q", got)
+	}
+}
+
+// TestActivityKinds_GlyphPerAct pins which glyph — and so which rows carry
+// the mutation rail (§14) — each tool gets.
+func TestActivityKinds_GlyphPerAct(t *testing.T) {
+	for tool, want := range map[string]components.ActivityKind{
+		"read_file":    components.ActivityTool,
+		"references":   components.ActivityTool,
+		"write_file":   components.ActivityEdit,
+		"sd":           components.ActivityEdit,
+		"remember":     components.ActivityEdit,
+		"process":      components.ActivityCommand,
+		"quality_gate": components.ActivityCommand,
+		"spawn_agent":  components.ActivitySubagent,
+		"agent_report": components.ActivitySubagent,
+	} {
+		if got := activityKind(tool); got != want {
+			t.Fatalf("%s should render as kind %d, got %d", tool, want, got)
+		}
+	}
+}
+
+// TestActivityRow_CancelledReadsAsYourRefusal: a call abandoned by ctrl+c
+// never ran, so it renders ⊘ rather than ✗.
+func TestActivityRow_CancelledReadsAsYourRefusal(t *testing.T) {
+	m := activityModel(t)
+	view := stripANSI(m.renderEntry(entry{kind: entryTool, toolName: "write_file",
+		toolArgs: `{"path":"a.go"}`, toolResult: cancelledToolResult}, 80))
+	for _, want := range []string{"⊘", "denied · you", "—"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("a cancelled call should read %q:\n%s", want, view)
+		}
+	}
+	if strings.Contains(view, cancelledToolResult) {
+		t.Fatalf("the synthetic result is not output to show:\n%s", view)
 	}
 }
 
@@ -308,7 +381,7 @@ func TestTranscriptSpacing_UniformRhythm(t *testing.T) {
 	}
 
 	// The feed — notice, row, notice, row — packs tight with no gaps.
-	feed := []string{"Auto-approved", "◇ agent", "Approved agent-4", "agent_report"}
+	feed := []string{"Auto-approved", "◇ spawn", "Approved agent-4", "◇ agent"}
 	start := -1
 	for i, line := range lines {
 		if strings.Contains(line, feed[0]) {

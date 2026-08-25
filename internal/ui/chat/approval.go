@@ -256,7 +256,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 		m.pendingApproval = nil
 		m.pendingRun = ""
 		m.agent.ResolveApproval(agent.PlanModeResult)
-		m.appendEntry(entry{kind: entrySystem, text: "Refused (" + reason + "): " + req.summary})
+		m.appendEntry(deniedEntry(req, decidedByAuto, reason, 0))
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
@@ -323,7 +323,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		m.pendingApproval = nil
 		m.pendingRun = ""
 		m.agent.ResolveApproval("error: auto mode denied this tool call: " + reason)
-		m.appendEntry(entry{kind: entrySystem, text: "Refused (classifier, " + elapsed + "): " + req.summary + " — " + reason + " (/mode why)"})
+		m.appendEntry(deniedEntry(req, decidedByAuto, reason, v.Elapsed))
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
@@ -358,10 +358,26 @@ func (m Model) declineApproval() (tea.Model, tea.Cmd) {
 		content = "error: the user declined to save this memory; do not re-propose it this session"
 	}
 	m.agent.ResolveApproval(content)
-	m.appendEntry(entry{kind: entrySystem, text: "Declined: " + req.summary})
+	m.appendEntry(deniedEntry(req, decidedByYou, "", 0))
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()
 	return m.advanceApprovalQueue()
+}
+
+// deniedEntry is the transcript row for a refused call (S-089,
+// DESIGN-TUI.md §6d): the same activity row every other call gets, with ⊘,
+// the decider's name and a duration field saying it never ran. A denial is a
+// moment that mattered, so the row keeps its mutation rail (§14) — which is
+// why it is a row and not a system notice.
+func deniedEntry(req *approvalRequest, decider, rule string, elapsed time.Duration) entry {
+	return entry{
+		kind:     entryTool,
+		toolName: req.call.Name,
+		toolArgs: req.call.Arguments,
+		deniedBy: decider,
+		denyRule: rule,
+		duration: elapsed,
+	}
 }
 
 // executeApprovedTool runs an approved non-exec tool call through the tool

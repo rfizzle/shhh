@@ -148,6 +148,12 @@ type entry struct {
 	// diff is the entryDiff viewer (S-074); a pointer so focus-mode
 	// expansion state survives re-renders.
 	diff *components.DiffView
+	// deniedBy names who refused the call — decidedByYou for a decline at the
+	// card, decidedByAuto for a rule — and renders the row as ⊘ rather than ✗
+	// (S-089, DESIGN-TUI.md §6d). Empty when nothing was refused.
+	deniedBy string
+	// denyRule names the rule behind an auto denial, e.g. "plan mode".
+	denyRule string
 }
 
 type Model struct {
@@ -1341,7 +1347,7 @@ func (m *Model) cancelStreaming() {
 	// Ctrl+C cancels the whole child tree with the turn (S-068).
 	m.cancelSubagents()
 	for _, tc := range m.agent.CancelTurn() {
-		m.appendEntry(entry{kind: entryTool, toolName: tc.Name, toolArgs: tc.Arguments, toolResult: "cancelled by user"})
+		m.appendEntry(entry{kind: entryTool, toolName: tc.Name, toolArgs: tc.Arguments, toolResult: cancelledToolResult})
 	}
 	m.pendingApproval = nil
 	m.memoryAsk = nil
