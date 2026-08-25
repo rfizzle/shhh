@@ -66,6 +66,10 @@ const (
 	// stateModelList: bare /model is querying the provider's /v1/models
 	// endpoint before opening the picker (S-083); esc cancels back to input.
 	stateModelList
+	// stateReview: review mode (S-099, DESIGN-TUI.md §16a) — the file list
+	// and hunk pane of what a turn changed, with staging per hunk. A
+	// takeover: full width, the rail hidden, esc returns.
+	stateReview
 )
 
 const inputHeight = 3
@@ -310,6 +314,12 @@ type Model struct {
 	// screen, diffReturn where esc goes back to.
 	fullDiff   *components.DiffView
 	diffReturn state
+	// Review mode (S-099): review is the surface while it has the screen,
+	// reviewTurnN the turn it is reviewing (0 for a review of something
+	// else), and reviewReturn where esc goes back to.
+	review       *components.ReviewView
+	reviewTurnN  int64
+	reviewReturn state
 	// Per-turn changeset store (S-097): changes records every applied edit
 	// with the content on both sides, keyed by turn, and is what /diff
 	// renders; tracker answers whether git knew about a file when it was
@@ -566,6 +576,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.state == stateModelList {
 			return m.updateModelList(msg)
+		}
+		if m.state == stateReview {
+			return m.updateReview(msg)
 		}
 		if m.state == stateFocus {
 			return m.updateFocus(msg)
@@ -1006,6 +1019,10 @@ func (m Model) View() string {
 		// The full-screen diff takes over the viewport (S-074, §3c).
 		m.fullDiff.Height = m.viewportHeight()
 		body = m.fullDiff.View(paneWidth)
+	case m.state == stateReview && m.review != nil:
+		// Review mode takes over the whole surface (S-099, §16a).
+		m.review.Height = m.viewportHeight()
+		body = m.review.View(paneWidth)
 	case m.attachedTo != "":
 		// The attached child's session fills the surface; its liveness shows
 		// in the child-scoped status bar, not a parent spinner.
@@ -1076,6 +1093,8 @@ func (m Model) View() string {
 			inputView = m.renderFocusHint()
 		case stateDiffFull:
 			inputView = m.renderDiffFullHint()
+		case stateReview:
+			inputView = m.renderReviewHint()
 		}
 		// The agent manager list takes the bottom panel while open (S-077).
 		if m.agentList != nil {
@@ -2017,6 +2036,9 @@ func helpText() string {
   /plan save [name]  Save the last plan/response to .shhh/plans/
   /diff          Show what this session changed, full screen — read from the
                  session's own changeset, so it works outside a git repository
+  /review [turn] Review what a turn changed: file list, hunks, staging per
+                 hunk (bare reviews the last turn that changed anything).
+                 Also [v] on a turn's changeset row. Nothing is applied.
   /compact       Summarize the conversation and continue from the summary
   /rewind [n]    Rewind to before a user turn (bare /rewind picks interactively);
                  the abandoned tail is kept as a branch. Conversation only —

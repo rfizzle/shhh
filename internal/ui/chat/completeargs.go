@@ -262,6 +262,21 @@ func agentArgs(m *Model) []argOption {
 	return out
 }
 
+// reviewTurnArgs offers the turns the changeset store still holds, latest
+// first, described by what each of them changed (S-099).
+func reviewTurnArgs(m *Model) []argOption {
+	turns := m.changes.Turns()
+	out := make([]argOption, 0, len(turns))
+	for i := len(turns) - 1; i >= 0; i-- {
+		t := turns[i]
+		out = append(out, argOption{
+			value: strconv.FormatInt(t.N, 10),
+			desc:  fmt.Sprintf("%s · +%d −%d", plural(t.Files(), "file"), t.Added, t.Removed),
+		})
+	}
+	return out
+}
+
 // checkpointArgs offers the rewind turn numbers, latest first.
 func checkpointArgs(m *Model) []argOption {
 	out := make([]argOption, 0, len(m.checkpoints))

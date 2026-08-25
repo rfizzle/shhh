@@ -252,6 +252,51 @@ func TestGolden_DiffView(t *testing.T) {
 	})
 }
 
+// TestGolden_ReviewMode captures the review surface (§16a, S-099): the two
+// panes at the widths that reach them, the stacked layout below 60 columns,
+// and the paired hunks the wide widths switch to automatically.
+func TestGolden_ReviewMode(t *testing.T) {
+	// 56 is the 60-column breakpoint less the surface's horizontal padding —
+	// what a minimal terminal actually hands the component, and the only one
+	// of these widths that reaches the stacked layout.
+	reviewWidths := append([]int{56}, goldenWidths...)
+	captureGolden(t, "review-mode", "review mode", reviewWidths, func(width int) []golden.Panel {
+		view := func(mut func(*ReviewView)) string {
+			v := &ReviewView{
+				Title: "turn 7",
+				Files: []ReviewFile{
+					{Path: "internal/agent/loop.go", Hunks: goldenHunks(), Staged: []bool{true}},
+					{Path: "internal/ui/chat/model.go", Hunks: goldenHunks(), Staged: []bool{false}},
+					{Path: "internal/agent/errors.go", Hunks: goldenHunks(), Staged: []bool{false}, Agent: "writer-1"},
+				},
+				Verdict: &ReviewVerdict{
+					Failed: true, Label: "go test ./internal/agent/... · exit 1",
+					Detail: []string{"--- FAIL: TestRoundLimit (0.03s)", "loop_test.go:142"},
+				},
+				Shield:       "nothing is committed",
+				ShieldDetail: "undo restores the 3 files this turn wrote",
+				ApplyVerb:    "undo",
+				Height:       18,
+			}
+			if mut != nil {
+				mut(v)
+			}
+			return v.View(width)
+		}
+		return []golden.Panel{
+			{Label: "staging · one of three files staged", View: view(nil)},
+			{Label: "staging · everything staged, second file focused", View: view(func(v *ReviewView) {
+				v.Update(key("A"))
+				v.Update(key("j"))
+			})},
+			{Label: "layout · side-by-side forced", View: view(func(v *ReviewView) { v.SideBySide = true })},
+			{Label: "read-only (a cumulative diff has nothing to stage)", View: view(func(v *ReviewView) {
+				v.ReadOnly = true
+			})},
+		}
+	})
+}
+
 // TestGolden_AgentList captures the sub-agent manager (§9a) with every lane
 // state present, and with the focus on the child that is waiting on an
 // answer.

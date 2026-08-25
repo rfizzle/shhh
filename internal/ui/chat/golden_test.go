@@ -152,14 +152,14 @@ func TestGolden_PromptFrame(t *testing.T) {
 	})
 }
 
-// TestGolden_SurfacesNotYetBuilt keeps the two surfaces S-096 asks for that
-// nothing renders yet from being quietly forgotten. Review mode is S-099 and
-// the fan-out block is S-110; neither has a renderer to capture, so this
-// skips with the reason rather than pretending the sheet is complete. Delete
-// a line here when its story lands and the capture goes in beside the rest.
+// TestGolden_SurfacesNotYetBuilt keeps the surfaces S-096 asks for that
+// nothing renders yet from being quietly forgotten. Review mode landed with
+// S-099 and is captured beside the component catalog (review-mode.*); the
+// fan-out block is S-110 and still has no renderer, so this skips with the
+// reason rather than pretending the sheet is complete. Delete a line here
+// when its story lands and the capture goes in beside the rest.
 func TestGolden_SurfacesNotYetBuilt(t *testing.T) {
 	for _, pending := range []string{
-		"review mode — S-099, no renderer yet",
 		"fan-out block — S-110, no renderer yet",
 	} {
 		t.Run(pending, func(t *testing.T) { t.Skip("no surface to capture yet") })

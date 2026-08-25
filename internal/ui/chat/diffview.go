@@ -38,25 +38,33 @@ func (m Model) systemNotice(text string) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// openSessionDiff shows the cumulative session diff full screen (/diff). It
-// reads the session's own changeset (S-097) rather than shelling out to git,
-// so it says the same thing in a directory that was never a repository — and
-// it says what this session changed, not what the working tree happens to
-// hold.
+// openSessionDiff shows what the session changed, in review mode (S-099).
+// It reads the session's own changeset (S-097) rather than shelling out to
+// git, so it says the same thing in a directory that was never a repository
+// — and it says what this session changed, not what the working tree happens
+// to hold. There is nothing to stage in a cumulative diff, so the surface
+// opens read-only: the same file list and hunk pane, without the boxes.
 func (m Model) openSessionDiff() (tea.Model, tea.Cmd) {
 	files := m.changes.Session()
 	if len(files) == 0 {
 		return m.systemNotice(sessionDiffEmptyNotice(m.changes))
 	}
-	label := fmt.Sprintf("session diff · %d file(s)", len(files))
-	if dropped := m.changes.Evicted(); len(dropped) > 0 {
-		label += fmt.Sprintf(" · %d earlier turn(s) dropped", len(dropped))
+	review := &components.ReviewView{
+		Title:    "session diff",
+		ReadOnly: true,
+		Shield:   "nothing is committed",
 	}
-	return m.openDiffFull(&components.DiffView{
-		Path:      label,
-		Files:     files,
-		SyntaxFor: diffSyntax,
-	}, stateInput)
+	// Eviction is a gap in the record, so it goes where the header keeps it
+	// rather than into the title, which is what a narrow list clips first.
+	if dropped := m.changes.Evicted(); len(dropped) > 0 {
+		review.Note = fmt.Sprintf("%d turn(s) dropped", len(dropped))
+	}
+	for _, f := range files {
+		review.Files = append(review.Files, components.ReviewFile{
+			Path: f.Path, Hunks: f.Hunks, Syntax: diffSyntax(f.Path),
+		})
+	}
+	return m.showReview(review, 0)
 }
 
 // sessionDiffEmptyNotice distinguishes a session that changed nothing from

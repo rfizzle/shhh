@@ -102,11 +102,13 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			if msg.String() == reviewKey {
-				return m.reviewTurn(e.turn)
+				// Review mode is a takeover opened from the row (S-099);
+				// esc comes back here, to the row that offered it.
+				return m.openReview(e.turn)
 			}
 			// The notice lands in the transcript behind focus mode, which
 			// keeps the screen: the cursor stays on the row it was on.
-			updated, cmd := m.undoTurn(e.turn)
+			updated, cmd := m.undoTurn(e.turn, nil)
 			next := updated.(Model)
 			next.refreshFocusView()
 			return next, cmd

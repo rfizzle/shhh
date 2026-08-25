@@ -59,7 +59,7 @@ func (m Model) inspectorHidden() bool {
 		return true
 	}
 	switch m.state {
-	case stateConfirmRun, statePlanApprove, stateRewindPick, statePick, stateDiffFull, stateModelList:
+	case stateConfirmRun, statePlanApprove, stateRewindPick, statePick, stateDiffFull, stateReview, stateModelList:
 		return true
 	}
 	return false

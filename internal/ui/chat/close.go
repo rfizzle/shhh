@@ -16,7 +16,6 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/changeset"
-	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -208,41 +207,27 @@ func turnChecksRow(es []entry) *components.TurnChecks {
 	}
 }
 
-// reviewTurn opens what a turn changed, full screen. It is the diff renderer
-// the transcript rows and /diff already use (S-074); review mode's staging
-// surface replaces it in S-099.
-func (m Model) reviewTurn(n int64) (tea.Model, tea.Cmd) {
-	t, ok := m.changes.Turn(n)
-	if !ok {
-		if m.changes.WasEvicted(n) {
-			return m.systemNotice(fmt.Sprintf(
-				"Turn %d's records were dropped to stay inside the changeset store's size limit; there is nothing left to review.", n))
-		}
-		return m.systemNotice(fmt.Sprintf("Turn %d changed no files.", n))
-	}
-	files := make([]diff.File, 0, len(t.Records))
-	for _, r := range t.Records {
-		files = append(files, diff.File{Path: r.Path, Hunks: r.Hunks})
-	}
-	return m.openDiffFull(&components.DiffView{
-		Path:      fmt.Sprintf("turn %d · %s · +%d −%d", n, plural(t.Files(), "file"), t.Added, t.Removed),
-		Files:     files,
-		SyntaxFor: diffSyntax,
-	}, stateFocus)
-}
-
 // undoTurn is the offer S-100 fills in. Saying so is better than a key that
 // silently does nothing: the records are held, so the turn stays undoable.
-func (m Model) undoTurn(n int64) (tea.Model, tea.Cmd) {
+// files names what review staged, when the offer came from there — undo is a
+// selection before it is an action, and the selection is already meaningful.
+func (m Model) undoTurn(n int64, files []string) (tea.Model, tea.Cmd) {
 	if m.changes.WasEvicted(n) {
 		return m.systemNotice(fmt.Sprintf(
 			"Turn %d's records were dropped to stay inside the changeset store's size limit; it can no longer be undone.", n))
 	}
-	if _, ok := m.changes.Turn(n); !ok {
+	t, ok := m.changes.Turn(n)
+	if !ok {
 		return m.systemNotice(fmt.Sprintf("Turn %d changed no files; there is nothing to undo.", n))
 	}
+	if len(files) == 0 {
+		for _, r := range t.Records {
+			files = append(files, r.Path)
+		}
+	}
 	return m.systemNotice(fmt.Sprintf(
-		"Undo is not wired up yet. Turn %d's changes are still recorded on both sides, so nothing is lost — [v] shows them.", n))
+		"Undo is not wired up yet. Turn %d's changes are still recorded on both sides, so nothing is lost — [v] shows them. It would restore %s: %s.",
+		n, plural(len(files), "file"), strings.Join(files, ", ")))
 }
 
 // plural is the chat-side counterpart of the components helper, for the

@@ -137,8 +137,8 @@ func TestSurface_TurnKeepsRunningUnderneath(t *testing.T) {
 	}
 
 	m = sendText(t, m, "/diff")
-	if m.state != stateDiffFull {
-		t.Fatalf("/diff should open full screen mid-turn, got state %d", m.state)
+	if m.state != stateReview {
+		t.Fatalf("/diff should open the session's changes mid-turn, got state %d", m.state)
 	}
 	if m.turnState() != stateStreaming {
 		t.Fatalf("the tool round should still be in flight, got turn state %d", m.turnState())
@@ -146,7 +146,7 @@ func TestSurface_TurnKeepsRunningUnderneath(t *testing.T) {
 
 	updated, _ = m.Update(cmd())
 	m = updated.(Model)
-	if m.state != stateDiffFull {
+	if m.state != stateReview {
 		t.Fatal("a result arriving mid-surface must not close the surface")
 	}
 	var sawTool bool

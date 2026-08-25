@@ -263,13 +263,15 @@ func TestTurnClose_ReachableFromFocusMode(t *testing.T) {
 		t.Fatalf("the hint should offer what the row offers, got %q", ansi.Strip(m.renderFocusHint()))
 	}
 
+	// [v] opens review mode over the turn's changeset (S-099); the surface
+	// names the turn it is reviewing.
 	updated, _ = m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(reviewKey)})
 	review := updated.(Model)
-	if review.state != stateDiffFull || review.fullDiff == nil {
+	if review.state != stateReview || review.review == nil {
 		t.Fatalf("[v] should open what the turn changed, got state %v", review.state)
 	}
-	if !strings.Contains(review.fullDiff.Path, "turn 1") {
-		t.Fatalf("the viewer should name the turn it is reviewing, got %q", review.fullDiff.Path)
+	if review.review.Title != "turn 1" {
+		t.Fatalf("the surface should name the turn it is reviewing, got %q", review.review.Title)
 	}
 
 	updated, _ = m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(undoKey)})

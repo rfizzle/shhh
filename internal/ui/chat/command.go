@@ -134,6 +134,11 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		// The cumulative session diff, full screen (S-074).
 		return m.openSessionDiff()
 
+	case name == "/review":
+		// Review mode over a turn's changeset (S-099, §16a); bare takes the
+		// most recent turn that changed anything.
+		return m.reviewCommand(parts)
+
 	case text == "/model" && m.canPickModel():
 		// Bare /model opens the model picker (S-078); the named form and
 		// sessions with nothing to pick go through handleSlashCommand. A

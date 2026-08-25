@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -174,7 +175,8 @@ func TestApprovalFullDiff_RoundTrips(t *testing.T) {
 
 func TestSessionDiff_ReadsTheChangesetWithoutGit(t *testing.T) {
 	// No git wiring, no tracker: /diff is the session's own record, so it
-	// works in a directory that was never a repository (S-097).
+	// works in a directory that was never a repository (S-097). It lands on
+	// the review surface with nothing to stage (S-099).
 	m := gatedModel(t, nil, nil)
 	m.changes.Add(1, changeset.Record{
 		Path: "a.go", Before: "old\n", After: "new\n",
@@ -184,10 +186,13 @@ func TestSessionDiff_ReadsTheChangesetWithoutGit(t *testing.T) {
 	m.input.SetValue("/diff")
 	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m = updated.(Model)
-	if m.state != stateDiffFull || m.fullDiff == nil {
-		t.Fatalf("/diff should open the session diff full screen, got state %d", m.state)
+	if m.state != stateReview || m.review == nil {
+		t.Fatalf("/diff should open the session diff in review mode, got state %d", m.state)
 	}
-	view := m.View()
+	if !m.review.ReadOnly {
+		t.Fatal("a cumulative diff has nothing to stage, so review opens read-only")
+	}
+	view := ansi.Strip(m.View())
 	for _, want := range []string{"session diff", "a.go", "- 1  old", "+ 1  new"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("session diff view should contain %q:\n%s", want, view)
@@ -196,7 +201,7 @@ func TestSessionDiff_ReadsTheChangesetWithoutGit(t *testing.T) {
 
 	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
 	m = updated.(Model)
-	if m.state != stateInput || m.fullDiff != nil {
+	if m.state != stateInput || m.review != nil {
 		t.Fatalf("esc should close the session diff, got state %d", m.state)
 	}
 }
@@ -209,10 +214,10 @@ func TestSessionDiff_SpansEveryTurn(t *testing.T) {
 	m.input.SetValue("/diff")
 	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m = updated.(Model)
-	if m.fullDiff == nil {
+	if m.review == nil {
 		t.Fatal("/diff should open with the cumulative session change")
 	}
-	view := m.View()
+	view := ansi.Strip(m.View())
 	for _, want := range []string{"two", "three"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the session diff should span both turns, missing %q:\n%s", want, view)
@@ -254,10 +259,10 @@ func TestSessionDiff_EvictedSaysSo(t *testing.T) {
 	m.input.SetValue("/diff")
 	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m = updated.(Model)
-	if m.fullDiff == nil {
+	if m.review == nil {
 		t.Fatal("the surviving turn should still render")
 	}
-	if !strings.Contains(m.View(), "dropped") {
-		t.Fatalf("the session diff should say earlier turns were dropped:\n%s", m.View())
+	if !strings.Contains(ansi.Strip(m.View()), "dropped") {
+		t.Fatalf("the session diff should say earlier turns were dropped:\n%s", ansi.Strip(m.View()))
 	}
 }
