@@ -2,9 +2,7 @@ package provider
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"net/http"
 	"os"
 
 	openai "github.com/sashabaranov/go-openai"
@@ -36,7 +34,7 @@ func NewOpenAI(opts ResolveOpts) (*OpenAI, error) {
 	return &OpenAI{
 		client:   openai.NewClientWithConfig(cfg),
 		model:    model,
-		classify: newClassifyError("SHHH_API_KEY or OPENAI_API_KEY"),
+		classify: newClassifier("openai", "SHHH_API_KEY or OPENAI_API_KEY", key),
 	}, nil
 }
 
@@ -44,7 +42,7 @@ func NewOpenAIWithConfig(client *openai.Client, model string) *OpenAI {
 	if model == "" {
 		model = defaultOpenAIModel
 	}
-	return &OpenAI{client: client, model: model, classify: newClassifyError("OPENAI_API_KEY")}
+	return &OpenAI{client: client, model: model, classify: newClassifier("openai", "OPENAI_API_KEY", "")}
 }
 
 func (o *OpenAI) Name() string { return "openai" }
@@ -133,35 +131,6 @@ func toOpenAIMessages(msgs []Message) []openai.ChatCompletionMessage {
 		out[i] = msg
 	}
 	return out
-}
-
-var (
-	ErrUnauthorized = errors.New("invalid API key")
-	ErrRateLimited  = errors.New("rate limited — try again shortly")
-)
-
-func newClassifyError(keyHint string) func(error) error {
-	return func(err error) error {
-		var apiErr *openai.APIError
-		if errors.As(err, &apiErr) {
-			switch apiErr.HTTPStatusCode {
-			case http.StatusUnauthorized:
-				return fmt.Errorf("%w — check %s: %s", ErrUnauthorized, keyHint, apiErr.Message)
-			case http.StatusTooManyRequests:
-				return fmt.Errorf("%w: %s", ErrRateLimited, apiErr.Message)
-			}
-		}
-		var reqErr *openai.RequestError
-		if errors.As(err, &reqErr) {
-			switch reqErr.HTTPStatusCode {
-			case http.StatusUnauthorized:
-				return fmt.Errorf("%w — check %s", ErrUnauthorized, keyHint)
-			case http.StatusTooManyRequests:
-				return fmt.Errorf("%w", ErrRateLimited)
-			}
-		}
-		return err
-	}
 }
 
 func init() {

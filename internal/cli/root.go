@@ -117,16 +117,17 @@ func NewRootCmd() *cobra.Command {
 
 			resolved := resolve.Resolve(flags)
 
-			p, err := provider.Resolve(resolved.Provider, provider.ResolveOpts{
-				APIKey:        flags.FlagAPIKey,
-				Model:         resolved.Model,
-				ConfigAPIKey:  cfg.ProviderAPIKey(),
-				ConfigBaseURL: cfg.ProviderBaseURL(),
-				ConfigName:    cfg.ProviderDisplayName(),
+			// A session with no provider gets the card that says where shhh
+			// looked, not the dialect's own one-line complaint (S-106, §17b).
+			p, req, err := resolveProvider(cmd.Context(), cfg, providerRequest{
+				Provider: resolved.Provider,
+				Model:    resolved.Model,
+				APIKey:   flags.FlagAPIKey,
 			})
 			if err != nil {
 				return err
 			}
+			resolved.Provider, resolved.Model = req.Provider, req.Model
 
 			promptExtra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra, project.FindContext())
 
@@ -140,7 +141,13 @@ func NewRootCmd() *cobra.Command {
 					Stderr:            os.Stderr,
 				})
 				if err != nil {
-					fmt.Fprintln(os.Stderr, "error:", err)
+					// Piped output has no chrome by contract, so the failure
+					// arrives as one classified line rather than as a row.
+					if line, ok := ui.FailureLine(err); ok {
+						fmt.Fprintln(os.Stderr, line)
+					} else {
+						fmt.Fprintln(os.Stderr, "error:", err)
+					}
 					os.Exit(1)
 				}
 				return nil
@@ -166,7 +173,7 @@ func NewRootCmd() *cobra.Command {
 
 			events, err := p.StreamCompletion(ctx, messages, compOpts)
 			if err != nil {
-				return err
+				return reportFailure(err, resolved.Model)
 			}
 
 			var metrics *storage.StreamMetrics
@@ -242,7 +249,10 @@ func NewRootCmd() *cobra.Command {
 			}
 
 			if result.Err != nil {
-				return result.Err
+				// Classified, never raw (S-106): the one-shot renders the
+				// same §17a row the session does, with the way out stated as
+				// a command rather than as a key nothing is listening for.
+				return reportFailure(result.Err, resolved.Model)
 			}
 
 			if cfg.SafetyWarningsEnabled() {

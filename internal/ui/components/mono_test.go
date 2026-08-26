@@ -162,6 +162,16 @@ func monoFixtures() []monoSurface {
 		return c.View(w)
 	}
 
+	// The recovery row holds its verb, subject and duration constant, so that
+	// only the class and its state are left to tell the failures apart
+	// (S-106, §17a). ⚠ and ✗ are a hue apart in colour; in mono they have to
+	// be the glyph and the words.
+	recovered := func(mut func(*RecoveryRow)) string {
+		r := RecoveryRow{Verb: VerbModel, Subject: "gpt-4o", Duration: "0.3s"}
+		mut(&r)
+		return r.View(w)
+	}
+
 	start := func(mut func(*StartScreen)) string {
 		s := StartScreen{
 			Facts: []StartFact{{Text: "~/src/shhh", Lead: true}, {Text: "git main"}},
@@ -318,6 +328,29 @@ func monoFixtures() []monoSurface {
 			{"dirty tree", start(func(s *StartScreen) {
 				s.Facts = append(s.Facts, StartFact{Text: "3 files changed", Tone: ToneOpen})
 			})},
+		}},
+		{"recovery row class", []monoState{
+			{"unauthorized", recovered(func(r *RecoveryRow) {
+				r.Qualifier, r.Outcome = "401 unauthorized", "key ···4f9c rejected"
+			})},
+			{"rate limited", recovered(func(r *RecoveryRow) {
+				r.State, r.Qualifier, r.Outcome = RecoveryStalled, "429 rate limited", "retry in 38s"
+			})},
+			{"overloaded", recovered(func(r *RecoveryRow) {
+				r.State, r.Qualifier, r.Outcome = RecoveryStalled, "529 overloaded", "the provider's side"
+			})},
+			{"cancelled", recovered(func(r *RecoveryRow) {
+				r.State, r.Qualifier, r.Outcome = RecoveryStopped, "cancelled", "stopped"
+			})},
+			{"unclassified", recovered(func(r *RecoveryRow) {
+				r.Qualifier, r.Outcome = "400 unclassified", "message below"
+			})},
+		}},
+		{"provider card place", []monoState{
+			{"nothing found", ProviderCard{Places: []ProviderPlace{
+				{Label: "env", Detail: "OPENAI_API_KEY — unset"}}}.View(w)},
+			{"something found", ProviderCard{Places: []ProviderPlace{
+				{Label: "env", Emphasis: "OPENAI_API_KEY ···4f9c", Found: true}}}.View(w)},
 		}},
 		{"undo drift", []monoState{
 			{"clean", undo(nil)},

@@ -3,6 +3,7 @@ package provider
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -189,7 +190,7 @@ func TestOpenAIResponses_ClassifiesHTTPErrors(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected an error")
 	}
-	if !strings.Contains(err.Error(), "invalid API key") {
+	if !errors.Is(err, ErrAuth) {
 		t.Fatalf("a 401 should read as an auth failure, got %v", err)
 	}
 	if !strings.Contains(err.Error(), "Incorrect API key provided") {

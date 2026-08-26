@@ -34,7 +34,7 @@ func NewOpenAICompat(opts ResolveOpts) (*OpenAICompat, error) {
 		model:    model,
 		baseURL:  baseURL,
 		name:     name,
-		classify: newClassifyError("SHHH_API_KEY"),
+		classify: newClassifier(name, "SHHH_API_KEY", key),
 	}, nil
 }
 
@@ -51,7 +51,7 @@ func NewOpenAICompatWith(client *openai.Client, model, baseURL string) *OpenAICo
 	if model == "" {
 		model = defaultCompatModel
 	}
-	return &OpenAICompat{client: client, model: model, baseURL: baseURL, name: "openai-compatible", classify: newClassifyError("SHHH_API_KEY")}
+	return &OpenAICompat{client: client, model: model, baseURL: baseURL, name: "openai-compatible", classify: newClassifier("openai-compatible", "SHHH_API_KEY", "")}
 }
 
 // NewOpenAICompatNamed builds a compat provider over an already-configured
@@ -60,7 +60,11 @@ func NewOpenAICompatWith(client *openai.Client, model, baseURL string) *OpenAICo
 func NewOpenAICompatNamed(client *openai.Client, model, baseURL, name string) *OpenAICompat {
 	p := NewOpenAICompatWith(client, model, baseURL)
 	if name != "" {
+		// The classifier is rebound too: a failure behind a gateway has to
+		// say which gateway (S-106), and the profile's name is the only
+		// place that is known.
 		p.name = name
+		p.classify = newClassifier(name, "SHHH_API_KEY", "")
 	}
 	return p
 }

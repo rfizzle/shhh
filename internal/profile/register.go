@@ -80,11 +80,11 @@ func New(p Profile, opts provider.ResolveOpts) (provider.Provider, error) {
 		inner := provider.NewOpenAIResponsesWith(httpClient, key, baseURL, opts.Model, p.Name)
 		return &responsesProfile{OpenAIResponses: inner, profile: p, client: httpClient}, nil
 	case APIAnthropicMessage:
-		inner := provider.NewAnthropicWith(anthropic.NewClient(
+		inner := provider.NewAnthropicNamed(anthropic.NewClient(
 			option.WithAPIKey(key),
 			option.WithBaseURL(baseURL),
 			option.WithHTTPClient(httpClient),
-		), opts.Model)
+		), opts.Model, p.Name)
 		return &anthropicProfile{Anthropic: inner, name: p.Name}, nil
 	default:
 		cfg := openai.DefaultConfig(key)

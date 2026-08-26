@@ -2,7 +2,6 @@ package provider
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -16,8 +15,9 @@ const (
 )
 
 type OpenRouter struct {
-	client *openai.Client
-	model  string
+	client   *openai.Client
+	model    string
+	classify func(error) error
 }
 
 func NewOpenRouter(opts ResolveOpts) (*OpenRouter, error) {
@@ -36,8 +36,9 @@ func NewOpenRouter(opts ResolveOpts) (*OpenRouter, error) {
 	}
 
 	return &OpenRouter{
-		client: openai.NewClientWithConfig(cfg),
-		model:  model,
+		client:   openai.NewClientWithConfig(cfg),
+		model:    model,
+		classify: newClassifier("openrouter", "SHHH_API_KEY or OPENROUTER_API_KEY", key),
 	}, nil
 }
 
@@ -55,7 +56,11 @@ func NewOpenRouterWith(client *openai.Client, model string) *OpenRouter {
 	if model == "" {
 		model = defaultOpenRouterModel
 	}
-	return &OpenRouter{client: client, model: model}
+	return &OpenRouter{
+		client:   client,
+		model:    model,
+		classify: newClassifier("openrouter", "SHHH_API_KEY or OPENROUTER_API_KEY", ""),
+	}
 }
 
 func (o *OpenRouter) Name() string { return "openrouter" }
@@ -95,37 +100,10 @@ func (o *OpenRouter) StreamCompletion(ctx context.Context, messages []Message, o
 
 	stream, err := o.client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
-		return nil, classifyOpenRouterError(err)
+		return nil, o.classify(err)
 	}
 
-	return streamOpenAIToolCalls(stream, classifyOpenRouterError), nil
-}
-
-var (
-	ErrOpenRouterUnauthorized = fmt.Errorf("invalid API key — check SHHH_API_KEY or OPENROUTER_API_KEY")
-	ErrOpenRouterRateLimited  = fmt.Errorf("rate limited — try again shortly")
-)
-
-func classifyOpenRouterError(err error) error {
-	var apiErr *openai.APIError
-	if errors.As(err, &apiErr) {
-		switch apiErr.HTTPStatusCode {
-		case http.StatusUnauthorized:
-			return fmt.Errorf("%w: %s", ErrOpenRouterUnauthorized, apiErr.Message)
-		case http.StatusTooManyRequests:
-			return fmt.Errorf("%w: %s", ErrOpenRouterRateLimited, apiErr.Message)
-		}
-	}
-	var reqErr *openai.RequestError
-	if errors.As(err, &reqErr) {
-		switch reqErr.HTTPStatusCode {
-		case http.StatusUnauthorized:
-			return fmt.Errorf("%w", ErrOpenRouterUnauthorized)
-		case http.StatusTooManyRequests:
-			return fmt.Errorf("%w", ErrOpenRouterRateLimited)
-		}
-	}
-	return err
+	return streamOpenAIToolCalls(stream, o.classify), nil
 }
 
 func init() {

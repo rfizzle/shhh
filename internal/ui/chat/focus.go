@@ -21,9 +21,10 @@ func expandable(e entry) bool {
 
 // selectable reports whether focus mode can put its cursor on an entry. It is
 // expandable plus the rows that offer keys without expanding: a turn's close
-// block is passive, but [v] and [u] are handled on it (S-098, §16).
+// block is passive, but [v] and [u] are handled on it (S-098, §16), and so are
+// a provider failure's own keys (S-106, §17a).
 func selectable(e entry) bool {
-	return expandable(e) || e.kind == entryTurnClose
+	return expandable(e) || e.kind == entryTurnClose || e.kind == entryFailure
 }
 
 // expandableIndices lists the transcript indices focus mode can select,
@@ -65,7 +66,10 @@ func (m Model) expandableIndices() []int {
 	return idxs
 }
 
-// enterFocusMode starts focus mode on the most recent expandable row.
+// enterFocusMode starts focus mode on the most recent expandable row — or on
+// the failure that ended the turn, when there is one. The close rows that
+// follow a broken turn are chrome about it (S-098); the row that broke it is
+// the one holding the way out (S-106), so that is where the cursor belongs.
 func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 	idxs := m.expandableIndices()
 	if len(idxs) == 0 {
@@ -81,6 +85,16 @@ func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 	}
 	m.enterSurface(stateFocus)
 	m.focusIdx = idxs[len(idxs)-1]
+	es := *m.entries()
+	for i := len(idxs) - 1; i >= 0; i-- {
+		if es[idxs[i]].kind == entryTurnClose {
+			continue
+		}
+		if es[idxs[i]].kind == entryFailure {
+			m.focusIdx = idxs[i]
+		}
+		break
+	}
 	m.refreshFocusView()
 	return m, nil
 }
@@ -116,6 +130,14 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			// bottom panel and focus mode keeps the screen, so the cursor
 			// stays on the row that offered it and esc comes back here.
 			return m.undoTurn(e.turn, nil)
+		}
+		return m, nil
+	case failRetryKey, failCompactKey, failKeyKey, failProviderKey:
+		// A provider failure's own offers (S-106, §17a). Like the changeset
+		// row's, they are handled here rather than globally, so the input
+		// keeps every one of these letters for typing.
+		if next, cmd, claimed := m.failureKey(msg.String()); claimed {
+			return next, cmd
 		}
 		return m, nil
 	case "enter":

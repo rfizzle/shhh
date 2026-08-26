@@ -75,6 +75,9 @@ const (
 	// §5) — what it would restore, what has drifted since, and esc to
 	// decline. It borrows the bottom panel, not the transcript.
 	stateUndoConfirm
+	// stateKeyEntry: the masked key prompt an auth failure's [k] opens
+	// (S-106, §17a). It borrows the bottom panel; esc keeps the old key.
+	stateKeyEntry
 )
 
 const inputHeight = 3
@@ -140,6 +143,9 @@ const (
 	entryDiff
 	// entryTurnClose: the rows a finished turn ends with (S-098).
 	entryTurnClose
+	// entryFailure: a classified provider failure rendered as a recovery row
+	// (S-106, §17a). It is a row, not a modal, because it is part of the turn.
+	entryFailure
 )
 
 // entry is one transcript item, stored raw so the history can be re-rendered
@@ -165,6 +171,11 @@ type entry struct {
 	// turn is the turn it closed — what [v] and [u] act on.
 	close *components.TurnClose
 	turn  int64
+	// fail is the classified provider failure behind an entryFailure row
+	// (S-106). It is stored as the classification rather than as rendered
+	// text, so the row re-renders at any width and the offered keys stay
+	// derived from the class rather than parsed back out of a string.
+	fail *provider.Failure
 	// deniedBy names who refused the call — decidedByYou for a decline at the
 	// card, decidedByAuto for a rule — and renders the row as ⊘ rather than ✗
 	// (S-089, DESIGN-TUI.md §6d). Empty when nothing was refused.
@@ -443,6 +454,14 @@ type Model struct {
 	start      *StartInfo
 	startFocus int
 	startSpent bool
+	// Recovery from a provider failure (S-106): the provider the session
+	// resolved to, the two hooks a failure row's keys need, and the masked
+	// key prompt [k] opens. A hook left nil is a key the row does not offer,
+	// which is why they are checked rather than assumed.
+	providerName     string
+	switchProviderFn func(string) error
+	replaceKeyFn     func(string) error
+	keyAsk           *components.SecretPrompt
 }
 
 func New(initialMessages []provider.Message, stream StreamFunc) Model {
@@ -514,6 +533,18 @@ func (m Model) WithInitialPrompt(prompt string) Model {
 func (m Model) WithPricing(prices *pricing.Table, modelName string) Model {
 	m.prices = prices
 	m.modelName = modelName
+	return m
+}
+
+// WithProvider names the provider the session resolved to and wires the two
+// things a provider failure can offer to do about it (S-106): replacing the
+// key for this session, and switching to another registered provider. Either
+// hook may be nil — the failure row then does not offer that key rather than
+// offering one that does nothing.
+func (m Model) WithProvider(name string, replaceKey func(string) error, switchProvider func(string) error) Model {
+	m.providerName = name
+	m.replaceKeyFn = replaceKey
+	m.switchProviderFn = switchProvider
 	return m
 }
 
@@ -631,6 +662,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.state == stateUndoConfirm {
 			return m.updateUndoConfirm(msg)
+		}
+		if m.state == stateKeyEntry {
+			return m.updateKeyEntry(msg)
 		}
 		if m.state == stateFocus {
 			return m.updateFocus(msg)
@@ -968,7 +1002,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleSubagentEvent(msg.ev)
 
 	case streamErrMsg:
-		m.appendEntry(entry{kind: entryError, text: msg.err.Error()})
+		// Classified, never raw (S-106, §17a): the failure is a row on the
+		// activity grid with the provider's own words in its detail body and
+		// the keys for its class underneath.
+		m.appendFailure(msg.err)
 		m.compacting = false
 		m.streaming = ""
 		m.events = nil
@@ -1178,6 +1215,8 @@ func (m Model) View() string {
 			inputView = m.renderReviewHint()
 		case stateUndoConfirm:
 			inputView = m.renderUndoConfirm()
+		case stateKeyEntry:
+			inputView = m.renderKeyEntry()
 		}
 		// The agent manager list takes the bottom panel while open (S-077).
 		if m.agentList != nil {
@@ -1647,6 +1686,8 @@ func (m Model) renderEntry(e entry, width int) string {
 			return ""
 		}
 		return e.close.View(width) + "\n"
+	case entryFailure:
+		return m.failureRow(e).View(width) + "\n"
 	case entryDiff:
 		if e.diff == nil {
 			return ""

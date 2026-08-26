@@ -135,6 +135,7 @@ func modelListerFor(p provider.Provider) func(context.Context) ([]string, error)
 type sessionEnv struct {
 	cfg       config.Config
 	prov      provider.Provider
+	provName  string
 	modelName string
 	sysPrompt string
 	// projectTokens is the estimated context cost of the project context
@@ -144,6 +145,11 @@ type sessionEnv struct {
 	messages      []provider.Message
 	stream        agent.StreamFunc
 	switchModel   func(string)
+	// replaceKey and switchProvider are what a provider failure's [k] and
+	// [p] do (S-106): both rebuild the provider in place, and both leave the
+	// session untouched when the rebuild fails.
+	replaceKey     func(string) error
+	switchProvider func(string) error
 }
 
 func buildSessionEnv(cmd *cobra.Command, session chatSession) (*sessionEnv, error) {
@@ -155,16 +161,15 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession) (*sessionEnv, erro
 
 	resolved := resolve.Resolve(*flags)
 
-	p, err := provider.Resolve(resolved.Provider, provider.ResolveOpts{
-		APIKey:        flags.FlagAPIKey,
-		Model:         resolved.Model,
-		ConfigAPIKey:  cfg.ProviderAPIKey(),
-		ConfigBaseURL: cfg.ProviderBaseURL(),
-		ConfigName:    cfg.ProviderDisplayName(),
+	p, req, err := resolveProvider(cmd.Context(), cfg, providerRequest{
+		Provider: resolved.Provider,
+		Model:    resolved.Model,
+		APIKey:   flags.FlagAPIKey,
 	})
 	if err != nil {
 		return nil, err
 	}
+	resolved.Provider, resolved.Model = req.Provider, req.Model
 
 	info := shell.Detect()
 	projectContext := project.FindContext()
@@ -181,18 +186,65 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession) (*sessionEnv, erro
 		ToolChoice: "auto",
 	}
 
-	// /model switches this mid-session; the stream closure runs in a
-	// background goroutine, so guard the read.
-	var modelMu sync.Mutex
+	// /model switches the model mid-session, and a provider failure's [k] and
+	// [p] switch the key and the provider under it (S-106). All three are
+	// read by the stream closure from a background goroutine, so one mutex
+	// guards the model, the provider and the key it was built with.
+	var sessionMu sync.Mutex
 	currentModel := resolved.Model
+	currentProvider := resolved.Provider
+	currentKey := req.APIKey
+	currentBaseURL := req.BaseURL
+
+	// rebuild resolves the provider again with whatever the session has
+	// changed. It replaces nothing until the new provider is built: a key
+	// that cannot be resolved leaves the session exactly as it was.
+	//
+	// What it swaps is the stream — the turn's own requests. The permission
+	// classifier, the observability recorder and the /model lister were
+	// wired to the provider this session opened on and keep it; a classifier
+	// that fails on a dead key falls back to asking, which is the right
+	// answer anyway.
+	rebuild := func(name, key string) error {
+		sessionMu.Lock()
+		baseURL, model := currentBaseURL, currentModel
+		sessionMu.Unlock()
+		if name != resolved.Provider {
+			// A base URL belongs to the endpoint it was chosen for; carrying
+			// one across a provider switch points the new dialect at the old
+			// gateway.
+			baseURL = ""
+		}
+		next, rErr := provider.Resolve(name, provider.ResolveOpts{
+			APIKey:        key,
+			Model:         model,
+			BaseURL:       baseURL,
+			ConfigAPIKey:  cfg.ProviderAPIKey(),
+			ConfigBaseURL: cfg.ProviderBaseURL(),
+			ConfigName:    cfg.ProviderDisplayName(),
+		})
+		if rErr != nil {
+			return rErr
+		}
+		sessionMu.Lock()
+		p, currentProvider, currentKey, currentBaseURL = next, name, key, baseURL
+		if name != resolved.Provider {
+			if model := provider.Defaults(name).Model; model != "" {
+				currentModel = model
+			}
+		}
+		sessionMu.Unlock()
+		return nil
+	}
 
 	stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 		ctx, cancel := context.WithCancel(cmd.Context())
 		opts := compOpts
-		modelMu.Lock()
+		sessionMu.Lock()
 		opts.Model = currentModel
-		modelMu.Unlock()
-		ev, sErr := p.StreamCompletion(ctx, msgs, opts)
+		active := p
+		sessionMu.Unlock()
+		ev, sErr := active.StreamCompletion(ctx, msgs, opts)
 		if sErr != nil {
 			cancel()
 			return nil, nil, sErr
@@ -203,15 +255,34 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession) (*sessionEnv, erro
 	return &sessionEnv{
 		cfg:           cfg,
 		prov:          p,
+		provName:      resolved.Provider,
 		modelName:     resolved.Model,
 		sysPrompt:     sysPrompt,
 		projectTokens: agent.EstimateTokens(projectContext),
 		messages:      messages,
 		stream:        stream,
 		switchModel: func(name string) {
-			modelMu.Lock()
+			sessionMu.Lock()
 			currentModel = name
-			modelMu.Unlock()
+			sessionMu.Unlock()
+		},
+		replaceKey: func(key string) error {
+			sessionMu.Lock()
+			name := currentProvider
+			sessionMu.Unlock()
+			return rebuild(name, key)
+		},
+		switchProvider: func(name string) error {
+			sessionMu.Lock()
+			key := currentKey
+			sessionMu.Unlock()
+			// A key resolved for one provider is not a key for another, so
+			// the switch resolves the new provider's own credentials rather
+			// than carrying the old one's across.
+			if name != currentProvider {
+				key = ""
+			}
+			return rebuild(name, key)
 		},
 	}, nil
 }
@@ -388,6 +459,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithApprovalMode(mode, cycle).
 		WithClassifier(classifier).
 		WithModelSwitcher(env.switchModel).
+		WithProvider(env.provName, env.replaceKey, env.switchProvider).
 		WithModelOptions(provider.KnownModels(env.prov.Name())).
 		WithModelLister(modelListerFor(env.prov)).
 		WithGitSnapshots(gitSnapshot).

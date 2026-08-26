@@ -2,7 +2,6 @@ package provider
 
 import (
 	"encoding/json"
-	"errors"
 	"os"
 	"testing"
 
@@ -272,35 +271,6 @@ func TestJsonSchemaToAny_Empty(t *testing.T) {
 	result := jsonSchemaToAny(nil)
 	if result != nil {
 		t.Errorf("expected nil for empty input, got %v", result)
-	}
-}
-
-func TestClassifyGeminiError_Unauthorized(t *testing.T) {
-	err := classifyGeminiError(errors.New("googleapi: Error 401: invalid key"))
-	if !errors.Is(err, ErrGeminiUnauthorized) {
-		t.Errorf("expected ErrGeminiUnauthorized, got: %v", err)
-	}
-}
-
-func TestClassifyGeminiError_Forbidden(t *testing.T) {
-	err := classifyGeminiError(errors.New("googleapi: Error 403: forbidden"))
-	if !errors.Is(err, ErrGeminiUnauthorized) {
-		t.Errorf("expected ErrGeminiUnauthorized, got: %v", err)
-	}
-}
-
-func TestClassifyGeminiError_RateLimited(t *testing.T) {
-	err := classifyGeminiError(errors.New("googleapi: Error 429: rate limit"))
-	if !errors.Is(err, ErrGeminiRateLimited) {
-		t.Errorf("expected ErrGeminiRateLimited, got: %v", err)
-	}
-}
-
-func TestClassifyGeminiError_Generic(t *testing.T) {
-	original := errors.New("some network error")
-	got := classifyGeminiError(original)
-	if got != original {
-		t.Errorf("expected original error returned, got %v", got)
 	}
 }
 

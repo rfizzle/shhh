@@ -35,10 +35,6 @@ const (
 // keeping; below it the note drops rather than crowding the statement.
 const closeMinNoteGap = 2
 
-// TurnKey is one offer on the changeset row: the key in info (§10a), the
-// label that says what it does in dim.
-type TurnKey struct{ Key, Label string }
-
 // TurnChanges is the second row — what the turn wrote. It is absent from a
 // turn that changed nothing.
 type TurnChanges struct {

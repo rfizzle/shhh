@@ -172,8 +172,8 @@ func TestOpenAICompat_StreamCompletion_ServerError(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for 401")
 	}
-	if !errors.Is(err, ErrUnauthorized) {
-		t.Errorf("expected ErrUnauthorized, got: %v", err)
+	if !errors.Is(err, ErrAuth) {
+		t.Errorf("expected ErrAuth, got: %v", err)
 	}
 }
 

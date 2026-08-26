@@ -586,6 +586,12 @@ Step headers (§13) are selection targets too: `j/k` steps between headers and
 rows alike, and `enter` on a header folds or unfolds the whole group. Focus
 mode is therefore also how the outline is navigated — no second key set.
 
+It is also where the rows that offer keys without expanding are answered: a
+turn's changeset row (§16) and a provider failure (§17a). Both are passive
+renderers, and holding their keys here is what lets the input keep `v`, `u`,
+`r`, `c`, `e` and `p` for typing. `ctrl+e` opens on the failure that ended a
+turn where there is one, rather than on the close rows after it.
+
 ---
 
 ## 8. Vitals (session state)
@@ -1410,15 +1416,77 @@ the session dead.
 
 ### 17a. Failures are rows, not modals
 
+A provider failure is classified before it reaches any surface (S-106,
+`internal/provider/failure.go`) into a closed vocabulary of nine: `unauthorized`,
+`rate limited`, `quota exhausted`, `overloaded`, `context too long`, `network`,
+`malformed response`, `cancelled`, and `unclassified` for everything the table
+has no case for. The classes are the provider package's; the keys are the UI's.
+
 ```
-   ✗ model   gpt-5.2 · 401 unauthorized         key ···4f9c rejected  0.3s
-    the key loaded from the macOS keychain, added 4 Mar
-    [k] replace it · [o] switch to ollama · nothing in the turn was lost
+   ✗ model   gpt-4o · 401 unauthorized                key ···4f9c rejected  0.3s
+    Incorrect API key provided
+    [e] enter a new key · [p] switch provider · nothing in the turn was lost
 
-   ⚠ model   rate limited · 40k tok/min tier            retry in 38s     —
-    ▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱  waiting · round 7 resumes where it stopped
-    [m] finish this turn on gpt-5.2-mini · [esc] stop and keep the 3 edits
+   ⚠ model   gpt-4o · 429 rate limited                        retry in 38s  0.3s
+    Rate limit reached for gpt-4o. Please try again in 38s.
+    [r] try again · [p] switch provider · nothing in the turn was lost
 
+   ✗ model   gpt-4o · 400 context too long                 over the window  0.3s
+    This model's maximum context length is 128000 tokens
+    [c] compact now · [r] then try again · compacting keeps the plan and the recent turns
+
+   ✗ model   gpt-4o · 400 unclassified                      message below   0.3s
+    Unknown parameter: 'reasoning.effort'
+    [r] try again · [p] switch provider · nothing in the turn was lost
+```
+
+The verb `model` occupies the same 8-column field as a tool verb (§6c) and the
+row obeys the same grid, so a failure reads as part of the turn rather than as
+an interruption of it. The pointer and mutation-rail columns stay blank: a
+failed request changed nothing.
+
+- **The target names the model, then the class.** The model is body text, the
+  class dim behind it — the one place the grid's single-styled target field is
+  split (`gridLineWith`), because which model failed and how are two facts.
+- **The outcome is the one thing that decides what to do next**, never a repeat
+  of the class: `key ···4f9c rejected`, `retry in 38s`, `the account, not the
+  rate`, `over the window`, `never reached it`. It right-aligns and never
+  clips.
+- **The detail body is the provider's own words**, bounded to three lines at
+  indent 4. It is why `unclassified` is a class rather than an error path: the
+  message that could not be named still gets said, and the outcome
+  (`message below`) points at it.
+- `⚠` (accent 214) is a stall the session comes back from — rate limited,
+  overloaded, network. `✗` (del 9) is a call that is over until you do
+  something. `⊘` (dim 241) is a stop you asked for. All three carry the state
+  in words as well, so the palette is reinforcement (invariant 1).
+- **Nothing in the turn is lost**, and the row says so in words. A class where
+  that is not the useful sentence says the useful one instead: quota says
+  `waiting will not clear this one`.
+- Offered keys are info (12) at indent 4. **A key the session cannot honour is
+  not offered** — no `[k]` without a way to replace the key, no `[p]` without a
+  second provider to switch to — because an offer that does nothing is worse
+  than no offer.
+- **The keys are handled by focus mode on the row** (§7), the way the changeset
+  row's `[v]` and `[u]` are (§16), so the input keeps all four letters for
+  typing — which matters more here than anywhere else, since "run the tests
+  again" and "check what it did" are exactly what gets typed after a failure.
+  `ctrl+e` opens on the failure rather than on the close rows that follow it:
+  those are chrome about a turn that broke, and this is the row holding the way
+  out. Entering a key is `[e]`, not `[k]`, because `k` is the focus cursor's
+  own.
+- `[e]` opens a masked prompt in the bottom panel — a bullet per rune, the key
+  never echoed, the replaced key named only by its last four characters. It
+  takes effect for the session; esc keeps the key that was already there.
+
+The one-shot renders the same row from the same classification, with the way
+out stated as a command (`export OPENAI_API_KEY`, `shhh config set
+provider.api_key`) rather than as a key, because nothing is listening for one
+by then. Piped output gets one classified line and no chrome.
+
+Two more verbs share this field, both belonging to stories not yet built:
+
+```
    ⚠ stream  dropped mid-reply · 1,204 tokens kept           partial   11s
     "…so I'll thread the sentinel through runRound and then
     [enter] continue from here · [r] ask again · the partial reply stays
@@ -1428,18 +1496,8 @@ the session dead.
     [v] review what it did · [+10] ten more rounds · [u] undo the turn
 ```
 
-Four failures, four offered keys, one shape. The verbs `model`, `stream` and
-`rounds` occupy the same 8-column field as tool verbs (§6c) and the rows obey
-the same grid, so a failure reads as part of the turn rather than an
-interruption of it.
-
-- **Nothing in the turn is lost.** The three edits survive a rate limit, the
-  partial reply survives a dropped stream, and each row says so in words.
-- `⚠` (accent 214) is a recoverable stall — it will resume or you can steer
-  it. `✗` (del 9) is a call that failed. The distinction is the whole reason
-  both exist.
-- The countdown meter (§10c) drains right to left while a retry waits.
-- Offered keys are info (12) and sit at indent 2 under the row.
+`stream` is S-107's, and brings the countdown meter (§10c) that drains while a
+retry waits; `rounds` is S-109's. Both are this same row with a different verb.
 
 ### 17b. The two cards
 
@@ -1448,20 +1506,43 @@ A card is warranted only when the session cannot continue without an answer.
 ```
 ┌─ No model provider configured ─────────────────────────────────────────┐
 │ shhh looked in four places:                                            │
-│   ✗ env       OPENAI_API_KEY, ANTHROPIC_API_KEY — unset                │
-│   ✗ config    ~/.shhh/config.toml — no [provider] block                │
-│   ✓ keychain  one entry: openai (added 4 Mar)                          │
-│   ✓ local     ollama on :11434 — llama-3.3-70b, no tool use            │
+│   ✗ env       SHHH_API_KEY, OPENAI_API_KEY — unset                     │
+│   ✗ config    ~/.config/shhh/config.toml — no provider api_key         │
+│   ✗ profiles  no .toml in ~/.config/shhh/providers                     │
+│   ✓ local     localhost:11434 — llama3.3, qwen2.5-coder                │
 │                                                                        │
-│ the keychain entry failed to decrypt — that is the likely fix          │
+│ the local runtime is already answering — that is the quickest way in   │
 ├────────────────────────────────────────────────────────────────────────┤
-│ [enter] setup wizard   [p] paste a key   [o] use the local model       │
+│ [enter] setup wizard   [p] paste a key   [o] use llama3.3 locally      │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
 The card names **every place shhh looked and what it found there**, then says
 which one is the likely fix. A missing-key message that does not say where it
-looked is a message that cannot be acted on.
+looked is a message that cannot be acted on — and "SHHH_API_KEY or
+OPENAI_API_KEY is not set", which is what this replaced, names two of the four
+and none of the findings.
+
+The four places are the search the resolution actually does
+(`internal/resolve/survey.go`), in its own order: the environment variables the
+dialect reads, the config files in search order, the gateway profile
+directories (S-084), and a local model runtime, probed once with a bounded
+request to `GET {base}/models`. A key that was found is named by its last four
+characters and never by more.
+
+- **`✓` is "something was there", not "it worked"** — only a request can answer
+  the second question. A profile that loaded with its key variable unexported
+  is the failure that looks most like no provider at all, so it is reported as
+  a profile that was found with the variable named.
+- **Every offer is one that can be honoured.** `[o]` appears only when
+  something local actually answered, and names the model it would start on.
+  `[enter]` picks a provider and takes a key; `[p]` takes a key for the
+  provider that was already resolved. Both ask afterwards whether to save it,
+  so meeting this card twice is a choice.
+- **A terminal that is not one gets the same information printed plainly** and
+  no offers, because there is nobody there to press a key.
+- Esc declines, and the session exits on what it came in with — nothing is
+  written, and nothing is printed twice.
 
 ```
 ┌─ Context is nearly full · 94% · 188k / 200k ───────────────────────────┐
@@ -1483,7 +1564,8 @@ This is the only place in the product that itemises token spend, because it is
 the only place where you can act on it. The categories come from S-093's
 accounting — tool output, files read, the conversation, memory and system —
 and the card states what compacting will keep, what it will drop, and how much
-that recovers. `[esc]` keeps going: invariant 3 holds even at 94%.
+that recovers. `[esc]` keeps going: invariant 3 holds even at 94%. It is
+S-108's, and not yet built.
 
 ### 17c. First contact
 

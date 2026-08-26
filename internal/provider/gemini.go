@@ -4,9 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"net/http"
 	"os"
-	"strings"
 
 	"google.golang.org/genai"
 )
@@ -14,8 +12,9 @@ import (
 const defaultGeminiModel = "gemini-2.5-flash"
 
 type Gemini struct {
-	client *genai.Client
-	model  string
+	client   *genai.Client
+	model    string
+	classify func(error) error
 }
 
 func NewGemini(opts ResolveOpts) (*Gemini, error) {
@@ -34,7 +33,11 @@ func NewGemini(opts ResolveOpts) (*Gemini, error) {
 		return nil, fmt.Errorf("failed to create Gemini client: %w", err)
 	}
 
-	return &Gemini{client: client, model: model}, nil
+	return &Gemini{
+		client:   client,
+		model:    model,
+		classify: newClassifier("gemini", "SHHH_API_KEY or GEMINI_API_KEY", key),
+	}, nil
 }
 
 func (g *Gemini) Name() string { return "gemini" }
@@ -71,7 +74,7 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 		var usage *Usage
 		for resp, err := range g.client.Models.GenerateContentStream(ctx, model, contents, config) {
 			if err != nil {
-				ch <- StreamEvent{Err: classifyGeminiError(err), Done: true}
+				ch <- StreamEvent{Err: g.classify(err), Done: true}
 				return
 			}
 			if resp == nil {
@@ -198,29 +201,6 @@ func jsonSchemaToAny(raw json.RawMessage) any {
 	var v any
 	_ = json.Unmarshal(raw, &v)
 	return v
-}
-
-var (
-	ErrGeminiUnauthorized = fmt.Errorf("invalid API key — check SHHH_API_KEY or GEMINI_API_KEY")
-	ErrGeminiRateLimited  = fmt.Errorf("rate limited — try again shortly")
-)
-
-func classifyGeminiError(err error) error {
-	errStr := err.Error()
-	for _, pattern := range []struct {
-		code int
-		msg  string
-		wrap error
-	}{
-		{http.StatusUnauthorized, "401", ErrGeminiUnauthorized},
-		{http.StatusForbidden, "403", ErrGeminiUnauthorized},
-		{http.StatusTooManyRequests, "429", ErrGeminiRateLimited},
-	} {
-		if strings.Contains(errStr, pattern.msg) {
-			return fmt.Errorf("%w: %s", pattern.wrap, err)
-		}
-	}
-	return err
 }
 
 func init() {

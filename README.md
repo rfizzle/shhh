@@ -274,6 +274,57 @@ These are checked when `SHHH_API_KEY` is not set:
 CLI flag > SHHH_* env var > Provider-specific env var > Config file > Provider default
 ```
 
+### When there is no provider
+
+Run shhh with nothing configured and it says where it looked, rather than
+naming one variable out of four:
+
+```
+┌─ No model provider configured ─────────────────────────────────────────┐
+│ shhh looked in four places:                                            │
+│   ✗ env       SHHH_API_KEY, OPENAI_API_KEY — unset                     │
+│   ✗ config    ~/.config/shhh/config.toml — no provider api_key         │
+│   ✗ profiles  no .toml in ~/.config/shhh/providers                     │
+│   ✓ local     localhost:11434 — llama3.3, qwen2.5-coder                │
+│                                                                        │
+│ the local runtime is already answering — that is the quickest way in   │
+├────────────────────────────────────────────────────────────────────────┤
+│ [enter] setup wizard   [p] paste a key   [o] use llama3.3 locally      │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+The four places are the search the resolution actually does, in its own order,
+and a key that was found is named by its last four characters and never by
+more. `[enter]` picks a provider and takes a key, `[p]` takes one for the
+provider already resolved, and `[o]` appears only when a local runtime actually
+answered — each asks afterwards whether to save it, so meeting the card twice
+is a choice. Piped or redirected, the same information prints plainly with no
+offers.
+
+### When a provider fails
+
+Every dialect's failures go through one classifier, so a 401 from Anthropic, a
+429 from a gateway and a dropped connection all arrive named:
+`unauthorized`, `rate limited`, `quota exhausted`, `overloaded`, `context too
+long`, `network`, `malformed response`, `cancelled`, and `unclassified` for
+anything the table has no case for. Each renders as an ordinary activity row
+with the provider's own words in a bounded detail body underneath, and the keys
+for its class under that:
+
+```
+   ✗ model   gpt-4o · 401 unauthorized                key ···4f9c rejected  0.3s
+    Incorrect API key provided
+    [e] enter a new key · [p] switch provider · nothing in the turn was lost
+```
+
+The keys are pressed in focus mode (`ctrl+e`, which opens on the failure), so
+the input keeps all four letters for typing. `[e]` opens a masked prompt — a
+bullet per rune, the key never echoed — and puts the new key to work for the
+session; `[p]` switches provider; `[r]` asks again; `[c]` compacts when the
+request was too long for the window. A key the session cannot honour is not
+offered. The one-shot prints the same row with the way out stated as a command
+instead of a key, and a pipe gets one classified line and no chrome.
+
 ## Usage
 
 ### Generate a command

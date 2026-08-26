@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/muesli/termenv"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/ui/golden"
@@ -565,6 +566,126 @@ func TestGolden_StartScreen(t *testing.T) {
 			})},
 			{Label: "typing dismissed the list · the facts stay", View: screen(func(s *StartScreen) {
 				s.Suggestions, s.Lead, s.Hint = nil, "", ""
+			})},
+		}
+	})
+}
+
+// TestGolden_RecoveryRows captures every provider failure class on one sheet
+// (§17a). The verb, subject and duration are held constant, so the file reads
+// as a table of what each class contributes: its glyph, the words in its
+// outcome, the keys it offers and what it says survived.
+func TestGolden_RecoveryRows(t *testing.T) {
+	captureGolden(t, "recovery-rows", "provider failure rows", goldenWidths, func(width int) []golden.Panel {
+		row := func(mut func(*RecoveryRow)) string {
+			r := RecoveryRow{Verb: VerbModel, Subject: "gpt-4o", Duration: "0.3s",
+				Note: "nothing in the turn was lost"}
+			mut(&r)
+			return r.View(width)
+		}
+		return []golden.Panel{
+			{Label: "auth · the key it sent, named by its last four", View: row(func(r *RecoveryRow) {
+				r.Qualifier, r.Outcome = "401 unauthorized", "key ···4f9c rejected"
+				r.Detail = []string{"Incorrect API key provided"}
+				r.Keys = []KeyOffer{{Key: "[e]", Label: "enter a new key"}, {Key: "[p]", Label: "switch provider"}}
+			})},
+			{Label: "rate limit · a stall, with the wait the provider asked for", View: row(func(r *RecoveryRow) {
+				r.State, r.Qualifier, r.Outcome = RecoveryStalled, "429 rate limited", "retry in 38s"
+				r.Detail = []string{"Rate limit reached for gpt-4o. Please try again in 38s."}
+				r.Keys = []KeyOffer{{Key: "[r]", Label: "try again"}, {Key: "[p]", Label: "switch provider"}}
+			})},
+			{Label: "quota · not a stall, because waiting does not clear it", View: row(func(r *RecoveryRow) {
+				r.Qualifier, r.Outcome = "429 quota exhausted", "the account, not the rate"
+				r.Detail = []string{"You exceeded your current quota, please check your plan and billing details"}
+				r.Keys = []KeyOffer{{Key: "[p]", Label: "switch provider"}}
+				r.Note = "waiting will not clear this one"
+			})},
+			{Label: "overloaded · the provider's own side", View: row(func(r *RecoveryRow) {
+				r.State, r.Qualifier, r.Outcome = RecoveryStalled, "529 overloaded", "the provider's side"
+				r.Detail = []string{"Overloaded"}
+				r.Keys = []KeyOffer{{Key: "[r]", Label: "try again"}, {Key: "[p]", Label: "switch provider"}}
+			})},
+			{Label: "context length · the one class with a remedy of its own", View: row(func(r *RecoveryRow) {
+				r.Qualifier, r.Outcome = "400 context too long", "over the window"
+				r.Detail = []string{"This model's maximum context length is 128000 tokens"}
+				r.Keys = []KeyOffer{{Key: "[c]", Label: "compact now"}, {Key: "[r]", Label: "then try again"}}
+				r.Note = "compacting keeps the plan and the recent turns"
+			})},
+			{Label: "network · it never reached the provider", View: row(func(r *RecoveryRow) {
+				r.State, r.Qualifier, r.Outcome = RecoveryStalled, "network", "never reached it"
+				r.Detail = []string{`Post "https://api.openai.com/v1/chat/completions": dial tcp: connection refused`}
+				r.Keys = []KeyOffer{{Key: "[r]", Label: "try again"}}
+			})},
+			{Label: "cancelled · you did it on purpose, so no key is offered", View: row(func(r *RecoveryRow) {
+				r.State, r.Qualifier, r.Outcome = RecoveryStopped, "cancelled", "stopped"
+				r.Duration = NoDuration
+			})},
+			{Label: "unclassified · the message is the whole point of the row", View: row(func(r *RecoveryRow) {
+				r.Qualifier, r.Outcome = "400 unclassified", "message below"
+				r.Detail = []string{"Unknown parameter: 'reasoning.effort'"}
+				r.Keys = []KeyOffer{{Key: "[r]", Label: "try again"}, {Key: "[p]", Label: "switch provider"}}
+			})},
+		}
+	})
+}
+
+// TestGolden_ProviderCard captures the missing-provider card (§17b) — the one
+// card a failure earns, because it is the one failure the session cannot
+// continue past.
+func TestGolden_ProviderCard(t *testing.T) {
+	captureGolden(t, "provider-card", "no provider configured", goldenWidths, func(width int) []golden.Panel {
+		card := func(mut func(*ProviderCard)) string {
+			c := ProviderCard{
+				Places: []ProviderPlace{
+					{Label: "env", Detail: "SHHH_API_KEY, OPENAI_API_KEY — unset"},
+					{Label: "config", Detail: "~/.config/shhh/config.toml — no provider api_key"},
+					{Label: "profiles", Detail: "no .toml in ~/.config/shhh/providers"},
+					{Label: "local", Emphasis: "localhost:11434", Detail: "llama3.3, qwen2.5-coder", Found: true},
+				},
+				Likely: "the local runtime is already answering — that is the quickest way in",
+				Keys: []KeyOffer{
+					{Key: "[enter]", Label: "setup wizard"},
+					{Key: "[p]", Label: "paste a key"},
+					{Key: "[o]", Label: "use llama3.3 locally"},
+				},
+			}
+			mut(&c)
+			return c.View(width)
+		}
+		return []golden.Panel{
+			{Label: "a local runtime is answering · the likely fix is named", View: card(func(c *ProviderCard) {})},
+			{Label: "nothing anywhere · no fix to point at, and no local offer", View: card(func(c *ProviderCard) {
+				c.Places[3] = ProviderPlace{Label: "local", Detail: "localhost:11434 — nothing listening"}
+				c.Likely = ""
+				c.Keys = c.Keys[:2]
+			})},
+			{Label: "a gateway profile is ready but its variable is not exported", View: card(func(c *ProviderCard) {
+				c.Places[2] = ProviderPlace{Label: "profiles", Detail: "litellm (LITELLM_KEY unset)"}
+				c.Places[3] = ProviderPlace{Label: "local", Detail: "localhost:11434 — nothing listening"}
+				c.Likely = "a gateway profile loaded but its key is not exported — export LITELLM_KEY"
+				c.Keys = c.Keys[:2]
+			})},
+		}
+	})
+}
+
+// TestGolden_SecretPrompt captures the masked key entry an auth failure's [k]
+// opens (S-106). What is typed is never rendered; the mask is.
+func TestGolden_SecretPrompt(t *testing.T) {
+	captureGolden(t, "secret-prompt", "masked key entry", goldenWidths, func(width int) []golden.Panel {
+		typed := func(n int, mut func(*SecretPrompt)) string {
+			s := SecretPrompt{Prompt: "Paste a key for openai", Hint: "SHHH_API_KEY or OPENAI_API_KEY"}
+			mut(&s)
+			for i := 0; i < n; i++ {
+				s.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
+			}
+			return s.View(width)
+		}
+		return []golden.Panel{
+			{Label: "nothing typed yet", View: typed(0, func(s *SecretPrompt) {})},
+			{Label: "a key pasted · masked, never echoed", View: typed(51, func(s *SecretPrompt) {})},
+			{Label: "replacing a key the provider rejected", View: typed(12, func(s *SecretPrompt) {
+				s.Replace = "4f9c"
 			})},
 		}
 	})

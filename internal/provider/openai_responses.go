@@ -60,7 +60,7 @@ func NewOpenAIResponsesWith(client *http.Client, apiKey, baseURL, model, name st
 		baseURL:  strings.TrimSuffix(first(baseURL, defaultResponsesBaseURL), "/"),
 		model:    first(model, defaultResponsesModel),
 		name:     first(name, "openai-responses"),
-		classify: newClassifyError("SHHH_API_KEY or OPENAI_API_KEY"),
+		classify: newClassifier(first(name, "openai-responses"), "SHHH_API_KEY or OPENAI_API_KEY", apiKey),
 	}
 }
 

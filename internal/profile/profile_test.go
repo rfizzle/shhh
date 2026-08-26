@@ -3,6 +3,7 @@ package profile
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -441,5 +442,98 @@ func TestValidate_AcceptsTheResponsesDialect(t *testing.T) {
 	}
 	if p.API != APIOpenAIResponses {
 		t.Fatalf("unexpected dialect: %q", p.API)
+	}
+}
+
+// A gateway is where an unclassified failure would hurt most: the endpoint is
+// someone else's, its error prose is its own, and the session has no other
+// way to find out what went wrong. So each dialect a profile can speak is
+// pointed at a server that fails, and the failure has to arrive named — and
+// named as the profile rather than as the built-in dialect underneath it
+// (S-106).
+func TestNew_ClassifiesGatewayFailures(t *testing.T) {
+	cases := []struct {
+		name    string
+		api     string
+		path    string
+		status  int
+		body    string
+		want    provider.Class
+		wantErr error
+	}{
+		{
+			name: "openai chat", api: APIOpenAIChat, path: "/v1/chat/completions",
+			status: http.StatusTooManyRequests,
+			body:   `{"error":{"message":"Rate limit reached for this gateway","type":"rate_limit_error"}}`,
+			want:   provider.ClassRateLimit, wantErr: provider.ErrRateLimited,
+		},
+		{
+			name: "openai responses", api: APIOpenAIResponses, path: "/v1/responses",
+			status: http.StatusUnauthorized,
+			body:   `{"error":{"message":"Incorrect API key provided","type":"invalid_request_error"}}`,
+			want:   provider.ClassAuth, wantErr: provider.ErrAuth,
+		},
+		{
+			name: "anthropic messages", api: APIAnthropicMessage, path: "/v1/messages",
+			status: 529,
+			body:   `{"type":"error","error":{"type":"overloaded_error","message":"Overloaded"}}`,
+			want:   provider.ClassOverloaded, wantErr: provider.ErrOverloaded,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(tc.status)
+				_, _ = w.Write([]byte(tc.body))
+			}))
+			defer srv.Close()
+
+			prov, err := New(Profile{
+				Name:    "gateway",
+				API:     tc.api,
+				BaseURL: srv.URL + "/v1",
+				APIKey:  "sk-gateway-4f9c",
+			}, provider.ResolveOpts{Model: "some-model"})
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			// The chat dialects report the failure when the request is made;
+			// the Messages API reports it on the stream. Either way it has to
+			// arrive classified.
+			ch, err := prov.StreamCompletion(context.Background(), []provider.Message{
+				{Role: provider.RoleUser, Content: "hi"},
+			}, provider.CompletionOpts{})
+			if err == nil {
+				if ch == nil {
+					t.Fatal("expected either an error or a stream")
+				}
+				for ev := range ch {
+					if ev.Err != nil {
+						err = ev.Err
+						break
+					}
+				}
+			}
+			if err == nil {
+				t.Fatal("expected the gateway's failure to reach the caller")
+			}
+
+			f, ok := provider.AsFailure(err)
+			if !ok {
+				t.Fatalf("a gateway failure reached the caller unclassified: %v", err)
+			}
+			if f.Class != tc.want {
+				t.Errorf("class = %q, want %q (message %q)", f.Class, tc.want, f.Message)
+			}
+			if !errors.Is(err, tc.wantErr) {
+				t.Errorf("errors.Is did not match the class sentinel: %v", err)
+			}
+			if f.Provider != "gateway" {
+				t.Errorf("provider = %q, want the profile's own name", f.Provider)
+			}
+		})
 	}
 }

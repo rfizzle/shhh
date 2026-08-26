@@ -191,9 +191,10 @@ func (r ActivityRow) glyph() string {
 }
 
 // verbField pads the verb to its 8 columns; an over-long verb clips, which is
-// the signal that the §6c table is stale.
-func (r ActivityRow) verbField() string {
-	v := clip(r.Verb, verbWidth)
+// the signal that the §6c table is stale. Recovery rows (§17a) share it, which
+// is what puts `model` in the same column as `read`.
+func verbField(verb string) string {
+	v := clip(verb, verbWidth)
 	return v + strings.Repeat(" ", verbWidth-lipgloss.Width(v))
 }
 
@@ -238,6 +239,15 @@ func durationField(d string) string {
 // never has to — it is the reason to read the line. Both the activity row and
 // the folded group row are this shape, which is why they line up.
 func gridLine(lead, target, outcome, duration string, width int) string {
+	return gridLineWith(lead, target, func(s string) string { return dimStyle.Render(s) }, outcome, duration, width)
+}
+
+// gridLineWith is gridLine with the target's painting under the caller's
+// control. A recovery row leads its target with the model in body text and
+// dims only the class behind it (§17a), which one style over the whole field
+// cannot express; paint is handed the already-clipped text so the column
+// arithmetic stays in one place.
+func gridLineWith(lead, target string, paint func(string) string, outcome, duration string, width int) string {
 	outW := lipgloss.Width(outcome)
 	sep := 0
 	if outW > 0 {
@@ -248,13 +258,13 @@ func gridLine(lead, target, outcome, duration string, width int) string {
 	if pad < sep {
 		pad = sep
 	}
-	line := lead + dimStyle.Render(target) + strings.Repeat(" ", pad) + outcome + durationField(duration)
+	line := lead + paint(target) + strings.Repeat(" ", pad) + outcome + durationField(duration)
 	return strings.TrimRight(line, " ")
 }
 
 // View renders the row (plus tail and detail lines) at the given width.
 func (r ActivityRow) View(width int) string {
-	lead := r.pointer() + r.railCell() + r.glyph() + r.verbField()
+	lead := r.pointer() + r.railCell() + r.glyph() + verbField(r.Verb)
 	lines := []string{gridLine(lead, r.Target, r.outcomeField(), r.Duration, width)}
 
 	if r.State == ActivityRunning && r.Tail != "" {

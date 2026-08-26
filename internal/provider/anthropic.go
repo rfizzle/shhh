@@ -19,8 +19,9 @@ const defaultAnthropicModel = "claude-opus-5"
 const defaultAnthropicMaxTokens = 64000
 
 type Anthropic struct {
-	client anthropic.Client
-	model  string
+	client   anthropic.Client
+	model    string
+	classify func(error) error
 }
 
 func NewAnthropic(opts ResolveOpts) (*Anthropic, error) {
@@ -35,8 +36,9 @@ func NewAnthropic(opts ResolveOpts) (*Anthropic, error) {
 	}
 
 	return &Anthropic{
-		client: anthropic.NewClient(clientOpts...),
-		model:  first(opts.Model, defaultAnthropicModel),
+		client:   anthropic.NewClient(clientOpts...),
+		model:    first(opts.Model, defaultAnthropicModel),
+		classify: newClassifier("anthropic", "SHHH_API_KEY or ANTHROPIC_API_KEY", key),
 	}, nil
 }
 
@@ -44,7 +46,19 @@ func NewAnthropic(opts ResolveOpts) (*Anthropic, error) {
 // gateway profiles (internal/profile) that supply their own base URL, auth,
 // and HTTP transport.
 func NewAnthropicWith(client anthropic.Client, model string) *Anthropic {
-	return &Anthropic{client: client, model: first(model, defaultAnthropicModel)}
+	return NewAnthropicNamed(client, model, "anthropic")
+}
+
+// NewAnthropicNamed is NewAnthropicWith under a caller-chosen name, so a
+// gateway profile speaking the Messages API classifies its failures as
+// itself rather than as Anthropic (S-106).
+func NewAnthropicNamed(client anthropic.Client, model, name string) *Anthropic {
+	name = first(name, "anthropic")
+	return &Anthropic{
+		client:   client,
+		model:    first(model, defaultAnthropicModel),
+		classify: newClassifier(name, "SHHH_API_KEY or ANTHROPIC_API_KEY", ""),
+	}
 }
 
 func (a *Anthropic) Name() string { return "anthropic" }
@@ -84,7 +98,7 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 		for stream.Next() {
 			event := stream.Current()
 			if err := accumulated.Accumulate(event); err != nil {
-				ch <- StreamEvent{Err: err, Done: true}
+				ch <- StreamEvent{Err: a.classify(err), Done: true}
 				return
 			}
 			if delta, ok := event.AsAny().(anthropic.ContentBlockDeltaEvent); ok {
@@ -94,12 +108,12 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 			}
 		}
 		if err := stream.Err(); err != nil {
-			ch <- StreamEvent{Err: classifyAnthropicError(err), Done: true}
+			ch <- StreamEvent{Err: a.classify(err), Done: true}
 			return
 		}
 
 		if accumulated.StopReason == anthropic.StopReasonRefusal {
-			ch <- StreamEvent{Err: fmt.Errorf("request was declined by the model's safety system"), Done: true}
+			ch <- StreamEvent{Err: a.classify(errors.New("request was declined by the model's safety system")), Done: true}
 			return
 		}
 
@@ -200,24 +214,6 @@ func toAnthropicTools(tools []Tool) []anthropic.ToolUnionParam {
 		})
 	}
 	return out
-}
-
-var (
-	ErrAnthropicUnauthorized = fmt.Errorf("invalid API key — check SHHH_API_KEY or ANTHROPIC_API_KEY")
-	ErrAnthropicRateLimited  = fmt.Errorf("rate limited — try again shortly")
-)
-
-func classifyAnthropicError(err error) error {
-	var apierr *anthropic.Error
-	if errors.As(err, &apierr) {
-		switch apierr.StatusCode {
-		case 401, 403:
-			return fmt.Errorf("%w: %s", ErrAnthropicUnauthorized, err)
-		case 429:
-			return fmt.Errorf("%w: %s", ErrAnthropicRateLimited, err)
-		}
-	}
-	return err
 }
 
 func init() {

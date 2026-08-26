@@ -19,7 +19,7 @@ func newTestOpenRouter(baseURL string, model string) *OpenRouter {
 	cfg.HTTPClient = &http.Client{
 		Transport: &openRouterTransport{base: http.DefaultTransport},
 	}
-	return &OpenRouter{client: openai.NewClientWithConfig(cfg), model: model}
+	return NewOpenRouterWith(openai.NewClientWithConfig(cfg), model)
 }
 
 func TestOpenRouter_Name(t *testing.T) {
@@ -185,8 +185,8 @@ func TestOpenRouter_StreamCompletion_Unauthorized(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for 401")
 	}
-	if !errors.Is(err, ErrOpenRouterUnauthorized) {
-		t.Errorf("expected ErrOpenRouterUnauthorized, got: %v", err)
+	if !errors.Is(err, ErrAuth) {
+		t.Errorf("expected ErrAuth, got: %v", err)
 	}
 }
 
@@ -210,8 +210,8 @@ func TestOpenRouter_StreamCompletion_RateLimited(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for 429")
 	}
-	if !errors.Is(err, ErrOpenRouterRateLimited) {
-		t.Errorf("expected ErrOpenRouterRateLimited, got: %v", err)
+	if !errors.Is(err, ErrRateLimited) {
+		t.Errorf("expected ErrRateLimited, got: %v", err)
 	}
 }
 

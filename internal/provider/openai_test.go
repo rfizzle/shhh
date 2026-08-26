@@ -126,8 +126,8 @@ func TestOpenAI_StreamCompletion_Unauthorized(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for 401")
 	}
-	if !errors.Is(err, ErrUnauthorized) {
-		t.Errorf("expected ErrUnauthorized, got: %v", err)
+	if !errors.Is(err, ErrAuth) {
+		t.Errorf("expected ErrAuth, got: %v", err)
 	}
 }
 
@@ -266,15 +266,6 @@ func TestToOpenAIMessages_MultipleToolCalls(t *testing.T) {
 	}
 	if got[0].ToolCalls[1].Function.Name != "list_directory" {
 		t.Errorf("second tool call name mismatch: %q", got[0].ToolCalls[1].Function.Name)
-	}
-}
-
-func TestClassifyError_GenericError(t *testing.T) {
-	classify := newClassifyError("TEST_KEY")
-	err := fmt.Errorf("some network error")
-	got := classify(err)
-	if got != err {
-		t.Errorf("expected original error returned, got %v", got)
 	}
 }
 

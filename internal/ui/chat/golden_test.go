@@ -12,12 +12,14 @@ package chat
 import (
 	"os"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
 	"github.com/rfizzle/shhh/internal/plan"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
@@ -261,6 +263,65 @@ func TestGolden_StartScreen(t *testing.T) {
 				i.Project.Partial = true
 			})},
 			{Label: "typing dismissed the list · the facts stay", View: typed()},
+		}
+	})
+}
+
+// TestGolden_ProviderFailures captures the session's own mapping from a
+// classified failure to a row (S-106, §17a): which class earns ⚠ and which
+// earns ✗, what each says in its outcome, and which keys the session can
+// honour for it. The component sheet in internal/ui/components captures the
+// row; this captures the decisions the session makes about one.
+func TestGolden_ProviderFailures(t *testing.T) {
+	captureGolden(t, "provider-failures", "provider failures in a session", goldenWidths, func(width int) []golden.Panel {
+		build := func(f *provider.Failure) string {
+			m := frameModel(t, width, 40)
+			m.modelName = "gpt-4o"
+			m.providerName = "openai"
+			m.replaceKeyFn = func(string) error { return nil }
+			m.switchProviderFn = func(string) error { return nil }
+			m.transcript = []entry{
+				{kind: entryUser, text: "rename the round-limit sentinel"},
+				{kind: entryFailure, fail: f, duration: 340 * time.Millisecond},
+			}
+			m.invalidateRenderCache()
+			return m.renderHistory()
+		}
+		return []golden.Panel{
+			{Label: "auth · the key it sent is named, and a new one can be entered", View: build(&provider.Failure{
+				Class: provider.ClassAuth, Status: 401, Provider: "openai",
+				Message: "Incorrect API key provided", KeyEnv: "SHHH_API_KEY or OPENAI_API_KEY", KeyTail: "4f9c",
+			})},
+			{Label: "rate limit · a stall, with the wait the provider named", View: build(&provider.Failure{
+				Class: provider.ClassRateLimit, Status: 429, Provider: "openai",
+				Message: "Rate limit reached for gpt-4o. Please try again in 38s.", RetryAfter: 38 * time.Second,
+			})},
+			{Label: "context length · the only class with a remedy of its own", View: build(&provider.Failure{
+				Class: provider.ClassContextLength, Status: 400, Provider: "openai",
+				Message: "This model's maximum context length is 128000 tokens",
+			})},
+			{Label: "unclassified · the message is the whole point of the row", View: build(&provider.Failure{
+				Class: provider.ClassUnclassified, Status: 400, Provider: "openai",
+				Message: "Unknown parameter: 'reasoning.effort'",
+			})},
+		}
+	})
+}
+
+// TestGolden_KeyEntry captures the masked prompt an auth failure's [k] opens
+// in the bottom panel, where a diff preview or an approval card would
+// otherwise be.
+func TestGolden_KeyEntry(t *testing.T) {
+	captureGolden(t, "key-entry", "masked key entry in the panel", goldenWidths, func(width int) []golden.Panel {
+		m := frameModel(t, width, 40)
+		m.providerName = "openai"
+		m.replaceKeyFn = func(string) error { return nil }
+		next, _ := m.openKeyEntry(&provider.Failure{
+			Class: provider.ClassAuth, KeyEnv: "SHHH_API_KEY or OPENAI_API_KEY", KeyTail: "4f9c",
+		})
+		opened := next.(Model)
+		return []golden.Panel{
+			{Label: "nothing pasted yet", View: strings.Join(opened.keyEntryLines(), "\n")},
 		}
 	})
 }
