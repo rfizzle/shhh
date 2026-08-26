@@ -1092,6 +1092,16 @@ stretching to the right-hand stats, tool count and duration.
 
 - **Declared.** Plan mode (S-104) produces an ordered list; those steps are
   authoritative and the outline mirrors them, including the ones not started.
+  The join is made once, when the assistant announcement that heads a batch of
+  calls is appended: it is matched against the steps still unclaimed, and the
+  entry is stamped with the number of the step it carries out. A declared step
+  then takes the plan's number **and the plan's title**, so the outline, the
+  rail's PLAN block and `/plan` are reading one list. Steps are claimed once
+  each and in the order the run reached them, so a step carried out early keeps
+  its own number where it happened rather than being renumbered into place;
+  steps nobody has reached trail the turn as queued headers; and an
+  announcement matching no declared step is marked `+` in the ordinal column —
+  work off the plan is shown as such, never renumbered into it.
 - **Inferred.** Otherwise the assistant prose immediately preceding a batch of
   tool calls becomes the step title.
 - **Neither.** A turn with no discernible steps renders exactly as it does
@@ -1110,6 +1120,10 @@ the UI for nothing.
 | `✓` | complete |
 | `✗` | complete, contained a failure |
 | `·` | declared but not started; duration `—` |
+
+The ordinal column carries the plan's number for a declared step, the outline's
+own count where no plan is running, and `+` for a step the running plan never
+declared.
 
 - A step is **open while running** and collapses to its header on completion —
   except a step containing a failure, which stays open, because a failure you
@@ -1227,6 +1241,14 @@ today's single-pane layout is untouched (§8c).
   ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱
   18 tools · 1m 04s elapsed
 
+  PLAN                             2 of 4 done
+  ✓ Locate the round accounting           6.2s
+  ✓ Add a RoundsExhausted sentinel       38.1s
+  ▸ Return it from runRound
+  · Offer more rounds in the chat model
+  ⚠ 1 off plan
+  /plan for the whole list
+
   CHANGES                               +30 −4
   ▎✎ agent/loop.go                      +18 −3
   ▎✎ ui/chat/model.go                    +9 −1
@@ -1250,6 +1272,7 @@ today's single-pane layout is untouched (§8c).
 | Block | Contents |
 |---|---|
 | THIS TURN | step progress meter, `step 3 of 4`, tool count, elapsed |
+| PLAN | an approved plan's steps as a live checklist — state glyph, title, elapsed per finished step, a drift note, and `/plan` for the whole list |
 | CHANGES | `+N −M` total, one row per changed file with its rail and glyph, failing-test state, `[v] review · [u] undo turn` |
 | AGENTS | running children — lane meter, steps, spend, current target and tool count |
 | CONTEXT | percent of the window, meter, tokens, the per-round burn sparkline (or `estimated`) |
@@ -1263,7 +1286,14 @@ today's single-pane layout is untouched (§8c).
   its longest block first, and the block says so rather than silently ending.
 - **The rail is passive**, like `components.Cockpit` — fed by the host model,
   no keys, no state, no goroutines. The keys it prints (`[v]`, `[u]`) are
-  handled by the host.
+  handled by the host. PLAN prints `/plan` rather than a bracketed key: the
+  input textarea owns every unmodified letter, so a `[p]` there would be an
+  offer nothing accepts.
+- **PLAN is the one block that is not turn-scoped.** It follows the approved
+  plan, which can outlive the turn that started it; a plan through its list is
+  retired by the next instruction, and `/plan drop` forgets one early. Below
+  130 columns there is no rail, and `/plan` is the whole checklist — nothing is
+  lost, it just has to be asked for.
 - **Takeover surfaces span the full width and hide the rail** — approval
   cards, pickers, review mode (§16), the agent list — and restore it on
   dismissal.

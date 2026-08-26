@@ -17,6 +17,7 @@ import (
 
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
+	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
@@ -130,6 +131,39 @@ func TestGolden_StepOutline(t *testing.T) {
 			{Label: "verbosity · normal, step 1 opened (read-only run folds to a group row)", View: opened},
 			{Label: "verbosity · high (every row, with detail)", View: high},
 			{Label: "verbosity · low (step headers only)", View: low},
+		}
+	})
+}
+
+// TestGolden_PlanChecklist captures the outline an approved plan numbers
+// (S-104, §13a): declared steps carrying the plan's own numbers and titles in
+// the order the run reached them, one group the plan never named marked off
+// it, and the declared-but-not-started steps trailing as queued headers. It is
+// the one shape of the outline that does not come from the prose.
+func TestGolden_PlanChecklist(t *testing.T) {
+	captureGolden(t, "plan-checklist", "plan checklist outline", goldenWidths, func(width int) []golden.Panel {
+		build := func(st state) string {
+			m := frameModel(t, width, 40)
+			m.transcript = []entry{{kind: entryUser, text: planApprovedMessage}}
+			m.planRun = newPlanRun(plan.Parse(planFixture), 0)
+			for _, a := range []struct {
+				title  string
+				d      time.Duration
+				failed bool
+			}{
+				{"Now let me locate the round accounting", 6200 * time.Millisecond, false},
+				{"Return it from runRound", 38100 * time.Millisecond, true},
+				{"Rebuild the changeset store", 3900 * time.Millisecond, false},
+			} {
+				announce(t, &m, a.title, a.d, a.failed)
+			}
+			m.state = st
+			m.invalidateRenderCache()
+			return m.renderHistory()
+		}
+		return []golden.Panel{
+			{Label: "mid-run (the last step is still working)", View: build(stateStreaming)},
+			{Label: "turn over (every step settled)", View: build(stateInput)},
 		}
 	})
 }

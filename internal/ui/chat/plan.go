@@ -126,6 +126,7 @@ func (m Model) selectPlanOption(idx int) (tea.Model, tea.Cmd) {
 // turn, with the plan already in context.
 func (m Model) approvePlan(execMode agent.Mode) (tea.Model, tea.Cmd) {
 	m.applyMode(execMode)
+	doc := m.planDoc
 	m.clearPlan()
 	m.setTurnState(stateStreaming)
 	m.streaming = ""
@@ -134,6 +135,11 @@ func (m Model) approvePlan(execMode agent.Mode) (tea.Model, tea.Cmd) {
 	m.recordCheckpoint(planApprovedMessage)
 	m.agent.StartTurn(planApprovedMessage)
 	m.appendEntry(entry{kind: entryUser, text: planApprovedMessage})
+	// From here the approved plan is the transcript's step list, the rail's
+	// PLAN block and what /plan answers with (S-104). A plan that never
+	// adopted the step shape has no list to keep, and newPlanRun says so.
+	m.planRun = newPlanRun(doc, len(m.transcript))
+	m.invalidateRenderCache()
 	m.trimForRequest()
 	m.syncViewport()
 	m.viewport.SetContent(m.renderHistory())
@@ -397,4 +403,202 @@ func sanitizePlanName(name string) string {
 		out = "plan-" + time.Now().Format("20060102-150405")
 	}
 	return out
+}
+
+// planUsage is what /plan answers to when it is given something it does not
+// know; the checklist itself is the bare form.
+const planUsage = "Usage: /plan · /plan save [name] · /plan drop"
+
+// planHintRail is the PLAN block's last row. It names the command rather than
+// a bracketed key because the rail's keys are the host's, and the input
+// textarea owns every unmodified letter — a `[p]` printed there would be an
+// offer nothing accepts (the reason S-101 kept [y/n/a]).
+const planHintRail = "/plan for the whole list"
+
+// declaredSteps is the approved plan's step list, or nil when no plan is
+// running — or when the transcript on screen belongs to a child, which the
+// orchestrator's plan says nothing about.
+func (m Model) declaredSteps() []plan.Step {
+	if m.planRun == nil || m.attachedTo != "" {
+		return nil
+	}
+	return m.planRun.doc.Steps
+}
+
+// blocksOf tiles entries into transcript blocks with the approved plan's
+// declared steps overlaid, which is the one call site every reader of the
+// outline should use.
+func (m Model) blocksOf(es []entry) []transcriptBlock {
+	return stepBlocks(es, m.declaredSteps())
+}
+
+// lastLiveBlock is the index of the last block rows can still land in — the
+// last one with entries. Declared steps that have not started trail it and
+// change as the run reaches them, so nothing from there on can be frozen.
+func lastLiveBlock(blocks []transcriptBlock) int {
+	for i := len(blocks) - 1; i >= 0; i-- {
+		if blocks[i].end > blocks[i].start {
+			return i
+		}
+	}
+	return 0
+}
+
+// planEntries is the slice of the transcript the approved plan has been
+// carried out over. It starts where the execution turn started, so a plan that
+// outlives one turn keeps its checklist and one that has been rewound past
+// reads nothing.
+func (m Model) planEntries() []entry {
+	if m.planRun == nil || m.planRun.start > len(m.transcript) {
+		return nil
+	}
+	return m.transcript[m.planRun.start:]
+}
+
+// stampStep records which declared step an assistant announcement carries out,
+// so the outline, the rail and /plan all read one assignment made in the order
+// the transcript was written (S-104). An entry that is not a step title, or a
+// session with no plan running, is returned untouched.
+func (m *Model) stampStep(e entry) entry {
+	if m.planRun == nil {
+		return e
+	}
+	title, ok := stepTitle(e)
+	if !ok {
+		return e
+	}
+	e.planStep = m.planRun.claim(title)
+	return e
+}
+
+// planChecklist reads the state of every declared step off the transcript. It
+// stores nothing: a step's state is its group's state, so the checklist and
+// the outline cannot disagree about what happened.
+func (m Model) planChecklist() []components.InspectorPlanStep {
+	run := m.planRun
+	if run == nil {
+		return nil
+	}
+	es := m.planEntries()
+	type observed struct {
+		state stepState
+		label string
+	}
+	at := map[int]observed{}
+	for _, blk := range m.blocksOf(es) {
+		g := blk.step
+		if g == nil || g.offPlan || g.queued() {
+			continue
+		}
+		h := m.headerFor(blk, es)
+		o := observed{state: h.State}
+		if h.State != stepRunning {
+			o.label = activityDuration(h.Duration)
+		}
+		at[g.ordinal] = o
+	}
+	out := make([]components.InspectorPlanStep, 0, len(run.doc.Steps))
+	for _, s := range run.doc.Steps {
+		row := components.InspectorPlanStep{Number: s.Number, Title: s.Title}
+		if o, ok := at[s.Number]; ok {
+			row.State, row.Elapsed = planStepState(o.state), o.label
+		}
+		out = append(out, row)
+	}
+	return out
+}
+
+// planStepState maps an outline step's state onto the rail's, which is the
+// same four states under another name — the two surfaces draw one step.
+func planStepState(s stepState) components.PlanStepState {
+	switch s {
+	case stepRunning:
+		return components.PlanStepRunning
+	case stepFailed:
+		return components.PlanStepFailed
+	case stepDone:
+		return components.PlanStepDone
+	}
+	return components.PlanStepQueued
+}
+
+// planStepsDone counts the checklist's finished steps. A failed step finished.
+func planStepsDone(steps []components.InspectorPlanStep) int {
+	done := 0
+	for _, s := range steps {
+		if s.State == components.PlanStepDone || s.State == components.PlanStepFailed {
+			done++
+		}
+	}
+	return done
+}
+
+// planProgress is how far through its steps the run is, for the THIS TURN
+// meter: the finished steps, plus the one in flight, because the step being
+// worked on is the step you are on.
+func planProgress(steps []components.InspectorPlanStep) int {
+	n := planStepsDone(steps)
+	for _, s := range steps {
+		if s.State == components.PlanStepRunning {
+			n++
+			break
+		}
+	}
+	return min(n, len(steps))
+}
+
+// planStatus is /plan: the approved plan as a checklist, and what the run has
+// done that the plan did not say. It is the same list the rail draws, so a
+// terminal too narrow for the rail loses nothing.
+func (m Model) planStatus() string {
+	run := m.planRun
+	if run == nil {
+		if m.mode == agent.ModePlan {
+			return "No plan approved yet — the card offers the checklist once one is.\n" + planUsage
+		}
+		return "No approved plan is running.\n" + planUsage
+	}
+	steps := m.planChecklist()
+	var b strings.Builder
+	fmt.Fprintf(&b, "%s — %d of %d done\n", run.title(), planStepsDone(steps), len(steps))
+	for _, s := range steps {
+		fmt.Fprintf(&b, "  %s %d  %s", planStatusGlyph(s.State), s.Number, s.Title)
+		if note := planStatusNote(s); note != "" {
+			b.WriteString(" · " + note)
+		}
+		b.WriteString("\n")
+	}
+	if d := run.drift(); len(d) > 0 {
+		b.WriteString("Drift: " + strings.Join(d, "; ") + ".")
+	} else {
+		b.WriteString("No drift — every step so far is one the plan named, in the order it named them.")
+	}
+	return b.String()
+}
+
+// planStatusGlyph is the checklist glyph /plan prints, the same four the
+// outline and the rail use (§13b).
+func planStatusGlyph(s components.PlanStepState) string {
+	switch s {
+	case components.PlanStepRunning:
+		return "▸"
+	case components.PlanStepDone:
+		return "✓"
+	case components.PlanStepFailed:
+		return "✗"
+	}
+	return "·"
+}
+
+// planStatusNote is the step's right-hand word: what it cost, or what it is
+// waiting on. A step that finished in under half a second reports nothing,
+// like every other duration in the product.
+func planStatusNote(s components.InspectorPlanStep) string {
+	switch s.State {
+	case components.PlanStepQueued:
+		return components.OutcomeQueued
+	case components.PlanStepRunning:
+		return "running"
+	}
+	return s.Elapsed
 }

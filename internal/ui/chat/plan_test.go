@@ -321,9 +321,11 @@ func TestPlan_SlashPlanSave(t *testing.T) {
 		t.Fatalf("/plan save without a name should still save, got %q", result)
 	}
 
-	_, usage := m.handleSlashCommand("/plan")
-	if !strings.Contains(usage, "Usage: /plan save") {
-		t.Fatalf("/plan alone should show usage, got %q", usage)
+	// Bare /plan is the checklist now (S-104); with no plan approved it says
+	// so, and still names the save form it replaced as the bare command.
+	_, bare := m.handleSlashCommand("/plan")
+	if !strings.Contains(bare, "No approved plan is running") || !strings.Contains(bare, "/plan save [name]") {
+		t.Fatalf("/plan with no approved plan should say so and name the forms, got %q", bare)
 	}
 }
 

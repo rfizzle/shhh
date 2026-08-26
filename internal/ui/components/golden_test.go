@@ -384,11 +384,22 @@ func TestGolden_AgentList(t *testing.T) {
 // TestGolden_InspectorRail captures the rail (§15). Its width is fixed at
 // InspectorWidth — it exists only in the two-pane layout and never renders at
 // another size — so the axis worth capturing is which blocks are present and
-// what a height too short to hold them all drops.
+// what a height too short to hold them all drops. The full rail carries an
+// approved plan's PLAN checklist (S-104), which is also what gives THIS TURN's
+// meter a denominator.
 func TestGolden_InspectorRail(t *testing.T) {
 	captureGolden(t, "inspector-rail", "inspector rail", []int{InspectorWidth}, func(width int) []golden.Panel {
 		full := InspectorRail{
 			Turn: &InspectorTurn{Step: 3, Steps: 4, Tools: 18, Elapsed: 64 * time.Second, Running: true},
+			Plan: &InspectorPlan{
+				Steps: []InspectorPlanStep{
+					{Number: 1, Title: "Locate the round accounting", State: PlanStepDone, Elapsed: "6.2s"},
+					{Number: 2, Title: "Add a RoundsExhausted sentinel", State: PlanStepFailed, Elapsed: "38.1s"},
+					{Number: 3, Title: "Return it from runRound", State: PlanStepRunning},
+					{Number: 4, Title: "Offer more rounds in the chat model", State: PlanStepQueued},
+				},
+				Done: 2, Drift: "1 off plan", Hint: "/plan for the whole list",
+			},
 			Changes: &InspectorChanges{
 				Files: []InspectorFile{
 					{Path: "internal/agent/loop.go", Added: 18, Removed: 3},

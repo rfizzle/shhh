@@ -14,6 +14,14 @@
    ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱ step 3 of 4         
   18 tools · 1m 04s elapsed                   
 
+  PLAN                             2 of 4 done
+  ✓ Locate the round accounting           6.2s
+  ✗ Add a RoundsExhausted sentinel       38.1s
+  ▸ Return it from runRound                   
+  · Offer more rounds in the chat model       
+  ⚠ 1 off plan                                
+  /plan for the whole list                    
+
   CHANGES                               +27 −4
   ▎✎ internal/agent/loop.go             +18 −3
   ▎✎ internal/ui/chat/model.go           +9 −1
@@ -37,6 +45,9 @@
   THIS TURN                                   
   … 2 more                                    
 
+  PLAN                             2 of 4 done
+  … 6 more                                    
+
   CHANGES                               +27 −4
   … 3 more                                    
 
@@ -44,12 +55,9 @@
   … 4 more                                    
 
   CONTEXT                          62% of 200k
-  ▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱                  124k
-  … 1 more                                    
+  … 2 more                                    
 
   SPEND                                  $0.14
-  gpt-5.2 · $0.12 main · $0.02 ◇              
-  … 1 more                                    
 
 · blocks with nothing to say are omitted
   THIS TURN                                   
@@ -64,6 +72,14 @@
   ␛[1;38;5;254mTHIS TURN␛[0m                                   
   ␛[38;5;244m␛[0m ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰␛[0m␛[38;5;254m▰▰▰▰▰␛[0m␛[38;5;244m▱▱▱▱▱▱␛[0m ␛[38;5;254mstep 3 of 4␛[0m         
   ␛[38;5;244m18 tools · 1m 04s elapsed␛[0m                   
+
+  ␛[1;38;5;254mPLAN␛[0m                             ␛[38;5;244m2 of 4 done␛[0m
+  ␛[38;5;254m✓␛[0m ␛[38;5;244mLocate the round accounting␛[0m           ␛[38;5;244m6.2s␛[0m
+  ␛[38;5;254m✗␛[0m ␛[38;5;254mAdd a RoundsExhausted sentinel␛[0m       ␛[38;5;244m38.1s␛[0m
+  ␛[38;5;254m▸␛[0m ␛[1;38;5;254mReturn it from runRound␛[0m                   
+  ␛[38;5;244m·␛[0m ␛[38;5;244mOffer more rounds in the chat model␛[0m       
+  ␛[38;5;254m⚠␛[0m ␛[38;5;244m1 off plan␛[0m                                
+  ␛[3;38;5;244m/plan for the whole list␛[0m                    
 
   ␛[1;38;5;254mCHANGES␛[0m                               ␛[38;5;254m+27␛[0m ␛[38;5;254m−4␛[0m
   ␛[38;5;254m▎␛[0m␛[38;5;254m✎␛[0m ␛[38;5;254minternal/agent/loop.go␛[0m             ␛[38;5;254m+18␛[0m ␛[38;5;254m−3␛[0m
@@ -88,6 +104,9 @@
   ␛[1;38;5;254mTHIS TURN␛[0m                                   
   ␛[3;38;5;244m… 2 more␛[0m                                    
 
+  ␛[1;38;5;254mPLAN␛[0m                             ␛[38;5;244m2 of 4 done␛[0m
+  ␛[3;38;5;244m… 6 more␛[0m                                    
+
   ␛[1;38;5;254mCHANGES␛[0m                               ␛[38;5;254m+27␛[0m ␛[38;5;254m−4␛[0m
   ␛[3;38;5;244m… 3 more␛[0m                                    
 
@@ -95,12 +114,9 @@
   ␛[3;38;5;244m… 4 more␛[0m                                    
 
   ␛[1;38;5;254mCONTEXT␛[0m                          ␛[38;5;254m62% of 200k␛[0m
-  ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱␛[0m                  ␛[38;5;254m124k␛[0m
-  ␛[3;38;5;244m… 1 more␛[0m                                    
+  ␛[3;38;5;244m… 2 more␛[0m                                    
 
   ␛[1;38;5;254mSPEND␛[0m                                  ␛[38;5;254m$0.14␛[0m
-  ␛[38;5;244mgpt-5.2 · $0.12 main · $0.02 ◇␛[0m              
-  ␛[3;38;5;244m… 1 more␛[0m                                    
 
 · blocks with nothing to say are omitted
   ␛[1;38;5;254mTHIS TURN␛[0m                                   

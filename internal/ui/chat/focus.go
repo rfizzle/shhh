@@ -34,8 +34,14 @@ func selectable(e entry) bool {
 func (m Model) expandableIndices() []int {
 	es := *m.entries()
 	var idxs []int
-	for _, blk := range stepBlocks(es) {
+	for _, blk := range m.blocksOf(es) {
 		if blk.step != nil {
+			if blk.step.queued() {
+				// A declared step nobody has started is a header with no rows
+				// and no entry behind it: nothing to select, nothing to
+				// expand (S-104).
+				continue
+			}
 			idxs = append(idxs, blk.step.titleIdx)
 			if m.headerFor(blk, es).Folded {
 				continue
@@ -115,7 +121,7 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "enter":
 		es := *m.entries()
 		if m.focusIdx >= 0 && m.focusIdx < len(es) {
-			if _, ok := stepBlockAt(es, m.focusIdx); ok {
+			if _, ok := m.stepBlockAt(es, m.focusIdx); ok {
 				// Enter on a step header folds or unfolds the whole group in
 				// place (S-090, §13b).
 				m.toggleStepFold(m.focusIdx)

@@ -151,8 +151,8 @@ func (m Model) groupRowFor(es []entry, s slot) components.ActivityGroup {
 // verbosity is not a group you can close row by row — /ui verbosity owns that
 // — so its first row keeps the ordinary expand behaviour.
 func (m Model) groupAnchor(es []entry, idx int) bool {
-	for _, blk := range stepBlocks(es) {
-		if blk.step == nil {
+	for _, blk := range m.blocksOf(es) {
+		if blk.step == nil || blk.step.queued() {
 			continue
 		}
 		for _, s := range m.stepSlots(es, blk.step.start, blk.step.end) {

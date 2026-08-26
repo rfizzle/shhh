@@ -49,9 +49,11 @@ func (m Model) turnCloseData() *components.TurnClose {
 		Changes: m.turnChangesRow(),
 		Checks:  turnChecksRow(es),
 	}
-	for _, blk := range stepBlocks(es) {
-		if blk.step != nil {
-			c.Steps = blk.step.ordinal
+	// The count is the steps this turn actually ran, so an approved plan's
+	// declared-but-not-started steps are not counted as work done (S-104).
+	for _, blk := range m.blocksOf(es) {
+		if blk.step != nil && !blk.step.queued() {
+			c.Steps++
 		}
 	}
 	for _, e := range es {

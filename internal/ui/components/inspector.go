@@ -8,10 +8,10 @@ package components
 //
 // The rail is passive, like Cockpit: the host feeds it this turn's numbers and
 // renders View every frame. It owns no keys, no state and no goroutines, and
-// the block order is fixed — THIS TURN, CHANGES, AGENTS, CONTEXT, SPEND. A
-// block with nothing to say is omitted rather than rendered empty (§15b), and
-// a rail that does not fit its height truncates its longest block first and
-// says how many rows it swallowed.
+// the block order is fixed — THIS TURN, PLAN, CHANGES, AGENTS, CONTEXT,
+// SPEND. A block with nothing to say is omitted rather than rendered empty
+// (§15b), and a rail that does not fit its height truncates its longest block
+// first and says how many rows it swallowed.
 
 import (
 	"fmt"
@@ -52,6 +52,49 @@ type InspectorTurn struct {
 	// Running says the turn is still in flight, so the elapsed time is a
 	// running total rather than a final one.
 	Running bool
+}
+
+// PlanStepState is one checklist step's state in the PLAN block. It is the
+// same four states the step outline draws (§13b), because an approved plan's
+// step and the transcript's step are the same step (S-104).
+type PlanStepState int
+
+const (
+	// PlanStepQueued is declared and not started; its duration is —.
+	PlanStepQueued PlanStepState = iota
+	// PlanStepRunning is the step in flight, the one the reader is looking
+	// for, so it is the one the block emphasises.
+	PlanStepRunning
+	// PlanStepDone finished with nothing to report.
+	PlanStepDone
+	// PlanStepFailed finished and contained a failure.
+	PlanStepFailed
+)
+
+// InspectorPlanStep is one step of the approved plan in the PLAN block.
+type InspectorPlanStep struct {
+	Number int
+	Title  string
+	State  PlanStepState
+	// Elapsed is how long the step took; blank for one that has not finished,
+	// so the column carries a number only where there is one.
+	Elapsed string
+}
+
+// InspectorPlan is the PLAN block: an approved plan as a live checklist
+// (S-104). An approved plan is not a message that scrolls away — it is the
+// answer to "where are we", and the rail is where that answer belongs.
+type InspectorPlan struct {
+	Steps []InspectorPlanStep
+	// Done counts the steps that finished, which is what the heading states.
+	// A failed step finished.
+	Done int
+	// Drift is the one-line note when the run has departed from the plan —
+	// work the plan never named, steps taken out of order, steps skipped.
+	// Empty while the run is following it, because "no drift" is not news.
+	Drift string
+	// Hint is the row under the list naming how to read the whole plan.
+	Hint string
 }
 
 // InspectorFile is one changed file in the CHANGES block.
@@ -121,6 +164,7 @@ type InspectorSpend struct {
 // list) is a block with nothing to say, and is omitted.
 type InspectorRail struct {
 	Turn    *InspectorTurn
+	Plan    *InspectorPlan
 	Changes *InspectorChanges
 	Agents  []InspectorAgent
 	Context *InspectorContext
@@ -134,7 +178,7 @@ type InspectorRail struct {
 // Empty reports whether every block is omitted, so the host can skip the
 // split rather than draw an empty column.
 func (r InspectorRail) Empty() bool {
-	return r.Turn == nil && r.Changes == nil && len(r.Agents) == 0 &&
+	return r.Turn == nil && r.Plan == nil && r.Changes == nil && len(r.Agents) == 0 &&
 		r.Context == nil && r.Spend == nil
 }
 
@@ -195,7 +239,7 @@ func (r InspectorRail) Lines(width, height int) []string {
 func (r InspectorRail) blocks(width int) []railBlock {
 	var blocks []railBlock
 	for _, b := range []func(int) (railBlock, bool){
-		r.turnBlock, r.changesBlock, r.agentsBlock, r.contextBlock, r.spendBlock,
+		r.turnBlock, r.planBlock, r.changesBlock, r.agentsBlock, r.contextBlock, r.spendBlock,
 	} {
 		if blk, ok := b(width); ok {
 			blocks = append(blocks, blk)
@@ -258,6 +302,51 @@ func (r InspectorRail) turnBlock(width int) (railBlock, bool) {
 	b.rows = append(b.rows, indentRow(dimStyle.Render(fmt.Sprintf("%s · %s %s",
 		plural(t.Tools, "tool"), FormatElapsed(t.Elapsed), elapsed)), width))
 	return b, true
+}
+
+// planBlock is the PLAN checklist (S-104). It sits under THIS TURN because it
+// is that block's detail: THIS TURN says how far through, PLAN says through
+// what. The keys it prints are the host's, like [v] and [u] on CHANGES.
+func (r InspectorRail) planBlock(width int) (railBlock, bool) {
+	p := r.Plan
+	if p == nil || len(p.Steps) == 0 {
+		return railBlock{}, false
+	}
+	b := railBlock{heading: railHeading("PLAN",
+		fmt.Sprintf("%d of %d done", p.Done, len(p.Steps)), dimStyle, width)}
+	for _, s := range p.Steps {
+		glyph, style := planStepTone(s.State)
+		// A step with no duration yet gets no right-hand field at all, so the
+		// title has the whole row rather than a column reserved for nothing.
+		elapsed := ""
+		if s.Elapsed != "" {
+			elapsed = dimStyle.Render(s.Elapsed)
+		}
+		b.rows = append(b.rows, railRow(glyph+" "+style.Render(s.Title), elapsed, width, inspectorIndent))
+	}
+	if p.Drift != "" {
+		b.rows = append(b.rows, railRow(accentStyle.Render("⚠")+" "+dimStyle.Render(p.Drift),
+			"", width, inspectorIndent))
+	}
+	if p.Hint != "" {
+		b.rows = append(b.rows, indentRow(hintStyle.Render(p.Hint), width))
+	}
+	return b, true
+}
+
+// planStepTone is a checklist step's glyph and the weight its title carries.
+// The running step is the one being looked for, so it is the bright one; a
+// finished step recedes to chrome, having nothing left to ask of anyone.
+func planStepTone(s PlanStepState) (string, lipgloss.Style) {
+	switch s {
+	case PlanStepRunning:
+		return spinTextStyle.Render("▸"), brightStyle()
+	case PlanStepDone:
+		return addStyle.Render("✓"), dimStyle
+	case PlanStepFailed:
+		return errStyle.Render("✗"), bodyStyle
+	}
+	return dimStyle.Render("·"), dimStyle
 }
 
 func (r InspectorRail) changesBlock(width int) (railBlock, bool) {

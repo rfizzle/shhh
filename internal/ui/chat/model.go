@@ -178,6 +178,12 @@ type entry struct {
 	// groupFold is the same override for the folded run of read-only calls
 	// this entry heads (S-091, §13c).
 	groupFold foldState
+	// planStep is the number of the approved plan's step this assistant
+	// announcement carries out, offPlanStep when it carries out none of them,
+	// and zero when no plan was running (S-104). It is stamped once, when the
+	// entry is appended, so every reader of the outline stays a pure function
+	// of the transcript.
+	planStep int
 }
 
 type Model struct {
@@ -284,6 +290,10 @@ type Model struct {
 	planDoc    plan.Plan
 	planFacts  []components.PlanFact
 	planDetail string
+	// planRun is the plan the user approved, for as long as it is being
+	// carried out (S-104): it numbers the transcript's steps, fills the
+	// rail's PLAN block and answers /plan. Nil when no plan is running.
+	planRun *planRun
 	// focusIdx is the transcript index of the row selected in focus mode
 	// (S-076).
 	focusIdx int
@@ -819,7 +829,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		auto, gated := m.agent.BeginToolRound(m.streaming, msg.calls, m.requiresApproval)
 		m.approvalTotal = len(gated)
 		if m.streaming != "" {
-			m.appendEntry(entry{kind: entryAssistant, text: m.streaming})
+			// This is the announcement a step is titled by, so it is where an
+			// approved plan's step list joins the transcript (S-104).
+			m.appendEntry(m.stampStep(entry{kind: entryAssistant, text: m.streaming}))
 		}
 		m.streaming = ""
 		m.events = nil
@@ -1000,6 +1012,12 @@ func (m *Model) recordInput(text string) {
 }
 
 func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
+	// A plan that has been through its list has answered "where are we", so
+	// the next instruction retires it. One with steps left to go survives the
+	// message, because that question is still open (S-104).
+	if m.planRun != nil && m.planRun.complete() {
+		m.planRun = nil
+	}
 	m.turnCount++
 	m.turnStarted, m.turnEnded = time.Now(), time.Time{}
 	m.turnOpen, m.turnOutcome = true, components.TurnDone
@@ -1568,6 +1586,10 @@ func (m *Model) appendEntry(e entry) {
 
 func (m *Model) resetTranscript() {
 	m.transcript = nil
+	// The checklist is read off the transcript, so a transcript that is gone
+	// takes the approved plan with it rather than pointing at entries that no
+	// longer exist (S-104).
+	m.planRun = nil
 	m.invalidateRenderCache()
 }
 
@@ -1733,8 +1755,11 @@ func (m *Model) renderHistory() string {
 	// has a successor can never change — and only the last one re-renders
 	// each frame, because a running step's header restates its count and
 	// duration as rows land.
-	blocks := stepBlocks(m.transcript)
-	for bi := 0; bi+1 < len(blocks); bi++ {
+	blocks := m.blocksOf(m.transcript)
+	// Freeze everything before the last block rows can still land in. With an
+	// approved plan that is not the last block: its declared-but-not-started
+	// steps trail it, and they change as the run reaches them (S-104).
+	for bi := 0; bi < lastLiveBlock(blocks); bi++ {
 		blk := blocks[bi]
 		if blk.end <= m.cachedCount {
 			continue
@@ -1925,18 +1950,32 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		return true, m.memory.Manage(parts[1:])
 
 	case "/plan":
-		if len(parts) < 2 || parts[1] != "save" {
-			return true, "Usage: /plan save [name]"
+		// Bare /plan reopens the approved plan mid-turn, which is how the
+		// checklist stays reachable below 130 columns, where there is no rail
+		// to hold it (S-104).
+		if len(parts) == 1 {
+			return true, m.planStatus()
 		}
-		planText := m.lastAssistantText()
-		if strings.TrimSpace(planText) == "" {
-			return true, "No plan to save yet — there is no assistant response."
+		switch parts[1] {
+		case "save":
+			planText := m.lastAssistantText()
+			if strings.TrimSpace(planText) == "" {
+				return true, "No plan to save yet — there is no assistant response."
+			}
+			path, err := savePlan(planText, strings.Join(parts[2:], "-"))
+			if err != nil {
+				return true, "Error saving plan: " + err.Error()
+			}
+			return true, "Plan saved to " + path
+		case "drop":
+			if m.planRun == nil {
+				return true, "No approved plan is running."
+			}
+			m.planRun = nil
+			m.invalidateRenderCache()
+			return true, "Dropped the approved plan — the outline goes back to inferring its steps."
 		}
-		path, err := savePlan(planText, strings.Join(parts[2:], "-"))
-		if err != nil {
-			return true, "Error saving plan: " + err.Error()
-		}
-		return true, "Plan saved to " + path
+		return true, planUsage
 
 	case "/rewind":
 		// Only the numbered form arrives here; bare /rewind opens the picker
@@ -2089,7 +2128,9 @@ func helpText() string {
   /agents        Agent manager: attach, steer, cancel, kill sub-agents (also Ctrl+A)
   /attach [name] Attach to an agent's session and steer it (bare /attach lists)
   /detach        Back to your own session (also Esc while attached)
-  /plan save [name]  Save the last plan/response to .shhh/plans/
+  /plan          The approved plan as a checklist, with anything that has
+                 departed from it · save [name] writes the last plan/response
+                 to .shhh/plans/ · drop forgets an approved plan
   /diff          Show what this session changed, full screen — read from the
                  session's own changeset, so it works outside a git repository
   /review [turn] Review what a turn changed: file list, hunks, staging per

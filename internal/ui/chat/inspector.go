@@ -108,9 +108,15 @@ func (m Model) turnElapsed() time.Duration {
 
 // inspectorData assembles the rail from what the session already tracks. A
 // block with nothing to say is left nil, and the component omits it.
+//
+// The approved plan's checklist is read once and handed to both blocks that
+// need it: THIS TURN takes its denominator from it and PLAN draws it, and
+// reading the transcript twice per frame to tell one story would be waste.
 func (m Model) inspectorData() components.InspectorRail {
+	steps := m.planChecklist()
 	return components.InspectorRail{
-		Turn:    m.inspectorTurn(),
+		Turn:    m.inspectorTurn(steps),
+		Plan:    m.inspectorPlan(steps),
 		Changes: m.inspectorChanges(),
 		Agents:  m.inspectorAgents(),
 		Context: m.inspectorContext(),
@@ -119,16 +125,20 @@ func (m Model) inspectorData() components.InspectorRail {
 	}
 }
 
-// inspectorTurn counts this turn's steps and tools. The step count is
-// observed, not declared, so it feeds "step 3" and no meter; a declared plan
-// (S-104) is the one place a total is authoritative, and only then does the
-// progress meter have a true denominator.
-func (m Model) inspectorTurn() *components.InspectorTurn {
+// inspectorTurn counts this turn's steps and tools. Without an approved plan
+// the step count is observed, not declared, so it feeds "step 3" and no
+// meter. An approved plan (S-104) is the one place a total is authoritative,
+// and only then does the progress meter have a true denominator.
+func (m Model) inspectorTurn(steps []components.InspectorPlanStep) *components.InspectorTurn {
 	es := m.turnEntries()
 	t := components.InspectorTurn{Running: m.working(), Elapsed: m.turnElapsed()}
-	for _, blk := range stepBlocks(es) {
-		if blk.step != nil {
-			t.Step = blk.step.ordinal
+	if len(steps) > 0 {
+		t.Step, t.Steps = planProgress(steps), len(steps)
+	} else {
+		for _, blk := range m.blocksOf(es) {
+			if blk.step != nil && !blk.step.queued() {
+				t.Step = blk.step.ordinal
+			}
 		}
 	}
 	for _, e := range es {
@@ -140,6 +150,22 @@ func (m Model) inspectorTurn() *components.InspectorTurn {
 		return nil
 	}
 	return &t
+}
+
+// inspectorPlan is the PLAN block: the approved plan as a live checklist, so
+// "where are we" never needs asking (S-104, §15a). The rail is turn-scoped
+// everywhere else; this block follows the plan rather than the turn, because
+// a plan that spans two turns is still the answer to the same question.
+func (m Model) inspectorPlan(steps []components.InspectorPlanStep) *components.InspectorPlan {
+	if m.planRun == nil || len(steps) == 0 {
+		return nil
+	}
+	return &components.InspectorPlan{
+		Steps: steps,
+		Done:  planStepsDone(steps),
+		Drift: m.planRun.driftLabel(),
+		Hint:  planHintRail,
+	}
 }
 
 // inspectorChanges aggregates this turn's applied edits by path (a file

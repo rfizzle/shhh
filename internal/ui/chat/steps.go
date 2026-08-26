@@ -4,11 +4,14 @@ package chat
 // numbered steps, so a forty-tool turn reads as an outline instead of a
 // scrolling feed. The grouping is a layer over the entry list — the agent
 // already emits ordered tool results, and inventing a step protocol on the
-// wire would couple every provider to the UI (§13a). Plan mode (S-104) is the
-// one place a step list is authoritative; until it feeds one in, every step is
-// inferred from the assistant prose immediately preceding a batch of calls,
-// and a turn with no discernible steps renders exactly as it did before — a
-// flat list, no empty group chrome.
+// wire would couple every provider to the UI (§13a). Plan mode is the one
+// place a step list is authoritative: once a plan is approved (S-104) its
+// steps are the transcript's steps — numbered as the plan numbered them,
+// including the ones not started — and work the plan never named is marked as
+// off it rather than renumbered into it. Without a plan every step is inferred
+// from the assistant prose immediately preceding a batch of calls, and a turn
+// with no discernible steps renders exactly as it did before — a flat list, no
+// empty group chrome.
 
 import (
 	"fmt"
@@ -17,6 +20,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -52,14 +56,26 @@ const stepTitleMaxRunes = 120
 const stepOrdinalWidth = 2
 
 // stepGroup is one titled run of consecutive activity entries: the assistant
-// entry at titleIdx heads it, and members [start,end) are the calls it made.
+// entry at titleIdx heads it, and members [start,end) are the calls it made. A
+// step an approved plan declared but the run has not reached yet has no
+// entries at all — start == end and titleIdx is stepNoTitle — and renders as
+// its header alone (S-104).
 type stepGroup struct {
 	ordinal  int
 	titleIdx int
 	title    string
 	start    int
 	end      int
+	// offPlan marks a step the running plan never declared. It carries no
+	// ordinal, because the numbers belong to the plan.
+	offPlan bool
 }
+
+// stepNoTitle is the titleIdx of a declared step no entry heads.
+const stepNoTitle = -1
+
+// queued reports whether the group is a declared step that has not started.
+func (g *stepGroup) queued() bool { return g.end <= g.start }
 
 // transcriptBlock is one renderable unit of history: a step, or a lone entry
 // that belongs to no step. Blocks tile the transcript in order.
@@ -112,9 +128,15 @@ func stepTitle(e entry) (string, bool) {
 // assistant title is followed by at least one call, a lone entry everywhere
 // else. The scan is left to right, so a block that already has a successor
 // can never change — which is what lets renderHistory keep caching.
-func stepBlocks(es []entry) []transcriptBlock {
+//
+// declared is the approved plan's step list, or nil. With one, a group takes
+// the number stamped on its title entry rather than the running count, the
+// steps nobody has reached are appended as headers with no rows, and a group
+// the plan never declared is marked off it.
+func stepBlocks(es []entry, declared []plan.Step) []transcriptBlock {
 	var blocks []transcriptBlock
 	ordinal := 0
+	claimed := map[int]bool{}
 	for i := 0; i < len(es); {
 		if title, ok := stepTitle(es[i]); ok {
 			j := i + 1
@@ -127,10 +149,23 @@ func stepBlocks(es []entry) []transcriptBlock {
 				j--
 			}
 			if j > i+1 {
-				ordinal++
-				blocks = append(blocks, transcriptBlock{start: i, end: j, step: &stepGroup{
-					ordinal: ordinal, titleIdx: i, title: title, start: i + 1, end: j,
-				}})
+				g := &stepGroup{titleIdx: i, title: title, start: i + 1, end: j}
+				switch n := es[i].planStep; {
+				case n > 0:
+					// The plan named this step, so the plan numbers and titles
+					// it: the outline mirrors the list that was approved.
+					g.ordinal = n
+					claimed[n] = true
+					if s, ok := stepByNumber(declared, n); ok {
+						g.title = s.Title
+					}
+				case n == offPlanStep:
+					g.offPlan = true
+				default:
+					ordinal++
+					g.ordinal = ordinal
+				}
+				blocks = append(blocks, transcriptBlock{start: i, end: j, step: g})
 				i = j
 				continue
 			}
@@ -138,15 +173,40 @@ func stepBlocks(es []entry) []transcriptBlock {
 		blocks = append(blocks, transcriptBlock{start: i, end: i + 1})
 		i++
 	}
-	if len(blocks) > 0 {
-		blocks[len(blocks)-1].last = true
+	// The last block a turn can still add to is the last one with entries in
+	// it; a declared step nobody has started is not somewhere rows can land.
+	for k := len(blocks) - 1; k >= 0; k-- {
+		if blocks[k].end > blocks[k].start {
+			blocks[k].last = true
+			break
+		}
+	}
+	for _, s := range declared {
+		if claimed[s.Number] {
+			continue
+		}
+		blocks = append(blocks, transcriptBlock{start: len(es), end: len(es), step: &stepGroup{
+			ordinal: s.Number, titleIdx: stepNoTitle, title: s.Title,
+			start: len(es), end: len(es),
+		}})
 	}
 	return blocks
 }
 
+// stepByNumber finds a declared step by the number the plan gave it — which is
+// the model's own numbering, not an index (internal/plan).
+func stepByNumber(declared []plan.Step, n int) (plan.Step, bool) {
+	for _, s := range declared {
+		if s.Number == n {
+			return s, true
+		}
+	}
+	return plan.Step{}, false
+}
+
 // stepBlockAt returns the block whose step is titled by the entry at idx.
-func stepBlockAt(es []entry, idx int) (transcriptBlock, bool) {
-	for _, blk := range stepBlocks(es) {
+func (m Model) stepBlockAt(es []entry, idx int) (transcriptBlock, bool) {
+	for _, blk := range m.blocksOf(es) {
 		if blk.step != nil && blk.step.titleIdx == idx {
 			return blk, true
 		}
@@ -193,6 +253,11 @@ func (m Model) stepStats(g *stepGroup, es []entry) (state stepState, tools int, 
 // failure, because a failure you have to scroll to find is a failure you will
 // miss (§13b). Your own fold overrides both.
 func (m Model) stepFolded(g *stepGroup, es []entry, state stepState) bool {
+	if g.titleIdx == stepNoTitle {
+		// A declared step nobody has started has no rows to fold and no entry
+		// to record a fold on.
+		return false
+	}
 	switch es[g.titleIdx].stepFold {
 	case foldOpen:
 		return false
@@ -214,7 +279,7 @@ func (m Model) stepFolded(g *stepGroup, es []entry, state stepState) bool {
 // on the entry that titles it.
 func (m *Model) toggleStepFold(idx int) {
 	es := *m.entries()
-	blk, ok := stepBlockAt(es, idx)
+	blk, ok := m.stepBlockAt(es, idx)
 	if !ok {
 		return
 	}
@@ -234,6 +299,10 @@ type stepHeader struct {
 	Tools    int
 	Duration time.Duration
 	Folded   bool
+	// OffPlan marks a step the running plan never declared: it takes the
+	// ordinal column's width but not a number, because the numbers are the
+	// plan's (S-104).
+	OffPlan bool
 }
 
 // tones are the header's per-state colors, following the design system's
@@ -296,6 +365,11 @@ func (h stepHeader) View(width int) string {
 		fold = "▸"
 	}
 	ord := strconv.Itoa(h.Ordinal)
+	if h.OffPlan {
+		// Off the plan: the eye still finds the column, and finds no number
+		// there, which is exactly what happened.
+		ord = "+"
+	}
 	if len(ord) < stepOrdinalWidth {
 		ord += strings.Repeat(" ", stepOrdinalWidth-len(ord))
 	}
@@ -349,6 +423,7 @@ func (m Model) headerFor(blk transcriptBlock, es []entry) stepHeader {
 		Tools:    tools,
 		Duration: d,
 		Folded:   m.stepFolded(g, es, state),
+		OffPlan:  g.offPlan,
 	}
 }
 
@@ -401,8 +476,11 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 		headerWidth -= components.GridPointerWidth
 	}
 	header := m.headerFor(blk, es)
-	add(g.titleIdx, entry{kind: entryAssistant}, entry{kind: entryTool}, header.View(headerWidth)+"\n", true)
-	if header.Folded {
+	// A declared step nobody has started is its header and nothing else: no
+	// rows to expand, so nothing for focus mode to select either.
+	add(g.titleIdx, entry{kind: entryAssistant}, entry{kind: entryTool},
+		header.View(headerWidth)+"\n", !g.queued())
+	if header.Folded || g.queued() {
 		return units
 	}
 	// A step's rows render through its slots, so a folded run of read-only
@@ -421,7 +499,7 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 // transcriptUnits renders every block of a transcript in order.
 func (m Model) transcriptUnits(es []entry, width int, focus bool, focusIdx int) []unit {
 	var units []unit
-	for _, blk := range stepBlocks(es) {
+	for _, blk := range m.blocksOf(es) {
 		units = append(units, m.blockUnits(blk, es, width, focus, focusIdx)...)
 	}
 	return units

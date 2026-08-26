@@ -117,6 +117,15 @@ func monoFixtures() []monoSurface {
 		return c.View(w)
 	}
 
+	// The PLAN checklist holds one step's title and duration constant, so
+	// that only its state is left to tell the rows apart (S-104, §15a).
+	checklist := func(state PlanStepState) string {
+		return InspectorRail{Plan: &InspectorPlan{
+			Steps: []InspectorPlanStep{{Number: 1, Title: "Return it from runRound",
+				State: state, Elapsed: "1.2s"}},
+		}}.View(InspectorWidth, 0)
+	}
+
 	meter := func(pct int) string {
 		return Meter{Pct: pct, Cells: MeterCellsVitals, Tone: MeterPressure, Label: "ctx"}.View()
 	}
@@ -288,6 +297,12 @@ func monoFixtures() []monoSurface {
 			{"clean", undo(nil)},
 			{"drifted", undo([]string{"internal/agent/loop.go"})},
 			{"drifted twice", undo([]string{"internal/agent/loop.go", "internal/ui/chat/model.go"})},
+		}},
+		{"plan checklist state", []monoState{
+			{"queued", checklist(PlanStepQueued)},
+			{"running", checklist(PlanStepRunning)},
+			{"done", checklist(PlanStepDone)},
+			{"failed", checklist(PlanStepFailed)},
 		}},
 		{"plan step intent", []monoState{
 			{"read only", planned(func(c *PlanCard) {})},

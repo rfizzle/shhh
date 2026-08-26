@@ -138,8 +138,11 @@ var slashCommands = []slashCommand{
 		argSpecs: []argSpec{{dynamic: agentArgs, fuzzy: true}}},
 	{name: "/detach", desc: "Back to the orchestrator (also esc)",
 		enabled: func(m *Model) bool { return m.subagents != nil && m.attachedTo != "" }},
-	{name: "/plan", args: "save [name]", desc: "Save the last plan/response to .shhh/plans/",
-		argSpecs: staticArgs(argOption{"save", "Write it to .shhh/plans/"})},
+	{name: "/plan", args: "[save|drop]", desc: "The approved plan as a checklist, with anything that has departed from it",
+		argSpecs: staticArgs(
+			argOption{"save", "Write the last plan/response to .shhh/plans/"},
+			argOption{"drop", "Forget the approved plan; steps go back to inferred"},
+		)},
 	{name: "/diff", desc: "Cumulative session diff, full screen",
 		enabled: func(m *Model) bool { return m.changes != nil }},
 	{name: "/review", args: "[turn]", desc: "Review what a turn changed — files, hunks, staging",
