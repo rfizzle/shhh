@@ -664,26 +664,64 @@ every child has a full transcript rendered with the same components, an
 input box that steers it, its own approval flow, and its own mode —
 the attached view *is* the chat surface, pointed at a child.
 
-### 9a. Agent list (`/agents` or `ctrl+a`)
+### 9a. Agent list (`/agents` or `ctrl+a`, S-077 · S-111)
 
 ```
-┌─ Agents ─────────────────────────────────────────────────────────┐
-│ ❯ ● orchestrator                     round 7 · ctx 62% · $0.14   │
-│   ◇ researcher-1  auth flow survey   9 tools · running…    $0.02 │
-│   ◇ writer-1      extract agent loop ⚠ waiting approval    $0.05 │
-│   ✓ researcher-2  db schema map      done · 14 tools       $0.03 │
-│   ✗ writer-2      port fish rules    failed · round limit  $0.01 │
+┌─ Agents ─────────────────────────────── 1 needs you · 1 running ─┐
+│ ❯ ● orchestrator  this session           round 7 · streaming…    │
+│   ⚠ runner-2   go test ./...   ⚠ needs you · 3 tools · $0.01     │
+│     waiting approval: run go test ./internal/agent/...           │
+│   ◇ writer-1   docs/loop.md      ▰▰▱▱▱ 2/5 · 6 tools · $0.02     │
+│   ✓ reader-3   survey internal/ui    done · 12 tools · $0.04     │
+│     the rails and the frame are one component                    │
+│   ✗ patcher-4  apply patch           failed · 1 tool  · $0.01    │
+│     round limit (25) reached                                     │
 │                                                                  │
-│ enter attach · x cancel · X kill · esc back                      │
+│ enter attach · a answer · x cancel · X kill · esc back           │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-- One row per agent: state glyph (`●` current, `◇` running (12), `✓`
-  done (10), `✗` failed (9)), name, task label, live status, spend.
-- `⚠ waiting approval` rows are red-accented and sort to the top below
-  the orchestrator. `x` cancels the agent's current turn; `X` kills the
-  agent (inline confirm, §5).
-- The list is a live view — statuses update while it is open.
+- One row per agent: state glyph (`●` current, `◇` running (12), `⚠`
+  blocked (9), `✓` done (10), `✗` failed (9)), name, task label, live
+  progress, spend.
+- **A row's progress is a fan-out lane's progress** (§9g), from one
+  renderer: the meter where the spawn declared a step count and the
+  spinner where it did not, the outcome word once the child settles, and
+  the same `tools · spend` behind it. What the transcript says about a
+  child and what the manager says about it cannot drift apart, because
+  they are the same function. The orchestrator is not a child and keeps
+  its own status text.
+- The title rail carries the same tally the fan-out header states — whoever
+  needs an answer first, and in del.
+- **Blocked children sort to the top below the orchestrator** and say what
+  they are waiting for on the line beneath. `⚠ needs you` without saying
+  what for sends the reader looking, and so does `failed`: a settled row
+  states the reason under it the same way.
+- `[a]` answers a blocked row's approval **here**. The card (§2, §9c)
+  renders over the list and hands the list back on either answer —
+  opening the manager *because* something needs you must not then send you
+  into that child's session to say yes. `[g]` and `[ctrl+a]` drop from the
+  card's hints: the manager is already what is underneath.
+- `[r]` runs a failed child again on its original task. The attempt is what
+  restarts, not the agent: it keeps its name, its place in the batch and its
+  transcript, and gets a fresh conversation, a fresh worktree if it writes,
+  and a fresh token budget — an attempt that inherits the spend that killed
+  it fails again before it has done anything. The earlier spend is still
+  counted; the reason the attempt failed stays above the retry.
+- `[a]` and `[r]` are offered only on rows that can act on them, and the hint
+  run states what the *focused* row can do. A key that does nothing is not an
+  offer.
+- `enter` attaches, `x` cancels the agent's current turn, `X` kills the agent
+  behind an inline confirm (§5) that states what survives as well as what does
+  not — its transcript stays and the other agents keep running.
+- The list is a live view — statuses update while it is open, and it opens
+  over a running turn like every other surface in §9 (§9f).
+
+**Deviation from `ui_kits/cockpit/Agents.html`.** The artboard's manager binds
+kill to `[k]` and adds `[K] kill all`. Both are corrected here: `x`/`X` are what
+the manager has always meant, a rebind would silently retire muscle memory, and
+killing every child at once is Ctrl+C's job (§9f) — a list row is the wrong
+place to reach for it. The artboard is left for a design-side pass.
 
 ### 9b. Attached view
 
@@ -813,9 +851,10 @@ one lane each, updating in place:
   (`steps` on `spawn_agent`, §9h); without one it spins beside the word
   `working`. A ratio nobody supplied is never invented (§10c, S-094).
 - Blocked lanes sort to the top and say `⚠ needs you` in words, with what
-  they are waiting for stated underneath and `[ctrl+a] agents` — today's way
-  to answer one — offered once under the block. Answering in the lane is
-  S-111.
+  they are waiting for stated underneath and `[ctrl+a] agents` offered once
+  under the block. The block scrolls with the transcript, so the answer lives
+  in the manager rather than in the lane — since S-111 that is one key away
+  and does not cost a detour through the child (§9a).
 - A settled lane stops drawing progress, which no longer measures anything,
   and keeps its outcome and the first line of its report instead.
 - The block is a passive transcript entry: it stores the batch number and

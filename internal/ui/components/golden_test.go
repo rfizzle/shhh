@@ -363,21 +363,34 @@ func TestGolden_ReviewMode(t *testing.T) {
 	})
 }
 
-// TestGolden_AgentList captures the sub-agent manager (§9a) with every lane
-// state present, and with the focus on the child that is waiting on an
-// answer.
+// TestGolden_AgentList captures the sub-agent manager (§9a) with every row
+// state present, the blocked child sorted to the top below the orchestrator,
+// and the focus moved across the three rows whose offers differ: the
+// orchestrator (no child progress at all), the blocked child ([a] answers it
+// here) and the failed one ([r] runs it again). The progress is the fan-out
+// lane's renderer, so the capture is also where the two surfaces are held to
+// the same columns.
 func TestGolden_AgentList(t *testing.T) {
 	captureGolden(t, "agent-list", "agent list", goldenWidths, func(width int) []golden.Panel {
+		progress := func(p AgentProgress) *AgentProgress { return &p }
 		rows := []AgentRow{
-			{State: AgentCurrent, Name: "orchestrator", Task: "this session", Status: "working", Spend: "$0.12"},
-			{State: AgentRunning, Name: "writer-1", Task: "docs/loop.md", Status: "4 tools · 48s", Spend: "$0.02"},
-			{State: AgentBlocked, Name: "runner-2", Task: "go test ./...", Status: "waiting on you", Spend: "$0.01"},
-			{State: AgentDone, Name: "reader-3", Task: "survey internal/ui", Status: "12 tools · 1m 20s", Spend: "$0.04"},
-			{State: AgentFailed, Name: "patcher-4", Task: "apply patch", Status: "exit 1", Spend: "$0.00"},
+			{State: AgentCurrent, Name: "orchestrator", Task: "this session", Status: "round 7 · streaming…", Spend: "$0.12"},
+			{State: AgentBlocked, Name: "runner-2", Task: "go test ./...", Answerable: true,
+				Progress: progress(AgentProgress{State: FanoutBlocked, Tools: 3, Spend: "$0.01"}),
+				Note:     "waiting approval: run go test ./internal/agent/..."},
+			{State: AgentRunning, Name: "writer-1", Task: "docs/loop.md",
+				Progress: progress(AgentProgress{State: FanoutRunning, Step: 2, Steps: 5, Tools: 6, Spend: "$0.02"})},
+			{State: AgentDone, Name: "reader-3", Task: "survey internal/ui",
+				Progress: progress(AgentProgress{State: FanoutDone, Tools: 12, Spend: "$0.04"}),
+				Note:     "the rails and the frame are one component"},
+			{State: AgentFailed, Name: "patcher-4", Task: "apply patch", Retryable: true,
+				Progress: progress(AgentProgress{State: FanoutFailed, Tools: 1, Spend: "$0.01"}),
+				Note:     "round limit (25) reached"},
 		}
 		return []golden.Panel{
-			{Label: "focus · the current agent", View: (&AgentList{Rows: rows}).View(width)},
-			{Label: "focus · the blocked child", View: (&AgentList{Rows: rows, Focus: 2}).View(width)},
+			{Label: "focus · the orchestrator", View: (&AgentList{Rows: rows}).View(width)},
+			{Label: "focus · the blocked child, [a] answers it here", View: (&AgentList{Rows: rows, Focus: 1}).View(width)},
+			{Label: "focus · the failed child, [r] runs it again", View: (&AgentList{Rows: rows, Focus: 4}).View(width)},
 		}
 	})
 }

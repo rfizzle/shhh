@@ -9,43 +9,81 @@
 # it for the colour assignments. Trailing spaces are significant in both.
 
 ── layout ──────────────────────────────────────────────────
-· focus · the current agent
-┌─ Agents ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ ❯ ● orchestrator  this session                                                                                  working  $0.12 │
-│   ◇ writer-1  docs/loop.md                                                                                4 tools · 48s  $0.02 │
-│   ◇ runner-2  go test ./...                                                                            ⚠ waiting on you  $0.01 │
-│   ✓ reader-3  survey internal/ui                                                                      12 tools · 1m 20s  $0.04 │
-│   ✗ patcher-4  apply patch                                                                                       exit 1  $0.00 │
+· focus · the orchestrator
+┌─ Agents ────────────────────────────────────────────────────────────────────────────────────────────── 1 needs you · 1 running ┐
+│ ❯ ● orchestrator  this session                                                                     round 7 · streaming…  $0.12 │
+│   ⚠ runner-2  go test ./...                                                                      ⚠ needs you · 3 tools · $0.01 │
+│     waiting approval: run go test ./internal/agent/...                                                                         │
+│   ◇ writer-1  docs/loop.md                                                                         ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
+│   ✓ reader-3  survey internal/ui                                                                       done · 12 tools · $0.04 │
+│     the rails and the frame are one component                                                                                  │
+│   ✗ patcher-4  apply patch                                                                             failed · 1 tool · $0.01 │
+│     round limit (25) reached                                                                                                   │
 │ enter attach · x cancel · X kill · esc back                                                                                    │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
-· focus · the blocked child
-┌─ Agents ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│   ● orchestrator  this session                                                                                  working  $0.12 │
-│   ◇ writer-1  docs/loop.md                                                                                4 tools · 48s  $0.02 │
-│ ❯ ◇ runner-2  go test ./...                                                                            ⚠ waiting on you  $0.01 │
-│   ✓ reader-3  survey internal/ui                                                                      12 tools · 1m 20s  $0.04 │
-│   ✗ patcher-4  apply patch                                                                                       exit 1  $0.00 │
-│ enter attach · x cancel · X kill · esc back                                                                                    │
+· focus · the blocked child, [a] answers it here
+┌─ Agents ────────────────────────────────────────────────────────────────────────────────────────────── 1 needs you · 1 running ┐
+│   ● orchestrator  this session                                                                     round 7 · streaming…  $0.12 │
+│ ❯ ⚠ runner-2  go test ./...                                                                      ⚠ needs you · 3 tools · $0.01 │
+│     waiting approval: run go test ./internal/agent/...                                                                         │
+│   ◇ writer-1  docs/loop.md                                                                         ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
+│   ✓ reader-3  survey internal/ui                                                                       done · 12 tools · $0.04 │
+│     the rails and the frame are one component                                                                                  │
+│   ✗ patcher-4  apply patch                                                                             failed · 1 tool · $0.01 │
+│     round limit (25) reached                                                                                                   │
+│ enter attach · a answer · x cancel · X kill · esc back                                                                         │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+· focus · the failed child, [r] runs it again
+┌─ Agents ────────────────────────────────────────────────────────────────────────────────────────────── 1 needs you · 1 running ┐
+│   ● orchestrator  this session                                                                     round 7 · streaming…  $0.12 │
+│   ⚠ runner-2  go test ./...                                                                      ⚠ needs you · 3 tools · $0.01 │
+│     waiting approval: run go test ./internal/agent/...                                                                         │
+│   ◇ writer-1  docs/loop.md                                                                         ▰▰▱▱▱ 2/5 · 6 tools · $0.02 │
+│   ✓ reader-3  survey internal/ui                                                                       done · 12 tools · $0.04 │
+│     the rails and the frame are one component                                                                                  │
+│ ❯ ✗ patcher-4  apply patch                                                                             failed · 1 tool · $0.01 │
+│     round limit (25) reached                                                                                                   │
+│ enter attach · r retry · x cancel · X kill · esc back                                                                          │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 ── ansi ────────────────────────────────────────────────────
-· focus · the current agent
-␛[38;5;244m┌─ Agents ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐␛[0m
-␛[38;5;244m│␛[0m ␛[1;48;5;237m❯␛[0m ␛[1;38;5;254m●␛[0m orchestrator  ␛[38;5;244mthis session␛[0m                                                                                  ␛[38;5;244mworking␛[0m  ␛[38;5;244m$0.12␛[0m ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m   ␛[38;5;254m◇␛[0m writer-1  ␛[38;5;244mdocs/loop.md␛[0m                                                                                ␛[38;5;244m4 tools · 48s␛[0m  ␛[38;5;244m$0.02␛[0m ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m   ␛[38;5;254m◇␛[0m runner-2  ␛[38;5;244mgo test ./...␛[0m                                                                            ␛[38;5;254m⚠ waiting on you␛[0m  ␛[38;5;244m$0.01␛[0m ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m   ␛[38;5;254m✓␛[0m reader-3  ␛[38;5;244msurvey internal/ui␛[0m                                                                      ␛[38;5;244m12 tools · 1m 20s␛[0m  ␛[38;5;244m$0.04␛[0m ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m   ␛[38;5;254m✗␛[0m patcher-4  ␛[38;5;244mapply patch␛[0m                                                                                       ␛[38;5;244mexit 1␛[0m  ␛[38;5;244m$0.00␛[0m ␛[38;5;244m│␛[0m
+· focus · the orchestrator
+␛[38;5;244m┌─ Agents ────────────────────────────────────────────────────────────────────────────────────────────── ␛[38;5;254m1 needs you␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m1 running␛[0m ┐␛[0m
+␛[38;5;244m│␛[0m ␛[1;48;5;237m❯␛[0m ␛[1;38;5;254m●␛[0m orchestrator  ␛[38;5;244mthis session␛[0m                                                                     ␛[38;5;244mround 7 · streaming…␛[0m  ␛[38;5;244m$0.12␛[0m ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m   ␛[38;5;254m⚠␛[0m runner-2  ␛[38;5;244mgo test ./...␛[0m                                                                      ␛[38;5;254m⚠ needs you␛[0m␛[38;5;244m · ␛[0m␛[38;5;244m3 tools · $0.01␛[0m ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m     ␛[38;5;244mwaiting approval: run go test ./internal/agent/...␛[0m                                                                         ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m   ␛[38;5;254m◇␛[0m writer-1  ␛[38;5;244mdocs/loop.md␛[0m                                                                         ␛[38;5;254m▰▰▱▱▱ 2/5␛[0m␛[38;5;244m · ␛[0m␛[38;5;244m6 tools · $0.02␛[0m ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m   ␛[38;5;254m✓␛[0m reader-3  ␛[38;5;244msurvey internal/ui␛[0m                                                                       ␛[38;5;254mdone␛[0m␛[38;5;244m · ␛[0m␛[38;5;244m12 tools · $0.04␛[0m ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m     ␛[38;5;244mthe rails and the frame are one component␛[0m                                                                                  ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m   ␛[38;5;254m✗␛[0m patcher-4  ␛[38;5;244mapply patch␛[0m                                                                             ␛[38;5;254mfailed␛[0m␛[38;5;244m · ␛[0m␛[38;5;244m1 tool · $0.01␛[0m ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m     ␛[38;5;244mround limit (25) reached␛[0m                                                                                                   ␛[38;5;244m│␛[0m
 ␛[38;5;244m│␛[0m ␛[3;38;5;244menter attach · x cancel · X kill · esc back␛[0m                                                                                    ␛[38;5;244m│␛[0m
 ␛[38;5;244m└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[0m
 
-· focus · the blocked child
-␛[38;5;244m┌─ Agents ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐␛[0m
-␛[38;5;244m│␛[0m   ␛[1;38;5;254m●␛[0m orchestrator  ␛[38;5;244mthis session␛[0m                                                                                  ␛[38;5;244mworking␛[0m  ␛[38;5;244m$0.12␛[0m ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m   ␛[38;5;254m◇␛[0m writer-1  ␛[38;5;244mdocs/loop.md␛[0m                                                                                ␛[38;5;244m4 tools · 48s␛[0m  ␛[38;5;244m$0.02␛[0m ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m ␛[1;48;5;237m❯␛[0m ␛[38;5;254m◇␛[0m runner-2  ␛[38;5;244mgo test ./...␛[0m                                                                            ␛[38;5;254m⚠ waiting on you␛[0m  ␛[38;5;244m$0.01␛[0m ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m   ␛[38;5;254m✓␛[0m reader-3  ␛[38;5;244msurvey internal/ui␛[0m                                                                      ␛[38;5;244m12 tools · 1m 20s␛[0m  ␛[38;5;244m$0.04␛[0m ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m   ␛[38;5;254m✗␛[0m patcher-4  ␛[38;5;244mapply patch␛[0m                                                                                       ␛[38;5;244mexit 1␛[0m  ␛[38;5;244m$0.00␛[0m ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m ␛[3;38;5;244menter attach · x cancel · X kill · esc back␛[0m                                                                                    ␛[38;5;244m│␛[0m
+· focus · the blocked child, [a] answers it here
+␛[38;5;244m┌─ Agents ────────────────────────────────────────────────────────────────────────────────────────────── ␛[38;5;254m1 needs you␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m1 running␛[0m ┐␛[0m
+␛[38;5;244m│␛[0m   ␛[1;38;5;254m●␛[0m orchestrator  ␛[38;5;244mthis session␛[0m                                                                     ␛[38;5;244mround 7 · streaming…␛[0m  ␛[38;5;244m$0.12␛[0m ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m ␛[1;48;5;237m❯␛[0m ␛[38;5;254m⚠␛[0m runner-2  ␛[38;5;244mgo test ./...␛[0m                                                                      ␛[38;5;254m⚠ needs you␛[0m␛[38;5;244m · ␛[0m␛[38;5;244m3 tools · $0.01␛[0m ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m     ␛[38;5;244mwaiting approval: run go test ./internal/agent/...␛[0m                                                                         ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m   ␛[38;5;254m◇␛[0m writer-1  ␛[38;5;244mdocs/loop.md␛[0m                                                                         ␛[38;5;254m▰▰▱▱▱ 2/5␛[0m␛[38;5;244m · ␛[0m␛[38;5;244m6 tools · $0.02␛[0m ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m   ␛[38;5;254m✓␛[0m reader-3  ␛[38;5;244msurvey internal/ui␛[0m                                                                       ␛[38;5;254mdone␛[0m␛[38;5;244m · ␛[0m␛[38;5;244m12 tools · $0.04␛[0m ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m     ␛[38;5;244mthe rails and the frame are one component␛[0m                                                                                  ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m   ␛[38;5;254m✗␛[0m patcher-4  ␛[38;5;244mapply patch␛[0m                                                                             ␛[38;5;254mfailed␛[0m␛[38;5;244m · ␛[0m␛[38;5;244m1 tool · $0.01␛[0m ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m     ␛[38;5;244mround limit (25) reached␛[0m                                                                                                   ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m ␛[3;38;5;244menter attach · a answer · x cancel · X kill · esc back␛[0m                                                                         ␛[38;5;244m│␛[0m
+␛[38;5;244m└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[0m
+
+· focus · the failed child, [r] runs it again
+␛[38;5;244m┌─ Agents ────────────────────────────────────────────────────────────────────────────────────────────── ␛[38;5;254m1 needs you␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m1 running␛[0m ┐␛[0m
+␛[38;5;244m│␛[0m   ␛[1;38;5;254m●␛[0m orchestrator  ␛[38;5;244mthis session␛[0m                                                                     ␛[38;5;244mround 7 · streaming…␛[0m  ␛[38;5;244m$0.12␛[0m ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m   ␛[38;5;254m⚠␛[0m runner-2  ␛[38;5;244mgo test ./...␛[0m                                                                      ␛[38;5;254m⚠ needs you␛[0m␛[38;5;244m · ␛[0m␛[38;5;244m3 tools · $0.01␛[0m ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m     ␛[38;5;244mwaiting approval: run go test ./internal/agent/...␛[0m                                                                         ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m   ␛[38;5;254m◇␛[0m writer-1  ␛[38;5;244mdocs/loop.md␛[0m                                                                         ␛[38;5;254m▰▰▱▱▱ 2/5␛[0m␛[38;5;244m · ␛[0m␛[38;5;244m6 tools · $0.02␛[0m ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m   ␛[38;5;254m✓␛[0m reader-3  ␛[38;5;244msurvey internal/ui␛[0m                                                                       ␛[38;5;254mdone␛[0m␛[38;5;244m · ␛[0m␛[38;5;244m12 tools · $0.04␛[0m ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m     ␛[38;5;244mthe rails and the frame are one component␛[0m                                                                                  ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m ␛[1;48;5;237m❯␛[0m ␛[38;5;254m✗␛[0m patcher-4  ␛[38;5;244mapply patch␛[0m                                                                             ␛[38;5;254mfailed␛[0m␛[38;5;244m · ␛[0m␛[38;5;244m1 tool · $0.01␛[0m ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m     ␛[38;5;244mround limit (25) reached␛[0m                                                                                                   ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m ␛[3;38;5;244menter attach · r retry · x cancel · X kill · esc back␛[0m                                                                          ␛[38;5;244m│␛[0m
 ␛[38;5;244m└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[0m

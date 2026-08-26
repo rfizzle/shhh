@@ -348,6 +348,14 @@ type child struct {
 	toolCalls int
 	tokensIn  int64
 	tokensOut int64
+	// priorIn/priorOut carry the spend of earlier attempts across a retry
+	// (S-111). The live counters are what the token budget is measured
+	// against, so each attempt gets the budget it was spawned with; the
+	// status adds the carried spend back, because money already spent does
+	// not stop being spent when the child runs again.
+	priorIn   int64
+	priorOut  int64
+	attempt   int
 	budgetHit bool
 	report    string
 	patchNote string
@@ -396,8 +404,8 @@ func (c *child) status() Status {
 		State:     c.state,
 		Detail:    c.detail,
 		ToolCalls: c.toolCalls,
-		TokensIn:  c.tokensIn,
-		TokensOut: c.tokensOut,
+		TokensIn:  c.priorIn + c.tokensIn,
+		TokensOut: c.priorOut + c.tokensOut,
 		Batch:     c.batch,
 		Started:   c.started,
 		Elapsed:   end.Sub(c.started),
@@ -479,6 +487,25 @@ func (c *child) interruptTurn() {
 		c.intClosed = true
 	}
 	c.mu.Unlock()
+}
+
+// stop cancels the current attempt. A retry replaces cancel, so it is read
+// under the lock rather than off the struct (S-111).
+func (c *child) stop() {
+	c.mu.Lock()
+	cancel := c.cancel
+	c.mu.Unlock()
+	if cancel != nil {
+		cancel()
+	}
+}
+
+// workspace is the attempt's isolated worktree and its parent repo top, read
+// under the lock for the same reason.
+func (c *child) workspace() (worktree, repoTop string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.worktree, c.repoTop
 }
 
 // interruptCh is the current turn's interrupt channel (nil before any turn).
@@ -817,7 +844,88 @@ func (s *Supervisor) Kill(name string) error {
 		return fmt.Errorf("agent %s has already finished (%s)", name, state)
 	}
 	c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Killed by the user."})
-	c.cancel()
+	c.stop()
+	return nil
+}
+
+// Retry runs a failed child again on its original task (S-111). Only a
+// failed child can be retried: a finished one has nothing to redo, and a live
+// one is already doing it.
+//
+// The attempt is what restarts, not the agent. The child keeps its name, its
+// place in the batch and its transcript — the failed attempt stays there,
+// with the reason it failed and the retry appended after it, so the list and
+// the attached view both keep their history. Everything the attempt owns is
+// new: a fresh conversation, a fresh workspace for a writer, and a fresh
+// token budget, because an attempt that inherits the spend that killed it
+// fails again before it has done anything.
+func (s *Supervisor) Retry(name string) error {
+	c, err := s.lookup(name)
+	if err != nil {
+		return err
+	}
+	if s.ctx.Err() != nil {
+		return errors.New("the agent supervisor is shut down")
+	}
+	c.mu.Lock()
+	state, detail := c.state, c.detail
+	c.mu.Unlock()
+	if state != StateFailed {
+		return fmt.Errorf("agent %s is %s; only a failed agent can be retried", name, state)
+	}
+	// The previous run's goroutine owns the worktree cleanup and the done
+	// channel, so a retry waits for it to be gone rather than racing it.
+	select {
+	case <-c.done:
+	default:
+		return fmt.Errorf("agent %s is still shutting down; try again in a moment", name)
+	}
+
+	root := s.opts.Root
+	worktree, repoTop := "", ""
+	if c.role == RoleWriter {
+		worktree, root, repoTop, err = addWorktree(s.opts.Root)
+		if err != nil {
+			return fmt.Errorf("cannot create an isolated worktree for the retry: %w", err)
+		}
+	}
+	cctx, cancel := context.WithCancel(s.ctx)
+	env, err := s.opts.NewEnv(cctx, Spec{Role: c.role, Root: root, Model: c.model, Paths: c.paths})
+	if err != nil {
+		cancel()
+		if worktree != "" {
+			removeWorktree(repoTop, worktree)
+		}
+		return fmt.Errorf("cannot set up the retry: %w", err)
+	}
+	a := agent.New([]provider.Message{{Role: provider.RoleSystem, Content: env.SystemPrompt}}, env.Stream)
+	a.SetMaxRounds(c.agent.MaxRounds())
+	a.SetExecutor(env.Executor)
+
+	c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Retrying — the previous attempt " + detail + "."})
+
+	c.mu.Lock()
+	c.ctx, c.cancel = cctx, cancel
+	c.agent, c.env, c.headless = a, env, nil
+	c.root, c.worktree, c.repoTop = root, worktree, repoTop
+	c.done = make(chan struct{})
+	c.state, c.detail = StateQueued, "queued · retry"
+	c.started, c.ended = time.Now(), time.Time{}
+	c.attempt++
+	// Each attempt is measured against the budget it was spawned with; what
+	// the earlier attempts spent is carried, not forgotten.
+	c.priorIn, c.priorOut = c.priorIn+c.tokensIn, c.priorOut+c.tokensOut
+	c.tokensIn, c.tokensOut, c.budgetHit = 0, 0, false
+	c.toolCalls, c.step = 0, 0
+	c.report, c.patchNote, c.streaming = "", "", ""
+	c.mu.Unlock()
+	if s.opts.Record != nil {
+		c.rec = s.opts.Record(c.role)
+	}
+
+	s.wg.Add(1)
+	go s.run(c)
+	s.emitUpdate(c)
 	return nil
 }
 
@@ -856,10 +964,11 @@ func (s *Supervisor) WorktreeDiff(name string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if c.worktree == "" {
+	worktree, _ := c.workspace()
+	if worktree == "" {
 		return "", fmt.Errorf("agent %s has no isolated workspace (%s role) — nothing to diff", name, c.role)
 	}
-	return worktreePatch(c.worktree)
+	return worktreePatch(worktree)
 }
 
 // CancelAll cancels every child; blocked approval waits unblock and each
@@ -870,7 +979,7 @@ func (s *Supervisor) CancelAll() {
 	copy(kids, s.children)
 	s.mu.Unlock()
 	for _, c := range kids {
-		c.cancel()
+		c.stop()
 	}
 }
 
@@ -886,8 +995,8 @@ func (s *Supervisor) Close() {
 		copy(kids, s.children)
 		s.mu.Unlock()
 		for _, c := range kids {
-			if c.worktree != "" {
-				removeWorktree(c.repoTop, c.worktree)
+			if worktree, repoTop := c.workspace(); worktree != "" {
+				removeWorktree(repoTop, worktree)
 			}
 		}
 		close(s.events)
@@ -1095,9 +1204,12 @@ func (s *Supervisor) run(c *child) {
 	if c.rec.End != nil {
 		defer c.rec.End()
 	}
+	// The attempt's workspace is captured here rather than read in the defer:
+	// a retry gives the child a new one, and this goroutine cleans up its own.
+	worktree, repoTop := c.workspace()
 	defer func() {
-		if c.worktree != "" {
-			removeWorktree(c.repoTop, c.worktree)
+		if worktree != "" {
+			removeWorktree(repoTop, worktree)
 		}
 	}()
 

@@ -154,6 +154,7 @@ func (m *Model) attach(name string) {
 	m.agentList = nil
 	m.killConfirm = nil
 	m.killTarget = ""
+	m.answerAgent = ""
 	// The prompt gutter shows the child's name while attached (S-082), so the
 	// textarea re-fits around it.
 	m.syncInputWidth()
@@ -184,6 +185,9 @@ func (m *Model) noteChild(name, text string) {
 // purgeChildAsks declines and removes every queued ask from one agent (its
 // turn was cancelled or it was killed — the requests are moot, never parked).
 func (m *Model) purgeChildAsks(name string) {
+	if m.answerAgent == name {
+		m.answerAgent = ""
+	}
 	kept := m.childAsks[:0]
 	for _, a := range m.childAsks {
 		if a.Agent == name {
@@ -234,11 +238,20 @@ func (m Model) buildAgentRows() ([]components.AgentRow, []string) {
 		}
 	}
 	for _, st := range append(blocked, rest...) {
+		// The row draws the child's progress through the fan-out lane's
+		// renderer, so the manager and the transcript say the same thing
+		// about the same child (S-111).
+		progress := m.childProgress(st)
 		row := components.AgentRow{
-			Name:   st.Name,
-			Task:   firstLine(st.Task),
-			Status: st.Detail,
-			Spend:  m.spendLabel(st.TokensIn, st.TokensOut),
+			Name:     st.Name,
+			Task:     firstLine(st.Task),
+			Status:   st.Detail,
+			Progress: &progress,
+			Note:     childNote(st),
+			// A blocked child can be answered here only while its request is
+			// still queued; a failed one can be run again on its task.
+			Answerable: st.State == subagent.StateBlocked && m.pendingAskFor(st.Name) != nil,
+			Retryable:  st.State == subagent.StateFailed,
 		}
 		switch {
 		case st.Name == m.attachedTo:
@@ -256,6 +269,17 @@ func (m Model) buildAgentRows() ([]components.AgentRow, []string) {
 		names = append(names, st.Name)
 	}
 	return rows, names
+}
+
+// pendingAskFor is the approval this agent is waiting on, if the session
+// still holds it.
+func (m Model) pendingAskFor(name string) *subagent.Ask {
+	for _, ask := range m.childAsks {
+		if ask.Agent == name {
+			return ask
+		}
+	}
+	return nil
 }
 
 func (m Model) orchestratorRow() components.AgentRow {
@@ -300,8 +324,13 @@ func (m Model) spendLabel(in, out int64) string {
 }
 
 // agentListLines renders the live agent list (plus the inline kill confirm
-// when armed), one row per line.
+// when armed), one row per line. While a row's approval is being answered the
+// card takes the panel instead — the list is what it returns to, so the two
+// never render at once (S-111).
 func (m Model) agentListLines() []string {
+	if ask := m.listAnswerAsk(); ask != nil {
+		return strings.Split(m.listAnswerCard(ask).View(m.contentWidth()), "\n")
+	}
 	rows, _ := m.buildAgentRows()
 	m.agentList.Rows = rows
 	m.agentList.MaxLines = m.maxConfirmPanelHeight()
@@ -340,6 +369,11 @@ func (m Model) updateAgentList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, m.quitCmd()
 	}
+	// An answer in progress owns the keys: the card is over the list, and
+	// answering it (either way) hands the list back.
+	if ask := m.listAnswerAsk(); ask != nil {
+		return m.updateListAnswer(msg, ask)
+	}
 	if m.killConfirm != nil {
 		done, result := m.killConfirm.Update(msg)
 		if !done {
@@ -371,6 +405,7 @@ func (m Model) updateAgentList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	}
 	if done && res.Action == components.AgentBack {
 		m.agentList = nil
+		m.answerAgent = ""
 		m.syncViewport()
 		return m, nil
 	}
@@ -404,15 +439,99 @@ func (m Model) updateAgentList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.purgeChildAsks(name)
 		}
 		return m, nil
+	case components.AgentAnswer:
+		// The card renders over the list and comes back to it (§9a): opening
+		// the manager because something needs you should not then send you
+		// into that child's session to say yes.
+		if name == "" || m.pendingAskFor(name) == nil {
+			return m, nil
+		}
+		m.answerAgent = name
+		m.syncViewport()
+		return m, nil
+	case components.AgentRetry:
+		if name == "" {
+			return m, nil // the orchestrator's turn is re-run by asking again
+		}
+		if err := m.subagents.Retry(name); err != nil {
+			m.noteChild(name, err.Error())
+		} else {
+			m.appendEntry(entry{kind: entrySystem, text: "Retrying " + name + " on its original task."})
+			m.viewport.SetContent(m.renderHistory())
+			m.viewport.GotoBottom()
+		}
+		return m, nil
 	case components.AgentKill:
 		if name == "" {
 			return m, nil // the orchestrator is quit with Ctrl+D, never killed from here
 		}
-		m.killConfirm = &components.Confirm{Prompt: "Kill " + name + "? Its turn is cancelled and its isolated workspace is discarded."}
+		// The confirm states what survives as well as what does not: a kill
+		// that only names its casualties reads as bigger than it is.
+		m.killConfirm = &components.Confirm{Prompt: "Kill " + name +
+			"? Its turn stops and its isolated workspace is discarded; its transcript stays and the other agents keep running."}
 		m.killTarget = name
 		m.syncViewport()
 		return m, nil
 	}
+	return m, nil
+}
+
+// listAnswerAsk is the approval being answered from the list, if one is: the
+// row's request, still queued. A request that resolved elsewhere (the agent
+// was killed, its turn cancelled) takes the surface with it rather than
+// leaving a card over nothing.
+func (m Model) listAnswerAsk() *subagent.Ask {
+	if m.agentList == nil || m.answerAgent == "" {
+		return nil
+	}
+	return m.pendingAskFor(m.answerAgent)
+}
+
+// listAnswerCard is the routed approval card as it renders over the list.
+// The hints drop [g] and [ctrl+a]: the manager is already what is underneath,
+// and answering here is the whole point of being here.
+func (m Model) listAnswerCard(ask *subagent.Ask) *components.ApprovalCard {
+	card := m.childAskCard(ask)
+	card.ExtraHints = []string{"esc: deny, back to the agents"}
+	return card
+}
+
+// updateListAnswer routes keys to the card over the list. Either answer
+// resolves the request and returns to the list; esc/n declines, because a
+// routed request is never silently dropped.
+func (m Model) updateListAnswer(msg tea.KeyMsg, ask *subagent.Ask) (tea.Model, tea.Cmd) {
+	if msg.String() == "ctrl+d" {
+		m.quitting = true
+		m.cancelSubagents()
+		if m.cancel != nil {
+			m.cancel()
+		}
+		if m.runCancel != nil {
+			m.runCancel()
+		}
+		return m, m.quitCmd()
+	}
+	done, result := m.listAnswerCard(ask).Update(msg)
+	if !done {
+		return m, nil
+	}
+	m.answerAgent = ""
+	for i, queued := range m.childAsks {
+		if queued == ask {
+			m.childAsks = append(m.childAsks[:i], m.childAsks[i+1:]...)
+			break
+		}
+	}
+	approved := result == components.ApprovalApprove
+	ask.Respond(approved)
+	verdict := "Declined"
+	if approved {
+		verdict = "Approved"
+	}
+	m.appendEntry(entry{kind: entrySystem, text: verdict + " " + ask.Agent + " ▸ " + ask.Title})
+	m.syncViewport()
+	m.viewport.SetContent(m.renderHistory())
+	m.viewport.GotoBottom()
 	return m, nil
 }
 

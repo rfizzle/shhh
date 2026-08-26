@@ -9,10 +9,12 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 func key(r rune) tea.KeyMsg { return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}} }
@@ -232,6 +234,185 @@ func TestKillFromListWithInlineConfirm(t *testing.T) {
 		st, ok := sup.Get("researcher-1")
 		return ok && st.State == subagent.StateFailed
 	})
+}
+
+// pumpAsks feeds the supervisor's events into the model the way
+// listenSubagents does at runtime, until want approvals have been routed into
+// the session. The child is really blocked on the other end of them, which is
+// what makes the answer observable through the child rather than through the
+// request object (the child consumes the response itself).
+func pumpAsks(t *testing.T, m Model, sup *subagent.Supervisor, want int) Model {
+	t.Helper()
+	deadline := time.After(5 * time.Second)
+	for len(m.childAsks) < want {
+		select {
+		case ev := <-sup.Events():
+			updated, _ := m.Update(subagentEventMsg{ev: ev})
+			m = updated.(Model)
+		case <-deadline:
+			t.Fatalf("only %d of %d approvals arrived", len(m.childAsks), want)
+		}
+	}
+	return m
+}
+
+// TestBlockedRowSortsUpAndSaysWhatItWaitsFor: the manager puts whoever needs
+// an answer directly below the orchestrator and states what the answer is
+// for, because "⚠ needs you" on its own sends the reader looking.
+func TestBlockedRowSortsUpAndSaysWhatItWaitsFor(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: gatedEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnInto(t, sup, `{"role":"researcher","task":"first"}`)
+	spawnInto(t, sup, `{"role":"researcher","task":"second"}`)
+	waitFor(t, func() bool { _, blocked := sup.ActiveCounts(); return blocked == 2 })
+	m = pumpAsks(t, m, sup, 2)
+
+	rows, names := m.buildAgentRows()
+	if len(rows) != 3 || names[0] != "" {
+		t.Fatalf("rows = %d, names = %v; want the orchestrator plus two children", len(rows), names)
+	}
+	for _, row := range rows[1:] {
+		if row.State != components.AgentBlocked {
+			t.Fatalf("blocked children must sort to the top, got %v at the front", row.State)
+		}
+		if !strings.Contains(row.Note, "echo hi") {
+			t.Fatalf("a blocked row must say what it waits for, got %q", row.Note)
+		}
+		if !row.Answerable {
+			t.Fatalf("a blocked row with a queued ask must be answerable: %+v", row)
+		}
+		if row.Progress == nil {
+			t.Fatalf("a child's row must carry lane progress: %+v", row)
+		}
+	}
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlA})
+	m = updated.(Model)
+	if view := m.View(); !strings.Contains(view, "2 needs you") {
+		t.Fatalf("the manager's title rail must state who needs you:\n%s", view)
+	}
+}
+
+// TestAnswerBlockedChildFromTheList is S-111's whole point: opening the
+// manager because something needs you must not then send you into that
+// child's session to say yes. [a] renders the card over the list and hands
+// the list back.
+func TestAnswerBlockedChildFromTheList(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: gatedEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnInto(t, sup, `{"role":"researcher","task":"survey"}`)
+	m = pumpAsks(t, m, sup, 1)
+
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlA})
+	m = updated.(Model)
+	// The child sorts directly below the orchestrator; [a] on it opens the card.
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	m = updated.(Model)
+	updated, _ = m.Update(key('a'))
+	m = updated.(Model)
+	if m.answerAgent != "researcher-1" {
+		t.Fatalf("answerAgent = %q, want researcher-1", m.answerAgent)
+	}
+	if m.attachedTo != "" {
+		t.Fatalf("answering must not attach, attached to %q", m.attachedTo)
+	}
+	view := m.View()
+	if !strings.Contains(view, "echo hi") {
+		t.Fatalf("the approval card is not over the list:\n%s", view)
+	}
+	if strings.Contains(view, "enter attach") {
+		t.Fatalf("the list must step aside while the card is up:\n%s", view)
+	}
+
+	updated, _ = m.Update(key('y'))
+	m = updated.(Model)
+	if !transcriptContains(m, "Approved researcher-1 ▸ run echo hi") {
+		t.Fatal("transcript missing the approval entry")
+	}
+	if len(m.childAsks) != 0 {
+		t.Fatalf("the answered request must leave the queue, %d left", len(m.childAsks))
+	}
+	// The child was really waiting on it: it consumed the answer and came
+	// back with its next request, which is what unblocking looks like from
+	// out here.
+	m = pumpAsks(t, m, sup, 1)
+	if m.answerAgent != "" || m.agentList == nil {
+		t.Fatalf("answering must return to the list (answerAgent=%q, open=%v)", m.answerAgent, m.agentList != nil)
+	}
+	if !strings.Contains(m.View(), "enter attach") {
+		t.Fatalf("the list did not come back:\n%s", m.View())
+	}
+}
+
+// TestAnswerFromTheListDeclinesOnEsc: a routed request is never dropped, and
+// the list is still what the answer returns to.
+func TestAnswerFromTheListDeclinesOnEsc(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: gatedEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnInto(t, sup, `{"role":"researcher","task":"survey"}`)
+	m = pumpAsks(t, m, sup, 1)
+
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlA})
+	m = updated.(Model)
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	m = updated.(Model)
+	updated, _ = m.Update(key('a'))
+	m = updated.(Model)
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	m = updated.(Model)
+
+	if !transcriptContains(m, "Declined researcher-1 ▸ run echo hi") {
+		t.Fatal("a routed request is never dropped: the decline must be recorded")
+	}
+	if m.agentList == nil || m.answerAgent != "" {
+		t.Fatal("declining must return to the list")
+	}
+}
+
+// TestRetryFailedChildFromTheList: [r] runs a failed child again on its
+// original task, and the row says why it failed before it does.
+func TestRetryFailedChildFromTheList(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnBlockedChild(t, sup)
+	if err := sup.Kill("researcher-1"); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, func() bool {
+		st, ok := sup.Get("researcher-1")
+		return ok && st.State == subagent.StateFailed
+	})
+
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlA})
+	m = updated.(Model)
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	m = updated.(Model)
+	view := m.View()
+	if !strings.Contains(view, "r retry") {
+		t.Fatalf("a failed row must offer the retry:\n%s", view)
+	}
+	if !strings.Contains(view, "cancelled") {
+		t.Fatalf("a failed row must state why it failed:\n%s", view)
+	}
+
+	updated, _ = m.Update(key('r'))
+	m = updated.(Model)
+	if m.agentList == nil {
+		t.Fatal("retrying must leave the list open")
+	}
+	waitFor(t, func() bool {
+		st, ok := sup.Get("researcher-1")
+		return ok && st.State == subagent.StateRunning
+	})
+	if st, _ := sup.Get("researcher-1"); st.Task != "long survey" {
+		t.Fatalf("the retry must keep the original task, got %q", st.Task)
+	}
+	if !transcriptContains(m, "Retrying researcher-1 on its original task.") {
+		t.Fatal("transcript missing the retry entry")
+	}
 }
 
 func TestDetachedAskGJumpsToAgent(t *testing.T) {

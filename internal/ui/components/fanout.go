@@ -41,6 +41,22 @@ const (
 // progress stops being worth drawing.
 func (s FanoutState) settled() bool { return s == FanoutDone || s == FanoutFailed }
 
+// AgentProgress is what one child reports about how it is doing: its state,
+// how far it has got against a declared step count, how many calls it has
+// made and what it has cost. A child is drawn in two places — a lane in the
+// transcript (§9g) and a row in the manager (§9a) — and both render it
+// through these methods, so what a lane says and what a row says about the
+// same child can never drift apart (S-111).
+type AgentProgress struct {
+	State       FanoutState
+	Step, Steps int
+	Tools       int
+	Spend       string
+	// Frame is the spinner frame for a child with no declared step count;
+	// the host ticks it.
+	Frame int
+}
+
 // FanoutLane is one child of the batch.
 type FanoutLane struct {
 	State FanoutState
@@ -102,10 +118,10 @@ func headerLead() string {
 		verbField("fan-out") + strings.Repeat(" ", ptrWidth)
 }
 
-// glyph pairs every lane state with a mark of its own, so a monochrome
-// terminal keeps them apart (invariant 1).
-func (l FanoutLane) glyph() string {
-	switch l.State {
+// glyph pairs every state with a mark of its own, so a monochrome terminal
+// keeps them apart (invariant 1).
+func (p AgentProgress) glyph() string {
+	switch p.State {
 	case FanoutQueued:
 		return dimStyle.Render("·")
 	case FanoutBlocked:
@@ -121,12 +137,11 @@ func (l FanoutLane) glyph() string {
 	}
 }
 
-// progress is the lane's left-hand status field: the meter when the spawn
-// declared a step count, the spinner when it did not, and the outcome word
-// once the child has settled — a bar against a finished child measures
-// nothing.
-func (l FanoutLane) progress() string {
-	switch l.State {
+// progress is the left-hand status field: the meter when the spawn declared
+// a step count, the spinner when it did not, and the outcome word once the
+// child has settled — a bar against a finished child measures nothing.
+func (p AgentProgress) progress() string {
+	switch p.State {
 	case FanoutBlocked:
 		return errStyle.Render("⚠ needs you")
 	case FanoutQueued:
@@ -138,23 +153,23 @@ func (l FanoutLane) progress() string {
 	case FanoutFailed:
 		return errStyle.Render("failed")
 	}
-	if m, ok := AgentMeter(l.Step, l.Steps); ok {
-		m.Text = fmt.Sprintf("%d/%d", min(max(l.Step, 0), l.Steps), l.Steps)
+	if m, ok := AgentMeter(p.Step, p.Steps); ok {
+		m.Text = fmt.Sprintf("%d/%d", min(max(p.Step, 0), p.Steps), p.Steps)
 		return m.View()
 	}
-	return Spinner{Frame: l.Frame, Label: "working"}.View()
+	return Spinner{Frame: p.Frame, Label: "working"}.View()
 }
 
-// stats is what the lane cost so far: the calls it made and the money it
+// stats is what the child cost so far: the calls it made and the money it
 // spent, each left out when there is nothing to report rather than stated as
 // a zero.
-func (l FanoutLane) stats() string {
+func (p AgentProgress) stats() string {
 	var parts []string
-	if l.Tools > 0 {
-		parts = append(parts, plural(l.Tools, "tool"))
+	if p.Tools > 0 {
+		parts = append(parts, plural(p.Tools, "tool"))
 	}
-	if l.Spend != "" {
-		parts = append(parts, l.Spend)
+	if p.Spend != "" {
+		parts = append(parts, p.Spend)
 	}
 	if len(parts) == 0 {
 		return ""
@@ -162,10 +177,10 @@ func (l FanoutLane) stats() string {
 	return dimmerStyle.Render(strings.Join(parts, " · "))
 }
 
-// outcomeField joins the lane's progress and its stats into the one
-// right-aligned field, the way an activity row joins outcome and counts.
-func (l FanoutLane) outcomeField() string {
-	progress, stats := l.progress(), l.stats()
+// outcomeField joins the progress and the stats into the one right-aligned
+// field, the way an activity row joins outcome and counts.
+func (p AgentProgress) outcomeField() string {
+	progress, stats := p.progress(), p.stats()
 	switch {
 	case progress == "":
 		return stats
@@ -174,6 +189,16 @@ func (l FanoutLane) outcomeField() string {
 	}
 	return progress + dimStyle.Render(" · ") + stats
 }
+
+// progressOf is the lane's child-progress view of itself, so the lane and
+// the manager row for the same child draw from one renderer (S-111).
+func (l FanoutLane) progressOf() AgentProgress {
+	return AgentProgress{State: l.State, Step: l.Step, Steps: l.Steps,
+		Tools: l.Tools, Spend: l.Spend, Frame: l.Frame}
+}
+
+func (l FanoutLane) glyph() string        { return l.progressOf().glyph() }
+func (l FanoutLane) outcomeField() string { return l.progressOf().outcomeField() }
 
 // target is the lane's growing field: the child's name, then what it was
 // asked to do.
@@ -235,10 +260,11 @@ func (b FanoutBlock) sorted() []FanoutLane {
 	return append(blocked, rest...)
 }
 
-// counts tallies the batch for its header.
-func (b FanoutBlock) counts() (running, blocked, done, failed int) {
-	for _, l := range b.Lanes {
-		switch l.State {
+// tallyStates counts a set of children by state, for the one line that heads
+// them.
+func tallyStates(states []FanoutState) (running, blocked, done, failed int) {
+	for _, st := range states {
+		switch st {
 		case FanoutBlocked:
 			blocked++
 		case FanoutDone:
@@ -252,13 +278,15 @@ func (b FanoutBlock) counts() (running, blocked, done, failed int) {
 	return running, blocked, done, failed
 }
 
-// headerOutcome states what the batch still owes you. Whoever needs an answer
-// is said first and in del, because it is the only part of the line that asks
-// anything of you; the batch's tally of finished children is left to the
-// lanes until nothing is running, when it becomes the whole story. The field
-// never clips (§6a), so it says two things at most.
-func (b FanoutBlock) headerOutcome() string {
-	running, blocked, done, failed := b.counts()
+// stateTally states what a set of children still owes you. Whoever needs an
+// answer is said first and in del, because it is the only part of the line
+// that asks anything of you; the tally of finished children is left to the
+// rows until nothing is running, when it becomes the whole story. The field
+// never clips (§6a), so it says two things at most. The fan-out header and
+// the manager's title rail are the same sentence about the same children, so
+// they are the same function (S-111).
+func stateTally(states []FanoutState) string {
+	running, blocked, done, failed := tallyStates(states)
 	var parts []string
 	if blocked > 0 {
 		parts = append(parts, errStyle.Render(fmt.Sprintf("%d needs you", blocked)))
@@ -276,6 +304,23 @@ func (b FanoutBlock) headerOutcome() string {
 	}
 	return strings.Join(parts, dimStyle.Render(" · "))
 }
+
+// states is the batch's lane states, in lane order.
+func (b FanoutBlock) states() []FanoutState {
+	out := make([]FanoutState, len(b.Lanes))
+	for i, l := range b.Lanes {
+		out[i] = l.State
+	}
+	return out
+}
+
+// counts tallies the batch for its header.
+func (b FanoutBlock) counts() (running, blocked, done, failed int) {
+	return tallyStates(b.states())
+}
+
+// headerOutcome states what the batch still owes you.
+func (b FanoutBlock) headerOutcome() string { return stateTally(b.states()) }
 
 // View renders the block at the given width: the header, then every lane in
 // sort order, then the offers a blocked lane makes.

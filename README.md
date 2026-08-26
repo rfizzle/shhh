@@ -522,6 +522,8 @@ A wrong turn costs one command, not the session: a checkpoint is recorded at the
 
 `shhh code` can delegate scoped work to background **sub-agents**. The model spawns them with `spawn_agent` (you approve each spawn) in one of two roles: a **researcher** gets read-only tools plus the web against the real workspace, and a **writer** gets the full toolset against an *isolated git worktree* — its changes never touch your checkout directly, they come back as a single patch you review and apply. `/agents` (or Ctrl+A) is the agent manager: attach to a child's live session, steer it mid-run, cancel a turn, or kill it; `/attach <name>` jumps straight into one and `/detach` (or Esc) comes back; `agent_report` collects a child's final report.
 
+The manager is also where a blocked child is answered. Children waiting on you sort to the top below the orchestrator and say what they are waiting for, not just that they are waiting; `[a]` renders that child's approval card over the list and hands the list back on either answer, so opening the manager *because* something needs you doesn't then cost you a detour through that child's session. A failed row says why it failed and offers `[r]`, which runs the child again on its original task — the attempt restarts, not the agent: it keeps its name and its transcript, and gets a fresh conversation, a fresh worktree if it writes, and a fresh token budget, because an attempt that inherits the spend that killed it fails again before it has done anything. Every row carries the same live progress its fan-out lane does, from the same renderer. `enter` attaches, `x` cancels a turn, and `X` kills an agent behind a confirm that states what survives as well as what doesn't.
+
 Parallel work looks parallel. A round that spawned two or more children renders as one **fan-out block** in the transcript rather than as their rows interleaved with everything else — one lane per child, carrying its name, its task, its progress, its tool count, its spend and its elapsed, updating in place while they run:
 
 ```
@@ -584,7 +586,7 @@ Slash commands inside a chat session:
 | `/diff` | Cumulative session diff, full screen: every file this session changed, from its own per-turn record (works outside git) |
 | `/review [turn]` | Review what a turn changed: file list with per-file `+N −M` and staging, hunk pane beside it, the turn's verdict pinned under the files (bare reviews the last turn that changed anything; also `[v]` on its changeset row). Nothing is applied |
 | `/undo [turn]` | Put back what a turn changed, from the session's own records rather than git (also `[u]` on its changeset row). Confirms first, names anything that changed since and leaves it alone unless you force it, and is recorded as a turn of its own |
-| `/agents` | Agent manager (also Ctrl+A): attach, steer, cancel a turn, kill — live while the parent turn runs |
+| `/agents` | Agent manager (also Ctrl+A): attach, steer, answer a blocked child, retry a failed one, cancel a turn, kill — live while the parent turn runs |
 | `/attach [name]` | Attach to a sub-agent's session and steer it (bare `/attach` opens the manager); `/detach` returns |
 | `/ui verbosity <v>` | Activity feed density: `low` shows step headers only, `normal` folds read-only runs into a counted row, `high` expands every row (bare `/ui` also reports the pane layout) |
 | `/ui mono <on\|off>` | Strip every surface to two greys; glyphs, words and layout carry the states. `NO_COLOR` turns it on for the session |

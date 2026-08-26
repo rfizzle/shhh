@@ -388,13 +388,15 @@ type Model struct {
 	// surface on a child ("" = orchestrator); childViews holds each child's
 	// mirrored transcript and scroll state so attach/detach loses nothing;
 	// agentList is the open agent manager, killConfirm/killTarget its armed
-	// inline kill confirmation.
+	// inline kill confirmation, and answerAgent the row whose approval is
+	// being answered over the list rather than inside the child (S-111).
 	attachedTo  string
 	childViews  map[string]*childView
 	parentView  viewState
 	agentList   *components.AgentList
 	killConfirm *components.Confirm
 	killTarget  string
+	answerAgent string
 	// Session branching and rewind (S-069): checkpoints mark each user turn's
 	// start; sessionName is the storage slot rewind branches hang off (set by
 	// /save, /load, and branch switches); rewindSelect is the open /rewind

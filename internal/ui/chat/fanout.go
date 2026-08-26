@@ -91,38 +91,74 @@ func (m Model) fanoutLive(e entry) bool {
 	return false
 }
 
+// childProgress is one child's live progress in the form both surfaces that
+// draw a child read: the lane in the transcript and the row in the manager
+// (S-111). One mapping from the supervisor's state means the two can never
+// disagree about what a child is doing.
+func (m Model) childProgress(st subagent.Status) components.AgentProgress {
+	p := components.AgentProgress{
+		Step:  st.Step,
+		Steps: st.Steps,
+		Tools: st.ToolCalls,
+		Spend: m.childSpendLabel(st),
+		Frame: m.spinFrame,
+	}
+	switch st.State {
+	case subagent.StateQueued:
+		p.State = components.FanoutQueued
+	case subagent.StateBlocked:
+		p.State = components.FanoutBlocked
+	case subagent.StateIdle:
+		p.State = components.FanoutIdle
+	case subagent.StateDone:
+		p.State = components.FanoutDone
+	case subagent.StateFailed:
+		p.State = components.FanoutFailed
+	default:
+		p.State = components.FanoutRunning
+	}
+	return p
+}
+
+// childNote is the line under a child wherever it is drawn: what a blocked
+// one is waiting for, why a failed one failed, what a finished one found.
+// Nothing for a child still working — its progress already says it.
+func childNote(st subagent.Status) string {
+	switch st.State {
+	case subagent.StateBlocked:
+		return st.Detail
+	case subagent.StateDone:
+		return firstLine(st.Summary)
+	case subagent.StateFailed:
+		// The row already says "failed"; the note says why.
+		return strings.TrimPrefix(st.Detail, "failed · ")
+	}
+	return ""
+}
+
 // fanoutBlockFor builds the block for one entry from the live snapshot.
 func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 	var block components.FanoutBlock
 	var longest time.Duration
 	for _, st := range m.fanoutStatuses(e.fanout) {
+		p := m.childProgress(st)
 		lane := components.FanoutLane{
+			State:   p.State,
 			Name:    st.Name,
 			Task:    firstLine(st.Task),
-			Step:    st.Step,
-			Steps:   st.Steps,
-			Tools:   st.ToolCalls,
-			Spend:   m.childSpendLabel(st),
+			Step:    p.Step,
+			Steps:   p.Steps,
+			Tools:   p.Tools,
+			Spend:   p.Spend,
 			Elapsed: turnDuration(st.Elapsed),
-			Frame:   m.spinFrame,
+			Frame:   p.Frame,
 		}
-		switch st.State {
-		case subagent.StateQueued:
-			lane.State = components.FanoutQueued
-		case subagent.StateBlocked:
-			lane.State = components.FanoutBlocked
-			lane.Waiting = st.Detail
-		case subagent.StateIdle:
-			lane.State = components.FanoutIdle
-		case subagent.StateDone:
-			lane.State = components.FanoutDone
-			lane.Summary = firstLine(st.Summary)
-		case subagent.StateFailed:
-			lane.State = components.FanoutFailed
-			// The lane already says "failed"; the note says why.
-			lane.Summary = strings.TrimPrefix(st.Detail, "failed · ")
-		default:
-			lane.State = components.FanoutRunning
+		if note := childNote(st); note != "" {
+			if st.State == subagent.StateBlocked {
+				lane.Waiting = note
+			} else {
+				lane.Summary = note
+			}
 		}
 		if st.Elapsed > longest {
 			longest = st.Elapsed
@@ -132,8 +168,9 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 	// The batch's own span is its longest-lived child: a fan-out is over when
 	// the last of them stops.
 	block.Elapsed = turnDuration(longest)
-	// The manager is where a blocked child is answered today, and it opens
-	// mid-turn (S-087). Answering a lane in place is S-111's job.
+	// The manager is where a blocked child is answered, and it opens mid-turn
+	// (S-087); since S-111 the answer happens in the list itself, without a
+	// detour through the child's session.
 	block.Keys = []components.TurnKey{{Key: "[ctrl+a]", Label: "agents"}}
 	return block
 }

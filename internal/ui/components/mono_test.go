@@ -98,8 +98,23 @@ func monoFixtures() []monoSurface {
 		return it.render(w, current)
 	}
 
+	// A manager row holds its name and task constant so only its state is
+	// left to tell two renders apart. A child's row draws through the lane
+	// renderer (S-111); the orchestrator has no lane progress and keeps its
+	// own status text.
 	agents := func(state AgentState, status string) string {
-		l := AgentList{Rows: []AgentRow{{State: state, Name: "writer-1", Task: "docs", Status: status}}}
+		row := AgentRow{State: state, Name: "writer-1", Task: "docs", Status: status}
+		switch state {
+		case AgentRunning:
+			row.Progress = &AgentProgress{State: FanoutRunning, Tools: 4}
+		case AgentBlocked:
+			row.Progress = &AgentProgress{State: FanoutBlocked, Tools: 4}
+		case AgentDone:
+			row.Progress = &AgentProgress{State: FanoutDone, Tools: 4}
+		case AgentFailed:
+			row.Progress = &AgentProgress{State: FanoutFailed, Tools: 4}
+		}
+		l := AgentList{Rows: []AgentRow{row}}
 		return l.View(w)
 	}
 
