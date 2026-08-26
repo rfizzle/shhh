@@ -1596,27 +1596,57 @@ characters and never by more.
   written, and nothing is printed twice.
 
 ```
-┌─ Context is nearly full · 94% · 188k / 200k ───────────────────────────┐
-│ ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱                                                 │
+┌─ Context is nearly full ──────────────────────── 94% · 188k / 200k ────┐
+│ ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱                                                 │
 │                                                                        │
-│ 88k  tool output — mostly go test runs, 6 of them                      │
-│ 54k  files read — 14 files, loop.go read 4 times                       │
-│ 31k  the conversation                                                  │
-│ 15k  memory and system                                                 │
+│ 88k  tool output — 6 results                                           │
+│ 54k  the conversation — 14 messages                                    │
+│ 31k  system prompt                                                     │
+│ 15k  project context                                                   │
 │                                                                        │
-│ compacting keeps the plan, the 3 changed files and the failing test    │
-│ and drops the older tool output — recovers about 96k (48%)             │
+│ compacting keeps the plan, 3 changed files and the last 2 turns        │
+│ and drops the older turns and their tool output — recovers about       │
+│ 96k (48%)                                                              │
+│ keeping going asks nothing further — the oldest tool output is elided  │
+│ before each request from here, and what falls out does not come back   │
 ├────────────────────────────────────────────────────────────────────────┤
-│ [enter] compact now   [n] new session   [esc] keep going               │
+│ [enter] compact now · [n] new session · [esc] keep going               │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
 This is the only place in the product that itemises token spend, because it is
-the only place where you can act on it. The categories come from S-093's
-accounting — tool output, files read, the conversation, memory and system —
-and the card states what compacting will keep, what it will drop, and how much
-that recovers. `[esc]` keeps going: invariant 3 holds even at 94%. It is
-S-108's, and not yet built.
+the only place where you can act on it (S-108).
+
+- **The categories are S-093's accounting**, in the card's own words rather
+  than in the field names: tool output, the conversation, the system prompt,
+  the project context inside it, the tool definitions. They are exhaustive by
+  construction, so they sum to the total on the title rail; a category with
+  nothing in it is dropped rather than printed as a zero, and one the
+  accounting cannot characterise loses its clause rather than gaining an
+  invented one. Largest first — the biggest is the one you can act on.
+- **The meter is the inspector rail's meter**: `MeterCellsRail`, `MeterPressure`,
+  and the session's own trim thresholds, which is what makes the card and the
+  two rails turn colour at the same two numbers (§10c). The frame takes the
+  meter's colour, so the bar and the numbers beside the title are one field
+  in the sense that matters — they change together.
+- **The prediction is arithmetic, not a promise.** What compaction keeps is
+  named only where the thing exists: the plan when one is being carried out,
+  the changed files when the changeset has any, the turns the tail will
+  actually hold. What it drops is read off the same accounting. The recovery
+  is the total less what survives, less an allowance for a summary that has
+  not been written — hence *about*.
+- **`[esc]` keeps going: invariant 3 holds even at 94%** — and the card says
+  what that costs before you press it. With tool output to trim, S-055 elides
+  the oldest of it before every request from there on and nothing asks again;
+  with none left, the first request that overruns the window fails instead of
+  shrinking (§17a's `context too long`).
+- **Once per crossing, not once per turn.** It is raised as a turn closes, by
+  the same transition that appends the close rows, and re-arms only after the
+  occupancy has fallen back under the threshold. It waits rather than steals:
+  a surface already on screen, an attached child, or a steering message queued
+  for the next turn all defer it to the next turn's end.
+- **The warning threshold keeps what it had** — a colour change in the rails
+  and nothing that stops you.
 
 ### 17c. First contact
 

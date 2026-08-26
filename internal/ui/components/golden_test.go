@@ -669,6 +669,46 @@ func TestGolden_ProviderCard(t *testing.T) {
 	})
 }
 
+// TestGolden_PressureCard captures the context-pressure card (§17b) — the
+// second of the two cards, and the only place in the product that itemises
+// token spend, because it is the only place where you can act on it.
+func TestGolden_PressureCard(t *testing.T) {
+	captureGolden(t, "pressure-card", "context is nearly full", goldenWidths, func(width int) []golden.Panel {
+		card := func(mut func(*PressureCard)) string {
+			c := PressureCard{
+				Pct: 94, Tokens: 188_000, Window: 200_000,
+				Warn: 60, Alert: 80,
+				Rows: []PressureRow{
+					{Tokens: 88_000, Label: "tool output", Detail: "6 results"},
+					{Tokens: 54_000, Label: "the conversation", Detail: "14 messages"},
+					{Tokens: 31_000, Label: "system prompt"},
+					{Tokens: 15_000, Label: "project context"},
+				},
+				Keeps:       "the plan, 3 changed files and the last 2 turns",
+				Drops:       "the older tool output",
+				Recovers:    96_000,
+				RecoversPct: 48,
+				Continuing:  "keeping going asks nothing further — the oldest tool output is elided before each request from here, and what falls out does not come back",
+				Keys: []KeyOffer{
+					{Key: "[enter]", Label: "compact now"},
+					{Key: "[n]", Label: "new session"},
+					{Key: "[esc]", Label: "keep going"},
+				},
+			}
+			mut(&c)
+			return c.View(width)
+		}
+		return []golden.Panel{
+			{Label: "94% · a plan and a changeset to keep", View: card(func(c *PressureCard) {})},
+			{Label: "an estimated total · nothing to keep but the turns", View: card(func(c *PressureCard) {
+				c.Estimated = true
+				c.Keeps = "the last turn"
+				c.Recovers, c.RecoversPct = 41_000, 20
+			})},
+		}
+	})
+}
+
 // TestGolden_SecretPrompt captures the masked key entry an auth failure's [k]
 // opens (S-106). What is typed is never rendered; the mask is.
 func TestGolden_SecretPrompt(t *testing.T) {

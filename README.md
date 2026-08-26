@@ -364,6 +364,55 @@ model in hand. Switching mid-turn is recorded in the transcript and splits
 `/stats` per model, so a turn that finished on two models is priced as two
 things.
 
+### When the context window fills
+
+At the alert threshold a turn ends on a card rather than on a grey line about
+a trim that already happened:
+
+```
+┌─ Context is nearly full ──────────────────────── 94% · 188k / 200k ────┐
+│ ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱                                                 │
+│                                                                        │
+│ 88k  tool output — 6 results                                           │
+│ 54k  the conversation — 14 messages                                    │
+│ 31k  system prompt                                                     │
+│ 15k  project context                                                   │
+│                                                                        │
+│ compacting keeps the plan, 3 changed files and the last 2 turns        │
+│ and drops the older turns and their tool output — recovers about       │
+│ 96k (48%)                                                              │
+│ keeping going asks nothing further — the oldest tool output is elided  │
+│ before each request from here, and what falls out does not come back   │
+├────────────────────────────────────────────────────────────────────────┤
+│ [enter] compact now · [n] new session · [esc] keep going               │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+This is the only place in shhh that itemises token spend, because it is the
+only place where you can act on it. The categories are the same accounting the
+rails and `/stats` read, so they sum to the number on the title rail, and a
+category shhh cannot characterise loses its clause instead of gaining an
+invented one. The meter is the inspector rail's meter — same cells, same
+thresholds — so the card and the rails never disagree about what colour 84%
+is.
+
+What compacting keeps is named only where it exists, and it is kept: the
+approved plan and its checklist carry across, the changeset (and so `/diff`
+and `/undo`) is untouched, and the most recent turns come through **verbatim**
+rather than as a description of themselves — bounded by two turns and by a
+share of the window, and always cut at a turn boundary so the rebuilt
+conversation is well-formed. `[n]` saves the session to the autosave slot
+(`shhh chat --continue` reopens it) and starts fresh. `[esc]` keeps going, and
+the card says what that costs first: with tool output to trim, the oldest of
+it is elided before every request from there on and nothing asks again; with
+none left, the first request that overruns the window fails rather than
+shrinks.
+
+The card is raised once per crossing, not once per turn, and only as a turn
+closes — it waits rather than interrupting a surface you already have open,
+an attached sub-agent, or a steering message you queued for the next turn. The
+warning threshold below it stays what it was: a colour change in the rails.
+
 ## Usage
 
 ### Generate a command
@@ -485,7 +534,7 @@ Slash commands inside a chat session:
 | `/model [name]` | Show or switch the model mid-session (same provider) |
 | `/model default [name]` | Show or persist the default model for new sessions (`provider.model`) |
 | `/model agents [name]` | Show or persist the model sub-agents run on (`agents.model`; `inherit` follows the session) |
-| `/compact` | Summarize the conversation via the model and continue from the summary (frees context) |
+| `/compact` | Summarize the conversation via the model and continue from the summary plus the most recent turns (frees context) |
 | `/stats` | This session's context occupancy by category, token and cost totals (cached share included), and the last turn's spend and duration |
 | `/evidence [purge]` | Tool-output evidence store: reduction stats and size; `purge` deletes the stored originals |
 | `/gate run [suite]`, `/gate result` | Quality gate (`shhh code`): run a named suite of the project's own checks in the background, then show the verdict (marked stale if the tree changed) |

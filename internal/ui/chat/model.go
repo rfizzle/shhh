@@ -78,6 +78,10 @@ const (
 	// stateKeyEntry: the masked key prompt an auth failure's [k] opens
 	// (S-106, §17a). It borrows the bottom panel; esc keeps the old key.
 	stateKeyEntry
+	// statePressure: the context-pressure card is up (S-108, §17b) — the
+	// occupancy, where the window went, and the three answers. It borrows
+	// the bottom panel; esc keeps going.
+	statePressure
 	// stateRetryWait: the turn is waiting out a bounded retry behind the
 	// countdown meter (S-107, §17a). It is a stage of the turn, not a
 	// surface — but nothing is streaming and the input is not live, so the
@@ -494,6 +498,12 @@ type Model struct {
 	// the bound a bound.
 	retryAttempt int
 	retrySeq     int
+	// The context-pressure card (S-108): the card while it is up, and
+	// whether this crossing of the alert threshold has already been
+	// answered. The flag is cleared by falling back under the threshold, so
+	// the card arrives once per crossing rather than once per turn.
+	pressure      *components.PressureCard
+	pressureShown bool
 }
 
 func New(initialMessages []provider.Message, stream StreamFunc) Model {
@@ -697,6 +707,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.state == stateKeyEntry {
 			return m.updateKeyEntry(msg)
+		}
+		if m.state == statePressure {
+			return m.updatePressure(msg)
 		}
 		// A draining retry countdown owns the keyboard the way the confirm
 		// prompt does: nothing is streaming, the input is not live, and the
@@ -1258,6 +1271,8 @@ func (m Model) View() string {
 			inputView = m.renderUndoConfirm()
 		case stateKeyEntry:
 			inputView = m.renderKeyEntry()
+		case statePressure:
+			inputView = m.renderPressure()
 		}
 		// The agent manager list takes the bottom panel while open (S-077).
 		if m.agentList != nil {
@@ -2258,7 +2273,7 @@ func helpText() string {
   /undo [turn]   Put back what a turn changed, from the session's own records
                  (not git). Asks first, names anything that changed since,
                  and is itself recorded as a turn. Also [u] on the row.
-  /compact       Summarize the conversation and continue from the summary
+  /compact       Continue from a summary plus the most recent turns
   /rewind [n]    Rewind to before a user turn (bare /rewind picks interactively);
                  the abandoned tail is kept as a branch. Conversation only —
                  files on disk are not restored.
@@ -2321,6 +2336,15 @@ func (m *Model) loadConversation(msgs []provider.Message) {
 	m.agent.SetMessages(msgs)
 	m.resetTranscript()
 	m.checkpoints = checkpointsFromMessages(msgs)
+	m.appendMessageEntries(msgs)
+}
+
+// appendMessageEntries renders a run of messages into the transcript: the
+// user turns, the assistant text, and one tool entry per call paired with the
+// result that followed it. It is shared by the session load and by the tail a
+// compaction carries through (S-108), so a conversation put back on screen
+// looks the same however it got there.
+func (m *Model) appendMessageEntries(msgs []provider.Message) {
 	for i, msg := range msgs {
 		switch msg.Role {
 		case provider.RoleUser:

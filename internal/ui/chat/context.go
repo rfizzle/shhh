@@ -30,6 +30,25 @@ const (
 // elidedResult replaces trimmed tool results in the conversation.
 const elidedResult = agent.ElidedResult
 
+// What a compaction keeps besides the summary (S-108). The pressure card
+// promises the most recent turns survive it, so they have to: a summary is a
+// description of a conversation, and the turn you are in the middle of is the
+// one place a description is not good enough.
+const (
+	// compactKeepTurns is how many of the most recent user turns are carried
+	// through verbatim.
+	compactKeepTurns = 2
+	// compactKeepPercent bounds what those turns may occupy of the window. A
+	// single turn that read half the repository is not a tail, and keeping it
+	// would compact the conversation into the same corner it started in.
+	compactKeepPercent = 15
+	// compactSummaryEstimate is the allowance the recovery prediction makes
+	// for the summary that has not been written yet. It is the one term of
+	// the prediction nobody can know in advance, which is why the card says
+	// "about".
+	compactSummaryEstimate = 1000
+)
+
 // compactInstruction is sent as the final user message of a /compact request.
 const compactInstruction = "Summarize this conversation so it can be continued from the summary alone. " +
 	"Capture the user's goals, key facts and decisions, work completed, current state, and open tasks. " +
@@ -142,11 +161,18 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 		return m, nil
 	}
-	rebuilt := make([]provider.Message, 0, 2)
+	// What survives is decided before the conversation is replaced: the turns
+	// kept verbatim, and the plan's checklist, which is read off a transcript
+	// that is about to be discarded (S-108).
+	kept := m.compactKeep()
+	run, carried := m.planRun, m.planChecklist()
+
+	rebuilt := make([]provider.Message, 0, 2+len(kept))
 	if msgs := m.agent.Messages(); len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
 		rebuilt = append(rebuilt, msgs[0])
 	}
 	rebuilt = append(rebuilt, provider.Message{Role: provider.RoleUser, Content: compactContextMessage(summary)})
+	rebuilt = append(rebuilt, kept...)
 	m.agent.SetMessages(rebuilt)
 	m.agent.ResetRounds()
 	// Nothing has been reported about the rebuilt conversation yet.
@@ -157,11 +183,85 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	// Pre-compaction checkpoints point into the discarded conversation;
 	// rebuild them from what remains (S-069).
 	m.checkpoints = checkpointsFromMessages(rebuilt)
-	m.appendEntry(entry{kind: entrySystem, text: "Conversation compacted; continuing from this summary:"})
+	m.appendEntry(entry{kind: entrySystem, text: compactedNotice(len(kept) > 0, m.keptTurnCount(kept))})
 	m.appendEntry(entry{kind: entryAssistant, text: summary})
+	// The turns the model kept are the turns the screen keeps: a transcript
+	// that lost them would say the conversation starts at the summary, and
+	// the request that follows would say otherwise.
+	m.appendMessageEntries(kept)
+	// The plan outlives the conversation it was being carried out in. Its
+	// checklist is frozen onto the run before the transcript goes, and the
+	// run is rebased on the transcript that replaces it (S-108).
+	if run != nil {
+		run.carryOver(carried, len(m.transcript))
+		m.planRun = run
+	}
+	// The window is empty again, so the next alert is a new crossing.
+	m.pressureShown = false
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()
 	return m, m.autosaveCmd()
+}
+
+// compactedNotice is the line that opens the rebuilt conversation. It names
+// the kept turns because the transcript below it is otherwise indisting-
+// uishable from a session that started at the summary.
+func compactedNotice(kept bool, turns int) string {
+	if !kept || turns <= 0 {
+		return "Conversation compacted; continuing from this summary:"
+	}
+	return fmt.Sprintf("Conversation compacted; continuing from this summary and the last %s:",
+		plural(turns, "turn"))
+}
+
+// compactKeep is the tail of the conversation a compaction carries through
+// verbatim: whole turns, most recent first, bounded by compactKeepTurns and
+// by compactKeepPercent of the window.
+//
+// The boundary is always a user message, which is what keeps the result
+// well-formed — a tail that started inside a tool round would open with
+// results for calls the model could no longer see it had made. A tail that
+// would be the whole conversation is no tail at all: there would be nothing
+// left for the summary to have summarized.
+func (m Model) compactKeep() []provider.Message {
+	msgs := m.agent.Messages()
+	first := 0
+	if len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
+		first = 1
+	}
+	var starts []int
+	for i := first; i < len(msgs); i++ {
+		if msgs[i].Role == provider.RoleUser {
+			starts = append(starts, i)
+		}
+	}
+	budget := m.contextWindow() * compactKeepPercent / 100
+	at := -1
+	for n := 1; n <= compactKeepTurns && n <= len(starts); n++ {
+		start := starts[len(starts)-n]
+		if start <= first {
+			break
+		}
+		if estimateMessageTokens(msgs[start:]) > budget {
+			break
+		}
+		at = start
+	}
+	if at < 0 {
+		return nil
+	}
+	return append([]provider.Message(nil), msgs[at:]...)
+}
+
+// keptTurnCount counts the user messages in a kept tail — the turns it is.
+func (m Model) keptTurnCount(kept []provider.Message) int {
+	n := 0
+	for _, msg := range kept {
+		if msg.Role == provider.RoleUser {
+			n++
+		}
+	}
+	return n
 }
 
 // abortCompact abandons a compaction that didn't produce a plain text

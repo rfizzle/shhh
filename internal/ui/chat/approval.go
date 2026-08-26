@@ -672,6 +672,10 @@ func (m Model) bottomPanelHeight() int {
 		lines = m.undoConfirmLines()
 	case stateKeyEntry:
 		lines = m.keyEntryLines()
+	case statePressure:
+		// The card is a decision, and a decision whose action bar was cut off
+		// by the panel bound is not one: it gets the plan card's headroom.
+		lines, bound = m.pressureLines(), m.planPanelBound()
 	default:
 		if m.agentList != nil {
 			lines = m.agentListLines()

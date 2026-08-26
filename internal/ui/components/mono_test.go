@@ -70,6 +70,15 @@ func monoFixtures() []monoSurface {
 		return strings.Join(UnifiedLines(hunk(kind), w, UnifiedOpts{LineNumbers: true, Emphasis: true}), "\n")
 	}
 
+	pressed := func(pct int, tokens int64) string {
+		return PressureCard{
+			Pct: pct, Tokens: tokens, Window: 200_000, Warn: 60, Alert: 80,
+			Rows:  []PressureRow{{Tokens: tokens, Label: "tool output"}},
+			Drops: "the older tool output",
+			Keys:  []KeyOffer{{Key: "[enter]", Label: "compact now"}},
+		}.View(w)
+	}
+
 	card := func(mut func(*ApprovalCard)) string {
 		c := ApprovalCard{
 			Variant:  ApprovalCommand,
@@ -373,6 +382,11 @@ func monoFixtures() []monoSurface {
 				{Label: "env", Detail: "OPENAI_API_KEY — unset"}}}.View(w)},
 			{"something found", ProviderCard{Places: []ProviderPlace{
 				{Label: "env", Emphasis: "OPENAI_API_KEY ···4f9c", Found: true}}}.View(w)},
+		}},
+		{"context pressure", []monoState{
+			{"warning", pressed(70, 140_000)},
+			{"alert", pressed(94, 188_000)},
+			{"full", pressed(100, 200_000)},
 		}},
 		{"undo drift", []monoState{
 			{"clean", undo(nil)},

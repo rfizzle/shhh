@@ -23,7 +23,7 @@ import "time"
 // rather than a stage of the session's own turn.
 func (s state) isSurface() bool {
 	switch s {
-	case stateFocus, stateDiffFull, stateReview, stateRewindPick, statePick, stateModelList, stateUndoConfirm, stateKeyEntry:
+	case stateFocus, stateDiffFull, stateReview, stateRewindPick, statePick, stateModelList, stateUndoConfirm, stateKeyEntry, statePressure:
 		return true
 	}
 	return false
@@ -54,6 +54,11 @@ func (m *Model) setTurnState(s state) {
 		// the same reason: every path back to the input passes through this
 		// one transition, so no turn can end without a summary.
 		m.appendTurnClose()
+		// A turn that ends at the alert threshold ends with the decision
+		// surface, not with a notice about a trim that already happened
+		// (S-108). Every path back to the input passes through here, which
+		// is what makes "once per crossing" a property rather than a habit.
+		defer m.armPressureCard()
 	}
 	if m.state.isSurface() {
 		m.turnBack = s

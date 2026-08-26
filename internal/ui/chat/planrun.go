@@ -22,6 +22,7 @@ import (
 	"unicode"
 
 	"github.com/rfizzle/shhh/internal/plan"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // offPlanStep marks an announcement that matched no declared step: work the
@@ -56,6 +57,12 @@ type planRun struct {
 	// offPlan are the announcements that matched no step, in the order they
 	// were made.
 	offPlan []string
+	// carried is the checklist as it stood when the transcript that recorded
+	// it was discarded — a compaction (S-108). Step states are read off the
+	// transcript, so a plan that outlives its transcript has to bring them
+	// with it or come back reading all-queued, which would be a plan
+	// reporting work it watched happen as work still to do.
+	carried map[int]components.InspectorPlanStep
 }
 
 // newPlanRun starts tracking an approved plan. A plan that never adopted the
@@ -89,6 +96,23 @@ func (r *planRun) claim(title string) int {
 	r.claims++
 	r.claimed[best] = r.claims
 	return r.doc.Steps[best].Number
+}
+
+// carryOver detaches the run from the transcript it was recorded in: the
+// checklist observed so far is frozen onto the run, and the run is rebased on
+// the transcript that replaces it. Queued steps are not carried — a step
+// nobody has reached is the same fact on either side of a compaction, and
+// storing it would let a stale entry outrank a live one.
+func (r *planRun) carryOver(steps []components.InspectorPlanStep, start int) {
+	carried := make(map[int]components.InspectorPlanStep, len(steps))
+	for _, s := range steps {
+		if s.State == components.PlanStepQueued {
+			continue
+		}
+		carried[s.Number] = s
+	}
+	r.carried = carried
+	r.start = start
 }
 
 // complete reports whether every declared step has been claimed — the plan is

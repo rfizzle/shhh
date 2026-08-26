@@ -152,7 +152,7 @@ var slashCommands = []slashCommand{
 		enabled:  func(m *Model) bool { return m.changes != nil },
 		argSpecs: []argSpec{{dynamic: reviewTurnArgs}},
 		idleOnly: "it writes files the running turn may be editing"},
-	{name: "/compact", desc: "Summarize the conversation and continue from the summary",
+	{name: "/compact", desc: "Continue from a summary plus the most recent turns",
 		idleOnly: "it rewrites the conversation into a summary"},
 	{name: "/rewind", args: "[n]", desc: "Rewind to before a user turn (bare /rewind picks)",
 		argSpecs: []argSpec{{dynamic: checkpointArgs}},

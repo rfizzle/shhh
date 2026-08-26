@@ -308,6 +308,19 @@ func TestGolden_ProviderFailures(t *testing.T) {
 	})
 }
 
+// TestGolden_PressureCard captures the context-pressure card where the
+// session actually raises it: in the bottom panel, at the end of a turn that
+// left the window at the alert threshold.
+func TestGolden_PressureCard(t *testing.T) {
+	captureGolden(t, "pressure-card", "context pressure in the panel", goldenWidths, func(width int) []golden.Panel {
+		m := pressureModel(t, width)
+		m.armPressureCard()
+		return []golden.Panel{
+			{Label: "at the alert threshold, with the turns to keep", View: strings.Join(m.pressureLines(), "\n")},
+		}
+	})
+}
+
 // TestGolden_KeyEntry captures the masked prompt an auth failure's [k] opens
 // in the bottom panel, where a diff preview or an approval card would
 // otherwise be.

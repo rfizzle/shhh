@@ -500,6 +500,12 @@ func (m Model) planChecklist() []components.InspectorPlanStep {
 	out := make([]components.InspectorPlanStep, 0, len(run.doc.Steps))
 	for _, s := range run.doc.Steps {
 		row := components.InspectorPlanStep{Number: s.Number, Title: s.Title}
+		// A run carried across a compaction starts from what it observed
+		// before the transcript went; anything the new transcript records
+		// outranks it (S-108).
+		if c, ok := run.carried[s.Number]; ok {
+			row.State, row.Elapsed = c.State, c.Elapsed
+		}
 		if o, ok := at[s.Number]; ok {
 			row.State, row.Elapsed = planStepState(o.state), o.label
 		}
