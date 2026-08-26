@@ -1494,20 +1494,43 @@ offers work rather than a blank prompt:
 shhh 0.9.4                                          [?] keys · [q] quit
 ──────────────────────────────────────────────────────────────────────
 
-~/src/shhh · go 1.24 · git main · 3 files changed · no .shhh/memory.md
+~/src/shhh · go 1.24 · git main · 3 files changed · 41 packages
+
+context  AGENTS.md — in the system prompt
+gate     default — vet, test · runs without asking
 
 Some things worth doing first:
-  ▸ pick up loop-refactor — 3 files changed, 1 test failing, 4m ago
+❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago
   ⚙ explain what changed in the working tree — reads only, no writes
-  ⚙ run go test ./... and triage the failures — one approval, then it
-    reports back
+  ⚙ run the default quality gate and triage what fails — one approval,
+    then it reports back
 
 [↑↓] choose · [enter] start · or just type what you want
 ```
 
 - The header line is what shhh already knows: path, toolchain, branch, dirty
-  state, package count, whether a project memory exists.
-- Suggestions are ordered by what the working tree suggests — an unfinished
-  branch first, then read-only offers, then one that needs a single approval.
-  Each says what it will cost you in permission.
-- Typing anything dismisses the list. It is a starting point, not a wizard.
+  state, package count. Clauses drop from the right as the terminal narrows
+  and the path is never one of them — a header that cannot say where it is has
+  nothing left to say. A count the bounded walk cut short reads `41+`.
+- Two labelled notes follow, because both govern what happens next without
+  being asked: what was read into the system prompt, and which quality-gate
+  suite is in effect. A gate that is not configured names the file it looked
+  for; one that exists but does not load reads `unreadable`, because a broken
+  gate is not an absent one.
+- Suggestions are ordered by what the working tree suggests — a session to
+  pick up first, then a read-only offer, then one that needs a single
+  approval. There are always three, and each says what it will cost you in
+  permission. The resume offer is priced from the observability record that
+  covers it; without one the price clause is dropped rather than printed as
+  `$0.00`.
+- Focus is the `❯` pointer, not only the highlight: a background survives no
+  monochrome terminal, and the row's own `▸`/`⚙` already means something else.
+- `enter` types the focused suggestion into the input and submits it, so
+  choosing an offer and typing it are the same act down to the dispatch.
+- Typing anything dismisses the list — the offers and their keys go, the facts
+  stay — because the input owns every ordinary key and `↑` belongs to the
+  input history again the moment there is a draft.
+- The screen is spent by the first thing the session says to the model, or by
+  a conversation loaded into it. `/clear` after either does not bring it back;
+  `/clear` on a session that never said anything does, because that session
+  really is still new.

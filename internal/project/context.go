@@ -10,17 +10,22 @@ import (
 // AGENTS.md convention.
 var contextFilenames = []string{".shhh", "AGENTS.md"}
 
-func FindContext() string {
+// Find returns the path and contents of the nearest project-context file,
+// walking up from the working directory. The path is what the start screen
+// names (S-105): a session that says what it read is a session whose system
+// prompt is not a secret.
+func Find() (path, content string) {
 	dir, err := os.Getwd()
 	if err != nil {
-		return ""
+		return "", ""
 	}
 
 	for {
 		for _, name := range contextFilenames {
-			data, err := os.ReadFile(filepath.Join(dir, name))
+			p := filepath.Join(dir, name)
+			data, err := os.ReadFile(p)
 			if err == nil {
-				return string(data)
+				return p, string(data)
 			}
 		}
 
@@ -30,5 +35,10 @@ func FindContext() string {
 		}
 		dir = parent
 	}
-	return ""
+	return "", ""
+}
+
+func FindContext() string {
+	_, content := Find()
+	return content
 }

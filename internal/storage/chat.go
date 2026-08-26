@@ -198,6 +198,52 @@ type ChatBranch struct {
 	Turns     int
 }
 
+// RecentChat is the most recently saved session, for the start screen's
+// resume suggestion (S-105): what it was called, how many turns it holds, and
+// what it cost. Cost is only present when an observability record covers the
+// moment the session was saved — the two tables are joined by that window
+// rather than by name, because a chat session row has never carried a price
+// and inventing one is worse than leaving the clause off.
+type RecentChat struct {
+	Name      string
+	UpdatedAt time.Time
+	Turns     int
+	Cost      float64
+	Priced    bool
+}
+
+// MostRecentChat returns the newest saved session, or ok=false when nothing
+// has been saved yet. A missing observability record costs the price clause,
+// never the suggestion.
+func (db *DB) MostRecentChat() (RecentChat, bool, error) {
+	entries, err := db.ListChats()
+	if err != nil {
+		return RecentChat{}, false, err
+	}
+	if len(entries) == 0 {
+		return RecentChat{}, false, nil
+	}
+	e := entries[0]
+	out := RecentChat{Name: e.Name, UpdatedAt: e.UpdatedAt, Turns: e.Turns}
+
+	// The session that was running when the chat was last written is the one
+	// whose lifetime contains that write: started before it, and either still
+	// open or ended after it. Children are excluded — a sub-agent's spend is
+	// part of its parent's, not a session of its own to resume. Both columns
+	// are written in the same UTC layout, so the comparison is exact.
+	at := e.UpdatedAt.UTC().Format(observeTimeFormat)
+	row := db.sql.QueryRow(
+		`SELECT est_cost FROM agent_sessions
+		 WHERE parent_id IS NULL AND started_at <= ?
+		   AND (ended_at IS NULL OR ended_at >= ?)
+		 ORDER BY started_at DESC LIMIT 1`, at, at)
+	var cost float64
+	if err := row.Scan(&cost); err == nil {
+		out.Cost, out.Priced = cost, true
+	}
+	return out, true, nil
+}
+
 // ListChatBranches returns the branch family of name — the root reached by
 // walking name's parent chain, plus every descendant — ordered oldest-first.
 // An unknown name yields an empty list, not an error.

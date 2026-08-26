@@ -697,3 +697,100 @@ func TestSaveChat_PreservesParentOnOverwrite(t *testing.T) {
 		t.Fatalf("parent link lost on overwrite: %+v", branches)
 	}
 }
+
+// The start screen's resume offer (S-105): the newest saved session, its turn
+// count, and the price only when a record actually covers it.
+func TestMostRecentChat_NewestSessionWithItsTurnCount(t *testing.T) {
+	db := openTestDB(t)
+
+	if _, ok, err := db.MostRecentChat(); err != nil || ok {
+		t.Fatalf("empty database: ok = %v, err = %v; want false, nil", ok, err)
+	}
+
+	older := []provider.Message{
+		{Role: provider.RoleUser, Content: "one"},
+		{Role: provider.RoleAssistant, Content: "1"},
+	}
+	newer := []provider.Message{
+		{Role: provider.RoleUser, Content: "one"},
+		{Role: provider.RoleAssistant, Content: "1"},
+		{Role: provider.RoleUser, Content: "two"},
+		{Role: provider.RoleAssistant, Content: "2"},
+	}
+	if err := db.SaveChat("older", older); err != nil {
+		t.Fatalf("save older: %v", err)
+	}
+	time.Sleep(2 * time.Millisecond)
+	if err := db.SaveChat("newer", newer); err != nil {
+		t.Fatalf("save newer: %v", err)
+	}
+
+	recent, ok, err := db.MostRecentChat()
+	if err != nil || !ok {
+		t.Fatalf("ok = %v, err = %v", ok, err)
+	}
+	if recent.Name != "newer" {
+		t.Fatalf("name = %q, want newer", recent.Name)
+	}
+	if recent.Turns != 2 {
+		t.Fatalf("turns = %d, want 2", recent.Turns)
+	}
+	// Nothing recorded the session, so no price is claimed for it.
+	if recent.Priced {
+		t.Fatalf("priced = true with no observability record (cost %v)", recent.Cost)
+	}
+}
+
+func TestMostRecentChat_PricedFromTheSessionThatWroteIt(t *testing.T) {
+	db := openTestDB(t)
+
+	id, err := db.StartAgentSession("chat", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	if err := db.UpdateAgentSession(id, 2, 1000, 200, 0.42); err != nil {
+		t.Fatalf("update session: %v", err)
+	}
+	// Saved while that session is still open, which is when a chat is
+	// actually autosaved.
+	if err := db.SaveChat("live", []provider.Message{{Role: provider.RoleUser, Content: "hi"}}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+
+	recent, ok, err := db.MostRecentChat()
+	if err != nil || !ok {
+		t.Fatalf("ok = %v, err = %v", ok, err)
+	}
+	if !recent.Priced || recent.Cost != 0.42 {
+		t.Fatalf("cost = %v priced = %v, want 0.42 true", recent.Cost, recent.Priced)
+	}
+}
+
+func TestMostRecentChat_IgnoresASessionThatHadAlreadyEnded(t *testing.T) {
+	db := openTestDB(t)
+
+	id, err := db.StartAgentSession("chat", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	if err := db.UpdateAgentSession(id, 2, 1000, 200, 0.99); err != nil {
+		t.Fatalf("update session: %v", err)
+	}
+	if err := db.EndAgentSession(id); err != nil {
+		t.Fatalf("end session: %v", err)
+	}
+	// A full second later, so the ended_at written to millisecond precision
+	// is unambiguously before this save.
+	time.Sleep(1100 * time.Millisecond)
+	if err := db.SaveChat("after", []provider.Message{{Role: provider.RoleUser, Content: "hi"}}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+
+	recent, _, err := db.MostRecentChat()
+	if err != nil {
+		t.Fatalf("recent: %v", err)
+	}
+	if recent.Priced {
+		t.Fatalf("priced from a session that had already ended (cost %v)", recent.Cost)
+	}
+}

@@ -436,6 +436,13 @@ type Model struct {
 	prices        *pricing.Table
 	modelName     string
 	updateNotice  string
+	// First contact (S-105): what the session already knew about the
+	// checkout when it opened, which suggestion the pointer is on, and
+	// whether the screen has been spent — a session that has said something
+	// to the model is not new again just because /clear emptied it.
+	start      *StartInfo
+	startFocus int
+	startSpent bool
 }
 
 func New(initialMessages []provider.Message, stream StreamFunc) Model {
@@ -739,6 +746,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return m, nil
 			}
+			// The start screen's suggestion list claims ↑↓ only while it is
+			// live: an empty draft on a session that has not started yet,
+			// which is also the only time the input history has nothing to
+			// browse (S-105).
+			if next, claimed := m.startKey("up"); claimed {
+				return next, nil
+			}
 			if m.state == stateInput && len(m.inputHistory) > 0 &&
 				(m.browsingHistory() || strings.TrimSpace(m.input.Value()) == "") {
 				if m.historyIdx > 0 {
@@ -753,6 +767,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.completeIdx++
 				}
 				return m, nil
+			}
+			if next, claimed := m.startKey("down"); claimed {
+				return next, nil
 			}
 			if m.state == stateInput && m.browsingHistory() {
 				m.historyIdx++
@@ -769,6 +786,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// mid-turn steering (S-077).
 			if m.attachedTo != "" {
 				return m.attachedSubmit()
+			}
+			// Enter on a live start screen types the focused suggestion and
+			// submits it, so choosing an offer and typing it are the same
+			// act down to the dispatch (S-105).
+			if action := m.startAction(); action != "" {
+				m.input.SetValue(action)
+				return m.submitInput()
 			}
 			// One submit path for every state that keeps the input live
 			// (S-087, command.go): commands run, plain text is a message when
@@ -1018,6 +1042,9 @@ func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
 	if m.planRun != nil && m.planRun.complete() {
 		m.planRun = nil
 	}
+	// The session has now said something of its own, so first contact is
+	// over: /clear empties the transcript without making it new again (S-105).
+	m.spendStartScreen()
 	m.turnCount++
 	m.turnStarted, m.turnEnded = time.Now(), time.Time{}
 	m.turnOpen, m.turnOutcome = true, components.TurnDone
@@ -1743,6 +1770,12 @@ func (m *Model) renderHistory() string {
 		return m.renderAttachedHistory()
 	}
 	if len(m.transcript) == 0 && m.turnState() != stateStreaming {
+		// First contact (S-105): the empty session states what it already
+		// knows about the project and offers work. Hosts without a survey —
+		// the attached child view, a bare test model — keep the plain line.
+		if m.startScreenShowing() {
+			return m.renderStartScreen(m.transcriptWidth())
+		}
 		return welcomeStyle.Render("Type a message to start chatting.")
 	}
 	w := m.transcriptWidth()
@@ -2196,6 +2229,9 @@ func (m *Model) clearConversation() {
 // loadConversation replaces the current conversation and rebuilds the
 // transcript from the stored messages.
 func (m *Model) loadConversation(msgs []provider.Message) {
+	// A loaded conversation is a session with a past; the start screen does
+	// not come back after it is cleared (S-105).
+	m.spendStartScreen()
 	m.agent.SetMessages(msgs)
 	m.resetTranscript()
 	m.checkpoints = checkpointsFromMessages(msgs)

@@ -162,6 +162,18 @@ func monoFixtures() []monoSurface {
 		return c.View(w)
 	}
 
+	start := func(mut func(*StartScreen)) string {
+		s := StartScreen{
+			Facts: []StartFact{{Text: "~/src/shhh", Lead: true}, {Text: "git main"}},
+			Suggestions: []StartSuggestion{
+				{Glyph: "▸", Title: "pick up (last session)", Detail: "7 turns"},
+				{Glyph: "⚙", Title: "explain what changed", Detail: "reads only, no writes"},
+			},
+		}
+		mut(&s)
+		return s.View(w)
+	}
+
 	return []monoSurface{
 		{"cockpit mode segment", []monoState{
 			// The mode word is held constant on purpose: the glyph has to
@@ -291,6 +303,20 @@ func monoFixtures() []monoSurface {
 			})},
 			{"checks failing", review([]bool{true, true}, func(v *ReviewView) {
 				v.Verdict = &ReviewVerdict{Failed: true, Label: "go test ./..."}
+			})},
+		}},
+		{"start screen focus", []monoState{
+			// The pointer is what survives the palette: a focus background
+			// strips to nothing and the row's own glyph means something else.
+			{"first offer", start(func(s *StartScreen) { s.Focus = 0 })},
+			{"second offer", start(func(s *StartScreen) { s.Focus = 1 })},
+		}},
+		{"start screen dirty state", []monoState{
+			{"clean tree", start(func(s *StartScreen) {
+				s.Facts = append(s.Facts, StartFact{Text: "clean tree", Tone: ToneSafe})
+			})},
+			{"dirty tree", start(func(s *StartScreen) {
+				s.Facts = append(s.Facts, StartFact{Text: "3 files changed", Tone: ToneOpen})
 			})},
 		}},
 		{"undo drift", []monoState{

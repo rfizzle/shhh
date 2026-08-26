@@ -512,3 +512,60 @@ func TestGolden_PlanCard(t *testing.T) {
 		}
 	})
 }
+
+// TestGolden_StartScreen captures the first-contact screen (§17c): the facts
+// a session already knows, the two notes under them, the three offers with
+// the pointer on one, and the screen the reader is left with once typing has
+// dismissed the list.
+func TestGolden_StartScreen(t *testing.T) {
+	captureGolden(t, "start-screen", "first-contact screen", goldenWidths, func(width int) []golden.Panel {
+		screen := func(mut func(*StartScreen)) string {
+			s := StartScreen{
+				Facts: []StartFact{
+					{Text: "~/src/shhh", Lead: true},
+					{Text: "go 1.24"},
+					{Text: "git main"},
+					{Text: "3 files changed", Tone: ToneOpen},
+					{Text: "41 packages"},
+				},
+				Notes: []StartNote{
+					{Label: "context", Value: "AGENTS.md", Detail: "in the system prompt"},
+					{Label: "gate", Value: "default", Detail: "vet, test · runs without asking"},
+				},
+				Lead: "Some things worth doing first:",
+				Suggestions: []StartSuggestion{
+					{Glyph: "▸", Title: "pick up (last session)", Detail: "7 turns · $0.42 · 4m ago"},
+					{Glyph: "⚙", Title: "explain what changed in the working tree",
+						Detail: "reads only, no writes"},
+					{Glyph: "⚙", Title: "run the default quality gate and triage what fails",
+						Detail: "one approval, then it reports back"},
+				},
+				Hint: "[↑↓] choose · [enter] start · or just type what you want",
+			}
+			mut(&s)
+			return s.View(width)
+		}
+		return []golden.Panel{
+			{Label: "first contact · the pointer on the resume offer", View: screen(func(s *StartScreen) {})},
+			{Label: "pointer moved to the offer that costs an approval", View: screen(func(s *StartScreen) {
+				s.Focus = 2
+			})},
+			{Label: "nothing to pick up · a clean tree in a project with no gate", View: screen(func(s *StartScreen) {
+				s.Facts[3] = StartFact{Text: "clean tree", Tone: ToneSafe}
+				s.Notes = []StartNote{
+					{Label: "context", Value: "nothing read", Detail: "no .shhh or AGENTS.md above this directory"},
+					{Label: "gate", Value: "not configured", Detail: ".shhh/quality.json"},
+				}
+				s.Suggestions = []StartSuggestion{
+					{Glyph: "⚙", Title: "walk me through what this project does", Detail: "reads only, no writes"},
+					{Glyph: "⚙", Title: "summarise the last ten commits", Detail: "reads only, no writes"},
+					{Glyph: "⚙", Title: "run go test ./... and triage the failures",
+						Detail: "one approval, then it reports back"},
+				}
+			})},
+			{Label: "typing dismissed the list · the facts stay", View: screen(func(s *StartScreen) {
+				s.Suggestions, s.Lead, s.Hint = nil, "", ""
+			})},
+		}
+	})
+}

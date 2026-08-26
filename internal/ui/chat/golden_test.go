@@ -224,3 +224,43 @@ func TestGolden_PromptFrameWidthsCoverEveryLayout(t *testing.T) {
 		}
 	}
 }
+
+// TestGolden_StartScreen captures the first-contact screen as the host
+// assembles it (S-105, §17c): the survey's facts, the gate in effect, and the
+// three offers a dirty Go checkout with a session to pick up produces —
+// against the same screen in a clean checkout with nothing saved and no gate,
+// which is the other end of what the survey can find.
+func TestGolden_StartScreen(t *testing.T) {
+	captureGolden(t, "start-screen", "first-contact screen", goldenWidths, func(width int) []golden.Panel {
+		build := func(mut func(*StartInfo)) string {
+			info := startFixture()
+			mut(&info)
+			m := frameModel(t, width, 40).WithStartScreen(info)
+			return m.renderHistory()
+		}
+		typed := func() string {
+			m := frameModel(t, width, 40).WithStartScreen(startFixture())
+			m.input.SetValue("why is the round limit off by one")
+			return m.renderHistory()
+		}
+		return []golden.Panel{
+			{Label: "first contact · a dirty checkout with a session to pick up", View: build(func(i *StartInfo) {})},
+			{Label: "the pointer on the offer that costs an approval", View: func() string {
+				m := frameModel(t, width, 40).WithStartScreen(startFixture())
+				m.startFocus = 2
+				return m.renderHistory()
+			}()},
+			{Label: "clean tree · nothing saved, no gate, no project context", View: build(func(i *StartInfo) {
+				i.Project.Dirty = 0
+				i.Project.ContextFiles = nil
+				i.Gate = StartGate{Path: ".shhh/quality.json"}
+				i.Recent = StartRecent{}
+			})},
+			{Label: "outside a repository · the package count is a floor", View: build(func(i *StartInfo) {
+				i.Project.Repo, i.Project.Branch, i.Project.Dirty = false, "", 0
+				i.Project.Partial = true
+			})},
+			{Label: "typing dismissed the list · the facts stay", View: typed()},
+		}
+	})
+}

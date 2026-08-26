@@ -391,7 +391,10 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithModelOptions(provider.KnownModels(env.prov.Name())).
 		WithModelLister(modelListerFor(env.prov)).
 		WithGitSnapshots(gitSnapshot).
-		WithChangeset(changeset.New(changeset.DefaultMaxBytes), changeset.NewTracker("."))
+		WithChangeset(changeset.New(changeset.DefaultMaxBytes), changeset.NewTracker(".")).
+		// First contact (S-105): the empty session's start screen, surveyed
+		// once here rather than assembled per frame.
+		WithStartScreen(buildStartInfo(db, gate != nil))
 	if red != nil {
 		model = model.WithEvidence(chat.Evidence{Reduce: red.Process, Manage: evidenceManager(red)})
 	}

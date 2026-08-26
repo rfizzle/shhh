@@ -299,6 +299,8 @@ shhh chat --resume       # pick a saved chat to resume
 
 Every session is autosaved after each exchange (to the `(last session)` slot), so `--continue` always picks up where you left off. Use `/save <name>` inside a session to keep a conversation permanently.
 
+An empty session opens on a start screen rather than a blank prompt. It states what shhh already knows about the checkout — the path, the detected language and toolchain, the branch and how many files are dirty, the package count — and names both things that govern what happens next without being asked: the project files it read into the system prompt (`.shhh` or `AGENTS.md`), and the quality-gate suite in effect with the checks it runs. Under that, three concrete offers, ordered by what the working tree suggests: the most recent saved session to pick up (with its turn count, its cost where an observability record covers it, and how long ago it was), a read-only offer, and one that costs a single approval — each saying so. `↑↓` moves the pointer and `enter` types the offer into the input and submits it, so choosing one and typing it are the same act. Typing anything dismisses the list and keeps the facts; the screen is spent by the first thing you say to the model or by a conversation you load, so `/clear` afterwards does not bring it back. Everything on it is surveyed once when the session opens, never per frame.
+
 You can also pipe context into a chat — it's attached to your first message:
 
 ```bash
