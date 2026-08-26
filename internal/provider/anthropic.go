@@ -98,7 +98,7 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 		for stream.Next() {
 			event := stream.Current()
 			if err := accumulated.Accumulate(event); err != nil {
-				ch <- StreamEvent{Err: a.classify(err), Done: true}
+				ch <- StreamEvent{ToolCalls: CompletedToolCalls(anthropicToolCalls(accumulated)), Err: a.classify(err), Done: true}
 				return
 			}
 			if delta, ok := event.AsAny().(anthropic.ContentBlockDeltaEvent); ok {
@@ -108,7 +108,10 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 			}
 		}
 		if err := stream.Err(); err != nil {
-			ch <- StreamEvent{Err: a.classify(err), Done: true}
+			// The blocks the model had finished travel with the failure, so a
+			// dropped stream can be continued rather than only re-asked
+			// (S-107).
+			ch <- StreamEvent{ToolCalls: CompletedToolCalls(anthropicToolCalls(accumulated)), Err: a.classify(err), Done: true}
 			return
 		}
 
@@ -123,21 +126,28 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 			CachedTokens:     int(accumulated.Usage.CacheReadInputTokens),
 		}
 
-		var toolCalls []ToolCall
-		for _, block := range accumulated.Content {
-			if tu, ok := block.AsAny().(anthropic.ToolUseBlock); ok {
-				toolCalls = append(toolCalls, ToolCall{
-					ID:        tu.ID,
-					Name:      tu.Name,
-					Arguments: tu.JSON.Input.Raw(),
-				})
-			}
-		}
-
-		ch <- StreamEvent{ToolCalls: toolCalls, Usage: usage, Done: true}
+		ch <- StreamEvent{ToolCalls: anthropicToolCalls(accumulated), Usage: usage, Done: true}
 	}()
 
 	return ch, nil
+}
+
+// anthropicToolCalls reads the tool-use blocks out of the accumulated
+// message. It is called on a partially accumulated one too, when a stream
+// breaks mid-reply (S-107) — the SDK only materialises a block once its own
+// deltas have been folded in, so what is there is what the model finished.
+func anthropicToolCalls(accumulated anthropic.Message) []ToolCall {
+	var calls []ToolCall
+	for _, block := range accumulated.Content {
+		if tu, ok := block.AsAny().(anthropic.ToolUseBlock); ok {
+			calls = append(calls, ToolCall{
+				ID:        tu.ID,
+				Name:      tu.Name,
+				Arguments: tu.JSON.Input.Raw(),
+			})
+		}
+	}
+	return calls
 }
 
 // toAnthropicMessages converts the neutral message history to Anthropic's

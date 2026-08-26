@@ -24,7 +24,8 @@ func expandable(e entry) bool {
 // block is passive, but [v] and [u] are handled on it (S-098, §16), and so are
 // a provider failure's own keys (S-106, §17a).
 func selectable(e entry) bool {
-	return expandable(e) || e.kind == entryTurnClose || e.kind == entryFailure
+	return expandable(e) || e.kind == entryTurnClose || e.kind == entryFailure ||
+		e.kind == entryStreamDrop
 }
 
 // expandableIndices lists the transcript indices focus mode can select,
@@ -90,7 +91,10 @@ func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 		if es[idxs[i]].kind == entryTurnClose {
 			continue
 		}
-		if es[idxs[i]].kind == entryFailure {
+		// A drop row sits under the failure that caused it and holds the
+		// better offer of the two, so it is the one the cursor lands on
+		// (S-107).
+		if k := es[idxs[i]].kind; k == entryFailure || k == entryStreamDrop {
 			m.focusIdx = idxs[i]
 		}
 		break
@@ -133,9 +137,14 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case failRetryKey, failCompactKey, failKeyKey, failProviderKey:
-		// A provider failure's own offers (S-106, §17a). Like the changeset
-		// row's, they are handled here rather than globally, so the input
-		// keeps every one of these letters for typing.
+		// A provider failure's own offers (S-106, §17a), and a dropped
+		// stream's (S-107). Like the changeset row's, they are handled here
+		// rather than globally, so the input keeps every one of these letters
+		// for typing — which is also why continuing from a partial is [c]
+		// rather than the artboard's [enter].
+		if next, cmd, claimed := m.dropKey(msg.String()); claimed {
+			return next, cmd
+		}
 		if next, cmd, claimed := m.failureKey(msg.String()); claimed {
 			return next, cmd
 		}

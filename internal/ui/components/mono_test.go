@@ -172,6 +172,16 @@ func monoFixtures() []monoSurface {
 		return r.View(w)
 	}
 
+	// The retry countdown's states differ by how much is left and what it
+	// offers (S-107). In colour the meter drains in accent; in mono the cells
+	// and the seconds beside them are the whole message.
+	waiting := func(mut func(*RetryWait)) string {
+		w := RetryWait{Pct: 60, Text: "retry in 12s", Note: "attempt 1 of 3",
+			Keys: []KeyOffer{{Key: "[esc]", Label: "stop the turn"}}}
+		mut(&w)
+		return w.View(72)
+	}
+
 	start := func(mut func(*StartScreen)) string {
 		s := StartScreen{
 			Facts: []StartFact{{Text: "~/src/shhh", Lead: true}, {Text: "git main"}},
@@ -344,6 +354,18 @@ func monoFixtures() []monoSurface {
 			})},
 			{"unclassified", recovered(func(r *RecoveryRow) {
 				r.Qualifier, r.Outcome = "400 unclassified", "message below"
+			})},
+		}},
+		{"retry countdown", []monoState{
+			{"just started", waiting(func(w *RetryWait) {})},
+			{"nearly out", waiting(func(w *RetryWait) {
+				w.Pct, w.Text = 5, "retry in 1s"
+			})},
+			{"last attempt", waiting(func(w *RetryWait) {
+				w.Note = "attempt 3 of 3"
+			})},
+			{"with a fallback", waiting(func(w *RetryWait) {
+				w.Keys = append([]KeyOffer{{Key: "[m]", Label: "finish this turn on gpt-4o-mini"}}, w.Keys...)
 			})},
 		}},
 		{"provider card place", []monoState{

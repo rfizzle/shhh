@@ -1484,20 +1484,71 @@ out stated as a command (`export OPENAI_API_KEY`, `shhh config set
 provider.api_key`) rather than as a key, because nothing is listening for one
 by then. Piped output gets one classified line and no chrome.
 
-Two more verbs share this field, both belonging to stories not yet built:
+Two more verbs share this field. `stream` is S-107's and is built; `rounds` is
+S-109's and is not.
 
 ```
-   ⚠ stream  dropped mid-reply · 1,204 tokens kept           partial   11s
-    "…so I'll thread the sentinel through runRound and then
-    [enter] continue from here · [r] ask again · the partial reply stays
+   ⚠ stream  dropped mid-reply · ~1,204 tokens kept · 2 tool calls  partial  11s
+    …so I'll thread the sentinel through runRound and then
+    [c] continue from here · [r] ask again from scratch · the partial reply stays
 
    ⚠ rounds  25 of 25 used · ErrRoundsExhausted              stopped 4m12s
     3 files changed +30 −4 · the suite has not been re-run since
     [v] review what it did · [+10] ten more rounds · [u] undo the turn
 ```
 
-`stream` is S-107's, and brings the countdown meter (§10c) that drains while a
-retry waits; `rounds` is S-109's. Both are this same row with a different verb.
+- **A drop is a second row, not a replacement for the first.** Whatever broke
+  the stream still gets its `model` row above, with its class and the
+  provider's own words; the `stream` row under it is only the offer. One row
+  cannot both name a network failure and describe a reply, and the two are
+  answered differently.
+- **`[c]`, not the `[enter]` this section used to draw.** Enter is how the
+  input sends what you just typed, and a row cannot have it while there is a
+  draft under it — the same reason replacing a key is `[e]`. Both keys are
+  pressed in focus mode, like every other recovery key.
+- **The count is an estimate and says so.** A request that dropped never
+  reported usage, so the `~` is `len/4`, the same arithmetic §15a's occupancy
+  uses. Finished tool calls are counted beside it, because they change what
+  continuing means: with calls, continuing *is* the round, resumed.
+- **Only finished calls are kept.** A call whose arguments stopped halfway is
+  a fragment of a decision the model never made, and running it would be worse
+  than losing it (`internal/provider/partial.go`).
+- **Taking the offer spends it.** The row keeps its words and loses its keys,
+  because the conversation has moved past the partial and sending it again
+  would send the model its own reply twice.
+
+A request that was never answered has nothing to keep, and waiting is the
+whole remedy. It grows a countdown under it instead of an offer to continue:
+
+```
+   ⚠ model   gpt-4o · 429 rate limited                        retry in 20s  0.3s
+    Rate limit reached for gpt-4o. Please try again in 20s.
+    ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱ retry in 12s · attempt 1 of 3
+    [m] finish this turn on gpt-4.1 · [esc] stop and keep the 3 edits
+```
+
+- **The meter is §10c's countdown**, twenty cells in accent, draining right to
+  left, with the seconds stated beside it in whole numbers — a tenth of a
+  second flickering twice a second is noise, not precision.
+- **The bound is on screen, every attempt.** Three automatic retries, counted
+  across the stall and reset by any request the provider actually answers. A
+  limit you cannot see is indistinguishable from a hang.
+- **The row above hands over its keys while the wait runs.** Two sets of
+  offers for one stall would be two answers to the same question; when the
+  wait ends the row has them back.
+- **The wait owns the keyboard.** Nothing is streaming and the input is not
+  live, so `[m]` can be a bare letter here where it could not be on a row.
+  `[esc]` stops at any point and says what stopping keeps.
+- **`[m]` names the closest cheaper model in the provider's own catalog**
+  (S-083/S-084's metadata) — closest rather than cheapest, because the point is
+  to finish the turn and the least capable model is the least likely to. It is
+  never invented, never from another provider, and not offered at all when the
+  pricing table cannot rank the model in hand. Taking it switches and resumes
+  immediately: the limit belonged to the model being left behind.
+- **A model switched mid-turn is on the record twice** — in the transcript, and
+  in `/stats`, which splits the session's spend per model as soon as there is
+  more than one. A turn that finished on two models was two things, and
+  pricing it as one is a number nobody can reconcile.
 
 ### 17b. The two cards
 

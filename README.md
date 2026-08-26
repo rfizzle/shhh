@@ -325,6 +325,45 @@ request was too long for the window. A key the session cannot honour is not
 offered. The one-shot prints the same row with the way out stated as a command
 instead of a key, and a pipe gets one classified line and no chrome.
 
+### When a stream drops, or a limit bites
+
+A reply that stopped halfway is not lost. The text already written and the tool
+calls the model had *finished* writing are kept, and a second row under the
+failure offers both ways on:
+
+```
+   ⚠ stream  dropped mid-reply · ~1,204 tokens kept · 2 tool calls  partial  11s
+    …so I'll thread the sentinel through runRound and then
+    [c] continue from here · [r] ask again from scratch · the partial reply stays
+```
+
+`[c]` hands the partial turn back to the model as its own and asks it to carry
+on from where it stopped — with tool calls, it resumes the round they belong to
+rather than re-asking for them. `[r]` throws the partial away and asks the
+question again. Nothing is re-requested on its own: a drop always waits for you.
+A call whose arguments were cut off mid-write is never kept, because running it
+would be worse than losing it.
+
+A request that was never answered has nothing to keep, so it waits instead — on
+a meter, a bounded number of times:
+
+```
+   ⚠ model   gpt-4o · 429 rate limited                        retry in 20s  0.3s
+    Rate limit reached for gpt-4o. Please try again in 20s.
+    ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱ retry in 12s · attempt 1 of 3
+    [m] finish this turn on gpt-4.1 · [esc] stop and keep the 3 edits
+```
+
+The wait is the provider's own when it named one and doubling backoff when it
+did not, capped at a minute. Three attempts, counted across the stall and stated
+on every one of them; any request the provider actually answers resets the
+count. `[esc]` stops at any point and keeps everything the turn already did.
+`[m]` finishes on the closest cheaper model in the same provider's catalog —
+named, never invented, and not offered when the pricing table cannot rank the
+model in hand. Switching mid-turn is recorded in the transcript and splits
+`/stats` per model, so a turn that finished on two models is priced as two
+things.
+
 ## Usage
 
 ### Generate a command

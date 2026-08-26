@@ -55,6 +55,52 @@ type vitals struct {
 	totalIn, totalOut, totalCached int64
 	totalCost                      float64
 	priced                         bool
+
+	// models is the session's spend split by the model that incurred it, in
+	// the order the session first used each (S-107). A turn that starts on
+	// one model and finishes on a cheaper one is priced as two things,
+	// because that is what it was.
+	models []modelSpend
+}
+
+// modelSpend is one model's share of the session. It exists because the
+// fallback in S-107 can change the model mid-turn: a single session total
+// priced against whichever model happened to be current when /stats was typed
+// would be a number nobody could reconcile.
+type modelSpend struct {
+	Model    string
+	In, Out  int64
+	Cost     float64
+	Priced   bool
+	Requests int
+}
+
+// modelEntry returns the running total for a model, creating it in first-use
+// order. An empty name is not a model — a session whose model was never named
+// keeps one unnamed bucket rather than growing one per request.
+func (v *vitals) modelEntry(model string) *modelSpend {
+	for i := range v.models {
+		if v.models[i].Model == model {
+			return &v.models[i]
+		}
+	}
+	v.models = append(v.models, modelSpend{Model: model})
+	return &v.models[len(v.models)-1]
+}
+
+// noteModel records that the session has moved to a model, before it has
+// spent anything on it. The switch is the fact worth keeping: /stats naming a
+// model with no tokens against it is how a fallback that answered nothing
+// still shows up (S-107).
+func (v *vitals) noteModel(model string) { v.modelEntry(model) }
+
+// modelSplit is the per-model spend, or nil when the whole session ran on one
+// model and the split would say nothing the total does not.
+func (v vitals) modelSplit() []modelSpend {
+	if len(v.models) < 2 {
+		return nil
+	}
+	return v.models
 }
 
 // startTurn opens a fresh turn's accounting. A turn still open (a cancelled
@@ -69,9 +115,18 @@ func (v *vitals) startTurn() {
 
 // record folds one request's usage into the open turn and the session
 // totals, and appends the round's context estimate to the burn series.
-func (v *vitals) record(u provider.Usage, cost float64, priced bool) {
+func (v *vitals) record(model string, u provider.Usage, cost float64, priced bool) {
 	in, out := int64(u.PromptTokens), int64(u.CompletionTokens)
 	cached := int64(u.CachedTokens)
+
+	// The model that answered owns what the answer cost, whichever model the
+	// session is on by the time anyone asks (S-107).
+	ms := v.modelEntry(model)
+	ms.In += in
+	ms.Out += out
+	ms.Cost += cost
+	ms.Priced = ms.Priced || priced
+	ms.Requests++
 
 	v.current.In += in
 	v.current.Out += out

@@ -87,7 +87,10 @@ func (m *Model) leaveSurface() {
 // conversation alone (S-087).
 func (m Model) working() bool {
 	switch m.turnState() {
-	case stateStreaming, stateRunningCmd, stateClassifying:
+	case stateStreaming, stateRunningCmd, stateClassifying, stateRetryWait:
+		// A turn waiting out a retry is still a turn in flight (S-107): it
+		// has not closed, its accounting is open, and the next thing it does
+		// is the request it was already making.
 		return true
 	}
 	return false

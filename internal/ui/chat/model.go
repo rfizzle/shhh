@@ -78,6 +78,11 @@ const (
 	// stateKeyEntry: the masked key prompt an auth failure's [k] opens
 	// (S-106, §17a). It borrows the bottom panel; esc keeps the old key.
 	stateKeyEntry
+	// stateRetryWait: the turn is waiting out a bounded retry behind the
+	// countdown meter (S-107, §17a). It is a stage of the turn, not a
+	// surface — but nothing is streaming and the input is not live, so the
+	// wait owns the keyboard for the two keys it offers.
+	stateRetryWait
 )
 
 const inputHeight = 3
@@ -94,7 +99,17 @@ type tokenMsg struct {
 	final tea.Msg
 }
 type doneMsg struct{ usage *provider.Usage }
-type streamErrMsg struct{ err error }
+
+// streamErrMsg carries a failed stream back to the session. calls are the
+// tool calls the model had *finished* writing before the wire broke, which is
+// what makes continuing from a drop possible (S-107); it is empty for every
+// failure that never got that far.
+type streamErrMsg struct {
+	err   error
+	calls []provider.ToolCall
+}
+
+// retryTickMsg is defined with the rest of S-107 in resume.go.
 type streamStartedMsg struct {
 	events <-chan provider.StreamEvent
 	cancel context.CancelFunc
@@ -146,6 +161,10 @@ const (
 	// entryFailure: a classified provider failure rendered as a recovery row
 	// (S-106, §17a). It is a row, not a modal, because it is part of the turn.
 	entryFailure
+	// entryStreamDrop: a reply that stopped halfway, rendered as the `stream`
+	// recovery row and holding the partial it offers to continue from
+	// (S-107, §17a).
+	entryStreamDrop
 )
 
 // entry is one transcript item, stored raw so the history can be re-rendered
@@ -176,6 +195,10 @@ type entry struct {
 	// text, so the row re-renders at any width and the offered keys stay
 	// derived from the class rather than parsed back out of a string.
 	fail *provider.Failure
+	// resume is what a dropped stream kept behind an entryStreamDrop row: the
+	// partial text and the finished tool calls (S-107). It is a pointer so
+	// that taking the offer marks this row spent wherever it is rendered from.
+	resume *streamResume
 	// deniedBy names who refused the call — decidedByYou for a decline at the
 	// card, decidedByAuto for a rule — and renders the row as ⊘ rather than ✗
 	// (S-089, DESIGN-TUI.md §6d). Empty when nothing was refused.
@@ -462,6 +485,15 @@ type Model struct {
 	switchProviderFn func(string) error
 	replaceKeyFn     func(string) error
 	keyAsk           *components.SecretPrompt
+	// retry is the bounded wait between a failed request and the next one
+	// (S-107); retrySeq fences its timer, so a cancelled or superseded wait
+	// is never advanced by a tick that outlived it.
+	retry *retryWait
+	// retryAttempt counts the automatic retries this stall has used, against
+	// maxRetryAttempts. It outlives each individual wait, which is what makes
+	// the bound a bound.
+	retryAttempt int
+	retrySeq     int
 }
 
 func New(initialMessages []provider.Message, stream StreamFunc) Model {
@@ -666,6 +698,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.state == stateKeyEntry {
 			return m.updateKeyEntry(msg)
 		}
+		// A draining retry countdown owns the keyboard the way the confirm
+		// prompt does: nothing is streaming, the input is not live, and the
+		// wait offers two keys that both end it (S-107).
+		if m.state == stateRetryWait {
+			return m.updateRetryWait(msg)
+		}
 		if m.state == stateFocus {
 			return m.updateFocus(msg)
 		}
@@ -847,6 +885,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, waitForEvent(m.events)
 
 	case tokenMsg:
+		// The provider is answering: whatever stall preceded this is over, and
+		// the next one starts its own bounded count (S-107).
+		m.clearRetryChain()
 		m.streaming += msg.text
 		m.viewport.SetContent(m.renderHistory())
 		if m.atBottom {
@@ -858,6 +899,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, waitForEvent(m.events)
 
 	case doneMsg:
+		m.clearRetryChain()
 		m.accumulateUsage(msg.usage)
 		if m.compacting {
 			return m.finishCompact()
@@ -880,6 +922,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.autosaveCmd()
 
 	case toolCallsMsg:
+		m.clearRetryChain()
 		m.accumulateUsage(msg.usage)
 		if m.compacting {
 			return m.abortCompact()
@@ -1004,20 +1047,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case streamErrMsg:
 		// Classified, never raw (S-106, §17a): the failure is a row on the
 		// activity grid with the provider's own words in its detail body and
-		// the keys for its class underneath.
-		m.appendFailure(msg.err)
-		m.compacting = false
-		m.streaming = ""
-		m.events = nil
-		m.cancel = nil
-		// The close rows say the turn broke, and still report what it
-		// changed before it stopped (S-098).
-		m.turnOutcome = components.TurnFailed
-		m.setTurnState(stateInput)
-		m.restoreSteering()
-		m.viewport.SetContent(m.renderHistory())
-		m.viewport.GotoBottom()
-		return m, m.autosaveCmd()
+		// the keys for its class underneath. What happens after the row —
+		// an offer to continue a partial, a bounded wait, or the end of the
+		// turn — is S-107's (resume.go).
+		return m.handleStreamFailure(msg)
+
+	case retryTickMsg:
+		return m.retryTick(msg)
 
 	case spinner.TickMsg:
 		// frameWorking keeps the top rail's WORKING spinner animated for the
@@ -1035,7 +1071,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// The input stays live while the agent streams or runs tools so the user
 	// can type a steering message (S-058); only the confirm and plan-approval
 	// prompts take over.
-	if m.state != stateConfirmRun && m.state != statePlanApprove {
+	if m.state != stateConfirmRun && m.state != statePlanApprove && m.state != stateRetryWait {
 		// Any other keypress while browsing input history turns the recalled
 		// text into a fresh draft.
 		if _, ok := msg.(tea.KeyMsg); ok {
@@ -1082,6 +1118,7 @@ func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
 	// The session has now said something of its own, so first contact is
 	// over: /clear empties the transcript without making it new again (S-105).
 	m.spendStartScreen()
+	m.clearRetryChain()
 	m.turnCount++
 	m.turnStarted, m.turnEnded = time.Now(), time.Time{}
 	m.turnOpen, m.turnOutcome = true, components.TurnDone
@@ -1164,6 +1201,10 @@ func (m Model) View() string {
 		}
 	case m.state == stateClassifying:
 		body = m.viewport.View() + "\n" + m.spinner.View() + " Checking permission…"
+	case m.state == stateRetryWait && m.retry != nil:
+		// The failure row is already in the transcript; this is the part of
+		// it that drains (S-107, §17a). A wait is a meter, never a spinner.
+		body = m.viewport.View() + "\n" + m.retryWaitBlock(paneWidth)
 	case m.state == stateModelList:
 		body = m.viewport.View() + "\n" + m.spinner.View() + " Listing models…"
 	default:
@@ -1496,7 +1537,9 @@ func waitForEvent(events <-chan provider.StreamEvent) tea.Cmd {
 // nil for a plain token event.
 func terminalMsg(ev provider.StreamEvent) tea.Msg {
 	if ev.Err != nil {
-		return streamErrMsg{err: ev.Err}
+		// The completed tool calls ride the failure (S-107): a stream that
+		// broke after the model finished writing a call kept that call.
+		return streamErrMsg{err: ev.Err, calls: ev.ToolCalls}
 	}
 	if len(ev.ToolCalls) > 0 {
 		return toolCallsMsg{calls: ev.ToolCalls, usage: ev.Usage}
@@ -1537,7 +1580,7 @@ func (m *Model) accumulateUsage(u *provider.Usage) {
 		return
 	}
 	cost, priced := m.usageCost(*u)
-	m.vitals.record(*u, cost, priced)
+	m.vitals.record(m.modelName, *u, cost, priced)
 	m.TotalTokensIn, m.TotalTokensOut = m.vitals.totalIn, m.vitals.totalOut
 	m.turnTokensIn, m.turnTokensOut = m.vitals.current.In, m.vitals.current.Out
 	m.contextTokens = m.vitals.lastContext
@@ -1688,6 +1731,8 @@ func (m Model) renderEntry(e entry, width int) string {
 		return e.close.View(width) + "\n"
 	case entryFailure:
 		return m.failureRow(e).View(width) + "\n"
+	case entryStreamDrop:
+		return m.dropRow(e).View(width) + "\n"
 	case entryDiff:
 		if e.diff == nil {
 			return ""
@@ -1868,7 +1913,7 @@ func (m Model) contentWidth() int {
 }
 
 func (m Model) viewportHeight() int {
-	h := m.height - m.bottomPanelHeight() - chromeHeight - m.agentRowsHeight() - m.frameExtraHeight()
+	h := m.height - m.bottomPanelHeight() - chromeHeight - m.agentRowsHeight() - m.frameExtraHeight() - m.retryWaitHeight()
 	if h < 1 {
 		return 1
 	}

@@ -74,7 +74,9 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 		var usage *Usage
 		for resp, err := range g.client.Models.GenerateContentStream(ctx, model, contents, config) {
 			if err != nil {
-				ch <- StreamEvent{Err: g.classify(err), Done: true}
+				// The function calls already delivered travel with the
+				// failure, so a dropped stream can be continued (S-107).
+				ch <- StreamEvent{ToolCalls: CompletedToolCalls(toolCalls), Err: g.classify(err), Done: true}
 				return
 			}
 			if resp == nil {

@@ -169,3 +169,38 @@ func TestSecretPrompt_EscResolvesToNothing(t *testing.T) {
 		t.Errorf("esc declines and keeps the old key, got done=%v result=%v", done, result)
 	}
 }
+
+// The retry countdown (S-107, §17a). The rules it has to keep are §10c's: a
+// bar that states its number, and cells that drain rather than fill.
+func TestRetryWait_StatesItsNumberAndItsBound(t *testing.T) {
+	w := RetryWait{
+		Pct: 60, Text: "retry in 12s", Note: "attempt 2 of 3",
+		Keys: []KeyOffer{
+			{Key: "[m]", Label: "finish this turn on gpt-4o-mini"},
+			{Key: "[esc]", Label: "stop and keep the 3 edits"},
+		},
+	}
+	view := ansi.Strip(w.View(80))
+	for _, want := range []string{"▰", "▱", "retry in 12s", "attempt 2 of 3", "[m]", "[esc]"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the countdown should say %q, got:\n%s", want, view)
+		}
+	}
+	// Both lines sit in the detail body's column, under the row that stalled.
+	for _, line := range strings.Split(view, "\n") {
+		if !strings.HasPrefix(line, "    ") {
+			t.Errorf("every line indents to the detail body, got %q", line)
+		}
+	}
+}
+
+func TestRetryWait_Drains(t *testing.T) {
+	full := ansi.Strip(RetryWait{Pct: 100, Text: "retry in 20s"}.View(80))
+	part := ansi.Strip(RetryWait{Pct: 25, Text: "retry in 5s"}.View(80))
+	if strings.Count(full, "▰") <= strings.Count(part, "▰") {
+		t.Errorf("a countdown loses cells as it runs down:\n%s\n%s", full, part)
+	}
+	if strings.Count(part, "▱") == 0 {
+		t.Error("a partly drained countdown should show the cells it has given up")
+	}
+}

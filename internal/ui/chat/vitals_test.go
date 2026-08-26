@@ -22,7 +22,7 @@ func TestVitals_RingEvictsOldestKeepingTotals(t *testing.T) {
 	var v vitals
 	for i := 1; i <= vitalsHistory+5; i++ {
 		v.startTurn()
-		v.record(provider.Usage{PromptTokens: i, CompletionTokens: 1, CachedTokens: 1}, 0.01, true)
+		v.record("gpt-4o", provider.Usage{PromptTokens: i, CompletionTokens: 1, CachedTokens: 1}, 0.01, true)
 		v.endTurn(time.Duration(i) * time.Second)
 	}
 	if got := len(v.turns); got != vitalsHistory {

@@ -123,13 +123,15 @@ func streamResponses(body io.ReadCloser, classify func(error) error) <-chan Stre
 				return
 
 			case eventFailed, eventError:
-				ch <- StreamEvent{Err: classify(responseFailure(ev)), Done: true}
+				// The items that finished travel with the failure, so a
+				// dropped stream can be continued (S-107).
+				ch <- StreamEvent{ToolCalls: CompletedToolCalls(orderedCalls(seen, order)), Err: classify(responseFailure(ev)), Done: true}
 				return
 			}
 		}
 
 		if err := scanner.Err(); err != nil {
-			ch <- StreamEvent{Err: classify(err), Done: true}
+			ch <- StreamEvent{ToolCalls: CompletedToolCalls(orderedCalls(seen, order)), Err: classify(err), Done: true}
 			return
 		}
 		// The stream ended without a terminal event: finish with whatever it

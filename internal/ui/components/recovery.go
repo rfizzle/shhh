@@ -152,7 +152,55 @@ func (r RecoveryRow) View(width int) string {
 		lines = append(lines, indented(d, detailIndent, width))
 	}
 	if keys := r.keyLine(); keys != "" {
-		lines = append(lines, strings.Repeat(" ", detailIndent)+clip(keys, max(width-detailIndent, 1)))
+		lines = append(lines, detailLine(keys, width))
+	}
+	return strings.Join(lines, "\n")
+}
+
+// detailLine puts one already-styled line in the detail body's column and
+// clips it to the surface. Every line under a recovery row sits here, so the
+// row and whatever renders live beneath it stay in one column.
+func detailLine(s string, width int) string {
+	return strings.Repeat(" ", detailIndent) + clip(s, max(width-detailIndent, 1))
+}
+
+// RetryWait is the live block a stalled failure row grows while a bounded
+// retry waits out the provider's own countdown (S-107, §17a). The row above
+// it is history and does not move; this is the part that drains.
+//
+// The shape is guidelines/meters-progress and ui_kits/cockpit/Edges.html in
+// the shhh Design System project: a draining accent meter with its seconds
+// beside it, then the offers, both in the detail body's column.
+//
+// It is a passive renderer like the row: what the offered keys do, how long
+// the wait is and whether there is a cheaper model to offer belong to the
+// host.
+type RetryWait struct {
+	// Pct is how much of the wait is left, 0–100. The meter drains right to
+	// left as it runs down (§10c).
+	Pct int
+	// Text states the wait beside the bar — `retry in 12s`. A bar is a shape;
+	// the number is the measurement, and the two turn colour together.
+	Text string
+	// Note trails the meter in dim: the attempt and the bound. It is what
+	// makes "retries are bounded" a thing you can see rather than a promise.
+	Note string
+	// Keys are the offers while it waits. Esc belongs among them: a wait you
+	// cannot stop is a hang with a progress bar.
+	Keys []KeyOffer
+}
+
+// View renders the draining meter and the offers, in the detail body's column
+// under the row that stalled.
+func (w RetryWait) View(width int) string {
+	meter := Meter{Pct: w.Pct, Cells: MeterCellsCountdown, Tone: MeterCountdown, Text: w.Text}
+	head := meter.View()
+	if w.Note != "" {
+		head += dimStyle.Render(" · " + w.Note)
+	}
+	lines := []string{detailLine(head, width)}
+	if keys := keyOffers(w.Keys); keys != "" {
+		lines = append(lines, detailLine(keys, width))
 	}
 	return strings.Join(lines, "\n")
 }

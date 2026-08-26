@@ -44,17 +44,28 @@ const (
 const maxFailureDetail = 3
 
 // appendFailure records a classified provider failure as a transcript entry.
-// An error that somehow arrives unclassified is classified here rather than
-// printed raw: no raw provider error string reaches the transcript (S-106).
 func (m *Model) appendFailure(err error) {
-	f, ok := provider.AsFailure(err)
-	if !ok {
-		f = &provider.Failure{
-			Class:    provider.ClassUnclassified,
-			Provider: m.providerName,
-			Message:  err.Error(),
-		}
+	m.appendFailureRecord(classifyFailure(err, m.providerName))
+}
+
+// classifyFailure names an error that somehow arrived unclassified rather than
+// letting it through raw: no raw provider error string reaches the transcript
+// (S-106).
+func classifyFailure(err error, providerName string) *provider.Failure {
+	if f, ok := provider.AsFailure(err); ok {
+		return f
 	}
+	return &provider.Failure{
+		Class:    provider.ClassUnclassified,
+		Provider: providerName,
+		Message:  err.Error(),
+	}
+}
+
+// appendFailureRecord puts an already-classified failure on the grid. The
+// pointer is kept as-is, because the retry wait identifies the row it stalled
+// on by it (S-107).
+func (m *Model) appendFailureRecord(f *provider.Failure) {
 	m.appendEntry(entry{kind: entryFailure, fail: f, duration: m.turnElapsed()})
 }
 
@@ -84,6 +95,12 @@ func (m Model) failureRow(e entry) components.RecoveryRow {
 		row.State = components.RecoveryStopped
 	case f.Recoverable():
 		row.State = components.RecoveryStalled
+	}
+	// While this row's own failure is being waited out, the live countdown
+	// under it carries the offers (S-107). Two sets of keys for one stall
+	// would be two answers to the same question.
+	if m.retry != nil && m.retry.fail == f {
+		row.Keys, row.Note = nil, ""
 	}
 	return row
 }
@@ -256,6 +273,7 @@ func (m Model) retryTurn() (tea.Model, tea.Cmd) {
 	// The failed request never reached the conversation, so asking again is
 	// asking the same question rather than asking twice. What restarts is the
 	// turn's own accounting: a retry is a turn, and /stats should say so.
+	m.clearRetryChain()
 	m.turnStarted, m.turnEnded = time.Now(), time.Time{}
 	m.turnOpen, m.turnOutcome = true, components.TurnDone
 	m.turnTokensIn, m.turnTokensOut = 0, 0

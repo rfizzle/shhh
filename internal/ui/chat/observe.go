@@ -152,6 +152,31 @@ func (m Model) statsReport() string {
 		spend += "  " + formatCost(m.vitals.totalCost)
 	}
 	sb.WriteString(spend + "\n")
+
+	// A session that changed model mid-flight is priced per model (S-107), so
+	// the total above can be reconciled against what each one actually
+	// answered. One model says nothing the total does not, so it says nothing.
+	if split := m.vitals.modelSplit(); split != nil {
+		sb.WriteString("By model:\n")
+		for _, ms := range split {
+			name := ms.Model
+			if name == "" {
+				name = "(unnamed)"
+			}
+			line := fmt.Sprintf("  %-24s ↑%s ↓%s", name,
+				formatTokenCount(ms.In), formatTokenCount(ms.Out))
+			switch {
+			case ms.Priced:
+				line += "  " + formatCost(ms.Cost)
+			case ms.Requests == 0:
+				// A model the session switched to and never used says so,
+				// rather than reporting a cost of nothing as though it ran.
+				line += "  (no requests)"
+			}
+			sb.WriteString(line + "\n")
+		}
+	}
+
 	fmt.Fprintf(&sb, "Turns: %d", m.turnCount)
 	if t, ok := m.vitals.lastTurn(); ok {
 		fmt.Fprintf(&sb, " · last turn ↑%s ↓%s in %s",
