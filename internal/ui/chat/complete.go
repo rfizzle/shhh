@@ -30,6 +30,10 @@ type slashCommand struct {
 	desc    string
 	aliases []string
 	enabled func(*Model) bool
+	// key is the binding that reaches the command without typing it, shown
+	// beside the name in the palette (S-112). Empty means the command has
+	// none.
+	key string
 	// argSpecs describes the command's positional arguments (S-079), one
 	// spec per position; positions past the list are free-form and get no
 	// menu.
@@ -87,6 +91,7 @@ var slashCommands = []slashCommand{
 		argSpecs: []argSpec{{dynamic: modelArgs, fuzzy: true}},
 		idleOnly: "it switches the model the running turn is using"},
 	{name: "/mode", args: "[name|why]", desc: "Set the permission mode (bare /mode opens a picker)",
+		key:      "shift+tab",
 		argSpecs: []argSpec{{dynamic: modeArgs}}},
 	{name: "/stats", desc: "Context occupancy and session spend"},
 	{name: "/ui", args: "verbosity <low|normal|high> | mono <on|off>", desc: "Activity feed density and monochrome mode",
@@ -132,6 +137,7 @@ var slashCommands = []slashCommand{
 			argOption{"forget", "Drop a memory by id"},
 		)},
 	{name: "/agents", desc: "Agent manager: attach, steer, cancel, kill (Ctrl+A)",
+		key:     "ctrl+a",
 		enabled: func(m *Model) bool { return m.subagents != nil }},
 	{name: "/attach", args: "[name]", desc: "Attach to an agent's session and steer it",
 		enabled:  func(m *Model) bool { return m.subagents != nil },
@@ -170,7 +176,7 @@ var slashCommands = []slashCommand{
 	{name: "/chats", desc: "Saved chats — enter to load",
 		enabled:  func(m *Model) bool { return m.db != nil },
 		idleOnly: "it opens the picker that replaces the conversation"},
-	{name: "/exit", aliases: []string{"/quit", "/q"}, desc: "Quit (also /quit, /q)"},
+	{name: "/exit", aliases: []string{"/quit", "/q"}, desc: "Quit (also /quit, /q)", key: "ctrl+d"},
 }
 
 // maxCompletionRows caps how many commands the menu shows at once; longer

@@ -79,8 +79,8 @@ func (s *NoteSelect) Update(msg tea.KeyMsg) (done bool, result any) {
 			s.Select.Focus++
 		}
 	default:
-		if idx := digitIndex(key, len(s.Select.Options)); idx >= 0 {
-			s.Select.Focus = idx
+		if n := digitIndex(key, s.Select.selectable()); n >= 0 {
+			s.Select.Focus = s.Select.selectableIndex(n)
 		}
 	}
 	return false, nil

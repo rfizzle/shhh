@@ -52,6 +52,12 @@ func (m Model) updatePick(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.quitting = true
 		return m, m.quitCmd()
 	}
+	// The palette is this surface with a query on it: same card, same panel
+	// accounting, but every key that is not movement or dispatch is text
+	// (S-112, palette.go).
+	if m.palette != nil {
+		return m.updatePalette(msg)
+	}
 	done, result := m.picker.Update(msg)
 	if !done {
 		return m, nil

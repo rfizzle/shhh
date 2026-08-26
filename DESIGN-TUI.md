@@ -301,6 +301,10 @@ plan itself above the options — see §4d.
   focused option only (keeps the card short).
 - Number keys select immediately. Lists longer than the panel scroll,
   with `…` markers.
+- The filtered variant (the palette, §18a) adds a query line above the
+  options, group rails the pointer steps over, and rows dimmed behind `⊘`
+  for an option that cannot be acted on right now. It is unnumbered, because
+  a digit typed into a filter is a digit.
 
 ### 4b. Multi-select
 
@@ -1830,3 +1834,61 @@ Some things worth doing first:
   a conversation loaded into it. `/clear` after either does not bring it back;
   `/clear` on a session that never said anything does, because that session
   really is still new.
+
+---
+
+## 18. Reach (E-018: S-112–S-114)
+
+### 18a. The palette (S-112)
+
+`ctrl+k` opens one prompt over everything the session can reach. `/` is for a
+command you are already typing; the palette is for one you are looking for.
+
+```
+┌─ Palette ──────────────────────────────────────────── 14 results ┐
+│ ❯ mod█                                                           │
+│ COMMANDS                                                         │
+│ ❯ /model                                                         │
+│     Switch the model (bare /model opens a picker)                │
+│   /mode  shift+tab                                               │
+│ SESSIONS                                                         │
+│   loop-refactor                                                  │
+│ FILES                                                            │
+│   internal/agent/model.go                                        │
+│ … 6 more — keep typing                                           │
+│ enter run · tab complete · ↑↓ move · esc dismiss                 │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+- It is the §4a single-select with a query line above it, not a fourth list:
+  same card, same pointer, same bottom-panel accounting. What it adds is the
+  query row, the group rails, and a result count on the title rail — the count
+  is of *matches*, not of rows showing, because the rail is where you find out
+  that there are more.
+- Three groups, always in this order: **COMMANDS** from the S-078 registry
+  with their descriptions and their key bindings, **SESSIONS** from the saved
+  chats, **FILES** from the paths this session changed and the checkout's most
+  recently modified files. The dynamic two are read when the palette opens and
+  never per keystroke (S-079's rule).
+- Matching is subsequence across all three groups; an exact command name
+  outranks everything, so a command typed in full is never left under a longer
+  sibling. When the panel cannot hold every match, each group keeps a share of
+  it rather than the first group taking the card — a query that found
+  something in three places has to say so.
+- `enter` runs, `tab` writes it into the draft, `esc` dismisses and keeps the
+  draft. A file has nothing to run, so both keys append its path to the draft.
+  Everything else is text: `j` is a letter and `2` is a digit, which is why
+  the card is unnumbered here.
+- **An unavailable command is dimmed, not dropped.** While a turn runs, the
+  commands that would rewrite the conversation it is working in (§9f) render
+  behind `⊘` with the reason on the description row, and choosing one answers
+  with the notice that names what it would disturb. The completion menu drops
+  them because it is completing what you are typing; the palette keeps them
+  because it is where you look when you cannot find a command, and "it is not
+  here" is the answer that sends you hunting.
+- It opens over a running turn like the rest of §9f's live surfaces, and the
+  turn keeps streaming underneath. Attached to a child (§9b) the key keeps its
+  textarea meaning: the orchestrator's commands are not what the keyboard is
+  pointed at.
+- `ctrl+k` takes the binding from the textarea's delete-to-end-of-line, which
+  is the one key the input gives up for it.

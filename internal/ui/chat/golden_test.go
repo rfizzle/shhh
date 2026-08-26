@@ -19,6 +19,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
 	"github.com/rfizzle/shhh/internal/plan"
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/golden"
@@ -359,6 +360,35 @@ func TestGolden_KeyEntry(t *testing.T) {
 		opened := next.(Model)
 		return []golden.Panel{
 			{Label: "nothing pasted yet", View: strings.Join(opened.keyEntryLines(), "\n")},
+		}
+	})
+}
+
+// TestGolden_Palette captures the command palette in the bottom panel
+// (S-112, §18a): the query line, the group rails, a command that cannot run
+// while the agent works, and the count of what did not fit.
+func TestGolden_Palette(t *testing.T) {
+	captureGolden(t, "palette", "the command palette in the panel", goldenWidths, func(width int) []golden.Panel {
+		m := frameModel(t, width, 40)
+		m.recentFiles = func() []project.RecentFile {
+			return []project.RecentFile{
+				{Path: "internal/agent/loop.go", Mod: time.Now().Add(-4*time.Minute - time.Second)},
+				{Path: "README.md", Mod: time.Now().Add(-2*time.Hour - time.Second)},
+			}
+		}
+		opened, _ := m.openPalette()
+		idle := opened.(Model)
+
+		working := idle
+		working.setTurnState(stateStreaming)
+		reopened, _ := working.openPalette()
+		working = reopened.(Model)
+		working.palette.query = "cl"
+		working.refreshPalette()
+
+		return []golden.Panel{
+			{Label: "nothing typed yet", View: strings.Join(idle.pickerLines(), "\n")},
+			{Label: "mid-turn, filtered to an idle-only command", View: strings.Join(working.pickerLines(), "\n")},
 		}
 	})
 }

@@ -190,7 +190,7 @@ func (m Model) frameHints() string {
 			hints = []string{"enter queues steering", "ctrl+a agents", "/ commands", "ctrl+c cancel"}
 		}
 	default:
-		hints = []string{"enter send", "/ commands", "shift+tab mode"}
+		hints = []string{"enter send", "/ commands", "ctrl+k palette", "shift+tab mode"}
 	}
 	return frameHintStyle.Render(strings.Join(hints, " · "))
 }

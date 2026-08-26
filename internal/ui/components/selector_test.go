@@ -177,3 +177,87 @@ func TestConfirm_Keys(t *testing.T) {
 		t.Fatalf("confirm should render prompt and [y/N]: %q", view)
 	}
 }
+
+// grouped is a filtered list of the shape the palette builds (S-112): rails
+// that label the runs beneath them, and one option that cannot be acted on.
+func grouped() []SelectOption {
+	return []SelectOption{
+		{Label: "COMMANDS", Header: true},
+		{Label: "/model"},
+		{Label: "/clear", Desc: "needs the turn to be finished", Dim: true},
+		{Label: "FILES", Header: true},
+		{Label: "internal/agent/loop.go"},
+	}
+}
+
+func TestSelect_HeadersAreSteppedOver(t *testing.T) {
+	s := &Select{Options: grouped(), Focus: 0, Unnumbered: true}
+	s.Update(key("down"))
+	if s.Focus != 2 {
+		t.Fatalf("focus should open on the first option and move to the next, got %d", s.Focus)
+	}
+	s.Update(key("down"))
+	if s.Focus != 4 {
+		t.Fatalf("moving down should step over the rail, got %d", s.Focus)
+	}
+	s.Update(key("down"))
+	if s.Focus != 4 {
+		t.Fatalf("the last option should hold the focus, got %d", s.Focus)
+	}
+	s.Update(key("up"))
+	s.Update(key("up"))
+	if s.Focus != 1 {
+		t.Fatalf("moving up should step over the rail too, got %d", s.Focus)
+	}
+	s.Update(key("up"))
+	if s.Focus != 1 {
+		t.Fatal("the pointer must never land on a rail")
+	}
+}
+
+func TestSelect_UnnumberedIgnoresDigits(t *testing.T) {
+	s := &Select{Options: grouped(), Unnumbered: true}
+	done, _ := s.Update(key("2"))
+	if done {
+		t.Fatal("a digit is text on an unnumbered list, not a jump")
+	}
+	view := s.View(70)
+	if strings.Contains(view, "1. ") {
+		t.Fatalf("an unnumbered list should not number its rows:\n%s", view)
+	}
+	if strings.Contains(view, "1–") {
+		t.Fatalf("nor offer the jump keys:\n%s", view)
+	}
+}
+
+func TestSelect_DigitJumpCountsOnlySelectableRows(t *testing.T) {
+	s := &Select{Options: grouped()}
+	done, result := s.Update(key("3"))
+	if !done {
+		t.Fatal("a numbered list should still jump")
+	}
+	if got := result.(SelectResult).Index; got != 4 {
+		t.Fatalf("the third selectable row is index 4, got %d", got)
+	}
+}
+
+func TestSelect_PromptChipsAndHint(t *testing.T) {
+	s := &Select{
+		Title: "Palette", Options: grouped(), Unnumbered: true,
+		Prompt: "❯ mod█", Chips: []string{"12 results"},
+		Hint: "enter run · tab complete · ↑↓ move · esc dismiss",
+	}
+	view := s.View(70)
+	for _, want := range []string{"Palette", "12 results", "❯ mod█", "COMMANDS", "tab complete"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("expected %q in the card:\n%s", want, view)
+		}
+	}
+}
+
+func TestSelect_DimOptionCarriesItsGlyph(t *testing.T) {
+	s := &Select{Options: grouped(), Unnumbered: true, Focus: 1}
+	if view := s.View(70); !strings.Contains(view, "⊘ /clear") {
+		t.Fatalf("an unavailable option says so in a glyph, not only in a colour:\n%s", view)
+	}
+}

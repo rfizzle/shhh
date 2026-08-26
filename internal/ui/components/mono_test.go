@@ -126,6 +126,14 @@ func monoFixtures() []monoSurface {
 		return l.View(w)
 	}
 
+	// The palette's row states, held to one command name so that only the
+	// state itself is left to tell them apart (S-112, §18a).
+	paletteRow := func(mut func(*SelectOption)) string {
+		opt := SelectOption{Label: "/clear"}
+		mut(&opt)
+		return (&Select{Options: []SelectOption{opt}, Unnumbered: true}).View(w)
+	}
+
 	staged := func(checked bool) string {
 		s := NewMultiSelect("Stage files", []SelectOption{{Label: "internal/agent/loop.go"}})
 		s.Checked[0] = checked
@@ -323,6 +331,11 @@ func monoFixtures() []monoSurface {
 			{"current", queued(true, func(it *QueueItem) {})},
 			{"waiting", queued(false, func(it *QueueItem) {})},
 			{"in the batch", queued(false, func(it *QueueItem) { it.Batch = true })},
+		}},
+		{"palette row state", []monoState{
+			{"available", paletteRow(func(o *SelectOption) {})},
+			{"unavailable", paletteRow(func(o *SelectOption) { o.Dim = true })},
+			{"group rail", paletteRow(func(o *SelectOption) { o.Header = true })},
 		}},
 		{"staged checkbox", []monoState{
 			{"unstaged", staged(false)},

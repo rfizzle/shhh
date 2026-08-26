@@ -18,6 +18,7 @@ import (
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/pricing"
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -452,6 +453,12 @@ type Model struct {
 	picker       *components.Select
 	pickerApply  func(*Model, int) string
 	modelOptions []string
+	// The command palette (S-112): the open palette's query and candidates,
+	// which turn statePick into a filtered list rather than a fixed one.
+	// recentFiles overrides the checkout walk behind its FILES group, which
+	// is how the tests stop depending on the directory they run in.
+	palette     *paletteState
+	recentFiles func() []project.RecentFile
 	// Live model discovery (S-083): modelLister queries the provider's
 	// /v1/models endpoint for endpoints no curated catalog can cover, and the
 	// result replaces modelOptions for the rest of the session.
@@ -822,6 +829,16 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// textarea meaning (line start).
 			if m.subagents != nil {
 				return m.openAgentList()
+			}
+		case "ctrl+k":
+			// The command palette (S-112): one prompt over the commands, the
+			// saved chats and the files this session has touched. It reads
+			// the session without touching the conversation, so it opens
+			// over a running turn like the rest of S-087's live surfaces.
+			// Attached, the orchestrator's commands are not what the keyboard
+			// is pointed at, so the key keeps its textarea meaning there.
+			if m.inputLive() && m.attachedTo == "" {
+				return m.openPalette()
 			}
 		case "ctrl+e":
 			// Focus mode (S-076): navigate and expand transcript rows; scoped
@@ -2348,6 +2365,9 @@ Keys:
   Enter          Send message        Alt+Enter    Insert newline
   Tab            Complete a slash command (typing / opens the menu;
                  ↑↓ move, Enter runs the highlighted command, Esc dismisses)
+  Ctrl+K         Command palette: one prompt over commands, saved chats and
+                 the files this session touched — type to filter, Enter runs,
+                 Tab writes it into the input, Esc dismisses
   Shift+Tab      Cycle the permission mode
                  (while the agent is working, Enter queues a steering message
                   that joins the conversation before the next model request)
