@@ -173,6 +173,10 @@ const (
 	// rendered as the `rounds` recovery row (S-109, §17a). It stands in for
 	// the turn's close block rather than sitting above one.
 	entryRoundPause
+	// entryFanout: the block a round that spawned two or more children
+	// renders instead of their separate rows (S-110, §9g). It holds only the
+	// batch number — the lanes are read off the supervisor every render.
+	entryFanout
 )
 
 // entry is one transcript item, stored raw so the history can be re-rendered
@@ -211,6 +215,10 @@ type entry struct {
 	// entryRoundPause row (S-109). A pointer for the same reason: granting
 	// the rounds spends the offer wherever the row is rendered from.
 	pause *roundPause
+	// fanout is the batch behind an entryFanout block (S-110). The lanes are
+	// not stored: they are read off the supervisor at render time, which is
+	// what keeps them live and what lets the block re-render at any width.
+	fanout *fanoutBatch
 	// deniedBy names who refused the call — decidedByYou for a decline at the
 	// card, decidedByAuto for a rule — and renders the row as ⊘ rather than ✗
 	// (S-089, DESIGN-TUI.md §6d). Empty when nothing was refused.
@@ -245,6 +253,10 @@ type Model struct {
 	viewport viewport.Model
 	input    textarea.Model
 	spinner  spinner.Model
+	// spawnRow is 1 + the transcript index of the current round's first spawn
+	// row, or 0 once the round has none left to convert — the row a second
+	// child of the same round turns into the fan-out block (S-110).
+	spawnRow int
 	// spinFrame counts spinner ticks for the passive surfaces that draw a
 	// frame themselves rather than animating one (the inspector rail's agent
 	// lanes, S-094).
@@ -960,6 +972,9 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		auto, gated := m.agent.BeginToolRound(m.streaming, msg.calls, m.requiresApproval)
 		m.approvalTotal = len(gated)
+		// A round is where a fan-out is measured: the children spawned in one
+		// share a batch and render as one block (S-110).
+		m.beginSpawnBatch()
 		if m.streaming != "" {
 			// This is the announcement a step is titled by, so it is where an
 			// approved plan's step list joins the transcript (S-104).
@@ -1055,6 +1070,8 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				MaxLines: maxDiffExpandedLines,
 				Syntax:   diffSyntax(req.path),
 			}})
+		} else if req.call.Name == subagent.SpawnToolName && outcomeFromResult(msg.result) == outcomeOK {
+			m.appendSpawnEntry(entry{kind: entryTool, toolName: req.call.Name, toolArgs: req.call.Arguments, toolResult: msg.result, duration: msg.duration})
 		} else {
 			m.appendEntry(entry{kind: entryTool, toolName: req.call.Name, toolArgs: req.call.Arguments, toolResult: msg.result, duration: msg.duration})
 		}
@@ -1727,6 +1744,9 @@ func (m *Model) appendEntry(e entry) {
 
 func (m *Model) resetTranscript() {
 	m.transcript = nil
+	// The index a fan-out would have converted points into a transcript that
+	// no longer exists (S-110).
+	m.spawnRow = 0
 	// The checklist is read off the transcript, so a transcript that is gone
 	// takes the approved plan with it rather than pointing at entries that no
 	// longer exist (S-104).
@@ -1767,6 +1787,12 @@ func (m Model) renderEntry(e entry, width int) string {
 		return m.dropRow(e).View(width) + "\n"
 	case entryRoundPause:
 		return m.roundPauseRow(e).View(width) + "\n"
+	case entryFanout:
+		block := m.fanoutBlockFor(e)
+		if len(block.Lanes) == 0 {
+			return ""
+		}
+		return block.View(width) + "\n"
 	case entryDiff:
 		if e.diff == nil {
 			return ""
@@ -1790,7 +1816,7 @@ func (m Model) renderEntry(e entry, width int) string {
 // lines — rather than as a row in the compact activity feed (§6).
 func entryIsBlock(e entry) bool {
 	switch e.kind {
-	case entryUser, entryAssistant, entryDiff, entryTurnClose:
+	case entryUser, entryAssistant, entryDiff, entryTurnClose, entryFanout:
 		return true
 	case entrySystem, entryError:
 		return strings.Contains(strings.TrimSpace(e.text), "\n")
@@ -1918,7 +1944,10 @@ func (m *Model) renderHistory() string {
 	// Freeze everything before the last block rows can still land in. With an
 	// approved plan that is not the last block: its declared-but-not-started
 	// steps trail it, and they change as the run reaches them (S-104).
-	for bi := 0; bi < lastLiveBlock(blocks); bi++ {
+	// A live fan-out is the one entry that keeps changing without a row
+	// landing in it, so its block cannot be frozen either (S-110).
+	freeze := min(lastLiveBlock(blocks), m.liveFanoutBlock(blocks))
+	for bi := 0; bi < freeze; bi++ {
 		blk := blocks[bi]
 		if blk.end <= m.cachedCount {
 			continue

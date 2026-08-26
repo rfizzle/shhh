@@ -16,6 +16,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
@@ -102,6 +103,23 @@ type Status struct {
 	ToolCalls int
 	TokensIn  int64
 	TokensOut int64
+	// Batch groups the children one parent tool round spawned, so a fan-out
+	// can be rendered as one block rather than as interleaved rows (S-110).
+	// Children spawned before the parent opened a batch share batch zero.
+	Batch int
+	// Started is when the child was spawned; Elapsed is how long it has been
+	// alive, frozen at the moment it finished.
+	Started time.Time
+	Elapsed time.Duration
+	// Step and Steps are progress against the step count the spawn declared.
+	// Steps is zero when nobody declared one, and a lane with no denominator
+	// gets a spinner rather than an invented ratio (S-094).
+	Step  int
+	Steps int
+	// Summary is the first line of the child's final report — what a finished
+	// lane keeps once its progress stops meaning anything (S-110). Empty
+	// until the child reports.
+	Summary string
 }
 
 // EntryKind tags one child transcript entry (S-077): the attached view
@@ -303,6 +321,8 @@ type child struct {
 	task      string
 	model     string   // the model this child runs on
 	paths     []string // declared write scope (writers); nil means unscoped
+	batch     int      // the parent tool round that spawned it (S-110)
+	steps     int      // step count the spawn declared; 0 means none
 	root      string   // working directory (worktree subdir for writers)
 	worktree  string   // worktree top dir; "" for researchers
 	repoTop   string   // parent repo toplevel; "" for researchers
@@ -322,6 +342,9 @@ type child struct {
 	mode      agent.Mode
 	state     State
 	detail    string
+	started   time.Time
+	ended     time.Time
+	step      int // announcements made, i.e. steps entered (S-090's grammar)
 	toolCalls int
 	tokensIn  int64
 	tokensOut int64
@@ -342,12 +365,28 @@ func (c *child) set(state State, detail string) {
 	c.mu.Lock()
 	c.state = state
 	c.detail = detail
+	// A finished child's elapsed stops moving: its lane reports what the work
+	// took, not how long ago it happened.
+	switch state {
+	case StateDone, StateFailed:
+		if c.ended.IsZero() {
+			c.ended = time.Now()
+		}
+	}
 	c.mu.Unlock()
 }
 
 func (c *child) status() Status {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	end := c.ended
+	if end.IsZero() {
+		end = time.Now()
+	}
+	summary := ""
+	if c.state == StateDone {
+		summary = firstLine(c.report)
+	}
 	return Status{
 		Name:      c.name,
 		Role:      c.role,
@@ -359,6 +398,12 @@ func (c *child) status() Status {
 		ToolCalls: c.toolCalls,
 		TokensIn:  c.tokensIn,
 		TokensOut: c.tokensOut,
+		Batch:     c.batch,
+		Started:   c.started,
+		Elapsed:   end.Sub(c.started),
+		Step:      min(c.step, c.steps),
+		Steps:     c.steps,
+		Summary:   summary,
 	}
 }
 
@@ -388,6 +433,7 @@ func (c *child) beginToolEntry(tool, args string) int {
 	if c.streaming != "" {
 		c.transcript = append(c.transcript, TranscriptEntry{Kind: EntryAssistant, Text: c.streaming})
 		c.streaming = ""
+		c.step++
 	}
 	c.transcript = append(c.transcript, TranscriptEntry{Kind: EntryTool, Tool: tool, Args: args, Pending: true})
 	return len(c.transcript) - 1
@@ -481,6 +527,11 @@ type Supervisor struct {
 	// appliedFiles records which agent's patch last landed each file, so a
 	// later patch touching the same file is flagged before it is applied.
 	appliedFiles map[string]string
+	// batch numbers the parent tool rounds that spawned children (S-110).
+	// The supervisor does not know where a round begins — the parent front-end
+	// does, and says so with BeginBatch — so children spawned by a host that
+	// never opens one all share batch zero.
+	batch int
 
 	wg        sync.WaitGroup
 	closeOnce sync.Once
@@ -508,6 +559,39 @@ func New(ctx context.Context, opts Options) *Supervisor {
 
 // Events is the supervisor's notification stream for the parent front-end.
 func (s *Supervisor) Events() <-chan Event { return s.events }
+
+// BeginBatch opens a new spawn batch and returns its number. The parent
+// front-end calls it once per tool round, so the children one round spawns
+// share a batch and can be rendered as one fan-out block (S-110) rather than
+// as rows interleaved with everything else the round did.
+func (s *Supervisor) BeginBatch() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.batch++
+	return s.batch
+}
+
+// Batch is the batch spawns are currently joining.
+func (s *Supervisor) Batch() int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.batch
+}
+
+// BatchSize counts the children of one batch, whatever state they are in: a
+// fan-out is two or more children spawned in one round, and it stays a
+// fan-out after they finish.
+func (s *Supervisor) BatchSize(batch int) int {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	n := 0
+	for _, c := range s.children {
+		if c.batch == batch {
+			n++
+		}
+	}
+	return n
+}
 
 // SetParentMode records the parent session's permission mode; children are
 // clamped to it at every decision, so a child can never be more permissive
@@ -850,6 +934,7 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 		return "", fmt.Errorf("an agent named %q already exists", name)
 	}
 	mode := s.parentMode
+	batch := s.batch
 	s.mu.Unlock()
 
 	// Writers work in isolated worktrees, so they cannot overwrite each
@@ -895,6 +980,8 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 		task:      args.Task,
 		model:     model,
 		paths:     args.paths,
+		batch:     batch,
+		steps:     args.steps,
 		root:      root,
 		worktree:  worktree,
 		repoTop:   repoTop,
@@ -908,6 +995,7 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 		steerWake: make(chan struct{}, 1),
 		state:     StateQueued,
 		detail:    "queued",
+		started:   time.Now(),
 	}
 	// The auto-run executor is the env's rooted, reduced chain.
 	a.SetExecutor(env.Executor)

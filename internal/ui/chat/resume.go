@@ -302,6 +302,7 @@ func (m Model) continueStream(res *streamResume) (tea.Model, tea.Cmd) {
 		// itself, which is why it is not appended above.
 		auto, gated := m.agent.BeginToolRound(res.text, res.calls, m.requiresApproval)
 		m.approvalTotal = len(gated)
+		m.beginSpawnBatch()
 		if strings.TrimSpace(res.text) != "" {
 			m.appendEntry(m.stampStep(entry{kind: entryAssistant, text: res.text}))
 		}

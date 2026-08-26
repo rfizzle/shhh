@@ -522,6 +522,20 @@ A wrong turn costs one command, not the session: a checkpoint is recorded at the
 
 `shhh code` can delegate scoped work to background **sub-agents**. The model spawns them with `spawn_agent` (you approve each spawn) in one of two roles: a **researcher** gets read-only tools plus the web against the real workspace, and a **writer** gets the full toolset against an *isolated git worktree* — its changes never touch your checkout directly, they come back as a single patch you review and apply. `/agents` (or Ctrl+A) is the agent manager: attach to a child's live session, steer it mid-run, cancel a turn, or kill it; `/attach <name>` jumps straight into one and `/detach` (or Esc) comes back; `agent_report` collects a child's final report.
 
+Parallel work looks parallel. A round that spawned two or more children renders as one **fan-out block** in the transcript rather than as their rows interleaved with everything else — one lane per child, carrying its name, its task, its progress, its tool count, its spend and its elapsed, updating in place while they run:
+
+```
+ ◇ fan-out   3 agents                              1 needs you · 2 running 1m12s
+   ⚠ agent   scout-3  other ErrRoundLimit …  ⚠ needs you · 3 tools · $0.01   18s
+    waiting approval: read ../shhh-plugins/registry.go
+   ◇ agent   writer-1  docs/loop.md            ▰▰▱▱▱ 2/5 · 6 tools · $0.02   12s
+   ✓ agent   tester-2  internal/agent tests         done · 9 tools · $0.03   41s
+    all four packages pass
+    [ctrl+a] agents
+```
+
+A child waiting on you sorts to the top of the block, says `⚠ needs you` in words, and states what it is waiting for — the only thing a fan-out can need from you is never something you have to scroll for. A lane draws a progress bar only when the spawn declared a step count (`spawn_agent` takes an optional `steps`); without one it spins, because a ratio nobody supplied is not invented. A finished lane stops drawing progress and keeps its outcome and the first line of its report instead. Spawn one child and it keeps its ordinary inline row — the block is for genuine fan-out — and the block itself is a plain transcript entry, so it re-renders on resize like everything else in the feed.
+
 All of that works **while the turn is in flight**, which is the only time sub-agents exist: commands run mid-turn, not just between turns. Type `/agents`, `/attach writer-1`, `/stats`, `/diff`, `/mode auto`, `/ps` — or open focus mode with Ctrl+E — while the agent works, and the turn keeps streaming underneath; plain text still queues as a steering message. The exceptions are the handful of commands that would rewrite or replace the conversation the agent is working in — `/clear`, `/compact`, `/rewind`, `/branches`, `/load`, `/chats`, `/model`, `/run` — which say what they'd disturb and wait for the turn to end (Ctrl+C ends it now). They drop out of the completion menu for the duration rather than failing when you pick them.
 
 Sub-agents inherit the parent session's permission state rather than re-litigating it. A child is clamped to your mode — it can never be more permissive than you are — and it inherits your session grants (`[a]` on a prompt), your command allowlist, the read-only inspection list, and, in auto mode, the same permission classifier the parent uses. That last one matters in practice: without it, an auto-mode session still stopped to ask about every command its children ran. Safety-flagged commands still prompt, plan mode still refuses, and every child approval is routed to you labeled with the agent's name.

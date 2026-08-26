@@ -39,6 +39,7 @@ func Definitions() []provider.Tool {
 					"name": {"type": "string", "description": "Optional short name (letters, digits, dashes); auto-generated like researcher-1 when omitted"},
 					"paths": {"type": "array", "items": {"type": "string"}, "description": "For writers: the paths or globs this agent may change (e.g. [\"internal/ui/**\", \"README.md\"]). Two concurrent writers may not claim overlapping paths — declare them whenever you fan out more than one writer, so their patches cannot collide.", "maxItems": 32},
 					"model": {"type": "string", "description": "Optional model for this agent (defaults to the configured agent model, else the session model). Use a smaller, cheaper model for wide mechanical work and the session model for reasoning-heavy work."},
+					"steps": {"type": "integer", "description": "Optional number of steps this task breaks into (max 20). Pass it when you can name the steps up front: the agent's lane then shows progress against it instead of a spinner. Leave it out rather than guessing — an invented denominator is worse than none."},
 					"max_rounds": {"type": "integer", "description": "Optional tool-round budget (default 25, max 50)"},
 					"max_tokens": {"type": "integer", "description": "Optional token budget, prompt+completion (default 200000)"}
 				},
@@ -65,14 +66,21 @@ type spawnArgs struct {
 	Name      string   `json:"name"`
 	Model     string   `json:"model"`
 	Paths     []string `json:"paths"`
+	Steps     int      `json:"steps"`
 	MaxRounds int      `json:"max_rounds"`
 	MaxTokens int64    `json:"max_tokens"`
 
 	role      Role
 	paths     []string
+	steps     int
 	maxRounds int
 	maxTokens int64
 }
+
+// MaxDeclaredSteps bounds the step count a spawn may declare (S-110). A lane
+// is five cells wide; a task claiming more steps than this is describing its
+// tool calls, not its shape, and the lane falls back to the spinner.
+const MaxDeclaredSteps = 20
 
 // maxClaimedPaths bounds a writer's declared scope; a claim longer than this
 // is a sign the model is listing files instead of scoping work.
@@ -114,6 +122,12 @@ func parseSpawnArgs(raw json.RawMessage) (spawnArgs, error) {
 	}
 	if args.role != RoleWriter && len(args.paths) > 0 {
 		return args, errors.New("paths apply to writer agents only; a researcher changes nothing")
+	}
+	// A step count outside the useful range is dropped rather than clamped:
+	// the lane's rule is that a denominator nobody supplied is not invented,
+	// and a clamped one is invented (S-094).
+	if args.Steps > 0 && args.Steps <= MaxDeclaredSteps {
+		args.steps = args.Steps
 	}
 	args.maxRounds = args.MaxRounds
 	switch {

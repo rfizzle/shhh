@@ -779,6 +779,65 @@ turn, and so does every command that leaves the conversation alone:
   agent is working in. They name what they'd disturb and wait, and they drop
   out of the completion menu for the duration rather than failing on pick.
 
+### 9g. Fan-out lanes in the transcript (S-110)
+
+Children only exist inside a parent turn, and until this story they wrote
+their spawn rows into that turn's feed one at a time. Three children read as
+one confused stream. A round that spawned two or more collapses to one block —
+one lane each, updating in place:
+
+```
+ ◇ fan-out   3 agents                              1 needs you · 2 running 1m12s
+   ⚠ agent   scout-3  other ErrRoundLimit …  ⚠ needs you · 3 tools · $0.01   18s
+    waiting approval: read ../shhh-plugins/registry.go
+   ◇ agent   writer-1  docs/loop.md            ▰▰▱▱▱ 2/5 · 6 tools · $0.02   12s
+   ✓ agent   tester-2  internal/agent tests         done · 9 tools · $0.03   41s
+    all four packages pass
+    [ctrl+a] agents
+```
+
+- One block per *round*, not per session: a later round's children are a
+  later block. A round that spawned one child keeps its inline row — a block
+  is for genuine fan-out.
+- The header names the size of the fan-out and what it still owes you.
+  Whoever needs an answer is said first and in del; the tally of finished
+  children is left to the lanes until nothing is running, when it becomes the
+  whole story. The field never clips (§6a), so it says two things at most.
+- A lane sits on the §6a grid with `agent` in the verb column — §6c's name
+  for a child's row in the parent transcript, which is exactly what a lane
+  is. **The child's name goes in the target field**, not the verb column:
+  a name is not a word from a closed vocabulary, and clipped to eight columns
+  `researcher-1` and `researcher-2` become the same string. The task follows
+  it, dimmed, and is what clips as the terminal narrows.
+- A lane draws its five-cell meter only where the spawn declared a step count
+  (`steps` on `spawn_agent`, §9h); without one it spins beside the word
+  `working`. A ratio nobody supplied is never invented (§10c, S-094).
+- Blocked lanes sort to the top and say `⚠ needs you` in words, with what
+  they are waiting for stated underneath and `[ctrl+a] agents` — today's way
+  to answer one — offered once under the block. Answering in the lane is
+  S-111.
+- A settled lane stops drawing progress, which no longer measures anything,
+  and keeps its outcome and the first line of its report instead.
+- The block is a passive transcript entry: it stores the batch number and
+  reads the lanes off the supervisor every render, which is what lets it stay
+  live and re-render at any width. It is its own block rather than a step
+  member, because a finished step folds (§13b) and the children outlive the
+  step that spawned them — a fold must never hide a child that needs you.
+
+**Deviation from `ui_kits/cockpit/Agents.html`.** The artboard draws the lanes
+under the step header that spawned them, with the child's name in the verb
+column. Both are corrected here: names longer than eight columns are the
+common case, and the fold that comes with living inside a step would hide a
+blocked lane. The artboard is left for a design-side pass.
+
+### 9h. Declared step counts (S-110)
+
+`spawn_agent` takes an optional `steps` — the number of steps the task breaks
+into — and the lane shows progress against it. A child's step is §13's step:
+an announcement followed by its calls, counted in the child's own transcript.
+A count outside 1–20 is dropped rather than clamped, because a clamped
+denominator is an invented one.
+
 ---
 
 ## 10. Palette, Meters & Drawing Kit

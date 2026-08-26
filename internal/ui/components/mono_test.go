@@ -103,6 +103,14 @@ func monoFixtures() []monoSurface {
 		return l.View(w)
 	}
 
+	// A fan-out lane holds its name, task and counts constant so that only
+	// the lane's state is left to tell two renders apart (S-110).
+	lane := func(mut func(*FanoutLane)) string {
+		l := FanoutLane{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md", Tools: 4}
+		mut(&l)
+		return l.View(w)
+	}
+
 	staged := func(checked bool) string {
 		s := NewMultiSelect("Stage files", []SelectOption{{Label: "internal/agent/loop.go"}})
 		s.Checked[0] = checked
@@ -304,6 +312,14 @@ func monoFixtures() []monoSurface {
 		{"staged checkbox", []monoState{
 			{"unstaged", staged(false)},
 			{"staged", staged(true)},
+		}},
+		{"fan-out lane state", []monoState{
+			{"queued", lane(func(l *FanoutLane) { l.State = FanoutQueued })},
+			{"running", lane(func(l *FanoutLane) {})},
+			{"blocked", lane(func(l *FanoutLane) { l.State = FanoutBlocked })},
+			{"idle", lane(func(l *FanoutLane) { l.State = FanoutIdle })},
+			{"done", lane(func(l *FanoutLane) { l.State = FanoutDone })},
+			{"failed", lane(func(l *FanoutLane) { l.State = FanoutFailed })},
 		}},
 		{"agent lane state", []monoState{
 			{"current", agents(AgentCurrent, "working")},

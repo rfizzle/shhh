@@ -382,6 +382,56 @@ func TestGolden_AgentList(t *testing.T) {
 	})
 }
 
+// TestGolden_FanoutBlock captures the fan-out block (§9g, S-110) in the three
+// readings that matter: a batch mid-flight with one child waiting on an
+// answer, a batch where every child has stopped, and a batch nobody declared
+// a step count for, where every lane spins instead of drawing a ratio. The
+// spinner frame is fixed so the capture is about layout rather than about
+// when the test ran.
+func TestGolden_FanoutBlock(t *testing.T) {
+	captureGolden(t, "fanout-block", "fan-out block", goldenWidths, func(width int) []golden.Panel {
+		flight := FanoutBlock{
+			Elapsed: "1m12s",
+			Keys:    []TurnKey{{Key: "[ctrl+a]", Label: "agents"}},
+			Lanes: []FanoutLane{
+				{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md",
+					Step: 2, Steps: 5, Tools: 6, Spend: "$0.02", Elapsed: "12s"},
+				{State: FanoutDone, Name: "tester-2", Task: "internal/agent tests",
+					Tools: 9, Spend: "$0.03", Elapsed: "41s", Summary: "all four packages pass"},
+				{State: FanoutBlocked, Name: "scout-3", Task: "other ErrRoundLimit callers",
+					Tools: 3, Spend: "$0.01", Elapsed: "18s",
+					Waiting: "waiting approval: read ../shhh-plugins/registry.go"},
+				{State: FanoutQueued, Name: "reader-4", Task: "survey internal/ui", Elapsed: "1.0s"},
+			},
+		}
+		settled := FanoutBlock{
+			Elapsed: "2m04s",
+			Lanes: []FanoutLane{
+				{State: FanoutDone, Name: "writer-1", Task: "docs/loop.md",
+					Tools: 11, Spend: "$0.04", Elapsed: "1m38s", Summary: "documented the sentinel and linked the test"},
+				{State: FanoutDone, Name: "tester-2", Task: "internal/agent tests",
+					Tools: 9, Spend: "$0.03", Elapsed: "41s", Summary: "all four packages pass"},
+				{State: FanoutFailed, Name: "patcher-3", Task: "apply the patch",
+					Tools: 12, Spend: "$0.05", Elapsed: "2m04s", Summary: "round limit (25) reached"},
+			},
+		}
+		spinning := FanoutBlock{
+			Elapsed: "22s",
+			Lanes: []FanoutLane{
+				{State: FanoutRunning, Name: "researcher-1", Task: "survey the round accounting",
+					Tools: 4, Spend: "$0.01", Elapsed: "22s", Frame: 2},
+				{State: FanoutRunning, Name: "researcher-2", Task: "survey the fold state",
+					Tools: 2, Spend: "$0.01", Elapsed: "19s", Frame: 2},
+			},
+		}
+		return []golden.Panel{
+			{Label: "mid-flight · one child is waiting on you", View: flight.View(width)},
+			{Label: "settled · every child has stopped", View: settled.View(width)},
+			{Label: "no declared step count · every lane spins", View: spinning.View(width)},
+		}
+	})
+}
+
 // TestGolden_InspectorRail captures the rail (§15). Its width is fixed at
 // InspectorWidth — it exists only in the two-pane layout and never renders at
 // another size — so the axis worth capturing is which blocks are present and

@@ -188,19 +188,10 @@ func TestGolden_PromptFrame(t *testing.T) {
 	})
 }
 
-// TestGolden_SurfacesNotYetBuilt keeps the surfaces S-096 asks for that
-// nothing renders yet from being quietly forgotten. Review mode landed with
-// S-099 and is captured beside the component catalog (review-mode.*); the
-// fan-out block is S-110 and still has no renderer, so this skips with the
-// reason rather than pretending the sheet is complete. Delete a line here
-// when its story lands and the capture goes in beside the rest.
-func TestGolden_SurfacesNotYetBuilt(t *testing.T) {
-	for _, pending := range []string{
-		"fan-out block — S-110, no renderer yet",
-	} {
-		t.Run(pending, func(t *testing.T) { t.Skip("no surface to capture yet") })
-	}
-}
+// Every surface S-096 asked for now has a capture. Review mode landed with
+// S-099 and the fan-out block with S-110; both are captured beside the
+// component catalog (review-mode.*, fanout-block.*), which is why the
+// placeholder that used to stand here for them is gone.
 
 // promptSurface is the bottom panel the product shows: the frame where it
 // fits, and the plain input row where it does not (Model.View's
