@@ -100,6 +100,23 @@ func monoFixtures() []monoSurface {
 		return s.View(w)
 	}
 
+	// The plan card holds its title, files and options constant so that only
+	// the step's intent — or the plan's radius — is left to tell the states
+	// apart (S-103, §4d).
+	planned := func(mut func(*PlanCard)) string {
+		c := PlanCard{
+			Title: "Plan · make the round limit recoverable",
+			Chip:  "1 step",
+			Steps: []PlanStep{{Number: 1, Title: "Rework the round accounting",
+				Detail: "internal/agent/loop.go", Kind: "read only", KindTone: ToneSafe}},
+			Summary: []PlanFact{{Text: "1 file touched"}, {Text: "reversible", Tone: ToneSafe}},
+			Options: []SelectOption{{Label: "Run the whole plan — accept-edits mode"}},
+			Hint:    "enter select · s save · esc keep planning",
+		}
+		mut(&c)
+		return c.View(w)
+	}
+
 	meter := func(pct int) string {
 		return Meter{Pct: pct, Cells: MeterCellsVitals, Tone: MeterPressure, Label: "ctx"}.View()
 	}
@@ -271,6 +288,36 @@ func monoFixtures() []monoSurface {
 			{"clean", undo(nil)},
 			{"drifted", undo([]string{"internal/agent/loop.go"})},
 			{"drifted twice", undo([]string{"internal/agent/loop.go", "internal/ui/chat/model.go"})},
+		}},
+		{"plan step intent", []monoState{
+			{"read only", planned(func(c *PlanCard) {})},
+			{"edits", planned(func(c *PlanCard) {
+				c.Steps[0].Kind, c.Steps[0].KindTone = "✎ edits 1 file", ToneNeutral
+			})},
+			{"creates", planned(func(c *PlanCard) {
+				c.Steps[0].Kind, c.Steps[0].KindTone = "✎ creates 1 file", ToneNeutral
+			})},
+			{"deletes", planned(func(c *PlanCard) {
+				c.Steps[0].Kind, c.Steps[0].KindTone = "✎ deletes 1 file", ToneRisk
+			})},
+			{"runs", planned(func(c *PlanCard) {
+				c.Steps[0].Kind, c.Steps[0].KindTone = "$ runs", ToneNeutral
+			})},
+			{"network", planned(func(c *PlanCard) {
+				c.Steps[0].Kind, c.Steps[0].KindTone = "network", ToneOpen
+			})},
+		}},
+		{"plan reversibility", []monoState{
+			{"reversible", planned(func(c *PlanCard) {})},
+			{"partly reversible", planned(func(c *PlanCard) {
+				c.Summary[1] = PlanFact{Text: "partly reversible", Tone: ToneNeutral}
+			})},
+			{"not reversible", planned(func(c *PlanCard) {
+				c.Summary[1] = PlanFact{Text: "not reversible", Tone: ToneRisk}
+			})},
+			{"nothing to put back", planned(func(c *PlanCard) {
+				c.Summary[1] = PlanFact{Text: "nothing to put back", Tone: ToneSafe}
+			})},
 		}},
 		{"context meter pressure", []monoState{
 			{"healthy", meter(40)},

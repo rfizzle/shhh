@@ -279,16 +279,17 @@ Truncated cells end with `…`; the pane divider is gray (241).
 
 ### 4a. Single-select
 
-Used by: plan approval (S-061), the `/run` block picker (S-081), `/mode`
-and `/model` menus, the session pickers (`/load`, `/chats`, `/branches` —
-S-080), model-asked structured questions.
+Used by: the `/run` block picker (S-081), `/mode` and `/model` menus, the
+session pickers (`/load`, `/chats`, `/branches` — S-080), model-asked
+structured questions. Plan approval is a single-select too, but with the
+plan itself above the options — see §4d.
 
 ```
-┌─ Plan ready — how should I proceed? ─────────────────────────────┐
-│ ❯ 1. Execute plan (accept edits)                                 │
-│   2. Execute plan (manual approvals)                             │
-│   3. Keep planning — tell me what to change                      │
-│   4. Reject plan                                                 │
+┌─ Switch mode ────────────────────────────────────────────────────┐
+│ ❯ 1. manual — every consequential tool call asks                 │
+│   2. accept-edits — file edits apply; commands ask               │
+│   3. auto — allowlisted commands run; classifier judges          │
+│   4. plan — read-only research                                   │
 │                                                                  │
 │ ↑↓/jk move · enter select · 1–4 jump · esc cancel                │
 └──────────────────────────────────────────────────────────────────┘
@@ -349,6 +350,57 @@ with a correction, `/mode feedback`.
   `textarea.Model`.
 - An option may declare "note required" (border turns red (9) with a
   `note required` hint if confirmed empty).
+
+### 4d. Plan card (S-103)
+
+Plan approval, with the plan priced above the options. A plan is the
+cheapest place in the product to disagree with an agent, so it states its
+whole blast radius once and shows the consequence of the option you are
+on — and no other.
+
+```
+┌─ Plan · make the round limit recoverable ─────────────── 4 steps ┐
+│ 1 Locate the round accounting                         read only  │
+│   internal/agent/loop.go · internal/agent/round.go               │
+│ 2 Add a RoundsExhausted sentinel                ✎ creates 1 file │
+│   internal/agent/errors.go · new type, no signature changes      │
+│ … 2 more steps                                                   │
+│                                                                  │
+│ 3 files touched · no deletes · no network · reversible           │
+├──────────────────────────────────────────────────────────────────┤
+│ ❯ 1. Run the whole plan — accept-edits mode                      │
+│     edits apply as they come; commands and other actions ask     │
+│   2. Run it unattended — auto mode                               │
+│   3. Step through it — manual approvals                          │
+│   4. Keep planning — tell me what to change                      │
+│   5. Reject the plan                                             │
+│ ↑↓/jk move · enter select · 1–5 jump · s save · esc keep planning│
+└──────────────────────────────────────────────────────────────────┘
+```
+
+- **Steps.** Numbered title in body (252), the intent right-aligned in
+  the same row, the paths beneath in dimmer (241). The intent uses the
+  §14 tool glyphs and no others: `✎ edits/creates/deletes N files`,
+  `$ runs`, and the two that persist nothing — `read only`, `network` —
+  which carry no glyph at all. The intent is dropped before a title is
+  clipped; a title cut in half says less than a missing label does.
+- **Paths are never guessed.** A step renders the files plan mode's
+  `files:` line named and nothing else. No paths, no row.
+- **Summary.** One computed line: files touched, deletes, network,
+  reversibility — the last from the same git-tracked check as §2. Its
+  qualifier (`— every file is tracked in git`) is dropped rather than
+  clipped when the terminal cannot carry both.
+- **Only the focused option explains itself.** Five consequences stacked
+  at once is a wall, not a choice.
+- **Every execution option names the mode it enters.** Accepting a plan
+  is never an unstated mode change.
+- **Height.** The card gets 60% of the terminal, not §1's 40%: an
+  approval card's context is the transcript behind it, but a plan card's
+  context *is* the card. Steps are what shrinks, dropped whole and
+  counted (`… 2 more steps`); the options and keys never are.
+- **A plan with no structure still renders** — as prose with the same
+  options below it, and with nothing claimed about a radius that was
+  never parsed.
 
 ---
 

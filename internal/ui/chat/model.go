@@ -16,6 +16,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/clipboard"
+	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -276,6 +277,13 @@ type Model struct {
 	denialNotice string
 	// planChoice is the focused row of the plan-approval prompt (S-061).
 	planChoice int
+	// The armed plan (S-103): planDoc is the planning response parsed into
+	// steps, planFacts and planDetail the radius line computed from it. All
+	// three are resolved once, when the prompt opens, because pricing the
+	// plan asks git about every file it names.
+	planDoc    plan.Plan
+	planFacts  []components.PlanFact
+	planDetail string
 	// focusIdx is the transcript index of the row selected in focus mode
 	// (S-076).
 	focusIdx int
@@ -796,7 +804,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// A completed planning response gets the plan-approval prompt (S-061).
 		if m.mode == agent.ModePlan && hadText {
 			m.setTurnState(statePlanApprove)
-			m.planChoice = 0
+			m.armPlan()
 			m.syncViewport()
 		}
 		m.viewport.SetContent(m.renderHistory())

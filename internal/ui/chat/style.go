@@ -29,8 +29,6 @@ var (
 	modeGatedStyle      lipgloss.Style
 	ctxAlertStyle       lipgloss.Style
 	updateNoticeStyle   lipgloss.Style
-	// Focused row of the plan-approval prompt (DESIGN-TUI.md §4a).
-	planSelectedStyle lipgloss.Style
 	// Focus-mode gutter pointer on the selected transcript row (§7).
 	focusMarkerStyle lipgloss.Style
 	// Step outline (S-090, §13): the header's title, ordinal, faint rule and
@@ -71,7 +69,6 @@ func applyPalette() {
 	modeGatedStyle = lipgloss.NewStyle().Foreground(p.Accent)
 	ctxAlertStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Del)
 	updateNoticeStyle = lipgloss.NewStyle().Foreground(p.Accent)
-	planSelectedStyle = lipgloss.NewStyle().Bold(true).Background(p.FocusBg)
 	focusMarkerStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Accent)
 	stepTitleStyle = lipgloss.NewStyle().Foreground(p.Body)
 	stepLiveTitleStyle = lipgloss.NewStyle().Foreground(p.Bright)

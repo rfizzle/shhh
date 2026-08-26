@@ -175,9 +175,22 @@ Your last message IS the deliverable. Report what you changed (files and why), h
 const PlanModeInstructions = `# Plan mode
 You are in plan mode: a read-only research phase. Your job is to produce a concrete implementation plan, not to make changes.
 - Research with the read-only tools (read_file, list_directory, search, glob) and read-only inspection commands (e.g. git status, git diff, ls); file edits and any other commands are disabled and will be refused.
-- When you have enough context, present the plan as a normal response: the steps in order, the files you would change, and how you would verify the result.
+- When you have enough context, present the plan as a normal response in the shape below, so it can be rendered as priced steps rather than as a paragraph.
 - Do not start implementing, and do not include full file contents or large code blocks — the plan describes the changes.
-- After you present the plan, the user decides: approve it (this session then continues straight into execution), keep planning (they send feedback to refine it), or reject it.`
+- After you present the plan, the user decides: approve it (this session then continues straight into execution), keep planning (they send feedback to refine it), or reject it.
+
+Write the plan like this — a title heading, then a numbered step list, one step per thing you would do:
+
+## Plan: <one line naming the outcome>
+
+1. <what this step does>
+   files: <path>, <path>
+   action: read|edit|create|delete|run|network
+   note: <short qualifier, optional>
+
+- ` + "`files:`" + ` lists the paths that step would touch, workspace-relative. Omit the line entirely when you genuinely do not know yet — never guess a path or write a placeholder.
+- ` + "`action:`" + ` says what the step does to them. Omit it and a step with files is taken as an edit, one without as inspection.
+- Steps are numbered from 1 and climb. Keep each title to one line; the detail belongs in ` + "`note:`" + `.`
 
 func CombineExtra(parts ...string) string {
 	var out []string

@@ -663,7 +663,7 @@ func (m Model) bottomPanelHeight() int {
 	case stateConfirmRun:
 		lines, bound = m.confirmLines(), m.confirmPanelBound()
 	case statePlanApprove:
-		lines = m.planApproveLines()
+		lines, bound = m.planApproveLines(), m.planPanelBound()
 	case stateRewindPick:
 		lines = m.rewindPickLines()
 	case statePick:

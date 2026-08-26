@@ -3,12 +3,14 @@ package chat
 import (
 	"context"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -61,12 +63,12 @@ func TestPlan_ApprovalPromptAfterPlanningResponse(t *testing.T) {
 		t.Fatalf("a completed planning response should enter the plan-approval prompt, got state %d", m.state)
 	}
 	view := m.View()
-	if !strings.Contains(view, "Plan ready — how should I proceed?") {
-		t.Fatalf("view should show the plan-approval prompt, got:\n%s", view)
+	if !strings.Contains(view, "Plan ready") {
+		t.Fatalf("view should show the plan-approval card, got:\n%s", view)
 	}
 	for _, opt := range planApproveOptions {
-		if !strings.Contains(view, opt) {
-			t.Errorf("view should list option %q", opt)
+		if !strings.Contains(view, opt.Label) {
+			t.Errorf("view should list option %q", opt.Label)
 		}
 	}
 }
@@ -349,5 +351,217 @@ func TestSanitizePlanName(t *testing.T) {
 	}
 	if got := sanitizePlanName("///"); !strings.HasPrefix(got, "plan-") {
 		t.Errorf("all-unsafe name should fall back to a timestamp, got %q", got)
+	}
+}
+
+// structuredPlan is the shape internal/prompt asks plan mode to emit.
+const structuredPlan = `## Plan: make the round limit recoverable
+
+1. Locate the round accounting
+   files: internal/agent/loop.go
+   action: read
+2. Add a RoundsExhausted sentinel
+   files: internal/agent/errors.go
+   action: create
+   note: new type, no signature changes
+3. Offer more rounds in the chat model
+   files: internal/ui/chat/model.go
+`
+
+// plannedModel drives a planning response to completion so the card is armed
+// with it, in dir as the work tree.
+func plannedModel(t *testing.T, response string) Model {
+	t.Helper()
+	m := planModel(t, mockStream)
+	m.streaming = response
+	updated, _ := m.Update(doneMsg{})
+	m = updated.(Model)
+	if m.state != statePlanApprove {
+		t.Fatalf("expected the plan card, got state %d", m.state)
+	}
+	return m
+}
+
+func TestPlanCard_StepsCarryTheFilesTheyTouch(t *testing.T) {
+	m := plannedModel(t, structuredPlan)
+	view := m.View()
+	for _, want := range []string{
+		"Plan · make the round limit recoverable",
+		"3 steps",
+		"1 Locate the round accounting",
+		"internal/agent/loop.go",
+		"2 Add a RoundsExhausted sentinel",
+		"internal/agent/errors.go · new type, no signature changes",
+		"3 Offer more rounds in the chat model",
+	} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the plan card should carry %q:\n%s", want, view)
+		}
+	}
+}
+
+func TestPlanCard_StepIntentComesFromTheAction(t *testing.T) {
+	m := plannedModel(t, structuredPlan)
+	view := m.View()
+	for _, want := range []string{"read only", "✎ creates 1 file", "✎ edits 1 file"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the plan card should rate the step %q:\n%s", want, view)
+		}
+	}
+}
+
+func TestPlanCard_SummaryIsComputedFromTheSteps(t *testing.T) {
+	m := plannedModel(t, structuredPlan)
+	view := m.View()
+	// The read step's file is not a write target, so two files are touched.
+	for _, want := range []string{"2 files touched", "no deletes", "no network"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the summary should state %q:\n%s", want, view)
+		}
+	}
+}
+
+func TestPlanCard_SummaryReadsTheSameGitCheckAsApprovals(t *testing.T) {
+	dir := chdir(t)
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git is not installed")
+	}
+	if err := os.WriteFile(filepath.Join(dir, "tracked.go"), []byte("package a\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, args := range [][]string{{"init", "-q"}, {"add", "tracked.go"}} {
+		cmd := exec.Command("git", append([]string{"-C", dir}, args...)...)
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Skipf("git setup failed: %v (%s)", err, out)
+		}
+	}
+
+	tracked := "1. Change it\n   files: tracked.go\n   action: edit\n"
+	both := tracked + "2. And a new one\n   files: fresh.go\n   action: create\n"
+
+	m := planModel(t, mockStream)
+	m.tracker = changeset.NewTracker(dir)
+
+	m.streaming = tracked
+	updated, _ := m.Update(doneMsg{})
+	armed := updated.(Model)
+	if view := armed.View(); !strings.Contains(view, "reversible") {
+		t.Errorf("a wholly tracked plan is reversible:\n%s", view)
+	}
+	if armed.planDetail != "every file is tracked in git" {
+		t.Errorf("the card should say why: %q", armed.planDetail)
+	}
+
+	m.state, m.streaming = stateStreaming, both
+	updated, _ = m.Update(doneMsg{})
+	armed = updated.(Model)
+	if view := armed.View(); !strings.Contains(view, "partly reversible") {
+		t.Errorf("a plan naming an untracked file is only partly reversible:\n%s", view)
+	}
+	if armed.planDetail != "1 of 2 files tracked in git" {
+		t.Errorf("the card should count them: %q", armed.planDetail)
+	}
+}
+
+func TestPlanCard_OutsideARepositoryNothingIsClaimed(t *testing.T) {
+	chdir(t)
+	m := plannedModel(t, structuredPlan)
+	if view := m.View(); !strings.Contains(view, "not reversible") {
+		t.Errorf("outside a work tree the card says so rather than claiming undo:\n%s", view)
+	}
+}
+
+func TestPlanCard_OptionsNameTheModeTheyEnter(t *testing.T) {
+	m := plannedModel(t, structuredPlan)
+	view := m.View()
+	// Accepting a plan is a mode change, so every execution option says which.
+	for _, want := range []string{"accept-edits mode", "auto mode", "manual approvals"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the options should name the mode %q:\n%s", want, view)
+		}
+	}
+}
+
+func TestPlanCard_OnlyTheFocusedOptionExplainsItself(t *testing.T) {
+	m := plannedModel(t, structuredPlan)
+	if view := m.View(); !strings.Contains(view, planApproveOptions[0].Desc) {
+		t.Fatalf("the focused option should explain itself:\n%s", view)
+	}
+	for _, opt := range planApproveOptions[1:] {
+		if strings.Contains(m.View(), opt.Desc) {
+			t.Errorf("an unfocused option must not explain itself: %q", opt.Desc)
+		}
+	}
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	view := updated.(Model).View()
+	if !strings.Contains(view, planApproveOptions[1].Desc) {
+		t.Errorf("moving the focus should move the explanation:\n%s", view)
+	}
+	if strings.Contains(view, planApproveOptions[0].Desc) {
+		t.Errorf("only one option explains itself at a time:\n%s", view)
+	}
+}
+
+func TestPlanCard_UnstructuredPlanStillRenders(t *testing.T) {
+	prose := "I'd add a sentinel error to the agent package and return it from the round loop."
+	m := plannedModel(t, prose)
+	view := m.View()
+	if !strings.Contains(view, "Plan ready") {
+		t.Errorf("a plan with no structure still gets a card:\n%s", view)
+	}
+	if !strings.Contains(view, "add a sentinel error") {
+		t.Errorf("the prose should render:\n%s", view)
+	}
+	if !strings.Contains(view, planApproveOptions[0].Label) {
+		t.Errorf("the options belong below it:\n%s", view)
+	}
+	// Nothing was parsed, so nothing is claimed about the radius.
+	for _, unwanted := range []string{"files touched", "no deletes", "reversible"} {
+		if strings.Contains(view, unwanted) {
+			t.Errorf("an unparsed plan must not be priced, found %q:\n%s", unwanted, view)
+		}
+	}
+}
+
+func TestPlanCard_SaveKeyWritesThePlanAndKeepsTheCard(t *testing.T) {
+	t.Chdir(t.TempDir())
+	m := plannedModel(t, structuredPlan)
+
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'s'}})
+	m = updated.(Model)
+	if m.state != statePlanApprove {
+		t.Fatalf("saving is not a decision and must not answer one, got state %d", m.state)
+	}
+	saved := ""
+	for _, e := range m.transcript {
+		if e.kind == entrySystem && strings.HasPrefix(e.text, "Plan saved to ") {
+			saved = strings.TrimPrefix(e.text, "Plan saved to ")
+		}
+	}
+	if saved == "" {
+		t.Fatalf("[s] should note where the plan was saved, got transcript %+v", m.transcript)
+	}
+	data, err := os.ReadFile(saved)
+	if err != nil {
+		t.Fatalf("expected %s to exist: %v", saved, err)
+	}
+	if !strings.Contains(string(data), "RoundsExhausted sentinel") {
+		t.Errorf("the saved file should hold the plan as written, got %q", data)
+	}
+	// /plan save is the same path and is unchanged by the key.
+	handled, result := m.handleSlashCommand("/plan save named")
+	if !handled || !strings.Contains(result, filepath.Join(".shhh", "plans", "named.md")) {
+		t.Errorf("/plan save should still write its own name, got %q", result)
+	}
+}
+
+func TestPlanCard_AnsweringTheCardDropsTheArmedPlan(t *testing.T) {
+	m := plannedModel(t, structuredPlan)
+	if !m.planDoc.Structured() {
+		t.Fatal("the plan should be armed while the card is up")
+	}
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	if got := updated.(Model).planDoc; got.Structured() || got.Text != "" {
+		t.Errorf("answering the card should drop the armed plan, got %+v", got)
 	}
 }

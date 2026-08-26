@@ -420,3 +420,84 @@ func TestGolden_InspectorRail(t *testing.T) {
 		}
 	})
 }
+
+// TestGolden_PlanCard captures the plan card (§4d): the priced step list with
+// its computed summary, a plan whose radius is the one worth reading twice,
+// the height bound that counts the steps it drops, and the prose fallback for
+// a plan that never adopted the shape.
+func TestGolden_PlanCard(t *testing.T) {
+	captureGolden(t, "plan-card", "plan card", goldenWidths, func(width int) []golden.Panel {
+		card := func(mut func(*PlanCard)) string {
+			c := PlanCard{
+				Title: "Plan · make the round limit recoverable",
+				Chip:  "4 steps",
+				Steps: []PlanStep{
+					{Number: 1, Title: "Locate the round accounting",
+						Detail: "internal/agent/loop.go · internal/agent/round.go",
+						Kind:   "read only", KindTone: ToneSafe},
+					{Number: 2, Title: "Add a RoundsExhausted sentinel",
+						Detail: "internal/agent/errors.go · new type, no signature changes",
+						Kind:   "✎ creates 1 file"},
+					{Number: 3, Title: "Return it from runRound and handle it in Run",
+						Detail: "internal/agent/loop.go · 2 hunks", Kind: "✎ edits 1 file"},
+					{Number: 4, Title: "Offer more rounds in the chat model",
+						Detail: "internal/ui/chat/model.go · one case in the update switch",
+						Kind:   "✎ edits 1 file"},
+				},
+				Summary: []PlanFact{
+					{Text: "3 files touched"},
+					{Text: "no deletes", Tone: ToneSafe},
+					{Text: "no network", Tone: ToneSafe},
+					{Text: "reversible", Tone: ToneSafe},
+				},
+				SummaryDetail: "every file is tracked in git",
+				Options: []SelectOption{
+					{Label: "Run the whole plan — accept-edits mode",
+						Desc: "edits apply as they come; commands and other actions still ask"},
+					{Label: "Run it unattended — auto mode",
+						Desc: "edits and allowlisted commands run; the classifier judges the rest"},
+					{Label: "Step through it — manual approvals",
+						Desc: "every edit and every command asks you first"},
+					{Label: "Keep planning — tell me what to change",
+						Desc: "stays in plan mode; the plan keeps its place in the conversation"},
+					{Label: "Reject the plan", Desc: "nothing runs and the session stays in plan mode"},
+				},
+				Hint: "↑↓/jk move · enter select · 1–5 jump · s save · esc keep planning",
+			}
+			mut(&c)
+			return c.View(width)
+		}
+		return []golden.Panel{
+			{Label: "priced steps · the first option focused", View: card(func(c *PlanCard) {})},
+			{Label: "focus moved · only the focused option explains itself", View: card(func(c *PlanCard) {
+				c.Focus = 2
+			})},
+			{Label: "a radius worth reading twice", View: card(func(c *PlanCard) {
+				c.Steps[3] = PlanStep{Number: 4, Title: "Drop the old round shim",
+					Detail: "internal/agent/shim.go", Kind: "✎ deletes 1 file", KindTone: ToneRisk}
+				c.Summary = []PlanFact{
+					{Text: "4 files touched"},
+					{Text: "deletes 1 file", Tone: ToneRisk},
+					{Text: "network needed", Tone: ToneOpen},
+					{Text: "partly reversible", Tone: ToneNeutral},
+				}
+				c.SummaryDetail = "3 of 4 files tracked in git"
+			})},
+			{Label: "bounded · the steps it cannot fit are counted", View: card(func(c *PlanCard) {
+				c.MaxLines = 18
+			})},
+			{Label: "too short for a single step · says so rather than counting more than none", View: card(func(c *PlanCard) {
+				c.MaxLines = 14
+			})},
+			{Label: "no structure · prose with the same options below it", View: card(func(c *PlanCard) {
+				c.Title, c.Chip = "Plan ready", ""
+				c.Steps, c.Summary, c.SummaryDetail = nil, nil, ""
+				c.Prose = []string{
+					"I'd add a sentinel error to the agent package and return it from",
+					"the round loop, then handle it in the chat model so the user is",
+					"offered more rounds instead of the turn simply stopping.",
+				}
+			})},
+		}
+	})
+}
