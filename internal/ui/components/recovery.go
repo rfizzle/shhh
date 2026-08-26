@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // KeyOffer is one bracketed key and the words for what it does. Every key the
@@ -151,10 +152,37 @@ func (r RecoveryRow) View(width int) string {
 	for _, d := range detail {
 		lines = append(lines, indented(d, detailIndent, width))
 	}
-	if keys := r.keyLine(); keys != "" {
+	for _, keys := range r.keyLines(max(width-detailIndent, 1)) {
 		lines = append(lines, detailLine(keys, width))
 	}
 	return strings.Join(lines, "\n")
+}
+
+// keyLines are the offers and the note under the row. They are one line
+// wherever there is room for one, and wrap onto more where there is not: a
+// narrow terminal gets more rows, never fewer answers, which is the rule the
+// review surface and the pressure card already follow. The note goes last,
+// because it annotates the offers rather than competing with them for the
+// width.
+func (r RecoveryRow) keyLines(width int) []string {
+	note := ""
+	if r.Note != "" {
+		note = dimStyle.Render(r.Note)
+	}
+	if len(r.Keys) == 0 {
+		if note == "" {
+			return nil
+		}
+		return []string{note}
+	}
+	if one := r.keyLine(); lipgloss.Width(one) <= width {
+		return []string{one}
+	}
+	rows := wrapOffers(r.Keys, width)
+	if note != "" {
+		rows = append(rows, note)
+	}
+	return rows
 }
 
 // detailLine puts one already-styled line in the detail body's column and

@@ -171,6 +171,19 @@ func (v *vitals) closeTurn(elapsed time.Duration) {
 	v.open = false
 }
 
+// reopenTurn puts the most recently closed turn back on the books, for a turn
+// that stopped at its round limit and was then granted more (S-109). Without
+// it a granted turn is two entries in the history, and the close rows at the
+// end of it price half of itself.
+func (v *vitals) reopenTurn() {
+	if v.open || len(v.turns) == 0 {
+		return
+	}
+	n := len(v.turns) - 1
+	v.current, v.turns = v.turns[n], v.turns[:n]
+	v.open = true
+}
+
 // series is the burn sparkline's input. One sample is a dot, not a trend, so
 // a single round reports nothing to draw.
 func (v vitals) series() []float64 {

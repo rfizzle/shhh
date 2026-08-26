@@ -308,6 +308,39 @@ func TestGolden_ProviderFailures(t *testing.T) {
 	})
 }
 
+// TestGolden_RoundLimitPause captures the checkpoint a turn stops on when it
+// runs out of tool rounds (S-109, §17a) — the `rounds` row standing where the
+// close block would be, in the three shapes the session can produce it: a turn
+// that changed files and never re-ran the suite, one that changed nothing, and
+// one that has already been granted a block of rounds.
+func TestGolden_RoundLimitPause(t *testing.T) {
+	captureGolden(t, "round-limit-pause", "the round-limit pause", goldenWidths, func(width int) []golden.Panel {
+		build := func(p *roundPause) string {
+			m := frameModel(t, width, 40)
+			m.transcript = []entry{
+				{kind: entryUser, text: "rename the round-limit sentinel"},
+				{kind: entryRoundPause, turn: 7, pause: p, duration: 4*time.Minute + 12*time.Second},
+			}
+			m.invalidateRenderCache()
+			return m.renderHistory()
+		}
+		return []golden.Panel{
+			{Label: "the edits are unchecked · all three ways on", View: build(&roundPause{
+				turn: 7, used: 25, limit: 25, files: 3, added: 30, removed: 4, stale: true,
+			})},
+			{Label: "nothing changed · only the grant can be honoured", View: build(&roundPause{
+				turn: 7, used: 25, limit: 25,
+			})},
+			{Label: "a second stop · what was already granted is named", View: build(&roundPause{
+				turn: 7, used: 35, limit: 35, granted: 10, files: 3, added: 30, removed: 4,
+			})},
+			{Label: "the offer is spent · the row keeps its words", View: build(&roundPause{
+				turn: 7, used: 25, limit: 25, files: 3, added: 30, removed: 4, stale: true, spent: true,
+			})},
+		}
+	})
+}
+
 // TestGolden_PressureCard captures the context-pressure card where the
 // session actually raises it: in the bottom panel, at the end of a turn that
 // left the window at the alert threshold.

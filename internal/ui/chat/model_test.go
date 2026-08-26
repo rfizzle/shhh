@@ -1703,9 +1703,14 @@ func TestToolLoop_StopsAtRoundCap(t *testing.T) {
 	if last.Role != provider.RoleTool || last.ToolCallID != "call_2" {
 		t.Fatalf("conversation must stay well-formed at the cap, last message: %+v", last)
 	}
-	notice := m.transcript[len(m.transcript)-1]
-	if notice.kind != entrySystem || !strings.Contains(notice.text, "Paused after 2 tool rounds") {
-		t.Fatalf("expected a round-cap notice, got %+v", notice)
+	// The cap is a checkpoint, not a notice: the turn closes on the `rounds`
+	// row that says what it managed and offers the ways on (S-109).
+	pause := m.transcript[len(m.transcript)-1]
+	if pause.kind != entryRoundPause || pause.pause == nil {
+		t.Fatalf("expected a round-limit pause row, got %+v", pause)
+	}
+	if pause.pause.used != 2 || pause.pause.limit != 2 {
+		t.Fatalf("pause should report 2 of 2 used, got %d of %d", pause.pause.used, pause.pause.limit)
 	}
 
 	// A fresh user message resets the counter and streams again.

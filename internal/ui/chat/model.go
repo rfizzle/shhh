@@ -169,6 +169,10 @@ const (
 	// recovery row and holding the partial it offers to continue from
 	// (S-107, §17a).
 	entryStreamDrop
+	// entryRoundPause: a turn that stopped at its tool-round ceiling,
+	// rendered as the `rounds` recovery row (S-109, §17a). It stands in for
+	// the turn's close block rather than sitting above one.
+	entryRoundPause
 )
 
 // entry is one transcript item, stored raw so the history can be re-rendered
@@ -203,6 +207,10 @@ type entry struct {
 	// partial text and the finished tool calls (S-107). It is a pointer so
 	// that taking the offer marks this row spent wherever it is rendered from.
 	resume *streamResume
+	// pause is where a turn stopped at its round limit, behind an
+	// entryRoundPause row (S-109). A pointer for the same reason: granting
+	// the rounds spends the offer wherever the row is rendered from.
+	pause *roundPause
 	// deniedBy names who refused the call — decidedByYou for a decline at the
 	// card, decidedByAuto for a rule — and renders the row as ⊘ rather than ✗
 	// (S-089, DESIGN-TUI.md §6d). Empty when nothing was refused.
@@ -504,6 +512,12 @@ type Model struct {
 	// the card arrives once per crossing rather than once per turn.
 	pressure      *components.PressureCard
 	pressureShown bool
+	// The round-limit pause (S-109): the offer standing on the last turn to
+	// stop at its ceiling, and the rounds [+10] has granted the turn in
+	// front of it. Both expire with the turn — resetRounds spends the offer
+	// and gives the configured ceiling back.
+	roundPause *roundPause
+	roundGrant int
 }
 
 func New(initialMessages []provider.Message, stream StreamFunc) Model {
@@ -610,8 +624,12 @@ func (m Model) WithMaxToolRounds(n int) Model {
 	return m
 }
 
+// effectiveMaxToolRounds is this turn's tool-round ceiling: the configured cap
+// plus whatever [+10] has granted the turn in front of it (S-109). The grant
+// lives here rather than on the Agent so that it expires with the turn — a new
+// one starts from the ceiling the session was configured with.
 func (m Model) effectiveMaxToolRounds() int {
-	return m.agent.MaxRounds()
+	return m.agent.MaxRounds() + m.roundGrant
 }
 
 // WithResumedMessages replaces the conversation with a previously saved one
@@ -1140,6 +1158,9 @@ func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
 	// A fresh user turn clears the notice rail's denial alert (S-082);
 	// lastDenial stays for /mode why.
 	m.denialNotice = ""
+	// A new turn starts from the ceiling the session was configured with, and
+	// the pause behind it can no longer be granted more rounds (S-109).
+	m.resetRounds()
 	m.recordCheckpoint(text)
 	m.agent.StartTurn(text)
 	m.appendEntry(entry{kind: entryUser, text: text})
@@ -1457,9 +1478,10 @@ func firstLine(s string) string {
 }
 
 // resumeToolLoop requests the next model response after a round of tool
-// results — unless this turn has hit the tool-round cap, in which case the
-// loop pauses and control returns to the user (a fresh message continues the
-// conversation and resets the counter).
+// results — unless this turn has hit the tool-round cap, in which case it
+// pauses on the checkpoint that says what it managed and offers the ways on
+// (S-109; a fresh message still continues the conversation and resets the
+// counter).
 func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
 	// Steering messages queued mid-turn join the conversation here, between
 	// tool rounds, so the model sees them on its next request (S-058). They
@@ -1468,15 +1490,10 @@ func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
 	}
-	if m.agent.CapReached() {
-		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
-			"Paused after %d tool rounds this turn. Send a message (e.g. \"continue\") to keep going.",
-			m.agent.Rounds())})
-		m.setTurnState(stateInput)
-		m.syncViewport()
-		m.viewport.SetContent(m.renderHistory())
-		m.viewport.GotoBottom()
-		return m, m.autosaveCmd()
+	// The ceiling is the session's, not the Agent's, because [+10] raises it
+	// for this turn alone (S-109).
+	if m.agent.Rounds() >= m.effectiveMaxToolRounds() {
+		return m.pauseAtRoundLimit()
 	}
 	m.setTurnState(stateStreaming)
 	m.streaming = ""
@@ -1668,7 +1685,7 @@ func (m *Model) injectSteering() bool {
 	m.turnCount += int64(len(m.steering))
 	m.steering = nil
 	m.denialNotice = ""
-	m.agent.ResetRounds()
+	m.resetRounds()
 	m.syncViewport()
 	return true
 }
@@ -1748,6 +1765,8 @@ func (m Model) renderEntry(e entry, width int) string {
 		return m.failureRow(e).View(width) + "\n"
 	case entryStreamDrop:
 		return m.dropRow(e).View(width) + "\n"
+	case entryRoundPause:
+		return m.roundPauseRow(e).View(width) + "\n"
 	case entryDiff:
 		if e.diff == nil {
 			return ""
@@ -1823,9 +1842,15 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 			c.ModeKind = components.CockpitGated
 		}
 	}
-	// Round counter shows only mid-turn, so long tool loops are visible.
-	if m.agent.Rounds() > 0 && m.turnState() != stateInput {
+	// Round counter shows only mid-turn, so long tool loops are visible — and
+	// through a round-limit pause, where the ceiling is the thing being
+	// decided. The grant on offer is stated beside it, so the counter says
+	// both what the bound is and what taking the offer would make it (S-109).
+	if m.agent.Rounds() > 0 && (m.turnState() != stateInput || m.pausedAtRoundLimit()) {
 		c.Round = fmt.Sprintf("round %d/%d", m.agent.Rounds(), m.effectiveMaxToolRounds())
+		if m.pausedAtRoundLimit() {
+			c.Round += fmt.Sprintf(" +%d", roundGrantSize)
+		}
 	}
 	if m.TotalTokensIn != 0 || m.TotalTokensOut != 0 {
 		c.Tokens = fmt.Sprintf("↑%s ↓%s", formatTokenCount(m.TotalTokensIn), formatTokenCount(m.TotalTokensOut))
@@ -2321,7 +2346,7 @@ func (m *Model) clearConversation() {
 	m.checkpoints = nil
 	m.contextTokens = 0
 	m.vitals.reset()
-	m.agent.ResetRounds()
+	m.resetRounds()
 	// The turn's accounting started over, so there is no longer a turn to
 	// close with a summary either (S-098).
 	m.turnOpen = false

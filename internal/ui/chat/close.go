@@ -35,6 +35,14 @@ func (m *Model) appendTurnClose() {
 		return
 	}
 	m.turnOpen = false
+	// A turn that stopped at its round limit has already closed, with the
+	// pause row (S-109): it states the rounds it used, what it changed, and
+	// the three ways on, and a second block offering [v] and [u] beside it
+	// would be the same answer twice. Granting the rounds spends the pause,
+	// so the turn it continues into closes here in the ordinary way.
+	if m.pausedAtRoundLimit() {
+		return
+	}
 	m.appendEntry(entry{kind: entryTurnClose, turn: m.turnCount, close: m.turnCloseData()})
 }
 

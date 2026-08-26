@@ -614,7 +614,7 @@ and the inspector rail's CONTEXT and SPEND blocks (§15, turn-scoped).
 | `⏵⏵ auto` / `⏵⏵ accept edits` (add 10) | permissive modes |
 | `⏸ plan` / `⏸ manual` (accent 214) | gated modes |
 | `✦ checking` (spin 205, spinner) | the auto-mode classifier is deciding |
-| `round 7/25` (dim 241) | rounds used of the limit; §17 recovers the ceiling |
+| `round 7/25` (dim 241) | rounds used of the limit, `+10` beside it while a round-limit pause offers more (§17a) |
 | `ctx ▰▰▰▰▰▱▱▱ 62%` | context meter (§10c) — bar and number share a colour |
 | `↑41.2k ↓9.8k` (dim 241) | tokens in / out this session |
 | `$0.14` (body 252) | spend |
@@ -1356,6 +1356,10 @@ step, and nothing folds them.
 - Nothing about the block is a takeover. The rows are transcript entries and
   the keys they offer are handled by focus mode on the row (§7), so the input
   keeps every other key.
+- One turn ending does not close twice, and one thing closes a turn instead of
+  this block: a turn that stopped at its tool-round ceiling ends on §17a's
+  `rounds` row, which says the same three things and offers the way on as well
+  (S-109).
 - `[u]` (and `/undo [turn]`) puts the turn's files back from the same records,
   and asks first — an inline confirm (§5) stating what it would restore and
   what it would delete. A file that changed since the turn is named on the
@@ -1484,15 +1488,14 @@ out stated as a command (`export OPENAI_API_KEY`, `shhh config set
 provider.api_key`) rather than as a key, because nothing is listening for one
 by then. Piped output gets one classified line and no chrome.
 
-Two more verbs share this field. `stream` is S-107's and is built; `rounds` is
-S-109's and is not.
+Two more verbs share this field: `stream` is S-107's and `rounds` is S-109's.
 
 ```
    ⚠ stream  dropped mid-reply · ~1,204 tokens kept · 2 tool calls  partial  11s
     …so I'll thread the sentinel through runRound and then
     [c] continue from here · [r] ask again from scratch · the partial reply stays
 
-   ⚠ rounds  25 of 25 used · ErrRoundsExhausted              stopped 4m12s
+   ⚠ rounds  25 of 25 used · the turn's own bound            stopped 4m12s
     3 files changed +30 −4 · the suite has not been re-run since
     [v] review what it did · [+10] ten more rounds · [u] undo the turn
 ```
@@ -1516,6 +1519,38 @@ S-109's and is not.
 - **Taking the offer spends it.** The row keeps its words and loses its keys,
   because the conversation has moved past the partial and sending it again
   would send the model its own reply twice.
+
+The `rounds` row is the odd one in this section: nothing failed. The turn
+reached a bound the session set for it, so the row is a checkpoint rather than
+a report of a break — and it is the *only* recovery row that stands where a
+turn's close block would be (§16).
+
+- **It replaces the close, it does not sit above one.** It already answers what
+  the turn did, what it changed and what the ways on are; a close block beside
+  it would offer `[v]` and `[u]` twice on adjacent rows. A turn that is granted
+  more rounds closes in the ordinary way when it really ends, once, for the
+  whole turn.
+- **The qualifier is what makes this number this number** — `the turn's own
+  bound` on the first stop, and `10 already granted` on the ones after it,
+  because `35 of 35 used` on its own reads like a limit nobody chose. It is
+  *not* a Go sentinel: no identifier from the source reaches the transcript,
+  which is the same rule §17a applies to a provider's error strings.
+- **Every clause is conditional on the thing it names.** A turn that changed
+  nothing says so rather than reporting three zeroes, and one whose edits are
+  still covered by a check says nothing about the suite. `[v]` and `[u]` are
+  offered only when there is a changeset to act on.
+- **`[+10]` draws the grant, not the keystroke.** The key is `+`, which is what
+  focus mode's hint line names; the bracket says what pressing it buys. Taking
+  it continues *the same turn* — nothing is added to the conversation, the
+  counter is not reset, the changeset goes on collecting under the same turn
+  number — so the turn is priced as one thing and `[u]` still takes all of it
+  back.
+- **The grant expires with the turn.** A new user message gets the configured
+  ceiling back and spends the standing offer, because a turn the session has
+  moved past cannot be given more rounds.
+- **The counter on the rail is part of the surface** (§8a): `round 25/25 +10`
+  while the offer stands, `round 25/35` once it is taken. The bound and the
+  price of lifting it are both on screen for the whole decision.
 
 A request that was never answered has nothing to keep, and waiting is the
 whole remedy. It grows a countdown under it instead of an offer to continue:

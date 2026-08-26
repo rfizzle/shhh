@@ -33,7 +33,8 @@ rename the round-limit sentinel
 
    ✗ model   gpt-4o · 400 context too long             over the window
     This model's maximum context length is 128000 tokens
-    [c] compact now · [r] then try again · compacting keeps the plan and th…
+    [c] compact now · [r] then try again
+    compacting keeps the plan and the recent turns
 
 
 · unclassified · the message is the whole point of the row
@@ -70,7 +71,8 @@ rename the round-limit sentinel
 
    ␛[91m✗␛[0m model   ␛[38;5;252mgpt-4o␛[0m␛[38;5;241m · 400 context too long␛[0m             ␛[91mover the window␛[0m
     ␛[38;5;245mThis model's maximum context length is 128000 tokens␛[0m
-    ␛[94m[c]␛[0m␛[38;5;241m compact now␛[0m␛[38;5;241m · ␛[0m␛[94m[r]␛[0m␛[38;5;241m then try again␛[0m␛[38;5;241m · ␛[0m␛[38;5;241mcompacting keeps the plan and th…␛[0m
+    ␛[94m[c]␛[0m␛[38;5;241m compact now␛[0m␛[38;5;241m · ␛[0m␛[94m[r]␛[0m␛[38;5;241m then try again␛[0m
+    ␛[38;5;241mcompacting keeps the plan and the recent turns␛[0m
 
 
 · unclassified · the message is the whole point of the row

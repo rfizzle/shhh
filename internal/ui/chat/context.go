@@ -174,7 +174,7 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	rebuilt = append(rebuilt, provider.Message{Role: provider.RoleUser, Content: compactContextMessage(summary)})
 	rebuilt = append(rebuilt, kept...)
 	m.agent.SetMessages(rebuilt)
-	m.agent.ResetRounds()
+	m.resetRounds()
 	// Nothing has been reported about the rebuilt conversation yet.
 	m.contextTokens = 0
 	// The burn series described the conversation that was just discarded.

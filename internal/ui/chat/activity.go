@@ -229,6 +229,24 @@ func activityDuration(d time.Duration) string {
 	return formatDuration(d)
 }
 
+// turnDuration renders the duration field of a row whose span is a whole turn
+// rather than one call: the three recovery rows of §17a, and the round-limit
+// pause above all, since a turn that spent 25 tool rounds is measured in
+// minutes. Past a minute `252s` stops reading as a duration, so the field
+// takes minutes and seconds — packed, because §6a gives duration six columns
+// and FormatElapsed's `4m 12s` would fill them and touch the outcome beside
+// it. It is the form DESIGN-TUI.md §17a draws on this row.
+func turnDuration(d time.Duration) string {
+	if d < time.Minute {
+		return activityDuration(d)
+	}
+	if mins := int(d.Minutes()); mins < 100 {
+		return fmt.Sprintf("%dm%02ds", mins, int(d.Seconds())%60)
+	}
+	// Longer than that and the seconds are not the interesting part anyway.
+	return fmt.Sprintf("%dm", int(d.Minutes()))
+}
+
 // activityRowFor builds the compact row for a tool or command entry (§6).
 // Collapsed rows never show output; focus-mode expansion shows the full
 // stored result (already bounded upstream by S-051/S-064), failed rows and

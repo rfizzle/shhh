@@ -50,6 +50,11 @@ func (m *Model) armPressureCard() {
 		m.activeChildAsk() != nil || len(m.steering) > 0 {
 		return
 	}
+	// So is a turn that stopped at its round limit: that checkpoint is a
+	// decision of its own, and two at once is one too many (S-109).
+	if m.pausedAtRoundLimit() {
+		return
+	}
 	card := m.pressureCardData()
 	if card == nil {
 		return

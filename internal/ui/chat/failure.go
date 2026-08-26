@@ -84,7 +84,7 @@ func (m Model) failureRow(e entry) components.RecoveryRow {
 		Subject:   m.failureSubject(f),
 		Qualifier: f.Headline(),
 		Outcome:   failureOutcome(f),
-		Duration:  activityDuration(e.duration),
+		Duration:  turnDuration(e.duration),
 		Detail:    f.Detail(),
 		MaxDetail: maxFailureDetail,
 		Keys:      m.failureKeys(f),
@@ -278,7 +278,7 @@ func (m Model) retryTurn() (tea.Model, tea.Cmd) {
 	m.turnOpen, m.turnOutcome = true, components.TurnDone
 	m.turnTokensIn, m.turnTokensOut = 0, 0
 	m.vitals.startTurn()
-	m.agent.ResetRounds()
+	m.resetRounds()
 	m.setTurnState(stateStreaming)
 	m.streaming = ""
 	m.atBottom = true

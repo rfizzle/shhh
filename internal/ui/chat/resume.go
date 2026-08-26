@@ -184,7 +184,7 @@ func (m Model) dropRow(e entry) components.RecoveryRow {
 		Subject:   "dropped mid-reply",
 		Qualifier: res.qualifier(),
 		Outcome:   "partial",
-		Duration:  activityDuration(e.duration),
+		Duration:  turnDuration(e.duration),
 		Detail:    res.tail(),
 		MaxDetail: maxDropDetail,
 		Keys:      m.dropKeys(res),

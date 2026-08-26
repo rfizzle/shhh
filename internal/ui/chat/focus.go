@@ -22,10 +22,11 @@ func expandable(e entry) bool {
 // selectable reports whether focus mode can put its cursor on an entry. It is
 // expandable plus the rows that offer keys without expanding: a turn's close
 // block is passive, but [v] and [u] are handled on it (S-098, §16), and so are
-// a provider failure's own keys (S-106, §17a).
+// a provider failure's own keys (S-106, §17a) and a round-limit pause's
+// (S-109).
 func selectable(e entry) bool {
 	return expandable(e) || e.kind == entryTurnClose || e.kind == entryFailure ||
-		e.kind == entryStreamDrop
+		e.kind == entryStreamDrop || e.kind == entryRoundPause
 }
 
 // expandableIndices lists the transcript indices focus mode can select,
@@ -118,7 +119,12 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "k", "up":
 		m.moveFocus(-1)
 		return m, nil
-	case reviewKey, undoKey:
+	case reviewKey, undoKey, grantRoundsKey:
+		// A round-limit pause offers all three on its own row (S-109); it is
+		// asked first because it stands where the close block would be.
+		if next, cmd, claimed := m.roundPauseKey(msg.String()); claimed {
+			return next, cmd
+		}
 		// The offers on a turn's changeset row (S-098, §16). They are
 		// handled here rather than globally, so the input keeps both keys.
 		if e, ok := m.focusedClose(); ok {
@@ -292,6 +298,12 @@ func (m Model) renderFocusHint() string {
 	// is what the hint says (S-098).
 	if e, ok := m.focusedClose(); ok && e.close.Changes != nil {
 		keys = reviewKey + " review · " + undoKey + " undo turn"
+	}
+	// On a round-limit pause the hint is where the literal keystroke for the
+	// row's `[+10]` is named, since the bracket on the row draws the grant
+	// rather than the key (S-109).
+	if e, ok := m.focusedRoundPause(); ok {
+		keys = roundPauseHint(e.pause)
 	}
 	hint := systemMsgStyle.Render("focus · j/k select row · " + keys + " · esc back")
 	return hint + strings.Repeat("\n", inputHeight-1)

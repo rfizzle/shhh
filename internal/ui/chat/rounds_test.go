@@ -1,0 +1,354 @@
+package chat
+
+// The round-limit pause (S-109, §17a): a turn that runs out of tool rounds
+// stops on a checkpoint rather than on a notice, and the checkpoint is the
+// turn's close — one block, one set of offers, one turn to grant more rounds
+// to.
+
+import (
+	"path/filepath"
+	"strings"
+	"testing"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/components"
+)
+
+// pausedModel is a turn that wrote one file and then used up its only round.
+func pausedModel(t *testing.T) (Model, string) {
+	t.Helper()
+	m := turnModel(t).WithMaxToolRounds(1)
+	m = sendText(t, m, "fix the round accounting")
+	path := filepath.Join(t.TempDir(), "loop.go")
+	m = applyWrite(t, m, path, "package agent\n", "y")
+	if m.roundPause == nil {
+		t.Fatalf("the turn should have stopped at its ceiling, state %v", m.turnState())
+	}
+	return m, path
+}
+
+// pauseEntry is the pause row in the transcript.
+func pauseEntry(t *testing.T, m Model) entry {
+	t.Helper()
+	return m.transcript[indexOfKind(t, m, entryRoundPause)]
+}
+
+func pauseView(m Model, e entry) string {
+	return ansi.Strip(m.roundPauseRow(e).View(110))
+}
+
+func TestRoundLimit_PausesWithRoundsUsedAndWhatChanged(t *testing.T) {
+	m, _ := pausedModel(t)
+
+	if m.turnState() != stateInput {
+		t.Fatalf("the pause hands the keyboard back, state %v", m.turnState())
+	}
+	e := pauseEntry(t, m)
+	view := pauseView(m, e)
+	for _, want := range []string{"rounds", "1 of 1 used", "stopped", "1 file changed +1 −0"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the row should state %q:\n%s", want, view)
+		}
+	}
+	// The suite has not run since the write, and the row says so — that is
+	// the difference between stopping and stopping halfway.
+	if !strings.Contains(view, "the suite has not been re-run since") {
+		t.Errorf("an unchecked edit should be named:\n%s", view)
+	}
+	for _, want := range []string{"[v] review what it did", "[+10] ten more rounds", "[u] undo the turn"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("the row should offer %q:\n%s", want, view)
+		}
+	}
+}
+
+func TestRoundLimit_ThePauseIsTheTurnsClose(t *testing.T) {
+	m, _ := pausedModel(t)
+
+	// A close block beside the pause row would offer [v] and [u] twice.
+	for _, e := range m.transcript {
+		if e.kind == entryTurnClose {
+			t.Fatalf("the pause row stands in for the close block, got %+v", e.close)
+		}
+	}
+	if m.turnOpen {
+		t.Error("the turn is closed; only the block that says so is different")
+	}
+	// And the notice it replaced is gone.
+	for _, e := range m.transcript {
+		if e.kind == entrySystem && strings.Contains(e.text, "Paused after") {
+			t.Errorf("the grey notice should be gone, got %q", e.text)
+		}
+	}
+}
+
+func TestRoundLimit_GrantContinuesTheSameTurn(t *testing.T) {
+	m, _ := pausedModel(t)
+	before := len(m.agent.Messages())
+	turn, rounds := m.turnCount, m.agent.Rounds()
+
+	m.focusIdx = indexOfKind(t, m, entryRoundPause)
+	updated, cmd, claimed := m.roundPauseKey(grantRoundsKey)
+	if !claimed {
+		t.Fatal("[+10] should be claimed by the focused pause row")
+	}
+	next := updated.(Model)
+	if cmd == nil {
+		t.Fatal("granting rounds should ask the model")
+	}
+	if next.turnState() != stateStreaming {
+		t.Errorf("state = %v, want streaming", next.turnState())
+	}
+	if got := len(next.agent.Messages()); got != before {
+		t.Errorf("the conversation continues as it stands, got %d new messages", got-before)
+	}
+	if next.turnCount != turn {
+		t.Errorf("turn = %d, want the same turn %d", next.turnCount, turn)
+	}
+	if next.agent.Rounds() != rounds {
+		t.Errorf("rounds = %d, want the counter kept at %d", next.agent.Rounds(), rounds)
+	}
+	if got, want := next.effectiveMaxToolRounds(), 1+roundGrantSize; got != want {
+		t.Errorf("ceiling = %d, want %d", got, want)
+	}
+	if !next.turnOpen {
+		t.Error("the turn is open again, so it can close when it really ends")
+	}
+	// Taking the offer spends it, on the row as well as in the dispatch.
+	if _, _, claimed := next.roundPauseKey(grantRoundsKey); claimed {
+		t.Error("a spent offer should stop claiming its key")
+	}
+	if view := pauseView(next, pauseEntry(t, next)); strings.Contains(view, grantRoundsOffer) {
+		t.Errorf("a spent offer keeps its words and loses its key:\n%s", view)
+	}
+}
+
+func TestRoundLimit_AGrantedTurnClosesOnceForTheWholeTurn(t *testing.T) {
+	m, _ := pausedModel(t)
+	m.focusIdx = indexOfKind(t, m, entryRoundPause)
+	updated, _, _ := m.roundPauseKey(grantRoundsKey)
+	m = finishTurn(t, updated.(Model))
+
+	closes := 0
+	for _, e := range m.transcript {
+		if e.kind == entryTurnClose {
+			closes++
+		}
+	}
+	if closes != 1 {
+		t.Fatalf("one turn closes once, got %d close blocks", closes)
+	}
+	c := lastClose(t, m)
+	if c.Changes == nil || c.Changes.Files != 1 {
+		t.Fatalf("the close covers everything the turn changed, got %+v", c.Changes)
+	}
+	if c.Note != "round 1/11" {
+		t.Errorf("the close reports the ceiling it finished under, got %q", c.Note)
+	}
+	// One turn in the history, not two: the accounting was reopened.
+	if got := len(m.vitals.turns); got != 1 {
+		t.Errorf("the granted turn is one entry in the history, got %d", got)
+	}
+}
+
+func TestRoundLimit_TheRailCarriesTheLimitAndTheGrant(t *testing.T) {
+	m, _ := pausedModel(t)
+	if got := m.cockpitData(true).Round; got != "round 1/1 +10" {
+		t.Errorf("paused rail = %q, want the limit and the grant on offer", got)
+	}
+
+	m.focusIdx = indexOfKind(t, m, entryRoundPause)
+	updated, _, _ := m.roundPauseKey(grantRoundsKey)
+	if got := updated.(Model).cockpitData(true).Round; got != "round 1/11" {
+		t.Errorf("granted rail = %q, want the raised ceiling", got)
+	}
+}
+
+func TestRoundLimit_ANewTurnGetsTheConfiguredCeilingBack(t *testing.T) {
+	m, _ := pausedModel(t)
+	m.focusIdx = indexOfKind(t, m, entryRoundPause)
+	updated, _, _ := m.roundPauseKey(grantRoundsKey)
+	m = finishTurn(t, updated.(Model))
+
+	m = sendText(t, m, "now do the other one")
+	if got := m.effectiveMaxToolRounds(); got != 1 {
+		t.Errorf("ceiling = %d, want the configured 1 back", got)
+	}
+	if m.pausedAtRoundLimit() {
+		t.Error("a new turn is not paused at anything")
+	}
+	if got := m.cockpitData(true).Round; strings.Contains(got, "+") {
+		t.Errorf("no grant is on offer in a fresh turn, got %q", got)
+	}
+}
+
+func TestRoundLimit_AFreshMessageSpendsTheStandingOffer(t *testing.T) {
+	m, _ := pausedModel(t)
+	m = sendText(t, m, "continue")
+
+	if got := m.agent.Rounds(); got != 0 {
+		t.Errorf("fresh input resets the counter, got %d", got)
+	}
+	e := pauseEntry(t, m)
+	if !e.pause.spent {
+		t.Error("a turn the session has moved past cannot be granted more rounds")
+	}
+	if view := pauseView(m, e); strings.Contains(view, grantRoundsOffer) {
+		t.Errorf("the row keeps its words and loses the key:\n%s", view)
+	}
+	if !strings.Contains(pauseView(m, e), "[v] review what it did") {
+		t.Error("reviewing what it did survives: the changeset is still there")
+	}
+}
+
+func TestRoundLimit_ReviewAndUndoActOnThePausedTurn(t *testing.T) {
+	m, path := pausedModel(t)
+	m.focusIdx = indexOfKind(t, m, entryRoundPause)
+
+	updated, _, claimed := m.roundPauseKey(reviewKey)
+	if !claimed {
+		t.Fatal("[v] should be claimed by the pause row")
+	}
+	reviewed := updated.(Model)
+	if reviewed.state != stateReview || reviewed.reviewTurnN != m.turnCount {
+		t.Fatalf("[v] opens the paused turn in review, got state %v turn %d",
+			reviewed.state, reviewed.reviewTurnN)
+	}
+
+	updated, _, claimed = m.roundPauseKey(undoKey)
+	if !claimed {
+		t.Fatal("[u] should be claimed by the pause row")
+	}
+	undone := updated.(Model)
+	if undone.state != stateUndoConfirm || undone.undoAsk == nil {
+		t.Fatalf("[u] asks before it writes, got state %v", undone.state)
+	}
+	if got := undoPlanPaths(undone.undoPlan); len(got) != 1 || got[0] != path {
+		t.Errorf("the undo covers what the turn wrote, got %v", got)
+	}
+}
+
+func TestRoundLimit_ATurnThatChangedNothingOffersOnlyTheGrant(t *testing.T) {
+	m := turnModel(t).WithMaxToolRounds(1)
+	m = sendText(t, m, "look around")
+	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_r", Name: "read_file", Arguments: `{"path":"nope.go"}`},
+	}})
+	m = updated.(Model)
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(toolResultsMsg); ok {
+			updated, _ = m.Update(msg)
+			m = updated.(Model)
+		}
+	}
+	if m.roundPause == nil {
+		t.Fatalf("the read should have used the only round, state %v", m.turnState())
+	}
+
+	view := pauseView(m, pauseEntry(t, m))
+	if !strings.Contains(view, "nothing changed") {
+		t.Errorf("a turn that changed nothing says so rather than reporting zeroes:\n%s", view)
+	}
+	for _, unwanted := range []string{"[v]", "[u]"} {
+		if strings.Contains(view, unwanted) {
+			t.Errorf("a key that cannot be honoured is not offered (%s):\n%s", unwanted, view)
+		}
+	}
+	if !strings.Contains(view, grantRoundsOffer) {
+		t.Errorf("the grant is always on offer:\n%s", view)
+	}
+}
+
+func TestRoundLimit_ASecondPauseNamesWhatWasAlreadyGranted(t *testing.T) {
+	p := roundPause{used: 11, limit: 11, granted: roundGrantSize, files: 1, added: 1}
+	if got := p.qualifier(); got != "10 already granted" {
+		t.Errorf("qualifier = %q, want the grants already made", got)
+	}
+	first := roundPause{used: 25, limit: 25}
+	if got := first.qualifier(); got != "the turn's own bound" {
+		t.Errorf("first qualifier = %q, want the bound named", got)
+	}
+}
+
+func TestRoundLimit_StalenessIsAboutTheLastEdit(t *testing.T) {
+	edit := entry{kind: entryDiff}
+	suite := entry{kind: entryCommand, text: "go test ./..."}
+	cases := []struct {
+		name string
+		es   []entry
+		want bool
+	}{
+		{"nothing edited makes no claim", []entry{suite}, false},
+		{"edited and never checked", []entry{edit}, true},
+		{"checked after the last edit", []entry{edit, suite}, false},
+		{"edited again after the check", []entry{edit, suite, edit}, true},
+	}
+	for _, tc := range cases {
+		if got := checksStale(tc.es); got != tc.want {
+			t.Errorf("%s: checksStale = %v, want %v", tc.name, got, tc.want)
+		}
+	}
+}
+
+func TestRoundLimit_ThePauseDefersTheContextCard(t *testing.T) {
+	m := pressureModel(t, 110).WithMaxToolRounds(1)
+	m = sendText(t, m, "keep going")
+	updated, cmd := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_r", Name: "read_file", Arguments: `{"path":"nope.go"}`},
+	}})
+	m = updated.(Model)
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(toolResultsMsg); ok {
+			updated, _ = m.Update(msg)
+			m = updated.(Model)
+		}
+	}
+	if m.roundPause == nil {
+		t.Fatalf("the turn should be paused at its ceiling, state %v", m.turnState())
+	}
+	if m.pressure != nil || m.state == statePressure {
+		t.Error("two decision surfaces at once is one too many; the card waits a turn")
+	}
+	if m.pressureShown {
+		t.Error("deferring must not spend the crossing")
+	}
+}
+
+func TestRoundLimit_FocusModeLandsOnThePauseAndTakesTheGrant(t *testing.T) {
+	m, _ := pausedModel(t)
+
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlE})
+	focused := updated.(Model)
+	if focused.state != stateFocus {
+		t.Fatalf("ctrl+e should enter focus mode, got state %v", focused.state)
+	}
+	if got := focused.transcript[focused.focusIdx].kind; got != entryRoundPause {
+		t.Fatalf("the cursor should land on the row holding the way out, got kind %v", got)
+	}
+	if hint := ansi.Strip(focused.renderFocusHint()); !strings.Contains(hint, "+ ten more rounds") {
+		t.Errorf("the hint names the literal key the row draws as [+10]:\n%s", hint)
+	}
+
+	updated, cmd := focused.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(grantRoundsKey)})
+	next := updated.(Model)
+	if cmd == nil || next.turnState() != stateStreaming {
+		t.Fatalf("[+10] in focus mode should continue the turn, state %v", next.turnState())
+	}
+	if got, want := next.effectiveMaxToolRounds(), 1+roundGrantSize; got != want {
+		t.Errorf("ceiling = %d, want %d", got, want)
+	}
+}
+
+// The row is a RecoveryRow like every other §17a row, on the same grid.
+func TestRoundLimit_TheRowIsOnTheGrid(t *testing.T) {
+	m, _ := pausedModel(t)
+	row := m.roundPauseRow(pauseEntry(t, m))
+	if row.Verb != components.VerbRounds {
+		t.Errorf("verb = %q, want the rounds verb", row.Verb)
+	}
+	if row.State != components.RecoveryStalled {
+		t.Errorf("state = %v, want the recoverable ⚠ — nothing failed here", row.State)
+	}
+}

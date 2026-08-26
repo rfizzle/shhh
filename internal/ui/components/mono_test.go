@@ -181,6 +181,16 @@ func monoFixtures() []monoSurface {
 		return r.View(w)
 	}
 
+	// The round-limit pause is the same row under a different verb (S-109).
+	// Its states differ by what the turn managed and what is still on offer,
+	// which in mono is all there is: nothing about them is a colour.
+	paused := func(mut func(*RecoveryRow)) string {
+		r := RecoveryRow{State: RecoveryStalled, Verb: VerbRounds,
+			Subject: "25 of 25 used", Outcome: "stopped", Duration: "4m12s"}
+		mut(&r)
+		return r.View(w)
+	}
+
 	// The retry countdown's states differ by how much is left and what it
 	// offers (S-107). In colour the meter drains in accent; in mono the cells
 	// and the seconds beside them are the whole message.
@@ -363,6 +373,31 @@ func monoFixtures() []monoSurface {
 			})},
 			{"unclassified", recovered(func(r *RecoveryRow) {
 				r.Qualifier, r.Outcome = "400 unclassified", "message below"
+			})},
+		}},
+		{"round-limit pause", []monoState{
+			{"changed files, unchecked", paused(func(r *RecoveryRow) {
+				r.Qualifier = "the turn's own bound"
+				r.Detail = []string{"3 files changed +30 −4 · the suite has not been re-run since"}
+				r.Keys = []KeyOffer{{Key: "[v]", Label: "review what it did"},
+					{Key: "[+10]", Label: "ten more rounds"}, {Key: "[u]", Label: "undo the turn"}}
+			})},
+			{"changed nothing", paused(func(r *RecoveryRow) {
+				r.Qualifier = "the turn's own bound"
+				r.Detail = []string{"nothing changed"}
+				r.Keys = []KeyOffer{{Key: "[+10]", Label: "ten more rounds"}}
+			})},
+			{"already granted once", paused(func(r *RecoveryRow) {
+				r.Subject, r.Qualifier = "35 of 35 used", "10 already granted"
+				r.Detail = []string{"3 files changed +30 −4"}
+				r.Keys = []KeyOffer{{Key: "[v]", Label: "review what it did"},
+					{Key: "[+10]", Label: "ten more rounds"}, {Key: "[u]", Label: "undo the turn"}}
+			})},
+			{"the grant is spent", paused(func(r *RecoveryRow) {
+				r.Qualifier = "the turn's own bound"
+				r.Detail = []string{"3 files changed +30 −4 · the suite has not been re-run since"}
+				r.Keys = []KeyOffer{{Key: "[v]", Label: "review what it did"},
+					{Key: "[u]", Label: "undo the turn"}}
 			})},
 		}},
 		{"retry countdown", []monoState{

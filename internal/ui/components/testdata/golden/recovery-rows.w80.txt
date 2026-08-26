@@ -32,7 +32,8 @@
 · context length · the one class with a remedy of its own
    ✗ model   gpt-4o · 400 context too long                 over the window  0.3s
     This model's maximum context length is 128000 tokens
-    [c] compact now · [r] then try again · compacting keeps the plan and the re…
+    [c] compact now · [r] then try again
+    compacting keeps the plan and the recent turns
 
 · network · it never reached the provider
    ⚠ model   gpt-4o · network                             never reached it  0.3s
@@ -72,7 +73,8 @@
 · context length · the one class with a remedy of its own
    ␛[91m✗␛[0m model   ␛[38;5;252mgpt-4o␛[0m␛[38;5;241m · 400 context too long␛[0m                 ␛[91mover the window␛[0m  ␛[38;5;245m0.3s␛[0m
     ␛[38;5;245mThis model's maximum context length is 128000 tokens␛[0m
-    ␛[94m[c]␛[0m␛[38;5;241m compact now␛[0m␛[38;5;241m · ␛[0m␛[94m[r]␛[0m␛[38;5;241m then try again␛[0m␛[38;5;241m · ␛[0m␛[38;5;241mcompacting keeps the plan and the re…␛[0m
+    ␛[94m[c]␛[0m␛[38;5;241m compact now␛[0m␛[38;5;241m · ␛[0m␛[94m[r]␛[0m␛[38;5;241m then try again␛[0m
+    ␛[38;5;241mcompacting keeps the plan and the recent turns␛[0m
 
 · network · it never reached the provider
    ␛[38;5;214m⚠␛[0m model   ␛[38;5;252mgpt-4o␛[0m␛[38;5;241m · network␛[0m                             ␛[38;5;214mnever reached it␛[0m  ␛[38;5;245m0.3s␛[0m
