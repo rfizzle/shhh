@@ -451,7 +451,7 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 			return
 		}
 		if focus && selectable {
-			text = gutterPrefix(text, idx == focusIdx)
+			text = gutterPrefix(text, idx == focusIdx, width-components.GridPointerWidth)
 		}
 		units = append(units, unit{idx: idx, sepBefore: sepBefore, sepAfter: sepAfter, text: text})
 	}

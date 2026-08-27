@@ -73,7 +73,9 @@ func applyPalette() {
 	modeGatedStyle = lipgloss.NewStyle().Foreground(p.Accent)
 	ctxAlertStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Del)
 	updateNoticeStyle = lipgloss.NewStyle().Foreground(p.Accent)
-	focusMarkerStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Accent)
+	// The reading cursor is info, as the pointer is on every artboard that
+	// draws one; the accent belongs to the mutation rail beside it (§14).
+	focusMarkerStyle = lipgloss.NewStyle().Foreground(p.Info)
 	stepTitleStyle = lipgloss.NewStyle().Foreground(p.Body)
 	stepLiveTitleStyle = lipgloss.NewStyle().Foreground(p.Bright)
 	stepRuleStyle = lipgloss.NewStyle().Foreground(p.Dim)
@@ -85,6 +87,7 @@ func applyPalette() {
 
 	applyFrameStyles(p)
 	applyNavigateStyles(p)
+	applyReadingHintStyles(p)
 	applyCompleteStyles(p)
 	applyInspectorStyles(p)
 }

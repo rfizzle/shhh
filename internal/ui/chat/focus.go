@@ -172,6 +172,15 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return next, cmd
 		}
 		return m.returnToInput(msg)
+	case collapseKey:
+		// The explicit half of [enter]'s toggle (§7a). Where the row under
+		// the cursor has nothing open, [-] is a character like any other and
+		// goes back to the draft.
+		if m.collapseFocused() {
+			m.refreshFocusView()
+			return m, nil
+		}
+		return m.returnToInput(msg)
 	case "pgup":
 		m.scrollPage(-1)
 		return m, nil
@@ -316,15 +325,25 @@ func (m *Model) renderFocusHistory() (content string, selStart, selCount int) {
 }
 
 // gutterPrefix indents a rendered block by two columns, placing the focus
-// pointer on the first line of the selected block.
-func gutterPrefix(block string, selected bool) string {
+// pointer on the first line of the selected block and lighting that line.
+//
+// The two things reading mode dresses are the rail and this (§7a). The row
+// under the cursor takes the focus background across its full width with its
+// words in bright; the rail and the glyph keep their colours inside the
+// highlight, so a row that changed the machine still says so while it is lit
+// (§14). The pointer sits outside the highlight, in its own column, because
+// it points at the row rather than belonging to it.
+//
+// width is what the block was rendered at — the pointer column is not part
+// of it, which is what makes the highlight end at the pane's edge.
+func gutterPrefix(block string, selected bool, width int) string {
 	lines := strings.Split(block, "\n")
 	for i, l := range lines {
 		if l == "" {
 			continue
 		}
 		if i == 0 && selected {
-			lines[i] = focusMarkerStyle.Render("❯") + " " + l
+			lines[i] = focusMarkerStyle.Render("❯") + " " + components.LitRow(l, 0, width)
 		} else {
 			lines[i] = "  " + l
 		}
@@ -332,30 +351,16 @@ func gutterPrefix(block string, selected bool) string {
 	return strings.Join(lines, "\n")
 }
 
-// renderFocusHint replaces the input area while focus mode is active. It is
-// the other half of the reading rail (S-115, §7a): the rail says which pane
-// has the keyboard, this says what the keyboard does there — including both
-// ways back, since esc is the safe answer and typing is the one a reader
-// reaches for without thinking (invariant 3).
+// renderFocusHint replaces the input frame while reading mode holds the
+// keyboard (S-115, S-122, §7a). It is the other half of the reading rail: the
+// rail says which pane has the keyboard, this says what the keyboard does
+// there. Its two lines are assembled in readinghint.go.
 func (m Model) renderFocusHint() string {
-	if m.focusIdx < 0 {
-		// Nothing to select: the surface is a pager, and offering a row key
-		// there would be an offer nothing accepts.
-		hint := systemMsgStyle.Render("reading · j/k scroll · pgup/pgdn · esc or type returns")
-		return clipRow(hint, m.contentWidth()) + strings.Repeat("\n", inputHeight-1)
+	width := m.contentWidth()
+	lines := []string{m.readingKeyLine(width)}
+	lines = append(lines, m.readingRowLines(width, inputHeight-1)...)
+	for len(lines) < inputHeight {
+		lines = append(lines, "")
 	}
-	keys := "enter expand/collapse"
-	// On a turn's close rows there is nothing to expand; what the row offers
-	// is what the hint says (S-098).
-	if e, ok := m.focusedClose(); ok && e.close.Changes != nil {
-		keys = reviewKey + " review · " + undoKey + " undo turn"
-	}
-	// On a round-limit pause the hint is where the literal keystroke for the
-	// row's `[+10]` is named, since the bracket on the row draws the grant
-	// rather than the key (S-109).
-	if e, ok := m.focusedRoundPause(); ok {
-		keys = roundPauseHint(e.pause)
-	}
-	hint := systemMsgStyle.Render("reading · j/k row · pgup/pgdn · " + keys + " · esc or type returns")
-	return clipRow(hint, m.contentWidth()) + strings.Repeat("\n", inputHeight-1)
+	return strings.Join(lines, "\n")
 }

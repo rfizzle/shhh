@@ -17,7 +17,6 @@ package chat
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -187,24 +186,21 @@ func (p roundPause) keys() []components.KeyOffer {
 	return keys
 }
 
-// roundPauseHint is the focus-mode hint for a pause row: the same offers the
-// row makes, with the grant named by the key that takes it rather than by the
-// block it grants.
-func roundPauseHint(p *roundPause) string {
-	var parts []string
+// roundPauseOffers is the hint bar's version of the same offers: the row
+// draws the grant as the block it grants ([+10]), and the bar has to name the
+// key that takes it, or it is advertising a keystroke nobody can type.
+func roundPauseOffers(p *roundPause) []components.KeyOffer {
+	var keys []components.KeyOffer
 	if p.files > 0 {
-		parts = append(parts, reviewKey+" review")
+		keys = append(keys, components.KeyOffer{Key: "[" + reviewKey + "]", Label: "review what it did"})
 	}
 	if !p.spent {
-		parts = append(parts, grantRoundsKey+" "+grantRoundsLabel)
+		keys = append(keys, components.KeyOffer{Key: "[" + grantRoundsKey + "]", Label: grantRoundsLabel})
 	}
 	if p.files > 0 {
-		parts = append(parts, undoKey+" undo turn")
+		keys = append(keys, components.KeyOffer{Key: "[" + undoKey + "]", Label: "undo the turn"})
 	}
-	if len(parts) == 0 {
-		return "nothing left to offer"
-	}
-	return strings.Join(parts, " · ")
+	return keys
 }
 
 // focusedRoundPause returns the pause row the focus cursor is on, if it is on

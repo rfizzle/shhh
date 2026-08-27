@@ -78,18 +78,22 @@ var (
 	dimStyle      lipgloss.Style
 	dimmerStyle   lipgloss.Style
 	focusRowStyle lipgloss.Style
-	addStyle      lipgloss.Style
-	delStyle      lipgloss.Style
-	addEmphStyle  lipgloss.Style
-	delEmphStyle  lipgloss.Style
-	hunkStyle     lipgloss.Style
-	contextStyle  lipgloss.Style
-	accentStyle   lipgloss.Style
-	infoStyle     lipgloss.Style
-	errStyle      lipgloss.Style
-	spinTextStyle lipgloss.Style
-	statusStyle   lipgloss.Style
-	bodyStyle     lipgloss.Style
+	// The reading cursor (§7a): the row it sits on is lit, and the pointer
+	// that names it stays outside the highlight.
+	litTextStyle      lipgloss.Style
+	focusPointerStyle lipgloss.Style
+	addStyle          lipgloss.Style
+	delStyle          lipgloss.Style
+	addEmphStyle      lipgloss.Style
+	delEmphStyle      lipgloss.Style
+	hunkStyle         lipgloss.Style
+	contextStyle      lipgloss.Style
+	accentStyle       lipgloss.Style
+	infoStyle         lipgloss.Style
+	errStyle          lipgloss.Style
+	spinTextStyle     lipgloss.Style
+	statusStyle       lipgloss.Style
+	bodyStyle         lipgloss.Style
 )
 
 // applyPalette rebuilds every style in this package from the current Palette.
@@ -102,6 +106,8 @@ func applyPalette() {
 	dimStyle = lipgloss.NewStyle().Foreground(Palette.Dim)
 	dimmerStyle = lipgloss.NewStyle().Foreground(Palette.Dimmer)
 	focusRowStyle = lipgloss.NewStyle().Bold(true).Background(Palette.FocusBg)
+	litTextStyle = lipgloss.NewStyle().Foreground(Palette.Bright).Background(Palette.FocusBg)
+	focusPointerStyle = lipgloss.NewStyle().Foreground(Palette.Info)
 	addStyle = lipgloss.NewStyle().Foreground(Palette.Add)
 	delStyle = lipgloss.NewStyle().Foreground(Palette.Del)
 	addEmphStyle = lipgloss.NewStyle().Foreground(Palette.Add).Background(Palette.AddBg)

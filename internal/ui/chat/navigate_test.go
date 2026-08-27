@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -207,8 +208,12 @@ func TestReadingMode_OpensOnATranscriptWithNothingExpandable(t *testing.T) {
 	if strings.Contains(m.renderHistory(), "❯") {
 		t.Fatal("a reading surface with no cursor should draw no pointer")
 	}
-	if hint := m.renderFocusHint(); !strings.Contains(hint, "j/k scroll") {
-		t.Fatalf("the hint should offer scrolling rather than a row key, got %q", hint)
+	hint := ansi.Strip(m.renderFocusHint())
+	if !strings.Contains(hint, "nothing on this row expands") {
+		t.Fatalf("[enter] should stay on the bar with its reason rather than vanishing, got %q", hint)
+	}
+	if strings.Contains(hint, "this row ·") {
+		t.Fatalf("there is no row under the cursor, so nothing should offer row keys, got %q", hint)
 	}
 
 	// j/k are a line of scroll where they cannot be a selection.

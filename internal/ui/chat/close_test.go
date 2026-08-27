@@ -259,7 +259,7 @@ func TestTurnClose_ReachableFromFocusMode(t *testing.T) {
 		t.Fatalf("focus should land on the close rows, but idx %d is kind %v",
 			m.focusIdx, m.transcript[m.focusIdx].kind)
 	}
-	if !strings.Contains(ansi.Strip(m.renderFocusHint()), "v review") {
+	if !strings.Contains(ansi.Strip(m.renderFocusHint()), "[v] review") {
 		t.Fatalf("the hint should offer what the row offers, got %q", ansi.Strip(m.renderFocusHint()))
 	}
 

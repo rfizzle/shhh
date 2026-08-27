@@ -21,7 +21,6 @@ package chat
 
 import (
 	"fmt"
-	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -163,22 +162,24 @@ func typedRune(msg tea.KeyMsg) bool {
 // input owns the keyboard and names the transcript when the transcript does,
 // so the two panes are never both dressed as the active one (§7a). The word
 // carries it; the accent is decoration, as everywhere else (invariant 1).
+//
+// It is the same labelled rail a waiting decision draws (§7b): four cells of
+// rule, the label in its own spaces, then the rule to the edge. Reading mode
+// shipped before that rail existed and borrowed components/terminal/Rule's
+// trailing variant, which hung the label off the right end — the one place
+// the three rails that name the keyboard's owner did not look alike.
 func (m Model) readingRail(width int) string {
 	if m.state != stateFocus || width <= 0 {
 		return dividerStyle(width)
 	}
-	label := readingLabelStyle.Render(m.readingLabel())
-	lw := lipgloss.Width(label)
-	if width < lw+4 {
-		// Too narrow for the label: the hint bar under the transcript still
-		// says where the keyboard is, so the rail goes back to a divider
-		// rather than clipping the word that carries the meaning.
+	if width < frameCompactWidth {
+		// Below the minimal breakpoint the word goes rather than being cut
+		// down (guidelines/layout-breakpoints, §7a): the hint bar under the
+		// transcript still says where the keyboard is, and the lit row still
+		// says which row it is, so dropping the label costs nothing there.
 		return dividerStyle(width)
 	}
-	// The label sits in its own spaces on the rule, as every other rail's
-	// does (§12a).
-	rule := readingRuleStyle.Render(strings.Repeat("─", width-lw-3))
-	return rule + " " + label + " " + readingRuleStyle.Render("─")
+	return keyboardRail(m.readingLabel(), width)
 }
 
 // readingLabel is READING plus the cursor's place in the selectable rows,
@@ -248,6 +249,9 @@ func (m *Model) mouseCommand(parts []string) string {
 // applyNavigateStyles rebuilds this file's styles from the palette; called
 // from applyPalette with the rest.
 func applyNavigateStyles(p components.ColorTokens) {
-	readingLabelStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Accent)
-	readingRuleStyle = lipgloss.NewStyle().Foreground(p.Accent)
+	// The label is info and bold, as DRAFT, DECISION and READING all are in
+	// guidelines/invariant-inert-keys; the rule it sits on is chrome, so it
+	// is dim like every other divider. The accent belongs to the rows.
+	readingLabelStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Info)
+	readingRuleStyle = lipgloss.NewStyle().Foreground(p.Dim)
 }

@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
 	"github.com/rfizzle/shhh/internal/plan"
@@ -411,6 +412,61 @@ func interruptSurface(m Model) string {
 		return m.renderInterrupt(m.contentWidth()) + "\n" + m.renderPromptFrame()
 	}
 	return strings.Join(m.confirmPanelLines(), "\n")
+}
+
+// TestGolden_ReadingMode captures the surface the keyboard moves to (§7a,
+// S-122) at the two widths where the artboard's rules bite: 130, where the
+// labelled rail, the lit row and the two-line hint bar all have room, and 80,
+// where the position field narrows. It is the pair that matters — the same
+// screen with the keyboard in the other pane is captured beside it, because
+// "only one pane is dressed" is a thing a reader checks by looking at both.
+func TestGolden_ReadingMode(t *testing.T) {
+	captureGolden(t, "reading-mode", "reading mode", []int{80, 130}, func(width int) []golden.Panel {
+		reading := func(mut func(*Model)) string {
+			m := goldenModel(t, width)
+			next, _ := m.enterFocusMode()
+			rm := next.(Model)
+			mut(&rm)
+			return readingSurface(rm)
+		}
+		return []golden.Panel{
+			{Label: "the transcript has the keyboard", View: reading(func(m *Model) {})},
+			{Label: "the input has it · plain rail, no row lit, the frame is accented",
+				View: readingSurface(goldenModel(t, width))},
+			{Label: "the cursor on a row that changed the machine", View: reading(func(m *Model) {
+				m.moveFocus(-1)
+				m.moveFocus(-1)
+			})},
+			{Label: "expanded under the cursor · [-] joins the bar", View: reading(func(m *Model) {
+				m.moveFocus(-1)
+				m.moveFocus(-1)
+				next, _ := m.updateFocus(tea.KeyMsg{Type: tea.KeyEnter})
+				*m = next.(Model)
+			})},
+			{Label: "prose · nothing expandable, so no cursor and no position", View: func() string {
+				m := frameModel(t, width, 40)
+				m.transcript = []entry{
+					{kind: entryUser, text: "why is the round limit fatal"},
+					{kind: entryAssistant, text: "Round exhaustion is fatal in Agent.runRound: the loop\nreturns ErrRoundLimit, and the chat model treats any error\nfrom a round as terminal."},
+				}
+				m.invalidateRenderCache()
+				next, _ := m.enterFocusMode()
+				return readingSurface(next.(Model))
+			}()},
+		}
+	})
+}
+
+// readingSurface is the rail, the transcript and the bottom panel together —
+// the whole of what says which pane holds the keyboard.
+func readingSurface(m Model) string {
+	rail := m.readingRail(m.contentWidth())
+	body := m.renderHistory()
+	if m.state == stateFocus {
+		body, _, _ = m.renderFocusHistory()
+		return rail + "\n" + body + "\n" + dividerStyle(m.contentWidth()) + "\n" + m.renderFocusHint()
+	}
+	return rail + "\n" + body + "\n" + promptSurface(m)
 }
 
 // TestGolden_KeyEntry captures the masked prompt an auth failure's [k] opens

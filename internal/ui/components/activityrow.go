@@ -159,7 +159,9 @@ func (r ActivityRow) railCell() string {
 // steps land (S-090).
 func (r ActivityRow) pointer() string {
 	if r.Selected {
-		return focusRowStyle.Render("❯") + " "
+		// The pointer is a glyph in its own column, not part of the
+		// highlight behind the row (§6a, §7a).
+		return focusPointerStyle.Render("❯") + " "
 	}
 	return strings.Repeat(" ", ptrWidth)
 }
@@ -284,7 +286,15 @@ func gridLineWith(lead, target string, paint func(string) string, outcome, durat
 // View renders the row (plus tail and detail lines) at the given width.
 func (r ActivityRow) View(width int) string {
 	lead := r.pointer() + r.railCell() + r.glyph() + verbField(r.Verb)
-	lines := []string{gridLine(lead, r.Target, r.outcomeField(), r.Duration, width)}
+	first := gridLine(lead, r.Target, r.outcomeField(), r.Duration, width)
+	if r.Selected {
+		// The reading cursor lights the row it is on (§7a): the background
+		// runs the row's width and its words go bright, while the rail and
+		// the glyph keep the colours that say what the row did. The pointer
+		// stays outside it.
+		first = LitRow(first, ptrWidth, width)
+	}
+	lines := []string{first}
 
 	if r.State == ActivityRunning && r.Tail != "" {
 		lines = append(lines, indented(r.Tail, tailIndent, width))

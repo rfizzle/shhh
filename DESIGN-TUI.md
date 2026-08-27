@@ -797,8 +797,11 @@ has them.**
   its position — `READING 5/12` — set four cells in from the left, on a rail
   that runs to the full width. It is not the `Rule` component's trailing
   variant with a label hung off the right end, which is what reading mode
-  borrowed when it had no artboard to read. While the input holds the keyboard
-  the same line is a plain divider and says nothing.
+  borrowed when it had no artboard to read. It is the same rail `DRAFT` and
+  `DECISION 1/2` draw (§7b), down to the paint: the label is info and bold,
+  the rule under it is dim like every other divider
+  (`guidelines/invariant-inert-keys`). While the input holds the keyboard the
+  same line is a plain divider and says nothing.
 - **The lit row.** The row under the cursor takes `focusBg` with its whole
   content in bright, and the `❯` pointer sits outside the highlight in the
   pointer column (§6a). It still reads over a row that carries a mutation rail
@@ -860,6 +863,37 @@ teaches a reader to stop reading refusals.
 The start screen (§17c) is where all of this is introduced, on a second key
 line under the suggestions. That line outlives the typing that dismisses the
 suggestions, because these keys outlive it too.
+
+**Four things S-122 settled, recorded rather than left silent.**
+
+- **The narrow rule is the breakpoint, not the arithmetic.** The label fits in
+  62 columns and still goes there, so "before it clips" is read as
+  `guidelines/layout-breakpoints`' minimal band: below 70 content columns the
+  rail is a bare divider. That is the same line the frame's vitals collapse
+  on, so a narrow terminal loses its chrome all at once rather than a field at
+  a time.
+- **The position narrows before the keys do, and drops last.** `row 5 of 12 ·
+  step 2` → `row 5 of 12` → `5 of 12` → `5/12`, then `[q] back to the prompt`
+  becomes `[q] prompt`, then `[enter] expand` leaves whole, and only when
+  none of that is enough does the field go. "First to drop" is about its own
+  fields; the lit row is what still says which row it is.
+- **`[-] collapse` is offered while the row under the cursor is open**, not
+  while anything anywhere is. A key on the bar that the surface cannot honour
+  is an offer nothing accepts, which is the thing invariant 5 exists to stop;
+  where nothing is open, `-` is a character and lands in the draft like any
+  other. The right-hand field still counts every open row (`2 rows expanded`),
+  so the bar says what is open even when the cursor is not standing on it.
+- **A row's own keys stack rather than clip.** They are one line where they
+  fit, one line without the `this row ·` words where they nearly do, and the
+  row's `▎` repeated on a second line where they do not — an offer folded out
+  of sight is an offer nobody can take (invariant 4).
+
+**The cursor keeps a column of its own.** Reading mode indents the transcript
+by the pointer column rather than writing `❯` into the row's own (§6a), so a
+step header under the cursor keeps its `▾`/`▸` and a folded group keeps the
+glyph that says it is folded. The artboard draws one column because it draws
+no lit header; the fold state is a fact about the row and the cursor is not
+allowed to spend it.
 
 ### 7b. When a decision lands mid-sentence (S-117, S-125)
 

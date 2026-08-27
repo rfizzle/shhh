@@ -327,7 +327,7 @@ func TestRoundLimit_FocusModeLandsOnThePauseAndTakesTheGrant(t *testing.T) {
 	if got := focused.transcript[focused.focusIdx].kind; got != entryRoundPause {
 		t.Fatalf("the cursor should land on the row holding the way out, got kind %v", got)
 	}
-	if hint := ansi.Strip(focused.renderFocusHint()); !strings.Contains(hint, "+ ten more rounds") {
+	if hint := ansi.Strip(focused.renderFocusHint()); !strings.Contains(hint, "[+] ten more rounds") {
 		t.Errorf("the hint names the literal key the row draws as [+10]:\n%s", hint)
 	}
 
