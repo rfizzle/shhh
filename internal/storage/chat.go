@@ -104,10 +104,22 @@ func saveChatTx(tx *sql.Tx, name string, messages []provider.Message) (int64, er
 			s := string(b)
 			toolCallsJSON = &s
 		}
+		// Attachment bytes are saved with the turn that carried them
+		// (S-134), so resuming a session keeps the screenshot the question
+		// was about rather than a sentence pointing at nothing.
+		var attachmentsJSON *string
+		if len(msg.Attachments) > 0 {
+			b, err := json.Marshal(msg.Attachments)
+			if err != nil {
+				return 0, fmt.Errorf("marshal attachments: %w", err)
+			}
+			s := string(b)
+			attachmentsJSON = &s
+		}
 		_, err := tx.Exec(
-			`INSERT INTO chat_messages (session_id, seq, role, content, tool_calls, tool_call_id)
-			 VALUES (?, ?, ?, ?, ?, ?)`,
-			sessionID, i, string(msg.Role), msg.Content, toolCallsJSON, msg.ToolCallID,
+			`INSERT INTO chat_messages (session_id, seq, role, content, tool_calls, tool_call_id, attachments)
+			 VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			sessionID, i, string(msg.Role), msg.Content, toolCallsJSON, msg.ToolCallID, attachmentsJSON,
 		)
 		if err != nil {
 			return 0, fmt.Errorf("insert message %d: %w", i, err)
@@ -128,7 +140,7 @@ func (db *DB) LoadChat(name string) ([]provider.Message, error) {
 	}
 
 	rows, err := db.sql.Query(
-		`SELECT role, content, tool_calls, tool_call_id
+		`SELECT role, content, tool_calls, tool_call_id, attachments
 		 FROM chat_messages WHERE session_id = ? ORDER BY seq`, sessionID,
 	)
 	if err != nil {
@@ -139,10 +151,10 @@ func (db *DB) LoadChat(name string) ([]provider.Message, error) {
 	var messages []provider.Message
 	for rows.Next() {
 		var (
-			role, content, toolCallID string
-			toolCallsJSON             *string
+			role, content, toolCallID      string
+			toolCallsJSON, attachmentsJSON *string
 		)
-		if err := rows.Scan(&role, &content, &toolCallsJSON, &toolCallID); err != nil {
+		if err := rows.Scan(&role, &content, &toolCallsJSON, &toolCallID, &attachmentsJSON); err != nil {
 			return nil, err
 		}
 		msg := provider.Message{
@@ -153,6 +165,11 @@ func (db *DB) LoadChat(name string) ([]provider.Message, error) {
 		if toolCallsJSON != nil {
 			if err := json.Unmarshal([]byte(*toolCallsJSON), &msg.ToolCalls); err != nil {
 				return nil, fmt.Errorf("unmarshal tool calls: %w", err)
+			}
+		}
+		if attachmentsJSON != nil {
+			if err := json.Unmarshal([]byte(*attachmentsJSON), &msg.Attachments); err != nil {
+				return nil, fmt.Errorf("unmarshal attachments: %w", err)
 			}
 		}
 		messages = append(messages, msg)

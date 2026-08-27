@@ -103,6 +103,47 @@ func TestSaveChat_WithToolCalls(t *testing.T) {
 	}
 }
 
+// A resumed session has to keep the screenshot the question was about, not
+// just the sentence pointing at nothing (S-134).
+func TestSaveChat_RoundTripsAttachments(t *testing.T) {
+	db := openTestDB(t)
+
+	msgs := []provider.Message{
+		{
+			Role:    provider.RoleUser,
+			Content: "what is wrong here?",
+			Attachments: []provider.Attachment{{
+				Kind:      provider.AttachmentImage,
+				Name:      "shot.png",
+				MediaType: "image/png",
+				Data:      []byte{0x89, 'P', 'N', 'G', 0x00, 0xff},
+			}},
+		},
+		{Role: provider.RoleAssistant, Content: "the margin is off"},
+	}
+
+	if err := db.SaveChat("shots", msgs); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	loaded, err := db.LoadChat("shots")
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if len(loaded[0].Attachments) != 1 {
+		t.Fatalf("expected 1 attachment, got %d", len(loaded[0].Attachments))
+	}
+	got := loaded[0].Attachments[0]
+	if got.Name != "shot.png" || got.MediaType != "image/png" || got.Kind != provider.AttachmentImage {
+		t.Fatalf("attachment metadata lost: %#v", got)
+	}
+	if string(got.Data) != string(msgs[0].Attachments[0].Data) {
+		t.Fatalf("attachment bytes lost: %v", got.Data)
+	}
+	if loaded[1].Attachments != nil {
+		t.Fatal("a message with no attachments should load with none")
+	}
+}
+
 func TestLoadChat_NotFound(t *testing.T) {
 	db := openTestDB(t)
 

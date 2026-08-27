@@ -604,8 +604,18 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		model = model.WithInitialPrompt(initialPrompt)
 	}
 
+	// Ask the terminal to report modified keys, so Shift+Enter arrives as
+	// something other than a bare carriage return (S-134, chat/newline.go).
+	// A terminal that does not know the request ignores it, and the draft
+	// keeps Alt+Enter and Ctrl+J.
+	restoreKeys := chat.RequestEnhancedKeys(os.Stdout)
+	defer restoreKeys()
+
 	program := tea.NewProgram(model, programOpts...)
 	if _, err := program.Run(); err != nil {
+		// os.Exit skips the deferred restore, so the terminal is put back
+		// here rather than left reporting modified keys to the next program.
+		restoreKeys()
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
 	}

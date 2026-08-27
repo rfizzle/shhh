@@ -96,9 +96,14 @@ func (a *Agent) Append(msg provider.Message) { a.messages = append(a.messages, m
 
 // StartTurn begins a fresh user turn: the text joins the conversation and
 // the round counter resets.
-func (a *Agent) StartTurn(text string) {
+func (a *Agent) StartTurn(text string) { a.StartTurnWith(text, nil) }
+
+// StartTurnWith is StartTurn carrying the attachments staged for this turn
+// (S-134). They ride on the user message itself, so every later snapshot,
+// save and resume keeps them beside the sentence that was asked about them.
+func (a *Agent) StartTurnWith(text string, atts []provider.Attachment) {
 	a.rounds = 0
-	a.Append(provider.Message{Role: provider.RoleUser, Content: text})
+	a.Append(provider.Message{Role: provider.RoleUser, Content: text, Attachments: atts})
 }
 
 // RequestMessages snapshots the conversation for a stream request, so

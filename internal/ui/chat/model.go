@@ -14,6 +14,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/plan"
@@ -195,6 +196,10 @@ type entry struct {
 	// expanded shows the full tool/command output instead of the truncated
 	// block; toggled from focus mode (S-076).
 	expanded bool
+	// attached names what a user row's message carried (S-134) — the names
+	// and sizes, never the bytes. The transcript shows a screenshot as the
+	// line "attached: shot.png (412 KB)" and nothing more.
+	attached []string
 	// diff is the entryDiff viewer (S-074); a pointer so focus-mode
 	// expansion state survives re-renders.
 	diff *components.DiffView
@@ -493,7 +498,12 @@ type Model struct {
 	modelListed     bool
 	// steering holds messages typed while the agent is working (S-058); they
 	// are injected as user messages before the next stream request.
-	steering      []string
+	steering []string
+	// attachments are the images and files staged for the next message
+	// (S-134, attachments.go). They ride on whichever user message goes out
+	// next — a fresh turn or the first queued steering line — and are never
+	// rendered, only named.
+	attachments   []provider.Attachment
 	title         string
 	width         int
 	height        int
@@ -577,7 +587,11 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 	ta.CharLimit = 0
 	ta.SetHeight(inputHeight)
 	ta.ShowLineNumbers = false
-	ta.KeyMap.InsertNewline.SetKeys("alt+enter")
+	// Three keys insert a line break, one of which the user can find:
+	// shift+enter is rewritten to alt+enter before the textarea sees it
+	// (newline.go), and ctrl+j is the chord that works in a terminal too old
+	// to report either (S-134).
+	ta.KeyMap.InsertNewline.SetKeys("alt+enter", "ctrl+j")
 
 	// One frame set, one cadence, one colour, shared with the one-shot UI
 	// (S-094).
@@ -751,6 +765,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// A modified Enter is a line break, not a send. It arrives as the raw
+	// sequence the terminal sent because bubbletea v1 has no name for it, so
+	// it is rewritten here into the key the textarea's newline binding
+	// listens for — before any surface can mistake the sequence for
+	// something of its own (S-134, newline.go).
+	if newlineKey(msg) {
+		msg = altEnter
+	}
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -785,6 +807,15 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateMouse(msg)
 
 	case tea.KeyMsg:
+		// A file dragged into the terminal arrives as a bracketed paste of
+		// its path. When it points at an image or a document, attaching it
+		// is the only thing the gesture can have meant (S-134); everything
+		// else pastes as the text it is.
+		if msg.Paste && m.inputLive() && m.attachedTo == "" {
+			if path, ok := pastedFileAttachment(string(msg.Runes)); ok {
+				return m, attachFileCmd(path)
+			}
+		}
 		if m.state == stateDiffFull {
 			return m.updateDiffFull(msg)
 		}
@@ -919,6 +950,16 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// textarea meaning (line start).
 			if m.subagents != nil {
 				return m.openAgentList()
+			}
+		case "ctrl+v":
+			// Ctrl+V used to be the textarea's own text paste. It reads the
+			// clipboard properly now: a screenshot or a copied file is
+			// staged as an attachment, and plain text still lands in the
+			// draft (S-134, attachments.go). Attached to a child, the
+			// orchestrator's staging area is not what the keyboard is
+			// pointed at, so the key keeps its textarea meaning there.
+			if m.inputLive() && m.attachedTo == "" {
+				return m, readClipboardCmd()
 			}
 		case "ctrl+k":
 			// The command palette (S-112): one prompt over the commands, the
@@ -1235,6 +1276,12 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case retryTickMsg:
 		return m.retryTick(msg)
 
+	case clipboardMsg:
+		return m.handleClipboard(msg)
+
+	case attachedFileMsg:
+		return m.handleAttachedFile(msg)
+
 	case spinner.TickMsg:
 		// The one tick, advancing the one frame (§10c, spin.go). The guard
 		// that used to stand here decided whether to answer at all, and a
@@ -1314,8 +1361,9 @@ func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
 	// the pause behind it can no longer be granted more rounds (S-109).
 	m.resetRounds()
 	m.recordCheckpoint(text)
-	m.agent.StartTurn(text)
-	m.appendEntry(entry{kind: entryUser, text: text})
+	atts := m.takeAttachments()
+	m.agent.StartTurnWith(text, atts)
+	m.appendEntry(entry{kind: entryUser, text: text, attached: attachment.Names(atts)})
 	m.trimForRequest()
 	m.setTurnState(stateStreaming)
 	m.streaming = ""
@@ -1841,10 +1889,15 @@ func (m *Model) injectSteering() bool {
 	if len(m.steering) == 0 {
 		return false
 	}
+	// Whatever was staged goes with the first line of the batch: they are
+	// all injected into the same round, so which one carries them is only a
+	// question of where the transcript names them (S-134).
+	atts := m.takeAttachments()
 	for _, text := range m.steering {
 		m.recordCheckpoint(text)
-		m.agent.Append(provider.Message{Role: provider.RoleUser, Content: text})
-		m.appendEntry(entry{kind: entryUser, text: text})
+		m.agent.Append(provider.Message{Role: provider.RoleUser, Content: text, Attachments: atts})
+		m.appendEntry(entry{kind: entryUser, text: text, attached: attachment.Names(atts)})
+		atts = nil
 	}
 	m.turnCount += int64(len(m.steering))
 	m.steering = nil
@@ -1932,7 +1985,11 @@ func (m Model) renderEntry(e entry, width int) string {
 func (m Model) renderEntryKeys(e entry, width int, keysLive bool) string {
 	switch e.kind {
 	case entryUser:
-		return userStyle.Render("You") + "\n" + m.wordWrap(e.text, width) + "\n"
+		row := userStyle.Render("You") + "\n" + m.wordWrap(e.text, width) + "\n"
+		if len(e.attached) > 0 {
+			row += systemMsgStyle.Render(clipRow("attached: "+strings.Join(e.attached, ", "), width)) + "\n"
+		}
+		return row
 	case entryAssistant:
 		return assistantStyle.Render("Assistant") + "\n" + renderMarkdown(e.text, width) + "\n"
 	case entryTool, entryCommand:
@@ -2460,6 +2517,9 @@ func helpText() string {
 	return strings.TrimSpace(`Commands:
   /help          Show this help
   /clear         Start a new conversation (also /new)
+  /paste [path]  Attach the clipboard — a screenshot, or files copied in a
+                 file manager — to your next message; /paste <path> attaches
+                 a file by name, /paste clear drops what is staged (Ctrl+V)
   /copy [code]   Copy the last response (or just its code blocks)
   /run [n]       Run a code block from the last response (with confirmation)
   /model [name]  Switch the model (bare /model opens an interactive picker)
@@ -2509,7 +2569,13 @@ rewrite or replace the running conversation (/clear, /compact, /rewind,
 /branches, /load, /chats, /model, /run); they say so and wait for the turn.
 
 Keys:
-  Enter          Send message        Alt+Enter    Insert newline
+  Enter          Send message        Shift+Enter  Insert newline
+                 (Alt+Enter and Ctrl+J do the same, for terminals that cannot
+                  report Shift+Enter)
+  Ctrl+V         Attach the clipboard: a copied screenshot or file is staged
+                 for your next message, plain text still pastes into the draft.
+                 Dragging an image into the terminal attaches it the same way.
+                 Attachments are named on the notice rail, never drawn
   Tab            Complete a slash command (typing / opens the menu;
                  ↑↓ move, Enter runs the highlighted command, Esc dismisses)
   Ctrl+K         Command palette: one prompt over commands, saved chats and
@@ -2576,7 +2642,11 @@ func (m *Model) appendMessageEntries(msgs []provider.Message) {
 	for i, msg := range msgs {
 		switch msg.Role {
 		case provider.RoleUser:
-			m.appendEntry(entry{kind: entryUser, text: msg.Content})
+			// A resumed turn keeps the names of what it attached (S-134):
+			// the bytes were saved with it, so the row that said "attached:
+			// shot.png" says it again.
+			m.appendEntry(entry{kind: entryUser, text: msg.Content,
+				attached: attachment.Names(msg.Attachments)})
 		case provider.RoleAssistant:
 			if msg.Content != "" {
 				m.appendEntry(entry{kind: entryAssistant, text: msg.Content})

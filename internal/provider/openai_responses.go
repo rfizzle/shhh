@@ -108,7 +108,12 @@ type responseItem struct {
 
 type responseContent struct {
 	Type string `json:"type"`
-	Text string `json:"text"`
+	Text string `json:"text,omitempty"`
+	// The attachment forms (S-134): an inline image is a data URL, an inline
+	// document is a filename plus the same data URL under another name.
+	ImageURL string `json:"image_url,omitempty"`
+	Filename string `json:"filename,omitempty"`
+	FileData string `json:"file_data,omitempty"`
 }
 
 // responsesTool is a function tool. The Responses API flattens what chat
@@ -180,10 +185,14 @@ func toResponseItems(messages []Message) ([]responseItem, string) {
 				instructions = append(instructions, m.Content)
 			}
 		case RoleUser:
+			content := responsesAttachmentContent(m.Attachments)
+			if m.Content != "" || len(content) == 0 {
+				content = append(content, responseContent{Type: "input_text", Text: m.Content})
+			}
 			items = append(items, responseItem{
 				Type:    "message",
 				Role:    string(RoleUser),
-				Content: []responseContent{{Type: "input_text", Text: m.Content}},
+				Content: content,
 			})
 		case RoleAssistant:
 			if m.Content != "" {
@@ -212,6 +221,28 @@ func toResponseItems(messages []Message) ([]responseItem, string) {
 		}
 	}
 	return items, strings.Join(instructions, "\n\n")
+}
+
+// responsesAttachmentContent renders attachments as Responses input parts.
+// This API takes both an image and a document inline, so only text
+// attachments use the shared text form.
+func responsesAttachmentContent(atts []Attachment) []responseContent {
+	var out []responseContent
+	for _, a := range atts {
+		switch a.Kind {
+		case AttachmentImage:
+			out = append(out, responseContent{Type: "input_image", ImageURL: a.DataURL()})
+		case AttachmentDocument:
+			out = append(out, responseContent{
+				Type:     "input_file",
+				Filename: a.Name,
+				FileData: a.DataURL(),
+			})
+		default:
+			out = append(out, responseContent{Type: "input_text", Text: a.AsText()})
+		}
+	}
+	return out
 }
 
 func toResponsesTools(tools []Tool) []responsesTool {

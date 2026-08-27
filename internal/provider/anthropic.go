@@ -170,7 +170,13 @@ func toAnthropicMessages(messages []Message) (system string, out []anthropic.Mes
 			systemParts = append(systemParts, msg.Content)
 		case RoleUser:
 			flushToolResults()
-			out = append(out, anthropic.NewUserMessage(anthropic.NewTextBlock(msg.Content)))
+			// Attachments lead the message: the Messages API reads an image
+			// better when the sentence about it comes after (S-134).
+			blocks := anthropicAttachmentBlocks(msg.Attachments)
+			if msg.Content != "" || len(blocks) == 0 {
+				blocks = append(blocks, anthropic.NewTextBlock(msg.Content))
+			}
+			out = append(out, anthropic.NewUserMessage(blocks...))
 		case RoleAssistant:
 			flushToolResults()
 			var blocks []anthropic.ContentBlockParamUnion
@@ -202,6 +208,26 @@ func toAnthropicMessages(messages []Message) (system string, out []anthropic.Mes
 	flushToolResults()
 
 	return strings.Join(systemParts, "\n\n"), out
+}
+
+// anthropicAttachmentBlocks carries a user message's attachments as native
+// blocks. Images and PDFs the API takes inline; everything else falls back to
+// the shared text form, which is also what a text attachment always is.
+func anthropicAttachmentBlocks(atts []Attachment) []anthropic.ContentBlockParamUnion {
+	var blocks []anthropic.ContentBlockParamUnion
+	for _, a := range atts {
+		switch {
+		case a.Kind == AttachmentImage:
+			blocks = append(blocks, anthropic.NewImageBlockBase64(a.MediaType, a.Base64()))
+		case a.Kind == AttachmentDocument && a.MediaType == "application/pdf":
+			blocks = append(blocks, anthropic.NewDocumentBlock(anthropic.Base64PDFSourceParam{
+				Data: a.Base64(),
+			}))
+		default:
+			blocks = append(blocks, anthropic.NewTextBlock(a.AsText()))
+		}
+	}
+	return blocks
 }
 
 func toAnthropicTools(tools []Tool) []anthropic.ToolUnionParam {

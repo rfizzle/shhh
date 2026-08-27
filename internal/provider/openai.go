@@ -128,9 +128,47 @@ func toOpenAIMessages(msgs []Message) []openai.ChatCompletionMessage {
 		if m.ToolCallID != "" {
 			msg.ToolCallID = m.ToolCallID
 		}
+		// Chat completions carry a mixed message as a parts array, and the
+		// two content fields are mutually exclusive — setting both is an SDK
+		// error, so Content is cleared once the parts exist (S-134).
+		if parts := openAIAttachmentParts(m); len(parts) > 0 {
+			msg.Content, msg.MultiContent = "", parts
+		}
 		out[i] = msg
 	}
 	return out
+}
+
+// openAIAttachmentParts renders a message's attachments as chat-completion
+// content parts, with the sentence last. It returns nil when there is nothing
+// to attach, which is what keeps ordinary messages on the plain string form.
+// Chat completions can take an image but not a document, so a PDF degrades to
+// the shared text note rather than disappearing.
+func openAIAttachmentParts(m Message) []openai.ChatMessagePart {
+	if len(m.Attachments) == 0 {
+		return nil
+	}
+	var parts []openai.ChatMessagePart
+	for _, a := range m.Attachments {
+		if a.Kind == AttachmentImage {
+			parts = append(parts, openai.ChatMessagePart{
+				Type:     openai.ChatMessagePartTypeImageURL,
+				ImageURL: &openai.ChatMessageImageURL{URL: a.DataURL()},
+			})
+			continue
+		}
+		parts = append(parts, openai.ChatMessagePart{
+			Type: openai.ChatMessagePartTypeText,
+			Text: a.AsText(),
+		})
+	}
+	if m.Content != "" {
+		parts = append(parts, openai.ChatMessagePart{
+			Type: openai.ChatMessagePartTypeText,
+			Text: m.Content,
+		})
+	}
+	return parts
 }
 
 func init() {

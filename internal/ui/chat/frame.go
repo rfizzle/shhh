@@ -235,7 +235,8 @@ func (m Model) frameHints() string {
 			hints = []string{"enter queues steering", "ctrl+a agents", "/ commands", "ctrl+c cancel"}
 		}
 	default:
-		hints = []string{"enter send", "/ commands", "ctrl+k palette", "shift+tab mode"}
+		hints = []string{"enter send", "shift+enter newline", "/ commands",
+			"ctrl+v attach", "ctrl+k palette", "shift+tab mode"}
 	}
 	return frameHintStyle.Render(strings.Join(hints, " · "))
 }
@@ -284,6 +285,9 @@ func (m Model) noticeLine() string {
 	var parts []string
 	if m.updateNotice != "" {
 		parts = append(parts, updateNoticeStyle.Render(m.updateNotice))
+	}
+	if note := m.attachmentNotice(); note != "" {
+		parts = append(parts, noticeInfoStyle.Render(note))
 	}
 	if n := len(m.steering); n > 0 {
 		parts = append(parts, noticeInfoStyle.Render(fmt.Sprintf("%d steering queued", n)))

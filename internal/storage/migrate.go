@@ -91,6 +91,8 @@ var migrations = []string{
 	);
 
 	CREATE INDEX IF NOT EXISTS idx_memories_scope ON memories(scope);`,
+
+	`ALTER TABLE chat_messages ADD COLUMN attachments TEXT;`,
 }
 
 func (db *DB) migrate() error {

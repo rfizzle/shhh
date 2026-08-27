@@ -27,6 +27,29 @@ func EstimateMessageTokens(msgs []provider.Message) int64 {
 		for _, tc := range msg.ToolCalls {
 			n += EstimateTokens(tc.Arguments)
 		}
+		n += EstimateAttachmentTokens(msg.Attachments)
+	}
+	return n
+}
+
+// estimatedImageTokens is what one attached image costs, roughly. Providers
+// price an image by its tile count rather than by its bytes, so byte-based
+// arithmetic would be wrong in both directions; a flat figure near a
+// full-width screenshot keeps the context meter honest enough to be worth
+// showing (S-134).
+const estimatedImageTokens = 1500
+
+// EstimateAttachmentTokens roughly estimates what a message's attachments
+// occupy: text goes in verbatim, images cost about a screenshot each.
+func EstimateAttachmentTokens(atts []provider.Attachment) int64 {
+	var n int64
+	for _, a := range atts {
+		switch a.Kind {
+		case provider.AttachmentText:
+			n += EstimateTokens(string(a.Data))
+		default:
+			n += estimatedImageTokens
+		}
 	}
 	return n
 }

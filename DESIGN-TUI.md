@@ -1845,6 +1845,52 @@ name); the notice rail is orchestrator-scoped and hides while attached.
 - The frame is rebuilt every render and never enters the transcript render
   cache, so resize just works.
 
+### 12f. The draft's second key, and what rides with it (S-134)
+
+Two things the prompt surface could not do. Enter sends, so a multi-line
+draft needed a key that does not; and a message could carry only text, so a
+screenshot had to be described instead of shown.
+
+**Shift+Enter is the newline.** It is also the one key a terminal is least
+likely to report: in the legacy encoding Enter is a bare CR with nowhere to
+put a modifier, so a terminal that has not been asked to say more sends the
+same byte for both. The session asks — xterm's `modifyOtherKeys` level 1, on
+at start and off at exit — and reads back both shapes the answer arrives in
+(`CSI 13 ; mods u` and `CSI 27 ; mods ; 13 ~`). Any modifier on Enter means
+the same thing here, so ctrl+enter works too. A terminal that ignores the
+request keeps `alt+enter` and `ctrl+j`, which stay bound; the rail names
+shift+enter, because naming the fallback would teach the wrong key.
+
+**Attachments are named, never drawn.** An image on this surface would fight
+every rule the §6a grid has, and a terminal cannot show one honestly anyway.
+So the bytes are staged and the words carry them:
+
+- **Notice rail** (§12a): `1 attachment · 412 KB` while it waits, the same
+  shape as the queued-steering count. The §10d glyph set is closed and has no
+  mark for this, so the rail says it in words rather than inventing one.
+- **Bottom rail**: `ctrl+v attach` joins the idle hints, after
+  `shift+enter newline`.
+- **The user's own transcript row**: `attached: shot.png (412 KB)` under the
+  sentence, in the system treatment. Base names only — the row must not leak
+  the sender's directory layout.
+
+Three doors, one staging area. `ctrl+v` reads the clipboard: a copied
+screenshot or a file the file manager copied is staged, and plain text still
+pastes into the draft, so the chord never stops doing what it did. A path
+dragged into the terminal arrives as a bracketed paste and is attached when
+it points at an image or a document — a pasted path to a source file stays
+text, because that is the only way to write one into a sentence. `/paste` is
+the explicit form and the only one that can name a file the clipboard never
+touched.
+
+What is staged rides on the next user message — a fresh turn, or the first
+queued steering line when one is waiting — and is spent by going out, so an
+attachment can only ever ride once. It is saved with the turn, so a resumed
+session keeps the screenshot the question was about rather than a sentence
+pointing at nothing. Refusals are by name and out loud: a file too large, or
+bytes shhh cannot carry, say which file and why, because an attachment
+dropped quietly is a question the model answers wrong.
+
 ---
 
 ## 13. Step Outline (S-090, S-091)

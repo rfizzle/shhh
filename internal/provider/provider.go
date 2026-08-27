@@ -19,6 +19,10 @@ type Message struct {
 	Content    string
 	ToolCalls  []ToolCall
 	ToolCallID string
+	// Attachments are the non-conversational parts the message carries —
+	// pasted images, files off the clipboard (S-134). Each provider's
+	// converter decides how to put them on the wire; see attachment.go.
+	Attachments []Attachment
 }
 
 type Tool struct {

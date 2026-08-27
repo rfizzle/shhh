@@ -130,10 +130,14 @@ func toGeminiContents(messages []Message) ([]*genai.Content, *genai.Content) {
 				Role:  "user",
 			}
 		case RoleUser:
-			contents = append(contents, &genai.Content{
-				Parts: []*genai.Part{{Text: msg.Content}},
-				Role:  "user",
-			})
+			// Attachments lead, the sentence follows (S-134): inline blobs
+			// for the bytes Gemini reads natively, the shared text form for
+			// the rest.
+			parts := geminiAttachmentParts(msg.Attachments)
+			if msg.Content != "" || len(parts) == 0 {
+				parts = append(parts, &genai.Part{Text: msg.Content})
+			}
+			contents = append(contents, &genai.Content{Parts: parts, Role: "user"})
 		case RoleAssistant:
 			content := &genai.Content{Role: "model"}
 			if msg.Content != "" {
@@ -165,6 +169,23 @@ func toGeminiContents(messages []Message) ([]*genai.Content, *genai.Content) {
 	}
 
 	return contents, systemInstruction
+}
+
+// geminiAttachmentParts carries a user message's attachments as inline data.
+// Gemini takes images and PDFs as blobs; text attachments stay text.
+func geminiAttachmentParts(atts []Attachment) []*genai.Part {
+	var parts []*genai.Part
+	for _, a := range atts {
+		switch a.Kind {
+		case AttachmentImage, AttachmentDocument:
+			parts = append(parts, &genai.Part{
+				InlineData: &genai.Blob{Data: a.Data, MIMEType: a.MediaType},
+			})
+		default:
+			parts = append(parts, &genai.Part{Text: a.AsText()})
+		}
+	}
+	return parts
 }
 
 func toGeminiTools(tools []Tool) []*genai.Tool {

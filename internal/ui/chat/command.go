@@ -85,6 +85,11 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 	}
 	parts := strings.Fields(text)
 	switch {
+	case name == "/paste":
+		// Attachments (S-134). Not idleOnly: staging bytes for the next
+		// message touches nothing the running turn is using.
+		return m.runPaste(parts)
+
 	case name == "/agents":
 		return m.openAgentList()
 
