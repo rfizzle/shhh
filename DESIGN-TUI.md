@@ -424,7 +424,7 @@ anything.
   destinations, the file picker, and `shhh config` (§19a) get the window and
   the filter row for free.
 
-**Three surfaces are not windowed, and each says why.**
+**Two surfaces are not windowed, and each says why.**
 
 - **The plan card's options** (§4d). Four decisions and seven steps do not
   compete for the same rows: the decisions are what you are answering, so they
@@ -435,9 +435,16 @@ anything.
   behind `↓ 4 more` would be a trap rather than a fold. This is the staging
   multi-select specifically; a multi-select that is an ordinary list of
   choices (`/memory forget`, gate checks) windows like any other.
-- **The agent list** (§9a). A fan-out wide enough to overflow the card is
-  itself the problem the screen should be showing, and blocked children stay
-  pinned above.
+
+**The agent list was the third, and is not any more (S-124).** A fan-out wide
+enough to overflow the card is still the problem the screen should be showing,
+but a list the pointer can walk off the bottom of is the worse of the two, and
+the design says what to do when it happens: window it with the selector's
+rules and keep every blocked child above the window. So the manager windows,
+with its head run — the current agent and the blocked children that sort with
+it (§9a) — pinned above the window and off the budget before it is drawn.
+Opening the manager *because* something needs you and then having to scroll to
+find it would undo the reason the list is there.
 
 **What the implementation read (S-123).** The artboard settles the shape; six
 things it does not spell out were decided against it and are recorded here
@@ -500,6 +507,17 @@ choosing quality-gate checks (S-067).
 - `[x]` green (10), `[ ]` gray (241). The confirm hint shows the live
   count. `a` toggles all ↔ none.
 - Zero-selected + enter = no-op with a one-line notice, not a confirm.
+- **A multi-select that is an ordinary list of choices windows** (S-124) —
+  `/memory forget`, the gate's checks — on the selector's own window, with the
+  notice and the key row pinned off the budget first. Staging is the exception
+  above and stays whole.
+- **A marker over a windowed multi-select says how many of the rows it is
+  hiding are ticked**: `↑ 11 more · 2 checked`. This is the one thing the
+  single-select case never had to answer — a single-select loses nothing by
+  scrolling, and a multi-select can scroll the user's own answer off the card.
+  The key row goes on stating the total (`enter apply (3)`), so between them
+  the card says how many are checked and where they went. A run hiding nothing
+  ticked says only what it hid.
 
 ### 4c. Select with optional note
 
@@ -1235,6 +1253,14 @@ the attached view *is* the chat surface, pointed at a child.
   not — its transcript stays and the other agents keep running.
 - The list is a live view — statuses update while it is open, and it opens
   over a running turn like every other surface in §9 (§9f).
+- **A batch too wide for the card scrolls** (S-124, §4a): the head run — the
+  orchestrator and the blocked children sorted under it — is pinned above the
+  window, the rest scroll through the selector's window, and the markers count
+  agents rather than lines, so a child carrying a `waiting approval:` line is
+  two rows and one agent. The list still does not sort its own rows: a sort
+  that happens inside the component is a sort nobody can check against the
+  transcript, so a blocked child the host left below the fold scrolls with the
+  others and the fix is the host's sort.
 
 **Deviation from `ui_kits/cockpit/Agents.html`.** The artboard's manager binds
 kill to `[k]` and adds `[K] kill all`. Both are corrected here: `x`/`X` are what

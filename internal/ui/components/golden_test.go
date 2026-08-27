@@ -11,6 +11,7 @@ package components
 //	go test ./internal/ui/components ./internal/ui/chat -update-golden
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -428,6 +429,100 @@ func TestGolden_Lists(t *testing.T) {
 			})},
 		}
 	})
+}
+
+// TestGolden_WindowedLists captures the two lists the window reached late
+// (§4a, S-124): the multi-select, where what scrolls out of the window can be
+// the user's own answer, and the agent manager, where the blocked child is
+// pinned above the window and never scrolls at all.
+//
+// The multi-select panels are walked to rather than positioned, for the same
+// reason the selector's are: the window is path-dependent, and where the
+// ticked rows ended up relative to it is the whole point of the capture.
+func TestGolden_WindowedLists(t *testing.T) {
+	captureGolden(t, "windowed-lists", "the window on the multi-select and the agent list", listWidths, func(width int) []golden.Panel {
+		memories := func(steps int) *MultiSelect {
+			s := NewMultiSelect("Forget which memories?", goldenMemories())
+			s.MaxLines = 11
+			s.Checked[0], s.Checked[1], s.Checked[15] = true, true, true
+			for i := 0; i < steps; i++ {
+				s.View(width)
+				s.Update(key("down"))
+			}
+			return s
+		}
+		agents := func(mut func(*AgentList)) string {
+			l := &AgentList{Rows: goldenFanout(), MaxLines: 11}
+			if mut != nil {
+				mut(l)
+			}
+			return l.View(width)
+		}
+		return []golden.Panel{
+			{Label: "the head · two ticked rows on screen, one below the fold", View: memories(0).View(width)},
+			{Label: "the tail · the marker carries the ticks that scrolled away", View: memories(17).View(width)},
+			{Label: "the manager · the blocked child is pinned above the window", View: agents(nil)},
+			{Label: "the manager · the pointer at the foot, the blocked child still on the card", View: agents(func(l *AgentList) {
+				for i := 0; i < len(l.Rows); i++ {
+					l.View(width)
+					l.Update(key("down"))
+				}
+			})},
+		}
+	})
+}
+
+// goldenMemories is the 18-entry list `/memory forget` opens over — long
+// enough that the card has to window, and mixed enough to read as memories
+// rather than as rows.
+func goldenMemories() []SelectOption {
+	labels := []string{
+		"prefers table-driven tests for tool packages",
+		"go, not shell, for anything with a loop in it",
+		"the design system is the source of truth for the TUI",
+		"never edit generated files directly",
+		"conventional commits, one story per commit",
+		"the plan directory is scrum, not code",
+		"run the whole suite before saying done",
+		"goldens are regenerated, never hand-edited",
+		"comments say why, the code says what",
+		"the rail is session scope, the transcript is turn scope",
+		"markers count what they hide",
+		"a key that cannot act is not offered",
+		"mono is a first-class palette",
+		"the window follows the pointer and only the pointer",
+		"blocked children sort to the top",
+		"approval cards state what is reversible",
+		"steering is queued, not interrupting",
+		"esc always changes nothing",
+	}
+	opts := make([]SelectOption, 0, len(labels))
+	for _, l := range labels {
+		opts = append(opts, SelectOption{Label: l})
+	}
+	return opts
+}
+
+// goldenFanout is a batch wide enough to overflow the manager: the
+// orchestrator, one child waiting on an answer, and eight more working.
+func goldenFanout() []AgentRow {
+	rows := []AgentRow{
+		{State: AgentCurrent, Name: "orchestrator", Task: "this session", Status: "round 7 · streaming…", Spend: "$0.12"},
+		{State: AgentBlocked, Name: "runner-2", Task: "go test ./...", Answerable: true,
+			Progress: &AgentProgress{State: FanoutBlocked, Tools: 3, Spend: "$0.01"},
+			Note:     "waiting approval: run go test ./internal/agent/..."},
+	}
+	tasks := []string{
+		"docs/loop.md", "internal/agent tests", "survey internal/ui", "apply patch",
+		"internal/tools tests", "README examples", "golden captures", "config schema",
+	}
+	for i, task := range tasks {
+		rows = append(rows, AgentRow{
+			State: AgentRunning, Name: fmt.Sprintf("writer-%d", i+3), Task: task,
+			Progress: &AgentProgress{State: FanoutRunning, Step: i%5 + 1, Steps: 5, Tools: 6, Spend: "$0.02"},
+		})
+	}
+	return rows
 }
 
 // TestGolden_DiffView captures the viewer's three modes (§3): the transcript

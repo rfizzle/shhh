@@ -246,7 +246,7 @@ func TestSelectWindow_ARunThatHidNoOptionKeepsTheBareMarker(t *testing.T) {
 	s.Focus = 1
 	// Push the window down by exactly the rail: the first option stays, so
 	// what went above the fold is the rail alone.
-	s.scroll = 1
+	s.window.scroll = 1
 	view := ansi.Strip(s.View(70))
 	if !strings.Contains(view, "…") {
 		t.Fatalf("a run that hid only a rail still marks that it hid something:\n%s", view)

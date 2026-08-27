@@ -16,6 +16,12 @@ type MultiSelectResult struct {
 // MultiSelect is the checkbox selector (DESIGN-TUI.md §4b): space toggles,
 // a flips all ↔ none, enter applies, esc cancels. Confirming with nothing
 // selected is a no-op with a one-line notice, not a confirm.
+//
+// A multi-select that is an ordinary list of choices — `/memory forget`, the
+// quality gate's checks — windows like any other list once it outgrows its
+// card (S-124, §4a). Staging is the exception the design names and keeps:
+// there you are accounting for every hunk, so hiding four of them behind
+// `↓ 4 more` would be a trap rather than a fold.
 type MultiSelect struct {
 	Title    string
 	Options  []SelectOption
@@ -23,6 +29,10 @@ type MultiSelect struct {
 	Focus    int
 	MaxLines int
 	notice   string
+	// window is the shared sliding window (listwindow.go). A multi-select
+	// owns its own Focus, which is why it did not come along when S-116 gave
+	// the window to the selector.
+	window listWindow
 }
 
 // NewMultiSelect builds a multi-select with nothing checked.
@@ -81,24 +91,71 @@ func (s *MultiSelect) Update(msg tea.KeyMsg) (done bool, result any) {
 
 func (s *MultiSelect) View(width int) string {
 	inner := width - cardFrameWidth
+	// The notice and the key hints are pinned: the list scrolls under them,
+	// so what the card spends on them comes off the list's budget before the
+	// window is drawn (§4a).
+	var tail []string
+	if s.notice != "" {
+		tail = append(tail, warnStyle.Render(clip(s.notice, inner)))
+	}
+	hint := fmt.Sprintf("space toggle · a all/none · enter apply (%d) · esc cancel", s.count())
+	tail = append(tail, hintRows([]string{hint}, width)...)
+	rows := append(s.visibleRows(width, bodyBudget(s.MaxLines, len(tail))), tail...)
+	rows = boundRows(rows, s.MaxLines)
+	return renderCard(s.Title, rows, width)
+}
+
+// visibleRows renders the checkbox list windowed to a body budget, with the
+// markers the window makes necessary. Every option is one row — a
+// multi-select shows no descriptions — and every one of them is something a
+// key can land on, so the markers count rows and options alike here.
+func (s *MultiSelect) visibleRows(width, budget int) []string {
+	inner := width - cardFrameWidth
+	n := len(s.Options)
+	g := listGeometry{
+		n:      n,
+		focus:  s.Focus,
+		height: func(int) int { return 1 },
+		counts: func(int) bool { return true },
+	}
+	lo, hi := s.window.rangeFor(g, budget)
 	var rows []string
-	for i, opt := range s.Options {
+	if lo > 0 {
+		rows = append(rows, listOverflowRow("↑", lo, s.checkedNote(0, lo), width))
+	}
+	for i := lo; i < hi; i++ {
 		box := dimStyle.Render("[ ]")
 		if i < len(s.Checked) && s.Checked[i] {
 			box = addStyle.Render("[x]")
 		}
-		row := box + " " + opt.Label
+		row := box + " " + s.Options[i].Label
 		if i == s.Focus {
 			rows = append(rows, focusRowStyle.Render(clip("❯ ", inner))+clip(row, max(inner-2, 0)))
 		} else {
 			rows = append(rows, "  "+clip(row, max(inner-2, 0)))
 		}
 	}
-	if s.notice != "" {
-		rows = append(rows, warnStyle.Render(clip(s.notice, inner)))
+	if hi < n {
+		rows = append(rows, listOverflowRow("↓", n-hi, s.checkedNote(hi, n), width))
 	}
-	hint := fmt.Sprintf("space toggle · a all/none · enter apply (%d) · esc cancel", s.count())
-	rows = append(rows, hintRows([]string{hint}, width)...)
-	rows = boundRows(rows, s.MaxLines)
-	return renderCard(s.Title, rows, width)
+	return rows
+}
+
+// checkedNote is what a marker adds about the run it is hiding: how many of
+// those rows are ticked. A single-select loses nothing by scrolling, but a
+// multi-select can scroll the user's own answer off the card, and a count
+// that is out of sight is a count that has to be taken on trust (S-124). The
+// key row states the total the same way it always has — `enter apply (3)` —
+// so the two together say how many are checked and where they went.
+func (s *MultiSelect) checkedNote(lo, hi int) string {
+	n := 0
+	for i := lo; i < hi && i < len(s.Checked); i++ {
+		if s.Checked[i] {
+			n++
+		}
+	}
+	if n == 0 {
+		return ""
+	}
+	return fmt.Sprintf("%d checked", n)
 }

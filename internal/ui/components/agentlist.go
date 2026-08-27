@@ -79,6 +79,38 @@ type AgentList struct {
 	Rows     []AgentRow
 	Focus    int
 	MaxLines int
+	// window is the shared sliding window (listwindow.go). A fan-out wide
+	// enough to overflow this card is itself the problem the screen should be
+	// showing, which is why the manager went unwindowed until S-124 — but a
+	// list the pointer can walk off the bottom of is worse than a wide
+	// fan-out, so it scrolls now, on the same code every other list uses.
+	// Blocked children never scroll: they are pinned above the window, so
+	// opening the manager because something needs you always shows you the
+	// thing that does.
+	window listWindow
+}
+
+// split divides the rows into the ones pinned above the window and the ones
+// it scrolls. The pinned run is the head of the list while it is the current
+// agent or a blocked child — which, given the sort the host owes this list
+// (blocked children to the top, below the orchestrator, §9a), is exactly the
+// orchestrator and everyone waiting on an answer. It is the leading run
+// rather than every blocked row anywhere, because the component does not sort
+// its own rows: a sort that happens in here is a sort nobody can check
+// against the transcript, and a blocked child that ended up below the fold is
+// a host that did not sort rather than a row this one should move.
+func (l *AgentList) split() (pinned, scrolling []int) {
+	i := 0
+	for ; i < len(l.Rows); i++ {
+		if s := l.Rows[i].State; s != AgentCurrent && s != AgentBlocked {
+			break
+		}
+		pinned = append(pinned, i)
+	}
+	for ; i < len(l.Rows); i++ {
+		scrolling = append(scrolling, i)
+	}
+	return pinned, scrolling
 }
 
 // focused is the row the keys act on.
@@ -219,13 +251,59 @@ func (l *AgentList) tally() string {
 	return stateTally(states)
 }
 
+// visibleRows renders the scrolling half of the list windowed to a body
+// budget, with the markers the window makes necessary. An agent is one row
+// plus the line under it that says what it is waiting for or why it failed,
+// and every agent is a row the pointer can land on, so the markers count
+// agents rather than lines.
+func (l *AgentList) visibleRows(width, budget int, scrolling []int) []string {
+	inner := width - cardFrameWidth
+	n := len(scrolling)
+	focus := -1
+	for pos, i := range scrolling {
+		if i == l.Focus {
+			focus = pos
+		}
+	}
+	g := listGeometry{
+		n:     n,
+		focus: focus,
+		height: func(pos int) int {
+			if l.Rows[scrolling[pos]].Note != "" {
+				return 2
+			}
+			return 1
+		},
+		counts: func(int) bool { return true },
+	}
+	lo, hi := l.window.rangeFor(g, budget)
+	var rows []string
+	if lo > 0 {
+		rows = append(rows, listOverflowRow("↑", lo, "", width))
+	}
+	for pos := lo; pos < hi; pos++ {
+		i := scrolling[pos]
+		rows = append(rows, l.Rows[i].render(inner, i == l.Focus)...)
+	}
+	if hi < n {
+		rows = append(rows, listOverflowRow("↓", n-hi, "", width))
+	}
+	return rows
+}
+
 func (l *AgentList) View(width int) string {
 	inner := width - cardFrameWidth
+	// The key hints and the pinned blocked children come off the budget
+	// before the window is drawn: the list scrolls under them, and the window
+	// may never buy itself a row (§4a).
+	hints := hintRows(l.hints(), width)
+	pinned, scrolling := l.split()
 	var rows []string
-	for i, r := range l.Rows {
-		rows = append(rows, r.render(inner, i == l.Focus)...)
+	for _, i := range pinned {
+		rows = append(rows, l.Rows[i].render(inner, i == l.Focus)...)
 	}
-	rows = append(rows, hintRows(l.hints(), width)...)
+	rows = append(rows, l.visibleRows(width, bodyBudget(l.MaxLines, len(hints)+len(rows)), scrolling)...)
+	rows = append(rows, hints...)
 	rows = boundRows(rows, l.MaxLines)
 	chrome := cardChrome{title: "Agents"}
 	if tally := l.tally(); tally != "" {
