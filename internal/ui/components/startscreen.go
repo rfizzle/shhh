@@ -62,6 +62,12 @@ type StartScreen struct {
 	// suggestions once the reader starts typing, because a key nothing
 	// accepts is not an offer.
 	Hint string
+	// Nav is the second key line: how to move between the prompt and the
+	// transcript (S-115, §7a). It outlives the typing dismissal that takes
+	// Hint, because those keys outlive it too — the wheel, pgup and ctrl+e
+	// work with a half-written draft in the box, which is the whole point of
+	// them.
+	Nav string
 }
 
 // suggestionGutter is the two columns the ❯ pointer occupies. Focus is a
@@ -91,6 +97,12 @@ func (s StartScreen) View(width int) string {
 	}
 	if s.Hint != "" {
 		rows = append(rows, "", hintStyle.Render(clip(s.Hint, width)))
+	}
+	if s.Nav != "" {
+		if s.Hint == "" {
+			rows = append(rows, "")
+		}
+		rows = append(rows, hintStyle.Render(clip(s.Nav, width)))
 	}
 	return strings.Join(rows, "\n")
 }

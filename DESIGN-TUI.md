@@ -596,6 +596,76 @@ renderers, and holding their keys here is what lets the input keep `v`, `u`,
 `r`, `c`, `e` and `p` for typing. `ctrl+e` opens on the failure that ended a
 turn where there is one, rather than on the close rows after it.
 
+### 7a. Where the keyboard is (S-115)
+
+There are two panes and one keyboard, and every rule here follows from
+saying which pane has it.
+
+**The input's rule: while the prompt has the keyboard, the transcript hears
+no keys at all.** Not the arrow keys, not the pager letters, nothing. A
+viewport handed every keystroke scrolls the history out from under the
+sentence being written — bubbles binds `j`, `k`, `u`, `d`, `f`, `b` and the
+spacebar by default, so "just find the buffer" paged the transcript four
+times on its way into the box. Anything the transcript can be moved by is
+therefore a gesture or a key a draft cannot produce.
+
+**The transfers**, and there are only these:
+
+| | |
+|---|---|
+| `ctrl+e` | reading mode, cursor on the last selectable row |
+| `pgup` / `pgdn` | reading mode, paged in that direction |
+| `↑` on an empty draft | reading mode — *only* where the input history has nothing left to recall |
+| wheel | scrolls, and transfers nothing |
+
+`↑` belongs to the input history wherever there is one; that convention is
+older than this surface, and `pgup` is the transfer for a session that has
+one. `pgdn` with nothing below is not a transfer either: the bottom of the
+transcript is where the prompt already stands.
+
+The wheel is the exception that proves the rule. It reads, and reading is not
+a decision: the draft keeps the keyboard, so a scroll mid-sentence never
+swallows the next keystroke. It reaches the full-screen diff (§3c) and review
+mode (§16a) when those own the screen, because the transcript behind them is
+not what is being looked at. Mouse reporting costs the terminal's own
+click-drag selection, which is a real trade and so a real setting: `/ui mouse
+off` gives it back and leaves the keyboard as the only way through.
+
+**Reading mode is focus mode**, not a second, lesser one. A pager key that
+opened its own surface would be a fourth list implementation by another name,
+and the row cursor, the `[enter]` expansions and the keys a close row or a
+failure offers all have to come with it. A transcript with rows but nothing
+expandable in them opens without a cursor — prose is read, not navigated —
+and `j`/`k` are a line of scroll there. Only an empty transcript still
+refuses, because there is nothing to open onto.
+
+**The ways back are `esc` and typing.** Esc is the safe answer everywhere
+(invariant 3). Typing is the one a reader reaches for without thinking, so
+any printable character that is not reading mode's own hands the keyboard
+back *and lands in the draft* — the keystroke is not spent on the exit. The
+letters reading mode keeps are its own work: `j`/`k`, `q`, and a row's offer
+keys while the row under the cursor actually offers them. Where it does not,
+`v` is a letter again.
+
+**The rail says which pane has it.** The line under the header is a plain
+divider while the input does and carries the transcript's name when the
+transcript does:
+
+```
+──────────────────────────────────────────────── READING 4/12 ─
+```
+
+The word carries the meaning and the accent is decoration (invariant 1); too
+narrow for the word, it goes back to a divider rather than clipping it, since
+the hint bar under the transcript says the same thing in full. The two panes
+are never both dressed as the active one: reading mode replaces the framed
+input (§12) with its hint bar, so the frame's own accent is absent exactly
+when the rail is present.
+
+The start screen (§17c) is where all of this is introduced, on a second key
+line under the suggestions. That line outlives the typing that dismisses the
+suggestions, because these keys outlive it too.
+
 ---
 
 ## 8. Vitals (session state)
@@ -1806,6 +1876,7 @@ Some things worth doing first:
     then it reports back
 
 [↑↓] choose · [enter] start · or just type what you want
+[pgup] or [ctrl+e] read the transcript · [esc] or type to come back · [ctrl+k] palette
 ```
 
 - The header line is what shhh already knows: path, toolchain, branch, dirty
@@ -1830,6 +1901,10 @@ Some things worth doing first:
 - Typing anything dismisses the list — the offers and their keys go, the facts
   stay — because the input owns every ordinary key and `↑` belongs to the
   input history again the moment there is a draft.
+- **The second key line is navigation** (§7a), and it outlives that dismissal,
+  because its keys do: the wheel, `pgup` and `ctrl+e` all work with a
+  half-written draft in the box. This is the one screen every user sees, so it
+  is where the two panes are introduced.
 - The screen is spent by the first thing the session says to the model, or by
   a conversation loaded into it. `/clear` after either does not bring it back;
   `/clear` on a session that never said anything does, because that session

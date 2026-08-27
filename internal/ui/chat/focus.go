@@ -72,9 +72,20 @@ func (m Model) expandableIndices() []int {
 // the failure that ended the turn, when there is one. The close rows that
 // follow a broken turn are chrome about it (S-098); the row that broke it is
 // the one holding the way out (S-106), so that is where the cursor belongs.
+//
+// A transcript with rows but nothing expandable in them still opens, without
+// a cursor (S-115): what is on screen is prose, and prose is read rather than
+// navigated. Refusing there was the old answer and it left the reader in the
+// input box with nowhere to go. An empty transcript is the one case with
+// nothing to open onto, and it still says so.
 func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
-	idxs := m.expandableIndices()
-	if len(idxs) == 0 {
+	if len(*m.entries()) == 0 {
+		if m.startScreenShowing() {
+			// First contact (§17c) is the one screen that is visibly empty,
+			// and it is the screen that advertises these keys. A notice here
+			// would be noise and would spend the screen to say it (S-115).
+			return m, nil
+		}
 		const notice = "Nothing to focus yet — tool and command rows become expandable."
 		if m.attachedTo != "" {
 			m.noteChild(m.attachedTo, notice)
@@ -86,6 +97,13 @@ func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	m.enterSurface(stateFocus)
+	idxs := m.expandableIndices()
+	if len(idxs) == 0 {
+		m.focusIdx = -1
+		m.invalidateRenderCache()
+		m.viewport.SetContent(m.renderHistory())
+		return m, nil
+	}
 	m.focusIdx = idxs[len(idxs)-1]
 	es := *m.entries()
 	for i := len(idxs) - 1; i >= 0; i-- {
@@ -127,10 +145,7 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		// The offers on a turn's changeset row (S-098, §16). They are
 		// handled here rather than globally, so the input keeps both keys.
-		if e, ok := m.focusedClose(); ok {
-			if e.close.Changes == nil {
-				return m, nil
-			}
+		if e, ok := m.focusedClose(); ok && e.close.Changes != nil {
 			if msg.String() == reviewKey {
 				// Review mode is a takeover opened from the row (S-099);
 				// esc comes back here, to the row that offered it.
@@ -141,7 +156,9 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			// stays on the row that offered it and esc comes back here.
 			return m.undoTurn(e.turn, nil)
 		}
-		return m, nil
+		// The row under the cursor does not offer this key, so it is a
+		// character like any other and goes back to the draft (S-115).
+		return m.returnToInput(msg)
 	case failRetryKey, failCompactKey, failKeyKey, failProviderKey:
 		// A provider failure's own offers (S-106, §17a), and a dropped
 		// stream's (S-107). Like the changeset row's, they are handled here
@@ -154,6 +171,12 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if next, cmd, claimed := m.failureKey(msg.String()); claimed {
 			return next, cmd
 		}
+		return m.returnToInput(msg)
+	case "pgup":
+		m.scrollPage(-1)
+		return m, nil
+	case "pgdown":
+		m.scrollPage(1)
 		return m, nil
 	case "enter":
 		es := *m.entries()
@@ -186,7 +209,14 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.refreshFocusView()
 		return m, nil
 	}
-	// Everything else (PgUp/PgDn, mouse wheel) still scrolls the viewport.
+	// Typing is the other way out (S-115, §7a). The letters above are focus
+	// mode's own and stay its own; every other printable character hands the
+	// keyboard back and lands in the draft, so a reader who forgot which
+	// pane they were in loses a mode rather than a sentence.
+	if typedRune(msg) {
+		return m.returnToInput(msg)
+	}
+	// Anything left is chrome — the viewport keeps it.
 	var cmd tea.Cmd
 	m.viewport, cmd = m.viewport.Update(msg)
 	return m, cmd
@@ -216,9 +246,15 @@ func (m Model) exitFocusMode() (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// moveFocus selects the next (+1) or previous (-1) expandable row.
+// moveFocus selects the next (+1) or previous (-1) expandable row. With
+// nothing to select the transcript is being read rather than navigated, so
+// the key is a line of scroll instead (S-115).
 func (m *Model) moveFocus(dir int) {
 	idxs := m.expandableIndices()
+	if len(idxs) == 0 {
+		m.scrollLines(dir)
+		return
+	}
 	for pos, idx := range idxs {
 		if idx == m.focusIdx {
 			if next := pos + dir; next >= 0 && next < len(idxs) {
@@ -235,6 +271,11 @@ func (m *Model) moveFocus(dir int) {
 func (m *Model) refreshFocusView() {
 	content, start, count := m.renderFocusHistory()
 	m.viewport.SetContent(content)
+	if m.focusIdx < 0 {
+		// No cursor to keep on screen: where the reader scrolled to is where
+		// they meant to be (S-115).
+		return
+	}
 	switch {
 	case start < m.viewport.YOffset:
 		m.viewport.SetYOffset(start)
@@ -291,8 +332,18 @@ func gutterPrefix(block string, selected bool) string {
 	return strings.Join(lines, "\n")
 }
 
-// renderFocusHint replaces the input area while focus mode is active.
+// renderFocusHint replaces the input area while focus mode is active. It is
+// the other half of the reading rail (S-115, §7a): the rail says which pane
+// has the keyboard, this says what the keyboard does there — including both
+// ways back, since esc is the safe answer and typing is the one a reader
+// reaches for without thinking (invariant 3).
 func (m Model) renderFocusHint() string {
+	if m.focusIdx < 0 {
+		// Nothing to select: the surface is a pager, and offering a row key
+		// there would be an offer nothing accepts.
+		hint := systemMsgStyle.Render("reading · j/k scroll · pgup/pgdn · esc or type returns")
+		return clipRow(hint, m.contentWidth()) + strings.Repeat("\n", inputHeight-1)
+	}
 	keys := "enter expand/collapse"
 	// On a turn's close rows there is nothing to expand; what the row offers
 	// is what the hint says (S-098).
@@ -305,6 +356,6 @@ func (m Model) renderFocusHint() string {
 	if e, ok := m.focusedRoundPause(); ok {
 		keys = roundPauseHint(e.pause)
 	}
-	hint := systemMsgStyle.Render("focus · j/k select row · " + keys + " · esc back")
-	return hint + strings.Repeat("\n", inputHeight-1)
+	hint := systemMsgStyle.Render("reading · j/k row · pgup/pgdn · " + keys + " · esc or type returns")
+	return clipRow(hint, m.contentWidth()) + strings.Repeat("\n", inputHeight-1)
 }

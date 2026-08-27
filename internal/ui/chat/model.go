@@ -354,8 +354,14 @@ type Model struct {
 	// rail's PLAN block and answers /plan. Nil when no plan is running.
 	planRun *planRun
 	// focusIdx is the transcript index of the row selected in focus mode
-	// (S-076).
+	// (S-076); -1 while the transcript is being read with nothing on it to
+	// select (S-115).
 	focusIdx int
+	// mouseOff turns terminal mouse reporting off (/ui mouse). The zero
+	// value is reporting on, which is what every host wants: the wheel
+	// scrolls the transcript. Off is for the reader who would rather keep
+	// the terminal's own click-drag selection (S-115, §7a).
+	mouseOff bool
 	// containment wraps assistant commands in OS-level process containment
 	// when a mechanism is available (S-062).
 	containment Containment
@@ -693,6 +699,12 @@ func (m Model) Init() tea.Cmd {
 	if m.subagents != nil {
 		cmds = append(cmds, listenSubagents(m.subagents.Events()))
 	}
+	// Mouse reporting is asked for by the model rather than by each host's
+	// program options, so every surface that runs this Model gets the wheel
+	// and /ui mouse has one thing to flip (S-115, §7a).
+	if !m.mouseOff {
+		cmds = append(cmds, mouseCmd(true))
+	}
 	return tea.Batch(cmds...)
 }
 
@@ -718,6 +730,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport.SetContent(m.renderHistory())
 		}
 		return m, nil
+
+	case tea.MouseMsg:
+		// The wheel scrolls whatever is showing content — the transcript, or
+		// the full-screen diff and review surfaces that take the screen from
+		// it. It never reaches the textarea, which is what made a scroll
+		// gesture over the conversation move the three-line prompt box
+		// (S-115, §7a).
+		if m.mouseOff {
+			return m, nil
+		}
+		return m.updateMouse(msg)
 
 	case tea.KeyMsg:
 		if m.state == stateDiffFull {
@@ -848,6 +871,19 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.inputLive() {
 				return m.enterFocusMode()
 			}
+		case "pgup", "pgdown":
+			// The dedicated pager keys hand the keyboard to the transcript
+			// and page it (S-115, §7a). They are the one transfer a reader
+			// finds without being told, and no draft can produce them — which
+			// is why the letters bubbles binds to the same job (j/k/u/d/f/b
+			// and the spacebar) are not offered here at all.
+			if m.inputLive() {
+				dir := -1
+				if msg.String() == "pgdown" {
+					dir = 1
+				}
+				return m.enterReading(dir)
+			}
 		case "esc":
 			// With the completion menu open, esc only dismisses the menu; the
 			// draft survives and further typing re-opens it (S-078).
@@ -894,6 +930,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.input.SetValue(m.inputHistory[m.historyIdx])
 				}
 				return m, nil
+			}
+			// ↑ on an empty draft with no history to recall is the last thing
+			// the input can do with the key, so it hands the keyboard to the
+			// transcript instead of doing nothing (S-115, §7a). Where there
+			// is history the key stays the history's — that convention is
+			// older than this surface — and pgup is the transfer.
+			if m.inputLive() && len(m.inputHistory) == 0 &&
+				strings.TrimSpace(m.input.Value()) == "" {
+				return m.enterReading(-1)
 			}
 		case "down":
 			if m.completionActive() {
@@ -1156,9 +1201,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	var cmd tea.Cmd
-	m.viewport, cmd = m.viewport.Update(msg)
-	cmds = append(cmds, cmd)
+	// The viewport's own pager bindings are bubbles' defaults — j, k, u, d,
+	// f, b and the spacebar — so handing it every keystroke scrolled the
+	// history out from under any draft containing those letters. While the
+	// input owns the keyboard the transcript hears no keys at all: it is
+	// moved by the wheel, by pgup/pgdn and by focus mode, never by a
+	// character the sentence wanted (S-115, §7a).
+	if _, isKey := msg.(tea.KeyMsg); !isKey {
+		var cmd tea.Cmd
+		m.viewport, cmd = m.viewport.Update(msg)
+		cmds = append(cmds, cmd)
+	}
 	m.atBottom = m.viewport.AtBottom()
 
 	return m, tea.Batch(cmds...)
@@ -1236,7 +1289,10 @@ func (m Model) View() string {
 	}
 	header += strings.Repeat(" ", max(0, contentWidth-lipgloss.Width(header)))
 
-	topDivider := dividerStyle(contentWidth)
+	// The line under the header says which pane has the keyboard (S-115,
+	// §7a): a plain divider while the input does, the transcript's own rail
+	// while focus mode does.
+	topDivider := m.readingRail(contentWidth)
 
 	var body string
 	switch {
@@ -2325,8 +2381,10 @@ func helpText() string {
                  bare /mode opens an interactive picker
   /mode why      Show the latest auto-mode denial's reason
   /stats         Context occupancy breakdown and cumulative session spend
-  /ui            Activity feed density and pane layout: /ui verbosity <low|normal|high>
-                 (low hides counts, med collapses rows, high expands rows)
+  /ui            Activity feed density, pane layout, monochrome and mouse:
+                 /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>
+                 (low hides counts, med collapses rows, high expands rows;
+                  mouse off gives the terminal its click-drag selection back)
   /sandbox       Containment status and container sandboxes (doctor|list|status|destroy <id>|prune)
   /evidence      Tool-output evidence store: reduction stats and size (purge to clear)
   /gate          Quality gate: run [suite] starts the project's checks in the background, result shows the verdict
@@ -2371,17 +2429,22 @@ Keys:
   Shift+Tab      Cycle the permission mode
                  (while the agent is working, Enter queues a steering message
                   that joins the conversation before the next model request)
-  Up/Down        Recall previous inputs (when the input is empty)
-  Ctrl+E         Focus mode: select tool/command/diff rows (j/k), expand/collapse (Enter), Esc back
+  Up/Down        Recall previous inputs (when the input is empty; with no
+                 history left to recall, Up reads the transcript instead)
+  Ctrl+E         Reading mode: select tool/command/diff rows (j/k), expand/collapse (Enter),
+                 pgup/pgdn page, Esc or typing returns to the prompt
                  (Enter on an edit row cycles collapsed → expanded → full-screen diff;
-                  opens over a running turn, which keeps streaming underneath)
+                  opens over a running turn, which keeps streaming underneath;
+                  a transcript with nothing expandable opens as a plain pager)
   Ctrl+A         Agent manager: enter attaches to an agent's session, x cancels
                  its turn, X kills it; attached, typing steers the agent,
                  Shift+Tab sets its mode (clamped), Esc detaches
   Esc            Clear the input
   Ctrl+C         Cancel response / clear input / quit
   Ctrl+D         Quit
-  PgUp/PgDn      Scroll history
+  PgUp/PgDn      Hand the keyboard to the transcript and page it
+  Wheel          Scroll the transcript (or the full-screen diff / review),
+                 leaving the draft and the keyboard where they are
   y/n/a          Approval prompts: allow / deny / always allow this session`)
 }
 

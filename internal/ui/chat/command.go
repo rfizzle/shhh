@@ -161,6 +161,19 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 			return picked, cmd
 		}
 
+	case name == "/ui":
+		// /ui mouse flips the terminal's own reporting, so it is the one /ui
+		// setting that needs a command back to the program rather than just a
+		// note in the transcript (S-115, §7a).
+		was := m.mouseOff
+		result := m.uiCommand(parts)
+		next, cmd := m.systemNotice(result)
+		nm, ok := next.(Model)
+		if !ok || nm.mouseOff == was {
+			return next, cmd
+		}
+		return nm, tea.Batch(cmd, mouseCmd(!nm.mouseOff))
+
 	case text == "/branches":
 		// Bare /branches opens the branch picker (S-080); a session with no
 		// branch family falls through.

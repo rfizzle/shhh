@@ -597,3 +597,14 @@ func sideCell(l *diff.Line, width int, oldSide bool) string {
 	text := fmt.Sprintf("%4d  %s", no, strings.ReplaceAll(l.Text, "\t", "    "))
 	return style.Render(clip(text, width))
 }
+
+// Scroll moves the full-screen body by delta rows, clamped to its bounds. It
+// is what the host routes a wheel gesture to (S-115): the wheel reads, so it
+// never changes the mode the way [enter] and [esc] do. Collapsed and expanded
+// views have nothing to scroll and ignore it.
+func (d *DiffView) Scroll(delta int) {
+	if d.Mode != DiffFull || delta == 0 {
+		return
+	}
+	d.scrollTo(d.Offset + delta)
+}

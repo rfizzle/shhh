@@ -31,6 +31,10 @@ var (
 	updateNoticeStyle   lipgloss.Style
 	// Focus-mode gutter pointer on the selected transcript row (§7).
 	focusMarkerStyle lipgloss.Style
+	// The reading rail under the header, which says the transcript has the
+	// keyboard rather than the input (S-115, §7a).
+	readingLabelStyle lipgloss.Style
+	readingRuleStyle  lipgloss.Style
 	// Step outline (S-090, §13): the header's title, ordinal, faint rule and
 	// stats, plus one style per state glyph — done, failed, running, queued.
 	stepTitleStyle     lipgloss.Style
@@ -80,6 +84,7 @@ func applyPalette() {
 	stepRunStyle = lipgloss.NewStyle().Foreground(p.Spin)
 
 	applyFrameStyles(p)
+	applyNavigateStyles(p)
 	applyCompleteStyles(p)
 	applyInspectorStyles(p)
 }

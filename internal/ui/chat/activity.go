@@ -336,10 +336,11 @@ func (m Model) runningCommandRow(width int) string {
 	return row.View(width)
 }
 
-// uiCommand handles /ui: the activity feed's verbosity and mono conformance.
+// uiCommand handles /ui: the activity feed's verbosity, mono conformance and
+// terminal mouse reporting.
 func (m *Model) uiCommand(parts []string) string {
 	if len(parts) == 1 {
-		return fmt.Sprintf("Activity feed verbosity: %s.\nMonochrome: %s.\nLayout: %s.\nUsage: /ui verbosity <low|normal|high> · /ui mono <on|off>", m.verbosity, monoStatus(), m.inspectorStatus())
+		return fmt.Sprintf("Activity feed verbosity: %s.\nMonochrome: %s.\nMouse reporting: %s.\nLayout: %s.\nUsage: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>", m.verbosity, monoStatus(), m.mouseStatus(), m.inspectorStatus())
 	}
 	switch parts[1] {
 	case "verbosity":
@@ -358,8 +359,10 @@ func (m *Model) uiCommand(parts []string) string {
 		return fmt.Sprintf("Activity feed verbosity set to %s.", v)
 	case "mono":
 		return m.monoCommand(parts)
+	case "mouse":
+		return m.mouseCommand(parts)
 	}
-	return "Usage: /ui verbosity <low|normal|high> · /ui mono <on|off>"
+	return "Usage: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>"
 }
 
 // monoStatus describes the current monochrome state, naming the environment

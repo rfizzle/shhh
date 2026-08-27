@@ -714,3 +714,14 @@ func (v *ReviewView) footerRows(width int) []string {
 	}
 	return rows
 }
+
+// Scroll moves the hunk pane by delta rows. The offset is clamped where it is
+// read, so an overshoot here settles at the end of the pane rather than
+// scrolling into nothing. It is the wheel's entry point (S-115), which is why
+// it moves the pane and never the file or hunk selection.
+func (v *ReviewView) Scroll(delta int) {
+	v.Offset += delta
+	if v.Offset < 0 {
+		v.Offset = 0
+	}
+}

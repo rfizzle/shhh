@@ -144,7 +144,8 @@ func (m Model) startAction() string {
 func (m Model) renderStartScreen(width int) string {
 	screen, _ := m.startScreen()
 	if !m.startChoosing() {
-		// Typing dismisses the list, not the facts (§17c).
+		// Typing dismisses the list, not the facts (§17c) — and not the
+		// navigation line, whose keys are still live (S-115).
 		screen.Suggestions, screen.Lead, screen.Hint = nil, "", ""
 	}
 	return screen.View(width)
@@ -165,6 +166,11 @@ func (m Model) startScreen() (components.StartScreen, []string) {
 		Suggestions: suggestions,
 		Focus:       min(max(m.startFocus, 0), max(len(suggestions)-1, 0)),
 		Hint:        "[↑↓] choose · [enter] start · or just type what you want",
+		// The navigation line survives the typing dismissal above, because
+		// these keys survive it: the wheel, pgup and ctrl+e all work with a
+		// half-written draft in the box (S-115, §7a). This is the one screen
+		// every user sees, so it is where the two panes are introduced.
+		Nav: "[pgup] or [ctrl+e] read the transcript · [esc] or type to come back · [ctrl+k] palette",
 	}, actions
 }
 
