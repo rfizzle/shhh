@@ -15,10 +15,70 @@ var errTest = errors.New("test error")
 func drainStream(m GenerateModel, events int) GenerateModel {
 	for i := 0; i < events; i++ {
 		cmd := m.stream.waitForEvent()
+		model, next := m.Update(cmd())
+		m = settle(model.(GenerateModel), next)
+	}
+	return m
+}
+
+// settle runs cmd far enough to deliver any stream the surface has asked for
+// and not waited on (S-132). Opening a stream is a round trip that happens
+// off the event loop now, so a test that wants the stream open has to let
+// that answer come back; everything else the cmd carries is left alone.
+// drainStreamPending drains the stream and stops at the point the surface has
+// asked for its next one and not yet been answered — the frame the reader
+// sees while that request is out.
+func drainStreamPending(m GenerateModel, events int) GenerateModel {
+	for i := 0; i < events; i++ {
+		cmd := m.stream.waitForEvent()
 		model, _ := m.Update(cmd())
 		m = model.(GenerateModel)
 	}
 	return m
+}
+
+// step delivers one message and settles whatever it asked for, which is what
+// the program does between two frames.
+func step(m GenerateModel, msg tea.Msg) GenerateModel {
+	model, cmd := m.Update(msg)
+	return settle(model.(GenerateModel), cmd)
+}
+
+func settle(m GenerateModel, cmd tea.Cmd) GenerateModel {
+	// Only a surface that is waiting on an open has anything to settle.
+	// Running a cmd is not free — the one that waits on the next token
+	// takes it — so nothing else here is touched.
+	if !m.opening || cmd == nil {
+		return m
+	}
+	msg := openMsg(cmd)
+	if msg == nil {
+		return m
+	}
+	model, next := m.Update(msg)
+	return settle(model.(GenerateModel), next)
+}
+
+// openMsg runs cmd far enough to find the answer to a stream the surface
+// asked for and did not wait on, and reports nothing if cmd holds no such
+// answer.
+func openMsg(cmd tea.Cmd) tea.Msg {
+	if cmd == nil {
+		return nil
+	}
+	switch msg := cmd().(type) {
+	case tea.BatchMsg:
+		for _, c := range msg {
+			if found := openMsg(c); found != nil {
+				return found
+			}
+		}
+	case explainReadyMsg:
+		return msg
+	case streamReadyMsg:
+		return msg
+	}
+	return nil
 }
 
 func TestGenerate_StartsInStreamingPhase(t *testing.T) {
@@ -88,8 +148,7 @@ func TestGenerate_SelectCopyReturnsResult(t *testing.T) {
 	m := NewGenerateModel(events, noopCancel, nil, nil, nil, "")
 	m = drainStream(m, 2)
 
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'c'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'c'}})
 
 	r := m.Result()
 	if r.Action != ActionCopy {
@@ -105,8 +164,7 @@ func TestGenerate_SelectCancelReturnsResult(t *testing.T) {
 	m := NewGenerateModel(events, noopCancel, nil, nil, nil, "")
 	m = drainStream(m, 2)
 
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyEscape})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyEscape})
 
 	r := m.Result()
 	if r.Action != ActionCancel {
@@ -122,8 +180,7 @@ func TestGenerate_CancelDuringStreamQuitsImmediately(t *testing.T) {
 
 	// Receive token
 	cmd := m.stream.waitForEvent()
-	model, _ := m.Update(cmd())
-	m = model.(GenerateModel)
+	m = step(m, cmd())
 
 	// Press Esc during stream
 	model, quitCmd := m.Update(tea.KeyMsg{Type: tea.KeyEscape})
@@ -173,8 +230,7 @@ func TestGenerate_StripsMarkdownBeforeActionBar(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Command should be stripped by the time action bar appears
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyEnter})
 
 	if m.Result().Command != "find . -name '*.log'" {
 		t.Errorf("expected stripped command, got %q", m.Result().Command)
@@ -187,10 +243,8 @@ func TestGenerate_ArrowsAreNotNavigation(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// The bar has no cursor: an arrow changes nothing, and enter still runs.
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRight})
-	m = model.(GenerateModel)
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRight})
+	m = step(m, tea.KeyMsg{Type: tea.KeyEnter})
 
 	if m.Result().Action != ActionRun {
 		t.Errorf("expected ActionRun after arrow+enter, got %v", m.Result().Action)
@@ -203,8 +257,7 @@ func TestGenerate_ReviseOpensTextInput(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Press 'r' to revise
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 
 	if m.Phase() != phaseRevise {
 		t.Errorf("expected phaseRevise, got %v", m.Phase())
@@ -217,12 +270,10 @@ func TestGenerate_ReviseEscReturnsToAction(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Enter revise
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 
 	// Press Esc to cancel revision
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyEscape})
 
 	if m.Phase() != phaseAction {
 		t.Errorf("expected phaseAction after Esc, got %v", m.Phase())
@@ -235,13 +286,11 @@ func TestGenerate_ReviseSubmitWithoutStreamFuncQuits(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Enter revise
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 
 	// Type feedback
 	for _, r := range "add -la flag" {
-		model, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
-		m = model.(GenerateModel)
+		m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
 	}
 
 	// Submit — no newStream func, so it falls back to quit
@@ -271,12 +320,10 @@ func TestGenerate_ReviseEmptyIgnored(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Enter revise
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 
 	// Submit empty
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyEnter})
 
 	if m.Phase() != phaseRevise {
 		t.Errorf("expected to stay in phaseRevise on empty submit, got %v", m.Phase())
@@ -288,8 +335,7 @@ func TestGenerate_ReviseViewShowsFeedbackPrompt(t *testing.T) {
 	m := NewGenerateModel(events, noopCancel, nil, nil, nil, "")
 	m = drainStream(m, 2)
 
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 
 	view := m.View()
 	if !strings.Contains(view, "Feedback") {
@@ -365,16 +411,13 @@ func TestGenerate_ReviseAppendsFeedbackToMessages(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Enter revise
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 
 	// Type and submit feedback
 	for _, r := range "add -la" {
-		model, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
-		m = model.(GenerateModel)
+		m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
 	}
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyEnter})
 
 	msgs := m.Messages()
 	if len(msgs) != 4 {
@@ -401,10 +444,8 @@ func TestGenerate_ReviseEscDoesNotAppendMessage(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Enter revise then cancel
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
-	m = model.(GenerateModel)
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
+	m = step(m, tea.KeyMsg{Type: tea.KeyEscape})
 
 	msgs := m.Messages()
 	if len(msgs) != 3 {
@@ -420,8 +461,8 @@ func mockNewStream(tokens ...string) NewStreamFunc {
 
 func typeKeys(m GenerateModel, s string) GenerateModel {
 	for _, r := range s {
-		model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
-		m = model.(GenerateModel)
+		model, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+		m = settle(model.(GenerateModel), cmd)
 	}
 	return m
 }
@@ -436,8 +477,7 @@ func TestGenerate_ReviseRestreamsWithNewResponse(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Enter revise, type feedback, submit
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 	m = typeKeys(m, "add -la")
 	model, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m = model.(GenerateModel)
@@ -450,6 +490,10 @@ func TestGenerate_ReviseRestreamsWithNewResponse(t *testing.T) {
 	if cmd == nil {
 		t.Fatal("expected Init cmd from new stream")
 	}
+
+	// The stream is asked for and not waited on (S-132), so let the open
+	// come back before draining what it opened.
+	m = settle(m, cmd)
 
 	// Drain the new stream (token + done)
 	m = drainStream(m, 2)
@@ -472,16 +516,13 @@ func TestGenerate_ReviseUpdatesCommandInResult(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Revise
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 	m = typeKeys(m, "add -la")
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyEnter})
 	m = drainStream(m, 2)
 
 	// Now select Run — result should have the NEW command
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyEnter})
 
 	if m.Result().Command != "ls -la" {
 		t.Errorf("expected revised command 'ls -la', got %q", m.Result().Command)
@@ -498,11 +539,9 @@ func TestGenerate_ReviseMessagesAccumulate(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Revise
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 	m = typeKeys(m, "add -la")
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyEnter})
 
 	// After submit, before re-stream completes: sys, user, assistant("ls"), user("add -la")
 	msgs := m.Messages()
@@ -531,11 +570,9 @@ func TestGenerate_ReviseActionBarReappearsAfterRestream(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Revise
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 	m = typeKeys(m, "fix it")
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyEnter})
 	m = drainStream(m, 2)
 
 	view := m.View()
@@ -556,14 +593,14 @@ func TestGenerate_ReviseStreamErrorQuitsWithError(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Revise
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 	m = typeKeys(m, "try again")
 	model, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m = model.(GenerateModel)
 
-	// The cmd carries the error as a reviseErrMsg
-	model, quitCmd := m.Update(cmd())
+	// The stream is opened off the event loop now (S-132), so the failure is
+	// the answer to that open rather than something the keystroke returned.
+	model, quitCmd := m.Update(openMsg(cmd))
 	m = model.(GenerateModel)
 
 	if m.Phase() != phaseDone {
@@ -584,8 +621,7 @@ func TestGenerate_EditOpensTextInput(t *testing.T) {
 	m := NewGenerateModel(events, noopCancel, nil, nil, nil, "")
 	m = drainStream(m, 2)
 
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
 
 	if m.Phase() != phaseEdit {
 		t.Errorf("expected phaseEdit, got %v", m.Phase())
@@ -597,8 +633,7 @@ func TestGenerate_EditPrePopulatesCommand(t *testing.T) {
 	m := NewGenerateModel(events, noopCancel, nil, nil, nil, "")
 	m = drainStream(m, 2)
 
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
 
 	view := m.View()
 	if !strings.Contains(view, "ls -la") {
@@ -614,11 +649,9 @@ func TestGenerate_EditEscReturnsToAction(t *testing.T) {
 	m := NewGenerateModel(events, noopCancel, nil, nil, nil, "")
 	m = drainStream(m, 2)
 
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
 
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyEscape})
 
 	if m.Phase() != phaseAction {
 		t.Errorf("expected phaseAction after Esc, got %v", m.Phase())
@@ -638,19 +671,16 @@ func TestGenerate_EditSubmitUpdatesCommand(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Enter edit
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
 
 	// Clear and type new command (select all not available, so we manipulate directly)
 	// The text input has "ls" pre-populated; type " -la" to append
 	for _, r := range " -la" {
-		model, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
-		m = model.(GenerateModel)
+		m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
 	}
 
 	// Submit
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyEnter})
 
 	if m.Phase() != phaseAction {
 		t.Errorf("expected phaseAction after edit submit, got %v", m.Phase())
@@ -670,14 +700,11 @@ func TestGenerate_EditUpdatesMessages(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Enter edit and append
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
 	for _, r := range " -la" {
-		model, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
-		m = model.(GenerateModel)
+		m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
 	}
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyEnter})
 
 	msgs := m.Messages()
 	if len(msgs) != 3 {
@@ -694,18 +721,14 @@ func TestGenerate_EditedCommandFlowsToResult(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Edit
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
 	for _, r := range " -la" {
-		model, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
-		m = model.(GenerateModel)
+		m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
 	}
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyEnter})
 
 	// Now select Run — result should have the edited command
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyEnter})
 
 	if m.Result().Command != "ls -la" {
 		t.Errorf("expected 'ls -la' in result, got %q", m.Result().Command)
@@ -718,18 +741,14 @@ func TestGenerate_EditEmptyIgnored(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Enter edit
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
 
 	// Clear the input by pressing backspace twice
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyBackspace})
-	m = model.(GenerateModel)
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyBackspace})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyBackspace})
+	m = step(m, tea.KeyMsg{Type: tea.KeyBackspace})
 
 	// Submit empty
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyEnter})
 
 	if m.Phase() != phaseEdit {
 		t.Errorf("expected to stay in phaseEdit on empty submit, got %v", m.Phase())
@@ -753,11 +772,9 @@ func TestGenerate_MultipleRevisionsWork(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// First revision
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 	m = typeKeys(m, "add -l")
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyEnter})
 	m = drainStream(m, 2)
 
 	if m.stream.Output() != "ls -l" {
@@ -765,11 +782,9 @@ func TestGenerate_MultipleRevisionsWork(t *testing.T) {
 	}
 
 	// Second revision
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 	m = typeKeys(m, "also add -a")
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyEnter})
 	m = drainStream(m, 2)
 
 	if m.stream.Output() != "ls -la" {
@@ -783,8 +798,7 @@ func TestGenerate_MultipleRevisionsWork(t *testing.T) {
 	}
 
 	// Enter runs — should get final command
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyEnter})
 	if m.Result().Command != "ls -la" {
 		t.Errorf("expected final command 'ls -la', got %q", m.Result().Command)
 	}
@@ -799,8 +813,8 @@ func mockExplainStream(tokens ...string) ExplainStreamFunc {
 func drainExplainStream(m GenerateModel, events int) GenerateModel {
 	for i := 0; i < events; i++ {
 		cmd := m.explainStream.waitForEvent()
-		model, _ := m.Update(cmd())
-		m = model.(GenerateModel)
+		model, next := m.Update(cmd())
+		m = settle(model.(GenerateModel), next)
 	}
 	return m
 }
@@ -810,8 +824,7 @@ func TestGenerate_ExplainOpensExplainPhase(t *testing.T) {
 	m := NewGenerateModel(events, noopCancel, nil, nil, mockExplainStream("lists files"), "")
 	m = drainStream(m, 2)
 
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
 
 	if m.Phase() != phaseExplain {
 		t.Errorf("expected phaseExplain, got %v", m.Phase())
@@ -823,8 +836,7 @@ func TestGenerate_ExplainStreamsAndReturnsToAction(t *testing.T) {
 	m := NewGenerateModel(events, noopCancel, nil, nil, mockExplainStream("lists files in detail"), "")
 	m = drainStream(m, 2)
 
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
 
 	// Drain explain stream (token + done)
 	m = drainExplainStream(m, 2)
@@ -839,13 +851,11 @@ func TestGenerate_ExplainViewShowsExplanation(t *testing.T) {
 	m := NewGenerateModel(events, noopCancel, nil, nil, mockExplainStream("lists files"), "")
 	m = drainStream(m, 2)
 
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
 
 	// Receive token
 	cmd := m.explainStream.waitForEvent()
-	model, _ = m.Update(cmd())
-	m = model.(GenerateModel)
+	m = step(m, cmd())
 
 	view := m.View()
 	if !strings.Contains(view, "Explanation") {
@@ -861,8 +871,7 @@ func TestGenerate_ExplainPersistsAfterReturn(t *testing.T) {
 	m := NewGenerateModel(events, noopCancel, nil, nil, mockExplainStream("lists files in detail"), "")
 	m = drainStream(m, 2)
 
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
 	m = drainExplainStream(m, 2)
 
 	// Now in phaseAction — explanation should still be visible
@@ -880,8 +889,7 @@ func TestGenerate_ExplainNilFuncIgnored(t *testing.T) {
 	m := NewGenerateModel(events, noopCancel, nil, nil, nil, "")
 	m = drainStream(m, 2)
 
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
 
 	// Should stay in phaseAction since no explain func
 	if m.Phase() != phaseAction {
@@ -895,13 +903,11 @@ func TestGenerate_ExplainDoesNotAffectResult(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Explain
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
 	m = drainExplainStream(m, 2)
 
 	// Now run
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
-	m = model.(GenerateModel)
+	m = step(m, tea.KeyMsg{Type: tea.KeyEnter})
 
 	if m.Result().Command != "docker ps" {
 		t.Errorf("expected 'docker ps', got %q", m.Result().Command)

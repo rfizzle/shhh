@@ -74,7 +74,11 @@ func (m StreamModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "q", "esc":
 			if !m.done {
-				m.cancel()
+				// A stream still being opened has no cancel yet (S-132); it
+				// is the surface's gen counter that discards its answer.
+				if m.cancel != nil {
+					m.cancel()
+				}
 				m.cancelled = true
 				m.done = true
 				m.output = StripFences(m.output)

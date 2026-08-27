@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -28,8 +29,8 @@ func armed(t *testing.T, command string, explain ExplainStreamFunc) GenerateMode
 
 func press(t *testing.T, m GenerateModel, key string) GenerateModel {
 	t.Helper()
-	model, _ := m.Update(keyMsg(key))
-	return model.(GenerateModel)
+	model, cmd := m.Update(keyMsg(key))
+	return settle(model.(GenerateModel), cmd)
 }
 
 func TestResult_ExplainsBrieflyByDefault(t *testing.T) {
@@ -205,8 +206,7 @@ func TestResult_DryRunRunsTheDerivedForm(t *testing.T) {
 	if m.Phase() != phaseDryRun {
 		t.Fatalf("expected phaseDryRun, got %v", m.Phase())
 	}
-	model, _ := m.Update(m.dryRunCmd()())
-	m = model.(GenerateModel)
+	m = step(m, m.dryRunCmd()())
 
 	if ran != "find . -name '*.tmp' -print" {
 		t.Errorf("the dry run executed %q, not the derived no-op form", ran)
@@ -315,8 +315,7 @@ func TestResult_AStaleStreamMessageIsIgnored(t *testing.T) {
 		t.Fatalf("expected phaseStreaming after the revise, got %v", m.Phase())
 	}
 
-	model, _ := m.Update(doneMsg{id: staleID})
-	m = model.(GenerateModel)
+	m = step(m, doneMsg{id: staleID})
 	if m.Phase() != phaseStreaming {
 		t.Errorf("a stale message from the explanation ended the command stream: phase %v", m.Phase())
 	}
@@ -337,5 +336,129 @@ func TestResult_StepByStepIsNotAConfirmation(t *testing.T) {
 	}
 	if m.Result().Confirmed {
 		t.Error("step-by-step was reported as a deliberate confirmation")
+	}
+}
+
+// The defect this guards against: opening the explanation's stream is an HTTP
+// request that does not return until the model starts answering, and it used
+// to be made inline in Update. The event loop cannot paint while it is out,
+// so the command sat alone on screen for the whole round trip and the action
+// bar arrived when the request did — seconds, on a real provider.
+func TestResult_TheKeysAreOnScreenBeforeTheExplanationIsAskedFor(t *testing.T) {
+	var asked int
+	explain := func(command string, long bool) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		asked++
+		return makeEvents("lists files"), noopCancel, nil
+	}
+
+	m := NewGenerateModel(makeEvents("ls -la"), noopCancel, nil, nil, explain, "")
+	m = drainStreamPending(m, 2)
+
+	if asked != 0 {
+		t.Error("the request was made inline, which is what stops the loop painting")
+	}
+	if m.Phase() != phaseAction {
+		t.Fatalf("the surface is not on the action phase: %v", m.Phase())
+	}
+	if !m.opening {
+		t.Error("the surface does not know it is waiting on a stream")
+	}
+	view := m.View()
+	if !strings.Contains(view, "[↵] run") {
+		t.Errorf("the keys are not on screen while the explanation is being asked for:\n%s", view)
+	}
+	if !strings.Contains(view, "ls -la") {
+		t.Errorf("the command is not on screen with them:\n%s", view)
+	}
+}
+
+// The long form is the one case that does hold the screen, and it says so
+// with a spinner rather than with nothing.
+func TestResult_TheLongFormSpinsWhileItsStreamOpens(t *testing.T) {
+	var asked int
+	explain := func(command string, long bool) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		asked++
+		return makeEvents("lists files in detail"), noopCancel, nil
+	}
+
+	m := NewGenerateModel(makeEvents("ls -la"), noopCancel, nil, nil, explain, "").
+		WithExplain(ExplainLong)
+	m = drainStreamPending(m, 2)
+
+	if asked != 0 {
+		t.Error("the request was made inline")
+	}
+	if m.Phase() != phaseExplain {
+		t.Fatalf("the long form did not take the screen: %v", m.Phase())
+	}
+	if !strings.Contains(m.View(), "Explanation:") {
+		t.Errorf("the wait says nothing about what it is waiting for:\n%s", m.View())
+	}
+	if m.explainStream.spinner.View() == "" {
+		t.Error("nothing is turning while the request is out")
+	}
+}
+
+// A revise opens its stream the same way, and the surface says it is thinking
+// rather than leaving the old command on screen looking live.
+func TestResult_AReviseSpinsWhileItsStreamOpens(t *testing.T) {
+	var asked int
+	newStream := func(messages []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		asked++
+		return makeEvents("ls -la"), noopCancel, nil
+	}
+
+	m := NewGenerateModel(makeEvents("ls"), noopCancel, nil, newStream, nil, "")
+	m = drainStream(m, 2)
+	m = press(t, m, "r")
+	m = typeKeys(m, "add -la")
+	model, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = model.(GenerateModel)
+
+	if asked != 0 {
+		t.Error("the request was made inline")
+	}
+	if m.Phase() != phaseStreaming {
+		t.Fatalf("the revise did not go back to streaming: %v", m.Phase())
+	}
+	if !m.opening {
+		t.Error("the surface does not know it is waiting on a stream")
+	}
+	if !strings.Contains(m.View(), "Thinking") {
+		t.Errorf("the wait for the new stream says nothing:\n%s", m.View())
+	}
+
+	// And it does arrive.
+	m = settle(m, cmd)
+	if asked != 1 {
+		t.Errorf("the stream was opened %d times, want 1", asked)
+	}
+	m = drainStream(m, 2)
+	if m.stream.Output() != "ls -la" {
+		t.Errorf("the revised command came back as %q", m.stream.Output())
+	}
+}
+
+// An explanation still being asked for when the reader moves on is an answer
+// about a command nobody is looking at.
+func TestResult_AnExplanationForALastCommandIsDropped(t *testing.T) {
+	m := NewGenerateModel(makeEvents("ls -la"), noopCancel, nil, nil,
+		mockExplainStream("lists files"), "")
+	m = drainStream(m, 2)
+
+	cancelled := false
+	stale := explainReadyMsg{
+		gen:    m.gen - 1,
+		events: makeEvents("about something else"),
+		cancel: func() { cancelled = true },
+	}
+	model, _ := m.Update(stale)
+	m = model.(GenerateModel)
+
+	if !cancelled {
+		t.Error("the request behind a dropped answer was left running")
+	}
+	if strings.Contains(m.View(), "about something else") {
+		t.Errorf("an explanation of a command that is gone reached the screen:\n%s", m.View())
 	}
 }

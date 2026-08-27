@@ -113,6 +113,17 @@ type GenerateModel struct {
 	// The keys stay live while it does — the bar is not worth blocking for
 	// one sentence.
 	explaining bool
+	// opening is a stream that has been asked for and has not come back. The
+	// spinner turns on it: it is the surface saying it is waiting on a round
+	// trip rather than on the reader.
+	opening bool
+	// gen counts the times this surface has asked for a stream. Opening one
+	// is a request that outlives the keystroke that asked for it, and the
+	// screen can move on while it is out: a revise, a step back, a different
+	// alternative. The answer carries the gen it was asked under, and one
+	// that no longer matches is an answer about a command nobody is looking
+	// at.
+	gen int
 	// reach is the resolved radius of the command on screen (S-101).
 	reach radius.Command
 	// dryCommand is the command's no-op form, and dryAvailable whether it has
@@ -222,6 +233,16 @@ func (m GenerateModel) Init() tea.Cmd {
 }
 
 func (m GenerateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	// A stream that has finished opening is answered wherever the surface
+	// has got to, not only in the phase that asked: the whole point of not
+	// waiting is that the screen was free to move.
+	switch msg := msg.(type) {
+	case explainReadyMsg:
+		return m.explainReady(msg)
+	case streamReadyMsg:
+		return m.streamReady(msg)
+	}
+
 	switch m.phase {
 	case phaseStreaming:
 		return m.updateStreaming(msg)
@@ -308,14 +329,10 @@ func (m GenerateModel) updateStreaming(msg tea.Msg) (tea.Model, tea.Cmd) {
 					provider.Message{Role: provider.RoleAssistant, Content: raw},
 					provider.Message{Role: provider.RoleUser, Content: correction},
 				)
-				events, cancel, err := m.newStream(m.messages)
-				if err != nil {
-					m.phase = phaseDone
-					m.result = GenerateResult{Err: err}
-					return m, tea.Quit
-				}
-				m.stream = NewStreamModel(events, cancel)
-				return m, m.stream.Init()
+				m.gen++
+				m.stream = pendingStream()
+				m.opening = true
+				return m, tea.Batch(m.stream.spinner.Tick, openStream(m.newStream, m.messages, m.gen))
 			}
 		}
 
@@ -338,6 +355,7 @@ func (m GenerateModel) updateStreaming(msg tea.Msg) (tea.Model, tea.Cmd) {
 // place the surface is built, so a revise, an edit and a first generation all
 // land on the same screen.
 func (m GenerateModel) arm(output string) (GenerateModel, tea.Cmd) {
+	m.gen++
 	m.reach = radius.Resolve(output)
 	m.danger = m.reach.Level == radius.High
 	m.dryCommand, m.dryAvailable = dryrun.Derive(output)
@@ -361,25 +379,72 @@ func (m GenerateModel) arm(output string) (GenerateModel, tea.Cmd) {
 		return m, nil
 	}
 	long := m.explainMode == ExplainLong
-	events, cancel, err := m.newExplain(output, long)
-	if err != nil {
-		// A surface that cannot explain itself still has to be usable; the
-		// keys are what the reader came for.
-		return m, nil
-	}
-	m.explainStream = NewStreamModel(events, cancel)
 	m.shown = m.explainMode
+	m.explainStream = pendingStream()
 	if long {
 		// The long form is a block, and reading it is the whole point of
 		// asking for it: it gets the screen until it is done, as `-e` always
 		// did.
 		m.phase = phaseExplain
-		return m, m.explainStream.Init()
+	} else {
+		// One line arrives under a live action bar. Blocking the keys for a
+		// sentence would make the default worse than the flag — and waiting
+		// for the request to open blocks them exactly as hard as waiting for
+		// the sentence, which is what the bar used to do.
+		m.explaining = true
 	}
-	// One line arrives under a live action bar. Blocking the keys for a
-	// sentence would make the default worse than the flag.
-	m.explaining = true
+	m.opening = true
+	return m, tea.Batch(m.explainStream.spinner.Tick, openExplain(m.newExplain, output, long, m.gen))
+}
+
+// explainReady installs an explanation stream that has finished opening.
+func (m GenerateModel) explainReady(msg explainReadyMsg) (GenerateModel, tea.Cmd) {
+	if msg.gen != m.gen {
+		// Asked for a command that is no longer on screen. Nothing here
+		// wants it, and the request behind it should stop.
+		if msg.cancel != nil {
+			msg.cancel()
+		}
+		return m, nil
+	}
+	m.opening = false
+	if msg.err != nil {
+		// A surface that cannot explain itself still has to be usable; the
+		// keys are what the reader came for.
+		m.explaining = false
+		if msg.long {
+			m.explainStream = m.explainStream.WithOutput("Error: " + msg.err.Error())
+			m.explainStream.done = true
+			m.phase = phaseAction
+			return m, nil
+		}
+		m.shown = ExplainNone
+		m.explainStream = StreamModel{}
+		return m, nil
+	}
+	m.explainStream = NewStreamModel(msg.events, msg.cancel)
 	return m, m.explainStream.Init()
+}
+
+// streamReady installs a command stream that has finished opening. Both the
+// paths that ask for one — a preflight correction and a revise — end a
+// failure the same way, so there is one answer to it.
+func (m GenerateModel) streamReady(msg streamReadyMsg) (GenerateModel, tea.Cmd) {
+	if msg.gen != m.gen {
+		if msg.cancel != nil {
+			msg.cancel()
+		}
+		return m, nil
+	}
+	m.opening = false
+	if msg.err != nil {
+		m.phase = phaseDone
+		m.result = GenerateResult{Err: msg.err}
+		return m, tea.Quit
+	}
+	m.stream = NewStreamModel(msg.events, msg.cancel)
+	m.phase = phaseStreaming
+	return m, m.stream.Init()
 }
 
 func (m GenerateModel) updateAction(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -442,14 +507,12 @@ func (m GenerateModel) updateAction(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.newExplain == nil {
 			return m, nil
 		}
-		events, cancel, err := m.newExplain(m.stream.Output(), true)
-		if err != nil {
-			return m, func() tea.Msg { return explainErrMsg{err: err} }
-		}
-		m.explainStream = NewStreamModel(events, cancel)
+		m.gen++
+		m.explainStream = pendingStream()
 		m.shown = ExplainLong
 		m.phase = phaseExplain
-		return m, m.explainStream.Init()
+		m.opening = true
+		return m, tea.Batch(m.explainStream.spinner.Tick, openExplain(m.newExplain, m.stream.Output(), true, m.gen))
 
 	case ActionSave:
 		m = m.hushExplain()
@@ -491,7 +554,11 @@ func (m GenerateModel) updateAction(msg tea.Msg) (tea.Model, tea.Cmd) {
 // waiting for goes first.
 func (m GenerateModel) hushExplain() GenerateModel {
 	if m.explaining {
-		m.explainStream.cancel()
+		// A stream still being opened has nothing to cancel yet; the gen it
+		// was asked under is what stops its answer from landing.
+		if m.explainStream.cancel != nil {
+			m.explainStream.cancel()
+		}
 		m.explaining = false
 	}
 	return m
@@ -501,6 +568,7 @@ func (m GenerateModel) hushExplain() GenerateModel {
 // and the conversation all return to where they were.
 func (m GenerateModel) stepBack() (GenerateModel, tea.Cmd) {
 	m = m.hushExplain()
+	m.gen++
 	last := m.past[len(m.past)-1]
 	m.past = m.past[:len(m.past)-1]
 	if last.messages <= len(m.messages) {
@@ -617,8 +685,54 @@ func oneLine(command string) string {
 	return strings.Join(SplitCommands(command), " ; ")
 }
 
-type reviseErrMsg struct{ err error }
-type explainErrMsg struct{ err error }
+// Opening a stream is not free and it is not instant. For every provider in
+// the OpenAI family, StreamCompletion sends the request and blocks until the
+// model has started answering — the whole time-to-first-token — before it
+// returns a channel. Doing that inline in Update stops the event loop, and a
+// loop that is stopped cannot paint: the command sat alone on screen for the
+// length of the explanation's round trip, and the action bar arrived when
+// that request did. So the surface asks, says so, and carries on (S-132).
+type explainReadyMsg struct {
+	gen    int
+	long   bool
+	events <-chan provider.StreamEvent
+	cancel context.CancelFunc
+	err    error
+}
+
+type streamReadyMsg struct {
+	gen    int
+	events <-chan provider.StreamEvent
+	cancel context.CancelFunc
+	err    error
+}
+
+func openExplain(f ExplainStreamFunc, command string, long bool, gen int) tea.Cmd {
+	return func() tea.Msg {
+		events, cancel, err := f(command, long)
+		return explainReadyMsg{gen: gen, long: long, events: events, cancel: cancel, err: err}
+	}
+}
+
+// openStream copies the conversation because the model that asked keeps
+// mutating its own copy — a revise appends to it the moment this returns.
+func openStream(f NewStreamFunc, messages []provider.Message, gen int) tea.Cmd {
+	msgs := make([]provider.Message, len(messages))
+	copy(msgs, messages)
+	return func() tea.Msg {
+		events, cancel, err := f(msgs)
+		return streamReadyMsg{gen: gen, events: events, cancel: cancel, err: err}
+	}
+}
+
+// pendingStream is what stands in for a stream that has been asked for and
+// has not arrived. It has no events to wait on — the ready message brings
+// those — but it has the spinner, so the wait says it is a wait.
+func pendingStream() StreamModel {
+	streamSeq++
+	return StreamModel{id: streamSeq, spinner: components.NewSpinnerModel()}
+}
+
 type dryRunDoneMsg struct {
 	output string
 	code   int
@@ -690,22 +804,16 @@ func (m GenerateModel) updateRevise(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return m, tea.Quit
 			}
-			events, cancel, err := m.newStream(m.messages)
-			if err != nil {
-				return m, func() tea.Msg { return reviseErrMsg{err: err} }
-			}
-			m.stream = NewStreamModel(events, cancel)
+			m.gen++
+			m.stream = pendingStream()
 			m.phase = phaseStreaming
-			return m, m.stream.Init()
+			m.opening = true
+			return m, tea.Batch(m.stream.spinner.Tick, openStream(m.newStream, m.messages, m.gen))
 		case tea.KeyEscape:
 			m.phase = phaseAction
 			m.reviseInput.Blur()
 			return m, nil
 		}
-	case reviseErrMsg:
-		m.phase = phaseDone
-		m.result = GenerateResult{Err: msg.err}
-		return m, tea.Quit
 	}
 	var cmd tea.Cmd
 	m.reviseInput, cmd = m.reviseInput.Update(msg)
@@ -757,15 +865,12 @@ func (m GenerateModel) updateExplain(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		switch msg.String() {
 		case "q", "esc":
-			m.explainStream.cancel()
+			if m.explainStream.cancel != nil {
+				m.explainStream.cancel()
+			}
 			m.phase = phaseAction
 			return m, nil
 		}
-		return m, nil
-	case explainErrMsg:
-		m.explainStream = m.explainStream.WithOutput("Error: " + msg.err.Error())
-		m.explainStream.done = true
-		m.phase = phaseAction
 		return m, nil
 	}
 	updated, cmd := m.explainStream.Update(msg)
