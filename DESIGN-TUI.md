@@ -299,12 +299,46 @@ plan itself above the options — see §4d.
   visual as the existing action bar's `ActiveStyle`.
 - Optional per-option description line, gray (241), shown under the
   focused option only (keeps the card short).
-- Number keys select immediately. Lists longer than the panel scroll,
-  with `…` markers.
+- Number keys select immediately, and they count the list rather than the
+  window: option 12 is `12.` whether or not it is the first row showing.
 - The filtered variant (the palette, §18a) adds a query line above the
   options, group rails the pointer steps over, and rows dimmed behind `⊘`
   for an option that cannot be acted on right now. It is unnumbered, because
   a digit typed into a filter is a digit.
+
+**Lists longer than the panel scroll (S-116).** The card is a window onto
+the list, not the first N rows of it:
+
+```
+┌─ Switch model ───────────────────────────────────────────────────┐
+│ ↑ 2 more                                                         │
+│   3. claude-sonnet-5                                             │
+│   4. claude-haiku-4-5                                            │
+│   5. gpt-5.2                                                     │
+│ ❯ 6. gpt-5.2-codex                                               │
+│     fast, cheap, tools                                           │
+│ ↓ 8 more                                                         │
+│ ↑↓/jk move · enter select · 1–14 jump · esc cancel               │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+- **The window follows the pointer, and only the pointer.** It moves when the
+  focus leaves it — up to meet a pointer above, down one option at a time to
+  reach one below — and stands still while the pointer moves inside it. A
+  list that re-centred on every keystroke would be unreadable.
+- **It is therefore path-dependent**, and deliberately so: an option reached
+  from above sits at the foot of the window, the same option reached from
+  below sits at its head. Neither is a jump.
+- **Markers count what they hide** (invariant 4) — `↑ 2 more` / `↓ 8 more` —
+  counting options rather than rows, because an option is what the pointer
+  can be scrolled to. Group rails (§18a) are labels for options and are not
+  counted; a run that hid nothing selectable keeps a bare `…`.
+- **Everything pinned comes off the budget first**: the query line above the
+  list, the key hints below it, and — in §4c — the note field, so a long list
+  scrolls rather than pushing the note off the card. The card's total height
+  is the bottom panel's accounting and the window may never buy itself a row.
+- A list that fits is not windowed at all: no markers, and no row spent
+  saying that nothing was hidden.
 
 ### 4b. Multi-select
 

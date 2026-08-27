@@ -71,7 +71,10 @@ type PlanCard struct {
 func (c *PlanCard) View(width int) string {
 	inner := width - cardFrameWidth
 	sel := Select{Options: c.Options, Focus: c.Focus}
-	tail := c.tailRows(width, inner, sel.optionRows(width, true))
+	// The plan card's options are its three or four decisions and never
+	// scroll; here it is the step list that shrinks (§4d), so the options
+	// render whole rather than through a window (S-116).
+	tail := c.tailRows(width, inner, sel.optionRows(width, true, 0, len(c.Options)))
 	rows := c.bodyRows(inner, c.bodyBudget(len(tail)))
 	return renderChromeCard(cardChrome{title: c.Title, chips: c.chips()}, append(rows, tail...), width)
 }

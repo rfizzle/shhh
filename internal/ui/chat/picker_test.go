@@ -3,10 +3,12 @@ package chat
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -147,6 +149,51 @@ func TestPick_RendersInBottomPanel(t *testing.T) {
 	view := m.View()
 	if !strings.Contains(view, "Permission mode") {
 		t.Fatal("the picker card should render in the view")
+	}
+}
+
+// A catalog longer than the bottom panel scrolls under the pointer rather
+// than leaving it below the card (S-116). This is the /model picker, but the
+// window belongs to components.Select, so /mode, /load, /chats, /branches and
+// /run all get it from the same place.
+func TestPick_LongCatalogScrollsWithTheFocus(t *testing.T) {
+	names := make([]string, 0, 20)
+	for i := 1; i <= 20; i++ {
+		names = append(names, fmt.Sprintf("model-%02d", i))
+	}
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, mockStream).
+		WithModelSwitcher(func(string) {}).
+		WithPricing(nil, "model-01").
+		WithModelOptions(names)
+	// A short terminal, so the panel cannot hold twenty rows however it tries.
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 90, Height: 24})
+	m = updated.(Model)
+	m = sendText(t, m, "/model")
+
+	if m.state != statePick || m.picker == nil {
+		t.Fatal("bare /model should open the picker")
+	}
+	for i := 0; i < len(names); i++ {
+		panel := m.renderPick()
+		want := fmt.Sprintf("%d. model-%02d", i+1, i+1)
+		if !strings.Contains(ansi.Strip(panel), "❯ "+want) {
+			t.Fatalf("at option %d the pointer should be on the card:\n%s", i+1, panel)
+		}
+		if got, budget := strings.Count(panel, "\n")+1, m.bottomPanelHeight(); got != budget {
+			t.Fatalf("the panel should stay exactly %d rows, got %d", budget, got)
+		}
+		if i < len(names)-1 {
+			updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
+			m = updated.(Model)
+		}
+	}
+	// The last option is reachable, which is what the old fixed slice made
+	// impossible.
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(Model)
+	if m.modelName != "model-20" {
+		t.Fatalf("the bottom of the catalog should be selectable, got %q", m.modelName)
 	}
 }
 

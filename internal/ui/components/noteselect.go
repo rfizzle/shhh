@@ -88,7 +88,6 @@ func (s *NoteSelect) Update(msg tea.KeyMsg) (done bool, result any) {
 
 func (s *NoteSelect) View(width int) string {
 	inner := width - cardFrameWidth
-	rows := s.Select.optionRows(width, true)
 
 	noteLabel := "note (optional)"
 	labelStyle := dimStyle
@@ -107,11 +106,17 @@ func (s *NoteSelect) View(width int) string {
 		}
 		noteView = dimmerStyle.Render(clip(text, max(inner-2, 8)))
 	}
-	rows = append(rows, labelStyle.Render(clip("┄ "+noteLabel, inner)))
+	// The note field and the hints are pinned under the list, so what they
+	// spend comes off the list's budget before its window is drawn (S-116) —
+	// otherwise a long list pushes the note itself off the card.
+	tail := []string{labelStyle.Render(clip("┄ "+noteLabel, inner))}
 	for _, l := range strings.Split(noteView, "\n") {
-		rows = append(rows, clip("  "+l, inner))
+		tail = append(tail, clip("  "+l, inner))
 	}
-	rows = append(rows, hintRows([]string{"tab note/options · enter confirm · esc cancel"}, width)...)
+	tail = append(tail, hintRows([]string{"tab note/options · enter confirm · esc cancel"}, width)...)
+
+	rows := s.Select.visibleRows(width, s.Select.bodyBudget(len(tail)), true)
+	rows = append(rows, tail...)
 	rows = boundRows(rows, s.Select.MaxLines)
 	return renderCard(s.Select.Title, rows, width)
 }
