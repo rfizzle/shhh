@@ -12,9 +12,16 @@ import (
 )
 
 const (
-	repoOwner  = "rfizzle"
-	repoName   = "shhh"
-	cacheTTL   = 24 * time.Hour
+	repoOwner = "rfizzle"
+	repoName  = "shhh"
+	cacheTTL  = 24 * time.Hour
+	// failTTL is how long a failed fetch is remembered. A machine that
+	// cannot reach api.github.com — offline, behind a proxy, or rate
+	// limited — used to write no cache at all, so the next run paid the
+	// full five-second timeout again, and so did the one after that. The
+	// window is short enough that a transient failure costs one hour of
+	// staleness rather than a day.
+	failTTL    = time.Hour
 	cacheFile  = "update_check.json"
 	releaseURL = "https://api.github.com/repos/" + repoOwner + "/" + repoName + "/releases/latest"
 )
@@ -35,17 +42,18 @@ func Check(currentVersion string) *Result {
 		return nil
 	}
 
-	cached := readCache()
-	if cached != nil && time.Since(cached.CheckedAt) < cacheTTL {
+	if cached := readCache(); cached != nil && fresh(cached) {
 		return compareVersions(currentVersion, cached.Latest)
 	}
 
 	latest := fetchLatest()
+	// A failure is recorded too, with an empty Latest: what stops the next
+	// run from making the same doomed request is the entry, not its
+	// contents. compareVersions reads an empty Latest as "nothing to say".
+	writeCache(&cacheEntry{Latest: latest, CheckedAt: time.Now()})
 	if latest == "" {
 		return nil
 	}
-
-	writeCache(&cacheEntry{Latest: latest, CheckedAt: time.Now()})
 	return compareVersions(currentVersion, latest)
 }
 
@@ -66,17 +74,23 @@ func BackgroundCheck(currentVersion string) {
 		return
 	}
 
-	cached := readCache()
-	if cached != nil && time.Since(cached.CheckedAt) < cacheTTL {
+	if cached := readCache(); cached != nil && fresh(cached) {
 		return
 	}
 
 	go func() {
-		latest := fetchLatest()
-		if latest != "" {
-			writeCache(&cacheEntry{Latest: latest, CheckedAt: time.Now()})
-		}
+		writeCache(&cacheEntry{Latest: fetchLatest(), CheckedAt: time.Now()})
 	}()
+}
+
+// fresh reports whether a cache entry still stands. An entry that recorded a
+// failure stands for a shorter window than one that recorded an answer.
+func fresh(entry *cacheEntry) bool {
+	ttl := cacheTTL
+	if entry.Latest == "" {
+		ttl = failTTL
+	}
+	return time.Since(entry.CheckedAt) < ttl
 }
 
 func compareVersions(current, latest string) *Result {

@@ -388,9 +388,17 @@ func NewRootCmd() *cobra.Command {
 	return cmd
 }
 
+// versionTemplate is built while the command tree is, which is before
+// Execute and therefore on the startup path of *every* invocation — `shhh
+// "…"` included, not just `--version`. It reads the update cache and never
+// the network: the blocking fetch that used to live here cost a round trip
+// to api.github.com before the first frame, and cost the full five-second
+// timeout on every run once that host was unreachable, because a failed
+// fetch wrote no cache to stop the next one. update.BackgroundCheck, which
+// PersistentPreRunE already starts, is what keeps the cache warm.
 func versionTemplate() string {
 	base := "shhh version {{.Version}}\n"
-	if r := update.Check(version); r != nil {
+	if r := update.CheckCached(version); r != nil {
 		base += fmt.Sprintf("Update available: %s → %s (brew upgrade shhh)\n", r.Current, r.Latest)
 	}
 	return base
