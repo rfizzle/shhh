@@ -26,6 +26,7 @@ func detectSeatbelt() Availability {
 func seatbeltProfile(s spec) string {
 	var b strings.Builder
 	b.WriteString("(version 1)\n(allow default)\n(deny file-write*)\n")
+	b.WriteString("(allow file-write*\n  (subpath \"/dev\"))\n")
 	if len(s.write) > 0 {
 		b.WriteString("(allow file-write*")
 		for _, w := range s.write {

@@ -217,6 +217,9 @@ func TestSeatbeltProfileShape(t *testing.T) {
 	if !strings.Contains(profile, "(deny file-write*)") {
 		t.Fatal("profile must default-deny writes")
 	}
+	if !strings.Contains(profile, `(allow file-write*`+"\n"+`  (subpath "/dev"))`) {
+		t.Fatal("profile must allow file-write to /dev")
+	}
 	if !strings.Contains(profile, `(subpath "/work/it\"s here")`) {
 		t.Fatalf("write grant paths must be SBPL-quoted, got:\n%s", profile)
 	}
