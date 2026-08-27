@@ -11,6 +11,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 func TestModelPick_BareModelOpensPicker(t *testing.T) {
@@ -770,5 +771,161 @@ func TestModelList_RendersSpinnerWhileQuerying(t *testing.T) {
 	m = updated.(Model)
 	if !strings.Contains(m.View(), "Listing models…") {
 		t.Fatal("the query should show its own status line")
+	}
+}
+
+// --- the filter row over the picker (S-123, DESIGN-TUI.md §4a) -------------
+
+// runes feeds a query into an open picker one keystroke at a time, which is
+// how a host learns the query changed at all.
+func runes(t *testing.T, m Model, text string) Model {
+	t.Helper()
+	for _, r := range text {
+		updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+		m = updated.(Model)
+	}
+	return m
+}
+
+// / opens the query line, typing narrows the list, and the choice still
+// reaches the apply that was written against the whole catalog — a filtered
+// index is mapped back before it is spent.
+func TestModelPick_FilterNarrowsAndStillSwitchesTheRightModel(t *testing.T) {
+	var switched string
+	m := readyModel(t).
+		WithModelSwitcher(func(name string) { switched = name }).
+		WithPricing(nil, "gpt-5.2").
+		WithModelOptions([]string{"gpt-5.2", "claude-opus-4.6", "claude-sonnet-4.6", "gemini-3-pro"})
+
+	m.input.SetValue("/model")
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(Model)
+	if !m.picker.Filterable {
+		t.Fatal("a picker over a catalog should offer the filter row")
+	}
+
+	m = runes(t, m, "/")
+	if !m.picker.Filtering {
+		t.Fatal("/ should open the query line")
+	}
+	m = runes(t, m, "sonnet")
+	if got := len(m.picker.Options); got != 1 {
+		t.Fatalf("one model matches \"sonnet\", the card is showing %d", got)
+	}
+	if m.picker.Total != 4 {
+		t.Fatalf("the row should still name the catalog it filtered, got %d", m.picker.Total)
+	}
+
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(Model)
+	if switched != "claude-sonnet-4.6" {
+		t.Fatalf("the filtered choice should reach the apply intact, got %q", switched)
+	}
+}
+
+// A digit typed into an open query line is a digit: the model whose name
+// carries a 5 must not be switched to halfway through being typed.
+func TestModelPick_DigitsAreTextWhileTheQueryLineIsOpen(t *testing.T) {
+	var switched string
+	m := readyModel(t).
+		WithModelSwitcher(func(name string) { switched = name }).
+		WithPricing(nil, "gpt-5.2").
+		WithModelOptions([]string{"gpt-5.2", "gpt-5.1", "o4-mini"})
+
+	m.input.SetValue("/model")
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(Model)
+	m = runes(t, m, "/gpt-5.1")
+
+	if switched != "" {
+		t.Fatalf("nothing should have been chosen while typing, got %q", switched)
+	}
+	if m.state != statePick {
+		t.Fatal("the picker should still be open")
+	}
+	if m.picker.Query != "gpt-5.1" {
+		t.Fatalf("every key should have landed in the query, got %q", m.picker.Query)
+	}
+}
+
+// ctrl+u puts the whole catalog back, and esc leaves without changing
+// anything at all.
+func TestModelPick_ClearAndEscape(t *testing.T) {
+	var switched string
+	m := readyModel(t).
+		WithModelSwitcher(func(name string) { switched = name }).
+		WithPricing(nil, "gpt-5.2").
+		WithModelOptions([]string{"gpt-5.2", "claude-opus-4.6", "gemini-3-pro"})
+
+	m.input.SetValue("/model")
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(Model)
+	m = runes(t, m, "/gemini")
+	if len(m.picker.Options) != 1 {
+		t.Fatalf("the filter should have narrowed the list, got %d", len(m.picker.Options))
+	}
+
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlU})
+	m = updated.(Model)
+	if len(m.picker.Options) != 3 || m.picker.Query != "" {
+		t.Fatalf("ctrl+u should put the whole catalog back, got %d options and query %q",
+			len(m.picker.Options), m.picker.Query)
+	}
+
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	m = updated.(Model)
+	if m.state != stateInput || switched != "" || m.picker != nil {
+		t.Fatalf("esc should leave the picker changing nothing, state=%v switched=%q", m.state, switched)
+	}
+}
+
+// A query nothing matched is a card that says so and names the nearest thing
+// that does exist, and enter on it does nothing.
+func TestModelPick_NoMatchNamesTheClosestModel(t *testing.T) {
+	var switched string
+	m := readyModel(t).
+		WithModelSwitcher(func(name string) { switched = name }).
+		WithPricing(nil, "gpt-5.2").
+		WithModelOptions([]string{"gpt-5.2", "claude-sonnet-4.6", "gemini-3-pro"})
+
+	m.input.SetValue("/model")
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(Model)
+	m = runes(t, m, "/sonnet-5")
+
+	if len(m.picker.Options) != 0 {
+		t.Fatalf("nothing matches \"sonnet-5\", got %d options", len(m.picker.Options))
+	}
+	if m.picker.Closest != "claude-sonnet-4.6" {
+		t.Fatalf("the card should name the closest model there is, got %q", m.picker.Closest)
+	}
+	view := ansi.Strip(m.picker.View(70))
+	for _, want := range []string{`no match for "sonnet-5"`, "closest is claude-sonnet-4.6", "0 of 3 match"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("expected %q on the card:\n%s", want, view)
+		}
+	}
+
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(Model)
+	if m.state != statePick || switched != "" {
+		t.Fatalf("enter on a card that matched nothing should do nothing, state=%v switched=%q", m.state, switched)
+	}
+}
+
+// closestOption is the same substring test as the match rule, run on shorter
+// and shorter prefixes; a query with nothing in common names nothing rather
+// than guessing.
+func TestClosestOption(t *testing.T) {
+	all := []components.SelectOption{
+		{Label: "COMMANDS", Header: true},
+		{Label: "claude-sonnet-4.6"},
+		{Label: "gpt-5.2"},
+	}
+	if got := closestOption(all, "sonnet-5"); got != "claude-sonnet-4.6" {
+		t.Fatalf("expected the model that shares \"sonnet-\", got %q", got)
+	}
+	if got := closestOption(all, "zzzz"); got != "" {
+		t.Fatalf("nothing is close to %q, so nothing should be named, got %q", "zzzz", got)
 	}
 }

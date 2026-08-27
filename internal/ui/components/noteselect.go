@@ -66,17 +66,32 @@ func (s *NoteSelect) Update(msg tea.KeyMsg) (done bool, result any) {
 		s.Note, _ = s.Note.Update(msg)
 		return false, nil
 	}
+	// List focus with the query line open: the query line is the surface, so
+	// everything but movement is text — the same reading the plain card makes
+	// (§4a). Tab is still how the note is reached, which is why it is handled
+	// above this and not here.
+	if s.Select.Filtering {
+		switch msg.String() {
+		case "up":
+			s.Select.move(-1)
+		case "down":
+			s.Select.move(1)
+		default:
+			s.Select.editQuery(msg)
+		}
+		return false, nil
+	}
 	// List focus: reuse the single-select movement; its enter/esc/digit paths
 	// are unreachable here (handled above), except digits, which should type
 	// nothing but jump focus without confirming.
 	switch key := msg.String(); key {
 	case "up", "k":
-		if s.Select.Focus > 0 {
-			s.Select.Focus--
-		}
+		s.Select.move(-1)
 	case "down", "j":
-		if s.Select.Focus < len(s.Select.Options)-1 {
-			s.Select.Focus++
+		s.Select.move(1)
+	case "/":
+		if s.Select.Filterable {
+			s.Select.Filtering = true
 		}
 	default:
 		if n := digitIndex(key, s.Select.selectable()); n >= 0 {
@@ -113,10 +128,22 @@ func (s *NoteSelect) View(width int) string {
 	for _, l := range strings.Split(noteView, "\n") {
 		tail = append(tail, clip("  "+l, inner))
 	}
-	tail = append(tail, hintRows([]string{"tab note/options · enter confirm · esc cancel"}, width)...)
+	keys := "tab note/options · enter confirm · esc cancel"
+	switch {
+	case s.Select.Filtering:
+		keys = "tab note/options · enter confirm · ctrl+u clear · esc cancel"
+	case s.Select.Filterable:
+		keys = "tab note/options · enter confirm · / filter · esc cancel"
+	}
+	tail = append(tail, hintRows([]string{keys}, width)...)
 
-	rows := s.Select.visibleRows(width, s.Select.bodyBudget(len(tail)), true)
+	// The query line is pinned above the list exactly as it is on a plain
+	// card, so the budget order is the artboard's — query line, key hints,
+	// note field, and then the options take what is left (§4a).
+	head := s.Select.queryRows(width)
+	rows, shown := s.Select.visibleRows(width, s.Select.bodyBudget(len(head)+len(tail)), true)
+	rows = append(head, rows...)
 	rows = append(rows, tail...)
 	rows = boundRows(rows, s.Select.MaxLines)
-	return renderCard(s.Select.Title, rows, width)
+	return renderChromeCard(cardChrome{title: s.Select.Title, chips: s.Select.chips(shown)}, rows, width)
 }

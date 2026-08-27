@@ -94,6 +94,11 @@ var (
 	spinTextStyle     lipgloss.Style
 	statusStyle       lipgloss.Style
 	bodyStyle         lipgloss.Style
+	// The filter row (§4a): what has been typed reads bright against the
+	// card, and the run of an option the query named is bold — the one
+	// emphasis that costs no colour and survives mono.
+	queryTextStyle lipgloss.Style
+	matchStyle     lipgloss.Style
 )
 
 // applyPalette rebuilds every style in this package from the current Palette.
@@ -120,4 +125,6 @@ func applyPalette() {
 	spinTextStyle = lipgloss.NewStyle().Foreground(Palette.Spin)
 	statusStyle = lipgloss.NewStyle().Foreground(Palette.Status)
 	bodyStyle = lipgloss.NewStyle().Foreground(Palette.Body)
+	queryTextStyle = lipgloss.NewStyle().Foreground(Palette.Bright)
+	matchStyle = lipgloss.NewStyle().Bold(true)
 }

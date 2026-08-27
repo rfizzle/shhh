@@ -32,18 +32,110 @@ func (m Model) WithModelOptions(names []string) Model {
 }
 
 // openPicker shows a select card in the bottom panel; apply consumes the
-// chosen index and returns the transcript note.
+// chosen index — always an index into the list the picker opened over, never
+// into whatever a filter left of it — and returns the transcript note.
+//
+// Every picker opened this way carries the filter row (S-123, §4a): the card
+// offers [/], and the match rule lives here rather than inside the component.
 func (m Model) openPicker(title string, opts []components.SelectOption, focus int, apply func(*Model, int) string) (tea.Model, tea.Cmd) {
 	m.picker = &components.Select{
-		Title:    title,
-		Options:  opts,
-		Focus:    focus,
-		MaxLines: m.maxConfirmPanelHeight(),
+		Title:      title,
+		Options:    opts,
+		Focus:      focus,
+		MaxLines:   m.maxConfirmPanelHeight(),
+		Filterable: true,
+		Total:      selectableOptions(opts),
 	}
+	m.pickerAll = opts
+	m.pickerIndex = identityIndex(len(opts))
 	m.pickerApply = apply
 	m.enterSurface(statePick)
 	m.syncViewport()
 	return m, nil
+}
+
+// selectableOptions counts what a key can land on, which is what the card's
+// counts are about: a group rail is a label for options and is not one.
+func selectableOptions(opts []components.SelectOption) int {
+	n := 0
+	for _, o := range opts {
+		if !o.Header {
+			n++
+		}
+	}
+	return n
+}
+
+// identityIndex is the row-to-option map of an unfiltered list.
+func identityIndex(n int) []int {
+	idx := make([]int, n)
+	for i := range idx {
+		idx[i] = i
+	}
+	return idx
+}
+
+// refilterPicker re-runs the match rule after the card's query line changed.
+// The component does not filter (§4a): it reports the query, this decides
+// what matches it, and the card is handed the matches, the catalog they came
+// out of, and the nearest option there is when nothing matched at all.
+func (m *Model) refilterPicker() {
+	matches, index := pickerMatches(m.pickerAll, m.picker.Query)
+	m.picker.Options = matches
+	m.pickerIndex = index
+	m.picker.Closest = ""
+	if len(matches) == 0 {
+		m.picker.Closest = closestOption(m.pickerAll, m.picker.Query)
+	}
+	m.picker.Focus = m.picker.FirstSelectable()
+}
+
+// pickerMatches is the picker's match rule: a case-insensitive run of the
+// option's label. It is a substring and not the palette's looser subsequence
+// because the card bolds the run it matched (§4a) — a rule the row cannot
+// show is a rule the reader cannot check. It returns the matches and, beside
+// them, where each came from, so an apply still receives the index it was
+// written against.
+func pickerMatches(all []components.SelectOption, query string) ([]components.SelectOption, []int) {
+	q := strings.ToLower(strings.TrimSpace(query))
+	if q == "" {
+		return all, identityIndex(len(all))
+	}
+	var (
+		matches []components.SelectOption
+		index   []int
+	)
+	for i, opt := range all {
+		if opt.Header {
+			continue
+		}
+		if strings.Contains(strings.ToLower(opt.Label), q) {
+			matches = append(matches, opt)
+			index = append(index, i)
+		}
+	}
+	return matches, index
+}
+
+// closestOption is the nearest option to a query nothing matched: the first
+// option carrying the longest leading run of the query. It is the same
+// substring test as the match rule, tried on shorter and shorter prefixes, so
+// "sonnet-5" finds claude-sonnet-4.6 through the "sonnet-" the two share. A
+// query with nothing at all in common names nothing rather than guessing.
+func closestOption(all []components.SelectOption, query string) string {
+	q := []rune(strings.ToLower(strings.TrimSpace(query)))
+	for n := len(q); n > 0; n-- {
+		prefix := string(q[:n])
+		for _, opt := range all {
+			if opt.Header {
+				continue
+			}
+			if strings.Contains(strings.ToLower(opt.Label), prefix) {
+				return opt.Label
+			}
+		}
+	}
+	return ""
 }
 
 // updatePick routes keys while a picker is showing.
@@ -59,17 +151,30 @@ func (m Model) updatePick(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.updatePalette(msg)
 	}
 	done, result := m.picker.Update(msg)
+	if m.picker.QueryChanged() {
+		m.refilterPicker()
+		m.syncViewport()
+		return m, nil
+	}
 	if !done {
 		return m, nil
 	}
 	sel := result.(components.SelectResult)
-	apply := m.pickerApply
+	apply, index := m.pickerApply, m.pickerIndex
 	m.picker = nil
 	m.pickerApply = nil
+	m.pickerAll = nil
+	m.pickerIndex = nil
 	m.leaveSurface()
 	if sel.Canceled {
 		m.syncViewport()
 		return m, nil
+	}
+	// The card answers with a row of what it was showing; the apply was
+	// written against the list the picker opened over, so a filtered choice
+	// is mapped back before it is spent.
+	if sel.Index >= 0 && sel.Index < len(index) {
+		sel.Index = index[sel.Index]
 	}
 	// An apply that hands the session to another surface — the /run picker
 	// into the confirm prompt (S-081) — returns no note and keeps the state

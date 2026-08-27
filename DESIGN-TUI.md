@@ -439,6 +439,48 @@ anything.
   itself the problem the screen should be showing, and blocked children stay
   pinned above.
 
+**What the implementation read (S-123).** The artboard settles the shape; six
+things it does not spell out were decided against it and are recorded here
+rather than left in the code to be rediscovered.
+
+- **The marker's form is the queue strip's, and that is now the decision.**
+  S-116 borrowed `… N more` from `QueueStrip` with no artboard to check it
+  against; `Lists.html` draws the same form, so the borrowing stops being an
+  improvisation. What did change is its paint: the marker is plain dim, not
+  the italic grey the key hints use — it is a count, not an aside.
+- **The title rail carries the counts the window makes true**: `24 available ·
+  8 showing` while the card is windowing, `24 available` once a filter has
+  made a shorter list that fits. A list that fits with no filter open spends
+  no rail saying that nothing was hidden, and a caller with its own chip — the
+  palette's match count — keeps it.
+- **While the query line is open, a digit is a digit and so is `j`.** The
+  query line is the surface then, which is the reading §18a already made for
+  the palette; the filter row generalizes it rather than making the palette an
+  exception. The cost is that the numbers cannot be typed while filtering; the
+  hazard it avoids is a model name with a `5` in it switching the model
+  halfway through being typed, which is a key acting where it was not offered
+  (invariant 5). Numbering itself stays the caller's prop and keeps counting
+  the matched list, so a number that is read is still a number that addresses
+  what is on screen.
+- **The key row sheds rather than clips** (invariant 4). Adding `/ filter` made
+  the row longer than a 60-column card, so it comes down a ladder: the
+  number-jump reminder goes first, because every row on screen is already
+  carrying its own number, then `j/k`, which is a second name for a key the
+  row still offers. What an offer *is* — the filter, the selection, the way
+  out — never goes.
+- **"The card holds its size" on a no-match is about rows, not padding.** The
+  empty card keeps its frame, its query row with both counts, its key row with
+  `[ctrl+u]` on it, and two rows that say what was not found and what is
+  nearest. It does not pad itself back to the height the unfiltered list had —
+  a filtered list that matched four is shorter too, and an empty pane is what
+  the rule forbids, not a shorter card.
+- **The palette is this component with the row always open** (§18a). It
+  stopped drawing its own query line when the filter row landed, so the two
+  cannot disagree about what one looks like; the `▸` prompt and the block
+  cursor are the card's now. The palette keeps the halves that are its own:
+  the match rule, the group rails, and the chip that counts matches rather
+  than a catalog.
+
 ### 4b. Multi-select
 
 Used by: staging/patch review (S-068 writer patches), `/memory forget`,

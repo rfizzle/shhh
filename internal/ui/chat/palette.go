@@ -96,7 +96,12 @@ func (m Model) openPalette() (tea.Model, tea.Cmd) {
 	m.picker = &components.Select{
 		Title:      "Palette",
 		Unnumbered: true,
-		Hint:       "enter run · tab complete · ↑↓ move · esc dismiss",
+		// The palette is the filter row always open (S-123): the query line
+		// it used to draw for itself is the card's own now, so the two cannot
+		// disagree about what a query line looks like. It keeps its own chip,
+		// which counts matches rather than a catalog.
+		Filtering: true,
+		Hint:      "enter run · tab complete · ↑↓ move · esc dismiss",
 	}
 	m.pickerApply = nil
 	m.refreshPalette()
@@ -147,39 +152,18 @@ func (m Model) updatePalette(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 		return m.dispatchPalette(row)
 
-	case "backspace":
-		if r := []rune(m.palette.query); len(r) > 0 {
-			m.palette.query = string(r[:len(r)-1])
-			m.refreshPalette()
-		}
-		return m, nil
-
-	case "ctrl+u":
-		m.palette.query = ""
-		m.refreshPalette()
-		return m, nil
 	}
 
-	if text := typedText(msg); text != "" {
-		m.palette.query += text
+	// Everything else belongs to the card's query line — backspace, ctrl+u
+	// and every key that types. The palette stopped keeping its own copy of
+	// that when the filter row landed (S-123); it keeps the match rule, which
+	// is the half the component never had.
+	m.picker.Update(msg)
+	if m.picker.QueryChanged() {
+		m.palette.query = m.picker.Query
 		m.refreshPalette()
 	}
 	return m, nil
-}
-
-// typedText is what a key contributes to the query, or "" for a key that
-// types nothing.
-func typedText(msg tea.KeyMsg) string {
-	switch msg.Type {
-	case tea.KeyRunes:
-		if msg.Alt {
-			return ""
-		}
-		return string(msg.Runes)
-	case tea.KeySpace:
-		return " "
-	}
-	return ""
 }
 
 // refreshPalette rebuilds the card from the query: the matches, the rows that
@@ -200,7 +184,7 @@ func (m *Model) refreshPalette() {
 		}
 	}
 	m.picker.Options = opts
-	m.picker.Prompt = "❯ " + p.query + "█"
+	m.picker.Query = p.query
 	m.picker.Chips = []string{paletteCount(len(matches))}
 	m.picker.MaxLines = m.maxConfirmPanelHeight()
 	m.picker.Focus = m.picker.FirstSelectable()

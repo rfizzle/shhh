@@ -356,6 +356,80 @@ func TestGolden_QueueStrip(t *testing.T) {
 	})
 }
 
+// listWidths are the two the Lists artboard is drawn at: the card at its
+// working width, and the same list on a terminal narrow enough that the rows
+// have to give something up.
+var listWidths = []int{60, 110}
+
+// goldenCatalog is the 24-entry model list the Lists artboard uses, long
+// enough that every card below it has to window.
+func goldenCatalog() []SelectOption {
+	names := []string{
+		"gpt-5.2", "gpt-5.2-mini", "gpt-5.1", "gpt-5.1-mini", "o4-mini",
+		"claude-opus-4.6", "claude-sonnet-4.6", "claude-sonnet-4.5",
+		"claude-haiku-4.5", "gemini-3-pro", "gemini-3-flash", "grok-4.1",
+		"deepseek-r2", "deepseek-v4", "qwen3-coder-72b", "llama-4-maverick",
+		"llama-3.3-70b", "mistral-large-3", "phi-5-mini", "command-r-plus",
+		"nova-pro-2", "jamba-2", "yi-2-34b", "solar-pro-3",
+	}
+	opts := make([]SelectOption, 0, len(names))
+	for _, n := range names {
+		opts = append(opts, SelectOption{Label: n})
+	}
+	return opts
+}
+
+// TestGolden_Lists captures the window and the filter row over it (§4a,
+// ui_kits/cockpit/Lists.html): the window at the head of a list, mid-list
+// where both markers count, and at its tail, then the same card with a query
+// on it and the card a query matched nothing on.
+//
+// The three window panels are walked to rather than positioned, because the
+// window is path-dependent on purpose: an option reached from above sits at
+// the foot of the window and the same option reached from below sits at its
+// head, and that is exactly what a fixed Focus would not capture.
+func TestGolden_Lists(t *testing.T) {
+	captureGolden(t, "lists", "list windowing and the filter row", listWidths, func(width int) []golden.Panel {
+		walked := func(steps int, k string) string {
+			s := &Select{Title: "Switch model", Options: goldenCatalog(), MaxLines: 11, Filterable: true}
+			if k == "up" {
+				s.Focus = len(s.Options) - 1
+			}
+			for i := 0; i < steps; i++ {
+				s.View(width)
+				s.Update(key(k))
+			}
+			return s.View(width)
+		}
+		filtered := func(query string, mut func(*Select)) string {
+			var matches []SelectOption
+			for _, o := range goldenCatalog() {
+				if strings.Contains(o.Label, query) {
+					matches = append(matches, o)
+				}
+			}
+			s := &Select{
+				Title: "Switch model", Options: matches, MaxLines: 11,
+				Filterable: true, Filtering: true, Query: query, Total: 24,
+			}
+			if mut != nil {
+				mut(s)
+			}
+			return s.View(width)
+		}
+		return []golden.Panel{
+			{Label: "the head · nothing is hidden above it", View: walked(0, "down")},
+			{Label: "mid-list from above · the option sits at the foot of the window", View: walked(12, "down")},
+			{Label: "the same option from below · it sits at the head instead", View: walked(11, "up")},
+			{Label: "the tail · nothing is hidden below it", View: walked(23, "down")},
+			{Label: "filtered · the run is bold, the row states both counts", View: filtered("mini", nil)},
+			{Label: "no match · a row, not an empty pane", View: filtered("sonnet-5", func(s *Select) {
+				s.Closest = "claude-sonnet-4.6"
+			})},
+		}
+	})
+}
+
 // TestGolden_DiffView captures the viewer's three modes (§3): the transcript
 // row, the bounded in-transcript body, and the full-screen view.
 func TestGolden_DiffView(t *testing.T) {

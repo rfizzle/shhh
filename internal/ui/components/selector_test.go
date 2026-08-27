@@ -241,14 +241,14 @@ func TestSelect_DigitJumpCountsOnlySelectableRows(t *testing.T) {
 	}
 }
 
-func TestSelect_PromptChipsAndHint(t *testing.T) {
+func TestSelect_QueryChipsAndHint(t *testing.T) {
 	s := &Select{
 		Title: "Palette", Options: grouped(), Unnumbered: true,
-		Prompt: "❯ mod█", Chips: []string{"12 results"},
+		Filtering: true, Query: "mod", Chips: []string{"12 results"},
 		Hint: "enter run · tab complete · ↑↓ move · esc dismiss",
 	}
 	view := s.View(70)
-	for _, want := range []string{"Palette", "12 results", "❯ mod█", "COMMANDS", "tab complete"} {
+	for _, want := range []string{"Palette", "12 results", "▸ mod█", "COMMANDS", "tab complete"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("expected %q in the card:\n%s", want, view)
 		}

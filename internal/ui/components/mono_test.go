@@ -128,6 +128,19 @@ func monoFixtures() []monoSurface {
 
 	// The palette's row states, held to one command name so that only the
 	// state itself is left to tell them apart (S-112, §18a).
+	// The filter row's three answers (§4a, S-123): a query with matches, a
+	// query with none, and a list with no filter open at all. Bold is what
+	// tells a matched run from the rest, and bold is what mono keeps.
+	filterCard := func(mut func(*Select)) string {
+		sel := Select{
+			Title: "Switch model", MaxLines: 9, Filterable: true,
+			Options: []SelectOption{{Label: "gpt-5.2-mini"}, {Label: "o4-mini"}},
+			Total:   24,
+		}
+		mut(&sel)
+		return sel.View(w)
+	}
+
 	paletteRow := func(mut func(*SelectOption)) string {
 		opt := SelectOption{Label: "/clear"}
 		mut(&opt)
@@ -340,6 +353,14 @@ func monoFixtures() []monoSurface {
 			{"current", queued(true, func(it *QueueItem) {})},
 			{"waiting", queued(false, func(it *QueueItem) {})},
 			{"in the batch", queued(false, func(it *QueueItem) { it.Batch = true })},
+		}},
+		{"list filter state", []monoState{
+			{"no filter open", filterCard(func(s *Select) {})},
+			{"matches", filterCard(func(s *Select) { s.Filtering, s.Query = true, "mini" })},
+			{"no match", filterCard(func(s *Select) {
+				s.Filtering, s.Query, s.Options = true, "sonnet-5", nil
+				s.Closest = "claude-sonnet-4.6"
+			})},
 		}},
 		{"palette row state", []monoState{
 			{"available", paletteRow(func(o *SelectOption) {})},

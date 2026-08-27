@@ -56,8 +56,11 @@ func TestPalette_CtrlKOpensGroupedResults(t *testing.T) {
 	if !strings.Contains(labels, "FILES") {
 		t.Fatalf("the recent files should be offered, got:\n%s", labels)
 	}
-	if !strings.Contains(m.picker.Prompt, "❯") {
-		t.Fatalf("the palette should carry its query line, got %q", m.picker.Prompt)
+	if !m.picker.Filtering {
+		t.Fatal("the palette is the shared filter row always open, so the card should be filtering")
+	}
+	if !strings.Contains(m.picker.View(70), "▸ █") {
+		t.Fatalf("the palette should carry its query line:\n%s", m.picker.View(70))
 	}
 	if got := strings.Join(m.picker.Chips, ""); !strings.Contains(got, "results") {
 		t.Fatalf("the title rail should count the results, got %q", got)

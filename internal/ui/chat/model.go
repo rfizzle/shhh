@@ -470,8 +470,14 @@ type Model struct {
 	// Interactive slash-command pickers (S-078): picker is the open select
 	// card, pickerApply consumes the chosen index and returns the transcript
 	// note; modelOptions is the /model picker's model catalog.
+	//
+	// pickerAll is the list the picker opened over and pickerIndex maps the
+	// rows it is showing back onto it, so a choice made through the filter row
+	// (S-123) still reaches an apply written against the whole list.
 	picker       *components.Select
 	pickerApply  func(*Model, int) string
+	pickerAll    []components.SelectOption
+	pickerIndex  []int
 	modelOptions []string
 	// The command palette (S-112): the open palette's query and candidates,
 	// which turn statePick into a filtered list rather than a fixed one.
