@@ -243,6 +243,33 @@ func TestTurnClose_RowsReRenderAtAnyWidth(t *testing.T) {
 	}
 }
 
+// A close row offers [v] and [u] and nothing else. The round-limit pause's
+// keys are dispatched in the same branch, so they reach this row too — and a
+// key a row does not offer has to fall through to the draft, not land on
+// whichever of the row's own offers happened to be checked last.
+func TestTurnClose_TheRoundPauseKeysAreInertOnACloseRow(t *testing.T) {
+	m := turnModel(t)
+	m = sendText(t, m, "write the file")
+	m = applyWrite(t, m, filepath.Join(t.TempDir(), "main.go"), "package main\n", "y")
+	m = finishTurn(t, m)
+
+	updated, _ := m.enterFocusMode()
+	m = updated.(Model)
+	if _, ok := m.focusedClose(); !ok {
+		t.Fatalf("focus should land on the close rows, got kind %v", m.transcript[m.focusIdx].kind)
+	}
+	for _, key := range []string{grantRoundsKey, uncapRoundsKey} {
+		next, _ := m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(key)})
+		got := next.(Model)
+		if got.state == stateUndoConfirm {
+			t.Errorf("%q is not an offer on a close row and must not arm the undo", key)
+		}
+		if !strings.Contains(got.input.Value(), key) {
+			t.Errorf("%q should be a character like any other here, draft = %q", key, got.input.Value())
+		}
+	}
+}
+
 func TestTurnClose_ReachableFromFocusMode(t *testing.T) {
 	m := turnModel(t)
 	m = sendText(t, m, "write the file")

@@ -999,7 +999,7 @@ belongs in the sentence. `ui_kits/cockpit/Interrupt.html` is normative.
 ┌─ shhh code · ~/src/shhh · loop-refactor ───────── ⏸ 1 waiting ─┐
 │ ▸ also add a --max-rounds █lag while you're in there           │
 ├────────────────────────────────────────────────────────────────┤
-│ ⏵⏵ auto · round 7/75 · ctx ▰▰▰▰▰▱▱▱ 62% · $0.14 · gpt-5.2      │
+│ ⏵⏵ auto · round 7/150 · ctx ▰▰▰▰▰▱▱▱ 62% · $0.14 · gpt-5.2     │
 └─ [ctrl+g] answer it · [enter] queue · [esc] stop the run ──────┘
 ```
 
@@ -1111,7 +1111,7 @@ Two positions are allowed, and there is no third.
 | the undo confirm (§5), the key entry (§17a), the full-screen diff (§3c) | takeover | `y n f` | the key that opens it |
 | the context pressure card (§17b), the retry countdown (§17a) | takeover | `n` | it opens on its own and takes the keyboard |
 | the changeset row (§16) | transcript row | `v u` | `ctrl+e`, then the cursor on the row |
-| a provider failure's row, a dropped stream's, a round-limit pause's (§17a) | transcript row | `e p r c v u +10` | `ctrl+e`, then the cursor on the row |
+| a provider failure's row, a dropped stream's, a round-limit pause's (§17a) | transcript row | `e p r c v u + !` | `ctrl+e`, then the cursor on the row |
 
 **The transcript rows are what the audit found.** Everything above them passes
 by construction — a takeover has the keyboard by definition, and the four
@@ -1191,7 +1191,7 @@ turn is the rail's THIS TURN block, and §8d is that turn while it is running.
 
 ```
 ──────────────────────────────────────────────────────────────────────────
-⏵⏵ auto · round 7/75 · ctx ▰▰▰▰▰▱▱▱ 62% · ↑41.2k ↓9.8k · $0.14 · ◇1 · gpt-5.2
+⏵⏵ auto · round 7/150 · ctx ▰▰▰▰▰▱▱▱ 62% · ↑41.2k ↓9.8k · $0.14 · ◇1 · gpt-5.2
 ```
 
 ### 8a. Segments
@@ -1201,7 +1201,7 @@ turn is the rail's THIS TURN block, and §8d is that turn while it is running.
 | `⏵⏵ auto` / `⏵⏵ accept edits` (add 10) | permissive modes |
 | `⏸ plan` / `⏸ manual` (accent 214) | gated modes |
 | `✦ checking` (spin 205, spinner) | the auto-mode classifier is deciding |
-| `round 7/75` (dim 241) | rounds used of the limit, `+10` beside it while a round-limit pause offers more (§17a) |
+| `round 7/150` (dim 241) | rounds used of the limit, `+50` beside it while a round-limit pause offers more, and `round 7/∞` for a turn running without a ceiling (§17a) |
 | `ctx ▰▰▰▰▰▱▱▱ 62%` | context meter (§10c) — bar and number share a colour |
 | `↑41.2k ↓9.8k` (dim 241) | tokens in / out this session |
 | `$0.14` (body 252) | spend |
@@ -1224,8 +1224,8 @@ failed state. A rail that has run out of room shows fewer facts, never
 truncated ones:
 
 ```
-⏵⏵ auto · round 7/75 · ctx ▰▰▰▰▰▱▱▱ 62% · ↑41.2k ↓9.8k · $0.14 · ◇1 · gpt-5.2
-⏵⏵ auto · 7/25 · ctx ▰▰▰▰▰▱▱▱ 62% · $0.14
+⏵⏵ auto · round 7/150 · ctx ▰▰▰▰▰▱▱▱ 62% · ↑41.2k ↓9.8k · $0.14 · ◇1 · gpt-5.2
+⏵⏵ auto · 7/150 · ctx ▰▰▰▰▰▱▱▱ 62% · $0.14
 ⏵⏵ ctx 62% · $0.14
 ```
 
@@ -1774,7 +1774,7 @@ layout and spans both panes of the two-pane cockpit (§15).
 │ ▸ and add a regression test for the parser▌                                   │
 │                                                                               │
 │                                                                               │
-├─ ⏵⏵ accept edits · round 7/75 · ctx ▰▰▰▰▰▱▱▱ 62% · ↑41.2k ↓9.8k · $0.14 · gpt-5.2 ─┤
+├─ ⏵⏵ accept edits · round 7/150 · ctx ▰▰▰▰▰▱▱▱ 62% · ↑41.2k ↓9.8k · $0.14 · gpt-5.2 ┤
 ╰─ enter queues steering · / commands · ctrl+c cancel ──────────────────────────╯
 ```
 
@@ -2210,7 +2210,7 @@ it change". So a turn closes with three rows: what it did, what changed, and
 whether the tests still pass.
 
 ```
- ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14                   round 7/75
+ ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14                  round 7/150
 ▎✎ 3 files changed +30 −4 · [v] review · [u] undo turn · [ctrl+e] to use them
  ✓ go test ./... passing · 41 packages · 12.8s
 ```
@@ -2389,9 +2389,13 @@ Two more verbs share this field: `stream` is S-107's and `rounds` is S-109's.
     …so I'll thread the sentinel through runRound and then
     [c] continue from here · [r] ask again from scratch · the partial reply stays
 
-   ⚠ rounds  75 of 75 used · the turn's own bound            stopped 4m12s
+   ⚠ rounds  150 of 150 used · the turn's own bound          stopped 4m12s
     3 files changed +30 −4 · the suite has not been re-run since
-    [v] review what it did · [+10] ten more rounds · [u] undo the turn
+    [v] review what it did · [+50] more rounds · [u] undo the turn
+
+   ⚠ rounds  200 of 200 used · 50 already granted            stopped 7m48s
+    5 files changed +112 −40
+    [v] review what it did · [+100] more rounds · [!] let it run · [u] undo the turn
 ```
 
 - **A drop is a second row, not a replacement for the first.** Whatever broke
@@ -2425,26 +2429,50 @@ turn's close block would be (§16).
   more rounds closes in the ordinary way when it really ends, once, for the
   whole turn.
 - **The qualifier is what makes this number this number** — `the turn's own
-  bound` on the first stop, and `10 already granted` on the ones after it,
-  because `35 of 35 used` on its own reads like a limit nobody chose. It is
+  bound` on the first stop, and `50 already granted` on the ones after it,
+  because `200 of 200 used` on its own reads like a limit nobody chose. It is
   *not* a Go sentinel: no identifier from the source reaches the transcript,
   which is the same rule §17a applies to a provider's error strings.
 - **Every clause is conditional on the thing it names.** A turn that changed
   nothing says so rather than reporting three zeroes, and one whose edits are
   still covered by a check says nothing about the suite. `[v]` and `[u]` are
-  offered only when there is a changeset to act on.
-- **`[+10]` draws the grant, not the keystroke.** The key is `+`, which is what
+  offered only when there is a changeset to act on, and `[!]` only when a grant
+  has already been taken.
+- **`[+50]` draws the grant, not the keystroke.** The key is `+`, which is what
   focus mode's hint line names; the bracket says what pressing it buys. Taking
   it continues *the same turn* — nothing is added to the conversation, the
   counter is not reset, the changeset goes on collecting under the same turn
   number — so the turn is priced as one thing and `[u]` still takes all of it
   back.
-- **The grant expires with the turn.** A new user message gets the configured
-  ceiling back and spends the standing offer, because a turn the session has
-  moved past cannot be given more rounds.
-- **The counter on the rail is part of the surface** (§8a): `round 75/75 +10`
-  while the offer stands, `round 75/85` once it is taken. The bound and the
-  price of lifting it are both on screen for the whole decision.
+- **The grant doubles.** Each one is everything the turn has been given
+  already, plus another block: 50, then 100, then 200. A stop you have
+  answered once with "keep going" is not a question worth asking again at the
+  same interval, and a checkpoint that charges a flat toll stops being a
+  checkpoint and becomes a turnstile. Three presses put the ceiling past any
+  turn that finishes, which is the shape the row is meant to have: it goes
+  quiet on its own.
+- **`[!]` is the second stop's offer, not the first's.** The first stop is the
+  checkpoint doing the job it exists for — you have not yet seen this turn
+  stopped, so the question is worth asking. Once you have answered it, the
+  more useful of the two answers is to stop being asked: `[!]` lifts the
+  ceiling for the rest of the turn, and the rail counts up against no bound.
+  The way out of a turn told to run is the one it always was, which is
+  interrupting it — that is the trade the key states, and the reason it is not
+  offered until the checkpoint has stopped the turn once.
+- **Both expire with the turn.** A new user message gets the configured ceiling
+  back and spends the standing offer, because a turn the session has moved past
+  cannot be given more rounds. A session that should never stop says so once,
+  at the command line (`shhh code --max-rounds 0`) or in the config file
+  (`behavior.max_tool_rounds` negative), rather than by a key pressed in the
+  middle of a turn — that is the unattended run, where there is nobody to press
+  one.
+- **The counter on the rail is part of the surface** (§8a): `round 150/150 +50`
+  while the offer stands, `round 150/200` once it is taken, and `round 214/∞` once
+  `[!]` or `--max-rounds 0` has removed the ceiling. The bound and the price of
+  lifting it are both on screen for the whole decision — and where there is no
+  bound the counter keeps its shape rather than inventing a number for it. Not
+  words: the rail joins its segments with `·`, so `round 214 · no bound` would
+  read as two facts rather than one.
 
 A request that was never answered has nothing to keep, and waiting is the
 whole remedy. It grows a countdown under it instead of an offer to continue:
@@ -2909,7 +2937,7 @@ shhh config · ~/.shhh/config.toml · 2 overridden by this repo  [?] keys · [q]
       claude-sonnet-4.6   better diffs · 200k ctx                         $3 / $15
       gemini-3-flash      1M ctx                                     $0.30 / $2.50
      ↓ 16 more   [/] filter · [enter] take it · [esc] keep gpt-5.2
-   round limit       75                                                    default
+   round limit       150                                                   default
    verbosity         normal — reads fold, mutations never do                  user
 
   WORKSPACE

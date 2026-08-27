@@ -24,26 +24,31 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
-// roundGrantSize is one block of rounds. It is what [+10] grants and what the
-// vitals rail advertises while the offer stands, so the ceiling the counter
-// reports after a grant is the one the row promised.
-const roundGrantSize = 10
+// roundGrantBlock is the first grant, and the step every later one grows by.
+// Grants escalate rather than repeat: a stop you have already answered with
+// "keep going" is not worth asking again at the same interval, so each grant
+// is the whole budget granted so far plus another block — which doubles it
+// (50, then 100, then 200, then 400). Three presses put the ceiling past any
+// turn that has ever finished, so the checkpoint puts itself out instead of
+// becoming a toll collected every few minutes.
+const roundGrantBlock = 50
 
-// grantRoundsKey is the keystroke that takes the offer. The row draws it as
-// `[+10]` — the grant, not the keystroke — because both design surfaces do
-// (DESIGN-TUI.md §17a and ui_kits/cockpit/Edges.html in the shhh Design System
-// project); focus mode's hint line names the literal key, which is where the
-// reader looks for one.
-const grantRoundsKey = "+"
+// grantRoundsKey is the keystroke that takes the offer, and uncapRoundsKey
+// the one that ends the question for the rest of the turn. The row draws the
+// grant as `[+50]` — the block, not the keystroke — because both design
+// surfaces do (DESIGN-TUI.md §17a and ui_kits/cockpit/Edges.html in the shhh
+// Design System project); focus mode's hint line names the literal keys, which
+// is where the reader looks for one.
+const (
+	grantRoundsKey = "+"
+	uncapRoundsKey = "!"
+)
 
-// grantRoundsOffer and grantRoundsLabel are the offer as it reads on the row:
-// the bracket is the grant, the words are what it buys. The bracket is derived
-// from the size so the two cannot disagree; the label spells the number out,
-// which is the one thing here that has to be rewritten by hand if the block
-// ever changes size.
-var grantRoundsOffer = fmt.Sprintf("[+%d]", roundGrantSize)
-
-const grantRoundsLabel = "ten more rounds"
+// uncapRoundsLabel is the second offer, which appears only once the first has
+// been taken (see roundPause.keys). It buys the rest of the turn outright: no
+// further stops, the rail counting up against no bound. It is the session's
+// version of `--max-rounds 0`, and like the grant it expires with the turn.
+const uncapRoundsLabel = "let it run"
 
 // roundPause is one stop at the tool-round ceiling: what the turn had spent
 // and what it had changed at the moment it stopped. The counts are a snapshot
@@ -56,8 +61,9 @@ type roundPause struct {
 	// used and limit are the counter as the rail reported it.
 	used, limit int
 	// granted is how many rounds this turn had already been given before
-	// this stop, which is the one fact that distinguishes the second pause
-	// from the first.
+	// this stop. It is the one fact that distinguishes the second pause from
+	// the first: it is what the qualifier reports, it sizes the next grant,
+	// and its being non-zero is what puts [!] on the row.
 	granted int
 	// files, added and removed are the turn's changeset when it stopped.
 	files          int
@@ -124,6 +130,29 @@ func checksStale(es []entry) bool {
 	return lastEdit >= 0 && lastCheck < lastEdit
 }
 
+// roundCounter is the vitals rail's round segment (§8a): the counter, plus the
+// block on offer while a stop is standing, so the rail says both what the
+// bound is and what taking the offer would make it.
+func (m Model) roundCounter() string {
+	s := m.roundLabel()
+	if m.pausedAtRoundLimit() {
+		s += fmt.Sprintf(" +%d", m.roundPause.grant())
+	}
+	return s
+}
+
+// roundLabel is the counter on its own, shared with the close block's note
+// (§16). A turn running without a ceiling keeps the counter's shape and puts
+// `∞` where the bound would be: the rail must not invent a number that does
+// not exist, and it cannot say so in words either — its segments are joined
+// with `·`, so `round 7 · no bound` would read as two facts rather than one.
+func (m Model) roundLabel() string {
+	if m.roundsUnbounded() {
+		return fmt.Sprintf("round %d/∞", m.agent.Rounds())
+	}
+	return fmt.Sprintf("round %d/%d", m.agent.Rounds(), m.effectiveMaxToolRounds())
+}
+
 // roundPauseRow renders the pause on the §6a grid, under the `rounds` verb it
 // shares with nothing else. `⚠` rather than `✗`: the turn is recoverable, and
 // the row exists to say how.
@@ -169,16 +198,30 @@ func (p roundPause) detail() string {
 	return d
 }
 
-// keys are the three ways on. Reviewing and undoing are offered only when
-// there is a changeset to act on — a key that cannot be honoured is not
-// offered (§17a) — and the grant goes once it has been taken.
+// grant is the block this stop offers: everything the turn has been granted
+// already, plus another block, which is the same thing as doubling the grant
+// each time (roundGrantBlock). The first stop offers 50, the second 100, the
+// third 200.
+func (p roundPause) grant() int { return p.granted + roundGrantBlock }
+
+// keys are the ways on. Reviewing and undoing are offered only when there is a
+// changeset to act on — a key that cannot be honoured is not offered (§17a) —
+// and both offers go once either has been taken.
+//
+// `[!]` appears only from the second stop, because the first one is the
+// checkpoint doing its job: you have not yet seen this turn stopped, so the
+// question it asks is worth asking. Once you have answered it, offering to
+// stop asking is the more useful of the two answers.
 func (p roundPause) keys() []components.KeyOffer {
 	var keys []components.KeyOffer
 	if p.files > 0 {
 		keys = append(keys, components.KeyOffer{Key: "[" + reviewKey + "]", Label: "review what it did"})
 	}
 	if !p.spent {
-		keys = append(keys, components.KeyOffer{Key: grantRoundsOffer, Label: grantRoundsLabel})
+		keys = append(keys, components.KeyOffer{Key: fmt.Sprintf("[+%d]", p.grant()), Label: "more rounds"})
+		if p.granted > 0 {
+			keys = append(keys, components.KeyOffer{Key: "[" + uncapRoundsKey + "]", Label: uncapRoundsLabel})
+		}
 	}
 	if p.files > 0 {
 		keys = append(keys, components.KeyOffer{Key: "[" + undoKey + "]", Label: "undo the turn"})
@@ -186,16 +229,21 @@ func (p roundPause) keys() []components.KeyOffer {
 	return keys
 }
 
-// roundPauseOffers is the hint bar's version of the same offers: the row
-// draws the grant as the block it grants ([+10]), and the bar has to name the
-// key that takes it, or it is advertising a keystroke nobody can type.
+// roundPauseOffers is the hint bar's version of the same offers. The two
+// differ in exactly one place and for one reason: the row draws the grant as
+// the block it grants ([+100]), while the bar has to name the key that takes
+// it, or it is advertising a keystroke nobody can type — so the bar's label
+// carries the number the row's bracket did.
 func roundPauseOffers(p *roundPause) []components.KeyOffer {
 	var keys []components.KeyOffer
 	if p.files > 0 {
 		keys = append(keys, components.KeyOffer{Key: "[" + reviewKey + "]", Label: "review what it did"})
 	}
 	if !p.spent {
-		keys = append(keys, components.KeyOffer{Key: "[" + grantRoundsKey + "]", Label: grantRoundsLabel})
+		keys = append(keys, components.KeyOffer{Key: "[" + grantRoundsKey + "]", Label: fmt.Sprintf("%d more rounds", p.grant())})
+		if p.granted > 0 {
+			keys = append(keys, components.KeyOffer{Key: "[" + uncapRoundsKey + "]", Label: uncapRoundsLabel})
+		}
 	}
 	if p.files > 0 {
 		keys = append(keys, components.KeyOffer{Key: "[" + undoKey + "]", Label: "undo the turn"})
@@ -245,6 +293,12 @@ func (m Model) roundPauseKey(key string) (tea.Model, tea.Cmd, bool) {
 		}
 		next, cmd := m.grantRounds(p)
 		return next, cmd, true
+	case uncapRoundsKey:
+		if p.spent || p.granted == 0 {
+			return m, nil, false
+		}
+		next, cmd := m.uncapRounds(p)
+		return next, cmd, true
 	}
 	return m, nil, false
 }
@@ -259,9 +313,33 @@ func (m Model) grantRounds(p *roundPause) (tea.Model, tea.Cmd) {
 	if m.working() {
 		return m.systemNotice("The turn is already running again.")
 	}
+	m.roundGrant += p.grant()
+	return m.resumeGrantedTurn(p)
+}
+
+// uncapRounds takes the second offer: the rest of the turn runs with no
+// ceiling at all and no further stops, the rail counting up against no bound
+// (§8a). Everything else is the grant — the same turn, the same changeset, one
+// close at the end — and like the grant it lasts exactly one turn, because a
+// session that should never stop says so once, at the command line
+// (`--max-rounds 0`), rather than by a key pressed in the middle of a turn.
+//
+// The escape from a turn told to run is the one it always was: interrupting
+// it. That is the trade the key states, and the reason it is not offered until
+// the checkpoint has already stopped the turn once.
+func (m Model) uncapRounds(p *roundPause) (tea.Model, tea.Cmd) {
+	if m.working() {
+		return m.systemNotice("The turn is already running again.")
+	}
+	m.roundsUncapped = true
+	return m.resumeGrantedTurn(p)
+}
+
+// resumeGrantedTurn is what both offers do once they have decided the new
+// bound: spend the offer and start the turn's next round.
+func (m Model) resumeGrantedTurn(p *roundPause) (tea.Model, tea.Cmd) {
 	p.spent = true
 	m.roundPause = nil
-	m.roundGrant += roundGrantSize
 	m.invalidateRenderCache()
 	m.turnOpen, m.turnOutcome = true, components.TurnDone
 	m.turnEnded = time.Time{}
@@ -277,14 +355,18 @@ func (m Model) grantRounds(p *roundPause) (tea.Model, tea.Cmd) {
 }
 
 // resetRounds starts a turn's tool-round budget over: the counter, whatever
-// [+10] added to it, and the offer that added it. Fresh user input, a rewind,
-// a retry and a compaction all get the configured ceiling back — and the
-// outstanding offer is spent rather than dropped, because a turn the session
-// has moved past cannot be given more rounds, and the row must not go on
-// saying it can.
+// [+50] added to it, whether [!] lifted it altogether, and the offer that did
+// either. Fresh user input, a rewind, a retry and a compaction all get the
+// configured ceiling back — and the outstanding offer is spent rather than
+// dropped, because a turn the session has moved past cannot be given more
+// rounds, and the row must not go on saying it can.
+//
+// A session started uncapped (`--max-rounds 0`) is untouched by this: that
+// bound is the Agent's and belongs to the session, not to the turn.
 func (m *Model) resetRounds() {
 	m.agent.ResetRounds()
 	m.roundGrant = 0
+	m.roundsUncapped = false
 	if m.roundPause != nil {
 		m.roundPause.spent = true
 		m.roundPause = nil

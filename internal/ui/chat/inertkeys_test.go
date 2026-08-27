@@ -117,7 +117,7 @@ func register(t *testing.T) []keyedSurface {
 		},
 		{
 			name: "a round-limit pause's row (§17a)",
-			keys: []string{"v", "u", grantRoundsKey},
+			keys: []string{"v", "u", grantRoundsKey, uncapRoundsKey},
 			open: func(t *testing.T) Model {
 				m, _ := pausedModel(t)
 				return typeChars(t, m, draftLead)

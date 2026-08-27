@@ -333,25 +333,39 @@ func TestPrintOptsRounds(t *testing.T) {
 	}
 }
 
-func TestCodeCmdMaxRoundsIsHeadlessOnly(t *testing.T) {
-	cases := []struct {
-		name    string
-		args    []string
-		wantErr string
-	}{
-		{"without --print", []string{"--max-rounds", "10"}, "applies to headless runs"},
-		{"negative", []string{"--print", "--max-rounds", "-1"}, "cannot be negative"},
+// --max-rounds no longer errors outside --print: a session takes it too, and
+// `--max-rounds 0` is how one is told up front to run unattended, which is the
+// one thing the in-session offers cannot do. A negative is still the value
+// with nothing left to mean, zero having taken "no cap".
+func TestCodeCmdMaxRoundsRejectsNegative(t *testing.T) {
+	cmd := newCodeCmd()
+	cmd.SetArgs([]string{"--print", "--max-rounds", "-1", "do a thing"})
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "cannot be negative") {
+		t.Fatalf("err = %v, want one naming the negative", err)
 	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			cmd := newCodeCmd()
-			cmd.SetArgs(append(tc.args, "do a thing"))
-			cmd.SetOut(io.Discard)
-			cmd.SetErr(io.Discard)
-			err := cmd.Execute()
-			if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
-				t.Fatalf("err = %v, want one naming %q", err, tc.wantErr)
-			}
-		})
+}
+
+// The session resolves the flag through the same helper the headless run
+// does, so `--max-rounds 0` means one thing on both sides of --print.
+func TestChatSessionRoundsMatchHeadless(t *testing.T) {
+	cfg := config.Config{}
+	cfg.Behavior.MaxToolRounds = 40
+	if got := maxRoundsFor(cfg, 0, false); got != 40 {
+		t.Errorf("unset session = %d, want the config's 40", got)
+	}
+	if got := maxRoundsFor(cfg, 0, true); got != agent.UnlimitedToolRounds {
+		t.Errorf("--max-rounds 0 in a session = %d, want no cap", got)
+	}
+	// A config file can say the same thing, for a machine that only ever runs
+	// unattended: any negative reaches the agent as UnlimitedToolRounds.
+	uncapped := config.Config{}
+	uncapped.Behavior.MaxToolRounds = -1
+	a := agent.New(nil, nil)
+	a.SetMaxRounds(maxRoundsFor(uncapped, 0, false))
+	if !a.Uncapped() {
+		t.Error("a negative behavior.max_tool_rounds should leave the agent uncapped")
 	}
 }

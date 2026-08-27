@@ -339,9 +339,14 @@ func TestGolden_ProviderFailures(t *testing.T) {
 
 // TestGolden_RoundLimitPause captures the checkpoint a turn stops on when it
 // runs out of tool rounds (S-109, §17a) — the `rounds` row standing where the
-// close block would be, in the three shapes the session can produce it: a turn
-// that changed files and never re-ran the suite, one that changed nothing, and
-// one that has already been granted a block of rounds.
+// close block would be, in the four shapes the session can produce it: a turn
+// that changed files and never re-ran the suite, one that changed nothing, one
+// that has already been granted a block of rounds (which is where the doubled
+// grant and [!] show up), and one whose offer has been taken.
+//
+// The numbers are the real ones a session produces: the default ceiling, and a
+// second stop derived from the block rather than written out, so the panel and
+// the row cannot disagree about what the grant buys.
 func TestGolden_RoundLimitPause(t *testing.T) {
 	captureGolden(t, "round-limit-pause", "the round-limit pause", goldenWidths, func(width int) []golden.Panel {
 		build := func(p *roundPause) string {
@@ -353,18 +358,23 @@ func TestGolden_RoundLimitPause(t *testing.T) {
 			m.invalidateRenderCache()
 			return m.renderHistory()
 		}
+		// cap0 is the ceiling a turn starts with and cap1 the one it stops at
+		// after taking the first grant.
+		cap0 := DefaultMaxToolRounds
+		cap1 := cap0 + roundGrantBlock
 		return []golden.Panel{
 			{Label: "the edits are unchecked · all three ways on", View: build(&roundPause{
-				turn: 7, used: 25, limit: 25, files: 3, added: 30, removed: 4, stale: true,
+				turn: 7, used: cap0, limit: cap0, files: 3, added: 30, removed: 4, stale: true,
 			})},
 			{Label: "nothing changed · only the grant can be honoured", View: build(&roundPause{
-				turn: 7, used: 25, limit: 25,
+				turn: 7, used: cap0, limit: cap0,
 			})},
-			{Label: "a second stop · what was already granted is named", View: build(&roundPause{
-				turn: 7, used: 35, limit: 35, granted: 10, files: 3, added: 30, removed: 4,
+			{Label: "a second stop · the grant doubles and [!] arrives", View: build(&roundPause{
+				turn: 7, used: cap1, limit: cap1, granted: roundGrantBlock,
+				files: 5, added: 112, removed: 40,
 			})},
 			{Label: "the offer is spent · the row keeps its words", View: build(&roundPause{
-				turn: 7, used: 25, limit: 25, files: 3, added: 30, removed: 4, stale: true, spent: true,
+				turn: 7, used: cap0, limit: cap0, files: 3, added: 30, removed: 4, stale: true, spent: true,
 			})},
 		}
 	})

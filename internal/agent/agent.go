@@ -40,9 +40,11 @@ type ToolResult struct {
 // The number is a checkpoint interval, not a safety limit: the interactive
 // pause it drives (S-109) is a place to look at what the turn has done, and a
 // checkpoint that fires on ordinary work is noise rather than signal. It was
-// 25, which an everyday "find this across the repo and fix it" turn spends
-// without going wrong.
-const DefaultMaxToolRounds = 75
+// 25, then 75, and both were spent by an everyday "find this across the repo
+// and fix it" turn without anything going wrong. 150 is the first number that
+// leaves the ordinary turn alone, which is the only way the pause means
+// something when it does arrive.
+const DefaultMaxToolRounds = 150
 
 // UnlimitedToolRounds passed to SetMaxRounds removes the per-turn cap: the
 // loop runs until the model stops asking for tools. It is for headless runs a

@@ -570,11 +570,13 @@ type Model struct {
 	pressure      *components.PressureCard
 	pressureShown bool
 	// The round-limit pause (S-109): the offer standing on the last turn to
-	// stop at its ceiling, and the rounds [+10] has granted the turn in
-	// front of it. Both expire with the turn — resetRounds spends the offer
-	// and gives the configured ceiling back.
-	roundPause *roundPause
-	roundGrant int
+	// stop at its ceiling, the rounds [+50] has granted the turn in front of
+	// it, and whether [!] has lifted this turn's ceiling altogether. All
+	// three expire with the turn — resetRounds spends the offer and gives the
+	// configured ceiling back.
+	roundPause     *roundPause
+	roundGrant     int
+	roundsUncapped bool
 }
 
 func New(initialMessages []provider.Message, stream StreamFunc) Model {
@@ -678,24 +680,31 @@ func (m Model) WithClassifier(c *agent.Classifier) Model {
 	return m
 }
 
-// WithMaxToolRounds overrides the per-turn tool-round cap; n <= 0 keeps
-// DefaultMaxToolRounds. A negative n is not agent.UnlimitedToolRounds here:
-// the chat cap is the S-109 checkpoint and the rail's `round n/m` counter has
-// no reading for a ceiling that does not exist, so the TUI never uncaps.
+// WithMaxToolRounds overrides the per-turn tool-round cap; zero keeps
+// DefaultMaxToolRounds and a negative n is agent.UnlimitedToolRounds, which
+// starts the session with no checkpoint at all — what `shhh code
+// --max-rounds 0` asks for, and the way to leave a session running unattended.
+// The rail has a reading for it (§8a), so the TUI no longer has to refuse it.
 func (m Model) WithMaxToolRounds(n int) Model {
-	if n < 0 {
-		n = 0
-	}
 	m.agent.SetMaxRounds(n)
 	return m
 }
 
 // effectiveMaxToolRounds is this turn's tool-round ceiling: the configured cap
-// plus whatever [+10] has granted the turn in front of it (S-109). The grant
+// plus whatever [+50] has granted the turn in front of it (S-109). The grant
 // lives here rather than on the Agent so that it expires with the turn — a new
-// one starts from the ceiling the session was configured with.
+// one starts from the ceiling the session was configured with. Callers that
+// render or enforce a ceiling must ask roundsUnbounded first: like
+// agent.MaxRounds, this keeps answering with a number when there is no bound,
+// because no number honestly means "none".
 func (m Model) effectiveMaxToolRounds() int {
 	return m.agent.MaxRounds() + m.roundGrant
+}
+
+// roundsUnbounded reports that this turn will not stop at a ceiling: either
+// [!] lifted it for the turn, or the session was started without one.
+func (m Model) roundsUnbounded() bool {
+	return m.roundsUncapped || m.agent.Uncapped()
 }
 
 // WithResumedMessages replaces the conversation with a previously saved one
@@ -1704,9 +1713,9 @@ func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
 	}
-	// The ceiling is the session's, not the Agent's, because [+10] raises it
+	// The ceiling is the session's, not the Agent's, because [+50] raises it
 	// for this turn alone (S-109).
-	if m.agent.Rounds() >= m.effectiveMaxToolRounds() {
+	if !m.roundsUnbounded() && m.agent.Rounds() >= m.effectiveMaxToolRounds() {
 		return m.pauseAtRoundLimit()
 	}
 	m.setTurnState(stateStreaming)
@@ -2099,10 +2108,7 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 	// decided. The grant on offer is stated beside it, so the counter says
 	// both what the bound is and what taking the offer would make it (S-109).
 	if m.agent.Rounds() > 0 && (m.turnState() != stateInput || m.pausedAtRoundLimit()) {
-		c.Round = fmt.Sprintf("round %d/%d", m.agent.Rounds(), m.effectiveMaxToolRounds())
-		if m.pausedAtRoundLimit() {
-			c.Round += fmt.Sprintf(" +%d", roundGrantSize)
-		}
+		c.Round = m.roundCounter()
 	}
 	if m.TotalTokensIn != 0 || m.TotalTokensOut != 0 {
 		c.Tokens = fmt.Sprintf("↑%s ↓%s", formatTokenCount(m.TotalTokensIn), formatTokenCount(m.TotalTokensOut))

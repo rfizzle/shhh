@@ -26,18 +26,14 @@ func newCodeCmd() *cobra.Command {
 		Long:  "Open an agent session that can read, search, edit, and run code in the current directory, with approval-gated file edits and commands.",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// --max-rounds is headless-only, so a value that would be
-			// silently ignored is an error instead: the flag's whole point is
-			// the run that would otherwise stop at the cap.
+			// --max-rounds applies to a session as much as to a headless
+			// run: `--max-rounds 0` is how a session is told up front to run
+			// unattended, which is the one thing the in-session [+] and [!]
+			// cannot do — they are keys, and nobody is there to press them.
 			popts.maxRoundsSet = cmd.Flags().Changed("max-rounds")
 			headless := printMode || popts.json || popts.sandbox
-			if popts.maxRoundsSet {
-				if popts.maxRounds < 0 {
-					return fmt.Errorf("--max-rounds cannot be negative (0 removes the cap)")
-				}
-				if !headless {
-					return fmt.Errorf("--max-rounds applies to headless runs; pass --print (in a session the round limit is a pause you can extend with +)")
-				}
+			if popts.maxRoundsSet && popts.maxRounds < 0 {
+				return fmt.Errorf("--max-rounds cannot be negative (0 removes the cap)")
 			}
 			session := chatSession{
 				title:        "shhh code",
@@ -52,6 +48,8 @@ func newCodeCmd() *cobra.Command {
 				structural:   structural.Detect(),
 				gate:         true,
 				processes:    true,
+				maxRounds:    popts.maxRounds,
+				maxRoundsSet: popts.maxRoundsSet,
 			}
 			if headless {
 				return runPrintSession(cmd, args, session, popts)
@@ -75,7 +73,7 @@ func newCodeCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&popts.yes, "yes", false, "with --print, auto-approve file edits and commands (safety-flagged commands stay denied)")
 	cmd.Flags().StringArrayVar(&popts.allow, "allow", nil, "with --print, auto-approve commands matching this prefix (repeatable; extends the config allowlist)")
 	cmd.Flags().BoolVar(&popts.sandbox, "sandbox", false, "run approved commands inside a disposable container sandbox; needs a configured digest-pinned image (implies --print)")
-	cmd.Flags().IntVar(&popts.maxRounds, "max-rounds", 0, "with --print, cap consecutive tool-call rounds for this run (0 removes the cap; default: behavior.max_tool_rounds)")
+	cmd.Flags().IntVar(&popts.maxRounds, "max-rounds", 0, "cap consecutive tool-call rounds per turn (0 removes the cap, for a run left unattended; default: behavior.max_tool_rounds)")
 
 	cmd.AddCommand(newCodeDoctorCmd())
 

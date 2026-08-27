@@ -46,13 +46,25 @@ type printOpts struct {
 // ErrRoundCap, so --max-rounds 0 is the way to say "run until it is done" on
 // a foreground run a person can interrupt.
 func (o printOpts) rounds(cfg config.Config) int {
-	if !o.maxRoundsSet {
+	return maxRoundsFor(cfg, o.maxRounds, o.maxRoundsSet)
+}
+
+// maxRoundsFor resolves the round cap the same way for a headless run and a
+// session, which is the whole point of it: `--max-rounds 0` means the same
+// thing on both sides of --print, and only the way out of a runaway differs
+// (the exit code there, the interrupt key here).
+//
+// The zero the flag was left at and the zero it was set to are different
+// answers, which is what set distinguishes: unset falls through to the config,
+// where zero in turn means "nobody chose" and negative means no cap.
+func maxRoundsFor(cfg config.Config, flag int, set bool) int {
+	if !set {
 		return cfg.Behavior.MaxToolRounds
 	}
-	if o.maxRounds == 0 {
+	if flag == 0 {
 		return agent.UnlimitedToolRounds
 	}
-	return o.maxRounds
+	return flag
 }
 
 // runPrintSession runs the agent loop to completion without the TUI:

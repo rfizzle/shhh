@@ -124,7 +124,7 @@ accent_color = "cyan"
 | `behavior.shell` | Override detected shell |
 | `behavior.safety_warnings` | Warn before destructive commands (default: true) |
 | `behavior.context_max_tokens` | Max tokens for stdin context (default: 8000) |
-| `behavior.max_tool_rounds` | Max consecutive tool-call rounds per chat turn (default: 75) |
+| `behavior.max_tool_rounds` | Max consecutive tool-call rounds per chat turn (default: 150; any negative removes the cap, for a machine that only runs unattended) |
 | `behavior.command_allowlist` | Command prefixes auto-approved in chat/code sessions (e.g. `["git status", "go test"]`); safety-flagged commands always prompt |
 | `behavior.read_only_commands` | Extra command prefixes treated as read-only inspection (they run without prompting in every mode, alongside the built-in list) |
 | `behavior.read_only_auto` | Whether built-in inspection commands run without prompting (default: true); `false` makes reads prompt like anything else |
@@ -432,14 +432,14 @@ what it was: a colour change in the rails.
 ### When the agent runs out of rounds
 
 A turn may only trigger so many consecutive tool rounds
-(`behavior.max_tool_rounds`, 75 by default). Reaching that used to end the turn
+(`behavior.max_tool_rounds`, 150 by default). Reaching that used to end the turn
 on a grey line telling you to send a message. It is a checkpoint now — the one
 row in this section where nothing failed:
 
 ```
-   ⚠ rounds  75 of 75 used · the turn's own bound            stopped 4m12s
+   ⚠ rounds  150 of 150 used · the turn's own bound          stopped 4m12s
     3 files changed +30 −4 · the suite has not been re-run since
-    [v] review what it did · [+10] ten more rounds · [u] undo the turn
+    [v] review what it did · [+50] more rounds · [u] undo the turn
     [ctrl+e] to use them
 ```
 
@@ -449,19 +449,44 @@ than something above one, so nothing offers `[v]` and `[u]` twice; a turn that
 changed nothing says so and offers only the grant, because a key that cannot be
 honoured is not offered.
 
-`[+10]` (pressed as `+`, in focus mode with the rest of the recovery keys)
-gives the turn ten more rounds and lets it carry straight on: nothing is added
-to the conversation, nothing is re-asked, the counter is not reset, and the
+`[+50]` (pressed as `+`, in focus mode with the rest of the recovery keys)
+gives the turn more rounds and lets it carry straight on: nothing is added to
+the conversation, nothing is re-asked, the counter is not reset, and the
 changeset keeps collecting under the same turn — so the turn is still priced as
-one thing and `[u]` still takes all of it back. The grant expires with the turn:
-your next message starts from the configured ceiling again. Throughout, the
-vitals rail carries the decision — `round 75/75 +10` while the offer stands,
-`round 75/85` once it is taken.
+one thing and `[u]` still takes all of it back.
 
-Headless runs have nobody to offer the grant to, so `shhh code -p` fails at the
-cap instead. `--max-rounds N` sets the ceiling for one run, and `--max-rounds 0`
-removes it — for a foreground run you are watching, where interrupting is the
-way out.
+**The grant doubles.** The next one is 100, then 200, then 400 — each grant is
+everything the turn has been given already, plus another block. A stop you have
+already answered with "keep going" is not worth asking again at the same
+interval, so the checkpoint goes quiet on its own instead of collecting a toll
+every few minutes.
+
+**From the second stop, `[!]` ends the question.** It lifts the ceiling for the
+rest of the turn: no further stops, the rail counting up against no bound. It
+is not offered at the first stop, because that one is the checkpoint doing its
+job — the way out of a turn told to run is to interrupt it, and that is a trade
+worth making only once you have seen where the turn got to.
+
+```
+   ⚠ rounds  200 of 200 used · 50 already granted            stopped 7m48s
+    5 files changed +112 −40
+    [v] review · [+100] more rounds · [!] let it run · [u] undo the turn
+```
+
+Both expire with the turn: your next message starts from the configured ceiling
+again. Throughout, the vitals rail carries the decision — `round 150/150 +50`
+while the offer stands, `round 150/200` once it is taken, `round 214/∞` once
+`[!]` has removed the ceiling.
+
+**For a run you are not sitting in front of**, `shhh code --max-rounds 0` starts
+the session with no ceiling and no checkpoint at all, which is the one thing
+`[+]` and `[!]` cannot do for you — they are keys, and nobody is there to press
+them. `--max-rounds N` sets a different ceiling for one run instead, and a
+negative `behavior.max_tool_rounds` says the same thing as `--max-rounds 0` for
+every run on the machine. The flags mean the same on both sides of `--print`;
+only the way out of a runaway differs, being the exit code in a headless run and
+the interrupt key in a session. A headless run has nobody to offer the grant to,
+so without the flag `shhh code -p` still fails at the cap.
 
 ## Usage
 
@@ -597,7 +622,7 @@ There are two panes and one keyboard, and the surface always says which one has 
 
 Reading the transcript is the same surface `Ctrl+E` always opened, not a second one: the row cursor, the `[enter]` expansions and the keys a close row or a failure offers all come with it. A transcript of prose — nothing expandable in it — opens without a cursor and `j`/`k` are a line of scroll there, rather than being refused with a notice that leaves you in the input box with nowhere to go. `Esc` and typing are both ways back: any printable character that is not reading mode's own hands the keyboard back **and lands in the draft**, so the keystroke is not spent on the exit. While the transcript has the keyboard, the line under the header says so (`──── READING 4/12 ─`) and the framed input is replaced by its key hints, so the two panes are never both dressed as the active one. The first-run screen introduces all of it on a line under the suggestions, and that line survives the typing that dismisses them — those keys work with a half-written draft in the box, which is the whole point of them.
 
-The status bar is a cockpit rail of session vitals: the active permission mode, the tool-round counter mid-turn (`round 7/75`, and `round 75/75 +10` while a round-limit pause offers more), a context occupancy meter (`ctx ▰▰▰▰▰▱▱▱ 62%`) that changes color at the same thresholds that trigger automatic trimming, token usage and estimated cost, the running sub-agent count with a blocked badge, and the active model (dropped first when the terminal narrows). Past the trim threshold, the oldest tool results are automatically elided from the conversation before the next request.
+The status bar is a cockpit rail of session vitals: the active permission mode, the tool-round counter mid-turn (`round 7/150`, `round 150/150 +50` while a round-limit pause offers more, and `round 214/∞` for a turn running without a ceiling), a context occupancy meter (`ctx ▰▰▰▰▰▱▱▱ 62%`) that changes color at the same thresholds that trigger automatic trimming, token usage and estimated cost, the running sub-agent count with a blocked badge, and the active model (dropped first when the terminal narrows). Past the trim threshold, the oldest tool results are automatically elided from the conversation before the next request.
 
 On a wide terminal the transcript stops being the whole screen. Past 130 content columns the surface splits into a transcript pane and a 46-column inspector rail, divided by a single `│` column, so the session stops being interrogated with `/stats` and `/diff` for what it already knows: **THIS TURN** (steps so far, tool count, elapsed), **CHANGES** (`+N −M` for the turn, one row per changed file carrying the same mutation rail its edit row did, and the command that came back broken), **AGENTS** (each running child with its current target, tool count and spend), **CONTEXT** (occupancy of the model's window at the same thresholds that trigger trimming, the token counts, and a per-round burn sparkline), and **SPEND** (this turn, split between the orchestrator and its children, plus the session total). A block with nothing to say is omitted rather than drawn empty, and the rail never scrolls — when it runs out of room it truncates its longest block and says how many rows it hid. The split is horizontal only, so the rail costs no rows: the transcript keeps its height and wraps to the narrower pane. Takeover surfaces — a picker, the full-screen diff, the agent manager, an approval card once it has the keyboard — span the full width and hide the rail, restoring it when they are dismissed (a card still waiting for `[ctrl+g]` is not one: it rides above the live frame and leaves the panes alone), and below 130 columns the single-pane layout is exactly what it was. `/ui` reports the layout in force.
 

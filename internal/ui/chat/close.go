@@ -89,7 +89,7 @@ func (m Model) roundNote() string {
 	if rounds <= 0 {
 		return ""
 	}
-	return fmt.Sprintf("round %d/%d", rounds, m.effectiveMaxToolRounds())
+	return m.roundLabel()
 }
 
 // turnChangesRow is the changed-files row, read from the turn's changeset.

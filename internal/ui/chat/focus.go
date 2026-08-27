@@ -137,24 +137,31 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "k", "up":
 		m.moveFocus(-1)
 		return m, nil
-	case reviewKey, undoKey, grantRoundsKey:
-		// A round-limit pause offers all three on its own row (S-109); it is
+	case reviewKey, undoKey, grantRoundsKey, uncapRoundsKey:
+		// A round-limit pause offers all four on its own row (S-109); it is
 		// asked first because it stands where the close block would be.
 		if next, cmd, claimed := m.roundPauseKey(msg.String()); claimed {
 			return next, cmd
 		}
-		// The offers on a turn's changeset row (S-098, §16). They are
-		// handled here rather than globally, so the input keeps both keys.
+		// The offers on a turn's changeset row (S-098, §16), which are [v]
+		// and [u] and no others. They are handled here rather than globally,
+		// so the input keeps both keys. The switch names them both rather
+		// than treating "not [v]" as [u]: the pause's other two keys reach
+		// this line whenever the cursor is on a close row, and a key a row
+		// does not offer has to fall through to the draft, not land on
+		// whichever offer happened to be last.
 		if e, ok := m.focusedClose(); ok && e.close.Changes != nil {
-			if msg.String() == reviewKey {
+			switch msg.String() {
+			case reviewKey:
 				// Review mode is a takeover opened from the row (S-099);
 				// esc comes back here, to the row that offered it.
 				return m.openReview(e.turn)
+			case undoKey:
+				// Undo asks before it writes (S-100). The confirm borrows the
+				// bottom panel and focus mode keeps the screen, so the cursor
+				// stays on the row that offered it and esc comes back here.
+				return m.undoTurn(e.turn, nil)
 			}
-			// Undo asks before it writes (S-100). The confirm borrows the
-			// bottom panel and focus mode keeps the screen, so the cursor
-			// stays on the row that offered it and esc comes back here.
-			return m.undoTurn(e.turn, nil)
 		}
 		// The row under the cursor does not offer this key, so it is a
 		// character like any other and goes back to the draft (S-115).

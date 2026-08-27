@@ -76,6 +76,13 @@ type chatSession struct {
 	// promptExtra is appended to the system prompt after config and project
 	// context (e.g. the recalled-memory block).
 	promptExtra string
+	// maxRounds overrides behavior.max_tool_rounds for this session, where 0
+	// means no cap at all — the unattended `shhh code --max-rounds 0`, where
+	// the S-109 checkpoint has nobody to stop for. maxRoundsSet tells the two
+	// zeroes apart exactly as printOpts does; `shhh chat` sets neither and
+	// takes the config.
+	maxRounds    int
+	maxRoundsSet bool
 }
 
 func newChatCmd() *cobra.Command {
@@ -448,7 +455,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithRunner(runner.RunCapture).
 		WithTailRunner(runner.RunCaptureTail).
 		WithContainment(containment).
-		WithMaxToolRounds(cfg.Behavior.MaxToolRounds).
+		WithMaxToolRounds(maxRoundsFor(cfg, session.maxRounds, session.maxRoundsSet)).
 		WithCommandAllowlist(cfg.Behavior.CommandAllowlist).
 		WithReadOnlyCommands(cfg.Behavior.ReadOnlyCommands, !cfg.ReadOnlyAutoEnabled()).
 		WithDefaults(chat.Defaults{

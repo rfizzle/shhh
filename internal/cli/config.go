@@ -291,7 +291,19 @@ func configSettings() []configSetting {
 		},
 	}, {
 		group: "SESSION", key: "behavior.max_tool_rounds", label: "round limit",
-		read:     num(func(c config.Config) int { return c.Behavior.MaxToolRounds }),
+		// Not num(): a negative here is the one number that is not a
+		// ceiling. It is how a config file says what `--max-rounds 0` says
+		// on the command line, and the screen has to read it back as the
+		// absence of a limit rather than as "-1".
+		read: func(c config.Config) string {
+			switch n := c.Behavior.MaxToolRounds; {
+			case n < 0:
+				return "no bound — turns run until they are done"
+			case n > 0:
+				return strconv.Itoa(n)
+			}
+			return ""
+		},
 		fallback: strconv.Itoa(agent.DefaultMaxToolRounds),
 		options:  noOptions,
 	}, {

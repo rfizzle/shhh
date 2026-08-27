@@ -104,9 +104,13 @@ type ProviderConfig struct {
 }
 
 type BehaviorConfig struct {
-	SilentMode        bool   `toml:"silent_mode"`
-	Shell             string `toml:"shell"`
-	ContextMaxTokens  int    `toml:"context_max_tokens"`
+	SilentMode       bool   `toml:"silent_mode"`
+	Shell            string `toml:"shell"`
+	ContextMaxTokens int    `toml:"context_max_tokens"`
+	// MaxToolRounds caps the consecutive tool-call rounds one turn may take:
+	// zero leaves agent.DefaultMaxToolRounds in place, and any negative
+	// removes the cap for every run in scope — the config-file form of
+	// `--max-rounds 0`, for a machine that only ever runs unattended.
 	MaxToolRounds     int    `toml:"max_tool_rounds"`
 	SafetyWarnings    *bool  `toml:"safety_warnings"`
 	SystemPromptExtra string `toml:"system_prompt_extra"`
