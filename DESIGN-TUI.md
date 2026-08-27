@@ -1984,8 +1984,8 @@ Departures from `ui_kits/cockpit/OneShot.html`, all deliberate:
 - The artboard steps back with `[b]`; this is `[u]`, which is what undo is
   called on the changeset row (§16) and in the round-limit offer (§17a). One
   letter for one meaning is worth more than the artboard's mnemonic.
-- The artboard's `[a] alternatives` is S-114 and is not built here; its
-  absence changes nothing about the row.
+- The artboard's `[a] alternatives` was S-114 and arrived after this story;
+  see §18c. Until it did, its absence changed nothing about the row.
 - The artboard's enter reads `list what it would delete`. The resolver
   describes writes, not deletions, so the key says `show what it would
   affect` — a command that truncates a file is not deleting it and the key
@@ -1996,3 +1996,72 @@ Departures from `ui_kits/cockpit/OneShot.html`, all deliberate:
   command.
 - The artboard's `[s]` is `save as alias`; shhh saves snippets, so it is
   `[s] save`.
+
+### 18c. The commands it did not pick (S-114)
+
+A generator that can only say one thing has already chosen for you. Asked for
+"every process listening above 8000" the model weighs `lsof` against `netstat`
+against `ss`, picks one, and throws the reasoning away — and the answer it kept
+is the portable one when you wanted the fast one about as often as not. The
+alternatives were free the whole time; only the surface for them was missing.
+
+```
+$ lsof -nP -iTCP -sTCP:LISTEN | awk '$9 ~ /:[89][0-9]{3}$/'
+  lsof lists listening TCP sockets without resolving names.
+  ⛨ writes unknown · no network · no sudo
+
+[↵] run  [e] edit  [r] revise  [a] 2 others  [x] explain  [c] copy  [s] save  [esc] quit
+
+┌─ Alternatives ──────────────────────────────────────────────────┐
+│ ❯ ◆ lsof -nP -iTCP -sTCP:LISTEN | awk '$9 ~ /:[89][0-9]{3}$/'   │
+│     the command on screen                                        │
+│     netstat -anv -p tcp | grep LISTEN                            │
+│     ss -ltn                                                      │
+│ ↑↓ move · enter choose · esc back                                │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+- **The count is the label, `[a]` is the key.** `[a] 2 others` says the one
+  thing worth knowing before pressing — whether there is anything behind it —
+  while keeping the row's rule that the key printed is the key pressed (§18b).
+  Nothing is drawn when the generation offered nothing, which is most of them.
+- **The response is structured, and command-first.** JSON is the obvious
+  envelope and the wrong one: the command streams onto the screen as it
+  arrives, and a front door whose first frames are `{"com` is worse than the
+  one it replaced. `internal/proposal` reads a line-oriented shape instead —
+  everything before a `--- alternatives` sentinel is the command, exactly as
+  it always was, and each line after it is another command with an optional
+  `# one phrase · like this` under it. The streaming view stops at the
+  sentinel, and at a line that could still become one, so the section never
+  flickers on its way to the picker.
+- **Parsing is total, so asking costs nothing.** A response with no sentinel
+  is one choice and no alternatives — every provider and profile that cannot
+  produce the section, and the fence-stripping path S-113 shipped with. The
+  prompt says the section is optional in as many words, because a model that
+  believes it is required will pad an `ls` with two commands it had to invent.
+- **The picker is `components.Select`** (§4a, S-078), not a list this surface
+  draws itself: moving, choosing and backing out are the keys they are
+  everywhere else. The current command is marked `◆` in the label rather than
+  by the focus bar — the reader has to be able to find it without moving the
+  pointer onto it (invariant 1) — and the focused row's tradeoff renders under
+  it, which is what the choice is being made on.
+- **Choosing arms, it does not run.** The chosen command gets its own
+  explanation, its own containment line and its own default, through the same
+  `arm` every other command on this surface goes through. An alternative is a
+  command like any other; running it straight out of the picker would be the
+  one path to execution that skipped the screen that vets it.
+- **The offers travel with the command.** A revise generates its own set, and
+  `[u]` puts the old ones back with the command they belonged to (§18b). An
+  edit rewrites the choice it started from and drops that choice's tradeoff —
+  the phrase was said about a command that no longer exists — while the other
+  offers stand, because they were alternatives to the request, not to the typo.
+- **Piped, they are never asked for.** The one-shot's stdout is one command by
+  contract, so the pipe path builds the prompt without the section at all
+  rather than printing a response it would have to strip.
+
+Departures from `ui_kits/cockpit/OneShot.html`:
+
+- The artboard's picker runs on enter. Here enter chooses and returns to the
+  key row, so the alternative arrives on the screen that explains it.
+- The artboard's key row reads `[a] alternatives`; the count is more useful
+  than the noun, and the noun is what the card is titled.

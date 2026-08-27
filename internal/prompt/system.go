@@ -4,10 +4,23 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/proposal"
 	"github.com/rfizzle/shhh/internal/shell"
 )
 
 func Build(info shell.Info, extra ...string) string {
+	return build(info, false, extra...)
+}
+
+// BuildAlternatives is Build plus the invitation to say what else it
+// considered (S-114). Only the interactive one-shot asks: a pipe prints one
+// command to stdout and has nowhere to put the others, so the ask stays off
+// the path whose output is a contract.
+func BuildAlternatives(info shell.Info, extra ...string) string {
+	return build(info, true, extra...)
+}
+
+func build(info shell.Info, alternatives bool, extra ...string) string {
 	os := friendlyOS(info.OS)
 	base := fmt.Sprintf(`You are a shell command generator. Output ONLY the command(s). No explanation, no markdown, no code fences.
 If the task requires multiple commands, output each command on its own line. Do not number them or add commentary between them.
@@ -20,6 +33,9 @@ For single-command tasks, output a single line.
 Shell: %s
 OS: %s
 Cwd: %s`, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), osRules(info.OS), info.Shell, os, info.Cwd)
+	if alternatives {
+		base += "\n\n" + proposal.Instructions()
+	}
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}

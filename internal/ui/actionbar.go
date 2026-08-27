@@ -41,6 +41,9 @@ const (
 	ActionDryRun
 	// ActionBack is `[u]` — step back to the command before the last revise.
 	ActionBack
+	// ActionAlternatives is `[a]` — the other commands the generator
+	// considered (S-114).
+	ActionAlternatives
 )
 
 type ActionSelectedMsg struct {
@@ -80,6 +83,9 @@ type ActionBarModel struct {
 	affected bool
 	// revision counts revises so far; above zero, `[u]` steps back.
 	revision int
+	// others counts the alternatives on offer beside the command showing;
+	// above zero, `[a]` opens the picker (S-114).
+	others int
 }
 
 func NewActionBarModel() ActionBarModel {
@@ -116,6 +122,14 @@ func (m ActionBarModel) SetAffected(shown bool) ActionBarModel {
 
 func (m ActionBarModel) SetRevision(n int) ActionBarModel {
 	m.revision = n
+	return m
+}
+
+// SetAlternatives states how many other commands are on offer. Zero is the
+// answer for every provider that cannot produce them and for every request
+// with one sensible answer, and the row is then exactly what it was.
+func (m ActionBarModel) SetAlternatives(n int) ActionBarModel {
+	m.others = n
 	return m
 }
 
@@ -159,6 +173,17 @@ func (m ActionBarModel) keys() []key {
 	)
 	if m.revision > 0 {
 		out = append(out, key{press: "u", shown: "u", label: "back", do: ActionBack})
+	}
+	if m.others > 0 {
+		// The count is the label rather than the key: what the reader wants
+		// to know before pressing is how many there are, and `[a]` is what
+		// the key row promises everywhere else — the key printed is the key
+		// pressed.
+		label := strconv.Itoa(m.others) + " others"
+		if m.others == 1 {
+			label = "1 other"
+		}
+		out = append(out, key{press: "a", shown: "a", label: label, do: ActionAlternatives})
 	}
 	out = append(out,
 		key{press: "x", shown: "x", label: "explain", do: ActionExplain},

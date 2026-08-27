@@ -453,7 +453,7 @@ vitals rail carries the decision — `round 25/25 +10` while the offer stands,
 shhh compress this directory into a tar.gz
 ```
 
-The result is one screen: the command, one line explaining it, a containment line stating what it can reach, and one row of bracketed keys. `[↵]` runs, `[e]` edits, `[r]` revises, `[x]` asks for the long explanation, `[c]` copies, `[s]` saves it as a snippet, `[esc]` quits. For multi-command output `[↵]` runs everything and `[t]` prompts before each command.
+The result is one screen: the command, one line explaining it, a containment line stating what it can reach, and one row of bracketed keys. `[↵]` runs, `[e]` edits, `[r]` revises, `[a]` shows the other commands it considered, `[x]` asks for the long explanation, `[c]` copies, `[s]` saves it as a snippet, `[esc]` quits. For multi-command output `[↵]` runs everything and `[t]` prompts before each command.
 
 The explanation is on by default — a command you don't understand is a command you shouldn't run. `-e/--explain` buys the longer form rather than the only form, and `-s/--silent` (or `behavior.silent_mode`) suppresses it.
 
@@ -463,7 +463,9 @@ On a destructive command the safe default moves. `[↵]` stops running and inste
 
 A revise keeps the previous command dimmed above the new one with the feedback that replaced it, counts the revisions, and `[u]` steps back to the one before — command, explanation and conversation together, with no second call to the model.
 
-Piped, none of this applies: `shhh` prints the raw command to stdout and nothing else.
+When there is more than one sensible way to do the job, the generator can say so, and the row gains `[a] 2 others`. It opens a list of every command it offered — the one on screen marked `◆`, each of the rest carrying the one phrase that says why you might take it instead (`faster · no process names`, `tracked files only`). Choosing one makes it the command on screen and hands you back to the key row, explained and with its own containment line and its own default: an alternative is a command like any other, not a shortcut past the screen that vets it. Nothing asks for alternatives that aren't there — most requests have one right answer, and their absence leaves the row exactly as it was.
+
+Piped, none of this applies: `shhh` prints the raw command to stdout and nothing else — and the alternatives are never even asked for on that path.
 
 ### Chat mode
 

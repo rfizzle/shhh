@@ -15,6 +15,12 @@ package ui
 // default moves: enter spends itself saying what would be affected, `[d]`
 // runs the command's own no-op form where one exists, and running takes a
 // deliberate `y`.
+//
+// S-114 added the fifth: the commands the generator did not pick. It weighed
+// lsof against netstat before answering; `[a]` is where that goes instead of
+// being thrown away, each one carrying the phrase that says why you might
+// take it. They are an offer, never a requirement — a response without them
+// is the surface exactly as it was.
 
 import (
 	"context"
@@ -26,9 +32,11 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/dryrun"
 	"github.com/rfizzle/shhh/internal/preflight"
+	"github.com/rfizzle/shhh/internal/proposal"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/radius"
 	"github.com/rfizzle/shhh/internal/runner"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 type phase int
@@ -41,6 +49,7 @@ const (
 	phaseExplain
 	phaseSave
 	phaseDryRun
+	phasePick
 	phaseDone
 )
 
@@ -119,6 +128,15 @@ type GenerateModel struct {
 	danger bool
 	// past is the revise chain, most recent last: what `[u]` steps back to.
 	past []pastCommand
+	// choices is every command this generation offered, the one it led with
+	// first (S-114). It always holds at least the command on screen, so the
+	// picker and the key row count from the same place.
+	choices []proposal.Choice
+	// chosen is which of them the surface is showing.
+	chosen int
+	// pick is the alternatives picker while it is open — the same select card
+	// the session pickers use (S-078).
+	pick *components.Select
 }
 
 // pastCommand is one rung of the revise ladder — the command that was on
@@ -132,6 +150,11 @@ type pastCommand struct {
 	// messages is how long the conversation was before the revise added to
 	// it, so stepping back drops exactly what the revise appended.
 	messages int
+	// choices and chosen are the offers that came with that command. A
+	// revise generated its own set, so stepping back has to put the old ones
+	// back or `[a]` would open on commands nobody is looking at.
+	choices []proposal.Choice
+	chosen  int
 }
 
 type GenerateResult struct {
@@ -214,6 +237,8 @@ func (m GenerateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateExplain(msg)
 	case phaseDryRun:
 		return m.updateDryRun(msg)
+	case phasePick:
+		return m.updatePick(msg)
 	}
 	return m, nil
 }
@@ -253,14 +278,23 @@ func (m GenerateModel) updateStreaming(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.stream.Cancelled() || m.stream.Err() != nil {
 			m.phase = phaseDone
 			m.result = GenerateResult{
-				Command:   m.stream.Output(),
+				// A cancelled stream reports what it had of the command, not
+				// what it had of the response: the section after the sentinel
+				// is never something a caller should copy or run.
+				Command:   proposal.CommandPart(m.stream.Output()),
 				Cancelled: m.stream.Cancelled(),
 				Err:       m.stream.Err(),
 			}
 			return m, tea.Quit
 		}
 
-		output := m.stream.Output()
+		// What arrived is a proposal, not a bare command: everything before
+		// the sentinel is the command, and what follows is the offers. A
+		// response without the section parses to one choice, which is the
+		// fence-stripping path this always was.
+		raw := m.stream.Output()
+		choices := proposal.Parse(raw)
+		output := choices[0].Command
 
 		if m.shell != "" && m.preflightRetries < maxPreflightRetries && m.newStream != nil {
 			check := preflight.Check(output, m.shell)
@@ -271,7 +305,7 @@ func (m GenerateModel) updateStreaming(msg tea.Msg) (tea.Model, tea.Cmd) {
 					strings.Join(check.Errors, "\n"),
 				)
 				m.messages = append(m.messages,
-					provider.Message{Role: provider.RoleAssistant, Content: output},
+					provider.Message{Role: provider.RoleAssistant, Content: raw},
 					provider.Message{Role: provider.RoleUser, Content: correction},
 				)
 				events, cancel, err := m.newStream(m.messages)
@@ -285,10 +319,15 @@ func (m GenerateModel) updateStreaming(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 
+		// The conversation keeps the raw response, alternatives and all: a
+		// revise is a reply to what the model actually said, and the format
+		// it answered in is part of that.
 		m.messages = append(m.messages, provider.Message{
 			Role:    provider.RoleAssistant,
-			Content: output,
+			Content: raw,
 		})
+		m.choices, m.chosen = choices, 0
+		m.stream = m.stream.WithOutput(output)
 		return m.arm(output)
 	}
 	return m, cmd
@@ -313,8 +352,10 @@ func (m GenerateModel) arm(output string) (GenerateModel, tea.Cmd) {
 		SetDryRun(m.dryAvailable).
 		SetAffected(false).
 		SetRevision(len(m.past)).
+		SetAlternatives(m.others()).
 		Reset()
 	m.phase = phaseAction
+	m.pick = nil
 
 	if m.newExplain == nil || m.explainMode == ExplainNone {
 		return m, nil
@@ -377,6 +418,14 @@ func (m GenerateModel) updateAction(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		return m.stepBack()
+
+	case ActionAlternatives:
+		m.actionBar = m.actionBar.Reset()
+		if m.others() == 0 {
+			return m, nil
+		}
+		m = m.hushExplain()
+		return m.openAlternatives()
 
 	case ActionEdit:
 		m = m.hushExplain()
@@ -457,6 +506,7 @@ func (m GenerateModel) stepBack() (GenerateModel, tea.Cmd) {
 	if last.messages <= len(m.messages) {
 		m.messages = m.messages[:last.messages]
 	}
+	m.choices, m.chosen = last.choices, last.chosen
 	m.stream = m.stream.WithOutput(last.command)
 	m.reach = radius.Resolve(last.command)
 	m.danger = m.reach.Level == radius.High
@@ -474,9 +524,97 @@ func (m GenerateModel) stepBack() (GenerateModel, tea.Cmd) {
 		SetDryRun(m.dryAvailable).
 		SetAffected(false).
 		SetRevision(len(m.past)).
+		SetAlternatives(m.others()).
 		Reset()
 	m.phase = phaseAction
+	m.pick = nil
 	return m, nil
+}
+
+// others is how many commands are on offer beside the one showing.
+func (m GenerateModel) others() int {
+	if len(m.choices) < 2 {
+		return 0
+	}
+	return len(m.choices) - 1
+}
+
+// alternativesWidth is what the picker renders at. Like the failure report,
+// the one-shot has no layout of its own to measure.
+const alternativesWidth = 88
+
+// openAlternatives shows every command this generation offered, the one on
+// screen marked. It is the generic select card (S-078) rather than a list
+// this surface draws itself, so moving, choosing and backing out are the keys
+// they are everywhere else.
+func (m GenerateModel) openAlternatives() (GenerateModel, tea.Cmd) {
+	opts := make([]components.SelectOption, 0, len(m.choices))
+	for i, c := range m.choices {
+		label := "  " + oneLine(c.Command)
+		if i == m.chosen {
+			// The mark is a glyph in the label, not the focus bar: the reader
+			// has to be able to find the current command without moving the
+			// pointer onto it (invariant 1).
+			label = "◆ " + oneLine(c.Command)
+		}
+		desc := c.Tradeoff
+		if i == m.chosen && desc == "" {
+			desc = "the command on screen"
+		}
+		opts = append(opts, components.SelectOption{Label: label, Desc: desc})
+	}
+	m.pick = &components.Select{
+		Title: "Alternatives",
+		// Numbers would be a third way to say the same thing on a list of
+		// three rows, and the artboard's row is ↑↓ and enter.
+		Unnumbered: true,
+		Options:    opts,
+		Focus:      m.chosen,
+		Hint:       "↑↓ move · enter choose · esc back",
+	}
+	m.phase = phasePick
+	return m, nil
+}
+
+// updatePick routes keys while the alternatives are showing. Choosing one
+// makes it the command on screen and hands the surface back to the key row —
+// it does not run: an alternative deserves the same explanation, containment
+// line and default the primary got.
+func (m GenerateModel) updatePick(msg tea.Msg) (tea.Model, tea.Cmd) {
+	key, ok := msg.(tea.KeyMsg)
+	if !ok || m.pick == nil {
+		return m, nil
+	}
+	done, result := m.pick.Update(key)
+	if !done {
+		return m, nil
+	}
+	sel := result.(components.SelectResult)
+	m.pick = nil
+	if sel.Canceled || sel.Index < 0 || sel.Index >= len(m.choices) {
+		m.phase = phaseAction
+		return m, nil
+	}
+	if sel.Index == m.chosen {
+		m.phase = phaseAction
+		return m, nil
+	}
+	m.chosen = sel.Index
+	command := m.choices[m.chosen].Command
+	m.stream = m.stream.WithOutput(command)
+	// The conversation follows the screen: a revise from here is a revise of
+	// the command the user chose, not of the one the model led with.
+	if len(m.messages) > 0 && m.messages[len(m.messages)-1].Role == provider.RoleAssistant {
+		m.messages[len(m.messages)-1].Content = command
+	}
+	return m.arm(command)
+}
+
+// oneLine folds a multi-command answer onto the single row a picker has for
+// it. The rows are what is being compared, and the command itself is on the
+// screen the picker returns to.
+func oneLine(command string) string {
+	return strings.Join(SplitCommands(command), " ; ")
 }
 
 type reviseErrMsg struct{ err error }
@@ -536,6 +674,8 @@ func (m GenerateModel) updateRevise(msg tea.Msg) (tea.Model, tea.Cmd) {
 				explain:  m.explainStream.Output(),
 				shown:    m.shown,
 				messages: len(m.messages),
+				choices:  m.choices,
+				chosen:   m.chosen,
 			})
 			m.messages = append(m.messages, provider.Message{
 				Role:    provider.RoleUser,
@@ -586,6 +726,13 @@ func (m GenerateModel) updateEdit(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.messages[len(m.messages)-1].Content = edited
 			}
 			m.editInput.Blur()
+			// An edit rewrites the choice it started from, and takes its
+			// tradeoff with it: the phrase was said about a command that no
+			// longer exists. The other offers stand — they were alternatives
+			// to the request, not to the typo.
+			if m.chosen < len(m.choices) {
+				m.choices[m.chosen] = proposal.Choice{Command: edited}
+			}
 			// An edited command is a different command: its radius, its dry
 			// run and its explanation are all re-read rather than carried
 			// over from the one it replaced.
@@ -659,6 +806,17 @@ func formatMultiCommand(output string) string {
 		b.WriteString(fmt.Sprintf("  %d. %s\n", i+1, cmd))
 	}
 	return strings.TrimRight(b.String(), "\n")
+}
+
+// streamingView is the command as it arrives. It stops at the sentinel, so
+// the alternatives section never appears on screen on its way to the picker —
+// the reason the response is command-first and line-oriented rather than a
+// JSON envelope.
+func (m GenerateModel) streamingView() string {
+	if m.stream.Err() != nil || m.stream.Output() == "" {
+		return m.stream.View()
+	}
+	return CommandStyle.Render(proposal.CommandPart(m.stream.Output()))
 }
 
 // commandView draws the command itself, numbered when there is more than one.
@@ -779,7 +937,12 @@ func prefixLines(s, pad string) string {
 func (m GenerateModel) View() string {
 	switch m.phase {
 	case phaseStreaming:
-		return m.stream.View()
+		return m.streamingView()
+	case phasePick:
+		if m.pick == nil {
+			return m.stream.View()
+		}
+		return m.pick.View(alternativesWidth)
 	case phaseAction, phaseDryRun:
 		return m.pastView() + m.commandView() +
 			m.explanationView() + m.reachView() +

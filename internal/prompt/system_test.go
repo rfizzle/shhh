@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/proposal"
 	"github.com/rfizzle/shhh/internal/shell"
 )
 
@@ -210,5 +211,41 @@ func TestBuildWriter_Instructions(t *testing.T) {
 		if !strings.Contains(got, want) {
 			t.Errorf("expected writer prompt to contain %q, got:\n%s", want, got)
 		}
+	}
+}
+
+// S-114: the alternatives section is asked for on the interactive one-shot
+// and nowhere else. A pipe's stdout is one command by contract, so the prompt
+// behind it must not invite a second one.
+func TestBuildAlternatives_AsksForTheSection(t *testing.T) {
+	info := shell.Info{Shell: "zsh", OS: "darwin", Cwd: "/tmp"}
+	got := BuildAlternatives(info)
+
+	if !strings.Contains(got, proposal.Sentinel) {
+		t.Errorf("the interactive prompt does not ask for the section:\n%s", got)
+	}
+	// Everything Build says is still said: the section is an addition, not a
+	// different prompt.
+	if !strings.Contains(got, "Shell: zsh") || !strings.Contains(got, "Output ONLY the command(s)") {
+		t.Errorf("the alternatives prompt lost the generator's own rules:\n%s", got)
+	}
+}
+
+func TestBuild_DoesNotAskForAlternatives(t *testing.T) {
+	got := Build(shell.Info{Shell: "zsh", OS: "darwin", Cwd: "/tmp"})
+	if strings.Contains(got, proposal.Sentinel) {
+		t.Errorf("the piped prompt invited a section its stdout cannot carry:\n%s", got)
+	}
+}
+
+func TestBuildAlternatives_KeepsTheExtraLast(t *testing.T) {
+	// The project's own context is the last word in the prompt, ahead of
+	// neither the syntax rules nor the section.
+	got := BuildAlternatives(shell.Info{Shell: "bash", OS: "linux", Cwd: "/tmp"}, "PROJECT CONTEXT")
+	if !strings.HasSuffix(got, "PROJECT CONTEXT") {
+		t.Errorf("the extra is no longer last:\n%s", got)
+	}
+	if strings.Index(got, proposal.Sentinel) > strings.Index(got, "PROJECT CONTEXT") {
+		t.Errorf("the section landed after the project context:\n%s", got)
 	}
 }

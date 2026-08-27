@@ -154,7 +154,10 @@ func NewRootCmd() *cobra.Command {
 			}
 
 			info := shell.Detect()
-			sysPrompt := prompt.Build(info, promptExtra)
+			// The interactive one-shot asks for the alternatives section as
+			// well (S-114); the pipe path above went out through prompt.Build
+			// and its stdout is one command, as it has always been.
+			sysPrompt := prompt.BuildAlternatives(info, promptExtra)
 
 			messages := []provider.Message{
 				{Role: provider.RoleSystem, Content: sysPrompt},
