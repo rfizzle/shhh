@@ -55,11 +55,19 @@ shhh chat
 
 ## Configuration
 
-Run the interactive config wizard:
+Run the interactive config editor:
 
 ```bash
 shhh config
 ```
+
+Every setting is a row grouped under `SESSION`, `MODEL` or `WORKSPACE`, showing
+what it is set to and where that answer came from — `default`, `user`, or
+`unwritten` for an edit this session has staged. `[enter]` opens a picker
+directly under the row being changed (or a field, or a masked entry for an API
+key), `[/]` filters the list, `[r]` puts one setting back to its default, and
+`[?]` lists every key. **Nothing is written until `[w]`**, which asks before it
+writes; `[esc]` leaves and discards the lot.
 
 Or set values directly:
 
@@ -684,7 +692,7 @@ The contents of `.shhh` are appended to the system prompt when running shhh from
 | `shhh chat [prompt]` | Start an interactive chat session |
 | `shhh chat --continue` | Resume the most recent chat session |
 | `shhh chat --resume` | Pick a saved chat to resume |
-| `shhh config` | Interactive configuration wizard |
+| `shhh config` | Interactive configuration editor |
 | `shhh config set <key> <value>` | Set a config value |
 | `shhh init <shell>` | Output shell integration snippet |
 | `shhh init --project` | Create a `.shhh` project context file |

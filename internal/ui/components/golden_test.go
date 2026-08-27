@@ -1105,3 +1105,133 @@ func TestGolden_SecretPrompt(t *testing.T) {
 		}
 	})
 }
+
+// goldenConfigRows is the settings sheet the Tools artboard draws (§19a):
+// three rails, values that are toned because their glyphs already say what
+// the colour says, a secret already masked, a setting the host cannot honour,
+// and enough rows that the window has work to do at both widths.
+func goldenConfigRows() []ConfigRow {
+	models := []SelectOption{
+		{Label: "gpt-5.2", Desc: "current default", Meta: "$1.25 / $10"},
+		{Label: "gpt-5.2-mini", Desc: "⅕ the price", Meta: "$0.25 / $2"},
+		{Label: "claude-opus-4.6", Desc: "deepest reasoning", Meta: "$15 / $75"},
+		{Label: "claude-sonnet-4.6", Desc: "better diffs · 200k ctx", Meta: "$3 / $15"},
+		{Label: "gemini-3-flash", Desc: "1M ctx", Meta: "$0.30 / $2.50"},
+		{Label: "deepseek-r2", Desc: "local via ollama", Meta: "not usable here", Dim: true},
+	}
+	return []ConfigRow{
+		{Group: "SESSION", Key: "behavior.default_mode", Label: "permission mode",
+			Value: "⏵⏵ auto", ValueTone: ToneSafe,
+			Detail: "edits apply; allowlisted commands run", Source: "user",
+			Options: []SelectOption{
+				{Label: "manual", Desc: "every consequential tool call asks"},
+				{Label: "accept-edits", Desc: "file edits apply without prompts"},
+				{Label: "auto", Desc: "edits apply; allowlisted commands run"},
+				{Label: "plan", Desc: "read-only research"},
+			}},
+		{Group: "SESSION", Key: "behavior.max_tool_rounds", Label: "round limit",
+			Value: "25", Source: "default"},
+		{Group: "SESSION", Key: "behavior.context_max_tokens", Label: "context budget",
+			Value: "8000 tokens", Source: "default"},
+		{Group: "SESSION", Key: "behavior.safety_warnings", Label: "safety warnings",
+			Value: "on", ValueTone: ToneSafe, Source: "default",
+			Options: []SelectOption{{Label: "true"}, {Label: "false"}}},
+		{Group: "MODEL", Key: "provider.default", Label: "provider",
+			Value: "openai", Source: "user"},
+		{Group: "MODEL", Key: "provider.model", Label: "model",
+			Value: "gpt-5.2", Source: "user · 6 available", Options: models},
+		{Group: "MODEL", Key: "provider.api_key", Label: "api key",
+			Value: "···4f9c", Source: "user", Secret: true},
+		{Group: "MODEL", Key: "provider.base_url", Label: "base url",
+			Value: "(the provider's own)", Source: "default"},
+		{Group: "MODEL", Key: "agents.model", Label: "sub-agent model",
+			Value: "inherit", Source: "default", Options: models},
+		{Group: "WORKSPACE", Key: "sandbox.profile", Label: "sandbox",
+			Value: "⛨ workspace-write", Source: "unavailable on this host", SourceTone: ToneRisk,
+			Options: []SelectOption{{Label: "workspace"}, {Label: "workspace-netless"}}},
+		{Group: "WORKSPACE", Key: "web.allow_private", Label: "network",
+			Value: "private hosts reachable", ValueTone: ToneOpen,
+			Detail: "intranet and localhost fetches are allowed", Source: "user",
+			Options: []SelectOption{{Label: "true"}, {Label: "false"}}},
+		{Group: "WORKSPACE", Key: "behavior.memory_disabled", Label: "memory",
+			Value: "on", Source: "default", Detail: "4 entries · .shhh/memory.md"},
+		{Group: "WORKSPACE", Key: "behavior.shell", Label: "shell",
+			Value: "(your login shell)", Source: "default"},
+		{Group: "WORKSPACE", Key: "history.retention_days", Label: "history retention",
+			Value: "90 days", Source: "default"},
+	}
+}
+
+// TestGolden_ConfigScreen captures `shhh config` on the cockpit's language
+// (S-127, §19a): the settings list, the picker that opens under the row being
+// changed rather than over the screen, the field and the masked entry that
+// open in the same place, and the write-back the header has been counting
+// towards.
+func TestGolden_ConfigScreen(t *testing.T) {
+	captureGolden(t, "config-screen", "the config screen", listWidths, func(width int) []golden.Panel {
+		screen := func(mut func(*ConfigScreen)) *ConfigScreen {
+			c := &ConfigScreen{
+				Path: "~/.config/shhh/config.toml", Rows: goldenConfigRows(), MaxLines: 22,
+			}
+			if mut != nil {
+				mut(c)
+			}
+			return c
+		}
+		typed := func(c *ConfigScreen, text string) {
+			for _, r := range text {
+				c.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+			}
+		}
+		return []golden.Panel{
+			{Label: "the list · every row states where its value came from", View: screen(nil).View(width)},
+			{Label: "changing one · the picker opens under the row, not over the screen", View: func() string {
+				c := screen(func(c *ConfigScreen) { c.Focus = 5 })
+				c.Update(key("enter"))
+				return c.View(width)
+			}()},
+			{Label: "the picker filtered · the query row carries both counts", View: func() string {
+				c := screen(func(c *ConfigScreen) { c.Focus = 5 })
+				c.Update(key("enter"))
+				c.Update(key("/"))
+				typed(c, "claude")
+				return c.View(width)
+			}()},
+			{Label: "a setting with no answers to choose · a field under the row", View: func() string {
+				c := screen(func(c *ConfigScreen) { c.Focus = 1 })
+				c.Update(key("enter"))
+				typed(c, "40")
+				return c.View(width)
+			}()},
+			{Label: "a secret · the mask, never the key", View: func() string {
+				c := screen(func(c *ConfigScreen) { c.Focus = 6 })
+				c.Update(key("enter"))
+				typed(c, "sk-live-9f2b")
+				return c.View(width)
+			}()},
+			{Label: "staged · the header counts it and [w] is offered", View: screen(func(c *ConfigScreen) {
+				c.Focus, c.Changed = 5, 2
+				c.Rows[5].Value = "claude-sonnet-4.6"
+				c.Rows[5].Source, c.Rows[5].SourceTone = "unwritten", ToneOpen
+				c.Rows[1].Value = "40"
+				c.Rows[1].Source, c.Rows[1].SourceTone = "unwritten", ToneOpen
+			}).View(width)},
+			{Label: "the write-back · the inline confirm, defaulting to no", View: func() string {
+				c := screen(func(c *ConfigScreen) { c.Changed = 2 })
+				c.Update(key("w"))
+				return c.View(width)
+			}()},
+			{Label: "the settings filtered · the list is the same window", View: func() string {
+				c := screen(nil)
+				c.Update(key("/"))
+				typed(c, "mo")
+				return c.View(width)
+			}()},
+			{Label: "[?] · every key the screen has, including the picker's", View: func() string {
+				c := screen(nil)
+				c.Update(key("?"))
+				return c.View(width)
+			}()},
+		}
+	})
+}

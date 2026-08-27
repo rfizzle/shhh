@@ -70,6 +70,26 @@ func monoFixtures() []monoSurface {
 		return strings.Join(UnifiedLines(hunk(kind), w, UnifiedOpts{LineNumbers: true, Emphasis: true}), "\n")
 	}
 
+	// The config screen's two toned fields (§19a). Everything but the field
+	// under test is held constant, so a value or a source that was only ever
+	// a hue apart from another would collapse here.
+	configScreen := func(row ConfigRow) string {
+		c := &ConfigScreen{Path: "~/.config/shhh/config.toml", Rows: []ConfigRow{row}}
+		return c.View(w)
+	}
+	configValue := func(value string, tone FieldTone) string {
+		return configScreen(ConfigRow{
+			Group: "SESSION", Key: "behavior.default_mode", Label: "setting",
+			Value: value, ValueTone: tone, Source: "user",
+		})
+	}
+	configSourced := func(source string, tone FieldTone) string {
+		return configScreen(ConfigRow{
+			Group: "SESSION", Key: "behavior.default_mode", Label: "setting",
+			Value: "auto", Source: source, SourceTone: tone,
+		})
+	}
+
 	pressed := func(pct int, tokens int64) string {
 		return PressureCard{
 			Pct: pct, Tokens: tokens, Window: 200_000, Warn: 60, Alert: 80,
@@ -557,6 +577,18 @@ func monoFixtures() []monoSurface {
 			{"healthy", meter(40)},
 			{"pressured", meter(75)},
 			{"critical", meter(95)},
+		}},
+		{"config value", []monoState{
+			{"permissive mode", configValue("⏵⏵ auto", ToneSafe)},
+			{"gated mode", configValue("⏸ manual", ToneOpen)},
+			{"contained", configValue("⛨ workspace-netless", ToneSafe)},
+			{"a door left open", configValue("private hosts reachable", ToneOpen)},
+		}},
+		{"config source", []monoState{
+			{"nothing set", configSourced("default", ToneNeutral)},
+			{"the file set it", configSourced("user", ToneNeutral)},
+			{"staged, not written", configSourced("unwritten", ToneOpen)},
+			{"the host cannot honour it", configSourced("unavailable on this host", ToneRisk)},
 		}},
 	}
 }

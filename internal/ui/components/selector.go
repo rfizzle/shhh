@@ -21,6 +21,18 @@ type SelectOption struct {
 	// focused one: a catalog you have to walk to read is a catalog you cannot
 	// compare. The plan card is the exception and says why (§4d, FocusDesc).
 	Desc string
+	// Value is the row's own answer, drawn between the label column and the
+	// description in a colour of its own: `⏵⏵ auto`, `⛨ workspace-write`,
+	// `gpt-5.2` (§19a). It is the config screen's field and no other list's —
+	// everywhere else a continuation is a note about the option, and a note
+	// has nothing to be toned about. A list that sets none renders exactly as
+	// it did before this field existed.
+	Value string
+	// ValueTone reads the value the way a card field is read (§2): safe,
+	// open, at risk, or an unremarkable statement of fact. The glyph beside
+	// it says the same thing, so the colour is never carrying it alone
+	// (invariant 1).
+	ValueTone FieldTone
 	// Meta is the right-aligned field at the end of the row: a key binding,
 	// `this one`, the reason an unavailable row is unavailable. It is the
 	// short field — one clause, never a sentence — and it is dropped before
@@ -384,7 +396,7 @@ func (s *Select) grid(numbered, inner int) optionGrid {
 		if opt.Header {
 			continue
 		}
-		if opt.Desc != "" || opt.Meta != "" {
+		if opt.Desc != "" || opt.Meta != "" || opt.Value != "" {
 			continued = true
 		}
 	}
@@ -427,7 +439,12 @@ func (s *Select) optionRows(width int, numbered bool, lo, hi int) []string {
 	for i, opt := range s.Options {
 		if opt.Header {
 			if i >= lo && i < hi {
-				rows = append(rows, dimStyle.Render(clip(opt.Label, inner)))
+				// A group rail is info and bold, the way `decision/Select`
+				// draws it (`c-info b`) and the way §18a and §19a both show
+				// it. It read dim until S-127 went looking for the config
+				// screen's SESSION / WORKSPACE rails and found the rails it
+				// already had painted as chrome.
+				rows = append(rows, headlineStyle.Render(clip(opt.Label, inner)))
 			}
 			continue
 		}
@@ -449,12 +466,30 @@ func (s *Select) optionRows(width int, numbered bool, lo, hi int) []string {
 // almost nothing.
 const minDescWidth = 8
 
+// minValueWidth is the narrowest a value is worth drawing. It is lower than
+// minDescWidth because a value is the row's answer rather than a note about
+// it: `25` clipped to nothing tells the reader the setting is unset, which is
+// a different and wrong thing.
+const minValueWidth = 3
+
+// descGap is the space between a continuation and what precedes it: two
+// columns after the label, where the description is a field of its own, and
+// one after a value, where it qualifies the value it follows —
+// `normal — reads fold, mutations never do` reads as one clause and is one.
+func descGap(value string) string {
+	if value == "" {
+		return "  "
+	}
+	return " "
+}
+
 // optionRow lays one option across the card: the pointer, the number
-// right-aligned in its column, the label, the description dim beside it, and
-// the meta field right-aligned at the end of the row (§4a). The row sheds from
-// the right when the terminal cannot carry all of it — meta first, then the
-// description — because both are the row explaining itself and the label is
-// the row.
+// right-aligned in its column, the label, the row's own value beside it, the
+// description dim after that, and the meta field right-aligned at the end
+// (§4a). What a narrow terminal cannot carry it gives up from the least
+// load-bearing end: the description goes first, then the value is clipped,
+// and the meta field — a whole clause naming why a row is what it is — is the
+// last thing standing beside the label, which is the row and never goes.
 func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, inner int) string {
 	head := "  "
 	if focused {
@@ -466,14 +501,19 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 	label := s.labelText(opt)
 	left := head + padRight(label, g.label)
 
-	meta, desc := "", ""
+	meta, value, desc := "", "", ""
 	avail := inner - lipgloss.Width(left)
 	if opt.Meta != "" && avail >= lipgloss.Width(opt.Meta)+2 {
 		meta = opt.Meta
 		avail -= lipgloss.Width(meta) + 2
 	}
+	if opt.Value != "" && avail >= minValueWidth+2 {
+		value = clip(opt.Value, avail-2)
+		avail -= lipgloss.Width(value) + 2
+	}
+	gap := descGap(value)
 	if !s.FocusDesc && opt.Desc != "" && avail >= minDescWidth {
-		desc = clip(opt.Desc, avail-2)
+		desc = clip(opt.Desc, avail-len(gap))
 	}
 
 	// The focused row is painted whole: it is already bold, so a matched run
@@ -481,8 +521,11 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 	// are what say which row this is.
 	if focused {
 		row := left
+		if value != "" {
+			row += "  " + value
+		}
 		if desc != "" {
-			row += "  " + desc
+			row += gap + desc
 		}
 		if meta != "" {
 			row = padRight(row, inner-lipgloss.Width(meta)) + meta
@@ -497,15 +540,22 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 		// run and say the wrong thing twice.
 		body = dimmerStyle.Render(label)
 		desc, meta = dimmerStyle.Render(desc), dimmerStyle.Render(meta)
+		value = dimmerStyle.Render(value)
 	} else {
 		desc = dimStyle.Render(desc)
+		if value != "" {
+			value = opt.ValueTone.style().Render(value)
+		}
 		if meta != "" {
 			meta = opt.MetaTone.style().Render(meta)
 		}
 	}
 	row := head + padRight(body, g.label)
+	if lipgloss.Width(value) > 0 {
+		row += "  " + value
+	}
 	if lipgloss.Width(desc) > 0 {
-		row += "  " + desc
+		row += gap + desc
 	}
 	if lipgloss.Width(meta) > 0 {
 		row = padRight(row, inner-lipgloss.Width(meta)) + meta
@@ -552,20 +602,37 @@ func (s *Select) bodyBudget(pinned int) int {
 // NoteSelect puts a note field under it (§4c) — and goes through here too, so
 // the pointer is never clipped off the bottom.
 func (s *Select) visibleRows(width, budget int, numbered bool) ([]string, int) {
+	rows, shown, _ := s.visibleRowsFocus(width, budget, numbered)
+	return rows, shown
+}
+
+// visibleRowsFocus is visibleRows and where in what it returned the focused
+// option's last row landed, for a host that draws something under that row
+// rather than over the list: the config screen opens its picker there (§19a).
+// It is -1 when the window does not hold the focus, which is what a filter
+// that matched nothing leaves behind.
+func (s *Select) visibleRowsFocus(width, budget int, numbered bool) ([]string, int, int) {
 	s.normalizeFocus()
 	if s.Filtering && s.selectable() == 0 {
-		return s.noMatchRows(width), 0
+		return s.noMatchRows(width), 0, -1
 	}
 	g := s.geometry()
 	lo, hi := s.window.rangeFor(g, budget)
 	rows := s.optionRows(width, numbered, lo, hi)
+	focusAt := -1
+	if s.Focus >= lo && s.Focus < hi {
+		focusAt = g.rows(lo, s.Focus) + g.height(s.Focus) - 1
+	}
 	if lo > 0 {
 		rows = append([]string{listOverflowRow("↑", g.countIn(0, lo), "", width)}, rows...)
+		if focusAt >= 0 {
+			focusAt++
+		}
 	}
 	if hi < len(s.Options) {
 		rows = append(rows, listOverflowRow("↓", g.countIn(hi, len(s.Options)), "", width))
 	}
-	return rows, g.countIn(lo, hi)
+	return rows, g.countIn(lo, hi), focusAt
 }
 
 // noMatchRows is what a filter that matched nothing renders (§4a): a row, not

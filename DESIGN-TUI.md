@@ -2889,6 +2889,67 @@ shhh config · ~/.shhh/config.toml · 2 overridden by this repo  [?] keys · [q]
 - Masked secrets render as the last four characters and nothing else
   (`···4f9c`), in the config rows and in `shhh doctor` alike.
 
+**What shipped (S-127).** `internal/cli/config.go` ran its own Bubble Tea
+program with its own list, its own three phases and its own idea of a value;
+it now hosts `components.ConfigScreen` and owns nothing but config semantics —
+what a setting means, what its default is, which answers it offers, and when
+any of it reaches the file. The screen is a passive renderer like every other
+component: an edit resolves to a `ConfigChange` the host applies to its own
+copy, and the host hands back fresh rows, which is why the screen can draw
+`⏵⏵ auto` without knowing what a permission mode is.
+
+- **The list is `Select`.** The window, the markers, the numbering rule, the
+  filter row with both its counts and the bolded matched run all arrive from
+  §4a rather than being written a second time. The screen adds the match rule
+  — a setting is found by its name or by the config key behind it — because
+  the card never filters.
+- **Two lists, one component.** The settings and the picker under the row
+  being changed are both `Select`, at two indents. That is what makes `[/]`
+  mean the same thing in both places.
+- **A value is a column.** `SelectOption` gained `Value`/`ValueTone`: the
+  row's own answer, between the label column and the description, in a colour
+  of its own. A list that sets none renders exactly as it did, which is why
+  only the config goldens are new. The design system's `Select.d.ts` declares
+  a tone for `meta` and none for `detail`, and its `Select.jsx` draws the
+  detail `c-dim` unconditionally — but `Tools.html`'s own config rows paint
+  `⏵⏵ auto` in add and `⛨ workspace-write` beside a del meta, which is a row
+  the primitive as declared cannot express. Recorded here rather than written
+  back: reading the design project is this story's business, editing it is
+  not (the S-126 precedent).
+- **Group rails were chrome and are labels.** `decision/Select` draws a rail
+  `c-info b`; Go drew it dim. S-126 audited the selector and missed it because
+  no Go surface had a rail worth looking at until this one. Fixed for every
+  list at once, which is why the palette goldens moved.
+- **Nothing is written until `[w]`.** The old wizard saved on every keystroke,
+  including on the way past a row it had only been walked through. Edits are
+  staged now, the header counts them, `[w]` asks through the §5 inline confirm
+  before writing, and `[esc]` discards. `[w]` is not offered at all while
+  nothing is staged (invariant 5).
+
+**The departures.**
+
+- **The picker's keys sit on their own row rather than on its `↓ N more`
+  marker.** The artboard puts `[/] filter · [enter] take it · [esc] keep
+  gpt-5.2` on the marker to save a line; `listOverflowRow`'s note field is for
+  saying what a marker is hiding (S-124's ticked-rows count), and an offer is
+  not that. The keys go where every other surface's keys go — the foot.
+- **The field a setting with no answers opens is inline, not a card.** §19a's
+  own rule is that changing a value happens under the row rather than over the
+  screen; a card for a one-line field would be the modal that rule exists to
+  refuse. It is the filter row's `▸ text█` grammar, which the reader has
+  already met on every picker in the product. The masked entry is
+  `SecretPrompt` and the write-back is `Confirm`, both as specified.
+- **The masked entry's own key row is dropped where the screen shows it.** It
+  offers `[enter]` and `[esc]`, and the screen's foot already does; two rows
+  offering the same two keys is one row too many.
+- **There is no `repo` source, because there is no repo layer.** `config.Load`
+  reads the first file that exists and stops. The three readings a row can
+  carry are therefore `default`, `user` and `unwritten`; the artboard's `repo ·
+  .shhh/config.toml` and its "2 overridden by this repo" wait on a config
+  system that layers, which is not a rendering story.
+- **`shhh config` has no vitals bar.** §19 offers one "where vitals apply at
+  all", and none apply to a screen that is not in a session.
+
 ### 19b. `shhh history` (S-128)
 
 ```
@@ -3016,7 +3077,7 @@ one row in the design and on none of the others in the binary is.
 
 | renderer | primitive | outcome |
 |---|---|---|
-| `selector.go` | `decision/Select` | fixed: the description column, the meta field, the right-aligned numbering. Two departures |
+| `selector.go` | `decision/Select` | fixed: the description column, the meta field, the right-aligned numbering. Two departures. The group rail followed later, under S-127 (§19a) |
 | `multiselect.go` | `decision/MultiSelect` | fixed: the meta field. Two departures |
 | `noteselect.go` | `decision/NoteSelect` | inherits the selector's three. One departure |
 | `plancard.go` | `decision/PlanCard` | conformant. Two departures |
