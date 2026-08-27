@@ -53,7 +53,13 @@ const (
 	// MaxChildren caps how many children one session may spawn in total.
 	MaxChildren = 16
 	// DefaultMaxRounds and MaxRoundsCeiling bound a child's tool rounds.
-	DefaultMaxRounds = agent.DefaultMaxToolRounds
+	// The default is the child's own number, not agent.DefaultMaxToolRounds:
+	// a parent's cap is a checkpoint it can spend more of by asking, and a
+	// child's is a hard budget nobody is watching, so the two moved apart
+	// when the parent's rose to 75. It must stay at or under the ceiling —
+	// otherwise a child that names its own budget is clamped below the one
+	// it would have been given for saying nothing.
+	DefaultMaxRounds = 25
 	MaxRoundsCeiling = 50
 	// DefaultMaxTokens and MaxTokensCeiling bound a child's token spend
 	// (prompt + completion, provider-reported).

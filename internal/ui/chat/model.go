@@ -679,8 +679,13 @@ func (m Model) WithClassifier(c *agent.Classifier) Model {
 }
 
 // WithMaxToolRounds overrides the per-turn tool-round cap; n <= 0 keeps
-// DefaultMaxToolRounds.
+// DefaultMaxToolRounds. A negative n is not agent.UnlimitedToolRounds here:
+// the chat cap is the S-109 checkpoint and the rail's `round n/m` counter has
+// no reading for a ceiling that does not exist, so the TUI never uncaps.
 func (m Model) WithMaxToolRounds(n int) Model {
+	if n < 0 {
+		n = 0
+	}
 	m.agent.SetMaxRounds(n)
 	return m
 }

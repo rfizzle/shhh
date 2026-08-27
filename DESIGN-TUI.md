@@ -999,7 +999,7 @@ belongs in the sentence. `ui_kits/cockpit/Interrupt.html` is normative.
 ┌─ shhh code · ~/src/shhh · loop-refactor ───────── ⏸ 1 waiting ─┐
 │ ▸ also add a --max-rounds █lag while you're in there           │
 ├────────────────────────────────────────────────────────────────┤
-│ ⏵⏵ auto · round 7/25 · ctx ▰▰▰▰▰▱▱▱ 62% · $0.14 · gpt-5.2      │
+│ ⏵⏵ auto · round 7/75 · ctx ▰▰▰▰▰▱▱▱ 62% · $0.14 · gpt-5.2      │
 └─ [ctrl+g] answer it · [enter] queue · [esc] stop the run ──────┘
 ```
 
@@ -1191,7 +1191,7 @@ turn is the rail's THIS TURN block, and §8d is that turn while it is running.
 
 ```
 ──────────────────────────────────────────────────────────────────────────
-⏵⏵ auto · round 7/25 · ctx ▰▰▰▰▰▱▱▱ 62% · ↑41.2k ↓9.8k · $0.14 · ◇1 · gpt-5.2
+⏵⏵ auto · round 7/75 · ctx ▰▰▰▰▰▱▱▱ 62% · ↑41.2k ↓9.8k · $0.14 · ◇1 · gpt-5.2
 ```
 
 ### 8a. Segments
@@ -1201,7 +1201,7 @@ turn is the rail's THIS TURN block, and §8d is that turn while it is running.
 | `⏵⏵ auto` / `⏵⏵ accept edits` (add 10) | permissive modes |
 | `⏸ plan` / `⏸ manual` (accent 214) | gated modes |
 | `✦ checking` (spin 205, spinner) | the auto-mode classifier is deciding |
-| `round 7/25` (dim 241) | rounds used of the limit, `+10` beside it while a round-limit pause offers more (§17a) |
+| `round 7/75` (dim 241) | rounds used of the limit, `+10` beside it while a round-limit pause offers more (§17a) |
 | `ctx ▰▰▰▰▰▱▱▱ 62%` | context meter (§10c) — bar and number share a colour |
 | `↑41.2k ↓9.8k` (dim 241) | tokens in / out this session |
 | `$0.14` (body 252) | spend |
@@ -1224,7 +1224,7 @@ failed state. A rail that has run out of room shows fewer facts, never
 truncated ones:
 
 ```
-⏵⏵ auto · round 7/25 · ctx ▰▰▰▰▰▱▱▱ 62% · ↑41.2k ↓9.8k · $0.14 · ◇1 · gpt-5.2
+⏵⏵ auto · round 7/75 · ctx ▰▰▰▰▰▱▱▱ 62% · ↑41.2k ↓9.8k · $0.14 · ◇1 · gpt-5.2
 ⏵⏵ auto · 7/25 · ctx ▰▰▰▰▰▱▱▱ 62% · $0.14
 ⏵⏵ ctx 62% · $0.14
 ```
@@ -1774,7 +1774,7 @@ layout and spans both panes of the two-pane cockpit (§15).
 │ ▸ and add a regression test for the parser▌                                   │
 │                                                                               │
 │                                                                               │
-├─ ⏵⏵ accept edits · round 7/25 · ctx ▰▰▰▰▰▱▱▱ 62% · ↑41.2k ↓9.8k · $0.14 · gpt-5.2 ─┤
+├─ ⏵⏵ accept edits · round 7/75 · ctx ▰▰▰▰▰▱▱▱ 62% · ↑41.2k ↓9.8k · $0.14 · gpt-5.2 ─┤
 ╰─ enter queues steering · / commands · ctrl+c cancel ──────────────────────────╯
 ```
 
@@ -2210,7 +2210,7 @@ it change". So a turn closes with three rows: what it did, what changed, and
 whether the tests still pass.
 
 ```
- ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14                   round 7/25
+ ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14                   round 7/75
 ▎✎ 3 files changed +30 −4 · [v] review · [u] undo turn · [ctrl+e] to use them
  ✓ go test ./... passing · 41 packages · 12.8s
 ```
@@ -2389,7 +2389,7 @@ Two more verbs share this field: `stream` is S-107's and `rounds` is S-109's.
     …so I'll thread the sentinel through runRound and then
     [c] continue from here · [r] ask again from scratch · the partial reply stays
 
-   ⚠ rounds  25 of 25 used · the turn's own bound            stopped 4m12s
+   ⚠ rounds  75 of 75 used · the turn's own bound            stopped 4m12s
     3 files changed +30 −4 · the suite has not been re-run since
     [v] review what it did · [+10] ten more rounds · [u] undo the turn
 ```
@@ -2442,8 +2442,8 @@ turn's close block would be (§16).
 - **The grant expires with the turn.** A new user message gets the configured
   ceiling back and spends the standing offer, because a turn the session has
   moved past cannot be given more rounds.
-- **The counter on the rail is part of the surface** (§8a): `round 25/25 +10`
-  while the offer stands, `round 25/35` once it is taken. The bound and the
+- **The counter on the rail is part of the surface** (§8a): `round 75/75 +10`
+  while the offer stands, `round 75/85` once it is taken. The bound and the
   price of lifting it are both on screen for the whole decision.
 
 A request that was never answered has nothing to keep, and waiting is the
@@ -2909,7 +2909,7 @@ shhh config · ~/.shhh/config.toml · 2 overridden by this repo  [?] keys · [q]
       claude-sonnet-4.6   better diffs · 200k ctx                         $3 / $15
       gemini-3-flash      1M ctx                                     $0.30 / $2.50
      ↓ 16 more   [/] filter · [enter] take it · [esc] keep gpt-5.2
-   round limit       25                                                    default
+   round limit       75                                                    default
    verbosity         normal — reads fold, mutations never do                  user
 
   WORKSPACE

@@ -11,6 +11,7 @@ import (
 
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -33,6 +34,25 @@ type printOpts struct {
 	yes     bool
 	allow   []string
 	sandbox bool
+	// maxRounds overrides behavior.max_tool_rounds for this run, where 0
+	// means no cap at all. maxRoundsSet tells the two zeroes apart: the flag
+	// left alone (config, then the default) and --max-rounds 0 (uncapped).
+	maxRounds    int
+	maxRoundsSet bool
+}
+
+// rounds is the per-turn tool-round cap for this run: the flag when it was
+// given, the config otherwise. Hitting the cap ends a headless run with
+// ErrRoundCap, so --max-rounds 0 is the way to say "run until it is done" on
+// a foreground run a person can interrupt.
+func (o printOpts) rounds(cfg config.Config) int {
+	if !o.maxRoundsSet {
+		return cfg.Behavior.MaxToolRounds
+	}
+	if o.maxRounds == 0 {
+		return agent.UnlimitedToolRounds
+	}
+	return o.maxRounds
 }
 
 // runPrintSession runs the agent loop to completion without the TUI:
@@ -159,7 +179,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	} else {
 		a.SetExecutor(baseExecutor)
 	}
-	a.SetMaxRounds(cfg.Behavior.MaxToolRounds)
+	a.SetMaxRounds(opts.rounds(cfg))
 
 	// Session observability (S-065): headless runs record the same
 	// content-free events as interactive sessions; failure just disables

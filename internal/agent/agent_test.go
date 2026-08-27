@@ -294,3 +294,29 @@ func TestEstimateMessageTokens_CountsContentAndArgs(t *testing.T) {
 		t.Fatalf("expected 200 estimated tokens, got %d", got)
 	}
 }
+
+func TestMaxRounds_UnlimitedIsNeverReached(t *testing.T) {
+	a := newTestAgent()
+	if a.Uncapped() {
+		t.Fatal("a fresh agent runs under the default cap")
+	}
+	a.SetMaxRounds(UnlimitedToolRounds)
+	if !a.Uncapped() {
+		t.Fatal("a negative cap removes the bound")
+	}
+	for i := 0; i < DefaultMaxToolRounds+1; i++ {
+		a.BeginToolRound("", nil, nil)
+		if a.CapReached() {
+			t.Fatalf("uncapped agent stopped at round %d", a.Rounds())
+		}
+	}
+	// MaxRounds still answers with a number, since the counter that renders
+	// it has no other reading; Uncapped is the question callers must ask.
+	if a.MaxRounds() != DefaultMaxToolRounds {
+		t.Fatalf("MaxRounds should fall back to the default, got %d", a.MaxRounds())
+	}
+	a.SetMaxRounds(2)
+	if a.Uncapped() {
+		t.Fatal("a positive cap puts the bound back")
+	}
+}

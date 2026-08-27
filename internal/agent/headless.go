@@ -142,7 +142,10 @@ func (h *Headless) Run(prompt string) (string, error) {
 
 		// Mirrors the TUI's resumeToolLoop: the cap is checked after a round's
 		// results are recorded, before the next stream request. Headless has no
-		// user to hand control back to, so hitting the cap is a failure.
+		// user to hand control back to, so hitting the cap is a failure — and
+		// an uncapped agent (--max-rounds 0) never reaches it, which is why
+		// that spelling is only offered to a foreground run someone can
+		// interrupt.
 		if h.Agent.CapReached() {
 			return "", fmt.Errorf("%w after %d rounds", ErrRoundCap, h.Agent.Rounds())
 		}

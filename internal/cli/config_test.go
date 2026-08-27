@@ -1,10 +1,12 @@
 package cli
 
 import (
+	"strconv"
 	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -55,8 +57,8 @@ func TestConfigRows_UnsetRowsShowTheirDefault(t *testing.T) {
 			t.Fatalf("%s renders nothing when it is unset", row.Key)
 		}
 	}
-	if got := rowFor(rows, "behavior.max_tool_rounds").Value; got != "25" {
-		t.Fatalf("the round limit states the built-in default, got %q", got)
+	if want := strconv.Itoa(agent.DefaultMaxToolRounds); rowFor(rows, "behavior.max_tool_rounds").Value != want {
+		t.Fatalf("the round limit states the built-in default %q, got %q", want, rowFor(rows, "behavior.max_tool_rounds").Value)
 	}
 	if got := rowFor(rows, "behavior.default_mode").Value; got != "⏸ manual" {
 		t.Fatalf("the unset mode is manual and says so with its glyph, got %q", got)

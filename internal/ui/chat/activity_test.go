@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -314,7 +315,8 @@ func TestStatusBar_CockpitSegments(t *testing.T) {
 	m.steering = []string{"queued note"}
 
 	bar := stripANSI(m.renderStatusBar(160))
-	for _, want := range []string{"⏸ manual", "round 1/25", "ctx ", "%", "↑41.2k ↓9.8k", "$0.51", "queued 1", "gpt-4o"} {
+	round := fmt.Sprintf("round 1/%d", DefaultMaxToolRounds)
+	for _, want := range []string{"⏸ manual", round, "ctx ", "%", "↑41.2k ↓9.8k", "$0.51", "queued 1", "gpt-4o"} {
 		if !strings.Contains(bar, want) {
 			t.Fatalf("cockpit rail should contain %q, got %q", want, bar)
 		}

@@ -36,7 +36,20 @@ type ToolResult struct {
 
 // DefaultMaxToolRounds bounds how many consecutive tool-call rounds one user
 // turn may trigger before the loop pauses for fresh input.
-const DefaultMaxToolRounds = 25
+//
+// The number is a checkpoint interval, not a safety limit: the interactive
+// pause it drives (S-109) is a place to look at what the turn has done, and a
+// checkpoint that fires on ordinary work is noise rather than signal. It was
+// 25, which an everyday "find this across the repo and fix it" turn spends
+// without going wrong.
+const DefaultMaxToolRounds = 75
+
+// UnlimitedToolRounds passed to SetMaxRounds removes the per-turn cap: the
+// loop runs until the model stops asking for tools. It is for headless runs a
+// human is watching in the foreground (`shhh code --print --max-rounds 0`),
+// where the cap has nobody to hand control back to and interrupting is the
+// way out. The chat TUI never uses it — there the cap is the checkpoint.
+const UnlimitedToolRounds = -1
 
 // CancelledResult is the synthetic tool result recorded for calls still
 // outstanding when the user cancels a turn, keeping the conversation
@@ -71,9 +84,21 @@ func New(initial []provider.Message, stream StreamFunc) *Agent {
 // SetExecutor sets the executor used for auto-run (non-gated) tool calls.
 func (a *Agent) SetExecutor(executor ToolExecutor) { a.executor = executor }
 
-// SetMaxRounds overrides the per-turn tool-round cap; n <= 0 keeps
-// DefaultMaxToolRounds.
-func (a *Agent) SetMaxRounds(n int) { a.maxRounds = n }
+// SetMaxRounds overrides the per-turn tool-round cap. Zero means "unset" and
+// keeps DefaultMaxToolRounds, so a config or flag nobody filled in still gets
+// the default; any negative n means UnlimitedToolRounds and removes the cap.
+// The two cases were one before, which left no way to ask for no cap at all.
+func (a *Agent) SetMaxRounds(n int) {
+	if n < 0 {
+		n = UnlimitedToolRounds
+	}
+	a.maxRounds = n
+}
+
+// Uncapped reports whether the per-turn cap has been removed. Callers that
+// render a ceiling must ask this first: MaxRounds still answers with the
+// default, because there is no number that honestly means "no bound".
+func (a *Agent) Uncapped() bool { return a.maxRounds < 0 }
 
 // MaxRounds is the effective per-turn tool-round cap.
 func (a *Agent) MaxRounds() int {
@@ -130,8 +155,9 @@ func (a *Agent) Rounds() int { return a.rounds }
 // capped turn).
 func (a *Agent) ResetRounds() { a.rounds = 0 }
 
-// CapReached reports whether this turn has used up its tool rounds.
-func (a *Agent) CapReached() bool { return a.rounds >= a.MaxRounds() }
+// CapReached reports whether this turn has used up its tool rounds. An
+// uncapped agent never reaches it.
+func (a *Agent) CapReached() bool { return !a.Uncapped() && a.rounds >= a.MaxRounds() }
 
 // Executing reports whether auto-run tool calls are executing in the
 // background.

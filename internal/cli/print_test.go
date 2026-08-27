@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,6 +13,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 
+	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/web"
@@ -301,5 +304,54 @@ func TestHeadlessApprover_SafetyFlaggedProcessStartDenied(t *testing.T) {
 	result := resolve(processStartCall("wipe", "rm -rf /tmp/x"))
 	if !strings.HasPrefix(result, "error:") || !strings.Contains(result, "interactive approval") {
 		t.Fatalf("safety-flagged starts must be denied even with --yes, got %q", result)
+	}
+}
+
+func TestPrintOptsRounds(t *testing.T) {
+	cfg := config.Config{}
+	cfg.Behavior.MaxToolRounds = 40
+	cases := []struct {
+		name string
+		opts printOpts
+		want int
+	}{
+		{"flag unset defers to config", printOpts{}, 40},
+		{"flag unset and config empty defers to the default", printOpts{}, 0},
+		{"zero removes the cap", printOpts{maxRoundsSet: true, maxRounds: 0}, agent.UnlimitedToolRounds},
+		{"a number wins over config", printOpts{maxRoundsSet: true, maxRounds: 5}, 5},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			c := cfg
+			if tc.want == 0 {
+				c.Behavior.MaxToolRounds = 0
+			}
+			if got := tc.opts.rounds(c); got != tc.want {
+				t.Fatalf("rounds = %d, want %d", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestCodeCmdMaxRoundsIsHeadlessOnly(t *testing.T) {
+	cases := []struct {
+		name    string
+		args    []string
+		wantErr string
+	}{
+		{"without --print", []string{"--max-rounds", "10"}, "applies to headless runs"},
+		{"negative", []string{"--print", "--max-rounds", "-1"}, "cannot be negative"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cmd := newCodeCmd()
+			cmd.SetArgs(append(tc.args, "do a thing"))
+			cmd.SetOut(io.Discard)
+			cmd.SetErr(io.Discard)
+			err := cmd.Execute()
+			if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+				t.Fatalf("err = %v, want one naming %q", err, tc.wantErr)
+			}
+		})
 	}
 }
