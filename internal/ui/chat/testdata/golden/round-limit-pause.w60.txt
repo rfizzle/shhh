@@ -17,6 +17,7 @@ rename the round-limit sentinel
     3 files changed +30 −4 · the suite has not been re-…
     [v] review what it did · [+10] ten more rounds
     [u] undo the turn
+    [ctrl+e] to use them
 
 
 · nothing changed · only the grant can be honoured
@@ -25,7 +26,7 @@ rename the round-limit sentinel
 
    ⚠ rounds  25 of 25 used · the turn's …  stopped 4m12s
     nothing changed
-    [+10] ten more rounds
+    [+10] ten more rounds · [ctrl+e] to use them
 
 
 · a second stop · what was already granted is named
@@ -36,6 +37,7 @@ rename the round-limit sentinel
     3 files changed +30 −4
     [v] review what it did · [+10] ten more rounds
     [u] undo the turn
+    [ctrl+e] to use them
 
 
 · the offer is spent · the row keeps its words
@@ -45,6 +47,7 @@ rename the round-limit sentinel
    ⚠ rounds  25 of 25 used · the turn's …  stopped 4m12s
     3 files changed +30 −4 · the suite has not been re-…
     [v] review what it did · [u] undo the turn
+    [ctrl+e] to use them
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -54,8 +57,9 @@ rename the round-limit sentinel
 
    ␛[38;5;214m⚠␛[0m rounds  ␛[38;5;252m25 of 25 used␛[0m␛[38;5;241m · the turn's …␛[0m  ␛[38;5;214mstopped␛[0m ␛[38;5;245m4m12s␛[0m
     ␛[38;5;245m3 files changed +30 −4 · the suite has not been re-…␛[0m
-    ␛[94m[v]␛[0m␛[38;5;241m review what it did␛[0m␛[38;5;241m · ␛[0m␛[94m[+10]␛[0m␛[38;5;241m ten more rounds␛[0m
-    ␛[94m[u]␛[0m␛[38;5;241m undo the turn␛[0m
+    ␛[38;5;245m[v]␛[0m␛[38;5;241m review what it did␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[+10]␛[0m␛[38;5;241m ten more rounds␛[0m
+    ␛[38;5;245m[u]␛[0m␛[38;5;241m undo the turn␛[0m
+    ␛[94m[ctrl+e]␛[0m␛[38;5;252m to use them␛[0m
 
 
 · nothing changed · only the grant can be honoured
@@ -64,7 +68,7 @@ rename the round-limit sentinel
 
    ␛[38;5;214m⚠␛[0m rounds  ␛[38;5;252m25 of 25 used␛[0m␛[38;5;241m · the turn's …␛[0m  ␛[38;5;214mstopped␛[0m ␛[38;5;245m4m12s␛[0m
     ␛[38;5;245mnothing changed␛[0m
-    ␛[94m[+10]␛[0m␛[38;5;241m ten more rounds␛[0m
+    ␛[38;5;245m[+10]␛[0m␛[38;5;241m ten more rounds␛[0m␛[38;5;241m · ␛[0m␛[94m[ctrl+e]␛[0m␛[38;5;252m to use them␛[0m
 
 
 · a second stop · what was already granted is named
@@ -73,8 +77,9 @@ rename the round-limit sentinel
 
    ␛[38;5;214m⚠␛[0m rounds  ␛[38;5;252m35 of 35 used␛[0m␛[38;5;241m · 10 already …␛[0m  ␛[38;5;214mstopped␛[0m ␛[38;5;245m4m12s␛[0m
     ␛[38;5;245m3 files changed +30 −4␛[0m
-    ␛[94m[v]␛[0m␛[38;5;241m review what it did␛[0m␛[38;5;241m · ␛[0m␛[94m[+10]␛[0m␛[38;5;241m ten more rounds␛[0m
-    ␛[94m[u]␛[0m␛[38;5;241m undo the turn␛[0m
+    ␛[38;5;245m[v]␛[0m␛[38;5;241m review what it did␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[+10]␛[0m␛[38;5;241m ten more rounds␛[0m
+    ␛[38;5;245m[u]␛[0m␛[38;5;241m undo the turn␛[0m
+    ␛[94m[ctrl+e]␛[0m␛[38;5;252m to use them␛[0m
 
 
 · the offer is spent · the row keeps its words
@@ -83,5 +88,6 @@ rename the round-limit sentinel
 
    ␛[38;5;214m⚠␛[0m rounds  ␛[38;5;252m25 of 25 used␛[0m␛[38;5;241m · the turn's …␛[0m  ␛[38;5;214mstopped␛[0m ␛[38;5;245m4m12s␛[0m
     ␛[38;5;245m3 files changed +30 −4 · the suite has not been re-…␛[0m
-    ␛[94m[v]␛[0m␛[38;5;241m review what it did␛[0m␛[38;5;241m · ␛[0m␛[94m[u]␛[0m␛[38;5;241m undo the turn␛[0m
+    ␛[38;5;245m[v]␛[0m␛[38;5;241m review what it did␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[u]␛[0m␛[38;5;241m undo the turn␛[0m
+    ␛[94m[ctrl+e]␛[0m␛[38;5;252m to use them␛[0m
 

@@ -317,11 +317,15 @@ for its class under that:
 ```
    ✗ model   gpt-4o · 401 unauthorized                key ···4f9c rejected  0.3s
     Incorrect API key provided
-    [e] enter a new key · [p] switch provider · nothing in the turn was lost
+    [e] enter a new key · [p] switch provider · [ctrl+e] to use them
+    nothing in the turn was lost
 ```
 
 The keys are pressed in focus mode (`ctrl+e`, which opens on the failure), so
-the input keeps all four letters for typing. `[e]` opens a masked prompt — a
+the input keeps all four letters for typing — which is why the row draws them
+grey with `[ctrl+e] to use them` beside them until the cursor is standing on
+it, and paints them as pressable keys only then. A key the input is keeping is
+not an offer. `[e]` opens a masked prompt — a
 bullet per rune, the key never echoed — and puts the new key to work for the
 session; `[p]` switches provider; `[r]` asks again; `[c]` compacts when the
 request was too long for the window. A key the session cannot honour is not
@@ -428,6 +432,7 @@ row in this section where nothing failed:
    ⚠ rounds  25 of 25 used · the turn's own bound            stopped 4m12s
     3 files changed +30 −4 · the suite has not been re-run since
     [v] review what it did · [+10] ten more rounds · [u] undo the turn
+    [ctrl+e] to use them
 ```
 
 The row says what the turn managed before it stopped, and whether anything has
@@ -563,7 +568,7 @@ Concurrent writers can't overwrite each other (separate worktrees, reviewed patc
 
 Reviewing the agent's edits is a first-class surface, not raw text. Every diff — the approval preview and the transcript row an applied edit leaves behind — renders with syntax highlighting (by file type, with add/remove coloring layered over it), line numbers, and background-tinted intraline emphasis on the changed span of a modified line. An applied edit lands in the transcript as one collapsed row (`✎ edit path  +12 −4 · 2 hunks`); in focus mode (Ctrl+E), Enter expands it in place to a bounded unified view, and Enter again opens it full screen — scroll with `j`/`k`, jump hunks with `n`/`p`, and toggle a side-by-side layout with `s` (automatic on terminals ≥ 120 columns). The approval card offers the same full view with `d`. `/diff` shows the cumulative session diff — every file this session changed, read from its own changeset record rather than from `git diff`, so it works in a directory that was never a repository — on the review surface below, read-only, since a cumulative diff has nothing to stage.
 
-A turn ends with what it did rather than with the last thing it said. A finished turn closes with a summary row — `✓ Done · 4 steps · 18 tools · 1m 04s · $0.14`, with the round counter right-aligned — and, when it wrote anything, a second row carrying the mutation rail: `▎✎ 3 files changed +30 −4 · [v] review · [u] undo turn`, with what git knew about those files (`all tracked in git`, `2 tracked · 1 new`, `no git here`) on the right. If the turn ran the quality gate or a test command, a third row states the verdict and its tally (`✓ go test ./internal/agent/... passing · 41 packages · 12.8s`); several runs collapse into one `2 of 3 passing`. A turn that changed nothing gets the first row alone, and a turn you cancelled or one whose stream broke says `⊘ Cancelled` or `✗ Failed` and still reports what it changed before it stopped. A turn that stopped at its tool-round limit closes on the round-limit checkpoint instead, which says the same three things and offers the way on as well (above). The rows are ordinary transcript entries — they re-render on resize like everything else — and the keys they offer are handled by focus mode on the row, so the input keeps `v` and `u` for typing: Ctrl+E, then `v` opens that turn in review mode. (`u` undoes the turn — see below.) The counts come from the session's own per-turn record, so they are the same numbers `/diff` and the inspector rail quote.
+A turn ends with what it did rather than with the last thing it said. A finished turn closes with a summary row — `✓ Done · 4 steps · 18 tools · 1m 04s · $0.14`, with the round counter right-aligned — and, when it wrote anything, a second row carrying the mutation rail: `▎✎ 3 files changed +30 −4 · [v] review · [u] undo turn · [ctrl+e] to use them`, with what git knew about those files (`all tracked in git`, `2 tracked · 1 new`, `no git here`) on the right. If the turn ran the quality gate or a test command, a third row states the verdict and its tally (`✓ go test ./internal/agent/... passing · 41 packages · 12.8s`); several runs collapse into one `2 of 3 passing`. A turn that changed nothing gets the first row alone, and a turn you cancelled or one whose stream broke says `⊘ Cancelled` or `✗ Failed` and still reports what it changed before it stopped. A turn that stopped at its tool-round limit closes on the round-limit checkpoint instead, which says the same three things and offers the way on as well (above). The rows are ordinary transcript entries — they re-render on resize like everything else — and the keys they offer are handled by focus mode on the row, so the input keeps `v` and `u` for typing: Ctrl+E, then `v` opens that turn in review mode. Because the input keeps them, the row draws them grey with `[ctrl+e] to use them` beside them, and they turn into pressable keys only once the reading cursor is on the row — the same rule that keeps an approval card's `[y]` inert until it holds the keyboard, applied to every surface that offers a bare letter. (`u` undoes the turn — see below.) The counts come from the session's own per-turn record, so they are the same numbers `/diff` and the inspector rail quote.
 
 Reviewing a turn is one surface rather than a scroll back through the feed. `/review` — or `[v]` on a turn's changeset row — takes over the screen with the files that turn touched down the left, each with a staging box and its own `+N −M`, and the focused file's hunks down the right. The turn's verdict is pinned under the file list, so the failing test sits beside the hunks that claim to fix it, and which sub-agent wrote which file is on the row it wrote. `space` stages the hunk under the cursor, `s` the whole file, `A` (or `a`) everything at once, `j`/`k` moves between files and `n`/`p` between hunks; `[enter]`'s label counts what is staged as you stage it. The hunks are the same renderer the approval card, the transcript row and `/diff` use — unified by default, paired side by side on terminals ≥ 120 columns or with `\`, and below 60 columns the list and the pane stack rather than truncating each other. Nothing in review is destructive: `⛨ nothing is committed` stays on screen the whole time, `esc` leaves having changed nothing, and for edits already on disk the staged selection is what an undo would restore.
 

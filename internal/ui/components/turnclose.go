@@ -74,6 +74,16 @@ type TurnClose struct {
 
 	Changes *TurnChanges
 	Checks  *TurnChecks
+	// KeysWaiting says the changeset row does not hold the keyboard, so its
+	// keys render grey rather than in the colour that means "you can press
+	// this" (§7c): while the draft has it, `v` is a letter and belongs in the
+	// sentence (invariant 5). A host that claims nothing keeps the live
+	// treatment the row always had.
+	KeysWaiting bool
+	// Handover is the key that hands the keyboard over, unbracketed, offered
+	// live beside the waiting keys. Empty where there is no such key to
+	// press from this screen.
+	Handover string
 }
 
 // stateGlyph is the first row's glyph and the word beside it. Both carry the
@@ -111,16 +121,6 @@ func (c TurnClose) summaryStats() string {
 	return " · " + strings.Join(parts, " · ")
 }
 
-// keyOffers renders the changeset row's offers: every key the interface
-// offers is info, so a key in any other colour is not an offer (§10a).
-func keyOffers(keys []TurnKey) string {
-	var parts []string
-	for _, k := range keys {
-		parts = append(parts, infoStyle.Render(k.Key)+dimStyle.Render(" "+k.Label))
-	}
-	return strings.Join(parts, dimStyle.Render(" · "))
-}
-
 // closeLead is the gutter the close rows share: the rail column, then the
 // glyph column. There is no pointer column — nothing folds a close row.
 func closeLead(rail, glyph string) string {
@@ -152,13 +152,21 @@ func (c TurnClose) View(width int) string {
 
 	if ch := c.Changes; ch != nil {
 		stats := addStyle.Render(fmt.Sprintf("+%d", ch.Added)) + " " + delStyle.Render(fmt.Sprintf("−%d", ch.Removed))
-		text := bodyStyle.Render(plural(ch.Files, "file")+" changed ") + stats
-		if offers := keyOffers(ch.Keys); offers != "" {
-			text += dimStyle.Render(" · ") + offers
+		stated := bodyStyle.Render(plural(ch.Files, "file")+" changed ") + stats
+		lead := closeLead(accentStyle.Render("▎"), accentStyle.Render("✎"))
+		text := stated
+		if run := keyRun(ch.Keys, c.KeysWaiting, c.Handover); run != "" {
+			text = stated + dimStyle.Render(" · ") + run
 		}
-		lines = append(lines, closeLine(
-			closeLead(accentStyle.Render("▎"), accentStyle.Render("✎")),
-			text, dimStyle.Render(ch.Note), width))
+		// The keys that are not live yet are the first thing to give up the
+		// width, and the key that makes them live is the last: one is an
+		// offer, the others are not offers yet (§7c).
+		if lipgloss.Width(lead+text) > width {
+			if run := keyRunNarrow(ch.Keys, c.KeysWaiting, c.Handover); run != "" {
+				text = stated + dimStyle.Render(" · ") + run
+			}
+		}
+		lines = append(lines, closeLine(lead, text, dimStyle.Render(ch.Note), width))
 	}
 
 	if ck := c.Checks; ck != nil {

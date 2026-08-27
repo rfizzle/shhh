@@ -43,7 +43,7 @@ fix the round limit
     --- FAIL: TestRoundLimit
 
  ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                                         round 2/25
-▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn                                                       all tracked in git
+▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+e] to use them                                all tracked in git
  ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 ╭─ shhh chat ───────────────────────────────────────────────────────────────────────────────────────────────────────── idle ─╮
@@ -145,7 +145,7 @@ fix the round limit
     ␛[38;5;245m--- FAIL: TestRoundLimit␛[0m
 
  ␛[92m✓␛[0m ␛[38;5;252mDone␛[0m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[0m                                                                         ␛[38;5;241mround 2/25␛[0m
-␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252m1 file changed ␛[0m␛[92m+12␛[0m ␛[91m−4␛[0m␛[38;5;241m · ␛[0m␛[94m[v]␛[0m␛[38;5;241m review␛[0m␛[38;5;241m · ␛[0m␛[94m[u]␛[0m␛[38;5;241m undo turn␛[0m                                                       ␛[38;5;241mall tracked in git␛[0m
+␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252m1 file changed ␛[0m␛[92m+12␛[0m ␛[91m−4␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[v]␛[0m␛[38;5;241m review␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[u]␛[0m␛[38;5;241m undo turn␛[0m␛[38;5;241m · ␛[0m␛[94m[ctrl+e]␛[0m␛[38;5;252m to use them␛[0m                                ␛[38;5;241mall tracked in git␛[0m
  ␛[91m✗␛[0m ␛[38;5;252mgo test ./internal/agent/... failing␛[0m␛[38;5;241m · exit 1 · 21s␛[0m
 
 ␛[38;5;214m╭─␛[0m shhh chat ␛[38;5;214m─────────────────────────────────────────────────────────────────────────────────────────────────────────␛[0m ␛[38;5;241midle␛[0m ␛[38;5;214m─╮␛[0m
@@ -168,7 +168,7 @@ fix the round limit
       ␛[38;5;245m--- FAIL: TestRoundLimit␛[0m
 
    ␛[92m✓␛[0m ␛[38;5;252mDone␛[0m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[0m                                                                       ␛[38;5;241mround 2/25␛[0m
-  ␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252m1 file changed ␛[0m␛[92m+12␛[0m ␛[91m−4␛[0m␛[38;5;241m · ␛[0m␛[94m[v]␛[0m␛[38;5;241m review␛[0m␛[38;5;241m · ␛[0m␛[94m[u]␛[0m␛[38;5;241m undo turn␛[0m                                                     ␛[38;5;241mall tracked in git␛[0m
+  ␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252m1 file changed ␛[0m␛[92m+12␛[0m ␛[91m−4␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[v]␛[0m␛[38;5;241m review␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[u]␛[0m␛[38;5;241m undo turn␛[0m                                                     ␛[38;5;241mall tracked in git␛[0m
    ␛[91m✗␛[0m ␛[38;5;252mgo test ./internal/agent/... failing␛[0m␛[38;5;241m · exit 1 · 21s␛[0m
 
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[0m
@@ -190,7 +190,7 @@ fix the round limit
       ␛[38;5;245m--- FAIL: TestRoundLimit␛[0m
 
    ␛[92m✓␛[0m ␛[38;5;252mDone␛[0m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[0m                                                                       ␛[38;5;241mround 2/25␛[0m
-  ␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252m1 file changed ␛[0m␛[92m+12␛[0m ␛[91m−4␛[0m␛[38;5;241m · ␛[0m␛[94m[v]␛[0m␛[38;5;241m review␛[0m␛[38;5;241m · ␛[0m␛[94m[u]␛[0m␛[38;5;241m undo turn␛[0m                                                     ␛[38;5;241mall tracked in git␛[0m
+  ␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252m1 file changed ␛[0m␛[92m+12␛[0m ␛[91m−4␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[v]␛[0m␛[38;5;241m review␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[u]␛[0m␛[38;5;241m undo turn␛[0m                                                     ␛[38;5;241mall tracked in git␛[0m
    ␛[91m✗␛[0m ␛[38;5;252mgo test ./internal/agent/... failing␛[0m␛[38;5;241m · exit 1 · 21s␛[0m
 
 ␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[0m

@@ -32,6 +32,16 @@
 · unpriced · tokens, never a made-up zero
  ✓ Done · 4 steps · 18 tools · 1m 04s · ~48.1k tok                                                  round 7/25
 
+· keys waiting · the draft has the keyboard, ctrl+e takes it
+ ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14                                                       round 7/25
+▎✎ 3 files changed +30 −4 · [v] review · [u] undo turn · [ctrl+e] to use them               all tracked in git
+ ✓ go test ./internal/agent/... passing · 41 packages · 12.8s
+
+· keys waiting · reading mode is up, the cursor is elsewhere
+ ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14                                                       round 7/25
+▎✎ 3 files changed +30 −4 · [v] review · [u] undo turn                                      all tracked in git
+ ✓ go test ./internal/agent/... passing · 41 packages · 12.8s
+
 ── ansi ────────────────────────────────────────────────────
 · done · changed · checked
  ␛[92m✓␛[0m ␛[38;5;252mDone␛[0m␛[38;5;241m · 4 steps · 18 tools · 1m 04s · $0.14␛[0m                                                       ␛[38;5;241mround 7/25␛[0m
@@ -55,3 +65,13 @@
 
 · unpriced · tokens, never a made-up zero
  ␛[92m✓␛[0m ␛[38;5;252mDone␛[0m␛[38;5;241m · 4 steps · 18 tools · 1m 04s · ~48.1k tok␛[0m                                                  ␛[38;5;241mround 7/25␛[0m
+
+· keys waiting · the draft has the keyboard, ctrl+e takes it
+ ␛[92m✓␛[0m ␛[38;5;252mDone␛[0m␛[38;5;241m · 4 steps · 18 tools · 1m 04s · $0.14␛[0m                                                       ␛[38;5;241mround 7/25␛[0m
+␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252m3 files changed ␛[0m␛[92m+30␛[0m ␛[91m−4␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[v]␛[0m␛[38;5;241m review␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[u]␛[0m␛[38;5;241m undo turn␛[0m␛[38;5;241m · ␛[0m␛[94m[ctrl+e]␛[0m␛[38;5;252m to use them␛[0m               ␛[38;5;241mall tracked in git␛[0m
+ ␛[92m✓␛[0m ␛[38;5;252mgo test ./internal/agent/... passing␛[0m␛[38;5;241m · 41 packages · 12.8s␛[0m
+
+· keys waiting · reading mode is up, the cursor is elsewhere
+ ␛[92m✓␛[0m ␛[38;5;252mDone␛[0m␛[38;5;241m · 4 steps · 18 tools · 1m 04s · $0.14␛[0m                                                       ␛[38;5;241mround 7/25␛[0m
+␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252m3 files changed ␛[0m␛[92m+30␛[0m ␛[91m−4␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[v]␛[0m␛[38;5;241m review␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[u]␛[0m␛[38;5;241m undo turn␛[0m                                      ␛[38;5;241mall tracked in git␛[0m
+ ␛[92m✓␛[0m ␛[38;5;252mgo test ./internal/agent/... passing␛[0m␛[38;5;241m · 41 packages · 12.8s␛[0m

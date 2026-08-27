@@ -5,18 +5,20 @@
 > S-048 (approvals), S-061 (plan mode), S-070 (memory), S-074 (diffs),
 > S-075 (activity feed & cockpit), S-082 (input frame).
 >
-> **v3 — S-121.** A fifth invariant, §7a rewritten, §7b and §19 added, and
-> §4a, §8, §10c and §15 brought onto the artboards that now specify them. It
-> continues what v2 (S-088) started — the file describes one grammar rather
-> than a record of how it grew — and where the two disagree the artboard wins
-> and the older text goes, rather than sitting beside it. The source is the
-> `shhh Design System` project in Claude Design (projectId
-> `8bd9b60d-8d86-403e-a591-c15a9ebccfd9`, read with the DesignSync tool, not
-> from the published Artifact, which is a viewer): `tokens/terminal.css` for
-> the column grid, `tokens/colors.css` for the palette, `guidelines/` for the
-> rules, `ui_kits/cockpit/` for the artboards (`Main`, `Steps`, `Changeset`,
-> `Edges`, `Sheet`, `Reading`, `Interrupt`, `Lists`, `Tools`). E-013 through
-> E-021 implement it; nothing below exists until a story builds it.
+> **v3 — S-121, with §7c added by S-125.** A fifth invariant, §7a rewritten,
+> §7b, §7c and §19 added, and §4a, §8, §10c and §15 brought onto the artboards
+> that now specify them. It continues what v2 (S-088) started — the file
+> describes one grammar rather than a record of how it grew — and where the
+> two disagree the artboard wins and the older text goes, rather than sitting
+> beside it, except where a guideline has since restated a rule the artboard
+> predates (§7c). The source is the `shhh Design System` project in Claude
+> Design (projectId `8bd9b60d-8d86-403e-a591-c15a9ebccfd9`, read with the
+> DesignSync tool, not from the published Artifact, which is a viewer):
+> `tokens/terminal.css` for the column grid, `tokens/colors.css` for the
+> palette, `guidelines/` for the rules, `ui_kits/cockpit/` for the artboards
+> (`Main`, `Steps`, `Changeset`, `Edges`, `Sheet`, `Reading`, `Interrupt`,
+> `Lists`, `Tools`). E-013 through E-021 implement it; nothing below exists
+> until a story builds it.
 
 ---
 
@@ -1028,10 +1030,9 @@ single-character key while a live input is on screen either holds the keyboard
 exclusively while those keys are live, or renders them as not-yet-live and
 offers the one key that hands the keyboard over. Most surfaces pass by
 construction, because a takeover surface holds the keyboard by definition; the
-ones worth auditing are those that render alongside a live input. S-125 is
-that audit, and it covers the approval card, inline confirm (§5), the selector
-family (§4), the plan card (§4d), the agent list (§9a), review mode (§16a),
-the recovery cards (§17b) and reading mode's per-row offers (§7a).
+ones worth auditing are those that render alongside a live input. §7c is that
+audit — the register of every keyed surface and which of the two positions it
+is in — and S-125 is where it was taken.
 
 **What S-117 reaches.** Four surfaces arrive unbidden and are gated by this
 rule: the approval card (§2), the `/run` confirm, the plan card (§4d) and a
@@ -1065,6 +1066,100 @@ card's own 40% bound (§1) plus its rail, plus the draft when there is one to
 hold. The card itself is bounded as if it stood alone, in both states: a
 decision the reader cannot read is not one they can make, so the transcript
 gives up the rows instead.
+
+---
+
+### 7c. The register of keyed surfaces (S-125)
+
+§7b is a rule about one card. This is the same rule asked of everything else
+that offers a bare letter, and the answer written down, because a rule nobody
+can check against a list is a rule each new surface gets to rediscover.
+
+Two positions are allowed, and there is no third.
+
+- **A takeover holds the keyboard exclusively.** Its state is routed before
+  the input sees a key and the input is not live while it is up, so its
+  letters are live because nothing else is listening. It names itself in a
+  rail where it has one.
+- **A surface that does not hold the keyboard renders its keys grey** — out of
+  info, which is the colour that means "you can press this" (§10a) — **and
+  offers the one key that hands the keyboard over**, live, beside them.
+
+| surface | position | keys | how it gets the keyboard |
+|---|---|---|---|
+| approval card (§2), `/run` confirm, plan card (§4d), a child's routed approval (§9c) | arrives ungated | `y n a d A` / `s` / `g` | `ctrl+g` (§7b) |
+| reading mode and its per-row offers (§7a) | takeover | `j k q -` and the row's own | `ctrl+e`, `pgup`/`pgdn` |
+| the selector family (§4), the model picker, the rewind picker, the palette (§18a) | takeover | digits, `j k` | the command or key that opens it |
+| review mode (§16a) | takeover | `s A n p` | `[v]`, `/review`, `/diff` |
+| the agent list (§9a) | takeover | `x X j k` | `ctrl+a`, `/agents` |
+| the undo confirm (§5), the key entry (§17a), the full-screen diff (§3c) | takeover | `y n f` | the key that opens it |
+| the context pressure card (§17b), the retry countdown (§17a) | takeover | `n` | it opens on its own and takes the keyboard |
+| the changeset row (§16) | transcript row | `v u` | `ctrl+e`, then the cursor on the row |
+| a provider failure's row, a dropped stream's, a round-limit pause's (§17a) | transcript row | `e p r c v u +10` | `ctrl+e`, then the cursor on the row |
+
+**The transcript rows are what the audit found.** Everything above them passes
+by construction — a takeover has the keyboard by definition, and the four
+unbidden decisions were fixed by S-117. The rows did not: they are passive
+entries whose keys are handled by reading mode on the row, so beside a live
+draft `[v] review` was an offer nothing accepts, painted in the colour that
+says it is one.
+
+```
+▎✎ 3 files changed +30 −4 · [v] review · [u] undo turn · [ctrl+e] to use them
+▎✎ 3 files changed +30 −4 · [v] review · [u] undo turn
+```
+
+- **The first line is the state a reader meets most of the time**: the draft
+  below has the keyboard, `v` is a letter, and the row says so — its keys
+  grey, and `[ctrl+e] to use them` in the live treatment they do not have.
+  The words are the row-sized form of the card's `not live yet`; a row cannot
+  spend three lines on the card's version of this and does not have to.
+- **The second is reading mode with the cursor somewhere else.** The keys are
+  still not live, and `ctrl+e` is not the way to them either — it is how you
+  leave. The mode's own bar names the way (`[j/k] move`) and the lit row says
+  where the cursor is, so the row offers nothing, which is exactly true.
+- **Under the cursor the keys go back to info and the handover disappears**,
+  because there is nothing left to hand over. Reading mode's bar names the
+  same offers on its own line (`▎this row · [v] review · [u] undo turn`), and
+  the two are read off the same list so they cannot drift.
+- **The keys that are not live yet drop first as the terminal narrows**, and
+  the key that makes them live drops last: `· [ctrl+e] read` is what a
+  60-column row keeps. A key that is not live is not an offer; the one that
+  turns it into one is.
+- **`[enter] expand` on a diff row (§3a) and a folded group row (§13c) is a
+  label, not an offer**, and both draw it in the hint treatment. Enter belongs
+  to the draft until reading mode takes the keyboard — which is the same
+  reason §17a's continue key is `[c]` and its key-entry key is `[e]` — so the
+  words say what the row does under the cursor rather than advertising a key
+  standing open.
+
+**Three departures, recorded rather than left silent.**
+
+- **`ui_kits/cockpit/Changeset.html` draws `[v]` and `[u]` in info on the
+  transcript row.** The artboard predates invariant 5;
+  `guidelines/invariant-inert-keys` is the newer statement and it is
+  unambiguous — "surfaces that do not hold it show their keys grey, plus the
+  one key that hands it over". Where the two disagree the guideline wins,
+  because it is the rule and the artboard is one drawing of a screen taken
+  before the rule existed. The artboard is still normative for the row's
+  fields, its order and its note.
+- **The handover is offered on the row, not once on the frame's rail.** Saying
+  it once would be cheaper and it is where §12a puts screen-level keys, but
+  the rail is not beside the keys it explains, and a reader who has scrolled
+  to a failure four turns back is looking at the row. The cost is the phrase
+  repeated once per close row on screen, which is at most a few.
+- **A row in reading mode with the cursor elsewhere states its waiting keys in
+  a shade alone.** Invariant 1 would ask for words, and the words are there —
+  on the rail (`READING 5/12`) and on the mode's own bar, which names the
+  offers of the row the cursor is actually on. Repeating "not live yet" on
+  every unfocused row would say the same thing a dozen times to answer a
+  question the rail has already answered.
+
+**The inspector rail's `[v]` and `[u]` stay unprinted** (§15c). The rail has no
+way to hold the keyboard at all, so neither position is open to it: the keys
+are live on the changeset row in the transcript, where reading mode can reach
+them, and the rail states the facts instead. S-125 settles that as the
+answer rather than as a gap.
 
 ---
 
@@ -1997,8 +2092,9 @@ Neither is rendered (S-120), for the reason §15c gives for PLAN printing
 in the rail is an offer nothing accepts — invariant 5. `[v]` and `[u]` are
 live on the changeset row in the transcript, where focus mode holds the
 keyboard (§16), and the alert's second row states what the command said
-(`exit 1`) instead. S-125's audit is where the rail either gains a surface
-that can hold those keys or the design drops them from the rail.
+(`exit 1`) instead. S-125's audit settled that as the answer rather than as a
+gap: the rail has no way to hold the keyboard at all, so neither of §7c's two
+positions is open to it and the keys stay off it.
 
 ### 15c. Rules
 
@@ -2052,9 +2148,15 @@ whether the tests still pass.
 
 ```
  ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14                   round 7/25
-▎✎ 3 files changed +30 −4 · [v] review · [u] undo turn   all tracked in git
+▎✎ 3 files changed +30 −4 · [v] review · [u] undo turn · [ctrl+e] to use them
  ✓ go test ./... passing · 41 packages · 12.8s
 ```
+
+Drawn here in the state a reader meets most of the time: the draft below has
+the keyboard, so `[v]` and `[u]` are grey and the key that makes them live is
+the one in the live treatment (§7c). Under reading mode's cursor they are
+ordinary keys again and the handover goes, because there is nothing left to
+hand over.
 
 The changed-files row carries the mutation rail (§14) — at a glance the close
 of a turn looks like the rows that produced it. Close rows start at the rail
@@ -2079,7 +2181,9 @@ step, and nothing folds them.
   answers "does it still build", not "what did you run".
 - Nothing about the block is a takeover. The rows are transcript entries and
   the keys they offer are handled by focus mode on the row (§7), so the input
-  keeps every other key.
+  keeps every other key — and because the input keeps them, the row renders
+  them as keys that are not live yet until the cursor is standing on it
+  (§7c, invariant 5).
 - One turn ending does not close twice, and one thing closes a turn instead of
   this block: a turn that stopped at its tool-round ceiling ends on §17a's
   `rounds` row, which says the same three things and offers the way on as well
@@ -2199,6 +2303,9 @@ failed request changed nothing.
   row's `[v]` and `[u]` are (§16), so the input keeps all four letters for
   typing — which matters more here than anywhere else, since "run the tests
   again" and "check what it did" are exactly what gets typed after a failure.
+  Which is why the row renders them grey with `[ctrl+e] to use them` beside
+  them until the cursor arrives (§7c): a key the input is keeping is not an
+  offer, and it must not be painted as one.
   `ctrl+e` opens on the failure rather than on the close rows that follow it:
   those are chrome about a turn that broke, and this is the row holding the way
   out. Entering a key is `[e]`, not `[k]`, because `k` is the focus cursor's

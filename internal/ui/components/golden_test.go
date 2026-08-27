@@ -191,6 +191,15 @@ func TestGolden_TurnClose(t *testing.T) {
 			{Label: "unpriced · tokens, never a made-up zero", View: closed(func(c *TurnClose) {
 				c.Spend, c.Changes, c.Checks = "~48.1k tok", nil, nil
 			})},
+			// The changeset row in the two states invariant 5 puts it in
+			// (§7c): its [v] and [u] are handled by reading mode on the row,
+			// so beside a live draft they are letters and the row says so.
+			{Label: "keys waiting · the draft has the keyboard, ctrl+e takes it", View: closed(func(c *TurnClose) {
+				c.KeysWaiting, c.Handover = true, "ctrl+e"
+			})},
+			{Label: "keys waiting · reading mode is up, the cursor is elsewhere", View: closed(func(c *TurnClose) {
+				c.KeysWaiting = true
+			})},
 		}
 	})
 }
@@ -946,6 +955,22 @@ func TestGolden_RecoveryRows(t *testing.T) {
 				r.Qualifier, r.Outcome = "400 unclassified", "message below"
 				r.Detail = []string{"Unknown parameter: 'reasoning.effort'"}
 				r.Keys = []KeyOffer{{Key: "[r]", Label: "try again"}, {Key: "[p]", Label: "switch provider"}}
+			})},
+			// The same row in the two states invariant 5 puts it in (§7c).
+			// It is a transcript row, so the draft below usually has the
+			// keyboard and `r` is a letter — the state a reader meets first
+			// is the waiting one.
+			{Label: "keys waiting · the draft has the keyboard, ctrl+e takes it", View: row(func(r *RecoveryRow) {
+				r.State, r.Qualifier, r.Outcome = RecoveryStalled, "429 rate limited", "retry in 38s"
+				r.Detail = []string{"Rate limit reached for gpt-4o. Please try again in 38s."}
+				r.Keys = []KeyOffer{{Key: "[r]", Label: "try again"}, {Key: "[p]", Label: "switch provider"}}
+				r.KeysWaiting, r.Handover = true, "ctrl+e"
+			})},
+			{Label: "keys waiting · reading mode is up, the cursor is elsewhere", View: row(func(r *RecoveryRow) {
+				r.State, r.Qualifier, r.Outcome = RecoveryStalled, "429 rate limited", "retry in 38s"
+				r.Detail = []string{"Rate limit reached for gpt-4o. Please try again in 38s."}
+				r.Keys = []KeyOffer{{Key: "[r]", Label: "try again"}, {Key: "[p]", Label: "switch provider"}}
+				r.KeysWaiting = true
 			})},
 		}
 	})

@@ -669,17 +669,28 @@ func scrollTo(offset, focus, height int) int {
 // They are what the surface can do, so none of them is truncated away; a
 // narrow terminal gets more rows instead of fewer offers.
 func wrapOffers(offers []TurnKey, width int) []string {
+	return wrapOffersIn(offers, width, true)
+}
+
+// wrapOffersIn is the same, in whichever treatment the keyboard puts the run
+// in (§7c). A takeover surface holds the keyboard by definition and always
+// passes true; only a transcript row has the other state.
+func wrapOffersIn(offers []TurnKey, width int, live bool) []string {
+	paint := keyOffers
+	if !live {
+		paint = inertOffers
+	}
 	var rows []string
 	line := []TurnKey{}
 	flush := func() {
 		if len(line) > 0 {
-			rows = append(rows, keyOffers(line))
+			rows = append(rows, paint(line))
 			line = nil
 		}
 	}
 	for _, o := range offers {
 		next := append(append([]TurnKey{}, line...), o)
-		if len(line) > 0 && lipgloss.Width(keyOffers(next)) > width {
+		if len(line) > 0 && lipgloss.Width(paint(next)) > width {
 			flush()
 		}
 		line = append(line, o)

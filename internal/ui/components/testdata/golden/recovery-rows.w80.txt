@@ -49,6 +49,18 @@
     Unknown parameter: 'reasoning.effort'
     [r] try again · [p] switch provider · nothing in the turn was lost
 
+· keys waiting · the draft has the keyboard, ctrl+e takes it
+   ⚠ model   gpt-4o · 429 rate limited                        retry in 38s  0.3s
+    Rate limit reached for gpt-4o. Please try again in 38s.
+    [r] try again · [p] switch provider
+    [ctrl+e] to use them
+    nothing in the turn was lost
+
+· keys waiting · reading mode is up, the cursor is elsewhere
+   ⚠ model   gpt-4o · 429 rate limited                        retry in 38s  0.3s
+    Rate limit reached for gpt-4o. Please try again in 38s.
+    [r] try again · [p] switch provider · nothing in the turn was lost
+
 ── ansi ────────────────────────────────────────────────────
 · auth · the key it sent, named by its last four
    ␛[91m✗␛[0m model   ␛[38;5;252mgpt-4o␛[0m␛[38;5;241m · 401 unauthorized␛[0m                ␛[91mkey ···4f9c rejected␛[0m  ␛[38;5;245m0.3s␛[0m
@@ -89,3 +101,15 @@
    ␛[91m✗␛[0m model   ␛[38;5;252mgpt-4o␛[0m␛[38;5;241m · 400 unclassified␛[0m                       ␛[91mmessage below␛[0m  ␛[38;5;245m0.3s␛[0m
     ␛[38;5;245mUnknown parameter: 'reasoning.effort'␛[0m
     ␛[94m[r]␛[0m␛[38;5;241m try again␛[0m␛[38;5;241m · ␛[0m␛[94m[p]␛[0m␛[38;5;241m switch provider␛[0m␛[38;5;241m · ␛[0m␛[38;5;241mnothing in the turn was lost␛[0m
+
+· keys waiting · the draft has the keyboard, ctrl+e takes it
+   ␛[38;5;214m⚠␛[0m model   ␛[38;5;252mgpt-4o␛[0m␛[38;5;241m · 429 rate limited␛[0m                        ␛[38;5;214mretry in 38s␛[0m  ␛[38;5;245m0.3s␛[0m
+    ␛[38;5;245mRate limit reached for gpt-4o. Please try again in 38s.␛[0m
+    ␛[38;5;245m[r]␛[0m␛[38;5;241m try again␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[p]␛[0m␛[38;5;241m switch provider␛[0m
+    ␛[94m[ctrl+e]␛[0m␛[38;5;252m to use them␛[0m
+    ␛[38;5;241mnothing in the turn was lost␛[0m
+
+· keys waiting · reading mode is up, the cursor is elsewhere
+   ␛[38;5;214m⚠␛[0m model   ␛[38;5;252mgpt-4o␛[0m␛[38;5;241m · 429 rate limited␛[0m                        ␛[38;5;214mretry in 38s␛[0m  ␛[38;5;245m0.3s␛[0m
+    ␛[38;5;245mRate limit reached for gpt-4o. Please try again in 38s.␛[0m
+    ␛[38;5;245m[r]␛[0m␛[38;5;241m try again␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[p]␛[0m␛[38;5;241m switch provider␛[0m␛[38;5;241m · ␛[0m␛[38;5;241mnothing in the turn was lost␛[0m

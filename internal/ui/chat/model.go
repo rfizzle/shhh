@@ -930,7 +930,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.inputLive() && m.attachedTo == "" {
 				return m.openPalette()
 			}
-		case "ctrl+e":
+		case readingHandoverKey:
 			// Focus mode (S-076): navigate and expand transcript rows; scoped
 			// to whichever agent is focused (S-077). It reads the transcript
 			// without touching the conversation, so it opens over a running
@@ -1921,6 +1921,15 @@ func (m *Model) invalidateRenderCache() {
 // an entry's business — separatorBefore owns it, so every caller that
 // concatenates entries gets the same rhythm.
 func (m Model) renderEntry(e entry, width int) string {
+	return m.renderEntryKeys(e, width, false)
+}
+
+// renderEntryKeys is the same, told whether the row's own keys are live —
+// which they are only while reading mode's cursor is standing on this row
+// (§7c, invariant 5). Everywhere else the row is beside a live draft, `v` is
+// a letter, and the row says so: its keys go grey and the key that hands the
+// keyboard over is offered in the live treatment beside them.
+func (m Model) renderEntryKeys(e entry, width int, keysLive bool) string {
 	switch e.kind {
 	case entryUser:
 		return userStyle.Render("You") + "\n" + m.wordWrap(e.text, width) + "\n"
@@ -1933,13 +1942,15 @@ func (m Model) renderEntry(e entry, width int) string {
 		if e.close == nil {
 			return ""
 		}
-		return e.close.View(width) + "\n"
+		c := *e.close
+		c.KeysWaiting, c.Handover = !keysLive, m.rowHandover(keysLive)
+		return c.View(width) + "\n"
 	case entryFailure:
-		return m.failureRow(e).View(width) + "\n"
+		return m.gateRow(m.failureRow(e), keysLive).View(width) + "\n"
 	case entryStreamDrop:
-		return m.dropRow(e).View(width) + "\n"
+		return m.gateRow(m.dropRow(e), keysLive).View(width) + "\n"
 	case entryRoundPause:
-		return m.roundPauseRow(e).View(width) + "\n"
+		return m.gateRow(m.roundPauseRow(e), keysLive).View(width) + "\n"
 	case entryFanout:
 		block := m.fanoutBlockFor(e)
 		if len(block.Lanes) == 0 {

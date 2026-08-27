@@ -319,8 +319,11 @@ func indented(s string, indent, width int) string {
 	return strings.Repeat(" ", indent) + dimmerStyle.Render(clip(s, max(width-indent, 1)))
 }
 
-// GroupExpandKey is the offer a folded group row makes; every key the
-// interface offers is info (§10a).
+// GroupExpandKey is what a folded group row says opens it. It is drawn in the
+// hint treatment rather than in info, the way the collapsed diff row's has
+// always been: enter belongs to the draft below until reading mode takes the
+// keyboard, so on a transcript row this is a label for what the row does
+// under the cursor, not an offer standing open (§7c, invariant 5).
 const GroupExpandKey = "[enter] expand"
 
 // ActivityGroup is the folded group row (§13c): the one line a run of
@@ -343,7 +346,7 @@ func (g ActivityGroup) View(width int) string {
 	lead := strings.Repeat(" ", ptrWidth+railWidth) +
 		dimStyle.Render("▸") + " " +
 		dimStyle.Render("⚙") + strings.Repeat(" ", verbWidth-1)
-	return gridLine(lead, g.Label, infoStyle.Render(GroupExpandKey), g.Duration, width)
+	return gridLine(lead, g.Label, hintStyle.Render(GroupExpandKey), g.Duration, width)
 }
 
 // The step outline (§13) draws its headers on this same grid but lives in

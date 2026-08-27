@@ -85,6 +85,17 @@ type RecoveryRow struct {
 	// `nothing in the turn was lost`. A failure that does not say what it
 	// cost is a failure you have to go and check.
 	Note string
+	// KeysWaiting says the row does not hold the keyboard, so its keys render
+	// grey (§7c): `r` and `c` are letters while the draft has it, and "run
+	// the tests again" is exactly what gets typed after a failure
+	// (invariant 5). A host that claims nothing keeps the live treatment the
+	// row always had — the one-shot prints these rows with no draft to
+	// protect, and states its way out as a command anyway (§17a).
+	KeysWaiting bool
+	// Handover is the key that hands the keyboard over, unbracketed, offered
+	// live beside the waiting keys. Empty where there is no such key to
+	// press from this screen.
+	Handover string
 }
 
 // glyph is the state's glyph, in the state's colour.
@@ -178,7 +189,13 @@ func (r RecoveryRow) keyLines(width int) []string {
 	if one := r.keyLine(); lipgloss.Width(one) <= width {
 		return []string{one}
 	}
-	rows := wrapOffers(r.Keys, width)
+	rows := wrapOffersIn(r.Keys, width, !r.KeysWaiting)
+	// The key that hands the keyboard over keeps a line of its own rather
+	// than wrapping in among the keys it makes live: it is the only offer on
+	// a row that does not hold the keyboard, and it reads as one (§7c).
+	if r.KeysWaiting && r.Handover != "" {
+		rows = append(rows, handoverOffer(r.Handover, handoverWords))
+	}
 	if note != "" {
 		rows = append(rows, note)
 	}
@@ -234,10 +251,11 @@ func (w RetryWait) View(width int) string {
 }
 
 // keyLine renders the offers and the note as one line: the keys in info, the
-// words for them and the note in dim.
+// words for them and the note in dim — or, where the row does not hold the
+// keyboard, the keys grey beside the one key that hands it over (§7c).
 func (r RecoveryRow) keyLine() string {
 	var parts []string
-	if offers := keyOffers(r.Keys); offers != "" {
+	if offers := keyRun(r.Keys, r.KeysWaiting, r.Handover); offers != "" {
 		parts = append(parts, offers)
 	}
 	if r.Note != "" {
