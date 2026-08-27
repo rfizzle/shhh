@@ -26,7 +26,7 @@ fix the round limit
    ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[j/k] move · [enter] expand · [q] back to the prompt                                                                row 5 of 5
+[j/k] move · [enter] expand · [ctrl+o] step detail — this row is not in a step · [q] back to the prompt             row 5 of 5
 ▎this row · [v] review · [u] undo turn · [esc] nothing
 
 
@@ -70,7 +70,7 @@ fix the round limit
    ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[j/k] move · [enter] expand · [q] back to the prompt                                                       row 3 of 5 · step 2
+[j/k] move · [enter] expand · [ctrl+o] step detail · [q] back to the prompt                                row 3 of 5 · step 2
 
 
 
@@ -92,7 +92,7 @@ fix the round limit
    ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
-[j/k] move · [enter] expand · [-] collapse · [q] back to the prompt                                             1 row expanded
+[j/k] move · [enter] expand · [ctrl+o] step detail · [-] collapse · [q] back to the prompt                      1 row expanded
 
 
 
@@ -128,7 +128,7 @@ fix the round limit
    ␛[38;5;254m✗␛[0m ␛[38;5;254mgo test ./internal/agent/... failing␛[0m␛[38;5;244m · exit 1 · 21s␛[0m
 
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[0m
-␛[38;5;254m[j/k]␛[0m␛[38;5;244m move␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[enter]␛[0m␛[38;5;244m expand␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[q]␛[0m␛[38;5;244m back to the prompt␛[0m                                                                ␛[38;5;244mrow 5 of 5␛[0m
+␛[38;5;254m[j/k]␛[0m␛[38;5;244m move␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[enter]␛[0m␛[38;5;244m expand␛[0m␛[38;5;244m · ␛[0m␛[38;5;244m[ctrl+o] step detail — this row is not in a step␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[q]␛[0m␛[38;5;244m back to the prompt␛[0m             ␛[38;5;244mrow 5 of 5␛[0m
 ␛[38;5;254m▎␛[0m␛[38;5;244mthis row · ␛[0m␛[38;5;254m[v]␛[0m␛[38;5;244m review␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[u]␛[0m␛[38;5;244m undo turn␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[esc]␛[0m␛[38;5;244m nothing␛[0m
 
 
@@ -172,7 +172,7 @@ fix the round limit
    ␛[38;5;254m✗␛[0m ␛[38;5;254mgo test ./internal/agent/... failing␛[0m␛[38;5;244m · exit 1 · 21s␛[0m
 
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[0m
-␛[38;5;254m[j/k]␛[0m␛[38;5;244m move␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[enter]␛[0m␛[38;5;244m expand␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[q]␛[0m␛[38;5;244m back to the prompt␛[0m                                                       ␛[38;5;244mrow 3 of 5 · step 2␛[0m
+␛[38;5;254m[j/k]␛[0m␛[38;5;244m move␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[enter]␛[0m␛[38;5;244m expand␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[ctrl+o]␛[0m␛[38;5;244m step detail␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[q]␛[0m␛[38;5;244m back to the prompt␛[0m                                ␛[38;5;244mrow 3 of 5 · step 2␛[0m
 
 
 
@@ -194,7 +194,7 @@ fix the round limit
    ␛[38;5;254m✗␛[0m ␛[38;5;254mgo test ./internal/agent/... failing␛[0m␛[38;5;244m · exit 1 · 21s␛[0m
 
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[0m
-␛[38;5;254m[j/k]␛[0m␛[38;5;244m move␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[enter]␛[0m␛[38;5;244m expand␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[-]␛[0m␛[38;5;244m collapse␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[q]␛[0m␛[38;5;244m back to the prompt␛[0m                                             ␛[38;5;244m1 row expanded␛[0m
+␛[38;5;254m[j/k]␛[0m␛[38;5;244m move␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[enter]␛[0m␛[38;5;244m expand␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[ctrl+o]␛[0m␛[38;5;244m step detail␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[-]␛[0m␛[38;5;244m collapse␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[q]␛[0m␛[38;5;244m back to the prompt␛[0m                      ␛[38;5;244m1 row expanded␛[0m
 
 
 

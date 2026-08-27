@@ -124,6 +124,18 @@ func TestGolden_StepOutline(t *testing.T) {
 		m.invalidateRenderCache()
 		opened := m.renderHistory()
 		m.toggleStepFold(1)
+		// Ctrl+O on step 1: it unfolds, its rows give the counted group back,
+		// and every one of them carries its bounded body — one step deep,
+		// with step 2 beside it untouched (S-137, §13d).
+		blk, ok := m.stepBlockAt(m.transcript, 1)
+		if !ok {
+			t.Fatal("step 1 not found in the golden transcript")
+		}
+		m.toggleStepDetail(blk.step)
+		m.invalidateRenderCache()
+		detail := m.renderHistory()
+		m.toggleStepDetail(blk.step)
+		m.toggleStepFold(1)
 		m.verbosity = verbosityHigh
 		m.invalidateRenderCache()
 		high := m.renderHistory()
@@ -133,6 +145,7 @@ func TestGolden_StepOutline(t *testing.T) {
 		return []golden.Panel{
 			{Label: "verbosity · normal (a finished step collapses)", View: normal},
 			{Label: "verbosity · normal, step 1 opened (read-only run folds to a group row)", View: opened},
+			{Label: "ctrl+o · step 1's detail, one step deep", View: detail},
 			{Label: "verbosity · high (every row, with detail)", View: high},
 			{Label: "verbosity · low (step headers only)", View: low},
 		}

@@ -247,13 +247,27 @@ func turnDuration(d time.Duration) string {
 	return fmt.Sprintf("%dm", int(d.Minutes()))
 }
 
-// activityRowFor builds the compact row for a tool or command entry (§6).
-// Collapsed rows never show output; focus-mode expansion shows the full
-// stored result (already bounded upstream by S-051/S-064), failed rows and
-// high verbosity show the bounded detail view, and low verbosity hides counts.
+// activityRowFor builds the compact row for a tool or command entry (§6), as
+// it renders outside any step that has been opened. Everything that only
+// wants to read a row's state — what it is, whether it ran, whether it broke
+// — asks through here, because none of those answers depend on how much of
+// the output is showing.
 func (m Model) activityRowFor(e entry) components.ActivityRow {
+	return m.activityRowDetail(e, false)
+}
+
+// activityRowDetail is the same row told whether the step around it has its
+// detail open (S-137, §13d). Collapsed rows never show output; focus-mode
+// expansion shows the full stored result (already bounded upstream by
+// S-051/S-064); failed rows, an opened step and high verbosity show the
+// bounded detail view; and low verbosity hides counts.
+//
+// A row you opened yourself keeps its unbounded body inside an opened step:
+// the step's answer is the default for its rows, never a ceiling on one you
+// asked about by name.
+func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRow {
 	row := components.ActivityRow{
-		Expanded:  e.expanded || m.verbosity == verbosityHigh,
+		Expanded:  e.expanded || stepDetail || m.verbosity == verbosityHigh,
 		MaxDetail: maxToolResultLines,
 		Duration:  activityDuration(e.duration),
 		Frame:     m.spinFrame,
@@ -353,7 +367,7 @@ func (m *Model) uiCommand(parts []string) string {
 	switch parts[1] {
 	case "verbosity":
 		if len(parts) == 2 {
-			return fmt.Sprintf("Activity feed verbosity: %s.\nUsage: /ui verbosity <low|normal|high> — low shows step headers only, normal folds read-only groups, high expands every row.", m.verbosity)
+			return fmt.Sprintf("Activity feed verbosity: %s.\nUsage: /ui verbosity <low|normal|high> — low shows step headers only, normal folds read-only groups, high expands every row.\nFor one step rather than all of them, ctrl+o opens the detail of the step in flight.", m.verbosity)
 		}
 		if len(parts) != 3 {
 			return "Usage: /ui verbosity <low|normal|high>"

@@ -200,7 +200,7 @@ type AppearanceConfig struct {
 	// reporting costs the terminal its own click-drag selection, and a
 	// transcript is text people copy out of — while scrolling it already has
 	// pgup/pgdn, ctrl+e and j/k. The wheel is the thing with a substitute, so
-	// the wheel is the thing you opt into (ctrl+o, or `/ui mouse on`).
+	// the wheel is the thing you opt into (ctrl+x, or `/ui mouse on`).
 	Mouse bool `toml:"mouse"`
 }
 

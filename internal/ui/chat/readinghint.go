@@ -59,9 +59,14 @@ func joinSegs(segs []hintSeg) string {
 }
 
 // readingModeKeys are the mode's own keys in the artboard's order: move,
-// expand, collapse once the row under the cursor is open, and the way back to
-// the prompt. On a transcript with nothing to select, [enter] stays on the bar
-// in grey with its reason beside it rather than disappearing.
+// expand, the step's detail, collapse once the row under the cursor is open,
+// and the way back to the prompt. On a transcript with nothing to select,
+// [enter] stays on the bar in grey with its reason beside it rather than
+// disappearing.
+//
+// [ctrl+o] is the one key on the bar with no mnemonic behind it (§7a), which
+// is exactly why it is written here: the bar is where a chord is learned, and
+// a chord nobody names is a chord nobody presses.
 func (m Model) readingModeKeys() []hintSeg {
 	segs := []hintSeg{{key: "j/k", label: "move"}}
 	switch {
@@ -70,11 +75,29 @@ func (m Model) readingModeKeys() []hintSeg {
 			reason: "nothing on this row expands"})
 	default:
 		segs = append(segs, hintSeg{key: "enter", label: "expand"})
+		segs = append(segs, m.detailKeySeg())
 		if m.focusedRowOpen() {
 			segs = append(segs, hintSeg{key: collapseKey, label: "collapse"})
 		}
 	}
 	return append(segs, hintSeg{key: "q", label: "back to the prompt"})
+}
+
+// detailKeySeg is [ctrl+o] in its three readings: the step under the cursor
+// is open and the key closes it, it is closed and the key opens it, or the
+// cursor is not in a step at all — which is said in words on the bar rather
+// than by the key quietly doing nothing (S-137, §13d).
+func (m Model) detailKeySeg() hintSeg {
+	es := *m.entries()
+	g, ok := m.stepAt(es, m.focusIdx)
+	if !ok {
+		return hintSeg{key: detailKey, label: "step detail",
+			reason: "this row is not in a step"}
+	}
+	if m.stepDetailOpen(g, es) {
+		return hintSeg{key: detailKey, label: "close the detail"}
+	}
+	return hintSeg{key: detailKey, label: "step detail"}
 }
 
 // shortenBackKey is the first thing the key line gives up as the terminal
@@ -89,7 +112,23 @@ func shortenBackKey(segs []hintSeg) []hintSeg {
 	return out
 }
 
-// dropExpandKey is the second: [enter] leaves whole rather than clipping.
+// dropDetailKey is the first thing the key line gives up, before any key
+// shortens its words (S-137). It is the only offer on the bar that acts past
+// the row under the cursor, and the only one with a home outside this mode —
+// the draft answers the same chord, and /help and the start screen both name
+// it — so it is the one key here a reader can lose and still find.
+func dropDetailKey(segs []hintSeg) []hintSeg {
+	out := make([]hintSeg, 0, len(segs))
+	for _, s := range segs {
+		if s.key == detailKey {
+			continue
+		}
+		out = append(out, s)
+	}
+	return out
+}
+
+// dropExpandKey is the last: [enter] leaves whole rather than clipping.
 func dropExpandKey(segs []hintSeg) []hintSeg {
 	out := make([]hintSeg, 0, len(segs))
 	for _, s := range segs {
@@ -125,20 +164,13 @@ func (m Model) readingPositionFields() []string {
 }
 
 // readingStepOrdinal is the number of the step the cursor is standing in, or
-// 0 where it is not in one.
+// 0 where it is not in one. It asks stepAt, which is the same walk the chord
+// that opens that step makes (S-137), so the number on the bar and the step
+// ctrl+o acts on are always the same step.
 func (m Model) readingStepOrdinal() int {
-	if m.focusIdx < 0 {
-		return 0
-	}
 	es := *m.entries()
-	for _, blk := range m.blocksOf(es) {
-		if blk.step == nil || blk.step.queued() {
-			continue
-		}
-		start, end := blk.members()
-		if m.focusIdx == blk.step.titleIdx || (m.focusIdx >= start && m.focusIdx < end) {
-			return blk.step.ordinal
-		}
+	if g, ok := m.stepAt(es, m.focusIdx); ok {
+		return g.ordinal
 	}
 	return 0
 }
@@ -169,10 +201,11 @@ func (m Model) focusedRowOpen() bool {
 		return false
 	}
 	if blk, ok := m.stepBlockAt(es, m.focusIdx); ok {
-		return !m.headerFor(blk, es).Folded
+		h := m.headerFor(blk, es)
+		return !h.Folded || h.Detail
 	}
 	if m.groupAnchor(es, m.focusIdx) {
-		return !m.groupFolded(es[m.focusIdx])
+		return !m.groupFolded(es[m.focusIdx], m.stepDetailAt(es, m.focusIdx))
 	}
 	if d := es[m.focusIdx].diff; d != nil {
 		return d.Mode != components.DiffCollapsed
@@ -285,7 +318,11 @@ func stackSegs(segs []hintSeg, rail string, width, budget int) []string {
 // least (§7a).
 func (m Model) readingKeyLine(width int) string {
 	full := m.readingModeKeys()
-	forms := [][]hintSeg{full, shortenBackKey(full), dropExpandKey(shortenBackKey(full))}
+	// The order S-122 settled, with the detail key ahead of it: [ctrl+o]
+	// goes, then [q] gives up its words, then [enter] goes whole.
+	noDetail := dropDetailKey(full)
+	short := shortenBackKey(noDetail)
+	forms := [][]hintSeg{full, noDetail, short, dropExpandKey(short)}
 	positions := m.readingPositionFields()
 	for _, keys := range forms {
 		left := joinSegs(keys)

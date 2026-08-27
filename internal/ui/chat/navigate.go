@@ -37,8 +37,8 @@ const wheelLines = 3
 // of what is left rather than what it stands for: the textarea underneath
 // claims a, b, d, e, f, k, n, p, t, u, v and w; this surface spends c, d, e, g
 // and j of its own; ctrl+s, ctrl+q and ctrl+z belong to the terminal; and
-// ctrl+o is held for expanding a step's detail. It is not a mnemonic and does
-// not pretend to be one — the start screen and /ui both name it, which is
+// ctrl+o opens a step's detail (S-137, detail.go). It is not a mnemonic and
+// does not pretend to be one — the start screen and /ui both name it, which is
 // where a chord is actually learned.
 const mouseToggleKey = "ctrl+x"
 
@@ -66,7 +66,7 @@ func (m Model) WithMouse(on bool) Model {
 // mouseCmd turns terminal mouse reporting on or off. Reporting is off for the
 // session by default — the terminal keeps its own click-drag selection, which
 // is the one thing tracking costs and the one thing nothing else here can do —
-// and ctrl+o (or `/ui mouse on`) buys the wheel with it.
+// and `/ui mouse on` buys the wheel with it.
 func mouseCmd(on bool) tea.Cmd {
 	if on {
 		return tea.EnableMouseCellMotion

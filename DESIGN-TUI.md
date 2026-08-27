@@ -862,6 +862,7 @@ therefore a gesture or a key a draft cannot produce.
 | `↑` on an empty draft | reading mode — *only* where the input history has nothing left to recall |
 | wheel | scrolls, and transfers nothing — when reporting is on (§7a) |
 | `ctrl+x` | mouse reporting on/off, from any surface, saved to the config |
+| `ctrl+o` | opens the step in flight, and transfers nothing — §13d |
 
 `↑` belongs to the input history wherever there is one; that convention is
 older than this surface, and `pgup` is the transfer for a session that has
@@ -887,9 +888,9 @@ reason to suspect a setting. So the wheel is the side you ask for.
   arrives at any of them, and a chord that only worked in one would miss it.
   The letter is what was left rather than what it stands for (the textarea
   underneath claims a, b, d, e, f, k, n, p, t, u, v, w; this surface spends c,
-  d, e, g and j; the terminal keeps s, q and z; `ctrl+o` is held for expanding
-  a step's detail), so the start screen's navigation line and `/help` both name
-  it — a chord with no mnemonic is learned by being written down.
+  d, e, g and j; the terminal keeps s, q and z; `ctrl+o` opens a step's detail,
+  §13d), so the start screen's navigation line and `/help` both name it — a
+  chord with no mnemonic is learned by being written down.
 - **The answer is saved** (`appearance.mouse`), because a preference about a
   physical input device is not a per-session opinion. `/ui mouse <on|off>` is
   the same setting said in words, and takes the same path so the two cannot
@@ -950,9 +951,17 @@ divider, then the mode's keys, with the position on the right:
 ```
 
 - The mode keys are one line, in this order: `[j/k] move`, `[enter] expand`,
-  `[-] collapse` once something is expanded, `[q] back to the prompt`. The
-  right-hand field is the position (`row 5 of 12 · step 2`, `2 rows
-  expanded`), and it is the first thing to drop as the terminal narrows.
+  `[ctrl+o] step detail` (§13d), `[-] collapse` once something is expanded,
+  `[q] back to the prompt`. The right-hand field is the position (`row 5 of 12
+  · step 2`, `2 rows expanded`), and it is the first thing to drop as the
+  terminal narrows. The drawing above is 64 columns, which is exactly where
+  `[ctrl+o]` has already gone; at 130 the line reads `[j/k] move · [enter]
+  expand · [ctrl+o] step detail · [q] back to the prompt`.
+- **`[ctrl+o]` says which of its three things it is doing.** `step detail`
+  where the step under the cursor is closed, `close the detail` where it is
+  open, and greyed with `this row is not in a step` beside it where the cursor
+  is outside every step — the same treatment `[enter] expand` gets over prose,
+  and for the same reason (invariant 1).
 - **A row's own keys are a second line, prefixed by that row's `▎`**, so a key
   that acts on one row never reads as a key that acts on the session. A row
   that offers none renders no second line at all — nothing says "this row has
@@ -999,9 +1008,13 @@ suggestions, because these keys outlive it too.
   on, so a narrow terminal loses its chrome all at once rather than a field at
   a time.
 - **The position narrows before the keys do, and drops last.** `row 5 of 12 ·
-  step 2` → `row 5 of 12` → `5 of 12` → `5/12`, then `[q] back to the prompt`
-  becomes `[q] prompt`, then `[enter] expand` leaves whole, and only when
-  none of that is enough does the field go. "First to drop" is about its own
+  step 2` → `row 5 of 12` → `5 of 12` → `5/12`, then `[ctrl+o] step detail`
+  goes whole, then `[q] back to the prompt` becomes `[q] prompt`, then
+  `[enter] expand` leaves whole, and only when none of that is enough does the
+  field go. `[ctrl+o]` goes before any key gives up its words because it is
+  the only offer on the bar that acts past the row under the cursor, and the
+  only one with a home outside this mode — the draft answers the same chord
+  and `/help` names it (S-137). "First to drop" is about its own
   fields; the lit row is what still says which row it is.
 - **`[-] collapse` is offered while the row under the cursor is open**, not
   while anything anywhere is. A key on the bar that the surface cannot honour
@@ -2047,6 +2060,83 @@ The folded group row obeys invariant 4: it always states what it swallowed
 (`▸ ⚙ 6 reads · 2 searches`, 3.9s of it) and expanding restores the individual
 rows in place. **Mutations, failures and sub-agent rows are never folded into
 a group** — the whole point of the fold is that it only ever hides chrome.
+
+### 13d. One step's detail (`ctrl+o`, S-137)
+
+`/ui verbosity high` scoped to a single step. Every row in it shows its output
+body, bounded; nothing else on the screen moves.
+
+```
+── before ───────────────────────────────────────────────────────────────
+▸ 1  Locate the round accounting ───────────────────────── ✓ 4 tools  6.2s
+▾ 2  Thread the sentinel through the loop ──────────────── ✗ 9 tools 38.1s
+   ▸ ⚙       6 reads · 2 searches                     [enter] expand  3.9s
+  ▎✎ edit    internal/agent/loop.go                 +12 −4 · 2 hunks  1.1s
+  ▎✗ run     go test ./internal/agent/...         exit 1 · 1 failing 21.4s
+    --- FAIL: TestRoundLimit (0.02s)
+
+── ctrl+o, on step 2 ────────────────────────────────────────────────────
+▸ 1  Locate the round accounting ───────────────────────── ✓ 4 tools  6.2s
+▾ 2  Thread the sentinel through the loop ─────── ✗ 9 tools · detail 38.1s
+   ⚙ read    internal/agent/loop.go                        218 lines  0.4s
+    88: return ErrRoundLimit
+   ⚙ search  ErrRoundLimit ./internal               6 hits · 4 files  0.3s
+    internal/agent/loop.go:88      return ErrRoundLimit
+  ▎✎ edit    internal/agent/loop.go                 +12 −4 · 2 hunks  1.1s
+  ▎✗ run     go test ./internal/agent/...         exit 1 · 1 failing 21.4s
+    --- FAIL: TestRoundLimit (0.02s)
+        loop_test.go:142: want 75, got 25
+```
+
+**The transcript had two ways to see what a call returned and a gap between
+them.** `[enter]` in reading mode opens one row, unbounded, and costs a
+keyboard handover to reach. `/ui verbosity high` (§13c) opens every row of
+every step and is a setting rather than a gesture. What neither answers is the
+question a reader actually holds — *what did this step do* — and the moment
+they hold it is usually mid-turn, with a half-written sentence in the box.
+
+- **The chord is answered from both surfaces and means the same thing on
+  each.** From the draft it opens the step in flight, which is the one being
+  watched; from reading mode it opens the step the cursor stands in, header or
+  row alike. Pressing it again closes it.
+- **From the draft it transfers nothing** (§7a): the sentence in the box
+  survives being curious, which is the same rule the wheel follows. This is
+  the reason the feature is a chord and not a second reading-mode key.
+- **Opening unfolds the step; closing leaves it unfolded.** A folded step is
+  its header and nothing else, so opening the bodies of rows nobody can see
+  would be a chord that reports success and shows nothing. Closing does not
+  fold it back: the reader is looking at those rows.
+- **An opened step gives its counted group row back** (§13c). Answering "what
+  did this step do" with `▸ ⚙ 6 reads · 2 searches` would be the fold hiding
+  the thing that was asked for rather than the chrome around it.
+- **The bodies are bounded to eight lines, as high verbosity's are.** A step
+  is nine calls wide often enough that unbounded detail would push its own
+  header off the screen — and the one row that wants its whole output still
+  has `[enter]` on it, which stays unbounded inside an opened step. The step's
+  answer is the default for its rows, never a ceiling on one asked for by
+  name.
+- **The header says `· detail` beside its count**, and only where the answer
+  is yours. At high verbosity every step is open, and a word repeated on every
+  header says nothing about any of them; what the marker is for is the one
+  step taller than the setting would have made it.
+- **The answer lives on the entry that titles the step**, beside `stepFold`
+  and `groupFold` (§13b), and is resolved at render time rather than stamped
+  onto the rows. Steps still hold no layout state of their own, and a call that
+  lands after the chord was pressed arrives already open — a step in flight is
+  a step still growing.
+- **A transcript with no step says so once.** The notice names what carries
+  detail rather than reporting the refusal, and a second press with still
+  nothing to open is silent: a refusal that fires on every keypress teaches a
+  reader to stop reading refusals (§7a).
+
+**One departure.** The start screen's navigation line does not name `ctrl+o`,
+though §7a's rule for a chord with no mnemonic says it should. That line is
+already over its budget — at 80 columns it clips inside `[ctrl+k]` and loses
+the mouse chord entirely — so appending a fifth offer would bury the newest
+chord where it is cut first. `/help` names it, and reading mode's hint bar
+offers it in place, which is where a key is actually learned. Fixing the
+navigation line is its own story; this one records the debt rather than adding
+to it silently.
 
 ---
 

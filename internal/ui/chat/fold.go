@@ -95,25 +95,35 @@ func (m Model) foldRun(es []entry, i, end int) int {
 // groupFolded decides whether a run shows as one group row. Folding is the
 // verbosity's call — normal and low fold, high shows every row — and your own
 // fold, recorded on the entry the run starts at, overrides it.
-func (m Model) groupFolded(e entry) bool {
+//
+// A step whose detail you opened gives its group back too (S-137, §13d):
+// ctrl+o asks what this step did, and answering it with a counted row that
+// swallowed six of the calls would be the fold hiding the thing that was
+// asked for rather than the chrome around it.
+func (m Model) groupFolded(e entry, stepDetail bool) bool {
 	switch e.groupFold {
 	case foldOpen:
 		return false
 	case foldClosed:
 		return true
 	}
-	return m.verbosity != verbosityHigh
+	return !stepDetail && m.verbosity != verbosityHigh
 }
 
 // stepSlots walks a step's members and reports what the transcript renders
 // for each: one slot per entry, or one group slot per folded run. Both the
 // renderer and focus mode read the step through this, so what is on screen
 // and what can be selected can never disagree.
-func (m Model) stepSlots(es []entry, start, end int) []slot {
+func (m Model) stepSlots(es []entry, g *stepGroup) []slot {
+	if g == nil {
+		return nil
+	}
+	start, end := g.start, g.end
+	detail := m.stepDetailOpen(g, es)
 	var slots []slot
 	for i := start; i < end; {
 		run := m.foldRun(es, i, end)
-		if run >= minGroupRun && m.groupFolded(es[i]) {
+		if run >= minGroupRun && m.groupFolded(es[i], detail) {
 			slots = append(slots, slot{idx: i, span: run, group: true})
 			i += run
 			continue
@@ -155,7 +165,7 @@ func (m Model) groupAnchor(es []entry, idx int) bool {
 		if blk.step == nil || blk.step.queued() {
 			continue
 		}
-		for _, s := range m.stepSlots(es, blk.step.start, blk.step.end) {
+		for _, s := range m.stepSlots(es, blk.step) {
 			if s.idx != idx {
 				continue
 			}
@@ -173,7 +183,7 @@ func (m *Model) toggleGroupFold(idx int) {
 	if idx < 0 || idx >= len(es) {
 		return
 	}
-	if m.groupFolded(es[idx]) {
+	if m.groupFolded(es[idx], m.stepDetailAt(es, idx)) {
 		es[idx].groupFold = foldOpen
 	} else {
 		es[idx].groupFold = foldClosed

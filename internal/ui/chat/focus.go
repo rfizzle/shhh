@@ -51,7 +51,7 @@ func (m Model) expandableIndices() []int {
 			}
 			// A folded group offers its group row, not the rows inside it
 			// (S-091, §13c).
-			for _, sl := range m.stepSlots(es, blk.step.start, blk.step.end) {
+			for _, sl := range m.stepSlots(es, blk.step) {
 				if selectable(es[sl.idx]) {
 					idxs = append(idxs, sl.idx)
 				}
@@ -179,6 +179,13 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return next, cmd
 		}
 		return m.returnToInput(msg)
+	case detailKey:
+		// The step around the cursor opens its rows' detail (S-137, §13d) —
+		// the header the cursor is on, or the step the row under it belongs
+		// to. A cursor outside every step has nothing to open, and the hint
+		// bar has already said so with its reason beside it rather than
+		// leaving the chord to fail without a word.
+		return m.detailFromReading()
 	case collapseKey:
 		// The explicit half of [enter]'s toggle (§7a). Where the row under
 		// the cursor has nothing open, [-] is a character like any other and

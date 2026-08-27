@@ -238,6 +238,12 @@ type entry struct {
 	// groupFold is the same override for the folded run of read-only calls
 	// this entry heads (S-091, §13c).
 	groupFold foldState
+	// detailFold is the same override again for the detail bodies of the step
+	// this entry titles — what ctrl+o opens and closes (S-137, §13d). It is a
+	// third override rather than a level of the first two because it answers
+	// a different question: stepFold and groupFold decide which rows are on
+	// screen, this decides how much of each one is.
+	detailFold foldState
 	// planStep is the number of the approved plan's step this assistant
 	// announcement carries out, offPlanStep when it carries out none of them,
 	// and zero when no plan was running (S-104). It is stamped once, when the
@@ -372,7 +378,7 @@ type Model struct {
 	// (S-076); -1 while the transcript is being read with nothing on it to
 	// select (S-115).
 	focusIdx int
-	// mouseOn turns terminal mouse reporting on (ctrl+o, /ui mouse). The
+	// mouseOn turns terminal mouse reporting on (ctrl+x, /ui mouse). The
 	// zero value is off, because reporting costs the terminal its own
 	// click-drag selection and a transcript is text people copy out of. The
 	// wheel is the side of the trade with a substitute — pgup/pgdn, ctrl+e,
@@ -1011,6 +1017,16 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// turn too — the turn keeps streaming underneath (S-087).
 			if m.inputLive() {
 				return m.enterFocusMode()
+			}
+		case detailKey:
+			// Step detail (S-137, §13d): the step in flight opens its rows'
+			// bodies without the keyboard leaving the draft. It reads the
+			// transcript and changes nothing about the conversation, so it
+			// is answered over a running turn like the rest of S-087's live
+			// surfaces — which is the case it exists for, since the step
+			// worth asking about is usually the one still going.
+			if m.inputLive() {
+				return m.detailFromDraft()
 			}
 		case "pgup", "pgdown":
 			// The dedicated pager keys hand the keyboard to the transcript
@@ -2016,6 +2032,14 @@ func (m Model) renderEntry(e entry, width int) string {
 // a letter, and the row says so: its keys go grey and the key that hands the
 // keyboard over is offered in the live treatment beside them.
 func (m Model) renderEntryKeys(e entry, width int, keysLive bool) string {
+	return m.renderEntryDetail(e, width, keysLive, false)
+}
+
+// renderEntryDetail is the same again, told whether the step this row belongs
+// to has its detail open (S-137, §13d). Only the activity rows can answer to
+// it; every other kind of entry renders the same inside an opened step as
+// outside one, because a step opens the bodies of its calls and nothing else.
+func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) string {
 	switch e.kind {
 	case entryUser:
 		row := userStyle.Render("You") + "\n" + m.wordWrap(e.text, width) + "\n"
@@ -2026,8 +2050,9 @@ func (m Model) renderEntryKeys(e entry, width int, keysLive bool) string {
 	case entryAssistant:
 		return assistantStyle.Render("Assistant") + "\n" + renderMarkdown(e.text, width) + "\n"
 	case entryTool, entryCommand:
-		// Compact one-row activity rendering (S-075); focus mode expands it.
-		return m.activityRowFor(e).View(width) + "\n"
+		// Compact one-row activity rendering (S-075); focus mode expands it,
+		// and so does the step around it (S-137).
+		return m.activityRowDetail(e, stepDetail).View(width) + "\n"
 	case entryTurnClose:
 		if e.close == nil {
 			return ""
@@ -2622,6 +2647,11 @@ Keys:
                  (Enter on an edit row cycles collapsed → expanded → full-screen diff;
                   opens over a running turn, which keeps streaming underneath;
                   a transcript with nothing expandable opens as a plain pager)
+  Ctrl+O         Open one step's detail: every row in it shows its output body,
+                 bounded. From the prompt it opens the step in flight and the
+                 draft keeps the keyboard; in reading mode it opens the step the
+                 cursor is standing in. Press it again to close it
+                 (/ui verbosity high is the same thing for every step at once)
   Ctrl+A         Agent manager: enter attaches to an agent's session, x cancels
                  its turn, X kills it; attached, typing steers the agent,
                  Shift+Tab sets its mode (clamped), Esc detaches

@@ -299,6 +299,12 @@ type stepHeader struct {
 	Tools    int
 	Duration time.Duration
 	Folded   bool
+	// Detail marks a step you opened the detail of yourself (S-137, §13d).
+	// It is your answer, not the resolved state: at high verbosity every step
+	// is open, and a word repeated on every header says nothing about any of
+	// them. What the marker is for is the one step that is taller than the
+	// setting would have made it.
+	Detail bool
 	// OffPlan marks a step the running plan never declared: it takes the
 	// ordinal column's width but not a number, because the numbers are the
 	// plan's (S-104).
@@ -335,13 +341,21 @@ func (h stepHeader) glyph() string {
 // countLabel names what the step holds, in words, so the glyph never carries
 // the state alone (invariant 1).
 func (h stepHeader) countLabel() string {
+	var label string
 	switch {
 	case h.State == stepQueued:
 		return components.OutcomeQueued
 	case h.Tools == 1:
-		return "1 tool"
+		label = "1 tool"
+	default:
+		label = fmt.Sprintf("%d tools", h.Tools)
 	}
-	return fmt.Sprintf("%d tools", h.Tools)
+	if h.Detail {
+		// What is open is said in a word rather than left to the reader to
+		// infer from how tall the step got (invariant 1, S-137).
+		label += " · detail"
+	}
+	return label
 }
 
 // durationText is the header's duration: blank under 0.5s like every other
@@ -423,6 +437,7 @@ func (m Model) headerFor(blk transcriptBlock, es []entry) stepHeader {
 		Tools:    tools,
 		Duration: d,
 		Folded:   m.stepFolded(g, es, state),
+		Detail:   g.titleIdx != stepNoTitle && es[g.titleIdx].detailFold == foldOpen,
 		OffPlan:  g.offPlan,
 	}
 }
@@ -461,16 +476,18 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 		}
 		return width
 	}
-	addEntry := func(i int) {
+	addEntry := func(i int, detail bool) {
 		e := es[i]
 		// A row's own keys are live only under reading mode's cursor (§7c);
 		// anywhere else they render beside the key that hands the keyboard
 		// to the transcript.
-		add(i, e, e, m.renderEntryKeys(e, entryWidth(e), focus && i == focusIdx), selectable(e))
+		add(i, e, e, m.renderEntryDetail(e, entryWidth(e), focus && i == focusIdx, detail), selectable(e))
 	}
 
 	if blk.step == nil {
-		addEntry(blk.start)
+		// A row outside a step has no step to be opened by, so ctrl+o never
+		// reaches it and [enter] is the only thing that opens it.
+		addEntry(blk.start, false)
 		return units
 	}
 	g := blk.step
@@ -487,10 +504,11 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 		return units
 	}
 	// A step's rows render through its slots, so a folded run of read-only
-	// calls arrives as one counted group row (S-091, §13c).
-	for _, sl := range m.stepSlots(es, g.start, g.end) {
+	// calls arrives as one counted group row (S-091, §13c) — unless the step
+	// has its detail open, which gives the run back (S-137, §13d).
+	for _, sl := range m.stepSlots(es, g) {
 		if !sl.group {
-			addEntry(sl.idx)
+			addEntry(sl.idx, header.Detail)
 			continue
 		}
 		e := es[sl.idx]
