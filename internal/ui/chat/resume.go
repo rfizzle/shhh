@@ -311,7 +311,7 @@ func (m Model) continueStream(res *streamResume) (tea.Model, tea.Cmd) {
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
 		if len(auto) > 0 {
-			return m, tea.Batch(m.spinner.Tick, m.execToolsCmd(auto))
+			return m, m.execToolsCmd(auto)
 		}
 		return m.advanceApprovalQueue()
 	}
@@ -324,7 +324,7 @@ func (m Model) continueStream(res *streamResume) (tea.Model, tea.Cmd) {
 	m.syncViewport()
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()
-	return m, tea.Batch(m.spinner.Tick, m.requestStream(), m.autosaveCmd())
+	return m, tea.Batch(m.requestStream(), m.autosaveCmd())
 }
 
 // continuePrompt is the one sentence that turns a partial assistant message
@@ -416,7 +416,7 @@ func (m Model) resumeAfterWait() (tea.Model, tea.Cmd) {
 	m.syncViewport()
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()
-	return m, tea.Batch(m.spinner.Tick, m.requestStream())
+	return m, m.requestStream()
 }
 
 // cancelRetryWait stops the wait. Esc is honoured at any point in it, and

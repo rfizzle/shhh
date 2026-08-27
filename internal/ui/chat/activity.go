@@ -256,6 +256,7 @@ func (m Model) activityRowFor(e entry) components.ActivityRow {
 		Expanded:  e.expanded || m.verbosity == verbosityHigh,
 		MaxDetail: maxToolResultLines,
 		Duration:  activityDuration(e.duration),
+		Frame:     m.spinFrame,
 	}
 	if e.expanded {
 		row.MaxDetail = 0
@@ -295,6 +296,11 @@ func (m Model) activityRowFor(e entry) components.ActivityRow {
 		case result == pendingToolResult:
 			row.State = components.ActivityRunning
 			row.Outcome = components.OutcomeRunning
+			// The row animates from the session's one frame (§10c), and only
+			// while the loop that advances it is running: a call left pending
+			// by a cancelled turn keeps the still `▸` rather than standing on
+			// one braille frame, which would read as a hang (S-119).
+			row.Spin = m.spinnerWanted()
 			result = ""
 		case result == cancelledToolResult:
 			// Ctrl+C during a turn: you stopped it, so it reads as your
@@ -326,6 +332,8 @@ func (m Model) runningCommandRow(width int) string {
 		Verb:    "run",
 		Target:  firstLine(m.runningCommand),
 		Outcome: components.OutcomeRunning,
+		Spin:    m.spinnerWanted(),
+		Frame:   m.spinFrame,
 	}
 	if !m.runStart.IsZero() {
 		row.Duration = activityDuration(time.Since(m.runStart))

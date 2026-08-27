@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -599,7 +600,7 @@ func execToolLoop(t *testing.T, m Model, msg toolCallsMsg) (Model, tea.Cmd) {
 	if cmd == nil {
 		t.Fatal("expected tool execution cmd")
 	}
-	res := cmd()
+	res := cmdMsg(t, cmd)
 	if _, ok := res.(toolResultsMsg); !ok {
 		t.Fatalf("expected toolResultsMsg, got %T", res)
 	}
@@ -1257,6 +1258,36 @@ func TestRun_SingleBlock_ConfirmAndExecute(t *testing.T) {
 	}
 }
 
+// cmdMsg runs cmd and returns the one message the test is about. Update
+// batches the spinner's tick alongside whatever a transition into a working
+// state produced (S-119, spin.go), so a caller that wants the work has to
+// look past the tick — which is never what a test is asserting.
+func cmdMsg(t *testing.T, cmd tea.Cmd) tea.Msg {
+	t.Helper()
+	var found []tea.Msg
+	var walk func(tea.Cmd)
+	walk = func(c tea.Cmd) {
+		if c == nil {
+			return
+		}
+		switch msg := c().(type) {
+		case tea.BatchMsg:
+			for _, sub := range msg {
+				walk(sub)
+			}
+		case spinner.TickMsg:
+		case nil:
+		default:
+			found = append(found, msg)
+		}
+	}
+	walk(cmd)
+	if len(found) != 1 {
+		t.Fatalf("expected one message from the cmd, got %d", len(found))
+	}
+	return found[0]
+}
+
 func unwrapBatch(cmd tea.Cmd) []tea.Cmd {
 	msg := cmd()
 	if batch, ok := msg.(tea.BatchMsg); ok {
@@ -1449,7 +1480,7 @@ func TestExecTool_MixedWithReadOnly(t *testing.T) {
 	if !m.agent.Executing() {
 		t.Fatal("read-only calls should run first")
 	}
-	res := cmd()
+	res := cmdMsg(t, cmd)
 	updated, _ = m.Update(res)
 	m = updated.(Model)
 

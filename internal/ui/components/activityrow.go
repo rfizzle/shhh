@@ -117,6 +117,14 @@ type ActivityRow struct {
 	// Expanded shows the detail body; Selected draws the focus-mode pointer.
 	Expanded bool
 	Selected bool
+	// Spin says the host is ticking, and Frame is the frame it is on — the
+	// same frame the status line and the frame header are drawing, from the
+	// one tick source (§10c). A running row is `▸` in a still image and the
+	// spinner while it animates, which is what §6d's own table says; a host
+	// that does not tick leaves Spin false rather than freezing a braille
+	// glyph on screen, because a stopped spinner reads as a hang.
+	Spin  bool
+	Frame int
 }
 
 // Failed reports whether the row broke, for callers deciding what to
@@ -156,6 +164,17 @@ func (r ActivityRow) pointer() string {
 	return strings.Repeat(" ", ptrWidth)
 }
 
+// runningGlyph is `▸` where the row is a still image and the host's current
+// spinner frame where it is animating (§6d, §10c). The frame is passed in
+// rather than counted here, so this row, the turn status line and the frame
+// header show the same one.
+func (r ActivityRow) runningGlyph() string {
+	if !r.Spin {
+		return "▸"
+	}
+	return Spinner{Frame: r.Frame}.Glyph()
+}
+
 // glyph renders the 2-column glyph field: the state where it overrides, the
 // kind of act otherwise.
 func (r ActivityRow) glyph() string {
@@ -164,7 +183,7 @@ func (r ActivityRow) glyph() string {
 	case ActivityQueued:
 		g = dimStyle.Render("·")
 	case ActivityRunning:
-		g = spinTextStyle.Render("▸")
+		g = spinTextStyle.Render(r.runningGlyph())
 	case ActivityChecking:
 		g = spinTextStyle.Render("✦")
 	case ActivityFailed:

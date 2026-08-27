@@ -142,7 +142,7 @@ func (m Model) startCompact() (tea.Model, tea.Cmd) {
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()
 	msgs := append(m.agent.RequestMessages(), provider.Message{Role: provider.RoleUser, Content: compactInstruction})
-	return m, tea.Batch(m.spinner.Tick, m.requestStreamFor(msgs))
+	return m, m.requestStreamFor(msgs)
 }
 
 // finishCompact restarts the message list from the streamed summary: system

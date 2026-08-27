@@ -144,7 +144,7 @@ func (m Model) approvePlan(execMode agent.Mode) (tea.Model, tea.Cmd) {
 	m.syncViewport()
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()
-	return m, tea.Batch(m.spinner.Tick, m.requestStream(), m.autosaveCmd())
+	return m, tea.Batch(m.requestStream(), m.autosaveCmd())
 }
 
 // keepPlanning dismisses the prompt so the user can send feedback; the

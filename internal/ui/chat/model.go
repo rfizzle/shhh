@@ -260,8 +260,14 @@ type Model struct {
 	spawnRow int
 	// spinFrame counts spinner ticks for the passive surfaces that draw a
 	// frame themselves rather than animating one (the inspector rail's agent
-	// lanes, S-094).
+	// lanes, S-094). It is the session's one frame counter: every surface
+	// that moves reads it, and it advances only with m.spinner, so the three
+	// places §10c names cannot report three different frames.
 	spinFrame int
+	// spinning reports whether a tick chain is in flight. It is what makes
+	// "one tick source, never three" (§10c) a property rather than a habit:
+	// spinCmd starts a chain only when this is false (S-119, spin.go).
+	spinning bool
 
 	transcript []entry
 	// Incremental render cache: entries [0, cachedCount) rendered at
@@ -700,7 +706,11 @@ func (m Model) quitCmd() tea.Cmd {
 func (m Model) Messages() []provider.Message { return m.agent.Messages() }
 
 func (m Model) Init() tea.Cmd {
-	cmds := []tea.Cmd{textarea.Blink, m.spinner.Tick}
+	// No spinner tick here: nothing is moving on an empty session, and a
+	// chain started before there is anything to animate is a chain that dies
+	// at its first tick. Update starts one the moment something does move
+	// (S-119, spin.go).
+	cmds := []tea.Cmd{textarea.Blink}
 	if m.initialPrompt != "" {
 		cmds = append(cmds, func() tea.Msg { return initialPromptMsg{} })
 	}
@@ -716,7 +726,25 @@ func (m Model) Init() tea.Cmd {
 	return tea.Batch(cmds...)
 }
 
+// Update routes the message, then makes the spinner's one rule true again
+// (S-119, §10c): a tick chain runs exactly while something on screen is
+// moving. Resuming the loop here rather than at each transition is what makes
+// "reliably restarts" a property of the loop instead of something fifteen
+// separate handoffs are each trusted to remember — three of them did not, and
+// the frame froze on the first turn of every session.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	next, cmd := m.update(msg)
+	mm, ok := next.(Model)
+	if !ok {
+		return next, cmd
+	}
+	if tick := mm.spinCmd(); tick != nil {
+		cmd = tea.Batch(cmd, tick)
+	}
+	return mm, cmd
+}
+
+func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
@@ -1034,7 +1062,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport.GotoBottom()
 		}
 		if msg.final != nil {
-			return m.Update(msg.final)
+			return m.update(msg.final)
 		}
 		return m, waitForEvent(m.events)
 
@@ -1202,15 +1230,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.retryTick(msg)
 
 	case spinner.TickMsg:
-		// frameWorking keeps the top rail's WORKING spinner animated for the
-		// whole turn (S-082), including while streamed text is rendering and
-		// while an attached child works.
-		if m.frameWorking() || (m.turnState() == stateStreaming && m.streaming == "") || m.turnState() == stateRunningCmd || m.turnState() == stateClassifying || m.state == stateModelList {
-			var cmd tea.Cmd
-			m.spinner, cmd = m.spinner.Update(msg)
-			m.spinFrame++
-			return m, cmd
-		}
+		// The one tick, advancing the one frame (§10c, spin.go). The guard
+		// that used to stand here decided whether to answer at all, and a
+		// tick it declined took the chain with it (S-119).
+		return m.spinTick(msg)
 	}
 
 	var cmds []tea.Cmd
@@ -1575,7 +1598,7 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 		runFn = m.containment.Run
 		tailFn = m.containment.TailRun
 	}
-	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
+	return m, func() tea.Msg {
 		start := time.Now()
 		var out string
 		var code int
@@ -1586,7 +1609,7 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 			out, code = runFn(ctx, command)
 		}
 		return cmdDoneMsg{runID: runID, command: command, output: out, exitCode: code, duration: time.Since(start)}
-	})
+	}
 }
 
 // commandContextMessage is appended to the conversation (as the user) so the
@@ -1838,7 +1861,7 @@ func (m *Model) dispatchSteering() tea.Cmd {
 	m.trimForRequest()
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()
-	return tea.Batch(m.spinner.Tick, m.requestStream(), m.autosaveCmd())
+	return tea.Batch(m.requestStream(), m.autosaveCmd())
 }
 
 // restoreSteering returns queued-but-uninjected steering messages to the input

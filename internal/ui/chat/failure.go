@@ -286,7 +286,7 @@ func (m Model) retryTurn() (tea.Model, tea.Cmd) {
 	m.syncViewport()
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()
-	return m, tea.Batch(m.spinner.Tick, m.requestStream())
+	return m, m.requestStream()
 }
 
 // openProviderPick opens the generic picker over the registered providers

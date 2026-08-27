@@ -144,7 +144,7 @@ func TestSurface_TurnKeepsRunningUnderneath(t *testing.T) {
 		t.Fatalf("the tool round should still be in flight, got turn state %d", m.turnState())
 	}
 
-	updated, _ = m.Update(cmd())
+	updated, _ = m.Update(cmdMsg(t, cmd))
 	m = updated.(Model)
 	if m.state != stateReview {
 		t.Fatal("a result arriving mid-surface must not close the surface")

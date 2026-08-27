@@ -1407,6 +1407,14 @@ same frame from
 the same tick. Three timers is three different truths about one turn, and a
 tick dropped on a state handoff freezes all three at once (S-119).
 
+One source has a consequence worth stating with it: the loop must run exactly
+while something is moving, and it is started from one place rather than from
+each transition — otherwise a handoff that forgets to carry a tick ends the
+animation everywhere at once, which is the shape S-119 fixed
+(`internal/ui/chat/spin.go`). A row nothing is ticking keeps §6d's still `▸`
+rather than standing on one braille frame, because a stopped spinner reads as
+a hang.
+
 **Turn status.** The one line that changes while a turn runs — spinner frame,
 phase, ticking elapsed, token counts, cost — is a meter and not free text:
 `TurnStatus` beside `Meter`, `Sparkline` and `Spinner`. §8d is its vocabulary,

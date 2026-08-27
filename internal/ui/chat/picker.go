@@ -146,10 +146,10 @@ func (m Model) startModelPick() (tea.Model, tea.Cmd) {
 	m.modelListCancel = cancel
 	m.enterSurface(stateModelList)
 	m.syncViewport()
-	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
+	return m, func() tea.Msg {
 		names, err := lister(ctx)
 		return modelListMsg{names: names, err: err}
-	})
+	}
 }
 
 // updateModelList routes keys while the model list is in flight: esc (or

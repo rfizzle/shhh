@@ -332,9 +332,9 @@ func (m Model) startClassifierCheck(req *approvalRequest) (tea.Model, tea.Cmd) {
 		CWD:       cwd,
 		Recent:    m.agent.RequestMessages(),
 	}
-	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
+	return m, func() tea.Msg {
 		return classifierDoneMsg{runID: runID, verdict: classifier.Judge(ctx, creq)}
-	})
+	}
 }
 
 // finishClassifierCheck applies the classifier's verdict to the pending
@@ -445,7 +445,7 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 	// reads happen next to the write, so a file that changed underneath the
 	// approval preview is recorded as it really was, not as it was previewed.
 	record := m.changeRecorder()
-	return m, tea.Batch(m.spinner.Tick, func() tea.Msg {
+	return m, func() tea.Msg {
 		var result string
 		before := record.before()
 		start := time.Now()
@@ -462,7 +462,7 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 		}
 		evicted := record.after(before)
 		return approvedToolDoneMsg{runID: runID, result: result, duration: time.Since(start), evicted: evicted}
-	})
+	}
 }
 
 // changeRecording captures one approved file modification for the changeset

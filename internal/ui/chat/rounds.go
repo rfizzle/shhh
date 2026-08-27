@@ -277,7 +277,7 @@ func (m Model) grantRounds(p *roundPause) (tea.Model, tea.Cmd) {
 	m.syncViewport()
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()
-	return m, tea.Batch(m.spinner.Tick, m.requestStream(), m.autosaveCmd())
+	return m, tea.Batch(m.requestStream(), m.autosaveCmd())
 }
 
 // resetRounds starts a turn's tool-round budget over: the counter, whatever
