@@ -359,14 +359,29 @@ func (s *Store) Bytes() int64 {
 	return s.bytes
 }
 
+// SessionFile is one path's net change across every retained turn: the hunks
+// between where the session found the file and where it left it, plus how
+// many turns it took to get there. The turn count is what the inspector
+// rail's `3t` field states — eight rows for one file is a log, not a state
+// (§15a).
+type SessionFile struct {
+	Path           string
+	Hunks          []diff.Hunk
+	Added, Removed int
+	// Turns is how many retained turns edited this path, and Last is the most
+	// recent of them. One record per turn per path is guaranteed by Add, so
+	// counting records counts turns.
+	Turns int
+	Last  int64
+}
+
 // Totals aggregates every retained turn: how many distinct files the session
 // changed and its net +N −M. A file changed by two turns counts once.
 func (s *Store) Totals() (files, added, removed int) {
-	for _, f := range s.Session() {
+	for _, f := range s.SessionFiles() {
 		files++
-		a, d := diff.Stats(f.Hunks)
-		added += a
-		removed += d
+		added += f.Added
+		removed += f.Removed
 	}
 	return files, added, removed
 }
@@ -375,34 +390,59 @@ func (s *Store) Totals() (files, added, removed int) {
 // first-edit order — the session diff /diff renders, computed from the
 // session's own records instead of shelling out to git.
 func (s *Store) Session() []diff.File {
+	fs := s.SessionFiles()
+	if len(fs) == 0 {
+		return nil
+	}
+	files := make([]diff.File, 0, len(fs))
+	for _, f := range fs {
+		files = append(files, diff.File{Path: f.Path, Hunks: f.Hunks})
+	}
+	return files
+}
+
+// SessionFiles is Session with the attribution the rail needs: one net change
+// per path, in first-edit order, each carrying how many turns produced it and
+// which turn touched it last. A path a turn edited back to where it started
+// nets to nothing and is left out — the session's state, not its history.
+func (s *Store) SessionFiles() []SessionFile {
 	if s == nil {
 		return nil
 	}
-	type pair struct {
+	type acc struct {
 		before, after             string
 		beforeExists, afterExists bool
+		turns                     int
+		last                      int64
 	}
 	var paths []string
-	at := map[string]*pair{}
+	at := map[string]*acc{}
 	for _, t := range s.Turns() {
 		for _, r := range t.Records {
 			p, ok := at[r.Path]
 			if !ok {
-				p = &pair{before: r.Before, beforeExists: r.BeforeExists}
+				p = &acc{before: r.Before, beforeExists: r.BeforeExists}
 				at[r.Path] = p
 				paths = append(paths, r.Path)
 			}
 			p.after, p.afterExists = r.After, r.AfterExists
+			p.turns++
+			p.last = t.N
 		}
 	}
-	var files []diff.File
+	var files []SessionFile
 	for _, path := range paths {
 		p := at[path]
 		hunks := diff.Compute(p.before, p.after)
 		if len(hunks) == 0 {
 			continue
 		}
-		files = append(files, diff.File{Path: path, Hunks: hunks})
+		added, removed := diff.Stats(hunks)
+		files = append(files, SessionFile{
+			Path: path, Hunks: hunks,
+			Added: added, Removed: removed,
+			Turns: p.turns, Last: p.last,
+		})
 	}
 	return files
 }

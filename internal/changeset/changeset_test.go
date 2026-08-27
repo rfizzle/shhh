@@ -242,3 +242,42 @@ func TestLatest(t *testing.T) {
 		t.Fatalf("expected turn 5 as the latest, got %+v", turn)
 	}
 }
+
+// SessionFiles is Session with the attribution the inspector rail needs: one
+// net row per path, in first-edit order, carrying how many turns produced it
+// (S-120, DESIGN-TUI.md §15a).
+func TestSessionFilesCarryTurnAttribution(t *testing.T) {
+	s := New(DefaultMaxBytes)
+	s.Add(1, Record{Path: "loop.go", Before: "a\n", After: "a\nb\n", BeforeExists: true, AfterExists: true})
+	s.Add(2, Record{Path: "model.go", Before: "x\n", After: "y\n", BeforeExists: true, AfterExists: true})
+	s.Add(3, Record{Path: "loop.go", Before: "a\nb\n", After: "a\nb\nc\n", BeforeExists: true, AfterExists: true})
+
+	files := s.SessionFiles()
+	if len(files) != 2 {
+		t.Fatalf("one row per path: %+v", files)
+	}
+	loop := files[0]
+	if loop.Path != "loop.go" {
+		t.Fatalf("first-edit order: %+v", files)
+	}
+	if loop.Added != 2 || loop.Removed != 0 {
+		t.Fatalf("the net change across both turns: %+v", loop)
+	}
+	if loop.Turns != 2 || loop.Last != 3 {
+		t.Fatalf("turn attribution: %+v", loop)
+	}
+	if files[1].Turns != 1 || files[1].Last != 2 {
+		t.Fatalf("a path edited once says one turn: %+v", files[1])
+	}
+
+	// A later turn putting a file back is state, not history: the path drops
+	// out of the session's net change entirely.
+	s.Add(4, Record{Path: "model.go", Before: "y\n", After: "x\n", BeforeExists: true, AfterExists: true})
+	files = s.SessionFiles()
+	if len(files) != 1 || files[0].Path != "loop.go" {
+		t.Fatalf("a file edited back to where it started nets out: %+v", files)
+	}
+	if n, added, removed := s.Totals(); n != 1 || added != 2 || removed != 0 {
+		t.Fatalf("Totals reads the same aggregation: %d files, +%d −%d", n, added, removed)
+	}
+}

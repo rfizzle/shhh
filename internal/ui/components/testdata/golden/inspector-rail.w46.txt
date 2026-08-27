@@ -12,7 +12,7 @@
 · every block, unbounded height
   THIS TURN                                   
    ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱ step 3 of 4         
-  18 tools · 1m 04s elapsed                   
+  3 files this turn +30 −4 · 18 tools · 1m 04s
 
   PLAN                             2 of 4 done
   ✓ Locate the round accounting           6.2s
@@ -22,10 +22,11 @@
   ⚠ 1 off plan                                
   /plan for the whole list                    
 
-  CHANGES                               +27 −4
-  ▎✎ internal/agent/loop.go             +18 −3
+  CHANGES                     session · +27 −4
+   ✗ go test ./internal/agent/...       turn 7
+    exit 1                                    
+  ▎✎ internal/agent/loop.go          +18 −3 3t
   ▎✎ internal/ui/chat/model.go           +9 −1
-   ✗ go test ./internal/agent/...       exit 1
 
   AGENTS                             2 running
   ◇ writer-1                             $0.02
@@ -48,8 +49,8 @@
   PLAN                             2 of 4 done
   … 6 more                                    
 
-  CHANGES                               +27 −4
-  … 3 more                                    
+  CHANGES                     session · +27 −4
+  … 4 more                              +27 −4
 
   AGENTS                             2 running
   … 4 more                                    
@@ -61,17 +62,52 @@
 
 · blocks with nothing to say are omitted
   THIS TURN                                   
-  2 tools · 3.0s elapsed                      
+  0 files this turn · 2 tools · 3.0s          
 
   CONTEXT                          41% of 200k
   ▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱                  ~82k
   estimated                                   
 
+· eight files, four turns deep
+  THIS TURN                                   
+   ▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ step 1 of 3         
+  0 files this turn · 0 tools · 8.0s          
+
+  CHANGES                    session · +96 −11
+   ✗ go test ./internal/agent/...       turn 7
+    exit 1                                    
+   ✗ go build ./...                     turn 9
+    exit 2                                    
+  ▎✎ internal/agent/loop.go          +21 −4 3t
+  ▎✎ internal/agent/loop_test.go     +18 −0 2t
+  ▎✎ internal/ui/chat/model.go           +9 −1
+  ▎✎ internal/agent/round.go             +6 −2
+  ▎✎ internal/tool/exec.go               +4 −4
+  ▎✎ internal/agent/errors.go            +3 −0
+  ▎✎ docs/loop.md                       +34 −0
+  ▎✎ go.mod                              +1 −0
+
+· the rail is shorter than the list (height 14)
+  THIS TURN                                   
+   ▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱ step 1 of 3         
+  0 files this turn · 0 tools · 8.0s          
+
+  CHANGES                    session · +96 −11
+   ✗ go test ./internal/agent/...       turn 7
+    exit 1                                    
+   ✗ go build ./...                     turn 9
+    exit 2                                    
+  ▎✎ internal/agent/loop.go          +21 −4 3t
+  ▎✎ internal/agent/loop_test.go     +18 −0 2t
+  ▎✎ internal/ui/chat/model.go           +9 −1
+  ▎✎ internal/agent/errors.go            +3 −0
+  … 4 more                              +45 −6
+
 ── ansi ────────────────────────────────────────────────────
 · every block, unbounded height
   ␛[1;94mTHIS TURN␛[0m                                   
   ␛[38;5;241m␛[0m ␛[92m▰▰▰▰▰▰▰▰▰▰▰␛[0m␛[38;5;205m▰▰▰▰▰␛[0m␛[38;5;241m▱▱▱▱▱▱␛[0m ␛[92mstep 3 of 4␛[0m         
-  ␛[38;5;241m18 tools · 1m 04s elapsed␛[0m                   
+  ␛[38;5;241m3 files this turn␛[0m ␛[92m+30␛[0m ␛[91m−4␛[0m␛[38;5;241m · ␛[0m␛[38;5;241m18 tools␛[0m␛[38;5;241m · ␛[0m␛[38;5;241m1m 04s␛[0m
 
   ␛[1;94mPLAN␛[0m                             ␛[38;5;241m2 of 4 done␛[0m
   ␛[92m✓␛[0m ␛[38;5;241mLocate the round accounting␛[0m           ␛[38;5;241m6.2s␛[0m
@@ -81,10 +117,11 @@
   ␛[38;5;214m⚠␛[0m ␛[38;5;241m1 off plan␛[0m                                
   ␛[3;38;5;241m/plan for the whole list␛[0m                    
 
-  ␛[1;94mCHANGES␛[0m                               ␛[92m+27␛[0m ␛[91m−4␛[0m
-  ␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252minternal/agent/loop.go␛[0m             ␛[92m+18␛[0m ␛[91m−3␛[0m
+  ␛[1;94mCHANGES␛[0m                     ␛[38;5;241msession · ␛[0m␛[92m+27␛[0m ␛[91m−4␛[0m
+   ␛[91m✗␛[0m ␛[38;5;252mgo test ./internal/agent/...␛[0m       ␛[38;5;241mturn 7␛[0m
+    ␛[38;5;241mexit 1␛[0m                                    
+  ␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252minternal/agent/loop.go␛[0m          ␛[92m+18␛[0m ␛[91m−3␛[0m ␛[38;5;241m3t␛[0m
   ␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252minternal/ui/chat/model.go␛[0m           ␛[92m+9␛[0m ␛[91m−1␛[0m
-   ␛[91m✗␛[0m ␛[38;5;252mgo test ./internal/agent/...␛[0m       ␛[91mexit 1␛[0m
 
   ␛[1;94mAGENTS␛[0m                             ␛[38;5;241m2 running␛[0m
   ␛[94m◇␛[0m ␛[38;5;252mwriter-1␛[0m                             ␛[38;5;241m$0.02␛[0m
@@ -107,8 +144,8 @@
   ␛[1;94mPLAN␛[0m                             ␛[38;5;241m2 of 4 done␛[0m
   ␛[3;38;5;241m… 6 more␛[0m                                    
 
-  ␛[1;94mCHANGES␛[0m                               ␛[92m+27␛[0m ␛[91m−4␛[0m
-  ␛[3;38;5;241m… 3 more␛[0m                                    
+  ␛[1;94mCHANGES␛[0m                     ␛[38;5;241msession · ␛[0m␛[92m+27␛[0m ␛[91m−4␛[0m
+  ␛[3;38;5;241m… 4 more␛[0m                              ␛[92m+27␛[0m ␛[91m−4␛[0m
 
   ␛[1;94mAGENTS␛[0m                             ␛[38;5;241m2 running␛[0m
   ␛[3;38;5;241m… 4 more␛[0m                                    
@@ -120,8 +157,43 @@
 
 · blocks with nothing to say are omitted
   ␛[1;94mTHIS TURN␛[0m                                   
-  ␛[38;5;241m2 tools · 3.0s elapsed␛[0m                      
+  ␛[38;5;241m0 files this turn␛[0m␛[38;5;241m · ␛[0m␛[38;5;241m2 tools␛[0m␛[38;5;241m · ␛[0m␛[38;5;241m3.0s␛[0m          
 
   ␛[1;94mCONTEXT␛[0m                          ␛[92m41% of 200k␛[0m
   ␛[92m▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱␛[0m                  ␛[92m~82k␛[0m
   ␛[38;5;241mestimated␛[0m                                   ␛[38;5;241m␛[0m
+
+· eight files, four turns deep
+  ␛[1;94mTHIS TURN␛[0m                                   
+  ␛[38;5;241m␛[0m ␛[92m␛[0m␛[38;5;205m▰▰▰▰▰▰▰␛[0m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[0m ␛[92mstep 1 of 3␛[0m         
+  ␛[38;5;241m0 files this turn␛[0m␛[38;5;241m · ␛[0m␛[38;5;241m0 tools␛[0m␛[38;5;241m · ␛[0m␛[38;5;241m8.0s␛[0m          
+
+  ␛[1;94mCHANGES␛[0m                    ␛[38;5;241msession · ␛[0m␛[92m+96␛[0m ␛[91m−11␛[0m
+   ␛[91m✗␛[0m ␛[38;5;252mgo test ./internal/agent/...␛[0m       ␛[38;5;241mturn 7␛[0m
+    ␛[38;5;241mexit 1␛[0m                                    
+   ␛[91m✗␛[0m ␛[38;5;252mgo build ./...␛[0m                     ␛[38;5;241mturn 9␛[0m
+    ␛[38;5;241mexit 2␛[0m                                    
+  ␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252minternal/agent/loop.go␛[0m          ␛[92m+21␛[0m ␛[91m−4␛[0m ␛[38;5;241m3t␛[0m
+  ␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252minternal/agent/loop_test.go␛[0m     ␛[92m+18␛[0m ␛[91m−0␛[0m ␛[38;5;241m2t␛[0m
+  ␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252minternal/ui/chat/model.go␛[0m           ␛[92m+9␛[0m ␛[91m−1␛[0m
+  ␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252minternal/agent/round.go␛[0m             ␛[92m+6␛[0m ␛[91m−2␛[0m
+  ␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252minternal/tool/exec.go␛[0m               ␛[92m+4␛[0m ␛[91m−4␛[0m
+  ␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252minternal/agent/errors.go␛[0m            ␛[92m+3␛[0m ␛[91m−0␛[0m
+  ␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252mdocs/loop.md␛[0m                       ␛[92m+34␛[0m ␛[91m−0␛[0m
+  ␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252mgo.mod␛[0m                              ␛[92m+1␛[0m ␛[91m−0␛[0m
+
+· the rail is shorter than the list (height 14)
+  ␛[1;94mTHIS TURN␛[0m                                   
+  ␛[38;5;241m␛[0m ␛[92m␛[0m␛[38;5;205m▰▰▰▰▰▰▰␛[0m␛[38;5;241m▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱␛[0m ␛[92mstep 1 of 3␛[0m         
+  ␛[38;5;241m0 files this turn␛[0m␛[38;5;241m · ␛[0m␛[38;5;241m0 tools␛[0m␛[38;5;241m · ␛[0m␛[38;5;241m8.0s␛[0m          
+
+  ␛[1;94mCHANGES␛[0m                    ␛[38;5;241msession · ␛[0m␛[92m+96␛[0m ␛[91m−11␛[0m
+   ␛[91m✗␛[0m ␛[38;5;252mgo test ./internal/agent/...␛[0m       ␛[38;5;241mturn 7␛[0m
+    ␛[38;5;241mexit 1␛[0m                                    
+   ␛[91m✗␛[0m ␛[38;5;252mgo build ./...␛[0m                     ␛[38;5;241mturn 9␛[0m
+    ␛[38;5;241mexit 2␛[0m                                    
+  ␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252minternal/agent/loop.go␛[0m          ␛[92m+21␛[0m ␛[91m−4␛[0m ␛[38;5;241m3t␛[0m
+  ␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252minternal/agent/loop_test.go␛[0m     ␛[92m+18␛[0m ␛[91m−0␛[0m ␛[38;5;241m2t␛[0m
+  ␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252minternal/ui/chat/model.go␛[0m           ␛[92m+9␛[0m ␛[91m−1␛[0m
+  ␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m ␛[38;5;252minternal/agent/errors.go␛[0m            ␛[92m+3␛[0m ␛[91m−0␛[0m
+  ␛[3;38;5;241m… 4 more␛[0m                              ␛[92m+45␛[0m ␛[91m−6␛[0m

@@ -6,12 +6,19 @@ package components
 // changed, what is it costing — so the session stops being interrogated with
 // /stats and /diff for what it already knows.
 //
-// The rail is passive, like Cockpit: the host feeds it this turn's numbers and
-// renders View every frame. It owns no keys, no state and no goroutines, and
-// the block order is fixed — THIS TURN, PLAN, CHANGES, AGENTS, CONTEXT,
+// The rail is passive, like Cockpit: the host feeds it the session's numbers
+// and renders View every frame. It owns no keys, no state and no goroutines,
+// and the block order is fixed — THIS TURN, PLAN, CHANGES, AGENTS, CONTEXT,
 // SPEND. A block with nothing to say is omitted rather than rendered empty
 // (§15b), and a rail that does not fit its height truncates its longest block
 // first and says how many rows it swallowed.
+//
+// THIS TURN is the turn. CHANGES, AGENTS, CONTEXT and SPEND are the session
+// (§15a, S-120): a file edited in turn 2 is still on screen in turn 8,
+// because "what has this session done to my machine" does not reset when the
+// agent starts a new turn. The two blocks that can count files both say their
+// scope in words — `3 files this turn` and `session · +96 −11` — which is the
+// rule that stops the two numbers reading as a contradiction.
 
 import (
 	"fmt"
@@ -49,8 +56,15 @@ type InspectorTurn struct {
 	Step, Steps int
 	Tools       int
 	Elapsed     time.Duration
-	// Running says the turn is still in flight, so the elapsed time is a
-	// running total rather than a final one.
+	// Files and its counts are what this turn changed — the turn-scoped half
+	// of §15a's pair, and the reason the row says "this turn" in words rather
+	// than printing a bare count beside CHANGES' session total.
+	Files          int
+	Added, Removed int
+	// Running says the turn is still in flight, which is what lights the
+	// progress meter's current cell. The row states the clock without saying
+	// whether it is still moving — the live turn status is what answers that
+	// (§8d), and saying it twice cost the row its file count.
 	Running bool
 }
 
@@ -97,22 +111,41 @@ type InspectorPlan struct {
 	Hint string
 }
 
-// InspectorFile is one changed file in the CHANGES block.
+// InspectorFile is one changed path in the CHANGES block: the session's net
+// change to it, however many turns produced that (§15a).
 type InspectorFile struct {
 	Path           string
 	Added, Removed int
+	// Turns is how many turns edited this path. Above one it is stated as
+	// `3t` beside the counts, because repeat edits collapse to one row and
+	// the row should say that it did.
+	Turns int
+	// ThisTurn marks a path the running turn touched. Those rows are the last
+	// the fold takes, so the turn in front of you keeps its rows while the
+	// session's older ones go behind `… N more`.
+	ThisTurn bool
 }
 
-// InspectorChanges is the CHANGES block: what this turn wrote, and whether
-// anything it ran came back broken.
+// InspectorAlert is one thing the workspace is still wrong about: a command
+// whose last run in this session came back broken, what it said, and the turn
+// that ran it. Alerts outlive their turn and clear when the workspace is
+// clean — a red row that clears itself because a new turn started is the
+// exact failure this rail exists to prevent (§15a).
+type InspectorAlert struct {
+	Label string
+	Note  string
+	// Turn is the turn that ran it; zero prints no turn field.
+	Turn int64
+}
+
+// InspectorChanges is the CHANGES block: what this session has written to the
+// workspace, and what about it is still broken.
 type InspectorChanges struct {
 	Files          []InspectorFile
 	Added, Removed int
-	// Failure is the command that failed this turn (empty when none) and
-	// FailureNote its outcome, e.g. "exit 1" — the turn's failing-test state
-	// as far as the session can currently see it.
-	Failure     string
-	FailureNote string
+	// Alerts are the failing commands still standing, oldest first. They are
+	// drawn above the file rows and are the last thing truncation takes.
+	Alerts []InspectorAlert
 }
 
 // InspectorAgent is one running child in the AGENTS block. Steps is only set
@@ -182,26 +215,56 @@ func (r InspectorRail) Empty() bool {
 		r.Context == nil && r.Spend == nil
 }
 
+// railLine is one assembled row and what truncation is allowed to do with it.
+// A pinned row is the last one taken — an alert, or a file the running turn
+// wrote — and a counted row hands its numbers to the fold, so a fold marker
+// states what it swallowed rather than only how much (invariant 4).
+type railLine struct {
+	text           string
+	pinned         bool
+	counted        bool
+	added, removed int
+}
+
 // railBlock is one headed block under assembly: its heading line, its rows,
-// and how many rows truncation has taken off the end.
+// and the rows truncation has taken.
 type railBlock struct {
 	heading string
-	rows    []string
-	hidden  int
+	rows    []railLine
+	// hidden holds what truncation took, in the order it stood in.
+	hidden []railLine
+	// fold renders the marker for the hidden rows. Nil prints the bare
+	// "… N more" every block but CHANGES uses.
+	fold func([]railLine) string
 }
+
+// add appends an ordinary row: truncation may take it, and it carries no
+// counts of its own.
+func (b *railBlock) add(text string) { b.rows = append(b.rows, railLine{text: text}) }
+
+// pin appends a row truncation takes only when nothing else is left.
+func (b *railBlock) pin(text string) { b.rows = append(b.rows, railLine{text: text, pinned: true}) }
 
 func (b railBlock) height() int {
 	h := 1 + len(b.rows)
-	if b.hidden > 0 {
+	if len(b.hidden) > 0 {
 		h++
 	}
 	return h
 }
 
 func (b railBlock) lines() []string {
-	out := append([]string{b.heading}, b.rows...)
-	if b.hidden > 0 {
-		out = append(out, indentRow(hintStyle.Render(fmt.Sprintf("… %d more", b.hidden)), InspectorWidth))
+	out := make([]string, 0, b.height())
+	out = append(out, b.heading)
+	for _, r := range b.rows {
+		out = append(out, r.text)
+	}
+	switch {
+	case len(b.hidden) == 0:
+	case b.fold != nil:
+		out = append(out, b.fold(b.hidden))
+	default:
+		out = append(out, indentRow(hintStyle.Render(fmt.Sprintf("… %d more", len(b.hidden))), InspectorWidth))
 	}
 	return out
 }
@@ -250,7 +313,8 @@ func (r InspectorRail) blocks(width int) []railBlock {
 
 // fitBlocks truncates the rail into height rows, taking rows off the longest
 // block first (§15b). A truncated block keeps its heading and says how many
-// rows it is hiding, so the rail never ends silently.
+// rows it is hiding, so the rail never ends silently; CHANGES folds rather
+// than truncates, and its marker carries the counts it took with it (§15a).
 func fitBlocks(blocks []railBlock, height int) []railBlock {
 	for total(blocks) > height {
 		longest, rows := -1, 0
@@ -264,8 +328,18 @@ func fitBlocks(blocks []railBlock, height int) []railBlock {
 			break
 		}
 		b := &blocks[longest]
-		b.rows = b.rows[:len(b.rows)-1]
-		b.hidden++
+		// The last row truncation is allowed to take: a pinned row — an
+		// alert, or a file the running turn wrote — goes only when there is
+		// nothing else left to give (§15a).
+		i := len(b.rows) - 1
+		for j := i; j >= 0; j-- {
+			if !b.rows[j].pinned {
+				i = j
+				break
+			}
+		}
+		b.hidden = append([]railLine{b.rows[i]}, b.hidden...)
+		b.rows = append(b.rows[:i], b.rows[i+1:]...)
 	}
 	return blocks
 }
@@ -293,14 +367,21 @@ func (r InspectorRail) turnBlock(width int) (railBlock, bool) {
 	if m, ok := StepMeter(t.Step, t.Steps, inspectorTurnCells, t.Running); ok {
 		// The count sits beside the bar rather than in the heading, because a
 		// bar is never the only carrier of its value (§10c).
-		b.rows = append(b.rows, indentRow(m.View(), width))
+		b.add(indentRow(m.View(), width))
 	}
-	elapsed := "elapsed"
-	if !t.Running {
-		elapsed = "total"
+	// "3 files this turn" rather than "3 files": CHANGES counts files too, and
+	// the two are different questions, so both say their scope in words
+	// (§15a). A turn that wrote nothing still says so — that is the fact.
+	files := dimStyle.Render(plural(t.Files, "file") + " this turn")
+	if t.Files > 0 {
+		files += " " + addStyle.Render(fmt.Sprintf("+%d", t.Added)) +
+			" " + delStyle.Render(fmt.Sprintf("−%d", t.Removed))
 	}
-	b.rows = append(b.rows, indentRow(dimStyle.Render(fmt.Sprintf("%s · %s %s",
-		plural(t.Tools, "tool"), FormatElapsed(t.Elapsed), elapsed)), width))
+	b.add(indentRow(strings.Join([]string{
+		files,
+		dimStyle.Render(plural(t.Tools, "tool")),
+		dimStyle.Render(FormatElapsed(t.Elapsed)),
+	}, dimStyle.Render(" · ")), width))
 	return b, true
 }
 
@@ -322,14 +403,14 @@ func (r InspectorRail) planBlock(width int) (railBlock, bool) {
 		if s.Elapsed != "" {
 			elapsed = dimStyle.Render(s.Elapsed)
 		}
-		b.rows = append(b.rows, railRow(glyph+" "+style.Render(s.Title), elapsed, width, inspectorIndent))
+		b.add(railRow(glyph+" "+style.Render(s.Title), elapsed, width, inspectorIndent))
 	}
 	if p.Drift != "" {
-		b.rows = append(b.rows, railRow(accentStyle.Render("⚠")+" "+dimStyle.Render(p.Drift),
+		b.add(railRow(accentStyle.Render("⚠")+" "+dimStyle.Render(p.Drift),
 			"", width, inspectorIndent))
 	}
 	if p.Hint != "" {
-		b.rows = append(b.rows, indentRow(hintStyle.Render(p.Hint), width))
+		b.add(indentRow(hintStyle.Render(p.Hint), width))
 	}
 	return b, true
 }
@@ -349,28 +430,76 @@ func planStepTone(s PlanStepState) (string, lipgloss.Style) {
 	return dimStyle.Render("·"), dimStyle
 }
 
+// changesBlock is the session's own diff (§15a, S-120): every path it has
+// touched since it opened, one row each, with the alerts still standing above
+// them. The heading says "session" in words because THIS TURN counts files
+// too, and a rail that printed two bare counts would read as a contradiction.
 func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 	c := r.Changes
-	if c == nil || (len(c.Files) == 0 && c.Failure == "") {
+	if c == nil || (len(c.Files) == 0 && len(c.Alerts) == 0) {
 		return railBlock{}, false
 	}
 	meta := ""
 	if len(c.Files) > 0 {
-		meta = addStyle.Render(fmt.Sprintf("+%d", c.Added)) + " " + delStyle.Render(fmt.Sprintf("−%d", c.Removed))
+		meta = dimStyle.Render("session · ") +
+			addStyle.Render(fmt.Sprintf("+%d", c.Added)) + " " +
+			delStyle.Render(fmt.Sprintf("−%d", c.Removed))
 	}
 	b := railBlock{heading: railHeading("CHANGES", meta, dimStyle, width)}
+	// The alerts come first and are pinned: they are what the block exists to
+	// keep on screen, and the turn that caused one is part of the fact.
+	for _, a := range c.Alerts {
+		turn := ""
+		if a.Turn > 0 {
+			turn = dimStyle.Render(fmt.Sprintf("turn %d", a.Turn))
+		}
+		b.pin(railRow(" "+errStyle.Render("✗")+" "+bodyStyle.Render(a.Label), turn, width, inspectorIndent))
+		if a.Note != "" {
+			b.pin(railRow(dimStyle.Render(a.Note), "", width, inspectorIndent+2))
+		}
+	}
 	for _, f := range c.Files {
 		// The changed-file row carries the mutation rail and the edit glyph,
 		// so the close of a turn looks like the rows that produced it (§14).
 		lead := accentStyle.Render("▎") + accentStyle.Render("✎") + " "
 		stats := addStyle.Render(fmt.Sprintf("+%d", f.Added)) + " " + delStyle.Render(fmt.Sprintf("−%d", f.Removed))
-		b.rows = append(b.rows, railRow(lead+bodyStyle.Render(f.Path), stats, width, inspectorIndent))
+		if f.Turns > 1 {
+			// Repeat edits collapsed to one row, so the row says how many
+			// turns are behind its counts.
+			stats += " " + dimStyle.Render(fmt.Sprintf("%dt", f.Turns))
+		}
+		b.rows = append(b.rows, railLine{
+			text:    railRow(lead+bodyStyle.Render(f.Path), stats, width, inspectorIndent),
+			pinned:  f.ThisTurn,
+			counted: true,
+			added:   f.Added,
+			removed: f.Removed,
+		})
 	}
-	if c.Failure != "" {
-		lead := " " + errStyle.Render("✗") + " "
-		b.rows = append(b.rows, railRow(lead+bodyStyle.Render(c.Failure), errStyle.Render(c.FailureNote), width, inspectorIndent))
-	}
+	b.fold = func(hidden []railLine) string { return changesFold(hidden, width) }
 	return b, true
+}
+
+// changesFold is the marker the file list folds behind when the rail is
+// shorter than it. It carries its own counts, so the rows it swallowed are
+// still accounted for (invariant 4); rows with no counts of their own — a
+// truncated alert — fold behind a bare marker rather than a fabricated zero.
+func changesFold(hidden []railLine, width int) string {
+	var added, removed, counted int
+	for _, h := range hidden {
+		if !h.counted {
+			continue
+		}
+		counted++
+		added += h.added
+		removed += h.removed
+	}
+	left := hintStyle.Render(fmt.Sprintf("… %d more", len(hidden)))
+	if counted == 0 {
+		return indentRow(left, width)
+	}
+	return railRow(left, addStyle.Render(fmt.Sprintf("+%d", added))+" "+
+		delStyle.Render(fmt.Sprintf("−%d", removed)), width, inspectorIndent)
 }
 
 func (r InspectorRail) agentsBlock(width int) (railBlock, bool) {
@@ -383,7 +512,7 @@ func (r InspectorRail) agentsBlock(width int) (railBlock, bool) {
 		if a.Blocked {
 			glyph = errStyle.Render("⚠")
 		}
-		b.rows = append(b.rows, railRow(glyph+" "+bodyStyle.Render(a.Name), dimStyle.Render(a.Spend), width, inspectorIndent))
+		b.add(railRow(glyph+" "+bodyStyle.Render(a.Name), dimStyle.Render(a.Spend), width, inspectorIndent))
 		var parts []string
 		switch m, ok := AgentMeter(a.Step, a.Steps); {
 		case ok:
@@ -406,7 +535,7 @@ func (r InspectorRail) agentsBlock(width int) (railBlock, bool) {
 			parts = append(parts, dimmerStyle.Render(plural(a.Tools, "tool")))
 		}
 		if len(parts) > 0 {
-			b.rows = append(b.rows, railRow(strings.Join(parts, dimmerStyle.Render(" · ")), "", width, inspectorIndent+2))
+			b.add(railRow(strings.Join(parts, dimmerStyle.Render(" · ")), "", width, inspectorIndent+2))
 		}
 	}
 	return b, true
@@ -429,7 +558,7 @@ func (r InspectorRail) contextBlock(width int) (railBlock, bool) {
 	}
 	// The bar's number is the token count at the rail's right edge, in the
 	// meter's own colour — the bar never carries the value alone (§10c).
-	b.rows = append(b.rows, railRow(meter.Bar(), style.Render(count), width, inspectorIndent))
+	b.add(railRow(meter.Bar(), style.Render(count), width, inspectorIndent))
 	tokens := strings.TrimSpace(c.Tokens1 + " " + c.Tokens2)
 	lead := ""
 	switch {
@@ -441,7 +570,7 @@ func (r InspectorRail) contextBlock(width int) (railBlock, bool) {
 		lead = dimStyle.Render("estimated")
 	}
 	if lead != "" || tokens != "" {
-		b.rows = append(b.rows, railRow(lead, dimStyle.Render(tokens), width, inspectorIndent))
+		b.add(railRow(lead, dimStyle.Render(tokens), width, inspectorIndent))
 	}
 	return b, true
 }
@@ -463,10 +592,10 @@ func (r InspectorRail) spendBlock(width int) (railBlock, bool) {
 		split = append(split, s.Children+" ◇")
 	}
 	if len(split) > 0 {
-		b.rows = append(b.rows, railRow(dimStyle.Render(strings.Join(split, " · ")), "", width, inspectorIndent))
+		b.add(railRow(dimStyle.Render(strings.Join(split, " · ")), "", width, inspectorIndent))
 	}
 	if s.Session != "" {
-		b.rows = append(b.rows, railRow(dimStyle.Render("session total "+s.Session), "", width, inspectorIndent))
+		b.add(railRow(dimStyle.Render("session total "+s.Session), "", width, inspectorIndent))
 	}
 	return b, true
 }

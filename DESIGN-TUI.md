@@ -1888,6 +1888,16 @@ is the one thing a reader checks as often as the changes; the block is
 recorded as a departure rather than silently resolved either way, and S-126 is
 where it is settled.
 
+**Two keys the block does not print.** The artboard's CHANGES ends on `[v]
+review all 8 · [u] undo turn`, and its alert detail row offers `[r] rerun`.
+Neither is rendered (S-120), for the reason §15c gives for PLAN printing
+`/plan`: the input textarea owns every unmodified letter, so a bracketed key
+in the rail is an offer nothing accepts — invariant 5. `[v]` and `[u]` are
+live on the changeset row in the transcript, where focus mode holds the
+keyboard (§16), and the alert's second row states what the command said
+(`exit 1`) instead. S-125's audit is where the rail either gains a surface
+that can hold those keys or the design drops them from the rail.
+
 ### 15c. Rules
 
 - **Blocks with nothing to say are omitted, not rendered empty.** A session

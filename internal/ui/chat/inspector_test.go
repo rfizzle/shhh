@@ -8,6 +8,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -16,7 +17,10 @@ import (
 )
 
 // inspectorModel is a ready model with usage, pricing and a turn's worth of
-// transcript, so every rail block has something to show.
+// transcript, so every rail block has something to show. The edit is recorded
+// in the changeset store as well as drawn in the transcript, because that is
+// what an applied edit does in a real session (S-097) and what the rail's
+// session-scoped CHANGES block reads (S-120).
 func inspectorModel(t *testing.T, width, height int) Model {
 	t.Helper()
 	table := pricing.NewTable(map[string]pricing.ModelPricing{
@@ -27,15 +31,20 @@ func inspectorModel(t *testing.T, width, height int) Model {
 	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 9800})
 	m.turnStarted = time.Now().Add(-64 * time.Second)
 	m.turnEnded = time.Now()
+	m.turnCount = 1
+	m.changes.Add(1, changeset.Record{
+		Path: "internal/agent/loop.go", BeforeExists: true, AfterExists: true,
+		Before: "c\n", After: "a\nb\n",
+	})
 	m.transcript = []entry{
-		{kind: entryUser, text: "do the thing"},
+		{kind: entryUser, text: "do the thing", turn: 1},
 		{kind: entryAssistant, text: "Reading the loop"},
-		{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"agent/loop.go"}`, toolResult: "ok", duration: time.Second},
+		{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"agent/loop.go"}`, toolResult: "ok", duration: time.Second, turn: 1},
 		{kind: entryDiff, diff: &components.DiffView{Path: "internal/agent/loop.go", Verb: "edit",
 			Hunks: []diff.Hunk{{OldStart: 1, OldCount: 3, NewStart: 1, NewCount: 4, Lines: []diff.Line{
 				{Kind: diff.Add, Text: "a"}, {Kind: diff.Add, Text: "b"}, {Kind: diff.Del, Text: "c"},
 			}}}}},
-		{kind: entryCommand, text: "go test ./...", toolResult: "FAIL", exitCode: 1, duration: 3 * time.Second},
+		{kind: entryCommand, text: "go test ./...", toolResult: "FAIL", exitCode: 1, duration: 3 * time.Second, turn: 1},
 	}
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: height})
 	return updated.(Model)
@@ -197,8 +206,14 @@ func TestInspectorData_BlocksFromTheSession(t *testing.T) {
 	if rail.Changes.Added != 2 || rail.Changes.Removed != 1 {
 		t.Fatalf("changeset totals: %+v", rail.Changes)
 	}
-	if rail.Changes.Failure != "go test ./..." || rail.Changes.FailureNote != "exit 1" {
-		t.Fatalf("the turn's broken command: %+v", rail.Changes)
+	if rail.Turn.Files != 1 || rail.Turn.Added != 2 || rail.Turn.Removed != 1 {
+		t.Fatalf("THIS TURN counts the turn's own files: %+v", rail.Turn)
+	}
+	if len(rail.Changes.Alerts) != 1 {
+		t.Fatalf("the session's broken command: %+v", rail.Changes.Alerts)
+	}
+	if a := rail.Changes.Alerts[0]; a.Label != "go test ./..." || a.Note != "exit 1" || a.Turn != 1 {
+		t.Fatalf("the alert names the turn that broke it: %+v", a)
 	}
 	if rail.Context == nil || rail.Context.Window != 200000 || rail.Context.Pct != 25 {
 		t.Fatalf("CONTEXT: %+v", rail.Context)
@@ -327,5 +342,107 @@ func TestFocusMode_KeepsTheRail(t *testing.T) {
 	}
 	if view := stripANSI(m.View()); !strings.Contains(view, "THIS TURN") {
 		t.Fatalf("focus mode still renders the rail:\n%s", view)
+	}
+}
+
+// The rail is the session's overview, not a second copy of the turn: a file
+// edited in an earlier turn is still on screen turns later, and a path edited
+// twice is one row with the net counts and the turns behind it (S-120, §15a).
+func TestInspectorChanges_SessionScoped(t *testing.T) {
+	m := inspectorModel(t, 144, 40)
+	// Turn 2 edits the same file again and a new one.
+	m.turnCount = 2
+	m.changes.Add(2, changeset.Record{
+		Path: "internal/agent/loop.go", BeforeExists: true, AfterExists: true,
+		Before: "a\nb\n", After: "a\nb\nd\n",
+	})
+	m.changes.Add(2, changeset.Record{
+		Path: "internal/ui/chat/model.go", BeforeExists: true, AfterExists: true,
+		Before: "x\n", After: "x\ny\n",
+	})
+	// A new turn's transcript: the earlier turn's rows are behind it.
+	m.transcript = append(m.transcript, entry{kind: entryUser, text: "and again", turn: 2})
+
+	c := m.inspectorChanges()
+	if c == nil || len(c.Files) != 2 {
+		t.Fatalf("CHANGES should hold both paths: %+v", c)
+	}
+	loop := c.Files[0]
+	if loop.Path != "internal/agent/loop.go" {
+		t.Fatalf("first-edit order: %+v", c.Files)
+	}
+	// Net across both turns: "c" became "a b d" — three added, one removed.
+	if loop.Added != 3 || loop.Removed != 1 {
+		t.Fatalf("repeat edits collapse to the net change: %+v", loop)
+	}
+	if loop.Turns != 2 {
+		t.Fatalf("the row carries the turns behind it: %+v", loop)
+	}
+	if !loop.ThisTurn || !c.Files[1].ThisTurn {
+		t.Fatalf("both paths were touched this turn: %+v", c.Files)
+	}
+	if c.Added != 4 || c.Removed != 1 {
+		t.Fatalf("the heading totals the session: %+v", c)
+	}
+
+	// Turn 3 touches neither: the earlier rows stay, and stop claiming to be
+	// this turn's work.
+	m.turnCount = 3
+	c = m.inspectorChanges()
+	if c == nil || len(c.Files) != 2 {
+		t.Fatalf("earlier turns' files stay on screen: %+v", c)
+	}
+	for _, f := range c.Files {
+		if f.ThisTurn {
+			t.Fatalf("turn 3 changed nothing: %+v", f)
+		}
+	}
+	view := stripANSI(m.View())
+	if !strings.Contains(view, "▎✎ internal/agent/loop.go") || !strings.Contains(view, "session · ") {
+		t.Fatalf("the rail still shows the session's changes:\n%s", view)
+	}
+}
+
+// An alert follows the workspace, not the turn: it survives later turns and
+// is cleared by the same command coming back clean (S-120, §15a).
+func TestInspectorAlerts_PersistUntilTheWorkspaceIsClean(t *testing.T) {
+	m := inspectorModel(t, 144, 40)
+	m.turnCount = 2
+	m.appendEntry(entry{kind: entryUser, text: "fix it"})
+	if alerts := m.inspectorAlerts(); len(alerts) != 1 || alerts[0].Turn != 1 {
+		t.Fatalf("turn 1's failure is still standing in turn 2: %+v", alerts)
+	}
+	// A second command breaks in turn 2; both are standing.
+	m.appendEntry(entry{kind: entryCommand, text: "go build ./...", exitCode: 2})
+	alerts := m.inspectorAlerts()
+	if len(alerts) != 2 || alerts[1].Label != "go build ./..." || alerts[1].Turn != 2 {
+		t.Fatalf("both failures stand, with their own turns: %+v", alerts)
+	}
+	// The suite comes back clean in turn 3: its alert goes, the other stays.
+	m.turnCount = 3
+	m.appendEntry(entry{kind: entryCommand, text: "go test ./...", exitCode: 0})
+	alerts = m.inspectorAlerts()
+	if len(alerts) != 1 || alerts[0].Label != "go build ./..." {
+		t.Fatalf("a clean run clears its own alert only: %+v", alerts)
+	}
+	m.appendEntry(entry{kind: entryCommand, text: "go build ./...", exitCode: 0})
+	if alerts = m.inspectorAlerts(); len(alerts) != 0 {
+		t.Fatalf("a clean workspace has no alerts: %+v", alerts)
+	}
+}
+
+// appendEntry stamps the turn an entry belongs to, which is what lets a row
+// that outlives its turn still name it.
+func TestAppendEntry_StampsTheTurn(t *testing.T) {
+	m := inspectorModel(t, 144, 40)
+	m.turnCount = 4
+	m.appendEntry(entry{kind: entryCommand, text: "go vet ./...", exitCode: 1})
+	if got := m.transcript[len(m.transcript)-1].turn; got != 4 {
+		t.Fatalf("entry stamped with turn %d, want 4", got)
+	}
+	// An entry that already names its turn keeps it.
+	m.appendEntry(entry{kind: entryTurnClose, turn: 2, close: &components.TurnClose{}})
+	if got := m.transcript[len(m.transcript)-1].turn; got != 2 {
+		t.Fatalf("an explicit turn is kept, got %d", got)
 	}
 }

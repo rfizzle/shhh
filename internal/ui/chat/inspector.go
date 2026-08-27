@@ -14,6 +14,11 @@ package chat
 //
 // Everything the rail shows is already known to the session; the rail is a
 // passive renderer fed from here, like components.Cockpit.
+//
+// THIS TURN is the turn; CHANGES, AGENTS, CONTEXT and SPEND are the session
+// (§15a, S-120). The chat transcript is the turn-by-turn feed, so the rail is
+// the standing overview beside it rather than a second copy of the same
+// scroll.
 
 import (
 	"fmt"
@@ -21,7 +26,6 @@ import (
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -52,8 +56,8 @@ func (m Model) twoPane() bool {
 }
 
 // inspectorHidden reports whether something is covering the rail. Takeover
-// surfaces span both panes (§15b); the attached view is a child's session, so
-// the orchestrator's turn-scoped rail has nothing true to say beside it.
+// surfaces span both panes (§15c); the attached view is a child's session, so
+// the orchestrator's rail is answering for the wrong session beside it.
 func (m Model) inspectorHidden() bool {
 	if m.attachedTo != "" || m.agentList != nil {
 		return true
@@ -155,16 +159,23 @@ func (m Model) inspectorTurn(steps []components.InspectorPlanStep) *components.I
 			t.Tools++
 		}
 	}
-	if t.Tools == 0 && !t.Running {
+	// The turn's own files come from the same changeset its close row reads
+	// (S-097), so THIS TURN and the row it leaves in the transcript cannot
+	// report the turn two ways.
+	if turn, ok := m.changes.Turn(m.turnCount); ok {
+		t.Files, t.Added, t.Removed = turn.Files(), turn.Added, turn.Removed
+	}
+	if t.Tools == 0 && t.Files == 0 && !t.Running {
 		return nil
 	}
 	return &t
 }
 
 // inspectorPlan is the PLAN block: the approved plan as a live checklist, so
-// "where are we" never needs asking (S-104, §15a). The rail is turn-scoped
-// everywhere else; this block follows the plan rather than the turn, because
-// a plan that spans two turns is still the answer to the same question.
+// "where are we" never needs asking (S-104, §15c). It follows the plan rather
+// than the turn or the session, because a plan that spans two turns is still
+// the answer to the same question and is retired by the next instruction
+// rather than by the clock.
 func (m Model) inspectorPlan(steps []components.InspectorPlanStep) *components.InspectorPlan {
 	if m.planRun == nil || len(steps) == 0 {
 		return nil
@@ -177,40 +188,81 @@ func (m Model) inspectorPlan(steps []components.InspectorPlanStep) *components.I
 	}
 }
 
-// inspectorChanges aggregates this turn's applied edits by path (a file
-// edited twice is one row with the net counts) and notes a command that came
-// back broken — the failing-test state as far as the session can see it until
-// the changeset store lands (S-097).
+// inspectorChanges is the session's net change to the workspace (§15a,
+// S-120): every path this session has touched, collapsed to one row each with
+// the turns behind it, and the commands still coming back broken above them.
+//
+// It is session-scoped deliberately. A file edited in turn 2 is still on
+// screen in turn 8, because "what has this session done to my machine" does
+// not reset when the agent starts a new turn — the turn-by-turn feed is the
+// transcript's job, and THIS TURN is the one block that answers for the turn.
+// The rows are read from the changeset store rather than from the transcript,
+// so an undo nets out and a child's applied patch counts (S-097).
 func (m Model) inspectorChanges() *components.InspectorChanges {
 	var c components.InspectorChanges
-	at := map[string]int{}
-	for _, e := range m.turnEntries() {
-		switch e.kind {
-		case entryDiff:
-			if e.diff == nil {
-				continue
-			}
-			adds, dels := diff.Stats(e.diff.Hunks)
-			c.Added += adds
-			c.Removed += dels
-			if i, ok := at[e.diff.Path]; ok {
-				c.Files[i].Added += adds
-				c.Files[i].Removed += dels
-				continue
-			}
-			at[e.diff.Path] = len(c.Files)
-			c.Files = append(c.Files, components.InspectorFile{Path: e.diff.Path, Added: adds, Removed: dels})
-		case entryCommand:
-			if e.exitCode != 0 {
-				c.Failure = firstLine(e.text)
-				c.FailureNote = components.OutcomeExit(e.exitCode)
-			}
+	touched := map[string]bool{}
+	if t, ok := m.changes.Turn(m.turnCount); ok {
+		for _, r := range t.Records {
+			touched[r.Path] = true
 		}
 	}
-	if len(c.Files) == 0 && c.Failure == "" {
+	for _, f := range m.changes.SessionFiles() {
+		c.Added += f.Added
+		c.Removed += f.Removed
+		c.Files = append(c.Files, components.InspectorFile{
+			Path:     f.Path,
+			Added:    f.Added,
+			Removed:  f.Removed,
+			Turns:    f.Turns,
+			ThisTurn: touched[f.Path],
+		})
+	}
+	c.Alerts = m.inspectorAlerts()
+	if len(c.Files) == 0 && len(c.Alerts) == 0 {
 		return nil
 	}
 	return &c
+}
+
+// inspectorAlerts is the workspace's standing bad news: the commands whose
+// most recent run in this session came back broken, oldest first, each with
+// the turn that ran it.
+//
+// An alert follows the workspace rather than the turn — it is cleared by the
+// same command coming back clean, not by a new turn starting. That is the
+// whole point of the block: a red row that clears itself because the agent
+// moved on is the failure this rail exists to prevent (§15a).
+func (m Model) inspectorAlerts() []components.InspectorAlert {
+	type run struct {
+		turn   int64
+		note   string
+		broken bool
+	}
+	last := map[string]*run{}
+	var commands []string
+	for _, e := range m.transcript {
+		if e.kind != entryCommand {
+			continue
+		}
+		label := firstLine(e.text)
+		if label == "" {
+			continue
+		}
+		r, ok := last[label]
+		if !ok {
+			r = &run{}
+			last[label] = r
+			commands = append(commands, label)
+		}
+		r.turn, r.broken, r.note = e.turn, e.exitCode != 0, components.OutcomeExit(e.exitCode)
+	}
+	var alerts []components.InspectorAlert
+	for _, label := range commands {
+		if r := last[label]; r.broken {
+			alerts = append(alerts, components.InspectorAlert{Label: label, Note: r.note, Turn: r.turn})
+		}
+	}
+	return alerts
 }
 
 // inspectorAgents lists the children still in flight; finished ones belong to

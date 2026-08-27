@@ -514,7 +514,8 @@ func TestGolden_FanoutBlock(t *testing.T) {
 func TestGolden_InspectorRail(t *testing.T) {
 	captureGolden(t, "inspector-rail", "inspector rail", []int{InspectorWidth}, func(width int) []golden.Panel {
 		full := InspectorRail{
-			Turn: &InspectorTurn{Step: 3, Steps: 4, Tools: 18, Elapsed: 64 * time.Second, Running: true},
+			Turn: &InspectorTurn{Step: 3, Steps: 4, Tools: 18, Elapsed: 64 * time.Second, Running: true,
+				Files: 3, Added: 30, Removed: 4},
 			Plan: &InspectorPlan{
 				Steps: []InspectorPlanStep{
 					{Number: 1, Title: "Locate the round accounting", State: PlanStepDone, Elapsed: "6.2s"},
@@ -526,11 +527,13 @@ func TestGolden_InspectorRail(t *testing.T) {
 			},
 			Changes: &InspectorChanges{
 				Files: []InspectorFile{
-					{Path: "internal/agent/loop.go", Added: 18, Removed: 3},
-					{Path: "internal/ui/chat/model.go", Added: 9, Removed: 1},
+					{Path: "internal/agent/loop.go", Added: 18, Removed: 3, Turns: 3, ThisTurn: true},
+					{Path: "internal/ui/chat/model.go", Added: 9, Removed: 1, ThisTurn: true},
 				},
 				Added: 27, Removed: 4,
-				Failure: "go test ./internal/agent/...", FailureNote: OutcomeExit(1),
+				Alerts: []InspectorAlert{
+					{Label: "go test ./internal/agent/...", Note: OutcomeExit(1), Turn: 7},
+				},
 			},
 			Agents: []InspectorAgent{
 				{Name: "writer-1", Detail: "docs/loop.md", Spend: "$0.02", Tools: 4},
@@ -548,10 +551,37 @@ func TestGolden_InspectorRail(t *testing.T) {
 			Turn:    &InspectorTurn{Tools: 2, Elapsed: 3 * time.Second, Running: true},
 			Context: &InspectorContext{Pct: 41, Tokens: 82000, Window: 200000, Estimated: true},
 		}
+		// Four turns deep, with the rail shorter than the list it has to show
+		// (S-120, §15a): repeat edits collapse to one row carrying their turn
+		// count, the rows this turn wrote survive the fold, the fold carries
+		// the counts it took, and an alert from turn 7 is still standing in
+		// turn 9 because the workspace is still broken.
+		session := InspectorRail{
+			Turn: &InspectorTurn{Step: 1, Steps: 3, Running: true, Elapsed: 8 * time.Second},
+			Changes: &InspectorChanges{
+				Files: []InspectorFile{
+					{Path: "internal/agent/loop.go", Added: 21, Removed: 4, Turns: 3, ThisTurn: true},
+					{Path: "internal/agent/loop_test.go", Added: 18, Turns: 2},
+					{Path: "internal/ui/chat/model.go", Added: 9, Removed: 1, ThisTurn: true},
+					{Path: "internal/agent/round.go", Added: 6, Removed: 2},
+					{Path: "internal/tool/exec.go", Added: 4, Removed: 4},
+					{Path: "internal/agent/errors.go", Added: 3, ThisTurn: true},
+					{Path: "docs/loop.md", Added: 34},
+					{Path: "go.mod", Added: 1},
+				},
+				Added: 96, Removed: 11,
+				Alerts: []InspectorAlert{
+					{Label: "go test ./internal/agent/...", Note: OutcomeExit(1), Turn: 7},
+					{Label: "go build ./...", Note: OutcomeExit(2), Turn: 9},
+				},
+			},
+		}
 		return []golden.Panel{
 			{Label: "every block, unbounded height", View: full.View(width, 0)},
 			{Label: "every block, height 16 (truncating)", View: full.View(width, 16)},
 			{Label: "blocks with nothing to say are omitted", View: quiet.View(width, 0)},
+			{Label: "eight files, four turns deep", View: session.View(width, 0)},
+			{Label: "the rail is shorter than the list (height 14)", View: session.View(width, 14)},
 		}
 	})
 }

@@ -1880,6 +1880,12 @@ func (m *Model) restoreSteering() {
 }
 
 func (m *Model) appendEntry(e entry) {
+	// Every entry knows the turn it belongs to, so a row that outlives its
+	// turn can still name it — the rail's alerts do (S-120, §15a). An entry
+	// that already carries one (a close block, a round-limit pause) keeps it.
+	if e.turn == 0 {
+		e.turn = m.turnCount
+	}
 	m.transcript = append(m.transcript, e)
 }
 

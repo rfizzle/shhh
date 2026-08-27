@@ -11,14 +11,15 @@ import (
 // fullRail is a rail with every block populated.
 func fullRail() InspectorRail {
 	return InspectorRail{
-		Turn: &InspectorTurn{Step: 3, Steps: 4, Tools: 18, Elapsed: 64 * time.Second, Running: true},
+		Turn: &InspectorTurn{Step: 3, Steps: 4, Tools: 18, Elapsed: 64 * time.Second, Running: true,
+			Files: 2, Added: 27, Removed: 4},
 		Changes: &InspectorChanges{
 			Files: []InspectorFile{
-				{Path: "agent/loop.go", Added: 18, Removed: 3},
-				{Path: "ui/chat/model.go", Added: 9, Removed: 1},
+				{Path: "agent/loop.go", Added: 18, Removed: 3, Turns: 3, ThisTurn: true},
+				{Path: "ui/chat/model.go", Added: 9, Removed: 1, ThisTurn: true},
 			},
 			Added: 27, Removed: 4,
-			Failure: "go test ./...", FailureNote: OutcomeExit(1),
+			Alerts: []InspectorAlert{{Label: "go test ./...", Note: OutcomeExit(1), Turn: 7}},
 		},
 		Agents: []InspectorAgent{{Name: "writer-1", Detail: "docs/loop.md", Spend: "$0.02", Tools: 4}},
 		Context: &InspectorContext{Pct: 62, Tokens: 124000, Window: 200000,
@@ -51,9 +52,9 @@ func TestInspectorContext_EstimatedSaysSo(t *testing.T) {
 func TestInspectorRail_BlockOrderAndContents(t *testing.T) {
 	view := stripANSI(fullRail().View(InspectorWidth, 0))
 	for _, want := range []string{
-		"THIS TURN", "step 3 of 4", "▰", "18 tools", "1m 04s elapsed",
-		"CHANGES", "+27", "−4", "▎✎ agent/loop.go", "+18", "−3",
-		"✗ go test ./...", "exit 1",
+		"THIS TURN", "step 3 of 4", "▰", "2 files this turn", "18 tools", "1m 04s",
+		"CHANGES", "session · ", "+27", "−4", "▎✎ agent/loop.go", "+18", "−3", "3t",
+		"✗ go test ./...", "turn 7", "exit 1",
 		"AGENTS", "1 running", "◇ writer-1", "$0.02", "docs/loop.md · 4 tools",
 		"CONTEXT", "62% of 200k", "124k", "↑41.2k ↓9.8k", "per round",
 		"SPEND", "$0.14", "gpt-5.2 · $0.12 main · $0.02 ◇", "session total $1.86",
@@ -202,13 +203,16 @@ func TestInspectorRail_NoDeclaredStepsNoRatio(t *testing.T) {
 	if strings.Contains(view, "▰") {
 		t.Fatalf("no meter without a declared step count:\n%s", view)
 	}
-	if !strings.Contains(view, "7 tools · 2.0s elapsed") {
+	// The row is the artboard's (§15b): the turn's own file count said in
+	// words, then its tools and its clock. Whether that clock is still
+	// running is the live turn status's answer (§8d), not a word repeated
+	// here — and a turn that wrote nothing still says so.
+	if !strings.Contains(view, "0 files this turn · 7 tools · 2.0s") {
 		t.Fatalf("the block still states its counts:\n%s", view)
 	}
-	// A turn that has finished says so rather than counting on.
-	done := InspectorRail{Turn: &InspectorTurn{Tools: 1, Elapsed: time.Second}}
-	if !strings.Contains(stripANSI(done.View(InspectorWidth, 0)), "1 tool · 1.0s total") {
-		t.Fatalf("a finished turn reports a total:\n%s", done.View(InspectorWidth, 0))
+	done := InspectorRail{Turn: &InspectorTurn{Tools: 1, Elapsed: time.Second, Files: 1, Added: 4, Removed: 2}}
+	if !strings.Contains(stripANSI(done.View(InspectorWidth, 0)), "1 file this turn +4 −2 · 1 tool · 1.0s") {
+		t.Fatalf("a turn's own files are counted beside its tools:\n%s", done.View(InspectorWidth, 0))
 	}
 }
 
@@ -231,5 +235,116 @@ func TestInspectorElapsedAndTokens(t *testing.T) {
 		if got := formatTokens(c.n); got != c.want {
 			t.Fatalf("formatTokens(%d) = %q, want %q", c.n, got, c.want)
 		}
+	}
+}
+
+// The two blocks that can count files say their scope in words, which is what
+// stops "2 files this turn" and "session · +96 −11" reading as a
+// contradiction (§15a, S-120).
+func TestInspectorRail_BothFileCountsSayTheirScope(t *testing.T) {
+	view := stripANSI(fullRail().View(InspectorWidth, 0))
+	if !strings.Contains(view, "2 files this turn") {
+		t.Fatalf("THIS TURN states its scope:\n%s", view)
+	}
+	if !strings.Contains(view, "session · ") {
+		t.Fatalf("CHANGES states its scope:\n%s", view)
+	}
+}
+
+// Repeat edits to one path collapse to a single row carrying the turns behind
+// it; one turn's worth of edits says nothing, because "1t" is not news.
+func TestInspectorChanges_RepeatEditsCarryTheirTurnCount(t *testing.T) {
+	r := InspectorRail{Changes: &InspectorChanges{
+		Files: []InspectorFile{
+			{Path: "agent/loop.go", Added: 21, Removed: 4, Turns: 3},
+			{Path: "go.mod", Added: 1, Turns: 1},
+		},
+		Added: 22, Removed: 4,
+	}}
+	view := stripANSI(r.View(InspectorWidth, 0))
+	if !strings.Contains(view, "+21 −4 3t") {
+		t.Fatalf("a path edited in three turns says so:\n%s", view)
+	}
+	if strings.Contains(view, "1t") {
+		t.Fatalf("one turn is not a count worth printing:\n%s", view)
+	}
+	if n := strings.Count(view, "agent/loop.go"); n != 1 {
+		t.Fatalf("one row per path, got %d:\n%s", n, view)
+	}
+}
+
+// The fold keeps the rows this turn wrote and carries the counts of the ones
+// it took, so nothing the session changed goes unaccounted for (invariant 4).
+func TestInspectorChanges_FoldKeepsThisTurnAndCarriesItsCounts(t *testing.T) {
+	r := InspectorRail{Changes: &InspectorChanges{
+		Files: []InspectorFile{
+			{Path: "agent/loop.go", Added: 21, Removed: 4, Turns: 3, ThisTurn: true},
+			{Path: "agent/loop_test.go", Added: 18, Turns: 2},
+			{Path: "ui/chat/model.go", Added: 9, Removed: 1, ThisTurn: true},
+			{Path: "agent/round.go", Added: 6, Removed: 2},
+			{Path: "tool/exec.go", Added: 4, Removed: 4},
+		},
+		Added: 58, Removed: 11,
+	}}
+	view := stripANSI(r.View(InspectorWidth, 4))
+	for _, want := range []string{"agent/loop.go", "ui/chat/model.go", "… 3 more", "+28", "−6"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("folded rail missing %q:\n%s", want, view)
+		}
+	}
+	for _, absent := range []string{"loop_test.go", "round.go", "exec.go"} {
+		if strings.Contains(view, absent) {
+			t.Fatalf("%q should be behind the fold:\n%s", absent, view)
+		}
+	}
+}
+
+// An alert outlives the turn that caused it, names that turn, and is the last
+// thing the fold takes — a red row that scrolls itself away is the failure
+// the block exists to prevent (§15a).
+func TestInspectorChanges_AlertsOutliveTheirTurn(t *testing.T) {
+	r := InspectorRail{Changes: &InspectorChanges{
+		Files: []InspectorFile{
+			{Path: "agent/loop.go", Added: 21, Removed: 4},
+			{Path: "go.mod", Added: 1},
+		},
+		Added: 22, Removed: 4,
+		Alerts: []InspectorAlert{
+			{Label: "go test ./...", Note: OutcomeExit(1), Turn: 7},
+			{Label: "go build ./...", Note: OutcomeExit(2), Turn: 9},
+		},
+	}}
+	view := stripANSI(r.View(InspectorWidth, 0))
+	for _, want := range []string{"✗ go test ./...", "turn 7", "exit 1", "✗ go build ./...", "turn 9"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("alert missing %q:\n%s", want, view)
+		}
+	}
+	// The alerts sit above the file rows.
+	if strings.Index(view, "go build ./...") > strings.Index(view, "agent/loop.go") {
+		t.Fatalf("alerts belong above the file rows:\n%s", view)
+	}
+	// Squeezed, the files go first.
+	tight := stripANSI(r.View(InspectorWidth, 5))
+	if !strings.Contains(tight, "go test ./...") || !strings.Contains(tight, "go build ./...") {
+		t.Fatalf("the alerts are the last rows truncation takes:\n%s", tight)
+	}
+	if strings.Contains(tight, "agent/loop.go") {
+		t.Fatalf("the file rows go before the alerts do:\n%s", tight)
+	}
+}
+
+// A block with nothing but alerts is still a block: the session changed
+// nothing this time and something is still broken.
+func TestInspectorChanges_AlertsAloneStillRender(t *testing.T) {
+	r := InspectorRail{Changes: &InspectorChanges{
+		Alerts: []InspectorAlert{{Label: "go test ./...", Note: OutcomeExit(1), Turn: 3}},
+	}}
+	view := stripANSI(r.View(InspectorWidth, 0))
+	if !strings.Contains(view, "CHANGES") || !strings.Contains(view, "go test ./...") {
+		t.Fatalf("an alert with no files still renders:\n%s", view)
+	}
+	if strings.Contains(view, "session · ") {
+		t.Fatal("a session that changed nothing states no total")
 	}
 }
