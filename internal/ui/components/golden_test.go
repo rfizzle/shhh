@@ -1235,3 +1235,100 @@ func TestGolden_ConfigScreen(t *testing.T) {
 		}
 	})
 }
+
+// historyWidths are the three the history browser is drawn at: the stacked
+// layout, and the two-pane split at the working width and at the width the
+// `Tools` artboard draws it at.
+var historyWidths = []int{60, 110, 130}
+
+// goldenHistoryRows is the fixture the browser renders: one command that ran
+// clean, one that was only copied, one that broke, one that was dismissed,
+// and one long enough that the preview has to continue it.
+func goldenHistoryRows() []HistoryRow {
+	return []HistoryRow{
+		{ID: "1", Prompt: "delete every log file older than a week",
+			Command: "find . -name '*.log' -mtime +7 -delete", When: "4m ago",
+			Model: "openai/gpt-5.2", Action: "run", Outcome: OutcomeExit(0),
+			State: ActivityDone, Duration: "1.4s", Counts: "↑ 412 · ↓ 38 tokens"},
+		{ID: "2", Prompt: "show the ten biggest files in this directory",
+			Command: "du -ah . | sort -rh | head -10", When: "yesterday",
+			Model: "openai/gpt-5.2", Action: "copy", Outcome: "copied",
+			State: ActivityDone, Duration: "0.9s", Counts: "↑ 388 · ↓ 24 tokens"},
+		{ID: "3", Prompt: "rebase onto main and force push",
+			Command: "git rebase main && git push --force-with-lease", When: "tue",
+			Model: "anthropic/claude-sonnet-4.6", Action: "run", Outcome: OutcomeExit(128),
+			State: ActivityFailed, Duration: "2.1s", Counts: "↑ 502 · ↓ 41 tokens"},
+		{ID: "4", Prompt: "find every reference to ErrRoundLimit under internal",
+			Command: "rg --hidden --glob '!.git' --line-number 'ErrRoundLimit' internal/agent internal/ui | sort -u",
+			When:    "mon", Model: "openai/gpt-5.2", Action: "save", Outcome: "saved",
+			State: ActivityDone, Duration: "1.1s", Counts: "↑ 470 · ↓ 66 tokens"},
+		{ID: "5", Prompt: "wipe the whole build directory",
+			Command: "rm -rf build/", When: "mon",
+			Model: "openai/gpt-5.2", Action: "cancel", Outcome: "dismissed",
+			State: ActivityDenied, Counts: "↑ 210 · ↓ 12 tokens"},
+		{ID: "6", Prompt: "count the log lines by level",
+			Command: "awk '{print $3}' app.log | sort | uniq -c", When: "Aug 14",
+			Model: "openai/gpt-5.2", Action: "", Outcome: "not run",
+			State: ActivityQueued, Counts: "↑ 195 · ↓ 30 tokens"},
+	}
+}
+
+// TestGolden_HistoryScreen captures `shhh history` on the cockpit's language
+// (S-128, §19b): the search on the left and the entry it selects on the
+// right, the shared filter row with both its counts and what it hid, the
+// command continued rather than clipped, and the confirm in front of the one
+// key that destroys something.
+func TestGolden_HistoryScreen(t *testing.T) {
+	captureGolden(t, "history-screen", "the history browser", historyWidths, func(width int) []golden.Panel {
+		screen := func(mut func(*HistoryScreen)) *HistoryScreen {
+			h := &HistoryScreen{
+				Rows: goldenHistoryRows(), Subject: "6 entries · 2 run", MaxLines: 20,
+			}
+			if mut != nil {
+				mut(h)
+			}
+			return h
+		}
+		typed := func(h *HistoryScreen, text string) {
+			for _, r := range text {
+				h.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+			}
+		}
+		return []golden.Panel{
+			{Label: "the list · every row says what became of the command", View: screen(nil).View(width)},
+			{Label: "the pointer moved · the preview follows, and has no cursor of its own", View: func() string {
+				h := screen(nil)
+				h.Update(key("down"))
+				h.Update(key("down"))
+				return h.View(width)
+			}()},
+			{Label: "a long command · continued under the row, never clipped away", View: screen(func(h *HistoryScreen) { h.Focus = 3 }).View(width)},
+			{Label: "filtered · both counts on the query row, and what it hid under the list", View: func() string {
+				h := screen(nil)
+				h.Update(key("/"))
+				typed(h, "log")
+				return h.View(width)
+			}()},
+			{Label: "a filter that matched nothing · a row, not an empty pane", View: func() string {
+				h := screen(nil)
+				h.Update(key("/"))
+				typed(h, "kubectl")
+				return h.View(width)
+			}()},
+			{Label: "[x] · the §5 confirm, naming what it would take, defaulting to no", View: func() string {
+				h := screen(nil)
+				h.Update(key("x"))
+				return h.View(width)
+			}()},
+			{Label: "a command carried out · the notice the host left behind", View: screen(func(h *HistoryScreen) {
+				h.Focus = 1
+				h.Notice = "copied the command to the clipboard"
+			}).View(width)},
+			{Label: "[?] · every key the screen has, including the ones the row sheds", View: func() string {
+				h := screen(nil)
+				h.Update(key("?"))
+				return h.View(width)
+			}()},
+		}
+	})
+}

@@ -90,6 +90,19 @@ func monoFixtures() []monoSurface {
 		})
 	}
 
+	// The history browser's row states (§19b). Everything but the outcome is
+	// held constant, so a row that said what happened to it in colour alone
+	// would collapse into the row beside it here.
+	historyRow := func(state ActivityState, outcome string) string {
+		h := &HistoryScreen{Subject: "1 entry · 1 run", Rows: []HistoryRow{{
+			ID: "1", Prompt: "delete every log file older than a week",
+			Command: "find . -name '*.log' -delete", When: "4m ago",
+			Model: "openai/gpt-5.2", Action: "run",
+			Outcome: outcome, State: state, Duration: "1.4s",
+		}}}
+		return h.View(w)
+	}
+
 	pressed := func(pct int, tokens int64) string {
 		return PressureCard{
 			Pct: pct, Tokens: tokens, Window: 200_000, Warn: 60, Alert: 80,
@@ -589,6 +602,13 @@ func monoFixtures() []monoSurface {
 			{"the file set it", configSourced("user", ToneNeutral)},
 			{"staged, not written", configSourced("unwritten", ToneOpen)},
 			{"the host cannot honour it", configSourced("unavailable on this host", ToneRisk)},
+		}},
+		{"history outcome", []monoState{
+			{"ran clean", historyRow(ActivityDone, "exit 0")},
+			{"broke", historyRow(ActivityFailed, "exit 128")},
+			{"dismissed", historyRow(ActivityDenied, "dismissed")},
+			{"never run", historyRow(ActivityQueued, "not run")},
+			{"copied instead", historyRow(ActivityDone, "copied")},
 		}},
 	}
 }

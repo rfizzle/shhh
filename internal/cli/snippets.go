@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"text/tabwriter"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -235,4 +236,17 @@ func newSnippetShowCmd() *cobra.Command {
 			return nil
 		},
 	}
+}
+
+// extractField pulls a labelled line back out of a browse detail body. The
+// snippet browser is the last surface that needs it: the history browser
+// stopped round-tripping its fields through rendered text when it moved onto
+// the cockpit's own components (S-128).
+func extractField(detail, prefix string) string {
+	for _, line := range strings.Split(detail, "\n") {
+		if strings.HasPrefix(line, prefix) {
+			return strings.TrimSpace(strings.TrimPrefix(line, prefix))
+		}
+	}
+	return ""
 }

@@ -794,3 +794,68 @@ func TestMostRecentChat_IgnoresASessionThatHadAlreadyEnded(t *testing.T) {
 		t.Fatalf("priced from a session that had already ended (cost %v)", recent.Cost)
 	}
 }
+
+// The columns the history browser reads (S-128): duration, exit code, token
+// counts and success. They were in the table before the browser was, and a
+// column that was never recorded comes back nil rather than as zero — the
+// browser reads the difference as "not known", not as "exit 0".
+func TestListHistory_CarriesTheRecordedColumns(t *testing.T) {
+	db := openTestDB(t)
+
+	dur := 1400 * time.Millisecond
+	in, out := int64(412), int64(38)
+	ran, err := db.RecordRequest(RequestRecord{
+		Provider: "openai", Model: "gpt-5.2", Prompt: "delete old logs",
+		Command: "find . -mtime +7 -delete", Action: "run",
+		Duration: &dur, TokensIn: &in, TokensOut: &out, Success: true,
+	})
+	if err != nil {
+		t.Fatalf("record: %v", err)
+	}
+	if err := db.RecordExitCode(ran, 3); err != nil {
+		t.Fatalf("exit code: %v", err)
+	}
+	if _, err := db.RecordRequest(RequestRecord{
+		Provider: "openai", Model: "gpt-5.2", Prompt: "biggest files",
+		Command: "du -ah .", Action: "copy", Success: false,
+	}); err != nil {
+		t.Fatalf("record: %v", err)
+	}
+
+	entries, err := db.ListHistory(HistoryFilter{Limit: 10})
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if len(entries) != 2 {
+		t.Fatalf("expected 2 entries, got %d", len(entries))
+	}
+
+	var recorded, bare HistoryEntry
+	for _, e := range entries {
+		if e.ID == ran {
+			recorded = e
+		} else {
+			bare = e
+		}
+	}
+	if recorded.Duration == nil || *recorded.Duration != dur {
+		t.Fatalf("duration came back %v", recorded.Duration)
+	}
+	if recorded.ExitCode == nil || *recorded.ExitCode != 3 {
+		t.Fatalf("exit code came back %v", recorded.ExitCode)
+	}
+	if recorded.TokensIn == nil || *recorded.TokensIn != in ||
+		recorded.TokensOut == nil || *recorded.TokensOut != out {
+		t.Fatalf("token counts came back %v / %v", recorded.TokensIn, recorded.TokensOut)
+	}
+	if !recorded.Success {
+		t.Fatal("a request that completed came back as a failure")
+	}
+
+	if bare.Duration != nil || bare.ExitCode != nil || bare.TokensIn != nil || bare.TokensOut != nil {
+		t.Fatalf("an unrecorded column came back as a value, not nil: %+v", bare)
+	}
+	if bare.Success {
+		t.Fatal("a request that did not complete came back as a success")
+	}
+}

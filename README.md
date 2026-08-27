@@ -730,6 +730,30 @@ shhh detects potentially destructive commands (recursive deletes, force pushes, 
 shhh config set behavior.safety_warnings false
 ```
 
+## History
+
+```bash
+shhh history
+```
+
+Two panes: the search on the left and the entry it selects on the right. Every
+row leads with a glyph for what became of the command — `$` generated, `✗` a
+non-zero exit, `⊘` dismissed, `·` never run — and states its outcome and how
+long the model took beside it. The right pane is a preview, not a second list:
+it carries the prompt in full, the command (continued across lines rather than
+clipped, because it is the thing `[enter]` would run), and the token counts.
+
+`[/]` filters by what was asked or by what came back, with the count of what
+the filter hid under the list and `[ctrl+u]` to clear it — clear an already
+empty filter and the query line closes, which is how the row keys come back.
+`[c]` copies the command, `[s]` saves it as a snippet, `[x]` deletes the entry
+after confirming, and `[?]` lists every key. **Nothing is re-run until
+`[enter]`**; `[esc]` leaves and runs nothing.
+
+`--search` seeds the filter row rather than the query, so its counts still
+state how much of the store was hidden. `--table` (or a non-terminal stdout)
+prints the plain table instead.
+
 ## Data Storage
 
 History, snippets, metrics, and chat logs are stored in a local SQLite database:

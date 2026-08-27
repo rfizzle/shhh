@@ -2985,6 +2985,92 @@ shhh history · 41 sessions · $18.42 all time                     [?] keys · [
 - History is the longest list in the product, which is why the window and the
   filter row are load-bearing here rather than a nicety.
 
+**What shipped (S-128).** `internal/cli/history.go` ran on
+`internal/ui/browse`, which invented a list, a query line, a detail page and
+an action bar of its own; it now hosts `components.HistoryScreen` and owns
+nothing but history semantics — what an entry means, how long ago it was, and
+what its action and its exit code add up to. The screen is a passive renderer
+like every other component: `[c]`, `[s]` and `[x]` resolve to a
+`HistoryCommand` the host carries out against its own store, and the host
+hands back fresh rows, which is why the screen can draw `exit 128` in del
+without knowing what an exit code is.
+
+- **The list is `Select`.** The window, the markers, the filter row with both
+  its counts and the bolded matched run all arrive from §4a rather than being
+  written a second time. The screen adds the match rule — an entry is found by
+  what was asked *or* by what came back — because the card never filters, and
+  because a reader hunting a command they half remember has both to work with.
+- **A history row is the §6a grid.** Glyph, target, outcome, right-aligned
+  duration: `$ delete every log file older than a week   exit 0   1.4s`. The
+  glyph is `$` for a command that was generated, `✗` for one that exited
+  non-zero, `⊘` for one that was dismissed and `·` for one never run — and
+  each of the four states its outcome in words beside it, so invariant 1 holds
+  with the colour covered.
+- **The exit code outranks the action.** A command that was run and failed
+  says so however it was reached. A command that was never run says what was
+  done with it instead — `copied`, `saved`, `dismissed`, `not run` — and one
+  recorded before the exit-code column existed says `run · exit not recorded`
+  rather than claiming a clean exit, because inventing the one fact the reader
+  came for is the worst thing this screen could do.
+- **The preview is a preview.** It has no cursor, no keys and no second
+  pointer: the title (when, which model, what was done), the prompt in full,
+  the command on the §6a grid with its outcome and duration, and the token
+  line. A command too long for the pane continues on the lines under it rather
+  than clipping — it is the thing `[enter]` would run (invariant 4).
+- **Nothing is re-run until `[enter]`**, and the field beside the key row says
+  it. That sentence is what the key row gives ground for: the movement
+  reminder goes first, then `[s]`, and `[/]` last, because `[/]` is what this
+  screen is for. Where no rung leaves room, the field goes (§16) and the row
+  keeps every offer and wraps.
+
+**The departures.**
+
+- **The artboard previews agent sessions; `shhh history` browses one-shot
+  generations.** Its right pane shows `loop-refactor · gpt-5.2 · 7 rounds`, a
+  changeset with its mutation rail, a failing check and a per-round sparkline
+  — a coding-agent session. What `shhh history` is over is the `requests`
+  table: one prompt, one command, and what was done with it. So the preview is
+  built from the rows a request actually has, `[enter]` re-runs the command
+  rather than resuming a session, `[v] review its 3 files` has no files to
+  review, and there is no sparkline because a one-shot has no rounds. Agent
+  sessions are recorded separately (S-065, `agent_sessions`) and have no
+  browser at all; if one is ever built, §19b's artboard is its specification
+  and this screen is not it. **This is the second place the design system
+  describes a surface the product does not have** — S-130's own note found the
+  first, `shhh doctor` — and it is recorded rather than resolved here for the
+  same reason: which of the two moves is a product decision, not a rendering
+  one.
+- **The row keys leave the key row while the query line is open.** The
+  artboard offers `[enter] resume it · [v] review · [x] delete` under an open
+  filter row. Invariant 5 says a key is inert until the surface offering it
+  holds the keyboard, and while the query line is open `x` is a letter. The
+  row's own letters are therefore not offered there; `[enter]`, which no query
+  line can consume, still is.
+- **`[ctrl+u]` on an already-empty filter closes the query line.** §4a's
+  reading is that `esc` leaves the picker rather than closing the filter — "a
+  filter you have to escape twice is a mode" — and on a picker that is right,
+  because leaving is cheap. On a takeover screen leaving means going back to
+  the shell, and a reader who has finished searching still wants `[c]` and
+  `[x]`. Clearing a filter that is already clear is the one keystroke with
+  nothing else it could mean, so it is what closes the row.
+- **A long prompt gives way to its outcome.** §4a's grid gives a label wider
+  than half the card the whole row and drops the fields behind it. History is
+  the one list where the field behind the label is the reason to read the row,
+  and the prompt is the one field on it that runs to any length — so the
+  prompt folds with `…` and the outcome stays. The preview beside it carries
+  the prompt in full, which is what makes that a fold rather than a loss.
+- **The list's rules are drawn only around a filter that is open.** The
+  artboard rules the left pane above and below. With no query row above and no
+  hidden count below, two rules would be framing nothing.
+- **The header counts entries, not spend.** `41 sessions · $18.42 all time` is
+  a session browser's accounting. A one-shot's cost is not recorded per
+  request in a form a header could total honestly, so the header states what
+  it can — `6 entries · 2 run` — and spend stays where §19c puts it.
+- **`internal/ui/browse` survives.** S-128's own note offered to delete the
+  package if the audit found nothing worth keeping, and nothing here was worth
+  keeping. But `shhh snippets` and `shhh chat --resume` are still on it, so it
+  stays until they move; `shhh history` no longer reaches it.
+
 ### 19c. `shhh metrics` (S-129)
 
 ```
