@@ -1,11 +1,8 @@
 package cli
 
 import (
-	"fmt"
-
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/resolve"
-	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/spf13/cobra"
@@ -69,27 +66,18 @@ func newCodeCmd() *cobra.Command {
 	return cmd
 }
 
-// newCodeDoctorCmd reports the process-containment mechanism and resolved
-// policy (S-062) plus container-sandbox status (S-063): which wrapper and
-// engine are available (and why not, when none is), the isolation-level
-// ladder, the image policy, and owned sandbox containers.
+// newCodeDoctorCmd is `shhh code doctor`: the containment slice of `shhh
+// doctor` (S-130). The command was scoped to process containment (S-062) and
+// container sandboxes (S-063) before the design system named a `shhh doctor`
+// covering the whole setup; S-130 promoted and widened that one and left this
+// as the way into the same two checks from the coding agent. `/sandbox
+// doctor` still prints the long text report in a session, where the question
+// really is only about containment.
 func newCodeDoctorCmd() *cobra.Command {
-	return &cobra.Command{
-		Use:   "doctor",
-		Short: "Report command-containment and container-sandbox status",
-		Long:  "Show which OS-level containment mechanism wraps agent-executed commands and which container engine can run sandboxes, or why not, plus the resolved policy and owned sandbox containers.",
-		Args:  cobra.NoArgs,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg := ConfigFrom(cmd.Context())
-			policy, err := sandboxPolicy(cfg)
-			if err != nil {
-				return err
-			}
-			reconcileOwnedSandboxes()
-			fmt.Fprintln(cmd.OutOrStdout(), sandbox.Report(sandbox.Detect(), policy))
-			fmt.Fprintln(cmd.OutOrStdout())
-			fmt.Fprintln(cmd.OutOrStdout(), containerReport(cfg))
-			return nil
-		},
-	}
+	return doctorCommand("doctor",
+		"Report command-containment and container-sandbox status",
+		"Show which OS-level containment mechanism wraps agent-executed commands and which container engine "+
+			"can run sandboxes, or why not, and what to do about either. These are two of the checks "+
+			"`shhh doctor` runs over the whole setup.",
+		containmentProbes())
 }

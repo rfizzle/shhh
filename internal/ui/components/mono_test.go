@@ -103,6 +103,18 @@ func monoFixtures() []monoSurface {
 		return h.View(w)
 	}
 
+	// The doctor surface's check states (§19d). Everything but the state is
+	// held constant — one name, one subject, one outcome word — so the only
+	// thing left to tell a failure from a warning is its glyph, which is
+	// exactly what invariant 1 asks of them.
+	doctorState := func(state DoctorState) string {
+		d := &DoctorScreen{Checks: []DoctorCheck{{
+			Name: "sandbox", Subject: "bwrap", Detail: "workspace profile",
+			Outcome: "an outcome", State: state,
+		}}}
+		return d.View(w)
+	}
+
 	// The metrics surface's category meters (§19c). The share and the number
 	// beside it are held constant, so the only thing left to tell an ordinary
 	// share from a cost nobody asked for is the label and its glyph — which
@@ -621,6 +633,14 @@ func monoFixtures() []monoSurface {
 			{"an ordinary share", metricsBar("$ run", MeterCategory)},
 			{"a sub-agent's share", metricsBar("◇ agents", MeterAgent)},
 			{"a cost nobody asked for", metricsBar("✗ no answer", MeterUnasked)},
+		}},
+		{"doctor state", []monoState{
+			{"passed", doctorState(DoctorPassed)},
+			{"warned", doctorState(DoctorWarned)},
+			{"failed", doctorState(DoctorFailed)},
+			{"nothing to check", doctorState(DoctorSkipped)},
+			{"running", doctorState(DoctorRunning)},
+			{"queued", doctorState(DoctorQueued)},
 		}},
 		{"history outcome", []monoState{
 			{"ran clean", historyRow(ActivityDone, "exit 0")},

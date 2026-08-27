@@ -515,7 +515,7 @@ Inspection commands never prompt either, in any mode. A built-in allowlist of co
 
 In auto mode the classifier (the session model by default, `behavior.classifier_model` to override) judges each remaining tool call against your recent conversation and either runs it, refuses it with a reason the model sees, or falls back to asking you. Every classifier failure — timeout, invalid response, request error — fails closed to a prompt, never to an allow, and safety-flagged commands prompt you even when the classifier approves. The status bar shows `✦ checking` while a decision is in flight, classifier tokens count toward the session totals, and `/mode why` shows the latest denial's reason.
 
-Assistant commands additionally run inside OS-level process containment when a mechanism is available — bubblewrap on Linux (unprivileged user namespaces are probed first), Seatbelt on macOS (deprecated by Apple but functional). Contained commands can write only to the workspace, scratch space, and toolchain caches, and a deny mask that cannot be disabled hides `~/.ssh`, `~/.aws`, `~/.config/gh`, and shhh's own config and state directories (masked paths read as empty and outrank any write grant). The exec confirm prompt carries the containment state as a chip on its title bar (and promotes `⚠ UNCONTAINED` there when there is no mechanism), `shhh code doctor` (or `/sandbox` in a session) reports the mechanism and resolved policy, and a policy that can't be enforced faithfully fails the command rather than running it bare. `/run` — your own command — is never contained.
+Assistant commands additionally run inside OS-level process containment when a mechanism is available — bubblewrap on Linux (unprivileged user namespaces are probed first), Seatbelt on macOS (deprecated by Apple but functional). Contained commands can write only to the workspace, scratch space, and toolchain caches, and a deny mask that cannot be disabled hides `~/.ssh`, `~/.aws`, `~/.config/gh`, and shhh's own config and state directories (masked paths read as empty and outrank any write grant). The exec confirm prompt carries the containment state as a chip on its title bar (and promotes `⚠ UNCONTAINED` there when there is no mechanism), `shhh doctor` reports the mechanism and resolved policy alongside every other setup check (`shhh code doctor` is the same two containment rows on their own, and `/sandbox` is the in-session equivalent), and a policy that can't be enforced faithfully fails the command rather than running it bare. `/run` — your own command — is never contained.
 
 For long or unsupervised runs, `shhh code -p --sandbox` goes a step further and execs approved commands inside a disposable container: Podman or Docker is auto-detected (rootless preferred and reported), the image must be digest-pinned and pass the configured allowlist, and the container gets exactly one writable mount (the workspace), no host environment or credentials, all capabilities dropped, and memory/CPU/pid ceilings. Isolation reporting is honest — `process < container < vm`, each level verified or explained — and a required level that can't be verified (`sandbox.require_isolation`) fails creation rather than silently downgrading. Every container shhh creates is recorded durably; records are reconciled at session start, containers past their TTL are reaped, and `/sandbox list|status|destroy <id>|prune|doctor` manages them in-session.
 
@@ -694,6 +694,7 @@ The contents of `.shhh` are appended to the system prompt when running shhh from
 | `shhh chat --resume` | Pick a saved chat to resume |
 | `shhh config` | Interactive configuration editor |
 | `shhh config set <key> <value>` | Set a config value |
+| `shhh doctor` | Check this machine's shhh setup |
 | `shhh init <shell>` | Output shell integration snippet |
 | `shhh init --project` | Create a `.shhh` project context file |
 | `shhh history` | Browse past prompts and commands |
@@ -781,6 +782,35 @@ the split is over tokens and says so.
 `[q]` (or `[esc]`) leaves; that is the whole keyboard. `--window` takes `all`
 (the default) or a number of days. `--table`, and any non-terminal stdout,
 prints the full plain table instead — every column the store has, for piping.
+
+## Doctor
+
+```bash
+shhh doctor
+```
+
+One row per check, in the same grammar as a tool call in a session: glyph,
+name, what was found, the outcome, and how long it took. Ten checks — the
+binary, the config file, the provider and where its key came from, the local
+store, command containment, container sandboxes, the workspace, the tools on
+PATH, durable memory, and whether a newer shhh exists. They run one at a time
+and the screen fills in as they answer, so a run in progress shows what is
+done, what is going and what is still queued.
+
+A check that did not pass says what it will cost you, in the words of the
+surface you will meet it on — `every approval will show ⚠ UNCONTAINED, and an
+approved command runs as you` — and offers `[f]` on that row to show the fix.
+`[↑↓]` moves between the checks that need something, `[r]` runs them all again
+once you have fixed one, `[c]` copies the whole report as text, and `[?]`
+lists every key. `[q]` (or `[esc]`) leaves.
+
+Nothing here writes to your config: a fix is named, never applied, because the
+screen that changes settings is `shhh config` and it asks before it writes.
+
+`shhh code doctor` runs the two containment checks on their own — the same
+rows, scoped the way that command has always been. `--table`, and any
+non-terminal stdout, prints the report as text (the same text `[c]` copies),
+so a doctor run can be piped or pasted into an issue.
 
 ## Data Storage
 

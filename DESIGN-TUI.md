@@ -2827,7 +2827,8 @@ Departures from `ui_kits/cockpit/OneShot.html`:
 
 `shhh config`, `shhh history`, `shhh metrics` and `shhh doctor` predate the
 cockpit, and each invented its own list, its own table and its own idea of a
-value. They are the four things this system already has: a row with fixed
+value. (`shhh doctor` predates it as `shhh code doctor`, which is the finding
+S-130 opens with — see §19d.) They are the four things this system already has: a row with fixed
 fields (§6a), a window with markers and a filter row (§4a), a block meter
 (§10c), and a card for anything that changes your machine (§2). Nothing new is
 introduced — the four screens are re-cut from parts that exist, and
@@ -3038,9 +3039,10 @@ without knowing what an exit code is.
   browser at all; if one is ever built, §19b's artboard is its specification
   and this screen is not it. **This is the second place the design system
   describes a surface the product does not have** — S-130's own note found the
-  first, `shhh doctor` — and it is recorded rather than resolved here for the
-  same reason: which of the two moves is a product decision, not a rendering
-  one.
+  first, `shhh doctor` — and it is recorded rather than resolved here because
+  which of the two moves to make is a product decision, not a rendering one.
+  (S-130 has since made its own: the command was promoted and widened, §19d.
+  Nobody has yet asked for the agent-session browser this pane draws.)
 - **The row keys leave the key row while the query line is open.** The
   artboard offers `[enter] resume it · [v] review · [x] delete` under an open
   filter row. Invariant 5 says a key is inert until the surface offering it
@@ -3148,8 +3150,10 @@ what a price table or an exit code is.
   done with it. So the grammar is the artboard's and the content is the
   store's, exactly the move S-128 made. This is the third place the design
   system describes a surface the product does not have, and like §19b's
-  session preview and §19d's `shhh doctor` it is recorded rather than
-  resolved.
+  session preview it is recorded rather than resolved. (§19d's was the one of
+  the three that got resolved: S-130 promoted and widened the command instead,
+  because unlike a session browser and an agent-event store, the checks the
+  doctor artboard asks for were over subsystems the product already had.)
 - **The split is by what became of the command.** `requests` records an action
   per row, so the categories are `$ run`, `copied`, `saved`, `edited`,
   `⊘ dismissed` and `· never used`, with `✗ no answer` keeping the del fill
@@ -3220,15 +3224,87 @@ shhh doctor · 9 checks · ⠹ running                      2.1s · [q] quit
   `[c]` copies the report as text, because the next thing that happens to a
   doctor run is that it gets pasted into an issue.
 
-**A name the product does not have.** The design system calls this surface
-`shhh doctor`. What is built is `shhh code doctor`, scoped to the sandbox
-ladder, the image policy and owned containers, with `/sandbox doctor` as the
-in-session equivalent — so the artboard shows a screen for a command that does
-not exist under that name. Whether the command is promoted and widened to
-cover provider, config and workspace health, or the design system's name is
-corrected to the one that ships, is S-130's first task and a product decision
-rather than a rendering one. This section describes the artboard; it does not
-settle that.
+**The name was settled by promoting the command (S-130).** The design system
+called this surface `shhh doctor` and what was built was `shhh code doctor`,
+scoped to the sandbox ladder — so the artboard showed a screen for a command
+that did not exist under that name. Of the two ways out, S-130 took the one
+that makes the design system's name true: `shhh doctor` is now a top-level
+command over ten checks — the binary, the config file, the provider and where
+its key came from, the local store, command containment, container sandboxes,
+the workspace, the tools on PATH, durable memory, and whether a newer shhh
+exists. `shhh code doctor` runs the containment pair of the same ten, so the
+two commands can no longer report differently on one machine, and `/sandbox
+doctor` is unchanged because in a session the question really is only about
+containment.
+
+**What shipped (S-130).** `internal/cli/doctor.go` hosts
+`components.DoctorScreen` and owns everything the screen deliberately does
+not: what a check looks at, what its answer means, what it will cost the
+reader, and what the fix is. Every judgement is a pure reading of what was
+probed — `doctorSandbox` is a function of a `sandbox.Availability`, not of
+this machine — which is what lets the whole report be checked on a machine
+with no containment mechanism, no provider key and no repository.
+
+- **A check is the §6a row and nothing else.** Pointer, blank rail, glyph,
+  eight-column name, target, right-aligned outcome, six-column duration. The
+  state vocabulary is §6d's: `✓` passed, `⚠` warned, `✗` failed, `⊘` nothing
+  to check, `▸` running, `·` queued with an em-dash duration. Nothing was
+  added to the grid.
+- **The consequence is quoted from where the reader will meet it.** `every
+  approval will show ⚠ UNCONTAINED, and an approved command runs as you` is
+  the approval card's own words (§2b); `no session will start until a key is
+  found` is what the no-provider card says (§17b). A failure that stated only
+  itself would leave the reader to work out whether it mattered.
+- **The fix is on the row, and only the row under the pointer offers it.**
+  `[f]` opens the fix at §6a's nested indent, under the consequence; the rows
+  that also have one carry the same key grey (§7c), because on this screen the
+  surface holding the keyboard is one row. A run with nothing to fix draws no
+  pointer and offers no `[↑↓]` (invariant 5).
+- **What gives ground first is what has nothing to say.** A short terminal
+  drops in order of how little a check is asking of the reader — the passes
+  and the skips, then the rows still to answer, and the failure last — and the
+  marker names what went. The summary row is still counting every check either
+  way (invariant 4).
+- **Checks run one at a time and the screen redraws between them,** which is
+  what makes the artboard's `▸ running` / `· queued` picture the honest one:
+  the update check talks to the network and the provider check probes a local
+  port. The header's spinner and the running row's are the same frame from one
+  tick source (§10c).
+
+**The departures.**
+
+- **`provider` became `model`.** §6c's verb field is eight columns and
+  `provider` fills all eight, leaving the target beside it with no gap — the
+  artboard's own `provider` row has the same overrun. `model` is the verb §17a
+  already gives a provider failure, so the two rows line up. Every check name
+  is held to seven columns by a test rather than by convention.
+- **A key that was found is reported as found, never as accepted.** The
+  artboard says `key ···4f9c accepted`, and accepting one means spending a
+  request on it. A diagnostic that billed you for running it is a diagnostic
+  nobody runs, so the row says which of the four places answered and stops
+  there.
+- **`[k] add one` and `[m] switch to ⏸ gated for this host` are not offered.**
+  Both write to the config file, and §19a's rule is that nothing is written
+  until `[w]` on the screen that owns config. What is offered instead is `[f]`
+  — the fix named, in the words that would fix it — and `[r]`, which re-runs
+  every check so the loop closes without leaving the screen. `[c]` is the
+  third, and copies the report.
+- **The foot's two halves are swapped.** §19's other three screens put the
+  keys on the line and a field beside them; here the summary is the line and
+  the keys annotate it, which is what the artboard draws. On a diagnostic the
+  thing to read is what the run found.
+- **The header carries `[?]`** where the artboard shows only `[q] quit`. §19's
+  common rule gives every one of these screens `[?] keys · [q] quit`, and
+  unlike `shhh metrics` this screen has five keys, so the list earns its
+  place. As on that screen it is the left that clips: a takeover surface that
+  dropped `[q]` would have no stated way out (invariant 5).
+- **Three of the artboard's ten rows are checks this product cannot make.**
+  `toolchain go 1.24.1 · gopls 0.16.2 · 41 packages indexed` is an indexed
+  workspace shhh does not keep, and `▸ tests go test ./internal/agent/...` is
+  a test run a diagnostic has no business starting on your machine. What
+  shipped in their place are readings the product does have: `tools` for what
+  is on PATH, `store` for the local database, and `memory` for what the
+  project remembers.
 
 ---
 

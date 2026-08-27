@@ -83,6 +83,18 @@ var binaryNames = map[string]string{
 // toolOrder fixes the registration order of the wrapped tools.
 var toolOrder = []string{FdToolName, AstGrepToolName, SdToolName, TokeiToolName, JaqToolName}
 
+// ToolBinaries are the binaries the wrapped tools need, in registration
+// order. `shhh doctor` reads them to say which of the five this machine has
+// (S-130); nothing else needs the list, because every other caller asks a
+// built toolset what it found rather than what it looked for.
+func ToolBinaries() []string {
+	out := make([]string, 0, len(toolOrder))
+	for _, name := range toolOrder {
+		out = append(out, binaryNames[name])
+	}
+	return out
+}
+
 // Toolset is the per-session set of wrapped external tools: the workspace
 // root every path argument is contained to, and the binaries that were
 // actually found on PATH.

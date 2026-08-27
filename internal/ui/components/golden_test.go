@@ -1424,3 +1424,110 @@ func TestGolden_MetricsScreen(t *testing.T) {
 		}
 	})
 }
+
+// doctorWidths are the three the doctor surface is drawn at: the narrowest
+// terminal a check row still reads in, the width the `Tools` artboard draws
+// it at, and the two-pane split — where this screen, being a takeover
+// surface, simply gets wider (§19).
+var doctorWidths = []int{60, 110, 130}
+
+// goldenDoctorChecks is the fixture run: a pass, a warning with a fix, the
+// failure §19d leads with, a check with nothing to look at, and a pass that
+// carries a duration — so a row of each shape is captured beside the others.
+func goldenDoctorChecks() []DoctorCheck {
+	return []DoctorCheck{
+		{Name: "binary", Subject: "shhh 0.9.4", Detail: "darwin/arm64 · ~/.local/bin/shhh", Outcome: "ok"},
+		{Name: "config", Subject: "~/.config/shhh/config.toml", Detail: "6 settings set", Outcome: "ok"},
+		{Name: "model", Subject: "anthropic", Detail: "claude-opus-5 · no key in any of the four places",
+			Outcome: "no key", State: DoctorFailed,
+			Consequence: "no session will start until a key is found — every one exits on \"no provider\"",
+			FixLabel:    "show the four places shhh looks",
+			Fix: []string{
+				"env       SHHH_API_KEY, ANTHROPIC_API_KEY — unset",
+				"config    ~/.config/shhh/config.toml — no provider api_key",
+				"profiles  no .toml in ~/.config/shhh/providers",
+				"local     localhost:11434 — nothing listening",
+			}},
+		{Name: "store", Subject: "~/.local/share/shhh/shhh.db",
+			Detail: "opened · migrations current · 56 kB", Outcome: "ok"},
+		{Name: "sandbox", Subject: "no containment mechanism", Detail: "sandbox-exec not found",
+			Outcome: "uncontained", Duration: "0.1s", State: DoctorFailed,
+			Consequence: "every approval will show ⚠ UNCONTAINED, and an approved command runs as you",
+			FixLabel:    "show the fix for this host",
+			Fix: []string{
+				"sandbox-exec ships with macOS; a PATH that hides /usr/bin is the usual cause",
+				"shhh doctor                        to check it took",
+			}},
+		{Name: "engine", Subject: "podman", Detail: "no sandbox image configured",
+			Outcome: "no image", State: DoctorWarned,
+			Consequence: "the engine is there, so only the image stands between this host and a sandbox",
+			Fix:         []string{"shhh config set sandbox.container_image <name>@sha256:<digest>"}},
+		{Name: "git", Subject: "~/src/shhh", Detail: "3 files changed, all tracked",
+			Outcome: "ok", Duration: "0.2s"},
+		{Name: "tools", Subject: "fd, ast-grep", Detail: "no sd/tokei/jaq · gopls", Outcome: "ok"},
+		{Name: "memory", Subject: "nothing remembered yet", Detail: "~/src/shhh",
+			Outcome: "empty", State: DoctorSkipped},
+		{Name: "update", Subject: "shhh 0.9.5 is out", Detail: "this machine is on 0.9.4",
+			Outcome: "out of date", State: DoctorWarned, FixLabel: "show how to upgrade",
+			Fix: []string{"brew upgrade shhh", "go install github.com/rfizzle/shhh/cmd/shhh@latest"}},
+	}
+}
+
+// TestGolden_DoctorScreen captures `shhh doctor` on the cockpit's language
+// (S-130, §19d): the §6a row per check, the consequence stated in the words
+// of the surface the reader will meet it on, and the fix offered on the row
+// that failed rather than in a footer.
+func TestGolden_DoctorScreen(t *testing.T) {
+	captureGolden(t, "doctor-screen", "the doctor surface", doctorWidths, func(width int) []golden.Panel {
+		screen := func(mut func(*DoctorScreen)) *DoctorScreen {
+			d := &DoctorScreen{Checks: goldenDoctorChecks(), Elapsed: "1.4s"}
+			if mut != nil {
+				mut(d)
+			}
+			return d
+		}
+		return []golden.Panel{
+			{Label: "the run · a row per check, the fix offered on the ones that need it",
+				View: screen(nil).View(width)},
+			{Label: "the fix open · under the row it belongs to, one indent past the consequence",
+				View: func() string {
+					d := screen(nil)
+					d.Update(key("f"))
+					return d.View(width)
+				}()},
+			{Label: "the pointer moved · the next check that needs something takes the live key",
+				View: func() string {
+					d := screen(nil)
+					d.Update(key("down"))
+					return d.View(width)
+				}()},
+			{Label: "still going · what has answered, one running, the rest queued",
+				View: screen(func(d *DoctorScreen) {
+					d.Running = true
+					d.Elapsed = "0.3s"
+					d.Checks[3] = DoctorCheck{Name: "store", Subject: "the local store",
+						Outcome: OutcomeRunning, State: DoctorRunning}
+					for i := 4; i < len(d.Checks); i++ {
+						d.Checks[i] = DoctorCheck{Name: d.Checks[i].Name,
+							Subject: "not started", Outcome: OutcomeQueued,
+							Duration: NoDuration, State: DoctorQueued}
+					}
+				}).View(width)},
+			{Label: "a short terminal · the passes go first, and the marker names them",
+				View: screen(func(d *DoctorScreen) { d.MaxLines = 18 }).View(width)},
+			{Label: "the keys · [?] over a screen that has five of them",
+				View: func() string {
+					d := screen(nil)
+					d.Update(key("?"))
+					return d.View(width)
+				}()},
+			{Label: "a clean run · no pointer, no fix key, and nothing to act on",
+				View: (&DoctorScreen{Elapsed: "0.9s", Checks: []DoctorCheck{
+					{Name: "binary", Subject: "shhh 0.9.4", Detail: "darwin/arm64", Outcome: "ok"},
+					{Name: "sandbox", Subject: "sandbox-exec",
+						Detail: "Seatbelt · workspace profile", Outcome: "contained"},
+					{Name: "git", Subject: "~/src/shhh", Detail: "clean", Outcome: "ok", Duration: "0.2s"},
+				}}).View(width)},
+		}
+	})
+}
