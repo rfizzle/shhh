@@ -105,8 +105,10 @@ func TestFrame_GutterAndHintsSwapWhileWorking(t *testing.T) {
 
 	m.state = stateStreaming
 	view = stripANSI(m.View())
-	if !strings.Contains(view, "│ ▸ ") || !strings.Contains(view, "WORKING") {
-		t.Fatalf("working frame missing the steering gutter and WORKING state:\n%s", view)
+	// The activity slot is the running turn's status line now (S-118, §8d):
+	// `WORKING` was true of every moment of every turn and said nothing.
+	if !strings.Contains(view, "│ ▸ ") || !strings.Contains(view, "thinking…") {
+		t.Fatalf("working frame missing the steering gutter and the turn status:\n%s", view)
 	}
 	if !strings.Contains(view, "enter queues steering · / commands · ctrl+c cancel") {
 		t.Fatalf("working frame missing the steering hints:\n%s", view)

@@ -180,18 +180,37 @@ func (m Model) frameIdentity() string {
 	return title
 }
 
-// frameActivity is the top rail's right side: spinner + WORKING while the
-// focused agent works, dim idle otherwise.
-func (m Model) frameActivity() string {
+// frameActivity is the top rail's right side (§12a): the running turn's
+// status line while the turn works, the summary it resolved into once it is
+// done, `⏸ N waiting` while decisions are queued and ungated, and dim `idle`
+// when there is nothing to report. width is the room the slot has; a slot too
+// small for even the phase says nothing rather than clipping the identity
+// beside it.
+func (m Model) frameActivity(width int) string {
+	if width <= 0 {
+		return ""
+	}
 	// A turn paused on a decision is not working, and what the rail should
 	// say is how many answers it is waiting for (S-117, §7b).
 	if n := m.waitingCount(); n > 0 {
-		return waitingChipStyle.Render(fmt.Sprintf("⏸ %d waiting", n))
+		return waitingChipStyle.Render(clipRow(fmt.Sprintf("⏸ %d waiting", n), width))
 	}
-	if m.frameWorking() {
-		return m.spinner.View() + frameWorkingStyle.Render("WORKING")
+	// Attached, the frame is scoped to the child (§12d) and the child's phase
+	// is not something the supervisor reports — a subagent is running,
+	// blocked or done. Naming one of §8d's four for it would be inventing the
+	// fact, so the attached rail keeps the working indicator it had.
+	if m.attachedTo != "" {
+		if m.frameWorking() {
+			return clipRow(m.spinner.View()+frameWorkingStyle.Render("WORKING"), width)
+		}
+		return frameIdleStyle.Render(clipRow("idle", width))
 	}
-	return frameIdleStyle.Render("idle")
+	if s, ok := m.turnStatus(); ok {
+		if line := s.View(width); line != "" {
+			return line
+		}
+	}
+	return frameIdleStyle.Render(clipRow("idle", width))
 }
 
 // frameHints is the contextual bottom-rail hint set, swapped by state; it
@@ -384,15 +403,20 @@ func (m Model) renderPromptFrame() string {
 		b.WriteString(notice + "\n")
 	}
 
-	topRight := " " + m.frameActivity() + " "
+	identity := " " + m.frameIdentity() + " "
+	if layout == frameNarrow {
+		identity = ""
+	}
+	// The identity is the rail's left label and keeps its room; the status
+	// line takes what is left and sheds fields in the §8d order to fit it.
+	var topRight string
+	if activity := m.frameActivity(width - 4 - lipgloss.Width(identity) - 2); activity != "" {
+		topRight = " " + activity + " "
+	}
 	if m.attachedTo != "" && layout != frameWide {
 		// Compact/narrow drop the hints rail; the detach affordance moves to
 		// the top rail (§12b).
 		topRight = " " + m.frameHints() + " "
-	}
-	identity := " " + m.frameIdentity() + " "
-	if layout == frameNarrow {
-		identity = ""
 	}
 	b.WriteString(frameRail(accent, "╭", "╮", identity, topRight, width))
 

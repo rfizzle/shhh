@@ -189,6 +189,42 @@ func TestGolden_PromptFrame(t *testing.T) {
 	})
 }
 
+// TestGolden_TurnStatus captures the frame's activity slot while a turn runs
+// (§8d, §12a, S-118): the phases in place on the top rail, and the summary
+// the line resolves into when the turn ends. The slot is whatever the
+// identity leaves of the rail, so the narrow captures are where the §8d drop
+// order shows.
+func TestGolden_TurnStatus(t *testing.T) {
+	captureGolden(t, "turn-status", "running turn status", goldenWidths, func(width int) []golden.Panel {
+		frame := func(mut func(*Model)) string {
+			m := goldenModel(t, width)
+			m.turnCount = 1
+			// A start stamp far from any rounding boundary, so the ticking
+			// field is captured without the capture depending on the clock.
+			m.turnStarted = time.Now().Add(-64500 * time.Millisecond)
+			m.state = stateStreaming
+			mut(&m)
+			return promptSurface(m)
+		}
+		return []golden.Panel{
+			{Label: "phase · thinking", View: frame(func(m *Model) {})},
+			{Label: "phase · running, named", View: frame(func(m *Model) {
+				m.state = stateRunningCmd
+				m.runningCommand = "go test ./internal/agent/..."
+			})},
+			{Label: "phase · streaming", View: frame(func(m *Model) {
+				m.streaming = "The round limit is enforced in the loop, not in the tool."
+			})},
+			{Label: "resolved · the summary it becomes", View: frame(func(m *Model) {
+				m.state = stateInput
+				m.transcript = append(m.transcript, entry{kind: entryTurnClose, turn: 1,
+					close: &components.TurnClose{State: components.TurnDone,
+						Tools: 18, Elapsed: "1m 04s", Spend: "$0.14"}})
+			})},
+		}
+	})
+}
+
 // Every surface S-096 asked for now has a capture. Review mode landed with
 // S-099 and the fan-out block with S-110; both are captured beside the
 // component catalog (review-mode.*, fanout-block.*), which is why the

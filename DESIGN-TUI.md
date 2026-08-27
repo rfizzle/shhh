@@ -1040,9 +1040,9 @@ whole surface; §12b and §15 are the two ends of it.
 ### 8d. The running turn's status (S-118)
 
 While a turn runs, one line changes and the rest of the screen holds still. It
-lives in the frame's activity slot (§12a) — the same place `WORKING` and dim
-`idle` sit — and it *resolves into* the turn summary rather than being
-replaced by one.
+lives in the frame's activity slot (§12a) — where dim `idle` sits, and where
+`WORKING` used to, a word that was true of every moment of every turn — and it
+*resolves into* the turn summary rather than being replaced by one.
 
 ```
 ⠋ thinking… 4.2s · ↑41.2k ↓2.1k · $0.06
@@ -1072,9 +1072,9 @@ is never the one carrying the magnitude.
 fields, not a second rule:
 
 ```
-⠋ running go test · 12.4s · ↑41.2k ↓2.1k · $0.06     drop 0
-⠋ running · 12.4s · ↑41.2k ↓2.1k · $0.06             drop 1 — the tool argument
-⠋ running · 12.4s · $0.06                            drop 2 — token counts
+⠋ running go test 12.4s · ↑41.2k ↓2.1k · $0.06       drop 0
+⠋ running 12.4s · ↑41.2k ↓2.1k · $0.06               drop 1 — the tool argument
+⠋ running 12.4s · $0.06                              drop 2 — token counts
 ⠋ running · $0.06                                    drop 3 — elapsed
 ```
 
@@ -1088,9 +1088,15 @@ which lead with the step count (`✓ Done · 4 steps · 18 tools · 1m 04s ·
 $0.14`) because a row in history is read after the fact and a status line is
 read during. Same four facts, two orders, two homes — and the numbers agree.
 
-**It is a component, not free text** (§10c): today the frame's status slot is
-a string and `components.Spinner` takes a static elapsed, so this extends
-`components/meters` rather than widening `cockpit.go`.
+Elapsed follows its phase with a space rather than a separator, which is what
+`components/meters/TurnStatus` renders and what the example above states; the
+`·` that the delivered collapse ladder drew there was the one place the two
+disagreed, and the example is the form that shipped (S-118).
+
+**It is a component, not free text** (§10c): the frame's status slot was a
+string and `components.Spinner` took a static elapsed, so this landed as
+`components.TurnStatus` beside `Meter`, `Sparkline` and `Spinner` rather than
+as a widening of `cockpit.go` (S-118).
 
 ---
 
@@ -1394,8 +1400,10 @@ measurement; the numbers beside it are the measurement.
 animation in the product. Anything else that wants to move gets a meter.
 
 **One tick source (normative).** A running turn drives up to three spinners at
-once — the frame header's `WORKING` (§12a), the turn status line (§8d), and
-the running activity row's `▸` (§6d) — and all three show the same frame from
+once — the frame's activity slot (§12a, where the turn status line of §8d
+sits, and where an attached child still reads `WORKING`), the transcript's
+live line, and the running activity row's `▸` (§6d) — and all three show the
+same frame from
 the same tick. Three timers is three different truths about one turn, and a
 tick dropped on a state handoff freezes all three at once (S-119).
 
@@ -1540,7 +1548,7 @@ layout and spans both panes of the two-pane cockpit (§15).
 **wide** (≥ 110): two rails below the input — vitals junction + hints:
 
 ```
-╭─ shhh code ─────────────────────────────────────────────────────── ⠋ WORKING ─╮
+╭─ shhh code ───────────────────────────────── ⠋ running go test 12.4s · $0.14 ─╮
 │ ▸ and add a regression test for the parser▌                                   │
 │                                                                               │
 │                                                                               │
@@ -1583,8 +1591,8 @@ the first fields removed; the mode segment is never dropped.
 The frame border color reflects the permission mode — add (10) for the
 permissive modes, accent (214) for the gated ones, spin (205) while the
 auto-mode classifier is checking. Attached, it reflects the child's mode.
-Every state keeps its textual glyph (`⏵⏵`/`⏸`/`✦` in the vitals, `WORKING`/
-`idle` on the top rail), so meaning never depends on color alone.
+Every state keeps its textual glyph (`⏵⏵`/`⏸`/`✦` in the vitals, the phase
+word or dim `idle` on the top rail), so meaning never depends on color alone.
 
 ### 12d. Attached (S-077)
 

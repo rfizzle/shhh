@@ -312,6 +312,10 @@ type Model struct {
 	runningCommand string
 	runStart       time.Time
 	runTail        *commandTail
+	// runningTools is the auto-run batch currently executing, so the frame's
+	// status line can name the call it is running (S-118, §8d). It is read
+	// only while agent.Executing() is true.
+	runningTools []provider.ToolCall
 	// Head of the agent's approval queue while its confirm prompt is showing,
 	// with everything needed to preview and execute it.
 	pendingApproval *approvalRequest
@@ -1088,6 +1092,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		m.agent.RecordAutoResults(msg.results)
+		m.runningTools = nil
 		for _, r := range msg.results {
 			m.recordToolEvent(r.Call.Name, r.Duration, outcomeFromResult(r.Result))
 			m.appendEntry(entry{kind: entryTool, toolName: r.Call.Name, toolArgs: r.Call.Arguments, toolResult: r.Result, duration: r.Duration})
@@ -1653,7 +1658,10 @@ func (m Model) requestStreamFor(msgs []provider.Message) tea.Cmd {
 	}
 }
 
-func (m Model) execToolsCmd(calls []provider.ToolCall) tea.Cmd {
+// execToolsCmd dispatches an auto-run batch off the UI goroutine, stamping
+// what it dispatched so the frame's status line can name it (S-118).
+func (m *Model) execToolsCmd(calls []provider.ToolCall) tea.Cmd {
+	m.runningTools = calls
 	a := m.agent
 	runID := a.RunID()
 	return func() tea.Msg {

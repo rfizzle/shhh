@@ -194,6 +194,52 @@ func TestGolden_TurnClose(t *testing.T) {
 	})
 }
 
+// TestGolden_TurnStatus captures the running turn's status line (§8d, S-118):
+// the four phases, the fields ticking, the collapse ladder as the slot
+// narrows, and the three ways it resolves. The captures are taken at the
+// §8c widths, which is where the ladder is visible — the slot is what is
+// left of the frame's top rail after the identity, so the narrow captures
+// are the drop order rather than a copy of the wide ones.
+func TestGolden_TurnStatus(t *testing.T) {
+	captureGolden(t, "turn-status", "running turn status", goldenWidths, func(width int) []golden.Panel {
+		live := func(mut func(*TurnStatus)) string {
+			s := TurnStatus{
+				Phase: PhaseRunning, Tool: "go test ./internal/agent/...",
+				Elapsed: "12.4s", Up: "41.2k", Down: "2.1k", Cost: "$0.06",
+			}
+			mut(&s)
+			return s.View(width)
+		}
+		done := func(mut func(*TurnStatus)) string {
+			s := TurnStatus{Done: true, Duration: "1m 04s", Tools: 18, Cost: "$0.14"}
+			mut(&s)
+			return s.View(width)
+		}
+		return []golden.Panel{
+			{Label: "phase · thinking", View: live(func(s *TurnStatus) {
+				s.Phase, s.Tool, s.Elapsed = PhaseThinking, "", "4.2s"
+			})},
+			{Label: "phase · deciding", View: live(func(s *TurnStatus) {
+				s.Phase, s.Tool, s.Elapsed = PhaseDeciding, "", "0.8s"
+			})},
+			{Label: "phase · running, named", View: live(func(s *TurnStatus) {})},
+			{Label: "phase · streaming", View: live(func(s *TurnStatus) {
+				s.Phase, s.Tool = PhaseStreaming, ""
+			})},
+			{Label: "unpriced · tokens, never a made-up zero", View: live(func(s *TurnStatus) {
+				s.Cost = "~43.3k tok"
+			})},
+			{Label: "resolved · done", View: done(func(s *TurnStatus) {})},
+			{Label: "resolved · cancelled", View: done(func(s *TurnStatus) {
+				s.Outcome, s.Tools, s.Duration = TurnCancelled, 5, "8.1s"
+			})},
+			{Label: "resolved · failed", View: done(func(s *TurnStatus) {
+				s.Outcome, s.Tools, s.Duration, s.Cost = TurnFailed, 2, "3.4s", "~1.2k tok"
+			})},
+		}
+	})
+}
+
 func TestGolden_ApprovalCard(t *testing.T) {
 	captureGolden(t, "approval-card", "approval card", goldenWidths, func(width int) []golden.Panel {
 		card := func(mut func(*ApprovalCard)) string {

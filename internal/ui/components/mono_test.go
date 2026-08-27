@@ -232,6 +232,15 @@ func monoFixtures() []monoSurface {
 		return w.View(72)
 	}
 
+	// The status line holds its numbers constant, so the phase and the
+	// outcome are the only things left to tell its states apart (§8d).
+	status := func(mut func(*TurnStatus)) string {
+		s := TurnStatus{Elapsed: "12.4s", Up: "41.2k", Down: "2.1k", Cost: "$0.06",
+			Duration: "12.4s", Tools: 18}
+		mut(&s)
+		return s.View(w)
+	}
+
 	start := func(mut func(*StartScreen)) string {
 		s := StartScreen{
 			Facts: []StartFact{{Text: "~/src/shhh", Lead: true}, {Text: "git main"}},
@@ -373,6 +382,21 @@ func monoFixtures() []monoSurface {
 			{"checks failing", closed(func(c *TurnClose) {
 				c.Checks = &TurnChecks{Failed: true, Label: "go test ./...", Counts: "41 packages"}
 			})},
+		}},
+		// The status line's phases and outcomes are words before they are
+		// colours: the spinner run is one hue for all four phases, and the
+		// three resolutions differ by glyph and word as well as by colour.
+		{"turn status phase", []monoState{
+			{"thinking", status(func(s *TurnStatus) { s.Phase = PhaseThinking })},
+			{"deciding", status(func(s *TurnStatus) { s.Phase = PhaseDeciding })},
+			{"running", status(func(s *TurnStatus) { s.Phase, s.Tool = PhaseRunning, "go test" })},
+			{"streaming", status(func(s *TurnStatus) { s.Phase = PhaseStreaming })},
+		}},
+		{"turn status resolution", []monoState{
+			{"running", status(func(s *TurnStatus) {})},
+			{"done", status(func(s *TurnStatus) { s.Done = true })},
+			{"cancelled", status(func(s *TurnStatus) { s.Done, s.Outcome = true, TurnCancelled })},
+			{"failed", status(func(s *TurnStatus) { s.Done, s.Outcome = true, TurnFailed })},
 		}},
 		{"review staging", []monoState{
 			{"nothing staged", review([]bool{false, false}, nil)},
