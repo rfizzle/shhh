@@ -26,7 +26,16 @@ func TestMigrate_Idempotent(t *testing.T) {
 	if err != nil {
 		t.Fatalf("first open: %v", err)
 	}
-	db1.Close()
+	defer db1.Close()
+
+	// Verify busy_timeout is set
+	var busyTimeout int
+	if err := db1.sql.QueryRow("PRAGMA busy_timeout;").Scan(&busyTimeout); err != nil {
+		t.Fatalf("read busy_timeout: %v", err)
+	}
+	if busyTimeout != 5000 {
+		t.Fatalf("busy_timeout: want 5000, got %d", busyTimeout)
+	}
 
 	db2, err := OpenPath(path)
 	if err != nil {

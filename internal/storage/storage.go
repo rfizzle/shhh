@@ -26,7 +26,7 @@ func Open() (*DB, error) {
 }
 
 func OpenPath(path string) (*DB, error) {
-	conn, err := sql.Open("sqlite", path+"?_pragma=journal_mode(wal)&_pragma=foreign_keys(on)")
+	conn, err := sql.Open("sqlite", path+"?_pragma=journal_mode(wal)&_pragma=foreign_keys(on)&_pragma=busy_timeout(5000)")
 	if err != nil {
 		return nil, fmt.Errorf("open database: %w", err)
 	}
