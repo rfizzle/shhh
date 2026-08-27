@@ -5,20 +5,24 @@
 > S-048 (approvals), S-061 (plan mode), S-070 (memory), S-074 (diffs),
 > S-075 (activity feed & cockpit), S-082 (input frame).
 >
-> **v2 — S-088.** §6, §8 and §10 are rewritten and §13–§17 added, so the file
-> describes one grammar rather than a record of how it grew. The source is the
+> **v3 — S-121.** A fifth invariant, §7a rewritten, §7b and §19 added, and
+> §4a, §8, §10c and §15 brought onto the artboards that now specify them. It
+> continues what v2 (S-088) started — the file describes one grammar rather
+> than a record of how it grew — and where the two disagree the artboard wins
+> and the older text goes, rather than sitting beside it. The source is the
 > `shhh Design System` project in Claude Design (projectId
-> `8bd9b60d-8d86-403e-a591-c15a9ebccfd9`, readable with the DesignSync tool):
-> `tokens/terminal.css` for the column grid, `tokens/colors.css` for the
-> palette, `guidelines/` for the rules, `ui_kits/cockpit/` for the artboards
-> (`Main`, `Steps`, `Changeset`, `Edges`, `Sheet`). E-013 through E-018
-> implement it; nothing below exists until a story builds it.
+> `8bd9b60d-8d86-403e-a591-c15a9ebccfd9`, read with the DesignSync tool, not
+> from the published Artifact, which is a viewer): `tokens/terminal.css` for
+> the column grid, `tokens/colors.css` for the palette, `guidelines/` for the
+> rules, `ui_kits/cockpit/` for the artboards (`Main`, `Steps`, `Changeset`,
+> `Edges`, `Sheet`, `Reading`, `Interrupt`, `Lists`, `Tools`). E-013 through
+> E-021 implement it; nothing below exists until a story builds it.
 
 ---
 
 ## Invariants
 
-Four rules, checked before anything else. A surface that breaks one of them is
+Five rules, checked before anything else. A surface that breaks one of them is
 wrong even when it looks right.
 
 1. **Colour never carries meaning alone.** Every state pairs its colour with a
@@ -31,6 +35,15 @@ wrong even when it looks right.
    answer is not obvious (`[esc] leave review, change nothing`).
 4. **Fold, never hide.** A collapsed group still counts what it swallowed
    (`▸ ⚙ 6 reads · 2 searches`). Nothing is dropped to save space.
+5. **A key is inert until the surface that offers it holds the keyboard** —
+   and that surface says so. The one holding it names itself in a labelled
+   rail (`DRAFT`, `DECISION 1/2`, `READING 5/12`); the ones that do not render
+   their keys grey beside the one key that hands the keyboard over. Invariant
+   3 depends on this one: `esc` can only be the safe answer if it reaches the
+   surface you think you are answering, and the same rule keeps `[v]` from
+   reviewing a turn while you are typing the letter v. Checkable: cover the
+   colours, and if two surfaces are on screen and neither names the keyboard's
+   owner in words, the screen is under-specified (§7a, §7b, §12a).
 
 ---
 
@@ -62,6 +75,11 @@ Every card answers the same three questions before it offers a key — what the
 action touches, whether shhh can take it back, and whether the network is open
 (S-101). A prompt that only says what the action *is* asks the reader to do
 the risk assessment themselves, at speed, twenty times a session.
+
+A card arrives when the agent needs it, which is not always when the reader is
+ready for it. What it may and may not do to a half-typed draft — and when its
+letters become live keys at all — is §7b, and it applies to every variant
+below.
 
 ### 2a. Command approval
 
@@ -301,24 +319,25 @@ plan itself above the options — see §4d.
   focused option only (keeps the card short).
 - Number keys select immediately, and they count the list rather than the
   window: option 12 is `12.` whether or not it is the first row showing.
-- The filtered variant (the palette, §18a) adds a query line above the
-  options, group rails the pointer steps over, and rows dimmed behind `⊘`
-  for an option that cannot be acted on right now. It is unnumbered, because
-  a digit typed into a filter is a digit.
+- Group rails (`COMMANDS`, `SESSIONS`, `SESSION`, `WORKSPACE`) are labels the
+  pointer steps over, not options. An option that cannot be acted on right now
+  is dimmed behind `⊘` with its reason, never dropped (invariant 4).
 
-**Lists longer than the panel scroll (S-116).** The card is a window onto
-the list, not the first N rows of it:
+**A list longer than the panel is a window onto the list** (S-116;
+`ui_kits/cockpit/Lists.html` is normative for everything from here to the end
+of §4a). The card shows a window, never the first N rows of it:
 
 ```
-┌─ Switch model ───────────────────────────────────────────────────┐
-│ ↑ 2 more                                                         │
-│   3. claude-sonnet-5                                             │
-│   4. claude-haiku-4-5                                            │
-│   5. gpt-5.2                                                     │
-│ ❯ 6. gpt-5.2-codex                                               │
-│     fast, cheap, tools                                           │
-│ ↓ 8 more                                                         │
-│ ↑↓/jk move · enter select · 1–14 jump · esc cancel               │
+┌─ Switch model ──────────────────────── 24 available · 8 showing ─┐
+│ ↑ 6 more                                                         │
+│     7. claude-opus-4.6    deepest reasoning · $15 / $75          │
+│     8. claude-sonnet-4.6  better diffs · $3 / $15                │
+│    11. gemini-3-pro       1M ctx · $2 / $12                      │
+│  ❯ 12. gemini-3-flash     1M ctx · $0.30 / $2.50                 │
+│    14. deepseek-r2        no tool use       not usable here      │
+│ ↓ 10 more                                                        │
+├──────────────────────────────────────────────────────────────────┤
+│ [↑↓] move  [enter] switch  [/] filter  [esc] keep gpt-5.2        │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -328,17 +347,88 @@ the list, not the first N rows of it:
   list that re-centred on every keystroke would be unreadable.
 - **It is therefore path-dependent**, and deliberately so: an option reached
   from above sits at the foot of the window, the same option reached from
-  below sits at its head. Neither is a jump.
-- **Markers count what they hide** (invariant 4) — `↑ 2 more` / `↓ 8 more` —
-  counting options rather than rows, because an option is what the pointer
-  can be scrolled to. Group rails (§18a) are labels for options and are not
-  counted; a run that hid nothing selectable keeps a bare `…`.
-- **Everything pinned comes off the budget first**: the query line above the
-  list, the key hints below it, and — in §4c — the note field, so a long list
-  scrolls rather than pushing the note off the card. The card's total height
-  is the bottom panel's accounting and the window may never buy itself a row.
+  below sits at its head. Neither is a jump, and the option is `12.` in both.
+  What changes is the markers — `↑ 4` and `↓ 12` in one, `↑ 11` and `↓ 5` in
+  the other — and they always sum with the rows on screen to the whole list.
+- **Markers count options, not rows** (invariant 4): `↑ 6 more` is six models
+  you have not seen, not six screen lines. A count of rows would change
+  meaning every time the card resized.
+- **What counts as an option is what the pointer can be scrolled to.** Group
+  rails are labels for options and are not counted; a run that hid nothing
+  selectable keeps a bare `…`, because writing `↑ 1 more` there would promise
+  an option that does not exist.
+- **Numbering counts the list, never the window.** Option 12 is `12.`
+  wherever it happens to sit, so a number you read is a number you can type.
+- **Everything pinned comes off the budget first, in this order**: the query
+  line, the key hints, the note field (§4c), and then the options take what is
+  left. A fourteen-row card with nine pinned rows shows three options and lets
+  the markers carry the other six. The card's total height is the bottom
+  panel's accounting and the window may never buy itself a row.
 - A list that fits is not windowed at all: no markers, and no row spent
   saying that nothing was hidden.
+
+**The filter row.** Past a dozen entries walking is the slow way, so the same
+component pins a query line above the window. `[/]` opens it, typing narrows
+the list, `[ctrl+u]` clears it, `[esc]` leaves the picker without changing
+anything.
+
+```
+┌─ Switch model ──────────────────────────────────── 24 available ─┐
+│ ▸ mini█                                       4 of 24 match      │
+│  ❯ 1. gpt-5.2-mini        $0.60 / $4                             │
+│    2. gpt-5.1-mini        $0.40 / $3                             │
+│    3. o4-mini             $1 / $6                                │
+│    4. phi-5-mini          local via ollama                       │
+├──────────────────────────────────────────────────────────────────┤
+│ [enter] switch  [ctrl+u] clear  [esc] keep gpt-5.2               │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+- **The filter makes a new list.** Numbering and both markers count matches —
+  a number you can type has to address the list you can see — and the query
+  row states both counts (`4 of 24 match`) so the catalog it came from is
+  never hidden.
+- **The matched run is bold, never tinted.** Exactly three background tints
+  exist inside a screen (§10b) and each already means one thing; a fourth for
+  search hits would cost more than it buys, and bold survives mono (§10f).
+- **The component does not filter.** The caller passes the matches and the
+  query that produced them, so the match rule stays where it is chosen rather
+  than hiding inside a primitive.
+- **No match is a row, not an empty pane.** The card holds its size, the query
+  row keeps both counts, a line names the nearest thing that does exist, and
+  the key that clears the filter stays on the key row:
+
+```
+┌─ Switch model ──────────────────────────────────── 24 available ─┐
+│ ▸ sonnet-5█                                   0 of 24 match      │
+│   no match for "sonnet-5"                                        │
+│   closest is claude-sonnet-4.6                                   │
+├──────────────────────────────────────────────────────────────────┤
+│ [ctrl+u] clear the filter  [esc] keep gpt-5.2                    │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+- Numbering is the picker's choice, not the filter's: `/model` numbers its
+  matches because a digit there selects, and the palette (§18a) does not,
+  because there the query line is the surface and a digit typed into it is a
+  digit. Everything else is shared — `/model`, session history, memory
+  destinations, the file picker, and `shhh config` (§19a) get the window and
+  the filter row for free.
+
+**Three surfaces are not windowed, and each says why.**
+
+- **The plan card's options** (§4d). Four decisions and seven steps do not
+  compete for the same rows: the decisions are what you are answering, so they
+  render whole, and the steps are evidence, so they fold and count instead —
+  `… 4 more steps  [s] show them · 2 of the 4 write`. A windowed option list
+  here would hide the thing you are agreeing to.
+- **Staging** (§4b). You are accounting for every hunk, so hiding four of them
+  behind `↓ 4 more` would be a trap rather than a fold. This is the staging
+  multi-select specifically; a multi-select that is an ordinary list of
+  choices (`/memory forget`, gate checks) windows like any other.
+- **The agent list** (§9a). A fan-out wide enough to overflow the card is
+  itself the problem the screen should be showing, and blocked children stay
+  pinned above.
 
 ### 4b. Multi-select
 
@@ -451,6 +541,12 @@ work, purge prompts). Renders in the input area, current
 ```
 Discard 14 unsaved turns and start a new conversation?  [y/N]
 ```
+
+`[y/N]` is a bare-letter offer like any other, so it is gated the same way: an
+inline confirm that appears over a live input renders its letters as not-yet-
+live until the confirm holds the keyboard (§7b, invariant 5). Where it
+replaces the input outright — the common case, `/clear` typed and submitted —
+it already holds the keyboard and the letters are live on arrival.
 
 ---
 
@@ -612,7 +708,7 @@ one shape: `218 lines`, `6 hits · 4 files`, `24 files`, `9 refs · 3 files`,
 
 ---
 
-## 7. Focus Mode (expanding history)
+## 7. Focus Mode & Where the Keyboard Is
 
 `ctrl+e` (or click) enters focus mode: the viewport gets a selection
 cursor on expandable rows (`❯` in the pointer column, §6a), `j/k` moves
@@ -630,10 +726,11 @@ renderers, and holding their keys here is what lets the input keep `v`, `u`,
 `r`, `c`, `e` and `p` for typing. `ctrl+e` opens on the failure that ended a
 turn where there is one, rather than on the close rows after it.
 
-### 7a. Where the keyboard is (S-115)
+### 7a. Reading mode: where the keyboard is (S-115, S-122)
 
 There are two panes and one keyboard, and every rule here follows from
-saying which pane has it.
+saying which pane has it. The transfers are S-115's and settled;
+`ui_kits/cockpit/Reading.html` is normative for how the mode is dressed.
 
 **The input's rule: while the prompt has the keyboard, the transcript hears
 no keys at all.** Not the arrow keys, not the pager letters, nothing. A
@@ -668,10 +765,7 @@ off` gives it back and leaves the keyboard as the only way through.
 **Reading mode is focus mode**, not a second, lesser one. A pager key that
 opened its own surface would be a fourth list implementation by another name,
 and the row cursor, the `[enter]` expansions and the keys a close row or a
-failure offers all have to come with it. A transcript with rows but nothing
-expandable in them opens without a cursor — prose is read, not navigated —
-and `j`/`k` are a line of scroll there. Only an empty transcript still
-refuses, because there is nothing to open onto.
+failure offers all have to come with it.
 
 **The ways back are `esc` and typing.** Esc is the safe answer everywhere
 (invariant 3). Typing is the one a reader reaches for without thinking, so
@@ -681,24 +775,160 @@ letters reading mode keeps are its own work: `j`/`k`, `q`, and a row's offer
 keys while the row under the cursor actually offers them. Where it does not,
 `v` is a letter again.
 
-**The rail says which pane has it.** The line under the header is a plain
-divider while the input does and carries the transcript's name when the
-transcript does:
+**Two things dress a pane as active, and only the pane holding the keyboard
+has them.**
 
 ```
-──────────────────────────────────────────────── READING 4/12 ─
+──── READING 5/12 ──────────────────────────────────────────────
+❯▎✎ edit  internal/agent/loop.go          +18 −3 · approved  1.1s
+   ✗ run  go test ./internal/agent/...          1 failing   21.4s
 ```
 
-The word carries the meaning and the accent is decoration (invariant 1); too
-narrow for the word, it goes back to a divider rather than clipping it, since
-the hint bar under the transcript says the same thing in full. The two panes
-are never both dressed as the active one: reading mode replaces the framed
-input (§12) with its hint bar, so the frame's own accent is absent exactly
-when the rail is present.
+- **The labelled rail.** The line under the header carries the mode's name and
+  its position — `READING 5/12` — set four cells in from the left, on a rail
+  that runs to the full width. It is not the `Rule` component's trailing
+  variant with a label hung off the right end, which is what reading mode
+  borrowed when it had no artboard to read. While the input holds the keyboard
+  the same line is a plain divider and says nothing.
+- **The lit row.** The row under the cursor takes `focusBg` with its whole
+  content in bright, and the `❯` pointer sits outside the highlight in the
+  pointer column (§6a). It still reads over a row that carries a mutation rail
+  (§14): the rail is drawn inside the highlight, keeps its accent and its
+  glyph, and the bright text is what changes.
+- **Both come off the instant the input takes the keyboard back**, and the
+  frame takes its mode accent instead. The two panes are never both dressed as
+  active: reading mode replaces the framed input (§12) with its hint bar, so
+  the frame's accent is absent exactly when the rail is labelled, and the rail
+  is a plain divider exactly when the frame is accented. Verified as a
+  rendered pair, not asserted (S-122).
+
+**The hint bar replaces the frame; it does not sit under it.** A plain
+divider, then the mode's keys, with the position on the right:
+
+```
+────────────────────────────────────────────────────────────────
+[j/k] move · [enter] expand · [q] back to the prompt  row 5 of 12
+▎this row · [v] review the 3 files · [u] undo turn · [esc] nothing
+```
+
+- The mode keys are one line, in this order: `[j/k] move`, `[enter] expand`,
+  `[-] collapse` once something is expanded, `[q] back to the prompt`. The
+  right-hand field is the position (`row 5 of 12 · step 2`, `2 rows
+  expanded`), and it is the first thing to drop as the terminal narrows.
+- **A row's own keys are a second line, prefixed by that row's `▎`**, so a key
+  that acts on one row never reads as a key that acts on the session. A row
+  that offers none renders no second line at all — nothing says "this row has
+  nothing to offer".
+- Two bottom elements is how you get a session where nobody can tell which one
+  `enter` belongs to, which is why the frame goes rather than dims.
+
+**Expansion is bounded.** `[enter]` opens the row in place — six lines and a
+count, never the whole 47-line log. The count is the offer, and the keys that
+take it up sit on the same line as the count: `… 41 more lines  [enter] full
+screen · [f] open loop_test.go:142 · [r] rerun`, `… hunk 2 of 2  [enter]
+review both · [\] side by side`.
+
+**Narrow.** The rule is that the word goes before it clips: at 100 columns
+the label still fits, at 62 it does not, and the rail drops to a bare divider
+rather than showing a cut one. The key line shortens with it — `[j/k] move ·
+[q] prompt`, position `5/12`. Nothing is truncated, and the lit row still says
+which row it is, which is why dropping the word costs nothing.
+
+**Prose is read, not navigated.** A transcript with rows but nothing
+expandable in them opens without a cursor, `j`/`k` are a line of scroll, and
+the rail carries a bare `READING` with no position, because there are no
+addressable rows to count. `[enter] expand` stays on the hint bar in grey with
+its reason beside it — `nothing on this row expands` — rather than
+disappearing (invariant 1).
+
+**An empty transcript refuses, and says so at most once.** On the start screen
+(§17c) `[↑↓]` already belong to the suggestion list, so `[k]` has no second
+meaning there and the refusal is silent. On a session with a real but empty
+transcript the key does have a meaning and no rows to spend it on, so it says
+so once, in dim, and does not repeat: a refusal that fires on every keypress
+teaches a reader to stop reading refusals.
 
 The start screen (§17c) is where all of this is introduced, on a second key
 line under the suggestions. That line outlives the typing that dismisses the
 suggestions, because these keys outlive it too.
+
+### 7b. When a decision lands mid-sentence (S-117, S-125)
+
+An approval arrives when the agent needs it, not when the reader is ready, so
+roughly once a session it lands on top of a half-typed sentence. Two things
+have to be true at once, and invariant 5 is what makes them compatible: the
+draft survives with its cursor where it was, and the card's `[y]` does nothing
+until the card holds the keyboard — because until then `y` is a letter, and it
+belongs in the sentence. `ui_kits/cockpit/Interrupt.html` is normative.
+
+**Ungated — the card is up, the draft still has the keyboard.**
+
+```
+┌─ Approve edit ───────────────────────────────────────── ⚠ low ─┐
+│ ▎✎ internal/ui/chat/model.go              +9 −1 · 1 hunk       │
+│ touches   internal/ui/chat/model.go — one case in the switch   │
+│ undo      yes — tracked in git, undo restores it               │
+│ network   closed                                               │
+├────────────────────────────────────────────────────────────────┤
+│ [y] approve   [n] deny   [a] always   [d] diff    not live yet │
+│ [ctrl+g] answer it — until then these letters go to your draft │
+└────────────────────────────────────────────────────────────────┘
+
+──── DRAFT ─────────────────────────────────────────────────────
+┌─ shhh code · ~/src/shhh · loop-refactor ───────── ⏸ 1 waiting ─┐
+│ ▸ also add a --max-rounds █lag while you're in there           │
+├────────────────────────────────────────────────────────────────┤
+│ ⏵⏵ auto · round 7/25 · ctx ▰▰▰▰▰▱▱▱ 62% · $0.14 · gpt-5.2      │
+└─ [ctrl+g] answer it · [enter] queue · [esc] stop the run ──────┘
+```
+
+- **The card's keys render as not-yet-live** — all four dim, with `not live
+  yet` on the same line. The state is said in words on the keys themselves
+  rather than left to be inferred from a border colour (invariant 1). A key
+  that is not yet live is a different thing from one that is unavailable
+  (§18a's `⊘`), and the two never render alike: one is waiting for the
+  keyboard, the other cannot be pressed at all.
+- **The key that hands the keyboard over is offered on the card**, on its own
+  line, in the live treatment the other four do not have: `[ctrl+g] answer
+  it`. It is the only live key the card has, and the card says what happens to
+  the letters until it is pressed.
+- **The draft keeps the frame's accent**, because the frame is where the
+  keystrokes are going. The card is bordered but undressed.
+- **A letter goes into the sentence.** Pressing `y` here leaves the edit
+  waiting and puts a `y` in the draft, and that is the correct outcome. The
+  alternative — routing `y` to the card whenever a card exists — means a
+  sentence containing the word `yes` can approve a shell command.
+- The frame's top rail counts what is waiting (`⏸ 1 waiting`, §12a) and its
+  bottom rail carries the three keys that matter while one is: `[ctrl+g]`
+  answer it, `[enter]` queue this for the next round, `[esc]` stop the run.
+
+**Gated — `ctrl+g`, and the card has it.** The rail above the card reads
+`DECISION 1/2`. The four keys go live in the ordinary treatment and gain their
+consequences (`[a] always  edits in internal/ui/*`), and the safe answer is
+stated because it is not obvious (invariant 3): `[esc] back to your draft —
+the edit stays waiting, nothing is denied`. Esc here leaves the decision
+unanswered; it does not deny it.
+
+**The frame is undressed, not disabled.** It drops its mode colour and its
+block cursor and keeps every character, and its rail states the position it is
+holding — `50 characters, cursor at 24` — so the reader can see that nothing
+moved while they were not typing into it.
+
+**The return.** Answering hands the keyboard straight back to the draft, at
+the same character. It does not clear the draft, submit it, or move the cursor
+to the end. A second waiting decision is announced in the top rail rather than
+replacing the card just closed — a queue that deals itself the next card is a
+queue answered by momentum (§2e).
+
+**It generalises, and that is the point.** Any surface offering a bare
+single-character key while a live input is on screen either holds the keyboard
+exclusively while those keys are live, or renders them as not-yet-live and
+offers the one key that hands the keyboard over. Most surfaces pass by
+construction, because a takeover surface holds the keyboard by definition; the
+ones worth auditing are those that render alongside a live input. S-125 is
+that audit, and it covers the approval card, inline confirm (§5), the selector
+family (§4), the plan card (§4d), the agent list (§9a), review mode (§16a),
+the recovery cards (§17b) and reading mode's per-row offers (§7a).
 
 ---
 
@@ -708,7 +938,9 @@ The vitals are the session's standing answer to *what mode am I in, how much
 context is left, what has this cost*. They are one vocabulary with three
 homes: the frame's rails (§12, where they normally live), the free-floating
 status bar (the fallback below `minCardWidth` and under takeover surfaces),
-and the inspector rail's CONTEXT and SPEND blocks (§15, turn-scoped).
+and the inspector rail's CONTEXT and SPEND blocks (§15). All three are
+session-scoped and live; the one thing in the product that is scoped to the
+turn is the rail's THIS TURN block, and §8d is that turn while it is running.
 
 ```
 ──────────────────────────────────────────────────────────────────────────
@@ -762,6 +994,61 @@ whole surface; §12b and §15 are the two ends of it.
 | 70–109 | one pane, vitals folded into the frame's bottom border (§12b compact) |
 | < 70 | minimal — mode, context and spend only (§12b narrow) |
 | < 12 | no frame — divider, this status bar, and a bare `❯` prompt |
+
+### 8d. The running turn's status (S-118)
+
+While a turn runs, one line changes and the rest of the screen holds still. It
+lives in the frame's activity slot (§12a) — the same place `WORKING` and dim
+`idle` sit — and it *resolves into* the turn summary rather than being
+replaced by one.
+
+```
+⠋ thinking… 4.2s · ↑41.2k ↓2.1k · $0.06
+⠋ running go test 12.4s · ↑41.2k ↓2.1k · $0.06
+✓ done · 1m 04s · 18 tools · $0.14
+```
+
+**The phases are a closed vocabulary**, and there are four:
+
+| Phase | When |
+|---|---|
+| `thinking…` | the model is reasoning before it acts — the reasoning stream, where a provider has one |
+| `deciding…` | the auto-mode classifier is judging a call (`✦ checking` in §8a is this phase seen from the vitals) |
+| `running <tool>` | a tool is executing, named |
+| `streaming…` | prose is arriving |
+
+Anything else is a phase nobody defined: pick the nearest of the four rather
+than inventing a fifth.
+
+**The fields tick.** Elapsed counts up on the tick loop, the token counts move
+as tokens arrive, and the cost is derived from them — all three are the turn's
+live numbers rather than the last thing a response reported. Elapsed reads
+`4.2s` under ten seconds and whole seconds above it, so the digit that changes
+is never the one carrying the magnitude.
+
+**Field-drop order (normative).** The §8b rule applied to a different set of
+fields, not a second rule:
+
+```
+⠋ running go test · 12.4s · ↑41.2k ↓2.1k · $0.06     drop 0
+⠋ running · 12.4s · ↑41.2k ↓2.1k · $0.06             drop 1 — the tool argument
+⠋ running · 12.4s · $0.06                            drop 2 — token counts
+⠋ running · $0.06                                    drop 3 — elapsed
+```
+
+Phase and cost never drop: what it is doing and what it is costing are the two
+things the line exists to say.
+
+**It resolves, it is not replaced.** `✓ done · 1m 04s · 18 tools · $0.14` is
+the same line finished, in place, and a turn that failed resolves into its
+failure instead (§17a). The transcript separately gains §16's close rows,
+which lead with the step count (`✓ Done · 4 steps · 18 tools · 1m 04s ·
+$0.14`) because a row in history is read after the fact and a status line is
+read during. Same four facts, two orders, two homes — and the numbers agree.
+
+**It is a component, not free text** (§10c): today the frame's status slot is
+a string and `components.Spinner` takes a static elapsed, so this extends
+`components/meters` rather than widening `cockpit.go`.
 
 ---
 
@@ -1064,6 +1351,17 @@ measurement; the numbers beside it are the measurement.
 **Spinner.** `⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧` at 80ms a frame, spin (205). It is the only
 animation in the product. Anything else that wants to move gets a meter.
 
+**One tick source (normative).** A running turn drives up to three spinners at
+once — the frame header's `WORKING` (§12a), the turn status line (§8d), and
+the running activity row's `▸` (§6d) — and all three show the same frame from
+the same tick. Three timers is three different truths about one turn, and a
+tick dropped on a state handoff freezes all three at once (S-119).
+
+**Turn status.** The one line that changes while a turn runs — spinner frame,
+phase, ticking elapsed, token counts, cost — is a meter and not free text:
+`TurnStatus` beside `Meter`, `Sparkline` and `Spinner`. §8d is its vocabulary,
+its ticking fields and its drop order.
+
 ### 10d. Glyphs
 
 Meaning lives here; colour only reinforces it. The set is closed.
@@ -1173,8 +1471,9 @@ fallback for takeover surfaces and sub-`minCardWidth` terminals.
 
 - **Top rail** (top border): session identity on the left — the title, plus
   the attached-child breadcrumb (S-077) — and the live activity state on the
-  right: a spinner + `WORKING` while streaming, running tools, or checking
-  permission; dim `idle` otherwise.
+  right: the turn status line (§8d) while streaming, running tools or
+  checking permission, `⏸ N waiting` while decisions are queued and ungated
+  (§7b), and dim `idle` otherwise.
 - **Prompt gutter** replacing the placeholder sentence: `❯` idle, `▸` while
   the agent works (typed text becomes steering, S-058), and the child's name
   (`writer-1 ❯`) while attached. Wrapped input lines indent under it.
@@ -1422,12 +1721,14 @@ rail, a decision gets a card.
 
 ---
 
-## 15. Inspector Rail (two-pane cockpit, S-092)
+## 15. Inspector Rail (two-pane cockpit, S-092, S-120)
 
 Past 130 content columns the transcript stops being the whole screen. A
-46-column rail on the right answers the three standing questions — what is it
-doing, what has it changed, what is it costing — so you stop running `/stats`
-and `/diff` to recover what the session already knows.
+46-column rail on the right answers the standing questions — what is this turn
+doing, what has this session changed, what is it costing — so you stop running
+`/stats` and `/diff` to recover what the session already knows.
+`components/frame/InspectorRail` and `guidelines/rail-session-scope.html` are
+normative.
 
 ```
 ┌───────────── 93 columns ─────────────┐ │ ┌───── 46 columns ─────┐
@@ -1446,12 +1747,39 @@ accounting are unchanged, and the input frame (§12) spans both panes because
 steering is a session-level act. Below 130 the rail is dropped entirely and
 today's single-pane layout is untouched (§8c).
 
-### 15a. Blocks
+### 15a. Scope: one turn-scoped block, the rest are the session
+
+**`THIS TURN` is the turn. `CHANGES`, `AGENTS`, `CONTEXT` and `SPEND` are the
+session.** A file edited in turn 2 is still on screen in turn 8, because "what
+has this session done to my machine" does not reset when the agent starts a
+new turn.
+
+Two blocks can count files, so **both say their scope in words** — `3 files
+this turn` and `session · +96 −11`. That is the rule that stops the two
+numbers reading as a contradiction, and it is why neither is allowed to print
+a bare count.
+
+Three rules follow from session scope:
+
+- **Repeat edits collapse to one row.** One row per path, carrying the net
+  count and how many turns produced it: `▎✎ agent/loop.go +21 −4  3t`. Eight
+  rows for one file is a log, not a state.
+- **The list folds when the rail is shorter than it.** Files touched in the
+  current turn keep their rows; the rest become `… 5 more  +63 −6`, and the
+  fold carries its own counts (invariant 4). `[v] review all 8` still opens
+  everything. This is a fold, not the §4a window — the rail has no pointer to
+  scroll, so it has no markers either.
+- **Alerts outlive their turn.** A failing test or a broken build sits above
+  the file rows with the turn that caused it (`✗ 1 test failing  turn 7`) and
+  stays until the workspace is clean. A red row that clears itself because a
+  new turn started is the exact failure this rail exists to prevent.
+
+### 15b. Blocks
 
 ```
   THIS TURN                        step 3 of 4
   ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱
-  18 tools · 1m 04s elapsed
+  3 files this turn +30 −4 · 18 tools · 1m 04s
 
   PLAN                             2 of 4 done
   ✓ Locate the round accounting           6.2s
@@ -1461,12 +1789,14 @@ today's single-pane layout is untouched (§8c).
   ⚠ 1 off plan
   /plan for the whole list
 
-  CHANGES                               +30 −4
-  ▎✎ agent/loop.go                      +18 −3
+  CHANGES                     session · +96 −11
+   ✗ 1 test failing                    turn 7
+     TestRoundLimit · [r] rerun
+  ▎✎ agent/loop.go                 +21 −4    3t
   ▎✎ ui/chat/model.go                    +9 −1
   ▎✎ agent/errors.go                     +3 −0
-   ✗ 1 test failing             TestRoundLimit
-  [v] review · [u] undo turn
+  … 5 more                             +63 −6
+  [v] review all 8 · [u] undo turn
 
   AGENTS                             1 running
   ◇ writer-1                 ▰▰▰▱▱ 2/5 · $0.02
@@ -1481,31 +1811,42 @@ today's single-pane layout is untouched (§8c).
   session total $1.86
 ```
 
-| Block | Contents |
-|---|---|
-| THIS TURN | step progress meter, `step 3 of 4`, tool count, elapsed |
-| PLAN | an approved plan's steps as a live checklist — state glyph, title, elapsed per finished step, a drift note, and `/plan` for the whole list |
-| CHANGES | `+N −M` total, one row per changed file with its rail and glyph, failing-test state, `[v] review · [u] undo turn` |
-| AGENTS | running children — lane meter, steps, spend, current target and tool count |
-| CONTEXT | percent of the window, meter, tokens, the per-round burn sparkline (or `estimated`) |
-| SPEND | turn total split main / children, model, session total |
+| Block | Scope | Contents |
+|---|---|---|
+| THIS TURN | turn | step progress meter, `step 3 of 4`, files touched this turn, tool count, elapsed |
+| PLAN | plan | an approved plan's steps as a live checklist — state glyph, title, elapsed per finished step, a drift note, and `/plan` for the whole list |
+| CHANGES | session | `session · +N −M` total, one row per changed path with its rail, glyph, net counts and turn count, alerts above them, `[v] review all N · [u] undo turn` |
+| AGENTS | session | children — lane meter, steps, spend, current target and tool count |
+| CONTEXT | session | percent of the window, meter, tokens, the per-round burn sparkline (or `estimated`) |
+| SPEND | session | this turn's spend as the headline, split main / children, with the model and `session total $1.86` under it — both numbers labelled in words, per §15a |
 
-### 15b. Rules
+Block order is fixed — THIS TURN, PLAN, CHANGES, AGENTS, CONTEXT, SPEND — and
+the rail drops from the bottom when it runs out of rows.
+
+**Departure from the design system.** `InspectorRail.prompt.md` fixes the
+order as THIS TURN, CHANGES, AGENTS, CONTEXT, SPEND and carries no PLAN block.
+PLAN shipped in S-104 and is kept here, second, because a plan through its list
+is the one thing a reader checks as often as the changes; the block is
+recorded as a departure rather than silently resolved either way, and S-126 is
+where it is settled.
+
+### 15c. Rules
 
 - **Blocks with nothing to say are omitted, not rendered empty.** A session
   with no children has no AGENTS heading at all.
 - **The rail never scrolls.** When it does not fit the viewport it truncates
   its longest block first, and the block says so rather than silently ending.
 - **The rail is passive**, like `components.Cockpit` — fed by the host model,
-  no keys, no state, no goroutines. The keys it prints (`[v]`, `[u]`) are
-  handled by the host. PLAN prints `/plan` rather than a bracketed key: the
+  no keys, no state, no goroutines. The keys it prints (`[v]`, `[u]`, `[r]`)
+  are handled by the host. PLAN prints `/plan` rather than a bracketed key: the
   input textarea owns every unmodified letter, so a `[p]` there would be an
-  offer nothing accepts.
-- **PLAN is the one block that is not turn-scoped.** It follows the approved
-  plan, which can outlive the turn that started it; a plan through its list is
-  retired by the next instruction, and `/plan drop` forgets one early. Below
-  130 columns there is no rail, and `/plan` is the whole checklist — nothing is
-  lost, it just has to be asked for.
+  offer nothing accepts — invariant 5 in the one place where the answer is to
+  print a command instead of a key.
+- **PLAN follows the plan, not the session or the turn.** An approved plan can
+  outlive the turn that started it; a plan through its list is retired by the
+  next instruction, and `/plan drop` forgets one early. Below 130 columns
+  there is no rail, and `/plan` is the whole checklist — nothing is lost, it
+  just has to be asked for.
 - **Takeover surfaces span the full width and hide the rail** — approval
   cards, pickers, review mode (§16), the agent list — and restore it on
   dismissal.
@@ -1519,10 +1860,14 @@ today's single-pane layout is untouched (§8c).
   meter and its percentage are unchanged: an estimate is still the best
   number there is, it is just not a measurement.
 
-The vitals rail on the frame (§12) stays as it is. The inspector rail is
-turn-scoped and historical; the vitals rail is session-scoped and live. They
-overlap only on context and spend, which is deliberate — those are the two
-numbers you want without moving your eyes.
+**Both rails are session-scoped, and they do not overlap by accident.** The
+vitals rail on the frame (§12) is the session at a glance on one line — mode,
+pressure, spend — and the inspector rail is the session in detail, block by
+block. They share context and spend deliberately: those are the two numbers
+you want without moving your eyes. What used to be said here — that the
+inspector rail is turn-scoped and historical while the vitals rail is
+session-scoped and live — was the distinction S-120 removed, and it is gone
+rather than qualified.
 
 ---
 
@@ -1552,7 +1897,7 @@ step, and nothing folds them.
   row's job.
 - A stat the session cannot report is left out rather than reported as a
   zero: a turn that called nothing says no step or tool count, and an
-  unpriced turn reports its tokens, never a made-up zero (§15b).
+  unpriced turn reports its tokens, never a made-up zero (§15c).
 - A turn that changed nothing is the first row alone. A turn you cancelled
   reads `⊘ Cancelled`, one whose stream broke reads `✗ Failed`, and both
   still carry the changed-files row for what landed before they stopped.
@@ -1609,7 +1954,7 @@ REVIEW turn 7          2 of 3 staged     │ internal/agent/loop.go  2 hunks · 
   repository, and it must not touch your index or your stash.
 - Unified is the default; `[\]` toggles side-by-side (§3c) for the case where
   a line moved rather than changed.
-- Review is a takeover surface: full width, rail hidden (§15b), `esc` returns.
+- Review is a takeover surface: full width, rail hidden (§15c), `esc` returns.
 
 The point is that review is a **place you can return to**. Diffs used to
 appear inside the approval prompt and nowhere else, so after approving you had
@@ -1716,7 +2061,7 @@ Two more verbs share this field: `stream` is S-107's and `rounds` is S-109's.
   draft under it — the same reason replacing a key is `[e]`. Both keys are
   pressed in focus mode, like every other recovery key.
 - **The count is an estimate and says so.** A request that dropped never
-  reported usage, so the `~` is `len/4`, the same arithmetic §15a's occupancy
+  reported usage, so the `~` is `len/4`, the same arithmetic §15c's occupancy
   uses. Finished tool calls are counted beside it, because they change what
   continuing means: with calls, continuing *is* the round, resumed.
 - **Only finished calls are kept.** A call whose arguments stopped halfway is
@@ -1954,26 +2299,30 @@ Some things worth doing first:
 command you are already typing; the palette is for one you are looking for.
 
 ```
-┌─ Palette ──────────────────────────────────────────── 14 results ┐
-│ ❯ mod█                                                           │
-│ COMMANDS                                                         │
-│ ❯ /model                                                         │
-│     Switch the model (bare /model opens a picker)                │
-│   /mode  shift+tab                                               │
+┌─ Palette ────────────────────────────────────── 9 of 41 matches ─┐
+│ ▸ mod█                                                           │
+├──────────────────────────────────────────────────────────────────┤
+│ …                                                                │
+│ ❯ /model      switch the model from the next round               │
+│   /mode       gated, auto or read-only          [tab]            │
+│   /memory     what shhh remembers about this repo                │
+│   ⊘ /compact  summarise and free context    idle only            │
 │ SESSIONS                                                         │
-│   loop-refactor                                                  │
-│ FILES                                                            │
-│   internal/agent/model.go                                        │
-│ … 6 more — keep typing                                           │
-│ enter run · tab complete · ↑↓ move · esc dismiss                 │
-└──────────────────────────────────────────────────────────────────┘
+│   loop-refactor          3 files changed · 4m ago                │
+│ ↓ 4 more                                                         │
+└─ [enter] run · [tab] complete · [esc] close ─────────────────────┘
 ```
 
-- It is the §4a single-select with a query line above it, not a fourth list:
-  same card, same pointer, same bottom-panel accounting. What it adds is the
-  query row, the group rails, and a result count on the title rail — the count
-  is of *matches*, not of rows showing, because the rail is where you find out
-  that there are more.
+- It is the §4a single-select with its filter row always open, not a fourth
+  list: same card, same pointer, same window, same bottom-panel accounting.
+  What it adds is the group rails and a result count on the title rail — the
+  count is of *matches* against the whole reach (`9 of 41 matches`), not of
+  rows showing, because the rail is where you find out that there are more.
+- The window's markers behave here as they do everywhere (§4a). Above, the run
+  that scrolled off hid only the `COMMANDS` rail, so the marker is a bare `…`;
+  below, four options and the `FILES` rail are hidden and the marker counts the
+  four. It is the one card in the product where both marker forms are visible
+  at once, and it is the reason the rule is stated in terms of options.
 - Three groups, always in this order: **COMMANDS** from the S-078 registry
   with their descriptions and their key bindings, **SESSIONS** from the saved
   chats, **FILES** from the paths this session changed and the checkout's most
@@ -1987,7 +2336,7 @@ command you are already typing; the palette is for one you are looking for.
 - `enter` runs, `tab` writes it into the draft, `esc` dismisses and keeps the
   draft. A file has nothing to run, so both keys append its path to the draft.
   Everything else is text: `j` is a letter and `2` is a digit, which is why
-  the card is unnumbered here.
+  the card is unnumbered here and `/model`'s is not (§4a).
 - **An unavailable command is dimmed, not dropped.** While a turn runs, the
   commands that would rewrite the conversation it is working in (§9f) render
   behind `⊘` with the reason on the description row, and choosing one answers
@@ -2174,3 +2523,180 @@ Departures from `ui_kits/cockpit/OneShot.html`:
   key row, so the alternative arrives on the screen that explains it.
 - The artboard's key row reads `[a] alternatives`; the count is more useful
   than the noun, and the noun is what the card is titled.
+
+---
+
+## 19. The Supporting TUIs (E-021: S-127–S-130)
+
+`shhh config`, `shhh history`, `shhh metrics` and `shhh doctor` predate the
+cockpit, and each invented its own list, its own table and its own idea of a
+value. They are the four things this system already has: a row with fixed
+fields (§6a), a window with markers and a filter row (§4a), a block meter
+(§10c), and a card for anything that changes your machine (§2). Nothing new is
+introduced — the four screens are re-cut from parts that exist, and
+`ui_kits/cockpit/Tools.html` is normative. The gain is that a reader who knows
+the cockpit already knows these.
+
+Common to all four:
+
+- A header line naming the command and its subject, with `[?] keys · [q] quit`
+  on the right, and a rule under it — the same header the start screen uses
+  (§17c).
+- One hint line at the foot in the §12a bracketed-key grammar, and a
+  right-hand field that annotates it and drops first (§16).
+- They are takeover surfaces: full width, no inspector rail (§15c), the §8
+  free-floating vitals bar where vitals apply at all.
+- Group rails (`SESSION`, `WORKSPACE`, `MODEL`) are labels, not options (§4a),
+  and every list in them is the §4a window.
+- Invariant 5 holds as it does everywhere: these screens own the keyboard for
+  as long as they are up, which is why their bare letters are live on arrival
+  (§7b).
+
+### 19a. `shhh config` (S-127)
+
+```
+shhh config · ~/.shhh/config.toml · 2 overridden by this repo  [?] keys · [q] quit
+──────────────────────────────────────────────────────────────────────────────────────
+
+  SESSION
+   permission mode   ⏵⏵ auto                              repo · .shhh/config.toml
+ ❯ model             gpt-5.2                                   user · 24 available
+     ↑ 6 more
+      claude-sonnet-4.6   better diffs · 200k ctx                         $3 / $15
+      gemini-3-flash      1M ctx                                     $0.30 / $2.50
+     ↓ 16 more   [/] filter · [enter] take it · [esc] keep gpt-5.2
+   round limit       25                                                    default
+   verbosity         normal — reads fold, mutations never do                  user
+
+  WORKSPACE
+   sandbox           ⛨ workspace-write                    unavailable on this host
+   network           allowed — approvals still ask per domain                 user
+   memory            .shhh/memory.md · 4 entries                              repo
+
+[↑↓] move · [enter] change · [r] reset · [w] write to the repo file    14 settings
+```
+
+- **A value is a row; changing one is a picker under it.** `[enter]` opens the
+  §4a window inline beneath the row being changed, indented one level, with
+  its own markers, its own filter row and its own `[esc]` that keeps the
+  current value. It is not a modal over the screen — the setting you are
+  changing stays visible above the options.
+- **Every row states where its value came from** — `default`, `user`, `repo`,
+  with the file where the answer is not obvious — because "why is this on" is
+  the only question a config screen is ever asked.
+- **A value the host cannot honour says so** rather than being hidden:
+  `sandbox ⛨ workspace-write   unavailable on this host` in del (9). Invariant
+  4 — the setting is not dropped because the machine cannot keep it.
+- **Nothing is written until `[w]`**, and the header counts the overrides
+  standing against the file it would write. `[r]` resets one row to its
+  default; `[esc]` discards the lot.
+- Masked secrets render as the last four characters and nothing else
+  (`···4f9c`), in the config rows and in `shhh doctor` alike.
+
+### 19b. `shhh history` (S-128)
+
+```
+shhh history · 41 sessions · $18.42 all time                     [?] keys · [q] quit
+────────────────────────────────────────────────────────────────────────────────────
+
+▸ round█                    6 of 41 │ loop-refactor · gpt-5.2 · 7 rounds
+──────────────────────────────────  │   make the round limit recoverable
+❯ loop-refactor · 4m ago            │
+      18 tools · $0.14              │ ▎✎ 3 files changed +30 −4
+  round-limit-spike · yesterday     │   ▎internal/agent/loop.go   +18 −3
+  ui-metrics-pane · yesterday       │   ▎internal/ui/chat/model.go  +9 −1
+  tool-round-tripping · mon         │  ✗ 1 test failing · TestRoundLimit
+↓ 1 more   matching round           │   ▁▂▃▃▄▅▅▆ tokens per round
+──────────────────────────────────  │   ctx 62% at exit
+35 sessions hidden · [ctrl+u] clear │
+
+[enter] resume · [v] review · [x] delete · [esc] back  nothing resumed until [enter]
+```
+
+- **Two panes: the search on the left, the session it selects on the right.**
+  The left pane is the §4a window with its filter row pinned above it; the
+  right pane is a preview, not a second list, and has no cursor of its own.
+- **The preview is built from rows the reader already knows** — the opening
+  instruction, the changeset row with its mutation rail (§14, §16), the
+  failing-check row, and the per-round sparkline (§10c). A session is
+  previewed in the grammar it was recorded in.
+- **The filter says what it hid.** `6 of 41` on the query row, `35 sessions
+  hidden by the filter · [ctrl+u] clear it` under the list (§4a).
+- **Nothing is resumed until `[enter]`**, and the hint line says so. `[v]`
+  reviews the session's files through review mode (§16a) and `[x]` deletes the
+  transcript behind an inline confirm (§5).
+- History is the longest list in the product, which is why the window and the
+  filter row are load-bearing here rather than a nicety.
+
+### 19c. `shhh metrics` (S-129)
+
+```
+shhh metrics · last 7 days · 41 sessions · 612 tool calls  $18.42 · [q] quit
+────────────────────────────────────────────────────────────────────────────
+
+  MODEL                TURNS  TOOLS  ↑ TOK  ↓ TOK  SPEND   PER DAY
+  gpt-5.2                184    421   2.9M   318k $12.80   ▃▄▄▅▆▅█
+  claude-sonnet-4.6       46    138   1.1M    96k  $4.71   ▁▂▅▃▂▆▄
+  gemini-3-flash          12      4    88k     7k  $0.13   ▁▁▂▁▁▁▃
+
+  where the money went                                                7 days
+  edits     ▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱  $9.94 · 54%                203 approvals
+  reads     ▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱  $5.11 · 28%                    312 calls
+  ◇ agents  ▰▰▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱  $2.41 · 13%                  19 children
+  retries   ▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱  $0.96 ·  5%               31 rate limits
+```
+
+- **Fixed-width, right-aligned numeric columns.** The column grid of §6a
+  applied to a table: the reader scans one column rather than parsing rows.
+- **One sparkline per row, in dimmer (245), never coloured** (§10c). A
+  coloured sparkline would imply a threshold nobody set. The numbers beside it
+  are the measurement; the sparkline is the shape.
+- **The spend split uses the same `▰▱` meter as context pressure**, with the
+  number always stated beside the bar (§10c), and it is the accent-coloured
+  category meter rather than the context ladder — no threshold colours here.
+- A category with nothing in it is left out rather than drawn as an empty bar,
+  and `retries` keeps its del (9) fill because a retry is a cost you did not
+  ask for.
+
+### 19d. `shhh doctor` (S-130)
+
+```
+shhh doctor · 9 checks · ⠹ running                      2.1s · [q] quit
+───────────────────────────────────────────────────────────────────────
+
+   ✓ binary     shhh 0.9.4 · darwin/arm64 · via brew               0.0s
+   ✓ provider   openai · key ···4f9c accepted                      0.3s
+   ⚠ provider   anthropic · no key — /model greys 4   [k] add one  0.0s
+   ✗ sandbox    sandbox-exec not found                             0.1s
+       every approval will show ⚠ UNCONTAINED until this is fixed
+       [f] show the 3-line fix · [m] switch to ⏸ gated for this host
+   ✓ git        ~/src/shhh · 3 files changed, all tracked          0.2s
+   ▸ tests      go test ./internal/agent/...   running             ⠹ 2s
+   · update     check for a newer shhh          queued                —
+
+   ✗ 1 failed · 1 warning · 6 passed · 1 running    [c] copy the report
+```
+
+- **A check is a tool call, so it is the §6a row**: glyph, verb, target,
+  outcome, right-aligned duration, with the same state vocabulary (§6d) — `✓`,
+  `⚠`, `✗`, `▸ running`, `· queued` with an em-dash duration.
+- **A failure states its consequence in the product's own words.** `every
+  approval will show ⚠ UNCONTAINED until this is fixed` is what the reader
+  will actually see on the next approval card, quoted from it.
+- **The fix is offered on the row that failed**, not in a footer: `[f] show
+  the 3-line fix`, `[m] switch to ⏸ gated for this host`, `[k] add one`. This
+  is §17a's rule — failures name the fix, not the blame — applied to a
+  diagnostic.
+- The summary row counts every outcome including the ones still running, and
+  `[c]` copies the report as text, because the next thing that happens to a
+  doctor run is that it gets pasted into an issue.
+
+**A name the product does not have.** The design system calls this surface
+`shhh doctor`. What is built is `shhh code doctor`, scoped to the sandbox
+ladder, the image policy and owned containers, with `/sandbox doctor` as the
+in-session equivalent — so the artboard shows a screen for a command that does
+not exist under that name. Whether the command is promoted and widened to
+cover provider, config and workspace health, or the design system's name is
+corrected to the one that ships, is S-130's first task and a product decision
+rather than a rendering one. This section describes the artboard; it does not
+settle that.
