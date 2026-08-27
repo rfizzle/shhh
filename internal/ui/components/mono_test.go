@@ -103,6 +103,20 @@ func monoFixtures() []monoSurface {
 		return h.View(w)
 	}
 
+	// The metrics surface's category meters (§19c). The share and the number
+	// beside it are held constant, so the only thing left to tell an ordinary
+	// share from a cost nobody asked for is the label and its glyph — which
+	// is exactly what invariant 1 asks of them.
+	metricsBar := func(label string, tone MeterTone) string {
+		m := &MetricsScreen{
+			Subject: "all time · 1 request · 1 model",
+			Blocks: []MetricsBlock{{Title: "where the money went", Bars: []MetricsBar{
+				{Label: label, Pct: 40, Text: "$0.96 · 40%", Tone: tone},
+			}}},
+		}
+		return m.View(w)
+	}
+
 	pressed := func(pct int, tokens int64) string {
 		return PressureCard{
 			Pct: pct, Tokens: tokens, Window: 200_000, Warn: 60, Alert: 80,
@@ -602,6 +616,11 @@ func monoFixtures() []monoSurface {
 			{"the file set it", configSourced("user", ToneNeutral)},
 			{"staged, not written", configSourced("unwritten", ToneOpen)},
 			{"the host cannot honour it", configSourced("unavailable on this host", ToneRisk)},
+		}},
+		{"metrics category", []monoState{
+			{"an ordinary share", metricsBar("$ run", MeterCategory)},
+			{"a sub-agent's share", metricsBar("◇ agents", MeterAgent)},
+			{"a cost nobody asked for", metricsBar("✗ no answer", MeterUnasked)},
 		}},
 		{"history outcome", []monoState{
 			{"ran clean", historyRow(ActivityDone, "exit 0")},

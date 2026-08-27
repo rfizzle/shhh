@@ -311,7 +311,7 @@ func TestMetricsSummary(t *testing.T) {
 		}
 	}
 
-	summary, err := db.MetricsSummary()
+	summary, err := db.MetricsSummary(time.Time{})
 	if err != nil {
 		t.Fatalf("summary: %v", err)
 	}
@@ -540,7 +540,7 @@ func TestRating_Flow(t *testing.T) {
 		t.Fatalf("expected 0 unrated after rating, got %d", len(unrated))
 	}
 
-	summary, err := db.MetricsSummary()
+	summary, err := db.MetricsSummary(time.Time{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -857,5 +857,108 @@ func TestListHistory_CarriesTheRecordedColumns(t *testing.T) {
 	}
 	if bare.Success {
 		t.Fatal("a request that did not complete came back as a success")
+	}
+}
+
+// The metrics window is a cutoff over the same rows, so a cutoff in the
+// future leaves nothing and the zero cutoff — what `shhh metrics` reads
+// without a --window — leaves everything.
+func TestMetricsSummary_WindowIsACutoff(t *testing.T) {
+	db := openTestDB(t)
+	for _, r := range []RequestRecord{
+		{Provider: "openai", Model: "gpt-4o", Prompt: "p1", Command: "c1", Action: "run", Success: true},
+		{Provider: "openai", Model: "gpt-4o", Prompt: "p2", Command: "c2", Action: "copy", Success: true},
+	} {
+		if _, err := db.RecordRequest(r); err != nil {
+			t.Fatalf("record: %v", err)
+		}
+	}
+
+	all, err := db.MetricsSummary(time.Time{})
+	if err != nil {
+		t.Fatalf("all time: %v", err)
+	}
+	if len(all) != 1 || all[0].Count != 2 {
+		t.Fatalf("all time read %d groups", len(all))
+	}
+	ahead, err := db.MetricsSummary(time.Now().Add(time.Hour))
+	if err != nil {
+		t.Fatalf("future cutoff: %v", err)
+	}
+	if len(ahead) != 0 {
+		t.Fatalf("a cutoff in the future read %d groups", len(ahead))
+	}
+}
+
+// The per-day token totals are what the sparkline is drawn from, grouped per
+// model and per calendar day.
+func TestMetricsTokensByDay(t *testing.T) {
+	db := openTestDB(t)
+	in, out := int64(400), int64(100)
+	for range 3 {
+		if _, err := db.RecordRequest(RequestRecord{
+			Provider: "openai", Model: "gpt-4o", Prompt: "p", Command: "c", Action: "run",
+			TokensIn: &in, TokensOut: &out, Success: true,
+		}); err != nil {
+			t.Fatalf("record: %v", err)
+		}
+	}
+
+	rows, err := db.MetricsTokensByDay(time.Time{})
+	if err != nil {
+		t.Fatalf("tokens by day: %v", err)
+	}
+	if len(rows) != 1 {
+		t.Fatalf("three requests on one day read as %d days", len(rows))
+	}
+	if rows[0].TokensIn != 1200 || rows[0].TokensOut != 300 {
+		t.Fatalf("the day totals read ↑%d ↓%d", rows[0].TokensIn, rows[0].TokensOut)
+	}
+	if rows[0].Model != "gpt-4o" || len(rows[0].Day) != len("2006-01-02") {
+		t.Fatalf("the day row reads %+v", rows[0])
+	}
+}
+
+// The action split carries success alongside the action, because a request
+// that never answered is not a thing that was done with a command.
+func TestMetricsByAction(t *testing.T) {
+	db := openTestDB(t)
+	in, out := int64(100), int64(10)
+	for _, r := range []RequestRecord{
+		{Provider: "openai", Model: "gpt-4o", Action: "run", Success: true, TokensIn: &in, TokensOut: &out},
+		{Provider: "openai", Model: "gpt-4o", Action: "run", Success: true, TokensIn: &in, TokensOut: &out},
+		{Provider: "openai", Model: "gpt-4o", Action: "run", Success: false, TokensIn: &in, TokensOut: &out},
+		{Provider: "openai", Model: "gpt-4o", Action: "copy", Success: true, TokensIn: &in, TokensOut: &out},
+	} {
+		r.Prompt, r.Command = "p", "c"
+		if _, err := db.RecordRequest(r); err != nil {
+			t.Fatalf("record: %v", err)
+		}
+	}
+
+	rows, err := db.MetricsByAction(time.Time{})
+	if err != nil {
+		t.Fatalf("by action: %v", err)
+	}
+	if len(rows) != 3 {
+		t.Fatalf("expected run/ok, run/failed and copy/ok, got %d groups: %+v", len(rows), rows)
+	}
+	for _, row := range rows {
+		switch {
+		case row.Action == "run" && row.Success:
+			if row.Count != 2 || row.TokensIn != 200 {
+				t.Fatalf("two clean runs read %+v", row)
+			}
+		case row.Action == "run" && !row.Success:
+			if row.Count != 1 {
+				t.Fatalf("the run that never answered read %+v", row)
+			}
+		case row.Action == "copy":
+			if row.Count != 1 {
+				t.Fatalf("the copy read %+v", row)
+			}
+		default:
+			t.Fatalf("an unexpected group: %+v", row)
+		}
 	}
 }

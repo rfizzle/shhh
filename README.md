@@ -754,6 +754,34 @@ after confirming, and `[?]` lists every key. **Nothing is re-run until
 state how much of the store was hidden. `--table` (or a non-terminal stdout)
 prints the plain table instead.
 
+## Metrics
+
+```bash
+shhh metrics
+shhh metrics --window 30d
+```
+
+A table of one row per model — requests, tokens in and out, spend, time to
+first token and its p95 — with every numeric column right-aligned in a fixed
+width so you read down a column instead of across a row. The last column is a
+sparkline of that model's tokens per day over the last week: it is dimmer and
+never coloured, because it is the shape and the numbers beside it are the
+measurement. Columns give ground whole as the terminal narrows, the sparkline
+first; the model and the spend never go.
+
+Under the table, one block meter per share with its number always stated
+beside the bar: **where the money went** — what became of the commands, with
+the requests that never answered kept as their own `✗` category, because that
+is a cost you did not ask for — and one block per ratio the store can answer:
+how much came back at all, how much of what was run exited clean, and how much
+of what was rated was rated up. A reading the store has nothing for is left
+out rather than drawn as a row of empty bars. Where no model can be priced,
+the split is over tokens and says so.
+
+`[q]` (or `[esc]`) leaves; that is the whole keyboard. `--window` takes `all`
+(the default) or a number of days. `--table`, and any non-terminal stdout,
+prints the full plain table instead — every column the store has, for piping.
+
 ## Data Storage
 
 History, snippets, metrics, and chat logs are stored in a local SQLite database:

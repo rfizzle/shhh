@@ -113,13 +113,16 @@ type ProviderMetrics struct {
 	RatingRate      *float64
 }
 
-func (db *DB) MetricsSummary() ([]ProviderMetrics, error) {
+// MetricsSummary aggregates recorded requests per provider and model since
+// the cutoff, most-used first. A zero cutoff is every request ever recorded,
+// which is what `shhh metrics` reads without a --window.
+func (db *DB) MetricsSummary(since time.Time) ([]ProviderMetrics, error) {
 	rows, err := db.sql.Query(`
 		WITH ranked AS (
 			SELECT provider, model, success, ttft_ms, duration_ms, tokens_in, tokens_out, exit_code, rating,
 			       PERCENT_RANK() OVER (PARTITION BY provider, model ORDER BY ttft_ms) AS ttft_rank,
 			       PERCENT_RANK() OVER (PARTITION BY provider, model ORDER BY duration_ms) AS dur_rank
-			FROM requests
+			FROM requests WHERE created_at >= ?
 		)
 		SELECT
 			provider, model,
@@ -137,7 +140,7 @@ func (db *DB) MetricsSummary() ([]ProviderMetrics, error) {
 			AVG(CAST(rating AS REAL)) as rating_rate
 		FROM ranked
 		GROUP BY provider, model
-		ORDER BY count DESC`)
+		ORDER BY count DESC`, observeCutoff(since))
 	if err != nil {
 		return nil, err
 	}
@@ -158,4 +161,85 @@ func (db *DB) MetricsSummary() ([]ProviderMetrics, error) {
 		results = append(results, m)
 	}
 	return results, rows.Err()
+}
+
+// MetricsDayTokens is one model's token use on one calendar day (UTC, the way
+// every row is stamped). It is what the per-model sparkline of §19c is drawn
+// from: the columns were always in `requests` and nothing had ever read them
+// by day.
+type MetricsDayTokens struct {
+	Provider  string
+	Model     string
+	Day       string
+	TokensIn  int64
+	TokensOut int64
+}
+
+// MetricsTokensByDay aggregates request tokens per provider/model per day
+// since the cutoff, oldest day first.
+func (db *DB) MetricsTokensByDay(since time.Time) ([]MetricsDayTokens, error) {
+	rows, err := db.sql.Query(
+		`SELECT provider, model, substr(created_at, 1, 10) AS day,
+		        COALESCE(SUM(tokens_in), 0), COALESCE(SUM(tokens_out), 0)
+		 FROM requests WHERE created_at >= ?
+		 GROUP BY provider, model, day ORDER BY day`, observeCutoff(since))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []MetricsDayTokens
+	for rows.Next() {
+		var d MetricsDayTokens
+		if err := rows.Scan(&d.Provider, &d.Model, &d.Day, &d.TokensIn, &d.TokensOut); err != nil {
+			return nil, err
+		}
+		out = append(out, d)
+	}
+	return out, rows.Err()
+}
+
+// MetricsActionUsage is what became of the commands one model answered with,
+// and what those answers cost in tokens. Success is carried alongside the
+// action because a request that never answered is not a category of what was
+// done with it — it is the cost of nothing having been done at all.
+type MetricsActionUsage struct {
+	Provider  string
+	Model     string
+	Action    string
+	Success   bool
+	Count     int
+	TokensIn  int64
+	TokensOut int64
+}
+
+// MetricsByAction aggregates requests by provider/model/action/success since
+// the cutoff, most-frequent first. The model stays in the grouping because
+// tokens are priced per model: a split of spend that summed tokens across
+// models first would be pricing gpt-5.2's output at gemini's rate.
+func (db *DB) MetricsByAction(since time.Time) ([]MetricsActionUsage, error) {
+	rows, err := db.sql.Query(
+		`SELECT provider, model, action, success, COUNT(*),
+		        COALESCE(SUM(tokens_in), 0), COALESCE(SUM(tokens_out), 0)
+		 FROM requests WHERE created_at >= ?
+		 GROUP BY provider, model, action, success ORDER BY COUNT(*) DESC`, observeCutoff(since))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []MetricsActionUsage
+	for rows.Next() {
+		var (
+			u       MetricsActionUsage
+			success int
+		)
+		if err := rows.Scan(&u.Provider, &u.Model, &u.Action, &success,
+			&u.Count, &u.TokensIn, &u.TokensOut); err != nil {
+			return nil, err
+		}
+		u.Success = success != 0
+		out = append(out, u)
+	}
+	return out, rows.Err()
 }

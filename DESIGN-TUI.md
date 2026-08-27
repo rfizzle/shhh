@@ -1596,6 +1596,7 @@ percentage without its bar, never a bar without its number.
 | step progress | 22 | completed steps add (10), the running step spin (205), the rest dim (241) |
 | agent progress | 5 | always info (12) — an agent lane is never colour-coded by health |
 | countdown | 20 | accent (214), draining right to left (`retry in 38s`, §17) |
+| category | 22 | accent (214) — one share of a total nobody set a threshold on (§19c). del (9) where the share is a cost you did not ask for, and info (12) where it is a sub-agent's |
 
 ```
 ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱   ctx 62%     healthy · add
@@ -3100,6 +3101,91 @@ shhh metrics · last 7 days · 41 sessions · 612 tool calls  $18.42 · [q] quit
 - A category with nothing in it is left out rather than drawn as an empty bar,
   and `retries` keeps its del (9) fill because a retry is a cost you did not
   ask for.
+
+**What shipped (S-129).** `internal/cli/metrics.go` printed a fifteen-column
+tabwriter table and had no Bubble Tea at all. It hosts
+`components.MetricsScreen` now and owns everything the screen deliberately
+does not — what the store recorded, what a token costs, what became of a
+command, and which of those readings there is anything to say about. Every
+number reaching the screen is already a string and every share is already a
+percentage, which is why it draws `$12.80` and `94% answered` without knowing
+what a price table or an exit code is.
+
+- **The artboard decided it is a surface.** The story left the choice between
+  a TUI and a printed table to the artboard, and the artboard's header offers
+  `[q] quit` — so it is a takeover surface like the other three. `--table`,
+  and any non-terminal stdout, still prints the old table, because a metrics
+  run is the one thing in this product people pipe.
+- **The table is the §6a grid.** Every numeric column is measured against its
+  own cells and right-aligned in that width, so the reader scans a column
+  rather than parsing rows. Columns give ground whole as the terminal narrows,
+  in a stated order — the sparkline first, because §19c already says it is the
+  shape and not the measurement — and `MODEL` and `SPEND` never go.
+- **One sparkline per row, in dimmer, never coloured**, and the host supplies
+  a full seven-day run with zeroes for the days nothing ran: a shape drawn
+  only over the days that happened would be a different week on every row.
+- **Every ratio is the block meter, and only ratios are.** The three readings
+  the store can answer — answered, exited 0, liked — are `Meter` blocks with
+  the number stated beside the bar; a reading it has nothing for is left out
+  rather than drawn as a row of empty bars, which is §19c's own rule about
+  empty categories applied to blocks.
+- **`MeterCategory` and `MeterUnasked` are new tones**, not a new meter: the
+  accent-coloured category share of §19c, and the del one for a cost nobody
+  asked for. Both are recorded in §10c above, and neither is a departure —
+  the design system's own `Meter.d.ts` already declares `tone?: 'add' | 'del'
+  | 'acc' | 'info'` as a forced tone beside the automatic pressure ladder, so
+  this is Go catching up with the primitive rather than adding to it. The
+  seven-cell sparkline is likewise within `Sparkline.d.ts`, which calls eight
+  points "the standard width in the rail" rather than the only one.
+
+**The departures.**
+
+- **The artboard's screen is over a store this command does not read.** Its
+  header counts sessions and tool calls, its columns are `TURNS` and `TOOLS`,
+  and its split is edits / reads / agents / retries — that is
+  `agent_sessions` and `agent_events`, which `shhh observe` reads. `shhh
+  metrics` is over the `requests` table: one prompt, one command, and what was
+  done with it. So the grammar is the artboard's and the content is the
+  store's, exactly the move S-128 made. This is the third place the design
+  system describes a surface the product does not have, and like §19b's
+  session preview and §19d's `shhh doctor` it is recorded rather than
+  resolved.
+- **The split is by what became of the command.** `requests` records an action
+  per row, so the categories are `$ run`, `copied`, `saved`, `edited`,
+  `⊘ dismissed` and `· never used`, with `✗ no answer` keeping the del fill
+  the artboard gives `retries` — a request that never answered is not a thing
+  that was done with a command, it is the cost of there having been no
+  command. Where nothing can be priced at all — a gateway whose catalog
+  returns bare ids — the split is over tokens and its title says so, because
+  the split is the reading and the currency is only the unit it happened to be
+  in.
+- **`PER DAY` is headed `TOK · 7d`.** The trend is tokens, and the column sits
+  beside `SPEND`, where `PER DAY` would as easily read as money. The span is
+  in the heading because the totals follow `--window` and the trend does not.
+- **Latency has no bar.** S-129 asks for the meter on "latency and
+  success-rate columns where a ratio is being shown"; a latency has no
+  denominator, and a bar drawn against a scale nobody set is the fabricated
+  ratio §10c refuses. `TTFT` and `P95` stay columns of the table.
+- **The number beside a category bar takes the bar's colour.** The artboard
+  paints `$9.94 · 54%` dim beside an accent bar; §10c's rule is that the bar
+  and its number turn together, and `Meter` renders the pair in one styling
+  pass.
+- **No `[?]` and no key row at the foot.** §19's common shape gives all four
+  screens a hint line; this one's only key is `[q]`, which the header already
+  offers — the same reading that dropped the masked entry's own key row in
+  §19a. §19c's header agrees with it: it writes `$18.42 · [q] quit` where the
+  artboard writes `[?] keys · [q] quit`.
+- **The header clips its subject rather than dropping its keys.** §19a and
+  §19b clip the left and let `[?] keys · [q] quit` go, because both have a
+  foot key row to fall back on. This screen has neither that nor a second key,
+  so the spend and `[q]` are fixed and the subject is what gives ground —
+  otherwise a takeover surface would be left with no stated way out of it
+  (invariant 5).
+- **A screen too short for its blocks names the ones that went.** Blocks are
+  dropped whole from the bottom and the marker lists them by title; the table
+  gives ground last and says how many models it is holding back. A marker that
+  only said "2 more" would leave the reader guessing which two readings the
+  screen is sitting on (invariant 4).
 
 ### 19d. `shhh doctor` (S-130)
 

@@ -1332,3 +1332,95 @@ func TestGolden_HistoryScreen(t *testing.T) {
 		}
 	})
 }
+
+// metricsWidths are the three the metrics surface is drawn at: the narrowest
+// terminal it still lines its columns up in, the working width, and the width
+// the `Tools` artboard draws it at.
+var metricsWidths = []int{60, 110, 130}
+
+// goldenMetricsModels is the fixture table: a model priced and timed, one
+// with a slower tail, and one from a gateway whose catalog returns bare ids —
+// so the row that has no price and no p95 to state is captured beside the
+// rows that do.
+func goldenMetricsModels() []MetricsModel {
+	return []MetricsModel{
+		{Name: "gpt-5.2", Requests: "184", TokensIn: "2.9M", TokensOut: "318k",
+			Spend: "$12.80", TTFT: "640ms", P95: "1.4s",
+			Trend: []float64{31, 44, 42, 55, 63, 51, 88}},
+		{Name: "claude-sonnet-4.6", Requests: "46", TokensIn: "1.1M", TokensOut: "96k",
+			Spend: "$4.71", TTFT: "910ms", P95: "2.1s",
+			Trend: []float64{8, 16, 41, 24, 15, 48, 30}},
+		{Name: "gemini-3-flash", Requests: "12", TokensIn: "88k", TokensOut: "7k",
+			Spend: "<$0.01", TTFT: "310ms", P95: "0.5s",
+			Trend: []float64{0, 0, 6, 0, 0, 0, 14}},
+		{Name: "house-model", Requests: "9", TokensIn: "42k", TokensOut: "3k",
+			Spend: NoDuration, TTFT: "1.2s", P95: NoDuration,
+			Trend: []float64{0, 0, 0, 0, 3, 0, 0}},
+	}
+}
+
+// goldenMetricsBlocks is the fixture's meter blocks: the spend split with its
+// unasked cost, and the two ratios the store had an answer for.
+func goldenMetricsBlocks() []MetricsBlock {
+	return []MetricsBlock{
+		{Title: "where the money went", Field: "last 30 days", Bars: []MetricsBar{
+			{Label: "$ run", Pct: 54, Text: "$9.94 · 54%", Note: "203 requests", Tone: MeterCategory},
+			{Label: "copied", Pct: 28, Text: "$5.11 · 28%", Note: "31 requests", Tone: MeterCategory},
+			{Label: "⊘ dismissed", Pct: 13, Text: "$2.41 · 13%", Note: "19 requests", Tone: MeterCategory},
+			{Label: "✗ no answer", Pct: 5, Text: "$0.96 · 5%", Note: "9 requests",
+				NoteTone: ToneRisk, Tone: MeterUnasked},
+		}},
+		{Title: "how the answers came back", Field: "251 requests", Bars: []MetricsBar{
+			{Label: "gpt-5.2", Pct: 94, Text: "94% answered", Note: "173 of 184", Tone: MeterCategory},
+			{Label: "claude-sonnet-4.6", Pct: 100, Text: "100% answered", Note: "46 of 46", Tone: MeterCategory},
+			{Label: "gemini-3-flash", Pct: 75, Text: "75% answered", Note: "9 of 12", Tone: MeterCategory},
+			{Label: "house-model", Pct: 100, Text: "100% answered", Note: "9 of 9", Tone: MeterCategory},
+		}},
+		{Title: "how the commands ran", Field: "203 runs", Bars: []MetricsBar{
+			{Label: "gpt-5.2", Pct: 81, Text: "81% exited 0", Note: "164 of 203", Tone: MeterCategory},
+		}},
+	}
+}
+
+// TestGolden_MetricsScreen captures `shhh metrics` on the cockpit's language
+// (S-129, §19c): the fixed-width right-aligned columns, the one sparkline per
+// row that is never coloured, and the block meter every ratio is drawn as
+// with its number stated beside it.
+func TestGolden_MetricsScreen(t *testing.T) {
+	captureGolden(t, "metrics-screen", "the metrics surface", metricsWidths, func(width int) []golden.Panel {
+		screen := func(mut func(*MetricsScreen)) *MetricsScreen {
+			m := &MetricsScreen{
+				Subject: "last 30 days · 251 requests · 4 models",
+				Spend:   "$18.42",
+				Models:  goldenMetricsModels(),
+				Blocks:  goldenMetricsBlocks(),
+			}
+			if mut != nil {
+				mut(m)
+			}
+			return m
+		}
+		return []golden.Panel{
+			{Label: "the surface · the table, the spend split, and the ratios under it",
+				View: screen(nil).View(width)},
+			{Label: "nothing priced · the split is over tokens and says so", View: screen(func(m *MetricsScreen) {
+				m.Spend = ""
+				for i := range m.Models {
+					m.Models[i].Spend = NoDuration
+				}
+				m.Blocks[0].Title = "where the tokens went"
+				for i, text := range []string{"2.1M · 54%", "1.1M · 28%", "504k · 13%", "194k · 5%"} {
+					m.Blocks[0].Bars[i].Text = text
+				}
+			}).View(width)},
+			{Label: "a short terminal · what fits is drawn, what went is named", View: screen(func(m *MetricsScreen) {
+				m.MaxLines = 16
+			}).View(width)},
+			{Label: "a shorter one · the table windows last and says what it holds back",
+				View: screen(func(m *MetricsScreen) { m.MaxLines = 7 }).View(width)},
+			{Label: "nothing recorded · a heading over nothing says so", View: (&MetricsScreen{
+				Subject: "all time · 0 requests · 0 models",
+			}).View(width)},
+		}
+	})
+}

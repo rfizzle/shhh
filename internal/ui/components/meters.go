@@ -54,6 +54,16 @@ const (
 	MeterAgent
 	// MeterCountdown is a draining countdown — always accent.
 	MeterCountdown
+	// MeterCategory is the category meter of §19c: one share of a total
+	// nobody set a threshold on — where the money went, how the answers came
+	// back. Always accent, never the context ladder, because a threshold
+	// colour here would imply a limit that does not exist.
+	MeterCategory
+	// MeterUnasked is a category meter over a share that is a cost nobody
+	// asked for — §19c's retries row, and the requests that never answered.
+	// Del, for the same reason the ladder's own top rung is: this is the
+	// part of the total the reader would rather not have paid.
+	MeterUnasked
 )
 
 // Meter is the block meter: `▰` filled, `▱` empty. Never a bar element, never
@@ -123,8 +133,10 @@ func (m Meter) Style() lipgloss.Style {
 		return addStyle
 	case MeterAgent:
 		return infoStyle
-	case MeterCountdown:
+	case MeterCountdown, MeterCategory:
 		return accentStyle
+	case MeterUnasked:
+		return delStyle
 	default:
 		return ctxStyle(min(max(m.Pct, 0), 100), m.Warn, m.Alert)
 	}
