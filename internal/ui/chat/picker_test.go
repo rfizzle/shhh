@@ -44,7 +44,7 @@ func TestModelPick_BareModelOpensPicker(t *testing.T) {
 		t.Fatalf("expected switch to m2, got switched=%q modelName=%q", switched, m.modelName)
 	}
 	last := m.transcript[len(m.transcript)-1]
-	if !strings.Contains(last.text, "Switched model to m2") {
+	if !strings.Contains(last.text, "Switched to m2 for this session") {
 		t.Fatalf("transcript should note the switch, got %q", last.text)
 	}
 }
@@ -929,5 +929,88 @@ func TestClosestOption(t *testing.T) {
 	}
 	if got := closestOption(all, "zzzz"); got != "" {
 		t.Fatalf("nothing is close to %q, so nothing should be named, got %q", "zzzz", got)
+	}
+}
+
+// The picker is where a model is chosen, so it is where the choice can be
+// made to stick: [d] switches the session and writes provider.model, so the
+// name just read off a list does not have to be typed back (S-136).
+func TestModelPick_MakeDefaultSwitchesAndPersists(t *testing.T) {
+	var switched string
+	var wrote [][2]string
+	m := readyModel(t).
+		WithModelSwitcher(func(name string) { switched = name }).
+		WithConfigWriter(func(k, v string) error {
+			wrote = append(wrote, [2]string{k, v})
+			return nil
+		}).
+		WithPricing(nil, "m1").
+		WithModelOptions([]string{"m1", "m2"})
+
+	m.input.SetValue("/model")
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(Model)
+	if m.picker == nil {
+		t.Fatal("bare /model should open the picker")
+	}
+	// Both readings are on the card, and enter's is named once d's is.
+	hint := ansi.Strip(m.picker.View(110))
+	for _, want := range []string{"enter this session", "d and make it default"} {
+		if !strings.Contains(hint, want) {
+			t.Errorf("the card should offer %q:\n%s", want, hint)
+		}
+	}
+
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	updated, _ = updated.(Model).Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(modelDefaultKey)})
+	next := updated.(Model)
+
+	if switched != "m2" || next.modelName != "m2" {
+		t.Fatalf("[d] switches the session too, got switched=%q modelName=%q", switched, next.modelName)
+	}
+	if len(wrote) != 1 || wrote[0] != [2]string{"provider.model", "m2"} {
+		t.Fatalf("persisted %v, want provider.model=m2", wrote)
+	}
+	last := next.transcript[len(next.transcript)-1]
+	if !strings.Contains(last.text, "m2") || !strings.Contains(last.text, "Default model set") {
+		t.Fatalf("the note should say both things it did, got %q", last.text)
+	}
+}
+
+// A key that cannot be honoured is not offered: a session with nowhere to
+// write has no default to set.
+func TestModelPick_NoWriterNoDefaultOffer(t *testing.T) {
+	m := readyModel(t).
+		WithModelSwitcher(func(string) {}).
+		WithPricing(nil, "m1").
+		WithModelOptions([]string{"m1", "m2"})
+
+	m.input.SetValue("/model")
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	m = updated.(Model)
+	if m.picker.AltKey != "" {
+		t.Errorf("no writer means no offer, got %q", m.picker.AltKey)
+	}
+	if hint := ansi.Strip(m.picker.View(110)); !strings.Contains(hint, "enter select") {
+		t.Errorf("enter goes back to its plain label when it is the only one:\n%s", hint)
+	}
+}
+
+// Writing a default that something else overrules is the one way this can
+// succeed and still not work, so the note has to say so (S-136).
+func TestModelDefault_NamesWhatOutranksIt(t *testing.T) {
+	m := New(nil, mockStream).
+		WithConfigWriter(func(string, string) error { return nil }).
+		WithDefaults(Defaults{Outranked: "SHHH_MODEL is set to gpt-4o"})
+	m.modelName = "gpt-4o"
+
+	_, out := m.handleSlashCommand("/model default o3")
+	if !strings.Contains(out, "SHHH_MODEL") || !strings.Contains(out, "outranks") {
+		t.Fatalf("the note should name what overrules it, got %q", out)
+	}
+	// And reading the setting back is the same claim, told more quietly.
+	_, out = m.handleSlashCommand("/model default")
+	if !strings.Contains(out, "Overruled") {
+		t.Fatalf("reporting the setting should say it too, got %q", out)
 	}
 }

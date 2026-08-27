@@ -21,6 +21,7 @@ package chat
 
 import (
 	"fmt"
+	"strconv"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -32,10 +33,40 @@ import (
 // other pager the reader uses.
 const wheelLines = 3
 
-// mouseCmd turns terminal mouse reporting on or off. Reporting is on for the
-// session by default — the wheel is the gesture people reach for first — and
-// `/ui mouse off` gives the terminal's own click-drag selection back, which
-// is the one thing tracking costs.
+// mouseToggleKey flips terminal mouse reporting from anywhere. Ctrl+X because
+// of what is left rather than what it stands for: the textarea underneath
+// claims a, b, d, e, f, k, n, p, t, u, v and w; this surface spends c, d, e, g
+// and j of its own; ctrl+s, ctrl+q and ctrl+z belong to the terminal; and
+// ctrl+o is held for expanding a step's detail. It is not a mnemonic and does
+// not pretend to be one — the start screen and /ui both name it, which is
+// where a chord is actually learned.
+const mouseToggleKey = "ctrl+x"
+
+// toggleMouse flips reporting, persists the answer, and tells the terminal.
+// It is the chord's whole job, and the same path /ui mouse takes, so the two
+// cannot drift into different states or different notices.
+func (m Model) toggleMouse() (tea.Model, tea.Cmd) {
+	note := m.setMouse(!m.mouseOn)
+	next, cmd := m.systemNotice(note)
+	nm, ok := next.(Model)
+	if !ok {
+		return next, cmd
+	}
+	return nm, tea.Batch(cmd, mouseCmd(nm.mouseOn))
+}
+
+// WithMouse sets whether the session starts with terminal mouse reporting on
+// (appearance.mouse). Off is the default and the zero value, which is what
+// leaves the terminal's own click-drag selection working.
+func (m Model) WithMouse(on bool) Model {
+	m.mouseOn = on
+	return m
+}
+
+// mouseCmd turns terminal mouse reporting on or off. Reporting is off for the
+// session by default — the terminal keeps its own click-drag selection, which
+// is the one thing tracking costs and the one thing nothing else here can do —
+// and ctrl+o (or `/ui mouse on`) buys the wheel with it.
 func mouseCmd(on bool) tea.Cmd {
 	if on {
 		return tea.EnableMouseCellMotion
@@ -208,10 +239,10 @@ func (m Model) readingPosition() (pos, total int) {
 
 // mouseStatus describes the current mouse-reporting state for /ui.
 func (m Model) mouseStatus() string {
-	if m.mouseOff {
-		return "off"
+	if m.mouseOn {
+		return "on"
 	}
-	return "on"
+	return "off"
 }
 
 // mouseCommand handles /ui mouse: whether the terminal reports the wheel to
@@ -236,12 +267,32 @@ func (m *Model) mouseCommand(parts []string) string {
 	default:
 		return fmt.Sprintf("Error: unknown mouse setting %q (on, off)", parts[2])
 	}
-	if on == !m.mouseOff {
+	if on == m.mouseOn {
 		return "Mouse reporting is already " + m.mouseStatus() + "."
 	}
-	m.mouseOff = !on
+	return m.setMouse(on)
+}
+
+// setMouse flips reporting and persists the answer, so the choice outlives
+// the process that made it. A session with no writer still flips — the
+// setting is real either way — and says only what it could not do.
+func (m *Model) setMouse(on bool) string {
+	m.mouseOn = on
+	note := mouseNote(on)
+	if m.writeConfig == nil {
+		return note + "\nThis session cannot write the config file, so it is for this session only."
+	}
+	if err := m.writeConfig("appearance.mouse", strconv.FormatBool(on)); err != nil {
+		return note + "\nIt could not be saved: " + err.Error()
+	}
+	return note + " Saved — new sessions start this way."
+}
+
+// mouseNote says what the new state costs and what it buys, because both
+// readings are a trade rather than an improvement.
+func mouseNote(on bool) string {
 	if on {
-		return "Mouse reporting on — the wheel scrolls the transcript; the terminal's own selection needs shift (or option) held."
+		return "Mouse reporting on — the wheel scrolls the transcript; the terminal's own click-drag selection needs shift (or option) held."
 	}
 	return "Mouse reporting off — the terminal keeps click-drag selection; pgup, ctrl+e and j/k read the transcript."
 }

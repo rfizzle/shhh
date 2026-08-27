@@ -64,7 +64,9 @@ func diffFullModel(t *testing.T) Model {
 }
 
 func TestWheel_ScrollsTheTranscriptAndLeavesTheDraftAlone(t *testing.T) {
-	m := typeChars(t, proseModel(t), "half a sentence")
+	// Reporting is off by default, so the wheel has to be asked for before
+	// there is a wheel event to route at all (S-136).
+	m := typeChars(t, proseModel(t).WithMouse(true), "half a sentence")
 	before := m.viewport.YOffset
 
 	updated, _ := m.Update(wheel(-1))
@@ -89,7 +91,7 @@ func TestWheel_ScrollsTheTranscriptAndLeavesTheDraftAlone(t *testing.T) {
 // The wheel is the one gesture that reaches a full-screen viewer, since the
 // transcript behind it is not what the reader is looking at (§3c).
 func TestWheel_ReachesTheFullScreenDiff(t *testing.T) {
-	m := diffFullModel(t)
+	m := diffFullModel(t).WithMouse(true)
 	before := m.fullDiff.Offset
 
 	updated, _ := m.Update(wheel(1))
@@ -105,7 +107,7 @@ func TestWheel_ReachesTheFullScreenDiff(t *testing.T) {
 
 func TestWheel_IgnoredWhileMouseReportingIsOff(t *testing.T) {
 	m := proseModel(t)
-	m.mouseOff = true
+	m.mouseOn = false
 	before := m.viewport.YOffset
 
 	updated, _ := m.Update(wheel(-1))
@@ -327,23 +329,24 @@ func TestReadingRail_NamesThePaneWithTheKeyboard(t *testing.T) {
 func TestUICommand_MouseTogglesReporting(t *testing.T) {
 	m := readyModel(t)
 
-	if _, result := m.handleSlashCommand("/ui"); !strings.Contains(result, "Mouse reporting: on") {
+	// Off is the default now, so the states below are the other way round.
+	if _, result := m.handleSlashCommand("/ui"); !strings.Contains(result, "Mouse reporting: off") {
 		t.Fatalf("bare /ui should report the mouse state, got %q", result)
 	}
-	if _, result := m.handleSlashCommand("/ui mouse off"); !strings.Contains(result, "click-drag selection") {
-		t.Fatalf("the reply should say what turning it off buys, got %q", result)
+	if _, result := m.handleSlashCommand("/ui mouse on"); !strings.Contains(result, "wheel scrolls") {
+		t.Fatalf("the reply should say what turning it on buys, got %q", result)
 	}
-	if !m.mouseOff {
-		t.Fatal("/ui mouse off should turn reporting off")
+	if !m.mouseOn {
+		t.Fatal("/ui mouse on should turn reporting on")
 	}
-	if _, result := m.handleSlashCommand("/ui mouse"); !strings.Contains(result, "Mouse reporting: off") {
+	if _, result := m.handleSlashCommand("/ui mouse"); !strings.Contains(result, "Mouse reporting: on") {
 		t.Fatalf("bare /ui mouse should report the state, got %q", result)
 	}
-	if _, result := m.handleSlashCommand("/ui mouse on"); !strings.Contains(result, "wheel scrolls") {
-		t.Fatalf("turning it back on should say so, got %q", result)
+	if _, result := m.handleSlashCommand("/ui mouse off"); !strings.Contains(result, "click-drag selection") {
+		t.Fatalf("turning it back off should say so, got %q", result)
 	}
-	if m.mouseOff {
-		t.Fatal("/ui mouse on should turn reporting back on")
+	if m.mouseOn {
+		t.Fatal("/ui mouse off should turn reporting back off")
 	}
 	if _, result := m.handleSlashCommand("/ui mouse sometimes"); !strings.Contains(result, "unknown mouse setting") {
 		t.Fatalf("an unknown setting should be an error, got %q", result)
@@ -355,9 +358,9 @@ func TestUICommand_MouseTogglesReporting(t *testing.T) {
 // for never comes back.
 func TestUICommand_MouseSendsTheTerminalACommand(t *testing.T) {
 	m := readyModel(t)
-	next, cmd := m.runCommand("/ui mouse off", "/ui")
-	if !next.(Model).mouseOff {
-		t.Fatal("running /ui mouse off should turn reporting off")
+	next, cmd := m.runCommand("/ui mouse on", "/ui")
+	if !next.(Model).mouseOn {
+		t.Fatal("running /ui mouse on should turn reporting on")
 	}
 	if cmd == nil {
 		t.Fatal("flipping reporting should send the terminal a command")
@@ -378,5 +381,82 @@ func TestStartScreen_NavLineSurvivesTyping(t *testing.T) {
 	}
 	if !strings.Contains(view, "read the transcript") {
 		t.Fatal("the navigation keys still work with a draft in the box, so they should still be offered")
+	}
+}
+
+// Reporting is off out of the box, because the thing it costs — the
+// terminal's own click-drag selection — has no substitute here, while the
+// wheel does (S-136, §7a).
+func TestMouse_OffByDefaultAndAskedForByChord(t *testing.T) {
+	var wrote [][2]string
+	m := readyModel(t).WithConfigWriter(func(k, v string) error {
+		wrote = append(wrote, [2]string{k, v})
+		return nil
+	})
+	if m.mouseOn {
+		t.Fatal("a session starts with reporting off")
+	}
+
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlX})
+	on := updated.(Model)
+	if !on.mouseOn {
+		t.Fatal("ctrl+x should turn reporting on")
+	}
+	if cmd == nil {
+		t.Fatal("the terminal has to be told, or the setting is only a field")
+	}
+	// The answer outlives the process that gave it, which is the whole
+	// difference between this and the old session-only /ui mouse.
+	if len(wrote) != 1 || wrote[0] != [2]string{"appearance.mouse", "true"} {
+		t.Fatalf("persisted %v, want appearance.mouse=true", wrote)
+	}
+
+	updated, _ = on.Update(tea.KeyMsg{Type: tea.KeyCtrlX})
+	if updated.(Model).mouseOn {
+		t.Fatal("ctrl+x again should turn it back off")
+	}
+	if len(wrote) != 2 || wrote[1] != [2]string{"appearance.mouse", "false"} {
+		t.Fatalf("persisted %v, want appearance.mouse=false second", wrote)
+	}
+}
+
+// The chord is answered above the surfaces, not inside one: wanting to copy
+// something arrives just as often while reading the transcript as while
+// typing, and a key that only worked in the draft would miss the moment.
+func TestMouse_ChordWorksFromEverySurface(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		open func(*testing.T) Model
+	}{
+		{"reading the transcript", func(t *testing.T) Model { return focusModel(t) }},
+		{"the full-screen diff", func(t *testing.T) Model { return diffFullModel(t) }},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := tc.open(t)
+			state := m.state
+			updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlX})
+			next := updated.(Model)
+			if !next.mouseOn || cmd == nil {
+				t.Fatalf("ctrl+x should flip reporting here too, on=%v", next.mouseOn)
+			}
+			if next.state != state {
+				t.Errorf("the chord is a setting, not a way out: state %v → %v", state, next.state)
+			}
+		})
+	}
+}
+
+// A session with nowhere to write still flips — the setting is real either
+// way — and says only the part it could not do.
+func TestMouse_WithoutAWriterSaysSo(t *testing.T) {
+	m := readyModel(t)
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlX})
+	next := updated.(Model)
+	if !next.mouseOn {
+		t.Fatal("the flip is not conditional on being able to save it")
+	}
+	last := next.transcript[len(next.transcript)-1]
+	if !strings.Contains(last.text, "this session only") {
+		t.Fatalf("an unsaved flip should say so, got %q", last.text)
 	}
 }

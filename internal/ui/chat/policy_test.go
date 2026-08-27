@@ -552,13 +552,12 @@ func TestReadOnlyAutoDisabledPrompts(t *testing.T) {
 
 func TestModelDefaults(t *testing.T) {
 	var wrote [][2]string
-	m := New(nil, mockStream).WithDefaults(Defaults{
-		Model: "gpt-4o",
-		Write: func(key, value string) error {
+	m := New(nil, mockStream).
+		WithConfigWriter(func(key, value string) error {
 			wrote = append(wrote, [2]string{key, value})
 			return nil
-		},
-	})
+		}).
+		WithDefaults(Defaults{Model: "gpt-4o"})
 	m.modelName = "gpt-4o"
 
 	if _, out := m.handleSlashCommand("/model default"); !strings.Contains(out, "gpt-4o") {

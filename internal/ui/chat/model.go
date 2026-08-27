@@ -372,11 +372,17 @@ type Model struct {
 	// (S-076); -1 while the transcript is being read with nothing on it to
 	// select (S-115).
 	focusIdx int
-	// mouseOff turns terminal mouse reporting off (/ui mouse). The zero
-	// value is reporting on, which is what every host wants: the wheel
-	// scrolls the transcript. Off is for the reader who would rather keep
-	// the terminal's own click-drag selection (S-115, §7a).
-	mouseOff bool
+	// mouseOn turns terminal mouse reporting on (ctrl+o, /ui mouse). The
+	// zero value is off, because reporting costs the terminal its own
+	// click-drag selection and a transcript is text people copy out of. The
+	// wheel is the side of the trade with a substitute — pgup/pgdn, ctrl+e,
+	// j/k all read the transcript — so the wheel is the side you ask for
+	// (S-115, §7a).
+	mouseOn bool
+	// writeConfig persists one config key to the user's file. The CLI
+	// installs it; a session without one cannot make a setting stick and
+	// says so rather than pretending it did.
+	writeConfig ConfigWriter
 	// containment wraps assistant commands in OS-level process containment
 	// when a mechanism is available (S-062).
 	containment Containment
@@ -480,7 +486,7 @@ type Model struct {
 	// rows it is showing back onto it, so a choice made through the filter row
 	// (S-123) still reaches an apply written against the whole list.
 	picker       *components.Select
-	pickerApply  func(*Model, int) string
+	pickerApply  func(*Model, int, bool) string
 	pickerAll    []components.SelectOption
 	pickerIndex  []int
 	modelOptions []string
@@ -752,9 +758,11 @@ func (m Model) Init() tea.Cmd {
 		cmds = append(cmds, listenSubagents(m.subagents.Events()))
 	}
 	// Mouse reporting is asked for by the model rather than by each host's
-	// program options, so every surface that runs this Model gets the wheel
-	// and /ui mouse has one thing to flip (S-115, §7a).
-	if !m.mouseOff {
+	// program options, so every surface that runs this Model gets the same
+	// answer and the toggle has one thing to flip (S-115, §7a). Nothing is
+	// sent when it is off: off is the terminal's own state, and the program
+	// that never asked for reporting has nothing to give back.
+	if m.mouseOn {
 		cmds = append(cmds, mouseCmd(true))
 	}
 	return tea.Batch(cmds...)
@@ -815,7 +823,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// it. It never reaches the textarea, which is what made a scroll
 		// gesture over the conversation move the three-line prompt box
 		// (S-115, §7a).
-		if m.mouseOff {
+		if !m.mouseOn {
 			return m, nil
 		}
 		return m.updateMouse(msg)
@@ -829,6 +837,17 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if path, ok := pastedFileAttachment(string(msg.Runes)); ok {
 				return m, attachFileCmd(path)
 			}
+		}
+		// Mouse reporting is the one setting with a chord of its own (S-136,
+		// §7a), and the only key answered before the surfaces are: what it
+		// costs — the terminal's own click-drag selection — is discovered at
+		// the moment of wanting to copy something, with a mouse already in
+		// hand and no appetite for a slash command. That moment arrives just
+		// as often over the full-screen diff or a transcript being read as it
+		// does over the draft, so the chord is answered above all of them.
+		// Nothing else claims it, so nothing is taken away by that.
+		if msg.String() == mouseToggleKey {
+			return m.toggleMouse()
 		}
 		if m.state == stateDiffFull {
 			return m.updateDiffFull(msg)
@@ -2544,7 +2563,8 @@ func helpText() string {
   /ui            Activity feed density, pane layout, monochrome and mouse:
                  /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>
                  (low hides counts, med collapses rows, high expands rows;
-                  mouse off gives the terminal its click-drag selection back)
+                  mouse is off by default so the terminal keeps click-drag
+                  selection — Ctrl+X flips it either way and saves the answer)
   /sandbox       Containment status and container sandboxes (doctor|list|status|destroy <id>|prune)
   /evidence      Tool-output evidence store: reduction stats and size (purge to clear)
   /gate          Quality gate: run [suite] starts the project's checks in the background, result shows the verdict

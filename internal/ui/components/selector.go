@@ -56,6 +56,11 @@ type SelectOption struct {
 type SelectResult struct {
 	Index    int
 	Canceled bool
+	// Alt is set when AltKey took the option rather than enter. It is the
+	// card's way of answering "which of the two readings of this choice",
+	// for a surface where taking an option means one thing now and another
+	// thing from now on (§4a).
+	Alt bool
 }
 
 // queryCursor is the block that follows what has been typed into the filter
@@ -80,6 +85,19 @@ type Select struct {
 	// Hint replaces the default key-hint line for a surface whose keys are
 	// not the default ones.
 	Hint string
+	// AltKey is a second way to take the focused option, and AltLabel is what
+	// it buys. They are for a card whose choice has two readings — /model's
+	// "this session" and "and from now on" — where an option that quietly
+	// picked one of them would be a decision the card made for the reader.
+	// Empty AltKey leaves the card with enter alone.
+	//
+	// Like j/k it is a bare letter, so it acts only while the query line is
+	// closed: a card being typed into keeps every letter as text (§4a).
+	AltKey   string
+	AltLabel string
+	// EnterLabel is what enter buys, for a card where "select" is not the
+	// whole answer because AltKey buys something else. Empty is "select".
+	EnterLabel string
 	// Unnumbered drops the "1." prefixes and the number-jump keys, for a
 	// surface where a digit is text rather than a jump (S-112).
 	Unnumbered bool
@@ -183,6 +201,12 @@ func (s *Select) Update(msg tea.KeyMsg) (done bool, result any) {
 		s.editQuery(msg)
 		return false, nil
 	}
+	// The second reading of the focused option, checked before the digits so
+	// a card whose alt key is a digit is still coherent. Like enter it needs
+	// something to take.
+	if s.AltKey != "" && key == s.AltKey && s.selectable() > 0 {
+		return true, SelectResult{Index: s.Focus, Alt: true}
+	}
 	switch key {
 	case "/":
 		if s.Filterable {
@@ -280,6 +304,14 @@ func (s *Select) View(width int) string {
 // own number, and then j/k, which is a second name for a key the row still
 // offers. What an offer is — the filter, the selection, the way out — never
 // goes.
+// enterLabel is what enter buys, defaulting to the plain reading.
+func (s *Select) enterLabel() string {
+	if s.EnterLabel != "" {
+		return s.EnterLabel
+	}
+	return "select"
+}
+
 func (s *Select) hintSegments(width int) []string {
 	if s.Hint != "" {
 		return []string{s.Hint}
@@ -298,11 +330,20 @@ func (s *Select) hintSegments(width int) []string {
 	if s.Filterable {
 		filter = "/ filter"
 	}
+	// The two readings of the choice, when there are two. Both are offers and
+	// so neither is ever dropped; what enter buys has to be named once the
+	// alt key names something else, or the pair reads as "select, or this
+	// other specific thing" and enter becomes the unlabelled one.
+	take, alt := "enter select", ""
+	if s.AltKey != "" {
+		take = "enter " + s.enterLabel()
+		alt = s.AltKey + " " + s.AltLabel
+	}
 	inner := max(width-cardFrameWidth, 1)
 	rungs := [][]string{
-		{move, "enter select", jump, filter, "esc cancel"},
-		{move, "enter select", filter, "esc cancel"},
-		{"↑↓ move", "enter select", filter, "esc cancel"},
+		{move, take, alt, jump, filter, "esc cancel"},
+		{move, take, alt, filter, "esc cancel"},
+		{"↑↓ move", take, alt, filter, "esc cancel"},
 	}
 	for _, rung := range rungs {
 		segs := presentSegments(rung)

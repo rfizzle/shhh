@@ -196,6 +196,12 @@ func (c Config) AgentModel(role, sessionModel string) string {
 
 type AppearanceConfig struct {
 	AccentColor string `toml:"accent_color"`
+	// Mouse turns terminal mouse reporting on. It is off by default because
+	// reporting costs the terminal its own click-drag selection, and a
+	// transcript is text people copy out of — while scrolling it already has
+	// pgup/pgdn, ctrl+e and j/k. The wheel is the thing with a substitute, so
+	// the wheel is the thing you opt into (ctrl+o, or `/ui mouse on`).
+	Mouse bool `toml:"mouse"`
 }
 
 type HistoryConfig struct {
@@ -308,6 +314,8 @@ func Set(cfg *Config, key, value string) error {
 		n := 0
 		fmt.Sscanf(value, "%d", &n)
 		cfg.Behavior.ContextMaxTokens = n
+	case "appearance.mouse":
+		cfg.Appearance.Mouse = value == "true"
 	case "behavior.max_tool_rounds":
 		n := 0
 		fmt.Sscanf(value, "%d", &n)

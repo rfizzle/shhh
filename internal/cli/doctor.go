@@ -263,6 +263,7 @@ func configSettingsSet(cfg config.Config) int {
 		cfg.Provider.BaseURL != "", cfg.Provider.Name != "",
 		cfg.Behavior.SilentMode, cfg.Behavior.Shell != "", cfg.Behavior.ContextMaxTokens > 0,
 		cfg.Behavior.MaxToolRounds != 0, cfg.Behavior.SafetyWarnings != nil,
+		cfg.Appearance.Mouse,
 		cfg.Behavior.SystemPromptExtra != "", len(cfg.Behavior.CommandAllowlist) > 0,
 		len(cfg.Behavior.ReadOnlyCommands) > 0,
 		cfg.Sandbox.Profile != "", cfg.Sandbox.ContainerImage != "", cfg.Sandbox.ContainerEngine != "",
@@ -286,7 +287,15 @@ func probeModel(ctx context.Context, cfg config.Config) doctorFinding {
 		ConfigAPIKey: cfg.Provider.APIKey,
 		ConfigPaths:  config.Paths(),
 	})
-	return doctorModelFinding(resolved.Provider, resolved.Model, survey)
+	f := doctorModelFinding(resolved.Provider, resolved.Model, survey)
+	// A model decided by an env var or a flag looks exactly like one decided
+	// by the config file, which is how `/model default` came to look broken
+	// while writing the file correctly (S-136). The row that reports the
+	// model is the row that has to say who chose it.
+	if over := resolve.ModelOutranks(resolve.Opts{ConfigModel: cfg.Provider.Model}); over != "" && cfg.Provider.Model != "" {
+		f.Detail = joinDetail(f.Detail, over+", overruling provider.model = "+cfg.Provider.Model)
+	}
+	return f
 }
 
 // doctorModelFinding reads the same walk the no-provider card reads (§17b):

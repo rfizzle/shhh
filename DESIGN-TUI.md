@@ -346,6 +346,32 @@ plan itself above the options — see §4d.
   pointer steps over, not options. An option that cannot be acted on right now
   is dimmed behind `⊘` with its reason, never dropped (invariant 4).
 
+**A choice with two readings gets two keys** (S-136). `/model` is the one card
+where taking an option means one thing now and another thing from now on, and a
+card that silently picked one of those would be making the decision for the
+reader:
+
+```
+┌─ Switch model ──────────────────────── 24 available · 8 showing ─┐
+│  ❯ 2. claude-sonnet-5     better diffs · $3 / $15                │
+│    3. gemini-3-flash      1M ctx · $0.30 / $2.50                 │
+│                                                                  │
+│ ↑↓/jk move · enter this session · d and make it default ·        │
+│ / filter · esc cancel                                            │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+- **Both are offers, so neither is ever dropped** as the card narrows — the
+  width ladder sheds the number-jump reminder and then `j/k`, exactly as it
+  did with one key.
+- **Naming the second key means naming the first.** `enter select` becomes
+  `enter this session` the moment `d` names something specific, or enter is
+  the unlabelled half of a pair.
+- **The alt key is a bare letter**, so it is text while the filter row is open
+  — the rule `j`/`k` already follow. A model name with a `d` in it types.
+- **A key that cannot be honoured is not offered**: a session with nowhere to
+  write a config file gets the card with `enter select` and nothing else.
+
 **A list longer than the panel is a window onto the list** (S-116;
 `ui_kits/cockpit/Lists.html` is normative for everything from here to the end
 of §4a). The card shows a window, never the first N rows of it:
@@ -834,7 +860,8 @@ therefore a gesture or a key a draft cannot produce.
 | `ctrl+e` | reading mode, cursor on the last selectable row |
 | `pgup` / `pgdn` | reading mode, paged in that direction |
 | `↑` on an empty draft | reading mode — *only* where the input history has nothing left to recall |
-| wheel | scrolls, and transfers nothing |
+| wheel | scrolls, and transfers nothing — when reporting is on (§7a) |
+| `ctrl+x` | mouse reporting on/off, from any surface, saved to the config |
 
 `↑` belongs to the input history wherever there is one; that convention is
 older than this surface, and `pgup` is the transfer for a session that has
@@ -845,9 +872,30 @@ The wheel is the exception that proves the rule. It reads, and reading is not
 a decision: the draft keeps the keyboard, so a scroll mid-sentence never
 swallows the next keystroke. It reaches the full-screen diff (§3c) and review
 mode (§16a) when those own the screen, because the transcript behind them is
-not what is being looked at. Mouse reporting costs the terminal's own
-click-drag selection, which is a real trade and so a real setting: `/ui mouse
-off` gives it back and leaves the keyboard as the only way through.
+not what is being looked at.
+
+**Mouse reporting is off by default**, because it costs the terminal's own
+click-drag selection and the two sides of that trade are not the same size.
+Scrolling has substitutes here — `pgup`/`pgdn`, `ctrl+e`, `j`/`k` all read the
+transcript. Selecting text has none: a transcript is something people copy out
+of, and a surface that quietly takes that away is broken in a way no key can
+answer, because the reader reaching for it has a mouse in their hand and no
+reason to suspect a setting. So the wheel is the side you ask for.
+
+- **`ctrl+x` is the ask, and it is answered above every surface** — the draft,
+  reading mode, the full-screen diff. The moment of wanting to copy something
+  arrives at any of them, and a chord that only worked in one would miss it.
+  The letter is what was left rather than what it stands for (the textarea
+  underneath claims a, b, d, e, f, k, n, p, t, u, v, w; this surface spends c,
+  d, e, g and j; the terminal keeps s, q and z; `ctrl+o` is held for expanding
+  a step's detail), so the start screen's navigation line and `/help` both name
+  it — a chord with no mnemonic is learned by being written down.
+- **The answer is saved** (`appearance.mouse`), because a preference about a
+  physical input device is not a per-session opinion. `/ui mouse <on|off>` is
+  the same setting said in words, and takes the same path so the two cannot
+  drift.
+- **Both notes state the trade, not an improvement.** Turning it on says the
+  selection now needs shift held; turning it off says what still scrolls.
 
 **Reading mode is focus mode**, not a second, lesser one. A pager key that
 opened its own surface would be a fourth list implementation by another name,

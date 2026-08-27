@@ -36,6 +36,36 @@ func Resolve(opts Opts) Resolved {
 	}
 }
 
+// ModelOutranks names what is deciding the model ahead of the config file, or
+// "" when nothing is. The order above is a precedence nobody can see, and a
+// setting overruled by something invisible is indistinguishable from one that
+// was never saved — which is exactly how `/model default` came to look broken
+// while writing the file correctly every time (S-136).
+//
+// Only the two ranks above the config file count. Below it there is nothing to
+// report: a config value that is set is the answer.
+func ModelOutranks(opts Opts) string {
+	if opts.FlagModel != "" {
+		return "--model " + opts.FlagModel + " is on the command line"
+	}
+	if v := os.Getenv("SHHH_MODEL"); v != "" {
+		return "SHHH_MODEL is set to " + v
+	}
+	return ""
+}
+
+// ProviderOutranks is ModelOutranks for the provider, and exists for the same
+// reason: `provider.default` is as quietly overrulable as `provider.model`.
+func ProviderOutranks(opts Opts) string {
+	if opts.FlagProvider != "" {
+		return "--provider " + opts.FlagProvider + " is on the command line"
+	}
+	if v := os.Getenv("SHHH_PROVIDER"); v != "" {
+		return "SHHH_PROVIDER is set to " + v
+	}
+	return ""
+}
+
 func DefaultModel(provider string) string {
 	return defaultModels[provider]
 }

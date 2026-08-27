@@ -451,6 +451,11 @@ func configSettings() []configSetting {
 		read:     str(func(c config.Config) string { return c.Appearance.AccentColor }),
 		fallback: "(the palette's own)",
 		options:  noOptions,
+	}, {
+		group: "WORKSPACE", key: "appearance.mouse", label: "mouse reporting",
+		read:     flag(func(c config.Config) bool { return c.Appearance.Mouse }),
+		fallback: "off — the terminal keeps click-drag selection",
+		options:  noOptions,
 	}}
 }
 

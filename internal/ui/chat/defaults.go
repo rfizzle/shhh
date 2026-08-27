@@ -12,19 +12,33 @@ import "fmt"
 // modelUsage is the one-line usage shown by /model and /help.
 const modelUsage = "Usage: /model <name> · /model default [name] · /model agents [name|inherit]"
 
-// DefaultsWriter persists one config key/value ("provider.model",
-// "agents.model") to the user's config file.
-type DefaultsWriter func(key, value string) error
+// ConfigWriter persists one config key/value to the user's config file. It
+// belongs to the session rather than to any one setting: the model defaults
+// were the first thing to need it (S-086) and the mouse toggle is the second,
+// and a second copy of the same function would be a second thing to install.
+type ConfigWriter func(key, value string) error
 
-// Defaults describes the session's persisted model defaults and how to change
-// them; Write is nil when the session cannot persist config.
+// WithConfigWriter installs the writer that makes a setting stick. A session
+// without one still applies what it is told; it just says the change is for
+// this session only rather than pretending it was saved.
+func (m Model) WithConfigWriter(w ConfigWriter) Model {
+	m.writeConfig = w
+	return m
+}
+
+// Defaults describes the session's persisted model defaults.
 type Defaults struct {
 	// Model is the configured default session model (provider.model).
 	Model string
 	// AgentModel is the configured sub-agent model (agents.model); empty or
 	// "inherit" means children follow the session model.
 	AgentModel string
-	Write      DefaultsWriter
+	// Outranked names what beats provider.model when a new session resolves
+	// one — an env var, or a flag on the command line. It is empty when
+	// nothing does. Writing a default that something else overrules is the
+	// one way this surface can succeed and still not work, so the row that
+	// writes it has to say so (S-136).
+	Outranked string
 }
 
 // WithDefaults installs the persisted-defaults surface.
@@ -43,21 +57,28 @@ func (m *Model) setModelDefault(which string, rest []string) string {
 		current = m.defaults.AgentModel
 	}
 	if len(rest) == 0 {
+		var note string
 		switch {
 		case current == "":
-			return fmt.Sprintf("%s: not set (%s).\n%s", label, m.defaultFallback(which), modelUsage)
+			note = fmt.Sprintf("%s: not set (%s).", label, m.defaultFallback(which))
 		default:
-			return fmt.Sprintf("%s: %s\n%s", label, current, modelUsage)
+			note = fmt.Sprintf("%s: %s", label, current)
 		}
+		// Reporting a setting that is being overruled without saying so is
+		// the same lie as writing one, told more quietly.
+		if which == "default" && m.defaults.Outranked != "" {
+			note += fmt.Sprintf("\nOverruled: %s, which outranks the config file.", m.defaults.Outranked)
+		}
+		return note + "\n" + modelUsage
 	}
 	if len(rest) > 1 {
 		return "Model names cannot contain spaces. " + modelUsage
 	}
-	if m.defaults.Write == nil {
+	if m.writeConfig == nil {
 		return "This session cannot write the config file, so the default was not saved."
 	}
 	name := rest[0]
-	if err := m.defaults.Write(key, name); err != nil {
+	if err := m.writeConfig(key, name); err != nil {
 		return "Error: could not save the default: " + err.Error()
 	}
 	if which == "agents" {
@@ -68,10 +89,19 @@ func (m *Model) setModelDefault(which string, rest []string) string {
 		return fmt.Sprintf("Sub-agents now run on %s. Agents already running keep the model they started on.", name)
 	}
 	m.defaults.Model = name
-	if name == m.modelName {
-		return fmt.Sprintf("Default model set to %s (this session already uses it).", name)
+	var note string
+	switch {
+	case name == m.modelName:
+		note = fmt.Sprintf("Default model set to %s (this session already uses it).", name)
+	default:
+		note = fmt.Sprintf("Default model set to %s for new sessions; this session stays on %s (/model %s switches it now).", name, m.modelName, name)
 	}
-	return fmt.Sprintf("Default model set to %s for new sessions; this session stays on %s (/model %s switches it now).", name, m.modelName, name)
+	// A default that something else overrules was written and will still be
+	// ignored, which is the one outcome a success message must not claim.
+	if m.defaults.Outranked != "" {
+		note += fmt.Sprintf("\nIt will not take effect while %s — that outranks the config file.", m.defaults.Outranked)
+	}
+	return note
 }
 
 // defaultFallback explains what an unset default falls back to.

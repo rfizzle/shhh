@@ -23,6 +23,11 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
+// modelDefaultKey is the /model picker's second key: take this option and
+// make it the default, rather than taking it for this session. A bare letter
+// like the card's own j/k, so it is text while the filter row is open.
+const modelDefaultKey = "d"
+
 // WithModelOptions sets the models offered by the bare /model picker,
 // normally the provider's curated catalog (provider.KnownModels). The
 // session's current model is merged in when missing.
@@ -38,6 +43,24 @@ func (m Model) WithModelOptions(names []string) Model {
 // Every picker opened this way carries the filter row (S-123, §4a): the card
 // offers [/], and the match rule lives here rather than inside the component.
 func (m Model) openPicker(title string, opts []components.SelectOption, focus int, apply func(*Model, int) string) (tea.Model, tea.Cmd) {
+	return m.openPickerWith(title, opts, focus, pickerAlt{}, func(m *Model, idx int, _ bool) string {
+		return apply(m, idx)
+	})
+}
+
+// pickerAlt is a picker's second reading of the same choice (S-136): the key
+// that takes it, what that key buys, and what plain enter buys once the two
+// have to be told apart. The zero value is a card with enter alone, which is
+// every picker but /model's.
+type pickerAlt struct {
+	Key   string
+	Label string
+	Enter string
+}
+
+// openPickerWith is openPicker for a card whose choice has two readings; apply
+// is told which key took it.
+func (m Model) openPickerWith(title string, opts []components.SelectOption, focus int, alt pickerAlt, apply func(*Model, int, bool) string) (tea.Model, tea.Cmd) {
 	m.picker = &components.Select{
 		Title:      title,
 		Options:    opts,
@@ -46,6 +69,9 @@ func (m Model) openPicker(title string, opts []components.SelectOption, focus in
 		Filterable: true,
 		QueryHint:  "type to filter",
 		Total:      selectableOptions(opts),
+		AltKey:     alt.Key,
+		AltLabel:   alt.Label,
+		EnterLabel: alt.Enter,
 	}
 	m.pickerAll = opts
 	m.pickerIndex = identityIndex(len(opts))
@@ -180,7 +206,7 @@ func (m Model) updatePick(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	// An apply that hands the session to another surface — the /run picker
 	// into the confirm prompt (S-081) — returns no note and keeps the state
 	// it set instead of stateInput.
-	if note := apply(&m, sel.Index); note != "" {
+	if note := apply(&m, sel.Index, sel.Alt); note != "" {
 		m.appendEntry(entry{kind: entrySystem, text: note})
 	}
 	m.syncViewport()
@@ -335,14 +361,36 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 		}
 		opts[i] = components.SelectOption{Label: label, Desc: desc}
 	}
-	return m.openPicker("Switch model", opts, focus, func(m *Model, idx int) string {
+	// The picker is where a model gets chosen, so it is where the choice has
+	// to be able to stick (S-136). Enter switches the session, as it always
+	// did; [d] switches it and writes provider.model, so the name you just
+	// read off a list does not have to be typed back to `/model default`.
+	alt := pickerAlt{Key: modelDefaultKey, Label: "and make it default", Enter: "this session"}
+	if m.writeConfig == nil {
+		alt = pickerAlt{}
+	}
+	return m.openPickerWith("Switch model", opts, focus, alt, func(m *Model, idx int, makeDefault bool) string {
 		name := choices[idx]
-		if name == m.modelName {
-			return fmt.Sprintf("Already using %s.", name)
+		switched := name != m.modelName
+		if switched {
+			m.switchFn(name)
+			m.modelName = name
 		}
-		m.switchFn(name)
-		m.modelName = name
-		return fmt.Sprintf("Switched model to %s.", name)
+		if !makeDefault {
+			if !switched {
+				return fmt.Sprintf("Already using %s.", name)
+			}
+			return fmt.Sprintf("Switched to %s for this session. [d] in the picker makes a choice the default.", name)
+		}
+		// setModelDefault owns the writing and everything true about it —
+		// the failure wording, and the warning when something outranks the
+		// file. Saying any of it a second time here is how the two come to
+		// disagree.
+		saved := m.setModelDefault("default", []string{name})
+		if !switched {
+			return saved
+		}
+		return fmt.Sprintf("Switched to %s. %s", name, saved)
 	})
 }
 

@@ -458,10 +458,12 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithMaxToolRounds(maxRoundsFor(cfg, session.maxRounds, session.maxRoundsSet)).
 		WithCommandAllowlist(cfg.Behavior.CommandAllowlist).
 		WithReadOnlyCommands(cfg.Behavior.ReadOnlyCommands, !cfg.ReadOnlyAutoEnabled()).
+		WithConfigWriter(configWriter()).
+		WithMouse(cfg.Appearance.Mouse).
 		WithDefaults(chat.Defaults{
 			Model:      cfg.Provider.Model,
 			AgentModel: cfg.Agents.Model,
-			Write:      configWriter(),
+			Outranked:  resolve.ModelOutranks(*session.flags),
 		}).
 		WithApprovalMode(mode, cycle).
 		WithClassifier(classifier).
