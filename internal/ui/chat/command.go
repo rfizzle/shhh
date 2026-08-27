@@ -42,9 +42,12 @@ func (m Model) submitInput() (tea.Model, tea.Cmd) {
 	if name := commandName(text); name != "" {
 		return m.runCommand(text, name)
 	}
-	if m.working() {
+	if m.working() || m.decisionUngated() {
 		// Typed while the agent works: the message joins the conversation
-		// before the next model request (S-058).
+		// before the next model request (S-058). A turn paused on a decision
+		// is a turn in flight for this purpose — enter queues the sentence
+		// for the next round rather than starting a turn the pending
+		// decision would immediately interrupt (S-117, §7b).
 		m.steering = append(m.steering, text)
 		// The queued count surfaces on the notice rail (S-082).
 		m.syncViewport()

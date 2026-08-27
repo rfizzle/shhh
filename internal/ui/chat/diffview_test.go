@@ -25,7 +25,7 @@ func appliedEditModel(t *testing.T) Model {
 		{ID: "call_w", Name: "write_file",
 			Arguments: fmt.Sprintf(`{"path":%q,"content":"package main\n"}`, path)},
 	}})
-	m = updated.(Model)
+	m = handover(t, updated.(Model))
 	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
 	m = updated.(Model)
 	for _, c := range unwrapBatch(cmd) {
@@ -78,6 +78,7 @@ func TestAppliedEdit_ErrorKeepsToolBlock(t *testing.T) {
 			Arguments: fmt.Sprintf(`{"path":%q,"old_text":"alpha","new_text":"beta"}`, path)},
 	}})
 	m = updated.(Model)
+	m = handover(t, m)
 	// Make the approved edit fail by removing the file after the preview.
 	if err := os.Remove(path); err != nil {
 		t.Fatal(err)
@@ -155,7 +156,7 @@ func TestApprovalFullDiff_RoundTrips(t *testing.T) {
 		{ID: "call_w", Name: "write_file",
 			Arguments: fmt.Sprintf(`{"path":%q,"content":"package main\n"}`, path)},
 	}})
-	m = updated.(Model)
+	m = handover(t, updated.(Model))
 	if !strings.Contains(m.View(), "d: full diff") {
 		t.Fatal("edit approval should hint the full-diff key")
 	}
@@ -170,6 +171,11 @@ func TestApprovalFullDiff_RoundTrips(t *testing.T) {
 	m = updated.(Model)
 	if m.state != stateConfirmRun || m.pendingApproval == nil {
 		t.Fatalf("esc should return to the approval with it still pending, got state %d", m.state)
+	}
+	// The keyboard comes back to the card it was opened from, not to the
+	// draft: reading the diff is not answering the decision (S-117, §7b).
+	if !m.decisionGated() {
+		t.Fatal("returning from the full diff keeps the card's keyboard")
 	}
 }
 

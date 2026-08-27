@@ -112,6 +112,7 @@ func TestPlan_ApproveExecutesInChosenMode(t *testing.T) {
 	updated, _ := m.Update(doneMsg{})
 	m = updated.(Model)
 
+	m = handover(t, m)
 	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'1'}})
 	m = updated.(Model)
 	if m.mode != agent.ModeAcceptEdits {
@@ -165,6 +166,7 @@ func TestPlan_ApproveOtherModes(t *testing.T) {
 		m := planModel(t, mockStream)
 		updated, _ := m.Update(doneMsg{})
 		m = updated.(Model)
+		m = handover(t, m)
 		updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{c.key}})
 		m = updated.(Model)
 		if m.mode != c.want || m.state != stateStreaming {
@@ -178,6 +180,7 @@ func TestPlan_KeepPlanningReturnsToInput(t *testing.T) {
 	updated, _ := m.Update(doneMsg{})
 	m = updated.(Model)
 
+	m = handover(t, m)
 	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
 	m = updated.(Model)
 	if m.state != stateInput {
@@ -202,6 +205,7 @@ func TestPlan_RejectStaysInPlanMode(t *testing.T) {
 	updated, _ := m.Update(doneMsg{})
 	m = updated.(Model)
 
+	m = handover(t, m)
 	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'5'}})
 	m = updated.(Model)
 	if m.state != stateInput || m.mode != agent.ModePlan {
@@ -224,6 +228,7 @@ func TestPlan_NavigationAndEnterSelect(t *testing.T) {
 	m = updated.(Model)
 
 	// k at the top stays put.
+	m = handover(t, m)
 	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
 	m = updated.(Model)
 	if m.planChoice != 0 {
@@ -381,7 +386,9 @@ func plannedModel(t *testing.T, response string) Model {
 	if m.state != statePlanApprove {
 		t.Fatalf("expected the plan card, got state %d", m.state)
 	}
-	return m
+	// The card arrives without the keyboard (S-117, §7b); ctrl+g is what
+	// makes its keys mean anything.
+	return handover(t, m)
 }
 
 func TestPlanCard_StepsCarryTheFilesTheyTouch(t *testing.T) {

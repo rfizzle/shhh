@@ -92,8 +92,9 @@ below.
 │ undo      none — nothing it writes is tracked in git                    │
 │ network   open — the workspace profile allows network access            │
 ├─────────────────────────────────────────────────────────────────────────┤
-│ Run this command? [y/N] · esc — the safe answer                         │
+│ Run this command? [y/N] · [n] deny — the safe answer                    │
 │ [a] always — not offered: a safety-flagged command is never pre-approved│
+│ [esc] back to your draft — the decision stays waiting, nothing is denied│
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -127,7 +128,14 @@ below.
   reason teaches; a missing key without one reads as a bug.
 - The keys sit below a `├───┤` rule so they never blend into the body, and
   where the safe answer is not obvious from `[y/N]` the card names it in
-  words (`esc — the safe answer`).
+  words (`[n] deny — the safe answer`). It names `[n]` rather than `esc`
+  because esc on this card hands the keyboard back to the draft and leaves
+  the decision waiting (§7b) — which the last hint row says, since a key
+  whose meaning changed is worth a row.
+- **The card is inert until it holds the keyboard** (invariant 5). It arrives
+  beside a live draft, so what is drawn above is the gated state: everything
+  §7b describes — the dimmed keys, `not live yet`, the `[ctrl+g]` that hands
+  the keyboard over — is what the same card looks like the moment it appears.
 
 ### 2b. Uncontained
 
@@ -145,8 +153,9 @@ explains what is missing:
 │ network   open — nothing contains this command, so nothing limits it   │
 │ ⛨         no sandbox — bwrap not found on PATH; it runs as you         │
 ├────────────────────────────────────────────────────────────────────────┤
-│ Run this command? [y/N] · esc — the safe answer                        │
+│ Run this command? [y/N] · [n] deny — the safe answer                   │
 │ containment is off for this session · /sandbox doctor explains why     │
+│ [esc] back to your draft — the decision stays waiting, nothing is denied│
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -929,6 +938,39 @@ ones worth auditing are those that render alongside a live input. S-125 is
 that audit, and it covers the approval card, inline confirm (§5), the selector
 family (§4), the plan card (§4d), the agent list (§9a), review mode (§16a),
 the recovery cards (§17b) and reading mode's per-row offers (§7a).
+
+**What S-117 reaches.** Four surfaces arrive unbidden and are gated by this
+rule: the approval card (§2), the `/run` confirm, the plan card (§4d) and a
+child agent's routed approval (§9c). The memory proposal (S-070) rides the
+approval state and is gated with it. Everything else a reader opens on purpose
+— the pickers, review mode, the undo confirm, the pressure card — is S-125's
+to audit, and most of it passes by construction.
+
+**Three departures, recorded rather than left silent.**
+
+- **`[esc] stop the run` is `[ctrl+c]` here.** The ungated frame's bottom rail
+  reads `[ctrl+g] answer it · [enter] queues steering · [ctrl+c] stop the
+  run`. Esc on this surface clears the draft and has since S-058, and the
+  frame is the surface holding the keyboard, so rebinding it would break
+  invariant 3 rather than serve it. Ctrl+C is what ends a turn everywhere else
+  in the product, and no draft can produce it either.
+- **The high-severity card names `[n]`, not `[esc]`, as its safe answer.**
+  §7b's own rule makes esc on a gated card the return to the draft, so a card
+  that told the reader esc was the safe *answer* would be naming a key that
+  answers nothing. The card says `[n] deny — the safe answer` and, on the line
+  below, what esc does instead.
+- **The plan card keeps its own esc.** On the approval cards esc leaves the
+  decision waiting because leaving and denying are different acts. On the plan
+  card "keep planning" already is the answer that decides nothing and returns
+  to the draft (§4d), so esc keeps that meaning: replacing one safe answer
+  with another would only lose the mode it names.
+
+**What the rail costs.** The `DECISION` rail is one row above the card and the
+gated draft block is three more, so the panel a gated decision occupies is the
+card's own 40% bound (§1) plus its rail, plus the draft when there is one to
+hold. The card itself is bounded as if it stood alone, in both states: a
+decision the reader cannot read is not one they can make, so the transcript
+gives up the rows instead.
 
 ---
 
@@ -1849,7 +1891,10 @@ where it is settled.
   just has to be asked for.
 - **Takeover surfaces span the full width and hide the rail** — approval
   cards, pickers, review mode (§16), the agent list — and restore it on
-  dismissal.
+  dismissal. A decision is a takeover only once it holds the keyboard (§7b):
+  while its keys are still not-yet-live the card rides above a live frame, the
+  panes behind it are what the reader is looking at, and the rail stays. A
+  card landing must not reflow the screen it landed on.
 - Transcript wrapping uses the reduced 93-column pane width, not the terminal
   width.
 - **A number nobody reported says so.** Occupancy is provider-reported where

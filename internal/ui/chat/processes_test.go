@@ -68,6 +68,7 @@ func TestProcessTool_StartApprovalFlow(t *testing.T) {
 		t.Fatal("confirm prompt should show the command")
 	}
 
+	m = handover(t, m)
 	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
 	m = updated.(Model)
 	var done approvedToolDoneMsg

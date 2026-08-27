@@ -161,6 +161,7 @@ func TestPolicy_AlwaysAllowCommandsViaKey(t *testing.T) {
 	}
 	// The second queued command puts a batch behind the card, so [A] joins
 	// the keys (S-102).
+	m = handover(t, m)
 	if !strings.Contains(m.View(), "[y/n/a/A]") {
 		t.Fatal("unflagged command prompt with a queue behind it should offer y/n/a/A")
 	}
@@ -201,6 +202,7 @@ func TestPolicy_AlwaysAllowEditsViaKey(t *testing.T) {
 	if m.state != stateConfirmRun {
 		t.Fatalf("first edit should prompt, got state %d", m.state)
 	}
+	m = handover(t, m)
 	if !strings.Contains(m.View(), "always allow edits") {
 		t.Fatal("edit prompt should offer the always-allow option")
 	}

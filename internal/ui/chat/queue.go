@@ -42,7 +42,10 @@ func (m Model) stripRows() int {
 // its rows out of the card would spend the decision's own space on the list
 // of decisions.
 func (m Model) confirmPanelBound() int {
-	return m.maxConfirmPanelHeight() + m.pendingQueue.Rows()
+	// The rail and the undressed draft a gated decision adds are paid for
+	// here too, so the card is never the thing clipped off the bottom to
+	// make room for them (S-117, §7b).
+	return m.maxConfirmPanelHeight() + m.pendingQueue.Rows() + m.gatedExtraRows()
 }
 
 // resolveQueue builds the strip above the card and the batch [A] would

@@ -65,6 +65,11 @@ type PlanCard struct {
 	// MaxLines bounds the card's height, frame included; the step list is
 	// what shrinks, and what it drops is counted rather than lost.
 	MaxLines int
+	// NotYetLive says the card is on screen beside a draft that still holds
+	// the keyboard (§7b, S-117): its keys render as not-yet-live, and
+	// Handover is the one that hands the keyboard over.
+	NotYetLive bool
+	Handover   string
 }
 
 // View renders the card at the given width.
@@ -98,7 +103,13 @@ func (c *PlanCard) tailRows(width, inner int, options []string) []string {
 	}
 	rows = append(rows, cardRule)
 	rows = append(rows, options...)
-	if c.Hint != "" {
+	switch {
+	case c.NotYetLive:
+		// A plan that arrived while a sentence was half-typed offers its keys
+		// the same way an approval card does (§7b): dimmed, said to be
+		// waiting, with the one key that hands the keyboard over under them.
+		rows = append(rows, notYetLiveRows(c.Hint, c.Handover, width)...)
+	case c.Hint != "":
 		rows = append(rows, hintRows([]string{c.Hint}, width)...)
 	}
 	return rows

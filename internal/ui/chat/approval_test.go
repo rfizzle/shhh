@@ -79,6 +79,7 @@ func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 	}
 
 	// Approve.
+	m = handover(t, m)
 	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
 	m = updated.(Model)
 	if m.state != stateRunningCmd {
@@ -124,6 +125,7 @@ func TestGatedTool_Declined(t *testing.T) {
 	}})
 	m = updated.(Model)
 
+	m = handover(t, m)
 	updated, restream := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
 	m = updated.(Model)
 
@@ -170,6 +172,7 @@ func TestGatedTool_QueueMixedWithExec(t *testing.T) {
 		t.Fatalf("expected pending command 'echo hi', got %q", m.pendingRun)
 	}
 
+	m = handover(t, m)
 	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
 	m = updated.(Model)
 	var done cmdDoneMsg
@@ -190,7 +193,10 @@ func TestGatedTool_QueueMixedWithExec(t *testing.T) {
 	}
 
 	// Both tool results are recorded in order once the second is declined.
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	// Esc would hand the keyboard back and leave it waiting (S-117, §7b);
+	// [n] is how a decision is denied.
+	m = handover(t, m)
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
 	m = updated.(Model)
 	var ids []string
 	for _, msg := range m.Messages() {
@@ -278,6 +284,7 @@ func TestMutatingTool_WriteApprovedThroughQueue(t *testing.T) {
 		t.Fatal("confirm prompt should show the write action and diff")
 	}
 
+	m = handover(t, m)
 	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
 	m = updated.(Model)
 	var done approvedToolDoneMsg
@@ -325,6 +332,7 @@ func TestMutatingTool_EditDeclinedLeavesFileUntouched(t *testing.T) {
 		t.Fatal("confirm prompt should diff the edit")
 	}
 
+	m = handover(t, m)
 	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
 	m = updated.(Model)
 	data, _ := os.ReadFile(path)
@@ -379,15 +387,20 @@ func TestGatedTool_LargeDiffTruncatedAndPanelGrows(t *testing.T) {
 	if !strings.Contains(m.View(), "more diff lines") {
 		t.Fatal("large diff should be truncated with a notice")
 	}
-	// Panel is capped at 40% of terminal height (30 → 12 rows).
-	if h := m.bottomPanelHeight(); h != 12 {
-		t.Fatalf("expected confirm panel capped at 12 rows, got %d", h)
+	// The card takes the panel once the decision holds the keyboard (S-117);
+	// until then it rides above a live frame and the panel is the input's.
+	m = handover(t, m)
+	// The card is capped at 40% of terminal height (30 → 12 rows); the rail
+	// that names the keyboard's owner is the row above it (S-117, §7b).
+	if h := m.bottomPanelHeight(); h != 13 {
+		t.Fatalf("expected confirm panel capped at 12 rows plus its rail, got %d", h)
 	}
-	if m.viewport.Height != m.height-chromeHeight-12 {
+	if m.viewport.Height != m.height-chromeHeight-13 {
 		t.Fatalf("viewport should shrink for the diff preview, got %d", m.viewport.Height)
 	}
 
 	// Declining restores the normal layout.
+	m = handover(t, m)
 	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
 	m = updated.(Model)
 	if m.viewport.Height != normalHeight {
@@ -410,6 +423,7 @@ func TestMutatingTool_HookAppendsDiagnosticsToResult(t *testing.T) {
 			Arguments: fmt.Sprintf(`{"path":%q,"content":"package main\n"}`, path)},
 	}})
 	m = updated.(Model)
+	m = handover(t, m)
 	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
 	m = updated.(Model)
 

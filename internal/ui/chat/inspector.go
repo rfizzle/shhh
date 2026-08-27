@@ -55,7 +55,16 @@ func (m Model) twoPane() bool {
 // surfaces span both panes (§15b); the attached view is a child's session, so
 // the orchestrator's turn-scoped rail has nothing true to say beside it.
 func (m Model) inspectorHidden() bool {
-	if m.attachedTo != "" || m.agentList != nil || m.activeChildAsk() != nil {
+	if m.attachedTo != "" || m.agentList != nil {
+		return true
+	}
+	// A decision still waiting for the keyboard is not a takeover (S-117,
+	// §7b): the draft is live, the panes above it are what the reader is
+	// looking at, and a card landing must not reflow the screen behind it.
+	if m.decisionUngated() {
+		return false
+	}
+	if m.activeChildAsk() != nil {
 		return true
 	}
 	switch m.state {

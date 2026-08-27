@@ -80,7 +80,9 @@ func (m Model) commandRadius(command string, assistant bool) blastRadius {
 		b.footnote = "[a] always — not offered: a safety-flagged command is never pre-approved"
 	}
 	if b.severity == components.SeverityHigh || b.uncontained {
-		b.safe = "esc — the safe answer"
+		// [n], not esc: on a gated card esc hands the keyboard back and
+		// leaves the decision waiting rather than answering it (S-117, §7b).
+		b.safe = "[n] deny — the safe answer"
 	}
 	if b.uncontained {
 		b.fields = append(b.fields, components.CardField{

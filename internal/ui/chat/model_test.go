@@ -1217,6 +1217,7 @@ func TestRun_SingleBlock_ConfirmAndExecute(t *testing.T) {
 		t.Fatal("confirm prompt should show the command and y/N")
 	}
 
+	m = handover(t, m)
 	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
 	m = updated.(Model)
 	if m.state != stateRunningCmd {
@@ -1267,6 +1268,7 @@ func unwrapBatch(cmd tea.Cmd) []tea.Cmd {
 func TestRun_Declined(t *testing.T) {
 	m := runCapableModel("```bash\nrm -rf /tmp/x\n```")
 	m = sendText(t, m, "/run")
+	m = handover(t, m)
 	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
 	m = updated.(Model)
 
@@ -1356,6 +1358,7 @@ func TestExecTool_ApprovalFlow(t *testing.T) {
 	}
 
 	// Approve.
+	m = handover(t, m)
 	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
 	m = updated.(Model)
 	if m.state != stateRunningCmd {
@@ -1409,6 +1412,7 @@ func TestExecTool_Declined(t *testing.T) {
 	}})
 	m = updated.(Model)
 
+	m = handover(t, m)
 	updated, restream := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
 	m = updated.(Model)
 
@@ -1743,6 +1747,7 @@ func TestToolLoop_RoundCapAfterApprovedCommand(t *testing.T) {
 		t.Fatalf("expected confirm state, got %d", m.state)
 	}
 
+	m = handover(t, m)
 	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
 	m = updated.(Model)
 	var done cmdDoneMsg

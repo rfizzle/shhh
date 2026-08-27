@@ -559,6 +559,9 @@ func (m Model) approvalCard() *components.ApprovalCard {
 	if m.attachedTo != "" {
 		card.Title = "orchestrator ▸ " + card.Title
 	}
+	// Whether the card's keys are live at all is not the card's to decide
+	// (invariant 5, S-117): it depends on which surface holds the keyboard.
+	m.applyNotYetLive(card)
 	return card
 }
 
@@ -644,9 +647,17 @@ func (m Model) confirmLines() []string {
 	return append(strip, strings.Split(m.approvalCard().View(width), "\n")...)
 }
 
+// confirmPanelLines is the whole bottom panel a gated confirm occupies: the
+// card, the rail that names the keyboard's owner, and the draft it is holding
+// while it does (S-117, §7b). confirmLines stays the card alone, because that
+// is what the rest of the surface asks it for.
+func (m Model) confirmPanelLines() []string {
+	return m.dressDecision(m.confirmLines(), m.contentWidth())
+}
+
 // renderConfirm renders the confirm prompt padded to the bottom panel height.
 func (m Model) renderConfirm() string {
-	lines := m.confirmLines()
+	lines := m.confirmPanelLines()
 	h := m.bottomPanelHeight()
 	for len(lines) < h {
 		lines = append(lines, "")
@@ -659,11 +670,18 @@ func (m Model) renderConfirm() string {
 func (m Model) bottomPanelHeight() int {
 	var lines []string
 	bound := m.maxConfirmPanelHeight()
-	switch m.state {
+	st := m.state
+	if m.decisionUngated() && m.frameShowing() {
+		// The card rides above the frame rather than filling the panel
+		// (§7b), so the panel is the input's and interruptHeight is what
+		// pays for the card.
+		st = stateInput
+	}
+	switch st {
 	case stateConfirmRun:
-		lines, bound = m.confirmLines(), m.confirmPanelBound()
+		lines, bound = m.confirmPanelLines(), m.confirmPanelBound()
 	case statePlanApprove:
-		lines, bound = m.planApproveLines(), m.planPanelBound()
+		lines, bound = m.planPanelLines(), m.planPanelBound()+m.gatedExtraRows()
 	case stateRewindPick:
 		lines = m.rewindPickLines()
 	case statePick:
@@ -679,8 +697,8 @@ func (m Model) bottomPanelHeight() int {
 	default:
 		if m.agentList != nil {
 			lines = m.agentListLines()
-		} else if ask := m.activeChildAsk(); ask != nil {
-			lines = m.childAskLines(ask)
+		} else if ask := m.activeChildAsk(); ask != nil && !m.decisionUngated() {
+			lines = m.childAskPanelLines(ask)
 		} else if m.completionActive() && m.attachedTo == "" {
 			// The completion menu extends the input area (S-078).
 			return min(inputHeight+len(m.completionMenuLines()), m.maxConfirmPanelHeight())

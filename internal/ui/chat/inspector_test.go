@@ -144,6 +144,9 @@ func TestTwoPane_HiddenByTakeoverSurfaces(t *testing.T) {
 	} {
 		m := base
 		m.state = c.state
+		// A decision is a takeover only once it holds the keyboard (S-117,
+		// §7b); until then the panes behind it are still what is being read.
+		m.decisionHeld = true
 		if m.twoPane() {
 			t.Fatalf("%s spans both panes and hides the rail", c.name)
 		}
@@ -161,6 +164,13 @@ func TestTwoPane_HiddenByTakeoverSurfaces(t *testing.T) {
 	m.agentList = nil
 	if !m.twoPane() {
 		t.Fatal("dismissing a takeover surface restores the rail")
+	}
+	// A decision that has not been given the keyboard is not a takeover: the
+	// card rides above a live frame and the rail stays (S-117, §7b).
+	waiting := base
+	waiting.state = stateConfirmRun
+	if !waiting.twoPane() {
+		t.Fatal("a decision still waiting for the keyboard must not reflow the panes")
 	}
 	// Attached, the surface is a child's session, not this turn's rail.
 	m.attachedTo = "writer-1"

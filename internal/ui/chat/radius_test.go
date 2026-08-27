@@ -46,7 +46,9 @@ func confirmFor(t *testing.T, m Model, command string) string {
 	if m.state != stateConfirmRun {
 		t.Fatalf("%q should have armed a confirm, got state %d", command, m.state)
 	}
-	return ansi.Strip(m.View())
+	// The consequences a card prints beside its keys are only printed once
+	// the keys are live (S-117, §7b), so the card is read after ctrl+g.
+	return ansi.Strip(handover(t, m).View())
 }
 
 // chdir moves into a scratch directory for the test, so path resolution has
@@ -135,7 +137,9 @@ func TestBlastRadius_FlaggedCommandSaysWhyAlwaysIsMissing(t *testing.T) {
 	if !strings.Contains(view, "[a] always — not offered") {
 		t.Fatalf("the card should say why [a] is absent:\n%s", view)
 	}
-	if !strings.Contains(view, "esc — the safe answer") {
+	// [n], not esc: esc on a gated card hands the keyboard back and leaves
+	// the decision waiting (S-117, §7b).
+	if !strings.Contains(view, "[n] deny — the safe answer") {
 		t.Fatalf("a high-severity card states the safe default in words:\n%s", view)
 	}
 }

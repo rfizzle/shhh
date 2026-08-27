@@ -66,6 +66,10 @@ var (
 	gutterWorkStyle       lipgloss.Style
 	noticeInfoStyle       lipgloss.Style
 	noticeAlertStyle      lipgloss.Style
+	// The undressed draft and the waiting chip a decision puts on the frame
+	// (S-117, §7b): the chrome goes dim, the characters stay legible.
+	draftHeldStyle   lipgloss.Style
+	waitingChipStyle lipgloss.Style
 )
 
 func applyFrameStyles(p components.ColorTokens) {
@@ -79,13 +83,24 @@ func applyFrameStyles(p components.ColorTokens) {
 	gutterWorkStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Spin)
 	noticeInfoStyle = lipgloss.NewStyle().Foreground(p.Info)
 	noticeAlertStyle = lipgloss.NewStyle().Foreground(p.Del)
+	draftHeldStyle = lipgloss.NewStyle().Foreground(p.Body)
+	waitingChipStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Accent)
 }
 
 func (m Model) frameLayout() frameLayout { return frameLayoutFor(m.contentWidth()) }
 
 // frameShowing reports whether the framed input is the current bottom panel.
 func (m Model) frameShowing() bool {
-	if m.agentList != nil || m.activeChildAsk() != nil {
+	if m.agentList != nil {
+		return false
+	}
+	if m.decisionUngated() {
+		// The card rides above the frame rather than replacing it (§7b,
+		// S-117): the draft still holds the keyboard, so it is still on
+		// screen, still accented, and still being typed into.
+		return m.frameLayout() != framePlain
+	}
+	if m.activeChildAsk() != nil {
 		return false
 	}
 	switch m.state {
@@ -103,7 +118,7 @@ func (m Model) frameExtraHeight() int {
 	if !m.frameShowing() {
 		return 0
 	}
-	extra := 0
+	extra := m.interruptHeight()
 	if m.noticeLine() != "" {
 		extra++
 	}
@@ -168,6 +183,11 @@ func (m Model) frameIdentity() string {
 // frameActivity is the top rail's right side: spinner + WORKING while the
 // focused agent works, dim idle otherwise.
 func (m Model) frameActivity() string {
+	// A turn paused on a decision is not working, and what the rail should
+	// say is how many answers it is waiting for (S-117, §7b).
+	if n := m.waitingCount(); n > 0 {
+		return waitingChipStyle.Render(fmt.Sprintf("⏸ %d waiting", n))
+	}
 	if m.frameWorking() {
 		return m.spinner.View() + frameWorkingStyle.Render("WORKING")
 	}
@@ -179,6 +199,12 @@ func (m Model) frameActivity() string {
 func (m Model) frameHints() string {
 	var hints []string
 	switch {
+	case m.decisionUngated():
+		// The three keys that matter while a decision waits (§7b). Stopping
+		// the run is ctrl+c here rather than the artboard's esc, because esc
+		// clears the draft on this surface and always has — see the departure
+		// recorded in DESIGN-TUI.md §7b.
+		hints = []string{handoverKey + " answer it", "enter queues steering", "ctrl+c stop the run"}
 	case m.attachedTo != "":
 		hints = []string{"esc detach", "ctrl+a agents"}
 	case m.working():

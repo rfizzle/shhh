@@ -426,7 +426,9 @@ func TestDetachedAskGJumpsToAgent(t *testing.T) {
 	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
 	m = updated.(Model)
 
-	// Detached, the card offers the jump.
+	// Detached, the card offers the jump — once it holds the keyboard, since
+	// until then [g] is a letter (S-117, §7b).
+	m = handover(t, m)
 	if view := m.View(); !strings.Contains(view, "g: attach to researcher-1") {
 		t.Fatalf("routed card missing the [g] hint:\n%s", view)
 	}
@@ -443,6 +445,7 @@ func TestDetachedAskGJumpsToAgent(t *testing.T) {
 		t.Fatal("the jump must not answer the ask")
 	}
 	// Answering in place works.
+	m = handover(t, m)
 	updated, _ = m.Update(key('y'))
 	m = updated.(Model)
 	if approved, ok := ask.Answered(); !ok || !approved {

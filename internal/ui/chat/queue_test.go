@@ -48,6 +48,7 @@ func TestQueueStrip_ShowsPositionAndOrder(t *testing.T) {
 		execCall("c3", "echo third"),
 	}})
 	m = updated.(Model)
+	m = handover(t, m)
 
 	lines := m.confirmLines()
 	if len(lines) < 4 {
@@ -94,6 +95,7 @@ func TestQueueStrip_SingleDecisionHasNoStrip(t *testing.T) {
 		execCall("c1", "echo only"),
 	}})
 	m = updated.(Model)
+	m = handover(t, m)
 
 	view := strings.Join(m.confirmLines(), "\n")
 	if strings.Contains(view, "pending") {
@@ -118,6 +120,7 @@ func TestBatch_MembershipSpansOnlyTheSameCategory(t *testing.T) {
 		execCall("c2", "echo two"),
 	}})
 	m = updated.(Model)
+	m = handover(t, m)
 
 	// The current decision is a command, so the batch is the queued commands
 	// and not the queued edit.
@@ -150,6 +153,7 @@ func TestBatch_ExcludesFlaggedActions(t *testing.T) {
 		execCall("c3", "echo three"),
 	}})
 	m = updated.(Model)
+	m = handover(t, m)
 
 	if got := m.pendingBatch; len(got) != 1 || got[0] != "c3" {
 		t.Fatalf("a safety-flagged command must be left out of the batch, got %v", got)
@@ -174,6 +178,7 @@ func TestBatch_ExcludesFlaggedActions(t *testing.T) {
 		t.Fatal("the prompt should be the flagged command")
 	}
 	// Decline it, and the last batch member runs without asking again.
+	m = handover(t, m)
 	updated, _ = m.Update(keyN())
 	m = updated.(Model)
 	if m.state != stateRunningCmd {
@@ -194,6 +199,7 @@ func TestBatch_ApprovesEveryMemberWithoutAskingAgain(t *testing.T) {
 		execCall("c3", "echo three"),
 	}})
 	m = updated.(Model)
+	m = handover(t, m)
 
 	updated, cmd := m.Update(keyA())
 	m = updated.(Model)
@@ -232,6 +238,7 @@ func TestBatch_EditsBatchTogether(t *testing.T) {
 		execCall("c1", "echo after"),
 	}})
 	m = updated.(Model)
+	m = handover(t, m)
 
 	if got := m.pendingBatch; len(got) != 1 || got[0] != "w2" {
 		t.Fatalf("the batch should hold the other edit only, got %v", got)
@@ -270,9 +277,11 @@ func TestBatch_DenyStillDeniesOnlyTheCurrentItem(t *testing.T) {
 		execCall("c2", "echo two"),
 	}})
 	m = updated.(Model)
+	m = handover(t, m)
 
 	updated, _ = m.Update(keyN())
 	m = updated.(Model)
+	m = handover(t, m)
 	if m.state != stateConfirmRun {
 		t.Fatalf("declining one item should move to the next, got state %d", m.state)
 	}
@@ -294,6 +303,7 @@ func TestBatch_KeyIsAbsentWithoutAQueue(t *testing.T) {
 		execCall("c2", "git reset --hard"),
 	}})
 	m = updated.(Model)
+	m = handover(t, m)
 
 	// The only other item is flagged, so there is no batch and no key for one
 	// — but [A] keeps its old meaning as the shifted spelling of [a].
@@ -320,6 +330,7 @@ func TestBatch_CancelledTurnDropsItsGrants(t *testing.T) {
 		execCall("c3", "echo three"),
 	}})
 	m = updated.(Model)
+	m = handover(t, m)
 	updated, _ = m.Update(keyA())
 	m = updated.(Model)
 	if len(m.batchApproved) != 2 {

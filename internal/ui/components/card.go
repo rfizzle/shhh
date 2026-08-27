@@ -147,6 +147,47 @@ func hintRows(segments []string, width int) []string {
 	return rows
 }
 
+// notYetLiveWords is what a key row says about itself while the surface
+// offering it does not hold the keyboard. It is words rather than a border
+// colour because invariant 1 does not stop applying to the state of a key.
+const notYetLiveWords = "not live yet"
+
+// notYetLiveRows renders a decision surface's key row while that surface does
+// not hold the keyboard (DESIGN-TUI.md §7b, invariant 5, S-117). The keys are
+// dimmed and said to be waiting in words, and handover — the one key that is
+// live — is offered underneath with what it does and what the letters do
+// until it is pressed. A key that is not yet live is a different thing from
+// one that cannot be pressed at all (§18a's ⊘), so the two never render
+// alike: this one is waiting for the keyboard, that one is refused.
+func notYetLiveRows(keys, handover string, width int) []string {
+	inner := max(width-cardFrameWidth, 1)
+	keys = clip(keys, inner)
+	rows := make([]string, 0, 3)
+	// The words sit on the key row itself where the terminal carries them,
+	// so the state is read in the same glance as the keys it describes.
+	if pad := inner - lipgloss.Width(keys) - lipgloss.Width(notYetLiveWords); pad >= 2 {
+		rows = append(rows, dimmerStyle.Render(keys)+strings.Repeat(" ", pad)+dimStyle.Render(notYetLiveWords))
+	} else {
+		rows = append(rows, dimmerStyle.Render(keys), dimStyle.Render(clip(notYetLiveWords, inner)))
+	}
+	if handover != "" {
+		rows = append(rows, handoverRow(handover, inner))
+	}
+	return rows
+}
+
+// handoverRow is the one live key on a not-yet-live surface. Its wording is
+// the card's rather than the caller's, because §7b fixes it: the key, what it
+// does, and where the letters go until it is pressed.
+func handoverRow(key string, inner int) string {
+	head := infoStyle.Render("["+key+"]") + bodyStyle.Render(" answer it")
+	tail := dimStyle.Render(" — until then these letters go into your draft")
+	if lipgloss.Width(head)+lipgloss.Width(tail) > inner {
+		return clip(head, inner)
+	}
+	return head + tail
+}
+
 // padRight pads s with spaces to the given display width.
 func padRight(s string, width int) string {
 	if pad := width - lipgloss.Width(s); pad > 0 {

@@ -216,6 +216,11 @@ func (m Model) planCard() *components.PlanCard {
 		SummaryDetail: m.planDetail,
 		MaxLines:      m.planPanelBound(),
 	}
+	if m.decisionUngated() {
+		// The plan landed while a sentence was half-typed: its keys are not
+		// live until ctrl+g hands the keyboard over (S-117, §7b).
+		card.NotYetLive, card.Handover = true, handoverKey
+	}
 	if doc.Title != "" {
 		card.Title = "Plan · " + doc.Title
 	}
@@ -355,10 +360,16 @@ func (m Model) planApproveLines() []string {
 	return strings.Split(m.planCard().View(m.contentWidth()), "\n")
 }
 
+// planPanelLines is the card plus the rail that names the keyboard's owner
+// and the draft it is holding while it does (S-117, §7b).
+func (m Model) planPanelLines() []string {
+	return m.dressDecision(m.planApproveLines(), m.contentWidth())
+}
+
 // renderPlanApprove renders the plan-approval card padded to the bottom
 // panel height.
 func (m Model) renderPlanApprove() string {
-	lines := m.planApproveLines()
+	lines := m.planPanelLines()
 	h := m.bottomPanelHeight()
 	for len(lines) < h {
 		lines = append(lines, "")

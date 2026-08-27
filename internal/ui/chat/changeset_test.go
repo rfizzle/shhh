@@ -29,6 +29,9 @@ func applyWrite(t *testing.T, m Model, path, content, key string) Model {
 	}})
 	m = updated.(Model)
 	if key != "" {
+		// The card arrives without the keyboard (S-117, §7b); ctrl+g is what
+		// hands it over before any of its letters mean anything.
+		m = handover(t, m)
 		updated, cmd = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(key)})
 		m = updated.(Model)
 	}

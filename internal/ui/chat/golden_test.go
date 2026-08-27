@@ -346,6 +346,37 @@ func TestGolden_PressureCard(t *testing.T) {
 	})
 }
 
+// TestGolden_Interrupt captures a decision landing on a half-typed sentence
+// (S-117, §7b): the card ungated above a live frame, and the same card once
+// ctrl+g has given it the keyboard with the draft held undressed beneath it.
+// Read the two panels together — the pair is what invariant 5 asks a reader
+// to check, and covering the colours must still answer "who has the
+// keyboard".
+func TestGolden_Interrupt(t *testing.T) {
+	captureGolden(t, "interrupt", "a decision landing mid-sentence", goldenWidths, func(width int) []golden.Panel {
+		const draft = "also add a --max-rounds flag while you're in there"
+		ungated := interruptedModel(t, draft)
+		ungated.width, ungated.height = width, 40
+		ungated.syncInputWidth()
+		ungated.syncViewport()
+		gated := handover(t, ungated)
+		return []golden.Panel{
+			{Label: "ungated · the draft still has the keyboard", View: interruptSurface(ungated)},
+			{Label: "gated · ctrl+g, and the card has it", View: interruptSurface(gated)},
+		}
+	})
+}
+
+// interruptSurface is the bottom panel a decision produces: ungated it is the
+// card, its DRAFT rail and the live frame under them; gated it is the whole
+// panel the card takes over.
+func interruptSurface(m Model) string {
+	if m.frameShowing() {
+		return m.renderInterrupt(m.contentWidth()) + "\n" + m.renderPromptFrame()
+	}
+	return strings.Join(m.confirmPanelLines(), "\n")
+}
+
 // TestGolden_KeyEntry captures the masked prompt an auth failure's [k] opens
 // in the bottom panel, where a diff preview or an approval card would
 // otherwise be.

@@ -391,6 +391,10 @@ type Model struct {
 	// their approval requests routed into this session's approval surface.
 	subagents *subagent.Supervisor
 	childAsks []*subagent.Ask
+	// decisionHeld is whether the decision on screen holds the keyboard
+	// (S-117, §7b). A card that arrives unbidden never does: until ctrl+g it
+	// renders its keys as not-yet-live and every letter goes into the draft.
+	decisionHeld bool
 	// Sub-agent management and steering (S-077): attachedTo focuses the chat
 	// surface on a child ("" = orchestrator); childViews holds each child's
 	// mirrored transcript and scroll state so attach/detach loses nothing;
@@ -746,11 +750,25 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.state == stateDiffFull {
 			return m.updateDiffFull(msg)
 		}
-		if m.state == stateConfirmRun {
-			return m.updateConfirmRun(msg)
-		}
-		if m.state == statePlanApprove {
-			return m.updatePlanApprove(msg)
+		// A decision that arrived unbidden is inert until it holds the
+		// keyboard (invariant 5, §7b): ungated, only the key that hands the
+		// keyboard over is its own, and every letter belongs to the draft.
+		if m.decisionUngated() {
+			if msg.String() == handoverKey {
+				return m.gateDecision()
+			}
+		} else {
+			if msg.String() == "esc" && m.escLeavesWaiting() {
+				// Esc leaves the decision waiting rather than denying it; [n]
+				// is how you say no (§7b).
+				return m.ungateDecision()
+			}
+			if m.state == stateConfirmRun {
+				return m.updateConfirmRun(msg)
+			}
+			if m.state == statePlanApprove {
+				return m.updatePlanApprove(msg)
+			}
 		}
 		if m.state == stateRewindPick {
 			return m.updateRewindPick(msg)
@@ -787,8 +805,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.updateAgentList(msg)
 		}
 		// A child agent's routed approval takes over the bottom panel (S-068);
-		// it defers to the parent's own prompts above.
-		if ask := m.activeChildAsk(); ask != nil {
+		// it defers to the parent's own prompts above. Like every other
+		// decision that arrives unbidden it is inert until ctrl+g gives it
+		// the keyboard (S-117), which is why the check is on decisionHeld.
+		if ask := m.activeChildAsk(); ask != nil && m.decisionHeld {
 			return m.updateChildAsk(msg, ask)
 		}
 		switch msg.String() {
@@ -817,6 +837,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					m.classifierCancel = nil
 				}
 				m.state = stateConfirmRun
+				m.releaseDecision()
 				m.syncViewport()
 				return m, nil
 			}
@@ -831,6 +852,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.viewport.SetContent(m.renderHistory())
 				m.viewport.GotoBottom()
 				return m, m.autosaveCmd()
+			}
+			if m.decisionUngated() {
+				// Ctrl+C keeps the meaning the card has always given it: it
+				// answers the decision no. No draft can produce the chord, so
+				// leaving it live is what keeps a waiting decision endable
+				// without first taking the keyboard (S-117, §7b).
+				m.decisionHeld = true
+				return m.routeDecision(msg)
 			}
 			if strings.TrimSpace(m.input.Value()) != "" {
 				m.input.Reset()
@@ -1183,7 +1212,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// The input stays live while the agent streams or runs tools so the user
 	// can type a steering message (S-058); only the confirm and plan-approval
 	// prompts take over.
-	if m.state != stateConfirmRun && m.state != statePlanApprove && m.state != stateRetryWait {
+	if m.decisionUngated() || (m.state != stateConfirmRun && m.state != statePlanApprove && m.state != stateRetryWait) {
 		// Any other keypress while browsing input history turns the recalled
 		// text into a fresh draft.
 		if _, ok := msg.(tea.KeyMsg); ok {
@@ -1358,6 +1387,12 @@ func (m Model) View() string {
 	var bottom string
 	if m.frameShowing() {
 		bottom = m.renderPromptFrame()
+		// A decision that has not been given the keyboard rides above the
+		// frame, with the rail that names the keyboard's owner between them
+		// (S-117, §7b).
+		if head := m.renderInterrupt(contentWidth); head != "" {
+			bottom = head + "\n" + bottom
+		}
 	} else {
 		inputView := m.input.View()
 		// The slash-command completion menu renders under the input (S-078);

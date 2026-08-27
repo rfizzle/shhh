@@ -42,6 +42,10 @@ func (m Model) turnState() state {
 // screen instead of closing it: a turn that finishes (or asks for approval)
 // while the user is reading a diff waits for them to come back.
 func (m *Model) setTurnState(s state) {
+	// Every arrival at a decision, and every departure from one, passes
+	// through here — so this is where the keyboard goes back to the draft. A
+	// card can never inherit the gate the last one was given (S-117, §7b).
+	m.releaseDecision()
 	// A turn going idle stamps its end, so the inspector rail's elapsed time
 	// freezes at what the turn took instead of counting on (S-092).
 	if s == stateInput && m.working() && !m.turnStarted.IsZero() {
@@ -106,6 +110,12 @@ func (m Model) working() bool {
 func (m Model) inputLive() bool {
 	if m.state.isSurface() {
 		return false
+	}
+	// A decision on screen that has not been given the keyboard has not taken
+	// it from the draft either (S-117, §7b): the frame is live, and so is
+	// everything the input offers.
+	if m.decisionUngated() {
+		return true
 	}
 	switch m.state {
 	case stateInput, stateStreaming, stateRunningCmd, stateClassifying:

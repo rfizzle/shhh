@@ -175,7 +175,9 @@ type ApprovalCard struct {
 	// "g: attach to writer-1" on a routed child approval, S-077).
 	ExtraHints []string
 	// SafeDefault names the safe answer in words, for the cards where it is
-	// not obvious from the keys — e.g. "esc — the safe answer".
+	// not obvious from the keys — e.g. "[n] deny — the safe answer". It names
+	// a key that answers, never esc, which hands the keyboard back instead
+	// (§7b); Return is where esc's own meaning is stated.
 	SafeDefault string
 	// Footnote says why a key the reader might expect is absent. A missing
 	// key with a stated reason teaches; a missing key without one reads as a
@@ -184,12 +186,31 @@ type ApprovalCard struct {
 	// MaxLines bounds the card's total height, frame included; the diff body
 	// shrinks to fit. 0 means unbounded.
 	MaxLines int
+	// Return names what esc does while the card holds the keyboard: it hands
+	// it back to the draft and leaves the decision waiting rather than
+	// answering it (§7b). Stated because it is not obvious — invariant 3
+	// asks for the safe answer in words wherever it is not.
+	Return string
+	// NotYetLive says the card is on screen beside a draft that still holds
+	// the keyboard (§7b, S-117). Its decision keys render as not-yet-live and
+	// Update answers nothing, so a letter typed into the sentence stays a
+	// letter. Handover is the key that changes that — the card's only live
+	// key in this state.
+	NotYetLive bool
+	Handover   string
 }
 
 // Update maps decision keys, preserving the chat confirm prompt's y/n/esc
 // semantics. Unrecognized keys — including [a] when AllowAlways is off —
 // leave the card waiting.
 func (c *ApprovalCard) Update(msg tea.KeyMsg) (done bool, result any) {
+	if c.NotYetLive {
+		// The card does not hold the keyboard, so none of its keys exist yet
+		// (invariant 5). The host owns the one key that changes that, and
+		// everything else belongs to the draft — including enter, which is
+		// how a sentence ends.
+		return false, nil
+	}
 	switch msg.String() {
 	case "y", "Y", "enter":
 		return true, ApprovalApprove
@@ -238,27 +259,7 @@ func (c *ApprovalCard) View(width int) string {
 		}
 	}
 
-	hint := c.Question + " " + c.keys()
-	if c.AllowAlways && c.AlwaysHint != "" {
-		hint += "  (" + c.AlwaysHint + ")"
-	}
-	if c.FullDiff {
-		hint += "  (d: full diff)"
-	}
-	segments := append([]string{hint}, c.ExtraHints...)
-	if c.SafeDefault != "" {
-		segments = append(segments, c.SafeDefault)
-	}
-	hints := hintRows(segments, width)
-	// [A] gets a row of its own rather than a place in the joined run: the
-	// count is the whole offer, and on an 80-column terminal a joined run is
-	// exactly where it would be clipped away.
-	if c.Batch && c.BatchHint != "" {
-		hints = append(hints, hintStyle.Render(clip(c.BatchHint, inner)))
-	}
-	if c.Footnote != "" {
-		hints = append(hints, dimStyle.Render(clip(c.Footnote, inner)))
-	}
+	hints := c.hintRowsFor(width, inner)
 	// The keys sit below a rule so they never blend into the body (S-101).
 	hints = append([]string{cardRule}, hints...)
 
@@ -289,6 +290,41 @@ func (c *ApprovalCard) View(width int) string {
 		style = delStyle
 	}
 	return renderChromeCard(cardChrome{title: title, chips: c.chips(), style: &style}, rows, width)
+}
+
+// hintRowsFor is the block under the rule: the decision keys and everything
+// that qualifies them. A card that does not hold the keyboard renders that
+// block as not-yet-live instead (§7b) — the consequences of a key nobody can
+// press yet are noise, so only the keys and the handover are shown.
+func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
+	if c.NotYetLive {
+		return notYetLiveRows(c.Question+" "+c.keys(), c.Handover, width)
+	}
+	hint := c.Question + " " + c.keys()
+	if c.AllowAlways && c.AlwaysHint != "" {
+		hint += "  (" + c.AlwaysHint + ")"
+	}
+	if c.FullDiff {
+		hint += "  (d: full diff)"
+	}
+	segments := append([]string{hint}, c.ExtraHints...)
+	if c.SafeDefault != "" {
+		segments = append(segments, c.SafeDefault)
+	}
+	hints := hintRows(segments, width)
+	// [A] gets a row of its own rather than a place in the joined run: the
+	// count is the whole offer, and on an 80-column terminal a joined run is
+	// exactly where it would be clipped away.
+	if c.Batch && c.BatchHint != "" {
+		hints = append(hints, hintStyle.Render(clip(c.BatchHint, inner)))
+	}
+	if c.Footnote != "" {
+		hints = append(hints, dimStyle.Render(clip(c.Footnote, inner)))
+	}
+	if c.Return != "" {
+		hints = append(hints, dimStyle.Render(clip(c.Return, inner)))
+	}
+	return hints
 }
 
 // keys is the decision prompt's key list. [a] appears only where a session

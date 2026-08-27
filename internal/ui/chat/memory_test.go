@@ -80,7 +80,7 @@ func TestRemember_AlwaysPromptsEvenInPermissiveModes(t *testing.T) {
 func TestRemember_SaveProjectScope(t *testing.T) {
 	m, saves := memoryModel(t, agent.ModeManual)
 	updated, _ := m.Update(rememberCall())
-	m = updated.(Model)
+	m = handover(t, updated.(Model))
 
 	// Option 1 ("Save (project)") is focused by default; enter confirms.
 	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
@@ -108,7 +108,7 @@ func TestRemember_SaveProjectScope(t *testing.T) {
 func TestRemember_SaveGlobalWithNote(t *testing.T) {
 	m, saves := memoryModel(t, agent.ModeManual)
 	updated, _ := m.Update(rememberCall())
-	m = updated.(Model)
+	m = handover(t, updated.(Model))
 
 	// Jump to option 2 ("Save (global)"), tab into the note, type, confirm.
 	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'2'}})
@@ -138,7 +138,7 @@ func TestRemember_SaveGlobalWithNote(t *testing.T) {
 func TestRemember_Declined(t *testing.T) {
 	m, saves := memoryModel(t, agent.ModeManual)
 	updated, _ := m.Update(rememberCall())
-	m = updated.(Model)
+	m = handover(t, updated.(Model))
 
 	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
 	m = updated.(Model)

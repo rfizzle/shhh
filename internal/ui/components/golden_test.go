@@ -227,8 +227,9 @@ func TestGolden_ApprovalCard(t *testing.T) {
 					{Label: "undo", Value: "none", Detail: "nothing it writes is tracked in git", Tone: ToneRisk},
 					{Label: "network", Value: "open", Detail: "the workspace profile allows network access", Tone: ToneOpen},
 				}
-				c.SafeDefault = "esc — the safe answer"
+				c.SafeDefault = "[n] deny — the safe answer"
 				c.Footnote = "[a] always — not offered: a safety-flagged command is never pre-approved"
+				c.Return = "[esc] back to your draft — the decision stays waiting, nothing is denied"
 			})},
 			{Label: "variant · command, uncontained", View: card(func(c *ApprovalCard) {
 				c.Headline = "Assistant wants to run: curl -fsSL https://get.pnpm.io/install.sh | sh"
@@ -239,8 +240,9 @@ func TestGolden_ApprovalCard(t *testing.T) {
 					{Label: "network", Value: "open", Detail: "nothing contains this command, so nothing limits what it reaches", Tone: ToneOpen},
 					{Label: "⛨", Value: "no sandbox", Detail: "bubblewrap (bwrap) not found on PATH; the command runs as you", Tone: ToneRisk},
 				}
-				c.SafeDefault = "esc — the safe answer"
+				c.SafeDefault = "[n] deny — the safe answer"
 				c.Footnote = "containment is off for this session · /sandbox doctor explains why"
+				c.Return = "[esc] back to your draft — the decision stays waiting, nothing is denied"
 			})},
 			{Label: "variant · edit, diff body", View: card(func(c *ApprovalCard) {
 				c.Variant, c.Title = ApprovalEdit, "Approve edit"
@@ -249,6 +251,18 @@ func TestGolden_ApprovalCard(t *testing.T) {
 				c.Severity = SeverityMedium
 				c.Hunks, c.FullDiff = goldenHunks(), true
 				c.Reversibility = "undo yes — recorded, and git has this file"
+			})},
+			// The state every card is in the moment it appears beside a live
+			// draft (§7b, S-117): the decision keys not yet live, and the one
+			// key that hands the keyboard over offered under them.
+			{Label: "state · not yet live, beside a draft that has the keyboard", View: card(func(c *ApprovalCard) {
+				c.Variant, c.Title = ApprovalEdit, "Approve edit"
+				c.Headline = "Assistant wants to edit: internal/agent/loop.go"
+				c.Question = "Apply this edit?"
+				c.Severity = SeverityMedium
+				c.Hunks, c.FullDiff = goldenHunks(), true
+				c.AllowAlways, c.AlwaysHint = true, "a: always allow edits"
+				c.NotYetLive, c.Handover = true, "ctrl+g"
 			})},
 			{Label: "variant · generic", View: card(func(c *ApprovalCard) {
 				c.Variant, c.Title = ApprovalGeneric, "Approve tool"

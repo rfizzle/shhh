@@ -135,7 +135,7 @@ func TestApprovalCard_BlastRadiusBlockAndRule(t *testing.T) {
 			{Label: "network", Value: "open", Detail: "the workspace profile allows it", Tone: ToneOpen},
 		},
 		Question:    "Run this command?",
-		SafeDefault: "esc — the safe answer",
+		SafeDefault: "[n] deny — the safe answer",
 		Footnote:    "[a] always — not offered: a safety-flagged command is never pre-approved",
 	}
 	lines := strings.Split(ansi.Strip(c.View(90)), "\n")
@@ -144,7 +144,7 @@ func TestApprovalCard_BlastRadiusBlockAndRule(t *testing.T) {
 		"touches   ./dist — 412 files, 84.0 MB",
 		"undo      none — rm bypasses the changeset",
 		"network   open — the workspace profile allows it",
-		"esc — the safe answer",
+		"[n] deny — the safe answer",
 		"[a] always — not offered",
 	} {
 		if !strings.Contains(view, want) {

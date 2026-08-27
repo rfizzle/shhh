@@ -158,6 +158,13 @@ func TestFrame_TakeoverKeepsPlainStack(t *testing.T) {
 	m.pendingRun = "echo hi"
 	m.state = stateConfirmRun
 	m.syncViewport()
+	// Ungated the card rides above a live frame (S-117, §7b); it takes the
+	// panel only once the decision holds the keyboard.
+	ungated := stripANSI(m.View())
+	if !strings.Contains(ungated, "╭─ shhh chat") {
+		t.Fatalf("an ungated decision leaves the draft its frame:\n%s", ungated)
+	}
+	m = handover(t, m)
 	view := stripANSI(m.View())
 	if strings.Contains(view, "╭─ shhh chat") {
 		t.Fatalf("takeover surfaces must replace the frame:\n%s", view)

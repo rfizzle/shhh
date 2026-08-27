@@ -65,6 +65,9 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 	switch ev.Kind {
 	case subagent.EventAsk:
 		m.childAsks = append(m.childAsks, ev.Ask)
+		// A routed approval arrives the way every other decision does: on
+		// screen, without the keyboard (S-117, §7b).
+		m.releaseDecision()
 	case subagent.EventDone:
 		// A finished child can no longer act on its asks (S-077).
 		m.purgeChildAsks(ev.Status.Name)
@@ -169,6 +172,9 @@ func (m Model) updateChildAsk(msg tea.KeyMsg, ask *subagent.Ask) (tea.Model, tea
 			break
 		}
 	}
+	// The keyboard goes straight back to the draft, at the same character
+	// (S-117, §7b).
+	m.releaseDecision()
 	approved := result == components.ApprovalApprove
 	ask.Respond(approved)
 	verdict := "Declined"
@@ -187,7 +193,8 @@ func (m Model) updateChildAsk(msg tea.KeyMsg, ask *subagent.Ask) (tea.Model, tea
 // the prefix drops (the breadcrumb already names it) — detached, [g] offers
 // the jump into its view.
 func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
-	card := &components.ApprovalCard{MaxLines: m.maxConfirmPanelHeight()}
+	card := &components.ApprovalCard{}
+	defer m.applyNotYetLive(card)
 	prefix := ask.Agent + " ▸ "
 	if m.attachedTo == ask.Agent {
 		prefix = ""
@@ -235,10 +242,16 @@ func (m Model) childAskLines(ask *subagent.Ask) []string {
 	return strings.Split(m.childAskCard(ask).View(m.contentWidth()), "\n")
 }
 
+// childAskPanelLines is the routed card plus the rail that names the
+// keyboard's owner and the draft it is holding while it does (S-117, §7b).
+func (m Model) childAskPanelLines(ask *subagent.Ask) []string {
+	return m.dressDecision(m.childAskLines(ask), m.contentWidth())
+}
+
 // renderChildAsk pads the card to the bottom panel height, like the parent's
 // own confirm prompt.
 func (m Model) renderChildAsk(ask *subagent.Ask) string {
-	lines := m.childAskLines(ask)
+	lines := m.childAskPanelLines(ask)
 	h := m.bottomPanelHeight()
 	for len(lines) < h {
 		lines = append(lines, "")

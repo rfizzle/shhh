@@ -59,6 +59,7 @@ func TestChildAskApprove(t *testing.T) {
 		t.Fatalf("view missing labeled child ask:\n%s", view)
 	}
 
+	m = handover(t, m)
 	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
 	m = updated.(Model)
 	approved, ok := ask.Answered()
@@ -73,7 +74,9 @@ func TestChildAskApprove(t *testing.T) {
 	}
 }
 
-func TestChildAskDeclineWithEsc(t *testing.T) {
+// Esc on a routed card hands the keyboard back and leaves the request
+// waiting; [n] is what declines it (S-117, §7b).
+func TestChildAskDecline(t *testing.T) {
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)
 	m := newSubagentModel(t, sup)
@@ -81,12 +84,23 @@ func TestChildAskDeclineWithEsc(t *testing.T) {
 	ask := subagent.NewAsk("researcher-1", subagent.AskGeneric, "use web_fetch")
 	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
 	m = updated.(Model)
+	m = handover(t, m)
 	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	m = updated.(Model)
+	if _, answered := ask.Answered(); answered {
+		t.Fatal("esc leaves a routed request waiting, it does not answer it")
+	}
+	if m.activeChildAsk() != ask {
+		t.Fatal("the request stays on screen after esc")
+	}
+
+	m = handover(t, m)
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
 	m = updated.(Model)
 
 	approved, ok := ask.Answered()
 	if !ok || approved {
-		t.Fatalf("esc should decline: approved=%v ok=%v", approved, ok)
+		t.Fatalf("[n] should decline: approved=%v ok=%v", approved, ok)
 	}
 	if !transcriptContains(m, "Declined researcher-1") {
 		t.Fatal("transcript missing the decline entry")
