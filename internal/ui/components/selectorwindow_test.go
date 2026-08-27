@@ -27,13 +27,20 @@ func modelList(n int) []SelectOption {
 
 func cardHeight(view string) int { return strings.Count(view, "\n") + 1 }
 
-// focusedRow is the label the pointer is on in a rendered card, or "" when
-// the pointer is nowhere on it — which is the bug this story is about.
+// focusedRow is the numbered label the pointer is on in a rendered card, or
+// "" when the pointer is nowhere on it — which is the bug this story is
+// about. It stops at the description column, which every row carries since
+// S-126: what these tests are asking is which option the pointer found, not
+// what that option says about itself.
 func focusedRow(view string) string {
 	for _, line := range strings.Split(ansi.Strip(view), "\n") {
-		if i := strings.Index(line, "❯ "); i >= 0 {
-			return strings.TrimSpace(strings.TrimRight(line[i+len("❯ "):], "│ "))
+		i := strings.Index(line, "❯ ")
+		if i < 0 {
+			continue
 		}
+		row := strings.TrimLeft(strings.TrimRight(line[i+len("❯ "):], "│ "), " ")
+		label, _, _ := strings.Cut(row, "  ")
+		return strings.TrimSpace(label)
 	}
 	return ""
 }
@@ -97,7 +104,7 @@ func TestSelectWindow_MarkersCountWhatIsHidden(t *testing.T) {
 	s := &Select{Title: "Switch model", Options: modelList(14), MaxLines: 10}
 
 	top := ansi.Strip(s.View(70))
-	if !strings.Contains(top, "↓ 9 more") {
+	if !strings.Contains(top, "↓ 8 more") {
 		t.Fatalf("at the top the card should count what is below it:\n%s", top)
 	}
 	if strings.Contains(top, "↑ ") {
@@ -106,7 +113,7 @@ func TestSelectWindow_MarkersCountWhatIsHidden(t *testing.T) {
 
 	s.Focus = 13
 	bottom := ansi.Strip(s.View(70))
-	if !strings.Contains(bottom, "↑ 9 more") {
+	if !strings.Contains(bottom, "↑ 8 more") {
 		t.Fatalf("at the bottom the card should count what is above it:\n%s", bottom)
 	}
 	if strings.Contains(bottom, "↓ ") {
@@ -119,12 +126,12 @@ func TestSelectWindow_MarkersCountWhatIsHidden(t *testing.T) {
 	// option from above puts it at the foot of the window, from below at the
 	// head, and the counts follow.
 	walked := &Select{Title: "Switch model", Options: modelList(14), MaxLines: 10}
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 8; i++ {
 		walked.View(70)
 		walked.Update(key("down"))
 	}
 	middle := ansi.Strip(walked.View(70))
-	for _, want := range []string{"↑ 2 more", "↓ 8 more"} {
+	for _, want := range []string{"↑ 4 more", "↓ 5 more"} {
 		if !strings.Contains(middle, want) {
 			t.Fatalf("mid-list the card should count both ways, expected %q:\n%s", want, middle)
 		}
@@ -136,20 +143,20 @@ func TestSelectWindow_MarkersCountWhatIsHidden(t *testing.T) {
 // at its head. Neither is a jump, which is the point.
 func TestSelectWindow_TracksTheEdgeTheFocusCrossed(t *testing.T) {
 	fromAbove := &Select{Title: "Switch model", Options: modelList(14), MaxLines: 10}
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 8; i++ {
 		fromAbove.View(70)
 		fromAbove.Update(key("down"))
 	}
-	if view := ansi.Strip(fromAbove.View(70)); !strings.Contains(view, "↑ 2 more") {
+	if view := ansi.Strip(fromAbove.View(70)); !strings.Contains(view, "↑ 4 more") {
 		t.Fatalf("reached from above, the option should sit at the foot of the window:\n%s", view)
 	}
 
 	fromBelow := &Select{Title: "Switch model", Options: modelList(14), Focus: 13, MaxLines: 10}
-	for i := 13; i > 5; i-- {
+	for i := 13; i > 8; i-- {
 		fromBelow.View(70)
 		fromBelow.Update(key("up"))
 	}
-	if view := ansi.Strip(fromBelow.View(70)); !strings.Contains(view, "↑ 5 more") {
+	if view := ansi.Strip(fromBelow.View(70)); !strings.Contains(view, "↑ 8 more") {
 		t.Fatalf("reached from below, the option should sit at the head of the window:\n%s", view)
 	}
 }

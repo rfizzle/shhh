@@ -44,6 +44,7 @@ func (m Model) openPicker(title string, opts []components.SelectOption, focus in
 		Focus:      focus,
 		MaxLines:   m.maxConfirmPanelHeight(),
 		Filterable: true,
+		QueryHint:  "type to filter",
 		Total:      selectableOptions(opts),
 	}
 	m.pickerAll = opts

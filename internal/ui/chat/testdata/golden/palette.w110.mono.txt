@@ -13,17 +13,17 @@
 ┌─ Palette ────────────────────────────────────────────────────────────────────────────────── 17 results ┐
 │ ▸ █                                                                                                    │
 │ COMMANDS                                                                                               │
-│ ❯ /help                                                                                                │
-│     Show commands, keys, and the approval policy                                                       │
-│   /clear                                                                                               │
-│   /copy                                                                                                │
-│   /model                                                                                               │
-│   /mode  shift+tab                                                                                     │
-│   /stats                                                                                               │
+│ ❯ /help                   Show commands, keys, and the approval policy                                 │
+│   /clear                  Start a new conversation                                                     │
+│   /copy                   Copy the last response (or just its code blocks)                             │
+│   /model                  Switch the model (bare /model opens a picker)                                │
+│   /mode                   Set the permission mode (bare /mode opens a picker)                shift+tab │
+│   /stats                  Context occupancy and session spend                                          │
+│   /ui                     Activity feed density and monochrome mode                                    │
 │ FILES                                                                                                  │
-│   internal/agent/loop.go                                                                               │
-│   README.md                                                                                            │
-│ … 9 more — keep typing                                                                                 │
+│   internal/agent/loop.go  modified 4m ago                                                              │
+│   README.md               modified 2h ago                                                              │
+│ … 8 more — keep typing                                                                                 │
 │ enter run · tab complete · ↑↓ move · esc dismiss                                                       │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
@@ -31,8 +31,7 @@
 ┌─ Palette ──────────────────────────────────────────────────────────────────────────────────── 1 result ┐
 │ ▸ cl█                                                                                                  │
 │ COMMANDS                                                                                               │
-│ ❯ ⊘ /clear                                                                                             │
-│     needs the turn to be finished — it starts a new conversation                                       │
+│ ❯ ⊘ /clear  needs the turn to be finished — it starts a new conversation                               │
 │ enter run · tab complete · ↑↓ move · esc dismiss                                                       │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
@@ -41,17 +40,17 @@
 ␛[38;5;244m┌─ Palette ────────────────────────────────────────────────────────────────────────────────── 17 results ┐␛[0m
 ␛[38;5;244m│␛[0m ␛[38;5;254m▸ ␛[0m␛[38;5;254m█␛[0m                                                                                                    ␛[38;5;244m│␛[0m
 ␛[38;5;244m│␛[0m ␛[38;5;244mCOMMANDS␛[0m                                                                                               ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m ␛[1;48;5;237m❯ /help␛[0m                                                                                                ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m ␛[38;5;244m    Show commands, keys, and the approval policy␛[0m                                                       ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m   /clear                                                                                               ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m   /copy                                                                                                ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m   /model                                                                                               ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m   /mode  shift+tab                                                                                     ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m   /stats                                                                                               ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m ␛[1;48;5;237m❯ /help                   Show commands, keys, and the approval policy␛[0m                                 ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m   /clear                  ␛[38;5;244mStart a new conversation␛[0m                                                     ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m   /copy                   ␛[38;5;244mCopy the last response (or just its code blocks)␛[0m                             ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m   /model                  ␛[38;5;244mSwitch the model (bare /model opens a picker)␛[0m                                ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m   /mode                   ␛[38;5;244mSet the permission mode (bare /mode opens a picker)␛[0m                ␛[38;5;254mshift+tab␛[0m ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m   /stats                  ␛[38;5;244mContext occupancy and session spend␛[0m                                          ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m   /ui                     ␛[38;5;244mActivity feed density and monochrome mode␛[0m                                    ␛[38;5;244m│␛[0m
 ␛[38;5;244m│␛[0m ␛[38;5;244mFILES␛[0m                                                                                                  ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m   internal/agent/loop.go                                                                               ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m   README.md                                                                                            ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m ␛[38;5;244m… 9 more — keep typing␛[0m                                                                                 ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m   internal/agent/loop.go  ␛[38;5;244mmodified 4m ago␛[0m                                                              ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m   README.md               ␛[38;5;244mmodified 2h ago␛[0m                                                              ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m ␛[38;5;244m… 8 more — keep typing␛[0m                                                                                 ␛[38;5;244m│␛[0m
 ␛[38;5;244m│␛[0m ␛[3;38;5;244menter run · tab complete · ↑↓ move · esc dismiss␛[0m                                                       ␛[38;5;244m│␛[0m
 ␛[38;5;244m└────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[0m
 
@@ -59,7 +58,6 @@
 ␛[38;5;244m┌─ Palette ──────────────────────────────────────────────────────────────────────────────────── 1 result ┐␛[0m
 ␛[38;5;244m│␛[0m ␛[38;5;254m▸ ␛[0m␛[38;5;254mcl█␛[0m                                                                                                  ␛[38;5;244m│␛[0m
 ␛[38;5;244m│␛[0m ␛[38;5;244mCOMMANDS␛[0m                                                                                               ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m ␛[1;48;5;237m❯ ⊘ /clear␛[0m                                                                                             ␛[38;5;244m│␛[0m
-␛[38;5;244m│␛[0m ␛[38;5;244m    needs the turn to be finished — it starts a new conversation␛[0m                                       ␛[38;5;244m│␛[0m
+␛[38;5;244m│␛[0m ␛[1;48;5;237m❯ ⊘ /clear  needs the turn to be finished — it starts a new conversation␛[0m                               ␛[38;5;244m│␛[0m
 ␛[38;5;244m│␛[0m ␛[3;38;5;244menter run · tab complete · ↑↓ move · esc dismiss␛[0m                                                       ␛[38;5;244m│␛[0m
 ␛[38;5;244m└────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[0m

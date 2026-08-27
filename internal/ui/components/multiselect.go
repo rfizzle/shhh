@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // MultiSelectResult is the multi-select Update result: the checked indices in
@@ -124,21 +125,35 @@ func (s *MultiSelect) visibleRows(width, budget int) []string {
 		rows = append(rows, listOverflowRow("↑", lo, s.checkedNote(0, lo), width))
 	}
 	for i := lo; i < hi; i++ {
-		box := dimStyle.Render("[ ]")
-		if i < len(s.Checked) && s.Checked[i] {
-			box = addStyle.Render("[x]")
-		}
-		row := box + " " + s.Options[i].Label
-		if i == s.Focus {
-			rows = append(rows, focusRowStyle.Render(clip("❯ ", inner))+clip(row, max(inner-2, 0)))
-		} else {
-			rows = append(rows, "  "+clip(row, max(inner-2, 0)))
-		}
+		rows = append(rows, s.optionRow(i, inner))
 	}
 	if hi < n {
 		rows = append(rows, listOverflowRow("↓", n-hi, s.checkedNote(hi, n), width))
 	}
 	return rows
+}
+
+// optionRow lays one checkbox row across the card: the box, the label, and —
+// where the caller has one — the short field right-aligned at the end of the
+// row (§4b). That field is where a staging list states `+34 −6`: the counts
+// are what you are deciding about, so they belong on the row rather than in a
+// summary underneath it.
+func (s *MultiSelect) optionRow(i, inner int) string {
+	opt := s.Options[i]
+	box := dimStyle.Render("[ ]")
+	if i < len(s.Checked) && s.Checked[i] {
+		box = addStyle.Render("[x]")
+	}
+	body := inner - 2
+	row := box + " " + opt.Label
+	if opt.Meta != "" && body-lipgloss.Width(row) >= lipgloss.Width(opt.Meta)+2 {
+		row = padRight(row, body-lipgloss.Width(opt.Meta)) + opt.MetaTone.style().Render(opt.Meta)
+	}
+	row = clip(row, max(body, 0))
+	if i == s.Focus {
+		return focusRowStyle.Render(clip("❯ ", inner)) + row
+	}
+	return "  " + row
 }
 
 // checkedNote is what a marker adds about the run it is hiding: how many of

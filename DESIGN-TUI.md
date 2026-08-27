@@ -326,10 +326,22 @@ plan itself above the options — see §4d.
 
 - Focused row: `❯` pointer, bold, selection background (62) — same
   visual as the existing action bar's `ActiveStyle`.
-- Optional per-option description line, gray (241), shown under the
-  focused option only (keeps the card short).
+- **Every row carries its own description**, gray (241), in a column of its
+  own after the label (S-126). A catalog you have to walk to read is a
+  catalog you cannot compare, which is the whole reason `/model` shows prices
+  at all. The one exception is the plan card, where the description is the
+  consequence of taking the option rather than a property of it (§4d).
+- **The short field at the end of the row** is right-aligned against the card
+  edge: a key binding, a price, `this one`, the reason an unavailable row is
+  unavailable. It is one clause and never a sentence, and it survives when the
+  description gives up its width — the description is the row explaining
+  itself, the short field is a label on the row.
+- The description column is measured over the whole list, not over the window,
+  so it does not shift under the reader as the window slides.
 - Number keys select immediately, and they count the list rather than the
-  window: option 12 is `12.` whether or not it is the first row showing.
+  window: option 12 is `12.` whether or not it is the first row showing. The
+  numbering is right-aligned in a column of its own, so option 9 and option 10
+  start their labels in the same place.
 - Group rails (`COMMANDS`, `SESSIONS`, `SESSION`, `WORKSPACE`) are labels the
   pointer steps over, not options. An option that cannot be acted on right now
   is dimmed behind `⊘` with its reason, never dropped (invariant 4).
@@ -508,6 +520,10 @@ choosing quality-gate checks (S-067).
 
 - `[x]` green (10), `[ ]` gray (241). The confirm hint shows the live
   count. `a` toggles all ↔ none.
+- **A row states what it costs on its own row**, right-aligned against the
+  card edge in the same field the single-select uses (§4a, S-126): a staging
+  list's `+34 −6` is what you are deciding about, so it is never a summary
+  underneath the thing being decided.
 - Zero-selected + enter = no-op with a one-line notice, not a confirm.
 - **A multi-select that is an ordinary list of choices windows** (S-124) —
   `/memory forget`, the gate's checks — on the selector's own window, with the
@@ -2980,3 +2996,134 @@ cover provider, config and workspace health, or the design system's name is
 corrected to the one that ships, is S-130's first task and a product decision
 rather than a rendering one. This section describes the artboard; it does not
 settle that.
+
+---
+
+## 20. The Primitives Register (S-126)
+
+Seven Go renderers shipped before the design system had a page to check them
+against. S-121 landed those pages; this is the audit that reads each renderer
+against the primitive that now specifies it, and writes the answer down — the
+S-095 and S-125 pattern, where a rule stated once becomes a list a new surface
+has to be entered into rather than a paragraph each surface is trusted to have
+read.
+
+Two positions are allowed, and there is no third: a divergence is either fixed
+in Go, or it is a departure recorded here with its reason. What counts as a
+divergence is what a reader sees on the row. A prop named `detail` in the
+design system and `Desc` in Go is not a finding; a description that appears on
+one row in the design and on none of the others in the binary is.
+
+| renderer | primitive | outcome |
+|---|---|---|
+| `selector.go` | `decision/Select` | fixed: the description column, the meta field, the right-aligned numbering. Two departures |
+| `multiselect.go` | `decision/MultiSelect` | fixed: the meta field. Two departures |
+| `noteselect.go` | `decision/NoteSelect` | inherits the selector's three. One departure |
+| `plancard.go` | `decision/PlanCard` | conformant. Two departures |
+| `inspector.go`'s PLAN block | `decision/PlanChecklist` | conformant. Two departures |
+| `diff.go` | `activity/DiffView` | conformant. Two departures |
+| `palette.go` | `frame/Palette` | fixed: the key binding is the row's meta field now |
+| `startscreen.go` | `frame/StartScreen` | conformant |
+| `fanout.go` | `activity/FanoutLane` | conformant. One departure |
+| `agentlist.go` | `decision/AgentList` | conformant. One departure |
+
+### 20a. What was fixed
+
+- **The description was hiding.** `Select.prompt.md` and `Lists.html` draw
+  every option's continuation on the option's own row; the Go card drew it
+  under the focused option and nowhere else, which is what the old §4a bullet
+  said ("keeps the card short"). That bullet predates the artboard §4a itself
+  declares normative, and it cost the reader the thing a catalog is for: a
+  `/model` list where the prices only appear one at a time cannot be compared,
+  only walked. Every row carries its description now, and the plan card keeps
+  the old behaviour under a name that says it is the exception (§4d).
+- **The short field did not exist.** The design gives every option a
+  right-aligned `meta` — the price on a model, `[tab]` on a command, `not
+  usable here` on a row that cannot be taken. Go had no such field, so the
+  palette hand-padded key bindings into the label text: a second column the
+  component knew nothing about, which a filter that shortened the list could
+  not keep aligned. One field, aligned by the card, for the single-select and
+  the multi-select alike.
+- **The numbering stepped sideways at ten.** `1. ` and `10. ` are different
+  widths, so a list of a dozen entries moved its labels one column left
+  halfway down. The artboard right-aligns the number in a column of its own;
+  so does the card now.
+- **An open filter row said nothing.** A row opened by a key names what the
+  key was for until something is typed into it, which is the design's own
+  default and costs nothing once it has content.
+
+A list where nothing has a description or a short field spends no columns on
+either, so a fixed menu of answers — `/mode`, the recovery cards' options —
+renders exactly as it did before.
+
+### 20b. The departures
+
+Each of these is a place the binary does something the design system does not,
+on purpose. The reason is here so the next reader finds a decision rather than
+a discrepancy.
+
+- **An unavailable option carries `⊘`.** `Lists.html` and `Palette.prompt.md`
+  paint the row grey and leave it at that. Invariant 1 does not allow a shade
+  to be the only difference between two states, and §10f's mono palette has
+  one grey to spend, so the glyph stays and the words in the meta field stay
+  with it. Same precedent as §7c: where a guideline and an artboard disagree
+  about a rule, the guideline wins.
+- **An unavailable option is still selectable.** `Select.d.ts` says `disabled`
+  is "shown but not selectable". In the palette, choosing the row is how the
+  surface says why — the reason is a clause, not a chip, and it is stated on
+  the row rather than swallowed. Nothing acts on the choice, so no key does
+  anything it did not offer (invariant 5); it is a row that answers rather
+  than a row that refuses.
+- **The multi-select keeps its `❯`.** The staging artboard draws the focused
+  row as a checkbox inside the focus background with no pointer. §4b's own
+  sketch draws the pointer, and a background is the one focus treatment mono
+  cannot carry, so the pointer stays.
+- **The multi-select does not colour the `@@` field itself.** `MultiSelect.d.ts`
+  splits a staging row into `hunk`, `label`, `added` and `removed`; Go takes a
+  label and a meta field and lets the staging caller compose them. The row
+  reads the same; the split would be a prop-shape change, which this audit is
+  not for.
+- **The note field is a labelled row, not a nested frame.** `NoteSelect`
+  draws `╭─ note ─╮ … ╰─╯` around the text. A card's height is the bottom
+  panel's accounting (§4a) and a nested frame spends two of its rows on a
+  border, taken from the option window — so Go writes `┄ note (optional)` above
+  the text and spends the rows on options instead. The label still names the
+  field, and turns red on `note required` the same way the border would.
+- **The plan card's fold row does not offer a key.** `Lists.html` writes `…
+  4 more steps  [s] show them · 2 of the 4 write`. `s` is already the plan
+  card's save key on §4d's own key row, and an audit is not where a key
+  binding gets reassigned. The row states the count; whether the steps become
+  unfoldable, and on which key, is a product decision for whoever needs it.
+- **The plan card numbers its options and points with `❯`.** The artboard
+  draws them unnumbered behind `▸`. §4d's key row offers `1–5 jump`, and a
+  number you can read has to be a number you can type (§4a), so the numbering
+  stays and the pointer stays the one every other list uses.
+- **The rail checklist has a fourth state.** `PlanChecklist` declares `done`,
+  `running` and `todo`. A step that finished and contained a failure is none
+  of the three, and the checklist is the answer to "where are we", so `✗` is
+  drawn there for the same reason the step outline draws it (§13b).
+- **The rail checklist names a command, not keys.** The artboard offers
+  `[p] full plan · [x] drop step 4` on the rail; Go writes `/plan for the
+  whole list`. §15c settled this under S-125: the rail has no way to hold the
+  keyboard, so neither of §7c's two positions is open to it, and a key printed
+  there would be an offer nothing accepts.
+- **Diff line numbers are as wide as the file, not five columns.**
+  `DiffView.d.ts` fixes the gutter at five. §3b's own sketch uses three, and
+  three columns of padding on a short file are three columns taken from the
+  code the row exists to show. The width is the largest line number in the
+  hunk.
+- **A deletion's gutter marker is `-`.** The design writes `−` (U+2212)
+  because that is the right character for a *count* — `+18 −3` — and Go uses
+  it there. In the gutter the marker is part of a unified diff, which is a
+  format other tools read, so it stays a hyphen.
+- **A fan-out lane's verb is `agent`, not the child's name.**
+  `FanoutLane.d.ts` puts the name in the 8-column verb field. §6c's verb
+  vocabulary is closed and its field never grows, and `researcher-1` and
+  `researcher-2` clip to the same eight columns — so the verb is `agent`, the
+  name leads the target field, which is the only field allowed to grow, and
+  the lane still lines up with the rows around it.
+- **The agent manager kills on `X`, not `k`.** `AgentList.prompt.md` offers
+  `[k] kill`. `k` is the move-up key on every list in the product, including
+  this one, and a movement key that also kills a process is the worst kind of
+  false offer. `x` cancels the turn, `X` kills the agent, and the pair reads
+  as one escalation.

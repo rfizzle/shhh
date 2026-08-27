@@ -71,6 +71,9 @@ type paletteEntry struct {
 	// space asks for a trailing space when tab writes the entry, because
 	// something else follows it: a command's argument, a path in a sentence.
 	space bool
+	// meta is the short field right-aligned at the end of the row: a
+	// command's key binding, and nothing that needs a sentence.
+	meta string
 	// dim is why the entry cannot be acted on right now — the registry's
 	// idleOnly reason while the agent works. Empty means it can.
 	dim string
@@ -179,6 +182,7 @@ func (m *Model) refreshPalette() {
 		opts[i] = components.SelectOption{
 			Label:  r.label,
 			Desc:   r.desc,
+			Meta:   r.meta,
 			Header: r.header,
 			Dim:    r.dim != "",
 		}
@@ -191,10 +195,11 @@ func (m *Model) refreshPalette() {
 }
 
 // paletteRowBudget is how many result rows fit the bottom panel: everything
-// the card spends before them — its frame, the query line, the hint run, and
-// the description the focused row carries — comes off the top.
+// the card spends before them — its frame, the query line and the hint run —
+// comes off the top. Descriptions ride their own rows' right-hand columns
+// since S-126, so the focused row no longer buys one of its own.
 func (m Model) paletteRowBudget() int {
-	return max(m.maxConfirmPanelHeight()-5, 1)
+	return max(m.maxConfirmPanelHeight()-4, 1)
 }
 
 // paletteCount is the title rail's chip. It counts the matches, not the rows
@@ -266,34 +271,34 @@ func (m Model) paletteCandidates() []paletteEntry {
 // an idle turn is dimmed with its reason rather than dropped.
 func (m Model) paletteCommandEntries() []paletteEntry {
 	working := m.working()
-	width := 0
 	var rows []slashCommand
 	for _, c := range slashCommands {
 		if c.enabled != nil && !c.enabled(&m) {
 			continue
 		}
 		rows = append(rows, c)
-		if c.key != "" && len(c.name) > width {
-			width = len(c.name)
-		}
 	}
 
 	out := make([]paletteEntry, 0, len(rows))
 	for _, c := range rows {
-		label := c.name
-		if c.key != "" {
-			label = c.name + strings.Repeat(" ", max(width-len(c.name), 0)) + "  " + c.key
-		}
 		e := paletteEntry{
 			group: paletteCommands,
 			text:  c.name,
-			label: label,
+			label: c.name,
+			// The key binding is the row's meta field, right-aligned by the
+			// card (§4a, S-126). It used to be padded into the label here,
+			// which made a second column the component knew nothing about and
+			// could not keep aligned once a filter shortened the list.
+			meta:  c.key,
 			desc:  c.desc,
 			match: append([]string{strings.TrimPrefix(c.name, "/")}, trimSlashes(c.aliases)...),
 			space: c.args != "",
 		}
 		if working && c.idleOnly != "" {
-			e.dim = c.idleOnly
+			// An unavailable command's shortcut is not an offer, so the meta
+			// field states why it is unavailable instead of what would have
+			// run it (invariant 5).
+			e.dim, e.meta = c.idleOnly, ""
 			e.desc = "needs the turn to be finished — " + c.idleOnly
 		}
 		out = append(out, e)

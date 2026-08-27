@@ -382,9 +382,29 @@ func goldenCatalog() []SelectOption {
 		"llama-3.3-70b", "mistral-large-3", "phi-5-mini", "command-r-plus",
 		"nova-pro-2", "jamba-2", "yi-2-34b", "solar-pro-3",
 	}
+	// The prices ride the rows, and the two models that cannot be used here
+	// state why in the field at the end of them (§4a, S-126): a catalog you
+	// have to walk to read is a catalog you cannot compare.
+	desc := map[string]string{
+		"gpt-5.2": "current default", "claude-opus-4.6": "deepest reasoning",
+		"claude-sonnet-4.6": "better diffs · 200k ctx", "claude-haiku-4.5": "fastest",
+		"gemini-3-pro": "1M ctx", "deepseek-r2": "no tool use",
+		"llama-3.3-70b": "no tool use", "qwen3-coder-72b": "local via ollama",
+	}
+	meta := map[string]string{
+		"gpt-5.2": "$1.25 / $10", "gpt-5.2-mini": "$0.25 / $2",
+		"claude-opus-4.6": "$15 / $75", "claude-sonnet-4.6": "$3 / $15",
+		"claude-sonnet-4.5": "$3 / $15", "claude-haiku-4.5": "$1 / $5",
+		"gemini-3-pro": "$2 / $12", "gemini-3-flash": "$0.30 / $2.50",
+		"deepseek-r2": "not usable here", "llama-3.3-70b": "not usable here",
+	}
 	opts := make([]SelectOption, 0, len(names))
 	for _, n := range names {
-		opts = append(opts, SelectOption{Label: n})
+		o := SelectOption{Label: n, Desc: desc[n], Meta: meta[n]}
+		if o.Meta == "not usable here" {
+			o.Dim = true
+		}
+		opts = append(opts, o)
 	}
 	return opts
 }
@@ -427,8 +447,16 @@ func TestGolden_Lists(t *testing.T) {
 			}
 			return s.View(width)
 		}
+		opened := func() string {
+			s := &Select{
+				Title: "Switch model", Options: goldenCatalog(), MaxLines: 11,
+				Filterable: true, Filtering: true, QueryHint: "type to filter", Total: 24,
+			}
+			return s.View(width)
+		}
 		return []golden.Panel{
-			{Label: "the head · nothing is hidden above it", View: walked(0, "down")},
+			{Label: "the head · the price rides the row, the unusable row says why", View: walked(0, "down")},
+			{Label: "the filter just opened · the row names what the key was for", View: opened()},
 			{Label: "mid-list from above · the option sits at the foot of the window", View: walked(12, "down")},
 			{Label: "the same option from below · it sits at the head instead", View: walked(11, "up")},
 			{Label: "the tail · nothing is hidden below it", View: walked(23, "down")},

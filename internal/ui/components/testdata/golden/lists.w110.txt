@@ -9,28 +9,41 @@
 # it for the colour assignments. Trailing spaces are significant in both.
 
 ── layout ──────────────────────────────────────────────────
-· the head · nothing is hidden above it
+· the head · the price rides the row, the unusable row says why
 ┌─ Switch model ─────────────────────────────────────────────────────────────────── 24 available · 7 showing ┐
-│ ❯ 1. gpt-5.2                                                                                               │
-│   2. gpt-5.2-mini                                                                                          │
-│   3. gpt-5.1                                                                                               │
-│   4. gpt-5.1-mini                                                                                          │
-│   5. o4-mini                                                                                               │
-│   6. claude-opus-4.6                                                                                       │
-│   7. claude-sonnet-4.6                                                                                     │
+│ ❯  1. gpt-5.2            current default                                                       $1.25 / $10 │
+│    2. gpt-5.2-mini                                                                              $0.25 / $2 │
+│    3. gpt-5.1                                                                                              │
+│    4. gpt-5.1-mini                                                                                         │
+│    5. o4-mini                                                                                              │
+│    6. claude-opus-4.6    deepest reasoning                                                       $15 / $75 │
+│    7. claude-sonnet-4.6  better diffs · 200k ctx                                                  $3 / $15 │
 │ ↓ 17 more                                                                                                  │
 │ ↑↓/jk move · enter select · 1–24 jump · / filter · esc cancel                                              │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+· the filter just opened · the row names what the key was for
+┌─ Switch model ─────────────────────────────────────────────────────────────────── 24 available · 6 showing ┐
+│ ▸ █ type to filter                                                                          24 of 24 match │
+│ ❯  1. gpt-5.2            current default                                                       $1.25 / $10 │
+│    2. gpt-5.2-mini                                                                              $0.25 / $2 │
+│    3. gpt-5.1                                                                                              │
+│    4. gpt-5.1-mini                                                                                         │
+│    5. o4-mini                                                                                              │
+│    6. claude-opus-4.6    deepest reasoning                                                       $15 / $75 │
+│ ↓ 18 more                                                                                                  │
+│ ↑↓ move · enter select · ctrl+u clear · esc cancel                                                         │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 · mid-list from above · the option sits at the foot of the window
 ┌─ Switch model ─────────────────────────────────────────────────────────────────── 24 available · 6 showing ┐
 │ ↑ 7 more                                                                                                   │
-│   8. claude-sonnet-4.5                                                                                     │
-│   9. claude-haiku-4.5                                                                                      │
-│   10. gemini-3-pro                                                                                         │
-│   11. gemini-3-flash                                                                                       │
+│    8. claude-sonnet-4.5                                                                           $3 / $15 │
+│    9. claude-haiku-4.5   fastest                                                                   $1 / $5 │
+│   10. gemini-3-pro       1M ctx                                                                   $2 / $12 │
+│   11. gemini-3-flash                                                                         $0.30 / $2.50 │
 │   12. grok-4.1                                                                                             │
-│ ❯ 13. deepseek-r2                                                                                          │
+│ ❯ 13. ⊘ deepseek-r2      no tool use                                                       not usable here │
 │ ↓ 11 more                                                                                                  │
 │ ↑↓/jk move · enter select · 1–24 jump · / filter · esc cancel                                              │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
@@ -38,11 +51,11 @@
 · the same option from below · it sits at the head instead
 ┌─ Switch model ─────────────────────────────────────────────────────────────────── 24 available · 6 showing ┐
 │ ↑ 12 more                                                                                                  │
-│ ❯ 13. deepseek-r2                                                                                          │
+│ ❯ 13. ⊘ deepseek-r2      no tool use                                                       not usable here │
 │   14. deepseek-v4                                                                                          │
-│   15. qwen3-coder-72b                                                                                      │
+│   15. qwen3-coder-72b    local via ollama                                                                  │
 │   16. llama-4-maverick                                                                                     │
-│   17. llama-3.3-70b                                                                                        │
+│   17. ⊘ llama-3.3-70b    no tool use                                                       not usable here │
 │   18. mistral-large-3                                                                                      │
 │ ↓ 6 more                                                                                                   │
 │ ↑↓/jk move · enter select · 1–24 jump · / filter · esc cancel                                              │
@@ -64,11 +77,11 @@
 · filtered · the run is bold, the row states both counts
 ┌─ Switch model ─────────────────────────────────────────────────────────────────────────────── 24 available ┐
 │ ▸ mini█                                                                                      6 of 24 match │
-│ ❯ 1. gpt-5.2-mini                                                                                          │
+│ ❯ 1. gpt-5.2-mini                                                                               $0.25 / $2 │
 │   2. gpt-5.1-mini                                                                                          │
 │   3. o4-mini                                                                                               │
-│   4. gemini-3-pro                                                                                          │
-│   5. gemini-3-flash                                                                                        │
+│   4. gemini-3-pro    1M ctx                                                                       $2 / $12 │
+│   5. gemini-3-flash                                                                          $0.30 / $2.50 │
 │   6. phi-5-mini                                                                                            │
 │ ↑↓ move · enter select · ctrl+u clear · esc cancel                                                         │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
@@ -82,28 +95,41 @@
 └────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
 ── ansi ────────────────────────────────────────────────────
-· the head · nothing is hidden above it
+· the head · the price rides the row, the unusable row says why
 ␛[38;5;241m┌─ Switch model ─────────────────────────────────────────────────────────────────── 24 available · 7 showing ┐␛[0m
-␛[38;5;241m│␛[0m ␛[1;48;5;62m❯ 1. gpt-5.2␛[0m                                                                                               ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   2. gpt-5.2-mini                                                                                          ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   3. gpt-5.1                                                                                               ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   4. gpt-5.1-mini                                                                                          ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   5. o4-mini                                                                                               ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   6. claude-opus-4.6                                                                                       ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   7. claude-sonnet-4.6                                                                                     ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m ␛[1;48;5;62m❯  1. gpt-5.2            current default                                                       $1.25 / $10␛[0m ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m    2. gpt-5.2-mini                                                                              ␛[38;5;252m$0.25 / $2␛[0m ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m    3. gpt-5.1                                                                                              ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m    4. gpt-5.1-mini                                                                                         ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m    5. o4-mini                                                                                              ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m    6. claude-opus-4.6    ␛[38;5;241mdeepest reasoning␛[0m                                                       ␛[38;5;252m$15 / $75␛[0m ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m    7. claude-sonnet-4.6  ␛[38;5;241mbetter diffs · 200k ctx␛[0m                                                  ␛[38;5;252m$3 / $15␛[0m ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m ␛[38;5;241m↓ 17 more␛[0m                                                                                                  ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m ␛[3;38;5;241m↑↓/jk move · enter select · 1–24 jump · / filter · esc cancel␛[0m                                              ␛[38;5;241m│␛[0m
+␛[38;5;241m└────────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[0m
+
+· the filter just opened · the row names what the key was for
+␛[38;5;241m┌─ Switch model ─────────────────────────────────────────────────────────────────── 24 available · 6 showing ┐␛[0m
+␛[38;5;241m│␛[0m ␛[94m▸ ␛[0m␛[97m█␛[0m␛[38;5;241m type to filter␛[0m                                                                          ␛[38;5;241m24 of 24 match␛[0m ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m ␛[1;48;5;62m❯  1. gpt-5.2            current default                                                       $1.25 / $10␛[0m ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m    2. gpt-5.2-mini                                                                              ␛[38;5;252m$0.25 / $2␛[0m ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m    3. gpt-5.1                                                                                              ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m    4. gpt-5.1-mini                                                                                         ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m    5. o4-mini                                                                                              ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m    6. claude-opus-4.6    ␛[38;5;241mdeepest reasoning␛[0m                                                       ␛[38;5;252m$15 / $75␛[0m ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m ␛[38;5;241m↓ 18 more␛[0m                                                                                                  ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m ␛[3;38;5;241m↑↓ move · enter select · ctrl+u clear · esc cancel␛[0m                                                         ␛[38;5;241m│␛[0m
 ␛[38;5;241m└────────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[0m
 
 · mid-list from above · the option sits at the foot of the window
 ␛[38;5;241m┌─ Switch model ─────────────────────────────────────────────────────────────────── 24 available · 6 showing ┐␛[0m
 ␛[38;5;241m│␛[0m ␛[38;5;241m↑ 7 more␛[0m                                                                                                   ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   8. claude-sonnet-4.5                                                                                     ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   9. claude-haiku-4.5                                                                                      ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   10. gemini-3-pro                                                                                         ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   11. gemini-3-flash                                                                                       ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m    8. claude-sonnet-4.5                                                                           ␛[38;5;252m$3 / $15␛[0m ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m    9. claude-haiku-4.5   ␛[38;5;241mfastest␛[0m                                                                   ␛[38;5;252m$1 / $5␛[0m ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m   10. gemini-3-pro       ␛[38;5;241m1M ctx␛[0m                                                                   ␛[38;5;252m$2 / $12␛[0m ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m   11. gemini-3-flash                                                                         ␛[38;5;252m$0.30 / $2.50␛[0m ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m   12. grok-4.1                                                                                             ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m ␛[1;48;5;62m❯ 13. deepseek-r2␛[0m                                                                                          ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m ␛[1;48;5;62m❯ 13. ⊘ deepseek-r2      no tool use                                                       not usable here␛[0m ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m ␛[38;5;241m↓ 11 more␛[0m                                                                                                  ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m ␛[3;38;5;241m↑↓/jk move · enter select · 1–24 jump · / filter · esc cancel␛[0m                                              ␛[38;5;241m│␛[0m
 ␛[38;5;241m└────────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[0m
@@ -111,11 +137,11 @@
 · the same option from below · it sits at the head instead
 ␛[38;5;241m┌─ Switch model ─────────────────────────────────────────────────────────────────── 24 available · 6 showing ┐␛[0m
 ␛[38;5;241m│␛[0m ␛[38;5;241m↑ 12 more␛[0m                                                                                                  ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m ␛[1;48;5;62m❯ 13. deepseek-r2␛[0m                                                                                          ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m ␛[1;48;5;62m❯ 13. ⊘ deepseek-r2      no tool use                                                       not usable here␛[0m ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m   14. deepseek-v4                                                                                          ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   15. qwen3-coder-72b                                                                                      ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m   15. qwen3-coder-72b    ␛[38;5;241mlocal via ollama␛[0m                                                                  ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m   16. llama-4-maverick                                                                                     ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   17. llama-3.3-70b                                                                                        ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m   17. ␛[38;5;245m⊘ llama-3.3-70b␛[0m    ␛[38;5;245mno tool use␛[0m                                                       ␛[38;5;245mnot usable here␛[0m ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m   18. mistral-large-3                                                                                      ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m ␛[38;5;241m↓ 6 more␛[0m                                                                                                   ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m ␛[3;38;5;241m↑↓/jk move · enter select · 1–24 jump · / filter · esc cancel␛[0m                                              ␛[38;5;241m│␛[0m
@@ -130,18 +156,18 @@
 ␛[38;5;241m│␛[0m   21. nova-pro-2                                                                                           ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m   22. jamba-2                                                                                              ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m   23. yi-2-34b                                                                                             ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m ␛[1;48;5;62m❯ 24. solar-pro-3␛[0m                                                                                          ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m ␛[1;48;5;62m❯ 24. solar-pro-3      ␛[0m                                                                                    ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m ␛[3;38;5;241m↑↓/jk move · enter select · 1–24 jump · / filter · esc cancel␛[0m                                              ␛[38;5;241m│␛[0m
 ␛[38;5;241m└────────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[0m
 
 · filtered · the run is bold, the row states both counts
 ␛[38;5;241m┌─ Switch model ─────────────────────────────────────────────────────────────────────────────── 24 available ┐␛[0m
 ␛[38;5;241m│␛[0m ␛[94m▸ ␛[0m␛[97mmini█␛[0m                                                                                      ␛[38;5;241m6 of 24 match␛[0m ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m ␛[1;48;5;62m❯ 1. gpt-5.2-mini␛[0m                                                                                          ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m ␛[1;48;5;62m❯ 1. gpt-5.2-mini                                                                               $0.25 / $2␛[0m ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m   2. gpt-5.1-␛[1mmini␛[0m                                                                                          ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m   3. o4-␛[1mmini␛[0m                                                                                               ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   4. ge␛[1mmini␛[0m-3-pro                                                                                          ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   5. ge␛[1mmini␛[0m-3-flash                                                                                        ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m   4. ge␛[1mmini␛[0m-3-pro    ␛[38;5;241m1M ctx␛[0m                                                                       ␛[38;5;252m$2 / $12␛[0m ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m   5. ge␛[1mmini␛[0m-3-flash                                                                          ␛[38;5;252m$0.30 / $2.50␛[0m ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m   6. phi-5-␛[1mmini␛[0m                                                                                            ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m ␛[3;38;5;241m↑↓ move · enter select · ctrl+u clear · esc cancel␛[0m                                                         ␛[38;5;241m│␛[0m
 ␛[38;5;241m└────────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[0m

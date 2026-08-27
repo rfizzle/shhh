@@ -2,18 +2,32 @@ package components
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-// SelectOption is one row of a selector. Desc, when set, renders dimmed under
-// the option while it is focused. RequireNote marks options that a NoteSelect
-// refuses to confirm without a note.
+// SelectOption is one row of a selector: the label, the dim continuation
+// beside it, and the short field right-aligned at the end of the row.
+// RequireNote marks options that a NoteSelect refuses to confirm without a
+// note.
 type SelectOption struct {
-	Label       string
-	Desc        string
+	Label string
+	// Desc is the option's own continuation, drawn dim on the same row in a
+	// column of its own — the price beside a model, what a command does, when
+	// a session was last touched (§4a). Every row carries it, not only the
+	// focused one: a catalog you have to walk to read is a catalog you cannot
+	// compare. The plan card is the exception and says why (§4d, FocusDesc).
+	Desc string
+	// Meta is the right-aligned field at the end of the row: a key binding,
+	// `this one`, the reason an unavailable row is unavailable. It is the
+	// short field — one clause, never a sentence — and it is dropped before
+	// Desc is, because Desc is the row's own words and Meta is a label on
+	// them.
+	Meta        string
+	MetaTone    FieldTone
 	RequireNote bool
 	// Header marks a row that labels the run of options beneath it rather
 	// than offering one — the palette's COMMANDS / SESSIONS / FILES rails
@@ -57,6 +71,17 @@ type Select struct {
 	// Unnumbered drops the "1." prefixes and the number-jump keys, for a
 	// surface where a digit is text rather than a jump (S-112).
 	Unnumbered bool
+	// FocusDesc keeps each option's Desc under the focused option instead of
+	// on every row. It is the plan card's rule and no other surface's (§4d):
+	// there the descriptions are consequences of taking the option, and four
+	// consequences stacked at once is a wall rather than a choice. Everywhere
+	// else the description is a property of the option, which is a thing you
+	// read across the list.
+	FocusDesc bool
+	// QueryHint is the placeholder the query row draws while nothing has been
+	// typed into it. A row opened by a key names what it is for; a surface
+	// that is a query line from the start (the palette) does not need telling.
+	QueryHint string
 
 	// Filterable offers / on the key row and lets it open the query line.
 	// Past a dozen entries walking is the slow way (§4a), so every picker
@@ -96,15 +121,16 @@ type Select struct {
 }
 
 // geometry is what the shared window needs to know about this list: every
-// option is one row except the focused one, which carries its description
-// underneath, and group rails are labels rather than options, so the markers
-// do not offer to scroll to them.
+// option is one row — its description rides the row rather than sitting under
+// it — except on a FocusDesc card, where the focused option carries its
+// consequence underneath. Group rails are labels rather than options, so the
+// markers do not offer to scroll to them.
 func (s *Select) geometry() listGeometry {
 	return listGeometry{
 		n:     len(s.Options),
 		focus: s.Focus,
 		height: func(i int) int {
-			if i == s.Focus && !s.Options[i].Header && s.Options[i].Desc != "" {
+			if s.FocusDesc && i == s.Focus && !s.Options[i].Header && s.Options[i].Desc != "" {
 				return 2
 			}
 			return 1
@@ -299,6 +325,12 @@ func (s *Select) queryRows(width int) []string {
 	}
 	inner := max(width-cardFrameWidth, 1)
 	typed := infoStyle.Render("▸ ") + queryTextStyle.Render(s.Query+queryCursor)
+	if s.Query == "" && s.QueryHint != "" {
+		// A row that has just been opened by a key says what the key was for.
+		// It goes as soon as anything is typed, because from then on the row
+		// is showing what it is doing.
+		typed += dimStyle.Render(" " + s.QueryHint)
+	}
 	if s.Total <= 0 {
 		return []string{clip(typed, inner)}
 	}
@@ -332,12 +364,64 @@ func (s *Select) chips(shown int) []string {
 	return []string{chip}
 }
 
-// optionRows renders Options[lo:hi] with the ❯ pointer on the focused row and
-// the focused option's description beneath it. Numbering counts from the
-// start of the list rather than from the window, because the number keys
-// address the list and not what happens to be on screen.
+// optionGrid is the column grid the option rows share: the width of the
+// numbering column and of the label column the descriptions start after. It
+// is measured over the whole list rather than over the window, so the
+// description column does not shift under the reader as the window slides.
+type optionGrid struct{ num, label int }
+
+// grid measures the columns. A list where nothing has a description or a meta
+// field spends no columns on either, so a plain menu renders exactly as wide
+// as its longest row; and a label wider than half the card takes the row, with
+// its description following one space behind rather than pushed off the edge.
+func (s *Select) grid(numbered, inner int) optionGrid {
+	var g optionGrid
+	if numbered > 0 {
+		g.num = numbered
+	}
+	continued := false
+	for _, opt := range s.Options {
+		if opt.Header {
+			continue
+		}
+		if opt.Desc != "" || opt.Meta != "" {
+			continued = true
+		}
+	}
+	if !continued || s.FocusDesc {
+		return g
+	}
+	for _, opt := range s.Options {
+		if opt.Header {
+			continue
+		}
+		g.label = max(g.label, lipgloss.Width(s.labelText(opt)))
+	}
+	g.label = min(g.label, max(inner/2, 8))
+	return g
+}
+
+// labelText is what the row says before its description: the option, behind
+// the ⊘ that marks it unavailable. The glyph, not the dimming, is what says
+// unavailable — colour never carries meaning alone (invariant 1).
+func (s *Select) labelText(opt SelectOption) string {
+	if opt.Dim {
+		return "⊘ " + opt.Label
+	}
+	return opt.Label
+}
+
+// optionRows renders Options[lo:hi] with the ❯ pointer on the focused row.
+// Numbering counts from the start of the list rather than from the window,
+// because the number keys address the list and not what happens to be on
+// screen.
 func (s *Select) optionRows(width int, numbered bool, lo, hi int) []string {
 	inner := width - cardFrameWidth
+	numWidth := 0
+	if numbered {
+		numWidth = len(strconv.Itoa(s.selectable())) + 1
+	}
+	g := s.grid(numWidth, inner)
 	var rows []string
 	n := 0
 	for i, opt := range s.Options {
@@ -351,34 +435,82 @@ func (s *Select) optionRows(width int, numbered bool, lo, hi int) []string {
 		if i < lo || i >= hi {
 			continue
 		}
-		label := opt.Label
-		if numbered {
-			label = fmt.Sprintf("%d. %s", n, label)
-		}
-		if opt.Dim {
-			// The glyph, not the dimming, is what says unavailable: colour
-			// never carries meaning alone (invariant 1).
-			label = "⊘ " + label
-		}
-		switch {
-		case i == s.Focus:
-			// The focused row is already bold, so a matched run has no
-			// emphasis left to spend on it; the pointer and the background
-			// are what say which row this is.
-			rows = append(rows, focusRowStyle.Render(clip("❯ "+label, inner)))
-			if opt.Desc != "" {
-				rows = append(rows, dimStyle.Render(clip("    "+opt.Desc, inner)))
-			}
-		case opt.Dim:
-			// A row that cannot be acted on is not a row the query is
-			// hunting for, and the dimming is one run: emphasis inside it
-			// would break the run and say the wrong thing twice.
-			rows = append(rows, dimmerStyle.Render(clip("  "+label, inner)))
-		default:
-			rows = append(rows, clip("  "+emphasizeMatch(label, s.Query), inner))
+		rows = append(rows, s.optionRow(opt, n, i == s.Focus, g, inner))
+		if s.FocusDesc && i == s.Focus && opt.Desc != "" {
+			rows = append(rows, dimStyle.Render(clip("    "+opt.Desc, inner)))
 		}
 	}
 	return rows
+}
+
+// minDescWidth is the narrowest a description column is worth drawing. Below
+// it the description is dropped whole rather than clipped to an ellipsis and
+// two letters — a row that says nothing reads better than one that says
+// almost nothing.
+const minDescWidth = 8
+
+// optionRow lays one option across the card: the pointer, the number
+// right-aligned in its column, the label, the description dim beside it, and
+// the meta field right-aligned at the end of the row (§4a). The row sheds from
+// the right when the terminal cannot carry all of it — meta first, then the
+// description — because both are the row explaining itself and the label is
+// the row.
+func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, inner int) string {
+	head := "  "
+	if focused {
+		head = "❯ "
+	}
+	if g.num > 0 {
+		head += padLeft(strconv.Itoa(n)+".", g.num) + " "
+	}
+	label := s.labelText(opt)
+	left := head + padRight(label, g.label)
+
+	meta, desc := "", ""
+	avail := inner - lipgloss.Width(left)
+	if opt.Meta != "" && avail >= lipgloss.Width(opt.Meta)+2 {
+		meta = opt.Meta
+		avail -= lipgloss.Width(meta) + 2
+	}
+	if !s.FocusDesc && opt.Desc != "" && avail >= minDescWidth {
+		desc = clip(opt.Desc, avail-2)
+	}
+
+	// The focused row is painted whole: it is already bold, so a matched run
+	// has no emphasis left to spend on it, and the pointer and the background
+	// are what say which row this is.
+	if focused {
+		row := left
+		if desc != "" {
+			row += "  " + desc
+		}
+		if meta != "" {
+			row = padRight(row, inner-lipgloss.Width(meta)) + meta
+		}
+		return focusRowStyle.Render(clip(row, inner))
+	}
+
+	body := emphasizeMatch(label, s.Query)
+	if opt.Dim {
+		// A row that cannot be acted on is not a row the query is hunting
+		// for, and the dimming is one run: emphasis inside it would break the
+		// run and say the wrong thing twice.
+		body = dimmerStyle.Render(label)
+		desc, meta = dimmerStyle.Render(desc), dimmerStyle.Render(meta)
+	} else {
+		desc = dimStyle.Render(desc)
+		if meta != "" {
+			meta = opt.MetaTone.style().Render(meta)
+		}
+	}
+	row := head + padRight(body, g.label)
+	if lipgloss.Width(desc) > 0 {
+		row += "  " + desc
+	}
+	if lipgloss.Width(meta) > 0 {
+		row = padRight(row, inner-lipgloss.Width(meta)) + meta
+	}
+	return clip(row, inner)
 }
 
 // emphasizeMatch bolds the run of the label the query names (§4a). Bold and
