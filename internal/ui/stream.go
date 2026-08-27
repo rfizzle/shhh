@@ -9,11 +9,29 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
-type tokenMsg string
-type doneMsg struct{}
-type streamErrMsg struct{ err error }
+// Stream messages carry the id of the stream that produced them. The result
+// surface can have a command stream and an explanation stream in the same
+// session, and a cancelled stream's last message can land after the next one
+// has started — without the id it would be read as the new stream's own
+// (S-113).
+type tokenMsg struct {
+	id   int
+	text string
+}
+type doneMsg struct{ id int }
+type streamErrMsg struct {
+	id  int
+	err error
+}
+
+// streamSeq hands out stream ids. Streams are created on the UI goroutine,
+// one at a time, so a plain counter is enough. It starts above zero so the
+// zero-valued StreamModel — the one a restored revision carries — matches
+// nothing.
+var streamSeq int
 
 type StreamModel struct {
+	id        int
 	events    <-chan provider.StreamEvent
 	cancel    context.CancelFunc
 	spinner   spinner.Model
@@ -27,7 +45,9 @@ func NewStreamModel(events <-chan provider.StreamEvent, cancel context.CancelFun
 	// The frame set and its cadence belong to components (S-094), so the
 	// one-shot UI spins exactly like the chat surface does.
 	s := components.NewSpinnerModel()
+	streamSeq++
 	return StreamModel{
+		id:      streamSeq,
 		events:  events,
 		cancel:  cancel,
 		spinner: s,
@@ -63,13 +83,22 @@ func (m StreamModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case tokenMsg:
-		m.output += string(msg)
+		if msg.id != m.id {
+			return m, nil
+		}
+		m.output += msg.text
 		return m, m.waitForEvent()
 	case doneMsg:
+		if msg.id != m.id {
+			return m, nil
+		}
 		m.done = true
 		m.output = StripFences(m.output)
 		return m, nil
 	case streamErrMsg:
+		if msg.id != m.id {
+			return m, nil
+		}
 		m.err = msg.err
 		m.done = true
 		return m, nil
@@ -95,17 +124,18 @@ func (m StreamModel) View() string {
 }
 
 func (m StreamModel) waitForEvent() tea.Cmd {
+	id, events := m.id, m.events
 	return func() tea.Msg {
-		ev, ok := <-m.events
+		ev, ok := <-events
 		if !ok {
-			return doneMsg{}
+			return doneMsg{id: id}
 		}
 		if ev.Err != nil {
-			return streamErrMsg{err: ev.Err}
+			return streamErrMsg{id: id, err: ev.Err}
 		}
 		if ev.Done {
-			return doneMsg{}
+			return doneMsg{id: id}
 		}
-		return tokenMsg(ev.Token)
+		return tokenMsg{id: id, text: ev.Token}
 	}
 }

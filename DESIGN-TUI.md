@@ -1892,3 +1892,107 @@ command you are already typing; the palette is for one you are looking for.
   pointed at.
 - `ctrl+k` takes the binding from the textarea's delete-to-end-of-line, which
   is the one key the input gives up for it.
+
+### 18b. The one-shot result (S-113)
+
+Most people meet shhh here rather than in the agent: one prompt, one command,
+one decision. The screen printed the command and waited for a key. It now
+explains the command by default, says what the command can reach, and moves
+the default when the answer is destructive.
+
+```
+❯ shhh find every process listening on a port above 8000
+
+$ lsof -nP -iTCP -sTCP:LISTEN | awk '$9 ~ /:[89][0-9]{3}$/'
+  lsof lists listening TCP sockets without resolving names; awk keeps the rows
+  whose address ends in a port from 8000–9999.
+  ⛨ writes unknown · no network · no sudo
+
+[↵] run  [e] edit  [r] revise  [x] explain  [c] copy  [s] save  [esc] quit
+```
+
+- **The explanation is on by default**, as one line under the command: a
+  command you do not understand is a command you should not run, and safe
+  only-if-you-remember-a-flag is not safe. `-e`/`--explain` now buys the long
+  form rather than the only form, `[x]` asks for it on demand, and
+  `--silent`/`behavior.silent_mode` still suppresses both. The one line
+  arrives under a live key row — blocking the keys for one sentence would make
+  the default worse than the flag it replaced. Two streams answering to the
+  same message types is what makes stream messages carry their stream's id: a
+  cancelled explanation's last message must not be read as the next command's
+  own.
+- **The containment line is `internal/radius`**, the same resolver §2a's
+  approval cards use, folded from three rows into one phrase: what it writes,
+  whether it leaves the machine, and whose privileges it runs with. It
+  inherits the resolver's honesty with it — a verb shhh cannot account for
+  reads `writes unknown · network unknown`, never `read-only`, because a
+  command nobody resolved is not one anybody can promise stays local. A
+  safety-flagged command gets `⚠` lines above it carrying `internal/safety`'s
+  own words.
+- **The bar is a row of bracketed keys, not a menu.** Arrow-then-enter to
+  reach a key that is already printed on the box costs two keystrokes and
+  makes this the one surface in shhh where a hint is not the key. Every hint
+  run in the session UI reads this way (§7, §16, §17a) and now so does the
+  front door. A key the surface cannot honour is not drawn.
+- **The safe default moves with the risk.** On an ordinary command enter runs.
+  On a destructive one enter spends itself saying what would be affected —
+  the resolved paths, described as the filesystem holds them now — and running
+  takes a deliberate `y`. The keys do not change, so nothing is re-learned;
+  what the default *does* changes, which is the half that matters. An
+  unresolved destructive command says so in the block rather than showing an
+  empty list.
+
+```
+$ find ~/src -name node_modules -type d -prune -exec rm -rf {} +
+  -prune stops find from descending into a directory it just deleted.
+  ⚠ recursive forced deletion — may destroy files irrecoverably
+  ⛨ writes /home/you/src · no network · no sudo
+  would affect
+    /home/you/src — at least 20000 files, 2.8 GB
+
+[↵] show what it would affect  [y] run it  [d] dry run  [e] edit  …  [esc] quit
+```
+
+- **`[d]` is offered only where a dry run exists** (`internal/dryrun`). The
+  derivation is a closed table of commands built to be asked rather than told
+  — `rsync --dry-run`, `git clean --dry-run`, `make -n`, `terraform plan`,
+  `find … -print` in place of `-delete` or an `-exec` clause, `sed` without
+  `-i` — because every entry is a claim that the rewrite is harmless, and a
+  wrong claim runs the real command while the surface says it did not. A line
+  the table cannot rewrite ends the offer for the whole command; a line that
+  changes nothing rides along unaltered, since running it is what makes the
+  rewrite around it mean anything. `rm` has no dry run and is never given one:
+  enter's radius block is what answers for it. Output is bounded to twenty
+  lines and what is past that is counted (invariant 4).
+- **A revise keeps what it is being compared to.** The previous command and
+  the feedback that replaced it stay dimmed above the new one — not history
+  you scroll for, the thing the new answer is an answer to — with the count on
+  the key row and `[u]` back to it. Stepping back restores the command, its
+  explanation and the conversation, and asks the model for nothing: the
+  explanation was said about that exact command and nothing about it changed.
+- **A deliberate `y` is not asked for twice.** `behavior.safety_warnings`
+  re-prompted on stderr after the TUI closed; the surface now carries that
+  decision, so the result reports it and the second prompt is skipped for
+  anything the surface already confirmed.
+- **Non-TTY output is untouched.** Piped, shhh still prints the command to
+  stdout and nothing else — no explanation, no containment line, no keys —
+  and a failure is the one classified line §17a's one-shot paragraph
+  describes.
+
+Departures from `ui_kits/cockpit/OneShot.html`, all deliberate:
+
+- The artboard steps back with `[b]`; this is `[u]`, which is what undo is
+  called on the changeset row (§16) and in the round-limit offer (§17a). One
+  letter for one meaning is worth more than the artboard's mnemonic.
+- The artboard's `[a] alternatives` is S-114 and is not built here; its
+  absence changes nothing about the row.
+- The artboard's enter reads `list what it would delete`. The resolver
+  describes writes, not deletions, so the key says `show what it would
+  affect` — a command that truncates a file is not deleting it and the key
+  should not claim otherwise.
+- The artboard writes the destructive line by hand (`deletes directories ·
+  not reversible`). It is `internal/safety`'s own warning instead, so the
+  front door and the approval cards say the same sentence about the same
+  command.
+- The artboard's `[s]` is `save as alias`; shhh saves snippets, so it is
+  `[s] save`.

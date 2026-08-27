@@ -31,18 +31,21 @@ func TestMonoReachesTheGenerateStyles(t *testing.T) {
 	for name, s := range map[string]lipgloss.Style{
 		"CommandStyle":      CommandStyle,
 		"ErrorStyle":        ErrorStyle,
-		"ActiveStyle":       ActiveStyle,
-		"InactiveStyle":     InactiveStyle,
 		"EditPromptStyle":   EditPromptStyle,
 		"RevisePromptStyle": RevisePromptStyle,
 		"ExplainLabelStyle": ExplainLabelStyle,
 		"ExplainBodyStyle":  ExplainBodyStyle,
+		"KeyStyle":          KeyStyle,
+		"KeyLabelStyle":     KeyLabelStyle,
+		"PrimaryKeyStyle":   PrimaryKeyStyle,
+		"DangerKeyStyle":    DangerKeyStyle,
+		"ReachStyle":        ReachStyle,
+		"RiskStyle":         RiskStyle,
+		"DimStyle":          DimStyle,
+		"PastCommandStyle":  PastCommandStyle,
 	} {
 		if fg := s.GetForeground(); fg != components.MonoFg && fg != components.MonoDim {
 			t.Errorf("%s has foreground %v, which is not one of the two greys", name, fg)
 		}
-	}
-	if bg := ActiveStyle.GetBackground(); bg != components.MonoBg {
-		t.Errorf("ActiveStyle background is %v, want the mono selection grey", bg)
 	}
 }

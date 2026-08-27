@@ -80,7 +80,13 @@ type Command struct {
 	// as a phrase fit to print after a dash. It being non-empty is what stops
 	// Writes from being read as the whole story.
 	Unresolved []string
-	Level      Level
+	// Net is true when a segment's verb is one shhh knows reaches the
+	// network. Like Writes it is a floor, not a census: an unresolved segment
+	// leaves it false, and Reach says so rather than promising quiet.
+	Net bool
+	// Sudo is true when any segment runs under a privilege-escalation prefix.
+	Sudo  bool
+	Level Level
 }
 
 // Resolve reads a command and reports what it would touch. It never runs
@@ -312,7 +318,12 @@ var writeVerbs = map[string]operandRule{
 // argPrefixes are the words a command line can start with that are not the
 // command: an environment prefix, or a privilege escalation. The verb behind
 // them is the one whose radius matters.
-var argPrefixes = map[string]bool{"sudo": true, "command": true, "nohup": true, "time": true}
+var argPrefixes = map[string]bool{"sudo": true, "doas": true, "command": true, "nohup": true, "time": true}
+
+// escalators are the prefixes among those that change who the command runs
+// as. `nohup` moves a process; `sudo` moves the privilege, and that is the
+// half a reader needs stated.
+var escalators = map[string]bool{"sudo": true, "doas": true}
 
 // harmlessVerbs write nothing of their own. They are not on the approval
 // allowlist (internal/agent) because a redirection or a chain turns them into
@@ -339,6 +350,9 @@ func (c *Command) resolveSegment(seg segment) {
 		c.add(t)
 	}
 	for len(toks) > 0 && (argPrefixes[path.Base(toks[0].text)] || strings.Contains(toks[0].text, "=")) {
+		if escalators[path.Base(toks[0].text)] {
+			c.Sudo = true
+		}
 		toks = toks[1:]
 	}
 	if len(toks) == 0 {
@@ -350,6 +364,9 @@ func (c *Command) resolveSegment(seg segment) {
 		return
 	}
 	verb := path.Base(head.text)
+	if reachesNetwork(verb, toks[1:]) {
+		c.Net = true
+	}
 	if seg.piped && interpreters[verb] {
 		c.unresolved("piped into " + verb + "; what it runs is not inspected first")
 		return

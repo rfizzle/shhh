@@ -48,7 +48,7 @@ func TestGenerate_ActionBarAppearsInView(t *testing.T) {
 	m = drainStream(m, 2)
 
 	view := m.View()
-	if !strings.Contains(view, "Run") {
+	if !strings.Contains(view, "[↵] run") {
 		t.Error("expected action bar visible after stream completes")
 	}
 	if !strings.Contains(view, "echo hello") {
@@ -61,8 +61,8 @@ func TestGenerate_SelectRunReturnsResult(t *testing.T) {
 	m := NewGenerateModel(events, noopCancel, nil, nil, nil, "")
 	m = drainStream(m, 2)
 
-	// Press 'r'
-	model, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
+	// This one is destructive, so running it is the deliberate key.
+	model, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
 	m = model.(GenerateModel)
 
 	if m.Phase() != phaseDone {
@@ -173,7 +173,7 @@ func TestGenerate_StripsMarkdownBeforeActionBar(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Command should be stripped by the time action bar appears
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m = model.(GenerateModel)
 
 	if m.Result().Command != "find . -name '*.log'" {
@@ -181,19 +181,19 @@ func TestGenerate_StripsMarkdownBeforeActionBar(t *testing.T) {
 	}
 }
 
-func TestGenerate_NavigateThenEnter(t *testing.T) {
+func TestGenerate_ArrowsAreNotNavigation(t *testing.T) {
 	events := makeEvents("pwd")
 	m := NewGenerateModel(events, noopCancel, nil, nil, nil, "")
 	m = drainStream(m, 2)
 
-	// Navigate right to Copy, then Enter
+	// The bar has no cursor: an arrow changes nothing, and enter still runs.
 	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRight})
 	m = model.(GenerateModel)
 	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m = model.(GenerateModel)
 
-	if m.Result().Action != ActionCopy {
-		t.Errorf("expected ActionCopy after nav+enter, got %v", m.Result().Action)
+	if m.Result().Action != ActionRun {
+		t.Errorf("expected ActionRun after arrow+enter, got %v", m.Result().Action)
 	}
 }
 
@@ -202,8 +202,8 @@ func TestGenerate_ReviseOpensTextInput(t *testing.T) {
 	m := NewGenerateModel(events, noopCancel, nil, nil, nil, "")
 	m = drainStream(m, 2)
 
-	// Press 'v' to revise
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	// Press 'r' to revise
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 	m = model.(GenerateModel)
 
 	if m.Phase() != phaseRevise {
@@ -217,7 +217,7 @@ func TestGenerate_ReviseEscReturnsToAction(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Enter revise
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 	m = model.(GenerateModel)
 
 	// Press Esc to cancel revision
@@ -235,7 +235,7 @@ func TestGenerate_ReviseSubmitWithoutStreamFuncQuits(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Enter revise
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 	m = model.(GenerateModel)
 
 	// Type feedback
@@ -271,7 +271,7 @@ func TestGenerate_ReviseEmptyIgnored(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Enter revise
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 	m = model.(GenerateModel)
 
 	// Submit empty
@@ -288,7 +288,7 @@ func TestGenerate_ReviseViewShowsFeedbackPrompt(t *testing.T) {
 	m := NewGenerateModel(events, noopCancel, nil, nil, nil, "")
 	m = drainStream(m, 2)
 
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 	m = model.(GenerateModel)
 
 	view := m.View()
@@ -365,7 +365,7 @@ func TestGenerate_ReviseAppendsFeedbackToMessages(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Enter revise
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 	m = model.(GenerateModel)
 
 	// Type and submit feedback
@@ -401,7 +401,7 @@ func TestGenerate_ReviseEscDoesNotAppendMessage(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Enter revise then cancel
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 	m = model.(GenerateModel)
 	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
 	m = model.(GenerateModel)
@@ -436,7 +436,7 @@ func TestGenerate_ReviseRestreamsWithNewResponse(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Enter revise, type feedback, submit
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 	m = model.(GenerateModel)
 	m = typeKeys(m, "add -la")
 	model, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
@@ -472,7 +472,7 @@ func TestGenerate_ReviseUpdatesCommandInResult(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Revise
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 	m = model.(GenerateModel)
 	m = typeKeys(m, "add -la")
 	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
@@ -480,7 +480,7 @@ func TestGenerate_ReviseUpdatesCommandInResult(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Now select Run — result should have the NEW command
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m = model.(GenerateModel)
 
 	if m.Result().Command != "ls -la" {
@@ -498,7 +498,7 @@ func TestGenerate_ReviseMessagesAccumulate(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Revise
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 	m = model.(GenerateModel)
 	m = typeKeys(m, "add -la")
 	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
@@ -531,7 +531,7 @@ func TestGenerate_ReviseActionBarReappearsAfterRestream(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Revise
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 	m = model.(GenerateModel)
 	m = typeKeys(m, "fix it")
 	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
@@ -539,7 +539,7 @@ func TestGenerate_ReviseActionBarReappearsAfterRestream(t *testing.T) {
 	m = drainStream(m, 2)
 
 	view := m.View()
-	if !strings.Contains(view, "Run") {
+	if !strings.Contains(view, "[↵] run") {
 		t.Error("expected action bar visible after re-stream")
 	}
 	if !strings.Contains(view, "ls -la") {
@@ -556,7 +556,7 @@ func TestGenerate_ReviseStreamErrorQuitsWithError(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// Revise
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 	m = model.(GenerateModel)
 	m = typeKeys(m, "try again")
 	model, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
@@ -704,7 +704,7 @@ func TestGenerate_EditedCommandFlowsToResult(t *testing.T) {
 	m = model.(GenerateModel)
 
 	// Now select Run — result should have the edited command
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m = model.(GenerateModel)
 
 	if m.Result().Command != "ls -la" {
@@ -753,7 +753,7 @@ func TestGenerate_MultipleRevisionsWork(t *testing.T) {
 	m = drainStream(m, 2)
 
 	// First revision
-	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	model, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 	m = model.(GenerateModel)
 	m = typeKeys(m, "add -l")
 	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
@@ -765,7 +765,7 @@ func TestGenerate_MultipleRevisionsWork(t *testing.T) {
 	}
 
 	// Second revision
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
 	m = model.(GenerateModel)
 	m = typeKeys(m, "also add -a")
 	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
@@ -782,8 +782,8 @@ func TestGenerate_MultipleRevisionsWork(t *testing.T) {
 		t.Fatalf("expected 7 messages after two revisions, got %d", len(msgs))
 	}
 
-	// Select Run — should get final command
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
+	// Enter runs — should get final command
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m = model.(GenerateModel)
 	if m.Result().Command != "ls -la" {
 		t.Errorf("expected final command 'ls -la', got %q", m.Result().Command)
@@ -791,7 +791,7 @@ func TestGenerate_MultipleRevisionsWork(t *testing.T) {
 }
 
 func mockExplainStream(tokens ...string) ExplainStreamFunc {
-	return func(command string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	return func(command string, long bool) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 		return makeEvents(tokens...), noopCancel, nil
 	}
 }
@@ -870,7 +870,7 @@ func TestGenerate_ExplainPersistsAfterReturn(t *testing.T) {
 	if !strings.Contains(view, "lists files in detail") {
 		t.Error("expected explanation to persist in action bar view")
 	}
-	if !strings.Contains(view, "Run") {
+	if !strings.Contains(view, "[↵] run") {
 		t.Error("expected action bar visible after explain")
 	}
 }
@@ -900,7 +900,7 @@ func TestGenerate_ExplainDoesNotAffectResult(t *testing.T) {
 	m = drainExplainStream(m, 2)
 
 	// Now run
-	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
+	model, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
 	m = model.(GenerateModel)
 
 	if m.Result().Command != "docker ps" {
@@ -967,9 +967,9 @@ func TestGenerate_PreflightSkippedWithEmptyShell(t *testing.T) {
 	}
 }
 
-func TestGenerate_AutoExplainEntersExplainPhase(t *testing.T) {
+func TestGenerate_LongExplainEntersExplainPhase(t *testing.T) {
 	events := makeEvents("ls -la")
-	m := NewGenerateModel(events, noopCancel, nil, nil, mockExplainStream("lists files"), "").WithAutoExplain(true)
+	m := NewGenerateModel(events, noopCancel, nil, nil, mockExplainStream("lists files"), "").WithExplain(ExplainLong)
 	m = drainStream(m, 2)
 
 	if m.Phase() != phaseExplain {
@@ -977,9 +977,9 @@ func TestGenerate_AutoExplainEntersExplainPhase(t *testing.T) {
 	}
 }
 
-func TestGenerate_AutoExplainStreamsThenShowsActionBar(t *testing.T) {
+func TestGenerate_LongExplainStreamsThenShowsActionBar(t *testing.T) {
 	events := makeEvents("ls -la")
-	m := NewGenerateModel(events, noopCancel, nil, nil, mockExplainStream("lists files in detail"), "").WithAutoExplain(true)
+	m := NewGenerateModel(events, noopCancel, nil, nil, mockExplainStream("lists files in detail"), "").WithExplain(ExplainLong)
 	m = drainStream(m, 2)
 	m = drainExplainStream(m, 2)
 
@@ -990,14 +990,14 @@ func TestGenerate_AutoExplainStreamsThenShowsActionBar(t *testing.T) {
 	if !strings.Contains(view, "lists files in detail") {
 		t.Error("expected explanation text to persist in action view")
 	}
-	if !strings.Contains(view, "Run") {
+	if !strings.Contains(view, "[↵] run") {
 		t.Error("expected action bar visible after auto-explain")
 	}
 }
 
-func TestGenerate_AutoExplainWithoutExplainFuncFallsBackToAction(t *testing.T) {
+func TestGenerate_ExplainWithoutExplainFuncFallsBackToAction(t *testing.T) {
 	events := makeEvents("ls -la")
-	m := NewGenerateModel(events, noopCancel, nil, nil, nil, "").WithAutoExplain(true)
+	m := NewGenerateModel(events, noopCancel, nil, nil, nil, "").WithExplain(ExplainLong)
 	m = drainStream(m, 2)
 
 	if m.Phase() != phaseAction {
@@ -1005,12 +1005,16 @@ func TestGenerate_AutoExplainWithoutExplainFuncFallsBackToAction(t *testing.T) {
 	}
 }
 
-func TestGenerate_AutoExplainDisabledGoesStraightToAction(t *testing.T) {
+func TestGenerate_SilentExplainGoesStraightToAction(t *testing.T) {
 	events := makeEvents("ls -la")
-	m := NewGenerateModel(events, noopCancel, nil, nil, mockExplainStream("lists files"), "")
+	m := NewGenerateModel(events, noopCancel, nil, nil, mockExplainStream("lists files"), "").
+		WithExplain(ExplainNone)
 	m = drainStream(m, 2)
 
 	if m.Phase() != phaseAction {
-		t.Errorf("expected phaseAction without auto-explain, got %v", m.Phase())
+		t.Errorf("expected phaseAction with explanations suppressed, got %v", m.Phase())
+	}
+	if strings.Contains(m.View(), "lists files") {
+		t.Error("silent mode explained the command anyway")
 	}
 }

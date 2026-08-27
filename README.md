@@ -4,8 +4,11 @@ Natural language to shell commands. Type what you want, get a command you can ru
 
 ```
 $ shhh find all go files changed in the last week
-▸ find . -name '*.go' -mtime -7
-  [Run] [Edit] [Revise] [Explain] [Copy] [Save] [Cancel]
+$ find . -name '*.go' -mtime -7
+  lists Go files under the current directory modified in the last seven days.
+  ⛨ read-only · no network · no sudo
+
+[↵] run  [e] edit  [r] revise  [x] explain  [c] copy  [s] save  [esc] quit
 ```
 
 ## Install
@@ -450,9 +453,17 @@ vitals rail carries the decision — `round 25/25 +10` while the offer stands,
 shhh compress this directory into a tar.gz
 ```
 
-After generation you can **Run**, **Edit**, **Revise**, **Explain**, **Copy**, **Save**, or **Cancel**.
+The result is one screen: the command, one line explaining it, a containment line stating what it can reach, and one row of bracketed keys. `[↵]` runs, `[e]` edits, `[r]` revises, `[x]` asks for the long explanation, `[c]` copies, `[s]` saves it as a snippet, `[esc]` quits. For multi-command output `[↵]` runs everything and `[t]` prompts before each command.
 
-For multi-command output, **Run All** executes everything and **Run Step** prompts before each command.
+The explanation is on by default — a command you don't understand is a command you shouldn't run. `-e/--explain` buys the longer form rather than the only form, and `-s/--silent` (or `behavior.silent_mode`) suppresses it.
+
+The containment line comes from the same resolver the agent's approval cards use: what the command writes, whether it leaves the machine, and whether it runs under `sudo`. It is honest about its limits — a verb shhh can't account for reads `writes unknown · network unknown`, never `read-only`.
+
+On a destructive command the safe default moves. `[↵]` stops running and instead states what would be affected — the paths it resolved, described as the filesystem holds them right now — and running takes a deliberate `[y]`. Where the command has a real dry run (`rsync`, `git clean`, `make`, `terraform`, `find … -delete`, `sed -i`), `[d]` performs it and lists what would change; where it doesn't, the key isn't offered rather than being wired to the real thing.
+
+A revise keeps the previous command dimmed above the new one with the feedback that replaced it, counts the revisions, and `[u]` steps back to the one before — command, explanation and conversation together, with no second call to the model.
+
+Piped, none of this applies: `shhh` prints the raw command to stdout and nothing else.
 
 ### Chat mode
 
@@ -685,13 +696,13 @@ The contents of `.shhh` are appended to the system prompt when running shhh from
 | `--model <name>` | Model name |
 | `--api-key <key>` | API key |
 | `--raw` | Force pipe mode (no TUI) |
-| `-e, --explain` | Automatically explain the generated command |
+| `-e, --explain` | Explain the generated command at length (one line is shown by default) |
 | `-s, --silent` | Suppress explanation output |
 | `--version` | Print version |
 
 ## Safety Warnings
 
-shhh detects potentially destructive commands (recursive deletes, force pushes, disk writes, etc.) and prompts for confirmation before execution. Disable with:
+shhh detects potentially destructive commands (recursive deletes, force pushes, disk writes, etc.). In the one-shot result surface that detection moves the default key — `[↵]` states the blast radius and `[y]` runs — so the decision is taken once, on screen, rather than as a second `[y/N]` prompt after the fact. Anything that reaches execution without having been confirmed there still gets the prompt. Disable with:
 
 ```bash
 shhh config set behavior.safety_warnings false

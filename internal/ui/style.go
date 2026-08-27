@@ -12,13 +12,22 @@ import (
 var (
 	CommandStyle      lipgloss.Style
 	ErrorStyle        lipgloss.Style
-	ActiveStyle       lipgloss.Style
-	InactiveStyle     lipgloss.Style
 	BarStyle          lipgloss.Style
 	EditPromptStyle   lipgloss.Style
 	RevisePromptStyle lipgloss.Style
 	ExplainLabelStyle lipgloss.Style
 	ExplainBodyStyle  lipgloss.Style
+
+	// The S-113 result surface: the key row, the containment line, the risk
+	// line, and the dimmed command a revise is being compared against.
+	KeyStyle         lipgloss.Style
+	KeyLabelStyle    lipgloss.Style
+	PrimaryKeyStyle  lipgloss.Style
+	DangerKeyStyle   lipgloss.Style
+	ReachStyle       lipgloss.Style
+	RiskStyle        lipgloss.Style
+	DimStyle         lipgloss.Style
+	PastCommandStyle lipgloss.Style
 
 	Narrow bool
 )
@@ -41,25 +50,29 @@ func InitStyles() {
 	}
 	Narrow = width < 40
 
-	padding := 1
-	if Narrow {
-		padding = 0
-	}
-
 	// Colors come from the shared components.Palette (S-076) so the generate
 	// and chat UIs use identical tokens.
 	p := components.Palette
 	CommandStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Add)
 	ErrorStyle = lipgloss.NewStyle().Foreground(p.Del)
 
-	ActiveStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Bright).Background(p.FocusBg).Padding(0, padding)
-	InactiveStyle = lipgloss.NewStyle().Foreground(p.Subtle).Padding(0, padding)
 	BarStyle = lipgloss.NewStyle().MarginTop(1)
 
 	EditPromptStyle = lipgloss.NewStyle().Foreground(p.Subtle).MarginTop(1)
 	RevisePromptStyle = lipgloss.NewStyle().Foreground(p.Subtle).MarginTop(1)
 	ExplainLabelStyle = lipgloss.NewStyle().Foreground(p.Subtle).MarginTop(1).Bold(true)
 	ExplainBodyStyle = lipgloss.NewStyle().Foreground(p.Body)
+
+	// Every key the interface offers is Info (§10a); the default and the
+	// deliberate one carry their tone as well, and both say it in words too.
+	KeyStyle = lipgloss.NewStyle().Foreground(p.Info)
+	KeyLabelStyle = lipgloss.NewStyle().Foreground(p.Dim)
+	PrimaryKeyStyle = lipgloss.NewStyle().Foreground(p.Add)
+	DangerKeyStyle = lipgloss.NewStyle().Foreground(p.Del)
+	ReachStyle = lipgloss.NewStyle().Foreground(p.Status)
+	RiskStyle = lipgloss.NewStyle().Foreground(p.Del)
+	DimStyle = lipgloss.NewStyle().Foreground(p.Dim)
+	PastCommandStyle = lipgloss.NewStyle().Foreground(p.Dim)
 }
 
 func init() {

@@ -202,8 +202,17 @@ func CombineExtra(parts ...string) string {
 	return strings.Join(out, "\n\n")
 }
 
-func BuildExplain() string {
-	return "Explain this shell command concisely. Break down each part (flags, pipes, redirections). Be brief — a few lines, not paragraphs."
+// BuildExplain is the explanation system prompt. The one-shot explains every
+// command by default now (S-113), so the brief form is the one that has to be
+// disciplined: it sits between the command and the keys, and a paragraph
+// there pushes the decision off the screen. long is what `-e` and `[x]` ask
+// for.
+func BuildExplain(long bool) string {
+	if long {
+		return "Explain this shell command concisely. Break down each part (flags, pipes, redirections). Be brief — a few lines, not paragraphs."
+	}
+	return "Explain what this shell command does in one sentence of at most 160 characters. " +
+		"Say what it operates on and what it produces. No preamble, no markdown, no restating the command."
 }
 
 func shellSyntaxRules(sh string) string {

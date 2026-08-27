@@ -12,6 +12,31 @@ func updateBar(m ActionBarModel, msg tea.Msg) (ActionBarModel, tea.Cmd) {
 	return model.(ActionBarModel), cmd
 }
 
+// pressBar sends one key and reports the action it selected, or ActionNone.
+func pressBar(t *testing.T, m ActionBarModel, key string) (ActionBarModel, Action) {
+	t.Helper()
+	m, cmd := updateBar(m, keyMsg(key))
+	if cmd == nil {
+		return m, ActionNone
+	}
+	sel, ok := cmd().(ActionSelectedMsg)
+	if !ok {
+		return m, ActionNone
+	}
+	return m, sel.Action
+}
+
+// keyMsg builds the tea.KeyMsg whose String() is key.
+func keyMsg(key string) tea.KeyMsg {
+	switch key {
+	case "enter":
+		return tea.KeyMsg{Type: tea.KeyEnter}
+	case "esc":
+		return tea.KeyMsg{Type: tea.KeyEscape}
+	}
+	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(key)}
+}
+
 func TestActionBar_InitialState(t *testing.T) {
 	m := NewActionBarModel()
 	if m.Selected() != ActionNone {
@@ -19,184 +44,156 @@ func TestActionBar_InitialState(t *testing.T) {
 	}
 }
 
-func TestActionBar_RightNavWraps(t *testing.T) {
-	m := NewActionBarModel()
-	// cursor starts at 0 (Run), advance through all items to wrap
-	for range singleActions {
-		m, _ = updateBar(m, tea.KeyMsg{Type: tea.KeyRight})
-	}
-	// Verify by pressing Enter — should select Run (index 0)
-	_, cmd := updateBar(m, tea.KeyMsg{Type: tea.KeyEnter})
-	msg := cmd()
-	if sel, ok := msg.(ActionSelectedMsg); !ok || sel.Action != ActionRun {
-		t.Errorf("expected ActionRun after wrapping, got %v", msg)
-	}
-}
-
-func TestActionBar_LeftNavWraps(t *testing.T) {
-	m := NewActionBarModel()
-	// cursor starts at 0, left wraps to last (Cancel)
-	m, _ = updateBar(m, tea.KeyMsg{Type: tea.KeyLeft})
-	_, cmd := updateBar(m, tea.KeyMsg{Type: tea.KeyEnter})
-	msg := cmd()
-	if sel, ok := msg.(ActionSelectedMsg); !ok || sel.Action != ActionCancel {
-		t.Errorf("expected ActionCancel after wrapping left, got %v", msg)
+func TestActionBar_KeysAreDirect(t *testing.T) {
+	for _, tc := range []struct {
+		key  string
+		want Action
+	}{
+		{"enter", ActionRun},
+		{"e", ActionEdit},
+		{"r", ActionRevise},
+		{"x", ActionExplain},
+		{"c", ActionCopy},
+		{"s", ActionSave},
+		{"esc", ActionCancel},
+		{"q", ActionCancel},
+	} {
+		if _, got := pressBar(t, NewActionBarModel(), tc.key); got != tc.want {
+			t.Errorf("%q selected %v, want %v", tc.key, got, tc.want)
+		}
 	}
 }
 
-func TestActionBar_TabNavigates(t *testing.T) {
+func TestActionBar_NoNavigationLeft(t *testing.T) {
+	// The row is not a menu: arrows and tab move nothing and select nothing.
+	for _, msg := range []tea.Msg{
+		tea.KeyMsg{Type: tea.KeyLeft},
+		tea.KeyMsg{Type: tea.KeyRight},
+		tea.KeyMsg{Type: tea.KeyTab},
+		tea.KeyMsg{Type: tea.KeyShiftTab},
+	} {
+		m, cmd := updateBar(NewActionBarModel(), msg)
+		if cmd != nil {
+			t.Errorf("%v produced a command; the bar has no cursor to move", msg)
+		}
+		if m.Selected() != ActionNone {
+			t.Errorf("%v selected %v", msg, m.Selected())
+		}
+	}
+	// And enter after them still runs, because nothing moved.
 	m := NewActionBarModel()
-	m, _ = updateBar(m, tea.KeyMsg{Type: tea.KeyTab})
-	_, cmd := updateBar(m, tea.KeyMsg{Type: tea.KeyEnter})
-	msg := cmd()
-	if sel, ok := msg.(ActionSelectedMsg); !ok || sel.Action != ActionCopy {
-		t.Errorf("expected ActionCopy after Tab, got %v", msg)
+	m, _ = updateBar(m, tea.KeyMsg{Type: tea.KeyRight})
+	if _, got := pressBar(t, m, "enter"); got != ActionRun {
+		t.Errorf("enter after an arrow selected %v, want ActionRun", got)
 	}
 }
 
-func TestActionBar_ShiftTabNavigates(t *testing.T) {
-	m := NewActionBarModel()
-	m, _ = updateBar(m, tea.KeyMsg{Type: tea.KeyShiftTab})
-	_, cmd := updateBar(m, tea.KeyMsg{Type: tea.KeyEnter})
-	msg := cmd()
-	if sel, ok := msg.(ActionSelectedMsg); !ok || sel.Action != ActionCancel {
-		t.Errorf("expected ActionCancel after Shift+Tab, got %v", msg)
+func TestActionBar_MultiRunsAll(t *testing.T) {
+	m := NewActionBarModel().SetMulti(true)
+	if _, got := pressBar(t, m, "enter"); got != ActionRunAll {
+		t.Errorf("enter on a multi-command bar selected %v, want ActionRunAll", got)
+	}
+	if _, got := pressBar(t, m, "t"); got != ActionRunStep {
+		t.Errorf("[t] selected %v, want ActionRunStep", got)
 	}
 }
 
-func TestActionBar_ShortcutR(t *testing.T) {
-	m := NewActionBarModel()
-	m, cmd := updateBar(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
-	if m.Selected() != ActionRun {
-		t.Errorf("expected ActionRun, got %v", m.Selected())
+func TestActionBar_DangerMovesTheDefault(t *testing.T) {
+	m := NewActionBarModel().SetDanger(true)
+	if _, got := pressBar(t, m, "enter"); got != ActionAffected {
+		t.Errorf("enter on a destructive command selected %v, want ActionAffected", got)
 	}
-	msg := cmd()
-	if sel, ok := msg.(ActionSelectedMsg); !ok || sel.Action != ActionRun {
-		t.Errorf("expected ActionSelectedMsg{ActionRun}, got %v", msg)
+	if _, got := pressBar(t, m, "y"); got != ActionRun {
+		t.Errorf("[y] selected %v, want ActionRun", got)
 	}
 }
 
-func TestActionBar_ShortcutC(t *testing.T) {
-	m := NewActionBarModel()
-	m, cmd := updateBar(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'c'}})
-	if m.Selected() != ActionCopy {
-		t.Errorf("expected ActionCopy, got %v", m.Selected())
-	}
-	msg := cmd()
-	if sel, ok := msg.(ActionSelectedMsg); !ok || sel.Action != ActionCopy {
-		t.Errorf("expected ActionSelectedMsg{ActionCopy}, got %v", msg)
+func TestActionBar_OrdinaryCommandIgnoresY(t *testing.T) {
+	if _, got := pressBar(t, NewActionBarModel(), "y"); got != ActionNone {
+		t.Errorf("[y] on an ordinary command selected %v; it is not an offer there", got)
 	}
 }
 
-func TestActionBar_ShortcutEsc(t *testing.T) {
-	m := NewActionBarModel()
-	m, cmd := updateBar(m, tea.KeyMsg{Type: tea.KeyEscape})
-	if m.Selected() != ActionCancel {
-		t.Errorf("expected ActionCancel, got %v", m.Selected())
+func TestActionBar_EnterIsSpentOnceTheRadiusIsShowing(t *testing.T) {
+	m := NewActionBarModel().SetDanger(true).SetAffected(true)
+	if _, got := pressBar(t, m, "enter"); got != ActionNone {
+		t.Errorf("enter selected %v after the radius was already shown; only y runs", got)
 	}
-	msg := cmd()
-	if sel, ok := msg.(ActionSelectedMsg); !ok || sel.Action != ActionCancel {
-		t.Errorf("expected ActionSelectedMsg{ActionCancel}, got %v", msg)
+	if _, got := pressBar(t, m, "y"); got != ActionRun {
+		t.Errorf("[y] selected %v, want ActionRun", got)
 	}
 }
 
-func TestActionBar_ShortcutQ(t *testing.T) {
-	m := NewActionBarModel()
-	m, cmd := updateBar(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'q'}})
-	if m.Selected() != ActionCancel {
-		t.Errorf("expected ActionCancel, got %v", m.Selected())
+func TestActionBar_DryRunOfferedOnlyWhenItExists(t *testing.T) {
+	if _, got := pressBar(t, NewActionBarModel(), "d"); got != ActionNone {
+		t.Errorf("[d] selected %v with no dry run available", got)
 	}
-	msg := cmd()
-	if sel, ok := msg.(ActionSelectedMsg); !ok || sel.Action != ActionCancel {
-		t.Errorf("expected ActionSelectedMsg{ActionCancel}, got %v", msg)
+	m := NewActionBarModel().SetDryRun(true)
+	if _, got := pressBar(t, m, "d"); got != ActionDryRun {
+		t.Errorf("[d] selected %v, want ActionDryRun", got)
 	}
-}
-
-func TestActionBar_EnterSelectsCurrent(t *testing.T) {
-	m := NewActionBarModel()
-	// Default cursor is at Run (index 0)
-	m, cmd := updateBar(m, tea.KeyMsg{Type: tea.KeyEnter})
-	if m.Selected() != ActionRun {
-		t.Errorf("expected ActionRun, got %v", m.Selected())
-	}
-	msg := cmd()
-	if sel, ok := msg.(ActionSelectedMsg); !ok || sel.Action != ActionRun {
-		t.Errorf("expected ActionSelectedMsg{ActionRun}, got %v", msg)
+	if strings.Contains(NewActionBarModel().View(), "dry run") {
+		t.Error("the bar offered a dry run it cannot perform")
 	}
 }
 
-func TestActionBar_ViewShowsAllOptions(t *testing.T) {
-	m := NewActionBarModel()
-	view := m.View()
-	if !strings.Contains(view, "Run") {
-		t.Error("expected 'Run' in view")
+func TestActionBar_BackOfferedOnlyAfterARevise(t *testing.T) {
+	if _, got := pressBar(t, NewActionBarModel(), "u"); got != ActionNone {
+		t.Errorf("[u] selected %v with nothing to step back to", got)
 	}
-	if !strings.Contains(view, "Copy") {
-		t.Error("expected 'Copy' in view")
-	}
-	if !strings.Contains(view, "Edit") {
-		t.Error("expected 'Edit' in view")
-	}
-	if !strings.Contains(view, "Revise") {
-		t.Error("expected 'Revise' in view")
-	}
-	if !strings.Contains(view, "Cancel") {
-		t.Error("expected 'Cancel' in view")
+	m := NewActionBarModel().SetRevision(1)
+	if _, got := pressBar(t, m, "u"); got != ActionBack {
+		t.Errorf("[u] selected %v, want ActionBack", got)
 	}
 }
 
-func TestActionBar_ShortcutE(t *testing.T) {
-	m := NewActionBarModel()
-	m, cmd := updateBar(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'e'}})
-	if m.Selected() != ActionEdit {
-		t.Errorf("expected ActionEdit, got %v", m.Selected())
+func TestActionBar_ViewIsOneRowOfBracketedKeys(t *testing.T) {
+	view := NewActionBarModel().View()
+	for _, want := range []string{
+		"[↵] run", "[e] edit", "[r] revise", "[x] explain",
+		"[c] copy", "[s] save", "[esc] quit",
+	} {
+		if !strings.Contains(view, want) {
+			t.Errorf("bar is missing %q:\n%s", want, view)
+		}
 	}
-	msg := cmd()
-	if sel, ok := msg.(ActionSelectedMsg); !ok || sel.Action != ActionEdit {
-		t.Errorf("expected ActionSelectedMsg{ActionEdit}, got %v", msg)
+	// One row of keys, under the blank line the bar's own margin puts above it.
+	rows := 0
+	for _, line := range strings.Split(view, "\n") {
+		if strings.TrimSpace(line) != "" {
+			rows++
+		}
+	}
+	if rows != 1 {
+		t.Errorf("the bar is %d rows, want 1:\n%s", rows, view)
 	}
 }
 
-func TestActionBar_ShortcutV(t *testing.T) {
-	m := NewActionBarModel()
-	m, cmd := updateBar(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
-	if m.Selected() != ActionRevise {
-		t.Errorf("expected ActionRevise, got %v", m.Selected())
+func TestActionBar_DangerViewNamesBothHalves(t *testing.T) {
+	view := NewActionBarModel().SetDanger(true).SetDryRun(true).View()
+	for _, want := range []string{"[↵] show what it would affect", "[y] run it", "[d] dry run"} {
+		if !strings.Contains(view, want) {
+			t.Errorf("destructive bar is missing %q:\n%s", want, view)
+		}
 	}
-	msg := cmd()
-	if sel, ok := msg.(ActionSelectedMsg); !ok || sel.Action != ActionRevise {
-		t.Errorf("expected ActionSelectedMsg{ActionRevise}, got %v", msg)
+}
+
+func TestActionBar_ViewStatesTheRevisionCount(t *testing.T) {
+	view := NewActionBarModel().SetRevision(2).View()
+	if !strings.Contains(view, "revision 2") {
+		t.Errorf("bar did not state the revision count:\n%s", view)
+	}
+	if !strings.Contains(view, "[u] back") {
+		t.Errorf("bar did not offer [u]:\n%s", view)
 	}
 }
 
 func TestActionBar_Reset(t *testing.T) {
-	m := NewActionBarModel()
-	m, _ = updateBar(m, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'r'}})
-	if m.Selected() != ActionRun {
-		t.Fatal("precondition: expected ActionRun")
+	m, _ := pressBar(t, NewActionBarModel(), "c")
+	if m.Selected() != ActionCopy {
+		t.Fatalf("expected ActionCopy before reset, got %v", m.Selected())
 	}
-	m = m.Reset()
-	if m.Selected() != ActionNone {
-		t.Errorf("expected ActionNone after reset, got %v", m.Selected())
-	}
-}
-
-func TestActionBar_ViewShowsShortcuts(t *testing.T) {
-	m := NewActionBarModel()
-	view := m.View()
-	if !strings.Contains(view, "(r)") {
-		t.Error("expected '(r)' shortcut in view")
-	}
-	if !strings.Contains(view, "(c)") {
-		t.Error("expected '(c)' shortcut in view")
-	}
-	if !strings.Contains(view, "(e)") {
-		t.Error("expected '(e)' shortcut in view")
-	}
-	if !strings.Contains(view, "(v)") {
-		t.Error("expected '(v)' shortcut in view")
-	}
-	if !strings.Contains(view, "(esc)") {
-		t.Error("expected '(esc)' shortcut in view")
+	if m.Reset().Selected() != ActionNone {
+		t.Errorf("expected ActionNone after reset, got %v", m.Reset().Selected())
 	}
 }

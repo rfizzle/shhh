@@ -189,10 +189,10 @@ func NewRootCmd() *cobra.Command {
 				return ev, sCancel, nil
 			}
 
-			newExplain := func(command string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+			newExplain := func(command string, long bool) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 				eCtx, eCancel := context.WithCancel(cmd.Context())
 				eMsgs := []provider.Message{
-					{Role: provider.RoleSystem, Content: prompt.BuildExplain()},
+					{Role: provider.RoleSystem, Content: prompt.BuildExplain(long)},
 					{Role: provider.RoleUser, Content: command},
 				}
 				ev, eErr := p.StreamCompletion(eCtx, eMsgs, compOpts)
@@ -203,8 +203,18 @@ func NewRootCmd() *cobra.Command {
 				return ev, eCancel, nil
 			}
 
-			autoExplain := explainMode && !silentMode && !cfg.Behavior.SilentMode
-			model := ui.NewGenerateModel(events, cancel, messages, newStream, newExplain, info.Shell).WithAutoExplain(autoExplain)
+			// The explanation is on by default now (S-113): a command you do
+			// not understand is a command you should not run. `-e` buys the
+			// long form rather than the only form, and silent mode still
+			// suppresses both.
+			explain := ui.ExplainBrief
+			switch {
+			case silentMode || cfg.Behavior.SilentMode:
+				explain = ui.ExplainNone
+			case explainMode:
+				explain = ui.ExplainLong
+			}
+			model := ui.NewGenerateModel(events, cancel, messages, newStream, newExplain, info.Shell).WithExplain(explain)
 			program := tea.NewProgram(model)
 			finalModel, err := program.Run()
 			if err != nil {
@@ -255,7 +265,12 @@ func NewRootCmd() *cobra.Command {
 				return reportFailure(result.Err, resolved.Model)
 			}
 
-			if cfg.SafetyWarningsEnabled() {
+			// The result surface already moves the safe default on a
+			// destructive command and takes a deliberate `y` for it (S-113),
+			// so asking the same question again here is a second prompt for
+			// one decision. It still runs for anything that reached this
+			// point without being asked.
+			if cfg.SafetyWarningsEnabled() && !result.Confirmed {
 				if result.Action == ui.ActionRun || result.Action == ui.ActionRunAll || result.Action == ui.ActionRunStep {
 					if warnings := safety.Check(result.Command); len(warnings) > 0 {
 						fmt.Fprintln(os.Stderr, "\n⚠ Safety warning:")
@@ -348,7 +363,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&flags.FlagModel, "model", "", "model name to use")
 	cmd.PersistentFlags().StringVar(&flags.FlagAPIKey, "api-key", "", "API key (overrides env var)")
 	cmd.Flags().BoolVar(&rawMode, "raw", false, "force pipe mode: raw command output, no TUI")
-	cmd.Flags().BoolVarP(&explainMode, "explain", "e", false, "automatically explain the generated command")
+	cmd.Flags().BoolVarP(&explainMode, "explain", "e", false, "explain the generated command at length (one line is shown by default)")
 	cmd.Flags().BoolVarP(&silentMode, "silent", "s", false, "suppress explanation output")
 
 	cmd.AddCommand(newInitCmd())
