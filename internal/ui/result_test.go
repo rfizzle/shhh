@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -460,5 +461,41 @@ func TestResult_AnExplanationForALastCommandIsDropped(t *testing.T) {
 	}
 	if strings.Contains(m.View(), "about something else") {
 		t.Errorf("an explanation of a command that is gone reached the screen:\n%s", m.View())
+	}
+}
+
+// Checking a command spawns a shell and walks PATH. Inline in Update that was
+// the loop stopped for however long this machine takes to do both, with the
+// command on screen and nothing able to paint over it (S-133).
+func TestResult_TheCommandIsCheckedOffTheLoop(t *testing.T) {
+	m := NewGenerateModel(makeEvents("ls -la"), noopCancel, nil,
+		mockNewStream("ls"), nil, "bash")
+	m = drainStreamPending(m, 2)
+
+	if !m.checking {
+		t.Fatal("the surface is not waiting on a check it asked for")
+	}
+	if m.Phase() != phaseStreaming {
+		t.Errorf("the surface left the streaming phase before the check answered: %v", m.Phase())
+	}
+	if !strings.Contains(m.View(), "ls -la") {
+		t.Errorf("the command is not on screen while it is being checked:\n%s", m.View())
+	}
+}
+
+// A check that is out must not be asked for again by every message that
+// arrives while it runs.
+func TestResult_AnOutstandingCheckIsAskedForOnce(t *testing.T) {
+	m := NewGenerateModel(makeEvents("ls -la"), noopCancel, nil,
+		mockNewStream("ls"), nil, "bash")
+	m = drainStreamPending(m, 2)
+
+	gen := m.gen
+	for i := 0; i < 3; i++ {
+		model, _ := m.Update(spinner.TickMsg{})
+		m = model.(GenerateModel)
+	}
+	if m.gen != gen {
+		t.Errorf("the check was asked for again %d times while it was out", m.gen-gen)
 	}
 }

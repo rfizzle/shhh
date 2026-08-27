@@ -45,10 +45,10 @@ func step(m GenerateModel, msg tea.Msg) GenerateModel {
 }
 
 func settle(m GenerateModel, cmd tea.Cmd) GenerateModel {
-	// Only a surface that is waiting on an open has anything to settle.
+	// Only a surface that is waiting on an answer has anything to settle.
 	// Running a cmd is not free — the one that waits on the next token
 	// takes it — so nothing else here is touched.
-	if !m.opening || cmd == nil {
+	if (!m.opening && !m.checking) || cmd == nil {
 		return m
 	}
 	msg := openMsg(cmd)
@@ -59,7 +59,7 @@ func settle(m GenerateModel, cmd tea.Cmd) GenerateModel {
 	return settle(model.(GenerateModel), next)
 }
 
-// openMsg runs cmd far enough to find the answer to a stream the surface
+// openMsg runs cmd far enough to find the answer to something the surface
 // asked for and did not wait on, and reports nothing if cmd holds no such
 // answer.
 func openMsg(cmd tea.Cmd) tea.Msg {
@@ -76,6 +76,8 @@ func openMsg(cmd tea.Cmd) tea.Msg {
 	case explainReadyMsg:
 		return msg
 	case streamReadyMsg:
+		return msg
+	case preflightDoneMsg:
 		return msg
 	}
 	return nil

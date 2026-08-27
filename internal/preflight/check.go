@@ -1,12 +1,23 @@
 package preflight
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 )
+
+// syntaxTimeout bounds the shell this spawns to parse a command. `-n` reads
+// without executing, but the shell it asks is still the one on this machine:
+// a startup file that blocks, a home directory over a mount that has gone
+// away, an interpreter that will not come back. A check that cannot answer in
+// this long has nothing to say, and saying nothing is the safe answer — see
+// checkSyntax.
+const syntaxTimeout = 2 * time.Second
 
 type Result struct {
 	OK      bool
@@ -63,9 +74,25 @@ func checkSyntax(command, shell string) string {
 		return ""
 	}
 
-	cmd := exec.Command(sh, flag, "-c", command)
+	ctx, cancel := context.WithTimeout(context.Background(), syntaxTimeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, sh, flag, "-c", command)
+	// Killing the shell is not the same as getting the pipes back: anything
+	// it started inherits them and can hold CombinedOutput open long after
+	// the shell is gone. WaitDelay bounds that second wait too, so the
+	// deadline is a deadline.
+	cmd.WaitDelay = syntaxTimeout
+
 	out, err := cmd.CombinedOutput()
 	if err != nil {
+		// A check that timed out did not find a syntax error, it failed to
+		// look. Reporting one would send a working command back to the model
+		// to be "fixed", which costs a whole round trip and can only make the
+		// answer worse.
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
+			return ""
+		}
 		msg := strings.TrimSpace(string(out))
 		if msg == "" {
 			msg = err.Error()

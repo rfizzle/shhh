@@ -113,6 +113,10 @@ type GenerateModel struct {
 	// The keys stay live while it does — the bar is not worth blocking for
 	// one sentence.
 	explaining bool
+	// checking is a preflight check that is out. The stream it is a check of
+	// stays done while it runs, so without this the surface would ask again
+	// on every message that arrives.
+	checking bool
 	// opening is a stream that has been asked for and has not come back. The
 	// spinner turns on it: it is the surface saying it is waiting on a round
 	// trip rather than on the reader.
@@ -241,6 +245,8 @@ func (m GenerateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.explainReady(msg)
 	case streamReadyMsg:
 		return m.streamReady(msg)
+	case preflightDoneMsg:
+		return m.preflightDone(msg)
 	}
 
 	switch m.phase {
@@ -309,6 +315,12 @@ func (m GenerateModel) updateStreaming(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
+		// The check is already out; the stream stays done and there is
+		// nothing to do again until it answers.
+		if m.checking {
+			return m, cmd
+		}
+
 		// What arrived is a proposal, not a bare command: everything before
 		// the sentinel is the command, and what follows is the offers. A
 		// response without the section parses to one choice, which is the
@@ -318,36 +330,59 @@ func (m GenerateModel) updateStreaming(msg tea.Msg) (tea.Model, tea.Cmd) {
 		output := choices[0].Command
 
 		if m.shell != "" && m.preflightRetries < maxPreflightRetries && m.newStream != nil {
-			check := preflight.Check(output, m.shell)
-			if !check.OK {
-				m.preflightRetries++
-				correction := fmt.Sprintf(
-					"That command has errors:\n%s\n\nPlease fix and output only the corrected command(s).",
-					strings.Join(check.Errors, "\n"),
-				)
-				m.messages = append(m.messages,
-					provider.Message{Role: provider.RoleAssistant, Content: raw},
-					provider.Message{Role: provider.RoleUser, Content: correction},
-				)
-				m.gen++
-				m.stream = pendingStream()
-				m.opening = true
-				return m, tea.Batch(m.stream.spinner.Tick, openStream(m.newStream, m.messages, m.gen))
-			}
+			// Checking the command spawns a shell and walks PATH, and both
+			// happen on whatever machine this is: a crowded PATH, a shell
+			// with a startup file, a home directory over a network mount.
+			// Inline in Update that is the loop stopped again (S-133), so
+			// the check goes where the requests went.
+			m.gen++
+			m.checking = true
+			return m, runPreflight(output, raw, choices, m.shell, m.gen)
 		}
 
-		// The conversation keeps the raw response, alternatives and all: a
-		// revise is a reply to what the model actually said, and the format
-		// it answered in is part of that.
-		m.messages = append(m.messages, provider.Message{
-			Role:    provider.RoleAssistant,
-			Content: raw,
-		})
-		m.choices, m.chosen = choices, 0
-		m.stream = m.stream.WithOutput(output)
-		return m.arm(output)
+		return m.accept(raw, choices)
 	}
 	return m, cmd
+}
+
+// accept takes a response the surface is going to show: the conversation
+// keeps the raw response, alternatives and all, because a revise is a reply
+// to what the model actually said and the format it answered in is part of
+// that.
+func (m GenerateModel) accept(raw string, choices []proposal.Choice) (GenerateModel, tea.Cmd) {
+	m.messages = append(m.messages, provider.Message{
+		Role:    provider.RoleAssistant,
+		Content: raw,
+	})
+	m.choices, m.chosen = choices, 0
+	m.stream = m.stream.WithOutput(choices[0].Command)
+	return m.arm(choices[0].Command)
+}
+
+// preflightDone carries a check that has finished, along with the response it
+// was a check of — the surface moved on from Update while it ran and the
+// answer has to bring its own subject.
+func (m GenerateModel) preflightDone(msg preflightDoneMsg) (GenerateModel, tea.Cmd) {
+	if msg.gen != m.gen {
+		return m, nil
+	}
+	m.checking = false
+	if msg.result.OK {
+		return m.accept(msg.raw, msg.choices)
+	}
+	m.preflightRetries++
+	correction := fmt.Sprintf(
+		"That command has errors:\n%s\n\nPlease fix and output only the corrected command(s).",
+		strings.Join(msg.result.Errors, "\n"),
+	)
+	m.messages = append(m.messages,
+		provider.Message{Role: provider.RoleAssistant, Content: msg.raw},
+		provider.Message{Role: provider.RoleUser, Content: correction},
+	)
+	m.gen++
+	m.stream = pendingStream()
+	m.opening = true
+	return m, tea.Batch(m.stream.spinner.Tick, openStream(m.newStream, m.messages, m.gen))
 }
 
 // arm resolves everything the result surface states about a freshly generated
@@ -716,6 +751,26 @@ func openExplain(f ExplainStreamFunc, command string, long bool, gen int) tea.Cm
 
 // openStream copies the conversation because the model that asked keeps
 // mutating its own copy — a revise appends to it the moment this returns.
+type preflightDoneMsg struct {
+	gen     int
+	raw     string
+	choices []proposal.Choice
+	result  preflight.Result
+}
+
+// runPreflight checks a command off the event loop. It carries the response
+// it checked so the answer needs nothing from the model it left behind.
+func runPreflight(command, raw string, choices []proposal.Choice, shell string, gen int) tea.Cmd {
+	return func() tea.Msg {
+		return preflightDoneMsg{
+			gen:     gen,
+			raw:     raw,
+			choices: choices,
+			result:  preflight.Check(command, shell),
+		}
+	}
+}
+
 func openStream(f NewStreamFunc, messages []provider.Message, gen int) tea.Cmd {
 	msgs := make([]provider.Message, len(messages))
 	copy(msgs, messages)

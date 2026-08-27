@@ -1,7 +1,10 @@
 package preflight
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 )
 
 func TestCheck_ValidCommand(t *testing.T) {
@@ -86,5 +89,32 @@ func TestExtractBinary_EnvVars(t *testing.T) {
 		if got != tt.expected {
 			t.Errorf("extractBinary(%q) = %q, want %q", tt.input, got, tt.expected)
 		}
+	}
+}
+
+// A check that could not finish did not find a syntax error, it failed to
+// look. Reporting one would send a working command back to the model to be
+// "fixed" — a whole round trip, for nothing.
+func TestCheckSyntax_ATimeoutIsNotASyntaxError(t *testing.T) {
+	sh := filepath.Join(t.TempDir(), "slowsh")
+	script := "#!/bin/sh\nsleep 30\n"
+	if err := os.WriteFile(sh, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// The name has to be one checkSyntax knows a no-execute flag for.
+	slow := filepath.Join(filepath.Dir(sh), "bash")
+	if err := os.Rename(sh, slow); err != nil {
+		t.Fatal(err)
+	}
+
+	start := time.Now()
+	got := checkSyntax("ls -la", slow)
+	elapsed := time.Since(start)
+
+	if got != "" {
+		t.Errorf("a shell that never answered was reported as a syntax error: %q", got)
+	}
+	if elapsed > 10*time.Second {
+		t.Errorf("the check waited %s on a shell that never answered", elapsed)
 	}
 }
