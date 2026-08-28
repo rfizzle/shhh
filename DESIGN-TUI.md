@@ -726,7 +726,9 @@ Three rules follow from fixed widths:
 - **Duration is a field, not a suffix.** Under 0.5s it renders blank rather
   than `0.0s` — a column of zeroes is noise. A call that never ran renders `—`.
 - **Detail bodies indent, they do not re-grid.** Tool output, live tails and
-  offered keys sit at indent 2/4/6 in dimmer (245) and carry no fields.
+  offered keys sit at indent 2/4/6 in dimmer (245) and carry no fields. Output
+  a program painted itself is re-painted into the palette on the way in
+  (§10i); it never arrives with colours of its own.
 
 ### 6b. Kinds
 
@@ -1875,6 +1877,10 @@ Three assignments carry the redesign, and are the ones to check first:
 mutation rail**, and **info marks every key the interface offers** — if a key
 is written in any other colour, the interface is not offering it.
 
+The sixteen colours a terminal theme owns are not a seventeenth set of
+tokens: output a program painted itself maps onto the table above before it is
+drawn (§10i), so a detail body is the same fifteen colours as the row over it.
+
 `tokens/colors.css` also defines canvas-only shades (`--screen`, `--page`,
 `--rule-faint`, `--meter-empty`, `--win-*`) that exist so the artboards can be
 drawn in a browser. They have no ANSI counterpart: in the terminal the screen
@@ -1994,10 +2000,11 @@ swap rather than capturing colours once at init.
 | mono-dim | 244 | `--mono-dim` | dim, dimmer, status, subtle |
 | mono-bg | 237 | `--mono-bg` | focusBg, addBg, delBg |
 
-Bold, glyphs and layout are untouched — only hue goes. The two colour
+Bold, glyphs and layout are untouched — only hue goes. The three colour
 sources the palette does not own are declined rather than recoloured: the
-diff renderer drops chroma highlighting, and assistant prose renders through
-glamour's `ascii` theme, which writes emphasis as `**` instead of as colour.
+diff renderer drops chroma highlighting, assistant prose renders through
+glamour's `ascii` theme, which writes emphasis as `**` instead of as colour,
+and a program's own output loses every colour it asked for (§10i).
 `NO_COLOR` additionally drops the terminal profile to `termenv.Ascii`, which
 flattens even the two greys — the stricter reading that convention asks for.
 
@@ -2111,6 +2118,67 @@ paragraph's own lines are then dropped, so the seam is the one glamour itself
 chose. The contract is asserted in `streammd_test.go` over a corpus with one
 document per construct named above, at every prefix, at all four widths, in
 both palettes.
+
+### 10i. Foreign output (S-150)
+
+A detail body is the one place in the transcript where bytes shhh did not
+write reach the screen: a failed command's output, a running command's live
+tail, a provider's error body (§6a, §17a). Programs emit `\x1b[31m` and trust
+the terminal to pick a red. Inside shhh that red is whatever the reader's
+theme decided — frequently illegible against the terminal's own background,
+and in every case a colour §10a does not list, sitting one indent away from
+rows that spent S-088 getting one job per token.
+
+So the line is read before it is drawn, and re-painted as runs of text
+carrying a lipgloss style like every other surface. The sixteen colours a
+terminal theme owns map onto the tokens that mean the same thing here:
+
+| Theme colour | Token | Why |
+|---|---|---|
+| black | dim (241) | the terminal's black is the background on half the terminals there are |
+| red | del (9) | a failure |
+| green | add (10) | a pass |
+| yellow | accent (214) | a warning |
+| blue | info (12) | — |
+| magenta | spin (205) | — |
+| cyan | hunk (14) | — |
+| white | body (252) | ordinary text; bright white is bright (15) |
+
+The bright half is not a second palette. shhh has one token per meaning, so a
+program's red and its bright red are both del — a failure is a failure. **Bold
+is what still says which of the two the program was emphasising**, and bold,
+faint, italic, underline, strikethrough and reverse all pass through
+untouched.
+
+Four rules decide what does not:
+
+- **Backgrounds are dropped, not remapped.** §10b says exactly three
+  background tints exist and all three collapse onto `--mono-bg`, which means
+  selection (§7a). A program painting a block of a detail body would be
+  drawing the reading cursor.
+- **An explicit colour is kept.** `38;5;n` and `38;2;r;g;b` are colours the
+  program could see when it chose them, and ones the palette has no token to
+  stand in for. They are kept as asked for and degrade through the renderer
+  like anything else.
+- **Under mono no foreign colour survives at all** — not even a grey step.
+  This is the diff renderer's answer to chroma (§10f), not a recolouring: a
+  detail body is exactly where the words are already carrying the
+  distinction.
+- **The sequence vocabulary is closed.** The only sequence a detail body
+  carries is the one that colours text. Cursor moves, erases, mode changes,
+  window titles and OSC 52 clipboard writes all leave by the same door rather
+  than by name, and a bare `\r` is read the way a terminal reads it — the
+  progress line rewrote itself, so the last write is the line.
+
+It is `repaint` in `internal/ui/components/foreign.go`, called from the one
+function that draws an indented body, so a surface cannot acquire foreign
+output without acquiring the door with it.
+
+Ported from Crush's `internal/ui/common/ansi16.go`. Crush rewrites the SGR
+parameters in place and lets the bytes through; painting through lipgloss
+instead puts foreign output behind the same renderer as everything else, so
+the colour profile, `NO_COLOR` and the mono swap reach it without this file
+knowing they exist.
 
 ---
 

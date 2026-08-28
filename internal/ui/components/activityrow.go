@@ -315,8 +315,22 @@ func (r ActivityRow) View(width int) string {
 
 // indented renders one detail line at the given indent in dimmer (245).
 // Detail bodies indent, they do not re-grid (§6a).
+//
+// It is also the one door foreign bytes come through — a command's output, a
+// live tail, a provider's error body — so the line is re-painted into the
+// palette before it is measured (§10i). A line shhh wrote itself has nothing
+// to re-paint and comes back unchanged; the clip runs afterwards because a
+// cursor sequence the terminal would never have shown still counts against
+// ansi.Truncate's width.
 func indented(s string, indent, width int) string {
-	return strings.Repeat(" ", indent) + dimmerStyle.Render(clip(s, max(width-indent, 1)))
+	pad, inner := strings.Repeat(" ", indent), max(width-indent, 1)
+	if painted, ok := repaint(s, Palette.Dimmer); ok {
+		// A re-painted line already carries the ground, run by run; a second
+		// wrapper around it would only spend bytes the first reset throws
+		// away.
+		return pad + clip(painted, inner)
+	}
+	return pad + dimmerStyle.Render(clip(s, inner))
 }
 
 // GroupExpandKey is what a folded group row says opens it. It is drawn in the

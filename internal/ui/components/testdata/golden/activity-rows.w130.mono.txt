@@ -36,6 +36,11 @@
     --- FAIL: TestRoundLimit (0.00s)
         loop_test.go:88: want ErrRoundLimit, got nil
 
+· output · a program's own colours, re-painted (§10i)
+  ▎✗ run     go test ./internal/agent/...                                                                             exit 1 21.4s
+    --- FAIL: TestRoundLimit (0.00s)
+    building 100%
+
 · state · denied by you
   ▎⊘ run     rm -rf ./build                                                                                     denied · you     —
 
@@ -78,6 +83,11 @@
   ␛[38;5;254m▎␛[0m␛[38;5;254m✗␛[0m run     ␛[38;5;244mgo test ./internal/agent/...␛[0m                                                                             ␛[38;5;254mexit 1␛[0m ␛[38;5;244m21.4s␛[0m
     ␛[38;5;244m--- FAIL: TestRoundLimit (0.00s)␛[0m
     ␛[38;5;244m    loop_test.go:88: want ErrRoundLimit, got nil␛[0m
+
+· output · a program's own colours, re-painted (§10i)
+  ␛[38;5;254m▎␛[0m␛[38;5;254m✗␛[0m run     ␛[38;5;244mgo test ./internal/agent/...␛[0m                                                                             ␛[38;5;254mexit 1␛[0m ␛[38;5;244m21.4s␛[0m
+    ␛[38;5;244m--- ␛[0m␛[38;5;244mFAIL␛[0m␛[38;5;244m: ␛[0m␛[1;38;5;244mTestRoundLimit␛[0m␛[38;5;244m (0.00s)␛[0m
+    ␛[38;5;244mbuilding 100%␛[0m
 
 · state · denied by you
   ␛[38;5;254m▎␛[0m␛[38;5;244m⊘␛[0m run     ␛[38;5;244mrm -rf ./build␛[0m                                                                                     ␛[38;5;244mdenied · you␛[0m     ␛[38;5;244m—␛[0m

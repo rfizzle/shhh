@@ -128,6 +128,20 @@ func TestGolden_ActivityRows(t *testing.T) {
 				r.Expanded = true
 				r.Detail = []string{"--- FAIL: TestRoundLimit (0.00s)", "    loop_test.go:88: want ErrRoundLimit, got nil"}
 			})},
+			{Label: "output · a program's own colours, re-painted (§10i)", View: row(func(r *ActivityRow) {
+				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "go test ./internal/agent/..."
+				r.State, r.Outcome, r.Duration = ActivityFailed, OutcomeExit(1), "21.4s"
+				r.Expanded = true
+				// A detail body as a program actually writes one: a colour
+				// the terminal's theme owns, an erase and a cursor move, and
+				// a progress line that rewrote itself. Read the layout block
+				// for what survives and the ansi block for what it is
+				// painted in.
+				r.Detail = []string{
+					"--- \x1b[31mFAIL\x1b[0m: \x1b[1mTestRoundLimit\x1b[0m (0.00s)",
+					"\x1b[2K\x1b[1Gbuilding 40%\rbuilding 100%",
+				}
+			})},
 			{Label: "state · denied by you", View: row(func(r *ActivityRow) {
 				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "rm -rf ./build"
 				r.State, r.Outcome, r.Duration = ActivityDenied, OutcomeBy(OutcomeDenied, "you"), NoDuration
