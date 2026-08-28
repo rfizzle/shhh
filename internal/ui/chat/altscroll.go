@@ -30,6 +30,15 @@ package chat
 // the keyboard transfers (pgup/pgdn, shift+arrows, ctrl+e) the whole story
 // for a session that has not bought the wheel with its selection.
 //
+// Suppressing rather than using those arrows is a decision, not an oversight,
+// and the obvious objection to it is a good one: a synthetic wheel costs no
+// mouse tracking, so routing it would have bought wheel scrolling without
+// giving up the terminal's click-drag selection. It turns on whether a real
+// arrow press can be told apart from a synthesised one, which was measured
+// rather than argued about — the readings, the one mode combination that
+// separates them, and why that combination costs more than the gesture is
+// worth are in DESIGN-TUI.md §7a. Read that before reaching for this again.
+//
 // It is asked for with XTSAVE/XTRESTORE rather than a bare set and clear, so
 // a terminal that had 1007 off keeps it off afterwards and one that had it on
 // gets it back.

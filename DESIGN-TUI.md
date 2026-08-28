@@ -920,6 +920,49 @@ selection to stop a bug. shhh now asks the terminal to stop synthesising
 (XTSAVE/XTRESTORE, so the setting survives us as its owner had it), which is
 what makes this section's claim about the wheel true rather than aspirational.
 
+**Keeping the synthetic wheel was investigated and declined (S-140).**
+Suppressing 1007 throws away something real: those synthetic arrows are a
+wheel that costs no mouse tracking, so a terminal that sent them could have
+had wheel scrolling *and* its own click-drag selection at the same time — the
+trade §7a describes as unavoidable, avoided. Routing them would have been
+safe by design, because the split is capability-gated rather than a second
+keymap: synthetic arrows scroll, real ones stay the input history's, and `↑`
+goes on meaning history on every terminal whether the wheel works there or
+not. The whole thing turns on one question — can the two be told apart — and
+it was measured on Ghostty rather than argued about:
+
+| requested | real arrows | wheel | |
+|---|---|---|---|
+| DECCKM alone | `\eOA` | `\eOA` | identical |
+| nothing | `\e[A` | `\e[A` | identical |
+| kitty disambiguate | `\e[A` | `\e[A` | identical |
+| kitty disambiguate + DECCKM | `\e[A` | `\eOA` | **distinguishable** |
+
+They separate, but only in the last combination, and the mechanism explains
+why: the kitty keyboard protocol reports real keys and ignores DECCKM, which
+its specification requires; alternate scroll goes down the legacy cursor-key
+path, which honours DECCKM. Two code paths, and setting both modes drives a
+wedge between them. DECCKM alone cannot do it because xterm's specification
+has alternate scroll honouring DECCKM — both move together, which is what the
+first row measures.
+
+It was declined for what reaching that row costs. The kitty protocol
+re-encodes exactly the keys that were ambiguous — `esc` becomes `CSI 27 u`,
+`ctrl+i` and `ctrl+m` separate from `tab` and `enter` — and those are
+load-bearing here (invariant 3 is *esc is always the safe answer*). Bubbletea
+v1 does not parse CSI-u; §12f already works around that by catching unnamed
+sequences to find shift+enter, and level 2 of `modifyOtherKeys` was declined
+for the same reason. So the price of the gesture is shhh owning a decoder for
+every key the protocol touches, not a routing change for two.
+
+Underneath that, the divergence is unspecified. Which internal path a terminal
+routes alternate scroll through is not something any specification constrains,
+so the result is an emergent property of one implementation and could change
+without anyone calling it a break. And it is kitty-protocol terminals only.
+The finding is recorded rather than acted on: the same gesture arrives free,
+permanently, and on every terminal the moment the transcript stops living in
+the alternate screen, which is where this should be paid for instead.
+
 **Scrolling away pauses the follow, and the notice rail says so.** A
 transcript scrolled off its live end stops being moved by the turn streaming
 into it. While scrolling cost a handover the labelled rail said `READING` and
