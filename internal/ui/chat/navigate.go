@@ -86,21 +86,55 @@ func mouseCmd(on bool) tea.Cmd {
 	return tea.DisableMouse
 }
 
-// updateMouse routes a mouse event. Only the wheel does anything: shhh draws
-// no clickable targets, so a press is better ignored than guessed at, and a
-// gesture that moved the cursor is not a decision anyone made.
+// updateMouse routes a mouse event: the wheel reads, and the primary button
+// selects text (S-145, select.go).
 //
 // The wheel reads, and reading is not a focus transfer: the draft keeps the
 // keyboard, so a scroll while composing never swallows the next keystroke.
+//
+// The primary button is the only other thing answered. shhh still draws no
+// clickable targets, and that is now a property worth keeping rather than an
+// accident: a press that also expanded a row or answered a decision would
+// make every drag a gamble on where it started. So a press anchors a
+// selection or does nothing, and a middle or right button does nothing at
+// all.
 func (m Model) updateMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
-	if msg.Action != tea.MouseActionPress {
+	// MouseMsg is a defined type over MouseEvent and does not carry its
+	// methods, so the wheel question is asked of the event underneath.
+	if tea.MouseEvent(msg).IsWheel() {
+		if msg.Action != tea.MouseActionPress {
+			return m, nil
+		}
+		switch msg.Button {
+		case tea.MouseButtonWheelUp:
+			m.scrollLines(-wheelLines)
+		case tea.MouseButtonWheelDown:
+			m.scrollLines(wheelLines)
+		}
 		return m, nil
 	}
-	switch msg.Button {
-	case tea.MouseButtonWheelUp:
-		m.scrollLines(-wheelLines)
-	case tea.MouseButtonWheelDown:
-		m.scrollLines(wheelLines)
+	if !m.selectableSurface() {
+		return m, nil
+	}
+	switch msg.Action {
+	case tea.MouseActionPress:
+		if msg.Button != tea.MouseButtonLeft {
+			return m, nil
+		}
+		return m.beginSelection(msg.X, msg.Y)
+	case tea.MouseActionMotion:
+		// Cell-motion reporting sends motion only while a button is down, so
+		// this is a drag. The button is checked anyway, because terminals
+		// disagree about what they put in the field on a drag and only the
+		// primary one selects.
+		if msg.Button != tea.MouseButtonLeft && msg.Button != tea.MouseButtonNone {
+			return m, nil
+		}
+		return m.dragSelection(msg.X, msg.Y)
+	case tea.MouseActionRelease:
+		// A release reports no button at all under X10 encoding, so the drag
+		// in flight is what says whether this release is ours.
+		return m.releaseSelection(msg.X, msg.Y)
 	}
 	return m, nil
 }
@@ -267,15 +301,16 @@ func (m Model) mouseStatus() string {
 	return "off"
 }
 
-// mouseCommand handles /ui mouse: whether the terminal reports the wheel to
+// mouseCommand handles /ui mouse: whether the terminal reports the mouse to
 // shhh at all. On, the wheel scrolls the transcript and the full-screen
-// viewers; off, the terminal keeps its own click-drag selection and the
-// keyboard is the only way through the history. It is a real trade, which is
-// why it is a setting and not a default nobody can reach.
+// viewers and a drag selects transcript text shhh copies itself (S-145);
+// off, the terminal keeps its own click-drag selection and the keyboard is
+// the only way through the history. It is a real trade, which is why it is a
+// setting and not a default nobody can reach.
 func (m *Model) mouseCommand(parts []string) string {
 	if len(parts) == 2 {
 		return "Mouse reporting: " + m.mouseStatus() +
-			".\nUsage: /ui mouse <on|off> — on, the wheel scrolls the transcript; off, the terminal keeps click-drag selection."
+			".\nUsage: /ui mouse <on|off> — on, the wheel scrolls the transcript and click-drag selects it; off, the terminal keeps its own click-drag selection."
 	}
 	if len(parts) != 3 {
 		return "Usage: /ui mouse <on|off>"
@@ -300,6 +335,12 @@ func (m *Model) mouseCommand(parts []string) string {
 // setting is real either way — and says only what it could not do.
 func (m *Model) setMouse(on bool) string {
 	m.mouseOn = on
+	// Reporting off hands the selection back to the terminal, so shhh's own
+	// has to let go of it — including any edge scroll still running under a
+	// drag the reader never released (S-145).
+	if !on && m.cancelSelection() {
+		m.refreshTranscript()
+	}
 	note := mouseNote(on)
 	if m.writeConfig == nil {
 		return note + "\nThis session cannot write the config file, so it is for this session only."
@@ -312,11 +353,18 @@ func (m *Model) setMouse(on bool) string {
 
 // mouseNote says what the new state costs and what it buys, because both
 // readings are a trade rather than an improvement.
+//
+// The on-side used to say the terminal's selection "needs shift (or option)
+// held", which was true and useless: shift-drag selects what is on the
+// screen, and the thing a reader reaches for the mouse to copy is usually
+// longer than the screen. So the note names what shhh does instead — a drag
+// that scrolls with the selection and copies on release (S-145) — and the
+// off-side names what the terminal gives back.
 func mouseNote(on bool) string {
 	if on {
-		return "Mouse reporting on — the wheel scrolls the transcript; the terminal's own click-drag selection needs shift (or option) held."
+		return "Mouse reporting on — the wheel scrolls the transcript, and click-drag selects it: the drag scrolls past the edge of the pane, esc cancels, and releasing copies."
 	}
-	return "Mouse reporting off — the terminal keeps click-drag selection; pgup, ctrl+e and j/k read the transcript."
+	return "Mouse reporting off — the terminal keeps click-drag selection for what is on screen; pgup, ctrl+e and j/k read the transcript."
 }
 
 // applyNavigateStyles rebuilds this file's styles from the palette; called

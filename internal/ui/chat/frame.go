@@ -298,6 +298,13 @@ func (m Model) noticeLine() string {
 	if note := m.followNotice(); note != "" {
 		parts = append(parts, noticeInfoStyle.Render(note))
 	}
+	// What the last mouse selection put on the clipboard (S-145, select.go).
+	// It rides here rather than in the transcript because a copy is not part
+	// of the conversation, and because appending a row would scroll the pane
+	// away from the selection the reader is still looking at.
+	if m.selNotice != "" {
+		parts = append(parts, noticeInfoStyle.Render(m.selNotice))
+	}
 	if m.subagents != nil {
 		if _, blocked := m.subagents.ActiveCounts(); blocked > 0 {
 			label := fmt.Sprintf("⚠ %d agents waiting approval", blocked)

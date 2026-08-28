@@ -787,6 +787,9 @@ func (m *Model) syncViewport() {
 	if h == m.viewport.Height && w == m.viewport.Width {
 		return
 	}
+	// The pane split can take columns without a terminal resize (S-092), and
+	// a selection's coordinates were taken at the old width (S-145).
+	m.resizeSelection(w)
 	m.viewport.Height, m.viewport.Width = h, w
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()

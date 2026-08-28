@@ -80,6 +80,11 @@ func (m *Model) enterSurface(s state) {
 	if !m.state.isSurface() {
 		m.turnBack = m.state
 	}
+	// A surface that borrows the screen takes the transcript's selection with
+	// it (S-145, select.go): the full-screen viewers replace the pane, and
+	// reading mode re-renders the history through a cursor gutter and can
+	// expand a row under coordinates that were taken before it did.
+	m.cancelSelection()
 	m.state = s
 }
 

@@ -122,6 +122,9 @@ func (m Model) breadcrumb() string {
 // saveScroll stores the current surface's scroll position before a focus
 // switch.
 func (m *Model) saveScroll() {
+	// A selection names lines in the transcript the viewport is about to stop
+	// showing, so the switch takes it with it (S-145).
+	m.cancelSelection()
 	vs := viewState{yoffset: m.viewport.YOffset, atBottom: m.atBottom}
 	if m.attachedTo == "" {
 		m.parentView = vs

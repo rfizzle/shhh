@@ -465,7 +465,7 @@ func configSettings() []configSetting {
 	}, {
 		group: "WORKSPACE", key: "appearance.mouse", label: "mouse reporting",
 		read:     flag(func(c config.Config) bool { return c.Appearance.Mouse }),
-		fallback: "off — the terminal keeps click-drag selection",
+		fallback: "off — the terminal keeps click-drag selection; on, shhh selects the transcript itself",
 		options:  noOptions,
 	}}
 }

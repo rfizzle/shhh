@@ -885,6 +885,7 @@ where it is:
 | `pgup` / `pgdn` | pages the transcript, and transfers nothing |
 | `shift+↑` / `shift+↓` | one line, and transfers nothing (`ctrl+↑`/`ctrl+↓` alias it — terminals disagree about which they report) |
 | wheel | scrolls, and transfers nothing — when reporting is on |
+| click-drag | selects transcript text, and transfers nothing — when reporting is on |
 | `ctrl+o` | opens the step in flight, and transfers nothing — §13d |
 | `ctrl+r` | cycles the reasoning level, and transfers nothing — §8a |
 | `ctrl+x` | mouse reporting on/off, from any surface, saved to the config |
@@ -992,8 +993,60 @@ reason to suspect a setting. So the wheel is the side you ask for.
   physical input device is not a per-session opinion. `/ui mouse <on|off>` is
   the same setting said in words, and takes the same path so the two cannot
   drift.
-- **Both notes state the trade, not an improvement.** Turning it on says the
-  selection now needs shift held; turning it off says what still scrolls.
+- **Both notes state the trade, not an improvement.** Turning it on says what
+  the drag now does; turning it off says what the terminal takes back.
+
+**With reporting on, shhh owns the selection (S-145).** The old note told the
+reader to hold shift, which is a true answer to a smaller question. A
+terminal's own selection can only reach what is on the screen: copying an
+answer three viewport-heights long meant scroll, select, paste, repeat, with
+no seam anywhere to say where the joins went — and the seams are exactly what
+gets lost. So while reporting is on, press anchors a selection inside the
+transcript, drag extends it, and release copies it. Shift-drag remains what
+the terminal does for what is visible, and is documented as that rather than
+as the answer to a long copy.
+
+- **Dragging past the edge scrolls, and a stationary pointer keeps
+  scrolling.** A drag held at the first or last row of the pane is a pointer
+  the terminal reports nothing about, so the scroll runs off a timer of its
+  own (60ms a line) rather than off the motion events. Every way a selection
+  can end — release, `esc`, `ctrl+x`, `/ui mouse off`, a resize, a takeover
+  surface — fences the timer, so a tick that outlived its drag scrolls
+  nothing. It stops itself at the end of the transcript.
+- **Selecting pauses the follow**, exactly as scrolling away does (§7a
+  above), and for the same reason twice over: a transcript that jumped to its
+  live end mid-drag would tear the selection off the text it was covering.
+- **The coordinates are the render's, not the screen's.** An anchor is a
+  visual line index plus a display column, so it survives scrolling and
+  survives a turn streaming more underneath it. It does not survive a change
+  of pane width, because every line reflows and there is no remapping that is
+  not a guess — so a width change drops the selection rather than copying the
+  wrong thing. A height change keeps the range and ends the drag.
+- **What is copied is what was on the screen, joined back up.** No escape
+  codes, no selection styling, no reading gutter. Soft wraps rejoin into
+  prose — the boundary is recovered by asking whether the next row's first
+  word could have fitted on the end of this one, which is a greedy wrapper
+  run backwards — while paragraph breaks, list items and code lines keep
+  their newlines, and the blank row between two transcript entries comes
+  through as the blank line it is drawn as. The renderer's own left margin is
+  chrome and goes; a code block's indentation is content and stays.
+- **A click is not a selection.** A press that never moved copies nothing and
+  lights nothing, which is what keeps the surface's one promise about the
+  mouse: shhh draws no click targets, so no drag can start by triggering
+  something.
+- **The highlight is reverse video**, not a background colour — it says
+  "selected" in mono exactly as loudly as in colour (invariant 1), and it is
+  what a terminal's own selection looks like, so the feedback matches the
+  gesture.
+- **It is the normal transcript's alone.** The full-screen diff (§3c) and
+  review mode (§16a) keep their own wheel behaviour, reading mode renders
+  through a cursor gutter nobody wants pasted (§7), and an attached child's
+  session is a different transcript in the same viewport (§18).
+- **A failed copy says so in the transcript** — the same place `/copy`'s
+  failures go — and keeps the selection, so the retry after installing a
+  clipboard tool is not another six screens of dragging. A successful one
+  costs one line on the notice rail (§12a) and no transcript row, so the pane
+  does not move away from what the reader just selected.
 
 **Reading mode is focus mode**, not a second, lesser one. A key that opened
 its own surface would be a fourth list implementation by another name, and the

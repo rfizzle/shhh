@@ -408,6 +408,17 @@ type Model struct {
 	// j/k all read the transcript — so the wheel is the side you ask for
 	// (S-115, §7a).
 	mouseOn bool
+	// Application-owned transcript selection (S-145, select.go). sel is the
+	// selection itself — anchor, endpoint, and whether the button is still
+	// down — in rendered-transcript coordinates. selScrollDir and
+	// selScrollSeq drive the edge auto-scroll: the direction a drag held at
+	// the edge of the pane is asking for, and the fence that stops a tick
+	// which outlived its drag. selNotice is the notice rail's line after a
+	// successful copy.
+	sel          selection
+	selScrollDir int
+	selScrollSeq int
+	selNotice    string
 	// writeConfig persists one config key to the user's file. The CLI
 	// installs it; a session without one cannot make a setting stick and
 	// says so rather than pretending it did.
@@ -853,6 +864,9 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// width while the inspector rail shows (S-092).
 		paneWidth := m.transcriptWidth()
 		vpHeight := m.viewportHeight()
+		// Every rendered line reflows at a new width, so a selection's
+		// coordinates stop naming the text they were taken over (S-145).
+		m.resizeSelection(paneWidth)
 
 		if !m.ready {
 			m.viewport = viewport.New(paneWidth, vpHeight)
@@ -871,11 +885,20 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// the full-screen diff and review surfaces that take the screen from
 		// it. It never reaches the textarea, which is what made a scroll
 		// gesture over the conversation move the three-line prompt box
-		// (S-115, §7a).
+		// (S-115, §7a). Press, drag and release own the transcript's text
+		// selection (S-145, select.go).
 		if !m.mouseOn {
 			return m, nil
 		}
 		return m.updateMouse(msg)
+
+	case selectionScrollMsg:
+		// A drag held at the edge of the transcript pane (S-145). It is
+		// answered whatever the surface, because the fence inside it is what
+		// decides whether the tick is still wanted — a selection cancelled
+		// between the tick being scheduled and arriving has already bumped
+		// the sequence.
+		return m.updateSelectionScroll(msg)
 
 	case tea.KeyMsg:
 		// Every key stamps the clock a decision's arrival reads (S-117, §7b,
@@ -1128,6 +1151,15 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		case "esc":
+			// A visible selection is what esc cancels first (S-145, §7a).
+			// It is the only thing on the surface esc could mean while one
+			// is lit, and it says so without touching the draft — a reader
+			// who selected the wrong six screens has not also abandoned the
+			// sentence they were writing.
+			if m.cancelSelection() {
+				m.refreshTranscript()
+				return m, nil
+			}
 			// With the completion menu open, esc only dismisses the menu; the
 			// draft survives and further typing re-opens it (S-078).
 			if m.completionActive() {
@@ -2120,6 +2152,9 @@ func (m *Model) resetTranscript() {
 	// takes the approved plan with it rather than pointing at entries that no
 	// longer exist (S-104).
 	m.planRun = nil
+	// A selection is a pair of coordinates into a render of this transcript;
+	// with the transcript gone they name nothing (S-145).
+	m.clearSelection()
 	m.invalidateRenderCache()
 }
 
@@ -2300,7 +2335,19 @@ func formatTokenCount(n int64) string {
 	return fmt.Sprintf("%.1fk", float64(n)/1000)
 }
 
+// renderHistory is the transcript the viewport shows: the history, with any
+// application-owned selection lit over it (S-145, select.go). The highlight
+// is the last thing applied and the first thing dropped — renderHistoryRaw is
+// what the clipboard extraction reads, so no selection styling can reach it.
 func (m *Model) renderHistory() string {
+	content := m.renderHistoryRaw()
+	if !m.selectableSurface() {
+		return content
+	}
+	return m.applySelectionHighlight(content)
+}
+
+func (m *Model) renderHistoryRaw() string {
 	if m.state == stateFocus {
 		// Focus mode renders fresh with the selection gutter, bypassing the
 		// incremental cache; it scopes to whichever agent is focused (S-077).
@@ -2739,7 +2786,8 @@ func helpText() string {
                  /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>
                  (low hides counts, med collapses rows, high expands rows;
                   mouse is off by default so the terminal keeps click-drag
-                  selection — Ctrl+X flips it either way and saves the answer)
+                  selection — on, shhh selects the transcript itself and the
+                  drag scrolls past the pane. Ctrl+X flips it and saves it)
   /add-dir       The working scope: which directories this session may write
                  to. Bare lists it; <path> adds one (contained commands can
                  write there, and edits there stop asking about leaving the
@@ -2824,6 +2872,9 @@ Keys:
                  leaving the draft and the keyboard where they are
                  (needs Ctrl+X — off by default, so the terminal keeps its
                   own click-drag selection)
+  Click-drag     With the mouse on (Ctrl+X), select transcript text: the drag
+                 scrolls the pane when it reaches an edge, so a selection can
+                 run past the screen; releasing copies it, Esc cancels
   y/n/a          Approval prompts: allow / deny / always allow this session`)
 }
 
