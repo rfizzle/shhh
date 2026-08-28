@@ -279,7 +279,34 @@ func TestTokenBudgetCancelsChild(t *testing.T) {
 				calls: []provider.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"x"}`}},
 				usage: &provider.Usage{PromptTokens: 5000, CompletionTokens: 100},
 			},
-			{text: "should never get here"},
+		},
+	}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"read a lot","max_tokens":1000}`)
+
+	// Nothing is scripted past the overrun, so the handoff (S-144) fails too.
+	// A handoff that cannot be produced must leave the real reason standing
+	// rather than replacing it with whatever went wrong second.
+	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+	if !strings.Contains(report, "token budget") {
+		t.Fatalf("expected a token-budget failure, got: %s", report)
+	}
+	if !strings.Contains(report, "no final report was produced") {
+		t.Fatalf("a child that could not hand off must say so: %s", report)
+	}
+}
+
+// TestTokenBudgetHandsOffBeforeItStops is S-144: the budget is still a hard
+// stop, but the child says where it got to on the way out, so the parent has
+// something to act on rather than a spend figure.
+func TestTokenBudgetHandsOffBeforeItStops(t *testing.T) {
+	env := &scriptedEnv{
+		steps: []streamStep{
+			{
+				calls: []provider.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"x"}`}},
+				usage: &provider.Usage{PromptTokens: 5000, CompletionTokens: 100},
+			},
+			{text: "got as far as the parser; the lexer is untouched"},
 		},
 	}
 	sup := newTestSupervisor(t, env)
@@ -287,7 +314,76 @@ func TestTokenBudgetCancelsChild(t *testing.T) {
 
 	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
 	if !strings.Contains(report, "token budget") {
-		t.Fatalf("expected a token-budget failure, got: %s", report)
+		t.Fatalf("the budget must still stop the child: %s", report)
+	}
+	if !strings.Contains(report, "got as far as the parser") {
+		t.Fatalf("the handoff must reach the parent: %s", report)
+	}
+}
+
+// TestRoundLimitChecksInAndCarriesOn is the heart of S-144: the round limit
+// is a checkpoint, not a failure. The child takes stock and keeps going on
+// the same conversation, and the budget grows so the next stop is further
+// away than the last.
+func TestRoundLimitChecksInAndCarriesOn(t *testing.T) {
+	env := &scriptedEnv{
+		steps: []streamStep{
+			{calls: []provider.ToolCall{{ID: "r1", Name: "read_file", Arguments: `{"path":"a"}`}}},
+			{calls: []provider.ToolCall{{ID: "r2", Name: "read_file", Arguments: `{"path":"b"}`}}},
+			{text: "finished after taking stock"},
+		},
+	}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"a long job","max_rounds":1}`)
+
+	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+	if !strings.Contains(report, "finished after taking stock") {
+		t.Fatalf("a child at its round limit must carry on: %s", report)
+	}
+	if strings.Contains(report, "round limit") {
+		t.Fatalf("the round limit must not fail the child: %s", report)
+	}
+
+	var st Status
+	for _, s := range sup.Snapshot() {
+		if s.Name == "researcher-1" {
+			st = s
+		}
+	}
+	if st.CheckIns != 1 {
+		t.Fatalf("expected exactly one check-in, got %d", st.CheckIns)
+	}
+	// The second turn ran two rounds against a budget of one, which it could
+	// only do because the check-in doubled it.
+	if st.ToolCalls != 2 {
+		t.Fatalf("expected both tool calls to run, got %d", st.ToolCalls)
+	}
+}
+
+// TestSpawnDefaultsToNoRoundLimit: an ordinary child runs to completion
+// without pausing (S-144), and the surfaces that price a spawn say so rather
+// than printing a negative number.
+func TestSpawnDefaultsToNoRoundLimit(t *testing.T) {
+	args, err := parseSpawnArgs(json.RawMessage(`{"role":"researcher","task":"x"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if args.maxRounds > 0 {
+		t.Fatalf("the default spawn must be unbounded, got %d", args.maxRounds)
+	}
+	summary, err := SpawnSummary(json.RawMessage(`{"role":"researcher","task":"x"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(summary, "no round limit") {
+		t.Fatalf("the approval preview must say the child is unbounded: %s", summary)
+	}
+	summary, err = SpawnSummary(json.RawMessage(`{"role":"researcher","task":"x","max_rounds":30}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(summary, "checks in every 30 rounds") {
+		t.Fatalf("a named interval must read as a rhythm, not a ceiling: %s", summary)
 	}
 }
 
@@ -329,8 +425,10 @@ func TestParseSpawnArgsClampsBudgets(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if args.maxRounds != MaxRoundsCeiling {
-		t.Fatalf("max_rounds not clamped: %d", args.maxRounds)
+	// The token budget is a ceiling and clamps; the check-in interval is not
+	// one and is honoured as asked (S-144).
+	if args.maxRounds != 999 {
+		t.Fatalf("max_rounds should be taken as given: %d", args.maxRounds)
 	}
 	if args.maxTokens != MaxTokensCeiling {
 		t.Fatalf("max_tokens not clamped: %d", args.maxTokens)

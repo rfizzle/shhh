@@ -1564,8 +1564,8 @@ the attached view *is* the chat surface, pointed at a child.
 │   ◇ writer-1   docs/loop.md      ▰▰▱▱▱ 2/5 · 6 tools · $0.02     │
 │   ✓ reader-3   survey internal/ui    done · 12 tools · $0.04     │
 │     the rails and the frame are one component                    │
-│   ✗ patcher-4  apply patch           failed · 1 tool  · $0.01    │
-│     round limit (25) reached                                     │
+│   ✗ patcher-4  apply patch           failed · 1 tool  · $0.31    │
+│     token budget (~200k) exceeded                                │
 │                                                                  │
 │ enter attach · a answer · x cancel · X kill · esc back           │
 └──────────────────────────────────────────────────────────────────┘
@@ -1592,6 +1592,14 @@ the attached view *is* the chat surface, pointed at a child.
   opening the manager *because* something needs you must not then send you
   into that child's session to say yes. `[g]` and `[ctrl+a]` drop from the
   card's hints: the manager is already what is underneath.
+- **A child's round limit is a check-in, not a failure** (S-144). A child
+  runs unbounded unless its spawn asked for one; where it did, reaching it
+  parks the child just long enough to say what it has done, what is left and
+  what it is doing next, and then it carries on with a budget twice the size.
+  The row says `running · check-in 2` while it happens — a child on its third
+  check-in is a task outgrowing the interval it was given, which is worth
+  seeing without being worth stopping for. The token budget is what still
+  fails a child, and it says where the child got to before it does.
 - `[r]` runs a failed child again on its original task. The attempt is what
   restarts, not the agent: it keeps its name, its place in the batch and its
   transcript, and gets a fresh conversation, a fresh worktree if it writes,
@@ -1634,7 +1642,7 @@ in the header, and returns on `esc`:
    ▎▸ run     go test ./internal/agent/...                 running…    3s
        ok  github.com/rfizzle/shhh/internal/agent
 ────────────────────────────────────────────────────────────────────────
-⏵⏵ accept edits · round 3/25 · ctx ▰▰▰▱▱▱▱▱ 31% · $0.05 · writer-1
+⏵⏵ accept edits · round 3/∞ · ctx ▰▰▰▱▱▱▱▱ 31% · $0.05 · writer-1
 > hold off on model.go — loop.go only for now▌
 ```
 

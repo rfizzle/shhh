@@ -54,15 +54,28 @@ const (
 	DefaultMaxConcurrent = 3
 	// MaxChildren caps how many children one session may spawn in total.
 	MaxChildren = 16
-	// DefaultMaxRounds and MaxRoundsCeiling bound a child's tool rounds.
-	// The default is the child's own number, not agent.DefaultMaxToolRounds:
-	// a parent's cap is a checkpoint it can spend more of by asking, and a
-	// child's is a hard budget nobody is watching, so the two moved apart
-	// when the parent's rose to 75. It must stay at or under the ceiling —
-	// otherwise a child that names its own budget is clamped below the one
-	// it would have been given for saying nothing.
-	DefaultMaxRounds = 25
-	MaxRoundsCeiling = 50
+	// DefaultMaxRounds leaves a child's tool rounds unbounded (S-144). The
+	// limit used to be a hard stop, and a child that reached one failed with
+	// its work half done and nothing to hand over — the one outcome worse
+	// than letting it run. It is a check-in now: the child takes stock and
+	// carries on with a larger budget. That makes the number a pacing choice
+	// rather than a safety one, and a pacing choice nobody asked for does not
+	// belong on by default. The token budget below is the guard, and it is
+	// the one that should be: spend is what actually needs stopping, and it
+	// stops a child whatever it happens to be doing.
+	//
+	// A spawn may still name max_rounds to get periodic check-ins, at any
+	// size. Nothing clamps it: the cap only decides how often a child pauses
+	// to take stock, so a ceiling could only make it check in more often than
+	// it was told to, for no reason that could be given to whoever set it.
+	DefaultMaxRounds = agent.UnlimitedToolRounds
+	// checkInGrowth multiplies the budget at each check-in, so a long task is
+	// not stopped at the same interval forever — the escalation behind the
+	// parent's grant (S-109), applied by a child with nobody to ask. A child
+	// capped at 25 takes stock at 25, then 50, then 100: often enough early
+	// to catch one working on the wrong thing, rare enough later to stay out
+	// of the way of one that is not.
+	checkInGrowth = 2
 	// DefaultMaxTokens and MaxTokensCeiling bound a child's token spend
 	// (prompt + completion, provider-reported).
 	DefaultMaxTokens  = 200_000
@@ -128,6 +141,11 @@ type Status struct {
 	// lane keeps once its progress stops meaning anything (S-110). Empty
 	// until the child reports.
 	Summary string
+	// CheckIns is how many times the child has reached its round limit and
+	// taken stock (S-144). Zero for the ordinary child, which runs unbounded
+	// and never reaches one; a lane showing several is a task outgrowing the
+	// interval its spawn chose, which is worth being able to see.
+	CheckIns int
 }
 
 // EntryKind tags one child transcript entry (S-077): the attached view
@@ -371,6 +389,7 @@ type child struct {
 	priorOut  int64
 	attempt   int
 	budgetHit bool
+	checkIns  int
 	report    string
 	patchNote string
 	// Live session surface (S-077): transcript entries, the in-flight
@@ -426,6 +445,7 @@ func (c *child) status() Status {
 		Step:      min(c.step, c.steps),
 		Steps:     c.steps,
 		Summary:   summary,
+		CheckIns:  c.checkIns,
 	}
 }
 
@@ -936,6 +956,7 @@ func (s *Supervisor) Retry(name string) error {
 	// the earlier attempts spent is carried, not forgotten.
 	c.priorIn, c.priorOut = c.priorIn+c.tokensIn, c.priorOut+c.tokensOut
 	c.tokensIn, c.tokensOut, c.budgetHit = 0, 0, false
+	c.checkIns = 0
 	c.toolCalls, c.step = 0, 0
 	c.report, c.patchNote, c.streaming = "", "", ""
 	c.mu.Unlock()
@@ -1154,8 +1175,8 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 	if model != "" {
 		modelNote = ", " + model
 	}
-	return fmt.Sprintf("Spawned %s (%s%s, max %d rounds, ~%s token budget).%s It works in the background: call agent_report with name=%q in a later step to wait for and collect its final report, or agent_report with no arguments for a status overview.",
-		name, args.role, modelNote, args.maxRounds, formatTokens(args.maxTokens), note, name), nil
+	return fmt.Sprintf("Spawned %s (%s%s, %s, ~%s token budget).%s It works in the background: call agent_report with name=%q in a later step to wait for and collect its final report, or agent_report with no arguments for a status overview.",
+		name, args.role, modelNote, roundBudgetLabel(args.maxRounds), formatTokens(args.maxTokens), note, name), nil
 }
 
 // claimConflict reports whether a writer's declared paths overlap those of a
@@ -1370,8 +1391,29 @@ func (s *Supervisor) run(c *child) {
 			continue
 		}
 
+		if errors.Is(err, agent.ErrRoundCap) && c.ctx.Err() == nil {
+			// The round limit is a check-in, not a stop (S-144). The cap is
+			// tested between rounds, after the last round's results were
+			// recorded, so the conversation is already well-formed: the child
+			// picks up exactly where it left off, with the check-in as its
+			// next turn and a budget that has grown.
+			used := c.agent.Rounds()
+			c.mu.Lock()
+			c.checkIns++
+			n := c.checkIns
+			c.mu.Unlock()
+			c.agent.SetMaxRounds(c.agent.MaxRounds() * checkInGrowth)
+			c.appendEntry(TranscriptEntry{Kind: EntrySystem,
+				Text: fmt.Sprintf("Check-in %d — %d rounds used. Taking stock, then carrying on.", n, used)})
+			turn = checkInPrompt(used)
+			c.set(StateRunning, fmt.Sprintf("running · check-in %d", n))
+			s.emitUpdate(c)
+			continue
+		}
+
 		// Keep the child's conversation well-formed for inspection.
 		c.agent.CancelTurn()
+		s.finalCheckIn(c)
 		c.set(StateFailed, s.failReason(c, err))
 		s.emit(Event{Kind: EventDone, Status: c.status()})
 		return
@@ -1392,6 +1434,100 @@ func (s *Supervisor) awaitSteering(c *child) (string, bool) {
 			return "", false
 		}
 	}
+}
+
+// checkInPrompt is the turn a child is given when it reaches its round limit
+// (S-144). It asks about the work rather than announcing the budget on
+// purpose: a child told it has run out of rounds tends to apologise and stop,
+// where one asked what is left states it and keeps going. The budget is
+// mentioned only as the reason for the interruption, and the last line is
+// there because a check-in is also the moment a child that is quietly
+// finished should say so instead of inventing more to do.
+func checkInPrompt(used int) string {
+	return fmt.Sprintf(`You have used %d tool rounds. This is a routine check-in, not a stop — nothing has gone wrong and nothing is running out.
+
+Briefly take stock:
+- what you have established or changed so far
+- what is still left to do
+- what you are doing next
+
+Then carry on with the task. If the work is in fact finished, give your final report instead.`, used)
+}
+
+// finalCheckInTimeout bounds the handoff completion. It is short on purpose:
+// the child is over its budget and on its way out either way, and a handoff
+// that takes longer than this is worth less than the delay it adds before the
+// parent hears that the child failed.
+const finalCheckInTimeout = 30 * time.Second
+
+// finalCheckInPrompt asks a child that ran out of budget to hand over. It does
+// not ask for more work, and says so: the child has nothing left to spend, and
+// a handoff that starts another edit is worse than none.
+const finalCheckInPrompt = `You have reached your token budget and are stopping now. Do not start any new work or call any tools.
+
+Write a short handoff for whoever picks this up: what you established or changed, what is left, and what you would do next.`
+
+// finalCheckIn asks a child that exhausted its token budget to say where it
+// got to, and records the answer as its report (S-144). The budget stays a
+// hard stop — the child is finished either way — but a stop that explains
+// itself leaves the parent something to act on rather than a spend figure and
+// a shrug.
+//
+// All of it is best-effort. The child's own context was cancelled the moment
+// the budget tripped, so this runs on a fresh one; the spend it costs is
+// counted, and it is past a bound that the response which tripped it had
+// already passed (addUsage measures after the fact). Every failure returns
+// silently: the handoff improves the failure message, it is never a
+// precondition for it, and a child that cannot produce one must still fail
+// for the reason it actually failed for. In particular a child that ran out
+// of context rather than money cannot answer this, and must not be made to
+// look like it failed for a different reason because the handoff also failed.
+func (s *Supervisor) finalCheckIn(c *child) {
+	c.mu.Lock()
+	hit, root, model, paths := c.budgetHit, c.root, c.model, c.paths
+	c.mu.Unlock()
+	if !hit {
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), finalCheckInTimeout)
+	defer cancel()
+	env, err := s.opts.NewEnv(ctx, Spec{Role: c.role, Root: root, Model: model, Paths: paths})
+	if err != nil {
+		return
+	}
+	msgs := append(c.agent.RequestMessages(),
+		provider.Message{Role: provider.RoleUser, Content: finalCheckInPrompt})
+	events, stop, err := env.Stream(msgs)
+	if err != nil {
+		return
+	}
+	defer stop()
+
+	var b strings.Builder
+	for e := range events {
+		if e.Err != nil {
+			return
+		}
+		b.WriteString(e.Token)
+		if e.Usage != nil {
+			// The handoff is the child's spend like anything else it did.
+			c.addUsage(e.Usage)
+		}
+		if e.Done {
+			break
+		}
+	}
+	text := strings.TrimSpace(b.String())
+	if text == "" {
+		return
+	}
+	c.appendEntry(TranscriptEntry{Kind: EntryAssistant, Text: text})
+	c.mu.Lock()
+	if c.report == "" {
+		c.report = text
+	}
+	c.mu.Unlock()
 }
 
 func (s *Supervisor) failReason(c *child, err error) string {

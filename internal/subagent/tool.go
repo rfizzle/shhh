@@ -40,7 +40,7 @@ func Definitions() []provider.Tool {
 					"paths": {"type": "array", "items": {"type": "string"}, "description": "For writers: the paths or globs this agent may change (e.g. [\"internal/ui/**\", \"README.md\"]). Two concurrent writers may not claim overlapping paths — declare them whenever you fan out more than one writer, so their patches cannot collide.", "maxItems": 32},
 					"model": {"type": "string", "description": "Optional model for this agent (defaults to the configured agent model, else the session model). Use a smaller, cheaper model for wide mechanical work and the session model for reasoning-heavy work."},
 					"steps": {"type": "integer", "description": "Optional number of steps this task breaks into (max 20). Pass it when you can name the steps up front: the agent's lane then shows progress against it instead of a spinner. Leave it out rather than guessing — an invented denominator is worse than none."},
-					"max_rounds": {"type": "integer", "description": "Optional tool-round budget (default 25, max 50)"},
+					"max_rounds": {"type": "integer", "description": "Optional: make the agent pause every N tool rounds to take stock — what it has done, what is left, what it is doing next — before carrying on with a larger budget. Omitted (the default) it runs to completion without pausing, which is what you want for most tasks. Pass it for long open-ended work where an agent quietly drifting off the task would otherwise go unnoticed. It is a pacing choice, not a limit: it never stops the agent, and the token budget is what bounds it."},
 					"max_tokens": {"type": "integer", "description": "Optional token budget, prompt+completion (default 200000)"}
 				},
 				"required": ["role", "task"]
@@ -129,12 +129,12 @@ func parseSpawnArgs(raw json.RawMessage) (spawnArgs, error) {
 	if args.Steps > 0 && args.Steps <= MaxDeclaredSteps {
 		args.steps = args.Steps
 	}
+	// A named interval is honoured as given: it decides how often the child
+	// takes stock, not what it is allowed to do, so there is nothing a
+	// ceiling would protect (S-144).
 	args.maxRounds = args.MaxRounds
-	switch {
-	case args.maxRounds <= 0:
+	if args.maxRounds <= 0 {
 		args.maxRounds = DefaultMaxRounds
-	case args.maxRounds > MaxRoundsCeiling:
-		args.maxRounds = MaxRoundsCeiling
 	}
 	args.maxTokens = args.MaxTokens
 	switch {
@@ -146,6 +146,18 @@ func parseSpawnArgs(raw json.RawMessage) (spawnArgs, error) {
 		args.maxTokens = MaxTokensCeiling
 	}
 	return args, nil
+}
+
+// roundBudgetLabel renders a child's round setting for the surfaces that
+// price a spawn. The unbounded child is the ordinary one now (S-144), and it
+// has to read as a deliberate default rather than a missing number — while
+// the bounded one is describing a rhythm, not a ceiling, so it must not be
+// rendered as "max N" beside a token budget that really is one.
+func roundBudgetLabel(maxRounds int) string {
+	if maxRounds <= 0 {
+		return "no round limit"
+	}
+	return fmt.Sprintf("checks in every %d rounds", maxRounds)
 }
 
 // SpawnSummary renders the one-line approval preview for a spawn_agent call;
@@ -167,7 +179,7 @@ func SpawnSummary(raw json.RawMessage) (string, error) {
 	if args.Model != "" {
 		model = ", " + args.Model
 	}
-	return fmt.Sprintf("%s agent%s (max %d rounds, ~%s tokens)%s — %s", args.role, model, args.maxRounds, formatTokens(args.maxTokens), scope, task), nil
+	return fmt.Sprintf("%s agent%s (%s, ~%s tokens)%s — %s", args.role, model, roundBudgetLabel(args.maxRounds), formatTokens(args.maxTokens), scope, task), nil
 }
 
 // Spawn is what spawning a child would cost, for the approval card's
@@ -191,7 +203,7 @@ func SpawnPlan(raw json.RawMessage) (Spawn, error) {
 	}
 	p := Spawn{
 		Writer: args.role == RoleWriter,
-		Budget: fmt.Sprintf("max %d rounds, ~%s tokens", args.maxRounds, formatTokens(args.maxTokens)),
+		Budget: fmt.Sprintf("%s, ~%s tokens", roundBudgetLabel(args.maxRounds), formatTokens(args.maxTokens)),
 	}
 	switch {
 	case len(args.paths) > 0:

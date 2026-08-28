@@ -191,7 +191,17 @@ func TestFanoutBlockFreezesOnceEveryChildStops(t *testing.T) {
 // supervisor parks them blocked on the parent user.
 func gatedEnv() subagent.EnvFactory {
 	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
+		// The same gated call every round, forever: these tests want a child
+		// parked on an approval, not one that finishes. Honouring ctx is what
+		// makes that safe — a real provider stream is bound to the child's
+		// context, so cancelling it ends the tool loop. Without this the mock
+		// is an infinite generator that only ever stopped because the round
+		// cap stopped it, and a child with no cap (S-144) would spin past
+		// Close.
 		stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+			if err := ctx.Err(); err != nil {
+				return nil, nil, err
+			}
 			ch := make(chan provider.StreamEvent, 1)
 			ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{{
 				ID: "c1", Name: tools.ExecCommandName, Arguments: `{"command":"echo hi"}`,
