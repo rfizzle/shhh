@@ -138,6 +138,12 @@ type spec struct {
 	network   bool
 }
 
+// DenyPaths is the deny mask that cannot be disabled, for the callers that
+// have to know what it covers before they offer to widen anything: the
+// working scope (S-141) refuses to hold a directory behind this mask, because
+// a grant it cannot honour is a promise the sandbox would break.
+func DenyPaths() []string { return fixedDenyPaths() }
+
 // fixedDenyPaths is the deny mask that cannot be disabled: credential
 // directories plus shhh's own config and state dirs, so an allowed command
 // still cannot read the user's keys or shhh's database.

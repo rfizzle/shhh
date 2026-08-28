@@ -1,6 +1,9 @@
 package agent
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestParseMode(t *testing.T) {
 	cases := []struct {
@@ -204,5 +207,70 @@ func TestDecide_ReadOnlyNeverPrompts(t *testing.T) {
 	plan := ModePolicy{Mode: ModePlan, ReadOnlyDisabled: true}
 	if got, reason := plan.Decide(inspect); got != Allow || reason != "plan mode inspection" {
 		t.Errorf("plan mode should still inspect, got %v %q", got, reason)
+	}
+}
+
+// The working scope (S-141) is a second question the mode does not answer:
+// a permissive mode was granted over the work, not over the whole disk.
+func TestDecideAsksForPathsOutsideTheWorkingScope(t *testing.T) {
+	edit := Action{Kind: ActionEdit, Path: "/elsewhere/config.toml", OutOfScope: []string{"/elsewhere"}}
+	for _, mode := range []Mode{ModeAcceptEdits, ModeAuto} {
+		p := ModePolicy{Mode: mode}
+		if got, _ := p.Decide(edit); got != Ask {
+			t.Errorf("%v mode allowed an edit outside the working scope (%v)", mode, got)
+		}
+	}
+	// The same edit inside the scope is the one the mode does answer.
+	inScope := Action{Kind: ActionEdit, Path: "/work/main.go"}
+	if got, _ := (ModePolicy{Mode: ModeAcceptEdits}).Decide(inScope); got != Allow {
+		t.Errorf("accept-edits should still allow an in-scope edit, got %v", got)
+	}
+}
+
+func TestDecideAsksForCommandsOutsideTheWorkingScopeDespiteTheAllowlist(t *testing.T) {
+	p := ModePolicy{Mode: ModeManual, CommandAllowlist: []string{"cp"}}
+	a := Action{Kind: ActionCommand, Command: "cp a.txt /elsewhere/a.txt", OutOfScope: []string{"/elsewhere"}}
+	if got, _ := p.Decide(a); got != Ask {
+		t.Errorf("an allowlisted command writing outside the scope should ask, got %v", got)
+	}
+	if got, _ := p.Decide(Action{Kind: ActionCommand, Command: "cp a.txt b.txt"}); got != Allow {
+		t.Error("the allowlist still answers for a command that stays in scope")
+	}
+}
+
+func TestDecideRefusesMaskedPathsInEveryMode(t *testing.T) {
+	a := Action{
+		Kind: ActionEdit, Path: "/home/u/.ssh/config",
+		OutOfScope: []string{"/home/u/.ssh"}, ScopeRefused: true,
+		ScopeReason: "contained commands mask /home/u/.ssh, and the mask cannot be disabled",
+	}
+	for _, mode := range []Mode{ModeManual, ModeAcceptEdits, ModeAuto} {
+		decision, reason := (ModePolicy{Mode: mode, AllowEdits: true}).Decide(a)
+		if decision != Deny {
+			t.Errorf("%v mode = %v for a masked path; want Deny", mode, decision)
+		}
+		if !strings.Contains(reason, "mask") {
+			t.Errorf("the refusal should say why, got %q", reason)
+		}
+	}
+	if result := ScopeRefusedResult("masked"); !strings.HasPrefix(result, "error:") || !strings.Contains(result, "/add-dir") {
+		t.Errorf("the tool result should name the boundary and the way to widen it, got %q", result)
+	}
+}
+
+func TestResolveAutoWillNotWidenTheScopeOnTheUsersBehalf(t *testing.T) {
+	allow := ClassifierVerdict{Decision: Allow, Reason: "routine"}
+	sensitive := Action{Kind: ActionCommand, Command: "cp x ~/.kube/config",
+		OutOfScope: []string{"/home/u/.kube"}, ScopeSensitive: true, ScopeReason: "/home/u/.kube holds credentials"}
+	if got, reason := ResolveAuto(sensitive, allow); got != Ask || reason == "" {
+		t.Errorf("a classifier allow over a sensitive directory = %v (%q); want Ask with a reason", got, reason)
+	}
+	refused := Action{Kind: ActionCommand, ScopeRefused: true, ScopeReason: "masked"}
+	if got, _ := ResolveAuto(refused, allow); got != Deny {
+		t.Errorf("a classifier allow over a masked path = %v; want Deny", got)
+	}
+	ordinary := Action{Kind: ActionCommand, Command: "go build", OutOfScope: []string{"/elsewhere"}}
+	if got, _ := ResolveAuto(ordinary, allow); got != Allow {
+		t.Error("an ordinary directory is exactly what auto mode may answer for")
 	}
 }

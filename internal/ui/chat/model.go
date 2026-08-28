@@ -22,6 +22,7 @@ import (
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -313,6 +314,11 @@ type Model struct {
 	// showing now (S-101), resolved once when the confirm is armed because it
 	// reads the filesystem and git.
 	pendingBlast blastRadius
+	// pendingScope is what that decision reaches outside the working scope
+	// (S-141), resolved with the blast radius and consumed when the decision
+	// is answered: approving it grants the directories, refusing it grants
+	// nothing.
+	pendingScope scopeReach
 	// The approval queue made visible (S-102): pendingQueue is the strip
 	// above the card, pendingBatch the queued call IDs [A] would answer with
 	// the current one, and batchApproved those an earlier [A] already
@@ -357,6 +363,12 @@ type Model struct {
 	// clears all four, which is the way back that a session grant never had.
 	editDirGrants []string
 	commandGrants []string
+	// scope is the session's working scope (S-141): the directory it was
+	// opened in plus whatever has been added to it since. It is a pointer
+	// because the runner closures that wrap contained commands read it off
+	// the UI goroutine, and because a grant made on a card has to be the same
+	// grant the sandbox sees on the next command.
+	scope *scope.Scope
 	// Read-only inspection commands auto-run in every mode; config can extend
 	// the built-in list or turn it off entirely.
 	readOnlyExtra    []string
@@ -1669,6 +1681,9 @@ func (m *Model) startRun(parts []string) (result string, entersConfirm bool) {
 		idx = n - 1
 	}
 	m.pendingRun = blocks[idx]
+	// /run is the user's own command: it never runs contained, so the working
+	// scope has nothing to say about it (S-141).
+	m.pendingScope = scopeReach{}
 	m.pendingBlast = m.resolveRadius(nil)
 	m.clearQueueStrip()
 	m.setTurnState(stateConfirmRun)
@@ -1779,6 +1794,10 @@ func execToolResult(output string, exitCode int) string {
 func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	command := m.pendingRun
 	m.pendingRun = ""
+	// An approved command that writes outside the working scope puts those
+	// directories in it (S-141) — otherwise containment would go on refusing
+	// the write the user has just approved.
+	m.applyScopeGrant()
 	m.setTurnState(stateRunningCmd)
 	m.runningCommand = command
 	m.runStart = time.Now()
@@ -2486,6 +2505,13 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 	case "/ui":
 		return true, m.uiCommand(parts)
 
+	case "/add-dir", "/adddir":
+		// The working scope (S-141): the grant made in front of no particular
+		// decision. It lives beside /permissions rather than under it because
+		// it answers a different question — not "what may run without
+		// asking", but "where is the work".
+		return true, m.scopeCommand(parts)
+
 	case "/sandbox":
 		args := parts[1:]
 		if len(args) == 0 {
@@ -2714,7 +2740,11 @@ func helpText() string {
                  (low hides counts, med collapses rows, high expands rows;
                   mouse is off by default so the terminal keeps click-drag
                   selection — Ctrl+X flips it either way and saves the answer)
-  /sandbox       Containment status and container sandboxes (doctor|list|status|destroy <id>|prune)
+  /add-dir       The working scope: which directories this session may write
+                 to. Bare lists it; <path> adds one (contained commands can
+                 write there, and edits there stop asking about leaving the
+                 scope); drop <path> takes it back
+  /sandbox       Containment status and container sandboxes (doctor|scope|list|status|destroy <id>|prune)
   /evidence      Tool-output evidence store: reduction stats and size (purge to clear)
   /gate          Quality gate: run [suite] starts the project's checks in the background, result shows the verdict
   /ps            List the long-running processes this session owns (process tool)

@@ -18,6 +18,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/radius"
+	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -72,6 +73,12 @@ func (m Model) commandRadius(command string, assistant bool) blastRadius {
 		Label: "touches", Value: value, Detail: detail, Tone: touchTone(res),
 	})
 	b.fields = append(b.fields, m.undoField(res))
+	if f, ok := scopeField(m.pendingScope); ok {
+		b.fields = append(b.fields, f)
+		if b.severity < components.SeverityMedium {
+			b.severity = components.SeverityMedium
+		}
+	}
 	if assistant {
 		b.chip, b.uncontained = m.containmentChip()
 		b.fields = append(b.fields, m.networkField())
@@ -198,6 +205,16 @@ func uncontainedDetail(detail string) string {
 // whether or not git ever knew about it.
 func (m Model) editRadius(req *approvalRequest) blastRadius {
 	b := blastRadius{severity: components.SeverityMedium}
+	// An edit outside the working scope is the one thing an edit card cannot
+	// say with a diff: the diff shows what changes, not that it changes
+	// something the session was never scoped to (S-141).
+	if f, ok := scopeField(m.pendingScope); ok {
+		b.fields = append(b.fields, f)
+		if m.pendingScope.class != scope.Ordinary {
+			b.severity = components.SeverityHigh
+			b.safe = "[n] deny — the safe answer"
+		}
+	}
 	switch {
 	case m.changes == nil:
 		b.reversibility = "undo none — this session records no changeset"
@@ -231,6 +248,33 @@ func (m Model) genericRadius(req *approvalRequest) blastRadius {
 		})
 	}
 	return b
+}
+
+// scopeField is the `scope` row: which directory the action reaches that the
+// session was not scoped to, and what answering yes would do about it. It is
+// the row that turns "this edit is somewhere else" from something the reader
+// has to notice in a path into something the card states.
+func scopeField(reach scopeReach) (components.CardField, bool) {
+	if !reach.any() {
+		return components.CardField{}, false
+	}
+	value := displayDir(reach.first())
+	if n := len(reach.dirs) - 1; n > 0 {
+		value += fmt.Sprintf(" and %d more", n)
+	}
+	f := components.CardField{Label: "scope", Value: value, Tone: components.ToneOpen}
+	switch reach.class {
+	case scope.Refused:
+		f.Value = "refused — " + value
+		f.Detail = reach.reason
+		f.Tone = components.ToneRisk
+	case scope.Sensitive:
+		f.Detail = "outside the working scope, and sensitive — " + reach.reason + "; approving adds it for this session"
+		f.Tone = components.ToneRisk
+	default:
+		f.Detail = "outside the working scope; approving adds it for this session"
+	}
+	return f, true
 }
 
 // severityOf maps the resolver's level onto the card's.

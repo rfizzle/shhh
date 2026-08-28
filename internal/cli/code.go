@@ -19,6 +19,7 @@ func newCodeCmd() *cobra.Command {
 	var resumePick bool
 	var printMode bool
 	var popts printOpts
+	var addDirs []string
 
 	cmd := &cobra.Command{
 		Use:   "code [prompt]",
@@ -50,6 +51,7 @@ func newCodeCmd() *cobra.Command {
 				processes:    true,
 				maxRounds:    popts.maxRounds,
 				maxRoundsSet: popts.maxRoundsSet,
+				addDirs:      addDirs,
 			}
 			if headless {
 				return runPrintSession(cmd, args, session, popts)
@@ -74,6 +76,8 @@ func newCodeCmd() *cobra.Command {
 	cmd.Flags().StringArrayVar(&popts.allow, "allow", nil, "with --print, auto-approve commands matching this prefix (repeatable; extends the config allowlist)")
 	cmd.Flags().BoolVar(&popts.sandbox, "sandbox", false, "run approved commands inside a disposable container sandbox; needs a configured digest-pinned image (implies --print)")
 	cmd.Flags().IntVar(&popts.maxRounds, "max-rounds", 0, "cap consecutive tool-call rounds per turn (0 removes the cap, for a run left unattended; default: behavior.max_tool_rounds)")
+
+	addDirFlag(cmd, &addDirs)
 
 	cmd.AddCommand(newCodeDoctorCmd())
 

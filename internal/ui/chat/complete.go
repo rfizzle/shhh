@@ -131,9 +131,16 @@ var slashCommands = []slashCommand{
 				{"off", "The full palette"},
 			}},
 		}},
-	{name: "/sandbox", args: "[doctor|list|status|destroy|prune]", desc: "Containment status and container sandboxes",
+	{name: "/add-dir", args: "[<path>|drop <path>]", desc: "The directories this session may work in",
+		enabled: func(m *Model) bool { return m.scope != nil },
+		argSpecs: []argSpec{
+			{options: []argOption{{"drop", "Take a directory back out of the scope"}}},
+			{after: []string{"drop"}, dynamic: scopeDropArgs},
+		}},
+	{name: "/sandbox", args: "[doctor|scope|list|status|destroy|prune]", desc: "Containment status and container sandboxes",
 		argSpecs: staticArgs(
 			argOption{"doctor", "Report containment support"},
+			argOption{"scope", "The directories commands may write to"},
 			argOption{"list", "List container sandboxes"},
 			argOption{"status", "This session's sandbox"},
 			argOption{"destroy", "Destroy a sandbox by id"},

@@ -8,13 +8,14 @@ import (
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/sandbox"
+	"github.com/rfizzle/shhh/internal/scope"
 )
 
 // openQualityGate builds the session's quality-gate runner (S-067): suites
 // come from the workspace's trusted .shhh/quality.json, checks run contained
 // with a read-only workspace when a mechanism is available (S-062), and full
 // check output lands in the evidence store (S-064) when one is open.
-func openQualityGate(cfg config.Config, red *evidence.Reducer) *quality.Runner {
+func openQualityGate(cfg config.Config, red *evidence.Reducer, sc *scope.Scope) *quality.Runner {
 	ws, err := os.Getwd()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "warning: quality gate unavailable: %v\n", err)
@@ -25,7 +26,7 @@ func openQualityGate(cfg config.Config, red *evidence.Reducer) *quality.Runner {
 		r.Evidence = red.Store().Put
 	}
 	if avail := sandbox.Detect(); avail.OK {
-		if policy, err := sandboxPolicy(cfg); err == nil {
+		if policy, err := sandboxPolicy(cfg, sc.Dirs()...); err == nil {
 			r.Mechanism = avail.Mechanism
 			r.Wrap = func(argv []string, allowWrite bool) ([]string, error) {
 				p := policy

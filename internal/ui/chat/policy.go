@@ -9,6 +9,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/safety"
+	"github.com/rfizzle/shhh/internal/scope"
 )
 
 // Session approval policy: the permission mode (S-059) decides how each
@@ -211,8 +212,23 @@ func shortenDir(dir string) string {
 }
 
 // approvalAction classifies an approval request for mode and classifier
-// decisions.
-func approvalAction(req *approvalRequest) agent.Action {
+// decisions. The working scope (S-141) rides along: what the action reaches
+// outside it is as much a part of the decision as what kind of action it is,
+// and resolving it here means every surface that asks the policy a question
+// asks it with the same facts.
+func (m Model) approvalAction(req *approvalRequest) agent.Action {
+	a := baseAction(req)
+	reach := m.scopeReachFor(req)
+	a.OutOfScope = reach.dirs
+	a.ScopeSensitive = reach.class == scope.Sensitive
+	a.ScopeRefused = reach.class == scope.Refused
+	a.ScopeReason = reach.reason
+	return a
+}
+
+// baseAction is the action without the scope reading — what the request is,
+// on its own terms.
+func baseAction(req *approvalRequest) agent.Action {
 	switch req.kind {
 	case approvalExec:
 		return agent.Action{
@@ -238,7 +254,7 @@ func approvalAction(req *approvalRequest) agent.Action {
 // policyDecision returns the mode verdict for an approval request and, when
 // allowed, the reason shown in the transcript.
 func (m Model) policyDecision(req *approvalRequest) (agent.Decision, string) {
-	return m.modePolicy().Decide(approvalAction(req))
+	return m.modePolicy().Decide(m.approvalAction(req))
 }
 
 // modeStatus describes the active mode and cycle for /permissions with no argument.
@@ -312,11 +328,34 @@ func (m Model) policyHelp() string {
 		fmt.Fprintf(&sb, "  read-only: %d inspection command(s) run without asking", len(agent.ReadOnlyCommands())+len(m.readOnlyExtra))
 		sb.WriteString(" (ls, cat, grep, git status, …)\n")
 	}
+	if n := len(m.scopeDirs()); n > 0 {
+		fmt.Fprintf(&sb, "  scope:     the session directory and %d added %s (/add-dir)\n", n, plural2(n, "directory", "directories"))
+	} else if m.scope != nil {
+		sb.WriteString("  scope:     the session directory; anything outside it asks (/add-dir)\n")
+	}
 	if m.subagents != nil {
 		sb.WriteString("  sub-agents inherit this mode, these grants, and the classifier.\n")
 	}
-	sb.WriteString("  Safety-flagged commands always ask.")
+	sb.WriteString("  Safety-flagged commands, and anything outside the working scope, always ask.")
 	return sb.String()
+}
+
+// scopeDirs is what the session has added to its working scope, or nothing
+// when the session has no scope wired (older tests, `shhh chat` without one).
+func (m Model) scopeDirs() []string {
+	if m.scope == nil {
+		return nil
+	}
+	return m.scope.Dirs()
+}
+
+// plural2 picks between two spellings for a count, where "dir"/"dirs" will
+// not do because the word is being read in a sentence.
+func plural2(n int, one, many string) string {
+	if n == 1 {
+		return one
+	}
+	return many
 }
 
 // allowlistMatches reports whether command's leading words exactly match all
@@ -333,7 +372,7 @@ func allowlistMatches(allowlist []string, command string) bool {
 // act.
 func (m Model) grantStatus() string {
 	g := m.grants()
-	if !g.Any() && len(m.commandAllowlist) == 0 {
+	if !g.Any() && len(m.commandAllowlist) == 0 && len(m.scopeDirs()) == 0 {
 		return "Nothing is granted — every gated call asks.\n" +
 			"[a] on a confirm prompt grants the one shape of call it is showing; /permissions allow <commands|edits> grants the category."
 	}
@@ -353,6 +392,9 @@ func (m Model) grantStatus() string {
 	}
 	if !g.Any() {
 		sb.WriteString("  (none — everything below came from config)\n")
+	}
+	for _, d := range m.scopeDirs() {
+		sb.WriteString("  scope      " + displayDir(d) + " — in the working scope (/add-dir drop takes it back)\n")
 	}
 	if n := len(m.commandAllowlist); n > 0 {
 		fmt.Fprintf(&sb, "  config     %d command pattern(s) from behavior.command_allowlist — not this session's to revoke\n", n)

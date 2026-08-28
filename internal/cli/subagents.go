@@ -23,6 +23,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/sandbox"
+	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -33,7 +34,7 @@ import (
 // buildSupervisor assembles the session's sub-agent supervisor.
 func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession, env *sessionEnv,
 	red *evidence.Reducer, recorder *observeRecorder, db *storage.DB, prices *pricing.Table,
-	classifier *agent.Classifier) *subagent.Supervisor {
+	classifier *agent.Classifier, sc *scope.Scope) *subagent.Supervisor {
 	root, err := os.Getwd()
 	if err != nil {
 		root = "."
@@ -125,7 +126,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			Stream:       stream,
 			Executor:     subagent.RootedExecutor(croot, autoExec),
 			ExecuteGated: gatedExec,
-			RunCommand:   childCommandRunner(cfg, croot),
+			RunCommand:   childCommandRunner(cfg, croot, sc),
 			Gated:        gated,
 		}, nil
 	}
@@ -150,6 +151,11 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			return cfg.AgentModel(string(role), env.modelName)
 		},
 		MaxConcurrent: cfg.Agents.MaxConcurrent,
+		// Children answer to the parent's working scope (S-141) on top of
+		// their own worktree, which is where their file edits are already
+		// pinned (RootArgs). This is what stops a child *command* writing
+		// somewhere the parent never put in scope.
+		ScopeDirs: sc.All,
 	})
 }
 
@@ -157,14 +163,18 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 // at dir: contained with the workspace grant moved to dir when a mechanism is
 // available, plain with cwd=dir otherwise (matching the parent session's
 // uncontained fallback).
-func childCommandRunner(cfg config.Config, dir string) func(context.Context, string) (string, int) {
-	policy, err := sandboxPolicy(cfg)
-	if err == nil {
+func childCommandRunner(cfg config.Config, dir string, sc *scope.Scope) func(context.Context, string) (string, int) {
+	if _, err := sandboxPolicy(cfg); err == nil {
 		if avail := sandbox.Detect(); avail.OK {
-			p := policy
-			p.Workspace = dir
-			p.Cwd = dir
 			return func(ctx context.Context, command string) (string, int) {
+				// The policy is rebuilt per command so a directory the parent
+				// added mid-session (S-141) is writable in the child too.
+				p, pErr := sandboxPolicy(cfg, sc.Dirs()...)
+				if pErr != nil {
+					return "sandbox: " + pErr.Error(), -1
+				}
+				p.Workspace = dir
+				p.Cwd = dir
 				argv, wErr := sandbox.Wrap(avail, p, command)
 				if wErr != nil {
 					return "sandbox: " + wErr.Error(), -1

@@ -257,6 +257,11 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	if req.kind == approvalExec {
 		m.pendingRun = req.command
 	}
+	// What the decision reaches outside the working scope (S-141): resolved
+	// before the blast radius because the radius block carries it as a row —
+	// the card names it, the policy asks about it, and approving the call
+	// grants it.
+	m.pendingScope = m.scopeReachFor(req)
 	// The blast radius is resolved once here, not inside View: it stats the
 	// filesystem and asks git about the paths it found (S-101).
 	m.pendingBlast = m.resolveRadius(req)
@@ -301,7 +306,8 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 		m.recordDecision(decisionDeny, reasonCode(reason))
 		m.pendingApproval = nil
 		m.pendingRun = ""
-		m.agent.ResolveApproval(agent.PlanModeResult)
+		m.pendingScope = scopeReach{}
+		m.agent.ResolveApproval(denialResult(reason))
 		m.appendEntry(deniedEntry(req, decidedByAuto, reason, 0))
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
@@ -309,10 +315,11 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	}
 	// In auto mode the classifier (S-060) judges what the static policy would
 	// ask about — except safety-flagged actions, which always prompt the human.
-	if m.mode == agent.ModeAuto && m.classifier != nil && !approvalAction(req).SafetyFlagged {
+	if act := m.approvalAction(req); m.mode == agent.ModeAuto && m.classifier != nil &&
+		!act.SafetyFlagged && !act.ScopeSensitive {
 		return m.startClassifierCheck(req)
 	}
-	m.recordDecision(decisionAsk, askReason(approvalAction(req)))
+	m.recordDecision(decisionAsk, askReason(m.approvalAction(req)))
 	m.armConfirm(req)
 	return m, nil
 }
@@ -350,7 +357,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 
 	req := m.pendingApproval
 	elapsed := fmt.Sprintf("%.1fs", v.Elapsed.Seconds())
-	switch decision, reason := agent.ResolveAuto(approvalAction(req), v); decision {
+	switch decision, reason := agent.ResolveAuto(m.approvalAction(req), v); decision {
 	case agent.Allow:
 		m.recordDecision(decisionAllow, "classifier")
 		req.auto = true
@@ -368,7 +375,8 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		m.denialNotice = req.summary
 		m.pendingApproval = nil
 		m.pendingRun = ""
-		m.agent.ResolveApproval("error: auto mode denied this tool call: " + reason)
+		m.pendingScope = scopeReach{}
+		m.agent.ResolveApproval(denialResult(reason))
 		m.appendEntry(deniedEntry(req, decidedByAuto, reason, v.Elapsed))
 		m.viewport.SetContent(m.renderHistory())
 		m.viewport.GotoBottom()
@@ -388,6 +396,31 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 	return m, nil
 }
 
+// denialResult is the tool result for a call the session refused without
+// asking: plan mode's own sentence, the scope's when the path is one no grant
+// can reach (S-141), and the classifier's reason otherwise.
+func denialResult(reason string) string {
+	switch {
+	case reason == "plan mode":
+		return agent.PlanModeResult
+	case strings.HasPrefix(reason, "outside the working scope"):
+		return agent.ScopeRefusedResult(reason)
+	}
+	return "error: auto mode denied this tool call: " + reason
+}
+
+// applyScopeGrant records the pending decision's out-of-scope directories in
+// the working scope and says so in the transcript. It runs on the one path
+// every approval takes on its way to executing, so no key has to remember to
+// call it and none of them can widen the scope without saying so.
+func (m *Model) applyScopeGrant() {
+	reach := m.pendingScope
+	m.pendingScope = scopeReach{}
+	if note := m.grantScope(reach); note != "" {
+		m.noteGrant(note)
+	}
+}
+
 // declineApproval records an error tool result for the pending call and moves
 // on to the next queued approval.
 func (m Model) declineApproval() (tea.Model, tea.Cmd) {
@@ -395,6 +428,7 @@ func (m Model) declineApproval() (tea.Model, tea.Cmd) {
 	req := m.pendingApproval
 	m.pendingApproval = nil
 	m.pendingRun = ""
+	m.pendingScope = scopeReach{}
 	content := "error: the user declined this tool call"
 	switch req.kind {
 	case approvalExec:
@@ -428,6 +462,11 @@ func deniedEntry(req *approvalRequest, decider, rule string, elapsed time.Durati
 // executeApprovedTool runs an approved non-exec tool call through the tool
 // executor in the background; the result arrives as approvedToolDoneMsg.
 func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
+	// An approved call that reaches outside the working scope puts what it
+	// reaches into the scope (S-141): the approval is the answer to "is this
+	// directory part of the work", and an answer the scope did not record is
+	// one the next call would ask again.
+	m.applyScopeGrant()
 	m.setTurnState(stateRunningCmd)
 	m.syncViewport()
 	a := m.agent
@@ -603,6 +642,13 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 			if prefix := agent.GrantPrefix(req.command); prefix != "" {
 				card.AllowAlways = true
 				card.AlwaysHint = "a: always allow " + strconv.Quote(prefix)
+				// A command that writes outside the working scope is granting
+				// two things at once, and the key says both (S-141): [y]
+				// would add the directory for this session, [a] adds it and
+				// stops asking about this shape of command as well.
+				if m.pendingScope.any() {
+					card.AlwaysHint += ", and " + displayDir(m.pendingScope.first()) + " with it"
+				}
 			}
 		}
 		return card
@@ -619,6 +665,9 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		card.Question = "Apply this change?"
 		card.AllowAlways = true
 		card.AlwaysHint = "a: always allow edits in " + displayDir(filepath.Dir(req.path))
+		if m.pendingScope.any() {
+			card.AlwaysHint += " and add it to the working scope"
+		}
 	default:
 		card.Variant = components.ApprovalGeneric
 		card.Title = "Approve tool"

@@ -87,13 +87,33 @@ type Command struct {
 	// Sudo is true when any segment runs under a privilege-escalation prefix.
 	Sudo  bool
 	Level Level
+	// describe is whether a recorded write is stat-ed and walked. WritePaths
+	// leaves it false: it wants the names, not the sizes.
+	describe bool
 }
 
 // Resolve reads a command and reports what it would touch. It never runs
 // anything and never expands anything: every answer comes from the text and
 // from stat-ing paths the text names literally.
 func Resolve(command string) Command {
-	var c Command
+	return resolve(command, true)
+}
+
+// WritePaths is Resolve for a caller that needs only the paths — the working
+// scope check (S-141), which asks which directories a command reaches and
+// nothing about how big they are. It skips the describe walk, so it can be
+// asked of every queued decision rather than only the one on screen.
+func WritePaths(command string) []string {
+	c := resolve(command, false)
+	paths := make([]string, 0, len(c.Writes))
+	for _, w := range c.Writes {
+		paths = append(paths, w.Path)
+	}
+	return paths
+}
+
+func resolve(command string, describe bool) Command {
+	c := Command{describe: describe}
 	for _, w := range safety.Check(command) {
 		c.Risks = append(c.Risks, w.Risk)
 	}
@@ -509,6 +529,10 @@ func (c *Command) add(p string) {
 		if t.Path == p {
 			return
 		}
+	}
+	if !c.describe {
+		c.Writes = append(c.Writes, Target{Path: p})
+		return
 	}
 	c.Writes = append(c.Writes, Describe(p))
 }

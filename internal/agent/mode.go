@@ -158,6 +158,23 @@ type Action struct {
 	// SafetyFlagged marks commands flagged by safety.Check; they always ask
 	// the human, in every mode except plan (which refuses them outright).
 	SafetyFlagged bool
+	// OutOfScope names the directories this action reaches that are outside
+	// the session's working scope (S-141). It is resolved by the front-end,
+	// which holds the scope; here it is one more thing that stops a
+	// permissive mode answering on the user's behalf, because a mode that
+	// says "edits apply" was granted over the work, not over the whole disk.
+	OutOfScope []string
+	// ScopeSensitive marks an out-of-scope directory that only a person may
+	// grant — a home directory, a system root, another tool's credential
+	// store. Like SafetyFlagged it always asks, in every mode.
+	ScopeSensitive bool
+	// ScopeRefused marks a path behind the containment deny mask, which no
+	// grant can reach. The call is refused rather than asked about: the
+	// answer would not have been honoured.
+	ScopeRefused bool
+	// ScopeReason is why the scope fields say what they do, in the words the
+	// card and the tool result print after a dash.
+	ScopeReason string
 }
 
 // Decision is a mode policy verdict for one gated tool call.
@@ -171,6 +188,22 @@ const (
 	// Deny refuses the call with an error tool result, without prompting.
 	Deny
 )
+
+// scopeRefusedReason states why a call was refused for what it reaches, in
+// the words the transcript and the tool result both use.
+func scopeRefusedReason(a Action) string {
+	if a.ScopeReason != "" {
+		return "outside the working scope — " + a.ScopeReason
+	}
+	return "outside the working scope, behind the containment deny mask"
+}
+
+// ScopeRefusedResult is the tool result recorded for a call refused for the
+// paths it reaches, so the model learns the boundary instead of retrying it.
+func ScopeRefusedResult(reason string) string {
+	return "error: this path is outside the session's working scope and cannot be granted (" + reason +
+		"). Work inside the session's directories, or ask the user to run /add-dir for a directory that can be granted."
+}
 
 // PlanModeResult is the tool result recorded for a gated call refused in
 // plan mode, so the model learns why nothing ran instead of the call being
@@ -322,6 +355,17 @@ func (p ModePolicy) Decide(a Action) (Decision, string) {
 		return Deny, "plan mode"
 	}
 	if a.SafetyFlagged {
+		return Ask, ""
+	}
+	// The working scope (S-141) is checked before the mode is: a path behind
+	// the deny mask is refused whatever the mode says, and a directory
+	// outside the scope is a decision the session has not been given — the
+	// permissive modes were granted over the work, and this is the question
+	// of what the work is.
+	if a.ScopeRefused {
+		return Deny, scopeRefusedReason(a)
+	}
+	if len(a.OutOfScope) > 0 {
 		return Ask, ""
 	}
 	// Inspection commands never prompt, in any mode: they cannot change

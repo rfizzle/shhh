@@ -11,12 +11,16 @@ import (
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/sandbox"
+	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 )
 
 // sandboxPolicy builds the session containment policy (S-062): workspace is
-// the current directory, profile and extensions come from config.
-func sandboxPolicy(cfg config.Config) (sandbox.Policy, error) {
+// the current directory, profile and extensions come from config, and the
+// working scope's directories (S-141) join the write grants — a directory the
+// user has said is part of the work is one contained commands may write to,
+// which is the whole point of having said so.
+func sandboxPolicy(cfg config.Config, scopeDirs ...string) (sandbox.Policy, error) {
 	profile, err := sandbox.ParseProfile(cfg.Sandbox.Profile)
 	if err != nil {
 		return sandbox.Policy{}, fmt.Errorf("config sandbox.profile: %w", err)
@@ -25,11 +29,12 @@ func sandboxPolicy(cfg config.Config) (sandbox.Policy, error) {
 	if err != nil {
 		return sandbox.Policy{}, err
 	}
+	write := append(append([]string{}, cfg.Sandbox.WriteExtra...), scopeDirs...)
 	return sandbox.Policy{
 		Workspace:  ws,
 		Profile:    profile,
 		DenyExtra:  cfg.Sandbox.DenyExtra,
-		WriteExtra: cfg.Sandbox.WriteExtra,
+		WriteExtra: write,
 	}, nil
 }
 
@@ -39,8 +44,13 @@ func sandboxPolicy(cfg config.Config) (sandbox.Policy, error) {
 // as the command's error result — a contained command never falls back to
 // running bare. Session start also reconciles container-sandbox ownership
 // records (S-063) so crashed sessions' containers get reaped.
-func buildContainment(cfg config.Config) (chat.Containment, error) {
-	policy, err := sandboxPolicy(cfg)
+func buildContainment(cfg config.Config, sc *scope.Scope) (chat.Containment, error) {
+	// The policy is rebuilt per command rather than captured once: the
+	// working scope grows mid-session (S-141), and a closure holding the
+	// policy it was built with would keep refusing writes to a directory the
+	// user has since granted.
+	policyNow := func() (sandbox.Policy, error) { return sandboxPolicy(cfg, sc.Dirs()...) }
+	policy, err := policyNow()
 	if err != nil {
 		return chat.Containment{}, err
 	}
@@ -49,7 +59,7 @@ func buildContainment(cfg config.Config) (chat.Containment, error) {
 	procReport := sandbox.Report(avail, policy)
 	c := chat.Containment{
 		Report: procReport,
-		Manage: sandboxManage(cfg, procReport),
+		Manage: sandboxManage(cfg, sc),
 	}
 	if !avail.OK {
 		c.Status = "unconfined — " + avail.Detail
@@ -63,15 +73,22 @@ func buildContainment(cfg config.Config) (chat.Containment, error) {
 	c.Status = fmt.Sprintf("contained: %s (%s profile)", avail.Mechanism, policy.Profile)
 	c.Mechanism, c.Profile = avail.Mechanism, string(policy.Profile)
 	c.Network = policy.Profile != sandbox.ProfileWorkspaceNetless
+	wrap := func(command string) ([]string, error) {
+		p, err := policyNow()
+		if err != nil {
+			return nil, err
+		}
+		return sandbox.Wrap(avail, p, command)
+	}
 	c.Run = func(ctx context.Context, command string) (string, int) {
-		argv, err := sandbox.Wrap(avail, policy, command)
+		argv, err := wrap(command)
 		if err != nil {
 			return "sandbox: " + err.Error(), -1
 		}
 		return runner.RunCaptureArgv(ctx, argv)
 	}
 	c.TailRun = func(ctx context.Context, command string, onLine func(string)) (string, int) {
-		argv, err := sandbox.Wrap(avail, policy, command)
+		argv, err := wrap(command)
 		if err != nil {
 			return "sandbox: " + err.Error(), -1
 		}
@@ -206,20 +223,51 @@ func ownedSummary() string {
 	return fmt.Sprintf("%d sandbox container(s) — /sandbox list", len(recs))
 }
 
-// sandboxManage handles the /sandbox subcommands (doctor, list, status,
-// destroy, prune) against the durable ownership records. Engine probes run
-// on demand here, never eagerly at session start.
-func sandboxManage(cfg config.Config, procReport string) func(args []string) string {
+// sandboxReportNow re-resolves the containment report against the working
+// scope as it stands now, so `/sandbox doctor` names the directories a
+// command may write to at the moment it is asked rather than at session
+// start (S-141).
+func sandboxReportNow(cfg config.Config, sc *scope.Scope) string {
+	avail := sandbox.Detect()
+	policy, err := sandboxPolicy(cfg, sc.Dirs()...)
+	if err != nil {
+		return "Command containment: policy unreadable — " + err.Error()
+	}
+	return sandbox.Report(avail, policy)
+}
+
+// scopeReport is `/sandbox scope`: the working scope as containment sees it.
+// The session's own /add-dir says the same thing in the session's words; this
+// is the sandbox's answer, next to the mechanism that enforces it.
+func scopeReport(sc *scope.Scope) string {
+	var b strings.Builder
+	b.WriteString("Working scope:\n")
+	fmt.Fprintf(&b, "  root:      %s\n", sc.Root())
+	dirs := sc.Dirs()
+	if len(dirs) == 0 {
+		b.WriteString("  added:     (none) — /add-dir <path> puts a directory in scope\n")
+	} else {
+		fmt.Fprintf(&b, "  added:     %s\n", strings.Join(dirs, "\n             "))
+	}
+	return strings.TrimRight(b.String(), "\n")
+}
+
+// sandboxManage handles the /sandbox subcommands (doctor, scope, list,
+// status, destroy, prune) against the durable ownership records. Engine
+// probes run on demand here, never eagerly at session start.
+func sandboxManage(cfg config.Config, sc *scope.Scope) func(args []string) string {
 	return func(args []string) string {
 		if len(args) == 0 {
-			return "Usage: /sandbox [doctor|list|status|destroy <id>|prune]"
+			return "Usage: /sandbox [doctor|scope|list|status|destroy <id>|prune]"
 		}
 		ctx := context.Background()
 		switch args[0] {
 		case "doctor":
-			return procReport + "\n\n" + containerReport(cfg)
+			return sandboxReportNow(cfg, sc) + "\n\n" + containerReport(cfg)
 		case "status":
 			return containerReport(cfg)
+		case "scope":
+			return scopeReport(sc)
 		case "list":
 			return sandboxList(ctx)
 		case "destroy":
@@ -230,7 +278,7 @@ func sandboxManage(cfg config.Config, procReport string) func(args []string) str
 		case "prune":
 			return sandboxPrune(ctx)
 		}
-		return "Usage: /sandbox [doctor|list|status|destroy <id>|prune]"
+		return "Usage: /sandbox [doctor|scope|list|status|destroy <id>|prune]"
 	}
 }
 

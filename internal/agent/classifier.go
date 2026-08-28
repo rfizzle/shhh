@@ -332,6 +332,14 @@ func ResolveAuto(a Action, v ClassifierVerdict) (Decision, string) {
 	if v.Decision == Allow && a.SafetyFlagged {
 		return Ask, "safety-flagged action; classifier approval is not sufficient"
 	}
+	// A sensitive directory is the user's to put in scope (S-141); a model
+	// judging one call is not who widens what the session may reach.
+	if v.Decision == Allow && a.ScopeSensitive {
+		return Ask, "this reaches a sensitive directory; only you can add one to the working scope"
+	}
+	if v.Decision == Allow && a.ScopeRefused {
+		return Deny, scopeRefusedReason(a)
+	}
 	return v.Decision, v.Reason
 }
 

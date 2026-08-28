@@ -317,3 +317,32 @@ func TestReportRefusedPolicy(t *testing.T) {
 		t.Fatalf("report should surface the refused policy:\n%s", r)
 	}
 }
+
+// A directory the session put in its working scope (S-141) reaches the
+// mechanism as a write grant — that is the whole point of having added it,
+// and it is what stops containment refusing a write the user approved.
+func TestScopeDirectoriesBecomeWriteGrants(t *testing.T) {
+	policy, ws := workspacePolicy(t)
+	added := mkdir(t, filepath.Join(t.TempDir(), "config"))
+	policy.WriteExtra = []string{added}
+
+	s, err := resolvePolicy(policy)
+	if err != nil {
+		t.Fatalf("resolvePolicy = %v", err)
+	}
+	if !slices.Contains(s.write, added) {
+		t.Fatalf("write grants = %v, want the added directory %s", s.write, added)
+	}
+
+	argv := bwrapArgv(s, "true")
+	bind := slices.Index(argv, added)
+	if bind < 1 || argv[bind-1] != "--bind" || argv[bind+1] != added {
+		t.Fatalf("bwrap should bind the added directory writable, got %v", argv)
+	}
+	if profile := seatbeltProfile(s); !strings.Contains(profile, `(subpath "`+added+`")`) {
+		t.Fatalf("seatbelt should allow writes under the added directory, got:\n%s", profile)
+	}
+	if !slices.Contains(s.write, ws) {
+		t.Fatal("the workspace grant must survive alongside the added directory")
+	}
+}

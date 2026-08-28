@@ -56,7 +56,7 @@ func (m Model) resolveQueue(cur *approvalRequest) (components.QueueStrip, []stri
 	if cur == nil || len(calls) < 2 {
 		return components.QueueStrip{}, nil
 	}
-	kind, batchable := batchCategory(cur)
+	kind, batchable := m.batchCategory(cur)
 	first := m.approvalTotal - len(calls) + 1
 	label, detail := queueLabel(cur)
 	items := []components.QueueItem{{
@@ -71,7 +71,7 @@ func (m Model) resolveQueue(cur *approvalRequest) (components.QueueStrip, []stri
 			Number: max(first, 1) + i + 1, Label: label, Detail: detail,
 			Severity: queueSeverity(req),
 		}
-		if k, ok := batchCategory(req); batchable && ok && k == kind {
+		if k, ok := m.batchCategory(req); batchable && ok && k == kind {
 			item.Batch = true
 			batch = append(batch, tc.ID)
 		}
@@ -101,9 +101,13 @@ func (m Model) previewQueued(tc provider.ToolCall) *approvalRequest {
 // batchCategory is the class a session grant ([a]) would cover, which is
 // exactly the question [A] asks of the queue — so both read it from here. A
 // flagged action, and anything the grants do not cover, belongs to no batch.
-func batchCategory(req *approvalRequest) (agent.ActionKind, bool) {
-	act := approvalAction(req)
-	if act.SafetyFlagged || act.Kind == agent.ActionOther {
+func (m Model) batchCategory(req *approvalRequest) (agent.ActionKind, bool) {
+	act := m.approvalAction(req)
+	// A decision that leaves the working scope (S-141) is never swept into a
+	// batch: [A] answers the calls the session would classify the same way,
+	// and a directory nobody has put in scope is the one thing on the card
+	// the reader has not already answered for.
+	if act.SafetyFlagged || act.Kind == agent.ActionOther || len(act.OutOfScope) > 0 {
 		return act.Kind, false
 	}
 	return act.Kind, true
@@ -186,7 +190,8 @@ func (m *Model) takeBatchApproval(req *approvalRequest) bool {
 		return false
 	}
 	delete(m.batchApproved, req.call.ID)
-	return m.mode != agent.ModePlan && !approvalAction(req).SafetyFlagged
+	act := m.approvalAction(req)
+	return m.mode != agent.ModePlan && !act.SafetyFlagged && len(act.OutOfScope) == 0
 }
 
 // armConfirm shows the confirm prompt for the pending decision, resolving the

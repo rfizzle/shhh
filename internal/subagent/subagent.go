@@ -21,7 +21,9 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/radius"
 	"github.com/rfizzle/shhh/internal/safety"
+	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
@@ -213,6 +215,12 @@ type Options struct {
 	// parent's.
 	ReadOnlyExtra    []string
 	ReadOnlyDisabled bool
+	// ScopeDirs reports the parent session's working scope (S-141) — the
+	// directories a child's commands may write to on top of its own
+	// worktree. Nil leaves children scoped to their worktree alone, which is
+	// what they did before the scope existed. A child's *file edits* are
+	// pinned to its worktree by RootArgs regardless.
+	ScopeDirs func() []string
 	// Classifier judges, in auto mode, what the static policy would ask about
 	// — the same S-060 path the parent uses. Nil routes those calls to the
 	// user instead, which is what made auto-mode children prompt for every
@@ -1415,12 +1423,18 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 	if actionErr != nil {
 		return "error: " + actionErr.Error()
 	}
+	action = s.scopedAction(c, action)
 	policy := s.childPolicy(c)
 	title := askTitle(tc.Name, action)
 	decision, reason := policy.Decide(action)
-	// The static policy denies only in plan mode, which refuses the call with
-	// the result that tells the model why nothing ran.
+	// The static policy denies in plan mode, which refuses the call with the
+	// result that tells the model why nothing ran, and for a path no grant
+	// can reach (S-141), which says which path and why.
 	if decision == agent.Deny {
+		if strings.HasPrefix(reason, "outside the working scope") {
+			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Refused: " + title + " — " + reason})
+			return agent.ScopeRefusedResult(reason)
+		}
 		return agent.PlanModeResult
 	}
 	if decision == agent.Ask {
@@ -1531,6 +1545,38 @@ func actionFor(name string, args json.RawMessage) (agent.Action, error) {
 		return agent.Action{Kind: agent.ActionEdit}, nil
 	}
 	return agent.Action{Kind: agent.ActionOther}, nil
+}
+
+// scopedAction fills in what a child's command reaches outside the working
+// scope (S-141): its own worktree plus whatever the parent session has put in
+// scope. A child's file edits never need this — RootArgs already refuses a
+// path outside the worktree — so it applies to commands, which can name any
+// path they like.
+func (s *Supervisor) scopedAction(c *child, a agent.Action) agent.Action {
+	if s.opts.ScopeDirs == nil || a.Kind != agent.ActionCommand || c.root == "" {
+		return a
+	}
+	sc, _ := scope.New(c.root, s.opts.ScopeDirs()...)
+	if sc == nil {
+		return a
+	}
+	dirs := sc.Outside(radius.WritePaths(a.Command)...)
+	if len(dirs) == 0 {
+		return a
+	}
+	a.OutOfScope = dirs
+	for _, d := range dirs {
+		class, reason := scope.Classify(d)
+		switch class {
+		case scope.Refused:
+			a.ScopeRefused, a.ScopeReason = true, reason
+		case scope.Sensitive:
+			if !a.ScopeRefused {
+				a.ScopeSensitive, a.ScopeReason = true, reason
+			}
+		}
+	}
+	return a
 }
 
 // buildAsk assembles the approval request the parent user reviews.

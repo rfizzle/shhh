@@ -131,6 +131,12 @@ type BehaviorConfig struct {
 	// auto-runs (default true). Setting it false makes reads prompt like
 	// anything else; plan mode still inspects.
 	ReadOnlyAuto *bool `toml:"read_only_auto"`
+	// ScopeDirs are directories added to a session's working scope at start
+	// (S-141) — the config form of /add-dir. The session is always scoped to
+	// the directory it was opened in; these are the ones beside it that the
+	// work legitimately reaches, so edits there are not treated as leaving
+	// the scope and contained commands can write there.
+	ScopeDirs []string `toml:"scope_dirs"`
 	// DefaultMode is the permission mode agent sessions start in: "manual",
 	// "accept-edits", "auto", or "plan". Empty means manual (everything
 	// prompts).
@@ -353,6 +359,8 @@ func Set(cfg *Config, key, value string) error {
 		p := cfg.Agents.Profiles[role]
 		p.Model = value
 		cfg.Agents.Profiles[role] = p
+	case "behavior.scope_dirs":
+		cfg.Behavior.ScopeDirs = splitList(value)
 	case "behavior.default_mode":
 		cfg.Behavior.DefaultMode = value
 	case "behavior.mode_cycle":

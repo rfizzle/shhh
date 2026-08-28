@@ -76,14 +76,25 @@ func reasonCode(raw string) string {
 	case "plan mode inspection":
 		return "plan-inspection"
 	}
+	// A refusal for what the call reaches (S-141) carries the directory in
+	// its reason, so it is matched by shape rather than by equality — the
+	// free text still never reaches the metrics.
+	if strings.HasPrefix(raw, "outside the working scope") {
+		return "out-of-scope"
+	}
 	return "other"
 }
 
 // askReason is the reason code recorded when policy falls through to
 // prompting the user.
 func askReason(a agent.Action) string {
-	if a.SafetyFlagged {
+	switch {
+	case a.SafetyFlagged:
 		return "safety"
+	case a.ScopeSensitive:
+		return "scope-sensitive"
+	case len(a.OutOfScope) > 0:
+		return "out-of-scope"
 	}
 	return "policy"
 }

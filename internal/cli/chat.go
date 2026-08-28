@@ -83,12 +83,17 @@ type chatSession struct {
 	// takes the config.
 	maxRounds    int
 	maxRoundsSet bool
+	// addDirs are --add-dir directories: the working scope (S-141) a session
+	// starts with beyond the directory it was opened in, on top of
+	// behavior.scope_dirs.
+	addDirs []string
 }
 
 func newChatCmd() *cobra.Command {
 	var flags resolve.Opts
 	var continueLast bool
 	var resumePick bool
+	var addDirs []string
 
 	cmd := &cobra.Command{
 		Use:   "chat [prompt]",
@@ -104,6 +109,7 @@ func newChatCmd() *cobra.Command {
 				flags:        &flags,
 				continueLast: continueLast,
 				resumePick:   resumePick,
+				addDirs:      addDirs,
 			})
 		},
 	}
@@ -113,6 +119,7 @@ func newChatCmd() *cobra.Command {
 	cmd.Flags().StringVar(&flags.FlagProvider, "provider", "", "LLM provider")
 	cmd.Flags().StringVar(&flags.FlagModel, "model", "", "model name to use")
 	cmd.Flags().StringVar(&flags.FlagAPIKey, "api-key", "", "API key (overrides env var)")
+	addDirFlag(cmd, &addDirs)
 
 	return cmd
 }
@@ -326,6 +333,16 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession) (*sessionEnv, erro
 }
 
 func runChatSession(cmd *cobra.Command, args []string, session chatSession) error {
+	// The working scope (S-141): the directory the session was opened in plus
+	// whatever config and --add-dir put beside it. Containment writes to it,
+	// the approval cards ask before anything leaves it, and /add-dir grows it
+	// mid-session. It is built first because everything that runs a command
+	// — the gate, sub-agents, the session's own runner — takes it.
+	sc, err := sessionScope(ConfigFrom(cmd.Context()), session.addDirs)
+	if err != nil {
+		return err
+	}
+
 	// Tool-output reduction (S-064): bulky tool results are reduced before
 	// the model sees them, with the originals retrievable via the evidence
 	// tool. No store means no reduction and no evidence tool.
@@ -353,7 +370,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// suite name; command text only ever comes from trusted config.
 	var gate *quality.Runner
 	if session.gate {
-		gate = openQualityGate(ConfigFrom(cmd.Context()), red)
+		gate = openQualityGate(ConfigFrom(cmd.Context()), red, sc)
 	}
 	if gate != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), quality.ToolDefinition())
@@ -398,6 +415,10 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		}
 	}
 
+	// The model is told where the work is (S-141), so an out-of-scope path is
+	// a question it asks rather than a call the user refuses.
+	session.promptExtra = prompt.CombineExtra(session.promptExtra, scopePromptBlock(sc))
+
 	env, err := buildSessionEnv(cmd, session)
 	if err != nil {
 		return err
@@ -434,7 +455,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 
 	// Process containment (S-062): assistant commands run wrapped when a
 	// mechanism is available; the confirm prompt shows the state either way.
-	containment, err := buildContainment(cfg)
+	containment, err := buildContainment(cfg, sc)
 	if err != nil {
 		return err
 	}
@@ -470,7 +491,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// leftover worktrees when the session ends.
 	var sup *subagent.Supervisor
 	if session.agents {
-		sup = buildSupervisor(cmd.Context(), cfg, session, env, red, recorder, db, prices, classifier)
+		sup = buildSupervisor(cmd.Context(), cfg, session, env, red, recorder, db, prices, classifier, sc)
 		executor = sup.WrapExecutor(executor)
 		defer sup.Close()
 	}
@@ -486,6 +507,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithRunner(runner.RunCapture).
 		WithTailRunner(runner.RunCaptureTail).
 		WithContainment(containment).
+		WithScope(sc).
 		WithMaxToolRounds(maxRoundsFor(cfg, session.maxRounds, session.maxRoundsSet)).
 		WithCommandAllowlist(cfg.Behavior.CommandAllowlist).
 		WithReadOnlyCommands(cfg.Behavior.ReadOnlyCommands, !cfg.ReadOnlyAutoEnabled()).

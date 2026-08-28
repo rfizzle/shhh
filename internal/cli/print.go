@@ -14,10 +14,13 @@ import (
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/process"
+	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/radius"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/safety"
+	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/stdin"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -72,6 +75,15 @@ func maxRoundsFor(cfg config.Config, flag int, set bool) int {
 // replaces the streamed text with a structured transcript on stdout. The
 // returned error drives the process exit code.
 func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opts printOpts) error {
+	// The working scope (S-141), mirroring the interactive session: the
+	// directory the run was started in, plus config's scope_dirs and any
+	// --add-dir. Nobody is here to grant a directory mid-run, so what the
+	// flags and the config say is the whole scope for the run.
+	sc, err := sessionScope(ConfigFrom(cmd.Context()), session.addDirs)
+	if err != nil {
+		return err
+	}
+
 	// Tool-output reduction (S-064), mirroring the interactive session: bulky
 	// results are reduced with the originals retrievable via the evidence
 	// tool.
@@ -100,7 +112,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// model only ever names a suite from the trusted config.
 	var qgate *quality.Runner
 	if session.gate {
-		qgate = openQualityGate(ConfigFrom(cmd.Context()), red)
+		qgate = openQualityGate(ConfigFrom(cmd.Context()), red, sc)
 	}
 	if qgate != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), quality.ToolDefinition())
@@ -116,6 +128,11 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), process.Definition())
 		defer procSup.Close()
 	}
+
+	// The model is told where the work is (S-141); a headless run cannot be
+	// asked for a directory mid-flight, so knowing the boundary is the
+	// difference between a report that names it and a round spent retrying.
+	session.promptExtra = prompt.CombineExtra(session.promptExtra, scopePromptBlock(sc))
 
 	env, err := buildSessionEnv(cmd, session)
 	if err != nil {
@@ -163,7 +180,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		}
 		defer cleanup()
 		run = srun
-	} else if containment, err := buildContainment(cfg); err != nil {
+	} else if containment, err := buildContainment(cfg, sc); err != nil {
 		return err
 	} else if containment.Run != nil {
 		run = containment.Run
@@ -222,7 +239,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	h := &agent.Headless{
 		Agent:   a,
 		Gate:    gate,
-		Resolve: headlessApprover(cmd.Context(), opts, allowlist, run, red, recorder.decision, session.web, procSup, lspMutationHook(session.lsp)),
+		Resolve: headlessApprover(cmd.Context(), opts, allowlist, run, red, recorder.decision, session.web, procSup, lspMutationHook(session.lsp), sc),
 		OnToolCall: func(tc provider.ToolCall) {
 			callStart = time.Now()
 			fmt.Fprintf(os.Stderr, "» %s %s\n", tc.Name, clipActivityLine(tc.Arguments))
@@ -269,7 +286,7 @@ func headlessGate(name string) bool {
 // reduction pipeline (red is nil-safe) like every other tool result. Each
 // verdict is reported to record (nil-safe) as a content-free decision event
 // (S-065).
-func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, run func(context.Context, string) (string, int), red *evidence.Reducer, record func(decision, reason string), webTools *web.Toolset, procSup *process.Supervisor, mutationHook chat.MutationHook) func(provider.ToolCall) string {
+func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, run func(context.Context, string) (string, int), red *evidence.Reducer, record func(decision, reason string), webTools *web.Toolset, procSup *process.Supervisor, mutationHook chat.MutationHook, sc *scope.Scope) func(provider.ToolCall) string {
 	note := func(decision, reason string) {
 		if record != nil {
 			record(decision, reason)
@@ -303,6 +320,12 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 				return "error: process start denied (" + strings.Join(risks, "; ") + "); safety-flagged commands require interactive approval"
 			}
 			if opts.yes || agent.AllowlistMatches(allowlist, command) {
+				// A process start is a command, and the working scope
+				// (S-141) applies to it as much as to a foreground one.
+				if deny, ok := headlessScopeCheck(sc, opts.yes, radius.WritePaths(command)); !ok {
+					note("deny", "out-of-scope")
+					return deny
+				}
 				if opts.yes {
 					note("allow", "headless-yes")
 				} else {
@@ -330,6 +353,13 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 				return "error: command denied (" + strings.Join(risks, "; ") + "); safety-flagged commands require interactive approval"
 			}
 			if opts.yes || agent.AllowlistMatches(allowlist, args.Command) {
+				// The working scope (S-141) is checked before the grant is
+				// spent: an allowlisted command shape is not a licence to
+				// write outside the directories this run was given.
+				if deny, ok := headlessScopeCheck(sc, opts.yes, radius.WritePaths(args.Command)); !ok {
+					note("deny", "out-of-scope")
+					return deny
+				}
 				if opts.yes {
 					note("allow", "headless-yes")
 				} else {
@@ -343,6 +373,12 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 		}
 		if tools.IsMutating(tc.Name) {
 			if opts.yes {
+				if mut, err := tools.PreviewMutation(tc.Name, json.RawMessage(tc.Arguments)); err == nil {
+					if deny, ok := headlessScopeCheck(sc, opts.yes, []string{mut.Path}); !ok {
+						note("deny", "out-of-scope")
+						return deny
+					}
+				}
 				note("allow", "headless-yes")
 				result := agent.ExecuteWith(tools.ExecuteMutating, tc)
 				if mutationHook != nil {

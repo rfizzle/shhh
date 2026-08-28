@@ -223,6 +223,18 @@ func modelArgs(m *Model) []argOption {
 	return out
 }
 
+// scopeDropArgs offers the directories this session has added to its working
+// scope (S-141) — the only ones /add-dir drop can take back, since the
+// session's own directory is never dropped.
+func scopeDropArgs(m *Model) []argOption {
+	dirs := m.scopeDirs()
+	out := make([]argOption, 0, len(dirs))
+	for _, d := range dirs {
+		out = append(out, argOption{value: d, desc: "Stop the session writing here"})
+	}
+	return out
+}
+
 // modeArgs offers the session's mode cycle plus /permissions' own
 // subcommands.
 func modeArgs(m *Model) []argOption {
