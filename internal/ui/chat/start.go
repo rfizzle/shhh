@@ -167,12 +167,16 @@ func (m Model) startScreen() (components.StartScreen, []string) {
 		Focus:       min(max(m.startFocus, 0), max(len(suggestions)-1, 0)),
 		Hint:        "[↑↓] choose · [enter] start · or just type what you want",
 		// The navigation line survives the typing dismissal above, because
-		// these keys survive it: pgup, ctrl+e and ctrl+x all work with a
-		// half-written draft in the box (S-115, §7a). This is the one screen
-		// every user sees, so it is where the two panes are introduced — and
-		// the one place the mouse chord can be learned before it is wanted,
-		// which for that setting is the whole difficulty (S-136).
-		Nav: "[pgup] or [ctrl+e] read the transcript · [esc] or type to come back · [ctrl+k] palette · [ctrl+x] mouse",
+		// these keys survive it: every one of them works with a half-written
+		// draft in the box (S-115, §7a). This is the one screen every user
+		// sees, so it is where the two panes are introduced — and the one
+		// place the mouse chord can be learned before it is wanted, which for
+		// that setting is the whole difficulty (S-136).
+		//
+		// Scrolling and the handover are named apart, because they are two
+		// things now (S-140): pgup reads without giving up the keyboard,
+		// ctrl+e is what hands it over when the rows are what you want.
+		Nav: "[pgup] or [shift+↑↓] scroll · [ctrl+e] select rows · [ctrl+k] palette · [ctrl+x] mouse",
 	}, actions
 }
 

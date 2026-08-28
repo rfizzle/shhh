@@ -12,12 +12,18 @@ package chat
 // f, b and the spacebar by default, which means typing "just fix the build"
 // scrolled the history four times before the space bar paged it.
 //
-// The rule both halves now follow: while the input owns the keyboard the
-// viewport hears no keys at all, and the only ways into the transcript are
-// the ones a draft cannot produce — the wheel, pgup/pgdn, ctrl+e, and ↑ once
-// the input history has nothing left to recall. Everything the transcript
-// then offers lives in focus mode (§7), which is the one reading surface;
-// this file is how the keyboard gets to it and back.
+// The rule both halves follow: while the input owns the keyboard the viewport
+// hears no keys at all, and the only things that move it are the ones a draft
+// cannot produce — the wheel, pgup/pgdn, shift+arrows, ctrl+e.
+//
+// S-140 split that list in two, because it had been conflating scrolling with
+// giving up the keyboard. Reading is not a decision: the wheel always said so
+// and the pager keys did not, so pgup took the draft off the screen to answer
+// a question about the pane above it. Now every scroll gesture leaves the
+// keyboard where it is, and ctrl+e is the one transfer — the reader who wants
+// the row cursor, the [enter] expansions and the keys a close row or a
+// failure offers asks for them, and gets focus mode (§7), which is still the
+// one reading surface. This file is how the keyboard gets to it and back.
 
 import (
 	"fmt"
@@ -32,6 +38,12 @@ import (
 // bubbles viewport default, so the gesture feels the same here as in every
 // other pager the reader uses.
 const wheelLines = 3
+
+// keyScrollLines is how far shift+↑ / shift+↓ move it. One line, because the
+// key is the fine adjustment in a pair: pgup/pgdn are there for the distance,
+// and a reader nudging the transcript to bring one row back into view wants
+// the row, not three of them.
+const keyScrollLines = 1
 
 // mouseToggleKey flips terminal mouse reporting from anywhere. Ctrl+X because
 // of what is left rather than what it stands for: the textarea underneath
@@ -133,29 +145,6 @@ func (m *Model) scrollPage(dir int) {
 	}
 }
 
-// enterReading hands the keyboard to the transcript and pages it in dir. It
-// opens the same surface ctrl+e does, because there is only one: the row
-// cursor, the [enter] expansions and the keys a close row or a failure offers
-// all come with it. A pager key that opened a second, lesser reading mode
-// would be a fourth list implementation by another name.
-//
-// Paging down with nothing below is not a transfer: the bottom of the
-// transcript is where the input already stands.
-func (m Model) enterReading(dir int) (tea.Model, tea.Cmd) {
-	if dir > 0 && m.state != stateFocus && m.viewport.AtBottom() {
-		return m, nil
-	}
-	next, cmd := m.enterFocusMode()
-	rm, ok := next.(Model)
-	if !ok || rm.state != stateFocus {
-		// The transcript had nothing to read and said so; the notice is the
-		// answer, not a half-entered mode.
-		return next, cmd
-	}
-	rm.scrollPage(dir)
-	return rm, cmd
-}
-
 // returnToInput leaves focus mode carrying the keystroke that ended it, so
 // the character a reader typed lands in the draft instead of being spent on
 // the exit. Esc and typing are the two ways out (§7a); this is the second.
@@ -187,6 +176,39 @@ func typedRune(msg tea.KeyMsg) bool {
 		return true
 	}
 	return false
+}
+
+// followNotice says that the transcript is no longer showing its live end,
+// and how far off it the reader is (S-140).
+//
+// Scrolling away pauses the follow — tokenMsg only calls GotoBottom while
+// atBottom — and until now nothing said so. A reader who scrolled up to check
+// a path during a turn watched a transcript that had silently stopped growing
+// under them, with no way to tell that from a model that had stopped talking.
+// That was survivable while scrolling cost a keyboard handover, because the
+// labelled rail said READING and a mode is its own explanation. Now that the
+// draft keeps the keyboard, the only thing on screen that changed is the part
+// nobody is looking at, so the state has to say its own name.
+//
+// It is a notice rather than a key: pgdn already walks back to the end and
+// re-pins on arrival, so there is nothing here to offer that the reader does
+// not have. Reading mode has its own rail and position (§7a), so this stays
+// out of its way.
+func (m Model) followNotice() string {
+	if m.state == stateFocus || m.viewport.AtBottom() {
+		return ""
+	}
+	below := m.viewport.TotalLineCount() - m.viewport.YOffset - m.viewport.VisibleLineCount()
+	if below <= 0 {
+		return ""
+	}
+	line := "lines"
+	if below == 1 {
+		line = "line"
+	}
+	// The word carries it, the glyph repeats it, and neither needs the colour
+	// (invariant 1).
+	return fmt.Sprintf("↓ %d %s below · [pgdn] the live end", below, line)
 }
 
 // readingRail is the line under the header. It is a plain divider while the

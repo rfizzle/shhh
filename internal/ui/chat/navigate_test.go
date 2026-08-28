@@ -133,48 +133,153 @@ func TestTypedLetters_NeverReachTheTranscript(t *testing.T) {
 	}
 }
 
-func TestPgUp_HandsTheKeyboardToTheTranscript(t *testing.T) {
+// Paging reads the transcript and leaves the keyboard in the draft (S-140):
+// the reader scrolling back to check a path mid-sentence is not asking to
+// stop writing the sentence.
+func TestPgUp_ScrollsWithoutTakingTheKeyboard(t *testing.T) {
 	m := typeChars(t, proseModel(t), "keep this")
 	before := m.viewport.YOffset
 
 	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyPgUp})
 	m = updated.(Model)
 
-	if m.state != stateFocus {
-		t.Fatalf("pgup should hand the keyboard to the transcript, got state %d", m.state)
+	if m.state != stateInput {
+		t.Fatalf("pgup should leave the keyboard in the draft, got state %d", m.state)
 	}
 	if m.viewport.YOffset >= before {
 		t.Fatalf("pgup should page up, offset %d → %d", before, m.viewport.YOffset)
 	}
 	if m.input.Value() != "keep this" {
-		t.Fatalf("the draft should survive the transfer, got %q", m.input.Value())
+		t.Fatalf("the draft should be untouched, got %q", m.input.Value())
 	}
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
-	m = updated.(Model)
+	// And the sentence carries on from where it was, into the same draft.
+	m = typeChars(t, m, " too")
+	if m.input.Value() != "keep this too" {
+		t.Fatalf("typing should continue the draft after a scroll, got %q", m.input.Value())
+	}
 	if m.state != stateInput {
-		t.Fatalf("esc should hand the keyboard back, got state %d", m.state)
-	}
-	if m.input.Value() != "keep this" {
-		t.Fatalf("the draft should survive the return, got %q", m.input.Value())
+		t.Fatalf("typing after a scroll should not have changed surface, got state %d", m.state)
 	}
 }
 
-// Paging down with nothing below is not a transfer: the bottom of the
-// transcript is where the input already stands.
-func TestPgDown_AtTheBottomIsNotATransfer(t *testing.T) {
+// Paging down with nothing below has nowhere to go, and no mode to leave.
+func TestPgDown_AtTheBottomDoesNothing(t *testing.T) {
 	m := proseModel(t)
+	before := m.viewport.YOffset
+
 	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyPgDown})
-	if got := updated.(Model).state; got != stateInput {
-		t.Fatalf("pgdn at the bottom should do nothing, got state %d", got)
+	m = updated.(Model)
+
+	if m.state != stateInput {
+		t.Fatalf("pgdn at the bottom should do nothing, got state %d", m.state)
+	}
+	if m.viewport.YOffset != before {
+		t.Fatalf("pgdn at the bottom should not move, offset %d → %d", before, m.viewport.YOffset)
 	}
 }
 
-func TestUpFromAnEmptyPrompt_ReadsWhenThereIsNoHistoryToRecall(t *testing.T) {
+// Shift+arrows are the fine adjustment beside pgup/pgdn, and they are held to
+// the same rule: a line of scroll, and the draft keeps the keyboard.
+func TestShiftArrows_ScrollALineWithoutTakingTheKeyboard(t *testing.T) {
+	for _, k := range []tea.KeyType{tea.KeyShiftUp, tea.KeyCtrlUp} {
+		m := typeChars(t, proseModel(t), "mid sentence")
+		before := m.viewport.YOffset
+
+		updated, _ := m.Update(tea.KeyMsg{Type: k})
+		m = updated.(Model)
+
+		if m.state != stateInput {
+			t.Fatalf("%v should leave the keyboard in the draft, got state %d", k, m.state)
+		}
+		if m.viewport.YOffset != before-keyScrollLines {
+			t.Fatalf("%v should scroll up one line, offset %d → %d", k, before, m.viewport.YOffset)
+		}
+		if m.input.Value() != "mid sentence" {
+			t.Fatalf("%v must not touch the draft, got %q", k, m.input.Value())
+		}
+	}
+
+	// And back down again.
 	m := proseModel(t)
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyShiftUp})
+	m = updated.(Model)
+	up := m.viewport.YOffset
+	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyShiftDown})
+	if got := updated.(Model).viewport.YOffset; got != up+keyScrollLines {
+		t.Fatalf("shift+↓ should scroll back down, offset %d → %d", up, got)
+	}
+}
+
+// ↑ used to hand the keyboard over on an empty draft with no history to
+// recall. A key that changes surface depending on how much history a session
+// happens to have is one nobody can learn — and on a terminal that
+// synthesises arrows for the wheel, it was a flick of the wheel that opened
+// reading mode (S-140, altscroll.go).
+func TestUpFromAnEmptyPrompt_NeverTakesTheKeyboard(t *testing.T) {
+	m := proseModel(t)
+	before := m.viewport.YOffset
+
 	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyUp})
-	if got := updated.(Model).state; got != stateFocus {
-		t.Fatalf("↑ with nothing to recall should reach the transcript, got state %d", got)
+	m = updated.(Model)
+
+	if m.state != stateInput {
+		t.Fatalf("↑ should stay the input's key, got state %d", m.state)
+	}
+	if m.viewport.YOffset != before {
+		t.Fatalf("↑ should not scroll the transcript either, offset %d → %d", before, m.viewport.YOffset)
+	}
+}
+
+// Scrolling away pauses the follow, and the notice rail is the only thing on
+// screen that can say so now the draft keeps the keyboard (S-140).
+func TestFollowNotice_CountsWhatIsBelowAndClearsAtTheEnd(t *testing.T) {
+	m := proseModel(t)
+	if note := m.followNotice(); note != "" {
+		t.Fatalf("at the live end there is nothing to say, got %q", note)
+	}
+
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyPgUp})
+	m = updated.(Model)
+
+	note := m.followNotice()
+	if note == "" {
+		t.Fatal("scrolled off the end, the rail should say so")
+	}
+	if !strings.Contains(note, "below") || !strings.Contains(note, "pgdn") {
+		t.Fatalf("the notice should count what is below and name the way back, got %q", note)
+	}
+	if !strings.Contains(ansi.Strip(m.renderPromptFrame()), "below") {
+		t.Fatal("the notice should reach the frame's notice rail")
+	}
+
+	// Walking back to the end retires it.
+	for i := 0; i < 10 && !m.viewport.AtBottom(); i++ {
+		updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyPgDown})
+		m = updated.(Model)
+	}
+	if note := m.followNotice(); note != "" {
+		t.Fatalf("back at the live end the notice should be gone, got %q", note)
+	}
+}
+
+// Reading mode has its own labelled rail and position, so the follow notice
+// stays out of its way (§7a).
+func TestFollowNotice_SilentInReadingMode(t *testing.T) {
+	m := proseModel(t)
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyPgUp})
+	m = updated.(Model)
+	if m.followNotice() == "" {
+		t.Fatal("precondition: the notice should be showing")
+	}
+
+	updated, _ = m.Update(ctrlE())
+	m = updated.(Model)
+	if m.state != stateFocus {
+		t.Fatalf("precondition: ctrl+e should open reading mode, got state %d", m.state)
+	}
+	if note := m.followNotice(); note != "" {
+		t.Fatalf("reading mode names the keyboard itself, got %q", note)
 	}
 }
 
@@ -371,16 +476,21 @@ func TestUICommand_MouseSendsTheTerminalACommand(t *testing.T) {
 // line outlives the typing that dismisses the suggestion list.
 func TestStartScreen_NavLineSurvivesTyping(t *testing.T) {
 	m := startModel(t, startFixture())
-	if !strings.Contains(m.renderStartScreen(100), "read the transcript") {
-		t.Fatal("the start screen should name the reading keys")
+	if !strings.Contains(m.renderStartScreen(100), "scroll") {
+		t.Fatal("the start screen should name the scrolling keys")
 	}
 	m = typeChars(t, m, "x")
 	view := m.renderStartScreen(100)
 	if strings.Contains(view, "[↑↓] choose") {
 		t.Fatal("typing should still dismiss the suggestion list")
 	}
-	if !strings.Contains(view, "read the transcript") {
+	if !strings.Contains(view, "scroll") {
 		t.Fatal("the navigation keys still work with a draft in the box, so they should still be offered")
+	}
+	// Scrolling and the handover are two things now, and the line says so
+	// rather than describing them as one (S-140).
+	if !strings.Contains(view, "[ctrl+e] select rows") {
+		t.Fatal("the line should name ctrl+e as the handover, apart from the scroll keys")
 	}
 }
 

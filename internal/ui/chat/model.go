@@ -1083,17 +1083,37 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m.detailFromDraft()
 			}
 		case "pgup", "pgdown":
-			// The dedicated pager keys hand the keyboard to the transcript
-			// and page it (S-115, §7a). They are the one transfer a reader
-			// finds without being told, and no draft can produce them — which
-			// is why the letters bubbles binds to the same job (j/k/u/d/f/b
-			// and the spacebar) are not offered here at all.
+			// The pager keys read the transcript and leave the keyboard in
+			// the draft (S-140, §7a). Reading is not a decision — the wheel
+			// has always said so — and the reader scrolling back to check a
+			// path mid-sentence is not asking to stop writing the sentence.
+			// Paging used to hand the keyboard over, which took the draft off
+			// the screen to answer a question about the pane above it.
+			//
+			// No draft can produce these keys, which is what makes them safe
+			// to spend here and why the letters bubbles binds to the same job
+			// (j/k/u/d/f/b and the spacebar) are still not offered at all.
 			if m.inputLive() {
 				dir := -1
 				if msg.String() == "pgdown" {
 					dir = 1
 				}
-				return m.enterReading(dir)
+				m.scrollPage(dir)
+				return m, nil
+			}
+		case "shift+up", "ctrl+up":
+			// The same job by a line rather than a page (S-140, §7a). Both
+			// chords are bound because terminals disagree about which they
+			// report: the textarea underneath claims neither, and neither is
+			// reachable by typing.
+			if m.inputLive() {
+				m.scrollLines(-keyScrollLines)
+				return m, nil
+			}
+		case "shift+down", "ctrl+down":
+			if m.inputLive() {
+				m.scrollLines(keyScrollLines)
+				return m, nil
 			}
 		case "esc":
 			// With the completion menu open, esc only dismisses the menu; the
@@ -1142,15 +1162,13 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return m, nil
 			}
-			// ↑ on an empty draft with no history to recall is the last thing
-			// the input can do with the key, so it hands the keyboard to the
-			// transcript instead of doing nothing (S-115, §7a). Where there
-			// is history the key stays the history's — that convention is
-			// older than this surface — and pgup is the transfer.
-			if m.inputLive() && len(m.inputHistory) == 0 &&
-				strings.TrimSpace(m.input.Value()) == "" {
-				return m.enterReading(-1)
-			}
+			// ↑ used to hand the keyboard to the transcript on an empty draft
+			// with no history to recall. It is the input's key in every other
+			// state, and a key that changes surface depending on how much
+			// history a session happens to have is one nobody can learn
+			// (S-140). Alternate scroll made it worse than unlearnable: on a
+			// terminal that synthesises arrows for the wheel, a flick opened
+			// reading mode (altscroll.go). Scrolling has its own keys now.
 		case "down":
 			if m.completionActive() {
 				if m.completeIdx < len(m.completions)-1 {
@@ -2749,8 +2767,10 @@ Keys:
   Shift+Tab      Cycle the permission mode
                  (while the agent is working, Enter queues a steering message
                   that joins the conversation before the next model request)
-  Up/Down        Recall previous inputs (when the input is empty; with no
-                 history left to recall, Up reads the transcript instead)
+  Up/Down        Recall previous inputs (when the input is empty)
+  Shift+Up/Down  Scroll the transcript a line, without leaving the prompt —
+                 the draft keeps the keyboard and every letter it has
+                 (Ctrl+Up/Down does the same, for terminals that report it)
   Ctrl+E         Reading mode: select tool/command/diff rows (j/k), expand/collapse (Enter),
                  pgup/pgdn page, Esc or typing returns to the prompt
                  (Enter on an edit row cycles collapsed → expanded → full-screen diff;
@@ -2767,9 +2787,13 @@ Keys:
   Esc            Clear the input
   Ctrl+C         Cancel response / clear input / quit
   Ctrl+D         Quit
-  PgUp/PgDn      Hand the keyboard to the transcript and page it
+  PgUp/PgDn      Page the transcript, leaving the keyboard in the prompt.
+                 Scrolling away pauses the follow while a turn streams; the
+                 notice rail counts what is below and PgDn walks back to it
   Wheel          Scroll the transcript (or the full-screen diff / review),
                  leaving the draft and the keyboard where they are
+                 (needs Ctrl+X — off by default, so the terminal keeps its
+                  own click-drag selection)
   y/n/a          Approval prompts: allow / deny / always allow this session`)
 }
 

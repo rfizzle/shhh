@@ -857,42 +857,77 @@ renderers, and holding their keys here is what lets the input keep `v`, `u`,
 `r`, `c`, `e` and `p` for typing. `ctrl+e` opens on the failure that ended a
 turn where there is one, rather than on the close rows after it.
 
-### 7a. Reading mode: where the keyboard is (S-115, S-122)
+### 7a. Reading mode: where the keyboard is (S-115, S-122, S-140)
 
 There are two panes and one keyboard, and every rule here follows from
-saying which pane has it. The transfers are S-115's and settled;
-`ui_kits/cockpit/Reading.html` is normative for how the mode is dressed.
+saying which pane has it. `ui_kits/cockpit/Reading.html` is normative for how
+the mode is dressed.
 
 **The input's rule: while the prompt has the keyboard, the transcript hears
-no keys at all.** Not the arrow keys, not the pager letters, nothing. A
-viewport handed every keystroke scrolls the history out from under the
-sentence being written — bubbles binds `j`, `k`, `u`, `d`, `f`, `b` and the
-spacebar by default, so "just find the buffer" paged the transcript four
-times on its way into the box. Anything the transcript can be moved by is
-therefore a gesture or a key a draft cannot produce.
+no keys at all.** Not the pager letters, nothing. A viewport handed every
+keystroke scrolls the history out from under the sentence being written —
+bubbles binds `j`, `k`, `u`, `d`, `f`, `b` and the spacebar by default, so
+"just find the buffer" paged the transcript four times on its way into the
+box. Anything the transcript can be moved by is therefore a gesture or a key
+a draft cannot produce.
 
-**The transfers**, and there are only these:
+**Scrolling is not a transfer.** S-115 wrote this rule with only one exception
+to it — the wheel — and made every keyboard gesture hand the keyboard over.
+S-140 corrected that: reading is not a decision, and the reader scrolling back
+to check a path mid-sentence is not asking to stop writing the sentence.
+Handing the keyboard over to answer that question takes the draft off the
+screen (the frame is *replaced*, §12), which is a mode change charged for a
+glance. So every gesture below reads the transcript and leaves the keyboard
+where it is:
 
 | | |
 |---|---|
-| `ctrl+e` | reading mode, cursor on the last selectable row |
-| `pgup` / `pgdn` | reading mode, paged in that direction |
-| `↑` on an empty draft | reading mode — *only* where the input history has nothing left to recall |
-| wheel | scrolls, and transfers nothing — when reporting is on (§7a) |
-| `ctrl+x` | mouse reporting on/off, from any surface, saved to the config |
+| `pgup` / `pgdn` | pages the transcript, and transfers nothing |
+| `shift+↑` / `shift+↓` | one line, and transfers nothing (`ctrl+↑`/`ctrl+↓` alias it — terminals disagree about which they report) |
+| wheel | scrolls, and transfers nothing — when reporting is on |
 | `ctrl+o` | opens the step in flight, and transfers nothing — §13d |
 | `ctrl+r` | cycles the reasoning level, and transfers nothing — §8a |
+| `ctrl+x` | mouse reporting on/off, from any surface, saved to the config |
 
-`↑` belongs to the input history wherever there is one; that convention is
-older than this surface, and `pgup` is the transfer for a session that has
-one. `pgdn` with nothing below is not a transfer either: the bottom of the
+**There is one transfer, and it is `ctrl+e`.** It opens reading mode with the
+cursor on the last selectable row. A reader who wants the row cursor, the
+`[enter]` expansions and the keys a close row or a failure offers asks for
+them by name; nothing else takes the keyboard by surprise on the way past.
+`pgdn` with nothing below does nothing at all, because the bottom of the
 transcript is where the prompt already stands.
 
-The wheel is the exception that proves the rule. It reads, and reading is not
-a decision: the draft keeps the keyboard, so a scroll mid-sentence never
-swallows the next keystroke. It reaches the full-screen diff (§3c) and review
-mode (§16a) when those own the screen, because the transcript behind them is
-not what is being looked at.
+`↑`/`↓` are the input history's, in every state. They used to become the
+transfer on an empty draft with no history left to recall, which made the key
+mean different things depending on how much history a session happened to
+have — unlearnable, and worse than unlearnable on a terminal with alternate
+scroll on, where a flick of the wheel arrives as `↑` and opened reading mode
+(see below).
+
+The wheel reaches the full-screen diff (§3c) and review mode (§16a) when those
+own the screen, because the transcript behind them is not what is being looked
+at.
+
+**Alternate scroll, and why the wheel was never inert (S-140).** DECSET 1007
+makes a terminal translate wheel notches into cursor keys for a full-screen
+program, and Ghostty, iTerm2, WezTerm, Alacritty and Terminal.app all ship
+with it on. So on most terminals the wheel was not doing nothing while
+reporting was off — it was sending bare `CSI A`/`CSI B`, indistinguishable
+from the arrow keys, hundreds at a time: scrubbing the input history on an
+empty draft, walking the cursor through a half-written one, moving the start
+screen's suggestion. Turning reporting on appeared to fix it, because tracking
+supersedes 1007 — which meant a reader paid their terminal's click-drag
+selection to stop a bug. shhh now asks the terminal to stop synthesising
+(XTSAVE/XTRESTORE, so the setting survives us as its owner had it), which is
+what makes this section's claim about the wheel true rather than aspirational.
+
+**Scrolling away pauses the follow, and the notice rail says so.** A
+transcript scrolled off its live end stops being moved by the turn streaming
+into it. While scrolling cost a handover the labelled rail said `READING` and
+a mode is its own explanation; now that the draft keeps the keyboard, the only
+thing that changed is in the pane nobody is looking at. So the notice rail
+(§12) carries `↓ 12 lines below · [pgdn] the live end` until the reader walks
+back to it, which re-pins on arrival. It is a notice and not an offer: `pgdn`
+is already on the bar above, and there is nothing here to hand out twice.
 
 **Mouse reporting is off by default**, because it costs the terminal's own
 click-drag selection and the two sides of that trade are not the same size.
@@ -917,10 +952,13 @@ reason to suspect a setting. So the wheel is the side you ask for.
 - **Both notes state the trade, not an improvement.** Turning it on says the
   selection now needs shift held; turning it off says what still scrolls.
 
-**Reading mode is focus mode**, not a second, lesser one. A pager key that
-opened its own surface would be a fourth list implementation by another name,
-and the row cursor, the `[enter]` expansions and the keys a close row or a
-failure offers all have to come with it.
+**Reading mode is focus mode**, not a second, lesser one. A key that opened
+its own surface would be a fourth list implementation by another name, and the
+row cursor, the `[enter]` expansions and the keys a close row or a failure
+offers all have to come with it. This is why S-140 could demote the pager keys
+without adding a mode: scrolling the transcript was never the part that needed
+a surface, and taking the keyboard was the price the pager keys had been
+paying to reach one they did not want.
 
 **The ways back are `esc` and typing.** Esc is the safe answer everywhere
 (invariant 3). Typing is the one a reader reaches for without thinking, so
@@ -1241,7 +1279,7 @@ Two positions are allowed, and there is no third.
 | surface | position | keys | how it gets the keyboard |
 |---|---|---|---|
 | approval card (§2), `/run` confirm, plan card (§4d), a child's routed approval (§9c) | arrives ungated | `y n a d A` / `s` / `g` | `ctrl+g` (§7b) |
-| reading mode and its per-row offers (§7a) | takeover | `j k q -` and the row's own | `ctrl+e`, `pgup`/`pgdn` |
+| reading mode and its per-row offers (§7a) | takeover | `j k q -` and the row's own | `ctrl+e` |
 | the selector family (§4), the model picker, the rewind picker, the palette (§18a) | takeover | digits, `j k` | the command or key that opens it |
 | review mode (§16a) | takeover | `s A n p` | `[v]`, `/review`, `/diff` |
 | the agent list (§9a) | takeover | `x X j k` | `ctrl+a`, `/agents` |
@@ -2865,7 +2903,7 @@ Some things worth doing first:
     then it reports back
 
 [↑↓] choose · [enter] start · or just type what you want
-[pgup] or [ctrl+e] read the transcript · [esc] or type to come back · [ctrl+k] palette
+[pgup] or [shift+↑↓] scroll · [ctrl+e] select rows · [ctrl+k] palette · [ctrl+x] mouse
 ```
 
 - The header line is what shhh already knows: path, toolchain, branch, dirty
@@ -2891,9 +2929,12 @@ Some things worth doing first:
   stay — because the input owns every ordinary key and `↑` belongs to the
   input history again the moment there is a draft.
 - **The second key line is navigation** (§7a), and it outlives that dismissal,
-  because its keys do: the wheel, `pgup` and `ctrl+e` all work with a
-  half-written draft in the box. This is the one screen every user sees, so it
-  is where the two panes are introduced.
+  because its keys do: the wheel, `pgup`, `shift+↑↓` and `ctrl+e` all work with
+  a half-written draft in the box. This is the one screen every user sees, so
+  it is where the two panes are introduced. It names scrolling and the
+  handover apart, because S-140 made them two things: the first three read the
+  transcript and leave the keyboard alone, and `ctrl+e` is the one that asks
+  for the rows.
 - The screen is spent by the first thing the session says to the model, or by
   a conversation loaded into it. `/clear` after either does not bring it back;
   `/clear` on a session that never said anything does, because that session

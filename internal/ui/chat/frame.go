@@ -292,6 +292,12 @@ func (m Model) noticeLine() string {
 	if n := len(m.steering); n > 0 {
 		parts = append(parts, noticeInfoStyle.Render(fmt.Sprintf("%d steering queued", n)))
 	}
+	// Scrolled off the live end, so the transcript has stopped following the
+	// turn (S-140, navigate.go). The draft still holds the keyboard, so this
+	// rail is the only thing that can say so.
+	if note := m.followNotice(); note != "" {
+		parts = append(parts, noticeInfoStyle.Render(note))
+	}
 	if m.subagents != nil {
 		if _, blocked := m.subagents.ActiveCounts(); blocked > 0 {
 			label := fmt.Sprintf("⚠ %d agents waiting approval", blocked)

@@ -21,7 +21,7 @@ Some things worth doing first:
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
 [↑↓] choose · [enter] start · or just type what you want
-[pgup] or [ctrl+e] read the transcript · [esc] or type to come back · [ctrl+k] palette · [ctrl+x] mouse
+[pgup] or [shift+↑↓] scroll · [ctrl+e] select rows · [ctrl+k] palette · [ctrl+x] mouse
 
 · the pointer on the offer that costs an approval
 ~/src/shhh · go 1.24 · git main · 3 files changed · 41 packages
@@ -35,7 +35,7 @@ Some things worth doing first:
 ❯ ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
 [↑↓] choose · [enter] start · or just type what you want
-[pgup] or [ctrl+e] read the transcript · [esc] or type to come back · [ctrl+k] palette · [ctrl+x] mouse
+[pgup] or [shift+↑↓] scroll · [ctrl+e] select rows · [ctrl+k] palette · [ctrl+x] mouse
 
 · clean tree · nothing saved, no gate, no project context
 ~/src/shhh · go 1.24 · git main · clean tree · 41 packages
@@ -49,7 +49,7 @@ Some things worth doing first:
   ⚙ run go test ./... and triage the failures — one approval, then it reports back
 
 [↑↓] choose · [enter] start · or just type what you want
-[pgup] or [ctrl+e] read the transcript · [esc] or type to come back · [ctrl+k] palette · [ctrl+x] mouse
+[pgup] or [shift+↑↓] scroll · [ctrl+e] select rows · [ctrl+k] palette · [ctrl+x] mouse
 
 · outside a repository · the package count is a floor
 ~/src/shhh · go 1.24 · not a git repository · 41+ packages
@@ -63,7 +63,7 @@ Some things worth doing first:
   ⚙ run the default quality gate and triage what fails — one approval, then it reports back
 
 [↑↓] choose · [enter] start · or just type what you want
-[pgup] or [ctrl+e] read the transcript · [esc] or type to come back · [ctrl+k] palette · [ctrl+x] mouse
+[pgup] or [shift+↑↓] scroll · [ctrl+e] select rows · [ctrl+k] palette · [ctrl+x] mouse
 
 · typing dismissed the list · the facts stay
 ~/src/shhh · go 1.24 · git main · 3 files changed · 41 packages
@@ -71,7 +71,7 @@ Some things worth doing first:
 context  AGENTS.md — in the system prompt
 gate     default — vet, test · runs without asking
 
-[pgup] or [ctrl+e] read the transcript · [esc] or type to come back · [ctrl+k] palette · [ctrl+x] mouse
+[pgup] or [shift+↑↓] scroll · [ctrl+e] select rows · [ctrl+k] palette · [ctrl+x] mouse
 
 ── ansi ────────────────────────────────────────────────────
 · first contact · a dirty checkout with a session to pick up
@@ -86,7 +86,7 @@ gate     default — vet, test · runs without asking
   ␛[38;5;254m⚙␛[0m ␛[38;5;254mrun the default quality gate and triage what fails␛[0m␛[38;5;244m — one approval, then it reports back␛[0m
 
 ␛[3;38;5;244m[↑↓] choose · [enter] start · or just type what you want␛[0m
-␛[3;38;5;244m[pgup] or [ctrl+e] read the transcript · [esc] or type to come back · [ctrl+k] palette · [ctrl+x] mouse␛[0m
+␛[3;38;5;244m[pgup] or [shift+↑↓] scroll · [ctrl+e] select rows · [ctrl+k] palette · [ctrl+x] mouse␛[0m
 
 · the pointer on the offer that costs an approval
 ␛[1;38;5;254m~/src/shhh␛[0m␛[38;5;244m · ␛[0m␛[38;5;254mgo 1.24␛[0m␛[38;5;244m · ␛[0m␛[38;5;254mgit main␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m3 files changed␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m41 packages␛[0m
@@ -100,7 +100,7 @@ gate     default — vet, test · runs without asking
 ␛[1;48;5;237m❯ ⚙ run the default quality gate and triage what fails — one approval, then it reports back␛[0m
 
 ␛[3;38;5;244m[↑↓] choose · [enter] start · or just type what you want␛[0m
-␛[3;38;5;244m[pgup] or [ctrl+e] read the transcript · [esc] or type to come back · [ctrl+k] palette · [ctrl+x] mouse␛[0m
+␛[3;38;5;244m[pgup] or [shift+↑↓] scroll · [ctrl+e] select rows · [ctrl+k] palette · [ctrl+x] mouse␛[0m
 
 · clean tree · nothing saved, no gate, no project context
 ␛[1;38;5;254m~/src/shhh␛[0m␛[38;5;244m · ␛[0m␛[38;5;254mgo 1.24␛[0m␛[38;5;244m · ␛[0m␛[38;5;254mgit main␛[0m␛[38;5;244m · ␛[0m␛[38;5;254mclean tree␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m41 packages␛[0m
@@ -114,7 +114,7 @@ gate     default — vet, test · runs without asking
   ␛[38;5;254m⚙␛[0m ␛[38;5;254mrun go test ./... and triage the failures␛[0m␛[38;5;244m — one approval, then it reports back␛[0m
 
 ␛[3;38;5;244m[↑↓] choose · [enter] start · or just type what you want␛[0m
-␛[3;38;5;244m[pgup] or [ctrl+e] read the transcript · [esc] or type to come back · [ctrl+k] palette · [ctrl+x] mouse␛[0m
+␛[3;38;5;244m[pgup] or [shift+↑↓] scroll · [ctrl+e] select rows · [ctrl+k] palette · [ctrl+x] mouse␛[0m
 
 · outside a repository · the package count is a floor
 ␛[1;38;5;254m~/src/shhh␛[0m␛[38;5;244m · ␛[0m␛[38;5;254mgo 1.24␛[0m␛[38;5;244m · ␛[0m␛[38;5;254mnot a git repository␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m41+ packages␛[0m
@@ -128,7 +128,7 @@ gate     default — vet, test · runs without asking
   ␛[38;5;254m⚙␛[0m ␛[38;5;254mrun the default quality gate and triage what fails␛[0m␛[38;5;244m — one approval, then it reports back␛[0m
 
 ␛[3;38;5;244m[↑↓] choose · [enter] start · or just type what you want␛[0m
-␛[3;38;5;244m[pgup] or [ctrl+e] read the transcript · [esc] or type to come back · [ctrl+k] palette · [ctrl+x] mouse␛[0m
+␛[3;38;5;244m[pgup] or [shift+↑↓] scroll · [ctrl+e] select rows · [ctrl+k] palette · [ctrl+x] mouse␛[0m
 
 · typing dismissed the list · the facts stay
 ␛[1;38;5;254m~/src/shhh␛[0m␛[38;5;244m · ␛[0m␛[38;5;254mgo 1.24␛[0m␛[38;5;244m · ␛[0m␛[38;5;254mgit main␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m3 files changed␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m41 packages␛[0m
@@ -136,4 +136,4 @@ gate     default — vet, test · runs without asking
 ␛[38;5;244mcontext␛[0m  ␛[38;5;254mAGENTS.md␛[0m␛[38;5;244m — in the system prompt␛[0m
 ␛[38;5;244mgate   ␛[0m  ␛[38;5;254mdefault␛[0m␛[38;5;244m — vet, test · runs without asking␛[0m
 
-␛[3;38;5;244m[pgup] or [ctrl+e] read the transcript · [esc] or type to come back · [ctrl+k] palette · [ctrl+x] mouse␛[0m
+␛[3;38;5;244m[pgup] or [shift+↑↓] scroll · [ctrl+e] select rows · [ctrl+k] palette · [ctrl+x] mouse␛[0m
