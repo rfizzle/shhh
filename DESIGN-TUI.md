@@ -3890,7 +3890,8 @@ Two claims, checked in that order:
 
 1. **A declared id.** `[[provider.endpoint.models]]` naming `claude-opus-5` is
    the user naming a model and an address in one breath, and nothing overrides
-   it.
+   it — including a glob on another endpoint. An id declared at the provider
+   level is a declaration too, and pins that model to the default address.
 2. **A `match` glob.** `["claude-*"]` catches the models nobody enumerated —
    the ones a catalog endpoint will hand back tomorrow.
 
@@ -3911,10 +3912,13 @@ endpoints existed, which is the compatibility the feature is built around.
   endpoint the session never touches costs nothing, and — the reason that
   matters — an endpoint whose key is unset does not fail a session that was
   never going to send it anything.
-- **An explicit `--base-url` collapses the routing.** Routing is a map from
-  models to addresses; an override naming one address for everything has
-  already answered the question the map exists to answer, so the profile is
-  pinned to it.
+- **A base URL override collapses the routing.** Routing is a map from models
+  to addresses; an override naming one address for everything has already
+  answered the question the map exists to answer, so the profile is pinned to
+  it. Only an override made for this session reaches a profile —
+  `provider.base_url` and `SHHH_BASE_URL` arrive as `ConfigBaseURL` and a
+  profile has never read them, because a base URL set for one provider
+  silently repointing another is worse than a setting that does nothing.
 
 ### 21c. One file
 

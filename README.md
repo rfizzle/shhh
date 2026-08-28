@@ -118,7 +118,7 @@ accent_color = "cyan"
 | `provider.default` | Provider name |
 | `provider.model` | Model to use |
 | `provider.api_key` | API key |
-| `provider.base_url` | Base URL override (each provider has its own default); on a gateway profile with endpoints it pins every model to that one address |
+| `provider.base_url` | Base URL override for the built-in providers (each has its own default); gateway profiles carry their own and ignore it |
 | `provider.name` | Custom display name |
 | `provider.reasoning` | Reasoning effort sessions start on: `off` (default), `low`, `medium`, `high` |
 | `behavior.silent_mode` | Suppress explanation output |
@@ -210,7 +210,7 @@ The OpenAI-shaped providers (`openai`, `openai-responses`, `openrouter`, `openai
 
 A private or self-hosted gateway is OpenAI-compatible in shape but rarely in detail: one rejects a parameter the upstream forbids, another hands back an id that must not be echoed to it, a third publishes its catalog at a path of its own. Those are per-deployment facts that change without warning, and they have no business living in provider code. A **profile** puts them in your config, where fixing one is an edit instead of a release.
 
-Every provider lives in one file: `<config-dir>/providers.toml` — `~/.config/shhh/providers.toml`, or the `Application Support` equivalent on macOS — with a `[[provider]]` block each. A profile registers exactly like a built-in: `--provider gateway`, `provider.default = "gateway"`, `SHHH_PROVIDER=gateway`.
+Every provider lives in one file: `<config-dir>/providers.toml` — `~/.config/shhh/providers.toml`, or the `Application Support` equivalent on macOS — with a `[[provider]]` block each. Every block needs a `name`, and it registers exactly like a built-in: `--provider gateway`, `provider.default = "gateway"`, `SHHH_PROVIDER=gateway`.
 
 ```toml
 [[provider]]
@@ -243,6 +243,8 @@ base_url = "http://localhost:11434/v1"
 
 The older form — one profile per file in `<config-dir>/providers/`, with the filename as the provider name unless the file sets one — still loads, and `providers.toml` is read first when both declare the same name. `shhh providers migrate` folds the directory into the one file; see [One file](#one-file) below.
 
+A file is one form or the other: settings at the top level *and* `[[provider]]` blocks in the same file is refused, rather than letting the top-level half load as a provider nobody meant. So is the same `name` twice in one file. A bad file is reported and skipped on its own — one profile that will not parse never takes the session down with it.
+
 `shhh providers` lists what resolves on this machine and checks each profile: where it points, whether its key is actually exported, what it declares, and what its rules do — including the `note` on each, because a profile outlives the memory of the incident that caused it.
 
 ### Endpoints
@@ -272,13 +274,27 @@ api_key_env = "GATEWAY_API_KEY"
     cost           = { input = 5.0, output = 25.0 }
 ```
 
-Everything an endpoint leaves unset it inherits: the key, the dialect, the catalog path, the headers, the rewrite rules. Headers merge, with the endpoint winning a collision; the profile's rules run first and the endpoint's after, so a quirk that is true of the whole gateway is written once.
+An endpoint takes the same fields the `[[provider]]` block does, and inherits every one it leaves out:
 
-A request goes to the endpoint that **declares its model**, or failing that to the first whose **`match` glob** claims it. Anything unclaimed goes to the profile's own `base_url`, which is why that stays required even when every model is routed. A profile with no endpoints routes everything there and behaves exactly as it always did.
+| Field | Meaning |
+|---|---|
+| `match` | Globs against the requested model (`["claude-*"]`), tried in file order after every endpoint's declared ids |
+| `label` | Name for this endpoint in `shhh providers`; defaults to its base URL |
+| `api` | Wire dialect for this address, when it differs from the provider's |
+| `base_url` | This address |
+| `api_key` / `api_key_env` | A key of its own, for the rare gateway whose paths authenticate separately |
+| `models_path` | A catalog endpoint of its own |
+| `headers` | Merged over the provider's; the endpoint wins a collision |
+| `models` | Declared here rather than at the provider level, which is also what routes them here |
+| `rewrite` | Rules for this address; the provider's run first, then these |
+
+An endpoint must declare `models` or `match` — one with neither can never be reached, so it is refused at load rather than sitting there doing nothing.
+
+A request goes to the endpoint that **declares its model**, or failing that to the first whose **`match` glob** claims it. A declared id always wins, including one declared at the provider level: `[[provider.models]] id = "claude-opus-5"` sends that model to the default address even when an endpoint matches `claude-*`. Anything unclaimed goes to the profile's own `base_url`, which is why that stays required even when every model is routed. A profile with no endpoints routes everything there and behaves exactly as it always did. A model declared in two places is refused at load, naming both — either could be the one meant.
 
 Routing happens per request, so `/model claude-opus-5` mid-session crosses from one dialect to the other with nothing rebuilt, and `/model` lists every endpoint's models as one catalog. Each endpoint's client is built the first time something needs it: an endpoint you never touch costs nothing, and one whose key is unset does not fail a session that was never going to use it.
 
-Two things are refused at load rather than resolved quietly: a model declared by two endpoints (either could be the one meant), and an endpoint with neither `models` nor `match` (nothing can reach it). An explicit `--base-url` or `provider.base_url` pins the whole profile to that one address — an override naming one endpoint for everything has already answered the question routing exists to answer.
+`provider.base_url` and `SHHH_BASE_URL` do not reach a gateway profile — a profile carries its own addresses, and a base URL meant for one provider silently repointing another is the bug that rule exists to prevent. Where a base URL override does reach a profile (the setup card offering a local runtime), it collapses the routing and pins every model to that one address: an override naming one endpoint for everything has already answered the question routing exists to answer.
 
 ### One file
 
@@ -329,7 +345,7 @@ A path that matches nothing is not an error — a rule with nothing to do does n
 | `SHHH_PROVIDER` | Default provider |
 | `SHHH_MODEL` | Default model |
 | `SHHH_API_KEY` | API key (works with any provider) |
-| `SHHH_BASE_URL` | Base URL override |
+| `SHHH_BASE_URL` | Base URL override for the built-in providers; gateway profiles carry their own and ignore it |
 
 ### Provider-Specific Fallbacks
 
