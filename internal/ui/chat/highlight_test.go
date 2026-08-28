@@ -123,3 +123,33 @@ func TestDiffSyntax_UnknownExtension(t *testing.T) {
 		t.Fatal("an unrecognized extension should disable highlighting")
 	}
 }
+
+func TestMatchLexer_Memoized(t *testing.T) {
+	first := matchLexer("loop.go")
+	if first == nil {
+		t.Fatal("a .go basename should match a lexer")
+	}
+	if second := matchLexer("loop.go"); second != first {
+		t.Fatal("a repeat lookup should return the cached lexer, not a new one")
+	}
+	if _, ok := lexerCache.Load("loop.go"); !ok {
+		t.Fatal("the hit should be cached")
+	}
+}
+
+func TestMatchLexer_CachesMisses(t *testing.T) {
+	if lexer := matchLexer("notes.unknownext"); lexer != nil {
+		t.Fatal("an unrecognized extension should not match a lexer")
+	}
+	// A miss costs the same full-registry walk as a hit, so it is cached too.
+	v, ok := lexerCache.Load("notes.unknownext")
+	if !ok {
+		t.Fatal("the miss should be cached")
+	}
+	if v != nil {
+		t.Fatalf("a cached miss should be nil, got %v", v)
+	}
+	if lexer := matchLexer("notes.unknownext"); lexer != nil {
+		t.Fatal("a repeat lookup of a miss should still be nil")
+	}
+}

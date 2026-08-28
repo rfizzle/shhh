@@ -69,6 +69,30 @@ func renderMarkdown(text string, width int) string {
 // renderer layers add/remove coloring over it (S-074, DESIGN-TUI.md §3b).
 const diffSyntaxStyle = "monokai"
 
+// lexerCache memoizes matchLexer. lexers.Match glob-matches the basename
+// against every registered lexer's patterns — hundreds of filepath.Match calls
+// per lookup — and every diff card re-derives its highlighter on each render,
+// so a resize in a code-heavy session pays for the whole registry once per
+// file per frame. The answer for a basename never changes, so it is looked up
+// once and kept, misses included.
+var lexerCache sync.Map // basename -> chroma.Lexer, nil when nothing matches
+
+// matchLexer returns the coalesced chroma lexer for base, or nil when no lexer
+// claims it. The returned lexer is shared across callers; chroma guards its own
+// lazy rule compilation, and tokenising holds no state of its own.
+func matchLexer(base string) chroma.Lexer {
+	if v, ok := lexerCache.Load(base); ok {
+		lexer, _ := v.(chroma.Lexer)
+		return lexer
+	}
+	lexer := lexers.Match(base)
+	if lexer != nil {
+		lexer = chroma.Coalesce(lexer)
+	}
+	lexerCache.Store(base, lexer)
+	return lexer
+}
+
 // diffSyntax returns a per-line syntax highlighter for path, or nil when no
 // lexer matches (the diff then renders with plain diff colors).
 func diffSyntax(path string) components.Syntax {
@@ -78,11 +102,10 @@ func diffSyntax(path string) components.Syntax {
 	if components.Mono() {
 		return nil
 	}
-	lexer := lexers.Match(filepath.Base(path))
+	lexer := matchLexer(filepath.Base(path))
 	if lexer == nil {
 		return nil
 	}
-	lexer = chroma.Coalesce(lexer)
 	style := styles.Get(diffSyntaxStyle)
 	return func(line string) []components.Segment {
 		it, err := lexer.Tokenise(nil, line)
