@@ -102,6 +102,11 @@ func (m Model) spinTick(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	m.spinFrame++
+	// The tick is also what the streaming transcript is repainted on (S-149,
+	// §10h) — the one clock, spent on the one other thing that wants one.
+	if m.streamDirty {
+		m.flushStream()
+	}
 	if !m.spinnerWanted() {
 		m.spinning = false
 		return m, nil

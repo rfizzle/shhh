@@ -51,6 +51,15 @@ func getRenderer(width int) *glamour.TermRenderer {
 }
 
 func renderMarkdown(text string, width int) string {
+	return strings.TrimSpace(renderMarkdownRaw(text, width))
+}
+
+// renderMarkdownRaw is the same without the trim. The streaming cache glues
+// two renders together and needs the padding the trim takes off the end: a
+// coloured terminal holds it in place with an escape, mono has nothing holding
+// it, and the seam between two blocks is exactly where the difference shows
+// (streammd.go).
+func renderMarkdownRaw(text string, width int) string {
 	if width <= 0 {
 		width = 80
 	}
@@ -62,7 +71,7 @@ func renderMarkdown(text string, width int) string {
 	if err != nil {
 		return text
 	}
-	return strings.TrimSpace(out)
+	return out
 }
 
 // diffSyntaxStyle is the chroma style diff views highlight with; the diff

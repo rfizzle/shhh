@@ -1938,6 +1938,10 @@ animation everywhere at once, which is the shape S-119 fixed
 rather than standing on one braille frame, because a stopped spinner reads as
 a hang.
 
+The same tick is what repaints the arriving message (§10h). It is not a fourth
+animation — it is the rule applied to the one thing on screen that was moving
+on the network's clock instead of the session's.
+
 **Turn status.** The one line that changes while a turn runs — spinner frame,
 phase, ticking elapsed, token counts, cost — is a meter and not free text:
 `TurnStatus` beside `Meter`, `Sparkline` and `Spinner`. §8d is its vocabulary,
@@ -2058,6 +2062,55 @@ bar.
 The two glyphs are one dim/dimmer step apart and collapse onto the same grey
 in mono, where the stroke carries all of it (invariant 1). That pair is in
 `mono_test.go` like every other.
+
+### 10h. The streaming render (S-149)
+
+The transcript freezes every step block but the last (§13), so the one thing
+it redraws each frame is the message still arriving. Two rules govern how
+often that redraw happens and how much of the message it costs.
+
+**The repaint rides the tick.** A chunk that lands while the tick chain of
+§10c is running does not repaint the transcript; it records that a repaint is
+owed, and the next tick pays it. So the arriving answer moves at 80ms a frame,
+the same clock the spinner beside it moves on — which is the point. §10c
+allows the session one clock because three would be three truths about one
+turn, and a second timer opened to smooth the text would be exactly that. A
+chunk that lands with nothing ticking repaints itself, because nothing else is
+going to.
+
+**The redraw costs the tail, not the answer.** Behind the repaint the message
+is a markdown document, and it was re-parsed whole every time — a 4,000-token
+answer arriving in 1,500 chunks re-parsing a document that grows to 16KB,
+1,500 times. Instead the render is cut at a **stable prefix**: the latest
+position after a blank line at which no construct can still be open, which is
+rendered once and kept, so a chunk renders only what follows it. The search
+for that position scans what has arrived since the last one, not the whole
+message. Measured over a 6KB answer in 12-byte chunks, the render work drops
+by an order of magnitude, and the saving grows with the length of the answer,
+because what it removes is quadratic.
+
+The cut is only allowed where the two renders glued back together are the
+**same bytes** as one render of the whole. Not visually the same — the same
+bytes. The selection (§7a, S-145) is a pair of coordinates into that string,
+and the message is re-rendered whole the instant it stops arriving and becomes
+a transcript entry; a byte of drift would move the selection under the cursor
+and jump the transcript on the last token. So the boundary refuses everything
+it cannot vouch for: an open fence, a list that may still be open, a table, a
+block quote, indented code, a heading or a rule (glamour closes both with a
+line the seam cannot follow), a setext underline on either side of the cut,
+and any HTML block or link-reference definition anywhere in the message, since
+those two carry meaning from one part of a document to another and cannot
+survive being rendered as two. Anything refused falls back to rendering the
+whole message, which is where the product started; the cache is an
+optimisation and never a second opinion about what the message says.
+
+The blank line glamour draws between two blocks is padded, and which padding
+it uses depends on the blocks either side of it. It is therefore never written
+down: the tail is rendered with a one-line paragraph in front of it and that
+paragraph's own lines are then dropped, so the seam is the one glamour itself
+chose. The contract is asserted in `streammd_test.go` over a corpus with one
+document per construct named above, at every prefix, at all four widths, in
+both palettes.
 
 ---
 

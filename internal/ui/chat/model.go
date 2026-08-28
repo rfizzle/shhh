@@ -282,6 +282,12 @@ type Model struct {
 	// "one tick source, never three" (§10c) a property rather than a habit:
 	// spinCmd starts a chain only when this is false (S-119, spin.go).
 	spinning bool
+	// streamDirty reports whether a chunk has landed that the transcript has
+	// not been repainted for. It rides the tick above rather than adding a
+	// clock of its own — §10c allows the session one, and §10h spends it on
+	// this as well: a repaint per chunk was re-rendering an answer that grows
+	// as it arrives, once per token (S-149).
+	streamDirty bool
 
 	transcript []entry
 	// Incremental render cache: entries [0, cachedCount) rendered at
@@ -293,6 +299,11 @@ type Model struct {
 	cachedCount  int
 	cachedSep    entry
 	cachedHasSep bool
+	// streamMD is the arriving message's own cache, keyed on nothing the
+	// caches above are: it holds a render of the part of that one message that
+	// can no longer change, so a chunk re-renders the tail rather than the
+	// answer (S-149, §10h, streammd.go).
+	streamMD streamingMarkdown
 
 	// Input recall: inputHistory holds previously submitted inputs;
 	// historyIdx == len(inputHistory) means "not browsing".
@@ -1307,9 +1318,15 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// the next one starts its own bounded count (S-107).
 		m.clearRetryChain()
 		m.streaming += msg.text
-		m.viewport.SetContent(m.renderHistory())
-		if m.atBottom {
-			m.viewport.GotoBottom()
+		// The repaint rides the spinner's tick rather than the chunk (S-149,
+		// §10h). A chunk that arrives while the loop is running only records
+		// that one is owed; one that arrives with nothing ticking — the last
+		// of a stream, or a state that draws no spinner — repaints itself,
+		// because nothing else is going to.
+		if m.spinning && msg.final == nil {
+			m.streamDirty = true
+		} else {
+			m.flushStream()
 		}
 		if msg.final != nil {
 			return m.update(msg.final)
@@ -2067,6 +2084,9 @@ func (m *Model) accumulateUsage(u *provider.Usage) {
 }
 
 func (m *Model) finishStreaming() {
+	// Whatever repaint the arriving message still owed, it does not owe it any
+	// more: the message is about to be an entry like every other (S-149).
+	m.streamDirty = false
 	if m.compacting {
 		// A cancelled compaction discards the partial summary and keeps the
 		// conversation unchanged (the success path goes through finishCompact).
@@ -2196,6 +2216,16 @@ func (m *Model) resetTranscript() {
 	// with the transcript gone they name nothing (S-145).
 	m.clearSelection()
 	m.invalidateRenderCache()
+}
+
+// flushStream repaints the transcript with as much of the arriving message as
+// has landed, and forgets that a repaint was owed (S-149, §10h).
+func (m *Model) flushStream() {
+	m.streamDirty = false
+	m.viewport.SetContent(m.renderHistory())
+	if m.atBottom {
+		m.viewport.GotoBottom()
+	}
 }
 
 // invalidateRenderCache forces the next renderHistory to re-render every
@@ -2450,7 +2480,10 @@ func (m *Model) renderHistoryRaw() string {
 			s += separatorBefore(prev, entry{kind: entryAssistant})
 		}
 		s += assistantStyle.Render("Assistant") + "\n"
-		s += renderMarkdown(m.streaming, w)
+		// The one thing in the transcript that is not frozen, and the only
+		// place the stable-prefix cache is used: everything else here is
+		// either cached whole or rendered once (S-149, §10h, streammd.go).
+		s += m.streamMD.Render(m.streaming, w)
 	}
 	return s
 }
