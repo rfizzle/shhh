@@ -32,16 +32,88 @@ func stagePNG(t *testing.T, m Model, name string) Model {
 	return next.(Model)
 }
 
-// What is staged has to be visible somewhere, and the notice rail is where
-// the surface says what is pending (§12a).
-func TestAttachments_NoticeRailNamesWhatIsStaged(t *testing.T) {
+// What is staged has to be visible somewhere, and the staged rail is where
+// the surface says what is pending (§12g). It names the file rather than
+// counting it, and carries the kind's mark so the two do not have to be
+// told apart by colour.
+func TestAttachments_StagedRailNamesWhatIsStaged(t *testing.T) {
 	m := frameModel(t, 130, 40)
-	if m.noticeLine() != "" {
+	if m.stagedRail() != "" {
 		t.Fatal("an empty staging area should say nothing")
 	}
 	m = stagePNG(t, m, "shot.png")
-	if !strings.Contains(stripANSI(m.noticeLine()), "1 attachment") {
+	if got := stripANSI(m.stagedRail()); !strings.Contains(got, "▣ shot.png") {
+		t.Fatalf("staged rail = %q", got)
+	}
+	// It is the frame's own row, not one of the notice rail's fields.
+	if m.noticeLine() != "" {
 		t.Fatalf("notice rail = %q", stripANSI(m.noticeLine()))
+	}
+	if !strings.Contains(stripANSI(m.View()), "▣ shot.png") {
+		t.Fatalf("the staged rail should reach the surface:\n%s", stripANSI(m.View()))
+	}
+}
+
+// The rail is a row like any other, so the viewport gives one up for it —
+// otherwise the frame grows past the bottom of the terminal (§12e).
+func TestAttachments_StagedRailCostsTheViewportALine(t *testing.T) {
+	m := frameModel(t, 130, 40)
+	base := m.viewport.Height
+	m = stagePNG(t, m, "shot.png")
+	m.syncViewport()
+	if m.viewport.Height != base-1 {
+		t.Fatalf("the staged rail must shrink the viewport (%d -> %d)", base, m.viewport.Height)
+	}
+}
+
+// Attached, the keyboard is pointed at a child and ctrl+v is a textarea key
+// again, so the orchestrator's staging area is not what is on screen (§12d).
+func TestAttachments_StagedRailIsOrchestratorScoped(t *testing.T) {
+	m := stagePNG(t, frameModel(t, 130, 40), "shot.png")
+	m.attachedTo = "writer-1"
+	if got := m.stagedRail(); got != "" {
+		t.Fatalf("staged rail while attached = %q", stripANSI(got))
+	}
+}
+
+// `/paste drop <name>` is the per-chip half of `/paste clear`: it takes one
+// back out and leaves the rest staged, and a name that is not staged is said
+// out loud rather than doing nothing.
+func TestAttachments_DropTakesOneBackOut(t *testing.T) {
+	m := stagePNG(t, stagePNG(t, frameModel(t, 130, 40), "shot.png"), "spec.png")
+
+	updated, _ := m.runPaste([]string{"/paste", "drop", "shot.png"})
+	next := updated.(Model)
+	if len(next.attachments) != 1 || next.attachments[0].Name != "spec.png" {
+		t.Fatalf("staged after the drop = %v", attachment.Names(next.attachments))
+	}
+	if !strings.Contains(lastSystemText(next), "dropped shot.png") {
+		t.Fatalf("the drop should say what it dropped: %q", lastSystemText(next))
+	}
+
+	updated, _ = next.runPaste([]string{"/paste", "drop", "nothing.png"})
+	if again := updated.(Model); len(again.attachments) != 1 ||
+		!strings.Contains(lastSystemText(again), "nothing.png is not attached") {
+		t.Fatalf("an unknown name should be refused out loud: %q", lastSystemText(again))
+	}
+
+	// A path that merely starts with the word is still a path.
+	updated, _ = next.runPaste([]string{"/paste", "dropbox.png"})
+	if strings.Contains(lastSystemText(updated.(Model)), "needs a name") {
+		t.Fatal("/paste dropbox.png is a path, not the drop subcommand")
+	}
+}
+
+// Model is a value type and takeAttachments hands the staged slice out whole,
+// so dropping a chip must build a new slice rather than shuffling the one
+// another holder is already looking at.
+func TestAttachments_DropDoesNotReachIntoASharedSlice(t *testing.T) {
+	m := stagePNG(t, stagePNG(t, frameModel(t, 130, 40), "shot.png"), "spec.png")
+	held := m.attachments
+
+	if _, _ = m.runPaste([]string{"/paste", "drop", "shot.png"}); len(held) != 2 ||
+		held[0].Name != "shot.png" || held[1].Name != "spec.png" {
+		t.Fatalf("the drop rewrote a slice it does not own: %v", attachment.Names(held))
 	}
 }
 

@@ -2,10 +2,11 @@ package chat
 
 // Attachments (S-134): images and files staged for the next message. The
 // screen has no business rendering a screenshot, so nothing here draws one —
-// an attachment shows as its name and its size, on the notice rail while it
-// waits and on the user's own transcript row once it has gone. What it is
-// for is the request: the bytes ride on the user message (internal/provider),
-// and each provider carries them the way its API takes them.
+// an attachment shows as a chip carrying its mark, its name and its size, on
+// the frame's staged rail while it waits (§12g) and on the user's own
+// transcript row once it has gone. What it is for is the request: the bytes
+// ride on the user message (internal/provider), and each provider carries
+// them the way its API takes them.
 //
 // Three doors, one staging area. Ctrl+V reads the clipboard — a pasted
 // screenshot or the files a file manager copied — and falls back to pasting
@@ -25,6 +26,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // clipboardMsg carries the result of one clipboard read back into Update.
@@ -106,7 +108,7 @@ func (m Model) stage(atts []provider.Attachment) (tea.Model, tea.Cmd) {
 	if len(added) == 0 {
 		return m, nil
 	}
-	// The notice rail may have appeared: the viewport is one line shorter.
+	// The staged rail may have appeared: the viewport is one line shorter.
 	m.syncViewport()
 	return m.surfaceNotice("attached " + strings.Join(added, ", ") +
 		" — it goes with your next message (/paste clear drops it)")
@@ -124,21 +126,52 @@ func (m *Model) takeAttachments() []provider.Attachment {
 	return atts
 }
 
-// attachmentNotice is the notice rail's line for what is staged (§12a). The
-// glyph set is closed (§10d) and has no mark for this, so the rail says it in
-// words, the way the queued-steering count does.
-func (m Model) attachmentNotice() string {
-	return attachment.Summarize(m.attachments)
+// stagedRail is the frame's staged rail (§12g): one chip per attachment
+// waiting to ride, drawn by components.AttachmentChips. It is
+// orchestrator-scoped like the notice rail above it — attached, the keyboard
+// is pointed at a child and ctrl+v is a textarea key again, so the
+// orchestrator's staging area is not what the reader is looking at.
+func (m Model) stagedRail() string {
+	if m.attachedTo != "" {
+		return ""
+	}
+	return components.AttachmentChips(m.attachmentChips(), m.contentWidth())
+}
+
+// attachmentChips is the staged set as the strip draws it.
+func (m Model) attachmentChips() []components.AttachmentChip {
+	chips := make([]components.AttachmentChip, 0, len(m.attachments))
+	for _, a := range m.attachments {
+		chips = append(chips, components.AttachmentChip{
+			Kind: chipKind(a.Kind),
+			Name: a.Name,
+			Size: attachment.HumanSize(len(a.Data)),
+		})
+	}
+	return chips
+}
+
+// chipKind maps what the sniffer decided onto the mark the strip draws. The
+// two vocabularies stay separate on purpose: one is how a provider carries
+// the bytes, the other is a glyph in a closed set (§10d).
+func chipKind(k provider.AttachmentKind) components.ChipKind {
+	switch k {
+	case provider.AttachmentImage:
+		return components.ChipImage
+	case provider.AttachmentDocument:
+		return components.ChipDocument
+	}
+	return components.ChipText
 }
 
 // runPaste dispatches `/paste`: bare reads the clipboard, `clear` drops what
-// is staged, and anything else is a path.
+// is staged, `drop <name>` drops one chip, and anything else is a path.
 func (m Model) runPaste(parts []string) (tea.Model, tea.Cmd) {
 	if len(parts) == 1 {
 		return m, readClipboardCmd()
 	}
-	arg := strings.Join(parts[1:], " ")
-	if strings.EqualFold(strings.TrimSpace(arg), "clear") {
+	arg := strings.TrimSpace(strings.Join(parts[1:], " "))
+	if strings.EqualFold(arg, "clear") {
 		if len(m.attachments) == 0 {
 			return m.surfaceNotice("nothing is attached")
 		}
@@ -147,7 +180,55 @@ func (m Model) runPaste(parts []string) (tea.Model, tea.Cmd) {
 		m.syncViewport()
 		return m.surfaceNotice("dropped " + dropped)
 	}
+	if rest, ok := cutFold(arg, "drop"); ok {
+		return m.dropAttachment(rest)
+	}
 	return m, attachFileCmd(attachment.Expand(arg))
+}
+
+// cutFold splits a leading subcommand word off an argument, matched the way
+// `clear` is: case-insensitively, and on the whole word — so a file called
+// `dropbox.png` is still a path.
+func cutFold(arg, word string) (string, bool) {
+	if len(arg) < len(word) || !strings.EqualFold(arg[:len(word)], word) {
+		return "", false
+	}
+	rest := arg[len(word):]
+	if rest != "" && rest[0] != ' ' && rest[0] != '\t' {
+		return "", false
+	}
+	return strings.TrimSpace(rest), true
+}
+
+// dropAttachment takes one staged attachment back out by name — the per-chip
+// half of what `clear` does to the whole strip.
+//
+// A chip carries no key of its own (§7c): it sits above a live draft, so the
+// name printed on it is the handle instead, and the completion menu offers
+// the staged names (S-079) so it is never typed from memory. A name that is
+// not staged is said out loud with the ones that are, for the same reason a
+// refused attachment is: a drop that quietly did nothing is a message that
+// goes out carrying the file you meant to remove.
+func (m Model) dropAttachment(name string) (tea.Model, tea.Cmd) {
+	if len(m.attachments) == 0 {
+		return m.surfaceNotice("nothing is attached")
+	}
+	staged := strings.Join(attachment.Names(m.attachments), ", ")
+	if name == "" {
+		return m.surfaceNotice("/paste drop needs a name — " + staged)
+	}
+	for i, a := range m.attachments {
+		if !strings.EqualFold(a.Name, name) {
+			continue
+		}
+		dropped := fmt.Sprintf("%s (%s)", a.Name, attachment.HumanSize(len(a.Data)))
+		// A full slice expression, because the staged set is handed off whole
+		// by takeAttachments and must not be shortened through a shared array.
+		m.attachments = append(m.attachments[:i:i], m.attachments[i+1:]...)
+		m.syncViewport()
+		return m.surfaceNotice("dropped " + dropped)
+	}
+	return m.surfaceNotice(name + " is not attached — " + staged)
 }
 
 // pastedFileAttachment reports the file a bracketed paste was pointing at,

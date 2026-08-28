@@ -2835,7 +2835,8 @@ func helpText() string {
   /clear         Start a new conversation (also /new)
   /paste [path]  Attach the clipboard — a screenshot, or files copied in a
                  file manager — to your next message; /paste <path> attaches
-                 a file by name, /paste clear drops what is staged (Ctrl+V)
+                 a file by name, /paste drop <name> takes one back out and
+                 /paste clear drops what is staged (Ctrl+V)
   /copy [code]   Copy the last response (or just its code blocks)
   /run [n]       Run a code block from the last response (with confirmation)
   /model [name]  Switch the model (bare /model opens an interactive picker)
@@ -2906,7 +2907,7 @@ Keys:
   Ctrl+V         Attach the clipboard: a copied screenshot or file is staged
                  for your next message, plain text still pastes into the draft.
                  Dragging an image into the terminal attaches it the same way.
-                 Attachments are named on the notice rail, never drawn
+                 What is staged shows as chips above the input, never drawn
   Tab            Complete a slash command (typing / opens the menu;
                  ↑↓ move, Enter runs the highlighted command, Esc dismisses)
   Ctrl+K         Command palette: one prompt over commands, saved chats and

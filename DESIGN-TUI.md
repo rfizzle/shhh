@@ -1968,6 +1968,17 @@ Meaning lives here; colour only reinforces it. The set is closed.
 | `⏵⏵` | permissive mode | `⚠` | risk, or a recoverable stall |
 | `⏸` | gated mode | `⛨` | containment |
 | `✦` | the classifier is deciding | `@@` | hunk header (hunk 14) |
+| `▣` | a staged image | `▤` | a staged document |
+| `≡` | staged text | | |
+
+The last three are the staging area's (§12g) and nothing else's. They were
+added by S-151 rather than found in the set, which is worth saying plainly:
+the set is closed, and closing it means an addition is a decision recorded
+here, not a glyph a surface reached for. Their shape is the argument for
+them — `▤` is `≡` inside the boundary that makes lines a single artifact, and
+`▣` is a frame with a subject in it — so three files staged together are told
+apart by drawing rather than by hue, which is what a chip strip needs from
+invariant 1.
 
 ### 10e. Drawing kit
 
@@ -2251,6 +2262,11 @@ fallback for takeover surfaces and sub-`minCardWidth` terminals.
   there is something to say — update notice, queued steering count, blocked
   sub-agents, the latest auto-mode denial — and disappears when clear
   (COCKPIT_SPEC.md §6 alert-rail pattern).
+- **Staged rail** (§12g): one plain line between the notices and the frame,
+  carrying a chip per attachment waiting to ride on the next message. It is
+  under the notice rail because what is staged leaves with the sentence being
+  typed and the notices do not, so it is the rail that belongs against the
+  box.
 
 ### 12b. Layout modes (COCKPIT_SPEC.md §3)
 
@@ -2331,8 +2347,9 @@ name); the notice rail is orchestrator-scoped and hides while attached.
   keep the divider + §8 status bar stack, so their geometry is unchanged.
 - The frame's top and bottom borders occupy the rows the bottom divider and
   status bar otherwise use, so `chromeHeight` stays constant in the compact
-  and narrow layouts; the wide vitals rail and the notice rail are accounted
-  separately (`frameExtraHeight`) when sizing the viewport.
+  and narrow layouts; the wide vitals rail, the notice rail and the staged
+  rail are accounted separately (`frameExtraHeight`) when sizing the
+  viewport.
 - The frame is rebuilt every render and never enters the transcript render
   cache, so resize just works.
 
@@ -2354,11 +2371,10 @@ shift+enter, because naming the fallback would teach the wrong key.
 
 **Attachments are named, never drawn.** An image on this surface would fight
 every rule the §6a grid has, and a terminal cannot show one honestly anyway.
-So the bytes are staged and the words carry them:
+So the bytes are staged and a mark and a name carry them:
 
-- **Notice rail** (§12a): `1 attachment · 412 KB` while it waits, the same
-  shape as the queued-steering count. The §10d glyph set is closed and has no
-  mark for this, so the rail says it in words rather than inventing one.
+- **Staged rail** (§12g): one chip per attachment while it waits — its kind's
+  mark, its name, its size.
 - **Bottom rail**: `ctrl+v attach` joins the idle hints, after
   `shift+enter newline`.
 - **The user's own transcript row**: `attached: shot.png (412 KB)` under the
@@ -2381,6 +2397,56 @@ session keeps the screenshot the question was about rather than a sentence
 pointing at nothing. Refusals are by name and out loud: a file too large, or
 bytes shhh cannot carry, say which file and why, because an attachment
 dropped quietly is a question the model answers wrong.
+
+### 12g. The staged rail (S-151)
+
+`2 attachments · 4 KB` was true and said nothing. The count is the one fact
+about a staging area a reader never has to be told — they just attached them
+— and the names are the ones they do: two screenshots and a spec read the
+same as three screenshots, and a file attached by accident looked exactly
+like one attached on purpose.
+
+So the rail is a chip per file: the §10d mark for what kind of thing it is,
+its base name, and its size.
+
+```
+▣ shot.png 412 KB · ≡ notes.md 2 KB · ▤ spec.pdf 1.1 MB
+╭─ shhh chat ──────────────────────────────────────────────────────── idle ─╮
+│ ❯ what changed between these two▌                                         │
+╰─ ⏸ manual · ctx ▰▰▰▱▱▱▱▱ 31% · ↑12.0k ↓3.4k · $0.05 ──────────── gpt-5.2 ─╯
+```
+
+- **The mark and the name are body text; the size is dim.** Nothing here is
+  coloured by kind, so the glyph carries the whole distinction and the strip
+  reads the same in mono (invariant 1). The size is a count and is drawn like
+  every other count on the rails.
+- **A row that runs out of room gives up whole chips and counts them** —
+  `▣ shot.png 412 KB · ≡ notes.md 2 KB · +1 more`. Half a name is a file that
+  cannot be named to `/paste drop`, and the number of files you are not
+  looking at is the one thing the row cannot otherwise say. The last rung
+  keeps one chip whatever the width: a strip that is only a number has lost
+  the thing it is for, so there the name clips like any other field.
+- **A name is capped at 20 columns, cut at the tail.** The head is the half
+  that tells `screenshot-2026-08-29-at-14-02-11.png` from the one beside it.
+- **It is orchestrator-scoped**, like the notice rail above it (§12d):
+  attached, the keyboard is pointed at a child and `ctrl+v` is a textarea key
+  again, so the orchestrator's staging area is not what the reader is looking
+  at.
+
+**Nothing on a chip is a key, and nothing on it is clickable.** The strip sits
+above a live draft, so a key written on it would be an offer nothing accepts
+(§7c), and a `✕` would be a button on a surface that has no mouse targets.
+Taking one back out is `/paste drop <name>`, with the staged names offered by
+the completion menu (S-079) so the handle never has to be typed from memory;
+`/paste clear` still drops the set. That is why the name is the field a chip
+gives up last — it is the handle, not just a label.
+
+Two departures from Crush's chips, recorded rather than left silent. Its strip
+numbers each chip and removes one on the digit after `ctrl+r`; here the digits
+would be letters going into the sentence below, which is the exact shape
+invariant 5 exists to stop, and shhh's `ctrl+r` is the reasoning level
+(S-139). And its `✕` is a mouse target: shhh has click targets on nothing yet,
+and a button that only looks like one is worse than no button.
 
 ---
 

@@ -4,7 +4,8 @@ package chat
 // a rounded-corner frame whose borders carry information: the top rail shows
 // session identity and the live activity state, the vitals rail re-homes the
 // §8 cockpit segments, and the bottom rail carries contextual key hints. A
-// notice rail above the frame appears only while there is something to say.
+// notice rail above the frame appears only while there is something to say,
+// and a staged rail under it while an attachment is waiting to ride.
 // Takeover surfaces (approval cards, pickers, the agent list, routed child
 // asks, focus/diff hints) replace the framed input wholesale and keep the
 // divider + status-bar stack, so their geometry is unchanged.
@@ -111,15 +112,19 @@ func (m Model) frameShowing() bool {
 }
 
 // frameExtraHeight is what the frame adds beyond the standard chrome rows:
-// the notice rail and, in the wide layout, the dedicated vitals rail. The
-// frame's top and bottom borders take the rows the bottom divider and status
-// bar otherwise use, so the compact and narrow layouts add nothing.
+// the notice rail, the staged rail (§12g) and, in the wide layout, the
+// dedicated vitals rail. The frame's top and bottom borders take the rows the
+// bottom divider and status bar otherwise use, so the compact and narrow
+// layouts add nothing.
 func (m Model) frameExtraHeight() int {
 	if !m.frameShowing() {
 		return 0
 	}
 	extra := m.interruptHeight()
 	if m.noticeLine() != "" {
+		extra++
+	}
+	if m.stagedRail() != "" {
 		extra++
 	}
 	if m.frameLayout() == frameWide {
@@ -286,9 +291,6 @@ func (m Model) noticeLine() string {
 	if m.updateNotice != "" {
 		parts = append(parts, updateNoticeStyle.Render(m.updateNotice))
 	}
-	if note := m.attachmentNotice(); note != "" {
-		parts = append(parts, noticeInfoStyle.Render(note))
-	}
 	if n := len(m.steering); n > 0 {
 		parts = append(parts, noticeInfoStyle.Render(fmt.Sprintf("%d steering queued", n)))
 	}
@@ -388,8 +390,9 @@ func (m Model) childRailSegments() []components.RailSegment {
 	return append(segs, components.RailSegment{Text: statusBarStyle.Render(st.Name), Drop: components.RailDetail})
 }
 
-// renderPromptFrame assembles the whole surface: notice rail, top rail,
-// gutter + input rows (+ completion menu), vitals rail, bottom rail.
+// renderPromptFrame assembles the whole surface: notice rail, staged rail,
+// top rail, gutter + input rows (+ completion menu), vitals rail, bottom
+// rail.
 func (m Model) renderPromptFrame() string {
 	width := m.contentWidth()
 	layout := m.frameLayout()
@@ -418,6 +421,12 @@ func (m Model) renderPromptFrame() string {
 	var b strings.Builder
 	if notice := m.noticeLine(); notice != "" {
 		b.WriteString(notice + "\n")
+	}
+	// The staged rail sits between the notices and the frame (§12g): what is
+	// staged rides with the sentence being typed, so it belongs against the
+	// box it will leave with, under anything transient the session is saying.
+	if staged := m.stagedRail(); staged != "" {
+		b.WriteString(staged + "\n")
 	}
 
 	identity := " " + m.frameIdentity() + " "

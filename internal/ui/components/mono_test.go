@@ -70,6 +70,13 @@ func monoFixtures() []monoSurface {
 		return strings.Join(UnifiedLines(hunk(kind), w, UnifiedOpts{LineNumbers: true, Emphasis: true}), "\n")
 	}
 
+	// One staged chip (§12g). The name and the size are held constant, so the
+	// kind's mark is the only thing left to tell the three apart — which is
+	// what makes the strip legible on a terminal with no colour at all.
+	chipStrip := func(kind ChipKind) string {
+		return AttachmentChips([]AttachmentChip{{Kind: kind, Name: "staged.bin", Size: "412 KB"}}, w)
+	}
+
 	// The config screen's two toned fields (§19a). Everything but the field
 	// under test is held constant, so a value or a source that was only ever
 	// a hue apart from another would collapse here.
@@ -650,6 +657,11 @@ func monoFixtures() []monoSurface {
 			{"nothing to check", doctorState(DoctorSkipped)},
 			{"running", doctorState(DoctorRunning)},
 			{"queued", doctorState(DoctorQueued)},
+		}},
+		{"attachment kind", []monoState{
+			{"an image", chipStrip(ChipImage)},
+			{"a document", chipStrip(ChipDocument)},
+			{"text", chipStrip(ChipText)},
 		}},
 		{"history outcome", []monoState{
 			{"ran clean", historyRow(ActivityDone, "exit 0")},

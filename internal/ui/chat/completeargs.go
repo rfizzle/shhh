@@ -16,6 +16,7 @@ import (
 	"unicode"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/subagent"
 )
 
@@ -231,6 +232,19 @@ func scopeDropArgs(m *Model) []argOption {
 	out := make([]argOption, 0, len(dirs))
 	for _, d := range dirs {
 		out = append(out, argOption{value: d, desc: "Stop the session writing here"})
+	}
+	return out
+}
+
+// attachmentDropArgs offers the attachments staged for the next message
+// (S-134) — the names `/paste drop` takes back out. A chip has no key of its
+// own (§7c), so its name is the handle, and this is what keeps the handle
+// from having to be typed from memory.
+func attachmentDropArgs(m *Model) []argOption {
+	out := make([]argOption, 0, len(m.attachments))
+	for _, a := range m.attachments {
+		out = append(out, argOption{value: a.Name,
+			desc: "Drop this attachment · " + attachment.HumanSize(len(a.Data))})
 	}
 	return out
 }

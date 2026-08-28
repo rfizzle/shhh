@@ -204,6 +204,41 @@ func TestGolden_PromptFrame(t *testing.T) {
 	})
 }
 
+// TestGolden_StagedRail captures the frame with something waiting to ride
+// (S-151, §12g): the chips between the notices and the box they will leave
+// with, at every width, so the rail's own ladder and its place in the stack
+// are on one sheet.
+//
+// The last panel is the pair that matters — a notice above the chips — because
+// "the staged rail sits under anything transient the session is saying" is a
+// claim a reader checks by looking at both rows at once.
+func TestGolden_StagedRail(t *testing.T) {
+	png := make([]byte, 412<<10)
+	pdf := make([]byte, 1126<<10)
+	md := make([]byte, 2<<10)
+	captureGolden(t, "staged-rail", "the frame's staged rail", goldenWidths, func(width int) []golden.Panel {
+		frame := func(mut func(*Model)) string {
+			m := goldenModel(t, width)
+			m.attachments = []provider.Attachment{
+				{Kind: provider.AttachmentImage, Name: "shot.png", Data: png},
+			}
+			mut(&m)
+			return promptSurface(m)
+		}
+		return []golden.Panel{
+			{Label: "one screenshot waiting", View: frame(func(m *Model) {})},
+			{Label: "one of each kind", View: frame(func(m *Model) {
+				m.attachments = append(m.attachments,
+					provider.Attachment{Kind: provider.AttachmentText, Name: "notes.md", Data: md},
+					provider.Attachment{Kind: provider.AttachmentDocument, Name: "spec.pdf", Data: pdf})
+			})},
+			{Label: "a notice above it · transient first, then what rides", View: frame(func(m *Model) {
+				m.steering = []string{"and check the parser"}
+			})},
+		}
+	})
+}
+
 // TestGolden_TurnStatus captures the frame's activity slot while a turn runs
 // (§8d, §12a, S-118): the phases in place on the top rail, and the summary
 // the line resolves into when the turn ends. The slot is whatever the

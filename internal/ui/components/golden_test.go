@@ -972,6 +972,34 @@ func TestGolden_ExitBanner(t *testing.T) {
 	})
 }
 
+// TestGolden_AttachmentChips captures the staged strip (S-151, §12g) at every
+// width: one chip per kind so the three marks are on the sheet together, and
+// the two rungs the row descends as it runs out of room — chips given up
+// whole from the end and counted where they stood, then the last chip's name
+// clipping like any other field.
+//
+// The sheet is what the mono pair is read against: the strip is drawn in body
+// text and dim, so the mark is the whole of what tells an image from a PDF,
+// and the two files must read as differently in the mono capture as in the
+// coloured one (invariant 1).
+func TestGolden_AttachmentChips(t *testing.T) {
+	captureGolden(t, "attachment-chips", "staged attachment chips", goldenWidths, func(width int) []golden.Panel {
+		strip := func(chips ...AttachmentChip) string { return AttachmentChips(chips, width) }
+		shot := AttachmentChip{Kind: ChipImage, Name: "shot.png", Size: "412 KB"}
+		notes := AttachmentChip{Kind: ChipText, Name: "notes.md", Size: "2 KB"}
+		spec := AttachmentChip{Kind: ChipDocument, Name: "spec.pdf", Size: "1.1 MB"}
+		return []golden.Panel{
+			{Label: "one image · the mark, the name, the size", View: strip(shot)},
+			{Label: "one of each kind", View: strip(shot, notes, spec)},
+			{Label: "more than the row can hold · whole chips, then a count",
+				View: strip(shot, notes, spec, shot, notes, spec)},
+			{Label: "a long name · clipped at the head, which is the half that names it",
+				View: strip(AttachmentChip{Kind: ChipImage,
+					Name: "screenshot-2026-08-29-at-14-02-11.png", Size: "412 KB"}, notes)},
+		}
+	})
+}
+
 // TestGolden_RecoveryRows captures every provider failure class on one sheet
 // (§17a). The verb, subject and duration are held constant, so the file reads
 // as a table of what each class contributes: its glyph, the words in its
