@@ -315,7 +315,7 @@ func TestBatch_KeyIsAbsentWithoutAQueue(t *testing.T) {
 	}
 	updated, _ = m.Update(keyA())
 	m = updated.(Model)
-	if !m.allowAllCommands {
+	if len(m.commandGrants) == 0 {
 		t.Fatal("[A] without a batch should still take the session grant")
 	}
 }

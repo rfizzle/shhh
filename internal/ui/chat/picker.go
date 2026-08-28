@@ -1,9 +1,9 @@
 package chat
 
-// Interactive slash-command pickers (S-078). Bare /model and /mode open a
+// Interactive slash-command pickers (S-078). Bare /model and /permissions open a
 // components.Select in the bottom panel instead of printing usage text: ↑↓
 // moves, enter applies, esc cancels. The argument forms (/model <name>,
-// /mode <name>) keep their direct handleSlashCommand paths. Both share one
+// /permissions <name>) keep their direct handleSlashCommand paths. Both share one
 // generic statePick surface, so the session pickers built on it (/load,
 // /chats, /branches — S-080) only need options and an apply function.
 //
@@ -394,7 +394,7 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 	})
 }
 
-// openModePick opens the interactive /mode picker over the session's mode
+// openModePick opens the interactive /permissions picker over the session's mode
 // cycle, focused on the active mode.
 func (m Model) openModePick() (tea.Model, tea.Cmd) {
 	cycle := m.modeCycle

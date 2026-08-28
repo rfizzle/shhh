@@ -302,7 +302,7 @@ func (m Model) noticeLine() string {
 		}
 	}
 	if m.denialNotice != "" {
-		parts = append(parts, noticeAlertStyle.Render("✗ auto denied: "+firstLine(m.denialNotice)+" (/mode why)"))
+		parts = append(parts, noticeAlertStyle.Render("✗ auto denied: "+firstLine(m.denialNotice)+" (/permissions why)"))
 	}
 	if len(parts) == 0 {
 		return ""

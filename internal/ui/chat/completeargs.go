@@ -223,7 +223,8 @@ func modelArgs(m *Model) []argOption {
 	return out
 }
 
-// modeArgs offers the session's mode cycle plus /mode why.
+// modeArgs offers the session's mode cycle plus /permissions' own
+// subcommands.
 func modeArgs(m *Model) []argOption {
 	cycle := m.modeCycle
 	if len(cycle) == 0 {
@@ -237,7 +238,11 @@ func modeArgs(m *Model) []argOption {
 		}
 		out = append(out, argOption{value: mode.String(), desc: desc})
 	}
-	return append(out, argOption{value: "why", desc: "Explain the last approval decision"})
+	return append(out,
+		argOption{value: "why", desc: "Explain the last approval decision"},
+		argOption{value: "grants", desc: "What this session has stopped asking about"},
+		argOption{value: "allow", desc: "Grant a whole category, for the session"},
+		argOption{value: "revoke", desc: "Take the session's grants back"})
 }
 
 // agentArgs offers this session's sub-agents for /attach, blocked ones

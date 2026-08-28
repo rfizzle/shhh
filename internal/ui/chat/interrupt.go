@@ -24,6 +24,7 @@ package chat
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -56,9 +57,110 @@ func (m Model) decisionUngated() bool { return m.interruptShowing() && !m.decisi
 func (m Model) decisionGated() bool { return m.interruptShowing() && m.decisionHeld }
 
 // releaseDecision hands the keyboard back to the draft. It is called wherever
-// a decision arrives or is answered, so a card can never inherit the gate a
+// a decision is answered or left, so a card can never inherit the gate a
 // previous one was given.
-func (m *Model) releaseDecision() { m.decisionHeld = false }
+func (m *Model) releaseDecision() { m.decisionHeld, m.heldOnArrival = false, false }
+
+// draftQuiet is how long the keyboard must have gone untouched before an
+// arriving decision is allowed to hold it. The window is not about the reader
+// who is watching a turn work — they have been quiet for the whole turn, and
+// any window at all catches them. It is about the one who stopped typing a
+// moment ago and is still mid-thought: their draft is empty because the
+// backspace emptied it, and the next thing they press is a letter meant for
+// the sentence they are about to start.
+const draftQuiet = time.Second
+
+// arrivesHeld reports whether a decision arriving now takes the keyboard
+// rather than waiting for ctrl+g.
+//
+// §7b's rule is about a card landing on top of a sentence: `y` stays a letter
+// because it belongs in the sentence, and the reader is charged one ctrl+g
+// for the protection. But most cards do not land on a sentence. They land
+// while the reader is watching a turn work with an empty box, and there the
+// toll buys nothing — there is no sentence for the letter to belong to, and
+// the reader who came to press `y` presses it twice.
+//
+// So the arrival state is decided by whether there is anything to protect.
+// With a sentence in the box, or a keyboard still warm from one, nothing
+// changes: the card arrives ungated, exactly as before. With neither, the
+// card arrives holding the keyboard — which is not a departure from §7b but
+// its other branch, the one every takeover surface takes: a surface whose
+// keys are live is a surface that holds the keyboard exclusively.
+func (m Model) arrivesHeld() bool {
+	if strings.TrimSpace(m.input.Value()) != "" {
+		return false
+	}
+	return m.summoned() || time.Since(m.lastKeypress) >= draftQuiet
+}
+
+// summoned reports whether the decision on screen is one the reader asked
+// for: the /run confirm, which is the user's own command and has no agent
+// request behind it. A card you opened yourself holds the keyboard whatever
+// the clock says — the keystroke the quiet window would count against it is
+// the very keystroke that summoned it.
+func (m Model) summoned() bool {
+	return m.pendingApproval == nil && m.pendingRun != ""
+}
+
+// armDecision decides where the keyboard is as the turn arrives at s. It is
+// the one place a turn-state arrival is answered, so no surface reached
+// through setTurnState can drift into an answer of its own.
+//
+// Departures pass through here too, and land on false: leaving a decision
+// gives the draft the keyboard back whatever it was doing. So does a decision
+// the turn reaches while a surface has the screen — it has not arrived in
+// front of anyone yet, and leaveSurface is where it does.
+func (m *Model) armDecision(s state) {
+	if m.state.isSurface() || !m.arrivalGates(s) {
+		m.decisionHeld, m.heldOnArrival = false, false
+		return
+	}
+	m.decisionHeld = m.arrivesHeld()
+	m.heldOnArrival = m.decisionHeld
+}
+
+// armArrival arms a decision that arrives outside the turn state machine: a
+// child agent's routed approval, which is a queue rather than a state (§9c).
+// It answers the same questions setTurnState's arming does — a decision
+// already holding the keyboard keeps it, one landing behind a surface has not
+// landed in front of anyone, and otherwise it depends on whether there is a
+// sentence to protect.
+func (m *Model) armArrival() {
+	if m.decisionHeld || m.state.isSurface() {
+		return
+	}
+	m.decisionHeld = m.arrivesHeld()
+	m.heldOnArrival = m.decisionHeld
+}
+
+// arrivalGates reports whether a decision arriving at s is one that may take
+// the keyboard by arriving at all.
+//
+// Only the approval card and the /run confirm are. Their question is the one
+// a reader walks up to a screen to answer, and the answer is one letter. The
+// plan card (§4d) and the memory proposal (S-070) both take typed input — a
+// choice moved with j/k, a note written into a field — so a card that took
+// the keyboard would be a card eating a sentence, which is the hazard this
+// whole rule exists for. They keep the handover, and it costs them nothing:
+// they arrive once, not once per tool call.
+func (m Model) arrivalGates(s state) bool {
+	return s == stateConfirmRun && m.memoryAsk == nil
+}
+
+// releaseToDraft hands the keyboard back and delivers the keystroke to the
+// draft (§7b). It is what a card holding the keyboard by arrival does with a
+// key it has no answer for: the reader never asked for the keyboard, so the
+// letter they typed is the start of a sentence and belongs in the box, not
+// dropped on the floor while they look at a card.
+func (m Model) releaseToDraft(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	m.releaseDecision()
+	var cmd tea.Cmd
+	m.input, cmd = m.input.Update(msg)
+	m.syncCompletions()
+	m.syncViewport()
+	m.viewport.SetContent(m.renderHistory())
+	return m, cmd
+}
 
 // gateDecision gives the card the keyboard. The draft is not touched: it
 // keeps every character and its cursor, and gets them back when the decision
@@ -67,7 +169,7 @@ func (m Model) gateDecision() (tea.Model, tea.Cmd) {
 	if !m.interruptShowing() {
 		return m, nil
 	}
-	m.decisionHeld = true
+	m.decisionHeld, m.heldOnArrival = true, false
 	// The completion menu belongs to the draft, and the draft no longer has
 	// the keyboard; leaving it open would offer keys nothing would answer.
 	m.dismissCompletions()
@@ -288,10 +390,15 @@ func (m Model) renderInterrupt(width int) string {
 // decide, so the transcript above gives up the rows instead.
 func (m Model) applyNotYetLive(card *components.ApprovalCard) {
 	card.MaxLines = m.maxConfirmPanelHeight()
+	card.Handover = handoverKey
 	if m.decisionUngated() {
-		card.NotYetLive, card.Handover = true, handoverKey
+		card.NotYetLive = true
 		return
 	}
+	// A card that took the keyboard by arriving on an idle draft claims less
+	// than one the reader handed it (§7b): it says so on the card, and says
+	// what the handover would still buy.
+	card.HeldOnArrival = m.heldOnArrival
 	if m.escLeavesWaiting() {
 		card.Return = "[esc] back to your draft — the decision stays waiting, nothing is denied"
 	}

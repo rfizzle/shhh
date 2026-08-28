@@ -38,7 +38,8 @@
 │ + 2  line two                                                            │
 │ +1 −0 · 1 hunk · undo yes — recorded, and it needs no git to restore     │
 ├──────────────────────────────────────────────────────────────────────────┤
-│ Apply this change? [y/n/a]  (a: always allow edits)  (d: full diff)      │
+│ Apply this change? [y/n/a]                                               │
+│ (a: always allow edits in ./)  (d: full diff)                            │
 │ [esc] back to your draft — the decision stays waiting, nothing is denied │
 └──────────────────────────────────────────────────────────────────────────┘
 
@@ -76,7 +77,8 @@
 ␛[38;5;214m│␛[0m ␛[92m+␛[0m␛[38;5;241m 2  ␛[0m␛[38;5;148mline␛[0m␛[38;5;231m ␛[0m␛[38;5;148mtwo␛[0m                                                            ␛[38;5;214m│␛[0m
 ␛[38;5;214m│␛[0m ␛[38;5;241m+1 −0 · 1 hunk · undo yes — recorded, and it needs no git to restore␛[0m     ␛[38;5;214m│␛[0m
 ␛[38;5;214m├──────────────────────────────────────────────────────────────────────────┤␛[0m
-␛[38;5;214m│␛[0m ␛[3;38;5;241mApply this change? [y/n/a]  (a: always allow edits)  (d: full diff)␛[0m      ␛[38;5;214m│␛[0m
+␛[38;5;214m│␛[0m ␛[3;38;5;241mApply this change? [y/n/a]␛[0m                                               ␛[38;5;214m│␛[0m
+␛[38;5;214m│␛[0m ␛[3;38;5;241m(a: always allow edits in ./)  (d: full diff)␛[0m                            ␛[38;5;214m│␛[0m
 ␛[38;5;214m│␛[0m ␛[38;5;241m[esc] back to your draft — the decision stays waiting, nothing is denied␛[0m ␛[38;5;214m│␛[0m
 ␛[38;5;214m└──────────────────────────────────────────────────────────────────────────┘␛[0m
 

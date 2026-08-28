@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/ansi"
@@ -270,5 +271,158 @@ func TestInterrupt_TheRailFallsBackRatherThanClippingTheWord(t *testing.T) {
 	}
 	if len([]rune(narrow)) != 10 {
 		t.Fatalf("the fallback still fills its width, got %q", narrow)
+	}
+}
+
+// The other half of §7b, and the one the rule was quietly charging for: most
+// cards do not land on a sentence. They land while the reader is watching a
+// turn work with an empty box, and there the handover buys nothing — there is
+// no sentence for the letter to belong to, and the reader who came to press
+// [y] was pressing it twice.
+
+func TestArrival_ACardLandingOnAnIdleDraftHoldsTheKeyboard(t *testing.T) {
+	m := interruptedModel(t, "")
+
+	if !m.decisionGated() {
+		t.Fatal("a card landing on a draft nobody is typing into should hold the keyboard")
+	}
+	if !m.heldOnArrival {
+		t.Fatal("the card took the keyboard by arriving, not by a handover")
+	}
+	view := ansi.Strip(m.View())
+	if strings.Contains(view, "not live yet") {
+		t.Fatalf("a card holding the keyboard has live keys:\n%s", view)
+	}
+	if !strings.Contains(view, "DECISION") {
+		t.Fatalf("the rail should name the decision as the keyboard's owner:\n%s", view)
+	}
+
+	// And [y] answers it, with no chord in front.
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	if got := updated.(Model).state; got != stateRunningCmd {
+		t.Fatalf("[y] should have approved the waiting call, state is %d", got)
+	}
+}
+
+func TestArrival_ASentenceInTheBoxStillKeepsTheKeyboard(t *testing.T) {
+	// The rule that started all of this is untouched: with something to
+	// protect, the card arrives with nothing of its own but the handover.
+	m := interruptedModel(t, "also add a --max-rounds flag")
+	if !m.decisionUngated() {
+		t.Fatal("a card landing on a sentence must not take the keyboard")
+	}
+}
+
+func TestArrival_AKeyboardStillWarmFromASentenceKeepsIt(t *testing.T) {
+	// An empty draft is not the same thing as an idle one. A reader who just
+	// held backspace down has an empty box and is mid-thought, and the next
+	// thing they press is the first letter of what they meant to say.
+	m := interruptedModel(t, "")
+	m.releaseDecision()
+	m.lastKeypress = time.Now()
+	m.armDecision(stateConfirmRun)
+	if m.decisionHeld {
+		t.Fatal("a decision arriving on a keyboard touched a moment ago must not take it")
+	}
+}
+
+func TestArrival_AnUnansweredKeyGoesToTheDraftAndLeavesTheDecisionWaiting(t *testing.T) {
+	m := interruptedModel(t, "")
+	if !m.heldOnArrival {
+		t.Fatal("the fixture should be a card holding the keyboard by arrival")
+	}
+
+	// "let's not" — a sentence, typed at a card the reader never asked for.
+	// The first letter hands the keyboard back and lands in the box.
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'l'}})
+	m = updated.(Model)
+	if m.state != stateConfirmRun {
+		t.Fatalf("a letter must leave the decision waiting, state is now %d", m.state)
+	}
+	if got := m.input.Value(); got != "l" {
+		t.Fatalf("the letter belongs in the draft, got %q", got)
+	}
+	if !m.decisionUngated() {
+		t.Fatal("the card should have handed the keyboard back with the letter")
+	}
+	// And the rest of the sentence follows it, including the letters the card
+	// would have answered to.
+	for _, k := range []rune{'e', 't', 's', ' ', 'n', 'o', 't', 'y', 'a'} {
+		updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{k}})
+		m = updated.(Model)
+	}
+	if got := m.input.Value(); got != "lets notya" {
+		t.Fatalf("the whole sentence belongs in the draft, got %q", got)
+	}
+	if m.state != stateConfirmRun {
+		t.Fatal("nothing in the sentence may have answered the decision")
+	}
+}
+
+func TestArrival_TheKeysASentenceCouldHaveMeantWaitForTheHandover(t *testing.T) {
+	// [a] is the one whose consequence outlives the call, and "also" is how
+	// half the follow-ups in this product start. It is not on an arrival-held
+	// card, and the card says where it went.
+	m := interruptedModel(t, "")
+	view := ansi.Strip(m.View())
+	if !strings.Contains(view, "[y/N]") {
+		t.Fatalf("an arrival-held card offers its two answers:\n%s", view)
+	}
+	if !strings.Contains(view, "[ctrl+g] for [a]/[d]") {
+		t.Fatalf("the card should say what the handover still buys:\n%s", view)
+	}
+	if !strings.Contains(view, "any other key goes to your draft") {
+		t.Fatalf("the card should say where everything else goes:\n%s", view)
+	}
+
+	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	m = updated.(Model)
+	if m.allowAllEdits || len(m.editDirGrants) > 0 {
+		t.Fatal("[a] must not grant anything on a card the reader never took")
+	}
+	if got := m.input.Value(); got != "a" {
+		t.Fatalf("[a] belongs in the draft here, got %q", got)
+	}
+
+	// The handover buys it back, and now it means what the card says.
+	m = handover(t, m)
+	if !strings.Contains(ansi.Strip(m.View()), "[y/n/a]") {
+		t.Fatal("after the handover the card offers [a] again")
+	}
+}
+
+func TestArrival_ADecisionParkedBehindASurfaceArmsWhenItLands(t *testing.T) {
+	// A card the turn reached while reading mode had the screen has not
+	// arrived in front of anyone. It arrives when the surface closes — one
+	// keystroke ago — so it arrives ungated.
+	m := interruptedModel(t, "")
+	m.releaseDecision()
+	m.enterSurface(stateFocus)
+	m.setTurnState(stateConfirmRun)
+	if m.decisionHeld {
+		t.Fatal("a decision behind a surface holds no keyboard")
+	}
+	m.lastKeypress = time.Now()
+	m.leaveSurface()
+	if m.state != stateConfirmRun {
+		t.Fatalf("leaving the surface should land on the decision, got %d", m.state)
+	}
+	if m.decisionHeld {
+		t.Fatal("a decision landing on the key that closed the surface must not take the keyboard")
+	}
+}
+
+func TestArrival_ACardYouAskedForHoldsTheKeyboard(t *testing.T) {
+	// The /run confirm is the reader's own command coming back to be
+	// confirmed. The enter that summoned it is the keystroke the quiet
+	// window would otherwise hold against it, which would make asking for a
+	// card cost a chord to answer.
+	m := interruptedModel(t, "")
+	m.releaseDecision()
+	m.pendingApproval, m.pendingRun = nil, "go test ./..."
+	m.lastKeypress = time.Now()
+	m.armDecision(stateConfirmRun)
+	if !m.decisionHeld {
+		t.Fatal("a confirm the reader summoned should arrive holding the keyboard")
 	}
 }

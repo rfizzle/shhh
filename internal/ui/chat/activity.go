@@ -301,7 +301,7 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 				row.Outcome += " · " + e.denyRule
 			}
 			if row.ByRule {
-				row.Keys = "/mode why"
+				row.Keys = "/permissions why"
 			}
 			if row.Duration == "" {
 				row.Duration = components.NoDuration

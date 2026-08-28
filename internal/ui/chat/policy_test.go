@@ -151,8 +151,8 @@ func TestPolicy_AlwaysAllowCommandsViaKey(t *testing.T) {
 	m := execModel(t, &ran)
 
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
-		{ID: "call_1", Name: "execute_command", Arguments: `{"command":"echo one"}`},
-		{ID: "call_2", Name: "execute_command", Arguments: `{"command":"echo two"}`},
+		{ID: "call_1", Name: "execute_command", Arguments: `{"command":"go build ./one"}`},
+		{ID: "call_2", Name: "execute_command", Arguments: `{"command":"go build ./two"}`},
 	}})
 	m = updated.(Model)
 
@@ -166,11 +166,15 @@ func TestPolicy_AlwaysAllowCommandsViaKey(t *testing.T) {
 		t.Fatal("unflagged command prompt with a queue behind it should offer y/n/a/A")
 	}
 
-	// 'a' approves this command and every later one this session.
+	// 'a' approves this command and stops the session asking about commands
+	// of the same shape — `echo`, not everything (S-054).
 	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
 	m = updated.(Model)
-	if !m.allowAllCommands {
-		t.Fatal("'a' should set the session command policy")
+	if m.allowAllCommands {
+		t.Fatal("'a' must not hand out a blanket grant; that is /permissions allow")
+	}
+	if got := m.commandGrants; len(got) != 1 || got[0] != "go build" {
+		t.Fatalf("'a' should have granted the command's leading words, got %v", got)
 	}
 	updated, cmd = m.Update(driveCmdDone(t, cmd))
 	m = updated.(Model)
@@ -179,7 +183,7 @@ func TestPolicy_AlwaysAllowCommandsViaKey(t *testing.T) {
 	}
 	updated, restream := m.Update(driveCmdDone(t, cmd))
 	m = updated.(Model)
-	if len(ran) != 2 || ran[0] != "echo one" || ran[1] != "echo two" {
+	if len(ran) != 2 || ran[0] != "go build ./one" || ran[1] != "go build ./two" {
 		t.Fatalf("both commands should have run in order, got %v", ran)
 	}
 	if m.state != stateStreaming || restream == nil {
@@ -209,8 +213,11 @@ func TestPolicy_AlwaysAllowEditsViaKey(t *testing.T) {
 
 	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
 	m = updated.(Model)
-	if !m.allowAllEdits {
-		t.Fatal("'a' should set the session edit policy")
+	if m.allowAllEdits {
+		t.Fatal("'a' must not hand out a blanket grant; that is /permissions allow")
+	}
+	if got := m.editDirGrants; len(got) != 1 || got[0] != dir {
+		t.Fatalf("'a' should have granted the edited file's directory, got %v", got)
 	}
 	var done approvedToolDoneMsg
 	for _, c := range unwrapBatch(cmd) {
@@ -238,12 +245,12 @@ func TestPolicy_AlwaysAllowEditsViaKey(t *testing.T) {
 	}
 	found := false
 	for _, e := range m.transcript {
-		if e.kind == entrySystem && strings.Contains(e.text, "Auto-approved (session policy): write "+second) {
+		if e.kind == entrySystem && strings.Contains(e.text, "Auto-approved (session grant): write "+second) {
 			found = true
 		}
 	}
 	if !found {
-		t.Fatal("transcript should note the session-policy auto-approval")
+		t.Fatal("transcript should note the session-grant auto-approval")
 	}
 }
 
@@ -402,7 +409,7 @@ func TestMode_PlanRefusesGatedCalls(t *testing.T) {
 		t.Fatalf("transcript should note both refusals, got %d", found)
 	}
 	view := stripANSI(m.renderHistory())
-	for _, want := range []string{"⊘", "denied · auto · plan mode", "/mode why"} {
+	for _, want := range []string{"⊘", "denied · auto · plan mode", "/permissions why"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("a rule's refusal names the rule and offers its key, want %q:\n%s", want, view)
 		}
@@ -580,5 +587,124 @@ func TestModelDefaults(t *testing.T) {
 	plain := New(nil, mockStream)
 	if _, out := plain.handleSlashCommand("/model default o3"); !strings.Contains(out, "cannot write") {
 		t.Fatalf("expected a not-persisted notice, got %q", out)
+	}
+}
+
+// The grant ladder (S-054). [a] used to have one rung above "this once" —
+// every command, or every edit, for the rest of the session — and no way
+// down: switching back to manual mode did not clear it, because the grant is
+// consulted before the mode is. These hold the two ends of the fix.
+
+func TestGrant_ADifferentShapeOfCommandStillAsks(t *testing.T) {
+	var ran []string
+	m := execModel(t, &ran)
+
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_1", Name: "execute_command", Arguments: `{"command":"go build ./one"}`},
+		{ID: "call_2", Name: "execute_command", Arguments: `{"command":"npm publish"}`},
+	}})
+	m = handover(t, updated.(Model))
+
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	m = updated.(Model)
+	updated, _ = m.Update(driveCmdDone(t, cmd))
+	m = updated.(Model)
+
+	// `go build` was granted; `npm publish` is a different thing entirely,
+	// and the whole point of a scoped grant is that it still asks.
+	if m.state != stateConfirmRun {
+		t.Fatalf("a command outside the grant should still prompt, got state %d", m.state)
+	}
+	if len(ran) != 1 {
+		t.Fatalf("only the granted command should have run, got %v", ran)
+	}
+}
+
+func TestGrant_ADifferentDirectoryStillAsks(t *testing.T) {
+	m := gatedModel(t, nil, nil)
+	root := t.TempDir()
+	inside := filepath.Join(root, "kept", "a.txt")
+	beside := filepath.Join(root, "other", "b.txt")
+	if err := os.MkdirAll(filepath.Dir(inside), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Dir(beside), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_1", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":"one\n"}`, inside)},
+		{ID: "call_2", Name: "write_file", Arguments: fmt.Sprintf(`{"path":%q,"content":"two\n"}`, beside)},
+	}})
+	m = handover(t, updated.(Model))
+
+	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	m = updated.(Model)
+	var done approvedToolDoneMsg
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(approvedToolDoneMsg); ok {
+			done = msg
+		}
+	}
+	updated, _ = m.Update(done)
+	m = updated.(Model)
+
+	if m.state != stateConfirmRun {
+		t.Fatalf("an edit outside the granted directory should still prompt, got state %d", m.state)
+	}
+}
+
+func TestGrant_RevokeTakesThemBack(t *testing.T) {
+	m := readyModel(t)
+
+	if got := m.allowCommand([]string{"commands"}); !strings.Contains(got, "without asking") {
+		t.Fatalf("/permissions allow commands should grant them, said %q", got)
+	}
+	m.commandGrants = append(m.commandGrants, "go build")
+	m.editDirGrants = append(m.editDirGrants, "internal/ui")
+	if !m.allowAllCommands {
+		t.Fatal("the blanket command grant should be on")
+	}
+
+	status := m.grantStatus()
+	for _, want := range []string{"every command", "go build", "internal/ui/"} {
+		if !strings.Contains(status, want) {
+			t.Fatalf("/permissions grants should name %q:\n%s", want, status)
+		}
+	}
+
+	said := m.revokeCommand(nil)
+	if !strings.Contains(said, "every command") || !strings.Contains(said, "go build") {
+		t.Fatalf("revoke should name what it took back, said %q", said)
+	}
+	if m.grants().Any() {
+		t.Fatalf("revoke should leave nothing granted, got %+v", m.grants())
+	}
+	if got := m.modePolicy(); got.AllowCommands || len(got.EditDirs) > 0 || len(got.CommandAllowlist) != len(m.commandAllowlist) {
+		t.Fatalf("the policy should be back to asking, got %+v", got)
+	}
+}
+
+func TestGrant_RevokeOneCategoryLeavesTheOther(t *testing.T) {
+	m := readyModel(t)
+	m.commandGrants = []string{"go build"}
+	m.editDirGrants = []string{"internal/ui"}
+
+	m.revokeCommand([]string{"edits"})
+	if len(m.editDirGrants) != 0 {
+		t.Fatal("the edit grants should be gone")
+	}
+	if len(m.commandGrants) != 1 {
+		t.Fatalf("the command grants should be untouched, got %v", m.commandGrants)
+	}
+}
+
+func TestGrant_ConfigsAllowlistIsNotTheSessionsToRevoke(t *testing.T) {
+	m := readyModel(t).WithCommandAllowlist([]string{"make"})
+	m.commandGrants = []string{"go build"}
+
+	m.revokeCommand(nil)
+	if got := m.allowlist(); len(got) != 1 || got[0] != "make" {
+		t.Fatalf("config's own allowlist should survive a revoke, got %v", got)
 	}
 }

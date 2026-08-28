@@ -43,9 +43,11 @@ func (m Model) turnState() state {
 // while the user is reading a diff waits for them to come back.
 func (m *Model) setTurnState(s state) {
 	// Every arrival at a decision, and every departure from one, passes
-	// through here — so this is where the keyboard goes back to the draft. A
-	// card can never inherit the gate the last one was given (S-117, §7b).
-	m.releaseDecision()
+	// through here — so this is where the keyboard is decided. A card can
+	// never inherit the gate the last one was given (S-117, §7b), and one
+	// arriving on a draft nobody is typing into holds the keyboard itself
+	// rather than charging a ctrl+g for a sentence that is not there.
+	m.armDecision(s)
 	// A turn going idle stamps its end, so the inspector rail's elapsed time
 	// freezes at what the turn took instead of counting on (S-092).
 	if s == stateInput && m.working() && !m.turnStarted.IsZero() {
@@ -88,6 +90,16 @@ func (m *Model) leaveSurface() {
 		m.state = m.turnBack
 	}
 	m.turnBack = stateInput
+	// A decision the turn reached while the surface had the screen is only
+	// arriving now, so it is armed now — which, a keystroke ago, means it
+	// arrives ungated. One that was already holding the keyboard keeps it:
+	// the reader took it on purpose, and the surface they just closed was
+	// most likely the card's own full-screen diff.
+	if m.arrivalGates(m.state) && !m.decisionHeld {
+		// (arrivesHeld answers the summoned case too, so a /run confirm
+		// picked from the block picker lands holding the keyboard.)
+		m.decisionHeld = m.arrivesHeld()
+	}
 }
 
 // working reports whether the session's own turn is in flight — streaming,

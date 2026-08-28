@@ -2,6 +2,7 @@ package components
 
 import (
 	"fmt"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -36,6 +37,12 @@ const (
 	// ApprovalBatch approves this action and every queued action the session
 	// would classify the same way (A, only when Batch is set — S-102).
 	ApprovalBatch
+	// ApprovalRelease hands the keyboard back to the draft and asks the host
+	// to deliver the keystroke there. Only a card holding the keyboard by
+	// arrival returns it (HeldOnArrival): the reader never took the keyboard,
+	// so a key the card has no answer for is the start of a sentence rather
+	// than a mispress.
+	ApprovalRelease
 )
 
 // Severity is how much the pending action could cost, led with as a word
@@ -198,6 +205,27 @@ type ApprovalCard struct {
 	// key in this state.
 	NotYetLive bool
 	Handover   string
+
+	// HeldOnArrival marks a card that took the keyboard by landing on a draft
+	// nobody was typing into, rather than by a handover the reader asked for
+	// (S-117, §7b). It claims less than a card that was handed the keyboard:
+	// the two answers and the two ways out, and nothing whose consequence a
+	// reader could not undo — [a] and [d] still want the handover, because
+	// `always` and `always` are not what someone typing `also` meant. Every
+	// other key releases the keyboard and goes into the draft.
+	HeldOnArrival bool
+}
+
+// arrivalKeys are what a HeldOnArrival card answers to. They are the keys a
+// reader who walked up to the card came to press; everything else is prose.
+func (c *ApprovalCard) arrivalKey(key string) (ApprovalDecision, bool) {
+	switch key {
+	case "y", "Y", "enter":
+		return ApprovalApprove, true
+	case "n", "N", "esc", "ctrl+c":
+		return ApprovalDeny, true
+	}
+	return 0, false
 }
 
 // Update maps decision keys, preserving the chat confirm prompt's y/n/esc
@@ -210,6 +238,16 @@ func (c *ApprovalCard) Update(msg tea.KeyMsg) (done bool, result any) {
 		// everything else belongs to the draft — including enter, which is
 		// how a sentence ends.
 		return false, nil
+	}
+	if c.HeldOnArrival {
+		// The card has the keyboard, but nobody handed it over. It answers
+		// what it was walked up to be asked and gives the keyboard back for
+		// everything else, so a reader who came to type a message instead of
+		// answering loses neither the first letter of it nor the decision.
+		if result, ok := c.arrivalKey(msg.String()); ok {
+			return true, result
+		}
+		return true, ApprovalRelease
 	}
 	switch msg.String() {
 	case "y", "Y", "enter":
@@ -301,21 +339,45 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 		return notYetLiveRows(c.Question+" "+c.keys(), c.Handover, width)
 	}
 	hint := c.Question + " " + c.keys()
-	if c.AllowAlways && c.AlwaysHint != "" {
-		hint += "  (" + c.AlwaysHint + ")"
+	// What [a] and [d] qualify is part of the offer, not decoration: [a] now
+	// names the scope it grants (`always allow "go test"`), which is longer
+	// than the word it replaced and is the half a clip would take. So the
+	// qualifiers ride beside the keys where the terminal carries them and
+	// drop to rows of their own where it does not — the judgement [A] has
+	// made since S-102, for the same reason.
+	var quals []string
+	if !c.HeldOnArrival {
+		if c.AllowAlways && c.AlwaysHint != "" {
+			quals = append(quals, "("+c.AlwaysHint+")")
+		}
+		if c.FullDiff {
+			quals = append(quals, "(d: full diff)")
+		}
 	}
-	if c.FullDiff {
-		hint += "  (d: full diff)"
+	qualRow := strings.Join(quals, "  ")
+	if qualRow != "" {
+		if joined := hint + "  " + qualRow; lipgloss.Width(joined) <= inner {
+			hint, qualRow = joined, ""
+		}
 	}
 	segments := append([]string{hint}, c.ExtraHints...)
+	if rest := c.arrivalRest(); rest != "" {
+		segments = append(segments, rest)
+	}
 	if c.SafeDefault != "" {
 		segments = append(segments, c.SafeDefault)
 	}
 	hints := hintRows(segments, width)
+	if qualRow != "" && len(hints) > 0 {
+		// They travel together on one row rather than one row each: they
+		// qualify the same key line, and a card is bounded to 40% of the
+		// screen (§1) — rows spent here are rows the transcript gives up.
+		hints = append([]string{hints[0], hintStyle.Render(clip(qualRow, inner))}, hints[1:]...)
+	}
 	// [A] gets a row of its own rather than a place in the joined run: the
 	// count is the whole offer, and on an 80-column terminal a joined run is
 	// exactly where it would be clipped away.
-	if c.Batch && c.BatchHint != "" {
+	if c.Batch && c.BatchHint != "" && !c.HeldOnArrival {
 		hints = append(hints, hintStyle.Render(clip(c.BatchHint, inner)))
 	}
 	if c.Footnote != "" {
@@ -331,6 +393,11 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 // grant is allowed and [A] only where there is a queue behind the card, so
 // the list is always exactly what the card will answer to.
 func (c *ApprovalCard) keys() string {
+	if c.HeldOnArrival {
+		// The card has the keyboard but nobody gave it: it answers the two
+		// keys and offers nothing a mistyped word could have meant.
+		return "[y/N]"
+	}
 	keys := "y/N"
 	if c.AllowAlways {
 		keys = "y/n/a"
@@ -344,6 +411,35 @@ func (c *ApprovalCard) keys() string {
 		keys += "/A"
 	}
 	return "[" + keys + "]"
+}
+
+// arrivalRest names what the handover still buys on a card that took the
+// keyboard by arriving: the keys it deliberately did not claim, and the fact
+// that everything else goes into the draft. It is the not-yet-live row turned
+// around — there ctrl+g buys every key, here it buys the ones a sentence
+// could have produced by accident.
+func (c *ApprovalCard) arrivalRest() string {
+	if !c.HeldOnArrival {
+		return ""
+	}
+	var rest []string
+	if c.AllowAlways {
+		rest = append(rest, "a")
+	}
+	if c.FullDiff {
+		rest = append(rest, "d")
+	}
+	if c.Batch {
+		rest = append(rest, "A")
+	}
+	if len(rest) == 0 || c.Handover == "" {
+		return "any other key goes to your draft"
+	}
+	for i, k := range rest {
+		rest[i] = "[" + k + "]"
+	}
+	return "[" + c.Handover + "] for " + strings.Join(rest, "/") +
+		" · any other key goes to your draft"
 }
 
 // severityRows are the ⚠ rows: the severity word leads the first risk, and

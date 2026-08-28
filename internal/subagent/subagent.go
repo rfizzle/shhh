@@ -551,12 +551,11 @@ type Supervisor struct {
 	children []*child
 	byName   map[string]*child
 	counters map[Role]int
-	// parentMode is the ceiling children are clamped to; parentEdits and
-	// parentCommands are the parent's session grants ([a] on a prompt),
-	// which children inherit for the same reason they inherit the mode.
-	parentMode     agent.Mode
-	parentEdits    bool
-	parentCommands bool
+	// parentMode is the ceiling children are clamped to; parentGrants are the
+	// parent's session grants ([a] on a prompt, /mode allow), which children
+	// inherit for the same reason they inherit the mode.
+	parentMode   agent.Mode
+	parentGrants agent.Grants
 	// appliedFiles records which agent's patch last landed each file, so a
 	// later patch touching the same file is flagged before it is applied.
 	appliedFiles map[string]string
@@ -636,11 +635,13 @@ func (s *Supervisor) SetParentMode(m agent.Mode) {
 }
 
 // SetParentGrants records the parent's session grants ([a] on a confirm
-// prompt): a category the user waved through for the session is waved through
-// for children too, so one grant is not re-asked once per agent.
-func (s *Supervisor) SetParentGrants(edits, commands bool) {
+// prompt, /mode allow): what the user waved through for the session is waved
+// through for children too, so one grant is not re-asked once per agent. The
+// scoped grants travel with the blanket ones — a child editing under a
+// directory the parent granted is doing the thing that was granted.
+func (s *Supervisor) SetParentGrants(g agent.Grants) {
 	s.mu.Lock()
-	s.parentEdits, s.parentCommands = edits, commands
+	s.parentGrants = g
 	s.mu.Unlock()
 }
 
@@ -649,13 +650,18 @@ func (s *Supervisor) SetParentGrants(edits, commands bool) {
 // read-only inspection settings.
 func (s *Supervisor) childPolicy(c *child) agent.ModePolicy {
 	s.mu.Lock()
-	edits, commands := s.parentEdits, s.parentCommands
+	g := s.parentGrants
 	s.mu.Unlock()
+	allowlist := s.opts.CommandAllowlist
+	if len(g.Commands) > 0 {
+		allowlist = append(append([]string(nil), allowlist...), g.Commands...)
+	}
 	return agent.ModePolicy{
 		Mode:             s.childMode(c),
-		AllowEdits:       edits,
-		AllowCommands:    commands,
-		CommandAllowlist: s.opts.CommandAllowlist,
+		AllowEdits:       g.AllEdits,
+		AllowCommands:    g.AllCommands,
+		EditDirs:         g.EditDirs,
+		CommandAllowlist: allowlist,
 		ReadOnlyExtra:    s.opts.ReadOnlyExtra,
 		ReadOnlyDisabled: s.opts.ReadOnlyDisabled,
 	}

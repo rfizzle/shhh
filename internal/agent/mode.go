@@ -44,7 +44,7 @@ func (m Mode) String() string {
 	}
 }
 
-// Describe is the one-line explanation of a mode shown by /mode and /help.
+// Describe is the one-line explanation of a mode shown by /permissions and /help.
 func (m Mode) Describe() string {
 	switch m {
 	case ModeAcceptEdits:
@@ -58,7 +58,7 @@ func (m Mode) Describe() string {
 	}
 }
 
-// ParseMode maps a config or /mode name to its Mode.
+// ParseMode maps a config or /permissions name to its Mode.
 func ParseMode(s string) (Mode, error) {
 	switch strings.ToLower(strings.TrimSpace(s)) {
 	case "manual":
@@ -152,6 +152,9 @@ type Action struct {
 	Kind ActionKind
 	// Command is the command text for ActionCommand (allowlist matching).
 	Command string
+	// Path is the file for ActionEdit, which is what a directory-scoped edit
+	// grant is matched against (S-054, GrantPrefix's counterpart).
+	Path string
 	// SafetyFlagged marks commands flagged by safety.Check; they always ask
 	// the human, in every mode except plan (which refuses them outright).
 	SafetyFlagged bool
@@ -172,17 +175,22 @@ const (
 // PlanModeResult is the tool result recorded for a gated call refused in
 // plan mode, so the model learns why nothing ran instead of the call being
 // silently dropped.
-const PlanModeResult = "error: this session is in plan mode (read-only); the call was not executed. Present your plan as a message, or ask the user to switch modes (Shift+Tab or /mode)."
+const PlanModeResult = "error: this session is in plan mode (read-only); the call was not executed. Present your plan as a message, or ask the user to switch modes (Shift+Tab or /permissions)."
 
 // ModePolicy is the session approval-policy state: the active mode plus the
 // S-054 internals (per-category session grants and the config command
 // allowlist) that manual and accept-edits build on.
 type ModePolicy struct {
 	Mode Mode
-	// AllowEdits and AllowCommands are the [a] session grants.
+	// AllowEdits and AllowCommands are the blanket session grants, which
+	// `/permissions allow` sets: every edit, every command, until they are revoked.
 	AllowEdits    bool
 	AllowCommands bool
-	// CommandAllowlist entries pre-approve matching commands (config).
+	// EditDirs are the scoped edit grants [a] records on an edit card: edits
+	// under these directories run without asking, and nothing else does.
+	EditDirs []string
+	// CommandAllowlist entries pre-approve matching commands — the config
+	// list, plus whatever [a] has recorded on a command card this session.
 	CommandAllowlist []string
 	// ReadOnlyExtra extends the built-in read-only command allowlist
 	// (behavior.read_only_commands).
@@ -328,6 +336,8 @@ func (p ModePolicy) Decide(a Action) (Decision, string) {
 			return Allow, p.Mode.String() + " mode"
 		case p.AllowEdits:
 			return Allow, "session policy"
+		case PathUnder(p.EditDirs, a.Path):
+			return Allow, "session grant"
 		}
 	case ActionCommand:
 		switch {

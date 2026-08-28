@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -589,12 +591,19 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 			card.Headline = "Run: " + firstLine(m.pendingRun)
 		}
 		// [a] is offered only for assistant commands without safety warnings:
-		// flagged actions can never be blanket-approved, and /run stays
-		// manual. The card says why it is missing rather than omitting it
-		// silently (S-101).
+		// flagged actions can never be pre-approved, and /run stays manual.
+		// The card says why it is missing rather than omitting it silently
+		// (S-101).
+		//
+		// What it grants is named on the card, because a key whose scope is
+		// not stated is a key pressed on a guess: [a] records the command's
+		// leading words, so the reader sees `go test` before they widen
+		// anything, not `commands` after they have.
 		if req != nil && len(card.Warnings) == 0 {
-			card.AllowAlways = true
-			card.AlwaysHint = "a: always allow commands this session"
+			if prefix := agent.GrantPrefix(req.command); prefix != "" {
+				card.AllowAlways = true
+				card.AlwaysHint = "a: always allow " + strconv.Quote(prefix)
+			}
 		}
 		return card
 	}
@@ -609,7 +618,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		card.FullDiff = len(req.hunks) > 0
 		card.Question = "Apply this change?"
 		card.AllowAlways = true
-		card.AlwaysHint = "a: always allow edits"
+		card.AlwaysHint = "a: always allow edits in " + displayDir(filepath.Dir(req.path))
 	default:
 		card.Variant = components.ApprovalGeneric
 		card.Title = "Approve tool"

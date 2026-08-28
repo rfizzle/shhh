@@ -63,7 +63,7 @@ const (
 	// stateRewindPick: the interactive /rewind checkpoint picker is showing
 	// (S-069).
 	stateRewindPick
-	// statePick: a generic slash-command picker (/model, /mode) is showing
+	// statePick: a generic slash-command picker (/model, /permissions) is showing
 	// (S-078).
 	statePick
 	// stateModelList: bare /model is querying the provider's /v1/models
@@ -338,14 +338,23 @@ type Model struct {
 	pendingApproval *approvalRequest
 	gatedTools      map[string]GatedPreviewFunc
 	// Session approval policy: the permission mode (S-059) plus the S-054
-	// internals it builds on — [a] on a confirm prompt promotes its category
-	// to auto-approval, commandAllowlist comes from config. The default is
-	// manual mode: everything prompts.
+	// internals it builds on. commandAllowlist comes from config; everything
+	// below it is what [a] and /permissions allow have granted this session. The
+	// default is manual mode with nothing granted: everything prompts.
 	mode             agent.Mode
 	modeCycle        []agent.Mode
+	commandAllowlist []string
+	// The blanket grants: every edit, every command, until revoked. They are
+	// what /permissions allow sets, and nothing else — [a] used to set them, which
+	// made one keystroke on one `go test` the last time the session asked
+	// about anything.
 	allowAllEdits    bool
 	allowAllCommands bool
-	commandAllowlist []string
+	// The scoped grants [a] records instead: directories edits are allowed
+	// under, and allowlist entries in agent.GrantPrefix's shape. /permissions revoke
+	// clears all four, which is the way back that a session grant never had.
+	editDirGrants []string
+	commandGrants []string
 	// Read-only inspection commands auto-run in every mode; config can extend
 	// the built-in list or turn it off entirely.
 	readOnlyExtra    []string
@@ -356,7 +365,7 @@ type Model struct {
 	classifierCancel context.CancelFunc
 	// defaults are the persisted model defaults /model default writes.
 	defaults Defaults
-	// lastDenial is the most recent auto-mode denial, shown by /mode why.
+	// lastDenial is the most recent auto-mode denial, shown by /permissions why.
 	lastDenial string
 	// denialNotice mirrors lastDenial on the notice rail (S-082) until the
 	// next user turn clears it.
@@ -419,9 +428,21 @@ type Model struct {
 	subagents *subagent.Supervisor
 	childAsks []*subagent.Ask
 	// decisionHeld is whether the decision on screen holds the keyboard
-	// (S-117, §7b). A card that arrives unbidden never does: until ctrl+g it
-	// renders its keys as not-yet-live and every letter goes into the draft.
+	// (S-117, §7b). A card that arrives on top of a sentence never does:
+	// until ctrl+g it renders its keys as not-yet-live and every letter goes
+	// into the draft. One that arrives on a draft nobody is typing into does,
+	// because there is no sentence for the letters to belong to.
 	decisionHeld bool
+	// heldOnArrival narrows that: the decision holds the keyboard because it
+	// landed on an idle draft, not because ctrl+g gave it to it. A card in
+	// that state answers only what it was walked up to be asked and hands the
+	// keyboard back for everything else (§7b, components/approval.go).
+	heldOnArrival bool
+	// lastKeypress is when the keyboard was last touched, whatever it was
+	// pointed at. It is the second half of "nobody is typing into it": an
+	// empty draft is not the same thing as an idle one, and a reader between
+	// two words has an empty draft for as long as the backspace held.
+	lastKeypress time.Time
 	// Sub-agent management and steering (S-077): attachedTo focuses the chat
 	// surface on a child ("" = orchestrator); childViews holds each child's
 	// mirrored transcript and scroll state so attach/detach loses nothing;
@@ -835,6 +856,11 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateMouse(msg)
 
 	case tea.KeyMsg:
+		// Every key stamps the clock a decision's arrival reads (S-117, §7b,
+		// interrupt.go). It is stamped here rather than on the draft's own
+		// path because the question is whether the reader is at the keyboard,
+		// not which surface they were talking to.
+		m.lastKeypress = time.Now()
 		// A file dragged into the terminal arrives as a bracketed paste of
 		// its path. When it points at an image or a document, attaching it
 		// is the only thing the gesture can have meant (S-134); everything
@@ -858,14 +884,19 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.state == stateDiffFull {
 			return m.updateDiffFull(msg)
 		}
-		// A decision that arrived unbidden is inert until it holds the
-		// keyboard (invariant 5, §7b): ungated, only the key that hands the
-		// keyboard over is its own, and every letter belongs to the draft.
-		if m.decisionUngated() {
-			if msg.String() == handoverKey {
-				return m.gateDecision()
-			}
-		} else {
+		// The handover means one thing in both states a decision can be in:
+		// give the card the whole keyboard. From ungated it is §7b's transfer
+		// — every letter belonged to the draft, and now none do. From a card
+		// holding the keyboard by arrival it buys the keys that card left
+		// alone on purpose ([a], [d], [A]).
+		if m.interruptShowing() && msg.String() == handoverKey && (m.decisionUngated() || m.heldOnArrival) {
+			return m.gateDecision()
+		}
+		// A decision that arrived on top of a sentence is inert until it
+		// holds the keyboard (invariant 5, §7b): ungated, the handover above
+		// is the only key that is its own, and every letter belongs to the
+		// draft.
+		if !m.decisionUngated() {
 			if msg.String() == "esc" && m.escLeavesWaiting() {
 				// Esc leaves the decision waiting rather than denying it; [n]
 				// is how you say no (§7b).
@@ -1404,7 +1435,7 @@ func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
 	m.turnTokensIn, m.turnTokensOut = 0, 0
 	m.vitals.startTurn()
 	// A fresh user turn clears the notice rail's denial alert (S-082);
-	// lastDenial stays for /mode why.
+	// lastDenial stays for /permissions why.
 	m.denialNotice = ""
 	// A new turn starts from the ceiling the session was configured with, and
 	// the pause behind it can no longer be granted more rounds (S-109).
@@ -1645,23 +1676,39 @@ func (m Model) updateConfirmRun(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m.executeApprovedTool()
 		}
 	case components.ApprovalAlways:
-		// Approve and auto-allow this category for the session (S-054).
+		// Approve, and stop asking about this shape of call for the session
+		// (S-054). The grant is scoped to what the card showed — this
+		// command's leading words, this file's directory — because that is
+		// what the reader read before pressing the key. The blanket grants
+		// the key used to hand out are `/permissions allow` now: a session-wide
+		// "never ask me again" is a decision worth typing, not a decision
+		// worth pressing while a card is in front of you.
+		//
 		// Safety-flagged commands, generic gated tools, and /run keep asking
 		// (the card offers [a] only where a grant is allowed).
 		if req := m.pendingApproval; req != nil {
 			switch req.kind {
 			case approvalExec:
 				m.recordDecision(decisionAllow, "user-always")
-				m.allowAllCommands = true
+				if prefix := m.grantCommand(req.command); prefix != "" {
+					m.noteGrant("Commands starting " + strconv.Quote(prefix) + " will run without asking. /permissions revoke takes it back.")
+				}
 				m.syncChildGrants()
 				return m.executeRun()
 			case approvalDiff:
 				m.recordDecision(decisionAllow, "user-always")
-				m.allowAllEdits = true
+				if dir := m.grantEditDir(req.path); dir != "" {
+					m.noteGrant("Edits in " + displayDir(dir) + " will apply without asking. /permissions revoke takes it back.")
+				}
 				m.syncChildGrants()
 				return m.executeApprovedTool()
 			}
 		}
+	case components.ApprovalRelease:
+		// The card had the keyboard by arrival and this key is not one of its
+		// answers, so it is the first letter of a sentence (§7b). The
+		// decision stays exactly where it was.
+		return m.releaseToDraft(msg)
 	case components.ApprovalDeny:
 		if m.pendingApproval != nil {
 			return m.declineApproval()
@@ -2345,12 +2392,28 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		m.modelName = name
 		return true, fmt.Sprintf("Switched model to %s. (/model default %s makes it the default for new sessions.)", name, name)
 
-	case "/mode":
+	// /permissions was /mode until the name was the problem: one letter from
+	// /model, on a menu that shows both, for a command whose whole job is
+	// deciding what runs without asking. The old spelling still answers —
+	// muscle memory is not a typo — but it is an alias now, and every line
+	// the product prints says /permissions.
+	case "/permissions", "/perms", "/mode":
 		if len(parts) < 2 {
 			return true, m.modeStatus()
 		}
+		// The grants are the mode's own subject — what the session has
+		// stopped asking about — so they answer here rather than under a
+		// command of their own (S-054).
+		switch parts[1] {
+		case "grants":
+			return true, m.grantStatus()
+		case "allow":
+			return true, m.allowCommand(parts[2:])
+		case "revoke":
+			return true, m.revokeCommand(parts[2:])
+		}
 		if len(parts) > 2 {
-			return true, "Usage: /mode [manual|accept-edits|auto|plan|why]"
+			return true, "Usage: /permissions [manual|accept-edits|auto|plan|why|grants|allow|revoke]"
 		}
 		if parts[1] == "why" {
 			if m.lastDenial == "" {
@@ -2581,9 +2644,13 @@ func helpText() string {
   /model default [name]   Show or persist the default model for new sessions
   /model agents [name]    Show or persist the model sub-agents run on
                  ("inherit" follows the session model)
-  /mode [name]   Set the permission mode (manual, accept-edits, auto, plan);
-                 bare /mode opens an interactive picker
-  /mode why      Show the latest auto-mode denial's reason
+  /permissions   What runs without asking, and the permission mode that
+                 frames it (also /perms; was /mode)
+                 [name]   manual, accept-edits, auto or plan; bare opens a picker
+                 why      the latest auto-mode denial's reason
+                 grants   what this session has stopped asking about
+                 allow <commands|edits>   grant a whole category
+                 revoke [commands|edits]  take the grants back
   /stats         Context occupancy breakdown and cumulative session spend
   /ui            Activity feed density, pane layout, monochrome and mouse:
                  /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>

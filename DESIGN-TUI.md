@@ -125,7 +125,23 @@ below.
 - **Containment folds into the title rail** as `⛨ mechanism · profile`
   (S-062). It is the first chip dropped as the terminal narrows; the severity
   chip is what the decision turns on and it is the one that survives.
-- `[a]` is absent for flagged actions — they can never be blanket-approved
+- **`[a]` grants the shape of the call it is showing** (S-054, S-138), not the
+  category: on a command card it records the command's leading bare words
+  (`always allow "go test"` for `go test ./internal/ui/...`), and on an edit
+  card the edited file's own directory (`always allow edits in
+  internal/ui/chat/`). The scope is written on the key row, because a key
+  whose scope is not stated is a key pressed on a guess.
+
+  It used to grant the whole category — every command, or every edit, for the
+  rest of the session — which put the only rung above "this once" out of reach
+  of anyone who wanted to stop being asked about one thing. The blanket grants
+  still exist; they are `/permissions allow <commands|edits>` now, because a
+  decision about every call the rest of the session will make is one to type,
+  not one to press while a card is in front of you. `/permissions grants`
+  lists what has been granted and `/permissions revoke` takes it back — the
+  way out a session grant did not have, since switching back to manual mode
+  never cleared one (the grant is consulted before the mode is).
+- `[a]` is absent for flagged actions — they can never be pre-approved
   (S-059) — and the card says so in a footnote. A missing key with a stated
   reason teaches; a missing key without one reads as a bug.
 - The keys sit below a `├───┤` rule so they never blend into the body, and
@@ -134,10 +150,12 @@ below.
   because esc on this card hands the keyboard back to the draft and leaves
   the decision waiting (§7b) — which the last hint row says, since a key
   whose meaning changed is worth a row.
-- **The card is inert until it holds the keyboard** (invariant 5). It arrives
-  beside a live draft, so what is drawn above is the gated state: everything
-  §7b describes — the dimmed keys, `not live yet`, the `[ctrl+g]` that hands
-  the keyboard over — is what the same card looks like the moment it appears.
+- **The card is inert until it holds the keyboard** (invariant 5) — where
+  there is a draft to protect. Arriving beside a live sentence it is drawn in
+  the gated state above: dimmed keys, `not live yet`, the `[ctrl+g]` that
+  hands the keyboard over. Arriving on an empty, idle draft it holds the
+  keyboard itself and answers `[y]`/`[n]` with no chord in front, keeping
+  `[a]`, `[d]` and `[A]` behind the handover. Both states, and why, are §7b.
 
 ### 2b. Uncontained
 
@@ -1086,7 +1104,8 @@ belongs in the sentence. `ui_kits/cockpit/Interrupt.html` is normative.
 
 **Gated — `ctrl+g`, and the card has it.** The rail above the card reads
 `DECISION 1/2`. The four keys go live in the ordinary treatment and gain their
-consequences (`[a] always  edits in internal/ui/*`), and the safe answer is
+consequences (`a: always allow edits in internal/ui/chat/` — the scope [a]
+grants, §2a), and the safe answer is
 stated because it is not obvious (invariant 3): `[esc] back to your draft —
 the edit stays waiting, nothing is denied`. Esc here leaves the decision
 unanswered; it does not deny it.
@@ -1101,6 +1120,62 @@ the same character. It does not clear the draft, submit it, or move the cursor
 to the end. A second waiting decision is announced in the top rail rather than
 replacing the card just closed — a queue that deals itself the next card is a
 queue answered by momentum (§2e).
+
+**And it only applies where there is a sentence (S-138).** The rule above is
+about a card landing on top of one. Most cards do not: they land while the
+reader is watching a turn work with an empty box, and there the handover buys
+nothing — there is no sentence for the letter to belong to, and the reader who
+came to press `[y]` was pressing it twice, once per approval, all session.
+
+So the arrival state is decided by whether there is anything to protect. A
+draft with characters in it, or a keyboard touched within the last second,
+arrives ungated exactly as above. A draft that is empty and idle arrives
+**held**: the card has the keyboard, its answers are live, and the frame it
+replaced is not drawn, because an empty draft has nothing to hold (§7b's
+undressed block already made that call).
+
+```
+──── DECISION ──────────────────────────────────────────────────────────
+┌─ Approve command ──────────────────────────────────────── ⚠ medium ─┐
+│ Assistant wants to run: go test ./internal/ui/...                   │
+│ touches   unknown — shhh cannot tell what go writes                 │
+├─────────────────────────────────────────────────────────────────────┤
+│ Run this command? [y/N] · [ctrl+g] for [a] · any other key goes to  │
+│ your draft                                                          │
+│ [esc] back to your draft — the decision stays waiting, nothing is   │
+│ denied                                                              │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+A card holding the keyboard by arrival is not the same as one that was handed
+it, and it claims less:
+
+- **It answers `[y]`, `[n]`, `[enter]`, `[esc]` and `[ctrl+c]`, and nothing
+  else.** Those are the keys a reader walks up to a card to press.
+- **`[a]`, `[d]` and `[A]` wait for the handover**, and the card says so on
+  its key row. They are the keys whose consequence outlives the call, and they
+  are the letters a sentence is most likely to open with — "always", "also",
+  "add". `ctrl+g` buys them, which is the same thing it has always bought:
+  the whole keyboard.
+- **Every other key hands the keyboard back and goes into the draft.** A
+  reader who came to type a message rather than answer loses neither the first
+  letter of it nor the decision, and the card is ungated from that keystroke
+  on, so the rest of the sentence flows normally.
+- **The plan card (§4d) and the memory proposal (S-070) never arrive held.**
+  Both take typed input — a choice moved with `j/k`, a note written into a
+  field — so a card that took the keyboard would be a card eating a sentence.
+  They arrive once per turn rather than once per tool call, so the handover
+  costs them nothing.
+- **A decision the turn reaches while a surface has the screen** has not
+  arrived in front of anyone. It is armed when the surface closes — one
+  keystroke ago — so it lands ungated. One that was already holding the
+  keyboard keeps it, because the surface it just came back from was most
+  likely its own full-screen diff.
+
+The residual hazard is named rather than hidden: a reader whose first
+keystroke after an idle second is `y` or `n` answers the card with it. That
+is the trade — one chord per approval against a one-letter window on a card
+that is on screen, unmissable, and standing where the input box was.
 
 **It generalises, and that is the point.** Any surface offering a bare
 single-character key while a live input is on screen either holds the keyboard
@@ -1489,7 +1564,8 @@ A child's approval requests never wait invisibly:
 ### 9d. Inherited permission state (S-086)
 
 A child decides with the parent's policy, not a fresh one: its mode is
-clamped to the parent's, and it inherits the session grants (`[a]`), the
+clamped to the parent's, and it inherits the session grants (`[a]` and
+`/permissions allow`, scoped ones included), the
 command allowlist, the read-only inspection list, and — in auto mode —
 the same classifier the parent uses. Without the classifier, an auto-mode
 session still stopped once per child command; with it, children are as

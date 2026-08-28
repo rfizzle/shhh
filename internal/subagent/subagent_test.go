@@ -737,7 +737,7 @@ func TestParentGrantsReachChildren(t *testing.T) {
 	}
 	sup := newTestSupervisor(t, env)
 	sup.SetParentMode(agent.ModeManual)
-	sup.SetParentGrants(false, true)
+	sup.SetParentGrants(agent.Grants{AllCommands: true})
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"run the tests"}`)
 
 	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)

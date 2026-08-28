@@ -158,8 +158,8 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		// provider that can enumerate its endpoint is queried first (S-083).
 		return m.startModelPick()
 
-	case text == "/mode":
-		// Bare /mode opens the mode picker (S-078).
+	case text == "/permissions" || text == "/perms" || text == "/mode":
+		// Bare /permissions opens the mode picker (S-078).
 		return m.openModePick()
 
 	case text == "/load" || text == "/chats":

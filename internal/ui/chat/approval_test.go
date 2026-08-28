@@ -74,12 +74,21 @@ func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 	if !strings.Contains(view, "@@") {
 		t.Fatal("diff preview should include a hunk header")
 	}
-	if !strings.Contains(view, "[y/n/a]") {
-		t.Fatal("confirm prompt should offer y/n/a")
+	// The card landed on a draft nobody was typing into, so it holds the
+	// keyboard and offers the two answers; [a] waits behind the handover
+	// (S-117, §7b).
+	if !strings.Contains(view, "[y/N]") {
+		t.Fatal("a card holding the keyboard by arrival should offer y/N")
+	}
+	if !strings.Contains(view, "[ctrl+g] for [a]/[d]") {
+		t.Fatal("the card should say what the handover still buys")
 	}
 
 	// Approve.
 	m = handover(t, m)
+	if !strings.Contains(m.View(), "[y/n/a]") {
+		t.Fatal("after the handover the card should offer y/n/a")
+	}
 	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
 	m = updated.(Model)
 	if m.state != stateRunningCmd {

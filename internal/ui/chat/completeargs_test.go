@@ -117,16 +117,24 @@ func TestArgCompletion_UnavailableCommandOffersNothing(t *testing.T) {
 func TestArgCompletion_ModeCycle(t *testing.T) {
 	m := readyModel(t)
 	m.modeCycle = []agent.Mode{agent.ModeManual, agent.ModeAcceptEdits, agent.ModeAuto}
-	m = typeChars(t, m, "/mode a")
+	m = typeChars(t, m, "/permissions a")
 
+	// The a-prefixed modes, and the a-prefixed subcommand beside them: the
+	// position offers everything /permissions takes there (S-054).
 	got := completionNames(m)
-	if len(got) != 2 || got[0] != "accept-edits" || got[1] != "auto" {
-		t.Fatalf("expected the a-prefixed modes, got %v", got)
+	if len(got) != 3 || got[0] != "accept-edits" || got[1] != "auto" || got[2] != "allow" {
+		t.Fatalf("expected the a-prefixed modes and allow, got %v", got)
 	}
 
-	m = typeChars(t, readyModel(t), "/mode wh")
+	m = typeChars(t, readyModel(t), "/permissions wh")
 	if got := completionNames(m); len(got) != 1 || got[0] != "why" {
-		t.Fatalf("/mode why should complete, got %v", got)
+		t.Fatalf("/permissions why should complete, got %v", got)
+	}
+
+	// The grants the key hands out are reachable from the menu, both halves.
+	m = typeChars(t, readyModel(t), "/permissions revoke ")
+	if got := completionNames(m); len(got) != 2 || got[0] != "edits" || got[1] != "commands" {
+		t.Fatalf("/permissions revoke should offer its scopes, got %v", got)
 	}
 }
 

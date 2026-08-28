@@ -93,9 +93,20 @@ var slashCommands = []slashCommand{
 	{name: "/model", args: "[name]", desc: "Switch the model (bare /model opens a picker)",
 		argSpecs: []argSpec{{dynamic: modelArgs, fuzzy: true}},
 		idleOnly: "it switches the model the running turn is using"},
-	{name: "/mode", args: "[name|why]", desc: "Set the permission mode (bare /mode opens a picker)",
-		key:      "shift+tab",
-		argSpecs: []argSpec{{dynamic: modeArgs}}},
+	{name: "/permissions", args: "[name|grants|allow|revoke|why]", desc: "What runs without asking, and the mode that frames it",
+		aliases: []string{"/perms", "/mode"},
+		key:     "shift+tab",
+		argSpecs: []argSpec{
+			{dynamic: modeArgs},
+			{after: []string{"allow"}, options: []argOption{
+				{"commands", "Every command runs without asking"},
+				{"edits", "Every edit applies without asking"},
+			}},
+			{after: []string{"revoke"}, options: []argOption{
+				{"edits", "Only the edit grants"},
+				{"commands", "Only the command grants"},
+			}},
+		}},
 	{name: "/stats", desc: "Context occupancy and session spend"},
 	{name: "/ui", args: "verbosity <low|normal|high> | mono <on|off>", desc: "Activity feed density and monochrome mode",
 		argSpecs: []argSpec{
@@ -215,6 +226,20 @@ func (c slashCommand) matches(token string) bool {
 	return false
 }
 
+// namesExactly reports whether the token is this command's own name or one of
+// its aliases written in full.
+func (c slashCommand) namesExactly(token string) bool {
+	if c.name == token {
+		return true
+	}
+	for _, a := range c.aliases {
+		if a == token {
+			return true
+		}
+	}
+	return false
+}
+
 // syncCompletions recomputes the completion menu from the current input.
 // Call it after every keypress that may have changed the input; every other
 // path invalidates the menu implicitly because completeFor no longer matches
@@ -255,7 +280,7 @@ func (m *Model) syncCompletions() {
 	m.completeIdx = 0
 	// Keep the arrowed-to row focused across keystrokes — unless the typed
 	// text now names a candidate exactly, which always wins the focus.
-	if matches[0].name != token {
+	if !exactlyNamed(m, token) {
 		for i, c := range matches {
 			if c.name == prev {
 				m.completeIdx = i
@@ -265,9 +290,18 @@ func (m *Model) syncCompletions() {
 	}
 }
 
+// exactlyNamed reports whether the typed token is some available command's
+// name or alias in full — the case that always wins the menu's focus.
+func exactlyNamed(m *Model, token string) bool {
+	c, ok := lookupCommand(m, token)
+	return ok && c.namesExactly(token)
+}
+
 // commandMatches are the available commands whose name or an alias starts
-// with the typed token. An exact name match ranks first so typing "/mode" in
-// full never leaves "/model" (or any longer sibling) highlighted.
+// with the typed token. An exact match ranks first so typing "/permissions"
+// in full never leaves "/model" (or any longer sibling) highlighted — and an
+// alias typed in full counts, because a reader who typed "/mode" from muscle
+// memory has named a command exactly, whatever the menu calls it.
 func (m *Model) commandMatches(token string) []completionItem {
 	var matches []completionItem
 	for _, c := range slashCommands {
@@ -283,7 +317,7 @@ func (m *Model) commandMatches(token string) []completionItem {
 			continue
 		}
 		item := completionItem{name: c.name, args: c.args, desc: c.desc, space: c.args != ""}
-		if c.name == token {
+		if c.namesExactly(token) {
 			matches = append([]completionItem{item}, matches...)
 		} else {
 			matches = append(matches, item)

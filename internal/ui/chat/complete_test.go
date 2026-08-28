@@ -64,12 +64,25 @@ func TestCompletion_HiddenForFreeFormArgument(t *testing.T) {
 }
 
 func TestCompletion_ExactMatchRanksFirst(t *testing.T) {
+	m := typeChars(t, readyModel(t), "/permissions")
+	if !m.completionActive() {
+		t.Fatal("typing /permissions should keep the menu open")
+	}
+	if got := m.completions[m.completeIdx].name; got != "/permissions" {
+		t.Fatalf("exact match /permissions should be focused, got %s", got)
+	}
+}
+
+// /mode was this command's name until it sat one letter from /model on the
+// same menu. It still answers, and typing it in full still names a command
+// exactly — the menu just shows what the command is called now.
+func TestCompletion_TheOldNameStillNamesTheCommand(t *testing.T) {
 	m := typeChars(t, readyModel(t), "/mode")
 	if !m.completionActive() {
-		t.Fatal("typing /mode should keep the menu open")
+		t.Fatal("typing the old name should keep the menu open")
 	}
-	if got := m.completions[m.completeIdx].name; got != "/mode" {
-		t.Fatalf("exact match /mode should be focused, got %s", got)
+	if got := m.completions[m.completeIdx].name; got != "/permissions" {
+		t.Fatalf("/mode should focus the command it renamed to, got %s", got)
 	}
 }
 

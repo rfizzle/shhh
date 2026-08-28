@@ -63,7 +63,12 @@ func reasonCode(raw string) string {
 	case agent.ModeAuto.String() + " mode":
 		return "mode-auto"
 	case "session policy":
+		// The blanket grants: every edit, every command (/permissions allow).
 		return "session-grant"
+	case "session grant":
+		// The scoped ones [a] records — a command's leading words, a file's
+		// directory. They are a different decision and count separately.
+		return "session-scope"
 	case "allowlist":
 		return "allowlist"
 	case "plan mode":

@@ -95,13 +95,13 @@ func TestPalette_SessionsAndFilesAreSearchedToo(t *testing.T) {
 }
 
 func TestPalette_ExactCommandNameRanksFirst(t *testing.T) {
-	m := openPaletteWith(t, paletteModel(t), "mode")
+	m := openPaletteWith(t, paletteModel(t), "permissions")
 
 	first, ok := m.paletteFocus()
 	if !ok {
 		t.Fatal("a query that matches should focus something")
 	}
-	if !strings.HasPrefix(first.label, "/mode") {
+	if !strings.HasPrefix(first.label, "/permissions") {
 		t.Fatalf("an exact command name should rank first, got %q", first.label)
 	}
 }

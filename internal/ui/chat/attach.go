@@ -575,7 +575,7 @@ func (m Model) attachedCommand(parts []string) (tea.Model, tea.Cmd) {
 		m.noteChild(name, m.childStatsReport(name))
 	case "/diff":
 		m.attachedDiff(name)
-	case "/mode":
+	case "/permissions", "/perms", "/mode":
 		m.attachedModeCommand(parts)
 	case "/agents":
 		return m.openAgentList()
@@ -586,7 +586,7 @@ func (m Model) attachedCommand(parts []string) (tea.Model, tea.Cmd) {
 	case "/detach":
 		m.detachOne()
 	default:
-		m.noteChild(name, "Commands while attached: /stats, /diff, /mode [name], /agents, /attach <name>, /detach, /exit (kill this agent). Plain text steers the agent; esc detaches.")
+		m.noteChild(name, "Commands while attached: /stats, /diff, /permissions [name], /agents, /attach <name>, /detach, /exit (kill this agent). Plain text steers the agent; esc detaches.")
 	}
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()
@@ -740,7 +740,7 @@ func (m Model) childStatsReport(name string) string {
 	return sb.String()
 }
 
-// childModeStatus is /mode with no argument, scoped to the attached child.
+// childModeStatus is /permissions with no argument, scoped to the attached child.
 func (m Model) childModeStatus(name string) string {
 	mode, ok := m.subagents.AgentMode(name)
 	if !ok {

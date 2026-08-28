@@ -26,7 +26,7 @@ func (m Model) WithSubagents(sup *subagent.Supervisor) Model {
 	m.subagents = sup
 	m.childViews = map[string]*childView{}
 	sup.SetParentMode(m.mode)
-	sup.SetParentGrants(m.allowAllEdits, m.allowAllCommands)
+	sup.SetParentGrants(m.grants())
 	return m
 }
 
@@ -35,7 +35,7 @@ func (m Model) WithSubagents(sup *subagent.Supervisor) Model {
 // children too, instead of being re-asked once per agent.
 func (m *Model) syncChildGrants() {
 	if m.subagents != nil {
-		m.subagents.SetParentGrants(m.allowAllEdits, m.allowAllCommands)
+		m.subagents.SetParentGrants(m.grants())
 	}
 }
 
@@ -66,8 +66,10 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 	case subagent.EventAsk:
 		m.childAsks = append(m.childAsks, ev.Ask)
 		// A routed approval arrives the way every other decision does: on
-		// screen, without the keyboard (S-117, §7b).
-		m.releaseDecision()
+		// screen, and holding the keyboard only if there is no sentence for
+		// its letters to belong to (S-117, §7b). It arms itself because it is
+		// a queue rather than a turn state, so setTurnState never sees it.
+		m.armArrival()
 	case subagent.EventDone:
 		// A finished child can no longer act on its asks (S-077).
 		m.purgeChildAsks(ev.Status.Name)
@@ -153,7 +155,10 @@ func (m Model) updateChildAsk(msg tea.KeyMsg, ask *subagent.Ask) (tea.Model, tea
 		}
 		return m, m.quitCmd()
 	}
-	if msg.String() == "g" && m.attachedTo != ask.Agent {
+	// [g] is a bare letter, so it belongs to the card only while the card was
+	// handed the keyboard. One holding it by arrival claims nothing but its
+	// answers (§7b), and "go ahead, but…" is a sentence.
+	if msg.String() == "g" && !m.heldOnArrival && m.attachedTo != ask.Agent {
 		m.attach(ask.Agent)
 		return m, nil
 	}
@@ -165,6 +170,11 @@ func (m Model) updateChildAsk(msg tea.KeyMsg, ask *subagent.Ask) (tea.Model, tea
 	done, result := m.childAskCard(ask).Update(msg)
 	if !done {
 		return m, nil
+	}
+	if result == components.ApprovalRelease {
+		// The card had the keyboard by arrival and this key is not one of its
+		// answers: it is the start of a sentence, and the ask stays queued.
+		return m.releaseToDraft(msg)
 	}
 	for i, queued := range m.childAsks {
 		if queued == ask {
