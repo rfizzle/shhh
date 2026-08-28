@@ -3920,7 +3920,36 @@ endpoints existed, which is the compatibility the feature is built around.
   profile has never read them, because a base URL set for one provider
   silently repointing another is worse than a setting that does nothing.
 
-### 21c. One file
+### 21c. Turning the catalog query off (S-143)
+
+`discovery_disabled = true` stops the `GET {base_url}/models` the picker makes
+and leaves the declared models as the whole list. A gateway that publishes
+hundreds of ids the key cannot actually use, one whose catalog is slow or
+absent, one that should simply not be asked — none of those are shhh's
+judgement to make, and all of them are one line of the user's config.
+
+- **The capability is hidden, not answered.** A disabled endpoint's provider
+  stops being a `provider.ModelLister` rather than returning its declared
+  models from `ListModels`. The picker reads the capability (§`canPickModel`),
+  so hiding it sends bare `/model` straight onto the declared catalog: no
+  query surface, no ten-second budget, no request at all. Answering instead
+  would show a reader a query that ran and came back with what they already
+  had, which is a different and untrue story.
+- **The switch is a `*bool`.** Endpoints inherit, and a plain `false` cannot
+  be told from "not said here" — so an endpoint could never re-enable the
+  query under a provider that turned it off. The pointer also has to survive
+  the migration: emitting `false` for an unset field would turn every migrated
+  endpoint into one that overrides its profile.
+- **A profile nothing can enumerate stops offering.** Every route disabled or
+  on the Messages dialect, which has no catalog, means the router has nothing
+  to ask; it is wrapped the same way rather than running a query that could
+  only return the catalog the picker already holds.
+- **It is the catalog, not a gate.** `/model <name>`, `--model` and
+  `SHHH_MODEL` still take any name. The declared list is what the picker
+  offers, and it was never what the session was allowed to run — the same
+  rule the curated catalogs have always followed.
+
+### 21d. One file
 
 Providers live in `<config-dir>/providers.toml`, one `[[provider]]` block
 each. The `providers/` directory beside it still loads — every profile written

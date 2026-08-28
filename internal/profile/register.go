@@ -86,7 +86,25 @@ func New(p Profile, opts provider.ResolveOpts) (provider.Provider, error) {
 	if len(routes) == 1 {
 		return newEndpoint(p, routes[0], opts)
 	}
-	return &router{profile: p, routes: routes, opts: opts, built: map[int]provider.Provider{}}, nil
+	r := &router{profile: p, routes: routes, opts: opts, built: map[int]provider.Provider{}}
+	if silent(routes) {
+		// Every address is either dialect-less or told not to be asked, so
+		// the router has nothing to enumerate. Keeping ListModels here would
+		// send the picker through a query that can only return the catalog
+		// it already has.
+		return noDiscovery{r}, nil
+	}
+	return r, nil
+}
+
+// silent reports whether no route can contribute a discovered model.
+func silent(routes []Endpoint) bool {
+	for _, e := range routes {
+		if e.API != APIAnthropicMessage && !e.DiscoveryOff() {
+			return false
+		}
+	}
+	return true
 }
 
 // router is a profile's several endpoints behind one provider name.
@@ -163,7 +181,7 @@ func (r *router) ListModels(ctx context.Context) ([]string, error) {
 
 	var lastErr error
 	for i, route := range r.routes {
-		if route.API == APIAnthropicMessage {
+		if route.API == APIAnthropicMessage || route.DiscoveryOff() {
 			continue
 		}
 		p, err := r.providerAt(i, route)
@@ -171,9 +189,7 @@ func (r *router) ListModels(ctx context.Context) ([]string, error) {
 			lastErr = err
 			continue
 		}
-		lister, ok := p.(interface {
-			ListModels(context.Context) ([]string, error)
-		})
+		lister, ok := p.(provider.ModelLister)
 		if !ok {
 			continue
 		}
@@ -219,7 +235,7 @@ func newEndpoint(p Profile, e Endpoint, opts provider.ResolveOpts) (provider.Pro
 	switch e.API {
 	case APIOpenAIResponses:
 		inner := provider.NewOpenAIResponsesWith(httpClient, key, e.BaseURL, opts.Model, p.Name)
-		return &responsesProfile{OpenAIResponses: inner, endpoint: e, client: httpClient}, nil
+		return withDiscovery(e, &responsesProfile{OpenAIResponses: inner, endpoint: e, client: httpClient}), nil
 	case APIAnthropicMessage:
 		inner := provider.NewAnthropicNamed(anthropic.NewClient(
 			option.WithAPIKey(key),
@@ -232,9 +248,29 @@ func newEndpoint(p Profile, e Endpoint, opts provider.ResolveOpts) (provider.Pro
 		cfg.BaseURL = e.BaseURL
 		cfg.HTTPClient = httpClient
 		inner := provider.NewOpenAICompatNamed(openai.NewClientWithConfig(cfg), opts.Model, e.BaseURL, p.Name)
-		return &openAIProfile{OpenAICompat: inner, endpoint: e, client: httpClient}, nil
+		return withDiscovery(e, &openAIProfile{OpenAICompat: inner, endpoint: e, client: httpClient}), nil
 	}
 }
+
+// withDiscovery hides the catalog query when the endpoint turned it off.
+//
+// Hiding the method rather than answering it with the declared models is the
+// difference between "there is nothing to ask" and "I asked and this is what
+// came back". The picker reads the capability, not the answer: without it,
+// bare /model opens straight onto the declared catalog, with no query
+// surface, no ten-second budget, and no request to a gateway whose /models
+// the user has told us not to call (S-143).
+func withDiscovery(e Endpoint, p provider.Provider) provider.Provider {
+	if e.DiscoveryOff() {
+		return noDiscovery{p}
+	}
+	return p
+}
+
+// noDiscovery is a provider with its catalog query removed. Embedding the
+// interface rather than the concrete type is what does it: only the two
+// interface methods are promoted, so a ModelLister assertion fails.
+type noDiscovery struct{ provider.Provider }
 
 // openAIProfile is a profile-backed openai-chat provider. It inherits
 // streaming and discovery from OpenAICompat, overriding discovery only when

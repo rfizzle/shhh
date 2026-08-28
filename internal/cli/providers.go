@@ -170,7 +170,10 @@ func printProfile(cmd *cobra.Command, p profile.Profile, prices *pricing.Table) 
 // what it hosts and what it rewrites.
 func printEndpoint(out io.Writer, e profile.Endpoint, indent string, prices *pricing.Table) {
 	fmt.Fprintf(out, "%sbase url: %s\n", indent, e.BaseURL)
-	if e.ModelsPath != "" {
+	switch {
+	case e.DiscoveryOff():
+		fmt.Fprintf(out, "%scatalog:  off — the declared models are the whole list\n", indent)
+	case e.ModelsPath != "":
 		fmt.Fprintf(out, "%scatalog:  %s\n", indent, e.ModelsPath)
 	}
 

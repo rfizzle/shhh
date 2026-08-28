@@ -37,6 +37,7 @@ func encodeProfile(b *strings.Builder, p Profile) {
 	writeString(b, "", "api_key", p.APIKey)
 	writeString(b, "", "api_key_env", p.APIKeyEnv)
 	writeString(b, "", "models_path", p.ModelsPath)
+	writeBool(b, "", "discovery_disabled", p.DiscoveryDisabled)
 
 	encodeHeaders(b, "  ", "provider.headers", p.Headers)
 	encodeModels(b, "  ", "provider.models", p.Models)
@@ -51,6 +52,7 @@ func encodeProfile(b *strings.Builder, p Profile) {
 		writeString(b, "  ", "api_key", e.APIKey)
 		writeString(b, "  ", "api_key_env", e.APIKeyEnv)
 		writeString(b, "  ", "models_path", e.ModelsPath)
+		writeBool(b, "  ", "discovery_disabled", e.DiscoveryDisabled)
 		encodeHeaders(b, "    ", "provider.endpoint.headers", e.Headers)
 		encodeModels(b, "    ", "provider.endpoint.models", e.Models)
 		encodeRules(b, "    ", "provider.endpoint.rewrite", e.Rewrite)
@@ -140,6 +142,17 @@ func writeStrings(b *strings.Builder, indent, key string, vals []string) {
 		quoted = append(quoted, quote(v))
 	}
 	fmt.Fprintf(b, "%s%s = [%s]\n", indent, key, strings.Join(quoted, ", "))
+}
+
+// writeBool writes an inherited boolean, and writes nothing when it was not
+// set — the distinction the pointer exists to keep. Emitting `false` for an
+// unset field would turn "inherit this" into "override it to off" the first
+// time a profile went through the migration.
+func writeBool(b *strings.Builder, indent, key string, val *bool) {
+	if val == nil {
+		return
+	}
+	fmt.Fprintf(b, "%s%s = %s\n", indent, key, strconv.FormatBool(*val))
 }
 
 func writeInt(b *strings.Builder, indent, key string, val int64) {

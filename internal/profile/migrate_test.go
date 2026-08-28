@@ -289,3 +289,38 @@ func TestWrite_RefusesWhenSomethingWouldNotLoad(t *testing.T) {
 		t.Fatal("nothing should have been written")
 	}
 }
+
+func TestEncode_KeepsAnUnsetDiscoverySwitchUnset(t *testing.T) {
+	// The pointer's whole job is telling "inherit" from "override to off".
+	// Emitting `false` for an unset field would turn every migrated endpoint
+	// into one that overrides its profile.
+	dir := t.TempDir()
+	off := true
+	profiles := []Profile{{
+		Name: "gateway", API: APIOpenAIChat, BaseURL: "https://gw.example/v1",
+		DiscoveryDisabled: &off,
+		Endpoints: []Endpoint{
+			{Match: []string{"quiet-*"}, BaseURL: "https://gw.example/quiet"},
+			{Match: []string{"loud-*"}, BaseURL: "https://gw.example/loud", DiscoveryDisabled: new(bool)},
+		},
+	}}
+	rendered := Encode(profiles)
+	if strings.Count(rendered, "discovery_disabled") != 2 {
+		t.Fatalf("want the profile's true and the endpoint's explicit false, got:\n%s", rendered)
+	}
+
+	reloaded, err := LoadFile(writeProfile(t, dir, "providers.toml", rendered))
+	if err != nil {
+		t.Fatalf("the emitted file should load:\n%s\nerror: %v", rendered, err)
+	}
+	p := reloaded[0]
+	if !p.Route("anything").DiscoveryOff() {
+		t.Fatal("the profile's switch did not survive")
+	}
+	if !p.Route("quiet-1").DiscoveryOff() {
+		t.Fatal("the endpoint that said nothing should still inherit off")
+	}
+	if p.Route("loud-1").DiscoveryOff() {
+		t.Fatal("the endpoint's explicit false did not survive")
+	}
+}

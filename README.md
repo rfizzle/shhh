@@ -204,7 +204,7 @@ op   = "delete"
 path = "temperature"
 ```
 
-The OpenAI-shaped providers (`openai`, `openai-responses`, `openrouter`, `openai-compatible`) can enumerate their endpoint: the first bare `/model` of a session queries `GET {base_url}/models` and offers what actually answers there, filtered to the chat-capable ids. That is the only way to know the catalog of a local runtime or a private gateway — Ollama, vLLM, LiteLLM — where the curated list is necessarily empty. The query is lazy (nothing runs until you ask), bounded at 10 seconds, cached for the session, and cancellable with Esc; an endpoint that refuses falls back to the curated catalog and says why.
+The OpenAI-shaped providers (`openai`, `openai-responses`, `openrouter`, `openai-compatible`) can enumerate their endpoint: the first bare `/model` of a session queries `GET {base_url}/models` and offers what actually answers there, filtered to the chat-capable ids. That is the only way to know the catalog of a local runtime or a private gateway — Ollama, vLLM, LiteLLM — where the curated list is necessarily empty. The query is lazy (nothing runs until you ask), bounded at 10 seconds, cached for the session, and cancellable with Esc; an endpoint that refuses falls back to the curated catalog and says why. A gateway profile can turn the query off entirely — see [Turning off model discovery](#turning-off-model-discovery).
 
 ## Gateway profiles
 
@@ -284,6 +284,7 @@ An endpoint takes the same fields the `[[provider]]` block does, and inherits ev
 | `base_url` | This address |
 | `api_key` / `api_key_env` | A key of its own, for the rare gateway whose paths authenticate separately |
 | `models_path` | A catalog endpoint of its own |
+| `discovery_disabled` | Turn the catalog query off for this address alone, or back on under a provider that turned it off |
 | `headers` | Merged over the provider's; the endpoint wins a collision |
 | `models` | Declared here rather than at the provider level, which is also what routes them here |
 | `rewrite` | Rules for this address; the provider's run first, then these |
@@ -305,6 +306,27 @@ shhh providers migrate --prune    # and remove the files it replaces
 ```
 
 It reads every profile in load order — `providers.toml` and `providers/*.toml`, across every config directory — and re-emits them as `[[provider]]` blocks. Re-emitting rather than concatenating is the point: TOML nesting means the directory form's top-level keys have to be re-keyed to live under `[[provider]]`, so a concatenation would parse into something else entirely. A file that will not parse stops the write, naming what it could not read, rather than letting a provider silently vanish from the consolidated file.
+
+### Turning off model discovery
+
+`discovery_disabled = true` on a `[[provider]]` stops the `GET {base_url}/models` query the `/model` picker makes, so the declared models are the whole list:
+
+```toml
+[[provider]]
+name               = "gateway"
+base_url           = "https://llm-gateway.internal/v1"
+api_key_env        = "GATEWAY_API_KEY"
+discovery_disabled = true
+
+  [[provider.models]]
+  id = "gpt-5.2"
+```
+
+Bare `/model` then opens straight onto the declared catalog — no query, no ten-second budget, no request to an endpoint you have told shhh not to call. A gateway that publishes hundreds of ids you have no access to, one whose `/models` is slow or absent, or one you would simply rather not have queried is what this is for.
+
+It is inherited like every other endpoint field, and an endpoint can override it either way: `discovery_disabled = false` on one address re-enables the query there under a provider that turned it off. When no endpoint can enumerate — every one either disabled or on the Messages dialect, which has no catalog at all — the provider stops offering discovery entirely rather than running a query that could only return what the picker already has.
+
+This is about the catalog, not about what you can run: `/model <name>`, `--model` and `SHHH_MODEL` still accept any name, whether it is declared or not.
 
 ### Model metadata
 

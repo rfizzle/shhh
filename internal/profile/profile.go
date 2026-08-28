@@ -85,6 +85,11 @@ type Profile struct {
 	// publish their catalog somewhere other than {base_url}/models. An
 	// absolute path ("/v1/models/simple") is resolved against the host.
 	ModelsPath string `toml:"models_path"`
+	// DiscoveryDisabled turns off the catalog query — the GET
+	// {base_url}/models the /model picker makes — so the picker offers the
+	// declared models and nothing else. A pointer because it is inherited:
+	// nil means "not said here", which is not the same as false.
+	DiscoveryDisabled *bool `toml:"discovery_disabled"`
 	// Models declares what the gateway hosts, and the metadata its catalog
 	// endpoint typically omits. Ids listed here seed the /model picker even
 	// before discovery runs; metadata missing here falls back to the public
@@ -116,14 +121,21 @@ type Endpoint struct {
 	Match []string `toml:"match"`
 
 	// The rest mirror the profile's own fields, and override them.
-	API        string            `toml:"api"`
-	BaseURL    string            `toml:"base_url"`
-	APIKey     string            `toml:"api_key"`
-	APIKeyEnv  string            `toml:"api_key_env"`
-	Headers    map[string]string `toml:"headers"`
-	ModelsPath string            `toml:"models_path"`
-	Models     []Model           `toml:"models"`
-	Rewrite    []Rule            `toml:"rewrite"`
+	API               string            `toml:"api"`
+	BaseURL           string            `toml:"base_url"`
+	APIKey            string            `toml:"api_key"`
+	APIKeyEnv         string            `toml:"api_key_env"`
+	Headers           map[string]string `toml:"headers"`
+	ModelsPath        string            `toml:"models_path"`
+	DiscoveryDisabled *bool             `toml:"discovery_disabled"`
+	Models            []Model           `toml:"models"`
+	Rewrite           []Rule            `toml:"rewrite"`
+}
+
+// DiscoveryOff reports whether this endpoint's catalog query is turned off,
+// leaving the declared models as the whole answer.
+func (e Endpoint) DiscoveryOff() bool {
+	return e.DiscoveryDisabled != nil && *e.DiscoveryDisabled
 }
 
 // Model is a declared model and the metadata a catalog endpoint that returns
@@ -191,15 +203,16 @@ func (p Profile) defaultRoute() Endpoint {
 		api = APIOpenAIChat
 	}
 	return Endpoint{
-		Label:      "default",
-		API:        api,
-		BaseURL:    p.BaseURL,
-		APIKey:     p.APIKey,
-		APIKeyEnv:  p.APIKeyEnv,
-		Headers:    p.Headers,
-		ModelsPath: p.ModelsPath,
-		Models:     p.Models,
-		Rewrite:    p.Rewrite,
+		Label:             "default",
+		API:               api,
+		BaseURL:           p.BaseURL,
+		APIKey:            p.APIKey,
+		APIKeyEnv:         p.APIKeyEnv,
+		Headers:           p.Headers,
+		ModelsPath:        p.ModelsPath,
+		DiscoveryDisabled: p.DiscoveryDisabled,
+		Models:            p.Models,
+		Rewrite:           p.Rewrite,
 	}
 }
 
@@ -223,6 +236,9 @@ func (p Profile) inherit(e Endpoint) Endpoint {
 	}
 	if out.ModelsPath == "" {
 		out.ModelsPath = p.ModelsPath
+	}
+	if out.DiscoveryDisabled == nil {
+		out.DiscoveryDisabled = p.DiscoveryDisabled
 	}
 	out.Headers = mergeHeaders(p.Headers, e.Headers)
 	if len(p.Rewrite) > 0 {
@@ -443,8 +459,9 @@ func LoadFile(path string) ([]Profile, error) {
 // silently ignored.
 func (p Profile) declaresProvider() bool {
 	return p.Name != "" || p.API != "" || p.BaseURL != "" || p.APIKey != "" ||
-		p.APIKeyEnv != "" || p.ModelsPath != "" || len(p.Headers) > 0 ||
-		len(p.Models) > 0 || len(p.Rewrite) > 0 || len(p.Endpoints) > 0
+		p.APIKeyEnv != "" || p.ModelsPath != "" || p.DiscoveryDisabled != nil ||
+		len(p.Headers) > 0 || len(p.Models) > 0 || len(p.Rewrite) > 0 ||
+		len(p.Endpoints) > 0
 }
 
 // Validate checks the profile is usable, naming the field at fault. It is

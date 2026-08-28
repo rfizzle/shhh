@@ -379,3 +379,128 @@ func drain(t *testing.T, prov provider.Provider, model string) {
 		}
 	}
 }
+
+// Turning off the catalog query (S-143): the declared models become the whole
+// list, and nothing is asked of the gateway.
+
+func TestDiscoveryDisabled_HidesTheCatalogQuery(t *testing.T) {
+	asked := false
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		asked = true
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[{"id":"something-the-gateway-lists"}]}`))
+	}))
+	defer srv.Close()
+
+	off := true
+	p := Profile{
+		Name: "gateway", BaseURL: srv.URL, APIKey: "k",
+		DiscoveryDisabled: &off,
+		Models:            []Model{{ID: "gpt-5.2"}},
+	}
+	prov, err := New(p, provider.ResolveOpts{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	// The picker reads the capability, not the answer: a provider that is
+	// not a ModelLister sends it straight to the declared catalog.
+	if _, ok := prov.(provider.ModelLister); ok {
+		t.Fatal("a provider with discovery off should not offer to enumerate")
+	}
+	if asked {
+		t.Fatal("nothing should have been asked of the gateway")
+	}
+	// And the declared models still seed the picker.
+	Register([]Profile{p})
+	if got := provider.KnownModels("gateway"); len(got) != 1 || got[0] != "gpt-5.2" {
+		t.Fatalf("the declared models should be the catalog, got %v", got)
+	}
+}
+
+func TestDiscoveryDisabled_IsInheritedAndOverridable(t *testing.T) {
+	off, on := true, false
+	p := Profile{
+		Name: "gateway", BaseURL: "https://gw.example/v1", APIKey: "k",
+		DiscoveryDisabled: &off,
+		Endpoints: []Endpoint{
+			{Match: []string{"quiet-*"}, BaseURL: "https://gw.example/quiet"},
+			{Match: []string{"loud-*"}, BaseURL: "https://gw.example/loud", DiscoveryDisabled: &on},
+		},
+	}
+	if !p.Route("anything").DiscoveryOff() {
+		t.Fatal("the default route should be off")
+	}
+	if !p.Route("quiet-1").DiscoveryOff() {
+		t.Fatal("an endpoint that says nothing should inherit off")
+	}
+	if p.Route("loud-1").DiscoveryOff() {
+		t.Fatal("an endpoint that says false should override the profile")
+	}
+}
+
+func TestDiscoveryDisabled_RouterAsksOnlyTheEndpointsThatAllowIt(t *testing.T) {
+	quiet := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Error("the endpoint with discovery off should never be asked")
+	}))
+	defer quiet.Close()
+	loud := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"data":[{"id":"discovered"}]}`))
+	}))
+	defer loud.Close()
+
+	off := true
+	p := Profile{
+		Name: "gateway", BaseURL: loud.URL, APIKey: "k",
+		Models: []Model{{ID: "gpt-5.2"}},
+		Endpoints: []Endpoint{{
+			Match: []string{"quiet-*"}, BaseURL: quiet.URL,
+			DiscoveryDisabled: &off, Models: []Model{{ID: "quiet-1"}},
+		}},
+	}
+	prov, err := New(p, provider.ResolveOpts{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	lister, ok := prov.(provider.ModelLister)
+	if !ok {
+		t.Fatal("one endpoint still allows discovery, so the router should offer it")
+	}
+	names, err := lister.ListModels(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if strings.Join(names, ",") != "gpt-5.2,quiet-1,discovered" {
+		t.Fatalf("got %v — the quiet endpoint contributes its declared models and nothing else", names)
+	}
+}
+
+func TestDiscoveryDisabled_SilentRouterOffersNoQuery(t *testing.T) {
+	off := true
+	p := Profile{
+		Name: "gateway", BaseURL: "https://gw.example/v1", APIKey: "k",
+		DiscoveryDisabled: &off,
+		Endpoints: []Endpoint{{
+			Match: []string{"claude-*"}, API: APIAnthropicMessage,
+			BaseURL: "https://gw.example/anthropic",
+		}},
+	}
+	prov, err := New(p, provider.ResolveOpts{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, ok := prov.(provider.ModelLister); ok {
+		t.Fatal("no route can enumerate, so the router should not offer to")
+	}
+	// It is still the router underneath: routing has not been given up.
+	drainable, ok := prov.(noDiscovery)
+	if !ok {
+		t.Fatalf("expected the query hidden, not the provider replaced, got %T", prov)
+	}
+	if _, ok := drainable.Provider.(*router); !ok {
+		t.Fatalf("expected a router underneath, got %T", drainable.Provider)
+	}
+	if prov.Name() != "gateway" {
+		t.Fatalf("the name should survive the wrapper, got %q", prov.Name())
+	}
+}
