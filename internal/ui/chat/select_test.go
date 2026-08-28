@@ -322,6 +322,36 @@ func TestSelection_WrappedProseCopiesAsOneSentence(t *testing.T) {
 	}
 }
 
+// The join is the geometry's, not the terminal's: the same paragraph copies
+// as one sentence at every width, because softWrap measures against the block
+// glamour filled rather than against the pane. Before S-147 it measured
+// against the pane, which happened to be right at 80 columns and wrong at 78.
+func TestSelection_WrappedProseCopiesAsOneSentenceAtEveryWidth(t *testing.T) {
+	for _, width := range []int{72, 78, 80, 96, 130} {
+		c := &clip{}
+		msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+		m := New(msgs, mockStream).WithMouse(true)
+		m.copyFn = c.fn()
+		updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 24})
+		m = updated.(Model)
+		m.appendEntry(entry{kind: entryAssistant, text: wrappedProse})
+		m.viewport.SetContent(m.renderHistory())
+		m.viewport.GotoTop()
+		m.atBottom = false
+
+		first := lineOf(t, m, "The parser walks")
+		last := lineOf(t, m, "special case in the grammar")
+		if last <= first {
+			t.Fatalf("width %d: the fixture must wrap over several rows", width)
+		}
+		dragLines(t, m, first, last)
+		if c.text != wrappedProse {
+			t.Fatalf("width %d: wrapped prose should copy as the sentence it is:\n got %q\nwant %q",
+				width, c.text, wrappedProse)
+		}
+	}
+}
+
 func TestSelection_KeepsParagraphsListsAndCodeLines(t *testing.T) {
 	c := &clip{}
 	md := "First paragraph.\n\nSecond paragraph.\n\n- first bullet\n- second bullet\n\n```go\nfunc main() {\n\tprintln(\"hi\")\n}\n```"

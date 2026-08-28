@@ -84,7 +84,7 @@ func TestSteps_FlatWithoutTitles(t *testing.T) {
 	}
 	m.invalidateRenderCache()
 
-	w := m.contentWidth()
+	w := m.transcriptWidth()
 	var want string
 	for i, e := range m.transcript {
 		if i > 0 {
@@ -210,8 +210,8 @@ func TestSteps_SurviveResizeAndCaching(t *testing.T) {
 	m = updated.(Model)
 	narrow := stripANSI(m.renderHistory())
 	line := stepLine(t, narrow, "Locate the round accounting")
-	if got := lipgloss.Width(line); got != m.contentWidth() {
-		t.Fatalf("resized header should fill the new width %d, got %d: %q", m.contentWidth(), got, line)
+	if got := lipgloss.Width(line); got != m.transcriptWidth() {
+		t.Fatalf("resized header should fill the new width %d, got %d: %q", m.transcriptWidth(), got, line)
 	}
 
 	// A row landing in the open step restates its header, cache or no cache.

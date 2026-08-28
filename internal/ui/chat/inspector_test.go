@@ -73,15 +73,24 @@ func TestTranscriptWidth_ReducedByTheRail(t *testing.T) {
 	if wide.contentWidth() != 140 {
 		t.Fatalf("content width = %d, want 140", wide.contentWidth())
 	}
-	if got := wide.transcriptWidth(); got != 93 {
+	if got := wide.paneWidth(); got != 93 {
 		t.Fatalf("transcript pane = %d columns, want 93", got)
 	}
-	if wide.viewport.Width != 93 {
-		t.Fatalf("viewport width = %d, want the pane width", wide.viewport.Width)
+	// The pane holds one column back for the scroll gutter (S-147, §10g), so
+	// the transcript wraps one column inside it — and so does the viewport,
+	// which is the selection's coordinate space.
+	if got := wide.transcriptWidth(); got != 92 {
+		t.Fatalf("transcript wraps to %d columns, want 92", got)
+	}
+	if wide.viewport.Width != 92 {
+		t.Fatalf("viewport width = %d, want the wrap width", wide.viewport.Width)
 	}
 	narrow := inspectorModel(t, 120, 40)
-	if got := narrow.transcriptWidth(); got != narrow.contentWidth() {
+	if got := narrow.paneWidth(); got != narrow.contentWidth() {
 		t.Fatalf("single pane keeps the full content width: %d vs %d", got, narrow.contentWidth())
+	}
+	if got := narrow.transcriptWidth(); got != narrow.contentWidth()-components.ScrollGutterWidth {
+		t.Fatalf("single pane still reserves the gutter: %d vs %d", got, narrow.contentWidth())
 	}
 }
 
@@ -159,7 +168,7 @@ func TestTwoPane_HiddenByTakeoverSurfaces(t *testing.T) {
 		if m.twoPane() {
 			t.Fatalf("%s spans both panes and hides the rail", c.name)
 		}
-		if got := m.transcriptWidth(); got != m.contentWidth() {
+		if got := m.paneWidth(); got != m.contentWidth() {
 			t.Fatalf("%s: transcript should span the full width, got %d", c.name, got)
 		}
 	}

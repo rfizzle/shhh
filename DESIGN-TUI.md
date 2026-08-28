@@ -973,6 +973,11 @@ thing that changed is in the pane nobody is looking at. So the notice rail
 back to it, which re-pins on arrival. It is a notice and not an offer: `pgdn`
 is already on the bar above, and there is nothing here to hand out twice.
 
+The number is the notice's; the proportion is the scroll gutter's (§10g), one
+column down the pane's right edge. The two say different things and are both
+worth having: the notice is a count and appears only once the follow is
+paused, the gutter is a shape and is there the whole time.
+
 **Mouse reporting is off by default**, because it costs the terminal's own
 click-drag selection and the two sides of that trade are not the same size.
 Scrolling has substitutes here — `pgup`/`pgdn`, `ctrl+e`, `j`/`k` all read the
@@ -1531,7 +1536,7 @@ whole surface; §12b and §15 are the two ends of it.
 
 | Columns | Layout |
 |---|---|
-| ≥ 130 | two panes — 93-column transcript + `│` + 46-column inspector rail (§15) |
+| ≥ 130 | two panes — 93-column transcript pane (92 of text + the §10g gutter) + `│` + 46-column inspector rail (§15) |
 | 110–129 | one pane, vitals on their own rail inside the input frame (§12b wide) |
 | 70–109 | one pane, vitals folded into the frame's bottom border (§12b compact) |
 | < 70 | minimal — mode, context and spend only (§12b narrow) |
@@ -1858,8 +1863,8 @@ in a minute.
 | spin | 205 | `--ansi-spin` | **anything in motion** — spinner frames, `▸ running…`, `✦ checking`, the current step's meter cell, the working prompt gutter |
 | focusBg | 62 | `--ansi-focus-bg` | selected row background, the cursor block |
 | addBg / delBg | 22 / 52 | `--ansi-add-bg` / `--ansi-del-bg` | intraline diff emphasis |
-| dimmer | 245 | `--ansi-dimmer` | tool output, live tails, detail bodies, sparklines |
-| dim | 241 | `--ansi-dim` | chrome, counts, hints, faint rules, empty meter cells — most of the screen |
+| dimmer | 245 | `--ansi-dimmer` | tool output, live tails, detail bodies, sparklines, the scroll gutter's thumb (§10g) |
+| dim | 241 | `--ansi-dim` | chrome, counts, hints, faint rules, empty meter cells, the scroll gutter's track — most of the screen |
 | status | 243 | `--ansi-status` | status text, the `⛨` containment line |
 | bright | 15 | `--ansi-bright` | headings, the focused row's text |
 | body | 252 | `--ansi-body` | ordinary body text |
@@ -1957,8 +1962,13 @@ Meaning lives here; colour only reinforces it. The set is closed.
 ### 10e. Drawing kit
 
 ```
-▎ ▌ ▁▂▃▄▅▆▇█ ▰ ▱ · ─ │ ╭ ╮ ╯ ╰ ├ ┤ ┬ ┴ ┌ ┐ └ ┘
+▎ ▌ ▁▂▃▄▅▆▇█ ▰ ▱ · ─ │ ┃ ╭ ╮ ╯ ╰ ├ ┤ ┬ ┴ ┌ ┐ └ ┘
 ```
+
+`┃` is the light rule's heavy twin and is the scroll gutter's thumb (§10g),
+and nothing else. It is the only glyph in the kit whose whole job is to be
+told apart from another glyph in the same column, which is why it is a weight
+of `│` rather than a shape of its own.
 
 Takeover cards (§2, §9a, §17) use the square corners `┌ ┐ └ ┘` with a `├ ┤`
 divider above the key row. The input frame (§12) uses the rounded `╭ ╮ ╰ ╯`
@@ -1992,6 +2002,62 @@ every state of every surface with mono on, strips the ANSI, and fails when
 two states collapse to the same text. A state that was only ever a hue apart
 from another is a failing test, not a review comment. The design-system
 project ships the same check as `guidelines/mono-check.html`.
+
+### 10g. The scroll gutter (S-147)
+
+One column down the right edge of the transcript pane, saying where in the
+whole transcript the pane is and how much of the whole it is showing. The
+track is `│`, the thumb `┃`, and the thumb is as tall a share of the gutter as
+the pane is of the transcript.
+
+```
+┌──── 75-column transcript ─────┐┐        ┐
+│ ▎✎ edit  internal/agent/loop.go││        │  the thumb is a fifth of the
+│ ▎✗ run   go test ./...        ─││        │  gutter because a fifth of the
+│    --- FAIL: TestRoundLimit    │┃  ← the │  transcript is on the screen
+│                                │┃    pane│
+│  ✓ Done · 2 steps · 6 tools    ││        │
+└────────────────────────────────┘│        │
+                                  ┘        ┘
+                                  76th column, dim (241) track,
+                                  dimmer (245) thumb
+```
+
+Four rules, and the first is the one that costs something:
+
+- **The column is reserved whether or not anything is drawn in it.** A gutter
+  that appeared on the first overflow would reflow every line of the
+  transcript at the moment the reader least expects it, and a reflow drops
+  the selection (§7a) and throws away the render cache (§13). So the
+  transcript wraps to one column *inside* its pane, always, and the gutter is
+  empty until there is something below. The two-pane split of §15 therefore
+  hands the transcript 92 of its 93 columns.
+- **The thumb touches an end only at that end.** It leaves the top as soon as
+  one line is above it and returns to the bottom only at the live end,
+  because whether there is anything below is the one thing the gutter is read
+  for. Floor division alone would park it on the top for the first several
+  lines of scroll; rounding would park it on the bottom before the live end.
+  Neither is a rounding question — both are claims about the transcript.
+- **It is a shape, not a measurement.** The notice rail already says
+  `↓ 12 lines below · [pgdn] the live end` when the follow is paused (§7a),
+  and that is the number. The gutter gives what a count cannot — proportion,
+  and a reading that is on the screen while the reader is still pinned to the
+  live end, which is exactly when the count says nothing. It is drawn the way
+  the sparkline is, and for the same reason.
+- **Nothing in it is clickable**, for the reason §7a gives about every other
+  cell of the pane: a press inside the transcript anchors a selection, and a
+  gutter you were meant to grab would make every selection started near the
+  right edge a gamble.
+
+It is the transcript's, so every surface the viewport shows carries it — the
+feed, reading mode, an attached child's session. The full-screen diff (§3c)
+and review mode (§16a) do not: they take the pane rather than fill the
+viewport, they scroll themselves, and each already says so on its own status
+bar.
+
+The two glyphs are one dim/dimmer step apart and collapse onto the same grey
+in mono, where the stroke carries all of it (invariant 1). That pair is in
+`mono_test.go` like every other.
 
 ---
 
@@ -2430,15 +2496,17 @@ doing, what has this session changed, what is it costing — so you stop running
 normative.
 
 ```
-┌───────────── 93 columns ─────────────┐ │ ┌───── 46 columns ─────┐
-│ transcript — steps, rows, details    │ │ │ THIS TURN            │
-│ wraps to 93, not to terminal width   │ │ │ CHANGES              │
-│ takeover surfaces span both panes    │ │ │ AGENTS               │
-│ and hide the rail while they show    │ │ │ CONTEXT              │
-│                                      │ │ │ SPEND                │
-└──────────────────────────────────────┘ │ └──────────────────────┘
-                                         ╰ one │ column, dim (241),
-                                           full viewport height
+┌──────────── 93 columns ─────────────┐┐ │ ┌───── 46 columns ─────┐
+│ transcript — steps, rows, details   │┃ │ │ THIS TURN            │
+│ wraps to 92, not to terminal width  │┃ │ │ CHANGES              │
+│ takeover surfaces span both panes   ││ │ │ AGENTS               │
+│ and hide the rail while they show   ││ │ │ CONTEXT              │
+│                                     ││ │ │ SPEND                │
+└─────────────────────────────────────┘┘ │ └──────────────────────┘
+                                       │ ╰ one │ column, dim (241),
+                                       │   full viewport height
+                                       ╰ the scroll gutter (§10g), the
+                                         pane's own last column
 ```
 
 The split is horizontal only: `chromeHeight` and `syncViewportHeight`
@@ -2563,8 +2631,8 @@ positions is open to it and the keys stay off it.
   while its keys are still not-yet-live the card rides above a live frame, the
   panes behind it are what the reader is looking at, and the rail stays. A
   card landing must not reflow the screen it landed on.
-- Transcript wrapping uses the reduced 93-column pane width, not the terminal
-  width.
+- Transcript wrapping uses the reduced pane width less the scroll gutter's
+  column — 92, not 93 and not the terminal width (§10g).
 - **A number nobody reported says so.** Occupancy is provider-reported where
   a response carried usage, and the session's own estimate everywhere else —
   before the first response, after a trim, after `/compact` or a rewind. An

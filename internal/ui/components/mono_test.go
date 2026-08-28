@@ -430,6 +430,15 @@ func monoFixtures() []monoSurface {
 			{"unstaged", staged(false)},
 			{"staged", staged(true)},
 		}},
+		// The scroll gutter has two states and one column to say them in, so
+		// the stroke is all it has: dim and dimmer are the same grey here
+		// (§10g).
+		{"scroll gutter cell", []monoState{
+			// The top row of a gutter scrolled to its end, and of the same
+			// gutter at its top.
+			{"track", Scrollbar(4, 40, 1, 39)[0]},
+			{"thumb", Scrollbar(4, 40, 1, 0)[0]},
+		}},
 		{"fan-out lane state", []monoState{
 			{"queued", lane(func(l *FanoutLane) { l.State = FanoutQueued })},
 			{"running", lane(func(l *FanoutLane) {})},

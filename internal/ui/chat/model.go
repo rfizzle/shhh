@@ -1555,8 +1555,10 @@ func (m Model) View() string {
 
 	contentWidth := m.width - horizontalPadding*2
 	// The body renders into the transcript pane; the header, divider and the
-	// prompt frame span both panes (S-092, §15).
-	paneWidth := m.transcriptWidth()
+	// prompt frame span both panes (S-092, §15). Surfaces that take the pane
+	// over get all of it — the scroll gutter's column is the transcript's own
+	// (S-147, §10g), and they do their own scrolling.
+	paneWidth := m.paneWidth()
 
 	title := m.title
 	if title == "" {
@@ -1590,7 +1592,7 @@ func (m Model) View() string {
 	case m.attachedTo != "":
 		// The attached child's session fills the surface; its liveness shows
 		// in the child-scoped status bar, not a parent spinner.
-		body = m.viewport.View()
+		body = m.transcriptBody()
 	case m.state == stateStreaming && m.streaming == "":
 		label := "Thinking…"
 		switch {
@@ -1599,25 +1601,25 @@ func (m Model) View() string {
 		case m.agent.Executing():
 			label = "Running tools…"
 		}
-		body = m.viewport.View() + "\n" + m.spinner.View() + " " + label
+		body = m.transcriptBody() + "\n" + m.spinner.View() + " " + label
 	case m.state == stateRunningCmd:
 		if m.pendingApproval != nil && m.pendingApproval.kind != approvalExec {
-			body = m.viewport.View() + "\n" + m.spinner.View() + " Applying changes…"
+			body = m.transcriptBody() + "\n" + m.spinner.View() + " Applying changes…"
 		} else {
 			// The running command renders as a live activity row whose tail is
 			// its last output line (S-075); spinner ticks keep it fresh.
-			body = m.viewport.View() + "\n" + m.runningCommandRow(paneWidth)
+			body = m.transcriptBody() + "\n" + m.runningCommandRow(paneWidth)
 		}
 	case m.state == stateClassifying:
-		body = m.viewport.View() + "\n" + m.spinner.View() + " Checking permission…"
+		body = m.transcriptBody() + "\n" + m.spinner.View() + " Checking permission…"
 	case m.state == stateRetryWait && m.retry != nil:
 		// The failure row is already in the transcript; this is the part of
 		// it that drains (S-107, §17a). A wait is a meter, never a spinner.
-		body = m.viewport.View() + "\n" + m.retryWaitBlock(paneWidth)
+		body = m.transcriptBody() + "\n" + m.retryWaitBlock(paneWidth)
 	case m.state == stateModelList:
-		body = m.viewport.View() + "\n" + m.spinner.View() + " Listing models…"
+		body = m.transcriptBody() + "\n" + m.spinner.View() + " Listing models…"
 	default:
-		body = m.viewport.View()
+		body = m.transcriptBody()
 	}
 
 	// Working sub-agents render as compact progress rows above the divider

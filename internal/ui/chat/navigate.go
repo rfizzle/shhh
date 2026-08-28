@@ -28,6 +28,7 @@ package chat
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -243,6 +244,33 @@ func (m Model) followNotice() string {
 	// The word carries it, the glyph repeats it, and neither needs the colour
 	// (invariant 1).
 	return fmt.Sprintf("↓ %d %s below · [pgdn] the live end", below, line)
+}
+
+// transcriptBody is the viewport with its scroll gutter glued to the right
+// (S-147, §10g). The viewport pads every row it returns to its own width and
+// returns exactly its own height of them, so the gutter is a glyph appended
+// per row rather than a column that has to be laid out.
+//
+// It is the transcript's, so every surface the viewport shows gets it — the
+// feed, reading mode, an attached child's session — and the two surfaces that
+// take the pane over instead of filling the viewport, the full-screen diff
+// and review mode, do not: they scroll themselves and say so on their own
+// status bars (§3c, §16a).
+func (m Model) transcriptBody() string {
+	view := m.viewport.View()
+	rows := components.Scrollbar(m.viewport.Height,
+		m.viewport.TotalLineCount(), m.viewport.Height, m.viewport.YOffset)
+	if rows == nil {
+		return view
+	}
+	lines := strings.Split(view, "\n")
+	for i := range lines {
+		if i >= len(rows) {
+			break
+		}
+		lines[i] += rows[i]
+	}
+	return strings.Join(lines, "\n")
 }
 
 // readingRail is the line under the header. It is a plain divider while the

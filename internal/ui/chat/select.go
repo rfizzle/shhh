@@ -528,11 +528,18 @@ func joinSelectedRows(rows []string, width int, cutFirst bool) string {
 		trimmed[i] = strings.TrimRight(row, " \t")
 	}
 	// Classify boundaries before dedenting: softWrap reads row widths against
-	// the pane, and a dedented row is narrower than the one the wrapper was
-	// actually filling.
+	// the width the wrapper was filling, and a dedented row is narrower than
+	// the one it actually emitted.
 	joins := make([]bool, max(len(trimmed)-1, 0))
 	for i := range joins {
-		joins[i] = softWrap(trimmed[i], trimmed[i+1], width)
+		fill := width
+		// A first row the selection cut mid-line is shorter than the block it
+		// came out of, so its padding says nothing about that block; every
+		// other row's does.
+		if i > 0 || !cutFirst {
+			fill = fillWidth(rows[i], trimmed[i], width)
+		}
+		joins[i] = softWrap(trimmed[i], trimmed[i+1], fill)
 	}
 	body := dedent(trimmed, cutFirst)
 	var b strings.Builder
@@ -550,6 +557,29 @@ func joinSelectedRows(rows []string, width int, cutFirst bool) string {
 	// Leading and trailing blank rows are the selection overshooting into the
 	// gaps between entries, not content; the gaps *inside* it are.
 	return strings.Trim(b.String(), "\n")
+}
+
+// fillWidth is the width the wrapper that emitted a row was filling, which is
+// not always the pane's.
+//
+// glamour lays prose out inside a two-column document margin and pads every
+// row it emits out to the block it filled, so trailing padding is the record
+// of how far that wrapper was allowed to go — four columns short of the pane,
+// two of which are already inside the row. Measuring against the pane instead
+// leaves a two-column window in which a wrap reads as a newline, and which
+// pane widths fall inside that window is arithmetic nobody chose: the fixture
+// in select_test.go joins at 76 columns and does not at 74, and no rule says
+// so.
+//
+// A row carrying no padding was not laid out inside a block, and gets the
+// pane: this package's own wordWrap emits none, and neither does a row the
+// selection cut short of its right edge.
+func fillWidth(row, trimmed string, width int) int {
+	w := ansi.StringWidth(row)
+	if w > ansi.StringWidth(trimmed) && w < width {
+		return w
+	}
+	return width
 }
 
 // softWrap reports whether the boundary between two rows is a renderer's word

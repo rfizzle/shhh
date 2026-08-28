@@ -11,6 +11,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 func mockStream(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
@@ -59,8 +60,10 @@ func TestWindowResize_SetsReady(t *testing.T) {
 	if model.width != 100 || model.height != 40 {
 		t.Fatalf("unexpected dimensions: %dx%d", model.width, model.height)
 	}
-	if model.viewport.Width != 100-horizontalPadding*2 {
-		t.Fatalf("viewport width should be %d, got %d", 100-horizontalPadding*2, model.viewport.Width)
+	// The viewport is the transcript, not the pane: the last column is the
+	// scroll gutter's (S-147, §10g).
+	if want := 100 - horizontalPadding*2 - components.ScrollGutterWidth; model.viewport.Width != want {
+		t.Fatalf("viewport width should be %d, got %d", want, model.viewport.Width)
 	}
 	expectedVPHeight := 40 - inputHeight - chromeHeight
 	if model.viewport.Height != expectedVPHeight {
@@ -78,8 +81,8 @@ func TestWindowResize_Subsequent(t *testing.T) {
 	updated2, _ := model.Update(tea.WindowSizeMsg{Width: 60, Height: 20})
 	model2 := updated2.(Model)
 
-	if model2.viewport.Width != 60-horizontalPadding*2 {
-		t.Fatalf("viewport width should update to %d, got %d", 60-horizontalPadding*2, model2.viewport.Width)
+	if want := 60 - horizontalPadding*2 - components.ScrollGutterWidth; model2.viewport.Width != want {
+		t.Fatalf("viewport width should update to %d, got %d", want, model2.viewport.Width)
 	}
 	expectedH := 20 - inputHeight - chromeHeight
 	if model2.viewport.Height != expectedH {

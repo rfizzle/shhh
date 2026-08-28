@@ -13,8 +13,8 @@
 You
 rename the round-limit sentinel
 
-   ⚠ rounds  150 of 150 used · the turn'…  stopped 4m12s
-    3 files changed +30 −4 · the suite has not been re-…
+   ⚠ rounds  150 of 150 used · the turn…  stopped 4m12s
+    3 files changed +30 −4 · the suite has not been re…
     [v] review what it did · [+50] more rounds
     [u] undo the turn
     [ctrl+e] to use them
@@ -24,7 +24,7 @@ rename the round-limit sentinel
 You
 rename the round-limit sentinel
 
-   ⚠ rounds  150 of 150 used · the turn'…  stopped 4m12s
+   ⚠ rounds  150 of 150 used · the turn…  stopped 4m12s
     nothing changed
     [+50] more rounds · [ctrl+e] to use them
 
@@ -33,7 +33,7 @@ rename the round-limit sentinel
 You
 rename the round-limit sentinel
 
-   ⚠ rounds  200 of 200 used · 50 alread…  stopped 4m12s
+   ⚠ rounds  200 of 200 used · 50 alrea…  stopped 4m12s
     5 files changed +112 −40
     [v] review what it did · [+100] more rounds
     [!] let it run · [u] undo the turn
@@ -44,8 +44,8 @@ rename the round-limit sentinel
 You
 rename the round-limit sentinel
 
-   ⚠ rounds  150 of 150 used · the turn'…  stopped 4m12s
-    3 files changed +30 −4 · the suite has not been re-…
+   ⚠ rounds  150 of 150 used · the turn…  stopped 4m12s
+    3 files changed +30 −4 · the suite has not been re…
     [v] review what it did · [u] undo the turn
     [ctrl+e] to use them
 
@@ -55,8 +55,8 @@ rename the round-limit sentinel
 ␛[1;94mYou␛[0m
 rename the round-limit sentinel
 
-   ␛[38;5;214m⚠␛[0m rounds  ␛[38;5;252m150 of 150 used␛[0m␛[38;5;241m · the turn'…␛[0m  ␛[38;5;214mstopped␛[0m ␛[38;5;245m4m12s␛[0m
-    ␛[38;5;245m3 files changed +30 −4 · the suite has not been re-…␛[0m
+   ␛[38;5;214m⚠␛[0m rounds  ␛[38;5;252m150 of 150 used␛[0m␛[38;5;241m · the turn…␛[0m  ␛[38;5;214mstopped␛[0m ␛[38;5;245m4m12s␛[0m
+    ␛[38;5;245m3 files changed +30 −4 · the suite has not been re…␛[0m
     ␛[38;5;245m[v]␛[0m␛[38;5;241m review what it did␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[+50]␛[0m␛[38;5;241m more rounds␛[0m
     ␛[38;5;245m[u]␛[0m␛[38;5;241m undo the turn␛[0m
     ␛[94m[ctrl+e]␛[0m␛[38;5;252m to use them␛[0m
@@ -66,7 +66,7 @@ rename the round-limit sentinel
 ␛[1;94mYou␛[0m
 rename the round-limit sentinel
 
-   ␛[38;5;214m⚠␛[0m rounds  ␛[38;5;252m150 of 150 used␛[0m␛[38;5;241m · the turn'…␛[0m  ␛[38;5;214mstopped␛[0m ␛[38;5;245m4m12s␛[0m
+   ␛[38;5;214m⚠␛[0m rounds  ␛[38;5;252m150 of 150 used␛[0m␛[38;5;241m · the turn…␛[0m  ␛[38;5;214mstopped␛[0m ␛[38;5;245m4m12s␛[0m
     ␛[38;5;245mnothing changed␛[0m
     ␛[38;5;245m[+50]␛[0m␛[38;5;241m more rounds␛[0m␛[38;5;241m · ␛[0m␛[94m[ctrl+e]␛[0m␛[38;5;252m to use them␛[0m
 
@@ -75,7 +75,7 @@ rename the round-limit sentinel
 ␛[1;94mYou␛[0m
 rename the round-limit sentinel
 
-   ␛[38;5;214m⚠␛[0m rounds  ␛[38;5;252m200 of 200 used␛[0m␛[38;5;241m · 50 alread…␛[0m  ␛[38;5;214mstopped␛[0m ␛[38;5;245m4m12s␛[0m
+   ␛[38;5;214m⚠␛[0m rounds  ␛[38;5;252m200 of 200 used␛[0m␛[38;5;241m · 50 alrea…␛[0m  ␛[38;5;214mstopped␛[0m ␛[38;5;245m4m12s␛[0m
     ␛[38;5;245m5 files changed +112 −40␛[0m
     ␛[38;5;245m[v]␛[0m␛[38;5;241m review what it did␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[+100]␛[0m␛[38;5;241m more rounds␛[0m
     ␛[38;5;245m[!]␛[0m␛[38;5;241m let it run␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[u]␛[0m␛[38;5;241m undo the turn␛[0m
@@ -86,8 +86,8 @@ rename the round-limit sentinel
 ␛[1;94mYou␛[0m
 rename the round-limit sentinel
 
-   ␛[38;5;214m⚠␛[0m rounds  ␛[38;5;252m150 of 150 used␛[0m␛[38;5;241m · the turn'…␛[0m  ␛[38;5;214mstopped␛[0m ␛[38;5;245m4m12s␛[0m
-    ␛[38;5;245m3 files changed +30 −4 · the suite has not been re-…␛[0m
+   ␛[38;5;214m⚠␛[0m rounds  ␛[38;5;252m150 of 150 used␛[0m␛[38;5;241m · the turn…␛[0m  ␛[38;5;214mstopped␛[0m ␛[38;5;245m4m12s␛[0m
+    ␛[38;5;245m3 files changed +30 −4 · the suite has not been re…␛[0m
     ␛[38;5;245m[v]␛[0m␛[38;5;241m review what it did␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[u]␛[0m␛[38;5;241m undo the turn␛[0m
     ␛[94m[ctrl+e]␛[0m␛[38;5;252m to use them␛[0m
 

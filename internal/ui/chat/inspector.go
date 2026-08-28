@@ -78,13 +78,29 @@ func (m Model) inspectorHidden() bool {
 	return false
 }
 
-// transcriptWidth is the width the transcript wraps to: the reduced pane
-// width when the surface is split, the full content width otherwise.
-func (m Model) transcriptWidth() int {
+// paneWidth is the transcript pane's own width: the reduced pane when the
+// surface is split, the full content width otherwise. It is what the surfaces
+// that take the pane over — the full-screen diff, review mode, the agent rows
+// — render to, and what splitPanes clips a body row to.
+func (m Model) paneWidth() int {
 	if !m.twoPane() {
 		return m.contentWidth()
 	}
 	w := m.contentWidth() - components.InspectorWidth - paneDividerWidth
+	if w < 1 {
+		return 1
+	}
+	return w
+}
+
+// transcriptWidth is the width the transcript wraps to: the pane less the
+// scroll gutter's column (S-147, §10g), which the pane reserves whether or
+// not there is anything to draw in it. Everything the viewport shows — the
+// feed, reading mode's gutter render, an attached child's session, the start
+// screen — wraps to this, and so does the selection's coordinate space, so
+// the gutter is never inside anything a drag can reach.
+func (m Model) transcriptWidth() int {
+	w := m.paneWidth() - components.ScrollGutterWidth
 	if w < 1 {
 		return 1
 	}
@@ -356,7 +372,7 @@ func (m Model) splitPanes(body string) string {
 	if len(rail) == 0 {
 		return body
 	}
-	pane := m.transcriptWidth()
+	pane := m.paneWidth()
 	divider := paneDividerStyle.Render("│")
 	out := make([]string, len(lines))
 	for i, line := range lines {
@@ -375,7 +391,7 @@ func (m Model) splitPanes(body string) string {
 func (m Model) inspectorStatus() string {
 	if m.twoPane() {
 		return fmt.Sprintf("two panes — %d-column transcript + %d-column inspector rail",
-			m.transcriptWidth(), components.InspectorWidth)
+			m.paneWidth(), components.InspectorWidth)
 	}
 	return fmt.Sprintf("one pane — %d columns", m.contentWidth())
 }

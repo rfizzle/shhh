@@ -10,6 +10,7 @@ package chat
 //	go test ./internal/ui/components ./internal/ui/chat -update-golden
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -435,6 +436,57 @@ func interruptSurface(m Model) string {
 		return m.renderInterrupt(m.contentWidth()) + "\n" + m.renderPromptFrame()
 	}
 	return strings.Join(m.confirmPanelLines(), "\n")
+}
+
+// TestGolden_ScrollGutter captures the transcript pane's right-hand column
+// (S-147, §10g) in the four states it has: nothing to scroll, pinned to the
+// live end with plenty above, halfway up, and at the top. The gutter is the
+// only thing that changes between them, which is the point — the transcript
+// wraps to the same width whether or not there is anything to draw in it, so
+// the pane never reflows underneath a reader who scrolled.
+//
+// It is the whole viewport rather than the gutter alone: a column captured on
+// its own would not show that it lands where the pane ends.
+func TestGolden_ScrollGutter(t *testing.T) {
+	captureGolden(t, "scroll-gutter", "the transcript's scroll gutter", []int{80, 130}, func(width int) []golden.Panel {
+		// A short viewport, so a golden a reader has to check by counting
+		// rows is small enough to count.
+		// Numbered read rows, so a reader checking the thumb against the pane
+		// can see which slice of the whole is showing without counting. They
+		// are activity rows rather than prose because the subject here is one
+		// column, and a markdown fixture would bury it under glamour's own
+		// escapes in the ansi block.
+		reads := func(n int) []entry {
+			es := []entry{{kind: entryUser, text: "read the round accounting"}}
+			for i := 1; i <= n; i++ {
+				es = append(es, entry{kind: entryTool, toolName: "read_file",
+					toolArgs:   fmt.Sprintf(`{"path":"internal/agent/round%02d.go"}`, i),
+					toolResult: "a\nb", duration: 200 * time.Millisecond})
+			}
+			return es
+		}
+		gutter := func(entries []entry, mut func(*Model)) string {
+			m := frameModel(t, width, 26)
+			m.transcript = entries
+			m.invalidateRenderCache()
+			m.viewport.Height = 8
+			m.viewport.SetContent(m.renderHistory())
+			m.viewport.GotoBottom()
+			mut(&m)
+			return m.transcriptBody()
+		}
+		long := reads(24)
+		return []golden.Panel{
+			{Label: "nothing to scroll · the column is reserved and empty",
+				View: gutter(reads(2), func(m *Model) {})},
+			{Label: "the live end · the thumb is on the last row",
+				View: gutter(long, func(m *Model) {})},
+			{Label: "scrolled halfway up",
+				View: gutter(long, func(m *Model) { m.viewport.SetYOffset(m.viewport.TotalLineCount() / 2) })},
+			{Label: "the top of the transcript · the thumb is on the first row",
+				View: gutter(long, func(m *Model) { m.viewport.GotoTop() })},
+		}
+	})
 }
 
 // TestGolden_ReadingMode captures the surface the keyboard moves to (§7a,

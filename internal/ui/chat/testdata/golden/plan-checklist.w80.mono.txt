@@ -13,35 +13,35 @@
 You
 The plan is approved. Leave planning and execute it now, using your tools.
 
-▸ 1  Locate the round accounting ──────────────────────────── ✓ 1 tool  6.2s
+▸ 1  Locate the round accounting ─────────────────────────── ✓ 1 tool  6.2s
 
-▾ 3  Return it from runRound ──────────────────────────────── ✗ 1 tool   38s
-  ▎✗ run     go test ./...                                      exit 1   38s
+▾ 3  Return it from runRound ─────────────────────────────── ✗ 1 tool   38s
+  ▎✗ run     go test ./...                                     exit 1   38s
     FAIL
 
-▾ +  Rebuild the changeset store ──────────────────────────── ▸ 1 tool  3.9s
-   ⚙ read    a.go                                               1 line  3.9s
+▾ +  Rebuild the changeset store ─────────────────────────── ▸ 1 tool  3.9s
+   ⚙ read    a.go                                              1 line  3.9s
 
-· 2  Add a RoundsExhausted sentinel ───────────────────────── · queued     —
+· 2  Add a RoundsExhausted sentinel ──────────────────────── · queued     —
 
-· 4  Offer more rounds in the chat model ──────────────────── · queued     —
+· 4  Offer more rounds in the chat model ─────────────────── · queued     —
 
 
 · turn over (every step settled)
 You
 The plan is approved. Leave planning and execute it now, using your tools.
 
-▸ 1  Locate the round accounting ──────────────────────────── ✓ 1 tool  6.2s
+▸ 1  Locate the round accounting ─────────────────────────── ✓ 1 tool  6.2s
 
-▾ 3  Return it from runRound ──────────────────────────────── ✗ 1 tool   38s
-  ▎✗ run     go test ./...                                      exit 1   38s
+▾ 3  Return it from runRound ─────────────────────────────── ✗ 1 tool   38s
+  ▎✗ run     go test ./...                                     exit 1   38s
     FAIL
 
-▸ +  Rebuild the changeset store ──────────────────────────── ✓ 1 tool  3.9s
+▸ +  Rebuild the changeset store ─────────────────────────── ✓ 1 tool  3.9s
 
-· 2  Add a RoundsExhausted sentinel ───────────────────────── · queued     —
+· 2  Add a RoundsExhausted sentinel ──────────────────────── · queued     —
 
-· 4  Offer more rounds in the chat model ──────────────────── · queued     —
+· 4  Offer more rounds in the chat model ─────────────────── · queued     —
 
 
 ── ansi ────────────────────────────────────────────────────
@@ -49,33 +49,33 @@ The plan is approved. Leave planning and execute it now, using your tools.
 ␛[1;38;5;254mYou␛[0m
 The plan is approved. Leave planning and execute it now, using your tools.
 
-␛[38;5;244m▸␛[0m ␛[38;5;254m1 ␛[0m ␛[38;5;254mLocate the round accounting␛[0m ␛[38;5;244m────────────────────────────␛[0m ␛[38;5;254m✓␛[0m ␛[38;5;244m1 tool␛[0m  ␛[38;5;244m6.2s␛[0m
+␛[38;5;244m▸␛[0m ␛[38;5;254m1 ␛[0m ␛[38;5;254mLocate the round accounting␛[0m ␛[38;5;244m───────────────────────────␛[0m ␛[38;5;254m✓␛[0m ␛[38;5;244m1 tool␛[0m  ␛[38;5;244m6.2s␛[0m
 
-␛[38;5;244m▾␛[0m ␛[38;5;254m3 ␛[0m ␛[38;5;254mReturn it from runRound␛[0m ␛[38;5;244m────────────────────────────────␛[0m ␛[38;5;254m✗␛[0m ␛[38;5;244m1 tool␛[0m   ␛[38;5;244m38s␛[0m
-  ␛[38;5;254m▎␛[0m␛[38;5;254m✗␛[0m run     ␛[38;5;244mgo test ./...␛[0m                                      ␛[38;5;254mexit 1␛[0m   ␛[38;5;244m38s␛[0m
+␛[38;5;244m▾␛[0m ␛[38;5;254m3 ␛[0m ␛[38;5;254mReturn it from runRound␛[0m ␛[38;5;244m───────────────────────────────␛[0m ␛[38;5;254m✗␛[0m ␛[38;5;244m1 tool␛[0m   ␛[38;5;244m38s␛[0m
+  ␛[38;5;254m▎␛[0m␛[38;5;254m✗␛[0m run     ␛[38;5;244mgo test ./...␛[0m                                     ␛[38;5;254mexit 1␛[0m   ␛[38;5;244m38s␛[0m
     ␛[38;5;244mFAIL␛[0m
 
-␛[38;5;254m▾␛[0m ␛[38;5;254m+ ␛[0m ␛[38;5;254mRebuild the changeset store␛[0m ␛[38;5;244m────────────────────────────␛[0m ␛[38;5;254m▸␛[0m ␛[38;5;244m1 tool␛[0m  ␛[38;5;254m3.9s␛[0m
-   ␛[38;5;254m⚙␛[0m read    ␛[38;5;244ma.go␛[0m                                               ␛[38;5;244m1 line␛[0m  ␛[38;5;244m3.9s␛[0m
+␛[38;5;254m▾␛[0m ␛[38;5;254m+ ␛[0m ␛[38;5;254mRebuild the changeset store␛[0m ␛[38;5;244m───────────────────────────␛[0m ␛[38;5;254m▸␛[0m ␛[38;5;244m1 tool␛[0m  ␛[38;5;254m3.9s␛[0m
+   ␛[38;5;254m⚙␛[0m read    ␛[38;5;244ma.go␛[0m                                              ␛[38;5;244m1 line␛[0m  ␛[38;5;244m3.9s␛[0m
 
-␛[38;5;244m·␛[0m ␛[38;5;244m2 ␛[0m ␛[38;5;244mAdd a RoundsExhausted sentinel␛[0m ␛[38;5;244m─────────────────────────␛[0m ␛[38;5;244m·␛[0m ␛[38;5;244mqueued␛[0m     ␛[38;5;244m—␛[0m
+␛[38;5;244m·␛[0m ␛[38;5;244m2 ␛[0m ␛[38;5;244mAdd a RoundsExhausted sentinel␛[0m ␛[38;5;244m────────────────────────␛[0m ␛[38;5;244m·␛[0m ␛[38;5;244mqueued␛[0m     ␛[38;5;244m—␛[0m
 
-␛[38;5;244m·␛[0m ␛[38;5;244m4 ␛[0m ␛[38;5;244mOffer more rounds in the chat model␛[0m ␛[38;5;244m────────────────────␛[0m ␛[38;5;244m·␛[0m ␛[38;5;244mqueued␛[0m     ␛[38;5;244m—␛[0m
+␛[38;5;244m·␛[0m ␛[38;5;244m4 ␛[0m ␛[38;5;244mOffer more rounds in the chat model␛[0m ␛[38;5;244m───────────────────␛[0m ␛[38;5;244m·␛[0m ␛[38;5;244mqueued␛[0m     ␛[38;5;244m—␛[0m
 
 
 · turn over (every step settled)
 ␛[1;38;5;254mYou␛[0m
 The plan is approved. Leave planning and execute it now, using your tools.
 
-␛[38;5;244m▸␛[0m ␛[38;5;254m1 ␛[0m ␛[38;5;254mLocate the round accounting␛[0m ␛[38;5;244m────────────────────────────␛[0m ␛[38;5;254m✓␛[0m ␛[38;5;244m1 tool␛[0m  ␛[38;5;244m6.2s␛[0m
+␛[38;5;244m▸␛[0m ␛[38;5;254m1 ␛[0m ␛[38;5;254mLocate the round accounting␛[0m ␛[38;5;244m───────────────────────────␛[0m ␛[38;5;254m✓␛[0m ␛[38;5;244m1 tool␛[0m  ␛[38;5;244m6.2s␛[0m
 
-␛[38;5;244m▾␛[0m ␛[38;5;254m3 ␛[0m ␛[38;5;254mReturn it from runRound␛[0m ␛[38;5;244m────────────────────────────────␛[0m ␛[38;5;254m✗␛[0m ␛[38;5;244m1 tool␛[0m   ␛[38;5;244m38s␛[0m
-  ␛[38;5;254m▎␛[0m␛[38;5;254m✗␛[0m run     ␛[38;5;244mgo test ./...␛[0m                                      ␛[38;5;254mexit 1␛[0m   ␛[38;5;244m38s␛[0m
+␛[38;5;244m▾␛[0m ␛[38;5;254m3 ␛[0m ␛[38;5;254mReturn it from runRound␛[0m ␛[38;5;244m───────────────────────────────␛[0m ␛[38;5;254m✗␛[0m ␛[38;5;244m1 tool␛[0m   ␛[38;5;244m38s␛[0m
+  ␛[38;5;254m▎␛[0m␛[38;5;254m✗␛[0m run     ␛[38;5;244mgo test ./...␛[0m                                     ␛[38;5;254mexit 1␛[0m   ␛[38;5;244m38s␛[0m
     ␛[38;5;244mFAIL␛[0m
 
-␛[38;5;244m▸␛[0m ␛[38;5;254m+ ␛[0m ␛[38;5;254mRebuild the changeset store␛[0m ␛[38;5;244m────────────────────────────␛[0m ␛[38;5;254m✓␛[0m ␛[38;5;244m1 tool␛[0m  ␛[38;5;244m3.9s␛[0m
+␛[38;5;244m▸␛[0m ␛[38;5;254m+ ␛[0m ␛[38;5;254mRebuild the changeset store␛[0m ␛[38;5;244m───────────────────────────␛[0m ␛[38;5;254m✓␛[0m ␛[38;5;244m1 tool␛[0m  ␛[38;5;244m3.9s␛[0m
 
-␛[38;5;244m·␛[0m ␛[38;5;244m2 ␛[0m ␛[38;5;244mAdd a RoundsExhausted sentinel␛[0m ␛[38;5;244m─────────────────────────␛[0m ␛[38;5;244m·␛[0m ␛[38;5;244mqueued␛[0m     ␛[38;5;244m—␛[0m
+␛[38;5;244m·␛[0m ␛[38;5;244m2 ␛[0m ␛[38;5;244mAdd a RoundsExhausted sentinel␛[0m ␛[38;5;244m────────────────────────␛[0m ␛[38;5;244m·␛[0m ␛[38;5;244mqueued␛[0m     ␛[38;5;244m—␛[0m
 
-␛[38;5;244m·␛[0m ␛[38;5;244m4 ␛[0m ␛[38;5;244mOffer more rounds in the chat model␛[0m ␛[38;5;244m────────────────────␛[0m ␛[38;5;244m·␛[0m ␛[38;5;244mqueued␛[0m     ␛[38;5;244m—␛[0m
+␛[38;5;244m·␛[0m ␛[38;5;244m4 ␛[0m ␛[38;5;244mOffer more rounds in the chat model␛[0m ␛[38;5;244m───────────────────␛[0m ␛[38;5;244m·␛[0m ␛[38;5;244mqueued␛[0m     ␛[38;5;244m—␛[0m
 

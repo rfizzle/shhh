@@ -32,8 +32,8 @@ type ColorTokens struct {
 	Accent  lipgloss.Color // 214 tool glyphs, ⚠ warnings, gated modes, ctx ≥70%, and the mutation rail (§14)
 	Info    lipgloss.Color // 12  sub-agents, block headings, and every key the interface offers
 	FocusBg lipgloss.Color // 62  selected option/row background, the cursor block
-	Dim     lipgloss.Color // 241 chrome, counts, hints, faint rules, empty meter cells
-	Dimmer  lipgloss.Color // 245 tool output, live tails, detail bodies, sparklines
+	Dim     lipgloss.Color // 241 chrome, counts, hints, faint rules, empty meter cells, the scroll gutter's track
+	Dimmer  lipgloss.Color // 245 tool output, live tails, detail bodies, sparklines, the scroll gutter's thumb
 	Spin    lipgloss.Color // 205 anything in motion — spinner frames, ▸ running…, ✦ checking
 	Status  lipgloss.Color // 243 status text, the ⛨ containment line
 	Bright  lipgloss.Color // 15  headings, the focused row's text
@@ -99,6 +99,12 @@ var (
 	// emphasis that costs no colour and survives mono.
 	queryTextStyle lipgloss.Style
 	matchStyle     lipgloss.Style
+	// The scroll gutter (§10g): the track is chrome like every other faint
+	// rule, the thumb a step brighter — the same step a sparkline stands off
+	// the chrome by, and for the same reason. It is a shape, not a
+	// measurement.
+	scrollTrackStyle lipgloss.Style
+	scrollThumbStyle lipgloss.Style
 )
 
 // applyPalette rebuilds every style in this package from the current Palette.
@@ -127,4 +133,6 @@ func applyPalette() {
 	bodyStyle = lipgloss.NewStyle().Foreground(Palette.Body)
 	queryTextStyle = lipgloss.NewStyle().Foreground(Palette.Bright)
 	matchStyle = lipgloss.NewStyle().Bold(true)
+	scrollTrackStyle = lipgloss.NewStyle().Foreground(Palette.Dim)
+	scrollThumbStyle = lipgloss.NewStyle().Foreground(Palette.Dimmer)
 }
