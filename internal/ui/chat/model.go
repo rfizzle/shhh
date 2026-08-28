@@ -111,8 +111,9 @@ type doneMsg struct{ usage *provider.Usage }
 // what makes continuing from a drop possible (S-107); it is empty for every
 // failure that never got that far.
 type streamErrMsg struct {
-	err   error
-	calls []provider.ToolCall
+	err       error
+	calls     []provider.ToolCall
+	reasoning []provider.ReasoningBlock
 }
 
 // retryTickMsg is defined with the rest of S-107 in resume.go.
@@ -121,8 +122,9 @@ type streamStartedMsg struct {
 	cancel context.CancelFunc
 }
 type toolCallsMsg struct {
-	calls []provider.ToolCall
-	usage *provider.Usage
+	calls     []provider.ToolCall
+	usage     *provider.Usage
+	reasoning []provider.ReasoningBlock
 }
 type toolResultsMsg struct {
 	runID   int
@@ -572,6 +574,14 @@ type Model struct {
 	prices        *pricing.Table
 	modelName     string
 	updateNotice  string
+	// Reasoning effort (S-139, reasoning.go): the level this session is on,
+	// the hook that carries a change to the next request, and the persisted
+	// default with whatever outranks it — the model's three, for the setting
+	// that sits beside it on the rail.
+	effort          provider.Effort
+	effortFn        func(provider.Effort)
+	effortDefault   string
+	effortOutranked string
 	// First contact (S-105): what the session already knew about the
 	// checkout when it opened, which suggestion the pointer is on, and
 	// whether the screen has been spent — a session that has said something
@@ -1031,6 +1041,19 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.inputLive() && m.attachedTo == "" {
 				return m, readClipboardCmd()
 			}
+		case reasoningKey:
+			// Reasoning effort (S-139): the level the next request asks for.
+			// It changes nothing about the conversation and nothing about the
+			// turn in flight, so like the rest of S-087's live surfaces it is
+			// answered while one runs — and it is a chord, so the draft below
+			// keeps every letter it has.
+			if m.inputLive() && m.attachedTo == "" {
+				next, note := m.cycleReasoning()
+				m = next
+				m.appendEntry(entry{kind: entrySystem, text: note})
+				m.syncViewport()
+				return m, nil
+			}
 		case "ctrl+k":
 			// The command palette (S-112): one prompt over the commands, the
 			// saved chats and the files this session has touched. It reads
@@ -1196,6 +1219,10 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case doneMsg:
 		m.clearRetryChain()
 		m.accumulateUsage(msg.usage)
+		// A response that ended in text asked for no tools, so its thinking
+		// has nowhere to travel to and the latch is dropped rather than left
+		// for a later round to pick up (S-139).
+		m.agent.CarryReasoning(nil)
 		if m.compacting {
 			return m.finishCompact()
 		}
@@ -1219,6 +1246,9 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case toolCallsMsg:
 		m.clearRetryChain()
 		m.accumulateUsage(msg.usage)
+		// The thinking behind these calls has to travel with them into the
+		// next request (S-139).
+		m.agent.CarryReasoning(msg.reasoning)
 		if m.compacting {
 			return m.abortCompact()
 		}
@@ -1879,10 +1909,10 @@ func terminalMsg(ev provider.StreamEvent) tea.Msg {
 	if ev.Err != nil {
 		// The completed tool calls ride the failure (S-107): a stream that
 		// broke after the model finished writing a call kept that call.
-		return streamErrMsg{err: ev.Err, calls: ev.ToolCalls}
+		return streamErrMsg{err: ev.Err, calls: ev.ToolCalls, reasoning: ev.Reasoning}
 	}
 	if len(ev.ToolCalls) > 0 {
-		return toolCallsMsg{calls: ev.ToolCalls, usage: ev.Usage}
+		return toolCallsMsg{calls: ev.ToolCalls, usage: ev.Usage, reasoning: ev.Reasoning}
 	}
 	if ev.Done {
 		return doneMsg{usage: ev.Usage}
@@ -2178,10 +2208,11 @@ func (m Model) renderStatusBar(width int) string {
 // includeQueued is false there.
 func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 	c := components.Cockpit{
-		CtxPct:   -1,
-		WarnPct:  warnThresholdPercent,
-		AlertPct: trimThresholdPercent,
-		Model:    m.modelName,
+		CtxPct:    -1,
+		WarnPct:   warnThresholdPercent,
+		AlertPct:  trimThresholdPercent,
+		Reasoning: m.reasoningSegment(),
+		Model:     m.modelName,
 	}
 	if m.turnState() == stateClassifying {
 		c.Mode, c.ModeKind = "checking", components.CockpitChecking
@@ -2428,6 +2459,9 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		m.applyMode(mode)
 		return true, fmt.Sprintf("Mode set to %s — %s.", mode, mode.Describe())
 
+	case "/reasoning", "/think":
+		return true, m.reasoningCommand(parts[1:])
+
 	case "/stats":
 		return true, m.statsReport()
 
@@ -2651,6 +2685,11 @@ func helpText() string {
                  grants   what this session has stopped asking about
                  allow <commands|edits>   grant a whole category
                  revoke [commands|edits]  take the grants back
+  /reasoning     How much thinking the model does before it answers:
+                 off (the default), low, medium or high — Ctrl+R cycles them
+                 [level]           set it for this session (also /think)
+                 default [level]   show or persist the level new sessions
+                                   start on (provider.reasoning)
   /stats         Context occupancy breakdown and cumulative session spend
   /ui            Activity feed density, pane layout, monochrome and mouse:
                  /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>
@@ -2704,6 +2743,9 @@ Keys:
   Ctrl+K         Command palette: one prompt over commands, saved chats and
                  the files this session touched — type to filter, Enter runs,
                  Tab writes it into the input, Esc dismisses
+  Ctrl+R         Cycle the reasoning level: off → low → medium → high. It
+                 changes the next model request, not the one in flight, and
+                 the level is stated on the vitals rail beside the model
   Shift+Tab      Cycle the permission mode
                  (while the agent is working, Enter queues a steering message
                   that joins the conversation before the next model request)

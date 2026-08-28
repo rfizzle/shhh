@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -242,5 +243,148 @@ func TestAnthropic_RefusalStopReason(t *testing.T) {
 	_, _, _, streamErr := drainAnthropic(t, events)
 	if streamErr == nil {
 		t.Fatal("expected an error for refusal stop reason")
+	}
+}
+
+// TestAnthropic_ThinkingBudgetOnlyWhenAsked pins the two halves of S-139 on
+// the Messages API: nothing is sent when no level was asked for, and the
+// budget respects the output ceiling when one was.
+func TestAnthropic_ThinkingBudgetOnlyWhenAsked(t *testing.T) {
+	var body map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		raw, _ := io.ReadAll(r.Body)
+		body = nil
+		_ = json.Unmarshal(raw, &body)
+		w.Header().Set("Content-Type", "text/event-stream")
+		sseEvent(w, "message_start", `{"type":"message_start","message":{"id":"m","type":"message","role":"assistant","content":[],"model":"claude-opus-5","usage":{"input_tokens":1,"output_tokens":1}}}`)
+		sseEvent(w, "message_stop", `{"type":"message_stop"}`)
+	}))
+	defer srv.Close()
+
+	p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
+	msgs := []Message{{Role: RoleUser, Content: "hi"}}
+
+	events, err := p.StreamCompletion(context.Background(), msgs, CompletionOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	drainAnthropic(t, events)
+	if _, ok := body["thinking"]; ok {
+		t.Fatalf("effort off must send no thinking config, got %v", body["thinking"])
+	}
+
+	events, err = p.StreamCompletion(context.Background(), msgs, CompletionOpts{Effort: EffortHigh})
+	if err != nil {
+		t.Fatal(err)
+	}
+	drainAnthropic(t, events)
+	thinking, ok := body["thinking"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected a thinking config, got %v", body["thinking"])
+	}
+	if thinking["type"] != "enabled" {
+		t.Errorf("expected enabled thinking, got %v", thinking["type"])
+	}
+	if got := thinking["budget_tokens"].(float64); got != 24576 {
+		t.Errorf("budget = %v, want the high level's 24576", got)
+	}
+
+	// A capped output leaves the answer room: the budget clamps to the cap
+	// less the answer floor rather than swallowing the whole ceiling.
+	events, err = p.StreamCompletion(context.Background(), msgs, CompletionOpts{Effort: EffortHigh, MaxTokens: 8192})
+	if err != nil {
+		t.Fatal(err)
+	}
+	drainAnthropic(t, events)
+	thinking = body["thinking"].(map[string]any)
+	if got := thinking["budget_tokens"].(float64); got != 8192-anthropicAnswerFloor {
+		t.Errorf("clamped budget = %v, want %d", got, 8192-anthropicAnswerFloor)
+	}
+}
+
+// TestAnthropic_ThinkingBlocksSurviveIntoTheNextRequest is the requirement
+// that makes reasoning blocks a data structure rather than a display detail:
+// with thinking on, an assistant turn that requested tools must carry the
+// thinking that led to them or the follow-up request is rejected.
+func TestAnthropic_ThinkingBlocksSurviveIntoTheNextRequest(t *testing.T) {
+	srv := anthropicSSEServer(t, func(w http.ResponseWriter) {
+		sseEvent(w, "message_start", `{"type":"message_start","message":{"id":"m","type":"message","role":"assistant","content":[],"model":"claude-opus-5","usage":{"input_tokens":1,"output_tokens":1}}}`)
+		sseEvent(w, "content_block_start", `{"type":"content_block_start","index":0,"content_block":{"type":"thinking","thinking":"","signature":""}}`)
+		sseEvent(w, "content_block_delta", `{"type":"content_block_delta","index":0,"delta":{"type":"thinking_delta","thinking":"weighing it"}}`)
+		sseEvent(w, "content_block_delta", `{"type":"content_block_delta","index":0,"delta":{"type":"signature_delta","signature":"sig-abc"}}`)
+		sseEvent(w, "content_block_stop", `{"type":"content_block_stop","index":0}`)
+		sseEvent(w, "content_block_start", `{"type":"content_block_start","index":1,"content_block":{"type":"tool_use","id":"t1","name":"read_file","input":{}}}`)
+		sseEvent(w, "content_block_delta", `{"type":"content_block_delta","index":1,"delta":{"type":"input_json_delta","partial_json":"{\"path\":\"a\"}"}}`)
+		sseEvent(w, "content_block_stop", `{"type":"content_block_stop","index":1}`)
+		sseEvent(w, "message_delta", `{"type":"message_delta","delta":{"stop_reason":"tool_use"},"usage":{"output_tokens":9}}`)
+		sseEvent(w, "message_stop", `{"type":"message_stop"}`)
+	})
+	defer srv.Close()
+
+	p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
+	events, err := p.StreamCompletion(context.Background(),
+		[]Message{{Role: RoleUser, Content: "read a"}}, CompletionOpts{Effort: EffortMedium})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var final StreamEvent
+	for ev := range events {
+		if ev.Done {
+			final = ev
+		}
+	}
+	if len(final.ToolCalls) != 1 {
+		t.Fatalf("expected the tool call, got %v", final.ToolCalls)
+	}
+	if len(final.Reasoning) != 1 {
+		t.Fatalf("expected the thinking block to ride the terminal event, got %v", final.Reasoning)
+	}
+	if final.Reasoning[0].Text != "weighing it" || final.Reasoning[0].Signature != "sig-abc" {
+		t.Fatalf("thinking block lost its text or signature: %+v", final.Reasoning[0])
+	}
+
+	// And it goes back on the wire ahead of the tool_use it explains.
+	_, msgs := toAnthropicMessages([]Message{
+		{Role: RoleUser, Content: "read a"},
+		{Role: RoleAssistant, ToolCalls: final.ToolCalls, Reasoning: final.Reasoning},
+	})
+	assistant := msgs[1]
+	if len(assistant.Content) != 2 {
+		t.Fatalf("expected thinking + tool_use on the assistant turn, got %d blocks", len(assistant.Content))
+	}
+	if assistant.Content[0].OfThinking == nil {
+		t.Fatal("thinking must lead the assistant turn")
+	}
+	if assistant.Content[0].OfThinking.Signature != "sig-abc" {
+		t.Errorf("signature must go back exactly as received, got %q", assistant.Content[0].OfThinking.Signature)
+	}
+	if assistant.Content[1].OfToolUse == nil {
+		t.Error("expected the tool_use block after the thinking")
+	}
+}
+
+// TestAnthropicReasoning_DropsUnsignedBlocks: a stream that broke before the
+// signature arrived kept a block the API will not take back, and sending it
+// fails the request it was kept for.
+func TestAnthropicReasoning_DropsUnsignedBlocks(t *testing.T) {
+	_, msgs := toAnthropicMessages([]Message{
+		{Role: RoleAssistant, Content: "x", Reasoning: []ReasoningBlock{
+			{Text: "unsigned"},
+			{Redacted: "opaque"},
+		}},
+	})
+	blocks := msgs[0].Content
+	if len(blocks) != 2 {
+		t.Fatalf("expected the redacted block and the text, got %d blocks", len(blocks))
+	}
+	if blocks[0].OfRedactedThinking == nil || blocks[0].OfRedactedThinking.Data != "opaque" {
+		t.Errorf("redacted thinking must survive unchanged, got %+v", blocks[0])
 	}
 }

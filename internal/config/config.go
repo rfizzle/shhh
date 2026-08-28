@@ -101,6 +101,11 @@ type ProviderConfig struct {
 	APIKey  string `toml:"api_key"`
 	BaseURL string `toml:"base_url"`
 	Name    string `toml:"name"`
+	// Reasoning is the level of thinking sessions start on: "off", "low",
+	// "medium" or "high" (S-139). Empty means off, which is what every
+	// session did before the setting existed — no reasoning field is sent at
+	// all, so models without the knob are unaffected.
+	Reasoning string `toml:"reasoning"`
 }
 
 type BehaviorConfig struct {
@@ -306,6 +311,8 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Provider.BaseURL = value
 	case "provider.name":
 		cfg.Provider.Name = value
+	case "provider.reasoning":
+		cfg.Provider.Reasoning = value
 	case "behavior.silent_mode":
 		cfg.Behavior.SilentMode = value == "true"
 	case "behavior.shell":

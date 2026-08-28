@@ -107,6 +107,13 @@ var slashCommands = []slashCommand{
 				{"commands", "Only the command grants"},
 			}},
 		}},
+	{name: "/reasoning", args: "[off|low|medium|high|default]", desc: "How much the model thinks before it answers (Ctrl+R cycles)",
+		aliases: []string{"/think"},
+		key:     reasoningKey,
+		argSpecs: []argSpec{
+			{dynamic: reasoningArgs},
+			{after: []string{"default"}, options: reasoningLevelArgs()},
+		}},
 	{name: "/stats", desc: "Context occupancy and session spend"},
 	{name: "/ui", args: "verbosity <low|normal|high> | mono <on|off>", desc: "Activity feed density and monochrome mode",
 		argSpecs: []argSpec{

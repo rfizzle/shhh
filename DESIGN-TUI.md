@@ -881,6 +881,7 @@ therefore a gesture or a key a draft cannot produce.
 | wheel | scrolls, and transfers nothing — when reporting is on (§7a) |
 | `ctrl+x` | mouse reporting on/off, from any surface, saved to the config |
 | `ctrl+o` | opens the step in flight, and transfers nothing — §13d |
+| `ctrl+r` | cycles the reasoning level, and transfers nothing — §8a |
 
 `↑` belongs to the input history wherever there is one; that convention is
 older than this surface, and `pgup` is the transfer for a session that has
@@ -1327,7 +1328,7 @@ turn is the rail's THIS TURN block, and §8d is that turn while it is running.
 
 ```
 ──────────────────────────────────────────────────────────────────────────
-⏵⏵ auto · round 7/150 · ctx ▰▰▰▰▰▱▱▱ 62% · ↑41.2k ↓9.8k · $0.14 · ◇1 · gpt-5.2
+⏵⏵ auto · round 7/150 · ctx ▰▰▰▰▰▱▱▱ 62% · ↑41.2k ↓9.8k · $0.14 · ◇1 · think high · gpt-5.2
 ```
 
 ### 8a. Segments
@@ -1342,25 +1343,49 @@ turn is the rail's THIS TURN block, and §8d is that turn while it is running.
 | `↑41.2k ↓9.8k` (dim 241) | tokens in / out this session |
 | `$0.14` (body 252) | spend |
 | `◇ 2 agents ⚠1` (info 12, badge del 9) | running children, badge when one is blocked |
-| `gpt-5.2` (dim 241) | model |
+| `think high` (body 252) | reasoning level, when one is asked for (S-139) |
+| `gpt-5.2` (body 252) | model |
 
 The agents segment is a jump target: `ctrl+a` opens the Agent Manager (§9).
 Every segment keeps a glyph or a word, so colour is never the carrier.
+
+**What answers is not chrome (S-139).** The rail's right-hand pair — the
+reasoning level and the model — reads in body, not in the dim the rest of the
+segments use. Everything to its left is a *measurement* of the session: how
+full the context is, what it has cost, how many rounds it has taken. The pair
+on the right is the session's *identity*: which model is answering, and how
+hard it is being asked to think. Those are the two facts a reader checks
+before trusting an answer or before spending on one, and they had been drawn
+as furniture.
+
+The level is stated only when there is one. Off is the default and means no
+reasoning field is sent at all, which is not a state worth a segment: a rail
+says what the session is doing, and a session doing nothing extra has nothing
+to say. `ctrl+r` cycles the four levels — off → low → medium → high, wrapping
+— and a level applies from the next model request, which a change made
+mid-turn says out loud, because a setting that takes effect one request later
+otherwise looks ignored.
 
 ### 8b. Field-drop order (normative)
 
 When the rail overflows, fields leave in this order:
 
 ```
-model / provider detail  →  token counts  →  round counter  →  extras
+model / provider detail  →  reasoning level, token counts  →  round counter  →  extras
 ```
+
+The model leaves before the level it is being asked to think at. Which model
+is answering is recoverable — `/model` says it, the config file holds it, and
+it rarely changes mid-session; the level is the thing the reader most likely
+just pressed a key to change, and is watching to confirm.
 
 Never dropped: the mode segment, context pressure, spend, and any blocked or
 failed state. A rail that has run out of room shows fewer facts, never
 truncated ones:
 
 ```
-⏵⏵ auto · round 7/150 · ctx ▰▰▰▰▰▱▱▱ 62% · ↑41.2k ↓9.8k · $0.14 · ◇1 · gpt-5.2
+⏵⏵ auto · round 7/150 · ctx ▰▰▰▰▰▱▱▱ 62% · ↑41.2k ↓9.8k · $0.14 · ◇1 · think high · gpt-5.2
+⏵⏵ auto · round 7/150 · ctx ▰▰▰▰▰▱▱▱ 62% · ↑41.2k ↓9.8k · $0.14 · think high
 ⏵⏵ auto · 7/150 · ctx ▰▰▰▰▰▱▱▱ 62% · $0.14
 ⏵⏵ ctx 62% · $0.14
 ```

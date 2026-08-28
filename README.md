@@ -120,6 +120,7 @@ accent_color = "cyan"
 | `provider.api_key` | API key |
 | `provider.base_url` | Base URL override (each provider has its own default) |
 | `provider.name` | Custom display name |
+| `provider.reasoning` | Reasoning effort sessions start on: `off` (default), `low`, `medium`, `high` |
 | `behavior.silent_mode` | Suppress explanation output |
 | `behavior.shell` | Override detected shell |
 | `behavior.safety_warnings` | Warn before destructive commands (default: true) |
@@ -179,7 +180,15 @@ Each provider picks a fast, capable default model. Override with `provider.model
 
 `openai` and `openai-responses` are two dialects of the same API. Chat completions (`openai`) is the older, wider-supported shape; the Responses API (`openai-responses`) is what the reasoning families are served through, and what gateways route them to. The conversation goes up as a flat list of typed items rather than messages with attached tool calls, the system prompt travels as `instructions`, and `store` is off — shhh sends the whole conversation each turn, so there is nothing to gain from server-side retention. If a model 404s or complains about its input shape on one, try the other.
 
-Reasoning models reject a sampling temperature and take their effort setting in a `reasoning` block that a vanilla request has no field for. Both are one rewrite rule each on a gateway profile:
+### Reasoning effort
+
+How hard the model thinks before it answers is a session setting of its own. `Ctrl+R` cycles it — off → low → medium → high, wrapping — `/reasoning <level>` sets it outright, and the level is stated on the vitals rail beside the model. It resolves like the model does: `--reasoning` beats `SHHH_REASONING`, which beats `provider.reasoning`; `/reasoning default <level>` persists one and says so when something is overruling it. A change applies from the next model request, not the one in flight.
+
+Each provider is handed the level in its own dialect — a named effort on the OpenAI dialects, a token budget on Anthropic (extended thinking, with the reply's own ceiling respected) and on Gemini. Sub-agents inherit the session's level, so a level you set is true of the work as well as the rail.
+
+`off` is the default, and it means the field is not sent at all rather than sent as a zero. That distinction matters: `reasoning_effort` on a model that has no reasoning to spend — `gpt-4o`, `gpt-4.1` — is a 400, so a session that never touches the key sends exactly the requests it sent before the setting existed.
+
+A gateway that wants a level forced regardless, or that needs the sampling temperature reasoning models reject stripped, still does it with rewrite rules:
 
 ```toml
 [[rewrite]]
@@ -652,6 +661,8 @@ Slash commands inside a chat session:
 | `/model [name]` | Show or switch the model mid-session (same provider). Bare `/model` opens the picker, where `enter` switches this session and `d` switches it *and* makes it the default |
 | `/model default [name]` | Show or persist the default model for new sessions (`provider.model`); says so when `--model` or `SHHH_MODEL` is overruling it |
 | `/model agents [name]` | Show or persist the model sub-agents run on (`agents.model`; `inherit` follows the session) |
+| `/reasoning [level]` | How much the model thinks before it answers: `off`, `low`, `medium`, `high`. `Ctrl+R` cycles them; `/think` is an alias |
+| `/reasoning default [level]` | Show or persist the level new sessions start on (`provider.reasoning`); says so when `--reasoning` or `SHHH_REASONING` is overruling it |
 | `/permissions [name]` | The permission mode (`manual`, `accept-edits`, `auto`, `plan`); bare opens a picker. `/perms` is the short form, `/mode` still answers |
 | `/permissions grants` | What this session has stopped asking about, and where each grant came from |
 | `/permissions allow <commands\|edits>` | Grant a whole category for the session — the blanket grant `[a]` used to hand out |

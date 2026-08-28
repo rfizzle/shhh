@@ -327,3 +327,36 @@ func TestOpenAIResponses_IsRegistered(t *testing.T) {
 		t.Fatalf("unexpected defaults: %+v", d)
 	}
 }
+
+func TestOpenAIResponses_SendsReasoningOnlyWhenAsked(t *testing.T) {
+	events := []string{`data: {"type":"response.completed","response":{"status":"completed","output":[]}}`}
+
+	var off responsesRequest
+	p := newTestResponses(responsesServer(t, events, &off).URL, "gpt-4.1")
+	ch, err := p.StreamCompletion(context.Background(), []Message{{Role: RoleUser, Content: "hi"}}, CompletionOpts{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, _, _, err := collect(t, ch); err != nil {
+		t.Fatalf("unexpected stream error: %v", err)
+	}
+	// The field must be absent, not "off": the Responses API serves models
+	// that have no reasoning to spend and they reject the object outright.
+	if off.Reasoning != nil {
+		t.Fatalf("effort off must send no reasoning object, got %+v", off.Reasoning)
+	}
+
+	var high responsesRequest
+	p = newTestResponses(responsesServer(t, events, &high).URL, "gpt-5.6-terra")
+	ch, err = p.StreamCompletion(context.Background(), []Message{{Role: RoleUser, Content: "hi"}},
+		CompletionOpts{Effort: EffortHigh})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, _, _, err := collect(t, ch); err != nil {
+		t.Fatalf("unexpected stream error: %v", err)
+	}
+	if high.Reasoning == nil || high.Reasoning.Effort != "high" {
+		t.Fatalf("expected reasoning effort high, got %+v", high.Reasoning)
+	}
+}

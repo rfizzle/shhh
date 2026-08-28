@@ -60,6 +60,15 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 	if opts.MaxTokens > 0 {
 		config.MaxOutputTokens = int32(opts.MaxTokens)
 	}
+	// Gemini's knob is a token budget rather than a named level (S-139), and
+	// the ladder is capped at the smaller of the 2.5 maxima so one setting
+	// serves flash and pro. Off sends no thinking config at all: the models
+	// that cannot turn thinking off should keep their own default rather
+	// than be handed a zero they will refuse.
+	if budget := opts.Effort.ThinkingBudget(0); budget > 0 {
+		b := int32(budget)
+		config.ThinkingConfig = &genai.ThinkingConfig{ThinkingBudget: &b}
+	}
 	if len(opts.Tools) > 0 {
 		config.Tools = toGeminiTools(opts.Tools)
 		if opts.ToolChoice != "" {

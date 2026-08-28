@@ -10,7 +10,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · nothing typed yet
-┌─ Palette ────────────────────────────────────────────────────────────────────────────────────────────────────── 18 results ┐
+┌─ Palette ────────────────────────────────────────────────────────────────────────────────────────────────────── 19 results ┐
 │ ▸ █                                                                                                                        │
 │ COMMANDS                                                                                                                   │
 │ ❯ /help                   Show commands, keys, and the approval policy                                                     │
@@ -19,11 +19,11 @@
 │   /copy                   Copy the last response (or just its code blocks)                                                 │
 │   /model                  Switch the model (bare /model opens a picker)                                                    │
 │   /permissions            What runs without asking, and the mode that frames it                                  shift+tab │
-│   /stats                  Context occupancy and session spend                                                              │
+│   /reasoning              How much the model thinks before it answers (Ctrl+R cycles)                               ctrl+r │
 │ FILES                                                                                                                      │
 │   internal/agent/loop.go  modified 4m ago                                                                                  │
 │   README.md               modified 2h ago                                                                                  │
-│ … 9 more — keep typing                                                                                                     │
+│ … 10 more — keep typing                                                                                                    │
 │ enter run · tab complete · ↑↓ move · esc dismiss                                                                           │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
@@ -37,7 +37,7 @@
 
 ── ansi ────────────────────────────────────────────────────
 · nothing typed yet
-␛[38;5;241m┌─ Palette ────────────────────────────────────────────────────────────────────────────────────────────────────── 18 results ┐␛[0m
+␛[38;5;241m┌─ Palette ────────────────────────────────────────────────────────────────────────────────────────────────────── 19 results ┐␛[0m
 ␛[38;5;241m│␛[0m ␛[94m▸ ␛[0m␛[97m█␛[0m                                                                                                                        ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m ␛[1;94mCOMMANDS␛[0m                                                                                                                   ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m ␛[1;48;5;62m❯ /help                   Show commands, keys, and the approval policy␛[0m                                                     ␛[38;5;241m│␛[0m
@@ -46,11 +46,11 @@
 ␛[38;5;241m│␛[0m   /copy                   ␛[38;5;241mCopy the last response (or just its code blocks)␛[0m                                                 ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m   /model                  ␛[38;5;241mSwitch the model (bare /model opens a picker)␛[0m                                                    ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m   /permissions            ␛[38;5;241mWhat runs without asking, and the mode that frames it␛[0m                                  ␛[38;5;252mshift+tab␛[0m ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   /stats                  ␛[38;5;241mContext occupancy and session spend␛[0m                                                              ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m   /reasoning              ␛[38;5;241mHow much the model thinks before it answers (Ctrl+R cycles)␛[0m                               ␛[38;5;252mctrl+r␛[0m ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m ␛[1;94mFILES␛[0m                                                                                                                      ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m   internal/agent/loop.go  ␛[38;5;241mmodified 4m ago␛[0m                                                                                  ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m   README.md               ␛[38;5;241mmodified 2h ago␛[0m                                                                                  ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m ␛[1;94m… 9 more — keep typing␛[0m                                                                                                     ␛[38;5;241m│␛[0m
+␛[38;5;241m│␛[0m ␛[1;94m… 10 more — keep typing␛[0m                                                                                                    ␛[38;5;241m│␛[0m
 ␛[38;5;241m│␛[0m ␛[3;38;5;241menter run · tab complete · ↑↓ move · esc dismiss␛[0m                                                                           ␛[38;5;241m│␛[0m
 ␛[38;5;241m└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[0m
 

@@ -320,3 +320,24 @@ func TestMaxRounds_UnlimitedIsNeverReached(t *testing.T) {
 		t.Fatal("a positive cap puts the bound back")
 	}
 }
+
+func TestCarryReasoning_LandsOnTheRoundAndIsConsumed(t *testing.T) {
+	a := newTestAgent()
+	blocks := []provider.ReasoningBlock{{Text: "weighing it", Signature: "sig"}}
+	a.CarryReasoning(blocks)
+	a.BeginToolRound("checking", []provider.ToolCall{{ID: "c1", Name: "read_file"}}, nil)
+
+	msgs := a.Messages()
+	last := msgs[len(msgs)-1]
+	if len(last.Reasoning) != 1 || last.Reasoning[0].Signature != "sig" {
+		t.Fatalf("the round's assistant message must carry the thinking, got %+v", last.Reasoning)
+	}
+
+	// And only that round: a latch left set would attach one response's
+	// thinking to another's calls.
+	a.BeginToolRound("next", []provider.ToolCall{{ID: "c2", Name: "read_file"}}, nil)
+	msgs = a.Messages()
+	if got := msgs[len(msgs)-1].Reasoning; len(got) != 0 {
+		t.Fatalf("the latch must be consumed, got %+v", got)
+	}
+}

@@ -17,22 +17,32 @@ type Opts struct {
 	FlagProvider string
 	FlagModel    string
 	FlagAPIKey   string
+	// FlagReasoning is --reasoning: the level of thinking a session starts on
+	// (S-139). It resolves like the model does — flag, then SHHH_REASONING,
+	// then the config file — and an unset chain means off.
+	FlagReasoning string
 
-	ConfigProvider string
-	ConfigModel    string
+	ConfigProvider  string
+	ConfigModel     string
+	ConfigReasoning string
 }
 
 type Resolved struct {
 	Provider string
 	Model    string
+	// Reasoning is the session's starting reasoning level, unparsed; "" is
+	// off. provider.ParseEffort turns it into a level, and rejects a value
+	// nobody meant rather than quietly reading it as off.
+	Reasoning string
 }
 
 func Resolve(opts Opts) Resolved {
 	provider := First(opts.FlagProvider, os.Getenv("SHHH_PROVIDER"), opts.ConfigProvider, DefaultProvider)
 	model := First(opts.FlagModel, os.Getenv("SHHH_MODEL"), opts.ConfigModel, defaultModels[provider])
 	return Resolved{
-		Provider: provider,
-		Model:    model,
+		Provider:  provider,
+		Model:     model,
+		Reasoning: First(opts.FlagReasoning, os.Getenv("SHHH_REASONING"), opts.ConfigReasoning),
 	}
 }
 
@@ -50,6 +60,19 @@ func ModelOutranks(opts Opts) string {
 	}
 	if v := os.Getenv("SHHH_MODEL"); v != "" {
 		return "SHHH_MODEL is set to " + v
+	}
+	return ""
+}
+
+// ReasoningOutranks is ModelOutranks for the reasoning level, and exists for
+// the same reason: a level written to the config file and then overruled by a
+// flag or an env var is indistinguishable from one that was never saved.
+func ReasoningOutranks(opts Opts) string {
+	if opts.FlagReasoning != "" {
+		return "--reasoning " + opts.FlagReasoning + " is on the command line"
+	}
+	if v := os.Getenv("SHHH_REASONING"); v != "" {
+		return "SHHH_REASONING is set to " + v
 	}
 	return ""
 }

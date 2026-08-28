@@ -194,9 +194,16 @@ func (h *Headless) streamOnce() (string, []provider.ToolCall, error) {
 			h.OnUsage(ev.Usage)
 		}
 		if len(ev.ToolCalls) > 0 {
+			// The thinking behind the calls travels with them into the round
+			// that records them (S-139).
+			h.Agent.CarryReasoning(ev.Reasoning)
 			return text.String(), ev.ToolCalls, nil
 		}
 		if ev.Done {
+			// A response that asked for no tools has nowhere to carry its
+			// thinking, and a latch left set would attach it to a later
+			// round's calls.
+			h.Agent.CarryReasoning(nil)
 			break
 		}
 	}

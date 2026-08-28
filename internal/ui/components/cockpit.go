@@ -41,8 +41,28 @@ type Cockpit struct {
 	// Extra segments (queued steering, policy label, …) render after the
 	// built-ins.
 	Extra []string
+	// Reasoning is the thinking level the session is asking for ("think
+	// high", S-139); empty means it is asking for none, and nothing is drawn.
+	// It renders right-aligned beside the model, in the same treatment: what
+	// the session is answering with is one fact in two halves, and neither
+	// half is chrome (§8a).
+	Reasoning string
 	// Model renders right-aligned and is the first thing dropped when narrow.
 	Model string
+}
+
+// identity renders the right-hand pair — the reasoning level and the model —
+// as they appear together, or "" when the session has neither to state.
+func (c Cockpit) identity() string {
+	switch {
+	case c.Reasoning != "" && c.Model != "":
+		return bodyStyle.Render(c.Reasoning) + statusStyle.Render(" · ") + bodyStyle.Render(c.Model)
+	case c.Reasoning != "":
+		return bodyStyle.Render(c.Reasoning)
+	case c.Model != "":
+		return bodyStyle.Render(c.Model)
+	}
+	return ""
 }
 
 // modeSegment renders the always-present permission-mode segment.
@@ -127,8 +147,14 @@ func (c Cockpit) RailSegments() []RailSegment {
 		}
 		segs = append(segs, RailSegment{Text: c.agentsSegment(), Drop: drop})
 	}
+	// The level and the model are separate segments so the rail can drop the
+	// model and keep the level: the model is the detail rank §8b names, and
+	// the level is the thing the session just changed.
+	if c.Reasoning != "" {
+		segs = append(segs, RailSegment{Text: bodyStyle.Render(c.Reasoning), Drop: RailTokens})
+	}
 	if c.Model != "" {
-		segs = append(segs, RailSegment{Text: statusStyle.Render(c.Model), Drop: RailDetail})
+		segs = append(segs, RailSegment{Text: bodyStyle.Render(c.Model), Drop: RailDetail})
 	}
 	return segs
 }
@@ -180,18 +206,21 @@ func (c Cockpit) View(width int) string {
 		segments = append(segments, c.agentsSegment())
 	}
 
-	right := ""
-	if c.Model != "" {
-		right = statusStyle.Render(c.Model)
-	}
+	// The right side sheds the model, then the reasoning level, then itself
+	// (§8b). The stages are a list rather than a chain of conditions because
+	// a chain that can re-widen never terminates.
+	rights := []string{c.identity(), Cockpit{Reasoning: c.Reasoning}.identity(), ""}
+	stage := 0
+	right := rights[stage]
 	for {
 		left := strings.Join(segments, statusStyle.Render(" · "))
 		pad := width - lipgloss.Width(left) - lipgloss.Width(right)
 		if pad >= 1 || (right == "" && pad >= 0) {
 			return left + strings.Repeat(" ", max(pad, 0)) + right
 		}
-		if right != "" {
-			right = ""
+		if stage < len(rights)-1 {
+			stage++
+			right = rights[stage]
 			continue
 		}
 		if len(segments) > 1 {

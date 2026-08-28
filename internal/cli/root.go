@@ -60,6 +60,7 @@ func NewRootCmd() *cobra.Command {
 
 			flags.ConfigProvider = cfg.Provider.Default
 			flags.ConfigModel = cfg.Provider.Model
+			flags.ConfigReasoning = cfg.Provider.Reasoning
 
 			cmd.SetContext(withConfig(cmd.Context(), cfg))
 
@@ -164,7 +165,11 @@ func NewRootCmd() *cobra.Command {
 				{Role: provider.RoleUser, Content: userPrompt},
 			}
 
-			compOpts := provider.CompletionOpts{Model: resolved.Model}
+			effort, err := provider.ParseEffort(resolved.Reasoning)
+			if err != nil {
+				return err
+			}
+			compOpts := provider.CompletionOpts{Model: resolved.Model, Effort: effort}
 
 			db, _ := storage.Open()
 			if db != nil {
@@ -365,6 +370,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&flags.FlagProvider, "provider", "", "LLM provider (openai, anthropic, gemini, openrouter, openai-compatible)")
 	cmd.PersistentFlags().StringVar(&flags.FlagModel, "model", "", "model name to use")
 	cmd.PersistentFlags().StringVar(&flags.FlagAPIKey, "api-key", "", "API key (overrides env var)")
+	cmd.PersistentFlags().StringVar(&flags.FlagReasoning, "reasoning", "", "reasoning effort: off, low, medium, high (default off)")
 	cmd.Flags().BoolVar(&rawMode, "raw", false, "force pipe mode: raw command output, no TUI")
 	cmd.Flags().BoolVarP(&explainMode, "explain", "e", false, "explain the generated command at length (one line is shown by default)")
 	cmd.Flags().BoolVarP(&silentMode, "silent", "s", false, "suppress explanation output")

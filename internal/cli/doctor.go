@@ -42,6 +42,7 @@ import (
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/memory"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -279,8 +280,9 @@ func configSettingsSet(cfg config.Config) int {
 
 func probeModel(ctx context.Context, cfg config.Config) doctorFinding {
 	resolved := resolve.Resolve(resolve.Opts{
-		ConfigProvider: cfg.Provider.Default,
-		ConfigModel:    cfg.Provider.Model,
+		ConfigProvider:  cfg.Provider.Default,
+		ConfigModel:     cfg.Provider.Model,
+		ConfigReasoning: cfg.Provider.Reasoning,
 	})
 	survey := resolve.SurveyPlaces(ctx, resolve.SurveyOpts{
 		Provider:     resolved.Provider,
@@ -294,6 +296,14 @@ func probeModel(ctx context.Context, cfg config.Config) doctorFinding {
 	// model is the row that has to say who chose it.
 	if over := resolve.ModelOutranks(resolve.Opts{ConfigModel: cfg.Provider.Model}); over != "" && cfg.Provider.Model != "" {
 		f.Detail = joinDetail(f.Detail, over+", overruling provider.model = "+cfg.Provider.Model)
+	}
+	// A reasoning level is the other half of what a request asks for (S-139),
+	// and an unreadable one is a session that will fail to start rather than
+	// quietly reason less than it was told to.
+	if effort, err := provider.ParseEffort(resolved.Reasoning); err != nil {
+		f.Detail = joinDetail(f.Detail, err.Error())
+	} else if effort.On() {
+		f.Detail = joinDetail(f.Detail, "reasoning "+effort.String())
 	}
 	return f
 }

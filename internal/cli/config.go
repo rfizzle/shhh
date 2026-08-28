@@ -370,6 +370,17 @@ func configSettings() []configSetting {
 		},
 		fallback: "(the provider's own default)",
 	}, {
+		group: "MODEL", key: "provider.reasoning", label: "reasoning",
+		read:     str(func(c config.Config) string { return c.Provider.Reasoning }),
+		fallback: "off",
+		options: func(config.Config) []components.SelectOption {
+			opts := make([]components.SelectOption, 0, len(provider.EffortCycle()))
+			for _, e := range provider.EffortCycle() {
+				opts = append(opts, components.SelectOption{Label: e.String(), Desc: e.Describe()})
+			}
+			return opts
+		},
+	}, {
 		group: "MODEL", key: "provider.api_key", label: "api key",
 		read:     str(func(c config.Config) string { return c.Provider.APIKey }),
 		fallback: "(from the environment)",

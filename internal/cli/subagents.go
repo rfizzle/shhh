@@ -100,10 +100,18 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		}
 		stream := agent.StreamFunc(func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			sctx, cancel := context.WithCancel(cctx)
+			// Children think as hard as the session does: the level is a
+			// session setting, and one that stopped at the orchestrator
+			// would be true of the rail and false of the work (S-139).
+			effort := env.effort
+			if env.reasoning != nil {
+				effort = env.reasoning()
+			}
 			ev, sErr := env.prov.StreamCompletion(sctx, msgs, provider.CompletionOpts{
 				Model:      childModel,
 				Tools:      streamDefs,
 				ToolChoice: "auto",
+				Effort:     effort,
 			})
 			if sErr != nil {
 				cancel()

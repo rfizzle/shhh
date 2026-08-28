@@ -152,6 +152,17 @@ type sessionEnv struct {
 	messages      []provider.Message
 	stream        agent.StreamFunc
 	switchModel   func(string)
+	// effort is the reasoning level the session resolved to, and
+	// switchReasoning is what ctrl+r and /reasoning change it with (S-139).
+	// Like the model it is read by the stream closure from another
+	// goroutine, so it lives under the same mutex.
+	effort          provider.Effort
+	switchReasoning func(provider.Effort)
+	// reasoning reads the level that is live now, for the streams built once
+	// at session start and used for the rest of it — a sub-agent's. Without
+	// it a level set with ctrl+r would be true of the session and false of
+	// every child it spawns.
+	reasoning func() provider.Effort
 	// replaceKey and switchProvider are what a provider failure's [k] and
 	// [p] do (S-106): both rebuild the provider in place, and both leave the
 	// session untouched when the rebuild fails.
@@ -165,6 +176,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession) (*sessionEnv, erro
 	flags := session.flags
 	flags.ConfigProvider = cfg.Provider.Default
 	flags.ConfigModel = cfg.Provider.Model
+	flags.ConfigReasoning = cfg.Provider.Reasoning
 
 	resolved := resolve.Resolve(*flags)
 
@@ -187,10 +199,16 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession) (*sessionEnv, erro
 		{Role: provider.RoleSystem, Content: sysPrompt},
 	}
 
+	effort, err := provider.ParseEffort(resolved.Reasoning)
+	if err != nil {
+		return nil, err
+	}
+
 	compOpts := provider.CompletionOpts{
 		Model:      resolved.Model,
 		Tools:      session.toolDefs,
 		ToolChoice: "auto",
+		Effort:     effort,
 	}
 
 	// /model switches the model mid-session, and a provider failure's [k] and
@@ -199,6 +217,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession) (*sessionEnv, erro
 	// guards the model, the provider and the key it was built with.
 	var sessionMu sync.Mutex
 	currentModel := resolved.Model
+	currentEffort := effort
 	currentProvider := resolved.Provider
 	currentKey := req.APIKey
 	currentBaseURL := req.BaseURL
@@ -249,6 +268,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession) (*sessionEnv, erro
 		opts := compOpts
 		sessionMu.Lock()
 		opts.Model = currentModel
+		opts.Effort = currentEffort
 		active := p
 		sessionMu.Unlock()
 		ev, sErr := active.StreamCompletion(ctx, msgs, opts)
@@ -272,6 +292,17 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession) (*sessionEnv, erro
 			sessionMu.Lock()
 			currentModel = name
 			sessionMu.Unlock()
+		},
+		effort: effort,
+		switchReasoning: func(e provider.Effort) {
+			sessionMu.Lock()
+			currentEffort = e
+			sessionMu.Unlock()
+		},
+		reasoning: func() provider.Effort {
+			sessionMu.Lock()
+			defer sessionMu.Unlock()
+			return currentEffort
 		},
 		replaceKey: func(key string) error {
 			sessionMu.Lock()
@@ -468,6 +499,8 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithApprovalMode(mode, cycle).
 		WithClassifier(classifier).
 		WithModelSwitcher(env.switchModel).
+		WithReasoning(env.effort, env.switchReasoning).
+		WithReasoningDefault(cfg.Provider.Reasoning, resolve.ReasoningOutranks(*session.flags)).
 		WithProvider(env.provName, env.replaceKey, env.switchProvider).
 		WithModelOptions(provider.KnownModels(env.prov.Name())).
 		WithModelLister(modelListerFor(env.prov)).

@@ -92,6 +92,15 @@ type responsesRequest struct {
 	ToolChoice   string          `json:"tool_choice,omitempty"`
 	Temperature  *float64        `json:"temperature,omitempty"`
 	MaxOutput    int             `json:"max_output_tokens,omitempty"`
+	// Reasoning is sent only when the session asked for a level (S-139):
+	// the Responses API serves non-reasoning models too, and they reject it.
+	Reasoning *responsesReasoning `json:"reasoning,omitempty"`
+}
+
+// responsesReasoning is the reasoning object: a named effort, which is the
+// whole of what shhh sets.
+type responsesReasoning struct {
+	Effort string `json:"effort,omitempty"`
 }
 
 // responseItem is one element of the flat input list: a message, a call the
@@ -146,6 +155,9 @@ func (o *OpenAIResponses) StreamCompletion(ctx context.Context, messages []Messa
 		ToolChoice:  opts.ToolChoice,
 		Temperature: opts.Temperature,
 		MaxOutput:   opts.MaxTokens,
+	}
+	if effort := opts.Effort.OpenAIEffort(); effort != "" {
+		req.Reasoning = &responsesReasoning{Effort: effort}
 	}
 	body, err := json.Marshal(req)
 	if err != nil {

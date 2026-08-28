@@ -23,6 +23,11 @@ type Message struct {
 	// pasted images, files off the clipboard (S-134). Each provider's
 	// converter decides how to put them on the wire; see attachment.go.
 	Attachments []Attachment
+	// Reasoning is the thinking the model did before this message, kept in
+	// the provider's own form (S-139, reasoning.go). Only the assistant turn
+	// that requested tools needs it, and only the providers that require it
+	// back put it on the wire.
+	Reasoning []ReasoningBlock
 }
 
 type Tool struct {
@@ -52,6 +57,10 @@ type StreamEvent struct {
 	Usage     *Usage
 	Done      bool
 	Err       error
+	// Reasoning is the thinking blocks this response produced (S-139). It
+	// rides the terminal event beside ToolCalls, and for the same reason:
+	// what the model finished has to survive into the next request.
+	Reasoning []ReasoningBlock
 }
 
 type CompletionOpts struct {
@@ -60,6 +69,9 @@ type CompletionOpts struct {
 	MaxTokens   int
 	Tools       []Tool
 	ToolChoice  string
+	// Effort is the reasoning level asked of the model (S-139,
+	// reasoning.go). EffortOff — the zero value — sends nothing.
+	Effort Effort
 }
 
 type Provider interface {

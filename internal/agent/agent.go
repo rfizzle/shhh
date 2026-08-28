@@ -77,6 +77,12 @@ type Agent struct {
 	executing bool
 	pending   []provider.ToolCall
 	queue     []provider.ToolCall
+
+	// reasoning is the thinking the response now being folded into the
+	// conversation produced (S-139). It is latched from the terminal stream
+	// event and consumed by the assistant message that round records,
+	// because that is the message the next request has to carry it in.
+	reasoning []provider.ReasoningBlock
 }
 
 func New(initial []provider.Message, stream StreamFunc) *Agent {
@@ -165,6 +171,12 @@ func (a *Agent) CapReached() bool { return !a.Uncapped() && a.rounds >= a.MaxRou
 // background.
 func (a *Agent) Executing() bool { return a.executing }
 
+// CarryReasoning latches the reasoning blocks a response produced, for the
+// assistant message about to record it. Every terminal stream event calls it,
+// including the ones with nothing to carry: a stale latch would attach one
+// response's thinking to another's tool calls, which is worse than none.
+func (a *Agent) CarryReasoning(blocks []provider.ReasoningBlock) { a.reasoning = blocks }
+
 // BeginToolRound records the assistant message that requested calls and
 // splits them into auto-run and approval-gated sets using gate; gated calls
 // wait in the approval queue until the front-end resolves them.
@@ -174,7 +186,9 @@ func (a *Agent) BeginToolRound(text string, calls []provider.ToolCall, gate Appr
 		Role:      provider.RoleAssistant,
 		Content:   text,
 		ToolCalls: calls,
+		Reasoning: a.reasoning,
 	})
+	a.reasoning = nil
 	for _, tc := range calls {
 		if gate != nil && gate(tc) {
 			gated = append(gated, tc)

@@ -116,6 +116,10 @@ func (m Model) handleStreamFailure(msg streamErrMsg) (tea.Model, tea.Cmd) {
 	f := classifyFailure(msg.err, m.providerName)
 	partial := m.streaming
 	calls := provider.CompletedToolCalls(msg.calls)
+	// The thinking behind the calls that survived the drop survives with
+	// them: continuing the partial is what re-uses them, and the request it
+	// makes needs the reasoning that produced them (S-139).
+	m.agent.CarryReasoning(msg.reasoning)
 	switch {
 	case m.compacting || f.Class == provider.ClassCancelled:
 		// A compaction that broke discards its partial summary rather than
