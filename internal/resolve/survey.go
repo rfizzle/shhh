@@ -192,7 +192,10 @@ func surveyProfiles(opts SurveyOpts) Place {
 		loaded, _ = profile.Load(dirs)
 	}
 	if len(loaded) == 0 {
-		detail := "no .toml in " + strings.Join(displayAll(dirs), ", ")
+		// Two places hold profiles now — the one file and the directory
+		// beside it — and naming only one of them would send someone to
+		// write a file where shhh is not the one that looks first.
+		detail := "no " + strings.Join(displayAll(profile.Files(dirs)), ", ") + " or .toml in " + strings.Join(displayAll(dirs), ", ")
 		if len(dirs) == 0 {
 			detail = "no profile directory on this machine"
 		}

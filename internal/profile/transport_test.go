@@ -42,7 +42,7 @@ func TestTransport_RewritesTheRequestBody(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := &http.Client{Transport: NewTransport(gatewayProfile(srv.URL), nil)}
+	client := &http.Client{Transport: NewTransport(gatewayProfile(srv.URL).Routes()[0], nil)}
 	body := `{"model":"gemini-3.1-pro","messages":[{"role":"tool","tool_call_id":"call_1__thought__YWJj"}]}`
 	req, err := http.NewRequest(http.MethodPost, srv.URL+"/chat/completions", strings.NewReader(body))
 	if err != nil {
@@ -74,7 +74,7 @@ func TestTransport_LeavesUnmatchedModelsAlone(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	client := &http.Client{Transport: NewTransport(gatewayProfile(srv.URL), nil)}
+	client := &http.Client{Transport: NewTransport(gatewayProfile(srv.URL).Routes()[0], nil)}
 	body := `{"model":"gpt-4o","messages":[{"role":"tool","tool_call_id":"call_1__thought__YWJj"}]}`
 	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/chat/completions", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -101,7 +101,7 @@ func TestTransport_IgnoresNonJSONBodies(t *testing.T) {
 
 	p := gatewayProfile(srv.URL)
 	p.Rewrite = append(p.Rewrite, Rule{Direction: DirectionRequest, Op: OpDelete, Path: "anything"})
-	client := &http.Client{Transport: NewTransport(p, nil)}
+	client := &http.Client{Transport: NewTransport(p.Routes()[0], nil)}
 	req, _ := http.NewRequest(http.MethodPost, srv.URL+"/upload", strings.NewReader("not json at all"))
 	req.Header.Set("Content-Type", "text/plain")
 	resp, err := client.Do(req)
@@ -131,7 +131,7 @@ func TestTransport_RewritesStreamedEvents(t *testing.T) {
 	// it on the way in rather than teaching every caller about the gateway.
 	p.Rewrite = append(p.Rewrite, Rule{Direction: DirectionResponse, Op: OpSet, Path: "finish_reason", Value: "stop"})
 
-	client := &http.Client{Transport: NewTransport(p, nil)}
+	client := &http.Client{Transport: NewTransport(p.Routes()[0], nil)}
 	resp, err := client.Get(srv.URL + "/chat/completions")
 	if err != nil {
 		t.Fatal(err)
@@ -168,7 +168,7 @@ func TestTransport_RewritesAJSONResponse(t *testing.T) {
 
 	p := gatewayProfile(srv.URL)
 	p.Rewrite = append(p.Rewrite, Rule{Direction: DirectionResponse, Op: OpSetDefault, Path: "usage", Value: map[string]any{"prompt_tokens": 0}})
-	client := &http.Client{Transport: NewTransport(p, nil)}
+	client := &http.Client{Transport: NewTransport(p.Routes()[0], nil)}
 	resp, err := client.Get(srv.URL + "/v1/models")
 	if err != nil {
 		t.Fatal(err)
@@ -186,7 +186,7 @@ func TestTransport_RewritesAJSONResponse(t *testing.T) {
 
 func TestTransport_UnchangedWithoutHeadersOrRules(t *testing.T) {
 	p := Profile{Name: "plain", BaseURL: "http://example.test"}
-	if got := NewTransport(p, http.DefaultTransport); got != http.RoundTripper(http.DefaultTransport) {
+	if got := NewTransport(p.Routes()[0], http.DefaultTransport); got != http.RoundTripper(http.DefaultTransport) {
 		t.Fatal("a profile with nothing to change should not wrap the transport")
 	}
 }

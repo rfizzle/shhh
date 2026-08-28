@@ -2836,7 +2836,7 @@ A card is warranted only when the session cannot continue without an answer.
 │ shhh looked in four places:                                            │
 │   ✗ env       SHHH_API_KEY, OPENAI_API_KEY — unset                     │
 │   ✗ config    ~/.config/shhh/config.toml — no provider api_key         │
-│   ✗ profiles  no .toml in ~/.config/shhh/providers                     │
+│   ✗ profiles  no ~/.config/shhh/providers.toml                         │
 │   ✓ local     localhost:11434 — llama3.3, qwen2.5-coder                │
 │                                                                        │
 │ the local runtime is already answering — that is the quickest way in   │
@@ -2853,8 +2853,8 @@ and none of the findings.
 
 The four places are the search the resolution actually does
 (`internal/resolve/survey.go`), in its own order: the environment variables the
-dialect reads, the config files in search order, the gateway profile
-directories (S-084), and a local model runtime, probed once with a bounded
+dialect reads, the config files in search order, the gateway profiles
+(S-084, S-142), and a local model runtime, probed once with a bounded
 request to `GET {base}/models`. A key that was found is named by its last four
 characters and never by more.
 
@@ -3833,3 +3833,116 @@ a discrepancy.
   this one, and a movement key that also kills a process is the worst kind of
   false offer. `x` cancels the turn, `X` kills the agent, and the pair reads
   as one escalation.
+
+## 21. One Provider, Several Endpoints (S-142)
+
+### 21a. The shape of the problem
+
+A gateway profile (S-084) was one file, one name, one address. That is the
+shape of a hosted API and it is not the shape of a gateway: a deployment
+serves its Claude models on the Messages dialect at a path of its own, its
+OpenAI-shaped models at the root, and its reasoning families through the
+Responses API — one deployment, one key, one set of house rules, three
+addresses.
+
+Under one-file-one-address the only way to say that was three profiles. Three
+copies of the key variable, three copies of the headers, three copies of every
+rule the whole gateway needs — and `/model` could not cross between them,
+because they were three providers as far as the session was concerned.
+Switching from `gpt-5.2` to `claude-opus-5` meant switching provider first.
+
+So a profile is a provider **with endpoints inside it**:
+
+```toml
+[[provider]]
+name        = "gateway"
+base_url    = "https://gw.internal/v1"
+api_key_env = "GATEWAY_API_KEY"
+
+  [[provider.models]]
+  id = "gpt-5.2"
+
+  [[provider.endpoint]]
+  match    = ["claude-*"]
+  api      = "anthropic-messages"
+  base_url = "https://gw.internal/anthropic"
+
+    [[provider.endpoint.models]]
+    id = "claude-opus-5"
+```
+
+- **An endpoint says only what differs.** Everything it leaves unset it
+  inherits: the key, the dialect, the catalog path, the headers, the rules.
+  The block above is the whole of what is different about the Claude address,
+  and that is the point — a profile that repeated the key on every endpoint
+  would be the three files again with extra syntax.
+- **Headers merge, rules concatenate.** A collision goes to the endpoint; the
+  profile's rules run first, then the endpoint's, so a quirk that is true of
+  the whole gateway is written once and a quirk that is true of one address
+  sits with that address.
+- **The profile's own fields are the default endpoint** — where a model that
+  no endpoint claims is sent. That is why `base_url` stays required even when
+  every model is routed: it is the answer to a question every session can ask.
+
+### 21b. Which endpoint a model goes to
+
+Two claims, checked in that order:
+
+1. **A declared id.** `[[provider.endpoint.models]]` naming `claude-opus-5` is
+   the user naming a model and an address in one breath, and nothing overrides
+   it.
+2. **A `match` glob.** `["claude-*"]` catches the models nobody enumerated —
+   the ones a catalog endpoint will hand back tomorrow.
+
+Anything unclaimed goes to the default. A profile with no endpoints therefore
+routes everything to the default and behaves exactly as it did before
+endpoints existed, which is the compatibility the feature is built around.
+
+- **A model claimed twice is refused at load**, naming both endpoints. Either
+  could be the one meant, and picking silently would send a session's traffic
+  to an address the user did not choose — the same reasoning that refuses a
+  malformed rewrite rule rather than letting it quietly do nothing.
+- **An endpoint with neither `models` nor `match` is refused too.** Nothing
+  can reach it, so it is a typo with no other reading.
+- **Routing happens per request, not per session.** The model travels in
+  `provider.CompletionOpts`, so `/model claude-opus-5` mid-session crosses
+  from the chat dialect to the Messages dialect with nothing rebuilt. Each
+  endpoint's client is built the first time a request needs it and kept: an
+  endpoint the session never touches costs nothing, and — the reason that
+  matters — an endpoint whose key is unset does not fail a session that was
+  never going to send it anything.
+- **An explicit `--base-url` collapses the routing.** Routing is a map from
+  models to addresses; an override naming one address for everything has
+  already answered the question the map exists to answer, so the profile is
+  pinned to it.
+
+### 21c. One file
+
+Providers live in `<config-dir>/providers.toml`, one `[[provider]]` block
+each. The `providers/` directory beside it still loads — every profile written
+before this is still read — and the single file is read first, so a name in
+both resolves to the one file.
+
+`shhh providers migrate` folds the directory into the file: it reads
+everything in load order, writes it as `[[provider]]` blocks, and leaves the
+originals alone. `--prune` removes them, `--dry-run` prints the file it would
+write and changes nothing.
+
+- **The migration re-emits rather than concatenates.** TOML nesting means the
+  directory form's top-level keys and `[[models]]` tables have to be re-keyed
+  to live under `[[provider]]`; a concatenation would produce a file that
+  parses into something else entirely. The emitter writes a fixed, readable
+  order and omits every unset field, because the result is a file someone has
+  to keep editing for years.
+- **A file that would not parse stops the write.** A provider that failed to
+  load is a provider that would silently vanish from the consolidated file, so
+  the migration refuses and names what it could not read.
+- **`migrate` then `migrate --prune` is two commands, and the second one
+  works.** Between them every original is shadowed by the file the first
+  wrote — dead, ignored by the loader — and a plan that only counted files
+  still contributing a provider would find nothing to prune and strand the
+  originals on disk forever. Redundant means "the one file stands in for
+  this", which covers both.
+- **`shhh providers` prints one block per endpoint**, with the rules and the
+  key check repeated under each, because "which rules apply where" is the
+  question a routed profile makes possible to get wrong.

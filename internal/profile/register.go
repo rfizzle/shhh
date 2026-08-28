@@ -3,6 +3,14 @@ package profile
 // Registration turns loaded profiles into providers the rest of shhh can
 // resolve by name, with the rewrite transport underneath and the declared
 // catalog feeding the /model picker.
+//
+// A profile with endpoints registers one provider all the same. What the
+// session holds is a router: it reads the model off each request and hands it
+// to the endpoint that claims it, building that endpoint's client the first
+// time it is needed and keeping it. The model travels per request
+// (provider.CompletionOpts), so a mid-session /model switch crosses from the
+// OpenAI-shaped root to the Messages dialect without rebuilding anything the
+// session is holding.
 
 import (
 	"context"
@@ -11,6 +19,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
@@ -53,45 +62,177 @@ func Register(profiles []Profile) {
 // defaultModel is the profile's first declared model, if any — the model a
 // session starts on when nothing else names one.
 func defaultModel(p Profile) string {
-	if len(p.Models) == 0 {
+	ids := p.ModelIDs()
+	if len(ids) == 0 {
 		return ""
 	}
-	return p.Models[0].ID
+	return ids[0]
 }
 
-// New builds the provider a profile describes: the dialect's own client,
-// pointed at the gateway, over the rewriting transport.
+// New builds the provider a profile describes. A profile with no endpoints is
+// the single client it always was; one with endpoints is a router over them.
+//
+// An explicit base URL — --base-url, provider.base_url — collapses the whole
+// profile onto that one address. Routing is a map from models to endpoints,
+// and an override that names one endpoint for everything has already answered
+// the question the map exists to answer.
 func New(p Profile, opts provider.ResolveOpts) (provider.Provider, error) {
+	if opts.BaseURL != "" {
+		pinned := p.defaultRoute()
+		pinned.BaseURL = opts.BaseURL
+		return newEndpoint(p, pinned, opts)
+	}
+	routes := p.Routes()
+	if len(routes) == 1 {
+		return newEndpoint(p, routes[0], opts)
+	}
+	return &router{profile: p, routes: routes, opts: opts, built: map[int]provider.Provider{}}, nil
+}
+
+// router is a profile's several endpoints behind one provider name.
+type router struct {
+	profile Profile
+	routes  []Endpoint
+	opts    provider.ResolveOpts
+
+	mu    sync.Mutex
+	built map[int]provider.Provider
+}
+
+func (r *router) Name() string { return r.profile.Name }
+
+// StreamCompletion sends the request to the endpoint that claims its model.
+func (r *router) StreamCompletion(ctx context.Context, messages []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	p, err := r.providerFor(opts.Model)
+	if err != nil {
+		return nil, err
+	}
+	return p.StreamCompletion(ctx, messages, opts)
+}
+
+// providerFor returns the built client for a model's endpoint, building it on
+// first use. A profile may name several endpoints a session never touches;
+// none of them should cost a client, and — more to the point — an endpoint
+// whose key is unset should not fail a session that was never going to send
+// it anything.
+func (r *router) providerFor(model string) (provider.Provider, error) {
+	route := r.profile.Route(model)
+	idx := r.indexOf(route)
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if p, ok := r.built[idx]; ok {
+		return p, nil
+	}
+	p, err := newEndpoint(r.profile, route, r.opts)
+	if err != nil {
+		return nil, err
+	}
+	r.built[idx] = p
+	return p, nil
+}
+
+// indexOf identifies a route by position, which is what Route returned it
+// from. Two endpoints can differ only in their match globs, so the position
+// is the only reliable identity.
+func (r *router) indexOf(route Endpoint) int {
+	for i, candidate := range r.routes {
+		if candidate.Label == route.Label && candidate.BaseURL == route.BaseURL && candidate.API == route.API {
+			return i
+		}
+	}
+	return 0
+}
+
+// ListModels is every model the profile declares, plus whatever its endpoints
+// can enumerate. An endpoint that refuses discovery — the Messages dialect
+// has no catalog at all — contributes its declared models and nothing else,
+// which is the same answer a single-endpoint profile gives.
+func (r *router) ListModels(ctx context.Context) ([]string, error) {
+	var out []string
+	seen := map[string]bool{}
+	add := func(names []string) {
+		for _, name := range names {
+			if name == "" || seen[name] {
+				continue
+			}
+			seen[name] = true
+			out = append(out, name)
+		}
+	}
+	add(r.profile.ModelIDs())
+
+	var lastErr error
+	for i, route := range r.routes {
+		if route.API == APIAnthropicMessage {
+			continue
+		}
+		p, err := r.providerAt(i, route)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		lister, ok := p.(interface {
+			ListModels(context.Context) ([]string, error)
+		})
+		if !ok {
+			continue
+		}
+		names, err := lister.ListModels(ctx)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		add(names)
+	}
+	if len(out) == 0 && lastErr != nil {
+		return nil, lastErr
+	}
+	return out, nil
+}
+
+func (r *router) providerAt(idx int, route Endpoint) (provider.Provider, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if p, ok := r.built[idx]; ok {
+		return p, nil
+	}
+	p, err := newEndpoint(r.profile, route, r.opts)
+	if err != nil {
+		return nil, err
+	}
+	r.built[idx] = p
+	return p, nil
+}
+
+// newEndpoint builds the client one endpoint describes: the dialect's own
+// client, pointed at that address, over the rewriting transport.
+func newEndpoint(p Profile, e Endpoint, opts provider.ResolveOpts) (provider.Provider, error) {
 	key := opts.APIKey
 	if key == "" {
-		key = p.Key()
+		key = e.Key()
 	}
-	if key == "" && p.APIKeyEnv != "" {
-		return nil, fmt.Errorf("provider %q: %s is not set", p.Name, p.APIKeyEnv)
+	if key == "" && e.APIKeyEnv != "" {
+		return nil, fmt.Errorf("provider %q: %s is not set", p.Name, e.APIKeyEnv)
 	}
-	baseURL := p.BaseURL
-	if opts.BaseURL != "" {
-		baseURL = opts.BaseURL
-	}
-	httpClient := &http.Client{Transport: NewTransport(p, nil)}
+	httpClient := &http.Client{Transport: NewTransport(e, nil)}
 
-	switch p.API {
+	switch e.API {
 	case APIOpenAIResponses:
-		inner := provider.NewOpenAIResponsesWith(httpClient, key, baseURL, opts.Model, p.Name)
-		return &responsesProfile{OpenAIResponses: inner, profile: p, client: httpClient}, nil
+		inner := provider.NewOpenAIResponsesWith(httpClient, key, e.BaseURL, opts.Model, p.Name)
+		return &responsesProfile{OpenAIResponses: inner, endpoint: e, client: httpClient}, nil
 	case APIAnthropicMessage:
 		inner := provider.NewAnthropicNamed(anthropic.NewClient(
 			option.WithAPIKey(key),
-			option.WithBaseURL(baseURL),
+			option.WithBaseURL(e.BaseURL),
 			option.WithHTTPClient(httpClient),
 		), opts.Model, p.Name)
 		return &anthropicProfile{Anthropic: inner, name: p.Name}, nil
 	default:
 		cfg := openai.DefaultConfig(key)
-		cfg.BaseURL = baseURL
+		cfg.BaseURL = e.BaseURL
 		cfg.HTTPClient = httpClient
-		inner := provider.NewOpenAICompatNamed(openai.NewClientWithConfig(cfg), opts.Model, baseURL, p.Name)
-		return &openAIProfile{OpenAICompat: inner, profile: p, client: httpClient}, nil
+		inner := provider.NewOpenAICompatNamed(openai.NewClientWithConfig(cfg), opts.Model, e.BaseURL, p.Name)
+		return &openAIProfile{OpenAICompat: inner, endpoint: e, client: httpClient}, nil
 	}
 }
 
@@ -100,30 +241,30 @@ func New(p Profile, opts provider.ResolveOpts) (provider.Provider, error) {
 // the gateway publishes its catalog somewhere else.
 type openAIProfile struct {
 	*provider.OpenAICompat
-	profile Profile
-	client  *http.Client
+	endpoint Endpoint
+	client   *http.Client
 }
 
 func (o *openAIProfile) ListModels(ctx context.Context) ([]string, error) {
-	if o.profile.ModelsPath == "" {
+	if o.endpoint.ModelsPath == "" {
 		return o.OpenAICompat.ListModels(ctx)
 	}
-	return listFrom(ctx, o.client, o.profile)
+	return listFrom(ctx, o.client, o.endpoint)
 }
 
 // responsesProfile is a profile-backed openai-responses provider, with the
 // same catalog override the chat dialect gets.
 type responsesProfile struct {
 	*provider.OpenAIResponses
-	profile Profile
-	client  *http.Client
+	endpoint Endpoint
+	client   *http.Client
 }
 
 func (r *responsesProfile) ListModels(ctx context.Context) ([]string, error) {
-	if r.profile.ModelsPath == "" {
+	if r.endpoint.ModelsPath == "" {
 		return r.OpenAIResponses.ListModels(ctx)
 	}
-	return listFrom(ctx, r.client, r.profile)
+	return listFrom(ctx, r.client, r.endpoint)
 }
 
 // anthropicProfile is a profile-backed anthropic-messages provider. The
@@ -135,11 +276,11 @@ type anthropicProfile struct {
 
 func (a *anthropicProfile) Name() string { return a.name }
 
-// listFrom reads a gateway's catalog from a profile's models_path, accepting
-// the shapes these endpoints use in practice: {"data":[{"id":…}]}, a bare
-// array of objects, or a bare array of strings.
-func listFrom(ctx context.Context, client *http.Client, p Profile) ([]string, error) {
-	endpoint, err := discoveryURL(p)
+// listFrom reads a gateway's catalog from an endpoint's models_path,
+// accepting the shapes these endpoints use in practice:
+// {"data":[{"id":…}]}, a bare array of objects, or a bare array of strings.
+func listFrom(ctx context.Context, client *http.Client, e Endpoint) ([]string, error) {
+	endpoint, err := discoveryURL(e)
 	if err != nil {
 		return nil, err
 	}
@@ -149,7 +290,7 @@ func listFrom(ctx context.Context, client *http.Client, p Profile) ([]string, er
 	if err != nil {
 		return nil, err
 	}
-	if key := p.Key(); key != "" {
+	if key := e.Key(); key != "" {
 		req.Header.Set("Authorization", "Bearer "+key)
 	}
 	resp, err := client.Do(req)
@@ -171,21 +312,21 @@ func listFrom(ctx context.Context, client *http.Client, p Profile) ([]string, er
 	return names, nil
 }
 
-// discoveryURL resolves models_path against the profile's base URL: an
+// discoveryURL resolves models_path against the endpoint's base URL: an
 // absolute path replaces the base's path, a relative one extends it.
-func discoveryURL(p Profile) (string, error) {
-	base, err := url.Parse(p.BaseURL)
+func discoveryURL(e Endpoint) (string, error) {
+	base, err := url.Parse(e.BaseURL)
 	if err != nil {
 		return "", err
 	}
-	ref, err := url.Parse(p.ModelsPath)
+	ref, err := url.Parse(e.ModelsPath)
 	if err != nil {
 		return "", err
 	}
-	if strings.HasPrefix(p.ModelsPath, "/") {
+	if strings.HasPrefix(e.ModelsPath, "/") {
 		return base.ResolveReference(ref).String(), nil
 	}
-	base.Path = strings.TrimSuffix(base.Path, "/") + "/" + strings.TrimPrefix(p.ModelsPath, "/")
+	base.Path = strings.TrimSuffix(base.Path, "/") + "/" + strings.TrimPrefix(e.ModelsPath, "/")
 	return base.String(), nil
 }
 

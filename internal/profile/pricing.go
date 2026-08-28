@@ -18,7 +18,7 @@ const tokensPerMillion = 1_000_000
 func Pricing(profiles []Profile) map[string]pricing.ModelPricing {
 	out := map[string]pricing.ModelPricing{}
 	for _, p := range profiles {
-		for _, m := range p.Models {
+		for _, m := range p.declaredModels() {
 			if !m.Cost.HasPricing() && m.ContextWindow == 0 {
 				continue
 			}
@@ -27,6 +27,24 @@ func Pricing(profiles []Profile) map[string]pricing.ModelPricing {
 				OutputCostPerToken: m.Cost.Output / tokensPerMillion,
 				MaxInputTokens:     m.ContextWindow,
 			}
+		}
+	}
+	return out
+}
+
+// declaredModels is every model a profile declares, at the top level and
+// inside its endpoints. Metadata is metadata wherever it was written; the
+// endpoint it belongs to matters to routing, not to the spend meter.
+func (p Profile) declaredModels() []Model {
+	var out []Model
+	seen := map[string]bool{}
+	for _, r := range p.Routes() {
+		for _, m := range r.Models {
+			if seen[m.ID] {
+				continue
+			}
+			seen[m.ID] = true
+			out = append(out, m)
 		}
 	}
 	return out

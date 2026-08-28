@@ -28,16 +28,18 @@ type Transport struct {
 	Rules   []Rule
 }
 
-// NewTransport builds the round tripper for a profile, or returns base
-// unchanged when the profile asks for no header or body changes.
-func NewTransport(p Profile, base http.RoundTripper) http.RoundTripper {
-	if len(p.Headers) == 0 && len(p.Rewrite) == 0 {
+// NewTransport builds the round tripper for one endpoint, or returns base
+// unchanged when that endpoint asks for no header or body changes. The
+// endpoint arrives with inheritance already applied, so its headers and rules
+// are the profile's plus its own.
+func NewTransport(e Endpoint, base http.RoundTripper) http.RoundTripper {
+	if len(e.Headers) == 0 && len(e.Rewrite) == 0 {
 		return base
 	}
 	if base == nil {
 		base = http.DefaultTransport
 	}
-	return &Transport{Base: base, Headers: p.Headers, Rules: p.Rewrite}
+	return &Transport{Base: base, Headers: e.Headers, Rules: e.Rewrite}
 }
 
 func (t *Transport) hasRules(direction string) bool {

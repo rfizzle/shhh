@@ -118,7 +118,7 @@ accent_color = "cyan"
 | `provider.default` | Provider name |
 | `provider.model` | Model to use |
 | `provider.api_key` | API key |
-| `provider.base_url` | Base URL override (each provider has its own default) |
+| `provider.base_url` | Base URL override (each provider has its own default); on a gateway profile with endpoints it pins every model to that one address |
 | `provider.name` | Custom display name |
 | `provider.reasoning` | Reasoning effort sessions start on: `off` (default), `low`, `medium`, `high` |
 | `behavior.silent_mode` | Suppress explanation output |
@@ -210,33 +210,85 @@ The OpenAI-shaped providers (`openai`, `openai-responses`, `openrouter`, `openai
 
 A private or self-hosted gateway is OpenAI-compatible in shape but rarely in detail: one rejects a parameter the upstream forbids, another hands back an id that must not be echoed to it, a third publishes its catalog at a path of its own. Those are per-deployment facts that change without warning, and they have no business living in provider code. A **profile** puts them in your config, where fixing one is an edit instead of a release.
 
-Drop a TOML file in `<config-dir>/providers/` — `~/.config/shhh/providers/gateway.toml`, or the `Application Support` equivalent on macOS. The filename is the provider name unless the file sets one, and the profile registers exactly like a built-in: `--provider gateway`, `provider.default = "gateway"`, `SHHH_PROVIDER=gateway`.
+Every provider lives in one file: `<config-dir>/providers.toml` — `~/.config/shhh/providers.toml`, or the `Application Support` equivalent on macOS — with a `[[provider]]` block each. A profile registers exactly like a built-in: `--provider gateway`, `provider.default = "gateway"`, `SHHH_PROVIDER=gateway`.
 
 ```toml
+[[provider]]
 name        = "gateway"
 api         = "openai-chat"            # or "openai-responses" / "anthropic-messages"
 base_url    = "https://llm-gateway.internal/v1"
 api_key_env = "GATEWAY_API_KEY"        # or api_key = "..." for a literal
 models_path = "/v1/models/simple"      # optional: a non-standard catalog endpoint
 
-[headers]
-X-Title = "shhh"
+  [provider.headers]
+  X-Title = "shhh"
 
-[[models]]
-id             = "gemini-3.1-pro"
-context_window = 1048576
-max_tokens     = 65536
-cost           = { input = 2.0, output = 12.0, cache_read = 0.2 }
+  [[provider.models]]
+  id             = "gemini-3.1-pro"
+  context_window = 1048576
+  max_tokens     = 65536
+  cost           = { input = 2.0, output = 12.0, cache_read = 0.2 }
 
-[[rewrite]]
-when  = { model = "gemini-*" }
-op    = "cut-at"
-path  = "messages[].tool_calls[].id"
-value = "__thought__"
-note  = "The gateway appends __thought__<base64> to tool-call ids; the upstream rejects the fabricated ones when they come back."
+  [[provider.rewrite]]
+  when  = { model = "gemini-*" }
+  op    = "cut-at"
+  path  = "messages[].tool_calls[].id"
+  value = "__thought__"
+  note  = "The gateway appends __thought__<base64> to tool-call ids; the upstream rejects the fabricated ones when they come back."
+
+[[provider]]
+name     = "local"
+base_url = "http://localhost:11434/v1"
 ```
 
+The older form — one profile per file in `<config-dir>/providers/`, with the filename as the provider name unless the file sets one — still loads, and `providers.toml` is read first when both declare the same name. `shhh providers migrate` folds the directory into the one file; see [One file](#one-file) below.
+
 `shhh providers` lists what resolves on this machine and checks each profile: where it points, whether its key is actually exported, what it declares, and what its rules do — including the `note` on each, because a profile outlives the memory of the incident that caused it.
+
+### Endpoints
+
+One gateway is usually several addresses. The Claude models answer on the Messages dialect at a path of their own, the OpenAI-shaped models at the root, the reasoning families through the Responses API — one deployment, one key, one set of house rules. An `[[provider.endpoint]]` is one of those addresses, and it says only what differs:
+
+```toml
+[[provider]]
+name        = "gateway"
+base_url    = "https://llm-gateway.internal/v1"
+api_key_env = "GATEWAY_API_KEY"
+
+  [[provider.models]]
+  id = "gpt-5.2"
+
+  [[provider.endpoint]]
+  match    = ["claude-*"]                          # globs for the models nobody enumerated
+  api      = "anthropic-messages"
+  base_url = "https://llm-gateway.internal/anthropic"
+
+    [provider.endpoint.headers]
+    anthropic-beta = "context-1m-2025-08-07"
+
+    [[provider.endpoint.models]]
+    id             = "claude-opus-5"
+    context_window = 1000000
+    cost           = { input = 5.0, output = 25.0 }
+```
+
+Everything an endpoint leaves unset it inherits: the key, the dialect, the catalog path, the headers, the rewrite rules. Headers merge, with the endpoint winning a collision; the profile's rules run first and the endpoint's after, so a quirk that is true of the whole gateway is written once.
+
+A request goes to the endpoint that **declares its model**, or failing that to the first whose **`match` glob** claims it. Anything unclaimed goes to the profile's own `base_url`, which is why that stays required even when every model is routed. A profile with no endpoints routes everything there and behaves exactly as it always did.
+
+Routing happens per request, so `/model claude-opus-5` mid-session crosses from one dialect to the other with nothing rebuilt, and `/model` lists every endpoint's models as one catalog. Each endpoint's client is built the first time something needs it: an endpoint you never touch costs nothing, and one whose key is unset does not fail a session that was never going to use it.
+
+Two things are refused at load rather than resolved quietly: a model declared by two endpoints (either could be the one meant), and an endpoint with neither `models` nor `match` (nothing can reach it). An explicit `--base-url` or `provider.base_url` pins the whole profile to that one address — an override naming one endpoint for everything has already answered the question routing exists to answer.
+
+### One file
+
+```bash
+shhh providers migrate            # write providers.toml, leave the originals
+shhh providers migrate --dry-run  # print the file it would write, change nothing
+shhh providers migrate --prune    # and remove the files it replaces
+```
+
+It reads every profile in load order — `providers.toml` and `providers/*.toml`, across every config directory — and re-emits them as `[[provider]]` blocks. Re-emitting rather than concatenating is the point: TOML nesting means the directory form's top-level keys have to be re-keyed to live under `[[provider]]`, so a concatenation would parse into something else entirely. A file that will not parse stops the write, naming what it could not read, rather than letting a provider silently vanish from the consolidated file.
 
 ### Model metadata
 
@@ -306,7 +358,7 @@ naming one variable out of four:
 │ shhh looked in four places:                                            │
 │   ✗ env       SHHH_API_KEY, OPENAI_API_KEY — unset                     │
 │   ✗ config    ~/.config/shhh/config.toml — no provider api_key         │
-│   ✗ profiles  no .toml in ~/.config/shhh/providers                     │
+│   ✗ profiles  no ~/.config/shhh/providers.toml                         │
 │   ✓ local     localhost:11434 — llama3.3, qwen2.5-coder                │
 │                                                                        │
 │ the local runtime is already answering — that is the quickest way in   │
@@ -772,6 +824,7 @@ The contents of `.shhh` are appended to the system prompt when running shhh from
 | `shhh memory add [--global] [--kind k] <text>` | Add a memory (preference, convention, correction, lesson) |
 | `shhh memory forget <id>` | Delete a memory by id |
 | `shhh providers` | List providers and check gateway profiles |
+| `shhh providers migrate` | Fold every gateway profile into one `providers.toml` |
 | `shhh completion <shell>` | Generate shell completion script |
 
 ### Flags

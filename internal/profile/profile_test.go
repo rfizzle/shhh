@@ -63,10 +63,14 @@ path      = "top_p"
 
 func TestLoadFile_ReadsAGatewayProfile(t *testing.T) {
 	path := writeProfile(t, t.TempDir(), "gateway.toml", gatewayTOML)
-	p, err := LoadFile(path)
+	loaded, err := LoadFile(path)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	if len(loaded) != 1 {
+		t.Fatalf("want one profile, got %d", len(loaded))
+	}
+	p := loaded[0]
 	if p.Name != "gateway" || p.API != APIOpenAIChat {
 		t.Fatalf("unexpected identity: %+v", p)
 	}
@@ -95,10 +99,14 @@ func TestLoadFile_ReadsAGatewayProfile(t *testing.T) {
 
 func TestLoadFile_NameDefaultsToTheFilename(t *testing.T) {
 	path := writeProfile(t, t.TempDir(), "corp-gateway.toml", `base_url = "https://gw.example/v1"`)
-	p, err := LoadFile(path)
+	loaded, err := LoadFile(path)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	if len(loaded) != 1 {
+		t.Fatalf("want one profile, got %d", len(loaded))
+	}
+	p := loaded[0]
 	if p.Name != "corp-gateway" {
 		t.Fatalf("expected the filename as the name, got %q", p.Name)
 	}
@@ -186,10 +194,11 @@ func TestKey_ReadsTheNamedEnvironmentVariable(t *testing.T) {
 func TestRegister_MakesTheProfileResolvable(t *testing.T) {
 	t.Setenv("GATEWAY_API_KEY", "secret")
 	path := writeProfile(t, t.TempDir(), "gateway.toml", gatewayTOML)
-	p, err := LoadFile(path)
+	loaded, err := LoadFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
+	p := loaded[0]
 	Register([]Profile{p})
 
 	prov, err := provider.Resolve("gateway", provider.ResolveOpts{Model: "kimi-k2.6"})
@@ -315,7 +324,7 @@ func TestDiscoveryURL(t *testing.T) {
 		{"https://gw.example/api/v2", "/models", "https://gw.example/models"},
 	}
 	for _, tc := range tests {
-		got, err := discoveryURL(Profile{BaseURL: tc.base, ModelsPath: tc.path})
+		got, err := discoveryURL(Endpoint{BaseURL: tc.base, ModelsPath: tc.path})
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
@@ -436,10 +445,14 @@ func TestNew_ResponsesDialect(t *testing.T) {
 
 func TestValidate_AcceptsTheResponsesDialect(t *testing.T) {
 	path := writeProfile(t, t.TempDir(), "gw.toml", "base_url = \"https://gw.example/v1\"\napi = \"openai-responses\"")
-	p, err := LoadFile(path)
+	loaded, err := LoadFile(path)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
+	if len(loaded) != 1 {
+		t.Fatalf("want one profile, got %d", len(loaded))
+	}
+	p := loaded[0]
 	if p.API != APIOpenAIResponses {
 		t.Fatalf("unexpected dialect: %q", p.API)
 	}
