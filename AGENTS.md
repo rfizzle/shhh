@@ -23,7 +23,7 @@ Build produces a `shhh` binary with version injected via `-ldflags`.
 ## Architecture
 
 ```
-cmd/shhh/main.go          Entry point (cobra root command)
+cmd/shhh/main.go          Entry point (cobra root command, executed through fang)
 internal/
   cli/                     All cobra commands (root, chat, code, init, doctor, etc.)
   agent/                   Front-end-agnostic agentic loop (conversation, tool dispatch, approval queue, round cap)

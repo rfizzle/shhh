@@ -287,6 +287,7 @@ shhh/
 | Dependency | Purpose |
 |------------|---------|
 | `github.com/spf13/cobra` | CLI command/flag parsing |
+| `charm.land/fang/v2` | Styled `--help`, errors and man pages around cobra |
 | `github.com/charmbracelet/bubbletea` | TUI framework |
 | `github.com/charmbracelet/lipgloss` | Terminal styling |
 | `github.com/charmbracelet/bubbles` | Spinner, text input, viewport |

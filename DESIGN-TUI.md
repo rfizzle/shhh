@@ -4040,3 +4040,48 @@ write and changes nothing.
 - **`shhh providers` prints one block per endpoint**, with the rules and the
   key check repeated under each, because "which rules apply where" is the
   question a routed profile makes possible to get wrong.
+
+---
+
+## 22. The Chrome Outside the TUI (S-146)
+
+Every surface in this file is a Bubble Tea program that draws itself. The
+binary has a second face — `shhh --help`, the line a mistyped flag prints on
+its way out, the man page a packager installs — and that face was cobra's
+default: usage dumped in one undifferentiated column, and a failure rendered
+as `Error: unknown flag: --nope` followed by the entire usage block again,
+which is the opposite of §17a's rule that a failure names one thing and one
+way out.
+
+`fang` renders those three. It is applied once, at the `Execute` call site in
+`internal/cli/root.go`; no command knows about it.
+
+- **Help is sectioned, not dumped.** `USAGE`, `COMMANDS`, `FLAGS` as labelled
+  blocks, each command and flag on its own row with its description in a
+  second column. Same reason the activity feed is a column grid (§6a): a list
+  you scan needs an axis.
+- **A failure is a labelled block with one way out.** `ERROR`, the sentence,
+  then `Try --help for usage.` — and no usage dump. The shape §17a asks of a
+  failure row: what went wrong, then the command that fixes it.
+- **Colour is still only decoration.** The labels are words (`ERROR`,
+  `FLAGS`), so `NO_COLOR` and a monochrome terminal lose the tint and keep
+  every distinction. Invariant 1 holds outside the TUI exactly as inside it.
+- **`shhh man` generates the page**, hidden from the command list because it
+  is for whoever builds the package, not for whoever runs the binary.
+- **`shhh completion <shell>` stays shhh's own.** cobra's generated command
+  steps aside when one of that name already exists, and shhh's is the
+  documented surface — bash, zsh, fish, with the install lines in its help.
+- **The version line is unchanged.** It still carries the cached update
+  notice, because the notice lives in the version *template* and fang sets
+  only the version string.
+- **No flag description opens with an acronym.** fang title-cases the first
+  word of every description, which turns `API key` into `Api key`. The six
+  descriptions that started with one were rewritten to start with an ordinary
+  word rather than fight the renderer over casing it cannot be told to skip.
+- **Signals stay where they were.** fang can turn SIGINT into a cancelled
+  root context; shhh does not take it. The interactive surfaces read ctrl+c
+  as a keystroke in raw mode, so the option would only reach the non-TUI
+  paths — and there it would swallow the *second* ctrl+c on anything that
+  does not honour the context promptly, which is a worse answer than the
+  default. `runner.Run` already forwards signals to the command it spawned,
+  the one case where the process is not the thing being asked to stop.

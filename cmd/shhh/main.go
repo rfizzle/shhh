@@ -1,13 +1,14 @@
 package main
 
 import (
+	"context"
 	"os"
 
 	"github.com/rfizzle/shhh/internal/cli"
 )
 
 func main() {
-	if err := cli.NewRootCmd().Execute(); err != nil {
+	if err := cli.Execute(context.Background()); err != nil {
 		os.Exit(1)
 	}
 }

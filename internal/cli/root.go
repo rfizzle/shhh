@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"charm.land/fang/v2"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/clipboard"
@@ -28,6 +29,23 @@ import (
 )
 
 var version = "dev"
+
+// Execute runs the command tree under fang, which is what dresses every
+// surface the binary has that is not a Bubble Tea program (S-146): `--help`,
+// the error a failed command prints on its way out, and the `man` page it can
+// now generate. It replaces cobra's own bare `Error: …` plus usage dump; the
+// TUIs draw themselves and are untouched.
+//
+// Signal handling is deliberately not fang's (fang.WithNotifySignal): the
+// interactive surfaces read ctrl+c as a keystroke in raw mode, and turning
+// SIGINT into a context cancellation for the whole tree would leave the
+// second ctrl+c with nothing to do on any path that does not honour the
+// context promptly. runner.Run already forwards signals to the command it
+// spawned, which is the one place the process is not the thing being asked
+// to stop.
+func Execute(ctx context.Context) error {
+	return fang.Execute(ctx, NewRootCmd(), fang.WithVersion(version))
+}
 
 func NewRootCmd() *cobra.Command {
 	var flags resolve.Opts
@@ -367,9 +385,9 @@ func NewRootCmd() *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().StringVar(&flags.FlagProvider, "provider", "", "LLM provider (openai, anthropic, gemini, openrouter, openai-compatible)")
+	cmd.PersistentFlags().StringVar(&flags.FlagProvider, "provider", "", "provider to use: openai, anthropic, gemini, openrouter, openai-compatible")
 	cmd.PersistentFlags().StringVar(&flags.FlagModel, "model", "", "model name to use")
-	cmd.PersistentFlags().StringVar(&flags.FlagAPIKey, "api-key", "", "API key (overrides env var)")
+	cmd.PersistentFlags().StringVar(&flags.FlagAPIKey, "api-key", "", "key for the provider, overriding the env var")
 	cmd.PersistentFlags().StringVar(&flags.FlagReasoning, "reasoning", "", "reasoning effort: off, low, medium, high (default off)")
 	cmd.Flags().BoolVar(&rawMode, "raw", false, "force pipe mode: raw command output, no TUI")
 	cmd.Flags().BoolVarP(&explainMode, "explain", "e", false, "explain the generated command at length (one line is shown by default)")
