@@ -653,11 +653,20 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	restoreKeys := chat.RequestEnhancedKeys(os.Stdout)
 	defer restoreKeys()
 
+	// And ask it to stop turning the wheel into arrow keys, which is what
+	// alternate scroll does to a full-screen program on most terminals — and
+	// what put hundreds of synthetic Up/Down presses into the draft
+	// (chat/altscroll.go). The setting is saved and restored, so a terminal
+	// that had it on keeps it after we exit.
+	restoreScroll := chat.SuppressAlternateScroll(os.Stdout)
+	defer restoreScroll()
+
 	program := tea.NewProgram(model, programOpts...)
 	if _, err := program.Run(); err != nil {
 		// os.Exit skips the deferred restore, so the terminal is put back
 		// here rather than left reporting modified keys to the next program.
 		restoreKeys()
+		restoreScroll()
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
 	}
