@@ -803,6 +803,44 @@ func (m Model) quitCmd() tea.Cmd {
 	return tea.Quit
 }
 
+// ExitBanner is what this session leaves on the terminal once the alt screen
+// is gone (S-148, §22b): the slot the conversation ended up in, how big it
+// got, what the sitting cost, and the command that reopens it. resume is that
+// command, supplied by the front-end because the model does not know which of
+// shhh's faces it is wearing — `shhh chat --continue`, `shhh code --continue`.
+//
+// The saved/not-saved split is autosaveCmd's condition and nothing else, and
+// the slot named is the one autosaveCmd writes rather than the session's
+// working name: what quitting wrote is what --continue will read back, so a
+// banner offering a resume the autosave did not take cannot be built.
+func (m Model) ExitBanner(resume string) components.ExitBanner {
+	b := components.ExitBanner{
+		Turns: m.conversationTurns(),
+		Spend: m.spendLabel(m.TotalTokensIn, m.TotalTokensOut),
+	}
+	if m.db == nil {
+		b.Unsaved = true
+		return b
+	}
+	b.Session, b.Resume = AutosaveName, resume
+	return b
+}
+
+// conversationTurns counts the exchanges the saved conversation holds, the
+// way ListChats counts them — user messages, so a resumed session reports the
+// whole thing rather than the part this sitting added. m.turnCount is the
+// wrong number here: it counts what was dispatched, including the steering
+// lines that joined a turn already running.
+func (m Model) conversationTurns() int {
+	n := 0
+	for _, msg := range m.agent.Messages() {
+		if msg.Role == provider.RoleUser {
+			n++
+		}
+	}
+	return n
+}
+
 func (m Model) Messages() []provider.Message { return m.agent.Messages() }
 
 func (m Model) Init() tea.Cmd {

@@ -930,6 +930,34 @@ func TestGolden_StartScreen(t *testing.T) {
 	})
 }
 
+// TestGolden_ExitBanner captures the bookend of the first-contact screen
+// (S-148, §22b): the lines the terminal keeps once the alt screen has taken
+// the session away. The four states are the ones the host can hand it — a
+// priced sitting, an unpriced one, a name long enough to work the row's
+// ladder, and a conversation nothing could be written for.
+func TestGolden_ExitBanner(t *testing.T) {
+	captureGolden(t, "exit-banner", "exit banner", goldenWidths, func(width int) []golden.Panel {
+		banner := func(mut func(*ExitBanner)) string {
+			b := ExitBanner{Session: "(last session)", Turns: 12, Spend: "$0.42",
+				Resume: "shhh code --continue"}
+			mut(&b)
+			return b.View(width)
+		}
+		return []golden.Panel{
+			{Label: "the ordinary exit · the slot, the sitting, the way back",
+				View: banner(func(b *ExitBanner) {})},
+			{Label: "unpriced · tokens, never a made-up zero",
+				View: banner(func(b *ExitBanner) { b.Spend = "~48.1k tok" })},
+			{Label: "nothing spent · the row goes rather than reading $0.00",
+				View: banner(func(b *ExitBanner) { b.Turns, b.Spend = 1, "" })},
+			{Label: "a long name · the count drops before the name clips",
+				View: banner(func(b *ExitBanner) { b.Session = "refactor-the-round-accounting-and-its-checkpoints" })},
+			{Label: "nothing could be saved · no slot named, no command offered",
+				View: banner(func(b *ExitBanner) { b.Unsaved = true })},
+		}
+	})
+}
+
 // TestGolden_RecoveryRows captures every provider failure class on one sheet
 // (§17a). The verb, subject and duration are held constant, so the file reads
 // as a table of what each class contributes: its glyph, the words in its

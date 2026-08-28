@@ -4111,15 +4111,19 @@ write and changes nothing.
 
 ---
 
-## 22. The Chrome Outside the TUI (S-146)
+## 22. The Chrome Outside the TUI (S-146, S-148)
 
 Every surface in this file is a Bubble Tea program that draws itself. The
 binary has a second face — `shhh --help`, the line a mistyped flag prints on
-its way out, the man page a packager installs — and that face was cobra's
-default: usage dumped in one undifferentiated column, and a failure rendered
-as `Error: unknown flag: --nope` followed by the entire usage block again,
-which is the opposite of §17a's rule that a failure names one thing and one
-way out.
+its way out, the man page a packager installs, and the lines left behind when
+the alternate screen hands the terminal back. None of it was designed.
+
+### 22a. Help, errors and the man page (S-146)
+
+That face was cobra's default: usage dumped in one undifferentiated column,
+and a failure rendered as `Error: unknown flag: --nope` followed by the entire
+usage block again, which is the opposite of §17a's rule that a failure names
+one thing and one way out.
 
 `fang` renders those three. It is applied once, at the `Execute` call site in
 `internal/cli/root.go`; no command knows about it.
@@ -4153,3 +4157,57 @@ way out.
   does not honour the context promptly, which is a worse answer than the
   default. `runner.Run` already forwards signals to the command it spawned,
   the one case where the process is not the thing being asked to stop.
+
+### 22b. The exit banner (S-148)
+
+The chat surfaces run on the alternate screen. Quitting does not leave the
+session in the scrollback the way a scrolling program would — it hands the
+terminal back exactly as it was found, and everything the session drew is gone
+in one frame. The vitals go with it: which slot the conversation is in, how
+long it got, what the sitting cost, and whether any of it was written down.
+All of that used to be answered with `Chat session ended.`
+
+The banner is what the terminal keeps:
+
+```
+session  (last session) · 12 turns
+spent    $0.42
+resume   shhh code --continue
+```
+
+- **It is the bookend of §17c.** The first-contact screen offers `pick up
+  (last session) — 7 turns · $0.42`, and this is where that offer comes from.
+  Both name the slot with the same word, so the string a reader last saw on
+  the way out is the one they are offered on the way back in.
+- **The slot named is the one that was written**, not the one the session was
+  working under. Quitting autosaves to `(last session)` whatever `/save`
+  called the conversation, so naming the working slot would point a
+  `--continue` at an older copy. The banner reads the autosave's own
+  condition, which is why it cannot promise a resume that was not taken.
+- **The resume command is the command that was running.** `shhh chat` and
+  `shhh code` reopen the same slot but not the same toolset, so the banner
+  offers back the face the session was wearing.
+- **That command is never clipped.** It is the one thing on this surface a
+  reader has to be able to retype, and a command with its tail eaten is not a
+  shorter command, it is a wrong one. Everything else clips, and the session
+  row has a drop ladder of its own: the turn count goes before the name is
+  touched, because a session a reader cannot name is one they cannot find
+  again.
+- **Nothing spent is no row**, never `$0.00` — the rule §17c holds the resume
+  offer to. A model with no price reports tokens instead.
+- **A conversation that could not be written names no slot and offers no
+  command.** The `resume` row reads `not saved · chat persistence was
+  unavailable`, and the turn count stays, because how much was lost is the
+  part still true. The failure a reader must not discover by typing is the one
+  that quietly reopens something older (§17a).
+- **A session that never said anything prints nothing at all.** There is
+  nothing to resume and nothing to report, and the shell prompt says more
+  about that than a line acknowledging it would.
+- **Colour is decoration here too.** Three labels and one sentence carry every
+  distinction, so a monochrome terminal loses the tint and keeps all of it
+  (invariant 1).
+- **No wordmark and no parting line.** A banner whose first two lines say
+  nothing is a banner a reader learns to skip, and the one line here that has
+  to be read is a command.
+- It is written to stderr, where everything else the command says about itself
+  goes, so a redirected stdout still carries only what the session produced.

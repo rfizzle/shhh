@@ -2003,3 +2003,66 @@ func TestSteering_QuitCommandStillQuits(t *testing.T) {
 		t.Fatal("/exit should quit even while the agent is working")
 	}
 }
+
+// The exit banner (S-148) names the slot the autosave actually wrote, counts
+// the whole conversation, and offers the front-end's own resume command.
+func TestExitBanner_NamesTheSlotTheAutosaveWrote(t *testing.T) {
+	db, err := storage.OpenPath(t.TempDir() + "/test.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "one"},
+		{Role: provider.RoleAssistant, Content: "ok"},
+		{Role: provider.RoleUser, Content: "two"},
+		{Role: provider.RoleAssistant, Content: "ok"},
+	}
+	m := New(msgs, mockStream).WithDB(db)
+
+	b := m.ExitBanner("shhh code --continue")
+	if b.Session != AutosaveName {
+		t.Fatalf("banner should name the autosave slot, got %q", b.Session)
+	}
+	if b.Turns != 2 {
+		t.Fatalf("banner should count both user turns, got %d", b.Turns)
+	}
+	if b.Resume != "shhh code --continue" {
+		t.Fatalf("banner should carry the front-end's resume command, got %q", b.Resume)
+	}
+	if b.Unsaved {
+		t.Fatal("a session with a store behind it is not unsaved")
+	}
+}
+
+// Without a store there is nothing to reopen, and the banner says so rather
+// than pointing at a slot holding somebody else's conversation. The condition
+// is autosaveCmd's, so the two can never disagree.
+func TestExitBanner_NoStoreIsUnsaved(t *testing.T) {
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "one"},
+	}
+	m := New(msgs, mockStream)
+
+	b := m.ExitBanner("shhh chat --continue")
+	if !b.Unsaved {
+		t.Fatal("no store → nothing was saved")
+	}
+	if b.Session != "" || b.Resume != "" {
+		t.Fatalf("an unsaved session names no slot and no command, got %q / %q", b.Session, b.Resume)
+	}
+	if m.autosaveCmd() != nil {
+		t.Fatal("the banner and the autosave must agree about there being nothing to write")
+	}
+}
+
+// A session that never said anything renders nothing at all.
+func TestExitBanner_NothingSaidHasNoTurns(t *testing.T) {
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	if b := m.ExitBanner("shhh chat --continue"); b.Turns != 0 || b.View(80) != "" {
+		t.Fatalf("an empty session should render no banner, got %q", b.View(80))
+	}
+}

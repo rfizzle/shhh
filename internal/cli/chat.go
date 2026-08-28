@@ -9,6 +9,7 @@ import (
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/x/term"
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
@@ -31,6 +32,7 @@ import (
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/browse"
 	"github.com/rfizzle/shhh/internal/ui/chat"
+	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/update"
 	"github.com/rfizzle/shhh/internal/web"
 	"github.com/spf13/cobra"
@@ -684,7 +686,8 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	defer restoreScroll()
 
 	program := tea.NewProgram(model, programOpts...)
-	if _, err := program.Run(); err != nil {
+	final, err := program.Run()
+	if err != nil {
 		// os.Exit skips the deferred restore, so the terminal is put back
 		// here rather than left reporting modified keys to the next program.
 		restoreKeys()
@@ -693,8 +696,33 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		os.Exit(1)
 	}
 
-	fmt.Fprintln(os.Stderr, "Chat session ended.")
+	// The alt screen took the whole session with it on the way out (S-148,
+	// DESIGN-TUI.md §22b). The banner is what the terminal keeps: the slot
+	// the conversation is in, what the sitting cost, and how to reopen it.
+	// The resume command is this command — `shhh chat` and `shhh code` read
+	// the same autosave slot but not the same toolset, so the one that comes
+	// back is the one that was running.
+	if m, ok := final.(chat.Model); ok {
+		printExitBanner(m.ExitBanner("shhh " + session.kind + " --continue"))
+	}
 	return nil
+}
+
+// printExitBanner writes the exit banner on stderr, beside everything else
+// this command says about itself, so a redirected stdout still carries only
+// what the session produced. A session with nothing to resume renders empty
+// and prints nothing at all.
+func printExitBanner(b components.ExitBanner) {
+	// stderr is what is being written to, so stderr is what is measured; a
+	// redirected one has no width to give and takes the same 80 columns the
+	// rest of the CLI falls back to.
+	width, _, err := term.GetSize(os.Stderr.Fd())
+	if err != nil || width <= 0 {
+		width = 80
+	}
+	if view := b.View(width); view != "" {
+		fmt.Fprintln(os.Stderr, view)
+	}
 }
 
 // gitSnapshot captures the workspace's git state for rewind checkpoints
