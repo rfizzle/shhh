@@ -57,6 +57,31 @@ func Check(currentVersion string) *Result {
 	return compareVersions(currentVersion, latest)
 }
 
+// Refresh asks the release feed now, whatever the cache says, and records
+// the answer. It is the manual trigger behind `shhh update`; Check is the
+// routine one. A dev build still has nothing to compare, and a feed that did
+// not answer returns nil after writing the failure the way Check does.
+func Refresh(currentVersion string) *Result {
+	if currentVersion == "dev" || currentVersion == "" {
+		return nil
+	}
+	latest := fetchLatest()
+	writeCache(&cacheEntry{Latest: latest, CheckedAt: time.Now()})
+	if latest == "" {
+		return nil
+	}
+	return compareVersions(currentVersion, latest)
+}
+
+// Latest is the newest released version the cache knows, or "" when it has
+// not been asked or the feed did not answer.
+func Latest() string {
+	if cached := readCache(); cached != nil {
+		return cached.Latest
+	}
+	return ""
+}
+
 func CheckCached(currentVersion string) *Result {
 	if currentVersion == "dev" || currentVersion == "" {
 		return nil

@@ -17,9 +17,9 @@ type Opts struct {
 	FlagProvider string
 	FlagModel    string
 	FlagAPIKey   string
-	// FlagReasoning is --reasoning: the level of thinking a session starts on
-	//. It resolves like the model does — flag, then SHHH_REASONING,
-	// then the config file — and an unset chain means off.
+	// FlagReasoning is --reasoning: the level of thinking a session starts
+	// on. It resolves like the model does — flag, then SHHH_REASONING, then
+	// the config file — and an unset chain means the default level.
 	FlagReasoning string
 
 	ConfigProvider  string
@@ -31,8 +31,9 @@ type Resolved struct {
 	Provider string
 	Model    string
 	// Reasoning is the session's starting reasoning level, unparsed; "" is
-	// off. provider.ParseEffort turns it into a level, and rejects a value
-	// nobody meant rather than quietly reading it as off.
+	// the default (provider.DefaultEffort). provider.ParseEffort turns it
+	// into a level, and rejects a value nobody meant rather than quietly
+	// reading it as the default.
 	Reasoning string
 }
 

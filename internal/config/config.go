@@ -132,9 +132,12 @@ type ProviderConfig struct {
 	BaseURL string `toml:"base_url"`
 	Name    string `toml:"name"`
 	// Reasoning is the level of thinking sessions start on: "off", "low",
-	// "medium" or "high". Empty means off, which is what every
-	// session did before the setting existed — no reasoning field is sent at
-	// all, so models without the knob are unaffected.
+	// "medium", "high", "xhigh" or "max". Empty means medium — a session
+	// never starts without thinking unless it was told to
+	// (docs/capabilities/providers.md#a-session-never-starts-without-thinking).
+	// The level is fitted to each model before it is sent, so a rung the
+	// model lacks lowers to the one it has and a model with no reasoning
+	// knob is not handed one.
 	Reasoning string `toml:"reasoning"`
 }
 

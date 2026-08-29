@@ -4,15 +4,17 @@ import "testing"
 
 func TestParseEffort(t *testing.T) {
 	cases := map[string]Effort{
-		"":        EffortOff,
+		"":        DefaultEffort,
 		"off":     EffortOff,
 		"none":    EffortOff,
-		"minimal": EffortOff,
+		"minimal": EffortLow,
 		"  LOW ":  EffortLow,
 		"med":     EffortMedium,
 		"medium":  EffortMedium,
 		"High":    EffortHigh,
-		"max":     EffortHigh,
+		"xhigh":   EffortXHigh,
+		"x-high":  EffortXHigh,
+		"max":     EffortMax,
 	}
 	for in, want := range cases {
 		got, err := ParseEffort(in)
@@ -29,13 +31,72 @@ func TestParseEffort(t *testing.T) {
 }
 
 func TestNextEffort_Cycles(t *testing.T) {
-	want := []Effort{EffortLow, EffortMedium, EffortHigh, EffortOff}
+	want := []Effort{EffortLow, EffortMedium, EffortHigh, EffortXHigh, EffortMax, EffortOff}
 	cur := EffortOff
 	for i, expect := range want {
-		cur = NextEffort(cur)
+		cur = NextEffort(cur, nil)
 		if cur != expect {
 			t.Fatalf("step %d: got %v, want %v", i, cur, expect)
 		}
+	}
+	// A model's own rungs are the walk; a level off the list restarts it.
+	levels := Levels(Capabilities{Known: true, Reasoning: true})
+	if got := NextEffort(EffortHigh, levels); got != EffortOff {
+		t.Errorf("after high on a low/medium/high model: got %v, want off", got)
+	}
+	if got := NextEffort(EffortMax, levels); got != EffortOff {
+		t.Errorf("a level the model lacks restarts the walk: got %v", got)
+	}
+}
+
+func TestEffort_FitLowersToWhatTheModelHas(t *testing.T) {
+	cases := []struct {
+		name string
+		in   Effort
+		caps Capabilities
+		want Effort
+	}{
+		{"unknown model is left alone", EffortMax, Capabilities{}, EffortMax},
+		{"off stays off", EffortOff, Capabilities{Known: true, Reasoning: true, Max: true}, EffortOff},
+		{"no reasoning knob means nothing sent", EffortHigh, Capabilities{Known: true}, EffortOff},
+		{"max on a model with max", EffortMax, Capabilities{Known: true, Reasoning: true, XHigh: true, Max: true}, EffortMax},
+		{"max without max falls to xhigh", EffortMax, Capabilities{Known: true, Reasoning: true, XHigh: true}, EffortXHigh},
+		{"max without either falls to high", EffortMax, Capabilities{Known: true, Reasoning: true}, EffortHigh},
+		{"xhigh without xhigh falls to high", EffortXHigh, Capabilities{Known: true, Reasoning: true, Max: true}, EffortHigh},
+		{"medium is everywhere", EffortMedium, Capabilities{Known: true, Reasoning: true}, EffortMedium},
+	}
+	for _, tc := range cases {
+		if got := tc.in.Fit(tc.caps); got != tc.want {
+			t.Errorf("%s: Fit(%v) = %v, want %v", tc.name, tc.in, got, tc.want)
+		}
+	}
+}
+
+func TestLevels_AreTheModelsRungs(t *testing.T) {
+	got := Levels(Capabilities{Known: true, Reasoning: true, Max: true})
+	want := []Effort{EffortOff, EffortLow, EffortMedium, EffortHigh, EffortMax}
+	if len(got) != len(want) {
+		t.Fatalf("levels = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("levels = %v, want %v", got, want)
+		}
+	}
+	if got := Levels(Capabilities{}); len(got) != len(EffortCycle()) {
+		t.Errorf("an unknown model offers every level, got %v", got)
+	}
+	if got := Levels(Capabilities{Known: true}); len(got) != 1 || got[0] != EffortOff {
+		t.Errorf("a model without reasoning offers only off, got %v", got)
+	}
+}
+
+func TestEffort_OpenAIEffortSpellsMaxAsXHigh(t *testing.T) {
+	if got := EffortMax.OpenAIEffort(); got != "xhigh" {
+		t.Errorf("max = %q, want xhigh — the API has no max", got)
+	}
+	if got := EffortXHigh.OpenAIEffort(); got != "xhigh" {
+		t.Errorf("xhigh = %q", got)
 	}
 }
 

@@ -33,8 +33,9 @@ type AgentDefinition struct {
 	// the [agents] section of config.toml and then to the session model; a
 	// spawn call naming a model outranks all of them.
 	Model string `toml:"model"`
-	// Reasoning is the thinking level: "off", "low", "medium", "high", or
-	// "inherit" (the default) for the session's live level.
+	// Reasoning is the thinking level: "off", "low", "medium", "high",
+	// "xhigh", "max", or "inherit" (the default) for the session's live
+	// level.
 	Reasoning string `toml:"reasoning"`
 	// Permissions is the set of tool tiers the agent gets: "read" (files and
 	// search — always on, listed or not), "write" (write_file, edit_file),

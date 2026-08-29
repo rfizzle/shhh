@@ -67,7 +67,7 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 	// serves flash and pro. Off sends no thinking config at all: the models
 	// that cannot turn thinking off should keep their own default rather
 	// than be handed a zero they will refuse.
-	if budget := opts.Effort.ThinkingBudget(0); budget > 0 {
+	if budget := opts.Effort.Fit(CapabilitiesFor(model)).ThinkingBudget(0); budget > 0 {
 		b := int32(budget)
 		config.ThinkingConfig = &genai.ThinkingConfig{ThinkingBudget: &b}
 	}

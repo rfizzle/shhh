@@ -52,7 +52,7 @@ func TestLoadFromFile(t *testing.T) {
 	}`
 	os.WriteFile(path, []byte(data), 0o600)
 
-	table, err := loadFromFile(path)
+	table, err := loadWithSnapshot(path)
 	if err != nil {
 		t.Fatalf("load: %v", err)
 	}
@@ -110,7 +110,7 @@ func TestLoadFromFile_ContextWindowOnlyEntry(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	table, err := loadFromFile(path)
+	table, err := loadWithSnapshot(path)
 	if err != nil {
 		t.Fatalf("load: %v", err)
 	}
@@ -119,5 +119,50 @@ func TestLoadFromFile_ContextWindowOnlyEntry(t *testing.T) {
 	}
 	if _, _, found := table.Cost("ollama/llama3", 1, 1); found {
 		t.Fatal("zero-cost entries should not report a cost")
+	}
+}
+
+func TestSnapshot_CarriesReasoningFlags(t *testing.T) {
+	table := Snapshot()
+	if table.Len() == 0 {
+		t.Fatal("the built-in snapshot is empty")
+	}
+	e, ok := table.Entry("claude-opus-5")
+	if !ok {
+		t.Fatal("snapshot should know claude-opus-5")
+	}
+	if !e.SupportsReasoning || !e.AdaptiveThinking || !e.XHighEffort || !e.MaxEffort {
+		t.Errorf("claude-opus-5 flags = %+v", e)
+	}
+	if e.InputCostPerToken == 0 || e.MaxInputTokens == 0 || e.MaxOutputTokens == 0 {
+		t.Errorf("claude-opus-5 should carry prices and windows, got %+v", e)
+	}
+	if e, ok := table.Entry("gpt-4o"); !ok || e.SupportsReasoning {
+		t.Errorf("gpt-4o has no reasoning knob, got %+v (found=%v)", e, ok)
+	}
+}
+
+func TestLoadWithSnapshot_DownloadOverlaysButKeepsFlags(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "prices.json")
+	// A download that reprices a model keeps the snapshot's flags when it
+	// carries none of its own, and a missing download is not an error.
+	data := `{"claude-opus-5": {"input_cost_per_token": 0.000001, "output_cost_per_token": 0.000002}}`
+	if err := os.WriteFile(path, []byte(data), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	table, err := loadWithSnapshot(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	e, _ := table.Entry("claude-opus-5")
+	if e.InputCostPerToken != 0.000001 {
+		t.Errorf("download should reprice, got %v", e.InputCostPerToken)
+	}
+	if !e.AdaptiveThinking || e.MaxInputTokens == 0 {
+		t.Errorf("snapshot's flags and window should survive, got %+v", e)
+	}
+	if _, err := loadWithSnapshot(filepath.Join(dir, "missing.json")); err != nil {
+		t.Errorf("a missing download should fall back to the snapshot, got %v", err)
 	}
 }

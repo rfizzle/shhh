@@ -410,7 +410,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&flags.FlagProvider, "provider", "", "provider to use: openai, anthropic, gemini, openrouter, openai-compatible")
 	cmd.PersistentFlags().StringVar(&flags.FlagModel, "model", "", "model name to use")
 	cmd.PersistentFlags().StringVar(&flags.FlagAPIKey, "api-key", "", "key for the provider, overriding the env var")
-	cmd.PersistentFlags().StringVar(&flags.FlagReasoning, "reasoning", "", "reasoning effort: off, low, medium, high (default off)")
+	cmd.PersistentFlags().StringVar(&flags.FlagReasoning, "reasoning", "", "reasoning effort: off, low, medium, high, xhigh, max (default medium; fitted to the model)")
 	cmd.Flags().BoolVar(&rawMode, "raw", false, "force pipe mode: raw command output, no TUI")
 	cmd.Flags().BoolVarP(&explainMode, "explain", "e", false, "explain the generated command at length (one line is shown by default)")
 	cmd.Flags().BoolVarP(&silentMode, "silent", "s", false, "suppress explanation output")
@@ -427,6 +427,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newSnippetsCmd())
 	cmd.AddCommand(newMemoryCmd())
 	cmd.AddCommand(newProvidersCmd())
+	cmd.AddCommand(newUpdateCmd())
 	cmd.AddCommand(newCompletionCmd(cmd))
 
 	cmd.SetVersionTemplate(versionTemplate())

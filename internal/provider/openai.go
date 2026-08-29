@@ -76,9 +76,10 @@ func (o *OpenAI) StreamCompletion(ctx context.Context, messages []Message, opts 
 	if opts.MaxTokens > 0 {
 		req.MaxTokens = opts.MaxTokens
 	}
-	// Reasoning effort is sent only when the session asked for one:
-	// the field is a 400 on a model that has no reasoning to spend.
-	if effort := opts.Effort.OpenAIEffort(); effort != "" {
+	// Reasoning effort, fitted to the model: a rung it lacks becomes the
+	// highest it has, and a model with no reasoning gets no field, because
+	// `reasoning_effort` on gpt-4o is a 400.
+	if effort := opts.Effort.Fit(CapabilitiesFor(req.Model)).OpenAIEffort(); effort != "" {
 		req.ReasoningEffort = effort
 	}
 	if len(opts.Tools) > 0 {

@@ -114,6 +114,7 @@ internal/
   cli/                     All cobra commands (root, chat, code, init, doctor, etc.)
   agent/                   Front-end-agnostic agentic loop (conversation, tool dispatch, approval queue, round cap, repeat detection)
   provider/                LLM provider interface + implementations (anthropic, openai, gemini, openrouter)
+  pricing/                 Model data: prices, context windows, reasoning flags — downloaded table over the built-in snapshot (`make model-data`)
   meter/                   Session spend ledger + the provider gate every request is billed at
   ui/chat/                 Bubble Tea chat TUI model (the main interactive surface)
   ui/components/           Reusable TUI components (cards, lists, diffs, selectors)
@@ -143,7 +144,7 @@ internal/
   structural/              Optional external tools integration (ast-grep, fd, jaq, sd, tokei)
   radius/                  Blast-radius analysis for edits
   preflight/               Startup checks
-  update/                  Version update checking
+  update/                  Release check behind `shhh update` and the startup nudge
 ```
 
 ## Key Design Patterns

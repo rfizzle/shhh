@@ -379,7 +379,7 @@ func configSettings() []configSetting {
 	}, {
 		group: "MODEL", key: "provider.reasoning", label: "reasoning",
 		read:     str(func(c config.Config) string { return c.Provider.Reasoning }),
-		fallback: "off",
+		fallback: provider.DefaultEffort.String(),
 		options: func(config.Config) []components.SelectOption {
 			opts := make([]components.SelectOption, 0, len(provider.EffortCycle()))
 			for _, e := range provider.EffortCycle() {

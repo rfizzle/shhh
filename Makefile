@@ -85,6 +85,11 @@ tidy: ## Tidy go.mod
 	@echo "${MAGENTA}Tidying go.mod...${RESET}"
 	@$(GOMOD) tidy
 
+## Data:
+model-data: ## Regenerate the built-in model-data snapshot from the public table
+	@echo "${MAGENTA}Regenerating internal/pricing/models.json...${RESET}"
+	@python3 scripts/model-data.py > internal/pricing/models.json
+
 ## Docs:
 docs-check: ## Verify every docs/ citation in code comments resolves
 	@echo "${MAGENTA}Checking documentation citations...${RESET}"

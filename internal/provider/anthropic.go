@@ -68,6 +68,30 @@ func NewAnthropicNamed(client anthropic.Client, model, name string) *Anthropic {
 
 func (a *Anthropic) Name() string { return "anthropic" }
 
+// applyAnthropicThinking puts the session's level on the request in the
+// shape this model takes. The current generation takes a named effort under
+// adaptive thinking; the older one takes a token budget, which has to leave
+// the reply room to exist, so it is clamped to the output ceiling less a
+// floor for the answer itself, and a ceiling too small for the API's minimum
+// budget asks for no thinking rather than sending a request the API will
+// refuse. Off sends nothing either way — on a model that always thinks that
+// is its own default, which is the most "off" it has.
+func applyAnthropicThinking(params *anthropic.MessageNewParams, effort Effort, model string, maxTokens int) {
+	caps := CapabilitiesFor(model)
+	effort = effort.Fit(caps)
+	if !effort.On() {
+		return
+	}
+	if caps.Adaptive || !caps.Known {
+		params.Thinking = anthropic.ThinkingConfigParamUnion{OfAdaptive: &anthropic.ThinkingConfigAdaptiveParam{}}
+		params.OutputConfig = anthropic.OutputConfigParam{Effort: anthropic.OutputConfigEffort(effort.String())}
+		return
+	}
+	if budget := effort.ThinkingBudget(maxTokens - anthropicAnswerFloor); budget > 0 {
+		params.Thinking = anthropic.ThinkingConfigParamOfEnabled(int64(budget))
+	}
+}
+
 func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, opts CompletionOpts) (<-chan StreamEvent, error) {
 	model := a.model
 	if opts.Model != "" {
@@ -84,13 +108,7 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 		MaxTokens: int64(maxTokens),
 	}
 
-	// Extended thinking. The budget has to leave the reply room to
-	// exist, so it is clamped to the output ceiling less a floor for the
-	// answer itself; a ceiling too small for the API's minimum budget asks
-	// for no thinking rather than sending a request the API will refuse.
-	if budget := opts.Effort.ThinkingBudget(maxTokens - anthropicAnswerFloor); budget > 0 {
-		params.Thinking = anthropic.ThinkingConfigParamOfEnabled(int64(budget))
-	}
+	applyAnthropicThinking(&params, opts.Effort, model, maxTokens)
 
 	system, converted := toAnthropicMessages(messages)
 	if system != "" {

@@ -277,7 +277,8 @@ func TestAnthropic_ThinkingBudgetOnlyWhenAsked(t *testing.T) {
 		t.Fatalf("effort off must send no thinking config, got %v", body["thinking"])
 	}
 
-	events, err = p.StreamCompletion(context.Background(), msgs, CompletionOpts{Effort: EffortHigh})
+	// The current generation takes a named effort under adaptive thinking.
+	events, err = p.StreamCompletion(context.Background(), msgs, CompletionOpts{Effort: EffortXHigh})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -286,16 +287,35 @@ func TestAnthropic_ThinkingBudgetOnlyWhenAsked(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected a thinking config, got %v", body["thinking"])
 	}
+	if thinking["type"] != "adaptive" {
+		t.Errorf("expected adaptive thinking on claude-opus-5, got %v", thinking["type"])
+	}
+	if got := body["output_config"].(map[string]any)["effort"]; got != "xhigh" {
+		t.Errorf("effort = %v, want xhigh", got)
+	}
+
+	// A budget-only model takes the ladder instead, and a rung it lacks
+	// becomes the highest it has.
+	legacy := []Message{{Role: RoleUser, Content: "hi"}}
+	events, err = p.StreamCompletion(context.Background(), legacy, CompletionOpts{Model: "claude-haiku-4-5", Effort: EffortMax})
+	if err != nil {
+		t.Fatal(err)
+	}
+	drainAnthropic(t, events)
+	thinking = body["thinking"].(map[string]any)
 	if thinking["type"] != "enabled" {
-		t.Errorf("expected enabled thinking, got %v", thinking["type"])
+		t.Errorf("expected enabled thinking on haiku 4.5, got %v", thinking["type"])
 	}
 	if got := thinking["budget_tokens"].(float64); got != 24576 {
 		t.Errorf("budget = %v, want the high level's 24576", got)
 	}
+	if _, ok := body["output_config"]; ok {
+		t.Errorf("a budgeted model must not be sent output_config, got %v", body["output_config"])
+	}
 
 	// A capped output leaves the answer room: the budget clamps to the cap
 	// less the answer floor rather than swallowing the whole ceiling.
-	events, err = p.StreamCompletion(context.Background(), msgs, CompletionOpts{Effort: EffortHigh, MaxTokens: 8192})
+	events, err = p.StreamCompletion(context.Background(), legacy, CompletionOpts{Model: "claude-haiku-4-5", Effort: EffortHigh, MaxTokens: 8192})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -303,6 +323,16 @@ func TestAnthropic_ThinkingBudgetOnlyWhenAsked(t *testing.T) {
 	thinking = body["thinking"].(map[string]any)
 	if got := thinking["budget_tokens"].(float64); got != 8192-anthropicAnswerFloor {
 		t.Errorf("clamped budget = %v, want %d", got, 8192-anthropicAnswerFloor)
+	}
+
+	// A model that has no thinking is sent none, whatever was asked.
+	events, err = p.StreamCompletion(context.Background(), legacy, CompletionOpts{Model: "claude-3-5-sonnet-latest", Effort: EffortHigh})
+	if err != nil {
+		t.Fatal(err)
+	}
+	drainAnthropic(t, events)
+	if _, ok := body["thinking"]; ok {
+		t.Errorf("a model without thinking must be sent none, got %v", body["thinking"])
 	}
 }
 

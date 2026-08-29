@@ -156,7 +156,9 @@ func (o *OpenAIResponses) StreamCompletion(ctx context.Context, messages []Messa
 		Temperature: opts.Temperature,
 		MaxOutput:   opts.MaxTokens,
 	}
-	if effort := opts.Effort.OpenAIEffort(); effort != "" {
+	// Fitted to the model: a rung it lacks becomes the highest it has, and
+	// a model with no reasoning gets no field.
+	if effort := opts.Effort.Fit(CapabilitiesFor(req.Model)).OpenAIEffort(); effort != "" {
 		req.Reasoning = &responsesReasoning{Effort: effort}
 	}
 	body, err := json.Marshal(req)

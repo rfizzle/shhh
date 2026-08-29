@@ -26,7 +26,7 @@ func reasoningModel(t *testing.T) (Model, *provider.Effort) {
 func TestReasoning_ChordCyclesAndReachesTheNextRequest(t *testing.T) {
 	m, applied := reasoningModel(t)
 
-	for _, want := range []provider.Effort{provider.EffortLow, provider.EffortMedium, provider.EffortHigh, provider.EffortOff} {
+	for _, want := range []provider.Effort{provider.EffortLow, provider.EffortMedium, provider.EffortHigh, provider.EffortXHigh, provider.EffortMax, provider.EffortOff} {
 		updated, _ := m.Update(ctrlR())
 		m = updated.(Model)
 		if m.effort != want {

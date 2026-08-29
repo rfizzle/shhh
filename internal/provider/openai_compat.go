@@ -102,10 +102,14 @@ func (o *OpenAICompat) StreamCompletion(ctx context.Context, messages []Message,
 	if opts.MaxTokens > 0 {
 		req.MaxTokens = opts.MaxTokens
 	}
-	// Reasoning effort is sent only when the session asked for one:
-	// the field is a 400 on a model that has no reasoning to spend.
-	if effort := opts.Effort.OpenAIEffort(); effort != "" {
-		req.ReasoningEffort = effort
+	// Reasoning effort is sent only when the model is known to take one.
+	// An openai-compatible endpoint hosts whatever it hosts, and a level
+	// fitted to a model nobody could describe is a field a local runtime
+	// may refuse; the table and the family floor are the only judges here.
+	if caps := CapabilitiesFor(req.Model); caps.Known {
+		if effort := opts.Effort.Fit(caps).OpenAIEffort(); effort != "" {
+			req.ReasoningEffort = effort
+		}
 	}
 	if len(opts.Tools) > 0 {
 		req.Tools = toOpenAITools(opts.Tools)

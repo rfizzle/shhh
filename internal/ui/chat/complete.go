@@ -116,7 +116,7 @@ var slashCommands = []slashCommand{
 				{"commands", "Only the command grants"},
 			}},
 		}},
-	{name: "/reasoning", args: "[off|low|medium|high|default]", desc: "How much the model thinks before it answers (Ctrl+R cycles)",
+	{name: "/reasoning", args: "[off|low|medium|high|xhigh|max|default]", desc: "How much the model thinks before it answers (Ctrl+R cycles)",
 		aliases: []string{"/think"},
 		key:     keys.Shown(keys.Draft.Reasoning),
 		argSpecs: []argSpec{

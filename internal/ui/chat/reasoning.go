@@ -25,7 +25,7 @@ import (
 // bindings and free of the terminal's, and it is the mnemonic.
 
 // reasoningUsage is the one-line usage shown by /reasoning and /help.
-const reasoningUsage = "Usage: /reasoning <off|low|medium|high> · /reasoning default [level] (Ctrl+R cycles)"
+const reasoningUsage = "Usage: /reasoning <off|low|medium|high|xhigh|max> · /reasoning default [level] (Ctrl+R cycles)"
 
 // WithReasoning installs the session's reasoning level and the hook that
 // makes a change reach the next request. fn may be nil — the level is then
@@ -52,7 +52,9 @@ func (m Model) cycleReasoning() (Model, string) {
 	if m.effortFn == nil {
 		return m, "This session cannot change the reasoning level."
 	}
-	next := provider.NextEffort(m.effort)
+	// The walk covers the rungs this model has: a level Fit would only
+	// lower is not a level worth landing on.
+	next := provider.NextEffort(m.effort, provider.Levels(provider.CapabilitiesFor(m.modelName)))
 	m.applyEffort(next)
 	return m, m.reasoningNote(next)
 }
@@ -108,7 +110,7 @@ func (m *Model) setReasoningDefault(rest []string) string {
 	if len(rest) == 0 {
 		current := m.effortDefault
 		if current == "" {
-			current = "not set (new sessions start with reasoning off)"
+			current = "not set (new sessions start on " + provider.DefaultEffort.String() + ")"
 		}
 		note := "Default reasoning: " + current
 		if m.effortOutranked != "" {
@@ -155,8 +157,9 @@ func (m Model) reasoningSegment() string {
 // reasoningArgs are the levels /reasoning offers, plus the sub-command that
 // persists one.
 func reasoningArgs(m *Model) []argOption {
-	out := make([]argOption, 0, len(provider.EffortCycle())+1)
-	for _, e := range provider.EffortCycle() {
+	levels := provider.Levels(provider.CapabilitiesFor(m.modelName))
+	out := make([]argOption, 0, len(levels)+1)
+	for _, e := range levels {
 		desc := e.Describe()
 		if e == m.effort {
 			desc = "current — " + desc
