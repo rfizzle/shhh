@@ -83,14 +83,16 @@ var slashCommands = []slashCommand{
 	{name: "/help", desc: "Show commands, keys, and the approval policy"},
 	{name: "/clear", aliases: []string{"/new"}, desc: "Start a new conversation",
 		idleOnly: "it starts a new conversation"},
-	{name: "/paste", args: "[path|drop <name>|clear]", desc: "Attach the clipboard, or a file, to your next message",
+	{name: "/paste", args: "[path|show <name>|drop <name>|clear]", desc: "Attach the clipboard, or a file, to your next message",
 		key: keys.Shown(keys.Draft.Attach),
 		argSpecs: []argSpec{
 			{options: []argOption{
+				{"show", "Look at a staged image"},
 				{"drop", "Take one attachment back out"},
 				{"clear", "Drop what is staged"},
 			}},
 			{after: []string{"drop"}, dynamic: attachmentDropArgs},
+			{after: []string{"show"}, dynamic: attachmentShowArgs},
 		}},
 	{name: "/copy", args: "[code]", desc: "Copy the last response (or just its code blocks)",
 		argSpecs: staticArgs(argOption{"code", "Only the code blocks"})},

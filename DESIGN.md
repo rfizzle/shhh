@@ -162,6 +162,9 @@ The [Charm](https://charm.sh) stack is the Go ecosystem's best answer for termin
 - Dumb terminals / non-TTY: plain text, no ANSI
 - `NO_COLOR=1`: strip all color codes
 - Narrow terminals (< 40 cols): drop borders, compact action bar
+- Inline images: drawn by the terminal where it says it can, as half-blocks
+  where there is colour, and as a density ramp where there is none — a staged
+  screenshot is still a picture on a monochrome terminal (DESIGN-TUI.md §12h)
 
 ---
 

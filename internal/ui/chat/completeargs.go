@@ -17,6 +17,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 )
 
@@ -245,6 +246,22 @@ func attachmentDropArgs(m *Model) []argOption {
 	for _, a := range m.attachments {
 		out = append(out, argOption{value: a.Name,
 			desc: "Drop this attachment · " + attachment.HumanSize(len(a.Data))})
+	}
+	return out
+}
+
+// attachmentShowArgs offers the staged images `/paste show` can open
+// (S-158, §12h). Only the images: a PDF and a markdown file are staged as
+// themselves and the surface refuses them, and a menu that offered a name it
+// would then decline is a menu that made the reader find that out by typing.
+func attachmentShowArgs(m *Model) []argOption {
+	out := make([]argOption, 0, len(m.attachments))
+	for _, a := range m.attachments {
+		if a.Kind != provider.AttachmentImage {
+			continue
+		}
+		out = append(out, argOption{value: a.Name,
+			desc: "Look at this image · " + attachment.HumanSize(len(a.Data))})
 	}
 	return out
 }

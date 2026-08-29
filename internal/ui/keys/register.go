@@ -181,6 +181,13 @@ func Surfaces() []Surface {
 			},
 		},
 		{
+			Name:     "the staged image preview",
+			Section:  "§12h",
+			Position: Takeover,
+			Reached:  "/paste show <name>",
+			Bindings: []Binding{Picture.Back, Picture.Leave},
+		},
+		{
 			Name:     "the retry countdown",
 			Section:  "§17a",
 			Position: Takeover,

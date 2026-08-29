@@ -407,6 +407,21 @@ var Diff = DiffKeys{
 	Leave:      bind("q", "back", "q", "ctrl+c"),
 }
 
+// PictureKeys are the staged image preview's (§12h). Two keys and no more:
+// the surface has nothing to decide, nothing to scroll and nothing to stage —
+// a thumbnail is fitted to the pane rather than panned around — so what it
+// offers is the two spellings of leaving that every full-screen viewer in
+// shhh has always answered to.
+type PictureKeys struct {
+	Back  Binding
+	Leave Binding
+}
+
+var Picture = PictureKeys{
+	Back:  bind("esc", "back", "esc"),
+	Leave: bind("q", "back", "q", "ctrl+c"),
+}
+
 // ScreenKeys are the supporting TUIs' (§19): `shhh config`, `shhh history`,
 // `shhh metrics`, `shhh doctor`. They are where `?` was invented — the
 // compact key row swapped for the whole list, in place — which is the idiom

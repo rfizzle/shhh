@@ -1,12 +1,13 @@
 package chat
 
 // Attachments (S-134): images and files staged for the next message. The
-// screen has no business rendering a screenshot, so nothing here draws one —
 // an attachment shows as a chip carrying its mark, its name and its size, on
 // the frame's staged rail while it waits (§12g) and on the user's own
-// transcript row once it has gone. What it is for is the request: the bytes
-// ride on the user message (internal/provider), and each provider carries
-// them the way its API takes them.
+// transcript row once it has gone. Nothing here draws a picture: `/paste
+// show` is the one surface that does, opened by naming a chip and given the
+// whole pane while it is up (S-158, §12h, preview.go). What the bytes are for
+// is the request — they ride on the user message (internal/provider), and
+// each provider carries them the way its API takes them.
 //
 // Three doors, one staging area. Ctrl+V reads the clipboard — a pasted
 // screenshot or the files a file manager copied — and falls back to pasting
@@ -165,7 +166,8 @@ func chipKind(k provider.AttachmentKind) components.ChipKind {
 }
 
 // runPaste dispatches `/paste`: bare reads the clipboard, `clear` drops what
-// is staged, `drop <name>` drops one chip, and anything else is a path.
+// is staged, `drop <name>` drops one chip, `show <name>` opens one as a
+// picture (S-158, §12h), and anything else is a path.
 func (m Model) runPaste(parts []string) (tea.Model, tea.Cmd) {
 	if len(parts) == 1 {
 		return m, readClipboardCmd()
@@ -182,6 +184,9 @@ func (m Model) runPaste(parts []string) (tea.Model, tea.Cmd) {
 	}
 	if rest, ok := cutFold(arg, "drop"); ok {
 		return m.dropAttachment(rest)
+	}
+	if rest, ok := cutFold(arg, "show"); ok {
+		return m.showAttachment(rest)
 	}
 	return m, attachFileCmd(attachment.Expand(arg))
 }

@@ -78,6 +78,17 @@ func monoFixtures() []monoSurface {
 		return AttachmentChips([]AttachmentChip{{Kind: kind, Name: "staged.bin", Size: "412 KB"}}, w)
 	}
 
+	// The staged image preview (§12h). It is the one surface in shhh whose
+	// content *is* colour, so it is the strongest thing invariant 1 has to
+	// say about mono: the picture is still drawn, still tells its bands
+	// apart, and asks the terminal for no colour at all to do it.
+	pictureCard := func(mut func(*PictureView)) string {
+		p := PictureView{Name: "staged.png", Size: "412 KB", Pixels: "640×400",
+			Image: testPicture(64, 40), Height: 9}
+		mut(&p)
+		return p.View(w)
+	}
+
 	// The config screen's two toned fields (§19a). Everything but the field
 	// under test is held constant, so a value or a source that was only ever
 	// a hue apart from another would collapse here.
@@ -663,6 +674,15 @@ func monoFixtures() []monoSurface {
 			{"an image", chipStrip(ChipImage)},
 			{"a document", chipStrip(ChipDocument)},
 			{"text", chipStrip(ChipText)},
+		}},
+		{"the staged image preview", []monoState{
+			{"a picture", pictureCard(func(*PictureView) {})},
+			{"a picture of another shape", pictureCard(func(p *PictureView) {
+				p.Image = testPicture(160, 20)
+			})},
+			{"nothing to draw", pictureCard(func(p *PictureView) {
+				p.Image, p.Note = nil, "shhh draws PNG, JPEG and GIF previews"
+			})},
 		}},
 		{"history outcome", []monoState{
 			{"ran clean", historyRow(ActivityDone, "exit 0")},

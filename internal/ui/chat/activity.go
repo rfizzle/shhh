@@ -442,23 +442,25 @@ func (m Model) terminalReport() string {
 	return strings.Join(lines, "\n")
 }
 
-// imageSupport names the picture protocols the terminal offered, or says why
-// there is no name to give.
+// imageSupport names how a staged image is drawn here (S-158, §12h), or says
+// why there is no name to give.
+//
+// It answers for what shhh spends rather than for what the terminal offered,
+// which is the difference between a diagnostic and a list. Sixel is detected
+// and deliberately not drawn (internal/ui/caps/graphics.go), so a terminal
+// that offered only sixel is a terminal whose pictures are half-blocks — and
+// the reader looking at this line is looking at it to find out which of those
+// they are about to see.
 func imageSupport(t caps.Terminal) string {
-	var have []string
-	if t.Kitty {
-		have = append(have, "kitty graphics")
-	}
-	if t.Sixel {
-		have = append(have, "sixel")
-	}
-	if len(have) > 0 {
-		return strings.Join(have, " · ")
-	}
-	if t.Held != "" {
+	switch {
+	case t.Kitty:
+		return "kitty graphics"
+	case t.Sixel:
+		return "sixel, which shhh does not draw — pictures here are half-blocks"
+	case t.Held != "":
 		return "not asked"
 	}
-	return "neither kitty graphics nor sixel"
+	return "neither kitty graphics nor sixel — pictures here are half-blocks"
 }
 
 // pick is the two words a capability comes back as. It exists so the three

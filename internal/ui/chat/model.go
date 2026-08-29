@@ -92,6 +92,10 @@ const (
 	// surface — but nothing is streaming and the input is not live, so the
 	// wait owns the keyboard for the two keys it offers.
 	stateRetryWait
+	// statePicture: a staged image is showing full-pane (S-158, §12h). It is
+	// the one surface that is opened by naming a file rather than by a key,
+	// because the chip it belongs to has no key of its own (§12g).
+	statePicture
 )
 
 const inputHeight = 3
@@ -531,6 +535,11 @@ type Model struct {
 	// screen, diffReturn where esc goes back to.
 	fullDiff   *components.DiffView
 	diffReturn state
+	// The staged image preview (S-158, §12h): picture is the card while it
+	// has the pane. There is no return state beside it — the surface is
+	// opened from the draft and from nowhere else, so leaveSurface's own
+	// answer is always the right one.
+	picture *components.PictureView
 	// Review mode (S-099): review is the surface while it has the screen,
 	// reviewTurnN the turn it is reviewing (0 for a review of something
 	// else), and reviewReturn where esc goes back to.
@@ -984,7 +993,11 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport.SetHeight(vpHeight)
 			m.viewport.SetContent(m.renderHistory())
 		}
-		return m, nil
+		// A placement is cells at a size (S-158, §12h): a pane that changed
+		// shape under a picture the terminal is holding is a picture that no
+		// longer fits the hole left for it, so it is sent again at the new
+		// one. Every other surface reflows from its own View.
+		return m, m.placePicture()
 
 	case tea.MouseMsg:
 		// The wheel scrolls whatever is showing content — the transcript, or
@@ -1051,6 +1064,9 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.state == stateDiffFull {
 			return m.updateDiffFull(msg)
+		}
+		if m.state == statePicture {
+			return m.updatePicture(msg)
 		}
 		// The handover means one thing in both states a decision can be in:
 		// give the card the whole keyboard. From ungated it is §7b's transfer
@@ -1741,6 +1757,10 @@ func (m Model) screen() string {
 		// The full-screen diff takes over the viewport (S-074, §3c).
 		m.fullDiff.Height = m.viewportHeight()
 		body = m.fullDiff.View(paneWidth)
+	case m.state == statePicture && m.picture != nil:
+		// The staged image takes over the pane (S-158, §12h).
+		m.picture.Height = m.viewportHeight()
+		body = m.picture.View(paneWidth)
 	case m.state == stateReview && m.review != nil:
 		// Review mode takes over the whole surface (S-099, §16a).
 		m.review.Height = m.viewportHeight()
@@ -1825,6 +1845,8 @@ func (m Model) screen() string {
 			inputView = m.renderFocusHint()
 		case stateDiffFull:
 			inputView = m.renderDiffFullHint()
+		case statePicture:
+			inputView = m.renderPictureHint()
 		case stateReview:
 			inputView = m.renderReviewHint()
 		case stateUndoConfirm:
@@ -2936,8 +2958,9 @@ func helpText() string {
   /clear         Start a new conversation (also /new)
   /paste [path]  Attach the clipboard — a screenshot, or files copied in a
                  file manager — to your next message; /paste <path> attaches
-                 a file by name, /paste drop <name> takes one back out and
-                 /paste clear drops what is staged (Ctrl+V)
+                 a file by name, /paste show <name> draws a staged image,
+                 /paste drop <name> takes one back out and /paste clear drops
+                 what is staged (Ctrl+V)
   /copy [code]   Copy the last response (or just its code blocks)
   /run [n]       Run a code block from the last response (with confirmation)
   /model [name]  Switch the model (bare /model opens an interactive picker)

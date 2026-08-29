@@ -22,6 +22,7 @@ import (
 	"github.com/charmbracelet/colorprofile"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/ui/golden"
+	"github.com/rfizzle/shhh/internal/ui/raster"
 )
 
 func TestMain(m *testing.M) { os.Exit(golden.Run(m)) }
@@ -1027,6 +1028,35 @@ func TestGolden_AttachmentChips(t *testing.T) {
 			{Label: "a long name · clipped at the head, which is the half that names it",
 				View: strip(AttachmentChip{Kind: ChipImage,
 					Name: "screenshot-2026-08-29-at-14-02-11.png", Size: "412 KB"}, notes)},
+		}
+	})
+}
+
+// TestGolden_Picture captures the staged image preview (S-158, §12h) at every
+// width, in both palettes — which is the whole argument for the surface in one
+// file. The colour sheet is half-blocks, two samples to a cell; the mono sheet
+// is the same picture as density, and the fact that it is still a picture
+// there is what invariant 1 asks of the one surface whose content is colour.
+func TestGolden_Picture(t *testing.T) {
+	captureGolden(t, "picture", "the staged image preview", goldenWidths, func(width int) []golden.Panel {
+		card := func(mut func(*PictureView)) string {
+			p := PictureView{Name: "shot.png", Size: "412 KB", Pixels: "640×400",
+				Image: testPicture(64, 40), Height: 9}
+			mut(&p)
+			return p.View(width)
+		}
+		return []golden.Panel{
+			{Label: "a staged screenshot · the name and size on the border, the picture inside",
+				View: card(func(*PictureView) {})},
+			{Label: "a picture wider than it is tall keeps its proportion",
+				View: card(func(p *PictureView) { p.Image = testPicture(160, 20); p.Pixels = "1600×200" })},
+			{Label: "the terminal reported its cells · 9×19 px, so the grid is taller",
+				View: card(func(p *PictureView) { p.Cell = raster.Aspect{Width: 9, Height: 19} })},
+			{Label: "nothing to draw · the reason where the picture would be",
+				View: card(func(p *PictureView) {
+					p.Name, p.Pixels, p.Image = "shot.webp", "", nil
+					p.Note = "shhh draws PNG, JPEG and GIF previews, and this is none of them"
+				})},
 		}
 	})
 }

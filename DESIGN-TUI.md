@@ -1404,6 +1404,7 @@ Two positions are allowed, and there is no third.
 | review mode (§16a) | takeover | `s A n p` | `[v]`, `/review`, `/diff` |
 | the agent list (§9a) | takeover | `x X j k` | `ctrl+a`, `/agents` |
 | the undo confirm (§5), the key entry (§17a), the full-screen diff (§3c) | takeover | `y n f` | the key that opens it |
+| the staged image preview (§12h) | takeover | `q` | `/paste show <name>` |
 | the context pressure card (§17b), the retry countdown (§17a) | takeover | `n` | it opens on its own and takes the keyboard |
 | the changeset row (§16) | transcript row | `v u` | `ctrl+e`, then the cursor on the row |
 | a provider failure's row, a dropped stream's, a round-limit pause's (§17a) | transcript row | `e p r c v u + !` | `ctrl+e`, then the cursor on the row |
@@ -2177,13 +2178,30 @@ invariant 1.
 ### 10e. Drawing kit
 
 ```
-▎ ▌ ▁▂▃▄▅▆▇█ ▰ ▱ · ─ │ ┃ ╭ ╮ ╯ ╰ ├ ┤ ┬ ┴ ┌ ┐ └ ┘
+▎ ▌ ▀ ▁▂▃▄▅▆▇█ ░ ▒ ▓ ▰ ▱ · ─ │ ┃ ╭ ╮ ╯ ╰ ├ ┤ ┬ ┴ ┌ ┐ └ ┘
 ```
 
 `┃` is the light rule's heavy twin and is the scroll gutter's thumb (§10g),
 and nothing else. It is the only glyph in the kit whose whole job is to be
 told apart from another glyph in the same column, which is why it is a weight
 of `│` rather than a shape of its own.
+
+**`▀` and the three shades are the picture's** (§12h), added by S-158 and
+recorded here for the reason §10d records its own additions: the kit is
+closed, and closing it means an addition is a decision written down rather
+than a glyph a surface reached for.
+
+- **`▄` and `▀` are one cell holding two stacked samples.** `▄` is the
+  ordinary one — the lower sample in the foreground, the upper behind it as a
+  background — and `▀` is what a cell whose *lower* half is transparent draws
+  instead, so a picture's own holes stay holes rather than filling with ink.
+  `▄` was already in the kit as the middle rung of the eighths; `▀` is its
+  twin and had no other reason to exist until there was a picture to draw.
+- **`░ ▒ ▓ █` are density, and only where there is no colour.** Four steps of
+  ink, faintest first, spending the one channel a monochrome terminal has on
+  luminance. The faintest step is `░` and not a space: a black corner of a
+  picture and a hole through it are different facts, and a space is reserved
+  for the second so a dark photograph still has visible edges.
 
 Takeover cards (§2, §9a, §17) use the square corners `┌ ┐ └ ┘` with a `├ ┤`
 divider above the key row. The input frame (§12) uses the rounded `╭ ╮ ╰ ╯`
@@ -2497,7 +2515,21 @@ It is `internal/ui/caps`, and it is the only package in the tree that speaks
 the wire: it writes the questions, reads the replies, and every
 terminal-protocol type stops there. What leaves is a value with plain fields
 on it — and where an answer is later spent as a sequence of its own, it is
-spent there too (§10l).
+spent there too: the notification in §10l, and the transmitted picture in
+§12h.
+
+**Two of the six answers are spent, and the readout says which.** The kitty
+graphics answer buys the top rung of §12h's preview; the sixel answer buys
+nothing, because a second encoder and a second set of scrolling quirks is a
+lot to carry for a rung the half-block picture already fills legibly
+everywhere. It is still asked for, because `/ui terminal` is a diagnostic and
+"this terminal offered sixel and shhh does not take it" is a truthful thing
+for it to be able to say — so the line answers for what shhh *draws* rather
+than for what was offered:
+
+```
+Inline images: sixel, which shhh does not draw — pictures here are half-blocks.
+```
 
 Ported from Crush's `internal/ui/common/capabilities.go`, with three places
 where shhh's semantics win. **It does not answer for the colour profile** —
@@ -2881,8 +2913,9 @@ above a live draft, so a key written on it would be an offer nothing accepts
 (§7c), and a `✕` would be a button on a surface that has no mouse targets.
 Taking one back out is `/paste drop <name>`, with the staged names offered by
 the completion menu (S-079) so the handle never has to be typed from memory;
-`/paste clear` still drops the set. That is why the name is the field a chip
-gives up last — it is the handle, not just a label.
+`/paste clear` still drops the set. Looking at one is `/paste show <name>`
+(§12h), which is the same handle spent on the other verb. That is why the name
+is the field a chip gives up last — it is the handle, not just a label.
 
 Two departures from Crush's chips, recorded rather than left silent. Its strip
 numbers each chip and removes one on the digit after `ctrl+r`; here the digits
@@ -2890,6 +2923,106 @@ would be letters going into the sentence below, which is the exact shape
 invariant 5 exists to stop, and shhh's `ctrl+r` is the reasoning level
 (S-139). And its `✕` is a mouse target: shhh has click targets on nothing yet,
 and a button that only looks like one is worse than no button.
+
+---
+
+### 12h. Seeing what you attached (S-158)
+
+`▣ shot.png 412 KB` is the right answer for a one-line strip above a live
+draft, and the wrong one the moment two screenshots are staged and the
+question is which of them has the stack trace in it. The strip cannot answer
+that at any width, because the answer is not words. `/paste show <name>` is
+the surface that can: the picture, given the whole transcript pane, framed by
+the name and size the chip already carried.
+
+```
+┌─ shot.png ───────────────────────────── 412 KB ─ 640×400 ┐
+│                  ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄                  │
+│                  ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄                  │
+│                  ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄                  │
+│                  ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄                  │
+└──────────────────────────────────────────────────────────┘
+────────────────────────────────────────────────────────────
+⏸ manual · ctx ▰▰▰▱▱▱▱▱ 31% · ↑12.0k ↓3.4k · $0.05   gpt-5.2
+esc back
+```
+
+**It is reached by name and not by a key**, for §12g's own reason: a chip sits
+above a live draft, so a key written on it would be an offer nothing accepts
+(invariant 5). The completion menu offers the staged *images* and only those
+(S-079) — a name the surface would then decline is a name the reader finds out
+about by typing it. Bare `/paste show` takes the only staged image when there
+is exactly one, and refuses when there are two: guessing which was meant is
+the mistake this surface exists to stop somebody making.
+
+**It is a takeover, and esc never destroys.** `esc` or `q` hands the pane
+back; the file is still staged, and `/paste drop` is still the only thing that
+removes one (invariant 3). There is nothing to scroll and nothing to pan — a
+thumbnail is fitted to the pane — so the two keys are the whole register
+(§7c).
+
+**The card's fields.** The name is the title, because it is the handle. The
+size rides the top border as a chip and the picture's real dimensions ride
+beside it; chips drop from the front as the terminal narrows (§2), so the size
+goes first and the dimensions survive — the dimensions are the fact this
+surface added, and the size is on the chip strip already. A picture that will
+not decode still opens, onto the reason where the picture would be: *this is
+staged and shhh cannot read it* is a fact about the send that follows, and a
+blank card would not have said it.
+
+#### The three rungs
+
+Which rung draws the picture is a question already answered elsewhere rather
+than one asked here.
+
+| Rung | When | What it is |
+|---|---|---|
+| kitty graphics | the terminal answered the graphics query (§10k) and said how big its cells are | the picture transmitted once, drawn by the terminal into cells the card reserves |
+| half-blocks | there is colour to draw with | `▄`/`▀`, two stacked samples per cell, the lower in the foreground and the upper behind it (§10e) |
+| the density ramp | mono, `NO_COLOR`, `TERM=dumb` — anything below sixteen colours | `░ ▒ ▓ █`, one sample per cell, luminance spent as ink (§10e) |
+
+**Sixel is detected and not drawn** (§10k). A terminal that offered only sixel
+gets half-blocks, and `/ui terminal` says so rather than listing a capability
+shhh does not spend.
+
+**The bottom rung is a picture and not a refusal, and that is a departure from
+§10f.** Everywhere else, a source of colour the palette does not own is
+declined under mono rather than recoloured — the diff drops its highlighting,
+a program's output loses every colour it asked for (§10i). What is declined
+there is a *recolouring*: those surfaces already carry their meaning in `+`,
+`−` and words, so a grey ladder over the top is decoration the reader has to
+unpick. A photograph has no other channel. Take its hue away and what is left
+is still the photograph; refuse to draw it and there is nothing at all. So the
+ramp draws, and it asks the terminal for no colour whatsoever to do it —
+which is the half of §10f that does still apply, and is checked in
+`mono_test.go` beside every other surface.
+
+**Transparency is not black.** A patch the picture left clear draws as a
+space, so the terminal's own background shows through and a screenshot with a
+rounded corner does not grow a square of ink. It is also why `▀` exists: a
+cell whose lower half is clear and whose upper half is not has to put its one
+colour on top.
+
+**Proportion is a fact about cells, not pixels.** The grid is fitted so that
+`cols × cellWidth` over `rows × cellHeight` is the picture's own ratio, using
+the cell size the terminal reported (§10k) and a two-to-one guess when it did
+not say — a thumbnail on a real 9×19 terminal is then off by a twentieth,
+which is slightly the wrong shape rather than one that does not fit. How many
+samples a cell holds does not enter it: half-blocks change how much detail
+fits in one cell, not how many cells the picture spans.
+
+**Where the code is.** `internal/ui/raster` is the arithmetic — decode, fit,
+half-blocks, ramp — and knows nothing about terminals. The kitty rung is a
+sequence, so it is composed in `internal/ui/caps` with every other sequence
+(§10k), and what reaches the card is rows of cells like any other. The card
+itself is `components.PictureView`, and the surface is `chat/preview.go`.
+
+**What it does not do.** No zoom, no pan, no scroll: the picture is fitted to
+the pane, and a reader who wants the pixels has the file. No preview for a PDF
+or a text attachment — those are staged as themselves and the chip already
+says everything there is to say. No WebP: shhh accepts one as an attachment
+and sends it, and the preview refuses it by name rather than by carrying a
+decoder for it. And nothing here is clickable, for §12g's reason.
 
 ---
 

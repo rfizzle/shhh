@@ -88,6 +88,12 @@ type Terminal struct {
 	// an ssh session; both leave Kitty, Sixel, PixelWidth and Name at their
 	// zero values for a reason that is not "no".
 	Held string
+
+	// tmux records that the questions went out through tmux, because
+	// everything spent on the answers has to go out the same way (graphics.go).
+	// It is not a capability and it is nobody else's business, which is why
+	// it is the one field here without a name on it.
+	tmux bool
 }
 
 // Query writes the questions and records that they went out. environ is the
@@ -113,6 +119,7 @@ func (t *Terminal) Query(environ []string) tea.Cmd {
 	env := uv.Environ(environ)
 	t.Asked = true
 	t.Held = held(env)
+	_, t.tmux = env.LookupEnv("TMUX")
 
 	var b strings.Builder
 	b.WriteString(ansi.RequestPrimaryDeviceAttributes)
@@ -128,14 +135,15 @@ func (t *Terminal) Query(environ []string) tea.Cmd {
 		// through, or tmux eats it on the way to the terminal that would
 		// answer.
 		kitty := ansi.KittyGraphics([]byte("AAAA"), "i=31", "s=1", "v=1", "a=q", "t=d", "f=24")
-		if _, inTmux := env.LookupEnv("TMUX"); inTmux {
+		if t.tmux {
 			kitty = ansi.TmuxPassthrough(kitty)
 		}
 		b.WriteString(kitty)
 	}
-	// One write, in one order. tea.Raw is the door for bytes that are a
-	// question rather than a picture, and it is the only place in shhh that
-	// writes outside a View.
+	// One write, in one order. tea.Raw is the door for bytes that go to the
+	// terminal rather than onto the screen — the questions here, and the
+	// answers spent in notify.go and graphics.go — and this package is the
+	// only one in shhh that opens it.
 	return tea.Raw(b.String())
 }
 
