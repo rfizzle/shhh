@@ -229,9 +229,10 @@ func (m Model) edgeDir(y int) int {
 
 // beginSelection anchors a selection under the pointer. It answers only a
 // press inside the transcript pane, and it deliberately does nothing else:
-// this surface draws no click targets, and a press that also expanded a row
-// or answered a decision would make every selection a gamble on holding
-// still (§7a).
+// a press that also expanded a row or answered a decision would make every
+// selection a gamble on holding still. The targets S-159 added are answered
+// on the release instead, in the cell the press landed in, which is the one
+// event a drag cannot produce (click.go, §7e).
 func (m Model) beginSelection(x, y int) (tea.Model, tea.Cmd) {
 	pt, ok := m.transcriptPoint(x, y)
 	if !ok {
@@ -301,7 +302,10 @@ func (m *Model) extendSelection(x, y int) {
 // releaseSelection ends the drag and copies what was covered.
 //
 // A press that never moved is not a selection and is dropped here rather than
-// copied as one cell, which is what keeps an ordinary click ordinary.
+// copied as one cell. It does not reach this function at all any more —
+// updateMouse routes it to the click targets (S-159) — but the guard stays,
+// because "one cell is not a selection" is this file's rule and not a
+// consequence of who happens to call it.
 func (m Model) releaseSelection(x, y int) (tea.Model, tea.Cmd) {
 	if !m.sel.dragging {
 		return m, nil

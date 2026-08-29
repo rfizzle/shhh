@@ -71,17 +71,18 @@ func (m Model) WithMouse(on bool) Model {
 }
 
 // updateMouse routes a mouse event: the wheel reads, and the primary button
-// selects text (S-145, select.go).
+// selects text (S-145, select.go) or clicks a target (S-159, click.go).
 //
 // The wheel reads, and reading is not a focus transfer: the draft keeps the
 // keyboard, so a scroll while composing never swallows the next keystroke.
 //
-// The primary button is the only other thing answered. shhh still draws no
-// clickable targets, and that is now a property worth keeping rather than an
-// accident: a press that also expanded a row or answered a decision would
-// make every drag a gamble on where it started. So a press anchors a
-// selection or does nothing, and a middle or right button does nothing at
-// all.
+// The primary button carries both of the other gestures, and the event they
+// are told apart by is the release rather than the press. A press that also
+// expanded a row would make every drag a gamble on where it started; a
+// release in the cell the press landed in cannot be a drag, because a drag
+// that went anywhere released somewhere else. So the press anchors and
+// nothing fires until the button comes back up. A middle or right button does
+// nothing at all.
 func (m Model) updateMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	// In v2 the action a mouse event is comes from the message's own type
 	// rather than from a field on one struct (S-155), which is why the wheel
@@ -97,12 +98,16 @@ func (m Model) updateMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	}
-	if !m.selectableSurface() {
-		return m, nil
-	}
 	switch msg.(type) {
 	case tea.MouseClickMsg:
 		if mouse.Button != tea.MouseLeft {
+			return m, nil
+		}
+		// Every press is remembered, wherever it lands: a click target can be
+		// on the card in the bottom panel, which is not a surface a selection
+		// can be anchored in (S-159, click.go).
+		m.beginClick(mouse.X, mouse.Y)
+		if !m.selectableSurface() {
 			return m, nil
 		}
 		return m.beginSelection(mouse.X, mouse.Y)
@@ -114,8 +119,24 @@ func (m Model) updateMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		if mouse.Button != tea.MouseLeft && mouse.Button != tea.MouseNone {
 			return m, nil
 		}
+		if !m.selectableSurface() {
+			return m, nil
+		}
 		return m.dragSelection(mouse.X, mouse.Y)
 	case tea.MouseReleaseMsg:
+		if m.endClick(mouse.X, mouse.Y) {
+			// A press and a release in the same cell is a click, and a click
+			// is not a selection (§7a): nothing was covered, so nothing is
+			// copied and what was under the pointer is what the gesture
+			// meant.
+			if m.cancelSelection() {
+				m.refreshTranscript()
+			}
+			return m.clickAt(mouse.X, mouse.Y)
+		}
+		if !m.selectableSurface() {
+			return m, nil
+		}
 		// A release reports no button at all under X10 encoding, so the drag
 		// in flight is what says whether this release is ours.
 		return m.releaseSelection(mouse.X, mouse.Y)
@@ -307,14 +328,15 @@ func (m Model) mouseStatus() string {
 
 // mouseCommand handles /ui mouse: whether the terminal reports the mouse to
 // shhh at all. On, the wheel scrolls the transcript and the full-screen
-// viewers and a drag selects transcript text shhh copies itself (S-145);
-// off, the terminal keeps its own click-drag selection and the keyboard is
-// the only way through the history. It is a real trade, which is why it is a
-// setting and not a default nobody can reach.
+// viewers, a drag selects transcript text shhh copies itself (S-145), and a
+// click opens a row or answers a decision key (S-159); off, the terminal
+// keeps its own click-drag selection and the keyboard is the only way through
+// the history. It is a real trade, which is why it is a setting and not a
+// default nobody can reach.
 func (m *Model) mouseCommand(parts []string) string {
 	if len(parts) == 2 {
 		return "Mouse reporting: " + m.mouseStatus() +
-			".\nUsage: /ui mouse <on|off> — on, the wheel scrolls the transcript and click-drag selects it; off, the terminal keeps its own click-drag selection."
+			".\nUsage: /ui mouse <on|off> — on, the wheel scrolls the transcript, click-drag selects it and a click opens the row or card key under it; off, the terminal keeps its own click-drag selection."
 	}
 	if len(parts) != 3 {
 		return "Usage: /ui mouse <on|off>"
@@ -366,7 +388,7 @@ func (m *Model) setMouse(on bool) string {
 // off-side names what the terminal gives back.
 func mouseNote(on bool) string {
 	if on {
-		return "Mouse reporting on — the wheel scrolls the transcript, and click-drag selects it: the drag scrolls past the edge of the pane, esc cancels, and releasing copies."
+		return "Mouse reporting on — the wheel scrolls the transcript, click-drag selects it (the drag scrolls past the edge of the pane, esc cancels, and releasing copies), and a click opens the activity row or answers the approval key under it."
 	}
 	return "Mouse reporting off — the terminal keeps click-drag selection for what is on screen; pgup, ctrl+e and j/k read the transcript."
 }

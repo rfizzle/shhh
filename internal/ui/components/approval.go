@@ -6,6 +6,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -390,34 +391,104 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 	return hints
 }
 
-// keys is the decision prompt's key list. [a] appears only where a session
-// grant is allowed and [A] only where there is a queue behind the card, so
-// the list is always exactly what the card will answer to.
-func (c *ApprovalCard) keys() string {
+// CardKey is one key of the decision run: the spelling the card printed, and
+// the keystroke it stands for. The two are the same everywhere but the safe
+// answer, where the capital N is §2's default marker rather than a shifted
+// key — which is exactly why a pointer cannot be told what it landed on by
+// reading the letter off the screen (S-159, §7e).
+type CardKey struct {
+	Shown string
+	Key   string
+}
+
+// KeyRun is the decision keys in the order the card draws them. [a] appears
+// only where a session grant is allowed and [A] only where there is a queue
+// behind the card, so the run is always exactly what the card will answer to.
+//
+// keys() is this list joined, and KeyAt walks it across the row it was drawn
+// on, so the run a reader sees, the keys the card answers and the cells a
+// click resolves against cannot become three different lists.
+func (c *ApprovalCard) KeyRun() []CardKey {
 	// The card spells its keys as one run rather than as a row of offers, so
 	// it composes them from the register's spellings: `y`, `n`, `a`, `A`.
 	// The capital N is not a key — it is the default marker §2 draws on the
 	// safe answer — which is why it is applied here rather than declared as
 	// a second binding for the same keystroke.
-	yes, no := keys.Shown(keys.Decision.Allow), keys.Shown(keys.Decision.Deny)
+	yes := CardKey{keys.Shown(keys.Decision.Allow), keys.Shown(keys.Decision.Allow)}
+	no := CardKey{keys.Shown(keys.Decision.Deny), keys.Shown(keys.Decision.Deny)}
+	def := CardKey{strings.ToUpper(no.Shown), no.Key}
 	if c.HeldOnArrival {
 		// The card has the keyboard but nobody gave it: it answers the two
 		// keys and offers nothing a mistyped word could have meant.
-		return "[" + yes + "/" + strings.ToUpper(no) + "]"
+		return []CardKey{yes, def}
 	}
-	run := []string{yes, strings.ToUpper(no)}
+	run := []CardKey{yes, def}
 	if c.AllowAlways {
-		run = []string{yes, no, keys.Shown(keys.Decision.Always)}
+		always := keys.Shown(keys.Decision.Always)
+		run = []CardKey{yes, no, {always, always}}
 	}
 	if c.Batch {
 		// The capital N means "this is the default"; beside a capital A it
 		// would only read as a second key, so the batch spelling drops it.
 		if !c.AllowAlways {
-			run = []string{yes, no}
+			run = []CardKey{yes, no}
 		}
-		run = append(run, keys.Shown(keys.Decision.Batch))
+		batch := keys.Shown(keys.Decision.Batch)
+		run = append(run, CardKey{batch, batch})
 	}
-	return "[" + strings.Join(run, "/") + "]"
+	return run
+}
+
+// keys is the decision prompt's key list as the card prints it.
+func (c *ApprovalCard) keys() string {
+	run := c.KeyRun()
+	shown := make([]string, len(run))
+	for i, k := range run {
+		shown[i] = k.Shown
+	}
+	return "[" + strings.Join(shown, "/") + "]"
+}
+
+// KeyAt reports which decision key covers display column col of a rendered
+// row, and whether the row carries the run at all.
+//
+// The geometry is read back out of the render rather than laid out a second
+// time beside it. Crush builds a parallel compositor of hit layers and
+// rebuilds it on every frame to keep the two honest (`common/button.go`);
+// finding the run in the row it was drawn on means a key that is on the
+// screen is clickable and a key a narrow terminal clipped away is not, by
+// construction rather than by upkeep (S-159, §7e).
+//
+// The run is divided among its keys with nothing left over — the brackets
+// belong to the keys at the ends and each separator to the key before it —
+// because one cell is not a target, and a press that lands between two keys
+// should mean the one it is standing on rather than nothing at all.
+func (c *ApprovalCard) KeyAt(row string, col int) (string, bool) {
+	run := c.KeyRun()
+	if len(run) == 0 {
+		return "", false
+	}
+	plain := ansi.Strip(row)
+	i := strings.Index(plain, c.keys())
+	if i < 0 {
+		return "", false
+	}
+	// One cell past the opening bracket, measured in display cells: the row
+	// carries a border, a pad and whatever the question said, and none of
+	// that is one byte per column.
+	at := ansi.StringWidth(plain[:i]) + 1
+	for i, k := range run {
+		w := ansi.StringWidth(k.Shown)
+		lo, hi := at, at+w+1
+		if i == 0 {
+			lo--
+		}
+		if col >= lo && col < hi {
+			return k.Key, true
+		}
+		at += w + 1
+	}
+	return "", false
 }
 
 // arrivalRest names what the handover still buys on a card that took the

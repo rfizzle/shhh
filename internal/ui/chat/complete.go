@@ -143,7 +143,7 @@ var slashCommands = []slashCommand{
 				{"off", "The full palette"},
 			}},
 			{after: []string{"mouse"}, options: []argOption{
-				{"on", "The wheel scrolls and click-drag selects the transcript"},
+				{"on", "The wheel scrolls, click-drag selects, a click opens a row"},
 				{"off", "The terminal keeps its own click-drag selection"},
 			}},
 			{after: []string{"notify"}, options: []argOption{

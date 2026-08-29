@@ -295,3 +295,110 @@ func TestApprovalCard_Keys(t *testing.T) {
 		t.Fatalf("with AllowAlways, [a] should resolve to ApprovalAlways, got done=%v result=%v", done, result)
 	}
 }
+
+// --- click targets (S-159, §7e) -------------------------------------------
+
+// runRow is the rendered row carrying the card's decision run.
+func runRow(t *testing.T, c *ApprovalCard, width int) string {
+	t.Helper()
+	for _, line := range strings.Split(c.View(width), "\n") {
+		if strings.Contains(ansi.Strip(line), c.keys()) {
+			return line
+		}
+	}
+	t.Fatalf("no rendered row carries %s", c.keys())
+	return ""
+}
+
+// Every cell of the run belongs to a key — the brackets to the keys at the
+// ends, each separator to the key before it — because one cell is not a
+// target and a press between two keys should mean the one it is standing on.
+func TestApprovalCard_EveryCellOfTheRunIsAKey(t *testing.T) {
+	c := &ApprovalCard{
+		Variant: ApprovalCommand, Title: "Approve command",
+		Headline: "Assistant wants to run: go test ./...",
+		Question: "Run this command?", AllowAlways: true,
+		AlwaysHint: `a: always allow "go test"`,
+	}
+	row := runRow(t, c, 80)
+	plain := ansi.Strip(row)
+	at := strings.Index(plain, c.keys())
+	start := ansi.StringWidth(plain[:at])
+	// [ y / n / a ] — the opening bracket and each separator go to the key
+	// before them, the closing bracket to the last.
+	want := []string{"y", "y", "y", "n", "n", "a", "a"}
+	for i, key := range want {
+		got, ok := c.KeyAt(row, start+i)
+		if !ok || got != key {
+			t.Fatalf("cell %d of %s should be %q, got %q (found=%v)", i, c.keys(), key, got, ok)
+		}
+	}
+	if _, ok := c.KeyAt(row, start+len(want)); ok {
+		t.Fatal("the cell past the run belongs to no key")
+	}
+	if _, ok := c.KeyAt(row, start-1); ok {
+		t.Fatal("the cell before the run belongs to no key")
+	}
+}
+
+// The safe answer is drawn as a capital N — §2's default marker, not a
+// shifted key — so the cell has to resolve to the keystroke the card answers.
+func TestApprovalCard_TheDefaultMarkerIsNotAKey(t *testing.T) {
+	c := &ApprovalCard{
+		Variant: ApprovalCommand, Title: "Approve command",
+		Headline: "Assistant wants to run: go test ./...",
+		Question: "Run this command?",
+	}
+	if c.keys() != "[y/N]" {
+		t.Fatalf("expected the default marker on the safe answer, got %s", c.keys())
+	}
+	row := runRow(t, c, 80)
+	plain := ansi.Strip(row)
+	start := ansi.StringWidth(plain[:strings.Index(plain, c.keys())])
+	// [ y / N ]
+	got, ok := c.KeyAt(row, start+3)
+	if !ok || got != "n" {
+		t.Fatalf("the capital N should answer as n, got %q (found=%v)", got, ok)
+	}
+	done, result := c.Update(key(got))
+	if !done || result != ApprovalDeny {
+		t.Fatalf("the key the cell named should deny, got %v/%v", done, result)
+	}
+}
+
+// A row that does not carry the run carries no target: the geometry is read
+// out of the render, so a key a narrow terminal clipped away is not clickable.
+func TestApprovalCard_ARowWithoutTheRunHasNoKeys(t *testing.T) {
+	c := &ApprovalCard{
+		Variant: ApprovalCommand, Title: "Approve command",
+		Headline: "Assistant wants to run: go test ./...",
+		Question: "Run this command?",
+	}
+	if _, ok := c.KeyAt("Assistant wants to run: go test ./...", 4); ok {
+		t.Fatal("a body row should carry no decision key")
+	}
+}
+
+// A card holding the keyboard by arrival claims two keys, so those are the
+// only two cells a pointer can land on — [a] and [d] still want the handover.
+func TestApprovalCard_HeldOnArrivalOffersOnlyItsTwoKeys(t *testing.T) {
+	c := &ApprovalCard{
+		Variant: ApprovalCommand, Title: "Approve command",
+		Headline:    "Assistant wants to run: go test ./...",
+		Question:    "Run this command?",
+		AllowAlways: true, AlwaysHint: `a: always allow "go test"`,
+		FullDiff: true, HeldOnArrival: true, Handover: "ctrl+g",
+	}
+	run := c.KeyRun()
+	if len(run) != 2 || run[0].Key != "y" || run[1].Key != "n" {
+		t.Fatalf("an arrival card should draw y and n alone, got %+v", run)
+	}
+	row := runRow(t, c, 80)
+	for _, absent := range []string{"a", "d"} {
+		for col := range ansi.StringWidth(ansi.Strip(row)) {
+			if k, ok := c.KeyAt(row, col); ok && k == absent {
+				t.Fatalf("an arrival card must offer no cell for %q", absent)
+			}
+		}
+	}
+}

@@ -221,30 +221,17 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.scrollPage(1)
 		return m, nil
 	case keys.Is(pressed, keys.Reading.Expand):
-		es := *m.entries()
-		if m.focusIdx >= 0 && m.focusIdx < len(es) {
-			if _, ok := m.stepBlockAt(es, m.focusIdx); ok {
-				// Enter on a step header folds or unfolds the whole group in
-				// place (S-090, §13b).
-				m.toggleStepFold(m.focusIdx)
-				m.refreshFocusView()
-				return m, nil
-			}
-			if m.groupAnchor(es, m.focusIdx) {
-				// Enter on a folded group restores its rows in place, and
-				// folds them back again (S-091, §13c).
-				m.toggleGroupFold(m.focusIdx)
-				m.refreshFocusView()
-				return m, nil
-			}
-			if d := es[m.focusIdx].diff; d != nil {
-				// A diff row cycles collapsed → expanded → full screen
-				// (S-074, DESIGN-TUI.md §3b).
-				d.Update(msg)
-				if d.Mode == components.DiffFull {
-					return m.openDiffFull(d, stateFocus)
-				}
-			} else {
+		// The row's structure — a step's fold, a group's, a diff's three
+		// modes — is toggleRow's (click.go), so the key and the pointer open
+		// a row through one act rather than two that agree by inspection.
+		// What is left is the plain body flag, which this mode sets on every
+		// row it can put its cursor on.
+		claimed, full := m.toggleRow(m.focusIdx)
+		if full != nil {
+			return m.openDiffFull(full, stateFocus)
+		}
+		if !claimed {
+			if es := *m.entries(); m.focusIdx >= 0 && m.focusIdx < len(es) {
 				es[m.focusIdx].expanded = !es[m.focusIdx].expanded
 			}
 		}

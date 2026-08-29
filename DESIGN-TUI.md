@@ -5,7 +5,7 @@
 > S-048 (approvals), S-061 (plan mode), S-070 (memory), S-074 (diffs),
 > S-075 (activity feed & cockpit), S-082 (input frame).
 >
-> **v3 — S-121, with §7c added by S-125 and §7d by S-153.** A fifth invariant, §7a rewritten,
+> **v3 — S-121, with §7c added by S-125, §7d by S-153 and §7e by S-159.** A fifth invariant, §7a rewritten,
 > §7b, §7c and §19 added, and §4a, §8, §10c and §15 brought onto the artboards
 > that now specify them. It continues what v2 (S-088) started — the file
 > describes one grammar rather than a record of how it grew — and where the
@@ -847,7 +847,7 @@ one shape: `218 lines`, `6 hits · 4 files`, `24 files`, `9 refs · 3 files`,
 
 ## 7. Focus Mode & Where the Keyboard Is
 
-`ctrl+e` (or click) enters focus mode: the viewport gets a selection
+`ctrl+e` enters focus mode: the viewport gets a selection
 cursor on expandable rows (`❯` in the pointer column, §6a), `j/k` moves
 between them, `enter` expands/collapses in place, `esc` returns to the input.
 This is the one mechanism behind "[enter] expand" everywhere in the
@@ -865,7 +865,9 @@ turn where there is one, rather than on the close rows after it.
 
 Which surface holds the keyboard, and which keys it may offer while it does,
 is §7c. Where every key in the product is declared — once, so the hint and
-the handler cannot disagree — is §7d.
+the handler cannot disagree — is §7d. What a pointer can reach without taking
+the keyboard from anyone is §7e: a click opens a row the way `enter` does, and
+it is not a way into this mode.
 
 ### 7a. Reading mode: where the keyboard is (S-115, S-122, S-140)
 
@@ -896,6 +898,7 @@ where it is:
 | `shift+↑` / `shift+↓` | one line, and transfers nothing (`ctrl+↑`/`ctrl+↓` alias it — terminals disagree about which they report) |
 | wheel | scrolls, and transfers nothing — when reporting is on |
 | click-drag | selects transcript text, and transfers nothing — when reporting is on |
+| click | opens the activity row or answers the card key under it, and transfers nothing — when reporting is on (§7e) |
 | `ctrl+o` | opens the step in flight, and transfers nothing — §13d |
 | `ctrl+r` | cycles the reasoning level, and transfers nothing — §8a |
 | `ctrl+x` | mouse reporting on/off, from any surface, saved to the config |
@@ -1051,9 +1054,11 @@ as the answer to a long copy.
   through as the blank line it is drawn as. The renderer's own left margin is
   chrome and goes; a code block's indentation is content and stays.
 - **A click is not a selection.** A press that never moved copies nothing and
-  lights nothing, which is what keeps the surface's one promise about the
-  mouse: shhh draws no click targets, so no drag can start by triggering
-  something.
+  lights nothing. That used to be the whole of it — shhh drew no click targets,
+  so no drag could start by triggering something — and S-159 kept the property
+  while adding the targets, by moving the question to the release: a press and
+  a release in the same cell is a click, and a drag that went anywhere released
+  somewhere else. Nothing fires while the button is down (§7e).
 - **The highlight is reverse video**, not a background colour — it says
   "selected" in mono exactly as loudly as in colour (invariant 1), and it is
   what a terminal's own selection looks like, so the feedback matches the
@@ -1587,6 +1592,82 @@ no longer start that question with `?`. It is the same price `q`, `j`, `k` and
 `-` already pay on this surface, and it buys the one key that answers "what
 else is here" — which on a bar that sheds its own offers as the terminal
 narrows is worth more than the first character of a rare sentence.
+
+---
+
+### 7e. What the pointer can reach (S-159)
+
+Until S-159 the mouse could read this surface and nothing else: the wheel
+scrolled, a drag selected (§7a), and a press on anything else was deliberately
+inert. The inertness was load-bearing and it was hung on the wrong event. A
+press that also expanded a row would have made every drag a gamble on where it
+started — but **a click is a press and a release in the same cell**, and a drag
+that went anywhere released somewhere else. Nothing fires while the button is
+down, so the one button carries both gestures and neither gives ground.
+
+**Two things are targets, and they pass the same test twice: the pointer names
+exactly one of them, and the thing it names already has a key.**
+
+| target | what a click does | the key it stands for |
+|---|---|---|
+| an activity row | opens or closes it in place — a step header folds its group, a folded run gives its rows back, a diff cycles collapsed → expanded → full screen | `[enter]` under reading mode's cursor (§7a) |
+| a decision key on the approval card | answers it | the same letter, typed (§2) |
+
+Everything else on the screen fails that test, and the failures are worth
+naming because they are the shapes a mouse-first product would have drawn
+first. Prose under the pointer is a selection surface and has no single act
+behind it. The scroll gutter (§10g) is a shape rather than a control. A chip's
+`✕` (§12g) and a picture (§12h) would be controls with no keyboard equal, and
+a target only the mouse can reach is a target half the readers do not have.
+A turn's close block and a provider failure are *selectable* — reading mode
+puts its cursor on them — but they offer two or three keys each (§16, §17a),
+and a pointer has no way to say which of `[v]` and `[u]` it meant.
+
+**A click never takes the keyboard.** This is §7a's rule about the wheel,
+applied to the other gesture: reading is not a decision, so a row opened by
+pointer leaves the draft holding every character and the keyboard it had.
+Inside reading mode the cursor is the reader's place in the rows, so a click
+moves it to the row it opened; outside, there is no cursor and the click does
+not make one.
+
+**A click on a not-yet-live card hands the keyboard over and answers nothing.**
+A card that arrived on top of a sentence draws its keys as not-yet-live and the
+draft keeps the keyboard (§7b, invariant 5). A click that answered anyway would
+be answering keys the screen says nobody can press — so it means what `ctrl+g`
+means: the card takes the keyboard, the decision stays waiting, and the second
+click answers it. Nothing about a decision is decided by a gesture the surface
+has not first said is live.
+
+**A clicked key is the keystroke.** It is delivered to the handler the key is
+delivered to, so there is no second decision path that could record, grant or
+execute differently from the first. A card holding the keyboard by arrival
+draws `[y/N]` and answers exactly those two, so those are the only two cells a
+pointer can land on — `[a]` and `[d]` still want the handover, for the reason
+§7b gives.
+
+**The target is read out of the render, not laid out beside it.** The run is
+found in the row the card drew it on, and the keys are walked across it in the
+order the card composed them. Crush builds a parallel compositor of hit layers
+per button and rebuilds it every frame to keep the two honest
+(`common/button.go`); reading the row means a key that is on the screen is
+clickable and a key a narrow terminal clipped away is not, by construction
+rather than by upkeep. The run is divided among its keys with nothing left
+over — the brackets belong to the keys at the ends and each separator to the
+key before it — because one cell is not a target, and a press that lands
+between two keys should mean the one it is standing on.
+
+**There is no hover, and nothing new is drawn.** Cell-motion reporting is what
+the selection drag needs and it reports motion only while a button is down;
+all-motion reporting would put a repaint on every pointer move across the
+terminal, which is a frame budget spent on a highlight. So a target looks
+exactly as it did — `[y/N/a]` and an activity row were already legible as the
+things they are — and not one golden moves. The affordance is the key spelling
+that was always there, which is also why the targets are the two places that
+had one.
+
+**It is bought with the wheel.** Everything here needs `appearance.mouse` on,
+so it arrives with the same trade §7a states and costs nothing to a reader who
+declined it: every target has a key, and the key is what the screen says.
 
 ---
 
@@ -2281,10 +2362,11 @@ Four rules, and the first is the one that costs something:
   and a reading that is on the screen while the reader is still pinned to the
   live end, which is exactly when the count says nothing. It is drawn the way
   the sparkline is, and for the same reason.
-- **Nothing in it is clickable**, for the reason §7a gives about every other
-  cell of the pane: a press inside the transcript anchors a selection, and a
-  gutter you were meant to grab would make every selection started near the
-  right edge a gamble.
+- **Nothing in it is clickable.** A press inside the transcript anchors a
+  selection, and a gutter you were meant to grab would make every selection
+  started near the right edge a gamble. It also fails §7e's test twice over: a
+  thumb is a shape rather than a control, and dragging one is a gesture no key
+  has an equal for.
 
 It is the transcript's, so every surface the viewport shows carries it — the
 feed, reading mode, an attached child's session. The full-screen diff (§3c)
@@ -2910,7 +2992,9 @@ its base name, and its size.
 
 **Nothing on a chip is a key, and nothing on it is clickable.** The strip sits
 above a live draft, so a key written on it would be an offer nothing accepts
-(§7c), and a `✕` would be a button on a surface that has no mouse targets.
+(§7c), and a `✕` would be a control the keyboard cannot reach — which is the
+test §7e gives the targets it does draw: the pointer names one thing, and that
+thing already has a key.
 Taking one back out is `/paste drop <name>`, with the staged names offered by
 the completion menu (S-079) so the handle never has to be typed from memory;
 `/paste clear` still drops the set. Looking at one is `/paste show <name>`
@@ -2921,8 +3005,8 @@ Two departures from Crush's chips, recorded rather than left silent. Its strip
 numbers each chip and removes one on the digit after `ctrl+r`; here the digits
 would be letters going into the sentence below, which is the exact shape
 invariant 5 exists to stop, and shhh's `ctrl+r` is the reasoning level
-(S-139). And its `✕` is a mouse target: shhh has click targets on nothing yet,
-and a button that only looks like one is worse than no button.
+(S-139). And its `✕` is a mouse target with no keyboard equal, which is what
+§7e refuses; the targets S-159 added are all keys a reader already has.
 
 ---
 
@@ -3022,7 +3106,8 @@ the pane, and a reader who wants the pixels has the file. No preview for a PDF
 or a text attachment — those are staged as themselves and the chip already
 says everything there is to say. No WebP: shhh accepts one as an attachment
 and sends it, and the preview refuses it by name rather than by carrying a
-decoder for it. And nothing here is clickable, for §12g's reason.
+decoder for it. And nothing here is clickable, for §12g's reason: a picture
+fitted to the pane is not a control, and there is no key it would stand for.
 
 ---
 

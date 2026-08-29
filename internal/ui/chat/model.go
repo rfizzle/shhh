@@ -460,6 +460,10 @@ type Model struct {
 	selScrollDir int
 	selScrollSeq int
 	selNotice    string
+	// press is the cell the primary button last went down in (S-159,
+	// click.go). A click is a press and a release in the same cell, which is
+	// what lets one button carry both the selection drag and the targets.
+	press pointerPress
 	// writeConfig persists one config key to the user's file. The CLI
 	// installs it; a session without one cannot make a setting stick and
 	// says so rather than pretending it did.
@@ -2984,8 +2988,9 @@ func helpText() string {
                  /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>
                  (low hides counts, med collapses rows, high expands rows;
                   mouse is off by default so the terminal keeps click-drag
-                  selection — on, shhh selects the transcript itself and the
-                  drag scrolls past the pane. Ctrl+X flips it and saves it)
+                  selection — on, shhh selects the transcript itself, the drag
+                  scrolls past the pane, and a click opens the row or answers
+                  the card key under it. Ctrl+X flips it and saves it)
                  terminal  what this terminal answered when shhh asked what
                            it can do: inline images, desktop notifications,
                            focus events, cell size
@@ -3084,6 +3089,10 @@ Keys:
   Click-drag     With the mouse on (Ctrl+X), select transcript text: the drag
                  scrolls the pane when it reaches an edge, so a selection can
                  run past the screen; releasing copies it, Esc cancels
+  Click          A press and release in the same cell opens the activity row
+                 under it, the way Enter does in reading mode, or answers the
+                 key it lands on in an approval card's [y/n/a]. It never takes
+                 the keyboard: the draft keeps every character
   y/n/a          Approval prompts: allow / deny / always allow this session`)
 }
 
