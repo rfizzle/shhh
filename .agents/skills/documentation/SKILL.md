@@ -73,7 +73,8 @@ one-line cross-references.
 **Measure before assuming a codebase is over-commented.** This one reads as
 verbose and is not: its comment-to-code ratio and its block lengths both sit
 just inside the Go standard library's. Volume is not the problem; a comment
-that says nothing is, at any length.
+that says nothing is, at any length. How to run that comparison — and when the
+stdlib is the wrong yardstick — is the `sound-patterns` skill.
 
 ## When a comment is missing
 

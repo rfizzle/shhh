@@ -6,10 +6,13 @@
 
 ## Documentation
 
-The `documentation` skill in
-[`.agents/skills/documentation/`](.agents/skills/documentation/SKILL.md) is the
-working guide — where a fact belongs, the citation convention, and the test a
-comment has to pass to earn its place, with worked before/after examples.
+Two skills in [`.agents/skills/`](.agents/skills/) carry the working guidance.
+`sound-patterns` is how to settle a question about style or convention —
+default to what the Go standard library does, and measure rather than assert.
+`documentation` is the [working
+guide](.agents/skills/documentation/SKILL.md) — where a fact belongs, the
+citation convention, and the test a comment has to pass to earn its place,
+with worked before/after examples.
 [`docs/README.md`](docs/README.md) is the architecture it follows. The short
 version:
 
