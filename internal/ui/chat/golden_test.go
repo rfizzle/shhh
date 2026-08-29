@@ -679,3 +679,43 @@ func TestGolden_Palette(t *testing.T) {
 		}
 	})
 }
+
+// screenWidths adds a terminal wide enough to split (S-092, §15) to the four
+// breakpoints: 144 columns is 140 content columns, past the
+// InspectorMinContentWidth rung, so the whole-screen capture carries the
+// two-pane arrangement as well as the single-pane one.
+var screenWidths = append(append([]int{}, goldenWidths...), 144)
+
+// screenHeight is the row count every whole-screen panel is captured at. It
+// is fixed because the capture's subject is the vertical arrangement: the
+// chrome, the pane, the live tail under it and the bottom panel have to add
+// up to exactly this many rows at every width and in every state.
+const screenHeight = 30
+
+// TestGolden_Screen captures the whole surface — everything View() paints,
+// chrome and padding included (§15). The other captures in this file each
+// hold one block of it; this one holds the arrangement, which is the thing
+// no substring assertion and no per-block golden can see: that the header,
+// the reading rail, the transcript pane, whatever the turn is doing under it
+// and the bottom panel together fill the terminal exactly once.
+func TestGolden_Screen(t *testing.T) {
+	captureGolden(t, "screen", "the whole surface", screenWidths, func(width int) []golden.Panel {
+		build := func(mut func(*Model)) string {
+			m := frameModel(t, width, screenHeight)
+			m.transcript = goldenTranscript()
+			mut(&m)
+			m.invalidateRenderCache()
+			m.syncViewport()
+			m.viewport.SetLines(m.renderHistoryLines())
+			m.viewport.GotoBottom()
+			return m.View().Content
+		}
+		return []golden.Panel{
+			{Label: "idle · the draft has the keyboard", View: build(func(m *Model) {})},
+			{Label: "working · the live tail sits under the pane", View: build(func(m *Model) {
+				m.state = stateStreaming
+				m.streaming = ""
+			})},
+		}
+	})
+}

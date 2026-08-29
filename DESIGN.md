@@ -295,7 +295,7 @@ shhh/
 | `charm.land/lipgloss/v2` | Terminal styling |
 | `charm.land/bubbles/v2` | Spinner, text input |
 | `charm.land/glamour/v2` | Markdown rendering in the transcript |
-| `github.com/charmbracelet/ultraviolet` | The terminal event vocabulary the capability probe reads (DESIGN-TUI.md §10k) |
+| `github.com/charmbracelet/ultraviolet` | The screen the chat surface draws into and the layout engine that splits it (DESIGN-TUI.md §10n); the terminal event vocabulary the capability probe reads (§10k) |
 | `github.com/BurntSushi/toml` | Config file parsing |
 | `github.com/sashabaranov/go-openai` | OpenAI / OpenAI-compatible API client |
 | `google.golang.org/genai` | Gemini API client |

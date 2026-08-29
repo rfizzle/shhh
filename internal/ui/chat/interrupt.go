@@ -28,6 +28,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -303,16 +304,20 @@ func (m Model) undressedDraft(width int) []string {
 	if value == "" || width < minFrameWidth {
 		return nil
 	}
-	inner := width - frameSideWidth
-	text := strings.ReplaceAll(value, "\n", " ")
-	row := sty.Frame.Idle.Render("▸ ") + sty.Frame.DraftHeld.Render(text)
-	row = clipRow(row, inner)
-	pad := strings.Repeat(" ", max(0, inner-lipgloss.Width(row)))
-	return []string{
-		frameRail(sty.Frame.Idle, "╭", "╮", " "+sty.Frame.Idle.Render(m.frameIdentity())+" ", "", width),
-		sty.Frame.Idle.Render("│") + " " + row + pad + " " + sty.Frame.Idle.Render("│"),
-		frameRail(sty.Frame.Idle, "╰", "╯", " "+sty.Frame.Idle.Render(m.draftPosition())+" ", "", width),
-	}
+	// The same box the frame is (§12), three rows deep and drawn into the
+	// same rectangles (S-161): its own rails, its two border columns, and the
+	// held sentence across what they leave. The `▸ ` is the block's own, not
+	// the prompt gutter's, so the row takes all of the inner columns.
+	scr := uv.NewScreenBuffer(max(width, 0), 3)
+	box := m.frameBoxFor(scr.Bounds())
+	idle := sty.Frame.Idle
+	drawRail(scr, rowAt(box.area, 0), idle, "╭", "╮", " "+idle.Render(m.frameIdentity())+" ", "")
+	drawIn(scr, idle.Render("│"), rowAt(box.left, 1))
+	drawIn(scr, idle.Render("│"), rowAt(box.right, 1))
+	drawIn(scr, idle.Render("▸ ")+sty.Frame.DraftHeld.Render(strings.ReplaceAll(value, "\n", " ")),
+		rowAt(box.inner, 1))
+	drawRail(scr, rowAt(box.area, 2), idle, "╰", "╯", " "+idle.Render(m.draftPosition())+" ", "")
+	return strings.Split(renderScreen(scr), "\n")
 }
 
 // draftPosition is the rail under the undressed draft: how much is held and

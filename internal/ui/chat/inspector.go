@@ -6,9 +6,10 @@ package chat
 // them. Below 130 the rail is dropped entirely and the single-pane layout is
 // exactly what it was.
 //
-// The split is horizontal only — viewport height accounting (chromeHeight,
-// viewportHeight, syncViewport) is untouched — and the prompt frame spans
-// both panes, because steering is a session-level act. Takeover surfaces
+// The split is horizontal only — it is one of the two constraints the
+// column half of the layout model resolves (S-161, layout.go), and the row
+// budget it hands out is unchanged — and the prompt frame spans both panes,
+// because steering is a session-level act. Takeover surfaces
 // (approval cards, pickers, the full-screen diff, the agent list) span the
 // full width and hide the rail, restoring it when they are dismissed.
 //
@@ -22,7 +23,6 @@ package chat
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"charm.land/lipgloss/v2"
@@ -50,12 +50,7 @@ func newPaneStyles(p components.ColorTokens) paneStyles {
 // twoPane reports whether the surface is split. Width is the first condition;
 // a takeover surface (or an attached child's session, which is a different
 // session's transcript) is the second.
-func (m Model) twoPane() bool {
-	if m.contentWidth() < components.InspectorMinContentWidth {
-		return false
-	}
-	return !m.inspectorHidden()
-}
+func (m Model) twoPane() bool { return m.columns().inspector.Dx() > 0 }
 
 // inspectorHidden reports whether something is covering the rail. Takeover
 // surfaces span both panes (§15c); the attached view is a child's session, so
@@ -83,17 +78,8 @@ func (m Model) inspectorHidden() bool {
 // paneWidth is the transcript pane's own width: the reduced pane when the
 // surface is split, the full content width otherwise. It is what the surfaces
 // that take the pane over — the full-screen diff, review mode, the agent rows
-// — render to, and what splitPanes clips a body row to.
-func (m Model) paneWidth() int {
-	if !m.twoPane() {
-		return m.contentWidth()
-	}
-	w := m.contentWidth() - components.InspectorWidth - paneDividerWidth
-	if w < 1 {
-		return 1
-	}
-	return w
-}
+// — render to, and the columns the body is drawn into (S-161, layout.go).
+func (m Model) paneWidth() int { return m.columns().pane.Dx() }
 
 // transcriptWidth is the width the transcript wraps to: the pane less the
 // scroll gutter's column (S-147, §10g), which the pane reserves whether or
@@ -101,13 +87,7 @@ func (m Model) paneWidth() int {
 // feed, reading mode's gutter render, an attached child's session, the start
 // screen — wraps to this, and so does the selection's coordinate space, so
 // the gutter is never inside anything a drag can reach.
-func (m Model) transcriptWidth() int {
-	w := m.paneWidth() - components.ScrollGutterWidth
-	if w < 1 {
-		return 1
-	}
-	return w
-}
+func (m Model) transcriptWidth() int { return max(m.columns().feed.Dx(), 1) }
 
 // turnStartIndex is the first entry of the current turn — the last user entry
 // in the transcript. It returns len(transcript) when no turn has started.
@@ -361,32 +341,6 @@ func (m Model) inspectorSpend() *components.InspectorSpend {
 	return &s
 }
 
-// splitPanes joins the body with the inspector rail, line by line: the
-// transcript pane padded to its width, the divider column, then the rail.
-// The rail is rendered to the body's own height, so the split adds no rows.
-func (m Model) splitPanes(body string) string {
-	data := m.inspectorData()
-	if data.Empty() {
-		return body
-	}
-	lines := strings.Split(body, "\n")
-	rail := data.Lines(components.InspectorWidth, len(lines))
-	if len(rail) == 0 {
-		return body
-	}
-	pane := m.paneWidth()
-	divider := sty.Pane.Divider.Render("│")
-	out := make([]string, len(lines))
-	for i, line := range lines {
-		line = clipRow(line, pane)
-		row := line + strings.Repeat(" ", max(0, pane-lipgloss.Width(line))) + divider
-		if i < len(rail) {
-			row += rail[i]
-		}
-		out[i] = strings.TrimRight(row, " ")
-	}
-	return strings.Join(out, "\n")
-}
 
 // inspectorStatus is the /stats-adjacent line describing the split, used by
 // /ui to say what the current layout is.

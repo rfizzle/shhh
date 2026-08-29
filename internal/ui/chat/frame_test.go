@@ -183,12 +183,12 @@ func TestFrame_WideViewportAccounting(t *testing.T) {
 	m := frameModel(t, 130, 40)
 	// The wide layout adds one dedicated vitals rail beyond the standard
 	// chrome rows.
-	if want := 40 - inputHeight - chromeHeight - 1; m.viewport.Height() != want {
+	if want := 40 - inputHeight - (headerHeight + dividerHeight + bottomChromeHeight) - 1; m.viewport.Height() != want {
 		t.Fatalf("wide viewport height = %d, want %d", m.viewport.Height(), want)
 	}
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	m = updated.(Model)
-	if want := 40 - inputHeight - chromeHeight; m.viewport.Height() != want {
+	if want := 40 - inputHeight - (headerHeight + dividerHeight + bottomChromeHeight); m.viewport.Height() != want {
 		t.Fatalf("compact viewport height = %d, want %d", m.viewport.Height(), want)
 	}
 }

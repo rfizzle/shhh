@@ -48,15 +48,11 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-// transcriptTop and transcriptLeft are where the transcript pane's first cell
-// lands on the screen. View() stacks the header, the reading rail and then
-// the body, and pads the whole thing horizontally (model.go), so the pane's
-// origin is fixed by the chrome above and to the left of it rather than by
-// anything the transcript itself does.
-const (
-	transcriptTop  = headerHeight + dividerHeight
-	transcriptLeft = horizontalPadding
-)
+// transcriptOrigin is where the transcript pane's first cell lands on the
+// screen. It is read off the layout (S-161, layout.go) rather than added up
+// from the chrome again: the pane's origin is a rectangle's corner, and a
+// second description of it here is exactly how a pointer comes to name a
+// different row than the one under it.
 
 // selectionScrollInterval is the cadence of the edge auto-scroll. A drag held
 // at the edge of the pane is a stationary pointer: the terminal reports no
@@ -188,7 +184,8 @@ func (m Model) paneCols() int {
 // answer: a press outside the pane — on the input, on the inspector rail, on
 // the chrome — starts nothing.
 func (m Model) transcriptPoint(x, y int) (selPoint, bool) {
-	row, col := y-transcriptTop, x-transcriptLeft
+	at := m.transcriptOrigin()
+	row, col := y-at.Y, x-at.X
 	if row < 0 || row >= m.paneRows() {
 		return selPoint{}, false
 	}
@@ -204,8 +201,9 @@ func (m Model) transcriptPoint(x, y int) (selPoint, bool) {
 // and dragging off the bottom selects to the last visible row (which the edge
 // scroll then keeps feeding).
 func (m Model) clampedPoint(x, y int) selPoint {
-	row := min(max(y-transcriptTop, 0), max(m.paneRows()-1, 0))
-	col := min(max(x-transcriptLeft, 0), max(m.paneCols()-1, 0))
+	at := m.transcriptOrigin()
+	row := min(max(y-at.Y, 0), max(m.paneRows()-1, 0))
+	col := min(max(x-at.X, 0), max(m.paneCols()-1, 0))
 	line := m.viewport.YOffset() + row
 	if last := m.viewport.TotalLineCount() - 1; last >= 0 && line > last {
 		line = last
@@ -218,7 +216,7 @@ func (m Model) clampedPoint(x, y int) selPoint {
 // row is deliberately unclamped, so a pointer dragged clean off the top of
 // the terminal keeps scrolling up rather than stopping at the header.
 func (m Model) edgeDir(y int) int {
-	row := y - transcriptTop
+	row := y - m.transcriptOrigin().Y
 	if row <= 0 {
 		return -1
 	}

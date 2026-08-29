@@ -15,6 +15,8 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
+	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/charmbracelet/ultraviolet/layout"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -29,9 +31,10 @@ const (
 	// minFrameWidth matches the component cards' minCardWidth: below it the
 	// prompt surface degrades to plain rows (divider + status bar + input).
 	minFrameWidth = 12
-	// frameSideWidth is what the side borders and inner padding consume
-	// ("│ " + " │").
-	frameSideWidth = 4
+	// frameRailEnd is a rail's fixed end: the corner and the dash beside it.
+	// It is the one part of a border row that never gives ground, which is
+	// why it is a Len and the labels between the two ends are not.
+	frameRailEnd = 2
 )
 
 type frameLayout int
@@ -277,18 +280,45 @@ func (m Model) promptGutter() string {
 	return sty.Frame.GutterIdle.Render("❯") + " "
 }
 
-// inputInnerWidth is the textarea's usable width inside the frame: the
-// content width minus the side borders and the prompt gutter. The plain
+// frameBox is the prompt frame's own rectangles (S-161, §12): the box, the
+// two border columns, what they leave between them, and the split a draft
+// row makes of that — the prompt gutter's columns and the text's.
+type frameBox struct {
+	area   uv.Rectangle
+	left   uv.Rectangle
+	right  uv.Rectangle
+	inner  uv.Rectangle
+	gutter uv.Rectangle
+	draft  uv.Rectangle
+}
+
+// frameBoxFor resolves the box inside a rectangle. The columns are the same
+// at every row, which is why a caller that only wants a width can hand it a
+// single row.
+func (m Model) frameBoxFor(area uv.Rectangle) frameBox {
+	var b frameBox
+	b.area = area
+	// border, its padding column, the content, and the same again mirrored.
+	layout.Horizontal(
+		layout.Len(1), layout.Len(1),
+		layout.Fill(1),
+		layout.Len(1), layout.Len(1),
+	).Split(b.area).Assign(&b.left, new(uv.Rectangle), &b.inner, new(uv.Rectangle), &b.right)
+	layout.Horizontal(
+		layout.Len(lipgloss.Width(m.promptGutter())),
+		layout.Fill(1),
+	).Split(b.inner).Assign(&b.gutter, &b.draft)
+	return b
+}
+
+// inputInnerWidth is the textarea's usable width inside the frame: what the
+// box leaves after its borders and the prompt gutter. The plain
 // (sub-minFrameWidth) layout keeps the full content width.
 func (m Model) inputInnerWidth() int {
-	w := m.contentWidth()
-	if m.frameLayout() != framePlain {
-		w -= frameSideWidth + lipgloss.Width(m.promptGutter())
+	if m.frameLayout() == framePlain {
+		return max(m.contentWidth(), 1)
 	}
-	if w < 1 {
-		return 1
-	}
-	return w
+	return max(m.frameBoxFor(uv.Rect(0, 0, max(m.contentWidth(), 0), 1)).draft.Dx(), 1)
 }
 
 // syncInputWidth re-fits the textarea to the frame; call it when the width
@@ -343,23 +373,52 @@ func (m Model) noticeLine() string {
 	return clipRow(strings.Join(parts, sty.SystemMsg.Render(" · ")), m.contentWidth())
 }
 
-// frameRail draws one border row: corner, dash, a left label, dash fill, an
-// optional right label, dash, corner. Labels are clipped before the fill so
-// the rail never overflows the width.
-func frameRail(accent lipgloss.Style, leftCorner, rightCorner, leftLabel, rightLabel string, width int) string {
-	inner := width - 4 // corners plus one dash on each side
-	if inner < 0 {
-		return accent.Render(clipRow(leftCorner+strings.Repeat("─", max(0, width-2))+rightCorner, width))
-	}
+// railSlots splits a border row into the five rectangles it is drawn from:
+// the two fixed ends, the left label, the dash fill between the labels, and
+// the right label. It is separate from drawRail because the top rail has to
+// know how wide the right-hand slot is *before* it can ask the status line
+// what to put in it (§12a).
+func railSlots(leftLabel, rightLabel string, width int) (head, left, fill, right, tail uv.Rectangle) {
+	var labels uv.Rectangle
+	layout.Horizontal(
+		layout.Len(frameRailEnd),
+		layout.Fill(1),
+		layout.Len(frameRailEnd),
+	).Split(uv.Rect(0, 0, max(width, 0), 1)).Assign(&head, &labels, &tail)
+
+	// A right label too wide for what is left says nothing rather than
+	// crowding the identity beside it (§12a). That is the design's rule, not
+	// the fill's, so it is spelled out here rather than left to the solver's
+	// idea of which segment should give ground.
 	rw := lipgloss.Width(rightLabel)
-	if rw > inner {
-		rightLabel, rw = "", 0
+	if rw > labels.Dx() {
+		rw = 0
 	}
-	leftLabel = clipRow(leftLabel, inner-rw)
-	fill := inner - lipgloss.Width(leftLabel) - rw
-	return accent.Render(leftCorner+"─") + leftLabel +
-		accent.Render(strings.Repeat("─", max(0, fill))) + rightLabel + accent.Render("─"+rightCorner)
+	var rest uv.Rectangle
+	layout.Horizontal(layout.Fill(1), layout.Len(rw)).Split(labels).Assign(&rest, &right)
+	layout.Horizontal(
+		layout.Len(min(lipgloss.Width(leftLabel), max(rest.Dx(), 0))),
+		layout.Fill(1),
+	).Split(rest).Assign(&left, &fill)
+	return head, left, fill, right, tail
 }
+
+// drawRail draws one border row into those rectangles: corner and dash at
+// each end, the labels in their slots, dashes across what is left. Nothing
+// is measured against a remainder — a label wider than the columns it was
+// given is cut by the edge it was drawn against.
+func drawRail(scr uv.Screen, area uv.Rectangle, accent lipgloss.Style, leftCorner, rightCorner, leftLabel, rightLabel string) {
+	head, left, fill, right, tail := railSlots(leftLabel, rightLabel, area.Dx())
+	at := func(r uv.Rectangle) uv.Rectangle { return r.Add(area.Min) }
+	drawIn(scr, accent.Render(leftCorner+"─"), at(head))
+	drawIn(scr, leftLabel, at(left))
+	drawIn(scr, accent.Render(strings.Repeat("─", max(fill.Dx(), 0))), at(fill))
+	if right.Dx() > 0 {
+		drawIn(scr, rightLabel, at(right))
+	}
+	drawIn(scr, accent.Render("─"+rightCorner), at(tail))
+}
+
 
 // frameVitals renders the vitals rail content: the §8 cockpit segments with
 // the §12b field-drop order. The narrow layout keeps only the never-dropped
@@ -408,74 +467,145 @@ func (m Model) childRailSegments() []components.RailSegment {
 	return append(segs, components.RailSegment{Text: sty.StatusBar.Render(st.Name), Drop: components.RailDetail})
 }
 
-// renderPromptFrame assembles the whole surface: notice rail, staged rail,
-// top rail, gutter + input rows (+ completion menu), vitals rail, bottom
-// rail.
-func (m Model) renderPromptFrame() string {
-	width := m.contentWidth()
-	layout := m.frameLayout()
-	accent := m.frameAccentStyle()
-	inner := width - frameSideWidth
+// railLabelWidth is the room a rail label has once the ends and an
+// already-placed label have taken theirs: the slot the split leaves, less the
+// space on each side of the label itself.
+func railLabelWidth(leftLabel string, width int) int {
+	_, _, fill, _, _ := railSlots(leftLabel, "", width)
+	var slot uv.Rectangle
+	layout.Horizontal(layout.Len(1), layout.Fill(1), layout.Len(1)).
+		Split(fill).Assign(new(uv.Rectangle), &slot, new(uv.Rectangle))
+	return slot.Dx()
+}
 
-	gutter := m.promptGutter()
-	indent := strings.Repeat(" ", lipgloss.Width(gutter))
-	var rows []string
-	for i, line := range strings.Split(m.input.View(), "\n") {
-		if i == 0 {
-			rows = append(rows, gutter+line)
-		} else {
-			rows = append(rows, indent+line)
+// topRailLabels is the top rail's two labels (§12a): the identity on the
+// left, and on the right the running turn's status line — or, attached below
+// the wide layout, the hints rail that has nowhere else to go (§12b).
+func (m Model) topRailLabels(mode frameLayout, width int) (identity, right string) {
+	identity = " " + m.frameIdentity() + " "
+	if mode == frameNarrow {
+		identity = ""
+	}
+	if m.attachedTo != "" && mode != frameWide {
+		// Compact/narrow drop the hints rail; the detach affordance moves to
+		// the top rail (§12b).
+		return identity, " " + m.frameHints() + " "
+	}
+	// The identity is the rail's left label and keeps its room; the status
+	// line takes the slot that is left and sheds fields in the §8d order to
+	// fit it.
+	if activity := m.frameActivity(railLabelWidth(identity, width)); activity != "" {
+		right = " " + activity + " "
+	}
+	return identity, right
+}
+
+// frameDraftLines is what goes inside the box: the textarea's rows and, under
+// them, the completion menu (S-078). bottomPanelHeight already caps the pair
+// at the confirm-panel bound, and the cut is taken here so the box's height
+// and its contents can never be counted differently.
+func (m Model) frameDraftLines() (lines, menu []string) {
+	lines = strings.Split(m.input.View(), "\n")
+	if m.completionActive() && m.attachedTo == "" {
+		menu = m.completionMenuLines()
+	}
+	if maxRows := m.bottomPanelHeight(); len(lines)+len(menu) > maxRows {
+		if len(lines) > maxRows {
+			return lines[:maxRows], nil
+		}
+		menu = menu[:maxRows-len(lines)]
+	}
+	return lines, menu
+}
+
+// drawPromptFrame paints the whole surface into its rectangle: notice rail,
+// staged rail, then the box — top rail, gutter + input rows (+ completion
+// menu), vitals rail, bottom rail — each in the rectangle frameBoxFor
+// resolved for it (S-161, §10n). The two rails above the box are rows of the
+// surface rather than rows of the box, which is why they are split off first.
+func (m Model) drawPromptFrame(scr uv.Screen, area uv.Rectangle) {
+	mode := m.frameLayout()
+	accent := m.frameAccentStyle()
+	width := area.Dx()
+
+	var above, boxArea uv.Rectangle
+	notice, staged := m.noticeLine(), m.stagedRail()
+	rails := 0
+	for _, rail := range []string{notice, staged} {
+		if rail != "" {
+			rails++
 		}
 	}
-	// The completion menu (S-078) renders inside the frame, under the input;
-	// bottomPanelHeight already caps input + menu at the confirm-panel bound.
-	if m.completionActive() && m.attachedTo == "" {
-		rows = append(rows, m.completionMenuLines()...)
-	}
-	if maxRows := m.bottomPanelHeight(); len(rows) > maxRows {
-		rows = rows[:maxRows]
-	}
-
-	var b strings.Builder
-	if notice := m.noticeLine(); notice != "" {
-		b.WriteString(notice + "\n")
-	}
+	layout.Vertical(layout.Len(rails), layout.Fill(1)).Split(area).Assign(&above, &boxArea)
+	row := 0
 	// The staged rail sits between the notices and the frame (§12g): what is
 	// staged rides with the sentence being typed, so it belongs against the
 	// box it will leave with, under anything transient the session is saying.
-	if staged := m.stagedRail(); staged != "" {
-		b.WriteString(staged + "\n")
+	for _, rail := range []string{notice, staged} {
+		if rail == "" {
+			continue
+		}
+		drawIn(scr, rail, rowAt(above, row))
+		row++
 	}
 
-	identity := " " + m.frameIdentity() + " "
-	if layout == frameNarrow {
-		identity = ""
+	lines, menu := m.frameDraftLines()
+	// The wide layout gets a rail of its own for the vitals; the others hang
+	// them on the closing rail (§12b).
+	vitalsRows := 0
+	if mode == frameWide {
+		vitalsRows = 1
 	}
-	// The identity is the rail's left label and keeps its room; the status
-	// line takes what is left and sheds fields in the §8d order to fit it.
-	var topRight string
-	if activity := m.frameActivity(width - 4 - lipgloss.Width(identity) - 2); activity != "" {
-		topRight = " " + activity + " "
-	}
-	if m.attachedTo != "" && layout != frameWide {
-		// Compact/narrow drop the hints rail; the detach affordance moves to
-		// the top rail (§12b).
-		topRight = " " + m.frameHints() + " "
-	}
-	b.WriteString(frameRail(accent, "╭", "╮", identity, topRight, width))
+	box := m.frameBoxFor(boxArea)
+	var top, drafts, vitalsRail, bottom uv.Rectangle
+	// The rails are fixed and the draft rows absorb whatever is left, so a
+	// box given more rows than it has content for stays closed rather than
+	// trailing blank rows under its own bottom border.
+	layout.Vertical(
+		layout.Len(1),
+		layout.Fill(1),
+		layout.Len(vitalsRows),
+		layout.Len(1),
+	).Split(box.area).Assign(&top, &drafts, &vitalsRail, &bottom)
 
-	for _, row := range rows {
-		row = clipRow(row, inner)
-		pad := strings.Repeat(" ", max(0, inner-lipgloss.Width(row)))
-		b.WriteString("\n" + accent.Render("│") + " " + row + pad + " " + accent.Render("│"))
+	identity, topRight := m.topRailLabels(mode, width)
+	drawRail(scr, top, accent, "╭", "╮", identity, topRight)
+
+	for i := range drafts.Dy() {
+		y := drafts.Min.Y - box.area.Min.Y + i
+		drawIn(scr, accent.Render("│"), rowAt(box.left, y))
+		drawIn(scr, accent.Render("│"), rowAt(box.right, y))
+		switch {
+		case i == 0:
+			// The prompt glyph owns its columns and the draft wraps to the
+			// rest; a continuation line simply leaves the gutter blank.
+			drawIn(scr, m.promptGutter(), rowAt(box.gutter, y))
+			drawIn(scr, lines[i], rowAt(box.draft, y))
+		case i < len(lines):
+			drawIn(scr, lines[i], rowAt(box.draft, y))
+		case i-len(lines) < len(menu):
+			// The menu is the frame's, not the draft's: it starts at the box
+			// edge rather than under the text.
+			drawIn(scr, menu[i-len(lines)], rowAt(box.inner, y))
+		}
 	}
 
-	vitals := " " + m.frameVitals(layout, width-6) + " "
-	if layout == frameWide {
-		b.WriteString("\n" + frameRail(accent, "├", "┤", vitals, "", width))
-		b.WriteString("\n" + frameRail(accent, "╰", "╯", " "+m.frameHints()+" ", "", width))
-	} else {
-		b.WriteString("\n" + frameRail(accent, "╰", "╯", vitals, "", width))
+	vitals := " " + m.frameVitals(mode, railLabelWidth("", width)) + " "
+	if mode == frameWide {
+		drawRail(scr, vitalsRail, accent, "├", "┤", vitals, "")
+		drawRail(scr, bottom, accent, "╰", "╯", " "+m.frameHints()+" ", "")
+		return
 	}
-	return b.String()
+	drawRail(scr, bottom, accent, "╰", "╯", vitals, "")
+}
+
+// renderPromptFrame is the same surface as a string, for the captures and for
+// callers that hold no screen. Its height is the bottom panel's own rows less
+// the interrupt card riding above it (§7b), which is the same accounting the
+// vertical split hands out — the frame cannot be sized one way and budgeted
+// for another.
+func (m Model) renderPromptFrame() string {
+	scr := uv.NewScreenBuffer(max(m.contentWidth(), 0), max(m.bottomRows()-m.interruptHeight(), 0))
+	m.drawPromptFrame(scr, scr.Bounds())
+	return renderScreen(scr)
 }

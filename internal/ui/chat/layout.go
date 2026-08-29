@@ -1,0 +1,201 @@
+package chat
+
+// The surface's rectangle model (S-161, DESIGN-TUI.md §10n). Every width and
+// every row budget on this surface used to be its own subtraction: the
+// content width was `m.width - horizontalPadding*2`, the pane was that less
+// the inspector and its divider, the transcript was the pane less the scroll
+// gutter, and the viewport was the terminal less five separate heights
+// counted in a different file each. Every one of those was a second
+// description of the same geometry, and a rung that moved had to move in all
+// of them or they disagreed — which is how the live tail came to be drawn on
+// a row nothing had paid for (§10n).
+//
+// This is the one description. The terminal is a rectangle, the layout engine
+// splits it, and everything downstream reads a rectangle instead of deriving
+// one. Two properties fall out that the arithmetic never gave. A block cannot
+// overflow the rectangle it is drawn into, because ultraviolet clips at the
+// edge rather than trusting the caller to have measured. And the rows have to
+// add up, because they are one vertical split of a fixed area rather than
+// five subtractions that could each be right on their own.
+//
+// The split is in two halves on purpose. columns() is horizontal and depends
+// on nothing but the terminal's width; surface() is vertical and has to ask
+// the bottom panel how many rows it wants, which the panel answers by
+// rendering itself at a width. Keeping the halves apart is what stops that
+// from being a cycle.
+
+import (
+	"strings"
+
+	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/charmbracelet/ultraviolet/layout"
+
+	"github.com/rfizzle/shhh/internal/ui/components"
+)
+
+// bottomChromeHeight is what the bottom panel costs beyond the panel itself:
+// the divider and the status bar, or — when the command-center frame is
+// showing — the two border rails that stand in for them (§12).
+const bottomChromeHeight = dividerHeight + statusBarHeight
+
+// paneColumns is the horizontal half of the model: which columns each pane
+// owns, at this terminal width, with the two-pane split already decided.
+type paneColumns struct {
+	// content is the surface inside the horizontal padding — what the
+	// header, the reading rail and the prompt frame all span (§15).
+	content uv.Rectangle
+	// pane is the transcript pane's columns: all of content when the surface
+	// is single-pane, the left side of the split when it is not.
+	pane uv.Rectangle
+	// feed is the pane less the scroll gutter — what the transcript wraps to
+	// (S-147, §10g), and the coordinate space a selection is taken in.
+	feed uv.Rectangle
+	// gutter is the scroll gutter's one column. The pane holds it back
+	// whether or not there is a thumb to draw in it, so nothing reflows the
+	// first time the transcript overflows.
+	gutter uv.Rectangle
+	// divider is the single │ column between the panes, empty when there is
+	// only one.
+	divider uv.Rectangle
+	// inspector is the rail's columns (§15), empty when the surface has not
+	// split.
+	inspector uv.Rectangle
+}
+
+// columns resolves the horizontal split. It reads m.width and the two
+// conditions the split has — the width rung and whether something is
+// covering the rail — and nothing else, which is what lets every width
+// reader on the surface go through it without asking a question that needs a
+// width to answer.
+func (m Model) columns() paneColumns {
+	// A terminal is never negative, and the arithmetic this replaces could
+	// hand one out: `m.width - 4` at three columns is -1, which the first
+	// strings.Repeat downstream would have panicked on.
+	area := uv.Rect(0, 0, max(m.width, 0), max(m.height, 0))
+
+	var cols paneColumns
+	layout.Horizontal(
+		layout.Len(horizontalPadding),
+		layout.Fill(1),
+		layout.Len(horizontalPadding),
+	).Split(area).Assign(new(uv.Rectangle), &cols.content, new(uv.Rectangle))
+
+	// Past the top rung of the width ladder (§8c) the rail takes its columns
+	// off the right of the content and one dim column divides the panes.
+	cols.pane = cols.content
+	if cols.content.Dx() >= components.InspectorMinContentWidth && !m.inspectorHidden() {
+		layout.Horizontal(
+			layout.Fill(1),
+			layout.Len(paneDividerWidth),
+			layout.Len(components.InspectorWidth),
+		).Split(cols.content).Assign(&cols.pane, &cols.divider, &cols.inspector)
+	}
+
+	layout.Horizontal(
+		layout.Fill(1),
+		layout.Len(components.ScrollGutterWidth),
+	).Split(cols.pane).Assign(&cols.feed, &cols.gutter)
+
+	return cols
+}
+
+// surfaceLayout is every rectangle View() paints into, in terminal
+// coordinates. The vertical rects span the content columns; a renderer that
+// belongs to one pane intersects them with that pane's columns, which is
+// what `in` is for.
+type surfaceLayout struct {
+	paneColumns
+
+	// header is the title row and rail the line under it that says which pane
+	// has the keyboard (S-115, §7a).
+	header uv.Rectangle
+	rail   uv.Rectangle
+	// body is everything between the rail and the bottom panel: the
+	// transcript, whatever the turn is doing under it, and the working
+	// children's rows. The inspector rail spans all of it.
+	body uv.Rectangle
+	// view is the transcript's own rows — the viewport's height.
+	view uv.Rectangle
+	// tail is the live block under the transcript (§10n): the thinking
+	// spinner, the running command's row, the retry countdown. Empty
+	// whenever the turn has nothing to say there.
+	tail uv.Rectangle
+	// agents is the working children's compact progress rows (S-068).
+	agents uv.Rectangle
+	// bottom is the command-center frame, or the divider + status bar + the
+	// takeover surface that replaced it (§12).
+	bottom uv.Rectangle
+}
+
+// in narrows one of the vertical rects to a pane's columns.
+func (s surfaceLayout) in(rows, cols uv.Rectangle) uv.Rectangle {
+	return rows.Intersect(cols)
+}
+
+// surface resolves the whole arrangement. The vertical split is the one that
+// has to be exact: header, rail, everything the pane shows, and the bottom
+// panel are four segments of the terminal's rows, so a panel that grew is a
+// transcript that shrank by construction rather than by an accounting entry
+// somebody has to remember to make.
+func (m Model) surface() surfaceLayout {
+	s := surfaceLayout{paneColumns: m.columns()}
+
+	layout.Vertical(
+		layout.Len(headerHeight),
+		layout.Len(dividerHeight),
+		layout.Fill(1),
+		layout.Len(m.bottomRows()),
+	).Split(s.content).Assign(&s.header, &s.rail, &s.body, &s.bottom)
+
+	// Inside the body, the transcript takes what the two blocks under it do
+	// not. They are drawn in this order, so they are split in it.
+	layout.Vertical(
+		layout.Fill(1),
+		layout.Len(m.liveTailHeight()),
+		layout.Len(m.agentRowsHeight()),
+	).Split(s.body).Assign(&s.view, &s.tail, &s.agents)
+
+	return s
+}
+
+// bottomRows is how many rows the bottom of the surface occupies: the panel
+// itself, the rails or chrome around it, and the extra rails the frame adds
+// (§12a). It is the only vertical segment that is measured rather than
+// fixed, because it is the only one whose content decides its own size.
+func (m Model) bottomRows() int {
+	return m.bottomPanelHeight() + bottomChromeHeight + m.frameExtraHeight()
+}
+
+// drawIn paints a rendered block into one rectangle. Everything the surface
+// draws goes through here, which is where the screen model's guarantee lives:
+// a block that is wider or taller than the rectangle it was given is cut at
+// the edge, and one that is smaller leaves the rest of the rectangle blank.
+func drawIn(scr uv.Screen, view string, area uv.Rectangle) {
+	if view == "" || area.Empty() {
+		return
+	}
+	uv.NewStyledString(view).Draw(scr, area)
+}
+
+// renderScreen turns a buffer back into the styled string the rest of the
+// tree passes around. The newline normalisation is ultraviolet's: it writes
+// what a raw terminal would.
+func renderScreen(scr uv.ScreenBuffer) string {
+	return strings.ReplaceAll(scr.Render(), "\r\n", "\n")
+}
+
+// rowAt is one row of a rectangle, counted from its top.
+func rowAt(area uv.Rectangle, i int) uv.Rectangle {
+	row := area
+	row.Min.Y += i
+	row.Max.Y = row.Min.Y + 1
+	return row.Intersect(area)
+}
+
+// transcriptOrigin is the screen cell the transcript's first rendered cell
+// lands in: the top-left corner of the rows the pane was given. The pointer
+// reads it to say which line and column it is on (S-145, select.go).
+func (m Model) transcriptOrigin() uv.Position {
+	s := m.surface()
+	return s.in(s.view, s.pane).Min
+}

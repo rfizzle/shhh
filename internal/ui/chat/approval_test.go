@@ -385,7 +385,10 @@ func TestGatedTool_LargeDiffTruncatedAndPanelGrows(t *testing.T) {
 	m := gatedModel(t, executor, map[string]GatedPreviewFunc{
 		"write_file": writeFilePreview(""),
 	})
-	normalHeight := m.viewport.Height()
+	// The layout's answer, not the viewport's field: the fixture sets the
+	// streaming state directly, and nothing has re-synced the pane to the row
+	// the turn's live tail is using (S-161, §10n).
+	normalHeight := m.viewportHeight()
 
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_w", Name: "write_file",
@@ -404,7 +407,7 @@ func TestGatedTool_LargeDiffTruncatedAndPanelGrows(t *testing.T) {
 	if h := m.bottomPanelHeight(); h != 13 {
 		t.Fatalf("expected confirm panel capped at 12 rows plus its rail, got %d", h)
 	}
-	if m.viewport.Height() != m.height-chromeHeight-13 {
+	if m.viewport.Height() != m.height-(headerHeight+dividerHeight+bottomChromeHeight)-13 {
 		t.Fatalf("viewport should shrink for the diff preview, got %d", m.viewport.Height())
 	}
 

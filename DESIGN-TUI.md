@@ -2595,7 +2595,8 @@ Graphics and name were not asked for: the reply would have to come back over ssh
 
 It is `internal/ui/caps`, and it is the only package in the tree that speaks
 the wire: it writes the questions, reads the replies, and every
-terminal-protocol type stops there. What leaves is a value with plain fields
+terminal-protocol type stops there (§10n's screen model shares the module and
+not the wire — it deals in cells, not sequences). What leaves is a value with plain fields
 on it — and where an answer is later spent as a sequence of its own, it is
 spent there too: the notification in §10l, and the transmitted picture in
 §12h.
@@ -2763,6 +2764,64 @@ withhold: the transcript is moved by `scrollLines` and `scrollPage`, which the
 wheel, `pgup`/`pgdn`, `shift+↑`/`shift+↓` and reading mode reach, and by
 nothing else.
 
+### 10n. The screen is a rectangle (S-161)
+
+Every width and every row budget on the chat surface was its own subtraction.
+The content width was the terminal less the horizontal padding; the pane was
+that less the inspector rail and its divider; the transcript was the pane less
+the scroll gutter; the viewport was the terminal less five heights counted in
+five different files. Each was a correct description of the geometry and there
+were six of them, which is the condition under which two of them disagree.
+
+Two did. The live block a working turn draws under the transcript — the
+thinking spinner, the running command's row, the retry countdown of §17a —
+was drawn without being budgeted for, so **the surface was one row taller than
+the terminal** in every state that has one, and the row that fell off the
+bottom was the frame's own closing rail. The countdown was worse: the
+accounting called it one row and it draws two, a meter and the offers under
+it.
+
+**The terminal is a rectangle and the layout engine splits it.** `layout.go`
+resolves the split once and everything downstream reads a rectangle rather
+than deriving one: `contentWidth`, `paneWidth`, `transcriptWidth`,
+`viewportHeight`, the pointer's origin in §7a's coordinate space, the prompt
+frame's box and every one of its border rails. Two properties fall out that
+the arithmetic never gave.
+
+- **A block cannot overflow the rectangle it was given.** Everything the
+  surface draws goes through one call that clips at the edge, so a label too
+  long for its slot is cut by the slot rather than by a `clipRow` the caller
+  had to remember.
+- **The rows add up.** Header, reading rail, body and bottom panel are one
+  vertical division of the terminal's rows, and the body is one division of
+  itself into the transcript, the live tail and the working children's rows.
+  A panel that grows is a transcript that shrinks, by construction. The live
+  tail's height is now *measured* — it renders itself and is asked how tall it
+  came out — because a constant that says what a block's height should be is
+  the thing that was wrong.
+
+**The split is in two halves.** `columns()` is horizontal and reads nothing
+but the terminal's width; `surface()` is vertical and has to ask the bottom
+panel how many rows it wants, which the panel answers by rendering itself at a
+width. Keeping the halves apart is what stops that from being a cycle.
+
+**The leaves still render strings.** A component is handed a width and returns
+styled text, exactly as before; what changed is who decides the width and who
+places the result. This is Crush's shape too (`uv.NewStyledString(view).Draw`),
+and it is why the migration moved no column. Of the 110 chat goldens, 74 are
+byte-identical across it and none of the 180 component goldens moved at all;
+36 changed only in their escape encoding, which the cell buffer coalesces
+(`␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m` becomes `␛[38;5;254m▎✎␛[m`). Eight of those
+also changed in their *layout* block, and only there: the notice and staged
+rails are rows of the surface, so they are now padded to the surface's width
+the way the screen has always drawn them.
+
+**What it costs.** A frame at 130×40 goes from 0.43ms to 0.85ms: parsing the
+blocks into cells and rendering them back is about 45% of the redraw. That is
+the price of the guarantee, it is constant in the size of the session rather
+than the size of the transcript, and it leaves §10m's win — 8.7ms to 0.6ms on
+a 14,000-line transcript — substantially intact.
+
 ---
 
 ## 11. Implementation Notes
@@ -2780,6 +2839,10 @@ nothing else.
 - The column grid (§6a) lives in one place — field widths are constants in
   `activityrow.go` and every surface that draws a transcript row uses them,
   so a grid change is a one-line change.
+- The chat surface's geometry lives in one place too (§10n):
+  `internal/ui/chat/layout.go` resolves the terminal into the rectangles
+  every renderer is handed, and `drawIn` is the single call that puts a
+  block into one. Nothing outside it subtracts a width from another width.
 - The attached view (§9b) is not a new surface: the chat `Model` renders
   whichever agent is "focused", and every agent (orchestrator included)
   is an `internal/agent` instance with its own transcript, approval
@@ -2824,8 +2887,10 @@ nothing else.
   (§10k): it writes the capability questions, reads the replies, and every
   ultraviolet event type and escape sequence composed to *ask* something
   stops there. The chat `Model` holds one value, asks on `tea.EnvMsg` and
-  hands every message to it; nothing else in the tree imports the
-  vocabulary.
+  hands every message to it; nothing else in the tree composes a sequence or
+  reads an event. (§10n's screen and rectangles come from the same module and
+  are not the wire: they are cells and coordinates, and nothing about them is
+  written to or read from a terminal.)
 
 ---
 
@@ -2944,10 +3009,13 @@ name); the notice rail is orchestrator-scoped and hides while attached.
   child asks, focus/diff hint bars — replace the framed input wholesale and
   keep the divider + §8 status bar stack, so their geometry is unchanged.
 - The frame's top and bottom borders occupy the rows the bottom divider and
-  status bar otherwise use, so `chromeHeight` stays constant in the compact
-  and narrow layouts; the wide vitals rail, the notice rail and the staged
-  rail are accounted separately (`frameExtraHeight`) when sizing the
-  viewport.
+  status bar otherwise use, so the compact and narrow layouts cost the
+  surface nothing beyond the panel itself; the wide vitals rail, the notice
+  rail and the staged rail are what `frameExtraHeight` adds to the bottom
+  segment of the vertical split (§10n).
+- The box is drawn into rectangles, not concatenated: the rails, the two
+  border columns, the prompt gutter and the draft each own their columns, so
+  the labels are cut by their slots and the rows are padded by theirs.
 - The frame is rebuilt every render and never enters the transcript render
   cache, so resize just works.
 
@@ -3408,8 +3476,9 @@ normative.
                                          pane's own last column
 ```
 
-The split is horizontal only: `chromeHeight` and `syncViewportHeight`
-accounting are unchanged, and the input frame (§12) spans both panes because
+The split is horizontal only — it is one of the two constraints the column
+half of the layout model resolves (§10n), and the rows the vertical half
+hands out are unchanged — and the input frame (§12) spans both panes because
 steering is a session-level act. Below 130 the rail is dropped entirely and
 today's single-pane layout is untouched (§8c).
 

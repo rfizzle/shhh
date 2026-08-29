@@ -524,15 +524,6 @@ func (m Model) modelRate(name string) (float64, bool) {
 	return in + out, true
 }
 
-// retryWaitHeight is the row the countdown block takes beyond the one every
-// live state already borrows under the viewport.
-func (m Model) retryWaitHeight() int {
-	if m.retry == nil || m.turnState() != stateRetryWait {
-		return 0
-	}
-	return 1
-}
-
 // retryWaitBlock is the live block under the row that stalled: the draining
 // meter, the attempt and the bound, and the two offers.
 func (m Model) retryWaitBlock(width int) string {

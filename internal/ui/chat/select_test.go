@@ -117,7 +117,8 @@ func at(t *testing.T, m Model, line, col int) (x, y int) {
 	if row < 0 || row >= m.paneRows() {
 		t.Fatalf("line %d is not on screen (offset %d, height %d)", line, m.viewport.YOffset(), m.paneRows())
 	}
-	return col + transcriptLeft, row + transcriptTop
+	at := m.transcriptOrigin()
+	return col + at.X, row + at.Y
 }
 
 // endOf is the last cell of a rendered line holding anything.
@@ -259,15 +260,16 @@ func TestSelection_DragDoesNotExpandARow(t *testing.T) {
 func TestSelection_PressOutsideTheTranscriptStartsNothing(t *testing.T) {
 	c := &clip{}
 	m := selectModel(t, c, entry{kind: entryUser, text: "a question about the parser"})
+	origin := m.transcriptOrigin()
 
 	cases := []struct {
 		name string
 		x, y int
 	}{
-		{"above the pane", 4, transcriptTop - 1},
-		{"below the pane, over the prompt", 4, transcriptTop + m.paneRows() + 1},
-		{"left of the pane", 0, transcriptTop + 1},
-		{"right of the pane", transcriptLeft + m.transcriptWidth(), transcriptTop + 1},
+		{"above the pane", 4, origin.Y - 1},
+		{"below the pane, over the prompt", 4, origin.Y + m.paneRows() + 1},
+		{"left of the pane", 0, origin.Y + 1},
+		{"right of the pane", origin.X + m.transcriptWidth(), origin.Y + 1},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -473,7 +475,7 @@ func scrollTick(t *testing.T, m Model) (Model, bool) {
 func TestSelection_BottomEdgeAutoScrollsAndExtends(t *testing.T) {
 	c := &clip{}
 	m := tallModel(t, c)
-	bottomRow := transcriptTop + m.paneRows() - 1
+	bottomRow := m.transcriptOrigin().Y + m.paneRows() - 1
 
 	x0, y0 := at(t, m, 0, 0)
 	updated, _ := m.Update(mousePress(x0, y0))
@@ -520,11 +522,11 @@ func TestSelection_TopEdgeAutoScrollsUpward(t *testing.T) {
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 
-	bottomRow := transcriptTop + m.paneRows() - 1
+	bottomRow := m.transcriptOrigin().Y + m.paneRows() - 1
 	updated, _ := m.Update(mousePress(10, bottomRow))
 	m = updated.(Model)
 
-	updated, cmd := m.Update(mouseMotion(10, transcriptTop))
+	updated, cmd := m.Update(mouseMotion(10, m.transcriptOrigin().Y))
 	m = updated.(Model)
 	if cmd == nil || m.selScrollDir != -1 {
 		t.Fatalf("a drag at the top edge should scroll up, dir %d cmd %v", m.selScrollDir, cmd != nil)
@@ -551,7 +553,7 @@ func TestSelection_TopEdgeAutoScrollsUpward(t *testing.T) {
 func TestSelection_StationaryPointerKeepsScrolling(t *testing.T) {
 	c := &clip{}
 	m := tallModel(t, c)
-	bottomRow := transcriptTop + m.paneRows() - 1
+	bottomRow := m.transcriptOrigin().Y + m.paneRows() - 1
 
 	updated, _ := m.Update(mousePress(at(t, m, 0, 0)))
 	m = updated.(Model)
@@ -581,7 +583,7 @@ func TestSelection_StationaryPointerKeepsScrolling(t *testing.T) {
 }
 
 func TestSelection_ReleaseAndEscStopPendingTicks(t *testing.T) {
-	bottomRow := func(m Model) int { return transcriptTop + m.paneRows() - 1 }
+	bottomRow := func(m Model) int { return m.transcriptOrigin().Y + m.paneRows() - 1 }
 
 	cases := []struct {
 		name string
@@ -839,9 +841,9 @@ func TestSelection_ConfinedToTheNormalTranscript(t *testing.T) {
 			if m.selectableSurface() {
 				t.Fatalf("%s is not the transcript; selection should not reach it", tc.name)
 			}
-			updated, _ := m.Update(mousePress(6, transcriptTop+1))
+			updated, _ := m.Update(mousePress(6, m.transcriptOrigin().Y+1))
 			m = updated.(Model)
-			updated, _ = m.Update(mouseMotion(20, transcriptTop+3))
+			updated, _ = m.Update(mouseMotion(20, m.transcriptOrigin().Y+3))
 			m = updated.(Model)
 			if m.hasSelection() {
 				t.Fatalf("%s should select nothing", tc.name)
@@ -1029,7 +1031,7 @@ func TestSelection_TakeoverSurfaceEndsTheDrag(t *testing.T) {
 	m := tallModel(t, c)
 	updated, _ := m.Update(mousePress(at(t, m, 0, 0)))
 	m = updated.(Model)
-	updated, _ = m.Update(mouseMotion(10, transcriptTop+m.paneRows()-1))
+	updated, _ = m.Update(mouseMotion(10, m.transcriptOrigin().Y+m.paneRows()-1))
 	m = updated.(Model)
 	stale := m.selScrollSeq
 	if m.selScrollDir == 0 || !m.sel.dragging {
@@ -1081,7 +1083,7 @@ func TestSelection_WorksInBothLayouts(t *testing.T) {
 			// The rail beyond the pane is not the transcript.
 			if tc.twoPane {
 				before := m.sel
-				updated, _ = m.Update(mousePress(transcriptLeft+m.transcriptWidth()+2, transcriptTop+1))
+				updated, _ = m.Update(mousePress(m.transcriptOrigin().X+m.transcriptWidth()+2, m.transcriptOrigin().Y+1))
 				if pm := updated.(Model); pm.sel != before {
 					t.Fatalf("a press on the inspector rail should change nothing: %+v → %+v", before, pm.sel)
 				}
@@ -1103,9 +1105,9 @@ func TestSelection_ReviewModeKeepsItsOwnMouse(t *testing.T) {
 	}
 	before := m.review.Offset
 
-	updated, _ := m.Update(mousePress(6, transcriptTop+1))
+	updated, _ := m.Update(mousePress(6, m.transcriptOrigin().Y+1))
 	m = updated.(Model)
-	updated, _ = m.Update(mouseMotion(20, transcriptTop+4))
+	updated, _ = m.Update(mouseMotion(20, m.transcriptOrigin().Y+4))
 	m = updated.(Model)
 	if m.hasSelection() {
 		t.Fatal("review mode should select nothing")
@@ -1132,9 +1134,10 @@ func TestSelection_DragDoesNotInvalidateTheRenderCache(t *testing.T) {
 
 	updated, _ := m.Update(mousePress(at(t, m, 0, 0)))
 	m = updated.(Model)
+	origin := m.transcriptOrigin()
 	for row := 1; row < m.paneRows(); row++ {
 		for col := 0; col < 8; col++ {
-			updated, _ = m.Update(mouseMotion(transcriptLeft+col, transcriptTop+row))
+			updated, _ = m.Update(mouseMotion(origin.X+col, origin.Y+row))
 			m = updated.(Model)
 		}
 	}

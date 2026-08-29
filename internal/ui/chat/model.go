@@ -12,6 +12,8 @@ import (
 	"charm.land/bubbles/v2/textarea"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	uv "github.com/charmbracelet/ultraviolet"
+	"github.com/charmbracelet/ultraviolet/layout"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/changeset"
@@ -101,7 +103,6 @@ const inputHeight = 3
 const headerHeight = 1
 const dividerHeight = 1
 const statusBarHeight = 1
-const chromeHeight = headerHeight + dividerHeight + dividerHeight + statusBarHeight
 const horizontalPadding = 2
 
 type tokenMsg struct {
@@ -1709,7 +1710,10 @@ func (m Model) View() tea.View {
 	return v
 }
 
-// screen paints everything inside the frame.
+// screen paints the whole terminal, drawing each block into the rectangle
+// layout.go resolved for it (S-161, §10n). Nothing here measures anything: a
+// block is handed a rectangle, it fills what it can, and ultraviolet clips
+// the rest at the edge.
 func (m Model) screen() string {
 	if m.quitting {
 		return ""
@@ -1718,51 +1722,98 @@ func (m Model) screen() string {
 		return "Initializing…"
 	}
 
-	contentWidth := m.width - horizontalPadding*2
+	s := m.surface()
+	scr := uv.NewScreenBuffer(max(m.width, 0), max(m.height, 0))
+	draw := func(view string, area uv.Rectangle) { drawIn(scr, view, area) }
+
+	draw(m.headerRow(), s.header)
+	// The line under the header says which pane has the keyboard (S-115,
+	// §7a): a plain divider while the input does, the transcript's own rail
+	// while focus mode does.
+	draw(m.readingRail(s.rail.Dx()), s.rail)
+
 	// The body renders into the transcript pane; the header, divider and the
 	// prompt frame span both panes (S-092, §15). Surfaces that take the pane
 	// over get all of it — the scroll gutter's column is the transcript's own
 	// (S-147, §10g), and they do their own scrolling.
-	paneWidth := m.paneWidth()
+	view := s.in(s.view, s.pane)
+	draw(m.paneView(view), view)
+	draw(m.liveTail(s.pane.Dx()), s.in(s.tail, s.pane))
+	// Working sub-agents render as compact progress rows above the divider
+	// (S-068); hidden while the agent list or an attached view covers them.
+	draw(m.renderAgentRows(s.pane.Dx()), s.in(s.agents, s.pane))
 
+	// Past 130 content columns the body shares its rows with the inspector
+	// rail (S-092, §15); the split is horizontal only, so the row budget the
+	// vertical split handed out is unchanged.
+	if rail := m.inspectorData().Lines(s.inspector.Dx(), s.body.Dy()); len(rail) > 0 {
+		column := strings.TrimSuffix(strings.Repeat(sty.Pane.Divider.Render("│")+"\n", s.body.Dy()), "\n")
+		draw(column, s.in(s.body, s.divider))
+		draw(strings.Join(rail, "\n"), s.in(s.body, s.inspector))
+	}
+
+	m.drawBottomPanel(scr, s.bottom)
+
+	return renderScreen(scr)
+}
+
+// headerRow is the title row (S-082): the header carries only the title —
+// the static key hint moved into the frame's contextual bottom rail, the
+// update notice onto the notice rail, and the attached breadcrumb onto the
+// frame's top rail.
+func (m Model) headerRow() string {
 	title := m.title
 	if title == "" {
 		title = "shhh chat"
 	}
-	// The header carries only the title (S-082): the static key hint moved
-	// into the frame's contextual bottom rail, the update notice onto the
-	// notice rail, and the attached breadcrumb onto the frame's top rail.
 	header := sty.Header.Render(" " + title)
 	if m.attachedTo != "" && !m.frameShowing() {
 		// A takeover surface while attached keeps the breadcrumb visible.
 		header += sty.HeaderHint.Render("  " + m.breadcrumb())
 	}
-	header += strings.Repeat(" ", max(0, contentWidth-lipgloss.Width(header)))
+	return header
+}
 
-	// The line under the header says which pane has the keyboard (S-115,
-	// §7a): a plain divider while the input does, the transcript's own rail
-	// while focus mode does.
-	topDivider := m.readingRail(contentWidth)
-
-	var body string
+// paneView is what the transcript pane's rows hold: one of the three
+// surfaces that take the pane over, or the transcript itself. A takeover
+// surface draws no live tail under it, so the rectangle it is handed is the
+// whole body and it does its own scrolling in it.
+func (m Model) paneView(area uv.Rectangle) string {
 	switch {
 	case m.state == stateDiffFull && m.fullDiff != nil:
 		// The full-screen diff takes over the viewport (S-074, §3c).
-		m.fullDiff.Height = m.viewportHeight()
-		body = m.fullDiff.View(paneWidth)
+		m.fullDiff.Height = area.Dy()
+		return m.fullDiff.View(area.Dx())
 	case m.state == statePicture && m.picture != nil:
 		// The staged image takes over the pane (S-158, §12h).
-		m.picture.Height = m.viewportHeight()
-		body = m.picture.View(paneWidth)
+		m.picture.Height = area.Dy()
+		return m.picture.View(area.Dx())
 	case m.state == stateReview && m.review != nil:
 		// Review mode takes over the whole surface (S-099, §16a).
-		m.review.Height = m.viewportHeight()
-		body = m.review.View(paneWidth)
-	case m.attachedTo != "":
-		// The attached child's session fills the surface; its liveness shows
-		// in the child-scoped status bar, not a parent spinner.
-		body = m.transcriptBody()
-	case m.state == stateStreaming && m.streaming == "":
+		m.review.Height = area.Dy()
+		return m.review.View(area.Dx())
+	}
+	return m.transcriptBody()
+}
+
+// liveTail is the block the turn draws under the transcript while it works:
+// the thinking spinner, the running command's own activity row, the retry
+// countdown (S-107, §17a). It is the one part of the pane whose height is
+// not fixed, so the layout asks it rather than assuming — the row it takes
+// used to be spent without being budgeted for, which put the bottom of the
+// frame one row past the bottom of the terminal (§10n).
+//
+// Attached, the child's session fills the pane and its liveness shows in the
+// child-scoped status bar, not a parent spinner.
+func (m Model) liveTail(width int) string {
+	if m.attachedTo != "" {
+		return ""
+	}
+	switch m.state {
+	case stateStreaming:
+		if m.streaming != "" {
+			return ""
+		}
 		label := "Thinking…"
 		switch {
 		case m.compacting:
@@ -1770,99 +1821,103 @@ func (m Model) screen() string {
 		case m.agent.Executing():
 			label = "Running tools…"
 		}
-		body = m.transcriptBody() + "\n" + m.spinner.View() + " " + label
-	case m.state == stateRunningCmd:
+		return m.spinner.View() + " " + label
+	case stateRunningCmd:
 		if m.pendingApproval != nil && m.pendingApproval.kind != approvalExec {
-			body = m.transcriptBody() + "\n" + m.spinner.View() + " Applying changes…"
-		} else {
-			// The running command renders as a live activity row whose tail is
-			// its last output line (S-075); spinner ticks keep it fresh.
-			body = m.transcriptBody() + "\n" + m.runningCommandRow(paneWidth)
+			return m.spinner.View() + " Applying changes…"
 		}
-	case m.state == stateClassifying:
-		body = m.transcriptBody() + "\n" + m.spinner.View() + " Checking permission…"
-	case m.state == stateRetryWait && m.retry != nil:
+		// The running command renders as a live activity row whose tail is
+		// its last output line (S-075); spinner ticks keep it fresh.
+		return m.runningCommandRow(width)
+	case stateClassifying:
+		return m.spinner.View() + " Checking permission…"
+	case stateRetryWait:
+		if m.retry == nil {
+			return ""
+		}
 		// The failure row is already in the transcript; this is the part of
 		// it that drains (S-107, §17a). A wait is a meter, never a spinner.
-		body = m.transcriptBody() + "\n" + m.retryWaitBlock(paneWidth)
-	case m.state == stateModelList:
-		body = m.transcriptBody() + "\n" + m.spinner.View() + " Listing models…"
-	default:
-		body = m.transcriptBody()
+		return m.retryWaitBlock(width)
+	case stateModelList:
+		return m.spinner.View() + " Listing models…"
 	}
+	return ""
+}
 
-	// Working sub-agents render as compact progress rows above the divider
-	// (S-068); hidden while the agent list or an attached view covers them.
-	if m.agentRowsHeight() > 0 {
-		if rows := m.renderAgentRows(paneWidth); rows != "" {
-			body += "\n" + rows
-		}
+// liveTailHeight is what that block costs the transcript. It is measured
+// rather than declared: a retry countdown is a meter and its two offers, and
+// a constant saying otherwise was how the surface came to overrun the
+// terminal by a row.
+func (m Model) liveTailHeight() int {
+	tail := m.liveTail(m.paneWidth())
+	if tail == "" {
+		return 0
 	}
+	return lipgloss.Height(tail)
+}
 
-	// Past 130 content columns the body shares its rows with the inspector
-	// rail (S-092, §15); the split is horizontal only, so the row budget the
-	// chrome accounting handed out is unchanged.
-	if m.twoPane() {
-		body = m.splitPanes(body)
-	}
-
-	// The command-center frame is the default bottom panel (S-082,
-	// DESIGN-TUI.md §12); takeover surfaces replace it wholesale and keep the
-	// divider + status-bar stack, as does the sub-minFrameWidth plain layout.
-	var bottom string
+// drawBottomPanel paints the surface's bottom rows: the command-center frame
+// (S-082, DESIGN-TUI.md §12), or the divider + status-bar stack with whichever
+// takeover surface replaced the input under it.
+func (m Model) drawBottomPanel(scr uv.Screen, area uv.Rectangle) {
 	if m.frameShowing() {
-		bottom = m.renderPromptFrame()
 		// A decision that has not been given the keyboard rides above the
 		// frame, with the rail that names the keyboard's owner between them
 		// (S-117, §7b).
-		if head := m.renderInterrupt(contentWidth); head != "" {
-			bottom = head + "\n" + bottom
-		}
-	} else {
-		inputView := m.input.View()
-		// The slash-command completion menu renders under the input (S-078);
-		// the takeover surfaces below replace it wholesale.
-		if m.completionActive() && m.attachedTo == "" && m.agentList == nil && m.activeChildAsk() == nil {
-			inputView += "\n" + strings.Join(m.completionMenuLines(), "\n")
-		}
-		switch m.state {
-		case stateConfirmRun:
-			inputView = m.renderConfirm()
-		case statePlanApprove:
-			inputView = m.renderPlanApprove()
-		case stateRewindPick:
-			inputView = m.renderRewindPick()
-		case statePick:
-			inputView = m.renderPick()
-		case stateFocus:
-			inputView = m.renderFocusHint()
-		case stateDiffFull:
-			inputView = m.renderDiffFullHint()
-		case statePicture:
-			inputView = m.renderPictureHint()
-		case stateReview:
-			inputView = m.renderReviewHint()
-		case stateUndoConfirm:
-			inputView = m.renderUndoConfirm()
-		case stateKeyEntry:
-			inputView = m.renderKeyEntry()
-		case statePressure:
-			inputView = m.renderPressure()
-		}
-		// The agent manager list takes the bottom panel while open (S-077).
-		if m.agentList != nil {
-			inputView = m.renderAgentList()
-		}
-		// A child agent's routed approval takes over the bottom panel when the
-		// parent's own prompts aren't using it (S-068).
-		if ask := m.activeChildAsk(); ask != nil {
-			inputView = m.renderChildAsk(ask)
-		}
-		bottom = dividerStyle(contentWidth) + "\n" + m.renderStatusBar(contentWidth) + "\n" + inputView
+		var head, frame uv.Rectangle
+		layout.Vertical(layout.Len(m.interruptHeight()), layout.Fill(1)).
+			Split(area).Assign(&head, &frame)
+		drawIn(scr, m.renderInterrupt(area.Dx()), head)
+		m.drawPromptFrame(scr, frame)
+		return
 	}
+	drawIn(scr, m.takeoverPanel(area.Dx()), area)
+}
 
-	content := header + "\n" + topDivider + "\n" + body + "\n" + bottom
-	return lipgloss.NewStyle().Padding(0, horizontalPadding).Render(content)
+// takeoverPanel is the bottom panel when the frame is not showing: the
+// divider and status bar, and under them the input or the surface that
+// replaced it.
+func (m Model) takeoverPanel(width int) string {
+	inputView := m.input.View()
+	// The slash-command completion menu renders under the input (S-078);
+	// the takeover surfaces below replace it wholesale.
+	if m.completionActive() && m.attachedTo == "" && m.agentList == nil && m.activeChildAsk() == nil {
+		inputView += "\n" + strings.Join(m.completionMenuLines(), "\n")
+	}
+	switch m.state {
+	case stateConfirmRun:
+		inputView = m.renderConfirm()
+	case statePlanApprove:
+		inputView = m.renderPlanApprove()
+	case stateRewindPick:
+		inputView = m.renderRewindPick()
+	case statePick:
+		inputView = m.renderPick()
+	case stateFocus:
+		inputView = m.renderFocusHint()
+	case stateDiffFull:
+		inputView = m.renderDiffFullHint()
+	case statePicture:
+		inputView = m.renderPictureHint()
+	case stateReview:
+		inputView = m.renderReviewHint()
+	case stateUndoConfirm:
+		inputView = m.renderUndoConfirm()
+	case stateKeyEntry:
+		inputView = m.renderKeyEntry()
+	case statePressure:
+		inputView = m.renderPressure()
+	}
+	// The agent manager list takes the bottom panel while open (S-077).
+	if m.agentList != nil {
+		inputView = m.renderAgentList()
+	}
+	// A child agent's routed approval takes over the bottom panel when the
+	// parent's own prompts aren't using it (S-068).
+	if ask := m.activeChildAsk(); ask != nil {
+		inputView = m.renderChildAsk(ask)
+	}
+	return dividerStyle(width) + "\n" + m.renderStatusBar(width) + "\n" + inputView
 }
 
 // startRun resolves which code block from the last response to execute.
@@ -2620,16 +2675,17 @@ func (m *Model) renderHistoryRawLines() []string {
 	return m.cached.lines
 }
 
+// contentWidth is the surface inside the horizontal padding (§15).
 func (m Model) contentWidth() int {
-	return m.width - horizontalPadding*2
+	return m.columns().content.Dx()
 }
 
+// viewportHeight is the transcript's own rows, read off the vertical split
+// (S-161, §10n) rather than counted down from the terminal. The floor is a
+// floor and not a layout: a terminal with no room left still has to hand the
+// viewport a height it can render at.
 func (m Model) viewportHeight() int {
-	h := m.height - m.bottomPanelHeight() - chromeHeight - m.agentRowsHeight() - m.frameExtraHeight() - m.retryWaitHeight()
-	if h < 1 {
-		return 1
-	}
-	return h
+	return max(m.surface().view.Dy(), 1)
 }
 
 func (m Model) wordWrap(text string, width int) string {

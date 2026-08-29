@@ -65,7 +65,7 @@ func TestWindowResize_SetsReady(t *testing.T) {
 	if want := 100 - horizontalPadding*2 - components.ScrollGutterWidth; model.viewport.Width() != want {
 		t.Fatalf("viewport width should be %d, got %d", want, model.viewport.Width())
 	}
-	expectedVPHeight := 40 - inputHeight - chromeHeight
+	expectedVPHeight := 40 - inputHeight - (headerHeight + dividerHeight + bottomChromeHeight)
 	if model.viewport.Height() != expectedVPHeight {
 		t.Fatalf("viewport height should be %d, got %d", expectedVPHeight, model.viewport.Height())
 	}
@@ -84,7 +84,7 @@ func TestWindowResize_Subsequent(t *testing.T) {
 	if want := 60 - horizontalPadding*2 - components.ScrollGutterWidth; model2.viewport.Width() != want {
 		t.Fatalf("viewport width should update to %d, got %d", want, model2.viewport.Width())
 	}
-	expectedH := 20 - inputHeight - chromeHeight
+	expectedH := 20 - inputHeight - (headerHeight + dividerHeight + bottomChromeHeight)
 	if model2.viewport.Height() != expectedH {
 		t.Fatalf("viewport height should be %d, got %d", expectedH, model2.viewport.Height())
 	}
