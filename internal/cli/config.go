@@ -415,6 +415,32 @@ func configSettings() []configSetting {
 			return opts
 		},
 	}, {
+		// The session summary's model (S-163). It sits under MODEL rather
+		// than SESSION because what it is is a second model the session runs,
+		// and the fallback says the thing worth knowing: unset means it runs
+		// on the expensive one.
+		group: "MODEL", key: "summary.model", label: "summary model",
+		read:     str(func(c config.Config) string { return c.Summary.Model }),
+		fallback: "(the session's own — a faster one costs less)",
+		options: func(c config.Config) []components.SelectOption {
+			opts := make([]components.SelectOption, 0, 8)
+			for _, name := range provider.KnownModels(c.Provider.Default) {
+				opts = append(opts, components.SelectOption{Label: name})
+			}
+			return opts
+		},
+	}, {
+		group: "SESSION", key: "summary.disabled", label: "session summary",
+		read: flag(func(c config.Config) bool { return c.Summary.Disabled }),
+		show: func(string) (string, components.FieldTone, string) {
+			return "off", components.ToneNeutral, "no reading is taken and the rail draws no SUMMARY block"
+		},
+		fallback: "on",
+		options: func(config.Config) []components.SelectOption {
+			return boolOptions("no reading is taken and no requests are made",
+				"a reading every few tool rounds, drawn in the inspector rail")
+		},
+	}, {
 		group: "WORKSPACE", key: "sandbox.profile", label: "sandbox",
 		read: str(func(c config.Config) string { return c.Sandbox.Profile }),
 		show: func(raw string) (string, components.FieldTone, string) {

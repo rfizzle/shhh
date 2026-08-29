@@ -348,3 +348,138 @@ func TestInspectorChanges_AlertsAloneStillRender(t *testing.T) {
 		t.Fatal("a session that changed nothing states no total")
 	}
 }
+
+// The SUMMARY block (S-163, §15d) is the rail's one prose block, and it sits
+// first: it says what is happening, and every block under it is the detail of
+// that.
+func TestInspectorSummary_LeadsTheRail(t *testing.T) {
+	r := fullRail()
+	r.Summary = &InspectorSummary{
+		Text:  "Wiring the round-limit pause into the chat model.",
+		State: SummaryOnTarget, Round: 24,
+	}
+	view := stripANSI(r.View(InspectorWidth, 0))
+	for _, want := range []string{"SUMMARY", "as of round 24", "Wiring the round-limit", "▸ on target"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("summary block missing %q:\n%s", want, view)
+		}
+	}
+	if strings.Index(view, "SUMMARY") > strings.Index(view, "THIS TURN") {
+		t.Fatalf("SUMMARY leads the rail:\n%s", view)
+	}
+}
+
+// A reading nobody has taken is a block with nothing to say, and a block with
+// nothing to say is omitted rather than drawn empty (§15c).
+func TestInspectorSummary_OmittedWithoutAReading(t *testing.T) {
+	for _, s := range []*InspectorSummary{nil, {Text: "   ", Round: 4}} {
+		r := InspectorRail{Summary: s, Turn: &InspectorTurn{Tools: 2, Running: true}}
+		if view := stripANSI(r.View(InspectorWidth, 0)); strings.Contains(view, "SUMMARY") {
+			t.Fatalf("an unread summary draws no block:\n%s", view)
+		}
+	}
+}
+
+// Every state says itself in a glyph and in words, so the row reads the same
+// on a monochrome terminal (§10c).
+func TestInspectorSummary_EveryStateStatesItself(t *testing.T) {
+	cases := []struct {
+		state SummaryTone
+		want  string
+	}{
+		{SummaryOnTarget, "▸ on target"},
+		{SummaryOffTarget, "⚠ off target"},
+		{SummaryUnclear, "· target unclear"},
+	}
+	for _, tc := range cases {
+		r := InspectorRail{Summary: &InspectorSummary{Text: "Reading the loop.", State: tc.state, Round: 3}}
+		if view := stripANSI(r.View(InspectorWidth, 0)); !strings.Contains(view, tc.want) {
+			t.Fatalf("state row missing %q:\n%s", tc.want, view)
+		}
+	}
+}
+
+// A departure earns the row that explains it; "on target because…" is the
+// model narrating, and the block has no row for that.
+func TestInspectorSummary_ReasonQualifiesADeparture(t *testing.T) {
+	r := InspectorRail{Summary: &InspectorSummary{
+		Text: "Rewriting the README.", State: SummaryOffTarget,
+		Reason: "docs were not asked for", Round: 31,
+	}}
+	view := stripANSI(r.View(InspectorWidth, 0))
+	if !strings.Contains(view, "⚠ off target") {
+		t.Fatalf("the state row states the departure:\n%s", view)
+	}
+	// The reason gets its own row, one indent past the state it explains, so
+	// it is read whole rather than clipped into a suffix.
+	if !strings.Contains(view, "    docs were not asked for") {
+		t.Fatalf("the reason follows the state row, indented:\n%s", view)
+	}
+	// An on-target reading has no reason row at all.
+	clean := InspectorRail{Summary: &InspectorSummary{Text: "Fixing the loop.", State: SummaryOnTarget, Round: 3}}
+	if lines := clean.Lines(InspectorWidth, 0); len(lines) != 3 {
+		t.Fatalf("an on-target block is heading, sentence, state: got %d rows", len(lines))
+	}
+}
+
+// A reading the session has outrun says so in the heading rather than letting
+// an old sentence pass for a current one (§15c).
+func TestInspectorSummary_StaleSaysSo(t *testing.T) {
+	r := InspectorRail{Summary: &InspectorSummary{
+		Text: "Running the tests.", State: SummaryOnTarget, Round: 12, Stale: true,
+	}}
+	view := stripANSI(r.View(InspectorWidth, 0))
+	if !strings.Contains(view, "as of round 12 · stale") {
+		t.Fatalf("a stale reading says so:\n%s", view)
+	}
+	fresh := InspectorRail{Summary: &InspectorSummary{Text: "Running the tests.", Round: 12}}
+	if strings.Contains(stripANSI(fresh.View(InspectorWidth, 0)), "stale") {
+		t.Fatal("a current reading does not hedge")
+	}
+}
+
+// The prose wraps to the rail rather than being clipped — a sentence cut at
+// 44 columns is a sentence nobody can finish — and stops at summaryLines.
+func TestInspectorSummary_WrapsAndBounds(t *testing.T) {
+	long := strings.TrimSpace(strings.Repeat("wiring the round limit into the chat model ", 8))
+	r := InspectorRail{Summary: &InspectorSummary{Text: long, State: SummaryOnTarget, Round: 9}}
+	lines := r.Lines(InspectorWidth, 0)
+	for _, line := range lines {
+		if lipgloss.Width(line) > InspectorWidth {
+			t.Fatalf("row overruns the rail (%d): %q", lipgloss.Width(line), stripANSI(line))
+		}
+	}
+	// Heading, the bounded prose, and the state row.
+	if want := 2 + summaryLines; len(lines) != want {
+		t.Fatalf("summary block = %d rows, want %d:\n%s", len(lines), want, strings.Join(lines, "\n"))
+	}
+	if last := strings.TrimRight(stripANSI(lines[summaryLines]), " "); !strings.HasSuffix(last, "…") {
+		t.Fatalf("a bounded reading says it was cut:\n%s", last)
+	}
+}
+
+// Truncation takes the tail of the reading, never the sentence's first line or
+// the state row — a block reduced to a heading and half a word is worse than
+// one that says it folded (§15b).
+func TestInspectorSummary_KeepsItsFirstLineAndItsState(t *testing.T) {
+	long := strings.TrimSpace(strings.Repeat("wiring the round limit into the chat model ", 8))
+	r := InspectorRail{
+		Summary: &InspectorSummary{Text: long, State: SummaryOffTarget, Reason: "docs", Round: 9},
+		Changes: &InspectorChanges{Files: []InspectorFile{
+			{Path: "internal/agent/loop.go", Added: 3},
+			{Path: "internal/agent/round.go", Added: 2},
+		}, Added: 5},
+	}
+	// Eight rows is room for the heading, one line of the sentence, the state
+	// row and the fold — the state row outranks the sentence's later lines.
+	view := stripANSI(r.View(InspectorWidth, 8))
+	if !strings.Contains(view, "SUMMARY") || !strings.Contains(view, "wiring the round") {
+		t.Fatalf("the sentence's first line survives:\n%s", view)
+	}
+	if !strings.Contains(view, "off target") {
+		t.Fatalf("the state row survives:\n%s", view)
+	}
+	if !strings.Contains(view, "more") {
+		t.Fatalf("a folded block says what it swallowed:\n%s", view)
+	}
+}

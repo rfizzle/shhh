@@ -19,6 +19,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/colorprofile"
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/project"
@@ -715,6 +716,22 @@ func TestGolden_Screen(t *testing.T) {
 			{Label: "working · the live tail sits under the pane", View: build(func(m *Model) {
 				m.state = stateStreaming
 				m.streaming = ""
+			})},
+			// The session summary leads the rail where there is a rail to
+			// lead (S-163, §15d); below 130 columns the same panel is the
+			// single-pane surface, which is how the capture shows that
+			// nothing was taken from the narrow terminal but the block.
+			{Label: "working · a reading of the session leads the rail", View: build(func(m *Model) {
+				m.state = stateStreaming
+				m.streaming = ""
+				m.summarizer = agent.NewSummarizer(&readingProvider{}, agent.SummaryConfig{Model: "fast"})
+				m.summary.last = &agent.SummaryVerdict{
+					Text:  "Wiring the round-limit pause into the chat model; the sentinel is in and nothing has run the tests yet.",
+					State: agent.SummaryOnTarget,
+					Round: 24,
+					Model: "fast",
+				}
+				m.summary.lastRound = 24
 			})},
 		}
 	})

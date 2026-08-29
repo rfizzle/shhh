@@ -19,6 +19,32 @@ type Config struct {
 	Appearance AppearanceConfig `toml:"appearance"`
 	History    HistoryConfig    `toml:"history"`
 	Agents     AgentsConfig     `toml:"agents"`
+	Summary    SummaryConfig    `toml:"summary"`
+}
+
+// SummaryConfig tunes the session summary (S-163): the periodic reading a
+// cheap model takes of the session, drawn as the inspector rail's SUMMARY
+// block. It is its own section rather than more `behavior.summary_*` keys
+// because auto-steering's knobs land beside these ones.
+type SummaryConfig struct {
+	// Model is the summarizing model. Empty means the session model, the same
+	// rule behavior.classifier_model follows — which is also why setting a
+	// fast model here is the one tuning worth doing: the readings are
+	// frequent, and the session model is usually the expensive one.
+	Model string `toml:"model"`
+	// IntervalRounds is how many tool rounds pass between readings (default
+	// 10). Higher is cheaper and staler.
+	IntervalRounds int `toml:"interval_rounds"`
+	// MinGapSeconds floors the wall-clock time between two readings (default
+	// 20), so a burst of fast rounds cannot rewrite the block repeatedly.
+	MinGapSeconds int `toml:"min_gap_seconds"`
+	// TimeoutSeconds bounds one reading (default 20).
+	TimeoutSeconds int `toml:"timeout_seconds"`
+	// MaxTokens caps a reading's response (default 512).
+	MaxTokens int `toml:"max_tokens"`
+	// Disabled turns the mechanism off entirely: no requests are made and the
+	// block is never drawn.
+	Disabled bool `toml:"disabled"`
 }
 
 // LSPConfig tunes the language-server integration (S-071) `shhh code` uses
@@ -401,6 +427,26 @@ func Set(cfg *Config, key, value string) error {
 		n := 0
 		fmt.Sscanf(value, "%d", &n)
 		cfg.Behavior.ClassifierRetries = n
+	case "summary.model":
+		cfg.Summary.Model = value
+	case "summary.interval_rounds":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Summary.IntervalRounds = n
+	case "summary.min_gap_seconds":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Summary.MinGapSeconds = n
+	case "summary.timeout_seconds":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Summary.TimeoutSeconds = n
+	case "summary.max_tokens":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Summary.MaxTokens = n
+	case "summary.disabled":
+		cfg.Summary.Disabled = value == "true"
 	case "behavior.memory_disabled":
 		cfg.Behavior.MemoryDisabled = value == "true"
 	case "behavior.memory_max_entries":

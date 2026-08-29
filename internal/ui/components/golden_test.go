@@ -766,6 +766,10 @@ func TestGolden_FanoutBlock(t *testing.T) {
 func TestGolden_InspectorRail(t *testing.T) {
 	captureGolden(t, "inspector-rail", "inspector rail", []int{InspectorWidth}, func(width int) []golden.Panel {
 		full := InspectorRail{
+			Summary: &InspectorSummary{
+				Text:  "Wiring the round-limit pause into the chat model; the sentinel is in and the tests have not been run yet.",
+				State: SummaryOnTarget, Round: 24,
+			},
 			Turn: &InspectorTurn{Step: 3, Steps: 4, Tools: 18, Elapsed: 64 * time.Second, Running: true,
 				Files: 3, Added: 30, Removed: 4},
 			Plan: &InspectorPlan{
@@ -828,12 +832,33 @@ func TestGolden_InspectorRail(t *testing.T) {
 				},
 			},
 		}
+		// A reading that has gone off the instruction, and one the session has
+		// outrun (S-163, §15d). The drifting one is what auto-steering will
+		// act on; here it is a row and nothing more.
+		drifting := InspectorRail{
+			Summary: &InspectorSummary{
+				Text:   "Rewriting the README's install section.",
+				State:  SummaryOffTarget,
+				Reason: "docs were not part of the round-limit request",
+				Round:  31,
+			},
+			Turn: &InspectorTurn{Tools: 9, Elapsed: 41 * time.Second, Running: true},
+		}
+		stale := InspectorRail{
+			Summary: &InspectorSummary{
+				Text:  "Running the agent package's tests.",
+				State: SummaryUnclear, Round: 12, Stale: true,
+			},
+			Turn: &InspectorTurn{Tools: 40, Elapsed: 6 * time.Minute, Running: true},
+		}
 		return []golden.Panel{
 			{Label: "every block, unbounded height", View: full.View(width, 0)},
 			{Label: "every block, height 16 (truncating)", View: full.View(width, 16)},
 			{Label: "blocks with nothing to say are omitted", View: quiet.View(width, 0)},
 			{Label: "eight files, four turns deep", View: session.View(width, 0)},
 			{Label: "the rail is shorter than the list (height 14)", View: session.View(width, 14)},
+			{Label: "a reading that has left the instruction", View: drifting.View(width, 0)},
+			{Label: "a reading the session has outrun", View: stale.View(width, 0)},
 		}
 	})
 }

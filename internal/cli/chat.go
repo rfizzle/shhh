@@ -455,6 +455,23 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		Retries:   cfg.Behavior.ClassifierRetries,
 	})
 
+	// The session summary (S-163) resolves its model the same way: summary.model
+	// overrides, empty means the session model. It is the one setting in that
+	// section worth changing — the readings are frequent, and the session
+	// model is usually the expensive one.
+	summaryModel := cfg.Summary.Model
+	if summaryModel == "" {
+		summaryModel = env.modelName
+	}
+	summarizer := agent.NewSummarizer(env.prov, agent.SummaryConfig{
+		Model:          summaryModel,
+		Timeout:        time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
+		MaxTokens:      cfg.Summary.MaxTokens,
+		IntervalRounds: cfg.Summary.IntervalRounds,
+		MinGap:         time.Duration(cfg.Summary.MinGapSeconds) * time.Second,
+		Disabled:       cfg.Summary.Disabled,
+	})
+
 	// Process containment (S-062): assistant commands run wrapped when a
 	// mechanism is available; the confirm prompt shows the state either way.
 	containment, err := buildContainment(cfg, sc)
@@ -523,6 +540,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		}).
 		WithApprovalMode(mode, cycle).
 		WithClassifier(classifier).
+		WithSummarizer(summarizer).
 		WithModelSwitcher(env.switchModel).
 		WithReasoning(env.effort, env.switchReasoning).
 		WithReasoningDefault(cfg.Provider.Reasoning, resolve.ReasoningOutranks(*session.flags)).

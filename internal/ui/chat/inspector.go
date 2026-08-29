@@ -126,6 +126,7 @@ func (m Model) turnElapsed() time.Duration {
 func (m Model) inspectorData() components.InspectorRail {
 	steps := m.planChecklist()
 	return components.InspectorRail{
+		Summary: m.inspectorSummary(),
 		Turn:    m.inspectorTurn(steps),
 		Plan:    m.inspectorPlan(steps),
 		Changes: m.inspectorChanges(),

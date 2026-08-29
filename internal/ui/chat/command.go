@@ -130,6 +130,15 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 		return m, nil
 
+	case text == "/status":
+		// The rail's SUMMARY block in words (S-163, §15d), for the terminals
+		// below 130 columns that have no rail to draw it in — the same answer
+		// §15c gives for PLAN. It takes a fresh reading on the way out:
+		// asking for the summary is a reason to have a current one.
+		note, read := m.statusCommand()
+		next, cmd := m.systemNotice(note)
+		return next, tea.Batch(cmd, read)
+
 	case text == "/compact":
 		return m.startCompact()
 

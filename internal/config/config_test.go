@@ -445,3 +445,54 @@ func TestSetAgentAndReadOnlyKeys(t *testing.T) {
 		t.Error("read_only_auto=false should disable the built-in list")
 	}
 }
+
+func TestSet_SummaryConfig(t *testing.T) {
+	var cfg Config
+	for key, value := range map[string]string{
+		"summary.model":           "anthropic/claude-haiku-4-5",
+		"summary.interval_rounds": "25",
+		"summary.min_gap_seconds": "45",
+		"summary.timeout_seconds": "10",
+		"summary.max_tokens":      "256",
+		"summary.disabled":        "true",
+	} {
+		if err := Set(&cfg, key, value); err != nil {
+			t.Fatalf("Set(%q) unexpected error: %v", key, err)
+		}
+	}
+	want := SummaryConfig{
+		Model: "anthropic/claude-haiku-4-5", IntervalRounds: 25,
+		MinGapSeconds: 45, TimeoutSeconds: 10, MaxTokens: 256, Disabled: true,
+	}
+	if cfg.Summary != want {
+		t.Errorf("summary = %+v, want %+v", cfg.Summary, want)
+	}
+}
+
+func TestLoadFrom_SummaryConfig(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+	content := `
+[summary]
+model = "anthropic/claude-haiku-4-5"
+interval_rounds = 12
+disabled = true
+`
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := LoadFrom(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Summary.Model != "anthropic/claude-haiku-4-5" {
+		t.Errorf("summary.model = %q", cfg.Summary.Model)
+	}
+	if cfg.Summary.IntervalRounds != 12 || !cfg.Summary.Disabled {
+		t.Errorf("summary = %+v", cfg.Summary)
+	}
+	// Unset numbers stay zero so the agent defaults stand.
+	if cfg.Summary.MinGapSeconds != 0 || cfg.Summary.TimeoutSeconds != 0 || cfg.Summary.MaxTokens != 0 {
+		t.Errorf("unset summary numbers should be zero, got %+v", cfg.Summary)
+	}
+}

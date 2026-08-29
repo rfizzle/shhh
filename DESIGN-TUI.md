@@ -3565,6 +3565,12 @@ Three rules follow from session scope:
 ### 15b. Blocks
 
 ```
+  SUMMARY                       as of round 24
+  Wiring the round-limit pause into the chat
+  model; the sentinel is in and nothing has
+  run the tests yet.
+  ▸ on target
+
   THIS TURN                        step 3 of 4
   ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱
   3 files this turn +30 −4 · 18 tools · 1m 04s
@@ -3601,6 +3607,7 @@ Three rules follow from session scope:
 
 | Block | Scope | Contents |
 |---|---|---|
+| SUMMARY | turn | a cheap model's reading of what the session is doing and whether it is still on the instruction that started the turn — the sentence, `as of round N`, and a state row (§15d) |
 | THIS TURN | turn | step progress meter, `step 3 of 4`, files touched this turn, tool count, elapsed |
 | PLAN | plan | an approved plan's steps as a live checklist — state glyph, title, elapsed per finished step, a drift note, and `/plan` for the whole list |
 | CHANGES | session | `session · +N −M` total, one row per changed path with its rail, glyph, net counts and turn count, alerts above them, `[v] review all N · [u] undo turn` |
@@ -3608,15 +3615,22 @@ Three rules follow from session scope:
 | CONTEXT | session | percent of the window, meter, tokens, the per-round burn sparkline (or `estimated`) |
 | SPEND | session | this turn's spend as the headline, split main / children, with the model and `session total $1.86` under it — both numbers labelled in words, per §15a |
 
-Block order is fixed — THIS TURN, PLAN, CHANGES, AGENTS, CONTEXT, SPEND — and
-the rail drops from the bottom when it runs out of rows.
+Block order is fixed — SUMMARY, THIS TURN, PLAN, CHANGES, AGENTS, CONTEXT,
+SPEND — and the rail drops from the bottom when it runs out of rows.
 
-**Departure from the design system.** `InspectorRail.prompt.md` fixes the
-order as THIS TURN, CHANGES, AGENTS, CONTEXT, SPEND and carries no PLAN block.
-PLAN shipped in S-104 and is kept here, second, because a plan through its list
-is the one thing a reader checks as often as the changes; the block is
-recorded as a departure rather than silently resolved either way, and S-126 is
-where it is settled.
+**Two departures from the design system, both additions.**
+`InspectorRail.prompt.md` fixes the order as THIS TURN, CHANGES, AGENTS,
+CONTEXT, SPEND and carries neither PLAN nor SUMMARY.
+
+- **PLAN** shipped in S-104 and is kept here, third, because a plan through its
+  list is the one thing a reader checks as often as the changes; the block is
+  recorded as a departure rather than silently resolved either way, and S-126
+  is where it is settled.
+- **SUMMARY** shipped in S-163 and leads the rail. It is the answer every block
+  under it is the detail of — SUMMARY says what is happening, THIS TURN says
+  how far through, CHANGES says what it cost the workspace — and it is the one
+  block whose content is prose rather than a count, which is exactly what the
+  rail had no way to say. §15d is its specification.
 
 **Two keys the block does not print.** The artboard's CHANGES ends on `[v]
 review all 8 · [u] undo turn`, and its alert detail row offers `[r] rerun`.
@@ -3670,6 +3684,113 @@ you want without moving your eyes. What used to be said here — that the
 inspector rail is turn-scoped and historical while the vitals rail is
 session-scoped and live — was the distinction S-120 removed, and it is gone
 rather than qualified.
+
+### 15d. SUMMARY: a read of the session (S-163)
+
+The rail answers every standing question in numbers. It cannot answer the one
+a reader asks after looking away for five minutes — *what is this actually
+doing, and is it still doing what I asked* — and reconstructing that means
+scrolling the transcript, which is the work the rail exists to remove. So
+every few tool rounds a cheap model reads a small digest of the session and
+writes the two sentences the rail was missing.
+
+```
+  SUMMARY                       as of round 24
+  Wiring the round-limit pause into the chat
+  model; the sentinel is in and nothing has
+  run the tests yet.
+  ▸ on target
+
+  SUMMARY                       as of round 31
+  Rewriting the README's install section.
+  ⚠ off target
+    docs were not part of the round-limit
+    request
+
+  SUMMARY               as of round 12 · stale
+  Running the agent package's tests.
+  · target unclear
+```
+
+**The block is turn-scoped, and the round stamp is what says so.** The round
+counter resets with every turn, so `as of round 24` only means anything inside
+the turn it was taken in; and a new instruction is a new target, so last turn's
+narrative held on screen while the agent works on something else would be the
+exact stale status this block exists to prevent. A finished turn's last reading
+does stand while the session is idle — that is the one you come back to the
+terminal for.
+
+**The cadence.** A reading every `summary.interval_rounds` tool rounds,
+defaulting to **10**. A round is one model request plus its tool calls and the
+default cap is 150 (§17a), so 25 would be a sixth of a capped turn — minutes of
+work — and the block would spend most of its life describing a state the
+session had already left. Ten gives a capped turn fifteen or so readings. Three
+bounds sit around it: the first reading comes at round **3**, so a long turn has
+a block within its first half-minute instead of after a whole interval of an
+empty rail; a **20-second** floor stops a burst of fast read-only rounds
+rewriting the block three times in ten seconds, which is the case the round
+interval cannot see; and a turn **closes** on a reading of its own, because a
+turn that finished at round 7 with a summary from round 3 would be describing
+its own middle. A turn of one round buys none: its answer is already on screen
+in full.
+
+**Rules.**
+
+- **A failed reading changes nothing.** The last summary stands and the heading
+  says `stale`. This is the one place the S-060 classifier's rule is inverted:
+  the classifier fails closed because a wrong allow is unsafe, and the
+  summarizer fails soft because a status block that vanishes when one request
+  times out is a block nobody trusts again. Stale means the session has outrun
+  the reading by two intervals, not that a refresh is in flight — a heading
+  that flickered every interval would be noise, not news.
+- **The state row is drawn in every state, including on target.** PLAN's drift
+  line is not (§15b), and the difference is where the two come from: PLAN's
+  drift is computed from the plan and the steps taken, so its absence is a
+  fact, while this is a model's judgement, and a block that went quiet when the
+  judgement was "fine" would be indistinguishable from one whose reading
+  failed. The glyph carries the state as well as the colour (§10c): `▸` on
+  target, `⚠` off it, `·` unclear.
+- **A departure gets its reason on its own row**, one indent further in, the
+  way an alert's note follows its alert in CHANGES. At 46 columns a reason
+  appended to the state row is a reason clipped mid-word, and the reason is the
+  whole content of a departure.
+- **The prose wraps; it does not clip.** Three rows at most, then `…`. The
+  first row is pinned — a block truncated to a heading and half a word is worse
+  than one that says it folded — and the state row outranks the sentence's
+  later lines.
+- **Nothing waits on a reading.** It is a background request like the
+  classifier's judge, one attempt and no retries: a missed reading is answered
+  by the next interval. Two failures in a row double the interval rather than
+  keep asking a provider that is refusing.
+- **`/status` is the block below 130 columns**, where there is no rail to draw
+  it in — the same answer §15c gives for PLAN, and it takes a fresh reading on
+  the way, because asking for the summary is a reason to have a current one. It
+  states the reading, the target it was judged against, the round, the model
+  that wrote it and what summaries have cost, so a mechanism spending in the
+  background can say how much.
+
+**What the reading is allowed to see, and why it matters.** The digest carries
+the turn's instruction, the approved plan's steps, the recent work as
+`tool · target · outcome`, the changeset counts, the standing alerts, the last
+thing the agent said, and the previous summary. It carries **no tool output and
+no file contents**. That keeps a reading's cost flat in the size of the session
+— about 2k tokens whether the session is ten rounds old or a thousand — but the
+reason it is a rule rather than an optimisation is the next story: auto-steering
+turns this verdict into something that acts, and material an outside party can
+write (a fetched page, a dependency's README, a test's stdout) must not be able
+to reach the thing that steers.
+
+**Built for steering, inert here.** S-163 renders the verdict and does nothing
+else with it. Four things are in place for the story that acts on it: the
+target is captured at turn start and never re-derived, so a run that drifts
+cannot drift its own yardstick with it; the verdict is a closed enum rather
+than prose, so a policy branches on a value rather than parsing a sentence the
+model wrote; the summarizer lives in `internal/agent`, so the headless runner
+and sub-agents adopt it without a move; and the intervention, when it comes, is
+bounded to the two things §17a's round-limit checkpoint already does — put a
+visible note in the conversation, or stop and ask. It must never approve a
+call, widen a scope or cancel work: those stay human decisions, and a model
+reading untrusted evidence is the last thing that should be making them.
 
 ---
 

@@ -10,6 +10,12 @@
 
 ── layout ──────────────────────────────────────────────────
 · every block, unbounded height
+  SUMMARY                       as of round 24
+  Wiring the round-limit pause into the chat  
+  model; the sentinel is in and the tests have
+  not been run yet.                           
+  ▸ on target                                 
+
   THIS TURN                                   
    ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱ step 3 of 4         
   3 files this turn +30 −4 · 18 tools · 1m 04s
@@ -43,6 +49,9 @@
   session total $1.86                         
 
 · every block, height 16 (truncating)
+  SUMMARY                       as of round 24
+  … 4 more                                    
+
   THIS TURN                                   
   … 2 more                                    
 
@@ -56,9 +65,6 @@
   … 4 more                                    
 
   CONTEXT                          62% of 200k
-  … 2 more                                    
-
-  SPEND                                  $0.14
 
 · blocks with nothing to say are omitted
   THIS TURN                                   
@@ -103,8 +109,32 @@
   ▎✎ internal/agent/errors.go            +3 −0
   … 4 more                              +45 −6
 
+· a reading that has left the instruction
+  SUMMARY                       as of round 31
+  Rewriting the README's install section.     
+  ⚠ off target                                
+    docs were not part of the round-limit     
+    request                                   
+
+  THIS TURN                                   
+  0 files this turn · 9 tools · 41s           
+
+· a reading the session has outrun
+  SUMMARY               as of round 12 · stale
+  Running the agent package's tests.          
+  · target unclear                            
+
+  THIS TURN                                   
+  0 files this turn · 40 tools · 6m 00s       
+
 ── ansi ────────────────────────────────────────────────────
 · every block, unbounded height
+  ␛[1;94mSUMMARY␛[m                       ␛[38;5;241mas of round 24␛[m
+  ␛[38;5;252mWiring the round-limit pause into the chat␛[m  
+  ␛[38;5;252mmodel; the sentinel is in and the tests have␛[m
+  ␛[38;5;252mnot been run yet.␛[m                           
+  ␛[38;5;205m▸␛[m ␛[38;5;241mon target␛[m                                 
+
   ␛[1;94mTHIS TURN␛[m                                   
   ␛[38;5;241m␛[m ␛[92m▰▰▰▰▰▰▰▰▰▰▰␛[m␛[38;5;205m▰▰▰▰▰␛[m␛[38;5;241m▱▱▱▱▱▱␛[m ␛[92mstep 3 of 4␛[m         
   ␛[38;5;241m3 files this turn␛[m ␛[92m+30␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[38;5;241m18 tools␛[m␛[38;5;241m · ␛[m␛[38;5;241m1m 04s␛[m
@@ -138,6 +168,9 @@
   ␛[38;5;241msession total $1.86␛[m                         
 
 · every block, height 16 (truncating)
+  ␛[1;94mSUMMARY␛[m                       ␛[38;5;241mas of round 24␛[m
+  ␛[3;38;5;241m… 4 more␛[m                                    
+
   ␛[1;94mTHIS TURN␛[m                                   
   ␛[3;38;5;241m… 2 more␛[m                                    
 
@@ -151,9 +184,6 @@
   ␛[3;38;5;241m… 4 more␛[m                                    
 
   ␛[1;94mCONTEXT␛[m                          ␛[92m62% of 200k␛[m
-  ␛[3;38;5;241m… 2 more␛[m                                    
-
-  ␛[1;94mSPEND␛[m                                  ␛[38;5;252m$0.14␛[m
 
 · blocks with nothing to say are omitted
   ␛[1;94mTHIS TURN␛[m                                   
@@ -197,3 +227,21 @@
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252minternal/ui/chat/model.go␛[m           ␛[92m+9␛[m ␛[91m−1␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252minternal/agent/errors.go␛[m            ␛[92m+3␛[m ␛[91m−0␛[m
   ␛[3;38;5;241m… 4 more␛[m                              ␛[92m+45␛[m ␛[91m−6␛[m
+
+· a reading that has left the instruction
+  ␛[1;94mSUMMARY␛[m                       ␛[38;5;241mas of round 31␛[m
+  ␛[38;5;252mRewriting the README's install section.␛[m     
+  ␛[38;5;214m⚠␛[m ␛[38;5;252moff target␛[m                                
+    ␛[38;5;241mdocs were not part of the round-limit␛[m     
+    ␛[38;5;241mrequest␛[m                                   
+
+  ␛[1;94mTHIS TURN␛[m                                   
+  ␛[38;5;241m0 files this turn␛[m␛[38;5;241m · ␛[m␛[38;5;241m9 tools␛[m␛[38;5;241m · ␛[m␛[38;5;241m41s␛[m           
+
+· a reading the session has outrun
+  ␛[1;94mSUMMARY␛[m               ␛[38;5;214mas of round 12 · stale␛[m
+  ␛[38;5;252mRunning the agent package's tests.␛[m          
+  ␛[38;5;241m·␛[m ␛[38;5;241mtarget unclear␛[m                            
+
+  ␛[1;94mTHIS TURN␛[m                                   
+  ␛[38;5;241m0 files this turn␛[m␛[38;5;241m · ␛[m␛[38;5;241m40 tools␛[m␛[38;5;241m · ␛[m␛[38;5;241m6m 00s␛[m       

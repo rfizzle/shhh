@@ -124,6 +124,7 @@ var slashCommands = []slashCommand{
 			{after: []string{"default"}, options: reasoningLevelArgs()},
 		}},
 	{name: "/stats", desc: "Context occupancy and session spend"},
+	{name: "/status", desc: "Where the session is, and whether it is still on target"},
 	{name: "/ui", args: "verbosity <low|normal|high> | mono <on|off>", desc: "Activity feed density and monochrome mode",
 		argSpecs: []argSpec{
 			{options: []argOption{

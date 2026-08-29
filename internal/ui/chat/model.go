@@ -389,6 +389,17 @@ type Model struct {
 	// static policy would ask about; nil falls back to asking the user.
 	classifier       *agent.Classifier
 	classifierCancel context.CancelFunc
+	// The session summary (S-163, summary.go): a cheap model's periodic read
+	// of what the session is doing, drawn as the rail's SUMMARY block.
+	summarizer    *agent.Summarizer
+	summary       summaryState
+	summaryCancel context.CancelFunc
+	// summaryTarget is the instruction the current turn is serving, captured
+	// when the turn starts and never re-derived. It is what a reading judges
+	// drift against, and anchoring it here — rather than reading the tail of
+	// a conversation that may itself have drifted — is what will make
+	// auto-steering answerable.
+	summaryTarget string
 	// defaults are the persisted model defaults /model default writes.
 	defaults Defaults
 	// lastDenial is the most recent auto-mode denial, shown by /permissions why.
@@ -937,6 +948,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if call := mm.notifyCmd(m); call != nil {
 		cmd = tea.Batch(cmd, call)
 	}
+	// The turn's closing summary is derived here too (S-163, summary.go), and
+	// for the third time for the same reason: "the turn just ended" is a fact
+	// about two models, and every path back to the input would otherwise have
+	// to remember to ask for one.
+	if read := mm.summaryCloseCmd(m); read != nil {
+		cmd = tea.Batch(cmd, read)
+	}
 	return mm, cmd
 }
 
@@ -1468,6 +1486,10 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		auto, gated := m.agent.BeginToolRound(m.streaming, msg.calls, m.requiresApproval)
 		m.approvalTotal = len(gated)
+		// A round is also where the session summary is scheduled (S-163):
+		// the round counter has just moved, which is the clock the reading
+		// interval is kept on. It is a no-op until one falls due.
+		summary := m.summaryCmd()
 		// A round is where a fan-out is measured: the children spawned in one
 		// share a batch and render as one block (S-110).
 		m.beginSpawnBatch()
@@ -1482,9 +1504,10 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		if len(auto) > 0 {
-			return m, m.execToolsCmd(auto)
+			return m, tea.Batch(m.execToolsCmd(auto), summary)
 		}
-		return m.advanceApprovalQueue()
+		next, cmd := m.advanceApprovalQueue()
+		return next, tea.Batch(cmd, summary)
 
 	case toolResultsMsg:
 		if msg.runID != m.agent.RunID() || m.turnState() != stateStreaming {
@@ -1583,6 +1606,14 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.classifierCancel = nil
 		return m.finishClassifierCheck(msg.verdict)
 
+	case summaryDoneMsg:
+		// A reading never routes anything: it changes what the rail draws and
+		// nothing else, which is why it has no turn-state guard of its own
+		// (S-163). finishSummary decides what to keep.
+		m.summaryCancel = nil
+		m.finishSummary(msg)
+		return m, nil
+
 	case modelListMsg:
 		return m.finishModelList(msg)
 
@@ -1680,6 +1711,13 @@ func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
 	// A new turn starts from the ceiling the session was configured with, and
 	// the pause behind it can no longer be granted more rounds (S-109).
 	m.resetRounds()
+	// This message is the target every reading of this turn is judged
+	// against, and it is captured once, here (S-163). A run that drifts must
+	// not be able to drift its own yardstick with it — which is the whole
+	// difference between a drift signal and a summary of wherever the
+	// conversation happens to have ended up.
+	m.summaryTarget = text
+	m.summary.startTurn()
 	m.recordCheckpoint(text)
 	atts := m.takeAttachments()
 	m.agent.StartTurnWith(text, atts)

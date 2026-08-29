@@ -47,6 +47,47 @@ const (
 	inspectorSparkCell = SparkCells
 )
 
+// InspectorSummary is the SUMMARY block (S-163, §15d): a cheap model's read of
+// what the session is doing and whether it is still doing what was asked. It
+// is the one block that is not a count — the numbers under it say how much has
+// happened, and this says what.
+type InspectorSummary struct {
+	// Text is the reading itself, in the model's own words. It is wrapped to
+	// the rail rather than clipped, because a sentence cut at 44 columns is a
+	// sentence nobody can finish.
+	Text string
+	// State is the reading's judgement, drawn as its own row.
+	State SummaryTone
+	// Reason qualifies a state that is not on target, and is empty otherwise
+	// — a departure the reader can see is worth a row, and "on target
+	// because…" is the model narrating.
+	Reason string
+	// Round is the tool round the reading was taken at, which the heading
+	// states. A summary without it is a claim about now that nobody can
+	// check.
+	Round int
+	// Stale marks a reading the session has outrun — a refresh that failed,
+	// or one still in flight past its interval. The heading says so rather
+	// than letting an old sentence pass for a current one (§15c).
+	Stale bool
+}
+
+// SummaryTone is the rail's rendering of a summary's state. It mirrors
+// agent.SummaryState; the component keeps its own type for the same reason
+// PlanStepState is not the transcript's own — the rail draws, it does not
+// import the session's vocabulary.
+type SummaryTone int
+
+const (
+	// SummaryUnclear is the reading that could not tell.
+	SummaryUnclear SummaryTone = iota
+	// SummaryOnTarget is the run still serving the instruction it started
+	// from.
+	SummaryOnTarget
+	// SummaryOffTarget is the run that has departed from it.
+	SummaryOffTarget
+)
+
 // InspectorTurn is the THIS TURN block: how far through its steps the turn is,
 // how many tools it has spent, and how long it has been running.
 type InspectorTurn struct {
@@ -196,6 +237,7 @@ type InspectorSpend struct {
 // InspectorRail is the whole rail. A nil block pointer (or an empty agent
 // list) is a block with nothing to say, and is omitted.
 type InspectorRail struct {
+	Summary *InspectorSummary
 	Turn    *InspectorTurn
 	Plan    *InspectorPlan
 	Changes *InspectorChanges
@@ -211,8 +253,8 @@ type InspectorRail struct {
 // Empty reports whether every block is omitted, so the host can skip the
 // split rather than draw an empty column.
 func (r InspectorRail) Empty() bool {
-	return r.Turn == nil && r.Plan == nil && r.Changes == nil && len(r.Agents) == 0 &&
-		r.Context == nil && r.Spend == nil
+	return r.Summary == nil && r.Turn == nil && r.Plan == nil && r.Changes == nil &&
+		len(r.Agents) == 0 && r.Context == nil && r.Spend == nil
 }
 
 // railLine is one assembled row and what truncation is allowed to do with it.
@@ -302,7 +344,8 @@ func (r InspectorRail) Lines(width, height int) []string {
 func (r InspectorRail) blocks(width int) []railBlock {
 	var blocks []railBlock
 	for _, b := range []func(int) (railBlock, bool){
-		r.turnBlock, r.planBlock, r.changesBlock, r.agentsBlock, r.contextBlock, r.spendBlock,
+		r.summaryBlock, r.turnBlock, r.planBlock, r.changesBlock,
+		r.agentsBlock, r.contextBlock, r.spendBlock,
 	} {
 		if blk, ok := b(width); ok {
 			blocks = append(blocks, blk)
@@ -350,6 +393,91 @@ func total(blocks []railBlock) int {
 		n += b.height()
 	}
 	return n
+}
+
+// summaryLines is how many wrapped rows the reading may take. Three is what
+// two short sentences need at this width; a model that wrote more has written
+// more than the block asked for, and the rest folds.
+const summaryLines = 3
+
+// summaryReasonLines is how many rows a departure's reason may take under the
+// state row. Two, because a reason that needs three is not a reason, it is a
+// second summary.
+const summaryReasonLines = 2
+
+// summaryBlock is the rail's one prose block (S-163, §15d). It sits first
+// because it is the answer the rest of the rail is the detail of: SUMMARY says
+// what is happening, THIS TURN says how far through, CHANGES says what it cost
+// the workspace.
+//
+// The state row is drawn in every state, including on target. PLAN's drift
+// line is not — "no drift is not news" — and the difference is where the two
+// come from: PLAN's drift is computed from the plan and the steps taken, so
+// its absence is a fact, while this is a model's judgement, and a block that
+// went quiet when the judgement was "fine" would be indistinguishable from one
+// whose reading failed.
+func (r InspectorRail) summaryBlock(width int) (railBlock, bool) {
+	s := r.Summary
+	if s == nil || strings.TrimSpace(s.Text) == "" {
+		return railBlock{}, false
+	}
+	var fields []string
+	if s.Round > 0 {
+		fields = append(fields, fmt.Sprintf("as of round %d", s.Round))
+	}
+	metaStyle := sty.Dim
+	if s.Stale {
+		// An old reading is still the best reading there is — it is just not
+		// a current one, and the heading is where that is said (§15c).
+		fields, metaStyle = append(fields, "stale"), sty.Accent
+	}
+	meta := strings.Join(fields, " · ")
+	b := railBlock{heading: railHeading("SUMMARY", meta, metaStyle, width)}
+
+	lines := wrapPlain(s.Text, width-inspectorIndent)
+	if len(lines) > summaryLines {
+		lines = lines[:summaryLines]
+		lines[summaryLines-1] = clip(lines[summaryLines-1], width-inspectorIndent-1) + "…"
+	}
+	for i, line := range lines {
+		// The first line is pinned: a block truncated to its heading would
+		// leave the rail with a word and no sentence, and the sentence is the
+		// whole block. The rest fold from the bottom like any other rows.
+		row := indentRow(sty.Body.Render(line), width)
+		if i == 0 {
+			b.pin(row)
+			continue
+		}
+		b.add(row)
+	}
+
+	glyph, label, style := summaryTone(s.State)
+	b.pin(indentRow(glyph+" "+style.Render(label), width))
+	// The reason gets its own rows rather than a suffix on the state row: it
+	// is the whole content of a departure, and at 46 columns a suffix is a
+	// reason clipped mid-word. It follows its state the way an alert's note
+	// follows its alert in CHANGES — one indent further in, dim, bounded.
+	for i, line := range wrapPlain(s.Reason, width-inspectorIndent-2) {
+		if s.Reason == "" || i >= summaryReasonLines {
+			break
+		}
+		b.pin(railRow(sty.Dim.Render(line), "", width, inspectorIndent+2))
+	}
+	return b, true
+}
+
+// summaryTone is the state row's glyph, its words and its weight. The glyph
+// carries the distinction so a monochrome terminal reads the same as a colour
+// one (§10c): ▸ for a run still on its instruction, ⚠ for one that has left
+// it, · for a reading that could not tell.
+func summaryTone(s SummaryTone) (string, string, lipgloss.Style) {
+	switch s {
+	case SummaryOnTarget:
+		return sty.SpinText.Render("▸"), "on target", sty.Dim
+	case SummaryOffTarget:
+		return sty.Accent.Render("⚠"), "off target", sty.Body
+	}
+	return sty.Dim.Render("·"), "target unclear", sty.Dim
 }
 
 func (r InspectorRail) turnBlock(width int) (railBlock, bool) {

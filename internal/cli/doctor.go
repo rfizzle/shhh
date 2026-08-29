@@ -270,6 +270,7 @@ func configSettingsSet(cfg config.Config) int {
 		cfg.Sandbox.Profile != "", cfg.Sandbox.ContainerImage != "", cfg.Sandbox.ContainerEngine != "",
 		cfg.Sandbox.RequireIsolation != "", len(cfg.Sandbox.DenyExtra) > 0, len(cfg.Sandbox.WriteExtra) > 0,
 		cfg.Web.SearchAPIKey != "", cfg.Web.AllowPrivate, cfg.LSP.Disabled,
+		cfg.Summary.Model != "", cfg.Summary.Disabled,
 	} {
 		if set {
 			n++
