@@ -74,7 +74,7 @@ shhh history · 6 entries · 2 run                                              
 
 [↑↓] move · [ctrl+u] clear the filter, then close it · [esc] back to the shell
 
-· [x] · the §5 confirm, naming what it would take, defaulting to no
+· [x] · the inline confirm, naming what it would take, defaulting to no
 shhh history · 6 entries · 2 run                                                                               [?] keys · [q] quit
 ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -189,7 +189,7 @@ shhh history · 6 entries · 2 run                                              
 
 ␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+u]␛[m␛[38;5;244m clear the filter, then close it␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
 
-· [x] · the §5 confirm, naming what it would take, defaulting to no
+· [x] · the inline confirm, naming what it would take, defaulting to no
 ␛[1;38;5;254mshhh history␛[m␛[38;5;244m · 6 entries · 2 run␛[m                                                                               ␛[38;5;244m[?] keys · [q] quit␛[m
 ␛[38;5;244m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 

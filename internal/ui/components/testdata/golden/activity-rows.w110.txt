@@ -36,7 +36,7 @@
     --- FAIL: TestRoundLimit (0.00s)
         loop_test.go:88: want ErrRoundLimit, got nil
 
-· output · a program's own colours, re-painted (§10i)
+· output · a program's own colours, re-painted
   ▎✗ run     go test ./internal/agent/...                                                         exit 1 21.4s
     --- FAIL: TestRoundLimit (0.00s)
     building 100%
@@ -84,7 +84,7 @@
     ␛[38;5;245m--- FAIL: TestRoundLimit (0.00s)␛[m
     ␛[38;5;245m    loop_test.go:88: want ErrRoundLimit, got nil␛[m
 
-· output · a program's own colours, re-painted (§10i)
+· output · a program's own colours, re-painted
   ␛[91m▎␛[m␛[91m✗␛[m run     ␛[38;5;241mgo test ./internal/agent/...␛[m                                                         ␛[91mexit 1␛[m ␛[38;5;245m21.4s␛[m
     ␛[38;5;245m--- ␛[m␛[91mFAIL␛[m␛[38;5;245m: ␛[m␛[1;38;5;245mTestRoundLimit␛[m␛[38;5;245m (0.00s)␛[m
     ␛[38;5;245mbuilding 100%␛[m

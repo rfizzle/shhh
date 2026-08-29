@@ -7,6 +7,15 @@ to it. This script is what makes that loud instead. See AGENTS.md#documentation.
 
 Also reports documents that nothing cites: a section nothing points at is
 either wrong or unnecessary.
+
+And it fails on a spec section reference (a § number) inside a Go string
+literal or a golden fixture. Such a reference belongs in a comment; in a
+string it becomes test output, an error message, or — worst — committed
+golden content, which couples a documentation edit to regenerating goldens.
+
+Only § is checked, not docs/ paths: a path like docs/loop.md is a perfectly
+ordinary test fixture filename, and internal/ui/keys deliberately stores doc
+paths as data so each keyed surface names what is normative for it.
 """
 import re, sys, pathlib, collections
 
@@ -42,6 +51,36 @@ for f in pathlib.Path('.').rglob('*'):
         if frag and frag not in anchors(tp): bad.append(f"{f}: no anchor #{frag} in {rel}")
 cited={c.split("#")[0] for c in CITED}
 uncited=sorted(REAL - cited - {"docs/README.md","docs/capabilities/README.md","docs/interface/README.md"})
+# a doc reference must never be data: not in a string literal, not in a golden
+def comment_start(line):
+    i=0; q=None
+    while i < len(line):
+        c=line[i]
+        if q:
+            if c=="\\" and q!="`": i+=2; continue
+            if c==q: q=None
+            i+=1; continue
+        if c in "\"`'": q=c; i+=1; continue
+        if c=="/" and i+1<len(line) and line[i+1]=="/": return i
+        i+=1
+    return -1
+
+REF=re.compile(r"§\d+[a-z]?")
+for f in pathlib.Path(".").rglob("*.go"):
+    if ".git" in f.parts: continue
+    raw=False
+    for ln,l in enumerate(f.read_text().split("\n"),1):
+        if raw:
+            raw ^= (l.count("`")%2==1); continue
+        c=comment_start(l); raw ^= (l.count("`")%2==1)
+        code = l if c<0 else l[:c]
+        if REF.search(code):
+            bad.append(f"{f}:{ln}: spec section reference in a string literal, not a comment")
+for f in pathlib.Path(".").rglob("testdata/golden/*.txt"):
+    for ln,l in enumerate(f.read_text().split("\n"),1):
+        if REF.search(l):
+            bad.append(f"{f}:{ln}: spec section reference baked into a golden fixture")
+
 print(f"checked {n} docs/ citations in {len(per)} files")
 if uncited:
     print("uncited documents (nothing in the tree points at these):")

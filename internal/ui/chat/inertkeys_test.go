@@ -55,13 +55,13 @@ func register(t *testing.T) []keyedSurface {
 	t.Helper()
 	return []keyedSurface{
 		{
-			name: "approval card (§2)",
+			name: "approval card",
 			keys: []string{"y", "n", "a", "d", "A"},
 			open: func(t *testing.T) Model { return interruptedModel(t, draftLead) },
 			hold: handover,
 		},
 		{
-			name: "plan card (§4d)",
+			name: "plan card",
 			// [j] leads because the answering test presses the first key,
 			// and moving the choice is the one plan-card key that neither
 			// writes a file nor ends the card.
@@ -78,7 +78,7 @@ func register(t *testing.T) []keyedSurface {
 			hold: handover,
 		},
 		{
-			name: "a child agent's routed approval (§9c)",
+			name: "a child agent's routed approval",
 			keys: []string{"y", "n", "a", "g"},
 			open: func(t *testing.T) Model {
 				sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
@@ -90,7 +90,7 @@ func register(t *testing.T) []keyedSurface {
 			hold: handover,
 		},
 		{
-			name: "the changeset row a turn closes with (§16)",
+			name: "the changeset row a turn closes with",
 			keys: []string{"v", "u"},
 			open: func(t *testing.T) Model {
 				m, _ := undoModel(t)
@@ -99,7 +99,7 @@ func register(t *testing.T) []keyedSurface {
 			hold: readingCursorOn(entryTurnClose),
 		},
 		{
-			name: "a provider failure's row (§17a)",
+			name: "a provider failure's row",
 			keys: []string{"e", "p", "r", "c"},
 			open: func(t *testing.T) Model {
 				m := failureModel(t)
@@ -109,7 +109,7 @@ func register(t *testing.T) []keyedSurface {
 			hold: readingCursorOn(entryFailure),
 		},
 		{
-			name: "a dropped stream's row (§17a)",
+			name: "a dropped stream's row",
 			keys: []string{"c", "r"},
 			open: func(t *testing.T) Model {
 				m := streamed(resumeModel(t), "so I'll thread the sentinel through runRound and then")
@@ -119,7 +119,7 @@ func register(t *testing.T) []keyedSurface {
 			hold: readingCursorOn(entryStreamDrop),
 		},
 		{
-			name: "a round-limit pause's row (§17a)",
+			name: "a round-limit pause's row",
 			keys: []string{"v", "u", keys.Shown(keys.Row.Rounds), keys.Shown(keys.Row.Uncap)},
 			open: func(t *testing.T) Model {
 				m, _ := pausedModel(t)
@@ -128,12 +128,12 @@ func register(t *testing.T) []keyedSurface {
 			hold: readingCursorOn(entryRoundPause),
 		},
 		{
-			name: "reading mode's own keys and its per-row offers (§7a)",
+			name: "reading mode's own keys and its per-row offers",
 			keys: []string{"j", "k", "q", "-"},
 			open: func(t *testing.T) Model { return typeChars(t, focusModel(t), draftLead) },
 		},
 		{
-			name: "review mode (§16a)",
+			name: "review mode",
 			keys: []string{"s", "A", "n", "p"},
 			open: func(t *testing.T) Model {
 				m, _ := reviewModel(t)
@@ -141,7 +141,7 @@ func register(t *testing.T) []keyedSurface {
 			},
 		},
 		{
-			name: "the undo confirm (§5)",
+			name: "the undo confirm",
 			keys: []string{"y", "n", "f"},
 			open: func(t *testing.T) Model {
 				m, _ := undoModel(t)
@@ -149,17 +149,17 @@ func register(t *testing.T) []keyedSurface {
 			},
 		},
 		{
-			name: "the context pressure card (§17b)",
+			name: "the context pressure card",
 			keys: []string{"n"},
 			open: func(t *testing.T) Model { return typeChars(t, pressureModel(t, 110), draftLead) },
 		},
 		{
-			name: "the selector family (§4)",
+			name: "the selector family",
 			keys: []string{"1", "2", "j", "k"},
 			open: func(t *testing.T) Model { return typeChars(t, readyModel(t), draftLead) },
 		},
 		{
-			name: "the agent list (§9a)",
+			name: "the agent list",
 			keys: []string{"x", "X", "j", "k"},
 			open: func(t *testing.T) Model {
 				sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
@@ -260,15 +260,15 @@ func TestInertKeys_EveryTakeoverHoldsTheKeyboardExclusively(t *testing.T) {
 		name string
 		s    state
 	}{
-		{"reading mode (§7a)", stateFocus},
-		{"the full-screen diff (§3c)", stateDiffFull},
-		{"review mode (§16a)", stateReview},
-		{"the rewind picker (§4a)", stateRewindPick},
-		{"the selector family (§4)", statePick},
-		{"the model picker (§4a)", stateModelList},
-		{"the undo confirm (§5)", stateUndoConfirm},
-		{"the key entry (§17a)", stateKeyEntry},
-		{"the context pressure card (§17b)", statePressure},
+		{"reading mode", stateFocus},
+		{"the full-screen diff", stateDiffFull},
+		{"review mode", stateReview},
+		{"the rewind picker", stateRewindPick},
+		{"the selector family", statePick},
+		{"the model picker", stateModelList},
+		{"the undo confirm", stateUndoConfirm},
+		{"the key entry", stateKeyEntry},
+		{"the context pressure card", statePressure},
 	}
 	for _, tc := range takeovers {
 		t.Run(tc.name, func(t *testing.T) {

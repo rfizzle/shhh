@@ -129,7 +129,7 @@ func TestGolden_ActivityRows(t *testing.T) {
 				r.Expanded = true
 				r.Detail = []string{"--- FAIL: TestRoundLimit (0.00s)", "    loop_test.go:88: want ErrRoundLimit, got nil"}
 			})},
-			{Label: "output · a program's own colours, re-painted (§10i)", View: row(func(r *ActivityRow) {
+			{Label: "output · a program's own colours, re-painted", View: row(func(r *ActivityRow) {
 				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "go test ./internal/agent/..."
 				r.State, r.Outcome, r.Duration = ActivityFailed, OutcomeExit(1), "21.4s"
 				r.Expanded = true
@@ -1472,7 +1472,7 @@ func TestGolden_HistoryScreen(t *testing.T) {
 				typed(h, "kubectl")
 				return h.View(width)
 			}()},
-			{Label: "[x] · the §5 confirm, naming what it would take, defaulting to no", View: func() string {
+			{Label: "[x] · the inline confirm, naming what it would take, defaulting to no", View: func() string {
 				h := screen(nil)
 				h.Update(key("x"))
 				return h.View(width)

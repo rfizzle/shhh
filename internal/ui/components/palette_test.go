@@ -56,7 +56,7 @@ func TestPalette_EveryTokenIsWrittenForEveryProfile(t *testing.T) {
 			{"16-colour fallback", c.token.ANSI, lipgloss.Color(c.ansi16), c.ansi16},
 		} {
 			if rung.got != rung.want {
-				t.Errorf("%s: %s is %s, §10a says %q",
+				t.Errorf("%s: %s is %s, the palette says %q",
 					c.name, rung.what, sgr(rung.got), rung.says)
 			}
 		}
