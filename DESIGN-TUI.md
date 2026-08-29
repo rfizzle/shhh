@@ -2496,7 +2496,8 @@ Graphics and name were not asked for: the reply would have to come back over ssh
 It is `internal/ui/caps`, and it is the only package in the tree that speaks
 the wire: it writes the questions, reads the replies, and every
 terminal-protocol type stops there. What leaves is a value with plain fields
-on it.
+on it — and where an answer is later spent as a sequence of its own, it is
+spent there too (§10l).
 
 Ported from Crush's `internal/ui/common/capabilities.go`, with three places
 where shhh's semantics win. **It does not answer for the colour profile** —
@@ -2508,6 +2509,94 @@ the layout's, because it is what every drop ladder in §8b and §6a reads, so
 the cell size is handed the cells to divide by rather than keeping a second
 copy of them. And **the reply is read where it was already framed** rather
 than fed back through a fresh parser a byte at a time.
+
+---
+
+### 10l. When shhh needs you and you are not there (S-157)
+
+A turn runs for minutes and then stops, and what it stops on is usually a
+question: approve this command, apply this patch, the plan is ready. The
+reader who started it went to do something else. Nothing told them, so they
+came back and found the turn had been waiting on one keystroke for four
+minutes — which is the whole cost of an agent that asks permission.
+
+So shhh raises **one desktop notification**, and two rules keep it from
+becoming noise. Both are edges rather than states.
+
+**It notifies on the transition into waiting**, not while waiting: the one
+moment the session stops needing shhh and starts needing the reader. That
+moment is `working()` (§8d) going false, plus the one decision that does not
+live in the turn state — a child agent's routed approval, which arrives while
+the parent's own turn is still streaming (§9c). It is reached from a dozen
+handlers, three of them cancellations, so it is not a message any of them can
+be trusted to send: it is derived in `Update` from the model before against
+the model after, the way the spinner's tick is (§10c, S-119). A property of a
+transition is read off the transition.
+
+**And only when the terminal has said the window is not the one in front.**
+That rule gates itself. Focus reporting is asked for on the `View`
+unconditionally — it costs the terminal nothing — and the only way to know
+the window is away is to have been told so. A terminal that does not report
+focus never sends the blur, so shhh never decides it is being ignored on a
+guess, and §10k's `FocusEvents` stays a readout rather than a gate: having
+actually received a blur is the stronger fact and it is free. Crush asks the
+capability probe whether focus events are supported and trusts that answer.
+
+What it says is **what the screen it is calling you back to says**: a card's
+own title and headline, a turn close's own summary word for word (§16). A
+summons that describes the screen in different words is a summons the reader
+has to reconcile when they arrive.
+
+```
+shhh · Approve command
+Assistant wants to run: go test ./...
+
+shhh · Turn done
+3 steps · 7 tools · 1m4s · $0.12 · 2 files changed · +48 −11 · go test ./... failing
+
+shhh · scout ▸ Approve command
+scout wants to run go build ./...
+```
+
+Three things it deliberately does not do.
+
+- **No native backend.** Crush picks between the escape sequence and the
+  operating system's own notification daemon; shhh cannot, because the machine
+  running shhh is not always the machine the reader is sitting at. Over `ssh` a
+  native notification is raised on the server, where nobody is; the escape
+  sequence travels back down the connection to the terminal that is actually
+  in front of them. One dialect that is right everywhere beats two that are
+  each right somewhere.
+- **No bell, and nothing for a command you ran yourself.** A `/run` finishing
+  reaches the input the same way a turn does and closes nothing on the way
+  (§16, S-098). The summons is about work shhh was doing on your behalf while
+  you were elsewhere, not about a command you watched start ten seconds ago.
+- **Nothing said twice.** One identifier for the life of the session, so where
+  a terminal treats a repeat as an update the second summons replaces the
+  first rather than stacking behind it.
+
+The dialect follows §10k's answer: **OSC 99** where the terminal said it can
+carry a title, **OSC 777** — the urxvt extension, which has no query and no
+reply — where it did not. Silence from the OSC 99 query is not "this terminal
+cannot notify", it is "this terminal did not say", and the answer to a
+terminal that did not say is to try the older thing quietly rather than to
+give up.
+
+What goes out is **stripped first**. The body of an approval notification is a
+command the model asked to run — text shhh did not author — and it is leaving
+as bytes the terminal reads rather than as a string a `View` draws. An escape
+sequence that survived the trip would be a sequence the model wrote straight
+to the terminal, so the sequences come off, every remaining control character
+with them, and the `;` that OSC 777 uses to separate its parameters becomes a
+space. What is left is folded onto one line and cut to fit, because a
+notification panel is one line and the whole card is on the screen anyway.
+
+It is `appearance.notify`, on by default, and `/ui notify <on|off>` is the
+same setting said in words. Unlike mouse reporting (§7a) it takes nothing
+away — it cannot fire while anyone is looking at the screen — so it is the
+thing you opt *out* of. `/ui` names the dialect in its readout, and says so
+when the setting is on and the terminal has never mentioned focus, because
+"on and silent" is the state worth explaining.
 
 ---
 

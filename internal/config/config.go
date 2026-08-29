@@ -216,6 +216,13 @@ type AppearanceConfig struct {
 	// the pane and copies on release (S-145), which the terminal's own
 	// cannot do.
 	Mouse bool `toml:"mouse"`
+	// Notify lets a session raise a desktop notification when a turn stops
+	// while the terminal has said the window is not the one in front
+	// (DESIGN-TUI.md §10l). It is on when unset, because unlike Mouse it
+	// takes nothing away: it cannot fire while you are looking at the screen,
+	// and the thing it exists for — a turn that stopped on an approval four
+	// minutes ago — is invisible until it does.
+	Notify *bool `toml:"notify"`
 }
 
 type HistoryConfig struct {
@@ -238,6 +245,15 @@ func (c Config) ReadOnlyAutoEnabled() bool {
 		return true
 	}
 	return *c.Behavior.ReadOnlyAuto
+}
+
+// NotifyEnabled reports whether a session may raise desktop notifications
+// (the default).
+func (c Config) NotifyEnabled() bool {
+	if c.Appearance.Notify == nil {
+		return true
+	}
+	return *c.Appearance.Notify
 }
 
 func (c Config) SafetyWarningsEnabled() bool {
@@ -332,6 +348,9 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Behavior.ContextMaxTokens = n
 	case "appearance.mouse":
 		cfg.Appearance.Mouse = value == "true"
+	case "appearance.notify":
+		v := value == "true"
+		cfg.Appearance.Notify = &v
 	case "behavior.max_tool_rounds":
 		n := 0
 		fmt.Sscanf(value, "%d", &n)

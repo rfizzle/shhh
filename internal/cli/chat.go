@@ -515,6 +515,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithReadOnlyCommands(cfg.Behavior.ReadOnlyCommands, !cfg.ReadOnlyAutoEnabled()).
 		WithConfigWriter(configWriter()).
 		WithMouse(cfg.Appearance.Mouse).
+		WithNotify(cfg.NotifyEnabled()).
 		WithDefaults(chat.Defaults{
 			Model:      cfg.Provider.Model,
 			AgentModel: cfg.Agents.Model,

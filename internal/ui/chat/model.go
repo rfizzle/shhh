@@ -430,9 +430,21 @@ type Model struct {
 	// caps is what this terminal told shhh it can do — inline images,
 	// desktop notifications, focus events (S-156, §10k). It is asked once,
 	// when the program hands over its environment, and the replies land
-	// wherever they land. Nothing on screen depends on it yet; `/ui
-	// terminal` is what reads it.
+	// wherever they land. `/ui terminal` reads it, and so does the desktop
+	// notification of §10l, which is the OSC 99 answer being spent.
 	caps caps.Terminal
+	// notifyOn is whether shhh may raise a desktop notification when a turn
+	// stops while the window is not the one in front (S-157, §10l,
+	// appearance.notify). It is on by default, because unlike mouse
+	// reporting it takes nothing away: the gate below means it can only fire
+	// when the terminal has said the reader cannot see the screen.
+	notifyOn bool
+	// away is what the terminal last said about focus. Its zero value is
+	// false, and that is deliberate: a window that is in front and a terminal
+	// that has never mentioned focus are different facts with the same
+	// answer to the only question asked of them — may shhh assume nobody is
+	// looking? — and the answer to both is no (S-157, §10l).
+	away bool
 	// Application-owned transcript selection (S-145, select.go). sel is the
 	// selection itself — anchor, endpoint, and whether the button is still
 	// down — in rendered-transcript coordinates. selScrollDir and
@@ -701,6 +713,10 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 		verbosity: verbosityNormal,
 		atBottom:  true,
 		copyFn:    clipboard.Copy,
+		// On unless the config says otherwise (WithNotify): unlike mouse
+		// reporting, a notification takes nothing away, and it cannot fire
+		// while anyone is looking at the screen (S-157, §10l).
+		notifyOn: true,
 		// Every session records what it changes; WithChangeset swaps in a
 		// store with a different bound or a git tracker (S-097).
 		changes:     changeset.New(changeset.DefaultMaxBytes),
@@ -904,6 +920,15 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if tick := mm.spinCmd(); tick != nil {
 		cmd = tea.Batch(cmd, tick)
 	}
+	// And the desktop notification is derived here for the same reason
+	// (S-157, §10l): the moment worth notifying about is a transition — the
+	// session stopped needing shhh and started needing the reader — and a
+	// transition is a fact about the model before against the model after,
+	// not a message any one of the dozen handlers that reach it could be
+	// trusted to send.
+	if call := mm.notifyCmd(m); call != nil {
+		cmd = tea.Batch(cmd, call)
+	}
 	return mm, cmd
 }
 
@@ -927,6 +952,16 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// terminal rather than this machine's (S-156). It arrives once, at
 		// startup, and asking is the only thing to do with it.
 		return m, m.caps.Query(msg)
+	case tea.FocusMsg:
+		// The window came back to the front. Nothing on screen changes; what
+		// changes is whether shhh may assume nobody is looking (S-157, §10l).
+		m.away = false
+		return m, nil
+
+	case tea.BlurMsg:
+		m.away = true
+		return m, nil
+
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
@@ -1649,6 +1684,12 @@ func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
 func (m Model) View() tea.View {
 	v := tea.NewView(m.screen())
 	v.AltScreen = true
+	// Focus reporting is asked for unconditionally, because it costs the
+	// terminal nothing and it is the only thing that can say whether anyone
+	// is looking (S-157, §10l). A terminal that does not know the mode says
+	// nothing back, and saying nothing is an answer shhh can act on: no blur
+	// ever arrives, so it never concludes the reader has gone.
+	v.ReportFocus = true
 	// Reporting is off for the session by default — the terminal keeps its
 	// own click-drag selection, which is the one thing tracking costs and the
 	// one thing nothing else here can do — and `/ui mouse on` buys the wheel

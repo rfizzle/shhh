@@ -127,6 +127,8 @@ var slashCommands = []slashCommand{
 			{options: []argOption{
 				{"verbosity", "Activity feed density"},
 				{"mono", "Strip every surface to two greys"},
+				{"mouse", "Whether shhh or the terminal owns the mouse"},
+				{"notify", "Say so when a turn stops and you are elsewhere"},
 				{"terminal", "What this terminal can do"},
 			}},
 			{after: []string{"verbosity"}, options: []argOption{
@@ -137,6 +139,14 @@ var slashCommands = []slashCommand{
 			{after: []string{"mono"}, options: []argOption{
 				{"on", "Two greys — glyphs and words carry every state"},
 				{"off", "The full palette"},
+			}},
+			{after: []string{"mouse"}, options: []argOption{
+				{"on", "The wheel scrolls and click-drag selects the transcript"},
+				{"off", "The terminal keeps its own click-drag selection"},
+			}},
+			{after: []string{"notify"}, options: []argOption{
+				{"on", "One notification when a turn stops and the window is not in front"},
+				{"off", "A turn that stops while you are elsewhere waits silently"},
 			}},
 		}},
 	{name: "/add-dir", args: "[<path>|drop <path>]", desc: "The directories this session may work in",

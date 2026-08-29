@@ -86,16 +86,58 @@ type TurnClose struct {
 	Handover string
 }
 
+// Word is how the turn ended, in the one word that rides beside the glyph so
+// colour never carries the state alone (invariant 1). It is exported because
+// the screen is not the only surface that has to say how a turn ended: the
+// desktop notification a finished turn raises has no glyph and no colour, and
+// says this (S-157, §10l).
+func (s TurnState) Word() string {
+	switch s {
+	case TurnCancelled:
+		return "Cancelled"
+	case TurnFailed:
+		return "Failed"
+	}
+	return "Done"
+}
+
 // stateGlyph is the first row's glyph and the word beside it. Both carry the
 // state: colour never carries it alone (invariant 1).
 func (c TurnClose) stateGlyph() (string, string) {
 	switch c.State {
 	case TurnCancelled:
-		return sty.Dim.Render("⊘"), "Cancelled"
+		return sty.Dim.Render("⊘"), c.State.Word()
 	case TurnFailed:
-		return sty.Del.Render("✗"), "Failed"
+		return sty.Del.Render("✗"), c.State.Word()
 	}
-	return sty.Add.Render("✓"), "Done"
+	return sty.Add.Render("✓"), c.State.Word()
+}
+
+// Summary is the whole block said in one plain line, without the state word
+// the notification's title already carries and without a glyph in it: what
+// the turn cost, what it changed, and whether the checks still pass — the
+// three rows of §16, in the order the screen draws them.
+//
+// It exists because a notification is the one surface that cannot draw
+// (S-157, §10l). Everything it says has to be words, so the glyph that
+// carries "changed" and the colours that carry "+3 −5" are spent here as
+// the words they stand for, and nothing is said twice.
+func (c TurnClose) Summary() string {
+	var parts []string
+	if stats := strings.TrimPrefix(c.summaryStats(), " · "); stats != "" {
+		parts = append(parts, stats)
+	}
+	if ch := c.Changes; ch != nil {
+		parts = append(parts, fmt.Sprintf("%s changed · +%d −%d", plural(ch.Files, "file"), ch.Added, ch.Removed))
+	}
+	if ck := c.Checks; ck != nil {
+		verdict := " passing"
+		if ck.Failed {
+			verdict = " failing"
+		}
+		parts = append(parts, ck.Label+verdict)
+	}
+	return strings.Join(parts, " · ")
 }
 
 // summaryStats is the first row's detail: the steps, tools, wall time and

@@ -360,10 +360,11 @@ func (m Model) runningCommandRow(width int) string {
 }
 
 // uiCommand handles /ui: the activity feed's verbosity, mono conformance,
-// terminal mouse reporting, and what the terminal itself can do.
+// terminal mouse reporting, desktop notifications, and what the terminal
+// itself can do.
 func (m *Model) uiCommand(parts []string) string {
 	if len(parts) == 1 {
-		return fmt.Sprintf("Activity feed verbosity: %s.\nMonochrome: %s.\nMouse reporting: %s.\nLayout: %s.\nTerminal: %s.\nUsage: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off> · /ui terminal", m.verbosity, monoStatus(), m.mouseStatus(), m.inspectorStatus(), terminalName(m.caps))
+		return fmt.Sprintf("Activity feed verbosity: %s.\nMonochrome: %s.\nMouse reporting: %s.\nDesktop notifications: %s.\nLayout: %s.\nTerminal: %s.\n"+uiUsage, m.verbosity, monoStatus(), m.mouseStatus(), m.notifyStatus(), m.inspectorStatus(), terminalName(m.caps))
 	}
 	switch parts[1] {
 	case "verbosity":
@@ -384,11 +385,18 @@ func (m *Model) uiCommand(parts []string) string {
 		return m.monoCommand(parts)
 	case "mouse":
 		return m.mouseCommand(parts)
+	case "notify":
+		return m.notifyCommand(parts)
 	case "terminal":
 		return m.terminalReport()
 	}
-	return "Usage: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off> · /ui terminal"
+	return uiUsage
 }
+
+// uiUsage is the one line naming everything /ui answers for. It is a constant
+// because the bare readout and the unknown-subcommand reply are the same
+// list, and a list written twice is a list that drifts.
+const uiUsage = "Usage: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off> · /ui notify <on|off> · /ui terminal"
 
 // terminalName is the one-line answer the bare /ui gives: what the terminal
 // called itself when shhh asked (S-156, §10k). A terminal that was asked

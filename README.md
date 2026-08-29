@@ -127,6 +127,7 @@ accent_color = "cyan"
 | `behavior.context_max_tokens` | Max tokens for stdin context (default: 8000) |
 | `behavior.max_tool_rounds` | Max consecutive tool-call rounds per chat turn (default: 150; any negative removes the cap, for a machine that only runs unattended) |
 | `appearance.mouse` | Terminal mouse reporting (default: false, so your terminal's own click-drag selection keeps working); on, the wheel scrolls and shhh's own click-drag selects the transcript. `Ctrl+X` in a session flips and saves it |
+| `appearance.notify` | Desktop notification when a turn stops while your terminal has said the window is not in front (default: true). It never fires while you are looking at the screen, and a terminal that does not report focus never triggers it at all. `/ui notify <on\|off>` flips and saves it |
 | `behavior.command_allowlist` | Command prefixes auto-approved in chat/code sessions (e.g. `["git status", "go test"]`); safety-flagged commands always prompt |
 | `behavior.read_only_commands` | Extra command prefixes treated as read-only inspection (they run without prompting in every mode, alongside the built-in list) |
 | `behavior.read_only_auto` | Whether built-in inspection commands run without prompting (default: true); `false` makes reads prompt like anything else |
@@ -782,6 +783,7 @@ Slash commands inside a chat session:
 | `/ui verbosity <v>` | Activity feed density: `low` shows step headers only, `normal` folds read-only runs into a counted row, `high` expands every row (bare `/ui` also reports the pane layout) |
 | `/ui mono <on\|off>` | Strip every surface to two greys; glyphs, words and layout carry the states. `NO_COLOR` turns it on for the session |
 | `/ui mouse <on\|off>` | Terminal mouse reporting (also `Ctrl+X`). Off by default, so your terminal keeps its own click-drag selection; on, the wheel scrolls the transcript and click-drag selects it, scrolling past the edge of the pane and copying on release. The answer is saved to `appearance.mouse` |
+| `/ui notify <on\|off>` | Desktop notifications when a turn stops and you are not there — an approval waiting, a plan ready, a sub-agent blocked, a turn done and what it cost. On by default; it only ever fires when your terminal has reported that the window is not the one in front, so nothing arrives while you are watching. Uses OSC 99 where your terminal answered for it and OSC 777 where it did not. The answer is saved to `appearance.notify` |
 | `/ui terminal` | What your terminal answered when shhh asked what it can do: inline images (kitty graphics or sixel), desktop notifications, focus events, and the size of one character cell in pixels. A capability shhh did not ask about says so rather than reading as a no — the graphics questions are held back on Apple Terminal and over `ssh`, where a terminal that does not recognise them prints them instead |
 | `/memory` | Durable memories (`shhh code`): `list` (default), `add [global] [kind] <text>`, `forget <id>` |
 | `/ps` | List the long-running processes this session owns (`shhh code`): state, pid, uptime, command |

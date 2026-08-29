@@ -264,7 +264,7 @@ func configSettingsSet(cfg config.Config) int {
 		cfg.Provider.BaseURL != "", cfg.Provider.Name != "",
 		cfg.Behavior.SilentMode, cfg.Behavior.Shell != "", cfg.Behavior.ContextMaxTokens > 0,
 		cfg.Behavior.MaxToolRounds != 0, cfg.Behavior.SafetyWarnings != nil,
-		cfg.Appearance.Mouse,
+		cfg.Appearance.Mouse, cfg.Appearance.Notify != nil,
 		cfg.Behavior.SystemPromptExtra != "", len(cfg.Behavior.CommandAllowlist) > 0,
 		len(cfg.Behavior.ReadOnlyCommands) > 0,
 		cfg.Sandbox.Profile != "", cfg.Sandbox.ContainerImage != "", cfg.Sandbox.ContainerEngine != "",

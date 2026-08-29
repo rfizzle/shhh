@@ -472,6 +472,28 @@ func configSettings() []configSetting {
 		read:     flag(func(c config.Config) bool { return c.Appearance.Mouse }),
 		fallback: "off — the terminal keeps click-drag selection; on, shhh selects the transcript itself",
 		options:  noOptions,
+	}, {
+		group: "WORKSPACE", key: "appearance.notify", label: "desktop notifications",
+		// Not flag(): the default is on, so an unset file and a file that
+		// says true are different facts the screen has to keep apart — the
+		// same reason behavior.safety_warnings reads its pointer.
+		read: func(c config.Config) string {
+			if c.Appearance.Notify == nil {
+				return ""
+			}
+			return strconv.FormatBool(*c.Appearance.Notify)
+		},
+		show: func(raw string) (string, components.FieldTone, string) {
+			if raw == "false" {
+				return "off", components.ToneNeutral, "a turn that stops while you are elsewhere waits silently"
+			}
+			return "on", components.ToneSafe, ""
+		},
+		fallback: "on",
+		options: func(config.Config) []components.SelectOption {
+			return boolOptions("a turn that stops while the window is not in front raises one notification",
+				"a turn that stops while you are elsewhere waits silently")
+		},
 	}}
 }
 
