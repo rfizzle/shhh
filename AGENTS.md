@@ -98,8 +98,13 @@ commit, even when it is already dirty and even when it is a one-line fix. A
 commit that carries a stranger cannot be reverted, cited, or read as a unit,
 which are the only three things a commit is for.
 
-Both rules yield to an explicit instruction to do otherwise.
+**Commit on the branch that is checked out.** `master` included — do not
+create a branch first. Where the work should live is the author's call and
+they have usually already made it by checking something out; branching on
+their behalf moves the commit somewhere they did not ask for and have to go
+looking for.
 
+All three rules yield to an explicit instruction to do otherwise.
 
 ## Architecture
 
