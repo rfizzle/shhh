@@ -67,9 +67,14 @@ const (
 // and the resolved ones when it ends; View picks the widest form that fits.
 type TurnStatus struct {
 	// Frame is which of the eight braille frames to show, from the host's one
-	// tick source (§10c).
+	// tick source (§10c). It is also the frame the label's sweep is on, so
+	// the glyph and the word beside it move on the same instant.
 	Frame int
-	Phase TurnPhase
+	// Arriving is how much of the label's entrance is still to run (§10c,
+	// anim.go). Zero — the value a host that does not stage one leaves — is
+	// the settled label. The chat frame fills it from the turn's own age.
+	Arriving int
+	Phase    TurnPhase
 	// Tool is the argument beside `running` — the call the grid's own naming
 	// gives it (§6c). Read only in PhaseRunning, and the first field dropped.
 	Tool string
@@ -139,17 +144,30 @@ func (s TurnStatus) render(drop int) string {
 	if s.Phase == PhaseRunning && s.Tool != "" && drop < TurnDropTool {
 		label += " " + s.Tool
 	}
-	out := sty.SpinText.Render(Spinner{Frame: s.Frame}.Glyph() + " " + label)
+	// The fields the ladder left standing ride behind the label as the
+	// animation's suffix (§10c): they are the host's own styling and the
+	// animation never touches them, but they belong to the same string so the
+	// line is measured and clipped as one.
+	var tail string
 	if s.Elapsed != "" && drop < TurnDropElapsed {
-		out += sty.Dim.Render(" " + s.Elapsed)
+		tail += sty.Dim.Render(" " + s.Elapsed)
 	}
 	if s.Up != "" && s.Down != "" && drop < TurnDropTokens {
-		out += sty.Dim.Render(" · ↑" + s.Up + " ↓" + s.Down)
+		tail += sty.Dim.Render(" · ↑" + s.Up + " ↓" + s.Down)
 	}
 	if s.Cost != "" {
-		out += sty.Body.Render(" · " + s.Cost)
+		tail += sty.Body.Render(" · " + s.Cost)
 	}
-	return out
+	// The line's moving part. The spinner's frame leads, outside the sweep
+	// because its eight-frame cycle is not the label's; the label arrives
+	// cell by cell when the turn starts and carries the light after that.
+	return Anim{
+		Frame:    s.Frame,
+		Arriving: s.Arriving,
+		Lead:     Spinner{Frame: s.Frame}.Glyph() + " ",
+		Label:    label,
+		Suffix:   tail,
+	}.View()
 }
 
 // renderDone is the resolved line. It sheds the same fields in the same

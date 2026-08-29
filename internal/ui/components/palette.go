@@ -59,7 +59,7 @@ type ColorTokens struct {
 	Dimmer  Token // tool output, live tails, detail bodies, sparklines, the scroll gutter's thumb
 	Spin    Token // anything in motion — spinner frames, ▸ running…, ✦ checking
 	Status  Token // status text, the ⛨ containment line
-	Bright  Token // headings, the focused row's text
+	Bright  Token // headings, the focused row's text, the working label's crest (§10j)
 	Subtle  Token // inactive labels (generate UI); no design-system counterpart
 	Body    Token // ordinary body text
 }
@@ -167,6 +167,12 @@ type Styles struct {
 	// measurement.
 	ScrollTrack lipgloss.Style
 	ScrollThumb lipgloss.Style
+
+	// The working label's sweep (§10c): the crest of the light that runs
+	// along a label in motion, over a base of Spin. It is the second rung of
+	// a two-rung ramp and not a colour of its own — under mono it is the same
+	// grey as the base, which is how the sweep goes away (§10f).
+	AnimCrest lipgloss.Style
 }
 
 // sty is the live style set, rebuilt by applyPalette whenever the theme is
@@ -210,8 +216,16 @@ func newStyles(p ColorTokens) Styles {
 
 		ScrollTrack: lipgloss.NewStyle().Foreground(p.Dim),
 		ScrollThumb: lipgloss.NewStyle().Foreground(p.Dimmer),
+
+		AnimCrest: lipgloss.NewStyle().Foreground(p.Bright),
 	}
 }
 
-// applyPalette rebuilds this package's styles from the current Palette.
-func applyPalette() { sty = newStyles(Palette) }
+// applyPalette rebuilds this package's styles from the current Palette, and
+// drops the animation's prerendered frames with them (anim.go) — they are
+// styled strings, so a frame kept across a swap is a colour from the theme
+// the session just left.
+func applyPalette() {
+	sty = newStyles(Palette)
+	clearAnimCache()
+}

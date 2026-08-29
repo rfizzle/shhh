@@ -1715,6 +1715,15 @@ fields, not a second rule:
 Phase and cost never drop: what it is doing and what it is costing are the two
 things the line exists to say.
 
+**It arrives, it does not appear** (§10j). The label spells itself out over the
+turn's first second — left to right, out of `·`, one cell at a time — and
+carries a light along it while the turn lasts. The entrance is measured off the
+turn's own age, which is the number the line is already printing beside the
+word, so it costs no second clock; the sweep rides the one tick. Neither
+changes the line's width and neither says anything the words do not: what the
+motion reports is that a turn started and is still running, which is what the
+spinner beside it reports too.
+
 **It resolves, it is not replaced.** `✓ done · 1m 04s · 18 tools · $0.14` is
 the same line finished, in place, and a turn that failed resolves into its
 failure instead (§17a). The transcript separately gains §16's close rows,
@@ -1996,7 +2005,7 @@ minute.
 | dimmer | `#8a8a8a` | 245 | 8 | `--ansi-dimmer` | tool output, live tails, detail bodies, sparklines, the scroll gutter's thumb (§10g) |
 | dim | `#626262` | 241 | 8 | `--ansi-dim` | chrome, counts, hints, faint rules, empty meter cells, the scroll gutter's track — most of the screen |
 | status | `#767676` | 243 | 8 | `--ansi-status` | status text, the `⛨` containment line |
-| bright | `#eaeaea` | 15 | 15 | `--ansi-bright` | headings, the focused row's text |
+| bright | `#eaeaea` | 15 | 15 | `--ansi-bright` | headings, the focused row's text, the working label's crest (§10j) |
 | body | `#d0d0d0` | 252 | 7 | `--ansi-body` | ordinary body text |
 | subtle | `#bcbcbc` | 250 | 7 | `--ansi-subtle` | inactive labels in the generate UI only |
 
@@ -2079,8 +2088,9 @@ percentage without its bar, never a bar without its number.
 per round over the last eight rounds (`▁▂▃▃▄▅▅▆`). It is a shape, not a
 measurement; the numbers beside it are the measurement.
 
-**Spinner.** `⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧` at 80ms a frame, spin (205). It is the only
-animation in the product. Anything else that wants to move gets a meter.
+**Spinner.** `⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧` at 80ms a frame, spin (205). With the working
+label beside it (§10j) it is the whole of the product's motion. Anything else
+that wants to move gets a meter.
 
 **One tick source (normative).** A running turn drives up to three spinners at
 once — the frame's activity slot (§12a, where the turn status line of §8d
@@ -2098,9 +2108,11 @@ animation everywhere at once, which is the shape S-119 fixed
 rather than standing on one braille frame, because a stopped spinner reads as
 a hang.
 
-The same tick is what repaints the arriving message (§10h). It is not a fourth
-animation — it is the rule applied to the one thing on screen that was moving
-on the network's clock instead of the session's.
+The same tick is what repaints the arriving message (§10h), and what advances
+the working label's sweep (§10j). Neither is a fourth animation: the first is
+the rule applied to the one thing on screen that was moving on the network's
+clock instead of the session's, and the second is the same frame the spinner
+beside it is already on.
 
 **Turn status.** The one line that changes while a turn runs — spinner frame,
 phase, ticking elapsed, token counts, cost — is a meter and not free text:
@@ -2348,6 +2360,59 @@ instead puts foreign output behind the same renderer as everything else, so
 the colour profile, `NO_COLOR` and the mono swap reach it without this file
 knowing they exist.
 
+### 10j. The working label (S-154)
+
+The one line that changes while a turn runs (§8d) is also the one thing on
+screen that moves beyond the spinner's eight frames. It does two things, and
+they are separate because one of them says something and the other does not.
+
+**It arrives.** Over the turn's first second the phase word spells itself out
+of `·` — the drawing kit's neutral mark (§10e), one column wide, so nothing on
+the top rail reflows while the word fills in.
+
+```
+⠋ run············ 0.4s · $0.01        the turn has just started
+⠋ running········ 0.4s · $0.01
+⠋ running go····· 0.4s · $0.01
+⠋ running go test 0.4s · $0.01        settled, and it stays settled
+```
+
+Left to right, with a cell of jitter either side of the sweep, which is this
+rail's departure from Crush's `internal/ui/anim`: Crush draws its birth steps
+from a seeded RNG, so a label materialises as a scatter of its letters and is
+unreadable until the last one lands. Arriving in reading order means whatever
+is on screen at any frame is the *beginning of the word* — `run·········` is
+already `running` to a reader — so the entrance costs no legibility at exactly
+the moment someone is looking. It is a shape rather than a hue, so it reads
+the same in mono.
+
+**Then it carries a light.** A three-cell crest in bright walks the label left
+to right, then rests for six frames before the next pass. This is the ramp the
+palette can afford: §10a is a closed set of fifteen tokens, and interpolating
+spin → bright the way Crush blends its gradient would put twenty colours on the
+top rail that the table does not name. Two rungs and a rest is what is left,
+and it is enough — the pass reads as a light rather than as a blink, and the
+rest keeps a line that is read for its numbers from becoming a barber's pole.
+
+Under mono bright and spin are the same grey, the runs merge, and the swept
+label is byte-for-byte the unswept one. The sweep is declined the way §10f
+declines every other colour it cannot carry, and it is declined *by the
+palette* rather than by a branch that has to remember to. That is also the
+invariant-1 argument for it: the half of the motion that survives mono is the
+half that means something, and the half that goes is the half that never did.
+
+**The entrance is on the turn's clock; the sweep is on the tick.** The turn's
+age is a number the line already prints, so the entrance borrows it rather than
+asking §10c for a second timer, and the sweep is on the same frame as the
+spinner beside it. Every frame is a pure function of the two, which is what
+lets `anim.w80` capture the whole animation as a block instead of a still.
+
+It is `components.Anim`, prerendered per label and dropped whenever the palette
+is swapped. Crush's `Anim` owns a `tea.Tick` chain per instance and stamps
+generations onto its messages so a restart can supersede the last one; §10c
+says there is one chain and never three, so shhh's is a value with no clock, no
+state and nothing to start or stop.
+
 ---
 
 ## 11. Implementation Notes
@@ -2357,7 +2422,7 @@ knowing they exist.
   `noteselect.go`, `confirm.go`, `activityrow.go`, `cockpit.go`,
   `agentlist.go`, `frame.go`). The v2 surfaces add `meters.go` (§10c —
   `Meter`, `Sparkline`, `Spinner`, and the frame set every animating host
-  ticks),
+  ticks), `anim.go` (§10j — the working label's entrance and sweep),
   `inspector.go` (§15) and `review.go` (§16); the step outline (§13) is a
   layer over the entry list in `internal/ui/chat/steps.go`, beside the
   activity feed and not a component, because it groups history rather than

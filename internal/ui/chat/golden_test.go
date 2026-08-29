@@ -266,6 +266,13 @@ func TestGolden_TurnStatus(t *testing.T) {
 			{Label: "phase · streaming", View: frame(func(m *Model) {
 				m.streaming = "The round limit is enforced in the loop, not in the tool."
 			})},
+			// The sweep in situ, mid-pass (§10c). The entrance is not
+			// capturable here — it is read off the turn's own age, and this
+			// fixture's turn is a minute old so its elapsed does not depend
+			// on the clock — so the components catalog captures that half.
+			{Label: "phase · thinking, mid-sweep", View: frame(func(m *Model) {
+				m.spinFrame = 8
+			})},
 			{Label: "resolved · the summary it becomes", View: frame(func(m *Model) {
 				m.state = stateInput
 				m.transcript = append(m.transcript, entry{kind: entryTurnClose, turn: 1,

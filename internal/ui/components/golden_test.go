@@ -264,6 +264,37 @@ func TestGolden_TurnStatus(t *testing.T) {
 	})
 }
 
+// TestGolden_Anim captures the working label's motion (§10c, S-154): the
+// entrance frame by frame, and one whole pass of the sweep with its rest
+// either side. It is captured at one width because the label does not reflow —
+// a cell that has not arrived is a mark of the same width, and the sweep
+// changes only colour — so a second width would be the same render again; the
+// widths that matter to this line are the drop ladder's, and those are
+// turn-status's.
+func TestGolden_Anim(t *testing.T) {
+	captureGolden(t, "anim", "the working label in motion", []int{80}, func(width int) []golden.Panel {
+		status := func(frame, arriving int) TurnStatus {
+			return TurnStatus{Frame: frame, Arriving: arriving,
+				Phase: PhaseRunning, Tool: "go test", Elapsed: "0.4s", Cost: "$0.01"}
+		}
+		// Each panel is one frame per row, oldest first, so the whole
+		// animation is legible as a block instead of one still at a time.
+		stack := func(rows ...string) string { return strings.Join(rows, "\n") }
+		var entrance []string
+		for arriving := animBirthSteps; arriving >= 0; arriving-- {
+			entrance = append(entrance, status(0, arriving).View(width))
+		}
+		var sweep []string
+		for frame := range animRest + len("running go test") {
+			sweep = append(sweep, status(frame, 0).View(width))
+		}
+		return []golden.Panel{
+			{Label: "the entrance · the word arrives in reading order", View: stack(entrance...)},
+			{Label: "the sweep · one pass, with its rest either side", View: stack(sweep...)},
+		}
+	})
+}
+
 func TestGolden_ApprovalCard(t *testing.T) {
 	captureGolden(t, "approval-card", "approval card", goldenWidths, func(width int) []golden.Panel {
 		card := func(mut func(*ApprovalCard)) string {

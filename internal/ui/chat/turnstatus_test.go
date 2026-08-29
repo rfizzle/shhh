@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/charmbracelet/lipgloss"
+
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -132,6 +134,9 @@ func TestTurnStatus_ResolvesFromTheTurnsOwnCloseBlock(t *testing.T) {
 func TestTurnStatus_FrameRailShowsTheTurnAndThenItsSummary(t *testing.T) {
 	m := statusModel(t)
 	m.runTail = nil
+	// Past the label's entrance (§10c): what the rail says while a turn runs
+	// is the settled word, and how it gets there is the test below.
+	m.turnStarted = time.Now().Add(-2 * time.Second)
 	view := stripANSI(m.View())
 	if !strings.Contains(view, "thinking…") || !strings.Contains(view, "$") {
 		t.Fatalf("the top rail should carry the live status:\n%s", view)
@@ -146,6 +151,31 @@ func TestTurnStatus_FrameRailShowsTheTurnAndThenItsSummary(t *testing.T) {
 	}
 	if strings.Contains(view, "thinking…") {
 		t.Fatalf("the live line should be finished, not still running:\n%s", view)
+	}
+}
+
+// The label materialises over the turn's first second rather than appearing
+// (S-154, §10c). The entrance is measured off the turn's own age — the number
+// the line already prints beside the word — so a turn that has just started
+// is mid-arrival and one a second old is not, without a second clock.
+func TestTurnStatus_TheLabelArrivesWithTheTurn(t *testing.T) {
+	m := statusModel(t)
+	m.runTail = nil
+	if view := stripANSI(m.View()); !strings.Contains(view, "·") || strings.Contains(view, "thinking…") {
+		t.Fatalf("a turn that just started should still be spelling its label out:\n%s", view)
+	}
+	m.turnStarted = time.Now().Add(-2 * time.Second)
+	if view := stripANSI(m.View()); !strings.Contains(view, "thinking…") {
+		t.Fatalf("a second in, the label should have arrived:\n%s", view)
+	}
+	// The width the slot needs never changes while the word fills in: a cell
+	// that has not arrived is a mark of the same width, so nothing on the top
+	// rail reflows during the entrance.
+	settled, _ := m.turnStatus()
+	arriving := settled
+	arriving.Arriving = 7
+	if a, b := lipgloss.Width(arriving.View(60)), lipgloss.Width(settled.View(60)); a != b {
+		t.Fatalf("the arriving label is %d columns and the settled one %d", a, b)
 	}
 }
 

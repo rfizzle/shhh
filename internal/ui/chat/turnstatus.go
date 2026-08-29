@@ -32,7 +32,14 @@ func (m Model) turnStatus() (components.TurnStatus, bool) {
 	// A turn with no start stamp reports no elapsed rather than counting from
 	// the zero time; every turn the user starts has one.
 	if !m.turnStarted.IsZero() {
-		s.Elapsed = components.FormatElapsed(m.turnElapsed())
+		age := m.turnElapsed()
+		s.Elapsed = components.FormatElapsed(age)
+		// The label materialises over the turn's first second (§10c). Its age
+		// is the turn's own — the number the line is already printing beside
+		// it — so the entrance borrows a clock the session keeps rather than
+		// asking for a second one, and the frames it advances on are still
+		// the one tick source's.
+		s.Arriving = components.AnimArriving(age)
 	}
 	in, out := m.liveTurnTokens()
 	if in > 0 || out > 0 {
