@@ -264,7 +264,7 @@ func (b railBlock) lines() []string {
 	case b.fold != nil:
 		out = append(out, b.fold(b.hidden))
 	default:
-		out = append(out, indentRow(hintStyle.Render(fmt.Sprintf("… %d more", len(b.hidden))), InspectorWidth))
+		out = append(out, indentRow(sty.Hint.Render(fmt.Sprintf("… %d more", len(b.hidden))), InspectorWidth))
 	}
 	return out
 }
@@ -363,7 +363,7 @@ func (r InspectorRail) turnBlock(width int) (railBlock, bool) {
 		// not be, so no denominator and no meter (S-094).
 		meta = fmt.Sprintf("step %d", t.Step)
 	}
-	b := railBlock{heading: railHeading("THIS TURN", meta, dimStyle, width)}
+	b := railBlock{heading: railHeading("THIS TURN", meta, sty.Dim, width)}
 	if m, ok := StepMeter(t.Step, t.Steps, inspectorTurnCells, t.Running); ok {
 		// The count sits beside the bar rather than in the heading, because a
 		// bar is never the only carrier of its value (§10c).
@@ -372,16 +372,16 @@ func (r InspectorRail) turnBlock(width int) (railBlock, bool) {
 	// "3 files this turn" rather than "3 files": CHANGES counts files too, and
 	// the two are different questions, so both say their scope in words
 	// (§15a). A turn that wrote nothing still says so — that is the fact.
-	files := dimStyle.Render(plural(t.Files, "file") + " this turn")
+	files := sty.Dim.Render(plural(t.Files, "file") + " this turn")
 	if t.Files > 0 {
-		files += " " + addStyle.Render(fmt.Sprintf("+%d", t.Added)) +
-			" " + delStyle.Render(fmt.Sprintf("−%d", t.Removed))
+		files += " " + sty.Add.Render(fmt.Sprintf("+%d", t.Added)) +
+			" " + sty.Del.Render(fmt.Sprintf("−%d", t.Removed))
 	}
 	b.add(indentRow(strings.Join([]string{
 		files,
-		dimStyle.Render(plural(t.Tools, "tool")),
-		dimStyle.Render(FormatElapsed(t.Elapsed)),
-	}, dimStyle.Render(" · ")), width))
+		sty.Dim.Render(plural(t.Tools, "tool")),
+		sty.Dim.Render(FormatElapsed(t.Elapsed)),
+	}, sty.Dim.Render(" · ")), width))
 	return b, true
 }
 
@@ -394,23 +394,23 @@ func (r InspectorRail) planBlock(width int) (railBlock, bool) {
 		return railBlock{}, false
 	}
 	b := railBlock{heading: railHeading("PLAN",
-		fmt.Sprintf("%d of %d done", p.Done, len(p.Steps)), dimStyle, width)}
+		fmt.Sprintf("%d of %d done", p.Done, len(p.Steps)), sty.Dim, width)}
 	for _, s := range p.Steps {
 		glyph, style := planStepTone(s.State)
 		// A step with no duration yet gets no right-hand field at all, so the
 		// title has the whole row rather than a column reserved for nothing.
 		elapsed := ""
 		if s.Elapsed != "" {
-			elapsed = dimStyle.Render(s.Elapsed)
+			elapsed = sty.Dim.Render(s.Elapsed)
 		}
 		b.add(railRow(glyph+" "+style.Render(s.Title), elapsed, width, inspectorIndent))
 	}
 	if p.Drift != "" {
-		b.add(railRow(accentStyle.Render("⚠")+" "+dimStyle.Render(p.Drift),
+		b.add(railRow(sty.Accent.Render("⚠")+" "+sty.Dim.Render(p.Drift),
 			"", width, inspectorIndent))
 	}
 	if p.Hint != "" {
-		b.add(indentRow(hintStyle.Render(p.Hint), width))
+		b.add(indentRow(sty.Hint.Render(p.Hint), width))
 	}
 	return b, true
 }
@@ -421,13 +421,13 @@ func (r InspectorRail) planBlock(width int) (railBlock, bool) {
 func planStepTone(s PlanStepState) (string, lipgloss.Style) {
 	switch s {
 	case PlanStepRunning:
-		return spinTextStyle.Render("▸"), brightStyle()
+		return sty.SpinText.Render("▸"), brightStyle()
 	case PlanStepDone:
-		return addStyle.Render("✓"), dimStyle
+		return sty.Add.Render("✓"), sty.Dim
 	case PlanStepFailed:
-		return errStyle.Render("✗"), bodyStyle
+		return sty.Err.Render("✗"), sty.Body
 	}
-	return dimStyle.Render("·"), dimStyle
+	return sty.Dim.Render("·"), sty.Dim
 }
 
 // changesBlock is the session's own diff (§15a, S-120): every path it has
@@ -441,35 +441,35 @@ func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 	}
 	meta := ""
 	if len(c.Files) > 0 {
-		meta = dimStyle.Render("session · ") +
-			addStyle.Render(fmt.Sprintf("+%d", c.Added)) + " " +
-			delStyle.Render(fmt.Sprintf("−%d", c.Removed))
+		meta = sty.Dim.Render("session · ") +
+			sty.Add.Render(fmt.Sprintf("+%d", c.Added)) + " " +
+			sty.Del.Render(fmt.Sprintf("−%d", c.Removed))
 	}
-	b := railBlock{heading: railHeading("CHANGES", meta, dimStyle, width)}
+	b := railBlock{heading: railHeading("CHANGES", meta, sty.Dim, width)}
 	// The alerts come first and are pinned: they are what the block exists to
 	// keep on screen, and the turn that caused one is part of the fact.
 	for _, a := range c.Alerts {
 		turn := ""
 		if a.Turn > 0 {
-			turn = dimStyle.Render(fmt.Sprintf("turn %d", a.Turn))
+			turn = sty.Dim.Render(fmt.Sprintf("turn %d", a.Turn))
 		}
-		b.pin(railRow(" "+errStyle.Render("✗")+" "+bodyStyle.Render(a.Label), turn, width, inspectorIndent))
+		b.pin(railRow(" "+sty.Err.Render("✗")+" "+sty.Body.Render(a.Label), turn, width, inspectorIndent))
 		if a.Note != "" {
-			b.pin(railRow(dimStyle.Render(a.Note), "", width, inspectorIndent+2))
+			b.pin(railRow(sty.Dim.Render(a.Note), "", width, inspectorIndent+2))
 		}
 	}
 	for _, f := range c.Files {
 		// The changed-file row carries the mutation rail and the edit glyph,
 		// so the close of a turn looks like the rows that produced it (§14).
-		lead := accentStyle.Render("▎") + accentStyle.Render("✎") + " "
-		stats := addStyle.Render(fmt.Sprintf("+%d", f.Added)) + " " + delStyle.Render(fmt.Sprintf("−%d", f.Removed))
+		lead := sty.Accent.Render("▎") + sty.Accent.Render("✎") + " "
+		stats := sty.Add.Render(fmt.Sprintf("+%d", f.Added)) + " " + sty.Del.Render(fmt.Sprintf("−%d", f.Removed))
 		if f.Turns > 1 {
 			// Repeat edits collapsed to one row, so the row says how many
 			// turns are behind its counts.
-			stats += " " + dimStyle.Render(fmt.Sprintf("%dt", f.Turns))
+			stats += " " + sty.Dim.Render(fmt.Sprintf("%dt", f.Turns))
 		}
 		b.rows = append(b.rows, railLine{
-			text:    railRow(lead+bodyStyle.Render(f.Path), stats, width, inspectorIndent),
+			text:    railRow(lead+sty.Body.Render(f.Path), stats, width, inspectorIndent),
 			pinned:  f.ThisTurn,
 			counted: true,
 			added:   f.Added,
@@ -494,25 +494,25 @@ func changesFold(hidden []railLine, width int) string {
 		added += h.added
 		removed += h.removed
 	}
-	left := hintStyle.Render(fmt.Sprintf("… %d more", len(hidden)))
+	left := sty.Hint.Render(fmt.Sprintf("… %d more", len(hidden)))
 	if counted == 0 {
 		return indentRow(left, width)
 	}
-	return railRow(left, addStyle.Render(fmt.Sprintf("+%d", added))+" "+
-		delStyle.Render(fmt.Sprintf("−%d", removed)), width, inspectorIndent)
+	return railRow(left, sty.Add.Render(fmt.Sprintf("+%d", added))+" "+
+		sty.Del.Render(fmt.Sprintf("−%d", removed)), width, inspectorIndent)
 }
 
 func (r InspectorRail) agentsBlock(width int) (railBlock, bool) {
 	if len(r.Agents) == 0 {
 		return railBlock{}, false
 	}
-	b := railBlock{heading: railHeading("AGENTS", fmt.Sprintf("%d running", len(r.Agents)), dimStyle, width)}
+	b := railBlock{heading: railHeading("AGENTS", fmt.Sprintf("%d running", len(r.Agents)), sty.Dim, width)}
 	for _, a := range r.Agents {
-		glyph := infoStyle.Render("◇")
+		glyph := sty.Info.Render("◇")
 		if a.Blocked {
-			glyph = errStyle.Render("⚠")
+			glyph = sty.Err.Render("⚠")
 		}
-		b.add(railRow(glyph+" "+bodyStyle.Render(a.Name), dimStyle.Render(a.Spend), width, inspectorIndent))
+		b.add(railRow(glyph+" "+sty.Body.Render(a.Name), sty.Dim.Render(a.Spend), width, inspectorIndent))
 		var parts []string
 		switch m, ok := AgentMeter(a.Step, a.Steps); {
 		case ok:
@@ -520,22 +520,22 @@ func (r InspectorRail) agentsBlock(width int) (railBlock, bool) {
 			// the child's health, and states its count beside it (§10c).
 			parts = append(parts, m.View())
 			if a.Detail != "" {
-				parts = append(parts, dimmerStyle.Render(a.Detail))
+				parts = append(parts, sty.Dimmer.Render(a.Detail))
 			}
 		case a.Detail == "":
 		case a.Blocked:
 			// A blocked lane is not running, so it gets no motion either.
-			parts = append(parts, dimmerStyle.Render(a.Detail))
+			parts = append(parts, sty.Dimmer.Render(a.Detail))
 		default:
 			// No declared total: motion beside the word naming what is
 			// running, never a fabricated ratio (S-094).
 			parts = append(parts, Spinner{Frame: r.Frame, Label: a.Detail}.View())
 		}
 		if a.Tools > 0 {
-			parts = append(parts, dimmerStyle.Render(plural(a.Tools, "tool")))
+			parts = append(parts, sty.Dimmer.Render(plural(a.Tools, "tool")))
 		}
 		if len(parts) > 0 {
-			b.add(railRow(strings.Join(parts, dimmerStyle.Render(" · ")), "", width, inspectorIndent+2))
+			b.add(railRow(strings.Join(parts, sty.Dimmer.Render(" · ")), "", width, inspectorIndent+2))
 		}
 	}
 	return b, true
@@ -563,14 +563,14 @@ func (r InspectorRail) contextBlock(width int) (railBlock, bool) {
 	lead := ""
 	switch {
 	case len(c.Burn) > 0:
-		lead = Sparkline{Values: c.Burn, Cells: inspectorSparkCell}.View() + " " + dimStyle.Render("per round")
+		lead = Sparkline{Values: c.Burn, Cells: inspectorSparkCell}.View() + " " + sty.Dim.Render("per round")
 	case c.Estimated:
 		// No series yet and no reported size: the block still has to say
 		// where its number came from.
-		lead = dimStyle.Render("estimated")
+		lead = sty.Dim.Render("estimated")
 	}
 	if lead != "" || tokens != "" {
-		b.add(railRow(lead, dimStyle.Render(tokens), width, inspectorIndent))
+		b.add(railRow(lead, sty.Dim.Render(tokens), width, inspectorIndent))
 	}
 	return b, true
 }
@@ -580,7 +580,7 @@ func (r InspectorRail) spendBlock(width int) (railBlock, bool) {
 	if s == nil || (s.Turn == "" && s.Main == "" && s.Session == "") {
 		return railBlock{}, false
 	}
-	b := railBlock{heading: railHeading("SPEND", bodyStyle.Render(s.Turn), bodyStyle, width)}
+	b := railBlock{heading: railHeading("SPEND", sty.Body.Render(s.Turn), sty.Body, width)}
 	var split []string
 	if s.Model != "" {
 		split = append(split, s.Model)
@@ -592,10 +592,10 @@ func (r InspectorRail) spendBlock(width int) (railBlock, bool) {
 		split = append(split, s.Children+" ◇")
 	}
 	if len(split) > 0 {
-		b.add(railRow(dimStyle.Render(strings.Join(split, " · ")), "", width, inspectorIndent))
+		b.add(railRow(sty.Dim.Render(strings.Join(split, " · ")), "", width, inspectorIndent))
 	}
 	if s.Session != "" {
-		b.add(railRow(dimStyle.Render("session total "+s.Session), "", width, inspectorIndent))
+		b.add(railRow(sty.Dim.Render("session total "+s.Session), "", width, inspectorIndent))
 	}
 	return b, true
 }
@@ -606,7 +606,7 @@ func railHeading(label, meta string, metaStyle lipgloss.Style, width int) string
 	if meta != "" && !strings.Contains(meta, "\x1b") {
 		meta = metaStyle.Render(meta)
 	}
-	return railRow(headlineStyle.Render(label), meta, width, inspectorIndent)
+	return railRow(sty.Headline.Render(label), meta, width, inspectorIndent)
 }
 
 // railRow lays one row out: indent, left field, right field against the

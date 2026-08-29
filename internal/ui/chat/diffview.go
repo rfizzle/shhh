@@ -160,5 +160,5 @@ func (m Model) renderDiffFullHint() string {
 	if m.diffReturn == stateConfirmRun {
 		label = "esc: back to the approval prompt"
 	}
-	return systemMsgStyle.Render(label) + strings.Repeat("\n", inputHeight-1)
+	return sty.SystemMsg.Render(label) + strings.Repeat("\n", inputHeight-1)
 }

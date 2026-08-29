@@ -976,13 +976,13 @@ func (m GenerateModel) streamingView() string {
 	if m.stream.Err() != nil || m.stream.Output() == "" {
 		return m.stream.View()
 	}
-	return CommandStyle.Render(proposal.CommandPart(m.stream.Output()))
+	return sty.Command.Render(proposal.CommandPart(m.stream.Output()))
 }
 
 // commandView draws the command itself, numbered when there is more than one.
 func (m GenerateModel) commandView() string {
 	if IsMultiCommand(m.stream.Output()) {
-		return CommandStyle.Render(formatMultiCommand(m.stream.Output()))
+		return sty.Command.Render(formatMultiCommand(m.stream.Output()))
 	}
 	return m.stream.View()
 }
@@ -997,8 +997,8 @@ func (m GenerateModel) pastView() string {
 	}
 	last := m.past[len(m.past)-1]
 	var b strings.Builder
-	b.WriteString(PastCommandStyle.Render("$ "+strings.ReplaceAll(last.command, "\n", " ; ")) + "\n")
-	b.WriteString(PastCommandStyle.Render("❯ "+last.feedback) + "\n")
+	b.WriteString(sty.PastCommand.Render("$ "+strings.ReplaceAll(last.command, "\n", " ; ")) + "\n")
+	b.WriteString(sty.PastCommand.Render("❯ "+last.feedback) + "\n")
 	return b.String()
 }
 
@@ -1010,11 +1010,11 @@ func (m GenerateModel) explanationView() string {
 	case m.shown == ExplainNone:
 		return ""
 	case m.shown == ExplainLong && text != "":
-		return "\n" + ExplainLabelStyle.Render("Explanation:") + "\n" + ExplainBodyStyle.Render(text)
+		return "\n" + sty.ExplainLabel.Render("Explanation:") + "\n" + sty.ExplainBody.Render(text)
 	case text == "":
 		return ""
 	}
-	return "\n" + indent(ExplainBodyStyle.Render(text))
+	return "\n" + indent(sty.ExplainBody.Render(text))
 }
 
 // reachView is the containment line: what the command writes, whether it
@@ -1023,9 +1023,9 @@ func (m GenerateModel) explanationView() string {
 func (m GenerateModel) reachView() string {
 	var b strings.Builder
 	for _, risk := range m.reach.Risks {
-		b.WriteString("\n" + indent(RiskStyle.Render("⚠ "+risk)))
+		b.WriteString("\n" + indent(sty.Risk.Render("⚠ "+risk)))
 	}
-	b.WriteString("\n" + indent(ReachStyle.Render("⛨ "+m.reach.Reach())))
+	b.WriteString("\n" + indent(sty.Reach.Render("⛨ "+m.reach.Reach())))
 	return b.String()
 }
 
@@ -1037,20 +1037,20 @@ func (m GenerateModel) affectedView() string {
 		return ""
 	}
 	var b strings.Builder
-	b.WriteString("\n" + indent(DimStyle.Render("would affect")))
+	b.WriteString("\n" + indent(sty.Dim.Render("would affect")))
 	if len(m.reach.Writes) == 0 {
 		reason := "shhh could not resolve what this writes"
 		if len(m.reach.Unresolved) > 0 {
 			reason = m.reach.Unresolved[0]
 		}
-		b.WriteString("\n" + indent2(RiskStyle.Render(reason)))
+		b.WriteString("\n" + indent2(sty.Risk.Render(reason)))
 		return b.String()
 	}
 	for _, w := range m.reach.Writes {
-		b.WriteString("\n" + indent2(ExplainBodyStyle.Render(w.Path)+DimStyle.Render(" — "+w.Describe())))
+		b.WriteString("\n" + indent2(sty.ExplainBody.Render(w.Path)+sty.Dim.Render(" — "+w.Describe())))
 	}
 	for _, u := range m.reach.Unresolved {
-		b.WriteString("\n" + indent2(RiskStyle.Render("and unresolved: "+u)))
+		b.WriteString("\n" + indent2(sty.Risk.Render("and unresolved: "+u)))
 	}
 	return b.String()
 }
@@ -1058,7 +1058,7 @@ func (m GenerateModel) affectedView() string {
 // dryRunView is what `[d]` came back with, bounded and counted.
 func (m GenerateModel) dryRunView() string {
 	if m.phase == phaseDryRun {
-		return "\n" + indent(DimStyle.Render("⟳ dry run — "+m.dryCommand))
+		return "\n" + indent(sty.Dim.Render("⟳ dry run — "+m.dryCommand))
 	}
 	if m.dryOutput == "" {
 		return ""
@@ -1068,17 +1068,17 @@ func (m GenerateModel) dryRunView() string {
 		label += " (it exited non-zero; what it printed is below)"
 	}
 	var b strings.Builder
-	b.WriteString("\n" + indent(DimStyle.Render(label)))
+	b.WriteString("\n" + indent(sty.Dim.Render(label)))
 	lines := strings.Split(m.dryOutput, "\n")
 	kept := lines
 	if len(kept) > dryRunLines {
 		kept = kept[:dryRunLines]
 	}
 	for _, line := range kept {
-		b.WriteString("\n" + indent2(ExplainBodyStyle.Render(line)))
+		b.WriteString("\n" + indent2(sty.ExplainBody.Render(line)))
 	}
 	if n := len(lines) - len(kept); n > 0 {
-		b.WriteString("\n" + indent2(DimStyle.Render(fmt.Sprintf("… %d more lines", n))))
+		b.WriteString("\n" + indent2(sty.Dim.Render(fmt.Sprintf("… %d more lines", n))))
 	}
 	return b.String()
 }
@@ -1109,17 +1109,17 @@ func (m GenerateModel) View() string {
 			m.affectedView() + m.dryRunView() +
 			m.actionBar.View()
 	case phaseEdit:
-		return EditPromptStyle.Render("Edit: ") + m.editInput.View()
+		return sty.EditPrompt.Render("Edit: ") + m.editInput.View()
 	case phaseSave:
-		return m.stream.View() + "\n" + RevisePromptStyle.Render("Snippet name: ") + m.saveInput.View()
+		return m.stream.View() + "\n" + sty.RevisePrompt.Render("Snippet name: ") + m.saveInput.View()
 	case phaseRevise:
-		return m.stream.View() + "\n" + RevisePromptStyle.Render("Feedback: ") + m.reviseInput.View()
+		return m.stream.View() + "\n" + sty.RevisePrompt.Render("Feedback: ") + m.reviseInput.View()
 	case phaseExplain:
-		view := m.stream.View() + "\n" + ExplainLabelStyle.Render("Explanation:")
+		view := m.stream.View() + "\n" + sty.ExplainLabel.Render("Explanation:")
 		if m.explainStream.output == "" && !m.explainStream.done {
 			view += " " + m.explainStream.spinner.View()
 		} else {
-			view += "\n" + ExplainBodyStyle.Render(m.explainStream.output)
+			view += "\n" + sty.ExplainBody.Render(m.explainStream.output)
 		}
 		return view
 	default:

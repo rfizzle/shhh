@@ -96,10 +96,10 @@ func (m *Model) renderAttachedHistory() string {
 		if havePrev {
 			b.WriteString(separatorBefore(prev, entry{kind: entryAssistant}))
 		}
-		b.WriteString(assistantStyle.Render("Assistant") + "\n" + renderMarkdown(s, w))
+		b.WriteString(sty.Assistant.Render("Assistant") + "\n" + renderMarkdown(s, w))
 	}
 	if b.Len() == 0 {
-		return welcomeStyle.Render("No activity from this agent yet.")
+		return sty.Welcome.Render("No activity from this agent yet.")
 	}
 	return b.String()
 }
@@ -773,21 +773,21 @@ func (m Model) renderChildStatusBar(width int) string {
 	name := m.attachedTo
 	st, ok := m.subagents.Get(name)
 	if !ok {
-		return statusBarStyle.Render(name)
+		return sty.StatusBar.Render(name)
 	}
 	mode, _ := m.subagents.AgentMode(name)
-	parts := []string{childModeSegment(mode), statusBarStyle.Render(st.Detail)}
+	parts := []string{childModeSegment(mode), sty.StatusBar.Render(st.Detail)}
 	if st.State == subagent.StateBlocked {
-		parts[1] = ctxAlertStyle.Render(st.Detail)
+		parts[1] = sty.CtxAlert.Render(st.Detail)
 	}
 	if spend := m.spendLabel(st.TokensIn, st.TokensOut); spend != "" {
-		parts = append(parts, statusBarStyle.Render(spend))
+		parts = append(parts, sty.StatusBar.Render(spend))
 	}
 	if q := m.subagents.QueuedSteering(name); q > 0 {
-		parts = append(parts, statusBarStyle.Render(fmt.Sprintf("queued %d", q)))
+		parts = append(parts, sty.StatusBar.Render(fmt.Sprintf("queued %d", q)))
 	}
 	left := strings.Join(parts, "  ")
-	right := statusBarStyle.Render(name)
+	right := sty.StatusBar.Render(name)
 	pad := width - lipgloss.Width(left) - lipgloss.Width(right)
 	if pad < 1 {
 		right = ""
@@ -804,8 +804,8 @@ func childModeSegment(mode agent.Mode) string {
 	name := strings.ReplaceAll(mode.String(), "-", " ")
 	switch mode {
 	case agent.ModeAcceptEdits, agent.ModeAuto:
-		return modePermissiveStyle.Render("⏵⏵ " + name)
+		return sty.ModePermissive.Render("⏵⏵ " + name)
 	default:
-		return modeGatedStyle.Render("⏸ " + name)
+		return sty.ModeGated.Render("⏸ " + name)
 	}
 }

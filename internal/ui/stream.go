@@ -119,12 +119,12 @@ func (m StreamModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m StreamModel) View() string {
 	if m.err != nil {
-		return ErrorStyle.Render("Error: " + m.err.Error())
+		return sty.Error.Render("Error: " + m.err.Error())
 	}
 	if m.output == "" && !m.done {
 		return m.spinner.View() + " Thinking…"
 	}
-	return CommandStyle.Render(m.output)
+	return sty.Command.Render(m.output)
 }
 
 func (m StreamModel) waitForEvent() tea.Cmd {

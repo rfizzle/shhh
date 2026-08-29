@@ -295,9 +295,13 @@ Applied edits land in history as one row (activity-row grammar, §6):
     …8 more lines · [enter] full view · [enter again] collapse
 ```
 
-- Syntax highlighting via the existing `highlight.go` (chroma), then diff
+- Syntax highlighting via the existing `highlight.go` (chroma for the
+  tokenising, the palette for the colours — §10a's syntax register), then diff
   coloring layered over it: additions green (10), deletions red (9), hunk
-  headers cyan (14), line numbers gray (241).
+  headers cyan (14), line numbers gray (241). The register and the gutter are
+  two layers, not two palettes: the row's own four tokens stay on the marker,
+  the number and the hunk header, and the body underneath is info, accent,
+  bright, body, dimmer and dim.
 - Intraline emphasis: within a changed line pair, the changed span gets a
   background tint (22 for adds, 52 for dels) rather than a different
   foreground, so syntax colors survive.
@@ -1851,31 +1855,58 @@ denominator is an invented one.
 ### 10a. Palette (normative assignments)
 
 `components.Palette` and `tokens/colors.css` hold the same tokens; the work of
-S-088 was giving each one exactly one job. The token set is unchanged — no
-colour was added or removed — so any screen can be checked against this table
-in a minute.
+S-088 was giving each one exactly one job, and P2-1 gave each one a value at
+every profile a terminal can report. The token set is unchanged — no colour
+was added or removed — so any screen can be checked against this table in a
+minute.
 
-| Token | 256 | Design token | Job |
-|---|---|---|---|
-| add | 10 | `--ansi-add` | diff additions, `✓`, `[x]`, permissive mode, staged hunks, healthy context |
-| del | 9 | `--ansi-del` | diff deletions, `✗`, failures, blocked agents, a rule's denial, ctx ≥ 90% |
-| accent | 214 | `--ansi-accent` | tool glyphs, `⚠` warnings, gated modes, ctx ≥ 70%, **and the mutation rail (§14)** |
-| info | 12 | `--ansi-info` | sub-agents, block headings — **and every key the interface offers** (`[enter]`, `[v]`, `/mode why`) |
-| hunk | 14 | `--ansi-hunk` | `@@` hunk headers and nothing else |
-| spin | 205 | `--ansi-spin` | **anything in motion** — spinner frames, `▸ running…`, `✦ checking`, the current step's meter cell, the working prompt gutter |
-| focusBg | 62 | `--ansi-focus-bg` | selected row background, the cursor block |
-| addBg / delBg | 22 / 52 | `--ansi-add-bg` / `--ansi-del-bg` | intraline diff emphasis |
-| dimmer | 245 | `--ansi-dimmer` | tool output, live tails, detail bodies, sparklines, the scroll gutter's thumb (§10g) |
-| dim | 241 | `--ansi-dim` | chrome, counts, hints, faint rules, empty meter cells, the scroll gutter's track — most of the screen |
-| status | 243 | `--ansi-status` | status text, the `⛨` containment line |
-| bright | 15 | `--ansi-bright` | headings, the focused row's text |
-| body | 252 | `--ansi-body` | ordinary body text |
-| subtle | 250 | — | inactive labels in the generate UI only; no design-system counterpart |
+| Token | Truecolor | 256 | 16 | Design token | Job |
+|---|---|---|---|---|---|
+| add | `#5fd75f` | 10 | 10 | `--ansi-add` | diff additions, `✓`, `[x]`, permissive mode, staged hunks, healthy context |
+| del | `#ff5f5f` | 9 | 9 | `--ansi-del` | diff deletions, `✗`, failures, blocked agents, a rule's denial, ctx ≥ 90% |
+| accent | `#ffaf00` | 214 | 11 | `--ansi-accent` | tool glyphs, `⚠` warnings, gated modes, ctx ≥ 70%, **and the mutation rail (§14)** |
+| info | `#5f87ff` | 12 | 12 | `--ansi-info` | sub-agents, block headings — **and every key the interface offers** (`[enter]`, `[v]`, `/mode why`) |
+| hunk | `#5fd7d7` | 14 | 14 | `--ansi-hunk` | `@@` hunk headers and nothing else |
+| spin | `#ff5faf` | 205 | 13 | `--ansi-spin` | **anything in motion** — spinner frames, `▸ running…`, `✦ checking`, the current step's meter cell, the working prompt gutter |
+| focusBg | `#5f5fd7` | 62 | 12 | `--ansi-focus-bg` | selected row background, the cursor block |
+| addBg / delBg | `#005f00` / `#5f0000` | 22 / 52 | 2 / 1 | `--ansi-add-bg` / `--ansi-del-bg` | intraline diff emphasis |
+| dimmer | `#8a8a8a` | 245 | 8 | `--ansi-dimmer` | tool output, live tails, detail bodies, sparklines, the scroll gutter's thumb (§10g) |
+| dim | `#626262` | 241 | 8 | `--ansi-dim` | chrome, counts, hints, faint rules, empty meter cells, the scroll gutter's track — most of the screen |
+| status | `#767676` | 243 | 8 | `--ansi-status` | status text, the `⛨` containment line |
+| bright | `#eaeaea` | 15 | 15 | `--ansi-bright` | headings, the focused row's text |
+| body | `#d0d0d0` | 252 | 7 | `--ansi-body` | ordinary body text |
+| subtle | `#bcbcbc` | 250 | 7 | `--ansi-subtle` | inactive labels in the generate UI only |
 
 Three assignments carry the redesign, and are the ones to check first:
 **spin means motion and only motion**, **accent additionally means the
 mutation rail**, and **info marks every key the interface offers** — if a key
 is written in any other colour, the interface is not offering it.
+
+**A token is written for every profile, not derived for one (S-152).** Ten of
+the fifteen hexes are exactly the 256 index beside them, because the colour
+cube and the greyscale ramp are colours a design can name. The other five —
+add, del, info, hunk and bright — live in the range a terminal theme owns,
+where 10 is whatever green the user's config calls green and 12 is a blue dark
+enough on some themes to lose a key the interface was offering. Those five are
+the design system's own colours on a truecolor terminal.
+
+The three columns are not redundant. A hex alone would be degraded by the
+renderer, and that degradation walks only the 6×6×6 cube: body (`#d0d0d0`) and
+bright (`#eaeaea`) both come back as 188, and two rungs of the grey ladder
+land on one colour. Sixteen colours genuinely cannot hold six greys, which is
+why the 16 column collapses dim, dimmer and status onto 8 — that is the
+profile invariant 1 exists for, and the glyphs and words carry the distinction
+there. `palette_test.go` is this table: it fails when the code drifts from it,
+when two tokens collapse at truecolor or 256, and when the grey ladder stops
+descending.
+
+**The syntax register (§3b).** Inside a code body the palette is read as a
+syntax register rather than as state: structure in info, values in accent, the
+names a reader scans for in bright, the glue between them in dimmer, comments
+in dim. Add, del, hunk and spin are never used there, because those four say
+something about the *row* — this line was added, that one removed, the hunk
+starts here, this is moving — and a string literal drawn in add would have the
+card contradicting its own gutter.
 
 The sixteen colours a terminal theme owns are not a seventeenth set of
 tokens: output a program painted itself maps onto the table above before it is
@@ -1885,7 +1916,7 @@ drawn (§10i), so a detail body is the same fifteen colours as the row over it.
 `--rule-faint`, `--meter-empty`, `--win-*`) that exist so the artboards can be
 drawn in a browser. They have no ANSI counterpart: in the terminal the screen
 is the terminal's own background, and faint rules and empty meter cells (`▱`)
-are dim (241).
+are dim.
 
 ### 10b. Backgrounds
 
@@ -2001,19 +2032,22 @@ the corner shape alone says which kind of thing you are looking at.
 The first invariant is checked, not asserted. `NO_COLOR`, `TERM=dumb` and
 `/ui mono on` swap `components.Palette` for the two greys of
 `tokens/colors.css`, and every surface follows because every surface reads
-its colours from that one token set — the component styles, the chat and
-generate style files, and the saved-chat browser rebuild themselves on the
-swap rather than capturing colours once at init.
+its colours from that one token set — each painting package rebuilds its whole
+`Styles` struct from the new tokens rather than capturing colours once at
+init (§11).
 
-| Mono token | 256 | Design token | Takes over from |
-|---|---|---|---|
-| mono-fg | 254 | `--mono-fg` | add, del, accent, info, hunk, spin, bright, body |
-| mono-dim | 244 | `--mono-dim` | dim, dimmer, status, subtle |
-| mono-bg | 237 | `--mono-bg` | focusBg, addBg, delBg |
+| Mono token | Truecolor | 256 | 16 | Design token | Takes over from |
+|---|---|---|---|---|---|
+| mono-fg | `#e2e2e2` | 254 | 15 | `--mono-fg` | add, del, accent, info, hunk, spin, bright, body |
+| mono-dim | `#7d7d7d` | 244 | 8 | `--mono-dim` | dim, dimmer, status, subtle |
+| mono-bg | `#32363f` | 237 | 0 | `--mono-bg` | focusBg, addBg, delBg |
 
-Bold, glyphs and layout are untouched — only hue goes. The three colour
-sources the palette does not own are declined rather than recoloured: the
-diff renderer drops chroma highlighting, assistant prose renders through
+Bold, glyphs and layout are untouched — only hue goes. Sources of colour the
+palette does not own are declined rather than recoloured, and the syntax
+register is declined with them even though it *is* the palette: a diff body is
+where the `+`/`−` styling is already carrying the distinction that matters,
+and a second grey ladder over it would be decoration the reader has to unpick.
+So the diff renderer drops highlighting, assistant prose renders through
 glamour's `ascii` theme, which writes emphasis as `**` instead of as colour,
 and a program's own output loses every colour it asked for (§10i).
 `NO_COLOR` additionally drops the terminal profile to `termenv.Ascii`, which
@@ -2225,7 +2259,12 @@ knowing they exist.
   the `/diff` session view).
 - Shared palette exported from one place (promote `style.go` values into
   a `components.Palette`); chat and generate UIs consume it so the two
-  TUIs stay visually consistent.
+  TUIs stay visually consistent. Each package derives its styles from that
+  token set into a single `Styles` struct built by one `newStyles` — the four
+  packages that paint (`components`, `chat`, `browse`, `ui`) have one
+  constructor each rather than a scatter of `applyXStyles` functions mutating
+  each other's globals, so a surface cannot be left out of a palette swap by
+  forgetting to call one more of them.
 - Every component takes an explicit width and handles < 60 columns by
   stacking rather than truncating hints.
 

@@ -177,7 +177,7 @@ func TestHistoryScreen_MatchedRunIsBold(t *testing.T) {
 	h.Update(key("/"))
 	typeIntoHistory(h, "log")
 	h.Update(key("down")) // off the focused row, which paints whole
-	if !strings.Contains(h.View(130), matchStyle.Render("log")) {
+	if !strings.Contains(h.View(130), sty.Match.Render("log")) {
 		t.Fatal("the matched run is not emphasized in the row")
 	}
 }

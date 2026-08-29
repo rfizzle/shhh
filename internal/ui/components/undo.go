@@ -100,16 +100,16 @@ func (c UndoConfirm) driftRows(width int) []string {
 	if c.touches() > 0 {
 		head += " — left alone"
 	}
-	rows := []string{clip(warnStyle.Render(head), width)}
+	rows := []string{clip(sty.Warn.Render(head), width)}
 	named := c.Drifted
 	if len(named) > undoDriftNames {
 		named = named[:undoDriftNames]
 	}
 	for _, p := range named {
-		rows = append(rows, clip("    "+dimStyle.Render(p), width))
+		rows = append(rows, clip("    "+sty.Dim.Render(p), width))
 	}
 	if rest := len(c.Drifted) - len(named); rest > 0 {
-		rows = append(rows, clip("    "+dimStyle.Render(fmt.Sprintf("and %d more", rest)), width))
+		rows = append(rows, clip("    "+sty.Dim.Render(fmt.Sprintf("and %d more", rest)), width))
 	}
 	return rows
 }
@@ -120,13 +120,13 @@ func (c UndoConfirm) driftRows(width int) []string {
 // end.
 func (c UndoConfirm) headRows(width int) []string {
 	question := fmt.Sprintf("Undo turn %d?", c.Turn)
-	keys := headlineStyle.Render(c.defaultKeys())
-	if full := bodyStyle.Render(question+" "+c.effect()) + "  " + keys; lipgloss.Width(full) <= width {
+	keys := sty.Headline.Render(c.defaultKeys())
+	if full := sty.Body.Render(question+" "+c.effect()) + "  " + keys; lipgloss.Width(full) <= width {
 		return []string{full}
 	}
 	return []string{
-		clip(bodyStyle.Render(question)+"  "+keys, width),
-		clip(dimStyle.Render(c.effect()), width),
+		clip(sty.Body.Render(question)+"  "+keys, width),
+		clip(sty.Dim.Render(c.effect()), width),
 	}
 }
 

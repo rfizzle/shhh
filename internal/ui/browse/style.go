@@ -5,40 +5,47 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
-// The saved-chat browser draws from the shared palette (DESIGN-TUI.md §10a)
-// like the other surfaces, so the mono swap (/ui mono, NO_COLOR — S-095)
-// reaches it too. Styles are rebuilt on a palette change rather than
+// Styles is the saved-chat browser's style set, built by newStyles from a
+// token set and nothing else. It draws from the shared palette (DESIGN-TUI.md
+// §10a) like the other surfaces, so the mono swap (/ui mono, NO_COLOR —
+// S-095) reaches it too.
+type Styles struct {
+	ListTitle      lipgloss.Style
+	DetailTitle    lipgloss.Style
+	DetailBody     lipgloss.Style
+	Cursor         lipgloss.Style
+	SelectedItem   lipgloss.Style
+	Item           lipgloss.Style
+	Preview        lipgloss.Style
+	Hint           lipgloss.Style
+	ActiveAction   lipgloss.Style
+	InactiveAction lipgloss.Style
+	DividerLine    lipgloss.Style
+}
+
+// sty is the live style set, rebuilt on a palette change rather than
 // initialized in place.
-var (
-	listTitleStyle      lipgloss.Style
-	detailTitleStyle    lipgloss.Style
-	detailBodyStyle     lipgloss.Style
-	cursorStyle         lipgloss.Style
-	selectedItemStyle   lipgloss.Style
-	itemStyle           lipgloss.Style
-	previewStyle        lipgloss.Style
-	hintStyle           lipgloss.Style
-	activeActionStyle   lipgloss.Style
-	inactiveActionStyle lipgloss.Style
-	dividerLineStyle    lipgloss.Style
-)
+var sty Styles
 
 func init() {
 	applyPalette()
 	components.OnPaletteChange(applyPalette)
 }
 
-func applyPalette() {
-	p := components.Palette
-	listTitleStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Bright)
-	detailTitleStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Bright)
-	detailBodyStyle = lipgloss.NewStyle().Foreground(p.Body)
-	cursorStyle = lipgloss.NewStyle().Foreground(p.Spin)
-	selectedItemStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Bright)
-	itemStyle = lipgloss.NewStyle().Foreground(p.Subtle)
-	previewStyle = lipgloss.NewStyle().Foreground(p.Dim)
-	hintStyle = lipgloss.NewStyle().Foreground(p.Dim)
-	activeActionStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Bright).Background(p.FocusBg).Padding(0, 1)
-	inactiveActionStyle = lipgloss.NewStyle().Foreground(p.Subtle).Padding(0, 1)
-	dividerLineStyle = lipgloss.NewStyle().Foreground(p.Dim)
+func applyPalette() { sty = newStyles(components.Palette) }
+
+func newStyles(p components.ColorTokens) Styles {
+	return Styles{
+		ListTitle:      lipgloss.NewStyle().Bold(true).Foreground(p.Bright),
+		DetailTitle:    lipgloss.NewStyle().Bold(true).Foreground(p.Bright),
+		DetailBody:     lipgloss.NewStyle().Foreground(p.Body),
+		Cursor:         lipgloss.NewStyle().Foreground(p.Spin),
+		SelectedItem:   lipgloss.NewStyle().Bold(true).Foreground(p.Bright),
+		Item:           lipgloss.NewStyle().Foreground(p.Subtle),
+		Preview:        lipgloss.NewStyle().Foreground(p.Dim),
+		Hint:           lipgloss.NewStyle().Foreground(p.Dim),
+		ActiveAction:   lipgloss.NewStyle().Bold(true).Foreground(p.Bright).Background(p.FocusBg).Padding(0, 1),
+		InactiveAction: lipgloss.NewStyle().Foreground(p.Subtle).Padding(0, 1),
+		DividerLine:    lipgloss.NewStyle().Foreground(p.Dim),
+	}
 }

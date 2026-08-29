@@ -9,9 +9,10 @@ import (
 	"github.com/muesli/termenv"
 )
 
-// ground is what a detail body is painted in (§6a); every test below asks for
-// the same one so the assertions read as claims about the foreign half.
-const testGround = lipgloss.Color("245")
+// ground is what a detail body is painted in (§6a) — dimmer, the token the
+// activity row hands repaint; every test below asks for the same one so the
+// assertions read as claims about the foreign half.
+var testGround = Palette.Dimmer
 
 // A line shhh wrote itself has no sequences in it and must come back byte for
 // byte, because that is the overwhelming majority of every detail body and
@@ -39,7 +40,7 @@ func TestForeignText_ThemeColoursBecomeTokens(t *testing.T) {
 	for _, c := range []struct {
 		name  string
 		param string
-		token lipgloss.Color
+		token Token
 	}{
 		{"red is del", "31", Palette.Del},
 		{"green is add", "32", Palette.Add},

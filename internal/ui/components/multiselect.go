@@ -97,7 +97,7 @@ func (s *MultiSelect) View(width int) string {
 	// window is drawn (§4a).
 	var tail []string
 	if s.notice != "" {
-		tail = append(tail, warnStyle.Render(clip(s.notice, inner)))
+		tail = append(tail, sty.Warn.Render(clip(s.notice, inner)))
 	}
 	hint := fmt.Sprintf("space toggle · a all/none · enter apply (%d) · esc cancel", s.count())
 	tail = append(tail, hintRows([]string{hint}, width)...)
@@ -140,9 +140,9 @@ func (s *MultiSelect) visibleRows(width, budget int) []string {
 // summary underneath it.
 func (s *MultiSelect) optionRow(i, inner int) string {
 	opt := s.Options[i]
-	box := dimStyle.Render("[ ]")
+	box := sty.Dim.Render("[ ]")
 	if i < len(s.Checked) && s.Checked[i] {
-		box = addStyle.Render("[x]")
+		box = sty.Add.Render("[x]")
 	}
 	body := inner - 2
 	row := box + " " + opt.Label
@@ -151,7 +151,7 @@ func (s *MultiSelect) optionRow(i, inner int) string {
 	}
 	row = clip(row, max(body, 0))
 	if i == s.Focus {
-		return focusRowStyle.Render(clip("❯ ", inner)) + row
+		return sty.FocusRow.Render(clip("❯ ", inner)) + row
 	}
 	return "  " + row
 }

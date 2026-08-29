@@ -157,5 +157,5 @@ func listOverflowRow(arrow string, n int, note string, width int) string {
 	if note != "" {
 		label += " · " + note
 	}
-	return dimStyle.Render(clip(label, width-cardFrameWidth))
+	return sty.Dim.Render(clip(label, width-cardFrameWidth))
 }

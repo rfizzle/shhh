@@ -318,24 +318,24 @@ type stepHeader struct {
 func (h stepHeader) tones() (ptr, title, dur lipgloss.Style) {
 	switch h.State {
 	case stepRunning:
-		return stepRunStyle, stepLiveTitleStyle, stepRunStyle
+		return sty.Step.Run, sty.Step.LiveTitle, sty.Step.Run
 	case stepQueued:
-		return stepDimStyle, stepDimStyle, stepDimStyle
+		return sty.Step.Dim, sty.Step.Dim, sty.Step.Dim
 	}
-	return stepDimStyle, stepTitleStyle, stepStatsStyle
+	return sty.Step.Dim, sty.Step.Title, sty.Step.Stats
 }
 
 // glyph is the state glyph and its color (§13b).
 func (h stepHeader) glyph() string {
 	switch h.State {
 	case stepRunning:
-		return stepRunStyle.Render("▸")
+		return sty.Step.Run.Render("▸")
 	case stepFailed:
-		return stepFailStyle.Render("✗")
+		return sty.Step.Fail.Render("✗")
 	case stepQueued:
-		return stepDimStyle.Render("·")
+		return sty.Step.Dim.Render("·")
 	}
-	return stepDoneStyle.Render("✓")
+	return sty.Step.Done.Render("✓")
 }
 
 // countLabel names what the step holds, in words, so the glyph never carries
@@ -392,7 +392,7 @@ func (h stepHeader) View(width int) string {
 	lead := ptrStyle.Render(fold) + " " + titleStyle.Render(ord) + " "
 
 	label := h.countLabel()
-	stats := h.glyph() + " " + stepStatsStyle.Render(label)
+	stats := h.glyph() + " " + sty.Step.Stats.Render(label)
 	statsW := lipgloss.Width(label) + 2
 
 	// The rule takes what the title leaves; the title clips before the rule
@@ -404,7 +404,7 @@ func (h stepHeader) View(width int) string {
 		rule = 1
 	}
 	line := lead + titleStyle.Render(title) + " " +
-		stepRuleStyle.Render(strings.Repeat("─", rule)) + " " +
+		sty.Step.Rule.Render(strings.Repeat("─", rule)) + " " +
 		stats + stepDurationField(h.durationText(), durStyle)
 	return strings.TrimRight(line, " ")
 }

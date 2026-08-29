@@ -259,5 +259,5 @@ func (m Model) renderReviewHint() string {
 	if m.reviewReturn == stateFocus {
 		label = "review · esc: back to the transcript"
 	}
-	return systemMsgStyle.Render(label) + strings.Repeat("\n", inputHeight-1)
+	return sty.SystemMsg.Render(label) + strings.Repeat("\n", inputHeight-1)
 }

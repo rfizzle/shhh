@@ -102,11 +102,11 @@ type RecoveryRow struct {
 func (r RecoveryRow) glyph() string {
 	switch r.State {
 	case RecoveryStalled:
-		return accentStyle.Render("⚠") + " "
+		return sty.Accent.Render("⚠") + " "
 	case RecoveryStopped:
-		return dimStyle.Render("⊘") + " "
+		return sty.Dim.Render("⊘") + " "
 	}
-	return errStyle.Render("✗") + " "
+	return sty.Err.Render("✗") + " "
 }
 
 // target assembles the growing field: the subject in body text, the qualifier
@@ -126,9 +126,9 @@ func (r RecoveryRow) target() string {
 // entirely rather than emphasising half a model name.
 func (r RecoveryRow) paintTarget(s string) string {
 	if r.Subject != "" && strings.HasPrefix(s, r.Subject) {
-		return bodyStyle.Render(r.Subject) + dimStyle.Render(strings.TrimPrefix(s, r.Subject))
+		return sty.Body.Render(r.Subject) + sty.Dim.Render(strings.TrimPrefix(s, r.Subject))
 	}
-	return dimStyle.Render(s)
+	return sty.Dim.Render(s)
 }
 
 // outcomeField colours the right-aligned field by state: a stall is accent, a
@@ -140,11 +140,11 @@ func (r RecoveryRow) outcomeField() string {
 	}
 	switch r.State {
 	case RecoveryStalled:
-		return accentStyle.Render(r.Outcome)
+		return sty.Accent.Render(r.Outcome)
 	case RecoveryStopped:
-		return dimStyle.Render(r.Outcome)
+		return sty.Dim.Render(r.Outcome)
 	}
-	return delStyle.Render(r.Outcome)
+	return sty.Del.Render(r.Outcome)
 }
 
 // View renders the row, its detail body and its offered keys at the given
@@ -178,7 +178,7 @@ func (r RecoveryRow) View(width int) string {
 func (r RecoveryRow) keyLines(width int) []string {
 	note := ""
 	if r.Note != "" {
-		note = dimStyle.Render(r.Note)
+		note = sty.Dim.Render(r.Note)
 	}
 	if len(r.Keys) == 0 {
 		if note == "" {
@@ -241,7 +241,7 @@ func (w RetryWait) View(width int) string {
 	meter := Meter{Pct: w.Pct, Cells: MeterCellsCountdown, Tone: MeterCountdown, Text: w.Text}
 	head := meter.View()
 	if w.Note != "" {
-		head += dimStyle.Render(" · " + w.Note)
+		head += sty.Dim.Render(" · " + w.Note)
 	}
 	lines := []string{detailLine(head, width)}
 	if keys := keyOffers(w.Keys); keys != "" {
@@ -259,9 +259,9 @@ func (r RecoveryRow) keyLine() string {
 		parts = append(parts, offers)
 	}
 	if r.Note != "" {
-		parts = append(parts, dimStyle.Render(r.Note))
+		parts = append(parts, sty.Dim.Render(r.Note))
 	}
-	return strings.Join(parts, dimStyle.Render(" · "))
+	return strings.Join(parts, sty.Dim.Render(" · "))
 }
 
 // Keys returns just the keystrokes the row offers, for a host deciding
@@ -328,12 +328,12 @@ func (c *ProviderCard) Update(msg tea.KeyMsg) (done bool, result any) {
 
 // View renders the card at the given width.
 func (c ProviderCard) View(width int) string {
-	rows := []string{dimStyle.Render(c.lookedIn())}
+	rows := []string{sty.Dim.Render(c.lookedIn())}
 	for _, p := range c.Places {
 		rows = append(rows, c.placeRow(p))
 	}
 	if c.Likely != "" {
-		rows = append(rows, "", dimStyle.Render(c.Likely))
+		rows = append(rows, "", sty.Dim.Render(c.Likely))
 	}
 	if len(c.Keys) > 0 {
 		rows = append(rows, cardRule, keyOffers(c.Keys))
@@ -341,7 +341,7 @@ func (c ProviderCard) View(width int) string {
 	// Accent, not the default gray: this is the one card that stops the
 	// session, and the border says so the way a gated mode does
 	// (ui_kits/cockpit/Edges.html in the shhh Design System project).
-	border := accentStyle
+	border := sty.Accent
 	return renderChromeCard(cardChrome{
 		title: "No model provider configured",
 		style: &border,
@@ -361,22 +361,22 @@ func (c ProviderCard) lookedIn() string {
 // placeRow is one row of the search list: the glyph for whether anything was
 // there, the place in a fixed field so the details line up, then the finding.
 func (c ProviderCard) placeRow(p ProviderPlace) string {
-	glyph := delStyle.Render("✗")
+	glyph := sty.Del.Render("✗")
 	if p.Found {
-		glyph = addStyle.Render("✓")
+		glyph = sty.Add.Render("✓")
 	}
 	label := p.Label
 	if pad := providerPlaceWidth - len([]rune(label)); pad > 0 {
 		label += strings.Repeat(" ", pad)
 	}
-	detail := dimStyle.Render(p.Detail)
+	detail := sty.Dim.Render(p.Detail)
 	if p.Emphasis != "" {
-		detail = bodyStyle.Render(p.Emphasis)
+		detail = sty.Body.Render(p.Emphasis)
 		if p.Detail != "" {
-			detail += dimStyle.Render(" — " + p.Detail)
+			detail += sty.Dim.Render(" — " + p.Detail)
 		}
 	}
-	return "  " + glyph + " " + bodyStyle.Render(label) + detail
+	return "  " + glyph + " " + sty.Body.Render(label) + detail
 }
 
 // spellNumber writes the small counts as words, because "shhh looked in 4
@@ -441,14 +441,14 @@ func (s *SecretPrompt) Len() int { return len(s.value) }
 
 // View renders the prompt, the mask, and the two keys it offers.
 func (s SecretPrompt) View(width int) string {
-	head := bodyStyle.Render(s.Prompt)
+	head := sty.Body.Render(s.Prompt)
 	if s.Replace != "" {
-		head += dimStyle.Render(" · replacing ···" + s.Replace)
+		head += sty.Dim.Render(" · replacing ···" + s.Replace)
 	} else if s.Hint != "" {
-		head += dimStyle.Render(" · stands in for " + s.Hint)
+		head += sty.Dim.Render(" · stands in for " + s.Hint)
 	}
 	mask := strings.Repeat("•", min(len(s.value), max(width-4, 1)))
-	entry := dimStyle.Render("▸ ") + accentStyle.Render(mask) + focusRowStyle.Render(" ")
+	entry := sty.Dim.Render("▸ ") + sty.Accent.Render(mask) + sty.FocusRow.Render(" ")
 	keys := keyOffers([]KeyOffer{
 		{Key: "[enter]", Label: "use it for this session"},
 		{Key: "[esc]", Label: "keep the current key"},

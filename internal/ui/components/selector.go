@@ -377,17 +377,17 @@ func (s *Select) queryRows(width int) []string {
 		return nil
 	}
 	inner := max(width-cardFrameWidth, 1)
-	typed := infoStyle.Render("▸ ") + queryTextStyle.Render(s.Query+queryCursor)
+	typed := sty.Info.Render("▸ ") + sty.QueryText.Render(s.Query+queryCursor)
 	if s.Query == "" && s.QueryHint != "" {
 		// A row that has just been opened by a key says what the key was for.
 		// It goes as soon as anything is typed, because from then on the row
 		// is showing what it is doing.
-		typed += dimStyle.Render(" " + s.QueryHint)
+		typed += sty.Dim.Render(" " + s.QueryHint)
 	}
 	if s.Total <= 0 {
 		return []string{clip(typed, inner)}
 	}
-	count := dimStyle.Render(fmt.Sprintf("%d of %d match", s.selectable(), s.Total))
+	count := sty.Dim.Render(fmt.Sprintf("%d of %d match", s.selectable(), s.Total))
 	if pad := inner - lipgloss.Width(typed) - lipgloss.Width(count); pad >= 2 {
 		return []string{typed + strings.Repeat(" ", pad) + count}
 	}
@@ -485,7 +485,7 @@ func (s *Select) optionRows(width int, numbered bool, lo, hi int) []string {
 				// it. It read dim until S-127 went looking for the config
 				// screen's SESSION / WORKSPACE rails and found the rails it
 				// already had painted as chrome.
-				rows = append(rows, headlineStyle.Render(clip(opt.Label, inner)))
+				rows = append(rows, sty.Headline.Render(clip(opt.Label, inner)))
 			}
 			continue
 		}
@@ -495,7 +495,7 @@ func (s *Select) optionRows(width int, numbered bool, lo, hi int) []string {
 		}
 		rows = append(rows, s.optionRow(opt, n, i == s.Focus, g, inner))
 		if s.FocusDesc && i == s.Focus && opt.Desc != "" {
-			rows = append(rows, dimStyle.Render(clip("    "+opt.Desc, inner)))
+			rows = append(rows, sty.Dim.Render(clip("    "+opt.Desc, inner)))
 		}
 	}
 	return rows
@@ -571,7 +571,7 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 		if meta != "" {
 			row = padRight(row, inner-lipgloss.Width(meta)) + meta
 		}
-		return focusRowStyle.Render(clip(row, inner))
+		return sty.FocusRow.Render(clip(row, inner))
 	}
 
 	body := emphasizeMatch(label, s.Query)
@@ -579,11 +579,11 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 		// A row that cannot be acted on is not a row the query is hunting
 		// for, and the dimming is one run: emphasis inside it would break the
 		// run and say the wrong thing twice.
-		body = dimmerStyle.Render(label)
-		desc, meta = dimmerStyle.Render(desc), dimmerStyle.Render(meta)
-		value = dimmerStyle.Render(value)
+		body = sty.Dimmer.Render(label)
+		desc, meta = sty.Dimmer.Render(desc), sty.Dimmer.Render(meta)
+		value = sty.Dimmer.Render(value)
 	} else {
-		desc = dimStyle.Render(desc)
+		desc = sty.Dim.Render(desc)
 		if value != "" {
 			value = opt.ValueTone.style().Render(value)
 		}
@@ -626,7 +626,7 @@ func emphasizeMatch(label, query string) string {
 	if i < 0 {
 		return label
 	}
-	return label[:i] + matchStyle.Render(label[i:i+len(query)]) + label[i+len(query):]
+	return label[:i] + sty.Match.Render(label[i:i+len(query)]) + label[i+len(query):]
 }
 
 // bodyBudget is how many rows the option list may spend on a card of this
@@ -683,9 +683,9 @@ func (s *Select) visibleRowsFocus(width, budget int, numbered bool) ([]string, i
 // because the caller is what matched.
 func (s *Select) noMatchRows(width int) []string {
 	inner := max(width-cardFrameWidth, 1)
-	rows := []string{dimStyle.Render(clip("  "+fmt.Sprintf("no match for %q", s.Query), inner))}
+	rows := []string{sty.Dim.Render(clip("  "+fmt.Sprintf("no match for %q", s.Query), inner))}
 	if s.Closest != "" {
-		rows = append(rows, dimStyle.Render(clip("  closest is "+s.Closest, inner)))
+		rows = append(rows, sty.Dim.Render(clip("  closest is "+s.Closest, inner)))
 	}
 	return rows
 }
@@ -793,5 +793,5 @@ func boundRows(rows []string, maxLines int) []string {
 		return rows
 	}
 	keep := max(budget-1, 1)
-	return append(rows[:keep:keep], dimStyle.Render("…"))
+	return append(rows[:keep:keep], sty.Dim.Render("…"))
 }

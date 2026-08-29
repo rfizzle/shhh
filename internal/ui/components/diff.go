@@ -27,11 +27,12 @@ const (
 // switches to side-by-side automatically.
 const sideBySideMinWidth = 120
 
-// Segment is one syntax-colored span of a source line. Color is a terminal
-// color ("#rrggbb" or an ANSI index); empty means the default foreground.
+// Segment is one syntax-colored span of a source line. Color is a palette
+// token (§10a); the zero token means the line's own diff colour, which is
+// what an unclaimed chroma type resolves to.
 type Segment struct {
 	Text  string
-	Color string
+	Color Token
 }
 
 // Syntax styles one raw source line as colored segments (S-074); nil renders
@@ -146,8 +147,8 @@ func (d *DiffView) RowView(width int) string {
 	if verb == "" {
 		verb = "edit"
 	}
-	left := accentStyle.Render("✎ "+verb) + " " + d.Path
-	right := dimStyle.Render(d.statsLabel()) + "   " + hintStyle.Render("[enter] expand")
+	left := sty.Accent.Render("✎ "+verb) + " " + d.Path
+	right := sty.Dim.Render(d.statsLabel()) + "   " + sty.Hint.Render("[enter] expand")
 	gap := width - lipgloss.Width(left) - lipgloss.Width(right)
 	if gap < 2 {
 		return clip(left+"  "+right, width)
@@ -173,7 +174,7 @@ type UnifiedOpts struct {
 // renders a single "(no changes)" notice.
 func UnifiedLines(hunks []diff.Hunk, width int, opts UnifiedOpts) []string {
 	if len(hunks) == 0 {
-		return []string{hintStyle.Render("(no changes)")}
+		return []string{sty.Hint.Render("(no changes)")}
 	}
 	numWidth := 0
 	if opts.LineNumbers {
@@ -182,7 +183,7 @@ func UnifiedLines(hunks []diff.Hunk, width int, opts UnifiedOpts) []string {
 	}
 	var rows []string
 	for _, h := range hunks {
-		rows = append(rows, hunkStyle.Render(clip(h.Header(), width)))
+		rows = append(rows, sty.Hunk.Render(clip(h.Header(), width)))
 		for _, l := range h.Lines {
 			rows = append(rows, renderUnifiedLine(l, width, numWidth, opts))
 		}
@@ -190,17 +191,17 @@ func UnifiedLines(hunks []diff.Hunk, width int, opts UnifiedOpts) []string {
 	if opts.MaxLines > 0 && len(rows) > opts.MaxLines {
 		keep := max(opts.MaxLines-1, 1)
 		extra := len(rows) - keep
-		rows = append(rows[:keep:keep], hintStyle.Render(fmt.Sprintf("… (+%d more diff lines)", extra)))
+		rows = append(rows[:keep:keep], sty.Hint.Render(fmt.Sprintf("… (+%d more diff lines)", extra)))
 	}
 	return rows
 }
 
 // ExpandedLines is the bounded in-transcript unified view (§3b).
 func (d *DiffView) ExpandedLines(width int) []string {
-	head := accentStyle.Render("✎ ") + d.Path
+	head := sty.Accent.Render("✎ ") + d.Path
 	gap := width - lipgloss.Width(head) - lipgloss.Width(d.statsLabel())
 	if gap > 1 {
-		head += strings.Repeat(" ", gap) + dimStyle.Render(d.statsLabel())
+		head += strings.Repeat(" ", gap) + sty.Dim.Render(d.statsLabel())
 	}
 	body := max(d.MaxLines-1, 1)
 	if d.MaxLines == 0 {
@@ -215,12 +216,12 @@ func (d *DiffView) ExpandedLines(width int) []string {
 // intraline emphasis.
 func renderUnifiedLine(l diff.Line, width, numWidth int, opts UnifiedOpts) string {
 	marker := " "
-	style, emphStyle := contextStyle, contextStyle
+	style, emphStyle := sty.Context, sty.Context
 	switch l.Kind {
 	case diff.Add:
-		marker, style, emphStyle = "+", addStyle, addEmphStyle
+		marker, style, emphStyle = "+", sty.Add, sty.AddEmph
 	case diff.Del:
-		marker, style, emphStyle = "-", delStyle, delEmphStyle
+		marker, style, emphStyle = "-", sty.Del, sty.DelEmph
 	}
 
 	prefix := marker
@@ -296,20 +297,20 @@ func renderSyntaxLine(prefix, text string, avail int, kind diff.Kind, span *diff
 		return "", false
 	}
 
-	kindStyle := contextStyle
-	var emphBg lipgloss.Color
+	kindStyle := sty.Context
+	var emphBg Token
 	switch kind {
 	case diff.Add:
-		kindStyle, emphBg = addStyle, Palette.AddBg
+		kindStyle, emphBg = sty.Add, Palette.AddBg
 	case diff.Del:
-		kindStyle, emphBg = delStyle, Palette.DelBg
+		kindStyle, emphBg = sty.Del, Palette.DelBg
 	}
 
 	var b strings.Builder
 	// The marker is ASCII, so byte slicing is safe.
 	b.WriteString(kindStyle.Render(prefix[:1]))
 	if len(prefix) > 1 {
-		b.WriteString(dimStyle.Render(prefix[1:]))
+		b.WriteString(sty.Dim.Render(prefix[1:]))
 	}
 
 	limit := len([]rune(text))
@@ -332,8 +333,8 @@ func renderSyntaxLine(prefix, text string, avail int, kind diff.Kind, span *diff
 		if kind == diff.Context {
 			st = lipgloss.NewStyle()
 		}
-		if seg.Color != "" {
-			st = lipgloss.NewStyle().Foreground(lipgloss.Color(seg.Color))
+		if seg.Color != (Token{}) {
+			st = lipgloss.NewStyle().Foreground(seg.Color)
 		}
 		s, e := 0, 0
 		if span != nil {
@@ -389,8 +390,8 @@ func (d *DiffView) fileSyntax(path string, explicit Syntax) Syntax {
 // fullView is the full-screen rendering (§3c): header, scrollable body,
 // footer hint. Side-by-side when toggled or the terminal is wide enough.
 func (d *DiffView) fullView(width int) string {
-	header := padRight(" "+d.Path, max(0, width-lipgloss.Width(d.statsLabel()))) + dimStyle.Render(d.statsLabel())
-	footer := hintStyle.Render("diff · j/k scroll · n/p hunk · s side-by-side · esc back")
+	header := padRight(" "+d.Path, max(0, width-lipgloss.Width(d.statsLabel()))) + sty.Dim.Render(d.statsLabel())
+	footer := sty.Hint.Render("diff · j/k scroll · n/p hunk · s side-by-side · esc back")
 
 	body := d.fullBody(width)
 	rows := d.bodyHeight()
@@ -416,13 +417,13 @@ func (d *DiffView) fullBody(width int) []string {
 	for _, sec := range d.sections() {
 		if sec.path != "" {
 			adds, dels := diff.Stats(sec.hunks)
-			rows = append(rows, clip(accentStyle.Render("─ "+sec.path)+"  "+dimStyle.Render(fmt.Sprintf("+%d −%d", adds, dels)), width))
+			rows = append(rows, clip(sty.Accent.Render("─ "+sec.path)+"  "+sty.Dim.Render(fmt.Sprintf("+%d −%d", adds, dels)), width))
 		}
 		switch {
 		case sec.binary:
-			rows = append(rows, hintStyle.Render("(binary file differs)"))
+			rows = append(rows, sty.Hint.Render("(binary file differs)"))
 		case len(sec.hunks) == 0:
-			rows = append(rows, hintStyle.Render("(no textual changes)"))
+			rows = append(rows, sty.Hint.Render("(no textual changes)"))
 		case sbs:
 			rows = append(rows, sideBySideHunks(sec.hunks, width)...)
 		default:
@@ -567,10 +568,10 @@ func pairHunkRows(h diff.Hunk) []pairedRow {
 // truncated cells end with … (§3c).
 func sideBySideHunks(hunks []diff.Hunk, width int) []string {
 	pane := max((width-3)/2, 8)
-	divider := dimStyle.Render(" │ ")
+	divider := sty.Dim.Render(" │ ")
 	var out []string
 	for _, h := range hunks {
-		out = append(out, hunkStyle.Render(clip(h.Header(), width)))
+		out = append(out, sty.Hunk.Render(clip(h.Header(), width)))
 		for _, row := range pairHunkRows(h) {
 			out = append(out, padRight(sideCell(row.old, pane, true), pane)+divider+sideCell(row.new, pane, false))
 		}
@@ -583,16 +584,16 @@ func sideCell(l *diff.Line, width int, oldSide bool) string {
 	if l == nil {
 		return ""
 	}
-	style := contextStyle
+	style := sty.Context
 	no := l.NewNo
 	if oldSide {
 		no = l.OldNo
 	}
 	switch l.Kind {
 	case diff.Add:
-		style = addStyle
+		style = sty.Add
 	case diff.Del:
-		style = delStyle
+		style = sty.Del
 	}
 	text := fmt.Sprintf("%4d  %s", no, strings.ReplaceAll(l.Text, "\t", "    "))
 	return style.Render(clip(text, width))

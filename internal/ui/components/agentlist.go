@@ -163,7 +163,7 @@ func (l *AgentList) Update(msg tea.KeyMsg) (done bool, result any) {
 func (r AgentRow) stateGlyph() string {
 	switch r.State {
 	case AgentCurrent:
-		return headlineStyle.Render("●")
+		return sty.Headline.Render("●")
 	case AgentBlocked:
 		return AgentProgress{State: FanoutBlocked}.glyph()
 	case AgentDone:
@@ -183,12 +183,12 @@ func (r AgentRow) rightField() string {
 	}
 	status := r.Status
 	if r.State == AgentBlocked {
-		status = errStyle.Render("⚠ " + status)
+		status = sty.Err.Render("⚠ " + status)
 	} else {
-		status = dimStyle.Render(status)
+		status = sty.Dim.Render(status)
 	}
 	if r.Spend != "" {
-		status += "  " + statusStyle.Render(r.Spend)
+		status += "  " + sty.Status.Render(r.Spend)
 	}
 	return status
 }
@@ -199,7 +199,7 @@ func (r AgentRow) render(inner int, focused bool) []string {
 	right := r.rightField()
 	left := r.stateGlyph() + " " + r.Name
 	if r.Task != "" {
-		left += "  " + dimmerStyle.Render(clip(r.Task, max(inner/3, 8)))
+		left += "  " + sty.Dimmer.Render(clip(r.Task, max(inner/3, 8)))
 	}
 	gap := inner - 2 - lipgloss.Width(left) - lipgloss.Width(right)
 	row := left
@@ -209,7 +209,7 @@ func (r AgentRow) render(inner int, focused bool) []string {
 		row = clip(left, max(inner-2-lipgloss.Width(right)-2, 0)) + "  " + right
 	}
 	if focused {
-		row = focusRowStyle.Render("❯") + " " + row
+		row = sty.FocusRow.Render("❯") + " " + row
 	} else {
 		row = "  " + row
 	}

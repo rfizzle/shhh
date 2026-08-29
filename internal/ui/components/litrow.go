@@ -48,7 +48,7 @@ func LitRow(line string, skip, width int) string {
 	words := ansi.Strip(ansi.TruncateLeft(rest, keep, ""))
 	pad := max(width-skip-keep-lipgloss.Width(words), 0)
 	return head + rearm(glyphs, bg) +
-		litTextStyle.Render(words+strings.Repeat(" ", pad)) + ansiReset
+		sty.LitText.Render(words+strings.Repeat(" ", pad)) + ansiReset
 }
 
 // glyphRunWidth is how many cells of a plain row come before its first word.
@@ -72,10 +72,10 @@ func rearm(s, bg string) string {
 	return bg + strings.ReplaceAll(s, ansiReset, ansiReset+bg)
 }
 
-// backgroundSeq is the escape that turns one palette colour on as a
+// backgroundSeq is the escape that turns one palette token on as a
 // background, or "" where the terminal has no colour to turn on.
-func backgroundSeq(c lipgloss.Color) string {
-	col := lipgloss.ColorProfile().Color(string(c))
+func backgroundSeq(t Token) string {
+	col := tokenColor(t)
 	if col == nil {
 		return ""
 	}

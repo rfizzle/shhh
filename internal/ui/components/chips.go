@@ -93,7 +93,7 @@ func AttachmentChips(chips []AttachmentChip, width int) string {
 	// a strip that is only a number has lost the thing it is for, so at that
 	// point the name clips like any other field.
 	for kept := len(chips) - 1; kept >= 1; kept-- {
-		row = joinChips(parts[:kept]) + dimStyle.Render(chipSeparator+chipTail(len(chips)-kept))
+		row = joinChips(parts[:kept]) + sty.Dim.Render(chipSeparator+chipTail(len(chips)-kept))
 		if lipgloss.Width(row) <= width || kept == 1 {
 			break
 		}
@@ -103,7 +103,7 @@ func AttachmentChips(chips []AttachmentChip, width int) string {
 
 // joinChips lays a run of already-rendered chips on one row.
 func joinChips(parts []string) string {
-	return strings.Join(parts, dimStyle.Render(chipSeparator))
+	return strings.Join(parts, sty.Dim.Render(chipSeparator))
 }
 
 // chipTail counts the chips the row could not take.
@@ -115,9 +115,9 @@ func chipTail(hidden int) string {
 // dim beside it. The size is a count and reads like every other count on the
 // rails; the name is the content, and is the only part drawn as such.
 func (c AttachmentChip) render() string {
-	s := bodyStyle.Render(c.Kind.mark() + " " + clip(c.Name, chipNameWidth))
+	s := sty.Body.Render(c.Kind.mark() + " " + clip(c.Name, chipNameWidth))
 	if c.Size != "" {
-		s += dimStyle.Render(" " + c.Size)
+		s += sty.Dim.Render(" " + c.Size)
 	}
 	return s
 }

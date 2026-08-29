@@ -69,7 +69,7 @@ func (q QueueStrip) View(width int) []string {
 		rows = append(rows, item.render(width, i == 0))
 	}
 	if len(hidden) > 0 {
-		rows = append(rows, queueIndent+dimStyle.Render(overflowRow(hidden)))
+		rows = append(rows, queueIndent+sty.Dim.Render(overflowRow(hidden)))
 	}
 	return rows
 }
@@ -110,10 +110,10 @@ const queueIndent = "  "
 // header is the dot run — one per decision still waiting, the current one
 // filled — the count in words, and the note that names what [A] covers.
 func (q QueueStrip) header(width int) string {
-	dots := spinTextStyle.Render("●") + dimStyle.Render(strings.Repeat("○", len(q.Items)-1))
-	head := dots + dimStyle.Render("  "+strconv.Itoa(len(q.Items))+" pending")
+	dots := sty.SpinText.Render("●") + sty.Dim.Render(strings.Repeat("○", len(q.Items)-1))
+	head := dots + sty.Dim.Render("  "+strconv.Itoa(len(q.Items))+" pending")
 	if q.Note != "" {
-		head += dimStyle.Render("  ·  ") + infoStyle.Render(q.Note)
+		head += sty.Dim.Render("  ·  ") + sty.Info.Render(q.Note)
 	}
 	return queueIndent + clip(head, max(width-len(queueIndent), 0))
 }
@@ -125,7 +125,7 @@ func (q QueueStrip) header(width int) string {
 func (item QueueItem) render(width int, current bool) string {
 	pointer := "  "
 	if current {
-		pointer = spinTextStyle.Render("▸") + " "
+		pointer = sty.SpinText.Render("▸") + " "
 	}
 	number := strconv.Itoa(item.Number) + " "
 	right := item.right()
@@ -133,12 +133,12 @@ func (item QueueItem) render(width int, current bool) string {
 	// Indent, pointer, number, one gap column, then the right-hand block.
 	room := width - len(queueIndent) - 2 - len(number) - 2 - lipgloss.Width(right)
 	label := clip(item.Label, max(room, 0))
-	style := dimStyle
+	style := sty.Dim
 	if current {
-		style = bodyStyle
+		style = sty.Body
 	}
 	pad := strings.Repeat(" ", max(room-lipgloss.Width(label), 0))
-	return queueIndent + pointer + dimStyle.Render(number) + style.Render(label) + pad + "  " + right
+	return queueIndent + pointer + sty.Dim.Render(number) + style.Render(label) + pad + "  " + right
 }
 
 // right is the item's detail and rating and, when [A] would answer it, the
@@ -146,15 +146,15 @@ func (item QueueItem) render(width int, current bool) string {
 func (item QueueItem) right() string {
 	var b strings.Builder
 	if item.Detail != "" {
-		b.WriteString(dimmerStyle.Render(item.Detail))
+		b.WriteString(sty.Dimmer.Render(item.Detail))
 	}
 	if word := item.Severity.Word(); word != "" {
 		if b.Len() > 0 {
 			b.WriteString("  ")
 		}
-		style := dimStyle
+		style := sty.Dim
 		if item.Severity >= SeverityMedium {
-			style = warnStyle
+			style = sty.Warn
 		}
 		b.WriteString(style.Render(word))
 	}
@@ -162,7 +162,7 @@ func (item QueueItem) right() string {
 		if b.Len() > 0 {
 			b.WriteString("  ")
 		}
-		b.WriteString(infoStyle.Render(queueMarkKey))
+		b.WriteString(sty.Info.Render(queueMarkKey))
 	}
 	return b.String()
 }

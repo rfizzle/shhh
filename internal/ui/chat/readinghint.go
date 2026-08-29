@@ -39,13 +39,13 @@ type hintSeg struct {
 // (invariant 3).
 func (s hintSeg) render() string {
 	if s.reason != "" {
-		return hintDimStyle.Render("[" + s.key + "] " + s.label + " — " + s.reason)
+		return sty.Hint.Dim.Render("[" + s.key + "] " + s.label + " — " + s.reason)
 	}
-	key := hintKeyStyle
+	key := sty.Hint.Key
 	if s.safe {
-		key = hintSafeStyle
+		key = sty.Hint.Safe
 	}
-	return key.Render("["+s.key+"]") + hintDimStyle.Render(" "+s.label)
+	return key.Render("["+s.key+"]") + sty.Hint.Dim.Render(" "+s.label)
 }
 
 // joinSegs renders a run of segments with the interpunct the whole product
@@ -55,7 +55,7 @@ func joinSegs(segs []hintSeg) string {
 	for _, s := range segs {
 		parts = append(parts, s.render())
 	}
-	return strings.Join(parts, hintDimStyle.Render(" · "))
+	return strings.Join(parts, sty.Hint.Dim.Render(" · "))
 }
 
 // readingModeKeys are the mode's own keys in the artboard's order: move,
@@ -270,8 +270,8 @@ func (m Model) readingRowLines(width int, budget int) []string {
 	}
 	segs = append(segs, hintSeg{key: "esc", label: "nothing", safe: true})
 
-	rail := mutationRailStyle.Render("▎")
-	lead := rail + hintDimStyle.Render("this row · ")
+	rail := sty.Hint.MutationRail.Render("▎")
+	lead := rail + sty.Hint.Dim.Render("this row · ")
 	if line := lead + joinSegs(segs); lipgloss.Width(line) <= width {
 		return []string{line}
 	}
@@ -329,7 +329,7 @@ func (m Model) readingKeyLine(width int) string {
 		lw := lipgloss.Width(left)
 		for _, pos := range positions {
 			if gap := width - lw - lipgloss.Width(pos); gap >= 2 {
-				return left + strings.Repeat(" ", gap) + hintDimStyle.Render(pos)
+				return left + strings.Repeat(" ", gap) + sty.Hint.Dim.Render(pos)
 			}
 		}
 	}
@@ -341,17 +341,20 @@ func (m Model) readingKeyLine(width int) string {
 	return clipRow(joinSegs(forms[len(forms)-1]), width)
 }
 
-// applyReadingHintStyles rebuilds this file's styles from the palette.
-func applyReadingHintStyles(p components.ColorTokens) {
-	hintKeyStyle = lipgloss.NewStyle().Foreground(p.Info)
-	hintSafeStyle = lipgloss.NewStyle().Foreground(p.Add)
-	hintDimStyle = lipgloss.NewStyle().Foreground(p.Dim)
-	mutationRailStyle = lipgloss.NewStyle().Foreground(p.Accent)
+// hintStyles is the reading-mode hint line's own group (§7a), with the
+// mutation rail (§14) that shares its file.
+type hintStyles struct {
+	Key          lipgloss.Style
+	Safe         lipgloss.Style
+	Dim          lipgloss.Style
+	MutationRail lipgloss.Style
 }
 
-var (
-	hintKeyStyle      lipgloss.Style
-	hintSafeStyle     lipgloss.Style
-	hintDimStyle      lipgloss.Style
-	mutationRailStyle lipgloss.Style
-)
+func newHintStyles(p components.ColorTokens) hintStyles {
+	return hintStyles{
+		Key:          lipgloss.NewStyle().Foreground(p.Info),
+		Safe:         lipgloss.NewStyle().Foreground(p.Add),
+		Dim:          lipgloss.NewStyle().Foreground(p.Dim),
+		MutationRail: lipgloss.NewStyle().Foreground(p.Accent),
+	}
+}

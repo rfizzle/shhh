@@ -395,12 +395,19 @@ func mouseNote(on bool) string {
 	return "Mouse reporting off — the terminal keeps click-drag selection for what is on screen; pgup, ctrl+e and j/k read the transcript."
 }
 
-// applyNavigateStyles rebuilds this file's styles from the palette; called
-// from applyPalette with the rest.
-func applyNavigateStyles(p components.ColorTokens) {
-	// The label is info and bold, as DRAFT, DECISION and READING all are in
-	// guidelines/invariant-inert-keys; the rule it sits on is chrome, so it
-	// is dim like every other divider. The accent belongs to the rows.
-	readingLabelStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Info)
-	readingRuleStyle = lipgloss.NewStyle().Foreground(p.Dim)
+// readingStyles is the reading rail's own group (S-115, §7a).
+type readingStyles struct {
+	Label lipgloss.Style
+	Rule  lipgloss.Style
+}
+
+func newReadingStyles(p components.ColorTokens) readingStyles {
+	return readingStyles{
+		// The label is info and bold, as DRAFT, DECISION and READING all are
+		// in guidelines/invariant-inert-keys; the rule it sits on is chrome,
+		// so it is dim like every other divider. The accent belongs to the
+		// rows.
+		Label: lipgloss.NewStyle().Bold(true).Foreground(p.Info),
+		Rule:  lipgloss.NewStyle().Foreground(p.Dim),
+	}
 }

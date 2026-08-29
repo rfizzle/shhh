@@ -9,30 +9,66 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
-var (
-	CommandStyle      lipgloss.Style
-	ErrorStyle        lipgloss.Style
-	BarStyle          lipgloss.Style
-	EditPromptStyle   lipgloss.Style
-	RevisePromptStyle lipgloss.Style
-	ExplainLabelStyle lipgloss.Style
-	ExplainBodyStyle  lipgloss.Style
+// Styles is the generate UI's style set, built by newStyles from a token set
+// and nothing else. Colors come from the shared components.Palette (S-076) so
+// the generate and chat UIs use identical tokens.
+type Styles struct {
+	Command      lipgloss.Style
+	Error        lipgloss.Style
+	Bar          lipgloss.Style
+	EditPrompt   lipgloss.Style
+	RevisePrompt lipgloss.Style
+	ExplainLabel lipgloss.Style
+	ExplainBody  lipgloss.Style
 
 	// The S-113 result surface: the key row, the containment line, the risk
 	// line, and the dimmed command a revise is being compared against.
-	KeyStyle         lipgloss.Style
-	KeyLabelStyle    lipgloss.Style
-	PrimaryKeyStyle  lipgloss.Style
-	DangerKeyStyle   lipgloss.Style
-	ReachStyle       lipgloss.Style
-	RiskStyle        lipgloss.Style
-	DimStyle         lipgloss.Style
-	PastCommandStyle lipgloss.Style
+	Key         lipgloss.Style
+	KeyLabel    lipgloss.Style
+	PrimaryKey  lipgloss.Style
+	DangerKey   lipgloss.Style
+	Reach       lipgloss.Style
+	Risk        lipgloss.Style
+	Dim         lipgloss.Style
+	PastCommand lipgloss.Style
+}
+
+var (
+	sty Styles
 
 	Narrow bool
 )
 
-func InitStyles() {
+// newStyles builds the whole set from one token set, reading no global.
+func newStyles(p components.ColorTokens) Styles {
+	return Styles{
+		Command: lipgloss.NewStyle().Bold(true).Foreground(p.Add),
+		Error:   lipgloss.NewStyle().Foreground(p.Del),
+
+		Bar: lipgloss.NewStyle().MarginTop(1),
+
+		EditPrompt:   lipgloss.NewStyle().Foreground(p.Subtle).MarginTop(1),
+		RevisePrompt: lipgloss.NewStyle().Foreground(p.Subtle).MarginTop(1),
+		ExplainLabel: lipgloss.NewStyle().Foreground(p.Subtle).MarginTop(1).Bold(true),
+		ExplainBody:  lipgloss.NewStyle().Foreground(p.Body),
+
+		// Every key the interface offers is Info (§10a); the default and the
+		// deliberate one carry their tone as well, and both say it in words
+		// too.
+		Key:         lipgloss.NewStyle().Foreground(p.Info),
+		KeyLabel:    lipgloss.NewStyle().Foreground(p.Dim),
+		PrimaryKey:  lipgloss.NewStyle().Foreground(p.Add),
+		DangerKey:   lipgloss.NewStyle().Foreground(p.Del),
+		Reach:       lipgloss.NewStyle().Foreground(p.Status),
+		Risk:        lipgloss.NewStyle().Foreground(p.Del),
+		Dim:         lipgloss.NewStyle().Foreground(p.Dim),
+		PastCommand: lipgloss.NewStyle().Foreground(p.Dim),
+	}
+}
+
+// applyPalette rebuilds the styles, and settles the terminal profile and the
+// width class the surface lays out against.
+func applyPalette() {
 	// components already switched the palette to its two greys for these
 	// (S-095); dropping the profile to Ascii on top of that is the stricter
 	// reading NO_COLOR asks for — no ANSI colour at all, bold and glyphs
@@ -50,34 +86,12 @@ func InitStyles() {
 	}
 	Narrow = width < 40
 
-	// Colors come from the shared components.Palette (S-076) so the generate
-	// and chat UIs use identical tokens.
-	p := components.Palette
-	CommandStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Add)
-	ErrorStyle = lipgloss.NewStyle().Foreground(p.Del)
-
-	BarStyle = lipgloss.NewStyle().MarginTop(1)
-
-	EditPromptStyle = lipgloss.NewStyle().Foreground(p.Subtle).MarginTop(1)
-	RevisePromptStyle = lipgloss.NewStyle().Foreground(p.Subtle).MarginTop(1)
-	ExplainLabelStyle = lipgloss.NewStyle().Foreground(p.Subtle).MarginTop(1).Bold(true)
-	ExplainBodyStyle = lipgloss.NewStyle().Foreground(p.Body)
-
-	// Every key the interface offers is Info (§10a); the default and the
-	// deliberate one carry their tone as well, and both say it in words too.
-	KeyStyle = lipgloss.NewStyle().Foreground(p.Info)
-	KeyLabelStyle = lipgloss.NewStyle().Foreground(p.Dim)
-	PrimaryKeyStyle = lipgloss.NewStyle().Foreground(p.Add)
-	DangerKeyStyle = lipgloss.NewStyle().Foreground(p.Del)
-	ReachStyle = lipgloss.NewStyle().Foreground(p.Status)
-	RiskStyle = lipgloss.NewStyle().Foreground(p.Del)
-	DimStyle = lipgloss.NewStyle().Foreground(p.Dim)
-	PastCommandStyle = lipgloss.NewStyle().Foreground(p.Dim)
+	sty = newStyles(components.Palette)
 }
 
 func init() {
-	InitStyles()
+	applyPalette()
 	// The one-shot generate UI honours the mono swap through the same shared
 	// palette the chat TUI uses (S-095).
-	components.OnPaletteChange(InitStyles)
+	components.OnPaletteChange(applyPalette)
 }

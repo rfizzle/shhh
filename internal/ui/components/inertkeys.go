@@ -38,9 +38,9 @@ const handoverWord = "read"
 func keyOffers(keys []TurnKey) string {
 	var parts []string
 	for _, k := range keys {
-		parts = append(parts, infoStyle.Render(k.Key)+dimStyle.Render(" "+k.Label))
+		parts = append(parts, sty.Info.Render(k.Key)+sty.Dim.Render(" "+k.Label))
 	}
-	return strings.Join(parts, dimStyle.Render(" · "))
+	return strings.Join(parts, sty.Dim.Render(" · "))
 }
 
 // inertOffers renders the same run for a surface that does not hold the
@@ -50,16 +50,16 @@ func keyOffers(keys []TurnKey) string {
 func inertOffers(keys []TurnKey) string {
 	var parts []string
 	for _, k := range keys {
-		parts = append(parts, dimmerStyle.Render(k.Key)+dimStyle.Render(" "+k.Label))
+		parts = append(parts, sty.Dimmer.Render(k.Key)+sty.Dim.Render(" "+k.Label))
 	}
-	return strings.Join(parts, dimStyle.Render(" · "))
+	return strings.Join(parts, sty.Dim.Render(" · "))
 }
 
 // handoverOffer is the one live key on a row whose own keys are not: the key
 // in info, its words in body text, so the live half of the run is the half
 // that reads as an offer.
 func handoverOffer(key, words string) string {
-	return infoStyle.Render("["+key+"]") + bodyStyle.Render(" "+words)
+	return sty.Info.Render("["+key+"]") + sty.Body.Render(" "+words)
 }
 
 // keyRun renders a row's offers in the state the keyboard puts them in.
@@ -82,7 +82,7 @@ func keyRun(keys []TurnKey, waiting bool, handover string) string {
 	if handover == "" {
 		return inertOffers(keys)
 	}
-	return inertOffers(keys) + dimStyle.Render(" · ") + handoverOffer(handover, handoverWords)
+	return inertOffers(keys) + sty.Dim.Render(" · ") + handoverOffer(handover, handoverWords)
 }
 
 // keyRunNarrow is the same run once the terminal has run out of room for the

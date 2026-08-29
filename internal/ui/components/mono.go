@@ -12,20 +12,19 @@ package components
 // derived styles of their own (internal/ui/chat, internal/ui, and the saved-
 // chat browser) register a callback with OnPaletteChange.
 
-import (
-	"os"
-
-	"github.com/charmbracelet/lipgloss"
-)
+import "os"
 
 // The mono palette's three shades, from tokens/colors.css. Two greys carry
 // everything: the foreground grey for anything that is content or state, the
 // dim grey for chrome. The third is a selection background, which is not a
 // colour distinction — the ❯ pointer and [x] box say the same thing.
-const (
-	MonoFg  = lipgloss.Color("254") // --mono-fg  #e2e2e2
-	MonoDim = lipgloss.Color("244") // --mono-dim #7d7d7d
-	MonoBg  = lipgloss.Color("237") // --mono-bg  #32363f
+//
+// They are tokens like every other (§10a): the hex is what a truecolor
+// terminal shows, the index what it stands for everywhere else.
+var (
+	MonoFg  = token("#e2e2e2", "254", "15")
+	MonoDim = token("#7d7d7d", "244", "8")
+	MonoBg  = token("#32363f", "237", "0")
 )
 
 // MonoPalette is the two-grey token set. Every token that means content,

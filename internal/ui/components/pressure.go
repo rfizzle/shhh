@@ -177,9 +177,9 @@ func (c PressureCard) rowLine(r PressureRow, field int) string {
 	if pad := field - len(count); pad > 0 {
 		count = strings.Repeat(" ", pad) + count
 	}
-	line := statusStyle.Render(count) + strings.Repeat(" ", pressureCountGap) + bodyStyle.Render(r.Label)
+	line := sty.Status.Render(count) + strings.Repeat(" ", pressureCountGap) + sty.Body.Render(r.Label)
 	if r.Detail != "" {
-		line += dimStyle.Render(" — " + r.Detail)
+		line += sty.Dim.Render(" — " + r.Detail)
 	}
 	return line
 }
@@ -201,7 +201,7 @@ type styledSpan struct {
 func (c PressureCard) prediction() [][]styledSpan {
 	var rows [][]styledSpan
 	if c.Keeps != "" {
-		rows = append(rows, []styledSpan{{"compacting keeps " + c.Keeps, dimStyle}})
+		rows = append(rows, []styledSpan{{"compacting keeps " + c.Keeps, sty.Dim}})
 	}
 	if c.Drops != "" || c.Recovers > 0 {
 		lead := "and drops " + c.Drops
@@ -211,16 +211,16 @@ func (c PressureCard) prediction() [][]styledSpan {
 		case len(rows) == 0:
 			lead = "compacting drops " + c.Drops
 		}
-		row := []styledSpan{{lead, dimStyle}}
+		row := []styledSpan{{lead, sty.Dim}}
 		if c.Recovers > 0 {
 			row = append(row,
-				styledSpan{"—", dimStyle},
-				styledSpan{fmt.Sprintf("recovers about %s (%d%%)", formatTokens(c.Recovers), c.RecoversPct), addStyle})
+				styledSpan{"—", sty.Dim},
+				styledSpan{fmt.Sprintf("recovers about %s (%d%%)", formatTokens(c.Recovers), c.RecoversPct), sty.Add})
 		}
 		rows = append(rows, row)
 	}
 	if c.Continuing != "" {
-		rows = append(rows, []styledSpan{{c.Continuing, dimStyle}})
+		rows = append(rows, []styledSpan{{c.Continuing, sty.Dim}})
 	}
 	return rows
 }

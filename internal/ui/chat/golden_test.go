@@ -20,6 +20,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
+	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -520,6 +521,46 @@ func TestGolden_ScrollGutter(t *testing.T) {
 				View: gutter(long, func(m *Model) { m.viewport.SetYOffset(m.viewport.TotalLineCount() / 2) })},
 			{Label: "the top of the transcript · the thumb is on the first row",
 				View: gutter(long, func(m *Model) { m.viewport.GotoTop() })},
+		}
+	})
+}
+
+// TestGolden_SyntaxRegister captures the diff body's syntax register (§3b,
+// P2-1): the palette read as a syntax register, where the monokai greens and
+// pinks of a foreign theme used to sit next to an add/del gutter drawn from
+// the product's own tokens.
+//
+// The fixture is chosen to exercise every rung at once — a comment, a
+// declaration keyword, a function name, a string, a number, and the operators
+// between them — so the ansi block is a table of the register's assignments
+// rather than a sample of one of them. The mono pair is the other half of the
+// claim: mono declines the register outright rather than collapsing it, so
+// the same body comes back in the plain +/- styling (§10f).
+func TestGolden_SyntaxRegister(t *testing.T) {
+	captureGolden(t, "syntax-register", "the diff body's syntax register", []int{80, 130}, func(width int) []golden.Panel {
+		hunks := []diff.Hunk{{
+			OldStart: 12, OldCount: 5, NewStart: 12, NewCount: 6,
+			Lines: []diff.Line{
+				{Kind: diff.Context, Text: "// retryAfter is the backoff one 429 asks for.", OldNo: 12, NewNo: 12},
+				{Kind: diff.Context, Text: "func retryAfter(h http.Header) time.Duration {", OldNo: 13, NewNo: 13},
+				{Kind: diff.Del, Text: "\treturn 30 * time.Second", OldNo: 14},
+				{Kind: diff.Add, Text: "\tif v := h.Get(\"Retry-After\"); v != \"\" {", NewNo: 14},
+				{Kind: diff.Add, Text: "\t\treturn parseSeconds(v)", NewNo: 15},
+				{Kind: diff.Add, Text: "\t}", NewNo: 16},
+				{Kind: diff.Context, Text: "}", OldNo: 15, NewNo: 17},
+			},
+		}}
+		body := func(mode components.DiffMode) string {
+			d := &components.DiffView{
+				Path: "internal/provider/retry.go", Verb: "edit",
+				Hunks: hunks, Mode: mode, Height: 14,
+				Syntax: diffSyntax("internal/provider/retry.go"),
+			}
+			return d.View(width)
+		}
+		return []golden.Panel{
+			{Label: "expanded · the register over the diff kinds", View: body(components.DiffExpanded)},
+			{Label: "full screen · the same body with room to breathe", View: body(components.DiffFull)},
 		}
 	})
 }

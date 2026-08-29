@@ -201,7 +201,7 @@ func (d *DoctorScreen) View(width int) string {
 	rows = append(rows, "")
 	rows = append(rows, foot...)
 	if d.Notice != "" {
-		rows = append(rows, dimStyle.Render(clip(d.Notice, width)))
+		rows = append(rows, sty.Dim.Render(clip(d.Notice, width)))
 	}
 	return strings.Join(rows, "\n")
 }
@@ -221,14 +221,14 @@ func (d *DoctorScreen) budget(pinned int) int {
 func (d *DoctorScreen) headerRow(width int) string {
 	left := brightStyle().Render("shhh doctor")
 	if n := len(d.Checks); n > 0 {
-		left += dimStyle.Render(" · " + countChecks(n))
+		left += sty.Dim.Render(" · " + countChecks(n))
 	}
 	if d.Running {
-		left += dimStyle.Render(" · ") + spinTextStyle.Render(d.spinGlyph()+" running")
+		left += sty.Dim.Render(" · ") + sty.SpinText.Render(d.spinGlyph()+" running")
 	}
-	right := dimStyle.Render("[?] keys · [q] quit")
+	right := sty.Dim.Render("[?] keys · [q] quit")
 	if d.Elapsed != "" {
-		right = dimmerStyle.Render(d.Elapsed) + dimStyle.Render(" · [?] keys · [q] quit")
+		right = sty.Dimmer.Render(d.Elapsed) + sty.Dim.Render(" · [?] keys · [q] quit")
 	}
 	// It is the left that gives ground, not the keys: a takeover surface that
 	// dropped `[q]` would be one with no stated way out of it (invariant 5),
@@ -322,7 +322,7 @@ func (d *DoctorScreen) droppedRow(kept []int, width int) string {
 			names = append(names, check.Name)
 		}
 	}
-	return dimStyle.Render(clip(
+	return sty.Dim.Render(clip(
 		fmt.Sprintf("↓ %d more · %s", len(names), strings.Join(names, " · ")), width))
 }
 
@@ -333,11 +333,11 @@ func (d *DoctorScreen) checkRows(i, width int) []string {
 	check := d.Checks[i]
 	rows := []string{d.checkRow(i, width)}
 	if check.Consequence != "" {
-		rows = append(rows, detailLine(dimmerStyle.Render(check.Consequence), width))
+		rows = append(rows, detailLine(sty.Dimmer.Render(check.Consequence), width))
 	}
 	if check.hasFix() && d.fix[i] {
 		for _, line := range check.Fix {
-			rows = append(rows, indentBy(bodyStyle.Render(
+			rows = append(rows, indentBy(sty.Body.Render(
 				clip(line, max(width-doctorFixIndent, 1))), doctorFixIndent, width))
 		}
 	}
@@ -387,7 +387,7 @@ func (d *DoctorScreen) checkRow(i, width int) string {
 // it to move: a run with nothing to fix has no pointer and no `[↑↓]`.
 func (d *DoctorScreen) pointer(i int) string {
 	if d.stops() > 0 && i == d.Focus {
-		return focusPointerStyle.Render("❯") + " "
+		return sty.FocusPointer.Render("❯") + " "
 	}
 	return strings.Repeat(" ", ptrWidth)
 }
@@ -398,17 +398,17 @@ func (d *DoctorScreen) pointer(i int) string {
 func (d *DoctorScreen) glyph(state DoctorState) string {
 	switch state {
 	case DoctorWarned:
-		return accentStyle.Render("⚠") + " "
+		return sty.Accent.Render("⚠") + " "
 	case DoctorFailed:
-		return errStyle.Render("✗") + " "
+		return sty.Err.Render("✗") + " "
 	case DoctorSkipped:
-		return dimStyle.Render("⊘") + " "
+		return sty.Dim.Render("⊘") + " "
 	case DoctorRunning:
-		return spinTextStyle.Render(d.spinGlyph()) + " "
+		return sty.SpinText.Render(d.spinGlyph()) + " "
 	case DoctorQueued:
-		return dimStyle.Render("·") + " "
+		return sty.Dim.Render("·") + " "
 	}
-	return addStyle.Render("✓") + " "
+	return sty.Add.Render("✓") + " "
 }
 
 // target assembles the growing field: what was checked, and the facts behind
@@ -429,9 +429,9 @@ func (c DoctorCheck) target() string {
 // version number.
 func (c DoctorCheck) paintTarget(s string) string {
 	if c.Subject != "" && strings.HasPrefix(s, c.Subject) {
-		return bodyStyle.Render(c.Subject) + dimStyle.Render(strings.TrimPrefix(s, c.Subject))
+		return sty.Body.Render(c.Subject) + sty.Dim.Render(strings.TrimPrefix(s, c.Subject))
 	}
-	return dimStyle.Render(s)
+	return sty.Dim.Render(s)
 }
 
 // outcomeField colours the right-aligned field by state. It never clips.
@@ -441,13 +441,13 @@ func (c DoctorCheck) outcomeField() string {
 	}
 	switch c.State {
 	case DoctorWarned:
-		return accentStyle.Render(c.Outcome)
+		return sty.Accent.Render(c.Outcome)
 	case DoctorFailed:
-		return delStyle.Render(c.Outcome)
+		return sty.Del.Render(c.Outcome)
 	case DoctorRunning:
-		return spinTextStyle.Render(c.Outcome)
+		return sty.SpinText.Render(c.Outcome)
 	}
-	return dimStyle.Render(c.Outcome)
+	return sty.Dim.Render(c.Outcome)
 }
 
 // footRows are the summary and the keys beside it. §19d puts the counts on
@@ -482,7 +482,7 @@ func (d *DoctorScreen) footRows(width int) []string {
 // one line a reader who has scrolled away can still see (§19d).
 func (d *DoctorScreen) summaryRow() string {
 	if len(d.Checks) == 0 {
-		return dimStyle.Render("no checks to run")
+		return sty.Dim.Render("no checks to run")
 	}
 	counts := map[DoctorState]int{}
 	worst := DoctorPassed
@@ -497,12 +497,12 @@ func (d *DoctorScreen) summaryRow() string {
 		word  string
 		style lipgloss.Style
 	}{
-		{DoctorFailed, "failed", delStyle},
-		{DoctorWarned, "warning", accentStyle},
-		{DoctorPassed, "passed", bodyStyle},
-		{DoctorSkipped, "not checked", dimStyle},
-		{DoctorRunning, "running", spinTextStyle},
-		{DoctorQueued, "queued", dimStyle},
+		{DoctorFailed, "failed", sty.Del},
+		{DoctorWarned, "warning", sty.Accent},
+		{DoctorPassed, "passed", sty.Body},
+		{DoctorSkipped, "not checked", sty.Dim},
+		{DoctorRunning, "running", sty.SpinText},
+		{DoctorQueued, "queued", sty.Dim},
 	}
 	var parts []string
 	for _, tally := range tallies {
@@ -517,7 +517,7 @@ func (d *DoctorScreen) summaryRow() string {
 		parts = append(parts, tally.style.Render(fmt.Sprintf("%d %s", n, word)))
 	}
 	lead := d.glyph(worst)
-	return lead + strings.Join(parts, dimStyle.Render(" · "))
+	return lead + strings.Join(parts, sty.Dim.Render(" · "))
 }
 
 // rank orders the states by how much they want the reader's attention, which

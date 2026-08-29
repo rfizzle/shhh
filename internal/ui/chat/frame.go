@@ -55,37 +55,39 @@ func frameLayoutFor(width int) frameLayout {
 	}
 }
 
-// Frame styles, rebuilt from the palette by applyFrameStyles (S-095).
-var (
-	frameAccentPermissive lipgloss.Style
-	frameAccentGated      lipgloss.Style
-	frameAccentChecking   lipgloss.Style
-	frameIdleStyle        lipgloss.Style
-	frameWorkingStyle     lipgloss.Style
-	frameHintStyle        lipgloss.Style
-	gutterIdleStyle       lipgloss.Style
-	gutterWorkStyle       lipgloss.Style
-	noticeInfoStyle       lipgloss.Style
-	noticeAlertStyle      lipgloss.Style
+// frameStyles is the input frame's own group (§12), built by newFrameStyles.
+type frameStyles struct {
+	AccentPermissive lipgloss.Style
+	AccentGated      lipgloss.Style
+	AccentChecking   lipgloss.Style
+	Idle             lipgloss.Style
+	Working          lipgloss.Style
+	Hint             lipgloss.Style
+	GutterIdle       lipgloss.Style
+	GutterWork       lipgloss.Style
+	NoticeInfo       lipgloss.Style
+	NoticeAlert      lipgloss.Style
 	// The undressed draft and the waiting chip a decision puts on the frame
 	// (S-117, §7b): the chrome goes dim, the characters stay legible.
-	draftHeldStyle   lipgloss.Style
-	waitingChipStyle lipgloss.Style
-)
+	DraftHeld   lipgloss.Style
+	WaitingChip lipgloss.Style
+}
 
-func applyFrameStyles(p components.ColorTokens) {
-	frameAccentPermissive = lipgloss.NewStyle().Foreground(p.Add)
-	frameAccentGated = lipgloss.NewStyle().Foreground(p.Accent)
-	frameAccentChecking = lipgloss.NewStyle().Foreground(p.Spin)
-	frameIdleStyle = lipgloss.NewStyle().Foreground(p.Dim)
-	frameWorkingStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Spin)
-	frameHintStyle = lipgloss.NewStyle().Foreground(p.Dim).Italic(true)
-	gutterIdleStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Info)
-	gutterWorkStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Spin)
-	noticeInfoStyle = lipgloss.NewStyle().Foreground(p.Info)
-	noticeAlertStyle = lipgloss.NewStyle().Foreground(p.Del)
-	draftHeldStyle = lipgloss.NewStyle().Foreground(p.Body)
-	waitingChipStyle = lipgloss.NewStyle().Bold(true).Foreground(p.Accent)
+func newFrameStyles(p components.ColorTokens) frameStyles {
+	return frameStyles{
+		AccentPermissive: lipgloss.NewStyle().Foreground(p.Add),
+		AccentGated:      lipgloss.NewStyle().Foreground(p.Accent),
+		AccentChecking:   lipgloss.NewStyle().Foreground(p.Spin),
+		Idle:             lipgloss.NewStyle().Foreground(p.Dim),
+		Working:          lipgloss.NewStyle().Bold(true).Foreground(p.Spin),
+		Hint:             lipgloss.NewStyle().Foreground(p.Dim).Italic(true),
+		GutterIdle:       lipgloss.NewStyle().Bold(true).Foreground(p.Info),
+		GutterWork:       lipgloss.NewStyle().Bold(true).Foreground(p.Spin),
+		NoticeInfo:       lipgloss.NewStyle().Foreground(p.Info),
+		NoticeAlert:      lipgloss.NewStyle().Foreground(p.Del),
+		DraftHeld:        lipgloss.NewStyle().Foreground(p.Body),
+		WaitingChip:      lipgloss.NewStyle().Bold(true).Foreground(p.Accent),
+	}
 }
 
 func (m Model) frameLayout() frameLayout { return frameLayoutFor(m.contentWidth()) }
@@ -156,7 +158,7 @@ func (m Model) frameWorking() bool {
 // glyphs in the vitals keep meaning independent of color.
 func (m Model) frameAccentStyle() lipgloss.Style {
 	if m.turnState() == stateClassifying {
-		return frameAccentChecking
+		return sty.Frame.AccentChecking
 	}
 	mode := m.mode
 	if m.attachedTo != "" && m.subagents != nil {
@@ -166,9 +168,9 @@ func (m Model) frameAccentStyle() lipgloss.Style {
 	}
 	switch mode {
 	case agent.ModeAcceptEdits, agent.ModeAuto:
-		return frameAccentPermissive
+		return sty.Frame.AccentPermissive
 	default:
-		return frameAccentGated
+		return sty.Frame.AccentGated
 	}
 }
 
@@ -198,7 +200,7 @@ func (m Model) frameActivity(width int) string {
 	// A turn paused on a decision is not working, and what the rail should
 	// say is how many answers it is waiting for (S-117, §7b).
 	if n := m.waitingCount(); n > 0 {
-		return waitingChipStyle.Render(clipRow(fmt.Sprintf("⏸ %d waiting", n), width))
+		return sty.Frame.WaitingChip.Render(clipRow(fmt.Sprintf("⏸ %d waiting", n), width))
 	}
 	// Attached, the frame is scoped to the child (§12d) and the child's phase
 	// is not something the supervisor reports — a subagent is running,
@@ -206,16 +208,16 @@ func (m Model) frameActivity(width int) string {
 	// fact, so the attached rail keeps the working indicator it had.
 	if m.attachedTo != "" {
 		if m.frameWorking() {
-			return clipRow(m.spinner.View()+frameWorkingStyle.Render("WORKING"), width)
+			return clipRow(m.spinner.View()+sty.Frame.Working.Render("WORKING"), width)
 		}
-		return frameIdleStyle.Render(clipRow("idle", width))
+		return sty.Frame.Idle.Render(clipRow("idle", width))
 	}
 	if s, ok := m.turnStatus(); ok {
 		if line := s.View(width); line != "" {
 			return line
 		}
 	}
-	return frameIdleStyle.Render(clipRow("idle", width))
+	return sty.Frame.Idle.Render(clipRow("idle", width))
 }
 
 // frameHints is the contextual bottom-rail hint set, swapped by state; it
@@ -243,7 +245,7 @@ func (m Model) frameHints() string {
 		hints = []string{"enter send", "shift+enter newline", "/ commands",
 			"ctrl+v attach", "ctrl+k palette", "shift+tab mode"}
 	}
-	return frameHintStyle.Render(strings.Join(hints, " · "))
+	return sty.Frame.Hint.Render(strings.Join(hints, " · "))
 }
 
 // promptGutter is the input's leading glyph (§12a): ❯ idle, ▸ while the
@@ -251,12 +253,12 @@ func (m Model) frameHints() string {
 // while attached.
 func (m Model) promptGutter() string {
 	if m.attachedTo != "" {
-		return gutterIdleStyle.Render(m.attachedTo+" ❯") + " "
+		return sty.Frame.GutterIdle.Render(m.attachedTo+" ❯") + " "
 	}
 	if m.frameWorking() {
-		return gutterWorkStyle.Render("▸") + " "
+		return sty.Frame.GutterWork.Render("▸") + " "
 	}
-	return gutterIdleStyle.Render("❯") + " "
+	return sty.Frame.GutterIdle.Render("❯") + " "
 }
 
 // inputInnerWidth is the textarea's usable width inside the frame: the
@@ -289,23 +291,23 @@ func (m Model) noticeLine() string {
 	}
 	var parts []string
 	if m.updateNotice != "" {
-		parts = append(parts, updateNoticeStyle.Render(m.updateNotice))
+		parts = append(parts, sty.UpdateNotice.Render(m.updateNotice))
 	}
 	if n := len(m.steering); n > 0 {
-		parts = append(parts, noticeInfoStyle.Render(fmt.Sprintf("%d steering queued", n)))
+		parts = append(parts, sty.Frame.NoticeInfo.Render(fmt.Sprintf("%d steering queued", n)))
 	}
 	// Scrolled off the live end, so the transcript has stopped following the
 	// turn (S-140, navigate.go). The draft still holds the keyboard, so this
 	// rail is the only thing that can say so.
 	if note := m.followNotice(); note != "" {
-		parts = append(parts, noticeInfoStyle.Render(note))
+		parts = append(parts, sty.Frame.NoticeInfo.Render(note))
 	}
 	// What the last mouse selection put on the clipboard (S-145, select.go).
 	// It rides here rather than in the transcript because a copy is not part
 	// of the conversation, and because appending a row would scroll the pane
 	// away from the selection the reader is still looking at.
 	if m.selNotice != "" {
-		parts = append(parts, noticeInfoStyle.Render(m.selNotice))
+		parts = append(parts, sty.Frame.NoticeInfo.Render(m.selNotice))
 	}
 	if m.subagents != nil {
 		if _, blocked := m.subagents.ActiveCounts(); blocked > 0 {
@@ -313,16 +315,16 @@ func (m Model) noticeLine() string {
 			if blocked == 1 {
 				label = "⚠ 1 agent waiting approval"
 			}
-			parts = append(parts, noticeAlertStyle.Render(label))
+			parts = append(parts, sty.Frame.NoticeAlert.Render(label))
 		}
 	}
 	if m.denialNotice != "" {
-		parts = append(parts, noticeAlertStyle.Render("✗ auto denied: "+firstLine(m.denialNotice)+" (/permissions why)"))
+		parts = append(parts, sty.Frame.NoticeAlert.Render("✗ auto denied: "+firstLine(m.denialNotice)+" (/permissions why)"))
 	}
 	if len(parts) == 0 {
 		return ""
 	}
-	return clipRow(strings.Join(parts, systemMsgStyle.Render(" · ")), m.contentWidth())
+	return clipRow(strings.Join(parts, sty.SystemMsg.Render(" · ")), m.contentWidth())
 }
 
 // frameRail draws one border row: corner, dash, a left label, dash fill, an
@@ -362,7 +364,7 @@ func (m Model) frameVitals(layout frameLayout, width int) string {
 		}
 		segs = minimal
 	}
-	return components.FitRail(segs, statusBarStyle.Render(" · "), width)
+	return components.FitRail(segs, sty.StatusBar.Render(" · "), width)
 }
 
 // childRailSegments is the attached child's vitals (S-077): mode, live
@@ -372,22 +374,22 @@ func (m Model) childRailSegments() []components.RailSegment {
 	name := m.attachedTo
 	st, ok := m.subagents.Get(name)
 	if !ok {
-		return []components.RailSegment{{Text: statusBarStyle.Render(name), Drop: components.RailKeep}}
+		return []components.RailSegment{{Text: sty.StatusBar.Render(name), Drop: components.RailKeep}}
 	}
 	mode, _ := m.subagents.AgentMode(name)
 	segs := []components.RailSegment{{Text: childModeSegment(mode), Drop: components.RailKeep}}
-	detail, drop := statusBarStyle.Render(st.Detail), components.RailNormal
+	detail, drop := sty.StatusBar.Render(st.Detail), components.RailNormal
 	if st.State == subagent.StateBlocked {
-		detail, drop = ctxAlertStyle.Render(st.Detail), components.RailVital
+		detail, drop = sty.CtxAlert.Render(st.Detail), components.RailVital
 	}
 	segs = append(segs, components.RailSegment{Text: detail, Drop: drop})
 	if spend := m.spendLabel(st.TokensIn, st.TokensOut); spend != "" {
-		segs = append(segs, components.RailSegment{Text: statusBarStyle.Render(spend), Drop: components.RailVital})
+		segs = append(segs, components.RailSegment{Text: sty.StatusBar.Render(spend), Drop: components.RailVital})
 	}
 	if q := m.subagents.QueuedSteering(name); q > 0 {
-		segs = append(segs, components.RailSegment{Text: statusBarStyle.Render(fmt.Sprintf("queued %d", q)), Drop: components.RailNormal})
+		segs = append(segs, components.RailSegment{Text: sty.StatusBar.Render(fmt.Sprintf("queued %d", q)), Drop: components.RailNormal})
 	}
-	return append(segs, components.RailSegment{Text: statusBarStyle.Render(st.Name), Drop: components.RailDetail})
+	return append(segs, components.RailSegment{Text: sty.StatusBar.Render(st.Name), Drop: components.RailDetail})
 }
 
 // renderPromptFrame assembles the whole surface: notice rail, staged rail,

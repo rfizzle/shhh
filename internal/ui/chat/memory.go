@@ -116,7 +116,7 @@ func (m Model) memoryAskLines() []string {
 	if req := m.pendingApproval; req != nil {
 		head := fmt.Sprintf("Assistant proposes a %s memory: %q", req.memoryDraft.Kind, firstLine(req.memoryDraft.Text))
 		for _, l := range strings.Split(m.wordWrap(head, m.contentWidth()), "\n") {
-			lines = append(lines, userStyle.Render(l))
+			lines = append(lines, sty.User.Render(l))
 		}
 	}
 	return append(lines, strings.Split(m.memoryAsk.View(m.contentWidth()), "\n")...)

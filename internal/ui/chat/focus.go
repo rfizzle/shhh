@@ -357,7 +357,7 @@ func gutterPrefix(block string, selected bool, width int) string {
 			continue
 		}
 		if i == 0 && selected {
-			lines[i] = focusMarkerStyle.Render("❯") + " " + components.LitRow(l, 0, width)
+			lines[i] = sty.FocusMarker.Render("❯") + " " + components.LitRow(l, 0, width)
 		} else {
 			lines[i] = "  " + l
 		}

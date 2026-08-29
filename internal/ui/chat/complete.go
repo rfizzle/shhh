@@ -217,19 +217,21 @@ var slashCommands = []slashCommand{
 // match lists scroll to keep the focused row visible.
 const maxCompletionRows = 6
 
-var (
-	completeFocusStyle lipgloss.Style
-	completeArgsStyle  lipgloss.Style
-	completeDescStyle  lipgloss.Style
-	completeHintStyle  lipgloss.Style
-)
+// completeStyles is the slash-command menu's own group (S-079).
+type completeStyles struct {
+	Focus lipgloss.Style
+	Args  lipgloss.Style
+	Desc  lipgloss.Style
+	Hint  lipgloss.Style
+}
 
-// applyCompleteStyles rebuilds the menu's styles from the palette (S-095).
-func applyCompleteStyles(p components.ColorTokens) {
-	completeFocusStyle = lipgloss.NewStyle().Bold(true).Background(p.FocusBg)
-	completeArgsStyle = lipgloss.NewStyle().Foreground(p.Dim)
-	completeDescStyle = lipgloss.NewStyle().Foreground(p.Dim)
-	completeHintStyle = lipgloss.NewStyle().Foreground(p.Dim).Italic(true)
+func newCompleteStyles(p components.ColorTokens) completeStyles {
+	return completeStyles{
+		Focus: lipgloss.NewStyle().Bold(true).Background(p.FocusBg),
+		Args:  lipgloss.NewStyle().Foreground(p.Dim),
+		Desc:  lipgloss.NewStyle().Foreground(p.Dim),
+		Hint:  lipgloss.NewStyle().Foreground(p.Dim).Italic(true),
+	}
 }
 
 // matchesCommand reports whether the typed token ("/mo") is a prefix of the
@@ -452,13 +454,13 @@ func (m Model) completionMenuLines() []string {
 		pad := strings.Repeat(" ", max(nameW-lipgloss.Width(plain), 0))
 		var row string
 		if i == m.completeIdx {
-			row = completeFocusStyle.Render(clipRow("❯ "+plain+pad+"  "+c.desc, width))
+			row = sty.Complete.Focus.Render(clipRow("❯ "+plain+pad+"  "+c.desc, width))
 		} else {
 			label := c.name
 			if c.args != "" {
-				label += " " + completeArgsStyle.Render(c.args)
+				label += " " + sty.Complete.Args.Render(c.args)
 			}
-			row = clipRow("  "+label+pad+"  "+completeDescStyle.Render(c.desc), width)
+			row = clipRow("  "+label+pad+"  "+sty.Complete.Desc.Render(c.desc), width)
 		}
 		lines = append(lines, row)
 	}
@@ -470,7 +472,7 @@ func (m Model) completionMenuLines() []string {
 	if len(m.completions) > visible {
 		hint = fmt.Sprintf("%d/%d · %s", m.completeIdx+1, len(m.completions), hint)
 	}
-	return append(lines, completeHintStyle.Render(clipRow(hint, width)))
+	return append(lines, sty.Complete.Hint.Render(clipRow(hint, width)))
 }
 
 // plainCommandLabel is the unstyled name+args column used for alignment.

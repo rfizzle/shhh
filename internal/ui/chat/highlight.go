@@ -7,7 +7,6 @@ import (
 
 	"github.com/alecthomas/chroma/v2"
 	"github.com/alecthomas/chroma/v2/lexers"
-	"github.com/alecthomas/chroma/v2/styles"
 	"github.com/charmbracelet/glamour"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -74,9 +73,67 @@ func renderMarkdownRaw(text string, width int) string {
 	return out
 }
 
-// diffSyntaxStyle is the chroma style diff views highlight with; the diff
-// renderer layers add/remove coloring over it (S-074, DESIGN-TUI.md §3b).
-const diffSyntaxStyle = "monokai"
+// The syntax register (DESIGN-TUI.md §3b, §10a). Diff bodies used to
+// highlight with stock monokai — greens, pinks and oranges from outside the
+// product, sitting next to an add/del gutter drawn from the palette, two
+// unrelated colour systems in one card. The theme below is the palette
+// instead, read as a register rather than as state: structure in info, values
+// in accent, the names a reader scans for a step brighter, the glue between
+// them dimmer, comments dim.
+//
+// Four tokens are deliberately absent. Add, del, hunk and spin say something
+// about the row — this line was added, that one removed, this is where the
+// hunk starts, this is moving — and a string literal inside a removed line
+// saying "added" is the card contradicting itself. The rule is checked in
+// highlight_test.go, not just written here.
+//
+// The map is keyed on the broadest chroma type that should carry the tone;
+// syntaxTone walks a token's parents to it, which is the inheritance a
+// chroma.Style would have done and the reason none is built.
+var syntaxTones map[chroma.TokenType]components.Token
+
+// applySyntaxTones rebuilds the register from a token set. It is called from
+// applyPalette with the styles, so a palette swap reaches the diff body the
+// same way it reaches everything else.
+func applySyntaxTones(p components.ColorTokens) {
+	syntaxTones = map[chroma.TokenType]components.Token{
+		chroma.Text:    p.Body,
+		chroma.Name:    p.Body,
+		chroma.Comment: p.Dim,
+		// Structure: what the language says about itself.
+		chroma.Keyword:       p.Info,
+		chroma.NameTag:       p.Info,
+		chroma.NameAttribute: p.Info,
+		chroma.NameNamespace: p.Info,
+		// Values: what the code is carrying.
+		chroma.Literal: p.Accent,
+		// The names a reader scans a diff for. Bright is a step on the grey
+		// ladder rather than a hue, which is what keeps the register at two
+		// colours (§10f: the mono capture of a diff has no highlighting at
+		// all, so the register never has to survive the swap — it has to
+		// survive being read in colour beside the gutter).
+		chroma.NameFunction: p.Bright,
+		chroma.NameClass:    p.Bright,
+		chroma.NameBuiltin:  p.Bright,
+		chroma.NameConstant: p.Bright,
+		// The glue: operators, punctuation, the characters between the words.
+		chroma.Operator:    p.Dimmer,
+		chroma.Punctuation: p.Dimmer,
+	}
+}
+
+// syntaxTone resolves one chroma token type to a palette token, walking up
+// the type's parents the way a chroma.Style resolves inheritance —
+// LiteralStringDouble to LiteralString to Literal. It reports false for a
+// type nothing above it claims, which renders in the diff kind's own colour.
+func syntaxTone(t chroma.TokenType) (components.Token, bool) {
+	for ; t != 0; t = t.Parent() {
+		if tone, ok := syntaxTones[t]; ok {
+			return tone, true
+		}
+	}
+	return components.Token{}, false
+}
 
 // lexerCache memoizes matchLexer. lexers.Match glob-matches the basename
 // against every registered lexer's patterns — hundreds of filepath.Match calls
@@ -105,9 +162,10 @@ func matchLexer(base string) chroma.Lexer {
 // diffSyntax returns a per-line syntax highlighter for path, or nil when no
 // lexer matches (the diff then renders with plain diff colors).
 func diffSyntax(path string) components.Syntax {
-	// Chroma's colours are not the product's palette, so mono mode declines
-	// highlighting outright and the diff renders in its plain +/- styling
-	// (S-095).
+	// Mono declines highlighting outright rather than collapsing the register
+	// onto its two greys: a diff body is where the +/- styling is already
+	// carrying the distinction that matters, and a second grey ladder over it
+	// would be decoration the reader has to unpick (S-095, §10f).
 	if components.Mono() {
 		return nil
 	}
@@ -115,7 +173,6 @@ func diffSyntax(path string) components.Syntax {
 	if lexer == nil {
 		return nil
 	}
-	style := styles.Get(diffSyntaxStyle)
 	return func(line string) []components.Segment {
 		it, err := lexer.Tokenise(nil, line)
 		if err != nil {
@@ -123,11 +180,8 @@ func diffSyntax(path string) components.Syntax {
 		}
 		var segs []components.Segment
 		for _, tok := range it.Tokens() {
-			color := ""
-			if entry := style.Get(tok.Type); entry.Colour.IsSet() {
-				color = entry.Colour.String()
-			}
-			segs = append(segs, components.Segment{Text: tok.Value, Color: color})
+			tone, _ := syntaxTone(tok.Type)
+			segs = append(segs, components.Segment{Text: tok.Value, Color: tone})
 		}
 		// Lexers append the trailing newline they require; the renderer works
 		// on bare lines, so trim it to reconstruct the input exactly.

@@ -150,9 +150,9 @@ func (r ActivityRow) railCell() string {
 		return strings.Repeat(" ", railWidth)
 	}
 	if r.State == ActivityFailed {
-		return delStyle.Render("▎")
+		return sty.Del.Render("▎")
 	}
-	return accentStyle.Render("▎")
+	return sty.Accent.Render("▎")
 }
 
 // pointer renders gutter columns 1–2: the focus cursor today, fold state once
@@ -161,7 +161,7 @@ func (r ActivityRow) pointer() string {
 	if r.Selected {
 		// The pointer is a glyph in its own column, not part of the
 		// highlight behind the row (§6a, §7a).
-		return focusPointerStyle.Render("❯") + " "
+		return sty.FocusPointer.Render("❯") + " "
 	}
 	return strings.Repeat(" ", ptrWidth)
 }
@@ -183,29 +183,29 @@ func (r ActivityRow) glyph() string {
 	var g string
 	switch r.State {
 	case ActivityQueued:
-		g = dimStyle.Render("·")
+		g = sty.Dim.Render("·")
 	case ActivityRunning:
-		g = spinTextStyle.Render(r.runningGlyph())
+		g = sty.SpinText.Render(r.runningGlyph())
 	case ActivityChecking:
-		g = spinTextStyle.Render("✦")
+		g = sty.SpinText.Render("✦")
 	case ActivityFailed:
-		g = errStyle.Render("✗")
+		g = sty.Err.Render("✗")
 	case ActivityDenied:
 		if r.ByRule {
-			g = delStyle.Render("⊘")
+			g = sty.Del.Render("⊘")
 		} else {
-			g = dimStyle.Render("⊘")
+			g = sty.Dim.Render("⊘")
 		}
 	default:
 		switch r.Kind {
 		case ActivityCommand:
-			g = accentStyle.Render("$")
+			g = sty.Accent.Render("$")
 		case ActivityEdit:
-			g = accentStyle.Render("✎")
+			g = sty.Accent.Render("✎")
 		case ActivitySubagent:
-			g = infoStyle.Render("◇")
+			g = sty.Info.Render("◇")
 		default:
-			g = accentStyle.Render("⚙")
+			g = sty.Accent.Render("⚙")
 		}
 	}
 	return g + " "
@@ -223,20 +223,20 @@ func verbField(verb string) string {
 func (r ActivityRow) outcomeField() string {
 	var parts []string
 	if r.Outcome != "" {
-		style := dimStyle
+		style := sty.Dim
 		switch {
 		case r.State == ActivityFailed, r.State == ActivityDenied && r.ByRule:
-			style = delStyle
+			style = sty.Del
 		}
 		parts = append(parts, style.Render(r.Outcome))
 	}
 	if r.Counts != "" {
-		parts = append(parts, dimmerStyle.Render(r.Counts))
+		parts = append(parts, sty.Dimmer.Render(r.Counts))
 	}
 	if r.Keys != "" {
-		parts = append(parts, infoStyle.Render(r.Keys))
+		parts = append(parts, sty.Info.Render(r.Keys))
 	}
-	return strings.Join(parts, dimStyle.Render(" · "))
+	return strings.Join(parts, sty.Dim.Render(" · "))
 }
 
 // durationField right-aligns the duration in its 6 columns. The field is
@@ -251,7 +251,7 @@ func durationField(d string) string {
 	if d == "" {
 		return strings.Repeat(" ", durWidth)
 	}
-	return strings.Repeat(" ", pad) + dimmerStyle.Render(d)
+	return strings.Repeat(" ", pad) + sty.Dimmer.Render(d)
 }
 
 // gridLine assembles one line on the §6a grid: a lead already padded to
@@ -260,7 +260,7 @@ func durationField(d string) string {
 // never has to — it is the reason to read the line. Both the activity row and
 // the folded group row are this shape, which is why they line up.
 func gridLine(lead, target, outcome, duration string, width int) string {
-	return gridLineWith(lead, target, func(s string) string { return dimStyle.Render(s) }, outcome, duration, width)
+	return gridLineWith(lead, target, func(s string) string { return sty.Dim.Render(s) }, outcome, duration, width)
 }
 
 // gridLineWith is gridLine with the target's painting under the caller's
@@ -330,7 +330,7 @@ func indented(s string, indent, width int) string {
 		// away.
 		return pad + clip(painted, inner)
 	}
-	return pad + dimmerStyle.Render(clip(s, inner))
+	return pad + sty.Dimmer.Render(clip(s, inner))
 }
 
 // GroupExpandKey is what a folded group row says opens it. It is drawn in the
@@ -358,9 +358,9 @@ type ActivityGroup struct {
 // View renders the group row at the given width.
 func (g ActivityGroup) View(width int) string {
 	lead := strings.Repeat(" ", ptrWidth+railWidth) +
-		dimStyle.Render("▸") + " " +
-		dimStyle.Render("⚙") + strings.Repeat(" ", verbWidth-1)
-	return gridLine(lead, g.Label, hintStyle.Render(GroupExpandKey), g.Duration, width)
+		sty.Dim.Render("▸") + " " +
+		sty.Dim.Render("⚙") + strings.Repeat(" ", verbWidth-1)
+	return gridLine(lead, g.Label, sty.Hint.Render(GroupExpandKey), g.Duration, width)
 }
 
 // The step outline (§13) draws its headers on this same grid but lives in

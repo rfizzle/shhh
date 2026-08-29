@@ -91,18 +91,18 @@ func (s StartScreen) View(width int) string {
 	if len(s.Suggestions) > 0 {
 		rows = append(rows, "")
 		if s.Lead != "" {
-			rows = append(rows, dimStyle.Render(clip(s.Lead, width)))
+			rows = append(rows, sty.Dim.Render(clip(s.Lead, width)))
 		}
 		rows = append(rows, s.suggestionRows(width)...)
 	}
 	if s.Hint != "" {
-		rows = append(rows, "", hintStyle.Render(clip(s.Hint, width)))
+		rows = append(rows, "", sty.Hint.Render(clip(s.Hint, width)))
 	}
 	if s.Nav != "" {
 		if s.Hint == "" {
 			rows = append(rows, "")
 		}
-		rows = append(rows, hintStyle.Render(clip(s.Nav, width)))
+		rows = append(rows, sty.Hint.Render(clip(s.Nav, width)))
 	}
 	return strings.Join(rows, "\n")
 }
@@ -125,7 +125,7 @@ func joinFacts(facts []StartFact) string {
 	var b strings.Builder
 	for i, f := range facts {
 		if i > 0 {
-			b.WriteString(dimStyle.Render(" · "))
+			b.WriteString(sty.Dim.Render(" · "))
 		}
 		style := f.Tone.style()
 		if f.Lead {
@@ -148,16 +148,16 @@ func (s StartScreen) noteRows(width int) []string {
 	indent := strings.Repeat(" ", label+2)
 	rows := make([]string, 0, len(s.Notes))
 	for _, n := range s.Notes {
-		head := dimStyle.Render(padRight(n.Label, label)) + "  " + bodyStyle.Render(n.Value)
+		head := sty.Dim.Render(padRight(n.Label, label)) + "  " + sty.Body.Render(n.Value)
 		if n.Detail == "" {
 			rows = append(rows, clip(head, width))
 			continue
 		}
-		if full := head + dimStyle.Render(" — "+n.Detail); lipgloss.Width(full) <= width {
+		if full := head + sty.Dim.Render(" — "+n.Detail); lipgloss.Width(full) <= width {
 			rows = append(rows, full)
 			continue
 		}
-		rows = append(rows, clip(head, width), clip(indent+dimStyle.Render(n.Detail), width))
+		rows = append(rows, clip(head, width), clip(indent+sty.Dim.Render(n.Detail), width))
 	}
 	return rows
 }
@@ -183,7 +183,7 @@ func (s StartScreen) suggestionRows(width int) []string {
 			continue
 		}
 		rows = append(rows, s.row(focused, head, "", width),
-			clip(strings.Repeat(" ", suggestionGutter+2)+dimStyle.Render(sg.Detail), width))
+			clip(strings.Repeat(" ", suggestionGutter+2)+sty.Dim.Render(sg.Detail), width))
 	}
 	return rows
 }
@@ -197,12 +197,12 @@ func (s StartScreen) row(focused bool, head, detail string, width int) string {
 		if detail != "" {
 			line += " — " + detail
 		}
-		return focusRowStyle.Render(clip(line, width))
+		return sty.FocusRow.Render(clip(line, width))
 	}
 	glyph, title, _ := strings.Cut(strings.TrimLeft(head, " "), " ")
-	line := strings.Repeat(" ", suggestionGutter) + accentStyle.Render(glyph) + " " + bodyStyle.Render(title)
+	line := strings.Repeat(" ", suggestionGutter) + sty.Accent.Render(glyph) + " " + sty.Body.Render(title)
 	if detail != "" {
-		line += dimStyle.Render(" — " + detail)
+		line += sty.Dim.Render(" — " + detail)
 	}
 	return clip(line, width)
 }

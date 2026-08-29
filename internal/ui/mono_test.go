@@ -16,33 +16,33 @@ func TestMonoReachesTheGenerateStyles(t *testing.T) {
 	t.Cleanup(func() { components.SetMono(was) })
 
 	components.SetMono(false)
-	fullCommand := CommandStyle.GetForeground()
-	fullError := ErrorStyle.GetForeground()
+	fullCommand := sty.Command.GetForeground()
+	fullError := sty.Error.GetForeground()
 
 	components.SetMono(true)
-	if CommandStyle.GetForeground() == fullCommand {
-		t.Errorf("CommandStyle kept its full-palette foreground %v after the mono swap", fullCommand)
+	if sty.Command.GetForeground() == fullCommand {
+		t.Errorf("sty.Command kept its full-palette foreground %v after the mono swap", fullCommand)
 	}
-	if ErrorStyle.GetForeground() == fullError {
-		t.Errorf("ErrorStyle kept its full-palette foreground %v after the mono swap", fullError)
+	if sty.Error.GetForeground() == fullError {
+		t.Errorf("sty.Error kept its full-palette foreground %v after the mono swap", fullError)
 	}
 
 	// The generate UI's whole surface, not just the two above.
 	for name, s := range map[string]lipgloss.Style{
-		"CommandStyle":      CommandStyle,
-		"ErrorStyle":        ErrorStyle,
-		"EditPromptStyle":   EditPromptStyle,
-		"RevisePromptStyle": RevisePromptStyle,
-		"ExplainLabelStyle": ExplainLabelStyle,
-		"ExplainBodyStyle":  ExplainBodyStyle,
-		"KeyStyle":          KeyStyle,
-		"KeyLabelStyle":     KeyLabelStyle,
-		"PrimaryKeyStyle":   PrimaryKeyStyle,
-		"DangerKeyStyle":    DangerKeyStyle,
-		"ReachStyle":        ReachStyle,
-		"RiskStyle":         RiskStyle,
-		"DimStyle":          DimStyle,
-		"PastCommandStyle":  PastCommandStyle,
+		"sty.Command":      sty.Command,
+		"sty.Error":        sty.Error,
+		"sty.EditPrompt":   sty.EditPrompt,
+		"sty.RevisePrompt": sty.RevisePrompt,
+		"sty.ExplainLabel": sty.ExplainLabel,
+		"sty.ExplainBody":  sty.ExplainBody,
+		"sty.Key":          sty.Key,
+		"sty.KeyLabel":     sty.KeyLabel,
+		"sty.PrimaryKey":   sty.PrimaryKey,
+		"sty.DangerKey":    sty.DangerKey,
+		"sty.Reach":        sty.Reach,
+		"sty.Risk":         sty.Risk,
+		"sty.Dim":          sty.Dim,
+		"sty.PastCommand":  sty.PastCommand,
 	} {
 		if fg := s.GetForeground(); fg != components.MonoFg && fg != components.MonoDim {
 			t.Errorf("%s has foreground %v, which is not one of the two greys", name, fg)

@@ -252,13 +252,13 @@ func keyboardRail(label string, width int) string {
 	if width <= 0 {
 		return ""
 	}
-	rendered := readingLabelStyle.Render(label)
+	rendered := sty.Reading.Label.Render(label)
 	lw := lipgloss.Width(rendered)
 	if width < lw+8 {
 		return dividerStyle(width)
 	}
-	return readingRuleStyle.Render(strings.Repeat("─", 4)) + " " + rendered + " " +
-		readingRuleStyle.Render(strings.Repeat("─", width-lw-6))
+	return sty.Reading.Rule.Render(strings.Repeat("─", 4)) + " " + rendered + " " +
+		sty.Reading.Rule.Render(strings.Repeat("─", width-lw-6))
 }
 
 // dressDecision puts the rail that names the keyboard's owner around a
@@ -305,13 +305,13 @@ func (m Model) undressedDraft(width int) []string {
 	}
 	inner := width - frameSideWidth
 	text := strings.ReplaceAll(value, "\n", " ")
-	row := frameIdleStyle.Render("▸ ") + draftHeldStyle.Render(text)
+	row := sty.Frame.Idle.Render("▸ ") + sty.Frame.DraftHeld.Render(text)
 	row = clipRow(row, inner)
 	pad := strings.Repeat(" ", max(0, inner-lipgloss.Width(row)))
 	return []string{
-		frameRail(frameIdleStyle, "╭", "╮", " "+frameIdleStyle.Render(m.frameIdentity())+" ", "", width),
-		frameIdleStyle.Render("│") + " " + row + pad + " " + frameIdleStyle.Render("│"),
-		frameRail(frameIdleStyle, "╰", "╯", " "+frameIdleStyle.Render(m.draftPosition())+" ", "", width),
+		frameRail(sty.Frame.Idle, "╭", "╮", " "+sty.Frame.Idle.Render(m.frameIdentity())+" ", "", width),
+		sty.Frame.Idle.Render("│") + " " + row + pad + " " + sty.Frame.Idle.Render("│"),
+		frameRail(sty.Frame.Idle, "╰", "╯", " "+sty.Frame.Idle.Render(m.draftPosition())+" ", "", width),
 	}
 }
 

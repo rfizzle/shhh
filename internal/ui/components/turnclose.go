@@ -91,11 +91,11 @@ type TurnClose struct {
 func (c TurnClose) stateGlyph() (string, string) {
 	switch c.State {
 	case TurnCancelled:
-		return dimStyle.Render("⊘"), "Cancelled"
+		return sty.Dim.Render("⊘"), "Cancelled"
 	case TurnFailed:
-		return delStyle.Render("✗"), "Failed"
+		return sty.Del.Render("✗"), "Failed"
 	}
-	return addStyle.Render("✓"), "Done"
+	return sty.Add.Render("✓"), "Done"
 }
 
 // summaryStats is the first row's detail: the steps, tools, wall time and
@@ -147,36 +147,36 @@ func (c TurnClose) View(width int) string {
 	glyph, word := c.stateGlyph()
 	lines := []string{closeLine(
 		closeLead("", glyph),
-		bodyStyle.Render(word)+dimStyle.Render(c.summaryStats()),
-		dimStyle.Render(c.Note), width)}
+		sty.Body.Render(word)+sty.Dim.Render(c.summaryStats()),
+		sty.Dim.Render(c.Note), width)}
 
 	if ch := c.Changes; ch != nil {
-		stats := addStyle.Render(fmt.Sprintf("+%d", ch.Added)) + " " + delStyle.Render(fmt.Sprintf("−%d", ch.Removed))
-		stated := bodyStyle.Render(plural(ch.Files, "file")+" changed ") + stats
-		lead := closeLead(accentStyle.Render("▎"), accentStyle.Render("✎"))
+		stats := sty.Add.Render(fmt.Sprintf("+%d", ch.Added)) + " " + sty.Del.Render(fmt.Sprintf("−%d", ch.Removed))
+		stated := sty.Body.Render(plural(ch.Files, "file")+" changed ") + stats
+		lead := closeLead(sty.Accent.Render("▎"), sty.Accent.Render("✎"))
 		text := stated
 		if run := keyRun(ch.Keys, c.KeysWaiting, c.Handover); run != "" {
-			text = stated + dimStyle.Render(" · ") + run
+			text = stated + sty.Dim.Render(" · ") + run
 		}
 		// The keys that are not live yet are the first thing to give up the
 		// width, and the key that makes them live is the last: one is an
 		// offer, the others are not offers yet (§7c).
 		if lipgloss.Width(lead+text) > width {
 			if run := keyRunNarrow(ch.Keys, c.KeysWaiting, c.Handover); run != "" {
-				text = stated + dimStyle.Render(" · ") + run
+				text = stated + sty.Dim.Render(" · ") + run
 			}
 		}
-		lines = append(lines, closeLine(lead, text, dimStyle.Render(ch.Note), width))
+		lines = append(lines, closeLine(lead, text, sty.Dim.Render(ch.Note), width))
 	}
 
 	if ck := c.Checks; ck != nil {
-		glyph, verdict := addStyle.Render("✓"), " passing"
+		glyph, verdict := sty.Add.Render("✓"), " passing"
 		if ck.Failed {
-			glyph, verdict = delStyle.Render("✗"), " failing"
+			glyph, verdict = sty.Del.Render("✗"), " failing"
 		}
-		text := bodyStyle.Render(ck.Label + verdict)
+		text := sty.Body.Render(ck.Label + verdict)
 		if ck.Counts != "" {
-			text += dimStyle.Render(" · " + ck.Counts)
+			text += sty.Dim.Render(" · " + ck.Counts)
 		}
 		lines = append(lines, closeLine(closeLead("", glyph), text, "", width))
 	}

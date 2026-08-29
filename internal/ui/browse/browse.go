@@ -199,11 +199,11 @@ func (m Model) View() string {
 func (m Model) viewList() string {
 	var b strings.Builder
 
-	title := listTitleStyle.Render(fmt.Sprintf(" %d items", len(m.filtered)))
+	title := sty.ListTitle.Render(fmt.Sprintf(" %d items", len(m.filtered)))
 	if m.filter.Focused() || m.filter.Value() != "" {
 		title += "  " + m.filter.View()
 	} else {
-		title += hintStyle.Render("  / filter  enter select  q quit")
+		title += sty.Hint.Render("  / filter  enter select  q quit")
 	}
 	b.WriteString(title + "\n")
 	b.WriteString(divider(m.width) + "\n")
@@ -219,9 +219,9 @@ func (m Model) viewList() string {
 		item := m.items[idx]
 		line := m.formatListItem(item, m.width-4)
 		if i == m.cursor {
-			b.WriteString(cursorStyle.Render("> ") + selectedItemStyle.Render(line) + "\n")
+			b.WriteString(sty.Cursor.Render("> ") + sty.SelectedItem.Render(line) + "\n")
 		} else {
-			b.WriteString("  " + itemStyle.Render(line) + "\n")
+			b.WriteString("  " + sty.Item.Render(line) + "\n")
 		}
 	}
 
@@ -236,7 +236,7 @@ func (m Model) viewDetail() string {
 	item := m.items[m.filtered[m.cursor]]
 	var b strings.Builder
 
-	b.WriteString(detailTitleStyle.Render(item.Title) + "\n")
+	b.WriteString(sty.DetailTitle.Render(item.Title) + "\n")
 	b.WriteString(divider(m.width) + "\n")
 
 	detailHeight := m.height - 5
@@ -248,7 +248,7 @@ func (m Model) viewDetail() string {
 	if len(lines) > detailHeight {
 		lines = lines[:detailHeight]
 	}
-	b.WriteString(detailBodyStyle.Render(strings.Join(lines, "\n")) + "\n")
+	b.WriteString(sty.DetailBody.Render(strings.Join(lines, "\n")) + "\n")
 
 	b.WriteString(divider(m.width) + "\n")
 	b.WriteString(m.renderActions() + "\n")
@@ -261,12 +261,12 @@ func (m Model) renderActions() string {
 	for i, a := range m.actions {
 		label := a.Label + " (" + a.Shortcut + ")"
 		if i == m.action {
-			parts = append(parts, activeActionStyle.Render(label))
+			parts = append(parts, sty.ActiveAction.Render(label))
 		} else {
-			parts = append(parts, inactiveActionStyle.Render(label))
+			parts = append(parts, sty.InactiveAction.Render(label))
 		}
 	}
-	hint := hintStyle.Render("  esc back")
+	hint := sty.Hint.Render("  esc back")
 	return lipgloss.JoinHorizontal(lipgloss.Center, parts...) + hint
 }
 
@@ -282,7 +282,7 @@ func (m Model) formatListItem(item Item, maxWidth int) string {
 	if remaining <= 0 {
 		return truncate(title, maxWidth)
 	}
-	return title + sep + previewStyle.Render(truncate(preview, remaining))
+	return title + sep + sty.Preview.Render(truncate(preview, remaining))
 }
 
 func (m Model) visibleRange(height int) (int, int) {
@@ -343,5 +343,5 @@ func truncate(s string, maxWidth int) string {
 }
 
 func divider(width int) string {
-	return dividerLineStyle.Render(strings.Repeat("─", width))
+	return sty.DividerLine.Render(strings.Repeat("─", width))
 }

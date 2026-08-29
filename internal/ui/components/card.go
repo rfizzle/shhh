@@ -61,7 +61,7 @@ func renderCard(title string, rows []string, width int) string {
 // renderChromeCard is renderCard with the top border's chips and the border
 // colour under the caller's control.
 func renderChromeCard(c cardChrome, rows []string, width int) string {
-	border := borderStyle
+	border := sty.Border
 	if c.style != nil {
 		border = *c.style
 	}
@@ -138,11 +138,11 @@ func dropRules(rows []string) []string {
 func hintRows(segments []string, width int) []string {
 	joined := strings.Join(segments, " · ")
 	if width >= narrowWidth || lipgloss.Width(joined) <= width-cardFrameWidth {
-		return []string{hintStyle.Render(joined)}
+		return []string{sty.Hint.Render(joined)}
 	}
 	rows := make([]string, 0, len(segments))
 	for _, s := range segments {
-		rows = append(rows, hintStyle.Render(s))
+		rows = append(rows, sty.Hint.Render(s))
 	}
 	return rows
 }
@@ -166,9 +166,9 @@ func notYetLiveRows(keys, handover string, width int) []string {
 	// The words sit on the key row itself where the terminal carries them,
 	// so the state is read in the same glance as the keys it describes.
 	if pad := inner - lipgloss.Width(keys) - lipgloss.Width(notYetLiveWords); pad >= 2 {
-		rows = append(rows, dimmerStyle.Render(keys)+strings.Repeat(" ", pad)+dimStyle.Render(notYetLiveWords))
+		rows = append(rows, sty.Dimmer.Render(keys)+strings.Repeat(" ", pad)+sty.Dim.Render(notYetLiveWords))
 	} else {
-		rows = append(rows, dimmerStyle.Render(keys), dimStyle.Render(clip(notYetLiveWords, inner)))
+		rows = append(rows, sty.Dimmer.Render(keys), sty.Dim.Render(clip(notYetLiveWords, inner)))
 	}
 	if handover != "" {
 		rows = append(rows, handoverRow(handover, inner))
@@ -180,8 +180,8 @@ func notYetLiveRows(keys, handover string, width int) []string {
 // the card's rather than the caller's, because §7b fixes it: the key, what it
 // does, and where the letters go until it is pressed.
 func handoverRow(key string, inner int) string {
-	head := infoStyle.Render("["+key+"]") + bodyStyle.Render(" answer it")
-	tail := dimStyle.Render(" — until then these letters go into your draft")
+	head := sty.Info.Render("["+key+"]") + sty.Body.Render(" answer it")
+	tail := sty.Dim.Render(" — until then these letters go into your draft")
 	if lipgloss.Width(head)+lipgloss.Width(tail) > inner {
 		return clip(head, inner)
 	}

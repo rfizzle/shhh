@@ -230,26 +230,26 @@ func (m ActionBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m ActionBarModel) View() string {
 	var b strings.Builder
 	if m.revision > 0 {
-		b.WriteString(DimStyle.Render("revision " + strconv.Itoa(m.revision) + "  "))
+		b.WriteString(sty.Dim.Render("revision " + strconv.Itoa(m.revision) + "  "))
 	}
 	for i, k := range m.keys() {
 		if i > 0 {
-			b.WriteString(KeyLabelStyle.Render("  "))
+			b.WriteString(sty.KeyLabel.Render("  "))
 		}
 		b.WriteString(keyStyle(k.tone).Render("[" + k.shown + "]"))
-		b.WriteString(KeyLabelStyle.Render(" " + k.label))
+		b.WriteString(sty.KeyLabel.Render(" " + k.label))
 	}
-	return BarStyle.Render(b.String())
+	return sty.Bar.Render(b.String())
 }
 
 func keyStyle(t keyTone) lipgloss.Style {
 	switch t {
 	case tonePrimary:
-		return PrimaryKeyStyle
+		return sty.PrimaryKey
 	case toneDanger:
-		return DangerKeyStyle
+		return sty.DangerKey
 	case toneQuiet:
-		return KeyLabelStyle
+		return sty.KeyLabel
 	}
-	return KeyStyle
+	return sty.Key
 }

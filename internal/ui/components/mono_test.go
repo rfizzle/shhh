@@ -713,7 +713,7 @@ func allowedMonoSGR(params string) bool {
 				return false
 			}
 			switch fields[i+2] {
-			case string(MonoFg), string(MonoDim), string(MonoBg):
+			case MonoFg.ANSI256, MonoDim.ANSI256, MonoBg.ANSI256:
 				i += 2
 				continue
 			}
@@ -777,14 +777,15 @@ func TestMonoLeavesTheFullPaletteIntact(t *testing.T) {
 	}
 }
 
-// TestMonoDeclinesSyntaxHighlighting covers the one source of colour the
-// palette does not own: chroma's themes. Mono declines them rather than
-// pretending to strip them.
+// TestMonoDeclinesSyntaxHighlighting covers the syntax register (§3b): even
+// though it is drawn from the palette now, mono declines it outright rather
+// than collapsing it onto the two greys, because the +/- styling under it is
+// already carrying the distinction that matters.
 func TestMonoDeclinesSyntaxHighlighting(t *testing.T) {
 	withColorProfile(t, termenv.ANSI256)
 	monoOn(t)
 	syntax := func(line string) []Segment {
-		return []Segment{{Text: line, Color: "#ff0000"}}
+		return []Segment{{Text: line, Color: Palette.Info}}
 	}
 	hunks := []diff.Hunk{{
 		OldStart: 1, OldCount: 0, NewStart: 1, NewCount: 1,

@@ -5,8 +5,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/charmbracelet/lipgloss"
 )
 
 func TestMeterCells(t *testing.T) {
@@ -58,7 +56,7 @@ func TestMeterThresholdColours(t *testing.T) {
 	// The bar and the number turn together (§10c), so one style decides both.
 	for _, c := range []struct {
 		pct  int
-		want lipgloss.Color
+		want Token
 		bold bool
 	}{{40, Palette.Add, false}, {62, Palette.Accent, false}, {95, Palette.Del, true}} {
 		style := Meter{Pct: c.pct, Warn: 60, Alert: 80}.Style()
@@ -79,7 +77,7 @@ func TestMeterThresholdColours(t *testing.T) {
 	// The other tones do not colour by value at all.
 	for _, c := range []struct {
 		tone MeterTone
-		want lipgloss.Color
+		want Token
 	}{{MeterProgress, Palette.Add}, {MeterAgent, Palette.Info}, {MeterCountdown, Palette.Accent}} {
 		if got := (Meter{Pct: 95, Tone: c.tone}).Style().GetForeground(); got != c.want {
 			t.Fatalf("tone %d at 95%% uses %v, want %v", c.tone, got, c.want)

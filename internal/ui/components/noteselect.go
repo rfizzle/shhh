@@ -105,10 +105,10 @@ func (s *NoteSelect) View(width int) string {
 	inner := width - cardFrameWidth
 
 	noteLabel := "note (optional)"
-	labelStyle := dimStyle
+	labelStyle := sty.Dim
 	if s.noteMissing {
 		noteLabel = "note required"
-		labelStyle = errStyle
+		labelStyle = sty.Err
 	}
 	s.Note.SetWidth(max(inner-2, 8))
 	noteView := s.Note.View()
@@ -119,7 +119,7 @@ func (s *NoteSelect) View(width int) string {
 		if text == "" {
 			text = "(none)"
 		}
-		noteView = dimmerStyle.Render(clip(text, max(inner-2, 8)))
+		noteView = sty.Dimmer.Render(clip(text, max(inner-2, 8)))
 	}
 	// The note field and the hints are pinned under the list, so what they
 	// spend comes off the list's budget before its window is drawn (S-116) —

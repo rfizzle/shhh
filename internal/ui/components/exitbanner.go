@@ -73,15 +73,15 @@ func (b ExitBanner) View(width int) string {
 		return ""
 	}
 
-	rows := []string{b.row("session", b.sessionLine(body), bodyStyle)}
+	rows := []string{b.row("session", b.sessionLine(body), sty.Body)}
 	if b.Spend != "" {
-		rows = append(rows, b.row("spent", clip(b.Spend, body), bodyStyle))
+		rows = append(rows, b.row("spent", clip(b.Spend, body), sty.Body))
 	}
 	switch {
 	case b.Unsaved:
 		// One thing gone wrong and no way out of it, which is the honest
 		// shape here: there is no command that brings this back.
-		rows = append(rows, b.row("resume", clip("not saved · chat persistence was unavailable", body), dimStyle))
+		rows = append(rows, b.row("resume", clip("not saved · chat persistence was unavailable", body), sty.Dim))
 	case b.Resume != "":
 		rows = append(rows, b.row("resume", b.Resume, brightStyle()))
 	}
@@ -91,7 +91,7 @@ func (b ExitBanner) View(width int) string {
 // row lays one labelled line out: the label dim in its column, the value in
 // the tone the row is read for.
 func (b ExitBanner) row(label, value string, style lipgloss.Style) string {
-	return dimStyle.Render(padRight(label, exitLabelWidth)) + "  " + style.Render(value)
+	return sty.Dim.Render(padRight(label, exitLabelWidth)) + "  " + style.Render(value)
 }
 
 // sessionLine is the conversation's identity: what it is called, and how big

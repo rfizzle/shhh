@@ -287,7 +287,7 @@ func TestSteps_FocusPointerOnHeader(t *testing.T) {
 func TestStepHeader_TonesFollowTheDesignSystem(t *testing.T) {
 	cases := []struct {
 		state           stepState
-		ptr, title, dur lipgloss.Color
+		ptr, title, dur components.Token
 	}{
 		{stepRunning, components.Palette.Spin, components.Palette.Bright, components.Palette.Spin},
 		{stepDone, components.Palette.Dim, components.Palette.Body, components.Palette.Dim},
@@ -305,8 +305,8 @@ func TestStepHeader_TonesFollowTheDesignSystem(t *testing.T) {
 		}
 	}
 	// The rule is the faint one, and the stats sit in dim beside their glyph.
-	if stepRuleStyle.GetForeground() != components.Palette.Dim ||
-		stepStatsStyle.GetForeground() != components.Palette.Dim {
+	if sty.Step.Rule.GetForeground() != components.Palette.Dim ||
+		sty.Step.Stats.GetForeground() != components.Palette.Dim {
 		t.Fatal("the stretched rule and the tool count are dim")
 	}
 }

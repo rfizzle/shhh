@@ -282,7 +282,7 @@ func TestReadingMode_SurvivesMono(t *testing.T) {
 	if !strings.Contains(view, "[q] back to the prompt") {
 		t.Fatal("the hint bar is words before it is colours")
 	}
-	if !strings.Contains(m.View(), string(components.MonoBg)) {
+	if !strings.Contains(m.View(), components.MonoBg.ANSI256) {
 		t.Fatal("the lit row keeps a background in mono; the two greys are what it has")
 	}
 }

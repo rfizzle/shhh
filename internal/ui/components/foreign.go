@@ -61,8 +61,8 @@ import (
 // it: with mono on, foreignRun never reaches this table.
 var ansiPalette = ansiTable(FullPalette)
 
-func ansiTable(p ColorTokens) [16]lipgloss.Color {
-	return [16]lipgloss.Color{
+func ansiTable(p ColorTokens) [16]Token {
+	return [16]Token{
 		p.Dim, p.Del, p.Add, p.Accent, p.Info, p.Spin, p.Hunk, p.Body,
 		p.Dim, p.Del, p.Add, p.Accent, p.Info, p.Spin, p.Hunk, p.Bright,
 	}
@@ -74,7 +74,7 @@ func ansiTable(p ColorTokens) [16]lipgloss.Color {
 // uncoloured majority of tool output render identically to the way it did
 // before this file existed.
 type foreignRun struct {
-	fg                                lipgloss.Color
+	fg                                lipgloss.TerminalColor
 	bold, faint, italic               bool
 	underline, strike, reverse, blink bool
 }
@@ -82,9 +82,9 @@ type foreignRun struct {
 // style resolves the run against the ground: the program's foreground where
 // there is one and the palette is showing colour at all, the ground
 // otherwise, plus whatever attributes the program set.
-func (r foreignRun) style(ground lipgloss.Color) lipgloss.Style {
-	fg := ground
-	if r.fg != "" && !mono {
+func (r foreignRun) style(ground Token) lipgloss.Style {
+	var fg lipgloss.TerminalColor = ground
+	if r.fg != nil && !mono {
 		fg = r.fg
 	}
 	return lipgloss.NewStyle().Foreground(fg).
@@ -101,7 +101,7 @@ func (r foreignRun) style(ground lipgloss.Color) lipgloss.Style {
 // It reports false, and returns the line untouched, where there was nothing
 // to re-paint. That is every line shhh wrote itself, which is nearly all of
 // them: the caller styles those the way it always did.
-func repaint(s string, ground lipgloss.Color) (string, bool) {
+func repaint(s string, ground Token) (string, bool) {
 	if !strings.ContainsAny(s, "\x1b\r") {
 		return s, false
 	}
@@ -212,7 +212,7 @@ func (r *foreignRun) apply(params ansi.Params) {
 		case p >= 90 && p <= 97:
 			r.fg = ansiPalette[8+p-90]
 		case p == 39:
-			r.fg = ""
+			r.fg = nil
 		case p == 38:
 			// An explicit 256-colour or truecolor foreground: a colour the
 			// program could see when it chose it, and one the palette has no
@@ -233,26 +233,26 @@ func (r *foreignRun) apply(params ansi.Params) {
 // `38;5;n` or `38;2;r;g;b` — starting at params[i]. It returns the colour and
 // the index of the last parameter it consumed; a truncated introducer yields
 // no colour rather than a guess.
-func extendedColor(params ansi.Params, i int) (lipgloss.Color, int) {
+func extendedColor(params ansi.Params, i int) (lipgloss.TerminalColor, int) {
 	if i+1 >= len(params) {
-		return "", i
+		return nil, i
 	}
 	switch params[i+1].Param(0) {
 	case 5:
 		if i+2 >= len(params) {
-			return "", i + 1
+			return nil, i + 1
 		}
 		return lipgloss.Color(strconv.Itoa(params[i+2].Param(0))), i + 2
 	case 2:
 		if i+4 >= len(params) {
-			return "", len(params) - 1
+			return nil, len(params) - 1
 		}
 		return lipgloss.Color(fmt.Sprintf("#%02x%02x%02x",
 			clampByte(params[i+2].Param(0)),
 			clampByte(params[i+3].Param(0)),
 			clampByte(params[i+4].Param(0)))), i + 4
 	}
-	return "", i + 1
+	return nil, i + 1
 }
 
 // clampByte keeps a malformed channel inside the byte the %02x expects.

@@ -4,6 +4,9 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"github.com/alecthomas/chroma/v2"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 var ansiRe = regexp.MustCompile(`\x1b\[[0-9;]*m`)
@@ -109,7 +112,7 @@ func TestDiffSyntax_GoFile(t *testing.T) {
 	}
 	colored := false
 	for _, s := range segs {
-		if s.Color != "" {
+		if s.Color != (components.Token{}) {
 			colored = true
 		}
 	}
@@ -151,5 +154,53 @@ func TestMatchLexer_CachesMisses(t *testing.T) {
 	}
 	if lexer := matchLexer("notes.unknownext"); lexer != nil {
 		t.Fatal("a repeat lookup of a miss should still be nil")
+	}
+}
+
+// The register's rule (§3b): a code body is painted in the palette read as a
+// syntax register, and never in the four tokens that say something about the
+// row it sits in. A string literal drawn in add would have the card telling
+// the reader that a span of a removed line was added.
+func TestSyntaxRegister_NeverBorrowsTheRowsOwnTokens(t *testing.T) {
+	p := components.Palette
+	for _, banned := range []struct {
+		name  string
+		token components.Token
+	}{{"add", p.Add}, {"del", p.Del}, {"hunk", p.Hunk}, {"spin", p.Spin}} {
+		for kind, tone := range syntaxTones {
+			if tone == banned.token {
+				t.Errorf("%v is drawn in %s, which is the row's colour and not the register's",
+					kind, banned.name)
+			}
+		}
+	}
+}
+
+// The register is keyed on the broadest type that should carry a tone, and
+// resolved by walking a token's parents — the inheritance a chroma.Style
+// would have done, which is why none is built. A type nothing above it claims
+// gets no tone and renders in the diff kind's own colour.
+func TestSyntaxRegister_ResolvesThroughTheTypeHierarchy(t *testing.T) {
+	p := components.Palette
+	for _, c := range []struct {
+		kind chroma.TokenType
+		want components.Token
+	}{
+		{chroma.LiteralStringDouble, p.Accent},
+		{chroma.LiteralNumberInteger, p.Accent},
+		{chroma.KeywordDeclaration, p.Info},
+		{chroma.CommentSingle, p.Dim},
+		{chroma.TextWhitespace, p.Body},
+		{chroma.NameFunction, p.Bright},
+	} {
+		got, ok := syntaxTone(c.kind)
+		if !ok || got != c.want {
+			t.Errorf("%v resolves to %+v (ok=%v), want %+v", c.kind, got, ok, c.want)
+		}
+	}
+	for _, unclaimed := range []chroma.TokenType{chroma.Error, chroma.None, chroma.Other} {
+		if _, ok := syntaxTone(unclaimed); ok {
+			t.Errorf("%v should be left to the diff kind's colour", unclaimed)
+		}
 	}
 }

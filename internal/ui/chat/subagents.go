@@ -332,21 +332,21 @@ func (m Model) renderAgentRows(width int) string {
 	}
 	var rows []string
 	for _, st := range statuses {
-		glyph := toolStyle.Render("◇")
-		detail := statusBarStyle.Render(st.Detail)
+		glyph := sty.Tool.Render("◇")
+		detail := sty.StatusBar.Render(st.Detail)
 		if st.State == subagent.StateBlocked {
-			glyph = errorStyle.Render("⚠")
-			detail = errorStyle.Render(st.Detail)
+			glyph = sty.Error.Render("⚠")
+			detail = sty.Error.Render(st.Detail)
 		}
-		left := glyph + " " + st.Name + "  " + toolArgsStyle.Render(clipText(firstLine(st.Task), max(width/3, 8)))
+		left := glyph + " " + st.Name + "  " + sty.ToolArgs.Render(clipText(firstLine(st.Task), max(width/3, 8)))
 		right := detail
 		if spend := st.TokensIn + st.TokensOut; spend > 0 {
-			right += "  " + statusBarStyle.Render("~"+formatTokenCount(spend)+" tok")
+			right += "  " + sty.StatusBar.Render("~"+formatTokenCount(spend)+" tok")
 		}
 		rows = append(rows, joinRow(left, right, width))
 	}
 	if overflow > 0 {
-		rows = append(rows, toolArgsStyle.Render(fmt.Sprintf("… +%d more agents", overflow)))
+		rows = append(rows, sty.ToolArgs.Render(fmt.Sprintf("… +%d more agents", overflow)))
 	}
 	return strings.Join(rows, "\n")
 }

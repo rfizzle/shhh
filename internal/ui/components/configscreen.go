@@ -201,7 +201,7 @@ func (c *ConfigScreen) updateMenu(msg tea.KeyMsg) (bool, any) {
 		}
 	case "w":
 		if c.Changed > 0 {
-			c.confirm = &Confirm{Prompt: bodyStyle.Render(fmt.Sprintf(
+			c.confirm = &Confirm{Prompt: sty.Body.Render(fmt.Sprintf(
 				"Write %s to %s?", plural(c.Changed, "change"), c.Path))}
 		}
 	}
@@ -357,7 +357,7 @@ func (c *ConfigScreen) View(width int) string {
 	rows = append(rows, "")
 	rows = append(rows, foot...)
 	if c.Notice != "" {
-		rows = append(rows, dimStyle.Render(clip(c.Notice, width)))
+		rows = append(rows, sty.Dim.Render(clip(c.Notice, width)))
 	}
 	return strings.Join(rows, "\n")
 }
@@ -442,12 +442,12 @@ func (c *ConfigScreen) pickerBudget(pinned int) int {
 func (c *ConfigScreen) headerRow(width int) string {
 	left := brightStyle().Render("shhh config")
 	if c.Path != "" {
-		left += dimStyle.Render(" · " + c.Path)
+		left += sty.Dim.Render(" · " + c.Path)
 	}
 	if c.Changed > 0 {
-		left += accentStyle.Render(" · " + plural(c.Changed, "change") + " unwritten")
+		left += sty.Accent.Render(" · " + plural(c.Changed, "change") + " unwritten")
 	}
-	right := dimStyle.Render("[?] keys · [q] quit")
+	right := sty.Dim.Render("[?] keys · [q] quit")
 	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 {
 		return left + strings.Repeat(" ", pad) + right
 	}
@@ -476,7 +476,7 @@ func (c *ConfigScreen) footRows(width int) []string {
 	if field == "" {
 		return rows
 	}
-	painted := dimStyle.Render(field)
+	painted := sty.Dim.Render(field)
 	if pad := width - lipgloss.Width(rows[0]) - lipgloss.Width(painted); pad >= 2 {
 		rows[0] += strings.Repeat(" ", pad) + painted
 	}
@@ -708,9 +708,9 @@ func (e *configEdit) update(msg tea.KeyMsg) {
 }
 
 func (e *configEdit) view() string {
-	row := infoStyle.Render("▸ ") + queryTextStyle.Render(string(e.value)+queryCursor)
+	row := sty.Info.Render("▸ ") + sty.QueryText.Render(string(e.value)+queryCursor)
 	if len(e.value) == 0 {
-		row += dimStyle.Render(" type a value")
+		row += sty.Dim.Render(" type a value")
 	}
 	return row
 }

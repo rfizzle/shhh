@@ -170,9 +170,9 @@ func fakeSyntax(line string) []Segment {
 		}
 	}
 	for _, r := range line {
-		color := ""
+		var color Token
 		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
-			color = "#ff0000"
+			color = Palette.Info
 		}
 		if color != cur.Color {
 			flush()

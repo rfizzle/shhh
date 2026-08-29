@@ -114,7 +114,7 @@ func fanoutLead(glyph string) string {
 // It still fills leadWidth, so the header's target and duration land in the
 // same columns as its lanes': only the gutter moves.
 func headerLead() string {
-	return strings.Repeat(" ", railWidth) + infoStyle.Render("◇") + " " +
+	return strings.Repeat(" ", railWidth) + sty.Info.Render("◇") + " " +
 		verbField("fan-out") + strings.Repeat(" ", ptrWidth)
 }
 
@@ -123,17 +123,17 @@ func headerLead() string {
 func (p AgentProgress) glyph() string {
 	switch p.State {
 	case FanoutQueued:
-		return dimStyle.Render("·")
+		return sty.Dim.Render("·")
 	case FanoutBlocked:
-		return errStyle.Render("⚠")
+		return sty.Err.Render("⚠")
 	case FanoutIdle:
-		return dimStyle.Render("⊘")
+		return sty.Dim.Render("⊘")
 	case FanoutDone:
-		return addStyle.Render("✓")
+		return sty.Add.Render("✓")
 	case FanoutFailed:
-		return errStyle.Render("✗")
+		return sty.Err.Render("✗")
 	default:
-		return infoStyle.Render("◇")
+		return sty.Info.Render("◇")
 	}
 }
 
@@ -143,15 +143,15 @@ func (p AgentProgress) glyph() string {
 func (p AgentProgress) progress() string {
 	switch p.State {
 	case FanoutBlocked:
-		return errStyle.Render("⚠ needs you")
+		return sty.Err.Render("⚠ needs you")
 	case FanoutQueued:
-		return dimStyle.Render("queued")
+		return sty.Dim.Render("queued")
 	case FanoutIdle:
-		return dimStyle.Render("idle")
+		return sty.Dim.Render("idle")
 	case FanoutDone:
-		return addStyle.Render("done")
+		return sty.Add.Render("done")
 	case FanoutFailed:
-		return errStyle.Render("failed")
+		return sty.Err.Render("failed")
 	}
 	if m, ok := AgentMeter(p.Step, p.Steps); ok {
 		m.Text = fmt.Sprintf("%d/%d", min(max(p.Step, 0), p.Steps), p.Steps)
@@ -174,7 +174,7 @@ func (p AgentProgress) stats() string {
 	if len(parts) == 0 {
 		return ""
 	}
-	return dimmerStyle.Render(strings.Join(parts, " · "))
+	return sty.Dimmer.Render(strings.Join(parts, " · "))
 }
 
 // outcomeField joins the progress and the stats into the one right-aligned
@@ -187,7 +187,7 @@ func (p AgentProgress) outcomeField() string {
 	case stats == "":
 		return progress
 	}
-	return progress + dimStyle.Render(" · ") + stats
+	return progress + sty.Dim.Render(" · ") + stats
 }
 
 // progressOf is the lane's child-progress view of itself, so the lane and
@@ -214,9 +214,9 @@ func (l FanoutLane) target() string {
 // rather than emphasising half a name — the same rule the recovery rows keep.
 func (l FanoutLane) paintTarget(s string) string {
 	if l.Name != "" && strings.HasPrefix(s, l.Name) {
-		return bodyStyle.Render(l.Name) + dimStyle.Render(strings.TrimPrefix(s, l.Name))
+		return sty.Body.Render(l.Name) + sty.Dim.Render(strings.TrimPrefix(s, l.Name))
 	}
-	return dimStyle.Render(s)
+	return sty.Dim.Render(s)
 }
 
 // View renders one lane plus whatever it has to say underneath: what a
@@ -289,20 +289,20 @@ func stateTally(states []FanoutState) string {
 	running, blocked, done, failed := tallyStates(states)
 	var parts []string
 	if blocked > 0 {
-		parts = append(parts, errStyle.Render(fmt.Sprintf("%d needs you", blocked)))
+		parts = append(parts, sty.Err.Render(fmt.Sprintf("%d needs you", blocked)))
 	}
 	if running > 0 {
-		parts = append(parts, spinTextStyle.Render(fmt.Sprintf("%d running", running)))
+		parts = append(parts, sty.SpinText.Render(fmt.Sprintf("%d running", running)))
 	}
 	if len(parts) == 0 {
 		if done > 0 {
-			parts = append(parts, addStyle.Render(fmt.Sprintf("%d done", done)))
+			parts = append(parts, sty.Add.Render(fmt.Sprintf("%d done", done)))
 		}
 		if failed > 0 {
-			parts = append(parts, errStyle.Render(fmt.Sprintf("%d failed", failed)))
+			parts = append(parts, sty.Err.Render(fmt.Sprintf("%d failed", failed)))
 		}
 	}
-	return strings.Join(parts, dimStyle.Render(" · "))
+	return strings.Join(parts, sty.Dim.Render(" · "))
 }
 
 // states is the batch's lane states, in lane order.

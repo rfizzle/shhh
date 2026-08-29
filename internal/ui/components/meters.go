@@ -130,13 +130,13 @@ func AgentMeter(step, steps int) (Meter, bool) {
 func (m Meter) Style() lipgloss.Style {
 	switch m.Tone {
 	case MeterProgress:
-		return addStyle
+		return sty.Add
 	case MeterAgent:
-		return infoStyle
+		return sty.Info
 	case MeterCountdown, MeterCategory:
-		return accentStyle
+		return sty.Accent
 	case MeterUnasked:
-		return delStyle
+		return sty.Del
 	default:
 		return ctxStyle(min(max(m.Pct, 0), 100), m.Warn, m.Alert)
 	}
@@ -145,7 +145,7 @@ func (m Meter) Style() lipgloss.Style {
 // View renders the meter: leading label, bar, and the value stated beside it.
 func (m Meter) View() string {
 	if m.Tone == MeterProgress {
-		return join(dimStyle.Render(m.Label), m.Bar(), m.Style().Render(m.text()))
+		return join(sty.Dim.Render(m.Label), m.Bar(), m.Style().Render(m.text()))
 	}
 	// One styling pass, so nothing but spaces separates the bar from its
 	// number: the two are one field, and they turn colour together.
@@ -165,9 +165,9 @@ func (m Meter) Bar() string {
 	// The only two-colour meter: the run in flight is motion, and motion is
 	// never the same colour as what is already done.
 	spin := min(max(m.Running, 0), filled)
-	return addStyle.Render(strings.Repeat("▰", filled-spin)) +
-		spinTextStyle.Render(strings.Repeat("▰", spin)) +
-		dimStyle.Render(strings.Repeat("▱", cells-filled))
+	return sty.Add.Render(strings.Repeat("▰", filled-spin)) +
+		sty.SpinText.Render(strings.Repeat("▰", spin)) +
+		sty.Dim.Render(strings.Repeat("▱", cells-filled))
 }
 
 func (m Meter) cells() int {
@@ -232,11 +232,11 @@ func ctxStyle(pct, warn, alert int) lipgloss.Style {
 	}
 	switch {
 	case pct >= alert:
-		return errStyle.Bold(true)
+		return sty.Err.Bold(true)
 	case pct >= warn:
-		return accentStyle
+		return sty.Accent
 	default:
-		return addStyle
+		return sty.Add
 	}
 }
 
@@ -266,7 +266,7 @@ func (s Sparkline) View() string {
 	if run == "" {
 		return ""
 	}
-	return dimmerStyle.Render(run)
+	return sty.Dimmer.Render(run)
 }
 
 // sparkCells renders the last cells values of a series as a ▁▂▃▄▅▆▇█ run,
@@ -330,9 +330,9 @@ func (s Spinner) View() string {
 	if s.Label == "" {
 		return ""
 	}
-	out := spinTextStyle.Render(s.Glyph() + " " + s.Label)
+	out := sty.SpinText.Render(s.Glyph() + " " + s.Label)
 	if s.Elapsed != "" {
-		out += dimStyle.Render(" · " + s.Elapsed)
+		out += sty.Dim.Render(" · " + s.Elapsed)
 	}
 	return out
 }
@@ -342,6 +342,6 @@ func (s Spinner) View() string {
 func NewSpinnerModel() spinner.Model {
 	s := spinner.New()
 	s.Spinner = spinner.Spinner{Frames: SpinnerFrames, FPS: SpinnerInterval}
-	s.Style = spinTextStyle
+	s.Style = sty.SpinText
 	return s
 }

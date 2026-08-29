@@ -155,7 +155,7 @@ func TestMetricsScreen_HeadingIsARail(t *testing.T) {
 	withColorProfile(t, termenv.ANSI256)
 	m := metricsScreen()
 	heading := strings.TrimSpace(metricsRowFor(m, 130, "REQUESTS"))
-	if !strings.Contains(m.View(130), headlineStyle.Render(heading)) {
+	if !strings.Contains(m.View(130), sty.Headline.Render(heading)) {
 		t.Fatalf("the heading %q is not the group rail every other list uses", heading)
 	}
 }
@@ -166,10 +166,10 @@ func TestMetricsScreen_SparklineIsDimmerAndNeverColoured(t *testing.T) {
 	withColorProfile(t, termenv.ANSI256)
 	view := metricsScreen().View(130)
 	run := sparkCells(metricsModels()[0].Trend, metricsTrendCells)
-	if !strings.Contains(view, dimmerStyle.Render(run)) {
+	if !strings.Contains(view, sty.Dimmer.Render(run)) {
 		t.Fatalf("the trend %q is not drawn in dimmer", run)
 	}
-	for _, style := range []lipgloss.Style{accentStyle, addStyle, delStyle, infoStyle} {
+	for _, style := range []lipgloss.Style{sty.Accent, sty.Add, sty.Del, sty.Info} {
 		if strings.Contains(view, style.Render(run)) {
 			t.Fatal("the trend is coloured, which would imply a threshold nobody set")
 		}

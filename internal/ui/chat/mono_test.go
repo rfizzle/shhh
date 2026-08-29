@@ -69,10 +69,10 @@ func TestUICommand_VerbositySurvivesTheMonoArgument(t *testing.T) {
 func TestMonoReachesTheChatStyles(t *testing.T) {
 	monoRestore(t)
 	components.SetMono(false)
-	full := []lipgloss.Style{assistantStyle, errorStyle, stepDoneStyle, frameAccentGated, completeArgsStyle, paneDividerStyle, hintKeyStyle, readingLabelStyle}
+	full := []lipgloss.Style{sty.Assistant, sty.Error, sty.Step.Done, sty.Frame.AccentGated, sty.Complete.Args, sty.Pane.Divider, sty.Hint.Key, sty.Reading.Label}
 
 	components.SetMono(true)
-	got := []lipgloss.Style{assistantStyle, errorStyle, stepDoneStyle, frameAccentGated, completeArgsStyle, paneDividerStyle, hintKeyStyle, readingLabelStyle}
+	got := []lipgloss.Style{sty.Assistant, sty.Error, sty.Step.Done, sty.Frame.AccentGated, sty.Complete.Args, sty.Pane.Divider, sty.Hint.Key, sty.Reading.Label}
 	for i := range got {
 		if got[i].GetForeground() == full[i].GetForeground() {
 			t.Errorf("style %d kept its full-palette foreground %v after the mono swap", i, full[i].GetForeground())

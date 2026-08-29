@@ -153,7 +153,7 @@ func TestReview_IntralineEmphasisSurvives(t *testing.T) {
 	v := reviewFixture()
 	rows, _ := v.hunkRows(v.Files[0], 70)
 	joined := strings.Join(rows, "\n")
-	if !strings.Contains(joined, string(Palette.AddBg)) || !strings.Contains(joined, string(Palette.DelBg)) {
+	if !strings.Contains(joined, Palette.AddBg.ANSI256) || !strings.Contains(joined, Palette.DelBg.ANSI256) {
 		t.Fatalf("the pane should carry the intraline emphasis backgrounds:\n%q", joined)
 	}
 }

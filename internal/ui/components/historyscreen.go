@@ -212,7 +212,7 @@ func (h *HistoryScreen) Update(msg tea.KeyMsg) (done bool, result any) {
 		// §5: the one key here that destroys something asks first, and the
 		// prompt names what it would take rather than saying "this entry".
 		if row := h.current(); row != nil {
-			h.confirm = &Confirm{Prompt: bodyStyle.Render(
+			h.confirm = &Confirm{Prompt: sty.Body.Render(
 				"Delete the entry for " + quoted(row.Prompt) + "?")}
 		}
 	}
@@ -261,7 +261,7 @@ func (h *HistoryScreen) View(width int) string {
 	rows = append(rows, "")
 	rows = append(rows, foot...)
 	if h.Notice != "" {
-		rows = append(rows, dimStyle.Render(clip(h.Notice, width)))
+		rows = append(rows, sty.Dim.Render(clip(h.Notice, width)))
 	}
 	return strings.Join(rows, "\n")
 }
@@ -378,8 +378,8 @@ func (h *HistoryScreen) hiddenRows(width int) []string {
 	if hidden <= 0 {
 		return nil
 	}
-	row := dimStyle.Render(entries(hidden)+" hidden by the filter · ") +
-		infoStyle.Render("[ctrl+u]") + dimStyle.Render(" clear it")
+	row := sty.Dim.Render(entries(hidden)+" hidden by the filter · ") +
+		sty.Info.Render("[ctrl+u]") + sty.Dim.Render(" clear it")
 	return []string{reviewRule(width), clip(row, width)}
 }
 
@@ -393,18 +393,18 @@ func (h *HistoryScreen) hiddenRows(width int) []string {
 func (h *HistoryScreen) previewRows(width int) []string {
 	row := h.current()
 	if row == nil {
-		return []string{dimStyle.Render(clip("no entry selected", width))}
+		return []string{sty.Dim.Render(clip("no entry selected", width))}
 	}
 	rows := []string{h.previewTitle(*row, width)}
 	if row.Prompt != "" {
-		for _, line := range wrapSpans([]styledSpan{{row.Prompt, dimStyle}}, max(width-2, 1)) {
+		for _, line := range wrapSpans([]styledSpan{{row.Prompt, sty.Dim}}, max(width-2, 1)) {
 			rows = append(rows, "  "+line)
 		}
 	}
 	rows = append(rows, "")
 	rows = append(rows, h.commandRows(*row, width)...)
 	if row.Counts != "" {
-		rows = append(rows, "  "+dimmerStyle.Render(clip(row.Counts, max(width-2, 1))))
+		rows = append(rows, "  "+sty.Dimmer.Render(clip(row.Counts, max(width-2, 1))))
 	}
 	return rows
 }
@@ -414,11 +414,11 @@ func (h *HistoryScreen) previewRows(width int) []string {
 func (h *HistoryScreen) previewTitle(row HistoryRow, width int) string {
 	left := brightStyle().Render(row.When)
 	if row.Model != "" {
-		left += dimStyle.Render(" · " + row.Model)
+		left += sty.Dim.Render(" · " + row.Model)
 	}
 	right := ""
 	if row.Action != "" {
-		right = dimStyle.Render(row.Action)
+		right = sty.Dim.Render(row.Action)
 	}
 	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 && right != "" {
 		return left + strings.Repeat(" ", pad) + right
@@ -434,7 +434,7 @@ func (h *HistoryScreen) previewTitle(row HistoryRow, width int) string {
 func (h *HistoryScreen) commandRows(row HistoryRow, width int) []string {
 	command := strings.Join(strings.Fields(row.Command), " ")
 	if command == "" {
-		return []string{dimStyle.Render(clip("  no command was recorded", width))}
+		return []string{sty.Dim.Render(clip("  no command was recorded", width))}
 	}
 	act := ActivityRow{
 		Kind: ActivityCommand, State: row.State, Verb: "run",
@@ -490,9 +490,9 @@ func wrapPlain(text string, width int) []string {
 func (h *HistoryScreen) headerRow(width int) string {
 	left := brightStyle().Render("shhh history")
 	if h.Subject != "" {
-		left += dimStyle.Render(" · " + h.Subject)
+		left += sty.Dim.Render(" · " + h.Subject)
 	}
-	right := dimStyle.Render("[?] keys · [q] quit")
+	right := sty.Dim.Render("[?] keys · [q] quit")
 	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 {
 		return left + strings.Repeat(" ", pad) + right
 	}
@@ -518,7 +518,7 @@ func (h *HistoryScreen) footRows(width int) []string {
 	if len(rows) == 0 || field == "" {
 		return rows
 	}
-	painted := dimStyle.Render(field)
+	painted := sty.Dim.Render(field)
 	if pad := width - lipgloss.Width(rows[0]) - lipgloss.Width(painted); pad >= 2 {
 		rows[0] += strings.Repeat(" ", pad) + painted
 	}

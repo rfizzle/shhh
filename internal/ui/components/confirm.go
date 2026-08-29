@@ -24,5 +24,5 @@ func (c *Confirm) Update(msg tea.KeyMsg) (done bool, result any) {
 }
 
 func (c *Confirm) View(width int) string {
-	return clip(c.Prompt+"  "+headlineStyle.Render("[y/N]"), width)
+	return clip(c.Prompt+"  "+sty.Headline.Render("[y/N]"), width)
 }

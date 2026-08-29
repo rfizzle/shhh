@@ -38,11 +38,13 @@ const (
 	contextBurnSamples = 8
 )
 
-var paneDividerStyle lipgloss.Style
+// paneStyles is the two-pane cockpit's own group (§15).
+type paneStyles struct {
+	Divider lipgloss.Style
+}
 
-// applyInspectorStyles rebuilds the pane divider from the palette (S-095).
-func applyInspectorStyles(p components.ColorTokens) {
-	paneDividerStyle = lipgloss.NewStyle().Foreground(p.Dim)
+func newPaneStyles(p components.ColorTokens) paneStyles {
+	return paneStyles{Divider: lipgloss.NewStyle().Foreground(p.Dim)}
 }
 
 // twoPane reports whether the surface is split. Width is the first condition;
@@ -373,7 +375,7 @@ func (m Model) splitPanes(body string) string {
 		return body
 	}
 	pane := m.paneWidth()
-	divider := paneDividerStyle.Render("│")
+	divider := sty.Pane.Divider.Render("│")
 	out := make([]string, len(lines))
 	for i, line := range lines {
 		line = clipRow(line, pane)

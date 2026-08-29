@@ -168,14 +168,14 @@ func (m *MetricsScreen) budget(pinned int) int {
 // second key, so dropping `[q]` would leave a takeover surface with no stated
 // way out of it (invariant 5).
 func (m *MetricsScreen) headerRow(width int) string {
-	right := dimStyle.Render("[q] quit")
+	right := sty.Dim.Render("[q] quit")
 	if m.Spend != "" {
-		right = bodyStyle.Render(m.Spend) + dimStyle.Render(" · [q] quit")
+		right = sty.Body.Render(m.Spend) + sty.Dim.Render(" · [q] quit")
 	}
 	left := brightStyle().Render("shhh metrics")
 	room := width - lipgloss.Width(right) - 2
 	if m.Subject != "" && room > lipgloss.Width(left) {
-		left = clip(left+dimStyle.Render(" · "+m.Subject), room)
+		left = clip(left+sty.Dim.Render(" · "+m.Subject), room)
 	}
 	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 {
 		return left + strings.Repeat(" ", pad) + right
@@ -238,7 +238,7 @@ func (m *MetricsScreen) droppedRow(dropped, width int) string {
 	for _, block := range m.Blocks[len(m.Blocks)-dropped:] {
 		titles = append(titles, block.Title)
 	}
-	return dimStyle.Render(clip(
+	return sty.Dim.Render(clip(
 		fmt.Sprintf("↓ %d more · %s", dropped, strings.Join(titles, " · ")), width))
 }
 
@@ -250,12 +250,12 @@ func (m *MetricsScreen) tableRows(width, budget int) []string {
 	if len(cols) == 0 {
 		return nil
 	}
-	rows := []string{indentBy(headlineStyle.Render(m.headingRow(cols)), metricsIndent, width)}
+	rows := []string{indentBy(sty.Headline.Render(m.headingRow(cols)), metricsIndent, width)}
 	if len(m.Models) == 0 {
 		// A heading over nothing is a table that lost its rows. The host
 		// keeps the screen closed when the store is empty, so this is the
 		// window having taken everything, and it says so.
-		return append(rows, indentBy(dimStyle.Render("no models to show"), metricsIndent, width))
+		return append(rows, indentBy(sty.Dim.Render("no models to show"), metricsIndent, width))
 	}
 
 	shown := m.Models
@@ -268,7 +268,7 @@ func (m *MetricsScreen) tableRows(width, budget int) []string {
 		rows = append(rows, indentBy(m.modelRow(model, cols), metricsIndent, width))
 	}
 	if hidden := len(m.Models) - len(shown); hidden > 0 {
-		rows = append(rows, indentBy(dimStyle.Render(
+		rows = append(rows, indentBy(sty.Dim.Render(
 			fmt.Sprintf("↓ %d more %s", hidden, nounFor(hidden, "model"))), metricsIndent, width))
 	}
 	return rows
@@ -396,7 +396,7 @@ func (m *MetricsScreen) modelRow(model MetricsModel, cols []metricsColumn) strin
 		}
 		cells = append(cells, align(col.value(model), col.width, col.numeric))
 	}
-	row := bodyStyle.Render(strings.Join(cells, strings.Repeat(" ", metricsGap)))
+	row := sty.Body.Render(strings.Join(cells, strings.Repeat(" ", metricsGap)))
 	if trend == "" {
 		return strings.TrimRight(row, " ")
 	}
@@ -441,8 +441,8 @@ func (m *MetricsScreen) labelWidth() int {
 // titleRow is the block's heading: what the block is reading, and what it is
 // reading it over.
 func titleRow(block MetricsBlock, width int) string {
-	left := dimStyle.Render(block.Title)
-	right := dimStyle.Render(block.Field)
+	left := sty.Dim.Render(block.Title)
+	right := sty.Dim.Render(block.Field)
 	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 && block.Field != "" {
 		return left + strings.Repeat(" ", pad) + right
 	}
@@ -474,7 +474,7 @@ func (m *MetricsScreen) barGeometry(block MetricsBlock, width int) (label int, n
 // meter never does.
 func barRow(bar MetricsBar, label int, notes bool, width int) string {
 	meter := Meter{Pct: bar.Pct, Cells: MeterCellsRail, Tone: bar.Tone, Text: bar.Text}
-	left := dimStyle.Render(padRight(clip(bar.Label, label), label)) + "  " + meter.View()
+	left := sty.Dim.Render(padRight(clip(bar.Label, label), label)) + "  " + meter.View()
 	if bar.Note == "" || !notes {
 		return clip(left, width)
 	}

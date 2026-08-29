@@ -76,11 +76,11 @@ func (s Severity) Word() string {
 func (s Severity) border() lipgloss.Style {
 	switch s {
 	case SeverityHigh:
-		return delStyle
+		return sty.Del
 	case SeverityMedium:
-		return accentStyle
+		return sty.Accent
 	}
-	return borderStyle
+	return sty.Border
 }
 
 // FieldTone colours a blast-radius field's value. The tone never carries the
@@ -103,13 +103,13 @@ const (
 func (t FieldTone) style() lipgloss.Style {
 	switch t {
 	case ToneSafe:
-		return addStyle
+		return sty.Add
 	case ToneOpen:
-		return accentStyle
+		return sty.Accent
 	case ToneRisk:
-		return delStyle
+		return sty.Del
 	}
-	return bodyStyle
+	return sty.Body
 }
 
 // CardField is one row of the blast-radius block: what the action touches,
@@ -278,7 +278,7 @@ func (c *ApprovalCard) Update(msg tea.KeyMsg) (done bool, result any) {
 // View renders the card at the given width, bounded to MaxLines rows.
 func (c *ApprovalCard) View(width int) string {
 	inner := width - cardFrameWidth
-	rows := []string{headlineStyle.Render(c.Headline)}
+	rows := []string{sty.Headline.Render(c.Headline)}
 	// Severity leads the body, as a word beside the first risk. The border
 	// and the title chip say the same thing again, which is what makes the
 	// card survive mono and a colour-blind reader alike.
@@ -286,7 +286,7 @@ func (c *ApprovalCard) View(width int) string {
 	// The generic variant's one-liner belongs with the headline it qualifies,
 	// above the blast-radius block rather than below it.
 	if c.Variant == ApprovalGeneric && c.Summary != "" && c.Summary != c.Headline {
-		rows = append(rows, dimStyle.Render(clip(c.Summary, inner)))
+		rows = append(rows, sty.Dim.Render(clip(c.Summary, inner)))
 	}
 	if len(c.Fields) > 0 {
 		if len(rows) > 1 {
@@ -307,7 +307,7 @@ func (c *ApprovalCard) View(width int) string {
 		if c.Reversibility != "" {
 			line += " · " + c.Reversibility
 		}
-		stats := dimStyle.Render(line)
+		stats := sty.Dim.Render(line)
 		// Frame (2) plus the fixed rows bound how much diff fits.
 		budget := 0
 		if c.MaxLines > 0 {
@@ -325,7 +325,7 @@ func (c *ApprovalCard) View(width int) string {
 	}
 	style := c.Severity.border()
 	if c.Uncontained {
-		style = delStyle
+		style = sty.Del
 	}
 	return renderChromeCard(cardChrome{title: title, chips: c.chips(), style: &style}, rows, width)
 }
@@ -372,19 +372,19 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 		// They travel together on one row rather than one row each: they
 		// qualify the same key line, and a card is bounded to 40% of the
 		// screen (§1) — rows spent here are rows the transcript gives up.
-		hints = append([]string{hints[0], hintStyle.Render(clip(qualRow, inner))}, hints[1:]...)
+		hints = append([]string{hints[0], sty.Hint.Render(clip(qualRow, inner))}, hints[1:]...)
 	}
 	// [A] gets a row of its own rather than a place in the joined run: the
 	// count is the whole offer, and on an 80-column terminal a joined run is
 	// exactly where it would be clipped away.
 	if c.Batch && c.BatchHint != "" && !c.HeldOnArrival {
-		hints = append(hints, hintStyle.Render(clip(c.BatchHint, inner)))
+		hints = append(hints, sty.Hint.Render(clip(c.BatchHint, inner)))
 	}
 	if c.Footnote != "" {
-		hints = append(hints, dimStyle.Render(clip(c.Footnote, inner)))
+		hints = append(hints, sty.Dim.Render(clip(c.Footnote, inner)))
 	}
 	if c.Return != "" {
-		hints = append(hints, dimStyle.Render(clip(c.Return, inner)))
+		hints = append(hints, sty.Dim.Render(clip(c.Return, inner)))
 	}
 	return hints
 }
@@ -450,21 +450,21 @@ func (c *ApprovalCard) severityRows() []string {
 	if word == "" {
 		var rows []string
 		for _, w := range c.Warnings {
-			rows = append(rows, warnStyle.Render("⚠ "+w))
+			rows = append(rows, sty.Warn.Render("⚠ "+w))
 		}
 		return rows
 	}
-	style := warnStyle
+	style := sty.Warn
 	if c.Severity == SeverityLow {
-		style = dimStyle
+		style = sty.Dim
 	}
 	var rows []string
 	if len(c.Warnings) == 0 {
 		return append(rows, style.Render(word))
 	}
-	rows = append(rows, style.Render(word+"  ")+dimStyle.Render(c.Warnings[0]))
+	rows = append(rows, style.Render(word+"  ")+sty.Dim.Render(c.Warnings[0]))
 	for _, w := range c.Warnings[1:] {
-		rows = append(rows, warnStyle.Render("⚠ "+w))
+		rows = append(rows, sty.Warn.Render("⚠ "+w))
 	}
 	return rows
 }
@@ -492,7 +492,7 @@ func (c *ApprovalCard) chips() []string {
 func (f CardField) render(inner int) string {
 	label := padRight(f.Label, fieldLabelWidth-1) + " "
 	value := f.Tone.style().Render(f.Value)
-	head := dimStyle.Render(label) + value
+	head := sty.Dim.Render(label) + value
 	if f.Detail == "" {
 		return head
 	}
@@ -500,7 +500,7 @@ func (f CardField) render(inner int) string {
 	if lipgloss.Width(head)+lipgloss.Width(detail) > inner {
 		return head
 	}
-	return head + dimmerStyle.Render(detail)
+	return head + sty.Dimmer.Render(detail)
 }
 
 // plural renders "1 hunk" / "3 hunks".

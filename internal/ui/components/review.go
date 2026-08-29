@@ -329,7 +329,7 @@ func (v *ReviewView) View(width int) string {
 		body = append(body, "")
 	}
 
-	out := append(body[:rows:rows], dimStyle.Render(strings.Repeat("─", max(width, 0))))
+	out := append(body[:rows:rows], sty.Dim.Render(strings.Repeat("─", max(width, 0))))
 	return strings.Join(append(out, footer...), "\n")
 }
 
@@ -379,7 +379,7 @@ func truncRows(rows []string, limit, width int) []string {
 	}
 	keep := max(limit-1, 1)
 	return append(rows[:keep:keep],
-		hintStyle.Render(clip(fmt.Sprintf("… (+%d more rows)", len(rows)-keep), width)))
+		sty.Hint.Render(clip(fmt.Sprintf("… (+%d more rows)", len(rows)-keep), width)))
 }
 
 // joinReviewPanes lays the list and the pane side by side, padding the list
@@ -396,7 +396,7 @@ func joinReviewPanes(list, pane []string, listWidth, rows int) []string {
 		}
 		// The divider runs the full height of the surface, so the panes stay
 		// framed rather than trailing off into blank rows.
-		out = append(out, strings.TrimRight(padRight(l, listWidth)+dimStyle.Render(reviewDivider)+r, " "))
+		out = append(out, strings.TrimRight(padRight(l, listWidth)+sty.Dim.Render(reviewDivider)+r, " "))
 	}
 	return out
 }
@@ -419,16 +419,16 @@ func reviewLine(text, note string, width int) string {
 func stageBox(staged, total int) string {
 	switch {
 	case total > 0 && staged == total:
-		return addStyle.Render("[x]")
+		return sty.Add.Render("[x]")
 	case staged > 0:
-		return accentStyle.Render("[~]")
+		return sty.Accent.Render("[~]")
 	default:
-		return dimStyle.Render("[ ]")
+		return sty.Dim.Render("[ ]")
 	}
 }
 
 // reviewRule is the horizontal rule the list is divided by.
-func reviewRule(width int) string { return dimStyle.Render(strings.Repeat("─", max(width, 0))) }
+func reviewRule(width int) string { return sty.Dim.Render(strings.Repeat("─", max(width, 0))) }
 
 // listRows is the whole left pane: the file list, the verdict and the shield
 // note, in that order.
@@ -439,9 +439,9 @@ func (v *ReviewView) listRows(width int) []string {
 
 // headRows are the list's header and the rule under it.
 func (v *ReviewView) headRows(width int) []string {
-	head := infoStyle.Bold(true).Render("REVIEW")
+	head := sty.Info.Bold(true).Render("REVIEW")
 	if v.Title != "" {
-		head += dimStyle.Render(" " + v.Title)
+		head += sty.Dim.Render(" " + v.Title)
 	}
 	return []string{reviewLine(head, v.stagedLabel(), width), reviewRule(width)}
 }
@@ -450,20 +450,20 @@ func (v *ReviewView) headRows(width int) []string {
 // the path with whoever wrote it, and the file's own +N −M.
 func (v *ReviewView) fileRows(width int) []string {
 	if len(v.Files) == 0 {
-		return []string{hintStyle.Render("(nothing changed)")}
+		return []string{sty.Hint.Render("(nothing changed)")}
 	}
 	rows := make([]string, 0, len(v.Files))
 	for i, f := range v.Files {
 		added, removed := f.stats()
 		lead := " "
 		if i == v.File {
-			lead = infoStyle.Render("❯")
+			lead = sty.Info.Render("❯")
 		}
 		if !v.ReadOnly {
 			lead += stageBox(f.stagedCount(), len(f.Hunks)) + " "
 		}
-		lead += accentStyle.Render("✎ ")
-		note := addStyle.Render(fmt.Sprintf("+%d", added)) + " " + delStyle.Render(fmt.Sprintf("−%d", removed))
+		lead += sty.Accent.Render("✎ ")
+		note := sty.Add.Render(fmt.Sprintf("+%d", added)) + " " + sty.Del.Render(fmt.Sprintf("−%d", removed))
 
 		// A file list is read by its filenames, so a path that does not fit
 		// loses its leading directories rather than its name, and the agent
@@ -477,11 +477,11 @@ func (v *ReviewView) fileRows(width int) []string {
 			tail = ""
 		}
 		path := clipLeft(f.Path, budget-lipgloss.Width(tail))
-		name := bodyStyle.Render(path)
+		name := sty.Body.Render(path)
 		if i == v.File {
 			name = brightStyle().Render(path)
 		}
-		rows = append(rows, reviewLine(lead+name+dimStyle.Render(tail), note, width))
+		rows = append(rows, reviewLine(lead+name+sty.Dim.Render(tail), note, width))
 	}
 	return rows
 }
@@ -528,13 +528,13 @@ func (v *ReviewView) verdictRows(width int) []string {
 	if vd == nil {
 		return nil
 	}
-	glyph, verdict := addStyle.Render("✓"), " passing"
+	glyph, verdict := sty.Add.Render("✓"), " passing"
 	if vd.Failed {
-		glyph, verdict = delStyle.Render("✗"), " failing"
+		glyph, verdict = sty.Del.Render("✗"), " failing"
 	}
-	rows := []string{reviewRule(width), clip(glyph+" "+bodyStyle.Render(vd.Label+verdict), width)}
+	rows := []string{reviewRule(width), clip(glyph+" "+sty.Body.Render(vd.Label+verdict), width)}
 	for _, d := range vd.Detail {
-		rows = append(rows, "  "+dimmerStyle.Render(clip(d, max(width-2, 0))))
+		rows = append(rows, "  "+sty.Dimmer.Render(clip(d, max(width-2, 0))))
 	}
 	return rows
 }
@@ -545,9 +545,9 @@ func (v *ReviewView) shieldRows(width int) []string {
 	if v.Shield == "" {
 		return nil
 	}
-	rows := []string{reviewRule(width), clip(shieldStyle.Render("⛨ "+v.Shield), width)}
+	rows := []string{reviewRule(width), clip(sty.Shield.Render("⛨ "+v.Shield), width)}
 	if v.ShieldDetail != "" {
-		rows = append(rows, "  "+dimStyle.Render(clip(v.ShieldDetail, max(width-2, 0))))
+		rows = append(rows, "  "+sty.Dim.Render(clip(v.ShieldDetail, max(width-2, 0))))
 	}
 	return rows
 }
@@ -563,11 +563,11 @@ func brightStyle() lipgloss.Style {
 func (v *ReviewView) stagedLabel() string {
 	if v.ReadOnly {
 		if v.Note != "" {
-			return dimStyle.Render(v.Note)
+			return sty.Dim.Render(v.Note)
 		}
-		return dimStyle.Render(plural(len(v.Files), "file"))
+		return sty.Dim.Render(plural(len(v.Files), "file"))
 	}
-	return addStyle.Render(fmt.Sprintf("%d of %d staged", v.stagedFiles(), len(v.Files)))
+	return sty.Add.Render(fmt.Sprintf("%d of %d staged", v.stagedFiles(), len(v.Files)))
 }
 
 // paneRows is the focused file's hunks, scrolled to keep the focused hunk on
@@ -576,14 +576,14 @@ func (v *ReviewView) stagedLabel() string {
 func (v *ReviewView) paneRows(width, rows int) []string {
 	f := v.current()
 	if f == nil {
-		return []string{hintStyle.Render("(no file selected)")}
+		return []string{sty.Hint.Render("(no file selected)")}
 	}
 	added, removed := f.stats()
 	head := lipgloss.NewStyle().Bold(true).Foreground(Palette.Bright).Render(f.Path) +
-		dimStyle.Render("  "+plural(len(f.Hunks), "hunk")+" · ") +
-		addStyle.Render(fmt.Sprintf("+%d", added)) + " " + delStyle.Render(fmt.Sprintf("−%d", removed))
+		sty.Dim.Render("  "+plural(len(f.Hunks), "hunk")+" · ") +
+		sty.Add.Render(fmt.Sprintf("+%d", added)) + " " + sty.Del.Render(fmt.Sprintf("−%d", removed))
 	if !v.ReadOnly {
-		head += dimStyle.Render(" · ") + v.fileStageLabel(*f)
+		head += sty.Dim.Render(" · ") + v.fileStageLabel(*f)
 	}
 
 	body, focus := v.hunkRows(*f, width)
@@ -597,11 +597,11 @@ func (v *ReviewView) paneRows(width, rows int) []string {
 func (v *ReviewView) fileStageLabel(f ReviewFile) string {
 	switch staged := f.stagedCount(); {
 	case len(f.Hunks) > 0 && staged == len(f.Hunks):
-		return addStyle.Render("✓ staged")
+		return sty.Add.Render("✓ staged")
 	case staged > 0:
-		return accentStyle.Render(fmt.Sprintf("~ %d of %d hunks staged", staged, len(f.Hunks)))
+		return sty.Accent.Render(fmt.Sprintf("~ %d of %d hunks staged", staged, len(f.Hunks)))
 	default:
-		return dimStyle.Render("not staged")
+		return sty.Dim.Render("not staged")
 	}
 }
 
@@ -629,7 +629,7 @@ func (v *ReviewView) hunkRows(f ReviewFile, width int) (rows []string, focus int
 		}
 	}
 	if len(rows) == 0 {
-		rows = append(rows, hintStyle.Render("(no changes)"))
+		rows = append(rows, sty.Hint.Render("(no changes)"))
 	}
 	return rows, focus
 }
@@ -639,7 +639,7 @@ func (v *ReviewView) hunkRows(f ReviewFile, width int) (rows []string, focus int
 func (v *ReviewView) hunkHeader(f ReviewFile, i int, h diff.Hunk, width int) string {
 	lead := " "
 	if i == v.Hunk {
-		lead = infoStyle.Render("❯")
+		lead = sty.Info.Render("❯")
 	}
 	if !v.ReadOnly {
 		staged := 0
@@ -650,7 +650,7 @@ func (v *ReviewView) hunkHeader(f ReviewFile, i int, h diff.Hunk, width int) str
 	} else {
 		lead += " "
 	}
-	return lead + hunkStyle.Render(clip(h.Header(), max(width-lipgloss.Width(lead), 0)))
+	return lead + sty.Hunk.Render(clip(h.Header(), max(width-lipgloss.Width(lead), 0)))
 }
 
 // scrollTo keeps the focused row inside a window of the given height,
@@ -721,7 +721,7 @@ func (v *ReviewView) footerRows(width int) []string {
 
 	rows := wrapOffers(offers, width)
 	if v.notice != "" {
-		rows = append(rows, warnStyle.Render(clip(v.notice, width)))
+		rows = append(rows, sty.Warn.Render(clip(v.notice, width)))
 	}
 	return rows
 }

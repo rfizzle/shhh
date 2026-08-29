@@ -1622,10 +1622,10 @@ func (m Model) View() string {
 	// The header carries only the title (S-082): the static key hint moved
 	// into the frame's contextual bottom rail, the update notice onto the
 	// notice rail, and the attached breadcrumb onto the frame's top rail.
-	header := headerStyle.Render(" " + title)
+	header := sty.Header.Render(" " + title)
 	if m.attachedTo != "" && !m.frameShowing() {
 		// A takeover surface while attached keeps the breadcrumb visible.
-		header += headerHintStyle.Render("  " + m.breadcrumb())
+		header += sty.HeaderHint.Render("  " + m.breadcrumb())
 	}
 	header += strings.Repeat(" ", max(0, contentWidth-lipgloss.Width(header)))
 
@@ -2261,13 +2261,13 @@ func (m Model) renderEntryKeys(e entry, width int, keysLive bool) string {
 func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) string {
 	switch e.kind {
 	case entryUser:
-		row := userStyle.Render("You") + "\n" + m.wordWrap(e.text, width) + "\n"
+		row := sty.User.Render("You") + "\n" + m.wordWrap(e.text, width) + "\n"
 		if len(e.attached) > 0 {
-			row += systemMsgStyle.Render(clipRow("attached: "+strings.Join(e.attached, ", "), width)) + "\n"
+			row += sty.SystemMsg.Render(clipRow("attached: "+strings.Join(e.attached, ", "), width)) + "\n"
 		}
 		return row
 	case entryAssistant:
-		return assistantStyle.Render("Assistant") + "\n" + renderMarkdown(e.text, width) + "\n"
+		return sty.Assistant.Render("Assistant") + "\n" + renderMarkdown(e.text, width) + "\n"
 	case entryTool, entryCommand:
 		// Compact one-row activity rendering (S-075); focus mode expands it,
 		// and so does the step around it (S-137).
@@ -2302,9 +2302,9 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 		}
 		return e.diff.View(width) + "\n"
 	case entrySystem:
-		return systemMsgStyle.Render(e.text) + "\n"
+		return sty.SystemMsg.Render(e.text) + "\n"
 	case entryError:
-		return errorStyle.Render("Error: "+e.text) + "\n"
+		return sty.Error.Render("Error: "+e.text) + "\n"
 	}
 	return ""
 }
@@ -2436,7 +2436,7 @@ func (m *Model) renderHistoryRaw() string {
 		if m.startScreenShowing() {
 			return m.renderStartScreen(m.transcriptWidth())
 		}
-		return welcomeStyle.Render("Type a message to start chatting.")
+		return sty.Welcome.Render("Type a message to start chatting.")
 	}
 	w := m.transcriptWidth()
 	if w != m.cachedWidth {
@@ -2479,7 +2479,7 @@ func (m *Model) renderHistoryRaw() string {
 		if havePrev {
 			s += separatorBefore(prev, entry{kind: entryAssistant})
 		}
-		s += assistantStyle.Render("Assistant") + "\n"
+		s += sty.Assistant.Render("Assistant") + "\n"
 		// The one thing in the transcript that is not frozen, and the only
 		// place the stable-prefix cache is used: everything else here is
 		// either cached whole or rendered once (S-149, §10h, streammd.go).

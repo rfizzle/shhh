@@ -107,11 +107,11 @@ var doneWords = map[TurnState]string{
 func (s TurnStatus) doneGlyph() (string, string, lipgloss.Style) {
 	switch s.Outcome {
 	case TurnCancelled:
-		return "⊘", doneWords[TurnCancelled], dimStyle
+		return "⊘", doneWords[TurnCancelled], sty.Dim
 	case TurnFailed:
-		return "✗", doneWords[TurnFailed], delStyle
+		return "✗", doneWords[TurnFailed], sty.Del
 	}
-	return "✓", doneWords[TurnDone], addStyle
+	return "✓", doneWords[TurnDone], sty.Add
 }
 
 // View renders the line at the widest fidelity that fits width, dropping in
@@ -139,15 +139,15 @@ func (s TurnStatus) render(drop int) string {
 	if s.Phase == PhaseRunning && s.Tool != "" && drop < TurnDropTool {
 		label += " " + s.Tool
 	}
-	out := spinTextStyle.Render(Spinner{Frame: s.Frame}.Glyph() + " " + label)
+	out := sty.SpinText.Render(Spinner{Frame: s.Frame}.Glyph() + " " + label)
 	if s.Elapsed != "" && drop < TurnDropElapsed {
-		out += dimStyle.Render(" " + s.Elapsed)
+		out += sty.Dim.Render(" " + s.Elapsed)
 	}
 	if s.Up != "" && s.Down != "" && drop < TurnDropTokens {
-		out += dimStyle.Render(" · ↑" + s.Up + " ↓" + s.Down)
+		out += sty.Dim.Render(" · ↑" + s.Up + " ↓" + s.Down)
 	}
 	if s.Cost != "" {
-		out += bodyStyle.Render(" · " + s.Cost)
+		out += sty.Body.Render(" · " + s.Cost)
 	}
 	return out
 }
@@ -159,13 +159,13 @@ func (s TurnStatus) renderDone(drop int) string {
 	glyph, word, style := s.doneGlyph()
 	out := style.Render(glyph + " " + word)
 	if s.Duration != "" && drop < TurnDropElapsed {
-		out += dimStyle.Render(" · " + s.Duration)
+		out += sty.Dim.Render(" · " + s.Duration)
 	}
 	if s.Tools > 0 && drop < TurnDropTokens {
-		out += dimStyle.Render(" · " + plural(s.Tools, "tool"))
+		out += sty.Dim.Render(" · " + plural(s.Tools, "tool"))
 	}
 	if s.Cost != "" {
-		out += bodyStyle.Render(" · " + s.Cost)
+		out += sty.Body.Render(" · " + s.Cost)
 	}
 	return out
 }

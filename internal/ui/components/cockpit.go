@@ -56,11 +56,11 @@ type Cockpit struct {
 func (c Cockpit) identity() string {
 	switch {
 	case c.Reasoning != "" && c.Model != "":
-		return bodyStyle.Render(c.Reasoning) + statusStyle.Render(" · ") + bodyStyle.Render(c.Model)
+		return sty.Body.Render(c.Reasoning) + sty.Status.Render(" · ") + sty.Body.Render(c.Model)
 	case c.Reasoning != "":
-		return bodyStyle.Render(c.Reasoning)
+		return sty.Body.Render(c.Reasoning)
 	case c.Model != "":
-		return bodyStyle.Render(c.Model)
+		return sty.Body.Render(c.Model)
 	}
 	return ""
 }
@@ -69,11 +69,11 @@ func (c Cockpit) identity() string {
 func (c Cockpit) modeSegment() string {
 	switch c.ModeKind {
 	case CockpitChecking:
-		return spinTextStyle.Render("✦ " + c.Mode)
+		return sty.SpinText.Render("✦ " + c.Mode)
 	case CockpitPermissive:
-		return addStyle.Render("⏵⏵ " + c.Mode)
+		return sty.Add.Render("⏵⏵ " + c.Mode)
 	default:
-		return accentStyle.Render("⏸ " + c.Mode)
+		return sty.Accent.Render("⏸ " + c.Mode)
 	}
 }
 
@@ -94,9 +94,9 @@ func (c Cockpit) ctxMeter() string {
 // agentsSegment renders the sub-agent count with the blocked badge, which
 // marks children waiting on the user (§9c).
 func (c Cockpit) agentsSegment() string {
-	seg := infoStyle.Render(fmt.Sprintf("◇ %s", plural(c.Agents, "agent")))
+	seg := sty.Info.Render(fmt.Sprintf("◇ %s", plural(c.Agents, "agent")))
 	if c.AgentsBlocked > 0 {
-		seg += " " + errStyle.Render(fmt.Sprintf("⚠%d", c.AgentsBlocked))
+		seg += " " + sty.Err.Render(fmt.Sprintf("⚠%d", c.AgentsBlocked))
 	}
 	return seg
 }
@@ -126,19 +126,19 @@ type RailSegment struct {
 func (c Cockpit) RailSegments() []RailSegment {
 	segs := []RailSegment{{Text: c.modeSegment(), Drop: RailKeep}}
 	if c.Round != "" {
-		segs = append(segs, RailSegment{Text: statusStyle.Render(c.Round), Drop: RailNormal})
+		segs = append(segs, RailSegment{Text: sty.Status.Render(c.Round), Drop: RailNormal})
 	}
 	if c.CtxPct >= 0 {
 		segs = append(segs, RailSegment{Text: c.ctxMeter(), Drop: RailVital})
 	}
 	if c.Tokens != "" {
-		segs = append(segs, RailSegment{Text: statusStyle.Render(c.Tokens), Drop: RailTokens})
+		segs = append(segs, RailSegment{Text: sty.Status.Render(c.Tokens), Drop: RailTokens})
 	}
 	if c.Spend != "" {
-		segs = append(segs, RailSegment{Text: statusStyle.Render(c.Spend), Drop: RailVital})
+		segs = append(segs, RailSegment{Text: sty.Status.Render(c.Spend), Drop: RailVital})
 	}
 	for _, e := range c.Extra {
-		segs = append(segs, RailSegment{Text: statusStyle.Render(e), Drop: RailNormal})
+		segs = append(segs, RailSegment{Text: sty.Status.Render(e), Drop: RailNormal})
 	}
 	if c.Agents > 0 {
 		drop := RailNormal
@@ -151,10 +151,10 @@ func (c Cockpit) RailSegments() []RailSegment {
 	// model and keep the level: the model is the detail rank §8b names, and
 	// the level is the thing the session just changed.
 	if c.Reasoning != "" {
-		segs = append(segs, RailSegment{Text: bodyStyle.Render(c.Reasoning), Drop: RailTokens})
+		segs = append(segs, RailSegment{Text: sty.Body.Render(c.Reasoning), Drop: RailTokens})
 	}
 	if c.Model != "" {
-		segs = append(segs, RailSegment{Text: bodyStyle.Render(c.Model), Drop: RailDetail})
+		segs = append(segs, RailSegment{Text: sty.Body.Render(c.Model), Drop: RailDetail})
 	}
 	return segs
 }
@@ -188,19 +188,19 @@ func FitRail(segs []RailSegment, sep string, width int) string {
 func (c Cockpit) View(width int) string {
 	segments := []string{c.modeSegment()}
 	if c.Round != "" {
-		segments = append(segments, statusStyle.Render(c.Round))
+		segments = append(segments, sty.Status.Render(c.Round))
 	}
 	if c.CtxPct >= 0 {
 		segments = append(segments, c.ctxMeter())
 	}
 	if c.Tokens != "" {
-		segments = append(segments, statusStyle.Render(c.Tokens))
+		segments = append(segments, sty.Status.Render(c.Tokens))
 	}
 	if c.Spend != "" {
-		segments = append(segments, statusStyle.Render(c.Spend))
+		segments = append(segments, sty.Status.Render(c.Spend))
 	}
 	for _, e := range c.Extra {
-		segments = append(segments, statusStyle.Render(e))
+		segments = append(segments, sty.Status.Render(e))
 	}
 	if c.Agents > 0 {
 		segments = append(segments, c.agentsSegment())
@@ -213,7 +213,7 @@ func (c Cockpit) View(width int) string {
 	stage := 0
 	right := rights[stage]
 	for {
-		left := strings.Join(segments, statusStyle.Render(" · "))
+		left := strings.Join(segments, sty.Status.Render(" · "))
 		pad := width - lipgloss.Width(left) - lipgloss.Width(right)
 		if pad >= 1 || (right == "" && pad >= 0) {
 			return left + strings.Repeat(" ", max(pad, 0)) + right
