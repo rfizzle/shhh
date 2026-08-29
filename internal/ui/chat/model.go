@@ -26,6 +26,7 @@ import (
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/ui/caps"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -426,6 +427,12 @@ type Model struct {
 	// j/k all read the transcript — so the wheel is the side you ask for
 	// (S-115, §7a).
 	mouseOn bool
+	// caps is what this terminal told shhh it can do — inline images,
+	// desktop notifications, focus events (S-156, §10k). It is asked once,
+	// when the program hands over its environment, and the replies land
+	// wherever they land. Nothing on screen depends on it yet; `/ui
+	// terminal` is what reads it.
+	caps caps.Terminal
 	// Application-owned transcript selection (S-145, select.go). sel is the
 	// selection itself — anchor, endpoint, and whether the button is still
 	// down — in rendered-transcript coordinates. selScrollDir and
@@ -908,7 +915,18 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if newlineKey(msg) {
 		msg = altEnter
 	}
+	// What the terminal can do is folded in wherever the reply lands
+	// (S-156, §10k). The answers come back as five unrelated message types,
+	// over however long the terminal takes to send them, and none of them
+	// is anything else on this switch's business — so they are read here,
+	// before the routing, and go on to it unchanged.
+	m.caps.Update(msg)
 	switch msg := msg.(type) {
+	case tea.EnvMsg:
+		// The program's own environment, which over ssh is the client's
+		// terminal rather than this machine's (S-156). It arrives once, at
+		// startup, and asking is the only thing to do with it.
+		return m, m.caps.Query(msg)
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
@@ -2904,6 +2922,9 @@ func helpText() string {
                   mouse is off by default so the terminal keeps click-drag
                   selection — on, shhh selects the transcript itself and the
                   drag scrolls past the pane. Ctrl+X flips it and saves it)
+                 terminal  what this terminal answered when shhh asked what
+                           it can do: inline images, desktop notifications,
+                           focus events, cell size
   /add-dir       The working scope: which directories this session may write
                  to. Bare lists it; <path> adds one (contained commands can
                  write there, and edits there stop asking about leaving the

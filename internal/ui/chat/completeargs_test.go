@@ -32,8 +32,8 @@ func TestArgCompletion_StaticSubcommands(t *testing.T) {
 	if !m.completionActive() {
 		t.Fatal("the menu should stay open past the command name")
 	}
-	if got := completionNames(m); len(got) != 2 || got[0] != "verbosity" || got[1] != "mono" {
-		t.Fatalf("expected the verbosity and mono subcommands, got %v", got)
+	if got := completionNames(m); len(got) != 3 || got[0] != "verbosity" || got[1] != "mono" || got[2] != "terminal" {
+		t.Fatalf("expected the verbosity, mono and terminal subcommands, got %v", got)
 	}
 
 	m = typeChars(t, m, "verbosity l")

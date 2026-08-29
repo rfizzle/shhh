@@ -782,6 +782,7 @@ Slash commands inside a chat session:
 | `/ui verbosity <v>` | Activity feed density: `low` shows step headers only, `normal` folds read-only runs into a counted row, `high` expands every row (bare `/ui` also reports the pane layout) |
 | `/ui mono <on\|off>` | Strip every surface to two greys; glyphs, words and layout carry the states. `NO_COLOR` turns it on for the session |
 | `/ui mouse <on\|off>` | Terminal mouse reporting (also `Ctrl+X`). Off by default, so your terminal keeps its own click-drag selection; on, the wheel scrolls the transcript and click-drag selects it, scrolling past the edge of the pane and copying on release. The answer is saved to `appearance.mouse` |
+| `/ui terminal` | What your terminal answered when shhh asked what it can do: inline images (kitty graphics or sixel), desktop notifications, focus events, and the size of one character cell in pixels. A capability shhh did not ask about says so rather than reading as a no — the graphics questions are held back on Apple Terminal and over `ssh`, where a terminal that does not recognise them prints them instead |
 | `/memory` | Durable memories (`shhh code`): `list` (default), `add [global] [kind] <text>`, `forget <id>` |
 | `/ps` | List the long-running processes this session owns (`shhh code`): state, pid, uptime, command |
 | `/rewind [n]` | Rewind to before a user turn (bare `/rewind` opens a picker); the abandoned tail is kept as a branch. Conversation only — files are not restored |

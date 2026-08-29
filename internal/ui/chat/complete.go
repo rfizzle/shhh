@@ -127,6 +127,7 @@ var slashCommands = []slashCommand{
 			{options: []argOption{
 				{"verbosity", "Activity feed density"},
 				{"mono", "Strip every surface to two greys"},
+				{"terminal", "What this terminal can do"},
 			}},
 			{after: []string{"verbosity"}, options: []argOption{
 				{"low", "Step headers only"},

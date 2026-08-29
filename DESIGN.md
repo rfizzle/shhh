@@ -292,6 +292,7 @@ shhh/
 | `charm.land/lipgloss/v2` | Terminal styling |
 | `charm.land/bubbles/v2` | Spinner, text input, viewport |
 | `charm.land/glamour/v2` | Markdown rendering in the transcript |
+| `github.com/charmbracelet/ultraviolet` | The terminal event vocabulary the capability probe reads (DESIGN-TUI.md §10k) |
 | `github.com/BurntSushi/toml` | Config file parsing |
 | `github.com/sashabaranov/go-openai` | OpenAI / OpenAI-compatible API client |
 | `google.golang.org/genai` | Gemini API client |

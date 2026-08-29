@@ -2441,6 +2441,74 @@ generations onto its messages so a restart can supersede the last one; §10c
 says there is one chain and never three, so shhh's is a value with no clock, no
 state and nothing to start or stop.
 
+### 10k. What the terminal can do (S-156)
+
+Everything else here adapts to the terminal by reading the environment and
+measuring the window: `NO_COLOR`, `TERM=dumb`, the profile (§10a), the width
+the ladders drop against (§8c). None of that can answer whether the terminal
+draws an inline image, whether it will raise a desktop notification, or
+whether it says when the window stops being the one in front. Those are
+questions only the terminal can answer, and answering them means **asking** —
+writing a query sequence out and reading the reply back as an ordinary event.
+
+Six questions go out once, when the program hands over its environment:
+
+| Question | Sequence | What the answer buys |
+|---|---|---|
+| primary device attributes | `CSI c` | attribute 4 is Sixel |
+| focus mode | `CSI ? 1004 $p` | whether `DECSET 1004` is a mode this terminal knows |
+| desktop notifications | `OSC 99 ; i=…:p=? ;` | whether it can raise a notification with a title |
+| name and version | `CSI > q` | what the terminal calls itself |
+| window size in pixels | `CSI 14 t` | with the columns and rows, one cell in pixels |
+| kitty graphics | `APC G i=31,a=q…` | whether it answers a graphics query at all |
+
+The first three are well-formed requests every terminal either answers or
+swallows. **The last three are held back where the reply is not worth the
+risk**, because a terminal that does not recognise them prints them: never on
+Apple Terminal, and never across an ssh session — unless `TERM` names one of
+the five terminals known to answer (alacritty, ghostty, kitty, rio, wezterm),
+which is asked either way. And nothing at all is written when there is no
+terminal on the other end, which is a question already settled once: a profile
+of `NoTTY` is what a pipe, a log or a CI run looks like (§10a, S-155).
+
+**Silence and never having asked are different answers.** A capability that
+is false because the terminal said so and one that is false because shhh
+declined to interrupt it are the same boolean and not the same fact, so the
+value carries `Asked` and `Held` — the reason, in words — beside the
+capabilities. `/ui terminal` prints them:
+
+```
+Terminal: ghostty 1.2.0.
+Inline images: kitty graphics.
+Desktop notifications: OSC 99.
+Focus events: reported.
+Cell size: 9×19 px.
+```
+
+```
+Terminal: unnamed — the reply would have to come back over ssh.
+Inline images: not asked.
+Desktop notifications: no OSC 99 answer — OSC 777 is the blind fallback.
+Focus events: reported.
+Graphics and name were not asked for: the reply would have to come back over ssh.
+```
+
+It is `internal/ui/caps`, and it is the only package in the tree that speaks
+the wire: it writes the questions, reads the replies, and every
+terminal-protocol type stops there. What leaves is a value with plain fields
+on it.
+
+Ported from Crush's `internal/ui/common/capabilities.go`, with three places
+where shhh's semantics win. **It does not answer for the colour profile** —
+Crush folds `tea.ColorProfileMsg` into the same value, and shhh settled that
+once and handed the same answer to every program and every direct print
+(§10a, S-155); a second answer to a decided question is the thing that rule
+exists to prevent. **It does not answer for the size either**: the width is
+the layout's, because it is what every drop ladder in §8b and §6a reads, so
+the cell size is handed the cells to divide by rather than keeping a second
+copy of them. And **the reply is read where it was already framed** rather
+than fed back through a fresh parser a byte at a time.
+
 ---
 
 ## 11. Implementation Notes
@@ -2498,6 +2566,12 @@ state and nothing to start or stop.
   forgetting to call one more of them.
 - Every component takes an explicit width and handles < 60 columns by
   stacking rather than truncating hints.
+- `internal/ui/caps` is the only package that speaks the terminal wire
+  (§10k): it writes the capability questions, reads the replies, and every
+  ultraviolet event type and escape sequence composed to *ask* something
+  stops there. The chat `Model` holds one value, asks on `tea.EnvMsg` and
+  hands every message to it; nothing else in the tree imports the
+  vocabulary.
 
 ---
 

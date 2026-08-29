@@ -22,6 +22,7 @@ import (
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
+	"github.com/rfizzle/shhh/internal/ui/caps"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/web"
 )
@@ -358,11 +359,11 @@ func (m Model) runningCommandRow(width int) string {
 	return row.View(width)
 }
 
-// uiCommand handles /ui: the activity feed's verbosity, mono conformance and
-// terminal mouse reporting.
+// uiCommand handles /ui: the activity feed's verbosity, mono conformance,
+// terminal mouse reporting, and what the terminal itself can do.
 func (m *Model) uiCommand(parts []string) string {
 	if len(parts) == 1 {
-		return fmt.Sprintf("Activity feed verbosity: %s.\nMonochrome: %s.\nMouse reporting: %s.\nLayout: %s.\nUsage: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>", m.verbosity, monoStatus(), m.mouseStatus(), m.inspectorStatus())
+		return fmt.Sprintf("Activity feed verbosity: %s.\nMonochrome: %s.\nMouse reporting: %s.\nLayout: %s.\nTerminal: %s.\nUsage: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off> · /ui terminal", m.verbosity, monoStatus(), m.mouseStatus(), m.inspectorStatus(), terminalName(m.caps))
 	}
 	switch parts[1] {
 	case "verbosity":
@@ -383,8 +384,82 @@ func (m *Model) uiCommand(parts []string) string {
 		return m.monoCommand(parts)
 	case "mouse":
 		return m.mouseCommand(parts)
+	case "terminal":
+		return m.terminalReport()
 	}
-	return "Usage: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>"
+	return "Usage: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off> · /ui terminal"
+}
+
+// terminalName is the one-line answer the bare /ui gives: what the terminal
+// called itself when shhh asked (S-156, §10k). A terminal that was asked
+// and did not name itself is not the same as one shhh never asked, and a
+// readout that could not tell them apart would be the reason someone
+// distrusts the rest of it.
+func terminalName(t caps.Terminal) string {
+	switch {
+	case t.Name != "":
+		return t.Name
+	case !t.Asked:
+		return "not asked"
+	case t.Held != "":
+		return "unnamed — " + t.Held
+	}
+	return "unnamed"
+}
+
+// terminalReport handles /ui terminal: what this terminal answered when shhh
+// asked what it can do (S-156, §10k). It is a diagnostic, and the question
+// it exists to answer is "why did that not happen here" — so a capability
+// nobody asked about says so rather than reading as a no.
+func (m Model) terminalReport() string {
+	t := m.caps
+	if !t.Asked {
+		return "Terminal: not asked — " + t.Held + ".\nNothing was queried, so nothing here would be an answer."
+	}
+	lines := []string{
+		"Terminal: " + terminalName(t) + ".",
+		"Inline images: " + imageSupport(t) + ".",
+		"Desktop notifications: " + pick(t.Notifications, "OSC 99", "no OSC 99 answer — OSC 777 is the blind fallback") + ".",
+		"Focus events: " + pick(t.FocusEvents, "reported", "not reported") + ".",
+	}
+	// The cell size is the terminal's pixels over the session's own columns
+	// and rows, which is why it is measured here rather than kept there
+	// (S-156).
+	if w, h := t.CellSize(m.width, m.height); w > 0 && h > 0 {
+		lines = append(lines, fmt.Sprintf("Cell size: %d×%d px.", w, h))
+	}
+	if t.Held != "" {
+		lines = append(lines, "Graphics and name were not asked for: "+t.Held+".")
+	}
+	return strings.Join(lines, "\n")
+}
+
+// imageSupport names the picture protocols the terminal offered, or says why
+// there is no name to give.
+func imageSupport(t caps.Terminal) string {
+	var have []string
+	if t.Kitty {
+		have = append(have, "kitty graphics")
+	}
+	if t.Sixel {
+		have = append(have, "sixel")
+	}
+	if len(have) > 0 {
+		return strings.Join(have, " · ")
+	}
+	if t.Held != "" {
+		return "not asked"
+	}
+	return "neither kitty graphics nor sixel"
+}
+
+// pick is the two words a capability comes back as. It exists so the three
+// rows above read as a table rather than as three if statements.
+func pick(ok bool, yes, no string) string {
+	if ok {
+		return yes
+	}
+	return no
 }
 
 // monoStatus describes the current monochrome state, naming the environment

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -413,5 +414,100 @@ func TestTranscriptSpacing_UniformRhythm(t *testing.T) {
 				break
 			}
 		}
+	}
+}
+
+// What the terminal can do (S-156, DESIGN-TUI.md §10k). The readout is a
+// diagnostic, so what it must never do is let "shhh did not ask" read as
+// "the terminal said no".
+func TestUITerminal_NeverAskedIsNotANo(t *testing.T) {
+	m := activityModel(t)
+	// The zero value is a session whose probe has not gone out.
+	got := m.uiCommand([]string{"/ui", "terminal"})
+	if !strings.Contains(got, "not asked") {
+		t.Errorf("an unasked terminal must say so, got %q", got)
+	}
+	for _, no := range []string{"neither kitty graphics nor sixel", "not reported"} {
+		if strings.Contains(got, no) {
+			t.Errorf("%q reads as an answer the terminal never gave: %q", no, got)
+		}
+	}
+	if !strings.Contains(m.uiCommand([]string{"/ui"}), "Terminal: not asked") {
+		t.Error("the bare /ui summary should name the terminal, or say it was not asked")
+	}
+}
+
+func TestUITerminal_ReportsWhatCameBack(t *testing.T) {
+	m := activityModel(t)
+	m.caps.Asked = true
+	m.caps.Name = "ghostty 1.2.0"
+	m.caps.Kitty = true
+	m.caps.Notifications = true
+	m.caps.FocusEvents = true
+	m.caps.PixelWidth, m.caps.PixelHeight = 720, 570
+
+	got := m.uiCommand([]string{"/ui", "terminal"})
+	for _, want := range []string{
+		"Terminal: ghostty 1.2.0.",
+		"Inline images: kitty graphics.",
+		"Desktop notifications: OSC 99.",
+		"Focus events: reported.",
+		// 720/80 and 570/30 — the terminal's pixels over the session's own
+		// columns and rows, which is the only place the two meet.
+		"Cell size: 9×19 px.",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("missing %q in:\n%s", want, got)
+		}
+	}
+	if !strings.Contains(m.uiCommand([]string{"/ui"}), "Terminal: ghostty 1.2.0") {
+		t.Error("the bare /ui summary should name the terminal it asked")
+	}
+}
+
+func TestUITerminal_HeldQuestionsSayWhy(t *testing.T) {
+	m := activityModel(t)
+	m.caps.Asked = true
+	m.caps.Held = "the reply would have to come back over ssh"
+	m.caps.FocusEvents = true
+
+	got := m.uiCommand([]string{"/ui", "terminal"})
+	if !strings.Contains(got, "Inline images: not asked.") {
+		t.Errorf("a held question is not a no, got %q", got)
+	}
+	if !strings.Contains(got, "over ssh") {
+		t.Errorf("the readout has to name the reason it held back, got %q", got)
+	}
+	// The safe questions went out either way, so their answers stand.
+	if !strings.Contains(got, "Focus events: reported.") {
+		t.Errorf("holding the graphics questions must not withhold the rest, got %q", got)
+	}
+}
+
+// The probe is asked once, when the program hands over its environment — and
+// it is the program's environment, not the process's, because over ssh those
+// are two different machines (S-156).
+func TestTerminalProbe_AsksOnTheProgramsEnvironment(t *testing.T) {
+	// A test binary's stdout is not a terminal, and the probe reads that off
+	// the profile shhh already settled (S-155): with nothing on the other
+	// end there is nothing to ask.
+	was := components.Profile()
+	components.SetProfile(colorprofile.ANSI256)
+	t.Cleanup(func() { components.SetProfile(was) })
+
+	m := activityModel(t)
+	updated, cmd := m.Update(tea.EnvMsg{"TERM=xterm-256color"})
+	next := updated.(Model)
+	if !next.caps.Asked {
+		t.Fatal("the environment arriving is the moment to ask")
+	}
+	if cmd == nil {
+		t.Fatal("nothing was written to the terminal")
+	}
+	// The replies land wherever they land, and the model folds them in
+	// without any of them being routed anywhere else.
+	updated, _ = next.Update(tea.TerminalVersionMsg{Name: "ghostty 1.2.0"})
+	if got := updated.(Model).caps.Name; got != "ghostty 1.2.0" {
+		t.Errorf("the reply did not reach the probe, Name = %q", got)
 	}
 }
