@@ -33,8 +33,8 @@ import (
 // and [u] are (S-098), so the input keeps all four letters for typing — which
 // matters more here than anywhere else, since "run the tests again" and
 // "check what it did" are exactly what gets typed after a failure. That is
-// also why entering a key is [e] and not §17a's [k]: k is the focus cursor's
-// own.
+// also why entering a key is [e] and not the artboard's [k]: k is the focus
+// cursor's own.
 
 // maxFailureDetail bounds the provider's own words on the row. The detail
 // body exists so an unclassified failure still says something; it does not
@@ -67,9 +67,9 @@ func (m *Model) appendFailureRecord(f *provider.Failure) {
 	m.appendEntry(entry{kind: entryFailure, fail: f, duration: m.turnElapsed()})
 }
 
-// failureRow renders one failure on the §6a grid. The offers stay on the row
-// whether or not they are still claimable: the row is a record of what was
-// said, and a record that rewrites itself as you type is worse than a key
+// failureRow renders one failure on the column grid. The offers stay on the
+// row whether or not they are still claimable: the row is a record of what
+// was said, and a record that rewrites itself as you type is worse than a key
 // that has quietly moved on.
 func (m Model) failureRow(e entry) components.RecoveryRow {
 	f := e.fail

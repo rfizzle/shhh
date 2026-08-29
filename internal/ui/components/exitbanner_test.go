@@ -50,8 +50,8 @@ func TestExitBanner_SaysWhatTheScreenTookWithIt(t *testing.T) {
 	}
 }
 
-// Nothing spent is no row, not a made-up $0.00 — the same rule §17c holds the
-// start screen's resume offer to.
+// Nothing spent is no row, not a made-up $0.00 — the same rule the start
+// screen holds the start screen's resume offer to.
 func TestExitBanner_UnpricedSittingDropsTheRow(t *testing.T) {
 	b := fullBanner()
 	b.Spend = ""

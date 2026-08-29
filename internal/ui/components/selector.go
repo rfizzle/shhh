@@ -20,7 +20,7 @@ type SelectOption struct {
 	// column of its own — the price beside a model, what a command does, when
 	// a session was last touched. Every row carries it, not only the
 	// focused one: a catalog you have to walk to read is a catalog you cannot
-	// compare. The plan card is the exception and says why (§4d, FocusDesc).
+	// compare. The plan card is the exception and says why (FocusDesc).
 	Desc string
 	// Value is the row's own answer, drawn between the label column and the
 	// description in a colour of its own: `⏵⏵ auto`, `⛨ workspace-write`,
@@ -189,7 +189,7 @@ func (s *Select) Update(msg tea.KeyPressMsg) (done bool, result any) {
 		}
 		return true, SelectResult{Index: s.Focus}
 	case keys.Is(pressed, keys.Select.Cancel):
-		// esc leaves the picker rather than closing the query line: §4a asks
+		// esc leaves the picker rather than closing the query line: the card asks
 		// that leaving change nothing, and a filter you have to escape twice
 		// is a mode.
 		return true, SelectResult{Index: -1, Canceled: true}
@@ -274,7 +274,7 @@ func (s *Select) View(width int) string {
 	s.normalizeFocus()
 	// The query line and the key hints are pinned: the list scrolls under
 	// them, so what the card spends on them comes off the list's budget
-	// before the window is drawn (§4a, S-116).
+	// before the window is drawn (S-116).
 	head := s.queryRows(width)
 	tail := hintRows(s.hintSegments(width), width)
 	body, shown := s.visibleRows(width, s.bodyBudget(len(head)+len(tail)), !s.Unnumbered)
@@ -474,11 +474,11 @@ func (s *Select) optionRows(width int, numbered bool, lo, hi int) []string {
 	for i, opt := range s.Options {
 		if opt.Header {
 			if i >= lo && i < hi {
-				// A group rail is info and bold, the way `decision/Select`
-				// draws it (`c-info b`) and the way §18a and §19a both show
-				// it. It read dim until S-127 went looking for the config
-				// screen's SESSION / WORKSPACE rails and found the rails it
-				// already had painted as chrome.
+				// A group rail is info and bold, the way `decision/Select` draws it
+				// (`c-info b`) and the way the palette and the config screen both show
+				// it. It read dim until S-127 went looking for the config screen's
+				// SESSION / WORKSPACE rails and found the rails it already had painted as
+				// chrome.
 				rows = append(rows, sty.Headline.Render(clip(opt.Label, inner)))
 			}
 			continue

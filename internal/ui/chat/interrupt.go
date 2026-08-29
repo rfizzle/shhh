@@ -35,8 +35,8 @@ import (
 )
 
 // keys.Draft.Answer hands the keyboard from the draft to the decision on
-// screen. It is a control chord for the reason every transfer in §7a is one:
-// no sentence can produce it, so it can be live while the draft is.
+// screen. It is a control chord for the reason every keyboard transfer is
+// one: no sentence can produce it, so it can be live while the draft is.
 
 // interruptShowing reports whether a decision that arrived unbidden is on
 // screen: the approval card, the /run confirm, the plan card, or a child
@@ -75,18 +75,18 @@ const draftQuiet = time.Second
 // arrivesHeld reports whether a decision arriving now takes the keyboard
 // rather than waiting for ctrl+g.
 //
-// §7b's rule is about a card landing on top of a sentence: `y` stays a letter
-// because it belongs in the sentence, and the reader is charged one ctrl+g
-// for the protection. But most cards do not land on a sentence. They land
-// while the reader is watching a turn work with an empty box, and there the
-// toll buys nothing — there is no sentence for the letter to belong to, and
-// the reader who came to press `y` presses it twice.
+// The mid-sentence rule is about a card landing on top of a sentence: `y`
+// stays a letter because it belongs in the sentence, and the reader is
+// charged one ctrl+g for the protection. But most cards do not land on a
+// sentence. They land while the reader is watching a turn work with an empty
+// box, and there the toll buys nothing — there is no sentence for the letter
+// to belong to, and the reader who came to press `y` presses it twice.
 //
 // So the arrival state is decided by whether there is anything to protect.
 // With a sentence in the box, or a keyboard still warm from one, nothing
 // changes: the card arrives ungated, exactly as before. With neither, the
-// card arrives holding the keyboard — which is not a departure from §7b but
-// its other branch, the one every takeover surface takes: a surface whose
+// card arrives holding the keyboard — which is not a departure from that rule
+// but its other branch, the one every takeover surface takes: a surface whose
 // keys are live is a surface that holds the keyboard exclusively.
 func (m Model) arrivesHeld() bool {
 	if strings.TrimSpace(m.input.Value()) != "" {

@@ -14,7 +14,7 @@ package components
 // first and says how many rows it swallowed.
 //
 // THIS TURN is the turn. CHANGES, AGENTS, CONTEXT and SPEND are the session
-// (§15a, S-120): a file edited in turn 2 is still on screen in turn 8,
+// (S-120): a file edited in turn 2 is still on screen in turn 8,
 // because "what has this session done to my machine" does not reset when the
 // agent starts a new turn. The two blocks that can count files both say their
 // scope in words — `3 files this turn` and `session · +96 −11` — which is the
@@ -40,7 +40,7 @@ const (
 	// inspectorIndent is the two columns every block heading and row starts
 	// at; a changed-file row spends the third on the mutation rail.
 	inspectorIndent = 2
-	// Meter and sparkline cell counts — the shared roles from §10c,
+	// Meter and sparkline cell counts — the shared meter roles,
 	// so the rail's runs are the same runs every other surface draws.
 	inspectorTurnCells = MeterCellsRail
 	inspectorCtxCells  = MeterCellsRail
@@ -97,8 +97,8 @@ type InspectorTurn struct {
 	Step, Steps int
 	Tools       int
 	Elapsed     time.Duration
-	// Files and its counts are what this turn changed — the turn-scoped half
-	// of §15a's pair, and the reason the row says "this turn" in words rather
+	// Files and its counts are what this turn changed — the turn-scoped half of
+	// the scoped pair, and the reason the row says "this turn" in words rather
 	// than printing a bare count beside CHANGES' session total.
 	Files          int
 	Added, Removed int
@@ -558,7 +558,7 @@ func planStepTone(s PlanStepState) (string, lipgloss.Style) {
 	return sty.Dim.Render("·"), sty.Dim
 }
 
-// changesBlock is the session's own diff (§15a, S-120): every path it has
+// changesBlock is the session's own diff (S-120): every path it has
 // touched since it opened, one row each, with the alerts still standing above
 // them. The heading says "session" in words because THIS TURN counts files
 // too, and a rail that printed two bare counts would read as a contradiction.

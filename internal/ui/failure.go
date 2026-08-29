@@ -25,9 +25,10 @@ import (
 // layout of its own to measure, and the row's own fields are what matter.
 const failureReportWidth = 88
 
-// FailureReport renders a classified provider failure as the §17a row, with
-// the way out stated as a command. It reports false for an error that is not
-// a provider failure, which the caller should keep handling as it always has.
+// FailureReport renders a classified provider failure as the failure row,
+// with the way out stated as a command. It reports false for an error that is
+// not a provider failure, which the caller should keep handling as it always
+// has.
 func FailureReport(err error, model string) (string, bool) {
 	f, ok := provider.AsFailure(err)
 	if !ok {

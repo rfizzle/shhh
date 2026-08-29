@@ -119,7 +119,7 @@ func TestHistoryScreen_RowStatesOutcomeInGlyphAndWord(t *testing.T) {
 	}
 }
 
-// The duration is the right-aligned field the §6a grid reserves for it.
+// The duration is the right-aligned field the column grid reserves for it.
 func TestHistoryScreen_DurationIsRightAligned(t *testing.T) {
 	out := plainView(historyScreen(), 130)
 	var row string
@@ -368,7 +368,7 @@ func TestHistoryScreen_LongCommandIsNotClippedAway(t *testing.T) {
 }
 
 // A narrow terminal stacks the panes rather than clipping both, and keeps the
-// preview (§19b's own reason for the second pane).
+// preview (the browser's own reason for the second pane).
 func TestHistoryScreen_NarrowStacksThePanes(t *testing.T) {
 	out := plainView(historyScreen(), 60)
 	if strings.Contains(out, "│") {

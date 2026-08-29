@@ -3,13 +3,13 @@ package chat
 // The transcript's line cache (S-160,
 // docs/architecture.md#the-screen-is-a-rectangle-and-so-is-everything-in-it).
 //
-// §13's block freeze is what makes the transcript cheap to redraw: a step
-// block that has a successor can never change, so it is rendered once and
-// kept. What it was kept as was one string, and that is what this file
-// changes. The string had to be concatenated with the live tail on every
-// frame, walked again if a selection was lit over it, and split into every
-// line of the session by the pane it was handed to — three passes over the
-// whole history to redraw the last forty lines of it.
+// The step outline's block freeze is what makes the transcript cheap to
+// redraw: a step block that has a successor can never change, so it is
+// rendered once and kept. What it was kept as was one string, and that is
+// what this file changes. The string had to be concatenated with the live
+// tail on every frame, walked again if a selection was lit over it, and split
+// into every line of the session by the pane it was handed to — three passes
+// over the whole history to redraw the last forty lines of it.
 //
 // So the cache holds lines. A frozen block's lines are appended once and
 // never touched again; the live tail is rebuilt in place after them; and the

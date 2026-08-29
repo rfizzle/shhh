@@ -5,19 +5,20 @@ package chat
 // the S-078 registry, the saved chats, and the files this session touched or
 // the checkout changed most recently — filtered as you type.
 //
-// It complements the inline `/` menu rather than replacing it: `/` completes a
-// command you are already typing, Ctrl+K finds one you are looking for. That
-// difference is why the two treat an unavailable command differently. The menu
-// drops a command that needs an idle turn, because it is completing something
+// It complements the inline `/` menu rather than replacing it: `/` completes
+// a command you are already typing, Ctrl+K finds one you are looking for.
+// That difference is why the two treat an unavailable command differently.
+// The menu drops a command that needs an idle turn, because it is completing
+// something
 // you are in the middle of typing; the palette keeps it, dimmed behind ⊘ with
-// the reason on its description row, because the palette is where you look for
-// a command you cannot find — and "it is not here" is the one answer that
+// the reason on its description row, because the palette is where you look
+// for a command you cannot find — and "it is not here" is the one answer that
 // sends you hunting.
 //
 // The surface is statePick with a query on it, not a fourth list
 // implementation: the same components.Select card, the same open/leave
-// accounting, the same bottom-panel height. What the palette adds is the query
-// line, the group rails, and a dispatch that runs the entry rather than
+// accounting, the same bottom-panel height. What the palette adds is the
+// query line, the group rails, and a dispatch that runs the entry rather than
 // applying an index — a command from the palette goes through runCommand, so
 // an idle-only command answers with the same notice it would from the input.
 
@@ -287,7 +288,7 @@ func (m Model) paletteCommandEntries() []paletteEntry {
 			text:  c.name,
 			label: c.name,
 			// The key binding is the row's meta field, right-aligned by the
-			// card (§4a, S-126). It used to be padded into the label here,
+			// card (S-126). It used to be padded into the label here,
 			// which made a second column the component knew nothing about and
 			// could not keep aligned once a filter shortened the list.
 			meta:  c.key,

@@ -232,10 +232,10 @@ func activityDuration(d time.Duration) string {
 }
 
 // turnDuration renders the duration field of a row whose span is a whole turn
-// rather than one call: the three recovery rows of §17a, and the round-limit
-// pause above all, since a turn that spent 25 tool rounds is measured in
-// minutes. Past a minute `252s` stops reading as a duration, so the field
-// takes minutes and seconds — packed, because §6a gives duration six columns
+// rather than one call: the three recovery rows, and the round-limit pause
+// above all, since a turn that spent 25 tool rounds is measured in minutes.
+// Past a minute `252s` stops reading as a duration, so the field takes
+// minutes and seconds — packed, because the grid gives duration six columns
 // and FormatElapsed's `4m 12s` would fill them and touch the outcome beside
 // it. It is the form docs/interface/surfaces.md#the-recovery-row draws on
 // this row.

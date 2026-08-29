@@ -26,7 +26,7 @@ package chat
 // able to drift apart.
 //
 // Three user-role messages are the session talking to itself, not lines
-// anyone typed: the summary a compaction restarts from (§10 /compact), the
+// anyone typed: the summary a compaction restarts from (/compact), the
 // output /run feeds back, and the nudge that continues a reply a dropped
 // connection cut off. Recalling one would put a sentence in the draft
 // that nobody wrote — a whole compaction summary, in the worst case — so each

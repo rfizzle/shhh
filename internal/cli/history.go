@@ -287,11 +287,11 @@ func historyRow(e storage.HistoryEntry, now time.Time) components.HistoryRow {
 	}
 }
 
-// historyOutcome is the §6d field and the glyph that goes with it. An exit
-// code is the strongest thing an entry can say, so it outranks the action:
-// a command that was run and failed says so however it was reached. A request
-// that never produced one says what was done with it instead, and a request
-// that broke before it answered says that — never a blank.
+// historyOutcome is the outcome field and the glyph that goes with it. An
+// exit code is the strongest thing an entry can say, so it outranks the
+// action: a command that was run and failed says so however it was reached. A
+// request that never produced one says what was done with it instead, and a
+// request that broke before it answered says that — never a blank.
 func historyOutcome(e storage.HistoryEntry) (components.ActivityState, string) {
 	if e.ExitCode != nil {
 		if *e.ExitCode == 0 {

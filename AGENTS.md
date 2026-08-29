@@ -46,35 +46,31 @@ System` project in Claude Design, read with the DesignSync tool. Don't re-draw
 an artboard in Markdown — it becomes a second source of truth that disagrees
 with the first.
 
-### Migrating away from S-numbers and §-numbers
+### Migrating away from S-numbers
 
-Comments carry two kinds of legacy anchor, and both are being retired.
-
-`DESIGN-TUI.md` is now a ~145-line index, not a document: it maps each of its
-old `§` sections to the `docs/` page that replaced it, so the ~1,168 bare `§`
-references still in comments resolve in one hop. **Delete that file once
-nothing cites a `§`** — the index tracks the remaining count per section.
-
-Many `§` references turn out to be redundant once the prose beside them names
-the concept (`Detail bodies indent, they do not re-grid (§6a)` says it twice).
-Prefer deleting such a reference over translating it; cite a document only
-where the reason is worth the reader's click.
-
-Comments across the tree also still anchor to story numbers (`S-060`, `S-142`).
+Comments across the tree still anchor to story numbers (`S-060`, `S-142`).
 These are being replaced: a story number records *when* work happened, and the
 reader needs to know *why* the code is this way. `.plan/` keeps them — that is
-the delivery record and is correct as it is.
+the delivery record and is correct as it is. Note that `.plan/` is gitignored,
+so an S-number in a comment points at something no other contributor can read.
 
-**The rule for now: when you touch a comment carrying an S-number, replace the
-number with the reason and, if the reason is a product or design decision, a
-doc citation.** Don't sweep files you aren't otherwise changing. The prose in
-these comments is usually already good — it is the anchor that needs
-replacing, not the explanation.
+**The rule: when you touch a comment carrying an S-number, replace the number
+with the reason and, if the reason is a product or design decision, a doc
+citation.** Don't sweep files you aren't otherwise changing. The prose in these
+comments is usually already good — it is the anchor that needs replacing, not
+the explanation.
+
+Many such references turn out to be redundant once the prose beside them names
+the concept. Prefer deleting one over translating it; cite a document only
+where the reason is worth the reader's click.
 
 If the reason isn't captured in `docs/` yet, add the section. A capability
 section nothing cites is either wrong or unnecessary, and the citations are
 what keep the documentation honest.
 
+The companion `§` references to the old `DESIGN-TUI.md` sections are gone, and
+so is the index that let them resolve. `make docs-check` fails on a `§` in a
+string literal or a golden fixture, so they cannot come back as data.
 
 ## Commands
 
@@ -217,7 +213,7 @@ Config is TOML at `~/.config/shhh/config.toml` (XDG on Linux, `~/Library/Applica
 ## Gotchas
 
 - **CGO_ENABLED=0**: The build is pure Go (uses `modernc.org/sqlite`, not cgo sqlite3). Never add cgo dependencies.
-- **S-numbers in comments** (e.g. `S-060`, `S-142`): legacy story identifiers, being migrated out. When you edit a comment carrying one, replace it with the reason and a `docs/` citation — see [Migrating away from S-numbers](#migrating-away-from-s-numbers). Don't sweep files you aren't otherwise touching, and don't add new ones.
+- **S-numbers in comments** (e.g. `S-060`, `S-142`): legacy story identifiers, being migrated out. They resolve only to `.plan/`, which is gitignored. When you edit a comment carrying one, replace it with the reason and a `docs/` citation — see [Migrating away from S-numbers](#migrating-away-from-s-numbers). Don't sweep files you aren't otherwise touching, and don't add new ones.
 - **Provider name normalization**: Underscores become hyphens in the registry (`open_ai` → `open-ai`). Use the normalized form when registering or resolving.
 - **The deny mask is not configurable**: The sandbox's built-in deny mask (credential stores, shhh's own state) cannot be disabled. Only `deny_extra` can add to it.
 - **Bubble Tea message routing**: shhh's own messages are typed structs (not interfaces with methods). When adding new async operations, add a corresponding `type fooMsg struct{}` and handle it in the `Update` switch. Note that some of Bubble Tea v2's *own* messages are interfaces — `tea.KeyMsg` covers presses and releases, `tea.MouseMsg` covers click/motion/release/wheel — so match `tea.KeyPressMsg` and the specific mouse types rather than the interface.

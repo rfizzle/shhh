@@ -3,8 +3,8 @@ package chat
 // Alternate scroll (DECSET 1007), and why shhh turns it off while it owns the
 // screen.
 //
-// §7a says the wheel "was never enabled, so a trackpad gesture over the
-// transcript did nothing at all". That is true of terminals which leave
+// Reading mode says the wheel "was never enabled, so a trackpad gesture over
+// the transcript did nothing at all". That is true of terminals which leave
 // alternate scroll off. It is false of most of the ones people use: Ghostty,
 // iTerm2, WezTerm, Alacritty and Terminal.app all ship with 1007 set, and in
 // the alternate screen that mode makes the terminal translate every wheel
@@ -27,9 +27,9 @@ package chat
 //
 // The fix is to make the documented behaviour the real one. shhh asks the
 // terminal to stop synthesising, and the wheel goes back to doing nothing
-// until reporting is on — which is what §7a always claimed, and what makes
-// the keyboard transfers (pgup/pgdn, shift+arrows, ctrl+e) the whole story
-// for a session that has not bought the wheel with its selection.
+// until reporting is on — which is what reading mode always claimed, and what
+// makes the keyboard transfers (pgup/pgdn, shift+arrows, ctrl+e) the whole
+// story for a session that has not bought the wheel with its selection.
 //
 // Suppressing rather than using those arrows is a decision, not an oversight,
 // and the obvious objection to it is a good one: a synthetic wheel costs no
@@ -64,10 +64,10 @@ const (
 	restoreAlternateScroll = "\x1b[?1007r"
 )
 
-// SuppressAlternateScroll asks the terminal to stop translating the wheel into
-// cursor keys, and returns the function that puts the setting back. It is
-// safe to call unconditionally: a terminal that does not know the sequences
-// ignores them.
+// SuppressAlternateScroll asks the terminal to stop translating the wheel
+// into cursor keys, and returns the function that puts the setting back. It
+// is safe to call unconditionally: a terminal that does not know the
+// sequences ignores them.
 func SuppressAlternateScroll(w io.Writer) func() {
 	if w == nil {
 		return func() {}

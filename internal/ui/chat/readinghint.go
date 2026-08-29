@@ -385,8 +385,9 @@ func newHintStyles(p components.ColorTokens) hintStyles {
 }
 
 // readingKeyListLines is what `[?]` puts where the compact bar was (S-153,
-// §7d): the mode's whole register, one key per line, then the offers the row
-// under the cursor makes, then the key that puts it away again.
+// the key register): the mode's whole register, one key per line, then the
+// offers the row under the cursor makes, then the key that puts it away
+// again.
 //
 // It is the supporting TUIs' answer to the same question, moved onto
 // the one chat surface that can hold a bare letter — the compact row swapped
@@ -395,7 +396,7 @@ func newHintStyles(p components.ColorTokens) hintStyles {
 // adds over the bar is completeness, not longer prose. The bar sheds keys as
 // the terminal narrows and never says which; this is where they went.
 //
-// The panel is bounded like every other one (§1: 40% of the screen). What
+// The panel is bounded like every other one (40% of the screen). What
 // does not fit is counted on a final row rather than dropped silently
 // (invariant 4) — and the count is honest about which end it came from,
 // because the keys a reader is most likely to be looking for are the ones

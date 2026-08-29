@@ -3,7 +3,7 @@ package chat
 // The streaming render (S-149,
 // docs/architecture.md#the-screen-is-a-rectangle-and-so-is-everything-in-it).
 //
-// The transcript freezes every step block but the last (§13, model.go), so
+// The transcript freezes every step block but the last (model.go), so
 // the only thing it re-renders each frame is the message still arriving. That
 // one message was re-parsed whole on every chunk: goldmark plus the ANSI
 // renderer over the entire accumulated answer, once per token. The cost is

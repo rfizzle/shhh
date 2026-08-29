@@ -203,7 +203,7 @@ type ApprovalCard struct {
 	// asks for the safe answer in words wherever it is not.
 	Return string
 	// NotYetLive says the card is on screen beside a draft that still holds
-	// the keyboard (§7b, S-117). Its decision keys render as not-yet-live and
+	// the keyboard (S-117). Its decision keys render as not-yet-live and
 	// Update answers nothing, so a letter typed into the sentence stays a
 	// letter. Handover is the key that changes that — the card's only live
 	// key in this state.
@@ -395,9 +395,9 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 
 // CardKey is one key of the decision run: the spelling the card printed, and
 // the keystroke it stands for. The two are the same everywhere but the safe
-// answer, where the capital N is §2's default marker rather than a shifted
-// key — which is exactly why a pointer cannot be told what it landed on by
-// reading the letter off the screen (S-159).
+// answer, where the capital N is the card's default marker rather than a
+// shifted key — which is exactly why a pointer cannot be told what it landed
+// on by reading the letter off the screen (S-159).
 type CardKey struct {
 	Shown string
 	Key   string
@@ -411,11 +411,11 @@ type CardKey struct {
 // on, so the run a reader sees, the keys the card answers and the cells a
 // click resolves against cannot become three different lists.
 func (c *ApprovalCard) KeyRun() []CardKey {
-	// The card spells its keys as one run rather than as a row of offers, so
-	// it composes them from the register's spellings: `y`, `n`, `a`, `A`.
-	// The capital N is not a key — it is the default marker §2 draws on the
-	// safe answer — which is why it is applied here rather than declared as
-	// a second binding for the same keystroke.
+	// The card spells its keys as one run rather than as a row of offers, so it
+	// composes them from the register's spellings: `y`, `n`, `a`, `A`. The
+	// capital N is not a key — it is the default marker the card draws on the
+	// safe answer — which is why it is applied here rather than declared as a
+	// second binding for the same keystroke.
 	yes := CardKey{keys.Shown(keys.Decision.Allow), keys.Shown(keys.Decision.Allow)}
 	no := CardKey{keys.Shown(keys.Decision.Deny), keys.Shown(keys.Decision.Deny)}
 	def := CardKey{strings.ToUpper(no.Shown), no.Key}

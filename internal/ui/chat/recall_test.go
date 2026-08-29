@@ -142,7 +142,7 @@ func TestResumedSession_CollapsesRepeatedPrompts(t *testing.T) {
 	}
 }
 
-// Recall belongs to the draft wherever the draft has the keyboard (§7a,
+// Recall belongs to the draft wherever the draft has the keyboard (
 // S-162). A turn in flight keeps the input live (S-058), so it keeps recall.
 func TestRecall_WorksWhileTheTurnRuns(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}

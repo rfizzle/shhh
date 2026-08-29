@@ -13,22 +13,22 @@ package components
 //
 // **It has no clock.** Crush's Anim owns a `tea.Tick` chain per instance and
 // stamps every message with a generation so a re-`Start()` can supersede the
-// last one. That machinery exists to make many independent chains safe; §10c
-// says there is one chain and never three, so shhh's animation is a *value*
-// that reads the frame it is told (`Frame`) and holds no state at all. There
-// is nothing to start, nothing to stop, nothing to supersede — and `View` is
-// a pure function, which is what lets a golden capture it.
+// last one. That machinery exists to make many independent chains safe; the
+// one-clock rule says there is one chain and never three, so shhh's animation
+// is a *value* that reads the frame it is told (`Frame`) and holds no state
+// at all. There is nothing to start, nothing to stop, nothing to supersede —
+// and `View` is a pure function, which is what lets a golden capture it.
 //
 // **The ramp is two rungs, not a gradient.** Crush blends two arbitrary
-// colours through HCL across the label. §10a is a closed set of fifteen
-// tokens and the reason a mono swap is a swap rather than a rewrite is that
-// nothing on screen is a colour the table does not name; interpolating spin →
-// bright would put twenty unnamed colours on the top rail. So the sweep is
-// the ramp the palette can afford: the label in spin, a three-cell crest in
-// bright. Under mono both tokens are the same grey, the runs merge, and the
-// swept label is byte-for-byte the unswept one — the motion is declined the
-// way §10f declines every other colour it cannot carry, and it is declined by
-// the palette rather than by a branch.
+// colours through HCL across the label. The palette is a closed set of
+// fifteen tokens and the reason a mono swap is a swap rather than a rewrite
+// is that nothing on screen is a colour the table does not name;
+// interpolating spin → bright would put twenty unnamed colours on the top
+// rail. So the sweep is the ramp the palette can afford: the label in spin, a
+// three-cell crest in bright. Under mono both tokens are the same grey, the
+// runs merge, and the swept label is byte-for-byte the unswept one — the
+// motion is declined the way the mono palette declines every other colour it
+// cannot carry, and it is declined by the palette rather than by a branch.
 //
 // **The entrance is a shape, so it survives mono.** A cell that has not
 // arrived draws `·` from the drawing kit, same width as the letter it
@@ -54,7 +54,7 @@ import (
 
 const (
 	// animBirthSteps is how many tick frames the entrance takes — twelve at
-	// §10c's 80ms is a hair under a second, which is long enough to read as
+	// The 80ms tick is a hair under a second, which is long enough to read as
 	// arriving and short enough that the label is settled before the first
 	// number beside it has moved.
 	animBirthSteps = 12
@@ -106,7 +106,7 @@ func animRung(rung int) lipgloss.Style {
 // them the same colour, which is what mono does (bright and spin are both
 // mono-fg). Collapsing before the runs are merged is what makes the swept
 // label byte-for-byte the unswept one there rather than three runs of one
-// grey: the sweep is declined by the palette, exactly the way §10f declines
+// grey: the sweep is declined by the palette, exactly the way mono declines
 // every other colour it cannot carry, and no branch has to remember to.
 func animCanon(rung int) int {
 	if rung == animCrest && Palette.Bright == Palette.Spin {
@@ -177,7 +177,7 @@ func (a Anim) View() string {
 // The age is measured in tick periods because that is what the entrance is
 // counted in, and it is read off the caller's own clock — the turn's elapsed,
 // which the status line already prints — rather than from a timer of this
-// package's own. §10c allows the session one clock; this borrows a number it
+// package's own. The session is allowed one clock; this borrows a number it
 // is already keeping instead of asking for a second.
 func AnimArriving(age time.Duration) int {
 	left := animBirthSteps - int(age/SpinnerInterval)

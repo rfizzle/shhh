@@ -206,7 +206,7 @@ func monoFixtures() []monoSurface {
 
 	// The palette's row states, held to one command name so that only the
 	// state itself is left to tell them apart (S-112).
-	// The filter row's three answers (§4a, S-123): a query with matches, a
+	// The filter row's three answers (S-123): a query with matches, a
 	// query with none, and a list with no filter open at all. Bold is what
 	// tells a matched run from the rest, and bold is what mono keeps.
 	filterCard := func(mut func(*Select)) string {

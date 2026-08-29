@@ -6,10 +6,10 @@ package caps
 // Query asks the terminal whether it can raise a desktop notification; this
 // is shhh raising one. It lives here because the two are one protocol read in
 // two directions — the reply that says which dialect this terminal speaks is
-// the only thing that decides which dialect goes out — and because §10k's
-// rule is that terminal sequences stop at this package. A notification
-// composed anywhere else would be the second place in the tree that speaks
-// the wire, which is the thing that rule exists to prevent.
+// the only thing that decides which dialect goes out — and because the
+// probe's rule is that terminal sequences stop at this package. A
+// notification composed anywhere else would be the second place in the tree
+// that speaks the wire, which is the thing that rule exists to prevent.
 //
 // There is no native backend. Crush picks between the escape sequence and the
 // operating system's own notification daemon; shhh cannot, because the
@@ -58,7 +58,7 @@ const (
 //   - OSC 99 where the terminal said it can carry a title (Notifications):
 //     the extensible protocol, sent as the three writes it wants.
 //   - OSC 777 otherwise — the urxvt extension, which has no query and no
-//     reply, so it is either understood or swallowed. That is why §10k calls
+//     reply, so it is either understood or swallowed. That is why the probe calls
 //     it the blind fallback: silence from the OSC 99 query is not "this
 //     terminal cannot notify", it is "this terminal did not say", and the
 //     answer to a terminal that did not say is to try the older thing quietly

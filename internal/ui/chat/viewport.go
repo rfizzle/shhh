@@ -5,14 +5,15 @@ package chat
 //
 // This is the pane the transcript is read through: a scroll offset, a size,
 // and the lines the offset is into. It replaces the bubbles viewport shhh
-// used to hold, and the reason is the one §10m states — that viewport takes
-// its content as a string, splits it into every line of the session, and
-// measures the width of all of them, so a frame cost as much as the history
-// was long. The lines arrive here already split and already measured by
-// lines.go, and the only ones this file touches are the ones on the screen.
+// used to hold, and the reason is the transcript window's — that viewport
+// takes its content as a string, splits it into every line of the session,
+// and measures the width of all of them, so a frame cost as much as the
+// history was long. The lines arrive here already split and already measured
+// by lines.go, and the only ones this file touches are the ones on the
+// screen.
 //
 // The scroll position is an absolute line index rather than the item-and-line
-// pair Crush's list keeps, and that is deliberate: the selection (§7a, S-145)
+// pair Crush's list keeps, and that is deliberate: the selection (S-145)
 // is a pair of coordinates in rendered transcript space, the notice rail
 // counts the lines below the pane, and the scroll gutter is a
 // proportion of the whole. All three ask the same question — which line of
@@ -20,8 +21,8 @@ package chat
 // them convert.
 //
 // What is *not* kept from the bubbles viewport is its keymap. It bound j, k,
-// u, d, f, b and the spacebar, which is the bug §7a opens with: the pager
-// fired from inside a sentence. Nothing here reads a key at all. The
+// u, d, f, b and the spacebar, which is the bug reading mode opens with: the
+// pager fired from inside a sentence. Nothing here reads a key at all. The
 // transcript is moved by scrollLines and scrollPage (navigate.go), which the
 // wheel, pgup/pgdn and shift+arrows reach — and by nothing else.
 
@@ -146,9 +147,9 @@ func (v *viewport) PageDown() { v.ScrollDown(v.height) }
 //
 // A line wider than the pane is cut rather than wrapped. Nothing in the
 // transcript should be: every renderer wraps to the pane width it was given
-// (§10g reserves the gutter's column so the width never changes underneath
-// one). The cut is what keeps a renderer that got it wrong from breaking the
-// frame's shape.
+// (the scroll gutter reserves its column so the width never changes
+// underneath one). The cut is what keeps a renderer that got it wrong from
+// breaking the frame's shape.
 func (v viewport) visibleLines() []string {
 	if v.width <= 0 || v.height <= 0 || len(v.lines) == 0 {
 		return nil

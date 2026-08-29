@@ -36,8 +36,9 @@ import (
 
 // The keys a stream-drop row offers are keys.Row.Continue and keys.Row.Retry.
 // They live in focus mode on the row, like every other recovery key (S-106,
-// §17a), so the input keeps both letters for typing — which is the whole
-// reason §17a's `[enter] continue from here` becomes `[c]` here: enter is how
+// a failure row), so the input keeps both letters for typing — which is the
+// whole reason a failure row's `[enter] continue from here` becomes `[c]`
+// here: enter is how
 // you send the message you just typed, and a row cannot have it while there
 // is an input under it.
 //
@@ -172,7 +173,7 @@ func (m Model) endBrokenTurn() (tea.Model, tea.Cmd) {
 	return m, m.autosaveCmd()
 }
 
-// dropRow renders a stream-drop entry on the §6a grid, under the `stream`
+// dropRow renders a stream-drop entry on the column grid, under the `stream`
 // verb it shares with nothing else.
 func (m Model) dropRow(e entry) components.RecoveryRow {
 	res := e.resume

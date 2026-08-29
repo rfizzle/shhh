@@ -162,7 +162,7 @@ const notYetLiveWords = "not live yet"
 // and handover — the one key that is live — is offered underneath with what
 // it does and what the letters do until it is pressed. A key that is not yet
 // live is a different thing from
-// one that cannot be pressed at all (§18a's ⊘), so the two never render
+// one that cannot be pressed at all (the palette's ⊘), so the two never render
 // alike: this one is waiting for the keyboard, that one is refused.
 func notYetLiveRows(keys, handover string, width int) []string {
 	inner := max(width-cardFrameWidth, 1)
@@ -182,8 +182,8 @@ func notYetLiveRows(keys, handover string, width int) []string {
 }
 
 // handoverRow is the one live key on a not-yet-live surface. Its wording is
-// the card's rather than the caller's, because §7b fixes it: the key, what it
-// does, and where the letters go until it is pressed.
+// the card's rather than the caller's, because the mid-sentence rule fixes
+// it: the key, what it does, and where the letters go until it is pressed.
 func handoverRow(key string, inner int) string {
 	head := sty.Info.Render("["+key+"]") + sty.Body.Render(" answer it")
 	tail := sty.Dim.Render(" — until then these letters go into your draft")

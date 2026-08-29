@@ -71,7 +71,7 @@ func TestPicture_IsExactlyAsWideAsTheCard(t *testing.T) {
 // Invariant 1, on the one surface in shhh whose content is colour. A
 // photograph keeps its shape when its hue goes, so mono draws the picture
 // rather than declining it — but it draws it with no colour at all, which is
-// what §10f asks of every source of colour the palette does not own.
+// what mono asks of every source of colour the palette does not own.
 func TestPicture_MonoAsksForNoColourAtAll(t *testing.T) {
 	colourPicture(t)
 	was := Mono()

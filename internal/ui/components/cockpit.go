@@ -122,8 +122,8 @@ type RailSegment struct {
 }
 
 // RailSegments returns the cockpit's segments in display order with their
-// drop ranks, for hosts that embed the §8 segments into frame rails (S-082)
-// instead of rendering the free-floating bar.
+// drop ranks, for hosts that embed the cockpit segments into frame rails
+// (S-082) instead of rendering the free-floating bar.
 func (c Cockpit) RailSegments() []RailSegment {
 	segs := []RailSegment{{Text: c.modeSegment(), Drop: RailKeep}}
 	if c.Round != "" {
@@ -149,8 +149,8 @@ func (c Cockpit) RailSegments() []RailSegment {
 		segs = append(segs, RailSegment{Text: c.agentsSegment(), Drop: drop})
 	}
 	// The level and the model are separate segments so the rail can drop the
-	// model and keep the level: the model is the detail rank §8b names, and
-	// the level is the thing the session just changed.
+	// model and keep the level: the model is the detail rank the field-drop
+	// order names, and the level is the thing the session just changed.
 	if c.Reasoning != "" {
 		segs = append(segs, RailSegment{Text: sty.Body.Render(c.Reasoning), Drop: RailTokens})
 	}

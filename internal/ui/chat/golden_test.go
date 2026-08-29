@@ -112,7 +112,7 @@ func goldenModel(t *testing.T, width int) Model {
 	return m
 }
 
-// TestGolden_StepOutline captures the transcript's step grammar (§6, S-090,
+// TestGolden_StepOutline captures the transcript's step grammar (S-090,
 // S-091) at each breakpoint: the numbered headers with their state glyph and
 // stats, the folded read-only group row, and the step that stays open because
 // it contains a failure.
@@ -187,7 +187,7 @@ func TestGolden_PlanChecklist(t *testing.T) {
 	})
 }
 
-// TestGolden_PromptFrame captures the command-center surface (§12, S-082) in
+// TestGolden_PromptFrame captures the command-center surface (S-082) in
 // each of its four layout modes. frameWidths adds a terminal too narrow for
 // the frame at all, which the four breakpoints do not reach: below
 // minFrameWidth content columns the frame degrades to the bare input, and
@@ -241,10 +241,10 @@ func TestGolden_StagedRail(t *testing.T) {
 }
 
 // TestGolden_TurnStatus captures the frame's activity slot while a turn runs
-// (§8d, §12a, S-118): the phases in place on the top rail, and the summary
-// the line resolves into when the turn ends. The slot is whatever the
-// identity leaves of the rail, so the narrow captures are where the §8d drop
-// order shows.
+// (S-118): the phases in place on the top rail, and the summary the line
+// resolves into when the turn ends. The slot is whatever the identity leaves
+// of the rail, so the narrow captures are where the turn-status drop order
+// shows.
 func TestGolden_TurnStatus(t *testing.T) {
 	captureGolden(t, "turn-status", "running turn status", goldenWidths, func(width int) []golden.Panel {
 		frame := func(mut func(*Model)) string {
@@ -532,7 +532,7 @@ func TestGolden_ScrollGutter(t *testing.T) {
 	})
 }
 
-// TestGolden_SyntaxRegister captures the diff body's syntax register (§3b,
+// TestGolden_SyntaxRegister captures the diff body's syntax register (
 // P2-1): the palette read as a syntax register, where the monokai greens and
 // pinks of a foreign theme used to sit next to an add/del gutter drawn from
 // the product's own tokens.
@@ -572,7 +572,7 @@ func TestGolden_SyntaxRegister(t *testing.T) {
 	})
 }
 
-// TestGolden_ReadingMode captures the surface the keyboard moves to (§7a,
+// TestGolden_ReadingMode captures the surface the keyboard moves to (
 // S-122) at the two widths where the artboard's rules bite: 130, where the
 // labelled rail, the lit row and the two-line hint bar all have room, and 80,
 // where the position field narrows. It is the pair that matters — the same

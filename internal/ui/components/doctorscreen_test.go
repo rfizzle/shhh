@@ -2,7 +2,7 @@ package components
 
 // The doctor surface (S-130,
 // docs/interface/surfaces.md#the-supporting-screens). The assertions here are
-// about the three rules the screen exists to keep: a check is a §6a row and
+// about the three rules the screen exists to keep: a check is a grid row and
 // nothing else, a check that did not pass states its consequence in the words
 // the reader will meet it in, and the fix is offered on the row that failed
 // rather than in a footer.
@@ -62,7 +62,7 @@ func doctorIndent(line string) int {
 }
 
 // The header names the command, how many checks it is over, how long the run
-// has taken and the two keys every screen in §19 offers.
+// has taken and the two keys every supporting screen offers.
 func TestDoctorScreen_HeaderStatesTheRunAndTheKeys(t *testing.T) {
 	head := doctorLines(doctorScreen(), 110)[0]
 	for _, want := range []string{"shhh doctor", "6 checks", "0.4s", "[?] keys", "[q] quit"} {
@@ -121,7 +121,7 @@ func TestDoctorScreen_EveryStateStatesItselfTwice(t *testing.T) {
 	}
 }
 
-// A check is a §6a row: the duration ends it, in the same 6-column field
+// A check is a grid row: the duration ends it, in the same 6-column field
 // every activity row uses.
 func TestDoctorScreen_TheDurationEndsTheRow(t *testing.T) {
 	d := doctorScreen()
@@ -131,8 +131,8 @@ func TestDoctorScreen_TheDurationEndsTheRow(t *testing.T) {
 	}
 }
 
-// The verb field is §6c's own eight columns, so every target starts in the
-// same place down the screen.
+// The verb field is the closed vocabulary's own eight columns, so every
+// target starts in the same place down the screen.
 func TestDoctorScreen_TargetsStartInOneColumn(t *testing.T) {
 	d := doctorScreen()
 	want := -1
@@ -153,8 +153,8 @@ func TestDoctorScreen_TargetsStartInOneColumn(t *testing.T) {
 }
 
 // The mutation-rail column stays blank on every row, failures included: a
-// check reports on the machine, it does not change it, and §14's rail means
-// the row did (invariant 2).
+// check reports on the machine, it does not change it, and the mutation rail
+// means the row did (invariant 2).
 func TestDoctorScreen_NoRowCarriesTheMutationRail(t *testing.T) {
 	for _, line := range doctorLines(doctorScreen(), 110) {
 		if strings.Contains(line, "▎") {
@@ -164,7 +164,7 @@ func TestDoctorScreen_NoRowCarriesTheMutationRail(t *testing.T) {
 }
 
 // A check that did not pass states what it will cost, on its own line under
-// the row, in §6a's detail column.
+// the row, in the grid's detail column.
 func TestDoctorScreen_AFailureStatesItsConsequence(t *testing.T) {
 	d := doctorScreen()
 	line := doctorRowFor(d, 110, "⚠ UNCONTAINED, and an approved command runs as you")
@@ -465,8 +465,8 @@ func TestDoctorScreen_TheSpinnerIsOneTickSource(t *testing.T) {
 	}
 }
 
-// Nothing here draws a frame: §19's screens are takeover surfaces, full
-// width, and a box around one would be a card the size of the terminal.
+// Nothing here draws a frame: the supporting screens are takeover surfaces,
+// full width, and a box around one would be a card the size of the terminal.
 func TestDoctorScreen_DrawsNoFrame(t *testing.T) {
 	for _, line := range doctorLines(doctorScreen(), 110) {
 		if strings.ContainsAny(line, "╭╮╰╯│") {

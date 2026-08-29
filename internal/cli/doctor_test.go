@@ -19,7 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
-// Every check's name has to fit §6c's eight-column verb field with a gap
+// Every check's name has to fit the eight-column verb field with a gap
 // after it, or the target beside it starts touching the name. This is the
 // guard on the vocabulary rather than on any one row.
 func TestDoctorProbes_NamesFitTheVerbField(t *testing.T) {
@@ -556,7 +556,7 @@ func TestRunDoctorChecks_EveryCheckAnswers(t *testing.T) {
 		if check.State == components.DoctorQueued || check.State == components.DoctorRunning {
 			t.Fatalf("check %q never resolved: %+v", check.Name, check)
 		}
-		// §17a: a check that went wrong names the fix. A `⊘` is not a
+		// A check that went wrong names the fix. A `⊘` is not a
 		// check that went wrong — it is one with nothing to look at — so
 		// only the two that ask something of the reader are held to it.
 		switch check.State {

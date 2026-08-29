@@ -1,7 +1,7 @@
 package chat
 
 // The approved plan as a live checklist (S-104,
-// docs/interface/surfaces.md#the-step, §15a).
+// docs/interface/surfaces.md#the-step).
 //
 // Plan mode is the one place a step list is authoritative. Everywhere else
 // the outline infers a step from the prose that precedes a batch of tool
@@ -31,20 +31,20 @@ import (
 // as such rather than renumbered into the plan.
 const offPlanStep = -1
 
-// planMatchFloor is how much of a declared step's title an announcement has to
-// restate before it counts as carrying that step out. Half is deliberately
+// planMatchFloor is how much of a declared step's title an announcement has
+// to restate before it counts as carrying that step out. Half is deliberately
 // forgiving — a model announcing step 2 rarely repeats its title verbatim —
 // and the floor is measured against the *step's* words, not the
 // announcement's, so a long sentence that contains the step still matches
 // while a short one that shares a single word with it does not.
 const planMatchFloor = 0.5
 
-// planRun is an approved plan for as long as it is being carried out. It holds
-// no rendering state: the checklist's glyphs and durations are read off the
-// transcript every frame, so the rail and the outline cannot disagree about a
-// step. What it does hold is the assignment — which announcement carried out
-// which step — because that is a decision, made once, in the order the
-// transcript was written.
+// planRun is an approved plan for as long as it is being carried out. It
+// holds no rendering state: the checklist's glyphs and durations are read off
+// the transcript every frame, so the rail and the outline cannot disagree
+// about a step. What it does hold is the assignment — which announcement
+// carried out which step — because that is a decision, made once, in the
+// order the transcript was written.
 type planRun struct {
 	doc plan.Plan
 	// start is the transcript index the execution turn began at, so the
@@ -145,9 +145,9 @@ func (r *planRun) outOfOrder() (ran, before int, ok bool) {
 	return 0, 0, false
 }
 
-// skipped are the steps still unclaimed with a later step already carried out.
-// A step nobody has reached yet is queued, not skipped — the difference is
-// whether the run has moved past it.
+// skipped are the steps still unclaimed with a later step already carried
+// out. A step nobody has reached yet is queued, not skipped — the difference
+// is whether the run has moved past it.
 func (r *planRun) skipped() []int {
 	last := -1
 	for i := range r.doc.Steps {
@@ -199,8 +199,8 @@ func (r *planRun) driftLabel() string {
 
 // planTitleScore is the share of a declared step's significant words that an
 // announcement restates. It is word overlap and nothing cleverer: the two
-// strings being compared are a step title and a sentence announcing that step,
-// so the words they share are the whole of the signal.
+// strings being compared are a step title and a sentence announcing that
+// step, so the words they share are the whole of the signal.
 func planTitleScore(announced, declared string) float64 {
 	want := planWords(declared)
 	if len(want) == 0 {
@@ -220,8 +220,8 @@ func planTitleScore(announced, declared string) float64 {
 }
 
 // planWords reduces a title to the words worth comparing: lowercase, letters
-// and digits only, each counted once. A word under three characters carries no
-// signal at this length.
+// and digits only, each counted once. A word under three characters carries
+// no signal at this length.
 func planWords(s string) []string {
 	var out []string
 	seen := map[string]bool{}
@@ -241,8 +241,8 @@ func planWords(s string) []string {
 // planFiller is the padding a model wraps an announcement in — "now let me
 // update the loop" against a step titled "Update the loop". Only a word that
 // is padding in *both* directions belongs here: a word that could be the
-// substance of a step title (add, run, fix, read) never does, because dropping
-// it would make two different steps look alike.
+// substance of a step title (add, run, fix, read) never does, because
+// dropping it would make two different steps look alike.
 var planFiller = map[string]bool{
 	"the": true, "and": true, "for": true, "with": true, "into": true,
 	"from": true, "that": true, "this": true, "then": true, "next": true,

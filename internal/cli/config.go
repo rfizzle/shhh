@@ -76,7 +76,7 @@ func newConfigSetCmd() *cobra.Command {
 // Two copies of the config are held. base is what was loaded and is what a
 // row is compared against to say where its value came from; cfg is what the
 // staged edits have made of it. Nothing is written until [w] — which is the
-// §19a rule the old wizard broke by saving on every keystroke.
+// rule the old wizard broke by saving on every keystroke.
 type configModel struct {
 	base  config.Config
 	cfg   config.Config
@@ -187,7 +187,7 @@ type configSetting struct {
 }
 
 // configRows renders every setting against the staged config, sourcing each
-// one from the loaded file. §19a: every row states where its value came from,
+// one from the loaded file: every row states where its value came from,
 // because "why is this on" is the only question a config screen is ever
 // asked.
 func configRows(cfg, base config.Config) []components.ConfigRow {
@@ -262,7 +262,7 @@ func modeShow(raw string) (string, components.FieldTone, string) {
 	return "⏸ " + name, components.ToneOpen, mode.Describe()
 }
 
-// configSettings is the table §19a's screen is drawn from, in the order and
+// configSettings is the table the screen is drawn from, in the order and
 // the three rails the artboard gives it.
 func configSettings() []configSetting {
 	str := func(f func(config.Config) string) func(config.Config) string { return f }

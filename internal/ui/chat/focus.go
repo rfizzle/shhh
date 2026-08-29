@@ -377,7 +377,7 @@ func gutterPrefix(block string, selected bool, width int) string {
 }
 
 // renderFocusHint replaces the input frame while reading mode holds the
-// keyboard (S-115, S-122, §7a). It is the other half of the reading rail: the
+// keyboard (S-115, S-122). It is the other half of the reading rail: the
 // rail says which pane has the keyboard, this says what the keyboard does
 // there. Its two lines are assembled in readinghint.go.
 func (m Model) renderFocusHint() string {

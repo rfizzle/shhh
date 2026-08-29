@@ -39,7 +39,7 @@ func typeInto(c *ConfigScreen, text string) {
 	}
 }
 
-// §19a: the picker opens beneath the row being changed, indented one level,
+// The picker opens beneath the row being changed, indented one level,
 // so the setting stays visible above its own options. A modal over the screen
 // would hide the thing the reader is deciding about.
 func TestConfigScreen_PickerOpensUnderTheRow(t *testing.T) {
@@ -69,7 +69,7 @@ func TestConfigScreen_PickerOpensUnderTheRow(t *testing.T) {
 }
 
 // esc on an open picker keeps the current value and leaves the screen up. It
-// is the one key §19a guarantees changes nothing.
+// is the one key the screen guarantees changes nothing.
 func TestConfigScreen_EscKeepsTheCurrentValue(t *testing.T) {
 	c := configFixture()
 	c.Update(key("enter"))
@@ -118,7 +118,7 @@ func TestConfigScreen_FieldEditsResolveWhatWasTyped(t *testing.T) {
 }
 
 // A secret is never echoed — not while it is being typed and not on the row
-// it came from (§19a: the last four characters and nothing else).
+// it came from (the last four characters and nothing else).
 func TestConfigScreen_SecretIsNeverEchoed(t *testing.T) {
 	c := configFixture()
 	c.Focus = 2
@@ -195,7 +195,7 @@ func TestConfigScreen_WriteConfirms(t *testing.T) {
 	}
 }
 
-// esc and q both leave without writing. §19a: esc discards the lot, and on
+// esc and q both leave without writing: esc discards the lot, and on
 // this screen "changes nothing" is literal because nothing has reached the
 // file yet.
 func TestConfigScreen_LeavingWritesNothing(t *testing.T) {
@@ -210,9 +210,9 @@ func TestConfigScreen_LeavingWritesNothing(t *testing.T) {
 	}
 }
 
-// The settings list is the §4a card, so it filters like one: / opens the row,
-// the row carries both counts, and the letters that are keys elsewhere are
-// text while it is open.
+// The settings list is the selector card, so it filters like one: / opens the
+// row, the row carries both counts, and the letters that are keys elsewhere
+// are text while it is open.
 func TestConfigScreen_SettingsFilter(t *testing.T) {
 	c := configFixture()
 	c.Update(key("/"))

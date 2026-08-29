@@ -285,7 +285,7 @@ func NewRootCmd() *cobra.Command {
 
 			if result.Err != nil {
 				// Classified, never raw (S-106): the one-shot renders the
-				// same §17a row the session does, with the way out stated as
+				// same failure row the session does, with the way out stated as
 				// a command rather than as a key nothing is listening for.
 				return reportFailure(result.Err, resolved.Model)
 			}

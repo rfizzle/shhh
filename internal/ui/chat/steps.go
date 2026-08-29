@@ -367,7 +367,7 @@ func (h stepHeader) durationText() string {
 	return activityDuration(h.Duration)
 }
 
-// View renders the header at the given width, on the §6a grid: the title
+// View renders the header at the given width, on the column grid: the title
 // starts in the verb column and the duration is the same right-aligned
 // 6-column field the rows use, so the outline and the feed share one edge.
 func (h stepHeader) View(width int) string {

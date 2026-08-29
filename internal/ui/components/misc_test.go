@@ -58,7 +58,7 @@ func TestCockpit_DropsRightSideWhenNarrow(t *testing.T) {
 
 // The right side sheds the model before the reasoning level and only then
 // goes altogether: the level is what the session just changed, the model is
-// the detail rank §8b drops first (S-139).
+// the detail rank the field-drop order drops first (S-139).
 func TestCockpit_ShedsTheModelBeforeTheReasoningLevel(t *testing.T) {
 	c := Cockpit{Mode: "manual", ModeKind: CockpitGated, CtxPct: 42,
 		Tokens: "↑41.2k ↓9.8k", Spend: "$0.14", Reasoning: "think high", Model: "claude-sonnet-5"}

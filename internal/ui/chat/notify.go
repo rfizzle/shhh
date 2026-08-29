@@ -28,7 +28,8 @@ package chat
 // shhh never decides it is being ignored on a guess. Crush asks the
 // capability probe whether focus events are supported and trusts that answer;
 // having actually received one is the stronger fact and it costs nothing to
-// prefer, so §10k's FocusEvents stays a readout rather than a gate.
+// prefer, so the capability probe's FocusEvents stays a readout rather than a
+// gate.
 
 import (
 	"fmt"

@@ -232,7 +232,7 @@ func (m Model) edgeDir(y int) int {
 // a press that also expanded a row or answered a decision would make every
 // selection a gamble on holding still. The targets S-159 added are answered
 // on the release instead, in the cell the press landed in, which is the one
-// event a drag cannot produce (click.go, §7e).
+// event a drag cannot produce (click.go).
 func (m Model) beginSelection(x, y int) (tea.Model, tea.Cmd) {
 	pt, ok := m.transcriptPoint(x, y)
 	if !ok {

@@ -86,7 +86,8 @@ func (db *DB) ListUnrated(limit int) ([]UnratedRequest, error) {
 	return out, rows.Err()
 }
 
-// RateRequest records a thumbs-up (true) or thumbs-down (false) for a request.
+// RateRequest records a thumbs-up (true) or thumbs-down (false) for a
+// request.
 func (db *DB) RateRequest(id int64, up bool) error {
 	rating := 0
 	if up {
@@ -164,9 +165,9 @@ func (db *DB) MetricsSummary(since time.Time) ([]ProviderMetrics, error) {
 }
 
 // MetricsDayTokens is one model's token use on one calendar day (UTC, the way
-// every row is stamped). It is what the per-model sparkline of §19c is drawn
-// from: the columns were always in `requests` and nothing had ever read them
-// by day.
+// every row is stamped). It is what the metrics screen's per-model sparkline
+// is drawn from: the columns were always in `requests` and nothing had ever
+// read them by day.
 type MetricsDayTokens struct {
 	Provider  string
 	Model     string

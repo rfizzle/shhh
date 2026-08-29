@@ -149,7 +149,7 @@ func saveProviderChoice(cfg config.Config, req providerRequest) {
 }
 
 // reportFailure prints a classified provider failure the way the surface it
-// happened on should show it — the §17a row on a terminal, one line into a
+// happened on should show it — the failure row on a terminal, one line into a
 // pipe — and ends the process. It does not return the error: cobra would
 // print it again underneath, and the second rendering is the raw one this
 // whole story exists to stop showing. An error that is not a provider failure

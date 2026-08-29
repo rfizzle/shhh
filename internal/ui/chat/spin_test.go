@@ -199,8 +199,8 @@ func TestSpin_OneChainAtATime(t *testing.T) {
 	}
 }
 
-// The three places §10c names show the same frame, because they read the same
-// counter rather than each keeping their own.
+// The three places the one-tick rule names show the same frame, because they
+// read the same counter rather than each keeping their own.
 func TestSpin_OneFrameAcrossTheThreeSurfaces(t *testing.T) {
 	m := spinModel(t)
 	m = sendText(t, m, "work")

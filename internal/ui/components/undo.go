@@ -1,9 +1,9 @@
 package components
 
 // The undo confirm (S-100, docs/interface/surfaces.md#the-inline-confirm and
-// §16). Taking a turn back writes to the workspace, so it asks first — as an
-// inline confirm in the input area rather than a card, because the question
-// is one line and the answer is a keystroke.
+// the turn close). Taking a turn back writes to the workspace, so it asks
+// first — as an inline confirm in the input area rather than a card, because
+// the question is one line and the answer is a keystroke.
 //
 // The confirm is where drift is put to the user. A file that changed since
 // the turn holds something the record never saw, so the default answer leaves

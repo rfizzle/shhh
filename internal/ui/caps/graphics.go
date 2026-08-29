@@ -4,7 +4,7 @@ package caps
 // docs/interface/surfaces.md#a-staged-picture).
 //
 // Query asks the terminal whether it draws inline images; this is shhh asking
-// it to draw one. The two are here together for §10k's rule — a terminal
+// it to draw one. The two are here together for the probe's rule — a terminal
 // sequence composed anywhere else would be the second place in the tree that
 // speaks the wire — and for the same reason the notification is: the reply
 // that says which dialect this terminal speaks is the only thing that decides
@@ -93,8 +93,8 @@ func (t Terminal) Transmit(img image.Image, cols, rows, cellW, cellH int) tea.Cm
 
 // Placement is the rows of cells a transmitted picture is drawn in: the
 // terminal fills them from the image it is holding, and to everything else
-// they are ordinary one-column cells, which is what keeps the width arithmetic
-// of every surface around them true.
+// they are ordinary one-column cells, which is what keeps the width
+// arithmetic of every surface around them true.
 //
 // The id travels in the cells' foreground colour and the row and column in
 // combining diacritics on them. Only the first cell of a row needs its

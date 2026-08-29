@@ -3,9 +3,9 @@ package keys
 // The register against itself (S-153,
 // docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
-// §7c's rule is that "a rule nobody can check against a list is a rule each
-// new surface gets to rediscover". These are the checks the list makes
-// possible: that every binding is in it, that no surface answers one
+// The register's rule is that "a rule nobody can check against a list is a
+// rule each new surface gets to rediscover". These are the checks the list
+// makes possible: that every binding is in it, that no surface answers one
 // keystroke twice, and that nothing on it is half-declared.
 
 import (
@@ -32,10 +32,10 @@ func TestEveryBindingIsDeclaredWhole(t *testing.T) {
 	}
 }
 
-// TestNoSurfaceAnswersOneKeystrokeTwice is the check §7c could not make on a
-// markdown table. Two bindings on one surface claiming the same keystroke is
-// a surface where the first case in a switch silently wins — which is how
-// [a] and [A] would have drifted apart on the approval card.
+// TestNoSurfaceAnswersOneKeystrokeTwice is the check the register could not
+// make on a markdown table. Two bindings on one surface claiming the same
+// keystroke is a surface where the first case in a switch silently wins —
+// which is how [a] and [A] would have drifted apart on the approval card.
 func TestNoSurfaceAnswersOneKeystrokeTwice(t *testing.T) {
 	for _, s := range all() {
 		seen := map[string]string{}
@@ -97,7 +97,7 @@ func TestShownIsAKeyOrASpellingOfOne(t *testing.T) {
 
 // TestEveryDeclaredBindingIsOnASurface is the register's completeness check:
 // a binding declared in this package and left off every surface is a key
-// nothing lists, which is exactly the state §7c was written to end.
+// nothing lists, which is exactly the state the register was written to end.
 // covers reports whether a shown part names keys the binding answers: the
 // part whole, or every character of it read as a key of its own.
 func covers(bound []string, part string, alias map[string]string) bool {
@@ -189,7 +189,7 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 	}
 }
 
-// TestSurfacesAreNamedAndPlaced keeps the register readable as §7c's table:
+// TestSurfacesAreNamedAndPlaced keeps the register readable as a table:
 // every row says what it is, which section is normative for it, and how it
 // gets the keyboard.
 func TestSurfacesAreNamedAndPlaced(t *testing.T) {

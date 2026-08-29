@@ -178,7 +178,7 @@ func TestPick_LongCatalogScrollsWithTheFocus(t *testing.T) {
 	}
 	for i := 0; i < len(names); i++ {
 		panel := m.renderPick()
-		// The numbering column is right-aligned (§4a, S-126), so option 9's
+		// The numbering column is right-aligned (S-126), so option 9's
 		// label starts where option 10's does.
 		want := fmt.Sprintf("%2d. model-%02d", i+1, i+1)
 		if !strings.Contains(ansi.Strip(panel), "❯ "+want) {

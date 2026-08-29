@@ -4,8 +4,8 @@ package cli
 //
 // Lip Gloss v2 has no renderer inside a Style: Render always emits the colour
 // it was given, and what a terminal can show is settled twice — once when
-// shhh resolves a palette token against a profile (components.Profile,
-// §10a), and once by whatever writes the bytes out. The two have to be the
+// shhh resolves a palette token against a profile (components.Profile, the
+// palette), and once by whatever writes the bytes out. The two have to be the
 // same profile, or the palette and the screen are answering to different
 // terminals. So every program is told the profile shhh already used, and
 // every direct print goes through a writer that knows it.

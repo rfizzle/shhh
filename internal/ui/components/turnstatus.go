@@ -1,7 +1,7 @@
 package components
 
 // The running turn's status line (S-118,
-// docs/interface/surfaces.md#the-input-frame, §10c). While a turn runs, this
+// docs/interface/surfaces.md#the-input-frame). While a turn runs, this
 // is the one line on screen that changes: a spinner frame, the phase, ticking
 // elapsed, the turn's live token counts and what they have cost. It lives in
 // the frame's activity slot and it *resolves into* the turn summary
@@ -19,8 +19,8 @@ package components
 
 import "charm.land/lipgloss/v2"
 
-// TurnPhase is the closed vocabulary of §8d. There are four; anything else is
-// a phase nobody defined.
+// TurnPhase is the turn status's closed vocabulary. There are four; anything
+// else is a phase nobody defined.
 type TurnPhase int
 
 const (
@@ -54,7 +54,7 @@ func (p TurnPhase) Word() string {
 	return phaseWords[PhaseThinking]
 }
 
-// Field-drop levels (§8d, guidelines/turnstatus-drop-order). Fields leave in
+// Field-drop levels (guidelines/turnstatus-drop-order). Fields leave in
 // this order and no other; the phase and the cost are not on the ladder.
 const (
 	TurnDropNone    = iota // every field the host supplied
@@ -70,7 +70,7 @@ type TurnStatus struct {
 	// tick source. It is also the frame the label's sweep is on, so
 	// the glyph and the word beside it move on the same instant.
 	Frame int
-	// Arriving is how much of the label's entrance is still to run (§10c,
+	// Arriving is how much of the label's entrance is still to run (
 	// anim.go). Zero — the value a host that does not stage one leaves — is
 	// the settled label. The chat frame fills it from the turn's own age.
 	Arriving int
@@ -120,9 +120,9 @@ func (s TurnStatus) doneGlyph() (string, string, lipgloss.Style) {
 }
 
 // View renders the line at the widest fidelity that fits width, dropping in
-// the §8d order. A width that cannot hold even the floor clips it rather than
-// rendering nothing: a line that says only what it is doing is still the
-// answer to the question the line exists for.
+// the turn status's order. A width that cannot hold even the floor clips it
+// rather than rendering nothing: a line that says only what it is doing is
+// still the answer to the question the line exists for.
 func (s TurnStatus) View(width int) string {
 	if width <= 0 {
 		return ""

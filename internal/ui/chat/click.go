@@ -156,11 +156,10 @@ func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
 		return m.openDiffFull(full, m.state)
 	}
 	if m.state == stateFocus {
-		// Inside reading mode the cursor is the reader's place in the rows,
-		// so it goes to the row they pointed at. Outside it there is no
-		// cursor to move, and the click does not make one: taking the
-		// keyboard to open a row is the handover §7a refuses to charge for a
-		// glance.
+		// Inside reading mode the cursor is the reader's place in the rows, so it
+		// goes to the row they pointed at. Outside it there is no cursor to move,
+		// and the click does not make one: taking the keyboard to open a row is the
+		// handover reading mode refuses to charge for a glance.
 		m.focusIdx = idx
 		m.refreshFocusView()
 		return m, nil
@@ -190,7 +189,7 @@ func (m *Model) toggleRow(idx int) (claimed bool, full *components.DiffView) {
 	}
 	if _, ok := m.stepBlockAt(es, idx); ok {
 		// A step header folds or unfolds the whole group in place (S-090,
-		// §13b).
+		// step folding).
 		m.toggleStepFold(idx)
 		return true, nil
 	}

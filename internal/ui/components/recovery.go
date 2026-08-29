@@ -48,7 +48,7 @@ const (
 	RecoveryStopped
 )
 
-// recoveryVerbs are the three §6c verbs that are not tool calls. They occupy
+// recoveryVerbs are the three verbs that are not tool calls. They occupy
 // the same 8-column field, which is what makes a failure read as part of the
 // turn.
 const (
@@ -57,7 +57,7 @@ const (
 	VerbRounds = "rounds"
 )
 
-// RecoveryRow is one failure on the §6a grid, plus the bounded detail body
+// RecoveryRow is one failure on the column grid, plus the bounded detail body
 // and the one line of keys underneath it.
 type RecoveryRow struct {
 	State RecoveryState

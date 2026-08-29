@@ -18,7 +18,7 @@ package chat
 // passive renderer fed from here, like components.Cockpit.
 //
 // THIS TURN is the turn; CHANGES, AGENTS, CONTEXT and SPEND are the session
-// (§15a, S-120). The chat transcript is the turn-by-turn feed, so the rail is
+// (S-120). The chat transcript is the turn-by-turn feed, so the rail is
 // the standing overview beside it rather than a second copy of the same
 // scroll.
 
@@ -60,9 +60,10 @@ func (m Model) inspectorHidden() bool {
 	if m.attachedTo != "" || m.agentList != nil {
 		return true
 	}
-	// A decision still waiting for the keyboard is not a takeover (S-117,
-	// §7b): the draft is live, the panes above it are what the reader is
-	// looking at, and a card landing must not reflow the screen behind it.
+	// A decision still waiting for the keyboard is not a takeover (S-117, the
+	// mid-sentence rule): the draft is live, the panes above it are what the
+	// reader is looking at, and a card landing must not reflow the screen behind
+	// it.
 	if m.decisionUngated() {
 		return false
 	}
@@ -188,7 +189,7 @@ func (m Model) inspectorPlan(steps []components.InspectorPlanStep) *components.I
 	}
 }
 
-// inspectorChanges is the session's net change to the workspace (§15a,
+// inspectorChanges is the session's net change to the workspace (
 // S-120): every path this session has touched, collapsed to one row each with
 // the turns behind it, and the commands still coming back broken above them.
 //

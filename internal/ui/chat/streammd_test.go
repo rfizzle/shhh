@@ -41,10 +41,11 @@ var streamCorpus = map[string]string{
 
 // TestStreamingMarkdown_MatchesTheWholeRender is the contract. A message
 // arrives a byte at a time, and at every one of those moments the cached glue
-// must be indistinguishable from re-rendering the whole thing — not close, not
-// visually the same, the same bytes. The selection is a pair of coordinates
-// into this string (S-145) and the message is re-rendered whole the instant it
-// freezes into an entry, so a byte of drift is a jump on the last token.
+// must be indistinguishable from re-rendering the whole thing — not close,
+// not visually the same, the same bytes. The selection is a pair of
+// coordinates into this string (S-145) and the message is re-rendered whole
+// the instant it freezes into an entry, so a byte of drift is a jump on the
+// last token.
 func TestStreamingMarkdown_MatchesTheWholeRender(t *testing.T) {
 	monoRestore(t)
 	for _, mono := range []bool{false, true} {
@@ -176,10 +177,11 @@ func TestBlankLineBefore(t *testing.T) {
 	}
 }
 
-// TestStreamingRepaint_RidesTheTick is the throttle half of §10h. A chunk that
+// TestStreamingRepaint_RidesTheTick is the throttle half of the streaming
+// render. A chunk that
 // lands while the tick chain is running records that a repaint is owed and
 // leaves it to the tick; a chunk that lands with nothing ticking repaints
-// itself, because nothing else is going to (§10c: one clock, and this is it).
+// itself, because nothing else is going to (one clock, and this is it).
 func TestStreamingRepaint_RidesTheTick(t *testing.T) {
 	m := readyModel(t)
 	m.setTurnState(stateStreaming)

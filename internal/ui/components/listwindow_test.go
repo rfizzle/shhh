@@ -30,7 +30,7 @@ func checkList(n int) []SelectOption {
 }
 
 // agentRows is a fan-out wider than the card: one orchestrator, one blocked
-// child under it (the sort the host owes the list, §9a), and the rest running.
+// child under it (the sort the host owes the list), and the rest running.
 func agentRows(children int) []AgentRow {
 	rows := []AgentRow{
 		{State: AgentCurrent, Name: "orchestrator", Task: "this session", Status: "round 7 · streaming…", Spend: "$0.12"},

@@ -27,7 +27,7 @@
 //     not a method.
 //   - It does not answer for the size either. Crush keeps Columns and Rows
 //     beside the pixels; in shhh the width is the layout's — it is what
-//     every drop ladder in §8b and §6a reads — and it already has an owner
+//     every drop ladder in the field-drop order and the column grid reads — and it already has an owner
 //     in the host model. So CellSize is handed the cells it should divide
 //     by, and this value stays about the terminal rather than about the
 //     window.

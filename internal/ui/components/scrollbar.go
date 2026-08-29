@@ -14,10 +14,10 @@ package components
 // is still pinned to the live end, which is when the count says nothing at
 // all.
 //
-// Nothing here is clickable, for the reason §7a gives about every other cell
-// of this pane: a press inside the transcript anchors a selection, and a
-// gutter you were meant to grab would make every selection started near the
-// right edge a gamble.
+// Nothing here is clickable, for the reason reading mode gives about every
+// other cell of this pane: a press inside the transcript anchors a selection,
+// and a gutter you were meant to grab would make every selection started near
+// the right edge a gamble.
 
 // ScrollGutterWidth is the column the transcript pane holds back for the
 // gutter. The pane reserves it whether or not there is anything to draw in

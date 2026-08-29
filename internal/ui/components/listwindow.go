@@ -126,7 +126,7 @@ func (w *listWindow) rangeFor(g listGeometry, budget int) (lo, hi int) {
 }
 
 // bodyBudget is how many rows a card of maxLines has left for its list once
-// the frame and everything pinned has been taken off it (§4a: the query line,
+// the frame and everything pinned has been taken off it (the query line,
 // the key hints and the note field come off the budget first, and the window
 // may never buy itself a row). 0 — an unbounded card — windows nothing, which
 // is what a test or a surface that sizes itself gets.

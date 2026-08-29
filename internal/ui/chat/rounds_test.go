@@ -350,7 +350,7 @@ func TestRoundLimit_FocusModeLandsOnThePauseAndTakesTheGrant(t *testing.T) {
 	}
 }
 
-// The row is a RecoveryRow like every other §17a row, on the same grid.
+// The row is a RecoveryRow like every other failure row, on the same grid.
 func TestRoundLimit_TheRowIsOnTheGrid(t *testing.T) {
 	m, _ := pausedModel(t)
 	row := m.roundPauseRow(pauseEntry(t, m))

@@ -4,17 +4,17 @@ package components
 // docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // The approval card's answer to "this surface does not hold the keyboard" is
-// a whole key row plus a handover row (§7b, card.go): the keys dimmed with
+// a whole key row plus a handover row (card.go): the keys dimmed with
 // `not live yet` beside them, and `[ctrl+g] answer it` underneath. A
 // transcript row cannot spend three lines saying it. It is one line on the
-// §6a grid, and its keys are live only while reading mode's cursor is
+// column grid, and its keys are live only while reading mode's cursor is
 // standing on it — which is most of the time not the case, because most of
 // the time the draft below has the keyboard and `v` is a letter.
 //
 // So a row says the same two things in the space it has: the keys grey, then
 // the one key that hands the keyboard over, live, carrying the words that say
 // the others are waiting for it. A key that is not yet live is a different
-// thing from one that cannot be pressed at all (§18a's ⊘) — that one is not
+// thing from one that cannot be pressed at all (the palette's ⊘) — that one is not
 // rendered as a key at all — and the difference is said in words, so a
 // monochrome terminal reads it as well as a coloured one (invariant 1).
 //
@@ -26,8 +26,8 @@ import "strings"
 
 // handoverWords trail the key that hands a row the keyboard. They are the
 // row-sized form of the card's `not live yet`, and they are the component's
-// own rather than the caller's for the same reason handoverRow's are: §7b
-// fixes what this sentence says.
+// own rather than the caller's for the same reason handoverRow's are: the
+// mid-sentence rule fixes what this sentence says.
 const handoverWords = "to use them"
 
 // handoverWord is the whole run once the grey keys have dropped, with nothing

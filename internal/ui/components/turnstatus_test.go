@@ -39,9 +39,9 @@ func TestTurnStatus_PhaseVocabularyIsClosed(t *testing.T) {
 	}
 }
 
-// The whole ladder in one table: what each width leaves, in the order §8d
-// says fields leave — tool argument, token counts, elapsed — with the phase
-// and the cost still standing at the floor.
+// The whole ladder in one table: what each width leaves, in the order the
+// turn status says fields leave — tool argument, token counts, elapsed — with
+// the phase and the cost still standing at the floor.
 func TestTurnStatus_DropOrder(t *testing.T) {
 	s := liveStatus()
 	full := plainStatus(s, 200)

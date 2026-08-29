@@ -133,7 +133,7 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 	case text == "/status":
 		// The rail's SUMMARY block in words (S-163), for the terminals
 		// below 130 columns that have no rail to draw it in — the same answer
-		// §15c gives for PLAN. It takes a fresh reading on the way out:
+		// the rail's rules give for PLAN. It takes a fresh reading on the way out:
 		// asking for the summary is a reason to have a current one.
 		note, read := m.statusCommand()
 		next, cmd := m.systemNotice(note)

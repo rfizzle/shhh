@@ -146,8 +146,8 @@ func (m Model) updateMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 }
 
 // scrollLines moves whichever surface is showing content by delta rows. The
-// full-screen diff and review mode own the screen when they are up (§3c,
-// §16a), so the wheel has to reach them rather than the transcript behind
+// full-screen diff and review mode own the screen when they are up, so the
+// wheel has to reach them rather than the transcript behind
 // them — that is the "code viewport" half of the story.
 func (m *Model) scrollLines(delta int) {
 	if delta == 0 {
@@ -287,7 +287,7 @@ func (m Model) readingRail(width int) string {
 	}
 	if width < frameCompactWidth {
 		// Below the minimal breakpoint the word goes rather than being cut
-		// down (guidelines/layout-breakpoints, §7a): the hint bar under the
+		// down (guidelines/layout-breakpoints): the hint bar under the
 		// transcript still says where the keyboard is, and the lit row still
 		// says which row it is, so dropping the label costs nothing there.
 		return dividerStyle(width)

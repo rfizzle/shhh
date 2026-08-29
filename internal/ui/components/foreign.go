@@ -23,7 +23,7 @@ package components
 //     lipgloss puts foreign output behind the same renderer as everything
 //     else, so the colour profile, NO_COLOR and the mono swap reach it
 //     without this file knowing they exist.
-//   - Background colours are dropped rather than remapped. §10b says exactly
+//   - Background colours are dropped rather than remapped. The palette allows exactly
 //     three background tints exist, and all three collapse onto --mono-bg,
 //     which means selection. A program painting a block of a detail
 //     body would be drawing the reading cursor.

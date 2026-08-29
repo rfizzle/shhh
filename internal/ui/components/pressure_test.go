@@ -9,8 +9,8 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-// pressureFixture is the card every test here starts from: the §17b artboard,
-// in the numbers a real session would have produced.
+// pressureFixture is the card every test here starts from: the recovery-card
+// artboard, in the numbers a real session would have produced.
 func pressureFixture() *PressureCard {
 	return &PressureCard{
 		Pct: 94, Tokens: 188_000, Window: 200_000,

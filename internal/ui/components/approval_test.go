@@ -342,7 +342,7 @@ func TestApprovalCard_EveryCellOfTheRunIsAKey(t *testing.T) {
 	}
 }
 
-// The safe answer is drawn as a capital N — §2's default marker, not a
+// The safe answer is drawn as a capital N — the card's default marker, not a
 // shifted key — so the cell has to resolve to the keystroke the card answers.
 func TestApprovalCard_TheDefaultMarkerIsNotAKey(t *testing.T) {
 	c := &ApprovalCard{

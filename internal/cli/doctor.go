@@ -119,10 +119,10 @@ type doctorFinding struct {
 	State       components.DoctorState
 }
 
-// doctorProbe is one check: the name it wears in the §6a verb field, and the
-// walk that answers it. Names are seven columns or fewer so the target beside
-// them keeps its gap — the field is §6c's own eight and nothing here widens
-// it.
+// doctorProbe is one check: the name it wears in the grid's verb field, and
+// the walk that answers it. Names are seven columns or fewer so the target
+// beside them keeps its gap — the field is the vocabulary's own eight and
+// nothing here widens it.
 type doctorProbe struct {
 	name string
 	run  func(context.Context, config.Config) doctorFinding
@@ -316,10 +316,10 @@ func probeModel(ctx context.Context, cfg config.Config) doctorFinding {
 // spending a request on it, and a diagnostic that billed you for running it
 // would be a diagnostic nobody runs.
 //
-// The check is named `model` rather than `provider` because §6c's verb field
-// is eight columns and `provider` fills all eight, leaving the target beside
-// it with no gap; `model` is the verb §17a already gives a provider failure,
-// so the two rows line up.
+// The check is named `model` rather than `provider` because the verb field is
+// eight columns and `provider` fills all eight, leaving the target beside it
+// with no gap; `model` is the verb a failure row already gives a provider
+// failure, so the two rows line up.
 func doctorModelFinding(providerName, model string, survey resolve.Survey) doctorFinding {
 	f := doctorFinding{Subject: providerName}
 	if model != "" {
@@ -930,7 +930,8 @@ type doctorDoneMsg struct {
 	took    time.Duration
 }
 
-// doctorTickMsg drives the one spinner on the screen, at §10c's own interval.
+// doctorTickMsg drives the one spinner on the screen, at the shared tick
+// interval.
 type doctorTickMsg time.Time
 
 func newDoctorModel(cfg config.Config, probes []doctorProbe) doctorModel {

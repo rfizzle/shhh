@@ -240,7 +240,7 @@ func TestInspectorElapsedAndTokens(t *testing.T) {
 
 // The two blocks that can count files say their scope in words, which is what
 // stops "2 files this turn" and "session · +96 −11" reading as a
-// contradiction (§15a, S-120).
+// contradiction (S-120).
 func TestInspectorRail_BothFileCountsSayTheirScope(t *testing.T) {
 	view := stripANSI(fullRail().View(InspectorWidth, 0))
 	if !strings.Contains(view, "2 files this turn") {

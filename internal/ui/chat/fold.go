@@ -34,7 +34,7 @@ type slot struct {
 
 // groupNouns names a verb in a counted label. A verb with no entry here
 // pluralizes by suffix, which is the signal that this table has fallen behind
-// the §6c verb table rather than a wrong word in the feed.
+// the closed verb table rather than a wrong word in the feed.
 var groupNouns = map[string][2]string{
 	"read":   {"read", "reads"},
 	"search": {"search", "searches"},

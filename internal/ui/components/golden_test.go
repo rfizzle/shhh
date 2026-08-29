@@ -171,7 +171,7 @@ func TestGolden_ActivityRows(t *testing.T) {
 // TestGolden_ApprovalCard captures the decision surface's variants: the
 // command card plain and flagged, the edit card carrying its diff, and the
 // generic card.
-// TestGolden_TurnClose captures the rows a turn ends with (§16, S-098): the
+// TestGolden_TurnClose captures the rows a turn ends with (S-098): the
 // three-row close, the one-row close of a turn that changed nothing, and the
 // two ways a turn can stop early.
 func TestGolden_TurnClose(t *testing.T) {
@@ -219,10 +219,10 @@ func TestGolden_TurnClose(t *testing.T) {
 	})
 }
 
-// TestGolden_TurnStatus captures the running turn's status line (§8d, S-118):
+// TestGolden_TurnStatus captures the running turn's status line (S-118):
 // the four phases, the fields ticking, the collapse ladder as the slot
 // narrows, and the three ways it resolves. The captures are taken at the
-// §8c widths, which is where the ladder is visible — the slot is what is
+// ladder widths, which is where the ladder is visible — the slot is what is
 // left of the frame's top rail after the identity, so the narrow captures
 // are the drop order rather than a copy of the wide ones.
 func TestGolden_TurnStatus(t *testing.T) {
@@ -265,7 +265,7 @@ func TestGolden_TurnStatus(t *testing.T) {
 	})
 }
 
-// TestGolden_Anim captures the working label's motion (§10c, S-154): the
+// TestGolden_Anim captures the working label's motion (S-154): the
 // entrance frame by frame, and one whole pass of the sweep with its rest
 // either side. It is captured at one width because the label does not reflow
 // — a cell that has not arrived is a mark of the same width, and the sweep
@@ -355,7 +355,7 @@ func TestGolden_ApprovalCard(t *testing.T) {
 				c.Reversibility = "undo yes — recorded, and git has this file"
 			})},
 			// The state every card is in the moment it appears beside a live
-			// draft (§7b, S-117): the decision keys not yet live, and the one
+			// draft (S-117): the decision keys not yet live, and the one
 			// key that hands the keyboard over offered under them.
 			{Label: "state · not yet live, beside a draft that has the keyboard", View: card(func(c *ApprovalCard) {
 				c.Variant, c.Title = ApprovalEdit, "Approve edit"
@@ -429,7 +429,7 @@ func goldenCatalog() []SelectOption {
 		"nova-pro-2", "jamba-2", "yi-2-34b", "solar-pro-3",
 	}
 	// The prices ride the rows, and the two models that cannot be used here
-	// state why in the field at the end of them (§4a, S-126): a catalog you
+	// state why in the field at the end of them (S-126): a catalog you
 	// have to walk to read is a catalog you cannot compare.
 	desc := map[string]string{
 		"gpt-5.2": "current default", "claude-opus-4.6": "deepest reasoning",
@@ -455,7 +455,7 @@ func goldenCatalog() []SelectOption {
 	return opts
 }
 
-// TestGolden_Lists captures the window and the filter row over it (§4a,
+// TestGolden_Lists captures the window and the filter row over it (
 // ui_kits/cockpit/Lists.html): the window at the head of a list, mid-list
 // where both markers count, and at its tail, then the same card with a query
 // on it and the card a query matched nothing on.
@@ -515,7 +515,7 @@ func TestGolden_Lists(t *testing.T) {
 }
 
 // TestGolden_WindowedLists captures the two lists the window reached late
-// (§4a, S-124): the multi-select, where what scrolls out of the window can be
+// (S-124): the multi-select, where what scrolls out of the window can be
 // the user's own answer, and the agent manager, where the blocked child is
 // pinned above the window and never scrolls at all.
 //
@@ -630,7 +630,7 @@ func TestGolden_DiffView(t *testing.T) {
 	})
 }
 
-// TestGolden_ReviewMode captures the review surface (§16a, S-099): the two
+// TestGolden_ReviewMode captures the review surface (S-099): the two
 // panes at the widths that reach them, the stacked layout below 60 columns,
 // and the paired hunks the wide widths switch to automatically.
 func TestGolden_ReviewMode(t *testing.T) {
@@ -707,7 +707,7 @@ func TestGolden_AgentList(t *testing.T) {
 	})
 }
 
-// TestGolden_FanoutBlock captures the fan-out block (§9g, S-110) in the three
+// TestGolden_FanoutBlock captures the fan-out block (S-110) in the three
 // readings that matter: a batch mid-flight with one child waiting on an
 // answer, a batch where every child has stopped, and a batch nobody declared
 // a step count for, where every lane spins instead of drawing a ratio. The
@@ -1589,8 +1589,9 @@ func TestGolden_MetricsScreen(t *testing.T) {
 var doctorWidths = []int{60, 110, 130}
 
 // goldenDoctorChecks is the fixture run: a pass, a warning with a fix, the
-// failure §19d leads with, a check with nothing to look at, and a pass that
-// carries a duration — so a row of each shape is captured beside the others.
+// failure the doctor screen leads with, a check with nothing to look at, and
+// a pass that carries a duration — so a row of each shape is captured beside
+// the others.
 func goldenDoctorChecks() []DoctorCheck {
 	return []DoctorCheck{
 		{Name: "binary", Subject: "shhh 0.9.4", Detail: "darwin/arm64 · ~/.local/bin/shhh", Outcome: "ok"},
@@ -1631,7 +1632,7 @@ func goldenDoctorChecks() []DoctorCheck {
 }
 
 // TestGolden_DoctorScreen captures `shhh doctor` on the cockpit's language
-// (S-130): the §6a row per check, the consequence stated in the words
+// (S-130): the grid row per check, the consequence stated in the words
 // of the surface the reader will meet it on, and the fix offered on the row
 // that failed rather than in a footer.
 func TestGolden_DoctorScreen(t *testing.T) {

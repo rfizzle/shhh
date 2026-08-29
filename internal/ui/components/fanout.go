@@ -99,12 +99,12 @@ type FanoutBlock struct {
 
 // fanoutLead is the gutter a lane shares with an activity row: the pointer
 // column, the mutation rail (a child's progress is a report, never an act),
-// the state glyph, and the verb. The verb is `agent` — §6c's name for a
-// child's mirrored row in the parent transcript — because a lane is that row,
-// one per child. The child's own name goes in the target field, which is the
-// only field that grows: a name is not a word from a closed vocabulary and
-// must never be clipped to eight columns, where `researcher-1` and
-// `researcher-2` become the same string.
+// the state glyph, and the verb. The verb is `agent` — the vocabulary's name
+// for a child's mirrored row in the parent transcript — because a lane is
+// that row, one per child. The child's own name goes in the target field,
+// which is the only field that grows: a name is not a word from a closed
+// vocabulary and must never be clipped to eight columns, where `researcher-1`
+// and `researcher-2` become the same string.
 func fanoutLead(glyph string) string {
 	return strings.Repeat(" ", ptrWidth+railWidth) + glyph + " " + verbField("agent")
 }

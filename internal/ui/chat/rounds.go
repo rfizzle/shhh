@@ -6,7 +6,7 @@ package chat
 // you to send a message to keep going. Everything a reader needed was
 // missing: what the agent had managed before it stopped, whether the tests
 // still covered it, and whether carrying on meant the same turn or a new one.
-// The limit is a checkpoint now — the last of §17's three recovery verbs, and
+// The limit is a checkpoint now — the last of the three recovery verbs, and
 // the only one that is not a failure at all: nothing broke, the turn reached
 // a bound the session set for it.
 //
@@ -71,7 +71,7 @@ type roundPause struct {
 	stale bool
 	// spent marks an offer that has been taken, or one belonging to a turn
 	// the session has moved past. The row keeps its words and loses the key,
-	// like every other spent offer in §17a.
+	// like every other spent offer on a failure row.
 	spent bool
 }
 
@@ -150,7 +150,8 @@ func (m Model) roundLabel() string {
 	return fmt.Sprintf("round %d/%d", m.agent.Rounds(), m.effectiveMaxToolRounds())
 }
 
-// roundPauseRow renders the pause on the §6a grid, under the `rounds` verb it
+// roundPauseRow renders the pause on the column grid, under the `rounds` verb
+// it
 // shares with nothing else. `⚠` rather than `✗`: the turn is recoverable, and
 // the row exists to say how.
 func (m Model) roundPauseRow(e entry) components.RecoveryRow {

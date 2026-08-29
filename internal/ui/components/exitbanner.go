@@ -37,10 +37,10 @@ type ExitBanner struct {
 	// --continue brought back into it, because that is what reopening it
 	// returns.
 	Turns int
-	// Spend is what this sitting cost, formatted by the host — a price where
-	// the model is priced, a token count where it is not, empty where nothing
-	// was spent. Never a made-up $0.00, for the reason §17c gives about the
-	// resume offer.
+	// Spend is what this sitting cost, formatted by the host — a price where the
+	// model is priced, a token count where it is not, empty where nothing was
+	// spent. Never a made-up $0.00, for the reason the start screen gives about
+	// the resume offer.
 	Spend string
 	// Resume is the command that reopens the conversation. It is the only
 	// thing on this surface a reader has to be able to retype, so it is the

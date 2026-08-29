@@ -79,8 +79,8 @@ const (
 	// of what a turn changed, with staging per hunk. A takeover: full width, the
 	// rail hidden, esc returns.
 	stateReview
-	// stateUndoConfirm: the inline confirm an undo asks through (S-100,
-	// §5) — what it would restore, what has drifted since, and esc to
+	// stateUndoConfirm: the inline confirm an undo asks through (S-100, inline
+	// confirm) — what it would restore, what has drifted since, and esc to
 	// decline. It borrows the bottom panel, not the transcript.
 	stateUndoConfirm
 	// stateKeyEntry: the masked key prompt an auth failure's [k] opens
@@ -285,7 +285,7 @@ type Model struct {
 	// frame themselves rather than animating one (the inspector rail's agent
 	// lanes, S-094). It is the session's one frame counter: every surface
 	// that moves reads it, and it advances only with m.spinner, so the three
-	// places §10c names cannot report three different frames.
+	// places the one tick source names cannot report three different frames.
 	spinFrame int
 	// spinning reports whether a tick chain is in flight. It is what makes
 	// "one tick source, never three" a property rather than a habit:
@@ -293,7 +293,8 @@ type Model struct {
 	spinning bool
 	// streamDirty reports whether a chunk has landed that the transcript has
 	// not been repainted for. It rides the tick above rather than adding a
-	// clock of its own — §10c allows the session one, and §10h spends it on
+	// clock of its own — the session is allowed one, and the streaming render
+	// spends it on
 	// this as well: a repaint per chunk was re-rendering an answer that grows
 	// as it arrives, once per token (S-149).
 	streamDirty bool
@@ -301,12 +302,12 @@ type Model struct {
 	transcript []entry
 	// Incremental render cache: the rendered lines of entries
 	// [0, cached.count), always a whole number of step blocks (S-090), with
-	// the live tail rebuilt after them each frame (S-160, §10m, lines.go).
+	// the live tail rebuilt after them each frame (S-160, lines.go).
 	cached lineCache
 	// streamMD is the arriving message's own cache, keyed on nothing the
 	// caches above are: it holds a render of the part of that one message that
 	// can no longer change, so a chunk re-renders the tail rather than the
-	// answer (S-149, §10h, streammd.go).
+	// answer (S-149, streammd.go).
 	streamMD streamingMarkdown
 
 	// Input recall: inputHistory holds previously submitted inputs;
@@ -445,10 +446,11 @@ type Model struct {
 	// desktop notifications, focus events (S-156). It is asked once,
 	// when the program hands over its environment, and the replies land
 	// wherever they land. `/ui terminal` reads it, and so does the desktop
-	// notification of §10l, which is the OSC 99 answer being spent.
+	// notification the session raises when you are not there, which is the
+	// OSC 99 answer being spent.
 	caps caps.Terminal
 	// notifyOn is whether shhh may raise a desktop notification when a turn
-	// stops while the window is not the one in front (S-157, §10l,
+	// stops while the window is not the one in front (S-157,
 	// appearance.notify). It is on by default, because unlike mouse
 	// reporting it takes nothing away: the gate below means it can only fire
 	// when the terminal has said the reader cannot see the screen.
@@ -516,7 +518,7 @@ type Model struct {
 	// heldOnArrival narrows that: the decision holds the keyboard because it
 	// landed on an idle draft, not because ctrl+g gave it to it. A card in
 	// that state answers only what it was walked up to be asked and hands the
-	// keyboard back for everything else (§7b, components/approval.go).
+	// keyboard back for everything else (components/approval.go).
 	heldOnArrival bool
 	// lastKeypress is when the keyboard was last touched, whatever it was
 	// pointed at. It is the second half of "nobody is typing into it": an
@@ -1067,13 +1069,13 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateSelectionScroll(msg)
 
 	case tea.KeyPressMsg:
-		// Every key stamps the clock a decision's arrival reads (S-117, §7b,
+		// Every key stamps the clock a decision's arrival reads (S-117,
 		// interrupt.go). It is stamped here rather than on the draft's own
 		// path because the question is whether the reader is at the keyboard,
 		// not which surface they were talking to.
 		m.lastKeypress = time.Now()
 		// Mouse reporting is the one setting with a chord of its own (S-136,
-		// §7a), and the only key answered before the surfaces are: what it
+		// reading mode), and the only key answered before the surfaces are: what it
 		// costs — the terminal's own click-drag selection — is discovered at
 		// the moment of wanting to copy something, with a mouse already in
 		// hand and no appetite for a slash command. That moment arrives just
@@ -1090,17 +1092,19 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.updatePicture(msg)
 		}
 		// The handover means one thing in both states a decision can be in:
-		// give the card the whole keyboard. From ungated it is §7b's transfer
+		// give the card the whole keyboard. From ungated it is the mid-sentence
+		// rule's transfer
 		// — every letter belonged to the draft, and now none do. From a card
 		// holding the keyboard by arrival it buys the keys that card left
 		// alone on purpose ([a], [d], [A]).
 		if m.interruptShowing() && keys.Match(msg, keys.Draft.Answer) && (m.decisionUngated() || m.heldOnArrival) {
 			return m.gateDecision()
 		}
-		// A decision that arrived on top of a sentence is inert until it
-		// holds the keyboard (invariant 5, §7b): ungated, the handover above
-		// is the only key that is its own, and every letter belongs to the
-		// draft.
+		// A decision that arrived on top of a sentence is inert until it holds the
+		// keyboard
+		// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard):
+		// ungated, the handover above is the only key that is its own, and every
+		// letter belongs to the draft.
 		if !m.decisionUngated() {
 			if keys.Match(msg, keys.Draft.Clear) && m.escLeavesWaiting() {
 				// Esc leaves the decision waiting rather than denying it; [n]
@@ -1438,10 +1442,10 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// the next one starts its own bounded count (S-107).
 		m.clearRetryChain()
 		m.streaming += msg.text
-		// The repaint rides the spinner's tick rather than the chunk (S-149,
-		// §10h). A chunk that arrives while the loop is running only records
-		// that one is owed; one that arrives with nothing ticking — the last
-		// of a stream, or a state that draws no spinner — repaints itself,
+		// The repaint rides the spinner's tick rather than the chunk (S-149, the
+		// streaming render). A chunk that arrives while the loop is running only
+		// records that one is owed; one that arrives with nothing ticking — the
+		// last of a stream, or a state that draws no spinner — repaints itself,
 		// because nothing else is going to.
 		if m.spinning && msg.final == nil {
 			m.streamDirty = true
@@ -1643,7 +1647,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleAttachedFile(msg)
 
 	case spinner.TickMsg:
-		// The one tick, advancing the one frame (§10c, spin.go). The guard
+		// The one tick, advancing the one frame (spin.go). The guard
 		// that used to stand here decided whether to answer at all, and a
 		// tick it declined took the chain with it (S-119).
 		return m.spinTick(msg)
@@ -1779,8 +1783,8 @@ func (m Model) screen() string {
 	draw := func(view string, area uv.Rectangle) { drawIn(scr, view, area) }
 
 	draw(m.headerRow(), s.header)
-	// The line under the header says which pane has the keyboard (S-115,
-	// §7a): a plain divider while the input does, the transcript's own rail
+	// The line under the header says which pane has the keyboard (S-115, reading
+	// mode): a plain divider while the input does, the transcript's own rail
 	// while focus mode does.
 	draw(m.readingRail(s.rail.Dx()), s.rail)
 
@@ -2474,9 +2478,10 @@ func (m Model) renderEntry(e entry, width int) string {
 
 // renderEntryKeys is the same, told whether the row's own keys are live —
 // which they are only while reading mode's cursor is standing on this row
-// (§7c, invariant 5). Everywhere else the row is beside a live draft, `v` is
-// a letter, and the row says so: its keys go grey and the key that hands the
-// keyboard over is offered in the live treatment beside them.
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+// Everywhere else the row is beside a live draft, `v` is a letter, and the
+// row says so: its keys go grey and the key that hands the keyboard over is
+// offered in the live treatment beside them.
 func (m Model) renderEntryKeys(e entry, width int, keysLive bool) string {
 	return m.renderEntryDetail(e, width, keysLive, false)
 }
@@ -2728,7 +2733,7 @@ func (m *Model) renderHistoryRawLines() []string {
 		m.cached.write(sty.Assistant.Render("Assistant") + "\n")
 		// The one thing in the transcript that is not frozen, and the only
 		// place the stable-prefix cache is used: everything else here is
-		// either cached whole or rendered once (S-149, §10h, streammd.go).
+		// either cached whole or rendered once (S-149, streammd.go).
 		m.cached.write(m.streamMD.Render(m.streaming, w))
 	}
 	return m.cached.lines

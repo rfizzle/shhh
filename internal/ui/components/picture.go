@@ -128,10 +128,10 @@ func (p PictureView) picture(width, height int) []string {
 }
 
 // PictureInColour reports whether a picture is drawn in colour here, or as
-// the density ramp of §10e.
+// the drawing kit's density ramp.
 //
 // Both halves of the answer are already settled elsewhere and neither is this
-// package's to re-decide. Mono is the swap of §10f — and a photograph is the
+// package's to re-decide. Mono is the palette swap — and a photograph is the
 // one place there that keeps its shape when its hue goes, which is why the
 // ramp exists rather than a refusal. The profile is S-155's single answer to
 // what the terminal can carry, and below sixteen colours there is nothing to
@@ -145,7 +145,7 @@ func PictureInColour() bool { return !Mono() && Profile() >= colorprofile.ANSI }
 // cell rendered on its own carries its own escape sequence, and a hundred of
 // those across a row is several kilobytes of a surface that is a hundred
 // columns wide. Runs are what keep a captured picture a file a person can
-// read (§11's golden suite).
+// read (the golden suite).
 func pictureRow(cells []raster.Cell) string {
 	var b strings.Builder
 	for i := 0; i < len(cells); {
@@ -164,7 +164,7 @@ func pictureRow(cells []raster.Cell) string {
 }
 
 // pictureStyle is the style one cell is painted with. A picture's colours are
-// its own — the fifteen tokens of §10a are the interface's, and a photograph
+// its own — the fifteen palette tokens are the interface's, and a photograph
 // is content, like the text of a message — so they are set literally and
 // converted to the profile's rung here, which is the job Token.Color does for
 // everything the palette does own (S-155).

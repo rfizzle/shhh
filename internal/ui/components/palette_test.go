@@ -102,7 +102,7 @@ func TestPalette_ProfilesEmitTheDocumentedValue(t *testing.T) {
 // The 256 rung no longer makes this case. Under v1 it did — termenv derived a
 // 256 colour by walking the 6×6×6 cube and never the greyscale ramp, so body
 // and bright both came back as 188 — and v2's downsampler walks the ramp, so
-// every grey in §10a now derives to the index written beside it. What it
+// every grey now derives to the index written beside it. What it
 // cannot do is the sixteen: derived from their hexes, bright, body and subtle
 // all land on the same white, and accent and spin both land on del's red — a
 // warning, a thing in motion and a failure told apart by a hue that is no
@@ -204,8 +204,8 @@ func TestPalette_MonoCollapsesOntoItsThreeShades(t *testing.T) {
 	}
 }
 
-// tokenNamed reads one token out of a palette by the name §10a gives it, so
-// the mono check can walk the same table the coloured one does.
+// tokenNamed reads one token out of a palette by the name the design system
+// gives it, so the mono check can walk the same table the coloured one does.
 func tokenNamed(p ColorTokens, name string) Token {
 	switch name {
 	case "add":

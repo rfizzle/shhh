@@ -5,7 +5,7 @@ package chat
 // the frame's staged rail while it waits and on the user's own
 // transcript row once it has gone. Nothing here draws a picture: `/paste
 // show` is the one surface that does, opened by naming a chip and given the
-// whole pane while it is up (S-158, §12h, preview.go). What the bytes are for
+// whole pane while it is up (S-158, preview.go). What the bytes are for
 // is the request — they ride on the user message (internal/provider), and
 // each provider carries them the way its API takes them.
 //

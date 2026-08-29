@@ -407,9 +407,10 @@ func summaryTone(s agent.SummaryState) components.SummaryTone {
 // that have no rail to draw it in.
 //
 // Below 130 columns the rail is dropped entirely, so the block would
-// otherwise be invisible on a narrow terminal. This is the same answer §15c
-// gives for PLAN — nothing is lost, it just has to be asked for — and asking
-// for it is itself a reason to have a current one, so it forces a reading.
+// otherwise be invisible on a narrow terminal. This is the same answer the
+// rail's rules gives for PLAN — nothing is lost, it just has to be asked for
+// — and asking for it is itself a reason to have a current one, so it forces
+// a reading.
 func (m *Model) statusCommand() (string, tea.Cmd) {
 	if !m.summaryEnabled() {
 		if m.summarizer.Config().Disabled {

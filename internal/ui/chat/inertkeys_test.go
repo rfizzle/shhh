@@ -254,7 +254,7 @@ func TestInertKeys_TheSurfaceAnswersOnceItHoldsTheKeyboard(t *testing.T) {
 // register passes by construction. A takeover surface is a state, the state
 // is routed before the input sees a key, and the input is not live while one
 // is up — so its letters are live because nothing else is listening, which is
-// the first of §7c's two positions.
+// the first of the register's two positions.
 func TestInertKeys_EveryTakeoverHoldsTheKeyboardExclusively(t *testing.T) {
 	takeovers := []struct {
 		name string

@@ -181,12 +181,12 @@ func halfblock(top, bottom sample) Cell {
 }
 
 // Ramp draws the picture into cols×rows cells at one sample per cell, as
-// density rather than colour: the four steps of §10e's ramp, and a space for
-// nothing at all.
+// density rather than colour: the four steps of the drawing kit's ramp, and a
+// space for nothing at all.
 //
 // This is the rung for a terminal with no colour to give — mono, NO_COLOR,
 // `TERM=dumb` — and it is a picture rather than a refusal for a reason worth
-// stating, because §10f declines foreign colour everywhere else. What it
+// stating, because mono declines foreign colour everywhere else. What it
 // declines there is a *recolouring*: a diff body already carries its meaning
 // in `+` and `−`, so a grey ladder over the top is decoration. A picture has
 // no other channel. Take its hue away and what is left is still the picture;

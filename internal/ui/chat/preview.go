@@ -10,11 +10,11 @@ package chat
 // picture, full width of the pane, framed by the name and size the chip
 // already carried.
 //
-// It is reached by name and not by a key, for §12g's own reason — a chip sits
-// above a live draft, so the name printed on it is the handle and the
-// completion menu offers the staged ones (S-079). The name is now the handle
-// for two verbs rather than one, which is the argument for having made it the
-// field a chip gives up last.
+// It is reached by name and not by a key, for the staged rail's own reason —
+// a chip sits above a live draft, so the name printed on it is the handle and
+// the completion menu offers the staged ones (S-079). The name is now the
+// handle for two verbs rather than one, which is the argument for having made
+// it the field a chip gives up last.
 //
 // Three rungs draw the picture, best first, and which one is used is a
 // question already answered rather than one asked here: the terminal's own

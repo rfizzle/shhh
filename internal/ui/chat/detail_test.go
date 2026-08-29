@@ -14,9 +14,9 @@ import (
 
 func ctrlO() tea.KeyPressMsg { return tea.KeyPressMsg{Code: 'o', Mod: tea.ModCtrl} }
 
-// detailModel is the §13c fixture with a second step after it, so every test
-// here can check that the chord opened one step and not the transcript. Step
-// 1 is the six reads and two searches; step 2 is an edit and a broken
+// detailModel is the verbosity fixture with a second step after it, so every
+// test here can check that the chord opened one step and not the transcript.
+// Step 1 is the six reads and two searches; step 2 is an edit and a broken
 // command.
 func detailModel(t *testing.T) Model {
 	t.Helper()

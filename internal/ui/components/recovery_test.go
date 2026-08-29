@@ -170,8 +170,8 @@ func TestSecretPrompt_EscResolvesToNothing(t *testing.T) {
 	}
 }
 
-// The retry countdown (S-107). The rules it has to keep are §10c's: a
-// bar that states its number, and cells that drain rather than fill.
+// The retry countdown (S-107). The rules it has to keep are the tick rules':
+// a bar that states its number, and cells that drain rather than fill.
 func TestRetryWait_StatesItsNumberAndItsBound(t *testing.T) {
 	w := RetryWait{
 		Pct: 60, Text: "retry in 12s", Note: "attempt 2 of 3",

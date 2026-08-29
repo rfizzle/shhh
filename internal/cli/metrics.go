@@ -292,7 +292,7 @@ func metricsSpendBlock(data metricsData, names map[string]string) components.Met
 			Note: countOf(s.count, "request", "requests"), Tone: components.MeterCategory,
 		}
 		if category.unasked {
-			// §19c's retries row: a cost you did not ask for keeps its del
+			// The retries row: a cost you did not ask for keeps its del
 			// fill, and the glyph on its label is what carries that once the
 			// colour is gone (invariant 1).
 			bar.Tone, bar.NoteTone = components.MeterUnasked, components.ToneRisk
@@ -363,10 +363,10 @@ var metricsRatios = []metricsRatio{
 	{title: "how the answers were rated", one: "rating", many: "ratings", read: metricsRated},
 }
 
-// metricsRateBlock is one ratio block: a §10c meter per model with its number
-// beside it, over the count its own reading is against — the answers block is
-// over every request, the runs block only over the ones an exit code was
-// recorded for.
+// metricsRateBlock is one ratio block: a block meter per model with its
+// number beside it, over the count its own reading is against — the answers
+// block is over every request, the runs block only over the ones an exit code
+// was recorded for.
 func metricsRateBlock(ratio metricsRatio, summary []storage.ProviderMetrics,
 	names map[string]string) components.MetricsBlock {
 	block := components.MetricsBlock{Title: ratio.title}

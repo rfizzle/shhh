@@ -1,11 +1,11 @@
 package keys
 
-// §7c's table, as data (S-153).
+// The register of keyed surfaces, as data (S-153).
 //
-// §7c is an audit: every surface that offers a bare letter, which of the two
+// It is an audit: every surface that offers a bare letter, which of the two
 // positions it is in, and how it gets the keyboard. It was written as a
 // markdown table, which is the form a rule takes when nobody can check it —
-// and the whole point of §7c is that "a rule nobody can check against a list
+// and the whole point of it is that "a rule nobody can check against a list
 // is a rule each new surface gets to rediscover".
 //
 // So the list is here, beside the bindings, and the tests check the code
@@ -17,9 +17,9 @@ package keys
 // It is also what `?` renders and what /help's key section is built
 // from, so the register a reader is shown is the register the handlers use.
 
-// Position is where a surface stands relative to the keyboard. §7c allows two
-// and says there is no third; Home is the thing those two are defined
-// against, not a third position.
+// Position is where a surface stands relative to the keyboard. The register
+// allows two and says there is no third; Home is the thing those two are
+// defined against, not a third position.
 type Position int
 
 const (

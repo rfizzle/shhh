@@ -4,7 +4,7 @@ package chat
 // docs/interface/surfaces.md#the-input-frame). The input sits in a
 // rounded-corner frame whose borders carry information: the top rail shows
 // session identity and the live activity state, the vitals rail re-homes the
-// §8 cockpit segments, and the bottom rail carries contextual key hints. A
+// cockpit segments, and the bottom rail carries contextual key hints. A
 // notice rail above the frame appears only while there is something to say,
 // and a staged rail under it while an attachment is waiting to ride. Takeover
 // surfaces (approval cards, pickers, the agent list, routed child asks,
@@ -24,8 +24,9 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// Layout thresholds in content columns (COCKPIT_SPEC.md §3 applied to shhh's
-// bottom panel, docs/interface/surfaces.md#the-input-frame).
+// Layout thresholds in content columns — the pi cockpit spec's layout modes
+// applied to shhh's bottom panel
+// (docs/interface/surfaces.md#the-input-frame).
 const (
 	frameWideWidth    = 110
 	frameCompactWidth = 70
@@ -103,7 +104,7 @@ func (m Model) frameShowing() bool {
 		return false
 	}
 	if m.decisionUngated() {
-		// The card rides above the frame rather than replacing it (§7b,
+		// The card rides above the frame rather than replacing it (
 		// S-117): the draft still holds the keyboard, so it is still on
 		// screen, still accented, and still being typed into.
 		return m.frameLayout() != framePlain
@@ -207,10 +208,10 @@ func (m Model) frameActivity(width int) string {
 	if n := m.waitingCount(); n > 0 {
 		return sty.Frame.WaitingChip.Render(clipRow(fmt.Sprintf("⏸ %d waiting", n), width))
 	}
-	// Attached, the frame is scoped to the child and the child's phase
-	// is not something the supervisor reports — a subagent is running,
-	// blocked or done. Naming one of §8d's four for it would be inventing the
-	// fact, so the attached rail keeps the working indicator it had.
+	// Attached, the frame is scoped to the child and the child's phase is not
+	// something the supervisor reports — a subagent is running, blocked or done.
+	// Naming one of the turn status's four for it would be inventing the fact,
+	// so the attached rail keeps the working indicator it had.
 	if m.attachedTo != "" {
 		if m.frameWorking() {
 			return clipRow(m.spinner.View()+sty.Frame.Working.Render("WORKING"), width)
@@ -420,9 +421,10 @@ func drawRail(scr uv.Screen, area uv.Rectangle, accent lipgloss.Style, leftCorne
 	drawIn(scr, accent.Render("─"+rightCorner), at(tail))
 }
 
-// frameVitals renders the vitals rail content: the §8 cockpit segments with
-// the §12b field-drop order. The narrow layout keeps only the never-dropped
-// fields (minimal rail); attached, the vitals scope to the child.
+// frameVitals renders the vitals rail content: the cockpit segments with the
+// layout modes' field-drop order. The narrow layout keeps only the
+// never-dropped fields (minimal rail); attached, the vitals scope to the
+// child.
 func (m Model) frameVitals(layout frameLayout, width int) string {
 	var segs []components.RailSegment
 	if m.attachedTo != "" && m.subagents != nil {
@@ -491,8 +493,8 @@ func (m Model) topRailLabels(mode frameLayout, width int) (identity, right strin
 		// the top rail.
 		return identity, " " + m.frameHints() + " "
 	}
-	// The identity is the rail's left label and keeps its room; the status
-	// line takes the slot that is left and sheds fields in the §8d order to
+	// The identity is the rail's left label and keeps its room; the status line
+	// takes the slot that is left and sheds fields in the turn status's order to
 	// fit it.
 	if activity := m.frameActivity(railLabelWidth(identity, width)); activity != "" {
 		right = " " + activity + " "

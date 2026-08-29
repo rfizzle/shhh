@@ -130,7 +130,7 @@ func TestForeignText_AttributesPassThrough(t *testing.T) {
 	}
 }
 
-// §10b: exactly three background tints exist and all three collapse onto the
+// Exactly three background tints exist and all three collapse onto the
 // selection grey in mono. A program painting a block of a detail body would
 // be drawing the reading cursor, so it does not get to.
 func TestForeignText_BackgroundsAreDropped(t *testing.T) {

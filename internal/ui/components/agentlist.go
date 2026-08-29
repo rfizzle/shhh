@@ -95,7 +95,7 @@ type AgentList struct {
 // split divides the rows into the ones pinned above the window and the ones
 // it scrolls. The pinned run is the head of the list while it is the current
 // agent or a blocked child — which, given the sort the host owes this list
-// (blocked children to the top, below the orchestrator, §9a), is exactly the
+// (blocked children to the top, below the orchestrator), is exactly the
 // orchestrator and everyone waiting on an answer. It is the leading run
 // rather than every blocked row anywhere, because the component does not sort
 // its own rows: a sort that happens in here is a sort nobody can check

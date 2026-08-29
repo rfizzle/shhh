@@ -80,7 +80,7 @@ func TestFrame_NarrowMinimalRail(t *testing.T) {
 			t.Fatalf("narrow frame missing %q:\n%s", want, view)
 		}
 	}
-	// Model detail and token counts drop first (COCKPIT_SPEC.md §3); the
+	// Model detail and token counts drop first in the field-drop order; the
 	// narrow rail keeps only the never-dropped fields.
 	if strings.Contains(view, "gpt-4o") || strings.Contains(view, "↑41.2k") {
 		t.Fatalf("narrow frame must drop model detail and token counts:\n%s", view)

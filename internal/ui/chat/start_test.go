@@ -17,7 +17,7 @@ import (
 var startNow = time.Date(2026, 8, 26, 11, 0, 0, 0, time.UTC)
 
 // startFixture is a dirty Go checkout with a gate, a project context file and
-// a session to pick up — the case §17c is drawn from.
+// a session to pick up — the case the start screen is drawn from.
 func startFixture() StartInfo {
 	return StartInfo{
 		Project: project.Info{

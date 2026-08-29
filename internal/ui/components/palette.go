@@ -20,7 +20,7 @@ import (
 // terminal can report rather than once and degraded.
 //
 // A downsampler will happily derive the other two from a hex, and it gets the
-// greys right — every rung of §10a's ladder derives to the 256 index written
+// greys right — every rung of the ladder derives to the 256 index written
 // beside it. It gets the other two profiles wrong in ways that cost meaning.
 // At sixteen colours it is a nearest match, and the nearest match to accent
 // (#ffaf00) and to spin (#ff5faf) is del's red: a warning, a thing in motion
@@ -40,13 +40,13 @@ import (
 // Style holds a resolved image/color.Color and Render always emits it at full
 // fidelity (S-155). So a token stays three colours and Color picks the one
 // the profile asked for, at the moment the styles are built rather than at
-// the moment they are drawn — which is the same rule §10a always stated, now
-// with somewhere of its own to live.
+// the moment they are drawn — which is the rule the palette always stated,
+// now with somewhere of its own to live.
 type Token struct {
 	TrueColor, ANSI256, ANSI color.Color
 }
 
-// token writes one row of the §10a table: the design system's hex, the 256
+// token writes one row of the palette table: the design system's hex, the 256
 // index it was chosen for, and the theme colour a 16-colour terminal falls
 // back to.
 //
@@ -195,8 +195,8 @@ func (t Token) Color() color.Color {
 // applyXStyles functions of S-088 were (Finding 2).
 //
 // The fields are grouped the way the design doc groups them, and the group
-// comments are the argument for the assignment; §10a is the table they answer
-// to.
+// comments are the argument for the assignment; the palette is the table they
+// answer to.
 type Styles struct {
 	Border   lipgloss.Style
 	Headline lipgloss.Style
@@ -218,7 +218,7 @@ type Styles struct {
 	LitText      lipgloss.Style
 	FocusPointer lipgloss.Style
 
-	// The diff body: the kind's colour, the intraline tints of §10b,
+	// The diff body: the kind's colour, the intraline background tints,
 	// and the context lines the tints sit between.
 	Add     lipgloss.Style
 	Del     lipgloss.Style

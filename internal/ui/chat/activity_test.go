@@ -79,9 +79,9 @@ func TestActivityRow_ToolNounsAndKinds(t *testing.T) {
 	}
 }
 
-// TestActivityVerbs_ClosedVocabulary pins the §6c table: every tool this
-// session can call maps onto one of the thirteen verbs, and an unmapped name
-// falls through as itself — the signal that the table is stale.
+// TestActivityVerbs_ClosedVocabulary pins the closed verb table: every tool
+// this session can call maps onto one of the thirteen verbs, and an unmapped
+// name falls through as itself — the signal that the table is stale.
 func TestActivityVerbs_ClosedVocabulary(t *testing.T) {
 	closed := map[string]bool{"read": true, "search": true, "glob": true, "lsp": true,
 		"web": true, "edit": true, "write": true, "patch": true, "run": true,

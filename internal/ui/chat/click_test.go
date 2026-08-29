@@ -253,8 +253,9 @@ func TestClick_ApprovalDenyIsTheCapitalN(t *testing.T) {
 		t.Fatalf("nothing may run on a denial, but %s did", name)
 		return "", nil
 	})
-	// The card draws the safe answer as `N` — §2's default marker, not a
-	// shifted key — so the cell has to resolve to the keystroke `n`.
+	// The card draws the safe answer as `N` — the approval card's default
+	// marker, not a shifted key — so the cell has to resolve to the keystroke
+	// `n`.
 	x, y := cardKeyCell(t, m, "n")
 	m = clickAnswer(t, m, x, y)
 	if m.state == stateConfirmRun {

@@ -24,7 +24,7 @@ func rowFor(rows []components.ConfigRow, key string) components.ConfigRow {
 	return components.ConfigRow{}
 }
 
-// §19a: every row states where its value came from, and there are only three
+// Every row states where its value came from, and there are only three
 // answers — the built-in default stands, the file set it, or this session
 // staged something the file has not got.
 func TestConfigRows_SourceStatesWhereTheValueCameFrom(t *testing.T) {
@@ -118,7 +118,7 @@ func TestConfigRows_TheKeyIsMasked(t *testing.T) {
 }
 
 // Nothing reaches the file until [w]. The old wizard saved on every
-// keystroke; §19a asks for the opposite, and the header counts what is
+// keystroke; the screen asks for the opposite, and the header counts what is
 // standing against the file in the meantime.
 func TestConfigModel_StagesUntilWrite(t *testing.T) {
 	var cfg config.Config

@@ -21,7 +21,7 @@ func searchEntry(pattern string, d time.Duration) entry {
 }
 
 // foldModel builds a one-step turn whose calls are six reads and two searches
-// followed by an edit and a broken command — the §13c mock, in entries.
+// followed by an edit and a broken command — the verbosity mock, in entries.
 func foldModel(t *testing.T) Model {
 	t.Helper()
 	m := activityModel(t)

@@ -275,11 +275,11 @@ func TestInterrupt_TheRailFallsBackRatherThanClippingTheWord(t *testing.T) {
 	}
 }
 
-// The other half of §7b, and the one the rule was quietly charging for: most
-// cards do not land on a sentence. They land while the reader is watching a
-// turn work with an empty box, and there the handover buys nothing — there is
-// no sentence for the letter to belong to, and the reader who came to press
-// [y] was pressing it twice.
+// The other half of the mid-sentence rule, and the one it was quietly
+// charging for: most cards do not land on a sentence. They land while the
+// reader is watching a turn work with an empty box, and there the handover
+// buys nothing — there is no sentence for the letter to belong to, and the
+// reader who came to press [y] was pressing it twice.
 
 func TestArrival_ACardLandingOnAnIdleDraftHoldsTheKeyboard(t *testing.T) {
 	m := interruptedModel(t, "")

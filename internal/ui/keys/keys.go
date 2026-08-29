@@ -5,7 +5,7 @@
 // handler that answers it, and once as prose in the hint that offers it. The
 // two lived in different files and nothing made them agree — sixty-eight
 // literals across twenty files, and a `/help` that had never heard of ctrl+g,
-// which is the single most load-bearing chord in §7b.
+// which is the single most load-bearing chord in the mid-sentence rule.
 //
 // So a key is declared once here, as a binding carrying both halves: the
 // keystrokes a handler matches, the spelling a hint prints, and the words
@@ -108,7 +108,7 @@ type DraftKeys struct {
 	Agents  Binding
 	Mouse   Binding
 
-	// Answer is §7b's handover: the one key a decision that arrived on top
+	// Answer is the handover: the one key a decision that arrived on top
 	// of a sentence answers to, and the reason every other letter on the
 	// card stays a letter.
 	Answer Binding
@@ -118,7 +118,7 @@ type DraftKeys struct {
 	Quit   Binding
 }
 
-// Draft's keys, in the order §12 and /help name them.
+// Draft's keys, in the order the input frame and /help name them.
 var Draft = DraftKeys{
 	Send:      bind("enter", "send the message", "enter"),
 	Newline:   bind("shift+enter", "insert a newline", "shift+enter", "alt+enter", "ctrl+j"),
@@ -182,10 +182,10 @@ var Reading = ReadingKeys{
 	Back: bind("q", "back to the prompt", "q", "esc", "ctrl+e", "ctrl+c"),
 }
 
-// RowKeys are the offers a transcript row carries. They are the
-// register's awkward corner and §7c's subject: passive entries whose keys are
-// answered by reading mode standing on the row, which is why the input keeps
-// every one of these letters for typing.
+// RowKeys are the offers a transcript row carries. They are the register's
+// awkward corner and its own subject: passive entries whose keys are answered
+// by reading mode standing on the row, which is why the input keeps every one
+// of these letters for typing.
 type RowKeys struct {
 	Review Binding
 	Undo   Binding
@@ -198,7 +198,8 @@ type RowKeys struct {
 	// compact-then-retry on a context failure. It is [c] rather than the
 	// artboard's [enter] because enter belongs to the draft.
 	Continue Binding
-	// Key is `[e]` rather than §17a's `[k]`, because k is reading mode's own.
+	// Key is `[e]` rather than the artboard's `[k]`, because k is reading mode's
+	// own.
 	Key      Binding
 	Provider Binding
 
@@ -280,9 +281,9 @@ type SelectKeys struct {
 	Palette PaletteKeys
 }
 
-// PaletteKeys are §18a's, which differ from the rest of the family in one
-// place: it is typed into from the first keystroke, so its movement keys are
-// the arrows and the readline chords, never j/k.
+// PaletteKeys are the palette surface's, which differ from the rest of the
+// family in one place: it is typed into from the first keystroke, so its
+// movement keys are the arrows and the readline chords, never j/k.
 type PaletteKeys struct {
 	Prev  Binding
 	Next  Binding

@@ -113,7 +113,7 @@ func (c PressureCard) View(width int) string {
 	// The border carries the meter's own colour — bold del at the alert
 	// threshold — which is what puts the bar and the numbers on the title
 	// rail in one colour without the chips having to be styled through the
-	// frame (§10c: the bar and its number turn colour together).
+	// frame (the bar and its number turn colour together).
 	style := meter.Style()
 
 	rows := []string{meter.Bar()}

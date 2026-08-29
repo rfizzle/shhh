@@ -13,7 +13,7 @@ package chat
 // THIS TURN block reads, the tokens off the vitals the session already
 // records, and the resolved line off the turn's own close block — so
 // the status line and the row it leaves in the transcript state the same four
-// facts in the two orders §8d asks for and cannot disagree.
+// facts in the two orders the turn status asks for and cannot disagree.
 
 import (
 	"github.com/rfizzle/shhh/internal/agent"
@@ -53,7 +53,7 @@ func (m Model) turnStatus() (components.TurnStatus, bool) {
 	return s, true
 }
 
-// turnPhase is which of §8d's four the turn is in, the argument to name
+// turnPhase is which of the four phases the turn is in, the argument to name
 // beside `running`, and whether the turn is in any of them at all. The
 // vocabulary is closed: a state that is not one of the four picks the nearest
 // rather than becoming a fifth.

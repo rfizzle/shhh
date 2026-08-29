@@ -5,11 +5,11 @@ package components
 // it change" — so a turn ends with up to three rows answering one question
 // each: what it did, what it changed, and whether the checks still pass.
 //
-// The rows sit on the §6a grid but start at the rail column rather than the
-// pointer column: they belong to the turn, not to a step, so nothing folds
-// them and no ordinal precedes them. The changed-files row carries the
-// mutation rail, which is why the close of a turn looks like the rows
-// that produced it.
+// The rows sit on the column grid but start at the rail column rather than
+// the pointer column: they belong to the turn, not to a step, so nothing
+// folds them and no ordinal precedes them. The changed-files row carries the
+// mutation rail, which is why the close of a turn looks like the rows that
+// produced it.
 //
 // This is a passive renderer. The keys it offers are handled by the host's
 // focus mode on the row, so the input keeps every other key.
@@ -116,7 +116,7 @@ func (c TurnClose) stateGlyph() (string, string) {
 // Summary is the whole block said in one plain line, without the state word
 // the notification's title already carries and without a glyph in it: what
 // the turn cost, what it changed, and whether the checks still pass — the
-// three rows of §16, in the order the screen draws them.
+// three rows a turn closes with, in the order the screen draws them.
 //
 // It exists because a notification is the one surface that cannot draw
 // (S-157). Everything it says has to be words, so the glyph that

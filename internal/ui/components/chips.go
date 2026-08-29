@@ -27,8 +27,8 @@ import (
 )
 
 // ChipKind is what a staged attachment is, as the strip marks it. The three
-// marks are §10d's additions, and they are closed for the same reason the
-// rest of that set is.
+// marks are the glyph set's additions, and they are closed for the same
+// reason the rest of that set is.
 type ChipKind int
 
 const (

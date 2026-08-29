@@ -66,7 +66,7 @@ type PlanCard struct {
 	// what shrinks, and what it drops is counted rather than lost.
 	MaxLines int
 	// NotYetLive says the card is on screen beside a draft that still holds
-	// the keyboard (§7b, S-117): its keys render as not-yet-live, and
+	// the keyboard (S-117): its keys render as not-yet-live, and
 	// Handover is the one that hands the keyboard over.
 	NotYetLive bool
 	Handover   string
@@ -75,10 +75,10 @@ type PlanCard struct {
 // View renders the card at the given width.
 func (c *PlanCard) View(width int) string {
 	inner := width - cardFrameWidth
-	// FocusDesc is §4d's rule and this card's alone: elsewhere a description
-	// is a property of the option and rides its row, but here it is the
-	// consequence of taking the option, and four consequences stacked at once
-	// is a wall rather than a choice.
+	// FocusDesc is the plan card's rule and this card's alone: elsewhere a
+	// description is a property of the option and rides its row, but here it is
+	// the consequence of taking the option, and four consequences stacked at
+	// once is a wall rather than a choice.
 	sel := Select{Options: c.Options, Focus: c.Focus, FocusDesc: true}
 	// The plan card's options are its three or four decisions and never
 	// scroll; here it is the step list that shrinks, so the options

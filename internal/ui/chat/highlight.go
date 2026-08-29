@@ -65,7 +65,7 @@ func renderMarkdown(text string, width int) string {
 // ahead of the escape, and the same call ate it — which set the opening line
 // of every paragraph two columns left of the rest of it, and told the
 // selection's soft-wrap rule that the first row belonged to a different
-// block (§15, select.go).
+// block (select.go).
 //
 // The trailing half is unchanged, and is still the whole trailing run: a
 // finished document has nothing after it, so its last line's padding is not
@@ -108,7 +108,7 @@ func renderMarkdownRaw(text string, width int) string {
 	return out
 }
 
-// The syntax register (docs/interface/surfaces.md#the-diff-view, §10a). Diff
+// The syntax register (docs/interface/surfaces.md#the-diff-view). Diff
 // bodies used to highlight with stock monokai — greens, pinks and oranges
 // from outside the product, sitting next to an add/del gutter drawn from the
 // palette, two unrelated colour systems in one card. The theme below is the
@@ -144,7 +144,7 @@ func applySyntaxTones(p components.ColorTokens) {
 		chroma.Literal: p.Accent,
 		// The names a reader scans a diff for. Bright is a step on the grey
 		// ladder rather than a hue, which is what keeps the register at two
-		// colours (§10f: the mono capture of a diff has no highlighting at
+		// colours (the mono capture of a diff has no highlighting at
 		// all, so the register never has to survive the swap — it has to
 		// survive being read in colour beside the gutter).
 		chroma.NameFunction: p.Bright,
