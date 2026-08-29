@@ -76,9 +76,13 @@ shhh config set provider.default openrouter
 shhh config set provider.api_key sk-or-...
 ```
 
-Config file location:
-- macOS: `~/Library/Application Support/shhh/config.toml`
-- Linux: `$XDG_CONFIG_HOME/shhh/config.toml` or `~/.config/shhh/config.toml`
+Config file location — the same on every platform:
+- `$XDG_CONFIG_HOME/shhh/config.toml` if that variable is set
+- otherwise `~/.config/shhh/config.toml`
+
+macOS used to read `~/Library/Application Support/shhh` instead. It doesn't
+any more; `shhh doctor` detects a machine that still has one and offers to
+move it (see [Doctor](#doctor)).
 
 ### Example config
 
@@ -220,7 +224,7 @@ The OpenAI-shaped providers (`openai`, `openai-responses`, `openrouter`, `openai
 
 A private or self-hosted gateway is OpenAI-compatible in shape but rarely in detail: one rejects a parameter the upstream forbids, another hands back an id that must not be echoed to it, a third publishes its catalog at a path of its own. Those are per-deployment facts that change without warning, and they have no business living in provider code. A **profile** puts them in your config, where fixing one is an edit instead of a release.
 
-Every provider lives in one file: `<config-dir>/providers.toml` — `~/.config/shhh/providers.toml`, or the `Application Support` equivalent on macOS — with a `[[provider]]` block each. Every block needs a `name`, and it registers exactly like a built-in: `--provider gateway`, `provider.default = "gateway"`, `SHHH_PROVIDER=gateway`.
+Every provider lives in one file: `<config-dir>/providers.toml` — `~/.config/shhh/providers.toml` on every platform — with a `[[provider]]` block each. Every block needs a `name`, and it registers exactly like a built-in: `--provider gateway`, `provider.default = "gateway"`, `SHHH_PROVIDER=gateway`.
 
 ```toml
 [[provider]]
@@ -965,12 +969,13 @@ shhh doctor
 ```
 
 One row per check, in the same grammar as a tool call in a session: glyph,
-name, what was found, the outcome, and how long it took. Ten checks — the
-binary, the config file, the provider and where its key came from, the local
-store, command containment, container sandboxes, the workspace, the tools on
-PATH, durable memory, and whether a newer shhh exists. They run one at a time
-and the screen fills in as they answer, so a run in progress shows what is
-done, what is going and what is still queued.
+name, what was found, the outcome, and how long it took. Eleven checks — the
+binary, the config file, any migration this machine still owes, the provider
+and where its key came from, the local store, command containment, container
+sandboxes, the workspace, the tools on PATH, durable memory, and whether a
+newer shhh exists. They run one at a time and the screen fills in as they
+answer, so a run in progress shows what is done, what is going and what is
+still queued.
 
 A check that did not pass says what it will cost you, in the words of the
 surface you will meet it on — `every approval will show ⚠ UNCONTAINED, and an
@@ -982,6 +987,26 @@ lists every key. `[q]` (or `[esc]`) leaves.
 Nothing here writes to your config: a fix is named, never applied, because the
 screen that changes settings is `shhh config` and it asks before it writes.
 
+### Migrations
+
+The one exception is a **migration**. When a release moves where something
+lives, shhh stops reading the old place rather than carrying a fallback
+forever — and the `migrate` row is where you find out. It names the old
+directory, says what you are missing while it sits there (`shhh is not reading
+those settings — every one of them is on its default until they move`), and
+`[f]` lists every path that would move and where it would go.
+
+Where the move is one shhh can make correctly on its own, the row also offers
+`[a]`, which asks `Make the change now?` before it touches anything and
+re-runs every check after it has. Where it is not — a file already at the
+destination, so only you can say which of the pair is the one you meant — the
+row says so, names both copies with their size and date, and leaves them
+alone.
+
+`shhh doctor --migrate` does the same thing without the surface, for a script
+or a machine being set up by something other than a person: it prints what it
+would do, does the automatic ones, and prints what changed.
+
 `shhh code doctor` runs the two containment checks on their own — the same
 rows, scoped the way that command has always been. `--table`, and any
 non-terminal stdout, prints the report as text (the same text `[c]` copies),
@@ -991,8 +1016,11 @@ so a doctor run can be piped or pasted into an issue.
 
 History, snippets, metrics, and chat logs are stored in a local SQLite database:
 
-- macOS: `~/Library/Application Support/shhh/shhh.db`
-- Linux: `$XDG_DATA_HOME/shhh/shhh.db` or `~/.local/share/shhh/shhh.db`
+- `$XDG_DATA_HOME/shhh/shhh.db` if that variable is set
+- otherwise `~/.local/share/shhh/shhh.db`
+
+The same on every platform, and separate from the config directory: settings
+are a file you edit, the store is one you never open.
 
 ## Development
 

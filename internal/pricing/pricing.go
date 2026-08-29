@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 )
@@ -175,14 +174,17 @@ func loadFromFile(path string) (*Table, error) {
 	return &Table{models: models}, nil
 }
 
+// CacheDir is where the price table is cached. It is exported so the
+// migration that moves a Mac off ~/Library can name the same directory this
+// package writes to, rather than deriving the rule a second time.
+func CacheDir() (string, error) { return cacheDir() }
+
+// cacheDir is one layout on every platform: XDG_CACHE_HOME if it is set, then
+// ~/.cache/shhh — the same rule the config and data directories follow
+// (docs/capabilities/configuration.md#one-layout-everywhere). This one holds
+// only the price table, which is re-downloaded when it is missing, so a Mac
+// that still has the old ~/Library/Caches/shhh loses nothing by ignoring it.
 func cacheDir() (string, error) {
-	if runtime.GOOS == "darwin" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", err
-		}
-		return filepath.Join(home, "Library", "Caches", "shhh"), nil
-	}
 	if xdg := os.Getenv("XDG_CACHE_HOME"); xdg != "" {
 		return filepath.Join(xdg, "shhh"), nil
 	}

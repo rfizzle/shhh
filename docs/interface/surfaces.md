@@ -238,6 +238,14 @@ Two rules they share are worth stating: none of them writes to your machine
 without a card, and doctor in particular names fixes rather than applying them
 — the screen that changes settings is the one that asks first.
 
+Doctor has one key that changes the machine, and it is the shape of the
+exception rather than a hole in the rule. A pending migration is not a repair
+and not a judgement about what you meant: the machine is shaped an older way,
+the move is mechanical, and the alternative to offering it here is a fallback
+that never ends. So the row that found it offers to make it, and puts the same
+confirm in front of it that the settings screen puts in front of a write
+(docs/capabilities/configuration.md#a-migration-is-a-doctor-check).
+
 ### The context surface
 
 The window has always been reported as a percentage on a rail and, once it is

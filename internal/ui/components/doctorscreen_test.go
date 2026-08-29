@@ -508,3 +508,83 @@ func TestDoctorScreen_ThePointerSurvivesTheHostReplacingTheChecks(t *testing.T) 
 		t.Fatalf("the pointer did not fall back to a check that still needs something: %q", row)
 	}
 }
+
+// migrationCheck is the one kind of check that can change the machine as well
+// as read it, and the only place `[a]` appears on this screen.
+func migrationCheck() DoctorCheck {
+	return DoctorCheck{
+		Name: "migrate", Subject: "1 migration pending",
+		Detail:  "~/Library/Application Support/shhh · 3 entries to move",
+		Outcome: "pending", State: DoctorWarned,
+		Consequence:  "shhh is reading none of it",
+		FixLabel:     "show what would change",
+		Fix:          []string{"~/Library/…/config.toml  →  ~/.config/shhh/config.toml"},
+		Action:       "make the change",
+		ActionPrompt: "Make the change now?",
+	}
+}
+
+// The offer is on the row, beside `[f]`, the same way every other thing you
+// can do on this screen is offered where it applies rather than in a footer.
+func TestDoctorScreen_OffersTheActionOnItsOwnRow(t *testing.T) {
+	d := &DoctorScreen{Checks: []DoctorCheck{migrationCheck()}}
+	view := doctorPlain(d, 110)
+	if !strings.Contains(view, "make the change") {
+		t.Fatalf("the row does not offer what it can do:\n%s", view)
+	}
+
+	// A check that only reports never names the key.
+	plain := &DoctorScreen{Checks: doctorChecks()}
+	if strings.Contains(doctorPlain(plain, 110), "[a]") {
+		t.Fatalf("a run with nothing to apply still offers [a]:\n%s", doctorPlain(plain, 110))
+	}
+}
+
+// `[a]` asks before it acts. This is the rule the supporting screens share —
+// none of them writes to the machine without a card — and doctor is the one
+// that had nothing to write until a migration gave it something.
+func TestDoctorScreen_ApplyAsksFirst(t *testing.T) {
+	d := &DoctorScreen{Checks: []DoctorCheck{migrationCheck()}}
+
+	if _, result := d.Update(key("a")); result != nil {
+		t.Fatalf("[a] acted without asking: %+v", result)
+	}
+	if !strings.Contains(doctorPlain(d, 110), "Make the change now?") {
+		t.Fatalf("the question was not put to the reader:\n%s", doctorPlain(d, 110))
+	}
+
+	// Declining leaves the screen exactly as it was: nothing has happened yet,
+	// which is the whole reason the question is there.
+	if _, result := d.Update(key("n")); result != nil {
+		t.Fatalf("declining produced a command: %+v", result)
+	}
+	if strings.Contains(doctorPlain(d, 110), "Make the change now?") {
+		t.Fatal("the question is still up after it was answered")
+	}
+
+	d.Update(key("a"))
+	_, result := d.Update(key("y"))
+	command, ok := result.(DoctorCommand)
+	if !ok || command.Act != DoctorApply {
+		t.Fatalf("a confirmed [a] did not ask the host to apply: %+v", result)
+	}
+	if command.At != 0 {
+		t.Fatalf("the command names check %d, not the one under the pointer", command.At)
+	}
+}
+
+// A check with an action is somewhere the pointer can stand even when it has
+// no fix behind it: the stop is "something to do here", not "something to
+// read here".
+func TestDoctorScreen_ActionMakesARowAStop(t *testing.T) {
+	only := migrationCheck()
+	only.Fix, only.FixLabel = nil, ""
+	d := &DoctorScreen{Checks: []DoctorCheck{
+		{Name: "binary", Subject: "shhh 0.9.4", Outcome: "ok"},
+		only,
+	}}
+	d.sync()
+	if d.Focus != 1 {
+		t.Fatalf("the pointer stands on %d, not on the row with something to do", d.Focus)
+	}
+}

@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -568,13 +567,17 @@ func WritePath() string {
 }
 
 // Paths returns config file paths in search order (highest priority first).
+//
+// One layout on every platform: XDG_CONFIG_HOME if it is set, then
+// ~/.config/shhh. macOS used to be read from ~/Library/Application Support
+// first, which meant the answer to "where are my settings" depended on the
+// operating system and on which of the two files happened to exist — and a
+// Mac that also had an XDG directory had two config files, only one of which
+// was ever read. See docs/capabilities/configuration.md#one-layout-everywhere.
+// A machine still holding the old directory is detected by `shhh doctor`,
+// which offers to move it (internal/migrate).
 func Paths() []string {
 	var out []string
-	if runtime.GOOS == "darwin" {
-		if home, err := os.UserHomeDir(); err == nil {
-			out = append(out, filepath.Join(home, "Library", "Application Support", "shhh", "config.toml"))
-		}
-	}
 	if xdg := os.Getenv("XDG_CONFIG_HOME"); xdg != "" {
 		out = append(out, filepath.Join(xdg, "shhh", "config.toml"))
 	}

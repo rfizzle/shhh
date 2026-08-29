@@ -14,6 +14,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/lsp"
+	"github.com/rfizzle/shhh/internal/migrate"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -642,5 +643,104 @@ func TestDoctorModel_RerunStartsOver(t *testing.T) {
 	}
 	if fresh.screen.Checks[0].State != components.DoctorRunning {
 		t.Fatalf("[r] did not start the first check: %+v", fresh.screen.Checks[0])
+	}
+}
+
+// The migration row. Nothing is broken when one is pending — shhh starts and
+// runs — so it is a warning, and the consequence line is where "running
+// without whatever is in the old place" gets said.
+func TestDoctorMigrate(t *testing.T) {
+	none := doctorMigrate(nil)
+	if none.State != components.DoctorPassed || none.Action != "" {
+		t.Fatalf("a machine with nothing to migrate is not a clean pass: %+v", none)
+	}
+
+	pending := doctorMigrate([]migrate.Pending{{
+		Name:        "the old directories",
+		Summary:     "~/Library/… · 3 entries to move",
+		Consequence: "shhh is reading none of it",
+		Steps:       []string{"a  →  b"},
+		Apply:       func() ([]string, error) { return []string{"moved a to b"}, nil },
+	}})
+	if pending.State != components.DoctorWarned || pending.Outcome != "pending" {
+		t.Fatalf("a pending migration does not read as a warning: %+v", pending)
+	}
+	if pending.Action == "" || pending.ActionPrompt == "" || pending.Apply == nil {
+		t.Fatalf("a migration shhh can make offers no way to make it: %+v", pending)
+	}
+	if !strings.Contains(strings.Join(pending.Fix, "\n"), "a  →  b") {
+		t.Fatalf("the fix does not say what would move: %+v", pending.Fix)
+	}
+}
+
+// A migration shhh will not make itself is still reported — the reader has to
+// know it is due — but it offers no key, because an offer that cannot be
+// honoured is worse than none (invariant 5).
+func TestDoctorMigrate_OffersNoKeyForAMigrationItCannotMake(t *testing.T) {
+	f := doctorMigrate([]migrate.Pending{{
+		Name:        "two files that both claim to be the config",
+		Summary:     "1 conflict to settle",
+		Consequence: "shhh is reading the new one",
+		Steps:       []string{"pick one"},
+	}})
+	if f.Action != "" || f.Apply != nil {
+		t.Fatalf("a migration shhh cannot make offered to make it: %+v", f)
+	}
+	if !strings.Contains(strings.Join(f.Fix, "\n"), "cannot make this one for you") {
+		t.Fatalf("the reader is left waiting for a key that never comes: %+v", f.Fix)
+	}
+}
+
+// Applying stops at the first failure and keeps what it already did, so the
+// notice the surface shows can say how far it got.
+func TestApplyMigrations_KeepsWhatItDidBeforeFailing(t *testing.T) {
+	lines, err := applyMigrations([]migrate.Pending{
+		{Apply: func() ([]string, error) { return []string{"one"}, nil }},
+		{Apply: func() ([]string, error) { return []string{"two"}, errors.New("no room") }},
+		{Apply: func() ([]string, error) { return []string{"three"}, nil }},
+	})
+	if err == nil {
+		t.Fatal("a migration that failed was reported as done")
+	}
+	if strings.Join(lines, ",") != "one,two" {
+		t.Fatalf("the changes made before the failure were not reported: %v", lines)
+	}
+}
+
+// The action has to survive the trip to the screen. The screen draws `[a]`
+// from these two fields, so a check that dropped them would report a pending
+// migration and offer no way to make it.
+func TestDoctorCheck_CarriesTheActionToTheScreen(t *testing.T) {
+	check := doctorCheck("migrate", doctorFinding{
+		Subject: "1 migration pending", Action: "make the change",
+		ActionPrompt: "Make the change now?",
+	}, 0)
+	if check.Action != "make the change" || check.ActionPrompt != "Make the change now?" {
+		t.Fatalf("the action did not reach the screen: %+v", check)
+	}
+}
+
+// What an applied action did is said once, at the foot, and the run behind it
+// is started again — the answer to "did that work" is the report itself.
+func TestDoctorModel_AppliedSaysWhatChangedAndRerunsTheChecks(t *testing.T) {
+	m := newDoctorModel(config.Config{}, []doctorProbe{{"binary", probeBinary}})
+	m.screen.Checks[0].State = components.DoctorPassed
+
+	next, cmd := m.applied(doctorAppliedMsg{lines: []string{"moved a to b", "moved c to d"}})
+	fresh, ok := next.(doctorModel)
+	if !ok {
+		t.Fatalf("applied returned %T", next)
+	}
+	if !strings.Contains(fresh.screen.Notice, "2 changes made") {
+		t.Fatalf("the notice does not say what changed: %q", fresh.screen.Notice)
+	}
+	if !fresh.screen.Running || cmd == nil {
+		t.Fatal("the checks were not started again after the change")
+	}
+
+	stopped, _ := m.applied(doctorAppliedMsg{lines: []string{"moved a to b"}, err: errors.New("no room")})
+	notice := stopped.(doctorModel).screen.Notice
+	if !strings.Contains(notice, "1 change made") || !strings.Contains(notice, "no room") {
+		t.Fatalf("a partial run does not say how far it got: %q", notice)
 	}
 }

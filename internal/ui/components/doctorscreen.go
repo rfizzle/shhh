@@ -97,18 +97,35 @@ type DoctorCheck struct {
 	// FixLabel names what `[f]` opens, so the offer says how much is behind it:
 	// `show the 3-line fix`.
 	FixLabel string
+	// Action is what `[a]` would do to this machine, in the host's words —
+	// `run the migration`. It is empty on every check that only reports, which
+	// is nearly all of them: a check looks, and the one kind that can also act
+	// is a migration the reader has to be asked about first.
+	Action string
+	// ActionPrompt is the question the confirm asks before `[a]` is carried
+	// out. The host writes it because the host is the only thing that knows
+	// what is about to change; a screen that composed this sentence itself
+	// would be a screen deciding how alarming a write is.
+	ActionPrompt string
 	// State picks the glyph, the outcome's colour, and whether the row is a stop
 	// for the pointer.
 	State DoctorState
 }
 
-// hasFix reports whether the check has anything behind `[f]`, which is also
-// what makes it a stop for the pointer: a row with nothing to do on it is not
-// somewhere the pointer should be able to stand (invariant 5).
+// hasFix reports whether the check has anything behind `[f]`.
 func (c DoctorCheck) hasFix() bool { return len(c.Fix) > 0 }
 
-// DoctorAct is what a key asked the host to do. Neither of them is about one
-// check: a report is the whole run, and re-running is the whole run again.
+// hasAction reports whether the check offers `[a]`.
+func (c DoctorCheck) hasAction() bool { return c.Action != "" }
+
+// actionable is what makes a check a stop for the pointer: a row with nothing
+// to do on it is not somewhere the pointer should be able to stand (invariant
+// 5). Either key counts — a fix to read, or a change to make.
+func (c DoctorCheck) actionable() bool { return c.hasFix() || c.hasAction() }
+
+// DoctorAct is what a key asked the host to do. Two of them are about the
+// whole run — a report is every check, and re-running is every check again —
+// and the third is about the one check under the pointer.
 type DoctorAct int
 
 const (
@@ -118,11 +135,20 @@ const (
 	// DoctorRerun is `[r]`: run the checks again, which is the key that closes
 	// the loop after a fix has been applied.
 	DoctorRerun
+	// DoctorApply is `[a]` on one check, already confirmed. It is the only act
+	// on this screen that changes the machine, which is why it is the only one
+	// that is asked about first and the only one that names a check.
+	DoctorApply
 )
 
 // DoctorCommand is one act the host carries out while the screen stays up.
 // The host does it, sets Notice, and hands back fresh Checks.
-type DoctorCommand struct{ Act DoctorAct }
+type DoctorCommand struct {
+	Act DoctorAct
+	// At is the check the act is about, for DoctorApply. Copying and
+	// re-running are about the whole run, and leave it at zero.
+	At int
+}
 
 // DoctorScreen is `shhh doctor`: a takeover surface, full width, no inspector
 // rail, owning the keyboard for as long as it is up.
@@ -156,6 +182,14 @@ type DoctorScreen struct {
 
 	fix  map[int]bool
 	keys bool
+	// confirm is the question standing between `[a]` and the change it makes.
+	// It borrows the foot row while it is up and the rest of the keyboard with
+	// it, the same way the config screen's write confirm does: none of the
+	// supporting screens writes to the machine without asking
+	// (docs/interface/surfaces.md#the-supporting-screens).
+	confirm *Confirm
+	// asking is the check the confirm is about.
+	asking int
 }
 
 // Update is the screen's whole keyboard. Every key here is live on arrival:
@@ -164,6 +198,9 @@ type DoctorScreen struct {
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (d *DoctorScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	d.sync()
+	if d.confirm != nil {
+		return d.updateConfirm(msg)
+	}
 	switch pressed := msg.String(); {
 	case pressed == "up", pressed == "k":
 		d.move(-1)
@@ -175,6 +212,13 @@ func (d *DoctorScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 		if d.stops() > 0 && d.Checks[d.Focus].hasFix() {
 			d.fix[d.Focus] = !d.fix[d.Focus]
 		}
+	case keys.Is(pressed, keys.Screen.Apply):
+		// The key is only live where the check under the pointer has
+		// something to apply, and even there it asks before it acts.
+		if d.stops() > 0 && d.Checks[d.Focus].hasAction() {
+			d.asking = d.Focus
+			d.confirm = &Confirm{Prompt: sty.Body.Render(d.Checks[d.Focus].ActionPrompt)}
+		}
 	case keys.Is(pressed, keys.Screen.Copy):
 		return false, DoctorCommand{Act: DoctorCopy}
 	case keys.Is(pressed, keys.Screen.Again):
@@ -185,6 +229,21 @@ func (d *DoctorScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 		d.keys = !d.keys
 	case keys.Is(pressed, keys.Screen.Quit):
 		return true, nil
+	}
+	return false, nil
+}
+
+// updateConfirm is the keyboard while the question is up. A decline puts the
+// screen back exactly as it was — nothing has happened yet, which is the whole
+// reason the question is there.
+func (d *DoctorScreen) updateConfirm(msg tea.KeyPressMsg) (bool, any) {
+	done, result := d.confirm.Update(msg)
+	if !done {
+		return false, nil
+	}
+	d.confirm = nil
+	if yes, _ := result.(bool); yes {
+		return false, DoctorCommand{Act: DoctorApply, At: d.asking}
 	}
 	return false, nil
 }
@@ -353,29 +412,36 @@ func (d *DoctorScreen) checkRows(i, width int) []string {
 	return rows
 }
 
-// fixKeyRow is the offer under a check that has a fix. The row under the
-// pointer offers it live; the others carry the same key grey, because a key
-// is inert until the surface that offers it holds the keyboard and on this
-// screen that surface is one row
+// fixKeyRow is the offer under a check that has something to do on it: `[f]`
+// to read the fix, and on a migration `[a]` to make the change. The row under
+// the pointer offers them live; the others carry the same keys grey, because
+// a key is inert until the surface that offers it holds the keyboard and on
+// this screen that surface is one row
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 // A screen with only one such check therefore never draws a grey key at all.
 func (d *DoctorScreen) fixKeyRow(i, width int) string {
 	check := d.Checks[i]
-	if !check.hasFix() {
+	if !check.actionable() {
 		return ""
 	}
-	label := check.FixLabel
-	if label == "" {
-		label = fmt.Sprintf("show the %d-line fix", len(check.Fix))
+	var offers []TurnKey
+	if check.hasFix() {
+		label := check.FixLabel
+		if label == "" {
+			label = fmt.Sprintf("show the %d-line fix", len(check.Fix))
+		}
+		if d.fix[i] {
+			label = "hide it"
+		}
+		offers = append(offers, keyOfferAs(keys.Screen.Fix, label))
 	}
-	if d.fix[i] {
-		label = "hide it"
+	if check.hasAction() {
+		offers = append(offers, keyOfferAs(keys.Screen.Apply, check.Action))
 	}
-	offer := []TurnKey{keyOfferAs(keys.Screen.Fix, label)}
 	if i != d.Focus {
-		return detailLine(inertOffers(offer), width)
+		return detailLine(inertOffers(offers), width)
 	}
-	return detailLine(keyOffers(offer), width)
+	return detailLine(keyOffers(offers), width)
 }
 
 // checkRow is the check on the grid. The mutation-rail column stays blank on
@@ -463,6 +529,9 @@ func (c DoctorCheck) outcomeField() string {
 // reverse of the other three supporting screens: on a diagnostic the thing to
 // read is what the run found, and `[c]` is the annotation.
 func (d *DoctorScreen) footRows(width int) []string {
+	if d.confirm != nil {
+		return []string{clip(d.confirm.View(width), width)}
+	}
 	if d.keys {
 		rows := make([]string, 0, len(d.keyList())+1)
 		for _, offer := range d.keyList() {
@@ -572,12 +641,27 @@ func (d *DoctorScreen) keyList() []TurnKey {
 			keyOfferAs(keys.Screen.Move, "move between the checks that need something"),
 			keyOfferAs(keys.Screen.Fix, "show the fix for the check under the pointer"))
 	}
+	if d.anyAction() {
+		list = append(list,
+			keyOfferAs(keys.Screen.Apply, "make the change the check under the pointer offers, after confirming"))
+	}
 	list = append(list,
 		keyOfferAs(keys.Screen.Copy, "copy the whole report as text"),
 		keyOfferAs(keys.Screen.Again, "run every check again"),
 		keyOfferAs(keys.Select.Cancel, "back to the shell"),
 		keyOfferAs(keys.Screen.Quit, "back to the shell"))
 	return list
+}
+
+// anyAction reports whether any check on the screen offers `[a]`. A run with
+// nothing to apply never names the key, in `[?]` or anywhere else.
+func (d *DoctorScreen) anyAction() bool {
+	for _, check := range d.Checks {
+		if check.hasAction() {
+			return true
+		}
+	}
+	return false
 }
 
 // sync keeps the pointer on a row worth standing on. It runs before every
@@ -592,7 +676,7 @@ func (d *DoctorScreen) sync() {
 		d.Focus = 0
 		return
 	}
-	if d.Focus >= 0 && d.Focus < len(d.Checks) && d.Checks[d.Focus].hasFix() {
+	if d.Focus >= 0 && d.Focus < len(d.Checks) && d.Checks[d.Focus].actionable() {
 		return
 	}
 	d.Focus = d.firstStop()
@@ -602,7 +686,7 @@ func (d *DoctorScreen) sync() {
 func (d *DoctorScreen) stops() int {
 	n := 0
 	for _, check := range d.Checks {
-		if check.hasFix() {
+		if check.actionable() {
 			n++
 		}
 	}
@@ -612,7 +696,7 @@ func (d *DoctorScreen) stops() int {
 // firstStop is the first check with something to do on it.
 func (d *DoctorScreen) firstStop() int {
 	for i, check := range d.Checks {
-		if check.hasFix() {
+		if check.actionable() {
 			return i
 		}
 	}
@@ -625,7 +709,7 @@ func (d *DoctorScreen) firstStop() int {
 func (d *DoctorScreen) move(delta int) {
 	stops := make([]int, 0, len(d.Checks))
 	for i, check := range d.Checks {
-		if check.hasFix() {
+		if check.actionable() {
 			stops = append(stops, i)
 		}
 	}

@@ -474,6 +474,7 @@ type ScreenKeys struct {
 	Delete  Binding
 	Fix     Binding
 	Again   Binding
+	Apply   Binding
 }
 
 var Screen = ScreenKeys{
@@ -494,6 +495,11 @@ var Screen = ScreenKeys{
 	Delete:  bind("x", "delete it", "x"),
 	Fix:     bind("f", "show the fix", "f"),
 	Again:   bind("r", "run the checks again", "r"),
+	// Apply is the one key on a supporting screen that changes the machine
+	// rather than reporting on it, and it is why doctor grew a confirm: none
+	// of these screens writes without asking first
+	// (docs/interface/surfaces.md#the-supporting-screens).
+	Apply: bind("a", "apply it", "a"),
 }
 
 // OneShotKeys are the action bar's: the row under a generated command,

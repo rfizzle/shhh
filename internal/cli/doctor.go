@@ -29,6 +29,7 @@ package cli
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -43,6 +44,7 @@ import (
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/memory"
+	"github.com/rfizzle/shhh/internal/migrate"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/sandbox"
@@ -63,11 +65,65 @@ const defaultDoctorWidth = 110
 const doctorGitTimeout = 3 * time.Second
 
 func newDoctorCmd() *cobra.Command {
-	return doctorCommand("doctor", "Check this machine's shhh setup",
-		"Run every setup check — the binary, the config file, the provider and its key, the local store, "+
-			"command containment, container sandboxes, the workspace, the tools on PATH, durable memory, and "+
-			"whether a newer shhh exists — and report each as a pass/fail row with the fix on the row that failed.",
+	cmd := doctorCommand("doctor", "Check this machine's shhh setup",
+		"Run every setup check — the binary, the config file, any migration this machine still owes, the "+
+			"provider and its key, the local store, command containment, container sandboxes, the workspace, "+
+			"the tools on PATH, durable memory, and whether a newer shhh exists — and report each as a "+
+			"pass/fail row with the fix on the row that failed.",
 		doctorProbes())
+	// `--migrate` is the same offer the surface makes with `[a]`, for a
+	// terminal that is not one: a script, a pipe, a machine being set up by
+	// something other than a person. It is a flag rather than a `shhh
+	// migrate` command because there is only ever one place to find out that
+	// a migration is due, and it is this one.
+	migrateFlag(cmd)
+	return cmd
+}
+
+// migrateFlag adds `--migrate` to a doctor command: carry out every pending
+// migration shhh can make itself, print what changed, and stop. Nothing else
+// runs — a run that both migrated and reported would leave the reader unable
+// to tell which half of the output described the machine before the change.
+func migrateFlag(cmd *cobra.Command) {
+	var apply bool
+	cmd.Flags().BoolVar(&apply, "migrate", false,
+		"carry out every pending migration and print what changed, instead of running the checks")
+	inner := cmd.RunE
+	cmd.RunE = func(c *cobra.Command, args []string) error {
+		if !apply {
+			return inner(c, args)
+		}
+		return runMigrations(c.OutOrStdout())
+	}
+}
+
+// runMigrations is `shhh doctor --migrate`. It says what it is about to do
+// before it does it, and names anything it will not do, so the output is a
+// record rather than a result.
+func runMigrations(out io.Writer) error {
+	pending := migrate.Plan()
+	if len(pending) == 0 {
+		fmt.Fprintln(out, "Nothing to migrate: this machine is on the current layout.")
+		return nil
+	}
+	for _, p := range pending {
+		fmt.Fprintf(out, "%s\n", p.Name)
+		for _, step := range p.Steps {
+			fmt.Fprintf(out, "  %s\n", step)
+		}
+		if !p.Auto() {
+			fmt.Fprintf(out, "  shhh cannot make this one for you.\n")
+			continue
+		}
+		lines, err := p.Apply()
+		for _, line := range lines {
+			fmt.Fprintf(out, "  %s\n", line)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // doctorCommand builds a run over some set of the checks. `shhh doctor` takes
@@ -117,6 +173,15 @@ type doctorFinding struct {
 	FixLabel    string
 	Fix         []string
 	State       components.DoctorState
+	// Action, ActionPrompt and Apply are the one thing a check can offer
+	// beyond reading the machine. Almost every check leaves them empty: a
+	// diagnostic looks and does not touch. A migration is the exception the
+	// product makes on purpose — the change is one shhh can make correctly and
+	// the reader cannot make quickly — and it is still asked about first
+	// (docs/capabilities/configuration.md#a-migration-is-a-doctor-check).
+	Action       string
+	ActionPrompt string
+	Apply        func() ([]string, error)
 }
 
 // doctorProbe is one check: the name it wears in the grid's verb field, and
@@ -135,6 +200,7 @@ func doctorProbes() []doctorProbe {
 	return []doctorProbe{
 		{"binary", probeBinary},
 		{"config", probeConfig},
+		{"migrate", probeMigrate},
 		{"model", probeModel},
 		{"store", probeStore},
 		{"sandbox", probeSandbox},
@@ -166,6 +232,7 @@ func doctorCheck(name string, f doctorFinding, took time.Duration) components.Do
 	return components.DoctorCheck{
 		Name: name, Subject: f.Subject, Detail: f.Detail, Outcome: f.Outcome,
 		Consequence: f.Consequence, Fix: f.Fix, FixLabel: f.FixLabel,
+		Action: f.Action, ActionPrompt: f.ActionPrompt,
 		State: f.State, Duration: doctorDuration(took),
 	}
 }
@@ -278,6 +345,119 @@ func configSettingsSet(cfg config.Config) int {
 		}
 	}
 	return n
+}
+
+func probeMigrate(context.Context, config.Config) doctorFinding {
+	return doctorMigrate(migrate.Plan())
+}
+
+// doctorMigrate reads whether this machine is still shaped the way an older
+// shhh shaped it. It is the one check that can change something, and it is
+// here rather than in a `shhh migrate` command on purpose: a migration nobody
+// knows they need is a migration nobody runs, and the place a person already
+// goes when something is not where they left it is the doctor
+// (docs/capabilities/configuration.md#a-migration-is-a-doctor-check).
+//
+// It reads as a warning and never as a failure. Nothing is broken — shhh
+// starts, runs, and records — it is just doing so without whatever is in the
+// old place, and the consequence line is where that is said plainly.
+func doctorMigrate(pending []migrate.Pending) doctorFinding {
+	if len(pending) == 0 {
+		return doctorFinding{
+			Subject: "nothing to migrate", Detail: "this machine is on the current layout",
+			Outcome: "ok",
+		}
+	}
+	f := doctorFinding{
+		Subject:     countOf(len(pending), "migration pending", "migrations pending"),
+		Detail:      migrateDetail(pending),
+		Outcome:     "pending",
+		State:       components.DoctorWarned,
+		Consequence: migrateConsequence(pending),
+		FixLabel:    "show what would change",
+		Fix:         migrateFix(pending),
+	}
+	if auto := migrateAuto(pending); len(auto) > 0 {
+		f.Action = "make " + migrateThese(auto)
+		f.ActionPrompt = "Make " + migrateThese(auto) + " now?"
+		f.Apply = func() ([]string, error) { return applyMigrations(auto) }
+	}
+	return f
+}
+
+// migrateAuto is the pending migrations shhh can carry out itself. One it
+// cannot is still reported — the fix lines say what to do — but it offers no
+// key, because an offer that cannot be honoured is worse than none
+// (invariant 5).
+func migrateAuto(pending []migrate.Pending) []migrate.Pending {
+	var auto []migrate.Pending
+	for _, p := range pending {
+		if p.Auto() {
+			auto = append(auto, p)
+		}
+	}
+	return auto
+}
+
+// migrateThese names what `[a]` would do, in the plural the count calls for.
+func migrateThese(auto []migrate.Pending) string {
+	if len(auto) == 1 {
+		return "the change"
+	}
+	return countOf(len(auto), "change", "changes")
+}
+
+// migrateDetail is the target field: what each pending migration is about.
+func migrateDetail(pending []migrate.Pending) string {
+	summaries := make([]string, 0, len(pending))
+	for _, p := range pending {
+		summaries = append(summaries, p.Summary)
+	}
+	return strings.Join(summaries, " · ")
+}
+
+// migrateConsequence is what leaving them costs. The migrations write their
+// own, because only the migration knows what the reader is missing.
+func migrateConsequence(pending []migrate.Pending) string {
+	lines := make([]string, 0, len(pending))
+	for _, p := range pending {
+		lines = append(lines, p.Consequence)
+	}
+	return strings.Join(lines, "; ")
+}
+
+// migrateFix is the lines behind `[f]`: every migration named, then its steps
+// under it. A migration shhh will not make itself says so on its own line,
+// because otherwise the reader would sit waiting for a key that never comes.
+func migrateFix(pending []migrate.Pending) []string {
+	var lines []string
+	for i, p := range pending {
+		if i > 0 {
+			lines = append(lines, "")
+		}
+		lines = append(lines, p.Name+":")
+		lines = append(lines, p.Steps...)
+		if !p.Auto() {
+			lines = append(lines, "shhh cannot make this one for you")
+		}
+	}
+	return lines
+}
+
+// applyMigrations carries out every automatic migration and reports what
+// changed, one line each. It stops at the first failure and keeps the lines
+// from before it: what already moved is what the reader needs to know before
+// they try again.
+func applyMigrations(auto []migrate.Pending) ([]string, error) {
+	var done []string
+	for _, p := range auto {
+		lines, err := p.Apply()
+		done = append(done, lines...)
+		if err != nil {
+			return done, err
+		}
+	}
+	return done, nil
 }
 
 func probeModel(ctx context.Context, cfg config.Config) doctorFinding {
@@ -399,21 +579,16 @@ func probeStore(context.Context, config.Config) doctorFinding {
 	return doctorStore(path, size, nil)
 }
 
-// doctorStorePath is where the local store lives, for the row to name. It is
-// derived the same way storage.Open derives it.
+// doctorStorePath is where the local store lives, for the row to name. It asks
+// storage rather than deriving it again: this file had its own copy of the
+// rule, and a report that names a different path from the one the store
+// actually opens is worse than no path at all.
 func doctorStorePath() string {
-	if runtime.GOOS == "darwin" {
-		if home, err := os.UserHomeDir(); err == nil {
-			return filepath.Join(home, "Library", "Application Support", "shhh", "shhh.db")
-		}
+	dir, err := storage.Dir()
+	if err != nil {
+		return "shhh.db"
 	}
-	if xdg := os.Getenv("XDG_DATA_HOME"); xdg != "" {
-		return filepath.Join(xdg, "shhh", "shhh.db")
-	}
-	if home, err := os.UserHomeDir(); err == nil {
-		return filepath.Join(home, ".local", "share", "shhh", "shhh.db")
-	}
-	return "shhh.db"
+	return filepath.Join(dir, "shhh.db")
 }
 
 // doctorStore reads the local store: history, snippets, metrics and chat logs
@@ -920,6 +1095,11 @@ type doctorModel struct {
 	at      int
 	width   int
 
+	// findings are the answers behind the rows the screen is drawing. The
+	// screen is handed only what it renders, and an action is not renderable
+	// — so the function `[a]` invokes stays here, indexed the same way.
+	findings []doctorFinding
+
 	screen components.DoctorScreen
 }
 
@@ -934,8 +1114,16 @@ type doctorDoneMsg struct {
 // interval.
 type doctorTickMsg time.Time
 
+// doctorAppliedMsg carries back what an action did, so a migration that has
+// to move a large store does not freeze the surface while it runs.
+type doctorAppliedMsg struct {
+	lines []string
+	err   error
+}
+
 func newDoctorModel(cfg config.Config, probes []doctorProbe) doctorModel {
 	m := doctorModel{cfg: cfg, probes: probes, width: defaultDoctorWidth}
+	m.findings = make([]doctorFinding, len(m.probes))
 	m.screen.Checks = make([]components.DoctorCheck, len(m.probes))
 	for i, probe := range m.probes {
 		m.screen.Checks[i] = components.DoctorCheck{
@@ -957,6 +1145,8 @@ func doctorQueuedSubject(name string) string {
 		return "which shhh this is"
 	case "config":
 		return "the config file and what it sets"
+	case "migrate":
+		return "whether this machine is still shaped an older way"
 	case "model":
 		return "the provider and where its key comes from"
 	case "store":
@@ -1018,7 +1208,11 @@ func (m doctorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.screen.Elapsed = doctorElapsed(time.Since(m.started))
 		return m, doctorTick()
 
+	case doctorAppliedMsg:
+		return m.applied(msg)
+
 	case doctorDoneMsg:
+		m.findings[msg.at] = msg.finding
 		m.screen.Checks[msg.at] = doctorCheck(m.probes[msg.at].name, msg.finding, msg.took)
 		m.at = msg.at + 1
 		m.screen.Elapsed = doctorElapsed(time.Since(m.started))
@@ -1064,13 +1258,53 @@ func (m doctorModel) apply(command components.DoctorCommand) (tea.Model, tea.Cmd
 		}
 		return m, nil
 	case components.DoctorRerun:
-		fresh := newDoctorModel(m.cfg, m.probes)
-		fresh.width, fresh.screen.MaxLines = m.width, m.screen.MaxLines
-		fresh.started = time.Now()
-		fresh.markRunning(0)
+		fresh := m.rerun()
 		return fresh, tea.Batch(fresh.runNext(), doctorTick())
+	case components.DoctorApply:
+		// The screen has already asked, so by the time this arrives the
+		// answer was yes. It is run off the update loop because a migration
+		// moves files, and a surface that stopped repainting while it did
+		// would read as a hang.
+		apply := m.findings[command.At].Apply
+		if apply == nil {
+			return m, nil
+		}
+		m.screen.Notice = "applying…"
+		return m, func() tea.Msg {
+			lines, err := apply()
+			return doctorAppliedMsg{lines: lines, err: err}
+		}
 	}
 	return m, nil
+}
+
+// applied reports what an action did and re-runs every check, because the
+// answer to "did that work" is the report itself and not a line at the foot
+// of a stale one. The notice survives the re-run: it is the record of what
+// changed, and the rows that are about to redraw will not say it again.
+func (m doctorModel) applied(msg doctorAppliedMsg) (tea.Model, tea.Cmd) {
+	fresh := m.rerun()
+	switch {
+	case msg.err != nil && len(msg.lines) == 0:
+		fresh.screen.Notice = "nothing changed: " + msg.err.Error()
+	case msg.err != nil:
+		fresh.screen.Notice = countOf(len(msg.lines), "change made", "changes made") +
+			", then it stopped: " + msg.err.Error()
+	default:
+		fresh.screen.Notice = countOf(len(msg.lines), "change made", "changes made")
+	}
+	return fresh, tea.Batch(fresh.runNext(), doctorTick())
+}
+
+// rerun is the screen put back to queued and started again — what `[r]` does,
+// and what an applied action does after it, so the report the reader is left
+// looking at is a reading of the machine as it is now.
+func (m doctorModel) rerun() doctorModel {
+	fresh := newDoctorModel(m.cfg, m.probes)
+	fresh.width, fresh.screen.MaxLines = m.width, m.screen.MaxLines
+	fresh.started = time.Now()
+	fresh.markRunning(0)
+	return fresh
 }
 
 // View is the frame: the doctor screen, on the alt screen it takes over.
