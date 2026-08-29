@@ -19,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // GitSnapshot is the workspace's git state at a checkpoint: HEAD plus a
@@ -98,7 +99,7 @@ func (m Model) openRewindPick() (tea.Model, tea.Cmd) {
 
 // updateRewindPick routes keys while the /rewind picker is showing.
 func (m Model) updateRewindPick(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	if msg.String() == "ctrl+d" {
+	if keys.Match(msg, keys.Draft.Quit) {
 		m.quitting = true
 		return m, m.quitCmd()
 	}

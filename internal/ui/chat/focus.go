@@ -11,6 +11,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // expandable reports whether a transcript entry has bounded output that focus
@@ -125,22 +126,40 @@ func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 // updateFocus handles keys while focus mode is active. Esc never destroys:
 // it only returns to the input, keeping any expansion state.
 func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-	case "ctrl+d":
+	switch pressed := msg.String(); {
+	case keys.Is(pressed, keys.Draft.Quit):
 		m.quitting = true
 		return m, m.quitCmd()
-	case "esc", "ctrl+e", "ctrl+c", "q":
+	case keys.Is(pressed, keys.Reading.Back):
 		return m.exitFocusMode()
-	case "j", "down":
-		m.moveFocus(1)
+	case keys.Is(pressed, keys.Reading.Move):
+		// One binding, both directions: the bar offers `j/k` as a pair and
+		// the dispatch reads which half was pressed, so the four keystrokes
+		// the mode moves on are declared in one place (§7d). Two bindings
+		// for one offer would put the same keystroke on the surface twice,
+		// which is the thing the register refuses.
+		if pressed == "j" || pressed == "down" {
+			m.moveFocus(1)
+		} else {
+			m.moveFocus(-1)
+		}
 		return m, nil
-	case "k", "up":
-		m.moveFocus(-1)
+	case keys.Is(pressed, keys.Reading.List):
+		// The register on the page (§7d). It is the same key the supporting
+		// TUIs have offered since S-127, answering the same question about
+		// the surface that holds the keyboard — and it is live here for the
+		// reason every bare letter on this bar is: nothing else is listening.
+		m.readingKeyList = !m.readingKeyList
+		// The list is taller than the bar it replaced, so the panel takes
+		// rows from the transcript and gives them back — the same accounting
+		// every other bottom panel does (§12e).
+		m.syncViewport()
+		m.refreshFocusView()
 		return m, nil
-	case reviewKey, undoKey, grantRoundsKey, uncapRoundsKey:
+	case keys.Is(pressed, keys.Row.Review, keys.Row.Undo, keys.Row.Rounds, keys.Row.Uncap):
 		// A round-limit pause offers all four on its own row (S-109); it is
 		// asked first because it stands where the close block would be.
-		if next, cmd, claimed := m.roundPauseKey(msg.String()); claimed {
+		if next, cmd, claimed := m.roundPauseKey(pressed); claimed {
 			return next, cmd
 		}
 		// The offers on a turn's changeset row (S-098, §16), which are [v]
@@ -151,12 +170,12 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// does not offer has to fall through to the draft, not land on
 		// whichever offer happened to be last.
 		if e, ok := m.focusedClose(); ok && e.close.Changes != nil {
-			switch msg.String() {
-			case reviewKey:
+			switch {
+			case keys.Is(pressed, keys.Row.Review):
 				// Review mode is a takeover opened from the row (S-099);
 				// esc comes back here, to the row that offered it.
 				return m.openReview(e.turn)
-			case undoKey:
+			case keys.Is(pressed, keys.Row.Undo):
 				// Undo asks before it writes (S-100). The confirm borrows the
 				// bottom panel and focus mode keeps the screen, so the cursor
 				// stays on the row that offered it and esc comes back here.
@@ -166,27 +185,27 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		// The row under the cursor does not offer this key, so it is a
 		// character like any other and goes back to the draft (S-115).
 		return m.returnToInput(msg)
-	case failRetryKey, failCompactKey, failKeyKey, failProviderKey:
+	case keys.Is(pressed, keys.Row.Retry, keys.Row.Continue, keys.Row.Key, keys.Row.Provider):
 		// A provider failure's own offers (S-106, §17a), and a dropped
 		// stream's (S-107). Like the changeset row's, they are handled here
 		// rather than globally, so the input keeps every one of these letters
 		// for typing — which is also why continuing from a partial is [c]
 		// rather than the artboard's [enter].
-		if next, cmd, claimed := m.dropKey(msg.String()); claimed {
+		if next, cmd, claimed := m.dropKey(pressed); claimed {
 			return next, cmd
 		}
-		if next, cmd, claimed := m.failureKey(msg.String()); claimed {
+		if next, cmd, claimed := m.failureKey(pressed); claimed {
 			return next, cmd
 		}
 		return m.returnToInput(msg)
-	case detailKey:
+	case keys.Is(pressed, keys.Reading.Detail):
 		// The step around the cursor opens its rows' detail (S-137, §13d) —
 		// the header the cursor is on, or the step the row under it belongs
 		// to. A cursor outside every step has nothing to open, and the hint
 		// bar has already said so with its reason beside it rather than
 		// leaving the chord to fail without a word.
 		return m.detailFromReading()
-	case collapseKey:
+	case keys.Is(pressed, keys.Reading.Collapse):
 		// The explicit half of [enter]'s toggle (§7a). Where the row under
 		// the cursor has nothing open, [-] is a character like any other and
 		// goes back to the draft.
@@ -195,13 +214,13 @@ func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		return m.returnToInput(msg)
-	case "pgup":
+	case keys.Is(pressed, keys.Reading.PageUp):
 		m.scrollPage(-1)
 		return m, nil
-	case "pgdown":
+	case keys.Is(pressed, keys.Reading.PageDown):
 		m.scrollPage(1)
 		return m, nil
-	case "enter":
+	case keys.Is(pressed, keys.Reading.Expand):
 		es := *m.entries()
 		if m.focusIdx >= 0 && m.focusIdx < len(es) {
 			if _, ok := m.stepBlockAt(es, m.focusIdx); ok {
@@ -262,6 +281,9 @@ func (m Model) focusedClose() (entry, bool) {
 // exitFocusMode returns to the input, keeping expansion state; the render
 // cache is rebuilt without the selection gutter.
 func (m Model) exitFocusMode() (tea.Model, tea.Cmd) {
+	// The register closes with the mode: it is a reading of this surface, and
+	// the next time reading mode opens the question has not been asked yet.
+	m.readingKeyList = false
 	m.leaveSurface()
 	m.invalidateRenderCache()
 	m.syncViewport()
@@ -370,11 +392,21 @@ func gutterPrefix(block string, selected bool, width int) string {
 // rail says which pane has the keyboard, this says what the keyboard does
 // there. Its two lines are assembled in readinghint.go.
 func (m Model) renderFocusHint() string {
-	width := m.contentWidth()
-	lines := []string{m.readingKeyLine(width)}
-	lines = append(lines, m.readingRowLines(width, inputHeight-1)...)
+	lines := m.focusHintLines()
 	for len(lines) < inputHeight {
 		lines = append(lines, "")
 	}
 	return strings.Join(lines, "\n")
+}
+
+// focusHintLines is the bar's content, which is also what the bottom panel is
+// sized from (approval.go) — one list, so the panel a reader gets is the
+// panel the layout paid for.
+func (m Model) focusHintLines() []string {
+	width := m.contentWidth()
+	if m.readingKeyList {
+		return m.readingKeyListLines(width, m.maxConfirmPanelHeight())
+	}
+	lines := []string{m.readingKeyLine(width)}
+	return append(lines, m.readingRowLines(width, inputHeight-1)...)
 }

@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // DiffMode selects which of the diff viewer's three renderings View produces
@@ -76,8 +77,8 @@ type DiffView struct {
 // always nil. Esc from full screen steps back to the expanded view — esc
 // never destroys.
 func (d *DiffView) Update(msg tea.KeyMsg) (done bool, result any) {
-	switch msg.String() {
-	case "enter":
+	switch pressed := msg.String(); {
+	case keys.Is(pressed, keys.Reading.Expand):
 		// [enter] expand · [enter] full view · [enter again] collapse (§3b).
 		switch d.Mode {
 		case DiffCollapsed:
@@ -89,7 +90,7 @@ func (d *DiffView) Update(msg tea.KeyMsg) (done bool, result any) {
 			d.Mode = DiffCollapsed
 		}
 		return false, nil
-	case "esc":
+	case keys.Is(pressed, keys.Diff.Back):
 		if d.Mode == DiffFull {
 			d.Mode = DiffExpanded
 			return false, nil
@@ -99,16 +100,16 @@ func (d *DiffView) Update(msg tea.KeyMsg) (done bool, result any) {
 	if d.Mode != DiffFull {
 		return false, nil
 	}
-	switch msg.String() {
-	case "j", "down":
+	switch pressed := msg.String(); {
+	case pressed == "j", pressed == "down":
 		d.scrollTo(d.Offset + 1)
-	case "k", "up":
+	case pressed == "k", pressed == "up":
 		d.scrollTo(d.Offset - 1)
-	case "n":
+	case pressed == "n":
 		d.jumpHunk(1)
-	case "p":
+	case pressed == "p":
 		d.jumpHunk(-1)
-	case "s":
+	case keys.Is(pressed, keys.Diff.SideBySide):
 		d.SideBySide = !d.SideBySide
 	}
 	return false, nil
@@ -148,7 +149,7 @@ func (d *DiffView) RowView(width int) string {
 		verb = "edit"
 	}
 	left := sty.Accent.Render("✎ "+verb) + " " + d.Path
-	right := sty.Dim.Render(d.statsLabel()) + "   " + sty.Hint.Render("[enter] expand")
+	right := sty.Dim.Render(d.statsLabel()) + "   " + sty.Hint.Render(GroupExpandKey)
 	gap := width - lipgloss.Width(left) - lipgloss.Width(right)
 	if gap < 2 {
 		return clip(left+"  "+right, width)
@@ -391,7 +392,10 @@ func (d *DiffView) fileSyntax(path string, explicit Syntax) Syntax {
 // footer hint. Side-by-side when toggled or the terminal is wide enough.
 func (d *DiffView) fullView(width int) string {
 	header := padRight(" "+d.Path, max(0, width-lipgloss.Width(d.statsLabel()))) + sty.Dim.Render(d.statsLabel())
-	footer := sty.Hint.Render("diff · j/k scroll · n/p hunk · s side-by-side · esc back")
+	footer := sty.Hint.Render("diff · " + strings.Join([]string{
+		offer(keys.Diff.Scroll), offer(keys.Diff.Hunk),
+		offer(keys.Diff.SideBySide), offer(keys.Diff.Back),
+	}, " · "))
 
 	body := d.fullBody(width)
 	rows := d.bodyHeight()

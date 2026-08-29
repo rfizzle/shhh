@@ -12,12 +12,13 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // queueMarkKey is the mark a batchable row carries: the key that would answer
 // it, written where the row is, so membership is a fact on the row rather
 // than a count on the card.
-const queueMarkKey = "[A]"
+var queueMarkKey = keys.Bracket(keys.Decision.Batch)
 
 // QueueItem is one pending decision as the strip lists it.
 type QueueItem struct {

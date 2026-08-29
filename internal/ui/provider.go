@@ -20,14 +20,10 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// Keys the card offers.
-const (
-	setupWizardKey = "enter"
-	setupPasteKey  = "p"
-	setupLocalKey  = "o"
-)
+// The keys the card offers are keys.Setup (§7d).
 
 // ProviderChoice is what the card resolved to. A zero value is a decline —
 // esc, or a card with nothing to offer — and leaves the caller with the
@@ -113,18 +109,18 @@ func placesFor(s resolve.Survey) []components.ProviderPlace {
 // always available, because pasting a key and picking a provider are things
 // this card can always do.
 func setupKeys(s resolve.Survey) []components.KeyOffer {
-	keys := []components.KeyOffer{
-		{Key: "[enter]", Label: "setup wizard"},
-		{Key: "[p]", Label: "paste a key"},
+	offers := []components.KeyOffer{
+		{Key: keys.Bracket(keys.Setup.Wizard), Label: keys.Words(keys.Setup.Wizard)},
+		{Key: keys.Bracket(keys.Setup.Paste), Label: keys.Words(keys.Setup.Paste)},
 	}
 	if s.LocalBaseURL != "" {
 		label := "use the local model"
 		if s.LocalModel != "" {
 			label = "use " + s.LocalModel + " locally"
 		}
-		keys = append(keys, components.KeyOffer{Key: "[o]", Label: label})
+		offers = append(offers, components.KeyOffer{Key: keys.Bracket(keys.Setup.Local), Label: label})
 	}
-	return keys
+	return offers
 }
 
 func (m ProviderSetup) Init() tea.Cmd { return nil }
@@ -151,11 +147,11 @@ func (m ProviderSetup) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		switch result {
-		case setupWizardKey:
+		case keys.Shown(keys.Setup.Wizard):
 			m.pick = components.Select{Title: "Which provider", Options: providerOptions(m.providers)}
 			m.step = stepPickProvider
 			return m, nil
-		case setupPasteKey:
+		case keys.Shown(keys.Setup.Paste):
 			m.choice.Provider = m.survey.Provider
 			m.secret = components.SecretPrompt{
 				Prompt: "Paste a key for " + m.survey.Provider,
@@ -163,7 +159,7 @@ func (m ProviderSetup) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			}
 			m.step = stepPasteKey
 			return m, nil
-		case setupLocalKey:
+		case keys.Shown(keys.Setup.Local):
 			// A local runtime needs no key and no wizard: it is already
 			// answering, which is the whole of the offer.
 			m.choice = ProviderChoice{

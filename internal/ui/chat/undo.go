@@ -21,6 +21,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // undoCommand handles `/undo [turn]`: bare undoes the most recent turn that
@@ -94,7 +95,7 @@ func (m Model) updateUndoConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.undoAsk == nil {
 		return m.closeUndoConfirm()
 	}
-	if msg.String() == "ctrl+d" {
+	if keys.Match(msg, keys.Draft.Quit) {
 		m.quitting = true
 		return m, m.quitCmd()
 	}

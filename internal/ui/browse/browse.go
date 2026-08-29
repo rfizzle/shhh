@@ -7,6 +7,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 type Item struct {
@@ -77,12 +78,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		if m.filter.Focused() {
 			switch msg.String() {
-			case "esc":
+			case keys.Shown(keys.Select.Cancel):
 				m.filter.Blur()
 				m.filter.SetValue("")
 				m.applyFilter()
 				return m, nil
-			case "enter":
+			case keys.Shown(keys.Browse.Take):
 				m.filter.Blur()
 				return m, nil
 			default:
@@ -109,30 +110,30 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) updateList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-	case "q", "esc":
+	switch pressed := msg.String(); {
+	case keys.Is(pressed, keys.Browse.Quit):
 		m.quit = true
 		return m, tea.Quit
-	case "j", "down":
+	case pressed == "j", pressed == "down":
 		if len(m.filtered) > 0 {
 			m.cursor++
 			if m.cursor >= len(m.filtered) {
 				m.cursor = len(m.filtered) - 1
 			}
 		}
-	case "k", "up":
+	case pressed == "k", pressed == "up":
 		if len(m.filtered) > 0 {
 			m.cursor--
 			if m.cursor < 0 {
 				m.cursor = 0
 			}
 		}
-	case "enter", "l", "right":
+	case keys.Is(pressed, keys.Browse.Open):
 		if len(m.filtered) > 0 {
 			m.detail = true
 			m.action = 0
 		}
-	case "/":
+	case keys.Is(pressed, keys.Browse.Filter):
 		m.filter.Focus()
 		return m, m.filter.Cursor.BlinkCmd()
 	}
@@ -140,24 +141,24 @@ func (m Model) updateList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) updateDetail(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-	case "q":
+	switch pressed := msg.String(); {
+	case keys.Is(pressed, keys.Browse.Leave):
 		m.quit = true
 		return m, tea.Quit
-	case "esc", "h", "left":
+	case keys.Is(pressed, keys.Browse.Back):
 		m.detail = false
 		return m, nil
-	case "tab", "right":
+	case keys.Is(pressed, keys.Browse.Action):
 		m.action++
 		if m.action >= len(m.actions) {
 			m.action = 0
 		}
-	case "shift+tab":
+	case keys.Is(pressed, keys.Browse.Prev):
 		m.action--
 		if m.action < 0 {
 			m.action = len(m.actions) - 1
 		}
-	case "enter":
+	case keys.Is(pressed, keys.Browse.Take):
 		if len(m.actions) > 0 && len(m.filtered) > 0 {
 			item := m.items[m.filtered[m.cursor]]
 			m.Result = &ResultAction{
@@ -266,7 +267,7 @@ func (m Model) renderActions() string {
 			parts = append(parts, sty.InactiveAction.Render(label))
 		}
 	}
-	hint := sty.Hint.Render("  esc back")
+	hint := sty.Hint.Render("  " + keys.Shown(keys.Browse.Back) + " " + keys.Words(keys.Browse.Back))
 	return lipgloss.JoinHorizontal(lipgloss.Center, parts...) + hint
 }
 

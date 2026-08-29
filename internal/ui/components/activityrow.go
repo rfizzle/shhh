@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/charmbracelet/lipgloss"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // The column grid (DESIGN-TUI.md §6a, normative). Widths are character cells
@@ -338,7 +339,7 @@ func indented(s string, indent, width int) string {
 // always been: enter belongs to the draft below until reading mode takes the
 // keyboard, so on a transcript row this is a label for what the row does
 // under the cursor, not an offer standing open (§7c, invariant 5).
-const GroupExpandKey = "[enter] expand"
+var GroupExpandKey = keys.Bracket(keys.Reading.Expand) + " " + keys.Words(keys.Reading.Expand)
 
 // ActivityGroup is the folded group row (§13c): the one line a run of
 // consecutive read-only calls collapses into at normal verbosity. It folds,

@@ -23,16 +23,17 @@ package chat
 // the keyboard to the transcript is offered beside them, in the live
 // treatment they do not have.
 
-import "github.com/rfizzle/shhh/internal/ui/components"
-
-// readingHandoverKey hands the keyboard from the draft to the transcript. It
-// is what a transcript row offers while its own keys are waiting, and it is a
-// control chord for the same reason ctrl+g is: no sentence can produce it, so
-// it can be live while the draft is.
-const readingHandoverKey = "ctrl+e"
+import (
+	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
+)
 
 // rowHandover is the key a transcript row offers beside keys that are not
 // live yet, or "" where the row has nothing to offer.
+//
+// It is keys.Draft.Reading (§7d), which hands the keyboard from the draft to
+// the transcript — a control chord for the same reason ctrl+g is: no sentence
+// can produce it, so it can be live while the draft is.
 //
 // It is offered only where it is live. Reading mode cannot be opened from
 // under a gated decision or from inside a takeover surface, and a key that
@@ -44,7 +45,7 @@ func (m Model) rowHandover(keysLive bool) string {
 	if keysLive || !m.inputLive() {
 		return ""
 	}
-	return readingHandoverKey
+	return keys.Shown(keys.Draft.Reading)
 }
 
 // gateRow stamps a recovery row with the state the keyboard puts it in. It is

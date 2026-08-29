@@ -27,6 +27,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 const (
@@ -130,8 +131,8 @@ type MetricsScreen struct {
 // choose and nothing to change, so there is no key list to open either — a
 // `[?]` over a single key would be a row explaining the row above it.
 func (m *MetricsScreen) Update(msg tea.KeyMsg) (done bool, result any) {
-	switch msg.String() {
-	case "q", "esc", "ctrl+c":
+	switch pressed := msg.String(); {
+	case keys.Is(pressed, keys.Screen.Quit):
 		return true, nil
 	}
 	return false, nil
@@ -168,9 +169,10 @@ func (m *MetricsScreen) budget(pinned int) int {
 // second key, so dropping `[q]` would leave a takeover surface with no stated
 // way out of it (invariant 5).
 func (m *MetricsScreen) headerRow(width int) string {
-	right := sty.Dim.Render("[q] quit")
+	quit := keys.Bracket(keys.Screen.Quit) + " " + keys.Words(keys.Screen.Quit)
+	right := sty.Dim.Render(quit)
 	if m.Spend != "" {
-		right = sty.Body.Render(m.Spend) + sty.Dim.Render(" · [q] quit")
+		right = sty.Body.Render(m.Spend) + sty.Dim.Render(" · "+quit)
 	}
 	left := brightStyle().Render("shhh metrics")
 	room := width - lipgloss.Width(right) - 2

@@ -11,6 +11,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // maxDiffExpandedLines bounds an applied edit's in-transcript expanded view;
@@ -111,11 +112,11 @@ func (m Model) updateDiffFull(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.closeDiffFull()
 	}
 	m.fullDiff.Height = m.viewportHeight()
-	switch msg.String() {
-	case "ctrl+d":
+	switch pressed := msg.String(); {
+	case keys.Is(pressed, keys.Draft.Quit):
 		m.quitting = true
 		return m, m.quitCmd()
-	case "q", "ctrl+c":
+	case keys.Is(pressed, keys.Diff.Leave):
 		m.fullDiff.Mode = components.DiffExpanded
 	default:
 		m.fullDiff.Update(msg)

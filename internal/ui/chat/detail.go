@@ -34,12 +34,11 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// detailKey opens a step's detail. Ctrl+O was the chord left for it (§7a,
-// navigate.go): the textarea underneath claims a, b, d, e, f, k, n, p, t, u,
-// v and w, this surface spends c, d, e, g, j and x of its own, and the
+// keys.Draft.Detail opens a step's detail. Ctrl+O was the chord left for it
+// (§7a, navigate.go): the textarea underneath claims a, b, d, e, f, k, n, p,
+// t, u, v and w, this surface spends c, d, e, g, j and x of its own, and the
 // terminal keeps s, q and z. It is not a mnemonic, which is why the start
 // screen's navigation line, /help and reading mode's hint bar all name it.
-const detailKey = "ctrl+o"
 
 // noStepDetailNotice is what the chord says when the transcript has no step
 // to open. It names what carries detail rather than reporting the refusal,

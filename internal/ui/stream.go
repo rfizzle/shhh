@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // Stream messages carry the id of the stream that produced them. The result
@@ -71,8 +72,8 @@ func (m StreamModel) Init() tea.Cmd {
 func (m StreamModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "q", "esc":
+		switch pressed := msg.String(); {
+		case keys.Is(pressed, keys.Screen.Quit):
 			if !m.done {
 				// A stream still being opened has no cancel yet (S-132); it
 				// is the surface's gen counter that discards its answer.

@@ -13,6 +13,7 @@ import (
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // resumeModel is a session with two priced models from one provider, so the
@@ -104,7 +105,7 @@ func TestStreamDrop_ContinueSendsThePartialBackAsContext(t *testing.T) {
 
 	before := len(next.agent.Messages())
 	next.focusIdx = indexOfKind(t, next, entryStreamDrop)
-	resumed, cmd, claimed := next.dropKey(resumeKey)
+	resumed, cmd, claimed := next.dropKey(keys.Shown(keys.Row.Continue))
 	if !claimed {
 		t.Fatal("[c] should be claimed by the focused drop row")
 	}
@@ -128,7 +129,7 @@ func TestStreamDrop_ContinueSendsThePartialBackAsContext(t *testing.T) {
 		t.Errorf("the instruction to carry on should follow it, got %+v", last)
 	}
 	// Taking the offer spends it: the same partial cannot be sent twice.
-	if _, _, claimed := after.dropKey(resumeKey); claimed {
+	if _, _, claimed := after.dropKey(keys.Shown(keys.Row.Continue)); claimed {
 		t.Error("a spent offer should stop claiming its key")
 	}
 	if keys := after.dropKeys(dropEntry(t, after).resume); len(keys) != 0 {
@@ -151,7 +152,7 @@ func TestStreamDrop_ContinueWithToolCallsResumesTheRound(t *testing.T) {
 	}
 
 	next.focusIdx = indexOfKind(t, next, entryStreamDrop)
-	resumed, _, claimed := next.dropKey(resumeKey)
+	resumed, _, claimed := next.dropKey(keys.Shown(keys.Row.Continue))
 	if !claimed {
 		t.Fatal("[c] should be claimed with tool calls too")
 	}
@@ -177,7 +178,7 @@ func TestStreamDrop_AskAgainDiscardsThePartial(t *testing.T) {
 	before := len(next.agent.Messages())
 
 	next.focusIdx = indexOfKind(t, next, entryStreamDrop)
-	again, cmd, claimed := next.dropKey(askAgainKey)
+	again, cmd, claimed := next.dropKey(keys.Shown(keys.Row.Retry))
 	if !claimed {
 		t.Fatal("[r] should be claimed by the drop row")
 	}

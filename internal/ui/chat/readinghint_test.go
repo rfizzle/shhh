@@ -14,6 +14,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/muesli/termenv"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // colorProfile forces 256-color rendering: a test binary's stdout is not a
@@ -161,8 +162,8 @@ func TestReadingHint_CollapseIsOfferedOnlyWhenSomethingIsOpen(t *testing.T) {
 	}
 
 	// [-] with nothing open is a character, and it lands in the draft.
-	typed, _ := m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(collapseKey)})
-	if got := typed.(Model); got.state != stateFocus && got.input.Value() != collapseKey {
+	typed, _ := m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(keys.Shown(keys.Reading.Collapse))})
+	if got := typed.(Model); got.state != stateFocus && got.input.Value() != keys.Shown(keys.Reading.Collapse) {
 		t.Fatalf("an unclaimed [-] should return to the draft carrying itself, got %q", got.input.Value())
 	}
 
@@ -175,7 +176,7 @@ func TestReadingHint_CollapseIsOfferedOnlyWhenSomethingIsOpen(t *testing.T) {
 		t.Fatal("the position field reports what is open once something is")
 	}
 
-	closed, _ := m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(collapseKey)})
+	closed, _ := m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(keys.Shown(keys.Reading.Collapse))})
 	m = closed.(Model)
 	if m.state != stateFocus {
 		t.Fatalf("[-] on an open row is the mode's own key, got state %d", m.state)
@@ -284,5 +285,89 @@ func TestReadingMode_SurvivesMono(t *testing.T) {
 	}
 	if !strings.Contains(m.View(), components.MonoBg.ANSI256) {
 		t.Fatal("the lit row keeps a background in mono; the two greys are what it has")
+	}
+}
+
+// The key register on the page (S-153, DESIGN-TUI.md §7d).
+
+// TestReadingKeyListNamesEveryModeKey is what `[?]` is for: the bar sheds
+// keys as the terminal narrows and never says which, and this is where they
+// went. A key in reading mode's register that the list does not print is a
+// key a reader has no way left to find.
+func TestReadingKeyListNamesEveryModeKey(t *testing.T) {
+	m := readingModel(t, 100)
+	lines := strings.Join(m.readingKeyListLines(100, 40), "\n")
+	for _, b := range keys.Reading.All() {
+		if !strings.Contains(ansi.Strip(lines), "["+keys.Shown(b)+"]") {
+			t.Errorf("the key list never names %q (%s)", keys.Shown(b), keys.Words(b))
+		}
+	}
+}
+
+// The list carries the row's own offers too, under the row's rail — the
+// answer to "what can this keyboard do from here" is the mode's keys plus
+// the row's, and a list that stopped at the mode's would be answering a
+// different question (§7a).
+func TestReadingKeyListCarriesTheRowsOffers(t *testing.T) {
+	m := readingModel(t, 100)
+	offers := m.readingRowOffers()
+	if len(offers) == 0 {
+		t.Fatal("the fixture's cursor is on a row with no offers; the test needs one that has them")
+	}
+	lines := ansi.Strip(strings.Join(m.readingKeyListLines(100, 40), "\n"))
+	for _, o := range offers {
+		if !strings.Contains(lines, o.Key) {
+			t.Errorf("the key list drops the row's own %s", o.Key)
+		}
+	}
+}
+
+// The panel is bounded like every other one (§1). What does not fit is
+// counted rather than dropped in silence (invariant 4).
+func TestReadingKeyListCountsWhatDoesNotFit(t *testing.T) {
+	m := readingModel(t, 100)
+	lines := m.readingKeyListLines(100, 3)
+	if len(lines) != 3 {
+		t.Fatalf("the list ignored its bound: %d lines", len(lines))
+	}
+	if last := ansi.Strip(lines[2]); !strings.Contains(last, "more keys") {
+		t.Errorf("the last row does not say what it swallowed: %q", last)
+	}
+}
+
+// `?` is live in reading mode and nowhere near the draft, which is invariant
+// 5 read literally: a bare letter is a letter while a sentence is being
+// typed, and reading mode is a takeover where nothing else is listening.
+func TestKeyListIsNotAKeyFromTheDraft(t *testing.T) {
+	m := frameModel(t, 100, 40)
+	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("?")})
+	after := next.(Model)
+	if after.readingKeyList {
+		t.Error("? opened the key register from a live draft")
+	}
+	if !strings.Contains(after.input.Value(), "?") {
+		t.Errorf("? did not land in the draft: %q", after.input.Value())
+	}
+}
+
+// The bar offers `j/k` as one segment and the dispatch reads the direction
+// off the keystroke, so this is what holds the four keys together: every
+// keystroke the register puts on the movement binding actually moves, and
+// nothing else does.
+func TestReadingMoveAnswersEveryDeclaredKey(t *testing.T) {
+	for _, k := range keys.Reading.Move.Keys() {
+		m := readingModel(t, 100)
+		// Away from both ends, so a key that moves has somewhere to go.
+		m.moveFocus(-1)
+		before := m.focusIdx
+		next, _ := m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(k)})
+		if len(k) > 1 {
+			// The arrow keys arrive as their own type, not as runes.
+			typ := map[string]tea.KeyType{"up": tea.KeyUp, "down": tea.KeyDown}[k]
+			next, _ = m.updateFocus(tea.KeyMsg{Type: typ})
+		}
+		if after := next.(Model); after.focusIdx == before {
+			t.Errorf("%q is on keys.Reading.Move but moves nothing", k)
+		}
 	}
 }

@@ -23,6 +23,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // reviewVerdictDetail bounds how much of a failing check's output is pinned
@@ -199,7 +200,7 @@ func (m Model) updateReview(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m.closeReview()
 	}
 	m.review.Height = m.viewportHeight()
-	if msg.String() == "ctrl+d" {
+	if keys.Match(msg, keys.Draft.Quit) {
 		m.quitting = true
 		return m, m.quitCmd()
 	}

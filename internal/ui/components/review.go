@@ -24,6 +24,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 const (
@@ -152,37 +153,39 @@ type ReviewView struct {
 // was cancelled.
 func (v *ReviewView) Update(msg tea.KeyMsg) (done bool, result any) {
 	v.notice = ""
-	switch msg.String() {
-	case "esc", "ctrl+c":
+	switch pressed := msg.String(); {
+	case keys.Is(pressed, keys.Review.Back):
 		// Esc never applies and never destroys.
 		return true, ReviewResult{Canceled: true}
-	case "j", "down":
+	case pressed == "j", pressed == "down":
 		v.moveFile(1)
-	case "k", "up":
+	case pressed == "k", pressed == "up":
 		v.moveFile(-1)
-	case "n":
+	case pressed == "n":
 		v.moveHunk(1)
-	case "p":
+	case pressed == "p":
 		v.moveHunk(-1)
-	case "pgdown":
+	case keys.Is(pressed, keys.Review.PageDown):
 		v.Offset += max(v.paneHeight()-1, 1)
-	case "pgup":
+	case keys.Is(pressed, keys.Review.PageUp):
 		v.Offset -= max(v.paneHeight()-1, 1)
-	case "\\":
+	case keys.Is(pressed, keys.Review.SideBySide):
 		v.SideBySide = !v.SideBySide
-	case " ", "space":
+	case keys.Is(pressed, keys.Review.StageHunk):
 		v.stageHunk()
-	case "s":
+	case keys.Is(pressed, keys.Review.StageFile):
 		v.stageFile()
-	case "a", "A":
+	case keys.Is(pressed, keys.Review.StageAll):
 		v.stageAll()
-	case "enter":
+	case keys.Is(pressed, keys.Review.Apply):
 		if v.ReadOnly {
 			return true, ReviewResult{Canceled: true}
 		}
 		staged := v.selection()
 		if len(staged) == 0 {
-			v.notice = "nothing staged — space stages a hunk, s a file, A everything"
+			v.notice = "nothing staged — " + keys.Shown(keys.Review.StageHunk) +
+				" stages a hunk, " + keys.Shown(keys.Review.StageFile) + " a file, " +
+				keys.Shown(keys.Review.StageAll) + " everything"
 			return false, nil
 		}
 		return true, ReviewResult{Staged: staged}
@@ -707,17 +710,17 @@ func (v *ReviewView) footerRows(width int) []string {
 	if verb == "" {
 		verb = "apply"
 	}
-	offers := []TurnKey{{Key: "[n/p]", Label: "hunk"}}
+	offers := []TurnKey{keyOffer(keys.Review.MoveHunk)}
 	if !v.ReadOnly {
 		offers = []TurnKey{
-			{Key: "[space]", Label: "stage hunk"},
-			{Key: "[s]", Label: "file"},
-			{Key: "[A]", Label: "all"},
-			{Key: "[n/p]", Label: "hunk"},
-			{Key: "[enter]", Label: fmt.Sprintf("%s %s", verb, plural(v.stagedFiles(), "file"))},
+			keyOffer(keys.Review.StageHunk),
+			keyOffer(keys.Review.StageFile),
+			keyOffer(keys.Review.StageAll),
+			keyOffer(keys.Review.MoveHunk),
+			keyOfferAs(keys.Review.Apply, fmt.Sprintf("%s %s", verb, plural(v.stagedFiles(), "file"))),
 		}
 	}
-	offers = append(offers, TurnKey{Key: "[esc]", Label: "leave, change nothing"})
+	offers = append(offers, keyOfferAs(keys.Review.Back, "leave, change nothing"))
 
 	rows := wrapOffers(offers, width)
 	if v.notice != "" {

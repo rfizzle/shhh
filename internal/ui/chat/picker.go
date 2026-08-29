@@ -21,12 +21,12 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// modelDefaultKey is the /model picker's second key: take this option and
+// keys.Select.Alt is the /model picker's second key: take this option and
 // make it the default, rather than taking it for this session. A bare letter
 // like the card's own j/k, so it is text while the filter row is open.
-const modelDefaultKey = "d"
 
 // WithModelOptions sets the models offered by the bare /model picker,
 // normally the provider's curated catalog (provider.KnownModels). The
@@ -167,7 +167,7 @@ func closestOption(all []components.SelectOption, query string) string {
 
 // updatePick routes keys while a picker is showing.
 func (m Model) updatePick(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	if msg.String() == "ctrl+d" {
+	if keys.Match(msg, keys.Draft.Quit) {
 		m.quitting = true
 		return m, m.quitCmd()
 	}
@@ -287,15 +287,15 @@ func (m Model) startModelPick() (tea.Model, tea.Cmd) {
 // updateModelList routes keys while the model list is in flight: esc (or
 // ctrl+c) abandons the query and returns to the input.
 func (m Model) updateModelList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-	case "ctrl+d":
+	switch pressed := msg.String(); {
+	case keys.Is(pressed, keys.Draft.Quit):
 		m.quitting = true
 		if m.modelListCancel != nil {
 			m.modelListCancel()
 			m.modelListCancel = nil
 		}
 		return m, m.quitCmd()
-	case "esc", "ctrl+c":
+	case keys.Is(pressed, keys.Select.Cancel):
 		if m.modelListCancel != nil {
 			m.modelListCancel()
 			m.modelListCancel = nil
@@ -365,7 +365,7 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 	// to be able to stick (S-136). Enter switches the session, as it always
 	// did; [d] switches it and writes provider.model, so the name you just
 	// read off a list does not have to be typed back to `/model default`.
-	alt := pickerAlt{Key: modelDefaultKey, Label: "and make it default", Enter: "this session"}
+	alt := pickerAlt{Key: keys.Shown(keys.Select.Alt), Label: "and make it default", Enter: "this session"}
 	if m.writeConfig == nil {
 		alt = pickerAlt{}
 	}

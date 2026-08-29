@@ -26,6 +26,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 const (
@@ -155,22 +156,22 @@ func (h *HistoryScreen) Update(msg tea.KeyMsg) (done bool, result any) {
 	if h.confirm != nil {
 		return h.updateConfirm(msg)
 	}
-	key := msg.String()
-	switch key {
-	case "up":
+	pressed := msg.String()
+	switch {
+	case pressed == "up":
 		h.move(-1)
 		return false, nil
-	case "down":
+	case pressed == "down":
 		h.move(1)
 		return false, nil
-	case "enter":
+	case keys.Is(pressed, keys.Screen.Rerun):
 		// The one key that leaves the screen with something to do. A list the
 		// filter emptied has nothing for it to take (invariant 5).
 		if row := h.current(); row != nil {
 			return true, HistoryResult{Run: true, ID: row.ID, Command: row.Command}
 		}
 		return false, nil
-	case "esc", "ctrl+c":
+	case keys.Is(pressed, keys.Select.Cancel):
 		return true, HistoryResult{Canceled: true}
 	}
 	// With the query line open the query line is the surface, so c, s, x and
@@ -179,7 +180,7 @@ func (h *HistoryScreen) Update(msg tea.KeyMsg) (done bool, result any) {
 	// already empty closes it, which is how the row keys are got back
 	// without leaving the screen.
 	if h.list.Filtering {
-		if key == "ctrl+u" && h.list.Query == "" {
+		if keys.Is(pressed, keys.Screen.ClearQ) && h.list.Query == "" {
 			h.list.Filtering = false
 			return false, nil
 		}
@@ -189,26 +190,26 @@ func (h *HistoryScreen) Update(msg tea.KeyMsg) (done bool, result any) {
 		}
 		return false, nil
 	}
-	switch key {
-	case "k":
+	switch {
+	case pressed == "k":
 		h.move(-1)
-	case "j":
+	case pressed == "j":
 		h.move(1)
-	case "/":
+	case keys.Is(pressed, keys.Screen.Filter):
 		h.list.Filtering = true
-	case "q":
+	case pressed == keys.Shown(keys.Screen.Quit):
 		return true, HistoryResult{Canceled: true}
-	case "?":
+	case keys.Is(pressed, keys.Screen.List):
 		h.keys = !h.keys
-	case "c":
+	case keys.Is(pressed, keys.Screen.Copy):
 		if row := h.current(); row != nil {
 			return false, HistoryCommand{Act: HistoryCopy, ID: row.ID}
 		}
-	case "s":
+	case keys.Is(pressed, keys.Screen.Snippet):
 		if row := h.current(); row != nil {
 			return false, HistoryCommand{Act: HistorySave, ID: row.ID}
 		}
-	case "x":
+	case keys.Is(pressed, keys.Screen.Delete):
 		// §5: the one key here that destroys something asks first, and the
 		// prompt names what it would take rather than saying "this entry".
 		if row := h.current(); row != nil {
@@ -492,7 +493,7 @@ func (h *HistoryScreen) headerRow(width int) string {
 	if h.Subject != "" {
 		left += sty.Dim.Render(" · " + h.Subject)
 	}
-	right := sty.Dim.Render("[?] keys · [q] quit")
+	right := sty.Dim.Render(screenHeaderKeys())
 	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 {
 		return left + strings.Repeat(" ", pad) + right
 	}
@@ -511,7 +512,7 @@ func (h *HistoryScreen) footRows(width int) []string {
 		for _, offer := range h.keyList() {
 			rows = append(rows, clip(keyOffers([]KeyOffer{offer}), width))
 		}
-		return append(rows, clip(keyOffers([]KeyOffer{{Key: "[?]", Label: "hide the keys"}}), width))
+		return append(rows, clip(keyOffers([]KeyOffer{hideKeysOffer()}), width))
 	}
 	field := h.footField()
 	rows := wrapOffers(h.offers(width, field), width)
@@ -541,23 +542,23 @@ func fitsBeside(offers []KeyOffer, field string, width int) bool {
 // is the one segment `[?]` still carries in full. Nothing is ever truncated
 // to make room (invariant 4); the segment goes whole or it stays whole.
 func (h *HistoryScreen) offers(width int, field string) []KeyOffer {
-	move := KeyOffer{Key: "[↑↓]", Label: "move"}
+	move := keyOffer(keys.Select.Move)
 	var acts []KeyOffer
 	if h.current() != nil {
-		acts = append(acts, KeyOffer{Key: "[enter]", Label: "re-run it"})
+		acts = append(acts, keyOffer(keys.Screen.Rerun))
 	}
 	if h.list.Filtering {
-		acts = append(acts, KeyOffer{Key: "[ctrl+u]", Label: "clear the filter, then close it"})
+		acts = append(acts, keyOfferAs(keys.Screen.ClearQ, "clear the filter, then close it"))
 	} else {
 		if h.current() != nil {
 			acts = append(acts,
-				KeyOffer{Key: "[c]", Label: "copy it"},
-				KeyOffer{Key: "[s]", Label: "save it as a snippet"},
-				KeyOffer{Key: "[x]", Label: "delete it"})
+				keyOffer(keys.Screen.Copy),
+				keyOffer(keys.Screen.Snippet),
+				keyOffer(keys.Screen.Delete))
 		}
-		acts = append(acts, KeyOffer{Key: "[/]", Label: "filter"})
+		acts = append(acts, keyOffer(keys.Screen.Filter))
 	}
-	acts = append(acts, KeyOffer{Key: "[esc]", Label: "back to the shell"})
+	acts = append(acts, keyOfferAs(keys.Select.Cancel, "back to the shell"))
 
 	// The rungs, in the order the row gives ground: the movement reminder
 	// first, because `[?]` still carries it in full and every list in the
@@ -568,8 +569,8 @@ func (h *HistoryScreen) offers(width int, field string) []KeyOffer {
 	rungs := [][]KeyOffer{
 		append([]KeyOffer{move}, acts...),
 		acts,
-		without(acts, "[s]"),
-		without(acts, "[s]", "[/]"),
+		without(acts, keys.Bracket(keys.Screen.Snippet)),
+		without(acts, keys.Bracket(keys.Screen.Snippet), keys.Bracket(keys.Screen.Filter)),
 	}
 	if field == "" {
 		return rungs[0]
@@ -586,9 +587,9 @@ func (h *HistoryScreen) offers(width int, field string) []KeyOffer {
 
 // without is a rung with some offers shed. Shedding is whole-segment: nothing
 // on a key row is ever truncated (invariant 4).
-func without(offers []KeyOffer, keys ...string) []KeyOffer {
+func without(offers []KeyOffer, shed ...string) []KeyOffer {
 	drop := map[string]bool{}
-	for _, k := range keys {
+	for _, k := range shed {
 		drop[k] = true
 	}
 	out := make([]KeyOffer, 0, len(offers))
@@ -603,15 +604,15 @@ func without(offers []KeyOffer, keys ...string) []KeyOffer {
 // keyList is every key the screen has, for `[?]`.
 func (h *HistoryScreen) keyList() []KeyOffer {
 	return []KeyOffer{
-		{Key: "[↑↓/jk]", Label: "move between entries"},
-		{Key: "[enter]", Label: "run the command under the pointer again"},
-		{Key: "[c]", Label: "copy the command to the clipboard"},
-		{Key: "[s]", Label: "save the command as a snippet"},
-		{Key: "[x]", Label: "delete the entry, after confirming it"},
-		{Key: "[/]", Label: "filter by what was asked or by what came back"},
-		{Key: "[ctrl+u]", Label: "clear the filter; clear it again to close it"},
-		{Key: "[esc]", Label: "back to the shell, running nothing"},
-		{Key: "[q]", Label: "back to the shell, running nothing"},
+		keyOfferAs(keys.Screen.Move, "move between entries"),
+		keyOfferAs(keys.Screen.Rerun, "run the command under the pointer again"),
+		keyOfferAs(keys.Screen.Copy, "copy the command to the clipboard"),
+		keyOfferAs(keys.Screen.Snippet, "save the command as a snippet"),
+		keyOfferAs(keys.Screen.Delete, "delete the entry, after confirming it"),
+		keyOfferAs(keys.Screen.Filter, "filter by what was asked or by what came back"),
+		keyOfferAs(keys.Screen.ClearQ, "clear the filter; clear it again to close it"),
+		keyOfferAs(keys.Select.Cancel, "back to the shell, running nothing"),
+		keyOfferAs(keys.Screen.Quit, "back to the shell, running nothing"),
 	}
 }
 

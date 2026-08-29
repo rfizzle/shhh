@@ -17,6 +17,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // undoDriftNames bounds how many drifted paths the confirm lists by name;
@@ -56,18 +57,18 @@ func (c UndoConfirm) touches() int { return c.Restores + c.Removes }
 // do — every file drifted — y is not bound, so the only ways out are the
 // deliberate [f] and declining.
 func (c *UndoConfirm) Update(msg tea.KeyMsg) (done bool, result any) {
-	switch msg.String() {
-	case "y", "Y":
+	switch pressed := msg.String(); {
+	case keys.Is(pressed, keys.Confirm.Yes):
 		if c.touches() == 0 {
 			return false, nil
 		}
 		return true, UndoApply
-	case "f", "F":
+	case keys.Is(pressed, keys.Confirm.Force):
 		if len(c.Drifted) == 0 {
 			return false, nil
 		}
 		return true, UndoForce
-	case "n", "N", "enter", "esc", "ctrl+c":
+	case keys.Is(pressed, keys.Confirm.No):
 		return true, UndoCancel
 	}
 	return false, nil
@@ -136,9 +137,11 @@ func (c UndoConfirm) View(width int) string {
 	rows := c.headRows(width)
 	rows = append(rows, c.driftRows(width)...)
 	if len(c.Drifted) > 0 {
-		force := fmt.Sprintf("[f] force — take back %s too, discarding what changed",
+		force := fmt.Sprintf("%s %s — take back %s too, discarding what changed",
+			keys.Bracket(keys.Confirm.Force), keys.Words(keys.Confirm.Force),
 			plural(len(c.Drifted), "drifted file"))
-		rows = append(rows, hintRows([]string{force, "[esc] cancel"}, width)...)
+		rows = append(rows, hintRows([]string{force,
+			keys.Bracket(keys.Select.Cancel) + " " + keys.Words(keys.Select.Cancel)}, width)...)
 	}
 	return strings.Join(rows, "\n")
 }
@@ -147,7 +150,7 @@ func (c UndoConfirm) View(width int) string {
 // to do it is not offered, so the prompt never shows a key that does nothing.
 func (c UndoConfirm) defaultKeys() string {
 	if c.touches() == 0 {
-		return "[f/N]"
+		return "[" + keys.Shown(keys.Confirm.Force) + "/" + keys.Shown(keys.Confirm.No) + "]"
 	}
-	return "[y/N]"
+	return confirmKeys()
 }

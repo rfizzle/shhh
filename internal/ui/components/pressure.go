@@ -24,6 +24,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // pressureTitle is the card's own name. It stays fixed while the chip beside
@@ -87,8 +88,7 @@ type PressureCard struct {
 // invariant 3 holding even at 94%.
 func (c *PressureCard) Update(msg tea.KeyMsg) (done bool, result any) {
 	pressed := msg.String()
-	switch pressed {
-	case "esc", "ctrl+c":
+	if keys.Is(pressed, keys.Select.Cancel) {
 		return true, ""
 	}
 	for _, k := range c.Keys {

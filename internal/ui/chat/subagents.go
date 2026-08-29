@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // subagentEventMsg carries one supervisor notification into the Update loop.
@@ -144,7 +145,7 @@ func (m Model) activeChildAsk() *subagent.Ask {
 // Detached, [g] jumps into the agent's attached view instead of answering
 // (DESIGN-TUI.md §9c).
 func (m Model) updateChildAsk(msg tea.KeyMsg, ask *subagent.Ask) (tea.Model, tea.Cmd) {
-	if msg.String() == "ctrl+d" {
+	if keys.Match(msg, keys.Draft.Quit) {
 		m.quitting = true
 		m.cancelSubagents()
 		if m.cancel != nil {
@@ -164,7 +165,7 @@ func (m Model) updateChildAsk(msg tea.KeyMsg, ask *subagent.Ask) (tea.Model, tea
 	}
 	// The manager is reachable from a routed approval too (S-087): the card
 	// steps aside while the list is open and comes back when it closes.
-	if msg.String() == "ctrl+a" {
+	if keys.Match(msg, keys.Draft.Agents) {
 		return m.openAgentList()
 	}
 	done, result := m.childAskCard(ask).Update(msg)

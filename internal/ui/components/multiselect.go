@@ -2,9 +2,11 @@ package components
 
 import (
 	"fmt"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // MultiSelectResult is the multi-select Update result: the checked indices in
@@ -53,28 +55,29 @@ func (s *MultiSelect) count() int {
 
 func (s *MultiSelect) Update(msg tea.KeyMsg) (done bool, result any) {
 	s.notice = ""
-	switch msg.String() {
-	case "up", "k":
+	switch pressed := msg.String(); {
+	case pressed == "up", pressed == "k":
 		if s.Focus > 0 {
 			s.Focus--
 		}
-	case "down", "j":
+	case pressed == "down", pressed == "j":
 		if s.Focus < len(s.Options)-1 {
 			s.Focus++
 		}
-	case " ", "space":
+	case keys.Is(pressed, keys.Select.Toggle):
 		if s.Focus < len(s.Checked) {
 			s.Checked[s.Focus] = !s.Checked[s.Focus]
 		}
-	case "a":
+	case keys.Is(pressed, keys.Select.All):
 		// All ↔ none: anything unchecked checks everything, else clears.
 		all := s.count() == len(s.Checked)
 		for i := range s.Checked {
 			s.Checked[i] = !all
 		}
-	case "enter":
+	case keys.Is(pressed, keys.Select.Take):
 		if s.count() == 0 {
-			s.notice = "nothing selected — space toggles, esc cancels"
+			s.notice = "nothing selected — " + keys.Shown(keys.Select.Toggle) +
+				" toggles, " + keys.Shown(keys.Select.Cancel) + " cancels"
 			return false, nil
 		}
 		var idx []int
@@ -84,7 +87,7 @@ func (s *MultiSelect) Update(msg tea.KeyMsg) (done bool, result any) {
 			}
 		}
 		return true, MultiSelectResult{Indices: idx}
-	case "esc", "ctrl+c":
+	case keys.Is(pressed, keys.Select.Cancel):
 		return true, MultiSelectResult{Canceled: true}
 	}
 	return false, nil
@@ -99,7 +102,12 @@ func (s *MultiSelect) View(width int) string {
 	if s.notice != "" {
 		tail = append(tail, sty.Warn.Render(clip(s.notice, inner)))
 	}
-	hint := fmt.Sprintf("space toggle · a all/none · enter apply (%d) · esc cancel", s.count())
+	hint := strings.Join([]string{
+		offer(keys.Select.Toggle),
+		words(keys.Select.All, "all/none"),
+		words(keys.Select.Take, fmt.Sprintf("apply (%d)", s.count())),
+		offer(keys.Select.Cancel),
+	}, " · ")
 	tail = append(tail, hintRows([]string{hint}, width)...)
 	rows := append(s.visibleRows(width, bodyBudget(s.MaxLines, len(tail))), tail...)
 	rows = boundRows(rows, s.MaxLines)

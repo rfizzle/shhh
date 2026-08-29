@@ -26,6 +26,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 const (
@@ -158,26 +159,26 @@ type DoctorScreen struct {
 // draft under it for a bare letter to belong to (§19, invariant 5).
 func (d *DoctorScreen) Update(msg tea.KeyMsg) (done bool, result any) {
 	d.sync()
-	switch msg.String() {
-	case "up", "k":
+	switch pressed := msg.String(); {
+	case pressed == "up", pressed == "k":
 		d.move(-1)
-	case "down", "j":
+	case pressed == "down", pressed == "j":
 		d.move(1)
-	case "f":
+	case keys.Is(pressed, keys.Screen.Fix):
 		// A row with nothing behind `[f]` does not offer it, so pressing it
 		// there is not a refusal to report — there is simply no key.
 		if d.stops() > 0 && d.Checks[d.Focus].hasFix() {
 			d.fix[d.Focus] = !d.fix[d.Focus]
 		}
-	case "c":
+	case keys.Is(pressed, keys.Screen.Copy):
 		return false, DoctorCommand{Act: DoctorCopy}
-	case "r":
+	case keys.Is(pressed, keys.Screen.Again):
 		if !d.Running {
 			return false, DoctorCommand{Act: DoctorRerun}
 		}
-	case "?":
+	case keys.Is(pressed, keys.Screen.List):
 		d.keys = !d.keys
-	case "q", "esc", "ctrl+c":
+	case keys.Is(pressed, keys.Screen.Quit):
 		return true, nil
 	}
 	return false, nil
@@ -226,7 +227,7 @@ func (d *DoctorScreen) headerRow(width int) string {
 	if d.Running {
 		left += sty.Dim.Render(" · ") + sty.SpinText.Render(d.spinGlyph()+" running")
 	}
-	right := sty.Dim.Render("[?] keys · [q] quit")
+	right := sty.Dim.Render(screenHeaderKeys())
 	if d.Elapsed != "" {
 		right = sty.Dimmer.Render(d.Elapsed) + sty.Dim.Render(" · [?] keys · [q] quit")
 	}
@@ -364,7 +365,7 @@ func (d *DoctorScreen) fixKeyRow(i, width int) string {
 	if d.fix[i] {
 		label = "hide it"
 	}
-	offer := []TurnKey{{Key: "[f]", Label: label}}
+	offer := []TurnKey{keyOfferAs(keys.Screen.Fix, label)}
 	if i != d.Focus {
 		return detailLine(inertOffers(offer), width)
 	}
@@ -460,7 +461,7 @@ func (d *DoctorScreen) footRows(width int) []string {
 		for _, offer := range d.keyList() {
 			rows = append(rows, clip(keyOffers([]TurnKey{offer}), width))
 		}
-		return append(rows, clip(keyOffers([]TurnKey{{Key: "[?]", Label: "hide the keys"}}), width))
+		return append(rows, clip(keyOffers([]TurnKey{hideKeysOffer()}), width))
 	}
 	summary := indentBy(d.summaryRow(), ptrWidth, width)
 	offers := d.offers()
@@ -545,31 +546,31 @@ func rank(state DoctorState) int {
 func (d *DoctorScreen) offers() []TurnKey {
 	var offers []TurnKey
 	if d.stops() > 1 {
-		offers = append(offers, TurnKey{Key: "[↑↓]", Label: "move"})
+		offers = append(offers, keyOffer(keys.Select.Move))
 	}
 	if len(d.Checks) > 0 {
-		offers = append(offers, TurnKey{Key: "[c]", Label: "copy the report"})
+		offers = append(offers, keyOfferAs(keys.Screen.Copy, "copy the report"))
 	}
 	if !d.Running {
-		offers = append(offers, TurnKey{Key: "[r]", Label: "run the checks again"})
+		offers = append(offers, keyOffer(keys.Screen.Again))
 	}
 	return offers
 }
 
 // keyList is every key the screen has, for `[?]`.
 func (d *DoctorScreen) keyList() []TurnKey {
-	keys := []TurnKey{}
+	list := []TurnKey{}
 	if d.stops() > 0 {
-		keys = append(keys,
-			TurnKey{Key: "[↑↓/jk]", Label: "move between the checks that need something"},
-			TurnKey{Key: "[f]", Label: "show the fix for the check under the pointer"})
+		list = append(list,
+			keyOfferAs(keys.Screen.Move, "move between the checks that need something"),
+			keyOfferAs(keys.Screen.Fix, "show the fix for the check under the pointer"))
 	}
-	keys = append(keys,
-		TurnKey{Key: "[c]", Label: "copy the whole report as text"},
-		TurnKey{Key: "[r]", Label: "run every check again"},
-		TurnKey{Key: "[esc]", Label: "back to the shell"},
-		TurnKey{Key: "[q]", Label: "back to the shell"})
-	return keys
+	list = append(list,
+		keyOfferAs(keys.Screen.Copy, "copy the whole report as text"),
+		keyOfferAs(keys.Screen.Again, "run every check again"),
+		keyOfferAs(keys.Select.Cancel, "back to the shell"),
+		keyOfferAs(keys.Screen.Quit, "back to the shell"))
+	return list
 }
 
 // sync keeps the pointer on a row worth standing on. It runs before every

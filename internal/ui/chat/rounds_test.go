@@ -16,6 +16,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // firstGrantOffer is the bracket a first stop draws. It is derived from the
@@ -98,7 +99,7 @@ func TestRoundLimit_GrantContinuesTheSameTurn(t *testing.T) {
 	turn, rounds := m.turnCount, m.agent.Rounds()
 
 	m.focusIdx = indexOfKind(t, m, entryRoundPause)
-	updated, cmd, claimed := m.roundPauseKey(grantRoundsKey)
+	updated, cmd, claimed := m.roundPauseKey(keys.Shown(keys.Row.Rounds))
 	if !claimed {
 		t.Fatal("the grant should be claimed by the focused pause row")
 	}
@@ -125,7 +126,7 @@ func TestRoundLimit_GrantContinuesTheSameTurn(t *testing.T) {
 		t.Error("the turn is open again, so it can close when it really ends")
 	}
 	// Taking the offer spends it, on the row as well as in the dispatch.
-	if _, _, claimed := next.roundPauseKey(grantRoundsKey); claimed {
+	if _, _, claimed := next.roundPauseKey(keys.Shown(keys.Row.Rounds)); claimed {
 		t.Error("a spent offer should stop claiming its key")
 	}
 	if view := pauseView(next, pauseEntry(t, next)); strings.Contains(view, firstGrantOffer) {
@@ -136,7 +137,7 @@ func TestRoundLimit_GrantContinuesTheSameTurn(t *testing.T) {
 func TestRoundLimit_AGrantedTurnClosesOnceForTheWholeTurn(t *testing.T) {
 	m, _ := pausedModel(t)
 	m.focusIdx = indexOfKind(t, m, entryRoundPause)
-	updated, _, _ := m.roundPauseKey(grantRoundsKey)
+	updated, _, _ := m.roundPauseKey(keys.Shown(keys.Row.Rounds))
 	m = finishTurn(t, updated.(Model))
 
 	closes := 0
@@ -168,7 +169,7 @@ func TestRoundLimit_TheRailCarriesTheLimitAndTheGrant(t *testing.T) {
 	}
 
 	m.focusIdx = indexOfKind(t, m, entryRoundPause)
-	updated, _, _ := m.roundPauseKey(grantRoundsKey)
+	updated, _, _ := m.roundPauseKey(keys.Shown(keys.Row.Rounds))
 	if got, want := updated.(Model).cockpitData(true).Round, fmt.Sprintf("round 1/%d", 1+roundGrantBlock); got != want {
 		t.Errorf("granted rail = %q, want the raised ceiling", got)
 	}
@@ -177,7 +178,7 @@ func TestRoundLimit_TheRailCarriesTheLimitAndTheGrant(t *testing.T) {
 func TestRoundLimit_ANewTurnGetsTheConfiguredCeilingBack(t *testing.T) {
 	m, _ := pausedModel(t)
 	m.focusIdx = indexOfKind(t, m, entryRoundPause)
-	updated, _, _ := m.roundPauseKey(grantRoundsKey)
+	updated, _, _ := m.roundPauseKey(keys.Shown(keys.Row.Rounds))
 	m = finishTurn(t, updated.(Model))
 
 	m = sendText(t, m, "now do the other one")
@@ -215,7 +216,7 @@ func TestRoundLimit_ReviewAndUndoActOnThePausedTurn(t *testing.T) {
 	m, path := pausedModel(t)
 	m.focusIdx = indexOfKind(t, m, entryRoundPause)
 
-	updated, _, claimed := m.roundPauseKey(reviewKey)
+	updated, _, claimed := m.roundPauseKey(keys.Shown(keys.Row.Review))
 	if !claimed {
 		t.Fatal("[v] should be claimed by the pause row")
 	}
@@ -225,7 +226,7 @@ func TestRoundLimit_ReviewAndUndoActOnThePausedTurn(t *testing.T) {
 			reviewed.state, reviewed.reviewTurnN)
 	}
 
-	updated, _, claimed = m.roundPauseKey(undoKey)
+	updated, _, claimed = m.roundPauseKey(keys.Shown(keys.Row.Undo))
 	if !claimed {
 		t.Fatal("[u] should be claimed by the pause row")
 	}
@@ -339,7 +340,7 @@ func TestRoundLimit_FocusModeLandsOnThePauseAndTakesTheGrant(t *testing.T) {
 		t.Errorf("the hint names the literal key the row draws as %s:\n%s", firstGrantOffer, hint)
 	}
 
-	updated, cmd := focused.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(grantRoundsKey)})
+	updated, cmd := focused.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(keys.Shown(keys.Row.Rounds))})
 	next := updated.(Model)
 	if cmd == nil || next.turnState() != stateStreaming {
 		t.Fatalf("the grant in focus mode should continue the turn, state %v", next.turnState())
@@ -391,7 +392,7 @@ func TestRoundLimit_TheGrantDoubles(t *testing.T) {
 // [!] belongs to the second stop, not the first: the first is the checkpoint
 // doing the job it exists for, and there is nothing to stop asking yet.
 func TestRoundLimit_LetItRunIsTheSecondStopsOffer(t *testing.T) {
-	uncap := "[" + uncapRoundsKey + "]"
+	uncap := "[" + keys.Shown(keys.Row.Uncap) + "]"
 	first := roundPause{files: 1}
 	if offers(first.keys(), uncap) {
 		t.Error("the first stop offers the grant, not the end of the question")
@@ -406,7 +407,7 @@ func TestRoundLimit_LetItRunIsTheSecondStopsOffer(t *testing.T) {
 	// The bar names the keys, so its labels carry the numbers the row's
 	// brackets do.
 	bar := roundPauseOffers(&second)
-	if !offers(bar, "["+grantRoundsKey+"]") || !offers(bar, uncap) {
+	if !offers(bar, "["+keys.Shown(keys.Row.Rounds)+"]") || !offers(bar, uncap) {
 		t.Errorf("the hint bar names both literal keys, got %+v", bar)
 	}
 	// Taking either spends both: the row keeps its words and loses its keys.
@@ -427,7 +428,7 @@ func TestRoundLimit_LetItRunClearsTheCeilingForTheTurn(t *testing.T) {
 	m.roundGrant = roundGrantBlock
 	m.focusIdx = indexOfKind(t, m, entryRoundPause)
 
-	updated, cmd, claimed := m.roundPauseKey(uncapRoundsKey)
+	updated, cmd, claimed := m.roundPauseKey(keys.Shown(keys.Row.Uncap))
 	if !claimed || cmd == nil {
 		t.Fatal("[!] should be claimed by the focused pause row and continue the turn")
 	}
@@ -441,7 +442,7 @@ func TestRoundLimit_LetItRunClearsTheCeilingForTheTurn(t *testing.T) {
 	if got, want := next.cockpitData(true).Round, "round 1/∞"; got != want {
 		t.Errorf("rail = %q, want %q — the rail must not invent a bound", got, want)
 	}
-	if _, _, claimed := next.roundPauseKey(uncapRoundsKey); claimed {
+	if _, _, claimed := next.roundPauseKey(keys.Shown(keys.Row.Uncap)); claimed {
 		t.Error("a spent offer should stop claiming its key")
 	}
 

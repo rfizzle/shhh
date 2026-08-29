@@ -18,6 +18,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // Layout thresholds in content columns (COCKPIT_SPEC.md §3 applied to shhh's
@@ -230,20 +231,35 @@ func (m Model) frameHints() string {
 		// the run is ctrl+c here rather than the artboard's esc, because esc
 		// clears the draft on this surface and always has — see the departure
 		// recorded in DESIGN-TUI.md §7b.
-		hints = []string{handoverKey + " answer it", "enter queues steering", "ctrl+c stop the run"}
+		hints = []string{
+			keys.Shown(keys.Draft.Answer) + " " + keys.Words(keys.Draft.Answer),
+			keys.Shown(keys.Draft.Send) + " queues steering",
+			keys.Shown(keys.Draft.Cancel) + " stop the run",
+		}
 	case m.attachedTo != "":
-		hints = []string{"esc detach", "ctrl+a agents"}
+		hints = []string{
+			keys.Shown(keys.Agent.Detach) + " detach",
+			keys.Shown(keys.Draft.Agents) + " agents",
+		}
 	case m.working():
 		// Commands run mid-turn now (S-087), so the working rail says so;
 		// with children in flight the agent manager is the first thing to
 		// reach for.
-		hints = []string{"enter queues steering", "/ commands", "ctrl+c cancel"}
+		steer := keys.Shown(keys.Draft.Send) + " queues steering"
+		cancel := keys.Shown(keys.Draft.Cancel) + " cancel"
+		hints = []string{steer, "/ commands", cancel}
 		if active, _ := m.activeAgents(); active > 0 {
-			hints = []string{"enter queues steering", "ctrl+a agents", "/ commands", "ctrl+c cancel"}
+			hints = []string{steer, keys.Shown(keys.Draft.Agents) + " agents", "/ commands", cancel}
 		}
 	default:
-		hints = []string{"enter send", "shift+enter newline", "/ commands",
-			"ctrl+v attach", "ctrl+k palette", "shift+tab mode"}
+		hints = []string{
+			keys.Shown(keys.Draft.Send) + " send",
+			keys.Shown(keys.Draft.Newline) + " newline",
+			"/ commands",
+			keys.Shown(keys.Draft.Attach) + " attach",
+			keys.Shown(keys.Draft.Palette) + " palette",
+			keys.Shown(keys.Draft.Mode) + " mode",
+		}
 	}
 	return sty.Frame.Hint.Render(strings.Join(hints, " · "))
 }

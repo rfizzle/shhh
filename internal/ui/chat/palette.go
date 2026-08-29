@@ -30,6 +30,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // paletteFileLimit bounds each half of the FILES group: the paths this
@@ -126,21 +127,21 @@ func (m *Model) closePalette() {
 // not movement, dispatch or dismissal is text: a digit is a digit and j is a
 // j, which is why the card is unnumbered.
 func (m Model) updatePalette(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch key := msg.String(); key {
-	case "esc", "ctrl+c":
+	switch pressed := msg.String(); {
+	case keys.Is(pressed, keys.Select.Cancel):
 		m.closePalette()
 		m.syncViewport()
 		return m, nil
 
-	case "up", "ctrl+p":
+	case keys.Is(pressed, keys.Select.Palette.Prev):
 		m.picker.Update(tea.KeyMsg{Type: tea.KeyUp})
 		return m, nil
 
-	case "down", "ctrl+n":
+	case keys.Is(pressed, keys.Select.Palette.Next):
 		m.picker.Update(tea.KeyMsg{Type: tea.KeyDown})
 		return m, nil
 
-	case "enter", "tab":
+	case keys.Is(pressed, keys.Select.Palette.Run, keys.Select.Palette.Write):
 		row, ok := m.paletteFocus()
 		if !ok {
 			return m, nil
@@ -148,7 +149,7 @@ func (m Model) updatePalette(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.closePalette()
 		// A file has nothing to run: both keys put its path in the draft,
 		// which is the only thing a path means to a prompt.
-		if key == "tab" || row.group == paletteFiles {
+		if keys.Is(pressed, keys.Select.Palette.Write) || row.group == paletteFiles {
 			m.paletteInsert(row)
 			m.syncViewport()
 			return m, nil

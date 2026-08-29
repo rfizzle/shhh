@@ -23,6 +23,7 @@ import (
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // planApprovedMessage is the user-role message that turns an approved plan
@@ -78,27 +79,27 @@ func (m *Model) clearPlan() {
 
 // updatePlanApprove handles keys while the plan-approval card is showing.
 func (m Model) updatePlanApprove(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch key := msg.String(); key {
-	case "up", "k":
+	switch pressed := msg.String(); {
+	case pressed == "up", pressed == "k":
 		if m.planChoice > 0 {
 			m.planChoice--
 		}
 		return m, nil
-	case "down", "j":
+	case pressed == "down", pressed == "j":
 		if m.planChoice < len(planApproveOptions)-1 {
 			m.planChoice++
 		}
 		return m, nil
-	case "enter":
+	case keys.Is(pressed, keys.Select.Take):
 		return m.selectPlanOption(m.planChoice)
-	case "1", "2", "3", "4", "5":
-		return m.selectPlanOption(int(key[0] - '1'))
-	case "s", "S":
+	case pressed >= "1" && pressed <= "5" && len(pressed) == 1:
+		return m.selectPlanOption(int(pressed[0] - '1'))
+	case pressed == "s", pressed == "S":
 		return m.savePlanFromCard()
-	case "esc", "ctrl+c":
+	case keys.Is(pressed, keys.Select.Cancel):
 		// Esc never destroys: dismissing the prompt keeps planning.
 		return m.keepPlanning()
-	case "ctrl+d":
+	case keys.Is(pressed, keys.Draft.Quit):
 		m.quitting = true
 		return m, m.quitCmd()
 	}
@@ -219,7 +220,7 @@ func (m Model) planCard() *components.PlanCard {
 	if m.decisionUngated() {
 		// The plan landed while a sentence was half-typed: its keys are not
 		// live until ctrl+g hands the keyboard over (S-117, §7b).
-		card.NotYetLive, card.Handover = true, handoverKey
+		card.NotYetLive, card.Handover = true, keys.Shown(keys.Draft.Answer)
 	}
 	if doc.Title != "" {
 		card.Title = "Plan · " + doc.Title

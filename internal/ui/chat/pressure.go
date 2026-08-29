@@ -27,6 +27,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // armPressureCard opens the card when the turn that just closed left the
@@ -232,7 +233,7 @@ func (m Model) updatePressure(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.pressure == nil {
 		return m.closePressure()
 	}
-	if msg.String() == "ctrl+d" {
+	if keys.Match(msg, keys.Draft.Quit) {
 		m.quitting = true
 		return m, m.quitCmd()
 	}

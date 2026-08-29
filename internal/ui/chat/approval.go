@@ -748,6 +748,11 @@ func (m Model) bottomPanelHeight() int {
 		lines = m.undoConfirmLines()
 	case stateKeyEntry:
 		lines = m.keyEntryLines()
+	case stateFocus:
+		// The reading bar is normally the input's three rows; `[?]` grows it
+		// into the mode's key register (S-153, §7d), and the panel pays for
+		// it out of the transcript the way every other panel does.
+		lines = m.focusHintLines()
 	case statePressure:
 		// The card is a decision, and a decision whose action bar was cut off
 		// by the panel bound is not one: it gets the plan card's headroom.

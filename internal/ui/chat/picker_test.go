@@ -12,6 +12,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 func TestModelPick_BareModelOpensPicker(t *testing.T) {
@@ -962,7 +963,7 @@ func TestModelPick_MakeDefaultSwitchesAndPersists(t *testing.T) {
 	}
 
 	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
-	updated, _ = updated.(Model).Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(modelDefaultKey)})
+	updated, _ = updated.(Model).Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(keys.Shown(keys.Select.Alt))})
 	next := updated.(Model)
 
 	if switched != "m2" || next.modelName != "m2" {

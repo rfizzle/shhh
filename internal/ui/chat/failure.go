@@ -21,22 +21,18 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// Keys a failure row can offer. They are declared here rather than inline so
-// the dispatch and the offers cannot drift apart.
+// The keys a failure row can offer are keys.Row.Retry, Continue, Key and
+// Provider (§7d), declared in the register rather than inline so the dispatch
+// and the offers cannot drift apart.
 //
 // They are handled by focus mode on the row, the way the changeset row's [v]
 // and [u] are (S-098), so the input keeps all four letters for typing — which
 // matters more here than anywhere else, since "run the tests again" and "check
 // what it did" are exactly what gets typed after a failure. That is also why
 // entering a key is [e] and not §17a's [k]: k is the focus cursor's own.
-const (
-	failRetryKey    = "r"
-	failCompactKey  = "c"
-	failKeyKey      = "e"
-	failProviderKey = "p"
-)
 
 // maxFailureDetail bounds the provider's own words on the row. The detail
 // body exists so an unclassified failure still says something; it does not
@@ -167,35 +163,35 @@ func failureNote(f *provider.Failure) string {
 // the session cannot honour is not offered: a provider that cannot be
 // switched offers no [p], and a session with nothing to compact offers no [c].
 func (m Model) failureKeys(f *provider.Failure) []components.KeyOffer {
-	var keys []components.KeyOffer
+	var offers []components.KeyOffer
 	add := func(key, label string) {
-		keys = append(keys, components.KeyOffer{Key: "[" + key + "]", Label: label})
+		offers = append(offers, components.KeyOffer{Key: "[" + key + "]", Label: label})
 	}
 	switch f.Class {
 	case provider.ClassAuth:
 		if m.replaceKeyFn != nil {
-			add(failKeyKey, "enter a new key")
+			add(keys.Shown(keys.Row.Key), "enter a new key")
 		}
 		if m.canSwitchProvider() {
-			add(failProviderKey, "switch provider")
+			add(keys.Shown(keys.Row.Provider), "switch provider")
 		}
 	case provider.ClassQuota:
 		if m.canSwitchProvider() {
-			add(failProviderKey, "switch provider")
+			add(keys.Shown(keys.Row.Provider), "switch provider")
 		}
 	case provider.ClassContextLength:
-		add(failCompactKey, "compact now")
-		add(failRetryKey, "then try again")
+		add(keys.Shown(keys.Row.Continue), "compact now")
+		add(keys.Shown(keys.Row.Retry), "then try again")
 	case provider.ClassCancelled:
 		// You stopped it on purpose. Offering a key here would be the
 		// interface arguing with the decision.
 	default:
-		add(failRetryKey, "try again")
+		add(keys.Shown(keys.Row.Retry), "try again")
 		if m.canSwitchProvider() {
-			add(failProviderKey, "switch provider")
+			add(keys.Shown(keys.Row.Provider), "switch provider")
 		}
 	}
-	return keys
+	return offers
 }
 
 // canSwitchProvider reports whether [p] can do anything: a switcher wired in,
@@ -246,16 +242,16 @@ func (m Model) failureKey(key string) (tea.Model, tea.Cmd, bool) {
 		return m, nil, false
 	}
 	switch key {
-	case failRetryKey:
+	case keys.Shown(keys.Row.Retry):
 		next, cmd := m.retryTurn()
 		return next, cmd, true
-	case failCompactKey:
+	case keys.Shown(keys.Row.Continue):
 		next, cmd := m.startCompact()
 		return next, cmd, true
-	case failKeyKey:
+	case keys.Shown(keys.Row.Key):
 		next, cmd := m.openKeyEntry(e.fail)
 		return next, cmd, true
-	case failProviderKey:
+	case keys.Shown(keys.Row.Provider):
 		next, cmd := m.openProviderPick()
 		return next, cmd, true
 	}
@@ -352,7 +348,7 @@ func (m Model) updateKeyEntry(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	if m.keyAsk == nil {
 		return m.closeKeyEntry("")
 	}
-	if msg.String() == "ctrl+d" {
+	if keys.Match(msg, keys.Draft.Quit) {
 		m.quitting = true
 		return m, m.quitCmd()
 	}

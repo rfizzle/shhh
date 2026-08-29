@@ -13,6 +13,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // reviewModel is a finished turn that wrote one file, ready to review.
@@ -255,7 +256,7 @@ func TestReview_ReturnsToFocusMode(t *testing.T) {
 	m, _ := reviewModel(t)
 	updated, _ := m.enterFocusMode()
 	m = updated.(Model)
-	updated, _ = m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(reviewKey)})
+	updated, _ = m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(keys.Shown(keys.Row.Review))})
 	m = updated.(Model)
 	if m.state != stateReview {
 		t.Fatalf("[v] should open review mode, got state %v", m.state)

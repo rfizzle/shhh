@@ -37,6 +37,7 @@ import (
 	"github.com/rfizzle/shhh/internal/radius"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 type phase int
@@ -918,8 +919,8 @@ func (m GenerateModel) updateExplain(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.phase = phaseAction
 			return m, nil
 		}
-		switch msg.String() {
-		case "q", "esc":
+		switch pressed := msg.String(); {
+		case keys.Is(pressed, keys.Screen.Quit):
 			if m.explainStream.cancel != nil {
 				m.explainStream.cancel()
 			}

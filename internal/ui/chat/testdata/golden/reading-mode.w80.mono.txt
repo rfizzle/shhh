@@ -95,6 +95,34 @@ fix the round limit
 
 
 
+· [?] · the mode's whole key register, where the bar was
+──── READING 5/5 ───────────────────────────────────────────────────────────
+You
+fix the round limit
+
+  ▸ 1  Locate the round accounting ──────────────────────── ✓ 4 tools  1.2s
+
+  ▾ 2  Thread the sentinel through the loop ─────────────── ✗ 2 tools   22s
+    ▎✎ edit    internal/agent/loop.go                          1 line  1.1s
+    ▎✗ run     go test ./internal/agent/...                    exit 1   21s
+      --- FAIL: TestRoundLimit
+
+❯  ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                    round 2/25
+  ▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn  all tracked in git
+   ✗ go test ./internal/agent/... failing · exit 1 · 21s
+
+────────────────────────────────────────────────────────────────────────────
+[j/k] move
+[enter] expand
+[ctrl+o] step detail
+[-] collapse
+[pgup] page up
+[pgdn] page down
+[?] hide the keys
+[q] back to the prompt
+▎[v] review
+▎[u] undo turn
+
 · prose · nothing expandable, so no cursor and no position
 ──── READING ───────────────────────────────────────────────────────────────
 You
@@ -196,6 +224,34 @@ fix the round limit
 ␛[38;5;254m[j/k]␛[0m␛[38;5;244m move␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[enter]␛[0m␛[38;5;244m expand␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[-]␛[0m␛[38;5;244m collapse␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[q]␛[0m␛[38;5;244m prompt␛[0m       ␛[38;5;244m1 row expanded␛[0m
 
 
+
+· [?] · the mode's whole key register, where the bar was
+␛[38;5;244m────␛[0m ␛[1;38;5;254mREADING 5/5␛[0m ␛[38;5;244m───────────────────────────────────────────────────────────␛[0m
+␛[1;38;5;254mYou␛[0m
+fix the round limit
+
+  ␛[38;5;244m▸␛[0m ␛[38;5;254m1 ␛[0m ␛[38;5;254mLocate the round accounting␛[0m ␛[38;5;244m────────────────────────␛[0m ␛[38;5;254m✓␛[0m ␛[38;5;244m4 tools␛[0m  ␛[38;5;244m1.2s␛[0m
+
+  ␛[38;5;244m▾␛[0m ␛[38;5;254m2 ␛[0m ␛[38;5;254mThread the sentinel through the loop␛[0m ␛[38;5;244m───────────────␛[0m ␛[38;5;254m✗␛[0m ␛[38;5;244m2 tools␛[0m   ␛[38;5;244m22s␛[0m
+    ␛[38;5;254m▎␛[0m␛[38;5;254m✎␛[0m edit    ␛[38;5;244minternal/agent/loop.go␛[0m                          ␛[38;5;244m1 line␛[0m  ␛[38;5;244m1.1s␛[0m
+    ␛[38;5;254m▎␛[0m␛[38;5;254m✗␛[0m run     ␛[38;5;244mgo test ./internal/agent/...␛[0m                    ␛[38;5;254mexit 1␛[0m   ␛[38;5;244m21s␛[0m
+      ␛[38;5;244m--- FAIL: TestRoundLimit␛[0m
+
+␛[38;5;254m❯␛[0m ␛[38;5;254m␛[0m␛[38;5;254m␛[0m␛[38;5;244m␛[0m␛[38;5;244m␛[0m␛[48;5;237m ␛[38;5;254m✓␛[0m␛[48;5;237m ␛[38;5;254m␛[0m␛[48;5;237m␛[38;5;244m␛[0m␛[48;5;237m␛[38;5;244m␛[0m␛[48;5;237m␛[38;5;254;48;5;237mDone · 2 steps · 6 tools · 24.7s · $0.14                    round 2/25␛[0m␛[0m
+  ␛[38;5;254m▎␛[0m␛[38;5;254m✎␛[0m ␛[38;5;254m1 file changed ␛[0m␛[38;5;254m+12␛[0m ␛[38;5;254m−4␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[v]␛[0m␛[38;5;244m review␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[u]␛[0m␛[38;5;244m undo turn␛[0m  ␛[38;5;244mall tracked in git␛[0m
+   ␛[38;5;254m✗␛[0m ␛[38;5;254mgo test ./internal/agent/... failing␛[0m␛[38;5;244m · exit 1 · 21s␛[0m
+
+␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[0m
+␛[38;5;254m[j/k]␛[0m␛[38;5;244m move␛[0m
+␛[38;5;254m[enter]␛[0m␛[38;5;244m expand␛[0m
+␛[38;5;254m[ctrl+o]␛[0m␛[38;5;244m step detail␛[0m
+␛[38;5;254m[-]␛[0m␛[38;5;244m collapse␛[0m
+␛[38;5;254m[pgup]␛[0m␛[38;5;244m page up␛[0m
+␛[38;5;254m[pgdn]␛[0m␛[38;5;244m page down␛[0m
+␛[38;5;254m[?]␛[0m␛[38;5;244m hide the keys␛[0m
+␛[38;5;254m[q]␛[0m␛[38;5;244m back to the prompt␛[0m
+␛[38;5;254m▎␛[0m␛[38;5;254m[v]␛[0m␛[38;5;244m review␛[0m
+␛[38;5;254m▎␛[0m␛[38;5;254m[u]␛[0m␛[38;5;244m undo turn␛[0m
 
 · prose · nothing expandable, so no cursor and no position
 ␛[38;5;244m────␛[0m ␛[1;38;5;254mREADING␛[0m ␛[38;5;244m───────────────────────────────────────────────────────────────␛[0m

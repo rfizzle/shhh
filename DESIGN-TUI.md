@@ -5,7 +5,7 @@
 > S-048 (approvals), S-061 (plan mode), S-070 (memory), S-074 (diffs),
 > S-075 (activity feed & cockpit), S-082 (input frame).
 >
-> **v3 — S-121, with §7c added by S-125.** A fifth invariant, §7a rewritten,
+> **v3 — S-121, with §7c added by S-125 and §7d by S-153.** A fifth invariant, §7a rewritten,
 > §7b, §7c and §19 added, and §4a, §8, §10c and §15 brought onto the artboards
 > that now specify them. It continues what v2 (S-088) started — the file
 > describes one grammar rather than a record of how it grew — and where the
@@ -863,6 +863,10 @@ renderers, and holding their keys here is what lets the input keep `v`, `u`,
 `r`, `c`, `e` and `p` for typing. `ctrl+e` opens on the failure that ended a
 turn where there is one, rather than on the close rows after it.
 
+Which surface holds the keyboard, and which keys it may offer while it does,
+is §7c. Where every key in the product is declared — once, so the hint and
+the handler cannot disagree — is §7d.
+
 ### 7a. Reading mode: where the keyboard is (S-115, S-122, S-140)
 
 There are two panes and one keyboard, and every rule here follows from
@@ -1116,11 +1120,12 @@ divider, then the mode's keys, with the position on the right:
 
 - The mode keys are one line, in this order: `[j/k] move`, `[enter] expand`,
   `[ctrl+o] step detail` (§13d), `[-] collapse` once something is expanded,
-  `[q] back to the prompt`. The right-hand field is the position (`row 5 of 12
-  · step 2`, `2 rows expanded`), and it is the first thing to drop as the
-  terminal narrows. The drawing above is 64 columns, which is exactly where
-  `[ctrl+o]` has already gone; at 130 the line reads `[j/k] move · [enter]
-  expand · [ctrl+o] step detail · [q] back to the prompt`.
+  `[?] keys` (§7d), `[q] back to the prompt`. The right-hand field is the
+  position (`row 5 of 12 · step 2`, `2 rows expanded`), and it is the first
+  thing to drop as the terminal narrows. The drawing above is 64 columns,
+  which is exactly where `[?]` and `[ctrl+o]` have already gone; at 130 the
+  line reads `[j/k] move · [enter] expand · [ctrl+o] step detail · [?] keys ·
+  [q] back to the prompt`.
 - **`[ctrl+o]` says which of its three things it is doing.** `step detail`
   where the step under the cursor is closed, `close the detail` where it is
   open, and greyed with `this row is not in a step` beside it where the cursor
@@ -1172,14 +1177,17 @@ suggestions, because these keys outlive it too.
   on, so a narrow terminal loses its chrome all at once rather than a field at
   a time.
 - **The position narrows before the keys do, and drops last.** `row 5 of 12 ·
-  step 2` → `row 5 of 12` → `5 of 12` → `5/12`, then `[ctrl+o] step detail`
-  goes whole, then `[q] back to the prompt` becomes `[q] prompt`, then
-  `[enter] expand` leaves whole, and only when none of that is enough does the
-  field go. `[ctrl+o]` goes before any key gives up its words because it is
-  the only offer on the bar that acts past the row under the cursor, and the
-  only one with a home outside this mode — the draft answers the same chord
-  and `/help` names it (S-137). "First to drop" is about its own
-  fields; the lit row is what still says which row it is.
+  step 2` → `row 5 of 12` → `5 of 12` → `5/12`, then `[?] keys` goes whole,
+  then `[ctrl+o] step detail` goes whole, then `[q] back to the prompt`
+  becomes `[q] prompt`, then `[enter] expand` leaves whole, and only when none
+  of that is enough does the field go. The two keys that go first are the two
+  a reader can lose and still find: `[?]` acts on nothing in the transcript at
+  all and `/help` names it (S-153), and `[ctrl+o]` is the only other offer on
+  the bar that acts past the row under the cursor and the only one with a home
+  outside this mode — the draft answers the same chord and `/help` names it
+  too (S-137). A key that explains the keys goes before a key that does
+  something. "First to drop" is about the position's own fields; the lit row
+  is what still says which row it is.
 - **`[-] collapse` is offered while the row under the cursor is open**, not
   while anything anywhere is. A key on the bar that the surface cannot honour
   is an offer nothing accepts, which is the thing invariant 5 exists to stop;
@@ -1458,6 +1466,121 @@ way to hold the keyboard at all, so neither position is open to it: the keys
 are live on the changeset row in the transcript, where reading mode can reach
 them, and the rail states the facts instead. S-125 settles that as the
 answer rather than as a gap.
+
+**The table above is now data** (§7d). S-153 moved it into `internal/ui/keys`
+as a list of surfaces, each with its position, how it reaches the keyboard and
+the bindings it offers — so the checks this section asks for are run rather
+than reread, and the rows here and the rows in the code are the same rows.
+
+---
+
+### 7d. The key register (S-153)
+
+§7c is an audit written as a table, and §7c says why that is not enough: "a
+rule nobody can check against a list is a rule each new surface gets to
+rediscover." The list is now a Go package — `internal/ui/keys` — and every
+key in the product is declared in it once, as a binding carrying both halves:
+the keystrokes a handler answers, and the spelling and words a hint prints.
+
+**The problem it closes is drift, not ignorance.** Before it, a key was
+written down twice — as a literal in the handler and as prose in the hint —
+in different files, with nothing making them agree. Sixty-eight chord literals
+across twenty files, and a `/help` that had never heard of `ctrl+g`: the chord
+§7b is built on, the only way to reach a waiting decision's keys from a live
+draft, and the single most load-bearing keystroke in this document. That
+omission is what the register found on its first run.
+
+**What the register owns, and what it does not.**
+
+- **It owns the key.** A surface that offers `[v]` and a handler that answers
+  `v` read the same binding, so a spelling that changes changes in both places
+  or in neither.
+- **It does not own contextual words.** `[r]` is `try again` on a failure row
+  and `ask again from scratch` on a dropped stream — the same key, the same
+  dispatch, meaning something more specific in each place. The binding carries
+  the words a surface has no better ones for; a surface with better ones keeps
+  them. The copy is the reason this product's key rows read the way they do,
+  and a register that flattened them would be a downgrade sold as consistency.
+- **It does not decide what is live.** Whether a row's keys can be pressed is
+  a question about state, and §7c is the answer; the register says what a key
+  *is*, not whether the surface offering it holds the keyboard.
+- **It is not yet a rebinding layer.** Nothing reads config. The shape is the
+  one that would make rebinding a config change rather than a code change, and
+  that is as far as S-153 goes.
+
+**A surface is one keyboard.** The register's rows are §7c's, split finer
+where §7c's prose bundled several: the retry countdown, the pressure card and
+the key prompt are three surfaces rather than one row of "it opens on its
+own", and each supporting TUI (§19) is its own row rather than one row of
+"the screens". The test that forced the split is the useful one — no surface
+may answer one keystroke with two bindings — because a surface where `enter`
+means two things is a surface where the first case in a switch silently wins.
+
+**Three tests are the register's whole point.**
+
+- **No chord is written down outside it.** The source under `internal/ui` is
+  parsed and any string literal that is a key row segment — a chord, alone or
+  with the two or three words a hint puts beside it — fails. Bare letters are
+  not policed: `j`, `k` and `enter` are ordinary characters all over this tree
+  and a test that could not tell those from an offer is a test people turn
+  off. Chords are worth policing precisely because no sentence produces one.
+- **Every key the input offers is named in `/help`.** Asserted beside the
+  text, against the register's own list of the input frame's keys. This is the
+  test that found `ctrl+g`.
+- **Every declared binding is on a surface.** A key declared and listed
+  nowhere is a key nothing lists, which is the state §7c was written to end.
+
+#### `[?]` — the register on the page
+
+The four supporting TUIs have offered `[?] keys` since S-127: the compact key
+row swapped for the whole list, in place, and swapped back by the same key.
+S-153 gives reading mode the same key, because reading mode is the one surface
+in a chat session that can hold a bare letter.
+
+```
+────────────────────────────────────────────────────────────────
+[j/k] move
+[enter] expand
+[ctrl+o] step detail
+[-] collapse
+[pgup] page up
+[pgdn] page down
+[?] hide the keys
+[q] back to the prompt
+▎[v] review
+▎[u] undo turn
+```
+
+- **It replaces the hint bar rather than overlaying it**, and the panel grows
+  into the transcript the way every other bottom panel does (§12e). Two
+  bottom elements is the thing §7a refuses; a list floating over the pane
+  would be a third.
+- **What it adds over the bar is completeness, not longer prose.** The bar
+  sheds keys as the terminal narrows and never says which; this is where they
+  went. The words are the register's own — a second, fuller vocabulary would
+  be a second place to drift.
+- **The row's own offers come with it, under the row's `▎`.** The question is
+  "what can the keyboard do from here", and the mode's keys are only half the
+  answer. A row that offers none adds no rows.
+- **The panel is bounded like every other one** (§1: 40% of the screen). What
+  does not fit is counted on a final row rather than dropped in silence
+  (invariant 4).
+- **The list closes with the mode.** It is a reading of this surface, not a
+  preference about it, so the next time reading mode opens the question has
+  not been asked yet — which is how the supporting TUIs treat their own `[?]`.
+
+**`?` is not a key from the draft, and `/help` is the door that is.** A bare
+letter beside a live sentence is a letter (invariant 5, §7c), and `?` is a
+letter people type. So from the input it lands in the draft, and the register
+a reader wants is in `/help` — which now names `ctrl+g`, names what `?` opens,
+and is checked against the register rather than maintained beside it.
+
+**One departure, recorded.** `?` in reading mode is a character reading mode
+takes away: a reader who was about to leave the mode by typing a question can
+no longer start that question with `?`. It is the same price `q`, `j`, `k` and
+`-` already pay on this surface, and it buys the one key that answers "what
+else is here" — which on a bar that sheds its own offers as the terminal
+narrows is worth more than the first character of a rare sentence.
 
 ---
 
@@ -3591,7 +3714,8 @@ Common to all four:
 
 - A header line naming the command and its subject, with `[?] keys · [q] quit`
   on the right, and a rule under it — the same header the start screen uses
-  (§17c).
+  (§17c). `[?]` is where that key was invented; reading mode borrowed it in
+  S-153, and all five now draw their lists from the same register (§7d).
 - One hint line at the foot in the §12a bracketed-key grammar, and a
   right-hand field that annotates it and drops first (§16).
 - They are takeover surfaces: full width, no inspector rail (§15c), the §8

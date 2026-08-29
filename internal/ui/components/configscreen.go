@@ -26,6 +26,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // menuIndent is the column the settings list starts at, and pickerIndent the
@@ -157,18 +158,18 @@ func (c *ConfigScreen) Update(msg tea.KeyMsg) (done bool, result any) {
 }
 
 func (c *ConfigScreen) updateMenu(msg tea.KeyMsg) (bool, any) {
-	key := msg.String()
-	switch key {
-	case "up":
+	pressed := msg.String()
+	switch {
+	case pressed == "up":
 		c.move(-1)
 		return false, nil
-	case "down":
+	case pressed == "down":
 		c.move(1)
 		return false, nil
-	case "enter":
+	case keys.Is(pressed, keys.Screen.Take):
 		c.open()
 		return false, nil
-	case "esc", "ctrl+c":
+	case keys.Is(pressed, keys.Select.Cancel):
 		// esc leaves and changes nothing, which on this screen is literal:
 		// nothing has reached the file yet, so discarding the staged edits is
 		// what "change nothing" means (§19a).
@@ -184,22 +185,22 @@ func (c *ConfigScreen) updateMenu(msg tea.KeyMsg) (bool, any) {
 		}
 		return false, nil
 	}
-	switch key {
-	case "k":
+	switch {
+	case pressed == "k":
 		c.move(-1)
-	case "j":
+	case pressed == "j":
 		c.move(1)
-	case "/":
+	case keys.Is(pressed, keys.Screen.Filter):
 		c.menu.Filtering = true
-	case "q":
+	case pressed == keys.Shown(keys.Screen.Quit):
 		return true, ConfigResult{Canceled: true}
-	case "?":
+	case keys.Is(pressed, keys.Screen.List):
 		c.keys = !c.keys
-	case "r":
+	case keys.Is(pressed, keys.Screen.Reset):
 		if row := c.current(); row != nil {
 			return false, ConfigChange{Key: row.Key, Reset: true}
 		}
-	case "w":
+	case keys.Is(pressed, keys.Screen.Write):
 		if c.Changed > 0 {
 			c.confirm = &Confirm{Prompt: sty.Body.Render(fmt.Sprintf(
 				"Write %s to %s?", plural(c.Changed, "change"), c.Path))}
@@ -241,13 +242,13 @@ func (c *ConfigScreen) open() {
 }
 
 func (c *ConfigScreen) updatePicker(msg tea.KeyMsg) (bool, any) {
-	switch msg.String() {
-	case "esc", "ctrl+c":
+	switch pressed := msg.String(); {
+	case keys.Is(pressed, keys.Select.Cancel):
 		// esc keeps the current value — it is the one key on this screen
 		// that is guaranteed to change nothing (§19a).
 		c.picker = nil
 		return false, nil
-	case "enter":
+	case keys.Is(pressed, keys.Screen.Take):
 		opts := c.picker.Options
 		if len(opts) == 0 {
 			return false, nil
@@ -273,23 +274,23 @@ func (c *ConfigScreen) updatePicker(msg tea.KeyMsg) (bool, any) {
 		}
 		return false, nil
 	}
-	switch msg.String() {
-	case "up", "k":
+	switch pressed := msg.String(); {
+	case pressed == "up", pressed == "k":
 		c.picker.move(-1)
-	case "down", "j":
+	case pressed == "down", pressed == "j":
 		c.picker.move(1)
-	case "/":
+	case keys.Is(pressed, keys.Screen.Filter):
 		c.picker.Filtering = true
 	}
 	return false, nil
 }
 
 func (c *ConfigScreen) updateEdit(msg tea.KeyMsg) (bool, any) {
-	switch msg.String() {
-	case "esc", "ctrl+c":
+	switch pressed := msg.String(); {
+	case keys.Is(pressed, keys.Select.Cancel):
 		c.edit = nil
 		return false, nil
-	case "enter":
+	case keys.Is(pressed, keys.Screen.Take):
 		value := strings.TrimSpace(string(c.edit.value))
 		c.edit = nil
 		if row := c.rowAt(c.editRow); row != nil {
@@ -447,7 +448,7 @@ func (c *ConfigScreen) headerRow(width int) string {
 	if c.Changed > 0 {
 		left += sty.Accent.Render(" · " + plural(c.Changed, "change") + " unwritten")
 	}
-	right := sty.Dim.Render("[?] keys · [q] quit")
+	right := sty.Dim.Render(screenHeaderKeys())
 	if pad := width - lipgloss.Width(left) - lipgloss.Width(right); pad >= 2 {
 		return left + strings.Repeat(" ", pad) + right
 	}
@@ -466,7 +467,7 @@ func (c *ConfigScreen) footRows(width int) []string {
 		for _, offer := range c.keyList() {
 			rows = append(rows, clip(keyOffers([]KeyOffer{offer}), width))
 		}
-		return append(rows, clip(keyOffers([]KeyOffer{{Key: "[?]", Label: "hide the keys"}}), width))
+		return append(rows, clip(keyOffers([]KeyOffer{hideKeysOffer()}), width))
 	}
 	rows := wrapOffers(c.offers(), width)
 	if len(rows) == 0 {
@@ -485,56 +486,55 @@ func (c *ConfigScreen) footRows(width int) []string {
 
 // offers is the key row for whichever surface holds the keyboard.
 func (c *ConfigScreen) offers() []KeyOffer {
-	keep := KeyOffer{Key: "[esc]", Label: "keep the current value"}
+	keep := keyOffer(keys.Screen.Keep)
 	if row := c.rowAt(c.editRow); row != nil && row.Value != "" && !row.Secret {
 		keep.Label = "keep " + row.Value
 	}
 	switch {
 	case c.picker != nil:
-		offers := []KeyOffer{{Key: "[↑↓]", Label: "move"}}
+		offers := []KeyOffer{keyOffer(keys.Select.Move)}
 		if c.picker.Filtering {
-			offers = append(offers, KeyOffer{Key: "[ctrl+u]", Label: "clear the filter"})
+			offers = append(offers, keyOffer(keys.Screen.ClearQ))
 		} else {
-			offers = append(offers, KeyOffer{Key: "[/]", Label: "filter"})
+			offers = append(offers, keyOffer(keys.Screen.Filter))
 		}
-		return append(offers, KeyOffer{Key: "[enter]", Label: "take it"}, keep)
+		return append(offers, keyOffer(keys.Screen.Take), keep)
 	case c.secret != nil:
 		return []KeyOffer{
-			{Key: "[enter]", Label: "use it"},
-			{Key: "[esc]", Label: "keep the current key"},
+			keyOfferAs(keys.Wait.UseKey, "use it"),
+			keyOffer(keys.Wait.KeepKey),
 		}
 	case c.edit != nil:
 		return []KeyOffer{
-			{Key: "[enter]", Label: "set it"},
-			{Key: "[ctrl+u]", Label: "clear the field"},
+			keyOfferAs(keys.Screen.Take, "set it"),
+			keyOfferAs(keys.Screen.ClearQ, "clear the field"),
 			keep,
 		}
 	}
-	offers := []KeyOffer{{Key: "[↑↓]", Label: "move"}, {Key: "[enter]", Label: "change"}}
+	offers := []KeyOffer{keyOffer(keys.Select.Move), keyOfferAs(keys.Screen.Take, "change")}
 	if c.menu.Filtering {
-		offers = append(offers, KeyOffer{Key: "[ctrl+u]", Label: "clear the filter"})
+		offers = append(offers, keyOffer(keys.Screen.ClearQ))
 	} else {
-		offers = append(offers, KeyOffer{Key: "[/]", Label: "filter"},
-			KeyOffer{Key: "[r]", Label: "reset to default"})
+		offers = append(offers, keyOffer(keys.Screen.Filter), keyOffer(keys.Screen.Reset))
 	}
 	if c.Changed > 0 {
-		offers = append(offers, KeyOffer{Key: "[w]", Label: "write the file"})
+		offers = append(offers, keyOffer(keys.Screen.Write))
 	}
-	return append(offers, KeyOffer{Key: "[esc]", Label: "discard"})
+	return append(offers, keyOfferAs(keys.Select.Cancel, "discard"))
 }
 
 // keyList is every key the screen has, for `[?]`. It says what the compact
 // row cannot: which keys belong to a picker rather than to the list.
 func (c *ConfigScreen) keyList() []KeyOffer {
 	return []KeyOffer{
-		{Key: "[↑↓/jk]", Label: "move between settings"},
-		{Key: "[enter]", Label: "change the setting under the pointer"},
-		{Key: "[/]", Label: "filter the settings by name"},
-		{Key: "[ctrl+u]", Label: "clear the filter, or the field being typed into"},
-		{Key: "[r]", Label: "reset this setting to its default"},
-		{Key: "[w]", Label: "write every staged change to " + c.Path},
-		{Key: "[esc]", Label: "leave the picker, or leave the screen writing nothing"},
-		{Key: "[q]", Label: "leave the screen writing nothing"},
+		keyOfferAs(keys.Screen.Move, "move between settings"),
+		keyOfferAs(keys.Screen.Take, "change the setting under the pointer"),
+		keyOfferAs(keys.Screen.Filter, "filter the settings by name"),
+		keyOfferAs(keys.Screen.ClearQ, "clear the filter, or the field being typed into"),
+		keyOfferAs(keys.Screen.Reset, "reset this setting to its default"),
+		keyOfferAs(keys.Screen.Write, "write every staged change to "+c.Path),
+		keyOfferAs(keys.Select.Cancel, "leave the picker, or leave the screen writing nothing"),
+		keyOfferAs(keys.Screen.Quit, "leave the screen writing nothing"),
 	}
 }
 
@@ -546,7 +546,7 @@ func (c *ConfigScreen) footField() string {
 	case c.picker != nil || c.edit != nil || c.secret != nil:
 		return ""
 	case c.Changed > 0:
-		return "nothing is written until [w]"
+		return "nothing is written until " + keys.Bracket(keys.Screen.Write)
 	case c.menu.Filtering:
 		return ""
 	}
@@ -695,10 +695,10 @@ func (c *ConfigScreen) optIndex(row int) int {
 type configEdit struct{ value []rune }
 
 func (e *configEdit) update(msg tea.KeyMsg) {
-	switch msg.String() {
-	case "ctrl+u":
+	switch pressed := msg.String(); {
+	case keys.Is(pressed, keys.Screen.ClearQ):
 		e.value = nil
-	case "backspace":
+	case pressed == "backspace":
 		if len(e.value) > 0 {
 			e.value = e.value[:len(e.value)-1]
 		}

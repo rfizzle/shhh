@@ -594,6 +594,13 @@ func TestGolden_ReadingMode(t *testing.T) {
 				next, _ := m.updateFocus(tea.KeyMsg{Type: tea.KeyEnter})
 				*m = next.(Model)
 			})},
+			// The register with the cursor on a row that offers keys of its
+			// own: the mode's keys, then the row's under its own rail, which
+			// is the whole of what the keyboard can do from here.
+			{Label: "[?] · the mode's whole key register, where the bar was", View: reading(func(m *Model) {
+				next, _ := m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("?")})
+				*m = next.(Model)
+			})},
 			{Label: "prose · nothing expandable, so no cursor and no position", View: func() string {
 				m := frameModel(t, width, 40)
 				m.transcript = []entry{

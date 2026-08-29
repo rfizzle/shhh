@@ -29,12 +29,12 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// handoverKey hands the keyboard from the draft to the decision on screen.
-// It is a control chord for the reason every transfer in §7a is one: no
-// sentence can produce it, so it can be live while the draft is.
-const handoverKey = "ctrl+g"
+// keys.Draft.Answer hands the keyboard from the draft to the decision on
+// screen. It is a control chord for the reason every transfer in §7a is one:
+// no sentence can produce it, so it can be live while the draft is.
 
 // interruptShowing reports whether a decision that arrived unbidden is on
 // screen: the approval card, the /run confirm, the plan card, or a child
@@ -390,7 +390,7 @@ func (m Model) renderInterrupt(width int) string {
 // decide, so the transcript above gives up the rows instead.
 func (m Model) applyNotYetLive(card *components.ApprovalCard) {
 	card.MaxLines = m.maxConfirmPanelHeight()
-	card.Handover = handoverKey
+	card.Handover = keys.Shown(keys.Draft.Answer)
 	if m.decisionUngated() {
 		card.NotYetLive = true
 		return

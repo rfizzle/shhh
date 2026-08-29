@@ -30,23 +30,20 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// The keys a stream-drop row offers. They live in focus mode on the row, like
-// every other recovery key (S-106, §17a), so the input keeps both letters for
-// typing — which is the whole reason §17a's `[enter] continue from here`
-// becomes `[c]` here: enter is how you send the message you just typed, and a
-// row cannot have it while there is an input under it.
-const (
-	resumeKey   = failCompactKey // [c] continue from here
-	askAgainKey = failRetryKey   // [r] ask again from scratch
-)
-
-// fallbackKey finishes the turn on the cheaper model while a retry waits. It
-// is a bare letter, which every other recovery key refused to be — but the
-// wait owns the keyboard outright (nothing is streaming and the input is not
-// live), so there is no draft for it to steal a character from.
-const fallbackKey = "m"
+// The keys a stream-drop row offers are keys.Row.Continue and keys.Row.Retry.
+// They live in focus mode on the row, like every other recovery key (S-106,
+// §17a), so the input keeps both letters for typing — which is the whole
+// reason §17a's `[enter] continue from here` becomes `[c]` here: enter is how
+// you send the message you just typed, and a row cannot have it while there
+// is an input under it.
+//
+// keys.Wait.Fallback finishes the turn on the cheaper model while a retry
+// waits. It is a bare letter, which every other recovery key refused to be —
+// but the wait owns the keyboard outright (nothing is streaming and the input
+// is not live), so there is no draft for it to steal a character from.
 
 // The retry bound and its cadence. Three attempts is the bound the countdown
 // states out loud: a limit you cannot see is indistinguishable from a hang.
@@ -241,8 +238,8 @@ func (m Model) dropKeys(res *streamResume) []components.KeyOffer {
 		return nil
 	}
 	return []components.KeyOffer{
-		{Key: "[" + resumeKey + "]", Label: "continue from here"},
-		{Key: "[" + askAgainKey + "]", Label: "ask again from scratch"},
+		{Key: keys.Bracket(keys.Row.Continue), Label: keys.Words(keys.Row.Continue)},
+		{Key: keys.Bracket(keys.Row.Retry), Label: "ask again from scratch"},
 	}
 }
 
@@ -268,10 +265,10 @@ func (m Model) dropKey(key string) (tea.Model, tea.Cmd, bool) {
 		return m, nil, false
 	}
 	switch key {
-	case resumeKey:
+	case keys.Shown(keys.Row.Continue):
 		next, cmd := m.continueStream(e.resume)
 		return next, cmd, true
-	case askAgainKey:
+	case keys.Shown(keys.Row.Retry):
 		e.resume.spent = true
 		m.invalidateRenderCache()
 		next, cmd := m.retryTurn()
@@ -444,13 +441,13 @@ func (m Model) cancelRetryWait() (tea.Model, tea.Cmd) {
 // both of them end the wait: everything else would be a keystroke typed into
 // an input that is not listening.
 func (m Model) updateRetryWait(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	switch msg.String() {
-	case "ctrl+d":
+	switch pressed := msg.String(); {
+	case keys.Is(pressed, keys.Draft.Quit):
 		m.quitting = true
 		return m, m.quitCmd()
-	case "esc", "ctrl+c":
+	case keys.Is(pressed, keys.Select.Cancel):
 		return m.cancelRetryWait()
-	case fallbackKey:
+	case keys.Is(pressed, keys.Wait.Fallback):
 		if m.retry != nil && m.retry.fallback != "" {
 			return m.finishOnFallback(m.retry.fallback)
 		}
@@ -558,7 +555,7 @@ func (m Model) retryWaitBlock(width int) string {
 	}
 	if r.fallback != "" {
 		w.Keys = append(w.Keys, components.KeyOffer{
-			Key: "[" + fallbackKey + "]", Label: "finish this turn on " + r.fallback,
+			Key: keys.Bracket(keys.Wait.Fallback), Label: "finish this turn on " + r.fallback,
 		})
 	}
 	w.Keys = append(w.Keys, components.KeyOffer{Key: "[esc]", Label: m.retryStopLabel()})

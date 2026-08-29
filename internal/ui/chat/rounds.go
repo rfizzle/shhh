@@ -22,6 +22,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // roundGrantBlock is the first grant, and the step every later one grows by.
@@ -33,16 +34,12 @@ import (
 // becoming a toll collected every few minutes.
 const roundGrantBlock = 50
 
-// grantRoundsKey is the keystroke that takes the offer, and uncapRoundsKey
-// the one that ends the question for the rest of the turn. The row draws the
-// grant as `[+50]` — the block, not the keystroke — because both design
-// surfaces do (DESIGN-TUI.md §17a and ui_kits/cockpit/Edges.html in the shhh
-// Design System project); focus mode's hint line names the literal keys, which
-// is where the reader looks for one.
-const (
-	grantRoundsKey = "+"
-	uncapRoundsKey = "!"
-)
+// keys.Row.Rounds is the keystroke that takes the offer, and keys.Row.Uncap
+// the one that ends the question for the rest of the turn (§7d). The row
+// draws the grant as `[+50]` — the block, not the keystroke — because both
+// design surfaces do (DESIGN-TUI.md §17a and ui_kits/cockpit/Edges.html in
+// the shhh Design System project); focus mode's hint line names the literal
+// keys, which is where the reader looks for one.
 
 // uncapRoundsLabel is the second offer, which appears only once the first has
 // been taken (see roundPause.keys). It buys the rest of the turn outright: no
@@ -213,20 +210,20 @@ func (p roundPause) grant() int { return p.granted + roundGrantBlock }
 // question it asks is worth asking. Once you have answered it, offering to
 // stop asking is the more useful of the two answers.
 func (p roundPause) keys() []components.KeyOffer {
-	var keys []components.KeyOffer
+	var offers []components.KeyOffer
 	if p.files > 0 {
-		keys = append(keys, components.KeyOffer{Key: "[" + reviewKey + "]", Label: "review what it did"})
+		offers = append(offers, components.KeyOffer{Key: keys.Bracket(keys.Row.Review), Label: "review what it did"})
 	}
 	if !p.spent {
-		keys = append(keys, components.KeyOffer{Key: fmt.Sprintf("[+%d]", p.grant()), Label: "more rounds"})
+		offers = append(offers, components.KeyOffer{Key: fmt.Sprintf("[+%d]", p.grant()), Label: "more rounds"})
 		if p.granted > 0 {
-			keys = append(keys, components.KeyOffer{Key: "[" + uncapRoundsKey + "]", Label: uncapRoundsLabel})
+			offers = append(offers, components.KeyOffer{Key: keys.Bracket(keys.Row.Uncap), Label: uncapRoundsLabel})
 		}
 	}
 	if p.files > 0 {
-		keys = append(keys, components.KeyOffer{Key: "[" + undoKey + "]", Label: "undo the turn"})
+		offers = append(offers, components.KeyOffer{Key: keys.Bracket(keys.Row.Undo), Label: "undo the turn"})
 	}
-	return keys
+	return offers
 }
 
 // roundPauseOffers is the hint bar's version of the same offers. The two
@@ -235,20 +232,20 @@ func (p roundPause) keys() []components.KeyOffer {
 // it, or it is advertising a keystroke nobody can type — so the bar's label
 // carries the number the row's bracket did.
 func roundPauseOffers(p *roundPause) []components.KeyOffer {
-	var keys []components.KeyOffer
+	var offers []components.KeyOffer
 	if p.files > 0 {
-		keys = append(keys, components.KeyOffer{Key: "[" + reviewKey + "]", Label: "review what it did"})
+		offers = append(offers, components.KeyOffer{Key: keys.Bracket(keys.Row.Review), Label: "review what it did"})
 	}
 	if !p.spent {
-		keys = append(keys, components.KeyOffer{Key: "[" + grantRoundsKey + "]", Label: fmt.Sprintf("%d more rounds", p.grant())})
+		offers = append(offers, components.KeyOffer{Key: keys.Bracket(keys.Row.Rounds), Label: fmt.Sprintf("%d more rounds", p.grant())})
 		if p.granted > 0 {
-			keys = append(keys, components.KeyOffer{Key: "[" + uncapRoundsKey + "]", Label: uncapRoundsLabel})
+			offers = append(offers, components.KeyOffer{Key: keys.Bracket(keys.Row.Uncap), Label: uncapRoundsLabel})
 		}
 	}
 	if p.files > 0 {
-		keys = append(keys, components.KeyOffer{Key: "[" + undoKey + "]", Label: "undo the turn"})
+		offers = append(offers, components.KeyOffer{Key: keys.Bracket(keys.Row.Undo), Label: "undo the turn"})
 	}
-	return keys
+	return offers
 }
 
 // focusedRoundPause returns the pause row the focus cursor is on, if it is on
@@ -275,25 +272,25 @@ func (m Model) roundPauseKey(key string) (tea.Model, tea.Cmd, bool) {
 	}
 	p := e.pause
 	switch key {
-	case reviewKey:
+	case keys.Shown(keys.Row.Review):
 		if p.files == 0 {
 			return m, nil, false
 		}
 		next, cmd := m.openReview(e.turn)
 		return next, cmd, true
-	case undoKey:
+	case keys.Shown(keys.Row.Undo):
 		if p.files == 0 {
 			return m, nil, false
 		}
 		next, cmd := m.undoTurn(e.turn, nil)
 		return next, cmd, true
-	case grantRoundsKey:
+	case keys.Shown(keys.Row.Rounds):
 		if p.spent {
 			return m, nil, false
 		}
 		next, cmd := m.grantRounds(p)
 		return next, cmd, true
-	case uncapRoundsKey:
+	case keys.Shown(keys.Row.Uncap):
 		if p.spent || p.granted == 0 {
 			return m, nil, false
 		}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // NoteSelectResult is the note-selector Update result: the chosen option and
@@ -36,14 +37,17 @@ func NewNoteSelect(title string, options []SelectOption) *NoteSelect {
 	ta.SetHeight(1)
 	ta.ShowLineNumbers = false
 	ta.CharLimit = 0
-	ta.KeyMap.InsertNewline.SetKeys("alt+enter")
+	// The note field takes the draft's newline keys, less the two the card
+	// itself answers: tab moves between the note and the options, and enter
+	// confirms (§4c).
+	ta.KeyMap.InsertNewline.SetKeys(keys.Draft.Newline.Keys()[1])
 	return &NoteSelect{Select: Select{Title: title, Options: options}, Note: ta}
 }
 
 func (s *NoteSelect) Update(msg tea.KeyMsg) (done bool, result any) {
 	s.noteMissing = false
-	switch msg.String() {
-	case "tab":
+	switch pressed := msg.String(); {
+	case keys.Is(pressed, keys.Select.Note):
 		s.FocusNote = !s.FocusNote
 		if s.FocusNote {
 			s.Note.Focus()
@@ -51,7 +55,7 @@ func (s *NoteSelect) Update(msg tea.KeyMsg) (done bool, result any) {
 			s.Note.Blur()
 		}
 		return false, nil
-	case "enter":
+	case keys.Is(pressed, keys.Select.Take):
 		idx := s.Select.Focus
 		note := strings.TrimSpace(s.Note.Value())
 		if idx < len(s.Select.Options) && s.Select.Options[idx].RequireNote && note == "" {
@@ -59,7 +63,7 @@ func (s *NoteSelect) Update(msg tea.KeyMsg) (done bool, result any) {
 			return false, nil
 		}
 		return true, NoteSelectResult{Index: idx, Note: note}
-	case "esc", "ctrl+c":
+	case keys.Is(pressed, keys.Select.Cancel):
 		return true, NoteSelectResult{Index: -1, Canceled: true}
 	}
 	if s.FocusNote {
@@ -128,14 +132,17 @@ func (s *NoteSelect) View(width int) string {
 	for _, l := range strings.Split(noteView, "\n") {
 		tail = append(tail, clip("  "+l, inner))
 	}
-	keys := "tab note/options · enter confirm · esc cancel"
+	// The note field's own key leads, because it is the one this card has
+	// that the plain selector does not.
+	hint := []string{words(keys.Select.Note, "note/options"), words(keys.Select.Take, "confirm")}
 	switch {
 	case s.Select.Filtering:
-		keys = "tab note/options · enter confirm · ctrl+u clear · esc cancel"
+		hint = append(hint, words(keys.Select.ClearQ, "clear"))
 	case s.Select.Filterable:
-		keys = "tab note/options · enter confirm · / filter · esc cancel"
+		hint = append(hint, offer(keys.Select.Filter))
 	}
-	tail = append(tail, hintRows([]string{keys}, width)...)
+	hint = append(hint, offer(keys.Select.Cancel))
+	tail = append(tail, hintRows([]string{strings.Join(hint, " · ")}, width)...)
 
 	// The query line is pinned above the list exactly as it is on a plain
 	// card, so the budget order is the artboard's — query line, key hints,

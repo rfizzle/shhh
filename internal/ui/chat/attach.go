@@ -18,6 +18,7 @@ import (
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // viewState is one surface's saved scroll position.
@@ -361,7 +362,7 @@ func (m Model) renderAgentList() string {
 // x cancels the focused agent's turn, X arms the inline kill confirm, esc
 // dismisses the list.
 func (m Model) updateAgentList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	if msg.String() == "ctrl+d" {
+	if keys.Match(msg, keys.Draft.Quit) {
 		m.quitting = true
 		m.cancelSubagents()
 		if m.cancel != nil {
@@ -503,7 +504,7 @@ func (m Model) listAnswerCard(ask *subagent.Ask) *components.ApprovalCard {
 // resolves the request and returns to the list; esc/n declines, because a
 // routed request is never silently dropped.
 func (m Model) updateListAnswer(msg tea.KeyMsg, ask *subagent.Ask) (tea.Model, tea.Cmd) {
-	if msg.String() == "ctrl+d" {
+	if keys.Match(msg, keys.Draft.Quit) {
 		m.quitting = true
 		m.cancelSubagents()
 		if m.cancel != nil {

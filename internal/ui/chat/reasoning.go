@@ -21,9 +21,8 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
-// reasoningKey cycles the level. Ctrl+R is free of the textarea's own
+// keys.Draft.Reasoning cycles the level. Ctrl+R is free of the textarea's own
 // bindings and free of the terminal's, and it is the mnemonic.
-const reasoningKey = "ctrl+r"
 
 // reasoningUsage is the one-line usage shown by /reasoning and /help.
 const reasoningUsage = "Usage: /reasoning <off|low|medium|high> · /reasoning default [level] (Ctrl+R cycles)"

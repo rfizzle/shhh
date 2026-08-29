@@ -19,6 +19,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // slashCommand is one registry row: the primary name shown in the menu, an
@@ -83,7 +84,7 @@ var slashCommands = []slashCommand{
 	{name: "/clear", aliases: []string{"/new"}, desc: "Start a new conversation",
 		idleOnly: "it starts a new conversation"},
 	{name: "/paste", args: "[path|drop <name>|clear]", desc: "Attach the clipboard, or a file, to your next message",
-		key: "ctrl+v",
+		key: keys.Shown(keys.Draft.Attach),
 		argSpecs: []argSpec{
 			{options: []argOption{
 				{"drop", "Take one attachment back out"},
@@ -101,7 +102,7 @@ var slashCommands = []slashCommand{
 		idleOnly: "it switches the model the running turn is using"},
 	{name: "/permissions", args: "[name|grants|allow|revoke|why]", desc: "What runs without asking, and the mode that frames it",
 		aliases: []string{"/perms", "/mode"},
-		key:     "shift+tab",
+		key:     keys.Shown(keys.Draft.Mode),
 		argSpecs: []argSpec{
 			{dynamic: modeArgs},
 			{after: []string{"allow"}, options: []argOption{
@@ -115,7 +116,7 @@ var slashCommands = []slashCommand{
 		}},
 	{name: "/reasoning", args: "[off|low|medium|high|default]", desc: "How much the model thinks before it answers (Ctrl+R cycles)",
 		aliases: []string{"/think"},
-		key:     reasoningKey,
+		key:     keys.Shown(keys.Draft.Reasoning),
 		argSpecs: []argSpec{
 			{dynamic: reasoningArgs},
 			{after: []string{"default"}, options: reasoningLevelArgs()},
@@ -171,7 +172,7 @@ var slashCommands = []slashCommand{
 			argOption{"forget", "Drop a memory by id"},
 		)},
 	{name: "/agents", desc: "Agent manager: attach, steer, cancel, kill (Ctrl+A)",
-		key:     "ctrl+a",
+		key:     keys.Shown(keys.Draft.Agents),
 		enabled: func(m *Model) bool { return m.subagents != nil }},
 	{name: "/attach", args: "[name]", desc: "Attach to an agent's session and steer it",
 		enabled:  func(m *Model) bool { return m.subagents != nil },
@@ -210,7 +211,7 @@ var slashCommands = []slashCommand{
 	{name: "/chats", desc: "Saved chats — enter to load",
 		enabled:  func(m *Model) bool { return m.db != nil },
 		idleOnly: "it opens the picker that replaces the conversation"},
-	{name: "/exit", aliases: []string{"/quit", "/q"}, desc: "Quit (also /quit, /q)", key: "ctrl+d"},
+	{name: "/exit", aliases: []string{"/quit", "/q"}, desc: "Quit (also /quit, /q)", key: keys.Shown(keys.Draft.Quit)},
 }
 
 // maxCompletionRows caps how many commands the menu shows at once; longer

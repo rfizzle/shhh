@@ -7,6 +7,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // SelectOption is one row of a selector: the label, the dim continuation
@@ -171,22 +172,22 @@ func (s *Select) geometry() listGeometry {
 
 func (s *Select) Update(msg tea.KeyMsg) (done bool, result any) {
 	s.normalizeFocus()
-	key := msg.String()
-	switch key {
-	case "up":
+	pressed := msg.String()
+	switch {
+	case pressed == "up":
 		s.move(-1)
 		return false, nil
-	case "down":
+	case pressed == "down":
 		s.move(1)
 		return false, nil
-	case "enter":
+	case keys.Is(pressed, keys.Select.Take):
 		// A card that matched nothing has nothing for enter to take, and a
 		// key that cannot act does not act (invariant 5).
 		if s.selectable() == 0 {
 			return false, nil
 		}
 		return true, SelectResult{Index: s.Focus}
-	case "esc", "ctrl+c":
+	case keys.Is(pressed, keys.Select.Cancel):
 		// esc leaves the picker rather than closing the query line: §4a asks
 		// that leaving change nothing, and a filter you have to escape twice
 		// is a mode.
@@ -204,20 +205,20 @@ func (s *Select) Update(msg tea.KeyMsg) (done bool, result any) {
 	// The second reading of the focused option, checked before the digits so
 	// a card whose alt key is a digit is still coherent. Like enter it needs
 	// something to take.
-	if s.AltKey != "" && key == s.AltKey && s.selectable() > 0 {
+	if s.AltKey != "" && pressed == s.AltKey && s.selectable() > 0 {
 		return true, SelectResult{Index: s.Focus, Alt: true}
 	}
-	switch key {
-	case "/":
+	switch {
+	case keys.Is(pressed, keys.Select.Filter):
 		if s.Filterable {
 			s.Filtering = true
 		}
-	case "k", "j":
+	case pressed == "k", pressed == "j":
 		// On a list that is typed into, j and k are letters (S-112).
 		if s.Unnumbered {
 			break
 		}
-		if key == "k" {
+		if pressed == "k" {
 			s.move(-1)
 		} else {
 			s.move(1)
@@ -226,7 +227,7 @@ func (s *Select) Update(msg tea.KeyMsg) (done bool, result any) {
 		if s.Unnumbered {
 			break
 		}
-		if n := digitIndex(key, s.selectable()); n >= 0 {
+		if n := digitIndex(pressed, s.selectable()); n >= 0 {
 			s.Focus = s.selectableIndex(n)
 			return true, SelectResult{Index: s.Focus}
 		}
@@ -237,13 +238,13 @@ func (s *Select) Update(msg tea.KeyMsg) (done bool, result any) {
 // editQuery applies one keystroke to the open query line: ctrl+u clears it,
 // backspace takes a rune back, and anything that types adds to it.
 func (s *Select) editQuery(msg tea.KeyMsg) {
-	switch msg.String() {
-	case "ctrl+u":
+	switch pressed := msg.String(); {
+	case keys.Is(pressed, keys.Select.ClearQ):
 		if s.Query == "" {
 			return
 		}
 		s.Query, s.queryEdited = "", true
-	case "backspace":
+	case pressed == "backspace":
 		if r := []rune(s.Query); len(r) > 0 {
 			s.Query, s.queryEdited = string(r[:len(r)-1]), true
 		}
@@ -318,32 +319,34 @@ func (s *Select) hintSegments(width int) []string {
 	}
 	if s.Filtering {
 		if s.selectable() == 0 {
-			return []string{"ctrl+u clear the filter", "esc cancel"}
+			return []string{offer(keys.Select.ClearQ), offer(keys.Select.Cancel)}
 		}
-		return []string{"↑↓ move", "enter select", "ctrl+u clear", "esc cancel"}
+		return []string{offer(keys.Select.Move), offer(keys.Select.Take),
+			words(keys.Select.ClearQ, "clear"), offer(keys.Select.Cancel)}
 	}
-	move, jump, filter := "↑↓/jk move", fmt.Sprintf("1–%d jump", s.selectable()), ""
+	move := offer(keys.Select.MoveJK)
+	jump, filter := fmt.Sprintf("1–%d jump", s.selectable()), ""
 	if s.Unnumbered {
 		// No numbers to offer means no j/k either, on a list typed into.
-		move, jump = "↑↓ move", ""
+		move, jump = offer(keys.Select.Move), ""
 	}
 	if s.Filterable {
-		filter = "/ filter"
+		filter = offer(keys.Select.Filter)
 	}
 	// The two readings of the choice, when there are two. Both are offers and
 	// so neither is ever dropped; what enter buys has to be named once the
 	// alt key names something else, or the pair reads as "select, or this
 	// other specific thing" and enter becomes the unlabelled one.
-	take, alt := "enter select", ""
+	take, alt := offer(keys.Select.Take), ""
 	if s.AltKey != "" {
-		take = "enter " + s.enterLabel()
+		take = words(keys.Select.Take, s.enterLabel())
 		alt = s.AltKey + " " + s.AltLabel
 	}
 	inner := max(width-cardFrameWidth, 1)
 	rungs := [][]string{
-		{move, take, alt, jump, filter, "esc cancel"},
-		{move, take, alt, filter, "esc cancel"},
-		{"↑↓ move", take, alt, filter, "esc cancel"},
+		{move, take, alt, jump, filter, offer(keys.Select.Cancel)},
+		{move, take, alt, filter, offer(keys.Select.Cancel)},
+		{offer(keys.Select.Move), take, alt, filter, offer(keys.Select.Cancel)},
 	}
 	for _, rung := range rungs {
 		segs := presentSegments(rung)

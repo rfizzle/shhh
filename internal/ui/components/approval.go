@@ -7,6 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // ApprovalVariant selects which body the approval card renders
@@ -218,11 +219,11 @@ type ApprovalCard struct {
 
 // arrivalKeys are what a HeldOnArrival card answers to. They are the keys a
 // reader who walked up to the card came to press; everything else is prose.
-func (c *ApprovalCard) arrivalKey(key string) (ApprovalDecision, bool) {
-	switch key {
-	case "y", "Y", "enter":
+func (c *ApprovalCard) arrivalKey(pressed string) (ApprovalDecision, bool) {
+	switch {
+	case keys.Is(pressed, keys.Decision.Allow):
 		return ApprovalApprove, true
-	case "n", "N", "esc", "ctrl+c":
+	case keys.Is(pressed, keys.Decision.Deny):
 		return ApprovalDeny, true
 	}
 	return 0, false
@@ -249,27 +250,27 @@ func (c *ApprovalCard) Update(msg tea.KeyMsg) (done bool, result any) {
 		}
 		return true, ApprovalRelease
 	}
-	switch msg.String() {
-	case "y", "Y", "enter":
+	switch pressed := msg.String(); {
+	case keys.Is(pressed, keys.Decision.Allow):
 		return true, ApprovalApprove
-	case "a":
+	case keys.Is(pressed, keys.Decision.Always):
 		if c.AllowAlways {
 			return true, ApprovalAlways
 		}
 	// [A] is the queue's key when there is a queue behind the card, and
 	// otherwise stays the shifted spelling of [a] it has always been.
-	case "A":
+	case keys.Is(pressed, keys.Decision.Batch):
 		if c.Batch {
 			return true, ApprovalBatch
 		}
 		if c.AllowAlways {
 			return true, ApprovalAlways
 		}
-	case "d", "D":
+	case keys.Is(pressed, keys.Decision.Diff):
 		if c.FullDiff {
 			return true, ApprovalFullDiff
 		}
-	case "n", "N", "esc", "ctrl+c":
+	case keys.Is(pressed, keys.Decision.Deny):
 		return true, ApprovalDeny
 	}
 	return false, nil
@@ -351,7 +352,7 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 			quals = append(quals, "("+c.AlwaysHint+")")
 		}
 		if c.FullDiff {
-			quals = append(quals, "(d: full diff)")
+			quals = append(quals, "("+keys.Shown(keys.Decision.Diff)+": "+keys.Words(keys.Decision.Diff)+")")
 		}
 	}
 	qualRow := strings.Join(quals, "  ")
@@ -393,24 +394,30 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 // grant is allowed and [A] only where there is a queue behind the card, so
 // the list is always exactly what the card will answer to.
 func (c *ApprovalCard) keys() string {
+	// The card spells its keys as one run rather than as a row of offers, so
+	// it composes them from the register's spellings: `y`, `n`, `a`, `A`.
+	// The capital N is not a key — it is the default marker §2 draws on the
+	// safe answer — which is why it is applied here rather than declared as
+	// a second binding for the same keystroke.
+	yes, no := keys.Shown(keys.Decision.Allow), keys.Shown(keys.Decision.Deny)
 	if c.HeldOnArrival {
 		// The card has the keyboard but nobody gave it: it answers the two
 		// keys and offers nothing a mistyped word could have meant.
-		return "[y/N]"
+		return "[" + yes + "/" + strings.ToUpper(no) + "]"
 	}
-	keys := "y/N"
+	run := []string{yes, strings.ToUpper(no)}
 	if c.AllowAlways {
-		keys = "y/n/a"
+		run = []string{yes, no, keys.Shown(keys.Decision.Always)}
 	}
 	if c.Batch {
 		// The capital N means "this is the default"; beside a capital A it
 		// would only read as a second key, so the batch spelling drops it.
 		if !c.AllowAlways {
-			keys = "y/n"
+			run = []string{yes, no}
 		}
-		keys += "/A"
+		run = append(run, keys.Shown(keys.Decision.Batch))
 	}
-	return "[" + keys + "]"
+	return "[" + strings.Join(run, "/") + "]"
 }
 
 // arrivalRest names what the handover still buys on a card that took the
@@ -424,13 +431,13 @@ func (c *ApprovalCard) arrivalRest() string {
 	}
 	var rest []string
 	if c.AllowAlways {
-		rest = append(rest, "a")
+		rest = append(rest, keys.Shown(keys.Decision.Always))
 	}
 	if c.FullDiff {
-		rest = append(rest, "d")
+		rest = append(rest, keys.Shown(keys.Decision.Diff))
 	}
 	if c.Batch {
-		rest = append(rest, "A")
+		rest = append(rest, keys.Shown(keys.Decision.Batch))
 	}
 	if len(rest) == 0 || c.Handover == "" {
 		return "any other key goes to your draft"

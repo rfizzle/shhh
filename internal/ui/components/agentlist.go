@@ -16,6 +16,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // AgentState is one agent row's lifecycle state (DESIGN-TUI.md §9a).
@@ -127,30 +128,30 @@ func (l *AgentList) focused() AgentRow {
 // on a row that does not offer them rather than reporting a failure the row
 // already predicted.
 func (l *AgentList) Update(msg tea.KeyMsg) (done bool, result any) {
-	switch msg.String() {
-	case "up", "k":
+	switch pressed := msg.String(); {
+	case pressed == "up", pressed == "k":
 		if l.Focus > 0 {
 			l.Focus--
 		}
-	case "down", "j":
+	case pressed == "down", pressed == "j":
 		if l.Focus < len(l.Rows)-1 {
 			l.Focus++
 		}
-	case "enter":
+	case keys.Is(pressed, keys.Agent.Attach):
 		return true, AgentListResult{Action: AgentAttach, Index: l.Focus}
-	case "a":
+	case keys.Is(pressed, keys.Agent.Answer):
 		if l.focused().Answerable {
 			return false, AgentListResult{Action: AgentAnswer, Index: l.Focus}
 		}
-	case "r":
+	case keys.Is(pressed, keys.Agent.Retry):
 		if l.focused().Retryable {
 			return false, AgentListResult{Action: AgentRetry, Index: l.Focus}
 		}
-	case "x":
+	case keys.Is(pressed, keys.Agent.Cancel):
 		return false, AgentListResult{Action: AgentCancel, Index: l.Focus}
-	case "X":
+	case keys.Is(pressed, keys.Agent.Kill):
 		return false, AgentListResult{Action: AgentKill, Index: l.Focus}
-	case "esc", "ctrl+c":
+	case keys.Is(pressed, keys.Agent.Back):
 		return true, AgentListResult{Action: AgentBack, Index: -1}
 	}
 	return false, nil
@@ -225,14 +226,14 @@ func (r AgentRow) render(inner int, focused bool) []string {
 // what the list can do in general.
 func (l *AgentList) hints() []string {
 	focus := l.focused()
-	segments := []string{"enter attach"}
+	segments := []string{offer(keys.Agent.Attach)}
 	if focus.Answerable {
-		segments = append(segments, "a answer")
+		segments = append(segments, offer(keys.Agent.Answer))
 	}
 	if focus.Retryable {
-		segments = append(segments, "r retry")
+		segments = append(segments, offer(keys.Agent.Retry))
 	}
-	return append(segments, "x cancel", "X kill", "esc back")
+	return append(segments, offer(keys.Agent.Cancel), offer(keys.Agent.Kill), offer(keys.Agent.Back))
 }
 
 // tally is the manager's title-rail summary: the same sentence the fan-out

@@ -19,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // draftLead is what the reader is half way through typing when the surface
@@ -117,7 +118,7 @@ func register(t *testing.T) []keyedSurface {
 		},
 		{
 			name: "a round-limit pause's row (§17a)",
-			keys: []string{"v", "u", grantRoundsKey, uncapRoundsKey},
+			keys: []string{"v", "u", keys.Shown(keys.Row.Rounds), keys.Shown(keys.Row.Uncap)},
 			open: func(t *testing.T) Model {
 				m, _ := pausedModel(t)
 				return typeChars(t, m, draftLead)
@@ -302,7 +303,7 @@ func TestInertKeys_AWaitingRowSaysSoAndOffersTheKeyThatEndsIt(t *testing.T) {
 	e := m.transcript[indexOfKind(t, m, entryTurnClose)]
 
 	waiting := ansi.Strip(m.renderEntryKeys(e, 110, false))
-	for _, want := range []string{"[v] review", "[u] undo turn", "[" + readingHandoverKey + "] to use them"} {
+	for _, want := range []string{"[v] review", "[u] undo turn", "[" + keys.Shown(keys.Draft.Reading) + "] to use them"} {
 		if !strings.Contains(waiting, want) {
 			t.Fatalf("a waiting row should still name its keys and the one that ends the wait, want %q in:\n%s", want, waiting)
 		}
@@ -315,7 +316,7 @@ func TestInertKeys_AWaitingRowSaysSoAndOffersTheKeyThatEndsIt(t *testing.T) {
 	if !strings.Contains(live, "[v] review") {
 		t.Fatalf("the row under the cursor keeps its keys:\n%s", live)
 	}
-	if strings.Contains(live, readingHandoverKey) {
+	if strings.Contains(live, keys.Shown(keys.Draft.Reading)) {
 		t.Fatalf("a row that holds the keyboard has nothing to hand over:\n%s", live)
 	}
 }

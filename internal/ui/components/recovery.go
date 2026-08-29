@@ -21,6 +21,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // KeyOffer is one bracketed key and the words for what it does. Every key the
@@ -314,8 +315,7 @@ type ProviderCard struct {
 // destroys.
 func (c *ProviderCard) Update(msg tea.KeyMsg) (done bool, result any) {
 	pressed := msg.String()
-	switch pressed {
-	case "esc", "ctrl+c", "q":
+	if keys.Is(pressed, keys.Screen.Quit) {
 		return true, ""
 	}
 	for _, k := range c.Keys {
@@ -449,13 +449,10 @@ func (s SecretPrompt) View(width int) string {
 	}
 	mask := strings.Repeat("•", min(len(s.value), max(width-4, 1)))
 	entry := sty.Dim.Render("▸ ") + sty.Accent.Render(mask) + sty.FocusRow.Render(" ")
-	keys := keyOffers([]KeyOffer{
-		{Key: "[enter]", Label: "use it for this session"},
-		{Key: "[esc]", Label: "keep the current key"},
-	})
+	offers := keyOffers([]KeyOffer{keyOffer(keys.Wait.UseKey), keyOffer(keys.Wait.KeepKey)})
 	return strings.Join([]string{
 		clip(head, width),
 		clip(entry, width),
-		clip(keys, width),
+		clip(offers, width),
 	}, "\n")
 }

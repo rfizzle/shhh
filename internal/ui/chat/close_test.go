@@ -14,6 +14,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // turnModel is a model sitting at the input, able to apply an approved write.
@@ -258,7 +259,7 @@ func TestTurnClose_TheRoundPauseKeysAreInertOnACloseRow(t *testing.T) {
 	if _, ok := m.focusedClose(); !ok {
 		t.Fatalf("focus should land on the close rows, got kind %v", m.transcript[m.focusIdx].kind)
 	}
-	for _, key := range []string{grantRoundsKey, uncapRoundsKey} {
+	for _, key := range []string{keys.Shown(keys.Row.Rounds), keys.Shown(keys.Row.Uncap)} {
 		next, _ := m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(key)})
 		got := next.(Model)
 		if got.state == stateUndoConfirm {
@@ -292,7 +293,7 @@ func TestTurnClose_ReachableFromFocusMode(t *testing.T) {
 
 	// [v] opens review mode over the turn's changeset (S-099); the surface
 	// names the turn it is reviewing.
-	updated, _ = m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(reviewKey)})
+	updated, _ = m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(keys.Shown(keys.Row.Review))})
 	review := updated.(Model)
 	if review.state != stateReview || review.review == nil {
 		t.Fatalf("[v] should open what the turn changed, got state %v", review.state)
@@ -304,7 +305,7 @@ func TestTurnClose_ReachableFromFocusMode(t *testing.T) {
 	// [u] arms the undo confirm (S-100) over the row that offered it: the
 	// prompt borrows the bottom panel and nothing is written until it is
 	// answered.
-	updated, _ = m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(undoKey)})
+	updated, _ = m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(keys.Shown(keys.Row.Undo))})
 	undo := updated.(Model)
 	if undo.state != stateUndoConfirm || undo.undoAsk == nil {
 		t.Fatalf("[u] should ask before it writes, got state %v", undo.state)

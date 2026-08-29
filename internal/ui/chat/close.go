@@ -17,14 +17,12 @@ import (
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// The offers the changeset row makes. Focus mode on the row consumes them, so
-// the input keeps every other key (§7).
-const (
-	reviewKey = "v"
-	undoKey   = "u"
-)
+// The offers the changeset row makes are keys.Row.Review and keys.Row.Undo
+// (§7d). Focus mode on the row consumes them, so the input keeps every other
+// key (§7).
 
 // appendTurnClose closes the turn with its summary rows. It runs where the
 // turn's accounting is closed — one place, so a turn cannot end without
@@ -104,8 +102,8 @@ func (m Model) turnChangesRow() *components.TurnChanges {
 		Added:   t.Added,
 		Removed: t.Removed,
 		Keys: []components.TurnKey{
-			{Key: "[" + reviewKey + "]", Label: "review"},
-			{Key: "[" + undoKey + "]", Label: "undo turn"},
+			{Key: keys.Bracket(keys.Row.Review), Label: keys.Words(keys.Row.Review)},
+			{Key: keys.Bracket(keys.Row.Undo), Label: keys.Words(keys.Row.Undo)},
 		},
 		Note: trackingNote(t),
 	}

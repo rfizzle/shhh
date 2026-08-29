@@ -27,6 +27,7 @@ import (
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // AutosaveName is the reserved chat-session slot that always mirrors the most
@@ -412,6 +413,12 @@ type Model struct {
 	// (S-076); -1 while the transcript is being read with nothing on it to
 	// select (S-115).
 	focusIdx int
+	// readingKeyList is `[?]` in reading mode (S-153, §7d): the compact hint
+	// bar swapped for the mode's whole key register, in place. It is
+	// per-visit, not per-session — the mode closing closes the list too,
+	// because it is a reading of this surface rather than a preference about
+	// it, and the four supporting TUIs treat their own `[?]` the same way.
+	readingKeyList bool
 	// mouseOn turns terminal mouse reporting on (ctrl+x, /ui mouse). The
 	// zero value is off, because reporting costs the terminal its own
 	// click-drag selection and a transcript is text people copy out of. The
@@ -670,7 +677,10 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 	// shift+enter is rewritten to alt+enter before the textarea sees it
 	// (newline.go), and ctrl+j is the chord that works in a terminal too old
 	// to report either (S-134).
-	ta.KeyMap.InsertNewline.SetKeys("alt+enter", "ctrl+j")
+	// The register's newline keys, less shift+enter, which the textarea
+	// cannot see: terminals that report it are handled above, and the other
+	// two are what the ones that cannot get instead (§7d).
+	ta.KeyMap.InsertNewline.SetKeys(keys.Draft.Newline.Keys()[1:]...)
 
 	// One frame set, one cadence, one colour, shared with the one-shot UI
 	// (S-094).
@@ -972,7 +982,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// as often over the full-screen diff or a transcript being read as it
 		// does over the draft, so the chord is answered above all of them.
 		// Nothing else claims it, so nothing is taken away by that.
-		if msg.String() == mouseToggleKey {
+		if keys.Match(msg, keys.Draft.Mouse) {
 			return m.toggleMouse()
 		}
 		if m.state == stateDiffFull {
@@ -983,7 +993,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// — every letter belonged to the draft, and now none do. From a card
 		// holding the keyboard by arrival it buys the keys that card left
 		// alone on purpose ([a], [d], [A]).
-		if m.interruptShowing() && msg.String() == handoverKey && (m.decisionUngated() || m.heldOnArrival) {
+		if m.interruptShowing() && keys.Match(msg, keys.Draft.Answer) && (m.decisionUngated() || m.heldOnArrival) {
 			return m.gateDecision()
 		}
 		// A decision that arrived on top of a sentence is inert until it
@@ -991,7 +1001,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// is the only key that is its own, and every letter belongs to the
 		// draft.
 		if !m.decisionUngated() {
-			if msg.String() == "esc" && m.escLeavesWaiting() {
+			if keys.Match(msg, keys.Draft.Clear) && m.escLeavesWaiting() {
 				// Esc leaves the decision waiting rather than denying it; [n]
 				// is how you say no (§7b).
 				return m.ungateDecision()
@@ -1044,8 +1054,8 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if ask := m.activeChildAsk(); ask != nil && m.decisionHeld {
 			return m.updateChildAsk(msg, ask)
 		}
-		switch msg.String() {
-		case "ctrl+d":
+		switch pressed := msg.String(); {
+		case keys.Is(pressed, keys.Draft.Quit):
 			m.quitting = true
 			m.cancelSubagents()
 			if m.cancel != nil {
@@ -1058,7 +1068,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.classifierCancel()
 			}
 			return m, m.quitCmd()
-		case "ctrl+c":
+		case keys.Is(pressed, keys.Draft.Cancel):
 			// While attached, Ctrl+C acts on the child: cancel its turn (S-077).
 			if m.attachedTo != "" {
 				return m.attachedCancel()
@@ -1101,7 +1111,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.quitting = true
 			return m, m.quitCmd()
-		case "shift+tab":
+		case keys.Is(pressed, keys.Draft.Mode):
 			// Cycle the permission mode (S-059); attached, it cycles the
 			// child's mode clamped to the orchestrator's ceiling (S-077).
 			if m.attachedTo != "" {
@@ -1109,13 +1119,13 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.applyMode(agent.NextMode(m.modeCycle, m.mode))
 			return m, nil
-		case "ctrl+a":
+		case keys.Is(pressed, keys.Draft.Agents):
 			// Agent manager (S-077); without a supervisor the key keeps its
 			// textarea meaning (line start).
 			if m.subagents != nil {
 				return m.openAgentList()
 			}
-		case "ctrl+v":
+		case keys.Is(pressed, keys.Draft.Attach):
 			// Ctrl+V used to be the textarea's own text paste. It reads the
 			// clipboard properly now: a screenshot or a copied file is
 			// staged as an attachment, and plain text still lands in the
@@ -1125,7 +1135,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.inputLive() && m.attachedTo == "" {
 				return m, readClipboardCmd()
 			}
-		case reasoningKey:
+		case keys.Is(pressed, keys.Draft.Reasoning):
 			// Reasoning effort (S-139): the level the next request asks for.
 			// It changes nothing about the conversation and nothing about the
 			// turn in flight, so like the rest of S-087's live surfaces it is
@@ -1138,7 +1148,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.syncViewport()
 				return m, nil
 			}
-		case "ctrl+k":
+		case keys.Is(pressed, keys.Draft.Palette):
 			// The command palette (S-112): one prompt over the commands, the
 			// saved chats and the files this session has touched. It reads
 			// the session without touching the conversation, so it opens
@@ -1148,7 +1158,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.inputLive() && m.attachedTo == "" {
 				return m.openPalette()
 			}
-		case readingHandoverKey:
+		case keys.Is(pressed, keys.Draft.Reading):
 			// Focus mode (S-076): navigate and expand transcript rows; scoped
 			// to whichever agent is focused (S-077). It reads the transcript
 			// without touching the conversation, so it opens over a running
@@ -1156,7 +1166,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.inputLive() {
 				return m.enterFocusMode()
 			}
-		case detailKey:
+		case keys.Is(pressed, keys.Draft.Detail):
 			// Step detail (S-137, §13d): the step in flight opens its rows'
 			// bodies without the keyboard leaving the draft. It reads the
 			// transcript and changes nothing about the conversation, so it
@@ -1166,7 +1176,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.inputLive() {
 				return m.detailFromDraft()
 			}
-		case "pgup", "pgdown":
+		case keys.Is(pressed, keys.Draft.PageUp, keys.Draft.PageDown):
 			// The pager keys read the transcript and leave the keyboard in
 			// the draft (S-140, §7a). Reading is not a decision — the wheel
 			// has always said so — and the reader scrolling back to check a
@@ -1179,13 +1189,13 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// (j/k/u/d/f/b and the spacebar) are still not offered at all.
 			if m.inputLive() {
 				dir := -1
-				if msg.String() == "pgdown" {
+				if keys.Is(pressed, keys.Draft.PageDown) {
 					dir = 1
 				}
 				m.scrollPage(dir)
 				return m, nil
 			}
-		case "shift+up", "ctrl+up":
+		case keys.Is(pressed, keys.Draft.ScrollUp):
 			// The same job by a line rather than a page (S-140, §7a). Both
 			// chords are bound because terminals disagree about which they
 			// report: the textarea underneath claims neither, and neither is
@@ -1194,12 +1204,12 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.scrollLines(-keyScrollLines)
 				return m, nil
 			}
-		case "shift+down", "ctrl+down":
+		case keys.Is(pressed, keys.Draft.ScrollDown):
 			if m.inputLive() {
 				m.scrollLines(keyScrollLines)
 				return m, nil
 			}
-		case "esc":
+		case keys.Is(pressed, keys.Draft.Clear):
 			// A visible selection is what esc cancels first (S-145, §7a).
 			// It is the only thing on the surface esc could mean while one
 			// is lit, and it says so without touching the draft — a reader
@@ -1226,14 +1236,14 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.input.Reset()
 			m.historyIdx = len(m.inputHistory)
 			return m, nil
-		case "tab":
+		case keys.Is(pressed, keys.Draft.Complete):
 			// Tab writes the focused completion into the input (S-078).
 			if m.completionActive() {
 				m.acceptCompletion()
 				m.syncViewport()
 				return m, nil
 			}
-		case "up":
+		case keys.Is(pressed, keys.Draft.HistoryPrev):
 			if m.completionActive() {
 				if m.completeIdx > 0 {
 					m.completeIdx--
@@ -1262,7 +1272,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// (S-140). Alternate scroll made it worse than unlearnable: on a
 			// terminal that synthesises arrows for the wheel, a flick opened
 			// reading mode (altscroll.go). Scrolling has its own keys now.
-		case "down":
+		case keys.Is(pressed, keys.Draft.HistoryNext):
 			if m.completionActive() {
 				if m.completeIdx < len(m.completions)-1 {
 					m.completeIdx++
@@ -1282,7 +1292,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return m, nil
 			}
-		case "enter":
+		case keys.Is(pressed, keys.Draft.Send):
 			// While attached, Enter acts on the child: scoped commands and
 			// mid-turn steering (S-077).
 			if m.attachedTo != "" {
@@ -1783,7 +1793,7 @@ func (m *Model) startRun(parts []string) (result string, entersConfirm bool) {
 // (S-076); the card's y/n/esc semantics match the original prompt, and [a]
 // (S-054) is offered only where a session grant is allowed.
 func (m Model) updateConfirmRun(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	if msg.String() == "ctrl+d" {
+	if keys.Match(msg, keys.Draft.Quit) {
 		m.quitting = true
 		return m, m.quitCmd()
 	}
@@ -2920,11 +2930,13 @@ Keys:
                  (while the agent is working, Enter queues a steering message
                   that joins the conversation before the next model request)
   Up/Down        Recall previous inputs (when the input is empty)
-  Shift+Up/Down  Scroll the transcript a line, without leaving the prompt —
-                 the draft keeps the keyboard and every letter it has
-                 (Ctrl+Up/Down does the same, for terminals that report it)
+  Shift+Up       Scroll the transcript a line, without leaving the prompt —
+  Shift+Down     the draft keeps the keyboard and every letter it has
+                 (Ctrl+Up and Ctrl+Down do the same, for terminals that
+                  report them)
   Ctrl+E         Reading mode: select tool/command/diff rows (j/k), expand/collapse (Enter),
-                 pgup/pgdn page, Esc or typing returns to the prompt
+                 pgup/pgdn page, ? lists every key the mode has, Esc or typing
+                 returns to the prompt
                  (Enter on an edit row cycles collapsed → expanded → full-screen diff;
                   opens over a running turn, which keeps streaming underneath;
                   a transcript with nothing expandable opens as a plain pager)
@@ -2936,6 +2948,12 @@ Keys:
   Ctrl+A         Agent manager: enter attaches to an agent's session, x cancels
                  its turn, X kills it; attached, typing steers the agent,
                  Shift+Tab sets its mode (clamped), Esc detaches
+  Ctrl+G         Hand the keyboard to a decision waiting on screen. An
+                 approval that lands while you are typing does not take your
+                 keys with it: its y, n and a are not live until this chord
+                 gives them the keyboard, and until then every letter goes
+                 into the draft. Esc leaves the decision waiting; n is how
+                 you say no
   Esc            Clear the input
   Ctrl+C         Cancel response / clear input / quit
   Ctrl+D         Quit

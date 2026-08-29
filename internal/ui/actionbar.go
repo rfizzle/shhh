@@ -19,6 +19,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 type Action int
@@ -58,6 +59,17 @@ type key struct {
 	label string
 	do    Action
 	tone  keyTone
+}
+
+// bar is one offer on the row, built from the register (§7d): the key it
+// answers to, the spelling it prints and the words beside it all come from
+// one place. A caller with better words than the register's passes them; the
+// key is never the caller's to choose.
+func bar(b keys.Binding, label string, do Action, tone keyTone) key {
+	if label == "" {
+		label = keys.Words(b)
+	}
+	return key{press: b.Keys()[0], shown: keys.Shown(b), label: label, do: do, tone: tone}
 }
 
 type keyTone int
@@ -147,11 +159,11 @@ func (m ActionBarModel) keys() []key {
 	var out []key
 	if m.danger {
 		if m.affected {
-			out = append(out, key{press: "y", shown: "y", label: "run it", do: m.runAction(), tone: toneDanger})
+			out = append(out, bar(keys.OneShot.Confirm, "", m.runAction(), toneDanger))
 		} else {
 			out = append(out,
-				key{press: "enter", shown: "↵", label: "show what it would affect", do: ActionAffected, tone: tonePrimary},
-				key{press: "y", shown: "y", label: "run it", do: m.runAction(), tone: toneDanger},
+				bar(keys.OneShot.Run, "show what it would affect", ActionAffected, tonePrimary),
+				bar(keys.OneShot.Confirm, "", m.runAction(), toneDanger),
 			)
 		}
 	} else {
@@ -159,20 +171,20 @@ func (m ActionBarModel) keys() []key {
 		if m.multi {
 			label = "run all"
 		}
-		out = append(out, key{press: "enter", shown: "↵", label: label, do: m.runAction(), tone: tonePrimary})
+		out = append(out, bar(keys.OneShot.Run, label, m.runAction(), tonePrimary))
 	}
 	if m.multi {
-		out = append(out, key{press: "t", shown: "t", label: "step by step", do: ActionRunStep})
+		out = append(out, bar(keys.OneShot.Step, "", ActionRunStep, toneOffer))
 	}
 	if m.dryRun {
-		out = append(out, key{press: "d", shown: "d", label: "dry run", do: ActionDryRun})
+		out = append(out, bar(keys.OneShot.DryRun, "", ActionDryRun, toneOffer))
 	}
 	out = append(out,
-		key{press: "e", shown: "e", label: "edit", do: ActionEdit},
-		key{press: "r", shown: "r", label: "revise", do: ActionRevise},
+		bar(keys.OneShot.Edit, "", ActionEdit, toneOffer),
+		bar(keys.OneShot.Revise, "", ActionRevise, toneOffer),
 	)
 	if m.revision > 0 {
-		out = append(out, key{press: "u", shown: "u", label: "back", do: ActionBack})
+		out = append(out, bar(keys.OneShot.Back, "", ActionBack, toneOffer))
 	}
 	if m.others > 0 {
 		// The count is the label rather than the key: what the reader wants
@@ -183,13 +195,13 @@ func (m ActionBarModel) keys() []key {
 		if m.others == 1 {
 			label = "1 other"
 		}
-		out = append(out, key{press: "a", shown: "a", label: label, do: ActionAlternatives})
+		out = append(out, bar(keys.OneShot.Alternatives, label, ActionAlternatives, toneOffer))
 	}
 	out = append(out,
-		key{press: "x", shown: "x", label: "explain", do: ActionExplain},
-		key{press: "c", shown: "c", label: "copy", do: ActionCopy},
-		key{press: "s", shown: "s", label: "save", do: ActionSave},
-		key{press: "esc", shown: "esc", label: "quit", do: ActionCancel, tone: toneQuiet},
+		bar(keys.OneShot.Explain, "", ActionExplain, toneOffer),
+		bar(keys.OneShot.Copy, "", ActionCopy, toneOffer),
+		bar(keys.OneShot.Save, "", ActionSave, toneOffer),
+		bar(keys.OneShot.Quit, "", ActionCancel, toneQuiet),
 	)
 	return out
 }
