@@ -126,10 +126,14 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 							})
 						case part.Thought:
 							// Thinking is not the answer: it goes back on
-							// the next request as a thought part,
-							// and streaming it as a token would have printed
-							// it as the reply.
+							// the next request as a thought part, and it
+							// travels on its own channel rather than as a
+							// token, which would have printed the model's
+							// thinking as its reply.
 							reasoning = appendThought(reasoning, part.Text, part.ThoughtSignature)
+							if part.Text != "" {
+								ch <- StreamEvent{Thinking: part.Text}
+							}
 						case part.Text != "":
 							ch <- StreamEvent{Token: part.Text}
 						}

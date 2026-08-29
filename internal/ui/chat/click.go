@@ -175,8 +175,9 @@ func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
 }
 
 // toggleRow opens or closes whatever structure the row at idx is — a step
-// header's group, a folded run of read-only calls, a diff's three modes — and
-// reports whether it was one of those at all.
+// header's group, a folded run of read-only calls, a think row's three
+// depths, a diff's three modes — and reports whether it was one of those at
+// all.
 //
 // The plain case, a row that simply shows its own body, is left to the
 // callers because they disagree about which rows have one: reading mode
@@ -197,6 +198,13 @@ func (m *Model) toggleRow(idx int) (claimed bool, full *components.DiffView) {
 		// A folded group restores its rows in place, and folds them back
 		// again.
 		m.toggleGroupFold(idx)
+		return true, nil
+	}
+	if es[idx].kind == entryThink {
+		// A think row cycles its three depths the way a diff cycles its three
+		// modes (think.go), and for the same reason: the middle one is what a
+		// glance wants and the whole block is what a read does.
+		m.cycleThink(idx)
 		return true, nil
 	}
 	if d := es[idx].diff; d != nil {

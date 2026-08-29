@@ -118,6 +118,15 @@ func (m Model) handleStreamFailure(msg streamErrMsg) (tea.Model, tea.Cmd) {
 	// them: continuing the partial is what re-uses them, and the request it
 	// makes needs the reasoning that produced them.
 	m.agent.CarryReasoning(msg.reasoning)
+	// And the readable half of it is the round's think row, which stops here
+	// whether it streamed or arrived whole with the failure (think.go).
+	//
+	// A retry leaves that row standing and opens a new one under the failure
+	// row between them, because the model did think and then the wire broke.
+	// The partial answer below is discarded instead, and the difference is
+	// what the two are: half a sentence reads as the reply, a count of lines
+	// thought is a record of what happened.
+	m.recordReasoning(msg.reasoning)
 	switch {
 	case m.compacting || f.Class == provider.ClassCancelled:
 		// A compaction that broke discards its partial summary rather than

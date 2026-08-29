@@ -18,7 +18,8 @@ import (
 // expandable reports whether a transcript entry has bounded output that focus
 // mode can expand.
 func expandable(e entry) bool {
-	return e.kind == entryTool || e.kind == entryCommand || e.kind == entryDiff
+	return e.kind == entryTool || e.kind == entryCommand || e.kind == entryDiff ||
+		e.kind == entryThink
 }
 
 // selectable reports whether focus mode can put its cursor on an entry. It is
@@ -28,6 +29,17 @@ func expandable(e entry) bool {
 func selectable(e entry) bool {
 	return expandable(e) || e.kind == entryTurnClose || e.kind == entryFailure ||
 		e.kind == entryStreamDrop || e.kind == entryRoundPause
+}
+
+// selectableRow is selectable plus the one thing that depends on the session
+// rather than on the entry: a think row the verbosity is not drawing is not on
+// screen to put a cursor on (think.go). A cursor that could land on a row
+// nobody can see is a cursor that vanishes.
+func (m Model) selectableRow(e entry) bool {
+	if e.kind == entryThink && !m.showThink() {
+		return false
+	}
+	return selectable(e)
 }
 
 // expandableIndices lists the transcript indices focus mode can select,
@@ -52,7 +64,7 @@ func (m Model) expandableIndices() []int {
 			}
 			// A folded group offers its group row, not the rows inside it.
 			for _, sl := range m.stepSlots(es, blk.step) {
-				if selectable(es[sl.idx]) {
+				if m.selectableRow(es[sl.idx]) {
 					idxs = append(idxs, sl.idx)
 				}
 			}
@@ -60,7 +72,7 @@ func (m Model) expandableIndices() []int {
 		}
 		start, end := blk.members()
 		for i := start; i < end; i++ {
-			if selectable(es[i]) {
+			if m.selectableRow(es[i]) {
 				idxs = append(idxs, i)
 			}
 		}

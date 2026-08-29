@@ -68,6 +68,17 @@ type StreamEvent struct {
 	// rides the terminal event beside ToolCalls, and for the same reason:
 	// what the model finished has to survive into the next request.
 	Reasoning []ReasoningBlock
+	// Thinking is reasoning text as it arrives, the way Token is answer text
+	// as it arrives. It is a second channel rather than more Token because
+	// the two are different acts and the transcript draws them as different
+	// things — thinking is a row of its own, and a provider that streamed it
+	// as a token would print the model's private murmur as its reply.
+	//
+	// Reasoning above is still what travels back on the next request: the
+	// blocks are the provider's own signed form, and this text is only what
+	// the screen can show of them. A provider that has one and not the other
+	// is normal in both directions.
+	Thinking string
 }
 
 type CompletionOpts struct {

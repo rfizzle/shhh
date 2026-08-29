@@ -120,8 +120,19 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 				return
 			}
 			if delta, ok := event.AsAny().(anthropic.ContentBlockDeltaEvent); ok {
-				if text, ok := delta.Delta.AsAny().(anthropic.TextDelta); ok && text.Text != "" {
-					ch <- StreamEvent{Token: text.Text}
+				switch d := delta.Delta.AsAny().(type) {
+				case anthropic.TextDelta:
+					if d.Text != "" {
+						ch <- StreamEvent{Token: d.Text}
+					}
+				case anthropic.ThinkingDelta:
+					// The thinking as it is written. The signed block the next
+					// request needs is read off the accumulation below — this
+					// is the same text a frame early, so the screen can show
+					// the model thinking rather than a spinner.
+					if d.Thinking != "" {
+						ch <- StreamEvent{Thinking: d.Thinking}
+					}
 				}
 			}
 		}

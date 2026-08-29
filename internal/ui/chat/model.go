@@ -114,6 +114,10 @@ const horizontalPadding = 2
 
 type tokenMsg struct {
 	text string
+	// think is reasoning text from the same batch. It rides the token message
+	// rather than a message of its own because the two arrive interleaved on
+	// one channel, and two messages would be two repaints of one frame.
+	think string
 	// final carries a terminal event (doneMsg, streamErrMsg, toolCallsMsg)
 	// that arrived in the same batch, so it isn't lost when tokens are drained.
 	final tea.Msg
@@ -194,6 +198,10 @@ const (
 	// renders instead of their separate rows. It holds only the
 	// batch number — the lanes are read off the supervisor every render.
 	entryFanout
+	// entryThink: the reasoning a round did, folded into one activity row
+	// (think.go). It holds the readable text; the blocks the next
+	// request replays are the agent's, not this row's.
+	entryThink
 )
 
 // entry is one transcript item, stored raw so the history can be re-rendered
@@ -260,6 +268,15 @@ type entry struct {
 	// a different question: stepFold and groupFold decide which rows are on
 	// screen, this decides how much of each one is.
 	detailFold foldState
+	// thinkDepth is how much of an entryThink row's body is on screen — the
+	// reader's own answer to [enter], recorded on the entry so the row
+	// re-renders at any width like every other one.
+	thinkDepth thinkDepth
+	// thinkStreaming says the reasoning is still being written, which is what
+	// spins the row. It is on the entry rather than on the Model for
+	// the reason a pending tool result is: what a row is doing is part of the
+	// row, and the render stays a function of the entry alone.
+	thinkStreaming bool
 	// planStep is the number of the approved plan's step this assistant
 	// announcement carries out, offPlanStep when it carries out none of them,
 	// and zero when no plan was running. It is stamped once, when the
@@ -285,6 +302,11 @@ type Model struct {
 	// row, or 0 once the round has none left to convert — the row a second
 	// child of the same round turns into the fan-out block.
 	spawnRow int
+	// thinkIdx is 1 + the transcript index of this round's think row, or 0
+	// where the round has not thought yet (think.go). It is the round's row
+	// rather than the block's, so reasoning that arrives in three pieces
+	// around two tool calls still lands on one row.
+	thinkIdx int
 	// spinFrame counts spinner ticks for the passive surfaces that draw a
 	// frame themselves rather than animating one (the inspector rail's agent
 	// lanes). It is the session's one frame counter: every surface
@@ -1482,12 +1504,23 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case streamStartedMsg:
 		m.events = msg.events
 		m.cancel = msg.cancel
+		// A round is a request: the row the last one's reasoning landed on is
+		// not the row this one's belongs to (think.go).
+		m.settleThink()
+		m.thinkIdx = 0
 		return m, waitForEvent(m.events)
 
 	case tokenMsg:
 		// The provider is answering: whatever stall preceded this is over, and
 		// the next one starts its own bounded count.
 		m.clearRetryChain()
+		m.appendThinking(msg.think)
+		if msg.text != "" {
+			// A model that has started writing has stopped thinking, so the
+			// round's think row settles here rather than spinning under the
+			// answer it already produced.
+			m.settleThink()
+		}
 		m.streaming += msg.text
 		// The repaint rides the spinner's tick rather than the chunk (the
 		// streaming render). A chunk that arrives while the loop is running only
@@ -1537,6 +1570,11 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// The thinking behind these calls has to travel with them into the
 		// next request.
 		m.agent.CarryReasoning(msg.reasoning)
+		// And what is readable of it is the round's think row, for a provider
+		// that hands its reasoning over whole at the end rather than as it is
+		// written (think.go). The row goes in before the announcement, which
+		// is where it happened.
+		m.recordReasoning(msg.reasoning)
 		if m.compacting {
 			return m.abortCompact()
 		}
@@ -2286,7 +2324,10 @@ func (m *Model) execToolsCmd(calls []provider.ToolCall) tea.Cmd {
 
 // waitForEvent reads the next stream event. If it is a token, any further
 // tokens already buffered on the channel are drained into a single batch so
-// the UI re-renders once per batch instead of once per token.
+// the UI re-renders once per batch instead of once per token. Reasoning text
+// drains into the same batch on its own string: it is a different act with a
+// row of its own (think.go), and the two never have to be told apart after
+// the fact because they never share a field.
 func waitForEvent(events <-chan provider.StreamEvent) tea.Cmd {
 	return func() tea.Msg {
 		ev, ok := <-events
@@ -2296,20 +2337,22 @@ func waitForEvent(events <-chan provider.StreamEvent) tea.Cmd {
 		if final := terminalMsg(ev); final != nil {
 			return final
 		}
-		var batch strings.Builder
-		batch.WriteString(ev.Token)
+		var text, think strings.Builder
+		text.WriteString(ev.Token)
+		think.WriteString(ev.Thinking)
 		for {
 			select {
 			case ev, ok := <-events:
 				if !ok {
-					return tokenMsg{text: batch.String(), final: doneMsg{}}
+					return tokenMsg{text: text.String(), think: think.String(), final: doneMsg{}}
 				}
 				if final := terminalMsg(ev); final != nil {
-					return tokenMsg{text: batch.String(), final: final}
+					return tokenMsg{text: text.String(), think: think.String(), final: final}
 				}
-				batch.WriteString(ev.Token)
+				text.WriteString(ev.Token)
+				think.WriteString(ev.Thinking)
 			default:
-				return tokenMsg{text: batch.String()}
+				return tokenMsg{text: text.String(), think: think.String()}
 			}
 		}
 	}
@@ -2373,6 +2416,9 @@ func (m *Model) finishStreaming() {
 	// Whatever repaint the arriving message still owed, it does not owe it any
 	// more: the message is about to be an entry like every other.
 	m.streamDirty = false
+	// The round's think row stops spinning here however the stream ended —
+	// finished, cancelled, or abandoned (think.go).
+	m.settleThink()
 	if m.compacting {
 		// A cancelled compaction discards the partial summary and keeps the
 		// conversation unchanged (the success path goes through finishCompact).
@@ -2492,8 +2538,9 @@ func (m *Model) appendEntry(e entry) {
 func (m *Model) resetTranscript() {
 	m.transcript = nil
 	// The index a fan-out would have converted points into a transcript that
-	// no longer exists.
+	// no longer exists, and so does the round's think row.
 	m.spawnRow = 0
+	m.thinkIdx = 0
 	// The checklist is read off the transcript, so a transcript that is gone
 	// takes the approved plan with it rather than pointing at entries that no
 	// longer exist.
@@ -2557,6 +2604,15 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 		// Compact one-row activity rendering; focus mode expands it,
 		// and so does the step around it.
 		return m.activityRowDetail(e, stepDetail).View(width) + "\n"
+	case entryThink:
+		// The round's reasoning, folded (think.go). Low verbosity draws no
+		// row at all, and an entry that renders to nothing is not a unit, so
+		// nothing downstream — spacing, line mapping, the reading cursor —
+		// has to know it was skipped.
+		if !m.showThink() {
+			return ""
+		}
+		return m.thinkRowFor(e, width).View(width) + "\n"
 	case entryTurnClose:
 		if e.close == nil {
 			return ""
@@ -3335,6 +3391,13 @@ func (m *Model) appendMessageEntries(msgs []provider.Message) {
 			m.appendEntry(entry{kind: entryUser, text: msg.Content,
 				attached: attachment.Names(msg.Attachments)})
 		case provider.RoleAssistant:
+			// The thinking that led to the turn comes back with it, above it,
+			// where it happened (think.go). A conversation that is still
+			// replaying its reasoning to the model and no longer showing it
+			// would be the transcript quietly disagreeing with the request.
+			if think := reasoningText(msg.Reasoning); think != "" {
+				m.appendEntry(entry{kind: entryThink, text: think})
+			}
 			if msg.Content != "" {
 				m.appendEntry(entry{kind: entryAssistant, text: msg.Content})
 			}

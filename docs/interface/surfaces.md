@@ -22,6 +22,43 @@ Because it is one shape, a reader learns it once. A provider failure using the
 same row as a file read is the point rather than an accident: a failure is
 part of the turn, not an interruption of it.
 
+### The think row
+
+What the model thought before it acted, folded into one row among the acts it
+led to. A round that reasoned gets one; a round that did not gets nothing,
+because a row reporting no thinking is a stat nobody measured.
+
+It is a row rather than a panel because thinking is one of the things a turn
+did, and the transcript has one shape for those. The row states how much it
+swallowed, so folding hides the words without hiding that there were words,
+and it opens through the diff's three depths: closed, the end of the thought,
+then all of it. The end rather than the beginning, because a model that
+thought for four hundred lines is being read for where it arrived. A block
+short enough to fit the window skips that middle step.
+
+Opened, it wraps rather than clips. Every other body under a row is the
+output of a program, where the head of a line is the information and the tail
+can be cut; this one is prose, where a paragraph is a single line hundreds of
+characters long and cutting it keeps a sentence and loses the thought.
+
+The row also ends the group above it, because the model stopping to think is
+where one round of work ends and the next begins. What follows stands as its
+own rows until the model says what it is doing: a step is a titled group, and
+private reasoning is not a title anybody asked for. So a round that thinks and
+then works without a word costs the fold its calls would otherwise have had —
+which is the cheaper of the two mistakes, because the other one was a fold
+that hid the thinking and did not count it.
+
+The row fills while the model thinks, so the wait is legible as work rather
+than as a spinner. Thinking is the model talking to itself: it changed
+nothing, ran nothing and read nothing, which is why it carries no rail and
+sits at the bottom of the weight order. The least dense verbosity drops it
+first, for the same reason.
+
+What is shown is only what the provider let through. Reasoning that comes back
+redacted, or as a signature with no words, is carried into the next request
+and shown as nothing — there is nothing to show.
+
 ### The diff view
 
 An applied edit is one row until you open it. Opening it shows the change in

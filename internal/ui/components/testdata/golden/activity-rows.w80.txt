@@ -21,6 +21,14 @@
 · kind · sub-agent
    ◇ agent   writer-1 · docs/loop.md                                    ok 48.0s
 
+· kind · think, folded
+   ✻ think                                       42 lines · [enter] expand
+
+· kind · think, opened to its tail
+   ✻ think                                                        42 lines
+    So the second one is cheaper: it reuses
+    the row the transcript already draws.
+
 · state · queued
    · read    internal/agent/loop.go                                 queued     —
 
@@ -68,6 +76,14 @@
 
 · kind · sub-agent
    ␛[94m◇␛[m agent   ␛[38;5;241mwriter-1 · docs/loop.md␛[m                                    ␛[38;5;241mok␛[m ␛[38;5;245m48.0s␛[m
+
+· kind · think, folded
+   ␛[38;5;241m✻␛[m think   ␛[38;5;241m␛[m                                    ␛[38;5;245m42 lines␛[m␛[38;5;241m · ␛[m␛[94m[enter] expand␛[m
+
+· kind · think, opened to its tail
+   ␛[38;5;241m✻␛[m think   ␛[38;5;241m␛[m                                                     ␛[38;5;245m42 lines␛[m
+    ␛[38;5;245mSo the second one is cheaper: it reuses␛[m
+    ␛[38;5;245mthe row the transcript already draws.␛[m
 
 · state · queued
    ␛[38;5;241m·␛[m read    ␛[38;5;241minternal/agent/loop.go␛[m                                 ␛[38;5;241mqueued␛[m     ␛[38;5;245m—␛[m

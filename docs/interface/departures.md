@@ -20,6 +20,20 @@ beside it.
 
 Where a guideline and an artboard disagree about a rule, the guideline wins.
 
+## The model's own reasoning has a glyph the design system has not assigned
+
+The design's tool-kind sheet is four glyphs — `⚙` read-only, `✎` edit, `$`
+command, `◇` sub-agent — and says they cover every tool shhh has. Thinking is
+not a tool and is the one act on the transcript that touched nothing, so none
+of the four is honest about it, and reusing one would put two different acts
+behind one glyph in the palette that has no colour left to tell them apart.
+The binary draws `✻`, dim rather than in the accent every other kind glyph
+carries, because [weight tracks risk](principles.md#weight-tracks-risk) and
+this row is the bottom of that order.
+
+This is the position that should be closed by the design system taking the
+glyph, not by the binary dropping it: the sheet is stale rather than wrong.
+
 ## An unavailable option is still selectable
 
 The design says such a row is shown but not selectable. Choosing it is how the

@@ -67,6 +67,12 @@ const (
 	ActivityCommand                      // $ shell command
 	ActivityEdit                         // ✎ edit, write, patch, memory
 	ActivitySubagent                     // ◇ sub-agent
+	// ActivityThink is the model's own reasoning: ✻, and the only kind that
+	// touched nothing at all. It is drawn dim rather than in the accent every
+	// other kind glyph carries, because weight tracks risk and this row is the
+	// bottom of that order — it read nothing, wrote nothing and ran nothing.
+	// See docs/interface/principles.md#weight-tracks-risk.
+	ActivityThink
 )
 
 // ActivityState is the row's state. It overrides the kind glyph — but only
@@ -207,6 +213,8 @@ func (r ActivityRow) glyph() string {
 			g = sty.Accent.Render("✎")
 		case ActivitySubagent:
 			g = sty.Info.Render("◇")
+		case ActivityThink:
+			g = sty.Dim.Render("✻")
 		default:
 			g = sty.Accent.Render("⚙")
 		}
@@ -376,4 +384,8 @@ const (
 	GridVerbColumn = ptrWidth + railWidth + glyphWidth
 	// GridDurationWidth is the right-aligned duration field.
 	GridDurationWidth = durWidth
+	// GridDetailIndent is where a detail body starts. A caller that has to
+	// wrap prose before handing it over as Detail lines needs the same number
+	// this file indents them by; measuring it twice is how they drift.
+	GridDetailIndent = detailIndent
 )

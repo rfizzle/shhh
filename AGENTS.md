@@ -195,6 +195,13 @@ diff view.
 The step outline is a layer over the entry list in `internal/ui/chat/steps.go`
 rather than a component: it groups history instead of rendering a widget.
 
+Reasoning is a row like any other act: `internal/ui/chat/think.go` owns the
+`think` row — where the round's thinking is collected as it streams, its three
+fold depths, and the verbosity that drops it. The text it shows is not the
+reasoning the next request replays; that stays with the agent as the
+provider's own signed blocks, and dropping them turns the second round of
+every thinking turn into a 400 (see the Gemini and Anthropic notes below).
+
 The attached sub-agent view is not a separate surface — the chat `Model`
 renders whichever agent is focused, and every agent including the orchestrator
 is an `internal/agent` instance with its own transcript, queue and mode.

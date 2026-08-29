@@ -208,6 +208,12 @@ func (m Model) expandedRowCount() int {
 			if e.diff.Mode != components.DiffCollapsed {
 				n++
 			}
+		case e.kind == entryThink:
+			// The reader's own depth, not the one the verbosity is imposing:
+			// this count is what [-] acts on (think.go).
+			if e.thinkDepth == thinkTail || e.thinkDepth == thinkFull {
+				n++
+			}
 		case e.expanded:
 			n++
 		}
@@ -233,6 +239,12 @@ func (m Model) focusedRowOpen() bool {
 	if d := es[m.focusIdx].diff; d != nil {
 		return d.Mode != components.DiffCollapsed
 	}
+	if es[m.focusIdx].kind == entryThink {
+		// The reader's own depth, like every other row here: a row the
+		// verbosity opened is not a row [-] has anything to close.
+		d := es[m.focusIdx].thinkDepth
+		return d == thinkTail || d == thinkFull
+	}
 	return es[m.focusIdx].expanded
 }
 
@@ -251,6 +263,8 @@ func (m *Model) collapseFocused() bool {
 		m.toggleGroupFold(m.focusIdx)
 	case es[m.focusIdx].diff != nil:
 		es[m.focusIdx].diff.Mode = components.DiffCollapsed
+	case es[m.focusIdx].kind == entryThink:
+		es[m.focusIdx].thinkDepth = thinkClosed
 	default:
 		es[m.focusIdx].expanded = false
 	}

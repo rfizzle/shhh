@@ -112,6 +112,20 @@ func TestGolden_ActivityRows(t *testing.T) {
 				r.Kind, r.Verb, r.Target = ActivitySubagent, "agent", "writer-1 · docs/loop.md"
 				r.Outcome, r.Duration = OutcomeOK, "48.0s"
 			})},
+			{Label: "kind · think, folded", View: row(func(r *ActivityRow) {
+				r.Kind, r.Verb, r.Target = ActivityThink, "think", ""
+				r.Counts, r.Keys = "42 lines", GroupExpandKey
+			})},
+			{Label: "kind · think, opened to its tail", View: row(func(r *ActivityRow) {
+				r.Kind, r.Verb, r.Target = ActivityThink, "think", ""
+				r.Counts, r.Expanded = "42 lines", true
+				// Already wrapped to the detail width by the caller: this
+				// body is prose, and the row would clip it.
+				r.Detail = []string{
+					"So the second one is cheaper: it reuses",
+					"the row the transcript already draws.",
+				}
+			})},
 			{Label: "state · queued", View: row(func(r *ActivityRow) {
 				r.State, r.Outcome, r.Duration = ActivityQueued, OutcomeQueued, NoDuration
 			})},
