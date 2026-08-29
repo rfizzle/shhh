@@ -1,8 +1,8 @@
 package chat
 
-// The command palette (S-112, docs/interface/surfaces.md#the-palette). Ctrl+K
-// opens one prompt over everything the session can reach — the commands in
-// the S-078 registry, the saved chats, and the files this session touched or
+// The command palette (docs/interface/surfaces.md#the-palette). Ctrl+K opens
+// one prompt over everything the session can reach — the commands in the
+// command registry, the saved chats, and the files this session touched or
 // the checkout changed most recently — filtered as you type.
 //
 // It complements the inline `/` menu rather than replacing it: `/` completes
@@ -95,13 +95,13 @@ type paletteState struct {
 
 // openPalette gathers the candidates and shows the palette over the frame.
 // The dynamic halves — saved chats, recent files — are read here and not per
-// keystroke (S-079).
+// keystroke.
 func (m Model) openPalette() (tea.Model, tea.Cmd) {
 	m.palette = &paletteState{all: m.paletteCandidates()}
 	m.picker = &components.Select{
 		Title:      "Palette",
 		Unnumbered: true,
-		// The palette is the filter row always open (S-123): the query line
+		// The palette is the filter row always open: the query line
 		// it used to draw for itself is the card's own now, so the two cannot
 		// disagree about what a query line looks like. It keeps its own chip,
 		// which counts matches rather than a catalog.
@@ -161,7 +161,7 @@ func (m Model) updatePalette(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 	// Everything else belongs to the card's query line — backspace, ctrl+u
 	// and every key that types. The palette stopped keeping its own copy of
-	// that when the filter row landed (S-123); it keeps the match rule, which
+	// that when the filter row landed; it keeps the match rule, which
 	// is the half the component never had.
 	m.picker.Update(msg)
 	if m.picker.QueryChanged() {
@@ -199,7 +199,7 @@ func (m *Model) refreshPalette() {
 // paletteRowBudget is how many result rows fit the bottom panel: everything
 // the card spends before them — its frame, the query line and the hint run —
 // comes off the top. Descriptions ride their own rows' right-hand columns
-// since S-126, so the focused row no longer buys one of its own.
+// on every row, so the focused row no longer buys one of its own.
 func (m Model) paletteRowBudget() int {
 	return max(m.maxConfirmPanelHeight()-4, 1)
 }
@@ -229,7 +229,7 @@ func (m Model) paletteFocus() (paletteEntry, bool) {
 
 // dispatchPalette runs the chosen entry. A command goes through the same
 // dispatch the input uses, so an idle-only command answers with the notice
-// that names what it would disturb rather than being refused here (S-087).
+// that names what it would disturb rather than being refused here.
 func (m Model) dispatchPalette(row paletteEntry) (tea.Model, tea.Cmd) {
 	name := commandName(row.text)
 	if name == "" {
@@ -268,9 +268,9 @@ func (m Model) paletteCandidates() []paletteEntry {
 	return append(out, m.paletteFileEntries()...)
 }
 
-// paletteCommandEntries is the S-078 registry: the commands this session has
-// wired, with their descriptions and their key bindings. A command that needs
-// an idle turn is dimmed with its reason rather than dropped.
+// paletteCommandEntries is the command registry: the commands this session
+// has wired, with their descriptions and their key bindings. A command that
+// needs an idle turn is dimmed with its reason rather than dropped.
 func (m Model) paletteCommandEntries() []paletteEntry {
 	working := m.working()
 	var rows []slashCommand
@@ -288,7 +288,7 @@ func (m Model) paletteCommandEntries() []paletteEntry {
 			text:  c.name,
 			label: c.name,
 			// The key binding is the row's meta field, right-aligned by the
-			// card (S-126). It used to be padded into the label here,
+			// card. It used to be padded into the label here,
 			// which made a second column the component knew nothing about and
 			// could not keep aligned once a filter shortened the list.
 			meta:  c.key,

@@ -67,7 +67,7 @@ func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 	if !strings.Contains(view, "Assistant wants to write main.go") {
 		t.Fatal("confirm prompt should describe the file action")
 	}
-	// Diff previews carry line numbers (S-074,
+	// Diff previews carry line numbers (
 	// docs/interface/surfaces.md#the-approval-card).
 	if !strings.Contains(view, "+ 2  line two") {
 		t.Fatal("confirm prompt should show the added line as a diff")
@@ -76,8 +76,7 @@ func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 		t.Fatal("diff preview should include a hunk header")
 	}
 	// The card landed on a draft nobody was typing into, so it holds the
-	// keyboard and offers the two answers; [a] waits behind the handover
-	// (S-117).
+	// keyboard and offers the two answers; [a] waits behind the handover.
 	if !strings.Contains(view, "[y/N]") {
 		t.Fatal("a card holding the keyboard by arrival should offer y/N")
 	}
@@ -203,7 +202,7 @@ func TestGatedTool_QueueMixedWithExec(t *testing.T) {
 	}
 
 	// Both tool results are recorded in order once the second is declined.
-	// Esc would hand the keyboard back and leave it waiting (S-117);
+	// Esc would hand the keyboard back and leave it waiting;
 	// [n] is how a decision is denied.
 	m = handover(t, m)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
@@ -266,7 +265,7 @@ func TestGatedTool_GenericPreview(t *testing.T) {
 	}
 }
 
-// The real write_file/edit_file tools are intercepted natively (S-049): no
+// The real write_file/edit_file tools are intercepted natively: no
 // registration needed, diff preview from disk, execution via ExecuteMutating
 // rather than the session's auto-run executor.
 func TestMutatingTool_WriteApprovedThroughQueue(t *testing.T) {
@@ -388,7 +387,7 @@ func TestGatedTool_LargeDiffTruncatedAndPanelGrows(t *testing.T) {
 	})
 	// The layout's answer, not the viewport's field: the fixture sets the
 	// streaming state directly, and nothing has re-synced the pane to the row
-	// the turn's live tail is using (S-161).
+	// the turn's live tail is using.
 	normalHeight := m.viewportHeight()
 
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
@@ -400,11 +399,11 @@ func TestGatedTool_LargeDiffTruncatedAndPanelGrows(t *testing.T) {
 	if !strings.Contains(m.View().Content, "more diff lines") {
 		t.Fatal("large diff should be truncated with a notice")
 	}
-	// The card takes the panel once the decision holds the keyboard (S-117);
+	// The card takes the panel once the decision holds the keyboard;
 	// until then it rides above a live frame and the panel is the input's.
 	m = handover(t, m)
 	// The card is capped at 40% of terminal height (30 → 12 rows); the rail
-	// that names the keyboard's owner is the row above it (S-117).
+	// that names the keyboard's owner is the row above it.
 	if h := m.bottomPanelHeight(); h != 13 {
 		t.Fatalf("expected confirm panel capped at 12 rows plus its rail, got %d", h)
 	}

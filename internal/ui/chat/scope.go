@@ -1,6 +1,6 @@
 package chat
 
-// The working scope in a session (S-141). A session is scoped to the
+// The working scope in a session. A session is scoped to the
 // directory it was opened in, and everything the agent does inside it is
 // judged by the permission mode alone. Reaching outside it is a second
 // question — is this directory part of the work? — and it is asked the same

@@ -1,6 +1,6 @@
 package provider
 
-// The taxonomy's own tests (S-106). Each dialect hands back a different error
+// The taxonomy's own tests. Each dialect hands back a different error
 // shape for the same failure — a typed *openai.APIError, an Anthropic error
 // envelope, a Gemini string with the status written into the prose — and the
 // point of the classifier is that all three arrive as the same class. So the

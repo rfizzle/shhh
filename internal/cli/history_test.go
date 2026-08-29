@@ -9,7 +9,7 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
-// The host half of the history browser (S-128): what an entry means, how long
+// The host half of the history browser: what an entry means, how long
 // ago it was, and what its action and its exit code add up to. The screen's
 // own rules are tested where the screen is.
 

@@ -1,7 +1,7 @@
 package ui
 
 // The one-shot generate UI honours mono through the same shared palette the
-// chat TUI does (S-095): its styles are rebuilt on a palette swap rather than
+// chat TUI does: its styles are rebuilt on a palette swap rather than
 // captured once at init.
 
 import (
@@ -15,7 +15,7 @@ import (
 func TestMonoReachesTheGenerateStyles(t *testing.T) {
 	// A profile with colour to give: the one detected from a test binary's
 	// non-terminal stdout resolves every token to no colour at all, which
-	// would make the two palettes indistinguishable (S-155).
+	// would make the two palettes indistinguishable.
 	wasProfile := components.Profile()
 	components.SetProfile(colorprofile.ANSI256)
 	t.Cleanup(func() { components.SetProfile(wasProfile) })

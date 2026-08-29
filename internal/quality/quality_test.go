@@ -483,7 +483,7 @@ func TestTailExcerpt(t *testing.T) {
 	}
 }
 
-// Summarize reads back what Format writes (S-098): the round trip is the
+// Summarize reads back what Format writes: the round trip is the
 // point, so the fixtures here are real runs rather than hand-typed strings.
 func TestSummarize_RoundTripsAFormattedResult(t *testing.T) {
 	ws := t.TempDir()

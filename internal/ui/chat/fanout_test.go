@@ -196,7 +196,7 @@ func gatedEnv() subagent.EnvFactory {
 		// makes that safe — a real provider stream is bound to the child's
 		// context, so cancelling it ends the tool loop. Without this the mock
 		// is an infinite generator that only ever stopped because the round
-		// cap stopped it, and a child with no cap (S-144) would spin past
+		// cap stopped it, and a child with no cap would spin past
 		// Close.
 		stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			if err := ctx.Err(); err != nil {

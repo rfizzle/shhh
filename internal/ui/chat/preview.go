@@ -1,6 +1,6 @@
 package chat
 
-// Seeing what you attached (S-158,
+// Seeing what you attached (
 // docs/interface/surfaces.md#a-staged-picture).
 //
 // The staged rail says `▣ shot.png 412 KB`, which is the right answer
@@ -12,7 +12,7 @@ package chat
 //
 // It is reached by name and not by a key, for the staged rail's own reason —
 // a chip sits above a live draft, so the name printed on it is the handle and
-// the completion menu offers the staged ones (S-079). The name is now the
+// the completion menu offers the staged ones. The name is now the
 // handle for two verbs rather than one, which is the argument for having made
 // it the field a chip gives up last.
 //

@@ -159,7 +159,7 @@ func (r ActivityRow) railCell() string {
 }
 
 // pointer renders gutter columns 1–2: the focus cursor today, fold state once
-// steps land (S-090).
+// steps land.
 func (r ActivityRow) pointer() string {
 	if r.Selected {
 		// The pointer is a glyph in its own column, not part of the highlight

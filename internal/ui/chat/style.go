@@ -27,7 +27,7 @@ type Styles struct {
 	StatusBar  lipgloss.Style
 	// Permission-mode segment (docs/interface/surfaces.md#the-input-frame):
 	// permissive vs gated modes (the orchestrator's bar renders through
-	// components.Cockpit; these back the child-scoped bar, S-077).
+	// components.Cockpit; these back the child-scoped bar).
 	ModePermissive lipgloss.Style
 	ModeGated      lipgloss.Style
 	CtxAlert       lipgloss.Style
@@ -36,14 +36,14 @@ type Styles struct {
 	FocusMarker lipgloss.Style
 
 	// The reading rail under the header, which says the transcript has the
-	// keyboard rather than the input (S-115) — navigate.go.
+	// keyboard rather than the input — navigate.go.
 	Reading readingStyles
-	// Step outline (S-090) — the header's title, ordinal, faint rule
+	// Step outline — the header's title, ordinal, faint rule
 	// and stats, plus one style per state glyph.
 	Step stepStyles
 	// The input frame and its rails — frame.go.
 	Frame frameStyles
-	// The slash-command menu (S-079) — complete.go.
+	// The slash-command menu — complete.go.
 	Complete completeStyles
 	// The reading-mode hint line and the mutation rail —
 	// readinghint.go.
@@ -52,7 +52,7 @@ type Styles struct {
 	Pane paneStyles
 }
 
-// stepStyles is the step outline's own group (S-090).
+// stepStyles is the step outline's own group.
 type stepStyles struct {
 	Title     lipgloss.Style
 	LiveTitle lipgloss.Style
@@ -65,7 +65,7 @@ type stepStyles struct {
 }
 
 // sty is the live style set. init builds it and keeps it current across a
-// palette swap (/ui mono, NO_COLOR — S-095); it runs after
+// palette swap (/ui mono, NO_COLOR); it runs after
 // internal/ui/components is fully initialized, so the environment's mono
 // decision is already settled.
 var sty Styles

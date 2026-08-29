@@ -1,6 +1,6 @@
 package chat
 
-// First contact (S-105, docs/interface/surfaces.md#the-start-screen). An
+// First contact (docs/interface/surfaces.md#the-start-screen). An
 // empty session is the one screen every user sees and the one that used to
 // say the least: a single italic sentence in the middle of a blank viewport.
 // It now states what shhh already knows about the checkout — path, toolchain,
@@ -145,7 +145,7 @@ func (m Model) renderStartScreen(width int) string {
 	screen, _ := m.startScreen()
 	if !m.startChoosing() {
 		// Typing dismisses the list, not the facts — and not the
-		// navigation line, whose keys are still live (S-115).
+		// navigation line, whose keys are still live.
 		screen.Suggestions, screen.Lead, screen.Hint = nil, "", ""
 	}
 	return screen.View(width)
@@ -168,13 +168,13 @@ func (m Model) startScreen() (components.StartScreen, []string) {
 		Hint:        "[↑↓] choose · [enter] start · or just type what you want",
 		// The navigation line survives the typing dismissal above, because
 		// these keys survive it: every one of them works with a half-written
-		// draft in the box (S-115). This is the one screen every user
+		// draft in the box. This is the one screen every user
 		// sees, so it is where the two panes are introduced — and the one
 		// place the mouse chord can be learned before it is wanted, which for
-		// that setting is the whole difficulty (S-136).
+		// that setting is the whole difficulty.
 		//
 		// Scrolling and the handover are named apart, because they are two
-		// things now (S-140): pgup reads without giving up the keyboard,
+		// things now: pgup reads without giving up the keyboard,
 		// ctrl+e is what hands it over when the rows are what you want.
 		Nav: "[pgup] or [shift+↑↓] scroll · [ctrl+e] select rows · [ctrl+k] palette · [ctrl+x] mouse",
 	}, actions

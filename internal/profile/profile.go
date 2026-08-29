@@ -12,7 +12,7 @@
 // One gateway is often several addresses. The Claude models answer on a
 // dialect and a path of their own, the rest on the OpenAI-shaped root, and
 // both are the same deployment behind the same key — so a profile is a
-// provider with endpoints inside it (S-142). An [[endpoint]] overrides only
+// provider with endpoints inside it. An [[endpoint]] overrides only
 // what differs; everything it leaves unset it inherits, and a request routes
 // to it by the model it names.
 //

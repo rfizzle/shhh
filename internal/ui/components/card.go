@@ -36,7 +36,7 @@ func clip(s string, width int) string {
 
 // cardRule is a row that renders as a horizontal rule across the card rather
 // than as content: the divider that keeps the key hints from blending into
-// the body (S-101, docs/interface/surfaces.md#the-approval-card). It is a
+// the body (docs/interface/surfaces.md#the-approval-card). It is a
 // sentinel because rows are already rendered strings by the time the frame
 // sees them.
 const cardRule = "\x00rule"
@@ -158,9 +158,9 @@ const notYetLiveWords = "not live yet"
 // notYetLiveRows renders a decision surface's key row while that surface does
 // not hold the keyboard
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard,
-// invariant 5, S-117). The keys are dimmed and said to be waiting in words,
-// and handover — the one key that is live — is offered underneath with what
-// it does and what the letters do until it is pressed. A key that is not yet
+// invariant 5). The keys are dimmed and said to be waiting in words, and
+// handover — the one key that is live — is offered underneath with what it
+// does and what the letters do until it is pressed. A key that is not yet
 // live is a different thing from
 // one that cannot be pressed at all (the palette's ⊘), so the two never render
 // alike: this one is waiting for the keyboard, that one is refused.

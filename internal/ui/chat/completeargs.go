@@ -1,6 +1,6 @@
 package chat
 
-// Argument-level completion (S-079). The command registry in complete.go
+// Argument-level completion. The command registry in complete.go
 // carries a positional argument spec per command: a static subcommand list
 // (/memory list|add|forget) or a dynamic source (saved chat names, branch
 // names, the model catalog, checkpoint numbers). Dynamic sources are read
@@ -85,7 +85,7 @@ func lookupCommand(m *Model, name string) (slashCommand, bool) {
 // chat name, a memory body) or gated on a different preceding token.
 //
 // Several gated specs may share one position: /ui's second argument is a
-// verbosity level after "verbosity" and an on/off after "mono" (S-095), so a
+// verbosity level after "verbosity" and an on/off after "mono", so a
 // gate that does not match falls through to the next alternative instead of
 // ending the search.
 func argSpecFor(c slashCommand, pos int, prior []string) (argSpec, bool) {
@@ -226,7 +226,7 @@ func modelArgs(m *Model) []argOption {
 }
 
 // scopeDropArgs offers the directories this session has added to its working
-// scope (S-141) — the only ones /add-dir drop can take back, since the
+// scope — the only ones /add-dir drop can take back, since the
 // session's own directory is never dropped.
 func scopeDropArgs(m *Model) []argOption {
 	dirs := m.scopeDirs()
@@ -238,7 +238,7 @@ func scopeDropArgs(m *Model) []argOption {
 }
 
 // attachmentDropArgs offers the attachments staged for the next message
-// (S-134) — the names `/paste drop` takes back out. A chip has no key of its
+// — the names `/paste drop` takes back out. A chip has no key of its
 // own, so its name is the handle, and this is what keeps the handle
 // from having to be typed from memory.
 func attachmentDropArgs(m *Model) []argOption {
@@ -251,7 +251,7 @@ func attachmentDropArgs(m *Model) []argOption {
 }
 
 // attachmentShowArgs offers the staged images `/paste show` can open
-// (S-158). Only the images: a PDF and a markdown file are staged as
+// . Only the images: a PDF and a markdown file are staged as
 // themselves and the surface refuses them, and a menu that offered a name it
 // would then decline is a menu that made the reader find that out by typing.
 func attachmentShowArgs(m *Model) []argOption {
@@ -289,7 +289,7 @@ func modeArgs(m *Model) []argOption {
 }
 
 // agentArgs offers this session's sub-agents for /attach, blocked ones
-// first — those are the agents waiting on the user (S-087).
+// first — those are the agents waiting on the user.
 func agentArgs(m *Model) []argOption {
 	if m.subagents == nil {
 		return nil
@@ -311,7 +311,7 @@ func agentArgs(m *Model) []argOption {
 }
 
 // reviewTurnArgs offers the turns the changeset store still holds, latest
-// first, described by what each of them changed (S-099).
+// first, described by what each of them changed.
 func reviewTurnArgs(m *Model) []argOption {
 	turns := m.changes.Turns()
 	out := make([]argOption, 0, len(turns))

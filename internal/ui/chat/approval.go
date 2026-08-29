@@ -30,7 +30,7 @@ type GatedPreview struct {
 	OldText string
 	NewText string
 	Summary string
-	// Fields is the tool's own blast-radius block (S-101) — a fetch states
+	// Fields is the tool's own blast-radius block — a fetch states
 	// its domain and what it sends, a spawn states the scope it claims. shhh
 	// cannot resolve these from the arguments the way it resolves a shell
 	// command's paths, so the tool that owns them supplies them.
@@ -60,7 +60,7 @@ const (
 	approvalExec    approvalKind = iota // one-line command + safety warnings
 	approvalDiff                        // colored unified diff of a file write/edit
 	approvalGeneric                     // one-line summary of the tool call
-	approvalMemory                      // memory proposal (S-070): scope selector with optional note
+	approvalMemory                      // memory proposal: scope selector with optional note
 )
 
 // approvalRequest is the head of the approval queue: one tool call awaiting
@@ -68,20 +68,20 @@ const (
 type approvalRequest struct {
 	call    provider.ToolCall
 	kind    approvalKind
-	command string      // approvalExec: the command handed to the runner; also set for a process start (S-073) so mode policy treats it as a command
+	command string      // approvalExec: the command handed to the runner; also set for a process start so mode policy treats it as a command
 	title   string      // action headline, e.g. "edit main.go"
 	verb    string      // approvalDiff: the action verb, e.g. "edit"
 	path    string      // approvalDiff: the file being modified
 	hunks   []diff.Hunk // approvalDiff: the change to show
 	summary string      // one-line description for transcript entries
-	// fields is a gated tool's own blast-radius block (S-101), from its
+	// fields is a gated tool's own blast-radius block, from its
 	// GatedPreview.
 	fields []GatedField
 	// auto marks a call the session approved on the user's behalf — mode
 	// policy, a session grant, or the auto-mode classifier. It is what the
-	// changeset record's origin says afterwards (S-097).
+	// changeset record's origin says afterwards.
 	auto bool
-	// memoryDraft is the proposed entry for approvalMemory (S-070).
+	// memoryDraft is the proposed entry for approvalMemory.
 	memoryDraft memory.Draft
 }
 
@@ -92,13 +92,12 @@ type approvedToolDoneMsg struct {
 	result   string
 	duration time.Duration
 	// evicted names the turns the changeset write dropped to stay inside its
-	// bound, so the session can say so rather than losing them silently
-	// (S-097).
+	// bound, so the session can say so rather than losing them silently.
 	evicted []int64
 }
 
 // MutationHook post-processes an applied file-modification tool result before
-// it is reduced and recorded — the LSP integration (S-071) uses it to append
+// it is reduced and recorded — the LSP integration uses it to append
 // fresh diagnostics for the touched file so the model can self-correct in the
 // same round. It runs off the UI goroutine and must return promptly (its own
 // waits are bounded).
@@ -128,12 +127,12 @@ func (m Model) requiresApproval(tc provider.ToolCall) bool {
 	if tools.IsMutating(tc.Name) {
 		return true
 	}
-	// remember (S-070) is always gated: agent-proposed memories persist only
+	// remember is always gated: agent-proposed memories persist only
 	// after explicit user confirmation.
 	if tc.Name == memory.RememberToolName {
 		return true
 	}
-	// The process tool (S-073) gates on its arguments: start launches a
+	// The process tool gates on its arguments: start launches a
 	// command and needs approval; status/read/input/stop auto-run.
 	if m.processes.Manage != nil && tc.Name == process.ToolName {
 		return process.NeedsApproval(json.RawMessage(tc.Arguments))
@@ -159,13 +158,12 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 		}, nil
 	}
 
-	// Memory proposals get the scope-selector prompt, never a generic card
-	// (S-070).
+	// Memory proposals get the scope-selector prompt, never a generic card.
 	if tc.Name == memory.RememberToolName {
 		return m.buildMemoryApproval(tc)
 	}
 
-	// A process start (S-073) is approved like a command: the card shows the
+	// A process start is approved like a command: the card shows the
 	// command text, and mode policy treats it as one (allowlist, safety).
 	if m.processes.Manage != nil && tc.Name == process.ToolName {
 		name, command, err := process.StartSummary(json.RawMessage(tc.Arguments))
@@ -257,15 +255,15 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	if req.kind == approvalExec {
 		m.pendingRun = req.command
 	}
-	// What the decision reaches outside the working scope (S-141): resolved
+	// What the decision reaches outside the working scope: resolved
 	// before the blast radius because the radius block carries it as a row —
 	// the card names it, the policy asks about it, and approving the call
 	// grants it.
 	m.pendingScope = m.scopeReachFor(req)
 	// The blast radius is resolved once here, not inside View: it stats the
-	// filesystem and asks git about the paths it found (S-101).
+	// filesystem and asks git about the paths it found.
 	m.pendingBlast = m.resolveRadius(req)
-	// Agent-proposed memories (S-070) always require explicit user
+	// Agent-proposed memories always require explicit user
 	// confirmation: no mode, session grant, or classifier can wave one
 	// through. Plan mode falls through to the policy below, which refuses the
 	// write like any other.
@@ -275,7 +273,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 		m.armConfirm(req)
 		return m, nil
 	}
-	// A decision an earlier [A] already answered (S-102) runs when its turn
+	// A decision an earlier [A] already answered runs when its turn
 	// comes, without asking again.
 	if m.takeBatchApproval(req) {
 		m.recordDecision(decisionAllow, "user-batch")
@@ -288,7 +286,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 		}
 		return m.executeApprovedTool()
 	}
-	// Mode policy (S-059, absorbing S-054): the permissive modes and session
+	// Mode policy: the permissive modes and session
 	// grants skip the prompt, plan mode refuses the call outright, and
 	// safety-flagged commands always prompt.
 	switch decision, reason := m.policyDecision(req); decision {
@@ -313,7 +311,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
 	}
-	// In auto mode the classifier (S-060) judges what the static policy would
+	// In auto mode the classifier judges what the static policy would
 	// ask about — except safety-flagged actions, which always prompt the human.
 	if act := m.approvalAction(req); m.mode == agent.ModeAuto && m.classifier != nil &&
 		!act.SafetyFlagged && !act.ScopeSensitive {
@@ -325,7 +323,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 }
 
 // startClassifierCheck sends the pending approval to the auto-mode permission
-// classifier in the background (S-060); the verdict arrives as
+// classifier in the background; the verdict arrives as
 // classifierDoneMsg.
 func (m Model) startClassifierCheck(req *approvalRequest) (tea.Model, tea.Cmd) {
 	m.setTurnState(stateClassifying)
@@ -371,7 +369,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 	case agent.Deny:
 		m.recordDecision(decisionDeny, "classifier")
 		m.lastDenial = req.summary + " — " + reason
-		// Surfaces on the notice rail until the next user turn (S-082).
+		// Surfaces on the notice rail until the next user turn.
 		m.denialNotice = req.summary
 		m.pendingApproval = nil
 		m.pendingRun = ""
@@ -398,7 +396,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 
 // denialResult is the tool result for a call the session refused without
 // asking: plan mode's own sentence, the scope's when the path is one no grant
-// can reach (S-141), and the classifier's reason otherwise.
+// can reach, and the classifier's reason otherwise.
 func denialResult(reason string) string {
 	switch {
 	case reason == "plan mode":
@@ -464,7 +462,7 @@ func deniedEntry(req *approvalRequest, decider, rule string, elapsed time.Durati
 // executor in the background; the result arrives as approvedToolDoneMsg.
 func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 	// An approved call that reaches outside the working scope puts what it
-	// reaches into the scope (S-141): the approval is the answer to "is this
+	// reaches into the scope: the approval is the answer to "is this
 	// directory part of the work", and an answer the scope did not record is
 	// one the next call would ask again.
 	m.applyScopeGrant()
@@ -476,14 +474,14 @@ func (m Model) executeApprovedTool() (tea.Model, tea.Cmd) {
 	// Built-in mutating tools run through their own dispatcher; the session
 	// executor (the auto-run read-only path) never learns them. A registered
 	// gated tool keeps the session executor. The session executor is already
-	// wrapped by the reduction pipeline (S-064), so only the direct mutating
+	// wrapped by the reduction pipeline, so only the direct mutating
 	// dispatch reduces here.
 	_, registered := m.gatedTools[call.Name]
 	mutating := !registered && tools.IsMutating(call.Name)
 	reduce := m.evidence.Reduce
 	hook := m.mutationHook
 	// The changeset record is taken around the call, on this goroutine: the
-	// file as it is now, then the file the call leaves behind (S-097). Both
+	// file as it is now, then the file the call leaves behind. Both
 	// reads happen next to the write, so a file that changed underneath the
 	// approval preview is recorded as it really was, not as it was previewed.
 	record := m.changeRecorder()
@@ -596,14 +594,14 @@ func readFileState(path string) fileState {
 // /run confirmation. Both the confirm prompt's rendering and its key handling
 // flow through this one card. While the user is attached to a child, the
 // orchestrator's own card is labeled so it is never mistaken for the focused
-// agent's (S-077).
+// agent's.
 func (m Model) approvalCard() *components.ApprovalCard {
 	card := m.buildApprovalCard()
 	if m.attachedTo != "" {
 		card.Title = "orchestrator ▸ " + card.Title
 	}
 	// Whether the card's keys are live at all is not the card's to decide
-	// (invariant 5, S-117): it depends on which surface holds the keyboard.
+	// (invariant 5): it depends on which surface holds the keyboard.
 	m.applyNotYetLive(card)
 	return card
 }
@@ -612,12 +610,12 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 	card := &components.ApprovalCard{MaxLines: m.maxConfirmPanelHeight()}
 	req := m.pendingApproval
 	// Where this decision sits in the round, and the key that answers the
-	// rest of its category along with it (S-102).
+	// rest of its category along with it.
 	card.QueuePos = m.queuePosition()
 	if card.Batch = len(m.pendingBatch) > 0; card.Batch {
 		card.BatchHint = fmt.Sprintf("A: approve %d like this", len(m.pendingBatch)+1)
 	}
-	// The blast-radius block, resolved when the decision was armed (S-101).
+	// The blast-radius block, resolved when the decision was armed.
 	// It also carries the safety risks, so the card states severity and
 	// warnings from one source rather than two.
 	m.pendingBlast.applyTo(card)
@@ -633,8 +631,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		}
 		// [a] is offered only for assistant commands without safety warnings:
 		// flagged actions can never be pre-approved, and /run stays manual.
-		// The card says why it is missing rather than omitting it silently
-		// (S-101).
+		// The card says why it is missing rather than omitting it silently.
 		//
 		// What it grants is named on the card, because a key whose scope is
 		// not stated is a key pressed on a guess: [a] records the command's
@@ -645,7 +642,7 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 				card.AllowAlways = true
 				card.AlwaysHint = "a: always allow " + strconv.Quote(prefix)
 				// A command that writes outside the working scope is granting
-				// two things at once, and the key says both (S-141): [y]
+				// two things at once, and the key says both: [y]
 				// would add the directory for this session, [a] adds it and
 				// stops asking about this shape of command as well.
 				if m.pendingScope.any() {
@@ -695,11 +692,11 @@ func (b blastRadius) applyTo(card *components.ApprovalCard) {
 	}
 }
 
-// confirmLines renders the approval card — or the memory prompt (S-070) when
+// confirmLines renders the approval card — or the memory prompt when
 // one is showing — one row per element.
 func (m Model) confirmLines() []string {
 	width := m.contentWidth()
-	// The queue strip (S-102) sits above whichever surface is asking.
+	// The queue strip sits above whichever surface is asking.
 	strip := m.pendingQueue.View(width)
 	if m.memoryAsk != nil {
 		return append(strip, m.memoryAskLines()...)
@@ -709,7 +706,7 @@ func (m Model) confirmLines() []string {
 
 // confirmPanelLines is the whole bottom panel a gated confirm occupies: the
 // card, the rail that names the keyboard's owner, and the draft it is holding
-// while it does (S-117). confirmLines stays the card alone, because that
+// while it does. confirmLines stays the card alone, because that
 // is what the rest of the surface asks it for.
 func (m Model) confirmPanelLines() []string {
 	return m.dressDecision(m.confirmLines(), m.contentWidth())
@@ -752,7 +749,7 @@ func (m Model) bottomPanelHeight() int {
 		lines = m.keyEntryLines()
 	case stateFocus:
 		// The reading bar is normally the input's three rows; `[?]` grows it
-		// into the mode's key register (S-153), and the panel pays for
+		// into the mode's key register, and the panel pays for
 		// it out of the transcript the way every other panel does.
 		lines = m.focusHintLines()
 	case statePressure:
@@ -765,7 +762,7 @@ func (m Model) bottomPanelHeight() int {
 		} else if ask := m.activeChildAsk(); ask != nil && !m.decisionUngated() {
 			lines = m.childAskPanelLines(ask)
 		} else if m.completionActive() && m.attachedTo == "" {
-			// The completion menu extends the input area (S-078).
+			// The completion menu extends the input area.
 			return min(inputHeight+len(m.completionMenuLines()), m.maxConfirmPanelHeight())
 		}
 	}
@@ -790,13 +787,13 @@ func (m *Model) syncViewport() {
 	}
 	// Both dimensions can move without a resize: the chrome takes rows as
 	// surfaces open and close, and the inspector rail takes columns whenever
-	// the pane split toggles (S-092).
+	// the pane split toggles.
 	h, w := m.viewportHeight(), m.transcriptWidth()
 	if h == m.viewport.Height() && w == m.viewport.Width() {
 		return
 	}
-	// The pane split can take columns without a terminal resize (S-092), and
-	// a selection's coordinates were taken at the old width (S-145).
+	// The pane split can take columns without a terminal resize, and
+	// a selection's coordinates were taken at the old width.
 	m.resizeSelection(w)
 	m.viewport.SetHeight(h)
 	m.viewport.SetWidth(w)

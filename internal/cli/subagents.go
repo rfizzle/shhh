@@ -1,12 +1,12 @@
 package cli
 
-// Sub-agent orchestration wiring (S-068): `shhh code` registers spawn_agent /
+// Sub-agent orchestration wiring: `shhh code` registers spawn_agent /
 // agent_report and hands the chat model a supervisor whose children reuse the
 // session provider with role-scoped toolsets. Researchers get read-only tools
 // plus the web against the real workspace; writers get the full toolset
 // against an isolated git worktree, commands contained when a mechanism is
 // available. Child sessions are recorded linked to the parent session so
-// observability (S-065) attributes their spend.
+// observability attributes their spend.
 
 import (
 	"context"
@@ -90,7 +90,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			autoExec = red.WrapExecutor(autoExec)
 			gatedExec = red.WrapExecutor(gatedExec)
 		}
-		// Repeat detection (S-164), one detector per child so its window is
+		// Repeat detection, one detector per child so its window is
 		// its own work, and shared across both paths so an approved call and
 		// an auto-run one are the same history. A sub-agent is the least
 		// supervised thing the session runs, and its rounds are spent out of
@@ -111,7 +111,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			sctx, cancel := context.WithCancel(cctx)
 			// Children think as hard as the session does: the level is a
 			// session setting, and one that stopped at the orchestrator
-			// would be true of the rail and false of the work (S-139).
+			// would be true of the rail and false of the work.
 			effort := env.effort
 			if env.reasoning != nil {
 				effort = env.reasoning()
@@ -159,7 +159,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			return cfg.AgentModel(string(role), env.modelName)
 		},
 		MaxConcurrent: cfg.Agents.MaxConcurrent,
-		// Children answer to the parent's working scope (S-141) on top of
+		// Children answer to the parent's working scope on top of
 		// their own worktree, which is where their file edits are already
 		// pinned (RootArgs). This is what stops a child *command* writing
 		// somewhere the parent never put in scope.
@@ -176,7 +176,7 @@ func childCommandRunner(cfg config.Config, dir string, sc *scope.Scope) func(con
 		if avail := sandbox.Detect(); avail.OK {
 			return func(ctx context.Context, command string) (string, int) {
 				// The policy is rebuilt per command so a directory the parent
-				// added mid-session (S-141) is writable in the child too.
+				// added mid-session is writable in the child too.
 				p, pErr := sandboxPolicy(cfg, sc.Dirs()...)
 				if pErr != nil {
 					return "sandbox: " + pErr.Error(), -1

@@ -1,6 +1,6 @@
 package components
 
-// The metrics surface (S-129,
+// The metrics surface (
 // docs/interface/surfaces.md#the-supporting-screens). The assertions here are
 // about the three rules the screen exists to keep: numeric columns are fixed
 // and right-aligned so a reader scans a column rather than parsing rows, a

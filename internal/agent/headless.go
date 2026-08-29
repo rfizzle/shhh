@@ -1,12 +1,12 @@
 package agent
 
-// Headless drives an Agent's loop synchronously to completion (S-057): one
+// Headless drives an Agent's loop synchronously to completion: one
 // user turn, stream events consumed inline, tool rounds dispatched until the
 // model produces a final message or the per-turn round cap is hit. The chat
 // TUI drives the same Agent asynchronously through Bubble Tea messages; this
 // runner is the scriptable front-end behind `shhh code -p` and each sub-agent
-// (S-068). Steering and interruption (S-077) let a supervisor redirect or
-// cancel a running turn the way the TUI's S-058 mechanics do.
+//. Steering and interruption let a supervisor redirect or
+// cancel a running turn the way the TUI's steering mechanics do.
 
 import (
 	"errors"
@@ -44,7 +44,7 @@ type Headless struct {
 
 	// Steer, when set, is drained after each tool round: returned messages
 	// join the conversation as user messages before the next stream request
-	// and reset the round counter (S-058 semantics for headless runs).
+	// and reset the round counter (steering semantics for headless runs).
 	Steer func() []string
 
 	mu           sync.Mutex
@@ -195,7 +195,7 @@ func (h *Headless) streamOnce() (string, []provider.ToolCall, error) {
 		}
 		if len(ev.ToolCalls) > 0 {
 			// The thinking behind the calls travels with them into the round
-			// that records them (S-139).
+			// that records them.
 			h.Agent.CarryReasoning(ev.Reasoning)
 			return text.String(), ev.ToolCalls, nil
 		}

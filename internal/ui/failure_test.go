@@ -1,6 +1,6 @@
 package ui
 
-// The one-shot's half of the taxonomy (S-106): the same classification as the
+// The one-shot's half of the taxonomy: the same classification as the
 // session, rendered on the same grid, with the way out stated as a command
 // because there is no program left listening for a key.
 

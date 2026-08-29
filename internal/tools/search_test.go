@@ -260,7 +260,7 @@ func TestSearch_RipgrepSkipsVendor(t *testing.T) {
 	}
 }
 
-// The options that let one search finish a thought (S-164). Each is checked
+// The options that let one search finish a thought. Each is checked
 // on both backends: the walker deterministically, ripgrep when it is present,
 // because the two must answer the same question the same way.
 
@@ -368,9 +368,10 @@ func TestSearch_ContextGroupsSeparated(t *testing.T) {
 	}
 }
 
-// The rg backend for the S-164 options, against ripgrep's real output shapes.
-// ripgrep is not installed everywhere, so the fake stands in for it: what is
-// under test is our parsing and the argv we ask for, both of which are ours.
+// The rg backend for the search options, against ripgrep's real output
+// shapes. ripgrep is not installed everywhere, so the fake stands in for it:
+// what is under test is our parsing and the argv we ask for, both of which
+// are ours.
 
 func TestSearch_RipgrepContextParsing(t *testing.T) {
 	// A match line, its context lines, and the bare "--" rg puts between

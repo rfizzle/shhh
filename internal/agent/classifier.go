@@ -1,6 +1,6 @@
 package agent
 
-// LLM permission classifier for auto mode (S-060): where the S-059 mode
+// LLM permission classifier for auto mode: where the permission mode
 // policy would Ask, auto mode instead asks a classifier model whether the
 // proposed tool call matches the user's intent. The classifier reuses the
 // session's provider.Provider — no separate plumbing — and every failure
@@ -332,7 +332,7 @@ func ResolveAuto(a Action, v ClassifierVerdict) (Decision, string) {
 	if v.Decision == Allow && a.SafetyFlagged {
 		return Ask, "safety-flagged action; classifier approval is not sufficient"
 	}
-	// A sensitive directory is the user's to put in scope (S-141); a model
+	// A sensitive directory is the user's to put in scope; a model
 	// judging one call is not who widens what the session may reach.
 	if v.Decision == Allow && a.ScopeSensitive {
 		return Ask, "this reaches a sensitive directory; only you can add one to the working scope"

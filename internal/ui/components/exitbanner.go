@@ -1,6 +1,6 @@
 package components
 
-// The exit banner (S-148, docs/interface/surfaces.md#outside-the-tui). The
+// The exit banner (docs/interface/surfaces.md#outside-the-tui). The
 // chat surfaces run on the alternate screen, which means quitting does not
 // leave the session in the scrollback the way a scrolling program would — it
 // restores the terminal to the moment before shhh started, and everything the

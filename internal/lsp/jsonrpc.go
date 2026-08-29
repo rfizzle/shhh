@@ -1,4 +1,4 @@
-// Package lsp is a minimal Language Server Protocol client (S-071): it
+// Package lsp is a minimal Language Server Protocol client: it
 // manages auto-detected language servers over stdio JSON-RPC, feeds file
 // changes to them, and surfaces diagnostics, definitions, and references to
 // the agent. Every request is bounded by a timeout so a hung server can never

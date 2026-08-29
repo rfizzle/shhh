@@ -113,7 +113,7 @@ func TestSaveChat_WithToolCalls(t *testing.T) {
 }
 
 // A resumed session has to keep the screenshot the question was about, not
-// just the sentence pointing at nothing (S-134).
+// just the sentence pointing at nothing.
 func TestSaveChat_RoundTripsAttachments(t *testing.T) {
 	db := openTestDB(t)
 
@@ -748,7 +748,7 @@ func TestSaveChat_PreservesParentOnOverwrite(t *testing.T) {
 	}
 }
 
-// The start screen's resume offer (S-105): the newest saved session, its turn
+// The start screen's resume offer: the newest saved session, its turn
 // count, and the price only when a record actually covers it.
 func TestMostRecentChat_NewestSessionWithItsTurnCount(t *testing.T) {
 	db := openTestDB(t)
@@ -845,7 +845,7 @@ func TestMostRecentChat_IgnoresASessionThatHadAlreadyEnded(t *testing.T) {
 	}
 }
 
-// The columns the history browser reads (S-128): duration, exit code, token
+// The columns the history browser reads: duration, exit code, token
 // counts and success. They were in the table before the browser was, and a
 // column that was never recorded comes back nil rather than as zero — the
 // browser reads the difference as "not known", not as "exit 0".

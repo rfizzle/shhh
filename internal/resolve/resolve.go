@@ -18,7 +18,7 @@ type Opts struct {
 	FlagModel    string
 	FlagAPIKey   string
 	// FlagReasoning is --reasoning: the level of thinking a session starts on
-	// (S-139). It resolves like the model does — flag, then SHHH_REASONING,
+	//. It resolves like the model does — flag, then SHHH_REASONING,
 	// then the config file — and an unset chain means off.
 	FlagReasoning string
 
@@ -50,10 +50,10 @@ func Resolve(opts Opts) Resolved {
 // "" when nothing is. The order above is a precedence nobody can see, and a
 // setting overruled by something invisible is indistinguishable from one that
 // was never saved — which is exactly how `/model default` came to look broken
-// while writing the file correctly every time (S-136).
+// while writing the file correctly every time.
 //
-// Only the two ranks above the config file count. Below it there is nothing to
-// report: a config value that is set is the answer.
+// Only the two ranks above the config file count. Below it there is nothing
+// to report: a config value that is set is the answer.
 func ModelOutranks(opts Opts) string {
 	if opts.FlagModel != "" {
 		return "--model " + opts.FlagModel + " is on the command line"

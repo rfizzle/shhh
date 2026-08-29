@@ -1,6 +1,6 @@
 package chat
 
-// Shift+Enter as a newline (S-134). Enter sends, so the draft needed a
+// Shift+Enter as a newline. Enter sends, so the draft needed a
 // second key that does not; alt+enter was it, and nobody found it. Shift
 // +Enter is the key people reach for, and it is the one key a terminal is
 // least likely to report: in the legacy encoding Enter is a bare CR with
@@ -12,7 +12,7 @@ package chat
 // because v1 had no name for a modified Enter and delivered it as the bytes
 // the terminal sent.
 //
-// v2 does both (S-155). It asks every terminal for modifyOtherKeys *and* the
+// v2 does both. It asks every terminal for modifyOtherKeys *and* the
 // Kitty keyboard protocol on every render, and puts both back on the way out
 // — through the Kitty stack, which is a thing the hand-written request had no
 // way to do — and its decoder reads what comes back. So a modified Enter now

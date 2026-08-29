@@ -1,6 +1,6 @@
 package components
 
-// The plan card (S-103, docs/interface/surfaces.md#selectors). Plan approval
+// The plan card (docs/interface/surfaces.md#selectors). Plan approval
 // is the cheapest place in the product to disagree with an agent, and it used
 // to be the vaguest: a list of option rows under a paragraph the reader
 // skimmed. The card states the plan as priced steps — each one naming the
@@ -66,7 +66,7 @@ type PlanCard struct {
 	// what shrinks, and what it drops is counted rather than lost.
 	MaxLines int
 	// NotYetLive says the card is on screen beside a draft that still holds
-	// the keyboard (S-117): its keys render as not-yet-live, and
+	// the keyboard: its keys render as not-yet-live, and
 	// Handover is the one that hands the keyboard over.
 	NotYetLive bool
 	Handover   string
@@ -82,7 +82,7 @@ func (c *PlanCard) View(width int) string {
 	sel := Select{Options: c.Options, Focus: c.Focus, FocusDesc: true}
 	// The plan card's options are its three or four decisions and never
 	// scroll; here it is the step list that shrinks, so the options
-	// render whole rather than through a window (S-116).
+	// render whole rather than through a window.
 	tail := c.tailRows(width, inner, sel.optionRows(width, true, 0, len(c.Options)))
 	rows := c.bodyRows(inner, c.bodyBudget(len(tail)))
 	return renderChromeCard(cardChrome{title: c.Title, chips: c.chips()}, append(rows, tail...), width)

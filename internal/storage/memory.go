@@ -7,9 +7,9 @@ import (
 	"time"
 )
 
-// Memory is one durable memory entry (S-070): a short text with a scope
-// ("global" or a per-project key), a kind (preference, convention, correction,
-// lesson), and its provenance (user-stated vs agent-proposed).
+// Memory is one durable memory entry: a short text with a scope ("global" or
+// a per-project key), a kind (preference, convention, correction, lesson),
+// and its provenance (user-stated vs agent-proposed).
 type Memory struct {
 	ID         int64
 	Scope      string

@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// sessionScope builds a session's working scope (S-141): the directory the
+// sessionScope builds a session's working scope: the directory the
 // session was opened in, plus the directories config and --add-dir put beside
 // it. A directory named on the command line that cannot be granted fails the
 // session — the user typed it and is waiting for it to be in scope — while a
@@ -47,7 +47,7 @@ func addDirFlag(cmd *cobra.Command, target *[]string) {
 }
 
 // headlessScopeCheck answers what a headless run may do about the paths a
-// call reaches outside its working scope (S-141). There is nobody to ask, so
+// call reaches outside its working scope. There is nobody to ask, so
 // the answer is the same one the interactive card would get from a permissive
 // mode: an ordinary directory comes into scope under --yes, a sensitive one
 // never does, and a directory behind the containment deny mask is refused
@@ -82,7 +82,7 @@ func headlessScopeCheck(sc *scope.Scope, yes bool, paths []string) (deny string,
 	return "", true
 }
 
-// scopePromptBlock tells the model where the work is (S-141). A model that
+// scopePromptBlock tells the model where the work is. A model that
 // does not know the boundary spends its rounds proposing calls the user has
 // to refuse one at a time; one that does asks for the directory instead,
 // which is a sentence the user can answer with /add-dir.

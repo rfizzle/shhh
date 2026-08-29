@@ -1,6 +1,6 @@
 package chat
 
-// Two-pane cockpit (S-092, docs/interface/surfaces.md#the-inspector-rail). At
+// Two-pane cockpit (docs/interface/surfaces.md#the-inspector-rail). At
 // or above 130 content columns the surface splits: the transcript keeps the
 // left pane, a
 // 46-column inspector rail takes the right, and one dim │ column divides
@@ -8,7 +8,7 @@ package chat
 // exactly what it was.
 //
 // The split is horizontal only — it is one of the two constraints the
-// column half of the layout model resolves (S-161, layout.go), and the row
+// column half of the layout model resolves (layout.go), and the row
 // budget it hands out is unchanged — and the prompt frame spans both panes,
 // because steering is a session-level act. Takeover surfaces
 // (approval cards, pickers, the full-screen diff, the agent list) span the
@@ -18,7 +18,7 @@ package chat
 // passive renderer fed from here, like components.Cockpit.
 //
 // THIS TURN is the turn; CHANGES, AGENTS, CONTEXT and SPEND are the session
-// (S-120). The chat transcript is the turn-by-turn feed, so the rail is
+//. The chat transcript is the turn-by-turn feed, so the rail is
 // the standing overview beside it rather than a second copy of the same
 // scroll.
 
@@ -60,7 +60,7 @@ func (m Model) inspectorHidden() bool {
 	if m.attachedTo != "" || m.agentList != nil {
 		return true
 	}
-	// A decision still waiting for the keyboard is not a takeover (S-117, the
+	// A decision still waiting for the keyboard is not a takeover (the
 	// mid-sentence rule): the draft is live, the panes above it are what the
 	// reader is looking at, and a card landing must not reflow the screen behind
 	// it.
@@ -80,11 +80,11 @@ func (m Model) inspectorHidden() bool {
 // paneWidth is the transcript pane's own width: the reduced pane when the
 // surface is split, the full content width otherwise. It is what the surfaces
 // that take the pane over — the full-screen diff, review mode, the agent rows
-// — render to, and the columns the body is drawn into (S-161, layout.go).
+// — render to, and the columns the body is drawn into (layout.go).
 func (m Model) paneWidth() int { return m.columns().pane.Dx() }
 
 // transcriptWidth is the width the transcript wraps to: the pane less the
-// scroll gutter's column (S-147), which the pane reserves whether or
+// scroll gutter's column, which the pane reserves whether or
 // not there is anything to draw in it. Everything the viewport shows — the
 // feed, reading mode's gutter render, an attached child's session, the start
 // screen — wraps to this, and so does the selection's coordinate space, so
@@ -141,7 +141,7 @@ func (m Model) inspectorData() components.InspectorRail {
 
 // inspectorTurn counts this turn's steps and tools. Without an approved plan
 // the step count is observed, not declared, so it feeds "step 3" and no
-// meter. An approved plan (S-104) is the one place a total is authoritative,
+// meter. An approved plan is the one place a total is authoritative,
 // and only then does the progress meter have a true denominator.
 func (m Model) inspectorTurn(steps []components.InspectorPlanStep) *components.InspectorTurn {
 	es := m.turnEntries()
@@ -161,7 +161,7 @@ func (m Model) inspectorTurn(steps []components.InspectorPlanStep) *components.I
 		}
 	}
 	// The turn's own files come from the same changeset its close row reads
-	// (S-097), so THIS TURN and the row it leaves in the transcript cannot
+	//, so THIS TURN and the row it leaves in the transcript cannot
 	// report the turn two ways.
 	if turn, ok := m.changes.Turn(m.turnCount); ok {
 		t.Files, t.Added, t.Removed = turn.Files(), turn.Added, turn.Removed
@@ -173,7 +173,7 @@ func (m Model) inspectorTurn(steps []components.InspectorPlanStep) *components.I
 }
 
 // inspectorPlan is the PLAN block: the approved plan as a live checklist, so
-// "where are we" never needs asking (S-104). It follows the plan rather
+// "where are we" never needs asking. It follows the plan rather
 // than the turn or the session, because a plan that spans two turns is still
 // the answer to the same question and is retired by the next instruction
 // rather than by the clock.
@@ -190,7 +190,7 @@ func (m Model) inspectorPlan(steps []components.InspectorPlanStep) *components.I
 }
 
 // inspectorChanges is the session's net change to the workspace (
-// S-120): every path this session has touched, collapsed to one row each with
+// every path this session has touched, collapsed to one row each with
 // the turns behind it, and the commands still coming back broken above them.
 //
 // It is session-scoped deliberately. A file edited in turn 2 is still on
@@ -198,7 +198,7 @@ func (m Model) inspectorPlan(steps []components.InspectorPlanStep) *components.I
 // not reset when the agent starts a new turn — the turn-by-turn feed is the
 // transcript's job, and THIS TURN is the one block that answers for the turn.
 // The rows are read from the changeset store rather than from the transcript,
-// so an undo nets out and a child's applied patch counts (S-097).
+// so an undo nets out and a child's applied patch counts.
 func (m Model) inspectorChanges() *components.InspectorChanges {
 	var c components.InspectorChanges
 	touched := map[string]bool{}
@@ -291,8 +291,8 @@ func (m Model) inspectorAgents() []components.InspectorAgent {
 }
 
 // inspectorContext reports occupancy against the model's window, with the
-// same thresholds the status bar and S-055's trim warnings use, plus the
-// per-round burn behind the sparkline (S-093). A session with fewer than two
+// same thresholds the status bar and the trim warnings use, plus the
+// per-round burn behind the sparkline. A session with fewer than two
 // rounds reported has no trend, and the row says the number is an estimate
 // rather than drawing a flat line.
 func (m Model) inspectorContext() *components.InspectorContext {

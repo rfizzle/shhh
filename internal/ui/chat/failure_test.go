@@ -1,6 +1,6 @@
 package chat
 
-// The session's half of the failure taxonomy (S-106): the mapping from a
+// The session's half of the failure taxonomy: the mapping from a
 // class to a row, and whether the keys that row offers actually reach
 // anything.
 

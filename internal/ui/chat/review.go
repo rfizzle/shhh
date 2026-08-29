@@ -1,20 +1,20 @@
 package chat
 
-// Review mode (S-099, docs/interface/surfaces.md#the-turns-close): the
+// Review mode (docs/interface/surfaces.md#the-turns-close): the
 // surface `/review` and `[v]` on a turn's changeset row open — every file the
 // turn touched with its hunks, staging per hunk, and the turn's verdict
 // pinned beside the files.
 //
-// It reads the session's own changeset (S-097), which is what makes it work
+// It reads the session's own changeset, which is what makes it work
 // in a directory that was never a repository and what makes the review of an
 // old turn possible at all. The hunks it shows are the ones the store
 // computed when the edit was applied, rendered by the same component the
-// approval card, the transcript row and /diff go through (S-074) — review is
+// approval card, the transcript row and /diff go through — review is
 // a layout around that renderer, not a second one.
 //
 // Nothing here writes to the workspace. For edits already on disk the
-// checkboxes select what an undo would put back, which is S-100's work; the
-// surface says so on screen rather than offering a key that quietly does
+// checkboxes select what an undo would put back, which is the undo's work;
+// the surface says so on screen rather than offering a key that quietly does
 // nothing.
 
 import (
@@ -67,7 +67,7 @@ func (m Model) openReview(n int64) (tea.Model, tea.Cmd) {
 		Title: fmt.Sprintf("turn %d", n),
 		Files: reviewFiles(t),
 		// The edits are already on disk, so what is staged is what an undo
-		// would put back (S-100), not something to apply.
+		// would put back, not something to apply.
 		ApplyVerb:    "undo",
 		Verdict:      m.reviewVerdict(n),
 		Shield:       "nothing is committed",
@@ -79,7 +79,7 @@ func (m Model) openReview(n int64) (tea.Model, tea.Cmd) {
 // showReview gives review the screen. turn is the turn it is reviewing, or 0
 // for a review of something else (the cumulative session diff). Esc goes
 // back to focus mode when that is what opened it, and to the input
-// otherwise — the turn underneath keeps running either way (S-087).
+// otherwise — the turn underneath keeps running either way.
 func (m Model) showReview(v *components.ReviewView, turn int64) (tea.Model, tea.Cmd) {
 	m.review = v
 	m.reviewTurnN = turn
@@ -107,7 +107,7 @@ func reviewFiles(t changeset.Turn) []components.ReviewFile {
 			Staged: staged,
 			Syntax: diffSyntax(r.Path),
 		}
-		// The session's own edits need no attribution; a child's do (S-097).
+		// The session's own edits need no attribution; a child's do.
 		if r.Agent != changeset.MainAgent {
 			f.Agent = r.Agent
 		}
@@ -124,7 +124,7 @@ func reviewShieldDetail(t changeset.Turn) string {
 
 // reviewVerdict pins the turn's own verdict beside its files: the checks it
 // ran and, where they failed, the first lines of what they said. It reads
-// the same rows the turn closed with (S-098) rather than deciding again what
+// the same rows the turn closed with rather than deciding again what
 // counts as a check.
 func (m Model) reviewVerdict(n int64) *components.ReviewVerdict {
 	es := m.entriesForTurn(n)

@@ -1,6 +1,6 @@
 package chat
 
-// Turn summary and changeset row (S-098): a turn ends with what it did, what
+// Turn summary and changeset row: a turn ends with what it did, what
 // it changed, and whether the checks still pass.
 
 import (
@@ -93,7 +93,7 @@ func TestTurnClose_TheChangesRowStatesTheFilesAndOffersTheKeys(t *testing.T) {
 			t.Fatalf("the changeset row should state %q, got:\n%s", want, view)
 		}
 	}
-	// The temp dir is not a repository, and unknown is not untracked (S-097).
+	// The temp dir is not a repository, and unknown is not untracked.
 	if c.Changes.Note != "no git here" {
 		t.Fatalf("outside a repository the tracking note should say so, got %q", c.Changes.Note)
 	}
@@ -291,7 +291,7 @@ func TestTurnClose_ReachableFromFocusMode(t *testing.T) {
 		t.Fatalf("the hint should offer what the row offers, got %q", ansi.Strip(m.renderFocusHint()))
 	}
 
-	// [v] opens review mode over the turn's changeset (S-099); the surface
+	// [v] opens review mode over the turn's changeset; the surface
 	// names the turn it is reviewing.
 	updated, _ = m.updateFocus(tea.KeyPressMsg{Code: []rune(keys.Shown(keys.Row.Review))[0], Text: keys.Shown(keys.Row.Review)})
 	review := updated.(Model)
@@ -302,7 +302,7 @@ func TestTurnClose_ReachableFromFocusMode(t *testing.T) {
 		t.Fatalf("the surface should name the turn it is reviewing, got %q", review.review.Title)
 	}
 
-	// [u] arms the undo confirm (S-100) over the row that offered it: the
+	// [u] arms the undo confirm over the row that offered it: the
 	// prompt borrows the bottom panel and nothing is written until it is
 	// answered.
 	updated, _ = m.updateFocus(tea.KeyPressMsg{Code: []rune(keys.Shown(keys.Row.Undo))[0], Text: keys.Shown(keys.Row.Undo)})

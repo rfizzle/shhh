@@ -120,7 +120,7 @@ func TestArgCompletion_ModeCycle(t *testing.T) {
 	m = typeChars(t, m, "/permissions a")
 
 	// The a-prefixed modes, and the a-prefixed subcommand beside them: the
-	// position offers everything /permissions takes there (S-054).
+	// position offers everything /permissions takes there.
 	got := completionNames(m)
 	if len(got) != 3 || got[0] != "accept-edits" || got[1] != "auto" || got[2] != "allow" {
 		t.Fatalf("expected the a-prefixed modes and allow, got %v", got)
@@ -171,7 +171,7 @@ func TestArgCompletion_SavedChatNames(t *testing.T) {
 		t.Fatalf("expected the prefix-matching chat, got %v", got)
 	}
 
-	// Long dynamic lists also match as a subsequence (S-079).
+	// Long dynamic lists also match as a subsequence.
 	m = typeChars(t, readyModel(t).WithDB(db), "/load btn")
 	if got := completionNames(m); len(got) != 1 || got[0] != "beta-notes" {
 		t.Fatalf("expected the fuzzy match, got %v", got)

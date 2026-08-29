@@ -1,6 +1,6 @@
 package chat
 
-// Command-center prompt surface (S-082,
+// Command-center prompt surface (
 // docs/interface/surfaces.md#the-input-frame). The input sits in a
 // rounded-corner frame whose borders carry information: the top rail shows
 // session identity and the live activity state, the vitals rail re-homes the
@@ -74,7 +74,7 @@ type frameStyles struct {
 	NoticeInfo       lipgloss.Style
 	NoticeAlert      lipgloss.Style
 	// The undressed draft and the waiting chip a decision puts on the frame
-	// (S-117): the chrome goes dim, the characters stay legible.
+	//: the chrome goes dim, the characters stay legible.
 	DraftHeld   lipgloss.Style
 	WaitingChip lipgloss.Style
 }
@@ -105,7 +105,7 @@ func (m Model) frameShowing() bool {
 	}
 	if m.decisionUngated() {
 		// The card rides above the frame rather than replacing it (
-		// S-117): the draft still holds the keyboard, so it is still on
+		// the draft still holds the keyboard, so it is still on
 		// screen, still accented, and still being typed into.
 		return m.frameLayout() != framePlain
 	}
@@ -181,7 +181,7 @@ func (m Model) frameAccentStyle() lipgloss.Style {
 }
 
 // frameIdentity is the top rail's left side: the title plus the attached
-// breadcrumb (S-077).
+// breadcrumb.
 func (m Model) frameIdentity() string {
 	title := m.title
 	if title == "" {
@@ -204,7 +204,7 @@ func (m Model) frameActivity(width int) string {
 		return ""
 	}
 	// A turn paused on a decision is not working, and what the rail should
-	// say is how many answers it is waiting for (S-117).
+	// say is how many answers it is waiting for.
 	if n := m.waitingCount(); n > 0 {
 		return sty.Frame.WaitingChip.Render(clipRow(fmt.Sprintf("⏸ %d waiting", n), width))
 	}
@@ -247,7 +247,7 @@ func (m Model) frameHints() string {
 			keys.Shown(keys.Draft.Agents) + " agents",
 		}
 	case m.working():
-		// Commands run mid-turn now (S-087), so the working rail says so;
+		// Commands run mid-turn now, so the working rail says so;
 		// with children in flight the agent manager is the first thing to
 		// reach for.
 		steer := keys.Shown(keys.Draft.Send) + " queues steering"
@@ -270,7 +270,7 @@ func (m Model) frameHints() string {
 }
 
 // promptGutter is the input's leading glyph: ❯ idle, ▸ while the
-// agent works (typed text becomes steering, S-058), and the child's name
+// agent works (typed text becomes steering), and the child's name
 // while attached.
 func (m Model) promptGutter() string {
 	if m.attachedTo != "" {
@@ -282,7 +282,7 @@ func (m Model) promptGutter() string {
 	return sty.Frame.GutterIdle.Render("❯") + " "
 }
 
-// frameBox is the prompt frame's own rectangles (S-161): the box, the
+// frameBox is the prompt frame's own rectangles: the box, the
 // two border columns, what they leave between them, and the split a draft
 // row makes of that — the prompt gutter's columns and the text's.
 type frameBox struct {
@@ -345,12 +345,12 @@ func (m Model) noticeLine() string {
 		parts = append(parts, sty.Frame.NoticeInfo.Render(fmt.Sprintf("%d steering queued", n)))
 	}
 	// Scrolled off the live end, so the transcript has stopped following the
-	// turn (S-140, navigate.go). The draft still holds the keyboard, so this
+	// turn (navigate.go). The draft still holds the keyboard, so this
 	// rail is the only thing that can say so.
 	if note := m.followNotice(); note != "" {
 		parts = append(parts, sty.Frame.NoticeInfo.Render(note))
 	}
-	// What the last mouse selection put on the clipboard (S-145, select.go).
+	// What the last mouse selection put on the clipboard (select.go).
 	// It rides here rather than in the transcript because a copy is not part
 	// of the conversation, and because appending a row would scroll the pane
 	// away from the selection the reader is still looking at.
@@ -444,7 +444,7 @@ func (m Model) frameVitals(layout frameLayout, width int) string {
 	return components.FitRail(segs, sty.StatusBar.Render(" · "), width)
 }
 
-// childRailSegments is the attached child's vitals (S-077): mode, live
+// childRailSegments is the attached child's vitals: mode, live
 // detail (alert-styled when blocked), spend, queued steering, and the
 // child's name as the droppable-first detail field.
 func (m Model) childRailSegments() []components.RailSegment {
@@ -503,7 +503,7 @@ func (m Model) topRailLabels(mode frameLayout, width int) (identity, right strin
 }
 
 // frameDraftLines is what goes inside the box: the textarea's rows and, under
-// them, the completion menu (S-078). bottomPanelHeight already caps the pair
+// them, the completion menu. bottomPanelHeight already caps the pair
 // at the confirm-panel bound, and the cut is taken here so the box's height
 // and its contents can never be counted differently.
 func (m Model) frameDraftLines() (lines, menu []string) {
@@ -523,7 +523,7 @@ func (m Model) frameDraftLines() (lines, menu []string) {
 // drawPromptFrame paints the whole surface into its rectangle: notice rail,
 // staged rail, then the box — top rail, gutter + input rows (+ completion
 // menu), vitals rail, bottom rail — each in the rectangle frameBoxFor
-// resolved for it (S-161). The two rails above the box are rows of the
+// resolved for it. The two rails above the box are rows of the
 // surface rather than rows of the box, which is why they are split off first.
 func (m Model) drawPromptFrame(scr uv.Screen, area uv.Rectangle) {
 	mode := m.frameLayout()

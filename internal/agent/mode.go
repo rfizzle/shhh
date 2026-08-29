@@ -1,6 +1,6 @@
 package agent
 
-// Permission modes (S-059): a session-level state machine that decides how
+// Permission modes: a session-level state machine that decides how
 // approval-gated tool calls are handled. Read-only tools never reach this
 // layer — they auto-run in every mode — and safety-flagged commands always
 // ask the human regardless of mode.
@@ -16,16 +16,16 @@ type Mode int
 const (
 	// ModeManual prompts for every consequential tool call (the maximally
 	// safe default). Session grants ([a] on a prompt) and the config command
-	// allowlist can loosen it per category (S-054).
+	// allowlist can loosen it per category.
 	ModeManual Mode = iota
 	// ModeAcceptEdits auto-allows file edits; commands and other external
 	// actions still prompt.
 	ModeAcceptEdits
 	// ModeAuto defers to policy: edits apply and allowlisted commands run;
-	// anything else is judged by the LLM classifier (S-060) when configured,
+	// anything else is judged by the LLM classifier when configured,
 	// else asks. Classifier failures fall back to asking, never allowing.
 	ModeAuto
-	// ModePlan is read-only research (S-061): file edits and non-inspection
+	// ModePlan is read-only research: file edits and non-inspection
 	// commands are refused with a result telling the model it is in plan
 	// mode; shell access is restricted to the inspection allowlist.
 	ModePlan
@@ -44,7 +44,8 @@ func (m Mode) String() string {
 	}
 }
 
-// Describe is the one-line explanation of a mode shown by /permissions and /help.
+// Describe is the one-line explanation of a mode shown by /permissions and
+// /help.
 func (m Mode) Describe() string {
 	switch m {
 	case ModeAcceptEdits:
@@ -127,7 +128,7 @@ func permissiveness(m Mode) int {
 }
 
 // ClampMode caps mode at ceiling: a sub-agent can never run in a more
-// permissive mode than its parent (S-068).
+// permissive mode than its parent.
 func ClampMode(mode, ceiling Mode) Mode {
 	if permissiveness(mode) > permissiveness(ceiling) {
 		return ceiling
@@ -153,13 +154,13 @@ type Action struct {
 	// Command is the command text for ActionCommand (allowlist matching).
 	Command string
 	// Path is the file for ActionEdit, which is what a directory-scoped edit
-	// grant is matched against (S-054, GrantPrefix's counterpart).
+	// grant is matched against (GrantPrefix's counterpart).
 	Path string
 	// SafetyFlagged marks commands flagged by safety.Check; they always ask
 	// the human, in every mode except plan (which refuses them outright).
 	SafetyFlagged bool
 	// OutOfScope names the directories this action reaches that are outside
-	// the session's working scope (S-141). It is resolved by the front-end,
+	// the session's working scope. It is resolved by the front-end,
 	// which holds the scope; here it is one more thing that stops a
 	// permissive mode answering on the user's behalf, because a mode that
 	// says "edits apply" was granted over the work, not over the whole disk.
@@ -211,12 +212,13 @@ func ScopeRefusedResult(reason string) string {
 const PlanModeResult = "error: this session is in plan mode (read-only); the call was not executed. Present your plan as a message, or ask the user to switch modes (Shift+Tab or /permissions)."
 
 // ModePolicy is the session approval-policy state: the active mode plus the
-// S-054 internals (per-category session grants and the config command
+// Session-grant internals (per-category grants and the config command
 // allowlist) that manual and accept-edits build on.
 type ModePolicy struct {
 	Mode Mode
 	// AllowEdits and AllowCommands are the blanket session grants, which
-	// `/permissions allow` sets: every edit, every command, until they are revoked.
+	// `/permissions allow` sets: every edit, every command, until they are
+	// revoked.
 	AllowEdits    bool
 	AllowCommands bool
 	// EditDirs are the scoped edit grants [a] records on an edit card: edits
@@ -244,9 +246,9 @@ func (p ModePolicy) readOnly(a Action) bool {
 
 // ReadOnlyCommands is the built-in allowlist of inspection commands that run
 // without a prompt in every mode: pure reads, nothing that can write, delete,
-// or execute further commands or code. Matching goes through AllowlistMatches,
-// so chained or redirected commands never qualify, and a safety-flagged
-// command is never matched against it at all.
+// or execute further commands or code. Matching goes through
+// AllowlistMatches, so chained or redirected commands never qualify, and a
+// safety-flagged command is never matched against it at all.
 //
 // Entries are deliberately conservative. Anything that compiles or runs
 // project code (go build, go test, go vet, make, npm run) stays out: it
@@ -275,7 +277,7 @@ func ReadOnlyCommands() []string {
 }
 
 // PlanInspectionCommands is the read-only allowlist under its plan-mode name
-// (S-061); plan mode grants exactly the same set.
+// ; plan mode grants exactly the same set.
 func PlanInspectionCommands() []string { return ReadOnlyCommands() }
 
 // readOnlyGuards names the flags that turn an otherwise read-only command
@@ -357,7 +359,7 @@ func (p ModePolicy) Decide(a Action) (Decision, string) {
 	if a.SafetyFlagged {
 		return Ask, ""
 	}
-	// The working scope (S-141) is checked before the mode is: a path behind
+	// The working scope is checked before the mode is: a path behind
 	// the deny mask is refused whatever the mode says, and a directory
 	// outside the scope is a decision the session has not been given — the
 	// permissive modes were granted over the work, and this is the question

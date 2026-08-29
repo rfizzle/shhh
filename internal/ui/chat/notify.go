@@ -1,6 +1,6 @@
 package chat
 
-// When shhh needs you and you are not there (S-157,
+// When shhh needs you and you are not there (
 // docs/interface/surfaces.md#when-you-are-not-there).
 //
 // A turn runs for minutes and then stops, and what it stops on is usually a
@@ -18,7 +18,7 @@ package chat
 // That moment is not a message it can be hung off — it is reached from a
 // dozen handlers, and three of them are cancellations — so it is derived in
 // Update from the model before against the model after, the way the spinner's
-// tick is (S-119, spin.go). A property of the transition is read off the
+// tick is (spin.go). A property of the transition is read off the
 // transition.
 //
 // **And only when the terminal has said the window is not the one in front.**
@@ -63,7 +63,7 @@ func (m Model) notifyCmd(prev Model) tea.Cmd {
 	// from things that are not turns — a /run the reader started themselves,
 	// a compaction — and shhh's summons is about work it was doing on their
 	// behalf while they were elsewhere, not about a command they watched
-	// start ten seconds ago (S-098: a /run finishing is not a turn ending).
+	// start ten seconds ago (a /run finishing is not a turn ending).
 	if m.turnState() == stateInput && !prev.turnOpen {
 		return nil
 	}
@@ -98,7 +98,7 @@ func (m Model) notifyWords() (title, body string) {
 	switch m.turnState() {
 	case stateConfirmRun:
 		// The memory proposal confirms through its own prompt rather than the
-		// card (S-070), and says its own thing.
+		// card, and says its own thing.
 		if m.memoryAsk != nil {
 			if req := m.pendingApproval; req != nil {
 				return "Remember this?", fmt.Sprintf("Assistant proposes a %s memory: %q", req.memoryDraft.Kind, firstLine(req.memoryDraft.Text))
@@ -124,7 +124,7 @@ func (m Model) notifyWords() (title, body string) {
 // what it cost and changed.
 func (m Model) turnCloseWords() (title, body string) {
 	// A turn that stopped at its round limit closed with the pause row rather
-	// than the close block (S-109), and the row is what the reader will find
+	// than the close block, and the row is what the reader will find
 	// on the screen — so it is what the notification says.
 	if p := m.roundPause; m.pausedAtRoundLimit() && p != nil {
 		return "Turn stopped at its round limit", fmt.Sprintf("%d of %d rounds used · %s", p.used, p.limit, p.detail())

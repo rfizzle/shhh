@@ -246,7 +246,8 @@ func TestAnthropic_RefusalStopReason(t *testing.T) {
 	}
 }
 
-// TestAnthropic_ThinkingBudgetOnlyWhenAsked pins the two halves of S-139 on
+// TestAnthropic_ThinkingBudgetOnlyWhenAsked pins the two halves of the
+// reasoning-budget rule on
 // the Messages API: nothing is sent when no level was asked for, and the
 // budget respects the output ceiling when one was.
 func TestAnthropic_ThinkingBudgetOnlyWhenAsked(t *testing.T) {

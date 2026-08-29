@@ -173,7 +173,7 @@ func TestApprovalFullDiff_RoundTrips(t *testing.T) {
 		t.Fatalf("esc should return to the approval with it still pending, got state %d", m.state)
 	}
 	// The keyboard comes back to the card it was opened from, not to the
-	// draft: reading the diff is not answering the decision (S-117).
+	// draft: reading the diff is not answering the decision.
 	if !m.decisionGated() {
 		t.Fatal("returning from the full diff keeps the card's keyboard")
 	}
@@ -181,8 +181,8 @@ func TestApprovalFullDiff_RoundTrips(t *testing.T) {
 
 func TestSessionDiff_ReadsTheChangesetWithoutGit(t *testing.T) {
 	// No git wiring, no tracker: /diff is the session's own record, so it
-	// works in a directory that was never a repository (S-097). It lands on
-	// the review surface with nothing to stage (S-099).
+	// works in a directory that was never a repository. It lands on
+	// the review surface with nothing to stage.
 	m := gatedModel(t, nil, nil)
 	m.changes.Add(1, changeset.Record{
 		Path: "a.go", Before: "old\n", After: "new\n",
@@ -252,7 +252,7 @@ func TestSessionDiff_Empty(t *testing.T) {
 }
 
 // An evicted turn is a gap in the record, not a quiet session, and /diff says
-// which of the two it is (S-097).
+// which of the two it is.
 func TestSessionDiff_EvictedSaysSo(t *testing.T) {
 	m := gatedModel(t, nil, nil)
 	store := changeset.New(64)

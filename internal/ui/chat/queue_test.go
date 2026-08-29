@@ -1,6 +1,6 @@
 package chat
 
-// The approval queue strip and batch approval (S-102). What these hold to is
+// The approval queue strip and batch approval. What these hold to is
 // that [A] never answers more than the strip said it would: the membership on
 // screen and the calls that actually run without a second prompt are the same
 // set, and a safety-flagged action is in neither.

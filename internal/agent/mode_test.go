@@ -210,7 +210,7 @@ func TestDecide_ReadOnlyNeverPrompts(t *testing.T) {
 	}
 }
 
-// The working scope (S-141) is a second question the mode does not answer:
+// The working scope is a second question the mode does not answer:
 // a permissive mode was granted over the work, not over the whole disk.
 func TestDecideAsksForPathsOutsideTheWorkingScope(t *testing.T) {
 	edit := Action{Kind: ActionEdit, Path: "/elsewhere/config.toml", OutOfScope: []string{"/elsewhere"}}

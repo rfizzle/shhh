@@ -1,6 +1,6 @@
 package chat
 
-// Transcript text selection (S-145, docs/interface/surfaces.md#reading-mode).
+// Transcript text selection (docs/interface/surfaces.md#reading-mode).
 // Mouse reporting used to buy the wheel and cost the terminal's own
 // click-drag selection, and the note about it told the reader to hold shift.
 // That answer works for what is on the screen and for nothing else: a
@@ -25,7 +25,7 @@ package chat
 //     taken before a scroll still names the same text after it, which is what
 //     lets a drag that started six screens up survive arriving here.
 //   - Streaming appends. renderHistory builds the history as a frozen prefix
-//     plus a live tail (S-090), so a line already rendered keeps its index
+//     plus a live tail, so a line already rendered keeps its index
 //     while the turn writes more underneath it.
 //
 // What it is *not* stable under is a change of pane width: every line reflows
@@ -50,7 +50,7 @@ import (
 )
 
 // transcriptOrigin is where the transcript pane's first cell lands on the
-// screen. It is read off the layout (S-161, layout.go) rather than added up
+// screen. It is read off the layout (layout.go) rather than added up
 // from the chrome again: the pane's origin is a rectangle's corner, and a
 // second description of it here is exactly how a pointer comes to name a
 // different row than the one under it.
@@ -66,7 +66,7 @@ const selectionScrollInterval = 60 * time.Millisecond
 // selectionScrollMsg advances an edge auto-scroll. seq fences it: every way a
 // selection can end bumps Model.selScrollSeq, so a tick that outlived its
 // drag arrives with a stale number and is dropped rather than scrolling a
-// transcript nobody is dragging over (S-107 does the same for retry waits).
+// transcript nobody is dragging over (retry waits do the same).
 type selectionScrollMsg struct{ seq int }
 
 // selPoint is a coordinate in rendered transcript space: line is an index
@@ -143,7 +143,7 @@ func (m Model) hasSelection() bool {
 //   - focus mode renders the transcript through a selection gutter, and a
 //     cursor column is chrome nobody wants on their clipboard;
 //   - an attached child's session is a different transcript in the same
-//     viewport (S-077), so a selection anchored in one would name lines in
+//     viewport, so a selection anchored in one would name lines in
 //     the other the moment the reader detached.
 func (m Model) selectableSurface() bool {
 	if !m.mouseOn || !m.ready {
@@ -230,7 +230,7 @@ func (m Model) edgeDir(y int) int {
 // beginSelection anchors a selection under the pointer. It answers only a
 // press inside the transcript pane, and it deliberately does nothing else:
 // a press that also expanded a row or answered a decision would make every
-// selection a gamble on holding still. The targets S-159 added are answered
+// selection a gamble on holding still. The click targets are answered
 // on the release instead, in the cell the press landed in, which is the one
 // event a drag cannot produce (click.go).
 func (m Model) beginSelection(x, y int) (tea.Model, tea.Cmd) {
@@ -291,7 +291,7 @@ func (m *Model) extendSelection(x, y int) {
 	}
 	m.sel.end = pt
 	// Selecting is reading, and reading pauses the follow the same way
-	// scrolling away does (S-140): a transcript that jumped to its live end
+	// scrolling away does: a transcript that jumped to its live end
 	// mid-drag would tear the selection off the text it was covering.
 	if !m.sel.empty() {
 		m.atBottom = false
@@ -303,7 +303,7 @@ func (m *Model) extendSelection(x, y int) {
 //
 // A press that never moved is not a selection and is dropped here rather than
 // copied as one cell. It does not reach this function at all any more —
-// updateMouse routes it to the click targets (S-159) — but the guard stays,
+// updateMouse routes it to the click targets — but the guard stays,
 // because "one cell is not a selection" is this file's rule and not a
 // consequence of who happens to call it.
 func (m Model) releaseSelection(x, y int) (tea.Model, tea.Cmd) {
@@ -458,7 +458,7 @@ func (m Model) updateSelectionScroll(msg selectionScrollMsg) (tea.Model, tea.Cmd
 // refreshTranscript re-renders the history into the viewport. The highlight
 // is applied over the finished render (applySelectionHighlight), so a drag
 // costs a restyle of the selected rows and never a re-render of the history
-// behind them — the incremental cache (S-090) is not touched by any of this.
+// behind them — the incremental cache is not touched by any of this.
 func (m *Model) refreshTranscript() {
 	if !m.ready {
 		return
@@ -687,7 +687,7 @@ func leadingSpaces(row string) int {
 // applySelectionHighlight lights the selected range in a finished render.
 //
 // It runs over the rendered string rather than inside the renderers, which is
-// what keeps a drag cheap: the history's incremental cache (S-090) is never
+// what keeps a drag cheap: the history's incremental cache is never
 // invalidated by a selection, so moving the pointer restyles the rows the
 // selection covers and re-renders nothing at all.
 func (m Model) applySelectionHighlight(content []string) []string {
@@ -698,7 +698,7 @@ func (m Model) applySelectionHighlight(content []string) []string {
 	if start.line >= len(content) {
 		return content
 	}
-	// The lines belong to the block cache (S-160), so the restyle works
+	// The lines belong to the block cache, so the restyle works
 	// on a copy of the slice: the frozen prefix is rendered once and must
 	// still be what a later frame, or the clipboard, reads.
 	lines := slices.Clone(content)
@@ -749,7 +749,7 @@ func highlightSpan(line string, lo, hi int) string {
 
 // selectionStyle is how a selected cell is drawn. It is reverse video rather
 // than a background colour, which is the one styling that survives every
-// palette this product has: it says "selected" in mono (S-095) exactly as
+// palette this product has: it says "selected" in mono exactly as
 // loudly as in colour, so the invariant that nothing is carried by colour
 // alone holds without a second signal being invented for it. It is also what
 // a terminal's own selection looks like, so the gesture and its feedback

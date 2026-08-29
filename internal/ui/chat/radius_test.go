@@ -47,7 +47,7 @@ func confirmFor(t *testing.T, m Model, command string) string {
 		t.Fatalf("%q should have armed a confirm, got state %d", command, m.state)
 	}
 	// The consequences a card prints beside its keys are only printed once
-	// the keys are live (S-117), so the card is read after ctrl+g.
+	// the keys are live, so the card is read after ctrl+g.
 	return ansi.Strip(handover(t, m).View().Content)
 }
 
@@ -138,7 +138,7 @@ func TestBlastRadius_FlaggedCommandSaysWhyAlwaysIsMissing(t *testing.T) {
 		t.Fatalf("the card should say why [a] is absent:\n%s", view)
 	}
 	// [n], not esc: esc on a gated card hands the keyboard back and leaves
-	// the decision waiting (S-117).
+	// the decision waiting.
 	if !strings.Contains(view, "[n] deny — the safe answer") {
 		t.Fatalf("a high-severity card states the safe default in words:\n%s", view)
 	}
@@ -230,7 +230,7 @@ func TestBlastRadius_EditStatesReversibilityOnTheStatsLine(t *testing.T) {
 	}
 }
 
-// A gated tool that described its own radius carries that block (S-101).
+// A gated tool that described its own radius carries that block.
 func TestBlastRadius_GenericToolCarriesItsOwnFields(t *testing.T) {
 	chdir(t)
 	msgs := []provider.Message{

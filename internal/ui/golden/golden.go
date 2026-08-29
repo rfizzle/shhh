@@ -1,6 +1,6 @@
 // Package golden captures the rendered output of a TUI surface in a
 // checked-in file so a layout regression is a failing test rather than
-// something noticed three commits later (S-096,
+// something noticed three commits later (
 // docs/interface/principles.md#one-grid).
 //
 // The component tests around it assert substrings — that a row contains
@@ -70,7 +70,7 @@ type Case struct {
 	// Width is the column count the panels were rendered at. The header
 	// states it so a reviewer knows what the right edge should be.
 	Width int
-	// Mono says the render used the two-grey palette (S-095). It picks the
+	// Mono says the render used the two-grey palette. It picks the
 	// `.mono` file rather than being a field the caller can get wrong: every
 	// surface is captured in both palettes, and the pair is named for it.
 	Mono   bool
@@ -141,7 +141,7 @@ func Assert(t *testing.T, name string, c Case) {
 func Format(name string, c Case) string {
 	palette := "color"
 	if c.Mono {
-		palette = "mono (two greys, S-095)"
+		palette = "mono (two greys)"
 	}
 	body := renderPanels(c.Panels)
 

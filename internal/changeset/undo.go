@@ -1,6 +1,6 @@
 package changeset
 
-// Undo (S-100). Taking a turn back is reading the store's before-content and
+// Undo. Taking a turn back is reading the store's before-content and
 // putting it on disk — deliberately not a git operation, so it works in a
 // directory that was never a repository and never touches the user's index
 // or stash.

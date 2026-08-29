@@ -12,10 +12,10 @@ import (
 	"github.com/rfizzle/shhh/internal/scope"
 )
 
-// Session approval policy: the permission mode (S-059) decides how each
+// Session approval policy: the permission mode decides how each
 // approval-gated tool call is handled — manual prompts for everything,
 // accept-edits auto-allows file edits, auto defers to policy (allowlist
-// rules, then the S-060 LLM classifier), and plan is read-only. The S-054
+// rules, then the LLM classifier), and plan is read-only. The session-grant
 // internals still apply inside the prompting modes: [a] on a confirm prompt
 // auto-allows the rest of that category for the session, and a config
 // allowlist (behavior.command_allowlist) pre-approves specific commands.
@@ -40,7 +40,7 @@ func (m Model) WithReadOnlyCommands(extra []string, disabled bool) Model {
 }
 
 // WithApprovalMode sets the session's starting permission mode and the
-// Shift+Tab cycle order (S-059); an empty cycle keeps the default order.
+// Shift+Tab cycle order; an empty cycle keeps the default order.
 func (m Model) WithApprovalMode(mode agent.Mode, cycle []agent.Mode) Model {
 	m.mode = mode
 	if len(cycle) > 0 {
@@ -77,7 +77,7 @@ func (m Model) allowlist() []string {
 }
 
 // grants is the session's four grants as one value, for the surfaces that
-// carry all of them: the sub-agent supervisor (S-086) and /permissions revoke.
+// carry all of them: the sub-agent supervisor and /permissions revoke.
 func (m Model) grants() agent.Grants {
 	return agent.Grants{
 		AllEdits:    m.allowAllEdits,
@@ -212,7 +212,7 @@ func shortenDir(dir string) string {
 }
 
 // approvalAction classifies an approval request for mode and classifier
-// decisions. The working scope (S-141) rides along: what the action reaches
+// decisions. The working scope rides along: what the action reaches
 // outside it is as much a part of the decision as what kind of action it is,
 // and resolving it here means every surface that asks the policy a question
 // asks it with the same facts.
@@ -239,7 +239,7 @@ func baseAction(req *approvalRequest) agent.Action {
 	case approvalDiff:
 		return agent.Action{Kind: agent.ActionEdit, Path: req.path}
 	}
-	// A generic approval carrying a command — a process start (S-073) — is
+	// A generic approval carrying a command — a process start — is
 	// judged as a command: allowlist entries apply and safety flags stick.
 	if req.command != "" {
 		return agent.Action{
@@ -257,7 +257,8 @@ func (m Model) policyDecision(req *approvalRequest) (agent.Decision, string) {
 	return m.modePolicy().Decide(m.approvalAction(req))
 }
 
-// modeStatus describes the active mode and cycle for /permissions with no argument.
+// modeStatus describes the active mode and cycle for /permissions with no
+// argument.
 func (m Model) modeStatus() string {
 	cycle := m.modeCycle
 	if len(cycle) == 0 {
@@ -275,7 +276,7 @@ func (m Model) modeStatus() string {
 	return sb.String()
 }
 
-// policyLabel is the status bar segment for the S-054 session grants; empty
+// policyLabel is the status bar segment for the session grants; empty
 // in the default everything-prompts state.
 func (m Model) policyLabel() string {
 	var parts []string
@@ -366,10 +367,10 @@ func allowlistMatches(allowlist []string, command string) bool {
 	return agent.AllowlistMatches(allowlist, command)
 }
 
-// grantStatus is `/permissions grants`: everything this session has stopped asking
-// about, and the one line that takes it back. It names each grant in the same
-// words the card used to record it, so the two can be recognised as the same
-// act.
+// grantStatus is `/permissions grants`: everything this session has stopped
+// asking about, and the one line that takes it back. It names each grant in
+// the same words the card used to record it, so the two can be recognised as
+// the same act.
 func (m Model) grantStatus() string {
 	g := m.grants()
 	if !g.Any() && len(m.commandAllowlist) == 0 && len(m.scopeDirs()) == 0 {
@@ -405,10 +406,10 @@ func (m Model) grantStatus() string {
 	return strings.TrimRight(sb.String(), "\n")
 }
 
-// allowCommand is `/permissions allow <commands|edits>`: the blanket grant, which
-// used to be one keystroke on a card. It is a command now because of what it
-// is — a decision about every call the rest of the session will make, taken
-// once, in front of no particular one of them.
+// allowCommand is `/permissions allow <commands|edits>`: the blanket grant,
+// which used to be one keystroke on a card. It is a command now because of
+// what it is — a decision about every call the rest of the session will make,
+// taken once, in front of no particular one of them.
 func (m *Model) allowCommand(args []string) string {
 	if len(args) != 1 {
 		return "Usage: /permissions allow <commands|edits> — the blanket grants. For one shape of call, [a] on its confirm prompt."
@@ -432,10 +433,10 @@ func (m *Model) allowCommand(args []string) string {
 	return "Usage: /permissions allow <commands|edits>"
 }
 
-// revokeCommand is `/permissions revoke`: the way back a session grant never had.
-// Until it existed, [a] pressed once on one `go test` was the last time the
-// session asked about anything, and only restarting it — or plan mode, which
-// refuses everything — undid that.
+// revokeCommand is `/permissions revoke`: the way back a session grant never
+// had. Until it existed, [a] pressed once on one `go test` was the last time
+// the session asked about anything, and only restarting it — or plan mode,
+// which refuses everything — undid that.
 func (m *Model) revokeCommand(args []string) string {
 	if len(args) > 1 {
 		return "Usage: /permissions revoke [edits|commands]"

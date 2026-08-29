@@ -15,13 +15,17 @@ given fact belongs, and how code refers back to it.
 | [`interface/`](interface/) | What must every surface obey? | an invariant changes |
 | the `shhh Design System` project | What does it look like, exactly? | the visual spec changes |
 | [`AGENTS.md`](../AGENTS.md) | Where is the code, what are the traps? | the code moves |
-| [`.plan/`](../.plan/) | When was it built, under which story? | every sprint |
 | code comments | Why is *this* line like this? | the line changes |
 
 The lifetimes are the point. A fact filed under the wrong question outlives
 its usefulness there: a roadmap in a design document is stale within a sprint,
 and a rendering rule in a delivery log is invisible to the next person who
 needs it.
+
+Planning lives outside the repository and stays there. Nothing here — no
+document, no comment — refers to a story, a sprint or a backlog item. Work is
+described by what it does, and a story that needs grounding cites a capability
+in this tree rather than the other way round.
 
 ## The four rules
 
@@ -60,11 +64,12 @@ It runs as part of `make ci`.
 
 ## What does not belong here
 
-- **Story and epic numbers** (`S-142`, `E-018`). They record when work
-  happened, not why the software is this way, and they live in
-  [`.plan/`](../.plan/), which is the delivery record and is correct as it is.
+- **Story and epic numbers** (`S-142`, `E-018`), and anything else that points
+  at a planning tool. They record when work happened, not why the software is
+  this way, and the planning that holds them is not part of this repository —
+  so a reference to one is a reference a reader cannot follow.
 - **Roadmaps, phases and open questions.** Planning artefacts age faster than
-  anything around them. `.plan/BACKLOG.md` is where intent-to-build goes.
+  anything around them, and none of them is a description of the software.
 - **Exact visual specification.** Column widths, colour rungs, glyph
   assignments and the artboards themselves are normative in the
   `shhh Design System` project in Claude Design (projectId
@@ -73,4 +78,4 @@ It runs as part of `make ci`.
   with the first. [`interface/`](interface/) says what the rules *are* and why
   they hold; the design system says what they *measure*.
 - **Changelogs.** A document describes the software as it is now. How it got
-  that way is git and `.plan/DONE.md`.
+  that way is what git is for.

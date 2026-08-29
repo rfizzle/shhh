@@ -1,5 +1,5 @@
 // Package radius resolves the blast radius of a shell command before it is
-// approved (S-101): the paths it would write, how big those paths are right
+// approved: the paths it would write, how big those paths are right
 // now, and how severe the whole thing is. It is what turns an approval card
 // from "here is a string, press y" into a decision the reader can make
 // without parsing the command themselves.
@@ -101,7 +101,7 @@ func Resolve(command string) Command {
 }
 
 // WritePaths is Resolve for a caller that needs only the paths — the working
-// scope check (S-141), which asks which directories a command reaches and
+// scope check, which asks which directories a command reaches and
 // nothing about how big they are. It skips the describe walk, so it can be
 // asked of every queued decision rather than only the one on screen.
 func WritePaths(command string) []string {
@@ -400,7 +400,7 @@ func (c *Command) resolveSegment(seg segment) {
 		c.resolveVerb(verb, rule, toks[1:])
 		return
 	}
-	// The inspection allowlist (S-061) is the one set of commands already
+	// The inspection allowlist is the one set of commands already
 	// known to change nothing; anything outside it is unaccounted for.
 	if harmlessVerbs[verb] || agent.ReadOnlyAllowed(seg.text, nil) {
 		return

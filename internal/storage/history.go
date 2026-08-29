@@ -21,7 +21,7 @@ type HistoryEntry struct {
 	// Duration is how long the generation took, and ExitCode what the command
 	// exited with when it was run. Both are nil for an entry recorded before the
 	// columns existed, which the browser reads as "not known" rather than as
-	// zero (S-128, docs/interface/surfaces.md#the-supporting-screens).
+	// zero (docs/interface/surfaces.md#the-supporting-screens).
 	Duration  *time.Duration
 	ExitCode  *int64
 	TokensIn  *int64

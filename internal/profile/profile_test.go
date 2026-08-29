@@ -380,7 +380,8 @@ func TestDirs_SitBesideEachConfigFile(t *testing.T) {
 	}
 }
 
-// --- the Responses dialect --------------------------------------------------
+// --- the Responses dialect
+// --------------------------------------------------
 
 func TestNew_ResponsesDialect(t *testing.T) {
 	var got map[string]any
@@ -462,8 +463,7 @@ func TestValidate_AcceptsTheResponsesDialect(t *testing.T) {
 // someone else's, its error prose is its own, and the session has no other
 // way to find out what went wrong. So each dialect a profile can speak is
 // pointed at a server that fails, and the failure has to arrive named — and
-// named as the profile rather than as the built-in dialect underneath it
-// (S-106).
+// named as the profile rather than as the built-in dialect underneath it.
 func TestNew_ClassifiesGatewayFailures(t *testing.T) {
 	cases := []struct {
 		name    string

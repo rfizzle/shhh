@@ -1,6 +1,6 @@
 package keys
 
-// The register of keyed surfaces, as data (S-153).
+// The register of keyed surfaces, as data.
 //
 // It is an audit: every surface that offers a bare letter, which of the two
 // positions it is in, and how it gets the keyboard. It was written as a

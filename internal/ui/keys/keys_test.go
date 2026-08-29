@@ -1,6 +1,6 @@
 package keys
 
-// The register against itself (S-153,
+// The register against itself (
 // docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // The register's rule is that "a rule nobody can check against a list is a

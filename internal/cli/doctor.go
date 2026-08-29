@@ -1,10 +1,10 @@
 package cli
 
-// The doctor surface (S-130,
+// The doctor surface (
 // docs/interface/surfaces.md#the-supporting-screens). `shhh code doctor`
 // reported on the sandbox ladder and nothing else, while the design system
 // named a `shhh doctor` covering the whole setup — the name had no command
-// behind it. S-130 settled that by promoting and widening: `shhh doctor` is a
+// behind it. That was settled by promoting and widening: `shhh doctor` is a
 // top-level command over ten checks, `shhh code doctor` stays as the way in
 // from the coding agent, and `/sandbox doctor` is unchanged because in a
 // session the question really is only about containment.
@@ -72,7 +72,7 @@ func newDoctorCmd() *cobra.Command {
 
 // doctorCommand builds a run over some set of the checks. `shhh doctor` takes
 // all of them; `shhh code doctor` takes the containment pair, which is the
-// scope that command has always had (S-130).
+// scope that command has always had.
 func doctorCommand(use, short, long string, probes []doctorProbe) *cobra.Command {
 	var table bool
 
@@ -294,12 +294,12 @@ func probeModel(ctx context.Context, cfg config.Config) doctorFinding {
 	f := doctorModelFinding(resolved.Provider, resolved.Model, survey)
 	// A model decided by an env var or a flag looks exactly like one decided
 	// by the config file, which is how `/model default` came to look broken
-	// while writing the file correctly (S-136). The row that reports the
+	// while writing the file correctly. The row that reports the
 	// model is the row that has to say who chose it.
 	if over := resolve.ModelOutranks(resolve.Opts{ConfigModel: cfg.Provider.Model}); over != "" && cfg.Provider.Model != "" {
 		f.Detail = joinDetail(f.Detail, over+", overruling provider.model = "+cfg.Provider.Model)
 	}
-	// A reasoning level is the other half of what a request asks for (S-139),
+	// A reasoning level is the other half of what a request asks for,
 	// and an unreadable one is a session that will fail to start rather than
 	// quietly reason less than it was told to.
 	if effort, err := provider.ParseEffort(resolved.Reasoning); err != nil {
@@ -750,7 +750,7 @@ func probeMemory(context.Context, config.Config) doctorFinding {
 	return doctorMemory(memory.ProjectScope(dir), project, len(entries)-project, listErr)
 }
 
-// doctorMemory reads durable memory (S-070) for this project. An empty store
+// doctorMemory reads durable memory for this project. An empty store
 // is the ordinary state of a new project rather than a fault, so it is `⊘`
 // with the words for it, not a warning.
 func doctorMemory(project string, forProject, global int, err error) doctorFinding {
@@ -1073,8 +1073,7 @@ func (m doctorModel) apply(command components.DoctorCommand) (tea.Model, tea.Cmd
 	return m, nil
 }
 
-// View is the frame: the doctor screen, on the alt screen it takes over
-// (S-155).
+// View is the frame: the doctor screen, on the alt screen it takes over.
 func (m doctorModel) View() tea.View {
 	v := tea.NewView(m.screen.View(m.width))
 	v.AltScreen = true

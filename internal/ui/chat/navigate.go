@@ -1,6 +1,6 @@
 package chat
 
-// Terminal interactivity (S-115, docs/interface/surfaces.md#reading-mode).
+// Terminal interactivity (docs/interface/surfaces.md#reading-mode).
 // Two things kept a reader stuck in the input box, and they are opposite
 // failures of the same rule.
 //
@@ -17,7 +17,7 @@ package chat
 // hears no keys at all, and the only things that move it are the ones a draft
 // cannot produce — the wheel, pgup/pgdn, shift+arrows, ctrl+e.
 //
-// S-140 split that list in two, because it had been conflating scrolling with
+// That list is split in two, because it had been conflating scrolling with
 // giving up the keyboard. Reading is not a decision: the wheel always said so
 // and the pager keys did not, so pgup took the draft off the screen to answer
 // a question about the pane above it. Now every scroll gesture leaves the
@@ -51,7 +51,7 @@ const keyScrollLines = 1
 // because of what is left rather than what it stands for: the textarea
 // underneath claims a, b, d, e, f, k, n, p, t, u, v and w; this surface
 // spends c, d, e, g and j of its own; ctrl+s, ctrl+q and ctrl+z belong to the
-// terminal; and ctrl+o opens a step's detail (S-137, detail.go). It is not a
+// terminal; and ctrl+o opens a step's detail (detail.go). It is not a
 // mnemonic and does not pretend to be one — the start screen and /ui both
 // name it, which is where a chord is actually learned.
 
@@ -72,7 +72,7 @@ func (m Model) WithMouse(on bool) Model {
 }
 
 // updateMouse routes a mouse event: the wheel reads, and the primary button
-// selects text (S-145, select.go) or clicks a target (S-159, click.go).
+// selects text (select.go) or clicks a target (click.go).
 //
 // The wheel reads, and reading is not a focus transfer: the draft keeps the
 // keyboard, so a scroll while composing never swallows the next keystroke.
@@ -86,7 +86,7 @@ func (m Model) WithMouse(on bool) Model {
 // nothing at all.
 func (m Model) updateMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	// In v2 the action a mouse event is comes from the message's own type
-	// rather than from a field on one struct (S-155), which is why the wheel
+	// rather than from a field on one struct, which is why the wheel
 	// no longer has to be told apart from a press by its button.
 	mouse := msg.Mouse()
 	switch msg.(type) {
@@ -106,7 +106,7 @@ func (m Model) updateMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 		}
 		// Every press is remembered, wherever it lands: a click target can be
 		// on the card in the bottom panel, which is not a surface a selection
-		// can be anchored in (S-159, click.go).
+		// can be anchored in (click.go).
 		m.beginClick(mouse.X, mouse.Y)
 		if !m.selectableSurface() {
 			return m, nil
@@ -208,11 +208,11 @@ func (m Model) returnToInput(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 //
 // Text is exactly that question in v2: it carries the characters a key
 // contributes and is empty for everything else, including a key held under a
-// modifier that changes what it means (S-155).
+// modifier that changes what it means.
 func typedRune(msg tea.KeyPressMsg) bool { return msg.Text != "" }
 
 // followNotice says that the transcript is no longer showing its live end,
-// and how far off it the reader is (S-140).
+// and how far off it the reader is.
 //
 // Scrolling away pauses the follow — tokenMsg only calls GotoBottom while
 // atBottom — and until now nothing said so. A reader who scrolled up to check
@@ -245,7 +245,7 @@ func (m Model) followNotice() string {
 }
 
 // transcriptBody is the viewport with its scroll gutter glued to the right
-// (S-147). The viewport pads every row it returns to its own width and
+// . The viewport pads every row it returns to its own width and
 // returns exactly its own height of them, so the gutter is a glyph appended
 // per row rather than a column that has to be laid out.
 //
@@ -329,8 +329,8 @@ func (m Model) mouseStatus() string {
 
 // mouseCommand handles /ui mouse: whether the terminal reports the mouse to
 // shhh at all. On, the wheel scrolls the transcript and the full-screen
-// viewers, a drag selects transcript text shhh copies itself (S-145), and a
-// click opens a row or answers a decision key (S-159); off, the terminal
+// viewers, a drag selects transcript text shhh copies itself, and a
+// click opens a row or answers a decision key; off, the terminal
 // keeps its own click-drag selection and the keyboard is the only way through
 // the history. It is a real trade, which is why it is a setting and not a
 // default nobody can reach.
@@ -364,7 +364,7 @@ func (m *Model) setMouse(on bool) string {
 	m.mouseOn = on
 	// Reporting off hands the selection back to the terminal, so shhh's own
 	// has to let go of it — including any edge scroll still running under a
-	// drag the reader never released (S-145).
+	// drag the reader never released.
 	if !on && m.cancelSelection() {
 		m.refreshTranscript()
 	}
@@ -385,7 +385,7 @@ func (m *Model) setMouse(on bool) string {
 // held", which was true and useless: shift-drag selects what is on the
 // screen, and the thing a reader reaches for the mouse to copy is usually
 // longer than the screen. So the note names what shhh does instead — a drag
-// that scrolls with the selection and copies on release (S-145) — and the
+// that scrolls with the selection and copies on release — and the
 // off-side names what the terminal gives back.
 func mouseNote(on bool) string {
 	if on {
@@ -394,7 +394,7 @@ func mouseNote(on bool) string {
 	return "Mouse reporting off — the terminal keeps click-drag selection for what is on screen; pgup, ctrl+e and j/k read the transcript."
 }
 
-// readingStyles is the reading rail's own group (S-115).
+// readingStyles is the reading rail's own group.
 type readingStyles struct {
 	Label lipgloss.Style
 	Rule  lipgloss.Style

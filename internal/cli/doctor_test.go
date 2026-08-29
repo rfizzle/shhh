@@ -1,6 +1,6 @@
 package cli
 
-// The doctor host (S-130, docs/interface/surfaces.md#the-supporting-screens).
+// The doctor host (docs/interface/surfaces.md#the-supporting-screens).
 // The screen renders; every judgement is here, and every judgement is a pure
 // function of what was probed — so this file checks the readings on a machine
 // that has no containment mechanism, no provider key and no git repository,
@@ -32,7 +32,8 @@ func TestDoctorProbes_NamesFitTheVerbField(t *testing.T) {
 }
 
 // `shhh code doctor` runs a slice of the same checks rather than a set of its
-// own: two commands reporting differently on one machine is the thing S-130
+// own: two commands reporting differently on one machine is the thing the
+// promotion
 // was resolving.
 func TestContainmentProbes_AreASliceOfTheWholeRun(t *testing.T) {
 	all := map[string]bool{}

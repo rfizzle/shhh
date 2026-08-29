@@ -1,6 +1,6 @@
 package radius
 
-// Reach is the one-shot's containment line (S-113,
+// Reach is the one-shot's containment line (
 // docs/interface/surfaces.md#the-one-shot-result). The approval cards spend a
 // row each on what a command touches, what could undo it and what the sandbox
 // allows, because a session has the room for three rows and the reader is

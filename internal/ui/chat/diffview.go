@@ -1,6 +1,6 @@
 package chat
 
-// Rich diff rendering (S-074, docs/interface/surfaces.md#the-diff-view): the
+// Rich diff rendering (docs/interface/surfaces.md#the-diff-view): the
 // full-screen diff state shared by transcript edit rows, the approval card's
 // [d], and the /diff session diff.
 
@@ -20,7 +20,7 @@ import (
 const maxDiffExpandedLines = 20
 
 // WithChangeset wires the per-turn changeset store and the git tracker that
-// answers whether a file was tracked when it was edited (S-097). Every
+// answers whether a file was tracked when it was edited. Every
 // session has a store already; this replaces it — with a different bound, or
 // with the tracker a workspace inside a repository deserves.
 func (m Model) WithChangeset(store *changeset.Store, tracker *changeset.Tracker) Model {
@@ -39,8 +39,8 @@ func (m Model) systemNotice(text string) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// openSessionDiff shows what the session changed, in review mode (S-099).
-// It reads the session's own changeset (S-097) rather than shelling out to
+// openSessionDiff shows what the session changed, in review mode.
+// It reads the session's own changeset rather than shelling out to
 // git, so it says the same thing in a directory that was never a repository
 // — and it says what this session changed, not what the working tree happens
 // to hold. There is nothing to stage in a cumulative diff, so the surface
@@ -79,8 +79,7 @@ func sessionDiffEmptyNotice(store *changeset.Store) string {
 
 // noteEvictedTurns says which turns the changeset store dropped to stay
 // inside its bound. Eviction costs the session its ability to review or undo
-// those turns, so it is a line in the transcript rather than a silent drop
-// (S-097).
+// those turns, so it is a line in the transcript rather than a silent drop.
 func (m *Model) noteEvictedTurns(evicted []int64) {
 	if len(evicted) == 0 {
 		return
@@ -132,8 +131,7 @@ func (m Model) updateDiffFull(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 func (m Model) closeDiffFull() (tea.Model, tea.Cmd) {
 	m.fullDiff = nil
 	// A diff opened from focus mode goes back to it; anything else hands the
-	// screen back to the turn, which may have moved on while it was up
-	// (S-087).
+	// screen back to the turn, which may have moved on while it was up.
 	if m.diffReturn.isSurface() {
 		m.state = m.diffReturn
 	} else {

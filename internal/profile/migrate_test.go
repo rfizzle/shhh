@@ -1,6 +1,6 @@
 package profile
 
-// One file for every provider (S-142): the [[provider]] form, the
+// One file for every provider: the [[provider]] form, the
 // providers.toml that holds it, and folding a providers/ directory into one.
 
 import (

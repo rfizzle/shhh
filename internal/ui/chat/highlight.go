@@ -20,7 +20,7 @@ var (
 )
 
 // markdownStyle is the glamour style the transcript renders assistant prose
-// with. Mono mode (S-095) swaps the coloured "dark" theme for "ascii", which
+// with. Mono mode swaps the coloured "dark" theme for "ascii", which
 // marks emphasis, headings and code with characters instead of colour — the
 // invariant applied to prose: the ** stays when the colour goes.
 func markdownStyle() string {
@@ -58,7 +58,7 @@ func renderMarkdown(text string, width int) string {
 // finished one: the blank lines glamour puts around it go, and nothing inside
 // it moves.
 //
-// The leading half was a strings.TrimSpace until S-155, and it worked by
+// The leading half was a strings.TrimSpace once, and it worked by
 // accident: glamour v1 opened every line with its style escape and put the
 // document's two-column margin *after* it, so a leading TrimSpace stopped at
 // the escape and the margin survived. v2 writes the margin as plain text
@@ -200,7 +200,7 @@ func diffSyntax(path string) components.Syntax {
 	// Mono declines highlighting outright rather than collapsing the register
 	// onto its two greys: a diff body is where the +/- styling is already
 	// carrying the distinction that matters, and a second grey ladder over it
-	// would be decoration the reader has to unpick (S-095).
+	// would be decoration the reader has to unpick.
 	if components.Mono() {
 		return nil
 	}

@@ -152,7 +152,7 @@ func TestAddWorktreeNeedsGitRepo(t *testing.T) {
 // The changeset records a child's patch by reading the real checkout either
 // side of the apply, and the paths it reports are relative to the session's
 // root — not to the repository top, which is a different place whenever the
-// session was started from a subdirectory (S-097).
+// session was started from a subdirectory.
 func TestPatchedFiles_SidesAndSessionRelativePaths(t *testing.T) {
 	repoTop := t.TempDir()
 	root := filepath.Join(repoTop, "sub")

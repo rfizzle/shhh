@@ -22,7 +22,7 @@ func drainStream(m GenerateModel, events int) GenerateModel {
 }
 
 // settle runs cmd far enough to deliver any stream the surface has asked for
-// and not waited on (S-132). Opening a stream is a round trip that happens
+// and not waited on. Opening a stream is a round trip that happens
 // off the event loop now, so a test that wants the stream open has to let
 // that answer come back; everything else the cmd carries is left alone.
 // drainStreamPending drains the stream and stops at the point the surface has
@@ -493,7 +493,7 @@ func TestGenerate_ReviseRestreamsWithNewResponse(t *testing.T) {
 		t.Fatal("expected Init cmd from new stream")
 	}
 
-	// The stream is asked for and not waited on (S-132), so let the open
+	// The stream is asked for and not waited on, so let the open
 	// come back before draining what it opened.
 	m = settle(m, cmd)
 
@@ -545,7 +545,8 @@ func TestGenerate_ReviseMessagesAccumulate(t *testing.T) {
 	m = typeKeys(m, "add -la")
 	m = step(m, tea.KeyPressMsg{Code: tea.KeyEnter})
 
-	// After submit, before re-stream completes: sys, user, assistant("ls"), user("add -la")
+	// After submit, before re-stream completes: sys, user, assistant("ls"),
+	// user("add -la")
 	msgs := m.Messages()
 	if len(msgs) != 4 {
 		t.Fatalf("expected 4 messages before re-stream, got %d", len(msgs))
@@ -600,7 +601,7 @@ func TestGenerate_ReviseStreamErrorQuitsWithError(t *testing.T) {
 	model, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = model.(GenerateModel)
 
-	// The stream is opened off the event loop now (S-132), so the failure is
+	// The stream is opened off the event loop now, so the failure is
 	// the answer to that open rather than something the keystroke returned.
 	model, quitCmd := m.Update(openMsg(cmd))
 	m = model.(GenerateModel)
@@ -675,8 +676,8 @@ func TestGenerate_EditSubmitUpdatesCommand(t *testing.T) {
 	// Enter edit
 	m = step(m, tea.KeyPressMsg{Code: 'e', Text: "e"})
 
-	// Clear and type new command (select all not available, so we manipulate directly)
-	// The text input has "ls" pre-populated; type " -la" to append
+	// Clear and type new command (select all not available, so we manipulate
+	// directly) The text input has "ls" pre-populated; type " -la" to append
 	for _, r := range " -la" {
 		m = step(m, tea.KeyPressMsg{Code: r, Text: string(r)})
 	}
@@ -793,7 +794,8 @@ func TestGenerate_MultipleRevisionsWork(t *testing.T) {
 		t.Errorf("expected 'ls -la' after second revision, got %q", m.stream.Output())
 	}
 
-	// Messages: sys, user, asst("ls"), user("add -l"), asst("ls -l"), user("also add -a"), asst("ls -la")
+	// Messages: sys, user, asst("ls"), user("add -l"), asst("ls -l"), user("also
+	// add -a"), asst("ls -la")
 	msgs := m.Messages()
 	if len(msgs) != 7 {
 		t.Fatalf("expected 7 messages after two revisions, got %d", len(msgs))
@@ -965,7 +967,8 @@ func TestGenerate_PreflightRespectsMaxRetries(t *testing.T) {
 }
 
 func TestGenerate_PreflightSkippedWithEmptyShell(t *testing.T) {
-	// With empty shell, preflight binary check still runs but syntax check doesn't
+	// With empty shell, preflight binary check still runs but syntax check
+	// doesn't
 	events := makeEvents("ls -la")
 	m := NewGenerateModel(events, noopCancel, nil, nil, nil, "")
 	m = drainStream(m, 2)

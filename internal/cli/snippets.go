@@ -240,7 +240,7 @@ func newSnippetShowCmd() *cobra.Command {
 // extractField pulls a labelled line back out of a browse detail body. The
 // snippet browser is the last surface that needs it: the history browser
 // stopped round-tripping its fields through rendered text when it moved onto
-// the cockpit's own components (S-128).
+// the cockpit's own components.
 func extractField(detail, prefix string) string {
 	for _, line := range strings.Split(detail, "\n") {
 		if strings.HasPrefix(line, prefix) {

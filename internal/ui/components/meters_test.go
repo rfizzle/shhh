@@ -87,7 +87,7 @@ func TestMeterThresholdColours(t *testing.T) {
 
 func TestStepMeterNeedsADeclaredTotal(t *testing.T) {
 	if _, ok := StepMeter(3, 0, MeterCellsRail, true); ok {
-		t.Fatal("no declared total, no ratio (S-094)")
+		t.Fatal("no declared total, no ratio")
 	}
 	if _, ok := AgentMeter(2, 0); ok {
 		t.Fatal("an agent lane without a step count gets no bar")

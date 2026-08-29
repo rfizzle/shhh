@@ -1,6 +1,6 @@
 package cli
 
-// Where a TUI starts and where styled bytes leave (S-155).
+// Where a TUI starts and where styled bytes leave.
 //
 // Lip Gloss v2 has no renderer inside a Style: Render always emits the colour
 // it was given, and what a terminal can show is settled twice — once when

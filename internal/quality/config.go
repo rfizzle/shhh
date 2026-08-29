@@ -1,4 +1,4 @@
-// Package quality implements the repository quality gate (S-067): named
+// Package quality implements the repository quality gate: named
 // suites of checks defined in trusted config, run read-only and contained
 // when a mechanism is available, with every result fingerprinted against the
 // git tree so a verdict can never silently vouch for code it did not see.

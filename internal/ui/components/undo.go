@@ -1,6 +1,6 @@
 package components
 
-// The undo confirm (S-100, docs/interface/surfaces.md#the-inline-confirm and
+// The undo confirm (docs/interface/surfaces.md#the-inline-confirm and
 // the turn close). Taking a turn back writes to the workspace, so it asks
 // first — as an inline confirm in the input area rather than a card, because
 // the question is one line and the answer is a keystroke.

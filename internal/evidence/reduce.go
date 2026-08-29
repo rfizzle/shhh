@@ -8,7 +8,7 @@ import (
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
-// Reduction pipeline tuning (S-064). Every knob lives here, so there is one
+// Reduction pipeline tuning. Every knob lives here, so there is one
 // place to reason about how much of a tool result the model sees.
 const (
 	// ReduceThreshold is the minimum-savings guard: results at or below this

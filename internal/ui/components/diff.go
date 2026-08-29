@@ -36,7 +36,7 @@ type Segment struct {
 	Color Token
 }
 
-// Syntax styles one raw source line as colored segments (S-074); nil renders
+// Syntax styles one raw source line as colored segments; nil renders
 // plain diff colors. Segments must concatenate back to the input line — a
 // mismatch falls back to plain rendering.
 type Syntax func(line string) []Segment
@@ -52,7 +52,7 @@ type DiffView struct {
 	// Syntax highlights this file's lines; nil renders plain diff colors.
 	Syntax Syntax
 	// Files renders a multi-file patch in the full-screen view (the /diff
-	// session diff, S-074); when set, Path is just the header label and
+	// session diff); when set, Path is just the header label and
 	// Hunks is ignored.
 	Files []diff.File
 	// SyntaxFor resolves a per-file highlighter for multi-file views.
@@ -282,7 +282,7 @@ func renderUnifiedLine(l diff.Line, width, numWidth int, opts UnifiedOpts) strin
 func renderSyntaxLine(prefix, text string, avail int, kind diff.Kind, span *diff.Span, syntax Syntax) (string, bool) {
 	// Syntax colours come from a chroma theme, not from Palette, so mono mode
 	// cannot strip them — it declines them instead and the line renders with
-	// the plain +/- diff styling (S-095).
+	// the plain +/- diff styling.
 	if Mono() {
 		return "", false
 	}
@@ -604,7 +604,7 @@ func sideCell(l *diff.Line, width int, oldSide bool) string {
 }
 
 // Scroll moves the full-screen body by delta rows, clamped to its bounds. It
-// is what the host routes a wheel gesture to (S-115): the wheel reads, so it
+// is what the host routes a wheel gesture to: the wheel reads, so it
 // never changes the mode the way [enter] and [esc] do. Collapsed and expanded
 // views have nothing to scroll and ignore it.
 func (d *DiffView) Scroll(delta int) {

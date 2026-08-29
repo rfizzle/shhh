@@ -1,7 +1,7 @@
 package components
 
-// The sub-agent manager (docs/interface/surfaces.md#the-agent-manager). S-077
-// made it a live list you could attach to, cancel and kill from; S-111 makes
+// The sub-agent manager (docs/interface/surfaces.md#the-agent-manager). It
+// is a live list you can attach to, cancel and kill from, and it makes
 // it the place a blocked child is answered. Opening the manager *because*
 // something needs you and then being sent into that child's session just to
 // say yes is a detour the list can spare you, so the approval card renders
@@ -83,7 +83,7 @@ type AgentList struct {
 	MaxLines int
 	// window is the shared sliding window (listwindow.go). A fan-out wide
 	// enough to overflow this card is itself the problem the screen should be
-	// showing, which is why the manager went unwindowed until S-124 — but a
+	// showing, which is why the manager went unwindowed at first — but a
 	// list the pointer can walk off the bottom of is worse than a wide
 	// fan-out, so it scrolls now, on the same code every other list uses.
 	// Blocked children never scroll: they are pinned above the window, so

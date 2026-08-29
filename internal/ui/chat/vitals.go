@@ -1,6 +1,6 @@
 package chat
 
-// Session vitals and context accounting (S-093,
+// Session vitals and context accounting (
 // docs/interface/surfaces.md#the-inspector-rail). Two numbers the session
 // already half-knew get a shape here:
 //
@@ -58,16 +58,16 @@ type vitals struct {
 	priced                         bool
 
 	// models is the session's spend split by the model that incurred it, in
-	// the order the session first used each (S-107). A turn that starts on
+	// the order the session first used each. A turn that starts on
 	// one model and finishes on a cheaper one is priced as two things,
 	// because that is what it was.
 	models []modelSpend
 }
 
 // modelSpend is one model's share of the session. It exists because the
-// fallback in S-107 can change the model mid-turn: a single session total
-// priced against whichever model happened to be current when /stats was typed
-// would be a number nobody could reconcile.
+// fallback on a failed request can change the model mid-turn: a single
+// session total priced against whichever model happened to be current when
+// /stats was typed would be a number nobody could reconcile.
 type modelSpend struct {
 	Model    string
 	In, Out  int64
@@ -92,7 +92,7 @@ func (v *vitals) modelEntry(model string) *modelSpend {
 // noteModel records that the session has moved to a model, before it has
 // spent anything on it. The switch is the fact worth keeping: /stats naming a
 // model with no tokens against it is how a fallback that answered nothing
-// still shows up (S-107).
+// still shows up.
 func (v *vitals) noteModel(model string) { v.modelEntry(model) }
 
 // modelSplit is the per-model spend, or nil when the whole session ran on one
@@ -121,7 +121,7 @@ func (v *vitals) record(model string, u provider.Usage, cost float64, priced boo
 	cached := int64(u.CachedTokens)
 
 	// The model that answered owns what the answer cost, whichever model the
-	// session is on by the time anyone asks (S-107).
+	// session is on by the time anyone asks.
 	ms := v.modelEntry(model)
 	ms.In += in
 	ms.Out += out
@@ -173,7 +173,7 @@ func (v *vitals) closeTurn(elapsed time.Duration) {
 }
 
 // reopenTurn puts the most recently closed turn back on the books, for a turn
-// that stopped at its round limit and was then granted more (S-109). Without
+// that stopped at its round limit and was then granted more. Without
 // it a granted turn is two entries in the history, and the close rows at the
 // end of it price half of itself.
 func (v *vitals) reopenTurn() {
@@ -302,7 +302,7 @@ func (b contextBreakdown) scaledTo(target int64) contextBreakdown {
 
 // WithProjectContextTokens sets the estimated token cost of the project
 // context (AGENTS.md and friends) injected into the system prompt, so the
-// occupancy breakdown can name it separately (S-093).
+// occupancy breakdown can name it separately.
 func (m Model) WithProjectContextTokens(n int64) Model {
 	m.projectTokens = n
 	return m

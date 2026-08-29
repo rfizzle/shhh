@@ -1,6 +1,6 @@
 package components
 
-// The metrics surface (S-129,
+// The metrics surface (
 // docs/interface/surfaces.md#the-supporting-screens,
 // ui_kits/cockpit/Tools.html). `shhh metrics` printed a tabwriter table of
 // fifteen unaligned columns and no Bubble Tea at all. It is re-cut here from

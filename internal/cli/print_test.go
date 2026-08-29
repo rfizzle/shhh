@@ -254,7 +254,7 @@ func TestHeadlessApprover_MutationHookAppendsDiagnostics(t *testing.T) {
 	}
 }
 
-// processStartCall builds a process-tool start call for approver tests (S-073).
+// processStartCall builds a process-tool start call for approver tests.
 func processStartCall(name, command string) provider.ToolCall {
 	args, _ := json.Marshal(map[string]string{"action": "start", "name": name, "command": command})
 	return provider.ToolCall{ID: "c1", Name: "process", Arguments: string(args)}
@@ -334,9 +334,9 @@ func TestPrintOptsRounds(t *testing.T) {
 }
 
 // --max-rounds no longer errors outside --print: a session takes it too, and
-// `--max-rounds 0` is how one is told up front to run unattended, which is the
-// one thing the in-session offers cannot do. A negative is still the value
-// with nothing left to mean, zero having taken "no cap".
+// `--max-rounds 0` is how one is told up front to run unattended, which is
+// the one thing the in-session offers cannot do. A negative is still the
+// value with nothing left to mean, zero having taken "no cap".
 func TestCodeCmdMaxRoundsRejectsNegative(t *testing.T) {
 	cmd := newCodeCmd()
 	cmd.SetArgs([]string{"--print", "--max-rounds", "-1", "do a thing"})

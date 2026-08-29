@@ -138,8 +138,7 @@ func chatModels(names []string) []string {
 	return kept
 }
 
-// What a session assumes when the pricing table has never heard of the model
-// (S-164).
+// What a session assumes when the pricing table has never heard of the model.
 //
 // The context window drives trimming: below the threshold nothing happens,
 // above it the oldest tool results are replaced with a placeholder. A session

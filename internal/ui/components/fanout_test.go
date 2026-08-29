@@ -105,9 +105,9 @@ func TestFanoutOffersOnlyWhileBlocked(t *testing.T) {
 	}
 }
 
-// TestFanoutProgressNeedsADeclaredCount is S-094's rule on a lane: a bar only
-// where the spawn declared a step count, the spinner everywhere else, and
-// never a ratio nobody supplied.
+// TestFanoutProgressNeedsADeclaredCount is the meter rule on a lane: a bar
+// only where the spawn declared a step count, the spinner everywhere else,
+// and never a ratio nobody supplied.
 func TestFanoutProgressNeedsADeclaredCount(t *testing.T) {
 	declared := FanoutLane{State: FanoutRunning, Name: "writer-1", Step: 2, Steps: 5}
 	bar := ansi.Strip(declared.View(110))

@@ -61,7 +61,7 @@ func NewOpenAICompatNamed(client *openai.Client, model, baseURL, name string) *O
 	p := NewOpenAICompatWith(client, model, baseURL)
 	if name != "" {
 		// The classifier is rebound too: a failure behind a gateway has to
-		// say which gateway (S-106), and the profile's name is the only
+		// say which gateway, and the profile's name is the only
 		// place that is known.
 		p.name = name
 		p.classify = newClassifier(name, "SHHH_API_KEY", "")
@@ -102,7 +102,7 @@ func (o *OpenAICompat) StreamCompletion(ctx context.Context, messages []Message,
 	if opts.MaxTokens > 0 {
 		req.MaxTokens = opts.MaxTokens
 	}
-	// Reasoning effort (S-139) is sent only when the session asked for one:
+	// Reasoning effort is sent only when the session asked for one:
 	// the field is a 400 on a model that has no reasoning to spend.
 	if effort := opts.Effort.OpenAIEffort(); effort != "" {
 		req.ReasoningEffort = effort

@@ -1,4 +1,4 @@
-// Package proposal reads what the one-shot generator answered with (S-114,
+// Package proposal reads what the one-shot generator answered with (
 // docs/interface/surfaces.md#the-one-shot-result).
 //
 // A generator that can only say one thing has already chosen for you. Asked

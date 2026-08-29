@@ -1,6 +1,6 @@
 package components
 
-// The running turn's status line (S-118,
+// The running turn's status line (
 // docs/interface/surfaces.md#the-input-frame). While a turn runs, this
 // is the one line on screen that changes: a spinner frame, the phase, ticking
 // elapsed, the turn's live token counts and what they have cost. It lives in

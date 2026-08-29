@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// Search provider (S-066): one provider first — Brave Search. The tool is
+// Search provider: one provider first — Brave Search. The tool is
 // registered only when web.search_api_key is configured; no key, no tool.
 const (
 	braveEndpoint      = "https://api.search.brave.com/res/v1/web/search"

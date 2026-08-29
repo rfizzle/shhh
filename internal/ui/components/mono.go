@@ -1,6 +1,6 @@
 package components
 
-// Monochrome conformance (S-095,
+// Monochrome conformance (
 // docs/interface/principles.md#colour-never-carries-meaning-alone).
 // Colour never
 // carries meaning alone: every state pairs its colour with a glyph or a word,
@@ -101,7 +101,7 @@ func OnPaletteChange(fn func()) { paletteHooks = append(paletteHooks, fn) }
 // NO_COLOR and TERM=dumb additionally settle the colour profile on ASCII
 // (detectProfile, palette.go), which flattens the two greys to none — a
 // stricter reading of the same invariant, and the one those conventions ask
-// for. Before S-155 that was a SetColorProfile call in the generate UI's own
+// for. That was once a SetColorProfile call in the generate UI's own
 // init; v2 has no global profile to set, so it is part of detecting the
 // profile instead, which is also the only place that can answer for every
 // surface rather than for whichever package happened to be imported.

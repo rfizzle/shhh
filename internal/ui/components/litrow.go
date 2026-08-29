@@ -1,6 +1,6 @@
 package components
 
-// The lit row (docs/interface/surfaces.md#reading-mode, S-122). Reading mode
+// The lit row (docs/interface/surfaces.md#reading-mode). Reading mode
 // dresses exactly two things, and this is the second of them: the row the
 // cursor is on takes the focus background with its words in bright, while the
 // rail and the glyph keep the colours that say what the row did. The pointer
@@ -22,7 +22,7 @@ import (
 // It is read from the renderer's own vocabulary rather than written out here,
 // because the two have to agree exactly and v2 shortened it — \x1b[m rather
 // than \x1b[0m, which mean the same thing to a terminal and different things
-// to strings.ReplaceAll (S-155).
+// to strings.ReplaceAll.
 const ansiReset = ansi.ResetStyle
 
 // LitRow paints one already-rendered line as the row the reading cursor sits

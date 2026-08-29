@@ -1,6 +1,6 @@
 package caps
 
-// The other half of the kitty graphics question (S-158,
+// The other half of the kitty graphics question (
 // docs/interface/surfaces.md#a-staged-picture).
 //
 // Query asks the terminal whether it draws inline images; this is shhh asking

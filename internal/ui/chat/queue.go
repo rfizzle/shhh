@@ -1,11 +1,11 @@
 package chat
 
-// The approval queue strip and batch approval (S-102,
+// The approval queue strip and batch approval (
 // docs/interface/surfaces.md#the-approval-card). The queue has always existed
-// — S-048 built it — but it was invisible: the card said nothing about what
-// was stacked behind it, so five decisions cost five identical keystrokes and
-// read as one decision asked five times. This file exposes the stack and adds
-// the one key that answers a category of it.
+// — the approval queue existed — but it was invisible: the card said nothing
+// about what was stacked behind it, so five decisions cost five identical
+// keystrokes and read as one decision asked five times. This file exposes the
+// stack and adds the one key that answers a category of it.
 //
 // Membership is decided by the same matcher the [a] session grant uses, so
 // "the same way" means one thing in both features rather than two. A
@@ -45,7 +45,7 @@ func (m Model) stripRows() int {
 func (m Model) confirmPanelBound() int {
 	// The rail and the undressed draft a gated decision adds are paid for
 	// here too, so the card is never the thing clipped off the bottom to
-	// make room for them (S-117).
+	// make room for them.
 	return m.maxConfirmPanelHeight() + m.pendingQueue.Rows() + m.gatedExtraRows()
 }
 
@@ -104,7 +104,7 @@ func (m Model) previewQueued(tc provider.ToolCall) *approvalRequest {
 // flagged action, and anything the grants do not cover, belongs to no batch.
 func (m Model) batchCategory(req *approvalRequest) (agent.ActionKind, bool) {
 	act := m.approvalAction(req)
-	// A decision that leaves the working scope (S-141) is never swept into a
+	// A decision that leaves the working scope is never swept into a
 	// batch: [A] answers the calls the session would classify the same way,
 	// and a directory nobody has put in scope is the one thing on the card
 	// the reader has not already answered for.

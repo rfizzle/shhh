@@ -1,6 +1,6 @@
 package components
 
-// The staged attachment strip (S-151,
+// The staged attachment strip (
 // docs/interface/surfaces.md#the-input-frame). What is waiting to ride on the
 // next message, one chip per file: the mark for what kind of thing it is,
 // what it is called, and how big it is.
@@ -14,7 +14,7 @@ package components
 // Nothing here is a key and nothing here is clickable. The strip sits above a
 // live draft, so a key written on a chip would be an offer nothing accepts
 //, and a `✕` would be a control the keyboard cannot reach — which is
-// the test S-159 gave the click targets it did add: the pointer names
+// the test the click targets came with: the pointer names
 // one thing, and that thing already has a key. Taking one back out is `/paste
 // drop <name>` — which is why the name is the field a chip gives up last, and
 // why what does not fit is counted rather than half-drawn.

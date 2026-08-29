@@ -1,6 +1,6 @@
 package chat
 
-// Reasoning effort in the session (S-139): the chord walks the levels, the
+// Reasoning effort in the session: the chord walks the levels, the
 // command says and sets them, and the cockpit states which one is live.
 
 import (
@@ -102,7 +102,7 @@ func TestReasoning_DefaultWritesTheConfigKey(t *testing.T) {
 }
 
 // A default that something else overrules was written and will still be
-// ignored, which is the one outcome the reply must not hide (S-136's rule).
+// ignored, which is the one outcome the reply must not hide.
 func TestReasoning_DefaultSaysWhenItIsOverruled(t *testing.T) {
 	m, _ := reasoningModel(t)
 	m = m.WithConfigWriter(func(string, string) error { return nil }).

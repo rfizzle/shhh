@@ -36,7 +36,7 @@ func TestCockpit_CtxMeterFillAndThresholds(t *testing.T) {
 	if view := hidden.View(120); strings.Contains(view, "ctx") {
 		t.Fatalf("a negative CtxPct hides the meter:\n%s", view)
 	}
-	// Host-supplied thresholds (S-055 trim warnings) override the defaults
+	// Host-supplied thresholds (the trim warnings) override the defaults
 	// without changing the bar's content.
 	overridden := Cockpit{Mode: "manual", ModeKind: CockpitGated, CtxPct: 65, WarnPct: 60, AlertPct: 80}
 	if view := overridden.View(120); !strings.Contains(view, "65%") {
@@ -58,7 +58,7 @@ func TestCockpit_DropsRightSideWhenNarrow(t *testing.T) {
 
 // The right side sheds the model before the reasoning level and only then
 // goes altogether: the level is what the session just changed, the model is
-// the detail rank the field-drop order drops first (S-139).
+// the detail rank the field-drop order drops first.
 func TestCockpit_ShedsTheModelBeforeTheReasoningLevel(t *testing.T) {
 	c := Cockpit{Mode: "manual", ModeKind: CockpitGated, CtxPct: 42,
 		Tokens: "↑41.2k ↓9.8k", Spend: "$0.14", Reasoning: "think high", Model: "claude-sonnet-5"}

@@ -1,6 +1,6 @@
 package provider
 
-// Attachments (S-134): a user message can carry parts that are not
+// Attachments: a user message can carry parts that are not
 // conversation — a pasted screenshot, a file dragged in from the desktop, a
 // PDF. They are held here as raw bytes with a sniffed media type rather than
 // as provider-shaped blocks, because the same attachment has to be sendable

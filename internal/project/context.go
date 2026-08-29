@@ -12,7 +12,7 @@ var contextFilenames = []string{".shhh", "AGENTS.md"}
 
 // Find returns the path and contents of the nearest project-context file,
 // walking up from the working directory. The path is what the start screen
-// names (S-105): a session that says what it read is a session whose system
+// names: a session that says what it read is a session whose system
 // prompt is not a secret.
 func Find() (path, content string) {
 	dir, err := os.Getwd()

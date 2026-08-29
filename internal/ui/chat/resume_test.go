@@ -1,6 +1,6 @@
 package chat
 
-// Stream resume and the cheaper-model fallback (S-107). The two paths are
+// Stream resume and the cheaper-model fallback. The two paths are
 // tested apart because they are apart: a drop has something to keep and never
 // re-requests on its own, and a wait has nothing to keep and does.
 

@@ -1,6 +1,6 @@
 package components
 
-// The doctor surface (S-130,
+// The doctor surface (
 // docs/interface/surfaces.md#the-supporting-screens,
 // ui_kits/cockpit/Tools.html). `shhh code doctor` printed two paragraphs of
 // key/value lines about the sandbox ladder and nothing else; `shhh doctor` is

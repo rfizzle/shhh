@@ -1,6 +1,6 @@
 package components
 
-// The approval queue strip (S-102,
+// The approval queue strip (
 // docs/interface/surfaces.md#the-approval-card; the Approvals artboard in the
 // shhh Design System project). Five separate cards, one after the other, is
 // how you train someone to hit enter without reading. The strip is the

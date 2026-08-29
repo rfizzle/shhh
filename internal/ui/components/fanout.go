@@ -1,6 +1,6 @@
 package components
 
-// Fan-out lanes (S-110, docs/interface/surfaces.md#the-agent-manager). Three
+// Fan-out lanes (docs/interface/surfaces.md#the-agent-manager). Three
 // children streaming their rows into one transcript reads as one confused
 // feed, so a spawn of two or more collapses into a single block with a lane
 // per child: its name, what it was asked to do, how far it has got, what it
@@ -10,7 +10,7 @@ package components
 // to the top and says `⚠ needs you` in words, because the only thing a
 // fan-out can need from you is an answer and it must never be the thing you
 // scroll past. A lane draws a progress bar only when the spawn declared a
-// step count (S-094) — without one it gets the spinner, never a ratio nobody
+// step count — without one it gets the spinner, never a ratio nobody
 // supplied. And progress stops being the point once a child finishes: a
 // settled lane reports its outcome and the first line of what it found.
 //
@@ -46,7 +46,7 @@ func (s FanoutState) settled() bool { return s == FanoutDone || s == FanoutFaile
 // made and what it has cost. A child is drawn in two places — a lane in the
 // transcript and a row in the manager — and both render it
 // through these methods, so what a lane says and what a row says about the
-// same child can never drift apart (S-111).
+// same child can never drift apart.
 type AgentProgress struct {
 	State       FanoutState
 	Step, Steps int
@@ -93,7 +93,7 @@ type FanoutBlock struct {
 	Elapsed string
 	// Keys are the offers the block makes while a child is waiting on you.
 	// They render once, under the lanes, and wrap rather than clip on a
-	// narrow terminal (S-099's wrapOffers).
+	// narrow terminal (wrapOffers).
 	Keys []TurnKey
 }
 
@@ -191,7 +191,7 @@ func (p AgentProgress) outcomeField() string {
 }
 
 // progressOf is the lane's child-progress view of itself, so the lane and
-// the manager row for the same child draw from one renderer (S-111).
+// the manager row for the same child draw from one renderer.
 func (l FanoutLane) progressOf() AgentProgress {
 	return AgentProgress{State: l.State, Step: l.Step, Steps: l.Steps,
 		Tools: l.Tools, Spend: l.Spend, Frame: l.Frame}
@@ -284,7 +284,7 @@ func tallyStates(states []FanoutState) (running, blocked, done, failed int) {
 // rows until nothing is running, when it becomes the whole story. The field
 // never clips, so it says two things at most. The fan-out header and
 // the manager's title rail are the same sentence about the same children, so
-// they are the same function (S-111).
+// they are the same function.
 func stateTally(states []FanoutState) string {
 	running, blocked, done, failed := tallyStates(states)
 	var parts []string

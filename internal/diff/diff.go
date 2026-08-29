@@ -1,5 +1,5 @@
 // Package diff computes line-based unified diffs as hunks, for the TUI diff
-// viewer and approval previews (S-076). It works from old/new content directly
+// viewer and approval previews. It works from old/new content directly
 // (edit_file knows both sides), so nothing shells out to git except the
 // session-level /diff view.
 package diff
@@ -22,8 +22,8 @@ type Span struct {
 }
 
 // Line is one line of a hunk. Text carries no diff marker. OldNo/NewNo are
-// 1-based line numbers in the old/new content; 0 means the line does not exist
-// on that side.
+// 1-based line numbers in the old/new content; 0 means the line does not
+// exist on that side.
 type Line struct {
 	Kind  Kind
 	Text  string
@@ -41,8 +41,9 @@ type Hunk struct {
 	Lines              []Line
 }
 
-// Header renders the unified-diff hunk header ("@@ -1,2 +1,3 @@"). A side with
-// zero lines reports the line before the change, matching git's convention.
+// Header renders the unified-diff hunk header ("@@ -1,2 +1,3 @@"). A side
+// with zero lines reports the line before the change, matching git's
+// convention.
 func (h Hunk) Header() string {
 	os, ns := h.OldStart, h.NewStart
 	if h.OldCount == 0 {

@@ -1,6 +1,6 @@
 package chat
 
-// Verbosity folding (S-091, docs/interface/surfaces.md#the-step): inside a
+// Verbosity folding (docs/interface/surfaces.md#the-step): inside a
 // step, a run of
 // consecutive read-only calls collapses into one counted row — `▸ ⚙ 6 reads ·
 // 2 searches` — so the rows that matter are not buried under eight `read`
@@ -97,7 +97,7 @@ func (m Model) foldRun(es []entry, i, end int) int {
 // verbosity's call — normal and low fold, high shows every row — and your own
 // fold, recorded on the entry the run starts at, overrides it.
 //
-// A step whose detail you opened gives its group back too (S-137):
+// A step whose detail you opened gives its group back too:
 // ctrl+o asks what this step did, and answering it with a counted row that
 // swallowed six of the calls would be the fold hiding the thing that was
 // asked for rather than the chrome around it.

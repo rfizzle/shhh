@@ -1,6 +1,6 @@
 package chat
 
-// Gate wires the quality gate (S-067) into the chat TUI. Manage backs the
+// Gate wires the quality gate into the chat TUI. Manage backs the
 // /gate slash command: "run [suite]" starts a suite in the background,
 // "result" reports the latest verdict (marked stale when the tree changed).
 type Gate struct {

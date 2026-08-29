@@ -126,7 +126,7 @@ func (s *NoteSelect) View(width int) string {
 		noteView = sty.Dimmer.Render(clip(text, max(inner-2, 8)))
 	}
 	// The note field and the hints are pinned under the list, so what they
-	// spend comes off the list's budget before its window is drawn (S-116) —
+	// spend comes off the list's budget before its window is drawn —
 	// otherwise a long list pushes the note itself off the card.
 	tail := []string{labelStyle.Render(clip("┄ "+noteLabel, inner))}
 	for _, l := range strings.Split(noteView, "\n") {

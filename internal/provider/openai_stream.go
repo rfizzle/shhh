@@ -34,7 +34,7 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 			if err != nil {
 				// The calls the model had finished writing travel with the
 				// failure, so the session can offer to continue from them
-				// rather than only from the top (S-107).
+				// rather than only from the top.
 				ch <- StreamEvent{ToolCalls: CompletedToolCalls(buildToolCalls(toolArgs)), Err: classify(err), Done: true}
 				return
 			}
@@ -90,7 +90,7 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 
 // buildToolCalls assembles the accumulated deltas in index order. It is
 // called on a half-filled map too, when a stream breaks mid-accumulation
-// (S-107), so a gap in the indices is skipped rather than dereferenced.
+// , so a gap in the indices is skipped rather than dereferenced.
 func buildToolCalls(accumulators map[int]*toolCallAccumulator) []ToolCall {
 	calls := make([]ToolCall, 0, len(accumulators))
 	for i := 0; i < len(accumulators); i++ {

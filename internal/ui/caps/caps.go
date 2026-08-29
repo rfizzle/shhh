@@ -1,4 +1,4 @@
-// Package caps is what the terminal can do (S-156,
+// Package caps is what the terminal can do (
 // docs/architecture.md#only-one-place-speaks-to-the-terminal).
 //
 // Everything else in shhh adapts to the terminal by reading the environment
@@ -21,8 +21,8 @@
 //   - It does not answer for the colour profile. Crush folds
 //     tea.ColorProfileMsg into the same value; shhh settled the profile once,
 //     from stdout and the environment, and handed that same answer to every
-//     program and every direct print (S-155, components.Profile). A second
-//     answer to a question already decided is the thing S-155 exists to
+//     program and every direct print (components.Profile). A second
+//     answer to a question already decided is the thing this package exists to
 //     prevent, so the profile is not a field here and SupportsTrueColor is
 //     not a method.
 //   - It does not answer for the size either. Crush keeps Columns and Rows
@@ -105,7 +105,7 @@ type Terminal struct {
 // It returns nil when there is no terminal to ask — shhh drawing into a pipe,
 // a log or a CI run, where a query sequence is garbage in a file and the
 // reply never comes. That question was also settled once already: a profile
-// of NoTTY is what "there is nothing on the other end" looks like (S-155).
+// of NoTTY is what "there is nothing on the other end" looks like.
 //
 // Two tiers go out, and the split is the port's. The first three are
 // well-formed requests every terminal either answers or swallows. The last

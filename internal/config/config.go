@@ -27,7 +27,7 @@ type Config struct {
 	Summary    SummaryConfig    `toml:"summary"`
 }
 
-// SummaryConfig tunes the session summary (S-163): the periodic reading a
+// SummaryConfig tunes the session summary: the periodic reading a
 // cheap model takes of the session, drawn as the inspector rail's SUMMARY
 // block. It is its own section rather than more `behavior.summary_*` keys
 // because auto-steering's knobs land beside these ones.
@@ -52,7 +52,7 @@ type SummaryConfig struct {
 	Disabled bool `toml:"disabled"`
 }
 
-// LSPConfig tunes the language-server integration (S-071) `shhh code` uses
+// LSPConfig tunes the language-server integration `shhh code` uses
 // for after-edit diagnostics and the definition/references tools. Servers are
 // auto-detected on PATH (gopls, rust-analyzer, typescript-language-server,
 // pyright); none found means the integration is a clean no-op.
@@ -68,7 +68,7 @@ type LSPConfig struct {
 	DiagnosticsTimeoutSeconds int `toml:"diagnostics_timeout_seconds"`
 }
 
-// WebConfig tunes the guarded web tools (S-066) `shhh code` registers.
+// WebConfig tunes the guarded web tools `shhh code` registers.
 type WebConfig struct {
 	// AllowPrivate permits fetching private, loopback, link-local, and CGNAT
 	// addresses (for intranet or local-dev targets) and lifts the 80/443 port
@@ -90,7 +90,7 @@ type WebConfig struct {
 }
 
 // SandboxConfig tunes process containment for agent-executed commands
-// (S-062). The built-in deny mask (~/.ssh, ~/.aws, ~/.config/gh, shhh's own
+// . The built-in deny mask (~/.ssh, ~/.aws, ~/.config/gh, shhh's own
 // config and state dirs) is deliberately not configurable — it cannot be
 // disabled, only extended.
 type SandboxConfig struct {
@@ -133,7 +133,7 @@ type ProviderConfig struct {
 	BaseURL string `toml:"base_url"`
 	Name    string `toml:"name"`
 	// Reasoning is the level of thinking sessions start on: "off", "low",
-	// "medium" or "high" (S-139). Empty means off, which is what every
+	// "medium" or "high". Empty means off, which is what every
 	// session did before the setting existed — no reasoning field is sent at
 	// all, so models without the knob are unaffected.
 	Reasoning string `toml:"reasoning"`
@@ -163,7 +163,7 @@ type BehaviorConfig struct {
 	// anything else; plan mode still inspects.
 	ReadOnlyAuto *bool `toml:"read_only_auto"`
 	// ScopeDirs are directories added to a session's working scope at start
-	// (S-141) — the config form of /add-dir. The session is always scoped to
+	// — the config form of /add-dir. The session is always scoped to
 	// the directory it was opened in; these are the ones beside it that the
 	// work legitimately reaches, so edits there are not treated as leaving
 	// the scope and contained commands can write there.
@@ -176,7 +176,7 @@ type BehaviorConfig struct {
 	// DefaultMode). Empty means manual → accept-edits → auto → plan.
 	ModeCycle []string `toml:"mode_cycle"`
 	// ClassifierModel is the model auto mode's permission classifier uses
-	// (S-060). Empty means the session model.
+	//. Empty means the session model.
 	ClassifierModel string `toml:"classifier_model"`
 	// ClassifierTimeoutSeconds bounds each classifier request (default 30).
 	ClassifierTimeoutSeconds int `toml:"classifier_timeout_seconds"`
@@ -185,7 +185,7 @@ type BehaviorConfig struct {
 	// ClassifierRetries is how many extra attempts an invalid or failed
 	// classifier response gets before failing closed (default 1).
 	ClassifierRetries int `toml:"classifier_retries"`
-	// MemoryDisabled turns off durable memory (S-070): no memories are
+	// MemoryDisabled turns off durable memory: no memories are
 	// injected into the system prompt and the remember tool is not registered.
 	MemoryDisabled bool `toml:"memory_disabled"`
 	// MemoryMaxEntries caps how many memories are injected per session
@@ -196,7 +196,7 @@ type BehaviorConfig struct {
 	MemoryMaxTokens int `toml:"memory_max_tokens"`
 }
 
-// AgentsConfig configures sub-agent (S-068) defaults: which model children
+// AgentsConfig configures sub-agent defaults: which model children
 // run and per-role overrides. A model of "inherit" (or empty) means the
 // session's own model, so one setting moves parent and children together.
 type AgentsConfig struct {
@@ -244,7 +244,7 @@ type AppearanceConfig struct {
 	// pgup/pgdn, ctrl+e and j/k. So it is the thing you opt into (ctrl+x, or
 	// `/ui mouse on`), and what it buys is both halves of what it cost: the
 	// wheel, and a selection shhh owns — one that scrolls past the edge of
-	// the pane and copies on release (S-145), which the terminal's own
+	// the pane and copies on release, which the terminal's own
 	// cannot do.
 	Mouse bool `toml:"mouse"`
 	// Notify lets a session raise a desktop notification when a turn stops while

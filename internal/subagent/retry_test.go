@@ -1,6 +1,6 @@
 package subagent
 
-// Retrying a failed child (S-111). The manager's `[r]` is only worth offering
+// Retrying a failed child. The manager's `[r]` is only worth offering
 // if the retry is a real second attempt: the same task, a fresh conversation,
 // a fresh budget, and the failed attempt still there to read.
 

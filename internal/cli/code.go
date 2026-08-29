@@ -10,9 +10,9 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// newCodeCmd is the coding-agent entry point: the same chat TUI as `shhh chat`
-// but with the agent system prompt and the full toolset (read-only + exec +
-// write/edit). Agent-only flags belong here, not on `shhh chat`.
+// newCodeCmd is the coding-agent entry point: the same chat TUI as `shhh
+// chat` but with the agent system prompt and the full toolset (read-only +
+// exec + write/edit). Agent-only flags belong here, not on `shhh chat`.
 func newCodeCmd() *cobra.Command {
 	var flags resolve.Opts
 	var continueLast bool
@@ -56,7 +56,7 @@ func newCodeCmd() *cobra.Command {
 			if headless {
 				return runPrintSession(cmd, args, session, popts)
 			}
-			// Sub-agent orchestration (S-068) and durable memory (S-070) are
+			// Sub-agent orchestration and durable memory are
 			// interactive-only: approvals and memory confirmations route to
 			// the user, which headless print mode cannot do.
 			session.agents = true
@@ -85,9 +85,9 @@ func newCodeCmd() *cobra.Command {
 }
 
 // newCodeDoctorCmd is `shhh code doctor`: the containment slice of `shhh
-// doctor` (S-130). The command was scoped to process containment (S-062) and
-// container sandboxes (S-063) before the design system named a `shhh doctor`
-// covering the whole setup; S-130 promoted and widened that one and left this
+// doctor`. The command was scoped to process containment and
+// container sandboxes before the design system named a `shhh doctor`
+// covering the whole setup; that one was promoted and widened, leaving this
 // as the way into the same two checks from the coding agent. `/sandbox
 // doctor` still prints the long text report in a session, where the question
 // really is only about containment.

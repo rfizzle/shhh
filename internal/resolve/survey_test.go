@@ -1,8 +1,8 @@
 package resolve
 
-// The provider search's own tests (S-106). Each place is exercised in both
-// states, because the card's whole value is the difference between "looked and
-// found nothing" and "looked and found something that did not work".
+// The provider search's own tests. Each place is exercised in both states,
+// because the card's whole value is the difference between "looked and found
+// nothing" and "looked and found something that did not work".
 
 import (
 	"context"

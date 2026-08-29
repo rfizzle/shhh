@@ -1,6 +1,6 @@
 package components
 
-// The history browser (S-128,
+// The history browser (
 // docs/interface/surfaces.md#the-supporting-screens). The assertions here are
 // about the two rules the screen exists to keep: the search is on the left
 // and the entry it selects is previewed on the right with no cursor of its

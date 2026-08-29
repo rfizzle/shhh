@@ -77,7 +77,7 @@ type spawnArgs struct {
 	maxTokens int64
 }
 
-// MaxDeclaredSteps bounds the step count a spawn may declare (S-110). A lane
+// MaxDeclaredSteps bounds the step count a spawn may declare. A lane
 // is five cells wide; a task claiming more steps than this is describing its
 // tool calls, not its shape, and the lane falls back to the spinner.
 const MaxDeclaredSteps = 20
@@ -125,13 +125,13 @@ func parseSpawnArgs(raw json.RawMessage) (spawnArgs, error) {
 	}
 	// A step count outside the useful range is dropped rather than clamped:
 	// the lane's rule is that a denominator nobody supplied is not invented,
-	// and a clamped one is invented (S-094).
+	// and a clamped one is invented.
 	if args.Steps > 0 && args.Steps <= MaxDeclaredSteps {
 		args.steps = args.Steps
 	}
 	// A named interval is honoured as given: it decides how often the child
 	// takes stock, not what it is allowed to do, so there is nothing a
-	// ceiling would protect (S-144).
+	// ceiling would protect.
 	args.maxRounds = args.MaxRounds
 	if args.maxRounds <= 0 {
 		args.maxRounds = DefaultMaxRounds
@@ -149,7 +149,7 @@ func parseSpawnArgs(raw json.RawMessage) (spawnArgs, error) {
 }
 
 // roundBudgetLabel renders a child's round setting for the surfaces that
-// price a spawn. The unbounded child is the ordinary one now (S-144), and it
+// price a spawn. The unbounded child is the ordinary one now, and it
 // has to read as a deliberate default rather than a missing number — while
 // the bounded one is describing a rhythm, not a ceiling, so it must not be
 // rendered as "max N" beside a token budget that really is one.
@@ -183,7 +183,7 @@ func SpawnSummary(raw json.RawMessage) (string, error) {
 }
 
 // Spawn is what spawning a child would cost, for the approval card's
-// blast-radius block (S-101): the scope it may change, whether its work
+// blast-radius block: the scope it may change, whether its work
 // reaches the checkout without another decision, and its token ceiling.
 type Spawn struct {
 	// Scope is the paths a writer claimed, or the phrase for a child that

@@ -1,6 +1,6 @@
 package components
 
-// Review mode (S-099, docs/interface/surfaces.md#the-turns-close). The
+// Review mode (docs/interface/surfaces.md#the-turns-close). The
 // surface is a layout around the shared diff renderer, so these cover the two
 // things that are its own: what staging selects, and how the two panes behave
 // as the terminal changes width.
@@ -125,7 +125,7 @@ func TestReview_EscLeavesWithNothingChosen(t *testing.T) {
 	}
 }
 
-// The hunk pane is a layout around the shared renderer (S-074): its body
+// The hunk pane is a layout around the shared renderer: its body
 // rows are the ones every other diff surface shows, so there is one diff
 // renderer and not a second one.
 func TestReview_PaneBodyComesFromTheSharedRenderer(t *testing.T) {

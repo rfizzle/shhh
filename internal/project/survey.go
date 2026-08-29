@@ -1,6 +1,6 @@
 package project
 
-// Project survey (S-105, docs/interface/surfaces.md#the-start-screen). A
+// Project survey (docs/interface/surfaces.md#the-start-screen). A
 // first launch in a repo shhh has never seen used to be a blank viewport and
 // a blinking cursor. It knows more than that before the first keystroke: it
 // has already read the project context file into the system prompt, and the

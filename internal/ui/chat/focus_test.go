@@ -127,7 +127,7 @@ func TestFocusMode_NoExpandableRows(t *testing.T) {
 }
 
 // Focus mode reads the transcript; it borrows the screen from a running turn
-// rather than being refused while one is in flight (S-087).
+// rather than being refused while one is in flight.
 func TestFocusMode_OpensOverAWorkingTurn(t *testing.T) {
 	m := focusModel(t)
 	m.state = stateStreaming

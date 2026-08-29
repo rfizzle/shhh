@@ -92,7 +92,7 @@ type responsesRequest struct {
 	ToolChoice   string          `json:"tool_choice,omitempty"`
 	Temperature  *float64        `json:"temperature,omitempty"`
 	MaxOutput    int             `json:"max_output_tokens,omitempty"`
-	// Reasoning is sent only when the session asked for a level (S-139):
+	// Reasoning is sent only when the session asked for a level:
 	// the Responses API serves non-reasoning models too, and they reject it.
 	Reasoning *responsesReasoning `json:"reasoning,omitempty"`
 }
@@ -118,7 +118,7 @@ type responseItem struct {
 type responseContent struct {
 	Type string `json:"type"`
 	Text string `json:"text,omitempty"`
-	// The attachment forms (S-134): an inline image is a data URL, an inline
+	// The attachment forms: an inline image is a data URL, an inline
 	// document is a filename plus the same data URL under another name.
 	ImageURL string `json:"image_url,omitempty"`
 	Filename string `json:"filename,omitempty"`

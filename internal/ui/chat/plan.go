@@ -1,14 +1,14 @@
 package chat
 
-// Plan mode's in-session flow (S-061): while the session is in plan mode the
+// Plan mode's in-session flow: while the session is in plan mode the
 // stream request carries planning instructions and the mode policy in
 // internal/agent refuses gated calls (waving through read-only inspection
 // commands). When the model finishes a planning response, the plan-approval
 // card takes over the input area: the user executes the plan in a chosen
 // mode, keeps planning, or rejects it — all in the same session.
 //
-// The card itself is S-103. The plan is parsed into steps and priced once,
-// when the prompt is armed, for the same reason the S-101 blast radius is:
+// The plan is parsed into steps and priced once,
+// when the prompt is armed, for the same reason the blast radius is:
 // pricing asks git about every file the plan names, and View runs per frame.
 
 import (
@@ -137,7 +137,7 @@ func (m Model) approvePlan(execMode agent.Mode) (tea.Model, tea.Cmd) {
 	m.agent.StartTurn(planApprovedMessage)
 	m.appendEntry(entry{kind: entryUser, text: planApprovedMessage})
 	// From here the approved plan is the transcript's step list, the rail's
-	// PLAN block and what /plan answers with (S-104). A plan that never
+	// PLAN block and what /plan answers with. A plan that never
 	// adopted the step shape has no list to keep, and newPlanRun says so.
 	m.planRun = newPlanRun(doc, len(m.transcript))
 	m.invalidateRenderCache()
@@ -219,7 +219,7 @@ func (m Model) planCard() *components.PlanCard {
 	}
 	if m.decisionUngated() {
 		// The plan landed while a sentence was half-typed: its keys are not
-		// live until ctrl+g hands the keyboard over (S-117).
+		// live until ctrl+g hands the keyboard over.
 		card.NotYetLive, card.Handover = true, keys.Shown(keys.Draft.Answer)
 	}
 	if doc.Title != "" {
@@ -284,7 +284,7 @@ func planStepKind(s plan.Step) (string, components.FieldTone) {
 // planRadius prices the whole plan in one line: what it touches, whether
 // anything is deleted, whether the network is needed, and whether it can be
 // put back. The reversibility answer comes from the same git-tracked check
-// the approval cards use (S-101) — shhh will not claim more about a plan than
+// the approval cards use — shhh will not claim more about a plan than
 // it claims about one edit.
 func (m Model) planRadius(doc plan.Plan) ([]components.PlanFact, string) {
 	if !doc.Structured() {
@@ -362,7 +362,7 @@ func (m Model) planApproveLines() []string {
 }
 
 // planPanelLines is the card plus the rail that names the keyboard's owner
-// and the draft it is holding while it does (S-117).
+// and the draft it is holding while it does.
 func (m Model) planPanelLines() []string {
 	return m.dressDecision(m.planApproveLines(), m.contentWidth())
 }
@@ -424,7 +424,7 @@ const planUsage = "Usage: /plan · /plan save [name] · /plan drop"
 // planHintRail is the PLAN block's last row. It names the command rather than
 // a bracketed key because the rail's keys are the host's, and the input
 // textarea owns every unmodified letter — a `[p]` printed there would be an
-// offer nothing accepts (the reason S-101 kept [y/n/a]).
+// offer nothing accepts (the reason the card kept [y/n/a]).
 const planHintRail = "/plan for the whole list"
 
 // declaredSteps is the approved plan's step list, or nil when no plan is
@@ -469,7 +469,7 @@ func (m Model) planEntries() []entry {
 
 // stampStep records which declared step an assistant announcement carries
 // out, so the outline, the rail and /plan all read one assignment made in the
-// order the transcript was written (S-104). An entry that is not a step
+// order the transcript was written. An entry that is not a step
 // title, or a session with no plan running, is returned untouched.
 func (m *Model) stampStep(e entry) entry {
 	if m.planRun == nil {
@@ -514,7 +514,7 @@ func (m Model) planChecklist() []components.InspectorPlanStep {
 		row := components.InspectorPlanStep{Number: s.Number, Title: s.Title}
 		// A run carried across a compaction starts from what it observed
 		// before the transcript went; anything the new transcript records
-		// outranks it (S-108).
+		// outranks it.
 		if c, ok := run.carried[s.Number]; ok {
 			row.State, row.Elapsed = c.State, c.Elapsed
 		}

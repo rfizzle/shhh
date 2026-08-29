@@ -1,6 +1,6 @@
 package chat
 
-// The hint bar reading mode puts where the input frame was (S-122,
+// The hint bar reading mode puts where the input frame was (
 // docs/interface/surfaces.md#reading-mode). It replaces the frame rather than
 // sitting under it: two bottom elements is how you get a session where nobody
 // can tell which one enter belongs to, which is also why the frame goes
@@ -98,7 +98,7 @@ func seg(b keys.Binding) hintSeg {
 // detailKeySeg is [ctrl+o] in its three readings: the step under the cursor
 // is open and the key closes it, it is closed and the key opens it, or the
 // cursor is not in a step at all — which is said in words on the bar rather
-// than by the key quietly doing nothing (S-137).
+// than by the key quietly doing nothing.
 func (m Model) detailKeySeg() hintSeg {
 	es := *m.entries()
 	g, ok := m.stepAt(es, m.focusIdx)
@@ -137,7 +137,7 @@ func dropKeyListKey(segs []hintSeg) []hintSeg {
 }
 
 // dropDetailKey is the second thing the key line gives up, before any key
-// shortens its words (S-137). It is the only offer on the bar that acts past
+// shortens its words. It is the only offer on the bar that acts past
 // the row under the cursor, and the only one with a home outside this mode —
 // the draft answers the same chord, and /help and the start screen both name
 // it — so it is the one key here a reader can lose and still find.
@@ -188,7 +188,7 @@ func (m Model) readingPositionFields() []string {
 
 // readingStepOrdinal is the number of the step the cursor is standing in, or
 // 0 where it is not in one. It asks stepAt, which is the same walk the chord
-// that opens that step makes (S-137), so the number on the bar and the step
+// that opens that step makes, so the number on the bar and the step
 // ctrl+o acts on are always the same step.
 func (m Model) readingStepOrdinal() int {
 	es := *m.entries()
@@ -238,7 +238,7 @@ func (m Model) focusedRowOpen() bool {
 
 // collapseFocused closes whatever the row under the cursor has open, and
 // reports whether there was anything to close. Where there is not, [-] is a
-// character like any other and belongs in the draft (S-115).
+// character like any other and belongs in the draft.
 func (m *Model) collapseFocused() bool {
 	if !m.focusedRowOpen() {
 		return false
@@ -341,7 +341,7 @@ func stackSegs(segs []hintSeg, rail string, width, budget int) []string {
 // least.
 func (m Model) readingKeyLine(width int) string {
 	full := m.readingModeKeys()
-	// The order S-122 settled, with the register key ahead of the detail key
+	// The settled order, with the register key ahead of the detail key
 	// and the detail key ahead of the rest: [?] goes, then [ctrl+o], then [q]
 	// gives up its words, then [enter] goes whole.
 	noList := dropKeyListKey(full)
@@ -384,7 +384,7 @@ func newHintStyles(p components.ColorTokens) hintStyles {
 	}
 }
 
-// readingKeyListLines is what `[?]` puts where the compact bar was (S-153,
+// readingKeyListLines is what `[?]` puts where the compact bar was (
 // the key register): the mode's whole register, one key per line, then the
 // offers the row under the cursor makes, then the key that puts it away
 // again.

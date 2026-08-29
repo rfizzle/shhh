@@ -1,6 +1,6 @@
 package chat
 
-// Step detail (S-137, docs/interface/surfaces.md#the-step): ctrl+o opens the
+// Step detail (docs/interface/surfaces.md#the-step): ctrl+o opens the
 // detail bodies of one step's rows — `/ui verbosity high` scoped to a single
 // step, and nothing else on the screen moves.
 //
@@ -53,7 +53,7 @@ const noStepDetailNotice = "Nothing to expand yet — ctrl+o opens the detail of
 func (m Model) stepDetailOpen(g *stepGroup, es []entry) bool {
 	if g == nil || g.titleIdx == stepNoTitle || g.titleIdx >= len(es) {
 		// A declared step nobody has started has no rows to open and no entry
-		// to record an answer on (S-104).
+		// to record an answer on.
 		return false
 	}
 	switch es[g.titleIdx].detailFold {
@@ -144,7 +144,7 @@ func (m Model) detailFromDraft() (tea.Model, tea.Cmd) {
 		if m.startScreenShowing() {
 			// First contact is the one screen with nothing behind it,
 			// and it advertises the chord itself. A notice there would spend
-			// the screen to say what the screen already says (S-115).
+			// the screen to say what the screen already says.
 			return m, nil
 		}
 		if m.saidNoStepDetail(es) {

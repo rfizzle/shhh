@@ -1,6 +1,6 @@
 package chat
 
-// Review mode's host side (S-099): what opens it, what it reads, and
+// Review mode's host side: what opens it, what it reads, and
 // that leaving it — by any route — changes nothing on disk.
 
 import (
@@ -99,7 +99,7 @@ func TestReview_EscChangesNothing(t *testing.T) {
 	}
 }
 
-// Enter hands the staged selection to the undo path (S-100). Review itself
+// Enter hands the staged selection to the undo path. Review itself
 // applies nothing: what enter does is arm the undo confirm, and the file is
 // untouched until that confirm is answered.
 func TestReview_EnterHandsTheSelectionToUndo(t *testing.T) {
@@ -148,7 +148,7 @@ func TestReview_EnterWithNothingStagedStays(t *testing.T) {
 }
 
 // A turn whose records were evicted is a gap in the record, not a quiet
-// turn, and review says which of the two it is (S-097).
+// turn, and review says which of the two it is.
 func TestReview_SaysWhyThereIsNothingToShow(t *testing.T) {
 	m := turnModel(t)
 	updated, _ := m.openReview(3)
@@ -219,7 +219,7 @@ func TestReview_CarriesTheTurnsVerdict(t *testing.T) {
 	}
 }
 
-// A child's patch is attributed to the child that wrote it (S-097).
+// A child's patch is attributed to the child that wrote it.
 func TestReview_AttributesASubagentsFiles(t *testing.T) {
 	m := turnModel(t)
 	m.turnCount = 1
@@ -268,7 +268,7 @@ func TestReview_ReturnsToFocusMode(t *testing.T) {
 	}
 }
 
-// A surface opened mid-turn borrows the screen, not the turn (S-087).
+// A surface opened mid-turn borrows the screen, not the turn.
 func TestReview_TurnKeepsRunningUnderneath(t *testing.T) {
 	m := turnModel(t)
 	m.changes.Add(1, changeset.Record{

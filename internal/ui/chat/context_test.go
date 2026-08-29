@@ -318,7 +318,7 @@ func TestCompact_ToolCallsAbort(t *testing.T) {
 }
 
 // Where the context window comes from when the pricing table is silent
-// (S-164). The window sets the trim threshold, so assuming 32k against a
+// . The window sets the trim threshold, so assuming 32k against a
 // model with far more was throwing away findings the session had room to
 // keep.
 func TestContextWindow_FallsBackToTheModelFamily(t *testing.T) {

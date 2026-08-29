@@ -6,7 +6,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
-// Saying what is actually in the box (S-164).
+// Saying what is actually in the box.
 //
 // A session's toolset is assembled from what the machine turned out to have:
 // a language server if one was detected, fd and ast-grep if they are on PATH,
@@ -14,8 +14,8 @@ import (
 // approve them. The system prompt named four tools and knew about none of
 // this, so the model met the rest as bare schemas — and a tool you have to
 // infer from its schema is one you reach for last, if at all. The session
-// that ground `search` over one directory forty times had `references` sitting
-// unused beside it.
+// that ground `search` over one directory forty times had `references`
+// sitting unused beside it.
 //
 // So the prompt is told what was registered, and only that: a line per tool
 // saying when it is the right answer. Nothing here describes a tool the

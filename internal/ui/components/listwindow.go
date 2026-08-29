@@ -1,8 +1,8 @@
 package components
 
 // The sliding window every long list in the product scrolls through
-// (docs/interface/surfaces.md#selectors). S-116 gave it to the selector and
-// left it there; S-124 lifts it out so the two lists that own their own Focus
+// (docs/interface/surfaces.md#selectors). It began on the selector and was
+// left there; it is lifted out here so the two lists that own their own Focus
 // — the multi-select and the agent manager — scroll through the same code
 // rather than growing a second and a third implementation of it. The design
 // says as much on both component pages: "if a real multi-select outgrows its
@@ -140,7 +140,7 @@ func bodyBudget(maxLines, pinned int) int {
 // listOverflowRow is the marker on a windowed list's edge. It counts what it
 // is hiding rather than only marking that something is (invariant 4) — the
 // form the queue strip's own overflowRow uses about a different list, which
-// `ui_kits/cockpit/Lists.html` keeps for this one, so the borrowing S-116
+// `ui_kits/cockpit/Lists.html` keeps for this one, so the borrowing it
 // made with nothing to check against is now the decision. A run that hid
 // nothing selectable keeps the bare …, because writing ↑ 1 more there would
 // promise an option that does not exist.
@@ -148,7 +148,7 @@ func bodyBudget(maxLines, pinned int) int {
 // note is what a particular list has to add about what it is hiding, and is
 // empty for most of them. The multi-select uses it to say how many of the
 // hidden rows are ticked, because a count you cannot see is a count you
-// cannot trust (S-124).
+// cannot trust.
 func listOverflowRow(arrow string, n int, note string, width int) string {
 	label := "…"
 	if n > 0 {

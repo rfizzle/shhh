@@ -1,7 +1,7 @@
 // Package changeset records what each turn changed: one record per file with
 // the content on both sides, so reviewing a turn, undoing it and summarising
 // it all read from one place instead of re-deriving the change from the
-// transcript or from git (S-097).
+// transcript or from git.
 //
 // The store is the session's own memory of its edits. It is deliberately not
 // a git operation — the records work in a directory that was never a
@@ -11,7 +11,7 @@
 // line on approval and plan cards.
 //
 // Nothing here re-diffs: edit_file and write_file already know both sides of
-// the edit (S-074), so this is a recording layer. Hunks and the +N −M counts
+// the edit, so this is a recording layer. Hunks and the +N −M counts
 // are computed once, on the way in, and every read after that is a field.
 package changeset
 

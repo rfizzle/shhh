@@ -51,51 +51,50 @@ const (
 	stateStreaming
 	stateConfirmRun
 	stateRunningCmd
-	// stateClassifying: the auto-mode permission classifier (S-060) is
+	// stateClassifying: the auto-mode permission classifier is
 	// deciding whether the pending approval may run without a prompt.
 	stateClassifying
 	// statePlanApprove: a completed planning response is awaiting the user's
-	// decision — execute, keep planning, or reject (S-061).
+	// decision — execute, keep planning, or reject.
 	statePlanApprove
-	// stateFocus: focus mode (S-076, docs/interface/surfaces.md#reading-mode) —
+	// stateFocus: focus mode (docs/interface/surfaces.md#reading-mode) —
 	// j/k moves a selection cursor over expandable transcript rows, enter
 	// expands/collapses in place, esc returns to the input.
 	stateFocus
-	// stateDiffFull: a diff is showing full screen (S-074,
+	// stateDiffFull: a diff is showing full screen (
 	// docs/interface/surfaces.md#the-diff-view) — from a transcript edit
 	// row, an approval's [d], or /diff.
 	stateDiffFull
-	// stateRewindPick: the interactive /rewind checkpoint picker is showing
-	// (S-069).
+	// stateRewindPick: the interactive /rewind checkpoint picker is showing.
 	stateRewindPick
 	// statePick: a generic slash-command picker (/model, /permissions) is
-	// showing (S-078).
+	// showing.
 	statePick
 	// stateModelList: bare /model is querying the provider's /v1/models
-	// endpoint before opening the picker (S-083); esc cancels back to input.
+	// endpoint before opening the picker; esc cancels back to input.
 	stateModelList
-	// stateReview: review mode (S-099,
+	// stateReview: review mode (
 	// docs/interface/surfaces.md#the-turns-close) — the file list and hunk pane
 	// of what a turn changed, with staging per hunk. A takeover: full width, the
 	// rail hidden, esc returns.
 	stateReview
-	// stateUndoConfirm: the inline confirm an undo asks through (S-100, inline
+	// stateUndoConfirm: the inline confirm an undo asks through (inline
 	// confirm) — what it would restore, what has drifted since, and esc to
 	// decline. It borrows the bottom panel, not the transcript.
 	stateUndoConfirm
 	// stateKeyEntry: the masked key prompt an auth failure's [k] opens
-	// (S-106). It borrows the bottom panel; esc keeps the old key.
+	//. It borrows the bottom panel; esc keeps the old key.
 	stateKeyEntry
-	// statePressure: the context-pressure card is up (S-108) — the
+	// statePressure: the context-pressure card is up — the
 	// occupancy, where the window went, and the three answers. It borrows
 	// the bottom panel; esc keeps going.
 	statePressure
 	// stateRetryWait: the turn is waiting out a bounded retry behind the
-	// countdown meter (S-107). It is a stage of the turn, not a
+	// countdown meter. It is a stage of the turn, not a
 	// surface — but nothing is streaming and the input is not live, so the
 	// wait owns the keyboard for the two keys it offers.
 	stateRetryWait
-	// statePicture: a staged image is showing full-pane (S-158). It is
+	// statePicture: a staged image is showing full-pane. It is
 	// the one surface that is opened by naming a file rather than by a key,
 	// because the chip it belongs to has no key of its own.
 	statePicture
@@ -117,7 +116,7 @@ type doneMsg struct{ usage *provider.Usage }
 
 // streamErrMsg carries a failed stream back to the session. calls are the
 // tool calls the model had *finished* writing before the wire broke, which is
-// what makes continuing from a drop possible (S-107); it is empty for every
+// what makes continuing from a drop possible; it is empty for every
 // failure that never got that far.
 type streamErrMsg struct {
 	err       error
@@ -125,7 +124,7 @@ type streamErrMsg struct {
 	reasoning []provider.ReasoningBlock
 }
 
-// retryTickMsg is defined with the rest of S-107 in resume.go.
+// retryTickMsg is defined with the rest of the retry path in resume.go.
 type streamStartedMsg struct {
 	events <-chan provider.StreamEvent
 	cancel context.CancelFunc
@@ -149,14 +148,14 @@ type cmdDoneMsg struct {
 type initialPromptMsg struct{}
 
 // modelListMsg carries the provider's live model list back to the /model
-// picker (S-083); err falls the session back to the curated catalog.
+// picker; err falls the session back to the curated catalog.
 type modelListMsg struct {
 	names []string
 	err   error
 }
 
 // classifierDoneMsg carries the auto-mode classifier's verdict for the
-// pending approval (S-060).
+// pending approval.
 type classifierDoneMsg struct {
 	runID   int
 	verdict agent.ClassifierVerdict
@@ -171,23 +170,22 @@ const (
 	entrySystem
 	entryError
 	entryCommand
-	// entryDiff: an applied edit/write rendered as a diff row (S-074).
+	// entryDiff: an applied edit/write rendered as a diff row.
 	entryDiff
-	// entryTurnClose: the rows a finished turn ends with (S-098).
+	// entryTurnClose: the rows a finished turn ends with.
 	entryTurnClose
 	// entryFailure: a classified provider failure rendered as a recovery row
-	// (S-106). It is a row, not a modal, because it is part of the turn.
+	//. It is a row, not a modal, because it is part of the turn.
 	entryFailure
 	// entryStreamDrop: a reply that stopped halfway, rendered as the `stream`
-	// recovery row and holding the partial it offers to continue from
-	// (S-107).
+	// recovery row and holding the partial it offers to continue from.
 	entryStreamDrop
 	// entryRoundPause: a turn that stopped at its tool-round ceiling,
-	// rendered as the `rounds` recovery row (S-109). It stands in for
+	// rendered as the `rounds` recovery row. It stands in for
 	// the turn's close block rather than sitting above one.
 	entryRoundPause
 	// entryFanout: the block a round that spawned two or more children
-	// renders instead of their separate rows (S-110). It holds only the
+	// renders instead of their separate rows. It holds only the
 	// batch number — the lanes are read off the supervisor every render.
 	entryFanout
 )
@@ -202,63 +200,63 @@ type entry struct {
 	toolResult string
 	exitCode   int
 	// duration is how long the tool call or command ran, shown on its
-	// activity row (S-075); zero hides it.
+	// activity row; zero hides it.
 	duration time.Duration
 	// expanded shows the full tool/command output instead of the truncated
-	// block; toggled from focus mode (S-076).
+	// block; toggled from focus mode.
 	expanded bool
-	// attached names what a user row's message carried (S-134) — the names
+	// attached names what a user row's message carried — the names
 	// and sizes, never the bytes. The transcript shows a screenshot as the
 	// line "attached: shot.png (412 KB)" and nothing more.
 	attached []string
-	// diff is the entryDiff viewer (S-074); a pointer so focus-mode
+	// diff is the entryDiff viewer; a pointer so focus-mode
 	// expansion state survives re-renders.
 	diff *components.DiffView
-	// close is the entryTurnClose block (S-098): the raw counts a turn ended
+	// close is the entryTurnClose block: the raw counts a turn ended
 	// with, so the rows re-render at any width like every other entry, and
 	// turn is the turn it closed — what [v] and [u] act on.
 	close *components.TurnClose
 	turn  int64
 	// fail is the classified provider failure behind an entryFailure row
-	// (S-106). It is stored as the classification rather than as rendered
+	//. It is stored as the classification rather than as rendered
 	// text, so the row re-renders at any width and the offered keys stay
 	// derived from the class rather than parsed back out of a string.
 	fail *provider.Failure
 	// resume is what a dropped stream kept behind an entryStreamDrop row: the
-	// partial text and the finished tool calls (S-107). It is a pointer so
+	// partial text and the finished tool calls. It is a pointer so
 	// that taking the offer marks this row spent wherever it is rendered from.
 	resume *streamResume
 	// pause is where a turn stopped at its round limit, behind an
-	// entryRoundPause row (S-109). A pointer for the same reason: granting
+	// entryRoundPause row. A pointer for the same reason: granting
 	// the rounds spends the offer wherever the row is rendered from.
 	pause *roundPause
-	// fanout is the batch behind an entryFanout block (S-110). The lanes are
+	// fanout is the batch behind an entryFanout block. The lanes are
 	// not stored: they are read off the supervisor at render time, which is
 	// what keeps them live and what lets the block re-render at any width.
 	fanout *fanoutBatch
 	// deniedBy names who refused the call — decidedByYou for a decline at the
 	// card, decidedByAuto for a rule — and renders the row as ⊘ rather than ✗
-	// (S-089, docs/interface/principles.md#closed-vocabularies). Empty when
+	// (docs/interface/principles.md#closed-vocabularies). Empty when
 	// nothing was refused.
 	deniedBy string
 	// denyRule names the rule behind an auto denial, e.g. "plan mode".
 	denyRule string
-	// stepFold is your fold override for the step this entry titles (S-090,
+	// stepFold is your fold override for the step this entry titles (
 	// docs/interface/surfaces.md#the-step); steps keep no layout state of their
 	// own, so it lives on the raw entry and survives a resize.
 	stepFold foldState
 	// groupFold is the same override for the folded run of read-only calls
-	// this entry heads (S-091).
+	// this entry heads.
 	groupFold foldState
 	// detailFold is the same override again for the detail bodies of the step
-	// this entry titles — what ctrl+o opens and closes (S-137). It is a
+	// this entry titles — what ctrl+o opens and closes. It is a
 	// third override rather than a level of the first two because it answers
 	// a different question: stepFold and groupFold decide which rows are on
 	// screen, this decides how much of each one is.
 	detailFold foldState
 	// planStep is the number of the approved plan's step this assistant
 	// announcement carries out, offPlanStep when it carries out none of them,
-	// and zero when no plan was running (S-104). It is stamped once, when the
+	// and zero when no plan was running. It is stamped once, when the
 	// entry is appended, so every reader of the outline stays a pure function
 	// of the transcript.
 	planStep int
@@ -267,7 +265,7 @@ type entry struct {
 type Model struct {
 	// agent owns the loop state (message list, stream requests, tool
 	// dispatch, approval queue, iteration guard); the Model is one front-end
-	// driving it (S-056).
+	// driving it.
 	agent    *agent.Agent
 	db       *storage.DB
 	copyFn   func(string) clipboard.Result
@@ -279,35 +277,35 @@ type Model struct {
 	spinner  spinner.Model
 	// spawnRow is 1 + the transcript index of the current round's first spawn
 	// row, or 0 once the round has none left to convert — the row a second
-	// child of the same round turns into the fan-out block (S-110).
+	// child of the same round turns into the fan-out block.
 	spawnRow int
 	// spinFrame counts spinner ticks for the passive surfaces that draw a
 	// frame themselves rather than animating one (the inspector rail's agent
-	// lanes, S-094). It is the session's one frame counter: every surface
+	// lanes). It is the session's one frame counter: every surface
 	// that moves reads it, and it advances only with m.spinner, so the three
 	// places the one tick source names cannot report three different frames.
 	spinFrame int
 	// spinning reports whether a tick chain is in flight. It is what makes
 	// "one tick source, never three" a property rather than a habit:
-	// spinCmd starts a chain only when this is false (S-119, spin.go).
+	// spinCmd starts a chain only when this is false (spin.go).
 	spinning bool
 	// streamDirty reports whether a chunk has landed that the transcript has
 	// not been repainted for. It rides the tick above rather than adding a
 	// clock of its own — the session is allowed one, and the streaming render
 	// spends it on
 	// this as well: a repaint per chunk was re-rendering an answer that grows
-	// as it arrives, once per token (S-149).
+	// as it arrives, once per token.
 	streamDirty bool
 
 	transcript []entry
 	// Incremental render cache: the rendered lines of entries
-	// [0, cached.count), always a whole number of step blocks (S-090), with
-	// the live tail rebuilt after them each frame (S-160, lines.go).
+	// [0, cached.count), always a whole number of step blocks, with
+	// the live tail rebuilt after them each frame (lines.go).
 	cached lineCache
 	// streamMD is the arriving message's own cache, keyed on nothing the
 	// caches above are: it holds a render of the part of that one message that
 	// can no longer change, so a chunk re-renders the tail rather than the
-	// answer (S-149, streammd.go).
+	// answer (streammd.go).
 	streamMD streamingMarkdown
 
 	// Input recall: inputHistory holds previously submitted inputs;
@@ -320,22 +318,22 @@ type Model struct {
 	cancel    context.CancelFunc
 	// state is the current surface: the stage of the session's own turn, or
 	// a transient view borrowing the screen. turnBack parks the turn's stage
-	// while a surface has it, so the turn keeps running underneath (S-087,
+	// while a surface has it, so the turn keeps running underneath (
 	// turn.go).
 	state      state
 	turnBack   state
 	pendingRun string
 	runCancel  context.CancelFunc
 	// pendingBlast is the approval card's blast-radius block for the decision
-	// showing now (S-101), resolved once when the confirm is armed because it
+	// showing now, resolved once when the confirm is armed because it
 	// reads the filesystem and git.
 	pendingBlast blastRadius
 	// pendingScope is what that decision reaches outside the working scope
-	// (S-141), resolved with the blast radius and consumed when the decision
+	//, resolved with the blast radius and consumed when the decision
 	// is answered: approving it grants the directories, refusing it grants
 	// nothing.
 	pendingScope scopeReach
-	// The approval queue made visible (S-102): pendingQueue is the strip
+	// The approval queue made visible: pendingQueue is the strip
 	// above the card, pendingBatch the queued call IDs [A] would answer with
 	// the current one, and batchApproved those an earlier [A] already
 	// answered — they run when they reach the head instead of asking again.
@@ -345,7 +343,7 @@ type Model struct {
 	pendingBatch  []string
 	batchApproved map[string]bool
 	approvalTotal int
-	// Compact activity feed (S-075): verbosity is the feed's default density
+	// Compact activity feed: verbosity is the feed's default density
 	// (/ui verbosity); tailRunFn is the tail-capable command runner, and
 	// runningCommand/runStart/runTail drive the live row while a command runs.
 	verbosity      verbosity
@@ -354,14 +352,14 @@ type Model struct {
 	runStart       time.Time
 	runTail        *commandTail
 	// runningTools is the auto-run batch currently executing, so the frame's
-	// status line can name the call it is running (S-118). It is read
+	// status line can name the call it is running. It is read
 	// only while agent.Executing() is true.
 	runningTools []provider.ToolCall
 	// Head of the agent's approval queue while its confirm prompt is showing,
 	// with everything needed to preview and execute it.
 	pendingApproval *approvalRequest
 	gatedTools      map[string]GatedPreviewFunc
-	// Session approval policy: the permission mode (S-059) plus the S-054
+	// Session approval policy: the permission mode plus the
 	// internals it builds on. commandAllowlist comes from config; everything
 	// below it is what [a] and /permissions allow have granted this session. The
 	// default is manual mode with nothing granted: everything prompts.
@@ -380,7 +378,7 @@ type Model struct {
 	// had.
 	editDirGrants []string
 	commandGrants []string
-	// scope is the session's working scope (S-141): the directory it was
+	// scope is the session's working scope: the directory it was
 	// opened in plus whatever has been added to it since. It is a pointer
 	// because the runner closures that wrap contained commands read it off
 	// the UI goroutine, and because a grant made on a card has to be the same
@@ -390,11 +388,11 @@ type Model struct {
 	// the built-in list or turn it off entirely.
 	readOnlyExtra    []string
 	readOnlyDisabled bool
-	// Auto mode's LLM permission classifier (S-060): judges gated calls the
+	// Auto mode's LLM permission classifier: judges gated calls the
 	// static policy would ask about; nil falls back to asking the user.
 	classifier       *agent.Classifier
 	classifierCancel context.CancelFunc
-	// The session summary (S-163, summary.go): a cheap model's periodic read
+	// The session summary (summary.go): a cheap model's periodic read
 	// of what the session is doing, drawn as the rail's SUMMARY block.
 	summarizer    *agent.Summarizer
 	summary       summaryState
@@ -409,12 +407,12 @@ type Model struct {
 	defaults Defaults
 	// lastDenial is the most recent auto-mode denial, shown by /permissions why.
 	lastDenial string
-	// denialNotice mirrors lastDenial on the notice rail (S-082) until the
+	// denialNotice mirrors lastDenial on the notice rail until the
 	// next user turn clears it.
 	denialNotice string
-	// planChoice is the focused row of the plan-approval prompt (S-061).
+	// planChoice is the focused row of the plan-approval prompt.
 	planChoice int
-	// The armed plan (S-103): planDoc is the planning response parsed into
+	// The armed plan: planDoc is the planning response parsed into
 	// steps, planFacts and planDetail the radius line computed from it. All
 	// three are resolved once, when the prompt opens, because pricing the
 	// plan asks git about every file it names.
@@ -422,14 +420,14 @@ type Model struct {
 	planFacts  []components.PlanFact
 	planDetail string
 	// planRun is the plan the user approved, for as long as it is being
-	// carried out (S-104): it numbers the transcript's steps, fills the
+	// carried out: it numbers the transcript's steps, fills the
 	// rail's PLAN block and answers /plan. Nil when no plan is running.
 	planRun *planRun
 	// focusIdx is the transcript index of the row selected in focus mode
-	// (S-076); -1 while the transcript is being read with nothing on it to
-	// select (S-115).
+	//; -1 while the transcript is being read with nothing on it to
+	// select.
 	focusIdx int
-	// readingKeyList is `[?]` in reading mode (S-153): the compact hint
+	// readingKeyList is `[?]` in reading mode: the compact hint
 	// bar swapped for the mode's whole key register, in place. It is
 	// per-visit, not per-session — the mode closing closes the list too,
 	// because it is a reading of this surface rather than a preference about
@@ -439,18 +437,17 @@ type Model struct {
 	// zero value is off, because reporting costs the terminal its own
 	// click-drag selection and a transcript is text people copy out of. The
 	// wheel is the side of the trade with a substitute — pgup/pgdn, ctrl+e,
-	// j/k all read the transcript — so the wheel is the side you ask for
-	// (S-115).
+	// j/k all read the transcript — so the wheel is the side you ask for.
 	mouseOn bool
 	// caps is what this terminal told shhh it can do — inline images,
-	// desktop notifications, focus events (S-156). It is asked once,
+	// desktop notifications, focus events. It is asked once,
 	// when the program hands over its environment, and the replies land
 	// wherever they land. `/ui terminal` reads it, and so does the desktop
 	// notification the session raises when you are not there, which is the
 	// OSC 99 answer being spent.
 	caps caps.Terminal
 	// notifyOn is whether shhh may raise a desktop notification when a turn
-	// stops while the window is not the one in front (S-157,
+	// stops while the window is not the one in front (
 	// appearance.notify). It is on by default, because unlike mouse
 	// reporting it takes nothing away: the gate below means it can only fire
 	// when the terminal has said the reader cannot see the screen.
@@ -459,9 +456,9 @@ type Model struct {
 	// false, and that is deliberate: a window that is in front and a terminal
 	// that has never mentioned focus are different facts with the same
 	// answer to the only question asked of them — may shhh assume nobody is
-	// looking? — and the answer to both is no (S-157).
+	// looking? — and the answer to both is no.
 	away bool
-	// Application-owned transcript selection (S-145, select.go). sel is the
+	// Application-owned transcript selection (select.go). sel is the
 	// selection itself — anchor, endpoint, and whether the button is still
 	// down — in rendered-transcript coordinates. selScrollDir and
 	// selScrollSeq drive the edge auto-scroll: the direction a drag held at
@@ -472,7 +469,7 @@ type Model struct {
 	selScrollDir int
 	selScrollSeq int
 	selNotice    string
-	// press is the cell the primary button last went down in (S-159,
+	// press is the cell the primary button last went down in (
 	// click.go). A click is a press and a release in the same cell, which is
 	// what lets one button carry both the selection drag and the targets.
 	press pointerPress
@@ -481,36 +478,36 @@ type Model struct {
 	// says so rather than pretending it did.
 	writeConfig ConfigWriter
 	// containment wraps assistant commands in OS-level process containment
-	// when a mechanism is available (S-062).
+	// when a mechanism is available.
 	containment Containment
 	// evidence reduces bulky tool results and keeps the originals
-	// retrievable (S-064).
+	// retrievable.
 	evidence Evidence
 	// mutationHook post-processes applied file-modification results before
-	// reduction — e.g. appending language-server diagnostics (S-071).
+	// reduction — e.g. appending language-server diagnostics.
 	mutationHook MutationHook
-	// gate backs the /gate quality-gate command (S-067).
+	// gate backs the /gate quality-gate command.
 	gate Gate
-	// processes backs /ps and process-start approval gating (S-073).
+	// processes backs /ps and process-start approval gating.
 	processes Processes
-	// memory backs /memory and the remember-tool confirm flow (S-070);
+	// memory backs /memory and the remember-tool confirm flow;
 	// memoryAsk is the open memory prompt while a proposal awaits the user.
 	memory    Memory
 	memoryAsk *components.NoteSelect
-	// compacting marks an in-flight /compact request (S-055): the streamed
+	// compacting marks an in-flight /compact request: the streamed
 	// response is a summary handled by finishCompact, not conversation text.
 	compacting bool
 	// observer receives content-free session events for observability
-	// (S-065); turnCount and toolDefTokens feed it and /stats.
+	//; turnCount and toolDefTokens feed it and /stats.
 	observer      Observer
 	turnCount     int64
 	toolDefTokens int64
-	// subagents supervises spawned child agents (S-068); childAsks queues
+	// subagents supervises spawned child agents; childAsks queues
 	// their approval requests routed into this session's approval surface.
 	subagents *subagent.Supervisor
 	childAsks []*subagent.Ask
 	// decisionHeld is whether the decision on screen holds the keyboard
-	// (S-117). A card that arrives on top of a sentence never does:
+	//. A card that arrives on top of a sentence never does:
 	// until ctrl+g it renders its keys as not-yet-live and every letter goes
 	// into the draft. One that arrives on a draft nobody is typing into does,
 	// because there is no sentence for the letters to belong to.
@@ -525,12 +522,12 @@ type Model struct {
 	// empty draft is not the same thing as an idle one, and a reader between
 	// two words has an empty draft for as long as the backspace held.
 	lastKeypress time.Time
-	// Sub-agent management and steering (S-077): attachedTo focuses the chat
+	// Sub-agent management and steering: attachedTo focuses the chat
 	// surface on a child ("" = orchestrator); childViews holds each child's
 	// mirrored transcript and scroll state so attach/detach loses nothing;
 	// agentList is the open agent manager, killConfirm/killTarget its armed
 	// inline kill confirmation, and answerAgent the row whose approval is
-	// being answered over the list rather than inside the child (S-111).
+	// being answered over the list rather than inside the child.
 	attachedTo  string
 	childViews  map[string]*childView
 	parentView  viewState
@@ -538,7 +535,7 @@ type Model struct {
 	killConfirm *components.Confirm
 	killTarget  string
 	answerAgent string
-	// Session branching and rewind (S-069): checkpoints mark each user turn's
+	// Session branching and rewind: checkpoints mark each user turn's
 	// start; sessionName is the storage slot rewind branches hang off (set by
 	// /save, /load, and branch switches); rewindSelect is the open /rewind
 	// picker; gitSnapshot records the workspace git state per checkpoint when
@@ -547,38 +544,38 @@ type Model struct {
 	sessionName  string
 	rewindSelect *components.Select
 	gitSnapshot  func() GitSnapshot
-	// Rich diff rendering (S-074): fullDiff is the viewer showing full
+	// Rich diff rendering: fullDiff is the viewer showing full
 	// screen, diffReturn where esc goes back to.
 	fullDiff   *components.DiffView
 	diffReturn state
-	// The staged image preview (S-158): picture is the card while it
+	// The staged image preview: picture is the card while it
 	// has the pane. There is no return state beside it — the surface is
 	// opened from the draft and from nowhere else, so leaveSurface's own
 	// answer is always the right one.
 	picture *components.PictureView
-	// Review mode (S-099): review is the surface while it has the screen,
+	// Review mode: review is the surface while it has the screen,
 	// reviewTurnN the turn it is reviewing (0 for a review of something
 	// else), and reviewReturn where esc goes back to.
 	review       *components.ReviewView
 	reviewTurnN  int64
 	reviewReturn state
-	// Undo (S-100): undoAsk is the confirm while it is up, undoPlan what it
+	// Undo: undoAsk is the confirm while it is up, undoPlan what it
 	// would do to the workspace (read once, when the confirm was offered),
 	// and undoReturn where declining hands the screen back to.
 	undoAsk    *components.UndoConfirm
 	undoPlan   changeset.UndoPlan
 	undoReturn state
-	// Per-turn changeset store (S-097): changes records every applied edit
+	// Per-turn changeset store: changes records every applied edit
 	// with the content on both sides, keyed by turn, and is what /diff
 	// renders; tracker answers whether git knew about a file when it was
 	// edited, and is nil outside a repository.
 	changes *changeset.Store
 	tracker *changeset.Tracker
-	// Slash-command completion (S-078): completions is the filtered candidate
+	// Slash-command completion: completions is the filtered candidate
 	// list for the input value completeFor (a mismatch means stale → hidden),
 	// completeIdx the focused row, and completeDismissedFor the input value
 	// esc dismissed the menu for (typing anything else re-opens it).
-	// Argument-level completion (S-079) adds the token span being completed
+	// Argument-level completion adds the token span being completed
 	// (completeStart/completeEnd, rune offsets into the input), completeArg
 	// to say the focused row is an argument value rather than a command
 	// name, and argCache so a command's dynamic sources (branch names, saved
@@ -592,35 +589,35 @@ type Model struct {
 	completeArg          bool
 	argCache             map[int][]argOption
 	argCacheFor          string
-	// Interactive slash-command pickers (S-078): picker is the open select
+	// Interactive slash-command pickers: picker is the open select
 	// card, pickerApply consumes the chosen index and returns the transcript
 	// note; modelOptions is the /model picker's model catalog.
 	//
 	// pickerAll is the list the picker opened over and pickerIndex maps the
 	// rows it is showing back onto it, so a choice made through the filter row
-	// (S-123) still reaches an apply written against the whole list.
+	// still reaches an apply written against the whole list.
 	picker       *components.Select
 	pickerApply  func(*Model, int, bool) string
 	pickerAll    []components.SelectOption
 	pickerIndex  []int
 	modelOptions []string
-	// The command palette (S-112): the open palette's query and candidates,
+	// The command palette: the open palette's query and candidates,
 	// which turn statePick into a filtered list rather than a fixed one.
 	// recentFiles overrides the checkout walk behind its FILES group, which
 	// is how the tests stop depending on the directory they run in.
 	palette     *paletteState
 	recentFiles func() []project.RecentFile
-	// Live model discovery (S-083): modelLister queries the provider's
+	// Live model discovery: modelLister queries the provider's
 	// /v1/models endpoint for endpoints no curated catalog can cover, and the
 	// result replaces modelOptions for the rest of the session.
 	modelLister     func(context.Context) ([]string, error)
 	modelListCancel context.CancelFunc
 	modelListed     bool
-	// steering holds messages typed while the agent is working (S-058); they
+	// steering holds messages typed while the agent is working; they
 	// are injected as user messages before the next stream request.
 	steering []string
 	// attachments are the images and files staged for the next message
-	// (S-134, attachments.go). They ride on whichever user message goes out
+	// (attachments.go). They ride on whichever user message goes out
 	// next — a fresh turn or the first queued steering line — and are never
 	// rendered, only named.
 	attachments   []provider.Attachment
@@ -635,12 +632,12 @@ type Model struct {
 	TotalTokensIn  int64
 	TotalTokensOut int64
 	// Current-turn accounting for the inspector rail's THIS TURN and SPEND
-	// blocks (S-092): when the turn started, when it finished (zero while it
+	// blocks: when the turn started, when it finished (zero while it
 	// runs), and what it has spent.
 	turnStarted time.Time
 	turnEnded   time.Time
 	// turnOpen marks a turn the user started and that has not yet closed, so
-	// the close rows are appended once, for a real turn (S-098); turnOutcome
+	// the close rows are appended once, for a real turn; turnOutcome
 	// is how it ended.
 	turnOpen      bool
 	turnOutcome   components.TurnState
@@ -648,10 +645,10 @@ type Model struct {
 	turnTokensOut int64
 	// contextTokens is what the provider last reported the request carrying;
 	// zero means nothing has been reported about the current message list, so
-	// the accounting estimates instead and says so (S-093).
+	// the accounting estimates instead and says so.
 	contextTokens int64
 	// vitals is the session's per-turn usage history and the burn series
-	// behind the rail's sparkline (S-093); projectTokens is the estimated
+	// behind the rail's sparkline; projectTokens is the estimated
 	// size of the project context inside the system prompt, which the
 	// occupancy breakdown names separately.
 	vitals        vitals
@@ -659,7 +656,7 @@ type Model struct {
 	prices        *pricing.Table
 	modelName     string
 	updateNotice  string
-	// Reasoning effort (S-139, reasoning.go): the level this session is on,
+	// Reasoning effort (reasoning.go): the level this session is on,
 	// the hook that carries a change to the next request, and the persisted
 	// default with whatever outranks it — the model's three, for the setting
 	// that sits beside it on the rail.
@@ -667,14 +664,14 @@ type Model struct {
 	effortFn        func(provider.Effort)
 	effortDefault   string
 	effortOutranked string
-	// First contact (S-105): what the session already knew about the
+	// First contact: what the session already knew about the
 	// checkout when it opened, which suggestion the pointer is on, and
 	// whether the screen has been spent — a session that has said something
 	// to the model is not new again just because /clear emptied it.
 	start      *StartInfo
 	startFocus int
 	startSpent bool
-	// Recovery from a provider failure (S-106): the provider the session
+	// Recovery from a provider failure: the provider the session
 	// resolved to, the two hooks a failure row's keys need, and the masked
 	// key prompt [k] opens. A hook left nil is a key the row does not offer,
 	// which is why they are checked rather than assumed.
@@ -683,7 +680,7 @@ type Model struct {
 	replaceKeyFn     func(string) error
 	keyAsk           *components.SecretPrompt
 	// retry is the bounded wait between a failed request and the next one
-	// (S-107); retrySeq fences its timer, so a cancelled or superseded wait
+	//; retrySeq fences its timer, so a cancelled or superseded wait
 	// is never advanced by a tick that outlived it.
 	retry *retryWait
 	// retryAttempt counts the automatic retries this stall has used, against
@@ -691,13 +688,13 @@ type Model struct {
 	// the bound a bound.
 	retryAttempt int
 	retrySeq     int
-	// The context-pressure card (S-108): the card while it is up, and
+	// The context-pressure card: the card while it is up, and
 	// whether this crossing of the alert threshold has already been
 	// answered. The flag is cleared by falling back under the threshold, so
 	// the card arrives once per crossing rather than once per turn.
 	pressure      *components.PressureCard
 	pressureShown bool
-	// The round-limit pause (S-109): the offer standing on the last turn to
+	// The round-limit pause: the offer standing on the last turn to
 	// stop at its ceiling, the rounds [+50] has granted the turn in front of
 	// it, and whether [!] has lifted this turn's ceiling altogether. All
 	// three expire with the turn — resetRounds spends the offer and gives the
@@ -710,7 +707,7 @@ type Model struct {
 func New(initialMessages []provider.Message, stream StreamFunc) Model {
 	ta := textarea.New()
 	// No placeholder sentence and no per-line prompt: the command-center
-	// frame's gutter glyph and bottom-rail hints carry that (S-082).
+	// frame's gutter glyph and bottom-rail hints carry that.
 	ta.Placeholder = ""
 	ta.Prompt = ""
 	ta.Focus()
@@ -720,14 +717,13 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 	// Three keys insert a line break, one of which the user can find:
 	// shift+enter is rewritten to alt+enter before the textarea sees it
 	// (newline.go), and ctrl+j is the chord that works in a terminal too old
-	// to report either (S-134).
+	// to report either.
 	// The register's newline keys, less shift+enter, which the textarea
 	// cannot see: terminals that report it are handled above, and the other
 	// two are what the ones that cannot get instead.
 	ta.KeyMap.InsertNewline.SetKeys(keys.Draft.Newline.Keys()[1:]...)
 
-	// One frame set, one cadence, one colour, shared with the one-shot UI
-	// (S-094).
+	// One frame set, one cadence, one colour, shared with the one-shot UI.
 	s := components.NewSpinnerModel()
 
 	return Model{
@@ -740,10 +736,10 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 		copyFn:    clipboard.Copy,
 		// On unless the config says otherwise (WithNotify): unlike mouse
 		// reporting, a notification takes nothing away, and it cannot fire
-		// while anyone is looking at the screen (S-157).
+		// while anyone is looking at the screen.
 		notifyOn: true,
 		// Every session records what it changes; WithChangeset swaps in a
-		// store with a different bound or a git tracker (S-097).
+		// store with a different bound or a git tracker.
 		changes:     changeset.New(changeset.DefaultMaxBytes),
 		sessionName: AutosaveName,
 	}
@@ -791,7 +787,7 @@ func (m Model) WithPricing(prices *pricing.Table, modelName string) Model {
 }
 
 // WithProvider names the provider the session resolved to and wires the two
-// things a provider failure can offer to do about it (S-106): replacing the
+// things a provider failure can offer to do about it: replacing the
 // key for this session, and switching to another registered provider. Either
 // hook may be nil — the failure row then does not offer that key rather than
 // offering one that does nothing.
@@ -807,7 +803,7 @@ func (m Model) WithUpdateNotice(notice string) Model {
 	return m
 }
 
-// WithClassifier enables auto mode's LLM permission classifier (S-060):
+// WithClassifier enables auto mode's LLM permission classifier:
 // gated calls the static policy would ask about are judged by it instead;
 // its failures fall back to asking the user.
 func (m Model) WithClassifier(c *agent.Classifier) Model {
@@ -826,7 +822,7 @@ func (m Model) WithMaxToolRounds(n int) Model {
 }
 
 // effectiveMaxToolRounds is this turn's tool-round ceiling: the configured
-// cap plus whatever [+50] has granted the turn in front of it (S-109). The
+// cap plus whatever [+50] has granted the turn in front of it. The
 // grant lives here rather than on the Agent so that it expires with the turn
 // — a new one starts from the ceiling the session was configured with.
 // Callers that render or enforce a ceiling must ask roundsUnbounded first:
@@ -873,7 +869,7 @@ func (m Model) quitCmd() tea.Cmd {
 }
 
 // ExitBanner is what this session leaves on the terminal once the alt screen
-// is gone (S-148): the slot the conversation ended up in, how big it got,
+// is gone: the slot the conversation ended up in, how big it got,
 // what the sitting cost, and the command that reopens it. resume is that
 // command, supplied by the front-end because the model does not know which of
 // shhh's faces it is wearing — `shhh chat --continue`, `shhh code
@@ -917,7 +913,7 @@ func (m Model) Init() tea.Cmd {
 	// No spinner tick here: nothing is moving on an empty session, and a
 	// chain started before there is anything to animate is a chain that dies
 	// at its first tick. Update starts one the moment something does move
-	// (S-119, spin.go).
+	// (spin.go).
 	cmds := []tea.Cmd{textarea.Blink}
 	if m.initialPrompt != "" {
 		cmds = append(cmds, func() tea.Msg { return initialPromptMsg{} })
@@ -926,13 +922,13 @@ func (m Model) Init() tea.Cmd {
 		cmds = append(cmds, listenSubagents(m.subagents.Events()))
 	}
 	// Mouse reporting is not asked for here: it is a field on the View
-	// (S-155), so every surface that runs this Model gets the same answer
-	// from the same place and the toggle has one thing to flip (S-115).
+	//, so every surface that runs this Model gets the same answer
+	// from the same place and the toggle has one thing to flip.
 	return tea.Batch(cmds...)
 }
 
 // Update routes the message, then makes the spinner's one rule true again
-// (S-119): a tick chain runs exactly while something on screen is
+// : a tick chain runs exactly while something on screen is
 // moving. Resuming the loop here rather than at each transition is what makes
 // "reliably restarts" a property of the loop instead of something fifteen
 // separate handoffs are each trusted to remember — three of them did not, and
@@ -947,7 +943,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmd = tea.Batch(cmd, tick)
 	}
 	// And the desktop notification is derived here for the same reason
-	// (S-157): the moment worth notifying about is a transition — the
+	//: the moment worth notifying about is a transition — the
 	// session stopped needing shhh and started needing the reader — and a
 	// transition is a fact about the model before against the model after,
 	// not a message any one of the dozen handlers that reach it could be
@@ -955,7 +951,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if call := mm.notifyCmd(m); call != nil {
 		cmd = tea.Batch(cmd, call)
 	}
-	// The turn's closing summary is derived here too (S-163, summary.go), and
+	// The turn's closing summary is derived here too (summary.go), and
 	// for the third time for the same reason: "the turn just ended" is a fact
 	// about two models, and every path back to the input would otherwise have
 	// to remember to ask for one.
@@ -969,12 +965,12 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// A modified Enter is a line break, not a send. Every modifier means the
 	// same thing, so they are rewritten here into the one key the textarea's
 	// newline binding listens for — before any surface can mistake a
-	// shift+enter for a send of its own (S-134, newline.go).
+	// shift+enter for a send of its own (newline.go).
 	if newlineKey(msg) {
 		msg = altEnter
 	}
 	// What the terminal can do is folded in wherever the reply lands
-	// (S-156). The answers come back as five unrelated message types,
+	//. The answers come back as five unrelated message types,
 	// over however long the terminal takes to send them, and none of them
 	// is anything else on this switch's business — so they are read here,
 	// before the routing, and go on to it unchanged.
@@ -982,12 +978,12 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.EnvMsg:
 		// The program's own environment, which over ssh is the client's
-		// terminal rather than this machine's (S-156). It arrives once, at
+		// terminal rather than this machine's. It arrives once, at
 		// startup, and asking is the only thing to do with it.
 		return m, m.caps.Query(msg)
 	case tea.FocusMsg:
 		// The window came back to the front. Nothing on screen changes; what
-		// changes is whether shhh may assume nobody is looking (S-157).
+		// changes is whether shhh may assume nobody is looking.
 		m.away = false
 		return m, nil
 
@@ -1000,11 +996,11 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.height = msg.Height
 		m.syncInputWidth()
 		// The transcript wraps to its pane, which is narrower than the content
-		// width while the inspector rail shows (S-092).
+		// width while the inspector rail shows.
 		paneWidth := m.transcriptWidth()
 		vpHeight := m.viewportHeight()
 		// Every rendered line reflows at a new width, so a selection's
-		// coordinates stop naming the text they were taken over (S-145).
+		// coordinates stop naming the text they were taken over.
 		m.resizeSelection(paneWidth)
 
 		if !m.ready {
@@ -1016,7 +1012,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport.SetHeight(vpHeight)
 			m.viewport.SetLines(m.renderHistoryLines())
 		}
-		// A placement is cells at a size (S-158): a pane that changed
+		// A placement is cells at a size: a pane that changed
 		// shape under a picture the terminal is holding is a picture that no
 		// longer fits the hole left for it, so it is sent again at the new
 		// one. Every other surface reflows from its own View.
@@ -1027,8 +1023,8 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// the full-screen diff and review surfaces that take the screen from
 		// it. It never reaches the textarea, which is what made a scroll
 		// gesture over the conversation move the three-line prompt box
-		// (S-115). Press, drag and release own the transcript's text
-		// selection (S-145, select.go).
+		//. Press, drag and release own the transcript's text
+		// selection (select.go).
 		if !m.mouseOn {
 			return m, nil
 		}
@@ -1037,11 +1033,11 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.PasteMsg:
 		// A file dragged into the terminal arrives as a bracketed paste of
 		// its path. When it points at an image or a document, attaching it
-		// is the only thing the gesture can have meant (S-134); everything
+		// is the only thing the gesture can have meant; everything
 		// else pastes as the text it is.
 		//
 		// In v2 a paste is a message of its own rather than a keystroke
-		// wearing a Paste flag (S-155). What that flag bought was routing:
+		// wearing a Paste flag. What that flag bought was routing:
 		// pasted text reached whichever surface had the keyboard, so a paste
 		// into a card's filter row filtered. So the text is handed on
 		// as the keystroke it used to be — one press carrying the whole run,
@@ -1061,7 +1057,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		})
 
 	case selectionScrollMsg:
-		// A drag held at the edge of the transcript pane (S-145). It is
+		// A drag held at the edge of the transcript pane. It is
 		// answered whatever the surface, because the fence inside it is what
 		// decides whether the tick is still wanted — a selection cancelled
 		// between the tick being scheduled and arriving has already bumped
@@ -1069,12 +1065,12 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.updateSelectionScroll(msg)
 
 	case tea.KeyPressMsg:
-		// Every key stamps the clock a decision's arrival reads (S-117,
+		// Every key stamps the clock a decision's arrival reads (
 		// interrupt.go). It is stamped here rather than on the draft's own
 		// path because the question is whether the reader is at the keyboard,
 		// not which surface they were talking to.
 		m.lastKeypress = time.Now()
-		// Mouse reporting is the one setting with a chord of its own (S-136,
+		// Mouse reporting is the one setting with a chord of its own (
 		// reading mode), and the only key answered before the surfaces are: what it
 		// costs — the terminal's own click-drag selection — is discovered at
 		// the moment of wanting to copy something, with a mouse already in
@@ -1141,21 +1137,21 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		// A draining retry countdown owns the keyboard the way the confirm
 		// prompt does: nothing is streaming, the input is not live, and the
-		// wait offers two keys that both end it (S-107).
+		// wait offers two keys that both end it.
 		if m.state == stateRetryWait {
 			return m.updateRetryWait(msg)
 		}
 		if m.state == stateFocus {
 			return m.updateFocus(msg)
 		}
-		// The agent manager list (S-077) takes over the bottom panel and keys.
+		// The agent manager list takes over the bottom panel and keys.
 		if m.agentList != nil {
 			return m.updateAgentList(msg)
 		}
-		// A child agent's routed approval takes over the bottom panel (S-068);
+		// A child agent's routed approval takes over the bottom panel;
 		// it defers to the parent's own prompts above. Like every other
 		// decision that arrives unbidden it is inert until ctrl+g gives it
-		// the keyboard (S-117), which is why the check is on decisionHeld.
+		// the keyboard, which is why the check is on decisionHeld.
 		if ask := m.activeChildAsk(); ask != nil && m.decisionHeld {
 			return m.updateChildAsk(msg, ask)
 		}
@@ -1174,7 +1170,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			return m, m.quitCmd()
 		case keys.Is(pressed, keys.Draft.Cancel):
-			// While attached, Ctrl+C acts on the child: cancel its turn (S-077).
+			// While attached, Ctrl+C acts on the child: cancel its turn.
 			if m.attachedTo != "" {
 				return m.attachedCancel()
 			}
@@ -1205,7 +1201,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// Ctrl+C keeps the meaning the card has always given it: it
 				// answers the decision no. No draft can produce the chord, so
 				// leaving it live is what keeps a waiting decision endable
-				// without first taking the keyboard (S-117).
+				// without first taking the keyboard.
 				m.decisionHeld = true
 				return m.routeDecision(msg)
 			}
@@ -1217,15 +1213,15 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.quitting = true
 			return m, m.quitCmd()
 		case keys.Is(pressed, keys.Draft.Mode):
-			// Cycle the permission mode (S-059); attached, it cycles the
-			// child's mode clamped to the orchestrator's ceiling (S-077).
+			// Cycle the permission mode; attached, it cycles the
+			// child's mode clamped to the orchestrator's ceiling.
 			if m.attachedTo != "" {
 				return m.cycleAttachedMode()
 			}
 			m.applyMode(agent.NextMode(m.modeCycle, m.mode))
 			return m, nil
 		case keys.Is(pressed, keys.Draft.Agents):
-			// Agent manager (S-077); without a supervisor the key keeps its
+			// Agent manager; without a supervisor the key keeps its
 			// textarea meaning (line start).
 			if m.subagents != nil {
 				return m.openAgentList()
@@ -1234,16 +1230,16 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Ctrl+V used to be the textarea's own text paste. It reads the
 			// clipboard properly now: a screenshot or a copied file is
 			// staged as an attachment, and plain text still lands in the
-			// draft (S-134, attachments.go). Attached to a child, the
+			// draft (attachments.go). Attached to a child, the
 			// orchestrator's staging area is not what the keyboard is
 			// pointed at, so the key keeps its textarea meaning there.
 			if m.inputLive() && m.attachedTo == "" {
 				return m, readClipboardCmd()
 			}
 		case keys.Is(pressed, keys.Draft.Reasoning):
-			// Reasoning effort (S-139): the level the next request asks for.
+			// Reasoning effort: the level the next request asks for.
 			// It changes nothing about the conversation and nothing about the
-			// turn in flight, so like the rest of S-087's live surfaces it is
+			// turn in flight, so like the rest of the live surfaces it is
 			// answered while one runs — and it is a chord, so the draft below
 			// keeps every letter it has.
 			if m.inputLive() && m.attachedTo == "" {
@@ -1254,28 +1250,28 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		case keys.Is(pressed, keys.Draft.Palette):
-			// The command palette (S-112): one prompt over the commands, the
+			// The command palette: one prompt over the commands, the
 			// saved chats and the files this session has touched. It reads
 			// the session without touching the conversation, so it opens
-			// over a running turn like the rest of S-087's live surfaces.
+			// over a running turn like the rest of the live surfaces.
 			// Attached, the orchestrator's commands are not what the keyboard
 			// is pointed at, so the key keeps its textarea meaning there.
 			if m.inputLive() && m.attachedTo == "" {
 				return m.openPalette()
 			}
 		case keys.Is(pressed, keys.Draft.Reading):
-			// Focus mode (S-076): navigate and expand transcript rows; scoped
-			// to whichever agent is focused (S-077). It reads the transcript
+			// Focus mode: navigate and expand transcript rows; scoped
+			// to whichever agent is focused. It reads the transcript
 			// without touching the conversation, so it opens over a running
-			// turn too — the turn keeps streaming underneath (S-087).
+			// turn too — the turn keeps streaming underneath.
 			if m.inputLive() {
 				return m.enterFocusMode()
 			}
 		case keys.Is(pressed, keys.Draft.Detail):
-			// Step detail (S-137): the step in flight opens its rows'
+			// Step detail: the step in flight opens its rows'
 			// bodies without the keyboard leaving the draft. It reads the
 			// transcript and changes nothing about the conversation, so it
-			// is answered over a running turn like the rest of S-087's live
+			// is answered over a running turn like the rest of the live
 			// surfaces — which is the case it exists for, since the step
 			// worth asking about is usually the one still going.
 			if m.inputLive() {
@@ -1283,7 +1279,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case keys.Is(pressed, keys.Draft.PageUp, keys.Draft.PageDown):
 			// The pager keys read the transcript and leave the keyboard in
-			// the draft (S-140). Reading is not a decision — the wheel
+			// the draft. Reading is not a decision — the wheel
 			// has always said so — and the reader scrolling back to check a
 			// path mid-sentence is not asking to stop writing the sentence.
 			// Paging used to hand the keyboard over, which took the draft off
@@ -1301,7 +1297,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		case keys.Is(pressed, keys.Draft.ScrollUp):
-			// The same job by a line rather than a page (S-140). Both
+			// The same job by a line rather than a page. Both
 			// chords are bound because terminals disagree about which they
 			// report: the textarea underneath claims neither, and neither is
 			// reachable by typing.
@@ -1315,7 +1311,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		case keys.Is(pressed, keys.Draft.Clear):
-			// A visible selection is what esc cancels first (S-145).
+			// A visible selection is what esc cancels first.
 			// It is the only thing on the surface esc could mean while one
 			// is lit, and it says so without touching the draft — a reader
 			// who selected the wrong six screens has not also abandoned the
@@ -1325,15 +1321,15 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			// With the completion menu open, esc only dismisses the menu; the
-			// draft survives and further typing re-opens it (S-078).
+			// draft survives and further typing re-opens it.
 			if m.completionActive() {
 				m.dismissCompletions()
 				m.syncViewport()
 				return m, nil
 			}
-			// The input is live in every non-confirm state (S-058), so esc
+			// The input is live in every non-confirm state, so esc
 			// clears the draft; attached with an empty draft it pops one
-			// breadcrumb level (S-077).
+			// breadcrumb level.
 			if m.attachedTo != "" && strings.TrimSpace(m.input.Value()) == "" {
 				m.detachOne()
 				return m, nil
@@ -1342,7 +1338,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.historyIdx = len(m.inputHistory)
 			return m, nil
 		case keys.Is(pressed, keys.Draft.Complete):
-			// Tab writes the focused completion into the input (S-078).
+			// Tab writes the focused completion into the input.
 			if m.completionActive() {
 				m.acceptCompletion()
 				m.syncViewport()
@@ -1358,15 +1354,16 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// The start screen's suggestion list claims ↑↓ only while it is
 			// live: an empty draft on a session that has not started yet,
 			// which is also the only time the input history has nothing to
-			// browse (S-105).
+			// browse.
 			if next, claimed := m.startKey("up"); claimed {
 				return next, nil
 			}
 			// Recall is the draft's, wherever the draft has the keyboard
-			// (S-162). It used to be the idle turn's: ↑ did nothing
+			//. It used to be the idle turn's: ↑ did nothing
 			// while the agent streamed, ran a command or waited on the
 			// classifier, and nothing under an approval card that had not
-			// been given the keyboard — the four states S-058 and S-117 exist
+			// been given the keyboard — the four states steering and the
+			// mid-sentence rule exist
 			// to keep the sentence live in. A key that is the input's in
 			// every state and a frame that is live but cannot recall
 			// were two claims about the same three lines, and the code was
@@ -1383,7 +1380,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// with no history to recall. It is the input's key in every other
 			// state, and a key that changes surface depending on how much
 			// history a session happens to have is one nobody can learn
-			// (S-140). Alternate scroll made it worse than unlearnable: on a
+			//. Alternate scroll made it worse than unlearnable: on a
 			// terminal that synthesises arrows for the wheel, a flick opened
 			// reading mode (altscroll.go). Scrolling has its own keys now.
 		case keys.Is(pressed, keys.Draft.HistoryNext):
@@ -1408,19 +1405,19 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case keys.Is(pressed, keys.Draft.Send):
 			// While attached, Enter acts on the child: scoped commands and
-			// mid-turn steering (S-077).
+			// mid-turn steering.
 			if m.attachedTo != "" {
 				return m.attachedSubmit()
 			}
 			// Enter on a live start screen types the focused suggestion and
 			// submits it, so choosing an offer and typing it are the same
-			// act down to the dispatch (S-105).
+			// act down to the dispatch.
 			if action := m.startAction(); action != "" {
 				m.input.SetValue(action)
 				return m.submitInput()
 			}
 			// One submit path for every state that keeps the input live
-			// (S-087, command.go): commands run, plain text is a message when
+			// (command.go): commands run, plain text is a message when
 			// idle and steering while the agent works.
 			if m.inputLive() {
 				return m.submitInput()
@@ -1439,10 +1436,10 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case tokenMsg:
 		// The provider is answering: whatever stall preceded this is over, and
-		// the next one starts its own bounded count (S-107).
+		// the next one starts its own bounded count.
 		m.clearRetryChain()
 		m.streaming += msg.text
-		// The repaint rides the spinner's tick rather than the chunk (S-149, the
+		// The repaint rides the spinner's tick rather than the chunk (the
 		// streaming render). A chunk that arrives while the loop is running only
 		// records that one is owed; one that arrives with nothing ticking — the
 		// last of a stream, or a state that draws no spinner — repaints itself,
@@ -1462,7 +1459,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.accumulateUsage(msg.usage)
 		// A response that ended in text asked for no tools, so its thinking
 		// has nowhere to travel to and the latch is dropped rather than left
-		// for a later round to pick up (S-139).
+		// for a later round to pick up.
 		m.agent.CarryReasoning(nil)
 		if m.compacting {
 			return m.finishCompact()
@@ -1470,11 +1467,11 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		hadText := m.streaming != ""
 		m.finishStreaming()
 		// A steering message queued while the model was responding becomes the
-		// next user turn immediately (S-058).
+		// next user turn immediately.
 		if cmd := m.dispatchSteering(); cmd != nil {
 			return m, cmd
 		}
-		// A completed planning response gets the plan-approval prompt (S-061).
+		// A completed planning response gets the plan-approval prompt.
 		if m.mode == agent.ModePlan && hadText {
 			m.setTurnState(statePlanApprove)
 			m.armPlan()
@@ -1488,23 +1485,23 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.clearRetryChain()
 		m.accumulateUsage(msg.usage)
 		// The thinking behind these calls has to travel with them into the
-		// next request (S-139).
+		// next request.
 		m.agent.CarryReasoning(msg.reasoning)
 		if m.compacting {
 			return m.abortCompact()
 		}
 		auto, gated := m.agent.BeginToolRound(m.streaming, msg.calls, m.requiresApproval)
 		m.approvalTotal = len(gated)
-		// A round is also where the session summary is scheduled (S-163):
+		// A round is also where the session summary is scheduled:
 		// the round counter has just moved, which is the clock the reading
 		// interval is kept on. It is a no-op until one falls due.
 		summary := m.summaryCmd()
 		// A round is where a fan-out is measured: the children spawned in one
-		// share a batch and render as one block (S-110).
+		// share a batch and render as one block.
 		m.beginSpawnBatch()
 		if m.streaming != "" {
 			// This is the announcement a step is titled by, so it is where an
-			// approved plan's step list joins the transcript (S-104).
+			// approved plan's step list joins the transcript.
 			m.appendEntry(m.stampStep(entry{kind: entryAssistant, text: m.streaming}))
 		}
 		m.streaming = ""
@@ -1545,7 +1542,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.runStart = time.Time{}
 		out := strings.TrimRight(msg.output, "\n")
 		// Assistant command output goes through the reduction pipeline
-		// (S-064) before both the transcript entry and the tool result, so
+		// before both the transcript entry and the tool result, so
 		// the user sees exactly what the model got. /run — the user's own
 		// command — stays unreduced.
 		if m.pendingApproval != nil {
@@ -1570,7 +1567,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			Content: commandContextMessage(msg.command, out, msg.exitCode),
 		})
 		// A message typed while the /run command executed is sent now, with
-		// the command context already in the conversation (S-058).
+		// the command context already in the conversation.
 		if cmd := m.dispatchSteering(); cmd != nil {
 			return m, cmd
 		}
@@ -1587,7 +1584,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.agent.ResolveApproval(msg.result)
 		m.recordToolEvent(req.call.Name, msg.duration, outcomeFromResult(msg.result))
 		m.noteEvictedTurns(msg.evicted)
-		// An applied edit lands in the transcript as a collapsed diff row (S-074,
+		// An applied edit lands in the transcript as a collapsed diff row (
 		// docs/interface/surfaces.md#the-diff-view); failures keep the plain tool
 		// block so the error text stays visible.
 		if req.kind == approvalDiff && len(req.hunks) > 0 && outcomeFromResult(msg.result) == outcomeOK {
@@ -1618,7 +1615,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case summaryDoneMsg:
 		// A reading never routes anything: it changes what the rail draws and
 		// nothing else, which is why it has no turn-state guard of its own
-		// (S-163). finishSummary decides what to keep.
+		//. finishSummary decides what to keep.
 		m.summaryCancel = nil
 		m.finishSummary(msg)
 		return m, nil
@@ -1630,11 +1627,11 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleSubagentEvent(msg.ev)
 
 	case streamErrMsg:
-		// Classified, never raw (S-106): the failure is a row on the
+		// Classified, never raw: the failure is a row on the
 		// activity grid with the provider's own words in its detail body and
 		// the keys for its class underneath. What happens after the row —
 		// an offer to continue a partial, a bounded wait, or the end of the
-		// turn — is S-107's (resume.go).
+		// turn — belongs to the retry path (resume.go).
 		return m.handleStreamFailure(msg)
 
 	case retryTickMsg:
@@ -1649,13 +1646,13 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case spinner.TickMsg:
 		// The one tick, advancing the one frame (spin.go). The guard
 		// that used to stand here decided whether to answer at all, and a
-		// tick it declined took the chain with it (S-119).
+		// tick it declined took the chain with it.
 		return m.spinTick(msg)
 	}
 
 	var cmds []tea.Cmd
 	// The input stays live while the agent streams or runs tools so the user
-	// can type a steering message (S-058); only the confirm and plan-approval
+	// can type a steering message; only the confirm and plan-approval
 	// prompts take over.
 	if m.decisionUngated() || (m.state != stateConfirmRun && m.state != statePlanApprove && m.state != stateRetryWait) {
 		// Any other keypress while browsing input history turns the recalled
@@ -1667,8 +1664,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.input, cmd = m.input.Update(msg)
 		cmds = append(cmds, cmd)
 		// Keystrokes may have changed the input: refresh the slash-command
-		// completion menu, and resize the viewport when it appears/disappears
-		// (S-078).
+		// completion menu, and resize the viewport when it appears/disappears.
 		if _, ok := msg.(tea.KeyPressMsg); ok {
 			m.syncCompletions()
 			m.syncViewport()
@@ -1678,10 +1674,9 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// Nothing is forwarded to the transcript here. The pager bindings that
 	// used to be — bubbles' defaults, j, k, u, d, f, b and the spacebar —
 	// scrolled the history out from under any draft containing those letters,
-	// so shhh's own pane reads no keys at all (S-160, viewport.go). While the
+	// so shhh's own pane reads no keys at all (viewport.go). While the
 	// input owns the keyboard the transcript is moved by the wheel, by
-	// pgup/pgdn and by focus mode, never by a character the sentence wanted
-	// (S-115).
+	// pgup/pgdn and by focus mode, never by a character the sentence wanted.
 	m.atBottom = m.viewport.AtBottom()
 
 	return m, tea.Batch(cmds...)
@@ -1701,12 +1696,12 @@ func (m *Model) recordInput(text string) {
 func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
 	// A plan that has been through its list has answered "where are we", so
 	// the next instruction retires it. One with steps left to go survives the
-	// message, because that question is still open (S-104).
+	// message, because that question is still open.
 	if m.planRun != nil && m.planRun.complete() {
 		m.planRun = nil
 	}
 	// The session has now said something of its own, so first contact is
-	// over: /clear empties the transcript without making it new again (S-105).
+	// over: /clear empties the transcript without making it new again.
 	m.spendStartScreen()
 	m.clearRetryChain()
 	m.turnCount++
@@ -1714,14 +1709,14 @@ func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
 	m.turnOpen, m.turnOutcome = true, components.TurnDone
 	m.turnTokensIn, m.turnTokensOut = 0, 0
 	m.vitals.startTurn()
-	// A fresh user turn clears the notice rail's denial alert (S-082);
+	// A fresh user turn clears the notice rail's denial alert;
 	// lastDenial stays for /permissions why.
 	m.denialNotice = ""
 	// A new turn starts from the ceiling the session was configured with, and
-	// the pause behind it can no longer be granted more rounds (S-109).
+	// the pause behind it can no longer be granted more rounds.
 	m.resetRounds()
 	// This message is the target every reading of this turn is judged
-	// against, and it is captured once, here (S-163). A run that drifts must
+	// against, and it is captured once, here. A run that drifts must
 	// not be able to drift its own yardstick with it — which is the whole
 	// difference between a drift signal and a summary of wherever the
 	// conversation happens to have ended up.
@@ -1741,7 +1736,7 @@ func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
 }
 
 // View is the frame the terminal shows. In v2 that is a value rather than a
-// string (S-155): the screen's content, and the terminal states the session
+// string: the screen's content, and the terminal states the session
 // is asking for while it is up. Two of those used to be commands — the alt
 // screen a program option each host passed, mouse reporting a command the
 // toggle had to remember to send — and both were the same bug waiting, a
@@ -1752,7 +1747,7 @@ func (m Model) View() tea.View {
 	v.AltScreen = true
 	// Focus reporting is asked for unconditionally, because it costs the
 	// terminal nothing and it is the only thing that can say whether anyone
-	// is looking (S-157). A terminal that does not know the mode says
+	// is looking. A terminal that does not know the mode says
 	// nothing back, and saying nothing is an answer shhh can act on: no blur
 	// ever arrives, so it never concludes the reader has gone.
 	v.ReportFocus = true
@@ -1767,7 +1762,7 @@ func (m Model) View() tea.View {
 }
 
 // screen paints the whole terminal, drawing each block into the rectangle
-// layout.go resolved for it (S-161). Nothing here measures anything: a
+// layout.go resolved for it. Nothing here measures anything: a
 // block is handed a rectangle, it fills what it can, and ultraviolet clips
 // the rest at the edge.
 func (m Model) screen() string {
@@ -1783,24 +1778,24 @@ func (m Model) screen() string {
 	draw := func(view string, area uv.Rectangle) { drawIn(scr, view, area) }
 
 	draw(m.headerRow(), s.header)
-	// The line under the header says which pane has the keyboard (S-115, reading
+	// The line under the header says which pane has the keyboard (reading
 	// mode): a plain divider while the input does, the transcript's own rail
 	// while focus mode does.
 	draw(m.readingRail(s.rail.Dx()), s.rail)
 
 	// The body renders into the transcript pane; the header, divider and the
-	// prompt frame span both panes (S-092). Surfaces that take the pane
+	// prompt frame span both panes. Surfaces that take the pane
 	// over get all of it — the scroll gutter's column is the transcript's own
-	// (S-147), and they do their own scrolling.
+	//, and they do their own scrolling.
 	view := s.in(s.view, s.pane)
 	draw(m.paneView(view), view)
 	draw(m.liveTail(s.pane.Dx()), s.in(s.tail, s.pane))
 	// Working sub-agents render as compact progress rows above the divider
-	// (S-068); hidden while the agent list or an attached view covers them.
+	//; hidden while the agent list or an attached view covers them.
 	draw(m.renderAgentRows(s.pane.Dx()), s.in(s.agents, s.pane))
 
 	// Past 130 content columns the body shares its rows with the inspector
-	// rail (S-092); the split is horizontal only, so the row budget the
+	// rail; the split is horizontal only, so the row budget the
 	// vertical split handed out is unchanged.
 	if rail := m.inspectorData().Lines(s.inspector.Dx(), s.body.Dy()); len(rail) > 0 {
 		column := strings.TrimSuffix(strings.Repeat(sty.Pane.Divider.Render("│")+"\n", s.body.Dy()), "\n")
@@ -1813,7 +1808,7 @@ func (m Model) screen() string {
 	return renderScreen(scr)
 }
 
-// headerRow is the title row (S-082): the header carries only the title —
+// headerRow is the title row: the header carries only the title —
 // the static key hint moved into the frame's contextual bottom rail, the
 // update notice onto the notice rail, and the attached breadcrumb onto the
 // frame's top rail.
@@ -1837,15 +1832,15 @@ func (m Model) headerRow() string {
 func (m Model) paneView(area uv.Rectangle) string {
 	switch {
 	case m.state == stateDiffFull && m.fullDiff != nil:
-		// The full-screen diff takes over the viewport (S-074).
+		// The full-screen diff takes over the viewport.
 		m.fullDiff.Height = area.Dy()
 		return m.fullDiff.View(area.Dx())
 	case m.state == statePicture && m.picture != nil:
-		// The staged image takes over the pane (S-158).
+		// The staged image takes over the pane.
 		m.picture.Height = area.Dy()
 		return m.picture.View(area.Dx())
 	case m.state == stateReview && m.review != nil:
-		// Review mode takes over the whole surface (S-099).
+		// Review mode takes over the whole surface.
 		m.review.Height = area.Dy()
 		return m.review.View(area.Dx())
 	}
@@ -1854,7 +1849,7 @@ func (m Model) paneView(area uv.Rectangle) string {
 
 // liveTail is the block the turn draws under the transcript while it works:
 // the thinking spinner, the running command's own activity row, the retry
-// countdown (S-107). It is the one part of the pane whose height is
+// countdown. It is the one part of the pane whose height is
 // not fixed, so the layout asks it rather than assuming — the row it takes
 // used to be spent without being budgeted for, which put the bottom of the
 // frame one row past the bottom of the terminal.
@@ -1883,7 +1878,7 @@ func (m Model) liveTail(width int) string {
 			return m.spinner.View() + " Applying changes…"
 		}
 		// The running command renders as a live activity row whose tail is
-		// its last output line (S-075); spinner ticks keep it fresh.
+		// its last output line; spinner ticks keep it fresh.
 		return m.runningCommandRow(width)
 	case stateClassifying:
 		return m.spinner.View() + " Checking permission…"
@@ -1892,7 +1887,7 @@ func (m Model) liveTail(width int) string {
 			return ""
 		}
 		// The failure row is already in the transcript; this is the part of
-		// it that drains (S-107). A wait is a meter, never a spinner.
+		// it that drains. A wait is a meter, never a spinner.
 		return m.retryWaitBlock(width)
 	case stateModelList:
 		return m.spinner.View() + " Listing models…"
@@ -1913,14 +1908,13 @@ func (m Model) liveTailHeight() int {
 }
 
 // drawBottomPanel paints the surface's bottom rows: the command-center frame
-// (S-082, docs/interface/surfaces.md#the-input-frame), or the divider +
+// (docs/interface/surfaces.md#the-input-frame), or the divider +
 // status-bar stack with whichever takeover surface replaced the input under
 // it.
 func (m Model) drawBottomPanel(scr uv.Screen, area uv.Rectangle) {
 	if m.frameShowing() {
 		// A decision that has not been given the keyboard rides above the
-		// frame, with the rail that names the keyboard's owner between them
-		// (S-117).
+		// frame, with the rail that names the keyboard's owner between them.
 		var head, frame uv.Rectangle
 		layout.Vertical(layout.Len(m.interruptHeight()), layout.Fill(1)).
 			Split(area).Assign(&head, &frame)
@@ -1936,7 +1930,7 @@ func (m Model) drawBottomPanel(scr uv.Screen, area uv.Rectangle) {
 // replaced it.
 func (m Model) takeoverPanel(width int) string {
 	inputView := m.input.View()
-	// The slash-command completion menu renders under the input (S-078);
+	// The slash-command completion menu renders under the input;
 	// the takeover surfaces below replace it wholesale.
 	if m.completionActive() && m.attachedTo == "" && m.agentList == nil && m.activeChildAsk() == nil {
 		inputView += "\n" + strings.Join(m.completionMenuLines(), "\n")
@@ -1965,12 +1959,12 @@ func (m Model) takeoverPanel(width int) string {
 	case statePressure:
 		inputView = m.renderPressure()
 	}
-	// The agent manager list takes the bottom panel while open (S-077).
+	// The agent manager list takes the bottom panel while open.
 	if m.agentList != nil {
 		inputView = m.renderAgentList()
 	}
 	// A child agent's routed approval takes over the bottom panel when the
-	// parent's own prompts aren't using it (S-068).
+	// parent's own prompts aren't using it.
 	if ask := m.activeChildAsk(); ask != nil {
 		inputView = m.renderChildAsk(ask)
 	}
@@ -1980,7 +1974,7 @@ func (m Model) takeoverPanel(width int) string {
 // startRun resolves which code block from the last response to execute.
 // It returns either a message for the transcript, or entersConfirm=true after
 // switching to the confirmation state. Bare /run takes the first block: the
-// several-blocks case is routed to the picker (S-081) before it gets here.
+// several-blocks case is routed to the picker before it gets here.
 func (m *Model) startRun(parts []string) (result string, entersConfirm bool) {
 	if m.runFn == nil {
 		return "Command execution is not available in this session.", false
@@ -1999,7 +1993,7 @@ func (m *Model) startRun(parts []string) (result string, entersConfirm bool) {
 	}
 	m.pendingRun = blocks[idx]
 	// /run is the user's own command: it never runs contained, so the working
-	// scope has nothing to say about it (S-141).
+	// scope has nothing to say about it.
 	m.pendingScope = scopeReach{}
 	m.pendingBlast = m.resolveRadius(nil)
 	m.clearQueueStrip()
@@ -2008,14 +2002,14 @@ func (m *Model) startRun(parts []string) (result string, entersConfirm bool) {
 }
 
 // updateConfirmRun routes confirm-prompt keys through the approval card
-// (S-076); the card's y/n/esc semantics match the original prompt, and [a]
-// (S-054) is offered only where a session grant is allowed.
+// ; the card's y/n/esc semantics match the original prompt, and [a]
+// is offered only where a session grant is allowed.
 func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if keys.Match(msg, keys.Draft.Quit) {
 		m.quitting = true
 		return m, m.quitCmd()
 	}
-	// A memory proposal (S-070) confirms through its own prompt, not the card.
+	// A memory proposal confirms through its own prompt, not the card.
 	if m.memoryAsk != nil {
 		return m.updateMemoryAsk(msg)
 	}
@@ -2033,7 +2027,7 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		return m.executeRun()
 	case components.ApprovalFullDiff:
-		// [d] opens the pending edit full screen (S-074); esc returns here
+		// [d] opens the pending edit full screen; esc returns here
 		// with the approval still pending.
 		if req := m.pendingApproval; req != nil && req.kind == approvalDiff {
 			return m.openDiffFull(&components.DiffView{
@@ -2045,7 +2039,7 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 	case components.ApprovalBatch:
 		// [A] answers this decision and every queued decision the session
-		// would classify the same way (S-102). Membership was on the strip
+		// would classify the same way. Membership was on the strip
 		// before the key applied it, and a flagged action was never in it.
 		if req := m.pendingApproval; req != nil && len(m.pendingBatch) > 0 {
 			m.approveBatch()
@@ -2057,7 +2051,7 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 	case components.ApprovalAlways:
 		// Approve, and stop asking about this shape of call for the session
-		// (S-054). The grant is scoped to what the card showed — this
+		//. The grant is scoped to what the card showed — this
 		// command's leading words, this file's directory — because that is
 		// what the reader read before pressing the key. The blanket grants
 		// the key used to hand out are `/permissions allow` now: a session-wide
@@ -2112,7 +2106,7 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	command := m.pendingRun
 	m.pendingRun = ""
 	// An approved command that writes outside the working scope puts those
-	// directories in it (S-141) — otherwise containment would go on refusing
+	// directories in it — otherwise containment would go on refusing
 	// the write the user has just approved.
 	m.applyScopeGrant()
 	m.setTurnState(stateRunningCmd)
@@ -2126,7 +2120,7 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	runID := m.agent.RunID()
 	runFn := m.runFn
 	tailFn := m.tailRunFn
-	// Assistant commands run contained when a mechanism is available (S-062);
+	// Assistant commands run contained when a mechanism is available;
 	// /run — the user's own command — stays on the plain runner.
 	if m.pendingApproval != nil && m.containment.Run != nil {
 		runFn = m.containment.Run
@@ -2136,7 +2130,7 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 		start := time.Now()
 		var out string
 		var code int
-		// The tail-capable runner feeds the live row (S-075) when wired.
+		// The tail-capable runner feeds the live row when wired.
 		if tailFn != nil {
 			out, code = tailFn(ctx, command, tail.Set)
 		} else {
@@ -2148,7 +2142,7 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 
 // commandContextPrefix opens that message, as a constant for the reason
 // compactContextPrefix is one: input recall reads it to tell a line the
-// reader typed from one the session wrote (recall.go, S-162).
+// reader typed from one the session wrote (recall.go).
 const commandContextPrefix = "I ran this command:"
 
 // commandContextMessage is appended to the conversation (as the user) so the
@@ -2174,18 +2168,18 @@ func firstLine(s string) string {
 // resumeToolLoop requests the next model response after a round of tool
 // results — unless this turn has hit the tool-round cap, in which case it
 // pauses on the checkpoint that says what it managed and offers the ways on
-// (S-109; a fresh message still continues the conversation and resets the
+// (a fresh message still continues the conversation and resets the
 // counter).
 func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
 	// Steering messages queued mid-turn join the conversation here, between
-	// tool rounds, so the model sees them on its next request (S-058). They
+	// tool rounds, so the model sees them on its next request. They
 	// count as fresh user input, so they also lift a hit round cap.
 	if m.injectSteering() {
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 	}
 	// The ceiling is the session's, not the Agent's, because [+50] raises it
-	// for this turn alone (S-109).
+	// for this turn alone.
 	if !m.roundsUnbounded() && m.agent.Rounds() >= m.effectiveMaxToolRounds() {
 		return m.pauseAtRoundLimit()
 	}
@@ -2199,7 +2193,7 @@ func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
 func (m Model) requestStream() tea.Cmd {
 	msgs := m.agent.RequestMessages()
 	// Plan mode injects planning instructions into the request's system
-	// prompt (S-061); the stored conversation stays untouched, so leaving
+	// prompt; the stored conversation stays untouched, so leaving
 	// plan mode stops the injection.
 	if m.mode == agent.ModePlan && len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
 		msgs[0].Content += "\n\n" + prompt.PlanModeInstructions
@@ -2221,7 +2215,7 @@ func (m Model) requestStreamFor(msgs []provider.Message) tea.Cmd {
 }
 
 // execToolsCmd dispatches an auto-run batch off the UI goroutine, stamping
-// what it dispatched so the frame's status line can name it (S-118).
+// what it dispatched so the frame's status line can name it.
 func (m *Model) execToolsCmd(calls []provider.ToolCall) tea.Cmd {
 	m.runningTools = calls
 	a := m.agent
@@ -2266,7 +2260,7 @@ func waitForEvent(events <-chan provider.StreamEvent) tea.Cmd {
 // nil for a plain token event.
 func terminalMsg(ev provider.StreamEvent) tea.Msg {
 	if ev.Err != nil {
-		// The completed tool calls ride the failure (S-107): a stream that
+		// The completed tool calls ride the failure: a stream that
 		// broke after the model finished writing a call kept that call.
 		return streamErrMsg{err: ev.Err, calls: ev.ToolCalls, reasoning: ev.Reasoning}
 	}
@@ -2303,7 +2297,7 @@ func formatToolArgs(raw string) string {
 
 // accumulateUsage folds one request's usage into the session vitals and
 // reads the running totals back out, so the rail, the cockpit and /stats all
-// quote the same numbers from one place (S-093).
+// quote the same numbers from one place.
 func (m *Model) accumulateUsage(u *provider.Usage) {
 	if u == nil {
 		return
@@ -2318,7 +2312,7 @@ func (m *Model) accumulateUsage(u *provider.Usage) {
 
 func (m *Model) finishStreaming() {
 	// Whatever repaint the arriving message still owed, it does not owe it any
-	// more: the message is about to be an entry like every other (S-149).
+	// more: the message is about to be an entry like every other.
 	m.streamDirty = false
 	if m.compacting {
 		// A cancelled compaction discards the partial summary and keeps the
@@ -2351,7 +2345,7 @@ func (m *Model) cancelStreaming() {
 	if m.cancel != nil {
 		m.cancel()
 	}
-	// Ctrl+C cancels the whole child tree with the turn (S-068).
+	// Ctrl+C cancels the whole child tree with the turn.
 	m.cancelSubagents()
 	for _, tc := range m.agent.CancelTurn() {
 		m.appendEntry(entry{kind: entryTool, toolName: tc.Name, toolArgs: tc.Arguments, toolResult: cancelledToolResult})
@@ -2359,27 +2353,27 @@ func (m *Model) cancelStreaming() {
 	m.pendingApproval = nil
 	m.memoryAsk = nil
 	// The queue the strip described is gone with the turn, and so is every
-	// batch grant made against it (S-102).
+	// batch grant made against it.
 	m.clearQueueStrip()
 	m.batchApproved, m.approvalTotal = nil, 0
-	// Ctrl+C is a cancellation, and the close rows say so (S-098).
+	// Ctrl+C is a cancellation, and the close rows say so.
 	m.turnOutcome = components.TurnCancelled
 	m.finishStreaming()
 	m.restoreSteering()
-	// Restored steering empties the queue: the notice rail may shrink (S-082).
+	// Restored steering empties the queue: the notice rail may shrink.
 	m.syncViewport()
 }
 
 // injectSteering appends queued steering messages to the conversation and
 // transcript as user messages, reporting whether any were queued. Steering is
-// fresh user input, so it resets the tool-round counter (S-053 semantics).
+// fresh user input, so it resets the tool-round counter.
 func (m *Model) injectSteering() bool {
 	if len(m.steering) == 0 {
 		return false
 	}
 	// Whatever was staged goes with the first line of the batch: they are
 	// all injected into the same round, so which one carries them is only a
-	// question of where the transcript names them (S-134).
+	// question of where the transcript names them.
 	atts := m.takeAttachments()
 	for _, text := range m.steering {
 		m.recordCheckpoint(text)
@@ -2428,7 +2422,7 @@ func (m *Model) restoreSteering() {
 
 func (m *Model) appendEntry(e entry) {
 	// Every entry knows the turn it belongs to, so a row that outlives its
-	// turn can still name it — the rail's alerts do (S-120). An entry
+	// turn can still name it — the rail's alerts do. An entry
 	// that already carries one (a close block, a round-limit pause) keeps it.
 	if e.turn == 0 {
 		e.turn = m.turnCount
@@ -2439,20 +2433,20 @@ func (m *Model) appendEntry(e entry) {
 func (m *Model) resetTranscript() {
 	m.transcript = nil
 	// The index a fan-out would have converted points into a transcript that
-	// no longer exists (S-110).
+	// no longer exists.
 	m.spawnRow = 0
 	// The checklist is read off the transcript, so a transcript that is gone
 	// takes the approved plan with it rather than pointing at entries that no
-	// longer exist (S-104).
+	// longer exist.
 	m.planRun = nil
 	// A selection is a pair of coordinates into a render of this transcript;
-	// with the transcript gone they name nothing (S-145).
+	// with the transcript gone they name nothing.
 	m.clearSelection()
 	m.invalidateRenderCache()
 }
 
 // flushStream repaints the transcript with as much of the arriving message as
-// has landed, and forgets that a repaint was owed (S-149).
+// has landed, and forgets that a repaint was owed.
 func (m *Model) flushStream() {
 	m.streamDirty = false
 	m.viewport.SetLines(m.renderHistoryLines())
@@ -2487,7 +2481,7 @@ func (m Model) renderEntryKeys(e entry, width int, keysLive bool) string {
 }
 
 // renderEntryDetail is the same again, told whether the step this row belongs
-// to has its detail open (S-137). Only the activity rows can answer to
+// to has its detail open. Only the activity rows can answer to
 // it; every other kind of entry renders the same inside an opened step as
 // outside one, because a step opens the bodies of its calls and nothing else.
 func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) string {
@@ -2501,8 +2495,8 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 	case entryAssistant:
 		return sty.Assistant.Render("Assistant") + "\n" + renderMarkdown(e.text, width) + "\n"
 	case entryTool, entryCommand:
-		// Compact one-row activity rendering (S-075); focus mode expands it,
-		// and so does the step around it (S-137).
+		// Compact one-row activity rendering; focus mode expands it,
+		// and so does the step around it.
 		return m.activityRowDetail(e, stepDetail).View(width) + "\n"
 	case entryTurnClose:
 		if e.close == nil {
@@ -2564,13 +2558,13 @@ func separatorBefore(prev, cur entry) string {
 	return ""
 }
 
-// renderStatusBar renders the cockpit rail (S-075,
+// renderStatusBar renders the cockpit rail (
 // docs/interface/surfaces.md#the-input-frame): the active mode, tool-round
-// counter, context occupancy meter (colored at the S-055 thresholds), usage
+// counter, context occupancy meter (coloured at the trim thresholds), usage
 // and spend, queued steering, policy grants, and the sub-agent badge, with
 // the model name right-aligned and dropped first when narrow.
 func (m Model) renderStatusBar(width int) string {
-	// Attached, the status bar scopes to the focused child (S-077).
+	// Attached, the status bar scopes to the focused child.
 	if m.attachedTo != "" && m.subagents != nil {
 		return m.renderChildStatusBar(width)
 	}
@@ -2578,7 +2572,7 @@ func (m Model) renderStatusBar(width int) string {
 }
 
 // cockpitData assembles the cockpit segments. The frame's vitals rail
-// (S-082) omits the queued-steering extra — the notice rail carries it — so
+// omits the queued-steering extra — the notice rail carries it — so
 // includeQueued is false there.
 func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 	c := components.Cockpit{
@@ -2602,7 +2596,7 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 	// Round counter shows only mid-turn, so long tool loops are visible — and
 	// through a round-limit pause, where the ceiling is the thing being
 	// decided. The grant on offer is stated beside it, so the counter says
-	// both what the bound is and what taking the offer would make it (S-109).
+	// both what the bound is and what taking the offer would make it.
 	if m.agent.Rounds() > 0 && (m.turnState() != stateInput || m.pausedAtRoundLimit()) {
 		c.Round = m.roundCounter()
 	}
@@ -2615,16 +2609,16 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 			c.CtxPct = int(tokens * 100 / m.contextWindow())
 		}
 	}
-	// Steering messages waiting to be injected (S-058).
+	// Steering messages waiting to be injected.
 	if n := len(m.steering); n > 0 && includeQueued {
 		c.Extra = append(c.Extra, fmt.Sprintf("queued %d", n))
 	}
-	// Active approval policy (S-054); absent in the default ask-everything
+	// Active approval policy; absent in the default ask-everything
 	// state.
 	if p := m.policyLabel(); p != "" {
 		c.Extra = append(c.Extra, p)
 	}
-	// Working sub-agents, with blocked-on-approval count (S-068).
+	// Working sub-agents, with blocked-on-approval count.
 	if m.subagents != nil {
 		c.Agents, c.AgentsBlocked = m.subagents.ActiveCounts()
 	}
@@ -2639,11 +2633,11 @@ func formatTokenCount(n int64) string {
 }
 
 // renderHistoryLines is the transcript the pane shows: the history, with any
-// application-owned selection lit over it (S-145, select.go). The highlight
+// application-owned selection lit over it (select.go). The highlight
 // is the last thing applied and the first thing dropped — the raw render is
 // what the clipboard extraction reads, so no selection styling can reach it.
 //
-// Lines rather than one string is the currency the pane takes (S-160),
+// Lines rather than one string is the currency the pane takes,
 // so nothing between the block cache and the screen splits the session into
 // lines again.
 func (m *Model) renderHistoryLines() []string {
@@ -2668,17 +2662,17 @@ func (m *Model) renderHistoryRaw() string {
 func (m *Model) renderHistoryRawLines() []string {
 	if m.state == stateFocus {
 		// Focus mode renders fresh with the selection gutter, bypassing the
-		// incremental cache; it scopes to whichever agent is focused (S-077).
+		// incremental cache; it scopes to whichever agent is focused.
 		content, _, _ := m.renderFocusHistory()
 		return strings.Split(content, "\n")
 	}
-	// Attached view (S-077): the focused child's session, rendered fresh from
+	// Attached view: the focused child's session, rendered fresh from
 	// the supervisor's live transcript (the parent's cache is untouched).
 	if m.attachedTo != "" && m.subagents != nil {
 		return strings.Split(m.renderAttachedHistory(), "\n")
 	}
 	if len(m.transcript) == 0 && m.turnState() != stateStreaming {
-		// First contact (S-105): the empty session states what it already
+		// First contact: the empty session states what it already
 		// knows about the project and offers work. Hosts without a survey —
 		// the attached child view, a bare test model — keep the plain line.
 		if m.startScreenShowing() {
@@ -2691,7 +2685,7 @@ func (m *Model) renderHistoryRawLines() []string {
 		m.cached.width = w
 		m.invalidateRenderCache()
 	}
-	// History renders as step blocks (S-090). Every block but the last
+	// History renders as step blocks. Every block but the last
 	// is frozen — the grouping scan is left to right, so a block that already
 	// has a successor can never change — and only the last one re-renders
 	// each frame, because a running step's header restates its count and
@@ -2699,9 +2693,9 @@ func (m *Model) renderHistoryRawLines() []string {
 	blocks := m.blocksOf(m.transcript)
 	// Freeze everything before the last block rows can still land in. With an
 	// approved plan that is not the last block: its declared-but-not-started
-	// steps trail it, and they change as the run reaches them (S-104).
+	// steps trail it, and they change as the run reaches them.
 	// A live fan-out is the one entry that keeps changing without a row
-	// landing in it, so its block cannot be frozen either (S-110).
+	// landing in it, so its block cannot be frozen either.
 	freeze := min(lastLiveBlock(blocks), m.liveFanoutBlock(blocks))
 	// Back to the settled lines and no further: what the frozen blocks wrote
 	// stays written, and only the tail after them is built again.
@@ -2733,7 +2727,7 @@ func (m *Model) renderHistoryRawLines() []string {
 		m.cached.write(sty.Assistant.Render("Assistant") + "\n")
 		// The one thing in the transcript that is not frozen, and the only
 		// place the stable-prefix cache is used: everything else here is
-		// either cached whole or rendered once (S-149, streammd.go).
+		// either cached whole or rendered once (streammd.go).
 		m.cached.write(m.streamMD.Render(m.streaming, w))
 	}
 	return m.cached.lines
@@ -2745,7 +2739,7 @@ func (m Model) contentWidth() int {
 }
 
 // viewportHeight is the transcript's own rows, read off the vertical split
-// (S-161) rather than counted down from the terminal. The floor is a
+// rather than counted down from the terminal. The floor is a
 // floor and not a layout: a terminal with no room left still has to hand the
 // viewport a height it can render at.
 func (m Model) viewportHeight() int {
@@ -2814,7 +2808,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 			return true, modelUsage
 		}
 		// /model default [name] and /model agents [name] persist a default to
-		// the config file instead of switching this session only (S-086).
+		// the config file instead of switching this session only.
 		if parts[1] == "default" || parts[1] == "agents" {
 			return true, m.setModelDefault(parts[1], parts[2:])
 		}
@@ -2843,7 +2837,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		}
 		// The grants are the mode's own subject — what the session has
 		// stopped asking about — so they answer here rather than under a
-		// command of their own (S-054).
+		// command of their own.
 		switch parts[1] {
 		case "grants":
 			return true, m.grantStatus()
@@ -2878,7 +2872,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		return true, m.uiCommand(parts)
 
 	case "/add-dir", "/adddir":
-		// The working scope (S-141): the grant made in front of no particular
+		// The working scope: the grant made in front of no particular
 		// decision. It lives beside /permissions rather than under it because
 		// it answers a different question — not "what may run without
 		// asking", but "where is the work".
@@ -2929,7 +2923,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 	case "/plan":
 		// Bare /plan reopens the approved plan mid-turn, which is how the
 		// checklist stays reachable below 130 columns, where there is no rail
-		// to hold it (S-104).
+		// to hold it.
 		if len(parts) == 1 {
 			return true, m.planStatus()
 		}
@@ -2956,7 +2950,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 
 	case "/rewind":
 		// Only the numbered form arrives here; bare /rewind opens the picker
-		// from the enter handler (S-069).
+		// from the enter handler.
 		if len(m.checkpoints) == 0 {
 			return true, "No checkpoints to rewind to yet."
 		}
@@ -3013,7 +3007,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		if err := m.db.SaveChat(name, m.agent.Messages()); err != nil {
 			return true, "Error saving: " + err.Error()
 		}
-		// Future rewind branches hang off the named session (S-069).
+		// Future rewind branches hang off the named session.
 		m.sessionName = name
 		return true, fmt.Sprintf("Chat saved as %q", name)
 
@@ -3023,7 +3017,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		}
 		if len(parts) < 2 {
 			// Only reached when there is nothing to pick; otherwise bare
-			// /load opens the picker from the enter handler (S-080).
+			// /load opens the picker from the enter handler.
 			_, listing := m.handleSlashCommand("/chats")
 			return true, listing + "\n\nUsage: /load <name>"
 		}
@@ -3058,7 +3052,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 }
 
 // loadChatByName replaces the working conversation with a saved chat. Both
-// /load <name> and the /load picker (S-080) come through here.
+// /load <name> and the /load picker come through here.
 func (m *Model) loadChatByName(name string) string {
 	msgs, err := m.db.LoadChat(name)
 	if err != nil {
@@ -3235,7 +3229,7 @@ func (m *Model) clearConversation() {
 	m.vitals.reset()
 	m.resetRounds()
 	// The turn's accounting started over, so there is no longer a turn to
-	// close with a summary either (S-098).
+	// close with a summary either.
 	m.turnOpen = false
 }
 
@@ -3243,14 +3237,14 @@ func (m *Model) clearConversation() {
 // transcript from the stored messages.
 func (m *Model) loadConversation(msgs []provider.Message) {
 	// A loaded conversation is a session with a past; the start screen does
-	// not come back after it is cleared (S-105).
+	// not come back after it is cleared.
 	m.spendStartScreen()
 	m.agent.SetMessages(msgs)
 	m.resetTranscript()
 	m.checkpoints = checkpointsFromMessages(msgs)
 	m.appendMessageEntries(msgs)
 	// The prompts that conversation was made of are what ↑ recalls in it
-	// (S-162, recall.go). They are seeded here rather than by each of the four
+	// (recall.go). They are seeded here rather than by each of the four
 	// callers, for the same reason the transcript is: every path back to a
 	// stored conversation passes through this one function.
 	m.recallFromMessages(msgs)
@@ -3259,13 +3253,13 @@ func (m *Model) loadConversation(msgs []provider.Message) {
 // appendMessageEntries renders a run of messages into the transcript: the
 // user turns, the assistant text, and one tool entry per call paired with the
 // result that followed it. It is shared by the session load and by the tail a
-// compaction carries through (S-108), so a conversation put back on screen
+// compaction carries through, so a conversation put back on screen
 // looks the same however it got there.
 func (m *Model) appendMessageEntries(msgs []provider.Message) {
 	for i, msg := range msgs {
 		switch msg.Role {
 		case provider.RoleUser:
-			// A resumed turn keeps the names of what it attached (S-134):
+			// A resumed turn keeps the names of what it attached:
 			// the bytes were saved with it, so the row that said "attached:
 			// shot.png" says it again.
 			m.appendEntry(entry{kind: entryUser, text: msg.Content,

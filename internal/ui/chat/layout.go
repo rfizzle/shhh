@@ -1,6 +1,6 @@
 package chat
 
-// The surface's rectangle model (S-161,
+// The surface's rectangle model (
 // docs/architecture.md#the-screen-is-a-rectangle-and-so-is-everything-in-it).
 // Every width and every row budget on this surface used to be its own
 // subtraction: the content width was `m.width - horizontalPadding*2`, the
@@ -49,7 +49,7 @@ type paneColumns struct {
 	// is single-pane, the left side of the split when it is not.
 	pane uv.Rectangle
 	// feed is the pane less the scroll gutter — what the transcript wraps to
-	// (S-147), and the coordinate space a selection is taken in.
+	//, and the coordinate space a selection is taken in.
 	feed uv.Rectangle
 	// gutter is the scroll gutter's one column. The pane holds it back
 	// whether or not there is a thumb to draw in it, so nothing reflows the
@@ -108,7 +108,7 @@ type surfaceLayout struct {
 	paneColumns
 
 	// header is the title row and rail the line under it that says which pane
-	// has the keyboard (S-115).
+	// has the keyboard.
 	header uv.Rectangle
 	rail   uv.Rectangle
 	// body is everything between the rail and the bottom panel: the
@@ -121,7 +121,7 @@ type surfaceLayout struct {
 	// spinner, the running command's row, the retry countdown. Empty
 	// whenever the turn has nothing to say there.
 	tail uv.Rectangle
-	// agents is the working children's compact progress rows (S-068).
+	// agents is the working children's compact progress rows.
 	agents uv.Rectangle
 	// bottom is the command-center frame, or the divider + status bar + the
 	// takeover surface that replaced it.
@@ -195,7 +195,7 @@ func rowAt(area uv.Rectangle, i int) uv.Rectangle {
 
 // transcriptOrigin is the screen cell the transcript's first rendered cell
 // lands in: the top-left corner of the rows the pane was given. The pointer
-// reads it to say which line and column it is on (S-145, select.go).
+// reads it to say which line and column it is on (select.go).
 func (m Model) transcriptOrigin() uv.Position {
 	s := m.surface()
 	return s.in(s.view, s.pane).Min

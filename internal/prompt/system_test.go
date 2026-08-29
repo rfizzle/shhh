@@ -214,7 +214,7 @@ func TestBuildWriter_Instructions(t *testing.T) {
 	}
 }
 
-// S-114: the alternatives section is asked for on the interactive one-shot
+// The alternatives section is asked for on the interactive one-shot
 // and nowhere else. A pipe's stdout is one command by contract, so the prompt
 // behind it must not invite a second one.
 func TestBuildAlternatives_AsksForTheSection(t *testing.T) {

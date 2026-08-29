@@ -1,6 +1,6 @@
 package chat
 
-// The running turn's status (S-118,
+// The running turn's status (
 // docs/interface/surfaces.md#the-input-frame). The frame's activity slot used
 // to say `WORKING` — which is true of every moment of every turn and
 // therefore says nothing — and the numbers that would have made it useful
@@ -118,7 +118,7 @@ func (m Model) liveTurnTokens() (in, out int64) {
 // close block rather than recomputed, so the two cannot disagree.
 //
 // A turn that closed without one — a round-limit pause states its own
-// checkpoint instead (S-109) — resolves into nothing, and the slot goes back
+// checkpoint instead — resolves into nothing, and the slot goes back
 // to `idle` rather than reporting an older turn as if it were this one.
 func (m Model) resolvedTurnStatus() (components.TurnStatus, bool) {
 	if m.turnCount == 0 {

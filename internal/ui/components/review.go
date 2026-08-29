@@ -1,6 +1,6 @@
 package components
 
-// Review mode (S-099, docs/interface/surfaces.md#the-turns-close): one
+// Review mode (docs/interface/surfaces.md#the-turns-close): one
 // surface showing every file a turn touched with its hunks, so reviewing an
 // agent's work is a pass over a list rather than a scroll through a
 // transcript.
@@ -732,7 +732,7 @@ func (v *ReviewView) footerRows(width int) []string {
 
 // Scroll moves the hunk pane by delta rows. The offset is clamped where it is
 // read, so an overshoot here settles at the end of the pane rather than
-// scrolling into nothing. It is the wheel's entry point (S-115), which is why
+// scrolling into nothing. It is the wheel's entry point, which is why
 // it moves the pane and never the file or hunk selection.
 func (v *ReviewView) Scroll(delta int) {
 	v.Offset += delta

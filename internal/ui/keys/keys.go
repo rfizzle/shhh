@@ -1,4 +1,4 @@
-// Package keys is shhh's key register (S-153,
+// Package keys is shhh's key register (
 // docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // Before it existed, a key was written down twice: once as a literal in the
@@ -27,7 +27,7 @@
 //	  ones for; a surface with better ones keeps them (see Words).
 //	- It is not a rebinding layer. Nothing here reads config yet. The shape
 //	  is the one that would make rebinding a config change rather than a
-//	  code change, and that is as far as S-153 goes.
+//	  code change, and that is as far as the register goes.
 package keys
 
 import (
@@ -174,7 +174,7 @@ var Reading = ReadingKeys{
 	Collapse: bind("-", "collapse", "-"),
 	PageUp:   bind("pgup", "page up", "pgup"),
 	PageDown: bind("pgdn", "page down", "pgdown"),
-	// List is the same `?` the supporting TUIs have offered since S-127: the
+	// List is the same `?` the supporting TUIs offer: the
 	// compact key row swapped for the whole list, in place, and swapped back
 	// by the same key. It is live here and nowhere near the draft, for the
 	// reason every bare letter in this file is.

@@ -64,16 +64,16 @@ func Execute(name string, args json.RawMessage) (string, error) {
 	return "", fmt.Errorf("unknown tool: %s", name)
 }
 
-// What a description tells a model to do (S-164).
+// What a description tells a model to do.
 //
 // This one used to lead with "Large files are truncated with a notice; use
 // start_line/end_line to page through the rest", and paging was what it got:
 // sessions reading twenty and forty line windows out of files well under the
 // cap, a round apiece. Nothing was wrong with the tool — MaxReadFileLines is
-// two thousand — but the salient sentence of a description is the instruction,
-// and that sentence described the exception. The common case leads now, and
-// paging is what it actually is: how to continue through a file the tool has
-// already told you it could not finish.
+// two thousand — but the salient sentence of a description is the
+// instruction, and that sentence described the exception. The common case
+// leads now, and paging is what it actually is: how to continue through a
+// file the tool has already told you it could not finish.
 var readFile = Definition{
 	Tool: provider.Tool{
 		Name: "read_file",

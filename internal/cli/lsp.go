@@ -12,7 +12,7 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/chat"
 )
 
-// openLSP builds the session's LSP toolset (S-071): auto-detected language
+// openLSP builds the session's LSP toolset: auto-detected language
 // servers rooted at the working directory. nil — a clean no-op — when the
 // integration is disabled or no known server binary is on PATH.
 func openLSP(cfg config.Config) *lsp.Toolset {

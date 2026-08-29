@@ -30,7 +30,7 @@ import (
 )
 
 // printOpts are the approval and output flags for headless print mode
-// (S-057). The default is maximally safe: every approval-gated tool call is
+// . The default is maximally safe: every approval-gated tool call is
 // denied; --yes and --allow opt in explicitly.
 type printOpts struct {
 	json    bool
@@ -58,8 +58,8 @@ func (o printOpts) rounds(cfg config.Config) int {
 // (the exit code there, the interrupt key here).
 //
 // The zero the flag was left at and the zero it was set to are different
-// answers, which is what set distinguishes: unset falls through to the config,
-// where zero in turn means "nobody chose" and negative means no cap.
+// answers, which is what set distinguishes: unset falls through to the
+// config, where zero in turn means "nobody chose" and negative means no cap.
 func maxRoundsFor(cfg config.Config, flag int, set bool) int {
 	if !set {
 		return cfg.Behavior.MaxToolRounds
@@ -75,7 +75,7 @@ func maxRoundsFor(cfg config.Config, flag int, set bool) int {
 // replaces the streamed text with a structured transcript on stdout. The
 // returned error drives the process exit code.
 func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opts printOpts) error {
-	// The working scope (S-141), mirroring the interactive session: the
+	// The working scope, mirroring the interactive session: the
 	// directory the run was started in, plus config's scope_dirs and any
 	// --add-dir. Nobody is here to grant a directory mid-run, so what the
 	// flags and the config say is the whole scope for the run.
@@ -84,31 +84,31 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		return err
 	}
 
-	// Tool-output reduction (S-064), mirroring the interactive session: bulky
+	// Tool-output reduction, mirroring the interactive session: bulky
 	// results are reduced with the originals retrievable via the evidence
 	// tool.
 	red := openEvidence()
 	if red != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), evidence.ToolDefinition())
 	}
-	// Guarded web tools (S-066), mirroring the interactive session; web_fetch
+	// Guarded web tools, mirroring the interactive session; web_fetch
 	// stays approval-gated, which headless resolves via --yes.
 	if session.web != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.web.Definitions()...)
 	}
-	// LSP integration (S-071), mirroring the interactive session: navigation
+	// LSP integration, mirroring the interactive session: navigation
 	// tools when a server was detected, after-edit diagnostics on approved
 	// edits, shutdown with the run.
 	if session.lsp != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.lsp.Definitions()...)
 		defer session.lsp.Close()
 	}
-	// Structural code tools (S-072), mirroring the interactive session:
+	// Structural code tools, mirroring the interactive session:
 	// read-only wrappers, each registered only when its binary is on PATH.
 	if session.structural != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.structural.Definitions()...)
 	}
-	// Quality gate (S-067), mirroring the interactive session: auto-run — the
+	// Quality gate, mirroring the interactive session: auto-run — the
 	// model only ever names a suite from the trusted config.
 	var qgate *quality.Runner
 	if session.gate {
@@ -117,7 +117,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if qgate != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), quality.ToolDefinition())
 	}
-	// Long-running process supervisor (S-073), mirroring the interactive
+	// Long-running process supervisor, mirroring the interactive
 	// session: start stays approval-gated (resolved via --yes/--allow), and
 	// Close terminates every owned process tree when the run ends.
 	var procSup *process.Supervisor
@@ -129,12 +129,12 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		defer procSup.Close()
 	}
 
-	// The model is told where the work is (S-141); a headless run cannot be
+	// The model is told where the work is; a headless run cannot be
 	// asked for a directory mid-flight, so knowing the boundary is the
 	// difference between a report that names it and a round spent retrying.
 	session.promptExtra = prompt.CombineExtra(session.promptExtra, scopePromptBlock(sc))
 
-	// …and what it has to work with (S-164), for the same reason: nobody is
+	// …and what it has to work with, for the same reason: nobody is
 	// there to suggest the tool it did not know it had.
 	session.promptExtra = prompt.CombineExtra(session.promptExtra, prompt.Toolbox(session.toolDefs))
 
@@ -172,8 +172,8 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	allowlist = append(allowlist, opts.allow...)
 
 	// Headless approved commands run contained when a mechanism is available
-	// (S-062) — there is no human watching, so containment matters most here.
-	// --sandbox goes further (S-063): a disposable container is created for
+	// — there is no human watching, so containment matters most here.
+	// --sandbox goes further: a disposable container is created for
 	// the run and approved commands exec inside it; if the sandbox cannot be
 	// created and verified, the run fails instead of downgrading.
 	run := runner.RunCapture
@@ -211,12 +211,12 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if red != nil {
 		executor = red.WrapExecutor(baseExecutor)
 	}
-	// Repeat detection (S-164). A headless run needs it most: there is nobody
+	// Repeat detection. A headless run needs it most: there is nobody
 	// watching to notice the same search going round for the third time.
 	a.SetExecutor(agent.NewRepeatDetector().WrapExecutor(executor))
 	a.SetMaxRounds(opts.rounds(cfg))
 
-	// Session observability (S-065): headless runs record the same
+	// Session observability: headless runs record the same
 	// content-free events as interactive sessions; failure just disables
 	// recording. Tool calls are strictly sequential here, so one start
 	// timestamp is enough for durations.
@@ -235,7 +235,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		if webTools != nil && tc.Name == web.FetchToolName {
 			return true
 		}
-		// The process tool (S-073) gates on its arguments: only start needs
+		// The process tool gates on its arguments: only start needs
 		// approval; status/read/input/stop auto-run.
 		if procSup != nil && tc.Name == process.ToolName {
 			return process.NeedsApproval(json.RawMessage(tc.Arguments))
@@ -290,8 +290,7 @@ func headlessGate(name string) bool {
 // policy decides. Safety-flagged commands are always denied — there is no
 // human to confirm them in a headless run. Approved results run through the
 // reduction pipeline (red is nil-safe) like every other tool result. Each
-// verdict is reported to record (nil-safe) as a content-free decision event
-// (S-065).
+// verdict is reported to record (nil-safe) as a content-free decision event.
 func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, run func(context.Context, string) (string, int), red *evidence.Reducer, record func(decision, reason string), webTools *web.Toolset, procSup *process.Supervisor, mutationHook chat.MutationHook, sc *scope.Scope) func(provider.ToolCall) string {
 	note := func(decision, reason string) {
 		if record != nil {
@@ -299,7 +298,7 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 		}
 	}
 	return func(tc provider.ToolCall) string {
-		// web_fetch is an external action (S-066): --yes opts in, the default
+		// web_fetch is an external action: --yes opts in, the default
 		// denies like every other gated call.
 		if webTools != nil && tc.Name == web.FetchToolName {
 			if opts.yes {
@@ -309,7 +308,7 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 			note("deny", "headless-default")
 			return "error: web fetch not approved: headless mode denies external actions by default (run with --yes)"
 		}
-		// A process start (S-073) is approved like a command: safety-flagged
+		// A process start is approved like a command: safety-flagged
 		// commands are always denied headless; --yes or an allowlist match
 		// opts in.
 		if procSup != nil && tc.Name == process.ToolName {
@@ -327,7 +326,7 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 			}
 			if opts.yes || agent.AllowlistMatches(allowlist, command) {
 				// A process start is a command, and the working scope
-				// (S-141) applies to it as much as to a foreground one.
+				// applies to it as much as to a foreground one.
 				if deny, ok := headlessScopeCheck(sc, opts.yes, radius.WritePaths(command)); !ok {
 					note("deny", "out-of-scope")
 					return deny
@@ -359,7 +358,7 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 				return "error: command denied (" + strings.Join(risks, "; ") + "); safety-flagged commands require interactive approval"
 			}
 			if opts.yes || agent.AllowlistMatches(allowlist, args.Command) {
-				// The working scope (S-141) is checked before the grant is
+				// The working scope is checked before the grant is
 				// spent: an allowlisted command shape is not a licence to
 				// write outside the directories this run was given.
 				if deny, ok := headlessScopeCheck(sc, opts.yes, radius.WritePaths(args.Command)); !ok {

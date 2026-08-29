@@ -1,10 +1,10 @@
 package chat
 
-// Reading mode against the Reading artboard (S-122,
-// docs/interface/surfaces.md#reading-mode). The behaviour is S-115's and
-// settled; what is checked here is the dressing — the labelled rail, the lit
-// row, the hint bar that replaces the frame, and the rule that only one pane
-// wears any of it at a time.
+// Reading mode against the Reading artboard (
+// docs/interface/surfaces.md#reading-mode). The behaviour is reading mode's
+// and settled; what is checked here is the dressing — the labelled rail, the
+// lit row, the hint bar that replaces the frame, and the rule that only one
+// pane wears any of it at a time.
 
 import (
 	"strings"
@@ -270,7 +270,7 @@ func TestReadingHint_ShortensRatherThanClipping(t *testing.T) {
 }
 
 // Mono has to keep the distinction the colours carry: the label, the keys and
-// the lit row all survive as words and greys (S-095).
+// the lit row all survive as words and greys.
 func TestReadingMode_SurvivesMono(t *testing.T) {
 	colorProfile(t)
 	monoRestore(t)
@@ -290,7 +290,7 @@ func TestReadingMode_SurvivesMono(t *testing.T) {
 	}
 }
 
-// The key register on the page (S-153,
+// The key register on the page (
 // docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 
 // TestReadingKeyListNamesEveryModeKey is what `[?]` is for: the bar sheds

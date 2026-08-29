@@ -11,10 +11,10 @@ import (
 	"github.com/rfizzle/shhh/internal/scope"
 )
 
-// openQualityGate builds the session's quality-gate runner (S-067): suites
+// openQualityGate builds the session's quality-gate runner: suites
 // come from the workspace's trusted .shhh/quality.json, checks run contained
-// with a read-only workspace when a mechanism is available (S-062), and full
-// check output lands in the evidence store (S-064) when one is open.
+// with a read-only workspace when a mechanism is available, and full
+// check output lands in the evidence store when one is open.
 func openQualityGate(cfg config.Config, red *evidence.Reducer, sc *scope.Scope) *quality.Runner {
 	ws, err := os.Getwd()
 	if err != nil {

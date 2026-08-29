@@ -259,7 +259,7 @@ func newEndpoint(p Profile, e Endpoint, opts provider.ResolveOpts) (provider.Pro
 // came back". The picker reads the capability, not the answer: without it,
 // bare /model opens straight onto the declared catalog, with no query
 // surface, no ten-second budget, and no request to a gateway whose /models
-// the user has told us not to call (S-143).
+// the user has told us not to call.
 func withDiscovery(e Endpoint, p provider.Provider) provider.Provider {
 	if e.DiscoveryOff() {
 		return noDiscovery{p}

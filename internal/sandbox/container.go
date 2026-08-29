@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-// Container sandboxes (S-063): a disposable engine-managed workspace for long
+// Container sandboxes: a disposable engine-managed workspace for long
 // or unsupervised agent runs. The container gets exactly one host mount (the
 // workspace, writable), no host environment or credentials, all capabilities
 // dropped, and resource ceilings; everything else it touches is its own

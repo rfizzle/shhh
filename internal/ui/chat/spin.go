@@ -1,6 +1,6 @@
 package chat
 
-// The spinner's tick loop (S-119, docs/interface/README.md). A running turn
+// The spinner's tick loop (docs/interface/README.md). A running turn
 // drives three animations at once — the frame's activity slot (where the turn
 // status sits and where an attached child still reads `WORKING`),
 // the transcript's live rows, and the inspector rail's agent lanes — and the
@@ -45,7 +45,7 @@ func (m Model) spinnerWanted() bool {
 		return true
 	}
 	// Bare /model is querying the provider before it can open the picker
-	// (S-083); the wait is the only thing on screen.
+	//; the wait is the only thing on screen.
 	if m.state == stateModelList {
 		return true
 	}
@@ -55,7 +55,7 @@ func (m Model) spinnerWanted() bool {
 		return true
 	}
 	// A child still working keeps the lanes and the rail's agent block moving
-	// even while the parent waits on an approval (S-110).
+	// even while the parent waits on an approval.
 	return m.childrenRunning()
 }
 
@@ -102,7 +102,7 @@ func (m Model) spinTick(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	m.spinFrame++
-	// The tick is also what the streaming transcript is repainted on (S-149,
+	// The tick is also what the streaming transcript is repainted on (
 	// the streaming render) — the one clock, spent on the one other thing that
 	// wants one.
 	if m.streamDirty {

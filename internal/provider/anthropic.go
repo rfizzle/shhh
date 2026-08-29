@@ -20,7 +20,7 @@ const defaultAnthropicMaxTokens = 64000
 
 // anthropicAnswerFloor is the output the thinking budget may not eat: the
 // budget shares max_tokens with the reply, and a session that has capped its
-// output should still get an answer under whatever cap it chose (S-139).
+// output should still get an answer under whatever cap it chose.
 const anthropicAnswerFloor = 4096
 
 type Anthropic struct {
@@ -56,7 +56,7 @@ func NewAnthropicWith(client anthropic.Client, model string) *Anthropic {
 
 // NewAnthropicNamed is NewAnthropicWith under a caller-chosen name, so a
 // gateway profile speaking the Messages API classifies its failures as
-// itself rather than as Anthropic (S-106).
+// itself rather than as Anthropic.
 func NewAnthropicNamed(client anthropic.Client, model, name string) *Anthropic {
 	name = first(name, "anthropic")
 	return &Anthropic{
@@ -84,7 +84,7 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 		MaxTokens: int64(maxTokens),
 	}
 
-	// Extended thinking (S-139). The budget has to leave the reply room to
+	// Extended thinking. The budget has to leave the reply room to
 	// exist, so it is clamped to the output ceiling less a floor for the
 	// answer itself; a ceiling too small for the API's minimum budget asks
 	// for no thinking rather than sending a request the API will refuse.
@@ -127,8 +127,7 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 		}
 		if err := stream.Err(); err != nil {
 			// The blocks the model had finished travel with the failure, so a
-			// dropped stream can be continued rather than only re-asked
-			// (S-107).
+			// dropped stream can be continued rather than only re-asked.
 			ch <- StreamEvent{
 				ToolCalls: CompletedToolCalls(anthropicToolCalls(accumulated)),
 				Reasoning: anthropicReasoning(accumulated),
@@ -162,7 +161,7 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 
 // anthropicToolCalls reads the tool-use blocks out of the accumulated
 // message. It is called on a partially accumulated one too, when a stream
-// breaks mid-reply (S-107) — the SDK only materialises a block once its own
+// breaks mid-reply — the SDK only materialises a block once its own
 // deltas have been folded in, so what is there is what the model finished.
 func anthropicToolCalls(accumulated anthropic.Message) []ToolCall {
 	var calls []ToolCall
@@ -179,7 +178,7 @@ func anthropicToolCalls(accumulated anthropic.Message) []ToolCall {
 }
 
 // anthropicReasoning reads the thinking blocks out of the accumulated
-// message so they can be replayed on the next request (S-139). Like
+// message so they can be replayed on the next request. Like
 // anthropicToolCalls it runs over a partial accumulation too: a stream that
 // broke after the model finished thinking kept the thinking.
 func anthropicReasoning(accumulated anthropic.Message) []ReasoningBlock {
@@ -203,7 +202,8 @@ func anthropicReasoning(accumulated anthropic.Message) []ReasoningBlock {
 
 // toAnthropicMessages converts the neutral message history to Anthropic's
 // shape: system content moves to the top-level system prompt, and consecutive
-// tool results merge into a single user turn (required for parallel tool use).
+// tool results merge into a single user turn (required for parallel tool
+// use).
 func toAnthropicMessages(messages []Message) (system string, out []anthropic.MessageParam) {
 	var systemParts []string
 	var pendingToolResults []anthropic.ContentBlockParamUnion
@@ -222,7 +222,7 @@ func toAnthropicMessages(messages []Message) (system string, out []anthropic.Mes
 		case RoleUser:
 			flushToolResults()
 			// Attachments lead the message: the Messages API reads an image
-			// better when the sentence about it comes after (S-134).
+			// better when the sentence about it comes after.
 			blocks := anthropicAttachmentBlocks(msg.Attachments)
 			if msg.Content != "" || len(blocks) == 0 {
 				blocks = append(blocks, anthropic.NewTextBlock(msg.Content))
@@ -233,8 +233,7 @@ func toAnthropicMessages(messages []Message) (system string, out []anthropic.Mes
 			var blocks []anthropic.ContentBlockParamUnion
 			// Thinking leads the turn, in the order and the form it arrived:
 			// with extended thinking on, the API rejects an assistant turn
-			// that requested tools and dropped the reasoning behind them
-			// (S-139).
+			// that requested tools and dropped the reasoning behind them.
 			for _, r := range msg.Reasoning {
 				if r.Redacted != "" {
 					blocks = append(blocks, anthropic.NewRedactedThinkingBlock(r.Redacted))

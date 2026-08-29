@@ -1,6 +1,6 @@
 package chat
 
-// Reasoning effort in the session (S-139): `ctrl+r` walks the four levels,
+// Reasoning effort in the session: `ctrl+r` walks the four levels,
 // `/reasoning [level]` says or sets one, `/reasoning default [level]` writes
 // it to the config file, and the cockpit states which one is live beside the
 // model.
@@ -37,7 +37,7 @@ func (m Model) WithReasoning(effort provider.Effort, fn func(provider.Effort)) M
 }
 
 // WithReasoningDefault records the persisted level and whatever outranks it,
-// so `/reasoning default` can report both (S-136's rule, applied to the
+// so `/reasoning default` can report both (the same rule, applied to the
 // second setting that has the same problem).
 func (m Model) WithReasoningDefault(level, outranked string) Model {
 	m.effortDefault = level

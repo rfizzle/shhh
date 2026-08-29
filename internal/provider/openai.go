@@ -76,7 +76,7 @@ func (o *OpenAI) StreamCompletion(ctx context.Context, messages []Message, opts 
 	if opts.MaxTokens > 0 {
 		req.MaxTokens = opts.MaxTokens
 	}
-	// Reasoning effort (S-139) is sent only when the session asked for one:
+	// Reasoning effort is sent only when the session asked for one:
 	// the field is a 400 on a model that has no reasoning to spend.
 	if effort := opts.Effort.OpenAIEffort(); effort != "" {
 		req.ReasoningEffort = effort
@@ -135,7 +135,7 @@ func toOpenAIMessages(msgs []Message) []openai.ChatCompletionMessage {
 		}
 		// Chat completions carry a mixed message as a parts array, and the
 		// two content fields are mutually exclusive — setting both is an SDK
-		// error, so Content is cleared once the parts exist (S-134).
+		// error, so Content is cleared once the parts exist.
 		if parts := openAIAttachmentParts(m); len(parts) > 0 {
 			msg.Content, msg.MultiContent = "", parts
 		}

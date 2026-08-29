@@ -1,5 +1,5 @@
 // Package structural exposes best-in-class external code tools — fd,
-// ast-grep, sd, tokei, and jaq — as first-class agent tools (S-072), so the
+// ast-grep, sd, tokei, and jaq — as first-class agent tools, so the
 // model searches structurally and previews transforms instead of improvising
 // shell pipelines. Each tool is registered only when its binary is found on
 // PATH.
@@ -54,7 +54,7 @@ const (
 
 	// MaxOutputBytes caps captured stdout; the process is killed once the cap
 	// is hit, and the result carries a truncation notice. Results this large
-	// are further reduced by the evidence pipeline (S-064) when it is active.
+	// are further reduced by the evidence pipeline when it is active.
 	MaxOutputBytes = 64 << 10
 
 	// MaxStderrBytes caps captured stderr embedded in error results.
@@ -85,7 +85,7 @@ var toolOrder = []string{FdToolName, AstGrepToolName, SdToolName, TokeiToolName,
 
 // ToolBinaries are the binaries the wrapped tools need, in registration
 // order. `shhh doctor` reads them to say which of the five this machine has
-// (S-130); nothing else needs the list, because every other caller asks a
+// ; nothing else needs the list, because every other caller asks a
 // built toolset what it found rather than what it looked for.
 func ToolBinaries() []string {
 	out := make([]string, 0, len(toolOrder))

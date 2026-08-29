@@ -1,6 +1,6 @@
 package caps
 
-// The kitty rung against the terminal that answered for it (S-158).
+// The kitty rung against the terminal that answered for it.
 
 import (
 	"image"

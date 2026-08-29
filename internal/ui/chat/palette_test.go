@@ -127,7 +127,7 @@ func TestPalette_AliasFindsItsCommand(t *testing.T) {
 	if !ok || !strings.HasPrefix(first.label, "/exit") {
 		t.Fatalf("an alias should surface its primary command, got %q", first.label)
 	}
-	// The binding is the row's meta field since S-126, right-aligned by the
+	// The binding is the row's meta field, right-aligned by the
 	// card rather than padded into the label by this package.
 	if first.meta != "ctrl+d" {
 		t.Fatalf("a command with a key binding should show it, got %q", first.meta)
@@ -258,7 +258,7 @@ func TestPalette_OpensMidTurn(t *testing.T) {
 		t.Fatal("the palette should open while the agent works")
 	}
 	if m.turnState() != stateStreaming {
-		t.Fatal("the turn should keep running underneath (S-087)")
+		t.Fatal("the turn should keep running underneath")
 	}
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)

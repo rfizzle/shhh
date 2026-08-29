@@ -1,11 +1,11 @@
 package chat
 
-// Attachments (S-134): images and files staged for the next message. The
+// Attachments: images and files staged for the next message. The
 // an attachment shows as a chip carrying its mark, its name and its size, on
 // the frame's staged rail while it waits and on the user's own
 // transcript row once it has gone. Nothing here draws a picture: `/paste
 // show` is the one surface that does, opened by naming a chip and given the
-// whole pane while it is up (S-158, preview.go). What the bytes are for
+// whole pane while it is up (preview.go). What the bytes are for
 // is the request — they ride on the user message (internal/provider), and
 // each provider carries them the way its API takes them.
 //
@@ -167,7 +167,7 @@ func chipKind(k provider.AttachmentKind) components.ChipKind {
 
 // runPaste dispatches `/paste`: bare reads the clipboard, `clear` drops what
 // is staged, `drop <name>` drops one chip, `show <name>` opens one as a
-// picture (S-158), and anything else is a path.
+// picture, and anything else is a path.
 func (m Model) runPaste(parts []string) (tea.Model, tea.Cmd) {
 	if len(parts) == 1 {
 		return m, readClipboardCmd()
@@ -210,7 +210,7 @@ func cutFold(arg, word string) (string, bool) {
 //
 // A chip carries no key of its own: it sits above a live draft, so the
 // name printed on it is the handle instead, and the completion menu offers
-// the staged names (S-079) so it is never typed from memory. A name that is
+// the staged names so it is never typed from memory. A name that is
 // not staged is said out loud with the ones that are, for the same reason a
 // refused attachment is: a drop that quietly did nothing is a message that
 // goes out carrying the file you meant to remove.

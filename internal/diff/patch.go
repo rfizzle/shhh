@@ -7,7 +7,7 @@ import (
 )
 
 // File is one file's portion of a multi-file patch (e.g. `git diff` output),
-// for the full-screen session diff view (S-074).
+// for the full-screen session diff view.
 type File struct {
 	Path string
 	// Binary marks a file git reported as a binary change; Hunks is empty.

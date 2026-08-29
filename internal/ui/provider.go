@@ -1,6 +1,6 @@
 package ui
 
-// The missing-provider card and what it offers (S-106,
+// The missing-provider card and what it offers (
 // docs/interface/surfaces.md#the-recovery-row).
 //
 // This is one of only two surfaces in the product that earns a card, and it
@@ -230,7 +230,7 @@ func (m ProviderSetup) finish() (tea.Model, tea.Cmd) {
 }
 
 // View is the frame. The setup card draws inline on stderr and asks the
-// terminal for nothing, so the view carries content and no state (S-155).
+// terminal for nothing, so the view carries content and no state.
 func (m ProviderSetup) View() tea.View {
 	return tea.NewView(m.screen())
 }

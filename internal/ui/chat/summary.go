@@ -1,6 +1,6 @@
 package chat
 
-// The session summary (S-163,
+// The session summary (
 // docs/interface/surfaces.md#the-session-summary).
 //
 // The inspector rail answers every standing question about a session in
@@ -107,7 +107,7 @@ type summaryDoneMsg struct {
 	verdict agent.SummaryVerdict
 }
 
-// WithSummarizer enables the session summary (S-163). A nil summarizer, or a
+// WithSummarizer enables the session summary. A nil summarizer, or a
 // disabled one, leaves the block undrawn and no requests made.
 func (m Model) WithSummarizer(s *agent.Summarizer) Model {
 	m.summarizer = s
@@ -163,7 +163,7 @@ func (m *Model) summaryCmd() tea.Cmd {
 
 // summaryCloseCmd is the reading a turn ends on, derived from the model
 // before against the model after — the same shape the desktop notification is
-// derived with (S-157), and for the same reason: a turn ending is a
+// derived with, and for the same reason: a turn ending is a
 // transition, not a message any one of the dozen handlers that reach it could
 // be trusted to send.
 //
@@ -195,7 +195,7 @@ func (m *Model) forceSummaryCmd() tea.Cmd {
 	summarizer := m.summarizer
 	runID := m.summary.runID
 	req := m.summaryRequest()
-	// Background, like the classifier's judge (S-060): nothing on screen
+	// Background, like the classifier's judge: nothing on screen
 	// waits for it, and the turn under it is untouched either way.
 	ctx, cancel := context.WithCancel(context.Background())
 	m.summaryCancel = cancel

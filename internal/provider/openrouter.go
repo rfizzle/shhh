@@ -91,7 +91,7 @@ func (o *OpenRouter) StreamCompletion(ctx context.Context, messages []Message, o
 	if opts.MaxTokens > 0 {
 		req.MaxTokens = opts.MaxTokens
 	}
-	// Reasoning effort (S-139) is sent only when the session asked for one:
+	// Reasoning effort is sent only when the session asked for one:
 	// the field is a 400 on a model that has no reasoning to spend.
 	if effort := opts.Effort.OpenAIEffort(); effort != "" {
 		req.ReasoningEffort = effort

@@ -1,12 +1,12 @@
 // Package plan turns a planning response into the ordered step list the plan
-// card renders (S-103).
+// card renders.
 //
 // A plan that arrives as a paragraph asks the reader to accept a leap of
-// faith: they approve a mode change and a run of tool calls on the strength of
-// prose they skimmed. Naming the files each step intends to touch turns that
-// into a check. This package is the parser for the shape plan mode asks the
-// model to emit (internal/prompt.PlanModeInstructions) — a numbered step list
-// with optional `files:`, `action:` and `note:` continuation lines.
+// faith: they approve a mode change and a run of tool calls on the strength
+// of prose they skimmed. Naming the files each step intends to touch turns
+// that into a check. This package is the parser for the shape plan mode asks
+// the model to emit (internal/prompt.PlanModeInstructions) — a numbered step
+// list with optional `files:`, `action:` and `note:` continuation lines.
 //
 // It is deliberately forgiving in one direction and strict in the other. A
 // response that never adopted the shape parses to zero steps, and the card
@@ -219,9 +219,9 @@ func applyKey(s *Step, key, value string) (statedAction bool) {
 // comma it was asked for, and the middle dot the card itself uses.
 var pathSplit = regexp.MustCompile(`\s*[,·;]\s*`)
 
-// parsePaths reads a `files:` value. Everything the model can plausibly wrap a
-// path in — backticks, quotes, bold — comes off; a value that says there are
-// none yields none rather than a path called "none".
+// parsePaths reads a `files:` value. Everything the model can plausibly wrap
+// a path in — backticks, quotes, bold — comes off; a value that says there
+// are none yields none rather than a path called "none".
 func parsePaths(value string) []string {
 	var out []string
 	for _, field := range pathSplit.Split(value, -1) {

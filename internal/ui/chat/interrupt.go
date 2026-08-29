@@ -1,6 +1,6 @@
 package chat
 
-// When a decision lands mid-sentence (S-117,
+// When a decision lands mid-sentence (
 // docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // An approval arrives when the agent needs it, not when the reader is ready,
@@ -140,7 +140,7 @@ func (m *Model) armArrival() {
 //
 // Only the approval card and the /run confirm are. Their question is the one
 // a reader walks up to a screen to answer, and the answer is one letter. The
-// plan card and the memory proposal (S-070) both take typed input — a
+// plan card and the memory proposal both take typed input — a
 // choice moved with j/k, a note written into a field — so a card that took
 // the keyboard would be a card eating a sentence, which is the hazard this
 // whole rule exists for. They keep the handover, and it costs them nothing:
@@ -306,7 +306,7 @@ func (m Model) undressedDraft(width int) []string {
 		return nil
 	}
 	// The same box the frame is, three rows deep and drawn into the
-	// same rectangles (S-161): its own rails, its two border columns, and the
+	// same rectangles: its own rails, its two border columns, and the
 	// held sentence across what they leave. The `▸ ` is the block's own, not
 	// the prompt gutter's, so the row takes all of the inner columns.
 	scr := uv.NewScreenBuffer(max(width, 0), 3)

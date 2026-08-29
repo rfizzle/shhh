@@ -1,6 +1,6 @@
 package components
 
-// The scroll gutter (S-147,
+// The scroll gutter (
 // docs/architecture.md#the-screen-is-a-rectangle-and-so-is-everything-in-it).
 // One column down the right edge of the transcript pane saying where in the
 // whole transcript the pane is, and how much of the whole it is showing.

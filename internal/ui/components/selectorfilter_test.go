@@ -1,7 +1,8 @@
 package components
 
-// The filter row over the window (S-123,
-// docs/interface/surfaces.md#selectors, ui_kits/cockpit/Lists.html). S-116
+// The filter row over the window (
+// docs/interface/surfaces.md#selectors, ui_kits/cockpit/Lists.html). The
+// window
 // gave every picker one window; past a dozen entries walking that window is
 // still the slow way, so the same component pins a query line above it. The
 // rule the artboard settles and these tests hold is that the component never

@@ -326,7 +326,7 @@ func TestPlan_SlashPlanSave(t *testing.T) {
 		t.Fatalf("/plan save without a name should still save, got %q", result)
 	}
 
-	// Bare /plan is the checklist now (S-104); with no plan approved it says
+	// Bare /plan is the checklist now; with no plan approved it says
 	// so, and still names the save form it replaced as the bare command.
 	_, bare := m.handleSlashCommand("/plan")
 	if !strings.Contains(bare, "No approved plan is running") || !strings.Contains(bare, "/plan save [name]") {
@@ -386,7 +386,7 @@ func plannedModel(t *testing.T, response string) Model {
 	if m.state != statePlanApprove {
 		t.Fatalf("expected the plan card, got state %d", m.state)
 	}
-	// The card arrives without the keyboard (S-117); ctrl+g is what
+	// The card arrives without the keyboard; ctrl+g is what
 	// makes its keys mean anything.
 	return handover(t, m)
 }

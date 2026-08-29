@@ -1,6 +1,6 @@
 package provider
 
-// The provider failure taxonomy (S-106,
+// The provider failure taxonomy (
 // docs/interface/surfaces.md#the-recovery-row).
 //
 // Every dialect used to map its own 401 and its own 429 and hand everything
@@ -32,7 +32,7 @@ import (
 	"google.golang.org/genai"
 )
 
-// Class is what went wrong, from the closed vocabulary S-106 fixed. The value
+// Class is what went wrong, from a closed vocabulary. The value
 // is the word the interface says, so a class the UI has no case for still
 // reads as itself rather than as a number.
 type Class string
@@ -58,7 +58,7 @@ const (
 	ClassCancelled Class = "cancelled"
 	// ClassUnclassified — a failure this table has no case for. It is a real
 	// class, not an error path: the row still renders on the grid and the
-	// provider's own message goes in the detail body (S-106).
+	// provider's own message goes in the detail body.
 	ClassUnclassified Class = "unclassified"
 )
 

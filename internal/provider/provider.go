@@ -20,11 +20,11 @@ type Message struct {
 	ToolCalls  []ToolCall
 	ToolCallID string
 	// Attachments are the non-conversational parts the message carries —
-	// pasted images, files off the clipboard (S-134). Each provider's
+	// pasted images, files off the clipboard. Each provider's
 	// converter decides how to put them on the wire; see attachment.go.
 	Attachments []Attachment
 	// Reasoning is the thinking the model did before this message, kept in
-	// the provider's own form (S-139, reasoning.go). Only the assistant turn
+	// the provider's own form (reasoning.go). Only the assistant turn
 	// that requested tools needs it, and only the providers that require it
 	// back put it on the wire.
 	Reasoning []ReasoningBlock
@@ -41,7 +41,7 @@ type ToolCall struct {
 	Name      string
 	Arguments string
 	// Signature is the opaque per-part reasoning token some providers attach
-	// to the tool call itself and require back on the next request (S-139).
+	// to the tool call itself and require back on the next request.
 	// Gemini 3 is the one that does: the thought signature rides the
 	// functionCall part, and a history that drops it hands the model a plan
 	// it cannot recognise as its own. It is base64 where the provider's is
@@ -54,7 +54,7 @@ type Usage struct {
 	CompletionTokens int
 	// CachedTokens is the part of PromptTokens the provider served from its
 	// prompt cache, when it reports one; zero means "not reported", not
-	// "nothing cached" (S-093).
+	// "nothing cached".
 	CachedTokens int
 }
 
@@ -64,7 +64,7 @@ type StreamEvent struct {
 	Usage     *Usage
 	Done      bool
 	Err       error
-	// Reasoning is the thinking blocks this response produced (S-139). It
+	// Reasoning is the thinking blocks this response produced. It
 	// rides the terminal event beside ToolCalls, and for the same reason:
 	// what the model finished has to survive into the next request.
 	Reasoning []ReasoningBlock
@@ -76,7 +76,7 @@ type CompletionOpts struct {
 	MaxTokens   int
 	Tools       []Tool
 	ToolChoice  string
-	// Effort is the reasoning level asked of the model (S-139,
+	// Effort is the reasoning level asked of the model (
 	// reasoning.go). EffortOff — the zero value — sends nothing.
 	Effort Effort
 }

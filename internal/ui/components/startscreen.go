@@ -1,6 +1,6 @@
 package components
 
-// The first-contact screen (S-105,
+// The first-contact screen (
 // docs/interface/surfaces.md#the-start-screen). An empty session used to be
 // one italic sentence in the middle of a blank viewport, which told a new
 // reader nothing and a returning one less. The screen states what shhh
@@ -64,7 +64,7 @@ type StartScreen struct {
 	// accepts is not an offer.
 	Hint string
 	// Nav is the second key line: how to move between the prompt and the
-	// transcript (S-115). It outlives the typing dismissal that takes
+	// transcript. It outlives the typing dismissal that takes
 	// Hint, because those keys outlive it too — the wheel, pgup and ctrl+e
 	// work with a half-written draft in the box, which is the whole point of
 	// them.

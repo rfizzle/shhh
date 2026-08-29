@@ -1,6 +1,6 @@
 package components
 
-// The primitives audit (S-126, docs/interface/departures.md). Seven Go
+// The primitives audit (docs/interface/departures.md). Seven Go
 // renderers were written before the design system had a page to check them
 // against; these are the divergences the audit closed, held open as tests so
 // the two cannot drift apart again the quiet way they did the first time.

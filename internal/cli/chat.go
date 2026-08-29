@@ -43,35 +43,35 @@ import (
 // registered toolset, and title.
 type chatSession struct {
 	title string
-	// kind labels recorded observability sessions (S-065): "chat" or "code".
+	// kind labels recorded observability sessions: "chat" or "code".
 	kind         string
 	buildPrompt  func(shell.Info, ...string) string
 	toolDefs     []provider.Tool
 	flags        *resolve.Opts
 	continueLast bool
 	resumePick   bool
-	// web is the guarded web toolset (S-066); nil leaves the web tools
+	// web is the guarded web toolset; nil leaves the web tools
 	// unregistered (`shhh chat` today).
 	web *web.Toolset
-	// lsp is the language-server toolset (S-071): after-edit diagnostics plus
+	// lsp is the language-server toolset: after-edit diagnostics plus
 	// the definition/references tools; nil (no servers detected, or disabled)
 	// is a clean no-op. `shhh code` only.
 	lsp *lsp.Toolset
-	// structural wraps external code tools (S-072: fd, ast-grep, sd, tokei,
+	// structural wraps external code tools (fd, ast-grep, sd, tokei,
 	// jaq), each registered only when its binary is on PATH; nil leaves them
 	// unregistered. `shhh code` only.
 	structural *structural.Toolset
-	// gate registers the quality-gate tool and /gate command (S-067);
+	// gate registers the quality-gate tool and /gate command;
 	// `shhh code` only.
 	gate bool
-	// processes registers the long-running process supervisor (S-073): the
+	// processes registers the long-running process supervisor: the
 	// process tool (start approval-gated) and the /ps command; `shhh code`
 	// only. Session end terminates every owned process tree.
 	processes bool
 	// agents registers the sub-agent orchestration tools and supervisor
-	// (S-068); `shhh code` interactive sessions only.
+	//; `shhh code` interactive sessions only.
 	agents bool
-	// memory enables durable memory (S-070): bounded recall into the system
+	// memory enables durable memory: bounded recall into the system
 	// prompt plus the confirm-gated remember tool; `shhh code` interactive
 	// sessions only (headless runs have nobody to confirm a proposal).
 	memory bool
@@ -80,12 +80,12 @@ type chatSession struct {
 	promptExtra string
 	// maxRounds overrides behavior.max_tool_rounds for this session, where 0
 	// means no cap at all — the unattended `shhh code --max-rounds 0`, where
-	// the S-109 checkpoint has nobody to stop for. maxRoundsSet tells the two
+	// the round checkpoint has nobody to stop for. maxRoundsSet tells the two
 	// zeroes apart exactly as printOpts does; `shhh chat` sets neither and
 	// takes the config.
 	maxRounds    int
 	maxRoundsSet bool
-	// addDirs are --add-dir directories: the working scope (S-141) a session
+	// addDirs are --add-dir directories: the working scope a session
 	// starts with beyond the directory it was opened in, on top of
 	// behavior.scope_dirs.
 	addDirs []string
@@ -129,7 +129,7 @@ func newChatCmd() *cobra.Command {
 // sessionEnv is the provider-and-prompt setup shared by the interactive chat
 // TUI and headless print mode: resolved model, initial messages, and a stream
 // closure over the session's provider.
-// modelListTimeout bounds the /model picker's live catalog query (S-083); a
+// modelListTimeout bounds the /model picker's live catalog query; a
 // gateway that is slow or down should cost the user a beat, not the session.
 const modelListTimeout = 10 * time.Second
 
@@ -156,13 +156,13 @@ type sessionEnv struct {
 	sysPrompt string
 	// projectTokens is the estimated context cost of the project context
 	// injected into the system prompt, which /stats and the inspector rail
-	// name as its own occupancy category (S-093).
+	// name as its own occupancy category.
 	projectTokens int64
 	messages      []provider.Message
 	stream        agent.StreamFunc
 	switchModel   func(string)
 	// effort is the reasoning level the session resolved to, and
-	// switchReasoning is what ctrl+r and /reasoning change it with (S-139).
+	// switchReasoning is what ctrl+r and /reasoning change it with.
 	// Like the model it is read by the stream closure from another
 	// goroutine, so it lives under the same mutex.
 	effort          provider.Effort
@@ -173,7 +173,7 @@ type sessionEnv struct {
 	// every child it spawns.
 	reasoning func() provider.Effort
 	// replaceKey and switchProvider are what a provider failure's [k] and
-	// [p] do (S-106): both rebuild the provider in place, and both leave the
+	// [p] do: both rebuild the provider in place, and both leave the
 	// session untouched when the rebuild fails.
 	replaceKey     func(string) error
 	switchProvider func(string) error
@@ -221,7 +221,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession) (*sessionEnv, erro
 	}
 
 	// /model switches the model mid-session, and a provider failure's [k] and
-	// [p] switch the key and the provider under it (S-106). All three are
+	// [p] switch the key and the provider under it. All three are
 	// read by the stream closure from a background goroutine, so one mutex
 	// guards the model, the provider and the key it was built with.
 	var sessionMu sync.Mutex
@@ -335,7 +335,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession) (*sessionEnv, erro
 }
 
 func runChatSession(cmd *cobra.Command, args []string, session chatSession) error {
-	// The working scope (S-141): the directory the session was opened in plus
+	// The working scope: the directory the session was opened in plus
 	// whatever config and --add-dir put beside it. Containment writes to it,
 	// the approval cards ask before anything leaves it, and /add-dir grows it
 	// mid-session. It is built first because everything that runs a command
@@ -345,30 +345,30 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		return err
 	}
 
-	// Tool-output reduction (S-064): bulky tool results are reduced before
+	// Tool-output reduction: bulky tool results are reduced before
 	// the model sees them, with the originals retrievable via the evidence
 	// tool. No store means no reduction and no evidence tool.
 	red := openEvidence()
 	if red != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), evidence.ToolDefinition())
 	}
-	// Guarded web tools (S-066): web_fetch (approval-gated as an external
+	// Guarded web tools: web_fetch (approval-gated as an external
 	// action) and, when a search key is configured, web_search.
 	if session.web != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.web.Definitions()...)
 	}
-	// LSP integration (S-071): definition/references tools when a language
+	// LSP integration: definition/references tools when a language
 	// server was detected; servers start lazily and shut down with the session.
 	if session.lsp != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.lsp.Definitions()...)
 		defer session.lsp.Close()
 	}
-	// Structural code tools (S-072): fd, ast-grep, sd, tokei, jaq — read-only
+	// Structural code tools: fd, ast-grep, sd, tokei, jaq — read-only
 	// wrappers, each registered only when its binary is on PATH.
 	if session.structural != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), session.structural.Definitions()...)
 	}
-	// Quality gate (S-067): the model can run the project's own checks by
+	// Quality gate: the model can run the project's own checks by
 	// suite name; command text only ever comes from trusted config.
 	var gate *quality.Runner
 	if session.gate {
@@ -377,13 +377,13 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if gate != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), quality.ToolDefinition())
 	}
-	// Sub-agent orchestration (S-068): spawn_agent (approval-gated) and
+	// Sub-agent orchestration: spawn_agent (approval-gated) and
 	// agent_report join the toolset; the supervisor itself is built once the
 	// provider is resolved.
 	if session.agents {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions()...)
 	}
-	// Long-running process supervisor (S-073): the process tool (start goes
+	// Long-running process supervisor: the process tool (start goes
 	// through the approval queue like any command) plus /ps; Close terminates
 	// every owned process tree when the session ends, however it ends.
 	var procSup *process.Supervisor
@@ -403,7 +403,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		defer db.Close()
 	}
 
-	// Durable memory (S-070): recalled entries join the system prompt under a
+	// Durable memory: recalled entries join the system prompt under a
 	// hard entry/token budget — cited by id, zero model calls — and the
 	// remember tool lets the model propose new ones, each confirmed by the
 	// user before it persists.
@@ -417,11 +417,11 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		}
 	}
 
-	// The model is told where the work is (S-141), so an out-of-scope path is
+	// The model is told where the work is, so an out-of-scope path is
 	// a question it asks rather than a call the user refuses.
 	session.promptExtra = prompt.CombineExtra(session.promptExtra, scopePromptBlock(sc))
 
-	// …and what it has to work with (S-164). Every optional tool above is
+	// …and what it has to work with. Every optional tool above is
 	// registered on a condition — a language server was found, a binary is on
 	// PATH, a key is configured — so this is the last point where the whole
 	// toolset is known, and it has to be said after the last one joins.
@@ -435,7 +435,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 
 	prices := loadPricing()
 
-	// Permission mode (S-059): starting mode and Shift+Tab cycle come from
+	// Permission mode: starting mode and Shift+Tab cycle come from
 	// config; the default is manual (everything prompts).
 	mode := agent.ModeManual
 	if s := cfg.Behavior.DefaultMode; s != "" {
@@ -448,7 +448,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		return fmt.Errorf("config behavior.mode_cycle: %w", err)
 	}
 
-	// Auto mode's permission classifier (S-060) reuses the session provider;
+	// Auto mode's permission classifier reuses the session provider;
 	// behavior.classifier_model overrides the model (default: session model).
 	classifierModel := cfg.Behavior.ClassifierModel
 	if classifierModel == "" {
@@ -461,7 +461,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		Retries:   cfg.Behavior.ClassifierRetries,
 	})
 
-	// The session summary (S-163) resolves its model the same way: summary.model
+	// The session summary resolves its model the same way: summary.model
 	// overrides, empty means the session model. It is the one setting in that
 	// section worth changing — the readings are frequent, and the session
 	// model is usually the expensive one.
@@ -478,7 +478,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		Disabled:       cfg.Summary.Disabled,
 	})
 
-	// Process containment (S-062): assistant commands run wrapped when a
+	// Process containment: assistant commands run wrapped when a
 	// mechanism is available; the confirm prompt shows the state either way.
 	containment, err := buildContainment(cfg, sc)
 	if err != nil {
@@ -506,12 +506,12 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		executor = red.WrapExecutor(baseExecutor)
 	}
 
-	// Session observability (S-065): content-free events (usage, tool calls,
+	// Session observability: content-free events (usage, tool calls,
 	// mode decisions) are recorded to storage; failure just disables recording.
 	recorder := startObserveRecorder(db, session.kind, env.prov.Name(), env.modelName, prices)
 	defer recorder.end()
 
-	// Sub-agent supervisor (S-068): spawn_agent and agent_report short-circuit
+	// Sub-agent supervisor: spawn_agent and agent_report short-circuit
 	// on the executor chain; Close cancels the child tree and removes
 	// leftover worktrees when the session ends.
 	var sup *subagent.Supervisor
@@ -521,7 +521,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		defer sup.Close()
 	}
 
-	// Repeat detection (S-164) goes on last, so it sees every tool the chain
+	// Repeat detection goes on last, so it sees every tool the chain
 	// can dispatch and the result the model will actually read.
 	executor = agent.NewRepeatDetector().WrapExecutor(executor)
 
@@ -559,7 +559,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithModelLister(modelListerFor(env.prov)).
 		WithGitSnapshots(gitSnapshot).
 		WithChangeset(changeset.New(changeset.DefaultMaxBytes), changeset.NewTracker(".")).
-		// First contact (S-105): the empty session's start screen, surveyed
+		// First contact: the empty session's start screen, surveyed
 		// once here rather than assembled per frame.
 		WithStartScreen(buildStartInfo(db, gate != nil))
 	if red != nil {
@@ -583,7 +583,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	}
 	// web_fetch and spawn_agent go through the approval queue as generic
 	// external actions: manual and accept-edits prompt, auto defers to the
-	// classifier (S-060).
+	// classifier.
 	gatedPreviews := map[string]chat.GatedPreviewFunc{}
 	if session.web != nil {
 		webTools := session.web
@@ -592,7 +592,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			if err != nil {
 				return chat.GatedPreview{}, err
 			}
-			// The card's blast-radius block for an outbound request (S-101):
+			// The card's blast-radius block for an outbound request:
 			// where it goes, what leaves with it, what comes back.
 			plan, err := webTools.FetchPlan(args)
 			if err != nil {
@@ -616,7 +616,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 				return chat.GatedPreview{}, err
 			}
 			// A child edits in its own worktree; nothing reaches the checkout
-			// until its patch is approved on a card of its own (S-101).
+			// until its patch is approved on a card of its own.
 			undo := "the child changes nothing on this checkout"
 			if plan.Writer {
 				undo = "its patch is a decision of its own before anything lands"
@@ -717,7 +717,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		os.Exit(1)
 	}
 
-	// The alt screen took the whole session with it on the way out (S-148,
+	// The alt screen took the whole session with it on the way out (
 	// docs/interface/surfaces.md#outside-the-tui). The banner is what the
 	// terminal keeps: the slot the conversation is in, what the sitting cost,
 	// and how to reopen it. The resume command is this command — `shhh chat` and
@@ -747,14 +747,14 @@ func printExitBanner(b components.ExitBanner) {
 }
 
 // gitSnapshot captures the workspace's git state for rewind checkpoints
-// (S-069), so /rewind can report what diverged since a checkpoint.
+// , so /rewind can report what diverged since a checkpoint.
 func gitSnapshot() chat.GitSnapshot {
 	fp := quality.TakeFingerprint(".")
 	return chat.GitSnapshot{Repo: fp.Repo, Head: fp.Head, StatusHash: fp.StatusHash, DirtyPaths: fp.DirtyPaths}
 }
 
 // estimateToolDefTokens roughly estimates the context cost of the registered
-// tool definitions, for /stats' occupancy breakdown (S-065).
+// tool definitions, for /stats' occupancy breakdown.
 func estimateToolDefTokens(defs []provider.Tool) int64 {
 	b, err := json.Marshal(defs)
 	if err != nil {

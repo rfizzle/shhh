@@ -73,7 +73,7 @@ func RunCapture(ctx context.Context, command string) (output string, exitCode in
 }
 
 // lineWriter captures combined output while reporting each completed line,
-// so a caller can render a live tail while the command runs (S-075).
+// so a caller can render a live tail while the command runs.
 type lineWriter struct {
 	mu      sync.Mutex
 	buf     bytes.Buffer
@@ -131,7 +131,7 @@ func runTail(cmd *exec.Cmd, onLine func(string)) (string, int) {
 }
 
 // RunCaptureTail is RunCapture reporting each completed output line to onLine
-// as it appears, so callers can show a live tail (S-075). onLine runs on the
+// as it appears, so callers can show a live tail. onLine runs on the
 // command's output goroutines and must be safe to call concurrently.
 func RunCaptureTail(ctx context.Context, command string, onLine func(string)) (string, int) {
 	sh := os.Getenv("SHELL")
@@ -143,7 +143,7 @@ func RunCaptureTail(ctx context.Context, command string, onLine func(string)) (s
 }
 
 // RunCaptureArgvTail is RunCaptureArgv with the same live-line reporting, for
-// pre-built invocations like contained commands (S-062).
+// pre-built invocations like contained commands.
 func RunCaptureArgvTail(ctx context.Context, argv []string, onLine func(string)) (string, int) {
 	if len(argv) == 0 {
 		return "error: empty command", -1
@@ -153,12 +153,12 @@ func RunCaptureArgvTail(ctx context.Context, argv []string, onLine func(string))
 }
 
 // RunCaptureArgv executes an explicit argv (no shell) with output captured,
-// for pre-built invocations like sandbox-wrapped commands (S-062). A spawn
+// for pre-built invocations like sandbox-wrapped commands. A spawn
 // failure — e.g. the containment binary vanished — reports the error in the
 // output with exit code -1, so the command fails visibly instead of running
 // bare.
 // RunCaptureIn is RunCapture with an explicit working directory, for
-// sub-agent commands that must run inside their own workspace (S-068).
+// sub-agent commands that must run inside their own workspace.
 func RunCaptureIn(ctx context.Context, dir, command string) (output string, exitCode int) {
 	sh := os.Getenv("SHELL")
 	if sh == "" {
@@ -184,7 +184,7 @@ func RunCaptureArgv(ctx context.Context, argv []string) (output string, exitCode
 
 // RunCaptureArgvIn is RunCaptureArgv with an explicit working directory
 // (empty keeps the process cwd), for sandbox-wrapped sub-agent commands whose
-// mechanism does not chdir itself (S-068).
+// mechanism does not chdir itself.
 func RunCaptureArgvIn(ctx context.Context, dir string, argv []string) (output string, exitCode int) {
 	if len(argv) == 0 {
 		return "error: empty command", -1

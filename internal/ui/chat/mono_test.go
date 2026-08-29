@@ -1,6 +1,6 @@
 package chat
 
-// /ui mono (S-095): the session-level half of the mono invariant — the switch
+// /ui mono: the session-level half of the mono invariant — the switch
 // itself, what it reports, and that the chat TUI's own derived styles follow
 // the shared palette instead of holding stale colours.
 
@@ -71,7 +71,7 @@ func TestUICommand_VerbositySurvivesTheMonoArgument(t *testing.T) {
 func TestMonoReachesTheChatStyles(t *testing.T) {
 	// A profile with colour to give: the one detected from a test binary's
 	// non-terminal stdout resolves every token to no colour at all, which
-	// would make the two palettes indistinguishable (S-155).
+	// would make the two palettes indistinguishable.
 	was := components.Profile()
 	components.SetProfile(colorprofile.ANSI256)
 	t.Cleanup(func() { components.SetProfile(was) })
@@ -138,7 +138,7 @@ func TestArgCompletion_MonoValuesAreGatedOnTheMonoToken(t *testing.T) {
 // The document margin is layout, not decoration, so it has to survive the
 // mono swap — invariant 1 runs in that direction too.
 //
-// It did not, until S-155. renderMarkdown finished a document with a
+// It did not always. renderMarkdown finished a document with a
 // TrimSpace, and glamour v1 opened each line with its style escape before the
 // margin, so the trim stopped at the escape and the margin survived — in
 // colour. In mono there was no escape in front of it, so the first line of

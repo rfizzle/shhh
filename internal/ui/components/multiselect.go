@@ -23,7 +23,7 @@ type MultiSelectResult struct {
 //
 // A multi-select that is an ordinary list of choices — `/memory forget`, the
 // quality gate's checks — windows like any other list once it outgrows its
-// card (S-124). Staging is the exception the design names and keeps:
+// card. Staging is the exception the design names and keeps:
 // there you are accounting for every hunk, so hiding four of them behind `↓ 4
 // more` would be a trap rather than a fold.
 type MultiSelect struct {
@@ -33,9 +33,9 @@ type MultiSelect struct {
 	Focus    int
 	MaxLines int
 	notice   string
-	// window is the shared sliding window (listwindow.go). A multi-select
-	// owns its own Focus, which is why it did not come along when S-116 gave
-	// the window to the selector.
+	// window is the shared sliding window (listwindow.go). A multi-select owns
+	// its own Focus, which is why it did not come along when the window went the
+	// window to the selector.
 	window listWindow
 }
 
@@ -168,7 +168,7 @@ func (s *MultiSelect) optionRow(i, inner int) string {
 // checkedNote is what a marker adds about the run it is hiding: how many of
 // those rows are ticked. A single-select loses nothing by scrolling, but a
 // multi-select can scroll the user's own answer off the card, and a count
-// that is out of sight is a count that has to be taken on trust (S-124). The
+// that is out of sight is a count that has to be taken on trust. The
 // key row states the total the same way it always has — `enter apply (3)` —
 // so the two together say how many are checked and where they went.
 func (s *MultiSelect) checkedNote(lo, hi int) string {

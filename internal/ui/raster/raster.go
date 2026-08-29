@@ -1,4 +1,4 @@
-// Package raster turns a picture into terminal cells (S-158,
+// Package raster turns a picture into terminal cells (
 // docs/interface/surfaces.md#a-staged-picture).
 //
 // It is the half of the image preview that has nothing to do with a terminal:

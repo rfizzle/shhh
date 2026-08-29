@@ -57,7 +57,7 @@ func extractCodeBlocks(text string) []string {
 }
 
 // blockHead is a code block's first non-blank line, used as its picker row
-// label (S-081).
+// label.
 func blockHead(body string) string {
 	for _, line := range strings.Split(body, "\n") {
 		if trimmed := strings.TrimSpace(line); trimmed != "" {

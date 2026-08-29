@@ -6,8 +6,8 @@ import (
 )
 
 // Isolation is how strongly a sandboxed command is separated from the host.
-// The levels are strictly ordered: process (S-062 containment wrappers) <
-// container (S-063 engine sandboxes) < vm. Reporting is honest: a level is
+// The levels are strictly ordered: process (containment wrappers) <
+// container (engine sandboxes) < vm. Reporting is honest: a level is
 // either verified available on this host or it is not, and a required level
 // that cannot be verified fails creation rather than downgrading.
 type Isolation string

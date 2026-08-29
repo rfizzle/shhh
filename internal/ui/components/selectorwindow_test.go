@@ -1,6 +1,6 @@
 package components
 
-// The sliding window a long list scrolls through (S-116,
+// The sliding window a long list scrolls through (
 // docs/interface/surfaces.md#selectors). The old card sliced its rows from
 // index 0 and replaced the last one with …, so a pointer moved past the fifth
 // model walked off the bottom of the card and the reader was navigating a
@@ -31,7 +31,7 @@ func cardHeight(view string) int { return strings.Count(view, "\n") + 1 }
 // focusedRow is the numbered label the pointer is on in a rendered card, or
 // "" when the pointer is nowhere on it — which is the bug this story is
 // about. It stops at the description column, which every row carries since
-// S-126: what these tests are asking is which option the pointer found, not
+// What these tests are asking is which option the pointer found, not
 // what that option says about itself.
 func focusedRow(view string) string {
 	for _, line := range strings.Split(ansi.Strip(view), "\n") {
@@ -229,7 +229,7 @@ func TestSelectWindow_MarkersCountOptionsAndNotHeaders(t *testing.T) {
 	}
 }
 
-// The palette rebuilds its options on every keystroke (S-112), so the window
+// The palette rebuilds its options on every keystroke, so the window
 // has to survive a list that got shorter under it without the host resetting
 // anything.
 func TestSelectWindow_SurvivesAListThatShrinks(t *testing.T) {

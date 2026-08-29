@@ -1,6 +1,6 @@
 package cli
 
-// The metrics surface (S-129,
+// The metrics surface (
 // docs/interface/surfaces.md#the-supporting-screens). `shhh metrics` printed
 // a fifteen-column tabwriter table and had no Bubble Tea at all; it hosts
 // `components.MetricsScreen` now and owns everything the screen deliberately
@@ -505,8 +505,7 @@ func (m metricsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// View is the frame: the metrics screen, on the alt screen it takes over
-// (S-155).
+// View is the frame: the metrics screen, on the alt screen it takes over.
 func (m metricsModel) View() tea.View {
 	v := tea.NewView(m.screen.View(m.width))
 	v.AltScreen = true

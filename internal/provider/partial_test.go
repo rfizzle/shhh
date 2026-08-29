@@ -1,6 +1,6 @@
 package provider
 
-// What a broken stream keeps (S-107). The question every case here asks is
+// What a broken stream keeps. The question every case here asks is
 // the same one: is this call whole enough to run, or is it a fragment of a
 // decision the model never finished making.
 

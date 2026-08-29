@@ -1,6 +1,6 @@
 package components
 
-// Inspector rail (S-092, docs/interface/surfaces.md#the-inspector-rail). Past
+// Inspector rail (docs/interface/surfaces.md#the-inspector-rail). Past
 // 130 content columns the transcript stops being the whole screen: a
 // 46-column rail on the right answers the three standing questions — what is
 // it doing, what has it changed, what is it costing — so the session stops
@@ -14,7 +14,7 @@ package components
 // first and says how many rows it swallowed.
 //
 // THIS TURN is the turn. CHANGES, AGENTS, CONTEXT and SPEND are the session
-// (S-120): a file edited in turn 2 is still on screen in turn 8,
+//: a file edited in turn 2 is still on screen in turn 8,
 // because "what has this session done to my machine" does not reset when the
 // agent starts a new turn. The two blocks that can count files both say their
 // scope in words — `3 files this turn` and `session · +96 −11` — which is the
@@ -47,7 +47,7 @@ const (
 	inspectorSparkCell = SparkCells
 )
 
-// InspectorSummary is the SUMMARY block (S-163): a cheap model's read of what
+// InspectorSummary is the SUMMARY block: a cheap model's read of what
 // the session is doing and whether it is still doing what was asked. It is
 // the one block that is not a count — the numbers under it say how much has
 // happened, and this says what.
@@ -93,7 +93,7 @@ const (
 type InspectorTurn struct {
 	// Step and Steps drive the progress meter and the "step 3 of 4" heading.
 	// Steps == 0 means the turn declared none, so no ratio is fabricated —
-	// the block states its tool count and elapsed time alone (S-094).
+	// the block states its tool count and elapsed time alone.
 	Step, Steps int
 	Tools       int
 	Elapsed     time.Duration
@@ -111,7 +111,7 @@ type InspectorTurn struct {
 
 // PlanStepState is one checklist step's state in the PLAN block. It is the
 // same four states the step outline draws, because an approved plan's
-// step and the transcript's step are the same step (S-104).
+// step and the transcript's step are the same step.
 type PlanStepState int
 
 const (
@@ -137,7 +137,7 @@ type InspectorPlanStep struct {
 }
 
 // InspectorPlan is the PLAN block: an approved plan as a live checklist
-// (S-104). An approved plan is not a message that scrolls away — it is the
+// . An approved plan is not a message that scrolls away — it is the
 // answer to "where are we", and the rail is where that answer belongs.
 type InspectorPlan struct {
 	Steps []InspectorPlanStep
@@ -191,7 +191,7 @@ type InspectorChanges struct {
 
 // InspectorAgent is one running child in the AGENTS block. Steps is only set
 // when the child declared a step count; without one the row shows its tool
-// count rather than a fabricated ratio (S-094).
+// count rather than a fabricated ratio.
 type InspectorAgent struct {
 	Name   string
 	Detail string
@@ -211,7 +211,7 @@ type InspectorContext struct {
 	Tokens, Window   int64
 	Tokens1, Tokens2 string // the ↑in and ↓out labels
 	// Burn is the per-round context series behind the sparkline, fed from the
-	// session's vitals history (S-093). One sample is a dot, not a trend, so
+	// session's vitals history. One sample is a dot, not a trend, so
 	// the host sends nothing until it has two and the row says "estimated"
 	// instead of drawing a flat line.
 	Burn []float64
@@ -219,7 +219,7 @@ type InspectorContext struct {
 	// defaults), so the rail matches the host's own trim warnings.
 	WarnPct, AlertPct int
 	// Estimated says the occupancy is the host's own estimate rather than a
-	// provider-reported size, and the block says so in words (S-093) — a
+	// provider-reported size, and the block says so in words — a
 	// number nobody vouched for should not look like one that was.
 	Estimated bool
 }
@@ -405,7 +405,7 @@ const summaryLines = 3
 // second summary.
 const summaryReasonLines = 2
 
-// summaryBlock is the rail's one prose block (S-163). It sits first because
+// summaryBlock is the rail's one prose block. It sits first because
 // it is the answer the rest of the rail is the detail of: SUMMARY says what
 // is happening, THIS TURN says how far through, CHANGES says what it cost the
 // workspace.
@@ -488,7 +488,7 @@ func (r InspectorRail) turnBlock(width int) (railBlock, bool) {
 	meta := ""
 	if t.Steps <= 0 && t.Step > 0 {
 		// Steps observed, none declared: the ordinal is true, the ratio would
-		// not be, so no denominator and no meter (S-094).
+		// not be, so no denominator and no meter.
 		meta = fmt.Sprintf("step %d", t.Step)
 	}
 	b := railBlock{heading: railHeading("THIS TURN", meta, sty.Dim, width)}
@@ -513,7 +513,7 @@ func (r InspectorRail) turnBlock(width int) (railBlock, bool) {
 	return b, true
 }
 
-// planBlock is the PLAN checklist (S-104). It sits under THIS TURN because it
+// planBlock is the PLAN checklist. It sits under THIS TURN because it
 // is that block's detail: THIS TURN says how far through, PLAN says through
 // what. The keys it prints are the host's, like [v] and [u] on CHANGES.
 func (r InspectorRail) planBlock(width int) (railBlock, bool) {
@@ -558,7 +558,7 @@ func planStepTone(s PlanStepState) (string, lipgloss.Style) {
 	return sty.Dim.Render("·"), sty.Dim
 }
 
-// changesBlock is the session's own diff (S-120): every path it has
+// changesBlock is the session's own diff: every path it has
 // touched since it opened, one row each, with the alerts still standing above
 // them. The heading says "session" in words because THIS TURN counts files
 // too, and a rail that printed two bare counts would read as a contradiction.
@@ -656,7 +656,7 @@ func (r InspectorRail) agentsBlock(width int) (railBlock, bool) {
 			parts = append(parts, sty.Dimmer.Render(a.Detail))
 		default:
 			// No declared total: motion beside the word naming what is
-			// running, never a fabricated ratio (S-094).
+			// running, never a fabricated ratio.
 			parts = append(parts, Spinner{Frame: r.Frame, Label: a.Detail}.View())
 		}
 		if a.Tools > 0 {

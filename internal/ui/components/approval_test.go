@@ -71,7 +71,7 @@ func TestApprovalCard_Warnings(t *testing.T) {
 }
 
 // Severity leads the card as a word and rides the border as a chip, so a
-// reader who cannot see the border colour loses nothing (S-101).
+// reader who cannot see the border colour loses nothing.
 func TestApprovalCard_SeverityIsAWordNotOnlyAColour(t *testing.T) {
 	c := &ApprovalCard{
 		Variant:  ApprovalCommand,
@@ -95,7 +95,7 @@ func TestApprovalCard_SeverityIsAWordNotOnlyAColour(t *testing.T) {
 }
 
 // The containment state folds into the title rail; an uncontained action
-// promotes ⚠ UNCONTAINED there instead (S-101).
+// promotes ⚠ UNCONTAINED there instead.
 func TestApprovalCard_ContainmentChip(t *testing.T) {
 	c := &ApprovalCard{
 		Variant:  ApprovalCommand,
@@ -126,7 +126,7 @@ func TestApprovalCard_ContainmentChip(t *testing.T) {
 }
 
 // The blast-radius block states what the action touches before the keys, and
-// the keys sit below a rule so they never blend into it (S-101).
+// the keys sit below a rule so they never blend into it.
 func TestApprovalCard_BlastRadiusBlockAndRule(t *testing.T) {
 	c := &ApprovalCard{
 		Variant:  ApprovalCommand,
@@ -196,9 +196,9 @@ func TestApprovalCard_EditVariantShowsDiffAndStats(t *testing.T) {
 		Hunks:    diff.Compute("a\nb\n", "a\nc\nd\n"),
 		Question: "Apply this change?",
 	}
-	// The diff body carries line numbers (S-074,
+	// The diff body carries line numbers (
 	// docs/interface/surfaces.md#the-approval-card), and the reversibility line
-	// rides the stats row (S-101).
+	// rides the stats row.
 	c.Reversibility = "undo yes — recorded, and git has this file"
 	view := c.View(80)
 	for _, want := range []string{"@@", "- 2  b", "+ 2  c", "+ 3  d",
@@ -297,7 +297,7 @@ func TestApprovalCard_Keys(t *testing.T) {
 	}
 }
 
-// --- click targets (S-159) -------------------------------------------
+// --- click targets -------------------------------------------
 
 // runRow is the rendered row carrying the card's decision run.
 func runRow(t *testing.T, c *ApprovalCard, width int) string {

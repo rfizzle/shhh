@@ -9,7 +9,7 @@ import (
 )
 
 // openProcessSupervisor builds the session's long-running process supervisor
-// (S-073), rooted at the current directory, with full logs retained through
+// , rooted at the current directory, with full logs retained through
 // the evidence store when one is open. Failure disables the process tool for
 // the session with a warning instead of blocking it.
 func openProcessSupervisor(red *evidence.Reducer) *process.Supervisor {

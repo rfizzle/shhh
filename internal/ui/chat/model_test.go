@@ -61,7 +61,7 @@ func TestWindowResize_SetsReady(t *testing.T) {
 		t.Fatalf("unexpected dimensions: %dx%d", model.width, model.height)
 	}
 	// The viewport is the transcript, not the pane: the last column is the
-	// scroll gutter's (S-147).
+	// scroll gutter's.
 	if want := 100 - horizontalPadding*2 - components.ScrollGutterWidth; model.viewport.Width() != want {
 		t.Fatalf("viewport width should be %d, got %d", want, model.viewport.Width())
 	}
@@ -1075,7 +1075,7 @@ func TestStatusBar_ShowsModelAndContext(t *testing.T) {
 		t.Error("status bar should show model name")
 	}
 	// No pricing table here, so the window comes from the model family
-	// (S-164): 1500 of gpt-4o's 128k ≈ 1% on the context meter.
+	//: 1500 of gpt-4o's 128k ≈ 1% on the context meter.
 	if !strings.Contains(bar, "ctx ") || !strings.Contains(bar, "1%") {
 		t.Errorf("status bar should show the context meter, got %q", bar)
 	}
@@ -1264,7 +1264,7 @@ func TestRun_SingleBlock_ConfirmAndExecute(t *testing.T) {
 
 // cmdMsg runs cmd and returns the one message the test is about. Update
 // batches the spinner's tick alongside whatever a transition into a working
-// state produced (S-119, spin.go), so a caller that wants the work has to
+// state produced (spin.go), so a caller that wants the work has to
 // look past the tick — which is never what a test is asserting.
 func cmdMsg(t *testing.T, cmd tea.Cmd) tea.Msg {
 	t.Helper()
@@ -1743,7 +1743,7 @@ func TestToolLoop_StopsAtRoundCap(t *testing.T) {
 		t.Fatalf("conversation must stay well-formed at the cap, last message: %+v", last)
 	}
 	// The cap is a checkpoint, not a notice: the turn closes on the `rounds`
-	// row that says what it managed and offers the ways on (S-109).
+	// row that says what it managed and offers the ways on.
 	pause := m.transcript[len(m.transcript)-1]
 	if pause.kind != entryRoundPause || pause.pause == nil {
 		t.Fatalf("expected a round-limit pause row, got %+v", pause)
@@ -2005,7 +2005,7 @@ func TestSteering_QuitCommandStillQuits(t *testing.T) {
 	}
 }
 
-// The exit banner (S-148) names the slot the autosave actually wrote, counts
+// The exit banner names the slot the autosave actually wrote, counts
 // the whole conversation, and offers the front-end's own resume command.
 func TestExitBanner_NamesTheSlotTheAutosaveWrote(t *testing.T) {
 	db, err := storage.OpenPath(t.TempDir() + "/test.db")

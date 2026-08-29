@@ -1,6 +1,6 @@
 package chat
 
-// Provider failures in the session (S-106,
+// Provider failures in the session (
 // docs/interface/surfaces.md#the-recovery-row).
 //
 // A stream that broke used to append `Error: <whatever Go said>` and hand the
@@ -30,7 +30,7 @@ import (
 // and the offers cannot drift apart.
 //
 // They are handled by focus mode on the row, the way the changeset row's [v]
-// and [u] are (S-098), so the input keeps all four letters for typing — which
+// and [u] are, so the input keeps all four letters for typing — which
 // matters more here than anywhere else, since "run the tests again" and
 // "check what it did" are exactly what gets typed after a failure. That is
 // also why entering a key is [e] and not the artboard's [k]: k is the focus
@@ -48,7 +48,7 @@ func (m *Model) appendFailure(err error) {
 
 // classifyFailure names an error that somehow arrived unclassified rather
 // than letting it through raw: no raw provider error string reaches the
-// transcript (S-106).
+// transcript.
 func classifyFailure(err error, providerName string) *provider.Failure {
 	if f, ok := provider.AsFailure(err); ok {
 		return f
@@ -62,7 +62,7 @@ func classifyFailure(err error, providerName string) *provider.Failure {
 
 // appendFailureRecord puts an already-classified failure on the grid. The
 // pointer is kept as-is, because the retry wait identifies the row it stalled
-// on by it (S-107).
+// on by it.
 func (m *Model) appendFailureRecord(f *provider.Failure) {
 	m.appendEntry(entry{kind: entryFailure, fail: f, duration: m.turnElapsed()})
 }
@@ -95,7 +95,7 @@ func (m Model) failureRow(e entry) components.RecoveryRow {
 		row.State = components.RecoveryStalled
 	}
 	// While this row's own failure is being waited out, the live countdown
-	// under it carries the offers (S-107). Two sets of keys for one stall
+	// under it carries the offers. Two sets of keys for one stall
 	// would be two answers to the same question.
 	if m.retry != nil && m.retry.fail == f {
 		row.Keys, row.Note = nil, ""
@@ -204,7 +204,7 @@ func (m Model) canSwitchProvider() bool {
 }
 
 // providerChoices is the registered providers, sorted — the built-ins plus
-// any gateway profile this process loaded (S-084), since a profile is a
+// any gateway profile this process loaded, since a profile is a
 // provider to everything downstream of the registry.
 func (m Model) providerChoices() []string {
 	names := provider.Available()
@@ -214,7 +214,7 @@ func (m Model) providerChoices() []string {
 
 // focusedFailure returns the failure row the focus cursor is on, if it is on
 // one. Failures live in the session's own transcript, so an attached child's
-// feed never offers them (S-077).
+// feed never offers them.
 func (m Model) focusedFailure() (entry, bool) {
 	if m.attachedTo != "" || m.focusIdx < 0 || m.focusIdx >= len(m.transcript) {
 		return entry{}, false
@@ -289,7 +289,7 @@ func (m Model) retryTurn() (tea.Model, tea.Cmd) {
 }
 
 // openProviderPick opens the generic picker over the registered providers
-// (S-078's statePick), focused on the session's own.
+// (statePick), focused on the session's own.
 func (m Model) openProviderPick() (tea.Model, tea.Cmd) {
 	choices := m.providerChoices()
 	opts := make([]components.SelectOption, len(choices))

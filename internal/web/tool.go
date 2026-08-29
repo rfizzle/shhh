@@ -11,7 +11,7 @@ import (
 	"github.com/rfizzle/shhh/internal/tools"
 )
 
-// FetchToolName is approval-gated as an external action (S-059/S-066): it
+// FetchToolName is approval-gated as an external action: it
 // prompts in manual and accept-edits modes and is classifier-judged in auto.
 // SearchToolName auto-runs like the read-only tools — it only reaches the
 // user-configured search provider.
@@ -21,7 +21,7 @@ const (
 )
 
 // MaxInlineBytes bounds the content a web tool result carries inline. It sits
-// well above the reduction threshold (S-064), so a large page is reduced for
+// well above the reduction threshold, so a large page is reduced for
 // the model with the full extracted text retrievable as evidence.
 const MaxInlineBytes = 48 << 10
 
@@ -124,7 +124,7 @@ func (t *Toolset) FetchSummary(args json.RawMessage) (string, error) {
 }
 
 // FetchPlan is what a fetch would do, for the approval card's blast-radius
-// block (S-101). shhh cannot resolve an outbound request the way it resolves
+// block. shhh cannot resolve an outbound request the way it resolves
 // a shell command's paths, so the toolset that owns the request states it.
 type FetchPlan struct {
 	// Host is the domain the request leaves for.

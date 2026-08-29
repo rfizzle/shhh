@@ -252,7 +252,7 @@ func TestBranches_ListAndSwitch(t *testing.T) {
 		t.Fatalf("current branch should be saved before switching, got %d messages", len(kept))
 	}
 
-	// /save then /load work on the branch (S-069 AC).
+	// /save then /load work on the branch.
 	if handled, res := m.handleSlashCommand("/save named-branch"); !handled || !strings.Contains(res, "saved") {
 		t.Fatalf("/save on a branch failed: %q", res)
 	}

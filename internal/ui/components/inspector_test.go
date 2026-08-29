@@ -30,7 +30,7 @@ func fullRail() InspectorRail {
 }
 
 // A context nobody vouched for says so, in a word and not just a sigil, so
-// the claim survives a monochrome terminal (S-093).
+// the claim survives a monochrome terminal.
 func TestInspectorContext_EstimatedSaysSo(t *testing.T) {
 	r := InspectorRail{Context: &InspectorContext{
 		Pct: 41, Tokens: 82000, Window: 200000, Estimated: true,
@@ -103,7 +103,7 @@ func TestInspectorRail_OmitsEmptyBlocks(t *testing.T) {
 
 func TestInspectorRail_AgentLaneOnlyMetersDeclaredSteps(t *testing.T) {
 	// No declared step count: the lane moves rather than drawing a ratio
-	// nobody supplied (S-094).
+	// nobody supplied.
 	r := InspectorRail{
 		Agents: []InspectorAgent{{Name: "writer-1", Detail: "editing docs/loop.md", Tools: 4}},
 		Frame:  2,
@@ -240,7 +240,7 @@ func TestInspectorElapsedAndTokens(t *testing.T) {
 
 // The two blocks that can count files say their scope in words, which is what
 // stops "2 files this turn" and "session · +96 −11" reading as a
-// contradiction (S-120).
+// contradiction.
 func TestInspectorRail_BothFileCountsSayTheirScope(t *testing.T) {
 	view := stripANSI(fullRail().View(InspectorWidth, 0))
 	if !strings.Contains(view, "2 files this turn") {
@@ -349,7 +349,7 @@ func TestInspectorChanges_AlertsAloneStillRender(t *testing.T) {
 	}
 }
 
-// The SUMMARY block (S-163) is the rail's one prose block, and it sits
+// The SUMMARY block is the rail's one prose block, and it sits
 // first: it says what is happening, and every block under it is the detail of
 // that.
 func TestInspectorSummary_LeadsTheRail(t *testing.T) {

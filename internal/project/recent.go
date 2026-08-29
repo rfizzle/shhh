@@ -1,11 +1,11 @@
 package project
 
-// Recently modified files (S-112). The command palette's FILES group is the
+// Recently modified files. The command palette's FILES group is the
 // paths this session touched plus what the checkout itself changed most
 // recently — the second half is this walk, and it is the same bounded walk
 // the survey uses: the same skipped directories, the same depth and entry
 // ceilings, so a checkout with a million files costs what one with a thousand
-// costs. It runs when the palette opens and never per keystroke (S-079's
+// costs. It runs when the palette opens and never per keystroke (the
 // rule for dynamic sources).
 
 import (

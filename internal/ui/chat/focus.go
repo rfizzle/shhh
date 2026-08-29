@@ -1,6 +1,6 @@
 package chat
 
-// Focus mode (S-076, docs/interface/surfaces.md#reading-mode): ctrl+e gives
+// Focus mode (docs/interface/surfaces.md#reading-mode): ctrl+e gives
 // the transcript a selection cursor over expandable rows (tool and command
 // output). j/k moves between them, enter expands/collapses the selected row
 // in place, and esc returns to the input. This is the one mechanism behind
@@ -23,17 +23,16 @@ func expandable(e entry) bool {
 
 // selectable reports whether focus mode can put its cursor on an entry. It is
 // expandable plus the rows that offer keys without expanding: a turn's close
-// block is passive, but [v] and [u] are handled on it (S-098), and so are
-// a provider failure's own keys (S-106) and a round-limit pause's
-// (S-109).
+// block is passive, but [v] and [u] are handled on it, and so are
+// a provider failure's own keys and a round-limit pause's.
 func selectable(e entry) bool {
 	return expandable(e) || e.kind == entryTurnClose || e.kind == entryFailure ||
 		e.kind == entryStreamDrop || e.kind == entryRoundPause
 }
 
 // expandableIndices lists the transcript indices focus mode can select,
-// scoped to whichever agent's transcript the surface renders (S-077). Step
-// headers are targets too (S-090): j/k steps between headers and rows
+// scoped to whichever agent's transcript the surface renders. Step
+// headers are targets too: j/k steps between headers and rows
 // alike, and a folded step offers only its header, since its rows are not on
 // screen to select.
 func (m Model) expandableIndices() []int {
@@ -44,15 +43,14 @@ func (m Model) expandableIndices() []int {
 			if blk.step.queued() {
 				// A declared step nobody has started is a header with no rows
 				// and no entry behind it: nothing to select, nothing to
-				// expand (S-104).
+				// expand.
 				continue
 			}
 			idxs = append(idxs, blk.step.titleIdx)
 			if m.headerFor(blk, es).Folded {
 				continue
 			}
-			// A folded group offers its group row, not the rows inside it
-			// (S-091).
+			// A folded group offers its group row, not the rows inside it.
 			for _, sl := range m.stepSlots(es, blk.step) {
 				if selectable(es[sl.idx]) {
 					idxs = append(idxs, sl.idx)
@@ -72,11 +70,11 @@ func (m Model) expandableIndices() []int {
 
 // enterFocusMode starts focus mode on the most recent expandable row — or on
 // the failure that ended the turn, when there is one. The close rows that
-// follow a broken turn are chrome about it (S-098); the row that broke it is
-// the one holding the way out (S-106), so that is where the cursor belongs.
+// follow a broken turn are chrome about it; the row that broke it is
+// the one holding the way out, so that is where the cursor belongs.
 //
 // A transcript with rows but nothing expandable in them still opens, without
-// a cursor (S-115): what is on screen is prose, and prose is read rather than
+// a cursor: what is on screen is prose, and prose is read rather than
 // navigated. Refusing there was the old answer and it left the reader in the
 // input box with nowhere to go. An empty transcript is the one case with
 // nothing to open onto, and it still says so.
@@ -85,7 +83,7 @@ func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 		if m.startScreenShowing() {
 			// First contact is the one screen that is visibly empty,
 			// and it is the screen that advertises these keys. A notice here
-			// would be noise and would spend the screen to say it (S-115).
+			// would be noise and would spend the screen to say it.
 			return m, nil
 		}
 		const notice = "Nothing to focus yet — tool and command rows become expandable."
@@ -113,8 +111,7 @@ func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 			continue
 		}
 		// A drop row sits under the failure that caused it and holds the
-		// better offer of the two, so it is the one the cursor lands on
-		// (S-107).
+		// better offer of the two, so it is the one the cursor lands on.
 		if k := es[idxs[i]].kind; k == entryFailure || k == entryStreamDrop {
 			m.focusIdx = idxs[i]
 		}
@@ -147,7 +144,7 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	case keys.Is(pressed, keys.Reading.List):
 		// The register on the page. It is the same key the supporting
-		// TUIs have offered since S-127, answering the same question about
+		// TUIs have long offered, answering the same question about
 		// the surface that holds the keyboard — and it is live here for the
 		// reason every bare letter on this bar is: nothing else is listening.
 		m.readingKeyList = !m.readingKeyList
@@ -158,12 +155,12 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.refreshFocusView()
 		return m, nil
 	case keys.Is(pressed, keys.Row.Review, keys.Row.Undo, keys.Row.Rounds, keys.Row.Uncap):
-		// A round-limit pause offers all four on its own row (S-109); it is
+		// A round-limit pause offers all four on its own row; it is
 		// asked first because it stands where the close block would be.
 		if next, cmd, claimed := m.roundPauseKey(pressed); claimed {
 			return next, cmd
 		}
-		// The offers on a turn's changeset row (S-098), which are [v]
+		// The offers on a turn's changeset row, which are [v]
 		// and [u] and no others. They are handled here rather than globally,
 		// so the input keeps both keys. The switch names them both rather
 		// than treating "not [v]" as [u]: the pause's other two keys reach
@@ -173,22 +170,22 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		if e, ok := m.focusedClose(); ok && e.close.Changes != nil {
 			switch {
 			case keys.Is(pressed, keys.Row.Review):
-				// Review mode is a takeover opened from the row (S-099);
+				// Review mode is a takeover opened from the row;
 				// esc comes back here, to the row that offered it.
 				return m.openReview(e.turn)
 			case keys.Is(pressed, keys.Row.Undo):
-				// Undo asks before it writes (S-100). The confirm borrows the
+				// Undo asks before it writes. The confirm borrows the
 				// bottom panel and focus mode keeps the screen, so the cursor
 				// stays on the row that offered it and esc comes back here.
 				return m.undoTurn(e.turn, nil)
 			}
 		}
 		// The row under the cursor does not offer this key, so it is a
-		// character like any other and goes back to the draft (S-115).
+		// character like any other and goes back to the draft.
 		return m.returnToInput(msg)
 	case keys.Is(pressed, keys.Row.Retry, keys.Row.Continue, keys.Row.Key, keys.Row.Provider):
-		// A provider failure's own offers (S-106), and a dropped
-		// stream's (S-107). Like the changeset row's, they are handled here
+		// A provider failure's own offers, and a dropped
+		// stream's. Like the changeset row's, they are handled here
 		// rather than globally, so the input keeps every one of these letters
 		// for typing — which is also why continuing from a partial is [c]
 		// rather than the artboard's [enter].
@@ -200,7 +197,7 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		return m.returnToInput(msg)
 	case keys.Is(pressed, keys.Reading.Detail):
-		// The step around the cursor opens its rows' detail (S-137) —
+		// The step around the cursor opens its rows' detail —
 		// the header the cursor is on, or the step the row under it belongs
 		// to. A cursor outside every step has nothing to open, and the hint
 		// bar has already said so with its reason beside it rather than
@@ -239,7 +236,7 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.refreshFocusView()
 		return m, nil
 	}
-	// Typing is the other way out (S-115). The letters above are focus
+	// Typing is the other way out. The letters above are focus
 	// mode's own and stay its own; every other printable character hands the
 	// keyboard back and lands in the draft, so a reader who forgot which
 	// pane they were in loses a mode rather than a sentence.
@@ -248,14 +245,14 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	}
 	// Anything left is chrome the transcript has no answer for. It used to be
 	// handed to the bubbles viewport, whose own keymap bound the arrows and
-	// the pager letters; shhh's pane reads no keys (S-160, viewport.go), and
+	// the pager letters; shhh's pane reads no keys (viewport.go), and
 	// every key this mode scrolls on is named in the switch above.
 	return m, nil
 }
 
 // focusedClose returns the turn-close entry the cursor is on, if it is on
 // one. The close rows live in the session's own transcript, so an attached
-// child's feed never offers them (S-077).
+// child's feed never offers them.
 func (m Model) focusedClose() (entry, bool) {
 	if m.attachedTo != "" || m.focusIdx < 0 || m.focusIdx >= len(m.transcript) {
 		return entry{}, false
@@ -282,7 +279,7 @@ func (m Model) exitFocusMode() (tea.Model, tea.Cmd) {
 
 // moveFocus selects the next (+1) or previous (-1) expandable row. With
 // nothing to select the transcript is being read rather than navigated, so
-// the key is a line of scroll instead (S-115).
+// the key is a line of scroll instead.
 func (m *Model) moveFocus(dir int) {
 	idxs := m.expandableIndices()
 	if len(idxs) == 0 {
@@ -307,7 +304,7 @@ func (m *Model) refreshFocusView() {
 	m.viewport.SetContent(content)
 	if m.focusIdx < 0 {
 		// No cursor to keep on screen: where the reader scrolled to is where
-		// they meant to be (S-115).
+		// they meant to be.
 		return
 	}
 	switch {
@@ -323,7 +320,7 @@ func (m *Model) refreshFocusView() {
 // first line and line count for scrolling. It bypasses the incremental cache.
 func (m *Model) renderFocusHistory() (content string, selStart, selCount int) {
 	// Focus mode is a way of reading the transcript, not a takeover surface,
-	// so it wraps to the transcript pane like the ordinary feed (S-092).
+	// so it wraps to the transcript pane like the ordinary feed.
 	w := m.transcriptWidth()
 	es := *m.entries()
 	var b strings.Builder
@@ -377,7 +374,7 @@ func gutterPrefix(block string, selected bool, width int) string {
 }
 
 // renderFocusHint replaces the input frame while reading mode holds the
-// keyboard (S-115, S-122). It is the other half of the reading rail: the
+// keyboard. It is the other half of the reading rail: the
 // rail says which pane has the keyboard, this says what the keyboard does
 // there. Its two lines are assembled in readinghint.go.
 func (m Model) renderFocusHint() string {

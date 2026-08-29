@@ -1,6 +1,6 @@
 package chat
 
-// Tests for the surface's rectangle model (S-161, layout.go). The claim they
+// Tests for the surface's rectangle model (layout.go). The claim they
 // stand behind is the one the arithmetic could never make: whatever the turn
 // is doing, the rows add up to the terminal exactly once, and nothing a
 // renderer hands over can reach past the rectangle it was given.
@@ -199,7 +199,7 @@ func TestLayout_DrawInClipsToItsRectangle(t *testing.T) {
 
 // TestLayout_TranscriptOriginIsThePanesCorner: the pointer and the render
 // read the same rectangle, so a click can never name a row the transcript is
-// not drawn on (S-145, S-159).
+// not drawn on.
 func TestLayout_TranscriptOriginIsThePanesCorner(t *testing.T) {
 	for _, width := range []int{80, 144} {
 		m := frameModel(t, width, 30)

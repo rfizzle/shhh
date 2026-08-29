@@ -160,14 +160,14 @@ func TestPolicy_AlwaysAllowCommandsViaKey(t *testing.T) {
 		t.Fatalf("first command should prompt, got state %d", m.state)
 	}
 	// The second queued command puts a batch behind the card, so [A] joins
-	// the keys (S-102).
+	// the keys.
 	m = handover(t, m)
 	if !strings.Contains(m.View().Content, "[y/n/a/A]") {
 		t.Fatal("unflagged command prompt with a queue behind it should offer y/n/a/A")
 	}
 
 	// 'a' approves this command and stops the session asking about commands
-	// of the same shape — `echo`, not everything (S-054).
+	// of the same shape — `echo`, not everything.
 	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
 	m = updated.(Model)
 	if m.allowAllCommands {
@@ -343,7 +343,7 @@ func TestMode_AutoAllowsEditsAndAllowlistedCommands(t *testing.T) {
 		t.Fatalf("expected the command to run, got %v", ran)
 	}
 
-	// An unlisted command still asks in auto mode (no classifier yet, S-060).
+	// An unlisted command still asks in auto mode (no classifier yet).
 	m.state = stateStreaming
 	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_y", Name: "execute_command", Arguments: `{"command":"go test ./..."}`},
@@ -590,7 +590,7 @@ func TestModelDefaults(t *testing.T) {
 	}
 }
 
-// The grant ladder (S-054). [a] used to have one rung above "this once" —
+// The grant ladder. [a] used to have one rung above "this once" —
 // every command, or every edit, for the rest of the session — and no way
 // down: switching back to manual mode did not clear it, because the grant is
 // consulted before the mode is. These hold the two ends of the fix.

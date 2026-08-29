@@ -1,6 +1,6 @@
 package components
 
-// The recovery surfaces' own tests (S-106). The golden files beside them
+// The recovery surfaces' own tests. The golden files beside them
 // capture the whole render; these assert the rules the render must not drift
 // from — the grid the row sits on, what the card refuses to claim, and the
 // one thing the key prompt must never do.
@@ -170,7 +170,7 @@ func TestSecretPrompt_EscResolvesToNothing(t *testing.T) {
 	}
 }
 
-// The retry countdown (S-107). The rules it has to keep are the tick rules':
+// The retry countdown. The rules it has to keep are the tick rules':
 // a bar that states its number, and cells that drain rather than fill.
 func TestRetryWait_StatesItsNumberAndItsBound(t *testing.T) {
 	w := RetryWait{

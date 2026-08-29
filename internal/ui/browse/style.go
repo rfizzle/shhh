@@ -9,7 +9,7 @@ import (
 // token set and nothing else. It draws from the shared palette
 // (docs/architecture.md#colour-is-resolved-once-at-the-top) like the other
 // surfaces, so the mono swap (/ui mono, NO_COLOR —
-// S-095) reaches it too.
+// reaches it too.
 type Styles struct {
 	ListTitle      lipgloss.Style
 	DetailTitle    lipgloss.Style

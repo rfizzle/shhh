@@ -78,7 +78,7 @@ func roundDuration(d time.Duration) string {
 // the Result itself: which suite ran, its verdict, the check tally and
 // whether the verdict still applies to the tree. It is parsed here, beside
 // Format, so the one place that writes the string is the one place that reads
-// it back (S-098).
+// it back.
 type Summary struct {
 	Suite         string
 	Verdict       Verdict

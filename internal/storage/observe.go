@@ -1,11 +1,11 @@
 package storage
 
-// Session observability (S-065): agent sessions record content-free events —
-// tokens, cost, model, tool-call counts/durations/outcomes, mode decisions
-// with enum-like reason codes, turn counts. Never prompts, outputs, paths, or
-// commands: every stored string is either a fixed identifier (provider, model,
-// tool name) or a code from a closed set, so the content-free guarantee holds
-// structurally.
+// Session observability: agent sessions record content-free events — tokens,
+// cost, model, tool-call counts/durations/outcomes, mode decisions with
+// enum-like reason codes, turn counts. Never prompts, outputs, paths, or
+// commands: every stored string is either a fixed identifier (provider,
+// model, tool name) or a code from a closed set, so the content-free
+// guarantee holds structurally.
 
 import (
 	"fmt"
@@ -34,7 +34,7 @@ func (db *DB) StartAgentSession(kind, provider, model string) (int64, error) {
 }
 
 // StartChildAgentSession opens a session row linked to a parent session, so
-// sub-agent spend is attributable (S-068). A non-positive parentID records an
+// sub-agent spend is attributable. A non-positive parentID records an
 // unlinked session.
 func (db *DB) StartChildAgentSession(parentID int64, kind, provider, model string) (int64, error) {
 	if parentID <= 0 {

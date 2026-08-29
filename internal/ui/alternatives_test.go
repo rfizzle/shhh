@@ -1,9 +1,9 @@
 package ui
 
-// S-114: the commands the generator did not pick. The key row counts them,
+// The commands the generator did not pick. The key row counts them,
 // `[a]` opens the select card on them, and choosing one hands the surface
 // back to the key row with the new command armed exactly as the first one
-// was. A response without them is the S-113 surface, unchanged.
+// was. A response without them is the ordinary result surface, unchanged.
 
 import (
 	"context"

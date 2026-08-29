@@ -1,11 +1,11 @@
 package chat
 
-// The approved plan as a live checklist (S-104,
+// The approved plan as a live checklist (
 // docs/interface/surfaces.md#the-step).
 //
 // Plan mode is the one place a step list is authoritative. Everywhere else
 // the outline infers a step from the prose that precedes a batch of tool
-// calls (S-090); once a plan is approved the steps it declared are the steps,
+// calls; once a plan is approved the steps it declared are the steps,
 // and the transcript outline, the inspector rail's PLAN block and /plan all
 // read one list.
 //
@@ -59,7 +59,7 @@ type planRun struct {
 	// were made.
 	offPlan []string
 	// carried is the checklist as it stood when the transcript that recorded
-	// it was discarded — a compaction (S-108). Step states are read off the
+	// it was discarded — a compaction. Step states are read off the
 	// transcript, so a plan that outlives its transcript has to bring them
 	// with it or come back reading all-queued, which would be a plan
 	// reporting work it watched happen as work still to do.

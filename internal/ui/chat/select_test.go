@@ -1,6 +1,6 @@
 package chat
 
-// Application-owned transcript selection (S-145): a drag inside the
+// Application-owned transcript selection: a drag inside the
 // transcript selects text shhh copies itself, scrolls the pane when it
 // reaches an edge, and gives the coordinates up rather than guessing when the
 // render underneath them changes shape.
@@ -326,7 +326,7 @@ func TestSelection_WrappedProseCopiesAsOneSentence(t *testing.T) {
 
 // The join is the geometry's, not the terminal's: the same paragraph copies
 // as one sentence at every width, because softWrap measures against the block
-// glamour filled rather than against the pane. Before S-147 it measured
+// glamour filled rather than against the pane. It used to measure
 // against the pane, which happened to be right at 80 columns and wrong at 78.
 func TestSelection_WrappedProseCopiesAsOneSentenceAtEveryWidth(t *testing.T) {
 	for _, width := range []int{72, 78, 80, 96, 130} {
@@ -510,7 +510,7 @@ func TestSelection_BottomEdgeAutoScrollsAndExtends(t *testing.T) {
 	}
 
 	// And the follow is paused while this is going on, exactly as scrolling
-	// away pauses it (S-140).
+	// away pauses it.
 	if m.atBottom {
 		t.Fatal("a selection drag should pause the follow of the live end")
 	}
@@ -1007,7 +1007,7 @@ func TestSelectionSpan_NormalizesBothDirections(t *testing.T) {
 }
 
 // The highlight is drawn with an attribute, not a colour, so it says the same
-// thing in mono as it does in colour (S-095, invariant 1).
+// thing in mono as it does in colour (invariant 1).
 func TestSelectionHighlight_SurvivesMono(t *testing.T) {
 	withColor(t)
 	was := components.Mono()
@@ -1119,7 +1119,7 @@ func TestSelection_ReviewModeKeepsItsOwnMouse(t *testing.T) {
 	}
 }
 
-// The history's incremental cache (S-090) is what makes a long transcript
+// The history's incremental cache is what makes a long transcript
 // cheap to redraw, and a drag must not spend it: the highlight is applied
 // over the finished render, so moving the pointer restyles rows and
 // re-renders nothing.

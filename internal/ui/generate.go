@@ -1,6 +1,6 @@
 package ui
 
-// The one-shot result surface (S-113,
+// The one-shot result surface (
 // docs/interface/surfaces.md#the-one-shot-result) — the whole interface of
 // command generation (docs/capabilities/generation.md). Most people meet shhh
 // here rather than in the agent, and until now this screen printed a command
@@ -18,7 +18,7 @@ package ui
 // runs the command's own no-op form where one exists, and running takes a
 // deliberate `y`.
 //
-// S-114 added the fifth: the commands the generator did not pick. It weighed
+// The fifth is the commands the generator did not pick. It weighed
 // lsof against netstat before answering; `[a]` is where that goes instead of
 // being thrown away, each one carrying the phrase that says why you might
 // take it. They are an offer, never a requirement — a response without them
@@ -131,7 +131,7 @@ type GenerateModel struct {
 	// that no longer matches is an answer about a command nobody is looking
 	// at.
 	gen int
-	// reach is the resolved radius of the command on screen (S-101).
+	// reach is the resolved radius of the command on screen.
 	reach radius.Command
 	// dryCommand is the command's no-op form, and dryAvailable whether it has
 	// one at all. Without one, `[d]` is not offered.
@@ -147,13 +147,13 @@ type GenerateModel struct {
 	// past is the revise chain, most recent last: what `[u]` steps back to.
 	past []pastCommand
 	// choices is every command this generation offered, the one it led with
-	// first (S-114). It always holds at least the command on screen, so the
+	// first. It always holds at least the command on screen, so the
 	// picker and the key row count from the same place.
 	choices []proposal.Choice
 	// chosen is which of them the surface is showing.
 	chosen int
 	// pick is the alternatives picker while it is open — the same select card
-	// the session pickers use (S-078).
+	// the session pickers use.
 	pick *components.Select
 }
 
@@ -336,7 +336,7 @@ func (m GenerateModel) updateStreaming(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// Checking the command spawns a shell and walks PATH, and both
 			// happen on whatever machine this is: a crowded PATH, a shell
 			// with a startup file, a home directory over a network mount.
-			// Inline in Update that is the loop stopped again (S-133), so
+			// Inline in Update that is the loop stopped again, so
 			// the check goes where the requests went.
 			m.gen++
 			m.checking = true
@@ -650,7 +650,7 @@ func (m GenerateModel) others() int {
 const alternativesWidth = 88
 
 // openAlternatives shows every command this generation offered, the one on
-// screen marked. It is the generic select card (S-078) rather than a list
+// screen marked. It is the generic select card rather than a list
 // this surface draws itself, so moving, choosing and backing out are the keys
 // they are everywhere else.
 func (m GenerateModel) openAlternatives() (GenerateModel, tea.Cmd) {
@@ -729,7 +729,7 @@ func oneLine(command string) string {
 // returns a channel. Doing that inline in Update stops the event loop, and a
 // loop that is stopped cannot paint: the command sat alone on screen for the
 // length of the explanation's round trip, and the action bar arrived when
-// that request did. So the surface asks, says so, and carries on (S-132).
+// that request did. So the surface asks, says so, and carries on.
 type explainReadyMsg struct {
 	gen    int
 	long   bool
@@ -1099,7 +1099,7 @@ func prefixLines(s, pad string) string {
 
 // View is the frame. The one-shot generate UI draws inline under the prompt
 // it was typed at and asks the terminal for nothing, so the view carries
-// content and no state (S-155).
+// content and no state.
 func (m GenerateModel) View() tea.View {
 	return tea.NewView(m.screen())
 }

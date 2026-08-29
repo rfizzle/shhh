@@ -1,9 +1,9 @@
 package chat
 
-// The fifth invariant across every keyed surface (S-125,
+// The fifth invariant across every keyed surface (
 // docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
-// S-095's precedent: a rule stated in the design system becomes a test that
+// The mono precedent: a rule stated in the design system becomes a test that
 // enforces it everywhere rather than a paragraph each surface is trusted to
 // have read. The register below is the audit — every surface in the product
 // that offers a bare single-character key, and which of the two positions it
@@ -202,14 +202,14 @@ func readingCursorOn(kind entryKind) func(*testing.T, Model) Model {
 }
 
 // TestInertKeys_ABareLetterReachesNoSurfaceWithoutTheKeyboard is the audit's
-// own assertion (S-125). Every key in the register is pressed into a
+// own assertion. Every key in the register is pressed into a
 // half-typed sentence while the surface offering it does not hold the
 // keyboard, and every one of them has to be a letter: it lands at the end of
 // the draft, and the session is otherwise exactly where it was.
 //
 // The alternative — routing `y` to whichever surface happens to be on screen
 // — is what made a sentence containing the word "yes" able to approve a shell
-// command (S-117), and there is no reason that hazard is special to
+// command, and there is no reason that hazard is special to
 // approvals.
 func TestInertKeys_ABareLetterReachesNoSurfaceWithoutTheKeyboard(t *testing.T) {
 	for _, s := range register(t) {
@@ -283,7 +283,7 @@ func TestInertKeys_EveryTakeoverHoldsTheKeyboardExclusively(t *testing.T) {
 		})
 	}
 	// The agent manager is a surface without being a state — it borrows the
-	// bottom panel — so it makes the same claim its own way (S-077).
+	// bottom panel — so it makes the same claim its own way.
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)
 	m := newSubagentModel(t, sup)

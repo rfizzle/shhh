@@ -1,6 +1,6 @@
 package cli
 
-// First-contact facts (S-105). Everything the empty session's start screen
+// First-contact facts. Everything the empty session's start screen
 // states is gathered here, once, while the session is being built: the
 // project survey, the quality-gate configuration in effect, and the most
 // recent saved session. Nothing on that screen is computed again while it is

@@ -62,7 +62,7 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 	if opts.MaxTokens > 0 {
 		config.MaxOutputTokens = int32(opts.MaxTokens)
 	}
-	// Gemini's knob is a token budget rather than a named level (S-139), and
+	// Gemini's knob is a token budget rather than a named level, and
 	// the ladder is capped at the smaller of the 2.5 maxima so one setting
 	// serves flash and pro. Off sends no thinking config at all: the models
 	// that cannot turn thinking off should keep their own default rather
@@ -87,7 +87,7 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 		for resp, err := range g.client.Models.GenerateContentStream(ctx, model, contents, config) {
 			if err != nil {
 				// The function calls already delivered travel with the
-				// failure, so a dropped stream can be continued (S-107).
+				// failure, so a dropped stream can be continued.
 				ch <- StreamEvent{
 					ToolCalls: CompletedToolCalls(toolCalls),
 					Reasoning: reasoning,
@@ -115,7 +115,7 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 							args, _ := json.Marshal(part.FunctionCall.Args)
 							toolCalls = append(toolCalls, ToolCall{
 								// The Gemini API leaves functionCall.id
-								// empty (S-164), and a call with no id is
+								// empty, and a call with no id is
 								// one a dropped stream discards (partial.go)
 								// and no tool result can be paired with. The
 								// id is ours to invent, so we invent one.
@@ -126,7 +126,7 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 							})
 						case part.Thought:
 							// Thinking is not the answer: it goes back on
-							// the next request as a thought part (S-139),
+							// the next request as a thought part,
 							// and streaming it as a token would have printed
 							// it as the reply.
 							reasoning = appendThought(reasoning, part.Text, part.ThoughtSignature)
@@ -192,7 +192,7 @@ func appendThought(blocks []ReasoningBlock, text string, sig []byte) []Reasoning
 
 // toGeminiContents converts the neutral message history to Gemini's shape.
 //
-// A tool result is addressed by the *name* of the function it answers (S-164) —
+// A tool result is addressed by the *name* of the function it answers —
 // functionResponse.name has to match the functionCall.name it came from, and
 // the ids the rest of shhh pairs on are ours, not the API's. So the calls of
 // the assistant turn just passed are kept, and each result takes its name
@@ -226,7 +226,7 @@ func toGeminiContents(messages []Message) ([]*genai.Content, *genai.Content) {
 			}
 		case RoleUser:
 			flushPending()
-			// Attachments lead, the sentence follows (S-134): inline blobs
+			// Attachments lead, the sentence follows: inline blobs
 			// for the bytes Gemini reads natively, the shared text form for
 			// the rest.
 			parts := geminiAttachmentParts(msg.Attachments)
@@ -240,7 +240,7 @@ func toGeminiContents(messages []Message) ([]*genai.Content, *genai.Content) {
 			// Thinking leads the turn, carrying the signatures back on the
 			// parts they arrived on: a Gemini 3 turn whose function calls
 			// come back unsigned is one the model cannot pick up where it
-			// left off, and it re-plans from the top instead (S-139).
+			// left off, and it re-plans from the top instead.
 			for _, r := range msg.Reasoning {
 				if r.Text == "" && r.Signature == "" {
 					continue

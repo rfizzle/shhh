@@ -1,6 +1,6 @@
 package chat
 
-// Sub-agent orchestration surface (S-068): the parent session renders child
+// Sub-agent orchestration surface: the parent session renders child
 // activity as compact progress rows, routes detached children's approval
 // requests through the same approval-card surface (labeled with the agent
 // name), and cancels the whole child tree with the turn.
@@ -21,7 +21,7 @@ import (
 // subagentEventMsg carries one supervisor notification into the Update loop.
 type subagentEventMsg struct{ ev subagent.Event }
 
-// WithSubagents wires the sub-agent supervisor (S-068); the model listens for
+// WithSubagents wires the sub-agent supervisor; the model listens for
 // its events and keeps its parent-mode ceiling current.
 func (m Model) WithSubagents(sup *subagent.Supervisor) Model {
 	m.subagents = sup
@@ -68,11 +68,11 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 		m.childAsks = append(m.childAsks, ev.Ask)
 		// A routed approval arrives the way every other decision does: on
 		// screen, and holding the keyboard only if there is no sentence for
-		// its letters to belong to (S-117). It arms itself because it is
+		// its letters to belong to. It arms itself because it is
 		// a queue rather than a turn state, so setTurnState never sees it.
 		m.armArrival()
 	case subagent.EventDone:
-		// A finished child can no longer act on its asks (S-077).
+		// A finished child can no longer act on its asks.
 		m.purgeChildAsks(ev.Status.Name)
 		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("Agent %s: %s", ev.Status.Name, ev.Status.Detail)})
 	case subagent.EventPatch:
@@ -87,7 +87,7 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 }
 
 // recordChildPatch files a child's applied patch in the session changeset
-// (S-097). A child edits inside its own worktree, so the patch landing on the
+// . A child edits inside its own worktree, so the patch landing on the
 // real checkout is the moment this session changed — and the record says
 // which agent's work it was.
 func (m *Model) recordChildPatch(p *subagent.PatchApplied) {
@@ -113,7 +113,7 @@ func (m *Model) recordChildPatch(p *subagent.PatchApplied) {
 // activeChildAsk is the routed approval currently presentable: deferred
 // while the parent's own prompts, a surface (focus mode, a full-screen diff,
 // a picker), or the agent list hold the bottom panel; attached, only the
-// focused child's asks render in place (S-077) — the rest stay visible via
+// focused child's asks render in place — the rest stay visible via
 // the badge and agent list.
 func (m Model) activeChildAsk() *subagent.Ask {
 	if len(m.childAsks) == 0 {
@@ -163,7 +163,7 @@ func (m Model) updateChildAsk(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model
 		m.attach(ask.Agent)
 		return m, nil
 	}
-	// The manager is reachable from a routed approval too (S-087): the card
+	// The manager is reachable from a routed approval too: the card
 	// steps aside while the list is open and comes back when it closes.
 	if keys.Match(msg, keys.Draft.Agents) {
 		return m.openAgentList()
@@ -183,8 +183,7 @@ func (m Model) updateChildAsk(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model
 			break
 		}
 	}
-	// The keyboard goes straight back to the draft, at the same character
-	// (S-117).
+	// The keyboard goes straight back to the draft, at the same character.
 	m.releaseDecision()
 	approved := result == components.ApprovalApprove
 	ask.Respond(approved)
@@ -235,7 +234,7 @@ func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
 		card.Hunks = ask.Hunks
 		card.Question = "Apply the agent's patch to your workspace?"
 		// A patch over files another agent already changed is the one case
-		// where two isolated writers can still collide (S-086).
+		// where two isolated writers can still collide.
 		if len(ask.Warnings) > 0 {
 			card.Warnings = []string{strings.Join(ask.Warnings, "; ")}
 		}
@@ -255,7 +254,7 @@ func (m Model) childAskLines(ask *subagent.Ask) []string {
 }
 
 // childAskPanelLines is the routed card plus the rail that names the
-// keyboard's owner and the draft it is holding while it does (S-117).
+// keyboard's owner and the draft it is holding while it does.
 func (m Model) childAskPanelLines(ask *subagent.Ask) []string {
 	return m.dressDecision(m.childAskLines(ask), m.contentWidth())
 }
@@ -272,7 +271,7 @@ func (m Model) renderChildAsk(ask *subagent.Ask) string {
 }
 
 // cancelSubagents cancels the whole child tree (Ctrl+C / quit semantics,
-// S-068): blocked approval waits unblock, children finish as cancelled with
+// blocked approval waits unblock, children finish as cancelled with
 // well-formed conversations, and queued asks are dropped as declined.
 func (m *Model) cancelSubagents() {
 	if m.subagents == nil {
@@ -305,7 +304,7 @@ func (m Model) activeAgentStatuses() []subagent.Status {
 }
 
 // agentRowsHeight is how many lines the progress rows currently occupy; the
-// rows hide while the agent list or an attached view covers them (S-077).
+// rows hide while the agent list or an attached view covers them.
 func (m Model) agentRowsHeight() int {
 	if m.attachedTo != "" || m.agentList != nil {
 		return 0

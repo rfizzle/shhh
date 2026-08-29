@@ -28,7 +28,7 @@ type Cockpit struct {
 	// CtxPct drives the 8-cell context meter; negative hides it.
 	CtxPct int
 	// WarnPct/AlertPct override the meter's warning-color thresholds (0 keeps
-	// the defaults), so the host can match its own trim warnings (S-055).
+	// the defaults), so the host can match its own trim warnings.
 	WarnPct  int
 	AlertPct int
 	// Tokens is the usage segment ("↑41.2k ↓9.8k"); Spend the cost ("$0.14").
@@ -42,7 +42,7 @@ type Cockpit struct {
 	// built-ins.
 	Extra []string
 	// Reasoning is the thinking level the session is asking for ("think
-	// high", S-139); empty means it is asking for none, and nothing is drawn.
+	// high"); empty means it is asking for none, and nothing is drawn.
 	// It renders right-aligned beside the model, in the same treatment: what
 	// the session is answering with is one fact in two halves, and neither
 	// half is chrome.
@@ -78,7 +78,7 @@ func (c Cockpit) modeSegment() string {
 }
 
 // ctxMeter renders the context occupancy bar with its warning colors — the
-// shared Meter (S-094), so the vitals rail and the inspector rail cannot
+// shared Meter, so the vitals rail and the inspector rail cannot
 // report the same pressure two ways.
 func (c Cockpit) ctxMeter() string {
 	return Meter{
@@ -101,7 +101,7 @@ func (c Cockpit) agentsSegment() string {
 	return seg
 }
 
-// Rail drop ranks (S-082, docs/interface/surfaces.md#the-input-frame): when a
+// Rail drop ranks (docs/interface/surfaces.md#the-input-frame): when a
 // frame rail overflows, the highest rank present is dropped first.
 // Model/provider detail goes first, then token counts; context pressure,
 // spend, and error/blocked state are never the first fields removed, and the
@@ -115,7 +115,7 @@ const (
 )
 
 // RailSegment is one cockpit segment prepared for embedding in a frame rail
-// (S-082): the styled text plus its drop rank.
+// : the styled text plus its drop rank.
 type RailSegment struct {
 	Text string
 	Drop int
@@ -123,7 +123,7 @@ type RailSegment struct {
 
 // RailSegments returns the cockpit's segments in display order with their
 // drop ranks, for hosts that embed the cockpit segments into frame rails
-// (S-082) instead of rendering the free-floating bar.
+// instead of rendering the free-floating bar.
 func (c Cockpit) RailSegments() []RailSegment {
 	segs := []RailSegment{{Text: c.modeSegment(), Drop: RailKeep}}
 	if c.Round != "" {

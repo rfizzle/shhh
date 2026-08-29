@@ -1,6 +1,6 @@
 package chat
 
-// The round-limit pause (S-109, docs/interface/surfaces.md#the-recovery-row).
+// The round-limit pause (docs/interface/surfaces.md#the-recovery-row).
 //
 // A turn that used up its tool rounds used to end on one grey line telling
 // you to send a message to keep going. Everything a reader needed was
@@ -13,7 +13,7 @@ package chat
 // The row stands in for the turn's close block rather than sitting above one.
 // It already says what the turn did, what it changed and what the ways on
 // are, and a second block offering [v] and [u] beside it would be the same
-// answer twice (S-098).
+// answer twice.
 
 import (
 	"fmt"
@@ -251,7 +251,7 @@ func roundPauseOffers(p *roundPause) []components.KeyOffer {
 
 // focusedRoundPause returns the pause row the focus cursor is on, if it is on
 // one. Like every recovery row it lives in the session's own transcript, so
-// an attached child's feed never offers it (S-077).
+// an attached child's feed never offers it.
 func (m Model) focusedRoundPause() (entry, bool) {
 	if m.attachedTo != "" || m.focusIdx < 0 || m.focusIdx >= len(m.transcript) {
 		return entry{}, false

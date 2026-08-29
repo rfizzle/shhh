@@ -11,7 +11,7 @@ import (
 	"github.com/rfizzle/shhh/internal/web"
 )
 
-// openWebTools builds the guarded web toolset (S-066) `shhh code` registers:
+// openWebTools builds the guarded web toolset `shhh code` registers:
 // the SSRF-guarded fetcher with its response cache, and — only when a search
 // API key is configured — the search tool. A missing cache directory just
 // disables caching; an unknown search provider disables search with a

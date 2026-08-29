@@ -35,10 +35,10 @@ func (db *DB) SaveChat(name string, messages []provider.Message) error {
 	return tx.Commit()
 }
 
-// SaveChatBranch stores messages as a branch session of parentName: the branch
-// gets its own session row with parent_id pointing at the parent (created as
-// an empty session if it doesn't exist yet, so a never-saved live session can
-// still grow branches).
+// SaveChatBranch stores messages as a branch session of parentName: the
+// branch gets its own session row with parent_id pointing at the parent
+// (created as an empty session if it doesn't exist yet, so a never-saved live
+// session can still grow branches).
 func (db *DB) SaveChatBranch(parentName, branchName string, messages []provider.Message) error {
 	tx, err := db.sql.Begin()
 	if err != nil {
@@ -105,7 +105,7 @@ func saveChatTx(tx *sql.Tx, name string, messages []provider.Message) (int64, er
 			toolCallsJSON = &s
 		}
 		// Attachment bytes are saved with the turn that carried them
-		// (S-134), so resuming a session keeps the screenshot the question
+		//, so resuming a session keeps the screenshot the question
 		// was about rather than a sentence pointing at nothing.
 		var attachmentsJSON *string
 		if len(msg.Attachments) > 0 {
@@ -207,7 +207,7 @@ func (db *DB) ListChats() ([]ChatListEntry, error) {
 }
 
 // ChatBranch is one session in a branch family: the root plus every branch
-// hanging off it (S-069). Parent is empty for the root.
+// hanging off it. Parent is empty for the root.
 type ChatBranch struct {
 	Name      string
 	Parent    string
@@ -216,7 +216,7 @@ type ChatBranch struct {
 }
 
 // RecentChat is the most recently saved session, for the start screen's
-// resume suggestion (S-105): what it was called, how many turns it holds, and
+// resume suggestion: what it was called, how many turns it holds, and
 // what it cost. Cost is only present when an observability record covers the
 // moment the session was saved — the two tables are joined by that window
 // rather than by name, because a chat session row has never carried a price

@@ -1,6 +1,6 @@
 package ui
 
-// The one-shot's action bar (S-113,
+// The one-shot's action bar (
 // docs/interface/surfaces.md#the-one-shot-result). It used to be a navigable
 // menu: seven boxes, a cursor, arrow keys to move it and enter to take what
 // was under it. That costs two keystrokes to reach a key that was already
@@ -44,7 +44,7 @@ const (
 	// ActionBack is `[u]` — step back to the command before the last revise.
 	ActionBack
 	// ActionAlternatives is `[a]` — the other commands the generator
-	// considered (S-114).
+	// considered.
 	ActionAlternatives
 )
 
@@ -97,7 +97,7 @@ type ActionBarModel struct {
 	// revision counts revises so far; above zero, `[u]` steps back.
 	revision int
 	// others counts the alternatives on offer beside the command showing;
-	// above zero, `[a]` opens the picker (S-114).
+	// above zero, `[a]` opens the picker.
 	others int
 }
 
@@ -218,7 +218,7 @@ func (m ActionBarModel) Init() tea.Cmd {
 }
 
 // Update returns the bar itself rather than a tea.Model, for the same reason
-// the stream does: it is a piece of a surface, not a program (S-155).
+// the stream does: it is a piece of a surface, not a program.
 func (m ActionBarModel) Update(msg tea.Msg) (ActionBarModel, tea.Cmd) {
 	msgKey, ok := msg.(tea.KeyPressMsg)
 	if !ok {

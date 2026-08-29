@@ -1,7 +1,7 @@
 package chat
 
 // Evidence wires the tool-output reduction pipeline and evidence store
-// (S-064) into the chat TUI. The auto-run executor is wrapped by the caller,
+// into the chat TUI. The auto-run executor is wrapped by the caller,
 // so only the approval-gated result paths (exec output, mutating tools) go
 // through Reduce here; the transcript records the reduced text the model got,
 // keeping the view display-consistent.

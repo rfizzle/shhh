@@ -1,6 +1,6 @@
 package resolve
 
-// Where shhh looked for a provider, and what it found there (S-106,
+// Where shhh looked for a provider, and what it found there (
 // docs/interface/surfaces.md#the-recovery-row).
 //
 // "SHHH_API_KEY or OPENAI_API_KEY is not set" is true and useless: it names
@@ -49,7 +49,7 @@ const (
 	PlaceEnv PlaceKind = "env"
 	// PlaceConfig is the config files, in search order.
 	PlaceConfig PlaceKind = "config"
-	// PlaceProfiles is the gateway profile directories (S-084).
+	// PlaceProfiles is the gateway profile directories.
 	PlaceProfiles PlaceKind = "profiles"
 	// PlaceLocal is a model runtime already listening on this machine.
 	PlaceLocal PlaceKind = "local"
@@ -182,7 +182,7 @@ func surveyConfig(opts SurveyOpts) Place {
 	return Place{Kind: PlaceConfig, Detail: display(opts.ConfigPaths[0]) + " — no such file"}
 }
 
-// surveyProfiles reports the gateway profiles that loaded (S-084) and whether
+// surveyProfiles reports the gateway profiles that loaded and whether
 // each one's key is resolvable, because a profile with an unexported variable
 // is the failure that looks most like no provider at all.
 func surveyProfiles(opts SurveyOpts) Place {

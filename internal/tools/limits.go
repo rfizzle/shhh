@@ -6,7 +6,7 @@ import (
 	"unicode/utf8"
 )
 
-// Tool output caps (S-051). Every limit on how much a tool may feed back into
+// Tool output caps. Every limit on how much a tool may feed back into
 // the model's context lives here, so there is one place to tune them.
 const (
 	// MaxReadFileLines and MaxReadFileBytes cap read_file output; whichever
@@ -23,7 +23,7 @@ const (
 	// MaxSearchContextLines caps the context a search may show around each
 	// match. Enough to read a signature and its body's first lines, which is
 	// what stops the round after the search from being a read of the same
-	// place (S-164).
+	// place.
 	MaxSearchContextLines = 5
 
 	// MaxSearchFileResults caps files_only output. One line per file is

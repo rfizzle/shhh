@@ -1,6 +1,6 @@
 package provider
 
-// What a broken stream keeps (S-107,
+// What a broken stream keeps (
 // docs/interface/surfaces.md#the-recovery-row).
 //
 // Every dialect used to drop what it had accumulated the moment the transport

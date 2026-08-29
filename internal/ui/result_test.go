@@ -1,6 +1,6 @@
 package ui
 
-// The S-113 result surface: the default explanation, the containment line,
+// The result surface: the default explanation, the containment line,
 // the safe default that moves with the risk, the dry run, and the revise
 // ladder.
 
@@ -466,7 +466,7 @@ func TestResult_AnExplanationForALastCommandIsDropped(t *testing.T) {
 
 // Checking a command spawns a shell and walks PATH. Inline in Update that was
 // the loop stopped for however long this machine takes to do both, with the
-// command on screen and nothing able to paint over it (S-133).
+// command on screen and nothing able to paint over it.
 func TestResult_TheCommandIsCheckedOffTheLoop(t *testing.T) {
 	m := NewGenerateModel(makeEvents("ls -la"), noopCancel, nil,
 		mockNewStream("ls"), nil, "bash")

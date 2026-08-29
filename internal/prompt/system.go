@@ -13,7 +13,7 @@ func Build(info shell.Info, extra ...string) string {
 }
 
 // BuildAlternatives is Build plus the invitation to say what else it
-// considered (S-114). Only the interactive one-shot asks: a pipe prints one
+// considered. Only the interactive one-shot asks: a pipe prints one
 // command to stdout and has nowhere to put the others, so the ask stays off
 // the path whose output is a contract.
 func BuildAlternatives(info shell.Info, extra ...string) string {
@@ -85,7 +85,7 @@ When suggesting commands, use markdown code blocks with the shell language tag. 
 // task is complete, instead of pasting suggestions into the chat.
 //
 // The "Finding things" rules are not padding, and a later edit trimming them
-// for brevity would be undoing a fix (S-164). Each answers a way a real
+// for brevity would be undoing a fix. Each answers a way a real
 // session wasted its whole round budget: one call per round when four were
 // independent; a bare search whose every hit needed a second round to read;
 // a file paged through in twenty-line windows against a cap of two thousand
@@ -146,7 +146,7 @@ Investigation is where a session is won or wasted. Each round costs the user tim
 	return base
 }
 
-// BuildResearcher is the system prompt for researcher sub-agents (S-068):
+// BuildResearcher is the system prompt for researcher sub-agents:
 // read-only tools plus the web, ending in a final report — the only thing the
 // orchestrator receives.
 func BuildResearcher(info shell.Info, extra ...string) string {
@@ -176,7 +176,7 @@ Your last message IS the deliverable. Make it a self-contained report: the findi
 	return base
 }
 
-// BuildWriter is the system prompt for writer sub-agents (S-068): the full
+// BuildWriter is the system prompt for writer sub-agents: the full
 // toolset against an isolated worktree whose changes return as a reviewable
 // patch.
 func BuildWriter(info shell.Info, extra ...string) string {
@@ -214,7 +214,7 @@ Your last message IS the deliverable. Report what you changed (files and why), h
 }
 
 // PlanModeInstructions is appended to the system prompt while the session is
-// in plan mode (S-061): research read-only, present a plan, and wait for the
+// in plan mode: research read-only, present a plan, and wait for the
 // user's decision instead of implementing.
 const PlanModeInstructions = `# Plan mode
 You are in plan mode: a read-only research phase. Your job is to produce a concrete implementation plan, not to make changes.
@@ -247,7 +247,7 @@ func CombineExtra(parts ...string) string {
 }
 
 // BuildExplain is the explanation system prompt. The one-shot explains every
-// command by default now (S-113), so the brief form is the one that has to be
+// command by default now, so the brief form is the one that has to be
 // disciplined: it sits between the command and the keys, and a paragraph
 // there pushes the decision off the screen. long is what `-e` and `[x]` ask
 // for.

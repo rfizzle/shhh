@@ -15,9 +15,9 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/chat"
 )
 
-// sandboxPolicy builds the session containment policy (S-062): workspace is
+// sandboxPolicy builds the session containment policy: workspace is
 // the current directory, profile and extensions come from config, and the
-// working scope's directories (S-141) join the write grants — a directory the
+// working scope's directories join the write grants — a directory the
 // user has said is part of the work is one contained commands may write to,
 // which is the whole point of having said so.
 func sandboxPolicy(cfg config.Config, scopeDirs ...string) (sandbox.Policy, error) {
@@ -43,10 +43,10 @@ func sandboxPolicy(cfg config.Config, scopeDirs ...string) (sandbox.Policy, erro
 // status line and doctor report either way. A wrap or spawn failure surfaces
 // as the command's error result — a contained command never falls back to
 // running bare. Session start also reconciles container-sandbox ownership
-// records (S-063) so crashed sessions' containers get reaped.
+// records so crashed sessions' containers get reaped.
 func buildContainment(cfg config.Config, sc *scope.Scope) (chat.Containment, error) {
 	// The policy is rebuilt per command rather than captured once: the
-	// working scope grows mid-session (S-141), and a closure holding the
+	// working scope grows mid-session, and a closure holding the
 	// policy it was built with would keep refusing writes to a directory the
 	// user has since granted.
 	policyNow := func() (sandbox.Policy, error) { return sandboxPolicy(cfg, sc.Dirs()...) }
@@ -66,7 +66,7 @@ func buildContainment(cfg config.Config, sc *scope.Scope) (chat.Containment, err
 		c.Detail = avail.Detail
 		// Nothing wraps the command, so nothing restricts what it reaches:
 		// the approval card says so rather than reporting the profile's
-		// answer, which is not in force (S-101).
+		// answer, which is not in force.
 		c.Network = true
 		return c, nil
 	}
@@ -226,7 +226,7 @@ func ownedSummary() string {
 // sandboxReportNow re-resolves the containment report against the working
 // scope as it stands now, so `/sandbox doctor` names the directories a
 // command may write to at the moment it is asked rather than at session
-// start (S-141).
+// start.
 func sandboxReportNow(cfg config.Config, sc *scope.Scope) string {
 	avail := sandbox.Detect()
 	policy, err := sandboxPolicy(cfg, sc.Dirs()...)

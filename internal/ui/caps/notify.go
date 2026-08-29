@@ -1,6 +1,6 @@
 package caps
 
-// The other half of the OSC 99 question (S-157,
+// The other half of the OSC 99 question (
 // docs/interface/surfaces.md#when-you-are-not-there).
 //
 // Query asks the terminal whether it can raise a desktop notification; this

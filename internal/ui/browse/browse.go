@@ -135,8 +135,7 @@ func (m Model) updateList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 	case keys.Is(pressed, keys.Browse.Filter):
 		// Focusing the input is what starts its caret blinking in v2, so the
-		// two are one call rather than a focus and a remembered follow-up
-		// (S-155).
+		// two are one call rather than a focus and a remembered follow-up.
 		return m, m.filter.Focus()
 	}
 	return m, nil
@@ -188,7 +187,7 @@ func (m Model) updateDetail(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 // View is the frame: the screen the browser paints, and the one terminal
 // state it asks for. In v2 the alt screen is a field on the view rather than
-// an option each host remembers to pass (S-155), so the browser owns the
+// an option each host remembers to pass, so the browser owns the
 // whole-window surface it was written for.
 func (m Model) View() tea.View {
 	v := tea.NewView(m.screen())

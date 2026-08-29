@@ -1,12 +1,12 @@
 package agent
 
-// Session summary (S-163): every few tool rounds a cheap model reads a small
+// Session summary: every few tool rounds a cheap model reads a small
 // structured digest of the session and answers the one question the inspector
 // rail's numbers cannot — what is this thing actually doing, and is it still
 // doing what was asked. The verdict feeds the rail's SUMMARY block
 // (docs/interface/surfaces.md#the-session-summary) and, later, auto-steering.
 //
-// It is the classifier's sibling (S-060, classifier.go): same provider, same
+// It is the classifier's sibling (classifier.go): same provider, same
 // structured-tool-call-with-a-text-fallback shape, same treatment of the
 // conversation as untrusted DATA. One thing is deliberately inverted. The
 // classifier fails *closed* — a broken classifier must never approve. The
@@ -70,10 +70,11 @@ const (
 	maxSummaryField = 300
 )
 
-// SummaryState is the summarizer's reading of whether the run is still serving
-// the instruction that started it. It is a closed set on purpose: this is what
-// auto-steering will branch on, and a policy that had to parse a sentence to
-// find out would be a policy written by whatever wrote the sentence.
+// SummaryState is the summarizer's reading of whether the run is still
+// serving the instruction that started it. It is a closed set on purpose:
+// this is what auto-steering will branch on, and a policy that had to parse a
+// sentence to find out would be a policy written by whatever wrote the
+// sentence.
 type SummaryState int
 
 const (
@@ -221,7 +222,8 @@ type SummaryRequest struct {
 }
 
 // SummaryVerdict is one reading. Failed marks a reading that did not happen:
-// the caller keeps whatever it had and marks it stale, never blanks the block.
+// the caller keeps whatever it had and marks it stale, never blanks the
+// block.
 type SummaryVerdict struct {
 	Text   string
 	State  SummaryState

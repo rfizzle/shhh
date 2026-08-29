@@ -1,6 +1,6 @@
 package chat
 
-// The streaming render (S-149,
+// The streaming render (
 // docs/architecture.md#the-screen-is-a-rectangle-and-so-is-everything-in-it).
 // The contract the cache lives or dies by is the first test: every prefix of
 // every document must render byte for byte the way renderMarkdown renders it
@@ -43,7 +43,7 @@ var streamCorpus = map[string]string{
 // arrives a byte at a time, and at every one of those moments the cached glue
 // must be indistinguishable from re-rendering the whole thing — not close,
 // not visually the same, the same bytes. The selection is a pair of
-// coordinates into this string (S-145) and the message is re-rendered whole
+// coordinates into this string and the message is re-rendered whole
 // the instant it freezes into an entry, so a byte of drift is a jump on the
 // last token.
 func TestStreamingMarkdown_MatchesTheWholeRender(t *testing.T) {
@@ -88,7 +88,7 @@ func TestStreamingMarkdown_AdvancesTheBoundary(t *testing.T) {
 
 // TestStreamingMarkdown_DropsTheCache: the render is keyed on the two things
 // renderMarkdown's own renderer is keyed on (highlight.go), plus the message
-// itself. A resize, a palette swap (S-095) or a different message must not be
+// itself. A resize, a palette swap or a different message must not be
 // answered out of the old cache.
 func TestStreamingMarkdown_DropsTheCache(t *testing.T) {
 	monoRestore(t)
@@ -245,7 +245,8 @@ func TestStreamingRepaint_FreezesWithoutAJump(t *testing.T) {
 	}
 }
 
-// BenchmarkStreamingMarkdown measures the thing S-149 exists for: one answer
+// BenchmarkStreamingMarkdown measures the thing the streaming render exists
+// for: one answer
 // arriving in chunks, rendered the old way and the new way.
 func BenchmarkStreamingMarkdown(b *testing.B) {
 	var doc strings.Builder

@@ -1,6 +1,6 @@
 package chat
 
-// Turn summary and changeset row (S-098,
+// Turn summary and changeset row (
 // docs/interface/surfaces.md#the-turns-close): a turn closes with the rows
 // that answer what it did, what it changed, and whether the checks still
 // pass. They are ordinary transcript entries — raw data plus a passive
@@ -9,7 +9,7 @@ package chat
 //
 // Nothing here recomputes what the session already knows: the steps and tools
 // come from the turn's own entries, the wall time and spend from the vitals
-// history (S-093), and the files from the changeset store (S-097).
+// history, and the files from the changeset store.
 
 import (
 	"fmt"
@@ -35,7 +35,7 @@ func (m *Model) appendTurnClose() {
 	}
 	m.turnOpen = false
 	// A turn that stopped at its round limit has already closed, with the
-	// pause row (S-109): it states the rounds it used, what it changed, and
+	// pause row: it states the rounds it used, what it changed, and
 	// the three ways on, and a second block offering [v] and [u] beside it
 	// would be the same answer twice. Granting the rounds spends the pause,
 	// so the turn it continues into closes here in the ordinary way.
@@ -57,7 +57,7 @@ func (m Model) turnCloseData() *components.TurnClose {
 		Checks:  turnChecksRow(es),
 	}
 	// The count is the steps this turn actually ran, so an approved plan's
-	// declared-but-not-started steps are not counted as work done (S-104).
+	// declared-but-not-started steps are not counted as work done.
 	for _, blk := range m.blocksOf(es) {
 		if blk.step != nil && !blk.step.queued() {
 			c.Steps++
@@ -69,7 +69,7 @@ func (m Model) turnCloseData() *components.TurnClose {
 		}
 	}
 	// The turn's own cost, priced per request as it went; an unpriced model
-	// reports tokens rather than a made-up zero (S-093).
+	// reports tokens rather than a made-up zero.
 	if t, ok := m.vitals.lastTurn(); ok {
 		if t.Priced {
 			c.Spend = formatCost(t.Cost)
@@ -111,7 +111,7 @@ func (m Model) turnChangesRow() *components.TurnChanges {
 }
 
 // trackingNote says what git knew about the files when they were edited — the
-// input to how reversible the turn is (S-097). Outside a repository every
+// input to how reversible the turn is. Outside a repository every
 // answer is unknown, which is not the same as untracked, so the note says so
 // differently.
 func trackingNote(t changeset.Turn) string {

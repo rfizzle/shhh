@@ -39,13 +39,13 @@ const (
 	MaxInlineBytes = 2 << 10
 )
 
-// WrapFunc builds the containment argv for one check (S-062); allowWrite
+// WrapFunc builds the containment argv for one check; allowWrite
 // grants the workspace write access (suites opt in via allow_write, the
 // default is read-only). A wrap error blocks the run — a check never falls
 // back to running bare when containment was expected.
 type WrapFunc func(argv []string, allowWrite bool) ([]string, error)
 
-// EvidenceFunc stores one check's full bounded output (S-064) and returns its
+// EvidenceFunc stores one check's full bounded output and returns its
 // opaque evidence id.
 type EvidenceFunc func(tool string, content []byte) (string, error)
 
@@ -84,7 +84,7 @@ type Result struct {
 // the "result" action and /gate result.
 type Runner struct {
 	Workspace string
-	// Wrap contains each check (S-062); nil runs checks bare, reported
+	// Wrap contains each check; nil runs checks bare, reported
 	// honestly in the result.
 	Wrap WrapFunc
 	// Mechanism names the containment mechanism Wrap uses, for the result's

@@ -23,7 +23,7 @@ type ToolExecutor func(name string, args json.RawMessage) (string, error)
 // before it may run. The front-end implements it (the chat TUI gates
 // execute_command, mutating tools, and registered gated tools). The gate sees
 // the whole call, so a tool can gate on its arguments (the process tool gates
-// only its start action, S-073).
+// only its start action).
 type ApprovalGate func(tc provider.ToolCall) bool
 
 // ToolResult pairs an executed tool call with its result text and how long
@@ -38,7 +38,7 @@ type ToolResult struct {
 // turn may trigger before the loop pauses for fresh input.
 //
 // The number is a checkpoint interval, not a safety limit: the interactive
-// pause it drives (S-109) is a place to look at what the turn has done, and a
+// pause it drives is a place to look at what the turn has done, and a
 // checkpoint that fires on ordinary work is noise rather than signal. It was
 // 25, then 75, and both were spent by an everyday "find this across the repo
 // and fix it" turn without anything going wrong. 150 is the first number that
@@ -79,7 +79,7 @@ type Agent struct {
 	queue     []provider.ToolCall
 
 	// reasoning is the thinking the response now being folded into the
-	// conversation produced (S-139). It is latched from the terminal stream
+	// conversation produced. It is latched from the terminal stream
 	// event and consumed by the assistant message that round records,
 	// because that is the message the next request has to carry it in.
 	reasoning []provider.ReasoningBlock
@@ -132,7 +132,7 @@ func (a *Agent) Append(msg provider.Message) { a.messages = append(a.messages, m
 func (a *Agent) StartTurn(text string) { a.StartTurnWith(text, nil) }
 
 // StartTurnWith is StartTurn carrying the attachments staged for this turn
-// (S-134). They ride on the user message itself, so every later snapshot,
+// . They ride on the user message itself, so every later snapshot,
 // save and resume keeps them beside the sentence that was asked about them.
 func (a *Agent) StartTurnWith(text string, atts []provider.Attachment) {
 	a.rounds = 0
@@ -254,7 +254,7 @@ func (a *Agent) RecordAutoResults(results []ToolResult) {
 func (a *Agent) QueuedApprovals() int { return len(a.queue) }
 
 // PendingApprovals is the approval queue in the order it will be asked,
-// head first. It is what the queue strip and batch approval read (S-102);
+// head first. It is what the queue strip and batch approval read;
 // the slice is a copy, so reading it can never reorder what the agent pops.
 func (a *Agent) PendingApprovals() []provider.ToolCall {
 	return append([]provider.ToolCall(nil), a.queue...)

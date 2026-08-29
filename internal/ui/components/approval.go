@@ -35,10 +35,10 @@ const (
 	// (a, only when AllowAlways is set).
 	ApprovalAlways
 	// ApprovalFullDiff opens the full-screen diff view (d, only when
-	// FullDiff is set); the host returns to the card afterwards (S-074).
+	// FullDiff is set); the host returns to the card afterwards.
 	ApprovalFullDiff
 	// ApprovalBatch approves this action and every queued action the session
-	// would classify the same way (A, only when Batch is set — S-102).
+	// would classify the same way (A, only when Batch is set).
 	ApprovalBatch
 	// ApprovalRelease hands the keyboard back to the draft and asks the host
 	// to deliver the keystroke there. Only a card holding the keyboard by
@@ -49,7 +49,7 @@ const (
 )
 
 // Severity is how much the pending action could cost, led with as a word
-// rather than carried by the border colour alone (S-101,
+// rather than carried by the border colour alone (
 // docs/interface/principles.md#colour-never-carries-meaning-alone).
 // The border tracks it as reinforcement.
 type Severity int
@@ -146,27 +146,26 @@ type ApprovalCard struct {
 	// Headline is the first body row, e.g. "Assistant wants to run: go test".
 	Headline string
 	// Severity leads the card as a word and rides the top border as the last
-	// chip; it also picks the border colour (S-101).
+	// chip; it also picks the border colour.
 	Severity Severity
 	// Warnings are safety.Check risks, rendered as ⚠ rows; when present the
 	// caller must not set AllowAlways (flagged actions are never
 	// blanket-approved).
 	Warnings []string
 	// Chip is the containment state folded into the title rail, e.g.
-	// "⛨ bwrap · workspace" (S-101). Uncontained replaces it with
+	// "⛨ bwrap · workspace". Uncontained replaces it with
 	// "⚠ UNCONTAINED" and promotes it ahead of the severity chip.
 	Chip        string
 	Uncontained bool
 	// Fields is the blast-radius block under the headline: what the action
 	// touches, whether it can be undone, whether the network is open.
 	Fields []CardField
-	// Hunks is the edit variant's diff body; Syntax highlights its lines
-	// (S-074).
+	// Hunks is the edit variant's diff body; Syntax highlights its lines.
 	Hunks  []diff.Hunk
 	Syntax Syntax
-	// FullDiff offers [d] to open the diff full screen (S-074).
+	// FullDiff offers [d] to open the diff full screen.
 	FullDiff bool
-	// Reversibility rides the edit variant's stats line (S-101): whether the
+	// Reversibility rides the edit variant's stats line: whether the
 	// change can be taken back, stated where it costs the diff no rows.
 	Reversibility string
 	// Summary is the generic variant's one-line description.
@@ -177,13 +176,13 @@ type ApprovalCard struct {
 	AllowAlways bool
 	AlwaysHint  string
 	// Batch offers [A]: this action and every queued action the session
-	// would classify the same way, answered together (S-102). BatchHint
+	// would classify the same way, answered together. BatchHint
 	// states the count on the key, because a key that answers an unstated
 	// number of decisions is not an offer.
 	Batch     bool
 	BatchHint string
 	// ExtraHints are additional key hints the host handles itself (e.g.
-	// "g: attach to writer-1" on a routed child approval, S-077).
+	// "g: attach to writer-1" on a routed child approval).
 	ExtraHints []string
 	// SafeDefault names the safe answer in words, for the cards where it is
 	// not obvious from the keys — e.g. "[n] deny — the safe answer". It names
@@ -203,7 +202,7 @@ type ApprovalCard struct {
 	// asks for the safe answer in words wherever it is not.
 	Return string
 	// NotYetLive says the card is on screen beside a draft that still holds
-	// the keyboard (S-117). Its decision keys render as not-yet-live and
+	// the keyboard. Its decision keys render as not-yet-live and
 	// Update answers nothing, so a letter typed into the sentence stays a
 	// letter. Handover is the key that changes that — the card's only live
 	// key in this state.
@@ -212,7 +211,7 @@ type ApprovalCard struct {
 
 	// HeldOnArrival marks a card that took the keyboard by landing on a draft
 	// nobody was typing into, rather than by a handover the reader asked for
-	// (S-117). It claims less than a card that was handed the keyboard:
+	//. It claims less than a card that was handed the keyboard:
 	// the two answers and the two ways out, and nothing whose consequence a
 	// reader could not undo — [a] and [d] still want the handover, because
 	// `always` and `always` are not what someone typing `also` meant. Every
@@ -302,7 +301,7 @@ func (c *ApprovalCard) View(width int) string {
 	}
 
 	hints := c.hintRowsFor(width, inner)
-	// The keys sit below a rule so they never blend into the body (S-101).
+	// The keys sit below a rule so they never blend into the body.
 	hints = append([]string{cardRule}, hints...)
 
 	if c.Variant == ApprovalEdit {
@@ -348,7 +347,7 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 	// than the word it replaced and is the half a clip would take. So the
 	// qualifiers ride beside the keys where the terminal carries them and
 	// drop to rows of their own where it does not — the judgement [A] has
-	// made since S-102, for the same reason.
+	// made for batches, for the same reason.
 	var quals []string
 	if !c.HeldOnArrival {
 		if c.AllowAlways && c.AlwaysHint != "" {
@@ -397,7 +396,7 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 // the keystroke it stands for. The two are the same everywhere but the safe
 // answer, where the capital N is the card's default marker rather than a
 // shifted key — which is exactly why a pointer cannot be told what it landed
-// on by reading the letter off the screen (S-159).
+// on by reading the letter off the screen.
 type CardKey struct {
 	Shown string
 	Key   string
@@ -459,7 +458,7 @@ func (c *ApprovalCard) keys() string {
 // rebuilds it on every frame to keep the two honest (`common/button.go`);
 // finding the run in the row it was drawn on means a key that is on the
 // screen is clickable and a key a narrow terminal clipped away is not, by
-// construction rather than by upkeep (S-159).
+// construction rather than by upkeep.
 //
 // The run is divided among its keys with nothing left over — the brackets
 // belong to the keys at the ends and each separator to the key before it —

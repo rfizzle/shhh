@@ -1,6 +1,6 @@
 package chat
 
-// Terminal interactivity and prompt↔transcript focus (S-115): the wheel
+// Terminal interactivity and prompt↔transcript focus: the wheel
 // reaches the transcript, typed letters do not, and there are named ways in
 // and out that a draft can never produce by accident.
 
@@ -65,7 +65,7 @@ func diffFullModel(t *testing.T) Model {
 
 func TestWheel_ScrollsTheTranscriptAndLeavesTheDraftAlone(t *testing.T) {
 	// Reporting is off by default, so the wheel has to be asked for before
-	// there is a wheel event to route at all (S-136).
+	// there is a wheel event to route at all.
 	m := typeChars(t, proseModel(t).WithMouse(true), "half a sentence")
 	before := m.viewport.YOffset()
 
@@ -135,7 +135,7 @@ func TestTypedLetters_NeverReachTheTranscript(t *testing.T) {
 	}
 }
 
-// Paging reads the transcript and leaves the keyboard in the draft (S-140):
+// Paging reads the transcript and leaves the keyboard in the draft:
 // the reader scrolling back to check a path mid-sentence is not asking to
 // stop writing the sentence.
 func TestPgUp_ScrollsWithoutTakingTheKeyboard(t *testing.T) {
@@ -221,7 +221,7 @@ func TestShiftArrows_ScrollALineWithoutTakingTheKeyboard(t *testing.T) {
 // recall. A key that changes surface depending on how much history a session
 // happens to have is one nobody can learn — and on a terminal that
 // synthesises arrows for the wheel, it was a flick of the wheel that opened
-// reading mode (S-140, altscroll.go).
+// reading mode (altscroll.go).
 func TestUpFromAnEmptyPrompt_NeverTakesTheKeyboard(t *testing.T) {
 	m := proseModel(t)
 	before := m.viewport.YOffset()
@@ -238,7 +238,7 @@ func TestUpFromAnEmptyPrompt_NeverTakesTheKeyboard(t *testing.T) {
 }
 
 // Scrolling away pauses the follow, and the notice rail is the only thing on
-// screen that can say so now the draft keeps the keyboard (S-140).
+// screen that can say so now the draft keeps the keyboard.
 func TestFollowNotice_CountsWhatIsBelowAndClearsAtTheEnd(t *testing.T) {
 	m := proseModel(t)
 	if note := m.followNotice(); note != "" {
@@ -467,7 +467,7 @@ func TestUICommand_MouseTogglesReporting(t *testing.T) {
 
 // The setting has to reach the terminal, not just the model: turning
 // reporting off has to un-tell the terminal, or the click-drag selection it
-// was traded for never comes back. Since S-155 the frame says so — the mouse
+// was traded for never comes back. The frame says so — the mouse
 // mode is a field on the View — so the check is that the next frame asks for
 // what the model believes.
 func TestUICommand_MouseSendsTheTerminalACommand(t *testing.T) {
@@ -502,7 +502,7 @@ func TestStartScreen_NavLineSurvivesTyping(t *testing.T) {
 		t.Fatal("the navigation keys still work with a draft in the box, so they should still be offered")
 	}
 	// Scrolling and the handover are two things now, and the line says so
-	// rather than describing them as one (S-140).
+	// rather than describing them as one.
 	if !strings.Contains(view, "[ctrl+e] select rows") {
 		t.Fatal("the line should name ctrl+e as the handover, apart from the scroll keys")
 	}
@@ -510,7 +510,7 @@ func TestStartScreen_NavLineSurvivesTyping(t *testing.T) {
 
 // Reporting is off out of the box, because the thing it costs — the
 // terminal's own click-drag selection — has no substitute here, while the
-// wheel does (S-136).
+// wheel does.
 func TestMouse_OffByDefaultAndAskedForByChord(t *testing.T) {
 	var wrote [][2]string
 	m := readyModel(t).WithConfigWriter(func(k, v string) error {

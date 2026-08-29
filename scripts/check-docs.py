@@ -8,8 +8,10 @@ to it. This script is what makes that loud instead. See AGENTS.md#documentation.
 Also reports documents that nothing cites: a section nothing points at is
 either wrong or unnecessary.
 
-And it fails on a spec section reference (a § number) inside a Go string
-literal or a golden fixture. Such a reference belongs in a comment; in a
+And it fails on a story identifier (S-060, E-018) anywhere in the code or a
+golden fixture, and on a spec section reference (a § number) inside a Go
+string literal or a golden fixture. Planning is not part of this repository,
+so a reference to it points at something the reader cannot open. Such a reference belongs in a comment; in a
 string it becomes test output, an error message, or — worst — committed
 golden content, which couples a documentation edit to regenerating goldens.
 
@@ -66,6 +68,7 @@ def comment_start(line):
     return -1
 
 REF=re.compile(r"§\d+[a-z]?")
+STORY=re.compile(r"\b[SEBT]-\d{3}\b")
 for f in pathlib.Path(".").rglob("*.go"):
     if ".git" in f.parts: continue
     raw=False
@@ -76,10 +79,12 @@ for f in pathlib.Path(".").rglob("*.go"):
         code = l if c<0 else l[:c]
         if REF.search(code):
             bad.append(f"{f}:{ln}: spec section reference in a string literal, not a comment")
+        if STORY.search(l):
+            bad.append(f"{f}:{ln}: story identifier in code — say what it does and cite docs/")
 for f in pathlib.Path(".").rglob("testdata/golden/*.txt"):
     for ln,l in enumerate(f.read_text().split("\n"),1):
-        if REF.search(l):
-            bad.append(f"{f}:{ln}: spec section reference baked into a golden fixture")
+        if REF.search(l) or STORY.search(l):
+            bad.append(f"{f}:{ln}: spec or story reference baked into a golden fixture")
 
 print(f"checked {n} docs/ citations in {len(per)} files")
 if uncited:

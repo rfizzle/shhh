@@ -1,9 +1,9 @@
-// Package process implements the long-running process supervisor (S-073):
+// Package process implements the long-running process supervisor:
 // the agent manages named processes (dev servers, watchers, test runners)
 // through one `process` tool — start (approval-gated like any command),
 // status, read, input, and stop. Output is captured into bounded per-stream
 // ring buffers for paged reads, with the full log (bounded) stored in the
-// evidence store (S-064) when the process ends. Every process runs in its own
+// evidence store when the process ends. Every process runs in its own
 // process group so stop, session end, cancel, and quit terminate the full
 // tree — no orphans.
 package process

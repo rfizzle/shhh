@@ -1,7 +1,7 @@
 package components
 
-// The two lists the sliding window reached late (S-124,
-// docs/interface/surfaces.md#selectors). S-116 gave the window to the
+// The two lists the sliding window reached late (
+// docs/interface/surfaces.md#selectors). The window began on the
 // selector and left the multi-select and the agent manager calling boundRows
 // directly, so a pointer walked past the last row on either of those cards
 // was navigating a list it could no longer see — the same bug, on the two

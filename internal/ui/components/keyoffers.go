@@ -1,6 +1,6 @@
 package components
 
-// The register on the page (S-153,
+// The register on the page (
 // docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // Every key row in this package is drawn from a binding rather than from a

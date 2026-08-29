@@ -10,7 +10,7 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
-// The host half of the metrics surface (S-129): what the store recorded, what
+// The host half of the metrics surface: what the store recorded, what
 // a token costs, what became of a command, and which readings there is
 // anything to say about. The screen's own rules are tested where the screen
 // is.

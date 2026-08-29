@@ -30,7 +30,7 @@ import (
 var version = "dev"
 
 // Execute runs the command tree under fang, which is what dresses every
-// surface the binary has that is not a Bubble Tea program (S-146): `--help`,
+// surface the binary has that is not a Bubble Tea program: `--help`,
 // the error a failed command prints on its way out, and the `man` page it can
 // now generate. It replaces cobra's own bare `Error: …` plus usage dump; the
 // TUIs draw themselves and are untouched.
@@ -136,7 +136,7 @@ func NewRootCmd() *cobra.Command {
 			resolved := resolve.Resolve(flags)
 
 			// A session with no provider gets the card that says where shhh
-			// looked, not the dialect's own one-line complaint (S-106).
+			// looked, not the dialect's own one-line complaint.
 			p, req, err := resolveProvider(cmd.Context(), cfg, providerRequest{
 				Provider: resolved.Provider,
 				Model:    resolved.Model,
@@ -173,7 +173,7 @@ func NewRootCmd() *cobra.Command {
 
 			info := shell.Detect()
 			// The interactive one-shot asks for the alternatives section as
-			// well (S-114); the pipe path above went out through prompt.Build
+			// well; the pipe path above went out through prompt.Build
 			// and its stdout is one command, as it has always been.
 			sysPrompt := prompt.BuildAlternatives(info, promptExtra)
 
@@ -228,7 +228,7 @@ func NewRootCmd() *cobra.Command {
 				return ev, eCancel, nil
 			}
 
-			// The explanation is on by default now (S-113): a command you do
+			// The explanation is on by default now: a command you do
 			// not understand is a command you should not run. `-e` buys the
 			// long form rather than the only form, and silent mode still
 			// suppresses both.
@@ -284,14 +284,14 @@ func NewRootCmd() *cobra.Command {
 			}
 
 			if result.Err != nil {
-				// Classified, never raw (S-106): the one-shot renders the
+				// Classified, never raw: the one-shot renders the
 				// same failure row the session does, with the way out stated as
 				// a command rather than as a key nothing is listening for.
 				return reportFailure(result.Err, resolved.Model)
 			}
 
 			// The result surface already moves the safe default on a
-			// destructive command and takes a deliberate `y` for it (S-113),
+			// destructive command and takes a deliberate `y` for it,
 			// so asking the same question again here is a second prompt for
 			// one decision. It still runs for anything that reached this
 			// point without being asked.

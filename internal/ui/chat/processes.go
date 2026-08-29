@@ -1,6 +1,6 @@
 package chat
 
-// Processes wires the long-running process supervisor (S-073) into the chat
+// Processes wires the long-running process supervisor into the chat
 // TUI. Manage backs the /ps slash command (the session's process list); its
 // presence also marks the process tool as registered, which routes start
 // actions through the approval queue while status/read/input/stop auto-run.

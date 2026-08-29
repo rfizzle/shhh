@@ -10,7 +10,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
-// processModel is gatedModel with the process supervisor wired (S-073).
+// processModel is gatedModel with the process supervisor wired.
 func processModel(t *testing.T, executor ToolExecutor) Model {
 	t.Helper()
 	m := gatedModel(t, executor, nil)

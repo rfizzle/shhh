@@ -32,7 +32,7 @@ func hangingEnv() EnvFactory {
 }
 
 // TestSpawnBatchGroupsOneRound covers what a fan-out block is built on
-// (S-110): children spawned between two BeginBatch calls share a batch, and
+// : children spawned between two BeginBatch calls share a batch, and
 // the batch a round opened is the one BatchSize counts.
 func TestSpawnBatchGroupsOneRound(t *testing.T) {
 	sup := New(context.Background(), Options{Root: t.TempDir(), NewEnv: hangingEnv()})
@@ -93,7 +93,7 @@ func TestSpawnBatchWithoutBeginBatch(t *testing.T) {
 }
 
 // TestSpawnDeclaredSteps covers the denominator a lane's progress bar needs
-// (S-094): a spawn may declare one, and a count nobody could mean is dropped
+// : a spawn may declare one, and a count nobody could mean is dropped
 // rather than clamped into an invented ratio.
 func TestSpawnDeclaredSteps(t *testing.T) {
 	for _, tc := range []struct {

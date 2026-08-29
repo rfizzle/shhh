@@ -1,5 +1,5 @@
 // Package evidence implements tool-output reduction and the evidence store
-// behind it (S-064): bulky tool results are reduced deterministically before
+// behind it: bulky tool results are reduced deterministically before
 // the model sees them, the full originals are kept under shhh's state dir,
 // and the model can retrieve an original through the evidence tool using an
 // opaque id — never a path.

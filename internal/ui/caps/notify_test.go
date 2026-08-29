@@ -1,6 +1,6 @@
 package caps
 
-// The summons against the terminals it will reach (S-157,
+// The summons against the terminals it will reach (
 // docs/interface/surfaces.md#when-you-are-not-there).
 //
 // Three things are worth asserting. That the dialect follows the answer —

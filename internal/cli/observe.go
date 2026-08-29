@@ -1,6 +1,6 @@
 package cli
 
-// Session observability (S-065): `shhh observe` renders local, content-free
+// Session observability: `shhh observe` renders local, content-free
 // dashboards over recorded agent sessions, with JSON export and purge. The
 // observeRecorder half persists what a running session reports.
 
@@ -42,7 +42,7 @@ func startObserveRecorder(db *storage.DB, kind, provider, model string, prices *
 }
 
 // startChildObserveRecorder opens a sub-agent's session row linked to its
-// parent session (S-068); failures disable recording for that child only.
+// parent session; failures disable recording for that child only.
 func startChildObserveRecorder(db *storage.DB, kind, provider, model string, prices *pricing.Table, parentID int64) *observeRecorder {
 	if db == nil {
 		return nil

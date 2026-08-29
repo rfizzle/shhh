@@ -1,4 +1,4 @@
-// Package components is the reusable TUI interaction catalog (S-076,
+// Package components is the reusable TUI interaction catalog (
 // docs/interface/surfaces.md): approval card, diff viewer, selectors, inline
 // confirm, activity rows, cockpit rail, and agent list. Components are plain
 // state with two methods — Update(tea.KeyPressMsg) (done, result) and
@@ -33,12 +33,12 @@ import (
 // So each rung says what it is, and nothing derives anything.
 //
 // The values are transcribed from tokens/colors.css in the shhh Design System
-// project (S-088), which states both halves already: a hex, and the 256 index
+// project, which states both halves already: a hex, and the 256 index
 // it stands for.
 //
 // Lip Gloss v2 has no CompleteColor and no renderer to degrade through: a
 // Style holds a resolved image/color.Color and Render always emits it at full
-// fidelity (S-155). So a token stays three colours and Color picks the one
+// fidelity. So a token stays three colours and Color picks the one
 // the profile asked for, at the moment the styles are built rather than at
 // the moment they are drawn — which is the rule the palette always stated,
 // now with somewhere of its own to live.
@@ -71,7 +71,7 @@ func token(hex, ansi256, ansi16 string) Token {
 // No new colors without adding them here.
 //
 // The assignments below are reconciled with tokens/colors.css in the shhh
-// Design System project (S-088): same token set, one documented job each.
+// Design System project: same token set, one documented job each.
 // Three of them carry the redesign — Spin means anything in motion and only
 // that, Accent additionally means the mutation rail, and Info marks every key
 // the interface offers, so a key written in any other color is not an offer.
@@ -99,7 +99,7 @@ type ColorTokens struct {
 }
 
 // Palette is the live token set: the full palette above, or the two-grey
-// mono palette while mono conformance is on (S-095, mono.go). Every style in
+// mono palette while mono conformance is on (mono.go). Every style in
 // the product reads it through newStyles, which applyPalette re-runs whenever
 // the palette is swapped.
 var Palette = FullPalette
@@ -192,7 +192,7 @@ func (t Token) Color() color.Color {
 // newStyles from the token set and nothing else. Every style this package
 // draws with is a field on it, so a theme is a struct to build rather than a
 // list of globals to remember to rebuild — which is what the seven
-// applyXStyles functions of S-088 were (Finding 2).
+// applyXStyles functions were (Finding 2).
 //
 // The fields are grouped the way the design doc groups them, and the group
 // comments are the argument for the assignment; the palette is the table they
@@ -252,7 +252,7 @@ type Styles struct {
 // View(width) because that signature is the components contract, and
 // the v2 migration did not change it: v2 moved the renderer out of the Style,
 // which is what made a resolved profile something this package has to own
-// (S-155), but it left the catalog's own contract alone.
+// , but it left the catalog's own contract alone.
 var sty = newStyles(Palette)
 
 // newStyles builds the whole style set from one token set. It reads its

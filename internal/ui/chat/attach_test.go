@@ -1,6 +1,6 @@
 package chat
 
-// Sub-agent management and steering tests (S-077): the agent list, attach /
+// Sub-agent management and steering tests: the agent list, attach /
 // detach, scoped commands, steering, mode clamping, and the [g] jump from a
 // routed approval.
 
@@ -293,7 +293,7 @@ func TestBlockedRowSortsUpAndSaysWhatItWaitsFor(t *testing.T) {
 	}
 }
 
-// TestAnswerBlockedChildFromTheList is S-111's whole point: opening the
+// TestAnswerBlockedChildFromTheList is the list's whole point: opening the
 // manager because something needs you must not then send you into that
 // child's session to say yes. [a] renders the card over the list and hands
 // the list back.
@@ -427,7 +427,7 @@ func TestDetachedAskGJumpsToAgent(t *testing.T) {
 	m = updated.(Model)
 
 	// Detached, the card offers the jump — once it holds the keyboard, since
-	// until then [g] is a letter (S-117).
+	// until then [g] is a letter.
 	m = handover(t, m)
 	if view := m.View().Content; !strings.Contains(view, "g: attach to researcher-1") {
 		t.Fatalf("routed card missing the [g] hint:\n%s", view)

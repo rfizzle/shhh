@@ -124,7 +124,7 @@ func streamResponses(body io.ReadCloser, classify func(error) error) <-chan Stre
 
 			case eventFailed, eventError:
 				// The items that finished travel with the failure, so a
-				// dropped stream can be continued (S-107).
+				// dropped stream can be continued.
 				ch <- StreamEvent{ToolCalls: CompletedToolCalls(orderedCalls(seen, order)), Err: classify(responseFailure(ev)), Done: true}
 				return
 			}

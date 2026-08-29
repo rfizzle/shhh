@@ -1,6 +1,6 @@
 package chat
 
-// Session observability (S-065): the Model reports content-free events —
+// Session observability: the Model reports content-free events —
 // usage totals, tool-call durations/outcomes, and mode decisions with
 // enum-like reason codes — to an Observer the CLI wires to storage. Nothing
 // here ever carries prompts, outputs, paths, or command text.
@@ -26,7 +26,7 @@ type Observer struct {
 	Decision func(decision, reason string)
 }
 
-// WithObserver wires session observability (S-065); the zero Observer
+// WithObserver wires session observability; the zero Observer
 // disables it.
 func (m Model) WithObserver(o Observer) Model {
 	m.observer = o
@@ -76,7 +76,7 @@ func reasonCode(raw string) string {
 	case "plan mode inspection":
 		return "plan-inspection"
 	}
-	// A refusal for what the call reaches (S-141) carries the directory in
+	// A refusal for what the call reaches carries the directory in
 	// its reason, so it is matched by shape rather than by equality — the
 	// free text still never reaches the metrics.
 	if strings.HasPrefix(raw, "outside the working scope") {
@@ -127,12 +127,12 @@ func (m *Model) recordDecision(decision, reason string) {
 }
 
 // The context occupancy breakdown itself lives with the rest of the session
-// vitals (S-093, vitals.go), so /stats and the inspector rail quote one
+// vitals (vitals.go), so /stats and the inspector rail quote one
 // source rather than two estimates that drift.
 
 // statsReport renders /stats: the current session's context occupancy
 // breakdown and cumulative spend, from the same accounting the inspector
-// rail reads (S-093).
+// rail reads.
 func (m Model) statsReport() string {
 	b := m.contextAccounting()
 	source := "estimated"
@@ -169,7 +169,7 @@ func (m Model) statsReport() string {
 	}
 	sb.WriteString(spend + "\n")
 
-	// A session that changed model mid-flight is priced per model (S-107), so
+	// A session that changed model mid-flight is priced per model, so
 	// the total above can be reconciled against what each one actually
 	// answered. One model says nothing the total does not, so it says nothing.
 	if split := m.vitals.modelSplit(); split != nil {

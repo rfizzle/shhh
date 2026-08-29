@@ -75,7 +75,7 @@ func TestChildAskApprove(t *testing.T) {
 }
 
 // Esc on a routed card hands the keyboard back and leaves the request
-// waiting; [n] is what declines it (S-117).
+// waiting; [n] is what declines it.
 func TestChildAskDecline(t *testing.T) {
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)

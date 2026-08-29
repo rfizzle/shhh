@@ -7,10 +7,10 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-// The rule S-134 is: any modifier on Enter means a line break rather than a
+// The rule is: any modifier on Enter means a line break rather than a
 // send. Under v1 that had to be read out of the raw CSI the terminal sent,
 // because v1 had no name for a modified Enter; v2 names it, so the rule is a
-// rule about a key again (S-155).
+// rule about a key again.
 func TestNewlineKey_RecognisesEveryModifiedEnter(t *testing.T) {
 	cases := []struct {
 		name string
@@ -45,7 +45,7 @@ func TestNewlineKey_IgnoresOrdinaryMessages(t *testing.T) {
 }
 
 // A modified Enter has to reach the draft as a line break rather than as a
-// send — the whole point of S-134's first half.
+// send — the whole point of the rule's first half.
 func TestUpdate_ShiftEnterInsertsNewlineWithoutSending(t *testing.T) {
 	m := frameModel(t, 100, 40)
 	m.input.SetValue("first line")

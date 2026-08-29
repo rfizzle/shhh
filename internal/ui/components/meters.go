@@ -1,6 +1,6 @@
 package components
 
-// Meters (S-094, docs/interface/README.md). Every quantitative glyph run in
+// Meters (docs/interface/README.md). Every quantitative glyph run in
 // the product is one of three things — a block meter, a sparkline, or the
 // spinner — and each has exactly one implementation here, so the context bar,
 // step progress, agent lanes and the retry countdown cannot drift apart.
@@ -31,8 +31,8 @@ const (
 	MeterCellsCountdown = 20 // a retry countdown
 )
 
-// Context-meter warning thresholds, matching S-055's trim warnings. Hosts
-// with their own thresholds override them per meter.
+// Context-meter warning thresholds, matching the window trim's warnings.
+// Hosts with their own thresholds override them per meter.
 const (
 	ctxWarnPct  = 70
 	ctxAlertPct = 90
@@ -91,7 +91,7 @@ type Meter struct {
 // StepMeter is the step-progress meter for step of steps: the completed steps
 // filled, the step in flight taking its own slice of cells in spin, and the
 // count stated beside the bar. It returns ok=false when no total was
-// declared — there is no honest ratio to draw (S-094).
+// declared — there is no honest ratio to draw.
 func StepMeter(step, steps, cells int, running bool) (Meter, bool) {
 	if steps <= 0 {
 		return Meter{}, false
@@ -113,7 +113,7 @@ func StepMeter(step, steps, cells int, running bool) (Meter, bool) {
 }
 
 // AgentMeter is a lane's progress meter — five cells, always info, and only
-// when the child declared a step count (S-094). A lane without one gets the
+// when the child declared a step count. A lane without one gets the
 // Spinner, because a bar drawn against a denominator nobody supplied is a
 // number the interface invented.
 func AgentMeter(step, steps int) (Meter, bool) {

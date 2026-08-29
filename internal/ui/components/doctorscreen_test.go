@@ -1,6 +1,6 @@
 package components
 
-// The doctor surface (S-130,
+// The doctor surface (
 // docs/interface/surfaces.md#the-supporting-screens). The assertions here are
 // about the three rules the screen exists to keep: a check is a grid row and
 // nothing else, a check that did not pass states its consequence in the words

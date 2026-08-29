@@ -1,6 +1,6 @@
 package agent
 
-// Noticing a session ask the same question twice (S-164).
+// Noticing a session ask the same question twice.
 //
 // The failure this exists for looks like work: forty searches over the same
 // directory, each returning what the one nine rounds ago returned, until the

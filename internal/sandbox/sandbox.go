@@ -1,5 +1,5 @@
 // Package sandbox wraps agent-executed shell commands in OS-level process
-// containment (S-062): bubblewrap on Linux, Seatbelt on macOS. A fixed deny
+// containment: bubblewrap on Linux, Seatbelt on macOS. A fixed deny
 // mask hides credential and shhh state directories from contained commands,
 // writes are limited to the workspace and scratch/cache paths, and any
 // configuration the mechanism cannot express honestly is refused ("wrap
@@ -51,10 +51,10 @@ type Policy struct {
 	WriteExtra []string
 	// Cwd is the directory the contained command starts in; empty means the
 	// current process directory (sub-agents run in their own worktree,
-	// S-068).
+	// sub-agents).
 	Cwd string
 	// ReadOnlyWorkspace withholds the workspace write grant, for callers that
-	// must run commands read-only (the quality gate, S-067). Scratch and
+	// must run commands read-only (the quality gate). Scratch and
 	// toolchain-cache paths stay writable so builds and test runners keep
 	// working.
 	ReadOnlyWorkspace bool
@@ -104,7 +104,7 @@ func Wrap(avail Availability, p Policy, command string) ([]string, error) {
 }
 
 // WrapArgv is Wrap for callers that already hold a resolved argv (the quality
-// gate's trusted checks, S-067): the argv runs directly under containment
+// gate's trusted checks): the argv runs directly under containment
 // with no shell in between, so its elements are never parsed or re-quoted.
 func WrapArgv(avail Availability, p Policy, argv []string) ([]string, error) {
 	if len(argv) == 0 {
@@ -140,7 +140,7 @@ type spec struct {
 
 // DenyPaths is the deny mask that cannot be disabled, for the callers that
 // have to know what it covers before they offer to widen anything: the
-// working scope (S-141) refuses to hold a directory behind this mask, because
+// working scope refuses to hold a directory behind this mask, because
 // a grant it cannot honour is a promise the sandbox would break.
 func DenyPaths() []string { return fixedDenyPaths() }
 

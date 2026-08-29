@@ -1,7 +1,7 @@
 package agent
 
 // Shared approval-policy helpers used by both front-ends: the chat TUI's
-// session policy (S-054) and headless print mode's --allow flags (S-057).
+// session policy and headless print mode's --allow flags.
 
 import (
 	"path/filepath"
@@ -39,7 +39,7 @@ func AllowlistMatches(allowlist []string, command string) bool {
 	return false
 }
 
-// GrantPrefix is the allowlist entry [a] records for one command (S-054):
+// GrantPrefix is the allowlist entry [a] records for one command:
 // its leading bare words, and nothing past the first argument.
 //
 // The blanket grant [a] used to hand out — every command, for the rest of the
@@ -131,7 +131,7 @@ func absClean(p string) string {
 
 // Grants are the session approval grants one surface hands another: the
 // scoped ones [a] records on a card, and the blanket ones `/mode allow` sets.
-// They travel as a struct because sub-agents inherit all four (S-086) and a
+// They travel as a struct because sub-agents inherit all four and a
 // signature that grows a parameter per grant is a signature that drifts.
 type Grants struct {
 	// AllEdits and AllCommands are the blanket grants: every edit, every

@@ -1,6 +1,6 @@
 package components
 
-// Invariant 5 on a transcript row (S-125,
+// Invariant 5 on a transcript row (
 // docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // The approval card's answer to "this surface does not hold the keyboard" is

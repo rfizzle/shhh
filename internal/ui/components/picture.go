@@ -1,6 +1,6 @@
 package components
 
-// The staged image preview (S-158,
+// The staged image preview (
 // docs/interface/surfaces.md#a-staged-picture). The card `/paste show` opens:
 // one attachment's picture, framed by the name and the size the chip strip
 // already carries.
@@ -133,7 +133,7 @@ func (p PictureView) picture(width, height int) []string {
 // Both halves of the answer are already settled elsewhere and neither is this
 // package's to re-decide. Mono is the palette swap — and a photograph is the
 // one place there that keeps its shape when its hue goes, which is why the
-// ramp exists rather than a refusal. The profile is S-155's single answer to
+// ramp exists rather than a refusal. The profile is the single answer to
 // what the terminal can carry, and below sixteen colours there is nothing to
 // carry a picture in.
 func PictureInColour() bool { return !Mono() && Profile() >= colorprofile.ANSI }
@@ -167,7 +167,7 @@ func pictureRow(cells []raster.Cell) string {
 // its own — the fifteen palette tokens are the interface's, and a photograph
 // is content, like the text of a message — so they are set literally and
 // converted to the profile's rung here, which is the job Token.Color does for
-// everything the palette does own (S-155).
+// everything the palette does own.
 func pictureStyle(c raster.Cell) lipgloss.Style {
 	s := lipgloss.NewStyle()
 	if c.Fg != nil {

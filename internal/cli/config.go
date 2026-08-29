@@ -68,7 +68,7 @@ func newConfigSetCmd() *cobra.Command {
 	}
 }
 
-// configModel hosts the config screen (S-127,
+// configModel hosts the config screen (
 // docs/interface/surfaces.md#the-supporting-screens). It owns everything the
 // screen deliberately does not: what a setting means, what its default is,
 // which answers it offers, and when any of it reaches the file.
@@ -128,7 +128,7 @@ func (m configModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View is the frame: the config screen, on the alt screen it takes over. In
 // v2 that state is a field on the view rather than an option the host passes
-// to NewProgram (S-155).
+// to NewProgram.
 func (m configModel) View() tea.View {
 	v := tea.NewView(m.screen.View(m.width))
 	v.AltScreen = true
@@ -416,7 +416,7 @@ func configSettings() []configSetting {
 			return opts
 		},
 	}, {
-		// The session summary's model (S-163). It sits under MODEL rather
+		// The session summary's model. It sits under MODEL rather
 		// than SESSION because what it is is a second model the session runs,
 		// and the fallback says the thing worth knowing: unset means it runs
 		// on the expensive one.

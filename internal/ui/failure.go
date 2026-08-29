@@ -1,6 +1,6 @@
 package ui
 
-// The one-shot's provider failures (S-106,
+// The one-shot's provider failures (
 // docs/interface/surfaces.md#the-recovery-row).
 //
 // `shhh "find the big files"` is where most people meet the product, and it

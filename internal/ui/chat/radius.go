@@ -1,6 +1,6 @@
 package chat
 
-// The blast-radius block on approval cards (S-101,
+// The blast-radius block on approval cards (
 // docs/interface/surfaces.md#the-approval-card). An approval that only says
 // what the action *is* asks the reader to do the risk assessment themselves,
 // at speed, twenty times a session. Every card states three things before the
@@ -89,7 +89,7 @@ func (m Model) commandRadius(command string, assistant bool) blastRadius {
 	}
 	if b.severity == components.SeverityHigh || b.uncontained {
 		// [n], not esc: on a gated card esc hands the keyboard back and
-		// leaves the decision waiting rather than answering it (S-117).
+		// leaves the decision waiting rather than answering it.
 		b.safe = "[n] deny — the safe answer"
 	}
 	if b.uncontained {
@@ -202,13 +202,13 @@ func uncontainedDetail(detail string) string {
 // the diff would otherwise have had.
 //
 // This is the one action shhh can genuinely take back: the changeset store
-// records the file on both sides of the call (S-097), so undo restores it
+// records the file on both sides of the call, so undo restores it
 // whether or not git ever knew about it.
 func (m Model) editRadius(req *approvalRequest) blastRadius {
 	b := blastRadius{severity: components.SeverityMedium}
 	// An edit outside the working scope is the one thing an edit card cannot
 	// say with a diff: the diff shows what changes, not that it changes
-	// something the session was never scoped to (S-141).
+	// something the session was never scoped to.
 	if f, ok := scopeField(m.pendingScope); ok {
 		b.fields = append(b.fields, f)
 		if m.pendingScope.class != scope.Ordinary {
@@ -231,7 +231,7 @@ func (m Model) editRadius(req *approvalRequest) blastRadius {
 
 // genericRadius is the block for a tool that is neither a command nor an
 // edit. A tool that described its own radius (GatedPreview.Fields) carries
-// that; a generic approval carrying a command — a process start, S-073 — is
+// that; a generic approval carrying a command — a process start — is
 // resolved as the command it is.
 func (m Model) genericRadius(req *approvalRequest) blastRadius {
 	if req.command != "" {

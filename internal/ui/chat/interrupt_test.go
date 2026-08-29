@@ -1,6 +1,6 @@
 package chat
 
-// When a decision lands mid-sentence (S-117,
+// When a decision lands mid-sentence (
 // docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 // The hazard these tests hold shut is the one the story opened with: a card
 // that arrives unbidden used to take the keyboard, so a sentence containing

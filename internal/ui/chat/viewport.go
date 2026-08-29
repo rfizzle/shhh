@@ -1,6 +1,6 @@
 package chat
 
-// The transcript window (S-160,
+// The transcript window (
 // docs/architecture.md#the-screen-is-a-rectangle-and-so-is-everything-in-it).
 //
 // This is the pane the transcript is read through: a scroll offset, a size,
@@ -13,7 +13,7 @@ package chat
 // screen.
 //
 // The scroll position is an absolute line index rather than the item-and-line
-// pair Crush's list keeps, and that is deliberate: the selection (S-145)
+// pair Crush's list keeps, and that is deliberate: the selection
 // is a pair of coordinates in rendered transcript space, the notice rail
 // counts the lines below the pane, and the scroll gutter is a
 // proportion of the whole. All three ask the same question — which line of

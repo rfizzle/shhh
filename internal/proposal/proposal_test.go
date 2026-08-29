@@ -1,6 +1,6 @@
 package proposal
 
-// S-114: the generation response the one-shot reads. The parse is total —
+// The generation response the one-shot reads. The parse is total —
 // every response is at least one command — and the section that carries the
 // alternatives is optional in every direction: absent, empty, malformed, or
 // spelled slightly wrong.

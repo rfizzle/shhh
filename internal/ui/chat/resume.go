@@ -1,10 +1,10 @@
 package chat
 
-// Stream resume and cheaper-model fallback (S-107,
+// Stream resume and cheaper-model fallback (
 // docs/interface/surfaces.md#the-recovery-row).
 //
-// S-106 made a broken request legible; it still cost the whole turn. Two
-// failures deserve better than starting over, and they are not the same
+// Classification made a broken request legible; it still cost the whole turn.
+// Two failures deserve better than starting over, and they are not the same
 // failure:
 //
 //   - a stream that dropped *mid-reply* already has an answer on the wire.
@@ -35,7 +35,7 @@ import (
 )
 
 // The keys a stream-drop row offers are keys.Row.Continue and keys.Row.Retry.
-// They live in focus mode on the row, like every other recovery key (S-106,
+// They live in focus mode on the row, like every other recovery key (
 // a failure row), so the input keeps both letters for typing — which is the
 // whole reason a failure row's `[enter] continue from here` becomes `[c]`
 // here: enter is how
@@ -108,7 +108,7 @@ type retryWait struct {
 type retryTickMsg struct{ seq int }
 
 // handleStreamFailure routes a failed stream to the path its failure earns.
-// Every path still appends the classified row S-106 built — this decides only
+// Every path still appends the classified failure row — this decides only
 // what happens after it.
 func (m Model) handleStreamFailure(msg streamErrMsg) (tea.Model, tea.Cmd) {
 	f := classifyFailure(msg.err, m.providerName)
@@ -116,7 +116,7 @@ func (m Model) handleStreamFailure(msg streamErrMsg) (tea.Model, tea.Cmd) {
 	calls := provider.CompletedToolCalls(msg.calls)
 	// The thinking behind the calls that survived the drop survives with
 	// them: continuing the partial is what re-uses them, and the request it
-	// makes needs the reasoning that produced them (S-139).
+	// makes needs the reasoning that produced them.
 	m.agent.CarryReasoning(msg.reasoning)
 	switch {
 	case m.compacting || f.Class == provider.ClassCancelled:
@@ -163,7 +163,7 @@ func (m Model) endBrokenTurn() (tea.Model, tea.Cmd) {
 	m.cancel = nil
 	m.retry = nil
 	// The close rows say the turn broke, and still report what it changed
-	// before it stopped (S-098).
+	// before it stopped.
 	m.turnOutcome = components.TurnFailed
 	m.setTurnState(stateInput)
 	m.restoreSteering()
@@ -246,7 +246,7 @@ func (m Model) dropKeys(res *streamResume) []components.KeyOffer {
 
 // focusedDrop returns the stream-drop row the focus cursor is on, if it is on
 // one. Like every recovery row, drops live in the session's own transcript,
-// so an attached child's feed never offers them (S-077).
+// so an attached child's feed never offers them.
 func (m Model) focusedDrop() (entry, bool) {
 	if m.attachedTo != "" || m.focusIdx < 0 || m.focusIdx >= len(m.transcript) {
 		return entry{}, false
@@ -351,7 +351,7 @@ func (m Model) startRetryWait(f *provider.Failure) (tea.Model, tea.Cmd) {
 	m.cancel = nil
 	if attempt > maxRetryAttempts {
 		// The bound was reached, and the row that reports it keeps its own
-		// S-106 keys: from here retrying is a decision, not a policy.
+		// Recovery keys: from here retrying is a decision, not a policy.
 		return m.endBrokenTurn()
 	}
 	m.retrySeq++
@@ -467,7 +467,7 @@ func (m Model) finishOnFallback(name string) (tea.Model, tea.Cmd) {
 	m.switchFn(name)
 	m.modelName = name
 	// The switch is on the record in both places a cost is read from: the
-	// transcript, and the per-model spend /stats reports (S-093), so a turn
+	// transcript, and the per-model spend /stats reports, so a turn
 	// that finished on two models is never priced as though it finished on
 	// one.
 	if from != "" {
@@ -481,7 +481,7 @@ func (m Model) finishOnFallback(name string) (tea.Model, tea.Cmd) {
 }
 
 // cheaperModel is the model `[m]` would offer: the closest one below the
-// session's own in price, from the provider's own catalog (S-083/S-084) — it
+// session's own in price, from the provider's own catalog — it
 // is never invented, and never a model from somewhere else, because switching
 // provider mid-turn is a different decision with a different key.
 //

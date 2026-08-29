@@ -1,6 +1,6 @@
 package agent
 
-// The grant ladder's two primitives (S-054): what [a] records for a command,
+// The grant ladder's two primitives: what [a] records for a command,
 // and what it records for an edit.
 
 import "testing"

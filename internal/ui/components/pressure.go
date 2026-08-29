@@ -1,6 +1,6 @@
 package components
 
-// The context-pressure card (S-108,
+// The context-pressure card (
 // docs/interface/surfaces.md#the-recovery-row, and ui_kits/cockpit/Edges.html
 // in the shhh Design System project).
 //
@@ -12,7 +12,7 @@ package components
 // It is the only place in the product that itemises token spend, because it
 // is the only place where you can act on it: a percentage tells you the
 // window is closing, and a breakdown tells you what closed it. The rows come
-// from the host's own accounting (S-093), so the card cannot quote a number
+// from the host's own accounting, so the card cannot quote a number
 // the rails disagree with.
 //
 // Like the provider card it is a passive renderer plus a key reader; what
@@ -102,7 +102,7 @@ func (c *PressureCard) Update(msg tea.KeyPressMsg) (done bool, result any) {
 
 // meter is the card's bar: the same component, cell count and thresholds the
 // inspector rail's CONTEXT block uses, so the two cannot disagree about what
-// colour 84% is (S-094).
+// colour 84% is.
 func (c PressureCard) meter() Meter {
 	return Meter{Pct: c.Pct, Cells: MeterCellsRail, Tone: MeterPressure, Warn: c.Warn, Alert: c.Alert}
 }

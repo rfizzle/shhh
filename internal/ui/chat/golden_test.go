@@ -1,6 +1,6 @@
 package chat
 
-// Golden-file render tests for the host surfaces (S-096): the step outline
+// Golden-file render tests for the host surfaces: the step outline
 // the transcript folds a turn into, and the prompt frame in each of its four
 // layout modes. The component catalog's own captures live beside it in
 // internal/ui/components.
@@ -69,7 +69,7 @@ func captureGolden(t *testing.T, name, surface string, widths []int, panels func
 // goldenTranscript is a two-step turn: a batch that read and searched, then a
 // batch that edited and broke a test, and the rows it closes with. It is the
 // steps fixture with a folded read-only run added, so the outline, the group
-// row, a failing step and the turn close (S-098) all appear in one capture.
+// row, a failing step and the turn close all appear in one capture.
 func goldenTranscript() []entry {
 	return []entry{
 		{kind: entryUser, text: "fix the round limit"},
@@ -112,8 +112,8 @@ func goldenModel(t *testing.T, width int) Model {
 	return m
 }
 
-// TestGolden_StepOutline captures the transcript's step grammar (S-090,
-// S-091) at each breakpoint: the numbered headers with their state glyph and
+// TestGolden_StepOutline captures the transcript's step grammar (
+// at each breakpoint: the numbered headers with their state glyph and
 // stats, the folded read-only group row, and the step that stays open because
 // it contains a failure.
 func TestGolden_StepOutline(t *testing.T) {
@@ -121,14 +121,14 @@ func TestGolden_StepOutline(t *testing.T) {
 		m := goldenModel(t, width)
 		normal := m.renderHistory()
 		// Step 1 finished, so it collapsed to its header; opening it is what
-		// puts the counted group row of S-091 on the sheet.
+		// puts the counted group row on the sheet.
 		m.toggleStepFold(1)
 		m.invalidateRenderCache()
 		opened := m.renderHistory()
 		m.toggleStepFold(1)
 		// Ctrl+O on step 1: it unfolds, its rows give the counted group back,
 		// and every one of them carries its bounded body — one step deep,
-		// with step 2 beside it untouched (S-137).
+		// with step 2 beside it untouched.
 		blk, ok := m.stepBlockAt(m.transcript, 1)
 		if !ok {
 			t.Fatal("step 1 not found in the golden transcript")
@@ -155,7 +155,7 @@ func TestGolden_StepOutline(t *testing.T) {
 }
 
 // TestGolden_PlanChecklist captures the outline an approved plan numbers
-// (S-104): declared steps carrying the plan's own numbers and titles in the
+// : declared steps carrying the plan's own numbers and titles in the
 // order the run reached them, one group the plan never named marked off it,
 // and the declared-but-not-started steps trailing as queued headers. It is
 // the one shape of the outline that does not come from the prose.
@@ -187,7 +187,7 @@ func TestGolden_PlanChecklist(t *testing.T) {
 	})
 }
 
-// TestGolden_PromptFrame captures the command-center surface (S-082) in
+// TestGolden_PromptFrame captures the command-center surface in
 // each of its four layout modes. frameWidths adds a terminal too narrow for
 // the frame at all, which the four breakpoints do not reach: below
 // minFrameWidth content columns the frame degrades to the bare input, and
@@ -206,7 +206,7 @@ func TestGolden_PromptFrame(t *testing.T) {
 }
 
 // TestGolden_StagedRail captures the frame with something waiting to ride
-// (S-151): the chips between the notices and the box they will leave
+// : the chips between the notices and the box they will leave
 // with, at every width, so the rail's own ladder and its place in the stack
 // are on one sheet.
 //
@@ -241,7 +241,7 @@ func TestGolden_StagedRail(t *testing.T) {
 }
 
 // TestGolden_TurnStatus captures the frame's activity slot while a turn runs
-// (S-118): the phases in place on the top rail, and the summary the line
+// : the phases in place on the top rail, and the summary the line
 // resolves into when the turn ends. The slot is whatever the identity leaves
 // of the rail, so the narrow captures are where the turn-status drop order
 // shows.
@@ -283,8 +283,8 @@ func TestGolden_TurnStatus(t *testing.T) {
 	})
 }
 
-// Every surface S-096 asked for now has a capture. Review mode landed with
-// S-099 and the fan-out block with S-110; both are captured beside the
+// Every surface the golden suite asked for now has a capture. Review mode and
+// the fan-out block are captured beside the
 // component catalog (review-mode.*, fanout-block.*), which is why the
 // placeholder that used to stand here for them is gone.
 
@@ -314,7 +314,7 @@ func TestGolden_PromptFrameWidthsCoverEveryLayout(t *testing.T) {
 }
 
 // TestGolden_StartScreen captures the first-contact screen as the host
-// assembles it (S-105): the survey's facts, the gate in effect, and the
+// assembles it: the survey's facts, the gate in effect, and the
 // three offers a dirty Go checkout with a session to pick up produces —
 // against the same screen in a clean checkout with nothing saved and no gate,
 // which is the other end of what the survey can find.
@@ -354,7 +354,7 @@ func TestGolden_StartScreen(t *testing.T) {
 }
 
 // TestGolden_ProviderFailures captures the session's own mapping from a
-// classified failure to a row (S-106): which class earns ⚠ and which
+// classified failure to a row: which class earns ⚠ and which
 // earns ✗, what each says in its outcome, and which keys the session can
 // honour for it. The component sheet in internal/ui/components captures the
 // row; this captures the decisions the session makes about one.
@@ -395,7 +395,7 @@ func TestGolden_ProviderFailures(t *testing.T) {
 }
 
 // TestGolden_RoundLimitPause captures the checkpoint a turn stops on when it
-// runs out of tool rounds (S-109) — the `rounds` row standing where the close
+// runs out of tool rounds — the `rounds` row standing where the close
 // block would be, in the four shapes the session can produce it: a turn that
 // changed files and never re-ran the suite, one that changed nothing, one
 // that has already been granted a block of rounds (which is where the doubled
@@ -451,7 +451,7 @@ func TestGolden_PressureCard(t *testing.T) {
 }
 
 // TestGolden_Interrupt captures a decision landing on a half-typed sentence
-// (S-117): the card ungated above a live frame, and the same card once
+// : the card ungated above a live frame, and the same card once
 // ctrl+g has given it the keyboard with the draft held undressed beneath it.
 // Read the two panels together — the pair is what invariant 5 asks a reader
 // to check, and covering the colours must still answer "who has the
@@ -482,7 +482,7 @@ func interruptSurface(m Model) string {
 }
 
 // TestGolden_ScrollGutter captures the transcript pane's right-hand column
-// (S-147) in the four states it has: nothing to scroll, pinned to the
+// in the four states it has: nothing to scroll, pinned to the
 // live end with plenty above, halfway up, and at the top. The gutter is the
 // only thing that changes between them, which is the point — the transcript
 // wraps to the same width whether or not there is anything to draw in it, so
@@ -573,7 +573,7 @@ func TestGolden_SyntaxRegister(t *testing.T) {
 }
 
 // TestGolden_ReadingMode captures the surface the keyboard moves to (
-// S-122) at the two widths where the artboard's rules bite: 130, where the
+// at the two widths where the artboard's rules bite: 130, where the
 // labelled rail, the lit row and the two-line hint bar all have room, and 80,
 // where the position field narrows. It is the pair that matters — the same
 // screen with the keyboard in the other pane is captured beside it, because
@@ -653,7 +653,7 @@ func TestGolden_KeyEntry(t *testing.T) {
 }
 
 // TestGolden_Palette captures the command palette in the bottom panel
-// (S-112): the query line, the group rails, a command that cannot run
+// : the query line, the group rails, a command that cannot run
 // while the agent works, and the count of what did not fit.
 func TestGolden_Palette(t *testing.T) {
 	captureGolden(t, "palette", "the command palette in the panel", goldenWidths, func(width int) []golden.Panel {
@@ -681,7 +681,7 @@ func TestGolden_Palette(t *testing.T) {
 	})
 }
 
-// screenWidths adds a terminal wide enough to split (S-092) to the four
+// screenWidths adds a terminal wide enough to split to the four
 // breakpoints: 144 columns is 140 content columns, past the
 // InspectorMinContentWidth rung, so the whole-screen capture carries the
 // two-pane arrangement as well as the single-pane one.
@@ -718,7 +718,7 @@ func TestGolden_Screen(t *testing.T) {
 				m.streaming = ""
 			})},
 			// The session summary leads the rail where there is a rail to
-			// lead (S-163); below 130 columns the same panel is the
+			// lead; below 130 columns the same panel is the
 			// single-pane surface, which is how the capture shows that
 			// nothing was taken from the narrow terminal but the block.
 			{Label: "working · a reading of the session leads the rail", View: build(func(m *Model) {

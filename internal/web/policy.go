@@ -1,4 +1,4 @@
-// Package web implements the guarded web fetch and search tools (S-066): an
+// Package web implements the guarded web fetch and search tools: an
 // SSRF-guarded HTTP client with DNS pinning and post-connect address
 // re-verification, bounded HTML-to-text extraction, a content-addressed
 // response cache, and a search provider behind a configured API key.

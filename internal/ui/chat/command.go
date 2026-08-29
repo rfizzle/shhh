@@ -1,6 +1,6 @@
 package chat
 
-// Submitting the input (S-087). Enter used to mean three unrelated things
+// Submitting the input. Enter used to mean three unrelated things
 // depending on the turn state, with the slash-command dispatch buried in the
 // idle branch — so while the agent worked, every command bounced off one
 // refusal ("commands can't run while the agent is working"). That was worst
@@ -24,8 +24,8 @@ import (
 func (m Model) submitInput() (tea.Model, tea.Cmd) {
 	text := strings.TrimSpace(m.input.Value())
 	// With the completion menu open, enter runs the highlighted command
-	// rather than the raw prefix (S-078); on an argument row it completes the
-	// token first and runs the whole line (S-079).
+	// rather than the raw prefix; on an argument row it completes the
+	// token first and runs the whole line.
 	if m.completionActive() {
 		if m.completeArg {
 			m.acceptCompletion()
@@ -44,12 +44,12 @@ func (m Model) submitInput() (tea.Model, tea.Cmd) {
 	}
 	if m.working() || m.decisionUngated() {
 		// Typed while the agent works: the message joins the conversation
-		// before the next model request (S-058). A turn paused on a decision
+		// before the next model request. A turn paused on a decision
 		// is a turn in flight for this purpose — enter queues the sentence
 		// for the next round rather than starting a turn the pending
-		// decision would immediately interrupt (S-117).
+		// decision would immediately interrupt.
 		m.steering = append(m.steering, text)
-		// The queued count surfaces on the notice rail (S-082).
+		// The queued count surfaces on the notice rail.
 		m.syncViewport()
 		return m, nil
 	}
@@ -86,7 +86,7 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 	parts := strings.Fields(text)
 	switch {
 	case name == "/paste":
-		// Attachments (S-134). Not idleOnly: staging bytes for the next
+		// Attachments. Not idleOnly: staging bytes for the next
 		// message touches nothing the running turn is using.
 		return m.runPaste(parts)
 
@@ -115,7 +115,7 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		return m, m.quitCmd()
 
 	case name == "/run":
-		// Bare /run with several code blocks opens the picker (S-081); one
+		// Bare /run with several code blocks opens the picker; one
 		// block, /run <n>, and every no-op case go straight to startRun.
 		if len(parts) == 1 {
 			if picked, cmd, ok := m.openRunPick(); ok {
@@ -131,7 +131,7 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case text == "/status":
-		// The rail's SUMMARY block in words (S-163), for the terminals
+		// The rail's SUMMARY block in words, for the terminals
 		// below 130 columns that have no rail to draw it in — the same answer
 		// the rail's rules give for PLAN. It takes a fresh reading on the way out:
 		// asking for the summary is a reason to have a current one.
@@ -143,50 +143,50 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		return m.startCompact()
 
 	case text == "/rewind":
-		// Bare /rewind opens the checkpoint picker (S-069); the numbered form
+		// Bare /rewind opens the checkpoint picker; the numbered form
 		// goes through handleSlashCommand.
 		return m.openRewindPick()
 
 	case text == "/diff":
-		// The cumulative session diff, full screen (S-074).
+		// The cumulative session diff, full screen.
 		return m.openSessionDiff()
 
 	case name == "/review":
-		// Review mode over a turn's changeset (S-099); bare takes the
+		// Review mode over a turn's changeset; bare takes the
 		// most recent turn that changed anything.
 		return m.reviewCommand(parts)
 
 	case name == "/undo":
-		// Put a turn's edits back from the session's own records (S-100);
+		// Put a turn's edits back from the session's own records;
 		// bare takes the most recent turn that changed anything.
 		return m.undoCommand(parts)
 
 	case text == "/model" && m.canPickModel():
-		// Bare /model opens the model picker (S-078); the named form and
+		// Bare /model opens the model picker; the named form and
 		// sessions with nothing to pick go through handleSlashCommand. A
-		// provider that can enumerate its endpoint is queried first (S-083).
+		// provider that can enumerate its endpoint is queried first.
 		return m.startModelPick()
 
 	case text == "/permissions" || text == "/perms" || text == "/mode":
-		// Bare /permissions opens the mode picker (S-078).
+		// Bare /permissions opens the mode picker.
 		return m.openModePick()
 
 	case text == "/load" || text == "/chats":
-		// Bare /load and /chats open the saved-chat picker (S-080); with
+		// Bare /load and /chats open the saved-chat picker; with
 		// nothing saved they fall through to the listing below.
 		if picked, cmd, ok := m.openChatPick(); ok {
 			return picked, cmd
 		}
 
 	case name == "/ui":
-		// /ui mouse flips the terminal's own reporting. Since S-155 that is
+		// /ui mouse flips the terminal's own reporting. That is
 		// a field on the View rather than a command back to the program, so
 		// this setting takes the same path as every other /ui setting: change
 		// the model, say so in the transcript.
 		return m.systemNotice(m.uiCommand(parts))
 
 	case text == "/branches":
-		// Bare /branches opens the branch picker (S-080); a session with no
+		// Bare /branches opens the branch picker; a session with no
 		// branch family falls through.
 		if picked, cmd, ok := m.openBranchPick(); ok {
 			return picked, cmd
@@ -222,7 +222,7 @@ func (m Model) activeAgents() (active, blocked int) {
 }
 
 // attachCommand is /attach: bare, it opens the agent list to pick from;
-// named, it jumps straight into that agent's session (S-087).
+// named, it jumps straight into that agent's session.
 func (m Model) attachCommand(parts []string) (tea.Model, tea.Cmd) {
 	if m.subagents == nil {
 		return m.systemNotice("Sub-agents are unavailable in this session.")

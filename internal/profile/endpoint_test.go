@@ -1,6 +1,6 @@
 package profile
 
-// Endpoints inside one provider (S-142): which address a model routes to,
+// Endpoints inside one provider: which address a model routes to,
 // what an endpoint inherits, and that the request actually lands there.
 
 import (
@@ -380,7 +380,7 @@ func drain(t *testing.T, prov provider.Provider, model string) {
 	}
 }
 
-// Turning off the catalog query (S-143): the declared models become the whole
+// Turning off the catalog query: the declared models become the whole
 // list, and nothing is asked of the gateway.
 
 func TestDiscoveryDisabled_HidesTheCatalogQuery(t *testing.T) {

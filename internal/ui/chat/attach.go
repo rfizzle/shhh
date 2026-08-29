@@ -1,6 +1,6 @@
 package chat
 
-// Sub-agent management and steering (S-077,
+// Sub-agent management and steering (
 // docs/interface/surfaces.md#the-agent-manager): the agent list (`/agents` /
 // ctrl+a) is a live view of every agent with cancel and kill actions, and
 // attaching renders a child's session on the full chat surface — same
@@ -91,7 +91,7 @@ func (m *Model) renderAttachedHistory() string {
 	cv := m.syncChildView(m.attachedTo)
 	w := m.transcriptWidth()
 	var b strings.Builder
-	// A child's transcript groups into steps like the parent's (S-090).
+	// A child's transcript groups into steps like the parent's.
 	body, prev, havePrev := joinUnits(m.transcriptUnits(cv.entries, w, false, -1), entry{}, false)
 	b.WriteString(body)
 	if s := m.subagents.StreamingText(m.attachedTo); s != "" {
@@ -125,7 +125,7 @@ func (m Model) breadcrumb() string {
 // switch.
 func (m *Model) saveScroll() {
 	// A selection names lines in the transcript the viewport is about to stop
-	// showing, so the switch takes it with it (S-145).
+	// showing, so the switch takes it with it.
 	m.cancelSelection()
 	vs := viewState{yoffset: m.viewport.YOffset(), atBottom: m.atBottom}
 	if m.attachedTo == "" {
@@ -160,7 +160,7 @@ func (m *Model) attach(name string) {
 	m.killConfirm = nil
 	m.killTarget = ""
 	m.answerAgent = ""
-	// The prompt gutter shows the child's name while attached (S-082), so the
+	// The prompt gutter shows the child's name while attached, so the
 	// textarea re-fits around it.
 	m.syncInputWidth()
 	m.syncViewport()
@@ -245,7 +245,7 @@ func (m Model) buildAgentRows() ([]components.AgentRow, []string) {
 	for _, st := range append(blocked, rest...) {
 		// The row draws the child's progress through the fan-out lane's
 		// renderer, so the manager and the transcript say the same thing
-		// about the same child (S-111).
+		// about the same child.
 		progress := m.childProgress(st)
 		row := components.AgentRow{
 			Name:     st.Name,
@@ -331,7 +331,7 @@ func (m Model) spendLabel(in, out int64) string {
 // agentListLines renders the live agent list (plus the inline kill confirm
 // when armed), one row per line. While a row's approval is being answered the
 // card takes the panel instead — the list is what it returns to, so the two
-// never render at once (S-111).
+// never render at once.
 func (m Model) agentListLines() []string {
 	if ask := m.listAnswerAsk(); ask != nil {
 		return strings.Split(m.listAnswerCard(ask).View(m.contentWidth()), "\n")
@@ -543,7 +543,7 @@ func (m Model) updateListAnswer(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Mod
 // --- attached-view interaction ---
 
 // attachedSubmit handles Enter while attached: scoped slash commands run
-// against the child, anything else is queued mid-turn steering (S-058
+// against the child, anything else is queued mid-turn steering (
 // mechanics, applied to the child).
 func (m Model) attachedSubmit() (tea.Model, tea.Cmd) {
 	text := strings.TrimSpace(m.input.Value())
@@ -586,7 +586,7 @@ func (m Model) attachedCommand(parts []string) (tea.Model, tea.Cmd) {
 		return m.openAgentList()
 	case "/attach":
 		// Hop straight to another agent without going through the list
-		// (S-087); bare /attach opens it.
+		//; bare /attach opens it.
 		return m.attachCommand(parts)
 	case "/detach":
 		m.detachOne()

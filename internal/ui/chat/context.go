@@ -1,6 +1,6 @@
 package chat
 
-// Context management (S-055). Phase 1 trims: before each stream request, when
+// Context management. Phase 1 trims: before each stream request, when
 // the estimated context exceeds the trim threshold, the oldest tool results
 // are replaced with a short placeholder while user/assistant text is kept.
 // Phase 2 compacts: /compact asks the provider for a summary of the
@@ -30,7 +30,7 @@ const (
 // elidedResult replaces trimmed tool results in the conversation.
 const elidedResult = agent.ElidedResult
 
-// What a compaction keeps besides the summary (S-108). The pressure card
+// What a compaction keeps besides the summary. The pressure card
 // promises the most recent turns survive it, so they have to: a summary is a
 // description of a conversation, and the turn you are in the middle of is the
 // one place a description is not good enough.
@@ -59,7 +59,7 @@ func estimateMessageTokens(msgs []provider.Message) int64 {
 }
 
 // contextWindow is the model's context size: the pricing table's figure when
-// it has one, the model family's published window when it doesn't (S-164),
+// it has one, the model family's published window when it doesn't,
 // and DefaultContextWindow only for a model nothing recognises.
 func (m Model) contextWindow() int64 {
 	if m.modelName == "" {
@@ -99,7 +99,7 @@ func (m Model) contextSeverity() int {
 
 // estimatedContextTokens is what the next request will carry: the provider's
 // reported size when one has arrived, else the category accounting's own
-// estimate (S-093). Every surface reads it through contextAccounting, so the
+// estimate. Every surface reads it through contextAccounting, so the
 // rails, /stats and the trim thresholds cannot quote different numbers.
 func (m Model) estimatedContextTokens() int64 {
 	return m.contextAccounting().total()
@@ -113,7 +113,7 @@ func (m *Model) trimContext() int {
 	if elided > 0 {
 		// What the provider reported described the untrimmed conversation, so
 		// it no longer describes anything: the accounting re-derives the size
-		// from the messages that remain, and says it is estimating (S-093).
+		// from the messages that remain, and says it is estimating.
 		m.contextTokens = 0
 	}
 	return elided
@@ -170,7 +170,7 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	}
 	// What survives is decided before the conversation is replaced: the turns
 	// kept verbatim, and the plan's checklist, which is read off a transcript
-	// that is about to be discarded (S-108).
+	// that is about to be discarded.
 	kept := m.compactKeep()
 	run, carried := m.planRun, m.planChecklist()
 
@@ -188,7 +188,7 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	m.vitals.clearBurn()
 	m.resetTranscript()
 	// Pre-compaction checkpoints point into the discarded conversation;
-	// rebuild them from what remains (S-069).
+	// rebuild them from what remains.
 	m.checkpoints = checkpointsFromMessages(rebuilt)
 	m.appendEntry(entry{kind: entrySystem, text: compactedNotice(len(kept) > 0, m.keptTurnCount(kept))})
 	m.appendEntry(entry{kind: entryAssistant, text: summary})
@@ -198,7 +198,7 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	m.appendMessageEntries(kept)
 	// The plan outlives the conversation it was being carried out in. Its
 	// checklist is frozen onto the run before the transcript goes, and the
-	// run is rebased on the transcript that replaces it (S-108).
+	// run is rebased on the transcript that replaces it.
 	if run != nil {
 		run.carryOver(carried, len(m.transcript))
 		m.planRun = run
@@ -289,7 +289,7 @@ func (m Model) abortCompact() (tea.Model, tea.Cmd) {
 // compactContextPrefix opens that message. It is a constant because input
 // recall reads it: a resumed session seeds its history from the user-role
 // messages it loads, and this is one of the three that nobody typed
-// (recall.go, S-162).
+// (recall.go).
 const compactContextPrefix = "Summary of the conversation so far (earlier messages were compacted):"
 
 // compactContextMessage is the user-role message that carries the summary

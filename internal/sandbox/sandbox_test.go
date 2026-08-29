@@ -318,7 +318,7 @@ func TestReportRefusedPolicy(t *testing.T) {
 	}
 }
 
-// A directory the session put in its working scope (S-141) reaches the
+// A directory the session put in its working scope reaches the
 // mechanism as a write grant — that is the whole point of having added it,
 // and it is what stops containment refusing a write the user approved.
 func TestScopeDirectoriesBecomeWriteGrants(t *testing.T) {

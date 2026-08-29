@@ -1,6 +1,6 @@
 package chat
 
-// The round-limit pause (S-109): a turn that runs out of tool rounds
+// The round-limit pause: a turn that runs out of tool rounds
 // stops on a checkpoint rather than on a notice, and the checkpoint is the
 // turn's close — one block, one set of offers, one turn to grant more rounds
 // to.

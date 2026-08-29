@@ -1,6 +1,6 @@
 package components
 
-// The working label's motion (S-154, docs/interface/README.md). The product's
+// The working label's motion (docs/interface/README.md). The product's
 // whole motion budget used to be one braille glyph: the plumbing under it —
 // one tick, one frame counter, one place the chain starts — was the careful
 // part

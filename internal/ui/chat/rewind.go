@@ -1,6 +1,6 @@
 package chat
 
-// Session branching and rewind (S-069). A checkpoint marks the start of each
+// Session branching and rewind. A checkpoint marks the start of each
 // user turn; /rewind truncates the working conversation back to a chosen
 // checkpoint and preserves the abandoned tail as a branch session in storage,
 // parent-linked to the current session. /branches lists the current session's
@@ -266,7 +266,7 @@ func (m *Model) switchBranch(branches []storage.ChatBranch, arg string) string {
 
 // switchToBranch saves the current conversation to its own slot (nothing is
 // lost on switch), then loads the named branch as the working conversation.
-// The /branches picker (S-080) selects a branch by name, so it comes here
+// The /branches picker selects a branch by name, so it comes here
 // directly rather than through switchBranch's number-or-name resolution.
 func (m *Model) switchToBranch(target string) string {
 	if target == m.sessionName {

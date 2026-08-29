@@ -155,7 +155,7 @@ func TestPick_RendersInBottomPanel(t *testing.T) {
 }
 
 // A catalog longer than the bottom panel scrolls under the pointer rather
-// than leaving it below the card (S-116). This is the /model picker, but the
+// than leaving it below the card. This is the /model picker, but the
 // window belongs to components.Select, so /mode, /load, /chats, /branches and
 // /run all get it from the same place.
 func TestPick_LongCatalogScrollsWithTheFocus(t *testing.T) {
@@ -178,7 +178,7 @@ func TestPick_LongCatalogScrollsWithTheFocus(t *testing.T) {
 	}
 	for i := 0; i < len(names); i++ {
 		panel := m.renderPick()
-		// The numbering column is right-aligned (S-126), so option 9's
+		// The numbering column is right-aligned, so option 9's
 		// label starts where option 10's does.
 		want := fmt.Sprintf("%2d. model-%02d", i+1, i+1)
 		if !strings.Contains(ansi.Strip(panel), "❯ "+want) {
@@ -201,7 +201,7 @@ func TestPick_LongCatalogScrollsWithTheFocus(t *testing.T) {
 	}
 }
 
-// --- session pickers (S-080) ----------------------------------------------
+// --- session pickers ----------------------------------------------
 
 // pickIndex is the picker row whose label starts with want.
 func pickIndex(t *testing.T, m Model, want string) int {
@@ -411,7 +411,7 @@ func TestBranchPick_NoDBKeepsTextMessage(t *testing.T) {
 	}
 }
 
-// --- run picker (S-081) ---------------------------------------------------
+// --- run picker ---------------------------------------------------
 
 const twoBlockResponse = "First:\n```bash\necho one\n```\nThen:\n```python\nprint(\"a\")\nprint(\"b\")\n```"
 
@@ -561,7 +561,7 @@ func TestRunPickPreview_CapsLongBlocks(t *testing.T) {
 	}
 }
 
-// --- live model discovery (S-083) -----------------------------------------
+// --- live model discovery -----------------------------------------
 
 // listerModel is a session whose provider can enumerate its endpoint, with no
 // curated catalog — the openai-compatible case the picker could not serve.
@@ -777,7 +777,7 @@ func TestModelList_RendersSpinnerWhileQuerying(t *testing.T) {
 	}
 }
 
-// --- the filter row over the picker (S-123,
+// --- the filter row over the picker (
 // docs/interface/surfaces.md#selectors) -------------
 
 // runes feeds a query into an open picker one keystroke at a time, which is
@@ -936,7 +936,7 @@ func TestClosestOption(t *testing.T) {
 
 // The picker is where a model is chosen, so it is where the choice can be
 // made to stick: [d] switches the session and writes provider.model, so the
-// name just read off a list does not have to be typed back (S-136).
+// name just read off a list does not have to be typed back.
 func TestModelPick_MakeDefaultSwitchesAndPersists(t *testing.T) {
 	var switched string
 	var wrote [][2]string
@@ -999,7 +999,7 @@ func TestModelPick_NoWriterNoDefaultOffer(t *testing.T) {
 }
 
 // Writing a default that something else overrules is the one way this can
-// succeed and still not work, so the note has to say so (S-136).
+// succeed and still not work, so the note has to say so.
 func TestModelDefault_NamesWhatOutranksIt(t *testing.T) {
 	m := New(nil, mockStream).
 		WithConfigWriter(func(string, string) error { return nil }).

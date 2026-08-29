@@ -284,7 +284,7 @@ func TestTokenBudgetCancelsChild(t *testing.T) {
 	sup := newTestSupervisor(t, env)
 	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"read a lot","max_tokens":1000}`)
 
-	// Nothing is scripted past the overrun, so the handoff (S-144) fails too.
+	// Nothing is scripted past the overrun, so the handoff fails too.
 	// A handoff that cannot be produced must leave the real reason standing
 	// rather than replacing it with whatever went wrong second.
 	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
@@ -296,7 +296,7 @@ func TestTokenBudgetCancelsChild(t *testing.T) {
 	}
 }
 
-// TestTokenBudgetHandsOffBeforeItStops is S-144: the budget is still a hard
+// TestTokenBudgetHandsOffBeforeItStops: the budget is still a hard
 // stop, but the child says where it got to on the way out, so the parent has
 // something to act on rather than a spend figure.
 func TestTokenBudgetHandsOffBeforeItStops(t *testing.T) {
@@ -321,7 +321,7 @@ func TestTokenBudgetHandsOffBeforeItStops(t *testing.T) {
 	}
 }
 
-// TestTokenBudgetOnTheFinalResponseKeepsTheReport is the other half of S-144:
+// TestTokenBudgetOnTheFinalResponseKeepsTheReport is the other half:
 // addUsage measures after the fact, so a child can finish its turn and only
 // then be found to have overspent. That child did the work and the session
 // paid for it, so it must stop for the budget with its own report in hand —
@@ -351,7 +351,7 @@ func TestTokenBudgetOnTheFinalResponseKeepsTheReport(t *testing.T) {
 	}
 }
 
-// TestRoundLimitChecksInAndCarriesOn is the heart of S-144: the round limit
+// TestRoundLimitChecksInAndCarriesOn is the heart of it: the round limit
 // is a checkpoint, not a failure. The child takes stock and keeps going on
 // the same conversation, and the budget grows so the next stop is further
 // away than the last.
@@ -391,7 +391,7 @@ func TestRoundLimitChecksInAndCarriesOn(t *testing.T) {
 }
 
 // TestSpawnDefaultsToNoRoundLimit: an ordinary child runs to completion
-// without pausing (S-144), and the surfaces that price a spawn say so rather
+// without pausing, and the surfaces that price a spawn say so rather
 // than printing a negative number.
 func TestSpawnDefaultsToNoRoundLimit(t *testing.T) {
 	args, err := parseSpawnArgs(json.RawMessage(`{"role":"researcher","task":"x"}`))
@@ -456,7 +456,7 @@ func TestParseSpawnArgsClampsBudgets(t *testing.T) {
 		t.Fatal(err)
 	}
 	// The token budget is a ceiling and clamps; the check-in interval is not
-	// one and is honoured as asked (S-144).
+	// one and is honoured as asked.
 	if args.maxRounds != 999 {
 		t.Fatalf("max_rounds should be taken as given: %d", args.maxRounds)
 	}

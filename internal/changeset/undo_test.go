@@ -1,6 +1,6 @@
 package changeset
 
-// Undo's mechanics (S-100): what a plan says about the workspace, and what
+// Undo's mechanics: what a plan says about the workspace, and what
 // applying one leaves behind. Everything here runs against a real temporary
 // directory — undo's whole point is that it writes files, and asserting on
 // anything less would be asserting on the plan rather than the effect.

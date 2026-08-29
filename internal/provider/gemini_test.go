@@ -288,7 +288,7 @@ func TestGemini_Registration(t *testing.T) {
 	}
 }
 
-// Addressing a tool result to the call it answers (S-164).
+// Addressing a tool result to the call it answers.
 //
 // Gemini pairs a functionResponse to its functionCall by name — the SDK's own
 // field doc says so — and the ids the rest of shhh pairs on are ours, not the
@@ -383,7 +383,7 @@ func TestToGeminiContents_ResultsOutOfOrderFollowTheirIDs(t *testing.T) {
 	}
 }
 
-// Thought signatures (S-139/S-164): Gemini 3 attaches an opaque signature to
+// Thought signatures: Gemini 3 attaches an opaque signature to
 // the parts it produced and expects it back on the same part. Dropped, the
 // model cannot recognise the plan in its own history and starts over.
 

@@ -1,6 +1,6 @@
 package chat
 
-// Click targets (S-159,
+// Click targets (
 // docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // Until now the mouse could read this surface and nothing else: the wheel
@@ -188,19 +188,19 @@ func (m *Model) toggleRow(idx int) (claimed bool, full *components.DiffView) {
 		return false, nil
 	}
 	if _, ok := m.stepBlockAt(es, idx); ok {
-		// A step header folds or unfolds the whole group in place (S-090,
+		// A step header folds or unfolds the whole group in place (
 		// step folding).
 		m.toggleStepFold(idx)
 		return true, nil
 	}
 	if m.groupAnchor(es, idx) {
 		// A folded group restores its rows in place, and folds them back
-		// again (S-091).
+		// again.
 		m.toggleGroupFold(idx)
 		return true, nil
 	}
 	if d := es[idx].diff; d != nil {
-		// A diff row cycles collapsed → expanded → full screen (S-074,
+		// A diff row cycles collapsed → expanded → full screen (
 		// docs/interface/surfaces.md#the-diff-view).
 		d.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 		if d.Mode == components.DiffFull {
@@ -263,7 +263,7 @@ func (m Model) decisionCard() *components.ApprovalCard {
 
 // clickKeyPress is the clicked key as the keystroke it stands for. Every key
 // on the run is one printable character, and a key message carrying its own
-// text is what the register matches against (S-153, S-155).
+// text is what the register matches against.
 func clickKeyPress(key string) tea.KeyPressMsg {
 	return tea.KeyPressMsg{Code: []rune(key)[0], Text: key}
 }

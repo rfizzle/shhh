@@ -1,6 +1,6 @@
 package chat
 
-// Step detail (S-137): ctrl+o opens one step's rows' bodies, from the
+// Step detail: ctrl+o opens one step's rows' bodies, from the
 // draft and from under reading mode's cursor, and leaves every other step
 // where it was.
 

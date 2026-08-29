@@ -1,6 +1,6 @@
 package components
 
-// The history browser (S-128,
+// The history browser (
 // docs/interface/surfaces.md#the-supporting-screens,
 // ui_kits/cockpit/Tools.html). `shhh history` shipped on
 // `internal/ui/browse`, which invented a list, a query line, a detail page
@@ -712,7 +712,7 @@ func (h *HistoryScreen) match() []int {
 
 // refilter re-runs the match after a keystroke changed the query, and puts
 // the pointer on the first entry that survived it — the rows under it are not
-// the rows that were there a moment ago (S-112).
+// the rows that were there a moment ago.
 func (h *HistoryScreen) refilter() {
 	h.confirm = nil
 	if shown := h.match(); len(shown) > 0 {

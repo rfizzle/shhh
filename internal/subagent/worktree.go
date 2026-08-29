@@ -119,7 +119,7 @@ type fileSide struct {
 // readSides reads the given repo-relative paths from the real checkout,
 // reporting a missing file as absent rather than as an error — a patch that
 // creates a file has no before-content, and that is the fact the changeset
-// record needs (S-097).
+// record needs.
 func readSides(repoTop string, paths []string) map[string]fileSide {
 	out := make(map[string]fileSide, len(paths))
 	for _, p := range paths {

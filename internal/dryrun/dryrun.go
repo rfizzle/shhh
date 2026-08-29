@@ -1,5 +1,5 @@
 // Package dryrun derives the harmless form of a command that has one
-// (S-113). The one-shot's `[d]` key is an offer to find out what a command
+// . The one-shot's `[d]` key is an offer to find out what a command
 // would do without doing it, and the only honest way to make that offer is to
 // know which commands can answer it: `rsync` and `git clean` and `make` were
 // built to, `rm` never was.

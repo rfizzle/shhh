@@ -2,7 +2,7 @@ package chat
 
 import "time"
 
-// Turn state and surfaces (S-087).
+// Turn state and surfaces.
 //
 // Two different things used to share Model.state: what the session's own
 // turn is doing (streaming, running a command, waiting on the classifier)
@@ -44,25 +44,25 @@ func (m Model) turnState() state {
 func (m *Model) setTurnState(s state) {
 	// Every arrival at a decision, and every departure from one, passes
 	// through here — so this is where the keyboard is decided. A card can
-	// never inherit the gate the last one was given (S-117), and one
+	// never inherit the gate the last one was given, and one
 	// arriving on a draft nobody is typing into holds the keyboard itself
 	// rather than charging a ctrl+g for a sentence that is not there.
 	m.armDecision(s)
 	// A turn going idle stamps its end, so the inspector rail's elapsed time
-	// freezes at what the turn took instead of counting on (S-092).
+	// freezes at what the turn took instead of counting on.
 	if s == stateInput && m.working() && !m.turnStarted.IsZero() {
 		m.turnEnded = time.Now()
 		// The turn's usage joins the session's history with its wall time
-		// (S-093), which is why the ring is closed here and not on the
+		//, which is why the ring is closed here and not on the
 		// last usage report — a turn is more than its final request.
 		m.vitals.endTurn(m.turnEnded.Sub(m.turnStarted))
-		// And the turn closes with what it did (S-098). It happens here for
+		// And the turn closes with what it did. It happens here for
 		// the same reason: every path back to the input passes through this
 		// one transition, so no turn can end without a summary.
 		m.appendTurnClose()
 		// A turn that ends at the alert threshold ends with the decision
 		// surface, not with a notice about a trim that already happened
-		// (S-108). Every path back to the input passes through here, which
+		//. Every path back to the input passes through here, which
 		// is what makes "once per crossing" a property rather than a habit.
 		defer m.armPressureCard()
 	}
@@ -81,7 +81,7 @@ func (m *Model) enterSurface(s state) {
 		m.turnBack = m.state
 	}
 	// A surface that borrows the screen takes the transcript's selection with
-	// it (S-145, select.go): the full-screen viewers replace the pane, and
+	// it (select.go): the full-screen viewers replace the pane, and
 	// reading mode re-renders the history through a cursor gutter and can
 	// expand a row under coordinates that were taken before it did.
 	m.cancelSelection()
@@ -109,12 +109,12 @@ func (m *Model) leaveSurface() {
 
 // working reports whether the session's own turn is in flight — streaming,
 // running a command, or waiting on the permission classifier. The input is
-// live in all three (S-058), and so are the commands that leave the running
-// conversation alone (S-087).
+// live in all three, and so are the commands that leave the running
+// conversation alone.
 func (m Model) working() bool {
 	switch m.turnState() {
 	case stateStreaming, stateRunningCmd, stateClassifying, stateRetryWait:
-		// A turn waiting out a retry is still a turn in flight (S-107): it
+		// A turn waiting out a retry is still a turn in flight: it
 		// has not closed, its accounting is open, and the next thing it does
 		// is the request it was already making.
 		return true
@@ -129,7 +129,7 @@ func (m Model) inputLive() bool {
 		return false
 	}
 	// A decision on screen that has not been given the keyboard has not taken
-	// it from the draft either (S-117): the frame is live, and so is
+	// it from the draft either: the frame is live, and so is
 	// everything the input offers.
 	if m.decisionUngated() {
 		return true

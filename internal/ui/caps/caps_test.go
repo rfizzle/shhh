@@ -1,6 +1,6 @@
 package caps
 
-// The probe against the terminals it will meet (S-156,
+// The probe against the terminals it will meet (
 // docs/architecture.md#only-one-place-speaks-to-the-terminal).
 //
 // Two halves are worth asserting. The questions: that they go out at all,

@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// openMemoryStore builds the durable-memory store (S-070) for the current
+// openMemoryStore builds the durable-memory store for the current
 // workspace; nil when persistence is unavailable.
 func openMemoryStore(db *storage.DB) *memory.Store {
 	if db == nil {

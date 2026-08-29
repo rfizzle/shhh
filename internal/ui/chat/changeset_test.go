@@ -1,6 +1,6 @@
 package chat
 
-// Per-turn changeset recording (S-097): what the session applies, it records.
+// Per-turn changeset recording: what the session applies, it records.
 
 import (
 	"context"
@@ -29,7 +29,7 @@ func applyWrite(t *testing.T, m Model, path, content, key string) Model {
 	}})
 	m = updated.(Model)
 	if key != "" {
-		// The card arrives without the keyboard (S-117); ctrl+g is what
+		// The card arrives without the keyboard; ctrl+g is what
 		// hands it over before any of its letters mean anything.
 		m = handover(t, m)
 		updated, cmd = m.Update(tea.KeyPressMsg{Code: []rune(key)[0], Text: key})

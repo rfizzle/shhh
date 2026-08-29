@@ -1,6 +1,6 @@
 package chat
 
-// What comes back with a resumed session (S-162,
+// What comes back with a resumed session (
 // docs/interface/surfaces.md#the-input-frame).
 //
 // Input recall is the surface's memory of what was typed into it: every
@@ -12,9 +12,9 @@ package chat
 // and fell through to the textarea, where it moved the cursor inside a
 // one-line draft and looked like a dead key.
 //
-// It looked like one only recently. Until S-140, ↑ on an empty draft with no
+// It looked like one only recently. ↑ on an empty draft with no
 // history to recall handed the keyboard to the transcript, so the key still
-// did something visible on a resumed session. S-140 took that away on purpose
+// did something visible on a resumed session. That was taken away on purpose
 // — a key that changes surface depending on how much history a session
 // happens to have is unlearnable — and what was left behind was a key
 // that did nothing at all, on exactly the sessions a reader most wants to

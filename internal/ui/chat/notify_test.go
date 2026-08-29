@@ -1,6 +1,6 @@
 package chat
 
-// The summons and its two gates (S-157,
+// The summons and its two gates (
 // docs/interface/surfaces.md#when-you-are-not-there).
 //
 // The rule is an edge and a fact: shhh notifies on the transition into
@@ -101,7 +101,7 @@ func TestNotify_SaysNothingTwiceForOneWait(t *testing.T) {
 
 func TestNotify_SaysNothingForWhatWasNeverATurn(t *testing.T) {
 	// A /run the reader started themselves reaches the input the same way a
-	// turn does, and closes nothing on the way (S-098).
+	// turn does, and closes nothing on the way.
 	prev := notifyModel(t)
 	prev.turnOpen = false
 	prev.state = stateRunningCmd

@@ -1,6 +1,6 @@
 package components
 
-// The config screen (S-127,
+// The config screen (
 // docs/interface/surfaces.md#the-supporting-screens,
 // ui_kits/cockpit/Tools.html). `shhh config` shipped before the cockpit and
 // invented its own list, its own idea of a value and its own key words for
@@ -620,7 +620,7 @@ func (c *ConfigScreen) match() []int {
 
 // refilter re-runs the match after a keystroke changed the query, and puts
 // the pointer on the first row that survived it — the rows under it are not
-// the rows that were there a moment ago (S-112).
+// the rows that were there a moment ago.
 func (c *ConfigScreen) refilter() {
 	c.picker, c.edit, c.secret = nil, nil, nil
 	if shown := c.match(); len(shown) > 0 {

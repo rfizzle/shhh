@@ -1,11 +1,11 @@
 package chat
 
-// Step outline (S-090, docs/interface/surfaces.md#the-step): consecutive tool
+// Step outline (docs/interface/surfaces.md#the-step): consecutive tool
 // calls fold under numbered steps, so a forty-tool turn reads as an outline
 // instead of a scrolling feed. The grouping is a layer over the entry list —
 // the agent already emits ordered tool results, and inventing a step protocol
 // on the wire would couple every provider to the UI. Plan mode is the
-// one place a step list is authoritative: once a plan is approved (S-104) its
+// one place a step list is authoritative: once a plan is approved its
 // steps are the transcript's steps — numbered as the plan numbered them,
 // including the ones not started — and work the plan never named is marked as
 // off it rather than renumbered into it. Without a plan every step is
@@ -26,7 +26,7 @@ import (
 
 // stepState is a step's state. It follows its rows: running while any
 // call is in flight, failed once one broke, done otherwise. Queued is the
-// declared-but-not-started state a plan's steps arrive in (S-104).
+// declared-but-not-started state a plan's steps arrive in.
 type stepState int
 
 const (
@@ -59,7 +59,7 @@ const stepOrdinalWidth = 2
 // entry at titleIdx heads it, and members [start,end) are the calls it made.
 // A step an approved plan declared but the run has not reached yet has no
 // entries at all — start == end and titleIdx is stepNoTitle — and renders as
-// its header alone (S-104).
+// its header alone.
 type stepGroup struct {
 	ordinal  int
 	titleIdx int
@@ -299,7 +299,7 @@ type stepHeader struct {
 	Tools    int
 	Duration time.Duration
 	Folded   bool
-	// Detail marks a step you opened the detail of yourself (S-137).
+	// Detail marks a step you opened the detail of yourself.
 	// It is your answer, not the resolved state: at high verbosity every step
 	// is open, and a word repeated on every header says nothing about any of
 	// them. What the marker is for is the one step that is taller than the
@@ -307,7 +307,7 @@ type stepHeader struct {
 	Detail bool
 	// OffPlan marks a step the running plan never declared: it takes the
 	// ordinal column's width but not a number, because the numbers are the
-	// plan's (S-104).
+	// plan's.
 	OffPlan bool
 }
 
@@ -352,7 +352,7 @@ func (h stepHeader) countLabel() string {
 	}
 	if h.Detail {
 		// What is open is said in a word rather than left to the reader to
-		// infer from how tall the step got (invariant 1, S-137).
+		// infer from how tall the step got (invariant 1).
 		label += " · detail"
 	}
 	return label
@@ -505,8 +505,8 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 		return units
 	}
 	// A step's rows render through its slots, so a folded run of read-only
-	// calls arrives as one counted group row (S-091) — unless the step
-	// has its detail open, which gives the run back (S-137).
+	// calls arrives as one counted group row — unless the step
+	// has its detail open, which gives the run back.
 	for _, sl := range m.stepSlots(es, g) {
 		if !sl.group {
 			addEntry(sl.idx, header.Detail)

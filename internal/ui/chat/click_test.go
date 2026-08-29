@@ -1,10 +1,11 @@
 package chat
 
-// Click targets (S-159,
+// Click targets (
 // docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 // The two things a click can mean, the gesture it is told apart from, and the
-// two properties that keep it from undoing anything S-145 and S-117 settled:
-// a drag is never a click, and a click is never a handover.
+// two properties that keep it from undoing what the selection and the
+// mid-sentence rule settled: a drag is never a click, and a click is never a
+// handover.
 
 import (
 	"encoding/json"
@@ -309,7 +310,7 @@ func TestClick_OffTheRunAnswersNothing(t *testing.T) {
 	}
 }
 
-// A routed child approval is the same card component (S-077), so the
+// A routed child approval is the same card component, so the
 // pointer reaches it through the same door and lands in the same handler.
 func TestClick_RoutedChildApproval(t *testing.T) {
 	m := frameModel(t, 130, 40).WithMouse(true)

@@ -8,7 +8,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
-// DefinitionToolName and ReferencesToolName are the navigation tools (S-071).
+// DefinitionToolName and ReferencesToolName are the navigation tools.
 // Both are read-only and auto-run like the other read-only tools.
 const (
 	DefinitionToolName = "definition"

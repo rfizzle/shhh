@@ -1,6 +1,6 @@
 package keys
 
-// No key literals outside the register (S-153,
+// No key literals outside the register (
 // docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // Every other test in this package checks the register against itself. This

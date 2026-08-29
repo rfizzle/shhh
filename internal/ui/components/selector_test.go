@@ -178,7 +178,7 @@ func TestConfirm_Keys(t *testing.T) {
 	}
 }
 
-// grouped is a filtered list of the shape the palette builds (S-112): rails
+// grouped is a filtered list of the shape the palette builds: rails
 // that label the runs beneath them, and one option that cannot be acted on.
 func grouped() []SelectOption {
 	return []SelectOption{

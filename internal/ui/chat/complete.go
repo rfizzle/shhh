@@ -1,13 +1,13 @@
 package chat
 
-// Slash-command autocomplete (S-078). Typing "/" plus a prefix in the input
-// opens a completion menu under the textarea: ↑↓ moves, tab completes into the
-// input, enter runs the highlighted command, esc dismisses. The menu is
-// derived from a single command registry filtered by what this session
-// actually has wired (no /save without a DB, no /agents without a
-// supervisor), so it never offers a command that would answer "unavailable".
+// Slash-command autocomplete. Typing "/" plus a prefix in the input opens a
+// completion menu under the textarea: ↑↓ moves, tab completes into the input,
+// enter runs the highlighted command, esc dismisses. The menu is derived from
+// a single command registry filtered by what this session actually has wired
+// (no /save without a DB, no /agents without a supervisor), so it never
+// offers a command that would answer "unavailable".
 //
-// Completion continues past the command name (S-079): each registry row
+// Completion continues past the command name: each registry row
 // carries argument specs — static subcommand lists, or dynamic sources read
 // once when the menu opens on that position — and the menu re-filters on the
 // token under the cursor. See completeargs.go.
@@ -32,16 +32,16 @@ type slashCommand struct {
 	aliases []string
 	enabled func(*Model) bool
 	// key is the binding that reaches the command without typing it, shown
-	// beside the name in the palette (S-112). Empty means the command has
+	// beside the name in the palette. Empty means the command has
 	// none.
 	key string
-	// argSpecs describes the command's positional arguments (S-079), one
+	// argSpecs describes the command's positional arguments, one
 	// spec per position; positions past the list are free-form and get no
 	// menu.
 	argSpecs []argSpec
 	// idleOnly is why the command needs the session's own turn to be
 	// finished — it rewrites or replaces the conversation the agent is
-	// working in. Empty means it runs while the agent works (S-087), which
+	// working in. Empty means it runs while the agent works, which
 	// is the default: inspecting and steering a running session is the point
 	// of having one. An idle-only command drops out of the menu for the
 	// duration, the way an unwired one never appears at all.
@@ -232,7 +232,7 @@ var slashCommands = []slashCommand{
 // match lists scroll to keep the focused row visible.
 const maxCompletionRows = 6
 
-// completeStyles is the slash-command menu's own group (S-079).
+// completeStyles is the slash-command menu's own group.
 type completeStyles struct {
 	Focus lipgloss.Style
 	Args  lipgloss.Style
@@ -346,7 +346,7 @@ func (m *Model) commandMatches(token string) []completionItem {
 			continue
 		}
 		// A command that needs an idle session is unavailable, not hidden
-		// forever: it comes back when the turn ends (S-087).
+		// forever: it comes back when the turn ends.
 		if c.idleOnly != "" && m.working() {
 			continue
 		}
@@ -366,7 +366,7 @@ func (m *Model) commandMatches(token string) []completionItem {
 // argumentMatches are the candidates for the argument under the cursor:
 // prior[0] names the command, and the remaining prior tokens fix the
 // position. Free-form positions (a chat name to save, a memory body) have no
-// spec and so no menu (S-079).
+// spec and so no menu.
 func (m *Model) argumentMatches(prior []string, token string) []completionItem {
 	c, ok := lookupCommand(m, prior[0])
 	if !ok {
@@ -413,7 +413,7 @@ func (m *Model) dismissCompletions() {
 }
 
 // acceptCompletion writes the focused candidate into the input (tab),
-// replacing only the token under the cursor (S-079). Candidates that can be
+// replacing only the token under the cursor. Candidates that can be
 // followed by more text get a trailing space so the user can keep typing.
 func (m *Model) acceptCompletion() {
 	c := m.completions[m.completeIdx]

@@ -1,6 +1,6 @@
 package chat
 
-// Live commands while the agent works (S-087).
+// Live commands while the agent works.
 
 import (
 	"context"
@@ -119,7 +119,7 @@ func TestCompletionMenu_HidesIdleOnlyCommandsWhileWorking(t *testing.T) {
 }
 
 // A surface opened mid-turn borrows the screen, not the turn: results that
-// arrive while it is up are still routed (S-087).
+// arrive while it is up are still routed.
 func TestSurface_TurnKeepsRunningUnderneath(t *testing.T) {
 	executor := func(name string, args json.RawMessage) (string, error) { return "read 3 lines", nil }
 	m := gatedModel(t, executor, nil)
@@ -236,7 +236,7 @@ func TestSubmit_PlainTextStillSteers(t *testing.T) {
 }
 
 // Attached, /attach hops sideways to another agent without going back out to
-// the orchestrator first (S-087).
+// the orchestrator first.
 func TestAttachCommand_HopsBetweenAgentsWhileAttached(t *testing.T) {
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)

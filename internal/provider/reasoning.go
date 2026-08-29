@@ -1,6 +1,6 @@
 package provider
 
-// Reasoning effort (S-139): how much thinking the session asks a model to do
+// Reasoning effort: how much thinking the session asks a model to do
 // before it answers.
 //
 // Every provider shhh speaks has the knob and every one of them spells it

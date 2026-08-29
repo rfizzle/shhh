@@ -65,7 +65,7 @@ func TestPalette_EveryTokenIsWrittenForEveryProfile(t *testing.T) {
 
 // sgr is the colour as a terminal is actually sent it, which is the only
 // comparison that means anything once a token holds three image/color.Color
-// values instead of three strings (S-155).
+// values instead of three strings.
 func sgr(c color.Color) string {
 	return strconv.Quote(ansi.NewStyle().ForegroundColor(c).String())
 }

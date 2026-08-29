@@ -1,9 +1,9 @@
 package chat
 
-// The context-pressure card (S-108,
+// The context-pressure card (
 // docs/interface/surfaces.md#the-recovery-row).
 //
-// S-055 already trimmed the oldest tool results when the window filled, and
+// The window trim already drops the oldest tool results when it fills, and
 // said so afterwards in one grey line. That is a notice about something that
 // already happened to your conversation, which is the wrong shape: by the
 // time it is printed the decision has been made for you, and the only two
@@ -11,10 +11,10 @@ package chat
 // — were things you had to know to type.
 //
 // The alert threshold gets a decision surface instead. It states the
-// occupancy, itemises where the window went (S-093's accounting, so it cannot
-// quote a number the rails disagree with), predicts what compaction would
-// recover, and offers the three answers. The warning threshold keeps what it
-// had: a colour change in the rails and nothing that stops you.
+// occupancy, itemises where the window went (the same accounting, so it
+// cannot quote a number the rails disagree with), predicts what compaction
+// would recover, and offers the three answers. The warning threshold keeps
+// what it had: a colour change in the rails and nothing that stops you.
 //
 // It appears once per crossing. Re-arming happens only after the occupancy
 // has fallen back under the threshold, so a session that answers "keep going"
@@ -35,7 +35,8 @@ import (
 // window at the alert threshold. It is called from the one transition every
 // turn ends through (setTurnState), so no path back to the input can skip it
 // — and it declines to open over anything that is already using the screen,
-// because a card that steals a surface is worse than a card that waits a turn.
+// because a card that steals a surface is worse than a card that waits a
+// turn.
 func (m *Model) armPressureCard() {
 	if m.contextSeverity() < 2 {
 		// Back under the threshold: the next crossing is a new crossing.
@@ -53,7 +54,7 @@ func (m *Model) armPressureCard() {
 		return
 	}
 	// So is a turn that stopped at its round limit: that checkpoint is a
-	// decision of its own, and two at once is one too many (S-109).
+	// decision of its own, and two at once is one too many.
 	if m.pausedAtRoundLimit() {
 		return
 	}
@@ -101,10 +102,10 @@ func (m Model) pressureCardData() *components.PressureCard {
 	return &card
 }
 
-// pressureRows are S-093's categories in the card's own words, largest first,
-// with the empty ones dropped. The wording differs from /stats' because the
-// card is a sentence about the session and /stats is a table; the numbers are
-// the same numbers.
+// pressureRows are the accounting's categories in the card's own words,
+// largest first, with the empty ones dropped. The wording differs from
+// /stats' because the card is a sentence about the session and /stats is a
+// table; the numbers are the same numbers.
 func (m Model) pressureRows(b contextBreakdown) []components.PressureRow {
 	messages, results := m.messageCounts()
 	rows := []components.PressureRow{
@@ -189,7 +190,7 @@ func joinClauses(parts []string) string {
 
 // continuingClause is the honest half of invariant 3: keeping going is
 // allowed, and it is not free. What it costs depends on what the trim has
-// left to work with — S-055 elides tool results and nothing else, so a
+// left to work with — the trim elides tool results and nothing else, so a
 // conversation that is all prose has nothing to give and the next request
 // that overruns the window fails instead of shrinking.
 func continuingClause(b contextBreakdown) string {

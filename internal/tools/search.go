@@ -15,7 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
-// What one search is worth (S-164).
+// What one search is worth.
 //
 // search used to answer only one question — which lines match — and answering
 // it took a round each time. A matched line with nothing around it rarely

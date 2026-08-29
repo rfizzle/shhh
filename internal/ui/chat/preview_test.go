@@ -1,6 +1,6 @@
 package chat
 
-// The staged image preview (S-158,
+// The staged image preview (
 // docs/interface/surfaces.md#a-staged-picture).
 
 import (
@@ -208,7 +208,7 @@ func TestPreview_UndecodableImageOpensOntoTheReason(t *testing.T) {
 	}
 }
 
-// The completion menu offers the staged images and only those (S-079): a
+// The completion menu offers the staged images and only those: a
 // name it would then decline is a name the reader found out about by typing.
 func TestPreview_CompletionOffersStagedImagesOnly(t *testing.T) {
 	m := stageText(t, stageImage(t, frameModel(t, 130, 40), "shot.png"), "notes.md")

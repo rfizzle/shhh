@@ -1,6 +1,6 @@
 package attachment
 
-// Acquiring attachments (S-134): reading the bytes off the clipboard or off
+// Acquiring attachments: reading the bytes off the clipboard or off
 // disk, deciding what they are, and refusing what shhh cannot carry. The
 // wire type lives in internal/provider — this package is only the door the
 // bytes come in through, which is why it is named for the noun rather than

@@ -11,7 +11,7 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
-// The host half of the config screen (S-127): what a setting means, what its
+// The host half of the config screen: what a setting means, what its
 // default is, and when any of it reaches the file. The screen's own rules are
 // tested where the screen is.
 

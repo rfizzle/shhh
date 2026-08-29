@@ -1,6 +1,6 @@
 package chat
 
-// The approved plan as a live checklist (S-104): the declared list numbering
+// The approved plan as a live checklist: the declared list numbering
 // the transcript's steps, the rail's PLAN block, /plan mid-turn, and what all
 // three say when the agent departs from the plan.
 

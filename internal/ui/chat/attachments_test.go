@@ -270,7 +270,7 @@ func lastSystemText(m Model) string {
 }
 
 // A bracketed paste is its own message in v2 rather than a keystroke carrying
-// a Paste flag (S-155), so the two things a paste can be are routed here
+// a Paste flag, so the two things a paste can be are routed here
 // rather than inside the key handler. Both have to keep working: a dragged-in
 // image attaches, and everything else is text going where the keyboard goes.
 func TestPasteMsg_AttachesAFileAndTypesEverythingElse(t *testing.T) {

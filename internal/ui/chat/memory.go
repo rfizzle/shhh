@@ -1,6 +1,6 @@
 package chat
 
-// Durable memory (S-070). The /memory slash command manages entries, and the
+// Durable memory. The /memory slash command manages entries, and the
 // model's remember tool proposes new ones. The trust rule is absolute:
 // agent-proposed memories persist only after explicit user confirmation on
 // the memory prompt (docs/interface/surfaces.md#selectors) — no permission
@@ -19,7 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
-// Memory wires durable memory (S-070) into the chat TUI. The zero value
+// Memory wires durable memory into the chat TUI. The zero value
 // disables it.
 type Memory struct {
 	// Manage backs the /memory slash command (list | add | forget).

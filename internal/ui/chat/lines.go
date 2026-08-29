@@ -1,6 +1,6 @@
 package chat
 
-// The transcript's line cache (S-160,
+// The transcript's line cache (
 // docs/architecture.md#the-screen-is-a-rectangle-and-so-is-everything-in-it).
 //
 // The step outline's block freeze is what makes the transcript cheap to
@@ -59,7 +59,7 @@ type lineCache struct {
 	// change and is never rewritten.
 	frozen int
 	// count is how many transcript entries the frozen prefix covers, always a
-	// whole number of step blocks (S-090).
+	// whole number of step blocks.
 	count int
 	// width is the pane width the lines were rendered at. A different width
 	// reflows every one of them, so it drops the cache.

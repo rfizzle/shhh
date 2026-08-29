@@ -13,8 +13,7 @@ import (
 // Stream messages carry the id of the stream that produced them. The result
 // surface can have a command stream and an explanation stream in the same
 // session, and a cancelled stream's last message can land after the next one
-// has started — without the id it would be read as the new stream's own
-// (S-113).
+// has started — without the id it would be read as the new stream's own.
 type tokenMsg struct {
 	id   int
 	text string
@@ -43,7 +42,7 @@ type StreamModel struct {
 }
 
 func NewStreamModel(events <-chan provider.StreamEvent, cancel context.CancelFunc) StreamModel {
-	// The frame set and its cadence belong to components (S-094), so the
+	// The frame set and its cadence belong to components, so the
 	// one-shot UI spins exactly like the chat surface does.
 	s := components.NewSpinnerModel()
 	streamSeq++
@@ -71,14 +70,14 @@ func (m StreamModel) Init() tea.Cmd {
 
 // Update returns the stream itself rather than a tea.Model: it is a piece of
 // the generate UI, not a program, and saying so drops the type assertion
-// every caller used to make on the way back (S-155).
+// every caller used to make on the way back.
 func (m StreamModel) Update(msg tea.Msg) (StreamModel, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
 		switch pressed := msg.String(); {
 		case keys.Is(pressed, keys.Screen.Quit):
 			if !m.done {
-				// A stream still being opened has no cancel yet (S-132); it
+				// A stream still being opened has no cancel yet; it
 				// is the surface's gen counter that discards its answer.
 				if m.cancel != nil {
 					m.cancel()

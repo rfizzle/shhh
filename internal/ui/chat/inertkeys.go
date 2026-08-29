@@ -1,9 +1,9 @@
 package chat
 
-// Invariant 5 across the keyed surfaces (S-125,
+// Invariant 5 across the keyed surfaces (
 // docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
-// S-117 fixed the acute case: a decision that arrives unbidden is inert until
+// The acute case is fixed: a decision that arrives unbidden is inert until
 // ctrl+g gives it the keyboard (interrupt.go). The audit behind this file is
 // the same rule asked of every other surface that offers a bare
 // single-character key, and most of them answered by construction — a picker,

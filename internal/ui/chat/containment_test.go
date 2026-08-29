@@ -45,7 +45,7 @@ func runExecApproval(t *testing.T, m Model) Model {
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
 	}})
-	// The card arrives without the keyboard (S-117); ctrl+g is what
+	// The card arrives without the keyboard; ctrl+g is what
 	// makes its keys — and the consequences it prints beside them — live.
 	return handover(t, updated.(Model))
 }
@@ -59,7 +59,7 @@ func TestConfirmPromptShowsContainmentState(t *testing.T) {
 		t.Fatalf("expected confirm state, got %d", m.state)
 	}
 	// The containment state rides the card's title rail as a chip, and the
-	// profile's network answer is a field of its own (S-101).
+	// profile's network answer is a field of its own.
 	view := m.View().Content
 	if !strings.Contains(view, "⛨ bwrap · workspace") {
 		t.Fatalf("confirm prompt should carry the containment chip:\n%s", view)
@@ -91,7 +91,7 @@ func TestConfirmPromptShowsUnconfinedState(t *testing.T) {
 	m = runExecApproval(t, m)
 
 	// An uncontained action promotes ⚠ UNCONTAINED into the title, explains the
-	// missing mechanism, and offers the doctor that expands on it (S-101).
+	// missing mechanism, and offers the doctor that expands on it.
 	view := m.View().Content
 	for _, want := range []string{"⚠ UNCONTAINED", "bubblewrap (bwrap) not found on PATH", "/sandbox doctor"} {
 		if !strings.Contains(view, want) {
@@ -204,7 +204,7 @@ func TestSandboxSlashCommandShowsReport(t *testing.T) {
 		t.Fatalf("/sandbox without containment should say so, got %q", out)
 	}
 
-	// Management subcommands need the wired manager (S-063).
+	// Management subcommands need the wired manager.
 	handled, out = m.handleSlashCommand("/sandbox list")
 	if !handled || !strings.Contains(out, "unavailable") {
 		t.Fatalf("/sandbox list without a manager should say it is unavailable, got %q", out)

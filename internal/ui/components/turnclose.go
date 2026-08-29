@@ -1,6 +1,6 @@
 package components
 
-// The turn close (S-098, docs/interface/surfaces.md#the-turns-close). The
+// The turn close (docs/interface/surfaces.md#the-turns-close). The
 // question after an agent stops is never "what did it say", it is "what did
 // it change" — so a turn ends with up to three rows answering one question
 // each: what it did, what it changed, and whether the checks still pass.
@@ -90,7 +90,7 @@ type TurnClose struct {
 // colour never carries the state alone (invariant 1). It is exported because
 // the screen is not the only surface that has to say how a turn ended: the
 // desktop notification a finished turn raises has no glyph and no colour, and
-// says this (S-157).
+// says this.
 func (s TurnState) Word() string {
 	switch s {
 	case TurnCancelled:
@@ -119,7 +119,7 @@ func (c TurnClose) stateGlyph() (string, string) {
 // three rows a turn closes with, in the order the screen draws them.
 //
 // It exists because a notification is the one surface that cannot draw
-// (S-157). Everything it says has to be words, so the glyph that
+// . Everything it says has to be words, so the glyph that
 // carries "changed" and the colours that carry "+3 −5" are spent here as
 // the words they stand for, and nothing is said twice.
 func (c TurnClose) Summary() string {

@@ -1,14 +1,14 @@
 package chat
 
-// Interactive slash-command pickers (S-078). Bare /model and /permissions
+// Interactive slash-command pickers. Bare /model and /permissions
 // open a components.Select in the bottom panel instead of printing usage
 // text: ↑↓ moves, enter applies, esc cancels. The argument forms (/model
 // <name>, /permissions <name>) keep their direct handleSlashCommand paths.
 // Both share one generic statePick surface, so the session pickers built on
-// it (/load, /chats, /branches — S-080) only need options and an apply
+// it (/load, /chats, /branches) only need options and an apply
 // function.
 //
-// The session pickers (S-080) and the /run code-block picker (S-081) open
+// The session pickers and the /run code-block picker open
 // only when there is something to pick: no database, a read error, an empty
 // list, or a lone code block falls through to the text message
 // handleSlashCommand has always printed.
@@ -41,7 +41,7 @@ func (m Model) WithModelOptions(names []string) Model {
 // chosen index — always an index into the list the picker opened over, never
 // into whatever a filter left of it — and returns the transcript note.
 //
-// Every picker opened this way carries the filter row (S-123): the card
+// Every picker opened this way carries the filter row: the card
 // offers [/], and the match rule lives here rather than inside the component.
 func (m Model) openPicker(title string, opts []components.SelectOption, focus int, apply func(*Model, int) string) (tea.Model, tea.Cmd) {
 	return m.openPickerWith(title, opts, focus, pickerAlt{}, func(m *Model, idx int, _ bool) string {
@@ -49,7 +49,7 @@ func (m Model) openPicker(title string, opts []components.SelectOption, focus in
 	})
 }
 
-// pickerAlt is a picker's second reading of the same choice (S-136): the key
+// pickerAlt is a picker's second reading of the same choice: the key
 // that takes it, what that key buys, and what plain enter buys once the two
 // have to be told apart. The zero value is a card with enter alone, which is
 // every picker but /model's.
@@ -174,7 +174,7 @@ func (m Model) updatePick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	}
 	// The palette is this surface with a query on it: same card, same panel
 	// accounting, but every key that is not movement or dispatch is text
-	// (S-112, palette.go).
+	// (palette.go).
 	if m.palette != nil {
 		return m.updatePalette(msg)
 	}
@@ -205,7 +205,7 @@ func (m Model) updatePick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		sel.Index = index[sel.Index]
 	}
 	// An apply that hands the session to another surface — the /run picker
-	// into the confirm prompt (S-081) — returns no note and keeps the state
+	// into the confirm prompt — returns no note and keeps the state
 	// it set instead of stateInput.
 	if note := apply(&m, sel.Index, sel.Alt); note != "" {
 		m.appendEntry(entry{kind: entrySystem, text: note})
@@ -250,7 +250,7 @@ func (m Model) modelPickChoices() []string {
 
 // canPickModel reports whether bare /model should open the picker rather
 // than fall back to the usage text: either the catalog already offers a
-// choice, or the provider can enumerate its endpoint for one (S-083).
+// choice, or the provider can enumerate its endpoint for one.
 func (m Model) canPickModel() bool {
 	if m.switchFn == nil {
 		return false
@@ -363,7 +363,7 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 		opts[i] = components.SelectOption{Label: label, Desc: desc}
 	}
 	// The picker is where a model gets chosen, so it is where the choice has
-	// to be able to stick (S-136). Enter switches the session, as it always
+	// to be able to stick. Enter switches the session, as it always
 	// did; [d] switches it and writes provider.model, so the name you just
 	// read off a list does not have to be typed back to `/model default`.
 	alt := pickerAlt{Key: keys.Shown(keys.Select.Alt), Label: "and make it default", Enter: "this session"}
@@ -419,7 +419,7 @@ func (m Model) openModePick() (tea.Model, tea.Cmd) {
 	})
 }
 
-// --- session pickers (S-080) ----------------------------------------------
+// --- session pickers ----------------------------------------------
 
 // sessionDesc is the description row shared by every saved-chat and branch
 // listing: how many turns it holds and when it was last written.
@@ -486,7 +486,7 @@ func (m Model) openBranchPick() (tea.Model, tea.Cmd, bool) {
 	return model, cmd, true
 }
 
-// --- run picker (S-081) ---------------------------------------------------
+// --- run picker ---------------------------------------------------
 
 // runPreviewMax bounds the description row's flattened block preview so a
 // long block does not build a string the card only clips away.

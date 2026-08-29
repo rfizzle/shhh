@@ -43,12 +43,12 @@ type SelectOption struct {
 	MetaTone    FieldTone
 	RequireNote bool
 	// Header marks a row that labels the run of options beneath it rather than
-	// offering one — the palette's COMMANDS / SESSIONS / FILES rails (S-112,
+	// offering one — the palette's COMMANDS / SESSIONS / FILES rails (
 	// docs/interface/surfaces.md#the-palette). Focus steps over it, it is never
 	// numbered, and no key can land on it.
 	Header bool
 	// Dim marks an option that is showing but cannot be acted on right now,
-	// rendered behind ⊘ with its Desc stating why (S-112). It stays
+	// rendered behind ⊘ with its Desc stating why. It stays
 	// selectable, because choosing it is how the surface says why.
 	Dim bool
 }
@@ -101,7 +101,7 @@ type Select struct {
 	// whole answer because AltKey buys something else. Empty is "select".
 	EnterLabel string
 	// Unnumbered drops the "1." prefixes and the number-jump keys, for a
-	// surface where a digit is text rather than a jump (S-112).
+	// surface where a digit is text rather than a jump.
 	Unnumbered bool
 	// FocusDesc keeps each option's Desc under the focused option instead of
 	// on every row. It is the plan card's rule and no other surface's:
@@ -145,8 +145,8 @@ type Select struct {
 	queryEdited bool
 
 	// window is the slice of Options the card shows when the list is taller
-	// than the card (S-116), and the shared one every long list scrolls
-	// through since S-124 — see listwindow.go. A filter that shortened the
+	// than the card, and the shared one every long list scrolls
+	// through the shared window — see listwindow.go. A filter that shortened the
 	// list clamps it and a Focus outside it pulls it back, so no host has to
 	// reset it.
 	window listWindow
@@ -215,7 +215,7 @@ func (s *Select) Update(msg tea.KeyPressMsg) (done bool, result any) {
 			s.Filtering = true
 		}
 	case pressed == "k", pressed == "j":
-		// On a list that is typed into, j and k are letters (S-112).
+		// On a list that is typed into, j and k are letters.
 		if s.Unnumbered {
 			break
 		}
@@ -267,14 +267,14 @@ func (s *Select) QueryChanged() bool {
 
 // typedRunes is what a key contributes to a query line, or "" for a key that
 // types nothing — which in v2 is the key's own Text, empty for every special
-// key and for a key held under a modifier (S-155).
+// key and for a key held under a modifier.
 func typedRunes(msg tea.KeyPressMsg) string { return msg.Text }
 
 func (s *Select) View(width int) string {
 	s.normalizeFocus()
 	// The query line and the key hints are pinned: the list scrolls under
 	// them, so what the card spends on them comes off the list's budget
-	// before the window is drawn (S-116).
+	// before the window is drawn.
 	head := s.queryRows(width)
 	tail := hintRows(s.hintSegments(width), width)
 	body, shown := s.visibleRows(width, s.bodyBudget(len(head)+len(tail)), !s.Unnumbered)
@@ -476,7 +476,7 @@ func (s *Select) optionRows(width int, numbered bool, lo, hi int) []string {
 			if i >= lo && i < hi {
 				// A group rail is info and bold, the way `decision/Select` draws it
 				// (`c-info b`) and the way the palette and the config screen both show
-				// it. It read dim until S-127 went looking for the config screen's
+				// it. It read dim until the config screen wanted the
 				// SESSION / WORKSPACE rails and found the rails it already had painted as
 				// chrome.
 				rows = append(rows, sty.Headline.Render(clip(opt.Label, inner)))
@@ -727,7 +727,7 @@ func (s *Select) normalizeFocus() {
 }
 
 // FirstSelectable is the index of the first row a key can land on. A filtered
-// list puts its pointer here after every keystroke (S-112), because the rows
+// list puts its pointer here after every keystroke, because the rows
 // under it are not the rows that were there a moment ago.
 func (s *Select) FirstSelectable() int {
 	for i, opt := range s.Options {

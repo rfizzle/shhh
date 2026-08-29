@@ -155,7 +155,7 @@ func TestTurnStatus_FrameRailShowsTheTurnAndThenItsSummary(t *testing.T) {
 }
 
 // The label materialises over the turn's first second rather than appearing
-// (S-154). The entrance is measured off the turn's own age — the number
+// . The entrance is measured off the turn's own age — the number
 // the line already prints beside the word — so a turn that has just started
 // is mid-arrival and one a second old is not, without a second clock.
 func TestTurnStatus_TheLabelArrivesWithTheTurn(t *testing.T) {
@@ -189,7 +189,7 @@ func TestTurnStatus_FreshSessionIsIdle(t *testing.T) {
 }
 
 // A decision waiting on the reader outranks the turn's own status: what the
-// rail should say is how many answers it wants (S-117).
+// rail should say is how many answers it wants.
 func TestTurnStatus_WaitingDecisionOutranksTheStatus(t *testing.T) {
 	m := statusModel(t)
 	m.pendingRun = "echo hi"

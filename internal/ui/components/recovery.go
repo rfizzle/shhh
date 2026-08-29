@@ -1,6 +1,6 @@
 package components
 
-// Recovery surfaces (S-106, docs/interface/surfaces.md#the-recovery-row). A
+// Recovery surfaces (docs/interface/surfaces.md#the-recovery-row). A
 // provider failure used to be a Go error string on a line of its own, which
 // meant the worst-read line in the session was the one you most needed to
 // read. It is an activity row now: the same pointer, glyph, verb, target,
@@ -29,7 +29,7 @@ import (
 // offer.
 type KeyOffer struct{ Key, Label string }
 
-// TurnKey is the turn close's name for the same thing (S-098); the two were
+// TurnKey is the turn close's name for the same thing; the two were
 // separate structs until recovery rows needed the third.
 type TurnKey = KeyOffer
 
@@ -211,7 +211,7 @@ func detailLine(s string, width int) string {
 }
 
 // RetryWait is the live block a stalled failure row grows while a bounded
-// retry waits out the provider's own countdown (S-107). The row above
+// retry waits out the provider's own countdown. The row above
 // it is history and does not move; this is the part that drains.
 //
 // The shape is guidelines/meters-progress and ui_kits/cockpit/Edges.html in
@@ -390,7 +390,7 @@ func spellNumber(n int) string {
 }
 
 // SecretPrompt is the masked one-line entry an auth failure's [k] opens
-// (S-106). It is a component rather than a reuse of the input textarea for
+// . It is a component rather than a reuse of the input textarea for
 // one reason: what is typed here must not reach the input history, the
 // transcript, or the recorded-input path that every other keystroke in the
 // session goes through.
@@ -430,7 +430,7 @@ func (s *SecretPrompt) Update(msg tea.KeyPressMsg) (done bool, result any) {
 		return true, ""
 	}
 	// Text is the characters the key contributes and nothing else, so the
-	// space bar types a space and every chord types nothing (S-155).
+	// space bar types a space and every chord types nothing.
 	s.value = append(s.value, []rune(msg.Text)...)
 	return false, nil
 }

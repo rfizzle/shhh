@@ -1,6 +1,6 @@
 package chat
 
-// The streaming render (S-149,
+// The streaming render (
 // docs/architecture.md#the-screen-is-a-rectangle-and-so-is-everything-in-it).
 //
 // The transcript freezes every step block but the last (model.go), so
@@ -19,7 +19,7 @@ package chat
 //
 // What shhh asks of it that Crush does not: **the glued render must be the
 // byte-for-byte render of the whole message.** Two things depend on that. The
-// selection (S-145, select.go) is a pair of coordinates into this string, and
+// selection (select.go) is a pair of coordinates into this string, and
 // the message freezes into an `entryAssistant` the moment the stream ends —
 // rendered whole, by renderMarkdown, from the top. A prefix cache that
 // drifted a byte would move the selection under the cursor and jump the

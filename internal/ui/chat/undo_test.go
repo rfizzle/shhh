@@ -1,6 +1,6 @@
 package chat
 
-// Undo's host side (S-100): that it asks before it writes, that drift
+// Undo's host side: that it asks before it writes, that drift
 // is put to the user rather than run over, and that the undo lands in the
 // transcript as a changeset of its own.
 
@@ -250,7 +250,7 @@ func TestUndo_RefusesATurnThatChangedNothing(t *testing.T) {
 }
 
 // Undo writes files, so it waits for the running turn rather than editing
-// underneath it (S-087).
+// underneath it.
 func TestUndo_WaitsForARunningTurn(t *testing.T) {
 	m, path := undoModel(t)
 	m = sendText(t, m, "keep going")

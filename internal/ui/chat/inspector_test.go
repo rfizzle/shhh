@@ -19,8 +19,8 @@ import (
 // inspectorModel is a ready model with usage, pricing and a turn's worth of
 // transcript, so every rail block has something to show. The edit is recorded
 // in the changeset store as well as drawn in the transcript, because that is
-// what an applied edit does in a real session (S-097) and what the rail's
-// session-scoped CHANGES block reads (S-120).
+// what an applied edit does in a real session and what the rail's
+// session-scoped CHANGES block reads.
 func inspectorModel(t *testing.T, width, height int) Model {
 	t.Helper()
 	table := pricing.NewTable(map[string]pricing.ModelPricing{
@@ -76,7 +76,7 @@ func TestTranscriptWidth_ReducedByTheRail(t *testing.T) {
 	if got := wide.paneWidth(); got != 93 {
 		t.Fatalf("transcript pane = %d columns, want 93", got)
 	}
-	// The pane holds one column back for the scroll gutter (S-147), so
+	// The pane holds one column back for the scroll gutter, so
 	// the transcript wraps one column inside it — and so does the viewport,
 	// which is the selection's coordinate space.
 	if got := wide.transcriptWidth(); got != 92 {
@@ -162,7 +162,7 @@ func TestTwoPane_HiddenByTakeoverSurfaces(t *testing.T) {
 	} {
 		m := base
 		m.state = c.state
-		// A decision is a takeover only once it holds the keyboard (S-117, the
+		// A decision is a takeover only once it holds the keyboard (the
 		// mid-sentence rule); until then the panes behind it are still what is
 		// being read.
 		m.decisionHeld = true
@@ -185,7 +185,7 @@ func TestTwoPane_HiddenByTakeoverSurfaces(t *testing.T) {
 		t.Fatal("dismissing a takeover surface restores the rail")
 	}
 	// A decision that has not been given the keyboard is not a takeover: the
-	// card rides above a live frame and the rail stays (S-117).
+	// card rides above a live frame and the rail stays.
 	waiting := base
 	waiting.state = stateConfirmRun
 	if !waiting.twoPane() {
@@ -357,7 +357,7 @@ func TestFocusMode_KeepsTheRail(t *testing.T) {
 
 // The rail is the session's overview, not a second copy of the turn: a file
 // edited in an earlier turn is still on screen turns later, and a path edited
-// twice is one row with the net counts and the turns behind it (S-120).
+// twice is one row with the net counts and the turns behind it.
 func TestInspectorChanges_SessionScoped(t *testing.T) {
 	m := inspectorModel(t, 144, 40)
 	// Turn 2 edits the same file again and a new one.
@@ -414,7 +414,7 @@ func TestInspectorChanges_SessionScoped(t *testing.T) {
 }
 
 // An alert follows the workspace, not the turn: it survives later turns and
-// is cleared by the same command coming back clean (S-120).
+// is cleared by the same command coming back clean.
 func TestInspectorAlerts_PersistUntilTheWorkspaceIsClean(t *testing.T) {
 	m := inspectorModel(t, 144, 40)
 	m.turnCount = 2

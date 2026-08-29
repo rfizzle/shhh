@@ -129,7 +129,7 @@ func printHistoryTable(entries []storage.HistoryEntry) error {
 	return w.Flush()
 }
 
-// historyModel hosts the history browser (S-128,
+// historyModel hosts the history browser (
 // docs/interface/surfaces.md#the-supporting-screens). It owns everything the
 // screen deliberately does not: what an entry means, how long ago it was,
 // what its action and exit code add up to, and when any of it reaches the
@@ -187,8 +187,7 @@ func (m historyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// View is the frame: the history screen, on the alt screen it takes over
-// (S-155).
+// View is the frame: the history screen, on the alt screen it takes over.
 func (m historyModel) View() tea.View {
 	v := tea.NewView(m.screen.View(m.width))
 	v.AltScreen = true

@@ -417,7 +417,7 @@ func TestTranscriptSpacing_UniformRhythm(t *testing.T) {
 	}
 }
 
-// What the terminal can do (S-156,
+// What the terminal can do (
 // docs/architecture.md#only-one-place-speaks-to-the-terminal). The readout is
 // a diagnostic, so what it must never do is let "shhh did not ask" read as
 // "the terminal said no".
@@ -487,10 +487,10 @@ func TestUITerminal_HeldQuestionsSayWhy(t *testing.T) {
 
 // The probe is asked once, when the program hands over its environment — and
 // it is the program's environment, not the process's, because over ssh those
-// are two different machines (S-156).
+// are two different machines.
 func TestTerminalProbe_AsksOnTheProgramsEnvironment(t *testing.T) {
 	// A test binary's stdout is not a terminal, and the probe reads that off
-	// the profile shhh already settled (S-155): with nothing on the other
+	// the profile shhh already settled: with nothing on the other
 	// end there is nothing to ask.
 	was := components.Profile()
 	components.SetProfile(colorprofile.ANSI256)

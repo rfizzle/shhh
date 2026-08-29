@@ -74,7 +74,7 @@ func TestAnim_ZeroArrivingIsSettled(t *testing.T) {
 
 // The sweep rests either side of its pass, and the lead merges into the
 // label's first run — which together are why a label at rest is the single
-// escape sequence it was before S-154, and why no golden of a still frame
+// escape sequence it once was, and why no golden of a still frame
 // moved when the animation landed.
 func TestAnim_AtRestIsOneRun(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)

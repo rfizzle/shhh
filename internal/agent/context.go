@@ -1,6 +1,6 @@
 package agent
 
-// Message-list hygiene for context management (S-055): trimming old tool
+// Message-list hygiene for context management: trimming old tool
 // results is conversation surgery, so it lives with the message list. The
 // thresholds and the /compact flow stay with the front-end, which knows the
 // model's context window and drives the summarization stream.
@@ -36,7 +36,7 @@ func EstimateMessageTokens(msgs []provider.Message) int64 {
 // price an image by its tile count rather than by its bytes, so byte-based
 // arithmetic would be wrong in both directions; a flat figure near a
 // full-width screenshot keeps the context meter honest enough to be worth
-// showing (S-134).
+// showing.
 const estimatedImageTokens = 1500
 
 // EstimateAttachmentTokens roughly estimates what a message's attachments

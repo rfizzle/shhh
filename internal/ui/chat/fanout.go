@@ -1,6 +1,6 @@
 package chat
 
-// Fan-out lanes in the transcript (S-110,
+// Fan-out lanes in the transcript (
 // docs/interface/surfaces.md#the-agent-manager). A round that
 // spawned one child keeps today's inline `◇ spawn` row; a round that spawned
 // two or more turns those rows into a single block with a lane per child, so
@@ -94,7 +94,7 @@ func (m Model) fanoutLive(e entry) bool {
 
 // childProgress is one child's live progress in the form both surfaces that
 // draw a child read: the lane in the transcript and the row in the manager
-// (S-111). One mapping from the supervisor's state means the two can never
+// . One mapping from the supervisor's state means the two can never
 // disagree about what a child is doing.
 func (m Model) childProgress(st subagent.Status) components.AgentProgress {
 	p := components.AgentProgress{
@@ -170,7 +170,7 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 	// the last of them stops.
 	block.Elapsed = turnDuration(longest)
 	// The manager is where a blocked child is answered, and it opens mid-turn
-	// (S-087); since S-111 the answer happens in the list itself, without a
+	//; the answer happens in the list itself, without a
 	// detour through the child's session.
 	block.Keys = []components.TurnKey{{Key: "[ctrl+a]", Label: "agents"}}
 	return block

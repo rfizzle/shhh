@@ -1,6 +1,6 @@
 package chat
 
-// Compact activity feed (S-075, docs/interface/principles.md#one-grid): tool
+// Compact activity feed (docs/interface/principles.md#one-grid): tool
 // calls and commands render as one-line activity rows — glyph, action, key
 // argument, outcome, counts, duration — never raw output blocks by default.
 // Focus mode expands a row in place, /ui verbosity changes the default
@@ -28,7 +28,7 @@ import (
 )
 
 // verbosity is the activity feed's default density, and the three levels have
-// three distinct meanings (S-091, docs/interface/surfaces.md#the-step): low
+// three distinct meanings (docs/interface/surfaces.md#the-step): low
 // shows step headers only, normal folds a step's consecutive read-only calls
 // into one counted row, high expands every row with its bounded detail body.
 type verbosity int
@@ -93,7 +93,7 @@ func (t *commandTail) Line() string {
 }
 
 // pendingToolResult marks a mirrored child tool call that hasn't finished yet
-// (S-077); the activity row renders it as running.
+// ; the activity row renders it as running.
 const pendingToolResult = "running…"
 
 // cancelledToolResult is the synthetic result left on a tool call abandoned
@@ -260,10 +260,10 @@ func (m Model) activityRowFor(e entry) components.ActivityRow {
 }
 
 // activityRowDetail is the same row told whether the step around it has its
-// detail open (S-137). Collapsed rows never show output; focus-mode
-// expansion shows the full stored result (already bounded upstream by
-// S-051/S-064); failed rows, an opened step and high verbosity show the
-// bounded detail view; and low verbosity hides counts.
+// detail open. Collapsed rows never show output; focus-mode expansion shows
+// the full stored result (already bounded upstream by the evidence store);
+// failed rows, an opened step and high verbosity show the bounded detail
+// view; and low verbosity hides counts.
 //
 // A row you opened yourself keeps its unbounded body inside an opened step:
 // the step's answer is the default for its rows, never a ceiling on one you
@@ -316,7 +316,7 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 			// The row animates from the session's one frame, and only
 			// while the loop that advances it is running: a call left pending
 			// by a cancelled turn keeps the still `▸` rather than standing on
-			// one braille frame, which would read as a hang (S-119).
+			// one braille frame, which would read as a hang.
 			row.Spin = m.spinnerWanted()
 			result = ""
 		case result == cancelledToolResult:
@@ -401,7 +401,7 @@ func (m *Model) uiCommand(parts []string) string {
 const uiUsage = "Usage: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off> · /ui notify <on|off> · /ui terminal"
 
 // terminalName is the one-line answer the bare /ui gives: what the terminal
-// called itself when shhh asked (S-156). A terminal that was asked
+// called itself when shhh asked. A terminal that was asked
 // and did not name itself is not the same as one shhh never asked, and a
 // readout that could not tell them apart would be the reason someone
 // distrusts the rest of it.
@@ -418,7 +418,7 @@ func terminalName(t caps.Terminal) string {
 }
 
 // terminalReport handles /ui terminal: what this terminal answered when shhh
-// asked what it can do (S-156). It is a diagnostic, and the question
+// asked what it can do. It is a diagnostic, and the question
 // it exists to answer is "why did that not happen here" — so a capability
 // nobody asked about says so rather than reading as a no.
 func (m Model) terminalReport() string {
@@ -433,8 +433,7 @@ func (m Model) terminalReport() string {
 		"Focus events: " + pick(t.FocusEvents, "reported", "not reported") + ".",
 	}
 	// The cell size is the terminal's pixels over the session's own columns
-	// and rows, which is why it is measured here rather than kept there
-	// (S-156).
+	// and rows, which is why it is measured here rather than kept there.
 	if w, h := t.CellSize(m.width, m.height); w > 0 && h > 0 {
 		lines = append(lines, fmt.Sprintf("Cell size: %d×%d px.", w, h))
 	}
@@ -444,7 +443,7 @@ func (m Model) terminalReport() string {
 	return strings.Join(lines, "\n")
 }
 
-// imageSupport names how a staged image is drawn here (S-158), or says
+// imageSupport names how a staged image is drawn here, or says
 // why there is no name to give.
 //
 // It answers for what shhh spends rather than for what the terminal offered,
@@ -489,7 +488,7 @@ func monoStatus() string {
 // monoCommand handles /ui mono: strip every surface to the two greys of the
 // first invariant
 // (docs/interface/principles.md#colour-never-carries-meaning-alone), so that
-// a state distinguished only by colour becomes visibly wrong (S-095).
+// a state distinguished only by colour becomes visibly wrong.
 // NO_COLOR and TERM=dumb turn it on for the whole session and it cannot be
 // turned back off from inside — the environment asked, not the user.
 func (m *Model) monoCommand(parts []string) string {

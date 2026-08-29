@@ -1,6 +1,6 @@
 package clipboard
 
-// Reading the clipboard (S-134). Copy has one job on every platform — push
+// Reading the clipboard. Copy has one job on every platform — push
 // text out — but reading it back is where the platforms stop agreeing: a
 // screenshot on the pasteboard is not text, and a file copied in Finder or a
 // file manager is neither. So Read reports what it found rather than a

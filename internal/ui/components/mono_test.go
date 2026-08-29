@@ -1,6 +1,6 @@
 package components
 
-// The mono conformance walk (S-095). The first invariant —
+// The mono conformance walk. The first invariant —
 // colour never carries meaning alone — is enforced here rather than asserted
 // in prose: every surface renders each of its states with the mono palette
 // on, the ANSI is stripped off, and the resulting plain texts must all
@@ -169,7 +169,7 @@ func monoFixtures() []monoSurface {
 	}
 
 	// The strip's three row states, held to one label and one rating so that
-	// only the state itself is left to tell them apart (S-102).
+	// only the state itself is left to tell them apart.
 	queued := func(current bool, mut func(*QueueItem)) string {
 		it := QueueItem{Number: 2, Label: "go test ./internal/agent/...", Severity: SeverityLow}
 		mut(&it)
@@ -178,7 +178,7 @@ func monoFixtures() []monoSurface {
 
 	// A manager row holds its name and task constant so only its state is
 	// left to tell two renders apart. A child's row draws through the lane
-	// renderer (S-111); the orchestrator has no lane progress and keeps its
+	// renderer; the orchestrator has no lane progress and keeps its
 	// own status text.
 	agents := func(state AgentState, status string) string {
 		row := AgentRow{State: state, Name: "writer-1", Task: "docs", Status: status}
@@ -197,7 +197,7 @@ func monoFixtures() []monoSurface {
 	}
 
 	// A fan-out lane holds its name, task and counts constant so that only
-	// the lane's state is left to tell two renders apart (S-110).
+	// the lane's state is left to tell two renders apart.
 	lane := func(mut func(*FanoutLane)) string {
 		l := FanoutLane{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md", Tools: 4}
 		mut(&l)
@@ -205,8 +205,8 @@ func monoFixtures() []monoSurface {
 	}
 
 	// The palette's row states, held to one command name so that only the
-	// state itself is left to tell them apart (S-112).
-	// The filter row's three answers (S-123): a query with matches, a
+	// state itself is left to tell them apart.
+	// The filter row's three answers: a query with matches, a
 	// query with none, and a list with no filter open at all. Bold is what
 	// tells a matched run from the rest, and bold is what mono keeps.
 	filterCard := func(mut func(*Select)) string {
@@ -233,7 +233,7 @@ func monoFixtures() []monoSurface {
 
 	// The plan card holds its title, files and options constant so that only
 	// the step's intent — or the plan's radius — is left to tell the states
-	// apart (S-103).
+	// apart.
 	planned := func(mut func(*PlanCard)) string {
 		c := PlanCard{
 			Title: "Plan · make the round limit recoverable",
@@ -249,7 +249,7 @@ func monoFixtures() []monoSurface {
 	}
 
 	// The PLAN checklist holds one step's title and duration constant, so
-	// that only its state is left to tell the rows apart (S-104).
+	// that only its state is left to tell the rows apart.
 	checklist := func(state PlanStepState) string {
 		return InspectorRail{Plan: &InspectorPlan{
 			Steps: []InspectorPlanStep{{Number: 1, Title: "Return it from runRound",
@@ -262,7 +262,7 @@ func monoFixtures() []monoSurface {
 	}
 
 	// The review surface's staging states, held to one file and one hunk so
-	// that only the staging itself is left to tell them apart (S-099).
+	// that only the staging itself is left to tell them apart.
 	review := func(staged []bool, mut func(*ReviewView)) string {
 		hunks := diff.Compute(
 			"a\nb\nc\nd\ne\nf\ng\nh\ni\nj\nk\nl\n",
@@ -280,13 +280,13 @@ func monoFixtures() []monoSurface {
 	}
 
 	// The undo confirm holds its counts constant so that only drift is left
-	// to tell the states apart (S-100).
+	// to tell the states apart.
 	undo := func(drifted []string) string {
 		return UndoConfirm{Turn: 7, Restores: 2, Removes: 1, Drifted: drifted}.View(w)
 	}
 
 	// The close rows hold their stats constant so that only the state itself
-	// is left to tell them apart (S-098).
+	// is left to tell them apart.
 	closed := func(mut func(*TurnClose)) string {
 		c := TurnClose{Steps: 4, Tools: 18, Elapsed: "1m 04s"}
 		mut(&c)
@@ -295,7 +295,7 @@ func monoFixtures() []monoSurface {
 
 	// The recovery row holds its verb, subject and duration constant, so that
 	// only the class and its state are left to tell the failures apart
-	// (S-106). ⚠ and ✗ are a hue apart in colour; in mono they have to
+	//. ⚠ and ✗ are a hue apart in colour; in mono they have to
 	// be the glyph and the words.
 	recovered := func(mut func(*RecoveryRow)) string {
 		r := RecoveryRow{Verb: VerbModel, Subject: "gpt-4o", Duration: "0.3s"}
@@ -303,7 +303,7 @@ func monoFixtures() []monoSurface {
 		return r.View(w)
 	}
 
-	// The round-limit pause is the same row under a different verb (S-109).
+	// The round-limit pause is the same row under a different verb.
 	// Its states differ by what the turn managed and what is still on offer,
 	// which in mono is all there is: nothing about them is a colour.
 	paused := func(mut func(*RecoveryRow)) string {
@@ -314,7 +314,7 @@ func monoFixtures() []monoSurface {
 	}
 
 	// The retry countdown's states differ by how much is left and what it
-	// offers (S-107). In colour the meter drains in accent; in mono the cells
+	// offers. In colour the meter drains in accent; in mono the cells
 	// and the seconds beside them are the whole message.
 	waiting := func(mut func(*RetryWait)) string {
 		w := RetryWait{Pct: 60, Text: "retry in 12s", Note: "attempt 1 of 3",
@@ -720,7 +720,7 @@ var sgrPattern = regexp.MustCompile(`\x1b\[([0-9;]*)m`)
 
 // index256 is the 256-colour index a token stands for, written the way an SGR
 // escape writes it. A token holds a colour value per profile rather than the
-// digits (S-155), so the digits are read back off the ANSI256 rung. The three
+// digits, so the digits are read back off the ANSI256 rung. The three
 // mono shades are all above sixteen, so all three are indexed colours.
 func index256(t Token) string {
 	i, ok := t.ANSI256.(lipgloss.ANSIColor)

@@ -1,4 +1,4 @@
-// Package subagent orchestrates child agents for `shhh code` (S-068): the
+// Package subagent orchestrates child agents for `shhh code`: the
 // model delegates scoped work to background children via spawn_agent, each
 // child is a full internal/agent instance driven by the headless loop, and
 // everything consequential a child wants to do — commands, edits, its final
@@ -54,7 +54,7 @@ const (
 	DefaultMaxConcurrent = 3
 	// MaxChildren caps how many children one session may spawn in total.
 	MaxChildren = 16
-	// DefaultMaxRounds leaves a child's tool rounds unbounded (S-144). The
+	// DefaultMaxRounds leaves a child's tool rounds unbounded. The
 	// limit used to be a hard stop, and a child that reached one failed with
 	// its work half done and nothing to hand over — the one outcome worse
 	// than letting it run. It is a check-in now: the child takes stock and
@@ -71,7 +71,7 @@ const (
 	DefaultMaxRounds = agent.UnlimitedToolRounds
 	// checkInGrowth multiplies the budget at each check-in, so a long task is
 	// not stopped at the same interval forever — the escalation behind the
-	// parent's grant (S-109), applied by a child with nobody to ask. A child
+	// parent's grant, applied by a child with nobody to ask. A child
 	// capped at 25 takes stock at 25, then 50, then 100: often enough early
 	// to catch one working on the wrong thing, rare enough later to stay out
 	// of the way of one that is not.
@@ -90,7 +90,7 @@ const (
 	StateQueued State = iota
 	StateRunning
 	StateBlocked // waiting on the parent user's approval
-	StateIdle    // turn cancelled; waiting for a steering message (S-077)
+	StateIdle    // turn cancelled; waiting for a steering message
 	StateDone
 	StateFailed
 )
@@ -125,7 +125,7 @@ type Status struct {
 	TokensIn  int64
 	TokensOut int64
 	// Batch groups the children one parent tool round spawned, so a fan-out
-	// can be rendered as one block rather than as interleaved rows (S-110).
+	// can be rendered as one block rather than as interleaved rows.
 	// Children spawned before the parent opened a batch share batch zero.
 	Batch int
 	// Started is when the child was spawned; Elapsed is how long it has been
@@ -134,21 +134,21 @@ type Status struct {
 	Elapsed time.Duration
 	// Step and Steps are progress against the step count the spawn declared.
 	// Steps is zero when nobody declared one, and a lane with no denominator
-	// gets a spinner rather than an invented ratio (S-094).
+	// gets a spinner rather than an invented ratio.
 	Step  int
 	Steps int
 	// Summary is the first line of the child's final report — what a finished
-	// lane keeps once its progress stops meaning anything (S-110). Empty
+	// lane keeps once its progress stops meaning anything. Empty
 	// until the child reports.
 	Summary string
 	// CheckIns is how many times the child has reached its round limit and
-	// taken stock (S-144). Zero for the ordinary child, which runs unbounded
+	// taken stock. Zero for the ordinary child, which runs unbounded
 	// and never reaches one; a lane showing several is a task outgrowing the
 	// interval its spawn chose, which is worth being able to see.
 	CheckIns int
 }
 
-// EntryKind tags one child transcript entry (S-077): the attached view
+// EntryKind tags one child transcript entry: the attached view
 // renders a child's session with the same components as the orchestrator's.
 type EntryKind int
 
@@ -209,7 +209,7 @@ type Spec struct {
 // must abort the child's streams).
 type EnvFactory func(ctx context.Context, spec Spec) (Env, error)
 
-// Recorder receives a child's content-free observability events (S-065); any
+// Recorder receives a child's content-free observability events; any
 // callback may be nil.
 type Recorder struct {
 	Usage    func(turns, tokensIn, tokensOut int64)
@@ -233,14 +233,14 @@ type Options struct {
 	// parent's.
 	ReadOnlyExtra    []string
 	ReadOnlyDisabled bool
-	// ScopeDirs reports the parent session's working scope (S-141) — the
+	// ScopeDirs reports the parent session's working scope — the
 	// directories a child's commands may write to on top of its own
 	// worktree. Nil leaves children scoped to their worktree alone, which is
 	// what they did before the scope existed. A child's *file edits* are
 	// pinned to its worktree by RootArgs regardless.
 	ScopeDirs func() []string
 	// Classifier judges, in auto mode, what the static policy would ask about
-	// — the same S-060 path the parent uses. Nil routes those calls to the
+	// — the same classifier path the parent uses. Nil routes those calls to the
 	// user instead, which is what made auto-mode children prompt for every
 	// command they ran.
 	Classifier *agent.Classifier
@@ -265,7 +265,7 @@ const (
 	EventDone
 	// EventPatch reports a child's patch landing in the parent's workspace,
 	// with both sides of every file it touched, so the parent can record it
-	// in the session changeset (S-097).
+	// in the session changeset.
 	EventPatch
 )
 
@@ -353,7 +353,7 @@ type child struct {
 	task      string
 	model     string   // the model this child runs on
 	paths     []string // declared write scope (writers); nil means unscoped
-	batch     int      // the parent tool round that spawned it (S-110)
+	batch     int      // the parent tool round that spawned it
 	steps     int      // step count the spawn declared; 0 means none
 	root      string   // working directory (worktree subdir for writers)
 	worktree  string   // worktree top dir; "" for researchers
@@ -376,12 +376,12 @@ type child struct {
 	detail    string
 	started   time.Time
 	ended     time.Time
-	step      int // announcements made, i.e. steps entered (S-090's grammar)
+	step      int // announcements made, i.e. steps entered
 	toolCalls int
 	tokensIn  int64
 	tokensOut int64
 	// priorIn/priorOut carry the spend of earlier attempts across a retry
-	// (S-111). The live counters are what the token budget is measured
+	//. The live counters are what the token budget is measured
 	// against, so each attempt gets the budget it was spawned with; the
 	// status adds the carried spend back, because money already spent does
 	// not stop being spent when the child runs again.
@@ -392,7 +392,7 @@ type child struct {
 	checkIns  int
 	report    string
 	patchNote string
-	// Live session surface (S-077): transcript entries, the in-flight
+	// Live session surface: transcript entries, the in-flight
 	// assistant text, queued steering messages, and the current turn's
 	// interrupt channel.
 	transcript []TranscriptEntry
@@ -524,7 +524,7 @@ func (c *child) interruptTurn() {
 }
 
 // stop cancels the current attempt. A retry replaces cancel, so it is read
-// under the lock rather than off the struct (S-111).
+// under the lock rather than off the struct.
 func (c *child) stop() {
 	c.mu.Lock()
 	cancel := c.cancel
@@ -587,7 +587,7 @@ type Supervisor struct {
 	// appliedFiles records which agent's patch last landed each file, so a
 	// later patch touching the same file is flagged before it is applied.
 	appliedFiles map[string]string
-	// batch numbers the parent tool rounds that spawned children (S-110).
+	// batch numbers the parent tool rounds that spawned children.
 	// The supervisor does not know where a round begins — the parent front-end
 	// does, and says so with BeginBatch — so children spawned by a host that
 	// never opens one all share batch zero.
@@ -622,7 +622,7 @@ func (s *Supervisor) Events() <-chan Event { return s.events }
 
 // BeginBatch opens a new spawn batch and returns its number. The parent
 // front-end calls it once per tool round, so the children one round spawns
-// share a batch and can be rendered as one fan-out block (S-110) rather than
+// share a batch and can be rendered as one fan-out block rather than
 // as rows interleaved with everything else the round did.
 func (s *Supervisor) BeginBatch() int {
 	s.mu.Lock()
@@ -761,7 +761,7 @@ func (s *Supervisor) Get(name string) (Status, bool) {
 }
 
 // Parent returns the name of the agent that spawned name ("" means the
-// orchestrator), for breadcrumbs and esc-pops (S-077).
+// orchestrator), for breadcrumbs and esc-pops.
 func (s *Supervisor) Parent(name string) (string, bool) {
 	c, err := s.lookup(name)
 	if err != nil {
@@ -806,7 +806,7 @@ func (s *Supervisor) Note(name string, e TranscriptEntry) error {
 	return nil
 }
 
-// Steer queues a message for a child (S-077, S-058 semantics): injected
+// Steer queues a message for a child (steering semantics): injected
 // before its next stream request when running, or starting a fresh turn when
 // the child is idle after a cancelled turn. Finished children cannot be
 // steered.
@@ -844,7 +844,7 @@ func (s *Supervisor) QueuedSteering(name string) int {
 	return len(c.steering)
 }
 
-// CancelTurn interrupts a child's current turn (S-077): the in-flight stream
+// CancelTurn interrupts a child's current turn: the in-flight stream
 // aborts, outstanding calls get synthetic results, and the child parks idle
 // awaiting steering — Ctrl+C semantics without killing the agent.
 func (s *Supervisor) CancelTurn(name string) error {
@@ -888,7 +888,7 @@ func (s *Supervisor) Kill(name string) error {
 	return nil
 }
 
-// Retry runs a failed child again on its original task (S-111). Only a
+// Retry runs a failed child again on its original task. Only a
 // failed child can be retried: a finished one has nothing to redo, and a live
 // one is already doing it.
 //
@@ -1323,7 +1323,7 @@ func (s *Supervisor) run(c *child) {
 	c.headless = h
 	c.mu.Unlock()
 
-	// The turn loop (S-077): a cancelled turn parks the child idle until a
+	// The turn loop: a cancelled turn parks the child idle until a
 	// steering message starts the next one; kill (context cancellation) ends
 	// the loop from any point.
 	turn := c.task
@@ -1344,7 +1344,7 @@ func (s *Supervisor) run(c *child) {
 			// Calling that "cancelled" names the mechanism rather than the
 			// reason and throws the report away — so a child that overspent
 			// on its way past the post stops for the reason it actually
-			// stopped for (S-144), with its own final report where the
+			// stopped for, with its own final report where the
 			// handoff would otherwise go.
 			//
 			// A kill is the other way, and a killed child whose provider
@@ -1373,7 +1373,7 @@ func (s *Supervisor) run(c *child) {
 
 			// Steering that arrived during the final stream becomes the next
 			// turn instead of being dropped (the TUI's dispatchSteering
-			// semantics, S-058).
+			// semantics).
 			if msgs := c.drainSteering(); len(msgs) > 0 {
 				turn = strings.Join(msgs, "\n\n")
 				c.set(StateRunning, "running")
@@ -1415,7 +1415,7 @@ func (s *Supervisor) run(c *child) {
 		}
 
 		if errors.Is(err, agent.ErrRoundCap) && c.ctx.Err() == nil {
-			// The round limit is a check-in, not a stop (S-144). The cap is
+			// The round limit is a check-in, not a stop. The cap is
 			// tested between rounds, after the last round's results were
 			// recorded, so the conversation is already well-formed: the child
 			// picks up exactly where it left off, with the check-in as its
@@ -1460,7 +1460,7 @@ func (s *Supervisor) awaitSteering(c *child) (string, bool) {
 }
 
 // checkInPrompt is the turn a child is given when it reaches its round limit
-// (S-144). It asks about the work rather than announcing the budget on
+// . It asks about the work rather than announcing the budget on
 // purpose: a child told it has run out of rounds tends to apologise and stop,
 // where one asked what is left states it and keeps going. The budget is
 // mentioned only as the reason for the interruption, and the last line is
@@ -1483,15 +1483,15 @@ Then carry on with the task. If the work is in fact finished, give your final re
 // parent hears that the child failed.
 const finalCheckInTimeout = 30 * time.Second
 
-// finalCheckInPrompt asks a child that ran out of budget to hand over. It does
-// not ask for more work, and says so: the child has nothing left to spend, and
-// a handoff that starts another edit is worse than none.
+// finalCheckInPrompt asks a child that ran out of budget to hand over. It
+// does not ask for more work, and says so: the child has nothing left to
+// spend, and a handoff that starts another edit is worse than none.
 const finalCheckInPrompt = `You have reached your token budget and are stopping now. Do not start any new work or call any tools.
 
 Write a short handoff for whoever picks this up: what you established or changed, what is left, and what you would do next.`
 
 // finalCheckIn asks a child that exhausted its token budget to say where it
-// got to, and records the answer as its report (S-144). The budget stays a
+// got to, and records the answer as its report. The budget stays a
 // hard stop — the child is finished either way — but a stop that explains
 // itself leaves the parent something to act on rather than a spend figure and
 // a shrug.
@@ -1594,7 +1594,7 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 	decision, reason := policy.Decide(action)
 	// The static policy denies in plan mode, which refuses the call with the
 	// result that tells the model why nothing ran, and for a path no grant
-	// can reach (S-141), which says which path and why.
+	// can reach, which says which path and why.
 	if decision == agent.Deny {
 		if strings.HasPrefix(reason, "outside the working scope") {
 			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Refused: " + title + " — " + reason})
@@ -1640,7 +1640,7 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 	return agent.ExecuteWith(c.env.ExecuteGated, provider.ToolCall{ID: tc.ID, Name: tc.Name, Arguments: string(rooted)})
 }
 
-// classify runs the auto-mode permission classifier (S-060) for a call the
+// classify runs the auto-mode permission classifier for a call the
 // static policy would have asked about, giving children the same treatment
 // the parent gets. Anything other than auto mode, a missing classifier, or a
 // safety-flagged action leaves the decision at Ask — the classifier can only
@@ -1713,7 +1713,7 @@ func actionFor(name string, args json.RawMessage) (agent.Action, error) {
 }
 
 // scopedAction fills in what a child's command reaches outside the working
-// scope (S-141): its own worktree plus whatever the parent session has put in
+// scope: its own worktree plus whatever the parent session has put in
 // scope. A child's file edits never need this — RootArgs already refuses a
 // path outside the worktree — so it applies to commands, which can name any
 // path they like.
@@ -1827,7 +1827,7 @@ func (s *Supervisor) reviewPatch(c *child) {
 		// Both sides are read around `git apply`, in the real checkout: the
 		// child's own worktree edits never touched these files, so this is
 		// the only place the session can see what its workspace lost and
-		// gained (S-097).
+		// gained.
 		before := readSides(c.repoTop, touched)
 		if applyErr := applyPatch(c.repoTop, patch); applyErr != nil {
 			note = "the patch failed to apply cleanly: " + firstLine(applyErr.Error()) + savedPatchNote(c.name, patch)

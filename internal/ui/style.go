@@ -9,7 +9,7 @@ import (
 )
 
 // Styles is the generate UI's style set, built by newStyles from a token set
-// and nothing else. Colors come from the shared components.Palette (S-076) so
+// and nothing else. Colors come from the shared components.Palette so
 // the generate and chat UIs use identical tokens.
 type Styles struct {
 	Command      lipgloss.Style
@@ -20,7 +20,7 @@ type Styles struct {
 	ExplainLabel lipgloss.Style
 	ExplainBody  lipgloss.Style
 
-	// The S-113 result surface: the key row, the containment line, the risk
+	// The result surface: the key row, the containment line, the risk
 	// line, and the dimmed command a revise is being compared against.
 	Key         lipgloss.Style
 	KeyLabel    lipgloss.Style
@@ -72,7 +72,7 @@ func newStyles(p components.ColorTokens) Styles {
 // under NO_COLOR and TERM=dumb. v2 has no global profile to set — a Style
 // carries a resolved colour and nothing degrades it on the way out — so that
 // rule moved to where the profile is now decided, beside the palette it
-// belongs to (components.detectProfile, S-155). It reads the same and it
+// belongs to (components.detectProfile). It reads the same and it
 // reaches every surface rather than only the ones that import this package.
 func applyPalette() {
 	width, _, err := term.GetSize(os.Stdout.Fd())
@@ -87,6 +87,6 @@ func applyPalette() {
 func init() {
 	applyPalette()
 	// The one-shot generate UI honours the mono swap through the same shared
-	// palette the chat TUI uses (S-095).
+	// palette the chat TUI uses.
 	components.OnPaletteChange(applyPalette)
 }
