@@ -3,6 +3,10 @@
 Every pair below is a real change made in this repository. The four
 anti-patterns account for roughly 2,600 removed references.
 
+These are examples of *judgement*, not a style to imitate wholesale. The
+standard is the test in `SKILL.md` — does this say something the code cannot —
+and it is worth applying to the examples themselves.
+
 ## The pointer the sentence already contains
 
 ```go
@@ -108,3 +112,34 @@ the config screen's screen ← "§19a's screen"
 
 If a mechanical rewrite cannot produce prose you would have written, the site
 needs a person. That is the whole reason the last few hundred were done by hand.
+
+## A branch that is empty on purpose
+
+```go
+case hunk != nil:
+    // "\ No newline at end of file" and blank separators.
+case strings.HasPrefix(line, "+++ "):
+```
+
+One line, and it is the difference between a deliberate no-op and an
+unfinished edit. Nothing about the empty branch says which it is.
+
+## What the audit found
+
+Before assuming a codebase is over-commented, measure it. This one:
+
+| | shhh | Go stdlib |
+|---|---|---|
+| comment:code | 0.32:1 | 0.36:1 |
+| median block | 2 lines | 2 lines |
+| p90 block | 5 lines | 7 lines |
+| blocks ≥ 15 lines | 1% | 2% |
+
+Plus: ~0 stale identifier references across 5,111 comment blocks, 1% of doc
+comments merely rewording the identifier, and 79% of the exported surface
+documented. The prose reads long, and the numbers say it is not.
+
+The real gap was the opposite of verbosity — the guidance had nothing to say
+about a comment that is *missing*, because it was written straight after a
+cleanup. Guidance derived only from what you just deleted will always have
+that shape; check it against what you did not.

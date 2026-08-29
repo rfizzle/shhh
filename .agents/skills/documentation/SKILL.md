@@ -66,12 +66,34 @@ one, decide which of these it is — if it is none, delete it.
 - **A non-obvious invariant** — especially one the type system does not hold.
 
 Length is not the test; density is. A long comment that names a real failure
-is worth more than three lines restating the signature.
+is worth more than three lines restating the signature — the most valuable
+comments in this tree are among its longest, and the least valuable were
+one-line cross-references.
+
+**Measure before assuming a codebase is over-commented.** This one reads as
+verbose and is not: its comment-to-code ratio and its block lengths both sit
+just inside the Go standard library's. Volume is not the problem; a comment
+that says nothing is, at any length.
+
+## When a comment is missing
+
+The opposite failure, and the easier one to miss because nothing on screen
+looks wrong. Write one when:
+
+- **An exported identifier's name does not say what it returns, costs or
+  mutates.** `Resolve()` and `Append()` need a line; `DeleteSnippet()` does not.
+- **A branch is deliberately empty or a value deliberately ignored.** Without a
+  line saying so it reads as an unfinished edit.
+- **A number was chosen rather than derived.** A threshold, a cap, a timeout:
+  say what it was measured against.
+- **A caller has to maintain an invariant** the signature cannot express.
+- **The code works around something outside it** — a terminal, a vendor's
+  dialect, an OS limit.
 
 ## What never earns its place
 
-These are the four that were removed wholesale from this codebase. Worked
-before/after examples: `references/examples.md`.
+These four were removed wholesale from this codebase — about 2,600 references.
+Worked before/after examples: `references/examples.md`.
 
 - **Story, sprint or backlog identifiers** (`S-060`, `E-018`), or anything
   under `.plan/`. Planning is not in this repository, so the reference points
