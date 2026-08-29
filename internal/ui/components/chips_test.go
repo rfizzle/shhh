@@ -93,3 +93,19 @@ func TestAttachmentChips_SizeIsOptional(t *testing.T) {
 		t.Fatalf("strip = %q, want %q", got, want)
 	}
 }
+
+// A text chip carries how far it runs, and nothing else does. For a paste
+// there is no name anybody chose, so the height is the field that tells two
+// of them apart — and a picture has no lines to count, which is left out
+// rather than reported as zero.
+func TestAttachmentChips_TextCountsItsLines(t *testing.T) {
+	got := ansi.Strip(AttachmentChips([]AttachmentChip{
+		{Kind: ChipText, Name: "paste-1.txt", Size: "4 KB", Lines: 178},
+		{Kind: ChipText, Name: "one.txt", Size: "12 B", Lines: 1},
+		{Kind: ChipImage, Name: "shot.png", Size: "412 KB"},
+	}, 120))
+	want := "≡ paste-1.txt 4 KB 178 lines · ≡ one.txt 12 B 1 line · ▣ shot.png 412 KB"
+	if got != want {
+		t.Fatalf("strip = %q, want %q", got, want)
+	}
+}

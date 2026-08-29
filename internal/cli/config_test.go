@@ -180,3 +180,27 @@ func TestConfigModel_EscWritesNothing(t *testing.T) {
 		t.Fatal("esc discards rather than writing")
 	}
 }
+
+// The paste thresholds are on the screen, with the default stated where
+// nothing is set — the screen is where a reader finds out what this machine
+// actually does, and /help can only name the defaults.
+func TestConfigRows_PasteThresholdsStateTheirDefault(t *testing.T) {
+	rows := configRows(config.Config{}, config.Config{})
+	lines := rowFor(rows, "appearance.paste_lines")
+	if lines.Value != "10 lines" || lines.Source != "default" {
+		t.Fatalf("unset paste_lines row = %q/%q, want the default", lines.Value, lines.Source)
+	}
+	columns := rowFor(rows, "appearance.paste_columns")
+	if columns.Value != "1000 columns" {
+		t.Fatalf("unset paste_columns row = %q", columns.Value)
+	}
+
+	// A negative is not a threshold, and the row has to read it as the
+	// answer it is rather than as "-1".
+	var off config.Config
+	off.Appearance.PasteLines = -1
+	row := rowFor(configRows(off, config.Config{}), "appearance.paste_lines")
+	if !strings.Contains(row.Value, "never") {
+		t.Fatalf("a negative paste_lines reads %q, want it stated in words", row.Value)
+	}
+}

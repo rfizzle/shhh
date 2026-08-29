@@ -10,6 +10,7 @@ package chat
 //	go test ./internal/ui/components ./internal/ui/chat -update-golden
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"strconv"
@@ -210,13 +211,19 @@ func TestGolden_PromptFrame(t *testing.T) {
 // with, at every width, so the rail's own ladder and its place in the stack
 // are on one sheet.
 //
+// A staged paste is on the sheet because it is the chip that has to carry the
+// most on its own: it has no name anybody chose and no file behind it, so the
+// height beside the size is what tells the reader which log they are about to
+// send.
+//
 // The last panel is the pair that matters — a notice above the chips —
 // because "the staged rail sits under anything transient the session is
 // saying" is a claim a reader checks by looking at both rows at once.
 func TestGolden_StagedRail(t *testing.T) {
 	png := make([]byte, 412<<10)
 	pdf := make([]byte, 1126<<10)
-	md := make([]byte, 2<<10)
+	md := bytes.Repeat([]byte("a note about the parser\n"), 84)
+	paste := bytes.Repeat([]byte("goroutine 1 [running]:\n"), 178)
 	captureGolden(t, "staged-rail", "the frame's staged rail", goldenWidths, func(width int) []golden.Panel {
 		frame := func(mut func(*Model)) string {
 			m := goldenModel(t, width)
@@ -228,10 +235,15 @@ func TestGolden_StagedRail(t *testing.T) {
 		}
 		return []golden.Panel{
 			{Label: "one screenshot waiting", View: frame(func(m *Model) {})},
-			{Label: "one of each kind", View: frame(func(m *Model) {
+			{Label: "one of each kind · only the text has lines to count", View: frame(func(m *Model) {
 				m.attachments = append(m.attachments,
 					provider.Attachment{Kind: provider.AttachmentText, Name: "notes.md", Data: md},
 					provider.Attachment{Kind: provider.AttachmentDocument, Name: "spec.pdf", Data: pdf})
+			})},
+			{Label: "a staged paste · the height is what names it", View: frame(func(m *Model) {
+				m.attachments = []provider.Attachment{
+					{Kind: provider.AttachmentText, Name: "paste-1.txt", Data: paste},
+				}
 			})},
 			{Label: "a notice above it · transient first, then what rides", View: frame(func(m *Model) {
 				m.steering = []string{"and check the parser"}

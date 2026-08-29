@@ -190,11 +190,11 @@ func Surfaces() []Surface {
 			},
 		},
 		{
-			Name:     "the staged image preview",
-			Section:  "docs/interface/surfaces.md#a-staged-picture",
+			Name:     "the staged attachment preview",
+			Section:  "docs/interface/surfaces.md#a-staged-attachment",
 			Position: Takeover,
 			Reached:  "/paste show <name>",
-			Bindings: []Binding{Picture.Back, Picture.Leave},
+			Bindings: []Binding{Preview.Back, Preview.Leave},
 		},
 		{
 			Name:     "the retry countdown",

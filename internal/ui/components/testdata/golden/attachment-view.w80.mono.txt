@@ -1,5 +1,5 @@
-# golden:  picture.w80
-# surface: the staged image preview
+# golden:  attachment-view.w80
+# surface: the staged attachment preview
 # width:   80 columns
 # palette: mono (two greys)
 #
@@ -53,6 +53,28 @@
 │                                                                              │
 └──────────────────────────────────────────────────────────────────────────────┘
 
+· a staged paste · from the top and from the left, lines counted on the border
+┌─ paste-1.txt ──────────────────────────────────────────────── 4 KB ─ 5 lines ┐
+│ goroutine 1 [running]:                                                       │
+│ github.com/rfizzle/shhh/internal/agent.(*Agent).runRound(0xc000180000)       │
+│     /src/shhh/internal/agent/loop.go:214 +0x3f4                              │
+│ github.com/rfizzle/shhh/internal/agent.(*Agent).Step(0xc000180000, {0x1a4b2… │
+│     /src/shhh/internal/agent/loop.go:96 +0x118                               │
+│                                                                              │
+│                                                                              │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+· taller than the pane · what did not fit is counted, not trailed off
+┌─ paste-1.txt ─────────────────────────────────────────────── 4 KB ─ 16 lines ┐
+│ goroutine 1 [running]:                                                       │
+│ github.com/rfizzle/shhh/internal/agent.(*Agent).runRound(0xc000180000)       │
+│     /src/shhh/internal/agent/loop.go:214 +0x3f4                              │
+│ github.com/rfizzle/shhh/internal/agent.(*Agent).Step(0xc000180000, {0x1a4b2… │
+│     /src/shhh/internal/agent/loop.go:96 +0x118                               │
+│ main.main()                                                                  │
+│ +10 more lines                                                               │
+└──────────────────────────────────────────────────────────────────────────────┘
+
 ── ansi ────────────────────────────────────────────────────
 · a staged screenshot · the name and size on the border, the picture inside
 ␛[38;5;244m┌─ shot.png ───────────────────────────────────────────────── ␛[38;5;244m412 KB␛[m ─ ␛[38;5;244m640×400␛[m ┐␛[m
@@ -96,4 +118,26 @@
 ␛[38;5;244m│␛[m                                                                              ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m                                                                              ␛[38;5;244m│␛[m
 ␛[38;5;244m│␛[m                                                                              ␛[38;5;244m│␛[m
+␛[38;5;244m└──────────────────────────────────────────────────────────────────────────────┘␛[m
+
+· a staged paste · from the top and from the left, lines counted on the border
+␛[38;5;244m┌─ paste-1.txt ──────────────────────────────────────────────── ␛[38;5;244m4 KB␛[m ─ ␛[38;5;244m5 lines␛[m ┐␛[m
+␛[38;5;244m│␛[m ␛[38;5;254mgoroutine 1 [running]:␛[m                                                       ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254mgithub.com/rfizzle/shhh/internal/agent.(*Agent).runRound(0xc000180000)␛[m       ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m    /src/shhh/internal/agent/loop.go:214 +0x3f4␛[m                              ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254mgithub.com/rfizzle/shhh/internal/agent.(*Agent).Step(0xc000180000, {0x1a4b2…␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m    /src/shhh/internal/agent/loop.go:96 +0x118␛[m                               ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m                                                                              ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m                                                                              ␛[38;5;244m│␛[m
+␛[38;5;244m└──────────────────────────────────────────────────────────────────────────────┘␛[m
+
+· taller than the pane · what did not fit is counted, not trailed off
+␛[38;5;244m┌─ paste-1.txt ─────────────────────────────────────────────── ␛[38;5;244m4 KB␛[m ─ ␛[38;5;244m16 lines␛[m ┐␛[m
+␛[38;5;244m│␛[m ␛[38;5;254mgoroutine 1 [running]:␛[m                                                       ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254mgithub.com/rfizzle/shhh/internal/agent.(*Agent).runRound(0xc000180000)␛[m       ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m    /src/shhh/internal/agent/loop.go:214 +0x3f4␛[m                              ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254mgithub.com/rfizzle/shhh/internal/agent.(*Agent).Step(0xc000180000, {0x1a4b2…␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254m    /src/shhh/internal/agent/loop.go:96 +0x118␛[m                               ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;254mmain.main()␛[m                                                                  ␛[38;5;244m│␛[m
+␛[38;5;244m│␛[m ␛[38;5;244m+10 more lines␛[m                                                               ␛[38;5;244m│␛[m
 ␛[38;5;244m└──────────────────────────────────────────────────────────────────────────────┘␛[m

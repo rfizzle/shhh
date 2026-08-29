@@ -253,6 +253,14 @@ type AppearanceConfig struct {
 	// looking at the screen, and the thing it exists for — a turn that stopped
 	// on an approval four minutes ago — is invisible until it does.
 	Notify *bool `toml:"notify"`
+	// PasteLines and PasteColumns are the shape past which a paste is staged
+	// as an attachment instead of typed into the draft
+	// (docs/interface/surfaces.md#the-input-frame). Zero on either means the
+	// default. They are here rather than under behavior for the reason Mouse
+	// and Notify are: what they set is how the input surface treats what the
+	// reader does at it, not what the session does with the answer.
+	PasteLines   int `toml:"paste_lines"`
+	PasteColumns int `toml:"paste_columns"`
 }
 
 type HistoryConfig struct {
@@ -381,6 +389,14 @@ func Set(cfg *Config, key, value string) error {
 	case "appearance.notify":
 		v := value == "true"
 		cfg.Appearance.Notify = &v
+	case "appearance.paste_lines":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Appearance.PasteLines = n
+	case "appearance.paste_columns":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Appearance.PasteColumns = n
 	case "behavior.max_tool_rounds":
 		n := 0
 		fmt.Sscanf(value, "%d", &n)

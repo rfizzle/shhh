@@ -129,3 +129,98 @@ func TestSummarizeAndNames(t *testing.T) {
 		t.Fatalf("Names = %v", names)
 	}
 }
+
+// The threshold is two questions asked of the same text, and either one
+// answering yes is enough: a log is tall, and a minified bundle is one line
+// nobody can read the end of.
+func TestPasteOverflows_HeightOrWidth(t *testing.T) {
+	for _, c := range []struct {
+		name    string
+		text    string
+		lines   int
+		columns int
+		want    bool
+	}{
+		{"empty", "", DefaultPasteLines, DefaultPasteColumns, false},
+		{"a sentence", "fix the round limit", DefaultPasteLines, DefaultPasteColumns, false},
+		{"exactly the line limit", strings.Repeat("x\n", 9) + "x",
+			DefaultPasteLines, DefaultPasteColumns, false},
+		{"a trailing newline opens no line", strings.Repeat("x\n", 10),
+			DefaultPasteLines, DefaultPasteColumns, false},
+		{"one line past it", strings.Repeat("x\n", 10) + "x",
+			DefaultPasteLines, DefaultPasteColumns, true},
+		{"exactly the column limit", strings.Repeat("x", 1000),
+			DefaultPasteLines, DefaultPasteColumns, false},
+		{"one column past it", strings.Repeat("x", 1001),
+			DefaultPasteLines, DefaultPasteColumns, true},
+		{"wide characters are counted in columns", strings.Repeat("世", 501),
+			DefaultPasteLines, DefaultPasteColumns, true},
+		{"height turned off", strings.Repeat("x\n", 40), -1, DefaultPasteColumns, false},
+		{"width turned off", strings.Repeat("x", 4000), DefaultPasteLines, -1, false},
+		{"both turned off", strings.Repeat("x\n", 40), -1, -1, false},
+	} {
+		if got := PasteOverflows(c.text, c.lines, c.columns); got != c.want {
+			t.Errorf("%s: PasteOverflows = %v, want %v", c.name, got, c.want)
+		}
+	}
+}
+
+func TestLineCount_ATrailingNewlineOpensNoLine(t *testing.T) {
+	for _, c := range []struct {
+		data []byte
+		want int
+	}{
+		{nil, 0},
+		{[]byte("a"), 1},
+		{[]byte("a\n"), 1},
+		{[]byte("a\nb"), 2},
+		{[]byte("a\nb\n"), 2},
+		{[]byte("\n"), 1},
+	} {
+		if got := LineCount(c.data); got != c.want {
+			t.Errorf("LineCount(%q) = %d, want %d", c.data, got, c.want)
+		}
+	}
+}
+
+func TestPasteName_IsTypeable(t *testing.T) {
+	if got, want := PasteName(1), "paste-1.txt"; got != want {
+		t.Fatalf("PasteName(1) = %q, want %q", got, want)
+	}
+	// The name has to sniff as text, because that is what decides how it
+	// rides out and what the preview draws it as.
+	a, err := FromBytes(PasteName(2), []byte("goroutine 1 [running]:\n"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if a.Kind != provider.AttachmentText || a.MediaType != "text/plain" {
+		t.Fatalf("a staged paste is %q/%q, want text/text.plain", a.Kind, a.MediaType)
+	}
+}
+
+// The order matters: \r\n has to go before a bare \r, or every Windows line
+// ending opens two lines instead of one.
+func TestNormalizeNewlines_EveryEndingBecomesOne(t *testing.T) {
+	for _, c := range []struct{ in, want string }{
+		{"a\nb", "a\nb"},
+		{"a\r\nb", "a\nb"},
+		{"a\rb", "a\nb"},
+		{"a\r\n\rb", "a\n\nb"},
+		{"a\n\rb\r\n", "a\n\nb\n"},
+		{"nothing to do", "nothing to do"},
+		{"", ""},
+	} {
+		if got := NormalizeNewlines(c.in); got != c.want {
+			t.Errorf("NormalizeNewlines(%q) = %q, want %q", c.in, got, c.want)
+		}
+	}
+	// And the counts downstream agree once it has run: eleven CRLF lines are
+	// eleven lines, not one.
+	crlf := NormalizeNewlines(strings.Repeat("goroutine 1 [running]:\r\n", 11))
+	if got := LineCount([]byte(crlf)); got != 11 {
+		t.Fatalf("LineCount after normalizing = %d, want 11", got)
+	}
+	if !PasteOverflows(crlf, DefaultPasteLines, DefaultPasteColumns) {
+		t.Fatal("eleven normalized lines should overflow the draft")
+	}
+}

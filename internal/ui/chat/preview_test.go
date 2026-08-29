@@ -1,7 +1,7 @@
 package chat
 
-// The staged image preview (
-// docs/interface/surfaces.md#a-staged-picture).
+// The staged attachment preview (
+// docs/interface/surfaces.md#a-staged-attachment).
 
 import (
 	"bytes"
@@ -65,8 +65,8 @@ func TestPreview_ShowDrawsTheStagedImage(t *testing.T) {
 	m := stageImage(t, frameModel(t, 130, 40), "shot.png")
 	updated, _ := m.runPaste([]string{"/paste", "show", "shot.png"})
 	m = updated.(Model)
-	if m.state != statePicture || m.picture == nil {
-		t.Fatalf("state = %v, picture = %v", m.state, m.picture)
+	if m.state != statePreview || m.preview == nil {
+		t.Fatalf("state = %v, preview = %v", m.state, m.preview)
 	}
 	view := stripANSI(m.View().Content)
 	if !strings.Contains(view, "shot.png") || !strings.Contains(view, "32×16") {
@@ -90,8 +90,8 @@ func TestPreview_LeavingKeepsWhatIsStaged(t *testing.T) {
 	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
-	if m.state != stateInput || m.picture != nil {
-		t.Fatalf("esc should hand the pane back: state = %v, picture = %v", m.state, m.picture)
+	if m.state != stateInput || m.preview != nil {
+		t.Fatalf("esc should hand the pane back: state = %v, preview = %v", m.state, m.preview)
 	}
 	if len(m.attachments) != 1 {
 		t.Fatalf("esc dropped the attachment: %d staged", len(m.attachments))
@@ -107,7 +107,7 @@ func TestPreview_QLeavesToo(t *testing.T) {
 	m := stageImage(t, frameModel(t, 130, 40), "shot.png")
 	updated, _ := m.runPaste([]string{"/paste", "show", "shot.png"})
 	updated, _ = updated.(Model).Update(key('q'))
-	if m := updated.(Model); m.state != stateInput || m.picture != nil {
+	if m := updated.(Model); m.state != stateInput || m.preview != nil {
 		t.Fatalf("q should hand the pane back: state = %v", m.state)
 	}
 }
@@ -118,14 +118,14 @@ func TestPreview_QLeavesToo(t *testing.T) {
 func TestPreview_BareShowTakesTheOnlyImage(t *testing.T) {
 	m := stageImage(t, frameModel(t, 130, 40), "shot.png")
 	updated, _ := m.runPaste([]string{"/paste", "show"})
-	if m := updated.(Model); m.state != statePicture {
+	if m := updated.(Model); m.state != statePreview {
 		t.Fatalf("one staged image should open bare: state = %v", m.state)
 	}
 	// A second image, and the name becomes required.
 	two := stageImage(t, m, "other.png")
 	updated, _ = two.runPaste([]string{"/paste", "show"})
 	next := updated.(Model)
-	if next.state == statePicture {
+	if next.state == statePreview {
 		t.Fatal("two staged images must not be guessed between")
 	}
 	notice := stripANSI(next.View().Content)
@@ -146,13 +146,13 @@ func TestPreview_RefusalsNameWhatIsThere(t *testing.T) {
 			"shot.png", "nothing is attached"},
 		{"a name that is not staged", stageImageNamed("shot.png"),
 			"other.png", "other.png is not attached"},
-		{"a file that is not an image", stageTextNamed("notes.md"),
-			"notes.md", "not an image"},
+		{"a PDF, which shhh does not render", stagePDFNamed("spec.pdf"),
+			"spec.pdf", "not an image or text"},
 	} {
 		m := c.setup(t, frameModel(t, 130, 40))
 		updated, _ := m.runPaste([]string{"/paste", "show", c.arg})
 		next := updated.(Model)
-		if next.state == statePicture {
+		if next.state == statePreview {
 			t.Errorf("%s: opened the surface anyway", c.name)
 			continue
 		}
@@ -166,8 +166,15 @@ func stageImageNamed(name string) func(*testing.T, Model) Model {
 	return func(t *testing.T, m Model) Model { return stageImage(t, m, name) }
 }
 
-func stageTextNamed(name string) func(*testing.T, Model) Model {
-	return func(t *testing.T, m Model) Model { return stageText(t, m, name) }
+func stagePDFNamed(name string) func(*testing.T, Model) Model {
+	return func(t *testing.T, m Model) Model {
+		a, err := attachment.FromBytes(name, []byte("%PDF-1.4\n1 0 obj\n<<>>\nendobj\n"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		next, _ := m.stage([]provider.Attachment{a})
+		return next.(Model)
+	}
 }
 
 // A terminal with no colour to give still gets the picture, as density
@@ -196,8 +203,8 @@ func TestPreview_UndecodableImageOpensOntoTheReason(t *testing.T) {
 	m := stagePNG(t, frameModel(t, 130, 40), "broken.png")
 	updated, _ := m.runPaste([]string{"/paste", "show", "broken.png"})
 	m = updated.(Model)
-	if m.state != statePicture {
-		t.Fatalf("state = %v, want the picture surface", m.state)
+	if m.state != statePreview {
+		t.Fatalf("state = %v, want the preview surface", m.state)
 	}
 	view := stripANSI(m.View().Content)
 	if !strings.Contains(view, "broken.png") {
@@ -208,20 +215,39 @@ func TestPreview_UndecodableImageOpensOntoTheReason(t *testing.T) {
 	}
 }
 
-// The completion menu offers the staged images and only those: a
-// name it would then decline is a name the reader found out about by typing.
-func TestPreview_CompletionOffersStagedImagesOnly(t *testing.T) {
-	m := stageText(t, stageImage(t, frameModel(t, 130, 40), "shot.png"), "notes.md")
+// The completion menu offers what the surface will actually open, and
+// nothing else: a name it would then decline is a name the reader found out
+// about by typing.
+func TestPreview_CompletionOffersWhatTheSurfaceOpens(t *testing.T) {
+	m := stagePDFNamed("spec.pdf")(t, stageText(t, stageImage(t, frameModel(t, 130, 40), "shot.png"), "notes.md"))
 	var names []string
 	for _, o := range attachmentShowArgs(&m) {
 		names = append(names, o.value)
 	}
-	if len(names) != 1 || names[0] != "shot.png" {
-		t.Fatalf("/paste show offers %v, want just the image", names)
+	if len(names) != 2 || names[0] != "shot.png" || names[1] != "notes.md" {
+		t.Fatalf("/paste show offers %v, want the image and the text", names)
 	}
 	// The drop menu still offers everything: dropping a document is fine.
-	if got := len(attachmentDropArgs(&m)); got != 2 {
-		t.Fatalf("/paste drop offers %d, want both staged files", got)
+	if got := len(attachmentDropArgs(&m)); got != 3 {
+		t.Fatalf("/paste drop offers %d, want all three staged files", got)
+	}
+}
+
+// A staged paste opens as its own text: the reader's two questions about
+// bytes with no file behind them — is this the right log, and is it all
+// there — are both answered by looking at it.
+func TestPreview_ShowDrawsAStagedPasteAsText(t *testing.T) {
+	m := stageText(t, frameModel(t, 130, 40), "paste-1.txt")
+	updated, _ := m.runPaste([]string{"/paste", "show", "paste-1.txt"})
+	next := updated.(Model)
+	if next.state != statePreview {
+		t.Fatalf("state = %v, want the preview surface", next.state)
+	}
+	view := stripANSI(next.View().Content)
+	for _, want := range []string{"paste-1.txt", "# notes", "something", "3 lines"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the card never says %q:\n%s", want, view)
+		}
 	}
 }
 
@@ -230,7 +256,23 @@ func TestPreview_CompletionOffersStagedImagesOnly(t *testing.T) {
 func TestPreview_ShowIsAWholeWord(t *testing.T) {
 	m := stageImage(t, frameModel(t, 130, 40), "shot.png")
 	updated, _ := m.runPaste([]string{"/paste", "showreel.png"})
-	if next := updated.(Model); next.state == statePicture {
+	if next := updated.(Model); next.state == statePreview {
 		t.Fatal("showreel.png is a path, not /paste show")
+	}
+}
+
+// Bare `/paste show` takes whatever is staged when only one thing is, which
+// after this story is most often a paste rather than a screenshot.
+func TestPreview_BareShowTakesALonePaste(t *testing.T) {
+	m := stageText(t, frameModel(t, 130, 40), "paste-1.txt")
+	updated, _ := m.runPaste([]string{"/paste", "show"})
+	if next := updated.(Model); next.state != statePreview {
+		t.Fatalf("state = %v, want the preview surface", next.state)
+	}
+	// Two it could have meant is still a refusal.
+	two := stageImage(t, m, "shot.png")
+	updated, _ = two.runPaste([]string{"/paste", "show"})
+	if next := updated.(Model); next.state == statePreview {
+		t.Fatal("with two staged, bare /paste show should ask for a name")
 	}
 }

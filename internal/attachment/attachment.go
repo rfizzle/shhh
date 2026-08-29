@@ -7,6 +7,7 @@ package attachment
 // for `attach`, the verb that already means "attach to a sub-agent" here.
 
 import (
+	"bytes"
 	"fmt"
 	"net/http"
 	"os"
@@ -14,6 +15,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -29,6 +31,19 @@ const (
 	// contents go into the prompt verbatim, so the limit that matters is the
 	// context window, not the upload size.
 	MaxTextBytes = 256 << 10
+)
+
+// The shape past which a paste stops being a sentence and becomes a file. Ten
+// lines is more than the draft box shows at once, so a paste taller than that
+// is already something the reader cannot see the whole of while they finish
+// the sentence around it; a thousand columns is wider than any terminal draws,
+// so a line that long is one nobody was going to read back either way.
+//
+// They are the point where inserting the text costs more than staging it —
+// not a judgement about size, which is what MaxTextBytes is for.
+const (
+	DefaultPasteLines   = 10
+	DefaultPasteColumns = 1000
 )
 
 // Clipboard is one read of the system clipboard, already classified: what
@@ -236,6 +251,74 @@ func PeekKind(path string) (provider.AttachmentKind, error) {
 	}
 	kind, _, err := Sniff(filepath.Base(path), head[:n])
 	return kind, err
+}
+
+// PasteOverflows reports whether pasted text is too big to leave in the
+// draft: taller than maxLines, or holding a line wider than maxColumns.
+//
+// This is the one place the thresholds are read, and so the one place the
+// rule about them lives: a non-positive threshold turns its own half of the
+// test off, which is how a person who wants every paste typed says so.
+//
+// A line is measured only once its bytes say it could be wide enough. A
+// column costs at least a byte, so a line shorter than the threshold in bytes
+// cannot reach it in columns, and the common paste — which arrives on the
+// event loop, because a paste is a keystroke — is never segmented at all.
+//
+// It counts \n and nothing else, so give it NormalizeNewlines' output: a
+// terminal that ends a pasted line with a bare \r would otherwise hand a
+// fifty-line stack trace over as one line.
+func PasteOverflows(text string, maxLines, maxColumns int) bool {
+	if text == "" {
+		return false
+	}
+	if maxLines > 0 && strings.Count(strings.TrimSuffix(text, "\n"), "\n")+1 > maxLines {
+		return true
+	}
+	if maxColumns <= 0 {
+		return false
+	}
+	for line := range strings.SplitSeq(text, "\n") {
+		if len(line) > maxColumns && ansi.StringWidth(line) > maxColumns {
+			return true
+		}
+	}
+	return false
+}
+
+// NormalizeNewlines puts a paste's line endings in the one form everything
+// downstream counts: \r\n and a bare \r both become \n.
+//
+// The draft never had to care, because the textarea rewrites both on the way
+// in (charm.land/bubbles' runeutil). Staging is a second door onto the same
+// bytes and there is nothing between it and the terminal, so it does the same
+// thing here — otherwise a CR-delimited paste is one line to every count that
+// follows: the threshold that decides whether to stage it, the chip that says
+// how tall it is, and the preview that draws it.
+func NormalizeNewlines(text string) string {
+	if !strings.ContainsRune(text, '\r') {
+		return text
+	}
+	return strings.ReplaceAll(strings.ReplaceAll(text, "\r\n", "\n"), "\r", "\n")
+}
+
+// LineCount is how many lines of text an attachment carries, as the chip and
+// the preview report it. A trailing newline opens no line: a file that ends
+// the way files end is not one line longer than what is in it.
+func LineCount(data []byte) int {
+	if len(data) == 0 {
+		return 0
+	}
+	body := bytes.TrimSuffix(data, []byte("\n"))
+	return bytes.Count(body, []byte("\n")) + 1
+}
+
+// PasteName is what the nth staged paste is called. A paste has no name of
+// its own — nobody chose it and there is no file behind it — and `/paste
+// drop` and `/paste show` are both reached by name, so it is given one that
+// can be typed rather than one that has to be described.
+func PasteName(n int) string {
+	return fmt.Sprintf("paste-%d.txt", n)
 }
 
 // HumanSize renders a byte count the way the rails do — two significant

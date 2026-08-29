@@ -139,6 +139,26 @@ Above it, a notice rail exists only while there is something to say and
 disappears when there is not. Below that, a staged rail carries whatever is
 waiting to ride out with the next message — it sits against the box because
 what is staged leaves with the sentence being typed, and the notices do not.
+Each chip says what the thing is, what it is called and how big it is, and for
+text how far it runs, because a size answers *will this fit* and never *which
+of these is the stack trace*.
+
+A paste past a certain size stops being a sentence and becomes one of those
+chips. A log or a stack trace typed into a three-row box buries the sentence
+it was meant to go with, and scrolling a draft to find the question you were
+asking is not composing — so past ten lines or a thousand columns the paste is
+staged as a file of its own and the box is left for the words. Both thresholds
+are settings, because how much text a person can hold in a draft is a fact
+about their terminal and their eyes rather than about shhh. Every door onto
+the staging area reads them, because which key the reader used to paste is not
+a fact about how much text they pasted.
+
+A paste too big to stage is refused with the limit named, and the draft is
+left exactly as it was. What bounds it is not the size a message can carry but
+the window it will be read in: a paste has no file behind it, so it goes into
+the prompt itself rather than being fetched when it is needed. Typing it in
+after all would put a megabyte in the box that the reader then has to get back
+out, and the bytes are still on the clipboard either way.
 
 Typing while the agent works is steering, not a queued prompt, and the gutter
 says which of the two you are doing.
@@ -341,12 +361,25 @@ one only says what filled it. Because it changes nothing, it is also the one
 occupancy surface that can be opened in the middle of a turn: a window filling
 up while the agent works is exactly when the question gets asked.
 
-### A staged picture
+### A staged attachment
 
 A chip above the draft is the right answer to *what is attached* and the wrong
 one the moment two screenshots are staged and the question is which of them
 has the stack trace in it. That question has no verbal answer at any width, so
-there is a surface that shows the picture at full size.
+there is a surface that shows the attachment at full size.
+
+A paste asks it harder. It arrived with no name anybody chose and no file
+behind it to open in something else, so a chip is the whole of what a reader
+knows about bytes they are about to send — and the two things they want to
+check, that it is the right log and that it is all of it, are both answered by
+looking at it. So text opens here too: laid out from the top and from the
+left, with whatever did not fit counted at the foot rather than trailing off
+([invariant 4](principles.md#fold-never-hide)).
+
+Neither body scrolls. This is a preview of something staged, not a reader for
+it — the question it answers is *is this the right thing to send*, and what
+did not fit is counted rather than lost. Reading the whole of it is the
+model's job, and it gets the whole of it either way.
 
 It is reached by name rather than by a key: a chip sits above a live draft,
 and a key written on it would be an offer nothing accepts
@@ -360,7 +393,9 @@ own deliberate act.
 
 A picture that will not decode still opens, onto the reason where the picture
 would be. That it is staged and unreadable is a fact about the message you are
-about to send, and a blank card would not have said it.
+about to send, and a blank card would not have said it. A PDF does not open at
+all: shhh does not render one, so there is nothing the card could say that the
+chip has not said already.
 
 ### The one-shot result
 

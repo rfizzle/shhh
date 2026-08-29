@@ -496,3 +496,47 @@ disabled = true
 		t.Errorf("unset summary numbers should be zero, got %+v", cfg.Summary)
 	}
 }
+
+// The paste thresholds read back from the file, and a negative survives:
+// it is the answer "never on this count" rather than a number to floor.
+func TestSet_PasteThresholds(t *testing.T) {
+	var cfg Config
+	for key, want := range map[string]int{
+		"appearance.paste_lines":   40,
+		"appearance.paste_columns": -1,
+	} {
+		if err := Set(&cfg, key, strconv.Itoa(want)); err != nil {
+			t.Fatalf("%s: %v", key, err)
+		}
+	}
+	if cfg.Appearance.PasteLines != 40 {
+		t.Errorf("appearance.paste_lines = %d, want 40", cfg.Appearance.PasteLines)
+	}
+	if cfg.Appearance.PasteColumns != -1 {
+		t.Errorf("appearance.paste_columns = %d, want -1", cfg.Appearance.PasteColumns)
+	}
+	// Resetting a row hands Set an empty value; it has to read back as unset
+	// rather than as a parse failure that leaves the old number standing.
+	if err := Set(&cfg, "appearance.paste_lines", ""); err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Appearance.PasteLines != 0 {
+		t.Errorf("a reset left appearance.paste_lines = %d", cfg.Appearance.PasteLines)
+	}
+}
+
+func TestLoadFrom_PasteThresholds(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	content := "[appearance]\npaste_lines = 25\npaste_columns = 400\n"
+	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := LoadFrom(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Appearance.PasteLines != 25 || cfg.Appearance.PasteColumns != 400 {
+		t.Fatalf("paste thresholds = %d/%d, want 25/400",
+			cfg.Appearance.PasteLines, cfg.Appearance.PasteColumns)
+	}
+}

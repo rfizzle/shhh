@@ -1,15 +1,22 @@
 package components
 
-// The staged image preview (
-// docs/interface/surfaces.md#a-staged-picture). The card `/paste show` opens:
-// one attachment's picture, framed by the name and the size the chip strip
-// already carries.
+// The staged attachment preview (
+// docs/interface/surfaces.md#a-staged-attachment). The card `/paste show`
+// opens: one attachment shown as itself, framed by the name and the size the
+// chip strip already carries.
 //
 // The strip says a file called shot.png is staged and how big it is.
 // That is the right answer for a rail sitting above a live draft, and it is
 // the wrong one the moment two screenshots are staged and the question is
 // which of them is the one with the stack trace in it. Nothing else in shhh
 // can answer that, because until now nothing drew the bytes.
+//
+// A picture and a paste are the same question asked of different bytes, so
+// they are the same card with two bodies: the picture fitted to the pane, or
+// the text laid out from the top with what did not fit counted at the foot
+// (docs/interface/principles.md#fold-never-hide). Neither body scrolls: the
+// question this card answers is whether the thing staged is the thing the
+// reader meant to send, not what is in it.
 //
 // The card is a frame and not a renderer. Which rung the picture was drawn at
 // — the terminal's own graphics protocol, half-blocks, or the density ramp of
@@ -21,6 +28,7 @@ package components
 import (
 	"image"
 	"image/color"
+	"strconv"
 	"strings"
 
 	"charm.land/lipgloss/v2"
@@ -28,19 +36,26 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/raster"
 )
 
-// pictureChrome is what the card costs a picture: the two border rows.
-const pictureChrome = 2
+// viewChrome is what the card costs its body: the two border rows.
+const viewChrome = 2
 
-// PictureView is one staged attachment shown as a picture.
-type PictureView struct {
+// AttachmentView is one staged attachment shown as itself: a picture, or the
+// text of a file or a paste.
+type AttachmentView struct {
 	// Name and Size are the chip's own two fields, and they ride the
-	// top border rather than a caption row: the picture is what the surface
-	// is for, so it gets every row the frame does not need.
+	// top border rather than a caption row: the attachment is what the
+	// surface is for, so it gets every row the frame does not need.
 	Name, Size string
 	// Pixels is the picture's real size, `1440×900`. It is the one fact the
 	// chip strip could never carry and the card can, and it is what says a
 	// preview is a thumbnail rather than the thing itself.
 	Pixels string
+
+	// Text is a text attachment's lines, drawn when there is no Image. They
+	// arrive already split, because the card is handed what to draw rather
+	// than the bytes to work it out from — the same bargain Image makes with
+	// the decoder.
+	Text []string
 
 	// Image is the decoded picture, drawn here when Placement is empty.
 	Image image.Image
@@ -64,22 +79,28 @@ type PictureView struct {
 }
 
 // View draws the card.
-func (p PictureView) View(width int) string {
-	rows := p.picture(width-cardFrameWidth, p.Height-pictureChrome)
+func (p AttachmentView) View(width int) string {
+	rows := p.body(width-cardFrameWidth, p.Height-viewChrome)
 	return renderChromeCard(cardChrome{title: p.Name, chips: p.captions()}, rows, width)
 }
 
 // captions are the top border's chips, in the order they are given up as the
 // terminal narrows — chips drop from the front (cardTop), so the size goes
-// before the pixel dimensions do. The dimensions are the fact this surface
+// before the measurement does. The measurement is the fact this surface
 // added; the size is on the chip strip already.
-func (p PictureView) captions() []string {
+//
+// A picture is measured in pixels and text in lines, and neither is reported
+// for bytes that are not that thing.
+func (p AttachmentView) captions() []string {
 	var out []string
 	if p.Size != "" {
 		out = append(out, sty.Dim.Render(p.Size))
 	}
-	if p.Pixels != "" {
+	switch {
+	case p.Pixels != "":
 		out = append(out, sty.Dim.Render(p.Pixels))
+	case len(p.Text) > 0:
+		out = append(out, sty.Dim.Render(countedLines(len(p.Text))))
 	}
 	return out
 }
@@ -92,13 +113,14 @@ func (p PictureView) captions() []string {
 // pixels ahead of the frame that places them, so the size has to be agreed
 // between the two, and the card is where the arithmetic about the card's own
 // chrome belongs.
-func (p PictureView) Fit(width int) (cols, rows int) {
-	return raster.Fit(p.Image, width-cardFrameWidth, p.Height-pictureChrome, p.Cell)
+func (p AttachmentView) Fit(width int) (cols, rows int) {
+	return raster.Fit(p.Image, width-cardFrameWidth, p.Height-viewChrome, p.Cell)
 }
 
-// picture draws the body: the placement the terminal will fill, the note that
-// says why there is nothing to draw, or the picture rastered into the space.
-func (p PictureView) picture(width, height int) []string {
+// body draws what the card is showing: the placement the terminal will fill,
+// the note that says why there is nothing to draw, the text laid out, or the
+// picture rastered into the space.
+func (p AttachmentView) body(width, height int) []string {
 	if width < 1 || height < 1 {
 		return nil
 	}
@@ -107,6 +129,8 @@ func (p PictureView) picture(width, height int) []string {
 		return centre(p.Placement, width, height)
 	case p.Note != "":
 		return centre([]string{sty.Dim.Render(clip(p.Note, width))}, width, height)
+	case p.Image == nil && len(p.Text) > 0:
+		return p.text(width, height)
 	case p.Image == nil:
 		return nil
 	}
@@ -125,6 +149,67 @@ func (p PictureView) picture(width, height int) []string {
 		lines[i] = pictureRow(row)
 	}
 	return centre(lines, width, height)
+}
+
+// text lays a text attachment out: from the top and from the left, because
+// prose and a stack trace are both read that way and centring either would
+// make the first character's column depend on the longest line below it.
+//
+// A line too wide for the pane is clipped and the lines past the foot are
+// counted on the last row rather than dropped, so what is not on screen is
+// still stated (docs/interface/principles.md#fold-never-hide). The count is
+// the surface's last row, which is why it is only drawn when there is more
+// than one row to spend.
+//
+// The body is padded out to the height it was given, the way the picture is
+// centred into it: this is a takeover, and a card that stopped four rows
+// short of the pane would read as a card that had lost its bottom border.
+func (p AttachmentView) text(width, height int) []string {
+	if len(p.Text) <= height {
+		lines := make([]string, height)
+		for i := range lines {
+			if i < len(p.Text) {
+				lines[i] = p.line(p.Text[i], width)
+			}
+		}
+		return lines
+	}
+	shown := height - 1
+	if shown < 1 {
+		// One row and more than one line: the count is the honest thing to
+		// spend it on, because a single line of a log says nothing and the
+		// number says the card is not the whole file.
+		return []string{sty.Dim.Render(clip(moreLines(len(p.Text)), width))}
+	}
+	lines := make([]string, 0, height)
+	for _, line := range p.Text[:shown] {
+		lines = append(lines, p.line(line, width))
+	}
+	return append(lines, sty.Dim.Render(clip(moreLines(len(p.Text)-shown), width)))
+}
+
+// line draws one row of the text body.
+//
+// It is the door a program's own bytes come through — a paste is usually
+// something a terminal printed — so the line is re-painted into the palette
+// before it is measured, exactly as a detail body's is
+// (docs/interface/principles.md#one-grid). Left raw, a colourised log would
+// paint its own reds into the card and a bare carriage return would send the
+// rest of the line back over the card's left border.
+func (p AttachmentView) line(s string, width int) string {
+	if painted, ok := repaint(s, Palette.Body); ok {
+		// A re-painted line already carries the ground, run by run.
+		return clip(painted, width)
+	}
+	return sty.Body.Render(clip(s, width))
+}
+
+// moreLines is the foot of a clipped text body: what it swallowed, counted.
+func moreLines(n int) string {
+	if n == 1 {
+		return "+1 more line"
+	}
+	return "+" + strconv.Itoa(n) + " more lines"
 }
 
 // PictureInColour reports whether a picture is drawn in colour here, or as

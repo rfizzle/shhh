@@ -1,7 +1,7 @@
 package caps
 
 // The other half of the kitty graphics question (
-// docs/interface/surfaces.md#a-staged-picture).
+// docs/interface/surfaces.md#a-staged-attachment).
 //
 // Query asks the terminal whether it draws inline images; this is shhh asking
 // it to draw one. The two are here together for the probe's rule — a terminal

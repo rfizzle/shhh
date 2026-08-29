@@ -169,7 +169,7 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 		{"Wait", []Binding{Wait.Fallback, Wait.Stop, Wait.Compact, Wait.NewSession,
 			Wait.KeepGoing, Wait.UseKey, Wait.KeepKey}},
 		{"Diff", []Binding{Diff.Scroll, Diff.Hunk, Diff.SideBySide, Diff.Back, Diff.Leave}},
-		{"Picture", []Binding{Picture.Back, Picture.Leave}},
+		{"Preview", []Binding{Preview.Back, Preview.Leave}},
 		{"Screen", []Binding{Screen.Move, Screen.Take, Screen.Filter, Screen.ClearQ,
 			Screen.List, Screen.Quit, Screen.Reset, Screen.Write, Screen.Keep,
 			Screen.Copy, Screen.Rerun, Screen.Snippet, Screen.Delete, Screen.Fix,

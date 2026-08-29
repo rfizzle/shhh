@@ -1,5 +1,5 @@
 // Package raster turns a picture into terminal cells (
-// docs/interface/surfaces.md#a-staged-picture).
+// docs/interface/surfaces.md#a-staged-attachment).
 //
 // It is the half of the image preview that has nothing to do with a terminal:
 // bytes in, a grid of cells out, no escape sequence and no palette. What it

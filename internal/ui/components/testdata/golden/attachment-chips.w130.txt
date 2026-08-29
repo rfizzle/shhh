@@ -12,24 +12,30 @@
 · one image · the mark, the name, the size
 ▣ shot.png 412 KB
 
-· one of each kind
-▣ shot.png 412 KB · ≡ notes.md 2 KB · ▤ spec.pdf 1.1 MB
+· a staged paste · the height is the half a name cannot carry
+≡ paste-1.txt 4 KB 178 lines
+
+· one of each kind · only the text counts lines
+▣ shot.png 412 KB · ≡ notes.md 2 KB 84 lines · ▤ spec.pdf 1.1 MB
 
 · more than the row can hold · whole chips, then a count
-▣ shot.png 412 KB · ≡ notes.md 2 KB · ▤ spec.pdf 1.1 MB · ▣ shot.png 412 KB · ≡ notes.md 2 KB · ▤ spec.pdf 1.1 MB
+▣ shot.png 412 KB · ≡ notes.md 2 KB 84 lines · ▤ spec.pdf 1.1 MB · ▣ shot.png 412 KB · ≡ notes.md 2 KB 84 lines · +1 more
 
 · a long name · clipped at the head, which is the half that names it
-▣ screenshot-2026-08-… 412 KB · ≡ notes.md 2 KB
+▣ screenshot-2026-08-… 412 KB · ≡ notes.md 2 KB 84 lines
 
 ── ansi ────────────────────────────────────────────────────
 · one image · the mark, the name, the size
 ␛[38;5;252m▣ shot.png␛[m␛[38;5;241m 412 KB␛[m
 
-· one of each kind
-␛[38;5;252m▣ shot.png␛[m␛[38;5;241m 412 KB␛[m␛[38;5;241m · ␛[m␛[38;5;252m≡ notes.md␛[m␛[38;5;241m 2 KB␛[m␛[38;5;241m · ␛[m␛[38;5;252m▤ spec.pdf␛[m␛[38;5;241m 1.1 MB␛[m
+· a staged paste · the height is the half a name cannot carry
+␛[38;5;252m≡ paste-1.txt␛[m␛[38;5;241m 4 KB␛[m␛[38;5;241m 178 lines␛[m
+
+· one of each kind · only the text counts lines
+␛[38;5;252m▣ shot.png␛[m␛[38;5;241m 412 KB␛[m␛[38;5;241m · ␛[m␛[38;5;252m≡ notes.md␛[m␛[38;5;241m 2 KB␛[m␛[38;5;241m 84 lines␛[m␛[38;5;241m · ␛[m␛[38;5;252m▤ spec.pdf␛[m␛[38;5;241m 1.1 MB␛[m
 
 · more than the row can hold · whole chips, then a count
-␛[38;5;252m▣ shot.png␛[m␛[38;5;241m 412 KB␛[m␛[38;5;241m · ␛[m␛[38;5;252m≡ notes.md␛[m␛[38;5;241m 2 KB␛[m␛[38;5;241m · ␛[m␛[38;5;252m▤ spec.pdf␛[m␛[38;5;241m 1.1 MB␛[m␛[38;5;241m · ␛[m␛[38;5;252m▣ shot.png␛[m␛[38;5;241m 412 KB␛[m␛[38;5;241m · ␛[m␛[38;5;252m≡ notes.md␛[m␛[38;5;241m 2 KB␛[m␛[38;5;241m · ␛[m␛[38;5;252m▤ spec.pdf␛[m␛[38;5;241m 1.1 MB␛[m
+␛[38;5;252m▣ shot.png␛[m␛[38;5;241m 412 KB␛[m␛[38;5;241m · ␛[m␛[38;5;252m≡ notes.md␛[m␛[38;5;241m 2 KB␛[m␛[38;5;241m 84 lines␛[m␛[38;5;241m · ␛[m␛[38;5;252m▤ spec.pdf␛[m␛[38;5;241m 1.1 MB␛[m␛[38;5;241m · ␛[m␛[38;5;252m▣ shot.png␛[m␛[38;5;241m 412 KB␛[m␛[38;5;241m · ␛[m␛[38;5;252m≡ notes.md␛[m␛[38;5;241m 2 KB␛[m␛[38;5;241m 84 lines␛[m␛[38;5;241m · +1 more␛[m
 
 · a long name · clipped at the head, which is the half that names it
-␛[38;5;252m▣ screenshot-2026-08-…␛[m␛[38;5;241m 412 KB␛[m␛[38;5;241m · ␛[m␛[38;5;252m≡ notes.md␛[m␛[38;5;241m 2 KB␛[m
+␛[38;5;252m▣ screenshot-2026-08-…␛[m␛[38;5;241m 412 KB␛[m␛[38;5;241m · ␛[m␛[38;5;252m≡ notes.md␛[m␛[38;5;241m 2 KB␛[m␛[38;5;241m 84 lines␛[m

@@ -1057,11 +1057,14 @@ func TestGolden_AttachmentChips(t *testing.T) {
 	captureGolden(t, "attachment-chips", "staged attachment chips", goldenWidths, func(width int) []golden.Panel {
 		strip := func(chips ...AttachmentChip) string { return AttachmentChips(chips, width) }
 		shot := AttachmentChip{Kind: ChipImage, Name: "shot.png", Size: "412 KB"}
-		notes := AttachmentChip{Kind: ChipText, Name: "notes.md", Size: "2 KB"}
+		notes := AttachmentChip{Kind: ChipText, Name: "notes.md", Size: "2 KB", Lines: 84}
 		spec := AttachmentChip{Kind: ChipDocument, Name: "spec.pdf", Size: "1.1 MB"}
+		paste := AttachmentChip{Kind: ChipText, Name: "paste-1.txt", Size: "4 KB", Lines: 178}
 		return []golden.Panel{
 			{Label: "one image · the mark, the name, the size", View: strip(shot)},
-			{Label: "one of each kind", View: strip(shot, notes, spec)},
+			{Label: "a staged paste · the height is the half a name cannot carry",
+				View: strip(paste)},
+			{Label: "one of each kind · only the text counts lines", View: strip(shot, notes, spec)},
 			{Label: "more than the row can hold · whole chips, then a count",
 				View: strip(shot, notes, spec, shot, notes, spec)},
 			{Label: "a long name · clipped at the head, which is the half that names it",
@@ -1071,32 +1074,54 @@ func TestGolden_AttachmentChips(t *testing.T) {
 	})
 }
 
-// TestGolden_Picture captures the staged image preview at every
+// TestGolden_AttachmentView captures the staged attachment preview at every
 // width, in both palettes — which is the whole argument for the surface in
 // one file. The colour sheet is half-blocks, two samples to a cell; the mono
 // sheet is the same picture as density, and the fact that it is still a
 // picture there is what invariant 1 asks of the one surface whose content is
 // colour.
-func TestGolden_Picture(t *testing.T) {
-	captureGolden(t, "picture", "the staged image preview", goldenWidths, func(width int) []golden.Panel {
-		card := func(mut func(*PictureView)) string {
-			p := PictureView{Name: "shot.png", Size: "412 KB", Pixels: "640×400",
+//
+// The text panels are the other body: a paste laid out from the top, and the
+// same paste too tall for the pane, where the last row is the count of what
+// the card could not show rather than a line that trails off.
+func TestGolden_AttachmentView(t *testing.T) {
+	trace := []string{
+		"goroutine 1 [running]:",
+		"github.com/rfizzle/shhh/internal/agent.(*Agent).runRound(0xc000180000)",
+		"\t/src/shhh/internal/agent/loop.go:214 +0x3f4",
+		"github.com/rfizzle/shhh/internal/agent.(*Agent).Step(0xc000180000, {0x1a4b2e0, 0xc0001a2000})",
+		"\t/src/shhh/internal/agent/loop.go:96 +0x118",
+		"main.main()",
+		"\t/src/shhh/cmd/shhh/main.go:41 +0x2c",
+		"exit status 2",
+	}
+	captureGolden(t, "attachment-view", "the staged attachment preview", goldenWidths, func(width int) []golden.Panel {
+		card := func(mut func(*AttachmentView)) string {
+			p := AttachmentView{Name: "shot.png", Size: "412 KB", Pixels: "640×400",
 				Image: testPicture(64, 40), Height: 9}
 			mut(&p)
 			return p.View(width)
 		}
+		text := func(lines []string) string {
+			p := AttachmentView{Name: "paste-1.txt", Size: "4 KB", Height: 9, Text: lines}
+			return p.View(width)
+		}
 		return []golden.Panel{
 			{Label: "a staged screenshot · the name and size on the border, the picture inside",
-				View: card(func(*PictureView) {})},
+				View: card(func(*AttachmentView) {})},
 			{Label: "a picture wider than it is tall keeps its proportion",
-				View: card(func(p *PictureView) { p.Image = testPicture(160, 20); p.Pixels = "1600×200" })},
+				View: card(func(p *AttachmentView) { p.Image = testPicture(160, 20); p.Pixels = "1600×200" })},
 			{Label: "the terminal reported its cells · 9×19 px, so the grid is taller",
-				View: card(func(p *PictureView) { p.Cell = raster.Aspect{Width: 9, Height: 19} })},
+				View: card(func(p *AttachmentView) { p.Cell = raster.Aspect{Width: 9, Height: 19} })},
 			{Label: "nothing to draw · the reason where the picture would be",
-				View: card(func(p *PictureView) {
+				View: card(func(p *AttachmentView) {
 					p.Name, p.Pixels, p.Image = "shot.webp", "", nil
 					p.Note = "shhh draws PNG, JPEG and GIF previews, and this is none of them"
 				})},
+			{Label: "a staged paste · from the top and from the left, lines counted on the border",
+				View: text(trace[:5])},
+			{Label: "taller than the pane · what did not fit is counted, not trailed off",
+				View: text(append(append([]string{}, trace...), trace...))},
 		}
 	})
 }

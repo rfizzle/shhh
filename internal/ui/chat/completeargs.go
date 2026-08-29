@@ -250,18 +250,23 @@ func attachmentDropArgs(m *Model) []argOption {
 	return out
 }
 
-// attachmentShowArgs offers the staged images `/paste show` can open
-// . Only the images: a PDF and a markdown file are staged as
-// themselves and the surface refuses them, and a menu that offered a name it
-// would then decline is a menu that made the reader find that out by typing.
+// attachmentShowArgs offers the staged attachments `/paste show` can open
+// . Not the PDFs: shhh does not render one, so the surface refuses
+// them, and a menu that offered a name it would then decline is a menu that
+// made the reader find that out by typing.
 func attachmentShowArgs(m *Model) []argOption {
 	out := make([]argOption, 0, len(m.attachments))
 	for _, a := range m.attachments {
-		if a.Kind != provider.AttachmentImage {
+		what := "Look at this image · "
+		switch a.Kind {
+		case provider.AttachmentImage:
+		case provider.AttachmentText:
+			what = "Read this text · "
+		default:
 			continue
 		}
 		out = append(out, argOption{value: a.Name,
-			desc: "Look at this image · " + attachment.HumanSize(len(a.Data))})
+			desc: what + attachment.HumanSize(len(a.Data))})
 	}
 	return out
 }

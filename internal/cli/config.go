@@ -9,6 +9,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -498,6 +499,36 @@ func configSettings() []configSetting {
 		group: "WORKSPACE", key: "appearance.mouse", label: "mouse reporting",
 		read:     flag(func(c config.Config) bool { return c.Appearance.Mouse }),
 		fallback: "off — the terminal keeps click-drag selection; on, shhh selects the transcript itself",
+		options:  noOptions,
+	}, {
+		group: "WORKSPACE", key: "appearance.paste_lines", label: "paste staged taller than",
+		// Not num(): a negative is the one number that is not a threshold. It
+		// is how the file says "never on this count", and the screen has to
+		// read it back as that rather than as "-1" — the same distinction
+		// behavior.max_tool_rounds makes.
+		read: func(c config.Config) string {
+			switch n := c.Appearance.PasteLines; {
+			case n < 0:
+				return "never on line count — a paste of any height types"
+			case n > 0:
+				return strconv.Itoa(n) + " lines"
+			}
+			return ""
+		},
+		fallback: strconv.Itoa(attachment.DefaultPasteLines) + " lines",
+		options:  noOptions,
+	}, {
+		group: "WORKSPACE", key: "appearance.paste_columns", label: "paste staged wider than",
+		read: func(c config.Config) string {
+			switch n := c.Appearance.PasteColumns; {
+			case n < 0:
+				return "never on width — a line of any length types"
+			case n > 0:
+				return strconv.Itoa(n) + " columns"
+			}
+			return ""
+		},
+		fallback: strconv.Itoa(attachment.DefaultPasteColumns) + " columns",
 		options:  noOptions,
 	}, {
 		group: "WORKSPACE", key: "appearance.notify", label: "desktop notifications",

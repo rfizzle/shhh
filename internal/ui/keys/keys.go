@@ -440,17 +440,18 @@ var Diff = DiffKeys{
 	Leave:      bind("q", "back", "q", "ctrl+c"),
 }
 
-// PictureKeys are the staged image preview's. Two keys and no more:
+// PreviewKeys are the staged attachment preview's. Two keys and no more:
 // the surface has nothing to decide, nothing to scroll and nothing to stage —
-// a thumbnail is fitted to the pane rather than panned around — so what it
+// a thumbnail is fitted to the pane and a paste is clipped with what did not
+// fit counted at the foot, rather than either being panned around — so what it
 // offers is the two spellings of leaving that every full-screen viewer in
 // shhh has always answered to.
-type PictureKeys struct {
+type PreviewKeys struct {
 	Back  Binding
 	Leave Binding
 }
 
-var Picture = PictureKeys{
+var Preview = PreviewKeys{
 	Back:  bind("esc", "back", "esc"),
 	Leave: bind("q", "back", "q", "ctrl+c"),
 }

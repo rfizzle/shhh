@@ -60,6 +60,15 @@ type AttachmentChip struct {
 	Kind ChipKind
 	Name string
 	Size string
+	// Lines is how far the text runs, for the chips that have text in them.
+	// A size answers "will this fit"; it does not answer "which of these is
+	// the stack trace", and for a paste that arrived without a name of its
+	// own the height is the only other thing there is to say about it.
+	//
+	// Zero draws nothing. A picture and a PDF have no lines to count, and a
+	// stat that cannot be reported is left out rather than reported as zero
+	// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
+	Lines int
 }
 
 // chipNameWidth caps a chip's name. A staging area holds a handful of files
@@ -108,18 +117,33 @@ func joinChips(parts []string) string {
 	return strings.Join(parts, sty.Dim.Render(chipSeparator))
 }
 
+// countedLines is a line count as the rails write one. It is here rather than
+// beside either caller because the strip and the preview card are the two
+// surfaces that report a text attachment's height, and two spellings of the
+// same count on two surfaces describing the same file is the kind of drift
+// nobody notices until it is on a screenshot.
+func countedLines(n int) string {
+	if n == 1 {
+		return "1 line"
+	}
+	return strconv.Itoa(n) + " lines"
+}
+
 // chipTail counts the chips the row could not take.
 func chipTail(hidden int) string {
 	return "+" + strconv.Itoa(hidden) + " more"
 }
 
-// render lays one chip: the kind's mark and the name in body text, the size
-// dim beside it. The size is a count and reads like every other count on the
-// rails; the name is the content, and is the only part drawn as such.
+// render lays one chip: the kind's mark and the name in body text, the counts
+// dim beside it. The counts read like every other count on the rails; the
+// name is the content, and is the only part drawn as such.
 func (c AttachmentChip) render() string {
 	s := sty.Body.Render(c.Kind.mark() + " " + clip(c.Name, chipNameWidth))
 	if c.Size != "" {
 		s += sty.Dim.Render(" " + c.Size)
+	}
+	if c.Lines > 0 {
+		s += sty.Dim.Render(" " + countedLines(c.Lines))
 	}
 	return s
 }

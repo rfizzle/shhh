@@ -100,10 +100,11 @@ const (
 	// folded under both. A takeover: full width, the rail hidden, esc
 	// returns. It reads the session and changes nothing in it.
 	stateContext
-	// statePicture: a staged image is showing full-pane. It is
-	// the one surface that is opened by naming a file rather than by a key,
-	// because the chip it belongs to has no key of its own.
-	statePicture
+	// statePreview: a staged attachment is showing full-pane — a
+	// picture, or the text of a file or a paste. It is the one surface that
+	// is opened by naming a file rather than by a key, because the chip it
+	// belongs to has no key of its own.
+	statePreview
 )
 
 const inputHeight = 3
@@ -577,11 +578,11 @@ type Model struct {
 	// screen, diffReturn where esc goes back to.
 	fullDiff   *components.DiffView
 	diffReturn state
-	// The staged image preview: picture is the card while it
+	// The staged attachment preview: preview is the card while it
 	// has the pane. There is no return state beside it — the surface is
 	// opened from the draft and from nowhere else, so leaveSurface's own
 	// answer is always the right one.
-	picture *components.PictureView
+	preview *components.AttachmentView
 	// Review mode: review is the surface while it has the screen,
 	// reviewTurnN the turn it is reviewing (0 for a review of something
 	// else), and reviewReturn where esc goes back to.
@@ -649,7 +650,14 @@ type Model struct {
 	// (attachments.go). They ride on whichever user message goes out
 	// next — a fresh turn or the first queued steering line — and are never
 	// rendered, only named.
-	attachments   []provider.Attachment
+	attachments []provider.Attachment
+	// pasteLines and pasteColumns are the shape past which a paste is staged
+	// as one of them rather than typed into the draft
+	// (appearance.paste_lines / appearance.paste_columns). They hold the
+	// defaults rather than zero, so a session built without
+	// WithPasteThresholds still stages a log.
+	pasteLines    int
+	pasteColumns  int
 	title         string
 	width         int
 	height        int
@@ -783,7 +791,9 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 		// On unless the config says otherwise (WithNotify): unlike mouse
 		// reporting, a notification takes nothing away, and it cannot fire
 		// while anyone is looking at the screen.
-		notifyOn: true,
+		notifyOn:     true,
+		pasteLines:   attachment.DefaultPasteLines,
+		pasteColumns: attachment.DefaultPasteColumns,
 		// Every session records what it changes; WithChangeset swaps in a
 		// store with a different bound or a git tracker.
 		changes:     changeset.New(changeset.DefaultMaxBytes),
@@ -1104,6 +1114,15 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if path, ok := pastedFileAttachment(msg.Content); ok {
 				return m, attachFileCmd(path)
 			}
+			// A stack trace or a log is a file that happens to have arrived
+			// through the clipboard, and typing it into a three-row box hides
+			// the sentence it was meant to go with (attachments.go). The
+			// line endings are settled first, because the count that decides
+			// this is a count of newlines and a terminal is free to send
+			// carriage returns.
+			if pasted := attachment.NormalizeNewlines(msg.Content); m.pasteOverflows(pasted) {
+				return m.stagePaste(pasted)
+			}
 		}
 		if msg.Content == "" {
 			return m, nil
@@ -1141,8 +1160,8 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.state == stateDiffFull {
 			return m.updateDiffFull(msg)
 		}
-		if m.state == statePicture {
-			return m.updatePicture(msg)
+		if m.state == statePreview {
+			return m.updatePreview(msg)
 		}
 		// The handover means one thing in both states a decision can be in:
 		// give the card the whole keyboard. From ungated it is the mid-sentence
@@ -1926,10 +1945,10 @@ func (m Model) paneView(area uv.Rectangle) string {
 		// The full-screen diff takes over the viewport.
 		m.fullDiff.Height = area.Dy()
 		return m.fullDiff.View(area.Dx())
-	case m.state == statePicture && m.picture != nil:
-		// The staged image takes over the pane.
-		m.picture.Height = area.Dy()
-		return m.picture.View(area.Dx())
+	case m.state == statePreview && m.preview != nil:
+		// The staged attachment takes over the pane.
+		m.preview.Height = area.Dy()
+		return m.preview.View(area.Dx())
 	case m.state == stateReview && m.review != nil:
 		// Review mode takes over the whole surface.
 		m.review.Height = area.Dy()
@@ -2043,8 +2062,8 @@ func (m Model) takeoverPanel(width int) string {
 		inputView = m.renderFocusHint()
 	case stateDiffFull:
 		inputView = m.renderDiffFullHint()
-	case statePicture:
-		inputView = m.renderPictureHint()
+	case statePreview:
+		inputView = m.renderPreviewHint()
 	case stateReview:
 		inputView = m.renderReviewHint()
 	case stateUndoConfirm:
@@ -3196,9 +3215,9 @@ func helpText() string {
   /clear         Start a new conversation (also /new)
   /paste [path]  Attach the clipboard — a screenshot, or files copied in a
                  file manager — to your next message; /paste <path> attaches
-                 a file by name, /paste show <name> draws a staged image,
-                 /paste drop <name> takes one back out and /paste clear drops
-                 what is staged (Ctrl+V)
+                 a file by name, /paste show <name> opens a staged image or
+                 paste full-pane, /paste drop <name> takes one back out and
+                 /paste clear drops what is staged (Ctrl+V)
   /copy [code]   Copy the last response (or just its code blocks)
   /run [n]       Run a code block from the last response (with confirmation)
   /model [name]  Switch the model (bare /model opens an interactive picker)
@@ -3272,9 +3291,19 @@ Keys:
                  (Alt+Enter and Ctrl+J do the same, for terminals that cannot
                   report Shift+Enter)
   Ctrl+V         Attach the clipboard: a copied screenshot or file is staged
-                 for your next message, plain text still pastes into the draft.
-                 Dragging an image into the terminal attaches it the same way.
-                 What is staged shows as chips above the input, never drawn
+                 for your next message, ordinary text still pastes into the
+                 draft. Dragging an image into the terminal attaches it the
+                 same way. What is staged shows as chips above the input
+  Pasting        Text taller than 10 lines or wider than 1000 columns is
+                 staged as paste-1.txt rather than typed into the draft — both
+                 through Ctrl+V and through your terminal's own paste — so a
+                 stack trace does not bury the sentence it came with. Those
+                 two numbers are the defaults for appearance.paste_lines and
+                 appearance.paste_columns; shhh config shows this machine's,
+                 and a negative turns one of them off. /paste show
+                 paste-1.txt reads it back before you send it, and a paste
+                 over 256 KB is refused rather than staged — it would ride in
+                 the prompt itself
   Tab            Complete a slash command (typing / opens the menu;
                  ↑↓ move, Enter runs the highlighted command, Esc dismisses)
   Ctrl+K         Command palette: one prompt over commands, saved chats and

@@ -1,21 +1,24 @@
 package chat
 
 // Attachments: images and files staged for the next message. The
-// an attachment shows as a chip carrying its mark, its name and its size, on
-// the frame's staged rail while it waits and on the user's own
-// transcript row once it has gone. Nothing here draws a picture: `/paste
-// show` is the one surface that does, opened by naming a chip and given the
-// whole pane while it is up (preview.go). What the bytes are for
-// is the request — they ride on the user message (internal/provider), and
-// each provider carries them the way its API takes them.
+// an attachment shows as a chip carrying its mark, its name and its size —
+// and, where it is text, how far it runs — on the frame's staged rail while
+// it waits and on the user's own transcript row once it has gone. Nothing
+// here draws the bytes: `/paste show` is the one surface that does, opened by
+// naming a chip and given the whole pane while it is up (preview.go). What
+// the bytes are for is the request — they ride on the user message
+// (internal/provider), and each provider carries them the way its API takes
+// them.
 //
-// Three doors, one staging area. Ctrl+V reads the clipboard — a pasted
+// Four doors, one staging area. Ctrl+V reads the clipboard — a pasted
 // screenshot or the files a file manager copied — and falls back to pasting
 // text into the draft when the clipboard holds only text, so the chord never
 // stops doing what it used to. A path dragged into the terminal arrives as a
 // bracketed paste and is attached when it points at an image or a document,
-// because that is what dragging one in means. `/paste` is the explicit form,
-// and the only one that can name a file the clipboard never touched.
+// because that is what dragging one in means. A paste of text too big to
+// compose around is staged as a file of its own rather than typed. `/paste`
+// is the explicit form, and the only one that can name a file the clipboard
+// never touched.
 //
 // Reading a clipboard shells out (osascript, wl-paste, xclip), which is slow
 // enough to be felt, so it happens in a command rather than in Update.
@@ -76,6 +79,12 @@ func (m Model) handleClipboard(msg clipboardMsg) (tea.Model, tea.Cmd) {
 	if msg.clip.Text == "" {
 		return m, nil
 	}
+	// A clipboard that holds a log is the same question a bracketed paste of
+	// one asks, and gets the same answer: the door does not change what is
+	// too big to compose around.
+	if pasted := attachment.NormalizeNewlines(msg.clip.Text); m.pasteOverflows(pasted) {
+		return m.stagePaste(pasted)
+	}
 	// Ctrl+V over ordinary text keeps doing what it always did.
 	m.input.InsertString(msg.clip.Text)
 	m.syncCompletions()
@@ -89,6 +98,91 @@ func (m Model) handleAttachedFile(msg attachedFileMsg) (tea.Model, tea.Cmd) {
 		return m.surfaceNotice("nothing attached — " + msg.err.Error())
 	}
 	return m.stage([]provider.Attachment{msg.attachment})
+}
+
+// WithPasteThresholds sets the shape past which a paste is staged rather than
+// typed (appearance.paste_lines / appearance.paste_columns). Zero on either
+// keeps that half at its default; what any other value means is
+// attachment.PasteOverflows'.
+func (m Model) WithPasteThresholds(lines, columns int) Model {
+	if lines != 0 {
+		m.pasteLines = lines
+	}
+	if columns != 0 {
+		m.pasteColumns = columns
+	}
+	return m
+}
+
+// pasteOverflows is the session's own reading of attachment.PasteOverflows:
+// this session's thresholds, against text whose line endings are already
+// settled. Both doors onto the staging area ask it, so neither can drift into
+// staging what the other would have typed.
+func (m Model) pasteOverflows(text string) bool {
+	return attachment.PasteOverflows(text, m.pasteLines, m.pasteColumns)
+}
+
+// stagePaste takes a paste too big for the draft and stages it as a file
+// instead (docs/interface/surfaces.md#the-input-frame).
+//
+// It runs where the paste arrived rather than in a command: the bytes are
+// already in hand, so there is nothing to read and nothing to wait for, and
+// routing it through one would let the next keystroke land in the draft
+// before the paste had decided it was not going there.
+//
+// A paste past the ceiling is refused with the ceiling named and the draft
+// left exactly as it was. The alternative — typing it in after all — puts a
+// megabyte in the box the reader then has to get back out, and the bytes are
+// still on the clipboard either way.
+func (m Model) stagePaste(text string) (tea.Model, tea.Cmd) {
+	// The ceiling on a paste is the text ceiling and not the attachment one:
+	// a paste has no file behind it, so it goes into the prompt verbatim and
+	// what bounds it is the context window. The refusal says so in those
+	// words, because attachment.FromBytes' answer — attach a smaller file, or
+	// let the agent read it with a tool — names two things a reader who just
+	// hit ⌘V does not have.
+	if len(text) > attachment.MaxTextBytes {
+		return m.surfaceNotice(fmt.Sprintf(
+			"nothing attached — that paste is %s, and a paste rides in the prompt "+
+				"itself, so the limit is %s. Save it to a file and ask for it by name; "+
+				"the agent reads one with a tool.",
+			attachment.HumanSize(len(text)), attachment.HumanSize(attachment.MaxTextBytes)))
+	}
+	a, err := attachment.FromBytes(nextPasteName(m.attachments), []byte(text))
+	if err != nil {
+		return m.surfaceNotice("nothing attached — " + err.Error())
+	}
+	// Bytes win over the extension everywhere else, and here they must not: a
+	// paste that happens to begin with %PDF- is still a paste, and staging it
+	// as a document called paste-1.txt would send the provider a name that
+	// contradicts the part it was put in.
+	if a.Kind != provider.AttachmentText {
+		return m.surfaceNotice("nothing attached — that paste is not text, it reads as " + a.MediaType)
+	}
+	return m.stage([]provider.Attachment{a})
+}
+
+// nextPasteName is the name the paste being staged takes: the lowest number
+// no chip is already using, matched the way `/paste drop` matches a name.
+//
+// It numbers what is staged rather than what the session has sent, because
+// the name is a handle for `/paste drop` and `/paste show` and both can only
+// reach what is staged now — a counter that climbed all session would make
+// the first chip of an emptied strip `paste-9.txt`.
+func nextPasteName(staged []provider.Attachment) string {
+	for n := 1; ; n++ {
+		name := attachment.PasteName(n)
+		taken := false
+		for _, a := range staged {
+			if strings.EqualFold(a.Name, name) {
+				taken = true
+				break
+			}
+		}
+		if !taken {
+			return name
+		}
+	}
 }
 
 // stage adds attachments to the pending set, refusing what would push it
@@ -143,11 +237,18 @@ func (m Model) stagedRail() string {
 func (m Model) attachmentChips() []components.AttachmentChip {
 	chips := make([]components.AttachmentChip, 0, len(m.attachments))
 	for _, a := range m.attachments {
-		chips = append(chips, components.AttachmentChip{
+		chip := components.AttachmentChip{
 			Kind: chipKind(a.Kind),
 			Name: a.Name,
 			Size: attachment.HumanSize(len(a.Data)),
-		})
+		}
+		// Only text has lines. A stat that cannot be reported is left out
+		// rather than reported as zero
+		// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
+		if a.Kind == provider.AttachmentText {
+			chip.Lines = attachment.LineCount(a.Data)
+		}
+		chips = append(chips, chip)
 	}
 	return chips
 }

@@ -1,14 +1,22 @@
 package chat
 
 // Seeing what you attached (
-// docs/interface/surfaces.md#a-staged-picture).
+// docs/interface/surfaces.md#a-staged-attachment).
 //
 // The staged rail says `▣ shot.png 412 KB`, which is the right answer
 // for a one-line strip above a live draft and the wrong one the moment two
 // screenshots are staged and the question is which of them has the stack
 // trace in it. `/paste show <name>` is the surface that answers it: the
-// picture, full width of the pane, framed by the name and size the chip
-// already carried.
+// attachment itself, full width of the pane, framed by the name and size the
+// chip already carried.
+//
+// A paste asks the same question harder. It arrived with no name it was given
+// and no file behind it to open in something else, so `paste-1.txt 4 KB` on
+// the rail is the whole of what a reader knows about bytes they are about to
+// send — and the two things they want to check, that it is the right log and
+// that it is all there, are both answered by looking at it. Neither body
+// scrolls, because the question is whether to send it rather than what is in
+// it: what did not fit is counted, and the model reads the whole of it.
 //
 // It is reached by name and not by a key, for the staged rail's own reason —
 // a chip sits above a live draft, so the name printed on it is the handle and
@@ -36,7 +44,7 @@ import (
 )
 
 // showAttachment dispatches `/paste show`: the named staged attachment, or
-// the only staged image when the name is left off.
+// the only one the surface can open when the name is left off.
 //
 // A name that is not staged is said out loud with the ones that are, the way
 // `/paste drop` says it — a command that quietly did nothing is worse here
@@ -48,58 +56,62 @@ func (m Model) showAttachment(name string) (tea.Model, tea.Cmd) {
 	}
 	staged := strings.Join(attachment.Names(m.attachments), ", ")
 	if name == "" {
-		only, ok := onlyImage(m.attachments)
+		only, ok := onlyPreviewable(m.attachments)
 		if !ok {
 			return m.surfaceNotice("/paste show needs a name — " + staged)
 		}
-		return m.openPicture(only)
+		return m.openPreview(only)
 	}
 	for _, a := range m.attachments {
 		if strings.EqualFold(a.Name, name) {
-			return m.openPicture(a)
+			return m.openPreview(a)
 		}
 	}
 	return m.surfaceNotice(name + " is not attached — " + staged)
 }
 
-// onlyImage is the one staged image, when there is exactly one. Bare
-// `/paste show` is worth having for the common staging area — a single
-// screenshot, just pasted — and worth refusing for every other one, because
-// guessing which of two pictures was meant is the mistake this surface
-// exists to stop somebody making.
-func onlyImage(atts []provider.Attachment) (provider.Attachment, bool) {
+// onlyPreviewable is the one staged attachment this surface can open, when
+// there is exactly one. Bare `/paste show` is worth having for the common
+// staging area — a single screenshot or a single paste, just made — and worth
+// refusing for every other one, because guessing which of two was meant is
+// the mistake this surface exists to stop somebody making.
+func onlyPreviewable(atts []provider.Attachment) (provider.Attachment, bool) {
 	var found provider.Attachment
 	var n int
 	for _, a := range atts {
-		if a.Kind == provider.AttachmentImage {
+		if a.Kind == provider.AttachmentImage || a.Kind == provider.AttachmentText {
 			found, n = a, n+1
 		}
 	}
 	return found, n == 1
 }
 
-// openPicture takes one attachment full-pane.
+// openPreview takes one attachment full-pane, drawn as whichever of the two
+// things it is.
 //
-// A file that is not an image is refused rather than opened onto a note: a
-// PDF and a markdown file are staged as themselves and there is nothing for
-// this surface to say about them that the chip does not already say. A file
-// that is an image and will not decode does open, because "this is staged and
-// shhh cannot read it" is a fact about the send that follows.
-func (m Model) openPicture(a provider.Attachment) (tea.Model, tea.Cmd) {
-	if a.Kind != provider.AttachmentImage {
-		return m.surfaceNotice(a.Name + " is not an image — " + string(a.Kind) +
+// A PDF is refused rather than opened onto a note: shhh does not render one,
+// so there is nothing this surface could say about it that the chip does not
+// already say. An image that will not decode does open, because "this is
+// staged and shhh cannot read it" is a fact about the send that follows.
+func (m Model) openPreview(a provider.Attachment) (tea.Model, tea.Cmd) {
+	view := &components.AttachmentView{Name: a.Name, Size: attachment.HumanSize(len(a.Data))}
+	switch a.Kind {
+	case provider.AttachmentImage:
+		img, err := raster.Decode(a.Data)
+		if err != nil {
+			view.Note = err.Error()
+		} else {
+			view.Image = img
+			view.Pixels = fmt.Sprintf("%d×%d", img.Bounds().Dx(), img.Bounds().Dy())
+		}
+	case provider.AttachmentText:
+		view.Text = strings.Split(strings.TrimSuffix(string(a.Data), "\n"), "\n")
+	default:
+		return m.surfaceNotice(a.Name + " is not an image or text — " + string(a.Kind) +
 			" attachments ride as themselves and have no preview")
 	}
-	view := &components.PictureView{Name: a.Name, Size: attachment.HumanSize(len(a.Data))}
-	img, err := raster.Decode(a.Data)
-	if err != nil {
-		view.Note = err.Error()
-	} else {
-		view.Image = img
-		view.Pixels = fmt.Sprintf("%d×%d", img.Bounds().Dx(), img.Bounds().Dy())
-	}
-	m.picture = view
-	m.enterSurface(statePicture)
+	m.preview = view
+	m.enterSurface(statePreview)
 	return m, m.placePicture()
 }
 
@@ -111,7 +123,7 @@ func (m Model) openPicture(a provider.Attachment) (tea.Model, tea.Cmd) {
 // that changed shape under it is a picture that no longer fits the hole left
 // for it.
 func (m *Model) placePicture() tea.Cmd {
-	p := m.picture
+	p := m.preview
 	if p == nil {
 		return nil
 	}
@@ -135,34 +147,34 @@ func (m *Model) placePicture() tea.Cmd {
 	return m.caps.Transmit(p.Image, cols, rows, cellW, cellH)
 }
 
-// updatePicture routes the surface's keys. It offers two, both of which are
+// updatePreview routes the surface's keys. It offers two, both of which are
 // the same thing said twice, and neither of which touches the staging area:
 // esc never destroys, and the file the reader just looked at is still staged
 // when they get back to their draft (invariant 3).
-func (m Model) updatePicture(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+func (m Model) updatePreview(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if keys.Match(msg, keys.Draft.Quit) {
 		m.quitting = true
 		return m, m.quitCmd()
 	}
-	if keys.Match(msg, keys.Picture.Back) || keys.Match(msg, keys.Picture.Leave) {
-		return m.closePicture()
+	if keys.Match(msg, keys.Preview.Back) || keys.Match(msg, keys.Preview.Leave) {
+		return m.closePreview()
 	}
 	return m, nil
 }
 
-// closePicture hands the pane back and releases whatever the terminal was
+// closePreview hands the pane back and releases whatever the terminal was
 // holding for it.
-func (m Model) closePicture() (tea.Model, tea.Cmd) {
+func (m Model) closePreview() (tea.Model, tea.Cmd) {
 	cmd := m.caps.Delete()
-	m.picture = nil
+	m.preview = nil
 	m.leaveSurface()
 	m.syncViewport()
 	return m, cmd
 }
 
-// renderPictureHint fills the input area while the picture shows. It names
+// renderPreviewHint fills the input area while the preview shows. It names
 // one of the two ways out, the way every other takeover's hint does.
-func (m Model) renderPictureHint() string {
-	return sty.SystemMsg.Render(keys.Shown(keys.Picture.Back)+" "+keys.Words(keys.Picture.Back)) +
+func (m Model) renderPreviewHint() string {
+	return sty.SystemMsg.Render(keys.Shown(keys.Preview.Back)+" "+keys.Words(keys.Preview.Back)) +
 		strings.Repeat("\n", inputHeight-1)
 }

@@ -313,3 +313,233 @@ func TestPasteMsg_ReachesTheSurfaceHoldingTheKeyboard(t *testing.T) {
 		t.Fatalf("and the text it typed is the draft, got %q", next.input.Value())
 	}
 }
+
+// A stack trace pasted into a three-row box buries the sentence it was meant
+// to go with, so past a threshold the paste is staged as a file instead. The
+// pair either side of the line is what says the threshold is a threshold and
+// not a guess about what the text looks like.
+func TestPasteMsg_StagesAPasteTooBigForTheDraft(t *testing.T) {
+	tall := strings.Repeat("goroutine 1 [running]:\n", 11)
+	updated, _ := frameModel(t, 100, 40).Update(tea.PasteMsg{Content: tall})
+	m := updated.(Model)
+	if len(m.attachments) != 1 {
+		t.Fatalf("an 11-line paste should stage one attachment, got %d", len(m.attachments))
+	}
+	if got := m.attachments[0].Name; got != "paste-1.txt" {
+		t.Fatalf("the staged paste is called %q, want paste-1.txt", got)
+	}
+	if got := m.attachments[0].Kind; got != provider.AttachmentText {
+		t.Fatalf("the staged paste is %q, want text", got)
+	}
+	if got := m.input.Value(); got != "" {
+		t.Fatalf("the staged paste should not also be typed, got %q", got)
+	}
+
+	short := strings.Repeat("goroutine 1 [running]:\n", 9) + "goroutine 1 [running]:"
+	updated, _ = frameModel(t, 100, 40).Update(tea.PasteMsg{Content: short})
+	m = updated.(Model)
+	if len(m.attachments) != 0 {
+		t.Fatalf("a 10-line paste belongs in the draft, %d were staged", len(m.attachments))
+	}
+	if m.input.Value() != short {
+		t.Fatalf("a 10-line paste should be the draft, got %q", m.input.Value())
+	}
+}
+
+// The other half of the threshold: one line nobody can read the end of is as
+// much a file as eleven short ones.
+func TestPasteMsg_StagesOneVeryWideLine(t *testing.T) {
+	updated, _ := frameModel(t, 100, 40).Update(tea.PasteMsg{Content: strings.Repeat("x", 1001)})
+	m := updated.(Model)
+	if len(m.attachments) != 1 {
+		t.Fatalf("a 1001-column paste should stage one attachment, got %d", len(m.attachments))
+	}
+	if m.input.Value() != "" {
+		t.Fatalf("and it should not also be typed, got %q", m.input.Value())
+	}
+
+	updated, _ = frameModel(t, 100, 40).Update(tea.PasteMsg{Content: strings.Repeat("x", 1000)})
+	if got := updated.(Model).attachments; len(got) != 0 {
+		t.Fatalf("a 1000-column paste belongs in the draft, %d were staged", len(got))
+	}
+}
+
+// A paste past the ceiling is refused with the ceiling named, and the draft is
+// left exactly as it was: typing a megabyte in after all is a megabyte the
+// reader then has to get back out.
+//
+// The ceiling is the text one, because a paste has no file behind it and goes
+// into the prompt verbatim. Both sides of it are here: the byte over, and the
+// six megabytes that would clear the attachment ceiling too.
+func TestPasteMsg_RefusesAPastePastTheCeiling(t *testing.T) {
+	for _, size := range []int{attachment.MaxTextBytes + 1, 6 << 20} {
+		m := frameModel(t, 100, 40)
+		m.input.SetValue("look at this: ")
+		updated, _ := m.Update(tea.PasteMsg{Content: strings.Repeat("x", size)})
+		next := updated.(Model)
+		if len(next.attachments) != 0 {
+			t.Fatalf("%d bytes should stage nothing, got %d", size, len(next.attachments))
+		}
+		if got := next.input.Value(); got != "look at this: " {
+			t.Fatalf("%d bytes: the draft should be untouched, got %q", size, got)
+		}
+		notice := lastSystemText(next)
+		if !strings.Contains(notice, "256 KB") {
+			t.Fatalf("%d bytes: the refusal should name the limit, got %q", size, notice)
+		}
+	}
+}
+
+// A paste whose lines end the way a terminal decided to send them is the same
+// paste. Counted in newlines alone, a CR-delimited stack trace is one line —
+// it would never be staged, and if the column test caught it the chip would
+// say "1 line" about fifty.
+func TestPasteMsg_CarriageReturnsCountAsLines(t *testing.T) {
+	for _, ending := range []string{"\r", "\r\n"} {
+		updated, _ := frameModel(t, 100, 40).Update(
+			tea.PasteMsg{Content: strings.Repeat("goroutine 1 [running]:"+ending, 11)})
+		m := updated.(Model)
+		if len(m.attachments) != 1 {
+			t.Fatalf("%q: 11 lines should stage one attachment, got %d", ending, len(m.attachments))
+		}
+		if got := attachment.LineCount(m.attachments[0].Data); got != 11 {
+			t.Fatalf("%q: the staged paste counts %d lines, want 11", ending, got)
+		}
+	}
+}
+
+// Ctrl+V is the other door onto the same staging area, and a clipboard
+// holding a log is the same question a bracketed paste of one asks.
+func TestClipboard_StagesTextTooBigForTheDraft(t *testing.T) {
+	tall := strings.Repeat("goroutine 1 [running]:\n", 11)
+	updated, _ := frameModel(t, 100, 40).handleClipboard(
+		clipboardMsg{clip: attachment.Clipboard{Text: tall}})
+	m := updated.(Model)
+	if len(m.attachments) != 1 || m.attachments[0].Name != "paste-1.txt" {
+		t.Fatalf("a tall clipboard should stage paste-1.txt, got %v", m.attachments)
+	}
+	if got := m.input.Value(); got != "" {
+		t.Fatalf("and it should not also be typed, got %q", got)
+	}
+
+	// Ordinary text still does what ctrl+v always did.
+	updated, _ = frameModel(t, 100, 40).handleClipboard(
+		clipboardMsg{clip: attachment.Clipboard{Text: "some prose"}})
+	m = updated.(Model)
+	if len(m.attachments) != 0 || m.input.Value() != "some prose" {
+		t.Fatalf("ordinary clipboard text belongs in the draft, got %q / %v",
+			m.input.Value(), m.attachments)
+	}
+}
+
+// Staging is the draft's own behaviour and nothing else's: a paste into a
+// card's filter row is text going where the keyboard went, whatever its
+// shape. Anything else would make a surface that borrowed the screen stage an
+// attachment the reader was never offering.
+func TestPasteMsg_ASurfaceWithTheKeyboardStillGetsTheText(t *testing.T) {
+	m := readyModel(t).
+		WithModelSwitcher(func(string) {}).
+		WithPricing(nil, "m1").
+		WithModelOptions([]string{"m1", "m2"})
+	m.input.SetValue("/model")
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+	if m.state != statePick || m.picker == nil {
+		t.Fatal("bare /model should open the picker")
+	}
+
+	updated, _ = m.Update(tea.KeyPressMsg{Code: '/', Text: "/"})
+	m = updated.(Model)
+	if !m.picker.Filtering {
+		t.Fatal("/ should open the picker's filter row")
+	}
+
+	updated, _ = m.Update(tea.PasteMsg{Content: strings.Repeat("m2\n", 11)})
+	next := updated.(Model)
+	if len(next.attachments) != 0 {
+		t.Fatalf("a paste into a filter row stages nothing, got %d", len(next.attachments))
+	}
+	if next.picker == nil || next.picker.Query == "" {
+		t.Fatal("the paste should have reached the filter row")
+	}
+}
+
+// Two pastes are two files, and the second one is not called paste-1.txt —
+// the name is the handle `/paste drop` and `/paste show` are reached by.
+func TestPasteMsg_NumbersEachStagedPaste(t *testing.T) {
+	tall := strings.Repeat("goroutine 1 [running]:\n", 11)
+	updated, _ := frameModel(t, 100, 40).Update(tea.PasteMsg{Content: tall})
+	updated, _ = updated.(Model).Update(tea.PasteMsg{Content: tall})
+	m := updated.(Model)
+	if len(m.attachments) != 2 {
+		t.Fatalf("two pastes should stage two attachments, got %d", len(m.attachments))
+	}
+	if m.attachments[1].Name != "paste-2.txt" {
+		t.Fatalf("the second staged paste is %q, want paste-2.txt", m.attachments[1].Name)
+	}
+}
+
+// The chip is the whole of what the reader knows about bytes that arrived
+// with no name of their own, so it carries the height as well as the size —
+// and only where there is a height to carry.
+func TestAttachmentChips_TextCarriesItsHeightAndNothingElseDoes(t *testing.T) {
+	m := frameModel(t, 100, 40)
+	m.attachments = []provider.Attachment{
+		{Kind: provider.AttachmentText, Name: "paste-1.txt", Data: []byte("a\nb\nc\n")},
+		{Kind: provider.AttachmentImage, Name: "shot.png", Data: pngHeader},
+	}
+	chips := m.attachmentChips()
+	if chips[0].Lines != 3 {
+		t.Fatalf("the paste chip counts %d lines, want 3", chips[0].Lines)
+	}
+	if chips[1].Lines != 0 {
+		t.Fatalf("a picture has no lines to report, got %d", chips[1].Lines)
+	}
+}
+
+// A staged paste rides out as prompt text, wrapped so the model can tell it
+// from the sentence it came with.
+func TestPasteMsg_TheStagedPasteRidesAsText(t *testing.T) {
+	updated, _ := frameModel(t, 100, 40).Update(
+		tea.PasteMsg{Content: strings.Repeat("goroutine 1 [running]:\n", 11)})
+	m := updated.(Model)
+	got := m.attachments[0].AsText()
+	if !strings.Contains(got, "goroutine 1 [running]:") || !strings.Contains(got, `name="paste-1.txt"`) {
+		t.Fatalf("the paste should ride as named text, got %q", got)
+	}
+}
+
+// Bytes win over the extension everywhere else in the attachment door, and
+// here they must not: a paste is text or it is nothing. Staging one that
+// sniffs as something else would hand the provider a part whose kind
+// contradicts the name printed on the chip.
+func TestPasteMsg_RefusesAPasteThatIsNotText(t *testing.T) {
+	// A PDF header followed by enough lines to cross the threshold.
+	updated, _ := frameModel(t, 100, 40).Update(tea.PasteMsg{
+		Content: "%PDF-1.4\n" + strings.Repeat("1 0 obj\n", 12)})
+	m := updated.(Model)
+	if len(m.attachments) != 0 {
+		t.Fatalf("a paste that is not text should stage nothing, got %v", m.attachments)
+	}
+	if notice := lastSystemText(m); !strings.Contains(notice, "not text") {
+		t.Fatalf("the refusal should say why, got %q", notice)
+	}
+	if got := m.input.Value(); got != "" {
+		t.Fatalf("and the draft is left alone, got %q", got)
+	}
+}
+
+// Bare `/paste show` takes the only thing it could open, so an image beside a
+// paste is two things and has to be named. The old rule counted images alone
+// and would have opened the screenshot without asking.
+func TestPreview_BareShowRefusesAnImageBesideAPaste(t *testing.T) {
+	m := stageText(t, stageImage(t, frameModel(t, 130, 40), "shot.png"), "paste-1.txt")
+	updated, _ := m.runPaste([]string{"/paste", "show"})
+	next := updated.(Model)
+	if next.state == statePreview {
+		t.Fatal("with an image and a paste staged, bare /paste show should ask for a name")
+	}
+	if notice := stripANSI(next.View().Content); !strings.Contains(notice, "needs a name") {
+		t.Fatalf("and say so: %s", notice)
+	}
+}

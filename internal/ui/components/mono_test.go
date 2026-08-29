@@ -78,14 +78,21 @@ func monoFixtures() []monoSurface {
 		return AttachmentChips([]AttachmentChip{{Kind: kind, Name: "staged.bin", Size: "412 KB"}}, w)
 	}
 
-	// The staged image preview. It is the one surface in shhh whose
-	// content *is* colour, so it is the strongest thing invariant 1 has to
-	// say about mono: the picture is still drawn, still tells its bands
-	// apart, and asks the terminal for no colour at all to do it.
-	pictureCard := func(mut func(*PictureView)) string {
-		p := PictureView{Name: "staged.png", Size: "412 KB", Pixels: "640×400",
+	// The staged attachment preview. Its picture body is the one surface in
+	// shhh whose content *is* colour, so it is the strongest thing invariant
+	// 1 has to say about mono: the picture is still drawn, still tells its
+	// bands apart, and asks the terminal for no colour at all to do it.
+	pictureCard := func(mut func(*AttachmentView)) string {
+		p := AttachmentView{Name: "staged.png", Size: "412 KB", Pixels: "640×400",
 			Image: testPicture(64, 40), Height: 9}
 		mut(&p)
+		return p.View(w)
+	}
+
+	// Its text body, which has two inks and has to read as two without them:
+	// the lines, and the dim count of the ones that did not fit.
+	textCard := func(lines []string) string {
+		p := AttachmentView{Name: "paste-1.txt", Size: "4 KB", Height: 6, Text: lines}
 		return p.View(w)
 	}
 
@@ -689,14 +696,18 @@ func monoFixtures() []monoSurface {
 			{"a document", chipStrip(ChipDocument)},
 			{"text", chipStrip(ChipText)},
 		}},
-		{"the staged image preview", []monoState{
-			{"a picture", pictureCard(func(*PictureView) {})},
-			{"a picture of another shape", pictureCard(func(p *PictureView) {
+		{"the staged attachment preview", []monoState{
+			{"a picture", pictureCard(func(*AttachmentView) {})},
+			{"a picture of another shape", pictureCard(func(p *AttachmentView) {
 				p.Image = testPicture(160, 20)
 			})},
-			{"nothing to draw", pictureCard(func(p *PictureView) {
+			{"nothing to draw", pictureCard(func(p *AttachmentView) {
 				p.Image, p.Note = nil, "shhh draws PNG, JPEG and GIF previews"
 			})},
+			{"text that fits", textCard([]string{"goroutine 1 [running]:", "main.main()"})},
+			{"text past the pane", textCard([]string{
+				"goroutine 1 [running]:", "main.main()", "exit status 2",
+				"goroutine 2 [select]:", "runtime.gopark()", "exit status 2"})},
 		}},
 		{"history outcome", []monoState{
 			{"ran clean", historyRow(ActivityDone, "exit 0")},
