@@ -58,6 +58,10 @@ are the test that the documentation still describes the software. A capability
 section with no comment pointing at it has either been removed from the
 product or was never a real decision.
 
+The `documentation` skill in
+[`.agents/skills/documentation/`](../.agents/skills/documentation/SKILL.md)
+turns these rules into working guidance, with worked examples.
+
 `make docs-check` enforces rules 3 and 4: it verifies every citation in the
 tree resolves to a real file and heading, and lists documents nothing cites.
 It runs as part of `make ci`.

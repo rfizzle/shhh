@@ -6,8 +6,12 @@
 
 ## Documentation
 
-Read [`docs/README.md`](docs/README.md) before writing a document or a comment
-that explains a decision. The short version:
+The `documentation` skill in
+[`.agents/skills/documentation/`](.agents/skills/documentation/SKILL.md) is the
+working guide — where a fact belongs, the citation convention, and the test a
+comment has to pass to earn its place, with worked before/after examples.
+[`docs/README.md`](docs/README.md) is the architecture it follows. The short
+version:
 
 **Each document answers one question, and that decides where a fact belongs.**
 `docs/product.md` is what shhh is; `docs/architecture.md` is the big shapes and
