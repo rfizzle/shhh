@@ -13,6 +13,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -138,7 +139,13 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// there to suggest the tool it did not know it had.
 	session.promptExtra = prompt.CombineExtra(session.promptExtra, prompt.Toolbox(session.toolDefs))
 
-	env, err := buildSessionEnv(cmd, session)
+	// Headless runs bill through the same gate the TUI does; a print run
+	// that under-reported would be the harder one to notice, because nobody
+	// is watching a rail while it works.
+	prices := loadPricing()
+	ledger := meter.New(prices)
+
+	env, err := buildSessionEnv(cmd, session, ledger)
 	if err != nil {
 		return err
 	}
@@ -224,7 +231,6 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if db != nil {
 		defer db.Close()
 	}
-	prices := loadPricing()
 	recorder := startObserveRecorder(db, "print", env.prov.Name(), env.modelName, prices)
 	defer recorder.end()
 
@@ -258,10 +264,18 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 			}
 			recorder.toolCall(tc.Name, time.Since(callStart), outcome)
 		},
-		OnUsage: func(u *provider.Usage) {
-			usage.PromptTokens += u.PromptTokens
-			usage.CompletionTokens += u.CompletionTokens
-			recorder.usage(1, int64(usage.PromptTokens), int64(usage.CompletionTokens))
+		OnUsage: func(*provider.Usage) {
+			// What the run has spent is read back from the ledger rather than
+			// summed here. The request that just landed was billed at the
+			// gate, and so is anything a later feature adds to a headless
+			// run without touching this callback.
+			t := ledger.Total()
+			usage = provider.Usage{
+				PromptTokens:     int(t.In),
+				CompletionTokens: int(t.Out),
+				CachedTokens:     int(t.Cached),
+			}
+			recorder.usagePriced(1, t.In, t.Out, t.Cost, t.Priced)
 		},
 	}
 	if !opts.json {

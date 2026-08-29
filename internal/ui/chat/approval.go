@@ -348,9 +348,9 @@ func (m Model) startClassifierCheck(req *approvalRequest) (tea.Model, tea.Cmd) {
 // approval: allow executes it, deny refuses it with the reason as the tool
 // result, and a failed check falls back to asking the user (fail closed).
 func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.Cmd) {
-	// Classifier spend counts toward the session totals.
-	m.TotalTokensIn += int64(v.Usage.PromptTokens)
-	m.TotalTokensOut += int64(v.Usage.CompletionTokens)
+	// The verdict was billed at the provider gate as it streamed, so there is
+	// nothing to add here — only the observer to nudge, because a judgement
+	// the session paid for is a change to what the session has spent.
 	m.notifyUsage()
 
 	req := m.pendingApproval

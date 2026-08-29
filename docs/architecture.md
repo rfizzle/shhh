@@ -136,6 +136,40 @@ of what a non-answer means — and the result is a program that hangs on one
 emulator in a way no one can reproduce. Keeping the wire in one component
 means there is one thing to reason about and one thing to fix.
 
+## Spend is counted at the provider
+
+Every request shhh makes is a call to a provider: the agent's own rounds, the
+permission classifier's judgements, the session summary's readings, each
+sub-agent's turns. The provider is therefore the one thing a feature cannot
+route around, and it is where spend is counted. Features are handed a gated
+provider and know nothing about accounting.
+
+The alternative is each feature reporting what it spent, and it fails in one
+direction only. A feature added later counts nothing, and nothing breaks —
+no test goes red, no screen shows an error, the session simply reports a
+smaller number than the invoice will. Under-reporting is the one kind of
+wrong a spend meter must not be, because it is invisible exactly when it
+matters. Counting at the choke point makes the default correct: a new caller
+is billed because it made a request, not because someone remembered.
+
+Spend is attributed to whoever incurred it, down to the individual requester.
+"Sub-agents cost $2.40" is not an answer to "which of them cost that", and a
+fan-out that ran away with the budget is only actionable if the child can be
+named. A request that arrives with no declared origin is not dropped and not
+quietly filed under the agent — it is counted under an unattributed heading
+that the breakdown prints, so a gap in the wiring shows up as a visible row
+rather than as a total that is slightly too small.
+
+Each request is priced against the model that answered it. The classifier and
+the summary routinely run somewhere cheaper than the session, a fan-out bills
+several models at once, and `/model` can change the rate mid-session — so a
+single total priced against whichever model happened to be current is a
+number that cannot be reconciled with anything.
+
+What the agent's own turns cost stays a separate figure from what the session
+cost, and both are shown. They answer different questions: one is what the
+work in front of you is costing, the other is the bill.
+
 ## Design lives outside the repository
 
 The visual specification — tokens, components, artboards, and the guidelines

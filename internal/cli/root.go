@@ -11,6 +11,7 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/profile"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
@@ -147,6 +148,16 @@ func NewRootCmd() *cobra.Command {
 			}
 			resolved.Provider, resolved.Model = req.Provider, req.Model
 
+			// The one-shot spends on more than the command it prints: a
+			// revision, an explanation and the description written for a
+			// saved snippet are all requests too. Gating the provider once,
+			// here, is what stops those being free in the record — the
+			// alternative is remembering to instrument each of them, and the
+			// explanation was already being missed.
+			// See docs/architecture.md#spend-is-counted-at-the-provider.
+			ledger := meter.New(loadPricing())
+			p = meter.WithFallbackModel(ledger.For(p, meter.SourceOneShot), resolved.Model)
+
 			promptExtra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra, project.FindContext())
 
 			if pipeMode {
@@ -270,15 +281,19 @@ func NewRootCmd() *cobra.Command {
 					actionName = "cancel"
 				}
 				requestID, _ = db.RecordRequest(storage.RequestRecord{
-					Provider:  p.Name(),
-					Model:     resolved.Model,
-					Prompt:    userPrompt,
-					Command:   result.Command,
-					Action:    actionName,
-					TTFT:      metrics.TTFT,
-					Duration:  metrics.Duration,
-					TokensIn:  metrics.TokensIn,
-					TokensOut: metrics.TokensOut,
+					Provider: p.Name(),
+					Model:    resolved.Model,
+					Prompt:   userPrompt,
+					Command:  result.Command,
+					Action:   actionName,
+					TTFT:     metrics.TTFT,
+					Duration: metrics.Duration,
+					// Timing belongs to the first request; the tokens are
+					// every request the interaction made — revisions and
+					// explanations included — because that is what the user
+					// paid to get this command.
+					TokensIn:  ledgerTokens(ledger.Total().In),
+					TokensOut: ledgerTokens(ledger.Total().Out),
 					Success:   metrics.Success,
 				})
 			}
@@ -380,6 +395,14 @@ func NewRootCmd() *cobra.Command {
 				}
 			}
 
+			// Saving a snippet writes a description, and writing it is
+			// another request. It lands after the row above, so the row is
+			// revised rather than left understating the interaction.
+			if db != nil && requestID != 0 {
+				total := ledger.Total()
+				_ = db.UpdateRequestTokens(requestID, ledgerTokens(total.In), ledgerTokens(total.Out))
+			}
+
 			return nil
 		},
 	}
@@ -425,4 +448,13 @@ func versionTemplate() string {
 		base += fmt.Sprintf("Update available: %s → %s (brew upgrade shhh)\n", r.Current, r.Latest)
 	}
 	return base
+}
+
+// ledgerTokens adapts a ledger total to the nullable column the request
+// record uses: nothing spent is an absent measurement, not a measured zero.
+func ledgerTokens(n int64) *int64 {
+	if n == 0 {
+		return nil
+	}
+	return &n
 }

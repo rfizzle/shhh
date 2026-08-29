@@ -18,6 +18,7 @@ import (
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/clipboard"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/project"
@@ -629,8 +630,15 @@ type Model struct {
 	quitting      bool
 	initialPrompt string
 
+	// TotalTokensIn and TotalTokensOut are the main agent's own spend — its
+	// turns and nothing else. The session's spend, which includes the
+	// classifier, the summary and every sub-agent, is the ledger's.
 	TotalTokensIn  int64
 	TotalTokensOut int64
+	// ledger is the session-wide spend, filled by the provider gate rather
+	// than by this model, so a feature added later counts without this file
+	// changing.
+	ledger *meter.Ledger
 	// Current-turn accounting for the inspector rail's THIS TURN and SPEND
 	// blocks: when the turn started, when it finished (zero while it
 	// runs), and what it has spent.
@@ -783,6 +791,17 @@ func (m Model) WithInitialPrompt(prompt string) Model {
 func (m Model) WithPricing(prices *pricing.Table, modelName string) Model {
 	m.prices = prices
 	m.modelName = modelName
+	return m
+}
+
+// WithLedger wires the session's spend ledger — what every request made
+// through the provider gate cost, attributed to whatever made it. The session
+// totals the rail and /stats report come from here rather than from the
+// turn's own accounting, because the turn is only one of the things spending.
+// A nil ledger leaves those surfaces on the main agent's own figures.
+// See docs/architecture.md#spend-is-counted-at-the-provider.
+func (m Model) WithLedger(l *meter.Ledger) Model {
+	m.ledger = l
 	return m
 }
 
@@ -3227,6 +3246,10 @@ func (m *Model) clearConversation() {
 	m.checkpoints = nil
 	m.contextTokens = 0
 	m.vitals.reset()
+	// The session's spend starts over with its accounting, or the rail would
+	// keep quoting a bill for a conversation that no longer exists.
+	m.ledger.Reset()
+	m.TotalTokensIn, m.TotalTokensOut = 0, 0
 	m.resetRounds()
 	// The turn's accounting started over, so there is no longer a turn to
 	// close with a summary either.

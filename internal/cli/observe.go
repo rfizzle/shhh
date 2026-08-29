@@ -77,9 +77,12 @@ func (r *observeRecorder) observer() chat.Observer {
 	if r == nil {
 		return chat.Observer{}
 	}
-	return chat.Observer{Usage: r.usage, ToolCall: r.toolCall, Decision: r.decision}
+	return chat.Observer{Usage: r.usagePriced, ToolCall: r.toolCall, Decision: r.decision}
 }
 
+// usage records a session's running totals, pricing them against the model
+// the session was opened on. It is what a sub-agent reports with: a child
+// runs on one model for its whole life, so that model is the right one.
 func (r *observeRecorder) usage(turns, tokensIn, tokensOut int64) {
 	if r == nil {
 		return
@@ -89,6 +92,23 @@ func (r *observeRecorder) usage(turns, tokensIn, tokensOut int64) {
 		if in, out, found := r.prices.Cost(r.model, tokensIn, tokensOut); found {
 			cost = in + out
 		}
+	}
+	_ = r.db.UpdateAgentSession(r.id, turns, tokensIn, tokensOut, cost)
+}
+
+// usagePriced records totals that arrive already priced, which is what a
+// parent session reports. Its spend is a mixture — several models, the
+// classifier and the summary among them — and only the ledger that billed
+// each request knows what rate each one went out at. Falling back to the
+// session model would price the mixture at whichever model happened to be
+// current, which is the number this exists to avoid.
+func (r *observeRecorder) usagePriced(turns, tokensIn, tokensOut int64, cost float64, priced bool) {
+	if r == nil {
+		return
+	}
+	if !priced {
+		r.usage(turns, tokensIn, tokensOut)
+		return
 	}
 	_ = r.db.UpdateAgentSession(r.id, turns, tokensIn, tokensOut, cost)
 }

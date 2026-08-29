@@ -9,6 +9,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -51,8 +52,11 @@ func (p *readingProvider) Name() string { return "reading" }
 // interval, and twenty real seconds is not a thing a test can wait for.
 func summaryModel(t *testing.T, p provider.Provider) Model {
 	t.Helper()
-	m := gatedModel(t, nil, nil)
-	m = m.WithSummarizer(agent.NewSummarizer(p, agent.SummaryConfig{
+	// Wired the way the session wires it: the summarizer reaches its
+	// provider through the gate, so a reading is billed as it streams.
+	ledger := meter.New(nil)
+	m := gatedModel(t, nil, nil).WithLedger(ledger)
+	m = m.WithSummarizer(agent.NewSummarizer(ledger.For(p, meter.SourceSummary), agent.SummaryConfig{
 		Model: "fast", IntervalRounds: 10, MinGap: -1,
 	}))
 	m.summaryTarget = "make the round limit a checkpoint"
@@ -205,20 +209,25 @@ func TestSummary_BacksOffAfterRepeatedFailures(t *testing.T) {
 }
 
 // A verdict from a run the session has moved past is not drawn — but it was
-// still paid for, so it is still counted.
+// still paid for, so it is still counted. Billing happens at the gate as the
+// reading streams, which is why it does not depend on what the model later
+// decides to do with the verdict.
 func TestSummary_StaleRunIsNotDrawnButIsPaidFor(t *testing.T) {
 	m := summaryModel(t, &readingProvider{text: "Reading the loop."})
+	if got := m.sessionSpend().In; got != 0 {
+		t.Fatalf("nothing spent yet, got ↑%d", got)
+	}
+
 	cmd := m.forceSummaryCmd()
 	msg := driveSummaryDone(t, cmd)
 	msg.runID = m.summary.runID + 1
 
-	before := m.TotalTokensIn
 	m.finishSummary(msg)
 	if m.summary.last != nil {
 		t.Fatal("a reading from a superseded run is not drawn")
 	}
-	if m.TotalTokensIn <= before {
-		t.Fatal("a reading that was spent is counted whether or not it is drawn")
+	if got := m.sessionSpend().In; got != 800 {
+		t.Fatalf("a reading that was spent is counted whether or not it is drawn, got ↑%d", got)
 	}
 	if !m.summary.inFlight {
 		t.Fatal("the reading actually in flight is still in flight")
@@ -233,8 +242,13 @@ func TestSummary_SpendJoinsTheSessionTotals(t *testing.T) {
 	if m.summary.tokensIn != 800 || m.summary.tokensOut != 30 {
 		t.Fatalf("summary spend = %d/%d", m.summary.tokensIn, m.summary.tokensOut)
 	}
-	if m.TotalTokensIn != 800 || m.TotalTokensOut != 30 {
-		t.Fatalf("session totals = %d/%d", m.TotalTokensIn, m.TotalTokensOut)
+	// A reading is background spend: it joins the session's bill without
+	// being mistaken for the agent's own turns.
+	if spend := m.sessionSpend(); spend.In != 800 || spend.Out != 30 {
+		t.Fatalf("session spend = %d/%d", spend.In, spend.Out)
+	}
+	if m.TotalTokensIn != 0 || m.TotalTokensOut != 0 {
+		t.Fatalf("a reading is not the agent's own spend, got ↑%d ↓%d", m.TotalTokensIn, m.TotalTokensOut)
 	}
 }
 

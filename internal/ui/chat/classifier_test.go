@@ -8,6 +8,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -45,7 +46,14 @@ func (p *verdictProvider) Name() string { return "verdict" }
 // fake provider.
 func classifierModel(t *testing.T, ran *[]string, p provider.Provider) Model {
 	t.Helper()
-	m := execModel(t, ran).WithClassifier(agent.NewClassifier(p, agent.ClassifierConfig{Model: "judge"}))
+	// Wired the way the session wires it: the classifier gets its provider
+	// through the gate, so what it spends is billed without the model
+	// counting anything itself.
+	ledger := meter.New(nil)
+	m := execModel(t, ran).
+		WithLedger(ledger).
+		WithClassifier(agent.NewClassifier(ledger.For(p, meter.SourceClassifier),
+			agent.ClassifierConfig{Model: "judge"}))
 	m.mode = agent.ModeAuto
 	return m
 }
@@ -82,8 +90,13 @@ func TestClassifierFlow_AllowRunsCommand(t *testing.T) {
 	if m.state != stateRunningCmd {
 		t.Fatalf("classifier allow should run the command, got state %d", m.state)
 	}
-	if m.TotalTokensIn != 100 || m.TotalTokensOut != 10 {
-		t.Fatalf("classifier usage should count in session totals, got ↑%d ↓%d", m.TotalTokensIn, m.TotalTokensOut)
+	// The verdict is background spend, so it counts toward the session but
+	// not toward the agent's own turns.
+	if spend := m.sessionSpend(); spend.In != 100 || spend.Out != 10 {
+		t.Fatalf("classifier usage should count in session spend, got ↑%d ↓%d", spend.In, spend.Out)
+	}
+	if m.TotalTokensIn != 0 || m.TotalTokensOut != 0 {
+		t.Fatalf("a classifier verdict is not the agent's own spend, got ↑%d ↓%d", m.TotalTokensIn, m.TotalTokensOut)
 	}
 	updated, restream := m.Update(driveCmdDone(t, cmd))
 	m = updated.(Model)

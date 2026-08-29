@@ -27,6 +27,7 @@ import (
 	"time"
 
 	"charm.land/lipgloss/v2"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -319,29 +320,56 @@ func (m Model) inspectorContext() *components.InspectorContext {
 }
 
 // inspectorSpend splits the cost between this session's own requests and its
-// children, which are priced with the same table (the approximation the agent
-// rows already make).
+// children. The session figure is the ledger's — the agent's turns, the
+// permission classifier, the session summary and every child, each priced
+// against the model that actually answered it — so the rail's bottom line is
+// the whole bill rather than the part of it the main agent ran up.
 func (m Model) inspectorSpend() *components.InspectorSpend {
-	var childIn, childOut int64
-	if m.subagents != nil {
-		for _, st := range m.subagents.Snapshot() {
-			childIn += st.TokensIn
-			childOut += st.TokensOut
-		}
-	}
-	if m.TotalTokensIn == 0 && m.TotalTokensOut == 0 && childIn == 0 && childOut == 0 {
+	total := m.sessionSpend()
+	children := m.childSpend()
+	if total.In == 0 && total.Out == 0 && children.In == 0 && children.Out == 0 {
 		return nil
 	}
 	s := components.InspectorSpend{
 		Turn:    m.spendLabel(m.turnTokensIn, m.turnTokensOut),
 		Main:    m.spendLabel(m.TotalTokensIn, m.TotalTokensOut),
-		Session: m.spendLabel(m.TotalTokensIn+childIn, m.TotalTokensOut+childOut),
+		Session: m.totalsLabel(total),
 		Model:   m.modelName,
 	}
-	if childIn != 0 || childOut != 0 {
-		s.Children = m.spendLabel(childIn, childOut)
+	if children.In != 0 || children.Out != 0 {
+		s.Children = m.totalsLabel(children)
 	}
 	return &s
+}
+
+// childSpend is what every sub-agent has cost. The ledger is the answer where
+// there is one: it prices each child against the model that child ran on,
+// which a fan-out across several models makes the only defensible figure. A
+// session with no ledger falls back to the supervisor's own token counts.
+func (m Model) childSpend() meter.Totals {
+	if m.ledger != nil {
+		return m.ledger.SourceTotal(meter.SourceSubagent)
+	}
+	var t meter.Totals
+	if m.subagents != nil {
+		for _, st := range m.subagents.Snapshot() {
+			t.In += st.TokensIn
+			t.Out += st.TokensOut
+		}
+	}
+	return t
+}
+
+// totalsLabel formats a ledger roll-up: the cost it was priced at, or a token
+// count where the pricing table knew none of the models involved.
+func (m Model) totalsLabel(t meter.Totals) string {
+	if t.In == 0 && t.Out == 0 {
+		return ""
+	}
+	if t.Priced {
+		return formatCost(t.Cost)
+	}
+	return m.spendLabel(t.In, t.Out)
 }
 
 // inspectorStatus is the /stats-adjacent line describing the split, used by

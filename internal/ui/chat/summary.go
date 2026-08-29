@@ -230,17 +230,18 @@ func (m *Model) finishSummary(msg summaryDoneMsg) {
 	m.summary.lastAt = time.Now()
 }
 
-// countSummarySpend adds a reading's tokens to the session totals, the same
-// rule the classifier follows: a background request the session made is spend
-// the session reports.
+// countSummarySpend records what a reading cost against the summary's own
+// running figure, which is what the /summary line quotes.
+//
+// It does not add to the session totals: the reading was billed at the
+// provider gate as it streamed, and adding it here as well would count it
+// twice. What the session spent on summaries is the ledger's answer.
 func (m *Model) countSummarySpend(v agent.SummaryVerdict) {
 	if v.Usage.PromptTokens == 0 && v.Usage.CompletionTokens == 0 {
 		return
 	}
 	m.summary.tokensIn += int64(v.Usage.PromptTokens)
 	m.summary.tokensOut += int64(v.Usage.CompletionTokens)
-	m.TotalTokensIn += int64(v.Usage.PromptTokens)
-	m.TotalTokensOut += int64(v.Usage.CompletionTokens)
 	m.notifyUsage()
 }
 

@@ -17,6 +17,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
@@ -34,7 +35,7 @@ import (
 // buildSupervisor assembles the session's sub-agent supervisor.
 func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession, env *sessionEnv,
 	red *evidence.Reducer, recorder *observeRecorder, db *storage.DB, prices *pricing.Table,
-	classifier *agent.Classifier, sc *scope.Scope) *subagent.Supervisor {
+	classifier *agent.Classifier, sc *scope.Scope, ledger *meter.Ledger) *subagent.Supervisor {
 	root, err := os.Getwd()
 	if err != nil {
 		root = "."
@@ -107,6 +108,11 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		if childModel == "" {
 			childModel = env.modelName
 		}
+		// Each child bills itself. A fan-out is the one place where several
+		// requesters spend at once, so "sub-agents" as a class is not a fine
+		// enough answer to which of them spent it.
+		childProvider := ledger.ForOrigin(env.prov, meter.Origin{Source: meter.SourceSubagent, Label: spec.Name})
+
 		stream := agent.StreamFunc(func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			sctx, cancel := context.WithCancel(cctx)
 			// Children think as hard as the session does: the level is a
@@ -116,7 +122,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			if env.reasoning != nil {
 				effort = env.reasoning()
 			}
-			ev, sErr := env.prov.StreamCompletion(sctx, msgs, provider.CompletionOpts{
+			ev, sErr := childProvider.StreamCompletion(sctx, msgs, provider.CompletionOpts{
 				Model:      childModel,
 				Tools:      streamDefs,
 				ToolChoice: "auto",
@@ -142,8 +148,16 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 	return subagent.New(ctx, subagent.Options{
 		Root:   root,
 		NewEnv: newEnv,
-		Record: func(role subagent.Role) subagent.Recorder {
-			r := startChildObserveRecorder(db, string(role), env.prov.Name(), env.modelName, prices, recorder.sessionID())
+		Record: func(spec subagent.Spec) subagent.Recorder {
+			// A child is recorded against the model it actually ran on. The
+			// session model is the wrong one to price it at: agents.model and
+			// a per-spawn model both routinely send children somewhere
+			// cheaper, and a row priced at the parent's rate overstates them.
+			model := spec.Model
+			if model == "" {
+				model = env.modelName
+			}
+			r := startChildObserveRecorder(db, string(spec.Role), env.prov.Name(), model, prices, recorder.sessionID())
 			return subagent.Recorder{Usage: r.usage, ToolCall: r.toolCallOutcome, End: r.end}
 		},
 		CommandAllowlist: cfg.Behavior.CommandAllowlist,

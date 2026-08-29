@@ -197,6 +197,11 @@ type Env struct {
 // its working directory, and the model it runs on (already resolved by the
 // supervisor's ModelFor).
 type Spec struct {
+	// Name is the child's session-unique name. It is in the spec because a
+	// fan-out bills several children at once, and what a child spends is
+	// only attributable if the thing building its environment knows which
+	// child it is building for.
+	Name  string
 	Role  Role
 	Root  string
 	Model string
@@ -224,7 +229,10 @@ type Options struct {
 	// NewEnv builds each child's runtime; required.
 	NewEnv EnvFactory
 	// Record opens a child's observability recorder; nil disables recording.
-	Record func(role Role) Recorder
+	// It takes the whole spec because a child's spend has to be recorded
+	// against the model the child actually ran on — which is resolved per
+	// child and is routinely not the session's.
+	Record func(spec Spec) Recorder
 	// CommandAllowlist is the parent's config allowlist, inherited by
 	// children (inheriting it keeps the child at most as permissive).
 	CommandAllowlist []string
@@ -930,7 +938,7 @@ func (s *Supervisor) Retry(name string) error {
 		}
 	}
 	cctx, cancel := context.WithCancel(s.ctx)
-	env, err := s.opts.NewEnv(cctx, Spec{Role: c.role, Root: root, Model: c.model, Paths: c.paths})
+	env, err := s.opts.NewEnv(cctx, Spec{Name: c.name, Role: c.role, Root: root, Model: c.model, Paths: c.paths})
 	if err != nil {
 		cancel()
 		if worktree != "" {
@@ -961,7 +969,7 @@ func (s *Supervisor) Retry(name string) error {
 	c.report, c.patchNote, c.streaming = "", "", ""
 	c.mu.Unlock()
 	if s.opts.Record != nil {
-		c.rec = s.opts.Record(c.role)
+		c.rec = s.opts.Record(Spec{Name: c.name, Role: c.role, Root: root, Model: c.model, Paths: c.paths})
 	}
 
 	s.wg.Add(1)
@@ -1112,7 +1120,7 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 	}
 
 	cctx, cancel := context.WithCancel(s.ctx)
-	env, err := s.opts.NewEnv(cctx, Spec{Role: args.role, Root: root, Model: model, Paths: args.paths})
+	env, err := s.opts.NewEnv(cctx, Spec{Name: name, Role: args.role, Root: root, Model: model, Paths: args.paths})
 	if err != nil {
 		cancel()
 		if worktree != "" {
@@ -1150,7 +1158,7 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 	// The auto-run executor is the env's rooted, reduced chain.
 	a.SetExecutor(env.Executor)
 	if s.opts.Record != nil {
-		c.rec = s.opts.Record(args.role)
+		c.rec = s.opts.Record(Spec{Name: name, Role: args.role, Root: root, Model: model, Paths: args.paths})
 	}
 
 	s.mu.Lock()
@@ -1515,7 +1523,7 @@ func (s *Supervisor) finalCheckIn(c *child) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), finalCheckInTimeout)
 	defer cancel()
-	env, err := s.opts.NewEnv(ctx, Spec{Role: c.role, Root: root, Model: model, Paths: paths})
+	env, err := s.opts.NewEnv(ctx, Spec{Name: c.name, Role: c.role, Root: root, Model: model, Paths: paths})
 	if err != nil {
 		return
 	}

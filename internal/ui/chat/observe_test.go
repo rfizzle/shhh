@@ -49,7 +49,7 @@ func TestAskReason(t *testing.T) {
 func TestObserver_UsageReportsTurnsAndTotals(t *testing.T) {
 	var gotTurns, gotIn, gotOut int64
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithObserver(Observer{Usage: func(turns, tokensIn, tokensOut int64) {
+		WithObserver(Observer{Usage: func(turns, tokensIn, tokensOut int64, _ float64, _ bool) {
 			gotTurns, gotIn, gotOut = turns, tokensIn, tokensOut
 		}})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})

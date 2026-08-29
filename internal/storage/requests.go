@@ -41,6 +41,17 @@ func (db *DB) RecordRequest(r RequestRecord) (int64, error) {
 	return res.LastInsertId()
 }
 
+// UpdateRequestTokens revises a recorded request's token totals. A one-shot
+// can spend after its row is written — the description generated for a saved
+// snippet is a request like any other — and a row that stopped counting when
+// it was inserted understates what the interaction cost.
+func (db *DB) UpdateRequestTokens(requestID int64, tokensIn, tokensOut *int64) error {
+	_, err := db.sql.Exec(
+		`UPDATE requests SET tokens_in = ?, tokens_out = ? WHERE id = ?`,
+		tokensIn, tokensOut, requestID)
+	return err
+}
+
 func (db *DB) RecordExitCode(requestID int64, exitCode int) error {
 	_, err := db.sql.Exec(`UPDATE requests SET exit_code = ? WHERE id = ?`, exitCode, requestID)
 	return err

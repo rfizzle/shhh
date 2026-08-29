@@ -17,6 +17,7 @@ import (
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/memory"
+	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
@@ -179,7 +180,7 @@ type sessionEnv struct {
 	switchProvider func(string) error
 }
 
-func buildSessionEnv(cmd *cobra.Command, session chatSession) (*sessionEnv, error) {
+func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledger) (*sessionEnv, error) {
 	cfg := ConfigFrom(cmd.Context())
 
 	flags := session.flags
@@ -280,7 +281,10 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession) (*sessionEnv, erro
 		opts.Effort = currentEffort
 		active := p
 		sessionMu.Unlock()
-		ev, sErr := active.StreamCompletion(ctx, msgs, opts)
+		// The gate is re-applied per request rather than once at startup,
+		// because [k] and [p] can swap the provider underneath the session
+		// and a gate wrapped around the old one would stop billing.
+		ev, sErr := ledger.For(active, meter.SourceAgent).StreamCompletion(ctx, msgs, opts)
 		if sErr != nil {
 			cancel()
 			return nil, nil, sErr
@@ -427,13 +431,18 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// toolset is known, and it has to be said after the last one joins.
 	session.promptExtra = prompt.CombineExtra(session.promptExtra, prompt.Toolbox(session.toolDefs))
 
-	env, err := buildSessionEnv(cmd, session)
+	// The spend ledger is opened before the session's provider, because the
+	// provider is handed out through it: every request shhh makes is billed
+	// at the gate rather than by the feature that made it.
+	// See docs/architecture.md#spend-is-counted-at-the-provider.
+	prices := loadPricing()
+	ledger := meter.New(prices)
+
+	env, err := buildSessionEnv(cmd, session, ledger)
 	if err != nil {
 		return err
 	}
 	cfg := env.cfg
-
-	prices := loadPricing()
 
 	// Permission mode: starting mode and Shift+Tab cycle come from
 	// config; the default is manual (everything prompts).
@@ -454,7 +463,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if classifierModel == "" {
 		classifierModel = env.modelName
 	}
-	classifier := agent.NewClassifier(env.prov, agent.ClassifierConfig{
+	classifier := agent.NewClassifier(ledger.For(env.prov, meter.SourceClassifier), agent.ClassifierConfig{
 		Model:     classifierModel,
 		Timeout:   time.Duration(cfg.Behavior.ClassifierTimeoutSeconds) * time.Second,
 		MaxTokens: cfg.Behavior.ClassifierMaxTokens,
@@ -469,7 +478,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if summaryModel == "" {
 		summaryModel = env.modelName
 	}
-	summarizer := agent.NewSummarizer(env.prov, agent.SummaryConfig{
+	summarizer := agent.NewSummarizer(ledger.For(env.prov, meter.SourceSummary), agent.SummaryConfig{
 		Model:          summaryModel,
 		Timeout:        time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
 		MaxTokens:      cfg.Summary.MaxTokens,
@@ -516,7 +525,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// leftover worktrees when the session ends.
 	var sup *subagent.Supervisor
 	if session.agents {
-		sup = buildSupervisor(cmd.Context(), cfg, session, env, red, recorder, db, prices, classifier, sc)
+		sup = buildSupervisor(cmd.Context(), cfg, session, env, red, recorder, db, prices, classifier, sc, ledger)
 		executor = sup.WrapExecutor(executor)
 		defer sup.Close()
 	}
@@ -533,6 +542,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithToolExecutor(executor).
 		WithDB(db).
 		WithPricing(prices, env.modelName).
+		WithLedger(ledger).
 		WithRunner(runner.RunCapture).
 		WithTailRunner(runner.RunCaptureTail).
 		WithContainment(containment).
