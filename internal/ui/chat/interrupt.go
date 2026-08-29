@@ -13,11 +13,11 @@ package chat
 // Invariant 5 is what makes the two halves compatible. The card arrives
 // ungated: it is on screen, its keys render as not-yet-live, and the draft
 // keeps the keyboard, so `y` is a letter and goes into the sentence. One key
-// — ctrl+g, offered on the card and on the frame's own rail — hands the
-// keyboard over. Gated, the card's keys are ordinary keys again and the draft
-// is shown undressed beneath it, holding its characters and saying which one
-// the cursor is on. Answering hands the keyboard straight back, at the same
-// character.
+// — the handover, offered on the card and on the frame's own rail — hands
+// the keyboard over. Gated, the card's keys are ordinary keys again and the
+// draft is shown undressed beneath it, holding its characters and saying
+// which one the cursor is on. Answering hands the keyboard straight back, at
+// the same character.
 //
 // A labelled rail names whichever surface holds it, the way reading mode's
 // does: DRAFT while the sentence has it, DECISION while the card does.
@@ -54,8 +54,8 @@ func (m Model) interruptShowing() bool {
 // holds the keyboard.
 func (m Model) decisionUngated() bool { return m.interruptShowing() && !m.decisionHeld }
 
-// decisionGated is after ctrl+g: the card holds the keyboard and its keys are
-// live.
+// decisionGated is after the handover: the card holds the keyboard and its
+// keys are live.
 func (m Model) decisionGated() bool { return m.interruptShowing() && m.decisionHeld }
 
 // releaseDecision hands the keyboard back to the draft. It is called wherever
@@ -73,11 +73,11 @@ func (m *Model) releaseDecision() { m.decisionHeld, m.heldOnArrival = false, fal
 const draftQuiet = time.Second
 
 // arrivesHeld reports whether a decision arriving now takes the keyboard
-// rather than waiting for ctrl+g.
+// rather than waiting for the handover.
 //
 // The mid-sentence rule is about a card landing on top of a sentence: `y`
 // stays a letter because it belongs in the sentence, and the reader is
-// charged one ctrl+g for the protection. But most cards do not land on a
+// charged one handover for the protection. But most cards do not land on a
 // sentence. They land while the reader is watching a turn work with an empty
 // box, and there the toll buys nothing — there is no sentence for the letter
 // to belong to, and the reader who came to press `y` presses it twice.

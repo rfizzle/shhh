@@ -5,11 +5,11 @@ package components
 //
 // The approval card's answer to "this surface does not hold the keyboard" is
 // a whole key row plus a handover row (card.go): the keys dimmed with
-// `not live yet` beside them, and `[ctrl+g] answer it` underneath. A
-// transcript row cannot spend three lines saying it. It is one line on the
-// column grid, and its keys are live only while reading mode's cursor is
-// standing on it — which is most of the time not the case, because most of
-// the time the draft below has the keyboard and `v` is a letter.
+// `not live yet` beside them, and the handover key with `answer it`
+// underneath. A transcript row cannot spend three lines saying it. It is one
+// line on the column grid, and its keys are live only while reading mode's
+// cursor is standing on it — which is most of the time not the case, because
+// most of the time the draft below has the keyboard and `v` is a letter.
 //
 // So a row says the same two things in the space it has: the keys grey, then
 // the one key that hands the keyboard over, live, carrying the words that say

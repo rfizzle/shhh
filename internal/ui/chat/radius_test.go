@@ -47,7 +47,7 @@ func confirmFor(t *testing.T, m Model, command string) string {
 		t.Fatalf("%q should have armed a confirm, got state %d", command, m.state)
 	}
 	// The consequences a card prints beside its keys are only printed once
-	// the keys are live, so the card is read after ctrl+g.
+	// the keys are live, so the card is read after the handover.
 	return ansi.Strip(handover(t, m).View().Content)
 }
 

@@ -219,7 +219,7 @@ func (m Model) planCard() *components.PlanCard {
 	}
 	if m.decisionUngated() {
 		// The plan landed while a sentence was half-typed: its keys are not
-		// live until ctrl+g hands the keyboard over.
+		// live until the handover gives it the keyboard.
 		card.NotYetLive, card.Handover = true, keys.Shown(keys.Draft.Answer)
 	}
 	if doc.Title != "" {

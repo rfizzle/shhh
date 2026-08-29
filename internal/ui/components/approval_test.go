@@ -389,7 +389,7 @@ func TestApprovalCard_HeldOnArrivalOffersOnlyItsTwoKeys(t *testing.T) {
 		Headline:    "Assistant wants to run: go test ./...",
 		Question:    "Run this command?",
 		AllowAlways: true, AlwaysHint: `a: always allow "go test"`,
-		FullDiff: true, HeldOnArrival: true, Handover: "ctrl+g",
+		FullDiff: true, HeldOnArrival: true, Handover: "ctrl+space",
 	}
 	run := c.KeyRun()
 	if len(run) != 2 || run[0].Key != "y" || run[1].Key != "n" {

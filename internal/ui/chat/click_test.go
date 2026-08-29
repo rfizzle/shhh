@@ -266,7 +266,7 @@ func TestClick_ApprovalDenyIsTheCapitalN(t *testing.T) {
 
 // Invariant 5 through the pointer: a card whose keys are drawn not-yet-live
 // cannot be answered by a gesture that skips the state saying so. The click
-// means what ctrl+g means, and the second one answers.
+// means what the handover means, and the second one answers.
 func TestClick_UngatedCardHandsOverRatherThanAnswering(t *testing.T) {
 	var executed []string
 	m := clickCardModel(t, "half a sentence", func(name string, args json.RawMessage) (string, error) {

@@ -18,18 +18,18 @@ import (
 	"github.com/rfizzle/shhh/internal/subagent"
 )
 
-// handover hands the keyboard to the decision on screen — what ctrl+g does
-// for a reader. A card that arrives unbidden holds no keyboard, so a
-// test that answers one presses this first, exactly as a user would.
+// handover hands the keyboard to the decision on screen, which is what the
+// chord does for a reader. A card that arrives unbidden holds no keyboard,
+// so a test that answers one presses this first, exactly as a user would.
 func handover(t *testing.T, m Model) Model {
 	t.Helper()
-	next, _ := m.Update(tea.KeyPressMsg{Code: 'g', Mod: tea.ModCtrl})
+	next, _ := m.Update(tea.KeyPressMsg{Code: tea.KeySpace, Mod: tea.ModCtrl})
 	rm, ok := next.(Model)
 	if !ok {
-		t.Fatal("ctrl+g should return the chat model")
+		t.Fatal("the handover should return the chat model")
 	}
 	if !rm.decisionGated() {
-		t.Fatal("ctrl+g should hand the keyboard to the decision on screen")
+		t.Fatal("the handover should hand the keyboard to the decision on screen")
 	}
 	return rm
 }
@@ -90,7 +90,7 @@ func TestInterrupt_TheCardSaysItsKeysAreNotLiveAndOffersTheOneThatIs(t *testing.
 	m := interruptedModel(t, "also add a --max-rounds flag")
 
 	view := ansi.Strip(m.View().Content)
-	for _, want := range []string{"not live yet", "[ctrl+g] answer it", "these letters go into your draft"} {
+	for _, want := range []string{"not live yet", "[ctrl+space] answer it", "these letters go into your draft"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the ungated card should say %q:\n%s", want, view)
 		}
@@ -369,7 +369,7 @@ func TestArrival_TheKeysASentenceCouldHaveMeantWaitForTheHandover(t *testing.T) 
 	if !strings.Contains(view, "[y/N]") {
 		t.Fatalf("an arrival-held card offers its two answers:\n%s", view)
 	}
-	if !strings.Contains(view, "[ctrl+g] for [a]/[d]") {
+	if !strings.Contains(view, "[ctrl+space] for [a]/[d]") {
 		t.Fatalf("the card should say what the handover still buys:\n%s", view)
 	}
 	if !strings.Contains(view, "any other key goes to your draft") {

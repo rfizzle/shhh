@@ -470,7 +470,8 @@ func TestGolden_PressureCard(t *testing.T) {
 
 // TestGolden_Interrupt captures a decision landing on a half-typed sentence
 // : the card ungated above a live frame, and the same card once
-// ctrl+g has given it the keyboard with the draft held undressed beneath it.
+// the card has been given the keyboard, with the draft held undressed
+// beneath it.
 // Read the two panels together — the pair is what invariant 5 asks a reader
 // to check, and covering the colours must still answer "who has the
 // keyboard".
@@ -484,7 +485,7 @@ func TestGolden_Interrupt(t *testing.T) {
 		gated := handover(t, ungated)
 		return []golden.Panel{
 			{Label: "ungated · the draft still has the keyboard", View: interruptSurface(ungated)},
-			{Label: "gated · ctrl+g, and the card has it", View: interruptSurface(gated)},
+			{Label: "gated · the handover, and the card has it", View: interruptSurface(gated)},
 		}
 	})
 }

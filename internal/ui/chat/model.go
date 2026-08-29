@@ -514,14 +514,15 @@ type Model struct {
 	childAsks []*subagent.Ask
 	// decisionHeld is whether the decision on screen holds the keyboard
 	//. A card that arrives on top of a sentence never does:
-	// until ctrl+g it renders its keys as not-yet-live and every letter goes
-	// into the draft. One that arrives on a draft nobody is typing into does,
-	// because there is no sentence for the letters to belong to.
+	// until the handover chord it renders its keys as not-yet-live and every
+	// letter goes into the draft. One that arrives on a draft nobody is
+	// typing into does, because there is no sentence for the letters to
+	// belong to.
 	decisionHeld bool
 	// heldOnArrival narrows that: the decision holds the keyboard because it
-	// landed on an idle draft, not because ctrl+g gave it to it. A card in
-	// that state answers only what it was walked up to be asked and hands the
-	// keyboard back for everything else (components/approval.go).
+	// landed on an idle draft, not because the handover gave it to it. A
+	// card in that state answers only what it was walked up to be asked and
+	// hands the keyboard back for everything else (components/approval.go).
 	heldOnArrival bool
 	// lastKeypress is when the keyboard was last touched, whatever it was
 	// pointed at. It is the second half of "nobody is typing into it": an
@@ -1187,8 +1188,8 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		// A child agent's routed approval takes over the bottom panel;
 		// it defers to the parent's own prompts above. Like every other
-		// decision that arrives unbidden it is inert until ctrl+g gives it
-		// the keyboard, which is why the check is on decisionHeld.
+		// decision that arrives unbidden it is inert until the handover gives
+		// it the keyboard, which is why the check is on decisionHeld.
 		if ask := m.activeChildAsk(); ask != nil && m.decisionHeld {
 			return m.updateChildAsk(msg, ask)
 		}
@@ -1273,6 +1274,18 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.inputLive() && m.attachedTo == "" {
 				return m, readClipboardCmd()
 			}
+		case keys.Is(pressed, keys.Draft.Editor):
+			// The draft goes out to the reader's own editor and comes back
+			// (editor.go). It is the one key here that stops the world:
+			// the program is suspended while the editor has the terminal, so
+			// it is refused with a notice rather than queued whenever
+			// something is still happening on this screen.
+			//
+			// It costs the textarea's own ctrl+g, which selected everything
+			// in the box. Nothing in shhh offered that key or said it was
+			// there, and what it selected could only be deleted or replaced
+			// — which is what the editor is for.
+			return m.openEditor()
 		case keys.Is(pressed, keys.Draft.Reasoning):
 			// Reasoning effort: the level the next request asks for.
 			// It changes nothing about the conversation and nothing about the
@@ -1676,6 +1689,9 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case clipboardMsg:
 		return m.handleClipboard(msg)
+
+	case editorDoneMsg:
+		return m.editorFinished(msg)
 
 	case attachedFileMsg:
 		return m.handleAttachedFile(msg)
@@ -3233,7 +3249,13 @@ Keys:
   Ctrl+A         Agent manager: enter attaches to an agent's session, x cancels
                  its turn, X kills it; attached, typing steers the agent,
                  Shift+Tab sets its mode (clamped), Esc detaches
-  Ctrl+G         Hand the keyboard to a decision waiting on screen. An
+  Ctrl+G         Open the draft in your editor: $EDITOR (then $VISUAL, then
+                 vi) opens a file holding what you have typed, at the line and
+                 column the cursor was on, and whatever is in the file when
+                 the editor exits becomes the draft. An empty file leaves the
+                 draft alone. Not while a turn is running or a decision is
+                 waiting — the editor takes the terminal with it
+  Ctrl+Space     Hand the keyboard to a decision waiting on screen. An
                  approval that lands while you are typing does not take your
                  keys with it: its y, n and a are not live until this chord
                  gives them the keyboard, and until then every letter goes

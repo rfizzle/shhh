@@ -144,8 +144,9 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 		group string
 		bs    []Binding
 	}{
-		{"Draft", []Binding{Draft.Send, Draft.Newline, Draft.Attach, Draft.Complete,
-			Draft.Palette, Draft.Reasoning, Draft.Mode, Draft.HistoryPrev, Draft.HistoryNext,
+		{"Draft", []Binding{Draft.Send, Draft.Newline, Draft.Editor, Draft.Attach,
+			Draft.Complete, Draft.Palette, Draft.Reasoning, Draft.Mode,
+			Draft.HistoryPrev, Draft.HistoryNext,
 			Draft.ScrollUp, Draft.ScrollDown, Draft.PageUp, Draft.PageDown, Draft.Reading,
 			Draft.Detail, Draft.Agents, Draft.Mouse, Draft.Answer, Draft.Clear,
 			Draft.Cancel, Draft.Quit}},

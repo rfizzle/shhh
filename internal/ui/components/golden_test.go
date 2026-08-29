@@ -364,7 +364,7 @@ func TestGolden_ApprovalCard(t *testing.T) {
 				c.Severity = SeverityMedium
 				c.Hunks, c.FullDiff = goldenHunks(), true
 				c.AllowAlways, c.AlwaysHint = true, "a: always allow edits"
-				c.NotYetLive, c.Handover = true, "ctrl+g"
+				c.NotYetLive, c.Handover = true, "ctrl+space"
 			})},
 			{Label: "variant · generic", View: card(func(c *ApprovalCard) {
 				c.Variant, c.Title = ApprovalGeneric, "Approve tool"

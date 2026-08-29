@@ -257,10 +257,19 @@ func (m Model) frameHints() string {
 			hints = []string{steer, keys.Shown(keys.Draft.Agents) + " agents", "/ commands", cancel}
 		}
 	default:
+		// Six hints, because at the width the rail first appears the row has
+		// 106 columns for them and these six spend 100 — a seventh is seven
+		// columns more than there is (frame_test.go holds that measurement).
+		// So the editor's chord takes the slash's place rather than joining
+		// it: typing `/` opens the command menu on its own, which makes it
+		// the one hint here that announces itself to a reader who never
+		// looked at the rail, and a chord is the only kind of key that
+		// cannot. The slash keeps its place on the working rail, which is
+		// shorter and has the room.
 		hints = []string{
 			keys.Shown(keys.Draft.Send) + " send",
 			keys.Shown(keys.Draft.Newline) + " newline",
-			"/ commands",
+			keys.Shown(keys.Draft.Editor) + " editor",
 			keys.Shown(keys.Draft.Attach) + " attach",
 			keys.Shown(keys.Draft.Palette) + " palette",
 			keys.Shown(keys.Draft.Mode) + " mode",

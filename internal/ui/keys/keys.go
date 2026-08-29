@@ -4,8 +4,9 @@
 // Before it existed, a key was written down twice: once as a literal in the
 // handler that answers it, and once as prose in the hint that offers it. The
 // two lived in different files and nothing made them agree — sixty-eight
-// literals across twenty files, and a `/help` that had never heard of ctrl+g,
-// which is the single most load-bearing chord in the mid-sentence rule.
+// literals across twenty files, and a `/help` that had never heard of the
+// handover chord, which is the single most load-bearing key in the
+// mid-sentence rule.
 //
 // So a key is declared once here, as a binding carrying both halves: the
 // keystrokes a handler matches, the spelling a hint prints, and the words
@@ -89,6 +90,7 @@ func Words(b Binding) string { return b.Help().Desc }
 type DraftKeys struct {
 	Send      Binding
 	Newline   Binding
+	Editor    Binding
 	Attach    Binding
 	Complete  Binding
 	Palette   Binding
@@ -122,6 +124,7 @@ type DraftKeys struct {
 var Draft = DraftKeys{
 	Send:      bind("enter", "send the message", "enter"),
 	Newline:   bind("shift+enter", "insert a newline", "shift+enter", "alt+enter", "ctrl+j"),
+	Editor:    bind("ctrl+g", "open the draft in $EDITOR", "ctrl+g"),
 	Attach:    bind("ctrl+v", "attach the clipboard", "ctrl+v"),
 	Complete:  bind("tab", "complete a slash command", "tab"),
 	Palette:   bind("ctrl+k", "the command palette", "ctrl+k"),
@@ -141,7 +144,7 @@ var Draft = DraftKeys{
 	Agents:  bind("ctrl+a", "the agent manager", "ctrl+a"),
 	Mouse:   bind("ctrl+x", "mouse reporting on or off", "ctrl+x"),
 
-	Answer: bind("ctrl+g", "answer it", "ctrl+g"),
+	Answer: bind("ctrl+space", "answer it", "ctrl+space"),
 
 	Clear:  bind("esc", "clear the input", "esc"),
 	Cancel: bind("ctrl+c", "cancel the response, then the input", "ctrl+c"),

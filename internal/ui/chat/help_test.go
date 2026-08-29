@@ -6,10 +6,9 @@ package chat
 // Finding 3 of the polish review named the shape of this bug before the
 // register existed: "the copy and the handler are in different places and
 // nothing enforces that they agree". The first thing this test found when it
-// was written was that `/help` had never heard of ctrl+g — the chord the
-// mid-sentence rule is
-// built on, the one key a waiting approval answers to, and the only way to
-// reach any of the decision keys from a live draft.
+// was written was that `/help` had never heard of the handover — the chord
+// the mid-sentence rule is built on, the one key a waiting approval answers
+// to, and the only way to reach any of the decision keys from a live draft.
 //
 // So: every key the input frame offers is named in /help's key section. What
 // the paragraph beside it says is /help's business — this asserts only that

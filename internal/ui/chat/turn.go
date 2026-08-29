@@ -46,7 +46,7 @@ func (m *Model) setTurnState(s state) {
 	// through here — so this is where the keyboard is decided. A card can
 	// never inherit the gate the last one was given, and one
 	// arriving on a draft nobody is typing into holds the keyboard itself
-	// rather than charging a ctrl+g for a sentence that is not there.
+	// rather than charging a handover for a sentence that is not there.
 	m.armDecision(s)
 	// A turn going idle stamps its end, so the inspector rail's elapsed time
 	// freezes at what the turn took instead of counting on.

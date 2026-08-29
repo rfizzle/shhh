@@ -47,7 +47,7 @@
 │                                                                                                                            │
 │                                                                                                                            │
 ├─ ⏸ manual · ctx ▰▰▰▱▱▱▱▱ 39% · ↑41.2k ↓9.8k · $0.51 · gpt-4o ──────────────────────────────────────────────────────────────┤
-╰─ enter send · shift+enter newline · / commands · ctrl+v attach · ctrl+k palette · shift+tab mode ──────────────────────────╯
+╰─ enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+k palette · shift+tab mode ───────────────────────╯
 
 ── ansi ────────────────────────────────────────────────────
 · phase · thinking
@@ -88,4 +88,4 @@
 ␛[38;5;254m│␛[m   ␛[30m                                                                                                                        ␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[30m                                                                                                                        ␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m├─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx ▰▰▰▱▱▱▱▱ 39%␛[38;5;244m · ↑41.2k ↓9.8k · $0.51 · ␛[38;5;254mgpt-4o␛[m ␛[38;5;254m──────────────────────────────────────────────────────────────┤␛[m
-␛[38;5;254m╰─␛[m ␛[38;5;244;3menter send · shift+enter newline · / commands · ctrl+v attach · ctrl+k palette · shift+tab mode␛[m ␛[38;5;254m──────────────────────────╯␛[m
+␛[38;5;254m╰─␛[m ␛[38;5;244;3menter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+k palette · shift+tab mode␛[m ␛[38;5;254m───────────────────────╯␛[m

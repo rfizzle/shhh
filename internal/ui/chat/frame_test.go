@@ -12,6 +12,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // frameModel is a ready model with usage, pricing, and a model name so every
@@ -47,10 +48,34 @@ func TestFrame_WideTwoRails(t *testing.T) {
 	m := frameModel(t, 130, 40) // content 126 ≥ 110
 	view := stripANSI(m.View().Content)
 
-	for _, want := range []string{"╭─ shhh chat", "├─", "╰─", "⏸ manual", "ctx ", "↑41.2k ↓9.8k", "$0.51", "gpt-4o", "enter send · shift+enter newline · / commands · ctrl+v attach · ctrl+k palette · shift+tab mode", "idle"} {
+	for _, want := range []string{"╭─ shhh chat", "├─", "╰─", "⏸ manual", "ctx ", "↑41.2k ↓9.8k", "$0.51", "gpt-4o", "enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+k palette · shift+tab mode", "idle"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("wide frame missing %q:\n%s", want, view)
 		}
+	}
+}
+
+// The idle rail is full at the width it first appears at, which is the
+// measurement the hint set is chosen against: another hint would push the
+// row past its own corner and be clipped, and a clipped hint is a key
+// nobody can read. Asserted here so adding a seventh fails a test rather
+// than shipping a truncated rail on a 114-column terminal.
+func TestFrame_IdleHintsFitTheRailAtItsThreshold(t *testing.T) {
+	m := frameModel(t, frameWideWidth+4, 40) // the narrowest wide frame
+	var rail string
+	for _, line := range strings.Split(stripANSI(m.View().Content), "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), "╰─") {
+			rail = strings.TrimSpace(line)
+		}
+	}
+	if rail == "" {
+		t.Fatal("no bottom rail at the wide threshold")
+	}
+	if !strings.HasSuffix(rail, "─╯") {
+		t.Fatalf("the hints crowd out the rail's own end:\n%s", rail)
+	}
+	if !strings.Contains(rail, keys.Shown(keys.Draft.Mode)+" mode") {
+		t.Fatalf("the last hint is clipped:\n%s", rail)
 	}
 }
 

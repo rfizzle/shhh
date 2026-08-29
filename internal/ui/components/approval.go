@@ -495,8 +495,8 @@ func (c *ApprovalCard) KeyAt(row string, col int) (string, bool) {
 // arrivalRest names what the handover still buys on a card that took the
 // keyboard by arriving: the keys it deliberately did not claim, and the fact
 // that everything else goes into the draft. It is the not-yet-live row turned
-// around — there ctrl+g buys every key, here it buys the ones a sentence
-// could have produced by accident.
+// around — there the handover buys every key, here it buys the ones a
+// sentence could have produced by accident.
 func (c *ApprovalCard) arrivalRest() string {
 	if !c.HeldOnArrival {
 		return ""

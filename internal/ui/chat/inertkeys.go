@@ -4,8 +4,8 @@ package chat
 // docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // The acute case is fixed: a decision that arrives unbidden is inert until
-// ctrl+g gives it the keyboard (interrupt.go). The audit behind this file is
-// the same rule asked of every other surface that offers a bare
+// the handover gives it the keyboard (interrupt.go). The audit behind this
+// file is the same rule asked of every other surface that offers a bare
 // single-character key, and most of them answered by construction — a picker,
 // review mode, the agent list, the undo confirm, the pressure card and
 // reading mode all take the keyboard the moment they open, so their letters
@@ -33,8 +33,8 @@ import (
 // live yet, or "" where the row has nothing to offer.
 //
 // It is keys.Draft.Reading, which hands the keyboard from the draft to
-// the transcript — a control chord for the same reason ctrl+g is: no sentence
-// can produce it, so it can be live while the draft is.
+// the transcript — a control chord for the same reason the handover is: no
+// sentence can produce it, so it can be live while the draft is.
 //
 // It is offered only where it is live. Reading mode cannot be opened from
 // under a gated decision or from inside a takeover surface, and a key that

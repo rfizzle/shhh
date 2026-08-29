@@ -235,8 +235,8 @@ func (m Model) clickKey(x, y int) (tea.Model, tea.Cmd) {
 		// The card is on screen with its keys drawn not-yet-live and the
 		// draft holding the keyboard. A click that answered anyway
 		// would be answering keys the screen says nobody can press, so it
-		// means what ctrl+g means instead: the card gets the keyboard, the
-		// decision stays waiting, and the second click answers it. Nothing
+		// means what the handover means instead: the card gets the keyboard,
+		// the decision stays waiting, and the second click answers it. Nothing
 		// about a decision is decided by a gesture the surface has not first
 		// said is live.
 		return m.gateDecision()

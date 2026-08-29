@@ -106,6 +106,14 @@ what is staged leaves with the sentence being typed, and the notices do not.
 Typing while the agent works is steering, not a queued prompt, and the gutter
 says which of the two you are doing.
 
+A draft too long to compose in three rows leaves for your own editor and comes
+back: shhh writes what you have typed to a file, opens the editor on it where
+the cursor was, and takes whatever the file holds when the editor exits. An
+empty file is not an instruction to throw the draft away, so it leaves it
+standing. The editor has the terminal while it runs, which is why the key is
+refused rather than queued while a turn is in flight or a decision is waiting
+— neither can be watched from inside somebody else's editor.
+
 ### The inspector rail
 
 Past a width threshold, a rail on the right answers the standing questions —

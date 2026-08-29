@@ -22,7 +22,7 @@ package keys
 // test people turn off. The chords are what is worth policing: no sentence
 // produces one, so a chord in the source is always somebody answering a key.
 //
-// Prose is not, and neither are test files: `/help` explains ctrl+g in a
+// Prose is not, and neither are test files: `/help` explains a chord in a
 // paragraph, a notice names the chord it is about, and a test says which key
 // it pressed when it fails. Those are sentences, and what this test looks for
 // is a *key row segment* — a chord, alone or with the two or three words a

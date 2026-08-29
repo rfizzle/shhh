@@ -80,7 +80,7 @@ func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 	if !strings.Contains(view, "[y/N]") {
 		t.Fatal("a card holding the keyboard by arrival should offer y/N")
 	}
-	if !strings.Contains(view, "[ctrl+g] for [a]/[d]") {
+	if !strings.Contains(view, "[ctrl+space] for [a]/[d]") {
 		t.Fatal("the card should say what the handover still buys")
 	}
 

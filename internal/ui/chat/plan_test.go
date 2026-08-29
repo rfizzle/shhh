@@ -386,7 +386,7 @@ func plannedModel(t *testing.T, response string) Model {
 	if m.state != statePlanApprove {
 		t.Fatalf("expected the plan card, got state %d", m.state)
 	}
-	// The card arrives without the keyboard; ctrl+g is what
+	// The card arrives without the keyboard; the handover is what
 	// makes its keys mean anything.
 	return handover(t, m)
 }
