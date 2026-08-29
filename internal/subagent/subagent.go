@@ -1304,7 +1304,7 @@ func (s *Supervisor) run(c *child) {
 			c.toolCalls++
 			n := c.toolCalls
 			c.mu.Unlock()
-			c.set(StateRunning, fmt.Sprintf("running · %d tools", n))
+			c.set(StateRunning, "running · "+plural(n, "tool"))
 			s.emitUpdate(c)
 		},
 		OnToolResult: func(tc provider.ToolCall, result string) {
@@ -1334,10 +1334,33 @@ func (s *Supervisor) run(c *child) {
 		c.flushStreaming()
 
 		if err == nil && c.ctx.Err() != nil {
-			// A killed child whose provider closed the stream quietly must
-			// never report success.
+			// The turn finished and the child's context is gone; which of the
+			// two ways that happened decides what this is.
+			//
+			// The budget is measured after the fact (addUsage), so the
+			// response that trips it is one the child had already finished:
+			// it did the work and the session has already paid for it, and
+			// the overrun only becomes visible with the answer in hand.
+			// Calling that "cancelled" names the mechanism rather than the
+			// reason and throws the report away — so a child that overspent
+			// on its way past the post stops for the reason it actually
+			// stopped for (S-144), with its own final report where the
+			// handoff would otherwise go.
+			//
+			// A kill is the other way, and a killed child whose provider
+			// closed the stream quietly must never report success.
 			c.agent.CancelTurn()
-			c.set(StateFailed, "cancelled")
+			c.mu.Lock()
+			budgetHit := c.budgetHit
+			if budgetHit && c.report == "" {
+				c.report = report
+			}
+			c.mu.Unlock()
+			reason := "cancelled"
+			if budgetHit {
+				reason = budgetReason(c)
+			}
+			c.set(StateFailed, reason)
 			s.emit(Event{Kind: EventDone, Status: c.status()})
 			return
 		}
@@ -1368,7 +1391,7 @@ func (s *Supervisor) run(c *child) {
 				}
 			}
 
-			c.set(StateDone, fmt.Sprintf("done · %d tools", tools))
+			c.set(StateDone, "done · "+plural(tools, "tool"))
 			s.emit(Event{Kind: EventDone, Status: c.status()})
 			return
 		}
@@ -1530,13 +1553,19 @@ func (s *Supervisor) finalCheckIn(c *child) {
 	c.mu.Unlock()
 }
 
+// budgetReason is how a child that ran out of tokens says so, in the one
+// wording every path that stops for the budget uses.
+func budgetReason(c *child) string {
+	return fmt.Sprintf("failed · token budget (~%s) exceeded", formatTokens(c.maxTokens))
+}
+
 func (s *Supervisor) failReason(c *child, err error) string {
 	c.mu.Lock()
 	budgetHit := c.budgetHit
 	c.mu.Unlock()
 	switch {
 	case budgetHit:
-		return fmt.Sprintf("failed · token budget (~%s) exceeded", formatTokens(c.maxTokens))
+		return budgetReason(c)
 	case errors.Is(err, agent.ErrRoundCap):
 		return fmt.Sprintf("failed · round limit (%d) reached", c.agent.MaxRounds())
 	case c.ctx.Err() != nil:
@@ -1924,9 +1953,17 @@ func (c *child) reportText() string {
 	patchNote := c.patchNote
 	c.mu.Unlock()
 
+	// The status line counts the tools itself wherever it has a count to
+	// give — `running · 3 tools`, `done · 3 tools` — so the header says it
+	// only for the states that do not, rather than saying it twice.
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "%s (%s) — %s · %d tool calls · ~%s tokens\n\n",
-		st.Name, st.Role, st.Detail, st.ToolCalls, formatTokens(st.TokensIn+st.TokensOut))
+	head := fmt.Sprintf("%s (%s) — %s", st.Name, st.Role, st.Detail)
+	switch st.State {
+	case StateRunning, StateDone:
+	default:
+		head += " · " + plural(st.ToolCalls, "tool call")
+	}
+	fmt.Fprintf(&sb, "%s · ~%s tokens\n\n", head, formatTokens(st.TokensIn+st.TokensOut))
 	switch {
 	case st.State == StateFailed && report == "":
 		sb.WriteString("The agent did not finish; no final report was produced.")
@@ -1957,6 +1994,15 @@ func (s *Supervisor) emitUpdate(c *child) {
 	case s.events <- Event{Kind: EventUpdate, Status: c.status()}:
 	default:
 	}
+}
+
+// plural renders "1 tool" / "3 tools", so a status line that counts what a
+// child did reads as a sentence rather than as a field.
+func plural(n int, noun string) string {
+	if n == 1 {
+		return "1 " + noun
+	}
+	return fmt.Sprintf("%d %ss", n, noun)
 }
 
 func firstLine(s string) string {

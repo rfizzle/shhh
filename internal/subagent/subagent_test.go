@@ -321,6 +321,36 @@ func TestTokenBudgetHandsOffBeforeItStops(t *testing.T) {
 	}
 }
 
+// TestTokenBudgetOnTheFinalResponseKeepsTheReport is the other half of S-144:
+// addUsage measures after the fact, so a child can finish its turn and only
+// then be found to have overspent. That child did the work and the session
+// paid for it, so it must stop for the budget with its own report in hand —
+// not as a "cancelled" agent that produced nothing, which is what a killed
+// one is.
+func TestTokenBudgetOnTheFinalResponseKeepsTheReport(t *testing.T) {
+	env := &scriptedEnv{
+		steps: []streamStep{
+			{
+				text:  "the parser is the bottleneck; here is what to change",
+				usage: &provider.Usage{PromptTokens: 5000, CompletionTokens: 100},
+			},
+		},
+	}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"find the bottleneck","max_tokens":1000}`)
+
+	report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+	if !strings.Contains(report, "token budget") {
+		t.Fatalf("the budget is what stopped it, and is what it must say: %s", report)
+	}
+	if strings.Contains(report, "cancelled") {
+		t.Fatalf("nobody cancelled this agent; it finished and overspent: %s", report)
+	}
+	if !strings.Contains(report, "the parser is the bottleneck") {
+		t.Fatalf("the finished report must reach the parent: %s", report)
+	}
+}
+
 // TestRoundLimitChecksInAndCarriesOn is the heart of S-144: the round limit
 // is a checkpoint, not a failure. The child takes stock and keeps going on
 // the same conversation, and the budget grows so the next stop is further
