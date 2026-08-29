@@ -1,6 +1,6 @@
 package chat
 
-// Undo's host side (S-100, §16): that it asks before it writes, that drift
+// Undo's host side (S-100): that it asks before it writes, that drift
 // is put to the user rather than run over, and that the undo lands in the
 // transcript as a changeset of its own.
 

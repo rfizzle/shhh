@@ -50,7 +50,7 @@ func TestSteps_ProseTitlesAGroupOfCalls(t *testing.T) {
 	view := stripANSI(m.renderHistory())
 
 	// Each batch of calls folds under an ordinal, a state glyph, a rule, a
-	// tool count and a duration (§13).
+	// tool count and a duration.
 	first := stepLine(t, view, "Locate the round accounting")
 	for _, want := range []string{"1 ", "✓", "2 tools", "0.7s", "─"} {
 		if !strings.Contains(first, want) {
@@ -160,7 +160,7 @@ func TestStepHeader_GridAndClipping(t *testing.T) {
 			t.Fatalf("width %d: header should fill the grid, got %d: %q", width, got, line)
 		}
 		// The title starts in the verb column, so headers and rows share one
-		// left edge (§6a).
+		// left edge.
 		if !strings.HasPrefix(line, "▾ 1  Loc") {
 			t.Fatalf("width %d: title should start in the verb column: %q", width, line)
 		}

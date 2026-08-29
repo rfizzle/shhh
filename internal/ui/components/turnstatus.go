@@ -4,7 +4,7 @@ package components
 // docs/interface/surfaces.md#the-input-frame, §10c). While a turn runs, this
 // is the one line on screen that changes: a spinner frame, the phase, ticking
 // elapsed, the turn's live token counts and what they have cost. It lives in
-// the frame's activity slot (§12a) and it *resolves into* the turn summary
+// the frame's activity slot and it *resolves into* the turn summary
 // rather than being replaced by one — same line, same facts,
 // `✓` where the spinner was.
 //
@@ -15,8 +15,7 @@ package components
 // phase and the cost never leave, because what it is doing and what it is
 // costing are the two things the line exists to say. And the spinner frame is
 // passed in rather than kept, so this line, the running activity row and
-// anything else that moves show the same frame from the one tick source
-// (§10c).
+// anything else that moves show the same frame from the one tick source.
 
 import "charm.land/lipgloss/v2"
 
@@ -47,7 +46,7 @@ var phaseWords = map[TurnPhase]string{
 }
 
 // Word is the phase's word. A phase outside the vocabulary reads as thinking
-// rather than as blank: the nearest of the four is the rule (§8d).
+// rather than as blank: the nearest of the four is the rule.
 func (p TurnPhase) Word() string {
 	if w, ok := phaseWords[p]; ok {
 		return w
@@ -68,7 +67,7 @@ const (
 // and the resolved ones when it ends; View picks the widest form that fits.
 type TurnStatus struct {
 	// Frame is which of the eight braille frames to show, from the host's one
-	// tick source (§10c). It is also the frame the label's sweep is on, so
+	// tick source. It is also the frame the label's sweep is on, so
 	// the glyph and the word beside it move on the same instant.
 	Frame int
 	// Arriving is how much of the label's entrance is still to run (§10c,
@@ -77,7 +76,7 @@ type TurnStatus struct {
 	Arriving int
 	Phase    TurnPhase
 	// Tool is the argument beside `running` — the call the grid's own naming
-	// gives it (§6c). Read only in PhaseRunning, and the first field dropped.
+	// gives it. Read only in PhaseRunning, and the first field dropped.
 	Tool string
 	// Elapsed is the turn's wall time so far, pre-formatted by FormatElapsed:
 	// tenths under ten seconds, whole seconds above.
@@ -100,7 +99,7 @@ type TurnStatus struct {
 }
 
 // doneWords is the resolved line's word per outcome. It is lower case where
-// the transcript's close row (§16) is capitalised: a status line is read
+// the transcript's close row is capitalised: a status line is read
 // while it happens, a row in history after the fact.
 var doneWords = map[TurnState]string{
 	TurnDone:      "done",
@@ -146,7 +145,7 @@ func (s TurnStatus) render(drop int) string {
 		label += " " + s.Tool
 	}
 	// The fields the ladder left standing ride behind the label as the
-	// animation's suffix (§10c): they are the host's own styling and the
+	// animation's suffix: they are the host's own styling and the
 	// animation never touches them, but they belong to the same string so the
 	// line is measured and clipped as one.
 	var tail string

@@ -39,7 +39,7 @@ func TestActivityRow_CollapsedNeverShowsOutput(t *testing.T) {
 		}
 	}
 	// Under 0.5s the duration field stays blank rather than spending a
-	// column on 0.1s (§6a).
+	// column on 0.1s.
 	if strings.Contains(view, "0.1s") {
 		t.Fatalf("sub-0.5s calls omit their duration:\n%s", view)
 	}
@@ -107,7 +107,7 @@ func TestActivityVerbs_ClosedVocabulary(t *testing.T) {
 }
 
 // TestActivityKinds_GlyphPerAct pins which glyph — and so which rows carry
-// the mutation rail (§14) — each tool gets.
+// the mutation rail — each tool gets.
 func TestActivityKinds_GlyphPerAct(t *testing.T) {
 	for tool, want := range map[string]components.ActivityKind{
 		"read_file":    components.ActivityTool,

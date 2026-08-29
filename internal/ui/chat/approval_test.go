@@ -77,7 +77,7 @@ func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 	}
 	// The card landed on a draft nobody was typing into, so it holds the
 	// keyboard and offers the two answers; [a] waits behind the handover
-	// (S-117, §7b).
+	// (S-117).
 	if !strings.Contains(view, "[y/N]") {
 		t.Fatal("a card holding the keyboard by arrival should offer y/N")
 	}
@@ -203,7 +203,7 @@ func TestGatedTool_QueueMixedWithExec(t *testing.T) {
 	}
 
 	// Both tool results are recorded in order once the second is declined.
-	// Esc would hand the keyboard back and leave it waiting (S-117, §7b);
+	// Esc would hand the keyboard back and leave it waiting (S-117);
 	// [n] is how a decision is denied.
 	m = handover(t, m)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
@@ -388,7 +388,7 @@ func TestGatedTool_LargeDiffTruncatedAndPanelGrows(t *testing.T) {
 	})
 	// The layout's answer, not the viewport's field: the fixture sets the
 	// streaming state directly, and nothing has re-synced the pane to the row
-	// the turn's live tail is using (S-161, §10n).
+	// the turn's live tail is using (S-161).
 	normalHeight := m.viewportHeight()
 
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
@@ -404,7 +404,7 @@ func TestGatedTool_LargeDiffTruncatedAndPanelGrows(t *testing.T) {
 	// until then it rides above a live frame and the panel is the input's.
 	m = handover(t, m)
 	// The card is capped at 40% of terminal height (30 → 12 rows); the rail
-	// that names the keyboard's owner is the row above it (S-117, §7b).
+	// that names the keyboard's owner is the row above it (S-117).
 	if h := m.bottomPanelHeight(); h != 13 {
 		t.Fatalf("expected confirm panel capped at 12 rows plus its rail, got %d", h)
 	}

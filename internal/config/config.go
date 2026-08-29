@@ -1,7 +1,8 @@
 // Package config loads and writes shhh's settings. Every value resolves
 // most-specific-first — flag, environment, file, default — and no setting
 // reverses that order, because a user who can predict where a value came from
-// can fix it (docs/capabilities/configuration.md#one-file-one-format-one-resolution-order).
+// can fix it
+// (docs/capabilities/configuration.md#one-file-one-format-one-resolution-order).
 package config
 
 import (

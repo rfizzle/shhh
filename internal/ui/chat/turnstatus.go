@@ -11,7 +11,7 @@ package chat
 // Nothing here is a second source of truth. The phase is read off the state
 // the turn is already in, the elapsed off the same clock the inspector rail's
 // THIS TURN block reads, the tokens off the vitals the session already
-// records, and the resolved line off the turn's own close block (§16) — so
+// records, and the resolved line off the turn's own close block — so
 // the status line and the row it leaves in the transcript state the same four
 // facts in the two orders §8d asks for and cannot disagree.
 
@@ -35,7 +35,7 @@ func (m Model) turnStatus() (components.TurnStatus, bool) {
 	if !m.turnStarted.IsZero() {
 		age := m.turnElapsed()
 		s.Elapsed = components.FormatElapsed(age)
-		// The label materialises over the turn's first second (§10c). Its age
+		// The label materialises over the turn's first second. Its age
 		// is the turn's own — the number the line is already printing beside
 		// it — so the entrance borrows a clock the session keeps rather than
 		// asking for a second one, and the frames it advances on are still
@@ -47,7 +47,7 @@ func (m Model) turnStatus() (components.TurnStatus, bool) {
 		s.Up, s.Down = formatTokenCount(in), formatTokenCount(out)
 	}
 	// Derived from the live counts, not from the last thing a response
-	// reported (§8d) — which is also why an unpriced model states tokens here
+	// reported — which is also why an unpriced model states tokens here
 	// instead of a made-up zero.
 	s.Cost = m.spendLabel(in, out)
 	return s, true
@@ -60,7 +60,7 @@ func (m Model) turnStatus() (components.TurnStatus, bool) {
 func (m Model) turnPhase() (components.TurnPhase, string, bool) {
 	switch m.turnState() {
 	case stateClassifying:
-		// The vitals rail's `✦ checking` (§8a), seen from the frame.
+		// The vitals rail's `✦ checking`, seen from the frame.
 		return components.PhaseDeciding, "", true
 	case stateRunningCmd:
 		return components.PhaseRunning, firstLine(m.runningCommand), true
@@ -79,7 +79,7 @@ func (m Model) turnPhase() (components.TurnPhase, string, bool) {
 }
 
 // runningToolLabel names the call being executed the way the activity grid
-// already names it (§6c) — its verb and its argument, minus the verb where
+// already names it — its verb and its argument, minus the verb where
 // the verb is `run`, because `running run go test` says it twice.
 //
 // A round executing several calls at once is named by none of them: picking
@@ -114,7 +114,7 @@ func (m Model) liveTurnTokens() (in, out int64) {
 }
 
 // resolvedTurnStatus is the summary the live line becomes when the turn ends
-// (§8d): the same line finished, in place. It is read off the turn's own
+// : the same line finished, in place. It is read off the turn's own
 // close block rather than recomputed, so the two cannot disagree.
 //
 // A turn that closed without one — a round-limit pause states its own

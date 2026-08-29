@@ -16,7 +16,7 @@ func TestLineCache_WriteMatchesConcatenation(t *testing.T) {
 		{"one line\n"},
 		{"one line\n", "another\n"},
 		{"a block\nof three\nlines\n"},
-		// A separator is a newline the next block begins with (§13), so the
+		// A separator is a newline the next block begins with, so the
 		// blank line lands between the two rather than inside either.
 		{"first\n", "\nsecond\n"},
 		// Text that does not end in a newline leaves the line open, and the
@@ -39,7 +39,7 @@ func TestLineCache_WriteMatchesConcatenation(t *testing.T) {
 
 // A frozen block is rendered once. Rewinding for the next frame must give the
 // tail back and nothing else: the lines below the seam are the ones the pane,
-// the selection and the clipboard all keep reading (§10m).
+// the selection and the clipboard all keep reading.
 func TestLineCache_RewindKeepsTheFrozenPrefix(t *testing.T) {
 	var c lineCache
 	c.rewind()
@@ -90,7 +90,7 @@ func TestRenderHistoryLines_IncrementalMatchesCold(t *testing.T) {
 
 // The lines the highlight is lit over belong to the block cache, so the
 // restyle works on a copy. A selection that wrote through would corrupt the
-// frozen prefix — and the clipboard reads the same lines unstyled (§7a).
+// frozen prefix — and the clipboard reads the same lines unstyled.
 func TestApplySelectionHighlight_DoesNotWriteThroughToTheCache(t *testing.T) {
 	c := &clip{}
 	m := tallModel(t, c)
@@ -107,7 +107,7 @@ func TestApplySelectionHighlight_DoesNotWriteThroughToTheCache(t *testing.T) {
 	if slices.Equal(lit, before) {
 		t.Fatal("and it should have lit something")
 	}
-	// The clipboard reads the same lines unstyled (§7a): the highlight is the
+	// The clipboard reads the same lines unstyled: the highlight is the
 	// last thing applied and the first thing dropped.
 	if raw := m.renderHistoryRawLines(); !slices.Equal(raw, before) {
 		t.Fatal("no selection styling may reach the raw render")

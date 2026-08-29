@@ -30,7 +30,7 @@ import (
 
 const (
 	// reviewStackWidth is the width below which the list and the hunk pane
-	// stack instead of truncating each other (§16a).
+	// stack instead of truncating each other.
 	reviewStackWidth = 60
 	// The file list's column budget in the two-pane layout: two fifths of
 	// the surface, held between these bounds.
@@ -78,7 +78,7 @@ func (f ReviewFile) stagedCount() int {
 }
 
 // ReviewVerdict is the turn's own verdict, pinned beside the files: what it
-// ran to check its own work and what came back (§16a). Failed says the
+// ran to check its own work and what came back. Failed says the
 // verdict in a field rather than leaving it to the glyph's color.
 type ReviewVerdict struct {
 	Failed bool
@@ -133,7 +133,7 @@ type ReviewView struct {
 	// Height is the surface's row budget, footer included.
 	Height int
 	// SideBySide forces the paired layout; it is automatic at
-	// sideBySideMinWidth columns either way (§3c).
+	// sideBySideMinWidth columns either way.
 	SideBySide bool
 
 	// File is the focused row of the list, Hunk the focused hunk within it,
@@ -145,7 +145,7 @@ type ReviewView struct {
 	notice string
 	// wide is the last render's automatic side-by-side verdict, taken from
 	// the surface's own width rather than the hunk pane's: the layout
-	// switches at the same terminal width the full-screen viewer does (§3c).
+	// switches at the same terminal width the full-screen viewer does.
 	wide bool
 }
 
@@ -344,7 +344,7 @@ func (v *ReviewView) paneHeight() int {
 	return max(v.Height-2, 1)
 }
 
-// stackedBody is the narrow layout (§16a): the list above, the hunks below,
+// stackedBody is the narrow layout: the list above, the hunks below,
 // nothing truncated sideways. The hunk pane keeps a floor — the list gives
 // way to it, since the pane is what review is for — and the pinned rows go
 // on last so the shield note is on screen at any height.
@@ -526,7 +526,7 @@ func (v *ReviewView) pinnedCompact(width int) []string {
 }
 
 // verdictRows are the turn's own verdict — what it ran to check itself and,
-// where it failed, the first lines of what it said (§16a).
+// where it failed, the first lines of what it said.
 func (v *ReviewView) verdictRows(width int) []string {
 	vd := v.Verdict
 	if vd == nil {
@@ -677,7 +677,7 @@ func wrapOffers(offers []TurnKey, width int) []string {
 }
 
 // wrapOffersIn is the same, in whichever treatment the keyboard puts the run
-// in (§7c). A takeover surface holds the keyboard by definition and always
+// in. A takeover surface holds the keyboard by definition and always
 // passes true; only a transcript row has the other state.
 func wrapOffersIn(offers []TurnKey, width int, live bool) []string {
 	paint := keyOffers

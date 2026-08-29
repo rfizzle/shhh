@@ -33,7 +33,7 @@ import (
 //
 // It is a constant rather than a counter because shhh only ever has one thing
 // to say. It says "come back" when the session stops needing shhh, and it is
-// not saying it again until the reader has come back (§10l). Where a terminal
+// not saying it again until the reader has come back. Where a terminal
 // treats a repeated identifier as an update, that is the right behaviour too:
 // the second summons replaces the first rather than stacking behind it, which
 // is what someone returning to four notifications would have wanted.

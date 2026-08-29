@@ -112,7 +112,7 @@ func TestClick_OpensTheRowUnderIt(t *testing.T) {
 	}
 }
 
-// A click reads the transcript, and reading is not a decision (§7a): the
+// A click reads the transcript, and reading is not a decision: the
 // draft keeps every character and the keyboard it had.
 func TestClick_NeverTakesTheKeyboard(t *testing.T) {
 	m := clickModel(t)
@@ -150,7 +150,7 @@ func TestClick_ADragIsNotAClick(t *testing.T) {
 	}
 }
 
-// Prose is read rather than navigated (§7a), so there is nothing under the
+// Prose is read rather than navigated, so there is nothing under the
 // pointer for a click to mean.
 func TestClick_ProseDoesNothing(t *testing.T) {
 	m := clickModel(t)
@@ -208,7 +208,7 @@ func cardKeyCell(t *testing.T, m Model, key string) (x, y int) {
 
 // clickCardModel is a gated write_file decision with mouse reporting on. A
 // draft in the box is what decides whether it arrives holding the keyboard,
-// so the two card tests below differ only in that (§7b).
+// so the two card tests below differ only in that.
 func clickCardModel(t *testing.T, draft string, executor ToolExecutor) Model {
 	t.Helper()
 	m := gatedModel(t, executor, map[string]GatedPreviewFunc{
@@ -308,13 +308,13 @@ func TestClick_OffTheRunAnswersNothing(t *testing.T) {
 	}
 }
 
-// A routed child approval is the same card component (S-077, §9c), so the
+// A routed child approval is the same card component (S-077), so the
 // pointer reaches it through the same door and lands in the same handler.
 func TestClick_RoutedChildApproval(t *testing.T) {
 	m := frameModel(t, 130, 40).WithMouse(true)
 	ask := subagent.NewAsk("researcher-1", subagent.AskCommand, "run make")
 	m.childAsks = []*subagent.Ask{ask}
-	// Nothing in the draft, so the card holds the keyboard on arrival (§7b).
+	// Nothing in the draft, so the card holds the keyboard on arrival.
 	m.armArrival()
 	if !m.decisionGated() {
 		t.Fatal("a card arriving on an idle draft holds the keyboard")

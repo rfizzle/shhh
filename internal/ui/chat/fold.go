@@ -97,7 +97,7 @@ func (m Model) foldRun(es []entry, i, end int) int {
 // verbosity's call — normal and low fold, high shows every row — and your own
 // fold, recorded on the entry the run starts at, overrides it.
 //
-// A step whose detail you opened gives its group back too (S-137, §13d):
+// A step whose detail you opened gives its group back too (S-137):
 // ctrl+o asks what this step did, and answering it with a counted row that
 // swallowed six of the calls would be the fold hiding the thing that was
 // asked for rather than the chrome around it.

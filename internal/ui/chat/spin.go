@@ -50,7 +50,7 @@ func (m Model) spinnerWanted() bool {
 		return true
 	}
 	// Attached, the top rail is scoped to the child, so the child's state is
-	// what the rail is animating (§12d).
+	// what the rail is animating.
 	if m.frameWorking() {
 		return true
 	}

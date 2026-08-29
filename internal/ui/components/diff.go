@@ -29,7 +29,7 @@ const (
 const sideBySideMinWidth = 120
 
 // Segment is one syntax-colored span of a source line. Color is a palette
-// token (§10a); the zero token means the line's own diff colour, which is
+// token; the zero token means the line's own diff colour, which is
 // what an unclaimed chroma type resolves to.
 type Segment struct {
 	Text  string
@@ -79,7 +79,7 @@ type DiffView struct {
 func (d *DiffView) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Reading.Expand):
-		// [enter] expand · [enter] full view · [enter again] collapse (§3b).
+		// [enter] expand · [enter] full view · [enter again] collapse.
 		switch d.Mode {
 		case DiffCollapsed:
 			d.Mode = DiffExpanded
@@ -142,7 +142,7 @@ func (d *DiffView) statsLabel() string {
 	return fmt.Sprintf("+%d −%d · %s", adds, dels, plural(len(d.Hunks), "hunk"))
 }
 
-// RowView is the collapsed one-row transcript form (§3a).
+// RowView is the collapsed one-row transcript form.
 func (d *DiffView) RowView(width int) string {
 	verb := d.Verb
 	if verb == "" {
@@ -197,7 +197,7 @@ func UnifiedLines(hunks []diff.Hunk, width int, opts UnifiedOpts) []string {
 	return rows
 }
 
-// ExpandedLines is the bounded in-transcript unified view (§3b).
+// ExpandedLines is the bounded in-transcript unified view.
 func (d *DiffView) ExpandedLines(width int) []string {
 	head := sty.Accent.Render("✎ ") + d.Path
 	gap := width - lipgloss.Width(head) - lipgloss.Width(d.statsLabel())
@@ -388,7 +388,7 @@ func (d *DiffView) fileSyntax(path string, explicit Syntax) Syntax {
 	return nil
 }
 
-// fullView is the full-screen rendering (§3c): header, scrollable body,
+// fullView is the full-screen rendering: header, scrollable body,
 // footer hint. Side-by-side when toggled or the terminal is wide enough.
 func (d *DiffView) fullView(width int) string {
 	header := padRight(" "+d.Path, max(0, width-lipgloss.Width(d.statsLabel()))) + sty.Dim.Render(d.statsLabel())
@@ -569,7 +569,7 @@ func pairHunkRows(h diff.Hunk) []pairedRow {
 }
 
 // sideBySideHunks renders hunks as two panes separated by a divider;
-// truncated cells end with … (§3c).
+// truncated cells end with ….
 func sideBySideHunks(hunks []diff.Hunk, width int) []string {
 	pane := max((width-3)/2, 8)
 	divider := sty.Dim.Render(" │ ")

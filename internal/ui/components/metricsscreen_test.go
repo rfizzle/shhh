@@ -86,7 +86,7 @@ func metricsColumnEnd(line, field string) int {
 }
 
 // The header names the command, what it is over, what it cost, and the one
-// key the screen has (§19c).
+// key the screen has.
 func TestMetricsScreen_HeaderStatesTheSpendAndTheKey(t *testing.T) {
 	head := metricsLines(metricsScreen(), 130)[0]
 	for _, want := range []string{"shhh metrics", "242 requests", "$18.42", "[q] quit"} {
@@ -127,7 +127,7 @@ func TestMetricsScreen_OnlyTheQuitKeysCloseIt(t *testing.T) {
 }
 
 // Numeric columns are right-aligned in a fixed width, so the digits line up
-// down the column rather than after the longest row (§19c).
+// down the column rather than after the longest row.
 func TestMetricsScreen_NumericColumnsLineUp(t *testing.T) {
 	m := metricsScreen()
 	lines := metricsLines(m, 130)
@@ -162,7 +162,7 @@ func TestMetricsScreen_HeadingIsARail(t *testing.T) {
 }
 
 // A sparkline is dimmer and never coloured: it is the shape, and the numbers
-// beside it are the measurement (§10c, §19c).
+// beside it are the measurement.
 func TestMetricsScreen_SparklineIsDimmerAndNeverColoured(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
 	view := metricsScreen().View(130)
@@ -214,7 +214,7 @@ func TestMetricsScreen_NothingOverrunsTheWidth(t *testing.T) {
 }
 
 // Every bar states its number beside it: a bar alone is a shape, not a
-// number (§10c).
+// number.
 func TestMetricsScreen_EveryBarStatesItsNumber(t *testing.T) {
 	out := metricsPlain(metricsScreen(), 130)
 	for _, want := range []string{"$9.94 · 54%", "94% answered", "81% exited 0"} {
@@ -260,7 +260,7 @@ func TestMetricsScreen_BlocksShareOneLabelColumn(t *testing.T) {
 }
 
 // The note is the field that annotates the bar, and it drops before anything
-// else on the row does (§16). It drops for the whole block at once: a note on
+// else on the row does. It drops for the whole block at once: a note on
 // the one short row and not on the three beside it would read as a fact about
 // that row.
 func TestMetricsScreen_NotesDropAsABlock(t *testing.T) {
@@ -332,7 +332,7 @@ func TestMetricsScreen_TheTableWindowsLast(t *testing.T) {
 	}
 }
 
-// It is a takeover surface, so it draws no frame of its own (§19).
+// It is a takeover surface, so it draws no frame of its own.
 func TestMetricsScreen_DrawsNoFrame(t *testing.T) {
 	out := metricsPlain(metricsScreen(), 110)
 	for _, glyph := range []string{"┌", "┐", "└", "┘", "│", "╭", "╰"} {

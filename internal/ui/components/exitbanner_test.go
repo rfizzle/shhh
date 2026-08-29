@@ -66,7 +66,7 @@ func TestExitBanner_UnpricedSittingDropsTheRow(t *testing.T) {
 
 // A conversation nothing could be written for names no slot and offers no
 // command: the failure a reader must not find out about by typing a resume
-// that quietly reopens something older (§17a).
+// that quietly reopens something older.
 func TestExitBanner_UnsavedNamesNoSlotAndOffersNoCommand(t *testing.T) {
 	b := fullBanner()
 	b.Unsaved = true

@@ -23,7 +23,7 @@ package chat
 // a question about the pane above it. Now every scroll gesture leaves the
 // keyboard where it is, and ctrl+e is the one transfer — the reader who wants
 // the row cursor, the [enter] expansions and the keys a close row or a
-// failure offers asks for them, and gets focus mode (§7), which is still the
+// failure offers asks for them, and gets focus mode, which is still the
 // one reading surface. This file is how the keyboard gets to it and back.
 
 import (
@@ -127,7 +127,7 @@ func (m Model) updateMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	case tea.MouseReleaseMsg:
 		if m.endClick(mouse.X, mouse.Y) {
 			// A press and a release in the same cell is a click, and a click
-			// is not a selection (§7a): nothing was covered, so nothing is
+			// is not a selection: nothing was covered, so nothing is
 			// copied and what was under the pointer is what the gesture
 			// meant.
 			if m.cancelSelection() {
@@ -187,7 +187,7 @@ func (m *Model) scrollPage(dir int) {
 
 // returnToInput leaves focus mode carrying the keystroke that ended it, so
 // the character a reader typed lands in the draft instead of being spent on
-// the exit. Esc and typing are the two ways out (§7a); this is the second.
+// the exit. Esc and typing are the two ways out; this is the second.
 func (m Model) returnToInput(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	next, _ := m.exitFocusMode()
 	rm, ok := next.(Model)
@@ -225,7 +225,7 @@ func typedRune(msg tea.KeyPressMsg) bool { return msg.Text != "" }
 //
 // It is a notice rather than a key: pgdn already walks back to the end and
 // re-pins on arrival, so there is nothing here to offer that the reader does
-// not have. Reading mode has its own rail and position (§7a), so this stays
+// not have. Reading mode has its own rail and position, so this stays
 // out of its way.
 func (m Model) followNotice() string {
 	if m.state == stateFocus || m.viewport.AtBottom() {
@@ -245,7 +245,7 @@ func (m Model) followNotice() string {
 }
 
 // transcriptBody is the viewport with its scroll gutter glued to the right
-// (S-147, §10g). The viewport pads every row it returns to its own width and
+// (S-147). The viewport pads every row it returns to its own width and
 // returns exactly its own height of them, so the gutter is a glyph appended
 // per row rather than a column that has to be laid out.
 //
@@ -253,7 +253,7 @@ func (m Model) followNotice() string {
 // feed, reading mode, an attached child's session — and the two surfaces that
 // take the pane over instead of filling the viewport, the full-screen diff
 // and review mode, do not: they scroll themselves and say so on their own
-// status bars (§3c, §16a).
+// status bars.
 func (m Model) transcriptBody() string {
 	view := m.viewport.View()
 	rows := components.Scrollbar(m.viewport.Height(),
@@ -273,10 +273,10 @@ func (m Model) transcriptBody() string {
 
 // readingRail is the line under the header. It is a plain divider while the
 // input owns the keyboard and names the transcript when the transcript does,
-// so the two panes are never both dressed as the active one (§7a). The word
+// so the two panes are never both dressed as the active one. The word
 // carries it; the accent is decoration, as everywhere else (invariant 1).
 //
-// It is the same labelled rail a waiting decision draws (§7b): four cells of
+// It is the same labelled rail a waiting decision draws: four cells of
 // rule, the label in its own spaces, then the rule to the edge. Reading mode
 // shipped before that rail existed and borrowed components/terminal/Rule's
 // trailing variant, which hung the label off the right end — the one place
@@ -394,7 +394,7 @@ func mouseNote(on bool) string {
 	return "Mouse reporting off — the terminal keeps click-drag selection for what is on screen; pgup, ctrl+e and j/k read the transcript."
 }
 
-// readingStyles is the reading rail's own group (S-115, §7a).
+// readingStyles is the reading rail's own group (S-115).
 type readingStyles struct {
 	Label lipgloss.Style
 	Rule  lipgloss.Style

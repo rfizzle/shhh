@@ -33,7 +33,7 @@ import (
 )
 
 // defaultMetricsWidth is what the surface is drawn at before the terminal has
-// said how wide it is — the width the `Tools` artboard draws it at (§19c).
+// said how wide it is — the width the `Tools` artboard draws it at.
 const defaultMetricsWidth = 120
 
 // metricsTrendDays is how many days of token totals the per-model sparkline
@@ -99,10 +99,10 @@ func newMetricsCmd() *cobra.Command {
 	return cmd
 }
 
-// parseMetricsWindow reads the --window flag into its cutoff and the words the
-// header says it in. "all" is the default and the zero time, because metrics
-// were all-time before this screen existed and narrowing them silently would
-// be the interface deciding which of your history counts.
+// parseMetricsWindow reads the --window flag into its cutoff and the words
+// the header says it in. "all" is the default and the zero time, because
+// metrics were all-time before this screen existed and narrowing them
+// silently would be the interface deciding which of your history counts.
 func parseMetricsWindow(s string) (time.Time, string, error) {
 	trimmed := strings.TrimSpace(strings.ToLower(s))
 	if trimmed == "" || trimmed == "all" {
@@ -175,7 +175,7 @@ func newMetricsScreen(data metricsData) components.MetricsScreen {
 	}
 	for _, block := range blocks {
 		// A reading the store has nothing for is left out rather than drawn
-		// as a row of empty bars (§19c).
+		// as a row of empty bars.
 		if len(block.Bars) > 0 {
 			screen.Blocks = append(screen.Blocks, block)
 		}
@@ -278,7 +278,7 @@ func metricsSpendBlock(data metricsData, names map[string]string) components.Met
 	for _, category := range metricsCategories {
 		s := shares[category.name]
 		// A category with nothing in it is left out rather than drawn as an
-		// empty bar (§19c).
+		// empty bar.
 		if s == nil || amount(s) <= 0 {
 			continue
 		}
@@ -347,7 +347,7 @@ var metricsCategories = []struct {
 // called, the noun its denominator counts, and how to read one model. ok is
 // false where the store has nothing to read — a model nobody rated has no
 // rating, and a bar drawn against a denominator nobody supplied is a number
-// the interface invented (§10c).
+// the interface invented.
 type metricsRatio struct {
 	title     string
 	one, many string
@@ -468,7 +468,7 @@ func metricsTokens(v *int64) string {
 
 // metricsLatency is the TTFT columns: milliseconds under a second, seconds
 // with one decimal above it, and an em dash where nothing was timed — the
-// same reading every duration field in the product makes (§6a).
+// same reading every duration field in the product makes.
 func metricsLatency(ms *float64) string {
 	if ms == nil {
 		return components.NoDuration

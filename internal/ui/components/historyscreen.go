@@ -5,16 +5,17 @@ package components
 // ui_kits/cockpit/Tools.html). `shhh history` shipped on
 // `internal/ui/browse`, which invented a list, a query line, a detail page
 // and an action bar of its own. It is re-cut here from parts that already
-// exist: the §4a window with its markers, its filter row and its two counts;
-// the §6a grid for the entry it selects; and the §5 inline confirm in front
-// of the one key that destroys something.
+// exist: the selector window with its markers, its filter row and its two
+// counts; the column grid for the entry it selects; and the inline confirm in
+// front of the one key that destroys something.
 //
-// Two panes and one rule shape it, both from §19b. The search is on the left
-// and the entry it selects on the right — the right pane is a preview, not a
-// second list, and has no cursor of its own. And nothing is re-run until
-// `[enter]`, which the hint line says in words, because a browser over past
-// shell commands that runs one by accident is the worst thing this screen
-// could do.
+// Two panes and one rule shape it
+// (docs/interface/surfaces.md#the-supporting-screens). The search is on the
+// left and the entry it selects on the right — the right pane is a preview,
+// not a second list, and has no cursor of its own. And nothing is re-run
+// until `[enter]`, which the hint line says in words, because a browser over
+// past shell commands that runs one by accident is the worst thing this
+// screen could do.
 //
 // It is a passive component like the rest of this package. It owns no history
 // semantics: `[c]`, `[s]` and `[x]` resolve to a HistoryCommand the host
@@ -32,27 +33,27 @@ import (
 )
 
 const (
-	// historyStackWidth is the width below which the two panes stack rather
-	// than sitting side by side. It is above §16a's own threshold because
-	// this list's rows carry four fields and the preview carries a shell
-	// command: two columns of 40 would clip both.
+	// historyStackWidth is the width below which the two panes stack rather than
+	// sitting side by side. It is above review mode's own threshold because this
+	// list's rows carry four fields and the preview carries a shell command: two
+	// columns of 40 would clip both.
 	historyStackWidth = 96
 	// historyListMin / historyListMax bound the search pane. History is the
-	// longest list in the product (§19b) and its rows carry four fields, so
-	// it takes very nearly half the terminal — the artboard's own split —
-	// rather than review's two fifths. Below the floor the outcome starts
-	// dropping off rows that exist to be read for it.
+	// longest list in the product and its rows carry four fields, so it takes
+	// very nearly half the terminal — the artboard's own split — rather than
+	// review's two fifths. Below the floor the outcome starts dropping off rows
+	// that exist to be read for it.
 	historyListMin = 30
 	historyListMax = 64
 	// historyMinPreview is the smallest preview the stacked layout leaves
 	// standing: the title, the prompt, the command and its outcome.
 	historyMinPreview = 4
-	// minHistoryLabel is the shortest run of a prompt worth putting on a
-	// row. Below it the row has stopped identifying anything, so the grid's
-	// own drop order is the better answer.
+	// minHistoryLabel is the shortest run of a prompt worth putting on a row.
+	// Below it the row has stopped identifying anything, so the grid's own drop
+	// order is the better answer.
 	minHistoryLabel = 24
-	// minClosestPrefix is the shortest run of the query that naming a near
-	// miss will stand on.
+	// minClosestPrefix is the shortest run of the query that naming a near miss
+	// will stand on.
 	minClosestPrefix = 3
 )
 
@@ -61,35 +62,35 @@ const (
 // code is "exit 0", a duration is "1.4s" — because those are readings of the
 // store and this is a renderer.
 type HistoryRow struct {
-	// ID is the host's own handle on the entry, carried back on a command
-	// and never drawn.
+	// ID is the host's own handle on the entry, carried back on a command and
+	// never drawn.
 	ID string
-	// Prompt is what was asked, and the row's target: the only field on the
-	// §6a grid that grows, and the one the filter bolds its match in.
+	// Prompt is what was asked, and the row's target: the only field on the grid
+	// field that grows, and the one the filter bolds its match in.
 	Prompt string
-	// Command is what came back. It is the preview's whole subject and the
-	// thing `[enter]` would run.
+	// Command is what came back. It is the preview's whole subject and the thing
+	// `[enter]` would run.
 	Command string
 	// When is how long ago, in the row's own words — `4m ago`, `yesterday`.
 	When string
-	// Model is `openai/gpt-5.2`, stated in the preview rather than on the
-	// row: it is a property of the answer, not a way of finding it.
+	// Model is `openai/gpt-5.2`, stated in the preview rather than on the row:
+	// it is a property of the answer, not a way of finding it.
 	Model string
 	// Action is what was done with the command at the time — `run`, `copy`,
 	// `save`, `cancel`. The preview states it; the row states its outcome.
 	Action string
-	// Outcome is the closed §6d field: `exit 0`, `copied`, `not run`. It is
+	// Outcome is the closed outcome field: `exit 0`, `copied`, `not run`. It is
 	// the reason to read the row, so it never clips.
 	Outcome string
 	// State picks the glyph the row and the preview both lead with, and the
-	// colour the outcome takes. §6b's reading holds: a command that finished
-	// keeps `$`, and only a break or a refusal overrides it.
+	// colour the outcome takes. The kind glyphs' reading holds: a command that
+	// finished keeps `$`, and only a break or a refusal overrides it.
 	State ActivityState
-	// Duration is the 6-column right-aligned field: how long the model took
-	// to answer. Blank under half a second, like every other row's.
+	// Duration is the 6-column right-aligned field: how long the model took to
+	// answer. Blank under half a second, like every other row's.
 	Duration string
-	// Counts is the preview's token line — `↑ 412 · ↓ 38`. Empty for an
-	// entry recorded before the columns existed, which is most of them.
+	// Counts is the preview's token line — `↑ 412 · ↓ 38`. Empty for an entry
+	// recorded before the columns existed, which is most of them.
 	Counts string
 }
 
@@ -103,9 +104,9 @@ const (
 	HistoryCopy HistoryAct = iota
 	// HistorySave is `[s]`: the command saved as a snippet.
 	HistorySave
-	// HistoryDelete is `[x]`, and only after the §5 confirm has been
-	// answered — the screen never resolves a delete the reader has not said
-	// yes to.
+	// HistoryDelete is `[x]`, and only after the inline confirm has been
+	// answered — the screen never resolves a delete the reader has not said yes
+	// to.
 	HistoryDelete
 )
 
@@ -120,16 +121,16 @@ type HistoryCommand struct {
 // nothing. Run and Canceled are never both true.
 type HistoryResult struct {
 	Run bool
-	// ID and Command are the entry `[enter]` chose. The command is carried
-	// out as well as the id so a host that has already closed its store can
-	// still run it.
+	// ID and Command are the entry `[enter]` chose. The command is carried out
+	// as well as the id so a host that has already closed its store can still
+	// run it.
 	ID       string
 	Command  string
 	Canceled bool
 }
 
 // HistoryScreen is `shhh history`: a takeover surface, full width, no
-// inspector rail, owning the keyboard for as long as it is up (§19).
+// inspector rail, owning the keyboard for as long as it is up.
 type HistoryScreen struct {
 	// Rows are the entries newest first, as the host read them.
 	Rows []HistoryRow
@@ -138,11 +139,11 @@ type HistoryScreen struct {
 	// Subject is what the header says the screen is over — `41 entries · 12
 	// run`. The host counts it, because counting is a reading of the store.
 	Subject string
-	// MaxLines bounds the screen height; everything pinned comes off the
-	// panes' budget before the window is drawn (§4a). 0 is unbounded.
+	// MaxLines bounds the screen height; everything pinned comes off the panes'
+	// budget before the window is drawn. 0 is unbounded.
 	MaxLines int
-	// Notice is the line a key left behind — what was copied, what was
-	// deleted. The host clears it on the next keystroke.
+	// Notice is the line a key left behind — what was copied, what was deleted.
+	// The host clears it on the next keystroke.
 	Notice string
 
 	list    Select
@@ -176,11 +177,11 @@ func (h *HistoryScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	case keys.Is(pressed, keys.Select.Cancel):
 		return true, HistoryResult{Canceled: true}
 	}
-	// With the query line open the query line is the surface, so c, s, x and
-	// q are letters rather than keys — the reading every picker in the
-	// product makes (§4a). ctrl+u clears it, and clearing a filter that is
-	// already empty closes it, which is how the row keys are got back
-	// without leaving the screen.
+	// With the query line open the query line is the surface, so c, s, x and q
+	// are letters rather than keys — the reading every picker in the product
+	// makes. ctrl+u clears it, and clearing a filter that is already empty
+	// closes it, which is how the row keys are got back without leaving the
+	// screen.
 	if h.list.Filtering {
 		if keys.Is(pressed, keys.Screen.ClearQ) && h.list.Query == "" {
 			h.list.Filtering = false
@@ -212,8 +213,8 @@ func (h *HistoryScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 			return false, HistoryCommand{Act: HistorySave, ID: row.ID}
 		}
 	case keys.Is(pressed, keys.Screen.Delete):
-		// §5: the one key here that destroys something asks first, and the
-		// prompt names what it would take rather than saying "this entry".
+		// The one key here that destroys something asks first, and the prompt names
+		// what it would take rather than saying "this entry".
 		if row := h.current(); row != nil {
 			h.confirm = &Confirm{Prompt: sty.Body.Render(
 				"Delete the entry for " + quoted(row.Prompt) + "?")}
@@ -246,8 +247,8 @@ func (h *HistoryScreen) updateConfirm(msg tea.KeyPressMsg) (bool, any) {
 	return false, nil
 }
 
-// View renders the screen: the §17c header and its rule, the two panes, and
-// one hint line at the foot.
+// View renders the screen: the start-screen header and its rule, the two
+// panes, and one hint line at the foot.
 func (h *HistoryScreen) View(width int) string {
 	if width <= 0 {
 		return ""
@@ -307,8 +308,8 @@ func (h *HistoryScreen) stackedRows(width, budget int) []string {
 	// The rule between the panes costs a row.
 	avail := budget - 1
 	if avail < historyMinPreview+2 {
-		// No room for both: the list wins, because a screen that cannot
-		// preview an entry can still say which entries there are.
+		// No room for both: the list wins, because a screen that cannot preview an
+		// entry can still say which entries there are.
 		return truncRows(h.listRows(width, budget), budget, width)
 	}
 	keep := min(len(pane), max(avail/2, historyMinPreview))
@@ -317,11 +318,10 @@ func (h *HistoryScreen) stackedRows(width, budget int) []string {
 	return append(rows, truncRows(pane, keep, width)...)
 }
 
-// listRows is the left pane: the filter row pinned above the §4a window, the
-// window itself with its markers, and — under it — what the filter hid and
-// the key that clears it. Both counts are stated (§19b): the query row says
-// `6 of 41 match` and the line under the list says what became of the other
-// 35.
+// listRows is the left pane: the filter row pinned above the selector window,
+// the window itself with its markers, and — under it — what the filter hid
+// and the key that clears it. Both counts are stated: the query row says `6
+// of 41 match` and the line under the list says what became of the other 35.
 func (h *HistoryScreen) listRows(width, budget int) []string {
 	h.clipLabels(width)
 	head := h.list.queryRows(cardWidthFor(width))
@@ -334,12 +334,12 @@ func (h *HistoryScreen) listRows(width, budget int) []string {
 	return append(rows, tail...)
 }
 
-// clipLabels is what keeps the outcome on the row. §4a's grid gives a label
-// wider than half the card the whole row and drops the fields after it — but
-// on this list the outcome is the reason to read the row, and a prompt is the
-// one field here that runs to any length. So the prompt gives way to it
-// instead, and the preview beside it carries the prompt in full, which is
-// what makes the trade a fold rather than a loss (invariant 4).
+// clipLabels is what keeps the outcome on the row. The selector's grid gives
+// a label wider than half the card the whole row and drops the fields after
+// it — but on this list the outcome is the reason to read the row, and a
+// prompt is the one field here that runs to any length. So the prompt gives
+// way to it instead, and the preview beside it carries the prompt in full,
+// which is what makes the trade a fold rather than a loss (invariant 4).
 func (h *HistoryScreen) clipLabels(width int) {
 	room := 2
 	for _, opt := range h.list.Options {
@@ -352,8 +352,8 @@ func (h *HistoryScreen) clipLabels(width int) {
 		}
 		room = max(room, field+2)
 	}
-	// A pane too narrow for a prompt and its fields both keeps a readable
-	// run of the prompt; below that the grid's own drop order takes over.
+	// A pane too narrow for a prompt and its fields both keeps a readable run of
+	// the prompt; below that the grid's own drop order takes over.
 	label := max(width-room, minHistoryLabel)
 	for i, opt := range h.list.Options {
 		h.list.Options[i].Label = clip(opt.Label, label)
@@ -387,9 +387,9 @@ func (h *HistoryScreen) hiddenRows(width int) []string {
 }
 
 // previewRows is the right pane: the entry the pointer is on, in the grammar
-// it was recorded in (§19b). The title says when and by which model, the
-// prompt is the opening instruction, the command is a §6a row with its
-// outcome and its duration, and the token line closes it.
+// it was recorded in. The title says when and by which model, the prompt is
+// the opening instruction, the command is a grid row with its outcome and its
+// duration, and the token line closes it.
 //
 // It is a preview, not a second list: nothing in it is focusable and no key
 // reaches it.
@@ -429,9 +429,9 @@ func (h *HistoryScreen) previewTitle(row HistoryRow, width int) string {
 	return clip(left, width)
 }
 
-// commandRows is the command on the §6a grid: the `$` glyph, the `run` verb,
-// the command itself as the target, the outcome and the duration. A command
-// too long for the pane keeps going on the detail lines under it rather than
+// commandRows is the command on the grid: the `$` glyph, the `run` verb, the
+// command itself as the target, the outcome and the duration. A command too
+// long for the pane keeps going on the detail lines under it rather than
 // being clipped away — this is the thing `[enter]` would run, so invariant 4
 // is not negotiable here.
 func (h *HistoryScreen) commandRows(row HistoryRow, width int) []string {
@@ -443,12 +443,12 @@ func (h *HistoryScreen) commandRows(row HistoryRow, width int) []string {
 		Kind: ActivityCommand, State: row.State, Verb: "run",
 		Outcome: row.Outcome, Duration: row.Duration, Expanded: true,
 	}
-	// The target column is what is left of the pane once the fixed fields
-	// have taken theirs; the continuation lines only give up the detail
-	// indent, so the wrap is measured against the narrower of the two. It is
-	// wrapped as plain text rather than through wrapSpans because the grid
-	// does its own painting, and a styled run it clipped would leave half an
-	// escape sequence behind.
+	// The target column is what is left of the pane once the fixed fields have
+	// taken theirs; the continuation lines only give up the detail indent, so
+	// the wrap is measured against the narrower of the two. It is wrapped as
+	// plain text rather than through wrapSpans because the grid does its own
+	// painting, and a styled run it clipped would leave half an escape sequence
+	// behind.
 	head := max(width-leadWidth-durWidth-lipgloss.Width(row.Outcome)-2, 8)
 	rest := max(width-detailIndent, 8)
 	lines := wrapPlain(command, min(head, rest))
@@ -487,9 +487,9 @@ func wrapPlain(text string, width int) []string {
 	return lines
 }
 
-// headerRow is the §17c header: the command, what it is over, and the two
-// keys every one of these screens offers. The right-hand keys drop before the
-// subject does — they annotate the line, and an annotation goes first (§16).
+// headerRow is the start-screen header: the command, what it is over, and the
+// two keys every one of these screens offers. The right-hand keys drop before
+// the subject does — they annotate the line, and an annotation goes first.
 func (h *HistoryScreen) headerRow(width int) string {
 	left := brightStyle().Render("shhh history")
 	if h.Subject != "" {
@@ -503,8 +503,7 @@ func (h *HistoryScreen) headerRow(width int) string {
 }
 
 // footRows are the keys the screen offers and the field that annotates them.
-// The field drops first (§16); the offers never truncate, they wrap
-// (invariant 4).
+// The field drops first; the offers never truncate, they wrap (invariant 4).
 func (h *HistoryScreen) footRows(width int) []string {
 	if h.confirm != nil {
 		return []string{clip(h.confirm.View(width), width)}
@@ -539,10 +538,11 @@ func fitsBeside(offers []KeyOffer, field string, width int) bool {
 // that cannot act is not an offer (invariant 5).
 //
 // The row also gives ground for the field beside it, and the movement
-// reminder is what it gives first — §19b's `nothing is re-run until [enter]`
-// is the sentence a reader has to have read before they walk away, and `[↑↓]`
-// is the one segment `[?]` still carries in full. Nothing is ever truncated
-// to make room (invariant 4); the segment goes whole or it stays whole.
+// reminder is what it gives first — the history browser's `nothing is re-run
+// until [enter]` is the sentence a reader has to have read before they walk
+// away, and `[↑↓]` is the one segment `[?]` still carries in full. Nothing is
+// ever truncated to make room (invariant 4); the segment goes whole or it
+// stays whole.
 func (h *HistoryScreen) offers(width int, field string) []KeyOffer {
 	move := keyOffer(keys.Select.Move)
 	var acts []KeyOffer
@@ -562,12 +562,12 @@ func (h *HistoryScreen) offers(width int, field string) []KeyOffer {
 	}
 	acts = append(acts, keyOfferAs(keys.Select.Cancel, "back to the shell"))
 
-	// The rungs, in the order the row gives ground: the movement reminder
-	// first, because `[?]` still carries it in full and every list in the
-	// product moves the same way; then saving a snippet, which is the one
-	// offer here that is about somewhere else. `[/]` is the last thing shed
-	// — it is what this screen is for. A row that still does not fit keeps
-	// the last rung and lets the field go, which is §16's own order.
+	// The rungs, in the order the row gives ground: the movement reminder first,
+	// because `[?]` still carries it in full and every list in the product moves
+	// the same way; then saving a snippet, which is the one offer here that is
+	// about somewhere else. `[/]` is the last thing shed — it is what this
+	// screen is for. A row that still does not fit keeps the last rung and lets
+	// the field go, which is the turn close's own order.
 	rungs := [][]KeyOffer{
 		append([]KeyOffer{move}, acts...),
 		acts,
@@ -582,8 +582,8 @@ func (h *HistoryScreen) offers(width int, field string) []KeyOffer {
 			return rung
 		}
 	}
-	// Nothing fits beside the field, so the field goes (§16) — and with
-	// nothing left to buy, the row keeps every offer it had and wraps.
+	// Nothing fits beside the field, so the field goes — and with nothing left
+	// to buy, the row keeps every offer it had and wraps.
 	return rungs[0]
 }
 
@@ -618,8 +618,9 @@ func (h *HistoryScreen) keyList() []KeyOffer {
 	}
 }
 
-// footField annotates the key row. §19b asks that the reader has read the
-// sentence before they walk away: nothing on this screen runs by itself.
+// footField annotates the key row. The history browser asks that the reader
+// has read the sentence before they walk away: nothing on this screen runs by
+// itself.
 func (h *HistoryScreen) footField() string {
 	if h.current() == nil {
 		return ""
@@ -672,8 +673,8 @@ func historyGlyph(state ActivityState) string {
 	return "$"
 }
 
-// historyTone reads the outcome the way a card field is read (§2): a command
-// that broke is del, one that never ran is an unremarkable fact, and one that
+// historyTone reads the outcome the way a card field is read: a command that
+// broke is del, one that never ran is an unremarkable fact, and one that
 // exited clean is the reassuring answer.
 func historyTone(state ActivityState) FieldTone {
 	switch state {
@@ -695,9 +696,9 @@ func historyWhen(when string) string {
 }
 
 // match is the entries the query left showing. The rule lives here rather
-// than in the card because the card never filters (§4a): an entry is found by
-// what was asked or by what came back, which is the pair a reader looking for
-// a command they half remember has to work with.
+// than in the card because the card never filters: an entry is found by what
+// was asked or by what came back, which is the pair a reader looking for a
+// command they half remember has to work with.
 func (h *HistoryScreen) match() []int {
 	query := strings.ToLower(strings.TrimSpace(h.list.Query))
 	out := make([]int, 0, len(h.Rows))
@@ -721,11 +722,11 @@ func (h *HistoryScreen) refilter() {
 }
 
 // closest names the nearest entry that does exist, for the card that matched
-// nothing (§4a). It is found by taking the query's last character back one at
-// a time until something matches, so what it names really is the nearest
-// thing to what was typed rather than whatever happens to be newest. It stops
-// at minClosestPrefix: a match on one or two letters is not a near miss, it
-// is a coincidence, and naming one would be worse than saying nothing.
+// nothing. It is found by taking the query's last character back one at a
+// time until something matches, so what it names really is the nearest thing
+// to what was typed rather than whatever happens to be newest. It stops at
+// minClosestPrefix: a match on one or two letters is not a near miss, it is a
+// coincidence, and naming one would be worse than saying nothing.
 func (h *HistoryScreen) closest() string {
 	for r := []rune(strings.TrimSpace(h.list.Query)); len(r) > minClosestPrefix; r = r[:len(r)-1] {
 		for _, row := range h.Rows {
@@ -789,7 +790,7 @@ func oneLine(s string) string { return strings.Join(strings.Fields(s), " ") }
 
 // quoted is how the confirm names the entry it would delete. It is clipped
 // short — the prompt identifies the row, and a confirm that wraps to three
-// lines has stopped being the §5 one-liner.
+// lines has stopped being the inline-confirm one-liner.
 func quoted(s string) string {
 	const shown = 48
 	s = oneLine(s)

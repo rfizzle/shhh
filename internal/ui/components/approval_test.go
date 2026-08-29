@@ -297,7 +297,7 @@ func TestApprovalCard_Keys(t *testing.T) {
 	}
 }
 
-// --- click targets (S-159, §7e) -------------------------------------------
+// --- click targets (S-159) -------------------------------------------
 
 // runRow is the rendered row carrying the card's decision run.
 func runRow(t *testing.T, c *ApprovalCard, width int) string {
@@ -368,7 +368,8 @@ func TestApprovalCard_TheDefaultMarkerIsNotAKey(t *testing.T) {
 }
 
 // A row that does not carry the run carries no target: the geometry is read
-// out of the render, so a key a narrow terminal clipped away is not clickable.
+// out of the render, so a key a narrow terminal clipped away is not
+// clickable.
 func TestApprovalCard_ARowWithoutTheRunHasNoKeys(t *testing.T) {
 	c := &ApprovalCard{
 		Variant: ApprovalCommand, Title: "Approve command",

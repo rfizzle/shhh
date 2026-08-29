@@ -138,7 +138,7 @@ func (f *Failure) Unwrap() error { return f.err }
 // dialect's failure.
 func (f *Failure) Is(target error) bool { return sentinels[f.Class] == target }
 
-// Headline is the row's target field (§17a): the status where there was one,
+// Headline is the row's target field: the status where there was one,
 // then the class. `401 unauthorized`, `overloaded`.
 func (f *Failure) Headline() string {
 	if f.Status > 0 {
@@ -149,7 +149,7 @@ func (f *Failure) Headline() string {
 
 // Recoverable reports whether the failure is a stall the session can come
 // back from — ⚠ in the row's glyph — rather than a call that is over. The
-// distinction is the whole reason both glyphs exist (§17a): a rate limit
+// distinction is the whole reason both glyphs exist: a rate limit
 // resumes, a rejected key does not until you replace it.
 func (f *Failure) Recoverable() bool {
 	switch f.Class {
@@ -424,9 +424,9 @@ func errorShape(err error) (int, string) {
 	return 0, err.Error()
 }
 
-// anthropicMessage reads the message out of the Messages API's error envelope,
-// falling back to the error type it names — `overloaded_error` is a worse
-// sentence than the message but a better one than nothing.
+// anthropicMessage reads the message out of the Messages API's error
+// envelope, falling back to the error type it names — `overloaded_error` is a
+// worse sentence than the message but a better one than nothing.
 func anthropicMessage(err *anthropic.Error) string {
 	var envelope struct {
 		Error struct {

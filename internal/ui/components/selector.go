@@ -18,18 +18,18 @@ type SelectOption struct {
 	Label string
 	// Desc is the option's own continuation, drawn dim on the same row in a
 	// column of its own — the price beside a model, what a command does, when
-	// a session was last touched (§4a). Every row carries it, not only the
+	// a session was last touched. Every row carries it, not only the
 	// focused one: a catalog you have to walk to read is a catalog you cannot
 	// compare. The plan card is the exception and says why (§4d, FocusDesc).
 	Desc string
 	// Value is the row's own answer, drawn between the label column and the
 	// description in a colour of its own: `⏵⏵ auto`, `⛨ workspace-write`,
-	// `gpt-5.2` (§19a). It is the config screen's field and no other list's —
+	// `gpt-5.2`. It is the config screen's field and no other list's —
 	// everywhere else a continuation is a note about the option, and a note
 	// has nothing to be toned about. A list that sets none renders exactly as
 	// it did before this field existed.
 	Value string
-	// ValueTone reads the value the way a card field is read (§2): safe,
+	// ValueTone reads the value the way a card field is read: safe,
 	// open, at risk, or an unremarkable statement of fact. The glyph beside
 	// it says the same thing, so the colour is never carrying it alone
 	// (invariant 1).
@@ -60,7 +60,7 @@ type SelectResult struct {
 	// Alt is set when AltKey took the option rather than enter. It is the
 	// card's way of answering "which of the two readings of this choice",
 	// for a surface where taking an option means one thing now and another
-	// thing from now on (§4a).
+	// thing from now on.
 	Alt bool
 }
 
@@ -81,7 +81,7 @@ type Select struct {
 	// MaxLines bounds the card height, frame included; long lists scroll with
 	// … markers. 0 means unbounded.
 	MaxLines int
-	// Chips ride the right end of the title border (§2). A card that sets
+	// Chips ride the right end of the title border. A card that sets
 	// none gets the window's own count instead — see chips.
 	Chips []string
 	// Hint replaces the default key-hint line for a surface whose keys are
@@ -94,7 +94,7 @@ type Select struct {
 	// Empty AltKey leaves the card with enter alone.
 	//
 	// Like j/k it is a bare letter, so it acts only while the query line is
-	// closed: a card being typed into keeps every letter as text (§4a).
+	// closed: a card being typed into keeps every letter as text.
 	AltKey   string
 	AltLabel string
 	// EnterLabel is what enter buys, for a card where "select" is not the
@@ -104,7 +104,7 @@ type Select struct {
 	// surface where a digit is text rather than a jump (S-112).
 	Unnumbered bool
 	// FocusDesc keeps each option's Desc under the focused option instead of
-	// on every row. It is the plan card's rule and no other surface's (§4d):
+	// on every row. It is the plan card's rule and no other surface's:
 	// there the descriptions are consequences of taking the option, and four
 	// consequences stacked at once is a wall rather than a choice. Everywhere
 	// else the description is a property of the option, which is a thing you
@@ -116,19 +116,19 @@ type Select struct {
 	QueryHint string
 
 	// Filterable offers / on the key row and lets it open the query line.
-	// Past a dozen entries walking is the slow way (§4a), so every picker
+	// Past a dozen entries walking is the slow way, so every picker
 	// that opens over a catalog sets this; a card that is a fixed set of
 	// answers does not.
 	Filterable bool
 	// Filtering is whether the query line is open. It is the card's own
 	// state when / opened it, and a caller's when the surface is a query
 	// line with a list under it from the start — which is what the palette
-	// is (§18a).
+	// is.
 	Filtering bool
 	// Query is the text that produced Options. The component never filters:
 	// the caller passes the matches and the query that made them, so the
 	// match rule stays where it is chosen rather than hiding in a primitive
-	// (§4a). Query is what the row echoes and what a matched run is bolded
+	//. Query is what the row echoes and what a matched run is bolded
 	// against.
 	Query string
 	// Total is how many options Query was applied to, for the row's "4 of 24
@@ -197,7 +197,7 @@ func (s *Select) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	// With the query line open, the query line is the surface: everything
 	// that is not movement or dispatch is text. A digit typed into a model
 	// name is a digit and so is a j — the reading the palette has always had
-	// (§18a), which the filter row is what generalizes. It is also what
+	//, which the filter row is what generalizes. It is also what
 	// stops a model name with a 5 in it from switching the model mid-word.
 	if s.Filtering {
 		s.editQuery(msg)
@@ -258,8 +258,7 @@ func (s *Select) editQuery(msg tea.KeyPressMsg) {
 
 // QueryChanged reports — and clears — whether the last Update edited the
 // query. It is how a host learns to re-run its match rule: the card does not
-// filter, so the answer to a changed query is new Options from the caller
-// (§4a).
+// filter, so the answer to a changed query is new Options from the caller.
 func (s *Select) QueryChanged() bool {
 	changed := s.queryEdited
 	s.queryEdited = false
@@ -360,7 +359,7 @@ func presentSegments(segs []string) []string {
 	return out
 }
 
-// queryRows is the pinned filter row (§4a): the ▸ prompt with what has been
+// queryRows is the pinned filter row: the ▸ prompt with what has been
 // typed and its block cursor, and — for a caller that said how big the
 // catalog behind it is — how many of that catalog the query matched. Both
 // counts are on the row so the list it came from is never hidden, and where
@@ -419,8 +418,9 @@ type optionGrid struct{ num, label int }
 
 // grid measures the columns. A list where nothing has a description or a meta
 // field spends no columns on either, so a plain menu renders exactly as wide
-// as its longest row; and a label wider than half the card takes the row, with
-// its description following one space behind rather than pushed off the edge.
+// as its longest row; and a label wider than half the card takes the row,
+// with its description following one space behind rather than pushed off the
+// edge.
 func (s *Select) grid(numbered, inner int) optionGrid {
 	var g optionGrid
 	if numbered > 0 {
@@ -521,7 +521,7 @@ func descGap(value string) string {
 // optionRow lays one option across the card: the pointer, the number
 // right-aligned in its column, the label, the row's own value beside it, the
 // description dim after that, and the meta field right-aligned at the end
-// (§4a). What a narrow terminal cannot carry it gives up from the least
+// . What a narrow terminal cannot carry it gives up from the least
 // load-bearing end: the description goes first, then the value is clipped,
 // and the meta field — a whole clause naming why a row is what it is — is the
 // last thing standing beside the label, which is the row and never goes.
@@ -598,7 +598,7 @@ func (s *Select) optionRow(opt SelectOption, n int, focused bool, g optionGrid, 
 	return clip(row, inner)
 }
 
-// emphasizeMatch bolds the run of the label the query names (§4a). Bold and
+// emphasizeMatch bolds the run of the label the query names. Bold and
 // never a tint: exactly three background tints exist inside a screen and each
 // already means one thing, and bold is the emphasis that survives mono.
 //
@@ -634,7 +634,7 @@ func (s *Select) bodyBudget(pinned int) int {
 // visibleRows renders the option list windowed to a body budget, with the
 // overflow markers the window makes necessary, and reports how many options
 // ended up on screen. A card that wraps a Select renders the list itself —
-// NoteSelect puts a note field under it (§4c) — and goes through here too, so
+// NoteSelect puts a note field under it — and goes through here too, so
 // the pointer is never clipped off the bottom.
 func (s *Select) visibleRows(width, budget int, numbered bool) ([]string, int) {
 	rows, shown, _ := s.visibleRowsFocus(width, budget, numbered)
@@ -643,7 +643,7 @@ func (s *Select) visibleRows(width, budget int, numbered bool) ([]string, int) {
 
 // visibleRowsFocus is visibleRows and where in what it returned the focused
 // option's last row landed, for a host that draws something under that row
-// rather than over the list: the config screen opens its picker there (§19a).
+// rather than over the list: the config screen opens its picker there.
 // It is -1 when the window does not hold the focus, which is what a filter
 // that matched nothing leaves behind.
 func (s *Select) visibleRowsFocus(width, budget int, numbered bool) ([]string, int, int) {
@@ -670,7 +670,7 @@ func (s *Select) visibleRowsFocus(width, budget int, numbered bool) ([]string, i
 	return rows, g.countIn(lo, hi), focusAt
 }
 
-// noMatchRows is what a filter that matched nothing renders (§4a): a row, not
+// noMatchRows is what a filter that matched nothing renders: a row, not
 // an empty pane. The card keeps its frame, the query row above keeps both
 // counts, the key that clears the filter stays on the key row, and a line
 // names the nearest thing that does exist — which the caller supplies,

@@ -8,11 +8,11 @@ package components
 // The rows sit on the §6a grid but start at the rail column rather than the
 // pointer column: they belong to the turn, not to a step, so nothing folds
 // them and no ordinal precedes them. The changed-files row carries the
-// mutation rail (§14), which is why the close of a turn looks like the rows
+// mutation rail, which is why the close of a turn looks like the rows
 // that produced it.
 //
 // This is a passive renderer. The keys it offers are handled by the host's
-// focus mode on the row (§7), so the input keeps every other key.
+// focus mode on the row, so the input keeps every other key.
 
 import (
 	"fmt"
@@ -76,7 +76,7 @@ type TurnClose struct {
 	Checks  *TurnChecks
 	// KeysWaiting says the changeset row does not hold the keyboard, so its
 	// keys render grey rather than in the colour that means "you can press
-	// this" (§7c): while the draft has it, `v` is a letter and belongs in the
+	// this": while the draft has it, `v` is a letter and belongs in the
 	// sentence (invariant 5). A host that claims nothing keeps the live
 	// treatment the row always had.
 	KeysWaiting bool
@@ -90,7 +90,7 @@ type TurnClose struct {
 // colour never carries the state alone (invariant 1). It is exported because
 // the screen is not the only surface that has to say how a turn ended: the
 // desktop notification a finished turn raises has no glyph and no colour, and
-// says this (S-157, §10l).
+// says this (S-157).
 func (s TurnState) Word() string {
 	switch s {
 	case TurnCancelled:
@@ -119,7 +119,7 @@ func (c TurnClose) stateGlyph() (string, string) {
 // three rows of §16, in the order the screen draws them.
 //
 // It exists because a notification is the one surface that cannot draw
-// (S-157, §10l). Everything it says has to be words, so the glyph that
+// (S-157). Everything it says has to be words, so the glyph that
 // carries "changed" and the colours that carry "+3 −5" are spent here as
 // the words they stand for, and nothing is said twice.
 func (c TurnClose) Summary() string {
@@ -202,7 +202,7 @@ func (c TurnClose) View(width int) string {
 		}
 		// The keys that are not live yet are the first thing to give up the
 		// width, and the key that makes them live is the last: one is an
-		// offer, the others are not offers yet (§7c).
+		// offer, the others are not offers yet.
 		if lipgloss.Width(lead+text) > width {
 			if run := keyRunNarrow(ch.Keys, c.KeysWaiting, c.Handover); run != "" {
 				text = stated + sty.Dim.Render(" · ") + run

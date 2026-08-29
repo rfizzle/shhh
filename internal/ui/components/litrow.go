@@ -4,7 +4,7 @@ package components
 // dresses exactly two things, and this is the second of them: the row the
 // cursor is on takes the focus background with its words in bright, while the
 // rail and the glyph keep the colours that say what the row did. The pointer
-// stays outside the highlight, in the pointer column (§6a), so the cursor
+// stays outside the highlight, in the pointer column, so the cursor
 // points at the row rather than being part of it.
 
 import (
@@ -29,7 +29,7 @@ const ansiReset = ansi.ResetStyle
 // on: the focus background runs to the row's full width, the words go bright,
 // and the glyphs before the first word keep their own colours inside the
 // highlight — which is what lets a mutation rail stay a mutation rail while
-// the row is lit (§14).
+// the row is lit.
 //
 // skip leaves that many leading cells outside the highlight; that is where
 // the pointer goes. width is the whole line's width, skip included.

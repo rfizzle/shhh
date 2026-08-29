@@ -40,11 +40,11 @@ import (
 // waiting reports whether the session has stopped and the next move is the
 // reader's.
 //
-// It is working() (§8d) read the other way round, plus the one decision that
+// It is working() read the other way round, plus the one decision that
 // does not live in the turn state: a child agent's routed approval arrives
-// while the parent's own turn is still streaming (§9c), and activeChildAsk
+// while the parent's own turn is still streaming, and activeChildAsk
 // already answers for whether it is in front of anyone — behind a surface it
-// is nil, because a decision nobody can see has not arrived yet (§7b).
+// is nil, because a decision nobody can see has not arrived yet.
 func (m Model) waiting() bool {
 	return !m.working() || m.activeChildAsk() != nil
 }
@@ -85,7 +85,7 @@ const notifyName = "shhh"
 // because a summons that describes the screen in different words is a summons
 // the reader has to reconcile when they arrive.
 //
-// The switch is interruptLines' switch (§7b) read against the turn state
+// The switch is interruptLines' switch read against the turn state
 // rather than Model.state: a decision the turn reached while a surface held
 // the screen is still the thing the session is waiting on, even though the
 // screen is showing something else.

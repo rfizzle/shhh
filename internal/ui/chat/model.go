@@ -68,8 +68,8 @@ const (
 	// stateRewindPick: the interactive /rewind checkpoint picker is showing
 	// (S-069).
 	stateRewindPick
-	// statePick: a generic slash-command picker (/model, /permissions) is showing
-	// (S-078).
+	// statePick: a generic slash-command picker (/model, /permissions) is
+	// showing (S-078).
 	statePick
 	// stateModelList: bare /model is querying the provider's /v1/models
 	// endpoint before opening the picker (S-083); esc cancels back to input.
@@ -84,20 +84,20 @@ const (
 	// decline. It borrows the bottom panel, not the transcript.
 	stateUndoConfirm
 	// stateKeyEntry: the masked key prompt an auth failure's [k] opens
-	// (S-106, §17a). It borrows the bottom panel; esc keeps the old key.
+	// (S-106). It borrows the bottom panel; esc keeps the old key.
 	stateKeyEntry
-	// statePressure: the context-pressure card is up (S-108, §17b) — the
+	// statePressure: the context-pressure card is up (S-108) — the
 	// occupancy, where the window went, and the three answers. It borrows
 	// the bottom panel; esc keeps going.
 	statePressure
 	// stateRetryWait: the turn is waiting out a bounded retry behind the
-	// countdown meter (S-107, §17a). It is a stage of the turn, not a
+	// countdown meter (S-107). It is a stage of the turn, not a
 	// surface — but nothing is streaming and the input is not live, so the
 	// wait owns the keyboard for the two keys it offers.
 	stateRetryWait
-	// statePicture: a staged image is showing full-pane (S-158, §12h). It is
+	// statePicture: a staged image is showing full-pane (S-158). It is
 	// the one surface that is opened by naming a file rather than by a key,
-	// because the chip it belongs to has no key of its own (§12g).
+	// because the chip it belongs to has no key of its own.
 	statePicture
 )
 
@@ -176,18 +176,18 @@ const (
 	// entryTurnClose: the rows a finished turn ends with (S-098).
 	entryTurnClose
 	// entryFailure: a classified provider failure rendered as a recovery row
-	// (S-106, §17a). It is a row, not a modal, because it is part of the turn.
+	// (S-106). It is a row, not a modal, because it is part of the turn.
 	entryFailure
 	// entryStreamDrop: a reply that stopped halfway, rendered as the `stream`
 	// recovery row and holding the partial it offers to continue from
-	// (S-107, §17a).
+	// (S-107).
 	entryStreamDrop
 	// entryRoundPause: a turn that stopped at its tool-round ceiling,
-	// rendered as the `rounds` recovery row (S-109, §17a). It stands in for
+	// rendered as the `rounds` recovery row (S-109). It stands in for
 	// the turn's close block rather than sitting above one.
 	entryRoundPause
 	// entryFanout: the block a round that spawned two or more children
-	// renders instead of their separate rows (S-110, §9g). It holds only the
+	// renders instead of their separate rows (S-110). It holds only the
 	// batch number — the lanes are read off the supervisor every render.
 	entryFanout
 )
@@ -248,10 +248,10 @@ type entry struct {
 	// own, so it lives on the raw entry and survives a resize.
 	stepFold foldState
 	// groupFold is the same override for the folded run of read-only calls
-	// this entry heads (S-091, §13c).
+	// this entry heads (S-091).
 	groupFold foldState
 	// detailFold is the same override again for the detail bodies of the step
-	// this entry titles — what ctrl+o opens and closes (S-137, §13d). It is a
+	// this entry titles — what ctrl+o opens and closes (S-137). It is a
 	// third override rather than a level of the first two because it answers
 	// a different question: stepFold and groupFold decide which rows are on
 	// screen, this decides how much of each one is.
@@ -288,7 +288,7 @@ type Model struct {
 	// places §10c names cannot report three different frames.
 	spinFrame int
 	// spinning reports whether a tick chain is in flight. It is what makes
-	// "one tick source, never three" (§10c) a property rather than a habit:
+	// "one tick source, never three" a property rather than a habit:
 	// spinCmd starts a chain only when this is false (S-119, spin.go).
 	spinning bool
 	// streamDirty reports whether a chunk has landed that the transcript has
@@ -353,7 +353,7 @@ type Model struct {
 	runStart       time.Time
 	runTail        *commandTail
 	// runningTools is the auto-run batch currently executing, so the frame's
-	// status line can name the call it is running (S-118, §8d). It is read
+	// status line can name the call it is running (S-118). It is read
 	// only while agent.Executing() is true.
 	runningTools []provider.ToolCall
 	// Head of the agent's approval queue while its confirm prompt is showing,
@@ -368,14 +368,15 @@ type Model struct {
 	modeCycle        []agent.Mode
 	commandAllowlist []string
 	// The blanket grants: every edit, every command, until revoked. They are
-	// what /permissions allow sets, and nothing else — [a] used to set them, which
-	// made one keystroke on one `go test` the last time the session asked
+	// what /permissions allow sets, and nothing else — [a] used to set them,
+	// which made one keystroke on one `go test` the last time the session asked
 	// about anything.
 	allowAllEdits    bool
 	allowAllCommands bool
 	// The scoped grants [a] records instead: directories edits are allowed
-	// under, and allowlist entries in agent.GrantPrefix's shape. /permissions revoke
-	// clears all four, which is the way back that a session grant never had.
+	// under, and allowlist entries in agent.GrantPrefix's shape. /permissions
+	// revoke clears all four, which is the way back that a session grant never
+	// had.
 	editDirGrants []string
 	commandGrants []string
 	// scope is the session's working scope (S-141): the directory it was
@@ -427,7 +428,7 @@ type Model struct {
 	// (S-076); -1 while the transcript is being read with nothing on it to
 	// select (S-115).
 	focusIdx int
-	// readingKeyList is `[?]` in reading mode (S-153, §7d): the compact hint
+	// readingKeyList is `[?]` in reading mode (S-153): the compact hint
 	// bar swapped for the mode's whole key register, in place. It is
 	// per-visit, not per-session — the mode closing closes the list too,
 	// because it is a reading of this surface rather than a preference about
@@ -438,10 +439,10 @@ type Model struct {
 	// click-drag selection and a transcript is text people copy out of. The
 	// wheel is the side of the trade with a substitute — pgup/pgdn, ctrl+e,
 	// j/k all read the transcript — so the wheel is the side you ask for
-	// (S-115, §7a).
+	// (S-115).
 	mouseOn bool
 	// caps is what this terminal told shhh it can do — inline images,
-	// desktop notifications, focus events (S-156, §10k). It is asked once,
+	// desktop notifications, focus events (S-156). It is asked once,
 	// when the program hands over its environment, and the replies land
 	// wherever they land. `/ui terminal` reads it, and so does the desktop
 	// notification of §10l, which is the OSC 99 answer being spent.
@@ -456,7 +457,7 @@ type Model struct {
 	// false, and that is deliberate: a window that is in front and a terminal
 	// that has never mentioned focus are different facts with the same
 	// answer to the only question asked of them — may shhh assume nobody is
-	// looking? — and the answer to both is no (S-157, §10l).
+	// looking? — and the answer to both is no (S-157).
 	away bool
 	// Application-owned transcript selection (S-145, select.go). sel is the
 	// selection itself — anchor, endpoint, and whether the button is still
@@ -507,7 +508,7 @@ type Model struct {
 	subagents *subagent.Supervisor
 	childAsks []*subagent.Ask
 	// decisionHeld is whether the decision on screen holds the keyboard
-	// (S-117, §7b). A card that arrives on top of a sentence never does:
+	// (S-117). A card that arrives on top of a sentence never does:
 	// until ctrl+g it renders its keys as not-yet-live and every letter goes
 	// into the draft. One that arrives on a draft nobody is typing into does,
 	// because there is no sentence for the letters to belong to.
@@ -548,7 +549,7 @@ type Model struct {
 	// screen, diffReturn where esc goes back to.
 	fullDiff   *components.DiffView
 	diffReturn state
-	// The staged image preview (S-158, §12h): picture is the card while it
+	// The staged image preview (S-158): picture is the card while it
 	// has the pane. There is no return state beside it — the surface is
 	// opened from the draft and from nowhere else, so leaveSurface's own
 	// answer is always the right one.
@@ -720,7 +721,7 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 	// to report either (S-134).
 	// The register's newline keys, less shift+enter, which the textarea
 	// cannot see: terminals that report it are handled above, and the other
-	// two are what the ones that cannot get instead (§7d).
+	// two are what the ones that cannot get instead.
 	ta.KeyMap.InsertNewline.SetKeys(keys.Draft.Newline.Keys()[1:]...)
 
 	// One frame set, one cadence, one colour, shared with the one-shot UI
@@ -737,7 +738,7 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 		copyFn:    clipboard.Copy,
 		// On unless the config says otherwise (WithNotify): unlike mouse
 		// reporting, a notification takes nothing away, and it cannot fire
-		// while anyone is looking at the screen (S-157, §10l).
+		// while anyone is looking at the screen (S-157).
 		notifyOn: true,
 		// Every session records what it changes; WithChangeset swaps in a
 		// store with a different bound or a git tracker (S-097).
@@ -816,19 +817,19 @@ func (m Model) WithClassifier(c *agent.Classifier) Model {
 // DefaultMaxToolRounds and a negative n is agent.UnlimitedToolRounds, which
 // starts the session with no checkpoint at all — what `shhh code
 // --max-rounds 0` asks for, and the way to leave a session running unattended.
-// The rail has a reading for it (§8a), so the TUI no longer has to refuse it.
+// The rail has a reading for it, so the TUI no longer has to refuse it.
 func (m Model) WithMaxToolRounds(n int) Model {
 	m.agent.SetMaxRounds(n)
 	return m
 }
 
-// effectiveMaxToolRounds is this turn's tool-round ceiling: the configured cap
-// plus whatever [+50] has granted the turn in front of it (S-109). The grant
-// lives here rather than on the Agent so that it expires with the turn — a new
-// one starts from the ceiling the session was configured with. Callers that
-// render or enforce a ceiling must ask roundsUnbounded first: like
-// agent.MaxRounds, this keeps answering with a number when there is no bound,
-// because no number honestly means "none".
+// effectiveMaxToolRounds is this turn's tool-round ceiling: the configured
+// cap plus whatever [+50] has granted the turn in front of it (S-109). The
+// grant lives here rather than on the Agent so that it expires with the turn
+// — a new one starts from the ceiling the session was configured with.
+// Callers that render or enforce a ceiling must ask roundsUnbounded first:
+// like agent.MaxRounds, this keeps answering with a number when there is no
+// bound, because no number honestly means "none".
 func (m Model) effectiveMaxToolRounds() int {
 	return m.agent.MaxRounds() + m.roundGrant
 }
@@ -870,10 +871,11 @@ func (m Model) quitCmd() tea.Cmd {
 }
 
 // ExitBanner is what this session leaves on the terminal once the alt screen
-// is gone (S-148, §22b): the slot the conversation ended up in, how big it
-// got, what the sitting cost, and the command that reopens it. resume is that
+// is gone (S-148): the slot the conversation ended up in, how big it got,
+// what the sitting cost, and the command that reopens it. resume is that
 // command, supplied by the front-end because the model does not know which of
-// shhh's faces it is wearing — `shhh chat --continue`, `shhh code --continue`.
+// shhh's faces it is wearing — `shhh chat --continue`, `shhh code
+// --continue`.
 //
 // The saved/not-saved split is autosaveCmd's condition and nothing else, and
 // the slot named is the one autosaveCmd writes rather than the session's
@@ -923,12 +925,12 @@ func (m Model) Init() tea.Cmd {
 	}
 	// Mouse reporting is not asked for here: it is a field on the View
 	// (S-155), so every surface that runs this Model gets the same answer
-	// from the same place and the toggle has one thing to flip (S-115, §7a).
+	// from the same place and the toggle has one thing to flip (S-115).
 	return tea.Batch(cmds...)
 }
 
 // Update routes the message, then makes the spinner's one rule true again
-// (S-119, §10c): a tick chain runs exactly while something on screen is
+// (S-119): a tick chain runs exactly while something on screen is
 // moving. Resuming the loop here rather than at each transition is what makes
 // "reliably restarts" a property of the loop instead of something fifteen
 // separate handoffs are each trusted to remember — three of them did not, and
@@ -943,7 +945,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		cmd = tea.Batch(cmd, tick)
 	}
 	// And the desktop notification is derived here for the same reason
-	// (S-157, §10l): the moment worth notifying about is a transition — the
+	// (S-157): the moment worth notifying about is a transition — the
 	// session stopped needing shhh and started needing the reader — and a
 	// transition is a fact about the model before against the model after,
 	// not a message any one of the dozen handlers that reach it could be
@@ -970,7 +972,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		msg = altEnter
 	}
 	// What the terminal can do is folded in wherever the reply lands
-	// (S-156, §10k). The answers come back as five unrelated message types,
+	// (S-156). The answers come back as five unrelated message types,
 	// over however long the terminal takes to send them, and none of them
 	// is anything else on this switch's business — so they are read here,
 	// before the routing, and go on to it unchanged.
@@ -983,7 +985,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.caps.Query(msg)
 	case tea.FocusMsg:
 		// The window came back to the front. Nothing on screen changes; what
-		// changes is whether shhh may assume nobody is looking (S-157, §10l).
+		// changes is whether shhh may assume nobody is looking (S-157).
 		m.away = false
 		return m, nil
 
@@ -1012,7 +1014,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport.SetHeight(vpHeight)
 			m.viewport.SetLines(m.renderHistoryLines())
 		}
-		// A placement is cells at a size (S-158, §12h): a pane that changed
+		// A placement is cells at a size (S-158): a pane that changed
 		// shape under a picture the terminal is holding is a picture that no
 		// longer fits the hole left for it, so it is sent again at the new
 		// one. Every other surface reflows from its own View.
@@ -1023,7 +1025,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// the full-screen diff and review surfaces that take the screen from
 		// it. It never reaches the textarea, which is what made a scroll
 		// gesture over the conversation move the three-line prompt box
-		// (S-115, §7a). Press, drag and release own the transcript's text
+		// (S-115). Press, drag and release own the transcript's text
 		// selection (S-145, select.go).
 		if !m.mouseOn {
 			return m, nil
@@ -1039,7 +1041,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// In v2 a paste is a message of its own rather than a keystroke
 		// wearing a Paste flag (S-155). What that flag bought was routing:
 		// pasted text reached whichever surface had the keyboard, so a paste
-		// into a card's filter row filtered (§4a). So the text is handed on
+		// into a card's filter row filtered. So the text is handed on
 		// as the keystroke it used to be — one press carrying the whole run,
 		// which is what v1 delivered — and every surface below sees exactly
 		// what it saw before.
@@ -1102,7 +1104,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if !m.decisionUngated() {
 			if keys.Match(msg, keys.Draft.Clear) && m.escLeavesWaiting() {
 				// Esc leaves the decision waiting rather than denying it; [n]
-				// is how you say no (§7b).
+				// is how you say no.
 				return m.ungateDecision()
 			}
 			if m.state == stateConfirmRun {
@@ -1199,7 +1201,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				// Ctrl+C keeps the meaning the card has always given it: it
 				// answers the decision no. No draft can produce the chord, so
 				// leaving it live is what keeps a waiting decision endable
-				// without first taking the keyboard (S-117, §7b).
+				// without first taking the keyboard (S-117).
 				m.decisionHeld = true
 				return m.routeDecision(msg)
 			}
@@ -1266,7 +1268,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m.enterFocusMode()
 			}
 		case keys.Is(pressed, keys.Draft.Detail):
-			// Step detail (S-137, §13d): the step in flight opens its rows'
+			// Step detail (S-137): the step in flight opens its rows'
 			// bodies without the keyboard leaving the draft. It reads the
 			// transcript and changes nothing about the conversation, so it
 			// is answered over a running turn like the rest of S-087's live
@@ -1277,7 +1279,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		case keys.Is(pressed, keys.Draft.PageUp, keys.Draft.PageDown):
 			// The pager keys read the transcript and leave the keyboard in
-			// the draft (S-140, §7a). Reading is not a decision — the wheel
+			// the draft (S-140). Reading is not a decision — the wheel
 			// has always said so — and the reader scrolling back to check a
 			// path mid-sentence is not asking to stop writing the sentence.
 			// Paging used to hand the keyboard over, which took the draft off
@@ -1295,7 +1297,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		case keys.Is(pressed, keys.Draft.ScrollUp):
-			// The same job by a line rather than a page (S-140, §7a). Both
+			// The same job by a line rather than a page (S-140). Both
 			// chords are bound because terminals disagree about which they
 			// report: the textarea underneath claims neither, and neither is
 			// reachable by typing.
@@ -1309,7 +1311,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 		case keys.Is(pressed, keys.Draft.Clear):
-			// A visible selection is what esc cancels first (S-145, §7a).
+			// A visible selection is what esc cancels first (S-145).
 			// It is the only thing on the surface esc could mean while one
 			// is lit, and it says so without touching the draft — a reader
 			// who selected the wrong six screens has not also abandoned the
@@ -1357,12 +1359,12 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return next, nil
 			}
 			// Recall is the draft's, wherever the draft has the keyboard
-			// (S-162, §7a). It used to be the idle turn's: ↑ did nothing
+			// (S-162). It used to be the idle turn's: ↑ did nothing
 			// while the agent streamed, ran a command or waited on the
 			// classifier, and nothing under an approval card that had not
 			// been given the keyboard — the four states S-058 and S-117 exist
 			// to keep the sentence live in. A key that is the input's in
-			// every state (§7a) and a frame that is live but cannot recall
+			// every state and a frame that is live but cannot recall
 			// were two claims about the same three lines, and the code was
 			// answering the older one.
 			if m.inputLive() && len(m.inputHistory) > 0 &&
@@ -1624,7 +1626,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m.handleSubagentEvent(msg.ev)
 
 	case streamErrMsg:
-		// Classified, never raw (S-106, §17a): the failure is a row on the
+		// Classified, never raw (S-106): the failure is a row on the
 		// activity grid with the provider's own words in its detail body and
 		// the keys for its class underneath. What happens after the row —
 		// an offer to continue a partial, a bounded wait, or the end of the
@@ -1675,7 +1677,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// so shhh's own pane reads no keys at all (S-160, viewport.go). While the
 	// input owns the keyboard the transcript is moved by the wheel, by
 	// pgup/pgdn and by focus mode, never by a character the sentence wanted
-	// (S-115, §7a).
+	// (S-115).
 	m.atBottom = m.viewport.AtBottom()
 
 	return m, tea.Batch(cmds...)
@@ -1746,14 +1748,14 @@ func (m Model) View() tea.View {
 	v.AltScreen = true
 	// Focus reporting is asked for unconditionally, because it costs the
 	// terminal nothing and it is the only thing that can say whether anyone
-	// is looking (S-157, §10l). A terminal that does not know the mode says
+	// is looking (S-157). A terminal that does not know the mode says
 	// nothing back, and saying nothing is an answer shhh can act on: no blur
 	// ever arrives, so it never concludes the reader has gone.
 	v.ReportFocus = true
 	// Reporting is off for the session by default — the terminal keeps its
 	// own click-drag selection, which is the one thing tracking costs and the
 	// one thing nothing else here can do — and `/ui mouse on` buys the wheel
-	// with it (§7a).
+	// with it.
 	if m.mouseOn {
 		v.MouseMode = tea.MouseModeCellMotion
 	}
@@ -1761,7 +1763,7 @@ func (m Model) View() tea.View {
 }
 
 // screen paints the whole terminal, drawing each block into the rectangle
-// layout.go resolved for it (S-161, §10n). Nothing here measures anything: a
+// layout.go resolved for it (S-161). Nothing here measures anything: a
 // block is handed a rectangle, it fills what it can, and ultraviolet clips
 // the rest at the edge.
 func (m Model) screen() string {
@@ -1783,9 +1785,9 @@ func (m Model) screen() string {
 	draw(m.readingRail(s.rail.Dx()), s.rail)
 
 	// The body renders into the transcript pane; the header, divider and the
-	// prompt frame span both panes (S-092, §15). Surfaces that take the pane
+	// prompt frame span both panes (S-092). Surfaces that take the pane
 	// over get all of it — the scroll gutter's column is the transcript's own
-	// (S-147, §10g), and they do their own scrolling.
+	// (S-147), and they do their own scrolling.
 	view := s.in(s.view, s.pane)
 	draw(m.paneView(view), view)
 	draw(m.liveTail(s.pane.Dx()), s.in(s.tail, s.pane))
@@ -1794,7 +1796,7 @@ func (m Model) screen() string {
 	draw(m.renderAgentRows(s.pane.Dx()), s.in(s.agents, s.pane))
 
 	// Past 130 content columns the body shares its rows with the inspector
-	// rail (S-092, §15); the split is horizontal only, so the row budget the
+	// rail (S-092); the split is horizontal only, so the row budget the
 	// vertical split handed out is unchanged.
 	if rail := m.inspectorData().Lines(s.inspector.Dx(), s.body.Dy()); len(rail) > 0 {
 		column := strings.TrimSuffix(strings.Repeat(sty.Pane.Divider.Render("│")+"\n", s.body.Dy()), "\n")
@@ -1831,15 +1833,15 @@ func (m Model) headerRow() string {
 func (m Model) paneView(area uv.Rectangle) string {
 	switch {
 	case m.state == stateDiffFull && m.fullDiff != nil:
-		// The full-screen diff takes over the viewport (S-074, §3c).
+		// The full-screen diff takes over the viewport (S-074).
 		m.fullDiff.Height = area.Dy()
 		return m.fullDiff.View(area.Dx())
 	case m.state == statePicture && m.picture != nil:
-		// The staged image takes over the pane (S-158, §12h).
+		// The staged image takes over the pane (S-158).
 		m.picture.Height = area.Dy()
 		return m.picture.View(area.Dx())
 	case m.state == stateReview && m.review != nil:
-		// Review mode takes over the whole surface (S-099, §16a).
+		// Review mode takes over the whole surface (S-099).
 		m.review.Height = area.Dy()
 		return m.review.View(area.Dx())
 	}
@@ -1848,10 +1850,10 @@ func (m Model) paneView(area uv.Rectangle) string {
 
 // liveTail is the block the turn draws under the transcript while it works:
 // the thinking spinner, the running command's own activity row, the retry
-// countdown (S-107, §17a). It is the one part of the pane whose height is
+// countdown (S-107). It is the one part of the pane whose height is
 // not fixed, so the layout asks it rather than assuming — the row it takes
 // used to be spent without being budgeted for, which put the bottom of the
-// frame one row past the bottom of the terminal (§10n).
+// frame one row past the bottom of the terminal.
 //
 // Attached, the child's session fills the pane and its liveness shows in the
 // child-scoped status bar, not a parent spinner.
@@ -1886,7 +1888,7 @@ func (m Model) liveTail(width int) string {
 			return ""
 		}
 		// The failure row is already in the transcript; this is the part of
-		// it that drains (S-107, §17a). A wait is a meter, never a spinner.
+		// it that drains (S-107). A wait is a meter, never a spinner.
 		return m.retryWaitBlock(width)
 	case stateModelList:
 		return m.spinner.View() + " Listing models…"
@@ -1914,7 +1916,7 @@ func (m Model) drawBottomPanel(scr uv.Screen, area uv.Rectangle) {
 	if m.frameShowing() {
 		// A decision that has not been given the keyboard rides above the
 		// frame, with the rail that names the keyboard's owner between them
-		// (S-117, §7b).
+		// (S-117).
 		var head, frame uv.Rectangle
 		layout.Vertical(layout.Len(m.interruptHeight()), layout.Fill(1)).
 			Split(area).Assign(&head, &frame)
@@ -2080,7 +2082,7 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 	case components.ApprovalRelease:
 		// The card had the keyboard by arrival and this key is not one of its
-		// answers, so it is the first letter of a sentence (§7b). The
+		// answers, so it is the first letter of a sentence. The
 		// decision stays exactly where it was.
 		return m.releaseToDraft(msg)
 	case components.ApprovalDeny:
@@ -2405,9 +2407,9 @@ func (m *Model) dispatchSteering() tea.Cmd {
 	return tea.Batch(m.requestStream(), m.autosaveCmd())
 }
 
-// restoreSteering returns queued-but-uninjected steering messages to the input
-// when a turn ends abnormally (cancel, stream error), so nothing typed is
-// silently lost.
+// restoreSteering returns queued-but-uninjected steering messages to the
+// input when a turn ends abnormally (cancel, stream error), so nothing typed
+// is silently lost.
 func (m *Model) restoreSteering() {
 	if len(m.steering) == 0 {
 		return
@@ -2422,7 +2424,7 @@ func (m *Model) restoreSteering() {
 
 func (m *Model) appendEntry(e entry) {
 	// Every entry knows the turn it belongs to, so a row that outlives its
-	// turn can still name it — the rail's alerts do (S-120, §15a). An entry
+	// turn can still name it — the rail's alerts do (S-120). An entry
 	// that already carries one (a close block, a round-limit pause) keeps it.
 	if e.turn == 0 {
 		e.turn = m.turnCount
@@ -2446,7 +2448,7 @@ func (m *Model) resetTranscript() {
 }
 
 // flushStream repaints the transcript with as much of the arriving message as
-// has landed, and forgets that a repaint was owed (S-149, §10h).
+// has landed, and forgets that a repaint was owed (S-149).
 func (m *Model) flushStream() {
 	m.streamDirty = false
 	m.viewport.SetLines(m.renderHistoryLines())
@@ -2480,7 +2482,7 @@ func (m Model) renderEntryKeys(e entry, width int, keysLive bool) string {
 }
 
 // renderEntryDetail is the same again, told whether the step this row belongs
-// to has its detail open (S-137, §13d). Only the activity rows can answer to
+// to has its detail open (S-137). Only the activity rows can answer to
 // it; every other kind of entry renders the same inside an opened step as
 // outside one, because a step opens the bodies of its calls and nothing else.
 func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) string {
@@ -2536,7 +2538,7 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 
 // entryIsBlock reports whether an entry reads as a standalone block — a
 // conversational turn, a diff, or a notice long enough to wrap onto its own
-// lines — rather than as a row in the compact activity feed (§6).
+// lines — rather than as a row in the compact activity feed.
 func entryIsBlock(e entry) bool {
 	switch e.kind {
 	case entryUser, entryAssistant, entryDiff, entryTurnClose, entryFanout:
@@ -2570,7 +2572,7 @@ func (m Model) renderStatusBar(width int) string {
 	return m.cockpitData(true).View(width)
 }
 
-// cockpitData assembles the cockpit segments (§8). The frame's vitals rail
+// cockpitData assembles the cockpit segments. The frame's vitals rail
 // (S-082) omits the queued-steering extra — the notice rail carries it — so
 // includeQueued is false there.
 func (m Model) cockpitData(includeQueued bool) components.Cockpit {
@@ -2612,7 +2614,8 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 	if n := len(m.steering); n > 0 && includeQueued {
 		c.Extra = append(c.Extra, fmt.Sprintf("queued %d", n))
 	}
-	// Active approval policy (S-054); absent in the default ask-everything state.
+	// Active approval policy (S-054); absent in the default ask-everything
+	// state.
 	if p := m.policyLabel(); p != "" {
 		c.Extra = append(c.Extra, p)
 	}
@@ -2635,7 +2638,7 @@ func formatTokenCount(n int64) string {
 // is the last thing applied and the first thing dropped — the raw render is
 // what the clipboard extraction reads, so no selection styling can reach it.
 //
-// Lines rather than one string is the currency the pane takes (S-160, §10m),
+// Lines rather than one string is the currency the pane takes (S-160),
 // so nothing between the block cache and the screen splits the session into
 // lines again.
 func (m *Model) renderHistoryLines() []string {
@@ -2647,8 +2650,8 @@ func (m *Model) renderHistoryLines() []string {
 }
 
 // renderHistory and renderHistoryRaw are the same two renders as one string.
-// Nothing on the drawing path uses them: they are what the goldens capture and
-// what the tests read, joined back up from the lines above.
+// Nothing on the drawing path uses them: they are what the goldens capture
+// and what the tests read, joined back up from the lines above.
 func (m *Model) renderHistory() string {
 	return strings.Join(m.renderHistoryLines(), "\n")
 }
@@ -2683,7 +2686,7 @@ func (m *Model) renderHistoryRawLines() []string {
 		m.cached.width = w
 		m.invalidateRenderCache()
 	}
-	// History renders as step blocks (S-090, §13). Every block but the last
+	// History renders as step blocks (S-090). Every block but the last
 	// is frozen — the grouping scan is left to right, so a block that already
 	// has a successor can never change — and only the last one re-renders
 	// each frame, because a running step's header restates its count and
@@ -2696,7 +2699,7 @@ func (m *Model) renderHistoryRawLines() []string {
 	// landing in it, so its block cannot be frozen either (S-110).
 	freeze := min(lastLiveBlock(blocks), m.liveFanoutBlock(blocks))
 	// Back to the settled lines and no further: what the frozen blocks wrote
-	// stays written, and only the tail after them is built again (§10m).
+	// stays written, and only the tail after them is built again.
 	m.cached.rewind()
 	for bi := 0; bi < freeze; bi++ {
 		blk := blocks[bi]
@@ -2731,13 +2734,13 @@ func (m *Model) renderHistoryRawLines() []string {
 	return m.cached.lines
 }
 
-// contentWidth is the surface inside the horizontal padding (§15).
+// contentWidth is the surface inside the horizontal padding.
 func (m Model) contentWidth() int {
 	return m.columns().content.Dx()
 }
 
 // viewportHeight is the transcript's own rows, read off the vertical split
-// (S-161, §10n) rather than counted down from the terminal. The floor is a
+// (S-161) rather than counted down from the terminal. The floor is a
 // floor and not a layout: a terminal with no room left still has to hand the
 // viewport a height it can render at.
 func (m Model) viewportHeight() int {

@@ -23,7 +23,7 @@ type MultiSelectResult struct {
 //
 // A multi-select that is an ordinary list of choices — `/memory forget`, the
 // quality gate's checks — windows like any other list once it outgrows its
-// card (S-124, §4a). Staging is the exception the design names and keeps:
+// card (S-124). Staging is the exception the design names and keeps:
 // there you are accounting for every hunk, so hiding four of them behind `↓ 4
 // more` would be a trap rather than a fold.
 type MultiSelect struct {
@@ -98,7 +98,7 @@ func (s *MultiSelect) View(width int) string {
 	inner := width - cardFrameWidth
 	// The notice and the key hints are pinned: the list scrolls under them,
 	// so what the card spends on them comes off the list's budget before the
-	// window is drawn (§4a).
+	// window is drawn.
 	var tail []string
 	if s.notice != "" {
 		tail = append(tail, sty.Warn.Render(clip(s.notice, inner)))
@@ -144,7 +144,7 @@ func (s *MultiSelect) visibleRows(width, budget int) []string {
 
 // optionRow lays one checkbox row across the card: the box, the label, and —
 // where the caller has one — the short field right-aligned at the end of the
-// row (§4b). That field is where a staging list states `+34 −6`: the counts
+// row. That field is where a staging list states `+34 −6`: the counts
 // are what you are deciding about, so they belong on the row rather than in a
 // summary underneath it.
 func (s *MultiSelect) optionRow(i, inner int) string {

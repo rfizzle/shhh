@@ -34,7 +34,7 @@ const draftLead = "also add a --max-rounds "
 //
 // `open` returns that session. For a decision that arrives unbidden it is the
 // surface on screen and ungated, because that is the state a reader meets it
-// in (§7b). For a transcript row it is the row in the transcript with the
+// in. For a transcript row it is the row in the transcript with the
 // draft below live. For a takeover it is the session with the surface not
 // opened, because opening one is what gives it the keyboard — there is no
 // state in which a takeover is on screen without it.
@@ -180,7 +180,7 @@ func authFailure() *provider.Failure {
 
 // readingCursorOn hands a transcript row the keyboard the way a reader does:
 // ctrl+e opens reading mode, then the cursor is put on the row of that kind.
-// This is the only way a transcript row's keys ever go live (§7c).
+// This is the only way a transcript row's keys ever go live.
 func readingCursorOn(kind entryKind) func(*testing.T, Model) Model {
 	return func(t *testing.T, m Model) Model {
 		t.Helper()
@@ -297,7 +297,7 @@ func TestInertKeys_EveryTakeoverHoldsTheKeyboardExclusively(t *testing.T) {
 }
 
 // TestInertKeys_AWaitingRowSaysSoAndOffersTheKeyThatEndsIt is invariant 1
-// applied to the state of a key (§7c). A transcript row whose keys are
+// applied to the state of a key. A transcript row whose keys are
 // waiting says it in words — not in a shade a monochrome terminal loses —
 // and offers the one key that makes them live.
 func TestInertKeys_AWaitingRowSaysSoAndOffersTheKeyThatEndsIt(t *testing.T) {
@@ -325,7 +325,7 @@ func TestInertKeys_AWaitingRowSaysSoAndOffersTheKeyThatEndsIt(t *testing.T) {
 
 // TestInertKeys_WaitingAndLiveNeverPaintAlike holds the colour half of the
 // same rule, in both palettes. A key that is not live yet is not painted in
-// info — the colour that means "you can press this" (§10a) — and the key that
+// info — the colour that means "you can press this" — and the key that
 // hands the keyboard over is.
 func TestInertKeys_WaitingAndLiveNeverPaintAlike(t *testing.T) {
 	for _, mono := range []bool{false, true} {

@@ -166,7 +166,7 @@ func TestPrimitives_APlainMenuSpendsNoColumnsOnEmptyOnes(t *testing.T) {
 
 // The plan card is the one list that keeps its descriptions under the focus:
 // there they are consequences of taking the option, and four consequences
-// stacked at once is a wall rather than a choice (§4d).
+// stacked at once is a wall rather than a choice.
 func TestPrimitives_PlanCardKeepsItsConsequenceUnderTheFocus(t *testing.T) {
 	c := &PlanCard{Title: "Plan", Options: []SelectOption{
 		{Label: "run the whole plan", Desc: "4 steps, stopping only for the two edits"},
@@ -238,7 +238,7 @@ func TestPrimitives_QueryHintGoesOnceAnythingIsTyped(t *testing.T) {
 }
 
 // A staging list states what each hunk costs on the hunk's own row: the
-// counts are what you are deciding about (§4b).
+// counts are what you are deciding about.
 func TestPrimitives_MultiSelectStatesItsCountsOnTheRow(t *testing.T) {
 	s := NewMultiSelect("Apply which hunks?", []SelectOption{
 		{Label: "@@ -84,9   return the sentinel", Meta: "+2 −1"},

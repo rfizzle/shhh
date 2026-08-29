@@ -33,7 +33,7 @@ func stagePNG(t *testing.T, m Model, name string) Model {
 }
 
 // What is staged has to be visible somewhere, and the staged rail is where
-// the surface says what is pending (§12g). It names the file rather than
+// the surface says what is pending. It names the file rather than
 // counting it, and carries the kind's mark so the two do not have to be
 // told apart by colour.
 func TestAttachments_StagedRailNamesWhatIsStaged(t *testing.T) {
@@ -55,7 +55,7 @@ func TestAttachments_StagedRailNamesWhatIsStaged(t *testing.T) {
 }
 
 // The rail is a row like any other, so the viewport gives one up for it —
-// otherwise the frame grows past the bottom of the terminal (§12e).
+// otherwise the frame grows past the bottom of the terminal.
 func TestAttachments_StagedRailCostsTheViewportALine(t *testing.T) {
 	m := frameModel(t, 130, 40)
 	base := m.viewport.Height()
@@ -67,7 +67,7 @@ func TestAttachments_StagedRailCostsTheViewportALine(t *testing.T) {
 }
 
 // Attached, the keyboard is pointed at a child and ctrl+v is a textarea key
-// again, so the orchestrator's staging area is not what is on screen (§12d).
+// again, so the orchestrator's staging area is not what is on screen.
 func TestAttachments_StagedRailIsOrchestratorScoped(t *testing.T) {
 	m := stagePNG(t, frameModel(t, 130, 40), "shot.png")
 	m.attachedTo = "writer-1"
@@ -293,7 +293,7 @@ func TestPasteMsg_AttachesAFileAndTypesEverythingElse(t *testing.T) {
 
 // The Paste flag bought routing: pasted text reached whichever surface held
 // the keyboard rather than the textarea directly, so a card's filter row
-// filtered and reading mode handed the keyboard back (§4a, §7a). The message
+// filtered and reading mode handed the keyboard back. The message
 // has to keep buying that, which is why it is handed on as the keystroke it
 // used to be — a paste that went straight to the draft would leave reading
 // mode holding a keyboard it no longer has.

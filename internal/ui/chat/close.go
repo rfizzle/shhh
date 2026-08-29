@@ -22,8 +22,8 @@ import (
 )
 
 // The offers the changeset row makes are keys.Row.Review and keys.Row.Undo
-// (§7d). Focus mode on the row consumes them, so the input keeps every other
-// key (§7).
+//. Focus mode on the row consumes them, so the input keeps every other
+// key.
 
 // appendTurnClose closes the turn with its summary rows. It runs where the
 // turn's accounting is closed — one place, so a turn cannot end without

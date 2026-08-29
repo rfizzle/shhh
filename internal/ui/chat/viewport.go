@@ -14,7 +14,7 @@ package chat
 // The scroll position is an absolute line index rather than the item-and-line
 // pair Crush's list keeps, and that is deliberate: the selection (§7a, S-145)
 // is a pair of coordinates in rendered transcript space, the notice rail
-// counts the lines below the pane, and the scroll gutter (§10g) is a
+// counts the lines below the pane, and the scroll gutter is a
 // proportion of the whole. All three ask the same question — which line of
 // the transcript is this — and an item-relative offset would make each of
 // them convert.
@@ -84,13 +84,13 @@ func (v *viewport) SetLines(lines []string) {
 
 // SetContent is SetLines for the surfaces that still render to one string:
 // reading mode's gutter render and an attached child's session, both of which
-// are built fresh each time and have no incremental cache to feed (§10m).
+// are built fresh each time and have no incremental cache to feed.
 func (v *viewport) SetContent(s string) {
 	v.SetLines(strings.Split(s, "\n"))
 }
 
 // TotalLineCount is how many lines the transcript has, which is what the
-// scroll gutter's proportion (§10g) and the notice rail's count (§7a) are
+// scroll gutter's proportion and the notice rail's count are
 // both fractions of.
 func (v viewport) TotalLineCount() int { return len(v.lines) }
 
@@ -172,7 +172,7 @@ func (v viewport) visibleLines() []string {
 }
 
 // View is the pane, padded to its own width and height so every row the
-// scroll gutter glues itself to (§10g) is the same length.
+// scroll gutter glues itself to is the same length.
 func (v viewport) View() string {
 	if v.width == 0 || v.height == 0 {
 		return ""

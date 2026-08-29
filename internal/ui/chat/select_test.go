@@ -1,6 +1,6 @@
 package chat
 
-// Application-owned transcript selection (S-145, §7a): a drag inside the
+// Application-owned transcript selection (S-145): a drag inside the
 // transcript selects text shhh copies itself, scrolls the pane when it
 // reaches an edge, and gives the coordinates up rather than guessing when the
 // render underneath them changes shape.
@@ -43,7 +43,8 @@ func withColor(t *testing.T) {
 	t.Cleanup(func() { components.SetProfile(was) })
 }
 
-// clip records what the session put on the clipboard, and can be told to fail.
+// clip records what the session put on the clipboard, and can be told to
+// fail.
 type clip struct {
 	text  string
 	calls int
@@ -1053,7 +1054,7 @@ func TestSelection_TakeoverSurfaceEndsTheDrag(t *testing.T) {
 
 // Both layouts use the same transcript viewport, so both select — the
 // inspector rail just takes columns off the pane, and a press on the rail is
-// a press outside it (§15).
+// a press outside it.
 func TestSelection_WorksInBothLayouts(t *testing.T) {
 	cases := []struct {
 		name    string
@@ -1093,7 +1094,7 @@ func TestSelection_WorksInBothLayouts(t *testing.T) {
 }
 
 // Review mode owns the screen the same way the full-screen diff does, and
-// keeps its own mouse behaviour (§16a).
+// keeps its own mouse behaviour.
 func TestSelection_ReviewModeKeepsItsOwnMouse(t *testing.T) {
 	m, _ := reviewModel(t)
 	m = sendText(t, m.WithMouse(true), "/review")

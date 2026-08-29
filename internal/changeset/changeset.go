@@ -362,8 +362,7 @@ func (s *Store) Bytes() int64 {
 // SessionFile is one path's net change across every retained turn: the hunks
 // between where the session found the file and where it left it, plus how
 // many turns it took to get there. The turn count is what the inspector
-// rail's `3t` field states — eight rows for one file is a log, not a state
-// (§15a).
+// rail's `3t` field states — eight rows for one file is a log, not a state.
 type SessionFile struct {
 	Path           string
 	Hunks          []diff.Hunk

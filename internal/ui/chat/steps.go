@@ -4,7 +4,7 @@ package chat
 // calls fold under numbered steps, so a forty-tool turn reads as an outline
 // instead of a scrolling feed. The grouping is a layer over the entry list —
 // the agent already emits ordered tool results, and inventing a step protocol
-// on the wire would couple every provider to the UI (§13a). Plan mode is the
+// on the wire would couple every provider to the UI. Plan mode is the
 // one place a step list is authoritative: once a plan is approved (S-104) its
 // steps are the transcript's steps — numbered as the plan numbered them,
 // including the ones not started — and work the plan never named is marked as
@@ -24,7 +24,7 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
-// stepState is a step's state (§13b). It follows its rows: running while any
+// stepState is a step's state. It follows its rows: running while any
 // call is in flight, failed once one broke, done otherwise. Queued is the
 // declared-but-not-started state a plan's steps arrive in (S-104).
 type stepState int
@@ -38,7 +38,7 @@ const (
 
 // foldState is your override of a step's automatic folding. It lives on the
 // entry that titles the step, so steps themselves hold no layout state and
-// re-render from stored raw entries on resize (§13b).
+// re-render from stored raw entries on resize.
 type foldState int
 
 const (
@@ -56,8 +56,8 @@ const stepTitleMaxRunes = 120
 const stepOrdinalWidth = 2
 
 // stepGroup is one titled run of consecutive activity entries: the assistant
-// entry at titleIdx heads it, and members [start,end) are the calls it made. A
-// step an approved plan declared but the run has not reached yet has no
+// entry at titleIdx heads it, and members [start,end) are the calls it made.
+// A step an approved plan declared but the run has not reached yet has no
 // entries at all — start == end and titleIdx is stepNoTitle — and renders as
 // its header alone (S-104).
 type stepGroup struct {
@@ -193,8 +193,8 @@ func stepBlocks(es []entry, declared []plan.Step) []transcriptBlock {
 	return blocks
 }
 
-// stepByNumber finds a declared step by the number the plan gave it — which is
-// the model's own numbering, not an index (internal/plan).
+// stepByNumber finds a declared step by the number the plan gave it — which
+// is the model's own numbering, not an index (internal/plan).
 func stepByNumber(declared []plan.Step, n int) (plan.Step, bool) {
 	for _, s := range declared {
 		if s.Number == n {
@@ -251,7 +251,7 @@ func (m Model) stepStats(g *stepGroup, es []entry) (state stepState, tools int, 
 // stepFolded decides whether a step shows only its header. A step is open
 // while it runs and collapses when it finishes — except one that contains a
 // failure, because a failure you have to scroll to find is a failure you will
-// miss (§13b). Your own fold overrides both.
+// miss. Your own fold overrides both.
 func (m Model) stepFolded(g *stepGroup, es []entry, state stepState) bool {
 	if g.titleIdx == stepNoTitle {
 		// A declared step nobody has started has no rows to fold and no entry
@@ -268,7 +268,7 @@ func (m Model) stepFolded(g *stepGroup, es []entry, state stepState) bool {
 	case verbosityHigh:
 		return false
 	case verbosityLow:
-		// Headers only (§13c): at low every step is folded, a broken one
+		// Headers only: at low every step is folded, a broken one
 		// included — you asked for the outline, and the ✗ is on the header.
 		return true
 	}
@@ -291,7 +291,7 @@ func (m *Model) toggleStepFold(idx int) {
 }
 
 // stepHeader is one step's line: fold state, ordinal, title, a faint rule
-// stretching to the stats, state glyph, tool count and duration (§13).
+// stretching to the stats, state glyph, tool count and duration.
 type stepHeader struct {
 	Ordinal  int
 	Title    string
@@ -299,7 +299,7 @@ type stepHeader struct {
 	Tools    int
 	Duration time.Duration
 	Folded   bool
-	// Detail marks a step you opened the detail of yourself (S-137, §13d).
+	// Detail marks a step you opened the detail of yourself (S-137).
 	// It is your answer, not the resolved state: at high verbosity every step
 	// is open, and a word repeated on every header says nothing about any of
 	// them. What the marker is for is the one step that is taller than the
@@ -325,7 +325,7 @@ func (h stepHeader) tones() (ptr, title, dur lipgloss.Style) {
 	return sty.Step.Dim, sty.Step.Title, sty.Step.Stats
 }
 
-// glyph is the state glyph and its color (§13b).
+// glyph is the state glyph and its color.
 func (h stepHeader) glyph() string {
 	switch h.State {
 	case stepRunning:
@@ -458,7 +458,8 @@ type unit struct {
 }
 
 // blockUnits renders one block. In focus mode selectable units render two
-// columns narrower and carry the gutter, with the pointer on the selected one.
+// columns narrower and carry the gutter, with the pointer on the selected
+// one.
 func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool, focusIdx int) []unit {
 	var units []unit
 	add := func(idx int, sepBefore, sepAfter entry, text string, selectable bool) {
@@ -478,7 +479,7 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 	}
 	addEntry := func(i int, detail bool) {
 		e := es[i]
-		// A row's own keys are live only under reading mode's cursor (§7c);
+		// A row's own keys are live only under reading mode's cursor;
 		// anywhere else they render beside the key that hands the keyboard
 		// to the transcript.
 		add(i, e, e, m.renderEntryDetail(e, entryWidth(e), focus && i == focusIdx, detail), selectable(e))
@@ -504,8 +505,8 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 		return units
 	}
 	// A step's rows render through its slots, so a folded run of read-only
-	// calls arrives as one counted group row (S-091, §13c) — unless the step
-	// has its detail open, which gives the run back (S-137, §13d).
+	// calls arrives as one counted group row (S-091) — unless the step
+	// has its detail open, which gives the run back (S-137).
 	for _, sl := range m.stepSlots(es, g) {
 		if !sl.group {
 			addEntry(sl.idx, header.Detail)

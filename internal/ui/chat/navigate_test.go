@@ -1,6 +1,6 @@
 package chat
 
-// Terminal interactivity and prompt↔transcript focus (S-115, §7a): the wheel
+// Terminal interactivity and prompt↔transcript focus (S-115): the wheel
 // reaches the transcript, typed letters do not, and there are named ways in
 // and out that a draft can never produce by accident.
 
@@ -90,7 +90,7 @@ func TestWheel_ScrollsTheTranscriptAndLeavesTheDraftAlone(t *testing.T) {
 }
 
 // The wheel is the one gesture that reaches a full-screen viewer, since the
-// transcript behind it is not what the reader is looking at (§3c).
+// transcript behind it is not what the reader is looking at.
 func TestWheel_ReachesTheFullScreenDiff(t *testing.T) {
 	m := diffFullModel(t).WithMouse(true)
 	before := m.fullDiff.Offset
@@ -270,7 +270,7 @@ func TestFollowNotice_CountsWhatIsBelowAndClearsAtTheEnd(t *testing.T) {
 }
 
 // Reading mode has its own labelled rail and position, so the follow notice
-// stays out of its way (§7a).
+// stays out of its way.
 func TestFollowNotice_SilentInReadingMode(t *testing.T) {
 	m := proseModel(t)
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyPgUp})
@@ -401,7 +401,7 @@ func TestReadingMode_KeepsItsOwnLetters(t *testing.T) {
 	}
 }
 
-// A row's offer keys (§16, §17a) are focus mode's only while the row under
+// A row's offer keys are focus mode's only while the row under
 // the cursor actually offers them. Where it does not, the letter is a letter
 // again and goes back to the draft rather than being swallowed.
 func TestReadingMode_AnUnclaimedOfferKeyReturnsToThePrompt(t *testing.T) {
@@ -420,7 +420,7 @@ func TestReadingMode_AnUnclaimedOfferKeyReturnsToThePrompt(t *testing.T) {
 }
 
 // The rail under the header is the visual half of the answer to "which pane
-// has the keyboard" (§7a). The word carries it, so it survives mono.
+// has the keyboard". The word carries it, so it survives mono.
 func TestReadingRail_NamesThePaneWithTheKeyboard(t *testing.T) {
 	m := focusModel(t)
 	if strings.Contains(m.View().Content, "READING") {
@@ -510,7 +510,7 @@ func TestStartScreen_NavLineSurvivesTyping(t *testing.T) {
 
 // Reporting is off out of the box, because the thing it costs — the
 // terminal's own click-drag selection — has no substitute here, while the
-// wheel does (S-136, §7a).
+// wheel does (S-136).
 func TestMouse_OffByDefaultAndAskedForByChord(t *testing.T) {
 	var wrote [][2]string
 	m := readyModel(t).WithConfigWriter(func(k, v string) error {

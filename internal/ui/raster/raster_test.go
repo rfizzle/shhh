@@ -120,7 +120,7 @@ func TestHalfblocks_LeaveTransparencyUnpainted(t *testing.T) {
 
 // The ramp is the rung with no colour to spend, so what it spends is density,
 // and it spends all of it on luminance. Nothing is ever the space: a black
-// patch and a hole are different facts (§10e).
+// patch and a hole are different facts.
 func TestRamp_IsDensityAndNeverColour(t *testing.T) {
 	for _, c := range []struct {
 		name  string

@@ -45,7 +45,7 @@ func TestEditOutsideTheScopeAsksEvenInAcceptEdits(t *testing.T) {
 	if view := m.View().Content; !strings.Contains(view, "scope") {
 		t.Fatalf("the card should carry a scope row, got:\n%s", view)
 	}
-	// The row's detail is the first thing a narrow card drops (§2), so what
+	// The row's detail is the first thing a narrow card drops, so what
 	// the key would grant is read at a width that can carry it.
 	wide, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 40})
 	if view := wide.(Model).View().Content; !strings.Contains(view, "approving adds it for this session") {

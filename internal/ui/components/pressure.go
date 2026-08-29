@@ -60,7 +60,7 @@ type PressureCard struct {
 	Tokens, Window int64
 	// Warn and Alert are the host's own thresholds, passed through to the
 	// meter so the card, the vitals rail and the inspector rail turn colour
-	// at the same two numbers (§10c).
+	// at the same two numbers.
 	Warn, Alert int
 	// Estimated marks a total the provider never reported, so the card says
 	// `~188k` where the rails say `~188k` and neither passes a guess off as a

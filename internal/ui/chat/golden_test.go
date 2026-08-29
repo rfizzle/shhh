@@ -128,7 +128,7 @@ func TestGolden_StepOutline(t *testing.T) {
 		m.toggleStepFold(1)
 		// Ctrl+O on step 1: it unfolds, its rows give the counted group back,
 		// and every one of them carries its bounded body — one step deep,
-		// with step 2 beside it untouched (S-137, §13d).
+		// with step 2 beside it untouched (S-137).
 		blk, ok := m.stepBlockAt(m.transcript, 1)
 		if !ok {
 			t.Fatal("step 1 not found in the golden transcript")
@@ -155,9 +155,9 @@ func TestGolden_StepOutline(t *testing.T) {
 }
 
 // TestGolden_PlanChecklist captures the outline an approved plan numbers
-// (S-104, §13a): declared steps carrying the plan's own numbers and titles in
-// the order the run reached them, one group the plan never named marked off
-// it, and the declared-but-not-started steps trailing as queued headers. It is
+// (S-104): declared steps carrying the plan's own numbers and titles in the
+// order the run reached them, one group the plan never named marked off it,
+// and the declared-but-not-started steps trailing as queued headers. It is
 // the one shape of the outline that does not come from the prose.
 func TestGolden_PlanChecklist(t *testing.T) {
 	captureGolden(t, "plan-checklist", "plan checklist outline", goldenWidths, func(width int) []golden.Panel {
@@ -206,13 +206,13 @@ func TestGolden_PromptFrame(t *testing.T) {
 }
 
 // TestGolden_StagedRail captures the frame with something waiting to ride
-// (S-151, §12g): the chips between the notices and the box they will leave
+// (S-151): the chips between the notices and the box they will leave
 // with, at every width, so the rail's own ladder and its place in the stack
 // are on one sheet.
 //
-// The last panel is the pair that matters — a notice above the chips — because
-// "the staged rail sits under anything transient the session is saying" is a
-// claim a reader checks by looking at both rows at once.
+// The last panel is the pair that matters — a notice above the chips —
+// because "the staged rail sits under anything transient the session is
+// saying" is a claim a reader checks by looking at both rows at once.
 func TestGolden_StagedRail(t *testing.T) {
 	png := make([]byte, 412<<10)
 	pdf := make([]byte, 1126<<10)
@@ -266,7 +266,7 @@ func TestGolden_TurnStatus(t *testing.T) {
 			{Label: "phase · streaming", View: frame(func(m *Model) {
 				m.streaming = "The round limit is enforced in the loop, not in the tool."
 			})},
-			// The sweep in situ, mid-pass (§10c). The entrance is not
+			// The sweep in situ, mid-pass. The entrance is not
 			// capturable here — it is read off the turn's own age, and this
 			// fixture's turn is a minute old so its elapsed does not depend
 			// on the clock — so the components catalog captures that half.
@@ -314,7 +314,7 @@ func TestGolden_PromptFrameWidthsCoverEveryLayout(t *testing.T) {
 }
 
 // TestGolden_StartScreen captures the first-contact screen as the host
-// assembles it (S-105, §17c): the survey's facts, the gate in effect, and the
+// assembles it (S-105): the survey's facts, the gate in effect, and the
 // three offers a dirty Go checkout with a session to pick up produces —
 // against the same screen in a clean checkout with nothing saved and no gate,
 // which is the other end of what the survey can find.
@@ -354,7 +354,7 @@ func TestGolden_StartScreen(t *testing.T) {
 }
 
 // TestGolden_ProviderFailures captures the session's own mapping from a
-// classified failure to a row (S-106, §17a): which class earns ⚠ and which
+// classified failure to a row (S-106): which class earns ⚠ and which
 // earns ✗, what each says in its outcome, and which keys the session can
 // honour for it. The component sheet in internal/ui/components captures the
 // row; this captures the decisions the session makes about one.
@@ -395,15 +395,15 @@ func TestGolden_ProviderFailures(t *testing.T) {
 }
 
 // TestGolden_RoundLimitPause captures the checkpoint a turn stops on when it
-// runs out of tool rounds (S-109, §17a) — the `rounds` row standing where the
-// close block would be, in the four shapes the session can produce it: a turn
-// that changed files and never re-ran the suite, one that changed nothing, one
+// runs out of tool rounds (S-109) — the `rounds` row standing where the close
+// block would be, in the four shapes the session can produce it: a turn that
+// changed files and never re-ran the suite, one that changed nothing, one
 // that has already been granted a block of rounds (which is where the doubled
 // grant and [!] show up), and one whose offer has been taken.
 //
-// The numbers are the real ones a session produces: the default ceiling, and a
-// second stop derived from the block rather than written out, so the panel and
-// the row cannot disagree about what the grant buys.
+// The numbers are the real ones a session produces: the default ceiling, and
+// a second stop derived from the block rather than written out, so the panel
+// and the row cannot disagree about what the grant buys.
 func TestGolden_RoundLimitPause(t *testing.T) {
 	captureGolden(t, "round-limit-pause", "the round-limit pause", goldenWidths, func(width int) []golden.Panel {
 		build := func(p *roundPause) string {
@@ -451,7 +451,7 @@ func TestGolden_PressureCard(t *testing.T) {
 }
 
 // TestGolden_Interrupt captures a decision landing on a half-typed sentence
-// (S-117, §7b): the card ungated above a live frame, and the same card once
+// (S-117): the card ungated above a live frame, and the same card once
 // ctrl+g has given it the keyboard with the draft held undressed beneath it.
 // Read the two panels together — the pair is what invariant 5 asks a reader
 // to check, and covering the colours must still answer "who has the
@@ -482,7 +482,7 @@ func interruptSurface(m Model) string {
 }
 
 // TestGolden_ScrollGutter captures the transcript pane's right-hand column
-// (S-147, §10g) in the four states it has: nothing to scroll, pinned to the
+// (S-147) in the four states it has: nothing to scroll, pinned to the
 // live end with plenty above, halfway up, and at the top. The gutter is the
 // only thing that changes between them, which is the point — the transcript
 // wraps to the same width whether or not there is anything to draw in it, so
@@ -542,7 +542,7 @@ func TestGolden_ScrollGutter(t *testing.T) {
 // between them — so the ansi block is a table of the register's assignments
 // rather than a sample of one of them. The mono pair is the other half of the
 // claim: mono declines the register outright rather than collapsing it, so
-// the same body comes back in the plain +/- styling (§10f).
+// the same body comes back in the plain +/- styling.
 func TestGolden_SyntaxRegister(t *testing.T) {
 	captureGolden(t, "syntax-register", "the diff body's syntax register", []int{80, 130}, func(width int) []golden.Panel {
 		hunks := []diff.Hunk{{
@@ -653,7 +653,7 @@ func TestGolden_KeyEntry(t *testing.T) {
 }
 
 // TestGolden_Palette captures the command palette in the bottom panel
-// (S-112, §18a): the query line, the group rails, a command that cannot run
+// (S-112): the query line, the group rails, a command that cannot run
 // while the agent works, and the count of what did not fit.
 func TestGolden_Palette(t *testing.T) {
 	captureGolden(t, "palette", "the command palette in the panel", goldenWidths, func(width int) []golden.Panel {
@@ -681,7 +681,7 @@ func TestGolden_Palette(t *testing.T) {
 	})
 }
 
-// screenWidths adds a terminal wide enough to split (S-092, §15) to the four
+// screenWidths adds a terminal wide enough to split (S-092) to the four
 // breakpoints: 144 columns is 140 content columns, past the
 // InspectorMinContentWidth rung, so the whole-screen capture carries the
 // two-pane arrangement as well as the single-pane one.
@@ -694,7 +694,7 @@ var screenWidths = append(append([]int{}, goldenWidths...), 144)
 const screenHeight = 30
 
 // TestGolden_Screen captures the whole surface — everything View() paints,
-// chrome and padding included (§15). The other captures in this file each
+// chrome and padding included. The other captures in this file each
 // hold one block of it; this one holds the arrangement, which is the thing
 // no substring assertion and no per-block golden can see: that the header,
 // the reading rail, the transcript pane, whatever the turn is doing under it
@@ -718,7 +718,7 @@ func TestGolden_Screen(t *testing.T) {
 				m.streaming = ""
 			})},
 			// The session summary leads the rail where there is a rail to
-			// lead (S-163, §15d); below 130 columns the same panel is the
+			// lead (S-163); below 130 columns the same panel is the
 			// single-pane surface, which is how the capture shows that
 			// nothing was taken from the narrow terminal but the block.
 			{Label: "working · a reading of the session leads the rail", View: build(func(m *Model) {

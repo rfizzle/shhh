@@ -10,7 +10,7 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-// ground is what a detail body is painted in (§6a) — dimmer, the token the
+// ground is what a detail body is painted in — dimmer, the token the
 // activity row hands repaint; every test below asks for the same one so the
 // assertions read as claims about the foreign half.
 var testGround = Palette.Dimmer
@@ -33,7 +33,7 @@ func TestForeignText_LinesWithNothingToRepaintAreUntouched(t *testing.T) {
 }
 
 // The sixteen colours a terminal theme owns become the tokens that mean the
-// same thing here (§10i). The assertion is against what lipgloss renders the
+// same thing here. The assertion is against what lipgloss renders the
 // token as rather than against a literal escape, so the test says "del", not
 // "91", and survives P2-1 making del a truecolor value.
 func TestForeignText_ThemeColoursBecomeTokens(t *testing.T) {
@@ -150,7 +150,8 @@ func TestForeignText_BackgroundsAreDropped(t *testing.T) {
 }
 
 // An explicit colour is one the program could see when it chose it, and one
-// the palette has no token to stand in for. It is kept rather than guessed at.
+// the palette has no token to stand in for. It is kept rather than guessed
+// at.
 func TestForeignText_ExplicitColoursAreKept(t *testing.T) {
 	withColorProfile(t, colorprofile.TrueColor)
 	for _, c := range []struct {
@@ -170,7 +171,7 @@ func TestForeignText_ExplicitColoursAreKept(t *testing.T) {
 
 // Invariant 1, on the one surface shhh does not write: with mono on, no
 // foreign colour survives at all — the diff renderer's answer to chroma
-// (§10f), not a recolouring. Two lines that differ only in which colour they
+// , not a recolouring. Two lines that differ only in which colour they
 // name render identically, and the words are what tell them apart.
 func TestForeignText_MonoDeclinesForeignColour(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)

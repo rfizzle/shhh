@@ -19,7 +19,7 @@ package chat
 // header or on one of its rows.
 //
 // The override lives on the entry that titles the step, beside stepFold and
-// groupFold (§13b), so steps still hold no layout state of their own and
+// groupFold, so steps still hold no layout state of their own and
 // re-render from stored raw entries on resize. It is resolved at render time
 // rather than stamped onto the rows, which is what lets a call that lands
 // after the chord was pressed arrive already open — a step in flight is a
@@ -133,7 +133,7 @@ func (m *Model) toggleStepDetail(g *stepGroup) {
 	es[g.titleIdx].stepFold = foldOpen
 }
 
-// detailFromDraft is the chord beside a live input (§7a): it opens the step
+// detailFromDraft is the chord beside a live input: it opens the step
 // in flight without taking the keyboard, so the sentence in the box survives
 // being curious. It is a reading, and reading is not a focus transfer — the
 // same rule the wheel follows.
@@ -142,14 +142,14 @@ func (m Model) detailFromDraft() (tea.Model, tea.Cmd) {
 	g, ok := m.draftStep(es)
 	if !ok {
 		if m.startScreenShowing() {
-			// First contact (§17c) is the one screen with nothing behind it,
+			// First contact is the one screen with nothing behind it,
 			// and it advertises the chord itself. A notice there would spend
 			// the screen to say what the screen already says (S-115).
 			return m, nil
 		}
 		if m.saidNoStepDetail(es) {
 			// A refusal that fires on every keypress teaches a reader to stop
-			// reading refusals (§7a). It is said once, and the next press of
+			// reading refusals. It is said once, and the next press of
 			// a chord that still has nothing to open is silent.
 			return m, nil
 		}

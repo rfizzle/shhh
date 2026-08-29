@@ -3,7 +3,7 @@
 //
 // Everything else in shhh adapts to the terminal by reading the environment
 // and measuring the window: NO_COLOR, TERM=dumb, the width the ladders drop
-// against (§8c). None of that can answer whether the terminal draws inline
+// against. None of that can answer whether the terminal draws inline
 // images, whether it will raise a desktop notification, or whether it tells
 // shhh when the window loses focus — those are questions only the terminal
 // itself can answer, and answering them means asking: writing a query
@@ -35,7 +35,7 @@
 //     are false in both cases; here Asked and Held say which, because a
 //     reader looking at a readout that says "no inline images" is owed the
 //     difference between a terminal that said no and one shhh declined to
-//     interrupt (§10k).
+//     interrupt.
 //   - The reply is read where uv already framed it, not parsed again. Crush
 //     runs the OSC 99 reply back through a fresh ansi.Parser; by the time
 //     the event arrives the sequence has been decoded once already, so the

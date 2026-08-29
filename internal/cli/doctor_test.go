@@ -146,8 +146,7 @@ func TestDoctorModelFinding_NeverClaimsAKeyWasAccepted(t *testing.T) {
 }
 
 // No key anywhere is the one check that stops a session outright, so it fails
-// rather than warns, and its fix names all four places with what was in each
-// (§17b).
+// rather than warns, and its fix names all four places with what was in each.
 func TestDoctorModelFinding_NoKeyFailsAndNamesTheFourPlaces(t *testing.T) {
 	survey := resolve.Survey{
 		Provider: "anthropic",
@@ -240,7 +239,7 @@ func TestDoctorSandbox_Contained(t *testing.T) {
 
 // The consequence is quoted from the surface the reader will actually meet it
 // on: the approval card promotes ⚠ UNCONTAINED to its title bar when nothing
-// wraps the command (§2b, §19d).
+// wraps the command.
 func TestDoctorSandbox_UncontainedQuotesTheApprovalCard(t *testing.T) {
 	f := doctorSandbox(sandbox.Availability{Detail: "sandbox-exec not found"}, "workspace", "darwin")
 	if f.State != components.DoctorFailed {
@@ -454,7 +453,7 @@ func TestDoctorUpdate(t *testing.T) {
 }
 
 // The duration field is blank under half a second, the same rule every
-// activity row in the product follows (§6a). Most checks are a stat, so most
+// activity row in the product follows. Most checks are a stat, so most
 // of this column is deliberately empty.
 func TestDoctorDuration(t *testing.T) {
 	for _, tc := range []struct {
@@ -470,8 +469,7 @@ func TestDoctorDuration(t *testing.T) {
 }
 
 // The text report carries the consequences and the fixes as well as the rows,
-// because those are the half of the run somebody else needs in order to help
-// (§19d).
+// because those are the half of the run somebody else needs in order to help.
 func TestDoctorReport_CarriesTheWholeRun(t *testing.T) {
 	checks := []components.DoctorCheck{
 		doctorCheck("binary", doctorBinary("0.9.4", "linux", "amd64", ""), 0),

@@ -248,7 +248,7 @@ func TestSelectWindow_SurvivesAListThatShrinks(t *testing.T) {
 	}
 }
 
-// The note field is pinned under the list (§4c), so a long list scrolls
+// The note field is pinned under the list, so a long list scrolls
 // rather than pushing the note off the card.
 func TestNoteSelectWindow_KeepsTheNoteFieldOnTheCard(t *testing.T) {
 	ns := NewNoteSelect("Remember this?", modelList(20))

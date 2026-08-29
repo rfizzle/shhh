@@ -87,7 +87,7 @@ func goldenHunks() []diff.Hunk {
 }
 
 // TestGolden_ActivityRows captures every activity row kind and state on one
-// sheet (§6b, §6d). Everything but the state is held constant, so the file
+// sheet. Everything but the state is held constant, so the file
 // reads as a table of what each state contributes.
 func TestGolden_ActivityRows(t *testing.T) {
 	captureGolden(t, "activity-rows", "activity row grammar", goldenWidths, func(width int) []golden.Panel {
@@ -168,7 +168,7 @@ func TestGolden_ActivityRows(t *testing.T) {
 	})
 }
 
-// TestGolden_ApprovalCard captures the decision surface's variants (§4): the
+// TestGolden_ApprovalCard captures the decision surface's variants: the
 // command card plain and flagged, the edit card carrying its diff, and the
 // generic card.
 // TestGolden_TurnClose captures the rows a turn ends with (§16, S-098): the
@@ -207,7 +207,7 @@ func TestGolden_TurnClose(t *testing.T) {
 				c.Spend, c.Changes, c.Checks = "~48.1k tok", nil, nil
 			})},
 			// The changeset row in the two states invariant 5 puts it in
-			// (§7c): its [v] and [u] are handled by reading mode on the row,
+			//: its [v] and [u] are handled by reading mode on the row,
 			// so beside a live draft they are letters and the row says so.
 			{Label: "keys waiting · the draft has the keyboard, ctrl+e takes it", View: closed(func(c *TurnClose) {
 				c.KeysWaiting, c.Handover = true, "ctrl+e"
@@ -267,8 +267,8 @@ func TestGolden_TurnStatus(t *testing.T) {
 
 // TestGolden_Anim captures the working label's motion (§10c, S-154): the
 // entrance frame by frame, and one whole pass of the sweep with its rest
-// either side. It is captured at one width because the label does not reflow —
-// a cell that has not arrived is a mark of the same width, and the sweep
+// either side. It is captured at one width because the label does not reflow
+// — a cell that has not arrived is a mark of the same width, and the sweep
 // changes only colour — so a second width would be the same render again; the
 // widths that matter to this line are the drop ladder's, and those are
 // turn-status's.
@@ -382,7 +382,7 @@ func TestGolden_ApprovalCard(t *testing.T) {
 	})
 }
 
-// TestGolden_QueueStrip captures the stack above the card (§2e): the full
+// TestGolden_QueueStrip captures the stack above the card: the full
 // list, the bounded list with its overflow count, and a queue with no batch
 // in it at all.
 func TestGolden_QueueStrip(t *testing.T) {
@@ -608,7 +608,7 @@ func goldenFanout() []AgentRow {
 	return rows
 }
 
-// TestGolden_DiffView captures the viewer's three modes (§3): the transcript
+// TestGolden_DiffView captures the viewer's three modes: the transcript
 // row, the bounded in-transcript body, and the full-screen view.
 func TestGolden_DiffView(t *testing.T) {
 	captureGolden(t, "diff-view", "diff viewer", goldenWidths, func(width int) []golden.Panel {
@@ -675,7 +675,7 @@ func TestGolden_ReviewMode(t *testing.T) {
 	})
 }
 
-// TestGolden_AgentList captures the sub-agent manager (§9a) with every row
+// TestGolden_AgentList captures the sub-agent manager with every row
 // state present, the blocked child sorted to the top below the orchestrator,
 // and the focus moved across the three rows whose offers differ: the
 // orchestrator (no child progress at all), the blocked child ([a] answers it
@@ -757,12 +757,12 @@ func TestGolden_FanoutBlock(t *testing.T) {
 	})
 }
 
-// TestGolden_InspectorRail captures the rail (§15). Its width is fixed at
+// TestGolden_InspectorRail captures the rail. Its width is fixed at
 // InspectorWidth — it exists only in the two-pane layout and never renders at
 // another size — so the axis worth capturing is which blocks are present and
 // what a height too short to hold them all drops. The full rail carries an
-// approved plan's PLAN checklist (S-104), which is also what gives THIS TURN's
-// meter a denominator.
+// approved plan's PLAN checklist (S-104), which is also what gives THIS
+// TURN's meter a denominator.
 func TestGolden_InspectorRail(t *testing.T) {
 	captureGolden(t, "inspector-rail", "inspector rail", []int{InspectorWidth}, func(width int) []golden.Panel {
 		full := InspectorRail{
@@ -808,7 +808,7 @@ func TestGolden_InspectorRail(t *testing.T) {
 			Context: &InspectorContext{Pct: 41, Tokens: 82000, Window: 200000, Estimated: true},
 		}
 		// Four turns deep, with the rail shorter than the list it has to show
-		// (S-120, §15a): repeat edits collapse to one row carrying their turn
+		// (S-120): repeat edits collapse to one row carrying their turn
 		// count, the rows this turn wrote survive the fold, the fold carries
 		// the counts it took, and an alert from turn 7 is still standing in
 		// turn 9 because the workspace is still broken.
@@ -833,7 +833,7 @@ func TestGolden_InspectorRail(t *testing.T) {
 			},
 		}
 		// A reading that has gone off the instruction, and one the session has
-		// outrun (S-163, §15d). The drifting one is what auto-steering will
+		// outrun (S-163). The drifting one is what auto-steering will
 		// act on; here it is a row and nothing more.
 		drifting := InspectorRail{
 			Summary: &InspectorSummary{
@@ -863,7 +863,7 @@ func TestGolden_InspectorRail(t *testing.T) {
 	})
 }
 
-// TestGolden_PlanCard captures the plan card (§4d): the priced step list with
+// TestGolden_PlanCard captures the plan card: the priced step list with
 // its computed summary, a plan whose radius is the one worth reading twice,
 // the height bound that counts the steps it drops, and the prose fallback for
 // a plan that never adopted the shape.
@@ -944,7 +944,7 @@ func TestGolden_PlanCard(t *testing.T) {
 	})
 }
 
-// TestGolden_StartScreen captures the first-contact screen (§17c): the facts
+// TestGolden_StartScreen captures the first-contact screen: the facts
 // a session already knows, the two notes under them, the three offers with
 // the pointer on one, and the screen the reader is left with once typing has
 // dismissed the list.
@@ -1002,7 +1002,7 @@ func TestGolden_StartScreen(t *testing.T) {
 }
 
 // TestGolden_ExitBanner captures the bookend of the first-contact screen
-// (S-148, §22b): the lines the terminal keeps once the alt screen has taken
+// (S-148): the lines the terminal keeps once the alt screen has taken
 // the session away. The four states are the ones the host can hand it — a
 // priced sitting, an unpriced one, a name long enough to work the row's
 // ladder, and a conversation nothing could be written for.
@@ -1029,7 +1029,7 @@ func TestGolden_ExitBanner(t *testing.T) {
 	})
 }
 
-// TestGolden_AttachmentChips captures the staged strip (S-151, §12g) at every
+// TestGolden_AttachmentChips captures the staged strip (S-151) at every
 // width: one chip per kind so the three marks are on the sheet together, and
 // the two rungs the row descends as it runs out of room — chips given up
 // whole from the end and counted where they stood, then the last chip's name
@@ -1057,11 +1057,12 @@ func TestGolden_AttachmentChips(t *testing.T) {
 	})
 }
 
-// TestGolden_Picture captures the staged image preview (S-158, §12h) at every
-// width, in both palettes — which is the whole argument for the surface in one
-// file. The colour sheet is half-blocks, two samples to a cell; the mono sheet
-// is the same picture as density, and the fact that it is still a picture
-// there is what invariant 1 asks of the one surface whose content is colour.
+// TestGolden_Picture captures the staged image preview (S-158) at every
+// width, in both palettes — which is the whole argument for the surface in
+// one file. The colour sheet is half-blocks, two samples to a cell; the mono
+// sheet is the same picture as density, and the fact that it is still a
+// picture there is what invariant 1 asks of the one surface whose content is
+// colour.
 func TestGolden_Picture(t *testing.T) {
 	captureGolden(t, "picture", "the staged image preview", goldenWidths, func(width int) []golden.Panel {
 		card := func(mut func(*PictureView)) string {
@@ -1087,7 +1088,7 @@ func TestGolden_Picture(t *testing.T) {
 }
 
 // TestGolden_RecoveryRows captures every provider failure class on one sheet
-// (§17a). The verb, subject and duration are held constant, so the file reads
+// . The verb, subject and duration are held constant, so the file reads
 // as a table of what each class contributes: its glyph, the words in its
 // outcome, the keys it offers and what it says survived.
 func TestGolden_RecoveryRows(t *testing.T) {
@@ -1140,7 +1141,7 @@ func TestGolden_RecoveryRows(t *testing.T) {
 				r.Detail = []string{"Unknown parameter: 'reasoning.effort'"}
 				r.Keys = []KeyOffer{{Key: "[r]", Label: "try again"}, {Key: "[p]", Label: "switch provider"}}
 			})},
-			// The same row in the two states invariant 5 puts it in (§7c).
+			// The same row in the two states invariant 5 puts it in.
 			// It is a transcript row, so the draft below usually has the
 			// keyboard and `r` is a letter — the state a reader meets first
 			// is the waiting one.
@@ -1160,7 +1161,7 @@ func TestGolden_RecoveryRows(t *testing.T) {
 	})
 }
 
-// TestGolden_ProviderCard captures the missing-provider card (§17b) — the one
+// TestGolden_ProviderCard captures the missing-provider card — the one
 // card a failure earns, because it is the one failure the session cannot
 // continue past.
 func TestGolden_ProviderCard(t *testing.T) {
@@ -1200,7 +1201,7 @@ func TestGolden_ProviderCard(t *testing.T) {
 	})
 }
 
-// TestGolden_PressureCard captures the context-pressure card (§17b) — the
+// TestGolden_PressureCard captures the context-pressure card — the
 // second of the two cards, and the only place in the product that itemises
 // token spend, because it is the only place where you can act on it.
 func TestGolden_PressureCard(t *testing.T) {
@@ -1262,7 +1263,7 @@ func TestGolden_SecretPrompt(t *testing.T) {
 	})
 }
 
-// goldenConfigRows is the settings sheet the Tools artboard draws (§19a):
+// goldenConfigRows is the settings sheet the Tools artboard draws:
 // three rails, values that are toned because their glyphs already say what
 // the colour says, a secret already masked, a setting the host cannot honour,
 // and enough rows that the window has work to do at both widths.
@@ -1319,7 +1320,7 @@ func goldenConfigRows() []ConfigRow {
 }
 
 // TestGolden_ConfigScreen captures `shhh config` on the cockpit's language
-// (S-127, §19a): the settings list, the picker that opens under the row being
+// (S-127): the settings list, the picker that opens under the row being
 // changed rather than over the screen, the field and the masked entry that
 // open in the same place, and the write-back the header has been counting
 // towards.
@@ -1430,7 +1431,7 @@ func goldenHistoryRows() []HistoryRow {
 }
 
 // TestGolden_HistoryScreen captures `shhh history` on the cockpit's language
-// (S-128, §19b): the search on the left and the entry it selects on the
+// (S-128): the search on the left and the entry it selects on the
 // right, the shared filter row with both its counts and what it hid, the
 // command continued rather than clipped, and the confirm in front of the one
 // key that destroys something.
@@ -1539,7 +1540,7 @@ func goldenMetricsBlocks() []MetricsBlock {
 }
 
 // TestGolden_MetricsScreen captures `shhh metrics` on the cockpit's language
-// (S-129, §19c): the fixed-width right-aligned columns, the one sparkline per
+// (S-129): the fixed-width right-aligned columns, the one sparkline per
 // row that is never coloured, and the block meter every ratio is drawn as
 // with its number stated beside it.
 func TestGolden_MetricsScreen(t *testing.T) {
@@ -1584,7 +1585,7 @@ func TestGolden_MetricsScreen(t *testing.T) {
 // doctorWidths are the three the doctor surface is drawn at: the narrowest
 // terminal a check row still reads in, the width the `Tools` artboard draws
 // it at, and the two-pane split — where this screen, being a takeover
-// surface, simply gets wider (§19).
+// surface, simply gets wider.
 var doctorWidths = []int{60, 110, 130}
 
 // goldenDoctorChecks is the fixture run: a pass, a warning with a fix, the
@@ -1630,7 +1631,7 @@ func goldenDoctorChecks() []DoctorCheck {
 }
 
 // TestGolden_DoctorScreen captures `shhh doctor` on the cockpit's language
-// (S-130, §19d): the §6a row per check, the consequence stated in the words
+// (S-130): the §6a row per check, the consequence stated in the words
 // of the surface the reader will meet it on, and the fix offered on the row
 // that failed rather than in a footer.
 func TestGolden_DoctorScreen(t *testing.T) {

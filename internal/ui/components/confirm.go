@@ -30,7 +30,7 @@ func (c *Confirm) View(width int) string {
 }
 
 // confirmKeys is the answer set every confirm in the product draws: the two
-// keys, with the default one capitalised (§5).
+// keys, with the default one capitalised.
 func confirmKeys() string {
 	return "[" + keys.Shown(keys.Confirm.Yes) + "/" + keys.Shown(keys.Confirm.No) + "]"
 }

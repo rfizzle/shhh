@@ -136,12 +136,12 @@ func (m Model) hasSelection() bool {
 }
 
 // selectableSurface reports whether the normal chat transcript is what the
-// pointer is over. Selection is confined to it on purpose (§7a):
+// pointer is over. Selection is confined to it on purpose:
 //
 //   - the full-screen diff and review surfaces replace the body with their
-//     own scrolling viewers, and their wheel behaviour is theirs (§3c, §16a);
+//     own scrolling viewers, and their wheel behaviour is theirs;
 //   - focus mode renders the transcript through a selection gutter, and a
-//     cursor column is chrome nobody wants on their clipboard (§7);
+//     cursor column is chrome nobody wants on their clipboard;
 //   - an attached child's session is a different transcript in the same
 //     viewport (S-077), so a selection anchored in one would name lines in
 //     the other the moment the reader detached.
@@ -325,7 +325,7 @@ func (m Model) releaseSelection(x, y int) (tea.Model, tea.Cmd) {
 // happened.
 //
 // The two outcomes report in different places on purpose. A success is worth
-// one transient line and nothing more, so it goes on the notice rail (§12a),
+// one transient line and nothing more, so it goes on the notice rail,
 // where it costs no transcript row and does not move the pane the reader is
 // still looking at their selection in. It stands exactly as long as the
 // selection it describes and goes with it, so it can never outlive the thing
@@ -698,7 +698,7 @@ func (m Model) applySelectionHighlight(content []string) []string {
 	if start.line >= len(content) {
 		return content
 	}
-	// The lines belong to the block cache (S-160, §10m), so the restyle works
+	// The lines belong to the block cache (S-160), so the restyle works
 	// on a copy of the slice: the frozen prefix is rendered once and must
 	// still be what a later frame, or the clipboard, reads.
 	lines := slices.Clone(content)

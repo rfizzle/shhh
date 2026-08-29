@@ -49,7 +49,7 @@ func layoutStates(t *testing.T, width, height int) map[string]Model {
 	running.runStart = time.Now()
 	out["running a command"] = running
 
-	// The two-row one: a countdown meter and the offers under it (§17a).
+	// The two-row one: a countdown meter and the offers under it.
 	waiting := base()
 	waiting.state = stateRetryWait
 	waiting.retry = &retryWait{
@@ -66,7 +66,7 @@ func layoutStates(t *testing.T, width, height int) map[string]Model {
 }
 
 // TestLayout_RowsAddUpToTheTerminal is the defect that motivated the model
-// (§10n): the live tail under the transcript was drawn on a row nothing had
+// : the live tail under the transcript was drawn on a row nothing had
 // budgeted for, so the surface ran one row past the bottom of the terminal
 // and the frame's closing rail went with it.
 func TestLayout_RowsAddUpToTheTerminal(t *testing.T) {
@@ -124,9 +124,9 @@ func TestLayout_RetryWaitIsPaidForByTheRowsItTakes(t *testing.T) {
 }
 
 // TestLayout_ColumnsMatchTheWidthLadder walks the rung the inspector rail
-// hangs on (§8c, §15): below it the pane is the whole content, at or above
+// hangs on: below it the pane is the whole content, at or above
 // it the rail and its divider take their columns off the right, and the
-// scroll gutter's column comes off the pane either way (§10g).
+// scroll gutter's column comes off the pane either way.
 func TestLayout_ColumnsMatchTheWidthLadder(t *testing.T) {
 	for _, width := range []int{60, 80, 110, 130, 134, 144} {
 		m := frameModel(t, width, 30)

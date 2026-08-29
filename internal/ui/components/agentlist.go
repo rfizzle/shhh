@@ -8,7 +8,7 @@ package components
 // over the list and hands the list back.
 //
 // A row's progress is a fan-out lane's progress in list form: both read the
-// same AgentProgress (§9g), so what the transcript says about a child and
+// same AgentProgress, so what the transcript says about a child and
 // what the manager says about it cannot drift apart.
 
 import (
@@ -40,7 +40,7 @@ type AgentRow struct {
 	Status string
 	Spend  string
 	// Progress is the child's live progress, rendered by the fan-out lane's
-	// renderer (§9g). Nil for a row with no child progress to draw — the
+	// renderer. Nil for a row with no child progress to draw — the
 	// orchestrator, which is not a child — and those rows fall back to
 	// Status and Spend.
 	Progress *AgentProgress
@@ -74,7 +74,7 @@ type AgentListResult struct {
 	Index  int
 }
 
-// AgentList is the sub-agent manager list (§9a), following the selector
+// AgentList is the sub-agent manager list, following the selector
 // visual language. The host keeps Rows current while the list is open — it is
 // a live view.
 type AgentList struct {
@@ -297,7 +297,7 @@ func (l *AgentList) View(width int) string {
 	inner := width - cardFrameWidth
 	// The key hints and the pinned blocked children come off the budget
 	// before the window is drawn: the list scrolls under them, and the window
-	// may never buy itself a row (§4a).
+	// may never buy itself a row.
 	hints := hintRows(l.hints(), width)
 	pinned, scrolling := l.split()
 	var rows []string

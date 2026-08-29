@@ -194,7 +194,7 @@ func TestDoctorScreen_APassStatesNothingUnderIt(t *testing.T) {
 	}
 }
 
-// The fix is offered on the row that failed, not in a footer (§19d), and the
+// The fix is offered on the row that failed, not in a footer, and the
 // offer says how much is behind it.
 func TestDoctorScreen_TheFixIsOfferedOnTheRow(t *testing.T) {
 	d := doctorScreen()
@@ -278,7 +278,7 @@ func TestDoctorScreen_ACleanRunHasNoPointer(t *testing.T) {
 }
 
 // A row that has a fix but does not hold the keyboard carries its key grey
-// rather than in the colour that means "you can press this" (§7c, §10a).
+// rather than in the colour that means "you can press this".
 func TestDoctorScreen_AnUnpointedFixKeyIsNotAnOffer(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
 	d := doctorScreen()
@@ -314,7 +314,7 @@ func TestDoctorScreen_TheFixKeyCountsWhatItOpens(t *testing.T) {
 }
 
 // The summary counts every outcome, including the ones still running, and
-// leads with the glyph of the worst of them (§19d).
+// leads with the glyph of the worst of them.
 func TestDoctorScreen_TheSummaryCountsEveryOutcome(t *testing.T) {
 	d := doctorScreen()
 	d.Checks = append(d.Checks, DoctorCheck{Name: "update", Outcome: "queued", State: DoctorQueued})
@@ -326,7 +326,8 @@ func TestDoctorScreen_TheSummaryCountsEveryOutcome(t *testing.T) {
 	}
 }
 
-// With nothing failed or warned the summary leads with the glyph that says so.
+// With nothing failed or warned the summary leads with the glyph that says
+// so.
 func TestDoctorScreen_ACleanSummaryLeadsWithThePassGlyph(t *testing.T) {
 	d := &DoctorScreen{Checks: []DoctorCheck{{Name: "git", Subject: "~/src/shhh", Outcome: "ok"}}}
 	foot := doctorRowFor(d, 110, "1 passed")
@@ -443,8 +444,7 @@ func TestDoctorScreen_AShorterTerminalStaysInsideItsBudget(t *testing.T) {
 }
 
 // The spinner is one tick source: a host that is not ticking gets `▸` rather
-// than a frozen braille frame, because a stopped spinner reads as a hang
-// (§10c).
+// than a frozen braille frame, because a stopped spinner reads as a hang.
 func TestDoctorScreen_TheSpinnerIsOneTickSource(t *testing.T) {
 	d := &DoctorScreen{Running: true, Checks: []DoctorCheck{
 		{Name: "update", Subject: "check for a newer shhh", Outcome: "running…", State: DoctorRunning},

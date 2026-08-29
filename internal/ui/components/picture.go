@@ -5,7 +5,7 @@ package components
 // one attachment's picture, framed by the name and the size the chip strip
 // already carries.
 //
-// The strip says a file called shot.png is staged and how big it is (§12g).
+// The strip says a file called shot.png is staged and how big it is.
 // That is the right answer for a rail sitting above a live draft, and it is
 // the wrong one the moment two screenshots are staged and the question is
 // which of them is the one with the stack trace in it. Nothing else in shhh
@@ -14,7 +14,7 @@ package components
 // The card is a frame and not a renderer. Which rung the picture was drawn at
 // — the terminal's own graphics protocol, half-blocks, or the density ramp of
 // a terminal with no colour — is decided before it gets here: the first is a
-// sequence and stops at internal/ui/caps (§10k), and the other two are
+// sequence and stops at internal/ui/caps, and the other two are
 // arithmetic and live in internal/ui/raster. What this owns is the border,
 // the caption, and the centring.
 
@@ -33,7 +33,7 @@ const pictureChrome = 2
 
 // PictureView is one staged attachment shown as a picture.
 type PictureView struct {
-	// Name and Size are the chip's own two fields (§12g), and they ride the
+	// Name and Size are the chip's own two fields, and they ride the
 	// top border rather than a caption row: the picture is what the surface
 	// is for, so it gets every row the frame does not need.
 	Name, Size string
@@ -45,12 +45,12 @@ type PictureView struct {
 	// Image is the decoded picture, drawn here when Placement is empty.
 	Image image.Image
 	// Cell is one character cell in pixels, as the terminal reported it
-	// (§10k). Its zero value is the default guess.
+	//. Its zero value is the default guess.
 	Cell raster.Aspect
 
 	// Placement is the picture already drawn by the terminal itself — the
 	// rows of graphics-protocol placeholders a kitty-capable terminal fills
-	// in (§10k). When it is set the card draws it instead of rastering, and
+	// in. When it is set the card draws it instead of rastering, and
 	// the rows are used at the size the caller reserved for them.
 	Placement []string
 

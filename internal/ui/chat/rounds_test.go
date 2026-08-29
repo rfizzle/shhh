@@ -1,6 +1,6 @@
 package chat
 
-// The round-limit pause (S-109, §17a): a turn that runs out of tool rounds
+// The round-limit pause (S-109): a turn that runs out of tool rounds
 // stops on a checkpoint rather than on a notice, and the checkpoint is the
 // turn's close — one block, one set of offers, one turn to grant more rounds
 // to.
@@ -374,9 +374,9 @@ func offers(keys []components.KeyOffer, bracket string) bool {
 }
 
 // The grant doubles: each one is everything the turn has been given already,
-// plus another block. Three stops put the ceiling past any turn that finishes,
-// which is the point — the checkpoint is meant to go quiet, not to become a
-// toll collected every few minutes.
+// plus another block. Three stops put the ceiling past any turn that
+// finishes, which is the point — the checkpoint is meant to go quiet, not to
+// become a toll collected every few minutes.
 func TestRoundLimit_TheGrantDoubles(t *testing.T) {
 	granted := 0
 	for _, want := range []int{roundGrantBlock, 2 * roundGrantBlock, 4 * roundGrantBlock, 8 * roundGrantBlock} {
@@ -454,8 +454,8 @@ func TestRoundLimit_LetItRunClearsTheCeilingForTheTurn(t *testing.T) {
 	}
 }
 
-// A session started with `--max-rounds 0` never reaches the checkpoint at all,
-// which is the whole point of it: there is nobody there to press a key.
+// A session started with `--max-rounds 0` never reaches the checkpoint at
+// all, which is the whole point of it: there is nobody there to press a key.
 func TestRoundLimit_AnUncappedSessionNeverStops(t *testing.T) {
 	m := turnModel(t).WithMaxToolRounds(agent.UnlimitedToolRounds)
 	m = sendText(t, m, "fix the round accounting")

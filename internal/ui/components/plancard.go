@@ -81,7 +81,7 @@ func (c *PlanCard) View(width int) string {
 	// is a wall rather than a choice.
 	sel := Select{Options: c.Options, Focus: c.Focus, FocusDesc: true}
 	// The plan card's options are its three or four decisions and never
-	// scroll; here it is the step list that shrinks (§4d), so the options
+	// scroll; here it is the step list that shrinks, so the options
 	// render whole rather than through a window (S-116).
 	tail := c.tailRows(width, inner, sel.optionRows(width, true, 0, len(c.Options)))
 	rows := c.bodyRows(inner, c.bodyBudget(len(tail)))
@@ -110,7 +110,7 @@ func (c *PlanCard) tailRows(width, inner int, options []string) []string {
 	switch {
 	case c.NotYetLive:
 		// A plan that arrived while a sentence was half-typed offers its keys
-		// the same way an approval card does (§7b): dimmed, said to be
+		// the same way an approval card does: dimmed, said to be
 		// waiting, with the one key that hands the keyboard over under them.
 		rows = append(rows, notYetLiveRows(c.Hint, c.Handover, width)...)
 	case c.Hint != "":

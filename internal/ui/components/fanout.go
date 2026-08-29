@@ -44,7 +44,7 @@ func (s FanoutState) settled() bool { return s == FanoutDone || s == FanoutFaile
 // AgentProgress is what one child reports about how it is doing: its state,
 // how far it has got against a declared step count, how many calls it has
 // made and what it has cost. A child is drawn in two places — a lane in the
-// transcript (§9g) and a row in the manager (§9a) — and both render it
+// transcript and a row in the manager — and both render it
 // through these methods, so what a lane says and what a row says about the
 // same child can never drift apart (S-111).
 type AgentProgress struct {
@@ -282,7 +282,7 @@ func tallyStates(states []FanoutState) (running, blocked, done, failed int) {
 // answer is said first and in del, because it is the only part of the line
 // that asks anything of you; the tally of finished children is left to the
 // rows until nothing is running, when it becomes the whole story. The field
-// never clips (§6a), so it says two things at most. The fan-out header and
+// never clips, so it says two things at most. The fan-out header and
 // the manager's title rail are the same sentence about the same children, so
 // they are the same function (S-111).
 func stateTally(states []FanoutState) string {

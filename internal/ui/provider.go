@@ -6,7 +6,7 @@ package ui
 // This is one of only two surfaces in the product that earns a card, and it
 // earns it for the same reason the other one does: the session cannot
 // continue without an answer. Everything else a provider can do to you is a
-// row (§17a).
+// row.
 //
 // The card's job is to end the guessing. "SHHH_API_KEY is not set" tells you
 // one thing that is not true of one place; this names every place shhh
@@ -24,7 +24,7 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// The keys the card offers are keys.Setup (§7d).
+// The keys the card offers are keys.Setup.
 
 // ProviderChoice is what the card resolved to. A zero value is a decline —
 // esc, or a card with nothing to offer — and leaves the caller with the

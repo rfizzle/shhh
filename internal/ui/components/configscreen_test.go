@@ -271,7 +271,7 @@ func TestConfigScreen_ResetIsOneRow(t *testing.T) {
 }
 
 // The pointer steps over the group rails, which are labels rather than
-// options (§4a), and stops at either end rather than wrapping.
+// options, and stops at either end rather than wrapping.
 func TestConfigScreen_PointerStepsOverRails(t *testing.T) {
 	c := configFixture()
 	for i := 0; i < 10; i++ {
@@ -289,7 +289,7 @@ func TestConfigScreen_PointerStepsOverRails(t *testing.T) {
 }
 
 // The screen is a takeover: full width, no frame, one header and one hint
-// line (§19).
+// line.
 func TestConfigScreen_IsATakeoverNotACard(t *testing.T) {
 	view := stripANSI(configFixture().View(110))
 	if strings.Contains(view, "┌─") || strings.Contains(view, "└─") {

@@ -62,7 +62,7 @@ type key struct {
 	tone  keyTone
 }
 
-// bar is one offer on the row, built from the register (§7d): the key it
+// bar is one offer on the row, built from the register: the key it
 // answers to, the spelling it prints and the words beside it all come from
 // one place. A caller with better words than the register's passes them; the
 // key is never the caller's to choose.

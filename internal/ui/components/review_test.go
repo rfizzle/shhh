@@ -18,7 +18,7 @@ import (
 // staging has something to be partial about.
 func reviewFixture() *ReviewView {
 	// The changed lines share a prefix, so the pair carries an intraline
-	// emphasis span (§3b) and the pane has something to tint.
+	// emphasis span and the pane has something to tint.
 	loop := diff.Compute(
 		"one\nreturn results, nil\nthree\nfour\nfive\nsix\nseven\neight\nnine\nreturn err\neleven\n",
 		"one\nreturn results, ErrRoundLimit\nthree\nfour\nfive\nsix\nseven\neight\nnine\nreturn wrapped\neleven\n")
@@ -155,7 +155,7 @@ func bgParams(t Token) string {
 	return strings.Join(ansi.NewStyle().BackgroundColor(t.Color()), ";")
 }
 
-// syntax highlighting survives underneath it (§3b).
+// syntax highlighting survives underneath it.
 func TestReview_IntralineEmphasisSurvives(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
 	v := reviewFixture()
@@ -227,7 +227,7 @@ func TestReview_ViewFillsExactlyItsHeight(t *testing.T) {
 }
 
 // The list carries the turn's verdict and who wrote what, beside the files
-// themselves (§16a).
+// themselves.
 func TestReview_ListCarriesTheVerdictAndAttribution(t *testing.T) {
 	v := reviewFixture()
 	out := ansi.Strip(v.View(130))
@@ -262,7 +262,7 @@ func TestReview_ReadOnlyOffersNoStaging(t *testing.T) {
 }
 
 // The footer's apply offer counts the staged files as they are staged, so
-// the confirm is live rather than a fixed label (§16a).
+// the confirm is live rather than a fixed label.
 func TestReview_ApplyOfferCountsWhatIsStaged(t *testing.T) {
 	v := reviewFixture()
 	v.ApplyVerb = "undo"

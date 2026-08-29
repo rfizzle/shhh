@@ -91,7 +91,7 @@ func TestHistoryScreen_PreviewFollowsThePointer(t *testing.T) {
 	}
 }
 
-// The preview has no cursor of its own (§19b): exactly one ❯ is on the
+// The preview has no cursor of its own: exactly one ❯ is on the
 // screen, and it is in the list.
 func TestHistoryScreen_PreviewHasNoCursor(t *testing.T) {
 	out := plainView(historyScreen(), 130)
@@ -140,7 +140,7 @@ func TestHistoryScreen_DurationIsRightAligned(t *testing.T) {
 
 // [/] opens the shared filter row rather than a second query line: the ▸
 // prompt, both counts on the row, and the count of what it hid under the
-// list with the key that clears it (§4a, §19b).
+// list with the key that clears it.
 func TestHistoryScreen_FilterRowIsTheSharedOne(t *testing.T) {
 	h := historyScreen()
 	h.Update(key("/"))
@@ -171,7 +171,7 @@ func TestHistoryScreen_FilterMatchesTheCommandToo(t *testing.T) {
 	}
 }
 
-// The matched run is bolded in the row (§4a) rather than tinted.
+// The matched run is bolded in the row rather than tinted.
 func TestHistoryScreen_MatchedRunIsBold(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
 	h := historyScreen()
@@ -201,7 +201,7 @@ func TestHistoryScreen_NoMatchSaysSo(t *testing.T) {
 	}
 }
 
-// While the query line is open the row keys are letters (§4a): x types an x
+// While the query line is open the row keys are letters: x types an x
 // rather than opening the delete confirm.
 func TestHistoryScreen_LettersAreTextWhileFiltering(t *testing.T) {
 	h := historyScreen()
@@ -272,7 +272,7 @@ func TestHistoryScreen_EnterRunsTheEntryUnderThePointer(t *testing.T) {
 }
 
 // esc and q both leave running nothing, and the foot says so before they are
-// pressed (§19b).
+// pressed.
 func TestHistoryScreen_LeavingRunsNothing(t *testing.T) {
 	if !strings.Contains(plainView(historyScreen(), 130), "nothing is re-run until [enter]") {
 		t.Fatal("the hint line does not say that nothing is re-run on its own")
@@ -307,7 +307,7 @@ func TestHistoryScreen_CopyAndSaveResolveWithoutClosing(t *testing.T) {
 	}
 }
 
-// [x] asks before it destroys (§5), names what it would take, and resolves
+// [x] asks before it destroys, names what it would take, and resolves
 // nothing until the answer is yes.
 func TestHistoryScreen_DeleteAsksFirst(t *testing.T) {
 	h := historyScreen()
@@ -385,7 +385,7 @@ func TestHistoryScreen_NarrowStacksThePanes(t *testing.T) {
 }
 
 // The header names the command and its subject, and offers the two keys every
-// one of these screens offers (§19).
+// one of these screens offers.
 func TestHistoryScreen_Header(t *testing.T) {
 	head := strings.SplitN(plainView(historyScreen(), 130), "\n", 2)[0]
 	for _, want := range []string{"shhh history", "4 entries · 2 run", "[?] keys · [q] quit"} {
@@ -408,7 +408,7 @@ func TestHistoryScreen_KeyListIsComplete(t *testing.T) {
 	}
 }
 
-// The screen is a takeover surface (§19): no card frame around it.
+// The screen is a takeover surface: no card frame around it.
 func TestHistoryScreen_DrawsNoFrame(t *testing.T) {
 	out := plainView(historyScreen(), 130)
 	for _, glyph := range []string{"╭", "╮", "╰", "╯"} {
@@ -436,7 +436,7 @@ func TestHistoryScreen_EmptyRenders(t *testing.T) {
 
 // A filter that missed by a character names what it nearly found; one that
 // missed by the whole word says nothing, because a match on two letters is a
-// coincidence rather than a near miss (§4a).
+// coincidence rather than a near miss.
 func TestHistoryScreen_ClosestIsANearMissOrNothing(t *testing.T) {
 	h := historyScreen()
 	h.SetQuery("rebased")

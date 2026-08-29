@@ -6,7 +6,7 @@ package components
 // whole transcript the pane is, and how much of the whole it is showing.
 //
 // The transcript already states how far off the live end a scrolled reader is
-// — `↓ 12 lines below · [pgdn] the live end` on the notice rail (§7a) — and
+// — `↓ 12 lines below · [pgdn] the live end` on the notice rail — and
 // that is the measurement. This is the shape. It gives the one thing the
 // count cannot, which is proportion: twelve lines from the end of a screenful
 // and twelve lines from the end of four hundred read the same as a number and
@@ -23,12 +23,12 @@ package components
 // gutter. The pane reserves it whether or not there is anything to draw in
 // it: a column that appeared on the first overflow would reflow every line of
 // the transcript at the moment the reader least expects it, and a reflow
-// drops the selection (§7a) and throws away the render cache (§13). So the
+// drops the selection and throws away the render cache. So the
 // transcript wraps one column narrower always, and the gutter stays empty
 // until there is something below.
 const ScrollGutterWidth = 1
 
-// The gutter's two glyphs (§10e): the track is the light rule the interface
+// The gutter's two glyphs: the track is the light rule the interface
 // draws every other rule with, the thumb its heavy twin. What separates them
 // is the stroke and not the hue — they sit one dim/dimmer step apart in
 // colour and collapse onto the same grey in mono, where the glyph carries all

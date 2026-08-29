@@ -33,7 +33,7 @@ func keyOfferAs(b keys.Binding, label string) KeyOffer {
 }
 
 // screenHeaderKeys is the pair every supporting TUI puts at the right end of
-// its header (§19): the key that shows the whole register, and the way out.
+// its header: the key that shows the whole register, and the way out.
 func screenHeaderKeys() string {
 	return keys.Bracket(keys.Screen.List) + " " + keys.Words(keys.Screen.List) +
 		" · " + keys.Bracket(keys.Screen.Quit) + " " + keys.Words(keys.Screen.Quit)

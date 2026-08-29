@@ -74,7 +74,7 @@ func TestHistoryOutcome_NoAnswerIsAFailure(t *testing.T) {
 }
 
 // The duration is blank under half a second, the same rule every activity row
-// follows (§6a).
+// follows.
 func TestHistoryDuration_BlankUnderHalfASecond(t *testing.T) {
 	for _, tc := range []struct {
 		in   *time.Duration

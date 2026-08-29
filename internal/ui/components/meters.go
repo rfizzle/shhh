@@ -22,13 +22,13 @@ import (
 	"charm.land/lipgloss/v2"
 )
 
-// Meter cell counts by role (§10c). The only supported widths: a meter that
+// Meter cell counts by role. The only supported widths: a meter that
 // wants some other count is a meter that is drifting.
 const (
 	MeterCellsVitals    = 8  // the context meter in the vitals rail
 	MeterCellsRail      = 22 // context and step progress in the inspector rail
 	MeterCellsAgent     = 5  // an agent lane's progress
-	MeterCellsCountdown = 20 // a retry countdown (§17)
+	MeterCellsCountdown = 20 // a retry countdown
 )
 
 // Context-meter warning thresholds, matching S-055's trim warnings. Hosts
@@ -38,7 +38,7 @@ const (
 	ctxAlertPct = 90
 )
 
-// MeterTone selects how a meter colours its cells and its number (§10c).
+// MeterTone selects how a meter colours its cells and its number.
 type MeterTone int
 
 const (
@@ -200,8 +200,7 @@ func join(fields ...string) string {
 }
 
 // meterCells renders the ▰/▱ run for a percentage, unstyled. The bar is never
-// the only carrier of the value — every caller states the number beside it
-// (§10c).
+// the only carrier of the value — every caller states the number beside it.
 func meterCells(pct, cells int) string {
 	pct = min(max(pct, 0), 100)
 	filled := meterFill(pct, cells)
@@ -220,7 +219,7 @@ func meterFill(pct, cells int) int {
 	return min(filled, cells)
 }
 
-// ctxStyle colours the context meter and its number together (§10c): healthy
+// ctxStyle colours the context meter and its number together: healthy
 // in add, pressured in accent, and bold del once compaction is the next
 // thing that should happen.
 func ctxStyle(pct, warn, alert int) lipgloss.Style {
@@ -244,9 +243,10 @@ func ctxStyle(pct, warn, alert int) lipgloss.Style {
 // eight samples, no more.
 const SparkCells = 8
 
-// Sparkline is the `▁▂▃▄▅▆▇█` run — tokens per round in the CONTEXT block, and
-// nothing else so far. It is a shape, not a measurement; the numbers beside it
-// are the measurement, which is why it is always dimmer and never coloured.
+// Sparkline is the `▁▂▃▄▅▆▇█` run — tokens per round in the CONTEXT block,
+// and nothing else so far. It is a shape, not a measurement; the numbers
+// beside it are the measurement, which is why it is always dimmer and never
+// coloured.
 type Sparkline struct {
 	// Values is the series, oldest first; only the last Cells samples are
 	// drawn.
@@ -298,7 +298,7 @@ func sparkCells(series []float64, cells int) string {
 	return b.String()
 }
 
-// SpinnerFrames is the product's only animation (§10c). Anything else that
+// SpinnerFrames is the product's only animation. Anything else that
 // wants to move gets a meter.
 var SpinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧"}
 

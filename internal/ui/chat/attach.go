@@ -204,7 +204,7 @@ func (m *Model) purgeChildAsks(name string) {
 	m.childAsks = kept
 }
 
-// --- agent list (§9a) ---
+// --- agent list ---
 
 // openAgentList shows the agent manager in the bottom panel.
 func (m Model) openAgentList() (tea.Model, tea.Cmd) {
@@ -445,7 +445,7 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case components.AgentAnswer:
-		// The card renders over the list and comes back to it (§9a): opening
+		// The card renders over the list and comes back to it: opening
 		// the manager because something needs you should not then send you
 		// into that child's session to say yes.
 		if name == "" || m.pendingAskFor(name) == nil {
@@ -540,7 +540,7 @@ func (m Model) updateListAnswer(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Mod
 	return m, nil
 }
 
-// --- attached-view interaction (§9b) ---
+// --- attached-view interaction ---
 
 // attachedSubmit handles Enter while attached: scoped slash commands run
 // against the child, anything else is queued mid-turn steering (S-058
@@ -745,7 +745,8 @@ func (m Model) childStatsReport(name string) string {
 	return sb.String()
 }
 
-// childModeStatus is /permissions with no argument, scoped to the attached child.
+// childModeStatus is /permissions with no argument, scoped to the attached
+// child.
 func (m Model) childModeStatus(name string) string {
 	mode, ok := m.subagents.AgentMode(name)
 	if !ok {

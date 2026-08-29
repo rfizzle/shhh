@@ -40,7 +40,7 @@ func TestHelpNamesEveryDraftKey(t *testing.T) {
 }
 
 // The reading-mode register is reachable from the draft too, because `?` is a
-// letter there (§7c) and /help is the door a reader with a live draft has.
+// letter there and /help is the door a reader with a live draft has.
 func TestHelpNamesTheKeyRegister(t *testing.T) {
 	if !strings.Contains(helpText(), keys.Shown(keys.Reading.List)+" lists every key") {
 		t.Errorf("/help does not say what %q opens in reading mode", keys.Shown(keys.Reading.List))

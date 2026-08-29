@@ -285,7 +285,7 @@ func TestPlanStatus_NoDriftSaysSo(t *testing.T) {
 }
 
 func TestPlanStatus_IsAvailableBelowTheRailBreakpoint(t *testing.T) {
-	// Below 130 content columns there is no rail (§8c), so /plan is the whole
+	// Below 130 content columns there is no rail, so /plan is the whole
 	// of the checklist and must lose nothing.
 	m := runningPlanModel(t, 80)
 	announce(t, &m, "Locate the round accounting", time.Second, false)

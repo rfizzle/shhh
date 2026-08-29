@@ -35,7 +35,7 @@ import (
 const roundGrantBlock = 50
 
 // keys.Row.Rounds is the keystroke that takes the offer, and keys.Row.Uncap
-// the one that ends the question for the rest of the turn (§7d). The row
+// the one that ends the question for the rest of the turn. The row
 // draws the grant as `[+50]` — the block, not the keystroke — because both
 // design surfaces do (docs/interface/surfaces.md#the-recovery-row and
 // ui_kits/cockpit/Edges.html in the shhh Design System project); focus mode's
@@ -76,9 +76,9 @@ type roundPause struct {
 }
 
 // pauseAtRoundLimit stops the turn at its ceiling and puts the checkpoint on
-// screen. The conversation is untouched: the round that just finished left its
-// results in it, so granting more rounds is the request the loop was about to
-// make and nothing is re-asked.
+// screen. The conversation is untouched: the round that just finished left
+// its results in it, so granting more rounds is the request the loop was
+// about to make and nothing is re-asked.
 func (m Model) pauseAtRoundLimit() (tea.Model, tea.Cmd) {
 	p := &roundPause{
 		turn:    m.turnCount,
@@ -127,7 +127,7 @@ func checksStale(es []entry) bool {
 	return lastEdit >= 0 && lastCheck < lastEdit
 }
 
-// roundCounter is the vitals rail's round segment (§8a): the counter, plus the
+// roundCounter is the vitals rail's round segment: the counter, plus the
 // block on offer while a stop is standing, so the rail says both what the
 // bound is and what taking the offer would make it.
 func (m Model) roundCounter() string {
@@ -139,7 +139,7 @@ func (m Model) roundCounter() string {
 }
 
 // roundLabel is the counter on its own, shared with the close block's note
-// (§16). A turn running without a ceiling keeps the counter's shape and puts
+// . A turn running without a ceiling keeps the counter's shape and puts
 // `∞` where the bound would be: the rail must not invent a number that does
 // not exist, and it cannot say so in words either — its segments are joined
 // with `·`, so `round 7 · no bound` would read as two facts rather than one.
@@ -180,10 +180,10 @@ func (p roundPause) qualifier() string {
 	return "the turn's own bound"
 }
 
-// detail is what the turn managed, which is the question the row is answering.
-// Every clause is conditional on the thing it names: a turn that changed
-// nothing says so rather than reporting three zeroes, and one whose edits are
-// still covered by a check says nothing about the suite.
+// detail is what the turn managed, which is the question the row is
+// answering. Every clause is conditional on the thing it names: a turn that
+// changed nothing says so rather than reporting three zeroes, and one whose
+// edits are still covered by a check says nothing about the suite.
 func (p roundPause) detail() string {
 	if p.files == 0 {
 		return "nothing changed"
@@ -201,9 +201,9 @@ func (p roundPause) detail() string {
 // third 200.
 func (p roundPause) grant() int { return p.granted + roundGrantBlock }
 
-// keys are the ways on. Reviewing and undoing are offered only when there is a
-// changeset to act on — a key that cannot be honoured is not offered (§17a) —
-// and both offers go once either has been taken.
+// keys are the ways on. Reviewing and undoing are offered only when there is
+// a changeset to act on — a key that cannot be honoured is not offered — and
+// both offers go once either has been taken.
 //
 // `[!]` appears only from the second stop, because the first one is the
 // checkpoint doing its job: you have not yet seen this turn stopped, so the
@@ -249,8 +249,8 @@ func roundPauseOffers(p *roundPause) []components.KeyOffer {
 }
 
 // focusedRoundPause returns the pause row the focus cursor is on, if it is on
-// one. Like every recovery row it lives in the session's own transcript, so an
-// attached child's feed never offers it (S-077).
+// one. Like every recovery row it lives in the session's own transcript, so
+// an attached child's feed never offers it (S-077).
 func (m Model) focusedRoundPause() (entry, bool) {
 	if m.attachedTo != "" || m.focusIdx < 0 || m.focusIdx >= len(m.transcript) {
 		return entry{}, false
@@ -316,14 +316,14 @@ func (m Model) grantRounds(p *roundPause) (tea.Model, tea.Cmd) {
 
 // uncapRounds takes the second offer: the rest of the turn runs with no
 // ceiling at all and no further stops, the rail counting up against no bound
-// (§8a). Everything else is the grant — the same turn, the same changeset, one
+// . Everything else is the grant — the same turn, the same changeset, one
 // close at the end — and like the grant it lasts exactly one turn, because a
 // session that should never stop says so once, at the command line
 // (`--max-rounds 0`), rather than by a key pressed in the middle of a turn.
 //
 // The escape from a turn told to run is the one it always was: interrupting
-// it. That is the trade the key states, and the reason it is not offered until
-// the checkpoint has already stopped the turn once.
+// it. That is the trade the key states, and the reason it is not offered
+// until the checkpoint has already stopped the turn once.
 func (m Model) uncapRounds(p *roundPause) (tea.Model, tea.Cmd) {
 	if m.working() {
 		return m.systemNotice("The turn is already running again.")

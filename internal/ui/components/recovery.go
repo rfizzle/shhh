@@ -25,7 +25,7 @@ import (
 )
 
 // KeyOffer is one bracketed key and the words for what it does. Every key the
-// interface offers is info (§10a), so a key in any other colour is not an
+// interface offers is info, so a key in any other colour is not an
 // offer.
 type KeyOffer struct{ Key, Label string }
 
@@ -36,7 +36,7 @@ type TurnKey = KeyOffer
 // RecoveryState is how the row ended, and which glyph says so. `⚠` is a
 // recoverable stall — it will resume, or you can steer it; `✗` is a call that
 // failed; `⊘` is a stop you asked for. The distinction is the whole reason
-// all three exist (§17a).
+// all three exist.
 type RecoveryState int
 
 const (
@@ -87,11 +87,11 @@ type RecoveryRow struct {
 	// cost is a failure you have to go and check.
 	Note string
 	// KeysWaiting says the row does not hold the keyboard, so its keys render
-	// grey (§7c): `r` and `c` are letters while the draft has it, and "run
+	// grey: `r` and `c` are letters while the draft has it, and "run
 	// the tests again" is exactly what gets typed after a failure
 	// (invariant 5). A host that claims nothing keeps the live treatment the
 	// row always had — the one-shot prints these rows with no draft to
-	// protect, and states its way out as a command anyway (§17a).
+	// protect, and states its way out as a command anyway.
 	KeysWaiting bool
 	// Handover is the key that hands the keyboard over, unbracketed, offered
 	// live beside the waiting keys. Empty where there is no such key to
@@ -150,7 +150,7 @@ func (r RecoveryRow) outcomeField() string {
 
 // View renders the row, its detail body and its offered keys at the given
 // width. The row is always one line; everything under it indents rather than
-// re-gridding (§6a).
+// re-gridding.
 func (r RecoveryRow) View(width int) string {
 	// The pointer and mutation-rail columns stay blank: a failed request
 	// changed nothing, and focus mode supplies its own cursor gutter.
@@ -193,7 +193,7 @@ func (r RecoveryRow) keyLines(width int) []string {
 	rows := wrapOffersIn(r.Keys, width, !r.KeysWaiting)
 	// The key that hands the keyboard over keeps a line of its own rather
 	// than wrapping in among the keys it makes live: it is the only offer on
-	// a row that does not hold the keyboard, and it reads as one (§7c).
+	// a row that does not hold the keyboard, and it reads as one.
 	if r.KeysWaiting && r.Handover != "" {
 		rows = append(rows, handoverOffer(r.Handover, handoverWords))
 	}
@@ -211,7 +211,7 @@ func detailLine(s string, width int) string {
 }
 
 // RetryWait is the live block a stalled failure row grows while a bounded
-// retry waits out the provider's own countdown (S-107, §17a). The row above
+// retry waits out the provider's own countdown (S-107). The row above
 // it is history and does not move; this is the part that drains.
 //
 // The shape is guidelines/meters-progress and ui_kits/cockpit/Edges.html in
@@ -223,7 +223,7 @@ func detailLine(s string, width int) string {
 // host.
 type RetryWait struct {
 	// Pct is how much of the wait is left, 0–100. The meter drains right to
-	// left as it runs down (§10c).
+	// left as it runs down.
 	Pct int
 	// Text states the wait beside the bar — `retry in 12s`. A bar is a shape;
 	// the number is the measurement, and the two turn colour together.
@@ -253,7 +253,7 @@ func (w RetryWait) View(width int) string {
 
 // keyLine renders the offers and the note as one line: the keys in info, the
 // words for them and the note in dim — or, where the row does not hold the
-// keyboard, the keys grey beside the one key that hands it over (§7c).
+// keyboard, the keys grey beside the one key that hands it over.
 func (r RecoveryRow) keyLine() string {
 	var parts []string
 	if offers := keyRun(r.Keys, r.KeysWaiting, r.Handover); offers != "" {
@@ -296,7 +296,7 @@ type ProviderPlace struct {
 	Found    bool
 }
 
-// ProviderCard is the one card a missing provider earns (§17b). It names
+// ProviderCard is the one card a missing provider earns. It names
 // every place shhh looked and what it found there, then says which one is the
 // likely fix — a missing-key message that does not say where it looked is a
 // message that cannot be acted on.

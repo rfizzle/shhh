@@ -30,9 +30,9 @@ type argOption struct {
 
 // argSpec describes one positional argument. options is the static list;
 // dynamic (when set) replaces it and is resolved lazily. after gates the
-// position on the preceding token, so "/ui verbosity <low|normal|high>" is two
-// plain specs rather than a special case. fuzzy allows subsequence matching
-// for lists the user cannot be expected to type from the front.
+// position on the preceding token, so "/ui verbosity <low|normal|high>" is
+// two plain specs rather than a special case. fuzzy allows subsequence
+// matching for lists the user cannot be expected to type from the front.
 type argSpec struct {
 	options []argOption
 	dynamic func(*Model) []argOption
@@ -239,7 +239,7 @@ func scopeDropArgs(m *Model) []argOption {
 
 // attachmentDropArgs offers the attachments staged for the next message
 // (S-134) — the names `/paste drop` takes back out. A chip has no key of its
-// own (§7c), so its name is the handle, and this is what keeps the handle
+// own, so its name is the handle, and this is what keeps the handle
 // from having to be typed from memory.
 func attachmentDropArgs(m *Model) []argOption {
 	out := make([]argOption, 0, len(m.attachments))
@@ -251,7 +251,7 @@ func attachmentDropArgs(m *Model) []argOption {
 }
 
 // attachmentShowArgs offers the staged images `/paste show` can open
-// (S-158, §12h). Only the images: a PDF and a markdown file are staged as
+// (S-158). Only the images: a PDF and a markdown file are staged as
 // themselves and the surface refuses them, and a menu that offered a name it
 // would then decline is a menu that made the reader find that out by typing.
 func attachmentShowArgs(m *Model) []argOption {

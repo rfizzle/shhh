@@ -17,18 +17,18 @@ package chat
 // key.
 //
 //   - An activity row. Its whole width is one row, and [enter] under reading
-//     mode's cursor already opens it (§7a).
+//     mode's cursor already opens it.
 //   - The approval card's decision run. Each key owns its own cells inside
-//     `[y/N/a]`, and the click is delivered as the keystroke (§2).
+//     `[y/N/a]`, and the click is delivered as the keystroke.
 //
 // Everything else on the screen fails that test. Prose under the pointer is a
 // selection surface first and has no single act behind it; the scroll gutter
-// (§10g) is a shape rather than a control; a chip's `✕` (§12g) would be a
+// is a shape rather than a control; a chip's `✕` would be a
 // button with no keyboard equal, and a target only the mouse can reach is a
 // target half the readers do not have.
 //
 // Two rules hold the whole file together. **A click never takes the
-// keyboard** — reading is not a decision (§7a), so a row opened by pointer
+// keyboard** — reading is not a decision, so a row opened by pointer
 // leaves the draft holding every character it had, exactly as the wheel does.
 // And **a clicked key is the keystroke**: it goes to the handler the key goes
 // to, so there is no second decision path that could answer differently from
@@ -131,7 +131,7 @@ func (m Model) unitAtLine(line int) (int, bool) {
 //
 // The rows a click can open are narrower than the rows reading mode can put
 // its cursor on. A turn's close block and a provider failure are selectable
-// because they *offer keys* (§16, §17a), not because they expand, and a
+// because they *offer keys*, not because they expand, and a
 // pointer has no way to say which of `[v]` and `[u]` it meant. So those keep
 // their cursor and lose nothing: the keys are still where they were.
 func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
@@ -151,7 +151,7 @@ func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
 		es[idx].expanded = !es[idx].expanded
 	}
 	if full != nil {
-		// A diff cycled past its expanded mode wants the screen (§3b). It is
+		// A diff cycled past its expanded mode wants the screen. It is
 		// opened from wherever the click came from, so esc comes back there.
 		return m.openDiffFull(full, m.state)
 	}
@@ -196,7 +196,7 @@ func (m *Model) toggleRow(idx int) (claimed bool, full *components.DiffView) {
 	}
 	if m.groupAnchor(es, idx) {
 		// A folded group restores its rows in place, and folds them back
-		// again (S-091, §13c).
+		// again (S-091).
 		m.toggleGroupFold(idx)
 		return true, nil
 	}
@@ -216,7 +216,7 @@ func (m *Model) toggleRow(idx int) (claimed bool, full *components.DiffView) {
 //
 // The card is found by rendering the screen and reading the row the pointer
 // is on, rather than by working out where the panel starts: the card rides
-// above a live frame in one state and fills the panel in another (§7b), and
+// above a live frame in one state and fills the panel in another, and
 // the arithmetic that decides which is exactly what P3-7 replaces. What was
 // drawn is the only thing a click can honestly be resolved against.
 func (m Model) clickKey(x, y int) (tea.Model, tea.Cmd) {
@@ -234,7 +234,7 @@ func (m Model) clickKey(x, y int) (tea.Model, tea.Cmd) {
 	}
 	if m.decisionUngated() {
 		// The card is on screen with its keys drawn not-yet-live and the
-		// draft holding the keyboard (§7b). A click that answered anyway
+		// draft holding the keyboard. A click that answered anyway
 		// would be answering keys the screen says nobody can press, so it
 		// means what ctrl+g means instead: the card gets the keyboard, the
 		// decision stays waiting, and the second click answers it. Nothing
@@ -246,7 +246,7 @@ func (m Model) clickKey(x, y int) (tea.Model, tea.Cmd) {
 }
 
 // decisionCard is the approval card on screen, if the surface showing one is
-// that card at all. The plan card (§4d) and the memory proposal both take
+// that card at all. The plan card and the memory proposal both take
 // typed input rather than a letter, so neither draws a run of keys for a
 // pointer to land in; they keep their keyboard and are unchanged.
 func (m Model) decisionCard() *components.ApprovalCard {

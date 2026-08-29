@@ -13,8 +13,8 @@ package components
 //
 // Nothing here is a key and nothing here is clickable. The strip sits above a
 // live draft, so a key written on a chip would be an offer nothing accepts
-// (§7c), and a `✕` would be a control the keyboard cannot reach — which is
-// the test S-159 gave the click targets it did add (§7e): the pointer names
+//, and a `✕` would be a control the keyboard cannot reach — which is
+// the test S-159 gave the click targets it did add: the pointer names
 // one thing, and that thing already has a key. Taking one back out is `/paste
 // drop <name>` — which is why the name is the field a chip gives up last, and
 // why what does not fit is counted rather than half-drawn.
@@ -41,7 +41,7 @@ const (
 	ChipDocument
 )
 
-// mark is the kind's glyph (§10d). Colour reinforces nothing here: the chips
+// mark is the kind's glyph. Colour reinforces nothing here: the chips
 // are drawn in body text and the mark carries the whole distinction, which is
 // what makes the strip read the same in mono (invariant 1).
 func (k ChipKind) mark() string {

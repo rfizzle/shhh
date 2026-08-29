@@ -94,7 +94,7 @@ type listWindow struct {
 // rangeFor is the half-open range of items the card shows for a body budget.
 // The pointer above the window pulls it up to meet it and the pointer below
 // pushes it down, one item at a time; inside it, the window does not move at
-// all. It is therefore path-dependent, and deliberately so (§4a).
+// all. It is therefore path-dependent, and deliberately so.
 func (w *listWindow) rangeFor(g listGeometry, budget int) (lo, hi int) {
 	if g.n == 0 {
 		w.scroll = 0

@@ -2,7 +2,7 @@ package chat
 
 // Attachments (S-134): images and files staged for the next message. The
 // an attachment shows as a chip carrying its mark, its name and its size, on
-// the frame's staged rail while it waits (§12g) and on the user's own
+// the frame's staged rail while it waits and on the user's own
 // transcript row once it has gone. Nothing here draws a picture: `/paste
 // show` is the one surface that does, opened by naming a chip and given the
 // whole pane while it is up (S-158, §12h, preview.go). What the bytes are for
@@ -127,7 +127,7 @@ func (m *Model) takeAttachments() []provider.Attachment {
 	return atts
 }
 
-// stagedRail is the frame's staged rail (§12g): one chip per attachment
+// stagedRail is the frame's staged rail: one chip per attachment
 // waiting to ride, drawn by components.AttachmentChips. It is
 // orchestrator-scoped like the notice rail above it — attached, the keyboard
 // is pointed at a child and ctrl+v is a textarea key again, so the
@@ -154,7 +154,7 @@ func (m Model) attachmentChips() []components.AttachmentChip {
 
 // chipKind maps what the sniffer decided onto the mark the strip draws. The
 // two vocabularies stay separate on purpose: one is how a provider carries
-// the bytes, the other is a glyph in a closed set (§10d).
+// the bytes, the other is a glyph in a closed set.
 func chipKind(k provider.AttachmentKind) components.ChipKind {
 	switch k {
 	case provider.AttachmentImage:
@@ -167,7 +167,7 @@ func chipKind(k provider.AttachmentKind) components.ChipKind {
 
 // runPaste dispatches `/paste`: bare reads the clipboard, `clear` drops what
 // is staged, `drop <name>` drops one chip, `show <name>` opens one as a
-// picture (S-158, §12h), and anything else is a path.
+// picture (S-158), and anything else is a path.
 func (m Model) runPaste(parts []string) (tea.Model, tea.Cmd) {
 	if len(parts) == 1 {
 		return m, readClipboardCmd()
@@ -208,7 +208,7 @@ func cutFold(arg, word string) (string, bool) {
 // dropAttachment takes one staged attachment back out by name — the per-chip
 // half of what `clear` does to the whole strip.
 //
-// A chip carries no key of its own (§7c): it sits above a live draft, so the
+// A chip carries no key of its own: it sits above a live draft, so the
 // name printed on it is the handle instead, and the completion menu offers
 // the staged names (S-079) so it is never typed from memory. A name that is
 // not staged is said out loud with the ones that are, for the same reason a

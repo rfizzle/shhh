@@ -19,7 +19,7 @@ package chat
 // # The open line
 //
 // Blocks are rendered as text, not as lines, because joinUnits owns the
-// spacing between them (§13) and a separator is a newline the block after it
+// spacing between them and a separator is a newline the block after it
 // begins with. Appending text to lines is therefore not appending lines: the
 // first part of what arrives continues the line the last block left open.
 // That open line is the element at index frozen, it is rebuilt from empty on

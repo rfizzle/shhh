@@ -71,14 +71,14 @@ func monoFixtures() []monoSurface {
 		return strings.Join(UnifiedLines(hunk(kind), w, UnifiedOpts{LineNumbers: true, Emphasis: true}), "\n")
 	}
 
-	// One staged chip (§12g). The name and the size are held constant, so the
+	// One staged chip. The name and the size are held constant, so the
 	// kind's mark is the only thing left to tell the three apart — which is
 	// what makes the strip legible on a terminal with no colour at all.
 	chipStrip := func(kind ChipKind) string {
 		return AttachmentChips([]AttachmentChip{{Kind: kind, Name: "staged.bin", Size: "412 KB"}}, w)
 	}
 
-	// The staged image preview (§12h). It is the one surface in shhh whose
+	// The staged image preview. It is the one surface in shhh whose
 	// content *is* colour, so it is the strongest thing invariant 1 has to
 	// say about mono: the picture is still drawn, still tells its bands
 	// apart, and asks the terminal for no colour at all to do it.
@@ -89,7 +89,7 @@ func monoFixtures() []monoSurface {
 		return p.View(w)
 	}
 
-	// The config screen's two toned fields (§19a). Everything but the field
+	// The config screen's two toned fields. Everything but the field
 	// under test is held constant, so a value or a source that was only ever
 	// a hue apart from another would collapse here.
 	configScreen := func(row ConfigRow) string {
@@ -109,7 +109,7 @@ func monoFixtures() []monoSurface {
 		})
 	}
 
-	// The history browser's row states (§19b). Everything but the outcome is
+	// The history browser's row states. Everything but the outcome is
 	// held constant, so a row that said what happened to it in colour alone
 	// would collapse into the row beside it here.
 	historyRow := func(state ActivityState, outcome string) string {
@@ -122,7 +122,7 @@ func monoFixtures() []monoSurface {
 		return h.View(w)
 	}
 
-	// The doctor surface's check states (§19d). Everything but the state is
+	// The doctor surface's check states. Everything but the state is
 	// held constant — one name, one subject, one outcome word — so the only
 	// thing left to tell a failure from a warning is its glyph, which is
 	// exactly what invariant 1 asks of them.
@@ -134,7 +134,7 @@ func monoFixtures() []monoSurface {
 		return d.View(w)
 	}
 
-	// The metrics surface's category meters (§19c). The share and the number
+	// The metrics surface's category meters. The share and the number
 	// beside it are held constant, so the only thing left to tell an ordinary
 	// share from a cost nobody asked for is the label and its glyph — which
 	// is exactly what invariant 1 asks of them.
@@ -169,7 +169,7 @@ func monoFixtures() []monoSurface {
 	}
 
 	// The strip's three row states, held to one label and one rating so that
-	// only the state itself is left to tell them apart (S-102, §2e).
+	// only the state itself is left to tell them apart (S-102).
 	queued := func(current bool, mut func(*QueueItem)) string {
 		it := QueueItem{Number: 2, Label: "go test ./internal/agent/...", Severity: SeverityLow}
 		mut(&it)
@@ -205,7 +205,7 @@ func monoFixtures() []monoSurface {
 	}
 
 	// The palette's row states, held to one command name so that only the
-	// state itself is left to tell them apart (S-112, §18a).
+	// state itself is left to tell them apart (S-112).
 	// The filter row's three answers (§4a, S-123): a query with matches, a
 	// query with none, and a list with no filter open at all. Bold is what
 	// tells a matched run from the rest, and bold is what mono keeps.
@@ -233,7 +233,7 @@ func monoFixtures() []monoSurface {
 
 	// The plan card holds its title, files and options constant so that only
 	// the step's intent — or the plan's radius — is left to tell the states
-	// apart (S-103, §4d).
+	// apart (S-103).
 	planned := func(mut func(*PlanCard)) string {
 		c := PlanCard{
 			Title: "Plan · make the round limit recoverable",
@@ -249,7 +249,7 @@ func monoFixtures() []monoSurface {
 	}
 
 	// The PLAN checklist holds one step's title and duration constant, so
-	// that only its state is left to tell the rows apart (S-104, §15a).
+	// that only its state is left to tell the rows apart (S-104).
 	checklist := func(state PlanStepState) string {
 		return InspectorRail{Plan: &InspectorPlan{
 			Steps: []InspectorPlanStep{{Number: 1, Title: "Return it from runRound",
@@ -262,7 +262,7 @@ func monoFixtures() []monoSurface {
 	}
 
 	// The review surface's staging states, held to one file and one hunk so
-	// that only the staging itself is left to tell them apart (S-099, §16a).
+	// that only the staging itself is left to tell them apart (S-099).
 	review := func(staged []bool, mut func(*ReviewView)) string {
 		hunks := diff.Compute(
 			"a\nb\nc\nd\ne\nf\ng\nh\ni\nj\nk\nl\n",
@@ -280,13 +280,13 @@ func monoFixtures() []monoSurface {
 	}
 
 	// The undo confirm holds its counts constant so that only drift is left
-	// to tell the states apart (S-100, §5).
+	// to tell the states apart (S-100).
 	undo := func(drifted []string) string {
 		return UndoConfirm{Turn: 7, Restores: 2, Removes: 1, Drifted: drifted}.View(w)
 	}
 
 	// The close rows hold their stats constant so that only the state itself
-	// is left to tell them apart (S-098, §16).
+	// is left to tell them apart (S-098).
 	closed := func(mut func(*TurnClose)) string {
 		c := TurnClose{Steps: 4, Tools: 18, Elapsed: "1m 04s"}
 		mut(&c)
@@ -295,7 +295,7 @@ func monoFixtures() []monoSurface {
 
 	// The recovery row holds its verb, subject and duration constant, so that
 	// only the class and its state are left to tell the failures apart
-	// (S-106, §17a). ⚠ and ✗ are a hue apart in colour; in mono they have to
+	// (S-106). ⚠ and ✗ are a hue apart in colour; in mono they have to
 	// be the glyph and the words.
 	recovered := func(mut func(*RecoveryRow)) string {
 		r := RecoveryRow{Verb: VerbModel, Subject: "gpt-4o", Duration: "0.3s"}
@@ -324,7 +324,7 @@ func monoFixtures() []monoSurface {
 	}
 
 	// The status line holds its numbers constant, so the phase and the
-	// outcome are the only things left to tell its states apart (§8d).
+	// outcome are the only things left to tell its states apart.
 	status := func(mut func(*TurnStatus)) string {
 		s := TurnStatus{Elapsed: "12.4s", Up: "41.2k", Down: "2.1k", Cost: "$0.06",
 			Duration: "12.4s", Tools: 18}
@@ -362,7 +362,7 @@ func monoFixtures() []monoSurface {
 			{"failed", row(func(r *ActivityRow) { r.State, r.Outcome = ActivityFailed, OutcomeExit(1) })},
 			// The two denials are the case the invariant is really about: the
 			// component colours them differently, so the decider has to be a
-			// word as well (§6d).
+			// word as well.
 			{"denied by you", row(func(r *ActivityRow) {
 				r.State, r.Outcome, r.Duration = ActivityDenied, OutcomeBy(OutcomeDenied, "you"), NoDuration
 			})},
@@ -450,8 +450,7 @@ func monoFixtures() []monoSurface {
 			{"staged", staged(true)},
 		}},
 		// The scroll gutter has two states and one column to say them in, so
-		// the stroke is all it has: dim and dimmer are the same grey here
-		// (§10g).
+		// the stroke is all it has: dim and dimmer are the same grey here.
 		{"scroll gutter cell", []monoState{
 			// The top row of a gutter scrolled to its end, and of the same
 			// gutter at its top.
@@ -810,7 +809,7 @@ func TestMonoLeavesTheFullPaletteIntact(t *testing.T) {
 	}
 }
 
-// TestMonoDeclinesSyntaxHighlighting covers the syntax register (§3b): even
+// TestMonoDeclinesSyntaxHighlighting covers the syntax register: even
 // though it is drawn from the palette now, mono declines it outright rather
 // than collapsing it onto the two greys, because the +/- styling under it is
 // already carrying the distinction that matters.

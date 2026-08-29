@@ -53,7 +53,7 @@ func TestMeterStatesItsValueBesideTheBar(t *testing.T) {
 }
 
 func TestMeterThresholdColours(t *testing.T) {
-	// The bar and the number turn together (§10c), so one style decides both.
+	// The bar and the number turn together, so one style decides both.
 	for _, c := range []struct {
 		pct  int
 		want Token

@@ -1,7 +1,8 @@
 // History is what you asked and what happened: every generated command with
 // the prompt behind it, what became of it, and what it cost. Nothing here
 // re-runs anything — the browser that reads these rows requires a deliberate
-// key (docs/capabilities/sessions-and-memory.md#history-is-what-you-asked-and-what-happened).
+// key
+// (docs/capabilities/sessions-and-memory.md#history-is-what-you-asked-and-what-happened).
 package storage
 
 import (

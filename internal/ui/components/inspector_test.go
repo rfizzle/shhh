@@ -63,7 +63,7 @@ func TestInspectorRail_BlockOrderAndContents(t *testing.T) {
 			t.Fatalf("rail missing %q:\n%s", want, view)
 		}
 	}
-	// The order is fixed (§15a).
+	// The order is fixed.
 	order := []string{"THIS TURN", "CHANGES", "AGENTS", "CONTEXT", "SPEND"}
 	at := 0
 	for _, label := range order {
@@ -82,7 +82,7 @@ func TestInspectorRail_OmitsEmptyBlocks(t *testing.T) {
 	if !(InspectorRail{}).Empty() {
 		t.Fatal("an empty rail reports Empty")
 	}
-	// A session with no children has no AGENTS heading at all (§15b).
+	// A session with no children has no AGENTS heading at all.
 	r := fullRail()
 	r.Agents = nil
 	r.Changes = nil
@@ -203,9 +203,9 @@ func TestInspectorRail_NoDeclaredStepsNoRatio(t *testing.T) {
 	if strings.Contains(view, "▰") {
 		t.Fatalf("no meter without a declared step count:\n%s", view)
 	}
-	// The row is the artboard's (§15b): the turn's own file count said in
+	// The row is the artboard's: the turn's own file count said in
 	// words, then its tools and its clock. Whether that clock is still
-	// running is the live turn status's answer (§8d), not a word repeated
+	// running is the live turn status's answer, not a word repeated
 	// here — and a turn that wrote nothing still says so.
 	if !strings.Contains(view, "0 files this turn · 7 tools · 2.0s") {
 		t.Fatalf("the block still states its counts:\n%s", view)
@@ -301,7 +301,7 @@ func TestInspectorChanges_FoldKeepsThisTurnAndCarriesItsCounts(t *testing.T) {
 
 // An alert outlives the turn that caused it, names that turn, and is the last
 // thing the fold takes — a red row that scrolls itself away is the failure
-// the block exists to prevent (§15a).
+// the block exists to prevent.
 func TestInspectorChanges_AlertsOutliveTheirTurn(t *testing.T) {
 	r := InspectorRail{Changes: &InspectorChanges{
 		Files: []InspectorFile{
@@ -349,7 +349,7 @@ func TestInspectorChanges_AlertsAloneStillRender(t *testing.T) {
 	}
 }
 
-// The SUMMARY block (S-163, §15d) is the rail's one prose block, and it sits
+// The SUMMARY block (S-163) is the rail's one prose block, and it sits
 // first: it says what is happening, and every block under it is the detail of
 // that.
 func TestInspectorSummary_LeadsTheRail(t *testing.T) {
@@ -370,7 +370,7 @@ func TestInspectorSummary_LeadsTheRail(t *testing.T) {
 }
 
 // A reading nobody has taken is a block with nothing to say, and a block with
-// nothing to say is omitted rather than drawn empty (§15c).
+// nothing to say is omitted rather than drawn empty.
 func TestInspectorSummary_OmittedWithoutAReading(t *testing.T) {
 	for _, s := range []*InspectorSummary{nil, {Text: "   ", Round: 4}} {
 		r := InspectorRail{Summary: s, Turn: &InspectorTurn{Tools: 2, Running: true}}
@@ -381,7 +381,7 @@ func TestInspectorSummary_OmittedWithoutAReading(t *testing.T) {
 }
 
 // Every state says itself in a glyph and in words, so the row reads the same
-// on a monochrome terminal (§10c).
+// on a monochrome terminal.
 func TestInspectorSummary_EveryStateStatesItself(t *testing.T) {
 	cases := []struct {
 		state SummaryTone
@@ -423,7 +423,7 @@ func TestInspectorSummary_ReasonQualifiesADeparture(t *testing.T) {
 }
 
 // A reading the session has outrun says so in the heading rather than letting
-// an old sentence pass for a current one (§15c).
+// an old sentence pass for a current one.
 func TestInspectorSummary_StaleSaysSo(t *testing.T) {
 	r := InspectorRail{Summary: &InspectorSummary{
 		Text: "Running the tests.", State: SummaryOnTarget, Round: 12, Stale: true,
@@ -458,9 +458,9 @@ func TestInspectorSummary_WrapsAndBounds(t *testing.T) {
 	}
 }
 
-// Truncation takes the tail of the reading, never the sentence's first line or
-// the state row — a block reduced to a heading and half a word is worse than
-// one that says it folded (§15b).
+// Truncation takes the tail of the reading, never the sentence's first line
+// or the state row — a block reduced to a heading and half a word is worse
+// than one that says it folded.
 func TestInspectorSummary_KeepsItsFirstLineAndItsState(t *testing.T) {
 	long := strings.TrimSpace(strings.Repeat("wiring the round limit into the chat model ", 8))
 	r := InspectorRail{

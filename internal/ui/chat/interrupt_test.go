@@ -19,7 +19,7 @@ import (
 )
 
 // handover hands the keyboard to the decision on screen — what ctrl+g does
-// for a reader (§7b). A card that arrives unbidden holds no keyboard, so a
+// for a reader. A card that arrives unbidden holds no keyboard, so a
 // test that answers one presses this first, exactly as a user would.
 func handover(t *testing.T, m Model) Model {
 	t.Helper()
@@ -133,7 +133,7 @@ func TestInterrupt_TheDraftSurvivesTheWholeRoundTrip(t *testing.T) {
 		t.Fatalf("gating must not move the cursor, %d → %d", before, got)
 	}
 	// The undressed frame states the position it is holding, so the reader
-	// can see that nothing moved (§7b).
+	// can see that nothing moved.
 	view := ansi.Strip(m.View().Content)
 	if !strings.Contains(view, m.draftPosition()) {
 		t.Fatalf("the held draft should state its own position (%q):\n%s", m.draftPosition(), view)
@@ -189,7 +189,7 @@ func TestInterrupt_TheDraftKeepsItsOwnKeysWhileTheCardWaits(t *testing.T) {
 	m := interruptedModel(t, "queue this")
 
 	// Enter queues the sentence for the next round rather than starting a
-	// turn the waiting decision would interrupt (§7b).
+	// turn the waiting decision would interrupt.
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.state != stateConfirmRun {

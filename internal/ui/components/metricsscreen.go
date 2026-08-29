@@ -4,19 +4,19 @@ package components
 // docs/interface/surfaces.md#the-supporting-screens,
 // ui_kits/cockpit/Tools.html). `shhh metrics` printed a tabwriter table of
 // fifteen unaligned columns and no Bubble Tea at all. It is re-cut here from
-// parts that already exist: the §6a column grid applied to a table, the §10c
-// sparkline for the shape of a trend, and the §10c block meter for every
-// ratio — so the sparkline a reader already knows from the inspector rail
-// means the same thing here.
+// parts that already exist: the column grid applied to a table, the sparkline
+// for the shape of a trend, and the block meter for every ratio — so the
+// sparkline a reader already knows from the inspector rail means the same
+// thing here.
 //
-// Three rules shape it and all three come from §19c. Numeric columns are
-// fixed-width and right-aligned, so the reader scans one column rather than
-// parsing rows. A sparkline is dimmer and never coloured, because a coloured
-// sparkline would imply a threshold nobody set — the numbers beside it are
-// the measurement and the sparkline is only the shape. And every ratio is a
-// block meter with its number stated beside the bar, in the accent-coloured
-// category tone rather than the context ladder, because none of these shares
-// has a threshold to cross.
+// Three rules shape it (docs/interface/surfaces.md#the-supporting-screens).
+// Numeric columns are fixed-width and right-aligned, so the reader scans one
+// column rather than parsing rows. A sparkline is dimmer and never coloured,
+// because a coloured sparkline would imply a threshold nobody set — the
+// numbers beside it are the measurement and the sparkline is only the shape.
+// And every ratio is a block meter with its number stated beside the bar, in
+// the accent-coloured category tone rather than the context ladder, because
+// none of these shares has a threshold to cross.
 //
 // It is a passive component like the rest of this package. It owns no metrics
 // semantics: the host reads the store, prices the tokens, decides what a
@@ -34,18 +34,18 @@ import (
 
 const (
 	// metricsIndent is the column the table and the blocks start at, the same
-	// one the config screen's settings list uses (§19a).
+	// one the config screen's settings list uses.
 	metricsIndent = 2
-	// metricsGap is the gutter between two columns of the table. Two spaces
-	// is what keeps a right-aligned number from touching the one before it.
+	// metricsGap is the gutter between two columns of the table. Two spaces is
+	// what keeps a right-aligned number from touching the one before it.
 	metricsGap = 2
-	// metricsTrendCells is the sparkline's width: one cell per day for a
-	// week. It is fixed rather than following the window, so a reader
-	// comparing two runs of `shhh metrics` is comparing the same span.
+	// metricsTrendCells is the sparkline's width: one cell per day for a week.
+	// It is fixed rather than following the window, so a reader comparing two
+	// runs of `shhh metrics` is comparing the same span.
 	metricsTrendCells = 7
 	// metricsMinLabel is the shortest run of a bar's label worth drawing. The
-	// meter itself never shrinks (§10c allows four cell counts and no
-	// others), so the label is what gives ground.
+	// meter itself never shrinks (the meter guidance allows four cell counts and
+	// no others), so the label is what gives ground.
 	metricsMinLabel = 8
 )
 
@@ -56,9 +56,9 @@ type MetricsModel struct {
 	// Name identifies the model, and is the one column that never drops.
 	Name string
 	// Requests, TokensIn, TokensOut, Spend, TTFT and P95 are the numeric
-	// columns, right-aligned in their own fixed widths. A field the store
-	// never recorded is NoDuration rather than a zero — a blank column would
-	// read as "none" where the truth is "never measured".
+	// columns, right-aligned in their own fixed widths. A field the store never
+	// recorded is NoDuration rather than a zero — a blank column would read as
+	// "none" where the truth is "never measured".
 	Requests  string
 	TokensIn  string
 	TokensOut string
@@ -67,26 +67,26 @@ type MetricsModel struct {
 	P95       string
 	// Trend is the token total for each of the last metricsTrendCells days,
 	// oldest first, and the host supplies a full run with zeroes for the days
-	// nothing ran — an eight-cell shape and a three-cell one side by side
-	// would compare two different spans. Each row scales to its own maximum:
-	// it is the shape of this model's week, not of the table's.
+	// nothing ran — an eight-cell shape and a three-cell one side by side would
+	// compare two different spans. Each row scales to its own maximum: it is the
+	// shape of this model's week, not of the table's.
 	Trend []float64
 }
 
 // MetricsBar is one row of a meter block: a share of a total, its bar, the
 // number beside it, and a right-hand field that annotates the pair.
 type MetricsBar struct {
-	// Label is the category or the model the share belongs to. Where the
-	// tone is the only thing separating two bars, the label carries a glyph
-	// as well — invariant 1 holds here as everywhere.
+	// Label is the category or the model the share belongs to. Where the tone is
+	// the only thing separating two bars, the label carries a glyph as well —
+	// invariant 1 holds here as everywhere.
 	Label string
 	// Pct is the fill, 0–100.
 	Pct int
-	// Text is the number stated beside the bar — `$9.94 · 54%`, `94%
-	// answered`. Never empty: a bar without its number is a shape (§10c).
+	// Text is the number stated beside the bar — `$9.94 · 54%`, `94% answered`.
+	// Never empty: a bar without its number is a shape.
 	Text string
-	// Note is the right-hand field: what the share is made of. It drops
-	// before anything else on the row does (§16).
+	// Note is the right-hand field: what the share is made of. It drops before
+	// anything else on the row does.
 	Note string
 	// NoteTone reads the note. A note that says something the reader would
 	// rather not have paid for is del, and its bar is too.
@@ -98,11 +98,11 @@ type MetricsBar struct {
 
 // MetricsBlock is one titled run of bars — `where the money went`, `how the
 // answers came back`. A block with no bars is left out by the host rather
-// than drawn empty (§19c), which is also how a reading the store has nothing
-// for disappears instead of showing as a row of zeroes.
+// than drawn empty, which is also how a reading the store has nothing for
+// disappears instead of showing as a row of zeroes.
 type MetricsBlock struct {
-	// Title names the block, in the sentence case the artboard uses: these
-	// are readings, not rails.
+	// Title names the block, in the sentence case the artboard uses: these are
+	// readings, not rails.
 	Title string
 	// Field is the right-hand annotation — `last 30 days`, `241 requests`.
 	Field string
@@ -110,17 +110,16 @@ type MetricsBlock struct {
 }
 
 // MetricsScreen is `shhh metrics`: a takeover surface, full width, no
-// inspector rail, owning the keyboard for as long as it is up (§19).
+// inspector rail, owning the keyboard for as long as it is up.
 type MetricsScreen struct {
-	// Subject is what the header says the screen is over — `last 30 days ·
-	// 241 requests · 4 models`. The host counts it.
+	// Subject is what the header says the screen is over — `last 30 days · 241
+	// requests · 4 models`. The host counts it.
 	Subject string
 	// Spend is the total the header states on the right, ahead of the keys.
 	Spend string
 	// Models are the table's rows, in the order the host read them.
 	Models []MetricsModel
-	// Blocks are the meter blocks under the table, in the order they are
-	// drawn.
+	// Blocks are the meter blocks under the table, in the order they are drawn.
 	Blocks []MetricsBlock
 	// MaxLines bounds the screen height; the header and its rule come off the
 	// body's budget before anything is drawn. 0 is unbounded, which is what a
@@ -128,10 +127,11 @@ type MetricsScreen struct {
 	MaxLines int
 }
 
-// Update is the screen's whole keyboard, and it is one key. §19c's header
-// offers `[q] quit` and nothing else: there is no pointer to move, nothing to
-// choose and nothing to change, so there is no key list to open either — a
-// `[?]` over a single key would be a row explaining the row above it.
+// Update is the screen's whole keyboard, and it is one key. The screen's
+// header offers `[q] quit` and nothing else: there is no pointer to move,
+// nothing to choose and nothing to change, so there is no key list to open
+// either — a `[?]` over a single key would be a row explaining the row above
+// it.
 func (m *MetricsScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Screen.Quit):
@@ -140,8 +140,8 @@ func (m *MetricsScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	return false, nil
 }
 
-// View renders the screen: the §17c header and its rule, the model table, and
-// the meter blocks under it.
+// View renders the screen: the start-screen header and its rule, the model
+// table, and the meter blocks under it.
 func (m *MetricsScreen) View(width int) string {
 	if width <= 0 {
 		return ""
@@ -160,16 +160,17 @@ func (m *MetricsScreen) budget(pinned int) int {
 	return max(m.MaxLines-pinned, 1)
 }
 
-// headerRow is the §17c header: the command, what it is over, the total spend
-// and the one key the screen has. The spend sits with the key rather than in
-// the subject because it is the answer the reader came for, and §19c puts it
-// where the eye already goes for the state of a surface.
+// headerRow is the start-screen header: the command, what it is over, the
+// total spend and the one key the screen has. The spend sits with the key
+// rather than in the subject because it is the answer the reader came for,
+// and the metrics screen puts it where the eye already goes for the state of
+// a surface.
 //
 // It is the subject that gives ground here, not the right-hand pair — the
-// other two screens of §19 clip the left and let their keys go, because both
-// have a foot key row to fall back on. This one has neither a foot row nor a
-// second key, so dropping `[q]` would leave a takeover surface with no stated
-// way out of it (invariant 5).
+// other two supporting screens clip the left and let their keys go, because
+// both have a foot key row to fall back on. This one has neither a foot row
+// nor a second key, so dropping `[q]` would leave a takeover surface with no
+// stated way out of it (invariant 5).
 func (m *MetricsScreen) headerRow(width int) string {
 	quit := keys.Bracket(keys.Screen.Quit) + " " + keys.Words(keys.Screen.Quit)
 	right := sty.Dim.Render(quit)
@@ -201,23 +202,22 @@ func (m *MetricsScreen) bodyRows(width, budget int) []string {
 	}
 
 	// Whole blocks go first, from the bottom, and the row that replaces them
-	// names what went rather than only marking that something did
-	// (invariant 4).
+	// names what went rather than only marking that something did (invariant 4).
 	kept, dropped := sections, 0
 	for len(kept) > 1 && rowCount(kept)+markerRows(dropped) > budget {
 		kept, dropped = kept[:len(kept)-1], dropped+1
 	}
 	if dropped == 0 {
-		// Everything fits, or the table alone still does not and windows
-		// itself against the whole budget.
+		// Everything fits, or the table alone still does not and windows itself
+		// against the whole budget.
 		if len(kept) > 1 {
 			return flatten(kept)
 		}
 		return m.tableRows(width, budget)
 	}
-	// The marker is what keeps the dropped blocks from being dropped
-	// silently, so it takes its row before the table windows against what is
-	// left (invariant 4).
+	// The marker is what keeps the dropped blocks from being dropped silently,
+	// so it takes its row before the table windows against what is left
+	// (invariant 4).
 	marker := indentBy(m.droppedRow(dropped, width-metricsIndent), metricsIndent, width)
 	if len(kept) > 1 {
 		return append(flatten(kept), marker)
@@ -234,8 +234,8 @@ func markerRows(dropped int) int {
 	return 1
 }
 
-// droppedRow names the blocks that did not fit. A marker that only said
-// "2 more" would leave the reader guessing which two readings the screen is
+// droppedRow names the blocks that did not fit. A marker that only said "2
+// more" would leave the reader guessing which two readings the screen is
 // sitting on.
 func (m *MetricsScreen) droppedRow(dropped, width int) string {
 	titles := make([]string, 0, dropped)
@@ -246,7 +246,7 @@ func (m *MetricsScreen) droppedRow(dropped, width int) string {
 		fmt.Sprintf("↓ %d more · %s", dropped, strings.Join(titles, " · ")), width))
 }
 
-// tableRows is the model table: the §6a grid applied to a table, with a
+// tableRows is the model table: the column grid applied to a table, with a
 // heading rail over it. budget bounds it; a table that cannot show every
 // model says how many it is holding back.
 func (m *MetricsScreen) tableRows(width, budget int) []string {
@@ -256,15 +256,15 @@ func (m *MetricsScreen) tableRows(width, budget int) []string {
 	}
 	rows := []string{indentBy(sty.Headline.Render(m.headingRow(cols)), metricsIndent, width)}
 	if len(m.Models) == 0 {
-		// A heading over nothing is a table that lost its rows. The host
-		// keeps the screen closed when the store is empty, so this is the
-		// window having taken everything, and it says so.
+		// A heading over nothing is a table that lost its rows. The host keeps the
+		// screen closed when the store is empty, so this is the window having taken
+		// everything, and it says so.
 		return append(rows, indentBy(sty.Dim.Render("no models to show"), metricsIndent, width))
 	}
 
 	shown := m.Models
-	// The heading and the marker both come off the budget before the models
-	// do: the window may never buy itself a row (§4a).
+	// The heading and the marker both come off the budget before the models do:
+	// the window may never buy itself a row.
 	if budget > 0 && len(shown) > budget-1 {
 		shown = shown[:max(budget-2, 1)]
 	}
@@ -278,18 +278,18 @@ func (m *MetricsScreen) tableRows(width, budget int) []string {
 	return rows
 }
 
-// metricsColumn is one column of the table: its heading, whether its cells are
-// numbers, and how to read one out of a row.
+// metricsColumn is one column of the table: its heading, whether its cells
+// are numbers, and how to read one out of a row.
 type metricsColumn struct {
 	head    string
 	numeric bool
 	value   func(MetricsModel) string
-	// width is the column's own fixed width, computed once from the heading
-	// and every cell under it.
+	// width is the column's own fixed width, computed once from the heading and
+	// every cell under it.
 	width int
-	// trend marks the sparkline column, which is drawn rather than printed:
-	// it is dimmer where the numbers are body, and it is a shape rather than
-	// a value (§10c).
+	// trend marks the sparkline column, which is drawn rather than printed: it
+	// is dimmer where the numbers are body, and it is a shape rather than a
+	// value.
 	trend bool
 }
 
@@ -309,8 +309,8 @@ func (m *MetricsScreen) allColumns() []metricsColumn {
 }
 
 // metricsDropOrder is which columns give ground as the terminal narrows, in
-// the order they go (§8b's rule, over a table). The sparkline goes first
-// because §19c says what it is: the shape, not the measurement — the
+// the order they go (the field-drop rule, over a table). The sparkline goes
+// first because of what it is: the shape, not the measurement — the
 // measurement is the column beside it. The latencies follow, then the token
 // totals from the smaller of the pair, and REQUESTS last, because a row with
 // no count on it has stopped being a summary.
@@ -334,7 +334,7 @@ func (m *MetricsScreen) columns(width int) []metricsColumn {
 
 // measure sets each column's width from its heading and every cell under it,
 // which is what makes the numbers line up down the column rather than after
-// the longest row (§19c).
+// the longest row.
 func (m *MetricsScreen) measure(cols []metricsColumn) []metricsColumn {
 	for i := range cols {
 		cols[i].width = lipgloss.Width(cols[i].head)
@@ -361,9 +361,9 @@ func tableWidth(cols []metricsColumn) int {
 	return total
 }
 
-// withoutColumn is the column set with one column shed. Shedding is whole-column:
-// a half-drawn heading over half a number is worse than the column not being
-// there (invariant 4).
+// withoutColumn is the column set with one column shed. Shedding is
+// whole-column: a half-drawn heading over half a number is worse than the
+// column not being there (invariant 4).
 func withoutColumn(cols []metricsColumn, head string) []metricsColumn {
 	out := make([]metricsColumn, 0, len(cols))
 	for _, col := range cols {
@@ -376,7 +376,7 @@ func withoutColumn(cols []metricsColumn, head string) []metricsColumn {
 
 // headingRow is the table's heading, aligned exactly as its cells are. It is
 // a rail rather than a row of labels — `c-info b`, the same as every group
-// rail in the product (§4a).
+// rail in the product.
 func (m *MetricsScreen) headingRow(cols []metricsColumn) string {
 	cells := make([]string, 0, len(cols))
 	for _, col := range cols {
@@ -460,8 +460,8 @@ func titleRow(block MetricsBlock, width int) string {
 // not on the three beside it would read as a fact about that row.
 //
 // The label is what gives ground when the terminal narrows, and the notes go
-// before it does (§16). The meter itself never gives ground, because §10c
-// allows four cell counts and no others.
+// before it does. The meter itself never gives ground, because the meter
+// guidance allows four cell counts and no others.
 func (m *MetricsScreen) barGeometry(block MetricsBlock, width int) (label int, notes bool) {
 	var text, note int
 	for _, bar := range block.Bars {
@@ -473,9 +473,9 @@ func (m *MetricsScreen) barGeometry(block MetricsBlock, width int) (label int, n
 	return label, notes
 }
 
-// barRow is one share: its label, the §10c meter with its number beside it,
-// and the note that annotates the pair. The note drops first (§16) and the
-// meter never does.
+// barRow is one share: its label, the block meter with its number beside it,
+// and the note that annotates the pair. The note drops first and the meter
+// never does.
 func barRow(bar MetricsBar, label int, notes bool, width int) string {
 	meter := Meter{Pct: bar.Pct, Cells: MeterCellsRail, Tone: bar.Tone, Text: bar.Text}
 	left := sty.Dim.Render(padRight(clip(bar.Label, label), label)) + "  " + meter.View()

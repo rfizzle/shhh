@@ -11,7 +11,7 @@ package components
 // So the banner is not a sign-off. It is the handful of facts the screen was
 // carrying that a reader still needs after the screen is gone, printed where
 // the shell prompt is about to be. It is the bookend of the first-contact
-// screen (§17c): that screen offers `pick up (last session) — 7 turns ·
+// screen: that screen offers `pick up (last session) — 7 turns ·
 // $0.42`, and this is where that offer comes from.
 //
 // There is no wordmark and no parting line. A banner whose first two lines
@@ -50,7 +50,7 @@ type ExitBanner struct {
 	// Unsaved marks a conversation that could not be written down at all.
 	// The banner then says so instead of naming a slot, because the failure a
 	// reader must not discover by typing a resume command is the one that
-	// silently reopens something older (§17a).
+	// silently reopens something older.
 	Unsaved bool
 }
 
@@ -68,7 +68,7 @@ func (b ExitBanner) View(width int) string {
 		return ""
 	}
 	// The value column starts after the label and its two-space gutter, the
-	// same one the start screen's labelled notes use (§17c).
+	// same one the start screen's labelled notes use.
 	body := width - exitLabelWidth - 2
 	if body <= 0 {
 		return ""

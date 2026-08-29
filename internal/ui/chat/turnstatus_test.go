@@ -119,7 +119,7 @@ func TestTurnStatus_ResolvesFromTheTurnsOwnCloseBlock(t *testing.T) {
 	if !ok || !s.Done {
 		t.Fatalf("a closed turn should resolve into its summary (ok=%v done=%v)", ok, s.Done)
 	}
-	// The numbers agree because they are the same numbers (§8d).
+	// The numbers agree because they are the same numbers.
 	if s.Tools != close.Tools || s.Duration != close.Elapsed || s.Cost != close.Spend {
 		t.Fatalf("the resolved line disagrees with the close row: %+v", s)
 	}
@@ -134,7 +134,7 @@ func TestTurnStatus_ResolvesFromTheTurnsOwnCloseBlock(t *testing.T) {
 func TestTurnStatus_FrameRailShowsTheTurnAndThenItsSummary(t *testing.T) {
 	m := statusModel(t)
 	m.runTail = nil
-	// Past the label's entrance (§10c): what the rail says while a turn runs
+	// Past the label's entrance: what the rail says while a turn runs
 	// is the settled word, and how it gets there is the test below.
 	m.turnStarted = time.Now().Add(-2 * time.Second)
 	view := stripANSI(m.View().Content)
@@ -155,7 +155,7 @@ func TestTurnStatus_FrameRailShowsTheTurnAndThenItsSummary(t *testing.T) {
 }
 
 // The label materialises over the turn's first second rather than appearing
-// (S-154, §10c). The entrance is measured off the turn's own age — the number
+// (S-154). The entrance is measured off the turn's own age — the number
 // the line already prints beside the word — so a turn that has just started
 // is mid-arrival and one a second old is not, without a second clock.
 func TestTurnStatus_TheLabelArrivesWithTheTurn(t *testing.T) {
@@ -189,7 +189,7 @@ func TestTurnStatus_FreshSessionIsIdle(t *testing.T) {
 }
 
 // A decision waiting on the reader outranks the turn's own status: what the
-// rail should say is how many answers it wants (S-117, §7b).
+// rail should say is how many answers it wants (S-117).
 func TestTurnStatus_WaitingDecisionOutranksTheStatus(t *testing.T) {
 	m := statusModel(t)
 	m.pendingRun = "echo hi"

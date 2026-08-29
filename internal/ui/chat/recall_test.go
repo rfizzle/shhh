@@ -168,7 +168,7 @@ func TestRecall_WorksWhileTheTurnRuns(t *testing.T) {
 }
 
 // A decision that arrived on top of a sentence has not taken the keyboard, so
-// the draft keeps every key it offers — recall included (§7b). The sentence
+// the draft keeps every key it offers — recall included. The sentence
 // itself is how the draft gets empty enough to recall into: enter queues it
 // for the next round and leaves the card waiting, and ↑ brings it back.
 func TestRecall_WorksWhileADecisionWaitsForTheKeyboard(t *testing.T) {
@@ -193,7 +193,7 @@ func TestRecall_WorksWhileADecisionWaitsForTheKeyboard(t *testing.T) {
 }
 
 // Once the card has the keyboard, it has ↑ too: the handover moves every key,
-// and the draft is not what is being typed into any more (§7b).
+// and the draft is not what is being typed into any more.
 func TestRecall_StopsAtTheHandover(t *testing.T) {
 	m := interruptedModel(t, "queue this")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
@@ -207,7 +207,7 @@ func TestRecall_StopsAtTheHandover(t *testing.T) {
 }
 
 // A surface that took the screen took ↑ with it: reading mode moves its own
-// cursor, and the draft underneath is not recalling anything (§7a).
+// cursor, and the draft underneath is not recalling anything.
 func TestRecall_StaysOutOfASurfaceThatHasTheKeyboard(t *testing.T) {
 	m := focusModel(t)
 	m.recordInput("an earlier prompt")

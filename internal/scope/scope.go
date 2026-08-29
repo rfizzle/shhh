@@ -1,11 +1,12 @@
 // Package scope holds a session's working scope: the directories the work is
-// allowed to reach (docs/capabilities/containment.md#scope-is-the-set-of-directories-the-work-may-reach).
-// A session starts scoped to the directory it was
-// opened in, which is the right default and the wrong one the moment the work
-// spills over — a config directory the project reads, a sibling checkout, a
-// vendored dependency outside the tree. Before this existed the only answers
-// were to edit the config file and restart, or to watch contained commands
-// fail on paths that were plainly part of the job.
+// allowed to reach
+// (docs/capabilities/containment.md#scope-is-the-set-of-directories-the-work-may-reach).
+// A session starts scoped to the directory it was opened in, which is the
+// right default and the wrong one the moment the work spills over — a config
+// directory the project reads, a sibling checkout, a vendored dependency
+// outside the tree. Before this existed the only answers were to edit the
+// config file and restart, or to watch contained commands fail on paths that
+// were plainly part of the job.
 //
 // Adding a directory is a permission grant, and it goes through the same
 // machinery every other grant does: the user types /add-dir, or answers the

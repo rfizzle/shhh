@@ -161,8 +161,8 @@ func TestPalette_NoTwoTokensCollapse(t *testing.T) {
 }
 
 // The grey ladder is an ordering, not six unrelated greys: bright reads over
-// body, body over subtle, and so on down to the chrome. A theme that scrambles
-// it would still pass every other check here and be unreadable.
+// body, body over subtle, and so on down to the chrome. A theme that
+// scrambles it would still pass every other check here and be unreadable.
 func TestPalette_GreyLadderDescends(t *testing.T) {
 	ladder := []struct {
 		name  string
@@ -184,7 +184,7 @@ func TestPalette_GreyLadderDescends(t *testing.T) {
 	}
 }
 
-// Mono is a token set like any other (§10f): three shades, each written for
+// Mono is a token set like any other: three shades, each written for
 // every profile, and every rung of the coloured palette lands on one of them.
 func TestPalette_MonoCollapsesOntoItsThreeShades(t *testing.T) {
 	for _, c := range []struct {

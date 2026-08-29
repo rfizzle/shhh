@@ -61,7 +61,7 @@ func TestWindowResize_SetsReady(t *testing.T) {
 		t.Fatalf("unexpected dimensions: %dx%d", model.width, model.height)
 	}
 	// The viewport is the transcript, not the pane: the last column is the
-	// scroll gutter's (S-147, §10g).
+	// scroll gutter's (S-147).
 	if want := 100 - horizontalPadding*2 - components.ScrollGutterWidth; model.viewport.Width() != want {
 		t.Fatalf("viewport width should be %d, got %d", want, model.viewport.Width())
 	}

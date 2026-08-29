@@ -89,7 +89,7 @@ func (m Model) commandRadius(command string, assistant bool) blastRadius {
 	}
 	if b.severity == components.SeverityHigh || b.uncontained {
 		// [n], not esc: on a gated card esc hands the keyboard back and
-		// leaves the decision waiting rather than answering it (S-117, §7b).
+		// leaves the decision waiting rather than answering it (S-117).
 		b.safe = "[n] deny — the safe answer"
 	}
 	if b.uncontained {

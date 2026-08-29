@@ -22,8 +22,8 @@ import (
 )
 
 // GatedPreview describes what an approval-gated tool call is about to do, for
-// the confirm prompt. When Path is set, OldText/NewText are shown as a colored
-// unified diff; otherwise Summary is shown as a generic preview.
+// the confirm prompt. When Path is set, OldText/NewText are shown as a
+// colored unified diff; otherwise Summary is shown as a generic preview.
 type GatedPreview struct {
 	Action  string // short verb for the title, e.g. "write", "edit"
 	Path    string
@@ -446,8 +446,8 @@ func (m Model) declineApproval() (tea.Model, tea.Cmd) {
 // deniedEntry is the transcript row for a refused call: the same activity row
 // every other call gets, with ⊘, the decider's name and a duration field
 // saying it never ran (docs/interface/principles.md#closed-vocabularies). A
-// denial is a moment that mattered, so the row keeps its mutation rail — which
-// is why it is a row and not a system notice
+// denial is a moment that mattered, so the row keeps its mutation rail —
+// which is why it is a row and not a system notice
 // (docs/interface/principles.md#weight-tracks-risk).
 func deniedEntry(req *approvalRequest, decider, rule string, elapsed time.Duration) entry {
 	return entry{
@@ -709,7 +709,7 @@ func (m Model) confirmLines() []string {
 
 // confirmPanelLines is the whole bottom panel a gated confirm occupies: the
 // card, the rail that names the keyboard's owner, and the draft it is holding
-// while it does (S-117, §7b). confirmLines stays the card alone, because that
+// while it does (S-117). confirmLines stays the card alone, because that
 // is what the rest of the surface asks it for.
 func (m Model) confirmPanelLines() []string {
 	return m.dressDecision(m.confirmLines(), m.contentWidth())
@@ -733,7 +733,7 @@ func (m Model) bottomPanelHeight() int {
 	st := m.state
 	if m.decisionUngated() && m.frameShowing() {
 		// The card rides above the frame rather than filling the panel
-		// (§7b), so the panel is the input's and interruptHeight is what
+		//, so the panel is the input's and interruptHeight is what
 		// pays for the card.
 		st = stateInput
 	}
@@ -752,7 +752,7 @@ func (m Model) bottomPanelHeight() int {
 		lines = m.keyEntryLines()
 	case stateFocus:
 		// The reading bar is normally the input's three rows; `[?]` grows it
-		// into the mode's key register (S-153, §7d), and the panel pays for
+		// into the mode's key register (S-153), and the panel pays for
 		// it out of the transcript the way every other panel does.
 		lines = m.focusHintLines()
 	case statePressure:

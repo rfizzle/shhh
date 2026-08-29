@@ -142,7 +142,7 @@ func (m *Model) setReasoningDefault(rest []string) string {
 	return note
 }
 
-// reasoningSegment is what the cockpit shows (§8a): the level, named, or ""
+// reasoningSegment is what the cockpit shows: the level, named, or ""
 // when nothing is being asked for. Off is not drawn — a rail states what the
 // session is doing, and a session doing nothing extra has nothing to say.
 func (m Model) reasoningSegment() string {

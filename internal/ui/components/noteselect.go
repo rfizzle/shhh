@@ -39,7 +39,7 @@ func NewNoteSelect(title string, options []SelectOption) *NoteSelect {
 	ta.CharLimit = 0
 	// The note field takes the draft's newline keys, less the two the card
 	// itself answers: tab moves between the note and the options, and enter
-	// confirms (§4c).
+	// confirms.
 	ta.KeyMap.InsertNewline.SetKeys(keys.Draft.Newline.Keys()[1])
 	return &NoteSelect{Select: Select{Title: title, Options: options}, Note: ta}
 }
@@ -72,7 +72,7 @@ func (s *NoteSelect) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	}
 	// List focus with the query line open: the query line is the surface, so
 	// everything but movement is text — the same reading the plain card makes
-	// (§4a). Tab is still how the note is reached, which is why it is handled
+	//. Tab is still how the note is reached, which is why it is handled
 	// above this and not here.
 	if s.Select.Filtering {
 		switch msg.String() {
@@ -117,7 +117,7 @@ func (s *NoteSelect) View(width int) string {
 	s.Note.SetWidth(max(inner-2, 8))
 	noteView := s.Note.View()
 	if !s.FocusNote {
-		// The unfocused region dims (§4c); a plain-text echo avoids the
+		// The unfocused region dims; a plain-text echo avoids the
 		// textarea's cursor artifacts.
 		text := s.Note.Value()
 		if text == "" {
@@ -146,7 +146,7 @@ func (s *NoteSelect) View(width int) string {
 
 	// The query line is pinned above the list exactly as it is on a plain
 	// card, so the budget order is the artboard's — query line, key hints,
-	// note field, and then the options take what is left (§4a).
+	// note field, and then the options take what is left.
 	head := s.Select.queryRows(width)
 	rows, shown := s.Select.visibleRows(width, s.Select.bodyBudget(len(head)+len(tail)), true)
 	rows = append(head, rows...)

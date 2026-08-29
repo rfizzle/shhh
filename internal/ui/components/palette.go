@@ -1,10 +1,10 @@
 // Package components is the reusable TUI interaction catalog (S-076,
-// docs/interface/surfaces.md): approval card, diff viewer, selectors, inline confirm,
-// activity rows, cockpit rail, and agent list. Components are plain state with
-// two methods — Update(tea.KeyPressMsg) (done, result) and View(width) string —
-// owned by a host Bubble Tea model via states; they are never nested programs
-// and never start goroutines. Esc always dismisses or declines, never
-// destroys.
+// docs/interface/surfaces.md): approval card, diff viewer, selectors, inline
+// confirm, activity rows, cockpit rail, and agent list. Components are plain
+// state with two methods — Update(tea.KeyPressMsg) (done, result) and
+// View(width) string — owned by a host Bubble Tea model via states; they are
+// never nested programs and never start goroutines. Esc always dismisses or
+// declines, never destroys.
 package components
 
 import (
@@ -54,7 +54,7 @@ type Token struct {
 // sixteen as one of the terminal's own sixteen and anything above it as an
 // index into the 256-colour table. That is the right reading for both index
 // rungs: the five tokens whose 256 index is under sixteen — add, del, hunk,
-// info, bright — were chosen *as* theme colours (§10a), which is why their
+// info, bright — were chosen *as* theme colours, which is why their
 // two index columns hold the same number, and a terminal is told so in the
 // form that says it.
 func token(hex, ansi256, ansi16 string) Token {
@@ -86,14 +86,14 @@ type ColorTokens struct {
 	AddBg   Token // intraline emphasis background for additions
 	DelBg   Token // intraline emphasis background for deletions
 	Hunk    Token // @@ hunk headers and nothing else
-	Accent  Token // tool glyphs, ⚠ warnings, gated modes, ctx ≥70%, and the mutation rail (§14)
+	Accent  Token // tool glyphs, ⚠ warnings, gated modes, ctx ≥70%, and the mutation rail
 	Info    Token // sub-agents, block headings, and every key the interface offers
 	FocusBg Token // selected option/row background, the cursor block
 	Dim     Token // chrome, counts, hints, faint rules, empty meter cells, the scroll gutter's track
 	Dimmer  Token // tool output, live tails, detail bodies, sparklines, the scroll gutter's thumb
 	Spin    Token // anything in motion — spinner frames, ▸ running…, ✦ checking
 	Status  Token // status text, the ⛨ containment line
-	Bright  Token // headings, the focused row's text, the working label's crest (§10j)
+	Bright  Token // headings, the focused row's text, the working label's crest
 	Subtle  Token // inactive labels (generate UI); no design-system counterpart
 	Body    Token // ordinary body text
 }
@@ -140,7 +140,7 @@ var FullPalette = ColorTokens{
 //
 // It is a package var rather than a field because the palette it belongs to
 // is one too (Palette, above), and for the same reason: the components
-// contract is View(width) string (§20), which leaves nowhere to thread a
+// contract is View(width) string, which leaves nowhere to thread a
 // theme through. Both are swapped through the same door, applyPalette.
 var profile = detectProfile(os.Stdout, os.Environ())
 
@@ -148,7 +148,7 @@ var profile = detectProfile(os.Stdout, os.Environ())
 // reading of NO_COLOR is stricter than colorprofile's — any non-empty value,
 // not a parseable truth, which is what no-color.org actually asks for — and
 // TERM=dumb means the same thing here, so both land on ASCII: no colour at
-// all, bold and glyphs intact (§10f).
+// all, bold and glyphs intact.
 func detectProfile(out io.Writer, environ []string) colorprofile.Profile {
 	p := colorprofile.Detect(out, environ)
 	if monoFromEnviron(environ) && p > colorprofile.ASCII {
@@ -163,7 +163,7 @@ func Profile() colorprofile.Profile { return profile }
 
 // SetProfile re-resolves every style against a different profile. It is the
 // same door SetMono uses — a token is a colour and a profile together, and
-// changing either means the derived styles are stale (§10a).
+// changing either means the derived styles are stale.
 func SetProfile(p colorprofile.Profile) {
 	if p == profile {
 		return
@@ -212,13 +212,13 @@ type Styles struct {
 	Err      lipgloss.Style
 	SpinText lipgloss.Style
 
-	// The reading cursor (§7a): the row it sits on is lit, and the pointer
+	// The reading cursor: the row it sits on is lit, and the pointer
 	// that names it stays outside the highlight.
 	FocusRow     lipgloss.Style
 	LitText      lipgloss.Style
 	FocusPointer lipgloss.Style
 
-	// The diff body (§3): the kind's colour, the intraline tints of §10b,
+	// The diff body: the kind's colour, the intraline tints of §10b,
 	// and the context lines the tints sit between.
 	Add     lipgloss.Style
 	Del     lipgloss.Style
@@ -227,29 +227,29 @@ type Styles struct {
 	Hunk    lipgloss.Style
 	Context lipgloss.Style
 
-	// The filter row (§4a): what has been typed reads bright against the
+	// The filter row: what has been typed reads bright against the
 	// card, and the run of an option the query named is bold — the one
 	// emphasis that costs no colour and survives mono.
 	QueryText lipgloss.Style
 	Match     lipgloss.Style
 
-	// The scroll gutter (§10g): the track is chrome like every other faint
+	// The scroll gutter: the track is chrome like every other faint
 	// rule, the thumb a step brighter — the same step a sparkline stands off
 	// the chrome by, and for the same reason. It is a shape, not a
 	// measurement.
 	ScrollTrack lipgloss.Style
 	ScrollThumb lipgloss.Style
 
-	// The working label's sweep (§10c): the crest of the light that runs
+	// The working label's sweep: the crest of the light that runs
 	// along a label in motion, over a base of Spin. It is the second rung of
 	// a two-rung ramp and not a colour of its own — under mono it is the same
-	// grey as the base, which is how the sweep goes away (§10f).
+	// grey as the base, which is how the sweep goes away.
 	AnimCrest lipgloss.Style
 }
 
 // sty is the live style set, rebuilt by applyPalette whenever the theme or
 // the profile is swapped. It is a var rather than a value threaded through
-// View(width) because that signature is the components contract (§20), and
+// View(width) because that signature is the components contract, and
 // the v2 migration did not change it: v2 moved the renderer out of the Style,
 // which is what made a resolved profile something this package has to own
 // (S-155), but it left the catalog's own contract alone.

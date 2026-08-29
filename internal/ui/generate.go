@@ -2,9 +2,9 @@ package ui
 
 // The one-shot result surface (S-113,
 // docs/interface/surfaces.md#the-one-shot-result) — the whole interface of
-// command generation (docs/capabilities/generation.md). Most people meet shhh here
-// rather than in the agent, and until now this screen printed a command and
-// waited for a keystroke: no explanation unless you remembered `-e`, no
+// command generation (docs/capabilities/generation.md). Most people meet shhh
+// here rather than in the agent, and until now this screen printed a command
+// and waited for a keystroke: no explanation unless you remembered `-e`, no
 // statement of what the command could reach, and the same default key whether
 // the answer was `ls` or `rm -rf`. Safe-if-you-remember-a-flag is not safe by
 // default.

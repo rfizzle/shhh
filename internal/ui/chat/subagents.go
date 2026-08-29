@@ -68,7 +68,7 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 		m.childAsks = append(m.childAsks, ev.Ask)
 		// A routed approval arrives the way every other decision does: on
 		// screen, and holding the keyboard only if there is no sentence for
-		// its letters to belong to (S-117, §7b). It arms itself because it is
+		// its letters to belong to (S-117). It arms itself because it is
 		// a queue rather than a turn state, so setTurnState never sees it.
 		m.armArrival()
 	case subagent.EventDone:
@@ -158,7 +158,7 @@ func (m Model) updateChildAsk(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model
 	}
 	// [g] is a bare letter, so it belongs to the card only while the card was
 	// handed the keyboard. One holding it by arrival claims nothing but its
-	// answers (§7b), and "go ahead, but…" is a sentence.
+	// answers, and "go ahead, but…" is a sentence.
 	if msg.String() == "g" && !m.heldOnArrival && m.attachedTo != ask.Agent {
 		m.attach(ask.Agent)
 		return m, nil
@@ -184,7 +184,7 @@ func (m Model) updateChildAsk(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model
 		}
 	}
 	// The keyboard goes straight back to the draft, at the same character
-	// (S-117, §7b).
+	// (S-117).
 	m.releaseDecision()
 	approved := result == components.ApprovalApprove
 	ask.Respond(approved)
@@ -255,7 +255,7 @@ func (m Model) childAskLines(ask *subagent.Ask) []string {
 }
 
 // childAskPanelLines is the routed card plus the rail that names the
-// keyboard's owner and the draft it is holding while it does (S-117, §7b).
+// keyboard's owner and the draft it is holding while it does (S-117).
 func (m Model) childAskPanelLines(ask *subagent.Ask) []string {
 	return m.dressDecision(m.childAskLines(ask), m.contentWidth())
 }

@@ -47,7 +47,7 @@ func (m Model) submitInput() (tea.Model, tea.Cmd) {
 		// before the next model request (S-058). A turn paused on a decision
 		// is a turn in flight for this purpose — enter queues the sentence
 		// for the next round rather than starting a turn the pending
-		// decision would immediately interrupt (S-117, §7b).
+		// decision would immediately interrupt (S-117).
 		m.steering = append(m.steering, text)
 		// The queued count surfaces on the notice rail (S-082).
 		m.syncViewport()
@@ -131,7 +131,7 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case text == "/status":
-		// The rail's SUMMARY block in words (S-163, §15d), for the terminals
+		// The rail's SUMMARY block in words (S-163), for the terminals
 		// below 130 columns that have no rail to draw it in — the same answer
 		// §15c gives for PLAN. It takes a fresh reading on the way out:
 		// asking for the summary is a reason to have a current one.
@@ -152,7 +152,7 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		return m.openSessionDiff()
 
 	case name == "/review":
-		// Review mode over a turn's changeset (S-099, §16a); bare takes the
+		// Review mode over a turn's changeset (S-099); bare takes the
 		// most recent turn that changed anything.
 		return m.reviewCommand(parts)
 
@@ -182,7 +182,7 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		// /ui mouse flips the terminal's own reporting. Since S-155 that is
 		// a field on the View rather than a command back to the program, so
 		// this setting takes the same path as every other /ui setting: change
-		// the model, say so in the transcript (§7a).
+		// the model, say so in the transcript.
 		return m.systemNotice(m.uiCommand(parts))
 
 	case text == "/branches":

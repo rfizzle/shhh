@@ -24,7 +24,7 @@ package cli
 //
 // `--table`, and any non-terminal stdout, prints the same report as text.
 // That text is also what `[c]` copies, because the next thing that happens to
-// a doctor run is that it gets pasted into an issue (§19d).
+// a doctor run is that it gets pasted into an issue.
 
 import (
 	"context"
@@ -54,7 +54,7 @@ import (
 )
 
 // defaultDoctorWidth is what the surface is drawn at before the terminal has
-// said how wide it is — the width the `Tools` artboard draws it at (§19d).
+// said how wide it is — the width the `Tools` artboard draws it at.
 const defaultDoctorWidth = 110
 
 // doctorGitTimeout bounds each git invocation. Reading a work tree's state is
@@ -171,7 +171,7 @@ func doctorCheck(name string, f doctorFinding, took time.Duration) components.Do
 }
 
 // doctorDuration is the 6-column field: blank under half a second, the same
-// rule every activity row in the product follows (§6a). Most checks are a
+// rule every activity row in the product follows. Most checks are a
 // stat and a string comparison, so most of this column is deliberately empty.
 func doctorDuration(d time.Duration) string {
 	if d < 500*time.Millisecond {
@@ -232,7 +232,7 @@ func probeConfig(_ context.Context, cfg config.Config) doctorFinding {
 // doctorConfig says which file was read and what it set. No file at all is
 // not a failure — shhh runs on its defaults — but the row says so plainly
 // rather than being left out, because "why is this on" is the question a
-// setup check gets asked (§19a).
+// setup check gets asked.
 func doctorConfig(read string, paths []string, cfg config.Config) doctorFinding {
 	if read == "" {
 		f := doctorFinding{
@@ -310,7 +310,7 @@ func probeModel(ctx context.Context, cfg config.Config) doctorFinding {
 	return f
 }
 
-// doctorModelFinding reads the same walk the no-provider card reads (§17b):
+// doctorModelFinding reads the same walk the no-provider card reads:
 // the four places a key can come from, and what was in each. A key that was
 // found is reported as found and not as accepted — accepting one means
 // spending a request on it, and a diagnostic that billed you for running it
@@ -354,7 +354,7 @@ func doctorModelFinding(providerName, model string, survey resolve.Survey) docto
 }
 
 // doctorKeyPlaces is the fix behind `[f]` on a provider with no key: the same
-// four places, each with what was there. It is the card's own body (§17b)
+// four places, each with what was there. It is the card's own body
 // written as lines, because a fix that only said "set an API key" would be
 // telling the reader something they already knew.
 func doctorKeyPlaces(survey resolve.Survey) []string {
@@ -377,7 +377,7 @@ func doctorKeyPlaces(survey resolve.Survey) []string {
 
 // doctorMasked keeps a secret masked wherever the survey already masked it.
 // The survey reports a key by its last four characters and never by more
-// (§19a), and this is the one place in the report a key is mentioned at all,
+// , and this is the one place in the report a key is mentioned at all,
 // so it is worth saying that the masking is inherited rather than reapplied.
 func doctorMasked(finding string) string { return finding }
 
@@ -471,7 +471,7 @@ func probeSandbox(_ context.Context, cfg config.Config) doctorFinding {
 // doctorSandbox reads the containment mechanism. This is the check the
 // artboard leads its failure with, and the consequence is quoted from the
 // surface the reader will actually meet it on: the approval card promotes
-// `⚠ UNCONTAINED` to its title bar when nothing wraps the command (§2b).
+// `⚠ UNCONTAINED` to its title bar when nothing wraps the command.
 func doctorSandbox(avail sandbox.Availability, profile, goos string) doctorFinding {
 	if avail.OK {
 		return doctorFinding{
@@ -849,7 +849,7 @@ func doctorReport(checks []components.DoctorCheck) string {
 
 // doctorReportGlyph is the text report's leading glyph. It is the surface's
 // own, because a report pasted somewhere else should still read as this
-// product's (§10d) — and because the glyph, not the colour, is what carries
+// product's — and because the glyph, not the colour, is what carries
 // the state in the first place (invariant 1).
 func doctorReportGlyph(state components.DoctorState) string {
 	switch state {
@@ -993,7 +993,7 @@ func (m doctorModel) runNext() tea.Cmd {
 	}
 }
 
-// doctorTick is the one tick source (§10c): the spinner in the header and on
+// doctorTick is the one tick source: the spinner in the header and on
 // the running row are the same frame.
 func doctorTick() tea.Cmd {
 	return tea.Tick(components.SpinnerInterval, func(t time.Time) tea.Msg {

@@ -10,7 +10,7 @@ package components
 // and renders View every frame. It owns no keys, no state and no goroutines,
 // and the block order is fixed — THIS TURN, PLAN, CHANGES, AGENTS, CONTEXT,
 // SPEND. A block with nothing to say is omitted rather than rendered empty
-// (§15b), and a rail that does not fit its height truncates its longest block
+//, and a rail that does not fit its height truncates its longest block
 // first and says how many rows it swallowed.
 //
 // THIS TURN is the turn. CHANGES, AGENTS, CONTEXT and SPEND are the session
@@ -30,26 +30,26 @@ import (
 
 const (
 	// InspectorWidth is the rail's column count — the only supported value at
-	// ≥ InspectorMinContentWidth (§8c, §15).
+	// ≥ InspectorMinContentWidth.
 	InspectorWidth = 46
-	// InspectorMinContentWidth is the top rung of the width ladder (§8c): at
+	// InspectorMinContentWidth is the top rung of the width ladder: at
 	// or above it the surface splits into transcript pane + rail, below it the
 	// rail is dropped entirely.
 	InspectorMinContentWidth = 130
 
 	// inspectorIndent is the two columns every block heading and row starts
-	// at; a changed-file row spends the third on the mutation rail (§14).
+	// at; a changed-file row spends the third on the mutation rail.
 	inspectorIndent = 2
-	// Meter and sparkline cell counts (§15a) — the shared roles from §10c,
+	// Meter and sparkline cell counts — the shared roles from §10c,
 	// so the rail's runs are the same runs every other surface draws.
 	inspectorTurnCells = MeterCellsRail
 	inspectorCtxCells  = MeterCellsRail
 	inspectorSparkCell = SparkCells
 )
 
-// InspectorSummary is the SUMMARY block (S-163, §15d): a cheap model's read of
-// what the session is doing and whether it is still doing what was asked. It
-// is the one block that is not a count — the numbers under it say how much has
+// InspectorSummary is the SUMMARY block (S-163): a cheap model's read of what
+// the session is doing and whether it is still doing what was asked. It is
+// the one block that is not a count — the numbers under it say how much has
 // happened, and this says what.
 type InspectorSummary struct {
 	// Text is the reading itself, in the model's own words. It is wrapped to
@@ -68,7 +68,7 @@ type InspectorSummary struct {
 	Round int
 	// Stale marks a reading the session has outrun — a refresh that failed,
 	// or one still in flight past its interval. The heading says so rather
-	// than letting an old sentence pass for a current one (§15c).
+	// than letting an old sentence pass for a current one.
 	Stale bool
 }
 
@@ -88,8 +88,8 @@ const (
 	SummaryOffTarget
 )
 
-// InspectorTurn is the THIS TURN block: how far through its steps the turn is,
-// how many tools it has spent, and how long it has been running.
+// InspectorTurn is the THIS TURN block: how far through its steps the turn
+// is, how many tools it has spent, and how long it has been running.
 type InspectorTurn struct {
 	// Step and Steps drive the progress meter and the "step 3 of 4" heading.
 	// Steps == 0 means the turn declared none, so no ratio is fabricated —
@@ -105,12 +105,12 @@ type InspectorTurn struct {
 	// Running says the turn is still in flight, which is what lights the
 	// progress meter's current cell. The row states the clock without saying
 	// whether it is still moving — the live turn status is what answers that
-	// (§8d), and saying it twice cost the row its file count.
+	//, and saying it twice cost the row its file count.
 	Running bool
 }
 
 // PlanStepState is one checklist step's state in the PLAN block. It is the
-// same four states the step outline draws (§13b), because an approved plan's
+// same four states the step outline draws, because an approved plan's
 // step and the transcript's step are the same step (S-104).
 type PlanStepState int
 
@@ -153,7 +153,7 @@ type InspectorPlan struct {
 }
 
 // InspectorFile is one changed path in the CHANGES block: the session's net
-// change to it, however many turns produced that (§15a).
+// change to it, however many turns produced that.
 type InspectorFile struct {
 	Path           string
 	Added, Removed int
@@ -171,7 +171,7 @@ type InspectorFile struct {
 // whose last run in this session came back broken, what it said, and the turn
 // that ran it. Alerts outlive their turn and clear when the workspace is
 // clean — a red row that clears itself because a new turn started is the
-// exact failure this rail exists to prevent (§15a).
+// exact failure this rail exists to prevent.
 type InspectorAlert struct {
 	Label string
 	Note  string
@@ -355,9 +355,9 @@ func (r InspectorRail) blocks(width int) []railBlock {
 }
 
 // fitBlocks truncates the rail into height rows, taking rows off the longest
-// block first (§15b). A truncated block keeps its heading and says how many
+// block first. A truncated block keeps its heading and says how many
 // rows it is hiding, so the rail never ends silently; CHANGES folds rather
-// than truncates, and its marker carries the counts it took with it (§15a).
+// than truncates, and its marker carries the counts it took with it.
 func fitBlocks(blocks []railBlock, height int) []railBlock {
 	for total(blocks) > height {
 		longest, rows := -1, 0
@@ -373,7 +373,7 @@ func fitBlocks(blocks []railBlock, height int) []railBlock {
 		b := &blocks[longest]
 		// The last row truncation is allowed to take: a pinned row — an
 		// alert, or a file the running turn wrote — goes only when there is
-		// nothing else left to give (§15a).
+		// nothing else left to give.
 		i := len(b.rows) - 1
 		for j := i; j >= 0; j-- {
 			if !b.rows[j].pinned {
@@ -405,17 +405,17 @@ const summaryLines = 3
 // second summary.
 const summaryReasonLines = 2
 
-// summaryBlock is the rail's one prose block (S-163, §15d). It sits first
-// because it is the answer the rest of the rail is the detail of: SUMMARY says
-// what is happening, THIS TURN says how far through, CHANGES says what it cost
-// the workspace.
+// summaryBlock is the rail's one prose block (S-163). It sits first because
+// it is the answer the rest of the rail is the detail of: SUMMARY says what
+// is happening, THIS TURN says how far through, CHANGES says what it cost the
+// workspace.
 //
 // The state row is drawn in every state, including on target. PLAN's drift
 // line is not — "no drift is not news" — and the difference is where the two
 // come from: PLAN's drift is computed from the plan and the steps taken, so
 // its absence is a fact, while this is a model's judgement, and a block that
-// went quiet when the judgement was "fine" would be indistinguishable from one
-// whose reading failed.
+// went quiet when the judgement was "fine" would be indistinguishable from
+// one whose reading failed.
 func (r InspectorRail) summaryBlock(width int) (railBlock, bool) {
 	s := r.Summary
 	if s == nil || strings.TrimSpace(s.Text) == "" {
@@ -428,7 +428,7 @@ func (r InspectorRail) summaryBlock(width int) (railBlock, bool) {
 	metaStyle := sty.Dim
 	if s.Stale {
 		// An old reading is still the best reading there is — it is just not
-		// a current one, and the heading is where that is said (§15c).
+		// a current one, and the heading is where that is said.
 		fields, metaStyle = append(fields, "stale"), sty.Accent
 	}
 	meta := strings.Join(fields, " · ")
@@ -468,7 +468,7 @@ func (r InspectorRail) summaryBlock(width int) (railBlock, bool) {
 
 // summaryTone is the state row's glyph, its words and its weight. The glyph
 // carries the distinction so a monochrome terminal reads the same as a colour
-// one (§10c): ▸ for a run still on its instruction, ⚠ for one that has left
+// one: ▸ for a run still on its instruction, ⚠ for one that has left
 // it, · for a reading that could not tell.
 func summaryTone(s SummaryTone) (string, string, lipgloss.Style) {
 	switch s {
@@ -494,12 +494,12 @@ func (r InspectorRail) turnBlock(width int) (railBlock, bool) {
 	b := railBlock{heading: railHeading("THIS TURN", meta, sty.Dim, width)}
 	if m, ok := StepMeter(t.Step, t.Steps, inspectorTurnCells, t.Running); ok {
 		// The count sits beside the bar rather than in the heading, because a
-		// bar is never the only carrier of its value (§10c).
+		// bar is never the only carrier of its value.
 		b.add(indentRow(m.View(), width))
 	}
 	// "3 files this turn" rather than "3 files": CHANGES counts files too, and
 	// the two are different questions, so both say their scope in words
-	// (§15a). A turn that wrote nothing still says so — that is the fact.
+	//. A turn that wrote nothing still says so — that is the fact.
 	files := sty.Dim.Render(plural(t.Files, "file") + " this turn")
 	if t.Files > 0 {
 		files += " " + sty.Add.Render(fmt.Sprintf("+%d", t.Added)) +
@@ -588,7 +588,7 @@ func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 	}
 	for _, f := range c.Files {
 		// The changed-file row carries the mutation rail and the edit glyph,
-		// so the close of a turn looks like the rows that produced it (§14).
+		// so the close of a turn looks like the rows that produced it.
 		lead := sty.Accent.Render("▎") + sty.Accent.Render("✎") + " "
 		stats := sty.Add.Render(fmt.Sprintf("+%d", f.Added)) + " " + sty.Del.Render(fmt.Sprintf("−%d", f.Removed))
 		if f.Turns > 1 {
@@ -645,7 +645,7 @@ func (r InspectorRail) agentsBlock(width int) (railBlock, bool) {
 		switch m, ok := AgentMeter(a.Step, a.Steps); {
 		case ok:
 			// A declared step count earns a bar; the lane is info whatever
-			// the child's health, and states its count beside it (§10c).
+			// the child's health, and states its count beside it.
 			parts = append(parts, m.View())
 			if a.Detail != "" {
 				parts = append(parts, sty.Dimmer.Render(a.Detail))
@@ -685,7 +685,7 @@ func (r InspectorRail) contextBlock(width int) (railBlock, bool) {
 		count = "~" + count
 	}
 	// The bar's number is the token count at the rail's right edge, in the
-	// meter's own colour — the bar never carries the value alone (§10c).
+	// meter's own colour — the bar never carries the value alone.
 	b.add(railRow(meter.Bar(), style.Render(count), width, inspectorIndent))
 	tokens := strings.TrimSpace(c.Tokens1 + " " + c.Tokens2)
 	lead := ""
@@ -729,7 +729,7 @@ func (r InspectorRail) spendBlock(width int) (railBlock, bool) {
 }
 
 // railHeading is a block heading: the label in info, its count or value
-// right-aligned at the rail's edge (§15a).
+// right-aligned at the rail's edge.
 func railHeading(label, meta string, metaStyle lipgloss.Style, width int) string {
 	if meta != "" && !strings.Contains(meta, "\x1b") {
 		meta = metaStyle.Render(meta)

@@ -35,7 +35,7 @@ type hintSeg struct {
 	safe   bool
 }
 
-// render paints one segment: the key in info as every offered key is (§10a),
+// render paints one segment: the key in info as every offered key is,
 // its imperative in dim, and the safe answer in add where there is one
 // (invariant 3).
 func (s hintSeg) render() string {
@@ -65,7 +65,7 @@ func joinSegs(segs []hintSeg) string {
 // [enter] stays on the bar in grey with its reason beside it rather than
 // disappearing.
 //
-// [ctrl+o] is the one key on the bar with no mnemonic behind it (§7a), which
+// [ctrl+o] is the one key on the bar with no mnemonic behind it, which
 // is exactly why it is written here: the bar is where a chord is learned, and
 // a chord nobody names is a chord nobody presses.
 func (m Model) readingModeKeys() []hintSeg {
@@ -83,15 +83,14 @@ func (m Model) readingModeKeys() []hintSeg {
 		}
 	}
 	// The register's own key sits between the row's offers and the way out:
-	// it is the last thing a reader reaches for and the first the bar sheds
-	// (§7d).
+	// it is the last thing a reader reaches for and the first the bar sheds.
 	segs = append(segs, seg(keys.Reading.List))
 	return append(segs, seg(keys.Reading.Back))
 }
 
 // seg is a binding as one segment of the bar: the register's spelling and the
 // register's words, so the bar cannot offer a key the dispatch does not
-// answer (§7d).
+// answer.
 func seg(b keys.Binding) hintSeg {
 	return hintSeg{key: keys.Shown(b), label: keys.Words(b)}
 }
@@ -99,7 +98,7 @@ func seg(b keys.Binding) hintSeg {
 // detailKeySeg is [ctrl+o] in its three readings: the step under the cursor
 // is open and the key closes it, it is closed and the key opens it, or the
 // cursor is not in a step at all — which is said in words on the bar rather
-// than by the key quietly doing nothing (S-137, §13d).
+// than by the key quietly doing nothing (S-137).
 func (m Model) detailKeySeg() hintSeg {
 	es := *m.entries()
 	g, ok := m.stepAt(es, m.focusIdx)
@@ -128,7 +127,7 @@ func shortenBackKey(segs []hintSeg) []hintSeg {
 	return out
 }
 
-// dropKeyListKey is the very first thing the bar gives up (§7d). `[?]` is the
+// dropKeyListKey is the very first thing the bar gives up. `[?]` is the
 // only offer here that acts on nothing in the transcript at all, and the one
 // a reader who loses it can still find — /help names it, and the supporting
 // TUIs have taught the same key for four screens. A key that explains the
@@ -167,7 +166,7 @@ func dropExpandKey(segs []hintSeg) []hintSeg {
 // readingPositionFields is the right-hand field in its forms, widest first.
 // It is the position of the cursor among the rows — or, once rows are open,
 // how many are, which is the fact the reader is actually holding then. Prose
-// has no addressable rows to count, so it reports nothing (§7a).
+// has no addressable rows to count, so it reports nothing.
 func (m Model) readingPositionFields() []string {
 	if n := m.expandedRowCount(); n > 0 {
 		return []string{plural(n, "row") + " expanded", fmt.Sprintf("%d expanded", n)}
@@ -339,7 +338,7 @@ func stackSegs(segs []hintSeg, rail string, width, budget int) []string {
 // of their words, the keys shorten before any of them leaves, and the
 // position is dropped altogether only when nothing else is left to give —
 // the lit row still says which row it is, which is why dropping it costs
-// least (§7a).
+// least.
 func (m Model) readingKeyLine(width int) string {
 	full := m.readingModeKeys()
 	// The order S-122 settled, with the register key ahead of the detail key
@@ -367,8 +366,8 @@ func (m Model) readingKeyLine(width int) string {
 	return clipRow(joinSegs(forms[len(forms)-1]), width)
 }
 
-// hintStyles is the reading-mode hint line's own group (§7a), with the
-// mutation rail (§14) that shares its file.
+// hintStyles is the reading-mode hint line's own group, with the
+// mutation rail that shares its file.
 type hintStyles struct {
 	Key          lipgloss.Style
 	Safe         lipgloss.Style
@@ -389,7 +388,7 @@ func newHintStyles(p components.ColorTokens) hintStyles {
 // §7d): the mode's whole register, one key per line, then the offers the row
 // under the cursor makes, then the key that puts it away again.
 //
-// It is the supporting TUIs' answer to the same question (§19), moved onto
+// It is the supporting TUIs' answer to the same question, moved onto
 // the one chat surface that can hold a bare letter — the compact row swapped
 // for the full list, in place, and swapped back by the same key. Nothing here
 // is a second vocabulary: the words are the register's, and what the list

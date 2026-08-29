@@ -11,7 +11,8 @@ import (
 // width ("│ " + " │").
 const cardFrameWidth = 4
 
-// minCardWidth is the narrowest card worth framing; below it rows render bare.
+// minCardWidth is the narrowest card worth framing; below it rows render
+// bare.
 const minCardWidth = 12
 
 // narrowWidth is the threshold below which hint rows stack one segment per
@@ -202,7 +203,7 @@ func padRight(s string, width int) string {
 
 // padLeft right-aligns s in the given display width. It is what a numbering
 // column is made of: `24.` and ` 7.` end in the same place, so the labels
-// beside them start in the same place (§4a).
+// beside them start in the same place.
 func padLeft(s string, width int) string {
 	if pad := width - lipgloss.Width(s); pad > 0 {
 		return strings.Repeat(" ", pad) + s

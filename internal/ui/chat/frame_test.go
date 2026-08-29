@@ -105,7 +105,7 @@ func TestFrame_GutterAndHintsSwapWhileWorking(t *testing.T) {
 
 	m.state = stateStreaming
 	view = stripANSI(m.View().Content)
-	// The activity slot is the running turn's status line now (S-118, §8d):
+	// The activity slot is the running turn's status line now (S-118):
 	// `WORKING` was true of every moment of every turn and said nothing.
 	if !strings.Contains(view, "│ ▸ ") || !strings.Contains(view, "thinking…") {
 		t.Fatalf("working frame missing the steering gutter and the turn status:\n%s", view)
@@ -160,7 +160,7 @@ func TestFrame_TakeoverKeepsPlainStack(t *testing.T) {
 	m.pendingRun = "echo hi"
 	m.state = stateConfirmRun
 	m.syncViewport()
-	// Ungated the card rides above a live frame (S-117, §7b); it takes the
+	// Ungated the card rides above a live frame (S-117); it takes the
 	// panel only once the decision holds the keyboard.
 	ungated := stripANSI(m.View().Content)
 	if !strings.Contains(ungated, "╭─ shhh chat") {

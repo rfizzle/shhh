@@ -45,7 +45,7 @@ func (m Model) stripRows() int {
 func (m Model) confirmPanelBound() int {
 	// The rail and the undressed draft a gated decision adds are paid for
 	// here too, so the card is never the thing clipped off the bottom to
-	// make room for them (S-117, §7b).
+	// make room for them (S-117).
 	return m.maxConfirmPanelHeight() + m.pendingQueue.Rows() + m.gatedExtraRows()
 }
 

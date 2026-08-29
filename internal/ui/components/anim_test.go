@@ -19,7 +19,7 @@ func anim(frame, arriving int) Anim {
 
 // The line does not reflow while it moves. The entrance swaps a cell for a
 // mark of the same width and the sweep swaps only colour, so a host can lay
-// the slot out once (§10c).
+// the slot out once.
 func TestAnim_WidthIsInvariant(t *testing.T) {
 	want := lipgloss.Width(anim(0, 0).View())
 	for arriving := 0; arriving <= animBirthSteps+4; arriving++ {
@@ -32,9 +32,9 @@ func TestAnim_WidthIsInvariant(t *testing.T) {
 }
 
 // The word arrives in reading order, so whatever is on screen at any frame is
-// the beginning of the label rather than a scatter of its letters. This is the
-// departure from Crush's seeded birth schedule, and the reason for it is that
-// this rail is read for what the turn is doing.
+// the beginning of the label rather than a scatter of its letters. This is
+// the departure from Crush's seeded birth schedule, and the reason for it is
+// that this rail is read for what the turn is doing.
 func TestAnim_ArrivesInReadingOrder(t *testing.T) {
 	const label = "running go test"
 	prev := 0
@@ -63,8 +63,9 @@ func TestAnim_ArrivesInReadingOrder(t *testing.T) {
 	}
 }
 
-// A host that stages no entrance gets the settled label: Arriving's zero value
-// is a label that has been on screen a while, not one that has just appeared.
+// A host that stages no entrance gets the settled label: Arriving's zero
+// value is a label that has been on screen a while, not one that has just
+// appeared.
 func TestAnim_ZeroArrivingIsSettled(t *testing.T) {
 	if got := ansi.Strip(Anim{Label: "thinking…"}.View()); got != "thinking…" {
 		t.Fatalf("the zero value rendered %q, want the settled label", got)
@@ -109,8 +110,8 @@ func TestAnim_SweepLightsTheCrest(t *testing.T) {
 
 // Colour never carries meaning alone (invariant 1), and the sweep carries
 // nothing at all: under mono the crest collapses onto the base and the swept
-// label is byte-for-byte the unswept one. The entrance survives, because it is
-// a shape.
+// label is byte-for-byte the unswept one. The entrance survives, because it
+// is a shape.
 func TestAnim_MonoDeclinesTheSweepAndKeepsTheEntrance(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
 	was := Mono()

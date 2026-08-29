@@ -5,15 +5,19 @@ package components
 // ui_kits/cockpit/Tools.html). `shhh code doctor` printed two paragraphs of
 // key/value lines about the sandbox ladder and nothing else; `shhh doctor` is
 // the whole setup, and it is re-cut here from parts that already exist: the
-// §6a column grid for each check, §6d's state vocabulary for what became of
-// it, and §17a's rule that a failure names the fix rather than the blame.
+// column grid for each check, the closed state vocabulary for what became of
+// it, and the failure row's rule that a failure names the fix rather than the
+// blame (docs/interface/principles.md#one-grid).
 //
-// Three rules shape it and all three come from §19d. A check is a tool call,
-// so it is the row — glyph, verb, target, outcome, right-aligned duration,
-// nothing invented. A failure states its consequence in the product's own
-// words, quoted from the surface the reader will actually meet it on. And the
-// fix is offered on the row that failed rather than in a footer, which is
-// what makes a doctor run something you can act on without scrolling back.
+// Three rules shape it, and all three come from the screen being re-cut from
+// parts that already exist
+// (docs/interface/surfaces.md#the-supporting-screens). A check is a tool
+// call, so it is the row — glyph, verb, target, outcome, right-aligned
+// duration, nothing invented. A failure states its consequence in the
+// product's own words, quoted from the surface the reader will actually meet
+// it on. And the fix is offered on the row that failed rather than in a
+// footer, which is what makes a doctor run something you can act on without
+// scrolling back.
 //
 // It is a passive component like the rest of this package. It owns no
 // diagnostic semantics: the host probes the machine, decides what passed,
@@ -31,14 +35,13 @@ import (
 )
 
 const (
-	// doctorFixIndent is where the lines behind `[f]` sit: §6a's nested
-	// detail, one step in from the consequence and the key row that frame
-	// them.
+	// doctorFixIndent is where the lines behind `[f]` sit: the grid's nested
+	// detail, one step in from the consequence and the key row that frame them.
 	doctorFixIndent = 6
 )
 
 // DoctorState is what became of one check, and which glyph says so. The five
-// are §6d's own vocabulary read for a diagnostic: two of them are terminal
+// are the outcome vocabulary read for a diagnostic: two of them are terminal
 // answers, one is a check that had nothing to look at, and two are states a
 // run passes through while it is still going.
 type DoctorState int
@@ -46,8 +49,8 @@ type DoctorState int
 const (
 	// DoctorPassed — ✓ add (10): the check looked and found nothing wrong.
 	DoctorPassed DoctorState = iota
-	// DoctorWarned — ⚠ accent (214): it works, and something about it will
-	// cost the reader later.
+	// DoctorWarned — ⚠ accent (214): it works, and something about it will cost
+	// the reader later.
 	DoctorWarned
 	// DoctorFailed — ✗ del (9): it does not work, and the row says what that
 	// means for the next session.
@@ -67,35 +70,35 @@ const (
 // costs and how long it took are all readings of the machine, and this is a
 // renderer.
 type DoctorCheck struct {
-	// Name is the §6a verb field: `binary`, `provider`, `sandbox`. Eight
+	// Name is the grid's verb field: `binary`, `provider`, `sandbox`. Eight
 	// columns, so a check named longer than that is the signal that the
 	// vocabulary has drifted rather than a field that grows.
 	Name string
-	// Subject leads the target field in body text — the thing that was
-	// checked. It is the only part of the target that is not dim.
+	// Subject leads the target field in body text — the thing that was checked.
+	// It is the only part of the target that is not dim.
 	Subject string
 	// Detail continues the target in dim, joined by ` · `: the version, the
 	// path, the count behind the subject.
 	Detail string
-	// Outcome is the right-aligned §6d field and never clips: it is the
+	// Outcome is the right-aligned outcome field and never clips: it is the
 	// reason to read the row.
 	Outcome string
-	// Duration is the 6-column field. Blank under half a second like every
-	// other row in the product, NoDuration for a check that has not run.
+	// Duration is the 6-column field. Blank under half a second like every other
+	// row in the product, NoDuration for a check that has not run.
 	Duration string
-	// Consequence is the line under a check that did not pass: what the
-	// reader will see because of it, in the words of the surface they will
-	// see it on. A failure that does not say what it costs is a failure the
-	// reader has to go and find out about (§19d).
+	// Consequence is the line under a check that did not pass: what the reader
+	// will see because of it, in the words of the surface they will see it on. A
+	// failure that does not say what it costs is a failure the reader has to go
+	// and find out about.
 	Consequence string
-	// Fix are the lines `[f]` reveals — the commands, the config keys, the
-	// order to do them in. A check with none of them offers no key.
+	// Fix are the lines `[f]` reveals — the commands, the config keys, the order
+	// to do them in. A check with none of them offers no key.
 	Fix []string
-	// FixLabel names what `[f]` opens, so the offer says how much is behind
-	// it: `show the 3-line fix`.
+	// FixLabel names what `[f]` opens, so the offer says how much is behind it:
+	// `show the 3-line fix`.
 	FixLabel string
-	// State picks the glyph, the outcome's colour, and whether the row is a
-	// stop for the pointer.
+	// State picks the glyph, the outcome's colour, and whether the row is a stop
+	// for the pointer.
 	State DoctorState
 }
 
@@ -110,10 +113,10 @@ type DoctorAct int
 
 const (
 	// DoctorCopy is `[c]`: the report as text, because the next thing that
-	// happens to a doctor run is that it gets pasted into an issue (§19d).
+	// happens to a doctor run is that it gets pasted into an issue.
 	DoctorCopy DoctorAct = iota
-	// DoctorRerun is `[r]`: run the checks again, which is the key that
-	// closes the loop after a fix has been applied.
+	// DoctorRerun is `[r]`: run the checks again, which is the key that closes
+	// the loop after a fix has been applied.
 	DoctorRerun
 )
 
@@ -122,22 +125,22 @@ const (
 type DoctorCommand struct{ Act DoctorAct }
 
 // DoctorScreen is `shhh doctor`: a takeover surface, full width, no inspector
-// rail, owning the keyboard for as long as it is up (§19).
+// rail, owning the keyboard for as long as it is up.
 type DoctorScreen struct {
-	// Checks are the checks in the order they run, and the order they are
-	// read. The host replaces them as each one answers.
+	// Checks are the checks in the order they run, and the order they are read.
+	// The host replaces them as each one answers.
 	Checks []DoctorCheck
-	// Elapsed is how long the run has taken so far, stated in the header
-	// beside the keys — the one number a reader watching a diagnostic wants.
+	// Elapsed is how long the run has taken so far, stated in the header beside
+	// the keys — the one number a reader watching a diagnostic wants.
 	Elapsed string
-	// Running says at least one check has not answered yet, which is what
-	// puts the spinner in the header and holds `[r]` back: re-running a run
-	// that is still going is not an offer (invariant 5).
+	// Running says at least one check has not answered yet, which is what puts
+	// the spinner in the header and holds `[r]` back: re-running a run that is
+	// still going is not an offer (invariant 5).
 	Running bool
-	// Spin says the host is ticking and Frame is the frame it is on — one
-	// tick source for the header and every running row, which is what §10c
-	// asks of anything in motion. A host that does not tick leaves Spin false
-	// rather than freezing a braille glyph on screen, because a stopped
+	// Spin says the host is ticking and Frame is the frame it is on — one tick
+	// source for the header and every running row, which is what the meter
+	// guidance asks of anything in motion. A host that does not tick leaves Spin
+	// false rather than freezing a braille glyph on screen, because a stopped
 	// spinner reads as a hang.
 	Spin  bool
 	Frame int
@@ -157,7 +160,8 @@ type DoctorScreen struct {
 
 // Update is the screen's whole keyboard. Every key here is live on arrival:
 // this surface holds the keyboard for as long as it is up, and there is no
-// draft under it for a bare letter to belong to (§19, invariant 5).
+// draft under it for a bare letter to belong to
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 func (d *DoctorScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	d.sync()
 	switch pressed := msg.String(); {
@@ -166,8 +170,8 @@ func (d *DoctorScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	case pressed == "down", pressed == "j":
 		d.move(1)
 	case keys.Is(pressed, keys.Screen.Fix):
-		// A row with nothing behind `[f]` does not offer it, so pressing it
-		// there is not a refusal to report — there is simply no key.
+		// A row with nothing behind `[f]` does not offer it, so pressing it there
+		// is not a refusal to report — there is simply no key.
 		if d.stops() > 0 && d.Checks[d.Focus].hasFix() {
 			d.fix[d.Focus] = !d.fix[d.Focus]
 		}
@@ -185,8 +189,8 @@ func (d *DoctorScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	return false, nil
 }
 
-// View renders the screen: the §17c header and its rule, the checks, and the
-// summary row at the foot.
+// View renders the screen: the start-screen header and its rule, the checks,
+// and the summary row at the foot.
 func (d *DoctorScreen) View(width int) string {
 	if width <= 0 {
 		return ""
@@ -217,9 +221,9 @@ func (d *DoctorScreen) budget(pinned int) int {
 	return max(d.MaxLines-pinned, 1)
 }
 
-// headerRow is the §17c header: the command, how many checks it is over and
-// whether they are still going, then the elapsed time and the two keys every
-// screen in §19 offers.
+// headerRow is the start-screen header: the command, how many checks it is
+// over and whether they are still going, then the elapsed time and the two
+// keys every screen offers.
 func (d *DoctorScreen) headerRow(width int) string {
 	left := brightStyle().Render("shhh doctor")
 	if n := len(d.Checks); n > 0 {
@@ -233,9 +237,9 @@ func (d *DoctorScreen) headerRow(width int) string {
 		right = sty.Dimmer.Render(d.Elapsed) + sty.Dim.Render(" · [?] keys · [q] quit")
 	}
 	// It is the left that gives ground, not the keys: a takeover surface that
-	// dropped `[q]` would be one with no stated way out of it (invariant 5),
-	// and the elapsed time goes with the keys because it is what says the run
-	// is still moving. The same trade the metrics header makes (§19c).
+	// dropped `[q]` would be one with no stated way out of it (invariant 5), and
+	// the elapsed time goes with the keys because it is what says the run is
+	// still moving. The same trade the metrics header makes.
 	if room := width - lipgloss.Width(right) - 2; room > 0 {
 		left = clip(left, room)
 	}
@@ -246,7 +250,7 @@ func (d *DoctorScreen) headerRow(width int) string {
 }
 
 // spinGlyph is the header's frame, or `▸` for a host that is not ticking —
-// the same reading every running glyph in the product makes (§6d, §10c).
+// the same reading every running glyph in the product makes.
 func (d *DoctorScreen) spinGlyph() string {
 	if !d.Spin {
 		return "▸"
@@ -310,9 +314,9 @@ func (d *DoctorScreen) quietest(kept []int) int {
 	return at
 }
 
-// droppedRow names the checks that did not fit. A marker that only said
-// "4 more" would leave the reader guessing which four the screen is sitting
-// on, which on a diagnostic is the whole question.
+// droppedRow names the checks that did not fit. A marker that only said "4
+// more" would leave the reader guessing which four the screen is sitting on,
+// which on a diagnostic is the whole question.
 func (d *DoctorScreen) droppedRow(kept []int, width int) string {
 	shown := map[int]bool{}
 	for _, i := range kept {
@@ -328,9 +332,9 @@ func (d *DoctorScreen) droppedRow(kept []int, width int) string {
 		fmt.Sprintf("↓ %d more · %s", len(names), strings.Join(names, " · ")), width))
 }
 
-// checkRows is one check: its row on the §6a grid, the consequence under a
-// check that did not pass, the fix behind `[f]` while it is open, and the
-// key row that offers it.
+// checkRows is one check: its row on the grid, the consequence under a check
+// that did not pass, the fix behind `[f]` while it is open, and the key row
+// that offers it.
 func (d *DoctorScreen) checkRows(i, width int) []string {
 	check := d.Checks[i]
 	rows := []string{d.checkRow(i, width)}
@@ -352,8 +356,9 @@ func (d *DoctorScreen) checkRows(i, width int) []string {
 // fixKeyRow is the offer under a check that has a fix. The row under the
 // pointer offers it live; the others carry the same key grey, because a key
 // is inert until the surface that offers it holds the keyboard and on this
-// screen that surface is one row (§7c, invariant 5). A screen with only one
-// such check therefore never draws a grey key at all.
+// screen that surface is one row
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+// A screen with only one such check therefore never draws a grey key at all.
 func (d *DoctorScreen) fixKeyRow(i, width int) string {
 	check := d.Checks[i]
 	if !check.hasFix() {
@@ -373,9 +378,10 @@ func (d *DoctorScreen) fixKeyRow(i, width int) string {
 	return detailLine(keyOffers(offer), width)
 }
 
-// checkRow is the check on the §6a grid. The mutation-rail column stays blank
-// on every row including the failures: a check reports on the machine, it
-// does not change it, and §14's rail means the row did (invariant 2).
+// checkRow is the check on the grid. The mutation-rail column stays blank on
+// every row including the failures: a check reports on the machine, it does
+// not change it, and the mutation rail means the row did
+// (docs/interface/principles.md#weight-tracks-risk).
 func (d *DoctorScreen) checkRow(i, width int) string {
 	check := d.Checks[i]
 	lead := d.pointer(i) + strings.Repeat(" ", railWidth) +
@@ -384,7 +390,7 @@ func (d *DoctorScreen) checkRow(i, width int) string {
 		check.outcomeField(), check.Duration, width)
 }
 
-// pointer is the focus cursor in §6a's own gutter — the two columns the
+// pointer is the focus cursor in the grid's own gutter — the two columns the
 // artboard leaves as an indent. It is drawn only where there is somewhere for
 // it to move: a run with nothing to fix has no pointer and no `[↑↓]`.
 func (d *DoctorScreen) pointer(i int) string {
@@ -426,8 +432,8 @@ func (c DoctorCheck) target() string {
 }
 
 // paintTarget leads the field with the subject in body text and dims the rest
-// behind it, the same reading a recovery row makes (§17a). A field too narrow
-// to hold the subject whole goes dim entirely rather than emphasising half a
+// behind it, the same reading a recovery row makes. A field too narrow to
+// hold the subject whole goes dim entirely rather than emphasising half a
 // version number.
 func (c DoctorCheck) paintTarget(s string) string {
 	if c.Subject != "" && strings.HasPrefix(s, c.Subject) {
@@ -452,10 +458,10 @@ func (c DoctorCheck) outcomeField() string {
 	return sty.Dim.Render(c.Outcome)
 }
 
-// footRows are the summary and the keys beside it. §19d puts the counts on
-// the line and the key in the right-hand field, which is the reverse of the
-// other three screens in §19: on a diagnostic the thing to read is what the
-// run found, and `[c]` is the annotation.
+// footRows are the summary and the keys beside it. The doctor screen puts the
+// counts on the line and the key in the right-hand field, which is the
+// reverse of the other three supporting screens: on a diagnostic the thing to
+// read is what the run found, and `[c]` is the annotation.
 func (d *DoctorScreen) footRows(width int) []string {
 	if d.keys {
 		rows := make([]string, 0, len(d.keyList())+1)
@@ -469,9 +475,9 @@ func (d *DoctorScreen) footRows(width int) []string {
 	if len(offers) == 0 {
 		return []string{summary}
 	}
-	// The keys annotate the summary where both fit, and take a row of their
-	// own where they do not. Nothing on a key row is ever truncated to make
-	// room (invariant 4).
+	// The keys annotate the summary where both fit, and take a row of their own
+	// where they do not. Nothing on a key row is ever truncated to make room
+	// (invariant 4).
 	keys := keyOffers(offers)
 	if pad := width - lipgloss.Width(summary) - lipgloss.Width(keys); pad >= 2 {
 		return []string{summary + strings.Repeat(" ", pad) + keys}
@@ -481,7 +487,7 @@ func (d *DoctorScreen) footRows(width int) []string {
 
 // summaryRow counts every outcome, including the checks still running, and
 // leads with the glyph of the worst one — so a run that failed says so on the
-// one line a reader who has scrolled away can still see (§19d).
+// one line a reader who has scrolled away can still see.
 func (d *DoctorScreen) summaryRow() string {
 	if len(d.Checks) == 0 {
 		return sty.Dim.Render("no checks to run")
@@ -614,7 +620,8 @@ func (d *DoctorScreen) firstStop() int {
 }
 
 // move steps the pointer to the next check that has a fix, stopping at either
-// end rather than wrapping — the same reading every list in the product makes.
+// end rather than wrapping — the same reading every list in the product
+// makes.
 func (d *DoctorScreen) move(delta int) {
 	stops := make([]int, 0, len(d.Checks))
 	for i, check := range d.Checks {

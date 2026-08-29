@@ -16,16 +16,18 @@
 //
 //   - It is not a keymap a surface consults at runtime to decide what it
 //     offers. Which of a row's keys are live is a question about state
-//     (§7c), and the surfaces answer it themselves; the register says what a
-//     key *is*, not whether it can be pressed right now.
-//   - It does not own contextual words. `[r]` is "try again" on a failure
-//     row and "ask again from scratch" on a dropped stream — the same key
-//     answered by the same handler, meaning something more specific in each
-//     place. The binding fixes the key and the words a surface has no better
-//     ones for; a surface with better ones keeps them (see Words).
-//   - It is not a rebinding layer. Nothing here reads config yet. The shape
-//     is the one that would make rebinding a config change rather than a
-//     code change, and that is as far as S-153 goes.
+//
+// , and the surfaces answer it themselves; the register says what a
+//
+//	  key *is*, not whether it can be pressed right now.
+//	- It does not own contextual words. `[r]` is "try again" on a failure
+//	  row and "ask again from scratch" on a dropped stream — the same key
+//	  answered by the same handler, meaning something more specific in each
+//	  place. The binding fixes the key and the words a surface has no better
+//	  ones for; a surface with better ones keeps them (see Words).
+//	- It is not a rebinding layer. Nothing here reads config yet. The shape
+//	  is the one that would make rebinding a config change rather than a
+//	  code change, and that is as far as S-153 goes.
 package keys
 
 import (
@@ -81,7 +83,7 @@ func Bracket(b Binding) string { return "[" + b.Help().Key + "]" }
 // second thing.
 func Words(b Binding) string { return b.Help().Desc }
 
-// Draft is the framed input (§12): the keys that are live while the sentence
+// Draft is the framed input: the keys that are live while the sentence
 // being typed holds the keyboard. Every one of them is a chord or a
 // navigation key, because a bare letter here is a letter (invariant 5).
 type DraftKeys struct {
@@ -146,7 +148,7 @@ var Draft = DraftKeys{
 	Quit:   bind("ctrl+d", "quit", "ctrl+d"),
 }
 
-// ReadingKeys are reading mode's own (§7a). It is a takeover, so its letters
+// ReadingKeys are reading mode's own. It is a takeover, so its letters
 // are live because nothing else is listening.
 type ReadingKeys struct {
 	Move     Binding
@@ -160,7 +162,7 @@ type ReadingKeys struct {
 }
 
 // All is reading mode's keys in the order it offers them, which is the order
-// `?` lists them in (§7d).
+// `?` lists them in.
 func (k ReadingKeys) All() []Binding {
 	return []Binding{k.Move, k.Expand, k.Detail, k.Collapse, k.PageUp, k.PageDown, k.List, k.Back}
 }
@@ -175,12 +177,12 @@ var Reading = ReadingKeys{
 	// List is the same `?` the supporting TUIs have offered since S-127: the
 	// compact key row swapped for the whole list, in place, and swapped back
 	// by the same key. It is live here and nowhere near the draft, for the
-	// reason every bare letter in this file is (§7d).
+	// reason every bare letter in this file is.
 	List: bind("?", "keys", "?"),
 	Back: bind("q", "back to the prompt", "q", "esc", "ctrl+e", "ctrl+c"),
 }
 
-// RowKeys are the offers a transcript row carries (§16, §17a). They are the
+// RowKeys are the offers a transcript row carries. They are the
 // register's awkward corner and §7c's subject: passive entries whose keys are
 // answered by reading mode standing on the row, which is why the input keeps
 // every one of these letters for typing.
@@ -194,13 +196,13 @@ type RowKeys struct {
 	Retry Binding
 	// Continue is `[c]`: continue from a partial answer on a drop row, and
 	// compact-then-retry on a context failure. It is [c] rather than the
-	// artboard's [enter] because enter belongs to the draft (§7c).
+	// artboard's [enter] because enter belongs to the draft.
 	Continue Binding
 	// Key is `[e]` rather than §17a's `[k]`, because k is reading mode's own.
 	Key      Binding
 	Provider Binding
 
-	// Rounds is the tool-round checkpoint's pair (§17a). The row draws the
+	// Rounds is the tool-round checkpoint's pair. The row draws the
 	// grant as the block it grants (`[+50]`); the hint bar names the literal
 	// key, which is what Shown carries.
 	Rounds Binding
@@ -220,10 +222,10 @@ var Row = RowKeys{
 	Uncap:  bind("!", "let it run", "!"),
 }
 
-// DecisionKeys are the approval card's (§2), the `/run` confirm's, the plan
-// card's (§4d) and a child's routed approval's (§9c). They arrive ungated:
+// DecisionKeys are the approval card's, the `/run` confirm's, the plan
+// card's and a child's routed approval's. They arrive ungated:
 // live only once Draft.Answer has handed the keyboard over, or on a card that
-// landed on a draft nobody was typing into (§7b).
+// landed on a draft nobody was typing into.
 type DecisionKeys struct {
 	Allow  Binding
 	Deny   Binding
@@ -240,7 +242,7 @@ var Decision = DecisionKeys{
 	Diff:   bind("d", "full diff", "d", "D"),
 }
 
-// ConfirmKeys are the inline one-liner's (§5) and the undo confirm's. They
+// ConfirmKeys are the inline one-liner's and the undo confirm's. They
 // are not DecisionKeys with fewer fields: enter means the opposite thing.
 // A card asks a question the reader walked up to and enter takes the offer;
 // a confirm interrupts something already in motion and enter is the default,
@@ -261,8 +263,8 @@ var Confirm = ConfirmKeys{
 	Force: bind("f", "force", "f", "F"),
 }
 
-// SelectKeys are the selector family's (§4), the model picker's, the rewind
-// picker's and the palette's (§18a). All takeovers.
+// SelectKeys are the selector family's, the model picker's, the rewind
+// picker's and the palette's. All takeovers.
 type SelectKeys struct {
 	Move    Binding
 	MoveJK  Binding
@@ -308,7 +310,7 @@ var Select = SelectKeys{
 	},
 }
 
-// ReviewKeys are review mode's (§16a): a takeover over the whole screen, with
+// ReviewKeys are review mode's: a takeover over the whole screen, with
 // staging per hunk. Nothing it does is applied.
 type ReviewKeys struct {
 	MoveFile   Binding
@@ -336,7 +338,7 @@ var Review = ReviewKeys{
 	Back:       bind("esc", "back", "esc", "ctrl+c"),
 }
 
-// AgentKeys are the agent manager's (§9a).
+// AgentKeys are the agent manager's.
 type AgentKeys struct {
 	Move   Binding
 	Attach Binding
@@ -360,7 +362,7 @@ var Agent = AgentKeys{
 }
 
 // WaitKeys are the surfaces that open on their own and take the keyboard with
-// them: the retry countdown and the context-pressure card (§17a, §17b), and
+// them: the retry countdown and the context-pressure card, and
 // the masked key prompt an auth failure opens.
 type WaitKeys struct {
 	Fallback Binding
@@ -386,7 +388,7 @@ var Wait = WaitKeys{
 	KeepKey: bind("esc", "keep the current key", "esc"),
 }
 
-// DiffKeys are the full-screen viewer's (§3c).
+// DiffKeys are the full-screen viewer's.
 type DiffKeys struct {
 	Scroll     Binding
 	SideBySide Binding
@@ -394,7 +396,7 @@ type DiffKeys struct {
 	Back       Binding
 	// Leave is the full-screen form's other ways out, and it is separate
 	// from Back for a reason worth the second field: the viewer is also a
-	// transcript row (§3a, §3b), and there `q` is reading mode's own. Only
+	// transcript row, and there `q` is reading mode's own. Only
 	// the surface that has the whole screen can claim it, so only that host
 	// answers this one.
 	Leave Binding
@@ -408,7 +410,7 @@ var Diff = DiffKeys{
 	Leave:      bind("q", "back", "q", "ctrl+c"),
 }
 
-// PictureKeys are the staged image preview's (§12h). Two keys and no more:
+// PictureKeys are the staged image preview's. Two keys and no more:
 // the surface has nothing to decide, nothing to scroll and nothing to stage —
 // a thumbnail is fitted to the pane rather than panned around — so what it
 // offers is the two spellings of leaving that every full-screen viewer in
@@ -423,7 +425,7 @@ var Picture = PictureKeys{
 	Leave: bind("q", "back", "q", "ctrl+c"),
 }
 
-// ScreenKeys are the supporting TUIs' (§19): `shhh config`, `shhh history`,
+// ScreenKeys are the supporting TUIs': `shhh config`, `shhh history`,
 // `shhh metrics`, `shhh doctor`. They are where `?` was invented — the
 // compact key row swapped for the whole list, in place — which is the idiom
 // reading mode borrows.
@@ -467,12 +469,12 @@ var Screen = ScreenKeys{
 	Again:   bind("r", "run the checks again", "r"),
 }
 
-// OneShotKeys are the action bar's (§18b): the row under a generated command,
+// OneShotKeys are the action bar's: the row under a generated command,
 // which is the one surface in the product where a bare letter is live beside
 // no input at all.
 type OneShotKeys struct {
 	// Run is enter, whose words depend on the command's rating: it runs a
-	// safe one and shows what a dangerous one would touch (§18b). One key,
+	// safe one and shows what a dangerous one would touch. One key,
 	// two readings — the words are the bar's, the key is the register's.
 	Run          Binding
 	Confirm      Binding
@@ -503,7 +505,7 @@ var OneShot = OneShotKeys{
 	Quit:         bind("esc", "quit", "esc"),
 }
 
-// SetupKeys are first contact's (§17c) and the provider card's.
+// SetupKeys are first contact's and the provider card's.
 type SetupKeys struct {
 	Wizard Binding
 	Paste  Binding

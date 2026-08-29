@@ -6,7 +6,7 @@ package components
 // provider's error body. Programs emit \x1b[31m and trust the terminal to
 // pick a red. Inside shhh that red is whatever the reader's theme decided —
 // frequently illegible against the terminal's own background, and in every
-// case a colour the palette does not own (§10a), sitting one indent away from
+// case a colour the palette does not own, sitting one indent away from
 // rows that spent S-088 getting one job per token.
 //
 // So the line is read before it is drawn. It is re-painted the way every
@@ -25,10 +25,10 @@ package components
 //     without this file knowing they exist.
 //   - Background colours are dropped rather than remapped. §10b says exactly
 //     three background tints exist, and all three collapse onto --mono-bg,
-//     which means selection (§7a). A program painting a block of a detail
+//     which means selection. A program painting a block of a detail
 //     body would be drawing the reading cursor.
 //   - Under mono no foreign colour survives at all, the way the diff renderer
-//     drops chroma highlighting rather than recolouring it (§10f). A grey
+//     drops chroma highlighting rather than recolouring it. A grey
 //     step is still a distinction, and a detail body is exactly where the
 //     words are already carrying one.
 //   - The sequence vocabulary is closed, not filtered. Crush strips the
@@ -48,7 +48,7 @@ import (
 )
 
 // ansiPalette maps the sixteen colours a terminal theme owns onto the tokens
-// that mean the same thing in shhh (§10i). Black is dim rather than black
+// that mean the same thing in shhh. Black is dim rather than black
 // because the terminal's black is the background on half the terminals there
 // are.
 //
@@ -96,7 +96,7 @@ func (r foreignRun) style(ground Token) lipgloss.Style {
 
 // repaint re-paints one line of a program's own output in shhh's materials.
 // ground is the token the body around it is drawn in — dimmer for a detail
-// body (§6a) — so a run the program left alone comes back the colour the body
+// body — so a run the program left alone comes back the colour the body
 // would have been anyway, and the caller has nothing left to add.
 //
 // It reports false, and returns the line untouched, where there was nothing
@@ -223,7 +223,7 @@ func (r *foreignRun) apply(params ansi.Params) {
 			r.fg, i = c, next
 		case p == 48 || p == 58:
 			// A background or an underline colour. Skipped, arguments and
-			// all (§10i).
+			// all.
 			_, next := extendedColor(params, i)
 			i = next
 		}

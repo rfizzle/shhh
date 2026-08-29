@@ -53,10 +53,10 @@ func stageText(t *testing.T, m Model, name string) Model {
 
 // The point of the surface: the chip says a file is staged, and this says
 // which file it is. It is opened by naming the chip, because a chip has no
-// key of its own (§12g).
+// key of its own.
 func TestPreview_ShowDrawsTheStagedImage(t *testing.T) {
 	// A test binary's stdout is not a terminal, so without this the picture
-	// would draw at the rung a terminal with no colour gets (§10e) — which is
+	// would draw at the rung a terminal with no colour gets — which is
 	// its own test, below.
 	was := components.Profile()
 	components.SetProfile(colorprofile.ANSI256)
@@ -171,7 +171,7 @@ func stageTextNamed(name string) func(*testing.T, Model) Model {
 }
 
 // A terminal with no colour to give still gets the picture, as density
-// rather than hue (§10e, §10f). The surface is the one place in shhh whose
+// rather than hue. The surface is the one place in shhh whose
 // content is colour, and a photograph is still the photograph without it.
 func TestPreview_NoColourStillDrawsThePicture(t *testing.T) {
 	was := components.Profile()

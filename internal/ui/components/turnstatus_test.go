@@ -29,7 +29,7 @@ func TestTurnStatus_PhaseVocabularyIsClosed(t *testing.T) {
 		{PhaseRunning, "running"},
 		{PhaseStreaming, "streaming…"},
 		// A phase nobody defined picks the nearest of the four rather than
-		// rendering blank or inventing a fifth (§8d).
+		// rendering blank or inventing a fifth.
 		{TurnPhase(42), "thinking…"},
 	}
 	for _, c := range cases {
@@ -140,7 +140,7 @@ func TestTurnStatus_ResolvedLineDropsInTheSameOrder(t *testing.T) {
 	}
 }
 
-// The frame index comes from the host's one tick source (§10c), so the same
+// The frame index comes from the host's one tick source, so the same
 // frame drives this line and every other spinner on screen.
 func TestTurnStatus_FrameFollowsTheTickSource(t *testing.T) {
 	for i := range SpinnerFrames {

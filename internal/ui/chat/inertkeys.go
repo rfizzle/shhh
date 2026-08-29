@@ -12,12 +12,12 @@ package chat
 // are live because nothing else is listening.
 //
 // Four surfaces answered differently, and they are the ones this file is
-// about: the changeset row a turn closes with (§16), a provider failure's row
-// (§17a), a dropped stream's, and a round-limit pause's. They are transcript
+// about: the changeset row a turn closes with, a provider failure's row
+//, a dropped stream's, and a round-limit pause's. They are transcript
 // entries, not takeovers. Their keys are handled by reading mode on the row
 // (focus.go), so while the draft below has the keyboard `v` is a letter, `[v]
 // review` is an offer nothing accepts, and the row was painting it in info —
-// the colour that means "you can press this" (§10a).
+// the colour that means "you can press this".
 //
 // So a transcript row renders its keys live only while reading mode's cursor
 // is standing on it. Everywhere else they go grey and the one key that hands
@@ -32,7 +32,7 @@ import (
 // rowHandover is the key a transcript row offers beside keys that are not
 // live yet, or "" where the row has nothing to offer.
 //
-// It is keys.Draft.Reading (§7d), which hands the keyboard from the draft to
+// It is keys.Draft.Reading, which hands the keyboard from the draft to
 // the transcript — a control chord for the same reason ctrl+g is: no sentence
 // can produce it, so it can be live while the draft is.
 //

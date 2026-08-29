@@ -37,7 +37,7 @@ func readingModel(t *testing.T, width int) Model {
 	return next.(Model)
 }
 
-// The rail is the same labelled rule DRAFT and DECISION draw (§7b): four
+// The rail is the same labelled rule DRAFT and DECISION draw: four
 // cells in, the label in its own spaces, the rule to the edge. Reading mode
 // borrowed Rule's trailing variant when it had no artboard to read, and that
 // hung the label off the right end.
@@ -96,7 +96,7 @@ func TestReadingRow_IsLitWithThePointerOutsideIt(t *testing.T) {
 
 // It still reads over a row that changed the machine: the rail is drawn
 // inside the highlight and keeps its accent, and the bright text is what
-// changes (§14).
+// changes.
 func TestReadingRow_KeepsTheMutationRailInsideTheHighlight(t *testing.T) {
 	colorProfile(t)
 	m := readingModel(t, 130)
@@ -213,7 +213,7 @@ func TestReadingHint_RowKeysAreASecondLineUnderTheRowsOwnRail(t *testing.T) {
 	}
 }
 
-// The pair, rendered rather than asserted (§7a): whichever pane holds the
+// The pair, rendered rather than asserted: whichever pane holds the
 // keyboard wears the labelled rail and the lit row, and the other wears the
 // frame's accent. Never both, never neither.
 func TestReadingMode_OnlyOnePaneIsDressedAtATime(t *testing.T) {
@@ -252,7 +252,7 @@ func TestReadingMode_OnlyOnePaneIsDressedAtATime(t *testing.T) {
 }
 
 // The key line shortens rather than clipping, and the position narrows before
-// the keys give up any of their words (§7a).
+// the keys give up any of their words.
 func TestReadingHint_ShortensRatherThanClipping(t *testing.T) {
 	for _, width := range []int{120, 80, 60, 46, 30} {
 		m := readingModel(t, 130)
@@ -270,7 +270,7 @@ func TestReadingHint_ShortensRatherThanClipping(t *testing.T) {
 }
 
 // Mono has to keep the distinction the colours carry: the label, the keys and
-// the lit row all survive as words and greys (S-095, §10f).
+// the lit row all survive as words and greys (S-095).
 func TestReadingMode_SurvivesMono(t *testing.T) {
 	colorProfile(t)
 	monoRestore(t)
@@ -310,7 +310,7 @@ func TestReadingKeyListNamesEveryModeKey(t *testing.T) {
 // The list carries the row's own offers too, under the row's rail — the
 // answer to "what can this keyboard do from here" is the mode's keys plus
 // the row's, and a list that stopped at the mode's would be answering a
-// different question (§7a).
+// different question.
 func TestReadingKeyListCarriesTheRowsOffers(t *testing.T) {
 	m := readingModel(t, 100)
 	offers := m.readingRowOffers()
@@ -325,7 +325,7 @@ func TestReadingKeyListCarriesTheRowsOffers(t *testing.T) {
 	}
 }
 
-// The panel is bounded like every other one (§1). What does not fit is
+// The panel is bounded like every other one. What does not fit is
 // counted rather than dropped in silence (invariant 4).
 func TestReadingKeyListCountsWhatDoesNotFit(t *testing.T) {
 	m := readingModel(t, 100)

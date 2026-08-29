@@ -32,27 +32,27 @@ type Styles struct {
 	ModeGated      lipgloss.Style
 	CtxAlert       lipgloss.Style
 	UpdateNotice   lipgloss.Style
-	// Focus-mode gutter pointer on the selected transcript row (§7).
+	// Focus-mode gutter pointer on the selected transcript row.
 	FocusMarker lipgloss.Style
 
 	// The reading rail under the header, which says the transcript has the
-	// keyboard rather than the input (S-115, §7a) — navigate.go.
+	// keyboard rather than the input (S-115) — navigate.go.
 	Reading readingStyles
-	// Step outline (S-090, §13) — the header's title, ordinal, faint rule
+	// Step outline (S-090) — the header's title, ordinal, faint rule
 	// and stats, plus one style per state glyph.
 	Step stepStyles
-	// The input frame and its rails (§12) — frame.go.
+	// The input frame and its rails — frame.go.
 	Frame frameStyles
 	// The slash-command menu (S-079) — complete.go.
 	Complete completeStyles
-	// The reading-mode hint line and the mutation rail (§7a, §14) —
+	// The reading-mode hint line and the mutation rail —
 	// readinghint.go.
 	Hint hintStyles
-	// The two-pane cockpit (§15) — inspector.go.
+	// The two-pane cockpit — inspector.go.
 	Pane paneStyles
 }
 
-// stepStyles is the step outline's own group (S-090, §13).
+// stepStyles is the step outline's own group (S-090).
 type stepStyles struct {
 	Title     lipgloss.Style
 	LiveTitle lipgloss.Style
@@ -105,8 +105,7 @@ func newStyles(p components.ColorTokens) Styles {
 		UpdateNotice:   lipgloss.NewStyle().Foreground(p.Accent.Color()),
 
 		// The reading cursor is info, as the pointer is on every artboard
-		// that draws one; the accent belongs to the mutation rail beside it
-		// (§14).
+		// that draws one; the accent belongs to the mutation rail beside it.
 		FocusMarker: lipgloss.NewStyle().Foreground(p.Info.Color()),
 
 		Step: stepStyles{

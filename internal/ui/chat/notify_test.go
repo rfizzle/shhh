@@ -126,7 +126,7 @@ func TestNotify_AnApprovalSaysWhatTheCardSays(t *testing.T) {
 }
 
 func TestNotify_AChildAskArrivesWhileTheParentIsStillWorking(t *testing.T) {
-	// A routed approval is a queue rather than a turn state (§9c): the parent
+	// A routed approval is a queue rather than a turn state: the parent
 	// keeps streaming underneath, so working() never drops and the wait has
 	// to be seen some other way.
 	prev := notifyModel(t)
@@ -182,7 +182,7 @@ func TestNotifyCommand_SaysWhatItIsAndSavesIt(t *testing.T) {
 		t.Errorf("wrote %q=%q, want appearance.notify=false", wroteKey, wroteValue)
 	}
 	// The readout names the dialect, because "on" and "on and audible" are
-	// different facts about the terminal (§10k).
+	// different facts about the terminal.
 	if out := m.notifyCommand([]string{"ui", "notify"}); !strings.Contains(out, "off") {
 		t.Errorf("the readout does not report the new state: %q", out)
 	}

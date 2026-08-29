@@ -9,7 +9,7 @@ package chat
 // separate heights counted in a different file each. Every one of those was a
 // second description of the same geometry, and a rung that moved had to move
 // in all of them or they disagreed — which is how the live tail came to be
-// drawn on a row nothing had paid for (§10n).
+// drawn on a row nothing had paid for.
 //
 // This is the one description. The terminal is a rectangle, the layout engine
 // splits it, and everything downstream reads a rectangle instead of deriving
@@ -36,20 +36,20 @@ import (
 
 // bottomChromeHeight is what the bottom panel costs beyond the panel itself:
 // the divider and the status bar, or — when the command-center frame is
-// showing — the two border rails that stand in for them (§12).
+// showing — the two border rails that stand in for them.
 const bottomChromeHeight = dividerHeight + statusBarHeight
 
 // paneColumns is the horizontal half of the model: which columns each pane
 // owns, at this terminal width, with the two-pane split already decided.
 type paneColumns struct {
 	// content is the surface inside the horizontal padding — what the
-	// header, the reading rail and the prompt frame all span (§15).
+	// header, the reading rail and the prompt frame all span.
 	content uv.Rectangle
 	// pane is the transcript pane's columns: all of content when the surface
 	// is single-pane, the left side of the split when it is not.
 	pane uv.Rectangle
 	// feed is the pane less the scroll gutter — what the transcript wraps to
-	// (S-147, §10g), and the coordinate space a selection is taken in.
+	// (S-147), and the coordinate space a selection is taken in.
 	feed uv.Rectangle
 	// gutter is the scroll gutter's one column. The pane holds it back
 	// whether or not there is a thumb to draw in it, so nothing reflows the
@@ -58,7 +58,7 @@ type paneColumns struct {
 	// divider is the single │ column between the panes, empty when there is
 	// only one.
 	divider uv.Rectangle
-	// inspector is the rail's columns (§15), empty when the surface has not
+	// inspector is the rail's columns, empty when the surface has not
 	// split.
 	inspector uv.Rectangle
 }
@@ -81,7 +81,7 @@ func (m Model) columns() paneColumns {
 		layout.Len(horizontalPadding),
 	).Split(area).Assign(new(uv.Rectangle), &cols.content, new(uv.Rectangle))
 
-	// Past the top rung of the width ladder (§8c) the rail takes its columns
+	// Past the top rung of the width ladder the rail takes its columns
 	// off the right of the content and one dim column divides the panes.
 	cols.pane = cols.content
 	if cols.content.Dx() >= components.InspectorMinContentWidth && !m.inspectorHidden() {
@@ -108,7 +108,7 @@ type surfaceLayout struct {
 	paneColumns
 
 	// header is the title row and rail the line under it that says which pane
-	// has the keyboard (S-115, §7a).
+	// has the keyboard (S-115).
 	header uv.Rectangle
 	rail   uv.Rectangle
 	// body is everything between the rail and the bottom panel: the
@@ -117,14 +117,14 @@ type surfaceLayout struct {
 	body uv.Rectangle
 	// view is the transcript's own rows — the viewport's height.
 	view uv.Rectangle
-	// tail is the live block under the transcript (§10n): the thinking
+	// tail is the live block under the transcript: the thinking
 	// spinner, the running command's row, the retry countdown. Empty
 	// whenever the turn has nothing to say there.
 	tail uv.Rectangle
 	// agents is the working children's compact progress rows (S-068).
 	agents uv.Rectangle
 	// bottom is the command-center frame, or the divider + status bar + the
-	// takeover surface that replaced it (§12).
+	// takeover surface that replaced it.
 	bottom uv.Rectangle
 }
 
@@ -161,7 +161,7 @@ func (m Model) surface() surfaceLayout {
 
 // bottomRows is how many rows the bottom of the surface occupies: the panel
 // itself, the rails or chrome around it, and the extra rails the frame adds
-// (§12a). It is the only vertical segment that is measured rather than
+// . It is the only vertical segment that is measured rather than
 // fixed, because it is the only one whose content decides its own size.
 func (m Model) bottomRows() int {
 	return m.bottomPanelHeight() + bottomChromeHeight + m.frameExtraHeight()

@@ -77,7 +77,7 @@ func TestPressureCard_MeterMatchesTheRails(t *testing.T) {
 }
 
 // The border carries the meter's colour, which is what puts the bar and the
-// numbers on the title rail in one colour (§10c).
+// numbers on the title rail in one colour.
 func TestPressureCard_BorderTakesTheMeterColour(t *testing.T) {
 	withColorProfile(t, colorprofile.ANSI256)
 	c := pressureFixture()

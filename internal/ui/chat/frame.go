@@ -60,7 +60,7 @@ func frameLayoutFor(width int) frameLayout {
 	}
 }
 
-// frameStyles is the input frame's own group (§12), built by newFrameStyles.
+// frameStyles is the input frame's own group, built by newFrameStyles.
 type frameStyles struct {
 	AccentPermissive lipgloss.Style
 	AccentGated      lipgloss.Style
@@ -73,7 +73,7 @@ type frameStyles struct {
 	NoticeInfo       lipgloss.Style
 	NoticeAlert      lipgloss.Style
 	// The undressed draft and the waiting chip a decision puts on the frame
-	// (S-117, §7b): the chrome goes dim, the characters stay legible.
+	// (S-117): the chrome goes dim, the characters stay legible.
 	DraftHeld   lipgloss.Style
 	WaitingChip lipgloss.Style
 }
@@ -119,7 +119,7 @@ func (m Model) frameShowing() bool {
 }
 
 // frameExtraHeight is what the frame adds beyond the standard chrome rows:
-// the notice rail, the staged rail (§12g) and, in the wide layout, the
+// the notice rail, the staged rail and, in the wide layout, the
 // dedicated vitals rail. The frame's top and bottom borders take the rows the
 // bottom divider and status bar otherwise use, so the compact and narrow
 // layouts add nothing.
@@ -157,7 +157,7 @@ func (m Model) frameWorking() bool {
 	return false
 }
 
-// frameAccentStyle is the mode-aware border accent (§12c): add for the
+// frameAccentStyle is the mode-aware border accent: add for the
 // permissive modes, accent for the gated ones, spin while the auto-mode
 // classifier is checking. Attached, it reflects the child's mode. The mode
 // glyphs in the vitals keep meaning independent of color.
@@ -192,7 +192,7 @@ func (m Model) frameIdentity() string {
 	return title
 }
 
-// frameActivity is the top rail's right side (§12a): the running turn's
+// frameActivity is the top rail's right side: the running turn's
 // status line while the turn works, the summary it resolved into once it is
 // done, `⏸ N waiting` while decisions are queued and ungated, and dim `idle`
 // when there is nothing to report. width is the room the slot has; a slot too
@@ -203,11 +203,11 @@ func (m Model) frameActivity(width int) string {
 		return ""
 	}
 	// A turn paused on a decision is not working, and what the rail should
-	// say is how many answers it is waiting for (S-117, §7b).
+	// say is how many answers it is waiting for (S-117).
 	if n := m.waitingCount(); n > 0 {
 		return sty.Frame.WaitingChip.Render(clipRow(fmt.Sprintf("⏸ %d waiting", n), width))
 	}
-	// Attached, the frame is scoped to the child (§12d) and the child's phase
+	// Attached, the frame is scoped to the child and the child's phase
 	// is not something the supervisor reports — a subagent is running,
 	// blocked or done. Naming one of §8d's four for it would be inventing the
 	// fact, so the attached rail keeps the working indicator it had.
@@ -231,9 +231,9 @@ func (m Model) frameHints() string {
 	var hints []string
 	switch {
 	case m.decisionUngated():
-		// The three keys that matter while a decision waits (§7b). Stopping the run
-		// is ctrl+c here rather than the artboard's esc, because esc clears the
-		// draft on this surface and always has — see the departure recorded in
+		// The three keys that matter while a decision waits. Stopping the run is
+		// ctrl+c here rather than the artboard's esc, because esc clears the draft
+		// on this surface and always has — see the departure recorded in
 		// docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard.
 		hints = []string{
 			keys.Shown(keys.Draft.Answer) + " " + keys.Words(keys.Draft.Answer),
@@ -268,7 +268,7 @@ func (m Model) frameHints() string {
 	return sty.Frame.Hint.Render(strings.Join(hints, " · "))
 }
 
-// promptGutter is the input's leading glyph (§12a): ❯ idle, ▸ while the
+// promptGutter is the input's leading glyph: ❯ idle, ▸ while the
 // agent works (typed text becomes steering, S-058), and the child's name
 // while attached.
 func (m Model) promptGutter() string {
@@ -281,7 +281,7 @@ func (m Model) promptGutter() string {
 	return sty.Frame.GutterIdle.Render("❯") + " "
 }
 
-// frameBox is the prompt frame's own rectangles (S-161, §12): the box, the
+// frameBox is the prompt frame's own rectangles (S-161): the box, the
 // two border columns, what they leave between them, and the split a draft
 // row makes of that — the prompt gutter's columns and the text's.
 type frameBox struct {
@@ -328,7 +328,7 @@ func (m *Model) syncInputWidth() {
 	m.input.SetWidth(m.inputInnerWidth())
 }
 
-// noticeLine assembles the notice rail (§12a): update notice, queued
+// noticeLine assembles the notice rail: update notice, queued
 // steering, blocked sub-agents, and the latest auto-mode denial. Empty —
 // rail hidden — when there is nothing to say; orchestrator-scoped, so it
 // hides while attached.
@@ -378,7 +378,7 @@ func (m Model) noticeLine() string {
 // the two fixed ends, the left label, the dash fill between the labels, and
 // the right label. It is separate from drawRail because the top rail has to
 // know how wide the right-hand slot is *before* it can ask the status line
-// what to put in it (§12a).
+// what to put in it.
 func railSlots(leftLabel, rightLabel string, width int) (head, left, fill, right, tail uv.Rectangle) {
 	var labels uv.Rectangle
 	layout.Horizontal(
@@ -388,7 +388,7 @@ func railSlots(leftLabel, rightLabel string, width int) (head, left, fill, right
 	).Split(uv.Rect(0, 0, max(width, 0), 1)).Assign(&head, &labels, &tail)
 
 	// A right label too wide for what is left says nothing rather than
-	// crowding the identity beside it (§12a). That is the design's rule, not
+	// crowding the identity beside it. That is the design's rule, not
 	// the fill's, so it is spelled out here rather than left to the solver's
 	// idea of which segment should give ground.
 	rw := lipgloss.Width(rightLabel)
@@ -478,9 +478,9 @@ func railLabelWidth(leftLabel string, width int) int {
 	return slot.Dx()
 }
 
-// topRailLabels is the top rail's two labels (§12a): the identity on the
+// topRailLabels is the top rail's two labels: the identity on the
 // left, and on the right the running turn's status line — or, attached below
-// the wide layout, the hints rail that has nowhere else to go (§12b).
+// the wide layout, the hints rail that has nowhere else to go.
 func (m Model) topRailLabels(mode frameLayout, width int) (identity, right string) {
 	identity = " " + m.frameIdentity() + " "
 	if mode == frameNarrow {
@@ -488,7 +488,7 @@ func (m Model) topRailLabels(mode frameLayout, width int) (identity, right strin
 	}
 	if m.attachedTo != "" && mode != frameWide {
 		// Compact/narrow drop the hints rail; the detach affordance moves to
-		// the top rail (§12b).
+		// the top rail.
 		return identity, " " + m.frameHints() + " "
 	}
 	// The identity is the rail's left label and keeps its room; the status
@@ -521,7 +521,7 @@ func (m Model) frameDraftLines() (lines, menu []string) {
 // drawPromptFrame paints the whole surface into its rectangle: notice rail,
 // staged rail, then the box — top rail, gutter + input rows (+ completion
 // menu), vitals rail, bottom rail — each in the rectangle frameBoxFor
-// resolved for it (S-161, §10n). The two rails above the box are rows of the
+// resolved for it (S-161). The two rails above the box are rows of the
 // surface rather than rows of the box, which is why they are split off first.
 func (m Model) drawPromptFrame(scr uv.Screen, area uv.Rectangle) {
 	mode := m.frameLayout()
@@ -538,7 +538,7 @@ func (m Model) drawPromptFrame(scr uv.Screen, area uv.Rectangle) {
 	}
 	layout.Vertical(layout.Len(rails), layout.Fill(1)).Split(area).Assign(&above, &boxArea)
 	row := 0
-	// The staged rail sits between the notices and the frame (§12g): what is
+	// The staged rail sits between the notices and the frame: what is
 	// staged rides with the sentence being typed, so it belongs against the
 	// box it will leave with, under anything transient the session is saying.
 	for _, rail := range []string{notice, staged} {
@@ -551,7 +551,7 @@ func (m Model) drawPromptFrame(scr uv.Screen, area uv.Rectangle) {
 
 	lines, menu := m.frameDraftLines()
 	// The wide layout gets a rail of its own for the vitals; the others hang
-	// them on the closing rail (§12b).
+	// them on the closing rail.
 	vitalsRows := 0
 	if mode == frameWide {
 		vitalsRows = 1
@@ -601,7 +601,7 @@ func (m Model) drawPromptFrame(scr uv.Screen, area uv.Rectangle) {
 
 // renderPromptFrame is the same surface as a string, for the captures and for
 // callers that hold no screen. Its height is the bottom panel's own rows less
-// the interrupt card riding above it (§7b), which is the same accounting the
+// the interrupt card riding above it, which is the same accounting the
 // vertical split hands out — the frame cannot be sized one way and budgeted
 // for another.
 func (m Model) renderPromptFrame() string {

@@ -4,12 +4,12 @@
 // It is the half of the image preview that has nothing to do with a terminal:
 // bytes in, a grid of cells out, no escape sequence and no palette. What it
 // draws with is the drawing kit's own two half-blocks and the four-step
-// density ramp beside them (§10e) — which is why the same grid can be painted
+// density ramp beside them — which is why the same grid can be painted
 // in colour, or read as shape alone where there is no colour to paint with.
 //
 // The rungs above and below live elsewhere for the reasons the design gives.
 // The kitty graphics protocol is a sequence, so it stops at internal/ui/caps
-// with every other sequence (§10k); the frame the picture sits in — its name,
+// with every other sequence; the frame the picture sits in — its name,
 // its size, the border — is a card, so it is in internal/ui/components with
 // the rest of the catalog. This package is only the arithmetic between them.
 //
@@ -45,7 +45,7 @@ type Cell struct {
 	Fg, Bg color.Color
 }
 
-// The two half-blocks and the density ramp (§10e). A cell holds two samples
+// The two half-blocks and the density ramp. A cell holds two samples
 // stacked, so `▄` is the ordinary one — the lower sample in the foreground,
 // the upper behind it — and `▀` is what a cell whose lower half is
 // transparent draws instead, so the picture's own holes stay holes.
@@ -76,7 +76,7 @@ const noInk = ' '
 type Aspect struct{ Width, Height int }
 
 // DefaultAspect is the shape of a cell when the terminal did not say — asked
-// and silent, or never asked (§10k). Two-to-one is the common ratio and the
+// and silent, or never asked. Two-to-one is the common ratio and the
 // safe guess: a picture fitted to it on a terminal that is really 9×19 is off
 // by a twentieth, which is a thumbnail slightly the wrong shape rather than
 // one that does not fit.

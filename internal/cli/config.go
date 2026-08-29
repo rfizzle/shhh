@@ -88,7 +88,7 @@ type configModel struct {
 }
 
 // defaultConfigWidth is what the screen is drawn at before the terminal has
-// said how wide it is — the working width the artboard is drawn at (§19a).
+// said how wide it is — the working width the artboard is drawn at.
 const defaultConfigWidth = 110
 
 func newConfigModel(cfg config.Config) configModel {
@@ -247,7 +247,7 @@ func boolOptions(on, off string) []components.SelectOption {
 func noOptions(config.Config) []components.SelectOption { return nil }
 
 // modeShow renders a permission mode the way the cockpit's own mode segment
-// does (§8): `⏵⏵` and add for the two that let work through, `⏸` and accent
+// does: `⏵⏵` and add for the two that let work through, `⏸` and accent
 // for the two that gate it. The glyph carries the distinction, so the colour
 // is never carrying it alone.
 func modeShow(raw string) (string, components.FieldTone, string) {

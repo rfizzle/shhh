@@ -295,7 +295,7 @@ func TestPlanCard_DecisionsRenderWholeAndTheStepsShrink(t *testing.T) {
 
 // The note selector pins its query row the same way, and still windows
 // through the same path — the note is the answer, not a row, so it never
-// scrolls off (§4c).
+// scrolls off.
 func TestNoteSelectFilter_PinsItsQueryRowAndKeepsTheNote(t *testing.T) {
 	ns := NewNoteSelect("Remember this?", modelList(20))
 	ns.Select.MaxLines = 12

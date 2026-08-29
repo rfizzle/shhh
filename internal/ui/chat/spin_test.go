@@ -178,7 +178,7 @@ func TestSpin_ResumesAfterTheLoopHasStopped(t *testing.T) {
 	}
 }
 
-// One tick source, never three (§10c). Every further message while the loop
+// One tick source, never three. Every further message while the loop
 // runs has to leave it alone rather than batching a second chain.
 func TestSpin_OneChainAtATime(t *testing.T) {
 	m := spinModel(t)
@@ -212,7 +212,7 @@ func TestSpin_OneFrameAcrossTheThreeSurfaces(t *testing.T) {
 	// The frame header draws through bubbles' own model, which is why the
 	// counter may only advance with it: a frame counted while bubbles
 	// rejected the tick would drift the two apart for the rest of the
-	// session, and the attached rail (§12d) would then disagree with
+	// session, and the attached rail would then disagree with
 	// everything else on screen.
 	if got := stripANSI(m.spinner.View()); got != want {
 		t.Fatalf("the frame header should be on frame %q, got %q", want, got)
@@ -239,7 +239,7 @@ func TestSpin_OneFrameAcrossTheThreeSurfaces(t *testing.T) {
 }
 
 // A row nothing is ticking keeps the still `▸` rather than standing on one
-// braille frame, which would read as a hang (§6d).
+// braille frame, which would read as a hang.
 func TestSpin_StillRowKeepsTheRunningGlyph(t *testing.T) {
 	row := components.ActivityRow{State: components.ActivityRunning, Verb: "run", Target: "go test"}
 	if got := stripANSI(row.View(80)); !strings.Contains(got, "▸") {

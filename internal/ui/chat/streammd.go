@@ -67,8 +67,8 @@ func (s *streamingMarkdown) Reset() {
 }
 
 // Render returns renderMarkdown(content, width), reusing the cached prefix
-// render where the boundary rules can vouch that gluing reproduces it exactly.
-// Every uncertain case falls through to renderMarkdown itself.
+// render where the boundary rules can vouch that gluing reproduces it
+// exactly. Every uncertain case falls through to renderMarkdown itself.
 func (s *streamingMarkdown) Render(content string, width int) string {
 	if width <= 0 {
 		width = 80
@@ -172,9 +172,9 @@ func (s *streamingMarkdown) safeIncremental(content string, p int) bool {
 	return closesCleanly(content, p, s.baseListMarker || hasListMarker(delta))
 }
 
-// findSafeBoundary returns the offset of the first byte after the latest blank
-// line at which content can be cut, or -1 when there is none. Latest wins: the
-// more of the message that is stable, the less is re-rendered.
+// findSafeBoundary returns the offset of the first byte after the latest
+// blank line at which content can be cut, or -1 when there is none. Latest
+// wins: the more of the message that is stable, the less is re-rendered.
 func findSafeBoundary(content string) int {
 	for p := blankLineBefore(content, len(content)); p > 0; p = blankLineBefore(content, p-1) {
 		if safeBoundaryAt(content, p) {
@@ -237,9 +237,9 @@ func closesCleanly(content string, p int, listSeen bool) bool {
 }
 
 // blankLineBefore returns the offset of the first byte after the latest blank
-// line ending strictly before until, or -1 when there is none. A blank line is
-// "\n" followed by a line of nothing but spaces and tabs and another "\n"; the
-// offset returned is the start of the first line after it.
+// line ending strictly before until, or -1 when there is none. A blank line
+// is "\n" followed by a line of nothing but spaces and tabs and another "\n";
+// the offset returned is the start of the first line after it.
 func blankLineBefore(content string, until int) int {
 	end := until
 	for end > 0 {
@@ -273,8 +273,8 @@ func mdLines(s string) func(func(string) bool) {
 // countFenceLines counts the lines that toggle a fenced code block: three or
 // more backticks or tildes as the first non-space content of a line, after at
 // most three spaces of indent (CommonMark). An even count means every fence
-// that opened has closed. Openers and closers are not told apart — toggling is
-// all the boundary check needs.
+// that opened has closed. Openers and closers are not told apart — toggling
+// is all the boundary check needs.
 func countFenceLines(s string) int {
 	n := 0
 	for line := range mdLines(s) {
@@ -569,7 +569,7 @@ func renderUnfinished(text string, width int) string {
 // on the last line stays. trimBlankLines takes that padding off, because a
 // finished document has nothing after it; here the seam does, and in mono —
 // where the padding is literal spaces rather than spaces inside an escape —
-// trimming it would lose a byte the whole render has (§10f).
+// trimming it would lose a byte the whole render has.
 func trimUnfinished(raw string) string {
 	return strings.TrimRight(dropLeadingBlankLines(raw), "\n")
 }

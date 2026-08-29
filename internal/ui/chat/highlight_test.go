@@ -157,7 +157,7 @@ func TestMatchLexer_CachesMisses(t *testing.T) {
 	}
 }
 
-// The register's rule (§3b): a code body is painted in the palette read as a
+// The register's rule: a code body is painted in the palette read as a
 // syntax register, and never in the four tokens that say something about the
 // row it sits in. A string literal drawn in add would have the card telling
 // the reader that a span of a removed line was added.

@@ -44,7 +44,7 @@ func (m Model) turnState() state {
 func (m *Model) setTurnState(s state) {
 	// Every arrival at a decision, and every departure from one, passes
 	// through here — so this is where the keyboard is decided. A card can
-	// never inherit the gate the last one was given (S-117, §7b), and one
+	// never inherit the gate the last one was given (S-117), and one
 	// arriving on a draft nobody is typing into holds the keyboard itself
 	// rather than charging a ctrl+g for a sentence that is not there.
 	m.armDecision(s)
@@ -129,7 +129,7 @@ func (m Model) inputLive() bool {
 		return false
 	}
 	// A decision on screen that has not been given the keyboard has not taken
-	// it from the draft either (S-117, §7b): the frame is live, and so is
+	// it from the draft either (S-117): the frame is live, and so is
 	// everything the input offers.
 	if m.decisionUngated() {
 		return true

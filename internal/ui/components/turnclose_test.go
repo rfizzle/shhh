@@ -1,6 +1,6 @@
 package components
 
-// The turn close (S-098, §16): what the rows state, and what they drop first.
+// The turn close (S-098): what the rows state, and what they drop first.
 
 import (
 	"strings"

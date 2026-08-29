@@ -16,7 +16,7 @@ package chat
 // history to recall handed the keyboard to the transcript, so the key still
 // did something visible on a resumed session. S-140 took that away on purpose
 // — a key that changes surface depending on how much history a session
-// happens to have is unlearnable (§7a) — and what was left behind was a key
+// happens to have is unlearnable — and what was left behind was a key
 // that did nothing at all, on exactly the sessions a reader most wants to
 // repeat a prompt in.
 //
@@ -28,7 +28,7 @@ package chat
 // Three user-role messages are the session talking to itself, not lines
 // anyone typed: the summary a compaction restarts from (§10 /compact), the
 // output /run feeds back, and the nudge that continues a reply a dropped
-// connection cut off (§17b). Recalling one would put a sentence in the draft
+// connection cut off. Recalling one would put a sentence in the draft
 // that nobody wrote — a whole compaction summary, in the worst case — so each
 // declares its opening as a constant beside the code that writes it, and the
 // ring skips them. What ↑ offers is what a reader could have typed, or it is

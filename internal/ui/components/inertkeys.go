@@ -35,7 +35,7 @@ const handoverWords = "to use them"
 const handoverWord = "read"
 
 // keyOffers renders a run of offers live: every key the interface offers is
-// info (§10a), the words for it dim.
+// info, the words for it dim.
 func keyOffers(keys []TurnKey) string {
 	var parts []string
 	for _, k := range keys {
@@ -46,7 +46,7 @@ func keyOffers(keys []TurnKey) string {
 
 // inertOffers renders the same run for a surface that does not hold the
 // keyboard. The keys drop out of info — which is the colour that means "you
-// can press this" (§10a) — and go grey with their words, the same treatment
+// can press this" — and go grey with their words, the same treatment
 // the card's not-yet-live key row takes.
 func inertOffers(keys []TurnKey) string {
 	var parts []string
@@ -66,7 +66,7 @@ func handoverOffer(key, words string) string {
 // keyRun renders a row's offers in the state the keyboard puts them in.
 // Waiting is the row's own claim — a host that makes none keeps the live
 // treatment the run always had, which is what leaves the one-shot's printed
-// rows (§17a) and every component test untouched.
+// rows and every component test untouched.
 //
 // A waiting run with no handover named is the third state and it is a real
 // one: reading mode holds the keyboard with its cursor on some other row, so

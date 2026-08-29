@@ -23,8 +23,8 @@ func expandable(e entry) bool {
 
 // selectable reports whether focus mode can put its cursor on an entry. It is
 // expandable plus the rows that offer keys without expanding: a turn's close
-// block is passive, but [v] and [u] are handled on it (S-098, §16), and so are
-// a provider failure's own keys (S-106, §17a) and a round-limit pause's
+// block is passive, but [v] and [u] are handled on it (S-098), and so are
+// a provider failure's own keys (S-106) and a round-limit pause's
 // (S-109).
 func selectable(e entry) bool {
 	return expandable(e) || e.kind == entryTurnClose || e.kind == entryFailure ||
@@ -33,7 +33,7 @@ func selectable(e entry) bool {
 
 // expandableIndices lists the transcript indices focus mode can select,
 // scoped to whichever agent's transcript the surface renders (S-077). Step
-// headers are targets too (S-090, §7): j/k steps between headers and rows
+// headers are targets too (S-090): j/k steps between headers and rows
 // alike, and a folded step offers only its header, since its rows are not on
 // screen to select.
 func (m Model) expandableIndices() []int {
@@ -52,7 +52,7 @@ func (m Model) expandableIndices() []int {
 				continue
 			}
 			// A folded group offers its group row, not the rows inside it
-			// (S-091, §13c).
+			// (S-091).
 			for _, sl := range m.stepSlots(es, blk.step) {
 				if selectable(es[sl.idx]) {
 					idxs = append(idxs, sl.idx)
@@ -83,7 +83,7 @@ func (m Model) expandableIndices() []int {
 func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 	if len(*m.entries()) == 0 {
 		if m.startScreenShowing() {
-			// First contact (§17c) is the one screen that is visibly empty,
+			// First contact is the one screen that is visibly empty,
 			// and it is the screen that advertises these keys. A notice here
 			// would be noise and would spend the screen to say it (S-115).
 			return m, nil
@@ -136,7 +136,7 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	case keys.Is(pressed, keys.Reading.Move):
 		// One binding, both directions: the bar offers `j/k` as a pair and
 		// the dispatch reads which half was pressed, so the four keystrokes
-		// the mode moves on are declared in one place (§7d). Two bindings
+		// the mode moves on are declared in one place. Two bindings
 		// for one offer would put the same keystroke on the surface twice,
 		// which is the thing the register refuses.
 		if pressed == "j" || pressed == "down" {
@@ -146,14 +146,14 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	case keys.Is(pressed, keys.Reading.List):
-		// The register on the page (§7d). It is the same key the supporting
+		// The register on the page. It is the same key the supporting
 		// TUIs have offered since S-127, answering the same question about
 		// the surface that holds the keyboard — and it is live here for the
 		// reason every bare letter on this bar is: nothing else is listening.
 		m.readingKeyList = !m.readingKeyList
 		// The list is taller than the bar it replaced, so the panel takes
 		// rows from the transcript and gives them back — the same accounting
-		// every other bottom panel does (§12e).
+		// every other bottom panel does.
 		m.syncViewport()
 		m.refreshFocusView()
 		return m, nil
@@ -163,7 +163,7 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		if next, cmd, claimed := m.roundPauseKey(pressed); claimed {
 			return next, cmd
 		}
-		// The offers on a turn's changeset row (S-098, §16), which are [v]
+		// The offers on a turn's changeset row (S-098), which are [v]
 		// and [u] and no others. They are handled here rather than globally,
 		// so the input keeps both keys. The switch names them both rather
 		// than treating "not [v]" as [u]: the pause's other two keys reach
@@ -187,7 +187,7 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// character like any other and goes back to the draft (S-115).
 		return m.returnToInput(msg)
 	case keys.Is(pressed, keys.Row.Retry, keys.Row.Continue, keys.Row.Key, keys.Row.Provider):
-		// A provider failure's own offers (S-106, §17a), and a dropped
+		// A provider failure's own offers (S-106), and a dropped
 		// stream's (S-107). Like the changeset row's, they are handled here
 		// rather than globally, so the input keeps every one of these letters
 		// for typing — which is also why continuing from a partial is [c]
@@ -200,14 +200,14 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		}
 		return m.returnToInput(msg)
 	case keys.Is(pressed, keys.Reading.Detail):
-		// The step around the cursor opens its rows' detail (S-137, §13d) —
+		// The step around the cursor opens its rows' detail (S-137) —
 		// the header the cursor is on, or the step the row under it belongs
 		// to. A cursor outside every step has nothing to open, and the hint
 		// bar has already said so with its reason beside it rather than
 		// leaving the chord to fail without a word.
 		return m.detailFromReading()
 	case keys.Is(pressed, keys.Reading.Collapse):
-		// The explicit half of [enter]'s toggle (§7a). Where the row under
+		// The explicit half of [enter]'s toggle. Where the row under
 		// the cursor has nothing open, [-] is a character like any other and
 		// goes back to the draft.
 		if m.collapseFocused() {
@@ -239,7 +239,7 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.refreshFocusView()
 		return m, nil
 	}
-	// Typing is the other way out (S-115, §7a). The letters above are focus
+	// Typing is the other way out (S-115). The letters above are focus
 	// mode's own and stay its own; every other printable character hands the
 	// keyboard back and lands in the draft, so a reader who forgot which
 	// pane they were in loses a mode rather than a sentence.
@@ -352,11 +352,11 @@ func (m *Model) renderFocusHistory() (content string, selStart, selCount int) {
 // gutterPrefix indents a rendered block by two columns, placing the focus
 // pointer on the first line of the selected block and lighting that line.
 //
-// The two things reading mode dresses are the rail and this (§7a). The row
+// The two things reading mode dresses are the rail and this. The row
 // under the cursor takes the focus background across its full width with its
 // words in bright; the rail and the glyph keep their colours inside the
 // highlight, so a row that changed the machine still says so while it is lit
-// (§14). The pointer sits outside the highlight, in its own column, because
+// . The pointer sits outside the highlight, in its own column, because
 // it points at the row rather than belonging to it.
 //
 // width is what the block was rendered at — the pointer column is not part

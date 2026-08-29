@@ -51,7 +51,7 @@ func inspectorModel(t *testing.T, width, height int) Model {
 }
 
 func TestTwoPane_WidthThreshold(t *testing.T) {
-	// The ladder's top rung is 130 content columns (§8c), both directions.
+	// The ladder's top rung is 130 content columns, both directions.
 	for _, c := range []struct {
 		width int
 		want  bool
@@ -76,7 +76,7 @@ func TestTranscriptWidth_ReducedByTheRail(t *testing.T) {
 	if got := wide.paneWidth(); got != 93 {
 		t.Fatalf("transcript pane = %d columns, want 93", got)
 	}
-	// The pane holds one column back for the scroll gutter (S-147, §10g), so
+	// The pane holds one column back for the scroll gutter (S-147), so
 	// the transcript wraps one column inside it — and so does the viewport,
 	// which is the selection's coordinate space.
 	if got := wide.transcriptWidth(); got != 92 {
@@ -184,7 +184,7 @@ func TestTwoPane_HiddenByTakeoverSurfaces(t *testing.T) {
 		t.Fatal("dismissing a takeover surface restores the rail")
 	}
 	// A decision that has not been given the keyboard is not a takeover: the
-	// card rides above a live frame and the rail stays (S-117, §7b).
+	// card rides above a live frame and the rail stays (S-117).
 	waiting := base
 	waiting.state = stateConfirmRun
 	if !waiting.twoPane() {
@@ -356,7 +356,7 @@ func TestFocusMode_KeepsTheRail(t *testing.T) {
 
 // The rail is the session's overview, not a second copy of the turn: a file
 // edited in an earlier turn is still on screen turns later, and a path edited
-// twice is one row with the net counts and the turns behind it (S-120, §15a).
+// twice is one row with the net counts and the turns behind it (S-120).
 func TestInspectorChanges_SessionScoped(t *testing.T) {
 	m := inspectorModel(t, 144, 40)
 	// Turn 2 edits the same file again and a new one.
@@ -413,7 +413,7 @@ func TestInspectorChanges_SessionScoped(t *testing.T) {
 }
 
 // An alert follows the workspace, not the turn: it survives later turns and
-// is cleared by the same command coming back clean (S-120, §15a).
+// is cleared by the same command coming back clean (S-120).
 func TestInspectorAlerts_PersistUntilTheWorkspaceIsClean(t *testing.T) {
 	m := inspectorModel(t, 144, 40)
 	m.turnCount = 2

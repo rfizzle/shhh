@@ -20,7 +20,7 @@ package chat
 // character.
 //
 // A labelled rail names whichever surface holds it, the way reading mode's
-// does (§7a): DRAFT while the sentence has it, DECISION while the card does.
+// does: DRAFT while the sentence has it, DECISION while the card does.
 
 import (
 	"fmt"
@@ -122,7 +122,7 @@ func (m *Model) armDecision(s state) {
 }
 
 // armArrival arms a decision that arrives outside the turn state machine: a
-// child agent's routed approval, which is a queue rather than a state (§9c).
+// child agent's routed approval, which is a queue rather than a state.
 // It answers the same questions setTurnState's arming does — a decision
 // already holding the keyboard keeps it, one landing behind a surface has not
 // landed in front of anyone, and otherwise it depends on whether there is a
@@ -140,7 +140,7 @@ func (m *Model) armArrival() {
 //
 // Only the approval card and the /run confirm are. Their question is the one
 // a reader walks up to a screen to answer, and the answer is one letter. The
-// plan card (§4d) and the memory proposal (S-070) both take typed input — a
+// plan card and the memory proposal (S-070) both take typed input — a
 // choice moved with j/k, a note written into a field — so a card that took
 // the keyboard would be a card eating a sentence, which is the hazard this
 // whole rule exists for. They keep the handover, and it costs them nothing:
@@ -150,7 +150,7 @@ func (m Model) arrivalGates(s state) bool {
 }
 
 // releaseToDraft hands the keyboard back and delivers the keystroke to the
-// draft (§7b). It is what a card holding the keyboard by arrival does with a
+// draft. It is what a card holding the keyboard by arrival does with a
 // key it has no answer for: the reader never asked for the keyboard, so the
 // letter they typed is the start of a sentence and belongs in the box, not
 // dropped on the floor while they look at a card.
@@ -181,7 +181,7 @@ func (m Model) gateDecision() (tea.Model, tea.Cmd) {
 }
 
 // ungateDecision hands the keyboard back with the decision still waiting.
-// This is what esc does on a gated approval card (§7b): it leaves the
+// This is what esc does on a gated approval card: it leaves the
 // decision unanswered rather than denying it, which is the distinction
 // invariant 3 depends on — esc can only be the safe answer if the reader
 // knows which surface it reached.
@@ -209,7 +209,7 @@ func (m Model) routeDecision(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 
 // escLeavesWaiting reports whether esc on the gated surface hands the
 // keyboard back rather than answering. It does on the approval cards, where
-// leaving and denying are different acts (§7b). The plan card keeps its own
+// leaving and denying are different acts. The plan card keeps its own
 // esc: "keep planning" is already the answer that decides nothing and returns
 // to the draft, so rebinding it would replace one safe answer with another
 // and lose the mode it names. A memory proposal keeps its esc for the same
@@ -246,7 +246,7 @@ func (m Model) decisionRailLabel() string {
 }
 
 // keyboardRail is the labelled rule that names the surface holding the
-// keyboard (§7b): four cells of rule, the label in its own spaces, then the
+// keyboard: four cells of rule, the label in its own spaces, then the
 // rule to the edge. Too narrow for the label, it falls back to a plain
 // divider rather than clipping the word that carries the meaning — the same
 // judgement the reading rail makes (invariant 1).
@@ -295,7 +295,7 @@ func (m Model) gatedExtraRows() int {
 // undressedDraft renders the draft while the decision holds the keyboard: the
 // frame drops its mode colour and its block cursor and keeps every character,
 // and its rail states the position it is holding, so the reader can see that
-// nothing moved while they were not typing into it (§7b).
+// nothing moved while they were not typing into it.
 //
 // An empty draft has nothing to hold, and a row saying so would be a row
 // spent on the absence of one — the block is rendered only when there is
@@ -305,7 +305,7 @@ func (m Model) undressedDraft(width int) []string {
 	if value == "" || width < minFrameWidth {
 		return nil
 	}
-	// The same box the frame is (§12), three rows deep and drawn into the
+	// The same box the frame is, three rows deep and drawn into the
 	// same rectangles (S-161): its own rails, its two border columns, and the
 	// held sentence across what they leave. The `▸ ` is the block's own, not
 	// the prompt gutter's, so the row takes all of the inner columns.
@@ -402,7 +402,7 @@ func (m Model) applyNotYetLive(card *components.ApprovalCard) {
 		return
 	}
 	// A card that took the keyboard by arriving on an idle draft claims less
-	// than one the reader handed it (§7b): it says so on the card, and says
+	// than one the reader handed it: it says so on the card, and says
 	// what the handover would still buy.
 	card.HeldOnArrival = m.heldOnArrival
 	if m.escLeavesWaiting() {

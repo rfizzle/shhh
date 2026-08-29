@@ -38,7 +38,7 @@ func newHistoryCmd() *cobra.Command {
 			interactive := isTTY && !table
 
 			// The browser filters in the screen rather than in SQL, so its
-			// query row can say `6 of 41 match` honestly (§19b). --search
+			// query row can say `6 of 41 match` honestly. --search
 			// seeds that filter; the table has no filter row, so it keeps
 			// asking the store.
 			filter := storage.HistoryFilter{Limit: limit}
@@ -151,7 +151,7 @@ type historyModel struct {
 }
 
 // defaultHistoryWidth is what the screen is drawn at before the terminal has
-// said how wide it is — the working width the artboard is drawn at (§19b).
+// said how wide it is — the working width the artboard is drawn at.
 const defaultHistoryWidth = 130
 
 func newHistoryModel(db *storage.DB, entries []storage.HistoryEntry, query string, now time.Time) historyModel {
@@ -332,7 +332,7 @@ func historyModelName(e storage.HistoryEntry) string {
 }
 
 // historyDuration is the 6-column field: how long the model took. Under half
-// a second it is blank, the same rule every activity row follows (§6a).
+// a second it is blank, the same rule every activity row follows.
 func historyDuration(d *time.Duration) string {
 	if d == nil || *d < 500*time.Millisecond {
 		return ""

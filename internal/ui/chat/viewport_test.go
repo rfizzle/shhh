@@ -45,7 +45,7 @@ func TestViewport_ShowsOnlyTheWindow(t *testing.T) {
 }
 
 // A pane shorter than its content is padded to its own height, so the scroll
-// gutter (§10g) has a row to glue itself to whether or not there is a line.
+// gutter has a row to glue itself to whether or not there is a line.
 func TestViewport_PadsToItsOwnHeight(t *testing.T) {
 	v := newViewport(10, 6)
 	v.SetLines(numbered(2))

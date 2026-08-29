@@ -24,7 +24,7 @@ import (
 // dim grey for chrome. The third is a selection background, which is not a
 // colour distinction — the ❯ pointer and [x] box say the same thing.
 //
-// They are tokens like every other (§10a): the hex is what a truecolor
+// They are tokens like every other: the hex is what a truecolor
 // terminal shows, the index what it stands for everywhere else.
 var (
 	MonoFg  = token("#e2e2e2", "254", "15")

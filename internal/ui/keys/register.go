@@ -14,7 +14,7 @@ package keys
 // takeover offers a bare letter without naming the key that hands the
 // keyboard over.
 //
-// It is also what `?` renders (§7d) and what /help's key section is built
+// It is also what `?` renders and what /help's key section is built
 // from, so the register a reader is shown is the register the handlers use.
 
 // Position is where a surface stands relative to the keyboard. §7c allows two
@@ -23,7 +23,7 @@ package keys
 type Position int
 
 const (
-	// Home is the framed input (§12). It holds the keyboard whenever nothing
+	// Home is the framed input. It holds the keyboard whenever nothing
 	// has taken it, which is most of the time, and it is why every key in
 	// this position is a chord — a bare letter here is a letter.
 	Home Position = iota
@@ -133,7 +133,7 @@ func Surfaces() []Surface {
 			// The same family with the query line open, which is why it is
 			// a row of its own: a list being typed into keeps every letter
 			// as text, so j/k are not keys and the arrows are the movement
-			// (§4a). Nothing here is a bare letter.
+			//. Nothing here is a bare letter.
 			Name:     "a selector being typed into",
 			Section:  "docs/interface/surfaces.md#selectors",
 			Position: Takeover,
@@ -214,7 +214,7 @@ func Surfaces() []Surface {
 }
 
 // Programs are the keyed surfaces outside a chat session: the supporting
-// TUIs (§19), the one-shot's action bar (§18b) and the saved-chat browser.
+// TUIs, the one-shot's action bar and the saved-chat browser.
 // Each is its own Bubble Tea program with its own key row and its own `?`,
 // so none of them is part of a session's answer to that key — but a key is a
 // key, and the register is not worth having if it is only most of them.

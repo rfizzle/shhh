@@ -1,13 +1,12 @@
 // Package memory implements durable cross-session memory
 // (docs/capabilities/sessions-and-memory.md#memory-is-what-shhh-knows-about-your-project):
-// short text
-// entries in the existing SQLite storage, scoped global or per-project, with
-// bounded recall into the system prompt. Its two principles come straight
-// from the story: admission control by provenance — an agent-proposed memory
-// persists only after explicit user confirmation, because memory an agent
-// writes to itself is an injection surface — and cheap to carry: recall is
-// keyword-free scope matching under a hard token budget, with zero model
-// calls just to maintain memory.
+// short text entries in the existing SQLite storage, scoped global or
+// per-project, with bounded recall into the system prompt. Its two principles
+// come straight from the story: admission control by provenance — an
+// agent-proposed memory persists only after explicit user confirmation,
+// because memory an agent writes to itself is an injection surface — and
+// cheap to carry: recall is keyword-free scope matching under a hard token
+// budget, with zero model calls just to maintain memory.
 package memory
 
 import (

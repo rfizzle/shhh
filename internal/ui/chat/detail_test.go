@@ -1,6 +1,6 @@
 package chat
 
-// Step detail (S-137, §13d): ctrl+o opens one step's rows' bodies, from the
+// Step detail (S-137): ctrl+o opens one step's rows' bodies, from the
 // draft and from under reading mode's cursor, and leaves every other step
 // where it was.
 
@@ -16,7 +16,8 @@ func ctrlO() tea.KeyPressMsg { return tea.KeyPressMsg{Code: 'o', Mod: tea.ModCtr
 
 // detailModel is the §13c fixture with a second step after it, so every test
 // here can check that the chord opened one step and not the transcript. Step
-// 1 is the six reads and two searches; step 2 is an edit and a broken command.
+// 1 is the six reads and two searches; step 2 is an edit and a broken
+// command.
 func detailModel(t *testing.T) Model {
 	t.Helper()
 	m := foldModel(t)
@@ -110,7 +111,7 @@ func TestStepDetail_DraftKeepsTheKeyboard(t *testing.T) {
 func TestStepDetail_OpeningUnfoldsTheStepAndClosingLeavesItOpen(t *testing.T) {
 	m := detailModel(t)
 	g := firstStep(t, m)
-	// A finished step collapses to its header (§13b), which is exactly the
+	// A finished step collapses to its header, which is exactly the
 	// step a reader reaches for: opening the detail of rows nobody can see
 	// would be a chord that reports success and shows nothing.
 	m.transcript[g.titleIdx].stepFold = foldClosed

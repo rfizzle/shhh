@@ -219,7 +219,7 @@ func (m Model) planCard() *components.PlanCard {
 	}
 	if m.decisionUngated() {
 		// The plan landed while a sentence was half-typed: its keys are not
-		// live until ctrl+g hands the keyboard over (S-117, §7b).
+		// live until ctrl+g hands the keyboard over (S-117).
 		card.NotYetLive, card.Handover = true, keys.Shown(keys.Draft.Answer)
 	}
 	if doc.Title != "" {
@@ -362,7 +362,7 @@ func (m Model) planApproveLines() []string {
 }
 
 // planPanelLines is the card plus the rail that names the keyboard's owner
-// and the draft it is holding while it does (S-117, §7b).
+// and the draft it is holding while it does (S-117).
 func (m Model) planPanelLines() []string {
 	return m.dressDecision(m.planApproveLines(), m.contentWidth())
 }
@@ -457,9 +457,9 @@ func lastLiveBlock(blocks []transcriptBlock) int {
 }
 
 // planEntries is the slice of the transcript the approved plan has been
-// carried out over. It starts where the execution turn started, so a plan that
-// outlives one turn keeps its checklist and one that has been rewound past
-// reads nothing.
+// carried out over. It starts where the execution turn started, so a plan
+// that outlives one turn keeps its checklist and one that has been rewound
+// past reads nothing.
 func (m Model) planEntries() []entry {
 	if m.planRun == nil || m.planRun.start > len(m.transcript) {
 		return nil
@@ -467,10 +467,10 @@ func (m Model) planEntries() []entry {
 	return m.transcript[m.planRun.start:]
 }
 
-// stampStep records which declared step an assistant announcement carries out,
-// so the outline, the rail and /plan all read one assignment made in the order
-// the transcript was written (S-104). An entry that is not a step title, or a
-// session with no plan running, is returned untouched.
+// stampStep records which declared step an assistant announcement carries
+// out, so the outline, the rail and /plan all read one assignment made in the
+// order the transcript was written (S-104). An entry that is not a step
+// title, or a session with no plan running, is returned untouched.
 func (m *Model) stampStep(e entry) entry {
 	if m.planRun == nil {
 		return e
@@ -540,7 +540,8 @@ func planStepState(s stepState) components.PlanStepState {
 	return components.PlanStepQueued
 }
 
-// planStepsDone counts the checklist's finished steps. A failed step finished.
+// planStepsDone counts the checklist's finished steps. A failed step
+// finished.
 func planStepsDone(steps []components.InspectorPlanStep) int {
 	done := 0
 	for _, s := range steps {
@@ -595,7 +596,7 @@ func (m Model) planStatus() string {
 }
 
 // planStatusGlyph is the checklist glyph /plan prints, the same four the
-// outline and the rail use (§13b).
+// outline and the rail use.
 func planStatusGlyph(s components.PlanStepState) string {
 	switch s {
 	case components.PlanStepRunning:

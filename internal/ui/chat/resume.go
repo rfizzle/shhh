@@ -65,10 +65,10 @@ const (
 const maxDropDetail = 2
 
 // streamResume is what a dropped stream kept: the text the model had written
-// and the tool calls it had finished. It is stored on the transcript entry, so
-// the offer survives a resize, a scroll, and everything else that re-renders
-// the row — and so that `[c]` acts on the partial that row is describing
-// rather than on whatever the session streamed most recently.
+// and the tool calls it had finished. It is stored on the transcript entry,
+// so the offer survives a resize, a scroll, and everything else that
+// re-renders the row — and so that `[c]` acts on the partial that row is
+// describing rather than on whatever the session streamed most recently.
 type streamResume struct {
 	text  string
 	calls []provider.ToolCall
@@ -96,8 +96,7 @@ type retryWait struct {
 	wait     time.Duration
 	deadline time.Time
 	// fallback is the cheaper model `[m]` would finish on, empty when the
-	// session has none to offer. A key that cannot be honoured is not offered
-	// (§17a).
+	// session has none to offer. A key that cannot be honoured is not offered.
 	fallback string
 	// seq fences stale ticks: a wait that was cancelled and one that was
 	// restarted must not be advanced by the timer of the one before it.
@@ -134,8 +133,8 @@ func (m Model) handleStreamFailure(msg streamErrMsg) (tea.Model, tea.Cmd) {
 
 // dropStream records a reply that stopped halfway. Nothing is re-requested:
 // the row states what was kept and offers the two ways on, because which of
-// them is right depends on whether the sentence the model was in the middle of
-// is worth having.
+// them is right depends on whether the sentence the model was in the middle
+// of is worth having.
 func (m Model) dropStream(f *provider.Failure, partial string, calls []provider.ToolCall) (tea.Model, tea.Cmd) {
 	res := &streamResume{
 		text:   partial,
@@ -154,8 +153,8 @@ func (m Model) dropStream(f *provider.Failure, partial string, calls []provider.
 }
 
 // endBrokenTurn is the tail every failure path shares: the stream is let go,
-// the turn closes as failed, and anything typed while it ran comes back to the
-// input rather than disappearing with it.
+// the turn closes as failed, and anything typed while it ran comes back to
+// the input rather than disappearing with it.
 func (m Model) endBrokenTurn() (tea.Model, tea.Cmd) {
 	m.compacting = false
 	m.streaming = ""
@@ -245,8 +244,8 @@ func (m Model) dropKeys(res *streamResume) []components.KeyOffer {
 }
 
 // focusedDrop returns the stream-drop row the focus cursor is on, if it is on
-// one. Like every recovery row, drops live in the session's own transcript, so
-// an attached child's feed never offers them (S-077).
+// one. Like every recovery row, drops live in the session's own transcript,
+// so an attached child's feed never offers them (S-077).
 func (m Model) focusedDrop() (entry, bool) {
 	if m.attachedTo != "" || m.focusIdx < 0 || m.focusIdx >= len(m.transcript) {
 		return entry{}, false
@@ -336,8 +335,8 @@ func (m Model) continueStream(res *streamResume) (tea.Model, tea.Cmd) {
 const continuePrompt = "Your previous reply was cut off by a connection failure. Continue it from exactly where it stopped — do not repeat what you already wrote."
 
 // startRetryWait puts the turn on a bounded, visible wait. Attempts count
-// across the whole stall, so three rate limits in a row are three attempts and
-// not three fresh chances; a request that is actually answered clears the
+// across the whole stall, so three rate limits in a row are three attempts
+// and not three fresh chances; a request that is actually answered clears the
 // count (clearRetryChain).
 func (m Model) startRetryWait(f *provider.Failure) (tea.Model, tea.Cmd) {
 	// The count lives on the model rather than on the wait: the wait is over
@@ -399,10 +398,10 @@ func (m Model) retryTick(msg retryTickMsg) (tea.Model, tea.Cmd) {
 	return m.resumeAfterWait()
 }
 
-// clearRetryChain forgets the attempts so far. A request the provider actually
-// answered ends the stall, whatever happens next — so does starting, retrying
-// or continuing a turn, each of which is a decision the user made and not the
-// automatic policy the bound exists to limit.
+// clearRetryChain forgets the attempts so far. A request the provider
+// actually answered ends the stall, whatever happens next — so does starting,
+// retrying or continuing a turn, each of which is a decision the user made
+// and not the automatic policy the bound exists to limit.
 func (m *Model) clearRetryChain() { m.retryAttempt = 0 }
 
 // resumeAfterWait asks again with the conversation exactly as the failed
@@ -485,8 +484,8 @@ func (m Model) finishOnFallback(name string) (tea.Model, tea.Cmd) {
 // is never invented, and never a model from somewhere else, because switching
 // provider mid-turn is a different decision with a different key.
 //
-// Closest rather than cheapest: the point is to finish the turn, and the least
-// capable model in the catalog is the one least likely to.
+// Closest rather than cheapest: the point is to finish the turn, and the
+// least capable model in the catalog is the one least likely to.
 func (m Model) cheaperModel() string {
 	if m.switchFn == nil || m.prices == nil || m.modelName == "" {
 		return ""
@@ -515,8 +514,8 @@ func (m Model) cheaperModel() string {
 }
 
 // modelRate prices a model per million tokens in and out together, which is
-// the only comparison that ranks two models by what they cost to finish a turn
-// on rather than by half of it.
+// the only comparison that ranks two models by what they cost to finish a
+// turn on rather than by half of it.
 func (m Model) modelRate(name string) (float64, bool) {
 	in, out, ok := m.prices.Cost(name, 1_000_000, 1_000_000)
 	if !ok {

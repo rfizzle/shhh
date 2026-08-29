@@ -45,7 +45,7 @@ func runExecApproval(t *testing.T, m Model) Model {
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_x", Name: "execute_command", Arguments: `{"command":"echo hi"}`},
 	}})
-	// The card arrives without the keyboard (S-117, §7b); ctrl+g is what
+	// The card arrives without the keyboard (S-117); ctrl+g is what
 	// makes its keys — and the consequences it prints beside them — live.
 	return handover(t, updated.(Model))
 }

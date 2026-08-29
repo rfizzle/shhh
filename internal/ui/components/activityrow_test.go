@@ -231,7 +231,7 @@ func TestActivityGroup_FoldsOnTheSameGrid(t *testing.T) {
 			t.Fatalf("width %d: group row overflows to %d cells: %q", width, w, line)
 		}
 		// The fold state takes the glyph column and ⚙ the verb column, so the
-		// group's label starts where a row's target does (§13c).
+		// group's label starts where a row's target does.
 		_, rail, _, rest := fieldsOf(t, group.View(width))
 		if strings.TrimSpace(rail) != "" {
 			t.Fatalf("a fold changed nothing, so it carries no mutation rail: %q", line)

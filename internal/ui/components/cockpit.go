@@ -17,7 +17,7 @@ const (
 	CockpitChecking                      // ✦ classifier deciding
 )
 
-// Cockpit is the status-bar rail of session vitals (§8). It is a passive
+// Cockpit is the status-bar rail of session vitals. It is a passive
 // renderer: the host feeds it current values and renders View every frame.
 // When the bar overflows, right-side segments drop first.
 type Cockpit struct {
@@ -25,7 +25,7 @@ type Cockpit struct {
 	ModeKind CockpitMode
 	// Round is the tool-round counter segment ("round 7/25"); empty hides it.
 	Round string
-	// CtxPct drives the 8-cell context meter (§10c); negative hides it.
+	// CtxPct drives the 8-cell context meter; negative hides it.
 	CtxPct int
 	// WarnPct/AlertPct override the meter's warning-color thresholds (0 keeps
 	// the defaults), so the host can match its own trim warnings (S-055).
@@ -45,7 +45,7 @@ type Cockpit struct {
 	// high", S-139); empty means it is asking for none, and nothing is drawn.
 	// It renders right-aligned beside the model, in the same treatment: what
 	// the session is answering with is one fact in two halves, and neither
-	// half is chrome (§8a).
+	// half is chrome.
 	Reasoning string
 	// Model renders right-aligned and is the first thing dropped when narrow.
 	Model string
@@ -92,7 +92,7 @@ func (c Cockpit) ctxMeter() string {
 }
 
 // agentsSegment renders the sub-agent count with the blocked badge, which
-// marks children waiting on the user (§9c).
+// marks children waiting on the user.
 func (c Cockpit) agentsSegment() string {
 	seg := sty.Info.Render(fmt.Sprintf("◇ %s", plural(c.Agents, "agent")))
 	if c.AgentsBlocked > 0 {
@@ -208,7 +208,7 @@ func (c Cockpit) View(width int) string {
 	}
 
 	// The right side sheds the model, then the reasoning level, then itself
-	// (§8b). The stages are a list rather than a chain of conditions because
+	//. The stages are a list rather than a chain of conditions because
 	// a chain that can re-widen never terminates.
 	rights := []string{c.identity(), Cockpit{Reasoning: c.Reasoning}.identity(), ""}
 	stage := 0

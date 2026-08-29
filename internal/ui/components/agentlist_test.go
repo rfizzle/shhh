@@ -1,6 +1,6 @@
 package components
 
-// Agent manager v2 (S-111, §9a): a row reports through the fan-out lane's
+// Agent manager v2 (S-111): a row reports through the fan-out lane's
 // renderer, states what a blocked or failed child is waiting on or died of,
 // and offers [a] and [r] only where they do something.
 

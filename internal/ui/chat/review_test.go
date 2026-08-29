@@ -1,6 +1,6 @@
 package chat
 
-// Review mode's host side (S-099, §16a): what opens it, what it reads, and
+// Review mode's host side (S-099): what opens it, what it reads, and
 // that leaving it — by any route — changes nothing on disk.
 
 import (
@@ -52,7 +52,7 @@ func TestReview_CommandOpensTheLastTurn(t *testing.T) {
 	}
 }
 
-// Review is a takeover: full width, no rail, no prompt frame (§15b).
+// Review is a takeover: full width, no rail, no prompt frame.
 func TestReview_IsATakeoverSurface(t *testing.T) {
 	m, _ := reviewModel(t)
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 160, Height: 40})
@@ -251,7 +251,7 @@ func TestReview_AttributesASubagentsFiles(t *testing.T) {
 }
 
 // Opened from the changeset row, review goes back to that row rather than to
-// the input: esc returns to where it was opened from (§7).
+// the input: esc returns to where it was opened from.
 func TestReview_ReturnsToFocusMode(t *testing.T) {
 	m, _ := reviewModel(t)
 	updated, _ := m.enterFocusMode()

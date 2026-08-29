@@ -4,18 +4,19 @@ package components
 // docs/interface/surfaces.md#the-supporting-screens,
 // ui_kits/cockpit/Tools.html). `shhh config` shipped before the cockpit and
 // invented its own list, its own idea of a value and its own key words for
-// them. It is re-cut here from parts that already exist: the §4a window with
-// its markers and its filter row, the §6a row with a right-hand field, the
-// §12a bracketed-key hint line, the masked entry an auth failure opens, and
-// the §5 inline confirm. Almost nothing here is new — the win is deletion,
-// and the gain is that a reader who knows the cockpit already knows this
-// screen.
+// them. It is re-cut here from parts that already exist: the selector window
+// with its markers and its filter row, the grid row with a right-hand field,
+// the frame's bracketed-key hint line, the masked entry an auth failure
+// opens, and the inline confirm. Almost nothing here is new — the win is
+// deletion, and the gain is that a reader who knows the cockpit already knows
+// this screen.
 //
-// Two rules shape it and both come from §19a. A value is a row, and changing
-// one opens the picker *under* that row rather than over the screen, so the
-// setting being changed stays visible above the options. And nothing reaches
-// the file until `[w]`: every edit is staged, the header counts what is
-// standing against the file, and `[esc]` discards the lot.
+// Two rules shape it (docs/interface/surfaces.md#the-supporting-screens). A
+// value is a row, and changing one opens the picker *under* that row rather
+// than over the screen, so the setting being changed stays visible above the
+// options. And nothing reaches the file until `[w]`: every edit is staged,
+// the header counts what is standing against the file, and `[esc]` discards
+// the lot.
 //
 // It is a passive component like the rest of this package. It owns no config
 // semantics: a change resolves to a ConfigChange the host applies to its own
@@ -32,8 +33,8 @@ import (
 )
 
 // menuIndent is the column the settings list starts at, and pickerIndent the
-// one level further in that an open picker sits at (§19a: "indented one
-// level"). Two levels is all this screen has.
+// one level further in that an open picker sits at ("indented one level").
+// Two levels is all this screen has.
 const (
 	menuIndent   = 2
 	pickerIndent = 4
@@ -43,40 +44,40 @@ const (
 // that answer came from. The host builds these from its config and rebuilds
 // them after every change — the screen never computes a value.
 type ConfigRow struct {
-	// Group is the rail this row sits under — SESSION, MODEL, WORKSPACE.
-	// Rails are labels rather than options (§4a): the pointer steps over
-	// them and the markers do not count them. A row whose Group differs from
-	// the row before it opens a new rail.
+	// Group is the rail this row sits under — SESSION, MODEL, WORKSPACE. Rails
+	// are labels rather than options: the pointer steps over them and the
+	// markers do not count them. A row whose Group differs from the row before
+	// it opens a new rail.
 	Group string
-	// Key is the config key `[w]` would write and `[r]` would clear. The
-	// screen only carries it back to the host.
+	// Key is the config key `[w]` would write and `[r]` would clear. The screen
+	// only carries it back to the host.
 	Key string
 	// Label is the setting's name, in the left column.
 	Label string
-	// Value is what it is set to, as it reads on the row: `⏵⏵ auto`,
-	// `⛨ workspace-write`, `25`. A masked secret is already masked here —
-	// see MaskSecret.
+	// Value is what it is set to, as it reads on the row: `⏵⏵ auto`, `⛨
+	// workspace-write`, `25`. A masked secret is already masked here — see
+	// MaskSecret.
 	Value string
 	// ValueTone reads the value: safe, a door left open, at risk, or an
-	// unremarkable fact. The glyph beside it says the same thing, so the
-	// colour never carries it alone (invariant 1).
+	// unremarkable fact. The glyph beside it says the same thing, so the colour
+	// never carries it alone (invariant 1).
 	ValueTone FieldTone
-	// Detail qualifies the value in dim text on the same row — `— reads
-	// fold, mutations never do`. It is a note about the value, which is why
-	// it is never toned.
+	// Detail qualifies the value in dim text on the same row — `— reads fold,
+	// mutations never do`. It is a note about the value, which is why it is
+	// never toned.
 	Detail string
-	// Source is the right-hand field: where the answer came from
-	// (`default`, `user`, `user · ~/.config/shhh/config.toml`), or the
-	// reason the host cannot honour the setting at all. §19a: "why is this
-	// on" is the only question a config screen is ever asked, and a setting
-	// the machine cannot keep says so rather than being hidden (invariant 4).
+	// Source is the right-hand field: where the answer came from (`default`,
+	// `user`, `user · ~/.config/shhh/config.toml`), or the reason the host
+	// cannot honour the setting at all: "why is this on" is the only question a
+	// config screen is ever asked, and a setting the machine cannot keep says so
+	// rather than being hidden (invariant 4).
 	Source     string
 	SourceTone FieldTone
-	// Options are what `[enter]` offers. A row with none opens a field to
-	// type into instead.
+	// Options are what `[enter]` offers. A row with none opens a field to type
+	// into instead.
 	Options []SelectOption
-	// Secret marks a value that must never be echoed: `[enter]` opens the
-	// masked entry rather than a field showing what is already there.
+	// Secret marks a value that must never be echoed: `[enter]` opens the masked
+	// entry rather than a field showing what is already there.
 	Secret bool
 }
 
@@ -96,7 +97,7 @@ type ConfigResult struct {
 }
 
 // ConfigScreen is `shhh config`: a takeover surface, full width, no inspector
-// rail, owning the keyboard for as long as it is up (§19).
+// rail, owning the keyboard for as long as it is up.
 type ConfigScreen struct {
 	// Path is the file `[w]` writes, stated in the header.
 	Path string
@@ -104,16 +105,16 @@ type ConfigScreen struct {
 	Rows []ConfigRow
 	// Focus is an index into Rows and survives the host rebuilding them.
 	Focus int
-	// Changed is how many edits are standing against the file. The header
-	// counts them and `[w]` is not offered while it is zero — a key that
-	// cannot act is not offered (invariant 5).
+	// Changed is how many edits are standing against the file. The header counts
+	// them and `[w]` is not offered while it is zero — a key that cannot act is
+	// not offered (invariant 5).
 	Changed int
-	// MaxLines bounds the screen height; everything pinned comes off the
-	// list's budget before its window is drawn (§4a). 0 is unbounded, which
-	// is what a test or a host that sizes itself gets.
+	// MaxLines bounds the screen height; everything pinned comes off the list's
+	// budget before its window is drawn. 0 is unbounded, which is what a test or
+	// a host that sizes itself gets.
 	MaxLines int
-	// Notice is the line a key left behind — what `[w]` wrote, what `[r]`
-	// reset. The host clears it on the next keystroke.
+	// Notice is the line a key left behind — what `[w]` wrote, what `[r]` reset.
+	// The host clears it on the next keystroke.
 	Notice string
 
 	menu    Select
@@ -127,9 +128,9 @@ type ConfigScreen struct {
 	keys    bool
 }
 
-// MaskSecret renders a secret the way §19a asks for: the last four characters
-// and nothing else. A key too short to have four is all dots, because a mask
-// that reveals most of a short key has masked nothing.
+// MaskSecret renders a secret the way the config screen asks for: the last
+// four characters and nothing else. A key too short to have four is all dots,
+// because a mask that reveals most of a short key has masked nothing.
 func MaskSecret(s string) string {
 	if s == "" {
 		return ""
@@ -172,14 +173,14 @@ func (c *ConfigScreen) updateMenu(msg tea.KeyPressMsg) (bool, any) {
 		c.open()
 		return false, nil
 	case keys.Is(pressed, keys.Select.Cancel):
-		// esc leaves and changes nothing, which on this screen is literal:
-		// nothing has reached the file yet, so discarding the staged edits is
-		// what "change nothing" means (§19a).
+		// esc leaves and changes nothing, which on this screen is literal: nothing
+		// has reached the file yet, so discarding the staged edits is what "change
+		// nothing" means.
 		return true, ConfigResult{Canceled: true}
 	}
-	// With the query line open the query line is the surface, so w, r and q
-	// are letters rather than keys — the same reading every picker in the
-	// product makes (§4a).
+	// With the query line open the query line is the surface, so w, r and q are
+	// letters rather than keys — the same reading every picker in the product
+	// makes.
 	if c.menu.Filtering {
 		c.menu.editQuery(msg)
 		if c.menu.QueryChanged() {
@@ -213,7 +214,7 @@ func (c *ConfigScreen) updateMenu(msg tea.KeyPressMsg) (bool, any) {
 
 // open is what `[enter]` does to the row under the pointer: a picker for a
 // setting with answers, the masked entry for a secret, a field for anything
-// else. All three open under the row rather than over the screen (§19a).
+// else. All three open under the row rather than over the screen.
 func (c *ConfigScreen) open() {
 	row := c.current()
 	if row == nil {
@@ -246,8 +247,8 @@ func (c *ConfigScreen) open() {
 func (c *ConfigScreen) updatePicker(msg tea.KeyPressMsg) (bool, any) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Select.Cancel):
-		// esc keeps the current value — it is the one key on this screen
-		// that is guaranteed to change nothing (§19a).
+		// esc keeps the current value — it is the one key on this screen that is
+		// guaranteed to change nothing.
 		c.picker = nil
 		return false, nil
 	case keys.Is(pressed, keys.Screen.Take):
@@ -334,9 +335,9 @@ func (c *ConfigScreen) updateConfirm(msg tea.KeyPressMsg) (bool, any) {
 	return false, nil
 }
 
-// View renders the screen: the §17c header and its rule, the settings list
-// with whatever is open under the row being changed, and one hint line at the
-// foot.
+// View renders the screen: the start-screen header and its rule, the settings
+// list with whatever is open under the row being changed, and one hint line
+// at the foot.
 func (c *ConfigScreen) View(width int) string {
 	if width <= 0 {
 		return ""
@@ -346,8 +347,8 @@ func (c *ConfigScreen) View(width int) string {
 	inline := c.inlineRows(width)
 	head := []string{c.headerRow(width), reviewRule(width), ""}
 	// The settings' own filter row is pinned above the list the way it is on
-	// every card (§4a), so what it spends comes off the list's budget before
-	// the window is drawn.
+	// every card, so what it spends comes off the list's budget before the
+	// window is drawn.
 	for _, row := range c.menu.queryRows(cardWidthFor(width - menuIndent)) {
 		head = append(head, indentBy(row, menuIndent, width))
 	}
@@ -375,9 +376,9 @@ func (c *ConfigScreen) budget(pinned int) int {
 }
 
 // bodyRows is the settings list with the open sub-surface spliced in under
-// the row it belongs to. That splice is the whole shape of §19a: the picker
-// is not a modal over the screen, so the setting being changed stays on
-// screen above its own options.
+// the row it belongs to. That splice is the whole shape of the screen: the
+// picker is not a modal over the screen, so the setting being changed stays
+// on screen above its own options.
 func (c *ConfigScreen) bodyRows(width, budget int, inline []string) []string {
 	rows, _, at := c.menu.visibleRowsFocus(cardWidthFor(width-menuIndent), budget, false)
 	out := make([]string, 0, len(rows)+len(inline))
@@ -387,9 +388,9 @@ func (c *ConfigScreen) bodyRows(width, budget int, inline []string) []string {
 			out = append(out, inline...)
 		}
 	}
-	// A focus the window does not hold — a filter that matched nothing —
-	// leaves the sub-surface with no row to sit under, so it goes at the
-	// foot of the list rather than nowhere.
+	// A focus the window does not hold — a filter that matched nothing — leaves
+	// the sub-surface with no row to sit under, so it goes at the foot of the
+	// list rather than nowhere.
 	if at < 0 {
 		out = append(out, inline...)
 	}
@@ -413,8 +414,8 @@ func (c *ConfigScreen) inlineRows(width int) []string {
 	case c.edit != nil:
 		rows = append(rows, c.edit.view())
 	case c.secret != nil:
-		// The masked entry's own key row is dropped: the screen already has
-		// one at its foot, and the two would offer the same two keys twice.
+		// The masked entry's own key row is dropped: the screen already has one at
+		// its foot, and the two would offer the same two keys twice.
 		lines := strings.Split(c.secret.View(inner), "\n")
 		rows = append(rows, lines[:max(len(lines)-1, 1)]...)
 	default:
@@ -429,7 +430,7 @@ func (c *ConfigScreen) inlineRows(width int) []string {
 
 // pickerBudget bounds the picker so that opening one over a two-dozen-entry
 // catalog does not push the settings under it off the screen. Eight options
-// is what the artboard draws and what the §4a window is sized for.
+// is what the artboard draws and what the selector window is sized for.
 func (c *ConfigScreen) pickerBudget(pinned int) int {
 	const pickerRows = 8
 	if c.MaxLines > 0 {
@@ -438,10 +439,10 @@ func (c *ConfigScreen) pickerBudget(pinned int) int {
 	return max(pickerRows-pinned, 1)
 }
 
-// headerRow is the §17c header: the command, its subject, what is standing
-// against the file, and the two keys every one of these screens offers. The
-// right-hand keys drop before the subject does — they annotate the line, and
-// an annotation goes first (§16).
+// headerRow is the start-screen header: the command, its subject, what is
+// standing against the file, and the two keys every one of these screens
+// offers. The right-hand keys drop before the subject does — they annotate
+// the line, and an annotation goes first.
 func (c *ConfigScreen) headerRow(width int) string {
 	left := brightStyle().Render("shhh config")
 	if c.Path != "" {
@@ -458,8 +459,7 @@ func (c *ConfigScreen) headerRow(width int) string {
 }
 
 // footRows are the keys the screen offers and the field that annotates them.
-// The field drops first (§16); the offers never truncate, they wrap
-// (invariant 4).
+// The field drops first; the offers never truncate, they wrap (invariant 4).
 func (c *ConfigScreen) footRows(width int) []string {
 	if c.confirm != nil {
 		return []string{clip(c.confirm.View(width), width)}
@@ -541,8 +541,8 @@ func (c *ConfigScreen) keyList() []KeyOffer {
 }
 
 // footField annotates the key row. It is the count of settings until
-// something is staged, and then it is the sentence §19a wants the reader to
-// have read before they walk away.
+// something is staged, and then it is the sentence the screen wants the
+// reader to have read before they walk away.
 func (c *ConfigScreen) footField() string {
 	switch {
 	case c.picker != nil || c.edit != nil || c.secret != nil:
@@ -590,10 +590,10 @@ func (c *ConfigScreen) sync() {
 	c.menu.Focus = c.optIndex(c.Focus)
 }
 
-// qualifier is how a note about a value joins it: an em-dash, because
-// `normal — reads fold, mutations never do` reads as one clause and
-// `normal reads fold` reads as a sentence that is not true. A host that
-// already wrote the dash keeps it.
+// qualifier is how a note about a value joins it: an em-dash, because `normal
+// — reads fold, mutations never do` reads as one clause and `normal reads
+// fold` reads as a sentence that is not true. A host that already wrote the
+// dash keeps it.
 func qualifier(detail string) string {
 	if detail == "" || strings.HasPrefix(detail, "—") {
 		return detail
@@ -602,9 +602,9 @@ func qualifier(detail string) string {
 }
 
 // match is the settings the query left showing. The rule lives here rather
-// than in the card because the card never filters (§4a): a setting is matched
-// by its name or by the config key behind it, so a reader who knows the key
-// can type it.
+// than in the card because the card never filters: a setting is matched by
+// its name or by the config key behind it, so a reader who knows the key can
+// type it.
 func (c *ConfigScreen) match() []int {
 	query := strings.ToLower(strings.TrimSpace(c.menu.Query))
 	out := make([]int, 0, len(c.Rows))
@@ -691,7 +691,7 @@ func (c *ConfigScreen) optIndex(row int) int {
 }
 
 // configEdit is the one-line field a setting with no answers to choose from
-// opens under itself. It is the filter row's own `▸ text█` grammar (§4a),
+// opens under itself. It is the filter row's own `▸ text█` grammar,
 // because the reader has met that row on every picker in the product and a
 // second idea of "a line you type into" is exactly what this story deletes.
 type configEdit struct{ value []rune }
@@ -729,9 +729,8 @@ func lastFour(s string) string {
 }
 
 // cardWidthFor turns a usable width into the width a card primitive expects.
-// The screen is a takeover and draws no frame (§19), but the rows inside it
-// are the card's rows and the card measures its columns against its own inner
-// width.
+// The screen is a takeover and draws no frame, but the rows inside it are the
+// card's rows and the card measures its columns against its own inner width.
 func cardWidthFor(inner int) int { return inner + cardFrameWidth }
 
 // indentBy moves one already-rendered row in by n columns without disturbing

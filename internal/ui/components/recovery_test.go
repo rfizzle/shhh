@@ -2,8 +2,8 @@ package components
 
 // The recovery surfaces' own tests (S-106). The golden files beside them
 // capture the whole render; these assert the rules the render must not drift
-// from — the grid the row sits on, what the card refuses to claim, and the one
-// thing the key prompt must never do.
+// from — the grid the row sits on, what the card refuses to claim, and the
+// one thing the key prompt must never do.
 
 import (
 	"strings"
@@ -23,7 +23,7 @@ func TestRecoveryRow_SitsOnTheActivityGrid(t *testing.T) {
 	line := []rune(ansi.Strip(strings.Split(row.View(110), "\n")[0]))
 	// Pointer (2) + rail (1) is blank, then the glyph, then the verb in its
 	// 8 columns: a failure reads as part of the turn because it is on the
-	// same grid as the call that failed (§6a).
+	// same grid as the call that failed.
 	if got := string(line[:ptrWidth+railWidth]); strings.TrimSpace(got) != "" {
 		t.Errorf("the pointer and rail columns should be blank, got %q", got)
 	}
@@ -170,7 +170,7 @@ func TestSecretPrompt_EscResolvesToNothing(t *testing.T) {
 	}
 }
 
-// The retry countdown (S-107, §17a). The rules it has to keep are §10c's: a
+// The retry countdown (S-107). The rules it has to keep are §10c's: a
 // bar that states its number, and cells that drain rather than fill.
 func TestRetryWait_StatesItsNumberAndItsBound(t *testing.T) {
 	w := RetryWait{

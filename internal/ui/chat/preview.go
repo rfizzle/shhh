@@ -3,7 +3,7 @@ package chat
 // Seeing what you attached (S-158,
 // docs/interface/surfaces.md#a-staged-picture).
 //
-// The staged rail says `▣ shot.png 412 KB` (§12g), which is the right answer
+// The staged rail says `▣ shot.png 412 KB`, which is the right answer
 // for a one-line strip above a live draft and the wrong one the moment two
 // screenshots are staged and the question is which of them has the stack
 // trace in it. `/paste show <name>` is the surface that answers it: the
@@ -18,8 +18,8 @@ package chat
 //
 // Three rungs draw the picture, best first, and which one is used is a
 // question already answered rather than one asked here: the terminal's own
-// graphics protocol where it said it has one (§10k), half-blocks where there
-// is colour, and the density ramp where there is not (§10e, §10f). The first
+// graphics protocol where it said it has one, half-blocks where there
+// is colour, and the density ramp where there is not. The first
 // is a sequence and so is composed in internal/ui/caps; the other two are
 // arithmetic and live in internal/ui/raster.
 
@@ -123,7 +123,7 @@ func (m *Model) placePicture() tea.Cmd {
 	// that draws pictures but never said how big its cells are cannot be told
 	// how many pixels to draw, and the half-block picture is what it gets.
 	// In practice the two arrive together — the terminals that answer the
-	// graphics query answer window op 14 as well (§10k).
+	// graphics query answer window op 14 as well.
 	if p.Image == nil || !m.caps.Kitty || cellW < 1 || cellH < 1 {
 		return nil
 	}

@@ -136,7 +136,7 @@ func NewRootCmd() *cobra.Command {
 			resolved := resolve.Resolve(flags)
 
 			// A session with no provider gets the card that says where shhh
-			// looked, not the dialect's own one-line complaint (S-106, §17b).
+			// looked, not the dialect's own one-line complaint (S-106).
 			p, req, err := resolveProvider(cmd.Context(), cfg, providerRequest{
 				Provider: resolved.Provider,
 				Model:    resolved.Model,

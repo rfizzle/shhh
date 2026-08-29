@@ -183,9 +183,9 @@ func (m *Model) summaryCloseCmd(prev Model) tea.Cmd {
 	return m.forceSummaryCmd()
 }
 
-// forceSummaryCmd takes a reading now, ignoring the interval. The turn's close
-// and /status are the callers: both are moments where the reading is about to
-// be read rather than glanced at.
+// forceSummaryCmd takes a reading now, ignoring the interval. The turn's
+// close and /status are the callers: both are moments where the reading is
+// about to be read rather than glanced at.
 func (m *Model) forceSummaryCmd() tea.Cmd {
 	if !m.summaryEnabled() || m.summary.inFlight {
 		return nil
@@ -365,8 +365,7 @@ func (m Model) summaryAlerts() []string {
 }
 
 // inspectorSummary is the rail's SUMMARY block, or nil when no reading has
-// landed yet — a block with nothing to say is omitted, not drawn empty
-// (§15c).
+// landed yet — a block with nothing to say is omitted, not drawn empty.
 func (m Model) inspectorSummary() *components.InspectorSummary {
 	v := m.summary.last
 	if v == nil || !m.summaryEnabled() {
@@ -407,7 +406,7 @@ func summaryTone(s agent.SummaryState) components.SummaryTone {
 // statusCommand is `/status`: the SUMMARY block in words, for the terminals
 // that have no rail to draw it in.
 //
-// Below 130 columns the rail is dropped entirely (§8c), so the block would
+// Below 130 columns the rail is dropped entirely, so the block would
 // otherwise be invisible on a narrow terminal. This is the same answer §15c
 // gives for PLAN — nothing is lost, it just has to be asked for — and asking
 // for it is itself a reason to have a current one, so it forces a reading.

@@ -26,14 +26,15 @@ import (
 )
 
 // The keys a failure row can offer are keys.Row.Retry, Continue, Key and
-// Provider (§7d), declared in the register rather than inline so the dispatch
+// Provider, declared in the register rather than inline so the dispatch
 // and the offers cannot drift apart.
 //
 // They are handled by focus mode on the row, the way the changeset row's [v]
 // and [u] are (S-098), so the input keeps all four letters for typing — which
-// matters more here than anywhere else, since "run the tests again" and "check
-// what it did" are exactly what gets typed after a failure. That is also why
-// entering a key is [e] and not §17a's [k]: k is the focus cursor's own.
+// matters more here than anywhere else, since "run the tests again" and
+// "check what it did" are exactly what gets typed after a failure. That is
+// also why entering a key is [e] and not §17a's [k]: k is the focus cursor's
+// own.
 
 // maxFailureDetail bounds the provider's own words on the row. The detail
 // body exists so an unclassified failure still says something; it does not
@@ -45,9 +46,9 @@ func (m *Model) appendFailure(err error) {
 	m.appendFailureRecord(classifyFailure(err, m.providerName))
 }
 
-// classifyFailure names an error that somehow arrived unclassified rather than
-// letting it through raw: no raw provider error string reaches the transcript
-// (S-106).
+// classifyFailure names an error that somehow arrived unclassified rather
+// than letting it through raw: no raw provider error string reaches the
+// transcript (S-106).
 func classifyFailure(err error, providerName string) *provider.Failure {
 	if f, ok := provider.AsFailure(err); ok {
 		return f
@@ -162,7 +163,8 @@ func failureNote(f *provider.Failure) string {
 
 // failureKeys are the ways out of one class, in the order worth trying. A key
 // the session cannot honour is not offered: a provider that cannot be
-// switched offers no [p], and a session with nothing to compact offers no [c].
+// switched offers no [p], and a session with nothing to compact offers no
+// [c].
 func (m Model) failureKeys(f *provider.Failure) []components.KeyOffer {
 	var offers []components.KeyOffer
 	add := func(key, label string) {

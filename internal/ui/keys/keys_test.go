@@ -201,7 +201,7 @@ func TestSurfacesAreNamedAndPlaced(t *testing.T) {
 }
 
 // TestOnlyTakeoversHoldBareLetters is invariant 5 asked of the register
-// (§7c). A surface that does not hold the keyboard may not answer a bare
+// . A surface that does not hold the keyboard may not answer a bare
 // letter without the register also declaring the key that hands the keyboard
 // over — which for both such surfaces is a chord no sentence can produce.
 func TestOnlyTakeoversHoldBareLetters(t *testing.T) {

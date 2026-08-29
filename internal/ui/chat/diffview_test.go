@@ -173,7 +173,7 @@ func TestApprovalFullDiff_RoundTrips(t *testing.T) {
 		t.Fatalf("esc should return to the approval with it still pending, got state %d", m.state)
 	}
 	// The keyboard comes back to the card it was opened from, not to the
-	// draft: reading the diff is not answering the decision (S-117, §7b).
+	// draft: reading the diff is not answering the decision (S-117).
 	if !m.decisionGated() {
 		t.Fatal("returning from the full diff keeps the card's keyboard")
 	}

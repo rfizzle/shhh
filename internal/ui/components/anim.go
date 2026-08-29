@@ -5,18 +5,19 @@ package components
 // one tick, one frame counter, one place the chain starts — was the careful
 // part
 // and the payload was `⠋`. This is the payload. The word beside the glyph
-// arrives cell by cell when a turn starts, and a light runs along it while the
-// turn lasts.
+// arrives cell by cell when a turn starts, and a light runs along it while
+// the turn lasts.
 //
-// Four things make it shhh's rather than a port of Crush's `internal/ui/anim`:
+// Four things make it shhh's rather than a port of Crush's
+// `internal/ui/anim`:
 //
 // **It has no clock.** Crush's Anim owns a `tea.Tick` chain per instance and
 // stamps every message with a generation so a re-`Start()` can supersede the
 // last one. That machinery exists to make many independent chains safe; §10c
 // says there is one chain and never three, so shhh's animation is a *value*
 // that reads the frame it is told (`Frame`) and holds no state at all. There
-// is nothing to start, nothing to stop, nothing to supersede — and `View` is a
-// pure function, which is what lets a golden capture it.
+// is nothing to start, nothing to stop, nothing to supersede — and `View` is
+// a pure function, which is what lets a golden capture it.
 //
 // **The ramp is two rungs, not a gradient.** Crush blends two arbitrary
 // colours through HCL across the label. §10a is a closed set of fifteen
@@ -30,7 +31,7 @@ package components
 // the palette rather than by a branch.
 //
 // **The entrance is a shape, so it survives mono.** A cell that has not
-// arrived draws `·` from the drawing kit (§10e), same width as the letter it
+// arrived draws `·` from the drawing kit, same width as the letter it
 // stands in for, so the label never reflows and the entrance reads in two
 // greys exactly as it reads in colour. It is the half of the motion that says
 // something — a turn just started — and it is the half that is not a hue.
@@ -70,7 +71,7 @@ const (
 	animCrestSpread = 1
 
 	// animBirthMark stands in for a cell that has not arrived. `·` is the
-	// drawing kit's neutral mark (§10e) and one cell wide, so nothing on the
+	// drawing kit's neutral mark and one cell wide, so nothing on the
 	// rail moves while the word fills in.
 	animBirthMark = "·"
 
@@ -116,7 +117,7 @@ func animCanon(rung int) int {
 
 // Anim is a label in motion. It is a value the host rebuilds every frame from
 // state it already has, not an object with a life of its own: `Frame` is the
-// session's one frame counter (§10c) and `Arriving` how much of the entrance
+// session's one frame counter and `Arriving` how much of the entrance
 // is still to run.
 type Anim struct {
 	// Frame is the tick the host is on. The sweep advances with it, so this
@@ -135,7 +136,7 @@ type Anim struct {
 	// Label is the word in motion.
 	Label string
 	// Suffix is written after the label exactly as the host styled it: the
-	// fields the caller's own drop ladder left standing (§8d). It is a string
+	// fields the caller's own drop ladder left standing. It is a string
 	// rather than Crush's `func() string` because this value is rebuilt every
 	// frame anyway, and a closure would make View impure for no gain.
 	Suffix string
@@ -312,7 +313,8 @@ func buildAnimFrames(label string) *animFrames {
 }
 
 // animBirthJitter is the cell's offset from the reading-order sweep: -1, 0 or
-// +1, so neighbours arrive out of step without the word arriving out of order.
+// +1, so neighbours arrive out of step without the word arriving out of
+// order.
 func animBirthJitter(label string, i int) int {
 	h := fnv.New32a()
 	h.Write([]byte(label))

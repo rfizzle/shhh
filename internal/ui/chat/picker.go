@@ -1,11 +1,12 @@
 package chat
 
-// Interactive slash-command pickers (S-078). Bare /model and /permissions open a
-// components.Select in the bottom panel instead of printing usage text: ↑↓
-// moves, enter applies, esc cancels. The argument forms (/model <name>,
-// /permissions <name>) keep their direct handleSlashCommand paths. Both share one
-// generic statePick surface, so the session pickers built on it (/load,
-// /chats, /branches — S-080) only need options and an apply function.
+// Interactive slash-command pickers (S-078). Bare /model and /permissions
+// open a components.Select in the bottom panel instead of printing usage
+// text: ↑↓ moves, enter applies, esc cancels. The argument forms (/model
+// <name>, /permissions <name>) keep their direct handleSlashCommand paths.
+// Both share one generic statePick surface, so the session pickers built on
+// it (/load, /chats, /branches — S-080) only need options and an apply
+// function.
 //
 // The session pickers (S-080) and the /run code-block picker (S-081) open
 // only when there is something to pick: no database, a read error, an empty
@@ -40,7 +41,7 @@ func (m Model) WithModelOptions(names []string) Model {
 // chosen index — always an index into the list the picker opened over, never
 // into whatever a filter left of it — and returns the transcript note.
 //
-// Every picker opened this way carries the filter row (S-123, §4a): the card
+// Every picker opened this way carries the filter row (S-123): the card
 // offers [/], and the match rule lives here rather than inside the component.
 func (m Model) openPicker(title string, opts []components.SelectOption, focus int, apply func(*Model, int) string) (tea.Model, tea.Cmd) {
 	return m.openPickerWith(title, opts, focus, pickerAlt{}, func(m *Model, idx int, _ bool) string {
@@ -58,8 +59,8 @@ type pickerAlt struct {
 	Enter string
 }
 
-// openPickerWith is openPicker for a card whose choice has two readings; apply
-// is told which key took it.
+// openPickerWith is openPicker for a card whose choice has two readings;
+// apply is told which key took it.
 func (m Model) openPickerWith(title string, opts []components.SelectOption, focus int, alt pickerAlt, apply func(*Model, int, bool) string) (tea.Model, tea.Cmd) {
 	m.picker = &components.Select{
 		Title:      title,
@@ -103,7 +104,7 @@ func identityIndex(n int) []int {
 }
 
 // refilterPicker re-runs the match rule after the card's query line changed.
-// The component does not filter (§4a): it reports the query, this decides
+// The component does not filter: it reports the query, this decides
 // what matches it, and the card is handed the matches, the catalog they came
 // out of, and the nearest option there is when nothing matched at all.
 func (m *Model) refilterPicker() {
@@ -119,7 +120,7 @@ func (m *Model) refilterPicker() {
 
 // pickerMatches is the picker's match rule: a case-insensitive run of the
 // option's label. It is a substring and not the palette's looser subsequence
-// because the card bolds the run it matched (§4a) — a rule the row cannot
+// because the card bolds the run it matched — a rule the row cannot
 // show is a rule the reader cannot check. It returns the matches and, beside
 // them, where each came from, so an apply still receives the index it was
 // written against.
@@ -394,8 +395,8 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 	})
 }
 
-// openModePick opens the interactive /permissions picker over the session's mode
-// cycle, focused on the active mode.
+// openModePick opens the interactive /permissions picker over the session's
+// mode cycle, focused on the active mode.
 func (m Model) openModePick() (tea.Model, tea.Cmd) {
 	cycle := m.modeCycle
 	if len(cycle) == 0 {

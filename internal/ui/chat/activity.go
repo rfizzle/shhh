@@ -3,7 +3,7 @@ package chat
 // Compact activity feed (S-075, docs/interface/principles.md#one-grid): tool
 // calls and commands render as one-line activity rows — glyph, action, key
 // argument, outcome, counts, duration — never raw output blocks by default.
-// Focus mode (§7) expands a row in place, /ui verbosity changes the default
+// Focus mode expands a row in place, /ui verbosity changes the default
 // density, and a running command shows a live output tail in its row.
 
 import (
@@ -61,9 +61,9 @@ func parseVerbosity(s string) (verbosity, error) {
 	return verbosityNormal, fmt.Errorf("unknown verbosity %q (low, normal, high)", s)
 }
 
-// TailFunc runs a command like the plain runner while reporting each completed
-// output line, so the row can show a live tail. onLine may be called from
-// other goroutines.
+// TailFunc runs a command like the plain runner while reporting each
+// completed output line, so the row can show a live tail. onLine may be
+// called from other goroutines.
 type TailFunc func(ctx context.Context, command string, onLine func(string)) (string, int)
 
 // WithTailRunner sets the tail-capable runner used for assistant commands and
@@ -100,7 +100,7 @@ const pendingToolResult = "running…"
 // when the turn was cancelled.
 const cancelledToolResult = "cancelled by user"
 
-// The deciders named on a denied row (§6d): your preference, or a rule.
+// The deciders named on a denied row: your preference, or a rule.
 const (
 	decidedByYou  = "you"
 	decidedByAuto = "auto"
@@ -145,7 +145,7 @@ func activityVerb(tool string) string {
 }
 
 // activityKind picks the row's glyph and, with it, whether the row carries
-// the mutation rail (§6b, §14): ⚙ reads, $ commands, ✎ anything that
+// the mutation rail: ⚙ reads, $ commands, ✎ anything that
 // persists, ◇ sub-agents.
 func activityKind(tool string) components.ActivityKind {
 	switch {
@@ -159,7 +159,8 @@ func activityKind(tool string) components.ActivityKind {
 	return components.ActivityTool
 }
 
-// activityArgKeys is the priority order for picking a tool call's key argument.
+// activityArgKeys is the priority order for picking a tool call's key
+// argument.
 var activityArgKeys = []string{"path", "pattern", "command", "query", "url", "name", "action", "task", "role"}
 
 // activityArg extracts the one argument worth showing beside the tool name,
@@ -221,7 +222,7 @@ func formatDuration(d time.Duration) string {
 	return fmt.Sprintf("%ds", int(d.Seconds()))
 }
 
-// activityDuration renders the row's duration field (§6a). Under 0.5s it is
+// activityDuration renders the row's duration field. Under 0.5s it is
 // blank rather than 0.0s: a column of zeroes down the feed is noise.
 func activityDuration(d time.Duration) string {
 	if d < 500*time.Millisecond {
@@ -249,7 +250,7 @@ func turnDuration(d time.Duration) string {
 	return fmt.Sprintf("%dm", int(d.Minutes()))
 }
 
-// activityRowFor builds the compact row for a tool or command entry (§6), as
+// activityRowFor builds the compact row for a tool or command entry, as
 // it renders outside any step that has been opened. Everything that only
 // wants to read a row's state — what it is, whether it ran, whether it broke
 // — asks through here, because none of those answers depend on how much of
@@ -259,7 +260,7 @@ func (m Model) activityRowFor(e entry) components.ActivityRow {
 }
 
 // activityRowDetail is the same row told whether the step around it has its
-// detail open (S-137, §13d). Collapsed rows never show output; focus-mode
+// detail open (S-137). Collapsed rows never show output; focus-mode
 // expansion shows the full stored result (already bounded upstream by
 // S-051/S-064); failed rows, an opened step and high verbosity show the
 // bounded detail view; and low verbosity hides counts.
@@ -295,7 +296,7 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 		switch {
 		case e.deniedBy != "":
 			// A refusal is not a failure: ⊘ and the decider's name say the
-			// call never ran, and the duration field says so too (§6d).
+			// call never ran, and the duration field says so too.
 			row.State = components.ActivityDenied
 			row.ByRule = e.deniedBy != decidedByYou
 			row.Outcome = components.OutcomeBy(components.OutcomeDenied, e.deniedBy)
@@ -312,7 +313,7 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 		case result == pendingToolResult:
 			row.State = components.ActivityRunning
 			row.Outcome = components.OutcomeRunning
-			// The row animates from the session's one frame (§10c), and only
+			// The row animates from the session's one frame, and only
 			// while the loop that advances it is running: a call left pending
 			// by a cancelled turn keeps the still `▸` rather than standing on
 			// one braille frame, which would read as a hang (S-119).
@@ -400,7 +401,7 @@ func (m *Model) uiCommand(parts []string) string {
 const uiUsage = "Usage: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off> · /ui notify <on|off> · /ui terminal"
 
 // terminalName is the one-line answer the bare /ui gives: what the terminal
-// called itself when shhh asked (S-156, §10k). A terminal that was asked
+// called itself when shhh asked (S-156). A terminal that was asked
 // and did not name itself is not the same as one shhh never asked, and a
 // readout that could not tell them apart would be the reason someone
 // distrusts the rest of it.
@@ -417,7 +418,7 @@ func terminalName(t caps.Terminal) string {
 }
 
 // terminalReport handles /ui terminal: what this terminal answered when shhh
-// asked what it can do (S-156, §10k). It is a diagnostic, and the question
+// asked what it can do (S-156). It is a diagnostic, and the question
 // it exists to answer is "why did that not happen here" — so a capability
 // nobody asked about says so rather than reading as a no.
 func (m Model) terminalReport() string {
@@ -443,7 +444,7 @@ func (m Model) terminalReport() string {
 	return strings.Join(lines, "\n")
 }
 
-// imageSupport names how a staged image is drawn here (S-158, §12h), or says
+// imageSupport names how a staged image is drawn here (S-158), or says
 // why there is no name to give.
 //
 // It answers for what shhh spends rather than for what the terminal offered,
@@ -486,11 +487,11 @@ func monoStatus() string {
 }
 
 // monoCommand handles /ui mono: strip every surface to the two greys of the
-// first invariant (docs/interface/principles.md#colour-never-carries-meaning-alone),
-// so that a state distinguished only by
-// colour becomes visibly wrong (S-095). NO_COLOR and TERM=dumb turn it on for
-// the whole session and it cannot be turned back off from inside — the
-// environment asked, not the user.
+// first invariant
+// (docs/interface/principles.md#colour-never-carries-meaning-alone), so that
+// a state distinguished only by colour becomes visibly wrong (S-095).
+// NO_COLOR and TERM=dumb turn it on for the whole session and it cannot be
+// turned back off from inside — the environment asked, not the user.
 func (m *Model) monoCommand(parts []string) string {
 	if len(parts) == 2 {
 		return fmt.Sprintf("Monochrome: %s.\nUsage: /ui mono <on|off> — strips every surface to two greys; glyphs, words and layout carry the states.", monoStatus())

@@ -1,6 +1,6 @@
 package components
 
-// The undo confirm's answers (S-100, §5): the default is the safe one, esc
+// The undo confirm's answers (S-100): the default is the safe one, esc
 // declines, and force is only offered when there is drift to force through.
 
 import (

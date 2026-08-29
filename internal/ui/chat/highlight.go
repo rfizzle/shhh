@@ -171,16 +171,16 @@ func syntaxTone(t chroma.TokenType) (components.Token, bool) {
 }
 
 // lexerCache memoizes matchLexer. lexers.Match glob-matches the basename
-// against every registered lexer's patterns — hundreds of filepath.Match calls
-// per lookup — and every diff card re-derives its highlighter on each render,
-// so a resize in a code-heavy session pays for the whole registry once per
-// file per frame. The answer for a basename never changes, so it is looked up
-// once and kept, misses included.
+// against every registered lexer's patterns — hundreds of filepath.Match
+// calls per lookup — and every diff card re-derives its highlighter on each
+// render, so a resize in a code-heavy session pays for the whole registry
+// once per file per frame. The answer for a basename never changes, so it is
+// looked up once and kept, misses included.
 var lexerCache sync.Map // basename -> chroma.Lexer, nil when nothing matches
 
-// matchLexer returns the coalesced chroma lexer for base, or nil when no lexer
-// claims it. The returned lexer is shared across callers; chroma guards its own
-// lazy rule compilation, and tokenising holds no state of its own.
+// matchLexer returns the coalesced chroma lexer for base, or nil when no
+// lexer claims it. The returned lexer is shared across callers; chroma guards
+// its own lazy rule compilation, and tokenising holds no state of its own.
 func matchLexer(base string) chroma.Lexer {
 	if v, ok := lexerCache.Load(base); ok {
 		lexer, _ := v.(chroma.Lexer)
@@ -200,7 +200,7 @@ func diffSyntax(path string) components.Syntax {
 	// Mono declines highlighting outright rather than collapsing the register
 	// onto its two greys: a diff body is where the +/- styling is already
 	// carrying the distinction that matters, and a second grey ladder over it
-	// would be decoration the reader has to unpick (S-095, §10f).
+	// would be decoration the reader has to unpick (S-095).
 	if components.Mono() {
 		return nil
 	}

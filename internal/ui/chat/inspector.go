@@ -39,7 +39,7 @@ const (
 	contextBurnSamples = 8
 )
 
-// paneStyles is the two-pane cockpit's own group (§15).
+// paneStyles is the two-pane cockpit's own group.
 type paneStyles struct {
 	Divider lipgloss.Style
 }
@@ -54,7 +54,7 @@ func newPaneStyles(p components.ColorTokens) paneStyles {
 func (m Model) twoPane() bool { return m.columns().inspector.Dx() > 0 }
 
 // inspectorHidden reports whether something is covering the rail. Takeover
-// surfaces span both panes (§15c); the attached view is a child's session, so
+// surfaces span both panes; the attached view is a child's session, so
 // the orchestrator's rail is answering for the wrong session beside it.
 func (m Model) inspectorHidden() bool {
 	if m.attachedTo != "" || m.agentList != nil {
@@ -83,7 +83,7 @@ func (m Model) inspectorHidden() bool {
 func (m Model) paneWidth() int { return m.columns().pane.Dx() }
 
 // transcriptWidth is the width the transcript wraps to: the pane less the
-// scroll gutter's column (S-147, §10g), which the pane reserves whether or
+// scroll gutter's column (S-147), which the pane reserves whether or
 // not there is anything to draw in it. Everything the viewport shows — the
 // feed, reading mode's gutter render, an attached child's session, the start
 // screen — wraps to this, and so does the selection's coordinate space, so
@@ -172,7 +172,7 @@ func (m Model) inspectorTurn(steps []components.InspectorPlanStep) *components.I
 }
 
 // inspectorPlan is the PLAN block: the approved plan as a live checklist, so
-// "where are we" never needs asking (S-104, §15c). It follows the plan rather
+// "where are we" never needs asking (S-104). It follows the plan rather
 // than the turn or the session, because a plan that spans two turns is still
 // the answer to the same question and is retired by the next instruction
 // rather than by the clock.
@@ -231,7 +231,7 @@ func (m Model) inspectorChanges() *components.InspectorChanges {
 // An alert follows the workspace rather than the turn — it is cleared by the
 // same command coming back clean, not by a new turn starting. That is the
 // whole point of the block: a red row that clears itself because the agent
-// moved on is the failure this rail exists to prevent (§15a).
+// moved on is the failure this rail exists to prevent.
 func (m Model) inspectorAlerts() []components.InspectorAlert {
 	type run struct {
 		turn   int64

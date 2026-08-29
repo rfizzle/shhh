@@ -188,7 +188,7 @@ type ApprovalCard struct {
 	// SafeDefault names the safe answer in words, for the cards where it is
 	// not obvious from the keys — e.g. "[n] deny — the safe answer". It names
 	// a key that answers, never esc, which hands the keyboard back instead
-	// (§7b); Return is where esc's own meaning is stated.
+	//; Return is where esc's own meaning is stated.
 	SafeDefault string
 	// Footnote says why a key the reader might expect is absent. A missing
 	// key with a stated reason teaches; a missing key without one reads as a
@@ -199,7 +199,7 @@ type ApprovalCard struct {
 	MaxLines int
 	// Return names what esc does while the card holds the keyboard: it hands
 	// it back to the draft and leaves the decision waiting rather than
-	// answering it (§7b). Stated because it is not obvious — invariant 3
+	// answering it. Stated because it is not obvious — invariant 3
 	// asks for the safe answer in words wherever it is not.
 	Return string
 	// NotYetLive says the card is on screen beside a draft that still holds
@@ -212,7 +212,7 @@ type ApprovalCard struct {
 
 	// HeldOnArrival marks a card that took the keyboard by landing on a draft
 	// nobody was typing into, rather than by a handover the reader asked for
-	// (S-117, §7b). It claims less than a card that was handed the keyboard:
+	// (S-117). It claims less than a card that was handed the keyboard:
 	// the two answers and the two ways out, and nothing whose consequence a
 	// reader could not undo — [a] and [d] still want the handover, because
 	// `always` and `always` are not what someone typing `also` meant. Every
@@ -336,7 +336,7 @@ func (c *ApprovalCard) View(width int) string {
 
 // hintRowsFor is the block under the rule: the decision keys and everything
 // that qualifies them. A card that does not hold the keyboard renders that
-// block as not-yet-live instead (§7b) — the consequences of a key nobody can
+// block as not-yet-live instead — the consequences of a key nobody can
 // press yet are noise, so only the keys and the handover are shown.
 func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 	if c.NotYetLive {
@@ -375,7 +375,7 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 	if qualRow != "" && len(hints) > 0 {
 		// They travel together on one row rather than one row each: they
 		// qualify the same key line, and a card is bounded to 40% of the
-		// screen (§1) — rows spent here are rows the transcript gives up.
+		// screen — rows spent here are rows the transcript gives up.
 		hints = append([]string{hints[0], sty.Hint.Render(clip(qualRow, inner))}, hints[1:]...)
 	}
 	// [A] gets a row of its own rather than a place in the joined run: the
@@ -397,7 +397,7 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 // the keystroke it stands for. The two are the same everywhere but the safe
 // answer, where the capital N is §2's default marker rather than a shifted
 // key — which is exactly why a pointer cannot be told what it landed on by
-// reading the letter off the screen (S-159, §7e).
+// reading the letter off the screen (S-159).
 type CardKey struct {
 	Shown string
 	Key   string
@@ -459,7 +459,7 @@ func (c *ApprovalCard) keys() string {
 // rebuilds it on every frame to keep the two honest (`common/button.go`);
 // finding the run in the row it was drawn on means a key that is on the
 // screen is clickable and a key a narrow terminal clipped away is not, by
-// construction rather than by upkeep (S-159, §7e).
+// construction rather than by upkeep (S-159).
 //
 // The run is divided among its keys with nothing left over — the brackets
 // belong to the keys at the ends and each separator to the key before it —
