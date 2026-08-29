@@ -2196,6 +2196,21 @@ percentage without its bar, never a bar without its number.
 ▰▰▰▱▱                    ◇ writer-1  agent lanes are always info
 ```
 
+**What the context meter is a percentage of (normative, S-164).** The window
+comes from the pricing table, which is fetched and current and is the
+authority. When it has not heard of the model, the model *family's* published
+window stands under it, and only a model nothing recognises falls back to
+`DefaultContextWindow`. That fallback is deliberately conservative — 32k —
+because a window guessed too small costs recall while one guessed too large
+costs a request the API refuses.
+
+The denominator is not cosmetic: it sets the trim threshold, so a window
+assumed too small has the session eliding findings it had all the room in the
+world to keep, and the model rediscovering them the next turn. A 51k
+conversation on `gpt-4o` read as *100% of 32k* until the family fallback
+existed; it is 39% of 128k. Any surface quoting a percentage — both rails, the
+card in §17b — quotes this one, which is what keeps them from disagreeing.
+
 **Sparkline.** `▁▂▃▄▅▆▇█`, eight cells, dimmer (245), never coloured — tokens
 per round over the last eight rounds (`▁▂▃▃▄▅▅▆`). It is a shape, not a
 measurement; the numbers beside it are the measurement.

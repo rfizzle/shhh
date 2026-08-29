@@ -115,10 +115,10 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 							args, _ := json.Marshal(part.FunctionCall.Args)
 							toolCalls = append(toolCalls, ToolCall{
 								// The Gemini API leaves functionCall.id
-								// empty, and a call with no id is one a
-								// dropped stream discards (partial.go) and
-								// no tool result can be paired with. The id
-								// is ours to invent, so we invent one.
+								// empty (S-164), and a call with no id is
+								// one a dropped stream discards (partial.go)
+								// and no tool result can be paired with. The
+								// id is ours to invent, so we invent one.
 								ID:        first(part.FunctionCall.ID, nextGeminiCallID()),
 								Name:      part.FunctionCall.Name,
 								Arguments: string(args),
@@ -192,7 +192,7 @@ func appendThought(blocks []ReasoningBlock, text string, sig []byte) []Reasoning
 
 // toGeminiContents converts the neutral message history to Gemini's shape.
 //
-// A tool result is addressed by the *name* of the function it answers —
+// A tool result is addressed by the *name* of the function it answers (S-164) —
 // functionResponse.name has to match the functionCall.name it came from, and
 // the ids the rest of shhh pairs on are ours, not the API's. So the calls of
 // the assistant turn just passed are kept, and each result takes its name

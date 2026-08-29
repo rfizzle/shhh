@@ -26,7 +26,7 @@ Build produces a `shhh` binary with version injected via `-ldflags`.
 cmd/shhh/main.go          Entry point (cobra root command, executed through fang)
 internal/
   cli/                     All cobra commands (root, chat, code, init, doctor, etc.)
-  agent/                   Front-end-agnostic agentic loop (conversation, tool dispatch, approval queue, round cap)
+  agent/                   Front-end-agnostic agentic loop (conversation, tool dispatch, approval queue, round cap, repeat detection)
   provider/                LLM provider interface + implementations (anthropic, openai, gemini, openrouter)
   ui/chat/                 Bubble Tea chat TUI model (the main interactive surface)
   ui/components/           Reusable TUI components (cards, lists, diffs, selectors)
@@ -43,7 +43,7 @@ internal/
   diff/                    Unified diff generation and patch application
   web/                     Web tools (fetch, search) with policy guards
   profile/                 Provider profile loading (gateway endpoints)
-  prompt/                  System prompt construction
+  prompt/                  System prompt construction (per-command prompts + the registered-toolset section)
   safety/                  Command safety analysis
   memory/                  Durable memory (cross-session remembered facts)
   evidence/                Evidence store for quality-gate output
@@ -126,6 +126,9 @@ Config is TOML at `~/.config/shhh/config.toml` (XDG on Linux, `~/Library/Applica
 - **The chat surface's geometry lives in `internal/ui/chat/layout.go`** (DESIGN-TUI.md §10n): `columns()` and `surface()` split the terminal into rectangles with `ultraviolet/layout`, and `contentWidth`, `paneWidth`, `transcriptWidth` and `viewportHeight` read them. Don't add a new `width - something` in a renderer — add a rectangle to the split and read it. Blocks are placed with `drawIn`, which clips to the rectangle, so a renderer never has to measure what it is about to overflow.
 - **Colours are resolved when styles are built, not when they are drawn**: a `lipgloss.Style` holds one `color.Color`, so a `components.Token` picks its truecolor/256/16 rung through `Token.Color()` at `newStyles` time. Changing the palette *or* the profile means rebuilding every derived style — both go through `applyPalette`.
 - **Golden file deletion**: `golden.Run(m)` removes any `.txt` file in `testdata/golden/` that wasn't asserted during the run. Don't manually create golden files; let the test framework generate them.
+- **The investigation rules in `BuildAgent` are load-bearing (S-164)**: the "Finding things" section — batch independent calls, make one search answer the question, never repeat a call you already made — is there because a real session spent all 150 rounds re-running the same searches. It reads like padding and is not; see the comment on `BuildAgent`.
+- **Never name a tool in a base system prompt**: the optional toolset is assembled from what the machine turned out to have (a language server was detected, a binary is on PATH, a key is configured), so a prompt that names one promises a tool the session may not have. `prompt.Toolbox` describes the tools actually registered and is appended as prompt extra after the last one joins.
+- **Gemini pairs tool results by function *name*, not by id (S-164)**: `FunctionResponse.Name` must be the name of the function called, and the Gemini API sends no `functionCall.id` at all — the ids in `provider.ToolCall` are ours. Don't "simplify" `toGeminiContents` back to putting `ToolCallID` in that field; it addresses every result to a function the model never called, and the model just calls again. Gemini 3 thought signatures ride the same parts and must go back on the part they arrived on.
 - **Tool-round cap is a checkpoint, not a limit**: The default 150-round cap pauses for user input rather than terminating. Sub-agents default to uncapped (`UnlimitedToolRounds = -1`) because they have no one to ask.
 - **Storage is single-connection SQLite**: `SetMaxOpenConns(1)` is intentional. The WAL journal mode and busy timeout handle concurrency; don't open multiple `*DB` instances to the same file.
 - **Version injection**: The `version` var in `internal/cli` is set via `-ldflags` at build time. It defaults to `"dev"` when built without flags.

@@ -83,6 +83,22 @@ When suggesting commands, use markdown code blocks with the shell language tag. 
 // BuildAgent is the system prompt for `shhh code`: unlike BuildChat, it tells
 // the model to act on the workspace with its tools and keep going until the
 // task is complete, instead of pasting suggestions into the chat.
+//
+// The "Finding things" rules are not padding, and a later edit trimming them
+// for brevity would be undoing a fix (S-164). Each answers a way a real
+// session wasted its whole round budget: one call per round when four were
+// independent; a bare search whose every hit needed a second round to read;
+// a file paged through in twenty-line windows against a cap of two thousand
+// lines; and the same search run forty times because nothing in the loop
+// could tell the model it had already asked. The rule against repeating a
+// call is the one that matters most — a model cannot see that it is circling,
+// because from inside a turn every round looks like progress, so it has to be
+// told the rule in advance. internal/agent/repeat.go is the harness half of
+// the same problem, for when the rule is not enough.
+//
+// What this prompt must never do is name a tool the session might not have:
+// the optional toolset is assembled from what the machine turned out to have,
+// and Toolbox (toolbox.go) describes the part of it that is really there.
 func BuildAgent(info shell.Info, extra ...string) string {
 	os := friendlyOS(info.OS)
 	base := fmt.Sprintf(`You are a coding agent running inside a terminal session. You complete coding tasks by reading, searching, editing, and running code in the user's working directory.
