@@ -266,14 +266,14 @@ func (m Model) closePressure() (tea.Model, tea.Cmd) {
 }
 
 // pressureNewSession is `[n]`: save what the session has said, then start
-// over with an empty conversation. The save is the autosave slot, which is
-// what `shhh chat --continue` reopens — a new session that lost the old one
-// is not an offer, it is a mistake with a key bound to it.
+// over with an empty conversation. The save goes to the old session's own
+// slot, which `shhh chat --resume` lists — a new session that lost the old
+// one is not an offer, it is a mistake with a key bound to it.
 func (m Model) pressureNewSession() (tea.Model, tea.Cmd) {
 	save := m.autosaveCmd()
 	note := "Started a new conversation."
 	if save != nil {
-		note = fmt.Sprintf("Saved the conversation as %q and started a new one; `shhh chat --continue` reopens it.", AutosaveName)
+		note = fmt.Sprintf("Saved the conversation as %q and started a new one; `shhh chat --resume` reopens it.", m.sessionName)
 	}
 	m.clearConversation()
 	// The window is empty again, so the next crossing is a new crossing.

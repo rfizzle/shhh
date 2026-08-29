@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"charm.land/bubbles/v2/spinner"
@@ -33,9 +34,33 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// AutosaveName is the reserved chat-session slot that always mirrors the most
-// recent conversation, used by `shhh chat --continue`.
-const AutosaveName = "(last session)"
+// sessionNameLayout is how a session that was never named is called in the
+// store: the moment it began, to the second. Every session gets a slot of its
+// own — the autosave used to go to one shared slot, which meant each new
+// session silently overwrote the last and `--resume` only ever had one thing
+// to offer. `--continue` reopens whichever slot was written most recently.
+const sessionNameLayout = "2006-01-02 15:04:05"
+
+// newSessionName mints the slot a fresh conversation autosaves to. Two slots
+// minted in the same second by one process (a /clear pressed twice) are told
+// apart by a suffix, so neither can overwrite the other.
+func newSessionName() string {
+	sessionNameMu.Lock()
+	defer sessionNameMu.Unlock()
+	name := time.Now().Format(sessionNameLayout)
+	if name == lastSessionStamp {
+		sessionNameDup++
+		return fmt.Sprintf("%s (%d)", name, sessionNameDup+1)
+	}
+	lastSessionStamp, sessionNameDup = name, 0
+	return name
+}
+
+var (
+	sessionNameMu    sync.Mutex
+	lastSessionStamp string
+	sessionNameDup   int
+)
 
 // DefaultMaxToolRounds bounds how many consecutive tool-call rounds one user
 // turn may trigger before the loop pauses for fresh input
@@ -797,7 +822,7 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 		// Every session records what it changes; WithChangeset swaps in a
 		// store with a different bound or a git tracker.
 		changes:     changeset.New(changeset.DefaultMaxBytes),
-		sessionName: AutosaveName,
+		sessionName: newSessionName(),
 	}
 }
 
@@ -906,23 +931,31 @@ func (m Model) roundsUnbounded() bool {
 }
 
 // WithResumedMessages replaces the conversation with a previously saved one
-// and rebuilds the transcript from it.
-func (m Model) WithResumedMessages(msgs []provider.Message) Model {
+// and rebuilds the transcript from it. name is the slot it came from, which
+// is the slot the session keeps autosaving to: a resumed conversation grows
+// in place rather than forking into a second copy. An empty name keeps the
+// fresh slot the model was built with.
+func (m Model) WithResumedMessages(name string, msgs []provider.Message) Model {
 	m.loadConversation(msgs)
+	if name != "" {
+		m.sessionName = name
+	}
 	return m
 }
 
-// autosaveCmd persists the conversation to the autosave slot in the
+// autosaveCmd persists the conversation to the session's own slot in the
 // background. Returns nil when there is no DB or nothing beyond the system
-// prompt to save.
+// prompt to save. The slot is captured here, not when the command runs, so
+// a save issued just before the session moves to a new slot still lands in
+// the one it was describing.
 func (m Model) autosaveCmd() tea.Cmd {
 	if m.db == nil || len(m.agent.Messages()) <= 1 {
 		return nil
 	}
-	db := m.db
+	db, name := m.db, m.sessionName
 	msgs := m.agent.RequestMessages()
 	return func() tea.Msg {
-		_ = db.SaveChat(AutosaveName, msgs)
+		_ = db.SaveChat(name, msgs)
 		return nil
 	}
 }
@@ -955,7 +988,7 @@ func (m Model) ExitBanner(resume string) components.ExitBanner {
 		b.Unsaved = true
 		return b
 	}
-	b.Session, b.Resume = AutosaveName, resume
+	b.Session, b.Resume = m.sessionName, resume
 	return b
 }
 
@@ -3386,6 +3419,9 @@ func (m *Model) clearConversation() {
 	// The turn's accounting started over, so there is no longer a turn to
 	// close with a summary either.
 	m.turnOpen = false
+	// A new conversation is a new session with a slot of its own; the one
+	// just left stays in the store as it was, for --resume to find.
+	m.sessionName = newSessionName()
 }
 
 // loadConversation replaces the current conversation and rebuilds the

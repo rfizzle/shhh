@@ -348,8 +348,9 @@ func TestBranchPick_BareBranchesOpensPickerAndSwitches(t *testing.T) {
 	if m.state != statePick || m.picker == nil {
 		t.Fatal("bare /branches should open the branch picker")
 	}
+	root := m.sessionName
 	focused := m.picker.Options[m.picker.Focus]
-	if !strings.HasPrefix(focused.Label, AutosaveName) || !strings.Contains(focused.Label, "(current)") {
+	if !strings.HasPrefix(focused.Label, root) || !strings.Contains(focused.Label, "(current)") {
 		t.Fatalf("the current branch should be marked and focused, got %q", focused.Label)
 	}
 	target := 1 - m.picker.Focus
@@ -369,7 +370,7 @@ func TestBranchPick_BareBranchesOpensPickerAndSwitches(t *testing.T) {
 		t.Fatalf("switching to the tail branch should restore all 5 messages, got %d", got)
 	}
 	// The pre-switch working conversation was saved, not lost.
-	kept, err := m.db.LoadChat(AutosaveName)
+	kept, err := m.db.LoadChat(root)
 	if err != nil {
 		t.Fatal(err)
 	}

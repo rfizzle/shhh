@@ -73,6 +73,7 @@ func TestRewindNumbered_TruncatesAndBranches(t *testing.T) {
 	m := newRewindModel(t).WithDB(db)
 	m = completeExchange(t, m, "first question", "answer one")
 	m = completeExchange(t, m, "second question", "answer two")
+	root := m.sessionName
 
 	m = sendText(t, m, "/rewind 2")
 
@@ -90,7 +91,7 @@ func TestRewindNumbered_TruncatesAndBranches(t *testing.T) {
 		t.Fatalf("rewind message should name the branch, got %q", last.text)
 	}
 
-	branches, err := db.ListChatBranches(AutosaveName)
+	branches, err := db.ListChatBranches(root)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,6 +166,7 @@ func TestRewind_BarePicker_SelectRewinds(t *testing.T) {
 	m := newRewindModel(t).WithDB(db)
 	m = completeExchange(t, m, "first", "one")
 	m = completeExchange(t, m, "second", "two")
+	root := m.sessionName
 
 	m = sendText(t, m, "/rewind")
 	// The focused row is the latest turn (options are latest-first).
@@ -177,7 +179,7 @@ func TestRewind_BarePicker_SelectRewinds(t *testing.T) {
 	if got := len(m.Messages()); got != 3 {
 		t.Fatalf("selecting the latest turn should drop it, got %d messages", got)
 	}
-	if branches, _ := db.ListChatBranches(AutosaveName); len(branches) != 2 {
+	if branches, _ := db.ListChatBranches(root); len(branches) != 2 {
 		t.Fatalf("picker rewind should preserve the tail as a branch, got %d family members", len(branches))
 	}
 }
@@ -216,13 +218,14 @@ func TestBranches_ListAndSwitch(t *testing.T) {
 	m := newRewindModel(t).WithDB(db)
 	m = completeExchange(t, m, "first question", "answer one")
 	m = completeExchange(t, m, "second question", "answer two")
+	root := m.sessionName
 	m = sendText(t, m, "/rewind 2")
 
 	handled, listing := m.handleSlashCommand("/branches")
 	if !handled {
 		t.Fatal("/branches should be handled")
 	}
-	if !strings.Contains(listing, "* 1. "+AutosaveName) {
+	if !strings.Contains(listing, "* 1. "+root) {
 		t.Fatalf("listing should mark the current session, got %q", listing)
 	}
 	if !strings.Contains(listing, "(branch of") {
@@ -236,7 +239,7 @@ func TestBranches_ListAndSwitch(t *testing.T) {
 	if got := len(m.Messages()); got != 5 {
 		t.Fatalf("switching to the tail branch should restore all 5 messages, got %d", got)
 	}
-	if m.sessionName == AutosaveName {
+	if m.sessionName == root {
 		t.Fatal("sessionName should track the switched-to branch")
 	}
 	if len(m.checkpoints) != 2 {
@@ -244,7 +247,7 @@ func TestBranches_ListAndSwitch(t *testing.T) {
 	}
 
 	// The pre-switch working conversation was saved, not lost.
-	kept, err := db.LoadChat(AutosaveName)
+	kept, err := db.LoadChat(root)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -259,7 +262,7 @@ func TestBranches_ListAndSwitch(t *testing.T) {
 	if m.sessionName != "named-branch" {
 		t.Fatal("/save should move the session to the new name")
 	}
-	if handled, res := m.handleSlashCommand("/load " + AutosaveName); !handled || !strings.Contains(res, "Loaded chat") {
+	if handled, res := m.handleSlashCommand("/load " + root); !handled || !strings.Contains(res, "Loaded chat") {
 		t.Fatalf("/load on a branch failed: %q", res)
 	}
 	if len(m.Messages()) != 3 {
@@ -291,7 +294,7 @@ func TestLoadConversation_RebuildsCheckpoints(t *testing.T) {
 		{Role: provider.RoleAssistant, Content: "more"},
 	}
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithResumedMessages(saved)
+		WithResumedMessages("", saved)
 
 	if len(m.checkpoints) != 2 {
 		t.Fatalf("resumed sessions should have rewind checkpoints, got %d", len(m.checkpoints))

@@ -14,7 +14,7 @@ func resumedModel(t *testing.T, msgs []provider.Message) Model {
 	t.Helper()
 	m := New(msgs[:1], multiTokenStream("ok")).
 		WithStartScreen(StartInfo{}).
-		WithResumedMessages(msgs)
+		WithResumedMessages("", msgs)
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	return updated.(Model)
 }

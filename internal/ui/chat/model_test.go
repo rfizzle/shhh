@@ -1551,12 +1551,69 @@ func TestAutosave_AfterExchange(t *testing.T) {
 	}
 	save() // run the autosave
 
-	saved, err := db.LoadChat(AutosaveName)
+	saved, err := db.LoadChat(m.sessionName)
 	if err != nil {
 		t.Fatalf("expected autosave slot to exist: %v", err)
 	}
 	if len(saved) != 3 || saved[2].Content != "hi there" {
 		t.Fatalf("autosave should contain the full exchange, got %d messages", len(saved))
+	}
+}
+
+// Two sessions must not share a slot: the autosave used to write every
+// session to one reserved name, so starting a second session erased the
+// first and --resume only ever listed one.
+func TestAutosave_EachSessionKeepsItsOwnSlot(t *testing.T) {
+	db, err := storage.OpenPath(t.TempDir() + "/test.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	sys := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	run := func(m Model, user, reply string) Model {
+		m = sendText(t, m, user)
+		updated, _ := m.Update(tokenMsg{text: reply})
+		updated, save := updated.(Model).Update(doneMsg{})
+		if save == nil {
+			t.Fatal("doneMsg should return an autosave cmd")
+		}
+		save()
+		return updated.(Model)
+	}
+	first := run(New(sys, mockStream).WithDB(db), "first session", "one")
+	second := run(New(sys, mockStream).WithDB(db), "second session", "two")
+
+	if first.sessionName == second.sessionName {
+		t.Fatalf("two sessions were given the same slot %q", first.sessionName)
+	}
+	entries, err := db.ListChats()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 2 {
+		t.Fatalf("both sessions should be saved, got %d", len(entries))
+	}
+	recent, ok, err := db.MostRecentChat()
+	if err != nil || !ok || recent.Name != second.sessionName {
+		t.Fatalf("--continue should find the newest session %q, got %q (ok=%v, err=%v)",
+			second.sessionName, recent.Name, ok, err)
+	}
+	if kept, err := db.LoadChat(first.sessionName); err != nil || len(kept) != 3 {
+		t.Fatalf("the first session should still be whole, got %d messages, err=%v", len(kept), err)
+	}
+
+	// A resumed session keeps growing in the slot it came from, not a copy.
+	resumed := New(sys, mockStream).WithDB(db).WithResumedMessages(first.sessionName, first.Messages())
+	if resumed.sessionName != first.sessionName {
+		t.Fatalf("resume should keep the slot %q, got %q", first.sessionName, resumed.sessionName)
+	}
+
+	// /clear moves to a fresh slot rather than overwriting the one just left.
+	cleared := second
+	cleared.handleSlashCommand("/clear")
+	if cleared.sessionName == second.sessionName {
+		t.Fatal("/clear should start a new slot")
 	}
 }
 
@@ -1585,7 +1642,7 @@ func TestWithResumedMessages_RebuildsTranscript(t *testing.T) {
 		{Role: provider.RoleAssistant, Content: "old answer"},
 	}
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithResumedMessages(saved)
+		WithResumedMessages("", saved)
 
 	if len(m.Messages()) != 3 {
 		t.Fatalf("expected 3 resumed messages, got %d", len(m.Messages()))
@@ -2024,8 +2081,8 @@ func TestExitBanner_NamesTheSlotTheAutosaveWrote(t *testing.T) {
 	m := New(msgs, mockStream).WithDB(db)
 
 	b := m.ExitBanner("shhh code --continue")
-	if b.Session != AutosaveName {
-		t.Fatalf("banner should name the autosave slot, got %q", b.Session)
+	if b.Session != m.sessionName {
+		t.Fatalf("banner should name the session's own slot, got %q", b.Session)
 	}
 	if b.Turns != 2 {
 		t.Fatalf("banner should count both user turns, got %d", b.Turns)

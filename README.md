@@ -639,7 +639,7 @@ shhh chat --continue     # resume the most recent session
 shhh chat --resume       # pick a saved chat to resume
 ```
 
-Every session is autosaved after each exchange (to the `(last session)` slot), so `--continue` always picks up where you left off. Use `/save <name>` inside a session to keep a conversation permanently.
+Every session is autosaved after each exchange to a slot of its own, named for the moment it began (`2026-08-30 14:05:07`), so `--resume` lists every conversation you have had and `--continue` picks up the most recent one. Use `/save <name>` inside a session to give a conversation a name worth remembering.
 
 Quitting hands the terminal back the way it was found, so the session goes off the screen in one frame. Three lines are left behind in its place — the slot the conversation was autosaved to and how many turns it holds, what the sitting cost, and the command that reopens it (`shhh chat --continue` or `shhh code --continue`, whichever was running). A session that never said anything leaves nothing, and one that could not be saved says so rather than offering a resume that would reopen something older.
 

@@ -656,7 +656,10 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		if db == nil {
 			return fmt.Errorf("chat persistence is unavailable, cannot resume")
 		}
-		name := chat.AutosaveName
+		// --continue is the newest slot, whatever it was called: every
+		// session autosaves to a slot of its own, so "the last session" is
+		// a query rather than a name.
+		name := ""
 		if session.resumePick {
 			picked, err := pickSavedChat(db)
 			if err != nil {
@@ -666,20 +669,32 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 				return nil
 			}
 			name = picked
+		} else if recent, ok, err := db.MostRecentChat(); err != nil {
+			return err
+		} else if ok {
+			name = recent.Name
 		}
-		resumed, err := db.LoadChat(name)
-		if err != nil {
+		var (
+			resumed []provider.Message
+			loadErr error
+		)
+		if name == "" {
+			loadErr = fmt.Errorf("no saved chats")
+		} else {
+			resumed, loadErr = db.LoadChat(name)
+		}
+		if loadErr != nil {
 			if session.continueLast {
 				fmt.Fprintln(os.Stderr, "No previous session found, starting fresh.")
 			} else {
-				return err
+				return loadErr
 			}
 		} else {
 			// Refresh the system prompt so shell/cwd context is current.
 			if len(resumed) > 0 && resumed[0].Role == provider.RoleSystem {
 				resumed[0].Content = env.sysPrompt
 			}
-			model = model.WithResumedMessages(resumed)
+			model = model.WithResumedMessages(name, resumed)
 		}
 	}
 	if r := update.CheckCached(version); r != nil {
