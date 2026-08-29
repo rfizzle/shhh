@@ -2001,8 +2001,9 @@ turn, and so does every command that leaves the conversation alone:
   turn keeps streaming underneath and keeps routing its own results.
 - Live mid-turn: `/agents`, `/attach <name>`, `/detach`, `/stats`, `/diff`,
   `/mode`, `/ui`, `/ps`, `/memory`, `/gate`, `/sandbox`, `/evidence`,
-  `/copy`, `/plan save`, `/save`, `/help`, `/exit` — plus Ctrl+E focus mode
-  and Ctrl+A. Plain text still queues as steering (S-058).
+  `/copy`, `/plan save`, `/save`, `/help`, `/exit` — plus Ctrl+E focus mode,
+  Ctrl+A, and `↑`/`↓` recall, which is the draft's key wherever the draft has
+  the keyboard (§12i). Plain text still queues as steering (S-058).
 - Idle-only: `/clear`, `/compact`, `/rewind`, `/branches`, `/load`,
   `/chats`, `/model`, `/run` — they rewrite or replace the conversation the
   agent is working in. They name what they'd disturb and wait, and they drop
@@ -3262,6 +3263,23 @@ What does *not* come back is the rest of the sitting: slash commands never
 entered the conversation, so they are not in it to recall, and an attachment
 that rode with a prompt is not re-staged by recalling its sentence. The
 history is the prompts, and the transcript above it is the record.
+
+**Recall is live wherever the draft is.** §7a says `↑`/`↓` are the input
+history's in every state, and they were the *idle* input history's: recall
+asked whether the session's turn had finished, so it did nothing while the
+agent streamed, ran a command or waited on the classifier — the states S-058
+keeps the sentence live in — and nothing under an approval card that had not
+been given the keyboard, which is the whole of §7b's ungated half. Two claims
+about the same three lines, and the code was answering the older one. It asks
+the surface's own question now: does the draft have the keyboard. So a prompt
+can be recalled and queued as steering while the turn it will steer is still
+running, and a sentence queued under a waiting card can be brought back with
+`↑` after `enter` takes it.
+
+The two ends of that are unchanged, because both are decided before recall is
+reached. A surface that took the screen took `↑` with it — reading mode moves
+its own cursor. And `ctrl+g` moves every key: once a card holds the keyboard,
+`↑` is the card's, not the draft's.
 
 ---
 

@@ -1335,7 +1335,16 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if next, claimed := m.startKey("up"); claimed {
 				return next, nil
 			}
-			if m.state == stateInput && len(m.inputHistory) > 0 &&
+			// Recall is the draft's, wherever the draft has the keyboard
+			// (S-162, §7a). It used to be the idle turn's: ↑ did nothing
+			// while the agent streamed, ran a command or waited on the
+			// classifier, and nothing under an approval card that had not
+			// been given the keyboard — the four states S-058 and S-117 exist
+			// to keep the sentence live in. A key that is the input's in
+			// every state (§7a) and a frame that is live but cannot recall
+			// were two claims about the same three lines, and the code was
+			// answering the older one.
+			if m.inputLive() && len(m.inputHistory) > 0 &&
 				(m.browsingHistory() || strings.TrimSpace(m.input.Value()) == "") {
 				if m.historyIdx > 0 {
 					m.historyIdx--
@@ -1360,7 +1369,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if next, claimed := m.startKey("down"); claimed {
 				return next, nil
 			}
-			if m.state == stateInput && m.browsingHistory() {
+			if m.inputLive() && m.browsingHistory() {
 				m.historyIdx++
 				if m.historyIdx >= len(m.inputHistory) {
 					m.historyIdx = len(m.inputHistory)

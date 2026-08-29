@@ -142,6 +142,87 @@ func TestResumedSession_CollapsesRepeatedPrompts(t *testing.T) {
 	}
 }
 
+// Recall belongs to the draft wherever the draft has the keyboard (§7a,
+// S-162). A turn in flight keeps the input live (S-058), so it keeps recall.
+func TestRecall_WorksWhileTheTurnRuns(t *testing.T) {
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, multiTokenStream("ok"))
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
+	m = updated.(Model)
+
+	m = sendText(t, m, "the prompt this turn is answering")
+	if m.state != stateStreaming {
+		t.Fatalf("the turn should be in flight, got state %d", m.state)
+	}
+	m = pressUp(t, m)
+	if m.input.Value() != "the prompt this turn is answering" {
+		t.Fatalf("↑ mid-turn should recall, got %q", m.input.Value())
+	}
+	m = pressDown(t, m)
+	if m.input.Value() != "" {
+		t.Fatalf("↓ mid-turn should walk back out of the history, got %q", m.input.Value())
+	}
+	if m.state != stateStreaming {
+		t.Fatalf("recall must not disturb the turn, state is now %d", m.state)
+	}
+}
+
+// A decision that arrived on top of a sentence has not taken the keyboard, so
+// the draft keeps every key it offers — recall included (§7b). The sentence
+// itself is how the draft gets empty enough to recall into: enter queues it
+// for the next round and leaves the card waiting, and ↑ brings it back.
+func TestRecall_WorksWhileADecisionWaitsForTheKeyboard(t *testing.T) {
+	m := interruptedModel(t, "queue this")
+
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+	if !m.decisionUngated() {
+		t.Fatal("queueing a line must not hand the card the keyboard")
+	}
+	if m.input.Value() != "" {
+		t.Fatalf("a queued sentence leaves the draft, got %q", m.input.Value())
+	}
+
+	m = pressUp(t, m)
+	if m.input.Value() != "queue this" {
+		t.Fatalf("↑ under an ungated card should recall, got %q", m.input.Value())
+	}
+	if m.state != stateConfirmRun {
+		t.Fatalf("recall must not answer or dismiss the card, state is now %d", m.state)
+	}
+}
+
+// Once the card has the keyboard, it has ↑ too: the handover moves every key,
+// and the draft is not what is being typed into any more (§7b).
+func TestRecall_StopsAtTheHandover(t *testing.T) {
+	m := interruptedModel(t, "queue this")
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+	m = handover(t, m)
+
+	m = pressUp(t, m)
+	if m.input.Value() != "" {
+		t.Fatalf("↑ belongs to the card once it holds the keyboard, got %q", m.input.Value())
+	}
+}
+
+// A surface that took the screen took ↑ with it: reading mode moves its own
+// cursor, and the draft underneath is not recalling anything (§7a).
+func TestRecall_StaysOutOfASurfaceThatHasTheKeyboard(t *testing.T) {
+	m := focusModel(t)
+	m.recordInput("an earlier prompt")
+
+	updated, _ := m.Update(ctrlE())
+	m = updated.(Model)
+	if m.state != stateFocus {
+		t.Fatalf("ctrl+e should enter reading mode, got state %d", m.state)
+	}
+	m = pressUp(t, m)
+	if m.input.Value() != "" {
+		t.Fatalf("↑ in reading mode must not reach the draft, got %q", m.input.Value())
+	}
+}
+
 // An empty conversation is an empty ring, and ↑ leaves the draft alone.
 func TestResumedSession_NothingToRecall(t *testing.T) {
 	m := resumedModel(t, []provider.Message{{Role: provider.RoleSystem, Content: "sys"}})
