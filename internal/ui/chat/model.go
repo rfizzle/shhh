@@ -2089,6 +2089,11 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	}
 }
 
+// commandContextPrefix opens that message, as a constant for the reason
+// compactContextPrefix is one: input recall reads it to tell a line the
+// reader typed from one the session wrote (recall.go, S-162).
+const commandContextPrefix = "I ran this command:"
+
 // commandContextMessage is appended to the conversation (as the user) so the
 // model can see what a /run produced, without triggering a response.
 func commandContextMessage(command, output string, exitCode int) string {
@@ -2098,7 +2103,7 @@ func commandContextMessage(command, output string, exitCode int) string {
 	if strings.TrimSpace(output) == "" {
 		output = "(no output)"
 	}
-	return fmt.Sprintf("I ran this command:\n```\n%s\n```\nExit code: %d\nOutput:\n```\n%s\n```", command, exitCode, output)
+	return fmt.Sprintf(commandContextPrefix+"\n```\n%s\n```\nExit code: %d\nOutput:\n```\n%s\n```", command, exitCode, output)
 }
 
 func firstLine(s string) string {
@@ -3185,6 +3190,11 @@ func (m *Model) loadConversation(msgs []provider.Message) {
 	m.resetTranscript()
 	m.checkpoints = checkpointsFromMessages(msgs)
 	m.appendMessageEntries(msgs)
+	// The prompts that conversation was made of are what ↑ recalls in it
+	// (S-162, recall.go). They are seeded here rather than by each of the four
+	// callers, for the same reason the transcript is: every path back to a
+	// stored conversation passes through this one function.
+	m.recallFromMessages(msgs)
 }
 
 // appendMessageEntries renders a run of messages into the transcript: the

@@ -915,7 +915,8 @@ transfer on an empty draft with no history left to recall, which made the key
 mean different things depending on how much history a session happened to
 have — unlearnable, and worse than unlearnable on a terminal with alternate
 scroll on, where a flick of the wheel arrives as `↑` and opened reading mode
-(see below).
+(see below). What a session that was resumed rather than started has to
+recall is §12i.
 
 The wheel reaches the full-screen diff (§3c) and review mode (§16a) when those
 own the screen, because the transcript behind them is not what is being looked
@@ -3227,6 +3228,40 @@ says everything there is to say. No WebP: shhh accepts one as an attachment
 and sends it, and the preview refuses it by name rather than by carrying a
 decoder for it. And nothing here is clickable, for §12g's reason: a picture
 fitted to the pane is not a control, and there is no key it would stand for.
+
+### 12i. What comes back with a resumed session (S-162)
+
+`↑` recalls what was typed into this surface (§7a). It recalled what was
+typed into it *this sitting*, which meant a session that came back — through
+`--continue`, `--resume`, `/load`, or a rewind's branch switch — brought its
+whole conversation onto the screen and none of its prompts back to the key.
+`↑` reached an empty history and fell through to the textarea, where it moved
+the cursor inside a one-line draft: a key that does nothing, on the sessions
+where repeating a prompt is most likely to be what you want.
+
+It read as dead only recently. Until S-140, `↑` with no history to recall
+handed the keyboard to the transcript, so on a resumed session the key still
+did *something*. S-140 removed that on purpose — a key that changes surface
+depending on how much history a session happens to have is unlearnable — and
+what it uncovered was a history that had never been restored.
+
+**A loaded conversation seeds the history**, out of the same messages the
+transcript is rebuilt from and in the same pass, so the conversation on screen
+and the prompts behind `↑` cannot drift apart.
+
+**Three user-role messages are not prompts.** The summary a compaction
+restarts from, the output `/run` feeds back, and the nudge that continues a
+reply a dropped connection cut off are all written by the session, in the
+user's role, because that is where the model must see them. Recalling one
+would put a sentence in the draft that nobody wrote — an entire compaction
+summary, in the worst case. Each declares its opening line as a constant
+beside the code that writes it, and the history skips them, so a reworded
+message cannot quietly start being offered as something you typed.
+
+What does *not* come back is the rest of the sitting: slash commands never
+entered the conversation, so they are not in it to recall, and an attachment
+that rode with a prompt is not re-staged by recalling its sentence. The
+history is the prompts, and the transcript above it is the record.
 
 ---
 

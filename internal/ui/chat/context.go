@@ -279,8 +279,14 @@ func (m Model) abortCompact() (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+// compactContextPrefix opens that message. It is a constant because input
+// recall reads it: a resumed session seeds its history from the user-role
+// messages it loads, and this is one of the three that nobody typed
+// (recall.go, S-162).
+const compactContextPrefix = "Summary of the conversation so far (earlier messages were compacted):"
+
 // compactContextMessage is the user-role message that carries the summary
 // into the restarted conversation.
 func compactContextMessage(summary string) string {
-	return "Summary of the conversation so far (earlier messages were compacted):\n\n" + summary
+	return compactContextPrefix + "\n\n" + summary
 }
