@@ -118,7 +118,7 @@ func TestToGeminiContents_AssistantToolCalls(t *testing.T) {
 		{
 			Role:       RoleTool,
 			Content:    "package main",
-			ToolCallID: "read_file",
+			ToolCallID: "call_1",
 		},
 	}
 
@@ -285,5 +285,184 @@ func TestGemini_Registration(t *testing.T) {
 	}
 	if !found {
 		t.Error("expected 'gemini' to be registered")
+	}
+}
+
+// Addressing a tool result to the call it answers (S-164).
+//
+// Gemini pairs a functionResponse to its functionCall by name — the SDK's own
+// field doc says so — and the ids the rest of shhh pairs on are ours, not the
+// API's, which sends none. Putting the id in the name field addressed every
+// result to a function the model had never called, so nothing it searched for
+// ever came back and it searched again.
+
+func TestToGeminiContents_ToolResultCarriesTheFunctionName(t *testing.T) {
+	msgs := []Message{
+		{Role: RoleUser, Content: "find it"},
+		{Role: RoleAssistant, ToolCalls: []ToolCall{
+			{ID: "gemini_call_7", Name: "search", Arguments: `{"pattern":"foo"}`},
+		}},
+		{Role: RoleTool, ToolCallID: "gemini_call_7", Content: "a.go:1: foo"},
+	}
+
+	contents, _ := toGeminiContents(msgs)
+
+	fr := contents[2].Parts[0].FunctionResponse
+	if fr == nil {
+		t.Fatal("expected a FunctionResponse part")
+	}
+	if fr.Name != "search" {
+		t.Errorf("FunctionResponse.Name = %q, want the function name %q", fr.Name, "search")
+	}
+	if fr.Response["result"] != "a.go:1: foo" {
+		t.Errorf("unexpected result payload: %v", fr.Response)
+	}
+}
+
+func TestToGeminiContents_ToolResultNamedEvenWithoutIDs(t *testing.T) {
+	// A history with no ids at all — a resumed session, a hand-built list —
+	// still pairs, by position.
+	msgs := []Message{
+		{Role: RoleAssistant, ToolCalls: []ToolCall{{Name: "read_file", Arguments: `{"path":"a.go"}`}}},
+		{Role: RoleTool, Content: "package a"},
+	}
+
+	contents, _ := toGeminiContents(msgs)
+
+	if got := contents[1].Parts[0].FunctionResponse.Name; got != "read_file" {
+		t.Errorf("FunctionResponse.Name = %q, want %q", got, "read_file")
+	}
+}
+
+func TestToGeminiContents_ParallelResultsMergeInCallOrder(t *testing.T) {
+	// Two calls of the same function in one round are told apart by their
+	// order inside a single function turn, which is how Gemini reads them.
+	msgs := []Message{
+		{Role: RoleAssistant, ToolCalls: []ToolCall{
+			{ID: "c1", Name: "search", Arguments: `{"pattern":"foo"}`},
+			{ID: "c2", Name: "read_file", Arguments: `{"path":"a.go"}`},
+		}},
+		{Role: RoleTool, ToolCallID: "c1", Content: "foo hit"},
+		{Role: RoleTool, ToolCallID: "c2", Content: "package a"},
+	}
+
+	contents, _ := toGeminiContents(msgs)
+
+	if len(contents) != 2 {
+		t.Fatalf("expected the model turn and one function turn, got %d contents", len(contents))
+	}
+	fn := contents[1]
+	if fn.Role != "function" {
+		t.Fatalf("expected role 'function', got %q", fn.Role)
+	}
+	if len(fn.Parts) != 2 {
+		t.Fatalf("expected both results in one turn, got %d parts", len(fn.Parts))
+	}
+	if fn.Parts[0].FunctionResponse.Name != "search" || fn.Parts[1].FunctionResponse.Name != "read_file" {
+		t.Errorf("results out of order: %q then %q",
+			fn.Parts[0].FunctionResponse.Name, fn.Parts[1].FunctionResponse.Name)
+	}
+}
+
+func TestToGeminiContents_ResultsOutOfOrderFollowTheirIDs(t *testing.T) {
+	msgs := []Message{
+		{Role: RoleAssistant, ToolCalls: []ToolCall{
+			{ID: "c1", Name: "search", Arguments: `{}`},
+			{ID: "c2", Name: "read_file", Arguments: `{}`},
+		}},
+		{Role: RoleTool, ToolCallID: "c2", Content: "package a"},
+		{Role: RoleTool, ToolCallID: "c1", Content: "foo hit"},
+	}
+
+	contents, _ := toGeminiContents(msgs)
+
+	fn := contents[1]
+	if fn.Parts[0].FunctionResponse.Name != "read_file" || fn.Parts[1].FunctionResponse.Name != "search" {
+		t.Errorf("an id should outrank position: got %q then %q",
+			fn.Parts[0].FunctionResponse.Name, fn.Parts[1].FunctionResponse.Name)
+	}
+}
+
+// Thought signatures (S-139/S-164): Gemini 3 attaches an opaque signature to
+// the parts it produced and expects it back on the same part. Dropped, the
+// model cannot recognise the plan in its own history and starts over.
+
+func TestToGeminiContents_ThoughtSignaturesRoundTrip(t *testing.T) {
+	sig := encodeSignature([]byte{0x01, 0x02, 0xff})
+	msgs := []Message{
+		{
+			Role:      RoleAssistant,
+			Reasoning: []ReasoningBlock{{Text: "I should grep", Signature: sig}},
+			ToolCalls: []ToolCall{{ID: "c1", Name: "search", Arguments: `{}`, Signature: sig}},
+		},
+	}
+
+	contents, _ := toGeminiContents(msgs)
+
+	parts := contents[0].Parts
+	if len(parts) != 2 {
+		t.Fatalf("expected a thought part and a call part, got %d", len(parts))
+	}
+	if !parts[0].Thought {
+		t.Error("thinking should go back marked as a thought")
+	}
+	if string(parts[0].ThoughtSignature) != "\x01\x02\xff" {
+		t.Errorf("thought signature not restored: %v", parts[0].ThoughtSignature)
+	}
+	if string(parts[1].ThoughtSignature) != "\x01\x02\xff" {
+		t.Errorf("the call's signature has to ride the call part: %v", parts[1].ThoughtSignature)
+	}
+}
+
+func TestSignatureRoundTrip(t *testing.T) {
+	if encodeSignature(nil) != "" {
+		t.Error("no signature encodes to nothing")
+	}
+	if decodeSignature("") != nil {
+		t.Error("nothing decodes to no signature")
+	}
+	if decodeSignature("not base64!!") != nil {
+		t.Error("an undecodable signature is no signature, not a panic")
+	}
+	raw := []byte{0x00, 0x7f, 0x80, 0xff}
+	if got := decodeSignature(encodeSignature(raw)); string(got) != string(raw) {
+		t.Errorf("round trip changed the bytes: %v", got)
+	}
+}
+
+func TestAppendThought_JoinsChunksUntilSigned(t *testing.T) {
+	// Thinking streams in pieces and the signature closes the piece it
+	// belongs to; a block per chunk would be a hundred blocks per turn.
+	var blocks []ReasoningBlock
+	blocks = appendThought(blocks, "I should ", nil)
+	blocks = appendThought(blocks, "grep for it", []byte("sig"))
+	blocks = appendThought(blocks, "then read it", []byte("sig2"))
+
+	if len(blocks) != 2 {
+		t.Fatalf("expected two thoughts, got %d: %+v", len(blocks), blocks)
+	}
+	if blocks[0].Text != "I should grep for it" {
+		t.Errorf("chunks should have joined, got %q", blocks[0].Text)
+	}
+	if blocks[0].Signature != encodeSignature([]byte("sig")) {
+		t.Errorf("the closing signature belongs to the block it closed, got %q", blocks[0].Signature)
+	}
+	if blocks[1].Text != "then read it" {
+		t.Errorf("a signed block is finished, got %q", blocks[1].Text)
+	}
+	if appendThought(nil, "", nil) != nil {
+		t.Error("an empty part is not a thought")
+	}
+}
+
+func TestNextGeminiCallID_Unique(t *testing.T) {
+	// Ids are ours to invent because the API sends none, and a reused id
+	// would let a later result pair with an earlier call.
+	a, b := nextGeminiCallID(), nextGeminiCallID()
+	if a == b || a == "" {
+		t.Errorf("expected distinct non-empty ids, got %q and %q", a, b)
+	}
+	if len(CompletedToolCalls([]ToolCall{{ID: a, Name: "search", Arguments: `{}`}})) != 1 {
+		t.Error("a call with an invented id should survive a dropped stream")
 	}
 }

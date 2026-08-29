@@ -2,9 +2,11 @@ package provider
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
+	"sync/atomic"
 
 	"google.golang.org/genai"
 )
@@ -80,12 +82,18 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 	go func() {
 		defer close(ch)
 		var toolCalls []ToolCall
+		var reasoning []ReasoningBlock
 		var usage *Usage
 		for resp, err := range g.client.Models.GenerateContentStream(ctx, model, contents, config) {
 			if err != nil {
 				// The function calls already delivered travel with the
 				// failure, so a dropped stream can be continued (S-107).
-				ch <- StreamEvent{ToolCalls: CompletedToolCalls(toolCalls), Err: g.classify(err), Done: true}
+				ch <- StreamEvent{
+					ToolCalls: CompletedToolCalls(toolCalls),
+					Reasoning: reasoning,
+					Err:       g.classify(err),
+					Done:      true,
+				}
 				return
 			}
 			if resp == nil {
@@ -102,34 +110,112 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 				candidate := resp.Candidates[0]
 				if candidate.Content != nil {
 					for _, part := range candidate.Content.Parts {
-						if part.Text != "" {
-							ch <- StreamEvent{Token: part.Text}
-						}
-						if part.FunctionCall != nil {
+						switch {
+						case part.FunctionCall != nil:
 							args, _ := json.Marshal(part.FunctionCall.Args)
 							toolCalls = append(toolCalls, ToolCall{
-								ID:        part.FunctionCall.ID,
+								// The Gemini API leaves functionCall.id
+								// empty, and a call with no id is one a
+								// dropped stream discards (partial.go) and
+								// no tool result can be paired with. The id
+								// is ours to invent, so we invent one.
+								ID:        first(part.FunctionCall.ID, nextGeminiCallID()),
 								Name:      part.FunctionCall.Name,
 								Arguments: string(args),
+								Signature: encodeSignature(part.ThoughtSignature),
 							})
+						case part.Thought:
+							// Thinking is not the answer: it goes back on
+							// the next request as a thought part (S-139),
+							// and streaming it as a token would have printed
+							// it as the reply.
+							reasoning = appendThought(reasoning, part.Text, part.ThoughtSignature)
+						case part.Text != "":
+							ch <- StreamEvent{Token: part.Text}
 						}
 					}
 				}
 			}
 		}
-		if len(toolCalls) > 0 {
-			ch <- StreamEvent{ToolCalls: toolCalls, Usage: usage, Done: true}
-		} else {
-			ch <- StreamEvent{Usage: usage, Done: true}
-		}
+		ch <- StreamEvent{ToolCalls: toolCalls, Reasoning: reasoning, Usage: usage, Done: true}
 	}()
 
 	return ch, nil
 }
 
+// geminiCallSeq numbers the ids we invent for function calls the API sent
+// without one. It is process-wide so two rounds of the same session cannot
+// hand out the same id, which would let a later tool result pair with an
+// earlier call.
+var geminiCallSeq atomic.Uint64
+
+func nextGeminiCallID() string {
+	return fmt.Sprintf("gemini_call_%d", geminiCallSeq.Add(1))
+}
+
+// encodeSignature/decodeSignature carry Gemini's binary thought signature
+// through the neutral message types, which are stored as JSON when a session
+// is saved. Base64 is the form that survives that round trip.
+func encodeSignature(sig []byte) string {
+	if len(sig) == 0 {
+		return ""
+	}
+	return base64.StdEncoding.EncodeToString(sig)
+}
+
+func decodeSignature(sig string) []byte {
+	if sig == "" {
+		return nil
+	}
+	out, err := base64.StdEncoding.DecodeString(sig)
+	if err != nil {
+		return nil
+	}
+	return out
+}
+
+// appendThought folds one streamed thought part into the reasoning blocks.
+// Thinking arrives in chunks and its signature lands on the chunk that closes
+// it, so chunks join the open block until one is signed; a signed block is
+// finished and the next chunk starts a new one.
+func appendThought(blocks []ReasoningBlock, text string, sig []byte) []ReasoningBlock {
+	if text == "" && len(sig) == 0 {
+		return blocks
+	}
+	if n := len(blocks); n > 0 && blocks[n-1].Signature == "" {
+		blocks[n-1].Text += text
+		blocks[n-1].Signature = encodeSignature(sig)
+		return blocks
+	}
+	return append(blocks, ReasoningBlock{Text: text, Signature: encodeSignature(sig)})
+}
+
+// toGeminiContents converts the neutral message history to Gemini's shape.
+//
+// A tool result is addressed by the *name* of the function it answers —
+// functionResponse.name has to match the functionCall.name it came from, and
+// the ids the rest of shhh pairs on are ours, not the API's. So the calls of
+// the assistant turn just passed are kept, and each result takes its name
+// from the call it answers. Consecutive results merge into one function turn,
+// in call order, which is also how Gemini tells apart two calls of the same
+// function made in the same round.
 func toGeminiContents(messages []Message) ([]*genai.Content, *genai.Content) {
 	var contents []*genai.Content
 	var systemInstruction *genai.Content
+
+	// lastCalls is the tool calls of the most recent assistant turn and
+	// answered how many of them have already been matched; pending collects
+	// the results owed to that turn until something else ends the run.
+	var lastCalls []ToolCall
+	answered := 0
+	var pending []*genai.Part
+
+	flushPending := func() {
+		if len(pending) > 0 {
+			contents = append(contents, &genai.Content{Role: "function", Parts: pending})
+			pending = nil
+		}
+	}
 
 	for _, msg := range messages {
 		switch msg.Role {
@@ -139,6 +225,7 @@ func toGeminiContents(messages []Message) ([]*genai.Content, *genai.Content) {
 				Role:  "user",
 			}
 		case RoleUser:
+			flushPending()
 			// Attachments lead, the sentence follows (S-134): inline blobs
 			// for the bytes Gemini reads natively, the shared text form for
 			// the rest.
@@ -148,7 +235,22 @@ func toGeminiContents(messages []Message) ([]*genai.Content, *genai.Content) {
 			}
 			contents = append(contents, &genai.Content{Parts: parts, Role: "user"})
 		case RoleAssistant:
+			flushPending()
 			content := &genai.Content{Role: "model"}
+			// Thinking leads the turn, carrying the signatures back on the
+			// parts they arrived on: a Gemini 3 turn whose function calls
+			// come back unsigned is one the model cannot pick up where it
+			// left off, and it re-plans from the top instead (S-139).
+			for _, r := range msg.Reasoning {
+				if r.Text == "" && r.Signature == "" {
+					continue
+				}
+				content.Parts = append(content.Parts, &genai.Part{
+					Text:             r.Text,
+					Thought:          true,
+					ThoughtSignature: decodeSignature(r.Signature),
+				})
+			}
 			if msg.Content != "" {
 				content.Parts = append(content.Parts, &genai.Part{Text: msg.Content})
 			}
@@ -160,24 +262,46 @@ func toGeminiContents(messages []Message) ([]*genai.Content, *genai.Content) {
 						Name: tc.Name,
 						Args: args,
 					},
+					ThoughtSignature: decodeSignature(tc.Signature),
 				})
 			}
 			contents = append(contents, content)
+			lastCalls, answered = msg.ToolCalls, 0
 		case RoleTool:
-			result := map[string]any{"result": msg.Content}
-			contents = append(contents, &genai.Content{
-				Role: "function",
-				Parts: []*genai.Part{{
-					FunctionResponse: &genai.FunctionResponse{
-						Name:     msg.ToolCallID,
-						Response: result,
-					},
-				}},
+			name := msg.ToolCallID
+			if i, ok := matchGeminiCall(lastCalls, msg.ToolCallID, answered); ok {
+				name = lastCalls[i].Name
+				answered = i + 1
+			}
+			pending = append(pending, &genai.Part{
+				FunctionResponse: &genai.FunctionResponse{
+					Name:     name,
+					Response: map[string]any{"result": msg.Content},
+				},
 			})
 		}
 	}
+	flushPending()
 
 	return contents, systemInstruction
+}
+
+// matchGeminiCall finds the call a tool result answers: the one carrying its
+// id, or failing that the next call not yet answered — results are appended
+// in call order, so position is a sound fallback for the histories (a resumed
+// session, a hand-built message list) whose ids do not line up.
+func matchGeminiCall(calls []ToolCall, id string, answered int) (int, bool) {
+	if id != "" {
+		for i, tc := range calls {
+			if tc.ID == id {
+				return i, true
+			}
+		}
+	}
+	if answered < len(calls) {
+		return answered, true
+	}
+	return 0, false
 }
 
 // geminiAttachmentParts carries a user message's attachments as inline data.

@@ -40,6 +40,13 @@ type ToolCall struct {
 	ID        string
 	Name      string
 	Arguments string
+	// Signature is the opaque per-part reasoning token some providers attach
+	// to the tool call itself and require back on the next request (S-139).
+	// Gemini 3 is the one that does: the thought signature rides the
+	// functionCall part, and a history that drops it hands the model a plan
+	// it cannot recognise as its own. It is base64 where the provider's is
+	// binary, so it survives the JSON a resumed session is stored as.
+	Signature string
 }
 
 type Usage struct {
