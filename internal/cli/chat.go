@@ -384,8 +384,16 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// Sub-agent orchestration: spawn_agent (approval-gated) and
 	// agent_report join the toolset; the supervisor itself is built once the
 	// provider is resolved.
+	// The roles it can spawn are the built-in two plus whatever profiles the
+	// user wrote to the agents directory; a profile that does not load is a
+	// startup error naming the file, not a role that quietly went missing.
+	var agents *agentProfiles
 	if session.agents {
-		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions()...)
+		agents, err = loadAgentProfiles()
+		if err != nil {
+			return err
+		}
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), subagent.Definitions(agents.profiles)...)
 	}
 	// Long-running process supervisor: the process tool (start goes
 	// through the approval queue like any command) plus /ps; Close terminates
@@ -525,7 +533,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// leftover worktrees when the session ends.
 	var sup *subagent.Supervisor
 	if session.agents {
-		sup = buildSupervisor(cmd.Context(), cfg, session, env, red, recorder, db, prices, classifier, sc, ledger)
+		sup = buildSupervisor(cmd.Context(), cfg, session, env, agents, red, recorder, db, prices, classifier, sc, ledger)
 		executor = sup.WrapExecutor(executor)
 		defer sup.Close()
 	}
@@ -618,11 +626,11 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	}
 	if sup != nil {
 		gatedPreviews[subagent.SpawnToolName] = func(args json.RawMessage) (chat.GatedPreview, error) {
-			summary, err := subagent.SpawnSummary(args)
+			summary, err := subagent.SpawnSummary(agents.profiles, args)
 			if err != nil {
 				return chat.GatedPreview{}, err
 			}
-			plan, err := subagent.SpawnPlan(args)
+			plan, err := subagent.SpawnPlan(agents.profiles, args)
 			if err != nil {
 				return chat.GatedPreview{}, err
 			}

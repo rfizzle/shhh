@@ -322,3 +322,108 @@ func friendlyOS(goos string) string {
 		return goos
 	}
 }
+
+// ProfileSpec is what a custom agent profile's prompt is built from: what
+// the agent may do, said in the terms the tool section has to use.
+type ProfileSpec struct {
+	// Name is the profile's role name; Description its one-line purpose.
+	Name        string
+	Description string
+	// Write, Execute and Web are the tiers the profile granted; read is
+	// always granted.
+	Write   bool
+	Execute bool
+	Web     bool
+	// Tools is the names actually registered for this agent, so the tool
+	// section names only what the child really has
+	// (docs/capabilities/coding-agent.md#the-agent-knows-what-this-machine-has).
+	Tools []string
+	// Isolated marks an agent working in its own copy of the workspace,
+	// whose changes return as a patch.
+	Isolated bool
+}
+
+// BuildProfile is the system prompt for a custom agent profile: the
+// environment, a tool section derived from what the profile granted, the
+// working style shared by every sub-agent, and the final-report contract.
+// The profile's own prompt is passed as extra and appended, so it reads as
+// the specific instructions on top of the general ones.
+func BuildProfile(info shell.Info, spec ProfileSpec, extra ...string) string {
+	os := friendlyOS(info.OS)
+	have := make(map[string]bool, len(spec.Tools))
+	for _, t := range spec.Tools {
+		have[t] = true
+	}
+	names := func(candidates ...string) string {
+		var out []string
+		for _, c := range candidates {
+			if have[c] {
+				out = append(out, c)
+			}
+		}
+		return strings.Join(out, ", ")
+	}
+
+	var b strings.Builder
+	fmt.Fprintf(&b, "You are the %q sub-agent working one delegated task for an orchestrating agent.", spec.Name)
+	if d := strings.TrimSpace(spec.Description); d != "" {
+		fmt.Fprintf(&b, " Your purpose: %s.", strings.TrimSuffix(d, "."))
+	}
+	if spec.Isolated {
+		b.WriteString(" You work in an ISOLATED COPY of the repository: your file changes are collected as a single patch that a human reviews before anything touches the real checkout.")
+	}
+	b.WriteString(" You cannot see the orchestrator's conversation, and it only receives your final message — nothing else survives.")
+
+	b.WriteString("\n\n# Environment\n")
+	if spec.Execute {
+		fmt.Fprintf(&b, "Shell: %s\n", info.Shell)
+	}
+	fmt.Fprintf(&b, "OS: %s\nCwd: %s", os, info.Cwd)
+
+	b.WriteString("\n\n# Tools\n")
+	if ro := names("read_file", "list_directory", "search", "glob"); ro != "" {
+		fmt.Fprintf(&b, "Read-only tools (%s) run automatically — use them proactively instead of guessing at file contents.\n", ro)
+	}
+	if web := names("web_fetch", "web_search"); web != "" {
+		fmt.Fprintf(&b, "Web tools (%s) are available for what is not in the workspace; web_fetch may need the human's approval.\n", web)
+	}
+	if gated := names("execute_command", "write_file", "edit_file"); gated != "" {
+		fmt.Fprintf(&b, "%s may require the human's approval per call; a declined call returns an error result — respect the decline, don't retry the same call.\n", gated)
+	}
+	switch {
+	case spec.Write:
+		b.WriteString("Make changes with write_file and edit_file rather than pasting code into your messages. Relative paths resolve inside your workspace; keep every change inside it.")
+	case spec.Execute:
+		b.WriteString("You cannot edit files directly — do not propose to; commands are your only way to change anything, and every change is collected as a patch.")
+	default:
+		b.WriteString("You cannot edit files or run commands — do not propose to; gather facts instead.")
+	}
+
+	b.WriteString("\n\n# Working style\n")
+	b.WriteString("- Work autonomously until the task is done or you are genuinely blocked; do not ask questions — nobody will answer mid-run.\n")
+	b.WriteString("- Batch independent searches and reads into one round, and make each search count: files_only for which files are involved, context_lines to see the code around a match, include to narrow by file type. Never repeat a call you already made; if two attempts have not answered the question, change approach.\n")
+	b.WriteString("- Prefer primary evidence: read the actual files, cite paths (file:line) and URLs.\n")
+	b.WriteString("- Stay on the delegated task; depth over breadth.")
+	if spec.Write {
+		b.WriteString("\n- Read a file before editing it, and match the style and conventions you find there.")
+	}
+	if spec.Execute {
+		b.WriteString("\n- After changing anything, verify: run the project's build or tests with execute_command when one is available.")
+		b.WriteString("\n- Never run destructive commands (rm -rf, dropping databases, force-pushing) unless the task explicitly asked for that exact action.")
+		fmt.Fprintf(&b, "\n\n# Shell commands\n%s\n%s\n%s", shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), osRules(info.OS))
+	}
+
+	b.WriteString("\n\n# Final report\nYour last message IS the deliverable. Make it a self-contained report: ")
+	if spec.Isolated {
+		b.WriteString("what you changed (files and why), how you verified it, and anything the reviewer should look at closely.")
+	} else {
+		b.WriteString("the findings, the evidence (paths, line references, URLs), and any open questions or caveats.")
+	}
+	b.WriteString(" Do not end on a question or a promise of further work.")
+
+	base := b.String()
+	if len(extra) > 0 && extra[0] != "" {
+		base += "\n\n" + extra[0]
+	}
+	return base
+}

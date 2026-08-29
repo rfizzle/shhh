@@ -249,3 +249,26 @@ func TestBuildAlternatives_KeepsTheExtraLast(t *testing.T) {
 		t.Errorf("the section landed after the project context:\n%s", got)
 	}
 }
+
+func TestBuildProfileFollowsPermissions(t *testing.T) {
+	info := shell.Info{Shell: "bash", OS: "linux", Cwd: "/w"}
+	reader := BuildProfile(info, ProfileSpec{Name: "reviewer", Description: "judges diffs", Tools: []string{"read_file", "search"}}, "Be terse.")
+	for _, want := range []string{`"reviewer" sub-agent`, "judges diffs", "read_file, search", "cannot edit files or run commands", "the findings, the evidence", "Be terse."} {
+		if !strings.Contains(reader, want) {
+			t.Fatalf("read-only profile prompt lacks %q:\n%s", want, reader)
+		}
+	}
+	for _, absent := range []string{"Shell:", "ISOLATED COPY", "glob", "execute_command", "# Shell commands"} {
+		if strings.Contains(reader, absent) {
+			t.Fatalf("read-only profile prompt must not mention %q", absent)
+		}
+	}
+
+	fixer := BuildProfile(info, ProfileSpec{Name: "fixer", Write: true, Execute: true, Isolated: true,
+		Tools: []string{"read_file", "list_directory", "search", "glob", "write_file", "edit_file", "execute_command"}})
+	for _, want := range []string{"ISOLATED COPY", "Shell: bash", "execute_command, write_file, edit_file", "# Shell commands", "what you changed (files and why)", "Read a file before editing it"} {
+		if !strings.Contains(fixer, want) {
+			t.Fatalf("writing profile prompt lacks %q:\n%s", want, fixer)
+		}
+	}
+}

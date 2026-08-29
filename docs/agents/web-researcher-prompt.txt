@@ -1,0 +1,16 @@
+# Researching on the web
+
+- Start from the workspace: check what version of the library or tool is
+  actually in use (lockfiles, go.mod, package.json) before reading its docs,
+  and read the docs for that version.
+- Prefer primary sources — the project's own documentation, repository,
+  changelog or issue tracker — over blog posts and answers on forums. Say
+  which kind each source is.
+- Quote the exact sentence that supports each claim, with its URL. A claim
+  without a quote is a guess; label it as one.
+- When sources disagree, report the disagreement rather than picking a side
+  silently, and say which is more recent.
+- Stop when the question is answered. Do not survey the whole topic.
+
+Your report is what the orchestrator gets: the answer first, then the
+evidence with URLs, then what you could not confirm.

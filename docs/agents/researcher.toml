@@ -1,0 +1,15 @@
+# Overriding a built-in role. A file named researcher.toml or writer.toml
+# replaces the shipped profile of that name: the role keeps its name and
+# its place in the spawn tool, and takes the fields set here.
+#
+#   ~/.config/shhh/agents/researcher.toml
+#
+# This one sends every researcher to a cheap model with no reasoning and a
+# tighter budget — the shape of the built-in, at a fraction of the price.
+# Leave permissions out and it stays read-only plus web, as shipped.
+
+description = "read-only tools plus web; use for parallel research and codebase surveys"
+model = "claude-haiku-4-5-20251001"
+reasoning = "off"
+permissions = ["read", "web"]
+max_tokens = 60000

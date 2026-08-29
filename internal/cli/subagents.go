@@ -11,6 +11,7 @@ package cli
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"os"
 	"strings"
 
@@ -32,13 +33,97 @@ import (
 	"github.com/rfizzle/shhh/internal/web"
 )
 
+// agentProfiles is the session's spawnable roles: the supervisor's view
+// (worktree, mode, budgets) and, for the ones read from files, the full
+// definition the child environment is built from. The built-in researcher
+// and writer have no definition and keep their hand-written prompts.
+type agentProfiles struct {
+	profiles    subagent.Profiles
+	definitions map[string]config.AgentDefinition
+}
+
+// loadAgentProfiles reads the user's agent profiles and lays them over the
+// built-in roles. A file named researcher.toml or writer.toml replaces the
+// built-in of that name, which is how the shipped roles get a different
+// model, mode or prompt without a config key per field. The mode and
+// reasoning names are checked here rather than in the loader because the
+// loader is config plumbing and these are the agent's and provider's
+// vocabularies (docs/capabilities/subagents.md#a-profile-is-a-file).
+func loadAgentProfiles() (*agentProfiles, error) {
+	defs, err := config.LoadAgents()
+	if err != nil {
+		return nil, err
+	}
+	out := &agentProfiles{profiles: subagent.BuiltinProfiles(), definitions: defs}
+	for name, def := range defs {
+		p := subagent.Profile{
+			Name:        subagent.Role(name),
+			Description: def.Description,
+			Writes:      def.Writes(),
+			MaxTokens:   def.MaxTokens,
+			MaxRounds:   def.MaxRounds,
+		}
+		if strings.TrimSpace(def.Mode) != "" {
+			mode, err := agent.ParseMode(def.Mode)
+			if err != nil {
+				return nil, fmt.Errorf("agent profile %s: mode: %w", def.Path, err)
+			}
+			p.Mode, p.HasMode = mode, true
+		}
+		if !def.InheritsReasoning() {
+			if _, err := provider.ParseEffort(def.Reasoning); err != nil {
+				return nil, fmt.Errorf("agent profile %s: reasoning: %w", def.Path, err)
+			}
+		}
+		out.profiles[p.Name] = p
+	}
+	return out, nil
+}
+
+// effortFor is the reasoning level a child runs at: the profile's own when
+// it names one, otherwise the session's live level — a level set with
+// ctrl+r is true of the session and so of every child it spawns.
+func (a *agentProfiles) effortFor(role subagent.Role, session provider.Effort) provider.Effort {
+	if a == nil {
+		return session
+	}
+	def, ok := a.definitions[string(role)]
+	if !ok || def.InheritsReasoning() {
+		return session
+	}
+	effort, err := provider.ParseEffort(def.Reasoning)
+	if err != nil {
+		return session // validated at load; unreachable
+	}
+	return effort
+}
+
+// modelFor is the model a child runs on: the spawn's own request, then the
+// profile file's, then the [agents] config layer, then the session model.
+func (a *agentProfiles) modelFor(cfg config.Config, role subagent.Role, requested, sessionModel string) string {
+	if requested != "" {
+		return requested
+	}
+	if a != nil {
+		if def, ok := a.definitions[string(role)]; ok {
+			if m := def.ProfileModel(); m != "" {
+				return m
+			}
+		}
+	}
+	return cfg.AgentModel(string(role), sessionModel)
+}
+
 // buildSupervisor assembles the session's sub-agent supervisor.
-func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession, env *sessionEnv,
+func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession, env *sessionEnv, agents *agentProfiles,
 	red *evidence.Reducer, recorder *observeRecorder, db *storage.DB, prices *pricing.Table,
 	classifier *agent.Classifier, sc *scope.Scope, ledger *meter.Ledger) *subagent.Supervisor {
 	root, err := os.Getwd()
 	if err != nil {
 		root = "."
+	}
+	if agents == nil {
+		agents = &agentProfiles{profiles: subagent.BuiltinProfiles()}
 	}
 
 	newEnv := func(cctx context.Context, spec subagent.Spec) (subagent.Env, error) {
@@ -50,28 +135,27 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		var sysPrompt string
 		var defs []provider.Tool
 		gated := map[string]bool{}
-		switch role {
-		case subagent.RoleWriter:
-			sysPrompt = prompt.BuildWriter(info, extra)
-			// A writer that declared a scope is told about it: other agents
-			// may be changing the rest of the repository at the same time.
-			if len(spec.Paths) > 0 {
-				sysPrompt += "\n\n# Scope\nYour changes are scoped to: " + strings.Join(spec.Paths, ", ") +
-					". Other agents may be working elsewhere in the repository at the same time. Keep every change inside your scope; if the task appears to need a change outside it, describe that in your report instead of making it."
-			}
-			defs = tools.DefinitionsFull()
-			gated[tools.ExecCommandName] = true
-			gated[tools.WriteFileName] = true
-			gated[tools.EditFileName] = true
-		default:
-			sysPrompt = prompt.BuildResearcher(info, extra)
-			defs = tools.Definitions()
-		}
 		base := agent.ToolExecutor(tools.Execute)
-		if session.web != nil {
-			defs = append(defs, session.web.Definitions()...)
-			base = session.web.WrapExecutor(tools.Execute)
-			gated[web.FetchToolName] = true
+		if def, ok := agents.definitions[string(role)]; ok {
+			sysPrompt, defs, base = profileEnv(def, spec, info, extra, session.web, gated)
+		} else {
+			switch role {
+			case subagent.RoleWriter:
+				sysPrompt = prompt.BuildWriter(info, extra)
+				sysPrompt += scopeNote(spec.Paths)
+				defs = tools.DefinitionsFull()
+				gated[tools.ExecCommandName] = true
+				gated[tools.WriteFileName] = true
+				gated[tools.EditFileName] = true
+			default:
+				sysPrompt = prompt.BuildResearcher(info, extra)
+				defs = tools.Definitions()
+			}
+			if session.web != nil {
+				defs = append(defs, session.web.Definitions()...)
+				base = session.web.WrapExecutor(tools.Execute)
+				gated[web.FetchToolName] = true
+			}
 		}
 		if red != nil {
 			defs = append(defs, evidence.ToolDefinition())
@@ -115,13 +199,15 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 
 		stream := agent.StreamFunc(func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			sctx, cancel := context.WithCancel(cctx)
-			// Children think as hard as the session does: the level is a
-			// session setting, and one that stopped at the orchestrator
-			// would be true of the rail and false of the work.
+			// Children think as hard as the session does unless their
+			// profile says otherwise: the level is a session setting, and
+			// one that stopped at the orchestrator would be true of the
+			// rail and false of the work.
 			effort := env.effort
 			if env.reasoning != nil {
 				effort = env.reasoning()
 			}
+			effort = agents.effortFor(role, effort)
 			ev, sErr := childProvider.StreamCompletion(sctx, msgs, provider.CompletionOpts{
 				Model:      childModel,
 				Tools:      streamDefs,
@@ -167,11 +253,9 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		// auto-mode session does not turn into one prompt per child command.
 		Classifier: classifier,
 		ModelFor: func(role subagent.Role, requested string) string {
-			if requested != "" {
-				return requested
-			}
-			return cfg.AgentModel(string(role), env.modelName)
+			return agents.modelFor(cfg, role, requested, env.modelName)
 		},
+		Profiles:      agents.profiles,
 		MaxConcurrent: cfg.Agents.MaxConcurrent,
 		// Children answer to the parent's working scope on top of
 		// their own worktree, which is where their file edits are already
@@ -179,6 +263,86 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		// somewhere the parent never put in scope.
 		ScopeDirs: sc.All,
 	})
+}
+
+// scopeNote tells a child that declared a write scope about it: other
+// agents may be changing the rest of the repository at the same time.
+func scopeNote(paths []string) string {
+	if len(paths) == 0 {
+		return ""
+	}
+	return "\n\n# Scope\nYour changes are scoped to: " + strings.Join(paths, ", ") +
+		". Other agents may be working elsewhere in the repository at the same time. Keep every change inside your scope; if the task appears to need a change outside it, describe that in your report instead of making it."
+}
+
+// profileEnv builds a custom profile's prompt, toolset and auto-run
+// executor from its definition. The toolset is the tiers the profile
+// granted, narrowed by its allowlist; the prompt is either the generic
+// profile prompt with the file's instructions appended, or the file's
+// instructions alone when it asked to replace the base. Gated is filled
+// with the approval-routed tools that made it in.
+func profileEnv(def config.AgentDefinition, spec subagent.Spec, info shell.Info, extra string,
+	webTools *web.Toolset, gated map[string]bool) (string, []provider.Tool, agent.ToolExecutor) {
+	var defs []provider.Tool
+	for _, t := range tools.Definitions() {
+		if def.Allows(t.Name) {
+			defs = append(defs, t)
+		}
+	}
+	if def.Has(config.PermissionWrite) {
+		for _, d := range tools.Mutating() {
+			if def.Allows(d.Tool.Name) {
+				defs = append(defs, d.Tool)
+				gated[d.Tool.Name] = true
+			}
+		}
+	}
+	if def.Has(config.PermissionExecute) && def.Allows(tools.ExecCommandName) {
+		defs = append(defs, tools.ExecCommandTool())
+		gated[tools.ExecCommandName] = true
+	}
+	base := agent.ToolExecutor(tools.Execute)
+	if def.Has(config.PermissionWeb) && webTools != nil {
+		var admitted []provider.Tool
+		for _, t := range webTools.Definitions() {
+			if def.Allows(t.Name) {
+				admitted = append(admitted, t)
+			}
+		}
+		if len(admitted) > 0 {
+			defs = append(defs, admitted...)
+			base = webTools.WrapExecutor(tools.Execute)
+			if def.Allows(web.FetchToolName) {
+				gated[web.FetchToolName] = true
+			}
+		}
+	}
+
+	names := make([]string, len(defs))
+	for i, t := range defs {
+		names[i] = t.Name
+	}
+	var sysPrompt string
+	if strings.EqualFold(strings.TrimSpace(def.PromptMode), config.PromptReplace) {
+		sysPrompt = strings.TrimSpace(def.Prompt)
+		if extra != "" {
+			sysPrompt += "\n\n" + extra
+		}
+	} else {
+		sysPrompt = prompt.BuildProfile(info, prompt.ProfileSpec{
+			Name:        def.Name,
+			Description: def.Description,
+			Write:       def.Has(config.PermissionWrite),
+			Execute:     def.Has(config.PermissionExecute),
+			Web:         def.Has(config.PermissionWeb),
+			Tools:       names,
+			Isolated:    def.Writes(),
+		}, prompt.CombineExtra(strings.TrimSpace(def.Prompt), extra))
+	}
+	if def.Writes() {
+		sysPrompt += scopeNote(spec.Paths)
+	}
+	return sysPrompt, defs, base
 }
 
 // childCommandRunner builds the execute_command runner for a sub-agent rooted

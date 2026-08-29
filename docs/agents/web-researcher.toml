@@ -1,0 +1,22 @@
+# Looks things up outside the workspace: library documentation, a changelog,
+# how another project solved the same problem. Read-only, so no worktree.
+#
+#   ~/.config/shhh/agents/web-researcher.toml
+#
+# The web tools are registered only when the session has them: web_fetch
+# always, web_search when web.search_api_key is set in config.toml.
+
+description = "answers a question from the web and the workspace: documentation, changelogs, prior art; cites URLs"
+
+model = "inherit"
+reasoning = "medium"
+
+permissions = ["read", "web"]
+
+# It searches and fetches; it does not need to walk directories.
+tools = ["read_file", "search", "web_search", "web_fetch"]
+
+max_tokens = 120000
+
+# A longer prompt lives in its own file beside this one.
+prompt_file = "web-researcher-prompt.txt"

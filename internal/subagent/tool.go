@@ -6,7 +6,6 @@ package subagent
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -25,20 +24,26 @@ const (
 )
 
 // Definitions returns the orchestration tool definitions the parent session
-// registers.
-func Definitions() []provider.Tool {
+// registers. The role enum and its description are built from the profiles
+// the session loaded, so a profile the user wrote is one the model can see
+// and choose between; nil means the built-in two.
+func Definitions(profiles Profiles) []provider.Tool {
+	if profiles == nil {
+		profiles = BuiltinProfiles()
+	}
+	names, _ := json.Marshal(profiles.Names())
 	return []provider.Tool{
 		{
 			Name:        SpawnToolName,
-			Description: "Delegate a scoped task to a background sub-agent. Roles: 'researcher' (read-only tools plus web; use for parallel research and codebase surveys) and 'writer' (full tools against an isolated copy of the workspace; its file changes come back as a single patch the user reviews before anything touches the real checkout). The user must approve each spawn. Returns immediately — the agent works in the background; collect its final report with agent_report in a LATER step (never in the same round as the spawn). Give each agent a complete, self-contained task prompt: it cannot see this conversation.",
+			Description: "Delegate a scoped task to a background sub-agent. Roles: " + profiles.describe() + ". The user must approve each spawn. Returns immediately — the agent works in the background; collect its final report with agent_report in a LATER step (never in the same round as the spawn). Give each agent a complete, self-contained task prompt: it cannot see this conversation.",
 			Parameters: json.RawMessage(`{
 				"type": "object",
 				"properties": {
-					"role": {"type": "string", "enum": ["researcher", "writer"], "description": "Toolset scope for the agent"},
+					"role": {"type": "string", "enum": ` + string(names) + `, "description": "Which agent profile to run"},
 					"task": {"type": "string", "description": "Complete, self-contained task prompt for the agent"},
 					"name": {"type": "string", "description": "Optional short name (letters, digits, dashes); auto-generated like researcher-1 when omitted"},
-					"paths": {"type": "array", "items": {"type": "string"}, "description": "For writers: the paths or globs this agent may change (e.g. [\"internal/ui/**\", \"README.md\"]). Two concurrent writers may not claim overlapping paths — declare them whenever you fan out more than one writer, so their patches cannot collide.", "maxItems": 32},
-					"model": {"type": "string", "description": "Optional model for this agent (defaults to the configured agent model, else the session model). Use a smaller, cheaper model for wide mechanical work and the session model for reasoning-heavy work."},
+					"paths": {"type": "array", "items": {"type": "string"}, "description": "For agents that change files: the paths or globs this agent may change (e.g. [\"internal/ui/**\", \"README.md\"]). Two concurrent writing agents may not claim overlapping paths — declare them whenever you fan out more than one, so their patches cannot collide.", "maxItems": 32},
+					"model": {"type": "string", "description": "Optional model for this agent (defaults to the profile's model, then the configured agent model, then the session model). Use a smaller, cheaper model for wide mechanical work and the session model for reasoning-heavy work."},
 					"steps": {"type": "integer", "description": "Optional number of steps this task breaks into (max 20). Pass it when you can name the steps up front: the agent's lane then shows progress against it instead of a spinner. Leave it out rather than guessing — an invented denominator is worse than none."},
 					"max_rounds": {"type": "integer", "description": "Optional: make the agent pause every N tool rounds to take stock — what it has done, what is left, what it is doing next — before carrying on with a larger budget. Omitted (the default) it runs to completion without pausing, which is what you want for most tasks. Pass it for long open-ended work where an agent quietly drifting off the task would otherwise go unnoticed. It is a pacing choice, not a limit: it never stops the agent, and the token budget is what bounds it."},
 					"max_tokens": {"type": "integer", "description": "Optional token budget, prompt+completion (default 200000)"}
@@ -48,7 +53,7 @@ func Definitions() []provider.Tool {
 		},
 		{
 			Name:        ReportToolName,
-			Description: "Check on background sub-agents. With no arguments: a status overview of every agent. With a name: waits until that agent finishes and returns its final report (pass wait=false for a non-blocking status peek). An agent's report is returned verbatim; a writer's report also states what happened to its patch.",
+			Description: "Check on background sub-agents. With no arguments: a status overview of every agent. With a name: waits until that agent finishes and returns its final report (pass wait=false for a non-blocking status peek). An agent's report is returned verbatim; a writing agent's report also states what happened to its patch.",
 			Parameters: json.RawMessage(`{
 				"type": "object",
 				"properties": {
@@ -71,6 +76,7 @@ type spawnArgs struct {
 	MaxTokens int64    `json:"max_tokens"`
 
 	role      Role
+	profile   Profile
 	paths     []string
 	steps     int
 	maxRounds int
@@ -88,18 +94,24 @@ const maxClaimedPaths = 32
 
 var validName = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9-]{0,23}$`)
 
-// parseSpawnArgs validates spawn_agent arguments and clamps the budgets to
-// their ceilings — the model can lower them, never remove them.
-func parseSpawnArgs(raw json.RawMessage) (spawnArgs, error) {
+// parseSpawnArgs validates spawn_agent arguments against the session's
+// profiles and clamps the budgets to their ceilings — the model can lower
+// them, never remove them. A budget the call leaves out falls back to the
+// profile's, then to the package default. nil profiles means the built-ins.
+func parseSpawnArgs(profiles Profiles, raw json.RawMessage) (spawnArgs, error) {
 	var args spawnArgs
 	if err := json.Unmarshal(raw, &args); err != nil {
 		return args, fmt.Errorf("invalid arguments: %w", err)
 	}
-	role, err := ParseRole(args.Role)
+	if profiles == nil {
+		profiles = BuiltinProfiles()
+	}
+	profile, err := profiles.Parse(args.Role)
 	if err != nil {
 		return args, err
 	}
-	args.role = role
+	args.role = profile.Name
+	args.profile = profile
 	if strings.TrimSpace(args.Task) == "" {
 		return args, fmt.Errorf("task is required")
 	}
@@ -113,15 +125,15 @@ func parseSpawnArgs(raw json.RawMessage) (spawnArgs, error) {
 			continue
 		}
 		if filepath.IsAbs(p) || strings.Contains(p, "..") {
-			return args, fmt.Errorf("path %q must be relative to the workspace and cannot contain ..", raw)
+			return args, fmt.Errorf("path %q must be relative to the workspace and cannot contain \"..\"", raw)
 		}
 		args.paths = append(args.paths, filepath.ToSlash(p))
 	}
 	if len(args.paths) > maxClaimedPaths {
 		return args, fmt.Errorf("too many paths (%d; max %d) — claim directories, not individual files", len(args.paths), maxClaimedPaths)
 	}
-	if args.role != RoleWriter && len(args.paths) > 0 {
-		return args, errors.New("paths apply to writer agents only; a researcher changes nothing")
+	if !profile.Writes && len(args.paths) > 0 {
+		return args, fmt.Errorf("paths apply to agents that can change files; a %s changes nothing", args.role)
 	}
 	// A step count outside the useful range is dropped rather than clamped:
 	// the lane's rule is that a denominator nobody supplied is not invented,
@@ -134,9 +146,15 @@ func parseSpawnArgs(raw json.RawMessage) (spawnArgs, error) {
 	// ceiling would protect.
 	args.maxRounds = args.MaxRounds
 	if args.maxRounds <= 0 {
+		args.maxRounds = profile.MaxRounds
+	}
+	if args.maxRounds <= 0 {
 		args.maxRounds = DefaultMaxRounds
 	}
 	args.maxTokens = args.MaxTokens
+	if args.maxTokens <= 0 {
+		args.maxTokens = profile.MaxTokens
+	}
 	switch {
 	case args.maxTokens <= 0:
 		args.maxTokens = DefaultMaxTokens
@@ -162,8 +180,8 @@ func roundBudgetLabel(maxRounds int) string {
 
 // SpawnSummary renders the one-line approval preview for a spawn_agent call;
 // an argument error skips the call like any other invalid gated call.
-func SpawnSummary(raw json.RawMessage) (string, error) {
-	args, err := parseSpawnArgs(raw)
+func SpawnSummary(profiles Profiles, raw json.RawMessage) (string, error) {
+	args, err := parseSpawnArgs(profiles, raw)
 	if err != nil {
 		return "", err
 	}
@@ -196,22 +214,22 @@ type Spawn struct {
 }
 
 // SpawnPlan describes a spawn_agent call the way its approval card needs it.
-func SpawnPlan(raw json.RawMessage) (Spawn, error) {
-	args, err := parseSpawnArgs(raw)
+func SpawnPlan(profiles Profiles, raw json.RawMessage) (Spawn, error) {
+	args, err := parseSpawnArgs(profiles, raw)
 	if err != nil {
 		return Spawn{}, err
 	}
 	p := Spawn{
-		Writer: args.role == RoleWriter,
+		Writer: args.profile.Writes,
 		Budget: fmt.Sprintf("%s, ~%s tokens", roundBudgetLabel(args.maxRounds), formatTokens(args.maxTokens)),
 	}
 	switch {
 	case len(args.paths) > 0:
 		p.Scope = strings.Join(args.paths, ", ")
 	case p.Writer:
-		p.Scope = "unknown — this writer claimed no paths"
+		p.Scope = "unknown — this agent claimed no paths"
 	default:
-		p.Scope = "nothing — a researcher reads and reports"
+		p.Scope = "nothing — a " + string(args.role) + " reads and reports"
 	}
 	return p, nil
 }

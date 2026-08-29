@@ -152,6 +152,7 @@ accent_color = "cyan"
 | `agents.model` | Model sub-agents run on (default: the session model); `"inherit"` follows the session model explicitly |
 | `agents.profiles.<role>.model` | Per-role override, `<role>` being `researcher` or `writer` (also settable as `agents.researcher_model` / `agents.writer_model`) |
 | `agents.max_concurrent` | Sub-agents running at once; further spawns queue (default: 3) |
+| `agents/<name>.toml` | Custom agent profiles, one file each beside `config.toml`: model, reasoning, permissions (`read`/`write`/`execute`/`web`), tool allowlist, starting mode, prompt and budgets. Spawnable by name; a file named `researcher` or `writer` overrides the built-in. See [`docs/agents/`](docs/agents/README.md) |
 | `summary.model` | Model the session summary is read on (default: the session model). The readings are frequent, so this is the one setting in the section worth changing — point it at a fast, cheap model |
 | `summary.interval_rounds` | Tool rounds between readings (default: 10). Higher is cheaper and staler |
 | `summary.min_gap_seconds` | Wall-clock floor between two readings (default: 20), so a burst of fast rounds cannot rewrite the block repeatedly |

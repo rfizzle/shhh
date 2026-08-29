@@ -1,0 +1,39 @@
+# Writes tests for code that already exists. It can edit and run commands,
+# so it works in an isolated worktree and its changes come back as a patch
+# you review before anything lands.
+#
+#   ~/.config/shhh/agents/test-writer.toml
+
+description = "adds or extends tests for existing code and runs them until they pass; changes only test files"
+
+# Follows the session model; good tests need the model that understood the
+# code. Think hard about edge cases.
+model = "inherit"
+reasoning = "high"
+
+permissions = ["read", "write", "execute"]
+
+# Narrowed within the tiers: it edits with edit_file (a new test file is
+# rare enough to describe in the report), and never write_file wholesale.
+tools = ["read_file", "list_directory", "search", "glob", "edit_file", "execute_command"]
+
+# Edits apply without a prompt inside its worktree; commands still ask,
+# unless the parent session is in auto mode (never looser than the parent).
+mode = "accept-edits"
+
+max_tokens = 150000
+# Take stock every 30 rounds: a test loop that is not converging should
+# say so rather than spend the whole budget on the same failure.
+max_rounds = 30
+
+prompt = """
+# Writing tests
+- Change test files only. If a test cannot be written without changing the
+  code under test, stop and say exactly what would need to change and why.
+- Match the test conventions already in the package: the same framework,
+  the same table-driven shape, the same helper names.
+- Run the tests you wrote with the project's own test command. A test that
+  has not been run does not count; say how many times you ran it.
+- Cover the boundary cases the task names first, then the ones you found
+  reading the code. Name each case for what it proves.
+"""

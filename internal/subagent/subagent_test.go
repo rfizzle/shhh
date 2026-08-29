@@ -394,21 +394,21 @@ func TestRoundLimitChecksInAndCarriesOn(t *testing.T) {
 // without pausing, and the surfaces that price a spawn say so rather
 // than printing a negative number.
 func TestSpawnDefaultsToNoRoundLimit(t *testing.T) {
-	args, err := parseSpawnArgs(json.RawMessage(`{"role":"researcher","task":"x"}`))
+	args, err := parseSpawnArgs(nil, json.RawMessage(`{"role":"researcher","task":"x"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if args.maxRounds > 0 {
 		t.Fatalf("the default spawn must be unbounded, got %d", args.maxRounds)
 	}
-	summary, err := SpawnSummary(json.RawMessage(`{"role":"researcher","task":"x"}`))
+	summary, err := SpawnSummary(nil, json.RawMessage(`{"role":"researcher","task":"x"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(summary, "no round limit") {
 		t.Fatalf("the approval preview must say the child is unbounded: %s", summary)
 	}
-	summary, err = SpawnSummary(json.RawMessage(`{"role":"researcher","task":"x","max_rounds":30}`))
+	summary, err = SpawnSummary(nil, json.RawMessage(`{"role":"researcher","task":"x","max_rounds":30}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -438,20 +438,20 @@ func TestCancelAllUnblocksAsks(t *testing.T) {
 }
 
 func TestSpawnSummary(t *testing.T) {
-	s, err := SpawnSummary(json.RawMessage(`{"role":"writer","task":"refactor the loop"}`))
+	s, err := SpawnSummary(nil, json.RawMessage(`{"role":"writer","task":"refactor the loop"}`))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(s, "writer") || !strings.Contains(s, "refactor the loop") {
 		t.Fatalf("unexpected summary: %s", s)
 	}
-	if _, err := SpawnSummary(json.RawMessage(`{"role":"nope","task":"x"}`)); err == nil {
+	if _, err := SpawnSummary(nil, json.RawMessage(`{"role":"nope","task":"x"}`)); err == nil {
 		t.Fatal("expected an error for an invalid role")
 	}
 }
 
 func TestParseSpawnArgsClampsBudgets(t *testing.T) {
-	args, err := parseSpawnArgs(json.RawMessage(`{"role":"researcher","task":"x","max_rounds":999,"max_tokens":99999999}`))
+	args, err := parseSpawnArgs(nil, json.RawMessage(`{"role":"researcher","task":"x","max_rounds":999,"max_tokens":99999999}`))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -463,7 +463,7 @@ func TestParseSpawnArgsClampsBudgets(t *testing.T) {
 	if args.maxTokens != MaxTokensCeiling {
 		t.Fatalf("max_tokens not clamped: %d", args.maxTokens)
 	}
-	args, err = parseSpawnArgs(json.RawMessage(`{"role":"researcher","task":"x"}`))
+	args, err = parseSpawnArgs(nil, json.RawMessage(`{"role":"researcher","task":"x"}`))
 	if err != nil {
 		t.Fatal(err)
 	}

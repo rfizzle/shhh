@@ -209,7 +209,9 @@ Attaching switches the focused agent.
 
 ### Sub-agents
 
-`shhh code` can spawn child agents via `spawn_agent`. Children are either `researcher` (read-only tools + web) or `writer` (full toolset against an isolated git worktree). Hard limits: max 3 concurrent, 16 total per session — a limit on attention, not on resources ([`docs/capabilities/subagents.md`](docs/capabilities/subagents.md)). Writer children produce patches that the parent approves.
+`shhh code` can spawn child agents via `spawn_agent`. Children are either `researcher` (read-only tools + web) or `writer` (full toolset against an isolated git worktree), or any custom profile the user wrote to `~/.config/shhh/agents/<name>.toml`. Hard limits: max 3 concurrent, 16 total per session — a limit on attention, not on resources ([`docs/capabilities/subagents.md`](docs/capabilities/subagents.md)). Children that can write or execute produce patches that the parent approves.
+
+Profiles are three layers, and the split matters: `config.AgentDefinition` (`internal/config/agents.go`) is the file as written and validates what needs no runtime — names, tiers, tool names against tiers; `subagent.Profile` (`internal/subagent/profile.go`) is what the supervisor decides by — worktree or not, starting mode, default budgets — and knows nothing about tools or prompts; `internal/cli/subagents.go` translates a definition into a child's toolset and prompt (`profileEnv`) and checks the mode and reasoning names, because those vocabularies belong to `agent` and `provider`, which `config` must not import. The two built-in roles are `subagent.BuiltinProfiles()` and keep their hand-written prompts; a file named `researcher.toml` or `writer.toml` replaces one. The file format and examples are in [`docs/agents/README.md`](docs/agents/README.md).
 
 ## Testing
 
@@ -234,7 +236,7 @@ A `TestMain` in each golden-using package calls `golden.Run(m)` which **deletes 
 
 ## Configuration
 
-Config is TOML at `~/.config/shhh/config.toml` (or `$XDG_CONFIG_HOME/shhh/`), the same on every platform — see [`docs/capabilities/configuration.md#one-layout-everywhere`](docs/capabilities/configuration.md#one-layout-everywhere). Key sections: `[provider]`, `[behavior]`, `[sandbox]`, `[web]`, `[lsp]`, `[appearance]`, `[history]`, `[agents]`.
+Config is TOML at `~/.config/shhh/config.toml` (or `$XDG_CONFIG_HOME/shhh/`), the same on every platform — see [`docs/capabilities/configuration.md#one-layout-everywhere`](docs/capabilities/configuration.md#one-layout-everywhere). Key sections: `[provider]`, `[behavior]`, `[sandbox]`, `[web]`, `[lsp]`, `[appearance]`, `[history]`, `[agents]`. Agent profiles are one TOML file each in the `agents/` directory beside it (`config.AgentDirs`), loaded by `config.LoadAgents`.
 
 ## Gotchas
 

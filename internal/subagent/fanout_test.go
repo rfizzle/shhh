@@ -109,7 +109,7 @@ func TestSpawnDeclaredSteps(t *testing.T) {
 		{"at the ceiling", `{"role":"researcher","task":"t","steps":20}`, 20},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			args, err := parseSpawnArgs(json.RawMessage(tc.args))
+			args, err := parseSpawnArgs(nil, json.RawMessage(tc.args))
 			if err != nil {
 				t.Fatal(err)
 			}

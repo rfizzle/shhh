@@ -1,0 +1,36 @@
+# A critic that cannot touch anything. Spawn it after a writer finishes to
+# get an independent read of the patch, or on a branch before you open a PR.
+#
+#   ~/.config/shhh/agents/reviewer.toml
+
+description = "reviews a change for correctness and clarity; reads only, changes nothing"
+
+# Reviews are wide and shallow; a fast model with a little reasoning is the
+# right price point. Set model = "inherit" to follow the session instead.
+model = "claude-haiku-4-5-20251001"
+reasoning = "low"
+
+# Read is always granted; nothing else is. There is no worktree, no patch.
+permissions = ["read"]
+
+# Plan mode makes the restriction visible to the agent itself: an attempt
+# to edit or run something is refused with a message saying why.
+mode = "plan"
+
+max_tokens = 80000
+
+prompt = """
+# Reviewing
+You are reviewing a change, not making one. You have no commands, so the
+task must hand you the diff or name the files; read those, then the files
+they touch, then the tests that cover them.
+
+Report, in this order:
+1. Bugs — concrete inputs that produce a wrong result, with the file:line.
+2. Behaviour changes the task did not ask for.
+3. Missing tests, naming the case that is not covered.
+4. Style only where it hides a bug or contradicts the surrounding file.
+
+Rank by severity. Say "no findings" for an empty section rather than
+inventing one. Never propose a rewrite of something that works.
+"""

@@ -36,17 +36,6 @@ const (
 	RoleWriter     Role = "writer"
 )
 
-// ParseRole maps a spawn_agent role argument to its Role.
-func ParseRole(s string) (Role, error) {
-	switch strings.ToLower(strings.TrimSpace(s)) {
-	case "researcher":
-		return RoleResearcher, nil
-	case "writer":
-		return RoleWriter, nil
-	}
-	return "", fmt.Errorf("unknown role %q (valid: researcher, writer)", s)
-}
-
 // Hard budgets and bounds. Concurrency and per-child budgets are deliberately
 // bounded: a runaway parent cannot fan out or spend without limit.
 const (
@@ -256,6 +245,9 @@ type Options struct {
 	// spawn call asked for (empty when it asked for none). Nil means every
 	// child runs on the session model.
 	ModelFor func(role Role, requested string) string
+	// Profiles is the set of roles a spawn may name; nil means the two
+	// built-in ones.
+	Profiles Profiles
 	// MaxConcurrent bounds simultaneously running children; <= 0 uses
 	// DefaultMaxConcurrent.
 	MaxConcurrent int
@@ -359,6 +351,7 @@ type child struct {
 	parent    string // spawning agent's name; "" means the orchestrator
 	role      Role
 	task      string
+	profile   Profile  // what the role means: worktree, patch, mode, budgets
 	model     string   // the model this child runs on
 	paths     []string // declared write scope (writers); nil means unscoped
 	batch     int      // the parent tool round that spawned it
@@ -610,6 +603,9 @@ type Supervisor struct {
 func New(ctx context.Context, opts Options) *Supervisor {
 	if opts.MaxConcurrent <= 0 {
 		opts.MaxConcurrent = DefaultMaxConcurrent
+	}
+	if opts.Profiles == nil {
+		opts.Profiles = BuiltinProfiles()
 	}
 	sctx, cancel := context.WithCancel(ctx)
 	return &Supervisor{
@@ -931,7 +927,7 @@ func (s *Supervisor) Retry(name string) error {
 
 	root := s.opts.Root
 	worktree, repoTop := "", ""
-	if c.role == RoleWriter {
+	if c.profile.Writes {
 		worktree, root, repoTop, err = addWorktree(s.opts.Root)
 		if err != nil {
 			return fmt.Errorf("cannot create an isolated worktree for the retry: %w", err)
@@ -1069,7 +1065,7 @@ func (s *Supervisor) WrapExecutor(next agent.ToolExecutor) agent.ToolExecutor {
 // spawn validates the arguments, prepares the child's workspace (a git
 // worktree for writers), and starts it in the background.
 func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
-	args, err := parseSpawnArgs(raw)
+	args, err := parseSpawnArgs(s.opts.Profiles, raw)
 	if err != nil {
 		return "", err
 	}
@@ -1094,12 +1090,18 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 	mode := s.parentMode
 	batch := s.batch
 	s.mu.Unlock()
+	// A profile may start its children stricter than the parent (a
+	// reviewer in plan mode under an auto session); childMode clamps it to
+	// the parent either way, so it can never start looser.
+	if args.profile.HasMode {
+		mode = args.profile.Mode
+	}
 
 	// Writers work in isolated worktrees, so they cannot overwrite each
 	// other's files — but two patches over the same file conflict when they
 	// land. A declared scope is refused up front rather than discovered at
 	// apply time.
-	if args.role == RoleWriter {
+	if args.profile.Writes {
 		if holder, claim, clash := s.claimConflict(args.paths); clash {
 			return "", fmt.Errorf("%s already claims %s, which overlaps this agent's paths; wait for it with agent_report, or narrow the paths so the two do not share files", holder, claim)
 		}
@@ -1112,7 +1114,7 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 
 	root := s.opts.Root
 	worktree, repoTop := "", ""
-	if args.role == RoleWriter {
+	if args.profile.Writes {
 		worktree, root, repoTop, err = addWorktree(s.opts.Root)
 		if err != nil {
 			return "", fmt.Errorf("cannot create an isolated worktree for a writer agent: %w", err)
@@ -1135,6 +1137,7 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 	c := &child{
 		name:      name,
 		role:      args.role,
+		profile:   args.profile,
 		task:      args.Task,
 		model:     model,
 		paths:     args.paths,
@@ -1171,7 +1174,7 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 	s.emitUpdate(c)
 
 	note := ""
-	if args.role == RoleWriter {
+	if args.profile.Writes {
 		note = " It edits an isolated copy of the workspace; its changes come back as a single patch the user reviews."
 		if len(args.paths) > 0 {
 			note += " It claims " + strings.Join(args.paths, ", ") + "; another writer cannot claim overlapping paths while it runs."
@@ -1201,7 +1204,7 @@ func (s *Supervisor) claimConflict(paths []string) (holder, claim string, confli
 	s.mu.Unlock()
 	for _, c := range kids {
 		st := c.status()
-		if st.Role != RoleWriter || len(st.Paths) == 0 {
+		if !c.profile.Writes || len(st.Paths) == 0 {
 			continue
 		}
 		switch st.State {
@@ -1389,7 +1392,7 @@ func (s *Supervisor) run(c *child) {
 				continue
 			}
 
-			if c.role == RoleWriter {
+			if c.profile.Writes {
 				s.reviewPatch(c)
 				c.mu.Lock()
 				note := c.patchNote
