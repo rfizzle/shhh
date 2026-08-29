@@ -158,7 +158,7 @@ func (m Model) applyUndo(plan changeset.UndoPlan, force bool) (tea.Model, tea.Cm
 	if m.state == stateFocus {
 		m.refreshFocusView()
 	} else {
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 	}
 	return m, nil

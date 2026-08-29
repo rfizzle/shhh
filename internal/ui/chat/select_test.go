@@ -76,7 +76,7 @@ func selectModel(t *testing.T, c *clip, entries ...entry) Model {
 	for _, e := range entries {
 		m.appendEntry(e)
 	}
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoTop()
 	m.atBottom = false
 	return m
@@ -334,7 +334,7 @@ func TestSelection_WrappedProseCopiesAsOneSentenceAtEveryWidth(t *testing.T) {
 		updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 24})
 		m = updated.(Model)
 		m.appendEntry(entry{kind: entryAssistant, text: wrappedProse})
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoTop()
 		m.atBottom = false
 
@@ -517,7 +517,7 @@ func TestSelection_TopEdgeAutoScrollsUpward(t *testing.T) {
 	c := &clip{}
 	m := tallModel(t, c)
 	m.viewport.GotoBottom()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 
 	bottomRow := transcriptTop + m.paneRows() - 1
@@ -828,7 +828,7 @@ func TestSelection_ConfinedToTheNormalTranscript(t *testing.T) {
 			m := selectModel(t, c, entries...)
 			next, _ := m.enterFocusMode()
 			m = next.(Model)
-			m.viewport.SetContent(m.renderHistory())
+			m.viewport.SetLines(m.renderHistoryLines())
 			m.viewport.GotoTop()
 			return m
 		}},
@@ -1123,8 +1123,9 @@ func TestSelection_ReviewModeKeepsItsOwnMouse(t *testing.T) {
 func TestSelection_DragDoesNotInvalidateTheRenderCache(t *testing.T) {
 	c := &clip{}
 	m := tallModel(t, c)
-	m.viewport.SetContent(m.renderHistory())
-	cachedBefore, countBefore := m.cachedRender, m.cachedCount
+	m.viewport.SetLines(m.renderHistoryLines())
+	cachedBefore := strings.Join(m.cached.lines[:m.cached.frozen], "\n")
+	countBefore := m.cached.count
 	if countBefore == 0 {
 		t.Fatal("the fixture should have a warm render cache")
 	}
@@ -1138,8 +1139,8 @@ func TestSelection_DragDoesNotInvalidateTheRenderCache(t *testing.T) {
 		}
 	}
 
-	if m.cachedCount != countBefore || m.cachedRender != cachedBefore {
-		t.Fatalf("a drag re-rendered the history: %d entries cached → %d", countBefore, m.cachedCount)
+	if m.cached.count != countBefore || strings.Join(m.cached.lines[:m.cached.frozen], "\n") != cachedBefore {
+		t.Fatalf("a drag re-rendered the history: %d entries cached → %d", countBefore, m.cached.count)
 	}
 	if !m.hasSelection() {
 		t.Fatal("and it should still have selected something")

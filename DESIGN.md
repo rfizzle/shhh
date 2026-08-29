@@ -133,11 +133,11 @@ The [Charm](https://charm.sh) stack is the Go ecosystem's best answer for termin
 |---------|------|
 | **bubbletea** | Elm-architecture TUI framework — manages state, input, rendering. `View()` returns a `tea.View`: the screen plus the terminal states the surface asks for (alt screen, mouse mode) |
 | **lipgloss** | Styled string rendering (colors, borders, padding). A `Style` holds a resolved colour and renders at full fidelity; the profile is decided once, in `components` (DESIGN-TUI.md §10a) |
-| **bubbles** | Pre-built components (spinner, text input, viewport, list) |
+| **bubbles** | Pre-built components (spinner, text input, list). The transcript pane is shhh's own: it windows a cached line list rather than taking its content as a string (DESIGN-TUI.md §10m) |
 
 ### Rendering Strategy
 
-**Streaming output** is the primary UX. The LLM response streams token-by-token into a `viewport` model. The user sees text appear in real time.
+**Streaming output** is the primary UX. The LLM response streams token-by-token into the transcript pane. The user sees text appear in real time.
 
 ```
 ┌─────────────────────────────────────┐
@@ -152,7 +152,7 @@ The [Charm](https://charm.sh) stack is the Go ecosystem's best answer for termin
 **Key rendering details:**
 
 - **Spinner**: Shown during the initial network round-trip before first token. Use `bubbles/spinner` with a dot-style animation.
-- **Streaming text**: Written into a `bubbles/viewport`. Each `StreamEvent` token appends to the buffer and triggers a re-render.
+- **Streaming text**: Written into the transcript pane, which holds the rendered history as lines and draws only the window the scroll offset names (DESIGN-TUI.md §10m). Each `StreamEvent` token appends to the buffer and triggers a re-render.
 - **Action bar**: Horizontal selection menu rendered with lipgloss. Arrow keys or single-letter shortcuts (`r`, `e`, `c`) to select.
 - **Colors**: Minimal palette — one accent color (configurable), dim for secondary text, bold for commands. Respect `NO_COLOR` env var.
 - **Inline mode**: No bubbletea — direct `fmt.Fprint` to stderr to avoid corrupting the shell's line buffer. Spinner via simple `\r`-overwrite loop.
@@ -293,7 +293,7 @@ shhh/
 | `charm.land/fang/v2` | Styled `--help`, errors and man pages around cobra |
 | `charm.land/bubbletea/v2` | TUI framework |
 | `charm.land/lipgloss/v2` | Terminal styling |
-| `charm.land/bubbles/v2` | Spinner, text input, viewport |
+| `charm.land/bubbles/v2` | Spinner, text input |
 | `charm.land/glamour/v2` | Markdown rendering in the transcript |
 | `github.com/charmbracelet/ultraviolet` | The terminal event vocabulary the capability probe reads (DESIGN-TUI.md §10k) |
 | `github.com/BurntSushi/toml` | Config file parsing |

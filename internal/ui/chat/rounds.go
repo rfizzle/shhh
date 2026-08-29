@@ -97,7 +97,7 @@ func (m Model) pauseAtRoundLimit() (tea.Model, tea.Cmd) {
 	// row above (appendTurnClose).
 	m.setTurnState(stateInput)
 	m.syncViewport()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, m.autosaveCmd()
 }
@@ -346,7 +346,7 @@ func (m Model) resumeGrantedTurn(p *roundPause) (tea.Model, tea.Cmd) {
 	m.atBottom = true
 	m.trimForRequest()
 	m.syncViewport()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, tea.Batch(m.requestStream(), m.autosaveCmd())
 }

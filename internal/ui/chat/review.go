@@ -247,7 +247,7 @@ func (m Model) closeReview() (tea.Model, tea.Cmd) {
 	if m.state == stateFocus {
 		m.refreshFocusView()
 	} else {
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 	}
 	return m, nil

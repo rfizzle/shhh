@@ -155,7 +155,7 @@ func (m Model) detailFromDraft() (tea.Model, tea.Cmd) {
 		}
 		if m.attachedTo != "" {
 			m.noteChild(m.attachedTo, noStepDetailNotice)
-			m.viewport.SetContent(m.renderHistory())
+			m.viewport.SetLines(m.renderHistoryLines())
 			m.viewport.GotoBottom()
 			return m, nil
 		}
@@ -163,7 +163,7 @@ func (m Model) detailFromDraft() (tea.Model, tea.Cmd) {
 	}
 	m.toggleStepDetail(g)
 	m.invalidateRenderCache()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	if m.atBottom {
 		// A reader watching a running step is at the bottom, and the rows the
 		// chord just opened are what pushed it up. A reader who had scrolled

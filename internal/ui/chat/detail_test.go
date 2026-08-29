@@ -25,7 +25,7 @@ func detailModel(t *testing.T) Model {
 		toolArgs: `{"path":"internal/agent/suite.go"}`, toolResult: "suite line one\nsuite line two",
 		duration: 300 * time.Millisecond})
 	m.invalidateRenderCache()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.atBottom = true
 	return m
 }

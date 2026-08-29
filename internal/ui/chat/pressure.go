@@ -277,7 +277,7 @@ func (m Model) pressureNewSession() (tea.Model, tea.Cmd) {
 	// The window is empty again, so the next crossing is a new crossing.
 	m.pressureShown = false
 	m.appendEntry(entry{kind: entrySystem, text: note})
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, save
 }

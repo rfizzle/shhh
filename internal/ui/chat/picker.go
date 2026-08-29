@@ -210,7 +210,7 @@ func (m Model) updatePick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.appendEntry(entry{kind: entrySystem, text: note})
 	}
 	m.syncViewport()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, nil
 }
@@ -336,7 +336,7 @@ func (m Model) finishModelList(msg modelListMsg) (tea.Model, tea.Cmd) {
 		m.appendEntry(entry{kind: entrySystem, text: note})
 	}
 	m.syncViewport()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, nil
 }

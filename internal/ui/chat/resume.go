@@ -167,7 +167,7 @@ func (m Model) endBrokenTurn() (tea.Model, tea.Cmd) {
 	m.setTurnState(stateInput)
 	m.restoreSteering()
 	m.syncViewport()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, m.autosaveCmd()
 }
@@ -309,7 +309,7 @@ func (m Model) continueStream(res *streamResume) (tea.Model, tea.Cmd) {
 		}
 		m.trimForRequest()
 		m.syncViewport()
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		if len(auto) > 0 {
 			return m, m.execToolsCmd(auto)
@@ -323,7 +323,7 @@ func (m Model) continueStream(res *streamResume) (tea.Model, tea.Cmd) {
 	m.appendEntry(entry{kind: entrySystem, text: "Continuing from the partial reply."})
 	m.trimForRequest()
 	m.syncViewport()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, tea.Batch(m.requestStream(), m.autosaveCmd())
 }
@@ -366,7 +366,7 @@ func (m Model) startRetryWait(f *provider.Failure) (tea.Model, tea.Cmd) {
 	}
 	m.setTurnState(stateRetryWait)
 	m.syncViewport()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, tea.Batch(m.retryTickCmd(), m.autosaveCmd())
 }
@@ -415,7 +415,7 @@ func (m Model) resumeAfterWait() (tea.Model, tea.Cmd) {
 	m.atBottom = true
 	m.trimForRequest()
 	m.syncViewport()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, m.requestStream()
 }
@@ -432,7 +432,7 @@ func (m Model) cancelRetryWait() (tea.Model, tea.Cmd) {
 	m.setTurnState(stateInput)
 	m.restoreSteering()
 	m.syncViewport()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, m.autosaveCmd()
 }

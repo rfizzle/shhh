@@ -34,7 +34,7 @@ func (m Model) WithChangeset(store *changeset.Store, tracker *changeset.Tracker)
 // systemNotice appends a system line and scrolls to it.
 func (m Model) systemNotice(text string) (tea.Model, tea.Cmd) {
 	m.appendEntry(entry{kind: entrySystem, text: text})
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, nil
 }
@@ -147,9 +147,9 @@ func (m Model) closeDiffFull() (tea.Model, tea.Cmd) {
 	case stateFocus:
 		m.refreshFocusView()
 	case stateConfirmRun:
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 	default:
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 	}
 	return m, nil

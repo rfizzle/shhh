@@ -165,7 +165,7 @@ func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	m.invalidateRenderCache()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	if m.atBottom {
 		// The row grew underneath itself. A reader pinned to the live end
 		// stays pinned to it, which is where the rows it just opened are.

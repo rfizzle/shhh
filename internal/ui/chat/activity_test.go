@@ -226,7 +226,7 @@ func TestSlashUI_VerbositySetting(t *testing.T) {
 	if m.verbosity != verbosityHigh {
 		t.Fatalf("verbosity should update, got %v", m.verbosity)
 	}
-	if m.cachedCount != 0 || m.cachedRender != "" {
+	if m.cached.count != 0 || m.cached.lines != nil {
 		t.Fatal("changing verbosity must invalidate the render cache")
 	}
 

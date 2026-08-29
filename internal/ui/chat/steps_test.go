@@ -226,7 +226,7 @@ func TestSteps_SurviveResizeAndCaching(t *testing.T) {
 
 func TestSteps_FocusFoldsAndUnfolds(t *testing.T) {
 	m := stepsModel(t)
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 
 	updated, _ := m.Update(ctrlE())
 	m = updated.(Model)

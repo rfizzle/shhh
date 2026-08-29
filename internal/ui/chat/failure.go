@@ -280,7 +280,7 @@ func (m Model) retryTurn() (tea.Model, tea.Cmd) {
 	m.atBottom = true
 	m.trimForRequest()
 	m.syncViewport()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, m.requestStream()
 }

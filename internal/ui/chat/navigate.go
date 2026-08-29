@@ -197,7 +197,7 @@ func (m Model) returnToInput(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	rm.input, cmd = rm.input.Update(msg)
 	rm.syncCompletions()
 	rm.syncViewport()
-	rm.viewport.SetContent(rm.renderHistory())
+	rm.viewport.SetLines(rm.renderHistoryLines())
 	return rm, cmd
 }
 

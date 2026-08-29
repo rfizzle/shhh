@@ -158,7 +158,7 @@ func (m Model) releaseToDraft(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	m.input, cmd = m.input.Update(msg)
 	m.syncCompletions()
 	m.syncViewport()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	return m, cmd
 }
 
@@ -174,7 +174,7 @@ func (m Model) gateDecision() (tea.Model, tea.Cmd) {
 	// the keyboard; leaving it open would offer keys nothing would answer.
 	m.dismissCompletions()
 	m.syncViewport()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	return m, nil
 }
 
@@ -186,7 +186,7 @@ func (m Model) gateDecision() (tea.Model, tea.Cmd) {
 func (m Model) ungateDecision() (tea.Model, tea.Cmd) {
 	m.releaseDecision()
 	m.syncViewport()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	return m, nil
 }
 

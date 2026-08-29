@@ -134,7 +134,7 @@ func TestView_TwoPaneRowsFitTheirPanes(t *testing.T) {
 	m := inspectorModel(t, 144, 40)
 	// A long user message must wrap to the pane, not to the terminal.
 	m.transcript = append(m.transcript, entry{kind: entryUser, text: strings.Repeat("wrap me ", 40)})
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	for _, line := range strings.Split(m.renderHistory(), "\n") {
 		if w := lipgloss.Width(line); w > m.transcriptWidth() {
 			t.Fatalf("transcript line is %d columns, pane is %d: %q", w, m.transcriptWidth(), stripANSI(line))

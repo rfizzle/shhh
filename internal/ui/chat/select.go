@@ -39,6 +39,7 @@ package chat
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -463,7 +464,7 @@ func (m *Model) refreshTranscript() {
 	if !m.ready {
 		return
 	}
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 }
 
 // selectedText is what the selection would put on the clipboard.
@@ -480,8 +481,7 @@ func (m *Model) selectedText() string {
 		return ""
 	}
 	start, end := m.sel.span()
-	lines := strings.Split(m.renderHistoryRaw(), "\n")
-	return selectedTextFrom(lines, start, end, m.transcriptWidth())
+	return selectedTextFrom(m.renderHistoryRawLines(), start, end, m.transcriptWidth())
 }
 
 // selectedTextFrom extracts the selected rectangle from rendered lines and
@@ -691,15 +691,18 @@ func leadingSpaces(row string) int {
 // what keeps a drag cheap: the history's incremental cache (S-090) is never
 // invalidated by a selection, so moving the pointer restyles the rows the
 // selection covers and re-renders nothing at all.
-func (m Model) applySelectionHighlight(content string) string {
+func (m Model) applySelectionHighlight(content []string) []string {
 	if m.sel.empty() || m.sel.width != m.transcriptWidth() {
 		return content
 	}
 	start, end := m.sel.span()
-	lines := strings.Split(content, "\n")
-	if start.line >= len(lines) {
+	if start.line >= len(content) {
 		return content
 	}
+	// The lines belong to the block cache (S-160, §10m), so the restyle works
+	// on a copy of the slice: the frozen prefix is rendered once and must
+	// still be what a later frame, or the clipboard, reads.
+	lines := slices.Clone(content)
 	last := min(end.line, len(lines)-1)
 	for y := start.line; y <= last; y++ {
 		lo := 0
@@ -719,7 +722,7 @@ func (m Model) applySelectionHighlight(content string) string {
 		}
 		lines[y] = highlightSpan(lines[y], lo, hi)
 	}
-	return strings.Join(lines, "\n")
+	return lines
 }
 
 // lastContentCol is one past the last non-blank display cell of a row.

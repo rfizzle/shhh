@@ -2712,6 +2712,57 @@ thing you opt *out* of. `/ui` names the dialect in its readout, and says so
 when the setting is on and the terminal has never mentioned focus, because
 "on and silent" is the state worth explaining.
 
+### 10m. The transcript window (S-160)
+
+§13 froze the transcript so that a frame redraws one step block instead of the
+session. §10h did the same to the message still arriving. What neither touched
+is what happened to the frozen part afterwards, and it was three passes over
+all of it:
+
+1. the frozen render was one string, so the live tail was **concatenated** onto
+   a copy of the whole history,
+2. a lit selection (§7a) **split** that string into every line of the session
+   to restyle the four the pointer covered,
+3. and the pane it was handed to split it again and measured the width of
+   every line, because the viewport shhh used took its content as a string.
+
+So the redraw a forty-line window costs was the length of the session, three
+times over, eighty times a second. A step block that can never change was
+being copied on every frame of the turn after it.
+
+**The cache holds lines, and the pane holds a window.** A frozen block's lines
+are appended once and never touched again; the live tail is rebuilt after them
+in place; and the pane renders the slice its offset names and no other. The
+frame's cost is what changed plus the height of the pane. Measured over a
+14,000-line transcript, a frame drops from 8.7ms to 0.6ms, and the part that
+still scales with the session is the step tiling of §13a rather than anything
+in the render.
+
+**The lines are byte-identical to the string they replace.** Blocks are
+rendered as text because the spacing between them is a newline the block after
+it begins with (§13), so writing text into the cache continues the line the
+last block left open rather than starting a new one. `renderHistory()` joins
+the lines back up and is what every golden in the package reads, so the
+equivalence is asserted by the whole suite rather than by one test — and by
+`lines_test.go`, which walks a transcript entry by entry and checks the
+incremental render against one that never used the cache.
+
+**The offset is a line, not an item.** Crush's list scrolls by an item index
+and a line within it, which is the right shape for a list whose items are the
+unit of interaction. shhh's are not: the selection is a pair of coordinates in
+rendered transcript space (§7a), the notice rail counts the lines below the
+pane, and the scroll gutter is a proportion of the whole (§10g). All three ask
+which line of the transcript this is, and an item-relative offset would make
+each of them convert.
+
+**The pane reads no keys.** The viewport it replaces bound `j`, `k`, `u`, `d`,
+`f`, `b` and the spacebar by default, which is the bug §7a opens with — the
+pager firing from inside a sentence — and the guard against it was to withhold
+every keystroke from a component that wanted them. Now there is nothing to
+withhold: the transcript is moved by `scrollLines` and `scrollPage`, which the
+wheel, `pgup`/`pgdn`, `shift+↑`/`shift+↓` and reading mode reach, and by
+nothing else.
+
 ---
 
 ## 11. Implementation Notes

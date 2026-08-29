@@ -121,7 +121,7 @@ func (m *Model) trimForRequest() {
 	}
 	m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
 		"Context trimmed: %d older tool result(s) elided.", n)})
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 }
 
@@ -130,7 +130,7 @@ func (m *Model) trimForRequest() {
 func (m Model) startCompact() (tea.Model, tea.Cmd) {
 	if len(m.agent.Messages()) <= 1 {
 		m.appendEntry(entry{kind: entrySystem, text: "Nothing to compact yet."})
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m, nil
 	}
@@ -139,7 +139,7 @@ func (m Model) startCompact() (tea.Model, tea.Cmd) {
 	m.streaming = ""
 	m.atBottom = true
 	m.appendEntry(entry{kind: entrySystem, text: "Compacting conversation…"})
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	msgs := append(m.agent.RequestMessages(), provider.Message{Role: provider.RoleUser, Content: compactInstruction})
 	return m, m.requestStreamFor(msgs)
@@ -157,7 +157,7 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	m.setTurnState(stateInput)
 	if summary == "" {
 		m.appendEntry(entry{kind: entryError, text: "compaction produced no summary; conversation unchanged"})
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m, nil
 	}
@@ -198,7 +198,7 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 	}
 	// The window is empty again, so the next alert is a new crossing.
 	m.pressureShown = false
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, m.autosaveCmd()
 }
@@ -274,7 +274,7 @@ func (m Model) abortCompact() (tea.Model, tea.Cmd) {
 	m.cancel = nil
 	m.appendEntry(entry{kind: entryError, text: "compaction failed: the model responded with tool calls; conversation unchanged"})
 	m.setTurnState(stateInput)
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, nil
 }

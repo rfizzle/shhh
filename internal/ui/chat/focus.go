@@ -93,7 +93,7 @@ func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 		} else {
 			m.appendEntry(entry{kind: entrySystem, text: notice})
 		}
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m, nil
 	}
@@ -102,7 +102,7 @@ func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 	if len(idxs) == 0 {
 		m.focusIdx = -1
 		m.invalidateRenderCache()
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		return m, nil
 	}
 	m.focusIdx = idxs[len(idxs)-1]
@@ -245,10 +245,11 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if typedRune(msg) {
 		return m.returnToInput(msg)
 	}
-	// Anything left is chrome — the viewport keeps it.
-	var cmd tea.Cmd
-	m.viewport, cmd = m.viewport.Update(msg)
-	return m, cmd
+	// Anything left is chrome the transcript has no answer for. It used to be
+	// handed to the bubbles viewport, whose own keymap bound the arrows and
+	// the pager letters; shhh's pane reads no keys (S-160, viewport.go), and
+	// every key this mode scrolls on is named in the switch above.
+	return m, nil
 }
 
 // focusedClose returns the turn-close entry the cursor is on, if it is on
@@ -274,7 +275,7 @@ func (m Model) exitFocusMode() (tea.Model, tea.Cmd) {
 	m.leaveSurface()
 	m.invalidateRenderCache()
 	m.syncViewport()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	return m, nil
 }
 

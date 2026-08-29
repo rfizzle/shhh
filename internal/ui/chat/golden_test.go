@@ -512,7 +512,7 @@ func TestGolden_ScrollGutter(t *testing.T) {
 			m.transcript = entries
 			m.invalidateRenderCache()
 			m.viewport.SetHeight(8)
-			m.viewport.SetContent(m.renderHistory())
+			m.viewport.SetLines(m.renderHistoryLines())
 			m.viewport.GotoBottom()
 			mut(&m)
 			return m.transcriptBody()

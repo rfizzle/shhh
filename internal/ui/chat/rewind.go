@@ -75,7 +75,7 @@ func checkpointsFromMessages(msgs []provider.Message) []checkpoint {
 func (m Model) openRewindPick() (tea.Model, tea.Cmd) {
 	if len(m.checkpoints) == 0 {
 		m.appendEntry(entry{kind: entrySystem, text: "No checkpoints to rewind to yet."})
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m, nil
 	}
@@ -118,7 +118,7 @@ func (m Model) updateRewindPick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	note := m.rewindToTurn(turn)
 	m.appendEntry(entry{kind: entrySystem, text: note})
 	m.syncViewport()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, m.autosaveCmd()
 }

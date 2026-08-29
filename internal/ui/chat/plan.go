@@ -143,7 +143,7 @@ func (m Model) approvePlan(execMode agent.Mode) (tea.Model, tea.Cmd) {
 	m.invalidateRenderCache()
 	m.trimForRequest()
 	m.syncViewport()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, tea.Batch(m.requestStream(), m.autosaveCmd())
 }
@@ -155,7 +155,7 @@ func (m Model) keepPlanning() (tea.Model, tea.Cmd) {
 	m.setTurnState(stateInput)
 	m.syncViewport()
 	m.appendEntry(entry{kind: entrySystem, text: "Keep planning — describe what to change and the agent will revise the plan."})
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, nil
 }
@@ -167,7 +167,7 @@ func (m Model) rejectPlan() (tea.Model, tea.Cmd) {
 	m.setTurnState(stateInput)
 	m.syncViewport()
 	m.appendEntry(entry{kind: entrySystem, text: "Plan rejected. Still in plan mode — give new directions, or switch modes with Shift+Tab or /mode."})
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, nil
 }
@@ -188,7 +188,7 @@ func (m Model) savePlanFromCard() (tea.Model, tea.Cmd) {
 		m.appendEntry(entry{kind: entrySystem, text: "Plan saved to " + path})
 	}
 	m.syncViewport()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, nil
 }

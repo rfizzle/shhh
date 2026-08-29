@@ -25,7 +25,7 @@ func focusModel(t *testing.T) Model {
 	m.appendEntry(entry{kind: entryUser, text: "look around"})
 	m.appendEntry(entry{kind: entryTool, toolName: "search", toolArgs: `{"pattern":"x"}`, toolResult: strings.TrimRight(long.String(), "\n")})
 	m.appendEntry(entry{kind: entryCommand, text: "go test ./...", toolResult: "ok", exitCode: 0})
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	return m
 }
 

@@ -82,7 +82,7 @@ func clickAnswer(t *testing.T, m Model, x, y int) Model {
 func clickModel(t *testing.T) Model {
 	t.Helper()
 	m := focusModel(t).WithMouse(true)
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoTop()
 	m.atBottom = false
 	return m

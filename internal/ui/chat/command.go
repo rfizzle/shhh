@@ -126,7 +126,7 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		if !entersConfirm {
 			m.appendEntry(entry{kind: entrySystem, text: result})
 		}
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m, nil
 
@@ -195,7 +195,7 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 func (m Model) surfaceNotice(text string) (tea.Model, tea.Cmd) {
 	if m.attachedTo != "" && m.subagents != nil {
 		m.noteChild(m.attachedTo, text)
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		m.atBottom = true
 		return m, nil

@@ -163,7 +163,7 @@ func (m *Model) attach(name string) {
 	// textarea re-fits around it.
 	m.syncInputWidth()
 	m.syncViewport()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.restoreScroll()
 }
 
@@ -209,7 +209,7 @@ func (m *Model) purgeChildAsks(name string) {
 func (m Model) openAgentList() (tea.Model, tea.Cmd) {
 	if m.subagents == nil {
 		m.appendEntry(entry{kind: entrySystem, text: "Sub-agents are unavailable in this session."})
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m, nil
 	}
@@ -431,7 +431,7 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			// The orchestrator's turn: same semantics as Ctrl+C.
 			if m.state == stateStreaming {
 				m.cancelStreaming()
-				m.viewport.SetContent(m.renderHistory())
+				m.viewport.SetLines(m.renderHistoryLines())
 				m.viewport.GotoBottom()
 				return m, m.autosaveCmd()
 			}
@@ -461,7 +461,7 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			m.noteChild(name, err.Error())
 		} else {
 			m.appendEntry(entry{kind: entrySystem, text: "Retrying " + name + " on its original task."})
-			m.viewport.SetContent(m.renderHistory())
+			m.viewport.SetLines(m.renderHistoryLines())
 			m.viewport.GotoBottom()
 		}
 		return m, nil
@@ -534,7 +534,7 @@ func (m Model) updateListAnswer(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Mod
 	}
 	m.appendEntry(entry{kind: entrySystem, text: verdict + " " + ask.Agent + " ▸ " + ask.Title})
 	m.syncViewport()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, nil
 }
@@ -557,7 +557,7 @@ func (m Model) attachedSubmit() (tea.Model, tea.Cmd) {
 	if err := m.subagents.Steer(m.attachedTo, text); err != nil {
 		m.noteChild(m.attachedTo, "Cannot steer: "+err.Error())
 	}
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	m.atBottom = true
 	return m, nil
@@ -592,7 +592,7 @@ func (m Model) attachedCommand(parts []string) (tea.Model, tea.Cmd) {
 	default:
 		m.noteChild(name, "Commands while attached: /stats, /diff, /permissions [name], /agents, /attach <name>, /detach, /exit (kill this agent). Plain text steers the agent; esc detaches.")
 	}
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	m.atBottom = true
 	return m, nil
@@ -684,7 +684,7 @@ func (m Model) cycleAttachedMode() (tea.Model, tea.Cmd) {
 			m.noteChild(name, fmt.Sprintf("Mode set to %s — %s.", next, next.Describe()))
 		}
 	}
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	if m.atBottom {
 		m.viewport.GotoBottom()
 	}
@@ -703,7 +703,7 @@ func (m Model) attachedCancel() (tea.Model, tea.Cmd) {
 			} else {
 				m.purgeChildAsks(name)
 			}
-			m.viewport.SetContent(m.renderHistory())
+			m.viewport.SetLines(m.renderHistoryLines())
 			m.viewport.GotoBottom()
 			return m, nil
 		}

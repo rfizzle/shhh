@@ -36,7 +36,7 @@ func proseModel(t *testing.T) Model {
 		m.appendEntry(entry{kind: entryUser, text: "a question about the parser"})
 		m.appendEntry(entry{kind: entryAssistant, text: "an answer with several\nlines of prose in it"})
 	}
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	m.atBottom = true
 	return m

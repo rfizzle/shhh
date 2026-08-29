@@ -10,7 +10,6 @@ import (
 
 	"charm.land/bubbles/v2/spinner"
 	"charm.land/bubbles/v2/textarea"
-	"charm.land/bubbles/v2/viewport"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -271,7 +270,7 @@ type Model struct {
 	runFn    func(context.Context, string) (string, int)
 	switchFn func(string)
 
-	viewport viewport.Model
+	viewport viewport
 	input    textarea.Model
 	spinner  spinner.Model
 	// spawnRow is 1 + the transcript index of the current round's first spawn
@@ -296,15 +295,10 @@ type Model struct {
 	streamDirty bool
 
 	transcript []entry
-	// Incremental render cache: entries [0, cachedCount) rendered at
-	// cachedWidth, always a whole number of step blocks (S-090). cachedSep is
-	// the last cached unit's spacing entry, so the tail joins on the same
-	// rhythm.
-	cachedRender string
-	cachedWidth  int
-	cachedCount  int
-	cachedSep    entry
-	cachedHasSep bool
+	// Incremental render cache: the rendered lines of entries
+	// [0, cached.count), always a whole number of step blocks (S-090), with
+	// the live tail rebuilt after them each frame (S-160, §10m, lines.go).
+	cached lineCache
 	// streamMD is the arriving message's own cache, keyed on nothing the
 	// caches above are: it holds a render of the part of that one message that
 	// can no longer change, so a chunk re-renders the tail rather than the
@@ -988,14 +982,13 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.resizeSelection(paneWidth)
 
 		if !m.ready {
-			m.viewport = viewport.New(viewport.WithWidth(paneWidth), viewport.WithHeight(vpHeight))
-			m.viewport.MouseWheelEnabled = true
-			m.viewport.SetContent(m.renderHistory())
+			m.viewport = newViewport(paneWidth, vpHeight)
+			m.viewport.SetLines(m.renderHistoryLines())
 			m.ready = true
 		} else {
 			m.viewport.SetWidth(paneWidth)
 			m.viewport.SetHeight(vpHeight)
-			m.viewport.SetContent(m.renderHistory())
+			m.viewport.SetLines(m.renderHistoryLines())
 		}
 		// A placement is cells at a size (S-158, §12h): a pane that changed
 		// shape under a picture the terminal is holding is a picture that no
@@ -1176,7 +1169,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if m.state == stateStreaming {
 				m.cancelStreaming()
-				m.viewport.SetContent(m.renderHistory())
+				m.viewport.SetLines(m.renderHistoryLines())
 				m.viewport.GotoBottom()
 				return m, m.autosaveCmd()
 			}
@@ -1450,7 +1443,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.armPlan()
 			m.syncViewport()
 		}
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m, m.autosaveCmd()
 
@@ -1476,7 +1469,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.streaming = ""
 		m.events = nil
 		m.cancel = nil
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		if len(auto) > 0 {
 			return m, m.execToolsCmd(auto)
@@ -1493,7 +1486,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.recordToolEvent(r.Call.Name, r.Duration, outcomeFromResult(r.Result))
 			m.appendEntry(entry{kind: entryTool, toolName: r.Call.Name, toolArgs: r.Call.Arguments, toolResult: r.Result, duration: r.Duration})
 		}
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		if m.agent.QueuedApprovals() > 0 {
 			return m.advanceApprovalQueue()
@@ -1525,7 +1518,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.pendingApproval != nil {
 			m.pendingApproval = nil
 			m.agent.ResolveApproval(execToolResult(out, msg.exitCode))
-			m.viewport.SetContent(m.renderHistory())
+			m.viewport.SetLines(m.renderHistoryLines())
 			m.viewport.GotoBottom()
 			return m.advanceApprovalQueue()
 		}
@@ -1539,7 +1532,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if cmd := m.dispatchSteering(); cmd != nil {
 			return m, cmd
 		}
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m, m.autosaveCmd()
 
@@ -1569,7 +1562,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		} else {
 			m.appendEntry(entry{kind: entryTool, toolName: req.call.Name, toolArgs: req.call.Arguments, toolResult: msg.result, duration: msg.duration})
 		}
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
 
@@ -1632,17 +1625,13 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	}
 
-	// The viewport's own pager bindings are bubbles' defaults — j, k, u, d,
-	// f, b and the spacebar — so handing it every keystroke scrolled the
-	// history out from under any draft containing those letters. While the
-	// input owns the keyboard the transcript hears no keys at all: it is
-	// moved by the wheel, by pgup/pgdn and by focus mode, never by a
-	// character the sentence wanted (S-115, §7a).
-	if _, isKey := msg.(tea.KeyPressMsg); !isKey {
-		var cmd tea.Cmd
-		m.viewport, cmd = m.viewport.Update(msg)
-		cmds = append(cmds, cmd)
-	}
+	// Nothing is forwarded to the transcript here. The pager bindings that
+	// used to be — bubbles' defaults, j, k, u, d, f, b and the spacebar —
+	// scrolled the history out from under any draft containing those letters,
+	// so shhh's own pane reads no keys at all (S-160, viewport.go). While the
+	// input owns the keyboard the transcript is moved by the wheel, by
+	// pgup/pgdn and by focus mode, never by a character the sentence wanted
+	// (S-115, §7a).
 	m.atBottom = m.viewport.AtBottom()
 
 	return m, tea.Batch(cmds...)
@@ -1689,7 +1678,7 @@ func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
 	m.setTurnState(stateStreaming)
 	m.streaming = ""
 	m.atBottom = true
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, m.requestStream()
 }
@@ -1996,7 +1985,7 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		m.setTurnState(stateInput)
 		m.syncViewport()
 		m.appendEntry(entry{kind: entrySystem, text: "Run cancelled."})
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m, nil
 	}
@@ -2075,7 +2064,7 @@ func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
 	// tool rounds, so the model sees them on its next request (S-058). They
 	// count as fresh user input, so they also lift a hit round cap.
 	if m.injectSteering() {
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 	}
 	// The ceiling is the session's, not the Agent's, because [+50] raises it
@@ -2300,7 +2289,7 @@ func (m *Model) dispatchSteering() tea.Cmd {
 	m.streaming = ""
 	m.atBottom = true
 	m.trimForRequest()
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return tea.Batch(m.requestStream(), m.autosaveCmd())
 }
@@ -2349,7 +2338,7 @@ func (m *Model) resetTranscript() {
 // has landed, and forgets that a repaint was owed (S-149, §10h).
 func (m *Model) flushStream() {
 	m.streamDirty = false
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	if m.atBottom {
 		m.viewport.GotoBottom()
 	}
@@ -2359,9 +2348,7 @@ func (m *Model) flushStream() {
 // entry (used when an entry's rendering changes in place, e.g. focus-mode
 // expansion).
 func (m *Model) invalidateRenderCache() {
-	m.cachedRender = ""
-	m.cachedCount = 0
-	m.cachedSep, m.cachedHasSep = entry{}, false
+	m.cached.reset()
 }
 
 // renderEntry renders one entry's own lines, always ending in exactly one
@@ -2532,42 +2519,57 @@ func formatTokenCount(n int64) string {
 	return fmt.Sprintf("%.1fk", float64(n)/1000)
 }
 
-// renderHistory is the transcript the viewport shows: the history, with any
+// renderHistoryLines is the transcript the pane shows: the history, with any
 // application-owned selection lit over it (S-145, select.go). The highlight
-// is the last thing applied and the first thing dropped — renderHistoryRaw is
+// is the last thing applied and the first thing dropped — the raw render is
 // what the clipboard extraction reads, so no selection styling can reach it.
-func (m *Model) renderHistory() string {
-	content := m.renderHistoryRaw()
+//
+// Lines rather than one string is the currency the pane takes (S-160, §10m),
+// so nothing between the block cache and the screen splits the session into
+// lines again.
+func (m *Model) renderHistoryLines() []string {
+	lines := m.renderHistoryRawLines()
 	if !m.selectableSurface() {
-		return content
+		return lines
 	}
-	return m.applySelectionHighlight(content)
+	return m.applySelectionHighlight(lines)
+}
+
+// renderHistory and renderHistoryRaw are the same two renders as one string.
+// Nothing on the drawing path uses them: they are what the goldens capture and
+// what the tests read, joined back up from the lines above.
+func (m *Model) renderHistory() string {
+	return strings.Join(m.renderHistoryLines(), "\n")
 }
 
 func (m *Model) renderHistoryRaw() string {
+	return strings.Join(m.renderHistoryRawLines(), "\n")
+}
+
+func (m *Model) renderHistoryRawLines() []string {
 	if m.state == stateFocus {
 		// Focus mode renders fresh with the selection gutter, bypassing the
 		// incremental cache; it scopes to whichever agent is focused (S-077).
 		content, _, _ := m.renderFocusHistory()
-		return content
+		return strings.Split(content, "\n")
 	}
 	// Attached view (S-077): the focused child's session, rendered fresh from
 	// the supervisor's live transcript (the parent's cache is untouched).
 	if m.attachedTo != "" && m.subagents != nil {
-		return m.renderAttachedHistory()
+		return strings.Split(m.renderAttachedHistory(), "\n")
 	}
 	if len(m.transcript) == 0 && m.turnState() != stateStreaming {
 		// First contact (S-105): the empty session states what it already
 		// knows about the project and offers work. Hosts without a survey —
 		// the attached child view, a bare test model — keep the plain line.
 		if m.startScreenShowing() {
-			return m.renderStartScreen(m.transcriptWidth())
+			return strings.Split(m.renderStartScreen(m.transcriptWidth()), "\n")
 		}
-		return sty.Welcome.Render("Type a message to start chatting.")
+		return strings.Split(sty.Welcome.Render("Type a message to start chatting."), "\n")
 	}
 	w := m.transcriptWidth()
-	if w != m.cachedWidth {
-		m.cachedWidth = w
+	if w != m.cached.width {
+		m.cached.width = w
 		m.invalidateRenderCache()
 	}
 	// History renders as step blocks (S-090, §13). Every block but the last
@@ -2582,37 +2584,40 @@ func (m *Model) renderHistoryRaw() string {
 	// A live fan-out is the one entry that keeps changing without a row
 	// landing in it, so its block cannot be frozen either (S-110).
 	freeze := min(lastLiveBlock(blocks), m.liveFanoutBlock(blocks))
+	// Back to the settled lines and no further: what the frozen blocks wrote
+	// stays written, and only the tail after them is built again (§10m).
+	m.cached.rewind()
 	for bi := 0; bi < freeze; bi++ {
 		blk := blocks[bi]
-		if blk.end <= m.cachedCount {
+		if blk.end <= m.cached.count {
 			continue
 		}
-		block, prev, have := joinUnits(m.blockUnits(blk, m.transcript, w, false, -1), m.cachedSep, m.cachedHasSep)
-		m.cachedRender += block
-		m.cachedSep, m.cachedHasSep = prev, have
-		m.cachedCount = blk.end
+		block, prev, have := joinUnits(m.blockUnits(blk, m.transcript, w, false, -1), m.cached.sep, m.cached.hasSep)
+		m.cached.write(block)
+		m.cached.freeze()
+		m.cached.sep, m.cached.hasSep = prev, have
+		m.cached.count = blk.end
 	}
-	s := m.cachedRender
-	prev, havePrev := m.cachedSep, m.cachedHasSep
+	prev, havePrev := m.cached.sep, m.cached.hasSep
 	for _, blk := range blocks {
-		if blk.end <= m.cachedCount {
+		if blk.end <= m.cached.count {
 			continue
 		}
 		var block string
 		block, prev, havePrev = joinUnits(m.blockUnits(blk, m.transcript, w, false, -1), prev, havePrev)
-		s += block
+		m.cached.write(block)
 	}
 	if m.turnState() == stateStreaming && m.streaming != "" {
 		if havePrev {
-			s += separatorBefore(prev, entry{kind: entryAssistant})
+			m.cached.write(separatorBefore(prev, entry{kind: entryAssistant}))
 		}
-		s += sty.Assistant.Render("Assistant") + "\n"
+		m.cached.write(sty.Assistant.Render("Assistant") + "\n")
 		// The one thing in the transcript that is not frozen, and the only
 		// place the stable-prefix cache is used: everything else here is
 		// either cached whole or rendered once (S-149, §10h, streammd.go).
-		s += m.streamMD.Render(m.streaming, w)
+		m.cached.write(m.streamMD.Render(m.streaming, w))
 	}
-	return s
+	return m.cached.lines
 }
 
 func (m Model) contentWidth() int {

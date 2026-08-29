@@ -180,7 +180,7 @@ func TestFold_EachVerbosityLevelOfOneEntryList(t *testing.T) {
 
 func TestFold_EnterRestoresTheRowsInPlace(t *testing.T) {
 	m := foldModel(t)
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 
 	updated, _ := m.Update(ctrlE())
 	m = updated.(Model)

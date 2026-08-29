@@ -249,7 +249,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	if err != nil {
 		m.agent.ResolveApproval("error: " + err.Error())
 		m.appendEntry(entry{kind: entrySystem, text: "Skipped a tool call with invalid arguments."})
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
 	}
@@ -281,7 +281,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 		m.recordDecision(decisionAllow, "user-batch")
 		req.auto = true
 		m.appendEntry(entry{kind: entrySystem, text: "Approved with the batch: " + req.summary})
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		if req.kind == approvalExec {
 			return m.executeRun()
@@ -296,7 +296,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 		m.recordDecision(decisionAllow, reasonCode(reason))
 		req.auto = true
 		m.appendEntry(entry{kind: entrySystem, text: "Auto-approved (" + reason + "): " + req.summary})
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		if req.kind == approvalExec {
 			return m.executeRun()
@@ -309,7 +309,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 		m.pendingScope = scopeReach{}
 		m.agent.ResolveApproval(denialResult(reason))
 		m.appendEntry(deniedEntry(req, decidedByAuto, reason, 0))
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
 	}
@@ -362,7 +362,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		m.recordDecision(decisionAllow, "classifier")
 		req.auto = true
 		m.appendEntry(entry{kind: entrySystem, text: "Auto-approved (classifier, " + elapsed + "): " + req.summary})
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		if req.kind == approvalExec {
 			return m.executeRun()
@@ -378,7 +378,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		m.pendingScope = scopeReach{}
 		m.agent.ResolveApproval(denialResult(reason))
 		m.appendEntry(deniedEntry(req, decidedByAuto, reason, v.Elapsed))
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()
 	}
@@ -387,7 +387,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 	if v.Failed {
 		m.recordDecision(decisionAsk, "classifier-failed")
 		m.appendEntry(entry{kind: entrySystem, text: "Classifier unavailable (" + v.Reason + "); asking you instead."})
-		m.viewport.SetContent(m.renderHistory())
+		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 	} else {
 		m.recordDecision(decisionAsk, "safety")
@@ -438,7 +438,7 @@ func (m Model) declineApproval() (tea.Model, tea.Cmd) {
 	}
 	m.agent.ResolveApproval(content)
 	m.appendEntry(deniedEntry(req, decidedByYou, "", 0))
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m.advanceApprovalQueue()
 }
@@ -797,6 +797,6 @@ func (m *Model) syncViewport() {
 	m.resizeSelection(w)
 	m.viewport.SetHeight(h)
 	m.viewport.SetWidth(w)
-	m.viewport.SetContent(m.renderHistory())
+	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 }
