@@ -238,6 +238,56 @@ Two rules they share are worth stating: none of them writes to your machine
 without a card, and doctor in particular names fixes rather than applying them
 — the screen that changes settings is the one that asks first.
 
+### The context surface
+
+The window has always been reported as a percentage on a rail and, once it is
+nearly full, as a card that asks what to do about it. Neither answers the
+question a percentage provokes, which is *what is in there*, and the card only
+asks it at the moment it is too late to act calmly on the answer.
+
+So the same accounting is reachable by name at any time, and it is drawn as
+the thing it is. The window is one block meter wrapped to the inspector rail's
+own width and ten rows deep, so the whole of it is on screen and what is left
+is a shape rather than a number to read. Each category takes one unbroken run
+of cells in its own colour, in the order the legend lists them, so the
+composition can be read without reading a number and a run can be found by
+counting down the legend.
+
+None of those colours is a new one, and that is the constraint the tinting had
+to earn its way past rather than the decoration it might look like. The system
+prompt is chrome, in the one sense that matters here: it is there whatever you
+do. Project context is the heading tone, because it is a document read in
+whole and the only category you shrink by editing a file. Tool definitions are
+accent, which is already the colour of every tool glyph in the product. The
+conversation is body, the ordinary text this interface is made of — and it is
+the category nobody should be encouraged to read as waste. Tool results are
+the tone tool output is drawn in everywhere else, which is also the category
+the window trim elides first, so the grid shows which cells will go before
+they go. Free space keeps the empty cell's grey *and* its own glyph, which is
+what holds used and free apart on a terminal with no colour, where all five
+tints collapse into two shades.
+
+Pressure is not in the grid. It stays on the number, which climbs the usual
+ladder in the header and again beside the total, because a grid that turned
+red at ninety percent would have to stop saying what filled it at exactly the
+moment that became the useful question.
+
+Below both, the categories that are made of many things fold open: what each
+registered tool costs to have available, what each tool's output is costing
+now that it has been used, and which exchange the conversation spent itself
+on. They arrive folded and each folded row counts what it swallowed, so the
+breakdown is an answer before it is opened and opening one is a question the
+reader chose to ask. A part too small to name is still counted in the tail
+rather than dropped, and a turn the session opened on the reader's behalf — a
+compaction summary, a command's output — is named for what it is rather than
+quoted back as if they had asked it.
+
+It reads and changes nothing, which is why it has no key that asks anything —
+the surface that decides what to do about a full window is the card, and this
+one only says what filled it. Because it changes nothing, it is also the one
+occupancy surface that can be opened in the middle of a turn: a window filling
+up while the agent works is exactly when the question gets asked.
+
 ### A staged picture
 
 A chip above the draft is the right answer to *what is attached* and the wrong

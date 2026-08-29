@@ -123,6 +123,7 @@ var slashCommands = []slashCommand{
 			{dynamic: reasoningArgs},
 			{after: []string{"default"}, options: reasoningLevelArgs()},
 		}},
+	{name: "/context", desc: "The window as a meter, itemised down to the tool"},
 	{name: "/stats", desc: "Context occupancy and session spend"},
 	{name: "/status", desc: "Where the session is, and whether it is still on target"},
 	{name: "/ui", args: "verbosity <low|normal|high> | mono <on|off>", desc: "Activity feed density and monochrome mode",

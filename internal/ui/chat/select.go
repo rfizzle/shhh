@@ -153,7 +153,7 @@ func (m Model) selectableSurface() bool {
 		return false
 	}
 	switch m.state {
-	case stateDiffFull, stateReview, stateFocus:
+	case stateDiffFull, stateReview, stateContext, stateFocus:
 		return false
 	}
 	return true

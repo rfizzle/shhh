@@ -256,6 +256,12 @@ func (m Model) closeReview() (tea.Model, tea.Cmd) {
 
 // renderReviewHint fills the input area while review has the screen. The
 // surface's own footer carries the keys; this says where esc goes.
+// renderContextHint is the context surface's bottom panel: it holds the
+// keyboard, so the panel states the way out and nothing else.
+func (m Model) renderContextHint() string {
+	return sty.SystemMsg.Render("context · "+contextKeyHint()) + strings.Repeat("\n", inputHeight-1)
+}
+
 func (m Model) renderReviewHint() string {
 	label := "review · esc back"
 	if m.reviewReturn == stateFocus {

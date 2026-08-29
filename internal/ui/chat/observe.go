@@ -210,6 +210,10 @@ func (m Model) statsReport() string {
 		fmt.Fprintf(&sb, " · last turn ↑%s ↓%s in %s",
 			formatTokenCount(t.In), formatTokenCount(t.Out), components.FormatElapsed(t.Elapsed))
 	}
+	// The occupancy half of this report has a surface of its own that draws
+	// it and itemises it below the category. Naming it here is how a reader
+	// who came for the breakdown finds out there is a better answer to it.
+	sb.WriteString("\n/context draws the occupancy and itemises it down to the tool.")
 	return sb.String()
 }
 

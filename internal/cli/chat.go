@@ -537,7 +537,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	model := chat.New(env.messages, env.stream).
 		WithTitle(session.title).
 		WithObserver(recorder.observer()).
-		WithToolTokenEstimate(estimateToolDefTokens(session.toolDefs)).
+		WithToolDefinitions(toolDefTokens(session.toolDefs)).
 		WithProjectContextTokens(env.projectTokens).
 		WithToolExecutor(executor).
 		WithDB(db).
@@ -763,14 +763,23 @@ func gitSnapshot() chat.GitSnapshot {
 	return chat.GitSnapshot{Repo: fp.Repo, Head: fp.Head, StatusHash: fp.StatusHash, DirtyPaths: fp.DirtyPaths}
 }
 
-// estimateToolDefTokens roughly estimates the context cost of the registered
-// tool definitions, for /stats' occupancy breakdown.
-func estimateToolDefTokens(defs []provider.Tool) int64 {
-	b, err := json.Marshal(defs)
-	if err != nil {
-		return 0
+// toolDefTokens roughly estimates what each registered tool definition costs
+// the context window, for the occupancy breakdown and the context surface's
+// itemisation of it.
+//
+// Each definition is measured on its own rather than the whole set at once,
+// which loses the punctuation between them — a few tokens across the toolset,
+// against a per-tool answer the sum alone cannot give.
+func toolDefTokens(defs []provider.Tool) []chat.ToolTokens {
+	out := make([]chat.ToolTokens, 0, len(defs))
+	for _, def := range defs {
+		b, err := json.Marshal(def)
+		if err != nil {
+			continue
+		}
+		out = append(out, chat.ToolTokens{Name: def.Name, Tokens: agent.EstimateTokens(string(b))})
 	}
-	return agent.EstimateTokens(string(b))
+	return out
 }
 
 // pickSavedChat shows the saved-chat picker and returns the chosen session

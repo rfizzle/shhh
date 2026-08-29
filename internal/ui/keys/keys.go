@@ -182,6 +182,32 @@ var Reading = ReadingKeys{
 	Back: bind("q", "back to the prompt", "q", "esc", "ctrl+e", "ctrl+c"),
 }
 
+// ContextKeys are the occupancy surface's own. It is a takeover in the chat
+// rather than a `shhh` sub-command, so its way out is worded as going back to
+// the prompt and not as quitting: the session it is a reading of is still
+// running underneath it.
+type ContextKeys struct {
+	Move   Binding
+	Expand Binding
+	List   Binding
+	Back   Binding
+}
+
+// All is the surface's keys in the order it offers them, which is the order
+// `?` lists them in.
+func (k ContextKeys) All() []Binding {
+	return []Binding{k.Move, k.Expand, k.List, k.Back}
+}
+
+var Context = ContextKeys{
+	Move: bind("↑↓/jk", "move", "up", "down", "j", "k"),
+	// One key both folds and unfolds. A surface whose every group is a fold
+	// would spend a second key saying what the glyph on the row already says.
+	Expand: bind("enter", "expand or fold", "enter"),
+	List:   bind("?", "keys", "?"),
+	Back:   bind("q", "back to the prompt", "q", "esc", "ctrl+c"),
+}
+
 // RowKeys are the offers a transcript row carries. They are the register's
 // awkward corner and its own subject: passive entries whose keys are answered
 // by reading mode standing on the row, which is why the input keeps every one

@@ -440,6 +440,24 @@ func TestGolden_RoundLimitPause(t *testing.T) {
 // TestGolden_PressureCard captures the context-pressure card where the
 // session actually raises it: in the bottom panel, at the end of a turn that
 // left the window at the alert threshold.
+// TestGolden_ContextScreen captures the context surface through the host:
+// the pane it takes over, built from a real session's accounting rather than
+// from a fixture, so the columns the component draws are checked against
+// numbers the product actually produces.
+func TestGolden_ContextScreen(t *testing.T) {
+	captureGolden(t, "context-screen", "the context surface in the pane", goldenWidths, func(width int) []golden.Panel {
+		m := contextModel(t, width)
+		m = sendText(t, m, "/context")
+		folded := strings.Join(m.contextLines(), "\n")
+		updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+		m = updated.(Model)
+		return []golden.Panel{
+			{Label: "as it opens · both groups folded", View: folded},
+			{Label: "the tool definitions opened", View: strings.Join(m.contextLines(), "\n")},
+		}
+	})
+}
+
 func TestGolden_PressureCard(t *testing.T) {
 	captureGolden(t, "pressure-card", "context pressure in the panel", goldenWidths, func(width int) []golden.Panel {
 		m := pressureModel(t, width)

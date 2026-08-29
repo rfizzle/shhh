@@ -151,6 +151,12 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		// The cumulative session diff, full screen.
 		return m.openSessionDiff()
 
+	case text == "/context":
+		// The occupancy surface, full screen. It reads the conversation
+		// and changes nothing in it, so it is not idleOnly: a window filling
+		// up mid-turn is exactly when the question gets asked.
+		return m.openContext()
+
 	case name == "/review":
 		// Review mode over a turn's changeset; bare takes the
 		// most recent turn that changed anything.

@@ -344,7 +344,22 @@ func monoFixtures() []monoSurface {
 		return s.View(w)
 	}
 
+	// The context surface's fold. The label and the count are held constant,
+	// so the fold glyph is the only thing left to say whether a group is open
+	// — and the occupancy grid, which is a run of one glyph, must still be
+	// telling the reader something under two greys.
+	contextFold := func(open bool) string {
+		c := goldenContextScreen()
+		c.Groups = c.Groups[:1]
+		c.Groups[0].Open = open
+		return c.View(w)
+	}
+
 	return []monoSurface{
+		{"the context surface", []monoState{
+			{"folded", contextFold(false)},
+			{"open", contextFold(true)},
+		}},
 		{"cockpit mode segment", []monoState{
 			// The mode word is held constant on purpose: the glyph has to
 			// carry the difference on its own.

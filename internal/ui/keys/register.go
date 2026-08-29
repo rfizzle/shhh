@@ -92,6 +92,13 @@ func Surfaces() []Surface {
 			Bindings: Reading.All(),
 		},
 		{
+			Name:     "the context surface",
+			Section:  "docs/interface/surfaces.md#the-context-surface",
+			Position: Takeover,
+			Reached:  "/context",
+			Bindings: Context.All(),
+		},
+		{
 			Name:     "a transcript row's own offers",
 			Section:  "docs/interface/surfaces.md#the-turns-close, docs/interface/surfaces.md#the-recovery-row",
 			Position: Beside,

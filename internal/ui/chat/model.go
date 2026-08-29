@@ -95,6 +95,11 @@ const (
 	// surface — but nothing is streaming and the input is not live, so the
 	// wait owns the keyboard for the two keys it offers.
 	stateRetryWait
+	// stateContext: the context surface is up — the window drawn as a
+	// wrapped meter, the categories beside it, and the tool breakdowns
+	// folded under both. A takeover: full width, the rail hidden, esc
+	// returns. It reads the session and changes nothing in it.
+	stateContext
 	// statePicture: a staged image is showing full-pane. It is
 	// the one surface that is opened by naming a file rather than by a key,
 	// because the chip it belongs to has no key of its own.
@@ -702,6 +707,16 @@ type Model struct {
 	// the card arrives once per crossing rather than once per turn.
 	pressure      *components.PressureCard
 	pressureShown bool
+	// The context surface: the screen while it is up, and the tool
+	// definitions it itemises the tool category into. The definitions are
+	// the host's because which tools a session has depends on what the
+	// machine turned out to have (prompt.Toolbox).
+	context  *components.ContextScreen
+	toolDefs []ToolTokens
+	// contextOpen is which of the surface's folds the reader had open when
+	// they last left it, by label. It outlives the screen because the screen
+	// is rebuilt from the accounting on every opening.
+	contextOpen map[string]bool
 	// The round-limit pause: the offer standing on the last turn to
 	// stop at its ceiling, the rounds [+50] has granted the turn in front of
 	// it, and whether [!] has lifted this turn's ceiling altogether. All
@@ -1153,6 +1168,9 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.state == statePressure {
 			return m.updatePressure(msg)
+		}
+		if m.state == stateContext {
+			return m.updateContext(msg)
 		}
 		// A draining retry countdown owns the keyboard the way the confirm
 		// prompt does: nothing is streaming, the input is not live, and the
@@ -1862,6 +1880,10 @@ func (m Model) paneView(area uv.Rectangle) string {
 		// Review mode takes over the whole surface.
 		m.review.Height = area.Dy()
 		return m.review.View(area.Dx())
+	case m.state == stateContext && m.context != nil:
+		// The context surface takes over the pane the same way.
+		m.context.MaxLines = area.Dy()
+		return m.context.View(area.Dx())
 	}
 	return m.transcriptBody()
 }
@@ -1977,6 +1999,8 @@ func (m Model) takeoverPanel(width int) string {
 		inputView = m.renderKeyEntry()
 	case statePressure:
 		inputView = m.renderPressure()
+	case stateContext:
+		inputView = m.renderContextHint()
 	}
 	// The agent manager list takes the bottom panel while open.
 	if m.agentList != nil {
@@ -3121,6 +3145,7 @@ func helpText() string {
                  [level]           set it for this session (also /think)
                  default [level]   show or persist the level new sessions
                                    start on (provider.reasoning)
+  /context       The window as a meter, by category, with the tools itemised
   /stats         Context occupancy breakdown and cumulative session spend
   /ui            Activity feed density, pane layout, monochrome and mouse:
                  /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>

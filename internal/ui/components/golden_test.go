@@ -1201,6 +1201,38 @@ func TestGolden_ProviderCard(t *testing.T) {
 	})
 }
 
+// TestGolden_ContextScreen captures the context surface: the window drawn as
+// a wrapped meter with the categories beside it, folded and with one fold
+// opened. The pair is what the surface is for — the folded capture is the
+// answer it gives without being asked, and the open one is the answer it
+// gives when it is.
+func TestGolden_ContextScreen(t *testing.T) {
+	captureGolden(t, "context-screen", "the window, by category and by tool", goldenWidths, func(width int) []golden.Panel {
+		screen := func(mut func(*ContextScreen)) string {
+			c := goldenContextScreen()
+			mut(&c)
+			return c.View(width)
+		}
+		return []golden.Panel{
+			{Label: "31% · both groups folded", View: screen(func(c *ContextScreen) {})},
+			{Label: "the tool definitions opened", View: screen(func(c *ContextScreen) {
+				c.Groups[0].Open = true
+			})},
+			{Label: "94% · an estimated total, nothing itemised yet", View: screen(func(c *ContextScreen) {
+				c.Pct, c.Tokens, c.Source = 94, "~940.0k", "estimated"
+				c.Categories = []ContextCategory{
+					{Label: "system prompt", Tokens: "3.8k", Pct: "0.4%", Share: 0.38, Tone: ContextPrompt},
+					{Label: "tool definitions", Tokens: "22.3k", Pct: "2.2%", Share: 2.23, Tone: ContextTools},
+					{Label: "messages", Tokens: "612.0k", Pct: "61.2%", Share: 61.2, Tone: ContextMessages},
+					{Label: "tool results", Tokens: "301.9k", Pct: "30.2%", Share: 30.19, Tone: ContextOutput},
+					{Label: "free space", Tokens: "60.0k", Pct: "6.0%", Share: 6.0, Tone: ContextFree},
+				}
+				c.Groups = nil
+			})},
+		}
+	})
+}
+
 // TestGolden_PressureCard captures the context-pressure card — the
 // second of the two cards, and the only place in the product that itemises
 // token spend, because it is the only place where you can act on it.
