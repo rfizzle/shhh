@@ -42,6 +42,7 @@ package profile
 
 import (
 	"fmt"
+	"github.com/rfizzle/shhh/internal/provider"
 	"os"
 	"path"
 	"path/filepath"
@@ -150,6 +151,60 @@ type Model struct {
 	MaxTokens int64 `toml:"max_tokens"`
 	// Cost is in dollars per million tokens, the unit model cards publish.
 	Cost Cost `toml:"cost"`
+	// Reasoning is how the model takes a thinking level, for a gateway
+	// whose ids the public table has never heard of. Left out, the table
+	// and then the family floor answer.
+	Reasoning Reasoning `toml:"reasoning"`
+}
+
+// Reasoning declares a model's thinking knob: its shape, the rungs above
+// high it has, and whether it thinks regardless.
+type Reasoning struct {
+	// Kind is "none" (no knob — never sent a level), "effort" (a named
+	// level, the chat-completions and Responses shape), "budget" (a token
+	// budget, the older Anthropic and the Gemini shape) or "adaptive" (a
+	// named level under adaptive thinking, the current Anthropic shape).
+	Kind string `toml:"kind"`
+	// Levels lists the rungs beyond low/medium/high the model accepts:
+	// "xhigh" and "max". Naming the lower three is allowed and changes
+	// nothing.
+	Levels []string `toml:"levels"`
+	// AlwaysOn is a model that thinks whether or not it is asked to.
+	AlwaysOn bool `toml:"always_on"`
+}
+
+// Declared reports whether the profile said anything about reasoning.
+func (r Reasoning) Declared() bool { return r.Kind != "" }
+
+// reasoningKinds is the closed set Kind may take.
+var reasoningKinds = map[string]bool{"none": true, "effort": true, "budget": true, "adaptive": true}
+
+func (r Reasoning) validate() error {
+	if !r.Declared() {
+		if len(r.Levels) > 0 || r.AlwaysOn {
+			return fmt.Errorf("reasoning: kind is required (none, effort, budget, adaptive)")
+		}
+		return nil
+	}
+	if !reasoningKinds[strings.ToLower(r.Kind)] {
+		return fmt.Errorf("reasoning: unknown kind %q (valid: none, effort, budget, adaptive)", r.Kind)
+	}
+	for _, l := range r.Levels {
+		if _, err := provider.ParseEffort(l); err != nil || strings.TrimSpace(l) == "" {
+			return fmt.Errorf("reasoning: levels: unknown level %q (valid: low, medium, high, xhigh, max)", l)
+		}
+	}
+	return nil
+}
+
+// hasLevel reports whether Levels names the rung.
+func (r Reasoning) hasLevel(e provider.Effort) bool {
+	for _, l := range r.Levels {
+		if got, err := provider.ParseEffort(l); err == nil && got == e {
+			return true
+		}
+	}
+	return false
 }
 
 // Cost is per-million-token pricing. CacheRead and CacheWrite are accepted
@@ -490,6 +545,9 @@ func (p *Profile) Validate() error {
 		if m.ID == "" {
 			return fmt.Errorf("models[%d]: id is required", i)
 		}
+		if err := m.Reasoning.validate(); err != nil {
+			return fmt.Errorf("models[%d]: %w", i, err)
+		}
 	}
 	for i := range p.Rewrite {
 		if err := p.Rewrite[i].validate(); err != nil {
@@ -541,6 +599,9 @@ func (e *Endpoint) validate() error {
 	for i, m := range e.Models {
 		if m.ID == "" {
 			return fmt.Errorf("models[%d]: id is required", i)
+		}
+		if err := m.Reasoning.validate(); err != nil {
+			return fmt.Errorf("models[%d]: %w", i, err)
 		}
 	}
 	for i := range e.Rewrite {

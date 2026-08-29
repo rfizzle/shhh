@@ -113,6 +113,12 @@ download: a fresh install answers before its first fetch, an offline machine
 answers after a failed one, and a download that does not parse is not
 written over a good cache.
 
+A gateway profile can say it outright. Its declared models take a reasoning
+shape beside their prices and context window, and a declaration outranks the
+table the way a declared price does — including a declaration of none, which
+is a statement about a model, not the absence of one. A private gateway's ids
+are exactly the ones the public table will never learn.
+
 Below the table there is a floor by family for the models the table has not
 caught up with. A brand-new Claude is sent the shape the current Claudes
 take, a brand-new GPT the shape the current GPTs take; the table overrides

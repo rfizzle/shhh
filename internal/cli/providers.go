@@ -202,9 +202,9 @@ func printEndpoint(out io.Writer, e profile.Endpoint, indent string, prices *pri
 	} else {
 		fmt.Fprintf(out, "%smodels:   %d declared\n", indent, len(e.Models))
 		w := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
-		fmt.Fprintf(w, "%s  MODEL\tCONTEXT\tINPUT $/Mtok\tOUTPUT $/Mtok\tSOURCE\n", indent)
+		fmt.Fprintf(w, "%s  MODEL\tCONTEXT\tINPUT $/Mtok\tOUTPUT $/Mtok\tREASONING\tSOURCE\n", indent)
 		for _, m := range e.Models {
-			fmt.Fprintf(w, "%s  %s\t%s\t%s\t%s\t%s\n", indent, m.ID, contextCell(m, prices), inputCell(m, prices), outputCell(m, prices), sourceCell(m, prices))
+			fmt.Fprintf(w, "%s  %s\t%s\t%s\t%s\t%s\t%s\n", indent, m.ID, contextCell(m, prices), inputCell(m, prices), outputCell(m, prices), reasoningCell(m, prices), sourceCell(m, prices))
 		}
 		w.Flush()
 	}
@@ -259,6 +259,53 @@ func outputCell(m profile.Model, prices *pricing.Table) string {
 		return fmt.Sprintf("%.2f", outCost)
 	}
 	return "-"
+}
+
+// reasoningCell is the shape a thinking level takes on the model and the
+// rungs above high it has, from the profile when it said, otherwise from the
+// table and the family floor — the same answer the providers act on.
+func reasoningCell(m profile.Model, prices *pricing.Table) string {
+	var caps provider.Capabilities
+	if e, ok := prices.Entry(m.ID); ok && (e.ReasoningKnown || e.SupportsReasoning) {
+		caps = provider.Capabilities{Known: true, Reasoning: e.SupportsReasoning, Adaptive: e.AdaptiveThinking,
+			Legacy: e.LegacyThinking, AlwaysOn: e.ThinkingAlwaysOn, XHigh: e.XHighEffort, Max: e.MaxEffort}
+	} else {
+		caps = provider.CapabilitiesFor(m.ID)
+	}
+	switch {
+	case !caps.Known:
+		return "-"
+	case !caps.Reasoning:
+		return "none"
+	}
+	shape := "effort"
+	if !caps.Adaptive && !caps.Legacy {
+		// The public table marks some models reasoning-capable without
+		// saying how; the family floor knows the shape, and it is what
+		// the provider sends.
+		if floor := provider.CapabilitiesFor(m.ID); floor.Adaptive || floor.Legacy {
+			caps.Adaptive, caps.Legacy = floor.Adaptive, floor.Legacy
+		}
+	}
+	if caps.Adaptive {
+		shape = "adaptive"
+	} else if caps.Legacy {
+		shape = "budget"
+	}
+	var extra []string
+	if caps.XHigh {
+		extra = append(extra, "xhigh")
+	}
+	if caps.Max {
+		extra = append(extra, "max")
+	}
+	if caps.AlwaysOn {
+		extra = append(extra, "always on")
+	}
+	if len(extra) > 0 {
+		shape += " (" + strings.Join(extra, ", ") + ")"
+	}
+	return shape
 }
 
 func sourceCell(m profile.Model, prices *pricing.Table) string {

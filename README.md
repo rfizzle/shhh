@@ -349,6 +349,16 @@ This is about the catalog, not about what you can run: `/model <name>`, `--model
 
 Declared models seed the `/model` picker before discovery runs, and supply what a catalog endpoint returning bare ids cannot: pricing for the spend meter, `context_window` for the context gauge. Costs are in dollars per million tokens, the unit model cards publish. Anything you leave out falls back to the public pricing table shhh already downloads (LiteLLM's `model_prices_and_context_window.json`, refreshed daily), so a profile only has to declare what that table gets wrong or has never heard of — `shhh providers` marks each model `profile`, `public table`, or `unpriced`. `cache_read` and `cache_write` are accepted and reported but not yet billed: shhh's usage accounting has no cached-token counters. `max_tokens` is metadata only — shhh does not add it to requests; a gateway that needs it set can get it from a `set-default` rule.
 
+`reasoning` says how the model takes a thinking level, for an id the public table has never heard of or gets wrong:
+
+```toml
+  [[provider.models]]
+  id        = "gw-opus"
+  reasoning = { kind = "adaptive", levels = ["xhigh", "max"], always_on = true }
+```
+
+`kind` is `none` (no knob — the model is never sent a level, whatever the session asked), `effort` (a named level, the chat-completions and Responses shape), `budget` (a token budget, the older Anthropic and the Gemini shape) or `adaptive` (a named level under adaptive thinking, the current Anthropic shape). `levels` lists the rungs above high the model accepts — `xhigh`, `max`; low, medium and high are always there. `always_on` marks a model that thinks whether or not it is asked to. A model that declares nothing is answered by the public table, then by a floor by family; `shhh providers` shows which shape each declared model resolved to.
+
 ### Rewrite rules
 
 Each rule names a place in the JSON on the wire and an edit to make there. Rules run in file order, so a later rule sees an earlier rule's edit, and they are written against the wire format rather than against shhh's own types — a field shhh doesn't model is still reachable.

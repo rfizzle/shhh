@@ -46,6 +46,7 @@ cost           = { input = 2.0, output = 12.0, cache_read = 0.2 }
 
 [[models]]
 id = "kimi-k2.6"
+reasoning = { kind = "effort", levels = ["xhigh"] }
 
 [[rewrite]]
 when  = { model = "gemini-*" }
@@ -79,6 +80,9 @@ func TestLoadFile_ReadsAGatewayProfile(t *testing.T) {
 	}
 	if len(p.Models) != 2 || p.Models[0].ContextWindow != 1048576 || p.Models[0].Cost.Input != 2.0 {
 		t.Fatalf("unexpected models: %+v", p.Models)
+	}
+	if r := p.Models[1].Reasoning; r.Kind != "effort" || len(r.Levels) != 1 || r.Levels[0] != "xhigh" {
+		t.Fatalf("reasoning should parse: %+v", r)
 	}
 	if p.Models[0].Cost.CacheRead != 0.2 || p.Models[0].MaxTokens != 65536 {
 		t.Fatalf("declared metadata should survive the round trip: %+v", p.Models[0])
@@ -548,5 +552,63 @@ func TestNew_ClassifiesGatewayFailures(t *testing.T) {
 				t.Errorf("provider = %q, want the profile's own name", f.Provider)
 			}
 		})
+	}
+}
+
+func TestPricing_CarriesADeclaredReasoningShape(t *testing.T) {
+	got := Pricing([]Profile{{Models: []Model{
+		{ID: "gw-opus", Reasoning: Reasoning{Kind: "adaptive", Levels: []string{"xhigh", "max"}, AlwaysOn: true}},
+		{ID: "gw-plain", Reasoning: Reasoning{Kind: "none"}},
+		{ID: "gw-budget", Reasoning: Reasoning{Kind: "budget"}},
+	}}})
+	if len(got) != 3 {
+		t.Fatalf("a reasoning declaration alone earns an entry, got %v", got)
+	}
+	opus := got["gw-opus"]
+	if !opus.ReasoningKnown || !opus.SupportsReasoning || !opus.AdaptiveThinking || !opus.XHighEffort || !opus.MaxEffort || !opus.ThinkingAlwaysOn {
+		t.Errorf("adaptive declaration: %+v", opus)
+	}
+	if plain := got["gw-plain"]; !plain.ReasoningKnown || plain.SupportsReasoning {
+		t.Errorf("none is a statement, not an absence: %+v", plain)
+	}
+	if budget := got["gw-budget"]; !budget.LegacyThinking || budget.AdaptiveThinking || budget.XHighEffort {
+		t.Errorf("budget declaration: %+v", budget)
+	}
+
+	// "none" overrides what the public table believed; a profile that said
+	// nothing keeps it.
+	table := pricing.NewTable(map[string]pricing.ModelPricing{
+		"gw-plain": {SupportsReasoning: true, AdaptiveThinking: true},
+		"gw-quiet": {SupportsReasoning: true, XHighEffort: true},
+	})
+	table.Overlay(Pricing([]Profile{{Models: []Model{
+		{ID: "gw-plain", Reasoning: Reasoning{Kind: "none"}},
+		{ID: "gw-quiet", ContextWindow: 1000},
+	}}}))
+	if e, _ := table.Entry("gw-plain"); e.SupportsReasoning {
+		t.Errorf("a declared none should win over the table: %+v", e)
+	}
+	if e, _ := table.Entry("gw-quiet"); !e.SupportsReasoning || !e.XHighEffort {
+		t.Errorf("silence keeps the table's flags: %+v", e)
+	}
+}
+
+func TestReasoning_Validate(t *testing.T) {
+	bad := []Reasoning{
+		{Kind: "sometimes"},
+		{Kind: "effort", Levels: []string{"ultra"}},
+		{Levels: []string{"xhigh"}},
+		{AlwaysOn: true},
+	}
+	for _, r := range bad {
+		if err := r.validate(); err == nil {
+			t.Errorf("%+v should be refused", r)
+		}
+	}
+	good := []Reasoning{{}, {Kind: "none"}, {Kind: "Adaptive", Levels: []string{"low", "max"}, AlwaysOn: true}}
+	for _, r := range good {
+		if err := r.validate(); err != nil {
+			t.Errorf("%+v: %v", r, err)
+		}
 	}
 }

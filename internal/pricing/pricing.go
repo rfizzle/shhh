@@ -57,12 +57,22 @@ type ModelPricing struct {
 	MaxEffort     bool `json:"supports_max_reasoning_effort"`
 	MinimalEffort bool `json:"supports_minimal_reasoning_effort"`
 	NoneEffort    bool `json:"supports_none_reasoning_effort"`
+
+	// ReasoningKnown marks an entry whose reasoning flags are a statement
+	// rather than an absence — a profile that declared the model has no
+	// knob needs to override a table that said it does. The public table
+	// never writes it; there, a set SupportsReasoning is the statement.
+	ReasoningKnown bool `json:"-"`
 }
+
+// describesReasoning reports whether the entry's reasoning flags mean
+// anything.
+func (p ModelPricing) describesReasoning() bool { return p.ReasoningKnown || p.SupportsReasoning }
 
 // known reports whether the entry carries anything worth keeping.
 func (p ModelPricing) known() bool {
 	return p.InputCostPerToken > 0 || p.OutputCostPerToken > 0 || p.MaxInputTokens > 0 ||
-		p.MaxOutputTokens > 0 || p.SupportsReasoning
+		p.MaxOutputTokens > 0 || p.describesReasoning()
 }
 
 type Table struct {
@@ -171,10 +181,10 @@ func (t *Table) Overlay(models map[string]ModelPricing) {
 		if p.MaxOutputTokens == 0 {
 			p.MaxOutputTokens = existing.MaxOutputTokens
 		}
-		if !p.SupportsReasoning {
-			// A profile entry says nothing about thinking; the flags are
-			// only ever written together, so an entry without the first
-			// keeps the set it is landing on.
+		if !p.describesReasoning() {
+			// An entry that says nothing about thinking keeps the flags it
+			// is landing on; they are only ever written together, so one
+			// check covers the set.
 			p.SupportsReasoning = existing.SupportsReasoning
 			p.AdaptiveThinking = existing.AdaptiveThinking
 			p.LegacyThinking = existing.LegacyThinking
@@ -183,6 +193,7 @@ func (t *Table) Overlay(models map[string]ModelPricing) {
 			p.MaxEffort = existing.MaxEffort
 			p.MinimalEffort = existing.MinimalEffort
 			p.NoneEffort = existing.NoneEffort
+			p.ReasoningKnown = existing.ReasoningKnown
 		}
 		t.models[name] = p
 	}
