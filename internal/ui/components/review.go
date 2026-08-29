@@ -1,8 +1,9 @@
 package components
 
-// Review mode (S-099, DESIGN-TUI.md §16a): one surface showing every file a
-// turn touched with its hunks, so reviewing an agent's work is a pass over a
-// list rather than a scroll through a transcript.
+// Review mode (S-099, docs/interface/surfaces.md#the-turns-close): one
+// surface showing every file a turn touched with its hunks, so reviewing an
+// agent's work is a pass over a list rather than a scroll through a
+// transcript.
 //
 // The file list is on the left with a staging box per file, the focused
 // file's hunks on the right, and the turn's verdict pinned under the list —

@@ -4,7 +4,7 @@ package agent
 // structured digest of the session and answers the one question the inspector
 // rail's numbers cannot — what is this thing actually doing, and is it still
 // doing what was asked. The verdict feeds the rail's SUMMARY block
-// (DESIGN-TUI.md §15d) and, later, auto-steering.
+// (docs/interface/surfaces.md#the-session-summary) and, later, auto-steering.
 //
 // It is the classifier's sibling (S-060, classifier.go): same provider, same
 // structured-tool-call-with-a-text-fallback shape, same treatment of the
@@ -16,9 +16,9 @@ package agent
 // age.
 //
 // The digest is the security boundary and the cost boundary at once. It
-// carries tool names, targets and outcomes — never raw tool output, never file
-// contents — so a fetched page cannot write the summary, and so one reading
-// costs the same whether the session is ten rounds old or a thousand.
+// carries tool names, targets and outcomes — never raw tool output, never
+// file contents — so a fetched page cannot write the summary, and so one
+// reading costs the same whether the session is ten rounds old or a thousand.
 
 import (
 	"context"

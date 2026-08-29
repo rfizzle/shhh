@@ -1,9 +1,9 @@
 package chat
 
-// The tick loop (S-119, DESIGN-TUI.md §10c). What these assert is the rule
-// rather than the animation: a chain is in flight exactly while something is
-// moving, there is never more than one of them, and the frame every surface
-// draws comes from that one chain.
+// The tick loop (S-119, docs/interface/README.md). What these assert is the
+// rule rather than the animation: a chain is in flight exactly while
+// something is moving, there is never more than one of them, and the frame
+// every surface draws comes from that one chain.
 
 import (
 	"context"

@@ -1,13 +1,14 @@
 package chat
 
-// Provider failures in the session (S-106, DESIGN-TUI.md §17a).
+// Provider failures in the session (S-106,
+// docs/interface/surfaces.md#the-recovery-row).
 //
 // A stream that broke used to append `Error: <whatever Go said>` and hand the
 // input back. Everything a reader needed was missing: whether the key was the
-// problem, whether the three edits already applied survived, and what to press
-// next. The classification arrives from internal/provider now; this file owns
-// the two things the provider cannot know — how the failure reads on the grid,
-// and which key gets you out of it in a session.
+// problem, whether the three edits already applied survived, and what to
+// press next. The classification arrives from internal/provider now; this
+// file owns the two things the provider cannot know — how the failure reads
+// on the grid, and which key gets you out of it in a session.
 //
 // The keys differ by class on purpose. A rate limit and a rejected key are
 // both "the request failed", and the only useful thing to say about them is

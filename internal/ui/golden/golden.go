@@ -1,12 +1,13 @@
 // Package golden captures the rendered output of a TUI surface in a
 // checked-in file so a layout regression is a failing test rather than
-// something noticed three commits later (S-096, DESIGN-TUI.md §6a).
+// something noticed three commits later (S-096,
+// docs/interface/principles.md#one-grid).
 //
 // The component tests around it assert substrings — that a row contains
 // "denied · you", that the rail carries a CONTEXT block. Substrings are blind
 // to exactly the thing the column grid is about: a verb field that grew by
-// one column, a right edge that drifted, a block that moved above another.
-// A golden file is the whole render, so any of those shows up as a diff.
+// one column, a right edge that drifted, a block that moved above another. A
+// golden file is the whole render, so any of those shows up as a diff.
 //
 // A golden holds one surface at one width in one palette, and is written in
 // two blocks: the render with ANSI stripped, which is the layout a reviewer

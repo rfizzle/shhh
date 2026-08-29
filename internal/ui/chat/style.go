@@ -5,9 +5,9 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
-// All colors come from the shared components.Palette (DESIGN-TUI.md §10) so
-// the chat and generate UIs stay visually consistent; no new colors without
-// adding a token there.
+// All colors come from the shared components.Palette
+// (docs/interface/README.md) so the chat and generate UIs stay visually
+// consistent; no new colors without adding a token there.
 //
 // Styles is this package's whole style set, built by newStyles from a token
 // set and nothing else. It replaced seven applyXStyles functions that each
@@ -25,9 +25,9 @@ type Styles struct {
 	Tool       lipgloss.Style
 	ToolArgs   lipgloss.Style
 	StatusBar  lipgloss.Style
-	// Permission-mode segment (DESIGN-TUI.md §8): permissive vs gated modes
-	// (the orchestrator's bar renders through components.Cockpit; these back
-	// the child-scoped bar, S-077).
+	// Permission-mode segment (docs/interface/surfaces.md#the-input-frame):
+	// permissive vs gated modes (the orchestrator's bar renders through
+	// components.Cockpit; these back the child-scoped bar, S-077).
 	ModePermissive lipgloss.Style
 	ModeGated      lipgloss.Style
 	CtxAlert       lipgloss.Style

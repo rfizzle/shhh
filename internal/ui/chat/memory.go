@@ -3,9 +3,9 @@ package chat
 // Durable memory (S-070). The /memory slash command manages entries, and the
 // model's remember tool proposes new ones. The trust rule is absolute:
 // agent-proposed memories persist only after explicit user confirmation on
-// the memory prompt (DESIGN-TUI.md §4c) — no permission mode, session grant,
-// or classifier verdict can wave one through, because memory an agent writes
-// to itself is an injection surface.
+// the memory prompt (docs/interface/surfaces.md#selectors) — no permission
+// mode, session grant, or classifier verdict can wave one through, because
+// memory an agent writes to itself is an injection surface.
 
 import (
 	"encoding/json"
@@ -57,9 +57,10 @@ func (m Model) buildMemoryApproval(tc provider.ToolCall) (*approvalRequest, erro
 	}, nil
 }
 
-// openMemoryAsk shows the memory confirm prompt (DESIGN-TUI.md §4c) for the
-// pending remember proposal: save to project or global scope — with an
-// optional note amending the entry — or don't save.
+// openMemoryAsk shows the memory confirm prompt
+// (docs/interface/surfaces.md#selectors) for the pending remember proposal:
+// save to project or global scope — with an optional note amending the entry
+// — or don't save.
 func (m *Model) openMemoryAsk(req *approvalRequest) {
 	ns := components.NewNoteSelect("Remember this?", []components.SelectOption{
 		{Label: "Save (project)", Desc: m.memory.ProjectScope},

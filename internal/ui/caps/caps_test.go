@@ -1,6 +1,7 @@
 package caps
 
-// The probe against the terminals it will meet (S-156, DESIGN-TUI.md §10k).
+// The probe against the terminals it will meet (S-156,
+// docs/architecture.md#only-one-place-speaks-to-the-terminal).
 //
 // Two halves are worth asserting. The questions: that they go out at all,
 // that the three risky ones are held back exactly where the rule says, and

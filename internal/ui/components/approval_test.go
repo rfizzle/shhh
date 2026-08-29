@@ -196,8 +196,9 @@ func TestApprovalCard_EditVariantShowsDiffAndStats(t *testing.T) {
 		Hunks:    diff.Compute("a\nb\n", "a\nc\nd\n"),
 		Question: "Apply this change?",
 	}
-	// The diff body carries line numbers (S-074, DESIGN-TUI.md §2c), and the
-	// reversibility line rides the stats row (S-101).
+	// The diff body carries line numbers (S-074,
+	// docs/interface/surfaces.md#the-approval-card), and the reversibility line
+	// rides the stats row (S-101).
 	c.Reversibility = "undo yes — recorded, and git has this file"
 	view := c.View(80)
 	for _, want := range []string{"@@", "- 2  b", "+ 2  c", "+ 3  d",

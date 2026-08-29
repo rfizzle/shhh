@@ -1,7 +1,8 @@
 package components
 
-// The context-pressure card (S-108, DESIGN-TUI.md §17b, and
-// ui_kits/cockpit/Edges.html in the shhh Design System project).
+// The context-pressure card (S-108,
+// docs/interface/surfaces.md#the-recovery-row, and ui_kits/cockpit/Edges.html
+// in the shhh Design System project).
 //
 // The second of the two cards, and for the same reason as the first: at the
 // alert threshold the session cannot go on without an answer. Everything

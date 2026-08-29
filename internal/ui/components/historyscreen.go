@@ -1,11 +1,13 @@
 package components
 
-// The history browser (S-128, DESIGN-TUI.md §19b, ui_kits/cockpit/Tools.html).
-// `shhh history` shipped on `internal/ui/browse`, which invented a list, a
-// query line, a detail page and an action bar of its own. It is re-cut here
-// from parts that already exist: the §4a window with its markers, its filter
-// row and its two counts; the §6a grid for the entry it selects; and the §5
-// inline confirm in front of the one key that destroys something.
+// The history browser (S-128,
+// docs/interface/surfaces.md#the-supporting-screens,
+// ui_kits/cockpit/Tools.html). `shhh history` shipped on
+// `internal/ui/browse`, which invented a list, a query line, a detail page
+// and an action bar of its own. It is re-cut here from parts that already
+// exist: the §4a window with its markers, its filter row and its two counts;
+// the §6a grid for the entry it selects; and the §5 inline confirm in front
+// of the one key that destroys something.
 //
 // Two panes and one rule shape it, both from §19b. The search is on the left
 // and the entry it selects on the right — the right pane is a preview, not a
@@ -16,9 +18,9 @@ package components
 //
 // It is a passive component like the rest of this package. It owns no history
 // semantics: `[c]`, `[s]` and `[x]` resolve to a HistoryCommand the host
-// carries out against its own store, and the host hands back fresh Rows.
-// That is why the screen can draw `exit 3` in del without knowing what an
-// exit code is.
+// carries out against its own store, and the host hands back fresh Rows. That
+// is why the screen can draw `exit 3` in del without knowing what an exit
+// code is.
 
 import (
 	"fmt"

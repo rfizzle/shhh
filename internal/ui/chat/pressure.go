@@ -1,6 +1,7 @@
 package chat
 
-// The context-pressure card (S-108, DESIGN-TUI.md §17b).
+// The context-pressure card (S-108,
+// docs/interface/surfaces.md#the-recovery-row).
 //
 // S-055 already trimmed the oldest tool results when the window filled, and
 // said so afterwards in one grey line. That is a notice about something that

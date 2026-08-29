@@ -1,10 +1,11 @@
 package components
 
-// The running turn's status line (S-118, DESIGN-TUI.md §8d, §10c). While a
-// turn runs, this is the one line on screen that changes: a spinner frame,
-// the phase, ticking elapsed, the turn's live token counts and what they have
-// cost. It lives in the frame's activity slot (§12a) and it *resolves into*
-// the turn summary rather than being replaced by one — same line, same facts,
+// The running turn's status line (S-118,
+// docs/interface/surfaces.md#the-input-frame, §10c). While a turn runs, this
+// is the one line on screen that changes: a spinner frame, the phase, ticking
+// elapsed, the turn's live token counts and what they have cost. It lives in
+// the frame's activity slot (§12a) and it *resolves into* the turn summary
+// rather than being replaced by one — same line, same facts,
 // `✓` where the spinner was.
 //
 // Three rules are enforced here rather than left to the hosts. The phases are

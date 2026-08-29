@@ -1,10 +1,10 @@
 package components
 
-// Fan-out lanes (S-110, DESIGN-TUI.md §9g). Three children streaming their
-// rows into one transcript reads as one confused feed, so a spawn of two or
-// more collapses into a single block with a lane per child: its name, what it
-// was asked to do, how far it has got, what it has cost, and what state it is
-// in.
+// Fan-out lanes (S-110, docs/interface/surfaces.md#the-agent-manager). Three
+// children streaming their rows into one transcript reads as one confused
+// feed, so a spawn of two or more collapses into a single block with a lane
+// per child: its name, what it was asked to do, how far it has got, what it
+// has cost, and what state it is in.
 //
 // Three rules the block enforces rather than documents. A blocked lane sorts
 // to the top and says `⚠ needs you` in words, because the only thing a

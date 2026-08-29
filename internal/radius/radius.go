@@ -24,7 +24,8 @@ import (
 )
 
 // Level is how much a pending action could cost, as a word the card leads
-// with. Colour reinforces it; the word carries it (DESIGN-TUI.md invariant 1).
+// with. Colour reinforces it; the word carries it
+// (docs/interface/principles.md#colour-never-carries-meaning-alone).
 type Level int
 
 const (

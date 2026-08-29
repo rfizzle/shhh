@@ -16,13 +16,14 @@ package chat
 // into the draft. What it did depended on what the draft held: it scrubbed
 // the input history on an empty one, walked the cursor between lines of a
 // half-written message, and moved the selection on the start screen's
-// suggestion list. The one thing it never did is scroll the transcript,
-// which is the only thing the reader turning the wheel wanted.
+// suggestion list. The one thing it never did is scroll the transcript, which
+// is the only thing the reader turning the wheel wanted.
 //
 // Enabling mouse reporting appeared to fix it, which is why this went unseen:
-// tracking supersedes alternate scroll, so ctrl+x swapped the synthetic arrows
-// for real SGR wheel events and the gesture started working. The reader who
-// took that trade paid for the terminal's click-drag selection to stop a bug.
+// tracking supersedes alternate scroll, so ctrl+x swapped the synthetic
+// arrows for real SGR wheel events and the gesture started working. The
+// reader who took that trade paid for the terminal's click-drag selection to
+// stop a bug.
 //
 // The fix is to make the documented behaviour the real one. shhh asks the
 // terminal to stop synthesising, and the wheel goes back to doing nothing
@@ -37,7 +38,8 @@ package chat
 // arrow press can be told apart from a synthesised one, which was measured
 // rather than argued about — the readings, the one mode combination that
 // separates them, and why that combination costs more than the gesture is
-// worth are in DESIGN-TUI.md §7a. Read that before reaching for this again.
+// worth are in docs/interface/surfaces.md#reading-mode. Read that before
+// reaching for this again.
 //
 // It is asked for with XTSAVE/XTRESTORE rather than a bare set and clear, so
 // a terminal that had 1007 off keeps it off afterwards and one that had it on

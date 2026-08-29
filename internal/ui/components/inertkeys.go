@@ -1,6 +1,7 @@
 package components
 
-// Invariant 5 on a transcript row (S-125, DESIGN-TUI.md §7c).
+// Invariant 5 on a transcript row (S-125,
+// docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // The approval card's answer to "this surface does not hold the keyboard" is
 // a whole key row plus a handover row (§7b, card.go): the keys dimmed with

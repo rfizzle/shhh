@@ -1,12 +1,13 @@
 package cli
 
-// The doctor surface (S-130, DESIGN-TUI.md §19d). `shhh code doctor` reported
-// on the sandbox ladder and nothing else, while the design system named a
-// `shhh doctor` covering the whole setup — the name had no command behind it.
-// S-130 settled that by promoting and widening: `shhh doctor` is a top-level
-// command over ten checks, `shhh code doctor` stays as the way in from the
-// coding agent, and `/sandbox doctor` is unchanged because in a session the
-// question really is only about containment.
+// The doctor surface (S-130,
+// docs/interface/surfaces.md#the-supporting-screens). `shhh code doctor`
+// reported on the sandbox ladder and nothing else, while the design system
+// named a `shhh doctor` covering the whole setup — the name had no command
+// behind it. S-130 settled that by promoting and widening: `shhh doctor` is a
+// top-level command over ten checks, `shhh code doctor` stays as the way in
+// from the coding agent, and `/sandbox doctor` is unchanged because in a
+// session the question really is only about containment.
 //
 // The host owns every diagnostic semantic and the screen owns none: what a
 // check looks at, what its answer means, what it will cost the reader, and

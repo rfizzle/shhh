@@ -1,6 +1,7 @@
 package ui
 
-// The missing-provider card and what it offers (S-106, DESIGN-TUI.md §17b).
+// The missing-provider card and what it offers (S-106,
+// docs/interface/surfaces.md#the-recovery-row).
 //
 // This is one of only two surfaces in the product that earns a card, and it
 // earns it for the same reason the other one does: the session cannot

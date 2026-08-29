@@ -16,15 +16,16 @@ type MultiSelectResult struct {
 	Canceled bool
 }
 
-// MultiSelect is the checkbox selector (DESIGN-TUI.md §4b): space toggles,
-// a flips all ↔ none, enter applies, esc cancels. Confirming with nothing
-// selected is a no-op with a one-line notice, not a confirm.
+// MultiSelect is the checkbox selector
+// (docs/interface/surfaces.md#selectors): space toggles, a flips all ↔ none,
+// enter applies, esc cancels. Confirming with nothing selected is a no-op
+// with a one-line notice, not a confirm.
 //
 // A multi-select that is an ordinary list of choices — `/memory forget`, the
 // quality gate's checks — windows like any other list once it outgrows its
 // card (S-124, §4a). Staging is the exception the design names and keeps:
-// there you are accounting for every hunk, so hiding four of them behind
-// `↓ 4 more` would be a trap rather than a fold.
+// there you are accounting for every hunk, so hiding four of them behind `↓ 4
+// more` would be a trap rather than a fold.
 type MultiSelect struct {
 	Title    string
 	Options  []SelectOption

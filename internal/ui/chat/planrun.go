@@ -1,20 +1,21 @@
 package chat
 
-// The approved plan as a live checklist (S-104, DESIGN-TUI.md §13a, §15a).
+// The approved plan as a live checklist (S-104,
+// docs/interface/surfaces.md#the-step, §15a).
 //
-// Plan mode is the one place a step list is authoritative. Everywhere else the
-// outline infers a step from the prose that precedes a batch of tool calls
-// (S-090); once a plan is approved the steps it declared are the steps, and
-// the transcript outline, the inspector rail's PLAN block and /plan all read
-// one list.
+// Plan mode is the one place a step list is authoritative. Everywhere else
+// the outline infers a step from the prose that precedes a batch of tool
+// calls (S-090); once a plan is approved the steps it declared are the steps,
+// and the transcript outline, the inspector rail's PLAN block and /plan all
+// read one list.
 //
 // The join between the declared list and the transcript is made once, when an
 // assistant announcement is appended ahead of a batch of calls: the line is
-// matched against the steps still unclaimed, and the entry is stamped with the
-// number of the step it carries out — or with offPlanStep when it matches
-// nothing the plan declared. Stamping at append time is what keeps every later
-// reader a pure function of the transcript, which is what lets the render
-// cache freeze a block and never look at it again.
+// matched against the steps still unclaimed, and the entry is stamped with
+// the number of the step it carries out — or with offPlanStep when it matches
+// nothing the plan declared. Stamping at append time is what keeps every
+// later reader a pure function of the transcript, which is what lets the
+// render cache freeze a block and never look at it again.
 
 import (
 	"fmt"

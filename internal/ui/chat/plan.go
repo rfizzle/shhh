@@ -194,12 +194,12 @@ func (m Model) savePlanFromCard() (tea.Model, tea.Cmd) {
 }
 
 // planPanelBound is how tall the plan card may grow. An approval card keeps
-// the 40% bound (DESIGN-TUI.md §1) because the context for its decision is
-// the transcript behind it — the file it is about, the output that led here.
-// A plan card carries its own context: the steps *are* the decision, and at
-// 40% of a 30-row terminal the fixed rows leave room for none of them, which
-// is a prompt about nothing. It gets 60%, and the transcript keeps the plan
-// in full either way.
+// the 40% bound (docs/interface/principles.md#the-grammar) because the
+// context for its decision is the transcript behind it — the file it is
+// about, the output that led here. A plan card carries its own context: the
+// steps *are* the decision, and at 40% of a 30-row terminal the fixed rows
+// leave room for none of them, which is a prompt about nothing. It gets 60%,
+// and the transcript keeps the plan in full either way.
 func (m Model) planPanelBound() int {
 	return max(m.height*3/5, inputHeight)
 }

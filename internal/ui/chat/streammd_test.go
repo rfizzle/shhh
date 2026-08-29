@@ -1,9 +1,10 @@
 package chat
 
-// The streaming render (S-149, DESIGN-TUI.md §10h). The contract the cache
-// lives or dies by is the first test: every prefix of every document must
-// render byte for byte the way renderMarkdown renders it whole. The rest is
-// the boundary vocabulary and the win itself.
+// The streaming render (S-149,
+// docs/architecture.md#the-screen-is-a-rectangle-and-so-is-everything-in-it).
+// The contract the cache lives or dies by is the first test: every prefix of
+// every document must render byte for byte the way renderMarkdown renders it
+// whole. The rest is the boundary vocabulary and the win itself.
 
 import (
 	"fmt"

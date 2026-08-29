@@ -1,10 +1,11 @@
 package chat
 
-// Turn summary and changeset row (S-098, DESIGN-TUI.md §16): a turn closes
-// with the rows that answer what it did, what it changed, and whether the
-// checks still pass. They are ordinary transcript entries — raw data plus a
-// passive renderer — so they re-render at any width like everything else, and
-// focus mode is what handles the keys they offer.
+// Turn summary and changeset row (S-098,
+// docs/interface/surfaces.md#the-turns-close): a turn closes with the rows
+// that answer what it did, what it changed, and whether the checks still
+// pass. They are ordinary transcript entries — raw data plus a passive
+// renderer — so they re-render at any width like everything else, and focus
+// mode is what handles the keys they offer.
 //
 // Nothing here recomputes what the session already knows: the steps and tools
 // come from the turn's own entries, the wall time and spend from the vitals

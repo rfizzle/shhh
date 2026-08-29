@@ -1,19 +1,19 @@
 package chat
 
-// The round-limit pause (S-109, DESIGN-TUI.md §17a).
+// The round-limit pause (S-109, docs/interface/surfaces.md#the-recovery-row).
 //
-// A turn that used up its tool rounds used to end on one grey line telling you
-// to send a message to keep going. Everything a reader needed was missing:
-// what the agent had managed before it stopped, whether the tests still
-// covered it, and whether carrying on meant the same turn or a new one. The
-// limit is a checkpoint now — the last of §17's three recovery verbs, and the
-// only one that is not a failure at all: nothing broke, the turn reached a
-// bound the session set for it.
+// A turn that used up its tool rounds used to end on one grey line telling
+// you to send a message to keep going. Everything a reader needed was
+// missing: what the agent had managed before it stopped, whether the tests
+// still covered it, and whether carrying on meant the same turn or a new one.
+// The limit is a checkpoint now — the last of §17's three recovery verbs, and
+// the only one that is not a failure at all: nothing broke, the turn reached
+// a bound the session set for it.
 //
 // The row stands in for the turn's close block rather than sitting above one.
-// It already says what the turn did, what it changed and what the ways on are,
-// and a second block offering [v] and [u] beside it would be the same answer
-// twice (S-098).
+// It already says what the turn did, what it changed and what the ways on
+// are, and a second block offering [v] and [u] beside it would be the same
+// answer twice (S-098).
 
 import (
 	"fmt"
@@ -37,9 +37,9 @@ const roundGrantBlock = 50
 // keys.Row.Rounds is the keystroke that takes the offer, and keys.Row.Uncap
 // the one that ends the question for the rest of the turn (§7d). The row
 // draws the grant as `[+50]` — the block, not the keystroke — because both
-// design surfaces do (DESIGN-TUI.md §17a and ui_kits/cockpit/Edges.html in
-// the shhh Design System project); focus mode's hint line names the literal
-// keys, which is where the reader looks for one.
+// design surfaces do (docs/interface/surfaces.md#the-recovery-row and
+// ui_kits/cockpit/Edges.html in the shhh Design System project); focus mode's
+// hint line names the literal keys, which is where the reader looks for one.
 
 // uncapRoundsLabel is the second offer, which appears only once the first has
 // been taken (see roundPause.keys). It buys the rest of the turn outright: no

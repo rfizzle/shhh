@@ -1,5 +1,5 @@
 // Package proposal reads what the one-shot generator answered with (S-114,
-// DESIGN-TUI.md §18b).
+// docs/interface/surfaces.md#the-one-shot-result).
 //
 // A generator that can only say one thing has already chosen for you. Asked
 // for "every process listening above 8000" a model will weigh lsof against

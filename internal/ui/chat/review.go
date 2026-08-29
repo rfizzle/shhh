@@ -1,8 +1,9 @@
 package chat
 
-// Review mode (S-099, DESIGN-TUI.md §16a): the surface `/review` and `[v]`
-// on a turn's changeset row open — every file the turn touched with its
-// hunks, staging per hunk, and the turn's verdict pinned beside the files.
+// Review mode (S-099, docs/interface/surfaces.md#the-turns-close): the
+// surface `/review` and `[v]` on a turn's changeset row open — every file the
+// turn touched with its hunks, staging per hunk, and the turn's verdict
+// pinned beside the files.
 //
 // It reads the session's own changeset (S-097), which is what makes it work
 // in a directory that was never a repository and what makes the review of an

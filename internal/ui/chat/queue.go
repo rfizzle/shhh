@@ -1,10 +1,11 @@
 package chat
 
-// The approval queue strip and batch approval (S-102, DESIGN-TUI.md §2e).
-// The queue has always existed — S-048 built it — but it was invisible: the
-// card said nothing about what was stacked behind it, so five decisions cost
-// five identical keystrokes and read as one decision asked five times. This
-// file exposes the stack and adds the one key that answers a category of it.
+// The approval queue strip and batch approval (S-102,
+// docs/interface/surfaces.md#the-approval-card). The queue has always existed
+// — S-048 built it — but it was invisible: the card said nothing about what
+// was stacked behind it, so five decisions cost five identical keystrokes and
+// read as one decision asked five times. This file exposes the stack and adds
+// the one key that answers a category of it.
 //
 // Membership is decided by the same matcher the [a] session grant uses, so
 // "the same way" means one thing in both features rather than two. A
@@ -37,10 +38,10 @@ func (m Model) stripRows() int {
 }
 
 // confirmPanelBound is how tall the confirm panel may grow. The card keeps
-// the 40% bound it has always had (DESIGN-TUI.md §1) and the strip's rows sit
-// above it: the strip is context for the decision, not part of it, and taking
-// its rows out of the card would spend the decision's own space on the list
-// of decisions.
+// the 40% bound it has always had (docs/interface/principles.md#the-grammar)
+// and the strip's rows sit above it: the strip is context for the decision,
+// not part of it, and taking its rows out of the card would spend the
+// decision's own space on the list of decisions.
 func (m Model) confirmPanelBound() int {
 	// The rail and the undressed draft a gated decision adds are paid for
 	// here too, so the card is never the thing clipped off the bottom to

@@ -1,11 +1,12 @@
 package components
 
-// The exit banner (S-148, DESIGN-TUI.md §22b). The chat surfaces run on the
-// alternate screen, which means quitting does not leave the session in the
-// scrollback the way a scrolling program would — it restores the terminal to
-// the moment before shhh started, and everything the session drew is gone in
-// one frame. The vitals go with it: which slot the conversation is in, how
-// long it got, what the sitting cost, and whether any of it was written down.
+// The exit banner (S-148, docs/interface/surfaces.md#outside-the-tui). The
+// chat surfaces run on the alternate screen, which means quitting does not
+// leave the session in the scrollback the way a scrolling program would — it
+// restores the terminal to the moment before shhh started, and everything the
+// session drew is gone in one frame. The vitals go with it: which slot the
+// conversation is in, how long it got, what the sitting cost, and whether any
+// of it was written down.
 //
 // So the banner is not a sign-off. It is the handful of facts the screen was
 // carrying that a reader still needs after the screen is gone, printed where

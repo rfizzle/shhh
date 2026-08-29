@@ -1,6 +1,7 @@
 package provider
 
-// The provider failure taxonomy (S-106, DESIGN-TUI.md §17a).
+// The provider failure taxonomy (S-106,
+// docs/interface/surfaces.md#the-recovery-row).
 //
 // Every dialect used to map its own 401 and its own 429 and hand everything
 // else to the transcript as a Go error string, so one failure read four

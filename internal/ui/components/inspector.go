@@ -1,10 +1,10 @@
 package components
 
-// Inspector rail (S-092, DESIGN-TUI.md §15). Past 130 content columns the
-// transcript stops being the whole screen: a 46-column rail on the right
-// answers the three standing questions — what is it doing, what has it
-// changed, what is it costing — so the session stops being interrogated with
-// /stats and /diff for what it already knows.
+// Inspector rail (S-092, docs/interface/surfaces.md#the-inspector-rail). Past
+// 130 content columns the transcript stops being the whole screen: a
+// 46-column rail on the right answers the three standing questions — what is
+// it doing, what has it changed, what is it costing — so the session stops
+// being interrogated with /stats and /diff for what it already knows.
 //
 // The rail is passive, like Cockpit: the host feeds it the session's numbers
 // and renders View every frame. It owns no keys, no state and no goroutines,

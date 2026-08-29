@@ -1,8 +1,9 @@
 package chat
 
-// The running turn's status (S-118, DESIGN-TUI.md §8d). The frame's activity
-// slot used to say `WORKING` — which is true of every moment of every turn
-// and therefore says nothing — and the numbers that would have made it useful
+// The running turn's status (S-118,
+// docs/interface/surfaces.md#the-input-frame). The frame's activity slot used
+// to say `WORKING` — which is true of every moment of every turn and
+// therefore says nothing — and the numbers that would have made it useful
 // were reported only after the fact. This is that slot given the turn's live
 // account of itself: which of the four phases it is in, how long it has been
 // there, what it has spent, and what that has cost.

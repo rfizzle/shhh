@@ -1,6 +1,7 @@
 package chat
 
-// The fifth invariant across every keyed surface (S-125, DESIGN-TUI.md §7c).
+// The fifth invariant across every keyed surface (S-125,
+// docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // S-095's precedent: a rule stated in the design system becomes a test that
 // enforces it everywhere rather than a paragraph each surface is trusted to
@@ -46,9 +47,10 @@ type keyedSurface struct {
 	hold func(t *testing.T, m Model) Model
 }
 
-// register is the enumeration DESIGN-TUI.md §7c keeps in words. A surface
-// added to the product with bare letters on it belongs here, and the tests
-// below are what stop it shipping ungated.
+// register is the enumeration
+// docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard
+// keeps in words. A surface added to the product with bare letters on it
+// belongs here, and the tests below are what stop it shipping ungated.
 func register(t *testing.T) []keyedSurface {
 	t.Helper()
 	return []keyedSurface{

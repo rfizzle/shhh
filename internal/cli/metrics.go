@@ -1,7 +1,8 @@
 package cli
 
-// The metrics surface (S-129, DESIGN-TUI.md §19c). `shhh metrics` printed a
-// fifteen-column tabwriter table and had no Bubble Tea at all; it hosts
+// The metrics surface (S-129,
+// docs/interface/surfaces.md#the-supporting-screens). `shhh metrics` printed
+// a fifteen-column tabwriter table and had no Bubble Tea at all; it hosts
 // `components.MetricsScreen` now and owns everything the screen deliberately
 // does not — what the store recorded, what a token costs, what became of a
 // command, and which of those readings there is anything to say about.

@@ -1,6 +1,7 @@
 package components
 
-// The register on the page (S-153, DESIGN-TUI.md §7d).
+// The register on the page (S-153,
+// docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // Every key row in this package is drawn from a binding rather than from a
 // string, so the spelling a reader is offered is the spelling the handler
@@ -9,9 +10,9 @@ package components
 // sentence (`[y] allow`), and the selector family's hint line does not
 // because it is already a run of nothing but keys.
 //
-// Words are the binding's own unless a surface has better ones. `[r]` is
-// "try again" in the register and "ask again from scratch" on the row that
-// means that; the key is what must not drift, and the register owns it.
+// Words are the binding's own unless a surface has better ones. `[r]` is "try
+// again" in the register and "ask again from scratch" on the row that means
+// that; the key is what must not drift, and the register owns it.
 
 import "github.com/rfizzle/shhh/internal/ui/keys"
 

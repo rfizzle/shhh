@@ -1,13 +1,15 @@
 package components
 
-// The config screen (S-127, DESIGN-TUI.md §19a, ui_kits/cockpit/Tools.html).
-// `shhh config` shipped before the cockpit and invented its own list, its own
-// idea of a value and its own key words for them. It is re-cut here from
-// parts that already exist: the §4a window with its markers and its filter
-// row, the §6a row with a right-hand field, the §12a bracketed-key hint line,
-// the masked entry an auth failure opens, and the §5 inline confirm. Almost
-// nothing here is new — the win is deletion, and the gain is that a reader
-// who knows the cockpit already knows this screen.
+// The config screen (S-127,
+// docs/interface/surfaces.md#the-supporting-screens,
+// ui_kits/cockpit/Tools.html). `shhh config` shipped before the cockpit and
+// invented its own list, its own idea of a value and its own key words for
+// them. It is re-cut here from parts that already exist: the §4a window with
+// its markers and its filter row, the §6a row with a right-hand field, the
+// §12a bracketed-key hint line, the masked entry an auth failure opens, and
+// the §5 inline confirm. Almost nothing here is new — the win is deletion,
+// and the gain is that a reader who knows the cockpit already knows this
+// screen.
 //
 // Two rules shape it and both come from §19a. A value is a row, and changing
 // one opens the picker *under* that row rather than over the screen, so the

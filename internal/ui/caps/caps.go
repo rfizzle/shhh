@@ -1,4 +1,5 @@
-// Package caps is what the terminal can do (S-156, DESIGN-TUI.md §10k).
+// Package caps is what the terminal can do (S-156,
+// docs/architecture.md#only-one-place-speaks-to-the-terminal).
 //
 // Everything else in shhh adapts to the terminal by reading the environment
 // and measuring the window: NO_COLOR, TERM=dumb, the width the ladders drop

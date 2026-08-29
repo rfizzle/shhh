@@ -48,17 +48,19 @@ func (p Position) String() string {
 	}
 }
 
-// Surface is one row of §7c's table.
+// Surface is one row of the register of keyed surfaces
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 type Surface struct {
-	// Name is what the surface is called in DESIGN-TUI.md, lowercase,
-	// because it is read inside a sentence as often as above a list.
+	// Name is what the surface is called in the interface documentation,
+	// lowercase, because it is read inside a sentence as often as above a
+	// list.
 	Name string
-	// Section is the part of the design doc that is normative for it.
+	// Section is the documentation that is normative for it.
 	Section string
 	// Position is where it stands relative to the keyboard.
 	Position Position
 	// Reached is how it gets the keyboard, in words — the last column of
-	// §7c's table.
+	// that register.
 	Reached string
 	// Bindings are its keys, in the order it offers them.
 	Bindings []Binding
@@ -70,7 +72,7 @@ func Surfaces() []Surface {
 	return []Surface{
 		{
 			Name:     "the input",
-			Section:  "§12",
+			Section:  "docs/interface/surfaces.md#the-input-frame",
 			Position: Home,
 			Reached:  "it has the keyboard unless something has taken it",
 			Bindings: []Binding{
@@ -84,14 +86,14 @@ func Surfaces() []Surface {
 		},
 		{
 			Name:     "reading mode",
-			Section:  "§7a",
+			Section:  "docs/interface/surfaces.md#reading-mode",
 			Position: Takeover,
 			Reached:  Shown(Draft.Reading),
 			Bindings: Reading.All(),
 		},
 		{
 			Name:     "a transcript row's own offers",
-			Section:  "§16, §17a",
+			Section:  "docs/interface/surfaces.md#the-turns-close, docs/interface/surfaces.md#the-recovery-row",
 			Position: Beside,
 			Reached:  Shown(Draft.Reading) + ", then the cursor on the row",
 			Bindings: []Binding{
@@ -101,7 +103,7 @@ func Surfaces() []Surface {
 		},
 		{
 			Name:     "the approval card, the /run confirm, the plan card",
-			Section:  "§2, §4d, §7b",
+			Section:  "docs/interface/surfaces.md#the-approval-card, docs/interface/surfaces.md#selectors, docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard",
 			Position: Beside,
 			Reached:  Shown(Draft.Answer),
 			Bindings: []Binding{
@@ -111,14 +113,14 @@ func Surfaces() []Surface {
 		},
 		{
 			Name:     "the inline confirm and the undo confirm",
-			Section:  "§5",
+			Section:  "docs/interface/surfaces.md#the-inline-confirm",
 			Position: Takeover,
 			Reached:  "the key that opens it",
 			Bindings: []Binding{Confirm.Yes, Confirm.Force, Confirm.No},
 		},
 		{
 			Name:     "the selector family, the model and rewind pickers",
-			Section:  "§4",
+			Section:  "docs/interface/surfaces.md#selectors",
 			Position: Takeover,
 			Reached:  "the command or key that opens it",
 			Bindings: []Binding{
@@ -133,7 +135,7 @@ func Surfaces() []Surface {
 			// as text, so j/k are not keys and the arrows are the movement
 			// (§4a). Nothing here is a bare letter.
 			Name:     "a selector being typed into",
-			Section:  "§4a",
+			Section:  "docs/interface/surfaces.md#selectors",
 			Position: Takeover,
 			Reached:  Bracket(Select.Filter) + " on the list",
 			Bindings: []Binding{
@@ -142,7 +144,7 @@ func Surfaces() []Surface {
 		},
 		{
 			Name:     "the command palette",
-			Section:  "§18a",
+			Section:  "docs/interface/surfaces.md#the-palette",
 			Position: Takeover,
 			Reached:  Shown(Draft.Palette),
 			Bindings: []Binding{
@@ -152,7 +154,7 @@ func Surfaces() []Surface {
 		},
 		{
 			Name:     "review mode",
-			Section:  "§16a",
+			Section:  "docs/interface/surfaces.md#the-turns-close",
 			Position: Takeover,
 			Reached:  Bracket(Row.Review) + ", /review, /diff",
 			Bindings: []Binding{
@@ -163,7 +165,7 @@ func Surfaces() []Surface {
 		},
 		{
 			Name:     "the agent manager",
-			Section:  "§9a",
+			Section:  "docs/interface/surfaces.md#the-agent-manager",
 			Position: Takeover,
 			Reached:  Shown(Draft.Agents) + ", /agents",
 			Bindings: []Binding{
@@ -173,7 +175,7 @@ func Surfaces() []Surface {
 		},
 		{
 			Name:     "the full-screen diff",
-			Section:  "§3c",
+			Section:  "docs/interface/surfaces.md#the-diff-view",
 			Position: Takeover,
 			Reached:  "the key that opens it",
 			Bindings: []Binding{
@@ -182,28 +184,28 @@ func Surfaces() []Surface {
 		},
 		{
 			Name:     "the staged image preview",
-			Section:  "§12h",
+			Section:  "docs/interface/surfaces.md#a-staged-picture",
 			Position: Takeover,
 			Reached:  "/paste show <name>",
 			Bindings: []Binding{Picture.Back, Picture.Leave},
 		},
 		{
 			Name:     "the retry countdown",
-			Section:  "§17a",
+			Section:  "docs/interface/surfaces.md#the-recovery-row",
 			Position: Takeover,
 			Reached:  "it opens on its own and takes the keyboard",
 			Bindings: []Binding{Wait.Fallback, Wait.Stop},
 		},
 		{
 			Name:     "the context-pressure card",
-			Section:  "§17b",
+			Section:  "docs/interface/surfaces.md#the-recovery-row",
 			Position: Takeover,
 			Reached:  "it opens on its own and takes the keyboard",
 			Bindings: []Binding{Wait.Compact, Wait.NewSession, Wait.KeepGoing},
 		},
 		{
 			Name:     "the masked key prompt",
-			Section:  "§17a",
+			Section:  "docs/interface/surfaces.md#the-recovery-row",
 			Position: Takeover,
 			Reached:  Bracket(Row.Key) + " on an auth failure's row",
 			Bindings: []Binding{Wait.UseKey, Wait.KeepKey},
@@ -220,7 +222,7 @@ func Programs() []Surface {
 	return []Surface{
 		{
 			Name:     "shhh config",
-			Section:  "§19a",
+			Section:  "docs/interface/surfaces.md#the-supporting-screens",
 			Position: Takeover,
 			Reached:  "shhh config",
 			Bindings: []Binding{
@@ -230,7 +232,7 @@ func Programs() []Surface {
 		},
 		{
 			Name:     "a setting's picker or field",
-			Section:  "§19a",
+			Section:  "docs/interface/surfaces.md#the-supporting-screens",
 			Position: Takeover,
 			Reached:  Bracket(Screen.Take) + " on a setting",
 			Bindings: []Binding{
@@ -239,7 +241,7 @@ func Programs() []Surface {
 		},
 		{
 			Name:     "shhh history",
-			Section:  "§19b",
+			Section:  "docs/interface/surfaces.md#the-supporting-screens",
 			Position: Takeover,
 			Reached:  "shhh history",
 			Bindings: []Binding{
@@ -249,7 +251,7 @@ func Programs() []Surface {
 		},
 		{
 			Name:     "shhh doctor",
-			Section:  "§19d",
+			Section:  "docs/interface/surfaces.md#the-supporting-screens",
 			Position: Takeover,
 			Reached:  "shhh doctor",
 			Bindings: []Binding{
@@ -259,14 +261,14 @@ func Programs() []Surface {
 		},
 		{
 			Name:     "shhh metrics",
-			Section:  "§19c",
+			Section:  "docs/interface/surfaces.md#the-supporting-screens",
 			Position: Takeover,
 			Reached:  "shhh metrics",
 			Bindings: []Binding{Screen.Quit},
 		},
 		{
 			Name:     "the one-shot's action bar",
-			Section:  "§18b",
+			Section:  "docs/interface/surfaces.md#the-one-shot-result",
 			Position: Takeover,
 			Reached:  "shhh <prompt>",
 			Bindings: []Binding{
@@ -277,21 +279,21 @@ func Programs() []Surface {
 		},
 		{
 			Name:     "first contact and the provider card",
-			Section:  "§17c",
+			Section:  "docs/interface/surfaces.md#the-start-screen",
 			Position: Takeover,
 			Reached:  "a session with no key to run on",
 			Bindings: []Binding{Setup.Wizard, Setup.Paste, Setup.Local},
 		},
 		{
 			Name:     "the saved-chat browser",
-			Section:  "§19b",
+			Section:  "docs/interface/surfaces.md#the-supporting-screens",
 			Position: Takeover,
 			Reached:  "shhh chats",
 			Bindings: []Binding{Browse.Move, Browse.Open, Browse.Filter, Browse.Quit},
 		},
 		{
 			Name:     "a saved chat's detail",
-			Section:  "§19b",
+			Section:  "docs/interface/surfaces.md#the-supporting-screens",
 			Position: Takeover,
 			Reached:  Bracket(Browse.Open) + " on a chat",
 			Bindings: []Binding{

@@ -1,10 +1,10 @@
 package project
 
-// Project survey (S-105, DESIGN-TUI.md §17c). A first launch in a repo shhh
-// has never seen used to be a blank viewport and a blinking cursor. It knows
-// more than that before the first keystroke: it has already read the project
-// context file into the system prompt, and the toolchain, the branch and the
-// dirty count are three cheap questions away.
+// Project survey (S-105, docs/interface/surfaces.md#the-start-screen). A
+// first launch in a repo shhh has never seen used to be a blank viewport and
+// a blinking cursor. It knows more than that before the first keystroke: it
+// has already read the project context file into the system prompt, and the
+// toolchain, the branch and the dirty count are three cheap questions away.
 //
 // Survey answers them once, at session start, beside the FindContext read
 // that already happens there. Nothing here runs per frame, and the one walk

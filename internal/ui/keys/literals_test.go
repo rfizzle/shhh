@@ -1,6 +1,7 @@
 package keys
 
-// No key literals outside the register (S-153, DESIGN-TUI.md §7d).
+// No key literals outside the register (S-153,
+// docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // Every other test in this package checks the register against itself. This
 // one checks the tree against the register, which is the half that actually

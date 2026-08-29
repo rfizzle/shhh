@@ -1,6 +1,7 @@
 package provider
 
-// What a broken stream keeps (S-107, DESIGN-TUI.md §17a).
+// What a broken stream keeps (S-107,
+// docs/interface/surfaces.md#the-recovery-row).
 //
 // Every dialect used to drop what it had accumulated the moment the transport
 // failed. The text was already on screen, so it survived by accident, but the

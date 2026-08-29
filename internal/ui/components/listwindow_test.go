@@ -1,10 +1,11 @@
 package components
 
-// The two lists the sliding window reached late (S-124, DESIGN-TUI.md §4a).
-// S-116 gave the window to the selector and left the multi-select and the
-// agent manager calling boundRows directly, so a pointer walked past the last
-// row on either of those cards was navigating a list it could no longer see —
-// the same bug, on the two surfaces that own their own Focus.
+// The two lists the sliding window reached late (S-124,
+// docs/interface/surfaces.md#selectors). S-116 gave the window to the
+// selector and left the multi-select and the agent manager calling boundRows
+// directly, so a pointer walked past the last row on either of those cards
+// was navigating a list it could no longer see — the same bug, on the two
+// surfaces that own their own Focus.
 //
 // These assert what is different about each: a multi-select can scroll the
 // user's own answer off the card, and the agent manager holds rows that must

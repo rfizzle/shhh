@@ -1,6 +1,7 @@
 package components
 
-// The doctor surface (S-130, DESIGN-TUI.md §19d). The assertions here are
+// The doctor surface (S-130,
+// docs/interface/surfaces.md#the-supporting-screens). The assertions here are
 // about the three rules the screen exists to keep: a check is a §6a row and
 // nothing else, a check that did not pass states its consequence in the words
 // the reader will meet it in, and the fix is offered on the row that failed

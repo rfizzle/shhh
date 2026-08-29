@@ -129,10 +129,11 @@ func printHistoryTable(entries []storage.HistoryEntry) error {
 	return w.Flush()
 }
 
-// historyModel hosts the history browser (S-128, DESIGN-TUI.md §19b). It owns
-// everything the screen deliberately does not: what an entry means, how long
-// ago it was, what its action and exit code add up to, and when any of it
-// reaches the store.
+// historyModel hosts the history browser (S-128,
+// docs/interface/surfaces.md#the-supporting-screens). It owns everything the
+// screen deliberately does not: what an entry means, how long ago it was,
+// what its action and exit code add up to, and when any of it reaches the
+// store.
 //
 // The screen resolves a key to a components.HistoryCommand; the host carries
 // it out, says so in the notice line, and hands back fresh rows. `[enter]` is

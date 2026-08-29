@@ -1,17 +1,17 @@
 package chat
 
-// Step outline (S-090, DESIGN-TUI.md §13): consecutive tool calls fold under
-// numbered steps, so a forty-tool turn reads as an outline instead of a
-// scrolling feed. The grouping is a layer over the entry list — the agent
-// already emits ordered tool results, and inventing a step protocol on the
-// wire would couple every provider to the UI (§13a). Plan mode is the one
-// place a step list is authoritative: once a plan is approved (S-104) its
+// Step outline (S-090, docs/interface/surfaces.md#the-step): consecutive tool
+// calls fold under numbered steps, so a forty-tool turn reads as an outline
+// instead of a scrolling feed. The grouping is a layer over the entry list —
+// the agent already emits ordered tool results, and inventing a step protocol
+// on the wire would couple every provider to the UI (§13a). Plan mode is the
+// one place a step list is authoritative: once a plan is approved (S-104) its
 // steps are the transcript's steps — numbered as the plan numbered them,
 // including the ones not started — and work the plan never named is marked as
-// off it rather than renumbered into it. Without a plan every step is inferred
-// from the assistant prose immediately preceding a batch of calls, and a turn
-// with no discernible steps renders exactly as it did before — a flat list, no
-// empty group chrome.
+// off it rather than renumbered into it. Without a plan every step is
+// inferred from the assistant prose immediately preceding a batch of calls,
+// and a turn with no discernible steps renders exactly as it did before — a
+// flat list, no empty group chrome.
 
 import (
 	"fmt"

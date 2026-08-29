@@ -57,12 +57,13 @@ const (
 	// statePlanApprove: a completed planning response is awaiting the user's
 	// decision — execute, keep planning, or reject (S-061).
 	statePlanApprove
-	// stateFocus: focus mode (S-076, DESIGN-TUI.md §7) — j/k moves a
-	// selection cursor over expandable transcript rows, enter
+	// stateFocus: focus mode (S-076, docs/interface/surfaces.md#reading-mode) —
+	// j/k moves a selection cursor over expandable transcript rows, enter
 	// expands/collapses in place, esc returns to the input.
 	stateFocus
-	// stateDiffFull: a diff is showing full screen (S-074, DESIGN-TUI.md
-	// §3c) — from a transcript edit row, an approval's [d], or /diff.
+	// stateDiffFull: a diff is showing full screen (S-074,
+	// docs/interface/surfaces.md#the-diff-view) — from a transcript edit
+	// row, an approval's [d], or /diff.
 	stateDiffFull
 	// stateRewindPick: the interactive /rewind checkpoint picker is showing
 	// (S-069).
@@ -73,9 +74,10 @@ const (
 	// stateModelList: bare /model is querying the provider's /v1/models
 	// endpoint before opening the picker (S-083); esc cancels back to input.
 	stateModelList
-	// stateReview: review mode (S-099, DESIGN-TUI.md §16a) — the file list
-	// and hunk pane of what a turn changed, with staging per hunk. A
-	// takeover: full width, the rail hidden, esc returns.
+	// stateReview: review mode (S-099,
+	// docs/interface/surfaces.md#the-turns-close) — the file list and hunk pane
+	// of what a turn changed, with staging per hunk. A takeover: full width, the
+	// rail hidden, esc returns.
 	stateReview
 	// stateUndoConfirm: the inline confirm an undo asks through (S-100,
 	// §5) — what it would restore, what has drifted since, and esc to
@@ -236,13 +238,14 @@ type entry struct {
 	fanout *fanoutBatch
 	// deniedBy names who refused the call — decidedByYou for a decline at the
 	// card, decidedByAuto for a rule — and renders the row as ⊘ rather than ✗
-	// (S-089, DESIGN-TUI.md §6d). Empty when nothing was refused.
+	// (S-089, docs/interface/principles.md#closed-vocabularies). Empty when
+	// nothing was refused.
 	deniedBy string
 	// denyRule names the rule behind an auto denial, e.g. "plan mode".
 	denyRule string
 	// stepFold is your fold override for the step this entry titles (S-090,
-	// DESIGN-TUI.md §13b); steps keep no layout state of their own, so it
-	// lives on the raw entry and survives a resize.
+	// docs/interface/surfaces.md#the-step); steps keep no layout state of their
+	// own, so it lives on the raw entry and survives a resize.
 	stepFold foldState
 	// groupFold is the same override for the folded run of read-only calls
 	// this entry heads (S-091, §13c).
@@ -1578,9 +1581,9 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.agent.ResolveApproval(msg.result)
 		m.recordToolEvent(req.call.Name, msg.duration, outcomeFromResult(msg.result))
 		m.noteEvictedTurns(msg.evicted)
-		// An applied edit lands in the transcript as a collapsed diff row
-		// (S-074, DESIGN-TUI.md §3a); failures keep the plain tool block so
-		// the error text stays visible.
+		// An applied edit lands in the transcript as a collapsed diff row (S-074,
+		// docs/interface/surfaces.md#the-diff-view); failures keep the plain tool
+		// block so the error text stays visible.
 		if req.kind == approvalDiff && len(req.hunks) > 0 && outcomeFromResult(msg.result) == outcomeOK {
 			m.appendEntry(entry{kind: entryDiff, diff: &components.DiffView{
 				Path:     req.path,
@@ -1904,8 +1907,9 @@ func (m Model) liveTailHeight() int {
 }
 
 // drawBottomPanel paints the surface's bottom rows: the command-center frame
-// (S-082, DESIGN-TUI.md §12), or the divider + status-bar stack with whichever
-// takeover surface replaced the input under it.
+// (S-082, docs/interface/surfaces.md#the-input-frame), or the divider +
+// status-bar stack with whichever takeover surface replaced the input under
+// it.
 func (m Model) drawBottomPanel(scr uv.Screen, area uv.Rectangle) {
 	if m.frameShowing() {
 		// A decision that has not been given the keyboard rides above the
@@ -2553,11 +2557,11 @@ func separatorBefore(prev, cur entry) string {
 	return ""
 }
 
-// renderStatusBar renders the cockpit rail (S-075, DESIGN-TUI.md §8): the
-// active mode, tool-round counter, context occupancy meter (colored at the
-// S-055 thresholds), usage and spend, queued steering, policy grants, and the
-// sub-agent badge, with the model name right-aligned and dropped first when
-// narrow.
+// renderStatusBar renders the cockpit rail (S-075,
+// docs/interface/surfaces.md#the-input-frame): the active mode, tool-round
+// counter, context occupancy meter (colored at the S-055 thresholds), usage
+// and spend, queued steering, policy grants, and the sub-agent badge, with
+// the model name right-aligned and dropped first when narrow.
 func (m Model) renderStatusBar(width int) string {
 	// Attached, the status bar scopes to the focused child (S-077).
 	if m.attachedTo != "" && m.subagents != nil {

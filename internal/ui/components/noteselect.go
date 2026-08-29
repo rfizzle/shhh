@@ -17,9 +17,9 @@ type NoteSelectResult struct {
 }
 
 // NoteSelect is a single-select plus an optional free-text note
-// (DESIGN-TUI.md §4c): tab moves between the option list and the note, enter
-// confirms both, esc cancels. An option with RequireNote refuses to confirm
-// with an empty note.
+// (docs/interface/surfaces.md#selectors): tab moves between the option list
+// and the note, enter confirms both, esc cancels. An option with RequireNote
+// refuses to confirm with an empty note.
 type NoteSelect struct {
 	Select    Select
 	Note      textarea.Model

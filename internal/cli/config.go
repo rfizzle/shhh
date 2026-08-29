@@ -68,9 +68,10 @@ func newConfigSetCmd() *cobra.Command {
 	}
 }
 
-// configModel hosts the config screen (S-127, DESIGN-TUI.md §19a). It owns
-// everything the screen deliberately does not: what a setting means, what its
-// default is, which answers it offers, and when any of it reaches the file.
+// configModel hosts the config screen (S-127,
+// docs/interface/surfaces.md#the-supporting-screens). It owns everything the
+// screen deliberately does not: what a setting means, what its default is,
+// which answers it offers, and when any of it reaches the file.
 //
 // Two copies of the config are held. base is what was loaded and is what a
 // row is compared against to say where its value came from; cfg is what the

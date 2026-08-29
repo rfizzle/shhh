@@ -1,6 +1,7 @@
 package chat
 
-// The transcript's line cache (S-160, DESIGN-TUI.md §10m).
+// The transcript's line cache (S-160,
+// docs/architecture.md#the-screen-is-a-rectangle-and-so-is-everything-in-it).
 //
 // §13's block freeze is what makes the transcript cheap to redraw: a step
 // block that has a successor can never change, so it is rendered once and
@@ -38,10 +39,10 @@ package chat
 // Every caller that builds the lines hands them straight to the pane, so the
 // render and the read are one frame apart at most. The one that does not is
 // the clipboard extraction (select.go), which reads the current render to see
-// what the selection names: it rebuilds the same tail from the same transcript
-// at the same width, so what it writes is what was already there — and while a
-// selection is lit the pane is holding a copy anyway, because the highlight
-// cannot restyle the cache's own lines.
+// what the selection names: it rebuilds the same tail from the same
+// transcript at the same width, so what it writes is what was already there —
+// and while a selection is lit the pane is holding a copy anyway, because the
+// highlight cannot restyle the cache's own lines.
 //
 // And the live Model owns the backing array. A Model copy that has been
 // superseded holds a cache it may no longer render from. That was true of the

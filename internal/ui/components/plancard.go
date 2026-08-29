@@ -1,12 +1,12 @@
 package components
 
-// The plan card (S-103, DESIGN-TUI.md §4d). Plan approval is the cheapest
-// place in the product to disagree with an agent, and it used to be the
-// vaguest: a list of option rows under a paragraph the reader skimmed. The
-// card states the plan as priced steps — each one naming the files it intends
-// to touch — computes the whole radius once on a line of its own, and then
-// asks, explaining the consequence of the option under the pointer and no
-// other.
+// The plan card (S-103, docs/interface/surfaces.md#selectors). Plan approval
+// is the cheapest place in the product to disagree with an agent, and it used
+// to be the vaguest: a list of option rows under a paragraph the reader
+// skimmed. The card states the plan as priced steps — each one naming the
+// files it intends to touch — computes the whole radius once on a line of its
+// own, and then asks, explaining the consequence of the option under the
+// pointer and no other.
 //
 // Only the focused option explains itself on purpose. Four consequences
 // stacked at once is a wall, not a choice, and a card that tall would push

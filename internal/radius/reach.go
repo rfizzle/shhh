@@ -1,12 +1,12 @@
 package radius
 
-// Reach is the one-shot's containment line (S-113, DESIGN-TUI.md §18b). The
-// approval cards spend a row each on what a command touches, what could undo
-// it and what the sandbox allows, because a session has the room for three
-// rows and the reader is deciding twenty times an hour. The front door has
-// one line and one decision, so the same resolution is folded into a phrase:
-// what it writes, whether it leaves the machine, and whose privileges it
-// runs with.
+// Reach is the one-shot's containment line (S-113,
+// docs/interface/surfaces.md#the-one-shot-result). The approval cards spend a
+// row each on what a command touches, what could undo it and what the sandbox
+// allows, because a session has the room for three rows and the reader is
+// deciding twenty times an hour. The front door has one line and one
+// decision, so the same resolution is folded into a phrase: what it writes,
+// whether it leaves the machine, and whose privileges it runs with.
 //
 // It is the same reading, so it inherits the same honesty: a verb shhh could
 // not account for makes the network facet `unknown` rather than quiet, since

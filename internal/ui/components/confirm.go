@@ -5,9 +5,10 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// Confirm is the inline one-line yes/no prompt (DESIGN-TUI.md §5) for moments
-// that don't warrant a card. It renders in the input area; the default is No,
-// and esc declines — never destroys.
+// Confirm is the inline one-line yes/no prompt
+// (docs/interface/surfaces.md#the-inline-confirm) for moments that don't
+// warrant a card. It renders in the input area; the default is No, and esc
+// declines — never destroys.
 type Confirm struct {
 	Prompt string
 }

@@ -1,6 +1,7 @@
 package chat
 
-// The summons and its two gates (S-157, DESIGN-TUI.md §10l).
+// The summons and its two gates (S-157,
+// docs/interface/surfaces.md#when-you-are-not-there).
 //
 // The rule is an edge and a fact: shhh notifies on the transition into
 // waiting, and only where the terminal has said the window is not in front.

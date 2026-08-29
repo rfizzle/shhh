@@ -1,9 +1,9 @@
 package components
 
-// Review mode (S-099, DESIGN-TUI.md §16a). The surface is a layout around
-// the shared diff renderer, so these cover the two things that are its own:
-// what staging selects, and how the two panes behave as the terminal
-// changes width.
+// Review mode (S-099, docs/interface/surfaces.md#the-turns-close). The
+// surface is a layout around the shared diff renderer, so these cover the two
+// things that are its own: what staging selects, and how the two panes behave
+// as the terminal changes width.
 
 import (
 	"strings"

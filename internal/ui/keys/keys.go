@@ -1,4 +1,5 @@
-// Package keys is shhh's key register (S-153, DESIGN-TUI.md §7d).
+// Package keys is shhh's key register (S-153,
+// docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // Before it existed, a key was written down twice: once as a literal in the
 // handler that answers it, and once as prose in the hint that offers it. The

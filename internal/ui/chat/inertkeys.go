@@ -1,6 +1,7 @@
 package chat
 
-// Invariant 5 across the keyed surfaces (S-125, DESIGN-TUI.md §7c).
+// Invariant 5 across the keyed surfaces (S-125,
+// docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // S-117 fixed the acute case: a decision that arrives unbidden is inert until
 // ctrl+g gives it the keyboard (interrupt.go). The audit behind this file is
@@ -14,9 +15,9 @@ package chat
 // about: the changeset row a turn closes with (§16), a provider failure's row
 // (§17a), a dropped stream's, and a round-limit pause's. They are transcript
 // entries, not takeovers. Their keys are handled by reading mode on the row
-// (focus.go), so while the draft below has the keyboard `v` is a letter,
-// `[v] review` is an offer nothing accepts, and the row was painting it in
-// info — the colour that means "you can press this" (§10a).
+// (focus.go), so while the draft below has the keyboard `v` is a letter, `[v]
+// review` is an offer nothing accepts, and the row was painting it in info —
+// the colour that means "you can press this" (§10a).
 //
 // So a transcript row renders its keys live only while reading mode's cursor
 // is standing on it. Everywhere else they go grey and the one key that hands

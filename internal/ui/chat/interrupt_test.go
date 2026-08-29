@@ -1,9 +1,10 @@
 package chat
 
-// When a decision lands mid-sentence (S-117, DESIGN-TUI.md §7b). The hazard
-// these tests hold shut is the one the story opened with: a card that arrives
-// unbidden used to take the keyboard, so a sentence containing the word "yes"
-// could approve a shell command before it had been read.
+// When a decision lands mid-sentence (S-117,
+// docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+// The hazard these tests hold shut is the one the story opened with: a card
+// that arrives unbidden used to take the keyboard, so a sentence containing
+// the word "yes" could approve a shell command before it had been read.
 
 import (
 	"encoding/json"

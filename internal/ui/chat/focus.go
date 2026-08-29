@@ -1,10 +1,11 @@
 package chat
 
-// Focus mode (S-076, DESIGN-TUI.md §7): ctrl+e gives the transcript a
-// selection cursor over expandable rows (tool and command output). j/k moves
-// between them, enter expands/collapses the selected row in place, and esc
-// returns to the input. This is the one mechanism behind "[enter] expand"
-// everywhere in the transcript, so the input textarea keeps all other keys.
+// Focus mode (S-076, docs/interface/surfaces.md#reading-mode): ctrl+e gives
+// the transcript a selection cursor over expandable rows (tool and command
+// output). j/k moves between them, enter expands/collapses the selected row
+// in place, and esc returns to the input. This is the one mechanism behind
+// "[enter] expand" everywhere in the transcript, so the input textarea keeps
+// all other keys.
 
 import (
 	"strings"

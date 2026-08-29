@@ -1,13 +1,13 @@
 package components
 
-// Foreign output (S-150, DESIGN-TUI.md §10i). A detail body is the one place
-// in the transcript where bytes shhh did not write reach the screen: a failed
-// command's output, a running one's live tail, a provider's error body.
-// Programs emit \x1b[31m and trust the terminal to pick a red. Inside shhh
-// that red is whatever the reader's theme decided — frequently illegible
-// against the terminal's own background, and in every case a colour the
-// palette does not own (§10a), sitting one indent away from rows that spent
-// S-088 getting one job per token.
+// Foreign output (S-150, docs/interface/principles.md#one-grid). A detail
+// body is the one place in the transcript where bytes shhh did not write
+// reach the screen: a failed command's output, a running one's live tail, a
+// provider's error body. Programs emit \x1b[31m and trust the terminal to
+// pick a red. Inside shhh that red is whatever the reader's theme decided —
+// frequently illegible against the terminal's own background, and in every
+// case a colour the palette does not own (§10a), sitting one indent away from
+// rows that spent S-088 getting one job per token.
 //
 // So the line is read before it is drawn. It is re-painted the way every
 // other surface is painted — as runs of text carrying a lipgloss style — with

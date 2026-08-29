@@ -1,6 +1,7 @@
 package chat
 
-// The session summary (S-163, DESIGN-TUI.md §15d).
+// The session summary (S-163,
+// docs/interface/surfaces.md#the-session-summary).
 //
 // The inspector rail answers every standing question about a session in
 // numbers. It cannot answer the one a reader asks after looking away for five

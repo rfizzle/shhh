@@ -1,6 +1,7 @@
 package chat
 
-// When a decision lands mid-sentence (S-117, DESIGN-TUI.md §7b).
+// When a decision lands mid-sentence (S-117,
+// docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // An approval arrives when the agent needs it, not when the reader is ready,
 // so roughly once a session it lands on top of a half-typed sentence. Until

@@ -1,14 +1,15 @@
 package chat
 
-// The surface's rectangle model (S-161, DESIGN-TUI.md §10n). Every width and
-// every row budget on this surface used to be its own subtraction: the
-// content width was `m.width - horizontalPadding*2`, the pane was that less
-// the inspector and its divider, the transcript was the pane less the scroll
-// gutter, and the viewport was the terminal less five separate heights
-// counted in a different file each. Every one of those was a second
-// description of the same geometry, and a rung that moved had to move in all
-// of them or they disagreed — which is how the live tail came to be drawn on
-// a row nothing had paid for (§10n).
+// The surface's rectangle model (S-161,
+// docs/architecture.md#the-screen-is-a-rectangle-and-so-is-everything-in-it).
+// Every width and every row budget on this surface used to be its own
+// subtraction: the content width was `m.width - horizontalPadding*2`, the
+// pane was that less the inspector and its divider, the transcript was the
+// pane less the scroll gutter, and the viewport was the terminal less five
+// separate heights counted in a different file each. Every one of those was a
+// second description of the same geometry, and a rung that moved had to move
+// in all of them or they disagreed — which is how the live tail came to be
+// drawn on a row nothing had paid for (§10n).
 //
 // This is the one description. The terminal is a rectangle, the layout engine
 // splits it, and everything downstream reads a rectangle instead of deriving

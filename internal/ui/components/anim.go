@@ -1,8 +1,9 @@
 package components
 
-// The working label's motion (S-154, DESIGN-TUI.md §10c). The product's whole
-// motion budget used to be one braille glyph: the plumbing under it — one
-// tick, one frame counter, one place the chain starts — was the careful part
+// The working label's motion (S-154, docs/interface/README.md). The product's
+// whole motion budget used to be one braille glyph: the plumbing under it —
+// one tick, one frame counter, one place the chain starts — was the careful
+// part
 // and the payload was `⠋`. This is the payload. The word beside the glyph
 // arrives cell by cell when a turn starts, and a light runs along it while the
 // turn lasts.

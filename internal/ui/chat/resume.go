@@ -1,6 +1,7 @@
 package chat
 
-// Stream resume and cheaper-model fallback (S-107, DESIGN-TUI.md §17a).
+// Stream resume and cheaper-model fallback (S-107,
+// docs/interface/surfaces.md#the-recovery-row).
 //
 // S-106 made a broken request legible; it still cost the whole turn. Two
 // failures deserve better than starting over, and they are not the same

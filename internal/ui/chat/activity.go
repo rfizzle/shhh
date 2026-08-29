@@ -1,10 +1,10 @@
 package chat
 
-// Compact activity feed (S-075, DESIGN-TUI.md §6): tool calls and commands
-// render as one-line activity rows — glyph, action, key argument, outcome,
-// counts, duration — never raw output blocks by default. Focus mode (§7)
-// expands a row in place, /ui verbosity changes the default density, and a
-// running command shows a live output tail in its row.
+// Compact activity feed (S-075, docs/interface/principles.md#one-grid): tool
+// calls and commands render as one-line activity rows — glyph, action, key
+// argument, outcome, counts, duration — never raw output blocks by default.
+// Focus mode (§7) expands a row in place, /ui verbosity changes the default
+// density, and a running command shows a live output tail in its row.
 
 import (
 	"context"
@@ -28,9 +28,9 @@ import (
 )
 
 // verbosity is the activity feed's default density, and the three levels have
-// three distinct meanings (S-091, DESIGN-TUI.md §13c): low shows step headers
-// only, normal folds a step's consecutive read-only calls into one counted
-// row, high expands every row with its bounded detail body.
+// three distinct meanings (S-091, docs/interface/surfaces.md#the-step): low
+// shows step headers only, normal folds a step's consecutive read-only calls
+// into one counted row, high expands every row with its bounded detail body.
 type verbosity int
 
 const (
@@ -107,11 +107,11 @@ const (
 )
 
 // activityVerbs is the one table mapping tool names onto the closed verb
-// vocabulary of DESIGN-TUI.md §6c — read, search, glob, lsp, web, edit,
-// write, patch, run, memory, spawn, fan-out, agent. A tool that maps onto
-// none of them is a hole in this table, not a fourteenth verb: it renders as
-// itself, clipped to the verb column, which is the signal that the table is
-// stale.
+// vocabulary of docs/interface/principles.md#closed-vocabularies — read,
+// search, glob, lsp, web, edit, write, patch, run, memory, spawn, fan-out,
+// agent. A tool that maps onto none of them is a hole in this table, not a
+// fourteenth verb: it renders as itself, clipped to the verb column, which is
+// the signal that the table is stale.
 var activityVerbs = map[string]string{
 	"read_file":                "read",
 	"list_directory":           "read",
@@ -236,7 +236,8 @@ func activityDuration(d time.Duration) string {
 // minutes. Past a minute `252s` stops reading as a duration, so the field
 // takes minutes and seconds — packed, because §6a gives duration six columns
 // and FormatElapsed's `4m 12s` would fill them and touch the outcome beside
-// it. It is the form DESIGN-TUI.md §17a draws on this row.
+// it. It is the form docs/interface/surfaces.md#the-recovery-row draws on
+// this row.
 func turnDuration(d time.Duration) string {
 	if d < time.Minute {
 		return activityDuration(d)
@@ -484,8 +485,9 @@ func monoStatus() string {
 	return "off"
 }
 
-// monoCommand handles /ui mono: strip every surface to the two greys of
-// DESIGN-TUI.md's first invariant, so that a state distinguished only by
+// monoCommand handles /ui mono: strip every surface to the two greys of the
+// first invariant (docs/interface/principles.md#colour-never-carries-meaning-alone),
+// so that a state distinguished only by
 // colour becomes visibly wrong (S-095). NO_COLOR and TERM=dumb turn it on for
 // the whole session and it cannot be turned back off from inside — the
 // environment asked, not the user.

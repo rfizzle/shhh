@@ -1,6 +1,7 @@
 package chat
 
-// /help against the register (S-153, DESIGN-TUI.md §7d).
+// /help against the register (S-153,
+// docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // Finding 3 of the polish review named the shape of this bug before the
 // register existed: "the copy and the handler are in different places and

@@ -1,11 +1,12 @@
 package components
 
-// The approval queue strip (S-102, DESIGN-TUI.md §2e; the Approvals artboard
-// in the shhh Design System project). Five separate cards, one after the
-// other, is how you train someone to hit enter without reading. The strip is
-// the alternative: what is stacked behind this decision, in the order it will
-// be asked, and — before the key applies it — which of them one keystroke
-// would answer together.
+// The approval queue strip (S-102,
+// docs/interface/surfaces.md#the-approval-card; the Approvals artboard in the
+// shhh Design System project). Five separate cards, one after the other, is
+// how you train someone to hit enter without reading. The strip is the
+// alternative: what is stacked behind this decision, in the order it will be
+// asked, and — before the key applies it — which of them one keystroke would
+// answer together.
 
 import (
 	"strconv"

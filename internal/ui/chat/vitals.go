@@ -1,7 +1,8 @@
 package chat
 
-// Session vitals and context accounting (S-093, DESIGN-TUI.md §15a). Two
-// numbers the session already half-knew get a shape here:
+// Session vitals and context accounting (S-093,
+// docs/interface/surfaces.md#the-inspector-rail). Two numbers the session
+// already half-knew get a shape here:
 //
 //   - the per-turn usage history — input, output, cached, cost, wall time —
 //     kept as a bounded ring with running totals that survive eviction, so

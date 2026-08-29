@@ -1,12 +1,13 @@
 package chat
 
-// Transcript text selection (S-145, DESIGN-TUI.md §7a). Mouse reporting used
-// to buy the wheel and cost the terminal's own click-drag selection, and the
-// note about it told the reader to hold shift. That answer works for what is
-// on the screen and for nothing else: a terminal's native selection cannot
-// follow a transcript past the edge of the window, so copying an answer three
-// viewport-heights long meant scrolling, selecting, pasting, and doing it
-// again — four times, without a seam anywhere to say where the joins went.
+// Transcript text selection (S-145, docs/interface/surfaces.md#reading-mode).
+// Mouse reporting used to buy the wheel and cost the terminal's own
+// click-drag selection, and the note about it told the reader to hold shift.
+// That answer works for what is on the screen and for nothing else: a
+// terminal's native selection cannot follow a transcript past the edge of the
+// window, so copying an answer three viewport-heights long meant scrolling,
+// selecting, pasting, and doing it again — four times, without a seam
+// anywhere to say where the joins went.
 //
 // So while reporting is on, the application owns the selection. Press inside
 // the transcript to anchor it, drag to extend it — including off the top or

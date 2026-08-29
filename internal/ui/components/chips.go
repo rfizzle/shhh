@@ -1,8 +1,9 @@
 package components
 
-// The staged attachment strip (S-151, DESIGN-TUI.md §12g). What is waiting to
-// ride on the next message, one chip per file: the mark for what kind of
-// thing it is, what it is called, and how big it is.
+// The staged attachment strip (S-151,
+// docs/interface/surfaces.md#the-input-frame). What is waiting to ride on the
+// next message, one chip per file: the mark for what kind of thing it is,
+// what it is called, and how big it is.
 //
 // It replaces `2 attachments · 4 KB`, which was true and said nothing. The
 // count is the one fact about a staging area a reader never has to be told —
@@ -14,9 +15,9 @@ package components
 // live draft, so a key written on a chip would be an offer nothing accepts
 // (§7c), and a `✕` would be a control the keyboard cannot reach — which is
 // the test S-159 gave the click targets it did add (§7e): the pointer names
-// one thing, and that thing already has a key. Taking one back out is
-// `/paste drop <name>` — which is why the name is the field a chip gives up
-// last, and why what does not fit is counted rather than half-drawn.
+// one thing, and that thing already has a key. Taking one back out is `/paste
+// drop <name>` — which is why the name is the field a chip gives up last, and
+// why what does not fit is counted rather than half-drawn.
 
 import (
 	"strconv"

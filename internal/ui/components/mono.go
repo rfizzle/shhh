@@ -1,6 +1,8 @@
 package components
 
-// Monochrome conformance (S-095, DESIGN-TUI.md invariant 1). Colour never
+// Monochrome conformance (S-095,
+// docs/interface/principles.md#colour-never-carries-meaning-alone).
+// Colour never
 // carries meaning alone: every state pairs its colour with a glyph or a word,
 // so a monochrome terminal loses decoration and never information. Mono mode
 // is how that invariant is enforced rather than asserted — it strips the

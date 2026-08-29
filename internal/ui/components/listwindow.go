@@ -1,12 +1,12 @@
 package components
 
 // The sliding window every long list in the product scrolls through
-// (DESIGN-TUI.md §4a). S-116 gave it to the selector and left it there;
-// S-124 lifts it out so the two lists that own their own Focus — the
-// multi-select and the agent manager — scroll through the same code rather
-// than growing a second and a third implementation of it. The design says as
-// much on both component pages: "if a real multi-select outgrows its card,
-// window it with Select's rules", and "when it happens, window it with
+// (docs/interface/surfaces.md#selectors). S-116 gave it to the selector and
+// left it there; S-124 lifts it out so the two lists that own their own Focus
+// — the multi-select and the agent manager — scroll through the same code
+// rather than growing a second and a third implementation of it. The design
+// says as much on both component pages: "if a real multi-select outgrows its
+// card, window it with Select's rules", and "when it happens, window it with
 // Select's rules and keep every blocked child above the window".
 //
 // What is shared is the arithmetic and the markers, not the rows: each list

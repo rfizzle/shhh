@@ -1,6 +1,7 @@
 package caps
 
-// The other half of the kitty graphics question (S-158, DESIGN-TUI.md §12h).
+// The other half of the kitty graphics question (S-158,
+// docs/interface/surfaces.md#a-staged-picture).
 //
 // Query asks the terminal whether it draws inline images; this is shhh asking
 // it to draw one. The two are here together for §10k's rule — a terminal
@@ -12,9 +13,9 @@ package caps
 // Only kitty is spent. Sixel is detected (Terminal.Sixel) and deliberately
 // not drawn: it is a second encoder, a second escape vocabulary and a second
 // set of scrolling quirks for a rung the half-block picture already fills
-// legibly on every terminal there is. Detection is kept because `/ui terminal`
-// is a diagnostic and "this terminal offered sixel and shhh does not take it"
-// is a truthful thing for it to be able to say.
+// legibly on every terminal there is. Detection is kept because `/ui
+// terminal` is a diagnostic and "this terminal offered sixel and shhh does
+// not take it" is a truthful thing for it to be able to say.
 //
 // Nothing here caches. Crush keys a cache on (id, cols, rows) because its
 // preview follows a file picker's cursor and re-transmits on every keystroke;

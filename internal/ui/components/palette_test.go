@@ -10,10 +10,11 @@ import (
 	"github.com/charmbracelet/x/ansi"
 )
 
-// paletteTable is DESIGN-TUI.md §10a written as data: the token, the design
-// system's hex, the 256 index it stands for, and the theme colour a
-// 16-colour terminal falls back to. The doc is normative, so the test's job
-// is to fail when the code drifts from it.
+// paletteTable is docs/architecture.md#colour-is-resolved-once-at-the-top
+// written as data: the token, the design system's hex, the 256 index it
+// stands for, and the theme colour a 16-colour terminal falls back to. The
+// doc is normative, so the test's job is to fail when the code drifts from
+// it.
 var paletteTable = []struct {
 	name    string
 	token   Token

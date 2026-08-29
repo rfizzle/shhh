@@ -8,7 +8,7 @@ import (
 )
 
 // CockpitMode classifies the permission-mode segment's rendering
-// (DESIGN-TUI.md §8).
+// (docs/interface/surfaces.md#the-input-frame).
 type CockpitMode int
 
 const (
@@ -101,10 +101,11 @@ func (c Cockpit) agentsSegment() string {
 	return seg
 }
 
-// Rail drop ranks (S-082, DESIGN-TUI.md §12b): when a frame rail overflows,
-// the highest rank present is dropped first. Model/provider detail goes
-// first, then token counts; context pressure, spend, and error/blocked state
-// are never the first fields removed, and the mode segment is never dropped.
+// Rail drop ranks (S-082, docs/interface/surfaces.md#the-input-frame): when a
+// frame rail overflows, the highest rank present is dropped first.
+// Model/provider detail goes first, then token counts; context pressure,
+// spend, and error/blocked state are never the first fields removed, and the
+// mode segment is never dropped.
 const (
 	RailKeep   = iota // mode — never dropped
 	RailVital         // context meter, spend, blocked-agent state

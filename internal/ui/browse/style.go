@@ -6,8 +6,9 @@ import (
 )
 
 // Styles is the saved-chat browser's style set, built by newStyles from a
-// token set and nothing else. It draws from the shared palette (DESIGN-TUI.md
-// §10a) like the other surfaces, so the mono swap (/ui mono, NO_COLOR —
+// token set and nothing else. It draws from the shared palette
+// (docs/architecture.md#colour-is-resolved-once-at-the-top) like the other
+// surfaces, so the mono swap (/ui mono, NO_COLOR —
 // S-095) reaches it too.
 type Styles struct {
 	ListTitle      lipgloss.Style

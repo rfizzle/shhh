@@ -1,8 +1,9 @@
 package components
 
-// The first-contact screen (S-105, DESIGN-TUI.md §17c). An empty session used
-// to be one italic sentence in the middle of a blank viewport, which told a
-// new reader nothing and a returning one less. The screen states what shhh
+// The first-contact screen (S-105,
+// docs/interface/surfaces.md#the-start-screen). An empty session used to be
+// one italic sentence in the middle of a blank viewport, which told a new
+// reader nothing and a returning one less. The screen states what shhh
 // already knows about the checkout it opened in — the path, the toolchain,
 // the branch and its dirty count, the package count — names the files it read
 // into the system prompt and the gate that will run without asking, and then

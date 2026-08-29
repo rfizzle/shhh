@@ -1,10 +1,11 @@
 package chat
 
-// The blast-radius block on approval cards (S-101, DESIGN-TUI.md §2). An
-// approval that only says what the action *is* asks the reader to do the risk
-// assessment themselves, at speed, twenty times a session. Every card states
-// three things before the keys: what it touches, whether shhh can put it
-// back, and whether the network is open.
+// The blast-radius block on approval cards (S-101,
+// docs/interface/surfaces.md#the-approval-card). An approval that only says
+// what the action *is* asks the reader to do the risk assessment themselves,
+// at speed, twenty times a session. Every card states three things before the
+// keys: what it touches, whether shhh can put it back, and whether the
+// network is open.
 //
 // The block is resolved once, when the decision is armed, and stashed on the
 // model — resolving it inside View would stat the filesystem and shell out to

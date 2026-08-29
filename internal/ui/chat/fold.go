@@ -1,6 +1,7 @@
 package chat
 
-// Verbosity folding (S-091, DESIGN-TUI.md §13c): inside a step, a run of
+// Verbosity folding (S-091, docs/interface/surfaces.md#the-step): inside a
+// step, a run of
 // consecutive read-only calls collapses into one counted row — `▸ ⚙ 6 reads ·
 // 2 searches` — so the rows that matter are not buried under eight `read`
 // lines. The fold obeys invariant 4: the group row always states what it

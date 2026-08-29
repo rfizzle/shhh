@@ -777,7 +777,8 @@ func TestModelList_RendersSpinnerWhileQuerying(t *testing.T) {
 	}
 }
 
-// --- the filter row over the picker (S-123, DESIGN-TUI.md §4a) -------------
+// --- the filter row over the picker (S-123,
+// docs/interface/surfaces.md#selectors) -------------
 
 // runes feeds a query into an open picker one keystroke at a time, which is
 // how a host learns the query changed at all.

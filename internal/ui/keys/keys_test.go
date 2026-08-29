@@ -1,6 +1,7 @@
 package keys
 
-// The register against itself (S-153, DESIGN-TUI.md §7d).
+// The register against itself (S-153,
+// docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // §7c's rule is that "a rule nobody can check against a list is a rule each
 // new surface gets to rediscover". These are the checks the list makes

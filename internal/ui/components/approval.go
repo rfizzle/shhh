@@ -12,7 +12,8 @@ import (
 )
 
 // ApprovalVariant selects which body the approval card renders
-// (DESIGN-TUI.md §2): a command, a file edit diff, or a generic tool summary.
+// (docs/interface/surfaces.md#the-approval-card): a command, a file edit
+// diff, or a generic tool summary.
 type ApprovalVariant int
 
 const (
@@ -48,8 +49,9 @@ const (
 )
 
 // Severity is how much the pending action could cost, led with as a word
-// rather than carried by the border colour alone (S-101, DESIGN-TUI.md
-// invariant 1). The border tracks it as reinforcement.
+// rather than carried by the border colour alone (S-101,
+// docs/interface/principles.md#colour-never-carries-meaning-alone).
+// The border tracks it as reinforcement.
 type Severity int
 
 const (

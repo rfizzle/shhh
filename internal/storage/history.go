@@ -1,3 +1,7 @@
+// History is what you asked and what happened: every generated command with
+// the prompt behind it, what became of it, and what it cost. Nothing here
+// re-runs anything — the browser that reads these rows requires a deliberate
+// key (docs/capabilities/sessions-and-memory.md#history-is-what-you-asked-and-what-happened).
 package storage
 
 import (
@@ -13,10 +17,10 @@ type HistoryEntry struct {
 	Prompt    string
 	Command   string
 	Action    string
-	// Duration is how long the generation took, and ExitCode what the
-	// command exited with when it was run. Both are nil for an entry
-	// recorded before the columns existed, which the browser reads as "not
-	// known" rather than as zero (S-128, DESIGN-TUI.md §19b).
+	// Duration is how long the generation took, and ExitCode what the command
+	// exited with when it was run. Both are nil for an entry recorded before the
+	// columns existed, which the browser reads as "not known" rather than as
+	// zero (S-128, docs/interface/surfaces.md#the-supporting-screens).
 	Duration  *time.Duration
 	ExitCode  *int64
 	TokensIn  *int64

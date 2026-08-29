@@ -1,3 +1,7 @@
+// Package config loads and writes shhh's settings. Every value resolves
+// most-specific-first — flag, environment, file, default — and no setting
+// reverses that order, because a user who can predict where a value came from
+// can fix it (docs/capabilities/configuration.md#one-file-one-format-one-resolution-order).
 package config
 
 import (
@@ -242,12 +246,12 @@ type AppearanceConfig struct {
 	// the pane and copies on release (S-145), which the terminal's own
 	// cannot do.
 	Mouse bool `toml:"mouse"`
-	// Notify lets a session raise a desktop notification when a turn stops
-	// while the terminal has said the window is not the one in front
-	// (DESIGN-TUI.md §10l). It is on when unset, because unlike Mouse it
-	// takes nothing away: it cannot fire while you are looking at the screen,
-	// and the thing it exists for — a turn that stopped on an approval four
-	// minutes ago — is invisible until it does.
+	// Notify lets a session raise a desktop notification when a turn stops while
+	// the terminal has said the window is not the one in front
+	// (docs/interface/surfaces.md#when-you-are-not-there). It is on when unset,
+	// because unlike Mouse it takes nothing away: it cannot fire while you are
+	// looking at the screen, and the thing it exists for — a turn that stopped
+	// on an approval four minutes ago — is invisible until it does.
 	Notify *bool `toml:"notify"`
 }
 

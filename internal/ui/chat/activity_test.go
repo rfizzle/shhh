@@ -417,8 +417,9 @@ func TestTranscriptSpacing_UniformRhythm(t *testing.T) {
 	}
 }
 
-// What the terminal can do (S-156, DESIGN-TUI.md §10k). The readout is a
-// diagnostic, so what it must never do is let "shhh did not ask" read as
+// What the terminal can do (S-156,
+// docs/architecture.md#only-one-place-speaks-to-the-terminal). The readout is
+// a diagnostic, so what it must never do is let "shhh did not ask" read as
 // "the terminal said no".
 func TestUITerminal_NeverAskedIsNotANo(t *testing.T) {
 	m := activityModel(t)

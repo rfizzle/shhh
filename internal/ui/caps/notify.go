@@ -1,6 +1,7 @@
 package caps
 
-// The other half of the OSC 99 question (S-157, DESIGN-TUI.md §10l).
+// The other half of the OSC 99 question (S-157,
+// docs/interface/surfaces.md#when-you-are-not-there).
 //
 // Query asks the terminal whether it can raise a desktop notification; this
 // is shhh raising one. It lives here because the two are one protocol read in

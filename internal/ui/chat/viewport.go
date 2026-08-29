@@ -1,6 +1,7 @@
 package chat
 
-// The transcript window (S-160, DESIGN-TUI.md §10m).
+// The transcript window (S-160,
+// docs/architecture.md#the-screen-is-a-rectangle-and-so-is-everything-in-it).
 //
 // This is the pane the transcript is read through: a scroll offset, a size,
 // and the lines the offset is into. It replaces the bubbles viewport shhh

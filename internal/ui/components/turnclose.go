@@ -1,9 +1,9 @@
 package components
 
-// The turn close (S-098, DESIGN-TUI.md §16). The question after an agent
-// stops is never "what did it say", it is "what did it change" — so a turn
-// ends with up to three rows answering one question each: what it did, what
-// it changed, and whether the checks still pass.
+// The turn close (S-098, docs/interface/surfaces.md#the-turns-close). The
+// question after an agent stops is never "what did it say", it is "what did
+// it change" — so a turn ends with up to three rows answering one question
+// each: what it did, what it changed, and whether the checks still pass.
 //
 // The rows sit on the §6a grid but start at the rail column rather than the
 // pointer column: they belong to the turn, not to a step, so nothing folds

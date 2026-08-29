@@ -443,11 +443,12 @@ func (m Model) declineApproval() (tea.Model, tea.Cmd) {
 	return m.advanceApprovalQueue()
 }
 
-// deniedEntry is the transcript row for a refused call (S-089,
-// DESIGN-TUI.md §6d): the same activity row every other call gets, with ⊘,
-// the decider's name and a duration field saying it never ran. A denial is a
-// moment that mattered, so the row keeps its mutation rail (§14) — which is
-// why it is a row and not a system notice.
+// deniedEntry is the transcript row for a refused call: the same activity row
+// every other call gets, with ⊘, the decider's name and a duration field
+// saying it never ran (docs/interface/principles.md#closed-vocabularies). A
+// denial is a moment that mattered, so the row keeps its mutation rail — which
+// is why it is a row and not a system notice
+// (docs/interface/principles.md#weight-tracks-risk).
 func deniedEntry(req *approvalRequest, decider, rule string, elapsed time.Duration) entry {
 	return entry{
 		kind:     entryTool,
@@ -590,11 +591,12 @@ func readFileState(path string) fileState {
 	return fileState{text: string(data), exists: true}
 }
 
-// approvalCard assembles the components.ApprovalCard (DESIGN-TUI.md §2) for
-// the pending approval or /run confirmation. Both the confirm prompt's
-// rendering and its key handling flow through this one card. While the user
-// is attached to a child, the orchestrator's own card is labeled so it is
-// never mistaken for the focused agent's (S-077).
+// approvalCard assembles the components.ApprovalCard
+// (docs/interface/surfaces.md#the-approval-card) for the pending approval or
+// /run confirmation. Both the confirm prompt's rendering and its key handling
+// flow through this one card. While the user is attached to a child, the
+// orchestrator's own card is labeled so it is never mistaken for the focused
+// agent's (S-077).
 func (m Model) approvalCard() *components.ApprovalCard {
 	card := m.buildApprovalCard()
 	if m.attachedTo != "" {
@@ -774,7 +776,8 @@ func (m Model) bottomPanelHeight() int {
 }
 
 // maxConfirmPanelHeight bounds how far the confirm panel may grow into the
-// viewport (DESIGN-TUI.md §1: at most 40% of terminal height).
+// viewport (docs/interface/principles.md#the-grammar: at most 40% of terminal
+// height).
 func (m Model) maxConfirmPanelHeight() int {
 	return max(m.height*2/5, inputHeight)
 }

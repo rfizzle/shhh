@@ -1,14 +1,15 @@
 package chat
 
-// Command-center prompt surface (S-082, DESIGN-TUI.md §12). The input sits in
-// a rounded-corner frame whose borders carry information: the top rail shows
+// Command-center prompt surface (S-082,
+// docs/interface/surfaces.md#the-input-frame). The input sits in a
+// rounded-corner frame whose borders carry information: the top rail shows
 // session identity and the live activity state, the vitals rail re-homes the
 // §8 cockpit segments, and the bottom rail carries contextual key hints. A
 // notice rail above the frame appears only while there is something to say,
-// and a staged rail under it while an attachment is waiting to ride.
-// Takeover surfaces (approval cards, pickers, the agent list, routed child
-// asks, focus/diff hints) replace the framed input wholesale and keep the
-// divider + status-bar stack, so their geometry is unchanged.
+// and a staged rail under it while an attachment is waiting to ride. Takeover
+// surfaces (approval cards, pickers, the agent list, routed child asks,
+// focus/diff hints) replace the framed input wholesale and keep the divider +
+// status-bar stack, so their geometry is unchanged.
 
 import (
 	"fmt"
@@ -24,7 +25,7 @@ import (
 )
 
 // Layout thresholds in content columns (COCKPIT_SPEC.md §3 applied to shhh's
-// bottom panel, DESIGN-TUI.md §12b).
+// bottom panel, docs/interface/surfaces.md#the-input-frame).
 const (
 	frameWideWidth    = 110
 	frameCompactWidth = 70
@@ -230,10 +231,10 @@ func (m Model) frameHints() string {
 	var hints []string
 	switch {
 	case m.decisionUngated():
-		// The three keys that matter while a decision waits (§7b). Stopping
-		// the run is ctrl+c here rather than the artboard's esc, because esc
-		// clears the draft on this surface and always has — see the departure
-		// recorded in DESIGN-TUI.md §7b.
+		// The three keys that matter while a decision waits (§7b). Stopping the run
+		// is ctrl+c here rather than the artboard's esc, because esc clears the
+		// draft on this surface and always has — see the departure recorded in
+		// docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard.
 		hints = []string{
 			keys.Shown(keys.Draft.Answer) + " " + keys.Words(keys.Draft.Answer),
 			keys.Shown(keys.Draft.Send) + " queues steering",
@@ -418,7 +419,6 @@ func drawRail(scr uv.Screen, area uv.Rectangle, accent lipgloss.Style, leftCorne
 	}
 	drawIn(scr, accent.Render("─"+rightCorner), at(tail))
 }
-
 
 // frameVitals renders the vitals rail content: the §8 cockpit segments with
 // the §12b field-drop order. The narrow layout keeps only the never-dropped

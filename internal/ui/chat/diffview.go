@@ -1,8 +1,8 @@
 package chat
 
-// Rich diff rendering (S-074, DESIGN-TUI.md §3): the full-screen diff state
-// shared by transcript edit rows, the approval card's [d], and the /diff
-// session diff.
+// Rich diff rendering (S-074, docs/interface/surfaces.md#the-diff-view): the
+// full-screen diff state shared by transcript edit rows, the approval card's
+// [d], and the /diff session diff.
 
 import (
 	"fmt"

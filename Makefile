@@ -35,7 +35,7 @@ else
 	RESET   := ""
 endif
 
-.PHONY: all build build-all linux darwin clean fmt lint tidy test race ci help
+.PHONY: all build build-all linux darwin clean fmt lint tidy test race ci docs-check help
 
 all: help
 
@@ -85,6 +85,11 @@ tidy: ## Tidy go.mod
 	@echo "${MAGENTA}Tidying go.mod...${RESET}"
 	@$(GOMOD) tidy
 
+## Docs:
+docs-check: ## Verify every docs/ citation in code comments resolves
+	@echo "${MAGENTA}Checking documentation citations...${RESET}"
+	@python3 scripts/check-docs.py
+
 ## Test:
 test: ## Run tests
 	@echo "${MAGENTA}Running tests...${RESET}"
@@ -95,6 +100,8 @@ race: ## Run tests with race detector
 	@$(GOTEST) -v -race $(PROJECT_PACKAGES)
 
 ci: ## Run tests and lint for CI
+	@echo "${MAGENTA}Checking documentation citations...${RESET}"
+	@python3 scripts/check-docs.py
 	@echo "${MAGENTA}Running tests...${RESET}"
 	@$(GOTEST) -v -failfast $(PROJECT_PACKAGES)
 	@echo "${MAGENTA}Running gofmt check...${RESET}"

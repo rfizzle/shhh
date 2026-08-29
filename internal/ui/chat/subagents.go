@@ -143,7 +143,7 @@ func (m Model) activeChildAsk() *subagent.Ask {
 // updateChildAsk routes keys to the presented child approval card. Its esc/n
 // path declines — a routed request is never silently dropped or auto-denied.
 // Detached, [g] jumps into the agent's attached view instead of answering
-// (DESIGN-TUI.md §9c).
+// (docs/interface/surfaces.md#the-agent-manager).
 func (m Model) updateChildAsk(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model, tea.Cmd) {
 	if keys.Match(msg, keys.Draft.Quit) {
 		m.quitting = true
@@ -200,9 +200,10 @@ func (m Model) updateChildAsk(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model
 }
 
 // childAskCard builds the approval card for a routed child request, title
-// prefixed with the agent name (DESIGN-TUI.md §9c). Attached to that agent,
-// the prefix drops (the breadcrumb already names it) — detached, [g] offers
-// the jump into its view.
+// prefixed with the agent name
+// (docs/interface/surfaces.md#the-agent-manager). Attached to that agent, the
+// prefix drops (the breadcrumb already names it) — detached, [g] offers the
+// jump into its view.
 func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
 	card := &components.ApprovalCard{}
 	defer m.applyNotYetLive(card)

@@ -1,9 +1,9 @@
 package chat
 
-// Undo a turn (S-100, DESIGN-TUI.md §16). `[u]` on a changeset row and
-// `/undo [turn]` put back what a turn wrote, reading the session's own
-// records (S-097) rather than git: it works in a directory that was never a
-// repository, and it never touches the user's index or stash.
+// Undo a turn (S-100, docs/interface/surfaces.md#the-turns-close). `[u]` on a
+// changeset row and `/undo [turn]` put back what a turn wrote, reading the
+// session's own records (S-097) rather than git: it works in a directory that
+// was never a repository, and it never touches the user's index or stash.
 //
 // Undo asks first. The confirm states what it would do, and when a file has
 // changed since the turn it says so and leaves that file alone — the drifted

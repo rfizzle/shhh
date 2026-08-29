@@ -1,9 +1,10 @@
 package components
 
-// The sliding window a long list scrolls through (S-116, DESIGN-TUI.md §4a).
-// The old card sliced its rows from index 0 and replaced the last one with …,
-// so a pointer moved past the fifth model walked off the bottom of the card
-// and the reader was navigating a list they could no longer see.
+// The sliding window a long list scrolls through (S-116,
+// docs/interface/surfaces.md#selectors). The old card sliced its rows from
+// index 0 and replaced the last one with …, so a pointer moved past the fifth
+// model walked off the bottom of the card and the reader was navigating a
+// list they could no longer see.
 
 import (
 	"fmt"

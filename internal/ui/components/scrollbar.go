@@ -1,8 +1,9 @@
 package components
 
-// The scroll gutter (S-147, DESIGN-TUI.md §10g). One column down the right
-// edge of the transcript pane saying where in the whole transcript the pane
-// is, and how much of the whole it is showing.
+// The scroll gutter (S-147,
+// docs/architecture.md#the-screen-is-a-rectangle-and-so-is-everything-in-it).
+// One column down the right edge of the transcript pane saying where in the
+// whole transcript the pane is, and how much of the whole it is showing.
 //
 // The transcript already states how far off the live end a scrolled reader is
 // — `↓ 12 lines below · [pgdn] the live end` on the notice rail (§7a) — and

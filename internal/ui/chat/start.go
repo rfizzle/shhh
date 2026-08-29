@@ -1,19 +1,19 @@
 package chat
 
-// First contact (S-105, DESIGN-TUI.md §17c). An empty session is the one
-// screen every user sees and the one that used to say the least: a single
-// italic sentence in the middle of a blank viewport. It now states what shhh
-// already knows about the checkout — path, toolchain, branch, dirty count,
-// package count — names the files it read into the system prompt and the
-// quality gate that will run without asking, and offers three concrete
-// pieces of work.
+// First contact (S-105, docs/interface/surfaces.md#the-start-screen). An
+// empty session is the one screen every user sees and the one that used to
+// say the least: a single italic sentence in the middle of a blank viewport.
+// It now states what shhh already knows about the checkout — path, toolchain,
+// branch, dirty count, package count — names the files it read into the
+// system prompt and the quality gate that will run without asking, and offers
+// three concrete pieces of work.
 //
 // Two rules keep it from becoming a wizard. Everything on it was computed
 // once, at session start, by the survey the CLI hands in; View does
-// arithmetic on strings and nothing else. And typing dismisses the list —
-// the suggestions and their keys go, the facts stay — because the input
-// textarea owns every ordinary key and an offer nothing accepts is worse
-// than no offer.
+// arithmetic on strings and nothing else. And typing dismisses the list — the
+// suggestions and their keys go, the facts stay — because the input textarea
+// owns every ordinary key and an offer nothing accepts is worse than no
+// offer.
 
 import (
 	"fmt"

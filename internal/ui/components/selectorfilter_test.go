@@ -1,12 +1,12 @@
 package components
 
-// The filter row over the window (S-123, DESIGN-TUI.md §4a,
-// ui_kits/cockpit/Lists.html). S-116 gave every picker one window; past a
-// dozen entries walking that window is still the slow way, so the same
-// component pins a query line above it. The rule the artboard settles and
-// these tests hold is that the component never filters: the caller passes the
-// matches and the query that produced them, so the match rule stays where it
-// is chosen.
+// The filter row over the window (S-123,
+// docs/interface/surfaces.md#selectors, ui_kits/cockpit/Lists.html). S-116
+// gave every picker one window; past a dozen entries walking that window is
+// still the slow way, so the same component pins a query line above it. The
+// rule the artboard settles and these tests hold is that the component never
+// filters: the caller passes the matches and the query that produced them, so
+// the match rule stays where it is chosen.
 
 import (
 	"strings"

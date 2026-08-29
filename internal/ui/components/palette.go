@@ -1,5 +1,5 @@
 // Package components is the reusable TUI interaction catalog (S-076,
-// DESIGN-TUI.md): approval card, diff viewer, selectors, inline confirm,
+// docs/interface/surfaces.md): approval card, diff viewer, selectors, inline confirm,
 // activity rows, cockpit rail, and agent list. Components are plain state with
 // two methods — Update(tea.KeyPressMsg) (done, result) and View(width) string —
 // owned by a host Bubble Tea model via states; they are never nested programs
@@ -65,7 +65,8 @@ func token(hex, ansi256, ansi16 string) Token {
 	}
 }
 
-// ColorTokens is the shared palette (DESIGN-TUI.md §10a) promoted from the
+// ColorTokens is the shared palette
+// (docs/architecture.md#colour-is-resolved-once-at-the-top) promoted from the
 // chat and generate style files, so every TUI surface uses identical tokens.
 // No new colors without adding them here.
 //

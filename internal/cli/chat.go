@@ -718,11 +718,11 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	}
 
 	// The alt screen took the whole session with it on the way out (S-148,
-	// DESIGN-TUI.md §22b). The banner is what the terminal keeps: the slot
-	// the conversation is in, what the sitting cost, and how to reopen it.
-	// The resume command is this command — `shhh chat` and `shhh code` read
-	// the same autosave slot but not the same toolset, so the one that comes
-	// back is the one that was running.
+	// docs/interface/surfaces.md#outside-the-tui). The banner is what the
+	// terminal keeps: the slot the conversation is in, what the sitting cost,
+	// and how to reopen it. The resume command is this command — `shhh chat` and
+	// `shhh code` read the same autosave slot but not the same toolset, so the
+	// one that comes back is the one that was running.
 	if m, ok := final.(chat.Model); ok {
 		printExitBanner(m.ExitBanner("shhh " + session.kind + " --continue"))
 	}

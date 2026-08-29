@@ -1,5 +1,6 @@
 // Package scope holds a session's working scope: the directories the work is
-// allowed to reach (S-141). A session starts scoped to the directory it was
+// allowed to reach (docs/capabilities/containment.md#scope-is-the-set-of-directories-the-work-may-reach).
+// A session starts scoped to the directory it was
 // opened in, which is the right default and the wrong one the moment the work
 // spills over — a config directory the project reads, a sibling checkout, a
 // vendored dependency outside the tree. Before this existed the only answers

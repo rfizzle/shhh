@@ -1,7 +1,7 @@
 package cli
 
 // Resolving the session's provider, and what happens when there isn't one
-// (S-106, DESIGN-TUI.md §17b).
+// (S-106, docs/interface/surfaces.md#the-recovery-row).
 //
 // Every entry point used to answer a missing provider the same way: return
 // the dialect's own "SHHH_API_KEY or OPENAI_API_KEY is not set" and exit. It

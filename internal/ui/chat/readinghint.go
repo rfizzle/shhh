@@ -1,9 +1,10 @@
 package chat
 
 // The hint bar reading mode puts where the input frame was (S-122,
-// DESIGN-TUI.md §7a). It replaces the frame rather than sitting under it:
-// two bottom elements is how you get a session where nobody can tell which
-// one enter belongs to, which is also why the frame goes rather than dims.
+// docs/interface/surfaces.md#reading-mode). It replaces the frame rather than
+// sitting under it: two bottom elements is how you get a session where nobody
+// can tell which one enter belongs to, which is also why the frame goes
+// rather than dims.
 //
 // It is one line of the mode's own keys with the position on the right, and —
 // when the row under the cursor offers keys of its own — a second line

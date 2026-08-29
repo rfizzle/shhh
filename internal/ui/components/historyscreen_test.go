@@ -1,6 +1,7 @@
 package components
 
-// The history browser (S-128, DESIGN-TUI.md §19b). The assertions here are
+// The history browser (S-128,
+// docs/interface/surfaces.md#the-supporting-screens). The assertions here are
 // about the two rules the screen exists to keep: the search is on the left
 // and the entry it selects is previewed on the right with no cursor of its
 // own, and nothing is re-run until [enter].

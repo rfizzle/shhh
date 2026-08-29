@@ -7,11 +7,12 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-// The config screen's own rules (S-127, DESIGN-TUI.md §19a). What it borrows
-// from the selector is covered where the selector is covered; what is tested
-// here is what this screen decides: that a picker opens under the row rather
-// than over the screen, that nothing reaches the host until it is asked for,
-// and that the keys mean what the hint line says they mean.
+// The config screen's own rules (S-127,
+// docs/interface/surfaces.md#the-supporting-screens). What it borrows from
+// the selector is covered where the selector is covered; what is tested here
+// is what this screen decides: that a picker opens under the row rather than
+// over the screen, that nothing reaches the host until it is asked for, and
+// that the keys mean what the hint line says they mean.
 
 func configFixture() *ConfigScreen {
 	return &ConfigScreen{

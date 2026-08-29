@@ -67,7 +67,8 @@ func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 	if !strings.Contains(view, "Assistant wants to write main.go") {
 		t.Fatal("confirm prompt should describe the file action")
 	}
-	// Diff previews carry line numbers (S-074, DESIGN-TUI.md §2c).
+	// Diff previews carry line numbers (S-074,
+	// docs/interface/surfaces.md#the-approval-card).
 	if !strings.Contains(view, "+ 2  line two") {
 		t.Fatal("confirm prompt should show the added line as a diff")
 	}

@@ -1,9 +1,10 @@
 package chat
 
-// Click targets (S-159, DESIGN-TUI.md §7e). The two things a click can mean,
-// the gesture it is told apart from, and the two properties that keep it from
-// undoing anything S-145 and S-117 settled: a drag is never a click, and a
-// click is never a handover.
+// Click targets (S-159,
+// docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+// The two things a click can mean, the gesture it is told apart from, and the
+// two properties that keep it from undoing anything S-145 and S-117 settled:
+// a drag is never a click, and a click is never a handover.
 
 import (
 	"encoding/json"

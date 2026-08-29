@@ -1,9 +1,10 @@
 package chat
 
-// Reading mode against the Reading artboard (S-122, DESIGN-TUI.md §7a). The
-// behaviour is S-115's and settled; what is checked here is the dressing —
-// the labelled rail, the lit row, the hint bar that replaces the frame, and
-// the rule that only one pane wears any of it at a time.
+// Reading mode against the Reading artboard (S-122,
+// docs/interface/surfaces.md#reading-mode). The behaviour is S-115's and
+// settled; what is checked here is the dressing — the labelled rail, the lit
+// row, the hint bar that replaces the frame, and the rule that only one pane
+// wears any of it at a time.
 
 import (
 	"strings"
@@ -289,7 +290,8 @@ func TestReadingMode_SurvivesMono(t *testing.T) {
 	}
 }
 
-// The key register on the page (S-153, DESIGN-TUI.md §7d).
+// The key register on the page (S-153,
+// docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 
 // TestReadingKeyListNamesEveryModeKey is what `[?]` is for: the bar sheds
 // keys as the terminal narrows and never says which, and this is where they

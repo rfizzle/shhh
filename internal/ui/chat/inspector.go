@@ -1,7 +1,8 @@
 package chat
 
-// Two-pane cockpit (S-092, DESIGN-TUI.md §15). At or above 130 content
-// columns the surface splits: the transcript keeps the left pane, a
+// Two-pane cockpit (S-092, docs/interface/surfaces.md#the-inspector-rail). At
+// or above 130 content columns the surface splits: the transcript keeps the
+// left pane, a
 // 46-column inspector rail takes the right, and one dim │ column divides
 // them. Below 130 the rail is dropped entirely and the single-pane layout is
 // exactly what it was.
@@ -341,7 +342,6 @@ func (m Model) inspectorSpend() *components.InspectorSpend {
 	}
 	return &s
 }
-
 
 // inspectorStatus is the /stats-adjacent line describing the split, used by
 // /ui to say what the current layout is.

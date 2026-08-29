@@ -1,6 +1,7 @@
 package components
 
-// The metrics surface (S-129, DESIGN-TUI.md §19c). The assertions here are
+// The metrics surface (S-129,
+// docs/interface/surfaces.md#the-supporting-screens). The assertions here are
 // about the three rules the screen exists to keep: numeric columns are fixed
 // and right-aligned so a reader scans a column rather than parsing rows, a
 // sparkline is dimmer and never coloured because it is a shape rather than a

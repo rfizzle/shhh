@@ -1,6 +1,6 @@
 package components
 
-// The mono conformance walk (S-095). DESIGN-TUI.md's first invariant —
+// The mono conformance walk (S-095). The first invariant —
 // colour never carries meaning alone — is enforced here rather than asserted
 // in prose: every surface renders each of its states with the mono palette
 // on, the ANSI is stripped off, and the resulting plain texts must all

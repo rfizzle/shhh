@@ -1,11 +1,11 @@
 package components
 
-// The sub-agent manager (DESIGN-TUI.md §9a). S-077 made it a live list you
-// could attach to, cancel and kill from; S-111 makes it the place a blocked
-// child is answered. Opening the manager *because* something needs you and
-// then being sent into that child's session just to say yes is a detour the
-// list can spare you, so the approval card renders over the list and hands
-// the list back.
+// The sub-agent manager (docs/interface/surfaces.md#the-agent-manager). S-077
+// made it a live list you could attach to, cancel and kill from; S-111 makes
+// it the place a blocked child is answered. Opening the manager *because*
+// something needs you and then being sent into that child's session just to
+// say yes is a detour the list can spare you, so the approval card renders
+// over the list and hands the list back.
 //
 // A row's progress is a fan-out lane's progress in list form: both read the
 // same AgentProgress (§9g), so what the transcript says about a child and
@@ -19,7 +19,8 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// AgentState is one agent row's lifecycle state (DESIGN-TUI.md §9a).
+// AgentState is one agent row's lifecycle state
+// (docs/interface/surfaces.md#the-agent-manager).
 type AgentState int
 
 const (

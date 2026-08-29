@@ -1,6 +1,7 @@
 package ui
 
-// The one-shot's provider failures (S-106, DESIGN-TUI.md §17a).
+// The one-shot's provider failures (S-106,
+// docs/interface/surfaces.md#the-recovery-row).
 //
 // `shhh "find the big files"` is where most people meet the product, and it
 // is where a raw provider error used to land hardest: one line of Go on

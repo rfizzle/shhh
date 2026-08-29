@@ -1,10 +1,10 @@
 package cli
 
-// The doctor host (S-130, DESIGN-TUI.md §19d). The screen renders; every
-// judgement is here, and every judgement is a pure function of what was
-// probed — so this file checks the readings on a machine that has no
-// containment mechanism, no provider key and no git repository, without
-// needing any of them.
+// The doctor host (S-130, docs/interface/surfaces.md#the-supporting-screens).
+// The screen renders; every judgement is here, and every judgement is a pure
+// function of what was probed — so this file checks the readings on a machine
+// that has no containment mechanism, no provider key and no git repository,
+// without needing any of them.
 
 import (
 	"errors"

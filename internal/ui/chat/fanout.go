@@ -1,6 +1,7 @@
 package chat
 
-// Fan-out lanes in the transcript (S-110, DESIGN-TUI.md §9g). A round that
+// Fan-out lanes in the transcript (S-110,
+// docs/interface/surfaces.md#the-agent-manager). A round that
 // spawned one child keeps today's inline `◇ spawn` row; a round that spawned
 // two or more turns those rows into a single block with a lane per child, so
 // three agents read as three things rather than as one interleaved feed.

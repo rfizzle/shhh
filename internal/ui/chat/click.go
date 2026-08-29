@@ -1,6 +1,7 @@
 package chat
 
-// Click targets (S-159, DESIGN-TUI.md §7e).
+// Click targets (S-159,
+// docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
 //
 // Until now the mouse could read this surface and nothing else: the wheel
 // scrolled, a drag selected, and a press on anything else was deliberately
@@ -201,7 +202,7 @@ func (m *Model) toggleRow(idx int) (claimed bool, full *components.DiffView) {
 	}
 	if d := es[idx].diff; d != nil {
 		// A diff row cycles collapsed → expanded → full screen (S-074,
-		// DESIGN-TUI.md §3b).
+		// docs/interface/surfaces.md#the-diff-view).
 		d.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 		if d.Mode == components.DiffFull {
 			return true, d

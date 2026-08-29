@@ -245,7 +245,7 @@ func TestLatest(t *testing.T) {
 
 // SessionFiles is Session with the attribution the inspector rail needs: one
 // net row per path, in first-edit order, carrying how many turns produced it
-// (S-120, DESIGN-TUI.md §15a).
+// (S-120, docs/interface/surfaces.md#the-inspector-rail).
 func TestSessionFilesCarryTurnAttribution(t *testing.T) {
 	s := New(DefaultMaxBytes)
 	s.Add(1, Record{Path: "loop.go", Before: "a\n", After: "a\nb\n", BeforeExists: true, AfterExists: true})

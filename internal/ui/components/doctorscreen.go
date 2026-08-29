@@ -1,11 +1,12 @@
 package components
 
-// The doctor surface (S-130, DESIGN-TUI.md §19d, ui_kits/cockpit/Tools.html).
-// `shhh code doctor` printed two paragraphs of key/value lines about the
-// sandbox ladder and nothing else; `shhh doctor` is the whole setup, and it
-// is re-cut here from parts that already exist: the §6a column grid for each
-// check, §6d's state vocabulary for what became of it, and §17a's rule that a
-// failure names the fix rather than the blame.
+// The doctor surface (S-130,
+// docs/interface/surfaces.md#the-supporting-screens,
+// ui_kits/cockpit/Tools.html). `shhh code doctor` printed two paragraphs of
+// key/value lines about the sandbox ladder and nothing else; `shhh doctor` is
+// the whole setup, and it is re-cut here from parts that already exist: the
+// §6a column grid for each check, §6d's state vocabulary for what became of
+// it, and §17a's rule that a failure names the fix rather than the blame.
 //
 // Three rules shape it and all three come from §19d. A check is a tool call,
 // so it is the row — glyph, verb, target, outcome, right-aligned duration,

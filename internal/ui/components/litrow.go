@@ -1,11 +1,11 @@
 package components
 
-// The lit row (DESIGN-TUI.md §7a, S-122). Reading mode dresses exactly two
-// things, and this is the second of them: the row the cursor is on takes the
-// focus background with its words in bright, while the rail and the glyph
-// keep the colours that say what the row did. The pointer stays outside the
-// highlight, in the pointer column (§6a), so the cursor points at the row
-// rather than being part of it.
+// The lit row (docs/interface/surfaces.md#reading-mode, S-122). Reading mode
+// dresses exactly two things, and this is the second of them: the row the
+// cursor is on takes the focus background with its words in bright, while the
+// rail and the glyph keep the colours that say what the row did. The pointer
+// stays outside the highlight, in the pointer column (§6a), so the cursor
+// points at the row rather than being part of it.
 
 import (
 	"strings"

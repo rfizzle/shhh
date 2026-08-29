@@ -15,7 +15,7 @@ const cardFrameWidth = 4
 const minCardWidth = 12
 
 // narrowWidth is the threshold below which hint rows stack one segment per
-// line instead of truncating (DESIGN-TUI.md §11).
+// line instead of truncating (AGENTS.md).
 const narrowWidth = 60
 
 // clip truncates s to the given display width, ANSI-aware, ending with … when
@@ -35,8 +35,9 @@ func clip(s string, width int) string {
 
 // cardRule is a row that renders as a horizontal rule across the card rather
 // than as content: the divider that keeps the key hints from blending into
-// the body (S-101, DESIGN-TUI.md §2). It is a sentinel because rows are
-// already rendered strings by the time the frame sees them.
+// the body (S-101, docs/interface/surfaces.md#the-approval-card). It is a
+// sentinel because rows are already rendered strings by the time the frame
+// sees them.
 const cardRule = "\x00rule"
 
 // cardChrome is a card's frame beyond its rows: the title, the chips that
@@ -53,7 +54,8 @@ type cardChrome struct {
 }
 
 // renderCard frames rows in a box with the title in the top border
-// (DESIGN-TUI.md §2). Rows are clipped and padded to the inner width.
+// (docs/interface/surfaces.md#the-approval-card). Rows are clipped and padded
+// to the inner width.
 func renderCard(title string, rows []string, width int) string {
 	return renderChromeCard(cardChrome{title: title}, rows, width)
 }
@@ -153,10 +155,12 @@ func hintRows(segments []string, width int) []string {
 const notYetLiveWords = "not live yet"
 
 // notYetLiveRows renders a decision surface's key row while that surface does
-// not hold the keyboard (DESIGN-TUI.md §7b, invariant 5, S-117). The keys are
-// dimmed and said to be waiting in words, and handover — the one key that is
-// live — is offered underneath with what it does and what the letters do
-// until it is pressed. A key that is not yet live is a different thing from
+// not hold the keyboard
+// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard,
+// invariant 5, S-117). The keys are dimmed and said to be waiting in words,
+// and handover — the one key that is live — is offered underneath with what
+// it does and what the letters do until it is pressed. A key that is not yet
+// live is a different thing from
 // one that cannot be pressed at all (§18a's ⊘), so the two never render
 // alike: this one is waiting for the keyboard, that one is refused.
 func notYetLiveRows(keys, handover string, width int) []string {

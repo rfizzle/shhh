@@ -1,6 +1,7 @@
 package chat
 
-// Seeing what you attached (S-158, DESIGN-TUI.md §12h).
+// Seeing what you attached (S-158,
+// docs/interface/surfaces.md#a-staged-picture).
 //
 // The staged rail says `▣ shot.png 412 KB` (§12g), which is the right answer
 // for a one-line strip above a live draft and the wrong one the moment two

@@ -1,6 +1,7 @@
 package chat
 
-// What comes back with a resumed session (S-162, DESIGN-TUI.md §12i).
+// What comes back with a resumed session (S-162,
+// docs/interface/surfaces.md#the-input-frame).
 //
 // Input recall is the surface's memory of what was typed into it: every
 // submitted line goes to recordInput, and ↑ walks back through them

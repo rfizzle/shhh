@@ -4,6 +4,78 @@
 
 `shhh` is a Go CLI tool that turns natural language into executable shell commands. It has four interaction modes: prefix (`shhh <prompt>`), inline/hotkey (`Ctrl+K` in shell), chat (`shhh chat`), and a coding agent (`shhh code`). The TUI is built with Bubble Tea v2 (charm.land/bubbletea/v2) and the LLM backend supports Anthropic, OpenAI, Gemini, and OpenRouter via a pluggable provider registry.
 
+## Documentation
+
+Read [`docs/README.md`](docs/README.md) before writing a document or a comment
+that explains a decision. The short version:
+
+**Each document answers one question, and that decides where a fact belongs.**
+`docs/product.md` is what shhh is; `docs/architecture.md` is the big shapes and
+why; `docs/capabilities/` is what it does and why that exists;
+`docs/interface/` is what every surface obeys; **this file** is where the code
+is and what will bite you; `.plan/` is when things were built. A fact filed
+under the wrong question rots there.
+
+**Documents name no Go symbol. Code cites documents.** The dependency points
+one way. A document that can name a function drifts silently when the function
+is renamed, so the map from intent to code lives here in AGENTS.md, and the map
+from code to intent is the citation in the comment:
+
+```go
+// Commands always carry the mutation rail: shhh cannot know whether a command
+// wrote something, so it assumes it did.
+// See docs/interface/principles.md#weight-tracks-risk.
+```
+
+The reason goes in the comment as prose. **The citation is a pointer to the
+long form, never a substitute for the reason** — a reader who does not open the
+document must still understand why the line is the way it is.
+
+**Cite only for product and design decisions.** Local mechanics do not get a
+citation: `SetMaxOpenConns(1)` is explained by the sentence next to it, and
+pointing at a document for it would be noise.
+
+**Headings are anchors — treat one like an exported symbol.** Renaming a
+heading breaks every citation to it, silently. Rename deliberately and fix the
+citations in the same commit. `make docs-check` verifies every citation
+resolves and lists documents nothing cites; it runs as part of `make ci`.
+
+**Exact visual specification is not in this repository.** Column widths, colour
+rungs, glyph assignments and the artboards are normative in the `shhh Design
+System` project in Claude Design, read with the DesignSync tool. Don't re-draw
+an artboard in Markdown — it becomes a second source of truth that disagrees
+with the first.
+
+### Migrating away from S-numbers and §-numbers
+
+Comments carry two kinds of legacy anchor, and both are being retired.
+
+`DESIGN-TUI.md` is now a ~145-line index, not a document: it maps each of its
+old `§` sections to the `docs/` page that replaced it, so the ~1,168 bare `§`
+references still in comments resolve in one hop. **Delete that file once
+nothing cites a `§`** — the index tracks the remaining count per section.
+
+Many `§` references turn out to be redundant once the prose beside them names
+the concept (`Detail bodies indent, they do not re-grid (§6a)` says it twice).
+Prefer deleting such a reference over translating it; cite a document only
+where the reason is worth the reader's click.
+
+Comments across the tree also still anchor to story numbers (`S-060`, `S-142`).
+These are being replaced: a story number records *when* work happened, and the
+reader needs to know *why* the code is this way. `.plan/` keeps them — that is
+the delivery record and is correct as it is.
+
+**The rule for now: when you touch a comment carrying an S-number, replace the
+number with the reason and, if the reason is a product or design decision, a
+doc citation.** Don't sweep files you aren't otherwise changing. The prose in
+these comments is usually already good — it is the anchor that needs
+replacing, not the explanation.
+
+If the reason isn't captured in `docs/` yet, add the section. A capability
+section nothing cites is either wrong or unnecessary, and the citations are
+what keep the documentation honest.
+
+
 ## Commands
 
 | Task | Command |
@@ -16,6 +88,7 @@
 | Lint | `make lint` (go vet + golangci-lint) |
 | Tidy modules | `make tidy` |
 | CI suite | `make ci` |
+| Check doc citations | `make docs-check` |
 | Update golden files | `go test ./internal/ui/components ./internal/ui/chat -update-golden` or `SHHH_UPDATE_GOLDEN=1 go test ./...` |
 
 Build produces a `shhh` binary with version injected via `-ldflags`.
@@ -60,9 +133,11 @@ internal/
 
 ## Key Design Patterns
 
+This section is the map from the shapes described in [`docs/architecture.md`](docs/architecture.md) to where they live. The *why* is in the docs; the *where* is here.
+
 ### Agent Loop
 
-The `internal/agent` package is a **passive state machine** — front-ends (the chat TUI or headless runner) drive it step-by-step. The same `Agent` backs both the interactive TUI and the headless `shhh code -p` runner. The `Headless` type in `headless.go` drives the agent synchronously for scripted/sub-agent use.
+The `internal/agent` package is a **passive state machine** — front-ends (the chat TUI or headless runner) drive it step-by-step. The same `Agent` backs both the interactive TUI and the headless `shhh code -p` runner. The `Headless` type in `headless.go` drives the agent synchronously for scripted/sub-agent use. Why it is passive: [`docs/architecture.md#one-agent-several-front-ends`](docs/architecture.md#one-agent-several-front-ends).
 
 ### Tool Security Tiers
 
@@ -72,23 +147,47 @@ Tools are split into three permission tiers that must never be mixed:
 2. **Execute** (`ExecCommandTool()`): `execute_command` — requires user approval or policy match
 3. **Mutating** (`Mutating()`): `write_file`, `edit_file` — require approval in manual mode, auto-apply in accept-edits/auto
 
-The `Execute()` function in `tools/tools.go` deliberately only dispatches read-only tools. Mutating calls route through `ExecuteMutating()`. This separation is a security invariant.
+The `Execute()` function in `tools/tools.go` deliberately only dispatches read-only tools. Mutating calls route through `ExecuteMutating()`. This separation is a security invariant — different functions rather than one function with a branch, for the reason in [`docs/architecture.md#tiers-not-permissions`](docs/architecture.md#tiers-not-permissions). Merging them always looks like a simplification; it isn't.
 
 ### Permission Modes
 
-Four modes (S-059) control approval flow: `manual`, `accept-edits`, `auto`, `plan`. The auto mode uses an LLM classifier (S-060) that **always fails closed** — classifier errors never approve, they fall back to asking the human.
+Four modes control approval flow: `manual`, `accept-edits`, `auto`, `plan`. The auto mode uses an LLM classifier that **always fails closed** — classifier errors never approve, they fall back to asking the human. There is no path where "could not decide" becomes yes, and the zero value must stay the one that costs nothing. See [`docs/capabilities/approvals-and-safety.md`](docs/capabilities/approvals-and-safety.md).
 
 ### Provider Interface
 
-All providers implement `StreamCompletion(ctx, messages, opts) (<-chan StreamEvent, error)`. Providers register via `provider.Register(name, factory)` with a `Factory func(ResolveOpts) (Provider, error)`. Provider names are normalized (underscores become hyphens).
+All providers implement `StreamCompletion(ctx, messages, opts) (<-chan StreamEvent, error)`. Providers register via `provider.Register(name, factory)` with a `Factory func(ResolveOpts) (Provider, error)`. Provider names are normalized (underscores become hyphens). What the interface deliberately does not abstract over: [`docs/capabilities/providers.md`](docs/capabilities/providers.md).
 
 ### TUI State Machine
 
 The chat TUI (`internal/ui/chat/model.go`) distinguishes between **turn states** (what the session's work is doing) and **surface states** (what borrows the screen). A surface can overlay while a turn keeps running underneath. This split is why `turnState()` / `setTurnState()` exist separately from `Model.state`.
 
+### TUI Components
+
+Components are **plain state plus two methods** — an update that takes a key
+press and reports whether it is done, and a view that takes an explicit width
+— not nested Bubble Tea models. The chat `Model` owns them via its states. No
+sub-programs, no goroutines inside a component.
+
+Every component is handed a width and must handle a narrow terminal by
+stacking rather than truncating its hints. The column-grid field widths are
+constants in `activityrow.go`, and every surface drawing a transcript row uses
+them, so a grid change is a one-line change.
+
+Diffs are computed in `internal/diff` from the old and new content the edit
+tools already hold — no shelling out to `git diff` except for the session-wide
+diff view.
+
+The step outline is a layer over the entry list in `internal/ui/chat/steps.go`
+rather than a component: it groups history instead of rendering a widget.
+
+The attached sub-agent view is not a separate surface — the chat `Model`
+renders whichever agent is focused, and every agent including the orchestrator
+is an `internal/agent` instance with its own transcript, queue and mode.
+Attaching switches the focused agent.
+
 ### Sub-agents
 
-`shhh code` can spawn child agents via `spawn_agent`. Children are either `researcher` (read-only tools + web) or `writer` (full toolset against an isolated git worktree). Hard limits: max 3 concurrent, 16 total per session. Writer children produce patches that the parent approves.
+`shhh code` can spawn child agents via `spawn_agent`. Children are either `researcher` (read-only tools + web) or `writer` (full toolset against an isolated git worktree). Hard limits: max 3 concurrent, 16 total per session — a limit on attention, not on resources ([`docs/capabilities/subagents.md`](docs/capabilities/subagents.md)). Writer children produce patches that the parent approves.
 
 ## Testing
 
@@ -118,17 +217,17 @@ Config is TOML at `~/.config/shhh/config.toml` (XDG on Linux, `~/Library/Applica
 ## Gotchas
 
 - **CGO_ENABLED=0**: The build is pure Go (uses `modernc.org/sqlite`, not cgo sqlite3). Never add cgo dependencies.
-- **S-numbers in comments** (e.g. `S-060`, `S-142`): These are internal spec/story identifiers. They cross-reference DESIGN.md and DESIGN-TUI.md sections. Preserve them when editing nearby code.
+- **S-numbers in comments** (e.g. `S-060`, `S-142`): legacy story identifiers, being migrated out. When you edit a comment carrying one, replace it with the reason and a `docs/` citation — see [Migrating away from S-numbers](#migrating-away-from-s-numbers). Don't sweep files you aren't otherwise touching, and don't add new ones.
 - **Provider name normalization**: Underscores become hyphens in the registry (`open_ai` → `open-ai`). Use the normalized form when registering or resolving.
 - **The deny mask is not configurable**: The sandbox's built-in deny mask (credential stores, shhh's own state) cannot be disabled. Only `deny_extra` can add to it.
 - **Bubble Tea message routing**: shhh's own messages are typed structs (not interfaces with methods). When adding new async operations, add a corresponding `type fooMsg struct{}` and handle it in the `Update` switch. Note that some of Bubble Tea v2's *own* messages are interfaces — `tea.KeyMsg` covers presses and releases, `tea.MouseMsg` covers click/motion/release/wheel — so match `tea.KeyPressMsg` and the specific mouse types rather than the interface.
 - **`View()` returns a `tea.View`, not a string**: the screen's content plus the terminal states the surface asks for (`AltScreen`, `MouseMode`). Tests that want the painted screen read `.View().Content`. Programs start through `internal/cli/program.go` so they all get the colour profile `components.Profile()` resolved the palette against.
-- **The chat surface's geometry lives in `internal/ui/chat/layout.go`** (DESIGN-TUI.md §10n): `columns()` and `surface()` split the terminal into rectangles with `ultraviolet/layout`, and `contentWidth`, `paneWidth`, `transcriptWidth` and `viewportHeight` read them. Don't add a new `width - something` in a renderer — add a rectangle to the split and read it. Blocks are placed with `drawIn`, which clips to the rectangle, so a renderer never has to measure what it is about to overflow.
+- **The chat surface's geometry lives in `internal/ui/chat/layout.go`** ([`docs/architecture.md#the-screen-is-a-rectangle-and-so-is-everything-in-it`](docs/architecture.md#the-screen-is-a-rectangle-and-so-is-everything-in-it)): `columns()` and `surface()` split the terminal into rectangles with `ultraviolet/layout`, and `contentWidth`, `paneWidth`, `transcriptWidth` and `viewportHeight` read them. Don't add a new `width - something` in a renderer — add a rectangle to the split and read it. Blocks are placed with `drawIn`, which clips to the rectangle, so a renderer never has to measure what it is about to overflow.
 - **Colours are resolved when styles are built, not when they are drawn**: a `lipgloss.Style` holds one `color.Color`, so a `components.Token` picks its truecolor/256/16 rung through `Token.Color()` at `newStyles` time. Changing the palette *or* the profile means rebuilding every derived style — both go through `applyPalette`.
 - **Golden file deletion**: `golden.Run(m)` removes any `.txt` file in `testdata/golden/` that wasn't asserted during the run. Don't manually create golden files; let the test framework generate them.
-- **The investigation rules in `BuildAgent` are load-bearing (S-164)**: the "Finding things" section — batch independent calls, make one search answer the question, never repeat a call you already made — is there because a real session spent all 150 rounds re-running the same searches. It reads like padding and is not; see the comment on `BuildAgent`.
+- **The investigation rules in `BuildAgent` are load-bearing**: the "Finding things" section — batch independent calls, make one search answer the question, never repeat a call you already made — is there because a real session spent all 150 rounds re-running the same searches. It reads like padding and is not; see the comment on `BuildAgent` and [`docs/capabilities/coding-agent.md#finding-things`](docs/capabilities/coding-agent.md#finding-things).
 - **Never name a tool in a base system prompt**: the optional toolset is assembled from what the machine turned out to have (a language server was detected, a binary is on PATH, a key is configured), so a prompt that names one promises a tool the session may not have. `prompt.Toolbox` describes the tools actually registered and is appended as prompt extra after the last one joins.
-- **Gemini pairs tool results by function *name*, not by id (S-164)**: `FunctionResponse.Name` must be the name of the function called, and the Gemini API sends no `functionCall.id` at all — the ids in `provider.ToolCall` are ours. Don't "simplify" `toGeminiContents` back to putting `ToolCallID` in that field; it addresses every result to a function the model never called, and the model just calls again. Gemini 3 thought signatures ride the same parts and must go back on the part they arrived on.
+- **Gemini pairs tool results by function *name*, not by id**: `FunctionResponse.Name` must be the name of the function called, and the Gemini API sends no `functionCall.id` at all — the ids in `provider.ToolCall` are ours. Don't "simplify" `toGeminiContents` back to putting `ToolCallID` in that field; it addresses every result to a function the model never called, and the model just calls again. Gemini 3 thought signatures ride the same parts and must go back on the part they arrived on.
 - **Tool-round cap is a checkpoint, not a limit**: The default 150-round cap pauses for user input rather than terminating. Sub-agents default to uncapped (`UnlimitedToolRounds = -1`) because they have no one to ask.
 - **Storage is single-connection SQLite**: `SetMaxOpenConns(1)` is intentional. The WAL journal mode and busy timeout handle concurrency; don't open multiple `*DB` instances to the same file.
 - **Version injection**: The `version` var in `internal/cli` is set via `-ldflags` at build time. It defaults to `"dev"` when built without flags.

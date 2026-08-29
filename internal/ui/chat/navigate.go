@@ -1,7 +1,8 @@
 package chat
 
-// Terminal interactivity (S-115, DESIGN-TUI.md §7a). Two things kept a reader
-// stuck in the input box, and they are opposite failures of the same rule.
+// Terminal interactivity (S-115, docs/interface/surfaces.md#reading-mode).
+// Two things kept a reader stuck in the input box, and they are opposite
+// failures of the same rule.
 //
 // The wheel was never enabled, so a trackpad gesture over the transcript did
 // nothing at all — the viewport had MouseWheelEnabled set and no mouse events

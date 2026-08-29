@@ -1,7 +1,7 @@
 package caps
 
-// The summons against the terminals it will reach (S-157, DESIGN-TUI.md
-// §10l).
+// The summons against the terminals it will reach (S-157,
+// docs/interface/surfaces.md#when-you-are-not-there).
 //
 // Three things are worth asserting. That the dialect follows the answer —
 // OSC 99 where the terminal said it can carry a title, OSC 777 where it did

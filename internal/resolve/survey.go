@@ -1,13 +1,13 @@
 package resolve
 
 // Where shhh looked for a provider, and what it found there (S-106,
-// DESIGN-TUI.md §17b).
+// docs/interface/surfaces.md#the-recovery-row).
 //
 // "SHHH_API_KEY or OPENAI_API_KEY is not set" is true and useless: it names
-// two of the four places and none of the findings, so the reader has to go and
-// check each one by hand — which is exactly the work the program just did.
-// Survey does the same walk the resolution does and reports it, so the card
-// can name every place, say what was there, and point at the one that is
+// two of the four places and none of the findings, so the reader has to go
+// and check each one by hand — which is exactly the work the program just
+// did. Survey does the same walk the resolution does and reports it, so the
+// card can name every place, say what was there, and point at the one that is
 // probably the fix.
 //
 // The walk is deliberately cheap: three environment lookups, a stat of each

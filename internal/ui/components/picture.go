@@ -1,8 +1,9 @@
 package components
 
-// The staged image preview (S-158, DESIGN-TUI.md §12h). The card `/paste
-// show` opens: one attachment's picture, framed by the name and the size the
-// chip strip already carries.
+// The staged image preview (S-158,
+// docs/interface/surfaces.md#a-staged-picture). The card `/paste show` opens:
+// one attachment's picture, framed by the name and the size the chip strip
+// already carries.
 //
 // The strip says a file called shot.png is staged and how big it is (§12g).
 // That is the right answer for a rail sitting above a live draft, and it is

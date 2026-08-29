@@ -1,10 +1,11 @@
 package ui
 
-// The one-shot's action bar (S-113, DESIGN-TUI.md §18b). It used to be a
-// navigable menu: seven boxes, a cursor, arrow keys to move it and enter to
-// take what was under it. That costs two keystrokes to reach a key that was
-// already printed on the box, and it makes the front door the one surface in
-// shhh where a key hint is not the key. It is now one row of bracketed keys,
+// The one-shot's action bar (S-113,
+// docs/interface/surfaces.md#the-one-shot-result). It used to be a navigable
+// menu: seven boxes, a cursor, arrow keys to move it and enter to take what
+// was under it. That costs two keystrokes to reach a key that was already
+// printed on the box, and it makes the front door the one surface in shhh
+// where a key hint is not the key. It is now one row of bracketed keys,
 // pressed directly, like every hint run in the session UI.
 //
 // The row is also where the safe default lives. On an ordinary command enter
@@ -120,8 +121,9 @@ func (m ActionBarModel) SetDanger(danger bool) ActionBarModel {
 }
 
 // SetDryRun offers `[d]` only where a dry run exists. A key that cannot be
-// honoured is not offered (DESIGN-TUI.md §17a), and here the cost of offering
-// one that is not there is running the real command.
+// honoured is not offered (docs/interface/surfaces.md#the-recovery-row), and
+// here the cost of offering one that is not there is running the real
+// command.
 func (m ActionBarModel) SetDryRun(available bool) ActionBarModel {
 	m.dryRun = available
 	return m

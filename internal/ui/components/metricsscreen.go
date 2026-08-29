@@ -1,11 +1,13 @@
 package components
 
-// The metrics surface (S-129, DESIGN-TUI.md §19c, ui_kits/cockpit/Tools.html).
-// `shhh metrics` printed a tabwriter table of fifteen unaligned columns and no
-// Bubble Tea at all. It is re-cut here from parts that already exist: the §6a
-// column grid applied to a table, the §10c sparkline for the shape of a
-// trend, and the §10c block meter for every ratio — so the sparkline a reader
-// already knows from the inspector rail means the same thing here.
+// The metrics surface (S-129,
+// docs/interface/surfaces.md#the-supporting-screens,
+// ui_kits/cockpit/Tools.html). `shhh metrics` printed a tabwriter table of
+// fifteen unaligned columns and no Bubble Tea at all. It is re-cut here from
+// parts that already exist: the §6a column grid applied to a table, the §10c
+// sparkline for the shape of a trend, and the §10c block meter for every
+// ratio — so the sparkline a reader already knows from the inspector rail
+// means the same thing here.
 //
 // Three rules shape it and all three come from §19c. Numeric columns are
 // fixed-width and right-aligned, so the reader scans one column rather than

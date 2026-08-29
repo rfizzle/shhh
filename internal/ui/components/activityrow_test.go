@@ -5,9 +5,10 @@ import (
 	"testing"
 )
 
-// fieldsOf splits a rendered row into its grid fields (DESIGN-TUI.md §6a):
-// the 13-column lead — pointer 2, rail 1, glyph 2, verb 8 — then the target,
-// and the right edge holding outcome and the 6-column duration.
+// fieldsOf splits a rendered row into its grid fields
+// (docs/interface/principles.md#one-grid): the 13-column lead — pointer 2,
+// rail 1, glyph 2, verb 8 — then the target, and the right edge holding
+// outcome and the 6-column duration.
 func fieldsOf(t *testing.T, view string) (lead, rail, verb, rest string) {
 	t.Helper()
 	line := []rune(strings.Split(stripANSI(view), "\n")[0])

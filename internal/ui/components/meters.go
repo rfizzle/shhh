@@ -1,9 +1,9 @@
 package components
 
-// Meters (S-094, DESIGN-TUI.md §10c). Every quantitative glyph run in the
-// product is one of three things — a block meter, a sparkline, or the spinner
-// — and each has exactly one implementation here, so the context bar, step
-// progress, agent lanes and the retry countdown cannot drift apart.
+// Meters (S-094, docs/interface/README.md). Every quantitative glyph run in
+// the product is one of three things — a block meter, a sparkline, or the
+// spinner — and each has exactly one implementation here, so the context bar,
+// step progress, agent lanes and the retry countdown cannot drift apart.
 //
 // Two rules are enforced rather than documented. A meter always states its
 // percent or count in text beside its bar: a bar alone is a shape, not a

@@ -1,9 +1,9 @@
 package chat
 
-// The command palette (S-112, DESIGN-TUI.md §18a). Ctrl+K opens one prompt
-// over everything the session can reach — the commands in the S-078 registry,
-// the saved chats, and the files this session touched or the checkout changed
-// most recently — filtered as you type.
+// The command palette (S-112, docs/interface/surfaces.md#the-palette). Ctrl+K
+// opens one prompt over everything the session can reach — the commands in
+// the S-078 registry, the saved chats, and the files this session touched or
+// the checkout changed most recently — filtered as you type.
 //
 // It complements the inline `/` menu rather than replacing it: `/` completes a
 // command you are already typing, Ctrl+K finds one you are looking for. That

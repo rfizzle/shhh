@@ -1,14 +1,15 @@
 package chat
 
-// The streaming render (S-149, DESIGN-TUI.md §10h).
+// The streaming render (S-149,
+// docs/architecture.md#the-screen-is-a-rectangle-and-so-is-everything-in-it).
 //
-// The transcript freezes every step block but the last (§13, model.go), so the
-// only thing it re-renders each frame is the message still arriving. That one
-// message was re-parsed whole on every chunk: goldmark plus the ANSI renderer
-// over the entire accumulated answer, once per token. The cost is quadratic in
-// the length of the answer, and it is paid at exactly the moment the user is
-// watching the screen — a long answer slows down as it gets longer, which
-// reads as the model slowing down.
+// The transcript freezes every step block but the last (§13, model.go), so
+// the only thing it re-renders each frame is the message still arriving. That
+// one message was re-parsed whole on every chunk: goldmark plus the ANSI
+// renderer over the entire accumulated answer, once per token. The cost is
+// quadratic in the length of the answer, and it is paid at exactly the moment
+// the user is watching the screen — a long answer slows down as it gets
+// longer, which reads as the model slowing down.
 //
 // The fix is the one Crush wrote down: a *stable prefix*. Find a position in
 // the message after which no markdown construct can still be open, render
@@ -20,11 +21,12 @@ package chat
 // byte-for-byte render of the whole message.** Two things depend on that. The
 // selection (S-145, select.go) is a pair of coordinates into this string, and
 // the message freezes into an `entryAssistant` the moment the stream ends —
-// rendered whole, by renderMarkdown, from the top. A prefix cache that drifted
-// a byte would move the selection under the cursor and jump the transcript on
-// the last token. So every rule below is written to preserve the bytes, the
-// contract is asserted over a corpus in streammd_test.go, and any position the
-// rules cannot vouch for falls back to the full render rather than guessing.
+// rendered whole, by renderMarkdown, from the top. A prefix cache that
+// drifted a byte would move the selection under the cursor and jump the
+// transcript on the last token. So every rule below is written to preserve
+// the bytes, the contract is asserted over a corpus in streammd_test.go, and
+// any position the rules cannot vouch for falls back to the full render
+// rather than guessing.
 
 import (
 	"strings"

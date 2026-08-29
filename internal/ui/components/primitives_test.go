@@ -1,9 +1,9 @@
 package components
 
-// The primitives audit (S-126, DESIGN-TUI.md §20). Seven Go renderers were
-// written before the design system had a page to check them against; these
-// are the divergences the audit closed, held open as tests so the two cannot
-// drift apart again the quiet way they did the first time.
+// The primitives audit (S-126, docs/interface/departures.md). Seven Go
+// renderers were written before the design system had a page to check them
+// against; these are the divergences the audit closed, held open as tests so
+// the two cannot drift apart again the quiet way they did the first time.
 //
 // What is asserted here is what a reader sees on the row — the description
 // column, the meta field, the numbering column — rather than the shape of the

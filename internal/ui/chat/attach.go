@@ -1,12 +1,13 @@
 package chat
 
-// Sub-agent management and steering (S-077, DESIGN-TUI.md §9): the agent
-// list (`/agents` / ctrl+a) is a live view of every agent with cancel and
-// kill actions, and attaching renders a child's session on the full chat
-// surface — same components, breadcrumb header, steering input, approval
-// cards in place, and mode changes clamped to the orchestrator's ceiling.
-// Attach is a focus switch, not a second UI: the transcript the surface
-// renders is whichever agent is focused, and esc pops one lineage level.
+// Sub-agent management and steering (S-077,
+// docs/interface/surfaces.md#the-agent-manager): the agent list (`/agents` /
+// ctrl+a) is a live view of every agent with cancel and kill actions, and
+// attaching renders a child's session on the full chat surface — same
+// components, breadcrumb header, steering input, approval cards in place, and
+// mode changes clamped to the orchestrator's ceiling. Attach is a focus
+// switch, not a second UI: the transcript the surface renders is whichever
+// agent is focused, and esc pops one lineage level.
 
 import (
 	"fmt"

@@ -1,6 +1,7 @@
 package chat
 
-// When shhh needs you and you are not there (S-157, DESIGN-TUI.md §10l).
+// When shhh needs you and you are not there (S-157,
+// docs/interface/surfaces.md#when-you-are-not-there).
 //
 // A turn runs for minutes and then stops, and what it stops on is usually a
 // question: approve this command, apply this patch, the plan is ready. The

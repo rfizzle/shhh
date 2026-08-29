@@ -1,11 +1,11 @@
 package components
 
-// Recovery surfaces (S-106, DESIGN-TUI.md §17). A provider failure used to be
-// a Go error string on a line of its own, which meant the worst-read line in
-// the session was the one you most needed to read. It is an activity row now:
-// the same pointer, glyph, verb, target, outcome and duration fields as the
-// call that failed, because a failure is part of the turn rather than an
-// interruption of it.
+// Recovery surfaces (S-106, docs/interface/surfaces.md#the-recovery-row). A
+// provider failure used to be a Go error string on a line of its own, which
+// meant the worst-read line in the session was the one you most needed to
+// read. It is an activity row now: the same pointer, glyph, verb, target,
+// outcome and duration fields as the call that failed, because a failure is
+// part of the turn rather than an interruption of it.
 //
 // Only one thing here is a card, and only because the session cannot continue
 // without an answer to it: there is no provider to talk to at all.

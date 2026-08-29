@@ -11,7 +11,7 @@ import (
 )
 
 // DiffMode selects which of the diff viewer's three renderings View produces
-// (DESIGN-TUI.md §3).
+// (docs/interface/surfaces.md#the-diff-view).
 type DiffMode int
 
 const (
@@ -167,7 +167,7 @@ type UnifiedOpts struct {
 	// when lines were dropped. 0 means unbounded.
 	MaxLines int
 	// Syntax highlights line text, with diff coloring layered over it
-	// (DESIGN-TUI.md §3b); nil keeps plain diff colors.
+	// (docs/interface/surfaces.md#the-diff-view); nil keeps plain diff colors.
 	Syntax Syntax
 }
 
@@ -275,10 +275,10 @@ func renderUnifiedLine(l diff.Line, width, numWidth int, opts UnifiedOpts) strin
 }
 
 // renderSyntaxLine renders the diff coloring layered over syntax highlighting
-// (DESIGN-TUI.md §3b): the marker keeps the kind's color, the line number is
-// gray, the text keeps its syntax foregrounds, and the emphasis span gets a
-// background tint so syntax colors survive. ok=false falls back to plain
-// rendering when the segments don't reconstruct the line.
+// (docs/interface/surfaces.md#the-diff-view): the marker keeps the kind's
+// color, the line number is gray, the text keeps its syntax foregrounds, and
+// the emphasis span gets a background tint so syntax colors survive. ok=false
+// falls back to plain rendering when the segments don't reconstruct the line.
 func renderSyntaxLine(prefix, text string, avail int, kind diff.Kind, span *diff.Span, syntax Syntax) (string, bool) {
 	// Syntax colours come from a chroma theme, not from Palette, so mono mode
 	// cannot strip them — it declines them instead and the line renders with

@@ -1,6 +1,7 @@
 package chat
 
-// The staged image preview (S-158, DESIGN-TUI.md §12h).
+// The staged image preview (S-158,
+// docs/interface/surfaces.md#a-staged-picture).
 
 import (
 	"bytes"

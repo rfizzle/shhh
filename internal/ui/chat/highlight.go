@@ -108,13 +108,13 @@ func renderMarkdownRaw(text string, width int) string {
 	return out
 }
 
-// The syntax register (DESIGN-TUI.md §3b, §10a). Diff bodies used to
-// highlight with stock monokai — greens, pinks and oranges from outside the
-// product, sitting next to an add/del gutter drawn from the palette, two
-// unrelated colour systems in one card. The theme below is the palette
-// instead, read as a register rather than as state: structure in info, values
-// in accent, the names a reader scans for a step brighter, the glue between
-// them dimmer, comments dim.
+// The syntax register (docs/interface/surfaces.md#the-diff-view, §10a). Diff
+// bodies used to highlight with stock monokai — greens, pinks and oranges
+// from outside the product, sitting next to an add/del gutter drawn from the
+// palette, two unrelated colour systems in one card. The theme below is the
+// palette instead, read as a register rather than as state: structure in
+// info, values in accent, the names a reader scans for a step brighter, the
+// glue between them dimmer, comments dim.
 //
 // Four tokens are deliberately absent. Add, del, hunk and spin say something
 // about the row — this line was added, that one removed, this is where the

@@ -8,9 +8,10 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// The column grid (DESIGN-TUI.md §6a, normative). Widths are character cells
-// and match tokens/terminal.css in the design-system project; nothing in the
-// transcript may invent a width. The target is the only field that grows.
+// The column grid (docs/interface/principles.md#one-grid, normative). Widths
+// are character cells and match tokens/terminal.css in the design-system
+// project; nothing in the transcript may invent a width. The target is the
+// only field that grows.
 const (
 	ptrWidth   = 2 // fold state ▾/▸, focus cursor ❯
 	railWidth  = 1 // the mutation rail ▎ (§14)

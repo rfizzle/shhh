@@ -1,8 +1,8 @@
 package chat
 
-// Step detail (S-137, DESIGN-TUI.md §13d): ctrl+o opens the detail bodies of
-// one step's rows — `/ui verbosity high` scoped to a single step, and nothing
-// else on the screen moves.
+// Step detail (S-137, docs/interface/surfaces.md#the-step): ctrl+o opens the
+// detail bodies of one step's rows — `/ui verbosity high` scoped to a single
+// step, and nothing else on the screen moves.
 //
 // The transcript had two ways to see what a call actually returned and a gap
 // between them. Reading mode's [enter] opens one row, unbounded, and costs a

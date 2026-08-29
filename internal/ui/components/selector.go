@@ -42,9 +42,9 @@ type SelectOption struct {
 	Meta        string
 	MetaTone    FieldTone
 	RequireNote bool
-	// Header marks a row that labels the run of options beneath it rather
-	// than offering one — the palette's COMMANDS / SESSIONS / FILES rails
-	// (S-112, DESIGN-TUI.md §18a). Focus steps over it, it is never
+	// Header marks a row that labels the run of options beneath it rather than
+	// offering one — the palette's COMMANDS / SESSIONS / FILES rails (S-112,
+	// docs/interface/surfaces.md#the-palette). Focus steps over it, it is never
 	// numbered, and no key can land on it.
 	Header bool
 	// Dim marks an option that is showing but cannot be acted on right now,
@@ -70,9 +70,10 @@ type SelectResult struct {
 // input frame owns it.
 const queryCursor = "█"
 
-// Select is the single-select card (DESIGN-TUI.md §4a): ↑↓/jk move, enter
-// selects, number keys select immediately, esc cancels, and — on a list long
-// enough to want one — / opens a filter row above the window.
+// Select is the single-select card (docs/interface/surfaces.md#selectors):
+// ↑↓/jk move, enter selects, number keys select immediately, esc cancels, and
+// — on a list long enough to want one — / opens a filter row above the
+// window.
 type Select struct {
 	Title   string
 	Options []SelectOption

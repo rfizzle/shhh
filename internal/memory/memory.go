@@ -1,4 +1,6 @@
-// Package memory implements durable cross-session memory (S-070): short text
+// Package memory implements durable cross-session memory
+// (docs/capabilities/sessions-and-memory.md#memory-is-what-shhh-knows-about-your-project):
+// short text
 // entries in the existing SQLite storage, scoped global or per-project, with
 // bounded recall into the system prompt. Its two principles come straight
 // from the story: admission control by provenance — an agent-proposed memory
