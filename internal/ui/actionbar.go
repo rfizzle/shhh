@@ -17,8 +17,8 @@ import (
 	"strconv"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -215,8 +215,10 @@ func (m ActionBarModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m ActionBarModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	msgKey, ok := msg.(tea.KeyMsg)
+// Update returns the bar itself rather than a tea.Model, for the same reason
+// the stream does: it is a piece of a surface, not a program (S-155).
+func (m ActionBarModel) Update(msg tea.Msg) (ActionBarModel, tea.Cmd) {
+	msgKey, ok := msg.(tea.KeyPressMsg)
 	if !ok {
 		return m, nil
 	}

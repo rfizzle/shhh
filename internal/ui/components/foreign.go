@@ -39,10 +39,11 @@ package components
 
 import (
 	"fmt"
+	"image/color"
 	"strconv"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -74,7 +75,7 @@ func ansiTable(p ColorTokens) [16]Token {
 // uncoloured majority of tool output render identically to the way it did
 // before this file existed.
 type foreignRun struct {
-	fg                                lipgloss.TerminalColor
+	fg                                color.Color
 	bold, faint, italic               bool
 	underline, strike, reverse, blink bool
 }
@@ -83,7 +84,7 @@ type foreignRun struct {
 // there is one and the palette is showing colour at all, the ground
 // otherwise, plus whatever attributes the program set.
 func (r foreignRun) style(ground Token) lipgloss.Style {
-	var fg lipgloss.TerminalColor = ground
+	fg := ground.Color()
 	if r.fg != nil && !mono {
 		fg = r.fg
 	}
@@ -208,9 +209,9 @@ func (r *foreignRun) apply(params ansi.Params) {
 		case p == 29:
 			r.strike = false
 		case p >= 30 && p <= 37:
-			r.fg = ansiPalette[p-30]
+			r.fg = ansiPalette[p-30].Color()
 		case p >= 90 && p <= 97:
-			r.fg = ansiPalette[8+p-90]
+			r.fg = ansiPalette[8+p-90].Color()
 		case p == 39:
 			r.fg = nil
 		case p == 38:
@@ -233,7 +234,7 @@ func (r *foreignRun) apply(params ansi.Params) {
 // `38;5;n` or `38;2;r;g;b` — starting at params[i]. It returns the colour and
 // the index of the last parameter it consumed; a truncated introducer yields
 // no colour rather than a guess.
-func extendedColor(params ansi.Params, i int) (lipgloss.TerminalColor, int) {
+func extendedColor(params ansi.Params, i int) (color.Color, int) {
 	if i+1 >= len(params) {
 		return nil, i
 	}

@@ -26,16 +26,16 @@
 
 ── ansi ────────────────────────────────────────────────────
 · at the alert threshold, with the turns to keep
-␛[1;91m┌─ Context is nearly full ─────────────────────────────── 92% · ~30k / 32k ┐␛[0m
-␛[1;91m│␛[0m ␛[1;91m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱␛[0m                                                   ␛[1;91m│␛[0m
-␛[1;91m│␛[0m                                                                          ␛[1;91m│␛[0m
-␛[1;91m│␛[0m ␛[38;5;243m30k␛[0m  ␛[38;5;252mthe conversation␛[0m␛[38;5;241m — 2 messages␛[0m                                       ␛[1;91m│␛[0m
-␛[1;91m│␛[0m ␛[38;5;243m150␛[0m  ␛[38;5;252msystem prompt␛[0m                                                       ␛[1;91m│␛[0m
-␛[1;91m│␛[0m                                                                          ␛[1;91m│␛[0m
-␛[1;91m│␛[0m ␛[38;5;241mcompacting drops the older turns␛[0m␛[38;5;241m —␛[0m␛[92m recovers about 29k (88%)␛[0m              ␛[1;91m│␛[0m
-␛[1;91m│␛[0m ␛[38;5;241mkeeping going asks nothing further — there is no tool output left to␛[0m     ␛[1;91m│␛[0m
-␛[1;91m│␛[0m ␛[38;5;241mtrim, so the first request that overruns the window will fail rather␛[0m     ␛[1;91m│␛[0m
-␛[1;91m│␛[0m ␛[38;5;241mthan shrink␛[0m                                                              ␛[1;91m│␛[0m
-␛[1;91m├──────────────────────────────────────────────────────────────────────────┤␛[0m
-␛[1;91m│␛[0m ␛[94m[enter]␛[0m␛[38;5;241m compact now␛[0m␛[38;5;241m · ␛[0m␛[94m[n]␛[0m␛[38;5;241m new session␛[0m␛[38;5;241m · ␛[0m␛[94m[esc]␛[0m␛[38;5;241m keep going␛[0m                 ␛[1;91m│␛[0m
-␛[1;91m└──────────────────────────────────────────────────────────────────────────┘␛[0m
+␛[1;91m┌─ Context is nearly full ─────────────────────────────── 92% · ~30k / 32k ┐␛[m
+␛[1;91m│␛[m ␛[1;91m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱␛[m                                                   ␛[1;91m│␛[m
+␛[1;91m│␛[m                                                                          ␛[1;91m│␛[m
+␛[1;91m│␛[m ␛[38;5;243m30k␛[m  ␛[38;5;252mthe conversation␛[m␛[38;5;241m — 2 messages␛[m                                       ␛[1;91m│␛[m
+␛[1;91m│␛[m ␛[38;5;243m150␛[m  ␛[38;5;252msystem prompt␛[m                                                       ␛[1;91m│␛[m
+␛[1;91m│␛[m                                                                          ␛[1;91m│␛[m
+␛[1;91m│␛[m ␛[38;5;241mcompacting drops the older turns␛[m␛[38;5;241m —␛[m␛[92m recovers about 29k (88%)␛[m              ␛[1;91m│␛[m
+␛[1;91m│␛[m ␛[38;5;241mkeeping going asks nothing further — there is no tool output left to␛[m     ␛[1;91m│␛[m
+␛[1;91m│␛[m ␛[38;5;241mtrim, so the first request that overruns the window will fail rather␛[m     ␛[1;91m│␛[m
+␛[1;91m│␛[m ␛[38;5;241mthan shrink␛[m                                                              ␛[1;91m│␛[m
+␛[1;91m├──────────────────────────────────────────────────────────────────────────┤␛[m
+␛[1;91m│␛[m ␛[94m[enter]␛[m␛[38;5;241m compact now␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m new session␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m keep going␛[m                 ␛[1;91m│␛[m
+␛[1;91m└──────────────────────────────────────────────────────────────────────────┘␛[m

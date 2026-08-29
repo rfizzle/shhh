@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -62,7 +62,7 @@ func TestPlan_ApprovalPromptAfterPlanningResponse(t *testing.T) {
 	if m.state != statePlanApprove {
 		t.Fatalf("a completed planning response should enter the plan-approval prompt, got state %d", m.state)
 	}
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "Plan ready") {
 		t.Fatalf("view should show the plan-approval card, got:\n%s", view)
 	}
@@ -113,7 +113,7 @@ func TestPlan_ApproveExecutesInChosenMode(t *testing.T) {
 	m = updated.(Model)
 
 	m = handover(t, m)
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'1'}})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: '1', Text: "1"})
 	m = updated.(Model)
 	if m.mode != agent.ModeAcceptEdits {
 		t.Fatalf("option 1 should switch to accept-edits, got %v", m.mode)
@@ -167,7 +167,7 @@ func TestPlan_ApproveOtherModes(t *testing.T) {
 		updated, _ := m.Update(doneMsg{})
 		m = updated.(Model)
 		m = handover(t, m)
-		updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{c.key}})
+		updated, _ = m.Update(tea.KeyPressMsg{Code: c.key, Text: string(c.key)})
 		m = updated.(Model)
 		if m.mode != c.want || m.state != stateStreaming {
 			t.Errorf("option %c: mode %v state %d, want mode %v streaming", c.key, m.mode, m.state, c.want)
@@ -181,7 +181,7 @@ func TestPlan_KeepPlanningReturnsToInput(t *testing.T) {
 	m = updated.(Model)
 
 	m = handover(t, m)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	if m.state != stateInput {
 		t.Fatalf("esc should dismiss to keep planning, got state %d", m.state)
@@ -206,7 +206,7 @@ func TestPlan_RejectStaysInPlanMode(t *testing.T) {
 	m = updated.(Model)
 
 	m = handover(t, m)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'5'}})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: '5', Text: "5"})
 	m = updated.(Model)
 	if m.state != stateInput || m.mode != agent.ModePlan {
 		t.Fatalf("reject should return to input in plan mode, got state %d mode %v", m.state, m.mode)
@@ -229,26 +229,26 @@ func TestPlan_NavigationAndEnterSelect(t *testing.T) {
 
 	// k at the top stays put.
 	m = handover(t, m)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'k', Text: "k"})
 	m = updated.(Model)
 	if m.planChoice != 0 {
 		t.Fatalf("k at the top should stay at 0, got %d", m.planChoice)
 	}
 	for range 10 {
-		updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'j'}})
+		updated, _ = m.Update(tea.KeyPressMsg{Code: 'j', Text: "j"})
 		m = updated.(Model)
 	}
 	if m.planChoice != len(planApproveOptions)-1 {
 		t.Fatalf("j should clamp at the last option, got %d", m.planChoice)
 	}
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyUp})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyUp})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 	m = updated.(Model)
 	if m.planChoice != 2 {
 		t.Fatalf("expected focus on option 3, got %d", m.planChoice)
 	}
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.mode != agent.ModeManual || m.state != stateStreaming {
 		t.Fatalf("enter should select the focused option (manual execution), got mode %v state %d", m.mode, m.state)
@@ -393,7 +393,7 @@ func plannedModel(t *testing.T, response string) Model {
 
 func TestPlanCard_StepsCarryTheFilesTheyTouch(t *testing.T) {
 	m := plannedModel(t, structuredPlan)
-	view := m.View()
+	view := m.View().Content
 	for _, want := range []string{
 		"Plan · make the round limit recoverable",
 		"3 steps",
@@ -411,7 +411,7 @@ func TestPlanCard_StepsCarryTheFilesTheyTouch(t *testing.T) {
 
 func TestPlanCard_StepIntentComesFromTheAction(t *testing.T) {
 	m := plannedModel(t, structuredPlan)
-	view := m.View()
+	view := m.View().Content
 	for _, want := range []string{"read only", "✎ creates 1 file", "✎ edits 1 file"} {
 		if !strings.Contains(view, want) {
 			t.Errorf("the plan card should rate the step %q:\n%s", want, view)
@@ -421,7 +421,7 @@ func TestPlanCard_StepIntentComesFromTheAction(t *testing.T) {
 
 func TestPlanCard_SummaryIsComputedFromTheSteps(t *testing.T) {
 	m := plannedModel(t, structuredPlan)
-	view := m.View()
+	view := m.View().Content
 	// The read step's file is not a write target, so two files are touched.
 	for _, want := range []string{"2 files touched", "no deletes", "no network"} {
 		if !strings.Contains(view, want) {
@@ -454,7 +454,7 @@ func TestPlanCard_SummaryReadsTheSameGitCheckAsApprovals(t *testing.T) {
 	m.streaming = tracked
 	updated, _ := m.Update(doneMsg{})
 	armed := updated.(Model)
-	if view := armed.View(); !strings.Contains(view, "reversible") {
+	if view := armed.View().Content; !strings.Contains(view, "reversible") {
 		t.Errorf("a wholly tracked plan is reversible:\n%s", view)
 	}
 	if armed.planDetail != "every file is tracked in git" {
@@ -464,7 +464,7 @@ func TestPlanCard_SummaryReadsTheSameGitCheckAsApprovals(t *testing.T) {
 	m.state, m.streaming = stateStreaming, both
 	updated, _ = m.Update(doneMsg{})
 	armed = updated.(Model)
-	if view := armed.View(); !strings.Contains(view, "partly reversible") {
+	if view := armed.View().Content; !strings.Contains(view, "partly reversible") {
 		t.Errorf("a plan naming an untracked file is only partly reversible:\n%s", view)
 	}
 	if armed.planDetail != "1 of 2 files tracked in git" {
@@ -475,14 +475,14 @@ func TestPlanCard_SummaryReadsTheSameGitCheckAsApprovals(t *testing.T) {
 func TestPlanCard_OutsideARepositoryNothingIsClaimed(t *testing.T) {
 	chdir(t)
 	m := plannedModel(t, structuredPlan)
-	if view := m.View(); !strings.Contains(view, "not reversible") {
+	if view := m.View().Content; !strings.Contains(view, "not reversible") {
 		t.Errorf("outside a work tree the card says so rather than claiming undo:\n%s", view)
 	}
 }
 
 func TestPlanCard_OptionsNameTheModeTheyEnter(t *testing.T) {
 	m := plannedModel(t, structuredPlan)
-	view := m.View()
+	view := m.View().Content
 	// Accepting a plan is a mode change, so every execution option says which.
 	for _, want := range []string{"accept-edits mode", "auto mode", "manual approvals"} {
 		if !strings.Contains(view, want) {
@@ -493,16 +493,16 @@ func TestPlanCard_OptionsNameTheModeTheyEnter(t *testing.T) {
 
 func TestPlanCard_OnlyTheFocusedOptionExplainsItself(t *testing.T) {
 	m := plannedModel(t, structuredPlan)
-	if view := m.View(); !strings.Contains(view, planApproveOptions[0].Desc) {
+	if view := m.View().Content; !strings.Contains(view, planApproveOptions[0].Desc) {
 		t.Fatalf("the focused option should explain itself:\n%s", view)
 	}
 	for _, opt := range planApproveOptions[1:] {
-		if strings.Contains(m.View(), opt.Desc) {
+		if strings.Contains(m.View().Content, opt.Desc) {
 			t.Errorf("an unfocused option must not explain itself: %q", opt.Desc)
 		}
 	}
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyDown})
-	view := updated.(Model).View()
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	view := updated.(Model).View().Content
 	if !strings.Contains(view, planApproveOptions[1].Desc) {
 		t.Errorf("moving the focus should move the explanation:\n%s", view)
 	}
@@ -514,7 +514,7 @@ func TestPlanCard_OnlyTheFocusedOptionExplainsItself(t *testing.T) {
 func TestPlanCard_UnstructuredPlanStillRenders(t *testing.T) {
 	prose := "I'd add a sentinel error to the agent package and return it from the round loop."
 	m := plannedModel(t, prose)
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "Plan ready") {
 		t.Errorf("a plan with no structure still gets a card:\n%s", view)
 	}
@@ -536,7 +536,7 @@ func TestPlanCard_SaveKeyWritesThePlanAndKeepsTheCard(t *testing.T) {
 	t.Chdir(t.TempDir())
 	m := plannedModel(t, structuredPlan)
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'s'}})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 's', Text: "s"})
 	m = updated.(Model)
 	if m.state != statePlanApprove {
 		t.Fatalf("saving is not a decision and must not answer one, got state %d", m.state)
@@ -569,7 +569,7 @@ func TestPlanCard_AnsweringTheCardDropsTheArmedPlan(t *testing.T) {
 	if !m.planDoc.Structured() {
 		t.Fatal("the plan should be armed while the card is up")
 	}
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	if got := updated.(Model).planDoc; got.Structured() || got.Text != "" {
 		t.Errorf("answering the card should drop the armed plan, got %+v", got)
 	}

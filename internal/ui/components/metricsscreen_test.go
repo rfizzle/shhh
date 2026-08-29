@@ -11,9 +11,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/muesli/termenv"
 )
 
 func metricsModels() []MetricsModel {
@@ -152,7 +152,7 @@ func TestMetricsScreen_NumericColumnsLineUp(t *testing.T) {
 // The heading is the same rail every group heading in the product is, and the
 // numbers under it are not painted with it.
 func TestMetricsScreen_HeadingIsARail(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	m := metricsScreen()
 	heading := strings.TrimSpace(metricsRowFor(m, 130, "REQUESTS"))
 	if !strings.Contains(m.View(130), sty.Headline.Render(heading)) {
@@ -163,7 +163,7 @@ func TestMetricsScreen_HeadingIsARail(t *testing.T) {
 // A sparkline is dimmer and never coloured: it is the shape, and the numbers
 // beside it are the measurement (§10c, §19c).
 func TestMetricsScreen_SparklineIsDimmerAndNeverColoured(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	view := metricsScreen().View(130)
 	run := sparkCells(metricsModels()[0].Trend, metricsTrendCells)
 	if !strings.Contains(view, sty.Dimmer.Render(run)) {
@@ -226,7 +226,7 @@ func TestMetricsScreen_EveryBarStatesItsNumber(t *testing.T) {
 // A cost nobody asked for is del, and it says so in a glyph as well, so the
 // row still reads once the colour is gone (invariant 1).
 func TestMetricsScreen_TheUnaskedCostIsToldTwice(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	m := metricsScreen()
 	unasked := Meter{Pct: 5, Cells: MeterCellsRail, Tone: MeterUnasked, Text: "$0.96 · 5%"}
 	if !strings.Contains(m.View(130), unasked.View()) {

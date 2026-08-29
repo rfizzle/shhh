@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -137,7 +137,7 @@ func TestTurnStatus_FrameRailShowsTheTurnAndThenItsSummary(t *testing.T) {
 	// Past the label's entrance (§10c): what the rail says while a turn runs
 	// is the settled word, and how it gets there is the test below.
 	m.turnStarted = time.Now().Add(-2 * time.Second)
-	view := stripANSI(m.View())
+	view := stripANSI(m.View().Content)
 	if !strings.Contains(view, "thinking…") || !strings.Contains(view, "$") {
 		t.Fatalf("the top rail should carry the live status:\n%s", view)
 	}
@@ -145,7 +145,7 @@ func TestTurnStatus_FrameRailShowsTheTurnAndThenItsSummary(t *testing.T) {
 	m.state = stateInput
 	m.transcript = append(m.transcript, entry{kind: entryTurnClose, turn: 1,
 		close: &components.TurnClose{State: components.TurnDone, Tools: 18, Elapsed: "1m 04s", Spend: "$0.14"}})
-	view = stripANSI(m.View())
+	view = stripANSI(m.View().Content)
 	if !strings.Contains(view, "✓ done · 1m 04s · 18 tools · $0.14") {
 		t.Fatalf("the top rail should resolve into the turn summary:\n%s", view)
 	}
@@ -161,11 +161,11 @@ func TestTurnStatus_FrameRailShowsTheTurnAndThenItsSummary(t *testing.T) {
 func TestTurnStatus_TheLabelArrivesWithTheTurn(t *testing.T) {
 	m := statusModel(t)
 	m.runTail = nil
-	if view := stripANSI(m.View()); !strings.Contains(view, "·") || strings.Contains(view, "thinking…") {
+	if view := stripANSI(m.View().Content); !strings.Contains(view, "·") || strings.Contains(view, "thinking…") {
 		t.Fatalf("a turn that just started should still be spelling its label out:\n%s", view)
 	}
 	m.turnStarted = time.Now().Add(-2 * time.Second)
-	if view := stripANSI(m.View()); !strings.Contains(view, "thinking…") {
+	if view := stripANSI(m.View().Content); !strings.Contains(view, "thinking…") {
 		t.Fatalf("a second in, the label should have arrived:\n%s", view)
 	}
 	// The width the slot needs never changes while the word fills in: a cell
@@ -182,7 +182,7 @@ func TestTurnStatus_TheLabelArrivesWithTheTurn(t *testing.T) {
 // A session that has not run a turn says `idle` — the summary is a fact about
 // a turn, and there is not one yet.
 func TestTurnStatus_FreshSessionIsIdle(t *testing.T) {
-	view := stripANSI(frameModel(t, 130, 40).View())
+	view := stripANSI(frameModel(t, 130, 40).View().Content)
 	if !strings.Contains(view, "idle") {
 		t.Fatalf("a fresh session's rail should read idle:\n%s", view)
 	}
@@ -195,7 +195,7 @@ func TestTurnStatus_WaitingDecisionOutranksTheStatus(t *testing.T) {
 	m.pendingRun = "echo hi"
 	m.state = stateConfirmRun
 	m.syncViewport()
-	view := stripANSI(m.View())
+	view := stripANSI(m.View().Content)
 	if !strings.Contains(view, "waiting") {
 		t.Fatalf("an ungated decision should claim the activity slot:\n%s", view)
 	}
@@ -211,7 +211,7 @@ func TestTurnStatus_RailNeverOverflows(t *testing.T) {
 		m := statusModel(t)
 		m.width = width
 		m.syncViewport()
-		for _, line := range strings.Split(stripANSI(m.View()), "\n") {
+		for _, line := range strings.Split(stripANSI(m.View().Content), "\n") {
 			if got := len([]rune(line)); got > width {
 				t.Fatalf("width %d produced a %d-column line: %q", width, got, line)
 			}
@@ -233,7 +233,7 @@ func TestTurnStatus_ARealTurnResolvesOnTheRail(t *testing.T) {
 	if s.Duration != c.Elapsed || s.Tools != c.Tools || s.Cost != c.Spend {
 		t.Fatalf("the rail and the close row disagree: %+v vs %+v", s, c)
 	}
-	if view := stripANSI(m.View()); !strings.Contains(view, "✓ done") {
+	if view := stripANSI(m.View().Content); !strings.Contains(view, "✓ done") {
 		t.Fatalf("the top rail should carry the resolved summary:\n%s", view)
 	}
 }

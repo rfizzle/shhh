@@ -1008,6 +1008,11 @@ reason to suspect a setting. So the wheel is the side you ask for.
   physical input device is not a per-session opinion. `/ui mouse <on|off>` is
   the same setting said in words, and takes the same path so the two cannot
   drift.
+- **The setting is the frame, not a command** (S-155). Reporting is a field on
+  the `tea.View` the model returns, so what the terminal is doing is a
+  function of what the model believes rather than of a command each of the two
+  doors remembered to send. There is nothing left for them to forget, and no
+  state the model can hold that the terminal has not been told.
 - **Both notes state the trade, not an improvement.** Turning it on says what
   the drag now does; turning it off says what the terminal takes back.
 
@@ -2022,15 +2027,38 @@ where 10 is whatever green the user's config calls green and 12 is a blue dark
 enough on some themes to lose a key the interface was offering. Those five are
 the design system's own colours on a truecolor terminal.
 
-The three columns are not redundant. A hex alone would be degraded by the
-renderer, and that degradation walks only the 6×6×6 cube: body (`#d0d0d0`) and
-bright (`#eaeaea`) both come back as 188, and two rungs of the grey ladder
-land on one colour. Sixteen colours genuinely cannot hold six greys, which is
-why the 16 column collapses dim, dimmer and status onto 8 — that is the
-profile invariant 1 exists for, and the glyphs and words carry the distinction
-there. `palette_test.go` is this table: it fails when the code drifts from it,
-when two tokens collapse at truecolor or 256, and when the grey ladder stops
-descending.
+The three columns are not redundant, and **where** they earn themselves moved
+with the toolkit (S-155). Under Bubble Tea v1 the argument was the greyscale
+ramp: a hex was degraded by the renderer, that degradation walked only the
+6×6×6 cube, and body (`#d0d0d0`) and bright (`#eaeaea`) both came back as 188.
+The v2 downsampler walks the ramp, so every grey now derives to the index
+written beside it, and the 256 column no longer earns itself that way. It
+earns itself the other way: five tokens are the terminal's own colours *by
+choice*, and deriving them from a hex would put a literal approximation where
+the design put the user's theme.
+
+The 16 column is where derivation still loses information outright. It is a
+nearest match, and the nearest match to accent (`#ffaf00`) and to spin
+(`#ff5faf`) is del's red — a warning, a thing in motion and a failure, all one
+hue, on the one profile invariant 1 exists for. Bright, body and subtle
+likewise land on one white. Sixteen colours genuinely cannot hold six greys,
+which is why this column collapses dim, dimmer and status onto 8 on purpose;
+what it must not do is collapse three *meanings*, and naming each token's
+theme colour is what stops it. `palette_test.go` is this table: it fails when
+the code drifts from it, when two tokens collapse at truecolor or 256, when
+the grey ladder stops descending, and when a derived sixteen would have kept
+apart what the written one keeps apart.
+
+**Where the profile is decided (S-155).** Lip Gloss v2 has no renderer inside
+a `Style`: `Render` emits the colour it was handed, and downsampling happens
+at whatever writes the bytes out. So shhh resolves a token to one of its three
+rungs when its styles are built — `components.Profile()`, detected once from
+stdout and the environment — and hands that same profile to every Bubble Tea
+program and to every direct print. One decision, made once; a writer that
+detected a second one could only disagree with the palette. `NO_COLOR` and
+`TERM=dumb` are part of that decision rather than a separate branch: they
+settle the profile on ASCII, which is no colour at all with bold, italic and
+the glyphs intact.
 
 **The syntax register (§3b).** Inside a code body the palette is read as a
 syntax register rather than as state: structure in info, values in accent, the
@@ -2437,9 +2465,24 @@ state and nothing to start or stop.
   simply the root of that list. This falls out of the S-056 extraction
   and is the strongest reason to keep it clean.
 - Components are plain state + two methods, not full Bubble Tea models:
-  `Update(tea.KeyMsg) (done bool, result any)` and `View(width int)
+  `Update(tea.KeyPressMsg) (done bool, result any)` and `View(width int)
   string`. The chat `Model` owns them via states (as `stateConfirmRun`
-  does today) — no nested programs, no goroutines in components.
+  does today) — no nested programs, no goroutines in components. The v2
+  migration (S-155) narrowed the first argument from `tea.KeyMsg`, which is
+  now the interface covering presses *and* releases; a component answers
+  presses, and the contract says so.
+- **The frame is a value, not a sequence of commands (S-155).** A Bubble Tea
+  v2 `View()` returns a `tea.View`: the screen's content, and the terminal
+  states the surface is asking for while it is up. Two of shhh's were
+  commands before — the alt screen a program option each host passed to
+  `tea.NewProgram`, mouse reporting a command `ctrl+x` and `/ui mouse` each
+  had to remember to send — and both were the same bug waiting: a state the
+  model believed in and the terminal had never been told about. A field
+  cannot drift from what `View` draws, because it is what `View` draws. The
+  ten programs that run a TUI (`chat`, `browse`, the generate and provider
+  surfaces, `/config`, `/doctor`, `/metrics`, `/history`) each declare their
+  own; `internal/cli/program.go` is the one door they start through, so the
+  colour profile §10a resolved against is the one the writer downsamples to.
 - `stateConfirmRun`/`renderRunConfirm` refactor into the Approval Card as
   the first consumer; behavior-compatible (y/n/esc semantics unchanged).
 - Diff computation: `internal/diff` producing hunks from old/new content
@@ -2589,12 +2632,22 @@ screenshot had to be described instead of shown.
 **Shift+Enter is the newline.** It is also the one key a terminal is least
 likely to report: in the legacy encoding Enter is a bare CR with nowhere to
 put a modifier, so a terminal that has not been asked to say more sends the
-same byte for both. The session asks — xterm's `modifyOtherKeys` level 1, on
-at start and off at exit — and reads back both shapes the answer arrives in
-(`CSI 13 ; mods u` and `CSI 27 ; mods ; 13 ~`). Any modifier on Enter means
-the same thing here, so ctrl+enter works too. A terminal that ignores the
-request keeps `alt+enter` and `ctrl+j`, which stay bound; the rail names
-shift+enter, because naming the fallback would teach the wrong key.
+same byte for both. The session asks, and reads back the answer.
+
+Until S-155 it did both by hand: it wrote xterm's `modifyOtherKeys` level 1 at
+start and cleared it at exit, and parsed the raw CSI sequence that came back
+in both the shapes terminals send it in (`CSI 13 ; mods u` and
+`CSI 27 ; mods ; 13 ~`), because Bubble Tea v1 had no name for a modified
+Enter and handed over the bytes. v2 asks for `modifyOtherKeys` *and* the Kitty
+keyboard protocol on every render, restores both on the way out — through the
+Kitty stack, which the hand-written request had no way to do — and decodes the
+reply. So a modified Enter arrives named, and this rule is a rule about a key
+again.
+
+Any modifier on Enter means the same thing here, so ctrl+enter works too. A
+terminal that answers neither request keeps `alt+enter` and `ctrl+j`, which
+stay bound; the rail names shift+enter, because naming the fallback would
+teach the wrong key.
 
 **Attachments are named, never drawn.** An image on this surface would fight
 every rule the §6a grid has, and a terminal cannot show one honestly anyway.

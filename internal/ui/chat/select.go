@@ -42,8 +42,8 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -169,15 +169,15 @@ func (m Model) selectableSurface() bool {
 // the cell under the cursor — the class of bug this whole file is careful
 // about, stated once here so it is not restated at four call sites.
 func (m Model) paneRows() int {
-	if m.viewport.Height > 0 {
-		return m.viewport.Height
+	if m.viewport.Height() > 0 {
+		return m.viewport.Height()
 	}
 	return m.viewportHeight()
 }
 
 func (m Model) paneCols() int {
-	if m.viewport.Width > 0 {
-		return m.viewport.Width
+	if m.viewport.Width() > 0 {
+		return m.viewport.Width()
 	}
 	return m.transcriptWidth()
 }
@@ -194,7 +194,7 @@ func (m Model) transcriptPoint(x, y int) (selPoint, bool) {
 	if col < 0 || col >= m.paneCols() {
 		return selPoint{}, false
 	}
-	return selPoint{line: m.viewport.YOffset + row, col: col}, true
+	return selPoint{line: m.viewport.YOffset() + row, col: col}, true
 }
 
 // clampedPoint is transcriptPoint for a drag, where leaving the pane is a
@@ -205,7 +205,7 @@ func (m Model) transcriptPoint(x, y int) (selPoint, bool) {
 func (m Model) clampedPoint(x, y int) selPoint {
 	row := min(max(y-transcriptTop, 0), max(m.paneRows()-1, 0))
 	col := min(max(x-transcriptLeft, 0), max(m.paneCols()-1, 0))
-	line := m.viewport.YOffset + row
+	line := m.viewport.YOffset() + row
 	if last := m.viewport.TotalLineCount() - 1; last >= 0 && line > last {
 		line = last
 	}
@@ -438,9 +438,9 @@ func (m Model) updateSelectionScroll(msg selectionScrollMsg) (tea.Model, tea.Cmd
 		m.cancelSelection()
 		return m, nil
 	}
-	before := m.viewport.YOffset
+	before := m.viewport.YOffset()
 	m.scrollLines(m.selScrollDir)
-	if m.viewport.YOffset == before {
+	if m.viewport.YOffset() == before {
 		m.stopEdgeScroll()
 		return m, nil
 	}

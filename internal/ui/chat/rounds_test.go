@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -328,7 +328,7 @@ func TestRoundLimit_ThePauseDefersTheContextCard(t *testing.T) {
 func TestRoundLimit_FocusModeLandsOnThePauseAndTakesTheGrant(t *testing.T) {
 	m, _ := pausedModel(t)
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlE})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'e', Mod: tea.ModCtrl})
 	focused := updated.(Model)
 	if focused.state != stateFocus {
 		t.Fatalf("ctrl+e should enter focus mode, got state %v", focused.state)
@@ -340,7 +340,7 @@ func TestRoundLimit_FocusModeLandsOnThePauseAndTakesTheGrant(t *testing.T) {
 		t.Errorf("the hint names the literal key the row draws as %s:\n%s", firstGrantOffer, hint)
 	}
 
-	updated, cmd := focused.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(keys.Shown(keys.Row.Rounds))})
+	updated, cmd := focused.Update(tea.KeyPressMsg{Code: []rune(keys.Shown(keys.Row.Rounds))[0], Text: keys.Shown(keys.Row.Rounds)})
 	next := updated.(Model)
 	if cmd == nil || next.turnState() != stateStreaming {
 		t.Fatalf("the grant in focus mode should continue the turn, state %v", next.turnState())

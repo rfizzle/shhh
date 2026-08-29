@@ -24,8 +24,8 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -142,7 +142,7 @@ func MaskSecret(s string) string {
 // Update is the screen's whole keyboard. The open sub-surface answers first —
 // a picker, a field, a masked entry or the write confirm owns the letters
 // while it is up (invariant 5) — and the settings list answers otherwise.
-func (c *ConfigScreen) Update(msg tea.KeyMsg) (done bool, result any) {
+func (c *ConfigScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	c.sync()
 	switch {
 	case c.confirm != nil:
@@ -157,7 +157,7 @@ func (c *ConfigScreen) Update(msg tea.KeyMsg) (done bool, result any) {
 	return c.updateMenu(msg)
 }
 
-func (c *ConfigScreen) updateMenu(msg tea.KeyMsg) (bool, any) {
+func (c *ConfigScreen) updateMenu(msg tea.KeyPressMsg) (bool, any) {
 	pressed := msg.String()
 	switch {
 	case pressed == "up":
@@ -241,7 +241,7 @@ func (c *ConfigScreen) open() {
 	}
 }
 
-func (c *ConfigScreen) updatePicker(msg tea.KeyMsg) (bool, any) {
+func (c *ConfigScreen) updatePicker(msg tea.KeyPressMsg) (bool, any) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Select.Cancel):
 		// esc keeps the current value — it is the one key on this screen
@@ -285,7 +285,7 @@ func (c *ConfigScreen) updatePicker(msg tea.KeyMsg) (bool, any) {
 	return false, nil
 }
 
-func (c *ConfigScreen) updateEdit(msg tea.KeyMsg) (bool, any) {
+func (c *ConfigScreen) updateEdit(msg tea.KeyPressMsg) (bool, any) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Select.Cancel):
 		c.edit = nil
@@ -302,7 +302,7 @@ func (c *ConfigScreen) updateEdit(msg tea.KeyMsg) (bool, any) {
 	return false, nil
 }
 
-func (c *ConfigScreen) updateSecret(msg tea.KeyMsg) (bool, any) {
+func (c *ConfigScreen) updateSecret(msg tea.KeyPressMsg) (bool, any) {
 	done, result := c.secret.Update(msg)
 	if !done {
 		return false, nil
@@ -320,7 +320,7 @@ func (c *ConfigScreen) updateSecret(msg tea.KeyMsg) (bool, any) {
 	return false, nil
 }
 
-func (c *ConfigScreen) updateConfirm(msg tea.KeyMsg) (bool, any) {
+func (c *ConfigScreen) updateConfirm(msg tea.KeyPressMsg) (bool, any) {
 	done, result := c.confirm.Update(msg)
 	if !done {
 		return false, nil
@@ -694,7 +694,7 @@ func (c *ConfigScreen) optIndex(row int) int {
 // second idea of "a line you type into" is exactly what this story deletes.
 type configEdit struct{ value []rune }
 
-func (e *configEdit) update(msg tea.KeyMsg) {
+func (e *configEdit) update(msg tea.KeyPressMsg) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Screen.ClearQ):
 		e.value = nil

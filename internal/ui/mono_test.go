@@ -7,11 +7,19 @@ package ui
 import (
 	"testing"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 func TestMonoReachesTheGenerateStyles(t *testing.T) {
+	// A profile with colour to give: the one detected from a test binary's
+	// non-terminal stdout resolves every token to no colour at all, which
+	// would make the two palettes indistinguishable (S-155).
+	wasProfile := components.Profile()
+	components.SetProfile(colorprofile.ANSI256)
+	t.Cleanup(func() { components.SetProfile(wasProfile) })
+
 	was := components.Mono()
 	t.Cleanup(func() { components.SetMono(was) })
 
@@ -44,7 +52,7 @@ func TestMonoReachesTheGenerateStyles(t *testing.T) {
 		"sty.Dim":          sty.Dim,
 		"sty.PastCommand":  sty.PastCommand,
 	} {
-		if fg := s.GetForeground(); fg != components.MonoFg && fg != components.MonoDim {
+		if fg := s.GetForeground(); fg != components.MonoFg.Color() && fg != components.MonoDim.Color() {
 			t.Errorf("%s has foreground %v, which is not one of the two greys", name, fg)
 		}
 	}

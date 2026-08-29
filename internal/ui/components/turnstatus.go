@@ -17,7 +17,7 @@ package components
 // anything else that moves show the same frame from the one tick source
 // (§10c).
 
-import "github.com/charmbracelet/lipgloss"
+import "charm.land/lipgloss/v2"
 
 // TurnPhase is the closed vocabulary of §8d. There are four; anything else is
 // a phase nobody defined.

@@ -16,7 +16,7 @@ package chat
 import (
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 // submitInput handles Enter on the orchestrator surface, in every state that
@@ -170,17 +170,11 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		}
 
 	case name == "/ui":
-		// /ui mouse flips the terminal's own reporting, so it is the one /ui
-		// setting that needs a command back to the program rather than just a
-		// note in the transcript (S-115, §7a).
-		was := m.mouseOn
-		result := m.uiCommand(parts)
-		next, cmd := m.systemNotice(result)
-		nm, ok := next.(Model)
-		if !ok || nm.mouseOn == was {
-			return next, cmd
-		}
-		return nm, tea.Batch(cmd, mouseCmd(nm.mouseOn))
+		// /ui mouse flips the terminal's own reporting. Since S-155 that is
+		// a field on the View rather than a command back to the program, so
+		// this setting takes the same path as every other /ui setting: change
+		// the model, say so in the transcript (§7a).
+		return m.systemNotice(m.uiCommand(parts))
 
 	case text == "/branches":
 		// Bare /branches opens the branch picker (S-080); a session with no

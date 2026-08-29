@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/changeset"
 )
@@ -37,14 +37,14 @@ func undoModel(t *testing.T) (Model, string) {
 // press sends one keystroke to the model.
 func press(t *testing.T, m Model, s string) Model {
 	t.Helper()
-	var msg tea.KeyMsg
+	var msg tea.KeyPressMsg
 	switch s {
 	case "esc":
-		msg = tea.KeyMsg{Type: tea.KeyEsc}
+		msg = tea.KeyPressMsg{Code: tea.KeyEscape}
 	case "enter":
-		msg = tea.KeyMsg{Type: tea.KeyEnter}
+		msg = tea.KeyPressMsg{Code: tea.KeyEnter}
 	default:
-		msg = tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s)}
+		msg = tea.KeyPressMsg{Code: []rune(s)[0], Text: s}
 	}
 	updated, _ := m.Update(msg)
 	return updated.(Model)

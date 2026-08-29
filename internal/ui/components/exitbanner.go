@@ -20,7 +20,7 @@ package components
 import (
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 )
 
 // ExitBanner is what the terminal keeps once the alt screen has gone.

@@ -2,12 +2,13 @@ package chat
 
 import (
 	"fmt"
+	"image/color"
 	"strings"
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -241,7 +242,7 @@ func TestSteps_FocusFoldsAndUnfolds(t *testing.T) {
 
 	// Enter on a folded header unfolds the group in place.
 	m.focusIdx = 1
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if !strings.Contains(stripANSI(m.renderHistory()), "ErrRoundLimit") {
 		t.Fatalf("enter on a folded header should unfold it:\n%s", stripANSI(m.renderHistory()))
@@ -251,7 +252,7 @@ func TestSteps_FocusFoldsAndUnfolds(t *testing.T) {
 	}
 
 	// And enter again folds it back, hiding nothing the header does not say.
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	view := stripANSI(m.renderHistory())
 	if strings.Contains(view, "ErrRoundLimit") {
@@ -296,8 +297,8 @@ func TestStepHeader_TonesFollowTheDesignSystem(t *testing.T) {
 	}
 	for _, tc := range cases {
 		ptr, title, dur := stepHeader{State: tc.state}.tones()
-		got := []lipgloss.TerminalColor{ptr.GetForeground(), title.GetForeground(), dur.GetForeground()}
-		want := []lipgloss.TerminalColor{tc.ptr, tc.title, tc.dur}
+		got := []color.Color{ptr.GetForeground(), title.GetForeground(), dur.GetForeground()}
+		want := []color.Color{tc.ptr.Color(), tc.title.Color(), tc.dur.Color()}
 		for i := range want {
 			if got[i] != want[i] {
 				t.Fatalf("state %d tone %d: got %v, want %v", tc.state, i, got[i], want[i])
@@ -305,8 +306,8 @@ func TestStepHeader_TonesFollowTheDesignSystem(t *testing.T) {
 		}
 	}
 	// The rule is the faint one, and the stats sit in dim beside their glyph.
-	if sty.Step.Rule.GetForeground() != components.Palette.Dim ||
-		sty.Step.Stats.GetForeground() != components.Palette.Dim {
+	if sty.Step.Rule.GetForeground() != components.Palette.Dim.Color() ||
+		sty.Step.Stats.GetForeground() != components.Palette.Dim.Color() {
 		t.Fatal("the stretched rule and the tool count are dim")
 	}
 }

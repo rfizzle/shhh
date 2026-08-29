@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -48,7 +48,7 @@ func confirmFor(t *testing.T, m Model, command string) string {
 	}
 	// The consequences a card prints beside its keys are only printed once
 	// the keys are live (S-117, §7b), so the card is read after ctrl+g.
-	return ansi.Strip(handover(t, m).View())
+	return ansi.Strip(handover(t, m).View().Content)
 }
 
 // chdir moves into a scratch directory for the test, so path resolution has
@@ -221,7 +221,7 @@ func TestBlastRadius_EditStatesReversibilityOnTheStatsLine(t *testing.T) {
 			Arguments: `{"path":"main.go","old_text":"beta","new_text":"delta"}`},
 	}})
 	m = updated.(Model)
-	view := ansi.Strip(m.View())
+	view := ansi.Strip(m.View().Content)
 	if !strings.Contains(view, "· undo yes — recorded") {
 		t.Fatalf("the edit card should state reversibility on its stats line:\n%s", view)
 	}
@@ -255,7 +255,7 @@ func TestBlastRadius_GenericToolCarriesItsOwnFields(t *testing.T) {
 		{ID: "call_f", Name: "web_fetch", Arguments: `{"url":"https://pkg.go.dev/context"}`},
 	}})
 	m = updated.(Model)
-	view := ansi.Strip(m.View())
+	view := ansi.Strip(m.View().Content)
 	for _, want := range []string{
 		"domain    pkg.go.dev — the request leaves this machine",
 		"sends     the URL and a user-agent — no file contents, no credentials",

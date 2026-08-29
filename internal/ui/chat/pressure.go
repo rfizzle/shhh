@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -229,7 +229,7 @@ func (m Model) compactRecovers(b contextBreakdown) int64 {
 }
 
 // updatePressure routes keys while the card is up.
-func (m Model) updatePressure(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updatePressure(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if m.pressure == nil {
 		return m.closePressure()
 	}

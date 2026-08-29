@@ -8,7 +8,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/colorprofile"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -67,6 +69,12 @@ func TestUICommand_VerbositySurvivesTheMonoArgument(t *testing.T) {
 // keep its colour forever, and every surface in this package would ignore the
 // swap.
 func TestMonoReachesTheChatStyles(t *testing.T) {
+	// A profile with colour to give: the one detected from a test binary's
+	// non-terminal stdout resolves every token to no colour at all, which
+	// would make the two palettes indistinguishable (S-155).
+	was := components.Profile()
+	components.SetProfile(colorprofile.ANSI256)
+	t.Cleanup(func() { components.SetProfile(was) })
 	monoRestore(t)
 	components.SetMono(false)
 	full := []lipgloss.Style{sty.Assistant, sty.Error, sty.Step.Done, sty.Frame.AccentGated, sty.Complete.Args, sty.Pane.Divider, sty.Hint.Key, sty.Reading.Label}
@@ -80,7 +88,7 @@ func TestMonoReachesTheChatStyles(t *testing.T) {
 	}
 	for _, s := range got {
 		fg := s.GetForeground()
-		if fg != components.MonoFg && fg != components.MonoDim {
+		if fg != components.MonoFg.Color() && fg != components.MonoDim.Color() {
 			t.Errorf("mono style has foreground %v, which is not one of the two greys", fg)
 		}
 	}
@@ -124,5 +132,32 @@ func TestArgCompletion_MonoValuesAreGatedOnTheMonoToken(t *testing.T) {
 	m = typeChars(t, readyModel(t), "/ui verbosity l")
 	if got := completionNames(m); len(got) != 1 || got[0] != "low" {
 		t.Fatalf("the verbosity position should be unchanged, got %v", got)
+	}
+}
+
+// The document margin is layout, not decoration, so it has to survive the
+// mono swap — invariant 1 runs in that direction too.
+//
+// It did not, until S-155. renderMarkdown finished a document with a
+// TrimSpace, and glamour v1 opened each line with its style escape before the
+// margin, so the trim stopped at the escape and the margin survived — in
+// colour. In mono there was no escape in front of it, so the first line of
+// every assistant paragraph sat two columns left of the rest of itself.
+func TestMonoKeepsTheDocumentMargin(t *testing.T) {
+	monoRestore(t)
+	const prose = "Round exhaustion is fatal in Agent.runRound: the loop returns " +
+		"ErrRoundLimit, and the chat model treats any error from a round as terminal.\n"
+	for _, on := range []bool{false, true} {
+		components.SetMono(on)
+		rows := strings.Split(ansi.Strip(renderMarkdown(prose, 60)), "\n")
+		if len(rows) < 2 {
+			t.Fatalf("mono=%v: the fixture must wrap, got %d row(s)", on, len(rows))
+		}
+		first := len(rows[0]) - len(strings.TrimLeft(rows[0], " "))
+		rest := len(rows[1]) - len(strings.TrimLeft(rows[1], " "))
+		if first != rest {
+			t.Errorf("mono=%v: the opening line is indented %d and the rest %d",
+				on, first, rest)
+		}
 	}
 }

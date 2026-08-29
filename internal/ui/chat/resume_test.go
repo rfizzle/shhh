@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -277,7 +277,7 @@ func TestRetryWait_EscStopsWithoutLosingTheTurn(t *testing.T) {
 	next := updated.(Model)
 	before := len(next.transcript)
 
-	stopped, _ := next.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	stopped, _ := next.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	after := stopped.(Model)
 	if after.turnState() != stateInput || after.retry != nil {
 		t.Fatalf("esc should end the wait, state = %v", after.turnState())

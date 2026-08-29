@@ -18,8 +18,8 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/muesli/termenv"
+	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
@@ -38,7 +38,7 @@ var goldenWidths = []int{60, 80, 110, 130}
 // terminal narrows — that is the whole point of capturing them.
 func captureGolden(t *testing.T, name, surface string, widths []int, panels func(width int) []golden.Panel) {
 	t.Helper()
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	for _, mono := range []bool{false, true} {
 		label := "color"
 		if mono {
@@ -1193,7 +1193,7 @@ func TestGolden_SecretPrompt(t *testing.T) {
 			s := SecretPrompt{Prompt: "Paste a key for openai", Hint: "SHHH_API_KEY or OPENAI_API_KEY"}
 			mut(&s)
 			for i := 0; i < n; i++ {
-				s.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'x'}})
+				s.Update(tea.KeyPressMsg{Code: 'x', Text: "x"})
 			}
 			return s.View(width)
 		}
@@ -1281,7 +1281,7 @@ func TestGolden_ConfigScreen(t *testing.T) {
 		}
 		typed := func(c *ConfigScreen, text string) {
 			for _, r := range text {
-				c.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+				c.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
 			}
 		}
 		return []golden.Panel{
@@ -1392,7 +1392,7 @@ func TestGolden_HistoryScreen(t *testing.T) {
 		}
 		typed := func(h *HistoryScreen, text string) {
 			for _, r := range text {
-				h.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+				h.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
 			}
 		}
 		return []golden.Panel{

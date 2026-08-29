@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -29,7 +29,7 @@ func paletteModel(t *testing.T) Model {
 // openPaletteWith opens the palette and types query into it.
 func openPaletteWith(t *testing.T, m Model, query string) Model {
 	t.Helper()
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlK})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'k', Mod: tea.ModCtrl})
 	m = updated.(Model)
 	if m.palette == nil || m.state != statePick {
 		t.Fatal("ctrl+k should open the palette on the picker surface")
@@ -137,7 +137,7 @@ func TestPalette_AliasFindsItsCommand(t *testing.T) {
 func TestPalette_EnterRunsTheFocusedCommand(t *testing.T) {
 	m := openPaletteWith(t, paletteModel(t), "stats")
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	if m.palette != nil || m.picker != nil || m.state != stateInput {
@@ -152,7 +152,7 @@ func TestPalette_EnterRunsTheFocusedCommand(t *testing.T) {
 func TestPalette_TabWritesIntoTheInput(t *testing.T) {
 	m := openPaletteWith(t, paletteModel(t), "model")
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyTab})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
 	m = updated.(Model)
 
 	if m.palette != nil {
@@ -168,7 +168,7 @@ func TestPalette_EnterOnAFileWritesItsPath(t *testing.T) {
 	m.input.SetValue("explain")
 	m = openPaletteWith(t, m, "loop.go")
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	if got := m.input.Value(); got != "explain internal/agent/loop.go " {
@@ -181,7 +181,7 @@ func TestPalette_EscDismissesAndKeepsTheDraft(t *testing.T) {
 	m.input.SetValue("half a sentence")
 	m = openPaletteWith(t, m, "mo")
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 
 	if m.palette != nil || m.state != stateInput {
@@ -201,7 +201,7 @@ func TestPalette_BackspaceWidensTheQuery(t *testing.T) {
 		t.Fatalf("the rail should say so, got %q", got)
 	}
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyBackspace})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyBackspace})
 	m = updated.(Model)
 	if len(m.palette.rows) == 0 {
 		t.Fatal("backspace should widen the query again")
@@ -239,7 +239,7 @@ func TestPalette_IdleOnlyCommandsDimRatherThanDrop(t *testing.T) {
 	}
 
 	// Choosing it answers with the notice rather than doing it.
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	last := m.transcript[len(m.transcript)-1]
 	if !strings.Contains(last.text, "needs the turn to be finished") {
@@ -251,7 +251,7 @@ func TestPalette_OpensMidTurn(t *testing.T) {
 	m := paletteModel(t)
 	m.setTurnState(stateStreaming)
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlK})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'k', Mod: tea.ModCtrl})
 	m = updated.(Model)
 
 	if m.palette == nil || m.state != statePick {
@@ -260,7 +260,7 @@ func TestPalette_OpensMidTurn(t *testing.T) {
 	if m.turnState() != stateStreaming {
 		t.Fatal("the turn should keep running underneath (S-087)")
 	}
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	if m.state != stateStreaming {
 		t.Fatalf("dismissing should hand the screen back to the turn, got state %v", m.state)
@@ -271,7 +271,7 @@ func TestPalette_NotOpenedWhileAttached(t *testing.T) {
 	m := paletteModel(t)
 	m.attachedTo = "researcher-1"
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlK})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'k', Mod: tea.ModCtrl})
 	m = updated.(Model)
 
 	if m.palette != nil {

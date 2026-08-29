@@ -7,13 +7,13 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 )
 
-func runes(s string) tea.KeyMsg { return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s)} }
+func runes(s string) tea.KeyPressMsg { return tea.KeyPressMsg{Code: []rune(s)[0], Text: s} }
 
-func answer(t *testing.T, c *UndoConfirm, msg tea.KeyMsg) (bool, UndoDecision) {
+func answer(t *testing.T, c *UndoConfirm, msg tea.KeyPressMsg) (bool, UndoDecision) {
 	t.Helper()
 	done, result := c.Update(msg)
 	d, _ := result.(UndoDecision)
@@ -22,8 +22,8 @@ func answer(t *testing.T, c *UndoConfirm, msg tea.KeyMsg) (bool, UndoDecision) {
 
 func TestUndoConfirm_DefaultIsDecline(t *testing.T) {
 	c := &UndoConfirm{Turn: 7, Restores: 2}
-	for _, msg := range []tea.KeyMsg{
-		runes("n"), {Type: tea.KeyEnter}, {Type: tea.KeyEsc},
+	for _, msg := range []tea.KeyPressMsg{
+		runes("n"), {Code: tea.KeyEnter}, {Code: tea.KeyEscape},
 	} {
 		done, d := answer(t, c, msg)
 		if !done || d != UndoCancel {

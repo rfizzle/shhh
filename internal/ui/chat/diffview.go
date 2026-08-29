@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -107,7 +107,7 @@ func (m Model) openDiffFull(d *components.DiffView, ret state) (tea.Model, tea.C
 // updateDiffFull routes keys to the full-screen viewer; any key that leaves
 // full-screen mode (esc, or enter's collapse) returns to where it was opened
 // from. Esc never destroys.
-func (m Model) updateDiffFull(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateDiffFull(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if m.fullDiff == nil {
 		return m.closeDiffFull()
 	}

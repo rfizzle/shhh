@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -377,10 +377,10 @@ type hintStyles struct {
 
 func newHintStyles(p components.ColorTokens) hintStyles {
 	return hintStyles{
-		Key:          lipgloss.NewStyle().Foreground(p.Info),
-		Safe:         lipgloss.NewStyle().Foreground(p.Add),
-		Dim:          lipgloss.NewStyle().Foreground(p.Dim),
-		MutationRail: lipgloss.NewStyle().Foreground(p.Accent),
+		Key:          lipgloss.NewStyle().Foreground(p.Info.Color()),
+		Safe:         lipgloss.NewStyle().Foreground(p.Add.Color()),
+		Dim:          lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		MutationRail: lipgloss.NewStyle().Foreground(p.Accent.Color()),
 	}
 }
 

@@ -26,8 +26,8 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -152,7 +152,7 @@ func (m Model) arrivalGates(s state) bool {
 // key it has no answer for: the reader never asked for the keyboard, so the
 // letter they typed is the start of a sentence and belongs in the box, not
 // dropped on the floor while they look at a card.
-func (m Model) releaseToDraft(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) releaseToDraft(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	m.releaseDecision()
 	var cmd tea.Cmd
 	m.input, cmd = m.input.Update(msg)
@@ -192,7 +192,7 @@ func (m Model) ungateDecision() (tea.Model, tea.Cmd) {
 
 // routeDecision hands a key to whichever decision surface is on screen. It is
 // only reached once the surface holds the keyboard.
-func (m Model) routeDecision(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) routeDecision(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch m.state {
 	case stateConfirmRun:
 		return m.updateConfirmRun(msg)

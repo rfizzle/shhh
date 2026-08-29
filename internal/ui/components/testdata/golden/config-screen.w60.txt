@@ -221,211 +221,211 @@ shhh config · ~/.config/shhh/config.toml
 
 ── ansi ────────────────────────────────────────────────────
 · the list · every row states where its value came from
-␛[1;97mshhh config␛[0m␛[38;5;241m · ~/.config/shhh/config.toml␛[0m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[0m
+␛[1;97mshhh config␛[m␛[38;5;241m · ~/.config/shhh/config.toml␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mSESSION␛[0m
-  ␛[1;48;5;62m❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user␛[0m
-    round limit        ␛[38;5;252m25␛[0m                            ␛[38;5;252mdefault␛[0m
-    context budget     ␛[38;5;252m8000 tokens␛[0m                   ␛[38;5;252mdefault␛[0m
-    safety warnings    ␛[92mon␛[0m                            ␛[38;5;252mdefault␛[0m
+  ␛[1;94mSESSION␛[m
+  ␛[1;48;5;62m❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user␛[m
+    round limit        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
+    context budget     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
+    safety warnings    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mMODEL␛[0m
-    provider           ␛[38;5;252mopenai␛[0m                           ␛[38;5;252muser␛[0m
-    model              ␛[38;5;252mgpt-5.2␛[0m            ␛[38;5;252muser · 6 available␛[0m
-    api key            ␛[38;5;252m···4f9c␛[0m                          ␛[38;5;252muser␛[0m
-    base url           ␛[38;5;252m(the provider's own)␛[0m          ␛[38;5;252mdefault␛[0m
-    sub-agent model    ␛[38;5;252minherit␛[0m                       ␛[38;5;252mdefault␛[0m
+  ␛[1;94mMODEL␛[m
+    provider           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
+    model              ␛[38;5;252mgpt-5.2␛[m            ␛[38;5;252muser · 6 available␛[m
+    api key            ␛[38;5;252m···4f9c␛[m                          ␛[38;5;252muser␛[m
+    base url           ␛[38;5;252m(the provider's own)␛[m          ␛[38;5;252mdefault␛[m
+    sub-agent model    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mWORKSPACE␛[0m
-    sandbox            ␛[38;5;252m⛨ workspac…␛[0m  ␛[91munavailable on this host␛[0m
-  ␛[38;5;241m↓ 4 more␛[0m
+  ␛[1;94mWORKSPACE␛[m
+    sandbox            ␛[38;5;252m⛨ workspac…␛[m  ␛[91munavailable on this host␛[m
+  ␛[38;5;241m↓ 4 more␛[m
 
-␛[94m[↑↓]␛[0m␛[38;5;241m move␛[0m␛[38;5;241m · ␛[0m␛[94m[enter]␛[0m␛[38;5;241m change␛[0m␛[38;5;241m · ␛[0m␛[94m[/]␛[0m␛[38;5;241m filter␛[0m          ␛[38;5;241m14 settings␛[0m
-␛[94m[r]␛[0m␛[38;5;241m reset to default␛[0m␛[38;5;241m · ␛[0m␛[94m[esc]␛[0m␛[38;5;241m discard␛[0m
+␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m          ␛[38;5;241m14 settings␛[m
+␛[94m[r]␛[m␛[38;5;241m reset to default␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m discard␛[m
 
 · changing one · the picker opens under the row, not over the screen
-␛[1;97mshhh config␛[0m␛[38;5;241m · ~/.config/shhh/config.toml␛[0m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[0m
+␛[1;97mshhh config␛[m␛[38;5;241m · ~/.config/shhh/config.toml␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mSESSION␛[0m
-    permission mode    ␛[92m⏵⏵ auto␛[0m ␛[38;5;241m— edits apply; allowli…␛[0m  ␛[38;5;252muser␛[0m
-    round limit        ␛[38;5;252m25␛[0m                            ␛[38;5;252mdefault␛[0m
-    context budget     ␛[38;5;252m8000 tokens␛[0m                   ␛[38;5;252mdefault␛[0m
-    safety warnings    ␛[92mon␛[0m                            ␛[38;5;252mdefault␛[0m
+  ␛[1;94mSESSION␛[m
+    permission mode    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowli…␛[m  ␛[38;5;252muser␛[m
+    round limit        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
+    context budget     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
+    safety warnings    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mMODEL␛[0m
-    provider           ␛[38;5;252mopenai␛[0m                           ␛[38;5;252muser␛[0m
-  ␛[1;48;5;62m❯ model              gpt-5.2            user · 6 available␛[0m
-    ␛[1;48;5;62m❯ gpt-5.2            current default         $1.25 / $10␛[0m
-      gpt-5.2-mini       ␛[38;5;241m⅕ the price␛[0m              ␛[38;5;252m$0.25 / $2␛[0m
-      claude-opus-4.6    ␛[38;5;241mdeepest reasoning␛[0m         ␛[38;5;252m$15 / $75␛[0m
-      claude-sonnet-4.6  ␛[38;5;241mbetter diffs · 200k ctx␛[0m    ␛[38;5;252m$3 / $15␛[0m
-      gemini-3-flash     ␛[38;5;241m1M ctx␛[0m                ␛[38;5;252m$0.30 / $2.50␛[0m
-      ␛[38;5;245m⊘ deepseek-r2␛[0m      ␛[38;5;245mlocal via ollama␛[0m    ␛[38;5;245mnot usable here␛[0m
-  ␛[38;5;241m↓ 8 more␛[0m
+  ␛[1;94mMODEL␛[m
+    provider           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
+  ␛[1;48;5;62m❯ model              gpt-5.2            user · 6 available␛[m
+    ␛[1;48;5;62m❯ gpt-5.2            current default         $1.25 / $10␛[m
+      gpt-5.2-mini       ␛[38;5;241m⅕ the price␛[m              ␛[38;5;252m$0.25 / $2␛[m
+      claude-opus-4.6    ␛[38;5;241mdeepest reasoning␛[m         ␛[38;5;252m$15 / $75␛[m
+      claude-sonnet-4.6  ␛[38;5;241mbetter diffs · 200k ctx␛[m    ␛[38;5;252m$3 / $15␛[m
+      gemini-3-flash     ␛[38;5;241m1M ctx␛[m                ␛[38;5;252m$0.30 / $2.50␛[m
+      ␛[38;5;245m⊘ deepseek-r2␛[m      ␛[38;5;245mlocal via ollama␛[m    ␛[38;5;245mnot usable here␛[m
+  ␛[38;5;241m↓ 8 more␛[m
 
-␛[94m[↑↓]␛[0m␛[38;5;241m move␛[0m␛[38;5;241m · ␛[0m␛[94m[/]␛[0m␛[38;5;241m filter␛[0m␛[38;5;241m · ␛[0m␛[94m[enter]␛[0m␛[38;5;241m take it␛[0m
-␛[94m[esc]␛[0m␛[38;5;241m keep gpt-5.2␛[0m
+␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m take it␛[m
+␛[94m[esc]␛[m␛[38;5;241m keep gpt-5.2␛[m
 
 · the picker filtered · the query row carries both counts
-␛[1;97mshhh config␛[0m␛[38;5;241m · ~/.config/shhh/config.toml␛[0m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[0m
+␛[1;97mshhh config␛[m␛[38;5;241m · ~/.config/shhh/config.toml␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mSESSION␛[0m
-    permission mode    ␛[92m⏵⏵ auto␛[0m ␛[38;5;241m— edits apply; allowli…␛[0m  ␛[38;5;252muser␛[0m
-    round limit        ␛[38;5;252m25␛[0m                            ␛[38;5;252mdefault␛[0m
-    context budget     ␛[38;5;252m8000 tokens␛[0m                   ␛[38;5;252mdefault␛[0m
-    safety warnings    ␛[92mon␛[0m                            ␛[38;5;252mdefault␛[0m
+  ␛[1;94mSESSION␛[m
+    permission mode    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowli…␛[m  ␛[38;5;252muser␛[m
+    round limit        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
+    context budget     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
+    safety warnings    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mMODEL␛[0m
-    provider           ␛[38;5;252mopenai␛[0m                           ␛[38;5;252muser␛[0m
-  ␛[1;48;5;62m❯ model              gpt-5.2            user · 6 available␛[0m
-    ␛[94m▸ ␛[0m␛[97mclaude█␛[0m                                   ␛[38;5;241m2 of 6 match␛[0m
-    ␛[1;48;5;62m❯ claude-opus-4.6    deepest reasoning         $15 / $75␛[0m
-      ␛[1mclaude␛[0m-sonnet-4.6  ␛[38;5;241mbetter diffs · 200k ctx␛[0m    ␛[38;5;252m$3 / $15␛[0m
-    api key            ␛[38;5;252m···4f9c␛[0m                          ␛[38;5;252muser␛[0m
-    base url           ␛[38;5;252m(the provider's own)␛[0m          ␛[38;5;252mdefault␛[0m
-    sub-agent model    ␛[38;5;252minherit␛[0m                       ␛[38;5;252mdefault␛[0m
-  ␛[38;5;241m↓ 5 more␛[0m
+  ␛[1;94mMODEL␛[m
+    provider           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
+  ␛[1;48;5;62m❯ model              gpt-5.2            user · 6 available␛[m
+    ␛[94m▸ ␛[m␛[97mclaude█␛[m                                   ␛[38;5;241m2 of 6 match␛[m
+    ␛[1;48;5;62m❯ claude-opus-4.6    deepest reasoning         $15 / $75␛[m
+      ␛[1mclaude␛[m-sonnet-4.6  ␛[38;5;241mbetter diffs · 200k ctx␛[m    ␛[38;5;252m$3 / $15␛[m
+    api key            ␛[38;5;252m···4f9c␛[m                          ␛[38;5;252muser␛[m
+    base url           ␛[38;5;252m(the provider's own)␛[m          ␛[38;5;252mdefault␛[m
+    sub-agent model    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
+  ␛[38;5;241m↓ 5 more␛[m
 
-␛[94m[↑↓]␛[0m␛[38;5;241m move␛[0m␛[38;5;241m · ␛[0m␛[94m[ctrl+u]␛[0m␛[38;5;241m clear the filter␛[0m␛[38;5;241m · ␛[0m␛[94m[enter]␛[0m␛[38;5;241m take it␛[0m
-␛[94m[esc]␛[0m␛[38;5;241m keep gpt-5.2␛[0m
+␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m clear the filter␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m take it␛[m
+␛[94m[esc]␛[m␛[38;5;241m keep gpt-5.2␛[m
 
 · a setting with no answers to choose · a field under the row
-␛[1;97mshhh config␛[0m␛[38;5;241m · ~/.config/shhh/config.toml␛[0m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[0m
+␛[1;97mshhh config␛[m␛[38;5;241m · ~/.config/shhh/config.toml␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mSESSION␛[0m
-    permission mode    ␛[92m⏵⏵ auto␛[0m ␛[38;5;241m— edits apply; allowli…␛[0m  ␛[38;5;252muser␛[0m
-  ␛[1;48;5;62m❯ round limit        25                            default␛[0m
-    ␛[94m▸ ␛[0m␛[97m2540█␛[0m
-    context budget     ␛[38;5;252m8000 tokens␛[0m                   ␛[38;5;252mdefault␛[0m
-    safety warnings    ␛[92mon␛[0m                            ␛[38;5;252mdefault␛[0m
+  ␛[1;94mSESSION␛[m
+    permission mode    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowli…␛[m  ␛[38;5;252muser␛[m
+  ␛[1;48;5;62m❯ round limit        25                            default␛[m
+    ␛[94m▸ ␛[m␛[97m2540█␛[m
+    context budget     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
+    safety warnings    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mMODEL␛[0m
-    provider           ␛[38;5;252mopenai␛[0m                           ␛[38;5;252muser␛[0m
-    model              ␛[38;5;252mgpt-5.2␛[0m            ␛[38;5;252muser · 6 available␛[0m
-    api key            ␛[38;5;252m···4f9c␛[0m                          ␛[38;5;252muser␛[0m
-    base url           ␛[38;5;252m(the provider's own)␛[0m          ␛[38;5;252mdefault␛[0m
-    sub-agent model    ␛[38;5;252minherit␛[0m                       ␛[38;5;252mdefault␛[0m
+  ␛[1;94mMODEL␛[m
+    provider           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
+    model              ␛[38;5;252mgpt-5.2␛[m            ␛[38;5;252muser · 6 available␛[m
+    api key            ␛[38;5;252m···4f9c␛[m                          ␛[38;5;252muser␛[m
+    base url           ␛[38;5;252m(the provider's own)␛[m          ␛[38;5;252mdefault␛[m
+    sub-agent model    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mWORKSPACE␛[0m
-    sandbox            ␛[38;5;252m⛨ workspac…␛[0m  ␛[91munavailable on this host␛[0m
-  ␛[38;5;241m↓ 4 more␛[0m
+  ␛[1;94mWORKSPACE␛[m
+    sandbox            ␛[38;5;252m⛨ workspac…␛[m  ␛[91munavailable on this host␛[m
+  ␛[38;5;241m↓ 4 more␛[m
 
-␛[94m[enter]␛[0m␛[38;5;241m set it␛[0m␛[38;5;241m · ␛[0m␛[94m[ctrl+u]␛[0m␛[38;5;241m clear the field␛[0m␛[38;5;241m · ␛[0m␛[94m[esc]␛[0m␛[38;5;241m keep 25␛[0m
+␛[94m[enter]␛[m␛[38;5;241m set it␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m clear the field␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m keep 25␛[m
 
 · a secret · the mask, never the key
-␛[1;97mshhh config␛[0m␛[38;5;241m · ~/.config/shhh/config.toml␛[0m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[0m
+␛[1;97mshhh config␛[m␛[38;5;241m · ~/.config/shhh/config.toml␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mSESSION␛[0m
-    permission mode    ␛[92m⏵⏵ auto␛[0m ␛[38;5;241m— edits apply; allowli…␛[0m  ␛[38;5;252muser␛[0m
-    round limit        ␛[38;5;252m25␛[0m                            ␛[38;5;252mdefault␛[0m
-    context budget     ␛[38;5;252m8000 tokens␛[0m                   ␛[38;5;252mdefault␛[0m
-    safety warnings    ␛[92mon␛[0m                            ␛[38;5;252mdefault␛[0m
+  ␛[1;94mSESSION␛[m
+    permission mode    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowli…␛[m  ␛[38;5;252muser␛[m
+    round limit        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
+    context budget     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
+    safety warnings    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mMODEL␛[0m
-    provider           ␛[38;5;252mopenai␛[0m                           ␛[38;5;252muser␛[0m
-    model              ␛[38;5;252mgpt-5.2␛[0m            ␛[38;5;252muser · 6 available␛[0m
-  ␛[1;48;5;62m❯ api key            ···4f9c                          user␛[0m
-    ␛[38;5;252mPaste a value for api key␛[0m␛[38;5;241m · replacing ···4f9c␛[0m
-    ␛[38;5;241m▸ ␛[0m␛[38;5;214m••••••••••••␛[0m␛[1;48;5;62m ␛[0m
-    base url           ␛[38;5;252m(the provider's own)␛[0m          ␛[38;5;252mdefault␛[0m
-    sub-agent model    ␛[38;5;252minherit␛[0m                       ␛[38;5;252mdefault␛[0m
+  ␛[1;94mMODEL␛[m
+    provider           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
+    model              ␛[38;5;252mgpt-5.2␛[m            ␛[38;5;252muser · 6 available␛[m
+  ␛[1;48;5;62m❯ api key            ···4f9c                          user␛[m
+    ␛[38;5;252mPaste a value for api key␛[m␛[38;5;241m · replacing ···4f9c␛[m
+    ␛[38;5;241m▸ ␛[m␛[38;5;214m••••••••••••␛[m␛[1;48;5;62m ␛[m
+    base url           ␛[38;5;252m(the provider's own)␛[m          ␛[38;5;252mdefault␛[m
+    sub-agent model    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mWORKSPACE␛[0m
-  ␛[38;5;241m↓ 5 more␛[0m
+  ␛[1;94mWORKSPACE␛[m
+  ␛[38;5;241m↓ 5 more␛[m
 
-␛[94m[enter]␛[0m␛[38;5;241m use it␛[0m␛[38;5;241m · ␛[0m␛[94m[esc]␛[0m␛[38;5;241m keep the current key␛[0m
+␛[94m[enter]␛[m␛[38;5;241m use it␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m keep the current key␛[m
 
 · staged · the header counts it and [w] is offered
-␛[1;97mshhh config␛[0m␛[38;5;241m · ~/.config/shhh/config.toml␛[0m␛[38;5;214m · 2 changes unwrit…␛[0m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[0m
+␛[1;97mshhh config␛[m␛[38;5;241m · ~/.config/shhh/config.toml␛[m␛[38;5;214m · 2 changes unwrit…␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mSESSION␛[0m
-    permission mode    ␛[92m⏵⏵ auto␛[0m ␛[38;5;241m— edits apply; allowli…␛[0m  ␛[38;5;252muser␛[0m
-    round limit        ␛[38;5;252m40␛[0m                          ␛[38;5;214munwritten␛[0m
-    context budget     ␛[38;5;252m8000 tokens␛[0m                   ␛[38;5;252mdefault␛[0m
-    safety warnings    ␛[92mon␛[0m                            ␛[38;5;252mdefault␛[0m
+  ␛[1;94mSESSION␛[m
+    permission mode    ␛[92m⏵⏵ auto␛[m ␛[38;5;241m— edits apply; allowli…␛[m  ␛[38;5;252muser␛[m
+    round limit        ␛[38;5;252m40␛[m                          ␛[38;5;214munwritten␛[m
+    context budget     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
+    safety warnings    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mMODEL␛[0m
-    provider           ␛[38;5;252mopenai␛[0m                           ␛[38;5;252muser␛[0m
-  ␛[1;48;5;62m❯ model              claude-sonnet-4.6           unwritten␛[0m
-    api key            ␛[38;5;252m···4f9c␛[0m                          ␛[38;5;252muser␛[0m
-    base url           ␛[38;5;252m(the provider's own)␛[0m          ␛[38;5;252mdefault␛[0m
-    sub-agent model    ␛[38;5;252minherit␛[0m                       ␛[38;5;252mdefault␛[0m
+  ␛[1;94mMODEL␛[m
+    provider           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
+  ␛[1;48;5;62m❯ model              claude-sonnet-4.6           unwritten␛[m
+    api key            ␛[38;5;252m···4f9c␛[m                          ␛[38;5;252muser␛[m
+    base url           ␛[38;5;252m(the provider's own)␛[m          ␛[38;5;252mdefault␛[m
+    sub-agent model    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mWORKSPACE␛[0m
-    sandbox            ␛[38;5;252m⛨ workspac…␛[0m  ␛[91munavailable on this host␛[0m
-  ␛[38;5;241m↓ 4 more␛[0m
+  ␛[1;94mWORKSPACE␛[m
+    sandbox            ␛[38;5;252m⛨ workspac…␛[m  ␛[91munavailable on this host␛[m
+  ␛[38;5;241m↓ 4 more␛[m
 
-␛[94m[↑↓]␛[0m␛[38;5;241m move␛[0m␛[38;5;241m · ␛[0m␛[94m[enter]␛[0m␛[38;5;241m change␛[0m␛[38;5;241m · ␛[0m␛[94m[/]␛[0m␛[38;5;241m filter␛[0m
-␛[94m[r]␛[0m␛[38;5;241m reset to default␛[0m␛[38;5;241m · ␛[0m␛[94m[w]␛[0m␛[38;5;241m write the file␛[0m␛[38;5;241m · ␛[0m␛[94m[esc]␛[0m␛[38;5;241m discard␛[0m
+␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[/]␛[m␛[38;5;241m filter␛[m
+␛[94m[r]␛[m␛[38;5;241m reset to default␛[m␛[38;5;241m · ␛[m␛[94m[w]␛[m␛[38;5;241m write the file␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m discard␛[m
 
 · the write-back · the inline confirm, defaulting to no
-␛[1;97mshhh config␛[0m␛[38;5;241m · ~/.config/shhh/config.toml␛[0m␛[38;5;214m · 2 changes unwrit…␛[0m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[0m
+␛[1;97mshhh config␛[m␛[38;5;241m · ~/.config/shhh/config.toml␛[m␛[38;5;214m · 2 changes unwrit…␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mSESSION␛[0m
-  ␛[1;48;5;62m❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user␛[0m
-    round limit        ␛[38;5;252m25␛[0m                            ␛[38;5;252mdefault␛[0m
-    context budget     ␛[38;5;252m8000 tokens␛[0m                   ␛[38;5;252mdefault␛[0m
-    safety warnings    ␛[92mon␛[0m                            ␛[38;5;252mdefault␛[0m
+  ␛[1;94mSESSION␛[m
+  ␛[1;48;5;62m❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user␛[m
+    round limit        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
+    context budget     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
+    safety warnings    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mMODEL␛[0m
-    provider           ␛[38;5;252mopenai␛[0m                           ␛[38;5;252muser␛[0m
-    model              ␛[38;5;252mgpt-5.2␛[0m            ␛[38;5;252muser · 6 available␛[0m
-    api key            ␛[38;5;252m···4f9c␛[0m                          ␛[38;5;252muser␛[0m
-    base url           ␛[38;5;252m(the provider's own)␛[0m          ␛[38;5;252mdefault␛[0m
-    sub-agent model    ␛[38;5;252minherit␛[0m                       ␛[38;5;252mdefault␛[0m
+  ␛[1;94mMODEL␛[m
+    provider           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
+    model              ␛[38;5;252mgpt-5.2␛[m            ␛[38;5;252muser · 6 available␛[m
+    api key            ␛[38;5;252m···4f9c␛[m                          ␛[38;5;252muser␛[m
+    base url           ␛[38;5;252m(the provider's own)␛[m          ␛[38;5;252mdefault␛[m
+    sub-agent model    ␛[38;5;252minherit␛[m                       ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mWORKSPACE␛[0m
-    sandbox            ␛[38;5;252m⛨ workspac…␛[0m  ␛[91munavailable on this host␛[0m
-    network            ␛[38;5;214mprivate hosts reachable␛[0m ␛[38;5;241m— intr…␛[0m  ␛[38;5;252muser␛[0m
-  ␛[38;5;241m↓ 3 more␛[0m
+  ␛[1;94mWORKSPACE␛[m
+    sandbox            ␛[38;5;252m⛨ workspac…␛[m  ␛[91munavailable on this host␛[m
+    network            ␛[38;5;214mprivate hosts reachable␛[m ␛[38;5;241m— intr…␛[m  ␛[38;5;252muser␛[m
+  ␛[38;5;241m↓ 3 more␛[m
 
-␛[38;5;252mWrite 2 changes to ~/.config/shhh/config.toml?␛[0m  ␛[1;94m[y/N]␛[0m
+␛[38;5;252mWrite 2 changes to ~/.config/shhh/config.toml?␛[m  ␛[1;94m[y/N]␛[m
 
 · the settings filtered · the list is the same window
-␛[1;97mshhh config␛[0m␛[38;5;241m · ~/.config/shhh/config.toml␛[0m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[0m
+␛[1;97mshhh config␛[m␛[38;5;241m · ~/.config/shhh/config.toml␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
-  ␛[94m▸ ␛[0m␛[97mmo█␛[0m                                        ␛[38;5;241m4 of 14 match␛[0m
-  ␛[1;94mSESSION␛[0m
-  ␛[1;48;5;62m❯ permission mode  ⏵⏵ auto — edits apply; allowlist…  user␛[0m
+  ␛[94m▸ ␛[m␛[97mmo█␛[m                                        ␛[38;5;241m4 of 14 match␛[m
+  ␛[1;94mSESSION␛[m
+  ␛[1;48;5;62m❯ permission mode  ⏵⏵ auto — edits apply; allowlist…  user␛[m
 
-  ␛[1;94mMODEL␛[0m
-    ␛[1mmo␛[0mdel            ␛[38;5;252mgpt-5.2␛[0m              ␛[38;5;252muser · 6 available␛[0m
-    sub-agent ␛[1mmo␛[0mdel  ␛[38;5;252minherit␛[0m                         ␛[38;5;252mdefault␛[0m
+  ␛[1;94mMODEL␛[m
+    ␛[1mmo␛[mdel            ␛[38;5;252mgpt-5.2␛[m              ␛[38;5;252muser · 6 available␛[m
+    sub-agent ␛[1mmo␛[mdel  ␛[38;5;252minherit␛[m                         ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mWORKSPACE␛[0m
-    me␛[1mmo␛[0mry           ␛[38;5;252mon␛[0m ␛[38;5;241m— 4 entries · .shhh/memory…␛[0m  ␛[38;5;252mdefault␛[0m
+  ␛[1;94mWORKSPACE␛[m
+    me␛[1mmo␛[mry           ␛[38;5;252mon␛[m ␛[38;5;241m— 4 entries · .shhh/memory…␛[m  ␛[38;5;252mdefault␛[m
 
-␛[94m[↑↓]␛[0m␛[38;5;241m move␛[0m␛[38;5;241m · ␛[0m␛[94m[enter]␛[0m␛[38;5;241m change␛[0m␛[38;5;241m · ␛[0m␛[94m[ctrl+u]␛[0m␛[38;5;241m clear the filter␛[0m
-␛[94m[esc]␛[0m␛[38;5;241m discard␛[0m
+␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m change␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+u]␛[m␛[38;5;241m clear the filter␛[m
+␛[94m[esc]␛[m␛[38;5;241m discard␛[m
 
 · [?] · every key the screen has, including the picker's
-␛[1;97mshhh config␛[0m␛[38;5;241m · ~/.config/shhh/config.toml␛[0m
-␛[38;5;241m────────────────────────────────────────────────────────────␛[0m
+␛[1;97mshhh config␛[m␛[38;5;241m · ~/.config/shhh/config.toml␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
-  ␛[1;94mSESSION␛[0m
-  ␛[1;48;5;62m❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user␛[0m
-    round limit        ␛[38;5;252m25␛[0m                            ␛[38;5;252mdefault␛[0m
-    context budget     ␛[38;5;252m8000 tokens␛[0m                   ␛[38;5;252mdefault␛[0m
-    safety warnings    ␛[92mon␛[0m                            ␛[38;5;252mdefault␛[0m
+  ␛[1;94mSESSION␛[m
+  ␛[1;48;5;62m❯ permission mode    ⏵⏵ auto — edits apply; allowli…  user␛[m
+    round limit        ␛[38;5;252m25␛[m                            ␛[38;5;252mdefault␛[m
+    context budget     ␛[38;5;252m8000 tokens␛[m                   ␛[38;5;252mdefault␛[m
+    safety warnings    ␛[92mon␛[m                            ␛[38;5;252mdefault␛[m
 
-  ␛[1;94mMODEL␛[0m
-    provider           ␛[38;5;252mopenai␛[0m                           ␛[38;5;252muser␛[0m
-  ␛[38;5;241m↓ 9 more␛[0m
+  ␛[1;94mMODEL␛[m
+    provider           ␛[38;5;252mopenai␛[m                           ␛[38;5;252muser␛[m
+  ␛[38;5;241m↓ 9 more␛[m
 
-␛[94m[↑↓/jk]␛[0m␛[38;5;241m move between settings␛[0m
-␛[94m[enter]␛[0m␛[38;5;241m change the setting under the pointer␛[0m
-␛[94m[/]␛[0m␛[38;5;241m filter the settings by name␛[0m
-␛[94m[ctrl+u]␛[0m␛[38;5;241m clear the filter, or the field being typed into␛[0m
-␛[94m[r]␛[0m␛[38;5;241m reset this setting to its default␛[0m
-␛[94m[w]␛[0m␛[38;5;241m write every staged change to ~/.config/shhh/config.toml␛[0m
-␛[94m[esc]␛[0m␛[38;5;241m leave the picker, or leave the screen writing nothing␛[0m
-␛[94m[q]␛[0m␛[38;5;241m leave the screen writing nothing␛[0m
-␛[94m[?]␛[0m␛[38;5;241m hide the keys␛[0m
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move between settings␛[m
+␛[94m[enter]␛[m␛[38;5;241m change the setting under the pointer␛[m
+␛[94m[/]␛[m␛[38;5;241m filter the settings by name␛[m
+␛[94m[ctrl+u]␛[m␛[38;5;241m clear the filter, or the field being typed into␛[m
+␛[94m[r]␛[m␛[38;5;241m reset this setting to its default␛[m
+␛[94m[w]␛[m␛[38;5;241m write every staged change to ~/.config/shhh/config.toml␛[m
+␛[94m[esc]␛[m␛[38;5;241m leave the picker, or leave the screen writing nothing␛[m
+␛[94m[q]␛[m␛[38;5;241m leave the screen writing nothing␛[m
+␛[94m[?]␛[m␛[38;5;241m hide the keys␛[m

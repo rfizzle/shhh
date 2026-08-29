@@ -17,7 +17,7 @@ import (
 	"os"
 	"sort"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -107,7 +107,7 @@ func askProvider(survey resolve.Survey) (ui.ProviderChoice, bool) {
 	}
 	names := provider.Available()
 	sort.Strings(names)
-	final, err := tea.NewProgram(ui.NewProviderSetup(survey, names), tea.WithOutput(os.Stderr)).Run()
+	final, err := newProgram(ui.NewProviderSetup(survey, names), tea.WithOutput(os.Stderr)).Run()
 	if err != nil {
 		fmt.Fprint(os.Stderr, ui.PlainProviderReport(survey))
 		return ui.ProviderChoice{}, false
@@ -163,7 +163,7 @@ func reportFailure(err error, model string) error {
 	}
 	if isTerminal(os.Stderr) {
 		if report, ok := ui.FailureReport(err, model); ok {
-			fmt.Fprintln(os.Stderr, report)
+			fprintStyled(os.Stderr, report)
 			os.Exit(1)
 		}
 	}

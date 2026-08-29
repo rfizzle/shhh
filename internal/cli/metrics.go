@@ -23,7 +23,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/term"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -496,7 +496,7 @@ func (m metricsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width, m.screen.MaxLines = msg.Width, msg.Height
 		return m, nil
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		if done, _ := m.screen.Update(msg); done {
 			return m, tea.Quit
 		}
@@ -504,10 +504,16 @@ func (m metricsModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m metricsModel) View() string { return m.screen.View(m.width) }
+// View is the frame: the metrics screen, on the alt screen it takes over
+// (S-155).
+func (m metricsModel) View() tea.View {
+	v := tea.NewView(m.screen.View(m.width))
+	v.AltScreen = true
+	return v
+}
 
 func runMetricsScreen(screen components.MetricsScreen) error {
-	_, err := tea.NewProgram(newMetricsModel(screen), tea.WithAltScreen()).Run()
+	_, err := newProgram(newMetricsModel(screen)).Run()
 	return err
 }
 

@@ -9,10 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/muesli/termenv"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -21,17 +20,17 @@ import (
 // --- gestures -------------------------------------------------------------
 
 func mousePress(x, y int) tea.MouseMsg {
-	return tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonLeft, X: x, Y: y}
+	return tea.MouseClickMsg{Button: tea.MouseLeft, X: x, Y: y}
 }
 
 func mouseMotion(x, y int) tea.MouseMsg {
-	return tea.MouseMsg{Action: tea.MouseActionMotion, Button: tea.MouseButtonLeft, X: x, Y: y}
+	return tea.MouseMotionMsg{Button: tea.MouseLeft, X: x, Y: y}
 }
 
 func mouseRelease(x, y int) tea.MouseMsg {
 	// Terminals disagree about whether a release names the button; X10 does
 	// not, so the harder case is the one exercised here.
-	return tea.MouseMsg{Action: tea.MouseActionRelease, Button: tea.MouseButtonNone, X: x, Y: y}
+	return tea.MouseReleaseMsg{Button: tea.MouseNone, X: x, Y: y}
 }
 
 // withColor makes lipgloss emit escape sequences, which a test binary with no
@@ -39,9 +38,9 @@ func mouseRelease(x, y int) tea.MouseMsg {
 // and there is nothing to assert on without this.
 func withColor(t *testing.T) {
 	t.Helper()
-	was := lipgloss.ColorProfile()
-	lipgloss.SetColorProfile(termenv.ANSI256)
-	t.Cleanup(func() { lipgloss.SetColorProfile(was) })
+	was := components.Profile()
+	components.SetProfile(colorprofile.ANSI256)
+	t.Cleanup(func() { components.SetProfile(was) })
 }
 
 // clip records what the session put on the clipboard, and can be told to fail.
@@ -114,9 +113,9 @@ func lineOf(t *testing.T, m Model, want string) int {
 // row is not testing what it thinks it is.
 func at(t *testing.T, m Model, line, col int) (x, y int) {
 	t.Helper()
-	row := line - m.viewport.YOffset
+	row := line - m.viewport.YOffset()
 	if row < 0 || row >= m.paneRows() {
-		t.Fatalf("line %d is not on screen (offset %d, height %d)", line, m.viewport.YOffset, m.paneRows())
+		t.Fatalf("line %d is not on screen (offset %d, height %d)", line, m.viewport.YOffset(), m.paneRows())
 	}
 	return col + transcriptLeft, row + transcriptTop
 }
@@ -489,7 +488,7 @@ func TestSelection_BottomEdgeAutoScrollsAndExtends(t *testing.T) {
 		t.Fatalf("the edge should ask to scroll down, got %d", m.selScrollDir)
 	}
 
-	offsetBefore, endBefore := m.viewport.YOffset, m.sel.end.line
+	offsetBefore, endBefore := m.viewport.YOffset(), m.sel.end.line
 	for i := 0; i < 8; i++ {
 		var more bool
 		m, more = scrollTick(t, m)
@@ -497,8 +496,8 @@ func TestSelection_BottomEdgeAutoScrollsAndExtends(t *testing.T) {
 			t.Fatalf("the chain stopped after %d ticks with content left", i)
 		}
 	}
-	if m.viewport.YOffset <= offsetBefore {
-		t.Fatalf("the transcript should have scrolled, offset %d → %d", offsetBefore, m.viewport.YOffset)
+	if m.viewport.YOffset() <= offsetBefore {
+		t.Fatalf("the transcript should have scrolled, offset %d → %d", offsetBefore, m.viewport.YOffset())
 	}
 	if m.sel.end.line <= endBefore {
 		t.Fatalf("the selection should have extended over what scrolled into view, %d → %d", endBefore, m.sel.end.line)
@@ -531,7 +530,7 @@ func TestSelection_TopEdgeAutoScrollsUpward(t *testing.T) {
 		t.Fatalf("a drag at the top edge should scroll up, dir %d cmd %v", m.selScrollDir, cmd != nil)
 	}
 
-	offsetBefore, endBefore := m.viewport.YOffset, m.sel.end.line
+	offsetBefore, endBefore := m.viewport.YOffset(), m.sel.end.line
 	for i := 0; i < 8; i++ {
 		var more bool
 		m, more = scrollTick(t, m)
@@ -539,8 +538,8 @@ func TestSelection_TopEdgeAutoScrollsUpward(t *testing.T) {
 			t.Fatalf("the chain stopped after %d ticks with content left", i)
 		}
 	}
-	if m.viewport.YOffset >= offsetBefore {
-		t.Fatalf("the transcript should have scrolled up, offset %d → %d", offsetBefore, m.viewport.YOffset)
+	if m.viewport.YOffset() >= offsetBefore {
+		t.Fatalf("the transcript should have scrolled up, offset %d → %d", offsetBefore, m.viewport.YOffset())
 	}
 	if m.sel.end.line >= endBefore {
 		t.Fatalf("the selection should have extended upward, %d → %d", endBefore, m.sel.end.line)
@@ -559,17 +558,17 @@ func TestSelection_StationaryPointerKeepsScrolling(t *testing.T) {
 	updated, _ = m.Update(mouseMotion(10, bottomRow))
 	m = updated.(Model)
 
-	last := m.viewport.YOffset
+	last := m.viewport.YOffset()
 	for i := 0; i < 5; i++ {
 		var more bool
 		m, more = scrollTick(t, m)
 		if !more {
 			t.Fatalf("tick %d ended the chain early", i)
 		}
-		if m.viewport.YOffset <= last {
-			t.Fatalf("tick %d did not scroll with a stationary pointer (%d → %d)", i, last, m.viewport.YOffset)
+		if m.viewport.YOffset() <= last {
+			t.Fatalf("tick %d did not scroll with a stationary pointer (%d → %d)", i, last, m.viewport.YOffset())
 		}
-		last = m.viewport.YOffset
+		last = m.viewport.YOffset()
 	}
 
 	// And it stops itself at the end rather than burning a timer forever.
@@ -593,11 +592,11 @@ func TestSelection_ReleaseAndEscStopPendingTicks(t *testing.T) {
 			return updated.(Model)
 		}},
 		{"esc", func(t *testing.T, m Model) Model {
-			updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+			updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 			return updated.(Model)
 		}},
 		{"ctrl+x", func(t *testing.T, m Model) Model {
-			updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlX})
+			updated, _ := m.Update(tea.KeyPressMsg{Code: 'x', Mod: tea.ModCtrl})
 			return updated.(Model)
 		}},
 		{"/ui mouse off", func(t *testing.T, m Model) Model {
@@ -623,14 +622,14 @@ func TestSelection_ReleaseAndEscStopPendingTicks(t *testing.T) {
 				t.Fatalf("%s should stop the auto-scroll", tc.name)
 			}
 
-			offset := m.viewport.YOffset
+			offset := m.viewport.YOffset()
 			updated, cmd := m.Update(selectionScrollMsg{seq: stale})
 			m = updated.(Model)
 			if cmd != nil {
 				t.Fatalf("a tick that outlived its drag should schedule nothing")
 			}
-			if m.viewport.YOffset != offset {
-				t.Fatalf("a stale tick should not scroll, %d → %d", offset, m.viewport.YOffset)
+			if m.viewport.YOffset() != offset {
+				t.Fatalf("a stale tick should not scroll, %d → %d", offset, m.viewport.YOffset())
 			}
 		})
 	}
@@ -645,7 +644,7 @@ func TestSelection_EscCancelsAndLeavesTheDraftAlone(t *testing.T) {
 	line := lineOf(t, m, "a question about the parser")
 	m = dragLines(t, m, line, line)
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 
 	if m.hasSelection() {
@@ -658,7 +657,7 @@ func TestSelection_EscCancelsAndLeavesTheDraftAlone(t *testing.T) {
 		t.Fatalf("the copy notice should go with it, got %q", m.selNotice)
 	}
 	// A second esc means what esc always meant.
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	if got := updated.(Model).input.Value(); got != "" {
 		t.Fatalf("esc with nothing selected should clear the draft, got %q", got)
 	}
@@ -670,7 +669,7 @@ func TestSelection_MouseOffClearsIt(t *testing.T) {
 		off  func(m Model) Model
 	}{
 		{"ctrl+x", func(m Model) Model {
-			updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlX})
+			updated, _ := m.Update(tea.KeyPressMsg{Code: 'x', Mod: tea.ModCtrl})
 			return updated.(Model)
 		}},
 		{"/ui mouse off", func(m Model) Model {
@@ -848,14 +847,14 @@ func TestSelection_ConfinedToTheNormalTranscript(t *testing.T) {
 				t.Fatalf("%s should select nothing", tc.name)
 			}
 			// The wheel still reaches it, which is what it always did.
-			before := m.viewport.YOffset
+			before := m.viewport.YOffset()
 			offset := before
 			if m.fullDiff != nil {
 				offset = m.fullDiff.Offset
 			}
 			updated, _ = m.Update(wheel(1))
 			m = updated.(Model)
-			moved := m.viewport.YOffset != before
+			moved := m.viewport.YOffset() != before
 			if m.fullDiff != nil {
 				moved = m.fullDiff.Offset != offset
 			}
@@ -1042,11 +1041,11 @@ func TestSelection_TakeoverSurfaceEndsTheDrag(t *testing.T) {
 	if m.sel.on || m.selScrollDir != 0 {
 		t.Fatal("a takeover surface should end the selection and the scroll")
 	}
-	offset := m.viewport.YOffset
+	offset := m.viewport.YOffset()
 	updated, cmd := m.Update(selectionScrollMsg{seq: stale})
 	m = updated.(Model)
-	if cmd != nil || m.viewport.YOffset != offset {
-		t.Fatalf("a tick that outlived the surface should do nothing (%d → %d)", offset, m.viewport.YOffset)
+	if cmd != nil || m.viewport.YOffset() != offset {
+		t.Fatalf("a tick that outlived the surface should do nothing (%d → %d)", offset, m.viewport.YOffset())
 	}
 }
 

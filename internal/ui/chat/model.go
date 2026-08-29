@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/spinner"
-	"github.com/charmbracelet/bubbles/textarea"
-	"github.com/charmbracelet/bubbles/viewport"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/spinner"
+	"charm.land/bubbles/v2/textarea"
+	"charm.land/bubbles/v2/viewport"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/changeset"
@@ -876,14 +876,9 @@ func (m Model) Init() tea.Cmd {
 	if m.subagents != nil {
 		cmds = append(cmds, listenSubagents(m.subagents.Events()))
 	}
-	// Mouse reporting is asked for by the model rather than by each host's
-	// program options, so every surface that runs this Model gets the same
-	// answer and the toggle has one thing to flip (S-115, §7a). Nothing is
-	// sent when it is off: off is the terminal's own state, and the program
-	// that never asked for reporting has nothing to give back.
-	if m.mouseOn {
-		cmds = append(cmds, mouseCmd(true))
-	}
+	// Mouse reporting is not asked for here: it is a field on the View
+	// (S-155), so every surface that runs this Model gets the same answer
+	// from the same place and the toggle has one thing to flip (S-115, §7a).
 	return tea.Batch(cmds...)
 }
 
@@ -906,11 +901,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// A modified Enter is a line break, not a send. It arrives as the raw
-	// sequence the terminal sent because bubbletea v1 has no name for it, so
-	// it is rewritten here into the key the textarea's newline binding
-	// listens for — before any surface can mistake the sequence for
-	// something of its own (S-134, newline.go).
+	// A modified Enter is a line break, not a send. Every modifier means the
+	// same thing, so they are rewritten here into the one key the textarea's
+	// newline binding listens for — before any surface can mistake a
+	// shift+enter for a send of its own (S-134, newline.go).
 	if newlineKey(msg) {
 		msg = altEnter
 	}
@@ -928,13 +922,13 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.resizeSelection(paneWidth)
 
 		if !m.ready {
-			m.viewport = viewport.New(paneWidth, vpHeight)
+			m.viewport = viewport.New(viewport.WithWidth(paneWidth), viewport.WithHeight(vpHeight))
 			m.viewport.MouseWheelEnabled = true
 			m.viewport.SetContent(m.renderHistory())
 			m.ready = true
 		} else {
-			m.viewport.Width = paneWidth
-			m.viewport.Height = vpHeight
+			m.viewport.SetWidth(paneWidth)
+			m.viewport.SetHeight(vpHeight)
 			m.viewport.SetContent(m.renderHistory())
 		}
 		return m, nil
@@ -951,6 +945,32 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m.updateMouse(msg)
 
+	case tea.PasteMsg:
+		// A file dragged into the terminal arrives as a bracketed paste of
+		// its path. When it points at an image or a document, attaching it
+		// is the only thing the gesture can have meant (S-134); everything
+		// else pastes as the text it is.
+		//
+		// In v2 a paste is a message of its own rather than a keystroke
+		// wearing a Paste flag (S-155). What that flag bought was routing:
+		// pasted text reached whichever surface had the keyboard, so a paste
+		// into a card's filter row filtered (§4a). So the text is handed on
+		// as the keystroke it used to be — one press carrying the whole run,
+		// which is what v1 delivered — and every surface below sees exactly
+		// what it saw before.
+		if m.inputLive() && m.attachedTo == "" {
+			if path, ok := pastedFileAttachment(msg.Content); ok {
+				return m, attachFileCmd(path)
+			}
+		}
+		if msg.Content == "" {
+			return m, nil
+		}
+		return m.update(tea.KeyPressMsg{
+			Code: []rune(msg.Content)[0],
+			Text: msg.Content,
+		})
+
 	case selectionScrollMsg:
 		// A drag held at the edge of the transcript pane (S-145). It is
 		// answered whatever the surface, because the fence inside it is what
@@ -959,21 +979,12 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// the sequence.
 		return m.updateSelectionScroll(msg)
 
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		// Every key stamps the clock a decision's arrival reads (S-117, §7b,
 		// interrupt.go). It is stamped here rather than on the draft's own
 		// path because the question is whether the reader is at the keyboard,
 		// not which surface they were talking to.
 		m.lastKeypress = time.Now()
-		// A file dragged into the terminal arrives as a bracketed paste of
-		// its path. When it points at an image or a document, attaching it
-		// is the only thing the gesture can have meant (S-134); everything
-		// else pastes as the text it is.
-		if msg.Paste && m.inputLive() && m.attachedTo == "" {
-			if path, ok := pastedFileAttachment(string(msg.Runes)); ok {
-				return m, attachFileCmd(path)
-			}
-		}
 		// Mouse reporting is the one setting with a chord of its own (S-136,
 		// §7a), and the only key answered before the surfaces are: what it
 		// costs — the terminal's own click-drag selection — is discovered at
@@ -1533,7 +1544,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if m.decisionUngated() || (m.state != stateConfirmRun && m.state != statePlanApprove && m.state != stateRetryWait) {
 		// Any other keypress while browsing input history turns the recalled
 		// text into a fresh draft.
-		if _, ok := msg.(tea.KeyMsg); ok {
+		if _, ok := msg.(tea.KeyPressMsg); ok {
 			m.historyIdx = len(m.inputHistory)
 		}
 		var cmd tea.Cmd
@@ -1542,7 +1553,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Keystrokes may have changed the input: refresh the slash-command
 		// completion menu, and resize the viewport when it appears/disappears
 		// (S-078).
-		if _, ok := msg.(tea.KeyMsg); ok {
+		if _, ok := msg.(tea.KeyPressMsg); ok {
 			m.syncCompletions()
 			m.syncViewport()
 		}
@@ -1554,7 +1565,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// input owns the keyboard the transcript hears no keys at all: it is
 	// moved by the wheel, by pgup/pgdn and by focus mode, never by a
 	// character the sentence wanted (S-115, §7a).
-	if _, isKey := msg.(tea.KeyMsg); !isKey {
+	if _, isKey := msg.(tea.KeyPressMsg); !isKey {
 		var cmd tea.Cmd
 		m.viewport, cmd = m.viewport.Update(msg)
 		cmds = append(cmds, cmd)
@@ -1610,7 +1621,28 @@ func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
 	return m, m.requestStream()
 }
 
-func (m Model) View() string {
+// View is the frame the terminal shows. In v2 that is a value rather than a
+// string (S-155): the screen's content, and the terminal states the session
+// is asking for while it is up. Two of those used to be commands — the alt
+// screen a program option each host passed, mouse reporting a command the
+// toggle had to remember to send — and both were the same bug waiting, a
+// state the model believed in and the terminal had never been told about. A
+// field cannot drift from what View draws, because it is what View draws.
+func (m Model) View() tea.View {
+	v := tea.NewView(m.screen())
+	v.AltScreen = true
+	// Reporting is off for the session by default — the terminal keeps its
+	// own click-drag selection, which is the one thing tracking costs and the
+	// one thing nothing else here can do — and `/ui mouse on` buys the wheel
+	// with it (§7a).
+	if m.mouseOn {
+		v.MouseMode = tea.MouseModeCellMotion
+	}
+	return v
+}
+
+// screen paints everything inside the frame.
+func (m Model) screen() string {
 	if m.quitting {
 		return ""
 	}
@@ -1792,7 +1824,7 @@ func (m *Model) startRun(parts []string) (result string, entersConfirm bool) {
 // updateConfirmRun routes confirm-prompt keys through the approval card
 // (S-076); the card's y/n/esc semantics match the original prompt, and [a]
 // (S-054) is offered only where a session grant is allowed.
-func (m Model) updateConfirmRun(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if keys.Match(msg, keys.Draft.Quit) {
 		m.quitting = true
 		return m, m.quitCmd()
@@ -2546,7 +2578,7 @@ func (m Model) wordWrap(text string, width int) string {
 
 func dividerStyle(width int) string {
 	return lipgloss.NewStyle().
-		Foreground(components.Palette.Dim).
+		Foreground(components.Palette.Dim.Color()).
 		Render(strings.Repeat("─", width))
 }
 

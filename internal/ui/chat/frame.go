@@ -14,7 +14,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -76,18 +76,18 @@ type frameStyles struct {
 
 func newFrameStyles(p components.ColorTokens) frameStyles {
 	return frameStyles{
-		AccentPermissive: lipgloss.NewStyle().Foreground(p.Add),
-		AccentGated:      lipgloss.NewStyle().Foreground(p.Accent),
-		AccentChecking:   lipgloss.NewStyle().Foreground(p.Spin),
-		Idle:             lipgloss.NewStyle().Foreground(p.Dim),
-		Working:          lipgloss.NewStyle().Bold(true).Foreground(p.Spin),
-		Hint:             lipgloss.NewStyle().Foreground(p.Dim).Italic(true),
-		GutterIdle:       lipgloss.NewStyle().Bold(true).Foreground(p.Info),
-		GutterWork:       lipgloss.NewStyle().Bold(true).Foreground(p.Spin),
-		NoticeInfo:       lipgloss.NewStyle().Foreground(p.Info),
-		NoticeAlert:      lipgloss.NewStyle().Foreground(p.Del),
-		DraftHeld:        lipgloss.NewStyle().Foreground(p.Body),
-		WaitingChip:      lipgloss.NewStyle().Bold(true).Foreground(p.Accent),
+		AccentPermissive: lipgloss.NewStyle().Foreground(p.Add.Color()),
+		AccentGated:      lipgloss.NewStyle().Foreground(p.Accent.Color()),
+		AccentChecking:   lipgloss.NewStyle().Foreground(p.Spin.Color()),
+		Idle:             lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Working:          lipgloss.NewStyle().Bold(true).Foreground(p.Spin.Color()),
+		Hint:             lipgloss.NewStyle().Foreground(p.Dim.Color()).Italic(true),
+		GutterIdle:       lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
+		GutterWork:       lipgloss.NewStyle().Bold(true).Foreground(p.Spin.Color()),
+		NoticeInfo:       lipgloss.NewStyle().Foreground(p.Info.Color()),
+		NoticeAlert:      lipgloss.NewStyle().Foreground(p.Del.Color()),
+		DraftHeld:        lipgloss.NewStyle().Foreground(p.Body.Color()),
+		WaitingChip:      lipgloss.NewStyle().Bold(true).Foreground(p.Accent.Color()),
 	}
 }
 

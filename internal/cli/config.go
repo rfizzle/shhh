@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -25,7 +25,7 @@ func newConfigCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			p := tea.NewProgram(newConfigModel(cfg), tea.WithAltScreen())
+			p := newProgram(newConfigModel(cfg))
 			finalModel, err := p.Run()
 			if err != nil {
 				return err
@@ -104,7 +104,7 @@ func (m configModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width, m.screen.MaxLines = msg.Width, msg.Height
 		return m, nil
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		m.screen.Notice = ""
 		done, result := m.screen.Update(msg)
 		if change, ok := result.(components.ConfigChange); ok {
@@ -125,8 +125,13 @@ func (m configModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m configModel) View() string {
-	return m.screen.View(m.width)
+// View is the frame: the config screen, on the alt screen it takes over. In
+// v2 that state is a field on the view rather than an option the host passes
+// to NewProgram (S-155).
+func (m configModel) View() tea.View {
+	v := tea.NewView(m.screen.View(m.width))
+	v.AltScreen = true
+	return v
 }
 
 // apply stages one edit and rebuilds the rows, so the screen redraws from the

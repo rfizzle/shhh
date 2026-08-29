@@ -25,7 +25,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -44,7 +44,7 @@ type paneStyles struct {
 }
 
 func newPaneStyles(p components.ColorTokens) paneStyles {
-	return paneStyles{Divider: lipgloss.NewStyle().Foreground(p.Dim)}
+	return paneStyles{Divider: lipgloss.NewStyle().Foreground(p.Dim.Color())}
 }
 
 // twoPane reports whether the surface is split. Width is the first condition;

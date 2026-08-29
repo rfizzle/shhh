@@ -14,8 +14,8 @@ package components
 import (
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -127,7 +127,7 @@ func (l *AgentList) focused() AgentRow {
 // action and comes back); attach and esc dismiss it. [a] and [r] are silent
 // on a row that does not offer them rather than reporting a failure the row
 // already predicted.
-func (l *AgentList) Update(msg tea.KeyMsg) (done bool, result any) {
+func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	switch pressed := msg.String(); {
 	case pressed == "up", pressed == "k":
 		if l.Focus > 0 {

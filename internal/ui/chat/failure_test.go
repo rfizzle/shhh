@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -28,8 +28,8 @@ func failureModel(t *testing.T) Model {
 
 // keyPress builds the key message for a single-rune key, the way bubbletea
 // delivers one.
-func keyPress(r rune) tea.KeyMsg {
-	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}}
+func keyPress(r rune) tea.KeyPressMsg {
+	return tea.KeyPressMsg{Code: r, Text: string(r)}
 }
 
 func TestStreamError_RendersAsAClassifiedRow(t *testing.T) {
@@ -228,7 +228,7 @@ func TestKeyEntry_AppliesTheKeyAndNeverShowsIt(t *testing.T) {
 	if strings.Contains(stripANSI(view), "secret") {
 		t.Errorf("the prompt must never echo the key, got:\n%s", stripANSI(view))
 	}
-	done, _ := next.updateKeyEntry(tea.KeyMsg{Type: tea.KeyEnter})
+	done, _ := next.updateKeyEntry(tea.KeyPressMsg{Code: tea.KeyEnter})
 	final := done.(Model)
 	if applied != "sk-secret-1234" {
 		t.Errorf("the key reached the session as %q", applied)
@@ -255,7 +255,7 @@ func TestKeyEntry_EscKeepsTheOldKey(t *testing.T) {
 	opened, _ := m.openKeyEntry(&provider.Failure{Class: provider.ClassAuth})
 	next := opened.(Model)
 	updated, _ := next.updateKeyEntry(keyPress('x'))
-	updated, _ = updated.(Model).updateKeyEntry(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ = updated.(Model).updateKeyEntry(tea.KeyPressMsg{Code: tea.KeyEscape})
 	final := updated.(Model)
 	if applied {
 		t.Error("esc declines; it must not replace the key")

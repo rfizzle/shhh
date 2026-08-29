@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -44,7 +44,7 @@ func TestReview_CommandOpensTheLastTurn(t *testing.T) {
 	if m.review.Files[0].Staged == nil || !m.review.Files[0].Staged[0] {
 		t.Fatalf("the turn should open wholly staged, got %#v", m.review.Files[0].Staged)
 	}
-	view := ansi.Strip(m.View())
+	view := ansi.Strip(m.View().Content)
 	for _, want := range []string{"REVIEW", "turn 1", "nothing is committed"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the review surface should show %q:\n%s", want, view)
@@ -82,7 +82,7 @@ func TestReview_EscChangesNothing(t *testing.T) {
 	}
 
 	m = sendText(t, m, "/review")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	if m.state != stateInput || m.review != nil {
 		t.Fatalf("esc should close review back to the input, got state %v", m.state)
@@ -110,7 +110,7 @@ func TestReview_EnterHandsTheSelectionToUndo(t *testing.T) {
 	}
 
 	m = sendText(t, m, "/review")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.state == stateReview {
 		t.Fatal("enter with a staged selection should leave the surface")
@@ -135,15 +135,15 @@ func TestReview_EnterWithNothingStagedStays(t *testing.T) {
 	m, _ := reviewModel(t)
 	m = sendText(t, m, "/review")
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("a")}) // all → none
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"}) // all → none
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.state != stateReview {
 		t.Fatalf("enter with nothing staged should stay in review, got state %v", m.state)
 	}
-	if !strings.Contains(ansi.Strip(m.View()), "nothing staged") {
-		t.Fatalf("the surface should say why enter did nothing:\n%s", ansi.Strip(m.View()))
+	if !strings.Contains(ansi.Strip(m.View().Content), "nothing staged") {
+		t.Fatalf("the surface should say why enter did nothing:\n%s", ansi.Strip(m.View().Content))
 	}
 }
 
@@ -179,7 +179,7 @@ func TestReview_NumberedTurnAndUsage(t *testing.T) {
 	if m.state != stateReview || m.review.Title != "turn 1" {
 		t.Fatalf("/review 1 should open turn 1, got state %v", m.state)
 	}
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 
 	m = sendText(t, m, "/review later")
@@ -214,8 +214,8 @@ func TestReview_CarriesTheTurnsVerdict(t *testing.T) {
 	if len(m.review.Verdict.Detail) == 0 || !strings.Contains(m.review.Verdict.Detail[0], "FAIL") {
 		t.Fatalf("the verdict should pin what the failure said, got %#v", m.review.Verdict.Detail)
 	}
-	if !strings.Contains(ansi.Strip(m.View()), "--- FAIL: TestRoundLimit") {
-		t.Fatalf("the failure belongs beside the files:\n%s", ansi.Strip(m.View()))
+	if !strings.Contains(ansi.Strip(m.View().Content), "--- FAIL: TestRoundLimit") {
+		t.Fatalf("the failure belongs beside the files:\n%s", ansi.Strip(m.View().Content))
 	}
 }
 
@@ -256,12 +256,12 @@ func TestReview_ReturnsToFocusMode(t *testing.T) {
 	m, _ := reviewModel(t)
 	updated, _ := m.enterFocusMode()
 	m = updated.(Model)
-	updated, _ = m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(keys.Shown(keys.Row.Review))})
+	updated, _ = m.updateFocus(tea.KeyPressMsg{Code: []rune(keys.Shown(keys.Row.Review))[0], Text: keys.Shown(keys.Row.Review)})
 	m = updated.(Model)
 	if m.state != stateReview {
 		t.Fatalf("[v] should open review mode, got state %v", m.state)
 	}
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	if m.state != stateFocus {
 		t.Fatalf("esc should hand the screen back to focus mode, got state %v", m.state)
@@ -285,7 +285,7 @@ func TestReview_TurnKeepsRunningUnderneath(t *testing.T) {
 	if m.turnState() != stateStreaming {
 		t.Fatalf("the turn should still be in flight, got %v", m.turnState())
 	}
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	if m.state != stateStreaming {
 		t.Fatalf("esc should hand the screen back to the running turn, got %v", m.state)

@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/spinner"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -56,7 +56,7 @@ func TestResult_ExplainsBrieflyByDefault(t *testing.T) {
 		t.Errorf("the brief explanation took the screen: phase %v", m.Phase())
 	}
 	m = drainExplainStream(m, 2)
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "lists the directory in long form") {
 		t.Errorf("the explanation is not under the command:\n%s", view)
 	}
@@ -77,8 +77,8 @@ func TestResult_SilentModeSuppressesTheExplanation(t *testing.T) {
 	if asked != 0 {
 		t.Errorf("silent mode asked for %d explanations", asked)
 	}
-	if strings.Contains(m.View(), "lists files") {
-		t.Errorf("silent mode explained the command anyway:\n%s", m.View())
+	if strings.Contains(m.View().Content, "lists files") {
+		t.Errorf("silent mode explained the command anyway:\n%s", m.View().Content)
 	}
 }
 
@@ -101,23 +101,23 @@ func TestResult_FlagBuysTheLongForm(t *testing.T) {
 
 func TestResult_ContainmentLineStatesTheReach(t *testing.T) {
 	m := armed(t, "grep -r listen .", nil)
-	if !strings.Contains(m.View(), "⛨ read-only · no network · no sudo") {
-		t.Errorf("no containment line on the result surface:\n%s", m.View())
+	if !strings.Contains(m.View().Content, "⛨ read-only · no network · no sudo") {
+		t.Errorf("no containment line on the result surface:\n%s", m.View().Content)
 	}
 }
 
 func TestResult_ContainmentLineComesFromTheResolver(t *testing.T) {
 	m := armed(t, "curl https://example.com", nil)
-	if got := m.Reach().Reach(); !strings.Contains(m.View(), "⛨ "+got) {
+	if got := m.Reach().Reach(); !strings.Contains(m.View().Content, "⛨ "+got) {
 		t.Errorf("the line and the resolver disagree: the view has no %q", got)
 	}
-	if !strings.Contains(m.View(), "network") {
+	if !strings.Contains(m.View().Content, "network") {
 		t.Error("a command that leaves the machine did not say so")
 	}
 }
 
 func TestResult_RiskIsStatedAboveTheContainmentLine(t *testing.T) {
-	view := armed(t, "rm -rf build", nil).View()
+	view := armed(t, "rm -rf build", nil).View().Content
 	risk := strings.Index(view, "⚠ ")
 	reach := strings.Index(view, "⛨ ")
 	if risk < 0 {
@@ -147,8 +147,8 @@ func TestResult_DestructiveCommandSpendsEnterOnTheRadius(t *testing.T) {
 	if m.Phase() != phaseAction {
 		t.Fatalf("expected to stay on the result surface, got phase %v", m.Phase())
 	}
-	if !strings.Contains(m.View(), "would affect") {
-		t.Errorf("enter did not say what would be affected:\n%s", m.View())
+	if !strings.Contains(m.View().Content, "would affect") {
+		t.Errorf("enter did not say what would be affected:\n%s", m.View().Content)
 	}
 
 	m = press(t, m, "y")
@@ -171,7 +171,7 @@ func TestResult_AffectedNamesThePathsAndDescribesThem(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	view := press(t, armed(t, "rm -rf "+target, nil), "enter").View()
+	view := press(t, armed(t, "rm -rf "+target, nil), "enter").View().Content
 	if !strings.Contains(view, target) {
 		t.Errorf("the affected block did not name the path:\n%s", view)
 	}
@@ -181,7 +181,7 @@ func TestResult_AffectedNamesThePathsAndDescribesThem(t *testing.T) {
 }
 
 func TestResult_AffectedSaysSoWhenItResolvedNothing(t *testing.T) {
-	view := press(t, armed(t, "rm -rf $TARGET", nil), "enter").View()
+	view := press(t, armed(t, "rm -rf $TARGET", nil), "enter").View().Content
 	if !strings.Contains(view, "would affect") {
 		t.Fatalf("no affected block:\n%s", view)
 	}
@@ -200,8 +200,8 @@ func TestResult_DryRunRunsTheDerivedForm(t *testing.T) {
 		})
 	m = drainStream(m, 2)
 
-	if !strings.Contains(m.View(), "[d] dry run") {
-		t.Fatalf("a command with a dry run was not offered one:\n%s", m.View())
+	if !strings.Contains(m.View().Content, "[d] dry run") {
+		t.Fatalf("a command with a dry run was not offered one:\n%s", m.View().Content)
 	}
 	m = press(t, m, "d")
 	if m.Phase() != phaseDryRun {
@@ -215,7 +215,7 @@ func TestResult_DryRunRunsTheDerivedForm(t *testing.T) {
 	if m.Phase() != phaseAction {
 		t.Errorf("the surface did not come back: phase %v", m.Phase())
 	}
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "./a.tmp") || !strings.Contains(view, "./b.tmp") {
 		t.Errorf("the dry run's output is not on the surface:\n%s", view)
 	}
@@ -223,8 +223,8 @@ func TestResult_DryRunRunsTheDerivedForm(t *testing.T) {
 
 func TestResult_DryRunNotOfferedWithoutOne(t *testing.T) {
 	m := armed(t, "rm -rf build", nil)
-	if strings.Contains(m.View(), "dry run") {
-		t.Errorf("rm was offered a dry run it does not have:\n%s", m.View())
+	if strings.Contains(m.View().Content, "dry run") {
+		t.Errorf("rm was offered a dry run it does not have:\n%s", m.View().Content)
 	}
 	m = press(t, m, "d")
 	if m.Phase() != phaseAction {
@@ -233,7 +233,7 @@ func TestResult_DryRunNotOfferedWithoutOne(t *testing.T) {
 }
 
 func TestResult_ReviseKeepsThePreviousCommandAndCountsRevisions(t *testing.T) {
-	view := reviseOnce(t).View()
+	view := reviseOnce(t).View().Content
 	if !strings.Contains(view, "$ ls") {
 		t.Errorf("the previous command is not on the surface:\n%s", view)
 	}
@@ -253,7 +253,7 @@ func TestResult_BackStepsToThePreviousCommand(t *testing.T) {
 	if got := m.stream.Output(); got != "ls" {
 		t.Errorf("[u] left %q on screen, want the command from before the revise", got)
 	}
-	view := m.View()
+	view := m.View().Content
 	if strings.Contains(view, "revision 1") {
 		t.Errorf("the counter did not come back down:\n%s", view)
 	}
@@ -364,7 +364,7 @@ func TestResult_TheKeysAreOnScreenBeforeTheExplanationIsAskedFor(t *testing.T) {
 	if !m.opening {
 		t.Error("the surface does not know it is waiting on a stream")
 	}
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "[↵] run") {
 		t.Errorf("the keys are not on screen while the explanation is being asked for:\n%s", view)
 	}
@@ -392,8 +392,8 @@ func TestResult_TheLongFormSpinsWhileItsStreamOpens(t *testing.T) {
 	if m.Phase() != phaseExplain {
 		t.Fatalf("the long form did not take the screen: %v", m.Phase())
 	}
-	if !strings.Contains(m.View(), "Explanation:") {
-		t.Errorf("the wait says nothing about what it is waiting for:\n%s", m.View())
+	if !strings.Contains(m.View().Content, "Explanation:") {
+		t.Errorf("the wait says nothing about what it is waiting for:\n%s", m.View().Content)
 	}
 	if m.explainStream.spinner.View() == "" {
 		t.Error("nothing is turning while the request is out")
@@ -413,7 +413,7 @@ func TestResult_AReviseSpinsWhileItsStreamOpens(t *testing.T) {
 	m = drainStream(m, 2)
 	m = press(t, m, "r")
 	m = typeKeys(m, "add -la")
-	model, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	model, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = model.(GenerateModel)
 
 	if asked != 0 {
@@ -425,8 +425,8 @@ func TestResult_AReviseSpinsWhileItsStreamOpens(t *testing.T) {
 	if !m.opening {
 		t.Error("the surface does not know it is waiting on a stream")
 	}
-	if !strings.Contains(m.View(), "Thinking") {
-		t.Errorf("the wait for the new stream says nothing:\n%s", m.View())
+	if !strings.Contains(m.View().Content, "Thinking") {
+		t.Errorf("the wait for the new stream says nothing:\n%s", m.View().Content)
 	}
 
 	// And it does arrive.
@@ -459,8 +459,8 @@ func TestResult_AnExplanationForALastCommandIsDropped(t *testing.T) {
 	if !cancelled {
 		t.Error("the request behind a dropped answer was left running")
 	}
-	if strings.Contains(m.View(), "about something else") {
-		t.Errorf("an explanation of a command that is gone reached the screen:\n%s", m.View())
+	if strings.Contains(m.View().Content, "about something else") {
+		t.Errorf("an explanation of a command that is gone reached the screen:\n%s", m.View().Content)
 	}
 }
 
@@ -478,8 +478,8 @@ func TestResult_TheCommandIsCheckedOffTheLoop(t *testing.T) {
 	if m.Phase() != phaseStreaming {
 		t.Errorf("the surface left the streaming phase before the check answered: %v", m.Phase())
 	}
-	if !strings.Contains(m.View(), "ls -la") {
-		t.Errorf("the command is not on screen while it is being checked:\n%s", m.View())
+	if !strings.Contains(m.View().Content, "ls -la") {
+		t.Errorf("the command is not on screen while it is being checked:\n%s", m.View().Content)
 	}
 }
 

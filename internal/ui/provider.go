@@ -16,7 +16,7 @@ import (
 	"strconv"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -130,7 +130,7 @@ func (m ProviderSetup) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		return m, nil
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		return m.key(msg)
 	}
 	return m, nil
@@ -139,7 +139,7 @@ func (m ProviderSetup) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 // key advances the machine. Every step's esc is a decline of that step, and a
 // decline at the first step ends the program with nothing chosen — esc
 // dismisses, never destroys.
-func (m ProviderSetup) key(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m ProviderSetup) key(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch m.step {
 	case stepCard:
 		done, result := m.card.Update(msg)
@@ -228,7 +228,13 @@ func (m ProviderSetup) finish() (tea.Model, tea.Cmd) {
 	return m, tea.Quit
 }
 
-func (m ProviderSetup) View() string {
+// View is the frame. The setup card draws inline on stderr and asks the
+// terminal for nothing, so the view carries content and no state (S-155).
+func (m ProviderSetup) View() tea.View {
+	return tea.NewView(m.screen())
+}
+
+func (m ProviderSetup) screen() string {
 	if m.quitting {
 		return ""
 	}

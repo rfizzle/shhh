@@ -24,8 +24,8 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -157,7 +157,7 @@ type DoctorScreen struct {
 // Update is the screen's whole keyboard. Every key here is live on arrival:
 // this surface holds the keyboard for as long as it is up, and there is no
 // draft under it for a bare letter to belong to (§19, invariant 5).
-func (d *DoctorScreen) Update(msg tea.KeyMsg) (done bool, result any) {
+func (d *DoctorScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	d.sync()
 	switch pressed := msg.String(); {
 	case pressed == "up", pressed == "k":

@@ -170,160 +170,160 @@ shhh doctor · 3 checks            0.9s · [?] keys · [q] quit
 
 ── ansi ────────────────────────────────────────────────────
 · the run · a row per check, the fix offered on the ones that need it
-␛[1;38;5;254mshhh doctor␛[0m␛[38;5;244m · 10 checks␛[0m           ␛[38;5;244m1.4s␛[0m␛[38;5;244m · [?] keys · [q] quit␛[0m
-␛[38;5;244m────────────────────────────────────────────────────────────␛[0m
+␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 10 checks␛[m           ␛[38;5;244m1.4s␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-   ␛[38;5;254m✓␛[0m binary  ␛[38;5;254mshhh 0.9.4␛[0m␛[38;5;244m · darwin/arm64 · ~/.local…␛[0m  ␛[38;5;244mok␛[0m
-   ␛[38;5;254m✓␛[0m config  ␛[38;5;254m~/.config/shhh/config.toml␛[0m␛[38;5;244m · 6 setti…␛[0m  ␛[38;5;244mok␛[0m
-␛[38;5;254m❯␛[0m  ␛[38;5;254m✗␛[0m model   ␛[38;5;254manthropic␛[0m␛[38;5;244m · claude-opus-5 · no k…␛[0m  ␛[38;5;254mno key␛[0m
-    ␛[38;5;244mno session will start until a key is found — every one …␛[0m
-    ␛[38;5;254m[f]␛[0m␛[38;5;244m show the four places shhh looks␛[0m
-   ␛[38;5;254m✓␛[0m store   ␛[38;5;254m~/.local/share/shhh/shhh.db␛[0m␛[38;5;244m · opened…␛[0m  ␛[38;5;244mok␛[0m
-   ␛[38;5;254m✗␛[0m sandbox ␛[38;5;254mno containment mechanism␛[0m␛[38;5;244m · …␛[0m  ␛[38;5;254muncontained␛[0m  ␛[38;5;244m0.1s␛[0m
-    ␛[38;5;244mevery approval will show ⚠ UNCONTAINED, and an approved…␛[0m
-    ␛[38;5;244m[f]␛[0m␛[38;5;244m show the fix for this host␛[0m
-   ␛[38;5;254m⚠␛[0m engine  ␛[38;5;254mpodman␛[0m␛[38;5;244m · no sandbox image conf…␛[0m  ␛[38;5;254mno image␛[0m
-    ␛[38;5;244mthe engine is there, so only the image stands between t…␛[0m
-    ␛[38;5;244m[f]␛[0m␛[38;5;244m show the 1-line fix␛[0m
-   ␛[38;5;254m✓␛[0m git     ␛[38;5;254m~/src/shhh␛[0m␛[38;5;244m · 3 files changed, all tr…␛[0m  ␛[38;5;244mok␛[0m  ␛[38;5;244m0.2s␛[0m
-   ␛[38;5;254m✓␛[0m tools   ␛[38;5;254mfd, ast-grep␛[0m␛[38;5;244m · no sd/tokei/jaq · gop…␛[0m  ␛[38;5;244mok␛[0m
-   ␛[38;5;244m⊘␛[0m memory  ␛[38;5;254mnothing remembered yet␛[0m␛[38;5;244m · ~/src/sh…␛[0m  ␛[38;5;244mempty␛[0m
-   ␛[38;5;254m⚠␛[0m update  ␛[38;5;254mshhh 0.9.5 is out␛[0m␛[38;5;244m · this ma…␛[0m  ␛[38;5;254mout of date␛[0m
-    ␛[38;5;244m[f]␛[0m␛[38;5;244m show how to upgrade␛[0m
+   ␛[38;5;254m✓␛[m binary  ␛[38;5;254mshhh 0.9.4␛[m␛[38;5;244m · darwin/arm64 · ~/.local…␛[m  ␛[38;5;244mok␛[m
+   ␛[38;5;254m✓␛[m config  ␛[38;5;254m~/.config/shhh/config.toml␛[m␛[38;5;244m · 6 setti…␛[m  ␛[38;5;244mok␛[m
+␛[38;5;254m❯␛[m  ␛[38;5;254m✗␛[m model   ␛[38;5;254manthropic␛[m␛[38;5;244m · claude-opus-5 · no k…␛[m  ␛[38;5;254mno key␛[m
+    ␛[38;5;244mno session will start until a key is found — every one …␛[m
+    ␛[38;5;254m[f]␛[m␛[38;5;244m show the four places shhh looks␛[m
+   ␛[38;5;254m✓␛[m store   ␛[38;5;254m~/.local/share/shhh/shhh.db␛[m␛[38;5;244m · opened…␛[m  ␛[38;5;244mok␛[m
+   ␛[38;5;254m✗␛[m sandbox ␛[38;5;254mno containment mechanism␛[m␛[38;5;244m · …␛[m  ␛[38;5;254muncontained␛[m  ␛[38;5;244m0.1s␛[m
+    ␛[38;5;244mevery approval will show ⚠ UNCONTAINED, and an approved…␛[m
+    ␛[38;5;244m[f]␛[m␛[38;5;244m show the fix for this host␛[m
+   ␛[38;5;254m⚠␛[m engine  ␛[38;5;254mpodman␛[m␛[38;5;244m · no sandbox image conf…␛[m  ␛[38;5;254mno image␛[m
+    ␛[38;5;244mthe engine is there, so only the image stands between t…␛[m
+    ␛[38;5;244m[f]␛[m␛[38;5;244m show the 1-line fix␛[m
+   ␛[38;5;254m✓␛[m git     ␛[38;5;254m~/src/shhh␛[m␛[38;5;244m · 3 files changed, all tr…␛[m  ␛[38;5;244mok␛[m  ␛[38;5;244m0.2s␛[m
+   ␛[38;5;254m✓␛[m tools   ␛[38;5;254mfd, ast-grep␛[m␛[38;5;244m · no sd/tokei/jaq · gop…␛[m  ␛[38;5;244mok␛[m
+   ␛[38;5;244m⊘␛[m memory  ␛[38;5;254mnothing remembered yet␛[m␛[38;5;244m · ~/src/sh…␛[m  ␛[38;5;244mempty␛[m
+   ␛[38;5;254m⚠␛[m update  ␛[38;5;254mshhh 0.9.5 is out␛[m␛[38;5;244m · this ma…␛[m  ␛[38;5;254mout of date␛[m
+    ␛[38;5;244m[f]␛[m␛[38;5;244m show how to upgrade␛[m
 
-  ␛[38;5;254m✗␛[0m ␛[38;5;254m2 failed␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m2 warnings␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m5 passed␛[0m␛[38;5;244m · ␛[0m␛[38;5;244m1 not checked␛[0m
-␛[38;5;254m[↑↓]␛[0m␛[38;5;244m move␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[c]␛[0m␛[38;5;244m copy the report␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[r]␛[0m␛[38;5;244m run the checks again␛[0m
+  ␛[38;5;254m✗␛[m ␛[38;5;254m2 failed␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 warnings␛[m␛[38;5;244m · ␛[m␛[38;5;254m5 passed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 not checked␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m run the checks again␛[m
 
 · the fix open · under the row it belongs to, one indent past the consequence
-␛[1;38;5;254mshhh doctor␛[0m␛[38;5;244m · 10 checks␛[0m           ␛[38;5;244m1.4s␛[0m␛[38;5;244m · [?] keys · [q] quit␛[0m
-␛[38;5;244m────────────────────────────────────────────────────────────␛[0m
+␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 10 checks␛[m           ␛[38;5;244m1.4s␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-   ␛[38;5;254m✓␛[0m binary  ␛[38;5;254mshhh 0.9.4␛[0m␛[38;5;244m · darwin/arm64 · ~/.local…␛[0m  ␛[38;5;244mok␛[0m
-   ␛[38;5;254m✓␛[0m config  ␛[38;5;254m~/.config/shhh/config.toml␛[0m␛[38;5;244m · 6 setti…␛[0m  ␛[38;5;244mok␛[0m
-␛[38;5;254m❯␛[0m  ␛[38;5;254m✗␛[0m model   ␛[38;5;254manthropic␛[0m␛[38;5;244m · claude-opus-5 · no k…␛[0m  ␛[38;5;254mno key␛[0m
-    ␛[38;5;244mno session will start until a key is found — every one …␛[0m
-      ␛[38;5;254menv       SHHH_API_KEY, ANTHROPIC_API_KEY — unset␛[0m
-      ␛[38;5;254mconfig    ~/.config/shhh/config.toml — no provider ap…␛[0m
-      ␛[38;5;254mprofiles  no .toml in ~/.config/shhh/providers␛[0m
-      ␛[38;5;254mlocal     localhost:11434 — nothing listening␛[0m
-    ␛[38;5;254m[f]␛[0m␛[38;5;244m hide it␛[0m
-   ␛[38;5;254m✓␛[0m store   ␛[38;5;254m~/.local/share/shhh/shhh.db␛[0m␛[38;5;244m · opened…␛[0m  ␛[38;5;244mok␛[0m
-   ␛[38;5;254m✗␛[0m sandbox ␛[38;5;254mno containment mechanism␛[0m␛[38;5;244m · …␛[0m  ␛[38;5;254muncontained␛[0m  ␛[38;5;244m0.1s␛[0m
-    ␛[38;5;244mevery approval will show ⚠ UNCONTAINED, and an approved…␛[0m
-    ␛[38;5;244m[f]␛[0m␛[38;5;244m show the fix for this host␛[0m
-   ␛[38;5;254m⚠␛[0m engine  ␛[38;5;254mpodman␛[0m␛[38;5;244m · no sandbox image conf…␛[0m  ␛[38;5;254mno image␛[0m
-    ␛[38;5;244mthe engine is there, so only the image stands between t…␛[0m
-    ␛[38;5;244m[f]␛[0m␛[38;5;244m show the 1-line fix␛[0m
-   ␛[38;5;254m✓␛[0m git     ␛[38;5;254m~/src/shhh␛[0m␛[38;5;244m · 3 files changed, all tr…␛[0m  ␛[38;5;244mok␛[0m  ␛[38;5;244m0.2s␛[0m
-   ␛[38;5;254m✓␛[0m tools   ␛[38;5;254mfd, ast-grep␛[0m␛[38;5;244m · no sd/tokei/jaq · gop…␛[0m  ␛[38;5;244mok␛[0m
-   ␛[38;5;244m⊘␛[0m memory  ␛[38;5;254mnothing remembered yet␛[0m␛[38;5;244m · ~/src/sh…␛[0m  ␛[38;5;244mempty␛[0m
-   ␛[38;5;254m⚠␛[0m update  ␛[38;5;254mshhh 0.9.5 is out␛[0m␛[38;5;244m · this ma…␛[0m  ␛[38;5;254mout of date␛[0m
-    ␛[38;5;244m[f]␛[0m␛[38;5;244m show how to upgrade␛[0m
+   ␛[38;5;254m✓␛[m binary  ␛[38;5;254mshhh 0.9.4␛[m␛[38;5;244m · darwin/arm64 · ~/.local…␛[m  ␛[38;5;244mok␛[m
+   ␛[38;5;254m✓␛[m config  ␛[38;5;254m~/.config/shhh/config.toml␛[m␛[38;5;244m · 6 setti…␛[m  ␛[38;5;244mok␛[m
+␛[38;5;254m❯␛[m  ␛[38;5;254m✗␛[m model   ␛[38;5;254manthropic␛[m␛[38;5;244m · claude-opus-5 · no k…␛[m  ␛[38;5;254mno key␛[m
+    ␛[38;5;244mno session will start until a key is found — every one …␛[m
+      ␛[38;5;254menv       SHHH_API_KEY, ANTHROPIC_API_KEY — unset␛[m
+      ␛[38;5;254mconfig    ~/.config/shhh/config.toml — no provider ap…␛[m
+      ␛[38;5;254mprofiles  no .toml in ~/.config/shhh/providers␛[m
+      ␛[38;5;254mlocal     localhost:11434 — nothing listening␛[m
+    ␛[38;5;254m[f]␛[m␛[38;5;244m hide it␛[m
+   ␛[38;5;254m✓␛[m store   ␛[38;5;254m~/.local/share/shhh/shhh.db␛[m␛[38;5;244m · opened…␛[m  ␛[38;5;244mok␛[m
+   ␛[38;5;254m✗␛[m sandbox ␛[38;5;254mno containment mechanism␛[m␛[38;5;244m · …␛[m  ␛[38;5;254muncontained␛[m  ␛[38;5;244m0.1s␛[m
+    ␛[38;5;244mevery approval will show ⚠ UNCONTAINED, and an approved…␛[m
+    ␛[38;5;244m[f]␛[m␛[38;5;244m show the fix for this host␛[m
+   ␛[38;5;254m⚠␛[m engine  ␛[38;5;254mpodman␛[m␛[38;5;244m · no sandbox image conf…␛[m  ␛[38;5;254mno image␛[m
+    ␛[38;5;244mthe engine is there, so only the image stands between t…␛[m
+    ␛[38;5;244m[f]␛[m␛[38;5;244m show the 1-line fix␛[m
+   ␛[38;5;254m✓␛[m git     ␛[38;5;254m~/src/shhh␛[m␛[38;5;244m · 3 files changed, all tr…␛[m  ␛[38;5;244mok␛[m  ␛[38;5;244m0.2s␛[m
+   ␛[38;5;254m✓␛[m tools   ␛[38;5;254mfd, ast-grep␛[m␛[38;5;244m · no sd/tokei/jaq · gop…␛[m  ␛[38;5;244mok␛[m
+   ␛[38;5;244m⊘␛[m memory  ␛[38;5;254mnothing remembered yet␛[m␛[38;5;244m · ~/src/sh…␛[m  ␛[38;5;244mempty␛[m
+   ␛[38;5;254m⚠␛[m update  ␛[38;5;254mshhh 0.9.5 is out␛[m␛[38;5;244m · this ma…␛[m  ␛[38;5;254mout of date␛[m
+    ␛[38;5;244m[f]␛[m␛[38;5;244m show how to upgrade␛[m
 
-  ␛[38;5;254m✗␛[0m ␛[38;5;254m2 failed␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m2 warnings␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m5 passed␛[0m␛[38;5;244m · ␛[0m␛[38;5;244m1 not checked␛[0m
-␛[38;5;254m[↑↓]␛[0m␛[38;5;244m move␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[c]␛[0m␛[38;5;244m copy the report␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[r]␛[0m␛[38;5;244m run the checks again␛[0m
+  ␛[38;5;254m✗␛[m ␛[38;5;254m2 failed␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 warnings␛[m␛[38;5;244m · ␛[m␛[38;5;254m5 passed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 not checked␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m run the checks again␛[m
 
 · the pointer moved · the next check that needs something takes the live key
-␛[1;38;5;254mshhh doctor␛[0m␛[38;5;244m · 10 checks␛[0m           ␛[38;5;244m1.4s␛[0m␛[38;5;244m · [?] keys · [q] quit␛[0m
-␛[38;5;244m────────────────────────────────────────────────────────────␛[0m
+␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 10 checks␛[m           ␛[38;5;244m1.4s␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-   ␛[38;5;254m✓␛[0m binary  ␛[38;5;254mshhh 0.9.4␛[0m␛[38;5;244m · darwin/arm64 · ~/.local…␛[0m  ␛[38;5;244mok␛[0m
-   ␛[38;5;254m✓␛[0m config  ␛[38;5;254m~/.config/shhh/config.toml␛[0m␛[38;5;244m · 6 setti…␛[0m  ␛[38;5;244mok␛[0m
-   ␛[38;5;254m✗␛[0m model   ␛[38;5;254manthropic␛[0m␛[38;5;244m · claude-opus-5 · no k…␛[0m  ␛[38;5;254mno key␛[0m
-    ␛[38;5;244mno session will start until a key is found — every one …␛[0m
-    ␛[38;5;244m[f]␛[0m␛[38;5;244m show the four places shhh looks␛[0m
-   ␛[38;5;254m✓␛[0m store   ␛[38;5;254m~/.local/share/shhh/shhh.db␛[0m␛[38;5;244m · opened…␛[0m  ␛[38;5;244mok␛[0m
-␛[38;5;254m❯␛[0m  ␛[38;5;254m✗␛[0m sandbox ␛[38;5;254mno containment mechanism␛[0m␛[38;5;244m · …␛[0m  ␛[38;5;254muncontained␛[0m  ␛[38;5;244m0.1s␛[0m
-    ␛[38;5;244mevery approval will show ⚠ UNCONTAINED, and an approved…␛[0m
-    ␛[38;5;254m[f]␛[0m␛[38;5;244m show the fix for this host␛[0m
-   ␛[38;5;254m⚠␛[0m engine  ␛[38;5;254mpodman␛[0m␛[38;5;244m · no sandbox image conf…␛[0m  ␛[38;5;254mno image␛[0m
-    ␛[38;5;244mthe engine is there, so only the image stands between t…␛[0m
-    ␛[38;5;244m[f]␛[0m␛[38;5;244m show the 1-line fix␛[0m
-   ␛[38;5;254m✓␛[0m git     ␛[38;5;254m~/src/shhh␛[0m␛[38;5;244m · 3 files changed, all tr…␛[0m  ␛[38;5;244mok␛[0m  ␛[38;5;244m0.2s␛[0m
-   ␛[38;5;254m✓␛[0m tools   ␛[38;5;254mfd, ast-grep␛[0m␛[38;5;244m · no sd/tokei/jaq · gop…␛[0m  ␛[38;5;244mok␛[0m
-   ␛[38;5;244m⊘␛[0m memory  ␛[38;5;254mnothing remembered yet␛[0m␛[38;5;244m · ~/src/sh…␛[0m  ␛[38;5;244mempty␛[0m
-   ␛[38;5;254m⚠␛[0m update  ␛[38;5;254mshhh 0.9.5 is out␛[0m␛[38;5;244m · this ma…␛[0m  ␛[38;5;254mout of date␛[0m
-    ␛[38;5;244m[f]␛[0m␛[38;5;244m show how to upgrade␛[0m
+   ␛[38;5;254m✓␛[m binary  ␛[38;5;254mshhh 0.9.4␛[m␛[38;5;244m · darwin/arm64 · ~/.local…␛[m  ␛[38;5;244mok␛[m
+   ␛[38;5;254m✓␛[m config  ␛[38;5;254m~/.config/shhh/config.toml␛[m␛[38;5;244m · 6 setti…␛[m  ␛[38;5;244mok␛[m
+   ␛[38;5;254m✗␛[m model   ␛[38;5;254manthropic␛[m␛[38;5;244m · claude-opus-5 · no k…␛[m  ␛[38;5;254mno key␛[m
+    ␛[38;5;244mno session will start until a key is found — every one …␛[m
+    ␛[38;5;244m[f]␛[m␛[38;5;244m show the four places shhh looks␛[m
+   ␛[38;5;254m✓␛[m store   ␛[38;5;254m~/.local/share/shhh/shhh.db␛[m␛[38;5;244m · opened…␛[m  ␛[38;5;244mok␛[m
+␛[38;5;254m❯␛[m  ␛[38;5;254m✗␛[m sandbox ␛[38;5;254mno containment mechanism␛[m␛[38;5;244m · …␛[m  ␛[38;5;254muncontained␛[m  ␛[38;5;244m0.1s␛[m
+    ␛[38;5;244mevery approval will show ⚠ UNCONTAINED, and an approved…␛[m
+    ␛[38;5;254m[f]␛[m␛[38;5;244m show the fix for this host␛[m
+   ␛[38;5;254m⚠␛[m engine  ␛[38;5;254mpodman␛[m␛[38;5;244m · no sandbox image conf…␛[m  ␛[38;5;254mno image␛[m
+    ␛[38;5;244mthe engine is there, so only the image stands between t…␛[m
+    ␛[38;5;244m[f]␛[m␛[38;5;244m show the 1-line fix␛[m
+   ␛[38;5;254m✓␛[m git     ␛[38;5;254m~/src/shhh␛[m␛[38;5;244m · 3 files changed, all tr…␛[m  ␛[38;5;244mok␛[m  ␛[38;5;244m0.2s␛[m
+   ␛[38;5;254m✓␛[m tools   ␛[38;5;254mfd, ast-grep␛[m␛[38;5;244m · no sd/tokei/jaq · gop…␛[m  ␛[38;5;244mok␛[m
+   ␛[38;5;244m⊘␛[m memory  ␛[38;5;254mnothing remembered yet␛[m␛[38;5;244m · ~/src/sh…␛[m  ␛[38;5;244mempty␛[m
+   ␛[38;5;254m⚠␛[m update  ␛[38;5;254mshhh 0.9.5 is out␛[m␛[38;5;244m · this ma…␛[m  ␛[38;5;254mout of date␛[m
+    ␛[38;5;244m[f]␛[m␛[38;5;244m show how to upgrade␛[m
 
-  ␛[38;5;254m✗␛[0m ␛[38;5;254m2 failed␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m2 warnings␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m5 passed␛[0m␛[38;5;244m · ␛[0m␛[38;5;244m1 not checked␛[0m
-␛[38;5;254m[↑↓]␛[0m␛[38;5;244m move␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[c]␛[0m␛[38;5;244m copy the report␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[r]␛[0m␛[38;5;244m run the checks again␛[0m
+  ␛[38;5;254m✗␛[m ␛[38;5;254m2 failed␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 warnings␛[m␛[38;5;244m · ␛[m␛[38;5;254m5 passed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 not checked␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m run the checks again␛[m
 
 · still going · what has answered, one running, the rest queued
-␛[1;38;5;254mshhh doctor␛[0m␛[38;5;244m · 10 checks␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m▸ run…␛[0m  ␛[38;5;244m0.3s␛[0m␛[38;5;244m · [?] keys · [q] quit␛[0m
-␛[38;5;244m────────────────────────────────────────────────────────────␛[0m
+␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 10 checks␛[m␛[38;5;244m · ␛[m␛[38;5;254m▸ run…␛[m  ␛[38;5;244m0.3s␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-   ␛[38;5;254m✓␛[0m binary  ␛[38;5;254mshhh 0.9.4␛[0m␛[38;5;244m · darwin/arm64 · ~/.local…␛[0m  ␛[38;5;244mok␛[0m
-   ␛[38;5;254m✓␛[0m config  ␛[38;5;254m~/.config/shhh/config.toml␛[0m␛[38;5;244m · 6 setti…␛[0m  ␛[38;5;244mok␛[0m
-␛[38;5;254m❯␛[0m  ␛[38;5;254m✗␛[0m model   ␛[38;5;254manthropic␛[0m␛[38;5;244m · claude-opus-5 · no k…␛[0m  ␛[38;5;254mno key␛[0m
-    ␛[38;5;244mno session will start until a key is found — every one …␛[0m
-    ␛[38;5;254m[f]␛[0m␛[38;5;244m show the four places shhh looks␛[0m
-   ␛[38;5;254m▸␛[0m store   ␛[38;5;254mthe local store␛[0m␛[38;5;244m␛[0m                  ␛[38;5;254mrunning…␛[0m
-   ␛[38;5;244m·␛[0m sandbox ␛[38;5;254mnot started␛[0m␛[38;5;244m␛[0m                        ␛[38;5;244mqueued␛[0m     ␛[38;5;244m—␛[0m
-   ␛[38;5;244m·␛[0m engine  ␛[38;5;254mnot started␛[0m␛[38;5;244m␛[0m                        ␛[38;5;244mqueued␛[0m     ␛[38;5;244m—␛[0m
-   ␛[38;5;244m·␛[0m git     ␛[38;5;254mnot started␛[0m␛[38;5;244m␛[0m                        ␛[38;5;244mqueued␛[0m     ␛[38;5;244m—␛[0m
-   ␛[38;5;244m·␛[0m tools   ␛[38;5;254mnot started␛[0m␛[38;5;244m␛[0m                        ␛[38;5;244mqueued␛[0m     ␛[38;5;244m—␛[0m
-   ␛[38;5;244m·␛[0m memory  ␛[38;5;254mnot started␛[0m␛[38;5;244m␛[0m                        ␛[38;5;244mqueued␛[0m     ␛[38;5;244m—␛[0m
-   ␛[38;5;244m·␛[0m update  ␛[38;5;254mnot started␛[0m␛[38;5;244m␛[0m                        ␛[38;5;244mqueued␛[0m     ␛[38;5;244m—␛[0m
+   ␛[38;5;254m✓␛[m binary  ␛[38;5;254mshhh 0.9.4␛[m␛[38;5;244m · darwin/arm64 · ~/.local…␛[m  ␛[38;5;244mok␛[m
+   ␛[38;5;254m✓␛[m config  ␛[38;5;254m~/.config/shhh/config.toml␛[m␛[38;5;244m · 6 setti…␛[m  ␛[38;5;244mok␛[m
+␛[38;5;254m❯␛[m  ␛[38;5;254m✗␛[m model   ␛[38;5;254manthropic␛[m␛[38;5;244m · claude-opus-5 · no k…␛[m  ␛[38;5;254mno key␛[m
+    ␛[38;5;244mno session will start until a key is found — every one …␛[m
+    ␛[38;5;254m[f]␛[m␛[38;5;244m show the four places shhh looks␛[m
+   ␛[38;5;254m▸␛[m store   ␛[38;5;254mthe local store␛[m␛[38;5;244m␛[m                  ␛[38;5;254mrunning…␛[m
+   ␛[38;5;244m·␛[m sandbox ␛[38;5;254mnot started␛[m␛[38;5;244m␛[m                        ␛[38;5;244mqueued␛[m     ␛[38;5;244m—␛[m
+   ␛[38;5;244m·␛[m engine  ␛[38;5;254mnot started␛[m␛[38;5;244m␛[m                        ␛[38;5;244mqueued␛[m     ␛[38;5;244m—␛[m
+   ␛[38;5;244m·␛[m git     ␛[38;5;254mnot started␛[m␛[38;5;244m␛[m                        ␛[38;5;244mqueued␛[m     ␛[38;5;244m—␛[m
+   ␛[38;5;244m·␛[m tools   ␛[38;5;254mnot started␛[m␛[38;5;244m␛[m                        ␛[38;5;244mqueued␛[m     ␛[38;5;244m—␛[m
+   ␛[38;5;244m·␛[m memory  ␛[38;5;254mnot started␛[m␛[38;5;244m␛[m                        ␛[38;5;244mqueued␛[m     ␛[38;5;244m—␛[m
+   ␛[38;5;244m·␛[m update  ␛[38;5;254mnot started␛[m␛[38;5;244m␛[m                        ␛[38;5;244mqueued␛[m     ␛[38;5;244m—␛[m
 
-  ␛[38;5;254m✗␛[0m ␛[38;5;254m1 failed␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m2 passed␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m1 running␛[0m␛[38;5;244m · ␛[0m␛[38;5;244m6 queued␛[0m
-␛[38;5;254m[c]␛[0m␛[38;5;244m copy the report␛[0m
+  ␛[38;5;254m✗␛[m ␛[38;5;254m1 failed␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 passed␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 running␛[m␛[38;5;244m · ␛[m␛[38;5;244m6 queued␛[m
+␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m
 
 · a short terminal · the passes go first, and the marker names them
-␛[1;38;5;254mshhh doctor␛[0m␛[38;5;244m · 10 checks␛[0m           ␛[38;5;244m1.4s␛[0m␛[38;5;244m · [?] keys · [q] quit␛[0m
-␛[38;5;244m────────────────────────────────────────────────────────────␛[0m
+␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 10 checks␛[m           ␛[38;5;244m1.4s␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-␛[38;5;254m❯␛[0m  ␛[38;5;254m✗␛[0m model   ␛[38;5;254manthropic␛[0m␛[38;5;244m · claude-opus-5 · no k…␛[0m  ␛[38;5;254mno key␛[0m
-    ␛[38;5;244mno session will start until a key is found — every one …␛[0m
-    ␛[38;5;254m[f]␛[0m␛[38;5;244m show the four places shhh looks␛[0m
-   ␛[38;5;254m✗␛[0m sandbox ␛[38;5;254mno containment mechanism␛[0m␛[38;5;244m · …␛[0m  ␛[38;5;254muncontained␛[0m  ␛[38;5;244m0.1s␛[0m
-    ␛[38;5;244mevery approval will show ⚠ UNCONTAINED, and an approved…␛[0m
-    ␛[38;5;244m[f]␛[0m␛[38;5;244m show the fix for this host␛[0m
-   ␛[38;5;254m⚠␛[0m engine  ␛[38;5;254mpodman␛[0m␛[38;5;244m · no sandbox image conf…␛[0m  ␛[38;5;254mno image␛[0m
-    ␛[38;5;244mthe engine is there, so only the image stands between t…␛[0m
-    ␛[38;5;244m[f]␛[0m␛[38;5;244m show the 1-line fix␛[0m
-   ␛[38;5;254m⚠␛[0m update  ␛[38;5;254mshhh 0.9.5 is out␛[0m␛[38;5;244m · this ma…␛[0m  ␛[38;5;254mout of date␛[0m
-    ␛[38;5;244m[f]␛[0m␛[38;5;244m show how to upgrade␛[0m
-  ␛[38;5;244m↓ 6 more · binary · config · store · git · tools · memory␛[0m
+␛[38;5;254m❯␛[m  ␛[38;5;254m✗␛[m model   ␛[38;5;254manthropic␛[m␛[38;5;244m · claude-opus-5 · no k…␛[m  ␛[38;5;254mno key␛[m
+    ␛[38;5;244mno session will start until a key is found — every one …␛[m
+    ␛[38;5;254m[f]␛[m␛[38;5;244m show the four places shhh looks␛[m
+   ␛[38;5;254m✗␛[m sandbox ␛[38;5;254mno containment mechanism␛[m␛[38;5;244m · …␛[m  ␛[38;5;254muncontained␛[m  ␛[38;5;244m0.1s␛[m
+    ␛[38;5;244mevery approval will show ⚠ UNCONTAINED, and an approved…␛[m
+    ␛[38;5;244m[f]␛[m␛[38;5;244m show the fix for this host␛[m
+   ␛[38;5;254m⚠␛[m engine  ␛[38;5;254mpodman␛[m␛[38;5;244m · no sandbox image conf…␛[m  ␛[38;5;254mno image␛[m
+    ␛[38;5;244mthe engine is there, so only the image stands between t…␛[m
+    ␛[38;5;244m[f]␛[m␛[38;5;244m show the 1-line fix␛[m
+   ␛[38;5;254m⚠␛[m update  ␛[38;5;254mshhh 0.9.5 is out␛[m␛[38;5;244m · this ma…␛[m  ␛[38;5;254mout of date␛[m
+    ␛[38;5;244m[f]␛[m␛[38;5;244m show how to upgrade␛[m
+  ␛[38;5;244m↓ 6 more · binary · config · store · git · tools · memory␛[m
 
-  ␛[38;5;254m✗␛[0m ␛[38;5;254m2 failed␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m2 warnings␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m5 passed␛[0m␛[38;5;244m · ␛[0m␛[38;5;244m1 not checked␛[0m
-␛[38;5;254m[↑↓]␛[0m␛[38;5;244m move␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[c]␛[0m␛[38;5;244m copy the report␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[r]␛[0m␛[38;5;244m run the checks again␛[0m
+  ␛[38;5;254m✗␛[m ␛[38;5;254m2 failed␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 warnings␛[m␛[38;5;244m · ␛[m␛[38;5;254m5 passed␛[m␛[38;5;244m · ␛[m␛[38;5;244m1 not checked␛[m
+␛[38;5;254m[↑↓]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m run the checks again␛[m
 
 · the keys · [?] over a screen that has five of them
-␛[1;38;5;254mshhh doctor␛[0m␛[38;5;244m · 10 checks␛[0m           ␛[38;5;244m1.4s␛[0m␛[38;5;244m · [?] keys · [q] quit␛[0m
-␛[38;5;244m────────────────────────────────────────────────────────────␛[0m
+␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 10 checks␛[m           ␛[38;5;244m1.4s␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-   ␛[38;5;254m✓␛[0m binary  ␛[38;5;254mshhh 0.9.4␛[0m␛[38;5;244m · darwin/arm64 · ~/.local…␛[0m  ␛[38;5;244mok␛[0m
-   ␛[38;5;254m✓␛[0m config  ␛[38;5;254m~/.config/shhh/config.toml␛[0m␛[38;5;244m · 6 setti…␛[0m  ␛[38;5;244mok␛[0m
-␛[38;5;254m❯␛[0m  ␛[38;5;254m✗␛[0m model   ␛[38;5;254manthropic␛[0m␛[38;5;244m · claude-opus-5 · no k…␛[0m  ␛[38;5;254mno key␛[0m
-    ␛[38;5;244mno session will start until a key is found — every one …␛[0m
-    ␛[38;5;254m[f]␛[0m␛[38;5;244m show the four places shhh looks␛[0m
-   ␛[38;5;254m✓␛[0m store   ␛[38;5;254m~/.local/share/shhh/shhh.db␛[0m␛[38;5;244m · opened…␛[0m  ␛[38;5;244mok␛[0m
-   ␛[38;5;254m✗␛[0m sandbox ␛[38;5;254mno containment mechanism␛[0m␛[38;5;244m · …␛[0m  ␛[38;5;254muncontained␛[0m  ␛[38;5;244m0.1s␛[0m
-    ␛[38;5;244mevery approval will show ⚠ UNCONTAINED, and an approved…␛[0m
-    ␛[38;5;244m[f]␛[0m␛[38;5;244m show the fix for this host␛[0m
-   ␛[38;5;254m⚠␛[0m engine  ␛[38;5;254mpodman␛[0m␛[38;5;244m · no sandbox image conf…␛[0m  ␛[38;5;254mno image␛[0m
-    ␛[38;5;244mthe engine is there, so only the image stands between t…␛[0m
-    ␛[38;5;244m[f]␛[0m␛[38;5;244m show the 1-line fix␛[0m
-   ␛[38;5;254m✓␛[0m git     ␛[38;5;254m~/src/shhh␛[0m␛[38;5;244m · 3 files changed, all tr…␛[0m  ␛[38;5;244mok␛[0m  ␛[38;5;244m0.2s␛[0m
-   ␛[38;5;254m✓␛[0m tools   ␛[38;5;254mfd, ast-grep␛[0m␛[38;5;244m · no sd/tokei/jaq · gop…␛[0m  ␛[38;5;244mok␛[0m
-   ␛[38;5;244m⊘␛[0m memory  ␛[38;5;254mnothing remembered yet␛[0m␛[38;5;244m · ~/src/sh…␛[0m  ␛[38;5;244mempty␛[0m
-   ␛[38;5;254m⚠␛[0m update  ␛[38;5;254mshhh 0.9.5 is out␛[0m␛[38;5;244m · this ma…␛[0m  ␛[38;5;254mout of date␛[0m
-    ␛[38;5;244m[f]␛[0m␛[38;5;244m show how to upgrade␛[0m
+   ␛[38;5;254m✓␛[m binary  ␛[38;5;254mshhh 0.9.4␛[m␛[38;5;244m · darwin/arm64 · ~/.local…␛[m  ␛[38;5;244mok␛[m
+   ␛[38;5;254m✓␛[m config  ␛[38;5;254m~/.config/shhh/config.toml␛[m␛[38;5;244m · 6 setti…␛[m  ␛[38;5;244mok␛[m
+␛[38;5;254m❯␛[m  ␛[38;5;254m✗␛[m model   ␛[38;5;254manthropic␛[m␛[38;5;244m · claude-opus-5 · no k…␛[m  ␛[38;5;254mno key␛[m
+    ␛[38;5;244mno session will start until a key is found — every one …␛[m
+    ␛[38;5;254m[f]␛[m␛[38;5;244m show the four places shhh looks␛[m
+   ␛[38;5;254m✓␛[m store   ␛[38;5;254m~/.local/share/shhh/shhh.db␛[m␛[38;5;244m · opened…␛[m  ␛[38;5;244mok␛[m
+   ␛[38;5;254m✗␛[m sandbox ␛[38;5;254mno containment mechanism␛[m␛[38;5;244m · …␛[m  ␛[38;5;254muncontained␛[m  ␛[38;5;244m0.1s␛[m
+    ␛[38;5;244mevery approval will show ⚠ UNCONTAINED, and an approved…␛[m
+    ␛[38;5;244m[f]␛[m␛[38;5;244m show the fix for this host␛[m
+   ␛[38;5;254m⚠␛[m engine  ␛[38;5;254mpodman␛[m␛[38;5;244m · no sandbox image conf…␛[m  ␛[38;5;254mno image␛[m
+    ␛[38;5;244mthe engine is there, so only the image stands between t…␛[m
+    ␛[38;5;244m[f]␛[m␛[38;5;244m show the 1-line fix␛[m
+   ␛[38;5;254m✓␛[m git     ␛[38;5;254m~/src/shhh␛[m␛[38;5;244m · 3 files changed, all tr…␛[m  ␛[38;5;244mok␛[m  ␛[38;5;244m0.2s␛[m
+   ␛[38;5;254m✓␛[m tools   ␛[38;5;254mfd, ast-grep␛[m␛[38;5;244m · no sd/tokei/jaq · gop…␛[m  ␛[38;5;244mok␛[m
+   ␛[38;5;244m⊘␛[m memory  ␛[38;5;254mnothing remembered yet␛[m␛[38;5;244m · ~/src/sh…␛[m  ␛[38;5;244mempty␛[m
+   ␛[38;5;254m⚠␛[m update  ␛[38;5;254mshhh 0.9.5 is out␛[m␛[38;5;244m · this ma…␛[m  ␛[38;5;254mout of date␛[m
+    ␛[38;5;244m[f]␛[m␛[38;5;244m show how to upgrade␛[m
 
-␛[38;5;254m[↑↓/jk]␛[0m␛[38;5;244m move between the checks that need something␛[0m
-␛[38;5;254m[f]␛[0m␛[38;5;244m show the fix for the check under the pointer␛[0m
-␛[38;5;254m[c]␛[0m␛[38;5;244m copy the whole report as text␛[0m
-␛[38;5;254m[r]␛[0m␛[38;5;244m run every check again␛[0m
-␛[38;5;254m[esc]␛[0m␛[38;5;244m back to the shell␛[0m
-␛[38;5;254m[q]␛[0m␛[38;5;244m back to the shell␛[0m
-␛[38;5;254m[?]␛[0m␛[38;5;244m hide the keys␛[0m
+␛[38;5;254m[↑↓/jk]␛[m␛[38;5;244m move between the checks that need something␛[m
+␛[38;5;254m[f]␛[m␛[38;5;244m show the fix for the check under the pointer␛[m
+␛[38;5;254m[c]␛[m␛[38;5;244m copy the whole report as text␛[m
+␛[38;5;254m[r]␛[m␛[38;5;244m run every check again␛[m
+␛[38;5;254m[esc]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[q]␛[m␛[38;5;244m back to the shell␛[m
+␛[38;5;254m[?]␛[m␛[38;5;244m hide the keys␛[m
 
 · a clean run · no pointer, no fix key, and nothing to act on
-␛[1;38;5;254mshhh doctor␛[0m␛[38;5;244m · 3 checks␛[0m            ␛[38;5;244m0.9s␛[0m␛[38;5;244m · [?] keys · [q] quit␛[0m
-␛[38;5;244m────────────────────────────────────────────────────────────␛[0m
+␛[1;38;5;254mshhh doctor␛[m␛[38;5;244m · 3 checks␛[m            ␛[38;5;244m0.9s␛[m␛[38;5;244m · [?] keys · [q] quit␛[m
+␛[38;5;244m────────────────────────────────────────────────────────────␛[m
 
-   ␛[38;5;254m✓␛[0m binary  ␛[38;5;254mshhh 0.9.4␛[0m␛[38;5;244m · darwin/arm64␛[0m              ␛[38;5;244mok␛[0m
-   ␛[38;5;254m✓␛[0m sandbox ␛[38;5;254msandbox-exec␛[0m␛[38;5;244m · Seatbelt · wor…␛[0m  ␛[38;5;244mcontained␛[0m
-   ␛[38;5;254m✓␛[0m git     ␛[38;5;254m~/src/shhh␛[0m␛[38;5;244m · clean␛[0m                     ␛[38;5;244mok␛[0m  ␛[38;5;244m0.2s␛[0m
+   ␛[38;5;254m✓␛[m binary  ␛[38;5;254mshhh 0.9.4␛[m␛[38;5;244m · darwin/arm64␛[m              ␛[38;5;244mok␛[m
+   ␛[38;5;254m✓␛[m sandbox ␛[38;5;254msandbox-exec␛[m␛[38;5;244m · Seatbelt · wor…␛[m  ␛[38;5;244mcontained␛[m
+   ␛[38;5;254m✓␛[m git     ␛[38;5;254m~/src/shhh␛[m␛[38;5;244m · clean␛[m                     ␛[38;5;244mok␛[m  ␛[38;5;244m0.2s␛[m
 
-  ␛[38;5;254m✓␛[0m ␛[38;5;254m3 passed␛[0m  ␛[38;5;254m[c]␛[0m␛[38;5;244m copy the report␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[r]␛[0m␛[38;5;244m run the checks again␛[0m
+  ␛[38;5;254m✓␛[m ␛[38;5;254m3 passed␛[m  ␛[38;5;254m[c]␛[m␛[38;5;244m copy the report␛[m␛[38;5;244m · ␛[m␛[38;5;254m[r]␛[m␛[38;5;244m run the checks again␛[m

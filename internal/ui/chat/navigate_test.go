@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -17,11 +17,11 @@ import (
 
 // wheel builds a wheel notch in dir (-1 up, +1 down).
 func wheel(dir int) tea.MouseMsg {
-	btn := tea.MouseButtonWheelUp
+	btn := tea.MouseWheelUp
 	if dir > 0 {
-		btn = tea.MouseButtonWheelDown
+		btn = tea.MouseWheelDown
 	}
-	return tea.MouseMsg{Action: tea.MouseActionPress, Button: btn}
+	return tea.MouseWheelMsg{Button: btn}
 }
 
 // proseModel is a transcript with plenty to scroll and nothing to expand: an
@@ -67,13 +67,13 @@ func TestWheel_ScrollsTheTranscriptAndLeavesTheDraftAlone(t *testing.T) {
 	// Reporting is off by default, so the wheel has to be asked for before
 	// there is a wheel event to route at all (S-136).
 	m := typeChars(t, proseModel(t).WithMouse(true), "half a sentence")
-	before := m.viewport.YOffset
+	before := m.viewport.YOffset()
 
 	updated, _ := m.Update(wheel(-1))
 	m = updated.(Model)
 
-	if m.viewport.YOffset >= before {
-		t.Fatalf("the wheel should scroll the transcript up, offset %d → %d", before, m.viewport.YOffset)
+	if m.viewport.YOffset() >= before {
+		t.Fatalf("the wheel should scroll the transcript up, offset %d → %d", before, m.viewport.YOffset())
 	}
 	if m.input.Value() != "half a sentence" {
 		t.Fatalf("the wheel must not touch the draft, got %q", m.input.Value())
@@ -83,8 +83,9 @@ func TestWheel_ScrollsTheTranscriptAndLeavesTheDraftAlone(t *testing.T) {
 	}
 
 	updated, _ = m.Update(wheel(1))
-	if got := updated.(Model).viewport.YOffset; got <= m.viewport.YOffset {
-		t.Fatalf("the wheel should scroll back down, offset %d → %d", m.viewport.YOffset, got)
+	next := updated.(Model)
+	if got := next.viewport.YOffset(); got <= m.viewport.YOffset() {
+		t.Fatalf("the wheel should scroll back down, offset %d → %d", m.viewport.YOffset(), got)
 	}
 }
 
@@ -100,18 +101,19 @@ func TestWheel_ReachesTheFullScreenDiff(t *testing.T) {
 	if m.fullDiff.Offset <= before {
 		t.Fatalf("the wheel should scroll the full-screen diff, offset %d → %d", before, m.fullDiff.Offset)
 	}
-	if m.viewport.YOffset != 0 {
-		t.Fatalf("the transcript behind the viewer should not have moved, got %d", m.viewport.YOffset)
+	if m.viewport.YOffset() != 0 {
+		t.Fatalf("the transcript behind the viewer should not have moved, got %d", m.viewport.YOffset())
 	}
 }
 
 func TestWheel_IgnoredWhileMouseReportingIsOff(t *testing.T) {
 	m := proseModel(t)
 	m.mouseOn = false
-	before := m.viewport.YOffset
+	before := m.viewport.YOffset()
 
 	updated, _ := m.Update(wheel(-1))
-	if got := updated.(Model).viewport.YOffset; got != before {
+	next := updated.(Model)
+	if got := next.viewport.YOffset(); got != before {
 		t.Fatalf("with reporting off nothing should scroll, offset %d → %d", before, got)
 	}
 }
@@ -120,13 +122,13 @@ func TestWheel_IgnoredWhileMouseReportingIsOff(t *testing.T) {
 // spacebar in its viewport, and the chat model used to hand it every key.
 func TestTypedLetters_NeverReachTheTranscript(t *testing.T) {
 	m := proseModel(t)
-	before := m.viewport.YOffset
+	before := m.viewport.YOffset()
 
 	const draft = "just find b u d f k"
 	m = typeChars(t, m, draft)
 
-	if m.viewport.YOffset != before {
-		t.Fatalf("typing must not scroll the transcript, offset %d → %d", before, m.viewport.YOffset)
+	if m.viewport.YOffset() != before {
+		t.Fatalf("typing must not scroll the transcript, offset %d → %d", before, m.viewport.YOffset())
 	}
 	if m.input.Value() != draft {
 		t.Fatalf("every character should have landed in the draft, got %q", m.input.Value())
@@ -138,16 +140,16 @@ func TestTypedLetters_NeverReachTheTranscript(t *testing.T) {
 // stop writing the sentence.
 func TestPgUp_ScrollsWithoutTakingTheKeyboard(t *testing.T) {
 	m := typeChars(t, proseModel(t), "keep this")
-	before := m.viewport.YOffset
+	before := m.viewport.YOffset()
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyPgUp})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyPgUp})
 	m = updated.(Model)
 
 	if m.state != stateInput {
 		t.Fatalf("pgup should leave the keyboard in the draft, got state %d", m.state)
 	}
-	if m.viewport.YOffset >= before {
-		t.Fatalf("pgup should page up, offset %d → %d", before, m.viewport.YOffset)
+	if m.viewport.YOffset() >= before {
+		t.Fatalf("pgup should page up, offset %d → %d", before, m.viewport.YOffset())
 	}
 	if m.input.Value() != "keep this" {
 		t.Fatalf("the draft should be untouched, got %q", m.input.Value())
@@ -166,34 +168,37 @@ func TestPgUp_ScrollsWithoutTakingTheKeyboard(t *testing.T) {
 // Paging down with nothing below has nowhere to go, and no mode to leave.
 func TestPgDown_AtTheBottomDoesNothing(t *testing.T) {
 	m := proseModel(t)
-	before := m.viewport.YOffset
+	before := m.viewport.YOffset()
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyPgDown})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyPgDown})
 	m = updated.(Model)
 
 	if m.state != stateInput {
 		t.Fatalf("pgdn at the bottom should do nothing, got state %d", m.state)
 	}
-	if m.viewport.YOffset != before {
-		t.Fatalf("pgdn at the bottom should not move, offset %d → %d", before, m.viewport.YOffset)
+	if m.viewport.YOffset() != before {
+		t.Fatalf("pgdn at the bottom should not move, offset %d → %d", before, m.viewport.YOffset())
 	}
 }
 
 // Shift+arrows are the fine adjustment beside pgup/pgdn, and they are held to
 // the same rule: a line of scroll, and the draft keeps the keyboard.
 func TestShiftArrows_ScrollALineWithoutTakingTheKeyboard(t *testing.T) {
-	for _, k := range []tea.KeyType{tea.KeyShiftUp, tea.KeyCtrlUp} {
+	for _, k := range []tea.KeyPressMsg{
+		{Code: tea.KeyUp, Mod: tea.ModShift},
+		{Code: tea.KeyUp, Mod: tea.ModCtrl},
+	} {
 		m := typeChars(t, proseModel(t), "mid sentence")
-		before := m.viewport.YOffset
+		before := m.viewport.YOffset()
 
-		updated, _ := m.Update(tea.KeyMsg{Type: k})
+		updated, _ := m.Update(k)
 		m = updated.(Model)
 
 		if m.state != stateInput {
 			t.Fatalf("%v should leave the keyboard in the draft, got state %d", k, m.state)
 		}
-		if m.viewport.YOffset != before-keyScrollLines {
-			t.Fatalf("%v should scroll up one line, offset %d → %d", k, before, m.viewport.YOffset)
+		if m.viewport.YOffset() != before-keyScrollLines {
+			t.Fatalf("%v should scroll up one line, offset %d → %d", k, before, m.viewport.YOffset())
 		}
 		if m.input.Value() != "mid sentence" {
 			t.Fatalf("%v must not touch the draft, got %q", k, m.input.Value())
@@ -202,11 +207,12 @@ func TestShiftArrows_ScrollALineWithoutTakingTheKeyboard(t *testing.T) {
 
 	// And back down again.
 	m := proseModel(t)
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyShiftUp})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyUp, Mod: tea.ModShift})
 	m = updated.(Model)
-	up := m.viewport.YOffset
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyShiftDown})
-	if got := updated.(Model).viewport.YOffset; got != up+keyScrollLines {
+	up := m.viewport.YOffset()
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown, Mod: tea.ModShift})
+	next := updated.(Model)
+	if got := next.viewport.YOffset(); got != up+keyScrollLines {
 		t.Fatalf("shift+↓ should scroll back down, offset %d → %d", up, got)
 	}
 }
@@ -218,16 +224,16 @@ func TestShiftArrows_ScrollALineWithoutTakingTheKeyboard(t *testing.T) {
 // reading mode (S-140, altscroll.go).
 func TestUpFromAnEmptyPrompt_NeverTakesTheKeyboard(t *testing.T) {
 	m := proseModel(t)
-	before := m.viewport.YOffset
+	before := m.viewport.YOffset()
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyUp})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 	m = updated.(Model)
 
 	if m.state != stateInput {
 		t.Fatalf("↑ should stay the input's key, got state %d", m.state)
 	}
-	if m.viewport.YOffset != before {
-		t.Fatalf("↑ should not scroll the transcript either, offset %d → %d", before, m.viewport.YOffset)
+	if m.viewport.YOffset() != before {
+		t.Fatalf("↑ should not scroll the transcript either, offset %d → %d", before, m.viewport.YOffset())
 	}
 }
 
@@ -239,7 +245,7 @@ func TestFollowNotice_CountsWhatIsBelowAndClearsAtTheEnd(t *testing.T) {
 		t.Fatalf("at the live end there is nothing to say, got %q", note)
 	}
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyPgUp})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyPgUp})
 	m = updated.(Model)
 
 	note := m.followNotice()
@@ -255,7 +261,7 @@ func TestFollowNotice_CountsWhatIsBelowAndClearsAtTheEnd(t *testing.T) {
 
 	// Walking back to the end retires it.
 	for i := 0; i < 10 && !m.viewport.AtBottom(); i++ {
-		updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyPgDown})
+		updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyPgDown})
 		m = updated.(Model)
 	}
 	if note := m.followNotice(); note != "" {
@@ -267,7 +273,7 @@ func TestFollowNotice_CountsWhatIsBelowAndClearsAtTheEnd(t *testing.T) {
 // stays out of its way (§7a).
 func TestFollowNotice_SilentInReadingMode(t *testing.T) {
 	m := proseModel(t)
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyPgUp})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyPgUp})
 	m = updated.(Model)
 	if m.followNotice() == "" {
 		t.Fatal("precondition: the notice should be showing")
@@ -289,7 +295,7 @@ func TestUpFromAnEmptyPrompt_KeepsTheHistoryWhereThereIsOne(t *testing.T) {
 	m := proseModel(t)
 	m.recordInput("the previous prompt")
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyUp})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 	m = updated.(Model)
 	if m.state != stateInput {
 		t.Fatalf("↑ should still recall history, got state %d", m.state)
@@ -324,9 +330,10 @@ func TestReadingMode_OpensOnATranscriptWithNothingExpandable(t *testing.T) {
 	}
 
 	// j/k are a line of scroll where they cannot be a selection.
-	before := m.viewport.YOffset
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
-	if got := updated.(Model).viewport.YOffset; got >= before {
+	before := m.viewport.YOffset()
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'k', Text: "k"})
+	next := updated.(Model)
+	if got := next.viewport.YOffset(); got >= before {
 		t.Fatalf("k should scroll a line up, offset %d → %d", before, got)
 	}
 }
@@ -346,7 +353,7 @@ func TestReadingMode_StillRefusesAnEmptyTranscript(t *testing.T) {
 // replace the screen with a notice about how empty it is.
 func TestReadingMode_LeavesTheStartScreenAlone(t *testing.T) {
 	m := startModel(t, startFixture())
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyPgUp})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyPgUp})
 	m = updated.(Model)
 
 	if m.state != stateInput {
@@ -368,7 +375,7 @@ func TestReadingMode_TypingReturnsToThePromptCarryingTheKey(t *testing.T) {
 		t.Fatalf("expected focus mode, got state %d", m.state)
 	}
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'w'}})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'w', Text: "w"})
 	m = updated.(Model)
 	if m.state != stateInput {
 		t.Fatalf("typing should hand the keyboard back, got state %d", m.state)
@@ -384,7 +391,7 @@ func TestReadingMode_KeepsItsOwnLetters(t *testing.T) {
 	updated, _ := m.Update(ctrlE())
 	m = updated.(Model)
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'k', Text: "k"})
 	m = updated.(Model)
 	if m.state != stateFocus {
 		t.Fatalf("k selects a row; it should not leave the surface, got state %d", m.state)
@@ -402,7 +409,7 @@ func TestReadingMode_AnUnclaimedOfferKeyReturnsToThePrompt(t *testing.T) {
 	updated, _ := m.Update(ctrlE())
 	m = updated.(Model)
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'v'}})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'v', Text: "v"})
 	m = updated.(Model)
 	if m.state != stateInput {
 		t.Fatalf("a tool row offers no [v], so the key should return to the prompt, got state %d", m.state)
@@ -416,13 +423,13 @@ func TestReadingMode_AnUnclaimedOfferKeyReturnsToThePrompt(t *testing.T) {
 // has the keyboard" (§7a). The word carries it, so it survives mono.
 func TestReadingRail_NamesThePaneWithTheKeyboard(t *testing.T) {
 	m := focusModel(t)
-	if strings.Contains(m.View(), "READING") {
+	if strings.Contains(m.View().Content, "READING") {
 		t.Fatal("the rail should be a plain divider while the input has the keyboard")
 	}
 
 	updated, _ := m.Update(ctrlE())
 	m = updated.(Model)
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "READING") {
 		t.Fatal("the rail should name the transcript once it has the keyboard")
 	}
@@ -458,17 +465,24 @@ func TestUICommand_MouseTogglesReporting(t *testing.T) {
 	}
 }
 
-// The command has to reach the program, not just the model: turning reporting
-// off has to un-tell the terminal, or the click-drag selection it was traded
-// for never comes back.
+// The setting has to reach the terminal, not just the model: turning
+// reporting off has to un-tell the terminal, or the click-drag selection it
+// was traded for never comes back. Since S-155 the frame says so — the mouse
+// mode is a field on the View — so the check is that the next frame asks for
+// what the model believes.
 func TestUICommand_MouseSendsTheTerminalACommand(t *testing.T) {
 	m := readyModel(t)
-	next, cmd := m.runCommand("/ui mouse on", "/ui")
-	if !next.(Model).mouseOn {
+	next, _ := m.runCommand("/ui mouse on", "/ui")
+	on := next.(Model)
+	if !on.mouseOn {
 		t.Fatal("running /ui mouse on should turn reporting on")
 	}
-	if cmd == nil {
-		t.Fatal("flipping reporting should send the terminal a command")
+	if on.View().MouseMode != tea.MouseModeCellMotion {
+		t.Fatal("flipping reporting should ask the terminal for it in the frame")
+	}
+	off, _ := on.runCommand("/ui mouse off", "/ui")
+	if off.(Model).View().MouseMode != tea.MouseModeNone {
+		t.Fatal("turning it off should stop asking, or the terminal keeps tracking")
 	}
 }
 
@@ -507,13 +521,17 @@ func TestMouse_OffByDefaultAndAskedForByChord(t *testing.T) {
 		t.Fatal("a session starts with reporting off")
 	}
 
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlX})
+	if m.View().MouseMode != tea.MouseModeNone {
+		t.Fatal("a session that never asked for reporting must not ask for it")
+	}
+
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'x', Mod: tea.ModCtrl})
 	on := updated.(Model)
 	if !on.mouseOn {
 		t.Fatal("ctrl+x should turn reporting on")
 	}
-	if cmd == nil {
-		t.Fatal("the terminal has to be told, or the setting is only a field")
+	if on.View().MouseMode != tea.MouseModeCellMotion {
+		t.Fatal("the terminal has to be told, and the frame is what tells it")
 	}
 	// The answer outlives the process that gave it, which is the whole
 	// difference between this and the old session-only /ui mouse.
@@ -521,7 +539,7 @@ func TestMouse_OffByDefaultAndAskedForByChord(t *testing.T) {
 		t.Fatalf("persisted %v, want appearance.mouse=true", wrote)
 	}
 
-	updated, _ = on.Update(tea.KeyMsg{Type: tea.KeyCtrlX})
+	updated, _ = on.Update(tea.KeyPressMsg{Code: 'x', Mod: tea.ModCtrl})
 	if updated.(Model).mouseOn {
 		t.Fatal("ctrl+x again should turn it back off")
 	}
@@ -544,9 +562,9 @@ func TestMouse_ChordWorksFromEverySurface(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			m := tc.open(t)
 			state := m.state
-			updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlX})
+			updated, _ := m.Update(tea.KeyPressMsg{Code: 'x', Mod: tea.ModCtrl})
 			next := updated.(Model)
-			if !next.mouseOn || cmd == nil {
+			if !next.mouseOn || next.View().MouseMode != tea.MouseModeCellMotion {
 				t.Fatalf("ctrl+x should flip reporting here too, on=%v", next.mouseOn)
 			}
 			if next.state != state {
@@ -560,7 +578,7 @@ func TestMouse_ChordWorksFromEverySurface(t *testing.T) {
 // way — and says only the part it could not do.
 func TestMouse_WithoutAWriterSaysSo(t *testing.T) {
 	m := readyModel(t)
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlX})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'x', Mod: tea.ModCtrl})
 	next := updated.(Model)
 	if !next.mouseOn {
 		t.Fatal("the flip is not conditional on being able to save it")

@@ -5,9 +5,10 @@ import (
 	"strings"
 	"sync"
 
+	"charm.land/glamour/v2"
 	"github.com/alecthomas/chroma/v2"
 	"github.com/alecthomas/chroma/v2/lexers"
-	"github.com/charmbracelet/glamour"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -50,14 +51,48 @@ func getRenderer(width int) *glamour.TermRenderer {
 }
 
 func renderMarkdown(text string, width int) string {
-	return strings.TrimSpace(renderMarkdownRaw(text, width))
+	return trimBlankLines(renderMarkdownRaw(text, width))
 }
 
-// renderMarkdownRaw is the same without the trim. The streaming cache glues
-// two renders together and needs the padding the trim takes off the end: a
-// coloured terminal holds it in place with an escape, mono has nothing holding
-// it, and the seam between two blocks is exactly where the difference shows
-// (streammd.go).
+// trimBlankLines finishes a whole document the way renderMarkdown has always
+// finished one: the blank lines glamour puts around it go, and nothing inside
+// it moves.
+//
+// The leading half was a strings.TrimSpace until S-155, and it worked by
+// accident: glamour v1 opened every line with its style escape and put the
+// document's two-column margin *after* it, so a leading TrimSpace stopped at
+// the escape and the margin survived. v2 writes the margin as plain text
+// ahead of the escape, and the same call ate it — which set the opening line
+// of every paragraph two columns left of the rest of it, and told the
+// selection's soft-wrap rule that the first row belonged to a different
+// block (§15, select.go).
+//
+// The trailing half is unchanged, and is still the whole trailing run: a
+// finished document has nothing after it, so its last line's padding is not
+// holding anything up. (renderUnfinished keeps that padding, because there
+// the seam does — streammd.go.)
+func trimBlankLines(s string) string {
+	return dropLeadingBlankLines(strings.TrimRight(s, " \t\n"))
+}
+
+// dropLeadingBlankLines removes the empty lines a render opens with, and
+// stops at the first line that has anything under its escapes — whose own
+// indent is the document margin and is kept.
+func dropLeadingBlankLines(s string) string {
+	for {
+		nl := strings.IndexByte(s, '\n')
+		if nl < 0 || strings.TrimSpace(ansi.Strip(s[:nl])) != "" {
+			return s
+		}
+		s = s[nl+1:]
+	}
+}
+
+// renderMarkdownRaw is the same as renderMarkdown without the trim. The
+// streaming cache glues two renders together and needs the padding the trim
+// takes off the end: a coloured terminal holds it in place with an escape,
+// mono has nothing holding it, and the seam between two blocks is exactly
+// where the difference shows (streammd.go).
 func renderMarkdownRaw(text string, width int) string {
 	if width <= 0 {
 		width = 80

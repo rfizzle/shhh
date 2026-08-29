@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -60,7 +60,7 @@ func TestConfirmPromptShowsContainmentState(t *testing.T) {
 	}
 	// The containment state rides the card's title rail as a chip, and the
 	// profile's network answer is a field of its own (S-101).
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "⛨ bwrap · workspace") {
 		t.Fatalf("confirm prompt should carry the containment chip:\n%s", view)
 	}
@@ -92,7 +92,7 @@ func TestConfirmPromptShowsUnconfinedState(t *testing.T) {
 
 	// An uncontained action promotes ⚠ UNCONTAINED into the title, explains the
 	// missing mechanism, and offers the doctor that expands on it (S-101).
-	view := m.View()
+	view := m.View().Content
 	for _, want := range []string{"⚠ UNCONTAINED", "bubblewrap (bwrap) not found on PATH", "/sandbox doctor"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("uncontained confirm prompt should contain %q:\n%s", want, view)
@@ -100,7 +100,7 @@ func TestConfirmPromptShowsUnconfinedState(t *testing.T) {
 	}
 
 	// With no containment runner, approval falls through to the plain runner.
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
 	drainCmdDone(t, m, cmd)
 	if len(bare) != 1 || bare[0] != "echo hi" {
@@ -124,7 +124,7 @@ func TestApprovedCommandRunsContained(t *testing.T) {
 	m := containedModel(t, &bare, &contained, "contained: bwrap")
 	m = runExecApproval(t, m)
 
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
 	done := drainCmdDone(t, m, cmd)
 
@@ -174,7 +174,7 @@ func TestRunCommandStaysUnconfined(t *testing.T) {
 	m.pendingApproval = nil
 	m = handover(t, m)
 
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
 	drainCmdDone(t, m, cmd)
 

@@ -5,8 +5,8 @@ import (
 	"strconv"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -170,7 +170,7 @@ func (s *Select) geometry() listGeometry {
 	}
 }
 
-func (s *Select) Update(msg tea.KeyMsg) (done bool, result any) {
+func (s *Select) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	s.normalizeFocus()
 	pressed := msg.String()
 	switch {
@@ -237,7 +237,7 @@ func (s *Select) Update(msg tea.KeyMsg) (done bool, result any) {
 
 // editQuery applies one keystroke to the open query line: ctrl+u clears it,
 // backspace takes a rune back, and anything that types adds to it.
-func (s *Select) editQuery(msg tea.KeyMsg) {
+func (s *Select) editQuery(msg tea.KeyPressMsg) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Select.ClearQ):
 		if s.Query == "" {
@@ -266,19 +266,9 @@ func (s *Select) QueryChanged() bool {
 }
 
 // typedRunes is what a key contributes to a query line, or "" for a key that
-// types nothing.
-func typedRunes(msg tea.KeyMsg) string {
-	switch msg.Type {
-	case tea.KeyRunes:
-		if msg.Alt {
-			return ""
-		}
-		return string(msg.Runes)
-	case tea.KeySpace:
-		return " "
-	}
-	return ""
-}
+// types nothing — which in v2 is the key's own Text, empty for every special
+// key and for a key held under a modifier (S-155).
+func typedRunes(msg tea.KeyPressMsg) string { return msg.Text }
 
 func (s *Select) View(width int) string {
 	s.normalizeFocus()

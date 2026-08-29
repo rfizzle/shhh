@@ -7,11 +7,11 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
-func ctrlR() tea.KeyMsg { return tea.KeyMsg{Type: tea.KeyCtrlR} }
+func ctrlR() tea.KeyPressMsg { return tea.KeyPressMsg{Code: 'r', Mod: tea.ModCtrl} }
 
 // reasoningModel is a ready session wired the way the CLI wires one: a level,
 // and the hook that carries a change to the next request.

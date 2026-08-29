@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/muesli/termenv"
 )
 
 func doctorChecks() []DoctorCheck {
@@ -279,7 +279,7 @@ func TestDoctorScreen_ACleanRunHasNoPointer(t *testing.T) {
 // A row that has a fix but does not hold the keyboard carries its key grey
 // rather than in the colour that means "you can press this" (§7c, §10a).
 func TestDoctorScreen_AnUnpointedFixKeyIsNotAnOffer(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	d := doctorScreen()
 	lines := strings.Split(d.View(110), "\n")
 	var live, inert string

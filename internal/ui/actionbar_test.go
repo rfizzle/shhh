@@ -4,12 +4,11 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 func updateBar(m ActionBarModel, msg tea.Msg) (ActionBarModel, tea.Cmd) {
-	model, cmd := m.Update(msg)
-	return model.(ActionBarModel), cmd
+	return m.Update(msg)
 }
 
 // pressBar sends one key and reports the action it selected, or ActionNone.
@@ -26,15 +25,15 @@ func pressBar(t *testing.T, m ActionBarModel, key string) (ActionBarModel, Actio
 	return m, sel.Action
 }
 
-// keyMsg builds the tea.KeyMsg whose String() is key.
-func keyMsg(key string) tea.KeyMsg {
+// keyMsg builds the tea.KeyPressMsg whose String() is key.
+func keyMsg(key string) tea.KeyPressMsg {
 	switch key {
 	case "enter":
-		return tea.KeyMsg{Type: tea.KeyEnter}
+		return tea.KeyPressMsg{Code: tea.KeyEnter}
 	case "esc":
-		return tea.KeyMsg{Type: tea.KeyEscape}
+		return tea.KeyPressMsg{Code: tea.KeyEscape}
 	}
-	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(key)}
+	return tea.KeyPressMsg{Code: []rune(key)[0], Text: key}
 }
 
 func TestActionBar_InitialState(t *testing.T) {
@@ -67,10 +66,10 @@ func TestActionBar_KeysAreDirect(t *testing.T) {
 func TestActionBar_NoNavigationLeft(t *testing.T) {
 	// The row is not a menu: arrows and tab move nothing and select nothing.
 	for _, msg := range []tea.Msg{
-		tea.KeyMsg{Type: tea.KeyLeft},
-		tea.KeyMsg{Type: tea.KeyRight},
-		tea.KeyMsg{Type: tea.KeyTab},
-		tea.KeyMsg{Type: tea.KeyShiftTab},
+		tea.KeyPressMsg{Code: tea.KeyLeft},
+		tea.KeyPressMsg{Code: tea.KeyRight},
+		tea.KeyPressMsg{Code: tea.KeyTab},
+		tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift},
 	} {
 		m, cmd := updateBar(NewActionBarModel(), msg)
 		if cmd != nil {
@@ -82,7 +81,7 @@ func TestActionBar_NoNavigationLeft(t *testing.T) {
 	}
 	// And enter after them still runs, because nothing moved.
 	m := NewActionBarModel()
-	m, _ = updateBar(m, tea.KeyMsg{Type: tea.KeyRight})
+	m, _ = updateBar(m, tea.KeyPressMsg{Code: tea.KeyRight})
 	if _, got := pressBar(t, m, "enter"); got != ActionRun {
 		t.Errorf("enter after an arrow selected %v, want ActionRun", got)
 	}

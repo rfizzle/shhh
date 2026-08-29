@@ -8,7 +8,7 @@ import (
 	"text/tabwriter"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/term"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/runner"
@@ -169,7 +169,7 @@ func (m historyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width, m.screen.MaxLines = msg.Width, msg.Height
 		return m, nil
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		m.screen.Notice = ""
 		done, result := m.screen.Update(msg)
 		if command, ok := result.(components.HistoryCommand); ok {
@@ -186,7 +186,13 @@ func (m historyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m historyModel) View() string { return m.screen.View(m.width) }
+// View is the frame: the history screen, on the alt screen it takes over
+// (S-155).
+func (m historyModel) View() tea.View {
+	v := tea.NewView(m.screen.View(m.width))
+	v.AltScreen = true
+	return v
+}
 
 // apply carries out one command against the store and rebuilds the rows, so
 // the screen redraws from the store rather than from what it thinks changed.
@@ -390,7 +396,7 @@ func oneLineText(s string) string { return strings.Join(strings.Fields(s), " ") 
 
 func runHistoryBrowser(db *storage.DB, entries []storage.HistoryEntry, query string) error {
 	model := newHistoryModel(db, entries, query, time.Now())
-	p := tea.NewProgram(model, tea.WithAltScreen())
+	p := newProgram(model)
 	out, err := p.Run()
 	if err != nil {
 		return err

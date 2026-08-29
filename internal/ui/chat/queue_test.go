@@ -12,15 +12,15 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
 // keyA presses the batch key.
-func keyA() tea.KeyMsg { return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'A'}} }
+func keyA() tea.KeyPressMsg { return tea.KeyPressMsg{Code: 'A', Text: "A"} }
 
 // keyN presses the decline key.
-func keyN() tea.KeyMsg { return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}} }
+func keyN() tea.KeyPressMsg { return tea.KeyPressMsg{Code: 'n', Text: "n"} }
 
 // execCall is one queued shell command.
 func execCall(id, command string) provider.ToolCall {
@@ -78,7 +78,7 @@ func TestQueueStrip_ShowsPositionAndOrder(t *testing.T) {
 	}
 
 	// One decision is not a queue: the strip disappears once the rest drain.
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
 	updated, _ = m.Update(driveCmdDone(t, cmd))
 	m = updated.(Model)

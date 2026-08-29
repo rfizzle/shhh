@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -195,7 +195,7 @@ func failureLines(es []entry) []string {
 // updateReview routes keys to the surface. Every exit is non-destructive:
 // esc leaves with nothing chosen, and enter hands the staged selection to
 // the undo path, which is what staging means for edits already applied.
-func (m Model) updateReview(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateReview(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if m.review == nil {
 		return m.closeReview()
 	}

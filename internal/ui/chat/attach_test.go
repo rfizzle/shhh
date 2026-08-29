@@ -11,13 +11,13 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
-func key(r rune) tea.KeyMsg { return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}} }
+func key(r rune) tea.KeyPressMsg { return tea.KeyPressMsg{Code: r, Text: string(r)} }
 
 // spawnBlockedChild spawns one researcher whose stream blocks until the child
 // is cancelled, so it stays observable as "running".
@@ -39,20 +39,20 @@ func TestAgentListOpensAttachesAndDetaches(t *testing.T) {
 	m := newSubagentModel(t, sup)
 	spawnBlockedChild(t, sup)
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlA})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModCtrl})
 	m = updated.(Model)
 	if m.agentList == nil {
 		t.Fatal("ctrl+a must open the agent list")
 	}
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "orchestrator") || !strings.Contains(view, "researcher-1") {
 		t.Fatalf("agent list missing rows:\n%s", view)
 	}
 
 	// Down to the child row, enter attaches.
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.attachedTo != "researcher-1" {
 		t.Fatalf("attachedTo = %q, want researcher-1", m.attachedTo)
@@ -60,7 +60,7 @@ func TestAgentListOpensAttachesAndDetaches(t *testing.T) {
 	if m.agentList != nil {
 		t.Fatal("attaching must close the list")
 	}
-	view = m.View()
+	view = m.View().Content
 	if !strings.Contains(view, "orchestrator ▸ researcher-1") {
 		t.Fatalf("attached view missing breadcrumb:\n%s", view)
 	}
@@ -72,7 +72,7 @@ func TestAgentListOpensAttachesAndDetaches(t *testing.T) {
 	}
 
 	// Esc with an empty draft pops back to the orchestrator.
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	if m.attachedTo != "" {
 		t.Fatalf("esc must detach, still attached to %q", m.attachedTo)
@@ -85,13 +85,13 @@ func TestSlashAgentsOpensList(t *testing.T) {
 	m := newSubagentModel(t, sup)
 
 	m.input.SetValue("/agents")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.agentList == nil {
 		t.Fatal("/agents must open the agent list")
 	}
 	// Esc dismisses it.
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	if m.agentList != nil {
 		t.Fatal("esc must dismiss the agent list")
@@ -106,13 +106,13 @@ func TestAttachedEnterSteersChild(t *testing.T) {
 
 	m.attach("researcher-1")
 	m.input.SetValue("hold off on model.go")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if n := sup.QueuedSteering("researcher-1"); n != 1 {
 		t.Fatalf("QueuedSteering = %d, want 1", n)
 	}
-	if !strings.Contains(m.View(), "queued 1") {
-		t.Fatalf("status bar missing the queued-steering count:\n%s", m.View())
+	if !strings.Contains(m.View().Content, "queued 1") {
+		t.Fatalf("status bar missing the queued-steering count:\n%s", m.View().Content)
 	}
 }
 
@@ -125,7 +125,7 @@ func TestAttachedScopedCommands(t *testing.T) {
 
 	// /stats scopes to the child.
 	m.input.SetValue("/stats")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if !childTranscriptContains(sup, "researcher-1", "tool calls") {
 		t.Fatal("/stats note missing from the child transcript")
@@ -133,7 +133,7 @@ func TestAttachedScopedCommands(t *testing.T) {
 
 	// /diff on a researcher reports there is nothing scoped to diff.
 	m.input.SetValue("/diff")
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if !childTranscriptContains(sup, "researcher-1", "nothing to diff") {
 		t.Fatal("/diff error missing from the child transcript")
@@ -141,7 +141,7 @@ func TestAttachedScopedCommands(t *testing.T) {
 
 	// Unknown commands get the scoped-command hint, not the parent handler.
 	m.input.SetValue("/save")
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if !childTranscriptContains(sup, "researcher-1", "Commands while attached") {
 		t.Fatal("scoped-command hint missing")
@@ -157,7 +157,7 @@ func TestAttachedModeClampedToCeiling(t *testing.T) {
 
 	// Shift+Tab skips accept-edits and auto (over the manual ceiling) and
 	// lands on plan; the skipped modes are named as disabled.
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyShiftTab})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
 	m = updated.(Model)
 	if mode, _ := sup.AgentMode("researcher-1"); mode != agent.ModePlan {
 		t.Fatalf("child mode = %s, want plan", mode)
@@ -168,7 +168,7 @@ func TestAttachedModeClampedToCeiling(t *testing.T) {
 
 	// /mode with an over-ceiling mode refuses instead of clamping silently.
 	m.input.SetValue("/mode auto")
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if mode, _ := sup.AgentMode("researcher-1"); mode != agent.ModePlan {
 		t.Fatalf("over-ceiling /mode must not change the mode, got %s", mode)
@@ -185,7 +185,7 @@ func TestAttachedCtrlCCancelsChildTurn(t *testing.T) {
 	spawnBlockedChild(t, sup)
 	m.attach("researcher-1")
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
 	// blockingEnv ignores the per-request cancel, so the child ends as
 	// cancelled once its context is cancelled at cleanup; the state must have
@@ -195,7 +195,7 @@ func TestAttachedCtrlCCancelsChildTurn(t *testing.T) {
 	if m.attachedTo != "researcher-1" {
 		t.Fatal("cancelling the child's turn must not detach")
 	}
-	_ = m.View()
+	_ = m.View().Content
 }
 
 func TestKillFromListWithInlineConfirm(t *testing.T) {
@@ -204,17 +204,17 @@ func TestKillFromListWithInlineConfirm(t *testing.T) {
 	m := newSubagentModel(t, sup)
 	spawnBlockedChild(t, sup)
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlA})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModCtrl})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
 	updated, _ = m.Update(key('X'))
 	m = updated.(Model)
 	if m.killConfirm == nil || m.killTarget != "researcher-1" {
 		t.Fatalf("X must arm the inline kill confirm (target %q)", m.killTarget)
 	}
-	if !strings.Contains(m.View(), "Kill researcher-1?") {
-		t.Fatalf("kill confirm not rendered:\n%s", m.View())
+	if !strings.Contains(m.View().Content, "Kill researcher-1?") {
+		t.Fatalf("kill confirm not rendered:\n%s", m.View().Content)
 	}
 	// n declines: nothing happens.
 	updated, _ = m.Update(key('n'))
@@ -286,9 +286,9 @@ func TestBlockedRowSortsUpAndSaysWhatItWaitsFor(t *testing.T) {
 			t.Fatalf("a child's row must carry lane progress: %+v", row)
 		}
 	}
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlA})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModCtrl})
 	m = updated.(Model)
-	if view := m.View(); !strings.Contains(view, "2 needs you") {
+	if view := m.View().Content; !strings.Contains(view, "2 needs you") {
 		t.Fatalf("the manager's title rail must state who needs you:\n%s", view)
 	}
 }
@@ -304,10 +304,10 @@ func TestAnswerBlockedChildFromTheList(t *testing.T) {
 	spawnInto(t, sup, `{"role":"researcher","task":"survey"}`)
 	m = pumpAsks(t, m, sup, 1)
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlA})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModCtrl})
 	m = updated.(Model)
 	// The child sorts directly below the orchestrator; [a] on it opens the card.
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
 	updated, _ = m.Update(key('a'))
 	m = updated.(Model)
@@ -317,7 +317,7 @@ func TestAnswerBlockedChildFromTheList(t *testing.T) {
 	if m.attachedTo != "" {
 		t.Fatalf("answering must not attach, attached to %q", m.attachedTo)
 	}
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "echo hi") {
 		t.Fatalf("the approval card is not over the list:\n%s", view)
 	}
@@ -340,8 +340,8 @@ func TestAnswerBlockedChildFromTheList(t *testing.T) {
 	if m.answerAgent != "" || m.agentList == nil {
 		t.Fatalf("answering must return to the list (answerAgent=%q, open=%v)", m.answerAgent, m.agentList != nil)
 	}
-	if !strings.Contains(m.View(), "enter attach") {
-		t.Fatalf("the list did not come back:\n%s", m.View())
+	if !strings.Contains(m.View().Content, "enter attach") {
+		t.Fatalf("the list did not come back:\n%s", m.View().Content)
 	}
 }
 
@@ -354,13 +354,13 @@ func TestAnswerFromTheListDeclinesOnEsc(t *testing.T) {
 	spawnInto(t, sup, `{"role":"researcher","task":"survey"}`)
 	m = pumpAsks(t, m, sup, 1)
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlA})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModCtrl})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
 	updated, _ = m.Update(key('a'))
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 
 	if !transcriptContains(m, "Declined researcher-1 ▸ run echo hi") {
@@ -386,11 +386,11 @@ func TestRetryFailedChildFromTheList(t *testing.T) {
 		return ok && st.State == subagent.StateFailed
 	})
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlA})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Mod: tea.ModCtrl})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "r retry") {
 		t.Fatalf("a failed row must offer the retry:\n%s", view)
 	}
@@ -429,7 +429,7 @@ func TestDetachedAskGJumpsToAgent(t *testing.T) {
 	// Detached, the card offers the jump — once it holds the keyboard, since
 	// until then [g] is a letter (S-117, §7b).
 	m = handover(t, m)
-	if view := m.View(); !strings.Contains(view, "g: attach to researcher-1") {
+	if view := m.View().Content; !strings.Contains(view, "g: attach to researcher-1") {
 		t.Fatalf("routed card missing the [g] hint:\n%s", view)
 	}
 	updated, _ = m.Update(key('g'))

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -172,7 +172,7 @@ func TestConfigModel_AnUnknownKeyIsReported(t *testing.T) {
 func TestConfigModel_EscWritesNothing(t *testing.T) {
 	m := newConfigModel(config.Config{})
 	m.apply(components.ConfigChange{Key: "behavior.shell", Value: "/bin/zsh"})
-	next, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	next, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	if cmd == nil {
 		t.Fatal("esc quits")
 	}

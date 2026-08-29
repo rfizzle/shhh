@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -130,7 +130,7 @@ func TestPolicy_FlaggedCommandAlwaysPrompts(t *testing.T) {
 	if m.state != stateConfirmRun {
 		t.Fatalf("safety-flagged command must prompt regardless of policy, got state %d", m.state)
 	}
-	view := m.View()
+	view := m.View().Content
 	if strings.Contains(view, "[y/n/a]") {
 		t.Fatal("flagged command must not offer the always-allow option")
 	}
@@ -139,7 +139,7 @@ func TestPolicy_FlaggedCommandAlwaysPrompts(t *testing.T) {
 	}
 
 	// 'a' is ignored on a flagged command.
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
 	m = updated.(Model)
 	if m.state != stateConfirmRun || len(ran) != 0 {
 		t.Fatal("'a' must not approve a safety-flagged command")
@@ -162,13 +162,13 @@ func TestPolicy_AlwaysAllowCommandsViaKey(t *testing.T) {
 	// The second queued command puts a batch behind the card, so [A] joins
 	// the keys (S-102).
 	m = handover(t, m)
-	if !strings.Contains(m.View(), "[y/n/a/A]") {
+	if !strings.Contains(m.View().Content, "[y/n/a/A]") {
 		t.Fatal("unflagged command prompt with a queue behind it should offer y/n/a/A")
 	}
 
 	// 'a' approves this command and stops the session asking about commands
 	// of the same shape — `echo`, not everything (S-054).
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
 	m = updated.(Model)
 	if m.allowAllCommands {
 		t.Fatal("'a' must not hand out a blanket grant; that is /permissions allow")
@@ -207,11 +207,11 @@ func TestPolicy_AlwaysAllowEditsViaKey(t *testing.T) {
 		t.Fatalf("first edit should prompt, got state %d", m.state)
 	}
 	m = handover(t, m)
-	if !strings.Contains(m.View(), "always allow edits") {
+	if !strings.Contains(m.View().Content, "always allow edits") {
 		t.Fatal("edit prompt should offer the always-allow option")
 	}
 
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
 	m = updated.(Model)
 	if m.allowAllEdits {
 		t.Fatal("'a' must not hand out a blanket grant; that is /permissions allow")
@@ -272,7 +272,7 @@ func TestPolicy_GenericGatedToolAlwaysPrompts(t *testing.T) {
 	if m.state != stateConfirmRun {
 		t.Fatalf("generic gated tool must always prompt, got state %d", m.state)
 	}
-	if !strings.Contains(m.View(), "[y/N]") {
+	if !strings.Contains(m.View().Content, "[y/N]") {
 		t.Fatal("generic approval keeps plain y/N")
 	}
 }
@@ -439,7 +439,7 @@ func TestMode_ShiftTabCyclesAndStatusBarShowsMode(t *testing.T) {
 		t.Fatalf("status bar should show the default manual mode, got %q", m.renderStatusBar(80))
 	}
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyShiftTab})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
 	m = updated.(Model)
 	if m.mode != agent.ModeAcceptEdits {
 		t.Fatalf("shift+tab should cycle manual → accept-edits, got %v", m.mode)
@@ -450,12 +450,12 @@ func TestMode_ShiftTabCyclesAndStatusBarShowsMode(t *testing.T) {
 
 	// A configured cycle is honored, wrapping around.
 	m = m.WithApprovalMode(agent.ModeManual, []agent.Mode{agent.ModeManual, agent.ModePlan})
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyShiftTab})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
 	m = updated.(Model)
 	if m.mode != agent.ModePlan {
 		t.Fatalf("configured cycle should go manual → plan, got %v", m.mode)
 	}
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyShiftTab})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyTab, Mod: tea.ModShift})
 	m = updated.(Model)
 	if m.mode != agent.ModeManual {
 		t.Fatalf("configured cycle should wrap plan → manual, got %v", m.mode)
@@ -605,7 +605,7 @@ func TestGrant_ADifferentShapeOfCommandStillAsks(t *testing.T) {
 	}})
 	m = handover(t, updated.(Model))
 
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
 	m = updated.(Model)
 	updated, _ = m.Update(driveCmdDone(t, cmd))
 	m = updated.(Model)
@@ -638,7 +638,7 @@ func TestGrant_ADifferentDirectoryStillAsks(t *testing.T) {
 	}})
 	m = handover(t, updated.(Model))
 
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
 	m = updated.(Model)
 	var done approvedToolDoneMsg
 	for _, c := range unwrapBatch(cmd) {

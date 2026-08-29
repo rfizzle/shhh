@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -151,7 +151,7 @@ type ReviewView struct {
 // Update handles keys while review has the screen. done reports that the
 // surface is finished, with a ReviewResult saying what was staged or that it
 // was cancelled.
-func (v *ReviewView) Update(msg tea.KeyMsg) (done bool, result any) {
+func (v *ReviewView) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	v.notice = ""
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Review.Back):
@@ -558,7 +558,7 @@ func (v *ReviewView) shieldRows(width int) []string {
 // brightStyle is the focused row's text: the one place the list says which
 // row it is on with weight as well as a pointer.
 func brightStyle() lipgloss.Style {
-	return lipgloss.NewStyle().Bold(true).Foreground(Palette.Bright)
+	return lipgloss.NewStyle().Bold(true).Foreground(Palette.Bright.Color())
 }
 
 // stagedLabel is the list header's right-hand note: how much of the review
@@ -582,7 +582,7 @@ func (v *ReviewView) paneRows(width, rows int) []string {
 		return []string{sty.Hint.Render("(no file selected)")}
 	}
 	added, removed := f.stats()
-	head := lipgloss.NewStyle().Bold(true).Foreground(Palette.Bright).Render(f.Path) +
+	head := brightStyle().Render(f.Path) +
 		sty.Dim.Render("  "+plural(len(f.Hunks), "hunk")+" · ") +
 		sty.Add.Render(fmt.Sprintf("+%d", added)) + " " + sty.Del.Render(fmt.Sprintf("−%d", removed))
 	if !v.ReadOnly {

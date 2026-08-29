@@ -8,15 +8,15 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 )
 
-func agentKey(s string) tea.KeyMsg {
+func agentKey(s string) tea.KeyPressMsg {
 	if s == "enter" {
-		return tea.KeyMsg{Type: tea.KeyEnter}
+		return tea.KeyPressMsg{Code: tea.KeyEnter}
 	}
-	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s)}
+	return tea.KeyPressMsg{Code: []rune(s)[0], Text: s}
 }
 
 // managerRows is one of each state, blocked first the way the host sorts it.
@@ -138,7 +138,7 @@ func TestAgentListKeepsTodaysSemantics(t *testing.T) {
 	if done, result := l.Update(agentKey("X")); done || result.(AgentListResult).Action != AgentKill {
 		t.Fatalf("X = %#v (done=%v), want AgentKill with the list open", result, done)
 	}
-	if done, result := l.Update(tea.KeyMsg{Type: tea.KeyEscape}); !done || result.(AgentListResult).Action != AgentBack {
+	if done, result := l.Update(tea.KeyPressMsg{Code: tea.KeyEscape}); !done || result.(AgentListResult).Action != AgentBack {
 		t.Fatalf("esc = %#v (done=%v), want AgentBack", result, done)
 	}
 }

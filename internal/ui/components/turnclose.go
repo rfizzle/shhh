@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 )
 
 // TurnState is how the turn ended. A cancelled or failed turn says so and

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -60,7 +60,7 @@ func TestPressure_ArmsWhenATurnEndsAtTheAlertThreshold(t *testing.T) {
 func TestPressure_AsksOncePerCrossing(t *testing.T) {
 	m := endTurn(t, pressureModel(t, 100), "carry on")
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	if m.state == statePressure || m.pressure != nil {
 		t.Fatal("esc should take the card down")
@@ -159,14 +159,14 @@ func TestPressure_KeepsClauseNamesOnlyWhatExists(t *testing.T) {
 
 func TestPressure_EnterCompactsAndNKeepsTheSessionSaved(t *testing.T) {
 	m := endTurn(t, pressureModel(t, 100), "carry on")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	after := updated.(Model)
 	if !after.compacting {
 		t.Fatal("[enter] should start a compaction")
 	}
 
 	m = endTurn(t, pressureModel(t, 100), "carry on")
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("n")})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
 	after = updated.(Model)
 	if after.state != stateInput || after.pressure != nil {
 		t.Fatalf("[n] should close the card, state=%d", after.state)

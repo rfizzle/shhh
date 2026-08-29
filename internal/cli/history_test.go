@@ -183,7 +183,7 @@ func TestHistoryModel_SubjectCountsOneEntry(t *testing.T) {
 // SQL, so the query row's `1 of 2 match` counts the store and not the query.
 func TestHistoryModel_SearchSeedsTheFilterRow(t *testing.T) {
 	m := newHistoryModel(nil, historyEntries(), "biggest", time.Now())
-	out := m.View()
+	out := m.View().Content
 	if !strings.Contains(out, "1 of 2 match") {
 		t.Fatalf("the seeded query did not keep both counts:\n%s", out)
 	}

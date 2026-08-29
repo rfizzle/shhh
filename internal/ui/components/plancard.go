@@ -16,7 +16,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 )
 
 // PlanFact is one clause of the computed summary line: `3 files touched`,

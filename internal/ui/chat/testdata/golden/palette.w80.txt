@@ -37,27 +37,27 @@
 
 ── ansi ────────────────────────────────────────────────────
 · nothing typed yet
-␛[38;5;241m┌─ Palette ──────────────────────────────────────────────────── 19 results ┐␛[0m
-␛[38;5;241m│␛[0m ␛[94m▸ ␛[0m␛[97m█␛[0m                                                                      ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m ␛[1;94mCOMMANDS␛[0m                                                                 ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m ␛[1;48;5;62m❯ /help                   Show commands, keys, and the approval policy␛[0m   ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   /clear                  ␛[38;5;241mStart a new conversation␛[0m                       ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   /paste                  ␛[38;5;241mAttach the clipboard, or a file, to y…␛[0m  ␛[38;5;252mctrl+v␛[0m ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   /copy                   ␛[38;5;241mCopy the last response (or just its code bloc…␛[0m ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   /model                  ␛[38;5;241mSwitch the model (bare /model opens a picker)␛[0m  ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   /permissions            ␛[38;5;241mWhat runs without asking, and the …␛[0m  ␛[38;5;252mshift+tab␛[0m ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   /reasoning              ␛[38;5;241mHow much the model thinks before it a…␛[0m  ␛[38;5;252mctrl+r␛[0m ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m ␛[1;94mFILES␛[0m                                                                    ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   internal/agent/loop.go  ␛[38;5;241mmodified 4m ago␛[0m                                ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m   README.md               ␛[38;5;241mmodified 2h ago␛[0m                                ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m ␛[1;94m… 10 more — keep typing␛[0m                                                  ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m ␛[3;38;5;241menter run · tab complete · ↑↓ move · esc dismiss␛[0m                         ␛[38;5;241m│␛[0m
-␛[38;5;241m└──────────────────────────────────────────────────────────────────────────┘␛[0m
+␛[38;5;241m┌─ Palette ──────────────────────────────────────────────────── 19 results ┐␛[m
+␛[38;5;241m│␛[m ␛[94m▸ ␛[m␛[97m█␛[m                                                                      ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[1;94mCOMMANDS␛[m                                                                 ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[1;48;5;62m❯ /help                   Show commands, keys, and the approval policy␛[m   ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   /clear                  ␛[38;5;241mStart a new conversation␛[m                       ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   /paste                  ␛[38;5;241mAttach the clipboard, or a file, to y…␛[m  ␛[38;5;252mctrl+v␛[m ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   /copy                   ␛[38;5;241mCopy the last response (or just its code bloc…␛[m ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   /model                  ␛[38;5;241mSwitch the model (bare /model opens a picker)␛[m  ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   /permissions            ␛[38;5;241mWhat runs without asking, and the …␛[m  ␛[38;5;252mshift+tab␛[m ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   /reasoning              ␛[38;5;241mHow much the model thinks before it a…␛[m  ␛[38;5;252mctrl+r␛[m ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[1;94mFILES␛[m                                                                    ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   internal/agent/loop.go  ␛[38;5;241mmodified 4m ago␛[m                                ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   README.md               ␛[38;5;241mmodified 2h ago␛[m                                ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[1;94m… 10 more — keep typing␛[m                                                  ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[3;38;5;241menter run · tab complete · ↑↓ move · esc dismiss␛[m                         ␛[38;5;241m│␛[m
+␛[38;5;241m└──────────────────────────────────────────────────────────────────────────┘␛[m
 
 · mid-turn, filtered to an idle-only command
-␛[38;5;241m┌─ Palette ────────────────────────────────────────────────────── 1 result ┐␛[0m
-␛[38;5;241m│␛[0m ␛[94m▸ ␛[0m␛[97mcl█␛[0m                                                                    ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m ␛[1;94mCOMMANDS␛[0m                                                                 ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m ␛[1;48;5;62m❯ ⊘ /clear  needs the turn to be finished — it starts a new conversation␛[0m ␛[38;5;241m│␛[0m
-␛[38;5;241m│␛[0m ␛[3;38;5;241menter run · tab complete · ↑↓ move · esc dismiss␛[0m                         ␛[38;5;241m│␛[0m
-␛[38;5;241m└──────────────────────────────────────────────────────────────────────────┘␛[0m
+␛[38;5;241m┌─ Palette ────────────────────────────────────────────────────── 1 result ┐␛[m
+␛[38;5;241m│␛[m ␛[94m▸ ␛[m␛[97mcl█␛[m                                                                    ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[1;94mCOMMANDS␛[m                                                                 ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[1;48;5;62m❯ ⊘ /clear  needs the turn to be finished — it starts a new conversation␛[m ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[3;38;5;241menter run · tab complete · ↑↓ move · esc dismiss␛[m                         ␛[38;5;241m│␛[m
+␛[38;5;241m└──────────────────────────────────────────────────────────────────────────┘␛[m

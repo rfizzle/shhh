@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -192,7 +192,7 @@ func TestFold_EnterRestoresTheRowsInPlace(t *testing.T) {
 	}
 
 	m.focusIdx = foldRunStart
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	view := stripANSI(m.renderHistory())
 	if strings.Contains(view, "6 reads · 2 searches") {
@@ -208,7 +208,7 @@ func TestFold_EnterRestoresTheRowsInPlace(t *testing.T) {
 	}
 
 	// And enter folds it back — the fold is reversible from the keyboard.
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if view := stripANSI(m.renderHistory()); !strings.Contains(view, "6 reads · 2 searches") {
 		t.Fatalf("enter should fold the group back:\n%s", view)

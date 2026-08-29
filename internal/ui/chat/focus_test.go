@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -29,7 +29,7 @@ func focusModel(t *testing.T) Model {
 	return m
 }
 
-func ctrlE() tea.KeyMsg { return tea.KeyMsg{Type: tea.KeyCtrlE} }
+func ctrlE() tea.KeyPressMsg { return tea.KeyPressMsg{Code: 'e', Mod: tea.ModCtrl} }
 
 func TestFocusMode_EnterNavigateExpand(t *testing.T) {
 	m := focusModel(t)
@@ -43,17 +43,17 @@ func TestFocusMode_EnterNavigateExpand(t *testing.T) {
 	if m.focusIdx != 2 {
 		t.Fatalf("focus should start on the last expandable row, got %d", m.focusIdx)
 	}
-	if !strings.Contains(m.View(), "❯") {
+	if !strings.Contains(m.View().Content, "❯") {
 		t.Fatal("focus mode should render the selection pointer")
 	}
 
 	// k moves to the tool row; j moves back.
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'k', Text: "k"})
 	m = updated.(Model)
 	if m.focusIdx != 1 {
 		t.Fatalf("k should select the previous expandable row, got %d", m.focusIdx)
 	}
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'k', Text: "k"})
 	m = updated.(Model)
 	if m.focusIdx != 1 {
 		t.Fatalf("k at the first expandable row should stay put, got %d", m.focusIdx)
@@ -63,7 +63,7 @@ func TestFocusMode_EnterNavigateExpand(t *testing.T) {
 	if strings.Contains(m.renderHistory(), "result line 19") {
 		t.Fatal("tool output should be truncated before expansion")
 	}
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if !m.transcript[1].expanded {
 		t.Fatal("enter should expand the selected row")
@@ -71,7 +71,7 @@ func TestFocusMode_EnterNavigateExpand(t *testing.T) {
 	if !strings.Contains(m.renderHistory(), "result line 19") {
 		t.Fatal("expanded row should show the full output")
 	}
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.transcript[1].expanded {
 		t.Fatal("enter again should collapse the row")
@@ -84,12 +84,12 @@ func TestFocusMode_EscReturnsToInputKeepingExpansion(t *testing.T) {
 
 	updated, _ := m.Update(ctrlE())
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'k'}})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'k', Text: "k"})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	if m.state != stateInput {
 		t.Fatalf("esc should return to the input, got state %d", m.state)
@@ -139,7 +139,7 @@ func TestFocusMode_OpensOverAWorkingTurn(t *testing.T) {
 	if m.turnState() != stateStreaming || !m.working() {
 		t.Fatalf("the turn must keep running underneath, got turn state %d", m.turnState())
 	}
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	if m.state != stateStreaming {
 		t.Fatalf("esc should hand the screen back to the running turn, got state %d", m.state)

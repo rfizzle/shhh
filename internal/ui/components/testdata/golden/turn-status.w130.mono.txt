@@ -35,25 +35,25 @@
 
 ── ansi ────────────────────────────────────────────────────
 · phase · thinking
-␛[38;5;254m⠋ thinking…␛[0m␛[38;5;244m 4.2s␛[0m␛[38;5;244m · ↑41.2k ↓2.1k␛[0m␛[38;5;254m · $0.06␛[0m
+␛[38;5;254m⠋ thinking…␛[m␛[38;5;244m 4.2s␛[m␛[38;5;244m · ↑41.2k ↓2.1k␛[m␛[38;5;254m · $0.06␛[m
 
 · phase · deciding
-␛[38;5;254m⠋ deciding…␛[0m␛[38;5;244m 0.8s␛[0m␛[38;5;244m · ↑41.2k ↓2.1k␛[0m␛[38;5;254m · $0.06␛[0m
+␛[38;5;254m⠋ deciding…␛[m␛[38;5;244m 0.8s␛[m␛[38;5;244m · ↑41.2k ↓2.1k␛[m␛[38;5;254m · $0.06␛[m
 
 · phase · running, named
-␛[38;5;254m⠋ running go test ./internal/agent/...␛[0m␛[38;5;244m 12.4s␛[0m␛[38;5;244m · ↑41.2k ↓2.1k␛[0m␛[38;5;254m · $0.06␛[0m
+␛[38;5;254m⠋ running go test ./internal/agent/...␛[m␛[38;5;244m 12.4s␛[m␛[38;5;244m · ↑41.2k ↓2.1k␛[m␛[38;5;254m · $0.06␛[m
 
 · phase · streaming
-␛[38;5;254m⠋ streaming…␛[0m␛[38;5;244m 12.4s␛[0m␛[38;5;244m · ↑41.2k ↓2.1k␛[0m␛[38;5;254m · $0.06␛[0m
+␛[38;5;254m⠋ streaming…␛[m␛[38;5;244m 12.4s␛[m␛[38;5;244m · ↑41.2k ↓2.1k␛[m␛[38;5;254m · $0.06␛[m
 
 · unpriced · tokens, never a made-up zero
-␛[38;5;254m⠋ running go test ./internal/agent/...␛[0m␛[38;5;244m 12.4s␛[0m␛[38;5;244m · ↑41.2k ↓2.1k␛[0m␛[38;5;254m · ~43.3k tok␛[0m
+␛[38;5;254m⠋ running go test ./internal/agent/...␛[m␛[38;5;244m 12.4s␛[m␛[38;5;244m · ↑41.2k ↓2.1k␛[m␛[38;5;254m · ~43.3k tok␛[m
 
 · resolved · done
-␛[38;5;254m✓ done␛[0m␛[38;5;244m · 1m 04s␛[0m␛[38;5;244m · 18 tools␛[0m␛[38;5;254m · $0.14␛[0m
+␛[38;5;254m✓ done␛[m␛[38;5;244m · 1m 04s␛[m␛[38;5;244m · 18 tools␛[m␛[38;5;254m · $0.14␛[m
 
 · resolved · cancelled
-␛[38;5;244m⊘ cancelled␛[0m␛[38;5;244m · 8.1s␛[0m␛[38;5;244m · 5 tools␛[0m␛[38;5;254m · $0.14␛[0m
+␛[38;5;244m⊘ cancelled␛[m␛[38;5;244m · 8.1s␛[m␛[38;5;244m · 5 tools␛[m␛[38;5;254m · $0.14␛[m
 
 · resolved · failed
-␛[38;5;254m✗ failed␛[0m␛[38;5;244m · 3.4s␛[0m␛[38;5;244m · 2 tools␛[0m␛[38;5;254m · ~1.2k tok␛[0m
+␛[38;5;254m✗ failed␛[m␛[38;5;244m · 3.4s␛[m␛[38;5;244m · 2 tools␛[m␛[38;5;254m · ~1.2k tok␛[m

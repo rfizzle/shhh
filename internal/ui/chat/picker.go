@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -166,7 +166,7 @@ func closestOption(all []components.SelectOption, query string) string {
 }
 
 // updatePick routes keys while a picker is showing.
-func (m Model) updatePick(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updatePick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if keys.Match(msg, keys.Draft.Quit) {
 		m.quitting = true
 		return m, m.quitCmd()
@@ -286,7 +286,7 @@ func (m Model) startModelPick() (tea.Model, tea.Cmd) {
 
 // updateModelList routes keys while the model list is in flight: esc (or
 // ctrl+c) abandons the query and returns to the input.
-func (m Model) updateModelList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateModelList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Draft.Quit):
 		m.quitting = true

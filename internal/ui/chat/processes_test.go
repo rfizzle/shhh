@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -60,7 +60,7 @@ func TestProcessTool_StartApprovalFlow(t *testing.T) {
 	if len(executed) != 0 {
 		t.Fatal("the start must not run before approval")
 	}
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "start process web") {
 		t.Fatalf("confirm prompt should name the process start, got %q", view)
 	}
@@ -69,7 +69,7 @@ func TestProcessTool_StartApprovalFlow(t *testing.T) {
 	}
 
 	m = handover(t, m)
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
 	var done approvedToolDoneMsg
 	found := false
@@ -124,7 +124,7 @@ func TestProcessTool_SafetyFlaggedStartAlwaysAsks(t *testing.T) {
 	if m.state != stateConfirmRun {
 		t.Fatalf("a safety-flagged start must prompt, got state %d", m.state)
 	}
-	if !strings.Contains(m.View(), "⚠") {
+	if !strings.Contains(m.View().Content, "⚠") {
 		t.Fatal("confirm prompt should show the safety warning")
 	}
 }

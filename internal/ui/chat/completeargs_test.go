@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -53,7 +53,7 @@ func TestArgCompletion_PositionGatedOnPreviousToken(t *testing.T) {
 func TestArgCompletion_TabCompletesCurrentTokenOnly(t *testing.T) {
 	m := typeChars(t, readyModel(t), "/ui verbosity h")
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyTab})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
 	m = updated.(Model)
 	if m.input.Value() != "/ui verbosity high" {
 		t.Fatalf("tab should complete the argument token, got %q", m.input.Value())
@@ -63,7 +63,7 @@ func TestArgCompletion_TabCompletesCurrentTokenOnly(t *testing.T) {
 func TestArgCompletion_TabKeepsTextAfterTheCursor(t *testing.T) {
 	m := readyModel(t)
 	m.input.SetValue("/ui verb low")
-	m.input.SetCursor(len("/ui verb"))
+	m.input.SetCursorColumn(len("/ui verb"))
 	m.syncCompletions()
 	if !m.completionActive() {
 		t.Fatalf("the token under the cursor should open the menu, input %q", m.input.Value())
@@ -81,7 +81,7 @@ func TestArgCompletion_TabKeepsTextAfterTheCursor(t *testing.T) {
 func TestArgCompletion_NoTrailingSpaceOnLastPosition(t *testing.T) {
 	m := typeChars(t, readyModel(t), "/plan sa")
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyTab})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
 	m = updated.(Model)
 	if m.input.Value() != "/plan save" {
 		t.Fatalf("a final argument should not gain a trailing space, got %q", m.input.Value())
@@ -91,7 +91,7 @@ func TestArgCompletion_NoTrailingSpaceOnLastPosition(t *testing.T) {
 func TestArgCompletion_EnterRunsCompletedLine(t *testing.T) {
 	m := typeChars(t, readyModel(t), "/ui verbosity l")
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.input.Value() != "" {
 		t.Fatalf("enter should consume the input, got %q", m.input.Value())
@@ -237,14 +237,14 @@ func TestArgCompletion_DynamicSourceReadOncePerMenu(t *testing.T) {
 	}
 
 	// Arrowing and typing reuse the cache; closing the menu drops it.
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
 	m = typeChars(t, m, "p")
 	if calls != 1 {
 		t.Fatalf("keystrokes should not re-read the source, got %d reads", calls)
 	}
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	m = typeChars(t, m, "h")
 	if !m.completionActive() {
@@ -257,7 +257,7 @@ func TestArgCompletion_DynamicSourceReadOncePerMenu(t *testing.T) {
 
 func TestArgCompletion_MenuInView(t *testing.T) {
 	m := typeChars(t, readyModel(t), "/ui verbosity ")
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "low") || !strings.Contains(view, "tab complete") {
 		t.Fatal("the view should render the argument menu and its hint line")
 	}

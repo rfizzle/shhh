@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -157,7 +157,7 @@ func TestTurnClose_OneBlockPerTurn(t *testing.T) {
 func TestTurnClose_ARunFinishingIsNotATurnEnding(t *testing.T) {
 	m := runCapableModel("```bash\necho hi\n```")
 	m = sendText(t, m, "/run")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
 	updated, _ = m.Update(cmdDoneMsg{runID: m.agent.RunID(), command: "echo hi", output: "hi"})
 	m = updated.(Model)
@@ -260,7 +260,7 @@ func TestTurnClose_TheRoundPauseKeysAreInertOnACloseRow(t *testing.T) {
 		t.Fatalf("focus should land on the close rows, got kind %v", m.transcript[m.focusIdx].kind)
 	}
 	for _, key := range []string{keys.Shown(keys.Row.Rounds), keys.Shown(keys.Row.Uncap)} {
-		next, _ := m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(key)})
+		next, _ := m.updateFocus(tea.KeyPressMsg{Code: []rune(key)[0], Text: key})
 		got := next.(Model)
 		if got.state == stateUndoConfirm {
 			t.Errorf("%q is not an offer on a close row and must not arm the undo", key)
@@ -293,7 +293,7 @@ func TestTurnClose_ReachableFromFocusMode(t *testing.T) {
 
 	// [v] opens review mode over the turn's changeset (S-099); the surface
 	// names the turn it is reviewing.
-	updated, _ = m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(keys.Shown(keys.Row.Review))})
+	updated, _ = m.updateFocus(tea.KeyPressMsg{Code: []rune(keys.Shown(keys.Row.Review))[0], Text: keys.Shown(keys.Row.Review)})
 	review := updated.(Model)
 	if review.state != stateReview || review.review == nil {
 		t.Fatalf("[v] should open what the turn changed, got state %v", review.state)
@@ -305,7 +305,7 @@ func TestTurnClose_ReachableFromFocusMode(t *testing.T) {
 	// [u] arms the undo confirm (S-100) over the row that offered it: the
 	// prompt borrows the bottom panel and nothing is written until it is
 	// answered.
-	updated, _ = m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(keys.Shown(keys.Row.Undo))})
+	updated, _ = m.updateFocus(tea.KeyPressMsg{Code: []rune(keys.Shown(keys.Row.Undo))[0], Text: keys.Shown(keys.Row.Undo)})
 	undo := updated.(Model)
 	if undo.state != stateUndoConfirm || undo.undoAsk == nil {
 		t.Fatalf("[u] should ask before it writes, got state %v", undo.state)

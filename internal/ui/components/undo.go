@@ -15,8 +15,8 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -56,7 +56,7 @@ func (c UndoConfirm) touches() int { return c.Restores + c.Removes }
 // drift, and n, enter, esc and ctrl+c all decline. With nothing for [y] to
 // do — every file drifted — y is not bound, so the only ways out are the
 // deliberate [f] and declining.
-func (c *UndoConfirm) Update(msg tea.KeyMsg) (done bool, result any) {
+func (c *UndoConfirm) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Confirm.Yes):
 		if c.touches() == 0 {

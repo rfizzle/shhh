@@ -7,7 +7,6 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/x/term"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/runner"
@@ -97,7 +96,7 @@ func runSnippetsBrowser(db *storage.DB, snippets []storage.Snippet) error {
 	}
 
 	model := browse.New(items, actions)
-	p := tea.NewProgram(model, tea.WithAltScreen())
+	p := newProgram(model)
 	result, err := p.Run()
 	if err != nil {
 		return err

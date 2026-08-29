@@ -16,7 +16,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -228,10 +228,10 @@ type completeStyles struct {
 
 func newCompleteStyles(p components.ColorTokens) completeStyles {
 	return completeStyles{
-		Focus: lipgloss.NewStyle().Bold(true).Background(p.FocusBg),
-		Args:  lipgloss.NewStyle().Foreground(p.Dim),
-		Desc:  lipgloss.NewStyle().Foreground(p.Dim),
-		Hint:  lipgloss.NewStyle().Foreground(p.Dim).Italic(true),
+		Focus: lipgloss.NewStyle().Bold(true).Background(p.FocusBg.Color()),
+		Args:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Desc:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Hint:  lipgloss.NewStyle().Foreground(p.Dim.Color()).Italic(true),
 	}
 }
 
@@ -417,7 +417,7 @@ func (m *Model) acceptCompletion() {
 		}
 	}
 	m.input.SetValue(string(r[:start]) + text + string(r[end:]))
-	m.input.SetCursor(cursor)
+	m.input.SetCursorColumn(cursor)
 	m.syncCompletions()
 }
 

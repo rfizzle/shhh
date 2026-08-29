@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 )
@@ -54,13 +54,13 @@ func TestChildAskApprove(t *testing.T) {
 	if m.activeChildAsk() == nil {
 		t.Fatal("routed ask should be presentable")
 	}
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "writer-1") || !strings.Contains(view, "echo hi") {
 		t.Fatalf("view missing labeled child ask:\n%s", view)
 	}
 
 	m = handover(t, m)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
 	approved, ok := ask.Answered()
 	if !ok || !approved {
@@ -85,7 +85,7 @@ func TestChildAskDecline(t *testing.T) {
 	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventAsk, Ask: ask}})
 	m = updated.(Model)
 	m = handover(t, m)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	if _, answered := ask.Answered(); answered {
 		t.Fatal("esc leaves a routed request waiting, it does not answer it")
@@ -95,7 +95,7 @@ func TestChildAskDecline(t *testing.T) {
 	}
 
 	m = handover(t, m)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
 	m = updated.(Model)
 
 	approved, ok := ask.Answered()
@@ -146,7 +146,7 @@ func TestAgentRowsAndBadge(t *testing.T) {
 	}
 	waitFor(t, func() bool { a, _ := sup.ActiveCounts(); return a == 1 })
 
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "researcher-1") {
 		t.Fatalf("view missing the agent progress row:\n%s", view)
 	}

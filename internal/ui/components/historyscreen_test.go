@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/muesli/termenv"
 )
 
 func historyRows() []HistoryRow {
@@ -41,7 +41,7 @@ func historyScreen() *HistoryScreen {
 
 func typeIntoHistory(h *HistoryScreen, text string) {
 	for _, r := range text {
-		h.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+		h.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
 	}
 }
 
@@ -172,7 +172,7 @@ func TestHistoryScreen_FilterMatchesTheCommandToo(t *testing.T) {
 
 // The matched run is bolded in the row (§4a) rather than tinted.
 func TestHistoryScreen_MatchedRunIsBold(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	h := historyScreen()
 	h.Update(key("/"))
 	typeIntoHistory(h, "log")

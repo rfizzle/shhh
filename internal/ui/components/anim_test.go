@@ -6,9 +6,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/muesli/termenv"
 )
 
 // anim builds the label the frame's activity slot animates, so every test
@@ -76,7 +76,7 @@ func TestAnim_ZeroArrivingIsSettled(t *testing.T) {
 // escape sequence it was before S-154, and why no golden of a still frame
 // moved when the animation landed.
 func TestAnim_AtRestIsOneRun(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	want := sty.SpinText.Render("⠋ thinking…")
 	for frame := range animRest - animCrestSpread {
 		if got := (Anim{Frame: frame, Lead: "⠋ ", Label: "thinking…"}).View(); got != want {
@@ -88,7 +88,7 @@ func TestAnim_AtRestIsOneRun(t *testing.T) {
 // Mid-pass the crest is bright over a spin label — a light running along the
 // word, and the only thing on the line that is colour and nothing else.
 func TestAnim_SweepLightsTheCrest(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	lit := 0
 	for frame := range animRest + len("thinking…") {
 		out := (Anim{Frame: frame, Label: "thinking…"}).View()
@@ -112,7 +112,7 @@ func TestAnim_SweepLightsTheCrest(t *testing.T) {
 // label is byte-for-byte the unswept one. The entrance survives, because it is
 // a shape.
 func TestAnim_MonoDeclinesTheSweepAndKeepsTheEntrance(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	was := Mono()
 	SetMono(true)
 	t.Cleanup(func() { SetMono(was) })
@@ -132,7 +132,7 @@ func TestAnim_MonoDeclinesTheSweepAndKeepsTheEntrance(t *testing.T) {
 // The frames are a pure function of the value, so a golden can capture them
 // and the cache can be dropped at any time without the render changing.
 func TestAnim_IsDeterministicAcrossTheCache(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	first := make([]string, 0, animBirthSteps)
 	for arriving := animBirthSteps; arriving >= 0; arriving-- {
 		first = append(first, anim(3, arriving).View())
@@ -148,7 +148,7 @@ func TestAnim_IsDeterministicAcrossTheCache(t *testing.T) {
 // The palette swap is the memo's only invalidation: a frame kept across it
 // would be a colour from the theme the session just left.
 func TestAnim_PaletteSwapDropsTheFrames(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	was := Mono()
 	t.Cleanup(func() { SetMono(was) })
 	SetMono(false)

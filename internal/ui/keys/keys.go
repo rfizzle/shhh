@@ -28,8 +28,8 @@
 package keys
 
 import (
-	"github.com/charmbracelet/bubbles/key"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/key"
+	tea "charm.land/bubbletea/v2"
 )
 
 // Binding is one key shhh offers: the keystrokes it answers to, the spelling
@@ -46,7 +46,7 @@ func bind(shown, words string, presses ...string) Binding {
 // Match reports whether a keystroke is one of the given bindings. It is the
 // register's own so a caller needs one import rather than two, and so the
 // name does not collide with the `key` locals this tree is full of.
-func Match(msg tea.KeyMsg, bs ...Binding) bool {
+func Match(msg tea.KeyPressMsg, bs ...Binding) bool {
 	return key.Matches(msg, bs...)
 }
 

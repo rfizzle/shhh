@@ -12,8 +12,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/muesli/termenv"
 )
 
 // catalog is the /model list the artboard draws: long enough to window, with
@@ -165,7 +165,7 @@ func TestSelectFilter_MakesANewList(t *testing.T) {
 // The matched run is bold and never tinted: three background tints already
 // mean one thing each, and bold is the emphasis that survives mono.
 func TestSelectFilter_TheMatchedRunIsBoldNotTinted(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	for _, monoOn := range []bool{false, true} {
 		was := Mono()
 		SetMono(monoOn)

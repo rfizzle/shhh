@@ -4,41 +4,35 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
-// csiMsg is bubbletea's unrecognised-sequence message: a named byte slice.
-// The real type is unexported, so the test stands in a value of the same
-// shape — which is exactly what newlineKey recognises.
-type csiMsg []byte
-
-func TestNewlineKey_RecognisesBothEncodings(t *testing.T) {
+// The rule S-134 is: any modifier on Enter means a line break rather than a
+// send. Under v1 that had to be read out of the raw CSI the terminal sent,
+// because v1 had no name for a modified Enter; v2 names it, so the rule is a
+// rule about a key again (S-155).
+func TestNewlineKey_RecognisesEveryModifiedEnter(t *testing.T) {
 	cases := []struct {
 		name string
-		seq  string
+		msg  tea.Msg
 		want bool
 	}{
-		{"csi-u shift+enter", "\x1b[13;2u", true},
-		{"csi-u ctrl+enter", "\x1b[13;5u", true},
-		{"csi-u with event sub-parameters", "\x1b[13;2:1u", true},
-		{"csi-u plain enter", "\x1b[13;1u", false},
-		{"csi-u another key", "\x1b[97;2u", false},
-		{"modifyOtherKeys shift+enter", "\x1b[27;2;13~", true},
-		{"modifyOtherKeys plain enter", "\x1b[27;1;13~", false},
-		{"modifyOtherKeys another key", "\x1b[27;2;97~", false},
-		{"an unrelated sequence", "\x1b[1;2A", false},
-		{"truncated", "\x1b[", false},
+		{"shift+enter", tea.KeyPressMsg{Code: tea.KeyEnter, Mod: tea.ModShift}, true},
+		{"ctrl+enter", tea.KeyPressMsg{Code: tea.KeyEnter, Mod: tea.ModCtrl}, true},
+		{"alt+enter", tea.KeyPressMsg{Code: tea.KeyEnter, Mod: tea.ModAlt}, true},
+		{"plain enter", tea.KeyPressMsg{Code: tea.KeyEnter}, false},
+		{"another modified key", tea.KeyPressMsg{Code: 'a', Mod: tea.ModShift}, false},
 	}
 	for _, c := range cases {
-		if got := newlineKey(csiMsg(c.seq)); got != c.want {
-			t.Errorf("%s: newlineKey(%q) = %v, want %v", c.name, c.seq, got, c.want)
+		if got := newlineKey(c.msg); got != c.want {
+			t.Errorf("%s: newlineKey = %v, want %v", c.name, got, c.want)
 		}
 	}
 }
 
 func TestNewlineKey_IgnoresOrdinaryMessages(t *testing.T) {
 	for _, msg := range []tea.Msg{
-		tea.KeyMsg{Type: tea.KeyEnter},
+		tea.KeyPressMsg{Code: tea.KeyEnter},
 		tea.WindowSizeMsg{Width: 80, Height: 24},
 		nil,
 		"a string",
@@ -56,7 +50,7 @@ func TestUpdate_ShiftEnterInsertsNewlineWithoutSending(t *testing.T) {
 	m := frameModel(t, 100, 40)
 	m.input.SetValue("first line")
 
-	updated, _ := m.Update(csiMsg("\x1b[13;2u"))
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter, Mod: tea.ModShift})
 	next := updated.(Model)
 
 	if !strings.Contains(next.input.Value(), "\n") {
@@ -75,7 +69,7 @@ func TestUpdate_PlainEnterStillSends(t *testing.T) {
 	m := frameModel(t, 100, 40)
 	m.input.SetValue("send me")
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	next := updated.(Model)
 
 	if next.input.Value() != "" {
@@ -84,18 +78,4 @@ func TestUpdate_PlainEnterStillSends(t *testing.T) {
 	if len(next.transcript) == 0 {
 		t.Fatal("enter did not send the draft")
 	}
-}
-
-func TestRequestEnhancedKeys_AsksAndRestores(t *testing.T) {
-	var w strings.Builder
-	restore := RequestEnhancedKeys(&w)
-	if got := w.String(); got != modifyOtherKeysOn {
-		t.Fatalf("asked %q, want %q", got, modifyOtherKeysOn)
-	}
-	restore()
-	if got := w.String(); got != modifyOtherKeysOn+modifyOtherKeysOff {
-		t.Fatalf("after restore %q, want the request then the reset", got)
-	}
-	// A nil writer is the headless case; it must not panic.
-	RequestEnhancedKeys(nil)()
 }

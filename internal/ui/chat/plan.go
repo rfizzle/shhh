@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/plan"
@@ -78,7 +78,7 @@ func (m *Model) clearPlan() {
 }
 
 // updatePlanApprove handles keys while the plan-approval card is showing.
-func (m Model) updatePlanApprove(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updatePlanApprove(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch pressed := msg.String(); {
 	case pressed == "up", pressed == "k":
 		if m.planChoice > 0 {

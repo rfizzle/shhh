@@ -4,33 +4,33 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/diff"
 )
 
-func key(s string) tea.KeyMsg {
+func key(s string) tea.KeyPressMsg {
 	switch s {
 	case "enter":
-		return tea.KeyMsg{Type: tea.KeyEnter}
+		return tea.KeyPressMsg{Code: tea.KeyEnter}
 	case "esc":
-		return tea.KeyMsg{Type: tea.KeyEscape}
+		return tea.KeyPressMsg{Code: tea.KeyEscape}
 	case "tab":
-		return tea.KeyMsg{Type: tea.KeyTab}
+		return tea.KeyPressMsg{Code: tea.KeyTab}
 	case "space":
-		return tea.KeyMsg{Type: tea.KeySpace}
+		return tea.KeyPressMsg{Code: tea.KeySpace, Text: " "}
 	case "up":
-		return tea.KeyMsg{Type: tea.KeyUp}
+		return tea.KeyPressMsg{Code: tea.KeyUp}
 	case "down":
-		return tea.KeyMsg{Type: tea.KeyDown}
+		return tea.KeyPressMsg{Code: tea.KeyDown}
 	case "ctrl+c":
-		return tea.KeyMsg{Type: tea.KeyCtrlC}
+		return tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl}
 	case "ctrl+u":
-		return tea.KeyMsg{Type: tea.KeyCtrlU}
+		return tea.KeyPressMsg{Code: 'u', Mod: tea.ModCtrl}
 	case "backspace":
-		return tea.KeyMsg{Type: tea.KeyBackspace}
+		return tea.KeyPressMsg{Code: tea.KeyBackspace}
 	}
-	return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(s)}
+	return tea.KeyPressMsg{Code: []rune(s)[0], Text: s}
 }
 
 func TestApprovalCard_CommandVariant(t *testing.T) {
@@ -219,14 +219,14 @@ func TestApprovalCard_FullDiffKey(t *testing.T) {
 	if !strings.Contains(c.View(80), "d: full diff") {
 		t.Fatal("card should hint the full-diff key when FullDiff is set")
 	}
-	done, result := c.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	done, result := c.Update(tea.KeyPressMsg{Code: 'd', Text: "d"})
 	if !done || result != ApprovalFullDiff {
 		t.Fatalf("d should request the full diff, got done=%v result=%v", done, result)
 	}
 
 	// Without FullDiff, d is unrecognized and the card keeps waiting.
 	c.FullDiff = false
-	if done, _ := c.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}}); done {
+	if done, _ := c.Update(tea.KeyPressMsg{Code: 'd', Text: "d"}); done {
 		t.Fatal("d should be ignored when FullDiff is off")
 	}
 }

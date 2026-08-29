@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -76,7 +76,7 @@ type DiffView struct {
 // viewer was dismissed (esc from the collapsed or expanded form); result is
 // always nil. Esc from full screen steps back to the expanded view — esc
 // never destroys.
-func (d *DiffView) Update(msg tea.KeyMsg) (done bool, result any) {
+func (d *DiffView) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Reading.Expand):
 		// [enter] expand · [enter] full view · [enter again] collapse (§3b).
@@ -335,7 +335,7 @@ func renderSyntaxLine(prefix, text string, avail int, kind diff.Kind, span *diff
 			st = lipgloss.NewStyle()
 		}
 		if seg.Color != (Token{}) {
-			st = lipgloss.NewStyle().Foreground(seg.Color)
+			st = lipgloss.NewStyle().Foreground(seg.Color.Color())
 		}
 		s, e := 0, 0
 		if span != nil {
@@ -344,7 +344,7 @@ func renderSyntaxLine(prefix, text string, avail int, kind diff.Kind, span *diff
 		}
 		if e > s {
 			b.WriteString(st.Render(string(sr[:s])))
-			b.WriteString(st.Background(emphBg).Render(string(sr[s:e])))
+			b.WriteString(st.Background(emphBg.Color()).Render(string(sr[s:e])))
 			b.WriteString(st.Render(string(sr[e:])))
 		} else if len(sr) > 0 {
 			b.WriteString(st.Render(string(sr)))

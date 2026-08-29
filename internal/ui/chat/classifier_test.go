@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -191,7 +191,7 @@ func TestClassifierFlow_CtrlCFallsBackToPrompt(t *testing.T) {
 		t.Fatalf("expected a classifier check, got state %d", m.state)
 	}
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
 	if m.state != stateConfirmRun {
 		t.Fatalf("ctrl+c should skip the check and ask the user, got state %d", m.state)

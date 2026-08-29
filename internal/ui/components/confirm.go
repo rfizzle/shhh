@@ -1,7 +1,7 @@
 package components
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -14,7 +14,7 @@ type Confirm struct {
 
 // Update resolves on the first decisive key: y confirms; n, enter, esc, and
 // ctrl+c decline (default No). The result is a bool.
-func (c *Confirm) Update(msg tea.KeyMsg) (done bool, result any) {
+func (c *Confirm) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Confirm.Yes):
 		return true, true

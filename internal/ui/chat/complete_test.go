@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -19,7 +19,7 @@ func readyModel(t *testing.T) Model {
 func typeChars(t *testing.T, m Model, s string) Model {
 	t.Helper()
 	for _, r := range s {
-		updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+		updated, _ := m.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
 		m = updated.(Model)
 	}
 	return m
@@ -90,7 +90,7 @@ func TestCompletion_ArrowsMoveFocus(t *testing.T) {
 	m := typeChars(t, readyModel(t), "/mo")
 	first := m.completions[0].name
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
 	if m.completeIdx != 1 {
 		t.Fatalf("down should move focus to 1, got %d", m.completeIdx)
@@ -99,7 +99,7 @@ func TestCompletion_ArrowsMoveFocus(t *testing.T) {
 		t.Fatalf("moving focus should not touch the input, got %q", m.input.Value())
 	}
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyUp})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 	m = updated.(Model)
 	if m.completeIdx != 0 || m.completions[0].name != first {
 		t.Fatalf("up should move focus back to 0, got %d", m.completeIdx)
@@ -109,7 +109,7 @@ func TestCompletion_ArrowsMoveFocus(t *testing.T) {
 func TestCompletion_TabCompletes(t *testing.T) {
 	m := typeChars(t, readyModel(t), "/comp")
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyTab})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
 	m = updated.(Model)
 	if m.input.Value() != "/compact" {
 		t.Fatalf("tab should complete to /compact, got %q", m.input.Value())
@@ -119,7 +119,7 @@ func TestCompletion_TabCompletes(t *testing.T) {
 func TestCompletion_TabAddsSpaceForArgCommands(t *testing.T) {
 	m := typeChars(t, readyModel(t), "/rewi")
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyTab})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
 	m = updated.(Model)
 	if m.input.Value() != "/rewind " {
 		t.Fatalf("tab should complete to %q, got %q", "/rewind ", m.input.Value())
@@ -132,7 +132,7 @@ func TestCompletion_TabAddsSpaceForArgCommands(t *testing.T) {
 func TestCompletion_EnterRunsHighlighted(t *testing.T) {
 	m := typeChars(t, readyModel(t), "/cle")
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.input.Value() != "" {
 		t.Fatalf("enter should consume the input, got %q", m.input.Value())
@@ -146,7 +146,7 @@ func TestCompletion_EnterRunsHighlighted(t *testing.T) {
 func TestCompletion_EscDismissesKeepsDraft(t *testing.T) {
 	m := typeChars(t, readyModel(t), "/mo")
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	if m.completionActive() {
 		t.Fatal("esc should dismiss the menu")
@@ -187,7 +187,7 @@ func TestCompletion_AliasMatches(t *testing.T) {
 
 func TestCompletion_MenuInView(t *testing.T) {
 	m := typeChars(t, readyModel(t), "/mo")
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "/model") || !strings.Contains(view, "tab complete") {
 		t.Fatal("the view should render the completion menu and its hint line")
 	}
@@ -195,14 +195,14 @@ func TestCompletion_MenuInView(t *testing.T) {
 
 func TestCompletion_ShrinksViewport(t *testing.T) {
 	m := readyModel(t)
-	base := m.viewport.Height
+	base := m.viewport.Height()
 	m = typeChars(t, m, "/mo")
-	if m.viewport.Height >= base {
-		t.Fatalf("the open menu should shrink the viewport (%d -> %d)", base, m.viewport.Height)
+	if m.viewport.Height() >= base {
+		t.Fatalf("the open menu should shrink the viewport (%d -> %d)", base, m.viewport.Height())
 	}
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
-	if m.viewport.Height != base {
-		t.Fatalf("dismissing the menu should restore the viewport (%d != %d)", m.viewport.Height, base)
+	if m.viewport.Height() != base {
+		t.Fatalf("dismissing the menu should restore the viewport (%d != %d)", m.viewport.Height(), base)
 	}
 }

@@ -48,38 +48,38 @@
 
 ── ansi ────────────────────────────────────────────────────
 · a local runtime is answering · the likely fix is named
-␛[38;5;214m┌─ No model provider configured ───────────────────────────┐␛[0m
-␛[38;5;214m│␛[0m ␛[38;5;241mshhh looked in four places:␛[0m                              ␛[38;5;214m│␛[0m
-␛[38;5;214m│␛[0m   ␛[91m✗␛[0m ␛[38;5;252menv       ␛[0m␛[38;5;241mSHHH_API_KEY, OPENAI_API_KEY — unset␛[0m       ␛[38;5;214m│␛[0m
-␛[38;5;214m│␛[0m   ␛[91m✗␛[0m ␛[38;5;252mconfig    ␛[0m␛[38;5;241m~/.config/shhh/config.toml — no provider …␛[0m ␛[38;5;214m│␛[0m
-␛[38;5;214m│␛[0m   ␛[91m✗␛[0m ␛[38;5;252mprofiles  ␛[0m␛[38;5;241mno .toml in ~/.config/shhh/providers␛[0m       ␛[38;5;214m│␛[0m
-␛[38;5;214m│␛[0m   ␛[92m✓␛[0m ␛[38;5;252mlocal     ␛[0m␛[38;5;252mlocalhost:11434␛[0m␛[38;5;241m — llama3.3, qwen2.5-coder␛[0m  ␛[38;5;214m│␛[0m
-␛[38;5;214m│␛[0m                                                          ␛[38;5;214m│␛[0m
-␛[38;5;214m│␛[0m ␛[38;5;241mthe local runtime is already answering — that is the qu…␛[0m ␛[38;5;214m│␛[0m
-␛[38;5;214m├──────────────────────────────────────────────────────────┤␛[0m
-␛[38;5;214m│␛[0m ␛[94m[enter]␛[0m␛[38;5;241m setup wizard␛[0m␛[38;5;241m · ␛[0m␛[94m[p]␛[0m␛[38;5;241m paste a key␛[0m␛[38;5;241m · ␛[0m␛[94m[o]␛[0m␛[38;5;241m use llama3…␛[0m ␛[38;5;214m│␛[0m
-␛[38;5;214m└──────────────────────────────────────────────────────────┘␛[0m
+␛[38;5;214m┌─ No model provider configured ───────────────────────────┐␛[m
+␛[38;5;214m│␛[m ␛[38;5;241mshhh looked in four places:␛[m                              ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m   ␛[91m✗␛[m ␛[38;5;252menv       ␛[m␛[38;5;241mSHHH_API_KEY, OPENAI_API_KEY — unset␛[m       ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m   ␛[91m✗␛[m ␛[38;5;252mconfig    ␛[m␛[38;5;241m~/.config/shhh/config.toml — no provider …␛[m ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m   ␛[91m✗␛[m ␛[38;5;252mprofiles  ␛[m␛[38;5;241mno .toml in ~/.config/shhh/providers␛[m       ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m   ␛[92m✓␛[m ␛[38;5;252mlocal     ␛[m␛[38;5;252mlocalhost:11434␛[m␛[38;5;241m — llama3.3, qwen2.5-coder␛[m  ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m                                                          ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;241mthe local runtime is already answering — that is the qu…␛[m ␛[38;5;214m│␛[m
+␛[38;5;214m├──────────────────────────────────────────────────────────┤␛[m
+␛[38;5;214m│␛[m ␛[94m[enter]␛[m␛[38;5;241m setup wizard␛[m␛[38;5;241m · ␛[m␛[94m[p]␛[m␛[38;5;241m paste a key␛[m␛[38;5;241m · ␛[m␛[94m[o]␛[m␛[38;5;241m use llama3…␛[m ␛[38;5;214m│␛[m
+␛[38;5;214m└──────────────────────────────────────────────────────────┘␛[m
 
 · nothing anywhere · no fix to point at, and no local offer
-␛[38;5;214m┌─ No model provider configured ───────────────────────────┐␛[0m
-␛[38;5;214m│␛[0m ␛[38;5;241mshhh looked in four places:␛[0m                              ␛[38;5;214m│␛[0m
-␛[38;5;214m│␛[0m   ␛[91m✗␛[0m ␛[38;5;252menv       ␛[0m␛[38;5;241mSHHH_API_KEY, OPENAI_API_KEY — unset␛[0m       ␛[38;5;214m│␛[0m
-␛[38;5;214m│␛[0m   ␛[91m✗␛[0m ␛[38;5;252mconfig    ␛[0m␛[38;5;241m~/.config/shhh/config.toml — no provider …␛[0m ␛[38;5;214m│␛[0m
-␛[38;5;214m│␛[0m   ␛[91m✗␛[0m ␛[38;5;252mprofiles  ␛[0m␛[38;5;241mno .toml in ~/.config/shhh/providers␛[0m       ␛[38;5;214m│␛[0m
-␛[38;5;214m│␛[0m   ␛[91m✗␛[0m ␛[38;5;252mlocal     ␛[0m␛[38;5;241mlocalhost:11434 — nothing listening␛[0m        ␛[38;5;214m│␛[0m
-␛[38;5;214m├──────────────────────────────────────────────────────────┤␛[0m
-␛[38;5;214m│␛[0m ␛[94m[enter]␛[0m␛[38;5;241m setup wizard␛[0m␛[38;5;241m · ␛[0m␛[94m[p]␛[0m␛[38;5;241m paste a key␛[0m                   ␛[38;5;214m│␛[0m
-␛[38;5;214m└──────────────────────────────────────────────────────────┘␛[0m
+␛[38;5;214m┌─ No model provider configured ───────────────────────────┐␛[m
+␛[38;5;214m│␛[m ␛[38;5;241mshhh looked in four places:␛[m                              ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m   ␛[91m✗␛[m ␛[38;5;252menv       ␛[m␛[38;5;241mSHHH_API_KEY, OPENAI_API_KEY — unset␛[m       ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m   ␛[91m✗␛[m ␛[38;5;252mconfig    ␛[m␛[38;5;241m~/.config/shhh/config.toml — no provider …␛[m ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m   ␛[91m✗␛[m ␛[38;5;252mprofiles  ␛[m␛[38;5;241mno .toml in ~/.config/shhh/providers␛[m       ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m   ␛[91m✗␛[m ␛[38;5;252mlocal     ␛[m␛[38;5;241mlocalhost:11434 — nothing listening␛[m        ␛[38;5;214m│␛[m
+␛[38;5;214m├──────────────────────────────────────────────────────────┤␛[m
+␛[38;5;214m│␛[m ␛[94m[enter]␛[m␛[38;5;241m setup wizard␛[m␛[38;5;241m · ␛[m␛[94m[p]␛[m␛[38;5;241m paste a key␛[m                   ␛[38;5;214m│␛[m
+␛[38;5;214m└──────────────────────────────────────────────────────────┘␛[m
 
 · a gateway profile is ready but its variable is not exported
-␛[38;5;214m┌─ No model provider configured ───────────────────────────┐␛[0m
-␛[38;5;214m│␛[0m ␛[38;5;241mshhh looked in four places:␛[0m                              ␛[38;5;214m│␛[0m
-␛[38;5;214m│␛[0m   ␛[91m✗␛[0m ␛[38;5;252menv       ␛[0m␛[38;5;241mSHHH_API_KEY, OPENAI_API_KEY — unset␛[0m       ␛[38;5;214m│␛[0m
-␛[38;5;214m│␛[0m   ␛[91m✗␛[0m ␛[38;5;252mconfig    ␛[0m␛[38;5;241m~/.config/shhh/config.toml — no provider …␛[0m ␛[38;5;214m│␛[0m
-␛[38;5;214m│␛[0m   ␛[91m✗␛[0m ␛[38;5;252mprofiles  ␛[0m␛[38;5;241mlitellm (LITELLM_KEY unset)␛[0m                ␛[38;5;214m│␛[0m
-␛[38;5;214m│␛[0m   ␛[91m✗␛[0m ␛[38;5;252mlocal     ␛[0m␛[38;5;241mlocalhost:11434 — nothing listening␛[0m        ␛[38;5;214m│␛[0m
-␛[38;5;214m│␛[0m                                                          ␛[38;5;214m│␛[0m
-␛[38;5;214m│␛[0m ␛[38;5;241ma gateway profile loaded but its key is not exported — …␛[0m ␛[38;5;214m│␛[0m
-␛[38;5;214m├──────────────────────────────────────────────────────────┤␛[0m
-␛[38;5;214m│␛[0m ␛[94m[enter]␛[0m␛[38;5;241m setup wizard␛[0m␛[38;5;241m · ␛[0m␛[94m[p]␛[0m␛[38;5;241m paste a key␛[0m                   ␛[38;5;214m│␛[0m
-␛[38;5;214m└──────────────────────────────────────────────────────────┘␛[0m
+␛[38;5;214m┌─ No model provider configured ───────────────────────────┐␛[m
+␛[38;5;214m│␛[m ␛[38;5;241mshhh looked in four places:␛[m                              ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m   ␛[91m✗␛[m ␛[38;5;252menv       ␛[m␛[38;5;241mSHHH_API_KEY, OPENAI_API_KEY — unset␛[m       ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m   ␛[91m✗␛[m ␛[38;5;252mconfig    ␛[m␛[38;5;241m~/.config/shhh/config.toml — no provider …␛[m ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m   ␛[91m✗␛[m ␛[38;5;252mprofiles  ␛[m␛[38;5;241mlitellm (LITELLM_KEY unset)␛[m                ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m   ␛[91m✗␛[m ␛[38;5;252mlocal     ␛[m␛[38;5;241mlocalhost:11434 — nothing listening␛[m        ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m                                                          ␛[38;5;214m│␛[m
+␛[38;5;214m│␛[m ␛[38;5;241ma gateway profile loaded but its key is not exported — …␛[m ␛[38;5;214m│␛[m
+␛[38;5;214m├──────────────────────────────────────────────────────────┤␛[m
+␛[38;5;214m│␛[m ␛[94m[enter]␛[m␛[38;5;241m setup wizard␛[m␛[38;5;241m · ␛[m␛[94m[p]␛[m␛[38;5;241m paste a key␛[m                   ␛[38;5;214m│␛[m
+␛[38;5;214m└──────────────────────────────────────────────────────────┘␛[m

@@ -17,9 +17,8 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
-	"github.com/muesli/termenv"
+	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/project"
@@ -42,9 +41,9 @@ var goldenWidths = []int{60, 80, 110, 130}
 // be a copy of the layout block.
 func captureGolden(t *testing.T, name, surface string, widths []int, panels func(width int) []golden.Panel) {
 	t.Helper()
-	was := lipgloss.ColorProfile()
-	lipgloss.SetColorProfile(termenv.ANSI256)
-	t.Cleanup(func() { lipgloss.SetColorProfile(was) })
+	was := components.Profile()
+	components.SetProfile(colorprofile.ANSI256)
+	t.Cleanup(func() { components.SetProfile(was) })
 
 	for _, mono := range []bool{false, true} {
 		label := "color"
@@ -512,7 +511,7 @@ func TestGolden_ScrollGutter(t *testing.T) {
 			m := frameModel(t, width, 26)
 			m.transcript = entries
 			m.invalidateRenderCache()
-			m.viewport.Height = 8
+			m.viewport.SetHeight(8)
 			m.viewport.SetContent(m.renderHistory())
 			m.viewport.GotoBottom()
 			mut(&m)
@@ -598,14 +597,14 @@ func TestGolden_ReadingMode(t *testing.T) {
 			{Label: "expanded under the cursor · [-] joins the bar", View: reading(func(m *Model) {
 				m.moveFocus(-1)
 				m.moveFocus(-1)
-				next, _ := m.updateFocus(tea.KeyMsg{Type: tea.KeyEnter})
+				next, _ := m.updateFocus(tea.KeyPressMsg{Code: tea.KeyEnter})
 				*m = next.(Model)
 			})},
 			// The register with the cursor on a row that offers keys of its
 			// own: the mode's keys, then the row's under its own rail, which
 			// is the whole of what the keyboard can do from here.
 			{Label: "[?] · the mode's whole key register, where the bar was", View: reading(func(m *Model) {
-				next, _ := m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("?")})
+				next, _ := m.updateFocus(tea.KeyPressMsg{Code: '?', Text: "?"})
 				*m = next.(Model)
 			})},
 			{Label: "prose · nothing expandable, so no cursor and no position", View: func() string {

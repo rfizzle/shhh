@@ -3,8 +3,8 @@ package ui
 import (
 	"context"
 
-	"github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/spinner"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -69,9 +69,12 @@ func (m StreamModel) Init() tea.Cmd {
 	return tea.Batch(m.spinner.Tick, m.waitForEvent())
 }
 
-func (m StreamModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+// Update returns the stream itself rather than a tea.Model: it is a piece of
+// the generate UI, not a program, and saying so drops the type assertion
+// every caller used to make on the way back (S-155).
+func (m StreamModel) Update(msg tea.Msg) (StreamModel, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		switch pressed := msg.String(); {
 		case keys.Is(pressed, keys.Screen.Quit):
 			if !m.done {

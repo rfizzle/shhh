@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -67,7 +67,7 @@ func TestRemember_AlwaysPromptsEvenInPermissiveModes(t *testing.T) {
 		if len(*saves) != 0 {
 			t.Fatalf("%s: nothing may persist before confirmation", mode)
 		}
-		view := m.View()
+		view := m.View().Content
 		if !strings.Contains(view, "Remember this?") {
 			t.Fatalf("%s: prompt should render the memory card:\n%s", mode, view)
 		}
@@ -83,7 +83,7 @@ func TestRemember_SaveProjectScope(t *testing.T) {
 	m = handover(t, updated.(Model))
 
 	// Option 1 ("Save (project)") is focused by default; enter confirms.
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	if len(*saves) != 1 {
@@ -111,13 +111,13 @@ func TestRemember_SaveGlobalWithNote(t *testing.T) {
 	m = handover(t, updated.(Model))
 
 	// Jump to option 2 ("Save (global)"), tab into the note, type, confirm.
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'2'}})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: '2', Text: "2"})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyTab})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("Go only")})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'G', Text: "Go only"})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	if m.memoryAsk != nil || m.state != stateStreaming {
@@ -140,7 +140,7 @@ func TestRemember_Declined(t *testing.T) {
 	updated, _ := m.Update(rememberCall())
 	m = handover(t, updated.(Model))
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 
 	if len(*saves) != 0 {

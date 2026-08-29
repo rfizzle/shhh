@@ -23,13 +23,13 @@
 
 ── ansi ────────────────────────────────────────────────────
 · one image · the mark, the name, the size
-␛[38;5;254m▣ shot.png␛[0m␛[38;5;244m 412 KB␛[0m
+␛[38;5;254m▣ shot.png␛[m␛[38;5;244m 412 KB␛[m
 
 · one of each kind
-␛[38;5;254m▣ shot.png␛[0m␛[38;5;244m 412 KB␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m≡ notes.md␛[0m␛[38;5;244m 2 KB␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m▤ spec.pdf␛[0m␛[38;5;244m 1.1 MB␛[0m
+␛[38;5;254m▣ shot.png␛[m␛[38;5;244m 412 KB␛[m␛[38;5;244m · ␛[m␛[38;5;254m≡ notes.md␛[m␛[38;5;244m 2 KB␛[m␛[38;5;244m · ␛[m␛[38;5;254m▤ spec.pdf␛[m␛[38;5;244m 1.1 MB␛[m
 
 · more than the row can hold · whole chips, then a count
-␛[38;5;254m▣ shot.png␛[0m␛[38;5;244m 412 KB␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m≡ notes.md␛[0m␛[38;5;244m 2 KB␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m▤ spec.pdf␛[0m␛[38;5;244m 1.1 MB␛[0m␛[38;5;244m · +3 more␛[0m
+␛[38;5;254m▣ shot.png␛[m␛[38;5;244m 412 KB␛[m␛[38;5;244m · ␛[m␛[38;5;254m≡ notes.md␛[m␛[38;5;244m 2 KB␛[m␛[38;5;244m · ␛[m␛[38;5;254m▤ spec.pdf␛[m␛[38;5;244m 1.1 MB␛[m␛[38;5;244m · +3 more␛[m
 
 · a long name · clipped at the head, which is the half that names it
-␛[38;5;254m▣ screenshot-2026-08-…␛[0m␛[38;5;244m 412 KB␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m≡ notes.md␛[0m␛[38;5;244m 2 KB␛[0m
+␛[38;5;254m▣ screenshot-2026-08-…␛[m␛[38;5;244m 412 KB␛[m␛[38;5;244m · ␛[m␛[38;5;254m≡ notes.md␛[m␛[38;5;244m 2 KB␛[m

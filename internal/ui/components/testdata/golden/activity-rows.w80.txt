@@ -58,48 +58,48 @@
 
 ── ansi ────────────────────────────────────────────────────
 · kind · tool (read-only, no rail)
-   ␛[38;5;214m⚙␛[0m read    ␛[38;5;241minternal/agent/loop.go␛[0m                              ␛[38;5;245m218 lines␛[0m  ␛[38;5;245m0.6s␛[0m
+   ␛[38;5;214m⚙␛[m read    ␛[38;5;241minternal/agent/loop.go␛[m                              ␛[38;5;245m218 lines␛[m  ␛[38;5;245m0.6s␛[m
 
 · kind · command
-  ␛[38;5;214m▎␛[0m␛[38;5;214m$␛[0m run     ␛[38;5;241mgo test ./internal/agent/...␛[0m                           ␛[38;5;241mexit 0␛[0m ␛[38;5;245m12.4s␛[0m
+  ␛[38;5;214m▎␛[m␛[38;5;214m$␛[m run     ␛[38;5;241mgo test ./internal/agent/...␛[m                           ␛[38;5;241mexit 0␛[m ␛[38;5;245m12.4s␛[m
 
 · kind · edit
-  ␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m edit    ␛[38;5;241minternal/agent/loop.go␛[0m      ␛[38;5;241mapproved · you␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m+12 −4 · 2 hunks␛[0m  ␛[38;5;245m1.1s␛[0m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m edit    ␛[38;5;241minternal/agent/loop.go␛[m      ␛[38;5;241mapproved · you␛[m␛[38;5;241m · ␛[m␛[38;5;245m+12 −4 · 2 hunks␛[m  ␛[38;5;245m1.1s␛[m
 
 · kind · sub-agent
-   ␛[94m◇␛[0m agent   ␛[38;5;241mwriter-1 · docs/loop.md␛[0m                                    ␛[38;5;241mok␛[0m ␛[38;5;245m48.0s␛[0m
+   ␛[94m◇␛[m agent   ␛[38;5;241mwriter-1 · docs/loop.md␛[m                                    ␛[38;5;241mok␛[m ␛[38;5;245m48.0s␛[m
 
 · state · queued
-   ␛[38;5;241m·␛[0m read    ␛[38;5;241minternal/agent/loop.go␛[0m                                 ␛[38;5;241mqueued␛[0m     ␛[38;5;245m—␛[0m
+   ␛[38;5;241m·␛[m read    ␛[38;5;241minternal/agent/loop.go␛[m                                 ␛[38;5;241mqueued␛[m     ␛[38;5;245m—␛[m
 
 · state · running with live tail
-  ␛[38;5;214m▎␛[0m␛[38;5;205m▸␛[0m run     ␛[38;5;241mgo build ./cmd/shhh␛[0m                                  ␛[38;5;241mrunning…␛[0m
-  ␛[38;5;245minternal/ui/chat/model.go:1660:1: too many arguments␛[0m
+  ␛[38;5;214m▎␛[m␛[38;5;205m▸␛[m run     ␛[38;5;241mgo build ./cmd/shhh␛[m                                  ␛[38;5;241mrunning…␛[m
+  ␛[38;5;245minternal/ui/chat/model.go:1660:1: too many arguments␛[m
 
 · state · classifier checking
-   ␛[38;5;205m✦␛[0m read    ␛[38;5;241minternal/agent/loop.go␛[0m                               ␛[38;5;241mchecking␛[0m
+   ␛[38;5;205m✦␛[m read    ␛[38;5;241minternal/agent/loop.go␛[m                               ␛[38;5;241mchecking␛[m
 
 · state · failed, expanded
-  ␛[91m▎␛[0m␛[91m✗␛[0m run     ␛[38;5;241mgo test ./internal/agent/...␛[0m                           ␛[91mexit 1␛[0m ␛[38;5;245m21.4s␛[0m
-    ␛[38;5;245m--- FAIL: TestRoundLimit (0.00s)␛[0m
-    ␛[38;5;245m    loop_test.go:88: want ErrRoundLimit, got nil␛[0m
+  ␛[91m▎␛[m␛[91m✗␛[m run     ␛[38;5;241mgo test ./internal/agent/...␛[m                           ␛[91mexit 1␛[m ␛[38;5;245m21.4s␛[m
+    ␛[38;5;245m--- FAIL: TestRoundLimit (0.00s)␛[m
+    ␛[38;5;245m    loop_test.go:88: want ErrRoundLimit, got nil␛[m
 
 · output · a program's own colours, re-painted (§10i)
-  ␛[91m▎␛[0m␛[91m✗␛[0m run     ␛[38;5;241mgo test ./internal/agent/...␛[0m                           ␛[91mexit 1␛[0m ␛[38;5;245m21.4s␛[0m
-    ␛[38;5;245m--- ␛[0m␛[91mFAIL␛[0m␛[38;5;245m: ␛[0m␛[1;38;5;245mTestRoundLimit␛[0m␛[38;5;245m (0.00s)␛[0m
-    ␛[38;5;245mbuilding 100%␛[0m
+  ␛[91m▎␛[m␛[91m✗␛[m run     ␛[38;5;241mgo test ./internal/agent/...␛[m                           ␛[91mexit 1␛[m ␛[38;5;245m21.4s␛[m
+    ␛[38;5;245m--- ␛[m␛[91mFAIL␛[m␛[38;5;245m: ␛[m␛[1;38;5;245mTestRoundLimit␛[m␛[38;5;245m (0.00s)␛[m
+    ␛[38;5;245mbuilding 100%␛[m
 
 · state · denied by you
-  ␛[38;5;214m▎␛[0m␛[38;5;241m⊘␛[0m run     ␛[38;5;241mrm -rf ./build␛[0m                                   ␛[38;5;241mdenied · you␛[0m     ␛[38;5;245m—␛[0m
+  ␛[38;5;214m▎␛[m␛[38;5;241m⊘␛[m run     ␛[38;5;241mrm -rf ./build␛[m                                   ␛[38;5;241mdenied · you␛[m     ␛[38;5;245m—␛[m
 
 · state · denied by a rule
-  ␛[38;5;214m▎␛[0m␛[91m⊘␛[0m run     ␛[38;5;241mrm -rf ./build␛[0m          ␛[91mdenied · auto · plan mode␛[0m␛[38;5;241m · ␛[0m␛[94m/mode why␛[0m     ␛[38;5;245m—␛[0m
+  ␛[38;5;214m▎␛[m␛[91m⊘␛[m run     ␛[38;5;241mrm -rf ./build␛[m          ␛[91mdenied · auto · plan mode␛[m␛[38;5;241m · ␛[m␛[94m/mode why␛[m     ␛[38;5;245m—␛[m
 
 · state · auto-allowed
-   ␛[38;5;214m⚙␛[0m read    ␛[38;5;241minternal/agent/loop.go␛[0m   ␛[38;5;241mauto-allowed · read-only␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m218 lines␛[0m  ␛[38;5;245m0.6s␛[0m
+   ␛[38;5;214m⚙␛[m read    ␛[38;5;241minternal/agent/loop.go␛[m   ␛[38;5;241mauto-allowed · read-only␛[m␛[38;5;241m · ␛[m␛[38;5;245m218 lines␛[m  ␛[38;5;245m0.6s␛[m
 
 · focus · selected
-␛[94m❯␛[0m ␛[38;5;214m␛[0m␛[38;5;241m␛[0m␛[38;5;245m␛[0m␛[38;5;245m␛[0m␛[48;5;62m␛[94m␛[0m␛[48;5;62m ␛[38;5;214m⚙␛[0m␛[48;5;62m ␛[38;5;241m␛[0m␛[48;5;62m␛[38;5;245m␛[0m␛[48;5;62m␛[38;5;245m␛[0m␛[48;5;62m␛[97;48;5;62mread    internal/agent/loop.go                              218 lines  0.6s␛[0m␛[0m
+␛[94m❯␛[m ␛[38;5;214m␛[m␛[38;5;241m␛[m␛[38;5;245m␛[m␛[38;5;245m␛[m␛[48;5;62m␛[94m␛[m␛[48;5;62m ␛[38;5;214m⚙␛[m␛[48;5;62m ␛[38;5;241m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[38;5;245m␛[m␛[48;5;62m␛[97;48;5;62mread    internal/agent/loop.go                              218 lines  0.6s␛[m␛[m
 
 · overflow · target clips, outcome does not
-  ␛[38;5;214m▎␛[0m␛[38;5;214m✎␛[0m edit    ␛[38;5;241minternal/ui/components/a/very/deeply/nes…␛[0m  ␛[38;5;245m+128 −64 · 9 hunks␛[0m  ␛[38;5;245m3.2s␛[0m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m edit    ␛[38;5;241minternal/ui/components/a/very/deeply/nes…␛[m  ␛[38;5;245m+128 −64 · 9 hunks␛[m  ␛[38;5;245m3.2s␛[m

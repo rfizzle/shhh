@@ -15,7 +15,7 @@ package components
 import (
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 )
 
 // StartFact is one clause of the header line: `~/src/shhh`, `go 1.24`,

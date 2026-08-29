@@ -13,9 +13,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/muesli/termenv"
 	"github.com/rfizzle/shhh/internal/diff"
 )
 
@@ -27,14 +27,15 @@ func monoOn(t *testing.T) {
 	t.Cleanup(func() { SetMono(was) })
 }
 
-// withColorProfile forces lipgloss to actually emit ANSI, which it does not do
-// for a test binary's non-terminal stdout. The palette assertions need the
-// escape codes to be there to check them.
-func withColorProfile(t *testing.T, p termenv.Profile) {
+// withColorProfile forces the palette to resolve against a profile that has
+// colour to give, which the one detected from a test binary's non-terminal
+// stdout does not. The palette assertions need the escape codes to be there
+// to check them.
+func withColorProfile(t *testing.T, p colorprofile.Profile) {
 	t.Helper()
-	was := lipgloss.ColorProfile()
-	lipgloss.SetColorProfile(p)
-	t.Cleanup(func() { lipgloss.SetColorProfile(was) })
+	was := Profile()
+	SetProfile(p)
+	t.Cleanup(func() { SetProfile(was) })
 }
 
 type monoState struct {
@@ -698,6 +699,18 @@ func TestMonoConformance(t *testing.T) {
 // sgrParams pulls the parameter list out of every SGR escape in s.
 var sgrPattern = regexp.MustCompile(`\x1b\[([0-9;]*)m`)
 
+// index256 is the 256-colour index a token stands for, written the way an SGR
+// escape writes it. A token holds a colour value per profile rather than the
+// digits (S-155), so the digits are read back off the ANSI256 rung. The three
+// mono shades are all above sixteen, so all three are indexed colours.
+func index256(t Token) string {
+	i, ok := t.ANSI256.(lipgloss.ANSIColor)
+	if !ok {
+		return ""
+	}
+	return strconv.Itoa(int(i))
+}
+
 // allowedMonoSGR is what a mono render may emit: the attribute codes that
 // carry weight and shape, and the two greys (plus the selection background)
 // of tokens/colors.css. Anything else is a colour that survived the swap.
@@ -713,7 +726,7 @@ func allowedMonoSGR(params string) bool {
 				return false
 			}
 			switch fields[i+2] {
-			case MonoFg.ANSI256, MonoDim.ANSI256, MonoBg.ANSI256:
+			case index256(MonoFg), index256(MonoDim), index256(MonoBg):
 				i += 2
 				continue
 			}
@@ -733,7 +746,7 @@ func allowedMonoSGR(params string) bool {
 // merely keep states distinguishable, it actually strips the palette. Every
 // escape a surface emits must be an attribute or one of the mono shades.
 func TestMonoRendersTwoGreys(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	monoOn(t)
 	for _, s := range monoFixtures() {
 		for _, st := range s.states {
@@ -749,7 +762,7 @@ func TestMonoRendersTwoGreys(t *testing.T) {
 // TestMonoLeavesTheFullPaletteIntact guards the swap itself: turning mono off
 // restores the colours, so the check above is testing a real change.
 func TestMonoLeavesTheFullPaletteIntact(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	was := mono
 	t.Cleanup(func() { SetMono(was) })
 
@@ -782,7 +795,7 @@ func TestMonoLeavesTheFullPaletteIntact(t *testing.T) {
 // than collapsing it onto the two greys, because the +/- styling under it is
 // already carrying the distinction that matters.
 func TestMonoDeclinesSyntaxHighlighting(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	monoOn(t)
 	syntax := func(line string) []Segment {
 		return []Segment{{Text: line, Color: Palette.Info}}

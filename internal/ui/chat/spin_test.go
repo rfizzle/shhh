@@ -11,8 +11,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/spinner"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -75,7 +75,7 @@ func TestSpin_StartsWhenTheUserStartsATurn(t *testing.T) {
 		t.Fatal("an idle session animates nothing, so no chain should be running")
 	}
 	m.input.SetValue("do the thing")
-	next, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	next, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = next.(Model)
 	if m.turnState() != stateStreaming {
 		t.Fatalf("expected a turn in flight, got state %d", m.turnState())
@@ -145,7 +145,7 @@ func TestSpin_SurvivesEveryHandoff(t *testing.T) {
 func sendTextModel(t *testing.T, m Model, text string) tea.Model {
 	t.Helper()
 	m.input.SetValue(text)
-	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	next, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	return next
 }
 
@@ -171,7 +171,7 @@ func TestSpin_ResumesAfterTheLoopHasStopped(t *testing.T) {
 	// And a second turn starts a fresh one rather than waiting on the dead
 	// chain — which is the freeze the story reports.
 	stopped.input.SetValue("second")
-	again, cmd := stopped.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	again, cmd := stopped.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	rm := again.(Model)
 	if !rm.spinning || cmd == nil {
 		t.Fatal("a working state entered from idle must restart the loop")

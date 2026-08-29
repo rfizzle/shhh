@@ -31,7 +31,7 @@ package chat
 // [enter] on it.
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 // keys.Draft.Detail opens a step's detail. Ctrl+O was the chord left for it

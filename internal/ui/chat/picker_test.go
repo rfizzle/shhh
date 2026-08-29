@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -23,7 +23,7 @@ func TestModelPick_BareModelOpensPicker(t *testing.T) {
 		WithModelOptions([]string{"m1", "m2", "m3"})
 
 	m.input.SetValue("/model")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	if m.state != statePick || m.picker == nil {
@@ -33,9 +33,9 @@ func TestModelPick_BareModelOpensPicker(t *testing.T) {
 		t.Fatalf("the current model should be focused, got %q", m.picker.Options[m.picker.Focus].Label)
 	}
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	if m.state != stateInput {
@@ -58,9 +58,9 @@ func TestModelPick_EscCancels(t *testing.T) {
 		WithModelOptions([]string{"m1", "m2"})
 
 	m.input.SetValue("/model")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 
 	if m.state != stateInput || m.picker != nil {
@@ -89,7 +89,7 @@ func TestModelPick_FallsBackWithoutCatalog(t *testing.T) {
 		WithPricing(nil, "m1")
 
 	m.input.SetValue("/model")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	if m.state != stateInput {
@@ -105,7 +105,7 @@ func TestModePick_BareModeOpensPickerAndApplies(t *testing.T) {
 	m := readyModel(t)
 
 	m.input.SetValue("/mode")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	if m.state != statePick || m.picker == nil {
@@ -115,9 +115,9 @@ func TestModePick_BareModeOpensPickerAndApplies(t *testing.T) {
 		t.Fatalf("the current mode should be focused, got %q", m.picker.Options[m.picker.Focus].Label)
 	}
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	if m.mode != agent.ModeAcceptEdits {
@@ -132,10 +132,10 @@ func TestModePick_BareModeOpensPickerAndApplies(t *testing.T) {
 func TestPick_CtrlDQuits(t *testing.T) {
 	m := readyModel(t)
 	m.input.SetValue("/mode")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlD})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'd', Mod: tea.ModCtrl})
 	m = updated.(Model)
 	if !m.quitting || cmd == nil {
 		t.Fatal("ctrl+d in a picker should quit")
@@ -145,10 +145,10 @@ func TestPick_CtrlDQuits(t *testing.T) {
 func TestPick_RendersInBottomPanel(t *testing.T) {
 	m := readyModel(t)
 	m.input.SetValue("/mode")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "Permission mode") {
 		t.Fatal("the picker card should render in the view")
 	}
@@ -188,13 +188,13 @@ func TestPick_LongCatalogScrollsWithTheFocus(t *testing.T) {
 			t.Fatalf("the panel should stay exactly %d rows, got %d", budget, got)
 		}
 		if i < len(names)-1 {
-			updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
+			updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 			m = updated.(Model)
 		}
 	}
 	// The last option is reachable, which is what the old fixed slice made
 	// impossible.
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.modelName != "model-20" {
 		t.Fatalf("the bottom of the catalog should be selectable, got %q", m.modelName)
@@ -219,14 +219,14 @@ func pickIndex(t *testing.T, m Model, want string) int {
 func focusPick(t *testing.T, m Model, target int) Model {
 	t.Helper()
 	for m.picker.Focus < target {
-		updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyDown})
+		updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 		m = updated.(Model)
 	}
 	for m.picker.Focus > target {
-		updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyUp})
+		updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 		m = updated.(Model)
 	}
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	return updated.(Model)
 }
 
@@ -289,7 +289,7 @@ func TestChatPick_EscDoesNotLoad(t *testing.T) {
 	m := sendText(t, chatPickModel(t, "alpha", "beta"), "/load")
 	before := m.sessionName
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 
 	if m.state != stateInput || m.picker != nil {
@@ -463,7 +463,7 @@ func TestRunPick_SelectingEntersConfirm(t *testing.T) {
 			t.Fatal("handing off to the confirm prompt should not append an empty note")
 		}
 	}
-	if !strings.Contains(m.View(), "Approve command") {
+	if !strings.Contains(m.View().Content, "Approve command") {
 		t.Fatal("the confirm card should render after selecting")
 	}
 }
@@ -476,7 +476,7 @@ func TestRunPick_SelectedBlockKeepsSafetyWarnings(t *testing.T) {
 	if m.state != stateConfirmRun {
 		t.Fatalf("expected confirm state, got %d", m.state)
 	}
-	if !strings.Contains(m.View(), "⚠") {
+	if !strings.Contains(m.View().Content, "⚠") {
 		t.Fatal("a dangerous picked block should still show its safety warning")
 	}
 }
@@ -484,7 +484,7 @@ func TestRunPick_SelectedBlockKeepsSafetyWarnings(t *testing.T) {
 func TestRunPick_EscReturnsToInputWithoutRunning(t *testing.T) {
 	m := runCapableModel(twoBlockResponse)
 	m = sendText(t, m, "/run")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 
 	if m.state != stateInput || m.picker != nil {
@@ -601,7 +601,7 @@ func TestModelList_BareModelQueriesTheProvider(t *testing.T) {
 	})
 
 	m.input.SetValue("/model")
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.state != stateModelList {
 		t.Fatalf("bare /model should query the provider first, got state %v", m.state)
@@ -638,16 +638,16 @@ func TestModelList_QueriedOncePerSession(t *testing.T) {
 	})
 
 	m.input.SetValue("/model")
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	runBatch(cmd)
 	updated, _ = m.Update(modelListMsg{names: []string{"llama3", "qwen3:8b"}})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 
 	m.input.SetValue("/model")
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	if m.state != statePick {
@@ -664,7 +664,7 @@ func TestModelList_ErrorFallsBackToUsageText(t *testing.T) {
 	})
 
 	m.input.SetValue("/model")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	updated, _ = m.Update(modelListMsg{err: errors.New("connection refused")})
 	m = updated.(Model)
@@ -694,7 +694,7 @@ func TestModelList_ErrorKeepsCuratedCatalog(t *testing.T) {
 		})
 
 	m.input.SetValue("/model")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	updated, _ = m.Update(modelListMsg{err: errors.New("timeout")})
 	m = updated.(Model)
@@ -711,7 +711,7 @@ func TestModelList_EmptyEndpointReportsIt(t *testing.T) {
 	m := listerModel(t, func(context.Context) ([]string, error) { return nil, nil })
 
 	m.input.SetValue("/model")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	updated, _ = m.Update(modelListMsg{})
 	m = updated.(Model)
@@ -731,9 +731,9 @@ func TestModelList_EscCancelsTheQuery(t *testing.T) {
 	})
 
 	m.input.SetValue("/model")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 
 	if m.state != stateInput {
@@ -756,7 +756,7 @@ func TestModelList_WithoutASwitcherStaysOnText(t *testing.T) {
 		})
 
 	m.input.SetValue("/model")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.state != stateInput {
 		t.Fatalf("expected the text path, got state %v", m.state)
@@ -770,9 +770,9 @@ func TestModelList_RendersSpinnerWhileQuerying(t *testing.T) {
 	})
 
 	m.input.SetValue("/model")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
-	if !strings.Contains(m.View(), "Listing models…") {
+	if !strings.Contains(m.View().Content, "Listing models…") {
 		t.Fatal("the query should show its own status line")
 	}
 }
@@ -784,7 +784,7 @@ func TestModelList_RendersSpinnerWhileQuerying(t *testing.T) {
 func runes(t *testing.T, m Model, text string) Model {
 	t.Helper()
 	for _, r := range text {
-		updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+		updated, _ := m.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
 		m = updated.(Model)
 	}
 	return m
@@ -801,7 +801,7 @@ func TestModelPick_FilterNarrowsAndStillSwitchesTheRightModel(t *testing.T) {
 		WithModelOptions([]string{"gpt-5.2", "claude-opus-4.6", "claude-sonnet-4.6", "gemini-3-pro"})
 
 	m.input.SetValue("/model")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if !m.picker.Filterable {
 		t.Fatal("a picker over a catalog should offer the filter row")
@@ -819,7 +819,7 @@ func TestModelPick_FilterNarrowsAndStillSwitchesTheRightModel(t *testing.T) {
 		t.Fatalf("the row should still name the catalog it filtered, got %d", m.picker.Total)
 	}
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if switched != "claude-sonnet-4.6" {
 		t.Fatalf("the filtered choice should reach the apply intact, got %q", switched)
@@ -836,7 +836,7 @@ func TestModelPick_DigitsAreTextWhileTheQueryLineIsOpen(t *testing.T) {
 		WithModelOptions([]string{"gpt-5.2", "gpt-5.1", "o4-mini"})
 
 	m.input.SetValue("/model")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	m = runes(t, m, "/gpt-5.1")
 
@@ -861,21 +861,21 @@ func TestModelPick_ClearAndEscape(t *testing.T) {
 		WithModelOptions([]string{"gpt-5.2", "claude-opus-4.6", "gemini-3-pro"})
 
 	m.input.SetValue("/model")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	m = runes(t, m, "/gemini")
 	if len(m.picker.Options) != 1 {
 		t.Fatalf("the filter should have narrowed the list, got %d", len(m.picker.Options))
 	}
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlU})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'u', Mod: tea.ModCtrl})
 	m = updated.(Model)
 	if len(m.picker.Options) != 3 || m.picker.Query != "" {
 		t.Fatalf("ctrl+u should put the whole catalog back, got %d options and query %q",
 			len(m.picker.Options), m.picker.Query)
 	}
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	if m.state != stateInput || switched != "" || m.picker != nil {
 		t.Fatalf("esc should leave the picker changing nothing, state=%v switched=%q", m.state, switched)
@@ -892,7 +892,7 @@ func TestModelPick_NoMatchNamesTheClosestModel(t *testing.T) {
 		WithModelOptions([]string{"gpt-5.2", "claude-sonnet-4.6", "gemini-3-pro"})
 
 	m.input.SetValue("/model")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	m = runes(t, m, "/sonnet-5")
 
@@ -909,7 +909,7 @@ func TestModelPick_NoMatchNamesTheClosestModel(t *testing.T) {
 		}
 	}
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.state != statePick || switched != "" {
 		t.Fatalf("enter on a card that matched nothing should do nothing, state=%v switched=%q", m.state, switched)
@@ -949,7 +949,7 @@ func TestModelPick_MakeDefaultSwitchesAndPersists(t *testing.T) {
 		WithModelOptions([]string{"m1", "m2"})
 
 	m.input.SetValue("/model")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.picker == nil {
 		t.Fatal("bare /model should open the picker")
@@ -962,8 +962,8 @@ func TestModelPick_MakeDefaultSwitchesAndPersists(t *testing.T) {
 		}
 	}
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
-	updated, _ = updated.(Model).Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(keys.Shown(keys.Select.Alt))})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	updated, _ = updated.(Model).Update(tea.KeyPressMsg{Code: []rune(keys.Shown(keys.Select.Alt))[0], Text: keys.Shown(keys.Select.Alt)})
 	next := updated.(Model)
 
 	if switched != "m2" || next.modelName != "m2" {
@@ -987,7 +987,7 @@ func TestModelPick_NoWriterNoDefaultOffer(t *testing.T) {
 		WithModelOptions([]string{"m1", "m2"})
 
 	m.input.SetValue("/model")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.picker.AltKey != "" {
 		t.Errorf("no writer means no offer, got %q", m.picker.AltKey)

@@ -16,6 +16,6 @@ Paste a key for openai · replacing ···4f9c
 
 ── ansi ────────────────────────────────────────────────────
 · nothing pasted yet
-␛[38;5;254mPaste a key for openai␛[0m␛[38;5;244m · replacing ···4f9c␛[0m
-␛[38;5;244m▸ ␛[0m␛[38;5;254m␛[0m␛[1;48;5;237m ␛[0m
-␛[38;5;254m[enter]␛[0m␛[38;5;244m use it for this session␛[0m␛[38;5;244m · ␛[0m␛[38;5;254m[esc]␛[0m␛[38;5;244m keep the curren…␛[0m
+␛[38;5;254mPaste a key for openai␛[m␛[38;5;244m · replacing ···4f9c␛[m
+␛[38;5;244m▸ ␛[m␛[38;5;254m␛[m␛[1;48;5;237m ␛[m
+␛[38;5;254m[enter]␛[m␛[38;5;244m use it for this session␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m keep the curren…␛[m

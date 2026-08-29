@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -26,7 +26,7 @@ func appliedEditModel(t *testing.T) Model {
 			Arguments: fmt.Sprintf(`{"path":%q,"content":"package main\n"}`, path)},
 	}})
 	m = handover(t, updated.(Model))
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
 	for _, c := range unwrapBatch(cmd) {
 		if msg, ok := c().(approvedToolDoneMsg); ok {
@@ -83,7 +83,7 @@ func TestAppliedEdit_ErrorKeepsToolBlock(t *testing.T) {
 	if err := os.Remove(path); err != nil {
 		t.Fatal(err)
 	}
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
 	for _, c := range unwrapBatch(cmd) {
 		if msg, ok := c().(approvedToolDoneMsg); ok {
@@ -112,14 +112,14 @@ func TestFocusMode_DiffRowCyclesToFullScreen(t *testing.T) {
 	m := appliedEditModel(t)
 	m.state = stateInput // the resumed stream is irrelevant to focus mode
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlE})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'e', Mod: tea.ModCtrl})
 	m = updated.(Model)
 	if m.state != stateFocus {
 		t.Fatalf("ctrl+e should enter focus mode, got state %d", m.state)
 	}
 
 	// Enter expands the collapsed diff row in place.
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	d := m.transcript[m.focusIdx].diff
 	if d == nil || d.Mode != components.DiffExpanded {
@@ -127,18 +127,18 @@ func TestFocusMode_DiffRowCyclesToFullScreen(t *testing.T) {
 	}
 
 	// A second enter opens the full-screen view.
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.state != stateDiffFull || m.fullDiff != d {
 		t.Fatalf("second enter should open the diff full screen, got state %d", m.state)
 	}
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "j/k scroll") {
 		t.Fatal("full-screen view should show its key hints")
 	}
 
 	// Esc steps back to the expanded row in focus mode — nothing is lost.
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	if m.state != stateFocus || m.fullDiff != nil {
 		t.Fatalf("esc should return to focus mode, got state %d", m.state)
@@ -157,17 +157,17 @@ func TestApprovalFullDiff_RoundTrips(t *testing.T) {
 			Arguments: fmt.Sprintf(`{"path":%q,"content":"package main\n"}`, path)},
 	}})
 	m = handover(t, updated.(Model))
-	if !strings.Contains(m.View(), "d: full diff") {
+	if !strings.Contains(m.View().Content, "d: full diff") {
 		t.Fatal("edit approval should hint the full-diff key")
 	}
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'d'}})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'd', Text: "d"})
 	m = updated.(Model)
 	if m.state != stateDiffFull || m.fullDiff == nil {
 		t.Fatalf("d should open the pending edit full screen, got state %d", m.state)
 	}
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	if m.state != stateConfirmRun || m.pendingApproval == nil {
 		t.Fatalf("esc should return to the approval with it still pending, got state %d", m.state)
@@ -190,7 +190,7 @@ func TestSessionDiff_ReadsTheChangesetWithoutGit(t *testing.T) {
 	})
 	m.state = stateInput
 	m.input.SetValue("/diff")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.state != stateReview || m.review == nil {
 		t.Fatalf("/diff should open the session diff in review mode, got state %d", m.state)
@@ -198,14 +198,14 @@ func TestSessionDiff_ReadsTheChangesetWithoutGit(t *testing.T) {
 	if !m.review.ReadOnly {
 		t.Fatal("a cumulative diff has nothing to stage, so review opens read-only")
 	}
-	view := ansi.Strip(m.View())
+	view := ansi.Strip(m.View().Content)
 	for _, want := range []string{"session diff", "a.go", "- 1  old", "+ 1  new"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("session diff view should contain %q:\n%s", want, view)
 		}
 	}
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	if m.state != stateInput || m.review != nil {
 		t.Fatalf("esc should close the session diff, got state %d", m.state)
@@ -218,12 +218,12 @@ func TestSessionDiff_SpansEveryTurn(t *testing.T) {
 	m.changes.Add(2, changeset.Record{Path: "a.go", Before: "one\ntwo\n", After: "one\ntwo\nthree\n", BeforeExists: true, AfterExists: true})
 	m.state = stateInput
 	m.input.SetValue("/diff")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.review == nil {
 		t.Fatal("/diff should open with the cumulative session change")
 	}
-	view := ansi.Strip(m.View())
+	view := ansi.Strip(m.View().Content)
 	for _, want := range []string{"two", "three"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the session diff should span both turns, missing %q:\n%s", want, view)
@@ -235,7 +235,7 @@ func TestSessionDiff_Empty(t *testing.T) {
 	m := gatedModel(t, nil, nil)
 	m.state = stateInput
 	m.input.SetValue("/diff")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.state != stateInput {
 		t.Fatalf("an empty session diff should stay in input state, got %d", m.state)
@@ -263,12 +263,12 @@ func TestSessionDiff_EvictedSaysSo(t *testing.T) {
 
 	m.state = stateInput
 	m.input.SetValue("/diff")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.review == nil {
 		t.Fatal("the surviving turn should still render")
 	}
-	if !strings.Contains(ansi.Strip(m.View()), "dropped") {
-		t.Fatalf("the session diff should say earlier turns were dropped:\n%s", ansi.Strip(m.View()))
+	if !strings.Contains(ansi.Strip(m.View().Content), "dropped") {
+		t.Fatalf("the session diff should say earlier turns were dropped:\n%s", ansi.Strip(m.View().Content))
 	}
 }

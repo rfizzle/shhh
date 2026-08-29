@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 )
@@ -150,7 +150,7 @@ func TestRewind_BarePicker_EscKeepsConversation(t *testing.T) {
 		t.Fatalf("picker should list every checkpoint, got %d", len(m.rewindSelect.Options))
 	}
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	if m.state != stateInput || m.rewindSelect != nil {
 		t.Fatal("esc should dismiss the picker")
@@ -168,7 +168,7 @@ func TestRewind_BarePicker_SelectRewinds(t *testing.T) {
 
 	m = sendText(t, m, "/rewind")
 	// The focused row is the latest turn (options are latest-first).
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	if m.state != stateInput {

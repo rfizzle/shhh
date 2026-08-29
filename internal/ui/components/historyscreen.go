@@ -24,8 +24,8 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -151,7 +151,7 @@ type HistoryScreen struct {
 
 // Update is the screen's whole keyboard. The confirm answers first while it
 // is up — it holds the keyboard, and `y` is not a letter to it (invariant 5).
-func (h *HistoryScreen) Update(msg tea.KeyMsg) (done bool, result any) {
+func (h *HistoryScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	h.sync()
 	if h.confirm != nil {
 		return h.updateConfirm(msg)
@@ -230,7 +230,7 @@ func (h *HistoryScreen) SetQuery(query string) {
 	h.refilter()
 }
 
-func (h *HistoryScreen) updateConfirm(msg tea.KeyMsg) (bool, any) {
+func (h *HistoryScreen) updateConfirm(msg tea.KeyPressMsg) (bool, any) {
 	done, result := h.confirm.Update(msg)
 	if !done {
 		return false, nil

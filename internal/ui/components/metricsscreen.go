@@ -25,8 +25,8 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -130,7 +130,7 @@ type MetricsScreen struct {
 // offers `[q] quit` and nothing else: there is no pointer to move, nothing to
 // choose and nothing to change, so there is no key list to open either — a
 // `[?]` over a single key would be a row explaining the row above it.
-func (m *MetricsScreen) Update(msg tea.KeyMsg) (done bool, result any) {
+func (m *MetricsScreen) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Screen.Quit):
 		return true, nil

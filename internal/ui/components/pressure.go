@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -86,7 +86,7 @@ type PressureCard struct {
 // Update resolves on any offered key and on esc, which declines. The result
 // is the chosen keystroke, or "" for a decline — esc keeps going, which is
 // invariant 3 holding even at 94%.
-func (c *PressureCard) Update(msg tea.KeyMsg) (done bool, result any) {
+func (c *PressureCard) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	pressed := msg.String()
 	if keys.Is(pressed, keys.Select.Cancel) {
 		return true, ""

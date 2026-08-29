@@ -1,7 +1,7 @@
 package browse
 
 import (
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -36,16 +36,16 @@ func applyPalette() { sty = newStyles(components.Palette) }
 
 func newStyles(p components.ColorTokens) Styles {
 	return Styles{
-		ListTitle:      lipgloss.NewStyle().Bold(true).Foreground(p.Bright),
-		DetailTitle:    lipgloss.NewStyle().Bold(true).Foreground(p.Bright),
-		DetailBody:     lipgloss.NewStyle().Foreground(p.Body),
-		Cursor:         lipgloss.NewStyle().Foreground(p.Spin),
-		SelectedItem:   lipgloss.NewStyle().Bold(true).Foreground(p.Bright),
-		Item:           lipgloss.NewStyle().Foreground(p.Subtle),
-		Preview:        lipgloss.NewStyle().Foreground(p.Dim),
-		Hint:           lipgloss.NewStyle().Foreground(p.Dim),
-		ActiveAction:   lipgloss.NewStyle().Bold(true).Foreground(p.Bright).Background(p.FocusBg).Padding(0, 1),
-		InactiveAction: lipgloss.NewStyle().Foreground(p.Subtle).Padding(0, 1),
-		DividerLine:    lipgloss.NewStyle().Foreground(p.Dim),
+		ListTitle:      lipgloss.NewStyle().Bold(true).Foreground(p.Bright.Color()),
+		DetailTitle:    lipgloss.NewStyle().Bold(true).Foreground(p.Bright.Color()),
+		DetailBody:     lipgloss.NewStyle().Foreground(p.Body.Color()),
+		Cursor:         lipgloss.NewStyle().Foreground(p.Spin.Color()),
+		SelectedItem:   lipgloss.NewStyle().Bold(true).Foreground(p.Bright.Color()),
+		Item:           lipgloss.NewStyle().Foreground(p.Subtle.Color()),
+		Preview:        lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Hint:           lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		ActiveAction:   lipgloss.NewStyle().Bold(true).Foreground(p.Bright.Color()).Background(p.FocusBg.Color()).Padding(0, 1),
+		InactiveAction: lipgloss.NewStyle().Foreground(p.Subtle.Color()).Padding(0, 1),
+		DividerLine:    lipgloss.NewStyle().Foreground(p.Dim.Color()),
 	}
 }

@@ -108,9 +108,9 @@ func (s *streamingMarkdown) Render(content string, width int) string {
 	if strings.TrimSpace(tail) == "" {
 		// The message ends at the boundary; the cached render is the answer,
 		// finished the way renderMarkdown finishes a whole document.
-		return strings.TrimSpace(s.stablePrefixRender)
+		return trimBlankLines(s.stablePrefixRender)
 	}
-	return strings.TrimSpace(s.stablePrefixRender + "\n" + renderContinuation(tail, width, false))
+	return trimBlankLines(s.stablePrefixRender + "\n" + renderContinuation(tail, width, false))
 }
 
 // adopt moves the boundary out to p, folding the chunk that has just become
@@ -543,7 +543,7 @@ func renderContinuation(text string, width int, continued bool) string {
 	// A continued block keeps the padding on its last line, because the seam
 	// after it needs the line at full width; the block that ends the message
 	// is trimmed the way renderMarkdown trims a finished document.
-	out := strings.TrimSpace(raw)
+	out := trimBlankLines(raw)
 	if continued {
 		out = trimUnfinished(raw)
 	}
@@ -563,13 +563,13 @@ func renderUnfinished(text string, width int) string {
 }
 
 // trimUnfinished finishes a raw glamour render that another block will follow:
-// the leading margin and the trailing newline go, and the padding on the last
-// line stays. renderMarkdown trims that padding, because a finished document
-// has nothing after it; here the seam does, and in mono — where the padding is
-// literal spaces rather than spaces inside an escape — trimming it would lose
-// a byte the whole render has (§10f).
+// the blank lines it opens with and the trailing newline go, and the padding
+// on the last line stays. trimBlankLines takes that padding off, because a
+// finished document has nothing after it; here the seam does, and in mono —
+// where the padding is literal spaces rather than spaces inside an escape —
+// trimming it would lose a byte the whole render has (§10f).
 func trimUnfinished(raw string) string {
-	return strings.TrimRight(strings.TrimLeft(raw, " \t\n"), "\n")
+	return strings.TrimRight(dropLeadingBlankLines(raw), "\n")
 }
 
 var (

@@ -10,7 +10,7 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
@@ -789,13 +789,14 @@ func (m *Model) syncViewport() {
 	// surfaces open and close, and the inspector rail takes columns whenever
 	// the pane split toggles (S-092).
 	h, w := m.viewportHeight(), m.transcriptWidth()
-	if h == m.viewport.Height && w == m.viewport.Width {
+	if h == m.viewport.Height() && w == m.viewport.Width() {
 		return
 	}
 	// The pane split can take columns without a terminal resize (S-092), and
 	// a selection's coordinates were taken at the old width (S-145).
 	m.resizeSelection(w)
-	m.viewport.Height, m.viewport.Width = h, w
+	m.viewport.SetHeight(h)
+	m.viewport.SetWidth(w)
 	m.viewport.SetContent(m.renderHistory())
 	m.viewport.GotoBottom()
 }

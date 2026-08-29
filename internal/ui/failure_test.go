@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
@@ -122,39 +122,39 @@ func TestPlainProviderReport_NamesEveryPlace(t *testing.T) {
 
 func TestNewProviderSetup_OffersLocalOnlyWhenSomethingAnswered(t *testing.T) {
 	without := NewProviderSetup(resolve.Survey{Provider: "openai"}, []string{"openai"})
-	if got := ansi.Strip(without.View()); strings.Contains(got, "[o]") {
+	if got := ansi.Strip(without.View().Content); strings.Contains(got, "[o]") {
 		t.Errorf("with nothing local, the card must not offer it, got:\n%s", got)
 	}
 	with := NewProviderSetup(resolve.Survey{
 		Provider: "openai", LocalBaseURL: "http://localhost:11434/v1", LocalModel: "llama3.3",
 	}, []string{"openai"})
-	if got := ansi.Strip(with.View()); !strings.Contains(got, "[o] use llama3.3 locally") {
+	if got := ansi.Strip(with.View().Content); !strings.Contains(got, "[o] use llama3.3 locally") {
 		t.Errorf("an answering endpoint should be offered by name, got:\n%s", got)
 	}
 }
 
 // setupKey drives the program the way bubbletea would.
-func setupKey(m ProviderSetup, key tea.KeyMsg) ProviderSetup {
+func setupKey(m ProviderSetup, key tea.KeyPressMsg) ProviderSetup {
 	next, _ := m.Update(key)
 	return next.(ProviderSetup)
 }
 
-func pressRune(r rune) tea.KeyMsg { return tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}} }
+func pressRune(r rune) tea.KeyPressMsg { return tea.KeyPressMsg{Code: r, Text: string(r)} }
 
 func TestProviderSetup_PasteAKeyForTheProviderThatFailed(t *testing.T) {
 	m := NewProviderSetup(resolve.Survey{Provider: "anthropic"}, []string{"anthropic", "openai"})
 	m = setupKey(m, pressRune('p'))
-	if got := ansi.Strip(m.View()); !strings.Contains(got, "Paste a key for anthropic") {
+	if got := ansi.Strip(m.View().Content); !strings.Contains(got, "Paste a key for anthropic") {
 		t.Fatalf("[p] should prompt for the resolved provider's key, got:\n%s", got)
 	}
 	for _, r := range "sk-ant-1234" {
 		m = setupKey(m, pressRune(r))
 	}
-	if got := ansi.Strip(m.View()); strings.Contains(got, "sk-ant") {
+	if got := ansi.Strip(m.View().Content); strings.Contains(got, "sk-ant") {
 		t.Errorf("the key must never be echoed, got:\n%s", got)
 	}
-	m = setupKey(m, tea.KeyMsg{Type: tea.KeyEnter})
-	if got := ansi.Strip(m.View()); !strings.Contains(got, "Save this to the config file") {
+	m = setupKey(m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if got := ansi.Strip(m.View().Content); !strings.Contains(got, "Save this to the config file") {
 		t.Fatalf("a pasted key should ask whether to keep it, got:\n%s", got)
 	}
 	m = setupKey(m, pressRune('n'))
@@ -169,16 +169,16 @@ func TestProviderSetup_PasteAKeyForTheProviderThatFailed(t *testing.T) {
 
 func TestProviderSetup_WizardPicksAProviderFirst(t *testing.T) {
 	m := NewProviderSetup(resolve.Survey{Provider: "openai"}, []string{"anthropic", "openai"})
-	m = setupKey(m, tea.KeyMsg{Type: tea.KeyEnter})
-	if got := ansi.Strip(m.View()); !strings.Contains(got, "Which provider") {
+	m = setupKey(m, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if got := ansi.Strip(m.View().Content); !strings.Contains(got, "Which provider") {
 		t.Fatalf("enter should open the provider list, got:\n%s", got)
 	}
-	m = setupKey(m, tea.KeyMsg{Type: tea.KeyDown})
-	m = setupKey(m, tea.KeyMsg{Type: tea.KeyEnter})
+	m = setupKey(m, tea.KeyPressMsg{Code: tea.KeyDown})
+	m = setupKey(m, tea.KeyPressMsg{Code: tea.KeyEnter})
 	for _, r := range "sk-9999" {
 		m = setupKey(m, pressRune(r))
 	}
-	m = setupKey(m, tea.KeyMsg{Type: tea.KeyEnter})
+	m = setupKey(m, tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = setupKey(m, pressRune('y'))
 	choice := m.Choice()
 	if choice.Provider != "openai" || choice.APIKey != "sk-9999" || !choice.Save {
@@ -206,7 +206,7 @@ func TestProviderSetup_LocalNeedsNoKey(t *testing.T) {
 
 func TestProviderSetup_EscChoosesNothing(t *testing.T) {
 	m := NewProviderSetup(resolve.Survey{Provider: "openai"}, []string{"openai"})
-	m = setupKey(m, tea.KeyMsg{Type: tea.KeyEsc})
+	m = setupKey(m, tea.KeyPressMsg{Code: tea.KeyEscape})
 	if m.Choice().Chosen {
 		t.Error("esc dismisses; it must not choose a provider")
 	}
@@ -217,8 +217,8 @@ func TestProviderSetup_AnEmptyKeyMeansDifferentThingsInTheTwoPaths(t *testing.T)
 	// returns to the card rather than starting a session on an empty key.
 	declined := NewProviderSetup(resolve.Survey{Provider: "openai"}, []string{"openai"})
 	declined = setupKey(declined, pressRune('p'))
-	declined = setupKey(declined, tea.KeyMsg{Type: tea.KeyEnter})
-	if got := ansi.Strip(declined.View()); !strings.Contains(got, "No model provider configured") {
+	declined = setupKey(declined, tea.KeyPressMsg{Code: tea.KeyEnter})
+	if got := ansi.Strip(declined.View().Content); !strings.Contains(got, "No model provider configured") {
 		t.Errorf("an empty paste should return to the card, got:\n%s", got)
 	}
 	if declined.Choice().Chosen {
@@ -228,9 +228,9 @@ func TestProviderSetup_AnEmptyKeyMeansDifferentThingsInTheTwoPaths(t *testing.T)
 	// The wizard's empty key is meaningful: a gateway or a local runtime may
 	// need none, and the prompt says so.
 	wizard := NewProviderSetup(resolve.Survey{Provider: "openai"}, []string{"openai-compatible"})
-	wizard = setupKey(wizard, tea.KeyMsg{Type: tea.KeyEnter})
-	wizard = setupKey(wizard, tea.KeyMsg{Type: tea.KeyEnter})
-	wizard = setupKey(wizard, tea.KeyMsg{Type: tea.KeyEnter})
+	wizard = setupKey(wizard, tea.KeyPressMsg{Code: tea.KeyEnter})
+	wizard = setupKey(wizard, tea.KeyPressMsg{Code: tea.KeyEnter})
+	wizard = setupKey(wizard, tea.KeyPressMsg{Code: tea.KeyEnter})
 	wizard = setupKey(wizard, pressRune('n'))
 	choice := wizard.Choice()
 	if !choice.Chosen || choice.Provider != "openai-compatible" || choice.APIKey != "" {

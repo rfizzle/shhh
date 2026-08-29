@@ -1,7 +1,7 @@
 package chat
 
 import (
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -88,36 +88,36 @@ func applyPalette() {
 // theme can be rendered in a test without swapping the session's.
 func newStyles(p components.ColorTokens) Styles {
 	return Styles{
-		User:       lipgloss.NewStyle().Bold(true).Foreground(p.Info),
-		Assistant:  lipgloss.NewStyle().Bold(true).Foreground(p.Add),
-		Error:      lipgloss.NewStyle().Foreground(p.Del),
-		SystemMsg:  lipgloss.NewStyle().Foreground(p.Dim).Italic(true),
-		Header:     lipgloss.NewStyle().Bold(true).Foreground(p.Bright),
-		HeaderHint: lipgloss.NewStyle().Foreground(p.Dim),
-		Welcome:    lipgloss.NewStyle().Foreground(p.Dim).Italic(true),
-		Tool:       lipgloss.NewStyle().Foreground(p.Accent),
-		ToolArgs:   lipgloss.NewStyle().Foreground(p.Dim),
-		StatusBar:  lipgloss.NewStyle().Foreground(p.Status),
+		User:       lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
+		Assistant:  lipgloss.NewStyle().Bold(true).Foreground(p.Add.Color()),
+		Error:      lipgloss.NewStyle().Foreground(p.Del.Color()),
+		SystemMsg:  lipgloss.NewStyle().Foreground(p.Dim.Color()).Italic(true),
+		Header:     lipgloss.NewStyle().Bold(true).Foreground(p.Bright.Color()),
+		HeaderHint: lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		Welcome:    lipgloss.NewStyle().Foreground(p.Dim.Color()).Italic(true),
+		Tool:       lipgloss.NewStyle().Foreground(p.Accent.Color()),
+		ToolArgs:   lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		StatusBar:  lipgloss.NewStyle().Foreground(p.Status.Color()),
 
-		ModePermissive: lipgloss.NewStyle().Foreground(p.Add),
-		ModeGated:      lipgloss.NewStyle().Foreground(p.Accent),
-		CtxAlert:       lipgloss.NewStyle().Bold(true).Foreground(p.Del),
-		UpdateNotice:   lipgloss.NewStyle().Foreground(p.Accent),
+		ModePermissive: lipgloss.NewStyle().Foreground(p.Add.Color()),
+		ModeGated:      lipgloss.NewStyle().Foreground(p.Accent.Color()),
+		CtxAlert:       lipgloss.NewStyle().Bold(true).Foreground(p.Del.Color()),
+		UpdateNotice:   lipgloss.NewStyle().Foreground(p.Accent.Color()),
 
 		// The reading cursor is info, as the pointer is on every artboard
 		// that draws one; the accent belongs to the mutation rail beside it
 		// (§14).
-		FocusMarker: lipgloss.NewStyle().Foreground(p.Info),
+		FocusMarker: lipgloss.NewStyle().Foreground(p.Info.Color()),
 
 		Step: stepStyles{
-			Title:     lipgloss.NewStyle().Foreground(p.Body),
-			LiveTitle: lipgloss.NewStyle().Foreground(p.Bright),
-			Rule:      lipgloss.NewStyle().Foreground(p.Dim),
-			Stats:     lipgloss.NewStyle().Foreground(p.Dim),
-			Dim:       lipgloss.NewStyle().Foreground(p.Dim),
-			Done:      lipgloss.NewStyle().Foreground(p.Add),
-			Fail:      lipgloss.NewStyle().Foreground(p.Del),
-			Run:       lipgloss.NewStyle().Foreground(p.Spin),
+			Title:     lipgloss.NewStyle().Foreground(p.Body.Color()),
+			LiveTitle: lipgloss.NewStyle().Foreground(p.Bright.Color()),
+			Rule:      lipgloss.NewStyle().Foreground(p.Dim.Color()),
+			Stats:     lipgloss.NewStyle().Foreground(p.Dim.Color()),
+			Dim:       lipgloss.NewStyle().Foreground(p.Dim.Color()),
+			Done:      lipgloss.NewStyle().Foreground(p.Add.Color()),
+			Fail:      lipgloss.NewStyle().Foreground(p.Del.Color()),
+			Run:       lipgloss.NewStyle().Foreground(p.Spin.Color()),
 		},
 
 		Reading:  newReadingStyles(p),

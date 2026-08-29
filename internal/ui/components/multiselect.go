@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -53,7 +53,7 @@ func (s *MultiSelect) count() int {
 	return n
 }
 
-func (s *MultiSelect) Update(msg tea.KeyMsg) (done bool, result any) {
+func (s *MultiSelect) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	s.notice = ""
 	switch pressed := msg.String(); {
 	case pressed == "up", pressed == "k":

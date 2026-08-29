@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -75,7 +75,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.ready = true
 		return m, nil
 
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		if m.filter.Focused() {
 			switch msg.String() {
 			case keys.Shown(keys.Select.Cancel):
@@ -109,7 +109,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Model) updateList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Browse.Quit):
 		m.quit = true
@@ -134,13 +134,15 @@ func (m Model) updateList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.action = 0
 		}
 	case keys.Is(pressed, keys.Browse.Filter):
-		m.filter.Focus()
-		return m, m.filter.Cursor.BlinkCmd()
+		// Focusing the input is what starts its caret blinking in v2, so the
+		// two are one call rather than a focus and a remembered follow-up
+		// (S-155).
+		return m, m.filter.Focus()
 	}
 	return m, nil
 }
 
-func (m Model) updateDetail(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateDetail(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Browse.Leave):
 		m.quit = true
@@ -184,7 +186,17 @@ func (m Model) updateDetail(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m Model) View() string {
+// View is the frame: the screen the browser paints, and the one terminal
+// state it asks for. In v2 the alt screen is a field on the view rather than
+// an option each host remembers to pass (S-155), so the browser owns the
+// whole-window surface it was written for.
+func (m Model) View() tea.View {
+	v := tea.NewView(m.screen())
+	v.AltScreen = true
+	return v
+}
+
+func (m Model) screen() string {
 	if m.quit {
 		return ""
 	}

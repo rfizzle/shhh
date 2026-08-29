@@ -19,8 +19,8 @@ import (
 	"strconv"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -313,7 +313,7 @@ type ProviderCard struct {
 // Update resolves on any offered key, and on esc, which declines. The result
 // is the chosen keystroke, or "" for a decline — esc always dismisses, never
 // destroys.
-func (c *ProviderCard) Update(msg tea.KeyMsg) (done bool, result any) {
+func (c *ProviderCard) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	pressed := msg.String()
 	if keys.Is(pressed, keys.Screen.Quit) {
 		return true, ""
@@ -414,24 +414,24 @@ type SecretPrompt struct {
 // Update accumulates the key. Enter resolves to what was typed, esc to "";
 // backspace deletes; every other printable rune is appended. Paste arrives as
 // a run of runes, which is the ordinary case here.
-func (s *SecretPrompt) Update(msg tea.KeyMsg) (done bool, result any) {
-	switch msg.Type {
+func (s *SecretPrompt) Update(msg tea.KeyPressMsg) (done bool, result any) {
+	switch msg.Code {
 	case tea.KeyEnter:
 		return true, strings.TrimSpace(string(s.value))
-	case tea.KeyEsc, tea.KeyCtrlC:
+	case tea.KeyEscape:
 		return true, ""
 	case tea.KeyBackspace:
 		if len(s.value) > 0 {
 			s.value = s.value[:len(s.value)-1]
 		}
 		return false, nil
-	case tea.KeyRunes, tea.KeySpace:
-		s.value = append(s.value, msg.Runes...)
-		if msg.Type == tea.KeySpace {
-			s.value = append(s.value, ' ')
-		}
-		return false, nil
 	}
+	if msg.Mod.Contains(tea.ModCtrl) && msg.Code == 'c' {
+		return true, ""
+	}
+	// Text is the characters the key contributes and nothing else, so the
+	// space bar types a space and every chord types nothing (S-155).
+	s.value = append(s.value, []rune(msg.Text)...)
 	return false, nil
 }
 

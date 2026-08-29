@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/spinner"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -62,12 +62,12 @@ func TestWindowResize_SetsReady(t *testing.T) {
 	}
 	// The viewport is the transcript, not the pane: the last column is the
 	// scroll gutter's (S-147, §10g).
-	if want := 100 - horizontalPadding*2 - components.ScrollGutterWidth; model.viewport.Width != want {
-		t.Fatalf("viewport width should be %d, got %d", want, model.viewport.Width)
+	if want := 100 - horizontalPadding*2 - components.ScrollGutterWidth; model.viewport.Width() != want {
+		t.Fatalf("viewport width should be %d, got %d", want, model.viewport.Width())
 	}
 	expectedVPHeight := 40 - inputHeight - chromeHeight
-	if model.viewport.Height != expectedVPHeight {
-		t.Fatalf("viewport height should be %d, got %d", expectedVPHeight, model.viewport.Height)
+	if model.viewport.Height() != expectedVPHeight {
+		t.Fatalf("viewport height should be %d, got %d", expectedVPHeight, model.viewport.Height())
 	}
 }
 
@@ -81,12 +81,12 @@ func TestWindowResize_Subsequent(t *testing.T) {
 	updated2, _ := model.Update(tea.WindowSizeMsg{Width: 60, Height: 20})
 	model2 := updated2.(Model)
 
-	if want := 60 - horizontalPadding*2 - components.ScrollGutterWidth; model2.viewport.Width != want {
-		t.Fatalf("viewport width should update to %d, got %d", want, model2.viewport.Width)
+	if want := 60 - horizontalPadding*2 - components.ScrollGutterWidth; model2.viewport.Width() != want {
+		t.Fatalf("viewport width should update to %d, got %d", want, model2.viewport.Width())
 	}
 	expectedH := 20 - inputHeight - chromeHeight
-	if model2.viewport.Height != expectedH {
-		t.Fatalf("viewport height should be %d, got %d", expectedH, model2.viewport.Height)
+	if model2.viewport.Height() != expectedH {
+		t.Fatalf("viewport height should be %d, got %d", expectedH, model2.viewport.Height())
 	}
 }
 
@@ -94,7 +94,7 @@ func TestViewBeforeReady(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream)
 
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "Initializing") {
 		t.Fatalf("expected initializing text, got: %s", view)
 	}
@@ -154,7 +154,7 @@ func TestMultiTurn_MessageAccumulation(t *testing.T) {
 
 	// Simulate user typing "hello" and pressing enter
 	m.input.SetValue("hello")
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	if m.state != stateStreaming {
@@ -224,7 +224,7 @@ func TestMultiTurn_SecondExchange(t *testing.T) {
 
 	// First turn
 	m.input.SetValue("question one")
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	events, cancel, _ := stream(m.Messages())
@@ -238,7 +238,7 @@ func TestMultiTurn_SecondExchange(t *testing.T) {
 
 	// Second turn
 	m.input.SetValue("question two")
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	if len(m.Messages()) != 4 {
@@ -285,7 +285,7 @@ func TestStreaming_TokenByToken(t *testing.T) {
 	m = updated.(Model)
 
 	m.input.SetValue("go")
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	events, cancel, _ := stream(m.Messages())
@@ -328,7 +328,7 @@ func TestStreaming_CancelPreservesPartial(t *testing.T) {
 	m = updated.(Model)
 
 	m.input.SetValue("go")
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	events, cancel, _ := stream(m.Messages())
@@ -339,7 +339,7 @@ func TestStreaming_CancelPreservesPartial(t *testing.T) {
 	updated, _ = m.Update(tokenMsg{text: "partial"})
 	m = updated.(Model)
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
 
 	if m.state != stateInput {
@@ -362,7 +362,7 @@ func TestStreamError_ReturnsToInput(t *testing.T) {
 	m = updated.(Model)
 
 	m.input.SetValue("go")
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	updated, _ = m.Update(streamErrMsg{err: context.DeadlineExceeded})
@@ -384,7 +384,7 @@ func TestExit_CtrlD(t *testing.T) {
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlD})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'd', Mod: tea.ModCtrl})
 	m = updated.(Model)
 
 	if !m.quitting {
@@ -403,7 +403,7 @@ func TestExit_SlashQuit(t *testing.T) {
 	m = updated.(Model)
 
 	m.input.SetValue("/quit")
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	if !m.quitting {
@@ -422,7 +422,7 @@ func TestExit_SlashExit(t *testing.T) {
 	m = updated.(Model)
 
 	m.input.SetValue("/exit")
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	if !m.quitting {
@@ -441,7 +441,7 @@ func TestExit_SlashQ(t *testing.T) {
 	m = updated.(Model)
 
 	m.input.SetValue("/q")
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	if !m.quitting {
@@ -460,7 +460,7 @@ func TestExit_CtrlC_DuringStreaming_DoesNotQuit(t *testing.T) {
 	m = updated.(Model)
 
 	m.input.SetValue("test")
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	events, cancel, _ := mockStream(m.Messages())
@@ -471,7 +471,7 @@ func TestExit_CtrlC_DuringStreaming_DoesNotQuit(t *testing.T) {
 	m = updated.(Model)
 
 	// Ctrl+C during streaming cancels but does not quit
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
 
 	if m.quitting {
@@ -489,7 +489,7 @@ func TestExit_CtrlC_DuringInput_Quits(t *testing.T) {
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
 
 	if !m.quitting {
@@ -521,7 +521,7 @@ func TestExit_SlashQuit_DuringStreaming_CancelsAndQuits(t *testing.T) {
 	m = updated.(Model)
 
 	m.input.SetValue("go")
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	events, cancel, _ := stream(m.Messages())
@@ -531,12 +531,12 @@ func TestExit_SlashQuit_DuringStreaming_CancelsAndQuits(t *testing.T) {
 	// Now type /quit — this won't work mid-stream since input is disabled,
 	// but verify the slash command logic works from input state
 	// First cancel streaming to get back to input
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
 
 	// Now /quit from input state
 	m.input.SetValue("/quit")
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	if !m.quitting {
@@ -571,7 +571,7 @@ func TestRequestStream_SendsFullConversation(t *testing.T) {
 	m = updated.(Model)
 
 	m.input.SetValue("second")
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	// Execute the cmd returned by requestStream
@@ -646,7 +646,7 @@ func TestToolCallLoop_SingleToolCall(t *testing.T) {
 	m = updated.(Model)
 
 	m.input.SetValue("read test.go")
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	// Stream starts, returns tool call
@@ -982,7 +982,7 @@ func TestCancelDuringToolRun_IgnoresStaleResults(t *testing.T) {
 	m = updated.(Model)
 
 	// User cancels while the tool is still running.
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
 
 	if m.state != stateInput {
@@ -1092,7 +1092,7 @@ func TestStatusBar_ShowsModelAndContext(t *testing.T) {
 func sendText(t *testing.T, m Model, text string) Model {
 	t.Helper()
 	m.input.SetValue(text)
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	return updated.(Model)
 }
 
@@ -1111,24 +1111,24 @@ func TestInputHistory_RecallWithArrows(t *testing.T) {
 	m = updated.(Model)
 
 	// Up recalls most recent first.
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyUp})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 	m = updated.(Model)
 	if m.input.Value() != "second question" {
 		t.Fatalf("expected 'second question', got %q", m.input.Value())
 	}
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyUp})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 	m = updated.(Model)
 	if m.input.Value() != "first question" {
 		t.Fatalf("expected 'first question', got %q", m.input.Value())
 	}
 
 	// Down walks forward and clears past the newest entry.
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
 	if m.input.Value() != "second question" {
 		t.Fatalf("expected 'second question' going down, got %q", m.input.Value())
 	}
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
 	if m.input.Value() != "" {
 		t.Fatalf("expected empty input past newest entry, got %q", m.input.Value())
@@ -1147,7 +1147,7 @@ func TestInputHistory_UpIgnoredWhenDraftPresent(t *testing.T) {
 	m = updated.(Model)
 
 	m.input.SetValue("my draft")
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyUp})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 	m = updated.(Model)
 	if m.input.Value() != "my draft" {
 		t.Fatalf("up with a non-empty draft should not clobber it, got %q", m.input.Value())
@@ -1161,7 +1161,7 @@ func TestEsc_ClearsInput(t *testing.T) {
 	m = updated.(Model)
 
 	m.input.SetValue("half-typed thought")
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	if m.input.Value() != "" {
 		t.Fatalf("Esc should clear input, got %q", m.input.Value())
@@ -1175,7 +1175,7 @@ func TestCtrlC_ClearsNonEmptyInputBeforeQuitting(t *testing.T) {
 	m = updated.(Model)
 
 	m.input.SetValue("oops")
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
 	if m.quitting {
 		t.Fatal("Ctrl+C with a draft should clear it, not quit")
@@ -1186,7 +1186,7 @@ func TestCtrlC_ClearsNonEmptyInputBeforeQuitting(t *testing.T) {
 	_ = cmd
 
 	// Second Ctrl+C on the now-empty input quits.
-	updated, cmd = m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	updated, cmd = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
 	if !m.quitting || cmd == nil {
 		t.Fatal("Ctrl+C on empty input should quit")
@@ -1216,13 +1216,13 @@ func TestRun_SingleBlock_ConfirmAndExecute(t *testing.T) {
 	if m.pendingRun != "echo hi" {
 		t.Fatalf("expected pending 'echo hi', got %q", m.pendingRun)
 	}
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "echo hi") || !strings.Contains(view, "[y/N]") {
 		t.Fatal("confirm prompt should show the command and y/N")
 	}
 
 	m = handover(t, m)
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
 	if m.state != stateRunningCmd {
 		t.Fatalf("expected running state, got %d", m.state)
@@ -1303,7 +1303,7 @@ func TestRun_Declined(t *testing.T) {
 	m := runCapableModel("```bash\nrm -rf /tmp/x\n```")
 	m = sendText(t, m, "/run")
 	m = handover(t, m)
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
 	m = updated.(Model)
 
 	if m.state != stateInput {
@@ -1324,7 +1324,7 @@ func TestRun_ConfirmShowsSafetyWarning(t *testing.T) {
 	if m.state != stateConfirmRun {
 		t.Fatalf("expected confirm state, got %d", m.state)
 	}
-	if !strings.Contains(m.View(), "⚠") {
+	if !strings.Contains(m.View().Content, "⚠") {
 		t.Fatal("dangerous command should show a safety warning in the confirm prompt")
 	}
 }
@@ -1387,13 +1387,13 @@ func TestExecTool_ApprovalFlow(t *testing.T) {
 	if m.state != stateConfirmRun {
 		t.Fatalf("exec tool call should enter confirm state, got %d", m.state)
 	}
-	if !strings.Contains(m.View(), "Assistant wants to run") {
+	if !strings.Contains(m.View().Content, "Assistant wants to run") {
 		t.Fatal("confirm prompt should say the assistant is asking")
 	}
 
 	// Approve.
 	m = handover(t, m)
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
 	if m.state != stateRunningCmd {
 		t.Fatalf("expected running state, got %d", m.state)
@@ -1447,7 +1447,7 @@ func TestExecTool_Declined(t *testing.T) {
 	m = updated.(Model)
 
 	m = handover(t, m)
-	updated, restream := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+	updated, restream := m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
 	m = updated.(Model)
 
 	last := m.Messages()[len(m.Messages())-1]
@@ -1782,7 +1782,7 @@ func TestToolLoop_RoundCapAfterApprovedCommand(t *testing.T) {
 	}
 
 	m = handover(t, m)
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
 	var done cmdDoneMsg
 	for _, c := range unwrapBatch(cmd) {
@@ -1857,7 +1857,7 @@ func TestSteering_EnterQueuesWhileStreaming(t *testing.T) {
 func TestSteering_InputStaysLiveWhileStreaming(t *testing.T) {
 	m := steeringModel(t, mockStream)
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("hi")})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'h', Text: "hi"})
 	m = updated.(Model)
 
 	if m.input.Value() != "hi" {
@@ -1953,7 +1953,7 @@ func TestSteering_CtrlCRestoresQueueToInput(t *testing.T) {
 	m := steeringModel(t, mockStream)
 	m = sendText(t, m, "queued while working")
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
 
 	if m.state != stateInput {

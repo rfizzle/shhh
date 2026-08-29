@@ -9,10 +9,10 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/muesli/termenv"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -22,9 +22,9 @@ import (
 // about colour would answer itself.
 func colorProfile(t *testing.T) {
 	t.Helper()
-	was := lipgloss.ColorProfile()
-	lipgloss.SetColorProfile(termenv.ANSI256)
-	t.Cleanup(func() { lipgloss.SetColorProfile(was) })
+	was := components.Profile()
+	components.SetProfile(colorprofile.ANSI256)
+	t.Cleanup(func() { components.SetProfile(was) })
 }
 
 // readingModel is the golden transcript with the keyboard already handed to
@@ -162,12 +162,12 @@ func TestReadingHint_CollapseIsOfferedOnlyWhenSomethingIsOpen(t *testing.T) {
 	}
 
 	// [-] with nothing open is a character, and it lands in the draft.
-	typed, _ := m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(keys.Shown(keys.Reading.Collapse))})
+	typed, _ := m.updateFocus(tea.KeyPressMsg{Code: []rune(keys.Shown(keys.Reading.Collapse))[0], Text: keys.Shown(keys.Reading.Collapse)})
 	if got := typed.(Model); got.state != stateFocus && got.input.Value() != keys.Shown(keys.Reading.Collapse) {
 		t.Fatalf("an unclaimed [-] should return to the draft carrying itself, got %q", got.input.Value())
 	}
 
-	opened, _ := m.updateFocus(tea.KeyMsg{Type: tea.KeyEnter})
+	opened, _ := m.updateFocus(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = opened.(Model)
 	if !strings.Contains(ansi.Strip(m.readingKeyLine(m.contentWidth())), "[-] collapse") {
 		t.Fatalf("an open row should offer to close it, got %q", ansi.Strip(m.readingKeyLine(m.contentWidth())))
@@ -176,7 +176,7 @@ func TestReadingHint_CollapseIsOfferedOnlyWhenSomethingIsOpen(t *testing.T) {
 		t.Fatal("the position field reports what is open once something is")
 	}
 
-	closed, _ := m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(keys.Shown(keys.Reading.Collapse))})
+	closed, _ := m.updateFocus(tea.KeyPressMsg{Code: []rune(keys.Shown(keys.Reading.Collapse))[0], Text: keys.Shown(keys.Reading.Collapse)})
 	m = closed.(Model)
 	if m.state != stateFocus {
 		t.Fatalf("[-] on an open row is the mode's own key, got state %d", m.state)
@@ -222,7 +222,7 @@ func TestReadingMode_OnlyOnePaneIsDressedAtATime(t *testing.T) {
 	next, _ := idle.enterFocusMode()
 	reading := next.(Model)
 
-	idleView, readingView := idle.View(), reading.View()
+	idleView, readingView := idle.View().Content, reading.View().Content
 
 	if strings.Contains(ansi.Strip(idleView), "READING") {
 		t.Fatal("the input has the keyboard, so the rail says nothing")
@@ -276,14 +276,15 @@ func TestReadingMode_SurvivesMono(t *testing.T) {
 	components.SetMono(true)
 
 	m := readingModel(t, 130)
-	view := ansi.Strip(m.View())
+	view := ansi.Strip(m.View().Content)
 	if !strings.Contains(view, "READING") {
 		t.Fatal("the rail's word is what carries it, so mono keeps it")
 	}
 	if !strings.Contains(view, "[q] back to the prompt") {
 		t.Fatal("the hint bar is words before it is colours")
 	}
-	if !strings.Contains(m.View(), components.MonoBg.ANSI256) {
+	litBg := ansi.NewStyle().BackgroundColor(components.MonoBg.Color()).String()
+	if !strings.Contains(m.View().Content, litBg) {
 		t.Fatal("the lit row keeps a background in mono; the two greys are what it has")
 	}
 }
@@ -340,7 +341,7 @@ func TestReadingKeyListCountsWhatDoesNotFit(t *testing.T) {
 // typed, and reading mode is a takeover where nothing else is listening.
 func TestKeyListIsNotAKeyFromTheDraft(t *testing.T) {
 	m := frameModel(t, 100, 40)
-	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("?")})
+	next, _ := m.Update(tea.KeyPressMsg{Code: '?', Text: "?"})
 	after := next.(Model)
 	if after.readingKeyList {
 		t.Error("? opened the key register from a live draft")
@@ -360,11 +361,11 @@ func TestReadingMoveAnswersEveryDeclaredKey(t *testing.T) {
 		// Away from both ends, so a key that moves has somewhere to go.
 		m.moveFocus(-1)
 		before := m.focusIdx
-		next, _ := m.updateFocus(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(k)})
+		next, _ := m.updateFocus(tea.KeyPressMsg{Code: []rune(k)[0], Text: k})
 		if len(k) > 1 {
-			// The arrow keys arrive as their own type, not as runes.
-			typ := map[string]tea.KeyType{"up": tea.KeyUp, "down": tea.KeyDown}[k]
-			next, _ = m.updateFocus(tea.KeyMsg{Type: typ})
+			// The arrow keys arrive as their own code, carrying no text.
+			code := map[string]rune{"up": tea.KeyUp, "down": tea.KeyDown}[k]
+			next, _ = m.updateFocus(tea.KeyPressMsg{Code: code})
 		}
 		if after := next.(Model); after.focusIdx == before {
 			t.Errorf("%q is on keys.Reading.Move but moves nothing", k)

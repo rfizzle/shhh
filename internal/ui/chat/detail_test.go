@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
-func ctrlO() tea.KeyMsg { return tea.KeyMsg{Type: tea.KeyCtrlO} }
+func ctrlO() tea.KeyPressMsg { return tea.KeyPressMsg{Code: 'o', Mod: tea.ModCtrl} }
 
 // detailModel is the §13c fixture with a second step after it, so every test
 // here can check that the chord opened one step and not the transcript. Step

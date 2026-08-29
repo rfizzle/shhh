@@ -9,8 +9,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/muesli/termenv"
 	"github.com/rfizzle/shhh/internal/diff"
 )
 
@@ -147,13 +147,21 @@ func TestReview_PaneBodyComesFromTheSharedRenderer(t *testing.T) {
 }
 
 // Intraline changes keep the background tint the shared renderer applies, so
+// bgParams is a token's background as SGR parameters, without the escape
+// around them: an emphasised run carries its foreground in the same escape,
+// so the background is a substring of a longer sequence rather than one of
+// its own.
+func bgParams(t Token) string {
+	return strings.Join(ansi.NewStyle().BackgroundColor(t.Color()), ";")
+}
+
 // syntax highlighting survives underneath it (§3b).
 func TestReview_IntralineEmphasisSurvives(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	v := reviewFixture()
 	rows, _ := v.hunkRows(v.Files[0], 70)
 	joined := strings.Join(rows, "\n")
-	if !strings.Contains(joined, Palette.AddBg.ANSI256) || !strings.Contains(joined, Palette.DelBg.ANSI256) {
+	if !strings.Contains(joined, bgParams(Palette.AddBg)) || !strings.Contains(joined, bgParams(Palette.DelBg)) {
 		t.Fatalf("the pane should carry the intraline emphasis backgrounds:\n%q", joined)
 	}
 }

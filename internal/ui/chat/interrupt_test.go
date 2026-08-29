@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -22,7 +22,7 @@ import (
 // test that answers one presses this first, exactly as a user would.
 func handover(t *testing.T, m Model) Model {
 	t.Helper()
-	next, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlG})
+	next, _ := m.Update(tea.KeyPressMsg{Code: 'g', Mod: tea.ModCtrl})
 	rm, ok := next.(Model)
 	if !ok {
 		t.Fatal("ctrl+g should return the chat model")
@@ -63,7 +63,7 @@ func TestInterrupt_ALetterGoesIntoTheSentenceNotIntoTheCard(t *testing.T) {
 
 	// The most dangerous keystroke in the product: y, typed mid-sentence,
 	// while an edit is waiting.
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
 
 	if m.state != stateConfirmRun {
@@ -74,7 +74,7 @@ func TestInterrupt_ALetterGoesIntoTheSentenceNotIntoTheCard(t *testing.T) {
 	}
 	// The other three, and enter, which is how a sentence ends.
 	for _, k := range []rune{'n', 'a', 'd', 'A'} {
-		updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{k}})
+		updated, _ = m.Update(tea.KeyPressMsg{Code: k, Text: string(k)})
 		m = updated.(Model)
 		if m.state != stateConfirmRun {
 			t.Fatalf("%q answered a card that does not hold the keyboard", k)
@@ -88,7 +88,7 @@ func TestInterrupt_ALetterGoesIntoTheSentenceNotIntoTheCard(t *testing.T) {
 func TestInterrupt_TheCardSaysItsKeysAreNotLiveAndOffersTheOneThatIs(t *testing.T) {
 	m := interruptedModel(t, "also add a --max-rounds flag")
 
-	view := ansi.Strip(m.View())
+	view := ansi.Strip(m.View().Content)
 	for _, want := range []string{"not live yet", "[ctrl+g] answer it", "these letters go into your draft"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("the ungated card should say %q:\n%s", want, view)
@@ -108,7 +108,7 @@ func TestInterrupt_TheCardSaysItsKeysAreNotLiveAndOffersTheOneThatIs(t *testing.
 	}
 
 	m = handover(t, m)
-	view = ansi.Strip(m.View())
+	view = ansi.Strip(m.View().Content)
 	if strings.Contains(view, "not live yet") {
 		t.Fatalf("a gated card's keys are ordinary keys:\n%s", view)
 	}
@@ -121,7 +121,7 @@ func TestInterrupt_TheDraftSurvivesTheWholeRoundTrip(t *testing.T) {
 	const draft = "also add a --max-rounds flag while you're in there"
 	m := interruptedModel(t, draft)
 	// Park the cursor mid-word, where a reader would have left it.
-	m.input.SetCursor(24)
+	m.input.SetCursorColumn(24)
 	before := m.draftCursor()
 
 	m = handover(t, m)
@@ -133,7 +133,7 @@ func TestInterrupt_TheDraftSurvivesTheWholeRoundTrip(t *testing.T) {
 	}
 	// The undressed frame states the position it is holding, so the reader
 	// can see that nothing moved (§7b).
-	view := ansi.Strip(m.View())
+	view := ansi.Strip(m.View().Content)
 	if !strings.Contains(view, m.draftPosition()) {
 		t.Fatalf("the held draft should state its own position (%q):\n%s", m.draftPosition(), view)
 	}
@@ -142,7 +142,7 @@ func TestInterrupt_TheDraftSurvivesTheWholeRoundTrip(t *testing.T) {
 	}
 
 	// Answer it. The keyboard comes back to the draft, at the same character.
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
 	if m.decisionHeld {
 		t.Fatal("answering hands the keyboard back to the draft")
@@ -159,7 +159,7 @@ func TestInterrupt_EscLeavesTheDecisionWaitingRatherThanDenyingIt(t *testing.T) 
 	m := interruptedModel(t, "half a sentence")
 	m = handover(t, m)
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 
 	if m.state != stateConfirmRun {
@@ -173,12 +173,12 @@ func TestInterrupt_EscLeavesTheDecisionWaitingRatherThanDenyingIt(t *testing.T) 
 	}
 	// And the card says so while it holds the keyboard, because the safe
 	// answer here is not obvious (invariant 3).
-	gatedView := ansi.Strip(handover(t, m).View())
+	gatedView := ansi.Strip(handover(t, m).View().Content)
 	if !strings.Contains(gatedView, "back to your draft") {
 		t.Fatalf("the gated card should state what esc does:\n%s", gatedView)
 	}
 	// Saying no is still [n].
-	updated, _ = handover(t, m).Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+	updated, _ = handover(t, m).Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
 	if next := updated.(Model); next.state == stateConfirmRun {
 		t.Fatal("[n] is how a decision is denied")
 	}
@@ -189,7 +189,7 @@ func TestInterrupt_TheDraftKeepsItsOwnKeysWhileTheCardWaits(t *testing.T) {
 
 	// Enter queues the sentence for the next round rather than starting a
 	// turn the waiting decision would interrupt (§7b).
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.state != stateConfirmRun {
 		t.Fatalf("enter is the draft's, not the card's, state is now %d", m.state)
@@ -203,7 +203,7 @@ func TestInterrupt_TheDraftKeepsItsOwnKeysWhileTheCardWaits(t *testing.T) {
 	// Esc on the draft is still the draft's esc: it clears what was typed and
 	// leaves the decision alone.
 	m.input.SetValue("scratch that")
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEscape})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	m = updated.(Model)
 	if m.state != stateConfirmRun {
 		t.Fatalf("esc on the draft must not reach the card, state is now %d", m.state)
@@ -218,7 +218,7 @@ func TestInterrupt_ASecondDecisionArrivesWithoutTheKeyboard(t *testing.T) {
 	m = handover(t, m)
 
 	// Answer the first; the next one arms behind it.
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
 	m = updated.(Model)
 	if m.decisionHeld {
 		t.Fatal("the keyboard goes back to the draft between decisions")
@@ -244,12 +244,12 @@ func TestInterrupt_ARoutedChildApprovalIsInertUntilItHoldsTheKeyboard(t *testing
 	if !m.decisionUngated() {
 		t.Fatal("a routed approval arrives the way every other decision does")
 	}
-	view := ansi.Strip(m.View())
+	view := ansi.Strip(m.View().Content)
 	if !strings.Contains(view, "not live yet") || !strings.Contains(view, "DRAFT") {
 		t.Fatalf("the routed card should render as not-yet-live:\n%s", view)
 	}
 	// [g] jumps to the agent — but only once the card has the keyboard.
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'g'}})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'g', Text: "g"})
 	m = updated.(Model)
 	if m.attachedTo != "" {
 		t.Fatal("a bare letter must not reach a card that does not hold the keyboard")
@@ -289,7 +289,7 @@ func TestArrival_ACardLandingOnAnIdleDraftHoldsTheKeyboard(t *testing.T) {
 	if !m.heldOnArrival {
 		t.Fatal("the card took the keyboard by arriving, not by a handover")
 	}
-	view := ansi.Strip(m.View())
+	view := ansi.Strip(m.View().Content)
 	if strings.Contains(view, "not live yet") {
 		t.Fatalf("a card holding the keyboard has live keys:\n%s", view)
 	}
@@ -298,7 +298,7 @@ func TestArrival_ACardLandingOnAnIdleDraftHoldsTheKeyboard(t *testing.T) {
 	}
 
 	// And [y] answers it, with no chord in front.
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	if got := updated.(Model).state; got != stateRunningCmd {
 		t.Fatalf("[y] should have approved the waiting call, state is %d", got)
 	}
@@ -334,7 +334,7 @@ func TestArrival_AnUnansweredKeyGoesToTheDraftAndLeavesTheDecisionWaiting(t *tes
 
 	// "let's not" — a sentence, typed at a card the reader never asked for.
 	// The first letter hands the keyboard back and lands in the box.
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'l'}})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'l', Text: "l"})
 	m = updated.(Model)
 	if m.state != stateConfirmRun {
 		t.Fatalf("a letter must leave the decision waiting, state is now %d", m.state)
@@ -348,7 +348,7 @@ func TestArrival_AnUnansweredKeyGoesToTheDraftAndLeavesTheDecisionWaiting(t *tes
 	// And the rest of the sentence follows it, including the letters the card
 	// would have answered to.
 	for _, k := range []rune{'e', 't', 's', ' ', 'n', 'o', 't', 'y', 'a'} {
-		updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{k}})
+		updated, _ = m.Update(tea.KeyPressMsg{Code: k, Text: string(k)})
 		m = updated.(Model)
 	}
 	if got := m.input.Value(); got != "lets notya" {
@@ -364,7 +364,7 @@ func TestArrival_TheKeysASentenceCouldHaveMeantWaitForTheHandover(t *testing.T) 
 	// half the follow-ups in this product start. It is not on an arrival-held
 	// card, and the card says where it went.
 	m := interruptedModel(t, "")
-	view := ansi.Strip(m.View())
+	view := ansi.Strip(m.View().Content)
 	if !strings.Contains(view, "[y/N]") {
 		t.Fatalf("an arrival-held card offers its two answers:\n%s", view)
 	}
@@ -375,7 +375,7 @@ func TestArrival_TheKeysASentenceCouldHaveMeantWaitForTheHandover(t *testing.T) 
 		t.Fatalf("the card should say where everything else goes:\n%s", view)
 	}
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'a'}})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
 	m = updated.(Model)
 	if m.allowAllEdits || len(m.editDirGrants) > 0 {
 		t.Fatal("[a] must not grant anything on a card the reader never took")
@@ -386,7 +386,7 @@ func TestArrival_TheKeysASentenceCouldHaveMeantWaitForTheHandover(t *testing.T) 
 
 	// The handover buys it back, and now it means what the card says.
 	m = handover(t, m)
-	if !strings.Contains(ansi.Strip(m.View()), "[y/n/a]") {
+	if !strings.Contains(ansi.Strip(m.View().Content), "[y/n/a]") {
 		t.Fatal("after the handover the card offers [a] again")
 	}
 }

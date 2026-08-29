@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -138,7 +138,7 @@ func TestSendUserMessage_TrimsAndNotes(t *testing.T) {
 func driveCompact(t *testing.T, m Model) Model {
 	t.Helper()
 	m.input.SetValue("/compact")
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if !m.compacting || m.state != stateStreaming {
 		t.Fatalf("/compact should enter a compacting stream, compacting=%v state=%d", m.compacting, m.state)
@@ -225,7 +225,7 @@ func TestCompact_RestartsFromSummary(t *testing.T) {
 func TestCompact_NothingToCompact(t *testing.T) {
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
 	m.input.SetValue("/compact")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	if m.compacting || m.state != stateInput {
@@ -267,11 +267,11 @@ func TestCompact_CancelKeepsConversation(t *testing.T) {
 		{Role: provider.RoleUser, Content: "question"},
 	}, mockStream)
 	m.input.SetValue("/compact")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	m.streaming = "partial sum"
 
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyCtrlC})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
 
 	if m.compacting || m.state != stateInput {
@@ -297,7 +297,7 @@ func TestCompact_ToolCallsAbort(t *testing.T) {
 		{Role: provider.RoleUser, Content: "question"},
 	}, mockStream)
 	m.input.SetValue("/compact")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{

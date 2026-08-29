@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -91,7 +91,7 @@ func driftedIn(plan changeset.UndoPlan, removes bool) int {
 
 // updateUndoConfirm routes keys while the confirm is up. Declining writes
 // nothing and hands the screen back to whatever offered the undo.
-func (m Model) updateUndoConfirm(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateUndoConfirm(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if m.undoAsk == nil {
 		return m.closeUndoConfirm()
 	}

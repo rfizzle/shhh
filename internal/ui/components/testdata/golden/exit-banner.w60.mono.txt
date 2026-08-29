@@ -35,25 +35,25 @@ resume   not saved · chat persistence was unavailable
 
 ── ansi ────────────────────────────────────────────────────
 · the ordinary exit · the slot, the sitting, the way back
-␛[38;5;244msession␛[0m  ␛[38;5;254m(last session) · 12 turns␛[0m
-␛[38;5;244mspent  ␛[0m  ␛[38;5;254m$0.42␛[0m
-␛[38;5;244mresume ␛[0m  ␛[1;38;5;254mshhh code --continue␛[0m
+␛[38;5;244msession␛[m  ␛[38;5;254m(last session) · 12 turns␛[m
+␛[38;5;244mspent  ␛[m  ␛[38;5;254m$0.42␛[m
+␛[38;5;244mresume ␛[m  ␛[1;38;5;254mshhh code --continue␛[m
 
 · unpriced · tokens, never a made-up zero
-␛[38;5;244msession␛[0m  ␛[38;5;254m(last session) · 12 turns␛[0m
-␛[38;5;244mspent  ␛[0m  ␛[38;5;254m~48.1k tok␛[0m
-␛[38;5;244mresume ␛[0m  ␛[1;38;5;254mshhh code --continue␛[0m
+␛[38;5;244msession␛[m  ␛[38;5;254m(last session) · 12 turns␛[m
+␛[38;5;244mspent  ␛[m  ␛[38;5;254m~48.1k tok␛[m
+␛[38;5;244mresume ␛[m  ␛[1;38;5;254mshhh code --continue␛[m
 
 · nothing spent · the row goes rather than reading $0.00
-␛[38;5;244msession␛[0m  ␛[38;5;254m(last session) · 1 turn␛[0m
-␛[38;5;244mresume ␛[0m  ␛[1;38;5;254mshhh code --continue␛[0m
+␛[38;5;244msession␛[m  ␛[38;5;254m(last session) · 1 turn␛[m
+␛[38;5;244mresume ␛[m  ␛[1;38;5;254mshhh code --continue␛[m
 
 · a long name · the count drops before the name clips
-␛[38;5;244msession␛[0m  ␛[38;5;254mrefactor-the-round-accounting-and-its-checkpoints␛[0m
-␛[38;5;244mspent  ␛[0m  ␛[38;5;254m$0.42␛[0m
-␛[38;5;244mresume ␛[0m  ␛[1;38;5;254mshhh code --continue␛[0m
+␛[38;5;244msession␛[m  ␛[38;5;254mrefactor-the-round-accounting-and-its-checkpoints␛[m
+␛[38;5;244mspent  ␛[m  ␛[38;5;254m$0.42␛[m
+␛[38;5;244mresume ␛[m  ␛[1;38;5;254mshhh code --continue␛[m
 
 · nothing could be saved · no slot named, no command offered
-␛[38;5;244msession␛[0m  ␛[38;5;254m12 turns␛[0m
-␛[38;5;244mspent  ␛[0m  ␛[38;5;254m$0.42␛[0m
-␛[38;5;244mresume ␛[0m  ␛[38;5;244mnot saved · chat persistence was unavailable␛[0m
+␛[38;5;244msession␛[m  ␛[38;5;254m12 turns␛[m
+␛[38;5;244mspent  ␛[m  ␛[38;5;254m$0.42␛[m
+␛[38;5;244mresume ␛[m  ␛[38;5;244mnot saved · chat persistence was unavailable␛[m

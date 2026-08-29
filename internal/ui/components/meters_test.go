@@ -60,7 +60,7 @@ func TestMeterThresholdColours(t *testing.T) {
 		bold bool
 	}{{40, Palette.Add, false}, {62, Palette.Accent, false}, {95, Palette.Del, true}} {
 		style := Meter{Pct: c.pct, Warn: 60, Alert: 80}.Style()
-		if got := style.GetForeground(); got != c.want {
+		if got := style.GetForeground(); got != c.want.Color() {
 			t.Fatalf("context at %d%% uses %v, want %v", c.pct, got, c.want)
 		}
 		if got := style.GetBold(); got != c.bold {
@@ -68,10 +68,10 @@ func TestMeterThresholdColours(t *testing.T) {
 		}
 	}
 	// Zero thresholds keep the cockpit's defaults (70/90).
-	if got := ctxStyle(75, 0, 0).GetForeground(); got != Palette.Accent {
+	if got := ctxStyle(75, 0, 0).GetForeground(); got != Palette.Accent.Color() {
 		t.Fatalf("default thresholds: 75%% should warn, got %v", got)
 	}
-	if got := ctxStyle(69, 0, 0).GetForeground(); got != Palette.Add {
+	if got := ctxStyle(69, 0, 0).GetForeground(); got != Palette.Add.Color() {
 		t.Fatalf("default thresholds: 69%% is still healthy, got %v", got)
 	}
 	// The other tones do not colour by value at all.
@@ -79,7 +79,7 @@ func TestMeterThresholdColours(t *testing.T) {
 		tone MeterTone
 		want Token
 	}{{MeterProgress, Palette.Add}, {MeterAgent, Palette.Info}, {MeterCountdown, Palette.Accent}} {
-		if got := (Meter{Pct: 95, Tone: c.tone}).Style().GetForeground(); got != c.want {
+		if got := (Meter{Pct: 95, Tone: c.tone}).Style().GetForeground(); got != c.want.Color() {
 			t.Fatalf("tone %d at 95%% uses %v, want %v", c.tone, got, c.want)
 		}
 	}

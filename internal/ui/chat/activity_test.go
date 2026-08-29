@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -254,7 +254,7 @@ func TestRunningCommandRow_LiveTail(t *testing.T) {
 	m.runTail = &commandTail{}
 	m.runTail.Set("ok  internal/agent  0.31s")
 
-	view := stripANSI(m.View())
+	view := stripANSI(m.View().Content)
 	if !strings.Contains(view, "go test ./...") || !strings.Contains(view, "running…") {
 		t.Fatalf("running commands render as a live row:\n%s", view)
 	}

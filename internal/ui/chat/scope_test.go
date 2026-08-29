@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/scope"
@@ -42,13 +42,13 @@ func TestEditOutsideTheScopeAsksEvenInAcceptEdits(t *testing.T) {
 	if m.state != stateConfirmRun {
 		t.Fatalf("an edit outside the working scope must ask, state = %d", m.state)
 	}
-	if view := m.View(); !strings.Contains(view, "scope") {
+	if view := m.View().Content; !strings.Contains(view, "scope") {
 		t.Fatalf("the card should carry a scope row, got:\n%s", view)
 	}
 	// The row's detail is the first thing a narrow card drops (§2), so what
 	// the key would grant is read at a width that can carry it.
 	wide, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 40})
-	if view := wide.(Model).View(); !strings.Contains(view, "approving adds it for this session") {
+	if view := wide.(Model).View().Content; !strings.Contains(view, "approving adds it for this session") {
 		t.Fatalf("the card should say what answering yes grants, got:\n%s", view)
 	}
 }
@@ -63,7 +63,7 @@ func TestApprovingAnOutOfScopeEditAddsTheDirectory(t *testing.T) {
 	}
 
 	m = handover(t, m)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
 
 	if !m.scope.Contains(filepath.Join(outside, "other.toml")) {
@@ -83,7 +83,7 @@ func TestDecliningAnOutOfScopeEditGrantsNothing(t *testing.T) {
 	m := scopedModel(t, root, agent.ModeManual)
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{writeCall("out", filepath.Join(outside, "config.toml"), "new\n")}})
 	m = updated.(Model)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
 	m = updated.(Model)
 	if len(m.scope.Dirs()) != 0 {
 		t.Fatalf("a refused decision must widen nothing, scope holds %v", m.scope.Dirs())

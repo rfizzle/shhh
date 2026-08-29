@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"charm.land/fang/v2"
-	tea "github.com/charmbracelet/bubbletea"
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/config"
@@ -241,7 +240,7 @@ func NewRootCmd() *cobra.Command {
 				explain = ui.ExplainLong
 			}
 			model := ui.NewGenerateModel(events, cancel, messages, newStream, newExplain, info.Shell).WithExplain(explain)
-			program := tea.NewProgram(model)
+			program := newProgram(model)
 			finalModel, err := program.Run()
 			if err != nil {
 				return err

@@ -21,7 +21,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 )
 
 // ChipKind is what a staged attachment is, as the strip marks it. The three

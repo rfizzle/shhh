@@ -3,9 +3,8 @@ package ui
 import (
 	"os"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/term"
-	"github.com/muesli/termenv"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -42,44 +41,40 @@ var (
 // newStyles builds the whole set from one token set, reading no global.
 func newStyles(p components.ColorTokens) Styles {
 	return Styles{
-		Command: lipgloss.NewStyle().Bold(true).Foreground(p.Add),
-		Error:   lipgloss.NewStyle().Foreground(p.Del),
+		Command: lipgloss.NewStyle().Bold(true).Foreground(p.Add.Color()),
+		Error:   lipgloss.NewStyle().Foreground(p.Del.Color()),
 
 		Bar: lipgloss.NewStyle().MarginTop(1),
 
-		EditPrompt:   lipgloss.NewStyle().Foreground(p.Subtle).MarginTop(1),
-		RevisePrompt: lipgloss.NewStyle().Foreground(p.Subtle).MarginTop(1),
-		ExplainLabel: lipgloss.NewStyle().Foreground(p.Subtle).MarginTop(1).Bold(true),
-		ExplainBody:  lipgloss.NewStyle().Foreground(p.Body),
+		EditPrompt:   lipgloss.NewStyle().Foreground(p.Subtle.Color()).MarginTop(1),
+		RevisePrompt: lipgloss.NewStyle().Foreground(p.Subtle.Color()).MarginTop(1),
+		ExplainLabel: lipgloss.NewStyle().Foreground(p.Subtle.Color()).MarginTop(1).Bold(true),
+		ExplainBody:  lipgloss.NewStyle().Foreground(p.Body.Color()),
 
 		// Every key the interface offers is Info (§10a); the default and the
 		// deliberate one carry their tone as well, and both say it in words
 		// too.
-		Key:         lipgloss.NewStyle().Foreground(p.Info),
-		KeyLabel:    lipgloss.NewStyle().Foreground(p.Dim),
-		PrimaryKey:  lipgloss.NewStyle().Foreground(p.Add),
-		DangerKey:   lipgloss.NewStyle().Foreground(p.Del),
-		Reach:       lipgloss.NewStyle().Foreground(p.Status),
-		Risk:        lipgloss.NewStyle().Foreground(p.Del),
-		Dim:         lipgloss.NewStyle().Foreground(p.Dim),
-		PastCommand: lipgloss.NewStyle().Foreground(p.Dim),
+		Key:         lipgloss.NewStyle().Foreground(p.Info.Color()),
+		KeyLabel:    lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		PrimaryKey:  lipgloss.NewStyle().Foreground(p.Add.Color()),
+		DangerKey:   lipgloss.NewStyle().Foreground(p.Del.Color()),
+		Reach:       lipgloss.NewStyle().Foreground(p.Status.Color()),
+		Risk:        lipgloss.NewStyle().Foreground(p.Del.Color()),
+		Dim:         lipgloss.NewStyle().Foreground(p.Dim.Color()),
+		PastCommand: lipgloss.NewStyle().Foreground(p.Dim.Color()),
 	}
 }
 
-// applyPalette rebuilds the styles, and settles the terminal profile and the
-// width class the surface lays out against.
+// applyPalette rebuilds the styles, and settles the width class the surface
+// lays out against.
+//
+// It used to settle the colour profile too, dropping the terminal to Ascii
+// under NO_COLOR and TERM=dumb. v2 has no global profile to set — a Style
+// carries a resolved colour and nothing degrades it on the way out — so that
+// rule moved to where the profile is now decided, beside the palette it
+// belongs to (components.detectProfile, S-155). It reads the same and it
+// reaches every surface rather than only the ones that import this package.
 func applyPalette() {
-	// components already switched the palette to its two greys for these
-	// (S-095); dropping the profile to Ascii on top of that is the stricter
-	// reading NO_COLOR asks for — no ANSI colour at all, bold and glyphs
-	// intact.
-	noColor := os.Getenv("NO_COLOR") != ""
-	dumbTerm := os.Getenv("TERM") == "dumb"
-
-	if noColor || dumbTerm {
-		lipgloss.SetColorProfile(termenv.Ascii)
-	}
-
 	width, _, err := term.GetSize(os.Stdout.Fd())
 	if err != nil {
 		width = 80

@@ -48,38 +48,38 @@ now, using your tools.
 
 ── ansi ────────────────────────────────────────────────────
 · mid-run (the last step is still working)
-␛[1;94mYou␛[0m
+␛[1;94mYou␛[m
 The plan is approved. Leave planning and execute it
 now, using your tools.
 
-␛[38;5;241m▸␛[0m ␛[38;5;252m1 ␛[0m ␛[38;5;252mLocate the round accounting␛[0m ␛[38;5;241m───────␛[0m ␛[92m✓␛[0m ␛[38;5;241m1 tool␛[0m  ␛[38;5;241m6.2s␛[0m
+␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m───────␛[m ␛[92m✓␛[m ␛[38;5;241m1 tool␛[m  ␛[38;5;241m6.2s␛[m
 
-␛[38;5;241m▾␛[0m ␛[38;5;252m3 ␛[0m ␛[38;5;252mReturn it from runRound␛[0m ␛[38;5;241m───────────␛[0m ␛[91m✗␛[0m ␛[38;5;241m1 tool␛[0m   ␛[38;5;241m38s␛[0m
-  ␛[91m▎␛[0m␛[91m✗␛[0m run     ␛[38;5;241mgo test ./...␛[0m                 ␛[91mexit 1␛[0m   ␛[38;5;245m38s␛[0m
-    ␛[38;5;245mFAIL␛[0m
+␛[38;5;241m▾␛[m ␛[38;5;252m3 ␛[m ␛[38;5;252mReturn it from runRound␛[m ␛[38;5;241m───────────␛[m ␛[91m✗␛[m ␛[38;5;241m1 tool␛[m   ␛[38;5;241m38s␛[m
+  ␛[91m▎␛[m␛[91m✗␛[m run     ␛[38;5;241mgo test ./...␛[m                 ␛[91mexit 1␛[m   ␛[38;5;245m38s␛[m
+    ␛[38;5;245mFAIL␛[m
 
-␛[38;5;205m▾␛[0m ␛[97m+ ␛[0m ␛[97mRebuild the changeset store␛[0m ␛[38;5;241m───────␛[0m ␛[38;5;205m▸␛[0m ␛[38;5;241m1 tool␛[0m  ␛[38;5;205m3.9s␛[0m
-   ␛[38;5;214m⚙␛[0m read    ␛[38;5;241ma.go␛[0m                          ␛[38;5;245m1 line␛[0m  ␛[38;5;245m3.9s␛[0m
+␛[38;5;205m▾␛[m ␛[97m+ ␛[m ␛[97mRebuild the changeset store␛[m ␛[38;5;241m───────␛[m ␛[38;5;205m▸␛[m ␛[38;5;241m1 tool␛[m  ␛[38;5;205m3.9s␛[m
+   ␛[38;5;214m⚙␛[m read    ␛[38;5;241ma.go␛[m                          ␛[38;5;245m1 line␛[m  ␛[38;5;245m3.9s␛[m
 
-␛[38;5;241m·␛[0m ␛[38;5;241m2 ␛[0m ␛[38;5;241mAdd a RoundsExhausted sentinel␛[0m ␛[38;5;241m────␛[0m ␛[38;5;241m·␛[0m ␛[38;5;241mqueued␛[0m     ␛[38;5;241m—␛[0m
+␛[38;5;241m·␛[m ␛[38;5;241m2 ␛[m ␛[38;5;241mAdd a RoundsExhausted sentinel␛[m ␛[38;5;241m────␛[m ␛[38;5;241m·␛[m ␛[38;5;241mqueued␛[m     ␛[38;5;241m—␛[m
 
-␛[38;5;241m·␛[0m ␛[38;5;241m4 ␛[0m ␛[38;5;241mOffer more rounds in the chat mo…␛[0m ␛[38;5;241m─␛[0m ␛[38;5;241m·␛[0m ␛[38;5;241mqueued␛[0m     ␛[38;5;241m—␛[0m
+␛[38;5;241m·␛[m ␛[38;5;241m4 ␛[m ␛[38;5;241mOffer more rounds in the chat mo…␛[m ␛[38;5;241m─␛[m ␛[38;5;241m·␛[m ␛[38;5;241mqueued␛[m     ␛[38;5;241m—␛[m
 
 
 · turn over (every step settled)
-␛[1;94mYou␛[0m
+␛[1;94mYou␛[m
 The plan is approved. Leave planning and execute it
 now, using your tools.
 
-␛[38;5;241m▸␛[0m ␛[38;5;252m1 ␛[0m ␛[38;5;252mLocate the round accounting␛[0m ␛[38;5;241m───────␛[0m ␛[92m✓␛[0m ␛[38;5;241m1 tool␛[0m  ␛[38;5;241m6.2s␛[0m
+␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m───────␛[m ␛[92m✓␛[m ␛[38;5;241m1 tool␛[m  ␛[38;5;241m6.2s␛[m
 
-␛[38;5;241m▾␛[0m ␛[38;5;252m3 ␛[0m ␛[38;5;252mReturn it from runRound␛[0m ␛[38;5;241m───────────␛[0m ␛[91m✗␛[0m ␛[38;5;241m1 tool␛[0m   ␛[38;5;241m38s␛[0m
-  ␛[91m▎␛[0m␛[91m✗␛[0m run     ␛[38;5;241mgo test ./...␛[0m                 ␛[91mexit 1␛[0m   ␛[38;5;245m38s␛[0m
-    ␛[38;5;245mFAIL␛[0m
+␛[38;5;241m▾␛[m ␛[38;5;252m3 ␛[m ␛[38;5;252mReturn it from runRound␛[m ␛[38;5;241m───────────␛[m ␛[91m✗␛[m ␛[38;5;241m1 tool␛[m   ␛[38;5;241m38s␛[m
+  ␛[91m▎␛[m␛[91m✗␛[m run     ␛[38;5;241mgo test ./...␛[m                 ␛[91mexit 1␛[m   ␛[38;5;245m38s␛[m
+    ␛[38;5;245mFAIL␛[m
 
-␛[38;5;241m▸␛[0m ␛[38;5;252m+ ␛[0m ␛[38;5;252mRebuild the changeset store␛[0m ␛[38;5;241m───────␛[0m ␛[92m✓␛[0m ␛[38;5;241m1 tool␛[0m  ␛[38;5;241m3.9s␛[0m
+␛[38;5;241m▸␛[m ␛[38;5;252m+ ␛[m ␛[38;5;252mRebuild the changeset store␛[m ␛[38;5;241m───────␛[m ␛[92m✓␛[m ␛[38;5;241m1 tool␛[m  ␛[38;5;241m3.9s␛[m
 
-␛[38;5;241m·␛[0m ␛[38;5;241m2 ␛[0m ␛[38;5;241mAdd a RoundsExhausted sentinel␛[0m ␛[38;5;241m────␛[0m ␛[38;5;241m·␛[0m ␛[38;5;241mqueued␛[0m     ␛[38;5;241m—␛[0m
+␛[38;5;241m·␛[m ␛[38;5;241m2 ␛[m ␛[38;5;241mAdd a RoundsExhausted sentinel␛[m ␛[38;5;241m────␛[m ␛[38;5;241m·␛[m ␛[38;5;241mqueued␛[m     ␛[38;5;241m—␛[m
 
-␛[38;5;241m·␛[0m ␛[38;5;241m4 ␛[0m ␛[38;5;241mOffer more rounds in the chat mo…␛[0m ␛[38;5;241m─␛[0m ␛[38;5;241m·␛[0m ␛[38;5;241mqueued␛[0m     ␛[38;5;241m—␛[0m
+␛[38;5;241m·␛[m ␛[38;5;241m4 ␛[m ␛[38;5;241mOffer more rounds in the chat mo…␛[m ␛[38;5;241m─␛[m ␛[38;5;241m·␛[m ␛[38;5;241mqueued␛[m     ␛[38;5;241m—␛[m
 

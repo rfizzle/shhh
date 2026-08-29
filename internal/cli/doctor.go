@@ -36,7 +36,7 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/term"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/config"
@@ -1026,7 +1026,7 @@ func (m doctorModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.markRunning(m.at)
 		return m, m.runNext()
 
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		m.screen.Notice = ""
 		done, result := m.screen.Update(msg)
 		if command, ok := result.(components.DoctorCommand); ok {
@@ -1070,7 +1070,13 @@ func (m doctorModel) apply(command components.DoctorCommand) (tea.Model, tea.Cmd
 	return m, nil
 }
 
-func (m doctorModel) View() string { return m.screen.View(m.width) }
+// View is the frame: the doctor screen, on the alt screen it takes over
+// (S-155).
+func (m doctorModel) View() tea.View {
+	v := tea.NewView(m.screen.View(m.width))
+	v.AltScreen = true
+	return v
+}
 
 // doctorElapsed is the header's running clock: tenths while a run is short
 // enough for them to mean something, whole seconds after that.
@@ -1085,6 +1091,6 @@ func runDoctorScreen(cfg config.Config, probes []doctorProbe) error {
 	m := newDoctorModel(cfg, probes)
 	m.started = time.Now()
 	m.markRunning(0)
-	_, err := tea.NewProgram(m, tea.WithAltScreen()).Run()
+	_, err := newProgram(m).Run()
 	return err
 }

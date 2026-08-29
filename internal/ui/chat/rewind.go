@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -98,7 +98,7 @@ func (m Model) openRewindPick() (tea.Model, tea.Cmd) {
 }
 
 // updateRewindPick routes keys while the /rewind picker is showing.
-func (m Model) updateRewindPick(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateRewindPick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if keys.Match(msg, keys.Draft.Quit) {
 		m.quitting = true
 		return m, m.quitCmd()

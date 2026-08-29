@@ -11,7 +11,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -32,7 +32,7 @@ func applyWrite(t *testing.T, m Model, path, content, key string) Model {
 		// The card arrives without the keyboard (S-117, §7b); ctrl+g is what
 		// hands it over before any of its letters mean anything.
 		m = handover(t, m)
-		updated, cmd = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(key)})
+		updated, cmd = m.Update(tea.KeyPressMsg{Code: []rune(key)[0], Text: key})
 		m = updated.(Model)
 	}
 	for _, c := range unwrapBatch(cmd) {

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 )
 
 // The config screen's own rules (S-127, DESIGN-TUI.md §19a). What it borrows
@@ -34,7 +34,7 @@ func configFixture() *ConfigScreen {
 
 func typeInto(c *ConfigScreen, text string) {
 	for _, r := range text {
-		c.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+		c.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
 	}
 }
 
@@ -216,7 +216,7 @@ func TestConfigScreen_SettingsFilter(t *testing.T) {
 	c := configFixture()
 	c.Update(key("/"))
 	typeInto(c, "mo")
-	view := c.View(110)
+	view := stripANSI(c.View(110))
 	if !strings.Contains(view, "▸ mo") || !strings.Contains(view, "of 4 match") {
 		t.Fatalf("the query row states what it typed and both counts:\n%s", view)
 	}
@@ -290,7 +290,7 @@ func TestConfigScreen_PointerStepsOverRails(t *testing.T) {
 // The screen is a takeover: full width, no frame, one header and one hint
 // line (§19).
 func TestConfigScreen_IsATakeoverNotACard(t *testing.T) {
-	view := configFixture().View(110)
+	view := stripANSI(configFixture().View(110))
 	if strings.Contains(view, "┌─") || strings.Contains(view, "└─") {
 		t.Fatalf("a takeover surface draws no card frame:\n%s", view)
 	}

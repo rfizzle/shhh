@@ -26,7 +26,7 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -440,7 +440,7 @@ func (m Model) cancelRetryWait() (tea.Model, tea.Cmd) {
 // updateRetryWait owns the keyboard while the countdown drains. Two keys, and
 // both of them end the wait: everything else would be a keystroke typed into
 // an input that is not listening.
-func (m Model) updateRetryWait(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateRetryWait(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Draft.Quit):
 		m.quitting = true

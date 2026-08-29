@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -344,7 +344,7 @@ func (m Model) openKeyEntry(f *provider.Failure) (tea.Model, tea.Cmd) {
 
 // updateKeyEntry routes keys while the prompt is up. Esc declines and writes
 // nothing — the old key stays exactly where it was.
-func (m Model) updateKeyEntry(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateKeyEntry(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if m.keyAsk == nil {
 		return m.closeKeyEntry("")
 	}

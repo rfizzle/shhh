@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -232,7 +232,7 @@ func (c *ApprovalCard) arrivalKey(pressed string) (ApprovalDecision, bool) {
 // Update maps decision keys, preserving the chat confirm prompt's y/n/esc
 // semantics. Unrecognized keys — including [a] when AllowAlways is off —
 // leave the card waiting.
-func (c *ApprovalCard) Update(msg tea.KeyMsg) (done bool, result any) {
+func (c *ApprovalCard) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	if c.NotYetLive {
 		// The card does not hold the keyboard, so none of its keys exist yet
 		// (invariant 5). The host owns the one key that changes that, and

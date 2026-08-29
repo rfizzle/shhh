@@ -27,7 +27,7 @@ package chat
 // acceptance criteria ask for.
 
 import (
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/subagent"
 )
 

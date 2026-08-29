@@ -9,7 +9,7 @@ package chat
 import (
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -125,7 +125,7 @@ func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 
 // updateFocus handles keys while focus mode is active. Esc never destroys:
 // it only returns to the input, keeping any expansion state.
-func (m Model) updateFocus(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Draft.Quit):
 		m.quitting = true
@@ -322,10 +322,10 @@ func (m *Model) refreshFocusView() {
 		return
 	}
 	switch {
-	case start < m.viewport.YOffset:
+	case start < m.viewport.YOffset():
 		m.viewport.SetYOffset(start)
-	case start+count > m.viewport.YOffset+m.viewport.Height:
-		m.viewport.SetYOffset(start + count - m.viewport.Height)
+	case start+count > m.viewport.YOffset()+m.viewport.Height():
+		m.viewport.SetYOffset(start + count - m.viewport.Height())
 	}
 }
 

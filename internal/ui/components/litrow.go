@@ -11,14 +11,19 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
 	"github.com/charmbracelet/x/ansi"
 )
 
 // ansiReset is the sequence lipgloss ends every styled run with. A background
 // armed before such a run is cleared by it, so painting a background across a
 // line that already carries colours means re-arming after each one.
-const ansiReset = "\x1b[0m"
+//
+// It is read from the renderer's own vocabulary rather than written out here,
+// because the two have to agree exactly and v2 shortened it — \x1b[m rather
+// than \x1b[0m, which mean the same thing to a terminal and different things
+// to strings.ReplaceAll (S-155).
+const ansiReset = ansi.ResetStyle
 
 // LitRow paints one already-rendered line as the row the reading cursor sits
 // on: the focus background runs to the row's full width, the words go bright,
@@ -73,15 +78,14 @@ func rearm(s, bg string) string {
 }
 
 // backgroundSeq is the escape that turns one palette token on as a
-// background, or "" where the terminal has no colour to turn on.
+// background, or "" where the terminal has no colour to turn on. It is the
+// one place that needs the escape rather than a lipgloss.Style, because the
+// row is lit by re-arming a background after every reset already in the line
+// (rearm, above) rather than by rendering it.
 func backgroundSeq(t Token) string {
-	col := tokenColor(t)
-	if col == nil {
+	col := t.Color()
+	if col == nil || col == (lipgloss.NoColor{}) {
 		return ""
 	}
-	seq := col.Sequence(true)
-	if seq == "" {
-		return ""
-	}
-	return "\x1b[" + seq + "m"
+	return ansi.NewStyle().BackgroundColor(col).String()
 }

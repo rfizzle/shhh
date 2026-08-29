@@ -12,7 +12,10 @@ package components
 // derived styles of their own (internal/ui/chat, internal/ui, and the saved-
 // chat browser) register a callback with OnPaletteChange.
 
-import "os"
+import (
+	"os"
+	"strings"
+)
 
 // The mono palette's three shades, from tokens/colors.css. Two greys carry
 // everything: the foreground grey for anything that is content or state, the
@@ -93,10 +96,13 @@ func OnPaletteChange(fn func()) { paletteHooks = append(paletteHooks, fn) }
 // Go initializes imported packages first, so a host reading Palette at var
 // time already sees the mono tokens when the environment asked for them.
 //
-// NO_COLOR and TERM=dumb additionally make the generate UI drop the terminal
-// to termenv.Ascii (internal/ui/style.go), which flattens the two greys to
-// none — a stricter reading of the same invariant, and the one those
-// conventions ask for.
+// NO_COLOR and TERM=dumb additionally settle the colour profile on ASCII
+// (detectProfile, palette.go), which flattens the two greys to none — a
+// stricter reading of the same invariant, and the one those conventions ask
+// for. Before S-155 that was a SetColorProfile call in the generate UI's own
+// init; v2 has no global profile to set, so it is part of detecting the
+// profile instead, which is also the only place that can answer for every
+// surface rather than for whichever package happened to be imported.
 func init() {
 	applyPalette()
 	if monoFromEnv(os.Getenv) {
@@ -109,4 +115,19 @@ func init() {
 // set to anything, or a terminal that cannot render attributes at all.
 func monoFromEnv(getenv func(string) string) bool {
 	return getenv("NO_COLOR") != "" || getenv("TERM") == "dumb"
+}
+
+// monoFromEnviron asks the same question of an environment in the KEY=value
+// form colorprofile takes, so the profile and the palette read one rule
+// rather than two that could drift.
+func monoFromEnviron(environ []string) bool {
+	return monoFromEnv(func(name string) string {
+		prefix := name + "="
+		for i := len(environ) - 1; i >= 0; i-- {
+			if strings.HasPrefix(environ[i], prefix) {
+				return environ[i][len(prefix):]
+			}
+		}
+		return ""
+	})
 }

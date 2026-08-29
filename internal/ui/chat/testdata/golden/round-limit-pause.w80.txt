@@ -50,40 +50,40 @@ rename the round-limit sentinel
 
 ── ansi ────────────────────────────────────────────────────
 · the edits are unchecked · all three ways on
-␛[1;94mYou␛[0m
+␛[1;94mYou␛[m
 rename the round-limit sentinel
 
-   ␛[38;5;214m⚠␛[0m rounds  ␛[38;5;252m150 of 150 used␛[0m␛[38;5;241m · the turn's own bound␛[0m           ␛[38;5;214mstopped␛[0m ␛[38;5;245m4m12s␛[0m
-    ␛[38;5;245m3 files changed +30 −4 · the suite has not been re-run since␛[0m
-    ␛[38;5;245m[v]␛[0m␛[38;5;241m review what it did␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[+50]␛[0m␛[38;5;241m more rounds␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[u]␛[0m␛[38;5;241m undo the turn␛[0m
-    ␛[94m[ctrl+e]␛[0m␛[38;5;252m to use them␛[0m
+   ␛[38;5;214m⚠␛[m rounds  ␛[38;5;252m150 of 150 used␛[m␛[38;5;241m · the turn's own bound␛[m           ␛[38;5;214mstopped␛[m ␛[38;5;245m4m12s␛[m
+    ␛[38;5;245m3 files changed +30 −4 · the suite has not been re-run since␛[m
+    ␛[38;5;245m[v]␛[m␛[38;5;241m review what it did␛[m␛[38;5;241m · ␛[m␛[38;5;245m[+50]␛[m␛[38;5;241m more rounds␛[m␛[38;5;241m · ␛[m␛[38;5;245m[u]␛[m␛[38;5;241m undo the turn␛[m
+    ␛[94m[ctrl+e]␛[m␛[38;5;252m to use them␛[m
 
 
 · nothing changed · only the grant can be honoured
-␛[1;94mYou␛[0m
+␛[1;94mYou␛[m
 rename the round-limit sentinel
 
-   ␛[38;5;214m⚠␛[0m rounds  ␛[38;5;252m150 of 150 used␛[0m␛[38;5;241m · the turn's own bound␛[0m           ␛[38;5;214mstopped␛[0m ␛[38;5;245m4m12s␛[0m
-    ␛[38;5;245mnothing changed␛[0m
-    ␛[38;5;245m[+50]␛[0m␛[38;5;241m more rounds␛[0m␛[38;5;241m · ␛[0m␛[94m[ctrl+e]␛[0m␛[38;5;252m to use them␛[0m
+   ␛[38;5;214m⚠␛[m rounds  ␛[38;5;252m150 of 150 used␛[m␛[38;5;241m · the turn's own bound␛[m           ␛[38;5;214mstopped␛[m ␛[38;5;245m4m12s␛[m
+    ␛[38;5;245mnothing changed␛[m
+    ␛[38;5;245m[+50]␛[m␛[38;5;241m more rounds␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+e]␛[m␛[38;5;252m to use them␛[m
 
 
 · a second stop · the grant doubles and [!] arrives
-␛[1;94mYou␛[0m
+␛[1;94mYou␛[m
 rename the round-limit sentinel
 
-   ␛[38;5;214m⚠␛[0m rounds  ␛[38;5;252m200 of 200 used␛[0m␛[38;5;241m · 50 already granted␛[0m             ␛[38;5;214mstopped␛[0m ␛[38;5;245m4m12s␛[0m
-    ␛[38;5;245m5 files changed +112 −40␛[0m
-    ␛[38;5;245m[v]␛[0m␛[38;5;241m review what it did␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[+100]␛[0m␛[38;5;241m more rounds␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[!]␛[0m␛[38;5;241m let it run␛[0m
-    ␛[38;5;245m[u]␛[0m␛[38;5;241m undo the turn␛[0m
-    ␛[94m[ctrl+e]␛[0m␛[38;5;252m to use them␛[0m
+   ␛[38;5;214m⚠␛[m rounds  ␛[38;5;252m200 of 200 used␛[m␛[38;5;241m · 50 already granted␛[m             ␛[38;5;214mstopped␛[m ␛[38;5;245m4m12s␛[m
+    ␛[38;5;245m5 files changed +112 −40␛[m
+    ␛[38;5;245m[v]␛[m␛[38;5;241m review what it did␛[m␛[38;5;241m · ␛[m␛[38;5;245m[+100]␛[m␛[38;5;241m more rounds␛[m␛[38;5;241m · ␛[m␛[38;5;245m[!]␛[m␛[38;5;241m let it run␛[m
+    ␛[38;5;245m[u]␛[m␛[38;5;241m undo the turn␛[m
+    ␛[94m[ctrl+e]␛[m␛[38;5;252m to use them␛[m
 
 
 · the offer is spent · the row keeps its words
-␛[1;94mYou␛[0m
+␛[1;94mYou␛[m
 rename the round-limit sentinel
 
-   ␛[38;5;214m⚠␛[0m rounds  ␛[38;5;252m150 of 150 used␛[0m␛[38;5;241m · the turn's own bound␛[0m           ␛[38;5;214mstopped␛[0m ␛[38;5;245m4m12s␛[0m
-    ␛[38;5;245m3 files changed +30 −4 · the suite has not been re-run since␛[0m
-    ␛[38;5;245m[v]␛[0m␛[38;5;241m review what it did␛[0m␛[38;5;241m · ␛[0m␛[38;5;245m[u]␛[0m␛[38;5;241m undo the turn␛[0m␛[38;5;241m · ␛[0m␛[94m[ctrl+e]␛[0m␛[38;5;252m to use them␛[0m
+   ␛[38;5;214m⚠␛[m rounds  ␛[38;5;252m150 of 150 used␛[m␛[38;5;241m · the turn's own bound␛[m           ␛[38;5;214mstopped␛[m ␛[38;5;245m4m12s␛[m
+    ␛[38;5;245m3 files changed +30 −4 · the suite has not been re-run since␛[m
+    ␛[38;5;245m[v]␛[m␛[38;5;241m review what it did␛[m␛[38;5;241m · ␛[m␛[38;5;245m[u]␛[m␛[38;5;241m undo the turn␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+e]␛[m␛[38;5;252m to use them␛[m
 

@@ -27,7 +27,7 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -126,7 +126,7 @@ func (m *Model) closePalette() {
 // updatePalette routes keys while the palette is showing. Everything that is
 // not movement, dispatch or dismissal is text: a digit is a digit and j is a
 // j, which is why the card is unnumbered.
-func (m Model) updatePalette(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updatePalette(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Select.Cancel):
 		m.closePalette()
@@ -134,11 +134,11 @@ func (m Model) updatePalette(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case keys.Is(pressed, keys.Select.Palette.Prev):
-		m.picker.Update(tea.KeyMsg{Type: tea.KeyUp})
+		m.picker.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 		return m, nil
 
 	case keys.Is(pressed, keys.Select.Palette.Next):
-		m.picker.Update(tea.KeyMsg{Type: tea.KeyDown})
+		m.picker.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 		return m, nil
 
 	case keys.Is(pressed, keys.Select.Palette.Run, keys.Select.Palette.Write):
@@ -254,7 +254,7 @@ func (m *Model) paletteInsert(row paletteEntry) {
 		val += " "
 	}
 	m.input.SetValue(val)
-	m.input.SetCursor(len([]rune(val)))
+	m.input.SetCursorColumn(len([]rune(val)))
 	m.syncCompletions()
 }
 

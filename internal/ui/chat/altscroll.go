@@ -63,9 +63,9 @@ const (
 )
 
 // SuppressAlternateScroll asks the terminal to stop translating the wheel into
-// cursor keys, and returns the function that puts the setting back. Like
-// RequestEnhancedKeys it is safe to call unconditionally: a terminal that does
-// not know the sequences ignores them.
+// cursor keys, and returns the function that puts the setting back. It is
+// safe to call unconditionally: a terminal that does not know the sequences
+// ignores them.
 func SuppressAlternateScroll(w io.Writer) func() {
 	if w == nil {
 		return func() {}

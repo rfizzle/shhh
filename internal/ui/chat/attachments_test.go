@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -49,8 +49,8 @@ func TestAttachments_StagedRailNamesWhatIsStaged(t *testing.T) {
 	if m.noticeLine() != "" {
 		t.Fatalf("notice rail = %q", stripANSI(m.noticeLine()))
 	}
-	if !strings.Contains(stripANSI(m.View()), "▣ shot.png") {
-		t.Fatalf("the staged rail should reach the surface:\n%s", stripANSI(m.View()))
+	if !strings.Contains(stripANSI(m.View().Content), "▣ shot.png") {
+		t.Fatalf("the staged rail should reach the surface:\n%s", stripANSI(m.View().Content))
 	}
 }
 
@@ -58,11 +58,11 @@ func TestAttachments_StagedRailNamesWhatIsStaged(t *testing.T) {
 // otherwise the frame grows past the bottom of the terminal (§12e).
 func TestAttachments_StagedRailCostsTheViewportALine(t *testing.T) {
 	m := frameModel(t, 130, 40)
-	base := m.viewport.Height
+	base := m.viewport.Height()
 	m = stagePNG(t, m, "shot.png")
 	m.syncViewport()
-	if m.viewport.Height != base-1 {
-		t.Fatalf("the staged rail must shrink the viewport (%d -> %d)", base, m.viewport.Height)
+	if m.viewport.Height() != base-1 {
+		t.Fatalf("the staged rail must shrink the viewport (%d -> %d)", base, m.viewport.Height())
 	}
 }
 
@@ -123,7 +123,7 @@ func TestAttachments_RideOnTheUserMessage(t *testing.T) {
 	m := stagePNG(t, frameModel(t, 100, 40), "shot.png")
 	m.input.SetValue("what is this?")
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	next := updated.(Model)
 
 	msgs := next.Messages()
@@ -137,7 +137,7 @@ func TestAttachments_RideOnTheUserMessage(t *testing.T) {
 	if len(next.attachments) != 0 {
 		t.Fatal("sending should empty the staging area — an attachment rides once")
 	}
-	view := stripANSI(next.View())
+	view := stripANSI(next.View().Content)
 	if !strings.Contains(view, "attached: shot.png") {
 		t.Fatalf("the transcript should name the attachment:\n%s", view)
 	}
@@ -150,7 +150,7 @@ func TestAttachments_RideOnQueuedSteering(t *testing.T) {
 	m.setTurnState(stateStreaming)
 	m.input.SetValue("also look at this")
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	next := updated.(Model)
 	if len(next.steering) != 1 {
 		t.Fatalf("expected the line to queue as steering, got %v", next.steering)
@@ -267,4 +267,49 @@ func lastSystemText(m Model) string {
 		}
 	}
 	return ""
+}
+
+// A bracketed paste is its own message in v2 rather than a keystroke carrying
+// a Paste flag (S-155), so the two things a paste can be are routed here
+// rather than inside the key handler. Both have to keep working: a dragged-in
+// image attaches, and everything else is text going where the keyboard goes.
+func TestPasteMsg_AttachesAFileAndTypesEverythingElse(t *testing.T) {
+	png := writePNG(t, "shot.png")
+	m := frameModel(t, 100, 40)
+
+	updated, cmd := m.Update(tea.PasteMsg{Content: png})
+	if cmd == nil {
+		t.Fatal("a pasted image path should attach the file")
+	}
+	if got := updated.(Model).input.Value(); got != "" {
+		t.Fatalf("the path should not also land in the draft, got %q", got)
+	}
+
+	updated, _ = m.Update(tea.PasteMsg{Content: "some pasted prose"})
+	if got := updated.(Model).input.Value(); got != "some pasted prose" {
+		t.Fatalf("pasted text belongs in the draft, got %q", got)
+	}
+}
+
+// The Paste flag bought routing: pasted text reached whichever surface held
+// the keyboard rather than the textarea directly, so a card's filter row
+// filtered and reading mode handed the keyboard back (§4a, §7a). The message
+// has to keep buying that, which is why it is handed on as the keystroke it
+// used to be — a paste that went straight to the draft would leave reading
+// mode holding a keyboard it no longer has.
+func TestPasteMsg_ReachesTheSurfaceHoldingTheKeyboard(t *testing.T) {
+	updated, _ := focusModel(t).Update(tea.KeyPressMsg{Code: 'e', Mod: tea.ModCtrl})
+	reading := updated.(Model)
+	if reading.state != stateFocus {
+		t.Fatalf("ctrl+e should hand the keyboard to reading mode, state = %v", reading.state)
+	}
+
+	updated, _ = reading.Update(tea.PasteMsg{Content: "prose"})
+	next := updated.(Model)
+	if next.state != stateInput {
+		t.Fatalf("typing into reading mode hands the keyboard back; state = %v", next.state)
+	}
+	if next.input.Value() != "prose" {
+		t.Fatalf("and the text it typed is the draft, got %q", next.input.Value())
+	}
 }

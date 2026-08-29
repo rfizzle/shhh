@@ -28,8 +28,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/bubbles/textinput"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/textinput"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/dryrun"
 	"github.com/rfizzle/shhh/internal/preflight"
 	"github.com/rfizzle/shhh/internal/proposal"
@@ -273,8 +273,8 @@ func (m GenerateModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m GenerateModel) updateSave(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.Type {
+	case tea.KeyPressMsg:
+		switch msg.Code {
 		case tea.KeyEnter:
 			name := strings.TrimSpace(m.saveInput.Value())
 			if name == "" {
@@ -299,8 +299,8 @@ func (m GenerateModel) updateSave(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m GenerateModel) updateStreaming(msg tea.Msg) (tea.Model, tea.Cmd) {
-	updated, cmd := m.stream.Update(msg)
-	m.stream = updated.(StreamModel)
+	var cmd tea.Cmd
+	m.stream, cmd = m.stream.Update(msg)
 
 	if m.stream.Done() {
 		if m.stream.Cancelled() || m.stream.Err() != nil {
@@ -486,17 +486,17 @@ func (m GenerateModel) streamReady(msg streamReadyMsg) (GenerateModel, tea.Cmd) 
 func (m GenerateModel) updateAction(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// A brief explanation is still arriving: everything that is not a
 	// keystroke belongs to it, and the keys stay the action bar's.
-	if _, isKey := msg.(tea.KeyMsg); !isKey && m.explaining {
-		updated, cmd := m.explainStream.Update(msg)
-		m.explainStream = updated.(StreamModel)
+	if _, isKey := msg.(tea.KeyPressMsg); !isKey && m.explaining {
+		var cmd tea.Cmd
+		m.explainStream, cmd = m.explainStream.Update(msg)
 		if m.explainStream.Done() {
 			m.explaining = false
 		}
 		return m, cmd
 	}
 
-	updated, cmd := m.actionBar.Update(msg)
-	m.actionBar = updated.(ActionBarModel)
+	var cmd tea.Cmd
+	m.actionBar, cmd = m.actionBar.Update(msg)
 
 	switch m.actionBar.Selected() {
 	case ActionAffected:
@@ -533,9 +533,9 @@ func (m GenerateModel) updateAction(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.phase = phaseEdit
 		m.editInput.SetValue(m.stream.Output())
 		m.editInput.CursorEnd()
-		m.editInput.Focus()
+		blink := m.editInput.Focus()
 		m.actionBar = m.actionBar.Reset()
-		return m, m.editInput.Cursor.BlinkCmd()
+		return m, blink
 
 	case ActionExplain:
 		m = m.hushExplain()
@@ -554,17 +554,17 @@ func (m GenerateModel) updateAction(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m = m.hushExplain()
 		m.phase = phaseSave
 		m.saveInput.Reset()
-		m.saveInput.Focus()
+		blink := m.saveInput.Focus()
 		m.actionBar = m.actionBar.Reset()
-		return m, m.saveInput.Cursor.BlinkCmd()
+		return m, blink
 
 	case ActionRevise:
 		m = m.hushExplain()
 		m.phase = phaseRevise
 		m.reviseInput.Reset()
-		m.reviseInput.Focus()
+		blink := m.reviseInput.Focus()
 		m.actionBar = m.actionBar.Reset()
-		return m, m.reviseInput.Cursor.BlinkCmd()
+		return m, blink
 	}
 
 	sel := m.actionBar.Selected()
@@ -685,7 +685,7 @@ func (m GenerateModel) openAlternatives() (GenerateModel, tea.Cmd) {
 // it does not run: an alternative deserves the same explanation, containment
 // line and default the primary got.
 func (m GenerateModel) updatePick(msg tea.Msg) (tea.Model, tea.Cmd) {
-	key, ok := msg.(tea.KeyMsg)
+	key, ok := msg.(tea.KeyPressMsg)
 	if !ok || m.pick == nil {
 		return m, nil
 	}
@@ -821,7 +821,7 @@ func (m GenerateModel) updateDryRun(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.phase = phaseAction
 		return m, nil
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		// The dry run is already running as its own process; esc only stops
 		// waiting for it on screen once it lands.
 		return m, nil
@@ -831,8 +831,8 @@ func (m GenerateModel) updateDryRun(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m GenerateModel) updateRevise(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.Type {
+	case tea.KeyPressMsg:
+		switch msg.Code {
 		case tea.KeyEnter:
 			feedback := m.reviseInput.Value()
 			if feedback == "" {
@@ -878,8 +878,8 @@ func (m GenerateModel) updateRevise(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m GenerateModel) updateEdit(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		switch msg.Type {
+	case tea.KeyPressMsg:
+		switch msg.Code {
 		case tea.KeyEnter:
 			edited := m.editInput.Value()
 			if edited == "" {
@@ -914,7 +914,7 @@ func (m GenerateModel) updateEdit(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m GenerateModel) updateExplain(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
-	case tea.KeyMsg:
+	case tea.KeyPressMsg:
 		if m.explainStream.Done() {
 			m.phase = phaseAction
 			return m, nil
@@ -929,8 +929,8 @@ func (m GenerateModel) updateExplain(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 	}
-	updated, cmd := m.explainStream.Update(msg)
-	m.explainStream = updated.(StreamModel)
+	var cmd tea.Cmd
+	m.explainStream, cmd = m.explainStream.Update(msg)
 	if m.explainStream.Done() {
 		m.phase = phaseAction
 		return m, nil
@@ -1095,7 +1095,14 @@ func prefixLines(s, pad string) string {
 	return strings.Join(lines, "\n")
 }
 
-func (m GenerateModel) View() string {
+// View is the frame. The one-shot generate UI draws inline under the prompt
+// it was typed at and asks the terminal for nothing, so the view carries
+// content and no state (S-155).
+func (m GenerateModel) View() tea.View {
+	return tea.NewView(m.screen())
+}
+
+func (m GenerateModel) screen() string {
 	switch m.phase {
 	case phaseStreaming:
 		return m.streamingView()

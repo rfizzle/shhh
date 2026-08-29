@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/term"
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -645,7 +645,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 
 	// Piped stdin becomes context for the first message; the TUI then
 	// reads keys from the terminal directly.
-	programOpts := []tea.ProgramOption{tea.WithAltScreen()}
+	var programOpts []tea.ProgramOption
 	stdinIsTTY := isatty.IsTerminal(os.Stdin.Fd()) || isatty.IsCygwinTerminal(os.Stdin.Fd())
 	if !stdinIsTTY {
 		maxChars := cfg.EffectiveContextMaxTokens() * 4
@@ -670,14 +670,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		model = model.WithInitialPrompt(initialPrompt)
 	}
 
-	// Ask the terminal to report modified keys, so Shift+Enter arrives as
-	// something other than a bare carriage return (S-134, chat/newline.go).
-	// A terminal that does not know the request ignores it, and the draft
-	// keeps Alt+Enter and Ctrl+J.
-	restoreKeys := chat.RequestEnhancedKeys(os.Stdout)
-	defer restoreKeys()
-
-	// And ask it to stop turning the wheel into arrow keys, which is what
+	// Ask the terminal to stop turning the wheel into arrow keys, which is what
 	// alternate scroll does to a full-screen program on most terminals — and
 	// what put hundreds of synthetic Up/Down presses into the draft
 	// (chat/altscroll.go). The setting is saved and restored, so a terminal
@@ -685,12 +678,11 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	restoreScroll := chat.SuppressAlternateScroll(os.Stdout)
 	defer restoreScroll()
 
-	program := tea.NewProgram(model, programOpts...)
+	program := newProgram(model, programOpts...)
 	final, err := program.Run()
 	if err != nil {
 		// os.Exit skips the deferred restore, so the terminal is put back
 		// here rather than left reporting modified keys to the next program.
-		restoreKeys()
 		restoreScroll()
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
@@ -721,7 +713,7 @@ func printExitBanner(b components.ExitBanner) {
 		width = 80
 	}
 	if view := b.View(width); view != "" {
-		fmt.Fprintln(os.Stderr, view)
+		fprintStyled(os.Stderr, view)
 	}
 }
 
@@ -766,7 +758,7 @@ func pickSavedChat(db *storage.DB) (string, error) {
 	}
 
 	model := browse.New(items, []browse.ActionDef{{Label: "Open", Shortcut: "o"}})
-	p := tea.NewProgram(model, tea.WithAltScreen())
+	p := newProgram(model)
 	result, err := p.Run()
 	if err != nil {
 		return "", err

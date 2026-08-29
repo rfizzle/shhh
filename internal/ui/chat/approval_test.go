@@ -10,7 +10,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -63,7 +63,7 @@ func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 	if len(executed) != 0 {
 		t.Fatal("gated tool must not run before approval")
 	}
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "Assistant wants to write main.go") {
 		t.Fatal("confirm prompt should describe the file action")
 	}
@@ -86,10 +86,10 @@ func TestGatedTool_DiffApprovalFlow(t *testing.T) {
 
 	// Approve.
 	m = handover(t, m)
-	if !strings.Contains(m.View(), "[y/n/a]") {
+	if !strings.Contains(m.View().Content, "[y/n/a]") {
 		t.Fatal("after the handover the card should offer y/n/a")
 	}
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
 	if m.state != stateRunningCmd {
 		t.Fatalf("expected running state while the tool executes, got %d", m.state)
@@ -135,7 +135,7 @@ func TestGatedTool_Declined(t *testing.T) {
 	m = updated.(Model)
 
 	m = handover(t, m)
-	updated, restream := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+	updated, restream := m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
 	m = updated.(Model)
 
 	last := m.Messages()[len(m.Messages())-1]
@@ -182,7 +182,7 @@ func TestGatedTool_QueueMixedWithExec(t *testing.T) {
 	}
 
 	m = handover(t, m)
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
 	var done cmdDoneMsg
 	for _, c := range unwrapBatch(cmd) {
@@ -197,7 +197,7 @@ func TestGatedTool_QueueMixedWithExec(t *testing.T) {
 	if m.state != stateConfirmRun || m.pendingApproval == nil || m.pendingApproval.kind != approvalDiff {
 		t.Fatalf("expected diff approval after exec completes, got state=%d", m.state)
 	}
-	if !strings.Contains(m.View(), "write a.txt") {
+	if !strings.Contains(m.View().Content, "write a.txt") {
 		t.Fatal("second approval should preview the file write")
 	}
 
@@ -205,7 +205,7 @@ func TestGatedTool_QueueMixedWithExec(t *testing.T) {
 	// Esc would hand the keyboard back and leave it waiting (S-117, §7b);
 	// [n] is how a decision is denied.
 	m = handover(t, m)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
 	m = updated.(Model)
 	var ids []string
 	for _, msg := range m.Messages() {
@@ -253,7 +253,7 @@ func TestGatedTool_GenericPreview(t *testing.T) {
 	}})
 	m = updated.(Model)
 
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "Assistant wants to use my_tool") {
 		t.Fatal("generic approval should name the tool")
 	}
@@ -288,13 +288,13 @@ func TestMutatingTool_WriteApprovedThroughQueue(t *testing.T) {
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
 		t.Fatal("file must not exist before approval")
 	}
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "Assistant wants to write") || !strings.Contains(view, "+ 1  hello") {
 		t.Fatal("confirm prompt should show the write action and diff")
 	}
 
 	m = handover(t, m)
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
 	var done approvedToolDoneMsg
 	found := false
@@ -336,13 +336,13 @@ func TestMutatingTool_EditDeclinedLeavesFileUntouched(t *testing.T) {
 	if m.state != stateConfirmRun || m.pendingApproval == nil || m.pendingApproval.kind != approvalDiff {
 		t.Fatalf("edit_file should enter diff approval, got state=%d", m.state)
 	}
-	view := m.View()
+	view := m.View().Content
 	if !strings.Contains(view, "- 2  beta") || !strings.Contains(view, "+ 2  delta") {
 		t.Fatal("confirm prompt should diff the edit")
 	}
 
 	m = handover(t, m)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
 	m = updated.(Model)
 	data, _ := os.ReadFile(path)
 	if string(data) != "alpha\nbeta\n" {
@@ -385,7 +385,7 @@ func TestGatedTool_LargeDiffTruncatedAndPanelGrows(t *testing.T) {
 	m := gatedModel(t, executor, map[string]GatedPreviewFunc{
 		"write_file": writeFilePreview(""),
 	})
-	normalHeight := m.viewport.Height
+	normalHeight := m.viewport.Height()
 
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "call_w", Name: "write_file",
@@ -393,7 +393,7 @@ func TestGatedTool_LargeDiffTruncatedAndPanelGrows(t *testing.T) {
 	}})
 	m = updated.(Model)
 
-	if !strings.Contains(m.View(), "more diff lines") {
+	if !strings.Contains(m.View().Content, "more diff lines") {
 		t.Fatal("large diff should be truncated with a notice")
 	}
 	// The card takes the panel once the decision holds the keyboard (S-117);
@@ -404,16 +404,16 @@ func TestGatedTool_LargeDiffTruncatedAndPanelGrows(t *testing.T) {
 	if h := m.bottomPanelHeight(); h != 13 {
 		t.Fatalf("expected confirm panel capped at 12 rows plus its rail, got %d", h)
 	}
-	if m.viewport.Height != m.height-chromeHeight-13 {
-		t.Fatalf("viewport should shrink for the diff preview, got %d", m.viewport.Height)
+	if m.viewport.Height() != m.height-chromeHeight-13 {
+		t.Fatalf("viewport should shrink for the diff preview, got %d", m.viewport.Height())
 	}
 
 	// Declining restores the normal layout.
 	m = handover(t, m)
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'n'}})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
 	m = updated.(Model)
-	if m.viewport.Height != normalHeight {
-		t.Fatalf("viewport should restore after decline: got %d, want %d", m.viewport.Height, normalHeight)
+	if m.viewport.Height() != normalHeight {
+		t.Fatalf("viewport should restore after decline: got %d, want %d", m.viewport.Height(), normalHeight)
 	}
 }
 
@@ -433,7 +433,7 @@ func TestMutatingTool_HookAppendsDiagnosticsToResult(t *testing.T) {
 	}})
 	m = updated.(Model)
 	m = handover(t, m)
-	updated, cmd := m.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'y'}})
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
 	m = updated.(Model)
 
 	var done approvedToolDoneMsg

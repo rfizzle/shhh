@@ -12,8 +12,8 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -126,7 +126,7 @@ func (m *Model) saveScroll() {
 	// A selection names lines in the transcript the viewport is about to stop
 	// showing, so the switch takes it with it (S-145).
 	m.cancelSelection()
-	vs := viewState{yoffset: m.viewport.YOffset, atBottom: m.atBottom}
+	vs := viewState{yoffset: m.viewport.YOffset(), atBottom: m.atBottom}
 	if m.attachedTo == "" {
 		m.parentView = vs
 	} else if cv := m.childViews[m.attachedTo]; cv != nil {
@@ -361,7 +361,7 @@ func (m Model) renderAgentList() string {
 // updateAgentList routes keys while the agent list is open: enter attaches,
 // x cancels the focused agent's turn, X arms the inline kill confirm, esc
 // dismisses the list.
-func (m Model) updateAgentList(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if keys.Match(msg, keys.Draft.Quit) {
 		m.quitting = true
 		m.cancelSubagents()
@@ -503,7 +503,7 @@ func (m Model) listAnswerCard(ask *subagent.Ask) *components.ApprovalCard {
 // updateListAnswer routes keys to the card over the list. Either answer
 // resolves the request and returns to the list; esc/n declines, because a
 // routed request is never silently dropped.
-func (m Model) updateListAnswer(msg tea.KeyMsg, ask *subagent.Ask) (tea.Model, tea.Cmd) {
+func (m Model) updateListAnswer(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model, tea.Cmd) {
 	if keys.Match(msg, keys.Draft.Quit) {
 		m.quitting = true
 		m.cancelSubagents()

@@ -3,8 +3,8 @@ package components
 import (
 	"strings"
 
-	"github.com/charmbracelet/bubbles/textarea"
-	tea "github.com/charmbracelet/bubbletea"
+	"charm.land/bubbles/v2/textarea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -44,7 +44,7 @@ func NewNoteSelect(title string, options []SelectOption) *NoteSelect {
 	return &NoteSelect{Select: Select{Title: title, Options: options}, Note: ta}
 }
 
-func (s *NoteSelect) Update(msg tea.KeyMsg) (done bool, result any) {
+func (s *NoteSelect) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	s.noteMissing = false
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Select.Note):

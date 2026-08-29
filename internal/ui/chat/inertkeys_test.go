@@ -14,7 +14,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -182,7 +182,7 @@ func authFailure() *provider.Failure {
 func readingCursorOn(kind entryKind) func(*testing.T, Model) Model {
 	return func(t *testing.T, m Model) Model {
 		t.Helper()
-		next, _ := m.Update(tea.KeyMsg{Type: tea.KeyCtrlE})
+		next, _ := m.Update(tea.KeyPressMsg{Code: 'e', Mod: tea.ModCtrl})
 		rm, ok := next.(Model)
 		if !ok || rm.state != stateFocus {
 			t.Fatalf("ctrl+e should open reading mode, state %v", rm.state)

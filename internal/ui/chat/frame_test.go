@@ -5,8 +5,8 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -45,7 +45,7 @@ func TestFrameLayoutFor(t *testing.T) {
 
 func TestFrame_WideTwoRails(t *testing.T) {
 	m := frameModel(t, 130, 40) // content 126 ≥ 110
-	view := stripANSI(m.View())
+	view := stripANSI(m.View().Content)
 
 	for _, want := range []string{"╭─ shhh chat", "├─", "╰─", "⏸ manual", "ctx ", "↑41.2k ↓9.8k", "$0.51", "gpt-4o", "enter send · shift+enter newline · / commands · ctrl+v attach · ctrl+k palette · shift+tab mode", "idle"} {
 		if !strings.Contains(view, want) {
@@ -56,7 +56,7 @@ func TestFrame_WideTwoRails(t *testing.T) {
 
 func TestFrame_CompactSingleRail(t *testing.T) {
 	m := frameModel(t, 100, 40) // content 96 → compact
-	view := stripANSI(m.View())
+	view := stripANSI(m.View().Content)
 
 	if strings.Contains(view, "├─") {
 		t.Fatalf("compact frame must not have a dedicated vitals rail:\n%s", view)
@@ -73,7 +73,7 @@ func TestFrame_CompactSingleRail(t *testing.T) {
 
 func TestFrame_NarrowMinimalRail(t *testing.T) {
 	m := frameModel(t, 60, 30) // content 56 → narrow
-	view := stripANSI(m.View())
+	view := stripANSI(m.View().Content)
 
 	for _, want := range []string{"╭─", "⏸ manual", "$0.51"} {
 		if !strings.Contains(view, want) {
@@ -89,7 +89,7 @@ func TestFrame_NarrowMinimalRail(t *testing.T) {
 
 func TestFrame_PlainBelowMinWidth(t *testing.T) {
 	m := frameModel(t, 14, 30) // content 10 < minFrameWidth
-	view := stripANSI(m.View())
+	view := stripANSI(m.View().Content)
 
 	if strings.Contains(view, "╭") {
 		t.Fatalf("sub-minimum widths must degrade to plain rows:\n%s", view)
@@ -98,13 +98,13 @@ func TestFrame_PlainBelowMinWidth(t *testing.T) {
 
 func TestFrame_GutterAndHintsSwapWhileWorking(t *testing.T) {
 	m := frameModel(t, 130, 40)
-	view := stripANSI(m.View())
+	view := stripANSI(m.View().Content)
 	if !strings.Contains(view, "│ ❯ ") {
 		t.Fatalf("idle frame missing the ❯ gutter:\n%s", view)
 	}
 
 	m.state = stateStreaming
-	view = stripANSI(m.View())
+	view = stripANSI(m.View().Content)
 	// The activity slot is the running turn's status line now (S-118, §8d):
 	// `WORKING` was true of every moment of every turn and said nothing.
 	if !strings.Contains(view, "│ ▸ ") || !strings.Contains(view, "thinking…") {
@@ -120,22 +120,22 @@ func TestFrame_GutterAndHintsSwapWhileWorking(t *testing.T) {
 
 func TestFrame_NoticeRailAppearsAndCounts(t *testing.T) {
 	m := frameModel(t, 100, 40)
-	base := m.viewport.Height
-	if strings.Contains(stripANSI(m.View()), "update:") {
+	base := m.viewport.Height()
+	if strings.Contains(stripANSI(m.View().Content), "update:") {
 		t.Fatal("no notice rail expected on a quiet session")
 	}
 
 	m = m.WithUpdateNotice("update: v9.9.9")
 	m.syncViewport()
-	if !strings.Contains(stripANSI(m.View()), "update: v9.9.9") {
+	if !strings.Contains(stripANSI(m.View().Content), "update: v9.9.9") {
 		t.Fatal("the notice rail should carry the update notice")
 	}
-	if m.viewport.Height != base-1 {
-		t.Fatalf("the notice rail must shrink the viewport (%d -> %d)", base, m.viewport.Height)
+	if m.viewport.Height() != base-1 {
+		t.Fatalf("the notice rail must shrink the viewport (%d -> %d)", base, m.viewport.Height())
 	}
 
 	m.steering = []string{"one", "two"}
-	if !strings.Contains(stripANSI(m.View()), "2 steering queued") {
+	if !strings.Contains(stripANSI(m.View().Content), "2 steering queued") {
 		t.Fatal("the notice rail should show the queued steering count")
 	}
 }
@@ -143,12 +143,12 @@ func TestFrame_NoticeRailAppearsAndCounts(t *testing.T) {
 func TestFrame_DenialNoticeClearsOnNextTurn(t *testing.T) {
 	m := frameModel(t, 100, 40)
 	m.denialNotice = "rm -rf /tmp/x"
-	if !strings.Contains(stripANSI(m.View()), "auto denied: rm -rf /tmp/x") {
+	if !strings.Contains(stripANSI(m.View().Content), "auto denied: rm -rf /tmp/x") {
 		t.Fatal("the notice rail should show the last auto-mode denial")
 	}
 
 	m.input.SetValue("try something else")
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if m.denialNotice != "" {
 		t.Fatal("a fresh user turn must clear the denial notice")
@@ -162,12 +162,12 @@ func TestFrame_TakeoverKeepsPlainStack(t *testing.T) {
 	m.syncViewport()
 	// Ungated the card rides above a live frame (S-117, §7b); it takes the
 	// panel only once the decision holds the keyboard.
-	ungated := stripANSI(m.View())
+	ungated := stripANSI(m.View().Content)
 	if !strings.Contains(ungated, "╭─ shhh chat") {
 		t.Fatalf("an ungated decision leaves the draft its frame:\n%s", ungated)
 	}
 	m = handover(t, m)
-	view := stripANSI(m.View())
+	view := stripANSI(m.View().Content)
 	if strings.Contains(view, "╭─ shhh chat") {
 		t.Fatalf("takeover surfaces must replace the frame:\n%s", view)
 	}
@@ -183,19 +183,19 @@ func TestFrame_WideViewportAccounting(t *testing.T) {
 	m := frameModel(t, 130, 40)
 	// The wide layout adds one dedicated vitals rail beyond the standard
 	// chrome rows.
-	if want := 40 - inputHeight - chromeHeight - 1; m.viewport.Height != want {
-		t.Fatalf("wide viewport height = %d, want %d", m.viewport.Height, want)
+	if want := 40 - inputHeight - chromeHeight - 1; m.viewport.Height() != want {
+		t.Fatalf("wide viewport height = %d, want %d", m.viewport.Height(), want)
 	}
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
 	m = updated.(Model)
-	if want := 40 - inputHeight - chromeHeight; m.viewport.Height != want {
-		t.Fatalf("compact viewport height = %d, want %d", m.viewport.Height, want)
+	if want := 40 - inputHeight - chromeHeight; m.viewport.Height() != want {
+		t.Fatalf("compact viewport height = %d, want %d", m.viewport.Height(), want)
 	}
 }
 
 func TestFrame_CompletionMenuInsideFrame(t *testing.T) {
 	m := typeChars(t, readyModel(t), "/mo")
-	view := stripANSI(m.View())
+	view := stripANSI(m.View().Content)
 	if !strings.Contains(view, "╭─ shhh chat") {
 		t.Fatalf("the frame should stay up while the completion menu is open:\n%s", view)
 	}
@@ -211,7 +211,7 @@ func TestFrame_AttachedShowsChildGutterAndVitals(t *testing.T) {
 	spawnBlockedChild(t, sup)
 	m.attach("researcher-1")
 
-	view := stripANSI(m.View())
+	view := stripANSI(m.View().Content)
 	if !strings.Contains(view, "orchestrator ▸ researcher-1") {
 		t.Fatalf("attached top rail missing the breadcrumb:\n%s", view)
 	}
@@ -264,11 +264,11 @@ func TestFrame_RowsAlignAtEveryLayout(t *testing.T) {
 
 func TestFrame_ModeGlyphNeverDependsOnColorAlone(t *testing.T) {
 	m := frameModel(t, 100, 40)
-	if !strings.Contains(stripANSI(m.View()), "⏸") {
+	if !strings.Contains(stripANSI(m.View().Content), "⏸") {
 		t.Fatal("gated mode must keep its textual glyph in the vitals rail")
 	}
 	m.mode = agent.ModeAuto
-	if !strings.Contains(stripANSI(m.View()), "⏵⏵") {
+	if !strings.Contains(stripANSI(m.View().Content), "⏵⏵") {
 		t.Fatal("permissive mode must keep its textual glyph in the vitals rail")
 	}
 }

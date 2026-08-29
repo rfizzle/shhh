@@ -4,9 +4,9 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/muesli/termenv"
 )
 
 // pressureFixture is the card every test here starts from: the §17b artboard,
@@ -79,10 +79,10 @@ func TestPressureCard_MeterMatchesTheRails(t *testing.T) {
 // The border carries the meter's colour, which is what puts the bar and the
 // numbers on the title rail in one colour (§10c).
 func TestPressureCard_BorderTakesTheMeterColour(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	c := pressureFixture()
 	probe := c.meter().Style().Render("\u250c")
-	probe = strings.TrimSuffix(probe, "\x1b[0m")
+	probe = strings.TrimSuffix(probe, ansi.ResetStyle)
 	if got := c.View(82); !strings.Contains(got, probe) {
 		t.Fatalf("the frame should be drawn in the meter's own colour (%q), got:\n%q", probe, got)
 	}
@@ -141,7 +141,7 @@ func TestPressureCard_KeysResolveAndEscDeclines(t *testing.T) {
 		{"ctrl+c", ""},
 	} {
 		c := pressureFixture()
-		done, result := c.Update(tea.KeyMsg{Type: keyTypeFor(tc.key), Runes: []rune(tc.key)})
+		done, result := c.Update(pressFor(tc.key))
 		if !done {
 			t.Fatalf("%q should resolve the card", tc.key)
 		}
@@ -151,21 +151,21 @@ func TestPressureCard_KeysResolveAndEscDeclines(t *testing.T) {
 	}
 
 	c := pressureFixture()
-	if done, _ := c.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("z")}); done {
+	if done, _ := c.Update(tea.KeyPressMsg{Code: 'z', Text: "z"}); done {
 		t.Fatal("a key the card does not offer should not resolve it")
 	}
 }
 
-// keyTypeFor maps the test's key names onto the message types bubbletea would
-// have produced for them.
-func keyTypeFor(key string) tea.KeyType {
+// pressFor maps the test's key names onto the presses bubbletea would have
+// produced for them.
+func pressFor(key string) tea.KeyPressMsg {
 	switch key {
 	case "enter":
-		return tea.KeyEnter
+		return tea.KeyPressMsg{Code: tea.KeyEnter}
 	case "esc":
-		return tea.KeyEsc
+		return tea.KeyPressMsg{Code: tea.KeyEscape}
 	case "ctrl+c":
-		return tea.KeyCtrlC
+		return tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl}
 	}
-	return tea.KeyRunes
+	return tea.KeyPressMsg{Code: []rune(key)[0], Text: key}
 }

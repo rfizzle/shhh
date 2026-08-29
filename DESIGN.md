@@ -131,8 +131,8 @@ The [Charm](https://charm.sh) stack is the Go ecosystem's best answer for termin
 
 | Library | Role |
 |---------|------|
-| **bubbletea** | Elm-architecture TUI framework — manages state, input, rendering |
-| **lipgloss** | Styled string rendering (colors, borders, padding) |
+| **bubbletea** | Elm-architecture TUI framework — manages state, input, rendering. `View()` returns a `tea.View`: the screen plus the terminal states the surface asks for (alt screen, mouse mode) |
+| **lipgloss** | Styled string rendering (colors, borders, padding). A `Style` holds a resolved colour and renders at full fidelity; the profile is decided once, in `components` (DESIGN-TUI.md §10a) |
 | **bubbles** | Pre-built components (spinner, text input, viewport, list) |
 
 ### Rendering Strategy
@@ -288,9 +288,10 @@ shhh/
 |------------|---------|
 | `github.com/spf13/cobra` | CLI command/flag parsing |
 | `charm.land/fang/v2` | Styled `--help`, errors and man pages around cobra |
-| `github.com/charmbracelet/bubbletea` | TUI framework |
-| `github.com/charmbracelet/lipgloss` | Terminal styling |
-| `github.com/charmbracelet/bubbles` | Spinner, text input, viewport |
+| `charm.land/bubbletea/v2` | TUI framework |
+| `charm.land/lipgloss/v2` | Terminal styling |
+| `charm.land/bubbles/v2` | Spinner, text input, viewport |
+| `charm.land/glamour/v2` | Markdown rendering in the transcript |
 | `github.com/BurntSushi/toml` | Config file parsing |
 | `github.com/sashabaranov/go-openai` | OpenAI / OpenAI-compatible API client |
 | `google.golang.org/genai` | Gemini API client |

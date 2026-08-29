@@ -166,156 +166,156 @@ shhh doctor · 3 checks                                                         
 
 ── ansi ────────────────────────────────────────────────────
 · the run · a row per check, the fix offered on the ones that need it
-␛[1;97mshhh doctor␛[0m␛[38;5;241m · 10 checks␛[0m                                                                                 ␛[38;5;245m1.4s␛[0m␛[38;5;241m · [?] keys · [q] quit␛[0m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[0m
+␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m                                                                                 ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-   ␛[92m✓␛[0m binary  ␛[38;5;252mshhh 0.9.4␛[0m␛[38;5;241m · darwin/arm64 · ~/.local/bin/shhh␛[0m                                                                ␛[38;5;241mok␛[0m
-   ␛[92m✓␛[0m config  ␛[38;5;252m~/.config/shhh/config.toml␛[0m␛[38;5;241m · 6 settings set␛[0m                                                                  ␛[38;5;241mok␛[0m
-␛[94m❯␛[0m  ␛[91m✗␛[0m model   ␛[38;5;252manthropic␛[0m␛[38;5;241m · claude-opus-5 · no key in any of the four places␛[0m                                             ␛[91mno key␛[0m
-    ␛[38;5;245mno session will start until a key is found — every one exits on "no provider"␛[0m
-    ␛[94m[f]␛[0m␛[38;5;241m show the four places shhh looks␛[0m
-   ␛[92m✓␛[0m store   ␛[38;5;252m~/.local/share/shhh/shhh.db␛[0m␛[38;5;241m · opened · migrations current · 56 kB␛[0m                                            ␛[38;5;241mok␛[0m
-   ␛[91m✗␛[0m sandbox ␛[38;5;252mno containment mechanism␛[0m␛[38;5;241m · sandbox-exec not found␛[0m                                                   ␛[91muncontained␛[0m  ␛[38;5;245m0.1s␛[0m
-    ␛[38;5;245mevery approval will show ⚠ UNCONTAINED, and an approved command runs as you␛[0m
-    ␛[38;5;245m[f]␛[0m␛[38;5;241m show the fix for this host␛[0m
-   ␛[38;5;214m⚠␛[0m engine  ␛[38;5;252mpodman␛[0m␛[38;5;241m · no sandbox image configured␛[0m                                                                   ␛[38;5;214mno image␛[0m
-    ␛[38;5;245mthe engine is there, so only the image stands between this host and a sandbox␛[0m
-    ␛[38;5;245m[f]␛[0m␛[38;5;241m show the 1-line fix␛[0m
-   ␛[92m✓␛[0m git     ␛[38;5;252m~/src/shhh␛[0m␛[38;5;241m · 3 files changed, all tracked␛[0m                                                                    ␛[38;5;241mok␛[0m  ␛[38;5;245m0.2s␛[0m
-   ␛[92m✓␛[0m tools   ␛[38;5;252mfd, ast-grep␛[0m␛[38;5;241m · no sd/tokei/jaq · gopls␛[0m                                                                       ␛[38;5;241mok␛[0m
-   ␛[38;5;241m⊘␛[0m memory  ␛[38;5;252mnothing remembered yet␛[0m␛[38;5;241m · ~/src/shhh␛[0m                                                                       ␛[38;5;241mempty␛[0m
-   ␛[38;5;214m⚠␛[0m update  ␛[38;5;252mshhh 0.9.5 is out␛[0m␛[38;5;241m · this machine is on 0.9.4␛[0m                                                        ␛[38;5;214mout of date␛[0m
-    ␛[38;5;245m[f]␛[0m␛[38;5;241m show how to upgrade␛[0m
+   ␛[92m✓␛[m binary  ␛[38;5;252mshhh 0.9.4␛[m␛[38;5;241m · darwin/arm64 · ~/.local/bin/shhh␛[m                                                                ␛[38;5;241mok␛[m
+   ␛[92m✓␛[m config  ␛[38;5;252m~/.config/shhh/config.toml␛[m␛[38;5;241m · 6 settings set␛[m                                                                  ␛[38;5;241mok␛[m
+␛[94m❯␛[m  ␛[91m✗␛[m model   ␛[38;5;252manthropic␛[m␛[38;5;241m · claude-opus-5 · no key in any of the four places␛[m                                             ␛[91mno key␛[m
+    ␛[38;5;245mno session will start until a key is found — every one exits on "no provider"␛[m
+    ␛[94m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
+   ␛[92m✓␛[m store   ␛[38;5;252m~/.local/share/shhh/shhh.db␛[m␛[38;5;241m · opened · migrations current · 56 kB␛[m                                            ␛[38;5;241mok␛[m
+   ␛[91m✗␛[m sandbox ␛[38;5;252mno containment mechanism␛[m␛[38;5;241m · sandbox-exec not found␛[m                                                   ␛[91muncontained␛[m  ␛[38;5;245m0.1s␛[m
+    ␛[38;5;245mevery approval will show ⚠ UNCONTAINED, and an approved command runs as you␛[m
+    ␛[38;5;245m[f]␛[m␛[38;5;241m show the fix for this host␛[m
+   ␛[38;5;214m⚠␛[m engine  ␛[38;5;252mpodman␛[m␛[38;5;241m · no sandbox image configured␛[m                                                                   ␛[38;5;214mno image␛[m
+    ␛[38;5;245mthe engine is there, so only the image stands between this host and a sandbox␛[m
+    ␛[38;5;245m[f]␛[m␛[38;5;241m show the 1-line fix␛[m
+   ␛[92m✓␛[m git     ␛[38;5;252m~/src/shhh␛[m␛[38;5;241m · 3 files changed, all tracked␛[m                                                                    ␛[38;5;241mok␛[m  ␛[38;5;245m0.2s␛[m
+   ␛[92m✓␛[m tools   ␛[38;5;252mfd, ast-grep␛[m␛[38;5;241m · no sd/tokei/jaq · gopls␛[m                                                                       ␛[38;5;241mok␛[m
+   ␛[38;5;241m⊘␛[m memory  ␛[38;5;252mnothing remembered yet␛[m␛[38;5;241m · ~/src/shhh␛[m                                                                       ␛[38;5;241mempty␛[m
+   ␛[38;5;214m⚠␛[m update  ␛[38;5;252mshhh 0.9.5 is out␛[m␛[38;5;241m · this machine is on 0.9.4␛[m                                                        ␛[38;5;214mout of date␛[m
+    ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
 
-  ␛[91m✗␛[0m ␛[91m2 failed␛[0m␛[38;5;241m · ␛[0m␛[38;5;214m2 warnings␛[0m␛[38;5;241m · ␛[0m␛[38;5;252m5 passed␛[0m␛[38;5;241m · ␛[0m␛[38;5;241m1 not checked␛[0m                    ␛[94m[↑↓]␛[0m␛[38;5;241m move␛[0m␛[38;5;241m · ␛[0m␛[94m[c]␛[0m␛[38;5;241m copy the report␛[0m␛[38;5;241m · ␛[0m␛[94m[r]␛[0m␛[38;5;241m run the checks again␛[0m
+  ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m                    ␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m
 
 · the fix open · under the row it belongs to, one indent past the consequence
-␛[1;97mshhh doctor␛[0m␛[38;5;241m · 10 checks␛[0m                                                                                 ␛[38;5;245m1.4s␛[0m␛[38;5;241m · [?] keys · [q] quit␛[0m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[0m
+␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m                                                                                 ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-   ␛[92m✓␛[0m binary  ␛[38;5;252mshhh 0.9.4␛[0m␛[38;5;241m · darwin/arm64 · ~/.local/bin/shhh␛[0m                                                                ␛[38;5;241mok␛[0m
-   ␛[92m✓␛[0m config  ␛[38;5;252m~/.config/shhh/config.toml␛[0m␛[38;5;241m · 6 settings set␛[0m                                                                  ␛[38;5;241mok␛[0m
-␛[94m❯␛[0m  ␛[91m✗␛[0m model   ␛[38;5;252manthropic␛[0m␛[38;5;241m · claude-opus-5 · no key in any of the four places␛[0m                                             ␛[91mno key␛[0m
-    ␛[38;5;245mno session will start until a key is found — every one exits on "no provider"␛[0m
-      ␛[38;5;252menv       SHHH_API_KEY, ANTHROPIC_API_KEY — unset␛[0m
-      ␛[38;5;252mconfig    ~/.config/shhh/config.toml — no provider api_key␛[0m
-      ␛[38;5;252mprofiles  no .toml in ~/.config/shhh/providers␛[0m
-      ␛[38;5;252mlocal     localhost:11434 — nothing listening␛[0m
-    ␛[94m[f]␛[0m␛[38;5;241m hide it␛[0m
-   ␛[92m✓␛[0m store   ␛[38;5;252m~/.local/share/shhh/shhh.db␛[0m␛[38;5;241m · opened · migrations current · 56 kB␛[0m                                            ␛[38;5;241mok␛[0m
-   ␛[91m✗␛[0m sandbox ␛[38;5;252mno containment mechanism␛[0m␛[38;5;241m · sandbox-exec not found␛[0m                                                   ␛[91muncontained␛[0m  ␛[38;5;245m0.1s␛[0m
-    ␛[38;5;245mevery approval will show ⚠ UNCONTAINED, and an approved command runs as you␛[0m
-    ␛[38;5;245m[f]␛[0m␛[38;5;241m show the fix for this host␛[0m
-   ␛[38;5;214m⚠␛[0m engine  ␛[38;5;252mpodman␛[0m␛[38;5;241m · no sandbox image configured␛[0m                                                                   ␛[38;5;214mno image␛[0m
-    ␛[38;5;245mthe engine is there, so only the image stands between this host and a sandbox␛[0m
-    ␛[38;5;245m[f]␛[0m␛[38;5;241m show the 1-line fix␛[0m
-   ␛[92m✓␛[0m git     ␛[38;5;252m~/src/shhh␛[0m␛[38;5;241m · 3 files changed, all tracked␛[0m                                                                    ␛[38;5;241mok␛[0m  ␛[38;5;245m0.2s␛[0m
-   ␛[92m✓␛[0m tools   ␛[38;5;252mfd, ast-grep␛[0m␛[38;5;241m · no sd/tokei/jaq · gopls␛[0m                                                                       ␛[38;5;241mok␛[0m
-   ␛[38;5;241m⊘␛[0m memory  ␛[38;5;252mnothing remembered yet␛[0m␛[38;5;241m · ~/src/shhh␛[0m                                                                       ␛[38;5;241mempty␛[0m
-   ␛[38;5;214m⚠␛[0m update  ␛[38;5;252mshhh 0.9.5 is out␛[0m␛[38;5;241m · this machine is on 0.9.4␛[0m                                                        ␛[38;5;214mout of date␛[0m
-    ␛[38;5;245m[f]␛[0m␛[38;5;241m show how to upgrade␛[0m
+   ␛[92m✓␛[m binary  ␛[38;5;252mshhh 0.9.4␛[m␛[38;5;241m · darwin/arm64 · ~/.local/bin/shhh␛[m                                                                ␛[38;5;241mok␛[m
+   ␛[92m✓␛[m config  ␛[38;5;252m~/.config/shhh/config.toml␛[m␛[38;5;241m · 6 settings set␛[m                                                                  ␛[38;5;241mok␛[m
+␛[94m❯␛[m  ␛[91m✗␛[m model   ␛[38;5;252manthropic␛[m␛[38;5;241m · claude-opus-5 · no key in any of the four places␛[m                                             ␛[91mno key␛[m
+    ␛[38;5;245mno session will start until a key is found — every one exits on "no provider"␛[m
+      ␛[38;5;252menv       SHHH_API_KEY, ANTHROPIC_API_KEY — unset␛[m
+      ␛[38;5;252mconfig    ~/.config/shhh/config.toml — no provider api_key␛[m
+      ␛[38;5;252mprofiles  no .toml in ~/.config/shhh/providers␛[m
+      ␛[38;5;252mlocal     localhost:11434 — nothing listening␛[m
+    ␛[94m[f]␛[m␛[38;5;241m hide it␛[m
+   ␛[92m✓␛[m store   ␛[38;5;252m~/.local/share/shhh/shhh.db␛[m␛[38;5;241m · opened · migrations current · 56 kB␛[m                                            ␛[38;5;241mok␛[m
+   ␛[91m✗␛[m sandbox ␛[38;5;252mno containment mechanism␛[m␛[38;5;241m · sandbox-exec not found␛[m                                                   ␛[91muncontained␛[m  ␛[38;5;245m0.1s␛[m
+    ␛[38;5;245mevery approval will show ⚠ UNCONTAINED, and an approved command runs as you␛[m
+    ␛[38;5;245m[f]␛[m␛[38;5;241m show the fix for this host␛[m
+   ␛[38;5;214m⚠␛[m engine  ␛[38;5;252mpodman␛[m␛[38;5;241m · no sandbox image configured␛[m                                                                   ␛[38;5;214mno image␛[m
+    ␛[38;5;245mthe engine is there, so only the image stands between this host and a sandbox␛[m
+    ␛[38;5;245m[f]␛[m␛[38;5;241m show the 1-line fix␛[m
+   ␛[92m✓␛[m git     ␛[38;5;252m~/src/shhh␛[m␛[38;5;241m · 3 files changed, all tracked␛[m                                                                    ␛[38;5;241mok␛[m  ␛[38;5;245m0.2s␛[m
+   ␛[92m✓␛[m tools   ␛[38;5;252mfd, ast-grep␛[m␛[38;5;241m · no sd/tokei/jaq · gopls␛[m                                                                       ␛[38;5;241mok␛[m
+   ␛[38;5;241m⊘␛[m memory  ␛[38;5;252mnothing remembered yet␛[m␛[38;5;241m · ~/src/shhh␛[m                                                                       ␛[38;5;241mempty␛[m
+   ␛[38;5;214m⚠␛[m update  ␛[38;5;252mshhh 0.9.5 is out␛[m␛[38;5;241m · this machine is on 0.9.4␛[m                                                        ␛[38;5;214mout of date␛[m
+    ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
 
-  ␛[91m✗␛[0m ␛[91m2 failed␛[0m␛[38;5;241m · ␛[0m␛[38;5;214m2 warnings␛[0m␛[38;5;241m · ␛[0m␛[38;5;252m5 passed␛[0m␛[38;5;241m · ␛[0m␛[38;5;241m1 not checked␛[0m                    ␛[94m[↑↓]␛[0m␛[38;5;241m move␛[0m␛[38;5;241m · ␛[0m␛[94m[c]␛[0m␛[38;5;241m copy the report␛[0m␛[38;5;241m · ␛[0m␛[94m[r]␛[0m␛[38;5;241m run the checks again␛[0m
+  ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m                    ␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m
 
 · the pointer moved · the next check that needs something takes the live key
-␛[1;97mshhh doctor␛[0m␛[38;5;241m · 10 checks␛[0m                                                                                 ␛[38;5;245m1.4s␛[0m␛[38;5;241m · [?] keys · [q] quit␛[0m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[0m
+␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m                                                                                 ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-   ␛[92m✓␛[0m binary  ␛[38;5;252mshhh 0.9.4␛[0m␛[38;5;241m · darwin/arm64 · ~/.local/bin/shhh␛[0m                                                                ␛[38;5;241mok␛[0m
-   ␛[92m✓␛[0m config  ␛[38;5;252m~/.config/shhh/config.toml␛[0m␛[38;5;241m · 6 settings set␛[0m                                                                  ␛[38;5;241mok␛[0m
-   ␛[91m✗␛[0m model   ␛[38;5;252manthropic␛[0m␛[38;5;241m · claude-opus-5 · no key in any of the four places␛[0m                                             ␛[91mno key␛[0m
-    ␛[38;5;245mno session will start until a key is found — every one exits on "no provider"␛[0m
-    ␛[38;5;245m[f]␛[0m␛[38;5;241m show the four places shhh looks␛[0m
-   ␛[92m✓␛[0m store   ␛[38;5;252m~/.local/share/shhh/shhh.db␛[0m␛[38;5;241m · opened · migrations current · 56 kB␛[0m                                            ␛[38;5;241mok␛[0m
-␛[94m❯␛[0m  ␛[91m✗␛[0m sandbox ␛[38;5;252mno containment mechanism␛[0m␛[38;5;241m · sandbox-exec not found␛[0m                                                   ␛[91muncontained␛[0m  ␛[38;5;245m0.1s␛[0m
-    ␛[38;5;245mevery approval will show ⚠ UNCONTAINED, and an approved command runs as you␛[0m
-    ␛[94m[f]␛[0m␛[38;5;241m show the fix for this host␛[0m
-   ␛[38;5;214m⚠␛[0m engine  ␛[38;5;252mpodman␛[0m␛[38;5;241m · no sandbox image configured␛[0m                                                                   ␛[38;5;214mno image␛[0m
-    ␛[38;5;245mthe engine is there, so only the image stands between this host and a sandbox␛[0m
-    ␛[38;5;245m[f]␛[0m␛[38;5;241m show the 1-line fix␛[0m
-   ␛[92m✓␛[0m git     ␛[38;5;252m~/src/shhh␛[0m␛[38;5;241m · 3 files changed, all tracked␛[0m                                                                    ␛[38;5;241mok␛[0m  ␛[38;5;245m0.2s␛[0m
-   ␛[92m✓␛[0m tools   ␛[38;5;252mfd, ast-grep␛[0m␛[38;5;241m · no sd/tokei/jaq · gopls␛[0m                                                                       ␛[38;5;241mok␛[0m
-   ␛[38;5;241m⊘␛[0m memory  ␛[38;5;252mnothing remembered yet␛[0m␛[38;5;241m · ~/src/shhh␛[0m                                                                       ␛[38;5;241mempty␛[0m
-   ␛[38;5;214m⚠␛[0m update  ␛[38;5;252mshhh 0.9.5 is out␛[0m␛[38;5;241m · this machine is on 0.9.4␛[0m                                                        ␛[38;5;214mout of date␛[0m
-    ␛[38;5;245m[f]␛[0m␛[38;5;241m show how to upgrade␛[0m
+   ␛[92m✓␛[m binary  ␛[38;5;252mshhh 0.9.4␛[m␛[38;5;241m · darwin/arm64 · ~/.local/bin/shhh␛[m                                                                ␛[38;5;241mok␛[m
+   ␛[92m✓␛[m config  ␛[38;5;252m~/.config/shhh/config.toml␛[m␛[38;5;241m · 6 settings set␛[m                                                                  ␛[38;5;241mok␛[m
+   ␛[91m✗␛[m model   ␛[38;5;252manthropic␛[m␛[38;5;241m · claude-opus-5 · no key in any of the four places␛[m                                             ␛[91mno key␛[m
+    ␛[38;5;245mno session will start until a key is found — every one exits on "no provider"␛[m
+    ␛[38;5;245m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
+   ␛[92m✓␛[m store   ␛[38;5;252m~/.local/share/shhh/shhh.db␛[m␛[38;5;241m · opened · migrations current · 56 kB␛[m                                            ␛[38;5;241mok␛[m
+␛[94m❯␛[m  ␛[91m✗␛[m sandbox ␛[38;5;252mno containment mechanism␛[m␛[38;5;241m · sandbox-exec not found␛[m                                                   ␛[91muncontained␛[m  ␛[38;5;245m0.1s␛[m
+    ␛[38;5;245mevery approval will show ⚠ UNCONTAINED, and an approved command runs as you␛[m
+    ␛[94m[f]␛[m␛[38;5;241m show the fix for this host␛[m
+   ␛[38;5;214m⚠␛[m engine  ␛[38;5;252mpodman␛[m␛[38;5;241m · no sandbox image configured␛[m                                                                   ␛[38;5;214mno image␛[m
+    ␛[38;5;245mthe engine is there, so only the image stands between this host and a sandbox␛[m
+    ␛[38;5;245m[f]␛[m␛[38;5;241m show the 1-line fix␛[m
+   ␛[92m✓␛[m git     ␛[38;5;252m~/src/shhh␛[m␛[38;5;241m · 3 files changed, all tracked␛[m                                                                    ␛[38;5;241mok␛[m  ␛[38;5;245m0.2s␛[m
+   ␛[92m✓␛[m tools   ␛[38;5;252mfd, ast-grep␛[m␛[38;5;241m · no sd/tokei/jaq · gopls␛[m                                                                       ␛[38;5;241mok␛[m
+   ␛[38;5;241m⊘␛[m memory  ␛[38;5;252mnothing remembered yet␛[m␛[38;5;241m · ~/src/shhh␛[m                                                                       ␛[38;5;241mempty␛[m
+   ␛[38;5;214m⚠␛[m update  ␛[38;5;252mshhh 0.9.5 is out␛[m␛[38;5;241m · this machine is on 0.9.4␛[m                                                        ␛[38;5;214mout of date␛[m
+    ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
 
-  ␛[91m✗␛[0m ␛[91m2 failed␛[0m␛[38;5;241m · ␛[0m␛[38;5;214m2 warnings␛[0m␛[38;5;241m · ␛[0m␛[38;5;252m5 passed␛[0m␛[38;5;241m · ␛[0m␛[38;5;241m1 not checked␛[0m                    ␛[94m[↑↓]␛[0m␛[38;5;241m move␛[0m␛[38;5;241m · ␛[0m␛[94m[c]␛[0m␛[38;5;241m copy the report␛[0m␛[38;5;241m · ␛[0m␛[94m[r]␛[0m␛[38;5;241m run the checks again␛[0m
+  ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m                    ␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m
 
 · still going · what has answered, one running, the rest queued
-␛[1;97mshhh doctor␛[0m␛[38;5;241m · 10 checks␛[0m␛[38;5;241m · ␛[0m␛[38;5;205m▸ running␛[0m                                                                     ␛[38;5;245m0.3s␛[0m␛[38;5;241m · [?] keys · [q] quit␛[0m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[0m
+␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m␛[38;5;241m · ␛[m␛[38;5;205m▸ running␛[m                                                                     ␛[38;5;245m0.3s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-   ␛[92m✓␛[0m binary  ␛[38;5;252mshhh 0.9.4␛[0m␛[38;5;241m · darwin/arm64 · ~/.local/bin/shhh␛[0m                                                                ␛[38;5;241mok␛[0m
-   ␛[92m✓␛[0m config  ␛[38;5;252m~/.config/shhh/config.toml␛[0m␛[38;5;241m · 6 settings set␛[0m                                                                  ␛[38;5;241mok␛[0m
-␛[94m❯␛[0m  ␛[91m✗␛[0m model   ␛[38;5;252manthropic␛[0m␛[38;5;241m · claude-opus-5 · no key in any of the four places␛[0m                                             ␛[91mno key␛[0m
-    ␛[38;5;245mno session will start until a key is found — every one exits on "no provider"␛[0m
-    ␛[94m[f]␛[0m␛[38;5;241m show the four places shhh looks␛[0m
-   ␛[38;5;205m▸␛[0m store   ␛[38;5;252mthe local store␛[0m␛[38;5;241m␛[0m                                                                                        ␛[38;5;205mrunning…␛[0m
-   ␛[38;5;241m·␛[0m sandbox ␛[38;5;252mnot started␛[0m␛[38;5;241m␛[0m                                                                                              ␛[38;5;241mqueued␛[0m     ␛[38;5;245m—␛[0m
-   ␛[38;5;241m·␛[0m engine  ␛[38;5;252mnot started␛[0m␛[38;5;241m␛[0m                                                                                              ␛[38;5;241mqueued␛[0m     ␛[38;5;245m—␛[0m
-   ␛[38;5;241m·␛[0m git     ␛[38;5;252mnot started␛[0m␛[38;5;241m␛[0m                                                                                              ␛[38;5;241mqueued␛[0m     ␛[38;5;245m—␛[0m
-   ␛[38;5;241m·␛[0m tools   ␛[38;5;252mnot started␛[0m␛[38;5;241m␛[0m                                                                                              ␛[38;5;241mqueued␛[0m     ␛[38;5;245m—␛[0m
-   ␛[38;5;241m·␛[0m memory  ␛[38;5;252mnot started␛[0m␛[38;5;241m␛[0m                                                                                              ␛[38;5;241mqueued␛[0m     ␛[38;5;245m—␛[0m
-   ␛[38;5;241m·␛[0m update  ␛[38;5;252mnot started␛[0m␛[38;5;241m␛[0m                                                                                              ␛[38;5;241mqueued␛[0m     ␛[38;5;245m—␛[0m
+   ␛[92m✓␛[m binary  ␛[38;5;252mshhh 0.9.4␛[m␛[38;5;241m · darwin/arm64 · ~/.local/bin/shhh␛[m                                                                ␛[38;5;241mok␛[m
+   ␛[92m✓␛[m config  ␛[38;5;252m~/.config/shhh/config.toml␛[m␛[38;5;241m · 6 settings set␛[m                                                                  ␛[38;5;241mok␛[m
+␛[94m❯␛[m  ␛[91m✗␛[m model   ␛[38;5;252manthropic␛[m␛[38;5;241m · claude-opus-5 · no key in any of the four places␛[m                                             ␛[91mno key␛[m
+    ␛[38;5;245mno session will start until a key is found — every one exits on "no provider"␛[m
+    ␛[94m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
+   ␛[38;5;205m▸␛[m store   ␛[38;5;252mthe local store␛[m␛[38;5;241m␛[m                                                                                        ␛[38;5;205mrunning…␛[m
+   ␛[38;5;241m·␛[m sandbox ␛[38;5;252mnot started␛[m␛[38;5;241m␛[m                                                                                              ␛[38;5;241mqueued␛[m     ␛[38;5;245m—␛[m
+   ␛[38;5;241m·␛[m engine  ␛[38;5;252mnot started␛[m␛[38;5;241m␛[m                                                                                              ␛[38;5;241mqueued␛[m     ␛[38;5;245m—␛[m
+   ␛[38;5;241m·␛[m git     ␛[38;5;252mnot started␛[m␛[38;5;241m␛[m                                                                                              ␛[38;5;241mqueued␛[m     ␛[38;5;245m—␛[m
+   ␛[38;5;241m·␛[m tools   ␛[38;5;252mnot started␛[m␛[38;5;241m␛[m                                                                                              ␛[38;5;241mqueued␛[m     ␛[38;5;245m—␛[m
+   ␛[38;5;241m·␛[m memory  ␛[38;5;252mnot started␛[m␛[38;5;241m␛[m                                                                                              ␛[38;5;241mqueued␛[m     ␛[38;5;245m—␛[m
+   ␛[38;5;241m·␛[m update  ␛[38;5;252mnot started␛[m␛[38;5;241m␛[m                                                                                              ␛[38;5;241mqueued␛[m     ␛[38;5;245m—␛[m
 
-  ␛[91m✗␛[0m ␛[91m1 failed␛[0m␛[38;5;241m · ␛[0m␛[38;5;252m2 passed␛[0m␛[38;5;241m · ␛[0m␛[38;5;205m1 running␛[0m␛[38;5;241m · ␛[0m␛[38;5;241m6 queued␛[0m                                                                 ␛[94m[c]␛[0m␛[38;5;241m copy the report␛[0m
+  ␛[91m✗␛[m ␛[91m1 failed␛[m␛[38;5;241m · ␛[m␛[38;5;252m2 passed␛[m␛[38;5;241m · ␛[m␛[38;5;205m1 running␛[m␛[38;5;241m · ␛[m␛[38;5;241m6 queued␛[m                                                                 ␛[94m[c]␛[m␛[38;5;241m copy the report␛[m
 
 · a short terminal · the passes go first, and the marker names them
-␛[1;97mshhh doctor␛[0m␛[38;5;241m · 10 checks␛[0m                                                                                 ␛[38;5;245m1.4s␛[0m␛[38;5;241m · [?] keys · [q] quit␛[0m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[0m
+␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m                                                                                 ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-␛[94m❯␛[0m  ␛[91m✗␛[0m model   ␛[38;5;252manthropic␛[0m␛[38;5;241m · claude-opus-5 · no key in any of the four places␛[0m                                             ␛[91mno key␛[0m
-    ␛[38;5;245mno session will start until a key is found — every one exits on "no provider"␛[0m
-    ␛[94m[f]␛[0m␛[38;5;241m show the four places shhh looks␛[0m
-   ␛[91m✗␛[0m sandbox ␛[38;5;252mno containment mechanism␛[0m␛[38;5;241m · sandbox-exec not found␛[0m                                                   ␛[91muncontained␛[0m  ␛[38;5;245m0.1s␛[0m
-    ␛[38;5;245mevery approval will show ⚠ UNCONTAINED, and an approved command runs as you␛[0m
-    ␛[38;5;245m[f]␛[0m␛[38;5;241m show the fix for this host␛[0m
-   ␛[38;5;214m⚠␛[0m engine  ␛[38;5;252mpodman␛[0m␛[38;5;241m · no sandbox image configured␛[0m                                                                   ␛[38;5;214mno image␛[0m
-    ␛[38;5;245mthe engine is there, so only the image stands between this host and a sandbox␛[0m
-    ␛[38;5;245m[f]␛[0m␛[38;5;241m show the 1-line fix␛[0m
-   ␛[38;5;241m⊘␛[0m memory  ␛[38;5;252mnothing remembered yet␛[0m␛[38;5;241m · ~/src/shhh␛[0m                                                                       ␛[38;5;241mempty␛[0m
-   ␛[38;5;214m⚠␛[0m update  ␛[38;5;252mshhh 0.9.5 is out␛[0m␛[38;5;241m · this machine is on 0.9.4␛[0m                                                        ␛[38;5;214mout of date␛[0m
-    ␛[38;5;245m[f]␛[0m␛[38;5;241m show how to upgrade␛[0m
-  ␛[38;5;241m↓ 5 more · binary · config · store · git · tools␛[0m
+␛[94m❯␛[m  ␛[91m✗␛[m model   ␛[38;5;252manthropic␛[m␛[38;5;241m · claude-opus-5 · no key in any of the four places␛[m                                             ␛[91mno key␛[m
+    ␛[38;5;245mno session will start until a key is found — every one exits on "no provider"␛[m
+    ␛[94m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
+   ␛[91m✗␛[m sandbox ␛[38;5;252mno containment mechanism␛[m␛[38;5;241m · sandbox-exec not found␛[m                                                   ␛[91muncontained␛[m  ␛[38;5;245m0.1s␛[m
+    ␛[38;5;245mevery approval will show ⚠ UNCONTAINED, and an approved command runs as you␛[m
+    ␛[38;5;245m[f]␛[m␛[38;5;241m show the fix for this host␛[m
+   ␛[38;5;214m⚠␛[m engine  ␛[38;5;252mpodman␛[m␛[38;5;241m · no sandbox image configured␛[m                                                                   ␛[38;5;214mno image␛[m
+    ␛[38;5;245mthe engine is there, so only the image stands between this host and a sandbox␛[m
+    ␛[38;5;245m[f]␛[m␛[38;5;241m show the 1-line fix␛[m
+   ␛[38;5;241m⊘␛[m memory  ␛[38;5;252mnothing remembered yet␛[m␛[38;5;241m · ~/src/shhh␛[m                                                                       ␛[38;5;241mempty␛[m
+   ␛[38;5;214m⚠␛[m update  ␛[38;5;252mshhh 0.9.5 is out␛[m␛[38;5;241m · this machine is on 0.9.4␛[m                                                        ␛[38;5;214mout of date␛[m
+    ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
+  ␛[38;5;241m↓ 5 more · binary · config · store · git · tools␛[m
 
-  ␛[91m✗␛[0m ␛[91m2 failed␛[0m␛[38;5;241m · ␛[0m␛[38;5;214m2 warnings␛[0m␛[38;5;241m · ␛[0m␛[38;5;252m5 passed␛[0m␛[38;5;241m · ␛[0m␛[38;5;241m1 not checked␛[0m                    ␛[94m[↑↓]␛[0m␛[38;5;241m move␛[0m␛[38;5;241m · ␛[0m␛[94m[c]␛[0m␛[38;5;241m copy the report␛[0m␛[38;5;241m · ␛[0m␛[94m[r]␛[0m␛[38;5;241m run the checks again␛[0m
+  ␛[91m✗␛[m ␛[91m2 failed␛[m␛[38;5;241m · ␛[m␛[38;5;214m2 warnings␛[m␛[38;5;241m · ␛[m␛[38;5;252m5 passed␛[m␛[38;5;241m · ␛[m␛[38;5;241m1 not checked␛[m                    ␛[94m[↑↓]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m
 
 · the keys · [?] over a screen that has five of them
-␛[1;97mshhh doctor␛[0m␛[38;5;241m · 10 checks␛[0m                                                                                 ␛[38;5;245m1.4s␛[0m␛[38;5;241m · [?] keys · [q] quit␛[0m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[0m
+␛[1;97mshhh doctor␛[m␛[38;5;241m · 10 checks␛[m                                                                                 ␛[38;5;245m1.4s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-   ␛[92m✓␛[0m binary  ␛[38;5;252mshhh 0.9.4␛[0m␛[38;5;241m · darwin/arm64 · ~/.local/bin/shhh␛[0m                                                                ␛[38;5;241mok␛[0m
-   ␛[92m✓␛[0m config  ␛[38;5;252m~/.config/shhh/config.toml␛[0m␛[38;5;241m · 6 settings set␛[0m                                                                  ␛[38;5;241mok␛[0m
-␛[94m❯␛[0m  ␛[91m✗␛[0m model   ␛[38;5;252manthropic␛[0m␛[38;5;241m · claude-opus-5 · no key in any of the four places␛[0m                                             ␛[91mno key␛[0m
-    ␛[38;5;245mno session will start until a key is found — every one exits on "no provider"␛[0m
-    ␛[94m[f]␛[0m␛[38;5;241m show the four places shhh looks␛[0m
-   ␛[92m✓␛[0m store   ␛[38;5;252m~/.local/share/shhh/shhh.db␛[0m␛[38;5;241m · opened · migrations current · 56 kB␛[0m                                            ␛[38;5;241mok␛[0m
-   ␛[91m✗␛[0m sandbox ␛[38;5;252mno containment mechanism␛[0m␛[38;5;241m · sandbox-exec not found␛[0m                                                   ␛[91muncontained␛[0m  ␛[38;5;245m0.1s␛[0m
-    ␛[38;5;245mevery approval will show ⚠ UNCONTAINED, and an approved command runs as you␛[0m
-    ␛[38;5;245m[f]␛[0m␛[38;5;241m show the fix for this host␛[0m
-   ␛[38;5;214m⚠␛[0m engine  ␛[38;5;252mpodman␛[0m␛[38;5;241m · no sandbox image configured␛[0m                                                                   ␛[38;5;214mno image␛[0m
-    ␛[38;5;245mthe engine is there, so only the image stands between this host and a sandbox␛[0m
-    ␛[38;5;245m[f]␛[0m␛[38;5;241m show the 1-line fix␛[0m
-   ␛[92m✓␛[0m git     ␛[38;5;252m~/src/shhh␛[0m␛[38;5;241m · 3 files changed, all tracked␛[0m                                                                    ␛[38;5;241mok␛[0m  ␛[38;5;245m0.2s␛[0m
-   ␛[92m✓␛[0m tools   ␛[38;5;252mfd, ast-grep␛[0m␛[38;5;241m · no sd/tokei/jaq · gopls␛[0m                                                                       ␛[38;5;241mok␛[0m
-   ␛[38;5;241m⊘␛[0m memory  ␛[38;5;252mnothing remembered yet␛[0m␛[38;5;241m · ~/src/shhh␛[0m                                                                       ␛[38;5;241mempty␛[0m
-   ␛[38;5;214m⚠␛[0m update  ␛[38;5;252mshhh 0.9.5 is out␛[0m␛[38;5;241m · this machine is on 0.9.4␛[0m                                                        ␛[38;5;214mout of date␛[0m
-    ␛[38;5;245m[f]␛[0m␛[38;5;241m show how to upgrade␛[0m
+   ␛[92m✓␛[m binary  ␛[38;5;252mshhh 0.9.4␛[m␛[38;5;241m · darwin/arm64 · ~/.local/bin/shhh␛[m                                                                ␛[38;5;241mok␛[m
+   ␛[92m✓␛[m config  ␛[38;5;252m~/.config/shhh/config.toml␛[m␛[38;5;241m · 6 settings set␛[m                                                                  ␛[38;5;241mok␛[m
+␛[94m❯␛[m  ␛[91m✗␛[m model   ␛[38;5;252manthropic␛[m␛[38;5;241m · claude-opus-5 · no key in any of the four places␛[m                                             ␛[91mno key␛[m
+    ␛[38;5;245mno session will start until a key is found — every one exits on "no provider"␛[m
+    ␛[94m[f]␛[m␛[38;5;241m show the four places shhh looks␛[m
+   ␛[92m✓␛[m store   ␛[38;5;252m~/.local/share/shhh/shhh.db␛[m␛[38;5;241m · opened · migrations current · 56 kB␛[m                                            ␛[38;5;241mok␛[m
+   ␛[91m✗␛[m sandbox ␛[38;5;252mno containment mechanism␛[m␛[38;5;241m · sandbox-exec not found␛[m                                                   ␛[91muncontained␛[m  ␛[38;5;245m0.1s␛[m
+    ␛[38;5;245mevery approval will show ⚠ UNCONTAINED, and an approved command runs as you␛[m
+    ␛[38;5;245m[f]␛[m␛[38;5;241m show the fix for this host␛[m
+   ␛[38;5;214m⚠␛[m engine  ␛[38;5;252mpodman␛[m␛[38;5;241m · no sandbox image configured␛[m                                                                   ␛[38;5;214mno image␛[m
+    ␛[38;5;245mthe engine is there, so only the image stands between this host and a sandbox␛[m
+    ␛[38;5;245m[f]␛[m␛[38;5;241m show the 1-line fix␛[m
+   ␛[92m✓␛[m git     ␛[38;5;252m~/src/shhh␛[m␛[38;5;241m · 3 files changed, all tracked␛[m                                                                    ␛[38;5;241mok␛[m  ␛[38;5;245m0.2s␛[m
+   ␛[92m✓␛[m tools   ␛[38;5;252mfd, ast-grep␛[m␛[38;5;241m · no sd/tokei/jaq · gopls␛[m                                                                       ␛[38;5;241mok␛[m
+   ␛[38;5;241m⊘␛[m memory  ␛[38;5;252mnothing remembered yet␛[m␛[38;5;241m · ~/src/shhh␛[m                                                                       ␛[38;5;241mempty␛[m
+   ␛[38;5;214m⚠␛[m update  ␛[38;5;252mshhh 0.9.5 is out␛[m␛[38;5;241m · this machine is on 0.9.4␛[m                                                        ␛[38;5;214mout of date␛[m
+    ␛[38;5;245m[f]␛[m␛[38;5;241m show how to upgrade␛[m
 
-␛[94m[↑↓/jk]␛[0m␛[38;5;241m move between the checks that need something␛[0m
-␛[94m[f]␛[0m␛[38;5;241m show the fix for the check under the pointer␛[0m
-␛[94m[c]␛[0m␛[38;5;241m copy the whole report as text␛[0m
-␛[94m[r]␛[0m␛[38;5;241m run every check again␛[0m
-␛[94m[esc]␛[0m␛[38;5;241m back to the shell␛[0m
-␛[94m[q]␛[0m␛[38;5;241m back to the shell␛[0m
-␛[94m[?]␛[0m␛[38;5;241m hide the keys␛[0m
+␛[94m[↑↓/jk]␛[m␛[38;5;241m move between the checks that need something␛[m
+␛[94m[f]␛[m␛[38;5;241m show the fix for the check under the pointer␛[m
+␛[94m[c]␛[m␛[38;5;241m copy the whole report as text␛[m
+␛[94m[r]␛[m␛[38;5;241m run every check again␛[m
+␛[94m[esc]␛[m␛[38;5;241m back to the shell␛[m
+␛[94m[q]␛[m␛[38;5;241m back to the shell␛[m
+␛[94m[?]␛[m␛[38;5;241m hide the keys␛[m
 
 · a clean run · no pointer, no fix key, and nothing to act on
-␛[1;97mshhh doctor␛[0m␛[38;5;241m · 3 checks␛[0m                                                                                  ␛[38;5;245m0.9s␛[0m␛[38;5;241m · [?] keys · [q] quit␛[0m
-␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[0m
+␛[1;97mshhh doctor␛[m␛[38;5;241m · 3 checks␛[m                                                                                  ␛[38;5;245m0.9s␛[m␛[38;5;241m · [?] keys · [q] quit␛[m
+␛[38;5;241m──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m
 
-   ␛[92m✓␛[0m binary  ␛[38;5;252mshhh 0.9.4␛[0m␛[38;5;241m · darwin/arm64␛[0m                                                                                    ␛[38;5;241mok␛[0m
-   ␛[92m✓␛[0m sandbox ␛[38;5;252msandbox-exec␛[0m␛[38;5;241m · Seatbelt · workspace profile␛[0m                                                           ␛[38;5;241mcontained␛[0m
-   ␛[92m✓␛[0m git     ␛[38;5;252m~/src/shhh␛[0m␛[38;5;241m · clean␛[0m                                                                                           ␛[38;5;241mok␛[0m  ␛[38;5;245m0.2s␛[0m
+   ␛[92m✓␛[m binary  ␛[38;5;252mshhh 0.9.4␛[m␛[38;5;241m · darwin/arm64␛[m                                                                                    ␛[38;5;241mok␛[m
+   ␛[92m✓␛[m sandbox ␛[38;5;252msandbox-exec␛[m␛[38;5;241m · Seatbelt · workspace profile␛[m                                                           ␛[38;5;241mcontained␛[m
+   ␛[92m✓␛[m git     ␛[38;5;252m~/src/shhh␛[m␛[38;5;241m · clean␛[m                                                                                           ␛[38;5;241mok␛[m  ␛[38;5;245m0.2s␛[m
 
-  ␛[92m✓␛[0m ␛[38;5;252m3 passed␛[0m                                                                        ␛[94m[c]␛[0m␛[38;5;241m copy the report␛[0m␛[38;5;241m · ␛[0m␛[94m[r]␛[0m␛[38;5;241m run the checks again␛[0m
+  ␛[92m✓␛[m ␛[38;5;252m3 passed␛[m                                                                        ␛[94m[c]␛[m␛[38;5;241m copy the report␛[m␛[38;5;241m · ␛[m␛[94m[r]␛[m␛[38;5;241m run the checks again␛[m

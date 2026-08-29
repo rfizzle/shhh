@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/pricing"
@@ -82,8 +82,8 @@ func TestTranscriptWidth_ReducedByTheRail(t *testing.T) {
 	if got := wide.transcriptWidth(); got != 92 {
 		t.Fatalf("transcript wraps to %d columns, want 92", got)
 	}
-	if wide.viewport.Width != 92 {
-		t.Fatalf("viewport width = %d, want the wrap width", wide.viewport.Width)
+	if wide.viewport.Width() != 92 {
+		t.Fatalf("viewport width = %d, want the wrap width", wide.viewport.Width())
 	}
 	narrow := inspectorModel(t, 120, 40)
 	if got := narrow.paneWidth(); got != narrow.contentWidth() {
@@ -96,14 +96,14 @@ func TestTranscriptWidth_ReducedByTheRail(t *testing.T) {
 
 func TestView_TwoPaneRendersRail(t *testing.T) {
 	m := inspectorModel(t, 144, 40)
-	view := stripANSI(m.View())
+	view := stripANSI(m.View().Content)
 	for _, want := range []string{"THIS TURN", "CHANGES", "▎✎ internal/agent/loop.go", "CONTEXT", "SPEND", "│"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("two-pane view missing %q:\n%s", want, view)
 		}
 	}
 	// Below the threshold nothing about the layout changes.
-	narrow := stripANSI(inspectorModel(t, 120, 40).View())
+	narrow := stripANSI(inspectorModel(t, 120, 40).View().Content)
 	for _, absent := range []string{"THIS TURN", "CHANGES", "SPEND"} {
 		if strings.Contains(narrow, absent) {
 			t.Fatalf("single-pane view should not show %q:\n%s", absent, narrow)
@@ -116,11 +116,11 @@ func TestView_SplitKeepsTheRowBudget(t *testing.T) {
 	// terminal's rows, and the viewport height is what the chrome left it.
 	for _, width := range []int{120, 144} {
 		m := inspectorModel(t, width, 30)
-		if got := len(strings.Split(m.View(), "\n")); got != 30 {
+		if got := len(strings.Split(m.View().Content, "\n")); got != 30 {
 			t.Fatalf("width %d: view is %d rows, want 30", width, got)
 		}
-		if m.viewport.Height != m.viewportHeight() {
-			t.Fatalf("width %d: viewport height %d != %d", width, m.viewport.Height, m.viewportHeight())
+		if m.viewport.Height() != m.viewportHeight() {
+			t.Fatalf("width %d: viewport height %d != %d", width, m.viewport.Height(), m.viewportHeight())
 		}
 	}
 	wide := inspectorModel(t, 144, 30)
@@ -140,7 +140,7 @@ func TestView_TwoPaneRowsFitTheirPanes(t *testing.T) {
 			t.Fatalf("transcript line is %d columns, pane is %d: %q", w, m.transcriptWidth(), stripANSI(line))
 		}
 	}
-	for _, line := range strings.Split(stripANSI(m.View()), "\n") {
+	for _, line := range strings.Split(stripANSI(m.View().Content), "\n") {
 		if w := lipgloss.Width(line); w > m.width {
 			t.Fatalf("view line is %d columns, terminal is %d: %q", w, m.width, line)
 		}
@@ -250,7 +250,7 @@ func TestInspectorData_OmitsBlocksWithNothingToSay(t *testing.T) {
 	if !rail.Empty() {
 		t.Fatalf("a fresh session has nothing to inspect: %+v", rail)
 	}
-	if got := stripANSI(fresh.View()); strings.Contains(got, "THIS TURN") {
+	if got := stripANSI(fresh.View().Content); strings.Contains(got, "THIS TURN") {
 		t.Fatalf("an empty rail draws nothing:\n%s", got)
 	}
 }
@@ -306,7 +306,7 @@ func TestInspector_AgentsBlockFromRunningChildren(t *testing.T) {
 	if len(agents) != 1 || agents[0].Name != "researcher-1" {
 		t.Fatalf("AGENTS should list the running child: %+v", agents)
 	}
-	view := stripANSI(m.View())
+	view := stripANSI(m.View().Content)
 	if !strings.Contains(view, "AGENTS") || !strings.Contains(view, "1 running") || !strings.Contains(view, "◇ researcher-1") {
 		t.Fatalf("two-pane view missing the AGENTS block:\n%s", view)
 	}
@@ -324,7 +324,7 @@ func TestInspectorContext_BurnSparkline(t *testing.T) {
 	if len(rail.Context.Burn) != contextBurnSamples {
 		t.Fatalf("CONTEXT should carry the series: %+v", rail.Context.Burn)
 	}
-	view := stripANSI(m.View())
+	view := stripANSI(m.View().Content)
 	if !strings.Contains(view, "per round") || !strings.Contains(view, "█") {
 		t.Fatalf("the CONTEXT block should draw the burn sparkline:\n%s", view)
 	}
@@ -349,7 +349,7 @@ func TestFocusMode_KeepsTheRail(t *testing.T) {
 			t.Fatalf("focus row is %d columns, pane is %d: %q", w, m.transcriptWidth(), stripANSI(line))
 		}
 	}
-	if view := stripANSI(m.View()); !strings.Contains(view, "THIS TURN") {
+	if view := stripANSI(m.View().Content); !strings.Contains(view, "THIS TURN") {
 		t.Fatalf("focus mode still renders the rail:\n%s", view)
 	}
 }
@@ -406,7 +406,7 @@ func TestInspectorChanges_SessionScoped(t *testing.T) {
 			t.Fatalf("turn 3 changed nothing: %+v", f)
 		}
 	}
-	view := stripANSI(m.View())
+	view := stripANSI(m.View().Content)
 	if !strings.Contains(view, "▎✎ internal/agent/loop.go") || !strings.Contains(view, "session · ") {
 		t.Fatalf("the rail still shows the session's changes:\n%s", view)
 	}

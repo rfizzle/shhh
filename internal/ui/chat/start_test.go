@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -196,26 +196,26 @@ func TestStartScreen_ArrowsMoveThePointerAndEnterRunsTheOffer(t *testing.T) {
 		t.Fatalf("focus starts at %d, want 0", m.startFocus)
 	}
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyDown})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 	m = updated.(Model)
 	if m.startFocus != 1 {
 		t.Fatalf("down moved focus to %d, want 1", m.startFocus)
 	}
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyUp})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 	m = updated.(Model)
 	if m.startFocus != 0 {
 		t.Fatalf("up moved focus to %d, want 0", m.startFocus)
 	}
 	// The pointer does not run off either end of the list.
 	for range 5 {
-		updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyUp})
+		updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 		m = updated.(Model)
 	}
 	if m.startFocus != 0 {
 		t.Fatalf("focus ran off the top to %d", m.startFocus)
 	}
 	for range 9 {
-		updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyDown})
+		updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
 		m = updated.(Model)
 	}
 	if m.startFocus != 2 {
@@ -225,7 +225,7 @@ func TestStartScreen_ArrowsMoveThePointerAndEnterRunsTheOffer(t *testing.T) {
 	// Enter on a read-only offer sends it as an ordinary message, through the
 	// same submit path typing it would take.
 	m.startFocus = 1
-	updated, _ = m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if len(m.transcript) == 0 || m.transcript[0].kind != entryUser {
 		t.Fatalf("enter did not send the offer: %+v", m.transcript)
@@ -252,7 +252,7 @@ func TestStartScreen_EnterOnTheResumeOfferLoadsThatSession(t *testing.T) {
 	info.Recent.Name = "loop refactor"
 
 	m := startModel(t, info).WithDB(db)
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
 	view := startText(m)
@@ -279,7 +279,7 @@ func TestStartScreen_TypingDismissesTheListAndGivesTheKeysBack(t *testing.T) {
 		t.Fatalf("dismissing the list took the facts with it:\n%s", view)
 	}
 	// Enter is the input's again, so the draft is sent rather than an offer.
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 	if len(m.transcript) == 0 || m.transcript[0].text != "what does this project do" {
 		t.Fatalf("enter did not send the draft: %+v", m.transcript)
@@ -291,7 +291,7 @@ func TestStartScreen_HistoryKeepsTheArrowsOnceThereIsHistory(t *testing.T) {
 	m.recordInput("an earlier message")
 	m.spendStartScreen()
 
-	updated, _ := m.Update(tea.KeyMsg{Type: tea.KeyUp})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyUp})
 	m = updated.(Model)
 	if m.input.Value() != "an earlier message" {
 		t.Fatalf("up should browse the input history, got %q", m.input.Value())

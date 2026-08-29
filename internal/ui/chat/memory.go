@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -76,7 +76,7 @@ func (m *Model) openMemoryAsk(req *approvalRequest) {
 // updateMemoryAsk routes confirm-prompt keys while the memory prompt shows.
 // Saving resolves the remember call with the saved entry as its result;
 // anything else declines it.
-func (m Model) updateMemoryAsk(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) updateMemoryAsk(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	done, result := m.memoryAsk.Update(msg)
 	if !done {
 		return m, nil

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	tea "github.com/charmbracelet/bubbletea"
+	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 )
 
@@ -122,15 +122,15 @@ func TestProviderCard_NamesEveryPlaceAndWhatWasThere(t *testing.T) {
 
 func TestProviderCard_ClaimsOnlyTheKeysItOffers(t *testing.T) {
 	card := &ProviderCard{Keys: []KeyOffer{{Key: "[p]", Label: "paste a key"}}}
-	if done, _ := card.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'z'}}); done {
+	if done, _ := card.Update(tea.KeyPressMsg{Code: 'z', Text: "z"}); done {
 		t.Error("a key the card does not offer should not resolve it")
 	}
-	done, result := card.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{'p'}})
+	done, result := card.Update(tea.KeyPressMsg{Code: 'p', Text: "p"})
 	if !done || result != "p" {
 		t.Errorf("[p] should resolve the card, got done=%v result=%v", done, result)
 	}
 	esc := &ProviderCard{Keys: []KeyOffer{{Key: "[p]"}}}
-	done, result = esc.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	done, result = esc.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	if !done || result != "" {
 		t.Errorf("esc should decline, got done=%v result=%v", done, result)
 	}
@@ -139,7 +139,7 @@ func TestProviderCard_ClaimsOnlyTheKeysItOffers(t *testing.T) {
 func TestSecretPrompt_MasksAndNeverEchoes(t *testing.T) {
 	p := &SecretPrompt{Prompt: "Paste a key for openai", Hint: "OPENAI_API_KEY"}
 	for _, r := range "sk-secret" {
-		p.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+		p.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
 	}
 	got := ansi.Strip(p.View(80))
 	if strings.Contains(got, "sk-secret") {
@@ -151,11 +151,11 @@ func TestSecretPrompt_MasksAndNeverEchoes(t *testing.T) {
 	if p.Len() != 9 {
 		t.Errorf("Len() = %d, want 9", p.Len())
 	}
-	p.Update(tea.KeyMsg{Type: tea.KeyBackspace})
+	p.Update(tea.KeyPressMsg{Code: tea.KeyBackspace})
 	if p.Len() != 8 {
 		t.Errorf("backspace should delete one rune, Len() = %d", p.Len())
 	}
-	done, result := p.Update(tea.KeyMsg{Type: tea.KeyEnter})
+	done, result := p.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	if !done || result != "sk-secre" {
 		t.Errorf("enter should resolve to what was typed, got %v", result)
 	}
@@ -163,8 +163,8 @@ func TestSecretPrompt_MasksAndNeverEchoes(t *testing.T) {
 
 func TestSecretPrompt_EscResolvesToNothing(t *testing.T) {
 	p := &SecretPrompt{}
-	p.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("abc")})
-	done, result := p.Update(tea.KeyMsg{Type: tea.KeyEsc})
+	p.Update(tea.KeyPressMsg{Code: 'a', Text: "abc"})
+	done, result := p.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
 	if !done || result != "" {
 		t.Errorf("esc declines and keeps the old key, got done=%v result=%v", done, result)
 	}

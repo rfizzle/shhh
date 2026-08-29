@@ -45,35 +45,35 @@
 
 ── ansi ────────────────────────────────────────────────────
 · 94% · a plan and a changeset to keep
-␛[1;91m┌─ Context is nearly full ────────────────────────────────── 94% · 188k / 200k ┐␛[0m
-␛[1;91m│␛[0m ␛[1;91m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱␛[0m                                                       ␛[1;91m│␛[0m
-␛[1;91m│␛[0m                                                                              ␛[1;91m│␛[0m
-␛[1;91m│␛[0m ␛[38;5;243m88k␛[0m  ␛[38;5;252mtool output␛[0m␛[38;5;241m — 6 results␛[0m                                                 ␛[1;91m│␛[0m
-␛[1;91m│␛[0m ␛[38;5;243m54k␛[0m  ␛[38;5;252mthe conversation␛[0m␛[38;5;241m — 14 messages␛[0m                                          ␛[1;91m│␛[0m
-␛[1;91m│␛[0m ␛[38;5;243m31k␛[0m  ␛[38;5;252msystem prompt␛[0m                                                           ␛[1;91m│␛[0m
-␛[1;91m│␛[0m ␛[38;5;243m15k␛[0m  ␛[38;5;252mproject context␛[0m                                                         ␛[1;91m│␛[0m
-␛[1;91m│␛[0m                                                                              ␛[1;91m│␛[0m
-␛[1;91m│␛[0m ␛[38;5;241mcompacting keeps the plan, 3 changed files and the last 2 turns␛[0m              ␛[1;91m│␛[0m
-␛[1;91m│␛[0m ␛[38;5;241mand drops the older tool output␛[0m␛[38;5;241m —␛[0m␛[92m recovers about 96k (48%)␛[0m                   ␛[1;91m│␛[0m
-␛[1;91m│␛[0m ␛[38;5;241mkeeping going asks nothing further — the oldest tool output is elided before␛[0m ␛[1;91m│␛[0m
-␛[1;91m│␛[0m ␛[38;5;241meach request from here, and what falls out does not come back␛[0m                ␛[1;91m│␛[0m
-␛[1;91m├──────────────────────────────────────────────────────────────────────────────┤␛[0m
-␛[1;91m│␛[0m ␛[94m[enter]␛[0m␛[38;5;241m compact now␛[0m␛[38;5;241m · ␛[0m␛[94m[n]␛[0m␛[38;5;241m new session␛[0m␛[38;5;241m · ␛[0m␛[94m[esc]␛[0m␛[38;5;241m keep going␛[0m                     ␛[1;91m│␛[0m
-␛[1;91m└──────────────────────────────────────────────────────────────────────────────┘␛[0m
+␛[1;91m┌─ Context is nearly full ────────────────────────────────── 94% · 188k / 200k ┐␛[m
+␛[1;91m│␛[m ␛[1;91m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱␛[m                                                       ␛[1;91m│␛[m
+␛[1;91m│␛[m                                                                              ␛[1;91m│␛[m
+␛[1;91m│␛[m ␛[38;5;243m88k␛[m  ␛[38;5;252mtool output␛[m␛[38;5;241m — 6 results␛[m                                                 ␛[1;91m│␛[m
+␛[1;91m│␛[m ␛[38;5;243m54k␛[m  ␛[38;5;252mthe conversation␛[m␛[38;5;241m — 14 messages␛[m                                          ␛[1;91m│␛[m
+␛[1;91m│␛[m ␛[38;5;243m31k␛[m  ␛[38;5;252msystem prompt␛[m                                                           ␛[1;91m│␛[m
+␛[1;91m│␛[m ␛[38;5;243m15k␛[m  ␛[38;5;252mproject context␛[m                                                         ␛[1;91m│␛[m
+␛[1;91m│␛[m                                                                              ␛[1;91m│␛[m
+␛[1;91m│␛[m ␛[38;5;241mcompacting keeps the plan, 3 changed files and the last 2 turns␛[m              ␛[1;91m│␛[m
+␛[1;91m│␛[m ␛[38;5;241mand drops the older tool output␛[m␛[38;5;241m —␛[m␛[92m recovers about 96k (48%)␛[m                   ␛[1;91m│␛[m
+␛[1;91m│␛[m ␛[38;5;241mkeeping going asks nothing further — the oldest tool output is elided before␛[m ␛[1;91m│␛[m
+␛[1;91m│␛[m ␛[38;5;241meach request from here, and what falls out does not come back␛[m                ␛[1;91m│␛[m
+␛[1;91m├──────────────────────────────────────────────────────────────────────────────┤␛[m
+␛[1;91m│␛[m ␛[94m[enter]␛[m␛[38;5;241m compact now␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m new session␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m keep going␛[m                     ␛[1;91m│␛[m
+␛[1;91m└──────────────────────────────────────────────────────────────────────────────┘␛[m
 
 · an estimated total · nothing to keep but the turns
-␛[1;91m┌─ Context is nearly full ───────────────────────────────── 94% · ~188k / 200k ┐␛[0m
-␛[1;91m│␛[0m ␛[1;91m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱␛[0m                                                       ␛[1;91m│␛[0m
-␛[1;91m│␛[0m                                                                              ␛[1;91m│␛[0m
-␛[1;91m│␛[0m ␛[38;5;243m88k␛[0m  ␛[38;5;252mtool output␛[0m␛[38;5;241m — 6 results␛[0m                                                 ␛[1;91m│␛[0m
-␛[1;91m│␛[0m ␛[38;5;243m54k␛[0m  ␛[38;5;252mthe conversation␛[0m␛[38;5;241m — 14 messages␛[0m                                          ␛[1;91m│␛[0m
-␛[1;91m│␛[0m ␛[38;5;243m31k␛[0m  ␛[38;5;252msystem prompt␛[0m                                                           ␛[1;91m│␛[0m
-␛[1;91m│␛[0m ␛[38;5;243m15k␛[0m  ␛[38;5;252mproject context␛[0m                                                         ␛[1;91m│␛[0m
-␛[1;91m│␛[0m                                                                              ␛[1;91m│␛[0m
-␛[1;91m│␛[0m ␛[38;5;241mcompacting keeps the last turn␛[0m                                               ␛[1;91m│␛[0m
-␛[1;91m│␛[0m ␛[38;5;241mand drops the older tool output␛[0m␛[38;5;241m —␛[0m␛[92m recovers about 41k (20%)␛[0m                   ␛[1;91m│␛[0m
-␛[1;91m│␛[0m ␛[38;5;241mkeeping going asks nothing further — the oldest tool output is elided before␛[0m ␛[1;91m│␛[0m
-␛[1;91m│␛[0m ␛[38;5;241meach request from here, and what falls out does not come back␛[0m                ␛[1;91m│␛[0m
-␛[1;91m├──────────────────────────────────────────────────────────────────────────────┤␛[0m
-␛[1;91m│␛[0m ␛[94m[enter]␛[0m␛[38;5;241m compact now␛[0m␛[38;5;241m · ␛[0m␛[94m[n]␛[0m␛[38;5;241m new session␛[0m␛[38;5;241m · ␛[0m␛[94m[esc]␛[0m␛[38;5;241m keep going␛[0m                     ␛[1;91m│␛[0m
-␛[1;91m└──────────────────────────────────────────────────────────────────────────────┘␛[0m
+␛[1;91m┌─ Context is nearly full ───────────────────────────────── 94% · ~188k / 200k ┐␛[m
+␛[1;91m│␛[m ␛[1;91m▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱␛[m                                                       ␛[1;91m│␛[m
+␛[1;91m│␛[m                                                                              ␛[1;91m│␛[m
+␛[1;91m│␛[m ␛[38;5;243m88k␛[m  ␛[38;5;252mtool output␛[m␛[38;5;241m — 6 results␛[m                                                 ␛[1;91m│␛[m
+␛[1;91m│␛[m ␛[38;5;243m54k␛[m  ␛[38;5;252mthe conversation␛[m␛[38;5;241m — 14 messages␛[m                                          ␛[1;91m│␛[m
+␛[1;91m│␛[m ␛[38;5;243m31k␛[m  ␛[38;5;252msystem prompt␛[m                                                           ␛[1;91m│␛[m
+␛[1;91m│␛[m ␛[38;5;243m15k␛[m  ␛[38;5;252mproject context␛[m                                                         ␛[1;91m│␛[m
+␛[1;91m│␛[m                                                                              ␛[1;91m│␛[m
+␛[1;91m│␛[m ␛[38;5;241mcompacting keeps the last turn␛[m                                               ␛[1;91m│␛[m
+␛[1;91m│␛[m ␛[38;5;241mand drops the older tool output␛[m␛[38;5;241m —␛[m␛[92m recovers about 41k (20%)␛[m                   ␛[1;91m│␛[m
+␛[1;91m│␛[m ␛[38;5;241mkeeping going asks nothing further — the oldest tool output is elided before␛[m ␛[1;91m│␛[m
+␛[1;91m│␛[m ␛[38;5;241meach request from here, and what falls out does not come back␛[m                ␛[1;91m│␛[m
+␛[1;91m├──────────────────────────────────────────────────────────────────────────────┤␛[m
+␛[1;91m│␛[m ␛[94m[enter]␛[m␛[38;5;241m compact now␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m new session␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m keep going␛[m                     ␛[1;91m│␛[m
+␛[1;91m└──────────────────────────────────────────────────────────────────────────────┘␛[m

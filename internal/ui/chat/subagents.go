@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -144,7 +144,7 @@ func (m Model) activeChildAsk() *subagent.Ask {
 // path declines — a routed request is never silently dropped or auto-denied.
 // Detached, [g] jumps into the agent's attached view instead of answering
 // (DESIGN-TUI.md §9c).
-func (m Model) updateChildAsk(msg tea.KeyMsg, ask *subagent.Ask) (tea.Model, tea.Cmd) {
+func (m Model) updateChildAsk(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model, tea.Cmd) {
 	if keys.Match(msg, keys.Draft.Quit) {
 		m.quitting = true
 		m.cancelSubagents()

@@ -1,12 +1,13 @@
 package components
 
 import (
+	"image/color"
 	"strings"
 	"testing"
 
-	"github.com/charmbracelet/lipgloss"
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/colorprofile"
 	"github.com/charmbracelet/x/ansi"
-	"github.com/muesli/termenv"
 )
 
 // ground is what a detail body is painted in (§6a) — dimmer, the token the
@@ -18,7 +19,7 @@ var testGround = Palette.Dimmer
 // byte, because that is the overwhelming majority of every detail body and
 // the caller styles it exactly as it did before this door existed.
 func TestForeignText_LinesWithNothingToRepaintAreUntouched(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	for _, s := range []string{
 		"",
 		"--- FAIL: TestRoundLimit (0.00s)",
@@ -36,7 +37,7 @@ func TestForeignText_LinesWithNothingToRepaintAreUntouched(t *testing.T) {
 // token as rather than against a literal escape, so the test says "del", not
 // "91", and survives P2-1 making del a truecolor value.
 func TestForeignText_ThemeColoursBecomeTokens(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	for _, c := range []struct {
 		name  string
 		param string
@@ -54,7 +55,7 @@ func TestForeignText_ThemeColoursBecomeTokens(t *testing.T) {
 		{"bright white is bright", "97", Palette.Bright},
 	} {
 		got, _ := repaint("\x1b["+c.param+"mWORD\x1b[0m", testGround)
-		want := lipgloss.NewStyle().Foreground(c.token).Render("WORD")
+		want := lipgloss.NewStyle().Foreground(c.token.Color()).Render("WORD")
 		if !strings.Contains(got, want) {
 			t.Fatalf("%s: repaint = %q, want it to contain %q", c.name, got, want)
 		}
@@ -65,7 +66,7 @@ func TestForeignText_ThemeColoursBecomeTokens(t *testing.T) {
 // stripped render is the layout, and the layout is the output with its
 // decoration taken off — not a shortened version of it.
 func TestForeignText_TheTextItselfAlwaysSurvives(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	for _, c := range []struct {
 		name, in, want string
 	}{
@@ -88,7 +89,7 @@ func TestForeignText_TheTextItselfAlwaysSurvives(t *testing.T) {
 // line is a terminator, not an overwrite — dropping the line for it would
 // blank every line of a program that writes CRLF.
 func TestForeignText_CarriageReturnOverwritesTheLine(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	for _, c := range []struct {
 		name, in, want string
 	}{
@@ -105,7 +106,7 @@ func TestForeignText_CarriageReturnOverwritesTheLine(t *testing.T) {
 	// The colour set before the return is still the colour after it: the
 	// terminal moved the cursor, it did not reset the pen.
 	got, _ := repaint("\x1b[31m10%\r90%", testGround)
-	want := lipgloss.NewStyle().Foreground(Palette.Del).Render("90%")
+	want := lipgloss.NewStyle().Foreground(Palette.Del.Color()).Render("90%")
 	if got != want {
 		t.Fatalf("attributes after a carriage return: %q, want %q", got, want)
 	}
@@ -115,16 +116,16 @@ func TestForeignText_CarriageReturnOverwritesTheLine(t *testing.T) {
 // spending a colour, which is the same thing the mono palette relies on. They
 // pass through whatever happens to the hue.
 func TestForeignText_AttributesPassThrough(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	got, _ := repaint("\x1b[1;3;4mloud\x1b[0m", testGround)
-	want := lipgloss.NewStyle().Foreground(testGround).
+	want := lipgloss.NewStyle().Foreground(testGround.Color()).
 		Bold(true).Italic(true).Underline(true).Render("loud")
 	if !strings.Contains(got, want) {
 		t.Fatalf("repaint = %q, want it to contain %q", got, want)
 	}
 	// And they come off again when the program takes them off.
 	got, _ = repaint("\x1b[1mloud\x1b[22m quiet", testGround)
-	if !strings.Contains(got, lipgloss.NewStyle().Foreground(testGround).Render(" quiet")) {
+	if !strings.Contains(got, lipgloss.NewStyle().Foreground(testGround.Color()).Render(" quiet")) {
 		t.Fatalf("repaint = %q, want the tail unbolded", got)
 	}
 }
@@ -133,7 +134,7 @@ func TestForeignText_AttributesPassThrough(t *testing.T) {
 // selection grey in mono. A program painting a block of a detail body would
 // be drawing the reading cursor, so it does not get to.
 func TestForeignText_BackgroundsAreDropped(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	for _, in := range []string{
 		"\x1b[41mBLOCK\x1b[0m",
 		"\x1b[101mBLOCK\x1b[0m",
@@ -141,7 +142,7 @@ func TestForeignText_BackgroundsAreDropped(t *testing.T) {
 		"\x1b[48;2;255;0;0mBLOCK\x1b[0m",
 	} {
 		got, _ := repaint(in, testGround)
-		want := lipgloss.NewStyle().Foreground(testGround).Render("BLOCK")
+		want := lipgloss.NewStyle().Foreground(testGround.Color()).Render("BLOCK")
 		if got != want {
 			t.Fatalf("%q rendered as %q, want the ground alone (%q)", in, got, want)
 		}
@@ -151,10 +152,10 @@ func TestForeignText_BackgroundsAreDropped(t *testing.T) {
 // An explicit colour is one the program could see when it chose it, and one
 // the palette has no token to stand in for. It is kept rather than guessed at.
 func TestForeignText_ExplicitColoursAreKept(t *testing.T) {
-	withColorProfile(t, termenv.TrueColor)
+	withColorProfile(t, colorprofile.TrueColor)
 	for _, c := range []struct {
 		in    string
-		token lipgloss.Color
+		token color.Color
 	}{
 		{"\x1b[38;5;208mwarn\x1b[0m", lipgloss.Color("208")},
 		{"\x1b[38;2;255;170;0mwarn\x1b[0m", lipgloss.Color("#ffaa00")},
@@ -172,12 +173,12 @@ func TestForeignText_ExplicitColoursAreKept(t *testing.T) {
 // (§10f), not a recolouring. Two lines that differ only in which colour they
 // name render identically, and the words are what tell them apart.
 func TestForeignText_MonoDeclinesForeignColour(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	was := Mono()
 	SetMono(true)
 	t.Cleanup(func() { SetMono(was) })
 
-	plain := lipgloss.NewStyle().Foreground(Palette.Dimmer).Render("WORD")
+	plain := lipgloss.NewStyle().Foreground(Palette.Dimmer.Color()).Render("WORD")
 	for _, in := range []string{
 		"\x1b[31mWORD\x1b[0m",
 		"\x1b[32mWORD\x1b[0m",
@@ -191,7 +192,7 @@ func TestForeignText_MonoDeclinesForeignColour(t *testing.T) {
 	}
 	// Bold is not colour, so mono keeps it — it is half of how the invariant
 	// is met in the first place.
-	bold := lipgloss.NewStyle().Foreground(Palette.Dimmer).Bold(true).Render("WORD")
+	bold := lipgloss.NewStyle().Foreground(Palette.Dimmer.Color()).Bold(true).Render("WORD")
 	if got, _ := repaint("\x1b[1;31mWORD\x1b[0m", Palette.Dimmer); got != bold {
 		t.Fatalf("mono: bold red rendered as %q, want %q", got, bold)
 	}
@@ -201,7 +202,7 @@ func TestForeignText_MonoDeclinesForeignColour(t *testing.T) {
 // one's live tail both come through indented, and neither may carry a colour
 // the palette does not own.
 func TestActivityRow_ForeignOutputIsRepainted(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
+	withColorProfile(t, colorprofile.ANSI256)
 	row := ActivityRow{
 		Kind: ActivityCommand, Verb: "run", Target: "go test ./...",
 		State: ActivityFailed, Outcome: OutcomeExit(1), Expanded: true,
@@ -211,7 +212,7 @@ func TestActivityRow_ForeignOutputIsRepainted(t *testing.T) {
 	if !strings.Contains(ansi.Strip(view), "--- FAIL: TestRoundLimit") {
 		t.Fatalf("detail body lost its text:\n%s", ansi.Strip(view))
 	}
-	if !strings.Contains(view, lipgloss.NewStyle().Foreground(Palette.Del).Render("FAIL")) {
+	if !strings.Contains(view, lipgloss.NewStyle().Foreground(Palette.Del.Color()).Render("FAIL")) {
 		t.Fatalf("detail body did not repaint FAIL as del:\n%q", view)
 	}
 

@@ -1,11 +1,13 @@
 package components
 
 import (
+	"image/color"
 	"strconv"
 	"testing"
 
-	"github.com/charmbracelet/lipgloss"
-	"github.com/muesli/termenv"
+	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/colorprofile"
+	"github.com/charmbracelet/x/ansi"
 )
 
 // paletteTable is DESIGN-TUI.md §10a written as data: the token, the design
@@ -37,21 +39,34 @@ var paletteTable = []struct {
 }
 
 // The token set is the design system's, at every profile. A hex alone would
-// not do: termenv derives a 256 colour by walking the 6×6×6 cube and never
-// the greyscale ramp, so body (#d0d0d0) and bright (#eaeaea) both come back
-// as 188. Writing all three is what keeps the rungs apart.
+// not do: a downsampler derives a 256 colour by walking the 6×6×6 cube and
+// never the greyscale ramp, so body (#d0d0d0) and bright (#eaeaea) both come
+// back as 188. Writing all three is what keeps the rungs apart.
 func TestPalette_EveryTokenIsWrittenForEveryProfile(t *testing.T) {
 	for _, c := range paletteTable {
-		if c.token.TrueColor != c.hex {
-			t.Errorf("%s: truecolor is %q, §10a says %q", c.name, c.token.TrueColor, c.hex)
-		}
-		if c.token.ANSI256 != c.ansi256 {
-			t.Errorf("%s: 256 index is %q, §10a says %q", c.name, c.token.ANSI256, c.ansi256)
-		}
-		if c.token.ANSI != c.ansi16 {
-			t.Errorf("%s: 16-colour fallback is %q, §10a says %q", c.name, c.token.ANSI, c.ansi16)
+		for _, rung := range []struct {
+			what string
+			got  color.Color
+			want color.Color
+			says string
+		}{
+			{"truecolor", c.token.TrueColor, lipgloss.Color(c.hex), c.hex},
+			{"256 index", c.token.ANSI256, lipgloss.Color(c.ansi256), c.ansi256},
+			{"16-colour fallback", c.token.ANSI, lipgloss.Color(c.ansi16), c.ansi16},
+		} {
+			if rung.got != rung.want {
+				t.Errorf("%s: %s is %s, §10a says %q",
+					c.name, rung.what, sgr(rung.got), rung.says)
+			}
 		}
 	}
+}
+
+// sgr is the colour as a terminal is actually sent it, which is the only
+// comparison that means anything once a token holds three image/color.Color
+// values instead of three strings (S-155).
+func sgr(c color.Color) string {
+	return strconv.Quote(ansi.NewStyle().ForegroundColor(c).String())
 }
 
 // The values in the table are what a terminal is actually sent: rendered at
@@ -63,16 +78,16 @@ func TestPalette_EveryTokenIsWrittenForEveryProfile(t *testing.T) {
 // colour; written as tokens they do not.
 func TestPalette_ProfilesEmitTheDocumentedValue(t *testing.T) {
 	for _, c := range []struct {
-		profile termenv.Profile
-		want    func(i int) string
+		profile colorprofile.Profile
+		want    func(i int) color.Color
 	}{
-		{termenv.ANSI256, func(i int) string { return paletteTable[i].ansi256 }},
-		{termenv.TrueColor, func(i int) string { return paletteTable[i].hex }},
+		{colorprofile.ANSI256, func(i int) color.Color { return lipgloss.Color(paletteTable[i].ansi256) }},
+		{colorprofile.TrueColor, func(i int) color.Color { return lipgloss.Color(paletteTable[i].hex) }},
 	} {
 		withColorProfile(t, c.profile)
 		for i, tc := range paletteTable {
-			got := lipgloss.NewStyle().Foreground(tc.token).Render("x")
-			want := lipgloss.NewStyle().Foreground(lipgloss.Color(c.want(i))).Render("x")
+			got := lipgloss.NewStyle().Foreground(tc.token.Color()).Render("x")
+			want := lipgloss.NewStyle().Foreground(c.want(i)).Render("x")
 			if got != want {
 				t.Errorf("%s at %v renders %q, want %q", tc.name, c.profile, got, want)
 			}
@@ -80,17 +95,43 @@ func TestPalette_ProfilesEmitTheDocumentedValue(t *testing.T) {
 	}
 }
 
-func TestPalette_AHexAloneWouldCollapseTheLadder(t *testing.T) {
-	withColorProfile(t, termenv.ANSI256)
-	naive := func(c Token) string {
-		return lipgloss.NewStyle().Foreground(lipgloss.Color(c.TrueColor)).Render("x")
-	}
-	if naive(FullPalette.Body) != naive(FullPalette.Bright) {
-		t.Skip("termenv now walks the greyscale ramp; the ANSI256 field may be redundant")
-	}
-	as := func(c Token) string { return lipgloss.NewStyle().Foreground(c).Render("x") }
-	if as(FullPalette.Body) == as(FullPalette.Bright) {
-		t.Fatal("body and bright must stay two colours at 256, which is what the token's own index is for")
+// Invariant 1's counter-assertion: the reason a token holds three colours
+// rather than one hex for a writer to downsample on the way out.
+//
+// The 256 rung no longer makes this case. Under v1 it did — termenv derived a
+// 256 colour by walking the 6×6×6 cube and never the greyscale ramp, so body
+// and bright both came back as 188 — and v2's downsampler walks the ramp, so
+// every grey in §10a now derives to the index written beside it. What it
+// cannot do is the sixteen: derived from their hexes, bright, body and subtle
+// all land on the same white, and accent and spin both land on del's red — a
+// warning, a thing in motion and a failure told apart by a hue that is no
+// longer three hues. The 16-colour rung says which theme colour each of them
+// is instead, and that is a decision a nearest-match cannot make.
+//
+// (The 256 rung earns itself for a different reason, pinned by the table
+// above: five tokens — add, del, hunk, info, bright — are the terminal's own
+// colours by choice, and deriving them from a hex would replace a theme
+// colour with a literal approximation of it.)
+func TestPalette_AHexAloneWouldCollapseTheSixteen(t *testing.T) {
+	derived := func(c Token) string { return sgr(colorprofile.ANSI.Convert(c.TrueColor)) }
+	written := func(c Token) string { return sgr(c.ANSI) }
+	for _, c := range []struct {
+		one, two string
+		a, b     Token
+	}{
+		{"bright", "body", FullPalette.Bright, FullPalette.Body},
+		{"accent", "del", FullPalette.Accent, FullPalette.Del},
+		{"spin", "del", FullPalette.Spin, FullPalette.Del},
+	} {
+		if derived(c.a) != derived(c.b) {
+			t.Errorf("the downsampler now keeps %s and %s apart at sixteen colours; "+
+				"the ANSI rung may no longer be what stops them collapsing", c.one, c.two)
+			continue
+		}
+		if written(c.a) == written(c.b) {
+			t.Errorf("%s and %s must stay two colours at sixteen, which is what the token's own ANSI rung is for",
+				c.one, c.two)
+		}
 	}
 }
 
@@ -104,8 +145,8 @@ func TestPalette_NoTwoTokensCollapse(t *testing.T) {
 		what string
 		of   func(Token) string
 	}{
-		{"truecolor", func(c Token) string { return c.TrueColor }},
-		{"256", func(c Token) string { return c.ANSI256 }},
+		{"truecolor", func(c Token) string { return sgr(c.TrueColor) }},
+		{"256", func(c Token) string { return sgr(c.ANSI256) }},
 	} {
 		seen := map[string]string{}
 		for _, c := range paletteTable {
@@ -149,7 +190,7 @@ func TestPalette_MonoCollapsesOntoItsThreeShades(t *testing.T) {
 		name  string
 		token Token
 	}{{"mono-fg", MonoFg}, {"mono-dim", MonoDim}, {"mono-bg", MonoBg}} {
-		if c.token.TrueColor == "" || c.token.ANSI256 == "" || c.token.ANSI == "" {
+		if c.token.TrueColor == nil || c.token.ANSI256 == nil || c.token.ANSI == nil {
 			t.Errorf("%s is not written for every profile: %+v", c.name, c.token)
 		}
 	}
@@ -204,11 +245,9 @@ func tokenNamed(p ColorTokens, name string) Token {
 // not pretending to be a contrast model.
 func luminance(t *testing.T, c Token) int {
 	t.Helper()
-	if len(c.TrueColor) != 7 {
-		t.Fatalf("token %+v has no hex to measure", c)
+	if c.TrueColor == nil {
+		t.Fatalf("token %+v has no colour to measure", c)
 	}
-	r, _ := strconv.ParseUint(c.TrueColor[1:3], 16, 8)
-	g, _ := strconv.ParseUint(c.TrueColor[3:5], 16, 8)
-	b, _ := strconv.ParseUint(c.TrueColor[5:7], 16, 8)
-	return int(299*r+587*g+114*b) / 1000
+	r, g, b, _ := c.TrueColor.RGBA()
+	return int(299*uint64(r>>8)+587*uint64(g>>8)+114*uint64(b>>8)) / 1000
 }

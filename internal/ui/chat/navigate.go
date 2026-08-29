@@ -30,8 +30,8 @@ import (
 	"strconv"
 	"strings"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
+	tea "charm.land/bubbletea/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -59,12 +59,7 @@ const keyScrollLines = 1
 // cannot drift into different states or different notices.
 func (m Model) toggleMouse() (tea.Model, tea.Cmd) {
 	note := m.setMouse(!m.mouseOn)
-	next, cmd := m.systemNotice(note)
-	nm, ok := next.(Model)
-	if !ok {
-		return next, cmd
-	}
-	return nm, tea.Batch(cmd, mouseCmd(nm.mouseOn))
+	return m.systemNotice(note)
 }
 
 // WithMouse sets whether the session starts with terminal mouse reporting on
@@ -73,17 +68,6 @@ func (m Model) toggleMouse() (tea.Model, tea.Cmd) {
 func (m Model) WithMouse(on bool) Model {
 	m.mouseOn = on
 	return m
-}
-
-// mouseCmd turns terminal mouse reporting on or off. Reporting is off for the
-// session by default — the terminal keeps its own click-drag selection, which
-// is the one thing tracking costs and the one thing nothing else here can do —
-// and `/ui mouse on` buys the wheel with it.
-func mouseCmd(on bool) tea.Cmd {
-	if on {
-		return tea.EnableMouseCellMotion
-	}
-	return tea.DisableMouse
 }
 
 // updateMouse routes a mouse event: the wheel reads, and the primary button
@@ -99,16 +83,16 @@ func mouseCmd(on bool) tea.Cmd {
 // selection or does nothing, and a middle or right button does nothing at
 // all.
 func (m Model) updateMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
-	// MouseMsg is a defined type over MouseEvent and does not carry its
-	// methods, so the wheel question is asked of the event underneath.
-	if tea.MouseEvent(msg).IsWheel() {
-		if msg.Action != tea.MouseActionPress {
-			return m, nil
-		}
-		switch msg.Button {
-		case tea.MouseButtonWheelUp:
+	// In v2 the action a mouse event is comes from the message's own type
+	// rather than from a field on one struct (S-155), which is why the wheel
+	// no longer has to be told apart from a press by its button.
+	mouse := msg.Mouse()
+	switch msg.(type) {
+	case tea.MouseWheelMsg:
+		switch mouse.Button {
+		case tea.MouseWheelUp:
 			m.scrollLines(-wheelLines)
-		case tea.MouseButtonWheelDown:
+		case tea.MouseWheelDown:
 			m.scrollLines(wheelLines)
 		}
 		return m, nil
@@ -116,25 +100,25 @@ func (m Model) updateMouse(msg tea.MouseMsg) (tea.Model, tea.Cmd) {
 	if !m.selectableSurface() {
 		return m, nil
 	}
-	switch msg.Action {
-	case tea.MouseActionPress:
-		if msg.Button != tea.MouseButtonLeft {
+	switch msg.(type) {
+	case tea.MouseClickMsg:
+		if mouse.Button != tea.MouseLeft {
 			return m, nil
 		}
-		return m.beginSelection(msg.X, msg.Y)
-	case tea.MouseActionMotion:
+		return m.beginSelection(mouse.X, mouse.Y)
+	case tea.MouseMotionMsg:
 		// Cell-motion reporting sends motion only while a button is down, so
 		// this is a drag. The button is checked anyway, because terminals
 		// disagree about what they put in the field on a drag and only the
 		// primary one selects.
-		if msg.Button != tea.MouseButtonLeft && msg.Button != tea.MouseButtonNone {
+		if mouse.Button != tea.MouseLeft && mouse.Button != tea.MouseNone {
 			return m, nil
 		}
-		return m.dragSelection(msg.X, msg.Y)
-	case tea.MouseActionRelease:
+		return m.dragSelection(mouse.X, mouse.Y)
+	case tea.MouseReleaseMsg:
 		// A release reports no button at all under X10 encoding, so the drag
 		// in flight is what says whether this release is ours.
-		return m.releaseSelection(msg.X, msg.Y)
+		return m.releaseSelection(mouse.X, mouse.Y)
 	}
 	return m, nil
 }
@@ -182,7 +166,7 @@ func (m *Model) scrollPage(dir int) {
 // returnToInput leaves focus mode carrying the keystroke that ended it, so
 // the character a reader typed lands in the draft instead of being spent on
 // the exit. Esc and typing are the two ways out (§7a); this is the second.
-func (m Model) returnToInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+func (m Model) returnToInput(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	next, _ := m.exitFocusMode()
 	rm, ok := next.(Model)
 	if !ok {
@@ -199,18 +183,11 @@ func (m Model) returnToInput(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 // typedRune reports a plain printable keystroke — the kind that belongs in
 // the draft. Focus mode's own letters are matched before this is asked, so
 // what reaches it is a character the transcript has no use for.
-func typedRune(msg tea.KeyMsg) bool {
-	if msg.Alt {
-		return false
-	}
-	switch msg.Type {
-	case tea.KeyRunes:
-		return len(msg.Runes) > 0
-	case tea.KeySpace:
-		return true
-	}
-	return false
-}
+//
+// Text is exactly that question in v2: it carries the characters a key
+// contributes and is empty for everything else, including a key held under a
+// modifier that changes what it means (S-155).
+func typedRune(msg tea.KeyPressMsg) bool { return msg.Text != "" }
 
 // followNotice says that the transcript is no longer showing its live end,
 // and how far off it the reader is (S-140).
@@ -232,7 +209,7 @@ func (m Model) followNotice() string {
 	if m.state == stateFocus || m.viewport.AtBottom() {
 		return ""
 	}
-	below := m.viewport.TotalLineCount() - m.viewport.YOffset - m.viewport.VisibleLineCount()
+	below := m.viewport.TotalLineCount() - m.viewport.YOffset() - m.viewport.VisibleLineCount()
 	if below <= 0 {
 		return ""
 	}
@@ -257,8 +234,8 @@ func (m Model) followNotice() string {
 // status bars (§3c, §16a).
 func (m Model) transcriptBody() string {
 	view := m.viewport.View()
-	rows := components.Scrollbar(m.viewport.Height,
-		m.viewport.TotalLineCount(), m.viewport.Height, m.viewport.YOffset)
+	rows := components.Scrollbar(m.viewport.Height(),
+		m.viewport.TotalLineCount(), m.viewport.Height(), m.viewport.YOffset())
 	if rows == nil {
 		return view
 	}
@@ -406,7 +383,7 @@ func newReadingStyles(p components.ColorTokens) readingStyles {
 		// in guidelines/invariant-inert-keys; the rule it sits on is chrome,
 		// so it is dim like every other divider. The accent belongs to the
 		// rows.
-		Label: lipgloss.NewStyle().Bold(true).Foreground(p.Info),
-		Rule:  lipgloss.NewStyle().Foreground(p.Dim),
+		Label: lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
+		Rule:  lipgloss.NewStyle().Foreground(p.Dim.Color()),
 	}
 }
