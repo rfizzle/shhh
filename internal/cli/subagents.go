@@ -90,6 +90,14 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			autoExec = red.WrapExecutor(autoExec)
 			gatedExec = red.WrapExecutor(gatedExec)
 		}
+		// Repeat detection (S-164), one detector per child so its window is
+		// its own work, and shared across both paths so an approved call and
+		// an auto-run one are the same history. A sub-agent is the least
+		// supervised thing the session runs, and its rounds are spent out of
+		// sight.
+		repeats := agent.NewRepeatDetector()
+		autoExec = repeats.WrapExecutor(autoExec)
+		gatedExec = repeats.WrapExecutor(gatedExec)
 
 		streamDefs := defs
 		// The child's model is resolved by the supervisor (spawn argument →

@@ -421,6 +421,12 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// a question it asks rather than a call the user refuses.
 	session.promptExtra = prompt.CombineExtra(session.promptExtra, scopePromptBlock(sc))
 
+	// …and what it has to work with (S-164). Every optional tool above is
+	// registered on a condition — a language server was found, a binary is on
+	// PATH, a key is configured — so this is the last point where the whole
+	// toolset is known, and it has to be said after the last one joins.
+	session.promptExtra = prompt.CombineExtra(session.promptExtra, prompt.Toolbox(session.toolDefs))
+
 	env, err := buildSessionEnv(cmd, session)
 	if err != nil {
 		return err
@@ -514,6 +520,10 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		executor = sup.WrapExecutor(executor)
 		defer sup.Close()
 	}
+
+	// Repeat detection (S-164) goes on last, so it sees every tool the chain
+	// can dispatch and the result the model will actually read.
+	executor = agent.NewRepeatDetector().WrapExecutor(executor)
 
 	model := chat.New(env.messages, env.stream).
 		WithTitle(session.title).

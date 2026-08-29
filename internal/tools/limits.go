@@ -20,6 +20,17 @@ const (
 	// cannot dominate a search result.
 	MaxSearchLineBytes = 400
 
+	// MaxSearchContextLines caps the context a search may show around each
+	// match. Enough to read a signature and its body's first lines, which is
+	// what stops the round after the search from being a read of the same
+	// place (S-164).
+	MaxSearchContextLines = 5
+
+	// MaxSearchFileResults caps files_only output. One line per file is
+	// cheap, and "which files are involved" is a question worth answering
+	// across a whole repository.
+	MaxSearchFileResults = 200
+
 	// MaxSearchFileBytes caps the size of a file the pure-Go search fallback
 	// will read; larger files are skipped (ripgrep bounds its own reads).
 	MaxSearchFileBytes = 1 << 20

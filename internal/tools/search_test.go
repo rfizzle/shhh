@@ -2,6 +2,7 @@ package tools
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -256,5 +257,179 @@ func TestSearch_RipgrepSkipsVendor(t *testing.T) {
 	}
 	if !strings.Contains(result, "main.go") {
 		t.Errorf("rg path should match main.go: %q", result)
+	}
+}
+
+// The options that let one search finish a thought (S-164). Each is checked
+// on both backends: the walker deterministically, ripgrep when it is present,
+// because the two must answer the same question the same way.
+
+func searchOptsFixture(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	mustWrite(t, filepath.Join(dir, "a.go"), "package a\n\nfunc Target() {\n\treturn\n}\n\nfunc other() {}\n")
+	mustWrite(t, filepath.Join(dir, "b.go"), "package b\n\nvar Target = 1\nvar Target2 = 2\n")
+	mustWrite(t, filepath.Join(dir, "c.txt"), "Target in a text file\n")
+	return dir
+}
+
+func mustWrite(t *testing.T, path, content string) {
+	t.Helper()
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func runSearch(t *testing.T, args string) string {
+	t.Helper()
+	out, err := executeSearch(json.RawMessage(args))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	return out
+}
+
+func TestSearch_ContextLines(t *testing.T) {
+	check := func(t *testing.T) {
+		dir := searchOptsFixture(t)
+		out := runSearch(t, fmt.Sprintf(`{"pattern":"func Target","path":%q,"context_lines":2}`, dir))
+		// The match keeps its ':' separator, context lines take '-'.
+		if !strings.Contains(out, "a.go:3: func Target() {") {
+			t.Errorf("expected the match line, got:\n%s", out)
+		}
+		if !strings.Contains(out, "a.go:4- \treturn") {
+			t.Errorf("expected trailing context, got:\n%s", out)
+		}
+		if !strings.Contains(out, "a.go:1- package a") {
+			t.Errorf("expected leading context, got:\n%s", out)
+		}
+	}
+	t.Run("walker", func(t *testing.T) { forceWalker(t); check(t) })
+	t.Run("ripgrep", func(t *testing.T) { requireRg(t); check(t) })
+}
+
+func TestSearch_ContextLinesClamped(t *testing.T) {
+	forceWalker(t)
+	dir := searchOptsFixture(t)
+	out := runSearch(t, fmt.Sprintf(`{"pattern":"Target","path":%q,"context_lines":500}`, dir))
+	if strings.Contains(out, "(truncated") {
+		t.Errorf("an over-large context should clamp, not truncate:\n%s", out)
+	}
+}
+
+func TestSearch_FilesOnly(t *testing.T) {
+	check := func(t *testing.T) {
+		dir := searchOptsFixture(t)
+		out := runSearch(t, fmt.Sprintf(`{"pattern":"Target","path":%q,"files_only":true}`, dir))
+		if !strings.Contains(out, "b.go: 2 matches") {
+			t.Errorf("expected b.go with its count, got:\n%s", out)
+		}
+		if !strings.Contains(out, "a.go: 1 match") {
+			t.Errorf("expected a.go with a singular count, got:\n%s", out)
+		}
+		if strings.Contains(out, "func Target") {
+			t.Errorf("files_only must not quote matching lines, got:\n%s", out)
+		}
+	}
+	t.Run("walker", func(t *testing.T) { forceWalker(t); check(t) })
+	t.Run("ripgrep", func(t *testing.T) { requireRg(t); check(t) })
+}
+
+func TestSearch_Include(t *testing.T) {
+	check := func(t *testing.T) {
+		dir := searchOptsFixture(t)
+		out := runSearch(t, fmt.Sprintf(`{"pattern":"Target","path":%q,"include":"*.go"}`, dir))
+		if strings.Contains(out, "c.txt") {
+			t.Errorf("include should have excluded the text file, got:\n%s", out)
+		}
+		if !strings.Contains(out, "a.go") || !strings.Contains(out, "b.go") {
+			t.Errorf("include should have kept the Go files, got:\n%s", out)
+		}
+	}
+	t.Run("walker", func(t *testing.T) { forceWalker(t); check(t) })
+	t.Run("ripgrep", func(t *testing.T) { requireRg(t); check(t) })
+}
+
+func TestSearch_IncludeInvalid(t *testing.T) {
+	forceWalker(t)
+	dir := searchOptsFixture(t)
+	if _, err := executeSearch(json.RawMessage(fmt.Sprintf(`{"pattern":"Target","path":%q,"include":"[bad"}`, dir))); err == nil {
+		t.Error("expected an error for a malformed include pattern")
+	}
+}
+
+func TestSearch_ContextGroupsSeparated(t *testing.T) {
+	forceWalker(t)
+	dir := t.TempDir()
+	mustWrite(t, filepath.Join(dir, "f.txt"), "hit\n"+strings.Repeat("filler\n", 20)+"hit\n")
+	out := runSearch(t, fmt.Sprintf(`{"pattern":"hit","path":%q,"context_lines":1}`, dir))
+	if !strings.Contains(out, "\n--\n") {
+		t.Errorf("expected a group separator between distant matches, got:\n%s", out)
+	}
+}
+
+// The rg backend for the S-164 options, against ripgrep's real output shapes.
+// ripgrep is not installed everywhere, so the fake stands in for it: what is
+// under test is our parsing and the argv we ask for, both of which are ours.
+
+func TestSearch_RipgrepContextParsing(t *testing.T) {
+	// A match line, its context lines, and the bare "--" rg puts between
+	// non-adjacent groups.
+	fakeRg(t, `printf 'a.go\0005-package a\na.go\0006:func Target() {\na.go\0007-\treturn\n--\na.go\00020:func Target2() {\n'`)
+	out := runSearch(t, fmt.Sprintf(`{"pattern":"func Target","path":%q,"context_lines":2}`, t.TempDir()))
+
+	want := "a.go:5- package a\na.go:6: func Target() {\na.go:7- \treturn\n--\na.go:20: func Target2() {"
+	if out != want {
+		t.Errorf("unexpected parse:\ngot:\n%s\nwant:\n%s", out, want)
+	}
+}
+
+func TestSearch_RipgrepFilesOnlyParsing(t *testing.T) {
+	fakeRg(t, `printf 'a.go\0001\nb.go\00012\n'`)
+	out := runSearch(t, fmt.Sprintf(`{"pattern":"Target","path":%q,"files_only":true}`, t.TempDir()))
+
+	want := "a.go: 1 match\nb.go: 12 matches"
+	if out != want {
+		t.Errorf("unexpected parse:\ngot:\n%s\nwant:\n%s", out, want)
+	}
+}
+
+func TestSearch_RipgrepArgvPerMode(t *testing.T) {
+	argvFile := filepath.Join(t.TempDir(), "argv")
+	fakeRg(t, fmt.Sprintf(`printf '%%s\n' "$@" > %s`, argvFile))
+
+	read := func() string {
+		t.Helper()
+		b, err := os.ReadFile(argvFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return string(b)
+	}
+
+	dir := t.TempDir()
+
+	runSearch(t, fmt.Sprintf(`{"pattern":"x","path":%q,"files_only":true}`, dir))
+	argv := read()
+	if !strings.Contains(argv, "--count-matches\n") {
+		t.Errorf("files_only should ask rg to count matches, got:\n%s", argv)
+	}
+	if strings.Contains(argv, "--line-number\n") {
+		t.Errorf("--line-number is meaningless with --count-matches, got:\n%s", argv)
+	}
+
+	runSearch(t, fmt.Sprintf(`{"pattern":"x","path":%q,"context_lines":3}`, dir))
+	argv = read()
+	if !strings.Contains(argv, "--context\n3\n") {
+		t.Errorf("expected a context window of 3, got:\n%s", argv)
+	}
+
+	runSearch(t, fmt.Sprintf(`{"pattern":"x","path":%q,"include":"*.go","context_lines":9}`, dir))
+	argv = read()
+	if !strings.Contains(argv, "--glob\n*.go\n") {
+		t.Errorf("expected include to reach rg as a glob, got:\n%s", argv)
+	}
+	if !strings.Contains(argv, fmt.Sprintf("--context\n%d\n", MaxSearchContextLines)) {
+		t.Errorf("an over-large context should clamp before reaching rg, got:\n%s", argv)
 	}
 }

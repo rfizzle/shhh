@@ -316,3 +316,27 @@ func TestCompact_ToolCallsAbort(t *testing.T) {
 		t.Fatalf("expected a compaction-failed entry, got %+v", last)
 	}
 }
+
+// Where the context window comes from when the pricing table is silent
+// (S-164). The window sets the trim threshold, so assuming 32k against a
+// model with far more was throwing away findings the session had room to
+// keep.
+func TestContextWindow_FallsBackToTheModelFamily(t *testing.T) {
+	for _, tc := range []struct {
+		model string
+		want  int64
+	}{
+		{"gpt-4o", 128_000},
+		{"claude-opus-5", 200_000},
+		{"gemini-3.7-flash", 1_000_000},
+		{"google/gemini-2.5-pro", 1_000_000},
+		{"claude-opus-5[1m]", 1_000_000},
+		{"some-local-llama-build", DefaultContextWindow},
+		{"", DefaultContextWindow},
+	} {
+		m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).WithPricing(nil, tc.model)
+		if got := m.contextWindow(); got != tc.want {
+			t.Errorf("%q: context window = %d, want %d", tc.model, got, tc.want)
+		}
+	}
+}

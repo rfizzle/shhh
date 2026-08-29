@@ -134,6 +134,10 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// difference between a report that names it and a round spent retrying.
 	session.promptExtra = prompt.CombineExtra(session.promptExtra, scopePromptBlock(sc))
 
+	// …and what it has to work with (S-164), for the same reason: nobody is
+	// there to suggest the tool it did not know it had.
+	session.promptExtra = prompt.CombineExtra(session.promptExtra, prompt.Toolbox(session.toolDefs))
+
 	env, err := buildSessionEnv(cmd, session)
 	if err != nil {
 		return err
@@ -203,11 +207,13 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if procSup != nil {
 		baseExecutor = procSup.WrapExecutor(baseExecutor)
 	}
+	executor := baseExecutor
 	if red != nil {
-		a.SetExecutor(red.WrapExecutor(baseExecutor))
-	} else {
-		a.SetExecutor(baseExecutor)
+		executor = red.WrapExecutor(baseExecutor)
 	}
+	// Repeat detection (S-164). A headless run needs it most: there is nobody
+	// watching to notice the same search going round for the third time.
+	a.SetExecutor(agent.NewRepeatDetector().WrapExecutor(executor))
 	a.SetMaxRounds(opts.rounds(cfg))
 
 	// Session observability (S-065): headless runs record the same

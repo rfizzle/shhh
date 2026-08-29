@@ -1074,8 +1074,9 @@ func TestStatusBar_ShowsModelAndContext(t *testing.T) {
 	if !strings.Contains(bar, "gpt-4o") {
 		t.Error("status bar should show model name")
 	}
-	// 1500 of the default 32768-token window ≈ 4% on the context meter.
-	if !strings.Contains(bar, "ctx ") || !strings.Contains(bar, "4%") {
+	// No pricing table here, so the window comes from the model family
+	// (S-164): 1500 of gpt-4o's 128k ≈ 1% on the context meter.
+	if !strings.Contains(bar, "ctx ") || !strings.Contains(bar, "1%") {
 		t.Errorf("status bar should show the context meter, got %q", bar)
 	}
 	if !strings.Contains(bar, "↑1.2k ↓300") {

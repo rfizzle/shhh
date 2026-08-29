@@ -58,13 +58,20 @@ func estimateMessageTokens(msgs []provider.Message) int64 {
 	return agent.EstimateMessageTokens(msgs)
 }
 
-// contextWindow is the model's context size from the pricing table, or
-// DefaultContextWindow when unknown.
+// contextWindow is the model's context size: the pricing table's figure when
+// it has one, the model family's published window when it doesn't (S-164),
+// and DefaultContextWindow only for a model nothing recognises.
 func (m Model) contextWindow() int64 {
-	if m.prices != nil && m.modelName != "" {
+	if m.modelName == "" {
+		return DefaultContextWindow
+	}
+	if m.prices != nil {
 		if w, ok := m.prices.ContextWindow(m.modelName); ok {
 			return w
 		}
+	}
+	if w, ok := provider.ContextWindowFor(m.modelName); ok {
+		return w
 	}
 	return DefaultContextWindow
 }

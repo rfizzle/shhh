@@ -66,8 +66,10 @@ func Execute(name string, args json.RawMessage) (string, error) {
 
 var readFile = Definition{
 	Tool: provider.Tool{
-		Name:        "read_file",
-		Description: "Read the contents of a file. Returns the file content as text. Large files are truncated with a notice; use start_line/end_line to page through the rest.",
+		Name: "read_file",
+		Description: "Read the contents of a file. Returns the file content as text. " +
+			"Read the whole file by default — it is one call, and reading it in small windows is not cheaper. " +
+			"start_line/end_line are for continuing through a file too large to return at once, which the result says explicitly when it happens.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {

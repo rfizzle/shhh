@@ -154,8 +154,8 @@ func TestSearch_ResultCapNotice(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.Contains(out, fmt.Sprintf("truncated at %d results", MaxSearchResults)) {
-		t.Errorf("expected truncation notice, got tail %q", out[len(out)-120:])
+	if !strings.Contains(out, fmt.Sprintf("truncated at %d matches", MaxSearchResults)) {
+		t.Errorf("expected truncation notice, got tail %q", out[len(out)-140:])
 	}
 	if got := strings.Count(out, "needle here"); got != MaxSearchResults {
 		t.Errorf("expected %d result lines, got %d", MaxSearchResults, got)

@@ -137,3 +137,62 @@ func chatModels(names []string) []string {
 	}
 	return kept
 }
+
+// What a session assumes when the pricing table has never heard of the model
+// (S-164).
+//
+// The context window drives trimming: below the threshold nothing happens,
+// above it the oldest tool results are replaced with a placeholder. A session
+// that assumed 32k against a model with a million was trimming away findings
+// it had all the room in the world to keep, and the model rediscovered them
+// the next turn. The pricing table is still the authority — it is fetched and
+// current — and this is only the floor under it, by family, for the models it
+// has not caught up with.
+//
+// Wrong-low costs recall; wrong-high costs a request the API refuses. So
+// these are the conservative end of each family's published window.
+var knownContextWindows = []struct {
+	prefix string
+	window int64
+}{
+	{"claude-3-5", 200_000},
+	{"claude-3", 200_000},
+	{"claude-", 200_000},
+	{"gemini-1.5-pro", 2_000_000},
+	{"gemini-", 1_000_000},
+	{"gpt-4.1", 1_000_000},
+	{"gpt-4o", 128_000},
+	{"gpt-4-turbo", 128_000},
+	{"gpt-4", 8_192},
+	{"gpt-5", 400_000},
+	{"o1", 200_000},
+	{"o3", 200_000},
+	{"o4", 200_000},
+}
+
+// ContextWindowFor is the assumed context window for a model name, by family,
+// for callers that could not find a real one. A vendor-qualified name
+// (openrouter's "google/gemini-2.5-pro") is matched on its model half, and a
+// "[1m]" marker on any name means what it says.
+func ContextWindowFor(model string) (int64, bool) {
+	name := strings.ToLower(strings.TrimSpace(model))
+	if name == "" {
+		return 0, false
+	}
+	if strings.Contains(name, "[1m]") {
+		return 1_000_000, true
+	}
+	if i := strings.LastIndex(name, "/"); i >= 0 {
+		name = name[i+1:]
+	}
+	best, bestLen := int64(0), 0
+	for _, e := range knownContextWindows {
+		if strings.HasPrefix(name, e.prefix) && len(e.prefix) > bestLen {
+			best, bestLen = e.window, len(e.prefix)
+		}
+	}
+	if bestLen == 0 {
+		return 0, false
+	}
+	return best, true
+}
