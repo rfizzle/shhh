@@ -85,6 +85,22 @@ golden fixture, so this cannot drift back.
 
 Build produces a `shhh` binary with version injected via `-ldflags`.
 
+## Version control
+
+**Never stage with `git add -A`, `git add .`, or `git commit -a`.** Name the
+paths. A blanket add commits whatever else is in the tree — a half-finished
+experiment, a scratch file, a golden nobody meant to update — and the mistake
+is invisible in the diff you reviewed, because you never reviewed those files.
+
+**Scope every commit to the work of the session that produced it.** If you did
+not change a file for the reason you are committing, it does not belong in the
+commit, even when it is already dirty and even when it is a one-line fix. A
+commit that carries a stranger cannot be reverted, cited, or read as a unit,
+which are the only three things a commit is for.
+
+Both rules yield to an explicit instruction to do otherwise.
+
+
 ## Architecture
 
 ```
@@ -93,6 +109,7 @@ internal/
   cli/                     All cobra commands (root, chat, code, init, doctor, etc.)
   agent/                   Front-end-agnostic agentic loop (conversation, tool dispatch, approval queue, round cap, repeat detection)
   provider/                LLM provider interface + implementations (anthropic, openai, gemini, openrouter)
+  meter/                   Session spend ledger + the provider gate every request is billed at
   ui/chat/                 Bubble Tea chat TUI model (the main interactive surface)
   ui/components/           Reusable TUI components (cards, lists, diffs, selectors)
   ui/golden/               Golden-file test framework for layout regression
