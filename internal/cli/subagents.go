@@ -27,6 +27,7 @@ import (
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/shell"
+	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -159,6 +160,14 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		}
 		if red != nil {
 			defs = append(defs, evidence.ToolDefinition())
+		}
+		// Children see the same skills the session does: a writer told to
+		// follow the project's documentation skill has to be able to read
+		// it, and the catalog is a read whatever the child's tier.
+		if session.skills.Len() > 0 {
+			defs = append(defs, skill.ToolDefinition(session.skills))
+			base = session.skills.WrapExecutor(base)
+			sysPrompt = prompt.CombineExtra(sysPrompt, skill.PromptBlock(session.skills))
 		}
 
 		// Approved non-exec gated calls: file mutations dispatch through their

@@ -19,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -135,6 +136,7 @@ var activityVerbs = map[string]string{
 	process.ToolName:           "run",
 	quality.ToolName:           "run",
 	memory.RememberToolName:    "memory",
+	skill.ToolName:             "read",
 	subagent.SpawnToolName:     "spawn",
 	subagent.ReportToolName:    "agent",
 }

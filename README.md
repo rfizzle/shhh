@@ -152,6 +152,7 @@ accent_color = "cyan"
 | `agents.model` | Model sub-agents run on (default: the session model); `"inherit"` follows the session model explicitly |
 | `agents.profiles.<role>.model` | Per-role override, `<role>` being `researcher` or `writer` (also settable as `agents.researcher_model` / `agents.writer_model`) |
 | `agents.max_concurrent` | Sub-agents running at once; further spawns queue (default: 3) |
+| `skills/<name>/SKILL.md` | User-scope [Agent Skills](https://agentskills.io/specification), one directory each beside `config.toml` (also `~/.agents/skills`, `~/.claude/skills`). Project skills live in the checkout under `.shhh/skills`, `.agents/skills` or `.claude/skills`. `shhh skills` lists what a session here would load |
 | `agents/<name>.toml` | Custom agent profiles, one file each beside `config.toml`: model, reasoning, permissions (`read`/`write`/`execute`/`web`), tool allowlist, starting mode, prompt and budgets. Spawnable by name; a file named `researcher` or `writer` overrides the built-in. See [`docs/agents/`](docs/agents/README.md) |
 | `summary.model` | Model the session summary is read on (default: the session model). The readings are frequent, so this is the one setting in the section worth changing — point it at a fast, cheap model |
 | `summary.interval_rounds` | Tool rounds between readings (default: 10). Higher is cheaper and staler |
@@ -874,6 +875,17 @@ shhh init --project
 ```
 
 The contents of `.shhh` are appended to the system prompt when running shhh from that directory (or any subdirectory).
+
+### Skills
+
+shhh loads [Agent Skills](https://agentskills.io/specification): a directory holding a `SKILL.md` whose frontmatter names the skill and says when to use it, with the instructions below and any scripts or references beside it. Every session sees the name and description of each skill; the model loads the full instructions with the `skill` tool when a task matches, and reads bundled files with the ordinary file tools only when the instructions point at them.
+
+Project skills live in the checkout under `.shhh/skills/`, `.agents/skills/` or `.claude/skills/` (from the working directory up to the repository root); user skills under `skills/` beside `config.toml`, `~/.agents/skills/` or `~/.claude/skills/`. A project skill shadows a user skill of the same name. Skills written for other harnesses load unchanged; a skill that cannot load is reported, not fatal.
+
+- `shhh skills` lists what a session here would load, with any diagnostics; `shhh skills show <name>` prints one skill's frontmatter and files.
+- In a session, `/skills` lists them and `/skill <name> [task]` (or just `/<name>`) activates one right now, sending its instructions to the model with your task.
+- A skill's `allowed-tools` is shown but never honoured: nothing in a repository can pre-approve a command.
+
 
 ## Commands
 

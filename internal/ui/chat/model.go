@@ -26,6 +26,7 @@ import (
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/scope"
+	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -548,6 +549,11 @@ type Model struct {
 	// memoryAsk is the open memory prompt while a proposal awaits the user.
 	memory    Memory
 	memoryAsk *components.NoteSelect
+	// skills is the session's skill catalog, behind /skills, /skill and
+	// the /<skill-name> shortcut; nil when none loaded. skillsList renders
+	// the catalog for /skills — the same text `shhh skills` prints.
+	skills     *skill.Catalog
+	skillsList func(*skill.Catalog) string
 	// compacting marks an in-flight /compact request: the streamed
 	// response is a summary handled by finishCompact, not conversation text.
 	compacting bool
@@ -1837,6 +1843,13 @@ func (m *Model) recordInput(text string) {
 }
 
 func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
+	return m.sendUserMessageAs(text, text)
+}
+
+// sendUserMessageAs starts a turn on text while the transcript shows
+// shown in its place — the command that produced a message, where the
+// message itself is not what the user typed.
+func (m Model) sendUserMessageAs(text, shown string) (tea.Model, tea.Cmd) {
 	// A plan that has been through its list has answered "where are we", so
 	// the next instruction retires it. One with steps left to go survives the
 	// message, because that question is still open.
@@ -1863,12 +1876,12 @@ func (m Model) sendUserMessage(text string) (tea.Model, tea.Cmd) {
 	// not be able to drift its own yardstick with it — which is the whole
 	// difference between a drift signal and a summary of wherever the
 	// conversation happens to have ended up.
-	m.summaryTarget = text
+	m.summaryTarget = shown
 	m.summary.startTurn()
-	m.recordCheckpoint(text)
+	m.recordCheckpoint(shown)
 	atts := m.takeAttachments()
 	m.agent.StartTurnWith(text, atts)
-	m.appendEntry(entry{kind: entryUser, text: text, attached: attachment.Names(atts)})
+	m.appendEntry(entry{kind: entryUser, text: shown, attached: attachment.Names(atts)})
 	m.trimForRequest()
 	m.setTurnState(stateStreaming)
 	m.streaming = ""
@@ -3087,6 +3100,12 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		}
 		return true, m.memory.Manage(parts[1:])
 
+	case "/skills":
+		if m.skills == nil {
+			return true, "No skills loaded in this session. A skill is a directory holding a SKILL.md under .shhh/skills, .agents/skills or .claude/skills, in the project or your home directory."
+		}
+		return true, m.skillsList(m.skills)
+
 	case "/plan":
 		// Bare /plan reopens the approved plan mid-turn, which is how the
 		// checklist stays reachable below 130 columns, where there is no rail
@@ -3290,6 +3309,12 @@ func helpText() string {
   /gate          Quality gate: run [suite] starts the project's checks in the background, result shows the verdict
   /ps            List the long-running processes this session owns (process tool)
   /memory        Durable memories: list (default) · add [global] [kind] <text> · forget <id>
+  /skills        The skills this session loaded (SKILL.md directories), and
+                 why any did not
+  /skill <name> [task]
+                 Activate a skill now: its instructions go to the model with
+                 your task, as the model would load them itself. /<name>
+                 does the same for a skill whose name is not a command
   /agents        Agent manager: attach, steer, cancel, kill sub-agents (also Ctrl+A)
   /attach [name] Attach to an agent's session and steer it (bare /attach lists)
   /detach        Back to your own session (also Esc while attached)

@@ -179,6 +179,10 @@ var slashCommands = []slashCommand{
 		)},
 	{name: "/ps", desc: "List session-owned long-running processes",
 		enabled: func(m *Model) bool { return m.processes.Manage != nil }},
+	{name: "/skills", desc: "The skills this session loaded, and why any did not"},
+	{name: "/skill", args: "<name> [task]", desc: "Activate a skill now, with your task after it",
+		enabled:  func(m *Model) bool { return m.skills.Len() > 0 },
+		argSpecs: []argSpec{{dynamic: skillArgs}}},
 	{name: "/memory", args: "[list|add|forget]", desc: "Durable memories",
 		enabled: func(m *Model) bool { return m.memory.Manage != nil },
 		argSpecs: staticArgs(

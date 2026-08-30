@@ -301,3 +301,15 @@ func LoadAgentFile(path string) (AgentDefinition, error) {
 	}
 	return def, nil
 }
+
+// SkillDirs returns shhh's own user-scope skill directories in search
+// order, one per config path, beside the agents directory: the layout that
+// holds config.toml holds everything the user wrote for shhh.
+// See docs/capabilities/skills.md#where-skills-live.
+func SkillDirs() []string {
+	var out []string
+	for _, p := range Paths() {
+		out = append(out, filepath.Join(filepath.Dir(p), "skills"))
+	}
+	return out
+}

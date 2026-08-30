@@ -16,6 +16,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -34,6 +35,18 @@ type Memory struct {
 }
 
 // WithMemory enables the /memory command and the remember-tool confirm flow.
+// WithSkills hands the model the session's skill catalog and the listing
+// /skills prints. Activated skill content is exempted from context
+// trimming: the instructions are guidance for every later turn, and a
+// trimmed skill fails silently — the model just stops following it.
+// See docs/capabilities/skills.md#a-skill-is-read-in-three-tiers.
+func (m Model) WithSkills(c *skill.Catalog, list func(*skill.Catalog) string) Model {
+	m.skills = c
+	m.skillsList = list
+	m.agent.KeepResults(skill.IsContent)
+	return m
+}
+
 func (m Model) WithMemory(mem Memory) Model {
 	m.memory = mem
 	return m

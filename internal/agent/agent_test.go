@@ -341,3 +341,28 @@ func TestCarryReasoning_LandsOnTheRoundAndIsConsumed(t *testing.T) {
 		t.Fatalf("the latch must be consumed, got %+v", got)
 	}
 }
+
+func TestTrimOldToolResults_KeepsClaimedResults(t *testing.T) {
+	big := strings.Repeat("x", 40000)
+	a := New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "q1"},
+		{Role: provider.RoleTool, Content: "<keep>" + big, ToolCallID: "c1"},
+		{Role: provider.RoleTool, Content: big, ToolCallID: "c2"},
+		{Role: provider.RoleAssistant, Content: "answer 1"},
+		{Role: provider.RoleUser, Content: "q2"},
+	}, noStream)
+	a.KeepResults(func(content string) bool { return strings.HasPrefix(content, "<keep>") })
+
+	elided, _ := a.TrimOldToolResults(30000, 26000)
+	if elided != 1 {
+		t.Fatalf("want 1 elided result, got %d", elided)
+	}
+	msgs := a.Messages()
+	if msgs[2].Content == ElidedResult {
+		t.Fatal("a kept result must survive trimming")
+	}
+	if msgs[3].Content != ElidedResult {
+		t.Fatal("the unclaimed result should have been elided")
+	}
+}

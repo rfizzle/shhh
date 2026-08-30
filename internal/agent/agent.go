@@ -83,6 +83,10 @@ type Agent struct {
 	// event and consumed by the assistant message that round records,
 	// because that is the message the next request has to carry it in.
 	reasoning []provider.ReasoningBlock
+
+	// keep, when set, marks tool results that context trimming must leave
+	// alone. Nil keeps nothing.
+	keep func(content string) bool
 }
 
 func New(initial []provider.Message, stream StreamFunc) *Agent {
@@ -91,6 +95,13 @@ func New(initial []provider.Message, stream StreamFunc) *Agent {
 
 // SetExecutor sets the executor used for auto-run (non-gated) tool calls.
 func (a *Agent) SetExecutor(executor ToolExecutor) { a.executor = executor }
+
+// KeepResults exempts tool results matching keep from context trimming. A
+// result is elided on the assumption that it was consumed when it arrived;
+// some results are instructions for the rest of the session and are wrong
+// to drop — and dropping one fails silently, since the model just carries
+// on without them. The caller says which those are.
+func (a *Agent) KeepResults(keep func(content string) bool) { a.keep = keep }
 
 // SetMaxRounds overrides the per-turn tool-round cap. Zero means "unset" and
 // keeps DefaultMaxToolRounds, so a config or flag nobody filled in still gets

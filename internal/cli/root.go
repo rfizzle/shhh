@@ -426,6 +426,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.AddCommand(newHistoryCmd())
 	cmd.AddCommand(newSnippetsCmd())
 	cmd.AddCommand(newMemoryCmd())
+	cmd.AddCommand(newSkillsCmd())
 	cmd.AddCommand(newProvidersCmd())
 	cmd.AddCommand(newUpdateCmd())
 	cmd.AddCommand(newCompletionCmd(cmd))

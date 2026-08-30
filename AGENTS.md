@@ -134,6 +134,7 @@ internal/
   prompt/                  System prompt construction (per-command prompts + the registered-toolset section)
   safety/                  Command safety analysis
   memory/                  Durable memory (cross-session remembered facts)
+  skill/                   Agent Skills: discovery, SKILL.md frontmatter, the catalog prompt block and the activation tool
   migrate/                 Layout migrations, detected and offered by `shhh doctor` (never at startup)
   evidence/                Evidence store for quality-gate output
   plan/                    Plan mode state (step tracking)
@@ -208,6 +209,12 @@ renders whichever agent is focused, and every agent including the orchestrator
 is an `internal/agent` instance with its own transcript, queue and mode.
 Attaching switches the focused agent.
 
+### Skills
+
+`internal/skill` follows the Agent Skills specification ([agentskills.io](https://agentskills.io/specification)) and its client guide. `skill.Roots` is the search order (project `.shhh/skills`, `.agents/skills`, `.claude/skills` from cwd up to the git root, then the user-scope ones), `skill.Discover` reads them into a `Catalog` with lenient validation — a skill that cannot load is a `Diagnostics` entry, never an error, for the reason in [`docs/capabilities/skills.md#where-skills-live`](docs/capabilities/skills.md#where-skills-live). The frontmatter reader in `frontmatter.go` is deliberately not a YAML parser: it takes everything after the first colon as the value, because skills written for other harnesses do.
+
+Three tiers, three places: `skill.PromptBlock` is the catalog in the system prompt (appended as prompt extra, like the toolbox, only when something loaded); the `skill` tool (`skill.ToolDefinition`, read-only, its `name` an enum of the catalog) returns `skill.Content` — body, directory, bundled files listed not read; the file tools do the rest. `/skill <name> [task]` and the `/<skill-name>` shortcut (`internal/ui/chat/skills.go`) send the same content as a user message. `agent.KeepResults(skill.IsContent)` exempts activated content from `TrimOldToolResults`. `allowed-tools` is parsed and displayed and grants nothing — [`docs/capabilities/skills.md#a-skill-cannot-grant-itself-anything`](docs/capabilities/skills.md#a-skill-cannot-grant-itself-anything). `shhh skills` and `/skills` print the catalog with its diagnostics.
+
 ### Sub-agents
 
 `shhh code` can spawn child agents via `spawn_agent`. Children are either `researcher` (read-only tools + web) or `writer` (full toolset against an isolated git worktree), or any custom profile the user wrote to `~/.config/shhh/agents/<name>.toml`. Hard limits: max 3 concurrent, 16 total per session — a limit on attention, not on resources ([`docs/capabilities/subagents.md`](docs/capabilities/subagents.md)). Children that can write or execute produce patches that the parent approves.
@@ -237,7 +244,7 @@ A `TestMain` in each golden-using package calls `golden.Run(m)` which **deletes 
 
 ## Configuration
 
-Config is TOML at `~/.config/shhh/config.toml` (or `$XDG_CONFIG_HOME/shhh/`), the same on every platform — see [`docs/capabilities/configuration.md#one-layout-everywhere`](docs/capabilities/configuration.md#one-layout-everywhere). Key sections: `[provider]`, `[behavior]`, `[sandbox]`, `[web]`, `[lsp]`, `[appearance]`, `[history]`, `[agents]`. Agent profiles are one TOML file each in the `agents/` directory beside it (`config.AgentDirs`), loaded by `config.LoadAgents`.
+Config is TOML at `~/.config/shhh/config.toml` (or `$XDG_CONFIG_HOME/shhh/`), the same on every platform — see [`docs/capabilities/configuration.md#one-layout-everywhere`](docs/capabilities/configuration.md#one-layout-everywhere). Key sections: `[provider]`, `[behavior]`, `[sandbox]`, `[web]`, `[lsp]`, `[appearance]`, `[history]`, `[agents]`. Agent profiles are one TOML file each in the `agents/` directory beside it (`config.AgentDirs`), loaded by `config.LoadAgents`. User-scope skills are directories under `skills/` beside it (`config.SkillDirs`); project-scope ones come from the checkout (`skill.ProjectRoots`).
 
 ## Gotchas
 

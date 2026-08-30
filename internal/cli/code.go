@@ -52,6 +52,7 @@ func newCodeCmd() *cobra.Command {
 				maxRounds:    popts.maxRounds,
 				maxRoundsSet: popts.maxRoundsSet,
 				addDirs:      addDirs,
+				skills:       loadSkills(),
 			}
 			if headless {
 				return runPrintSession(cmd, args, session, popts)

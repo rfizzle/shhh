@@ -22,6 +22,7 @@ import (
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/scope"
+	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/stdin"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -130,6 +131,14 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		defer procSup.Close()
 	}
 
+	// Skills, mirroring the interactive session: the catalog in the
+	// prompt, the activation tool in the toolset, both only when something
+	// loaded. Activation is a read, so headless needs no approval for it.
+	if session.skills.Len() > 0 {
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), skill.ToolDefinition(session.skills))
+		session.promptExtra = prompt.CombineExtra(session.promptExtra, skill.PromptBlock(session.skills))
+	}
+
 	// The model is told where the work is; a headless run cannot be
 	// asked for a directory mid-flight, so knowing the boundary is the
 	// difference between a report that names it and a round spent retrying.
@@ -198,6 +207,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	}
 
 	a := agent.New(env.messages, env.stream)
+	if session.skills.Len() > 0 {
+		a.KeepResults(skill.IsContent)
+	}
 	baseExecutor := agent.ToolExecutor(tools.Execute)
 	if session.web != nil {
 		baseExecutor = session.web.WrapExecutor(tools.Execute)
@@ -213,6 +225,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	}
 	if procSup != nil {
 		baseExecutor = procSup.WrapExecutor(baseExecutor)
+	}
+	if session.skills.Len() > 0 {
+		baseExecutor = session.skills.WrapExecutor(baseExecutor)
 	}
 	executor := baseExecutor
 	if red != nil {

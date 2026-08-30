@@ -96,6 +96,14 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 	case name == "/attach":
 		return m.attachCommand(parts)
 
+	case name == "/skill":
+		// Explicit activation. Not idleOnly: while the agent works the
+		// content queues as steering, like any typed text.
+		if len(parts) < 2 {
+			return m.surfaceNotice("Usage: /skill <name> [task]. /skills lists what can be activated.")
+		}
+		return m.activateSkill(parts[1], strings.Join(parts[2:], " "))
+
 	case name == "/detach":
 		if m.attachedTo == "" {
 			return m.surfaceNotice("Not attached to an agent. /attach <name> or /agents to pick one.")
@@ -196,6 +204,15 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		// branch family falls through.
 		if picked, cmd, ok := m.openBranchPick(); ok {
 			return picked, cmd
+		}
+	}
+	// A skill's own name works as a command — /documentation — the way
+	// the other harnesses spell it, but only where no real command has the
+	// name: the registry wins a collision, so a skill called "help" is
+	// reached through /skill help.
+	if _, ok := m.skills.Find(name[1:]); ok {
+		if _, taken := lookupCommand(&m, name); !taken {
+			return m.activateSkill(name[1:], strings.Join(parts[1:], " "))
 		}
 	}
 	// commandName accepts exactly what handleSlashCommand answers — down to

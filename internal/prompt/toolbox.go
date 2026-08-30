@@ -41,6 +41,7 @@ var toolboxNotes = []struct{ name, note string }{
 	{"agent_report", "collect what a spawned agent found."},
 	{"evidence", "retrieve the full output of an earlier tool result that was reduced. The notice on a reduced result carries its id."},
 	{"remember", "propose a durable fact worth keeping across sessions. The user confirms it before it persists."},
+	{"skill", "load the full instructions of a skill from the Skills list when the task matches one. Do it before starting the work, not after."},
 }
 
 // Toolbox describes the optional tools this session registered, for the

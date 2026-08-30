@@ -57,7 +57,8 @@ func EstimateAttachmentTokens(atts []provider.Attachment) int64 {
 // TrimOldToolResults elides the oldest tool results until the context
 // estimate est is back at or under threshold, returning how many were elided
 // and the updated estimate. Messages at or after the last user message (the
-// current turn) are never touched, and user/assistant text is always kept.
+// current turn) are never touched, user/assistant text is always kept, and
+// so is any result the KeepResults predicate claims.
 func (a *Agent) TrimOldToolResults(est, threshold int64) (elided int, newEst int64) {
 	if est <= threshold {
 		return 0, est
@@ -72,6 +73,9 @@ func (a *Agent) TrimOldToolResults(est, threshold int64) (elided int, newEst int
 	for i := 0; i < lastUser && est > threshold; i++ {
 		msg := &a.messages[i]
 		if msg.Role != provider.RoleTool || msg.Content == ElidedResult {
+			continue
+		}
+		if a.keep != nil && a.keep(msg.Content) {
 			continue
 		}
 		est -= EstimateTokens(msg.Content) - EstimateTokens(ElidedResult)

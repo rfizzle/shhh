@@ -26,6 +26,7 @@ import (
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/shell"
+	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/stdin"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/structural"
@@ -76,6 +77,10 @@ type chatSession struct {
 	// prompt plus the confirm-gated remember tool; `shhh code` interactive
 	// sessions only (headless runs have nobody to confirm a proposal).
 	memory bool
+	// skills is the catalog of Agent Skills the session discovered; nil
+	// registers neither the tool nor the prompt section. Both `shhh chat`
+	// and `shhh code`, headless included: activation is a read.
+	skills *skill.Catalog
 	// promptExtra is appended to the system prompt after config and project
 	// context (e.g. the recalled-memory block).
 	promptExtra string
@@ -113,6 +118,7 @@ func newChatCmd() *cobra.Command {
 				continueLast: continueLast,
 				resumePick:   resumePick,
 				addDirs:      addDirs,
+				skills:       loadSkills(),
 			})
 		},
 	}
@@ -429,6 +435,13 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		}
 	}
 
+	// Skills: the catalog's names and descriptions join the prompt and
+	// the activation tool joins the toolset, only when something loaded.
+	if session.skills.Len() > 0 {
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), skill.ToolDefinition(session.skills))
+		session.promptExtra = prompt.CombineExtra(session.promptExtra, skill.PromptBlock(session.skills))
+	}
+
 	// The model is told where the work is, so an out-of-scope path is
 	// a question it asks rather than a call the user refuses.
 	session.promptExtra = prompt.CombineExtra(session.promptExtra, scopePromptBlock(sc))
@@ -518,6 +531,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if procSup != nil {
 		baseExecutor = procSup.WrapExecutor(baseExecutor)
 	}
+	if session.skills.Len() > 0 {
+		baseExecutor = session.skills.WrapExecutor(baseExecutor)
+	}
 	executor := baseExecutor
 	if red != nil {
 		executor = red.WrapExecutor(baseExecutor)
@@ -592,6 +608,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	}
 	if procSup != nil {
 		model = model.WithProcesses(chat.Processes{Manage: processManager(procSup)})
+	}
+	if session.skills != nil {
+		model = model.WithSkills(session.skills, skillsListing)
 	}
 	if mem != nil {
 		model = model.WithMemory(chat.Memory{
