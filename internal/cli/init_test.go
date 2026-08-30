@@ -168,18 +168,39 @@ func TestInitProject_CreatesFile(t *testing.T) {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	data, err := os.ReadFile(filepath.Join(dir, ".shhh"))
+	data, err := os.ReadFile(filepath.Join(dir, ".shhh", "project.md"))
 	if err != nil {
-		t.Fatalf("expected .shhh file to exist: %v", err)
+		t.Fatalf("expected .shhh/project.md to exist: %v", err)
 	}
 	if !strings.Contains(string(data), "project-local context") {
-		t.Error("expected .shhh to contain template content")
+		t.Error("expected .shhh/project.md to contain template content")
+	}
+}
+
+func TestInitProject_OldLayoutPointsAtDoctor(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, ".shhh"), []byte("existing"), 0o644)
+
+	orig, _ := os.Getwd()
+	os.Chdir(dir)
+	defer os.Chdir(orig)
+
+	cmd := NewRootCmd()
+	cmd.SetArgs([]string{"init", "--project"})
+
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "shhh doctor") {
+		t.Fatalf("err = %v, want a pointer at the doctor", err)
+	}
+	if data, _ := os.ReadFile(filepath.Join(dir, ".shhh")); string(data) != "existing" {
+		t.Error("the old file was touched")
 	}
 }
 
 func TestInitProject_AlreadyExists(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, ".shhh"), []byte("existing"), 0o644)
+	os.MkdirAll(filepath.Join(dir, ".shhh"), 0o755)
+	os.WriteFile(filepath.Join(dir, ".shhh", "project.md"), []byte("existing"), 0o644)
 
 	orig, _ := os.Getwd()
 	os.Chdir(dir)

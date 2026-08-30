@@ -63,6 +63,7 @@ func (p Pending) Auto() bool { return p.Apply != nil }
 // which is the ordinary case and the one that must stay cheap.
 var detectors = []func() (Pending, bool){
 	legacyAppleDirs,
+	legacyProjectFile,
 }
 
 // Plan is every migration with work outstanding on this machine.

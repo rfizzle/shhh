@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/spf13/cobra"
 )
 
@@ -56,7 +57,7 @@ end
 bind \ck _shhh_raw
 `
 
-const projectTemplate = `# .shhh — project-local context for shhh
+const projectTemplate = `# .shhh/project.md — project-local context for shhh
 # This file is appended to the LLM system prompt when running shhh
 # from this directory (or any subdirectory). Use it to describe your
 # project's tooling, conventions, and common workflows.
@@ -75,7 +76,7 @@ func newInitCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init [shell]",
 		Short: "Output shell integration snippet or scaffold project config",
-		Long:  "Print a shell snippet to stdout for eval in your rc file, or create a .shhh project file with --project.",
+		Long:  "Print a shell snippet to stdout for eval in your rc file, or create a .shhh/project.md context file with --project.",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if projectMode {
@@ -99,13 +100,23 @@ func newInitCmd() *cobra.Command {
 			}
 		},
 	}
-	cmd.Flags().BoolVar(&projectMode, "project", false, "create a .shhh project context file in the current directory")
+	cmd.Flags().BoolVar(&projectMode, "project", false, "create a .shhh/project.md context file in the current directory")
 	return cmd
 }
 
+// initProject scaffolds the context file inside the state directory. A
+// checkout where .shhh is still the old single file is left alone and
+// pointed at the doctor: writing a directory over it is impossible, and
+// replacing it would lose what it says.
 func initProject() error {
-	if _, err := os.Stat(".shhh"); err == nil {
-		return fmt.Errorf(".shhh already exists in the current directory")
+	if st, err := os.Stat(project.StateDir); err == nil && !st.IsDir() {
+		return fmt.Errorf("%s is a file from an older layout; run `shhh doctor` to move it to %s", project.StateDir, project.ContextFile)
 	}
-	return os.WriteFile(".shhh", []byte(projectTemplate), 0o644)
+	if _, err := os.Stat(project.ContextFile); err == nil {
+		return fmt.Errorf("%s already exists in the current directory", project.ContextFile)
+	}
+	if err := os.MkdirAll(project.StateDir, 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(project.ContextFile, []byte(projectTemplate), 0o644)
 }

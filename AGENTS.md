@@ -135,6 +135,7 @@ internal/
   safety/                  Command safety analysis
   memory/                  Durable memory (cross-session remembered facts)
   skill/                   Agent Skills: discovery, SKILL.md frontmatter, the catalog prompt block and the activation tool
+  todo/                    The project backlog: one Markdown item per file under .shhh/todo, the ready set and its order, the archive
   secret/                  Session secrets: the vault, the scrub every text passes through, and the prompt block naming them
   migrate/                 Layout migrations, detected and offered by `shhh doctor` (never at startup)
   evidence/                Evidence store for quality-gate output
@@ -215,6 +216,10 @@ Attaching switches the focused agent.
 `internal/skill` follows the Agent Skills specification ([agentskills.io](https://agentskills.io/specification)) and its client guide. `skill.Roots` is the search order (project `.shhh/skills`, `.agents/skills`, `.claude/skills` from cwd up to the git root, then the user-scope ones), `skill.Discover` reads them into a `Catalog` with lenient validation — a skill that cannot load is a `Diagnostics` entry, never an error, for the reason in [`docs/capabilities/skills.md#where-skills-live`](docs/capabilities/skills.md#where-skills-live). The frontmatter reader in `frontmatter.go` is deliberately not a YAML parser: it takes everything after the first colon as the value, because skills written for other harnesses do.
 
 Three tiers, three places: `skill.PromptBlock` is the catalog in the system prompt (appended as prompt extra, like the toolbox, only when something loaded); the `skill` tool (`skill.ToolDefinition`, read-only, its `name` an enum of the catalog) returns `skill.Content` — body, directory, bundled files listed not read; the file tools do the rest. `/skill <name> [task]` and the `/<skill-name>` shortcut (`internal/ui/chat/skills.go`) send the same content as a user message. `agent.KeepResults(skill.IsContent)` exempts activated content from `TrimOldToolResults`. `allowed-tools` is parsed and displayed and grants nothing — [`docs/capabilities/skills.md#a-skill-cannot-grant-itself-anything`](docs/capabilities/skills.md#a-skill-cannot-grant-itself-anything). `shhh skills` and `/skills` print the catalog with its diagnostics.
+
+### Backlog
+
+`internal/todo` is the project backlog ([`docs/capabilities/todo.md`](docs/capabilities/todo.md)): `todo.Root(cwd)` keys it on the repository root, `todo.Load(root)` reads `.shhh/todo/*.md` and `.shhh/todo/done/*.md` into a `Store` whose `Items` are in `todo.Less` order (priority, created, slug) and whose `Ready()` is open items with every `depends_on` in the archive. The header reader in `header.go` keeps every line's text so `SetStatus`/`SetSize` rewrite one line and nothing else; `Render` is only for a new file. Loading is lenient the way skills are: a file that cannot be read at all — no header, no title, an unknown status — is a `Diagnostics` entry, and a value merely off its scale (priority, size, kind) is a warning on the loaded `Item`. Slugs are validated by `todo.ValidSlug` and must never look like a planning identifier, for the docs-check reason above. `Create` writes `.shhh/todo/.gitignore` ignoring `.run/`; whether the backlog itself is committed is the user's call and nothing in shhh stages it. `shhh todo` (`internal/cli/todo.go`) prints the store. The `.shhh` path is a directory now: the context file is `.shhh/project.md` (`project.ContextFile`), `shhh init --project` writes it there, and a checkout still holding the old single `.shhh` file is a `shhh doctor` migration (`internal/migrate/project.go`), not something the context reader falls back to.
 
 ### Secrets
 

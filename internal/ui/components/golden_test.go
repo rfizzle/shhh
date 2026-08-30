@@ -998,7 +998,7 @@ func TestGolden_StartScreen(t *testing.T) {
 			{Label: "nothing to pick up · a clean tree in a project with no gate", View: screen(func(s *StartScreen) {
 				s.Facts[3] = StartFact{Text: "clean tree", Tone: ToneSafe}
 				s.Notes = []StartNote{
-					{Label: "context", Value: "nothing read", Detail: "no .shhh or AGENTS.md above this directory"},
+					{Label: "context", Value: "nothing read", Detail: "no .shhh/project.md or AGENTS.md up the tree"},
 					{Label: "gate", Value: "not configured", Detail: ".shhh/quality.json"},
 				}
 				s.Suggestions = []StartSuggestion{

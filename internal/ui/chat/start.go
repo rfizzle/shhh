@@ -239,7 +239,7 @@ func startFacts(p project.Info) []components.StartFact {
 // project, and what will run without asking.
 func startNotes(info StartInfo) []components.StartNote {
 	context := components.StartNote{Label: "context", Value: "nothing read",
-		Detail: "no .shhh or AGENTS.md above this directory"}
+		Detail: "no .shhh/project.md or AGENTS.md up the tree"}
 	if files := info.Project.ContextFiles; len(files) > 0 {
 		context.Value = strings.Join(files, " · ")
 		context.Detail = "in the system prompt"

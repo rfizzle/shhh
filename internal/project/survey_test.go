@@ -209,11 +209,11 @@ func TestSurvey_DotShhhWinsOverAgentsMd(t *testing.T) {
 	if resolved, err := filepath.EvalSymlinks(dir); err == nil {
 		dir = resolved
 	}
-	writeFiles(t, dir, map[string]string{".shhh": "shhh rules\n", "AGENTS.md": "generic\n"})
+	writeFiles(t, dir, map[string]string{".shhh/project.md": "shhh rules\n", "AGENTS.md": "generic\n"})
 	chdir(t, dir)
 
 	if _, content := Find(); content != "shhh rules\n" {
-		t.Fatalf("content = %q, want the .shhh file", content)
+		t.Fatalf("content = %q, want the .shhh/project.md file", content)
 	}
 }
 

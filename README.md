@@ -655,7 +655,7 @@ Every session is autosaved after each exchange to a slot of its own, named for t
 
 Quitting hands the terminal back the way it was found, so the session goes off the screen in one frame. Three lines are left behind in its place — the slot the conversation was autosaved to and how many turns it holds, what the sitting cost, and the command that reopens it (`shhh chat --continue` or `shhh code --continue`, whichever was running). A session that never said anything leaves nothing, and one that could not be saved says so rather than offering a resume that would reopen something older.
 
-An empty session opens on a start screen rather than a blank prompt. It states what shhh already knows about the checkout — the path, the detected language and toolchain, the branch and how many files are dirty, the package count — and names both things that govern what happens next without being asked: the project files it read into the system prompt (`.shhh` or `AGENTS.md`), and the quality-gate suite in effect with the checks it runs. Under that, three concrete offers, ordered by what the working tree suggests: the most recent saved session to pick up (with its turn count, its cost where an observability record covers it, and how long ago it was), a read-only offer, and one that costs a single approval — each saying so. `↑↓` moves the pointer and `enter` types the offer into the input and submits it, so choosing one and typing it are the same act. Typing anything dismisses the list and keeps the facts; the screen is spent by the first thing you say to the model or by a conversation you load, so `/clear` afterwards does not bring it back. Everything on it is surveyed once when the session opens, never per frame.
+An empty session opens on a start screen rather than a blank prompt. It states what shhh already knows about the checkout — the path, the detected language and toolchain, the branch and how many files are dirty, the package count — and names both things that govern what happens next without being asked: the project files it read into the system prompt (`.shhh/project.md` or `AGENTS.md`), and the quality-gate suite in effect with the checks it runs. Under that, three concrete offers, ordered by what the working tree suggests: the most recent saved session to pick up (with its turn count, its cost where an observability record covers it, and how long ago it was), a read-only offer, and one that costs a single approval — each saying so. `↑↓` moves the pointer and `enter` types the offer into the input and submits it, so choosing one and typing it are the same act. Typing anything dismisses the list and keeps the facts; the screen is spent by the first thing you say to the model or by a conversation you load, so `/clear` afterwards does not bring it back. Everything on it is surveyed once when the session opens, never per frame.
 
 You can also pipe context into a chat — it's attached to your first message:
 
@@ -870,13 +870,13 @@ Type a description on your command line, press Ctrl+K, and it's replaced with th
 
 ### Project context
 
-Create a `.shhh` file in your project root to give shhh context about your project's tooling and conventions:
+Create a `.shhh/project.md` file in your project root to give shhh context about your project's tooling and conventions:
 
 ```bash
 shhh init --project
 ```
 
-The contents of `.shhh` are appended to the system prompt when running shhh from that directory (or any subdirectory).
+The contents of `.shhh/project.md` are appended to the system prompt when running shhh from that directory (or any subdirectory). The `.shhh` directory is also where the project's skills, saved plans, quality-gate config and backlog live. A checkout from an older version, where `.shhh` was the context file itself, is reported by `shhh doctor`, which offers to move the file inside.
 
 ### Skills
 
@@ -914,7 +914,8 @@ shhh chat --secret PIN=1234            # given inline; lands in shell history
 | `shhh config set <key> <value>` | Set a config value |
 | `shhh doctor` | Check this machine's shhh setup |
 | `shhh init <shell>` | Output shell integration snippet |
-| `shhh init --project` | Create a `.shhh` project context file |
+| `shhh init --project` | Create a `.shhh/project.md` project context file |
+| `shhh todo` | List the project's backlog (`.shhh/todo/`) in working order; `shhh todo show <slug>` prints one item |
 | `shhh history` | Browse past prompts and commands |
 | `shhh metrics` | Show provider usage statistics |
 | `shhh rate` | Rate recent commands (feeds accuracy metrics) |

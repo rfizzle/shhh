@@ -6,10 +6,20 @@ import (
 	"testing"
 )
 
+func writeContext(t *testing.T, dir, content string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Join(dir, ".shhh"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, ".shhh", "project.md"), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestFindContext_InCurrentDir(t *testing.T) {
 	dir := t.TempDir()
 	content := "This project uses Docker Compose for services."
-	os.WriteFile(filepath.Join(dir, ".shhh"), []byte(content), 0o644)
+	writeContext(t, dir, content)
 
 	orig, _ := os.Getwd()
 	os.Chdir(dir)
@@ -27,7 +37,7 @@ func TestFindContext_InParentDir(t *testing.T) {
 	os.MkdirAll(sub, 0o755)
 
 	content := "Use make test for tests."
-	os.WriteFile(filepath.Join(root, ".shhh"), []byte(content), 0o644)
+	writeContext(t, root, content)
 
 	orig, _ := os.Getwd()
 	os.Chdir(sub)
@@ -69,7 +79,7 @@ func TestFindContext_AgentsMd(t *testing.T) {
 
 func TestFindContext_ShhhBeatsAgentsMd(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, ".shhh"), []byte("shhh context"), 0o644)
+	writeContext(t, dir, "shhh context")
 	os.WriteFile(filepath.Join(dir, "AGENTS.md"), []byte("agents context"), 0o644)
 
 	orig, _ := os.Getwd()
@@ -105,8 +115,8 @@ func TestFindContext_NearestWins(t *testing.T) {
 	sub := filepath.Join(root, "child")
 	os.MkdirAll(sub, 0o755)
 
-	os.WriteFile(filepath.Join(root, ".shhh"), []byte("root context"), 0o644)
-	os.WriteFile(filepath.Join(sub, ".shhh"), []byte("child context"), 0o644)
+	writeContext(t, root, "root context")
+	writeContext(t, sub, "child context")
 
 	orig, _ := os.Getwd()
 	os.Chdir(sub)
@@ -115,5 +125,18 @@ func TestFindContext_NearestWins(t *testing.T) {
 	got := FindContext()
 	if got != "child context" {
 		t.Errorf("FindContext() = %q, want %q", got, "child context")
+	}
+}
+
+func TestFindContext_OldSingleFileIsNotRead(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, ".shhh"), []byte("old layout"), 0o644)
+
+	orig, _ := os.Getwd()
+	os.Chdir(dir)
+	defer os.Chdir(orig)
+
+	if got := FindContext(); got != "" {
+		t.Errorf("FindContext() = %q, want empty: the old file is the doctor's to move", got)
 	}
 }
