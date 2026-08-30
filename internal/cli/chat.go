@@ -24,26 +24,7 @@ func newChatCmd() *cobra.Command {
 		Long:  "Open a multi-turn conversation that answers questions, reads files and the web, and can delegate to read-only sub-agents. It changes nothing on the machine; use `shhh code` to edit and run.",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			// The conversation's toolset is every read the session has:
-			// the filesystem tools, the web, and nothing that could act.
-			// execute_command is not registered, so no mode can reach it.
-			return runChatSession(cmd, args, chatSession{
-				title:        "shhh chat",
-				kind:         "chat",
-				buildPrompt:  prompt.BuildConversation,
-				toolDefs:     tools.Definitions(),
-				flags:        &flags,
-				continueLast: continueLast,
-				resumePick:   resumePick,
-				addDirs:      addDirs,
-				skills:       loadSkills(),
-				secretFlags:  secretFlags,
-				web:          openWebTools(ConfigFrom(cmd.Context())),
-				agents:       true,
-				memory:       true,
-				conversation: true,
-				mcp:          true,
-			})
+			return runChatSession(cmd, args, conversationSession(cmd, &flags, continueLast, resumePick, addDirs, secretFlags))
 		},
 	}
 
@@ -56,6 +37,30 @@ func newChatCmd() *cobra.Command {
 	addSecretFlag(cmd, &secretFlags)
 
 	return cmd
+}
+
+// conversationSession is `shhh chat`'s session, shared with `shhh chats`,
+// which is the same conversation opened on a saved one. The toolset is every
+// read the session has: the filesystem tools, the web, and nothing that
+// acts. execute_command is not registered, so no mode can reach it.
+func conversationSession(cmd *cobra.Command, flags *resolve.Opts, continueLast, resumePick bool, addDirs, secretFlags []string) chatSession {
+	return chatSession{
+		title:        "shhh chat",
+		kind:         "chat",
+		buildPrompt:  prompt.BuildConversation,
+		toolDefs:     tools.Definitions(),
+		flags:        flags,
+		continueLast: continueLast,
+		resumePick:   resumePick,
+		addDirs:      addDirs,
+		skills:       loadSkills(),
+		secretFlags:  secretFlags,
+		web:          openWebTools(ConfigFrom(cmd.Context())),
+		agents:       true,
+		memory:       true,
+		conversation: true,
+		mcp:          true,
+	}
 }
 
 // addSecretFlag registers --secret: a value commands may use and the

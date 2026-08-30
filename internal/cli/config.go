@@ -443,6 +443,27 @@ func configSettings() []configSetting {
 				"a reading every few tool rounds, drawn in the inspector rail")
 		},
 	}, {
+		group: "SESSION", key: "summary.title", label: "session titles",
+		// Not flag(): unset resolves against summary.model, so an unset
+		// file and one that says false are different facts.
+		read: func(c config.Config) string {
+			if c.Summary.Title == nil {
+				return ""
+			}
+			return strconv.FormatBool(*c.Summary.Title)
+		},
+		show: func(raw string) (string, components.FieldTone, string) {
+			if raw == "false" {
+				return "off", components.ToneNeutral, "no session is asked for a title"
+			}
+			return "on", components.ToneNeutral, "an unnamed session is titled by the summary model after its first turn"
+		},
+		fallback: "on when a summary model is set, off otherwise",
+		options: func(config.Config) []components.SelectOption {
+			return boolOptions("an unnamed session is titled after its first turn (on the summary model, or the session's own)",
+				"no session is asked for a title")
+		},
+	}, {
 		group: "WORKSPACE", key: "sandbox.profile", label: "sandbox",
 		read: str(func(c config.Config) string { return c.Sandbox.Profile }),
 		show: func(raw string) (string, components.FieldTone, string) {

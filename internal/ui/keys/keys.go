@@ -296,15 +296,21 @@ var Confirm = ConfirmKeys{
 // SelectKeys are the selector family's, the model picker's, the rewind
 // picker's and the palette's. All takeovers.
 type SelectKeys struct {
-	Move    Binding
-	MoveJK  Binding
-	Take    Binding
-	Alt     Binding
-	Filter  Binding
-	ClearQ  Binding
-	Toggle  Binding
-	All     Binding
-	Note    Binding
+	Move   Binding
+	MoveJK Binding
+	Take   Binding
+	Alt    Binding
+	Filter Binding
+	ClearQ Binding
+	Toggle Binding
+	All    Binding
+	Note   Binding
+	// Delete and Rename are the saved-chat picker's housekeeping keys,
+	// answered on the focused row: the first arms an inline confirm, the
+	// second opens a rename row. Bare letters, so like Alt they are text
+	// while the query line is open.
+	Delete  Binding
+	Rename  Binding
 	Cancel  Binding
 	Quit    Binding
 	Palette PaletteKeys
@@ -330,6 +336,8 @@ var Select = SelectKeys{
 	Toggle: bind("space", "toggle", " ", "space"),
 	All:    bind("a", "all or none", "a"),
 	Note:   bind("tab", "note or options", "tab"),
+	Delete: bind("x", "delete", "x"),
+	Rename: bind("r", "rename", "r"),
 	Cancel: bind("esc", "cancel", "esc", "ctrl+c"),
 	Quit:   bind("ctrl+d", "quit", "ctrl+d"),
 	Palette: PaletteKeys{
@@ -560,6 +568,10 @@ type BrowseKeys struct {
 	Move   Binding
 	Open   Binding
 	Filter Binding
+	// Delete and Rename act on the focused chat from the list: the first
+	// arms an inline confirm, the second opens a rename row.
+	Delete Binding
+	Rename Binding
 	Action Binding
 	Prev   Binding
 	Take   Binding
@@ -574,6 +586,8 @@ var Browse = BrowseKeys{
 	Move:   bind("j/k", "move", "j", "k", "down", "up"),
 	Open:   bind("enter", "open it", "enter", "l", "right"),
 	Filter: bind("/", "filter", "/"),
+	Delete: bind("x", "delete", "x"),
+	Rename: bind("r", "rename", "r"),
 	Action: bind("tab", "next action", "tab", "right"),
 	Prev:   bind("shift+tab", "the previous one", "shift+tab"),
 	Take:   bind("enter", "take it", "enter"),

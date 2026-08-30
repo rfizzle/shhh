@@ -50,6 +50,9 @@ func (g StartGate) Configured() bool { return g.Suite != "" }
 type StartRecent struct {
 	Present bool
 	Name    string
+	// Title is the session's generated title, shown ahead of the count so
+	// a timestamp of a name still says what the conversation was about.
+	Title   string
 	Turns   int
 	Updated time.Time
 	Cost    float64
@@ -322,6 +325,9 @@ func verifyPrompt(info StartInfo) string {
 // keeps the first and last clauses and drops the price.
 func recentDetail(r StartRecent, now time.Time) string {
 	parts := []string{plural(r.Turns, "turn")}
+	if r.Title != "" {
+		parts = []string{r.Title, parts[0]}
+	}
 	if r.Priced {
 		parts = append(parts, fmt.Sprintf("$%.2f", r.Cost))
 	}

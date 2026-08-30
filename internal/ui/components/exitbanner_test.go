@@ -130,3 +130,17 @@ func TestExitBanner_SaysTheSameThingInMono(t *testing.T) {
 		}
 	}
 }
+
+func TestExitBanner_TitleRidesBesideTheSlotAndDropsBeforeIt(t *testing.T) {
+	b := ExitBanner{Session: "2026-08-31 14:02:11", Title: "Flaky retry test", Turns: 3, Resume: "shhh chat --continue"}
+	wide := b.sessionLine(80)
+	if wide != "2026-08-31 14:02:11 — Flaky retry test · 3 turns" {
+		t.Fatalf("the title should sit between the slot and the count, got %q", wide)
+	}
+	if got := b.sessionLine(40); got != "2026-08-31 14:02:11 — Flaky retry test" {
+		t.Fatalf("the count drops first, got %q", got)
+	}
+	if got := b.sessionLine(24); got != "2026-08-31 14:02:11" {
+		t.Fatalf("the title drops before the slot, got %q", got)
+	}
+}

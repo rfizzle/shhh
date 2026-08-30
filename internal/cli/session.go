@@ -61,6 +61,11 @@ type chatSession struct {
 	flags        *resolve.Opts
 	continueLast bool
 	resumePick   bool
+	// resumeName is a chat already chosen — `shhh chats` runs the browser
+	// before it builds a session, so a reader with no provider configured
+	// can still tidy the store, and nobody pays a provider resolve to
+	// browse.
+	resumeName string
 	// web is the guarded web toolset; nil leaves the web tools
 	// unregistered (`shhh chat` today).
 	web *web.Toolset
@@ -563,6 +568,14 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		MinGap:         time.Duration(cfg.Summary.MinGapSeconds) * time.Second,
 		Disabled:       cfg.Summary.Disabled,
 	})
+	// Session titles ask the same model. Off unless a summary model is
+	// configured or the config says so outright; a name the user gives
+	// wins either way.
+	titler := agent.NewTitler(ledger.For(env.prov, meter.SourceSummary), agent.TitleConfig{
+		Model:    summaryModel,
+		Timeout:  time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
+		Disabled: !cfg.TitlesEnabled(),
+	})
 
 	// Process containment: assistant commands run wrapped when a
 	// mechanism is available; the confirm prompt shows the state either way.
@@ -651,6 +664,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithApprovalMode(mode, cycle).
 		WithClassifier(classifier).
 		WithSummarizer(summarizer).
+		WithTitler(titler, cfg.TitlesEnabled()).
 		WithModelSwitcher(env.switchModel).
 		WithReasoning(env.effort, env.switchReasoning).
 		WithReasoningDefault(cfg.Provider.Reasoning, resolve.ReasoningOutranks(*session.flags)).
@@ -777,14 +791,14 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		model = model.WithGatedTools(gatedPreviews)
 	}
 
-	if session.continueLast || session.resumePick {
+	if session.continueLast || session.resumePick || session.resumeName != "" {
 		if db == nil {
 			return fmt.Errorf("chat persistence is unavailable, cannot resume")
 		}
 		// --continue is the newest slot, whatever it was called: every
 		// session autosaves to a slot of its own, so "the last session" is
 		// a query rather than a name.
-		name := ""
+		name := session.resumeName
 		if session.resumePick {
 			picked, err := pickSavedChat(db)
 			if err != nil {
@@ -905,6 +919,36 @@ func printExitBanner(b components.ExitBanner) {
 	}
 }
 
+// chatBrowseItems is the saved chats as the browser lists them: the name,
+// its title and size beside it, and what deleting it would take along.
+func chatBrowseItems(db *storage.DB, entries []storage.ChatListEntry) []browse.Item {
+	items := make([]browse.Item, len(entries))
+	for i, e := range entries {
+		when := e.UpdatedAt.Local().Format("Jan 2 15:04")
+		preview := fmt.Sprintf("%d turns, %s", e.Turns, when)
+		detail := fmt.Sprintf("Name:     %s\nTurns:    %d\nUpdated:  %s",
+			e.Name, e.Turns, e.UpdatedAt.Local().Format("2006-01-02 15:04:05"))
+		if e.Title != "" {
+			preview = e.Title + " · " + preview
+			detail = fmt.Sprintf("Name:     %s\nTitle:    %s\nTurns:    %d\nUpdated:  %s",
+				e.Name, e.Title, e.Turns, e.UpdatedAt.Local().Format("2006-01-02 15:04:05"))
+		}
+		items[i] = browse.Item{ID: e.Name, Title: e.Name, Preview: preview, Detail: detail}
+		if n, err := db.CountChatBranches(e.Name); err == nil && n > 0 {
+			items[i].Deleting = "and its " + branchCount(n)
+		}
+	}
+	return items
+}
+
+// branchCount is n branches, in words.
+func branchCount(n int) string {
+	if n == 1 {
+		return "1 branch"
+	}
+	return fmt.Sprintf("%d branches", n)
+}
+
 // gitSnapshot captures the workspace's git state for rewind checkpoints
 // , so /rewind can report what diverged since a checkpoint.
 func gitSnapshot() chat.GitSnapshot {
@@ -943,18 +987,8 @@ func pickSavedChat(db *storage.DB) (string, error) {
 		return "", nil
 	}
 
-	items := make([]browse.Item, len(entries))
-	for i, e := range entries {
-		items[i] = browse.Item{
-			ID:      e.Name,
-			Title:   e.Name,
-			Preview: fmt.Sprintf("%d turns, %s", e.Turns, e.UpdatedAt.Local().Format("Jan 2 15:04")),
-			Detail: fmt.Sprintf("Name:     %s\nTurns:    %d\nUpdated:  %s",
-				e.Name, e.Turns, e.UpdatedAt.Local().Format("2006-01-02 15:04:05")),
-		}
-	}
-
-	model := browse.New(items, []browse.ActionDef{{Label: "Open", Shortcut: "o"}})
+	model := browse.New(chatBrowseItems(db, entries), []browse.ActionDef{{Label: "Open", Shortcut: "o"}}).
+		WithOps(browse.Ops{Delete: db.DeleteChat, Rename: db.RenameChat})
 	p := newProgram(model)
 	result, err := p.Run()
 	if err != nil {

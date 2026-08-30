@@ -373,7 +373,7 @@ func chatArgs(m *Model) []argOption {
 	}
 	out := make([]argOption, 0, len(entries))
 	for _, e := range entries {
-		out = append(out, argOption{value: e.Name, desc: sessionDesc(e.Turns, e.UpdatedAt)})
+		out = append(out, argOption{value: e.Name, desc: chatDesc(e)})
 	}
 	return out
 }

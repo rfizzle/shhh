@@ -306,8 +306,8 @@ func TestChatPick_CurrentSessionMarkedAndFocused(t *testing.T) {
 	m = sendText(t, m, "/load")
 
 	focused := m.picker.Options[m.picker.Focus]
-	if !strings.HasPrefix(focused.Label, "beta") || !strings.Contains(focused.Label, "(current)") {
-		t.Fatalf("the current chat should be marked and focused, got %q", focused.Label)
+	if focused.Label != "beta" || !focused.Dim || focused.Meta != protectedPhrase {
+		t.Fatalf("the current chat should be the unavailable row and focused, got %+v", focused)
 	}
 }
 

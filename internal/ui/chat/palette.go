@@ -330,8 +330,13 @@ func (m Model) paletteSessionEntries() []paletteEntry {
 			group: paletteSessions,
 			text:  "/load " + e.Name,
 			label: label,
-			desc:  sessionDesc(e.Turns, e.UpdatedAt),
+			desc:  chatDesc(e),
 			match: []string{e.Name},
+		}
+		if e.Title != "" {
+			// A title is a second name for the same row, so it is searched
+			// the way the name is.
+			row.match = append(row.match, e.Title)
 		}
 		if m.working() {
 			row.dim = reason
@@ -486,8 +491,8 @@ func paletteRank(e paletteEntry, q string) (int, bool) {
 // When the budget cannot hold everything, each group that matched keeps a
 // share of it rather than the first group taking the card. A query that found
 // something in all three places has to say so: a palette that answers "there
-// are no sessions" by not mentioning sessions is the thing this story exists
-// to stop.
+// are no sessions" by not mentioning sessions is the thing the share rule
+// exists to stop.
 func paletteRows(matches []paletteEntry, budget int) []paletteEntry {
 	if budget < 1 {
 		budget = 1

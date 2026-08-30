@@ -284,6 +284,9 @@ func (m *Model) switchToBranch(target string) string {
 	m.loadConversation(msgs)
 	m.sessionName = target
 	m.bindNotebook()
+	// The title stays: a branch is the same conversation, and the next
+	// autosave stamps it on the branch's row so the listing shows both
+	// members of the family under the same words.
 	m.contextTokens = 0
 	m.resetRounds()
 	return fmt.Sprintf("Switched to branch %q (%d messages).", target, len(msgs))

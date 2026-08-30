@@ -1,0 +1,87 @@
+package agent
+
+import (
+	"context"
+	"errors"
+	"strings"
+	"testing"
+
+	"github.com/rfizzle/shhh/internal/provider"
+)
+
+func titleCall(args string) provider.StreamEvent {
+	return provider.StreamEvent{
+		ToolCalls: []provider.ToolCall{{ID: "t1", Name: TitleToolName, Arguments: args}},
+		Usage:     &provider.Usage{PromptTokens: 300, CompletionTokens: 8},
+		Done:      true,
+	}
+}
+
+func TestTitler_ToolCallReading(t *testing.T) {
+	var sawUser bool
+	p := &fakeClassifierProvider{fn: func(_ int, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		sawUser = opts.Model == "small"
+		return eventsOf(titleCall(`{"title":"Flaky retry test"}`)), nil
+	}}
+	v := NewTitler(p, TitleConfig{Model: "small"}).Title(context.Background(), TitleRequest{User: "why does the retry test flake", Assistant: "it races the timer"})
+	if v.Failed || v.Title != "Flaky retry test" {
+		t.Fatalf("expected a clean reading, got %+v", v)
+	}
+	if !sawUser {
+		t.Fatal("the reading should go to the configured model")
+	}
+	if v.Usage.PromptTokens != 300 || v.Model != "small" {
+		t.Fatalf("usage and model should be captured, got %+v", v)
+	}
+}
+
+func TestTitler_ProseFallbackAndBounds(t *testing.T) {
+	p := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		return eventsOf(provider.StreamEvent{Token: "\"One two three four five six seven eight.\"\nmore", Done: true}), nil
+	}}
+	v := NewTitler(p, TitleConfig{Model: "m"}).Title(context.Background(), TitleRequest{User: "q"})
+	if v.Failed {
+		t.Fatalf("prose should still read, got %+v", v)
+	}
+	if v.Title != "One two three four five six" {
+		t.Fatalf("the title should be bounded to six words with the quotes and period gone, got %q", v.Title)
+	}
+}
+
+func TestTitler_FailsSoft(t *testing.T) {
+	cases := map[string]func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error){
+		"provider error": func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+			return nil, errors.New("down")
+		},
+		"empty answer": func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+			return eventsOf(titleCall(`{"title":"   "}`)), nil
+		},
+	}
+	for name, fn := range cases {
+		v := NewTitler(&fakeClassifierProvider{fn: fn}, TitleConfig{Model: "m"}).Title(context.Background(), TitleRequest{User: "q"})
+		if !v.Failed || v.Title != "" || v.Err == "" {
+			t.Errorf("%s: expected a failed reading with a reason, got %+v", name, v)
+		}
+	}
+	if v := NewTitler(nil, TitleConfig{Model: "m"}).Title(context.Background(), TitleRequest{}); !v.Failed {
+		t.Fatal("no provider is a failed reading, not a panic")
+	}
+	if NewTitler(&fakeClassifierProvider{}, TitleConfig{}).Enabled() {
+		t.Fatal("no model means disabled")
+	}
+}
+
+func TestCleanTitle(t *testing.T) {
+	cases := map[string]string{
+		"  Fix   the\nbuild.  ": "Fix the build",
+		`"Quoted title"`:        "Quoted title",
+		"a b c d e f g h":       "a b c d e f",
+		strings.Repeat("x", 80): strings.Repeat("x", 60),
+		"":                      "",
+	}
+	for in, want := range cases {
+		if got := CleanTitle(in); got != want {
+			t.Errorf("CleanTitle(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"testing"
@@ -1010,5 +1011,135 @@ func TestMetricsByAction(t *testing.T) {
 		default:
 			t.Fatalf("an unexpected group: %+v", row)
 		}
+	}
+}
+
+func TestRenameChat_KeepsMessagesAndBranches(t *testing.T) {
+	db := openTestDB(t)
+
+	root := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "one"},
+	}
+	if err := db.SaveChat("main", root); err != nil {
+		t.Fatalf("save root: %v", err)
+	}
+	if err := db.SaveChatBranch("main", "main@turn2", append(root, provider.Message{Role: provider.RoleUser, Content: "two"})); err != nil {
+		t.Fatalf("save branch: %v", err)
+	}
+	if err := db.SetChatTitle("main", "Renaming things"); err != nil {
+		t.Fatalf("title: %v", err)
+	}
+
+	if err := db.RenameChat("main", "renamed"); err != nil {
+		t.Fatalf("rename: %v", err)
+	}
+	if _, err := db.LoadChat("main"); err == nil {
+		t.Fatal("the old name should be gone")
+	}
+	msgs, err := db.LoadChat("renamed")
+	if err != nil {
+		t.Fatalf("load renamed: %v", err)
+	}
+	if len(msgs) != 2 || msgs[1].Content != "one" {
+		t.Fatalf("messages should survive the rename, got %+v", msgs)
+	}
+	branches, err := db.ListChatBranches("renamed")
+	if err != nil {
+		t.Fatalf("branches: %v", err)
+	}
+	if len(branches) != 2 || branches[1].Parent != "renamed" {
+		t.Fatalf("the branch should still hang off the renamed root, got %+v", branches)
+	}
+	if title, _ := db.ChatTitle("renamed"); title != "Renaming things" {
+		t.Fatalf("the title should travel with the row, got %q", title)
+	}
+}
+
+func TestRenameChat_RefusesACollision(t *testing.T) {
+	db := openTestDB(t)
+	msgs := []provider.Message{{Role: provider.RoleUser, Content: "hi"}}
+	for _, name := range []string{"a", "b"} {
+		if err := db.SaveChat(name, msgs); err != nil {
+			t.Fatalf("save %s: %v", name, err)
+		}
+	}
+	err := db.RenameChat("a", "b")
+	var exists ChatExistsError
+	if !errors.As(err, &exists) || exists.Name != "b" {
+		t.Fatalf("expected ChatExistsError for b, got %v", err)
+	}
+	if _, err := db.LoadChat("a"); err != nil {
+		t.Fatalf("a refused rename must leave the source in place: %v", err)
+	}
+	var missing ChatNotFoundError
+	if err := db.RenameChat("nope", "c"); !errors.As(err, &missing) {
+		t.Fatalf("renaming a missing chat should say not found, got %v", err)
+	}
+}
+
+func TestDeleteChat_RemovesBranches(t *testing.T) {
+	db := openTestDB(t)
+	root := []provider.Message{{Role: provider.RoleUser, Content: "one"}}
+	if err := db.SaveChat("main", root); err != nil {
+		t.Fatalf("save root: %v", err)
+	}
+	if err := db.SaveChatBranch("main", "main@turn2", root); err != nil {
+		t.Fatalf("save branch: %v", err)
+	}
+	if err := db.SaveChatBranch("main@turn2", "main@turn2@turn3", root); err != nil {
+		t.Fatalf("save grandchild: %v", err)
+	}
+	if err := db.SaveChat("other", root); err != nil {
+		t.Fatalf("save other: %v", err)
+	}
+
+	if n, err := db.CountChatBranches("main"); err != nil || n != 2 {
+		t.Fatalf("main should count 2 descendants, got %d %v", n, err)
+	}
+	if n, err := db.CountChatBranches("other"); err != nil || n != 0 {
+		t.Fatalf("other should count 0, got %d %v", n, err)
+	}
+
+	if err := db.DeleteChat("main"); err != nil {
+		t.Fatalf("delete: %v", err)
+	}
+	entries, err := db.ListChats()
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	if len(entries) != 1 || entries[0].Name != "other" {
+		t.Fatalf("only the unrelated chat should remain, got %+v", entries)
+	}
+	var count int
+	if err := db.sql.QueryRow(`SELECT COUNT(*) FROM chat_messages`).Scan(&count); err != nil || count != 1 {
+		t.Fatalf("the family's messages should be gone, %d left (%v)", count, err)
+	}
+}
+
+func TestChatTitle_ListedAndUnknown(t *testing.T) {
+	db := openTestDB(t)
+	msgs := []provider.Message{{Role: provider.RoleUser, Content: "hi"}}
+	if err := db.SaveChat("t", msgs); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	if title, err := db.ChatTitle("t"); err != nil || title != "" {
+		t.Fatalf("a fresh chat has no title, got %q %v", title, err)
+	}
+	if err := db.SetChatTitle("t", "Greeting"); err != nil {
+		t.Fatalf("set title: %v", err)
+	}
+	entries, _ := db.ListChats()
+	if len(entries) != 1 || entries[0].Title != "Greeting" {
+		t.Fatalf("listing should carry the title, got %+v", entries)
+	}
+	if recent, ok, _ := db.MostRecentChat(); !ok || recent.Title != "Greeting" {
+		t.Fatalf("the resume suggestion should carry the title, got %+v", recent)
+	}
+	if err := db.SetChatTitle("missing", "x"); err == nil {
+		t.Fatal("titling a missing chat should fail")
+	}
+	if title, err := db.ChatTitle("missing"); err != nil || title != "" {
+		t.Fatalf("an unknown chat has no title and no error, got %q %v", title, err)
 	}
 }

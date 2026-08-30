@@ -178,6 +178,11 @@ func (m Model) updatePick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if m.palette != nil {
 		return m.updatePalette(msg)
 	}
+	// The saved-chat picker's housekeeping keys, and the confirm or rename
+	// row one of them opened (chats.go), come before the card sees the key.
+	if model, cmd, handled := m.updateChatOps(msg); handled {
+		return model, cmd
+	}
 	done, result := m.picker.Update(msg)
 	if m.picker.QueryChanged() {
 		m.refilterPicker()
@@ -189,11 +194,7 @@ func (m Model) updatePick(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	}
 	sel := result.(components.SelectResult)
 	apply, index := m.pickerApply, m.pickerIndex
-	m.picker = nil
-	m.pickerApply = nil
-	m.pickerAll = nil
-	m.pickerIndex = nil
-	m.leaveSurface()
+	m.closePicker()
 	if sel.Canceled {
 		m.syncViewport()
 		return m, nil
@@ -221,7 +222,8 @@ func (m Model) pickerLines() []string {
 	if m.picker == nil {
 		return nil
 	}
-	return strings.Split(m.picker.View(m.contentWidth()), "\n")
+	lines := strings.Split(m.picker.View(m.contentWidth()), "\n")
+	return append(lines, m.chatPickLines()...)
 }
 
 // renderPick renders the picker padded to the bottom panel height.
@@ -425,33 +427,6 @@ func (m Model) openModePick() (tea.Model, tea.Cmd) {
 // listing: how many turns it holds and when it was last written.
 func sessionDesc(turns int, updated time.Time) string {
 	return fmt.Sprintf("%d turns, %s", turns, updated.Local().Format("Jan 2 15:04"))
-}
-
-// openChatPick opens the saved-chat picker behind bare /load and /chats:
-// enter loads the highlighted chat, esc keeps the current one. It reports
-// false when there is nothing to pick, leaving the caller on the text path.
-func (m Model) openChatPick() (tea.Model, tea.Cmd, bool) {
-	if m.db == nil {
-		return m, nil, false
-	}
-	entries, err := m.db.ListChats()
-	if err != nil || len(entries) == 0 {
-		return m, nil, false
-	}
-	opts := make([]components.SelectOption, len(entries))
-	focus := 0
-	for i, e := range entries {
-		label := e.Name
-		if e.Name == m.sessionName {
-			label += "  (current)"
-			focus = i
-		}
-		opts[i] = components.SelectOption{Label: label, Desc: sessionDesc(e.Turns, e.UpdatedAt)}
-	}
-	model, cmd := m.openPicker("Load a saved chat", opts, focus, func(m *Model, idx int) string {
-		return m.loadChatByName(entries[idx].Name)
-	})
-	return model, cmd, true
 }
 
 // openBranchPick opens the branch picker behind bare /branches, focused on

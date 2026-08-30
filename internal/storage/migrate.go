@@ -120,6 +120,12 @@ var migrations = []string{
 		trusted_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
 		PRIMARY KEY (root, name)
 	);`,
+
+	// A session's title is what a cheap model called it after its first
+	// turn, kept apart from the name so a name the user typed is never
+	// overwritten by one a model wrote
+	// (docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write).
+	`ALTER TABLE chat_sessions ADD COLUMN title TEXT NOT NULL DEFAULT '';`,
 }
 
 func (db *DB) migrate() error {

@@ -100,6 +100,13 @@ type Select struct {
 	// EnterLabel is what enter buys, for a card where "select" is not the
 	// whole answer because AltKey buys something else. Empty is "select".
 	EnterLabel string
+	// Actions are keys the host answers on the focused option beyond
+	// taking it — the saved-chat picker's delete and rename. The card only
+	// offers them on its key row; like AltKey they are bare letters and so
+	// are text while the query line is open, which is the host's to honour
+	// (it reads Filtering before answering one). They are offers and are
+	// never dropped from the row.
+	Actions []keys.Binding
 	// Unnumbered drops the "1." prefixes and the number-jump keys, for a
 	// surface where a digit is text rather than a jump.
 	Unnumbered bool
@@ -333,10 +340,14 @@ func (s *Select) hintSegments(width int) []string {
 		alt = s.AltKey + " " + s.AltLabel
 	}
 	inner := max(width-cardFrameWidth, 1)
+	actions := make([]string, 0, len(s.Actions))
+	for _, b := range s.Actions {
+		actions = append(actions, offer(b))
+	}
 	rungs := [][]string{
-		{move, take, alt, jump, filter, offer(keys.Select.Cancel)},
-		{move, take, alt, filter, offer(keys.Select.Cancel)},
-		{offer(keys.Select.Move), take, alt, filter, offer(keys.Select.Cancel)},
+		rung([]string{move, take, alt}, actions, []string{jump, filter, offer(keys.Select.Cancel)}),
+		rung([]string{move, take, alt}, actions, []string{filter, offer(keys.Select.Cancel)}),
+		rung([]string{offer(keys.Select.Move), take, alt}, actions, []string{filter, offer(keys.Select.Cancel)}),
 	}
 	for _, rung := range rungs {
 		segs := presentSegments(rung)
@@ -345,6 +356,15 @@ func (s *Select) hintSegments(width int) []string {
 		}
 	}
 	return presentSegments(rungs[len(rungs)-1])
+}
+
+// rung is one key row in order: what moves and takes, then the
+// host's own actions, then the filter and the way out.
+func rung(head, actions, tail []string) []string {
+	out := make([]string, 0, len(head)+len(actions)+len(tail))
+	out = append(out, head...)
+	out = append(out, actions...)
+	return append(out, tail...)
 }
 
 // presentSegments drops the rungs' empty placeholders, which is what a

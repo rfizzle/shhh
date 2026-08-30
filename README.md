@@ -165,6 +165,7 @@ accent_color = "cyan"
 | `summary.timeout_seconds` | Timeout per reading (default: 20) |
 | `summary.max_tokens` | Max tokens for a reading's response (default: 512) |
 | `summary.disabled` | Turn the session summary off: no readings, no requests, no `SUMMARY` block (default: false) |
+| `summary.title` | Name an unnamed session after its first turn, on the summary model, for `/chats`, `shhh chats` and the exit banner (default: on when `summary.model` is set, off otherwise). A name you give with `/save` or a rename always wins |
 | `sandbox.profile` | Containment profile for assistant commands: `workspace` (network preserved, default) or `workspace-netless` |
 | `sandbox.deny_extra` | Extra paths masked from contained commands (the built-in mask — `~/.ssh`, `~/.aws`, `~/.config/gh`, shhh's own config/state dirs — cannot be disabled) |
 | `sandbox.write_extra` | Extra writable paths inside containment (beyond the workspace, scratch, and toolchain caches) |
@@ -653,9 +654,11 @@ shhh chat
 shhh chat "help me debug this failing test"
 shhh chat --continue     # resume the most recent session
 shhh chat --resume       # pick a saved chat to resume
+shhh chats               # the same browser; x deletes, r renames
+shhh chats list --json   # the saved chats for a script (also show, delete, rename)
 ```
 
-Every session is autosaved after each exchange to a slot of its own, named for the moment it began (`2026-08-30 14:05:07`), so `--resume` lists every conversation you have had and `--continue` picks up the most recent one. Use `/save <name>` inside a session to give a conversation a name worth remembering.
+Every session is autosaved after each exchange to a slot of its own, named for the moment it began (`2026-08-30 14:05:07`), so `--resume` lists every conversation you have had and `--continue` picks up the most recent one. Use `/save <name>` inside a session to give a conversation a name worth remembering — or let the summary model name it: with `summary.model` set, an unnamed session gets a title of a few words after its first turn, shown beside the slot wherever chats are listed. Housekeeping happens where the chats are listed: `x` deletes the focused chat (after a confirm naming it and its branches), `r` renames it, in the `/chats` picker and the `shhh chats` browser alike; the chat you are in stays out of reach.
 
 Quitting hands the terminal back the way it was found, so the session goes off the screen in one frame. Three lines are left behind in its place — the slot the conversation was autosaved to and how many turns it holds, what the sitting cost, and the command that reopens it (`shhh chat --continue` or `shhh code --continue`, whichever was running). A session that never said anything leaves nothing, and one that could not be saved says so rather than offering a resume that would reopen something older.
 
@@ -821,6 +824,7 @@ Slash commands inside a chat session:
 | `/ui mono <on\|off>` | Strip every surface to two greys; glyphs, words and layout carry the states. `NO_COLOR` turns it on for the session |
 | `/ui mouse <on\|off>` | Terminal mouse reporting (also `Ctrl+X`). Off by default, so your terminal keeps its own click-drag selection; on, the wheel scrolls the transcript, click-drag selects it (scrolling past the edge of the pane and copying on release), and a click opens the row or answers the approval key under it. The answer is saved to `appearance.mouse` |
 | `/ui notify <on\|off>` | Desktop notifications when a turn stops and you are not there — an approval waiting, a plan ready, a sub-agent blocked, a turn done and what it cost. On by default; it only ever fires when your terminal has reported that the window is not the one in front, so nothing arrives while you are watching. Uses OSC 99 where your terminal answered for it and OSC 777 where it did not. The answer is saved to `appearance.notify` |
+| `/ui title <on\|off>` | Name an unnamed session after its first completed turn: one request to the summary model, at most six words, shown beside the slot in `/chats`, `shhh chats` and the exit banner. A name you give with `/save` or a rename always wins. Off unless `summary.model` is set; `summary.title` makes the choice for good |
 | `/ui terminal` | What your terminal answered when shhh asked what it can do: inline images (kitty graphics or sixel), desktop notifications, focus events, and the size of one character cell in pixels. A capability shhh did not ask about says so rather than reading as a no — the graphics questions are held back on Apple Terminal and over `ssh`, where a terminal that does not recognise them prints them instead |
 | `/memory` | Durable memories (`shhh code`): `list` (default), `add [global] [kind] <text>`, `forget <id>` |
 | `/secret` | [Secrets](#secrets) commands can use and the model never sees: `list` (default), `set NAME` (from the environment) or `set NAME=value`, `forget NAME` |
@@ -829,7 +833,7 @@ Slash commands inside a chat session:
 | `/branches [n]` | Switch this session's branches (bare `/branches` opens a picker; current work is saved first) |
 | `/save [name]` | Save this chat |
 | `/load [name]` | Load a saved chat (bare `/load` opens a picker) |
-| `/chats` | Saved chats — the same picker; Enter loads |
+| `/chats` | Saved chats — the same picker; Enter loads, `x` deletes after a confirm, `r` renames |
 | `/exit` | Quit (also `/quit`, `/q`, Ctrl+D) |
 
 Press Up/Down in an empty input to recall previous messages, Ctrl+K for the command palette, Ctrl+G to write the message in your own editor (`$EDITOR`, opened where the cursor is; what the file holds when you close it becomes the draft, and an empty file leaves it alone), Esc to clear the input, and Ctrl+C to cancel a streaming response (or clear the input / quit when idle). Commands run while the agent is working, except the ones that rewrite the running conversation. Type `/help` in a session for the full list.
@@ -940,6 +944,8 @@ shhh chat --secret PIN=1234            # given inline; lands in shell history
 | `shhh chat [prompt]` | Start an interactive chat session |
 | `shhh chat --continue` | Resume the most recent chat session |
 | `shhh chat --resume` | Pick a saved chat to resume |
+| `shhh chats` | Browse saved chats: pick one to resume, `x` deletes, `r` renames |
+| `shhh chats list\|show\|delete\|rename` | Saved chats from a script; `list`/`show` take `--json`, `delete` asks unless `--yes` |
 | `shhh config` | Interactive configuration editor |
 | `shhh config set <key> <value>` | Set a config value |
 | `shhh doctor` | Check this machine's shhh setup |

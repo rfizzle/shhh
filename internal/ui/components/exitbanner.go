@@ -32,6 +32,10 @@ type ExitBanner struct {
 	// the conversation was actually written to, which is not always the one
 	// the session was working under.
 	Session string
+	// Title is the conversation's generated title, if a reading named it:
+	// shown beside the slot, never instead of it, because the slot is what
+	// the resume command reads.
+	Title string
 	// Turns is how many exchanges that conversation holds, counted the way
 	// /chats counts them: the whole conversation, including whatever a
 	// --continue brought back into it, because that is what reopening it
@@ -95,10 +99,11 @@ func (b ExitBanner) row(label, value string, style lipgloss.Style) string {
 	return sty.Dim.Render(padRight(label, exitLabelWidth)) + "  " + style.Render(value)
 }
 
-// sessionLine is the conversation's identity: what it is called, and how big
-// it got. The turn count drops first when the line will not fit, and the name
-// is what the clip eats into last — a session a reader cannot name is one
-// they cannot find again, and the count is only ever colour on top of that.
+// sessionLine is the conversation's identity: what it is called, what it
+// was about, and how big it got. The turn count drops first when the line
+// will not fit, then the title, and the name is what the clip eats into last
+// — a session a reader cannot name is one they cannot find again, and the
+// rest is only ever colour on top of that.
 //
 // An unsaved conversation has no name to give: the working slot did not
 // receive it, so printing that slot would point at somebody else's messages.
@@ -108,8 +113,15 @@ func (b ExitBanner) sessionLine(width int) string {
 	if b.Unsaved || b.Session == "" {
 		return clip(turns, width)
 	}
-	if line := b.Session + " · " + turns; lipgloss.Width(line) <= width {
+	name := b.Session
+	if b.Title != "" {
+		name += " — " + b.Title
+	}
+	if line := name + " · " + turns; lipgloss.Width(line) <= width {
 		return line
+	}
+	if lipgloss.Width(name) <= width {
+		return name
 	}
 	return clip(b.Session, width)
 }

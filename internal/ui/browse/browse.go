@@ -1,3 +1,8 @@
+// Package browse is the saved-chat browser
+// (docs/interface/surfaces.md#the-supporting-screens): a whole-screen list
+// with a filter, a detail pane per item, and the housekeeping the picker
+// inside a session offers — delete behind an inline confirm, rename in a
+// one-line row (docs/capabilities/sessions-and-memory.md#housekeeping).
 package browse
 
 import (
@@ -7,6 +12,7 @@ import (
 	"charm.land/bubbles/v2/textinput"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -15,6 +21,18 @@ type Item struct {
 	Title   string
 	Preview string
 	Detail  string
+	// Deleting is what deleting the item also removes, in words — "and
+	// its 2 branches" — so the confirm can state it
+	// (docs/interface/surfaces.md#the-inline-confirm). Empty when nothing
+	// else goes.
+	Deleting string
+}
+
+// Ops are the housekeeping a host lets the list do to an item. A nil func
+// is a key the list does not offer.
+type Ops struct {
+	Delete func(id string) error
+	Rename func(id, name string) error
 }
 
 type ActionDef struct {
@@ -42,7 +60,24 @@ type Model struct {
 	detail bool
 	quit   bool
 
+	ops Ops
+	// confirm is the armed delete confirm and target the item it names;
+	// rename is the open rename row over the same target. notice is a
+	// one-line answer that outlives the key that produced it — a refused
+	// rename — until the next key.
+	confirm  *components.Confirm
+	target   int
+	rename   textinput.Model
+	renaming bool
+	notice   string
+
 	Result *ResultAction
+}
+
+// WithOps gives the list its housekeeping keys.
+func (m Model) WithOps(ops Ops) Model {
+	m.ops = ops
+	return m
 }
 
 func New(items []Item, actions []ActionDef) Model {
@@ -76,6 +111,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case tea.KeyPressMsg:
+		m.notice = ""
+		if m.confirm != nil {
+			return m.updateConfirm(msg)
+		}
+		if m.renaming {
+			return m.updateRename(msg)
+		}
 		if m.filter.Focused() {
 			switch msg.String() {
 			case keys.Shown(keys.Select.Cancel):
@@ -137,8 +179,86 @@ func (m Model) updateList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// Focusing the input is what starts its caret blinking in v2, so the
 		// two are one call rather than a focus and a remembered follow-up.
 		return m, m.filter.Focus()
+	case keys.Is(pressed, keys.Browse.Delete) && m.ops.Delete != nil:
+		if len(m.filtered) == 0 {
+			return m, nil
+		}
+		item := m.items[m.filtered[m.cursor]]
+		with := ""
+		if item.Deleting != "" {
+			with = " " + item.Deleting
+		}
+		m.target = m.filtered[m.cursor]
+		m.confirm = &components.Confirm{Prompt: fmt.Sprintf("Delete %q%s? Files on disk are untouched.", item.Title, with)}
+	case keys.Is(pressed, keys.Browse.Rename) && m.ops.Rename != nil:
+		if len(m.filtered) == 0 {
+			return m, nil
+		}
+		m.target = m.filtered[m.cursor]
+		ti := textinput.New()
+		ti.Prompt = "rename ▸ "
+		ti.CharLimit = 0
+		ti.SetValue(m.items[m.target].Title)
+		ti.CursorEnd()
+		ti.SetWidth(max(m.width-len(ti.Prompt)-2, 8))
+		m.rename, m.renaming = ti, true
+		return m, m.rename.Focus()
 	}
 	return m, nil
+}
+
+// updateConfirm answers the armed delete confirm: y deletes, everything
+// else is No.
+func (m Model) updateConfirm(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	done, result := m.confirm.Update(msg)
+	if !done {
+		return m, nil
+	}
+	target := m.target
+	m.confirm = nil
+	if confirmed, _ := result.(bool); !confirmed {
+		return m, nil
+	}
+	item := m.items[target]
+	if err := m.ops.Delete(item.ID); err != nil {
+		m.notice = "Could not delete: " + err.Error()
+		return m, nil
+	}
+	m.items = append(m.items[:target:target], m.items[target+1:]...)
+	m.applyFilter()
+	m.notice = fmt.Sprintf("Deleted %q.", item.Title)
+	return m, nil
+}
+
+// updateRename routes keys to the rename row: enter commits, esc keeps the
+// old name, everything else types.
+func (m Model) updateRename(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	switch pressed := msg.String(); {
+	case keys.Is(pressed, keys.Select.Cancel):
+		m.renaming = false
+		return m, nil
+	case keys.Is(pressed, keys.Browse.Take):
+		m.renaming = false
+		next := strings.TrimSpace(m.rename.Value())
+		item := m.items[m.target]
+		if next == "" || next == item.Title {
+			return m, nil
+		}
+		if err := m.ops.Rename(item.ID, next); err != nil {
+			m.notice = "Could not rename: " + err.Error()
+			return m, nil
+		}
+		m.items[m.target].ID, m.items[m.target].Title = next, next
+		// The detail's first line is the name under its label; only that
+		// occurrence is the name, so only that one is replaced.
+		m.items[m.target].Detail = strings.Replace(m.items[m.target].Detail, "Name:     "+item.Title, "Name:     "+next, 1)
+		m.applyFilter()
+		m.notice = fmt.Sprintf("Renamed %q to %q.", item.Title, next)
+		return m, nil
+	}
+	var cmd tea.Cmd
+	m.rename, cmd = m.rename.Update(msg)
+	return m, cmd
 }
 
 func (m Model) updateDetail(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
@@ -215,12 +335,13 @@ func (m Model) viewList() string {
 	if m.filter.Focused() || m.filter.Value() != "" {
 		title += "  " + m.filter.View()
 	} else {
-		title += sty.Hint.Render("  / filter  enter select  q quit")
+		title += sty.Hint.Render("  " + strings.Join(m.listHints(), "  "))
 	}
 	b.WriteString(title + "\n")
 	b.WriteString(divider(m.width) + "\n")
 
-	listHeight := m.height - 3
+	foot := m.footer()
+	listHeight := m.height - 3 - len(foot)
 	if listHeight < 1 {
 		listHeight = 1
 	}
@@ -236,8 +357,41 @@ func (m Model) viewList() string {
 			b.WriteString("  " + sty.Item.Render(line) + "\n")
 		}
 	}
+	for _, line := range foot {
+		b.WriteString(line + "\n")
+	}
 
 	return b.String()
+}
+
+// listHints is the list's key row, read from the register so it cannot say
+// a key the list does not answer.
+func (m Model) listHints() []string {
+	hints := []string{
+		keys.Shown(keys.Browse.Filter) + " " + keys.Words(keys.Browse.Filter),
+		keys.Shown(keys.Browse.Open) + " select",
+	}
+	if m.ops.Delete != nil {
+		hints = append(hints, keys.Shown(keys.Browse.Delete)+" "+keys.Words(keys.Browse.Delete))
+	}
+	if m.ops.Rename != nil {
+		hints = append(hints, keys.Shown(keys.Browse.Rename)+" "+keys.Words(keys.Browse.Rename))
+	}
+	return append(hints, keys.Shown(keys.Browse.Quit)+" "+keys.Words(keys.Browse.Quit))
+}
+
+// footer is what the list draws under its rows: the armed confirm, the open
+// rename row, or the notice the last key left.
+func (m Model) footer() []string {
+	switch {
+	case m.confirm != nil:
+		return []string{m.confirm.View(m.width)}
+	case m.renaming:
+		return []string{m.rename.View(), sty.Hint.Render(keys.Shown(keys.Browse.Take) + " renames  " + keys.Shown(keys.Select.Cancel) + " keeps the name")}
+	case m.notice != "":
+		return []string{sty.Hint.Render(m.notice)}
+	}
+	return nil
 }
 
 func (m Model) viewDetail() string {

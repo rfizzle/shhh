@@ -392,7 +392,7 @@ func (m Model) runningCommandRow(width int) string {
 // itself can do.
 func (m *Model) uiCommand(parts []string) string {
 	if len(parts) == 1 {
-		return fmt.Sprintf("Activity feed verbosity: %s.\nMonochrome: %s.\nMouse reporting: %s.\nDesktop notifications: %s.\nLayout: %s.\nTerminal: %s.\n"+uiUsage, m.verbosity, monoStatus(), m.mouseStatus(), m.notifyStatus(), m.inspectorStatus(), terminalName(m.caps))
+		return fmt.Sprintf("Activity feed verbosity: %s.\nMonochrome: %s.\nMouse reporting: %s.\nDesktop notifications: %s.\nSession titles: %s.\nLayout: %s.\nTerminal: %s.\n"+uiUsage, m.verbosity, monoStatus(), m.mouseStatus(), m.notifyStatus(), m.titleStatus(), m.inspectorStatus(), terminalName(m.caps))
 	}
 	switch parts[1] {
 	case "verbosity":
@@ -415,6 +415,8 @@ func (m *Model) uiCommand(parts []string) string {
 		return m.mouseCommand(parts)
 	case "notify":
 		return m.notifyCommand(parts)
+	case "title":
+		return m.titleCommand(parts)
 	case "terminal":
 		return m.terminalReport()
 	}
@@ -424,7 +426,7 @@ func (m *Model) uiCommand(parts []string) string {
 // uiUsage is the one line naming everything /ui answers for. It is a constant
 // because the bare readout and the unknown-subcommand reply are the same
 // list, and a list written twice is a list that drifts.
-const uiUsage = "Usage: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off> · /ui notify <on|off> · /ui terminal"
+const uiUsage = "Usage: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off> · /ui notify <on|off> · /ui title <on|off> · /ui terminal"
 
 // terminalName is the one-line answer the bare /ui gives: what the terminal
 // called itself when shhh asked. A terminal that was asked

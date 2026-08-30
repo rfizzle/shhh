@@ -133,6 +133,7 @@ var slashCommands = []slashCommand{
 				{"mono", "Strip every surface to two greys"},
 				{"mouse", "Whether shhh or the terminal owns the mouse"},
 				{"notify", "Say so when a turn stops and you are elsewhere"},
+				{"title", "Name an unnamed session after its first turn"},
 				{"terminal", "What this terminal can do"},
 			}},
 			{after: []string{"verbosity"}, options: []argOption{
@@ -151,6 +152,10 @@ var slashCommands = []slashCommand{
 			{after: []string{"notify"}, options: []argOption{
 				{"on", "One notification when a turn stops and the window is not in front"},
 				{"off", "A turn that stops while you are elsewhere waits silently"},
+			}},
+			{after: []string{"title"}, options: []argOption{
+				{"on", "The summary model names the session after its first turn"},
+				{"off", "Sessions keep the timestamp they were opened at"},
 			}},
 		}},
 	{name: "/add-dir", args: "[<path>|drop <path>]", desc: "The directories this session may work in",
@@ -265,7 +270,7 @@ var slashCommands = []slashCommand{
 		enabled:  func(m *Model) bool { return m.db != nil },
 		argSpecs: []argSpec{{dynamic: chatArgs, fuzzy: true}},
 		idleOnly: "it replaces the conversation"},
-	{name: "/chats", desc: "Saved chats — enter to load",
+	{name: "/chats", desc: "Saved chats — enter loads, x deletes, r renames",
 		enabled:  func(m *Model) bool { return m.db != nil },
 		idleOnly: "it opens the picker that replaces the conversation"},
 	{name: "/exit", aliases: []string{"/quit", "/q"}, desc: "Quit (also /quit, /q)", key: keys.Shown(keys.Draft.Quit)},

@@ -32,6 +32,7 @@ func buildStartInfo(db *storage.DB, gateEnabled bool) chat.StartInfo {
 			info.Recent = chat.StartRecent{
 				Present: true,
 				Name:    recent.Name,
+				Title:   recent.Title,
 				Turns:   recent.Turns,
 				Updated: recent.UpdatedAt,
 				Cost:    recent.Cost,

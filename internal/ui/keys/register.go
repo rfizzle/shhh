@@ -137,6 +137,15 @@ func Surfaces() []Surface {
 			},
 		},
 		{
+			// The one card in the family with keys of its own: only the
+			// saved-chat picker answers them, so only its row offers them.
+			Name:     "the saved-chat picker",
+			Section:  "docs/interface/surfaces.md#selectors, docs/capabilities/sessions-and-memory.md#housekeeping",
+			Position: Takeover,
+			Reached:  "/chats, or bare /load",
+			Bindings: []Binding{Select.Delete, Select.Rename},
+		},
+		{
 			// The same family with the query line open, which is why it is
 			// a row of its own: a list being typed into keeps every letter
 			// as text, so j/k are not keys and the arrows are the movement
@@ -295,8 +304,11 @@ func Programs() []Surface {
 			Name:     "the saved-chat browser",
 			Section:  "docs/interface/surfaces.md#the-supporting-screens",
 			Position: Takeover,
-			Reached:  "shhh chats",
-			Bindings: []Binding{Browse.Move, Browse.Open, Browse.Filter, Browse.Quit},
+			Reached:  "shhh chats, or --resume on shhh chat and shhh code",
+			Bindings: []Binding{
+				Browse.Move, Browse.Open, Browse.Filter, Browse.Delete, Browse.Rename,
+				Browse.Quit,
+			},
 		},
 		{
 			Name:     "a saved chat's detail",

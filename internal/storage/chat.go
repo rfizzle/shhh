@@ -16,11 +16,27 @@ type ChatSession struct {
 	UpdatedAt time.Time
 }
 
+// ChatListEntry is one saved session as a listing shows it. Title is the
+// generated one, empty until a reading produced it; the name is always the
+// slot's own and is what every command addresses the session by.
 type ChatListEntry struct {
 	Name      string
+	Title     string
 	UpdatedAt time.Time
 	Turns     int
 }
+
+// ChatExistsError is what a rename into a name already in use returns. It is
+// its own type so a caller can tell a collision — which the person can fix by
+// choosing another name — from a store that failed.
+type ChatExistsError struct{ Name string }
+
+func (e ChatExistsError) Error() string { return fmt.Sprintf("a chat named %q already exists", e.Name) }
+
+// ChatNotFoundError is the error for a name no saved session carries.
+type ChatNotFoundError struct{ Name string }
+
+func (e ChatNotFoundError) Error() string { return fmt.Sprintf("chat %q not found", e.Name) }
 
 func (db *DB) SaveChat(name string, messages []provider.Message) error {
 	tx, err := db.sql.Begin()
@@ -133,7 +149,7 @@ func (db *DB) LoadChat(name string) ([]provider.Message, error) {
 	var sessionID int64
 	err := db.sql.QueryRow(`SELECT id FROM chat_sessions WHERE name = ?`, name).Scan(&sessionID)
 	if err == sql.ErrNoRows {
-		return nil, fmt.Errorf("chat %q not found", name)
+		return nil, ChatNotFoundError{Name: name}
 	}
 	if err != nil {
 		return nil, err
@@ -179,7 +195,7 @@ func (db *DB) LoadChat(name string) ([]provider.Message, error) {
 
 func (db *DB) ListChats() ([]ChatListEntry, error) {
 	rows, err := db.sql.Query(
-		`SELECT s.name, s.updated_at,
+		`SELECT s.name, s.title, s.updated_at,
 		        COUNT(CASE WHEN m.role = 'user' THEN 1 END) as turns
 		 FROM chat_sessions s
 		 LEFT JOIN chat_messages m ON m.session_id = s.id
@@ -197,7 +213,7 @@ func (db *DB) ListChats() ([]ChatListEntry, error) {
 			e         ChatListEntry
 			updatedAt string
 		)
-		if err := rows.Scan(&e.Name, &updatedAt, &e.Turns); err != nil {
+		if err := rows.Scan(&e.Name, &e.Title, &updatedAt, &e.Turns); err != nil {
 			return nil, err
 		}
 		e.UpdatedAt, _ = time.Parse(time.RFC3339Nano, updatedAt)
@@ -223,6 +239,7 @@ type ChatBranch struct {
 // and inventing one is worse than leaving the clause off.
 type RecentChat struct {
 	Name      string
+	Title     string
 	UpdatedAt time.Time
 	Turns     int
 	Cost      float64
@@ -241,7 +258,7 @@ func (db *DB) MostRecentChat() (RecentChat, bool, error) {
 		return RecentChat{}, false, nil
 	}
 	e := entries[0]
-	out := RecentChat{Name: e.Name, UpdatedAt: e.UpdatedAt, Turns: e.Turns}
+	out := RecentChat{Name: e.Name, Title: e.Title, UpdatedAt: e.UpdatedAt, Turns: e.Turns}
 
 	// The session that was running when the chat was last written is the one
 	// whose lifetime contains that write: started before it, and either still
@@ -305,14 +322,103 @@ func (db *DB) ListChatBranches(name string) ([]ChatBranch, error) {
 	return branches, rows.Err()
 }
 
+// DeleteChat removes a session and every branch hanging off it. The
+// branches go with it because a branch is a tail of the conversation it
+// forked from: left behind, it would be a session nobody named, holding a
+// copy of messages that were just deleted. The confirm that precedes this
+// names the count (CountChatBranches), so nothing is removed unannounced
+// (docs/interface/surfaces.md#the-inline-confirm).
 func (db *DB) DeleteChat(name string) error {
-	res, err := db.sql.Exec(`DELETE FROM chat_sessions WHERE name = ?`, name)
+	res, err := db.sql.Exec(
+		`WITH RECURSIVE family(id) AS (
+		     SELECT id FROM chat_sessions WHERE name = ?
+		     UNION ALL
+		     SELECT s.id FROM chat_sessions s JOIN family f ON s.parent_id = f.id
+		 )
+		 DELETE FROM chat_sessions WHERE id IN (SELECT id FROM family)`, name)
 	if err != nil {
 		return err
 	}
 	n, _ := res.RowsAffected()
 	if n == 0 {
-		return fmt.Errorf("chat %q not found", name)
+		return ChatNotFoundError{Name: name}
 	}
 	return nil
+}
+
+// CountChatBranches is how many sessions hang off name — its descendants,
+// not the family it belongs to — which is what deleting it would take with
+// it. An unknown name counts zero.
+func (db *DB) CountChatBranches(name string) (int, error) {
+	var n int
+	err := db.sql.QueryRow(
+		`WITH RECURSIVE below(id) AS (
+		     SELECT id FROM chat_sessions WHERE name = ?
+		     UNION ALL
+		     SELECT s.id FROM chat_sessions s JOIN below b ON s.parent_id = b.id
+		 )
+		 SELECT COUNT(*) - 1 FROM below`, name).Scan(&n)
+	if err != nil {
+		return 0, err
+	}
+	return max(n, 0), nil
+}
+
+// RenameChat gives a saved session a new name. Branches are linked by id,
+// so a renamed root keeps every branch and a renamed branch keeps its
+// parent. A name already in use is refused with ChatExistsError rather than
+// merged: two conversations under one name is what SaveChat's overwrite
+// would make of it, and a rename that silently discards a session is not a
+// rename (docs/capabilities/sessions-and-memory.md#housekeeping).
+func (db *DB) RenameChat(oldName, newName string) error {
+	if oldName == newName {
+		return nil
+	}
+	var taken int
+	if err := db.sql.QueryRow(`SELECT COUNT(*) FROM chat_sessions WHERE name = ?`, newName).Scan(&taken); err != nil {
+		return err
+	}
+	if taken > 0 {
+		return ChatExistsError{Name: newName}
+	}
+	res, err := db.sql.Exec(`UPDATE chat_sessions SET name = ? WHERE name = ?`, newName, oldName)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ChatNotFoundError{Name: oldName}
+	}
+	return nil
+}
+
+// SetChatTitle stores the generated title on a session. It is the one write
+// a reading makes, and it never touches the name: the name is the user's,
+// the title is the model's, and only the listing puts them side by side.
+func (db *DB) SetChatTitle(name, title string) error {
+	res, err := db.sql.Exec(`UPDATE chat_sessions SET title = ? WHERE name = ?`, title, name)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ChatNotFoundError{Name: name}
+	}
+	return nil
+}
+
+// HasChat reports whether a session by that name is saved.
+func (db *DB) HasChat(name string) (bool, error) {
+	var n int
+	err := db.sql.QueryRow(`SELECT COUNT(*) FROM chat_sessions WHERE name = ?`, name).Scan(&n)
+	return n > 0, err
+}
+
+// ChatTitle reads a session's generated title; empty when none was written
+// or the session is unknown.
+func (db *DB) ChatTitle(name string) (string, error) {
+	var title string
+	err := db.sql.QueryRow(`SELECT title FROM chat_sessions WHERE name = ?`, name).Scan(&title)
+	if err == sql.ErrNoRows {
+		return "", nil
+	}
+	return title, err
 }

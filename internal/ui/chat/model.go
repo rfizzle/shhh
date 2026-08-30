@@ -464,6 +464,10 @@ type Model struct {
 	summarizer    *agent.Summarizer
 	summary       summaryState
 	summaryCancel context.CancelFunc
+	// The session titler and what it has written — title.go.
+	titler      *agent.Titler
+	titles      titleState
+	titleCancel context.CancelFunc
 	// summaryTarget is the instruction the current turn is serving, captured
 	// when the turn starts and never re-derived. It is what a reading judges
 	// drift against, and anchoring it here — rather than reading the tail of
@@ -702,6 +706,8 @@ type Model struct {
 	pickerAll    []components.SelectOption
 	pickerIndex  []int
 	modelOptions []string
+	// chats is the saved-chat picker's housekeeping — chats.go.
+	chats chatOps
 	// The command palette: the open palette's query and candidates,
 	// which turn statePick into a filtered list rather than a fixed one.
 	// recentFiles overrides the checkout walk behind its FILES group, which
@@ -994,6 +1000,7 @@ func (m Model) WithResumedMessages(name string, msgs []provider.Message) Model {
 	if name != "" {
 		m.sessionName = name
 		m.bindNotebook()
+		m.loadTitle()
 	}
 	return m
 }
@@ -1007,7 +1014,7 @@ func (m Model) autosaveCmd() tea.Cmd {
 	if m.db == nil || len(m.agent.Messages()) <= 1 {
 		return nil
 	}
-	db, name := m.db, m.sessionName
+	db, name, title := m.db, m.sessionName, m.titles.title
 	// The slot's name is what joins this session's metrics to its
 	// transcript, so the recorder learns it here, where the slot is decided.
 	if m.observer.Session != nil {
@@ -1015,7 +1022,14 @@ func (m Model) autosaveCmd() tea.Cmd {
 	}
 	msgs := m.agent.RequestMessages()
 	return func() tea.Msg {
-		_ = db.SaveChat(name, msgs)
+		if err := db.SaveChat(name, msgs); err != nil {
+			return nil
+		}
+		// The title rides every save, so a slot written after the reading
+		// landed carries it and /save name takes it along.
+		if title != "" {
+			_ = db.SetChatTitle(name, title)
+		}
 		return nil
 	}
 }
@@ -1048,7 +1062,7 @@ func (m Model) ExitBanner(resume string) components.ExitBanner {
 		b.Unsaved = true
 		return b
 	}
-	b.Session, b.Resume = m.sessionName, resume
+	b.Session, b.Title, b.Resume = m.sessionName, m.titles.title, resume
 	return b
 }
 
@@ -1116,6 +1130,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// about two models, and every path back to the input would otherwise have
 	// to remember to ask for one.
 	if read := mm.summaryCloseCmd(m); read != nil {
+		cmd = tea.Batch(cmd, read)
+	}
+	// And the session's title (title.go), read once the first turn is over.
+	if read := mm.titleCloseCmd(m); read != nil {
 		cmd = tea.Batch(cmd, read)
 	}
 	// And the backlog runner's next stage (todorun.go), for the same
@@ -1834,6 +1852,9 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		m.classifierCancel = nil
 		return m.finishClassifierCheck(msg.verdict)
+
+	case titleDoneMsg:
+		return m, m.finishTitle(msg)
 
 	case summaryDoneMsg:
 		// A reading never routes anything: it changes what the rail draws and
@@ -3301,6 +3322,11 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		if err := m.db.SaveChat(name, m.agent.Messages()); err != nil {
 			return true, "Error saving: " + err.Error()
 		}
+		// The generated title goes with the conversation into its named
+		// slot; the name is what the listing leads with from now on.
+		if m.titles.title != "" {
+			_ = m.db.SetChatTitle(name, m.titles.title)
+		}
 		// Future rewind branches hang off the named session.
 		m.sessionName = name
 		m.bindNotebook()
@@ -3332,7 +3358,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		var sb strings.Builder
 		sb.WriteString("Saved chats:\n")
 		for _, e := range entries {
-			sb.WriteString(fmt.Sprintf("  %s  (%s)\n", e.Name, sessionDesc(e.Turns, e.UpdatedAt)))
+			sb.WriteString(fmt.Sprintf("  %s  (%s)\n", e.Name, chatDesc(e)))
 		}
 		return true, strings.TrimRight(sb.String(), "\n")
 
@@ -3356,6 +3382,7 @@ func (m *Model) loadChatByName(name string) string {
 	m.loadConversation(msgs)
 	m.sessionName = name
 	m.bindNotebook()
+	m.loadTitle()
 	return fmt.Sprintf("Loaded chat %q (%d messages)", name, len(msgs))
 }
 
@@ -3455,7 +3482,8 @@ func helpText() string {
   /branches [n]  Switch this session's branches (bare /branches opens a picker)
   /save [name]   Save this chat
   /load [name]   Load a saved chat (bare /load opens a picker)
-  /chats         Saved chats — opens the same picker; enter loads
+  /chats         Saved chats — opens the same picker; enter loads, [x]
+                 deletes (asks first), [r] renames
   /exit          Quit (also /quit, /q)
 
 Commands run while the agent is working — including while sub-agents are in
@@ -3573,6 +3601,7 @@ func (m *Model) clearConversation() {
 	// just left stays in the store as it was, for --resume to find.
 	m.sessionName = newSessionName()
 	m.bindNotebook()
+	m.resetTitle()
 }
 
 // loadConversation replaces the current conversation and rebuilds the

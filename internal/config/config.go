@@ -107,6 +107,12 @@ type SummaryConfig struct {
 	// Disabled turns the mechanism off entirely: no requests are made and the
 	// block is never drawn.
 	Disabled bool `toml:"disabled"`
+	// Title asks the summary model to name an unnamed session after its
+	// first turn, for the saved-chat listings. Unset means on when Model is
+	// set and off otherwise: on the session model the question is not
+	// cheap, and a title nobody asked for should not cost anything. A name
+	// the user gives a session always wins over it.
+	Title *bool `toml:"title"`
 }
 
 // LSPConfig tunes the language-server integration `shhh code` uses
@@ -346,6 +352,15 @@ func (c Config) ReadOnlyAutoEnabled() bool {
 	return *c.Behavior.ReadOnlyAuto
 }
 
+// TitlesEnabled reports whether sessions are titled: what summary.title
+// says, or — unset — whether a summary model is configured to ask.
+func (c Config) TitlesEnabled() bool {
+	if c.Summary.Title == nil {
+		return c.Summary.Model != ""
+	}
+	return *c.Summary.Title
+}
+
 // NotifyEnabled reports whether a session may raise desktop notifications
 // (the default).
 func (c Config) NotifyEnabled() bool {
@@ -530,6 +545,9 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Summary.MaxTokens = n
 	case "summary.disabled":
 		cfg.Summary.Disabled = value == "true"
+	case "summary.title":
+		v := value == "true"
+		cfg.Summary.Title = &v
 	case "behavior.memory_disabled":
 		cfg.Behavior.MemoryDisabled = value == "true"
 	case "behavior.memory_max_entries":

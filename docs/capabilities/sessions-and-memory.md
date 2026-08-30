@@ -29,6 +29,34 @@ work that was in flight, what was staged, where the session had got to: a
 resume that restored only the visible text would look right and behave like a
 fresh session, which is worse than not resuming at all.
 
+### Housekeeping
+
+A saved chat can be renamed and deleted where it is listed — the picker
+inside a session, the browser `shhh chats` opens, and the same command with
+a verb for a script. Deleting asks first, names the chat and the branches
+that go with it, and defaults to No; a branch is a tail of the conversation
+it forked from, so it goes with the conversation rather than lingering under
+a name nobody typed. Renaming keeps every branch, and refuses a name that is
+already in use rather than merging two conversations under one name.
+
+The one chat that cannot be touched is the one the session is in. Its slot is
+the one every autosave writes to, and a key that deleted it would be racing
+the save; the row stays in the list and says why.
+
+### A title you did not write
+
+A session that was never named is called by the moment it began, and a list
+of those is a list of timestamps. So after a session's first completed turn,
+a cheap model reads the exchange and writes a title of a few words, shown
+beside the slot's name wherever chats are listed.
+
+Three rules keep it honest. A name you give a session — `/save name`, or a
+rename — always wins, and such a session is never asked for a title. A
+reading that fails leaves the row untitled and is retried once, after the
+next turn, never in a loop. And the reading is off unless a summary model is
+configured, because on the session model the cheapest question is still not
+cheap; `summary.title` and `/ui title` say otherwise.
+
 ## Memory is what shhh knows about your project
 
 Durable facts that outlive a session: a preference, a project convention, a

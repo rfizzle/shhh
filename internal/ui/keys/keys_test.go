@@ -159,7 +159,7 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 		{"Confirm", []Binding{Confirm.Yes, Confirm.No, Confirm.Force}},
 		{"Select", []Binding{Select.Move, Select.MoveJK, Select.Take, Select.Alt,
 			Select.Filter, Select.ClearQ, Select.Toggle, Select.All, Select.Note,
-			Select.Cancel, Select.Palette.Prev, Select.Palette.Next,
+			Select.Delete, Select.Rename, Select.Cancel, Select.Palette.Prev, Select.Palette.Next,
 			Select.Palette.Run, Select.Palette.Write}},
 		{"Review", []Binding{Review.MoveFile, Review.MoveHunk, Review.StageHunk,
 			Review.StageFile, Review.StageAll, Review.SideBySide, Review.PageUp,
@@ -179,7 +179,8 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 			OneShot.Alternatives, OneShot.Explain, OneShot.Copy, OneShot.Save,
 			OneShot.Quit}},
 		{"Setup", []Binding{Setup.Wizard, Setup.Paste, Setup.Local}},
-		{"Browse", []Binding{Browse.Move, Browse.Open, Browse.Filter, Browse.Action,
+		{"Browse", []Binding{Browse.Move, Browse.Open, Browse.Filter, Browse.Delete,
+			Browse.Rename, Browse.Action,
 			Browse.Prev, Browse.Take, Browse.Back, Browse.Quit, Browse.Leave}},
 	}
 	for _, g := range declared {

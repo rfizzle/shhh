@@ -1,0 +1,152 @@
+package browse
+
+import (
+	"errors"
+	"strings"
+	"testing"
+
+	tea "charm.land/bubbletea/v2"
+)
+
+func press(t *testing.T, m Model, s string) Model {
+	t.Helper()
+	var msg tea.KeyPressMsg
+	switch s {
+	case "esc":
+		msg = tea.KeyPressMsg{Code: tea.KeyEscape}
+	case "enter":
+		msg = tea.KeyPressMsg{Code: tea.KeyEnter}
+	default:
+		msg = tea.KeyPressMsg{Code: []rune(s)[0], Text: s}
+	}
+	updated, _ := m.Update(msg)
+	return updated.(Model)
+}
+
+type fakeStore struct {
+	deleted []string
+	renamed [][2]string
+	err     error
+}
+
+func (f *fakeStore) model() Model {
+	m := New([]Item{
+		{ID: "alpha", Title: "alpha", Preview: "1 turns", Deleting: "and its 2 branches"},
+		{ID: "beta", Title: "beta", Preview: "3 turns"},
+	}, []ActionDef{{Label: "Open", Shortcut: "o"}}).WithOps(Ops{
+		Delete: func(id string) error {
+			if f.err != nil {
+				return f.err
+			}
+			f.deleted = append(f.deleted, id)
+			return nil
+		},
+		Rename: func(id, name string) error {
+			if f.err != nil {
+				return f.err
+			}
+			f.renamed = append(f.renamed, [2]string{id, name})
+			return nil
+		},
+	})
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	return updated.(Model)
+}
+
+func TestBrowse_DeleteAsksAndDefaultsToNo(t *testing.T) {
+	store := &fakeStore{}
+	m := store.model()
+
+	m = press(t, m, "x")
+	if m.confirm == nil || !strings.Contains(m.confirm.Prompt, `"alpha" and its 2 branches`) {
+		t.Fatalf("x should arm a confirm naming the chat and its branches, got %+v", m.confirm)
+	}
+	if screen := m.screen(); !strings.Contains(screen, "[y/N]") {
+		t.Fatalf("the confirm should be on screen, got:\n%s", screen)
+	}
+	m = press(t, m, "enter")
+	if m.confirm != nil || len(store.deleted) != 0 {
+		t.Fatalf("enter is No, deleted=%v", store.deleted)
+	}
+	m = press(t, m, "x")
+	m = press(t, m, "y")
+	if len(store.deleted) != 1 || store.deleted[0] != "alpha" {
+		t.Fatalf("y should delete alpha, got %v", store.deleted)
+	}
+	if len(m.items) != 1 || m.items[0].ID != "beta" {
+		t.Fatalf("the list should drop the row, got %+v", m.items)
+	}
+	if !strings.Contains(m.screen(), `Deleted "alpha"`) {
+		t.Fatal("the list should say what it did")
+	}
+}
+
+func TestBrowse_RenameCommitsOnEnterAndKeepsOnEsc(t *testing.T) {
+	store := &fakeStore{}
+	m := store.model()
+
+	m = press(t, m, "r")
+	if !m.renaming || m.rename.Value() != "alpha" {
+		t.Fatalf("r should open the rename row prefilled, got renaming=%v value=%q", m.renaming, m.rename.Value())
+	}
+	m = press(t, m, "2")
+	m = press(t, m, "esc")
+	if m.renaming || len(store.renamed) != 0 || m.items[0].Title != "alpha" {
+		t.Fatalf("esc keeps the name, got %+v", store.renamed)
+	}
+
+	m = press(t, m, "r")
+	m = press(t, m, "2")
+	m = press(t, m, "enter")
+	if len(store.renamed) != 1 || store.renamed[0] != [2]string{"alpha", "alpha2"} {
+		t.Fatalf("enter should rename alpha to alpha2, got %v", store.renamed)
+	}
+	if m.items[0].ID != "alpha2" || m.items[0].Title != "alpha2" {
+		t.Fatalf("the row should carry the new name, got %+v", m.items[0])
+	}
+}
+
+func TestBrowse_RenameOfAShortNameLeavesTheLabelsAlone(t *testing.T) {
+	m := New([]Item{{ID: "a", Title: "a", Detail: "Name:     a\nTurns:    1"}}, nil).WithOps(Ops{
+		Delete: func(string) error { return nil },
+		Rename: func(string, string) error { return nil },
+	})
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	m = updated.(Model)
+	m = press(t, m, "r")
+	m = press(t, m, "b")
+	m = press(t, m, "enter")
+	if m.items[0].Detail != "Name:     ab\nTurns:    1" {
+		t.Fatalf("only the name under its label changes, got %q", m.items[0].Detail)
+	}
+}
+
+func TestBrowse_RefusedOpsAreReportedNotHidden(t *testing.T) {
+	store := &fakeStore{err: errors.New("already exists")}
+	m := store.model()
+	m = press(t, m, "r")
+	m = press(t, m, "2")
+	m = press(t, m, "enter")
+	if !strings.Contains(m.screen(), "Could not rename: already exists") {
+		t.Fatalf("a refused rename should say why, got:\n%s", m.screen())
+	}
+	if m.items[0].Title != "alpha" {
+		t.Fatal("a refused rename changes nothing")
+	}
+}
+
+func TestBrowse_HintsNameOnlyTheKeysOffered(t *testing.T) {
+	plain := New([]Item{{ID: "a", Title: "a"}}, nil)
+	updated, _ := plain.Update(tea.WindowSizeMsg{Width: 80, Height: 24})
+	plain = updated.(Model)
+	if screen := plain.screen(); strings.Contains(screen, "x delete") || strings.Contains(screen, "r rename") {
+		t.Fatalf("a list without ops offers no housekeeping keys, got:\n%s", screen)
+	}
+	if plain = press(t, plain, "x"); plain.confirm != nil {
+		t.Fatal("x on a list without ops does nothing")
+	}
+	withOps := (&fakeStore{}).model()
+	if screen := withOps.screen(); !strings.Contains(screen, "x delete") || !strings.Contains(screen, "r rename") {
+		t.Fatalf("a list with ops offers them, got:\n%s", screen)
+	}
+}
