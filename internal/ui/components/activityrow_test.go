@@ -93,6 +93,7 @@ func TestActivityRow_MutationRailPerKind(t *testing.T) {
 		{"sub-agent", ActivityRow{Kind: ActivitySubagent, Verb: "agent"}, false},
 		{"command", ActivityRow{Kind: ActivityCommand, Verb: "run"}, true},
 		{"edit", ActivityRow{Kind: ActivityEdit, Verb: "edit"}, true},
+		{"server call", ActivityRow{Kind: ActivityRemote, Verb: "mcp"}, true},
 		{"denied read", ActivityRow{Kind: ActivityTool, Verb: "read", State: ActivityDenied}, true},
 		{"failed read", ActivityRow{Kind: ActivityTool, Verb: "read", State: ActivityFailed}, true},
 		{"queued read", ActivityRow{Kind: ActivityTool, Verb: "read", State: ActivityQueued}, false},

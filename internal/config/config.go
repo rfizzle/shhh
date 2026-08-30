@@ -25,6 +25,52 @@ type Config struct {
 	Agents     AgentsConfig     `toml:"agents"`
 	Summary    SummaryConfig    `toml:"summary"`
 	Secrets    SecretsConfig    `toml:"secrets"`
+	MCP        MCPConfig        `toml:"mcp"`
+}
+
+// MCPConfig is the user's MCP servers and how they are started. shhh
+// speaks the protocol only: a server is a command or a URL, and whatever
+// authorisation a remote one wants is the job of the forwarder the user put
+// in front of it (docs/capabilities/mcp.md#shhh-speaks-the-protocol-and-nothing-else).
+type MCPConfig struct {
+	// Disabled starts no server and registers no tool, whatever is defined.
+	Disabled bool `toml:"disabled"`
+	// StartupTimeoutSeconds bounds each server's connect and tool listing
+	// (default 20). A server that has not answered by then is reported and
+	// left out; the session starts without it.
+	StartupTimeoutSeconds int `toml:"startup_timeout_seconds"`
+	// Servers are the user's own definitions, keyed by name.
+	Servers map[string]MCPServer `toml:"servers"`
+}
+
+// MCPServer is one server definition as written in the config file. A
+// command makes a stdio server; a url makes a remote one.
+type MCPServer struct {
+	// Command and Args are the argv of a stdio server; Env is added to its
+	// environment. `${NAME}` anywhere in a value is read from the
+	// environment at startup, and an unset name keeps the server from
+	// starting rather than sending an empty value.
+	Command string            `toml:"command,omitempty"`
+	Args    []string          `toml:"args,omitempty"`
+	Env     map[string]string `toml:"env,omitempty"`
+	// URL reaches a remote server over streamable HTTP, or SSE when Type
+	// says so. Headers go on every request — a token belongs here as an
+	// environment reference, never as the value
+	// (docs/capabilities/mcp.md#a-value-in-the-file-is-a-value-in-a-backup).
+	URL     string            `toml:"url,omitempty"`
+	Headers map[string]string `toml:"headers,omitempty"`
+	// Type is "stdio", "http" (the default for a url) or "sse".
+	Type string `toml:"type,omitempty"`
+	// ReadOnly is the user's statement that nothing this server does needs
+	// an answer: its tools run the way a file read does, and it is the only
+	// kind of server a conversation takes. The server's own read-only hints
+	// are shown and grant nothing
+	// (docs/capabilities/mcp.md#a-server-cannot-vouch-for-itself).
+	ReadOnly bool `toml:"read_only,omitempty"`
+	// Disabled keeps the definition and starts nothing.
+	Disabled bool `toml:"disabled,omitempty"`
+	// TimeoutSeconds overrides the startup timeout for this server.
+	TimeoutSeconds int `toml:"timeout_seconds,omitempty"`
 }
 
 // SecretsConfig names the values the model may use but never see. Only
@@ -55,7 +101,7 @@ type SummaryConfig struct {
 	// 20), so a burst of fast rounds cannot rewrite the block repeatedly.
 	MinGapSeconds int `toml:"min_gap_seconds"`
 	// TimeoutSeconds bounds one reading (default 20).
-	TimeoutSeconds int `toml:"timeout_seconds"`
+	TimeoutSeconds int `toml:"timeout_seconds,omitempty"`
 	// MaxTokens caps a reading's response (default 512).
 	MaxTokens int `toml:"max_tokens"`
 	// Disabled turns the mechanism off entirely: no requests are made and the
@@ -540,6 +586,12 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Web.SearchAPIKey = value
 	case "lsp.disabled":
 		cfg.LSP.Disabled = value == "true"
+	case "mcp.disabled":
+		cfg.MCP.Disabled = value == "true"
+	case "mcp.startup_timeout_seconds":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.MCP.StartupTimeoutSeconds = n
 	case "lsp.request_timeout_seconds":
 		n := 0
 		fmt.Sscanf(value, "%d", &n)

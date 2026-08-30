@@ -16,6 +16,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/lsp"
+	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/quality"
@@ -145,14 +146,25 @@ func activityVerb(tool string) string {
 	if v, ok := activityVerbs[tool]; ok {
 		return v
 	}
+	if _, ok := mcp.SplitName(tool); ok {
+		return "mcp"
+	}
 	return tool
 }
 
 // activityKind picks the row's glyph and, with it, whether the row carries
 // the mutation rail: ⚙ reads, $ commands, ✎ anything that
-// persists, ◇ sub-agents.
-func activityKind(tool string) components.ActivityKind {
+// persists, ◇ sub-agents, ⇄ a server call the user did not mark read-only.
+func (m Model) activityKind(tool string) components.ActivityKind {
 	switch {
+	case m.mcp.Has != nil && m.mcp.Has(tool):
+		// A read-only server's call is a read and draws as one; every
+		// other server's call is an act shhh cannot see the far side of
+		// (docs/capabilities/mcp.md#a-call-is-a-command-unless-you-said-otherwise).
+		if m.mcp.ReadOnly(tool) {
+			return components.ActivityTool
+		}
+		return components.ActivityRemote
 	case tool == subagent.SpawnToolName || tool == subagent.ReportToolName:
 		return components.ActivitySubagent
 	case tool == tools.ExecCommandName || tool == process.ToolName || tool == quality.ToolName:
@@ -177,6 +189,16 @@ func activityArg(tool, rawArgs string) string {
 	var args map[string]any
 	if err := json.Unmarshal([]byte(rawArgs), &args); err != nil {
 		return firstLine(rawArgs)
+	}
+	if server, ok := mcp.SplitName(tool); ok {
+		// The target names the server and the tool, then the arguments
+		// compacted: `github get_issue number=42`. The verb column already
+		// says `mcp`, so the row reads as where, what, with what.
+		target := server + " " + strings.TrimPrefix(tool, server+mcp.Separator)
+		if compact := mcp.CompactArgs(json.RawMessage(rawArgs)); compact != "" {
+			target += " " + compact
+		}
+		return target
 	}
 	if tool == "read_file" {
 		if p, _ := args["path"].(string); p != "" {
@@ -294,7 +316,7 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 			row.Outcome = components.OutcomeOK
 		}
 	} else {
-		row.Kind = activityKind(e.toolName)
+		row.Kind = m.activityKind(e.toolName)
 		row.Verb = activityVerb(e.toolName)
 		row.Target = activityArg(e.toolName, e.toolArgs)
 		switch {

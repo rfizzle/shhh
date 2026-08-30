@@ -10,6 +10,7 @@ none of them names a Go symbol (see [the rules](../README.md#the-four-rules)).
 | [`coding-agent.md`](coding-agent.md) | The agent that edits, runs and checks its own work |
 | [`subagents.md`](subagents.md) | Handing part of a job to a child agent |
 | [`skills.md`](skills.md) | Folders of instructions for one kind of task, loaded when a task matches |
+| [`mcp.md`](mcp.md) | Tools from outside: MCP servers the person defined, what they may do, and who may start one |
 | [`todo.md`](todo.md) | The project's backlog: items as files, what is ready, what is archived |
 | [`secrets.md`](secrets.md) | Values commands can use and the model never sees |
 | [`approvals-and-safety.md`](approvals-and-safety.md) | Deciding whether something runs, with the facts in hand |

@@ -50,6 +50,9 @@ read-only researcher named after the file.
 - Add tools shhh does not have. The web tools appear only when the session
   registered them; a profile granting `web` without a configured search key
   gets what is there.
+- Name an MCP server's tool. A child is handed the tools of every server the
+  session connected and you marked read-only, whatever its tier, and no
+  other server's — see [`../capabilities/mcp.md`](../capabilities/mcp.md#what-a-conversation-may-reach).
 
 ## When a file is wrong
 

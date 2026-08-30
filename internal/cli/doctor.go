@@ -157,8 +157,8 @@ func doctorCommand(use, short, long string, probes []doctorProbe) *cobra.Command
 // instead.
 func containmentProbes() []doctorProbe {
 	return []doctorProbe{
-		{"sandbox", probeSandbox},
-		{"engine", probeEngine},
+		{name: "sandbox", run: probeSandbox},
+		{name: "engine", run: probeEngine},
 	}
 }
 
@@ -191,6 +191,10 @@ type doctorFinding struct {
 type doctorProbe struct {
 	name string
 	run  func(context.Context, config.Config) doctorFinding
+	// queued is what the row says before the probe has run, for a probe
+	// whose name is not in doctorQueuedSubject's vocabulary — the servers
+	// `shhh mcp` lists are named by the user, not by this file.
+	queued string
 }
 
 // doctorProbes is every check, in the order they run and the order they read:
@@ -198,17 +202,17 @@ type doctorProbe struct {
 // it can do to this machine, and last what it might become.
 func doctorProbes() []doctorProbe {
 	return []doctorProbe{
-		{"binary", probeBinary},
-		{"config", probeConfig},
-		{"migrate", probeMigrate},
-		{"model", probeModel},
-		{"store", probeStore},
-		{"sandbox", probeSandbox},
-		{"engine", probeEngine},
-		{"git", probeGit},
-		{"tools", probeTools},
-		{"memory", probeMemory},
-		{"update", probeUpdate},
+		{name: "binary", run: probeBinary},
+		{name: "config", run: probeConfig},
+		{name: "migrate", run: probeMigrate},
+		{name: "model", run: probeModel},
+		{name: "store", run: probeStore},
+		{name: "sandbox", run: probeSandbox},
+		{name: "engine", run: probeEngine},
+		{name: "git", run: probeGit},
+		{name: "tools", run: probeTools},
+		{name: "memory", run: probeMemory},
+		{name: "update", run: probeUpdate},
 	}
 }
 
@@ -999,8 +1003,14 @@ func doctorUpdate(current string, latest string) doctorFinding {
 // pasted into an issue carries the consequences and the fixes too — those are
 // the half of the run somebody else needs in order to help.
 func doctorReport(checks []components.DoctorCheck) string {
+	return doctorReportTitled("shhh doctor", "check", "checks", checks)
+}
+
+// doctorReportTitled is the report under another command's name: `shhh
+// mcp` prints the same rows over servers rather than checks.
+func doctorReportTitled(title, one, many string, checks []components.DoctorCheck) string {
 	var b strings.Builder
-	fmt.Fprintf(&b, "shhh doctor — %s\n\n", countOf(len(checks), "check", "checks"))
+	fmt.Fprintf(&b, "%s — %s\n\n", title, countOf(len(checks), one, many))
 	for _, check := range checks {
 		target := check.Subject
 		if check.Detail != "" {
@@ -1099,6 +1109,9 @@ type doctorModel struct {
 	// screen is handed only what it renders, and an action is not renderable
 	// — so the function `[a]` invokes stays here, indexed the same way.
 	findings []doctorFinding
+	// nouns are what the header and the text report count, singular and
+	// plural, when the screen is not doctor's own.
+	nouns [2]string
 
 	screen components.DoctorScreen
 }
@@ -1126,8 +1139,12 @@ func newDoctorModel(cfg config.Config, probes []doctorProbe) doctorModel {
 	m.findings = make([]doctorFinding, len(m.probes))
 	m.screen.Checks = make([]components.DoctorCheck, len(m.probes))
 	for i, probe := range m.probes {
+		subject := probe.queued
+		if subject == "" {
+			subject = doctorQueuedSubject(probe.name)
+		}
 		m.screen.Checks[i] = components.DoctorCheck{
-			Name: probe.name, Subject: doctorQueuedSubject(probe.name),
+			Name: probe.name, Subject: subject,
 			Outcome: components.OutcomeQueued, Duration: components.NoDuration,
 			State: components.DoctorQueued,
 		}
@@ -1251,7 +1268,7 @@ func (m *doctorModel) markRunning(at int) {
 func (m doctorModel) apply(command components.DoctorCommand) (tea.Model, tea.Cmd) {
 	switch command.Act {
 	case components.DoctorCopy:
-		if res := clipboard.Copy(doctorReport(m.screen.Checks)); !res.OK {
+		if res := clipboard.Copy(m.report()); !res.OK {
 			m.screen.Notice = "clipboard: " + res.Warning
 		} else {
 			m.screen.Notice = "copied the report to the clipboard"
@@ -1302,9 +1319,19 @@ func (m doctorModel) applied(msg doctorAppliedMsg) (tea.Model, tea.Cmd) {
 func (m doctorModel) rerun() doctorModel {
 	fresh := newDoctorModel(m.cfg, m.probes)
 	fresh.width, fresh.screen.MaxLines = m.width, m.screen.MaxLines
+	fresh.screen.Title, fresh.nouns = m.screen.Title, m.nouns
 	fresh.started = time.Now()
 	fresh.markRunning(0)
 	return fresh
+}
+
+// report is the run as text under the screen's own title.
+func (m doctorModel) report() string {
+	title, one, many := "shhh doctor", "check", "checks"
+	if m.screen.Title != "" {
+		title, one, many = m.screen.Title, m.nouns[0], m.nouns[1]
+	}
+	return doctorReportTitled(title, one, many, m.screen.Checks)
 }
 
 // View is the frame: the doctor screen, on the alt screen it takes over.
@@ -1324,7 +1351,14 @@ func doctorElapsed(d time.Duration) string {
 }
 
 func runDoctorScreen(cfg config.Config, probes []doctorProbe) error {
+	return runDoctorScreenTitled(cfg, probes, "", [2]string{})
+}
+
+// runDoctorScreenTitled is the screen under another command's name, with
+// the nouns its header and report count in. Empty means doctor's own.
+func runDoctorScreenTitled(cfg config.Config, probes []doctorProbe, title string, nouns [2]string) error {
 	m := newDoctorModel(cfg, probes)
+	m.screen.Title, m.nouns = title, nouns
 	m.started = time.Now()
 	m.markRunning(0)
 	_, err := newProgram(m).Run()

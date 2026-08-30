@@ -18,6 +18,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/pricing"
@@ -220,6 +221,17 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			defs = append(defs, notebook.Definitions()...)
 			base = session.notebook.WrapExecutor(spec.Name, base)
 			sysPrompt = prompt.CombineExtra(sysPrompt, notebook.PromptBlock(session.notebook.List()))
+		}
+		// The servers the person marked read-only are reads, and a child
+		// gets them the way it gets the skills catalog. Every other
+		// server's tools need a card, and a child has no card of its own
+		// (docs/capabilities/mcp.md#what-a-conversation-may-reach).
+		if session.mcpTools != nil {
+			if ro := session.mcpTools.ReadOnlyDefinitions(); len(ro) > 0 {
+				defs = append(defs, ro...)
+				base = session.mcpTools.WrapReadOnlyExecutor(base)
+				sysPrompt = prompt.CombineExtra(sysPrompt, mcp.ReadOnlyPromptBlock(session.mcpTools))
+			}
 		}
 		// Secrets are read at spawn rather than at session start, so a
 		// child knows what /secret added since.

@@ -112,6 +112,14 @@ var migrations = []string{
 	);
 
 	CREATE INDEX IF NOT EXISTS idx_notes_session ON notes(session);`,
+
+	`CREATE TABLE IF NOT EXISTS mcp_trust (
+		root        TEXT NOT NULL,
+		name        TEXT NOT NULL,
+		fingerprint TEXT NOT NULL,
+		trusted_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+		PRIMARY KEY (root, name)
+	);`,
 }
 
 func (db *DB) migrate() error {

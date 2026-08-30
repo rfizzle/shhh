@@ -304,7 +304,10 @@ owns every ordinary key the moment there is a draft.
 Configuration, history, metrics and doctor are each re-cut from parts that
 already exist — the row, the windowed list, the meter, the card. Nothing new
 is introduced, and the gain is that a reader who knows the session already
-knows these.
+knows these. The MCP server listing is the doctor screen over servers rather
+than checks: a connect is a check, so it is the same row, and a server
+waiting on the person's trust offers it the way a pending migration offers
+the move.
 
 Two rules they share are worth stating: none of them writes to your machine
 without a card, and doctor in particular names fixes rather than applying them

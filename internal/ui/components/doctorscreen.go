@@ -153,6 +153,11 @@ type DoctorCommand struct {
 // DoctorScreen is `shhh doctor`: a takeover surface, full width, no inspector
 // rail, owning the keyboard for as long as it is up.
 type DoctorScreen struct {
+	// Title is the command the header names; empty is `shhh doctor`. The
+	// screen is re-cut for every command that is a list of checks — `shhh
+	// mcp` connects each server the way doctor probes each check — and the
+	// header is the one place they differ.
+	Title string
 	// Checks are the checks in the order they run, and the order they are read.
 	// The host replaces them as each one answers.
 	Checks []DoctorCheck
@@ -284,7 +289,11 @@ func (d *DoctorScreen) budget(pinned int) int {
 // over and whether they are still going, then the elapsed time and the two
 // keys every screen offers.
 func (d *DoctorScreen) headerRow(width int) string {
-	left := brightStyle().Render("shhh doctor")
+	title := d.Title
+	if title == "" {
+		title = "shhh doctor"
+	}
+	left := brightStyle().Render(title)
 	if n := len(d.Checks); n > 0 {
 		left += sty.Dim.Render(" · " + countChecks(n))
 	}

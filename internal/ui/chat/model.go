@@ -591,6 +591,9 @@ type Model struct {
 	// the catalog for /skills — the same text `shhh skills` prints.
 	skills     *skill.Catalog
 	skillsList func(*skill.Catalog) string
+	// mcp is the session's MCP servers: which tools are theirs, which run
+	// as reads, and the /mcp listing.
+	mcp MCP
 	// compacting marks an in-flight /compact request: the streamed
 	// response is a summary handled by finishCompact, not conversation text.
 	compacting bool
@@ -3198,6 +3201,12 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 			return true, "Durable memory is unavailable in this session."
 		}
 		return true, m.memory.Manage(parts[1:])
+
+	case "/mcp":
+		if m.mcp.Manage == nil {
+			return true, "No MCP servers in this session. Define one under [mcp.servers] in your config, or in mcp.json beside it; `shhh mcp` lists what a session here would connect."
+		}
+		return true, m.mcp.Manage(parts[1:])
 
 	case "/skills":
 		if m.skills == nil {

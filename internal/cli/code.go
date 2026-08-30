@@ -55,6 +55,7 @@ func newCodeCmd() *cobra.Command {
 				addDirs:      addDirs,
 				skills:       loadSkills(),
 				secretFlags:  secretFlags,
+				mcp:          true,
 			}
 			if headless {
 				return runPrintSession(cmd, args, session, popts)

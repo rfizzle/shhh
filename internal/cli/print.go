@@ -13,6 +13,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/prompt"
@@ -142,6 +143,19 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		session.promptExtra = prompt.CombineExtra(session.promptExtra, skill.PromptBlock(session.skills))
 	}
 
+	// The local store is opened here rather than with the recorder below
+	// because trust for a project MCP server is read from it.
+	db, _ := storage.Open()
+	if db != nil {
+		defer db.Close()
+	}
+	// MCP servers, mirroring the interactive session. A read-only server's
+	// tools run; every other server's calls are gated and resolved the way
+	// web_fetch is — --yes opts in, the default denies.
+	if session.mcp {
+		defer session.attachMCP(cmd.Context(), db, false)()
+	}
+
 	// The model is told where the work is; a headless run cannot be
 	// asked for a directory mid-flight, so knowing the boundary is the
 	// difference between a report that names it and a round spent retrying.
@@ -225,6 +239,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if session.structural != nil {
 		baseExecutor = session.structural.WrapExecutor(baseExecutor)
 	}
+	if session.mcpTools != nil {
+		baseExecutor = session.mcpTools.WrapExecutor(baseExecutor)
+	}
 	if qgate != nil {
 		baseExecutor = qgate.WrapExecutor(baseExecutor)
 	}
@@ -248,10 +265,6 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// content-free events as interactive sessions; failure just disables
 	// recording. Tool calls are strictly sequential here, so one start
 	// timestamp is enough for durations.
-	db, _ := storage.Open()
-	if db != nil {
-		defer db.Close()
-	}
 	recorder := startObserveRecorder(db, "print", env.prov.Name(), env.modelName, prices)
 	defer recorder.end()
 	recorder.stamp(env.sysPrompt, session.skills.Len(), projectFingerprintRoot())
@@ -270,6 +283,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	var usage provider.Usage
 	var callStart time.Time
 	webTools := session.web
+	mcpTools := session.mcpTools
 	gate := func(tc provider.ToolCall) bool {
 		if webTools != nil && tc.Name == web.FetchToolName {
 			return true
@@ -279,12 +293,15 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		if procSup != nil && tc.Name == process.ToolName {
 			return process.NeedsApproval(json.RawMessage(tc.Arguments))
 		}
+		if mcpTools != nil && mcpTools.Has(tc.Name) {
+			return !mcpTools.ReadOnly(tc.Name)
+		}
 		return headlessGate(tc.Name)
 	}
 	h := &agent.Headless{
 		Agent:   a,
 		Gate:    gate,
-		Resolve: headlessApprover(cmd.Context(), opts, allowlist, run, red, recorder.decision, session.web, procSup, lspMutationHook(session.lsp), sc),
+		Resolve: headlessApprover(cmd.Context(), opts, allowlist, run, red, recorder.decision, session.web, procSup, lspMutationHook(session.lsp), sc, session.mcpTools),
 		OnToolCall: func(tc provider.ToolCall) {
 			callStart = time.Now()
 			fmt.Fprintf(os.Stderr, "» %s %s\n", tc.Name, clipActivityLine(tc.Arguments))
@@ -339,13 +356,23 @@ func headlessGate(name string) bool {
 // human to confirm them in a headless run. Approved results run through the
 // reduction pipeline (red is nil-safe) like every other tool result. Each
 // verdict is reported to record (nil-safe) as a content-free decision event.
-func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, run func(context.Context, string) (string, int), red *evidence.Reducer, record func(decision, reason string), webTools *web.Toolset, procSup *process.Supervisor, mutationHook chat.MutationHook, sc *scope.Scope) func(provider.ToolCall) string {
+func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, run func(context.Context, string) (string, int), red *evidence.Reducer, record func(decision, reason string), webTools *web.Toolset, procSup *process.Supervisor, mutationHook chat.MutationHook, sc *scope.Scope, mcpTools *mcp.Toolset) func(provider.ToolCall) string {
 	note := func(decision, reason string) {
 		if record != nil {
 			record(decision, reason)
 		}
 	}
 	return func(tc provider.ToolCall) string {
+		// A server call is an external action like a fetch: --yes opts
+		// in, the default denies.
+		if mcpTools != nil && mcpTools.Has(tc.Name) {
+			if opts.yes {
+				note("allow", "headless-yes")
+				return red.Process(tc.Name, agent.ExecuteWith(mcpTools.Execute, tc))
+			}
+			note("deny", "headless-default")
+			return "error: " + tc.Name + " not approved: headless mode denies external actions by default (run with --yes)"
+		}
 		// web_fetch is an external action: --yes opts in, the default
 		// denies like every other gated call.
 		if webTools != nil && tc.Name == web.FetchToolName {

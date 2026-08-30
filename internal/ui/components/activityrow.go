@@ -67,6 +67,12 @@ const (
 	ActivityCommand                      // $ shell command
 	ActivityEdit                         // ✎ edit, write, patch, memory
 	ActivitySubagent                     // ◇ sub-agent
+	// ActivityRemote is a call to an MCP server the user has not marked
+	// read-only: ⇄, with the mutation rail, because shhh cannot know whether
+	// the far end wrote something and so assumes it did — the rule commands
+	// already follow. A read-only server's call is ⚙ like any other read
+	// (docs/capabilities/mcp.md#a-call-is-a-command-unless-you-said-otherwise).
+	ActivityRemote
 	// ActivityThink is the model's own reasoning: ✻, and the only kind that
 	// touched nothing at all. It is drawn dim rather than in the accent every
 	// other kind glyph carries, because weight tracks risk and this row is the
@@ -150,7 +156,7 @@ func (r ActivityRow) mutated() bool {
 	case ActivityFailed, ActivityDenied:
 		return true
 	}
-	return r.Kind == ActivityCommand || r.Kind == ActivityEdit
+	return r.Kind == ActivityCommand || r.Kind == ActivityEdit || r.Kind == ActivityRemote
 }
 
 // railCell renders gutter column 3: accent for a mutation, del for a break.
@@ -213,6 +219,8 @@ func (r ActivityRow) glyph() string {
 			g = sty.Accent.Render("✎")
 		case ActivitySubagent:
 			g = sty.Info.Render("◇")
+		case ActivityRemote:
+			g = sty.Accent.Render("⇄")
 		case ActivityThink:
 			g = sty.Dim.Render("✻")
 		default:

@@ -153,6 +153,10 @@ accent_color = "cyan"
 | `agents.profiles.<role>.model` | Per-role override, `<role>` being `researcher` or `writer` (also settable as `agents.researcher_model` / `agents.writer_model`) |
 | `agents.max_concurrent` | Sub-agents running at once; further spawns queue (default: 3) |
 | `secrets.env` | Environment variables to declare as [secrets](#secrets) in every session — commands get them, the model never sees their values. Names only; an unset one is skipped with a warning |
+| `mcp.disabled` | Start no MCP server and register none of their tools, whatever is defined (default: false) |
+| `mcp.startup_timeout_seconds` | How long each MCP server gets to connect and list its tools before the session starts without it (default: 20) |
+| `mcp.servers.<name>` | One [MCP server](#mcp-servers) per table: `command` + `args` + `env` for a local one, `url` + `headers` (+ `type = "sse"`) for a remote one, `read_only = true` to let its tools run without asking, `disabled`, `timeout_seconds`. `${NAME}` in any value reads the environment |
+| `mcp.json` | The same servers as `mcpServers` JSON beside `config.toml`, the shape every MCP client documents, so a vendor's snippet pastes in unchanged. A project's own live at `.mcp.json` or `.shhh/mcp.json` under the repository root and must be trusted before they start |
 | `skills/<name>/SKILL.md` | User-scope [Agent Skills](https://agentskills.io/specification), one directory each beside `config.toml` (also `~/.agents/skills`, `~/.claude/skills`). Project skills live in the checkout under `.shhh/skills`, `.agents/skills` or `.claude/skills`. `shhh skills` lists what a session here would load |
 | `agents/<name>.toml` | Custom agent profiles, one file each beside `config.toml`: model, reasoning, permissions (`read`/`write`/`execute`/`web`), tool allowlist, starting mode, prompt and budgets. Spawnable by name; a file named `researcher` or `writer` overrides the built-in. See [`docs/agents/`](docs/agents/README.md) |
 | `summary.model` | Model the session summary is read on (default: the session model). The readings are frequent, so this is the one setting in the section worth changing — point it at a fast, cheap model |
@@ -887,6 +891,32 @@ Project skills live in the checkout under `.shhh/skills/`, `.agents/skills/` or 
 - `shhh skills` lists what a session here would load, with any diagnostics; `shhh skills show <name>` prints one skill's frontmatter and files.
 - In a session, `/skills` lists them and `/skill <name> [task]` (or just `/<name>`) activates one right now, sending its instructions to the model with your task.
 - A skill's `allowed-tools` is shown but never honoured: nothing in a repository can pre-approve a command.
+
+### MCP servers
+
+shhh connects [Model Context Protocol](https://modelcontextprotocol.io) servers and offers their tools to the model beside its own, named `<server>__<tool>`. It speaks the protocol and nothing else: a server is a command to spawn or a URL to reach. A remote server that wants a login gets it from a local forwarder such as [`mcp-remote`](https://github.com/geelen/mcp-remote), which handles the browser flow and token refresh and speaks stdio to shhh — the same way every other client reaches those servers.
+
+```toml
+[mcp.servers.docs]                       # a local server, its tools run as reads
+command = "npx"
+args = ["-y", "@example/docs-mcp"]
+read_only = true
+
+[mcp.servers.github]                     # a remote server behind a forwarder
+command = "npx"
+args = ["-y", "mcp-remote", "https://api.githubcopilot.com/mcp/"]
+
+[mcp.servers.tracker]                    # a remote server with a static token
+url = "https://tracker.example/mcp"
+headers = { Authorization = "Bearer ${TRACKER_TOKEN}" }
+```
+
+Or paste a vendor's `mcpServers` JSON into `mcp.json` beside `config.toml`; `shhh mcp add <name> --url … | -- <command> …` writes one from the command line and refuses a value that looks like a credential — write it as `${NAME}` and export the variable.
+
+- **What a call costs you.** A tool on a server you marked `read_only` runs like a file read. Every other server's call asks first, like a command: the card says where it goes, what leaves with it and what comes back; auto mode asks its classifier, plan mode refuses, and the transcript draws the call as `⇄` with the mutation rail. A server's own "read-only" annotations are shown and grant nothing — the word is yours.
+- **Project servers.** A `.mcp.json` in a checkout is a command somebody else wrote, so it does not start until you trust it: `shhh mcp trust <name>`, or `[a]` on its row in `shhh mcp`. Trust is recorded outside the checkout, at the definition as it is; an edit asks again. `read_only` in a project file is ignored.
+- **`shhh chat`** connects only servers marked `read_only`; `shhh code` connects them all. Sub-agents get the read-only ones. Headless `shhh code -p` denies gated calls unless run with `--yes`.
+- `shhh mcp` connects every server and reports it as a row — what it reaches, how many tools, and for one that did not connect, why and the fix. `shhh mcp show <name>` connects one and prints its instructions and every tool with its description; `remove`, `trust` and `distrust` do what they say. In a session, `/mcp` lists them and `/mcp trust <name>` records trust for the next session.
 
 ### Secrets
 

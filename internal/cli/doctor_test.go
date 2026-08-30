@@ -723,7 +723,7 @@ func TestDoctorCheck_CarriesTheActionToTheScreen(t *testing.T) {
 // What an applied action did is said once, at the foot, and the run behind it
 // is started again — the answer to "did that work" is the report itself.
 func TestDoctorModel_AppliedSaysWhatChangedAndRerunsTheChecks(t *testing.T) {
-	m := newDoctorModel(config.Config{}, []doctorProbe{{"binary", probeBinary}})
+	m := newDoctorModel(config.Config{}, []doctorProbe{{name: "binary", run: probeBinary}})
 	m.screen.Checks[0].State = components.DoctorPassed
 
 	next, cmd := m.applied(doctorAppliedMsg{lines: []string{"moved a to b", "moved c to d"}})

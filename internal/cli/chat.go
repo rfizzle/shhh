@@ -42,6 +42,7 @@ func newChatCmd() *cobra.Command {
 				agents:       true,
 				memory:       true,
 				conversation: true,
+				mcp:          true,
 			})
 		},
 	}

@@ -21,6 +21,7 @@ import (
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/lsp"
+	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/notebook"
@@ -117,6 +118,12 @@ type chatSession struct {
 	// notebook is the shared channel between a conversation's agents;
 	// nil registers no notebook tools.
 	notebook *notebook.Store
+	// mcp connects the MCP servers the catalog names; mcpTools and
+	// mcpCatalog are what came of it. A conversation takes only servers
+	// marked read-only (docs/capabilities/mcp.md#what-a-conversation-may-reach).
+	mcp        bool
+	mcpTools   *mcp.Toolset
+	mcpCatalog *mcp.Catalog
 }
 
 // openSecrets resolves the session's vault and hands its values to every
@@ -449,6 +456,15 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		defer db.Close()
 	}
 
+	// MCP servers: every definition the catalog holds is connected at
+	// once, and the tools of the ones that answered join the toolset. A
+	// server that did not answer is a line before the session starts and
+	// a row in /mcp, never a reason not to start
+	// (docs/capabilities/mcp.md#a-server-that-did-not-answer-is-a-row).
+	if session.mcp {
+		defer session.attachMCP(cmd.Context(), db, session.conversation)()
+	}
+
 	// Durable memory: recalled entries join the system prompt under a
 	// hard entry/token budget — cited by id, zero model calls — and the
 	// remember tool lets the model propose new ones, each confirmed by the
@@ -567,6 +583,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	}
 	if session.structural != nil {
 		baseExecutor = session.structural.WrapExecutor(baseExecutor)
+	}
+	if session.mcpTools != nil {
+		baseExecutor = session.mcpTools.WrapExecutor(baseExecutor)
 	}
 	if gate != nil {
 		baseExecutor = gate.WrapExecutor(baseExecutor)
@@ -736,6 +755,23 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			}}, nil
 		}
 		model = model.WithSubagents(sup).WithPersonas(buildPersonas(session, env, agents, sup, ledger))
+	}
+	// A server call the user did not mark read-only goes through the
+	// queue the same way: the card says where it goes and what leaves
+	// with it (docs/capabilities/mcp.md#a-call-is-a-command-unless-you-said-otherwise).
+	if session.mcpTools != nil {
+		mcpTools := session.mcpTools
+		for _, name := range mcpTools.Gated() {
+			name := name
+			gatedPreviews[name] = func(args json.RawMessage) (chat.GatedPreview, error) {
+				return mcpGatedPreview(mcpTools, name, args)
+			}
+		}
+		model = model.WithMCP(chat.MCP{
+			Has:      mcpTools.Has,
+			ReadOnly: mcpTools.ReadOnly,
+			Manage:   mcpManager(mcpTools, session.mcpCatalog, db),
+		})
 	}
 	if len(gatedPreviews) > 0 {
 		model = model.WithGatedTools(gatedPreviews)

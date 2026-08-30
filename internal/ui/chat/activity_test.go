@@ -120,9 +120,43 @@ func TestActivityKinds_GlyphPerAct(t *testing.T) {
 		"spawn_agent":  components.ActivitySubagent,
 		"agent_report": components.ActivitySubagent,
 	} {
-		if got := activityKind(tool); got != want {
+		if got := (Model{}).activityKind(tool); got != want {
 			t.Fatalf("%s should render as kind %d, got %d", tool, want, got)
 		}
+	}
+}
+
+// TestActivityKinds_ServerCallsDrawByTheUsersWord: a server the person
+// marked read-only draws as a read; any other server's call is ⇄ with the
+// rail, because shhh cannot see what the far end did.
+func TestActivityKinds_ServerCallsDrawByTheUsersWord(t *testing.T) {
+	m := activityModel(t).WithMCP(MCP{
+		Has:      func(name string) bool { return strings.HasPrefix(name, "docs__") || strings.HasPrefix(name, "gh__") },
+		ReadOnly: func(name string) bool { return strings.HasPrefix(name, "docs__") },
+	})
+	if got := m.activityKind("docs__search"); got != components.ActivityTool {
+		t.Fatalf("read-only server call kind = %d, want a read", got)
+	}
+	if got := m.activityKind("gh__create_issue"); got != components.ActivityRemote {
+		t.Fatalf("gated server call kind = %d, want remote", got)
+	}
+	if got := activityVerb("gh__create_issue"); got != "mcp" {
+		t.Fatalf("verb = %q", got)
+	}
+	if got := activityArg("gh__create_issue", `{"title":"Bug","body":"long\ntext"}`); got != "gh create_issue body=long text title=Bug" {
+		t.Fatalf("target = %q", got)
+	}
+	view := stripANSI(m.renderEntry(entry{kind: entryTool, toolName: "gh__create_issue",
+		toolArgs: `{"title":"Bug"}`, toolResult: "created #42"}, 80))
+	for _, want := range []string{"⇄", "▎", "mcp", "gh create_issue title=Bug"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("server call row lacks %q:\n%s", want, view)
+		}
+	}
+	view = stripANSI(m.renderEntry(entry{kind: entryTool, toolName: "docs__search",
+		toolArgs: `{"q":"x"}`, toolResult: "hit"}, 80))
+	if strings.Contains(view, "⇄") || strings.Contains(view, "▎") {
+		t.Fatalf("read-only server call carries a rail or the remote glyph:\n%s", view)
 	}
 }
 
