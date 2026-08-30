@@ -1,0 +1,16 @@
+# The linter gate behind `make ci`. The default set — errcheck, govet,
+# ineffassign, staticcheck, unused — with one carve-out: the tree's own
+# convention is to leave a handful of returns unchecked where nothing could
+# be done with them, and errcheck would otherwise flag every one of them.
+# `defer db.Close()` and `defer tx.Rollback()` have no caller left to tell;
+# `fmt.Fprint*` and `tabwriter.Flush` write to a buffer or the terminal,
+# where a failed write is the terminal's problem; `fmt.Sscanf` on a config
+# value leaves the zero, which is what an unparsable value means. Anything
+# outside that list is still checked.
+version: "2"
+linters:
+  default: standard
+  exclusions:
+    rules:
+      - linters: [errcheck]
+        text: 'Error return value of `((.*\.)?(Close|Rollback|Flush)|fmt\.Fprint(f|ln)?|fmt\.Sscanf)` is not checked'
