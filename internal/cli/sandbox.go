@@ -140,7 +140,7 @@ func containerSpec(cfg config.Config) (sandbox.ContainerSpec, error) {
 // the cleanup that destroys it. Any unverifiable requirement — no engine, an
 // unpinned or unlisted image, or a required isolation level that cannot be
 // met — fails creation; there is no silent downgrade to a weaker sandbox.
-func startSandbox(ctx context.Context, cfg config.Config) (run func(context.Context, string) (string, int), cleanup func(), err error) {
+func startSandbox(ctx context.Context, cfg config.Config, env []string) (run func(context.Context, string) (string, int), cleanup func(), err error) {
 	store, err := sandbox.OpenStore()
 	if err != nil {
 		return nil, nil, err
@@ -172,7 +172,7 @@ func startSandbox(ctx context.Context, cfg config.Config) (run func(context.Cont
 	}
 
 	run = func(ctx context.Context, command string) (string, int) {
-		return runner.RunCaptureArgv(ctx, c.ExecArgv(command))
+		return runner.RunCaptureArgv(ctx, c.ExecArgv(command, env...))
 	}
 	cleanup = func() {
 		// The parent ctx is usually done by cleanup time; destruction gets its

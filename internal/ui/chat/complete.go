@@ -183,6 +183,13 @@ var slashCommands = []slashCommand{
 	{name: "/skill", args: "<name> [task]", desc: "Activate a skill now, with your task after it",
 		enabled:  func(m *Model) bool { return m.skills.Len() > 0 },
 		argSpecs: []argSpec{{dynamic: skillArgs}}},
+	{name: "/secret", args: "[list|set|forget]", desc: "Values commands can use and the model never sees",
+		enabled: func(m *Model) bool { return m.secrets.Manage != nil },
+		argSpecs: staticArgs(
+			argOption{"list", "Name the session's secrets"},
+			argOption{"set", "Declare one: NAME from the environment, or NAME=value"},
+			argOption{"forget", "Drop one by name"},
+		)},
 	{name: "/memory", args: "[list|add|forget]", desc: "Durable memories",
 		enabled: func(m *Model) bool { return m.memory.Manage != nil },
 		argSpecs: staticArgs(

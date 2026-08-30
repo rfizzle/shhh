@@ -152,6 +152,7 @@ accent_color = "cyan"
 | `agents.model` | Model sub-agents run on (default: the session model); `"inherit"` follows the session model explicitly |
 | `agents.profiles.<role>.model` | Per-role override, `<role>` being `researcher` or `writer` (also settable as `agents.researcher_model` / `agents.writer_model`) |
 | `agents.max_concurrent` | Sub-agents running at once; further spawns queue (default: 3) |
+| `secrets.env` | Environment variables to declare as [secrets](#secrets) in every session — commands get them, the model never sees their values. Names only; an unset one is skipped with a warning |
 | `skills/<name>/SKILL.md` | User-scope [Agent Skills](https://agentskills.io/specification), one directory each beside `config.toml` (also `~/.agents/skills`, `~/.claude/skills`). Project skills live in the checkout under `.shhh/skills`, `.agents/skills` or `.claude/skills`. `shhh skills` lists what a session here would load |
 | `agents/<name>.toml` | Custom agent profiles, one file each beside `config.toml`: model, reasoning, permissions (`read`/`write`/`execute`/`web`), tool allowlist, starting mode, prompt and budgets. Spawnable by name; a file named `researcher` or `writer` overrides the built-in. See [`docs/agents/`](docs/agents/README.md) |
 | `summary.model` | Model the session summary is read on (default: the session model). The readings are frequent, so this is the one setting in the section worth changing — point it at a fast, cheap model |
@@ -818,6 +819,7 @@ Slash commands inside a chat session:
 | `/ui notify <on\|off>` | Desktop notifications when a turn stops and you are not there — an approval waiting, a plan ready, a sub-agent blocked, a turn done and what it cost. On by default; it only ever fires when your terminal has reported that the window is not the one in front, so nothing arrives while you are watching. Uses OSC 99 where your terminal answered for it and OSC 777 where it did not. The answer is saved to `appearance.notify` |
 | `/ui terminal` | What your terminal answered when shhh asked what it can do: inline images (kitty graphics or sixel), desktop notifications, focus events, and the size of one character cell in pixels. A capability shhh did not ask about says so rather than reading as a no — the graphics questions are held back on Apple Terminal and over `ssh`, where a terminal that does not recognise them prints them instead |
 | `/memory` | Durable memories (`shhh code`): `list` (default), `add [global] [kind] <text>`, `forget <id>` |
+| `/secret` | [Secrets](#secrets) commands can use and the model never sees: `list` (default), `set NAME` (from the environment) or `set NAME=value`, `forget NAME` |
 | `/ps` | List the long-running processes this session owns (`shhh code`): state, pid, uptime, command |
 | `/rewind [n]` | Rewind to before a user turn (bare `/rewind` opens a picker); the abandoned tail is kept as a branch. Conversation only — files are not restored |
 | `/branches [n]` | Switch this session's branches (bare `/branches` opens a picker; current work is saved first) |
@@ -886,6 +888,19 @@ Project skills live in the checkout under `.shhh/skills/`, `.agents/skills/` or 
 - In a session, `/skills` lists them and `/skill <name> [task]` (or just `/<name>`) activates one right now, sending its instructions to the model with your task.
 - A skill's `allowed-tools` is shown but never honoured: nothing in a repository can pre-approve a command.
 
+### Secrets
+
+A secret is a value commands may use and the model never sees — the API key for the service you are debugging, a database password, a token a script needs. Declare one and the model is told its *name* and the one way to use it: as an environment variable in every command it runs (`curl -H "Authorization: Bearer $API_KEY"`, `os.environ["API_KEY"]` in a script it writes and runs, a long-running process it starts, a sub-agent's commands, a sandboxed container). The value never enters the conversation: every tool result, command output line, message and request is scrubbed before it reaches the model, and the value — or its base64/hex/URL-escaped form, or any run of it eight bytes or longer — becomes `[secret:API_KEY]`. That placeholder tells the model the key was there and was used.
+
+```sh
+export STRIPE_KEY=sk_live_...
+shhh code --secret STRIPE_KEY          # read from the environment (preferred)
+shhh chat --secret PIN=1234            # given inline; lands in shell history
+```
+
+- `secrets.env = ["STRIPE_KEY"]` in config declares them for every session; a name the environment lacks is a warning, not a secret.
+- `/secret` lists the session's secrets by name. `/secret set NAME` reads one from the environment mid-session — the model is told it is now available — and `/secret set NAME=value` types one in (that line is kept out of input recall). `/secret forget NAME` removes one.
+- The scrub is text matching, not a proof: a value transformed some other way is not recognised, and a command that sends the key somewhere new is still a command — it is shown before it runs, and approving it is your call.
 
 ## Commands
 

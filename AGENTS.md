@@ -135,6 +135,7 @@ internal/
   safety/                  Command safety analysis
   memory/                  Durable memory (cross-session remembered facts)
   skill/                   Agent Skills: discovery, SKILL.md frontmatter, the catalog prompt block and the activation tool
+  secret/                  Session secrets: the vault, the scrub every text passes through, and the prompt block naming them
   migrate/                 Layout migrations, detected and offered by `shhh doctor` (never at startup)
   evidence/                Evidence store for quality-gate output
   plan/                    Plan mode state (step tracking)
@@ -215,6 +216,10 @@ Attaching switches the focused agent.
 
 Three tiers, three places: `skill.PromptBlock` is the catalog in the system prompt (appended as prompt extra, like the toolbox, only when something loaded); the `skill` tool (`skill.ToolDefinition`, read-only, its `name` an enum of the catalog) returns `skill.Content` — body, directory, bundled files listed not read; the file tools do the rest. `/skill <name> [task]` and the `/<skill-name>` shortcut (`internal/ui/chat/skills.go`) send the same content as a user message. `agent.KeepResults(skill.IsContent)` exempts activated content from `TrimOldToolResults`. `allowed-tools` is parsed and displayed and grants nothing — [`docs/capabilities/skills.md#a-skill-cannot-grant-itself-anything`](docs/capabilities/skills.md#a-skill-cannot-grant-itself-anything). `shhh skills` and `/skills` print the catalog with its diagnostics.
 
+### Secrets
+
+`internal/secret` is the vault of values the model never sees ([`docs/capabilities/secrets.md`](docs/capabilities/secrets.md)). A `secret.Vault` holds name→value; `Environ()` is what a command gets, `Scrub()` is what everything read gets, and `PromptBlock` names the secrets to the model. The CLI owns the vault (`internal/cli/secrets.go`) and every door: `chatSession.openSecrets` runs before the first command and puts the values in `runner.SetSessionEnv` (every captured runner sets `cmd.Env` from `runner.Environ()`), `process.Supervisor.SetEnv` (the process tool builds a bare environment and would otherwise miss them), and `sandbox.Container.ExecArgv`'s `--env NAME` pass-through (a container has no host environment). The scrub sits on the executor chain (`Vault.WrapExecutor`, after evidence reduction), on the runners (`scrubRunner`, `scrubTailRunner`, `scrubContainment` — the tail is what the screen shows), on the agent (`Agent.SetScrub`, applied in `Append`, `SetMessages` and `Stream`) and on the stream closure in `buildSessionEnv` and the sub-agent `newEnv`. Children get the same through `subagent.Env.Scrub`. `/secret` (`internal/ui/chat/secrets.go`) calls the CLI's `secretsManager`, which returns the note and an announcement the chat sends the model as a user message — the system prompt cannot be rewritten mid-session. `Scrub` also replaces base64/hex/URL-escaped forms and any run of the value ≥ 8 bytes; it is text matching and the doc says so.
+
 ### Sub-agents
 
 `shhh code` can spawn child agents via `spawn_agent`. Children are either `researcher` (read-only tools + web) or `writer` (full toolset against an isolated git worktree), or any custom profile the user wrote to `~/.config/shhh/agents/<name>.toml`. Hard limits: max 3 concurrent, 16 total per session — a limit on attention, not on resources ([`docs/capabilities/subagents.md`](docs/capabilities/subagents.md)). Children that can write or execute produce patches that the parent approves.
@@ -244,7 +249,7 @@ A `TestMain` in each golden-using package calls `golden.Run(m)` which **deletes 
 
 ## Configuration
 
-Config is TOML at `~/.config/shhh/config.toml` (or `$XDG_CONFIG_HOME/shhh/`), the same on every platform — see [`docs/capabilities/configuration.md#one-layout-everywhere`](docs/capabilities/configuration.md#one-layout-everywhere). Key sections: `[provider]`, `[behavior]`, `[sandbox]`, `[web]`, `[lsp]`, `[appearance]`, `[history]`, `[agents]`. Agent profiles are one TOML file each in the `agents/` directory beside it (`config.AgentDirs`), loaded by `config.LoadAgents`. User-scope skills are directories under `skills/` beside it (`config.SkillDirs`); project-scope ones come from the checkout (`skill.ProjectRoots`).
+Config is TOML at `~/.config/shhh/config.toml` (or `$XDG_CONFIG_HOME/shhh/`), the same on every platform — see [`docs/capabilities/configuration.md#one-layout-everywhere`](docs/capabilities/configuration.md#one-layout-everywhere). Key sections: `[provider]`, `[behavior]`, `[sandbox]`, `[web]`, `[lsp]`, `[appearance]`, `[history]`, `[agents]`, `[secrets]` (names only; values come from the environment). Agent profiles are one TOML file each in the `agents/` directory beside it (`config.AgentDirs`), loaded by `config.LoadAgents`. User-scope skills are directories under `skills/` beside it (`config.SkillDirs`); project-scope ones come from the checkout (`skill.ProjectRoots`).
 
 ## Gotchas
 

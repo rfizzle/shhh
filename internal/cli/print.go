@@ -126,6 +126,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if session.processes {
 		procSup = openProcessSupervisor(red)
 	}
+	if err := session.openSecrets(cmd, procSup); err != nil {
+		return err
+	}
 	if procSup != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), process.Definition())
 		defer procSup.Close()
@@ -194,7 +197,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// created and verified, the run fails instead of downgrading.
 	run := runner.RunCapture
 	if opts.sandbox {
-		srun, cleanup, err := startSandbox(cmd.Context(), cfg)
+		srun, cleanup, err := startSandbox(cmd.Context(), cfg, session.vault.Names())
 		if err != nil {
 			return fmt.Errorf("sandbox: %w", err)
 		}
@@ -205,8 +208,10 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	} else if containment.Run != nil {
 		run = containment.Run
 	}
+	run = scrubRunner(session.vault, run)
 
 	a := agent.New(env.messages, env.stream)
+	a.SetScrub(session.vault.ScrubMessage)
 	if session.skills.Len() > 0 {
 		a.KeepResults(skill.IsContent)
 	}
@@ -233,6 +238,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if red != nil {
 		executor = red.WrapExecutor(baseExecutor)
 	}
+	executor = session.vault.WrapExecutor(executor)
 	// Repeat detection. A headless run needs it most: there is nobody
 	// watching to notice the same search going round for the third time.
 	a.SetExecutor(agent.NewRepeatDetector().WrapExecutor(executor))

@@ -26,6 +26,7 @@ import (
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/scope"
+	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -169,6 +170,11 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			base = session.skills.WrapExecutor(base)
 			sysPrompt = prompt.CombineExtra(sysPrompt, skill.PromptBlock(session.skills))
 		}
+		// Secrets are read at spawn rather than at session start, so a
+		// child knows what /secret added since.
+		if session.vault.Len() > 0 {
+			sysPrompt = prompt.CombineExtra(sysPrompt, secret.PromptBlock(session.vault))
+		}
 
 		// Approved non-exec gated calls: file mutations dispatch through their
 		// own path (never the auto-run executor), everything else falls back to
@@ -217,6 +223,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 				effort = env.reasoning()
 			}
 			effort = agents.effortFor(role, effort)
+			msgs = session.vault.ScrubMessages(msgs)
 			ev, sErr := childProvider.StreamCompletion(sctx, msgs, provider.CompletionOpts{
 				Model:      childModel,
 				Tools:      streamDefs,
@@ -233,10 +240,11 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		return subagent.Env{
 			SystemPrompt: sysPrompt,
 			Stream:       stream,
-			Executor:     subagent.RootedExecutor(croot, autoExec),
-			ExecuteGated: gatedExec,
-			RunCommand:   childCommandRunner(cfg, croot, sc),
+			Executor:     session.vault.WrapExecutor(subagent.RootedExecutor(croot, autoExec)),
+			ExecuteGated: session.vault.WrapExecutor(gatedExec),
+			RunCommand:   scrubRunner(session.vault, childCommandRunner(cfg, croot, sc)),
 			Gated:        gated,
+			Scrub:        session.vault.ScrubMessage,
 		}, nil
 	}
 

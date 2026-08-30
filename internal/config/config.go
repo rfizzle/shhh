@@ -24,6 +24,18 @@ type Config struct {
 	History    HistoryConfig    `toml:"history"`
 	Agents     AgentsConfig     `toml:"agents"`
 	Summary    SummaryConfig    `toml:"summary"`
+	Secrets    SecretsConfig    `toml:"secrets"`
+}
+
+// SecretsConfig names the values the model may use but never see. Only
+// names live here: the values come from the environment at session start,
+// because a config file is read by more things than shhh and a token in it
+// is a token in a backup.
+// See docs/capabilities/secrets.md#where-a-value-comes-from.
+type SecretsConfig struct {
+	// Env names environment variables to declare as secrets in every
+	// session; one that is unset is skipped with a warning.
+	Env []string `toml:"env"`
 }
 
 // SummaryConfig tunes the session summary: the periodic reading a
@@ -416,6 +428,8 @@ func Set(cfg *Config, key, value string) error {
 	case "behavior.read_only_auto":
 		v := value == "true"
 		cfg.Behavior.ReadOnlyAuto = &v
+	case "secrets.env":
+		cfg.Secrets.Env = splitList(value)
 	case "agents.model":
 		cfg.Agents.Model = value
 	case "agents.max_concurrent":

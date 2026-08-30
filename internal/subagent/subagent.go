@@ -180,6 +180,9 @@ type Env struct {
 	RunCommand func(ctx context.Context, command string) (output string, exitCode int)
 	// Gated names the tools that must go through approval routing.
 	Gated map[string]bool
+	// Scrub, when set, is installed on the child's agent so its
+	// conversation never holds a session secret; nil scrubs nothing.
+	Scrub func(provider.Message) provider.Message
 }
 
 // Spec is everything the CLI needs to build one child's runtime: its role,
@@ -945,6 +948,9 @@ func (s *Supervisor) Retry(name string) error {
 	a := agent.New([]provider.Message{{Role: provider.RoleSystem, Content: env.SystemPrompt}}, env.Stream)
 	a.SetMaxRounds(c.agent.MaxRounds())
 	a.SetExecutor(env.Executor)
+	if env.Scrub != nil {
+		a.SetScrub(env.Scrub)
+	}
 
 	c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Retrying — the previous attempt " + detail + "."})
 
@@ -1133,6 +1139,9 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 
 	a := agent.New([]provider.Message{{Role: provider.RoleSystem, Content: env.SystemPrompt}}, env.Stream)
 	a.SetMaxRounds(args.maxRounds)
+	if env.Scrub != nil {
+		a.SetScrub(env.Scrub)
+	}
 
 	c := &child{
 		name:      name,

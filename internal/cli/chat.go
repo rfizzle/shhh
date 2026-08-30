@@ -25,6 +25,7 @@ import (
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/runner"
+	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/stdin"
@@ -81,6 +82,11 @@ type chatSession struct {
 	// registers neither the tool nor the prompt section. Both `shhh chat`
 	// and `shhh code`, headless included: activation is a read.
 	skills *skill.Catalog
+	// secretFlags are the --secret specs; vault is what they and
+	// secrets.env resolved to, opened by openSecrets before anything that
+	// runs a command. Both `shhh chat` and `shhh code`, headless included.
+	secretFlags []string
+	vault       *secret.Vault
 	// promptExtra is appended to the system prompt after config and project
 	// context (e.g. the recalled-memory block).
 	promptExtra string
@@ -102,6 +108,7 @@ func newChatCmd() *cobra.Command {
 	var continueLast bool
 	var resumePick bool
 	var addDirs []string
+	var secretFlags []string
 
 	cmd := &cobra.Command{
 		Use:   "chat [prompt]",
@@ -119,6 +126,7 @@ func newChatCmd() *cobra.Command {
 				resumePick:   resumePick,
 				addDirs:      addDirs,
 				skills:       loadSkills(),
+				secretFlags:  secretFlags,
 			})
 		},
 	}
@@ -129,8 +137,35 @@ func newChatCmd() *cobra.Command {
 	cmd.Flags().StringVar(&flags.FlagModel, "model", "", "model name to use")
 	cmd.Flags().StringVar(&flags.FlagAPIKey, "api-key", "", "key for the provider, overriding the env var")
 	addDirFlag(cmd, &addDirs)
+	addSecretFlag(cmd, &secretFlags)
 
 	return cmd
+}
+
+// addSecretFlag registers --secret: a value commands may use and the
+// model never sees, named from the environment or given as NAME=value.
+func addSecretFlag(cmd *cobra.Command, specs *[]string) {
+	cmd.Flags().StringArrayVar(specs, "secret", nil,
+		"declare a secret for commands to use as $NAME and the model never to see: NAME reads it from the environment, NAME=value gives it (repeatable; extends secrets.env)")
+}
+
+// openSecrets resolves the session's vault and hands its values to every
+// path a command runs through. It must run before the first command and
+// before the prompt is built, and it is the one place the values are put
+// anywhere; everything after it works with the vault's name list and scrub.
+// See docs/capabilities/secrets.md#a-secret-is-an-environment-variable.
+func (s *chatSession) openSecrets(cmd *cobra.Command, procSup *process.Supervisor) error {
+	v, err := loadSecrets(ConfigFrom(cmd.Context()), s.secretFlags, cmd.ErrOrStderr())
+	if err != nil {
+		return err
+	}
+	s.vault = v
+	runner.SetSessionEnv(v.Environ())
+	if procSup != nil {
+		procSup.SetEnv(v.Environ())
+	}
+	s.promptExtra = prompt.CombineExtra(s.promptExtra, secret.PromptBlock(v))
+	return nil
 }
 
 // sessionEnv is the provider-and-prompt setup shared by the interactive chat
@@ -287,6 +322,10 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 		opts.Effort = currentEffort
 		active := p
 		sessionMu.Unlock()
+		// The last door before the provider: the agent scrubs the
+		// conversation it keeps, and this scrubs the request it sends, so
+		// a message that reached the stream some other way is caught here.
+		msgs = session.vault.ScrubMessages(msgs)
 		// The gate is re-applied per request rather than once at startup,
 		// because [k] and [p] can swap the provider underneath the session
 		// and a gate wrapped around the old one would stop billing.
@@ -411,6 +450,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if procSup != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), process.Definition())
 		defer procSup.Close()
+	}
+	if err := session.openSecrets(cmd, procSup); err != nil {
+		return err
 	}
 
 	db, err := storage.Open()
@@ -538,6 +580,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if red != nil {
 		executor = red.WrapExecutor(baseExecutor)
 	}
+	// Secrets are scrubbed from every result after reduction, so what the
+	// evidence store keeps and what the model reads are the same text.
+	executor = session.vault.WrapExecutor(executor)
 
 	// Session observability: content-free events (usage, tool calls,
 	// mode decisions) are recorded to storage; failure just disables recording.
@@ -567,9 +612,10 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithDB(db).
 		WithPricing(prices, env.modelName).
 		WithLedger(ledger).
-		WithRunner(runner.RunCapture).
-		WithTailRunner(runner.RunCaptureTail).
-		WithContainment(containment).
+		WithRunner(scrubRunner(session.vault, runner.RunCapture)).
+		WithTailRunner(scrubTailRunner(session.vault, runner.RunCaptureTail)).
+		WithContainment(scrubContainment(session.vault, containment)).
+		WithSecrets(chat.Secrets{Manage: secretsManager(session.vault), Scrub: session.vault.ScrubMessage}).
 		WithScope(sc).
 		WithMaxToolRounds(maxRoundsFor(cfg, session.maxRounds, session.maxRoundsSet)).
 		WithCommandAllowlist(cfg.Behavior.CommandAllowlist).

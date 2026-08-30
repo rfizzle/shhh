@@ -37,7 +37,11 @@ func (m Model) submitInput() (tea.Model, tea.Cmd) {
 	if text == "" {
 		return m, nil
 	}
-	m.recordInput(text)
+	// A line carrying a secret's value is not recalled: the point of the
+	// command is that the value is typed once and never shown again.
+	if !secretInput(text) {
+		m.recordInput(text)
+	}
 	m.input.Reset()
 	if name := commandName(text); name != "" {
 		return m.runCommand(text, name)
@@ -95,6 +99,11 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 
 	case name == "/attach":
 		return m.attachCommand(parts)
+
+	case name == "/secret" || name == "/secrets":
+		// Not idleOnly: adding a secret mid-turn is exactly when the
+		// command is wanted — the model just asked for a key it lacks.
+		return m.secretCommand(parts[1:])
 
 	case name == "/skill":
 		// Explicit activation. Not idleOnly: while the agent works the

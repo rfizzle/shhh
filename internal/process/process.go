@@ -73,6 +73,20 @@ type Supervisor struct {
 	mu     sync.Mutex
 	procs  map[string]*proc
 	closed bool
+	// env is the session's NAME=value pairs every process gets after the
+	// caller's own, so the model's `env` argument cannot shadow a secret.
+	env []string
+}
+
+// SetEnv sets the session pairs every started process carries beyond
+// PATH, HOME and the model's own extras. The process tool builds a
+// deliberately bare environment, so the secrets a foreground command sees
+// through the inherited one have to be handed to it here.
+// See docs/capabilities/secrets.md#a-secret-is-an-environment-variable.
+func (s *Supervisor) SetEnv(env []string) {
+	s.mu.Lock()
+	s.env = append([]string(nil), env...)
+	s.mu.Unlock()
 }
 
 // New builds a supervisor whose processes are contained to root (cwd-wise).
@@ -294,7 +308,7 @@ func (s *Supervisor) start(name, command, cwd string, extraEnv map[string]string
 	}
 	cmd := exec.Command(filepath.Clean(sh), "-c", command)
 	cmd.Dir = dir
-	cmd.Env = env
+	cmd.Env = append(env, s.env...)
 	cmd.SysProcAttr = sysProcAttr()
 
 	p := &proc{

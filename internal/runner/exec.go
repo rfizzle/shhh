@@ -15,6 +15,38 @@ import (
 	"github.com/rfizzle/shhh/internal/history"
 )
 
+// sessionEnv is what every captured command's environment carries beyond
+// the process's own: the session's secrets, as NAME=value. It is
+// package state because the session runs commands through half a dozen
+// paths — plain, tailed, contained, in a sub-agent's worktree — and a value
+// present in some of them is a bug that surfaces as "the variable is unset"
+// only in the one that mattered.
+// See docs/capabilities/secrets.md#a-secret-is-an-environment-variable.
+var (
+	sessionMu  sync.RWMutex
+	sessionEnv []string
+)
+
+// SetSessionEnv replaces the NAME=value pairs every captured command gets
+// on top of the inherited environment. Later pairs win over earlier ones
+// and over the inherited value of the same name.
+func SetSessionEnv(env []string) {
+	sessionMu.Lock()
+	sessionEnv = append([]string(nil), env...)
+	sessionMu.Unlock()
+}
+
+// Environ is the inherited environment plus the session's pairs, or nil
+// when there are none, which leaves exec.Cmd to inherit exactly as before.
+func Environ() []string {
+	sessionMu.RLock()
+	defer sessionMu.RUnlock()
+	if len(sessionEnv) == 0 {
+		return nil
+	}
+	return append(os.Environ(), sessionEnv...)
+}
+
 func Run(command string) (exitCode int) {
 	sh := os.Getenv("SHELL")
 	if sh == "" {
@@ -61,6 +93,7 @@ func RunCapture(ctx context.Context, command string) (output string, exitCode in
 	}
 
 	cmd := exec.CommandContext(ctx, filepath.Clean(sh), "-c", command)
+	cmd.Env = Environ()
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		var exitErr *exec.ExitError
@@ -139,6 +172,7 @@ func RunCaptureTail(ctx context.Context, command string, onLine func(string)) (s
 		sh = "/bin/sh"
 	}
 	cmd := exec.CommandContext(ctx, filepath.Clean(sh), "-c", command)
+	cmd.Env = Environ()
 	return runTail(cmd, onLine)
 }
 
@@ -149,6 +183,7 @@ func RunCaptureArgvTail(ctx context.Context, argv []string, onLine func(string))
 		return "error: empty command", -1
 	}
 	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
+	cmd.Env = Environ()
 	return runTail(cmd, onLine)
 }
 
@@ -167,6 +202,7 @@ func RunCaptureIn(ctx context.Context, dir, command string) (output string, exit
 
 	cmd := exec.CommandContext(ctx, filepath.Clean(sh), "-c", command)
 	cmd.Dir = dir
+	cmd.Env = Environ()
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		var exitErr *exec.ExitError
@@ -191,6 +227,7 @@ func RunCaptureArgvIn(ctx context.Context, dir string, argv []string) (output st
 	}
 	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
 	cmd.Dir = dir
+	cmd.Env = Environ()
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		var exitErr *exec.ExitError

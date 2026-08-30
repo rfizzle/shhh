@@ -20,6 +20,7 @@ func newCodeCmd() *cobra.Command {
 	var printMode bool
 	var popts printOpts
 	var addDirs []string
+	var secretFlags []string
 
 	cmd := &cobra.Command{
 		Use:   "code [prompt]",
@@ -53,6 +54,7 @@ func newCodeCmd() *cobra.Command {
 				maxRoundsSet: popts.maxRoundsSet,
 				addDirs:      addDirs,
 				skills:       loadSkills(),
+				secretFlags:  secretFlags,
 			}
 			if headless {
 				return runPrintSession(cmd, args, session, popts)
@@ -79,6 +81,7 @@ func newCodeCmd() *cobra.Command {
 	cmd.Flags().IntVar(&popts.maxRounds, "max-rounds", 0, "cap consecutive tool-call rounds per turn (0 removes the cap, for a run left unattended; default: behavior.max_tool_rounds)")
 
 	addDirFlag(cmd, &addDirs)
+	addSecretFlag(cmd, &secretFlags)
 
 	cmd.AddCommand(newCodeDoctorCmd())
 

@@ -366,3 +366,38 @@ func TestTrimOldToolResults_KeepsClaimedResults(t *testing.T) {
 		t.Fatal("the unclaimed result should have been elided")
 	}
 }
+
+func TestSetScrub_RewritesEveryDoor(t *testing.T) {
+	var sent []provider.Message
+	stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		sent = msgs
+		return noStream(msgs)
+	}
+	a := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, stream)
+	a.SetScrub(func(m provider.Message) provider.Message {
+		m.Content = strings.ReplaceAll(m.Content, "hunter2", "[secret:PW]")
+		return m
+	})
+
+	a.Append(provider.Message{Role: provider.RoleUser, Content: "pw is hunter2"})
+	if got := a.Messages()[1].Content; got != "pw is [secret:PW]" {
+		t.Fatalf("Append not scrubbed: %q", got)
+	}
+
+	resumed := []provider.Message{{Role: provider.RoleTool, Content: "hunter2"}}
+	a.SetMessages(resumed)
+	if got := a.Messages()[0].Content; got != "[secret:PW]" {
+		t.Fatalf("SetMessages not scrubbed: %q", got)
+	}
+	if resumed[0].Content != "hunter2" {
+		t.Fatal("SetMessages must not rewrite the caller's slice")
+	}
+
+	raw := []provider.Message{{Role: provider.RoleUser, Content: "hunter2"}}
+	if _, _, err := a.Stream(raw); err != nil {
+		t.Fatal(err)
+	}
+	if sent[0].Content != "[secret:PW]" || raw[0].Content != "hunter2" {
+		t.Fatalf("Stream sent %q, caller holds %q", sent[0].Content, raw[0].Content)
+	}
+}

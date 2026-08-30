@@ -138,9 +138,17 @@ func createArgv(eng Engine, name string, s ContainerSpec) []string {
 
 // ExecArgv builds the argv that runs command inside the sandbox. The command
 // text rides as one argv element after `sh -c` — never parsed or re-quoted —
-// mirroring the process-containment wrappers.
-func (c Container) ExecArgv(command string) []string {
-	return []string{c.Engine.Path, "exec", "--workdir", workspaceMount, c.Record.Name, "/bin/sh", "-c", command}
+// mirroring the process-containment wrappers. env names variables to carry
+// in from the engine client's environment (a bare `--env NAME` is how both
+// docker and podman spell that): the container was created with no host
+// environment at all, so a session secret has to be named to cross into it.
+// See docs/capabilities/secrets.md#a-secret-is-an-environment-variable.
+func (c Container) ExecArgv(command string, env ...string) []string {
+	argv := []string{c.Engine.Path, "exec", "--workdir", workspaceMount}
+	for _, name := range env {
+		argv = append(argv, "--env", name)
+	}
+	return append(argv, c.Record.Name, "/bin/sh", "-c", command)
 }
 
 // CreateContainer validates the spec, starts the container, and records

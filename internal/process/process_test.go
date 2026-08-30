@@ -374,3 +374,26 @@ func TestWrapExecutor_DispatchesAndFallsThrough(t *testing.T) {
 		t.Fatalf("dispatch broken: %q %v", out, err)
 	}
 }
+
+func TestSetEnv_ProcessesCarrySessionPairsOverExtras(t *testing.T) {
+	s := newTestSupervisor(t, nil)
+	s.SetEnv([]string{"SHHH_TEST_SECRET=vault"})
+	extra := map[string]string{"SHHH_TEST_SECRET": "model", "OTHER": "kept"}
+	if _, err := s.start("env", `printf '%s %s' "$SHHH_TEST_SECRET" "$OTHER"; sleep 0.2`, "", extra); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		out, err := s.read("env", "stdout", 0, 0)
+		if err != nil {
+			t.Fatalf("read: %v", err)
+		}
+		if strings.Contains(out, "vault kept") {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("session pair must win over the model's extra: %q", out)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+}

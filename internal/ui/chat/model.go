@@ -549,6 +549,8 @@ type Model struct {
 	// memoryAsk is the open memory prompt while a proposal awaits the user.
 	memory    Memory
 	memoryAsk *components.NoteSelect
+	// secrets backs /secret and the scrub on the agent.
+	secrets Secrets
 	// skills is the session's skill catalog, behind /skills, /skill and
 	// the /<skill-name> shortcut; nil when none loaded. skillsList renders
 	// the catalog for /skills — the same text `shhh skills` prints.

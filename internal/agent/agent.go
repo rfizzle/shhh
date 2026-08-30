@@ -87,6 +87,10 @@ type Agent struct {
 	// keep, when set, marks tool results that context trimming must leave
 	// alone. Nil keeps nothing.
 	keep func(content string) bool
+
+	// scrub, when set, rewrites every text that joins the conversation or
+	// leaves it for a provider. Nil leaves text alone.
+	scrub func(msg provider.Message) provider.Message
 }
 
 func New(initial []provider.Message, stream StreamFunc) *Agent {
@@ -102,6 +106,23 @@ func (a *Agent) SetExecutor(executor ToolExecutor) { a.executor = executor }
 // to drop — and dropping one fails silently, since the model just carries
 // on without them. The caller says which those are.
 func (a *Agent) KeepResults(keep func(content string) bool) { a.keep = keep }
+
+// SetScrub installs the rewrite every message goes through on the way in
+// (Append, SetMessages) and on the way out (Stream). It is where the
+// session's secrets are removed: the conversation is what gets saved,
+// shown and replayed, so a value that reaches it has already leaked, and
+// the request is the last door before the provider. Both are scrubbed
+// because either alone has a path around it — a resumed session, a stream
+// a front-end opens itself.
+// See docs/capabilities/secrets.md#the-value-is-scrubbed-at-every-door.
+func (a *Agent) SetScrub(scrub func(provider.Message) provider.Message) { a.scrub = scrub }
+
+func (a *Agent) scrubbed(msg provider.Message) provider.Message {
+	if a.scrub == nil {
+		return msg
+	}
+	return a.scrub(msg)
+}
 
 // SetMaxRounds overrides the per-turn tool-round cap. Zero means "unset" and
 // keeps DefaultMaxToolRounds, so a config or flag nobody filled in still gets
@@ -133,10 +154,18 @@ func (a *Agent) Messages() []provider.Message { return a.messages }
 
 // SetMessages replaces the conversation wholesale (resume, /clear,
 // compaction).
-func (a *Agent) SetMessages(msgs []provider.Message) { a.messages = msgs }
+func (a *Agent) SetMessages(msgs []provider.Message) {
+	if a.scrub != nil {
+		msgs = append([]provider.Message(nil), msgs...)
+		for i := range msgs {
+			msgs[i] = a.scrub(msgs[i])
+		}
+	}
+	a.messages = msgs
+}
 
 // Append adds one message to the conversation.
-func (a *Agent) Append(msg provider.Message) { a.messages = append(a.messages, msg) }
+func (a *Agent) Append(msg provider.Message) { a.messages = append(a.messages, a.scrubbed(msg)) }
 
 // StartTurn begins a fresh user turn: the text joins the conversation and
 // the round counter resets.
@@ -160,6 +189,12 @@ func (a *Agent) RequestMessages() []provider.Message {
 
 // Stream opens a completion stream over msgs.
 func (a *Agent) Stream(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	if a.scrub != nil {
+		msgs = append([]provider.Message(nil), msgs...)
+		for i := range msgs {
+			msgs[i] = a.scrub(msgs[i])
+		}
+	}
 	return a.stream(msgs)
 }
 

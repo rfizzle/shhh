@@ -168,3 +168,27 @@ func TestRunCaptureArgvTail_RunsExplicitArgv(t *testing.T) {
 		t.Fatalf("expected the completed line reported, got %v", lines)
 	}
 }
+
+func TestSessionEnv_ReachesEveryCapturedCommand(t *testing.T) {
+	t.Setenv("SHELL", "/bin/sh")
+	SetSessionEnv([]string{"SHHH_TEST_SECRET=s3cret"})
+	t.Cleanup(func() { SetSessionEnv(nil) })
+	ctx := context.Background()
+	const cmd = `printf '%s' "$SHHH_TEST_SECRET"`
+	runs := map[string]func() (string, int){
+		"RunCapture":         func() (string, int) { return RunCapture(ctx, cmd) },
+		"RunCaptureTail":     func() (string, int) { return RunCaptureTail(ctx, cmd, nil) },
+		"RunCaptureIn":       func() (string, int) { return RunCaptureIn(ctx, t.TempDir(), cmd) },
+		"RunCaptureArgv":     func() (string, int) { return RunCaptureArgv(ctx, []string{"/bin/sh", "-c", cmd}) },
+		"RunCaptureArgvTail": func() (string, int) { return RunCaptureArgvTail(ctx, []string{"/bin/sh", "-c", cmd}, nil) },
+	}
+	for name, run := range runs {
+		if out, code := run(); out != "s3cret" || code != 0 {
+			t.Errorf("%s: out=%q code=%d", name, out, code)
+		}
+	}
+	SetSessionEnv(nil)
+	if Environ() != nil {
+		t.Fatal("no session pairs must leave the command to inherit")
+	}
+}
