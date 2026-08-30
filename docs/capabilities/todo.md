@@ -182,6 +182,18 @@ What is left is offered as a follow-up item, after the blocked one, on
 the same card the session's own proposals use; accepting it is what lets
 the blocked item be archived once the rest lands.
 
+A run survives its session. Every transition is written to a checkpoint
+beside the backlog, and an item found in progress with one is continued
+from the stage it was at — the stage starts over, because a stage is the
+smallest thing that can be judged and the conversation that was mid-way
+through it is gone, but the plan, the answers and the rounds spent are
+kept, and so is the work of the stages before it. A turn that gets in
+ahead of a stage — a compaction, a skill being loaded — pauses the run
+the same way rather than failing the item: nothing about the item is
+wrong, only the conversation moved. Clearing the conversation is the one
+thing a run does not survive: it is an explicit end, and the item goes
+back to open with the tree as the run left it.
+
 ## Done is archived, not deleted
 
 A finished item moves into an archive beside the active ones, with the

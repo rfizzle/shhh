@@ -258,3 +258,39 @@ func TestRun_ReviewBySize(t *testing.T) {
 		t.Fatalf("S reviews itself: %+v", step)
 	}
 }
+
+func TestContinue_ReentersEachStage(t *testing.T) {
+	it := item(todo.SizeM)
+	for stage, want := range map[Stage]Action{StageResearch: ActionPrompt, StageImplement: ActionPrompt, StageRemediate: ActionPrompt, StageVerify: ActionVerify, StageReview: ActionReview, StageCommit: ActionPrompt, StageDone: ActionBlocked, StageBlocked: ActionBlocked} {
+		s := Start(it, "", "", 0)
+		s.Stage, s.Plan, s.Size, s.Message = stage, "## Plan: x\n\n1. a", todo.SizeM, "stale"
+		step := s.Continue(it)
+		if step.Action != want {
+			t.Errorf("%s: action %v, want %v", stage, step.Action, want)
+		}
+		if stage == StageCommit && s.Message != "" {
+			t.Error("a continued commit stage forgets the stale message")
+		}
+	}
+}
+
+func TestContinue_AtAPauseReshowsTheCard(t *testing.T) {
+	it := item(todo.SizeL)
+	s := Start(it, "", "", 0)
+	s.Stage, s.Paused, s.Plan = StageResearch, "a large item pauses", "## Plan: x\n\n1. a"
+	if step := s.Continue(it); step.Action != ActionPause || s.Paused == "" {
+		t.Fatalf("continue at a pause = %+v", step)
+	}
+}
+
+func TestReview_NamesAreNeverReused(t *testing.T) {
+	it := item(todo.SizeM)
+	s := Start(it, "", "", 0)
+	s.Size = todo.SizeM
+	first := s.review(it).Shown
+	s.Reviewer = ""
+	second := s.review(it).Shown
+	if first == second || !strings.HasSuffix(first, "-1") || !strings.HasSuffix(second, "-2") {
+		t.Fatalf("names = %q %q", first, second)
+	}
+}

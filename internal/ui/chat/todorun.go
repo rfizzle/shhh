@@ -82,11 +82,29 @@ func (m Model) startTodoRun(arg string) (tea.Model, tea.Cmd) {
 	if m.changes == nil {
 		return m.systemNotice("This session does not track changes, so a run could not know what to commit.")
 	}
-	if err := todo.SetStatus(it.Path, todo.StatusInProgress); err != nil {
-		return m.systemNotice("Could not mark the item in progress: " + err.Error())
-	}
 	if m.turnState() != stateInput {
 		return m.systemNotice("Answer the open decision first; a run starts from an idle session.")
+	}
+	// An item left in progress with a checkpoint is a run that died with
+	// its session. It continues from the stage it was at rather than
+	// starting over: the plan and the rounds spent are in the checkpoint,
+	// and the work of the stages before it is in the tree.
+	if it.Status == todo.StatusInProgress {
+		if st, err := run.Load(m.todos.Root, it.Slug); err == nil && !st.Over() {
+			from := st.Session
+			st.Session = m.sessionName
+			st.PrevMode = m.mode.String()
+			st.Turn = int(m.turnCount) + 1
+			st.Reviewer = ""
+			m.todoRun = st
+			m.todoRunItem = it
+			model, _ := m.systemNotice(fmt.Sprintf("Continuing the run on %s from its %s stage (checkpoint from session %s).", it.Slug, st.Stage, orDash(from)))
+			return model.(Model).todoRunStep(st.Continue(it))
+		}
+		return m.systemNotice(fmt.Sprintf("%s is in progress with no checkpoint to continue from; /todo open %s puts it back to open and a run can start over.", it.Slug, it.Slug))
+	}
+	if err := todo.SetStatus(it.Path, todo.StatusInProgress); err != nil {
+		return m.systemNotice("Could not mark the item in progress: " + err.Error())
 	}
 	m.todoRun = run.Start(it, m.sessionName, m.mode.String(), int(m.turnCount)+1)
 	m.todoRunItem = it
@@ -97,6 +115,7 @@ func (m Model) startTodoRun(arg string) (tea.Model, tea.Cmd) {
 // todoRunStep carries out one step the machine handed back.
 func (m Model) todoRunStep(step run.Step) (tea.Model, tea.Cmd) {
 	st := m.todoRun
+	st.Paths = m.todoRunPaths()
 	if err := st.Save(m.todos.Root); err != nil {
 		m.appendEntry(entry{kind: entrySystem, text: "The run's checkpoint could not be written — " + err.Error()})
 	}
@@ -151,9 +170,13 @@ func (m Model) todoRunAfter(prev Model) (Model, tea.Cmd) {
 		return m, nil
 	}
 	if int(m.turnCount) != m.todoRunTurn {
-		// The turn that ended is not the stage's — a message got in ahead
-		// of it. Its answer is not the stage's answer, so the run stops.
-		next, cmd := m.todoRunStep(st.Block("the " + string(st.Stage) + " turn was displaced by another message"))
+		// The turn that ended is not the stage's — a compaction, a skill
+		// activation, something a command started. Its answer is not the
+		// stage's answer and the stage cannot be judged, but nothing about
+		// the item is wrong, so the run pauses rather than blocks: the item
+		// stays in progress with its checkpoint, and /todo run picks it up
+		// from this stage.
+		next, cmd := m.stopTodoRunKeeping(fmt.Sprintf("the %s turn was displaced by another message", st.Stage))
 		return next.(Model), cmd
 	}
 	if m.todoRunCancelled {
@@ -260,6 +283,16 @@ func (m Model) todoRunPaths() []string {
 	root := m.todos.Root
 	seen := map[string]bool{}
 	var out []string
+	// What earlier sessions of this run changed comes from the checkpoint;
+	// this session's own records are added to it.
+	if m.todoRun != nil {
+		for _, rel := range m.todoRun.Paths {
+			if !seen[rel] {
+				seen[rel] = true
+				out = append(out, rel)
+			}
+		}
+	}
 	for _, t := range m.changes.Turns() {
 		if int(t.N) < m.todoRun.Turn {
 			continue
@@ -505,6 +538,34 @@ func (m Model) todoRunDiff() string {
 	root := m.todos.Root
 	var b strings.Builder
 	seen := map[string]bool{}
+	// Paths from an earlier session have no record here; git's diff of
+	// the tree stands in, with an untracked file shown whole.
+	recorded := map[string]bool{}
+	for _, t := range m.changes.Turns() {
+		if int(t.N) < m.todoRun.Turn {
+			continue
+		}
+		for _, r := range t.Records {
+			if rel := runRelPath(root, r.Path); rel != "" && r.Changed() {
+				recorded[rel] = true
+			}
+		}
+	}
+	for _, rel := range m.todoRun.Paths {
+		if recorded[rel] || seen[rel] {
+			continue
+		}
+		seen[rel] = true
+		// Only a diff counts; git's complaint about a path or a tree is
+		// not one, and must not reach the reviewer as if it were.
+		if out, code := git(root, "diff", "--", rel); code == 0 && strings.HasPrefix(out, "diff --git") {
+			b.WriteString(out + "\n")
+			continue
+		}
+		if out, _ := git(root, "diff", "--no-index", os.DevNull, rel); strings.HasPrefix(out, "diff --git") {
+			b.WriteString(out + "\n")
+		}
+	}
 	for _, t := range m.changes.Turns() {
 		if int(t.N) < m.todoRun.Turn {
 			continue
@@ -641,6 +702,25 @@ func (m *Model) endTodoRun() {
 		m.leaveSurface()
 	}
 	m.reloadTodos()
+}
+
+// stopTodoRunKeeping ends the run but keeps the checkpoint and the item in
+// progress, so /todo run continues it from the stage it was at.
+func (m Model) stopTodoRunKeeping(why string) (tea.Model, tea.Cmd) {
+	st, it := m.todoRun, m.todoRunItem
+	if prev, err := agent.ParseMode(st.PrevMode); err == nil {
+		m.applyMode(prev)
+	}
+	if st.Reviewer != "" && m.subagents != nil {
+		_ = m.subagents.Kill(st.Reviewer)
+	}
+	st.Reviewer = ""
+	st.Paths = m.todoRunPaths()
+	_ = st.Save(m.todos.Root)
+	m.todoRun = nil
+	m.todoRunItem = todo.Item{}
+	m.reloadTodos()
+	return m.systemNotice(fmt.Sprintf("Paused the run on %s at %s — %s. /todo run %s continues it from there.", it.Slug, st.Stage, why, it.Slug))
 }
 
 // stopTodoRun is /todo stop: the run is abandoned, the item goes back to

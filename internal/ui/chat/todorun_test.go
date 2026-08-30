@@ -600,3 +600,119 @@ func TestTodoFollowUp_CriteriaOnly(t *testing.T) {
 		t.Errorf("criteria = %v", p.Criteria)
 	}
 }
+
+func TestTodoRun_ContinuesFromCheckpointAndDisplacementPauses(t *testing.T) {
+	m, root := runModel(t)
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	m = answer(t, updated.(Model), runPlan)
+	if m.todoRun.Stage != run.StageImplement {
+		t.Fatal("should be implementing")
+	}
+	// Another turn gets in ahead of the stage: a compaction-like user turn.
+	updated, _ = m.sendUserMessage("summarise")
+	m = answer(t, updated.(Model), "summary")
+	if m.todoRun != nil {
+		t.Fatal("a displaced stage should pause the run")
+	}
+	it, _ := todo.Load(root).Find("do-it")
+	if it.Status != todo.StatusInProgress {
+		t.Fatalf("item should stay in progress, is %s", it.Status)
+	}
+	if st, err := run.Load(root, "do-it"); err != nil || st.Stage != run.StageImplement {
+		t.Fatalf("checkpoint should be kept at implement: %+v %v", st, err)
+	}
+	if !strings.Contains(m.transcript[len(m.transcript)-1].text, "/todo run do-it continues it") {
+		t.Fatal("the note should say how to continue")
+	}
+
+	// A fresh session continues from the checkpoint.
+	m2 := frameModel(t, 130, 40)
+	m2.changes = changeset.New(1 << 20)
+	m2.mode = agent.ModeManual
+	m2 = m2.WithTodos(Todos{Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }})
+	m2.input.SetValue("/todo run do-it")
+	updated, _ = m2.submitInput()
+	m2 = updated.(Model)
+	if m2.todoRun == nil || m2.todoRun.Stage != run.StageImplement || !m2.working() || m2.mode != agent.ModeAuto {
+		t.Fatalf("should continue at implement in auto: %+v", m2.todoRun)
+	}
+	if len(m2.todoRun.Steps) != 1 {
+		t.Fatal("the plan should come back with the checkpoint")
+	}
+	m2 = answer(t, m2, "done")
+	if m2.todoRun.Stage != run.StageVerify {
+		t.Fatal("the continued run should carry on")
+	}
+
+	// In progress with no checkpoint: told how to start over.
+	run.Discard(root, "do-it")
+	m3 := frameModel(t, 130, 40)
+	m3.changes = changeset.New(1 << 20)
+	m3 = m3.WithTodos(Todos{Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }})
+	m3.input.SetValue("/todo run do-it")
+	updated, _ = m3.submitInput()
+	if note := updated.(Model).transcript[len(updated.(Model).transcript)-1].text; !strings.Contains(note, "no checkpoint") {
+		t.Fatalf("note = %q", note)
+	}
+}
+
+func TestTodoRun_ContinuedRunKeepsEarlierPaths(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not installed")
+	}
+	m, root := runModel(t)
+	if out, code := git(root, "init", "-q"); code != 0 {
+		t.Fatal(out)
+	}
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	m = answer(t, updated.(Model), runPlan)
+	m.changes.Add(m.turnCount, changeset.Record{Path: filepath.Join(root, "a.go"), Before: "a", After: "b", BeforeExists: true, AfterExists: true})
+	// Displace the stage so the checkpoint is kept.
+	updated, _ = m.sendUserMessage("x")
+	m = answer(t, updated.(Model), "y")
+	st, err := run.Load(root, "do-it")
+	if err != nil || strings.Join(st.Paths, ",") != "a.go" {
+		t.Fatalf("checkpoint paths = %v %v", st, err)
+	}
+	m2 := frameModel(t, 130, 40)
+	m2.changes = changeset.New(1 << 20)
+	m2 = m2.WithTodos(Todos{Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }})
+	m2.input.SetValue("/todo run do-it")
+	updated, _ = m2.submitInput()
+	m2 = updated.(Model)
+	m2.changes.Add(m2.turnCount, changeset.Record{Path: filepath.Join(root, "b.go"), After: "n", AfterExists: true})
+	if got := strings.Join(m2.todoRunPaths(), ","); got != "a.go,b.go" {
+		t.Fatalf("continued paths = %q", got)
+	}
+	if err := os.WriteFile(filepath.Join(root, "a.go"), []byte("whole file\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if d := m2.todoRunDiff(); !strings.Contains(d, "+whole file") || !strings.Contains(d, "+++ b/b.go") {
+		t.Fatalf("diff should cover both sessions' paths: %q", d)
+	}
+}
+
+func TestTodoRun_SameSessionContinueRespawnsAReviewer(t *testing.T) {
+	m, sup := reviewReadyModel(t, blockingEnv())
+	if m.todoRun.Reviewer != "todo-review-do-it-1" {
+		t.Fatalf("reviewer = %q", m.todoRun.Reviewer)
+	}
+	// Displace: a user turn while the reviewer reads pauses the run.
+	updated, _ := m.sendUserMessage("x")
+	m = answer(t, updated.(Model), "y")
+	if m.todoRun != nil {
+		t.Fatal("should have paused")
+	}
+	waitDone(t, sup)
+	m.input.SetValue("/todo run do-it")
+	updated, _ = m.submitInput()
+	m = updated.(Model)
+	if m.todoRun == nil || m.todoRun.Reviewer != "todo-review-do-it-2" {
+		t.Fatalf("a continued review should spawn a fresh child: %+v", m.todoRun)
+	}
+	if _, ok := sup.Get("todo-review-do-it-2"); !ok {
+		t.Fatal("the second child should exist")
+	}
+}

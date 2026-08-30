@@ -130,8 +130,11 @@ type State struct {
 	// Paused is why the run is waiting on the person, empty otherwise.
 	Paused string `json:"paused"`
 	// Reviewer is the name of the review child in flight, empty when the
-	// review is the orchestrator's own turn.
+	// review is the orchestrator's own turn; Reviews counts the children
+	// spawned, so a name is never reused — a killed child keeps its name
+	// in the supervisor for the session.
 	Reviewer string `json:"reviewer"`
+	Reviews  int    `json:"reviews"`
 	// Answers are the notes the person gave at a pause, for the re-plan.
 	Answers []string `json:"answers"`
 
@@ -140,6 +143,11 @@ type State struct {
 	Blocked string `json:"blocked"`
 	// Files are the paths the run committed, for the report.
 	Files []string `json:"files"`
+	// Paths are the repository paths the run has changed so far, kept in
+	// the checkpoint because a session's own change records die with it
+	// and a run continued in a new session must still know what it may
+	// stage.
+	Paths []string `json:"paths"`
 	// Tests are the item's test commands as they stood when the run
 	// started — before any model turn could have edited the file. The
 	// verify stage runs these and only these.
@@ -190,6 +198,42 @@ func Load(root, slug string) (*State, error) {
 
 // Discard removes a checkpoint; a run that ended has nothing to continue.
 func Discard(root, slug string) { _ = os.Remove(path(root, slug)) }
+
+// Continue re-enters the stage a checkpoint was saved at, for a run picked
+// up in a new session: the stage starts over — its prompt is sent again,
+// its verify re-run — because the transcript that was mid-stage is gone
+// and a stage is the smallest unit that can be judged.
+func (s *State) Continue(it todo.Item) Step {
+	switch s.Stage {
+	case StageResearch:
+		// A checkpoint saved at the pause re-shows the card: the plan is
+		// there and was never answered, so asking research again would
+		// only produce it a second time.
+		if s.Paused != "" {
+			return s.pause(s.Paused)
+		}
+		return Step{Action: ActionPrompt, Stage: StageResearch, Mode: ModePlan,
+			Prompt: researchPrompt(it, answersBlock(s.Answers)), Shown: s.label("research (continued)")}
+	case StageImplement:
+		return Step{Action: ActionPrompt, Stage: StageImplement, Mode: ModeAuto,
+			Prompt: implementPrompt(it, s.Plan, answersBlock(s.Answers)), Shown: s.label("implement (continued)")}
+	case StageRemediate:
+		return Step{Action: ActionPrompt, Stage: StageRemediate, Mode: ModeAuto,
+			Prompt: remediatePrompt(it, s.Findings), Shown: s.label("remediate (continued)")}
+	case StageVerify:
+		// A checkpoint from before Tests existed decodes with none; the
+		// gate still runs, and "nothing to verify" is said when there is
+		// neither.
+		return s.verify()
+	case StageReview:
+		return s.review(it)
+	case StageCommit:
+		s.Message, s.Report = "", ""
+		return Step{Action: ActionPrompt, Stage: StageCommit, Mode: ModePlan,
+			Prompt: commitPrompt(it, s.Plan), Shown: s.label("commit (continued)")}
+	}
+	return s.block("the checkpoint names a stage that cannot be continued: " + string(s.Stage))
+}
 
 // Over reports whether the run has reached an end state.
 func (s *State) Over() bool { return s.Stage == StageDone || s.Stage == StageBlocked }
@@ -348,7 +392,8 @@ func (s *State) review(it todo.Item) Step {
 		return Step{Action: ActionPrompt, Stage: StageReview, Mode: ModePlan,
 			Prompt: reviewPrompt(it, s.Plan), Shown: s.label("review")}
 	}
-	s.Reviewer = fmt.Sprintf("todo-review-%s-%d", s.Slug, s.Round+1)
+	s.Reviews++
+	s.Reviewer = fmt.Sprintf("todo-review-%s-%d", s.Slug, s.Reviews)
 	return Step{Action: ActionReview, Stage: StageReview, Mode: ModePlan, Shown: s.label("review by " + s.Reviewer)}
 }
 
