@@ -1,6 +1,7 @@
 package chat
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -67,7 +68,7 @@ func TestObserver_UsageReportsTurnsAndTotals(t *testing.T) {
 func TestObserver_ToolEventsRecorded(t *testing.T) {
 	var events []string
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithObserver(Observer{ToolCall: func(tool string, duration time.Duration, outcome string) {
+		WithObserver(Observer{ToolCall: func(_ Pos, tool string, duration time.Duration, outcome, class string) {
 			events = append(events, tool+":"+outcome)
 		}})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
@@ -136,5 +137,88 @@ func TestSlashStats_Handled(t *testing.T) {
 func TestHelp_ListsStats(t *testing.T) {
 	if !strings.Contains(helpText(), "/stats") {
 		t.Fatal("help should list /stats")
+	}
+}
+
+func TestObserver_TurnRecordedOnClose(t *testing.T) {
+	var turns []string
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
+		WithObserver(Observer{Turn: func(turn, rounds int64, _ time.Duration, outcome string) {
+			turns = append(turns, fmt.Sprintf("%d:%d:%s", turn, rounds, outcome))
+		}})
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
+	model := updated.(Model)
+	updated, _ = model.sendUserMessage("hello")
+	model = updated.(Model)
+	updated, _ = model.Update(doneMsg{})
+	model = updated.(Model)
+
+	if len(turns) != 1 || turns[0] != "1:0:done" {
+		t.Fatalf("expected one done turn, got %v", turns)
+	}
+	// Cancelling the next turn reports it as cancelled.
+	updated, _ = model.sendUserMessage("again")
+	model = updated.(Model)
+	model.cancelStreaming()
+	if len(turns) != 2 || turns[1] != "2:0:cancelled" {
+		t.Fatalf("expected a cancelled turn, got %v", turns)
+	}
+}
+
+func TestObserver_SignalsFromResultsAndSummary(t *testing.T) {
+	var signals []string
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
+		WithObserver(Observer{Signal: func(at Pos, code, reason string) {
+			signals = append(signals, fmt.Sprintf("%d/%s:%s", at.Turn, code, reason))
+		}})
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
+	model := updated.(Model)
+	updated, _ = model.sendUserMessage("hello")
+	model = updated.(Model)
+	model.state = stateStreaming
+
+	updated, _ = model.Update(toolResultsMsg{runID: model.agent.RunID(), results: []agent.ToolResult{
+		{Call: provider.ToolCall{ID: "1", Name: "search"}, Result: "[repeat: this exact search call has now run 2 times]\nx"},
+	}})
+	model = updated.(Model)
+	model.applyMode(agent.ModeAuto)
+	model.applyMode(agent.ModeAuto)
+
+	want := []string{"1/repeat-notice:search", "1/mode:auto"}
+	if len(signals) != len(want) {
+		t.Fatalf("expected %v, got %v", want, signals)
+	}
+	for i := range want {
+		if signals[i] != want[i] {
+			t.Fatalf("signal %d: expected %q, got %q", i, want[i], signals[i])
+		}
+	}
+}
+
+func TestClassFromResult(t *testing.T) {
+	cases := map[string]string{
+		"data":              "",
+		"No matches found.": classEmpty,
+		"error: open x: no such file or directory": classNotFound,
+		"error: the user declined this tool call":  classDeclined,
+		"error: this session is in plan mode":      classPlanMode,
+		"error: this path is outside the session":  classOutOfScope,
+		"error: cancelled by user":                 classCancelled,
+		"error: open x: permission denied":         classDeclined,
+		"error: context deadline exceeded":         classTimeout,
+		"error: unknown tool frobnicate":           classUnknown,
+		"error: invalid arguments: missing 'path'": classBadArgs,
+		"error: boom": classOther,
+	}
+	for in, want := range cases {
+		if got := classFromResult(in); got != want {
+			t.Errorf("classFromResult(%q) = %q, want %q", in, got, want)
+		}
+	}
+}
+
+func TestSummaryStateCode(t *testing.T) {
+	if summaryStateCode(agent.SummaryOffTarget) != "off-target" || summaryStateCode(agent.SummaryOnTarget) != "on-target" || summaryStateCode(agent.SummaryUncertain) != "unclear" {
+		t.Fatal("summary state codes drifted")
 	}
 }

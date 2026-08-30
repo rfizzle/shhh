@@ -116,7 +116,7 @@ func (m Model) updateMemoryAsk(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	}
 	m.pendingApproval = nil
 	m.agent.ResolveApproval(resultText)
-	m.recordToolEvent(req.call.Name, time.Duration(0), outcomeFromResult(resultText))
+	m.recordToolResult(req.call.Name, time.Duration(0), resultText)
 	m.appendEntry(entry{kind: entryTool, toolName: req.call.Name, toolArgs: req.call.Arguments, toolResult: resultText})
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()

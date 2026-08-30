@@ -5,6 +5,8 @@ package cli
 // observeRecorder half persists what a running session reports.
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -15,6 +17,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/spf13/cobra"
 )
@@ -26,6 +29,9 @@ type observeRecorder struct {
 	id     int64
 	prices *pricing.Table
 	model  string
+	// linked is the saved conversation the row was last linked to, so an
+	// autosave that lands in the same slot costs no write.
+	linked string
 }
 
 // startObserveRecorder opens a session row; any failure disables recording
@@ -63,13 +69,51 @@ func (r *observeRecorder) sessionID() int64 {
 	return r.id
 }
 
-// toolCallOutcome records a tool event without a duration, for sub-agent
-// runners that don't time individual calls.
+// stamp records what the session ran under: the build, a fingerprint of the
+// system prompt as sent, how many skills loaded, and a fingerprint of the
+// checkout. Fingerprints rather than the things themselves: the prompt
+// carries the project context and the path names the machine, and neither
+// belongs in a table that is content-free by construction. A hash still
+// splits "before the edit" from "after it", which is all a comparison needs.
+func (r *observeRecorder) stamp(sysPrompt string, skills int, root string) {
+	if r == nil {
+		return
+	}
+	_ = r.db.StampAgentSession(r.id, storage.AgentProvenance{
+		Version:    version,
+		PromptHash: fingerprint(sysPrompt),
+		Skills:     skills,
+		Project:    fingerprint(root),
+	})
+}
+
+// projectFingerprintRoot is the checkout the session runs in — its
+// repository root when there is one, else the working directory — as the
+// string the project fingerprint hashes.
+func projectFingerprintRoot() string {
+	cwd, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+	return todo.Root(cwd)
+}
+
+// fingerprint is a short stable hash of a string, or empty for empty input.
+func fingerprint(s string) string {
+	if s == "" {
+		return ""
+	}
+	sum := sha256.Sum256([]byte(s))
+	return hex.EncodeToString(sum[:6])
+}
+
+// toolCallOutcome records a tool event without a duration or position, for
+// sub-agent runners that don't time individual calls.
 func (r *observeRecorder) toolCallOutcome(tool, outcome string) {
 	if r == nil {
 		return
 	}
-	_ = r.db.RecordAgentEvent(r.id, storage.AgentEventTool, tool, nil, outcome, "")
+	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{Kind: storage.AgentEventTool, Tool: tool, Outcome: outcome})
 }
 
 // observer adapts the recorder to the chat TUI's observability hooks.
@@ -77,7 +121,14 @@ func (r *observeRecorder) observer() chat.Observer {
 	if r == nil {
 		return chat.Observer{}
 	}
-	return chat.Observer{Usage: r.usagePriced, ToolCall: r.toolCall, Decision: r.decision}
+	return chat.Observer{
+		Usage:    r.usagePriced,
+		ToolCall: r.toolCallAt,
+		Decision: r.decisionAt,
+		Turn:     r.turn,
+		Signal:   r.signal,
+		Session:  r.link,
+	}
 }
 
 // usage records a session's running totals, pricing them against the model
@@ -114,18 +165,62 @@ func (r *observeRecorder) usagePriced(turns, tokensIn, tokensOut int64, cost flo
 }
 
 func (r *observeRecorder) toolCall(tool string, duration time.Duration, outcome string) {
+	r.toolCallAt(chat.Pos{}, tool, duration, outcome, "")
+}
+
+func (r *observeRecorder) toolCallAt(at chat.Pos, tool string, duration time.Duration, outcome, class string) {
 	if r == nil {
 		return
 	}
 	ms := duration.Milliseconds()
-	_ = r.db.RecordAgentEvent(r.id, storage.AgentEventTool, tool, &ms, outcome, "")
+	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{
+		Kind: storage.AgentEventTool, Tool: tool, DurationMs: &ms, Outcome: outcome, Reason: class,
+		Turn: at.Turn, Round: at.Round,
+	})
 }
 
 func (r *observeRecorder) decision(decision, reason string) {
+	r.decisionAt(chat.Pos{}, decision, reason)
+}
+
+func (r *observeRecorder) decisionAt(at chat.Pos, decision, reason string) {
 	if r == nil {
 		return
 	}
-	_ = r.db.RecordAgentEvent(r.id, storage.AgentEventDecision, "", nil, decision, reason)
+	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{
+		Kind: storage.AgentEventDecision, Outcome: decision, Reason: reason, Turn: at.Turn, Round: at.Round,
+	})
+}
+
+// turn records a turn closing: the rounds it took ride in the event's
+// round column, its wall time in the duration.
+func (r *observeRecorder) turn(turn, rounds int64, duration time.Duration, outcome string) {
+	if r == nil {
+		return
+	}
+	ms := duration.Milliseconds()
+	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{
+		Kind: storage.AgentEventTurn, Outcome: outcome, DurationMs: &ms, Turn: turn, Round: rounds,
+	})
+}
+
+func (r *observeRecorder) signal(at chat.Pos, code, reason string) {
+	if r == nil {
+		return
+	}
+	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{
+		Kind: storage.AgentEventSignal, Outcome: code, Reason: reason, Turn: at.Turn, Round: at.Round,
+	})
+}
+
+// link names the saved conversation the session is writing.
+func (r *observeRecorder) link(name string) {
+	if r == nil || name == "" || name == r.linked {
+		return
+	}
+	if err := r.db.LinkAgentSession(r.id, name); err == nil {
+		r.linked = name
+	}
 }
 
 func (r *observeRecorder) end() {
@@ -159,9 +254,11 @@ func newObserveCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&window, "window", "30d", "time window, in days (e.g. 7d, 30d)")
 
 	var exportOut string
+	var exportTranscript bool
 	exportCmd := &cobra.Command{
 		Use:   "export",
 		Short: "Export recorded agent-session metrics as JSON",
+		Long:  "Export every recorded session with its events. The export is content-free unless --transcript is given, which joins each session's saved conversation to it.",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			since, err := parseObserveWindow(window)
@@ -174,7 +271,7 @@ func newObserveCmd() *cobra.Command {
 			}
 			defer db.Close()
 
-			sessions, err := db.ExportAgentObservability(since)
+			sessions, err := db.ExportAgentObservability(since, exportTranscript)
 			if err != nil {
 				return fmt.Errorf("export: %w", err)
 			}
@@ -202,6 +299,26 @@ func newObserveCmd() *cobra.Command {
 		},
 	}
 	exportCmd.Flags().StringVarP(&exportOut, "out", "o", "", "write to a file (user-only permissions) instead of stdout")
+	exportCmd.Flags().BoolVar(&exportTranscript, "transcript", false, "join each session's saved conversation to its metrics (the export is no longer content-free)")
+
+	sessionCmd := &cobra.Command{
+		Use:   "session <id>",
+		Short: "Show one recorded session as a timeline",
+		Long:  "Print one session's provenance and its events in order, grouped by turn: tool calls with their duration and outcome, decisions, and the signals the loop raised.",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			id, err := strconv.ParseInt(args[0], 10, 64)
+			if err != nil || id <= 0 {
+				return fmt.Errorf("invalid session id %q", args[0])
+			}
+			db, err := storage.Open()
+			if err != nil {
+				return fmt.Errorf("open database: %w", err)
+			}
+			defer db.Close()
+			return renderObserveSession(cmd, db, id)
+		},
+	}
 
 	purgeCmd := &cobra.Command{
 		Use:   "purge",
@@ -222,7 +339,7 @@ func newObserveCmd() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(exportCmd, purgeCmd)
+	cmd.AddCommand(exportCmd, sessionCmd, purgeCmd)
 	return cmd
 }
 
@@ -303,19 +420,150 @@ func renderObserveDashboard(cmd *cobra.Command, db *storage.DB, window string, s
 		_ = w.Flush()
 	}
 
+	turns, err := db.AgentTurns(since)
+	if err != nil {
+		return fmt.Errorf("query turns: %w", err)
+	}
+	if len(turns) > 0 {
+		fmt.Fprintln(out, "\nTurns:")
+		w = tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
+		fmt.Fprintln(w, "  ENDED\tCOUNT\tAVG ROUNDS\tMAX ROUNDS\tAVG TIME")
+		for _, t := range turns {
+			fmt.Fprintf(w, "  %s\t%d\t%.1f\t%d\t%s\n", t.Outcome, t.Count, t.AvgRounds, t.MaxRounds, fmtMs(t.AvgDurationMs))
+		}
+		_ = w.Flush()
+	}
+
+	toolErrors, err := db.AgentToolErrors(since)
+	if err != nil {
+		return fmt.Errorf("query tool errors: %w", err)
+	}
+	if len(toolErrors) > 0 {
+		fmt.Fprintln(out, "\nTool errors:")
+		w = tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
+		fmt.Fprintln(w, "  TOOL\tCLASS\tCOUNT")
+		for _, e := range toolErrors {
+			fmt.Fprintf(w, "  %s\t%s\t%d\n", e.Tool, orDash(e.Class), e.Count)
+		}
+		_ = w.Flush()
+	}
+
+	signals, err := db.AgentSignals(since)
+	if err != nil {
+		return fmt.Errorf("query signals: %w", err)
+	}
+	if len(signals) > 0 {
+		fmt.Fprintln(out, "\nSignals:")
+		w = tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
+		fmt.Fprintln(w, "  SIGNAL\tREASON\tCOUNT")
+		for _, s := range signals {
+			fmt.Fprintf(w, "  %s\t%s\t%d\n", s.Signal, orDash(s.Reason), s.Count)
+		}
+		_ = w.Flush()
+	}
+
 	fmt.Fprintln(out, "\nRecent sessions:")
 	w = tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(w, "  STARTED\tKIND\tMODEL\tDURATION\tTURNS\tTOKENS IN\tTOKENS OUT\tEST. COST")
+	fmt.Fprintln(w, "  ID\tSTARTED\tKIND\tMODEL\tDURATION\tTURNS\tTOKENS IN\tTOKENS OUT\tEST. COST")
 	for _, s := range sessions {
 		duration := "active"
 		if s.EndedAt != nil {
 			duration = s.EndedAt.Sub(s.StartedAt).Round(time.Second).String()
 		}
-		fmt.Fprintf(w, "  %s\t%s\t%s\t%s\t%d\t%d\t%d\t%s\n",
-			s.StartedAt.Local().Format("Jan 2 15:04"), s.Kind, s.Model, duration,
+		fmt.Fprintf(w, "  %d\t%s\t%s\t%s\t%s\t%d\t%d\t%d\t%s\n",
+			s.ID, s.StartedAt.Local().Format("Jan 2 15:04"), s.Kind, s.Model, duration,
 			s.Turns, s.TokensIn, s.TokensOut, fmtObserveCost(s.Cost))
 	}
+	if err := w.Flush(); err != nil {
+		return err
+	}
+	fmt.Fprintln(out, "\n`shhh observe session <id>` shows one session turn by turn.")
+	return nil
+}
+
+// renderObserveSession prints one session: its provenance, then its events
+// in order with a heading per turn, so a reader can see where the rounds
+// went and where the loop's safeguards spoke.
+func renderObserveSession(cmd *cobra.Command, db *storage.DB, id int64) error {
+	out := cmd.OutOrStdout()
+	s, ok, err := db.AgentSession(id)
+	if err != nil {
+		return fmt.Errorf("query session: %w", err)
+	}
+	if !ok {
+		return fmt.Errorf("no recorded session %d", id)
+	}
+	duration := "active"
+	if s.EndedAt != nil {
+		duration = s.EndedAt.Sub(s.StartedAt).Round(time.Second).String()
+	}
+	fmt.Fprintf(out, "Session %d — %s %s/%s, started %s, %s\n", s.ID, s.Kind, s.Provider, s.Model,
+		s.StartedAt.Local().Format("Jan 2 15:04"), duration)
+	fmt.Fprintf(out, "  turns %d · tokens ↑%d ↓%d · est. cost %s\n", s.Turns, s.TokensIn, s.TokensOut, fmtObserveCost(s.Cost))
+	fmt.Fprintf(out, "  version %s · prompt %s · skills %d · project %s\n",
+		orDash(s.Version), orDash(s.PromptHash), s.Skills, orDash(s.Project))
+	if s.ChatSession != "" {
+		fmt.Fprintf(out, "  conversation %q (shhh chat --resume, or observe export --transcript)\n", s.ChatSession)
+	}
+	if s.ParentID != nil {
+		fmt.Fprintf(out, "  child of session %d\n", *s.ParentID)
+	}
+
+	events, err := db.AgentSessionEvents(id)
+	if err != nil {
+		return fmt.Errorf("query events: %w", err)
+	}
+	if len(events) == 0 {
+		fmt.Fprintln(out, "\nNo events recorded.")
+		return nil
+	}
+	w := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
+	turn := int64(-1)
+	for _, e := range events {
+		if e.Turn != turn {
+			_ = w.Flush()
+			turn = e.Turn
+			if turn == 0 {
+				fmt.Fprintln(out, "\nBefore the first turn:")
+			} else {
+				fmt.Fprintf(out, "\nTurn %d:\n", turn)
+			}
+		}
+		at := e.CreatedAt
+		if t, err := time.Parse(observeTimeLayout, e.CreatedAt); err == nil {
+			at = t.Local().Format("15:04:05")
+		}
+		switch e.Kind {
+		case storage.AgentEventTool:
+			fmt.Fprintf(w, "  %s\tr%d\ttool\t%s\t%s\t%s\t%s\n", at, e.Round, e.Tool, e.Outcome, orDash(e.Reason), fmtEventMs(e.DurationMs))
+		case storage.AgentEventDecision:
+			fmt.Fprintf(w, "  %s\tr%d\tdecision\t%s\t%s\t\t\n", at, e.Round, e.Outcome, orDash(e.Reason))
+		case storage.AgentEventSignal:
+			fmt.Fprintf(w, "  %s\tr%d\tsignal\t%s\t%s\t\t\n", at, e.Round, e.Outcome, orDash(e.Reason))
+		case storage.AgentEventTurn:
+			fmt.Fprintf(w, "  %s\t\tturn\t%s\t%d rounds\t\t%s\n", at, e.Outcome, e.Round, fmtEventMs(e.DurationMs))
+		default:
+			fmt.Fprintf(w, "  %s\tr%d\t%s\t%s\t%s\t\t\n", at, e.Round, e.Kind, e.Outcome, orDash(e.Reason))
+		}
+	}
 	return w.Flush()
+}
+
+// observeTimeLayout is how storage stamps event times.
+const observeTimeLayout = "2006-01-02T15:04:05.000Z"
+
+func orDash(s string) string {
+	if s == "" {
+		return "-"
+	}
+	return s
+}
+
+func fmtEventMs(ms *int64) string {
+	if ms == nil {
+		return ""
+	}
+	return (time.Duration(*ms) * time.Millisecond).String()
 }
 
 func fmtObserveCost(v float64) string {

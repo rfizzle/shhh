@@ -20,6 +20,7 @@ package agent
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"sync"
 )
 
@@ -91,9 +92,18 @@ func (d *RepeatDetector) WrapExecutor(next ToolExecutor) ToolExecutor {
 	}
 }
 
+// IsRepeatNotice reports whether a result leads with the detector's notice,
+// so a front-end can count how often the session was told it was circling
+// without knowing how the notice is worded.
+func IsRepeatNotice(result string) bool {
+	return strings.HasPrefix(result, repeatNoticePrefix)
+}
+
+const repeatNoticePrefix = "[repeat:"
+
 func repeatNotice(tool string, n int) string {
 	return fmt.Sprintf(
-		"[repeat: this exact %s call has now run %d times and returned exactly this each time — "+
+		repeatNoticePrefix+" this exact %s call has now run %d times and returned exactly this each time — "+
 			"the earlier result is still above, unchanged. Running it again will not answer the question. "+
 			"Read one of the files it names, widen or narrow the search, or use a different tool.]",
 		tool, n)

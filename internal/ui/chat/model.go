@@ -992,6 +992,11 @@ func (m Model) autosaveCmd() tea.Cmd {
 		return nil
 	}
 	db, name := m.db, m.sessionName
+	// The slot's name is what joins this session's metrics to its
+	// transcript, so the recorder learns it here, where the slot is decided.
+	if m.observer.Session != nil {
+		m.observer.Session(name)
+	}
 	msgs := m.agent.RequestMessages()
 	return func() tea.Msg {
 		_ = db.SaveChat(name, msgs)
@@ -1718,7 +1723,10 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.agent.RecordAutoResults(msg.results)
 		m.runningTools = nil
 		for _, r := range msg.results {
-			m.recordToolEvent(r.Call.Name, r.Duration, outcomeFromResult(r.Result))
+			m.recordToolResult(r.Call.Name, r.Duration, r.Result)
+			if agent.IsRepeatNotice(r.Result) {
+				m.signal(signalRepeat, r.Call.Name)
+			}
 			m.appendEntry(entry{kind: entryTool, toolName: r.Call.Name, toolArgs: r.Call.Arguments, toolResult: r.Result, duration: r.Duration})
 		}
 		m.viewport.SetLines(m.renderHistoryLines())
@@ -1743,11 +1751,11 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// command — stays unreduced.
 		if m.pendingApproval != nil {
 			out = m.reduceResult(tools.ExecCommandName, out)
-			outcome := outcomeOK
+			outcome, class := outcomeOK, ""
 			if msg.exitCode != 0 {
-				outcome = outcomeError
+				outcome, class = outcomeError, classExitStatus
 			}
-			m.recordToolEvent(tools.ExecCommandName, msg.duration, outcome)
+			m.recordToolEvent(tools.ExecCommandName, msg.duration, outcome, class)
 		}
 		m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out, exitCode: msg.exitCode, duration: msg.duration})
 		if m.pendingApproval != nil {
@@ -1778,7 +1786,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		req := m.pendingApproval
 		m.pendingApproval = nil
 		m.agent.ResolveApproval(msg.result)
-		m.recordToolEvent(req.call.Name, msg.duration, outcomeFromResult(msg.result))
+		m.recordToolResult(req.call.Name, msg.duration, msg.result)
 		m.noteEvictedTurns(msg.evicted)
 		// An applied edit lands in the transcript as a collapsed diff row (
 		// docs/interface/surfaces.md#the-diff-view); failures keep the plain tool
@@ -2621,6 +2629,7 @@ func (m *Model) injectSteering() bool {
 		atts = nil
 	}
 	m.turnCount += int64(len(m.steering))
+	m.signal(signalSteer, strconv.Itoa(len(m.steering)))
 	m.steering = nil
 	m.denialNotice = ""
 	m.resetRounds()

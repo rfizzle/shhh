@@ -93,6 +93,14 @@ var migrations = []string{
 	CREATE INDEX IF NOT EXISTS idx_memories_scope ON memories(scope);`,
 
 	`ALTER TABLE chat_messages ADD COLUMN attachments TEXT;`,
+
+	`ALTER TABLE agent_events ADD COLUMN turn INTEGER NOT NULL DEFAULT 0;
+	ALTER TABLE agent_events ADD COLUMN round INTEGER NOT NULL DEFAULT 0;
+	ALTER TABLE agent_sessions ADD COLUMN version TEXT NOT NULL DEFAULT '';
+	ALTER TABLE agent_sessions ADD COLUMN prompt_hash TEXT NOT NULL DEFAULT '';
+	ALTER TABLE agent_sessions ADD COLUMN skills INTEGER NOT NULL DEFAULT 0;
+	ALTER TABLE agent_sessions ADD COLUMN project TEXT NOT NULL DEFAULT '';
+	ALTER TABLE agent_sessions ADD COLUMN chat_session TEXT NOT NULL DEFAULT '';`,
 }
 
 func (db *DB) migrate() error {

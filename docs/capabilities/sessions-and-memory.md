@@ -57,6 +57,45 @@ folding it into the successes hides exactly the thing worth seeing.
 
 Where no model can be priced, the split is over tokens, and it says so.
 
+## Observations are what the session did
+
+Every agent session leaves a record of what happened in it — not what was
+said. Which tools were called, in which round of which turn, how long each
+took and whether it failed and how; what the permission policy decided and
+why; how every turn ended and how many rounds it took; and each time one of
+the loop's own safeguards spoke — the repeat detector, the round cap, the
+context trim, the summarizer's reading of whether the work was still on
+target. Beside the events, the record says what the session ran under: the
+build, a fingerprint of the system prompt, how many skills loaded, a
+fingerprint of the checkout.
+
+The record exists so the prompts and the workflow can be improved against
+evidence rather than anecdote. "The agent circles" is a feeling; "the repeat
+detector fires in one turn in six, and those turns average forty rounds" is
+a number that a prompt edit either moves or does not. The provenance is what
+lets two weeks of sessions be split into before and after that edit.
+
+**The record is content-free by construction.** Never a prompt, an output, a
+path, or a command: every string stored is a fixed identifier — a provider,
+a model, a tool, a skill's name — or a code from a closed set. This is what
+makes recording every session unconditionally the right default: there is
+nothing in it to leak, so there is nothing to opt out of. It is also what
+makes the record safe to export and share.
+
+**A base rate is recorded before a guard is built on it.** Every summarizer
+reading is recorded, not only the ones that say the work drifted; every turn
+end, not only the ones that hit the cap. A threshold chosen without the
+denominator is a guess, and a guard that fires on a guess is one that
+interrupts work that was fine.
+
+**Joining the record to the conversation is a deliberate act.** A session's
+record names the saved conversation it wrote, and the export can put the two
+side by side — but only when asked, in so many words, because that is the
+moment the export stops being content-free and the reader should know it.
+
+Sessions can be recorded and never read; the record can be exported as JSON
+and purged entirely.
+
 ## Where it all lives
 
 One local embedded database file, on your machine, in the platform's

@@ -79,6 +79,31 @@ const (
 	ActionDone
 )
 
+// String names the action, as a closed set a record can be keyed on.
+func (a Action) String() string {
+	switch a {
+	case ActionPrompt:
+		return "prompt"
+	case ActionVerify:
+		return "verify"
+	case ActionCommit:
+		return "commit"
+	case ActionPause:
+		return "pause"
+	case ActionReview:
+		return "review"
+	case ActionFanOut:
+		return "fan-out"
+	case ActionWait:
+		return "wait"
+	case ActionBlocked:
+		return "blocked"
+	case ActionDone:
+		return "done"
+	}
+	return "unknown"
+}
+
 // Mode is the permission mode a prompt is sent in.
 type Mode string
 

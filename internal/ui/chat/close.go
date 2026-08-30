@@ -34,6 +34,7 @@ func (m *Model) appendTurnClose() {
 		return
 	}
 	m.turnOpen = false
+	m.recordTurn(m.turnOutcomeCode())
 	// A turn that stopped at its round limit has already closed, with the
 	// pause row: it states the rounds it used, what it changed, and
 	// the three ways on, and a second block offering [v] and [u] beside it

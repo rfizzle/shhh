@@ -126,6 +126,7 @@ func (m Model) selectPlanOption(idx int) (tea.Model, tea.Cmd) {
 // switches to the chosen one and the approval message becomes the next user
 // turn, with the plan already in context.
 func (m Model) approvePlan(execMode agent.Mode) (tea.Model, tea.Cmd) {
+	m.signal(signalPlan, "approved")
 	m.applyMode(execMode)
 	doc := m.planDoc
 	m.clearPlan()
@@ -151,6 +152,7 @@ func (m Model) approvePlan(execMode agent.Mode) (tea.Model, tea.Cmd) {
 // keepPlanning dismisses the prompt so the user can send feedback; the
 // session stays in plan mode.
 func (m Model) keepPlanning() (tea.Model, tea.Cmd) {
+	m.signal(signalPlan, "kept")
 	m.clearPlan()
 	m.setTurnState(stateInput)
 	m.syncViewport()
@@ -163,6 +165,7 @@ func (m Model) keepPlanning() (tea.Model, tea.Cmd) {
 // rejectPlan discards the prompt; the session stays in plan mode and the plan
 // remains in the transcript for reference.
 func (m Model) rejectPlan() (tea.Model, tea.Cmd) {
+	m.signal(signalPlan, "rejected")
 	m.clearPlan()
 	m.setTurnState(stateInput)
 	m.syncViewport()

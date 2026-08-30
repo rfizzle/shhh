@@ -43,6 +43,9 @@ func (m *Model) syncChildGrants() {
 // applyMode changes the session's permission mode, keeping the sub-agent
 // ceiling in sync (children are never more permissive than the parent).
 func (m *Model) applyMode(mode agent.Mode) {
+	if mode != m.mode {
+		m.signal(signalMode, mode.String())
+	}
 	m.mode = mode
 	if m.subagents != nil {
 		m.subagents.SetParentMode(mode)
@@ -80,6 +83,7 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 	case subagent.EventDone:
 		// A finished child can no longer act on its asks.
 		m.purgeChildAsks(ev.Status.Name)
+		m.signal(signalSubagent, ev.Status.State.String())
 		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("Agent %s: %s", ev.Status.Name, ev.Status.Detail)})
 		// A reviewer the backlog runner spawned answers its review stage.
 		if next, cmd, ok := m.todoReviewDone(ev.Status); ok {

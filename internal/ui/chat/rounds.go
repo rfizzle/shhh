@@ -312,6 +312,7 @@ func (m Model) grantRounds(p *roundPause) (tea.Model, tea.Cmd) {
 		return m.systemNotice("The turn is already running again.")
 	}
 	m.roundGrant += p.grant()
+	m.signal(signalRounds, "granted")
 	return m.resumeGrantedTurn(p)
 }
 
@@ -330,6 +331,7 @@ func (m Model) uncapRounds(p *roundPause) (tea.Model, tea.Cmd) {
 		return m.systemNotice("The turn is already running again.")
 	}
 	m.roundsUncapped = true
+	m.signal(signalRounds, "uncapped")
 	return m.resumeGrantedTurn(p)
 }
 

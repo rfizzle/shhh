@@ -119,6 +119,7 @@ func (m Model) todoRunStep(step run.Step) (tea.Model, tea.Cmd) {
 	if err := st.Save(m.todos.Root); err != nil {
 		m.appendEntry(entry{kind: entrySystem, text: "The run's checkpoint could not be written — " + err.Error()})
 	}
+	m.signal(signalRun, step.Action.String())
 	switch step.Action {
 	case run.ActionPrompt:
 		mode := agent.ModeAuto
@@ -503,6 +504,7 @@ func (m Model) updateTodoPause(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		note := strings.TrimSpace(res.Note)
 		_ = todo.Append(it.Path, "## Answers\n"+note)
 		m.reloadTodos()
+		m.signal(signalRun, "replan")
 		return m.todoRunStep(st.Replan(it, note))
 	}
 	if note := strings.TrimSpace(res.Note); note != "" {
@@ -724,6 +726,7 @@ func (m Model) stopTodoRunKeeping(why string) (tea.Model, tea.Cmd) {
 	}
 	st.Paths = m.todoRunPaths()
 	_ = st.Save(m.todos.Root)
+	m.signal(signalRun, "kept")
 	m.todoRun = nil
 	m.todoRunItem = todo.Item{}
 	m.reloadTodos()
@@ -739,6 +742,7 @@ func (m Model) stopTodoRun() (tea.Model, tea.Cmd) {
 	}
 	it := m.todoRunItem
 	_ = todo.SetStatus(it.Path, todo.StatusOpen)
+	m.signal(signalRun, "stopped")
 	m.endTodoRun()
 	return m.systemNotice(fmt.Sprintf("Stopped the run on %s at %s; the item is open again and the tree is as the run left it.", it.Slug, st.Stage))
 }
@@ -822,6 +826,7 @@ func (m Model) todoLaneAsk(ask *subagent.Ask) (tea.Model, tea.Cmd, bool) {
 	}
 	if len(ask.Warnings) > 0 {
 		ask.Respond(false)
+		m.signal(signalRun, "lane-refused")
 		next, cmd := m.todoRunStep(st.LaneFailed(ask.Agent, "its patch was refused: "+strings.Join(ask.Warnings, "; ")))
 		return next, cmd, true
 	}

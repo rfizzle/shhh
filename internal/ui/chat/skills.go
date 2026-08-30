@@ -26,6 +26,7 @@ func (m Model) activateSkill(name, task string) (tea.Model, tea.Cmd) {
 	if err != nil {
 		return m.surfaceNotice("Could not read skill " + name + ": " + err.Error())
 	}
+	m.signal(signalSkill, s.Name)
 	shown := "/skill " + name
 	if task != "" {
 		shown += " " + task

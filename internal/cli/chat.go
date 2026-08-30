@@ -589,6 +589,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// mode decisions) are recorded to storage; failure just disables recording.
 	recorder := startObserveRecorder(db, session.kind, env.prov.Name(), env.modelName, prices)
 	defer recorder.end()
+	recorder.stamp(env.sysPrompt, session.skills.Len(), projectFingerprintRoot())
 
 	// Sub-agent supervisor: spawn_agent and agent_report short-circuit
 	// on the executor chain; Close cancels the child tree and removes

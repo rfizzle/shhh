@@ -9,6 +9,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/spf13/cobra"
 )
 
@@ -106,10 +107,10 @@ func TestRenderObserveDashboard_Sections(t *testing.T) {
 		t.Fatalf("update session: %v", err)
 	}
 	ms := int64(42)
-	if err := db.RecordAgentEvent(id, storage.AgentEventTool, "read_file", &ms, "ok", ""); err != nil {
+	if err := db.RecordAgentEvent(id, storage.AgentEvent{Kind: storage.AgentEventTool, Tool: "read_file", DurationMs: &ms, Outcome: "ok", Turn: 1, Round: 1}); err != nil {
 		t.Fatalf("record tool event: %v", err)
 	}
-	if err := db.RecordAgentEvent(id, storage.AgentEventDecision, "", nil, "deny", "classifier"); err != nil {
+	if err := db.RecordAgentEvent(id, storage.AgentEvent{Kind: storage.AgentEventDecision, Outcome: "deny", Reason: "classifier", Turn: 1, Round: 1}); err != nil {
 		t.Fatalf("record decision event: %v", err)
 	}
 	if err := db.EndAgentSession(id); err != nil {
@@ -138,11 +139,73 @@ func TestObserveRecorder_NilSafe(t *testing.T) {
 	rec.usage(1, 1, 1)
 	rec.toolCall("read_file", time.Millisecond, "ok")
 	rec.decision("allow", "user")
+	rec.stamp("prompt", 1, "/repo")
+	rec.turn(1, 3, time.Second, "done")
+	rec.signal(chat.Pos{}, "summary", "on-target")
+	rec.link("name")
 	rec.end()
-	if obs := rec.observer(); obs.Usage != nil || obs.ToolCall != nil || obs.Decision != nil {
+	if obs := rec.observer(); obs.Usage != nil || obs.ToolCall != nil || obs.Decision != nil || obs.Turn != nil || obs.Signal != nil || obs.Session != nil {
 		t.Fatal("nil recorder should produce a zero observer")
 	}
 	if r := startObserveRecorder(nil, "chat", "p", "m", nil); r != nil {
 		t.Fatal("nil db should produce a nil recorder")
+	}
+}
+
+func TestObserveSessionTimeline(t *testing.T) {
+	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	defer db.Close()
+
+	rec := startObserveRecorder(db, "code", "anthropic", "test-model", nil)
+	rec.stamp("the prompt", 2, "/repo")
+	rec.link("2026-01-01 10:00:00")
+	rec.link("2026-01-01 10:00:00")
+	rec.toolCallAt(chat.Pos{Turn: 1, Round: 1}, "search", 5*time.Millisecond, "ok", "empty")
+	rec.decisionAt(chat.Pos{Turn: 1, Round: 2}, "ask", "safety")
+	rec.signal(chat.Pos{Turn: 1, Round: 40}, "summary", "off-target")
+	rec.turn(1, 41, 90*time.Second, "cap-paused")
+	rec.end()
+
+	var buf bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetOut(&buf)
+	if err := renderObserveSession(cmd, db, rec.sessionID()); err != nil {
+		t.Fatalf("render session: %v", err)
+	}
+	out := buf.String()
+	for _, want := range []string{
+		"Session 1", "prompt " + fingerprint("the prompt"), "skills 2", "project " + fingerprint("/repo"),
+		"conversation \"2026-01-01 10:00:00\"", "Turn 1:", "search", "empty", "ask", "safety",
+		"summary", "off-target", "cap-paused", "41 rounds",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("timeline missing %q:\n%s", want, out)
+		}
+	}
+	if err := renderObserveSession(cmd, db, 99); err == nil {
+		t.Fatal("expected an error for a session that does not exist")
+	}
+
+	buf.Reset()
+	if err := renderObserveDashboard(cmd, db, "30d", time.Now().Add(-time.Hour)); err != nil {
+		t.Fatalf("render dashboard: %v", err)
+	}
+	out = buf.String()
+	for _, want := range []string{"Turns:", "cap-paused", "Signals:", "off-target", "observe session"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("dashboard missing %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestFingerprint(t *testing.T) {
+	if fingerprint("") != "" {
+		t.Fatal("empty input must fingerprint to empty")
+	}
+	if a, b := fingerprint("x"), fingerprint("y"); a == b || len(a) != 12 {
+		t.Fatalf("fingerprints %q %q", a, b)
 	}
 }

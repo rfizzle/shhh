@@ -3,6 +3,8 @@ package storage
 import (
 	"testing"
 	"time"
+
+	"github.com/rfizzle/shhh/internal/provider"
 )
 
 func TestAgentObservability_Lifecycle(t *testing.T) {
@@ -28,7 +30,7 @@ func TestAgentObservability_Lifecycle(t *testing.T) {
 		{AgentEventDecision, "", "allow", "mode-auto", nil},
 	}
 	for _, e := range events {
-		if err := db.RecordAgentEvent(id, e.kind, e.tool, e.duration, e.outcome, e.reason); err != nil {
+		if err := db.RecordAgentEvent(id, AgentEvent{Kind: e.kind, Tool: e.tool, DurationMs: e.duration, Outcome: e.outcome, Reason: e.reason, Turn: 1, Round: 2}); err != nil {
 			t.Fatalf("record event: %v", err)
 		}
 	}
@@ -101,7 +103,7 @@ func TestAgentObservability_Lifecycle(t *testing.T) {
 		t.Fatal("expected ended session to have an end time")
 	}
 
-	export, err := db.ExportAgentObservability(since)
+	export, err := db.ExportAgentObservability(since, false)
 	if err != nil {
 		t.Fatalf("export: %v", err)
 	}
@@ -110,6 +112,9 @@ func TestAgentObservability_Lifecycle(t *testing.T) {
 	}
 	if export[0].Events[0].Tool != "read_file" || export[0].Events[0].Outcome != "ok" {
 		t.Fatalf("unexpected first exported event: %+v", export[0].Events[0])
+	}
+	if export[0].Events[0].Turn != 1 || export[0].Events[0].Round != 2 {
+		t.Fatalf("expected the event's position to export, got %+v", export[0].Events[0])
 	}
 
 	purged, err := db.PurgeAgentObservability()
@@ -172,7 +177,7 @@ func TestStartChildAgentSession_LinksParent(t *testing.T) {
 		t.Fatalf("update child: %v", err)
 	}
 
-	sessions, err := db.ExportAgentObservability(time.Now().Add(-time.Hour))
+	sessions, err := db.ExportAgentObservability(time.Now().Add(-time.Hour), false)
 	if err != nil {
 		t.Fatalf("export: %v", err)
 	}
@@ -205,5 +210,97 @@ func TestStartChildAgentSession_LinksParent(t *testing.T) {
 	}
 	if looseID <= 0 {
 		t.Fatal("unlinked session not created")
+	}
+}
+
+func TestAgentObservability_TurnsSignalsAndProvenance(t *testing.T) {
+	db := openTestDB(t)
+
+	id, err := db.StartAgentSession("code", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	if err := db.StampAgentSession(id, AgentProvenance{Version: "1.2.3", PromptHash: "abc123", Skills: 2, Project: "p0"}); err != nil {
+		t.Fatalf("stamp: %v", err)
+	}
+	if err := db.LinkAgentSession(id, "2026-01-01 10:00:00"); err != nil {
+		t.Fatalf("link: %v", err)
+	}
+	if err := db.SaveChat("2026-01-01 10:00:00", []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "fix the build"},
+	}); err != nil {
+		t.Fatalf("save chat: %v", err)
+	}
+
+	ms := int64(900)
+	events := []AgentEvent{
+		{Kind: AgentEventTurn, Outcome: "done", Turn: 1, Round: 4, DurationMs: &ms},
+		{Kind: AgentEventTurn, Outcome: "done", Turn: 2, Round: 8, DurationMs: &ms},
+		{Kind: AgentEventTurn, Outcome: "cap-paused", Turn: 3, Round: 150},
+		{Kind: AgentEventSignal, Outcome: "summary", Reason: "off-target", Turn: 3, Round: 40},
+		{Kind: AgentEventSignal, Outcome: "repeat-notice", Reason: "search", Turn: 3, Round: 41},
+		{Kind: AgentEventSignal, Outcome: "repeat-notice", Reason: "search", Turn: 3, Round: 42},
+		{Kind: AgentEventTool, Tool: "read_file", Outcome: "error", Reason: "not-found", Turn: 1, Round: 1},
+		{Kind: AgentEventTool, Tool: "read_file", Outcome: "ok", Turn: 1, Round: 2},
+	}
+	for _, e := range events {
+		if err := db.RecordAgentEvent(id, e); err != nil {
+			t.Fatalf("record: %v", err)
+		}
+	}
+
+	since := time.Now().Add(-time.Hour)
+	turns, err := db.AgentTurns(since)
+	if err != nil {
+		t.Fatalf("turns: %v", err)
+	}
+	if len(turns) != 2 || turns[0].Outcome != "done" || turns[0].Count != 2 || turns[0].AvgRounds != 6 || turns[0].MaxRounds != 8 {
+		t.Fatalf("unexpected turns: %+v", turns)
+	}
+	if turns[1].Outcome != "cap-paused" || turns[1].AvgDurationMs != nil {
+		t.Fatalf("unexpected paused turn row: %+v", turns[1])
+	}
+
+	signals, err := db.AgentSignals(since)
+	if err != nil {
+		t.Fatalf("signals: %v", err)
+	}
+	if len(signals) != 2 || signals[0].Signal != "repeat-notice" || signals[0].Reason != "search" || signals[0].Count != 2 {
+		t.Fatalf("unexpected signals: %+v", signals)
+	}
+
+	errs, err := db.AgentToolErrors(since)
+	if err != nil {
+		t.Fatalf("tool errors: %v", err)
+	}
+	if len(errs) != 1 || errs[0].Tool != "read_file" || errs[0].Class != "not-found" || errs[0].Count != 1 {
+		t.Fatalf("unexpected tool errors: %+v", errs)
+	}
+
+	s, ok, err := db.AgentSession(id)
+	if err != nil || !ok {
+		t.Fatalf("session: ok=%v err=%v", ok, err)
+	}
+	if s.Version != "1.2.3" || s.PromptHash != "abc123" || s.Skills != 2 || s.Project != "p0" || s.ChatSession != "2026-01-01 10:00:00" {
+		t.Fatalf("unexpected provenance: %+v", s)
+	}
+	if _, ok, err := db.AgentSession(id + 100); err != nil || ok {
+		t.Fatalf("expected no session, got ok=%v err=%v", ok, err)
+	}
+
+	plain, err := db.ExportAgentObservability(since, false)
+	if err != nil {
+		t.Fatalf("export: %v", err)
+	}
+	if len(plain) != 1 || plain[0].Transcript != nil || plain[0].PromptHash != "abc123" {
+		t.Fatalf("expected a content-free export with provenance, got %+v", plain)
+	}
+	joined, err := db.ExportAgentObservability(since, true)
+	if err != nil {
+		t.Fatalf("export with transcript: %v", err)
+	}
+	if len(joined) != 1 || len(joined[0].Transcript) != 2 || joined[0].Transcript[1].Content != "fix the build" {
+		t.Fatalf("expected the transcript joined, got %+v", joined)
 	}
 }

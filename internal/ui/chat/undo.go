@@ -139,6 +139,7 @@ func (m Model) applyUndo(plan changeset.UndoPlan, force bool) (tea.Model, tea.Cm
 	out := plan.Apply(force)
 	if len(out.Records) > 0 {
 		m.turnCount++
+		m.signal(signalUndo, "")
 		var evicted []int64
 		for _, r := range out.Records {
 			evicted = append(evicted, m.changes.Add(m.turnCount, r)...)

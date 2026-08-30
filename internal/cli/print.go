@@ -254,6 +254,18 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	}
 	recorder := startObserveRecorder(db, "print", env.prov.Name(), env.modelName, prices)
 	defer recorder.end()
+	recorder.stamp(env.sysPrompt, session.skills.Len(), projectFingerprintRoot())
+	// A headless run is one turn; it closes here with the rounds it took,
+	// the same event an interactive turn ends with.
+	var runErr error
+	runStart := time.Now()
+	defer func() {
+		outcome := "done"
+		if runErr != nil {
+			outcome = "failed"
+		}
+		recorder.turn(1, int64(a.Rounds()), time.Since(runStart), outcome)
+	}()
 
 	var usage provider.Usage
 	var callStart time.Time
@@ -303,7 +315,8 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		h.OnText = func(text string) { fmt.Fprint(os.Stdout, text) }
 	}
 
-	final, runErr := h.Run(initialPrompt)
+	final, err := h.Run(initialPrompt)
+	runErr = err
 	if !opts.json && final != "" && !strings.HasSuffix(final, "\n") {
 		fmt.Fprintln(os.Stdout)
 	}
