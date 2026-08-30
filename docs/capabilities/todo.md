@@ -194,6 +194,38 @@ wrong, only the conversation moved. Clearing the conversation is the one
 thing a run does not survive: it is an explicit end, and the item goes
 back to open with the tree as the run left it.
 
+## A large item is built in lanes
+
+A large item is the one size the session does not build itself. After the
+pause, one more read-only turn divides the approved plan into lanes: a
+short name, the paths the lane may touch, and what it builds. Code checks
+the division before anything is spawned — between two and four lanes, each
+with a task and at least one path, no path shared between two lanes,
+nothing under the backlog — and a division that fails the check is not a
+blocked item, it is a plan the session builds whole, with the record saying
+why. The orchestrator can also answer that the plan does not divide; a
+plan whose steps all rest on one new foundation is that kind, and a wrong
+split costs more than no split.
+
+Each lane goes to a writer child, the same kind a session spawns by hand:
+its own copy of the tree, the item and its lane in the task by content
+rather than by path, because a copy of an uncommitted backlog holds no
+item files. The lanes are written blind to each other, which is why each
+must build against the tree as it stands. A lane's patch is the run's to
+take — the lanes were checked disjoint, and the tree is verified and
+reviewed after — so it lands without a card; a patch the supervisor flags
+as overwriting another's is refused, and the run blocks on it, with the
+other lanes' work in the tree and the missing one named. A command a
+writer's classifier cannot decide goes to the person the way every child's
+does; that is the steering a fan-out keeps.
+
+When the last lane lands, the session takes one turn of its own in the
+working mode to make the lanes fit — wire what the reports say needs
+wiring, tick the item's boxes, which no lane could — and hands the tree to
+verification. From there a large item is a medium one: the same checks,
+the same reviewer child, the same rounds. A run continued in a new session
+at its fan-out spawns only the lanes that had not landed, under new names.
+
 ## Done is archived, not deleted
 
 A finished item moves into an archive beside the active ones, with the

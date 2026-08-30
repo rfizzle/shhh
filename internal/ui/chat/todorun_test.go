@@ -383,8 +383,9 @@ func TestTodoRun_PauseCardGoAheadReplanStop(t *testing.T) {
 		t.Fatal("L pauses again after re-plan")
 	}
 	m = press(t, m, "enter")
-	if m.todoRun.Stage != run.StageImplement || !m.working() || m.mode != agent.ModeAuto {
-		t.Fatalf("go ahead should implement in auto: stage=%s mode=%s", m.todoRun.Stage, m.mode)
+	// A large item is divided before it is built; the split reads only.
+	if m.todoRun.Stage != run.StageSplit || !m.working() || m.mode != agent.ModePlan {
+		t.Fatalf("go ahead on L should split in plan mode: stage=%s mode=%s", m.todoRun.Stage, m.mode)
 	}
 
 	// Stop from the card.
@@ -585,8 +586,16 @@ func TestTodoRun_GoAheadNoteReachesImplement(t *testing.T) {
 	m = answer(t, updated.(Model), largePlan)
 	m.todoPause.Note.SetValue("use the old flag")
 	m = press(t, m, "enter")
+	if !m.working() || m.todoRun.Stage != run.StageSplit {
+		t.Fatal("go ahead on L should split")
+	}
+	if msgs := m.agent.Messages(); !strings.Contains(msgs[len(msgs)-1].Content, "use the old flag") {
+		t.Fatal("the note should be in front of the split stage")
+	}
+	// And in front of the lanes and the integration after them.
+	m = answer(t, m, "lanes: none")
 	if !m.working() || m.todoRun.Stage != run.StageImplement {
-		t.Fatal("go ahead should implement")
+		t.Fatal("no lanes should implement whole")
 	}
 	if msgs := m.agent.Messages(); !strings.Contains(msgs[len(msgs)-1].Content, "use the old flag") {
 		t.Fatal("the note should be in front of the implement stage")
@@ -714,5 +723,196 @@ func TestTodoRun_SameSessionContinueRespawnsAReviewer(t *testing.T) {
 	}
 	if _, ok := sup.Get("todo-review-do-it-2"); !ok {
 		t.Fatal("the second child should exist")
+	}
+}
+
+// largeRunModel is a run on a large item at its fan-out: research answered
+// L, the pause was taken, and the split named two lanes. The root is a
+// git repository with a commit, because writers work in worktrees.
+func largeRunModel(t *testing.T, env subagent.EnvFactory) (Model, *subagent.Supervisor) {
+	t.Helper()
+	m, root := runModel(t)
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not on PATH")
+	}
+	git := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", append([]string{"-C", root}, args...)...)
+		cmd.Env = append(os.Environ(), "GIT_AUTHOR_NAME=t", "GIT_AUTHOR_EMAIL=t@t", "GIT_COMMITTER_NAME=t", "GIT_COMMITTER_EMAIL=t@t")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v: %v\n%s", args, err, out)
+		}
+	}
+	git("init", "-q")
+	if err := os.WriteFile(filepath.Join(root, "a.go"), []byte("package a\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	git("add", "a.go")
+	git("commit", "-q", "-m", "seed")
+	sup := subagent.New(context.Background(), subagent.Options{Root: root, NewEnv: env})
+	t.Cleanup(sup.Close)
+	m = m.WithSubagents(sup)
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	m = answer(t, updated.(Model), strings.Replace(runPlan, "size: S", "size: L", 1))
+	if m.todoPause == nil {
+		t.Fatal("L should pause")
+	}
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+	if m.todoRun == nil || m.todoRun.Stage != run.StageSplit || !m.working() {
+		t.Fatalf("go ahead should start the split turn: %+v", m.todoRun)
+	}
+	m = answer(t, m, "LANE: alpha\npaths: a.go\ntask: change a\n\nLANE: beta\npaths: b.go\ntask: create b\n")
+	if m.todoRun.Stage != run.StageFanOut || m.working() {
+		t.Fatalf("the split should fan out: %+v", m.todoRun)
+	}
+	return m, sup
+}
+
+// writingEnv builds writers that write one file into their own copy of the
+// tree, named after their lane's first path, then report. The write is
+// gated, as it is in production, so the child's mode is what decides
+// whether it happens: a writer spawned read-only would write nothing.
+func writingEnv(content string) subagent.EnvFactory {
+	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
+		calls := 0
+		stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+			ch := make(chan provider.StreamEvent, 2)
+			calls++
+			if calls == 1 {
+				ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{{ID: "1", Name: "write_file", Arguments: `{"path":"` + spec.Paths[0] + `"}`}}}
+			} else {
+				ch <- provider.StreamEvent{Token: "Wrote " + spec.Paths[0] + ". Wire it up."}
+				ch <- provider.StreamEvent{Done: true}
+			}
+			close(ch)
+			return ch, func() {}, nil
+		}
+		write := func(name string, args json.RawMessage) (string, error) {
+			var a struct{ Path string }
+			_ = json.Unmarshal(args, &a)
+			return "ok", os.WriteFile(filepath.Join(spec.Root, filepath.Base(a.Path)), []byte(content), 0o644)
+		}
+		return subagent.Env{SystemPrompt: "sys", Stream: stream, Executor: write, ExecuteGated: write,
+			Gated: map[string]bool{"write_file": true}}, nil
+	}
+}
+
+// pumpSubagents feeds supervisor events to the model until every lane has
+// reported or the deadline passes.
+func pumpSubagents(t *testing.T, m Model, sup *subagent.Supervisor, until func(Model) bool) Model {
+	t.Helper()
+	deadline := time.After(10 * time.Second)
+	for !until(m) {
+		select {
+		case ev := <-sup.Events():
+			updated, _ := m.handleSubagentEvent(ev)
+			m = updated.(Model)
+		case <-deadline:
+			t.Fatalf("timed out; run = %+v", m.todoRun)
+		}
+	}
+	return m
+}
+
+func TestTodoRun_LargeItemLanesLandAndIntegrate(t *testing.T) {
+	m, sup := largeRunModel(t, writingEnv("package a\n\nvar changed = true\n"))
+	if st, ok := sup.Get("tw1-alpha"); !ok || st.Role != subagent.RoleWriter || st.Paths[0] != "a.go" || st.Batch == 0 {
+		t.Fatalf("alpha = %+v %v", st, ok)
+	}
+	if mode, _ := sup.AgentMode("tw1-alpha"); mode != agent.ModeAuto {
+		t.Fatalf("a writer must be spawned in the working mode, got %v", mode)
+	}
+	if _, ok := sup.Get("tw1-beta"); !ok {
+		t.Fatal("beta should be spawned")
+	}
+	m = pumpSubagents(t, m, sup, func(m Model) bool { return m.todoRun == nil || m.todoRun.Stage != run.StageFanOut })
+	if m.todoRun == nil || m.todoRun.Stage != run.StageImplement || !m.working() || !m.todoRun.AllLanesDone() {
+		t.Fatalf("both lanes landing should start the integration turn: %+v", m.todoRun)
+	}
+	if len(m.childAsks) != 0 {
+		t.Fatal("a lane's patch is the run's to take, never a card")
+	}
+	// The patches are on the real tree, recorded in the changeset, and so
+	// in what the run may stage.
+	if data, _ := os.ReadFile(filepath.Join(m.todos.Root, "b.go")); !strings.Contains(string(data), "changed") {
+		t.Fatalf("beta's patch should have landed: %q", data)
+	}
+	paths := m.todoRunPaths()
+	if len(paths) != 2 {
+		t.Fatalf("paths = %v", paths)
+	}
+	if m.mode != agent.ModeAuto {
+		t.Fatalf("integration runs in auto mode, got %v", m.mode)
+	}
+	// The reports reached the integration prompt.
+	if msgs := m.agent.Messages(); !strings.Contains(msgs[len(msgs)-1].Content, "INTEGRATE stage") || !strings.Contains(msgs[len(msgs)-1].Content, "Wrote a.go. Wire it up.") {
+		t.Fatal("the integration prompt should carry the lane reports")
+	}
+}
+
+func TestTodoRun_WriterWithoutAPatchBlocksTheRun(t *testing.T) {
+	m, sup := largeRunModel(t, reportingEnv("I looked and changed nothing."))
+	m = pumpSubagents(t, m, sup, func(m Model) bool { return m.todoRun == nil })
+	found := false
+	for _, e := range m.transcript {
+		if strings.Contains(e.text, "patch did not land") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("the evidence should say the lane's patch did not land")
+	}
+	it, _ := m.todoStore.Find("do-it")
+	if it.Status != todo.StatusBlocked {
+		t.Fatalf("item should be blocked, is %s", it.Status)
+	}
+	// The other writer is not left running on a run that is over.
+	deadline := time.After(5 * time.Second)
+	for {
+		active, _ := sup.ActiveCounts()
+		if active == 0 {
+			break
+		}
+		select {
+		case <-sup.Events():
+		case <-deadline:
+			t.Fatal("the surviving writer should have been killed")
+		}
+	}
+}
+
+func TestTodoRun_StopKillsTheWriters(t *testing.T) {
+	m, sup := largeRunModel(t, blockingEnv())
+	m.input.SetValue("/todo stop")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+	if m.todoRun != nil {
+		t.Fatal("run should be over")
+	}
+	killed := 0
+	deadline := time.After(5 * time.Second)
+	for killed < 2 {
+		select {
+		case ev := <-sup.Events():
+			if ev.Kind == subagent.EventDone && ev.Status.State != subagent.StateDone {
+				killed++
+			}
+		case <-deadline:
+			t.Fatalf("stop should kill both writers, killed %d", killed)
+		}
+	}
+}
+
+func TestTodoRun_FanOutWithoutASupervisorBuildsWhole(t *testing.T) {
+	m, _ := runModel(t)
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	m = answer(t, updated.(Model), strings.Replace(runPlan, "size: S", "size: L", 1))
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = answer(t, updated.(Model), "LANE: alpha\npaths: a.go\ntask: change a\n\nLANE: beta\npaths: b.go\ntask: create b\n")
+	if m.todoRun == nil || m.todoRun.Stage != run.StageImplement || !m.working() || len(m.todoRun.Lanes) != 0 {
+		t.Fatalf("no supervisor should build the item in this session: %+v", m.todoRun)
 	}
 }

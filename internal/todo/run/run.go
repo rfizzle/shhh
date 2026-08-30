@@ -27,7 +27,12 @@ const (
 	// StageResearch reads the code in plan mode and answers with a plan, a
 	// size and any open questions.
 	StageResearch Stage = "research"
-	// StageImplement carries the plan out.
+	// StageSplit divides a large item's plan into lanes, in plan mode.
+	StageSplit Stage = "split"
+	// StageFanOut is writer children building the lanes; no session turn.
+	StageFanOut Stage = "fan-out"
+	// StageImplement carries the plan out — the whole plan for a small or
+	// medium item, the integration of the lanes for a large one.
 	StageImplement Stage = "implement"
 	// StageVerify runs the item's tests and the project's checks. No model.
 	StageVerify Stage = "verify"
@@ -62,6 +67,12 @@ const (
 	// ActionReview: hand Prompt to a reviewer sub-agent named Reviewer and
 	// report its final text through ReviewResult.
 	ActionReview
+	// ActionFanOut: spawn a writer child per State.Lanes entry whose Agent
+	// is set, with LaneTask as its task and Paths as its claim; report
+	// each patch through LanePatched and each finish through LaneDone.
+	ActionFanOut
+	// ActionWait: nothing to do until a child reports.
+	ActionWait
 	// ActionBlocked: the run is over with State.Blocked as the evidence.
 	ActionBlocked
 	// ActionDone: the run is over; the item is archived.
@@ -135,6 +146,11 @@ type State struct {
 	// in the supervisor for the session.
 	Reviewer string `json:"reviewer"`
 	Reviews  int    `json:"reviews"`
+	// Lanes is a large item's division into writer children, and Fanouts
+	// how many times they were spawned, so a lane's child name is never
+	// one the supervisor already holds.
+	Lanes   []Lane `json:"lanes,omitempty"`
+	Fanouts int    `json:"fanouts,omitempty"`
 	// Answers are the notes the person gave at a pause, for the re-plan.
 	Answers []string `json:"answers"`
 
@@ -214,7 +230,16 @@ func (s *State) Continue(it todo.Item) Step {
 		}
 		return Step{Action: ActionPrompt, Stage: StageResearch, Mode: ModePlan,
 			Prompt: researchPrompt(it, answersBlock(s.Answers)), Shown: s.label("research (continued)")}
+	case StageSplit:
+		return s.split(it)
+	case StageFanOut:
+		// The children died with the session; the lanes that landed are
+		// in the tree, and the rest are spawned again under new names.
+		return s.fanOut()
 	case StageImplement:
+		if s.AllLanesDone() {
+			return s.integrate(it)
+		}
 		return Step{Action: ActionPrompt, Stage: StageImplement, Mode: ModeAuto,
 			Prompt: implementPrompt(it, s.Plan, answersBlock(s.Answers)), Shown: s.label("implement (continued)")}
 	case StageRemediate:
@@ -257,7 +282,7 @@ func (s *State) Observe(it todo.Item, text string) Step {
 	// Only a stage that changes things may report itself blocked; a review
 	// or a commit turn quoting the word is not a block.
 	switch s.Stage {
-	case StageResearch, StageImplement, StageRemediate:
+	case StageResearch, StageSplit, StageImplement, StageRemediate:
 		if reason, ok := blockedLine(text); ok {
 			return s.block("the model reported it is blocked: " + reason)
 		}
@@ -265,6 +290,8 @@ func (s *State) Observe(it todo.Item, text string) Step {
 	switch s.Stage {
 	case StageResearch:
 		return s.afterResearch(it, text)
+	case StageSplit:
+		return s.afterSplit(it, text)
 	case StageImplement, StageRemediate:
 		return s.verify()
 	case StageReview:
@@ -328,7 +355,12 @@ func (s *State) pause(why string) Step {
 	return Step{Action: ActionPause, Stage: StageResearch, Shown: s.label("paused — " + why)}
 }
 
+// implement is the stage after the gate. A large item is divided first
+// and built by writer children; anything smaller is built here.
 func (s *State) implement(it todo.Item) Step {
+	if s.Size == todo.SizeL {
+		return s.split(it)
+	}
 	s.Paused = ""
 	s.Stage = StageImplement
 	return Step{Action: ActionPrompt, Stage: StageImplement, Mode: ModeAuto,
@@ -488,6 +520,15 @@ func (s *State) Summary() string {
 	}
 	if s.Round > 0 {
 		fmt.Fprintf(&b, " · remediation %d/%d", s.Round, Rounds(s.Size))
+	}
+	if n := len(s.Lanes); n > 0 {
+		done := 0
+		for _, l := range s.Lanes {
+			if l.Done {
+				done++
+			}
+		}
+		fmt.Fprintf(&b, " · lanes %d/%d landed", done, n)
 	}
 	if len(s.Steps) > 0 {
 		fmt.Fprintf(&b, "\nplan: %d steps", len(s.Steps))

@@ -212,7 +212,9 @@ func TestRun_ResumeAndReplan(t *testing.T) {
 	}
 	s.Observe(it, large)
 	step = s.Resume(it)
-	if step.Action != ActionPrompt || step.Stage != StageImplement || s.Paused != "" {
+	// A large item is divided before it is built, in the read-only mode,
+	// with the person's steering in front of the split.
+	if step.Action != ActionPrompt || step.Stage != StageSplit || step.Mode != ModePlan || s.Paused != "" || !strings.Contains(step.Prompt, "keep the old flag") {
 		t.Fatalf("resume = %+v", step)
 	}
 	if step := s.Resume(it); step.Action != ActionBlocked {

@@ -1256,6 +1256,11 @@ func (s *Supervisor) claimConflict(paths []string) (holder, claim string, confli
 		if !c.profile.Writes || len(st.Paths) == 0 {
 			continue
 		}
+		// A killed child holds its claim until its goroutine notices the
+		// cancel; a claim that is going is not one to wait for.
+		if c.ctx.Err() != nil {
+			continue
+		}
 		switch st.State {
 		case StateDone, StateFailed:
 			continue

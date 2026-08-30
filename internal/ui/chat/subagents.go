@@ -65,6 +65,12 @@ func listenSubagents(ch <-chan subagent.Event) tea.Cmd {
 func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 	switch ev.Kind {
 	case subagent.EventAsk:
+		// A patch from one of the backlog run's writers is the run's to
+		// take; it never reaches a card.
+		if next, cmd, ok := m.todoLaneAsk(ev.Ask); ok {
+			nm := next.(Model)
+			return nm, tea.Batch(cmd, listenSubagents(nm.subagents.Events()))
+		}
 		m.childAsks = append(m.childAsks, ev.Ask)
 		// A routed approval arrives the way every other decision does: on
 		// screen, and holding the keyboard only if there is no sentence for
@@ -80,8 +86,14 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 			nm := next.(Model)
 			return nm, tea.Batch(cmd, listenSubagents(nm.subagents.Events()))
 		}
+		// A writer building one of its lanes answers the fan-out stage.
+		if next, cmd, ok := m.todoWriterDone(ev.Status); ok {
+			nm := next.(Model)
+			return nm, tea.Batch(cmd, listenSubagents(nm.subagents.Events()))
+		}
 	case subagent.EventPatch:
 		m.recordChildPatch(ev.Patch)
+		m.todoLanePatched(ev.Patch)
 	}
 	m.syncViewport()
 	m.viewport.SetLines(m.renderHistoryLines())
