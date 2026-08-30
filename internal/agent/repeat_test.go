@@ -93,7 +93,7 @@ func TestRepeatDetector_WrapExecutorLeavesFailuresAlone(t *testing.T) {
 		return "", errors.New("boom")
 	})
 	args := json.RawMessage(`{"pattern":"foo"}`)
-	exec("search", args)
+	_, _ = exec("search", args)
 	out, err := exec("search", args)
 	if err == nil {
 		t.Fatal("expected the underlying error to pass through")

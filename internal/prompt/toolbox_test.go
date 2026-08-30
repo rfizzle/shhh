@@ -50,7 +50,7 @@ func TestToolbox_StableOrder(t *testing.T) {
 	// Navigation leads: it is where a session wastes the most rounds.
 	got := Toolbox(toolList("remember", "fd", "definition"))
 	def, fd, rem := strings.Index(got, "- definition"), strings.Index(got, "- fd"), strings.Index(got, "- remember")
-	if !(def < fd && fd < rem) {
+	if def >= fd || fd >= rem {
 		t.Errorf("expected definition < fd < remember, got:\n%s", got)
 	}
 }

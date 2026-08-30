@@ -26,13 +26,24 @@ func TestProjectAgentDirFindsRepoRoot(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	os.WriteFile(filepath.Join(global, "helper.toml"), []byte(`description = "global"`), 0o644)
-	os.WriteFile(filepath.Join(proj, "helper.toml"), []byte(`description = "project"`), 0o644)
+	for dir, body := range map[string]string{global: `description = "global"`, proj: `description = "project"`} {
+		if err := os.WriteFile(filepath.Join(dir, "helper.toml"), []byte(body), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
 	defs, err := LoadAgentsFrom(proj, global)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if defs["helper"].Description != "project" {
 		t.Fatalf("project did not shadow global: %+v", defs["helper"])
+	}
+}
+
+// must fails the test on an error from setting it up.
+func must(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatal(err)
 	}
 }

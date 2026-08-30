@@ -176,3 +176,11 @@ func TestChats_Rename(t *testing.T) {
 		t.Fatalf("a missing chat is reported, got %v", err)
 	}
 }
+
+// must fails the test on an error from setting it up.
+func must(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatal(err)
+	}
+}

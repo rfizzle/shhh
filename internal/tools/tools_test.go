@@ -37,7 +37,7 @@ func TestExecute_UnknownTool(t *testing.T) {
 func TestReadFile_Basic(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "test.txt")
-	os.WriteFile(path, []byte("line1\nline2\nline3\n"), 0o644)
+	must(t, os.WriteFile(path, []byte("line1\nline2\nline3\n"), 0o644))
 
 	args, _ := json.Marshal(readFileArgs{Path: path})
 	result, err := Execute("read_file", args)
@@ -52,7 +52,7 @@ func TestReadFile_Basic(t *testing.T) {
 func TestReadFile_LineRange(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "test.txt")
-	os.WriteFile(path, []byte("a\nb\nc\nd\ne\n"), 0o644)
+	must(t, os.WriteFile(path, []byte("a\nb\nc\nd\ne\n"), 0o644))
 
 	args, _ := json.Marshal(readFileArgs{Path: path, StartLine: 2, EndLine: 4})
 	result, err := Execute("read_file", args)
@@ -67,7 +67,7 @@ func TestReadFile_LineRange(t *testing.T) {
 func TestReadFile_StartLineOnly(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "test.txt")
-	os.WriteFile(path, []byte("a\nb\nc\n"), 0o644)
+	must(t, os.WriteFile(path, []byte("a\nb\nc\n"), 0o644))
 
 	args, _ := json.Marshal(readFileArgs{Path: path, StartLine: 2})
 	result, err := Execute("read_file", args)
@@ -82,7 +82,7 @@ func TestReadFile_StartLineOnly(t *testing.T) {
 func TestReadFile_StartLineBeyondEnd(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "test.txt")
-	os.WriteFile(path, []byte("only\n"), 0o644)
+	must(t, os.WriteFile(path, []byte("only\n"), 0o644))
 
 	args, _ := json.Marshal(readFileArgs{Path: path, StartLine: 100})
 	_, err := Execute("read_file", args)
@@ -108,8 +108,8 @@ func TestReadFile_MissingPath(t *testing.T) {
 
 func TestListDirectory_Basic(t *testing.T) {
 	tmp := t.TempDir()
-	os.WriteFile(filepath.Join(tmp, "file.txt"), []byte("hi"), 0o644)
-	os.Mkdir(filepath.Join(tmp, "subdir"), 0o755)
+	must(t, os.WriteFile(filepath.Join(tmp, "file.txt"), []byte("hi"), 0o644))
+	must(t, os.Mkdir(filepath.Join(tmp, "subdir"), 0o755))
 
 	args, _ := json.Marshal(listDirectoryArgs{Path: tmp})
 	result, err := Execute("list_directory", args)
@@ -126,8 +126,8 @@ func TestListDirectory_Basic(t *testing.T) {
 
 func TestListDirectory_Depth(t *testing.T) {
 	tmp := t.TempDir()
-	os.MkdirAll(filepath.Join(tmp, "a", "b"), 0o755)
-	os.WriteFile(filepath.Join(tmp, "a", "b", "deep.txt"), []byte("x"), 0o644)
+	must(t, os.MkdirAll(filepath.Join(tmp, "a", "b"), 0o755))
+	must(t, os.WriteFile(filepath.Join(tmp, "a", "b", "deep.txt"), []byte("x"), 0o644))
 
 	args, _ := json.Marshal(listDirectoryArgs{Path: tmp, Depth: 3})
 	result, err := Execute("list_directory", args)
@@ -141,8 +141,8 @@ func TestListDirectory_Depth(t *testing.T) {
 
 func TestListDirectory_DefaultDepth(t *testing.T) {
 	tmp := t.TempDir()
-	os.MkdirAll(filepath.Join(tmp, "a", "b"), 0o755)
-	os.WriteFile(filepath.Join(tmp, "a", "b", "deep.txt"), []byte("x"), 0o644)
+	must(t, os.MkdirAll(filepath.Join(tmp, "a", "b"), 0o755))
+	must(t, os.WriteFile(filepath.Join(tmp, "a", "b", "deep.txt"), []byte("x"), 0o644))
 
 	args, _ := json.Marshal(listDirectoryArgs{Path: tmp})
 	result, err := Execute("list_directory", args)
@@ -171,8 +171,8 @@ func TestListDirectory_NonexistentPath(t *testing.T) {
 
 func TestSearch_Basic(t *testing.T) {
 	tmp := t.TempDir()
-	os.WriteFile(filepath.Join(tmp, "hello.go"), []byte("package main\nfunc Hello() {}\n"), 0o644)
-	os.WriteFile(filepath.Join(tmp, "other.go"), []byte("package other\n"), 0o644)
+	must(t, os.WriteFile(filepath.Join(tmp, "hello.go"), []byte("package main\nfunc Hello() {}\n"), 0o644))
+	must(t, os.WriteFile(filepath.Join(tmp, "other.go"), []byte("package other\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "Hello", Path: tmp})
 	result, err := Execute("search", args)
@@ -189,7 +189,7 @@ func TestSearch_Basic(t *testing.T) {
 
 func TestSearch_CaseInsensitive(t *testing.T) {
 	tmp := t.TempDir()
-	os.WriteFile(filepath.Join(tmp, "test.txt"), []byte("FooBar\n"), 0o644)
+	must(t, os.WriteFile(filepath.Join(tmp, "test.txt"), []byte("FooBar\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "foobar", Path: tmp})
 	result, err := Execute("search", args)
@@ -203,7 +203,7 @@ func TestSearch_CaseInsensitive(t *testing.T) {
 
 func TestSearch_NoMatches(t *testing.T) {
 	tmp := t.TempDir()
-	os.WriteFile(filepath.Join(tmp, "test.txt"), []byte("nothing here\n"), 0o644)
+	must(t, os.WriteFile(filepath.Join(tmp, "test.txt"), []byte("nothing here\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "zzzzz", Path: tmp})
 	result, err := Execute("search", args)
@@ -235,9 +235,9 @@ func TestSearch_MissingPattern(t *testing.T) {
 
 func TestSearch_SkipsGitDir(t *testing.T) {
 	tmp := t.TempDir()
-	os.MkdirAll(filepath.Join(tmp, ".git"), 0o755)
-	os.WriteFile(filepath.Join(tmp, ".git", "config"), []byte("findme\n"), 0o644)
-	os.WriteFile(filepath.Join(tmp, "main.go"), []byte("findme\n"), 0o644)
+	must(t, os.MkdirAll(filepath.Join(tmp, ".git"), 0o755))
+	must(t, os.WriteFile(filepath.Join(tmp, ".git", "config"), []byte("findme\n"), 0o644))
+	must(t, os.WriteFile(filepath.Join(tmp, "main.go"), []byte("findme\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "findme", Path: tmp})
 	result, err := Execute("search", args)
@@ -255,7 +255,7 @@ func TestSearch_SkipsGitDir(t *testing.T) {
 func TestSearch_SingleFile(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "target.txt")
-	os.WriteFile(path, []byte("alpha\nbeta\ngamma\n"), 0o644)
+	must(t, os.WriteFile(path, []byte("alpha\nbeta\ngamma\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "beta", Path: path})
 	result, err := Execute("search", args)
@@ -269,8 +269,8 @@ func TestSearch_SingleFile(t *testing.T) {
 
 func TestSearch_SkipsBinaryFiles(t *testing.T) {
 	tmp := t.TempDir()
-	os.WriteFile(filepath.Join(tmp, "binary.bin"), []byte("findme\x00\x01\x02"), 0o644)
-	os.WriteFile(filepath.Join(tmp, "text.txt"), []byte("findme\n"), 0o644)
+	must(t, os.WriteFile(filepath.Join(tmp, "binary.bin"), []byte("findme\x00\x01\x02"), 0o644))
+	must(t, os.WriteFile(filepath.Join(tmp, "text.txt"), []byte("findme\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "findme", Path: tmp})
 	result, err := Execute("search", args)
@@ -282,5 +282,13 @@ func TestSearch_SkipsBinaryFiles(t *testing.T) {
 	}
 	if !strings.Contains(result, "text.txt") {
 		t.Errorf("should find text file: %q", result)
+	}
+}
+
+// must fails the test on an error from setting up its files.
+func must(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatal(err)
 	}
 }

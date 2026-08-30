@@ -222,7 +222,9 @@ func TestSaveChat_OverwritePreservesCreatedAt(t *testing.T) {
 	}
 
 	var createdAt string
-	db.sql.QueryRow(`SELECT created_at FROM chat_sessions WHERE name = 'update-test'`).Scan(&createdAt)
+	if err := db.sql.QueryRow(`SELECT created_at FROM chat_sessions WHERE name = 'update-test'`).Scan(&createdAt); err != nil {
+		t.Fatal(err)
+	}
 
 	msgs2 := []provider.Message{{Role: provider.RoleUser, Content: "second"}}
 	if err := db.SaveChat("update-test", msgs2); err != nil {
@@ -230,7 +232,9 @@ func TestSaveChat_OverwritePreservesCreatedAt(t *testing.T) {
 	}
 
 	var createdAt2 string
-	db.sql.QueryRow(`SELECT created_at FROM chat_sessions WHERE name = 'update-test'`).Scan(&createdAt2)
+	if err := db.sql.QueryRow(`SELECT created_at FROM chat_sessions WHERE name = 'update-test'`).Scan(&createdAt2); err != nil {
+		t.Fatal(err)
+	}
 
 	if createdAt != createdAt2 {
 		t.Fatalf("created_at changed on overwrite: %q -> %q", createdAt, createdAt2)
@@ -291,7 +295,9 @@ func TestRecordRequest(t *testing.T) {
 	}
 
 	var count int
-	db.sql.QueryRow(`SELECT COUNT(*) FROM requests`).Scan(&count)
+	if err := db.sql.QueryRow(`SELECT COUNT(*) FROM requests`).Scan(&count); err != nil {
+		t.Fatal(err)
+	}
 	if count != 1 {
 		t.Fatalf("expected 1 request, got %d", count)
 	}
@@ -319,7 +325,7 @@ func TestRecordExitCode(t *testing.T) {
 	}
 
 	var exitCode *int
-	db.sql.QueryRow(`SELECT exit_code FROM requests WHERE id = ?`, id).Scan(&exitCode)
+	must(t, db.sql.QueryRow(`SELECT exit_code FROM requests WHERE id = ?`, id).Scan(&exitCode))
 	if exitCode == nil || *exitCode != 0 {
 		t.Fatalf("expected exit_code 0, got %v", exitCode)
 	}
@@ -338,7 +344,7 @@ func TestRecordExitCode(t *testing.T) {
 	}
 
 	var exitCode2 *int
-	db.sql.QueryRow(`SELECT exit_code FROM requests WHERE id = ?`, id2).Scan(&exitCode2)
+	must(t, db.sql.QueryRow(`SELECT exit_code FROM requests WHERE id = ?`, id2).Scan(&exitCode2))
 	if exitCode2 == nil || *exitCode2 != 1 {
 		t.Fatalf("expected exit_code 1, got %v", exitCode2)
 	}

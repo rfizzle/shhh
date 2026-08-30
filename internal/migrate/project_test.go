@@ -13,7 +13,7 @@ func chdir(t *testing.T, dir string) {
 	if err := os.Chdir(dir); err != nil {
 		t.Fatal(err)
 	}
-	t.Cleanup(func() { os.Chdir(orig) })
+	t.Cleanup(func() { _ = os.Chdir(orig) })
 }
 
 func TestLegacyProjectFile_NothingWithoutTheFile(t *testing.T) {
@@ -25,9 +25,9 @@ func TestLegacyProjectFile_NothingWithoutTheFile(t *testing.T) {
 
 func TestLegacyProjectFile_SeesPastANearerDirectory(t *testing.T) {
 	root := t.TempDir()
-	os.WriteFile(filepath.Join(root, ".shhh"), []byte("old"), 0o644)
+	must(t, os.WriteFile(filepath.Join(root, ".shhh"), []byte("old"), 0o644))
 	sub := filepath.Join(root, "child")
-	os.MkdirAll(filepath.Join(sub, ".shhh"), 0o755)
+	must(t, os.MkdirAll(filepath.Join(sub, ".shhh"), 0o755))
 	chdir(t, sub)
 	p, ok := legacyProjectFile()
 	if !ok || !strings.Contains(p.Steps[0], filepath.Join(root, ".shhh")) {
@@ -38,8 +38,8 @@ func TestLegacyProjectFile_SeesPastANearerDirectory(t *testing.T) {
 func TestMoveProjectFileInside_RefusesWhenTheAsidePathIsTaken(t *testing.T) {
 	root := t.TempDir()
 	old := filepath.Join(root, ".shhh")
-	os.WriteFile(old, []byte("old"), 0o644)
-	os.WriteFile(old+".migrating", []byte("stale"), 0o644)
+	must(t, os.WriteFile(old, []byte("old"), 0o644))
+	must(t, os.WriteFile(old+".migrating", []byte("stale"), 0o644))
 	if _, err := moveProjectFileInside(old); err == nil || !strings.Contains(err.Error(), "in the way") {
 		t.Fatalf("err = %v", err)
 	}
@@ -50,9 +50,9 @@ func TestMoveProjectFileInside_RefusesWhenTheAsidePathIsTaken(t *testing.T) {
 
 func TestLegacyProjectFile_MovesTheFileInside(t *testing.T) {
 	root := t.TempDir()
-	os.WriteFile(filepath.Join(root, ".shhh"), []byte("old context"), 0o644)
+	must(t, os.WriteFile(filepath.Join(root, ".shhh"), []byte("old context"), 0o644))
 	sub := filepath.Join(root, "src")
-	os.MkdirAll(sub, 0o755)
+	must(t, os.MkdirAll(sub, 0o755))
 	chdir(t, sub)
 
 	p, ok := legacyProjectFile()

@@ -131,7 +131,7 @@ func TestOpenAICompat_StreamCompletion_ModelOverride(t *testing.T) {
 	var receivedModel string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req openai.ChatCompletionRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		receivedModel = req.Model
 		w.Header().Set("Content-Type", "text/event-stream")
 		fmt.Fprint(w, "data: [DONE]\n\n")
@@ -156,7 +156,7 @@ func TestOpenAICompat_StreamCompletion_ServerError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"error": map[string]any{
 				"message": "Invalid key",
 				"type":    "invalid_request_error",

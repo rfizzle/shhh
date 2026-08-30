@@ -87,7 +87,9 @@ func newHistoryClearCmd() *cobra.Command {
 			if !yes {
 				fmt.Print("Delete all history entries? [y/N] ")
 				var confirm string
-				fmt.Scanln(&confirm)
+				// No answer — a closed stdin — reads as an empty line, and an
+				// empty line is No.
+				_, _ = fmt.Scanln(&confirm)
 				if confirm != "y" && confirm != "Y" {
 					fmt.Println("Cancelled.")
 					return nil

@@ -51,7 +51,7 @@ func TestReadFile_LineCapTruncation(t *testing.T) {
 	for i := range lines {
 		lines[i] = fmt.Sprintf("line %d", i+1)
 	}
-	os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644)
+	must(t, os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644))
 
 	out, err := executeReadFile(json.RawMessage(fmt.Sprintf(`{"path": %q}`, path)))
 	if err != nil {
@@ -79,7 +79,7 @@ func TestReadFile_ByteCapTruncation(t *testing.T) {
 	for i := range lines {
 		lines[i] = strings.Repeat("x", 20000)
 	}
-	os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644)
+	must(t, os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644))
 
 	out, err := executeReadFile(json.RawMessage(fmt.Sprintf(`{"path": %q}`, path)))
 	if err != nil {
@@ -104,7 +104,7 @@ func TestReadFile_RangeStillCapped(t *testing.T) {
 	for i := range lines {
 		lines[i] = fmt.Sprintf("line %d", i+1)
 	}
-	os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644)
+	must(t, os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0o644))
 
 	out, err := executeReadFile(json.RawMessage(fmt.Sprintf(`{"path": %q, "start_line": 100}`, path)))
 	if err != nil {
@@ -119,7 +119,7 @@ func TestReadFile_RangeStillCapped(t *testing.T) {
 func TestReadFile_EndBeforeStart(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "test.txt")
-	os.WriteFile(path, []byte("a\nb\nc\n"), 0o644)
+	must(t, os.WriteFile(path, []byte("a\nb\nc\n"), 0o644))
 
 	_, err := executeReadFile(json.RawMessage(fmt.Sprintf(`{"path": %q, "start_line": 3, "end_line": 1}`, path)))
 	if err == nil {
@@ -130,7 +130,7 @@ func TestReadFile_EndBeforeStart(t *testing.T) {
 func TestListDirectory_EntryCapTruncation(t *testing.T) {
 	tmp := t.TempDir()
 	for i := 0; i < MaxListEntries+20; i++ {
-		os.WriteFile(filepath.Join(tmp, fmt.Sprintf("f%04d.txt", i)), []byte("x"), 0o644)
+		must(t, os.WriteFile(filepath.Join(tmp, fmt.Sprintf("f%04d.txt", i)), []byte("x"), 0o644))
 	}
 
 	out, err := executeListDirectory(json.RawMessage(fmt.Sprintf(`{"path": %q}`, tmp)))
@@ -148,7 +148,7 @@ func TestListDirectory_EntryCapTruncation(t *testing.T) {
 func TestSearch_ResultCapNotice(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "many.txt")
-	os.WriteFile(path, []byte(strings.Repeat("needle here\n", MaxSearchResults+10)), 0o644)
+	must(t, os.WriteFile(path, []byte(strings.Repeat("needle here\n", MaxSearchResults+10)), 0o644))
 
 	out, err := executeSearch(json.RawMessage(fmt.Sprintf(`{"pattern": "needle", "path": %q}`, tmp)))
 	if err != nil {
@@ -165,7 +165,7 @@ func TestSearch_ResultCapNotice(t *testing.T) {
 func TestSearch_LongMatchLineTrimmed(t *testing.T) {
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "minified.txt")
-	os.WriteFile(path, []byte("needle"+strings.Repeat("x", 2*MaxSearchLineBytes)+"\n"), 0o644)
+	must(t, os.WriteFile(path, []byte("needle"+strings.Repeat("x", 2*MaxSearchLineBytes)+"\n"), 0o644))
 
 	out, err := executeSearch(json.RawMessage(fmt.Sprintf(`{"pattern": "needle", "path": %q}`, tmp)))
 	if err != nil {

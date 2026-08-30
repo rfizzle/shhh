@@ -72,6 +72,7 @@ func SuppressAlternateScroll(w io.Writer) func() {
 	if w == nil {
 		return func() {}
 	}
-	io.WriteString(w, saveAlternateScroll+disableAlternateScroll)
-	return func() { io.WriteString(w, restoreAlternateScroll) }
+	// A terminal that cannot be written to is not one that scrolls either.
+	_, _ = io.WriteString(w, saveAlternateScroll+disableAlternateScroll)
+	return func() { _, _ = io.WriteString(w, restoreAlternateScroll) }
 }

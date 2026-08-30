@@ -50,7 +50,7 @@ func TestLoadFromFile(t *testing.T) {
 		"gpt-4o": {"input_cost_per_token": 0.0000025, "output_cost_per_token": 0.00001},
 		"gemini-2.5-flash": {"input_cost_per_token": 0.0000001, "output_cost_per_token": 0.0000004}
 	}`
-	os.WriteFile(path, []byte(data), 0o600)
+	must(t, os.WriteFile(path, []byte(data), 0o600))
 
 	table, err := loadWithSnapshot(path)
 	if err != nil {
@@ -73,7 +73,7 @@ func TestShouldRefresh(t *testing.T) {
 	}
 
 	existing := filepath.Join(dir, "exists.json")
-	os.WriteFile(existing, []byte("{}"), 0o600)
+	must(t, os.WriteFile(existing, []byte("{}"), 0o600))
 	if shouldRefresh(existing) {
 		t.Error("expected no refresh for fresh file")
 	}
@@ -164,5 +164,13 @@ func TestLoadWithSnapshot_DownloadOverlaysButKeepsFlags(t *testing.T) {
 	}
 	if _, err := loadWithSnapshot(filepath.Join(dir, "missing.json")); err != nil {
 		t.Errorf("a missing download should fall back to the snapshot, got %v", err)
+	}
+}
+
+// must fails the test on an error from setting it up.
+func must(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatal(err)
 	}
 }

@@ -30,7 +30,7 @@ func requireRg(t *testing.T) {
 func TestSearch_RegexWalker(t *testing.T) {
 	forceWalker(t)
 	tmp := t.TempDir()
-	os.WriteFile(filepath.Join(tmp, "code.go"), []byte("func Hello() {}\nfunc world() {}\n"), 0o644)
+	must(t, os.WriteFile(filepath.Join(tmp, "code.go"), []byte("func Hello() {}\nfunc world() {}\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: `func H\w+`, Path: tmp})
 	result, err := Execute("search", args)
@@ -48,7 +48,7 @@ func TestSearch_RegexWalker(t *testing.T) {
 func TestSearch_RegexCaseInsensitiveDefault(t *testing.T) {
 	forceWalker(t)
 	tmp := t.TempDir()
-	os.WriteFile(filepath.Join(tmp, "test.txt"), []byte("FooBar\n"), 0o644)
+	must(t, os.WriteFile(filepath.Join(tmp, "test.txt"), []byte("FooBar\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: `FOO\w+`, Path: tmp})
 	result, err := Execute("search", args)
@@ -63,7 +63,7 @@ func TestSearch_RegexCaseInsensitiveDefault(t *testing.T) {
 func TestSearch_CaseSensitiveFlag(t *testing.T) {
 	forceWalker(t)
 	tmp := t.TempDir()
-	os.WriteFile(filepath.Join(tmp, "test.txt"), []byte("FooBar\nfoobar\n"), 0o644)
+	must(t, os.WriteFile(filepath.Join(tmp, "test.txt"), []byte("FooBar\nfoobar\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "foobar", Path: tmp, CaseSensitive: true})
 	result, err := Execute("search", args)
@@ -97,8 +97,8 @@ func TestSearch_WalkerSkipsOversizedFiles(t *testing.T) {
 	for i := range big[7:] {
 		big[7+i] = 'a'
 	}
-	os.WriteFile(filepath.Join(tmp, "big.txt"), big, 0o644)
-	os.WriteFile(filepath.Join(tmp, "small.txt"), []byte("findme\n"), 0o644)
+	must(t, os.WriteFile(filepath.Join(tmp, "big.txt"), big, 0o644))
+	must(t, os.WriteFile(filepath.Join(tmp, "small.txt"), []byte("findme\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "findme", Path: tmp})
 	result, err := Execute("search", args)
@@ -116,10 +116,10 @@ func TestSearch_WalkerSkipsOversizedFiles(t *testing.T) {
 func TestSearch_WalkerSkipsBinaryAndGit(t *testing.T) {
 	forceWalker(t)
 	tmp := t.TempDir()
-	os.MkdirAll(filepath.Join(tmp, ".git"), 0o755)
-	os.WriteFile(filepath.Join(tmp, ".git", "config"), []byte("findme\n"), 0o644)
-	os.WriteFile(filepath.Join(tmp, "binary.bin"), []byte("findme\x00\x01"), 0o644)
-	os.WriteFile(filepath.Join(tmp, "main.go"), []byte("findme\n"), 0o644)
+	must(t, os.MkdirAll(filepath.Join(tmp, ".git"), 0o755))
+	must(t, os.WriteFile(filepath.Join(tmp, ".git", "config"), []byte("findme\n"), 0o644))
+	must(t, os.WriteFile(filepath.Join(tmp, "binary.bin"), []byte("findme\x00\x01"), 0o644))
+	must(t, os.WriteFile(filepath.Join(tmp, "main.go"), []byte("findme\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "findme", Path: tmp})
 	result, err := Execute("search", args)
@@ -182,7 +182,7 @@ func TestSearch_RipgrepNoMatchExitCode(t *testing.T) {
 func TestSearch_RipgrepFailureFallsBackToWalker(t *testing.T) {
 	fakeRg(t, "exit 2")
 	tmp := t.TempDir()
-	os.WriteFile(filepath.Join(tmp, "real.txt"), []byte("findme\n"), 0o644)
+	must(t, os.WriteFile(filepath.Join(tmp, "real.txt"), []byte("findme\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "findme", Path: tmp})
 	result, err := Execute("search", args)
@@ -197,7 +197,7 @@ func TestSearch_RipgrepFailureFallsBackToWalker(t *testing.T) {
 func TestSearch_Ripgrep(t *testing.T) {
 	requireRg(t)
 	tmp := t.TempDir()
-	os.WriteFile(filepath.Join(tmp, "hello.go"), []byte("package main\nfunc Hello() {}\n"), 0o644)
+	must(t, os.WriteFile(filepath.Join(tmp, "hello.go"), []byte("package main\nfunc Hello() {}\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: `func h\w+`, Path: tmp})
 	result, err := Execute("search", args)
@@ -213,7 +213,7 @@ func TestSearch_RipgrepSingleFileKeepsFilename(t *testing.T) {
 	requireRg(t)
 	tmp := t.TempDir()
 	path := filepath.Join(tmp, "target.txt")
-	os.WriteFile(path, []byte("alpha\nbeta\n"), 0o644)
+	must(t, os.WriteFile(path, []byte("alpha\nbeta\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "beta", Path: path})
 	result, err := Execute("search", args)
@@ -228,7 +228,7 @@ func TestSearch_RipgrepSingleFileKeepsFilename(t *testing.T) {
 func TestSearch_RipgrepNoMatches(t *testing.T) {
 	requireRg(t)
 	tmp := t.TempDir()
-	os.WriteFile(filepath.Join(tmp, "test.txt"), []byte("nothing here\n"), 0o644)
+	must(t, os.WriteFile(filepath.Join(tmp, "test.txt"), []byte("nothing here\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "zzzzz", Path: tmp})
 	result, err := Execute("search", args)
@@ -243,9 +243,9 @@ func TestSearch_RipgrepNoMatches(t *testing.T) {
 func TestSearch_RipgrepSkipsVendor(t *testing.T) {
 	requireRg(t)
 	tmp := t.TempDir()
-	os.MkdirAll(filepath.Join(tmp, "vendor"), 0o755)
-	os.WriteFile(filepath.Join(tmp, "vendor", "dep.go"), []byte("findme\n"), 0o644)
-	os.WriteFile(filepath.Join(tmp, "main.go"), []byte("findme\n"), 0o644)
+	must(t, os.MkdirAll(filepath.Join(tmp, "vendor"), 0o755))
+	must(t, os.WriteFile(filepath.Join(tmp, "vendor", "dep.go"), []byte("findme\n"), 0o644))
+	must(t, os.WriteFile(filepath.Join(tmp, "main.go"), []byte("findme\n"), 0o644))
 
 	args, _ := json.Marshal(searchArgs{Pattern: "findme", Path: tmp})
 	result, err := Execute("search", args)

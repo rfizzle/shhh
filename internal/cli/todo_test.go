@@ -13,12 +13,12 @@ func todoFixture(t *testing.T) string {
 	t.Helper()
 	root := t.TempDir()
 	dir := todo.Dir(root)
-	os.MkdirAll(filepath.Join(dir, todo.DoneSubdir), 0o755)
-	os.WriteFile(filepath.Join(dir, "first.md"), []byte("---\ntitle: First thing\npriority: high\nsize: S\n---\n## Notes\nhi\n"), 0o644)
-	os.WriteFile(filepath.Join(dir, "second.md"), []byte("---\ntitle: Second\ndepends_on: [first, gone]\n---\n"), 0o644)
-	os.WriteFile(filepath.Join(dir, "third.md"), []byte("---\ntitle: Third\nstatus: blocked\ndepends_on: [gone]\n---\n"), 0o644)
-	os.WriteFile(filepath.Join(dir, todo.DoneSubdir, "gone.md"), []byte("---\ntitle: Gone\nstatus: done\n---\n"), 0o644)
-	os.WriteFile(filepath.Join(dir, "bad.md"), []byte("nope\n"), 0o644)
+	must(t, os.MkdirAll(filepath.Join(dir, todo.DoneSubdir), 0o755))
+	must(t, os.WriteFile(filepath.Join(dir, "first.md"), []byte("---\ntitle: First thing\npriority: high\nsize: S\n---\n## Notes\nhi\n"), 0o644))
+	must(t, os.WriteFile(filepath.Join(dir, "second.md"), []byte("---\ntitle: Second\ndepends_on: [first, gone]\n---\n"), 0o644))
+	must(t, os.WriteFile(filepath.Join(dir, "third.md"), []byte("---\ntitle: Third\nstatus: blocked\ndepends_on: [gone]\n---\n"), 0o644))
+	must(t, os.WriteFile(filepath.Join(dir, todo.DoneSubdir, "gone.md"), []byte("---\ntitle: Gone\nstatus: done\n---\n"), 0o644))
+	must(t, os.WriteFile(filepath.Join(dir, "bad.md"), []byte("nope\n"), 0o644))
 	return root
 }
 
@@ -65,7 +65,7 @@ func TestTodoCommand_ShowUnknownSlug(t *testing.T) {
 	if err := os.Chdir(root); err != nil {
 		t.Fatal(err)
 	}
-	defer os.Chdir(orig)
+	defer func() { _ = os.Chdir(orig) }()
 
 	cmd := NewRootCmd()
 	cmd.SetArgs([]string{"todo", "show", "nope"})

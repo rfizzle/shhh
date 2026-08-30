@@ -3358,7 +3358,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		var sb strings.Builder
 		sb.WriteString("Saved chats:\n")
 		for _, e := range entries {
-			sb.WriteString(fmt.Sprintf("  %s  (%s)\n", e.Name, chatDesc(e)))
+			fmt.Fprintf(&sb, "  %s  (%s)\n", e.Name, chatDesc(e))
 		}
 		return true, strings.TrimRight(sb.String(), "\n")
 

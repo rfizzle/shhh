@@ -43,7 +43,9 @@ func TestOpenRouter_DefaultModel(t *testing.T) {
 func TestNewOpenRouter_MissingKey(t *testing.T) {
 	t.Setenv("SHHH_API_KEY", "")
 	t.Setenv("OPENROUTER_API_KEY", "")
-	os.Unsetenv("OPENROUTER_API_KEY")
+	if err := os.Unsetenv("OPENROUTER_API_KEY"); err != nil {
+		t.Fatal(err)
+	}
 	_, err := NewOpenRouter(ResolveOpts{})
 	if err == nil {
 		t.Fatal("expected error for missing API key")
@@ -144,7 +146,7 @@ func TestOpenRouter_StreamCompletion_OptsOverrideModel(t *testing.T) {
 	var receivedModel string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req openai.ChatCompletionRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		receivedModel = req.Model
 		w.Header().Set("Content-Type", "text/event-stream")
 		fmt.Fprint(w, "data: [DONE]\n\n")
@@ -169,7 +171,7 @@ func TestOpenRouter_StreamCompletion_Unauthorized(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"error": map[string]any{
 				"message": "Invalid API key",
 				"type":    "invalid_request_error",
@@ -194,7 +196,7 @@ func TestOpenRouter_StreamCompletion_RateLimited(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusTooManyRequests)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"error": map[string]any{
 				"message": "Rate limit reached",
 				"type":    "rate_limit_error",

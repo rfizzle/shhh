@@ -129,7 +129,8 @@ func runSnippetsBrowser(db *storage.DB, snippets []storage.Snippet) error {
 	case "Rename":
 		fmt.Print("New name: ")
 		var newName string
-		fmt.Scanln(&newName)
+		// No answer reads as an empty name, which keeps the old one.
+		_, _ = fmt.Scanln(&newName)
 		if newName != "" {
 			if err := db.RenameSnippet(name, newName); err != nil {
 				return fmt.Errorf("rename snippet: %w", err)

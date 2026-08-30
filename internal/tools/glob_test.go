@@ -10,10 +10,10 @@ import (
 
 func TestGlob_TopLevel(t *testing.T) {
 	tmp := t.TempDir()
-	os.WriteFile(filepath.Join(tmp, "main.go"), []byte("x"), 0o644)
-	os.WriteFile(filepath.Join(tmp, "readme.md"), []byte("x"), 0o644)
-	os.MkdirAll(filepath.Join(tmp, "sub"), 0o755)
-	os.WriteFile(filepath.Join(tmp, "sub", "deep.go"), []byte("x"), 0o644)
+	must(t, os.WriteFile(filepath.Join(tmp, "main.go"), []byte("x"), 0o644))
+	must(t, os.WriteFile(filepath.Join(tmp, "readme.md"), []byte("x"), 0o644))
+	must(t, os.MkdirAll(filepath.Join(tmp, "sub"), 0o755))
+	must(t, os.WriteFile(filepath.Join(tmp, "sub", "deep.go"), []byte("x"), 0o644))
 
 	args, _ := json.Marshal(globArgs{Pattern: "*.go", Path: tmp})
 	result, err := Execute("glob", args)
@@ -27,10 +27,10 @@ func TestGlob_TopLevel(t *testing.T) {
 
 func TestGlob_DoubleStar(t *testing.T) {
 	tmp := t.TempDir()
-	os.WriteFile(filepath.Join(tmp, "main.go"), []byte("x"), 0o644)
-	os.MkdirAll(filepath.Join(tmp, "a", "b"), 0o755)
-	os.WriteFile(filepath.Join(tmp, "a", "b", "deep.go"), []byte("x"), 0o644)
-	os.WriteFile(filepath.Join(tmp, "a", "note.txt"), []byte("x"), 0o644)
+	must(t, os.WriteFile(filepath.Join(tmp, "main.go"), []byte("x"), 0o644))
+	must(t, os.MkdirAll(filepath.Join(tmp, "a", "b"), 0o755))
+	must(t, os.WriteFile(filepath.Join(tmp, "a", "b", "deep.go"), []byte("x"), 0o644))
+	must(t, os.WriteFile(filepath.Join(tmp, "a", "note.txt"), []byte("x"), 0o644))
 
 	args, _ := json.Marshal(globArgs{Pattern: "**/*.go", Path: tmp})
 	result, err := Execute("glob", args)
@@ -50,9 +50,9 @@ func TestGlob_DoubleStar(t *testing.T) {
 
 func TestGlob_MidPatternDoubleStar(t *testing.T) {
 	tmp := t.TempDir()
-	os.MkdirAll(filepath.Join(tmp, "cmd", "shhh"), 0o755)
-	os.WriteFile(filepath.Join(tmp, "cmd", "shhh", "main.go"), []byte("x"), 0o644)
-	os.WriteFile(filepath.Join(tmp, "cmd", "other.go"), []byte("x"), 0o644)
+	must(t, os.MkdirAll(filepath.Join(tmp, "cmd", "shhh"), 0o755))
+	must(t, os.WriteFile(filepath.Join(tmp, "cmd", "shhh", "main.go"), []byte("x"), 0o644))
+	must(t, os.WriteFile(filepath.Join(tmp, "cmd", "other.go"), []byte("x"), 0o644))
 
 	args, _ := json.Marshal(globArgs{Pattern: "cmd/**/main.go", Path: tmp})
 	result, err := Execute("glob", args)
@@ -70,10 +70,10 @@ func TestGlob_MidPatternDoubleStar(t *testing.T) {
 func TestGlob_SkipList(t *testing.T) {
 	tmp := t.TempDir()
 	for _, dir := range []string{".git", "node_modules", "vendor"} {
-		os.MkdirAll(filepath.Join(tmp, dir), 0o755)
-		os.WriteFile(filepath.Join(tmp, dir, "skipped.go"), []byte("x"), 0o644)
+		must(t, os.MkdirAll(filepath.Join(tmp, dir), 0o755))
+		must(t, os.WriteFile(filepath.Join(tmp, dir, "skipped.go"), []byte("x"), 0o644))
 	}
-	os.WriteFile(filepath.Join(tmp, "kept.go"), []byte("x"), 0o644)
+	must(t, os.WriteFile(filepath.Join(tmp, "kept.go"), []byte("x"), 0o644))
 
 	args, _ := json.Marshal(globArgs{Pattern: "**/*.go", Path: tmp})
 	result, err := Execute("glob", args)
@@ -90,8 +90,8 @@ func TestGlob_SkipList(t *testing.T) {
 
 func TestGlob_MatchesFilesOnly(t *testing.T) {
 	tmp := t.TempDir()
-	os.MkdirAll(filepath.Join(tmp, "somedir"), 0o755)
-	os.WriteFile(filepath.Join(tmp, "somefile"), []byte("x"), 0o644)
+	must(t, os.MkdirAll(filepath.Join(tmp, "somedir"), 0o755))
+	must(t, os.WriteFile(filepath.Join(tmp, "somefile"), []byte("x"), 0o644))
 
 	args, _ := json.Marshal(globArgs{Pattern: "*", Path: tmp})
 	result, err := Execute("glob", args)
@@ -108,7 +108,7 @@ func TestGlob_MatchesFilesOnly(t *testing.T) {
 
 func TestGlob_NoMatches(t *testing.T) {
 	tmp := t.TempDir()
-	os.WriteFile(filepath.Join(tmp, "main.go"), []byte("x"), 0o644)
+	must(t, os.WriteFile(filepath.Join(tmp, "main.go"), []byte("x"), 0o644))
 
 	args, _ := json.Marshal(globArgs{Pattern: "*.rs", Path: tmp})
 	result, err := Execute("glob", args)

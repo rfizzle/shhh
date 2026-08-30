@@ -85,7 +85,7 @@ func TestOpenAI_StreamCompletion_OptsOverrideModel(t *testing.T) {
 	var receivedModel string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req openai.ChatCompletionRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		receivedModel = req.Model
 		w.Header().Set("Content-Type", "text/event-stream")
 		fmt.Fprint(w, "data: [DONE]\n\n")
@@ -110,7 +110,7 @@ func TestOpenAI_StreamCompletion_Unauthorized(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusUnauthorized)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"error": map[string]any{
 				"message": "Incorrect API key provided",
 				"type":    "invalid_request_error",
@@ -135,7 +135,7 @@ func TestOpenAI_StreamCompletion_RateLimited(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusTooManyRequests)
-		json.NewEncoder(w).Encode(map[string]any{
+		_ = json.NewEncoder(w).Encode(map[string]any{
 			"error": map[string]any{
 				"message": "Rate limit reached",
 				"type":    "rate_limit_error",
@@ -273,7 +273,7 @@ func TestOpenAI_StreamCompletion_ToolCalls(t *testing.T) {
 	idx0 := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req openai.ChatCompletionRequest
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 
 		if len(req.Tools) != 1 {
 			t.Errorf("expected 1 tool in request, got %d", len(req.Tools))
@@ -448,7 +448,7 @@ func TestOpenAI_StreamCompletion_ToolsPassedInRequest(t *testing.T) {
 	var receivedToolChoice any
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req map[string]any
-		json.NewDecoder(r.Body).Decode(&req)
+		_ = json.NewDecoder(r.Body).Decode(&req)
 		if tools, ok := req["tools"].([]any); ok {
 			receivedTools = len(tools)
 		}

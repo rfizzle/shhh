@@ -186,12 +186,14 @@ func TestLoadFrom_FirstFileWins(t *testing.T) {
 	first := filepath.Join(dir, "first.toml")
 	second := filepath.Join(dir, "second.toml")
 
-	os.WriteFile(first, []byte(`[provider]
+	if err := os.WriteFile(first, []byte(`[provider]
 default = "gemini"
-`), 0644)
-	os.WriteFile(second, []byte(`[provider]
+`), 0644); err != nil {
+		t.Fatal(err)
+	}
+	must(t, os.WriteFile(second, []byte(`[provider]
 default = "openai"
-`), 0644)
+`), 0644))
 
 	cfg, err := LoadFrom(first, second)
 	if err != nil {
@@ -205,9 +207,9 @@ default = "openai"
 func TestLoadFrom_SkipsMissingThenReadsNext(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.toml")
-	os.WriteFile(path, []byte(`[provider]
+	must(t, os.WriteFile(path, []byte(`[provider]
 default = "openrouter"
-`), 0644)
+`), 0644))
 
 	cfg, err := LoadFrom("/nonexistent/config.toml", path)
 	if err != nil {
@@ -221,7 +223,7 @@ default = "openrouter"
 func TestLoadFrom_InvalidTOML(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "bad.toml")
-	os.WriteFile(path, []byte(`[broken`), 0644)
+	must(t, os.WriteFile(path, []byte(`[broken`), 0644))
 
 	_, err := LoadFrom(path)
 	if err == nil {

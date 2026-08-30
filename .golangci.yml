@@ -14,3 +14,9 @@ linters:
     rules:
       - linters: [errcheck]
         text: 'Error return value of `((.*\.)?(Close|Rollback|Flush)|fmt\.Fprint(f|ln)?|fmt\.Sscanf)` is not checked'
+issues:
+  # Every finding, every time: a cap on identical messages hides the rest
+  # of a class behind three examples, and a gate that hides findings is
+  # not a gate.
+  max-issues-per-linter: 0
+  max-same-issues: 0

@@ -198,12 +198,3 @@ func (m Model) saidNoStepDetail(es []entry) bool {
 	last := es[len(es)-1]
 	return last.kind == entrySystem && last.text == noStepDetailNotice
 }
-
-// focusedStepDetailOpen reports whether the step under reading mode's cursor
-// has its detail open — what puts [ctrl+o] on the hint bar as the key that
-// closes it again.
-func (m Model) focusedStepDetailOpen() bool {
-	es := *m.entries()
-	g, ok := m.stepAt(es, m.focusIdx)
-	return ok && m.stepDetailOpen(g, es)
-}

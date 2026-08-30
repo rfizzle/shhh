@@ -234,8 +234,8 @@ func (m Model) listBranches(branches []storage.ChatBranch) string {
 		if b.Parent != "" {
 			parent = fmt.Sprintf("  (branch of %q)", b.Parent)
 		}
-		sb.WriteString(fmt.Sprintf("%s %d. %s  (%s)%s\n",
-			marker, i+1, b.Name, sessionDesc(b.Turns, b.UpdatedAt), parent))
+		fmt.Fprintf(&sb, "%s %d. %s  (%s)%s\n",
+			marker, i+1, b.Name, sessionDesc(b.Turns, b.UpdatedAt), parent)
 	}
 	sb.WriteString("Switch with /branches <n>.")
 	return sb.String()

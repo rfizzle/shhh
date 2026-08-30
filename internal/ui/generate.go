@@ -966,7 +966,7 @@ func formatMultiCommand(output string) string {
 	}
 	var b strings.Builder
 	for i, cmd := range cmds {
-		b.WriteString(fmt.Sprintf("  %d. %s\n", i+1, cmd))
+		fmt.Fprintf(&b, "  %d. %s\n", i+1, cmd)
 	}
 	return strings.TrimRight(b.String(), "\n")
 }

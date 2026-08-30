@@ -38,3 +38,11 @@ func TestMCPTrustIsPerRootAndReplaceable(t *testing.T) {
 		t.Error("still trusted after distrust")
 	}
 }
+
+// must fails the test on an error from setting it up.
+func must(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatal(err)
+	}
+}

@@ -263,8 +263,8 @@ func TestTodoRun_CancelStopsTheRun(t *testing.T) {
 
 func TestTodoRun_ArchiveFailureAfterCommitReopensWithReport(t *testing.T) {
 	m, root := runModel(t)
-	os.MkdirAll(filepath.Join(todo.Dir(root), todo.DoneSubdir), 0o755)
-	os.WriteFile(filepath.Join(todo.Dir(root), todo.DoneSubdir, "do-it.md"), []byte("---\ntitle: old\nstatus: done\n---\n"), 0o644)
+	must(t, os.MkdirAll(filepath.Join(todo.Dir(root), todo.DoneSubdir), 0o755))
+	must(t, os.WriteFile(filepath.Join(todo.Dir(root), todo.DoneSubdir, "do-it.md"), []byte("---\ntitle: old\nstatus: done\n---\n"), 0o644))
 	m.input.SetValue("/todo run do-it")
 	updated, _ := m.submitInput()
 	m = updated.(Model)
@@ -316,11 +316,11 @@ func TestTodoCommitCmd_StagesByNameAndRefusesForeignIndex(t *testing.T) {
 	gitc("init", "-q")
 	gitc("config", "user.email", "t@example.com")
 	gitc("config", "user.name", "t")
-	os.WriteFile(filepath.Join(root, "a.go"), []byte("package a\n"), 0o644)
-	os.WriteFile(filepath.Join(root, "stray.go"), []byte("package a\n"), 0o644)
+	must(t, os.WriteFile(filepath.Join(root, "a.go"), []byte("package a\n"), 0o644))
+	must(t, os.WriteFile(filepath.Join(root, "stray.go"), []byte("package a\n"), 0o644))
 	gitc("add", "a.go")
 	gitc("commit", "-q", "-m", "seed")
-	os.WriteFile(filepath.Join(root, "a.go"), []byte("package a // changed\n"), 0o644)
+	must(t, os.WriteFile(filepath.Join(root, "a.go"), []byte("package a // changed\n"), 0o644))
 
 	m := frameModel(t, 130, 40)
 	m.changes = changeset.New(1 << 20)

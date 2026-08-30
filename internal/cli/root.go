@@ -86,7 +86,9 @@ func NewRootCmd() *cobra.Command {
 
 			go func() {
 				if db, err := storage.Open(); err == nil {
-					db.PurgeOldHistory(cfg.EffectiveRetentionDays())
+					// Best effort: a purge that fails is retried on the next
+					// command, and there is nobody here to tell.
+					_, _ = db.PurgeOldHistory(cfg.EffectiveRetentionDays())
 					db.Close()
 				}
 			}()

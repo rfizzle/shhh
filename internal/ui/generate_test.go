@@ -941,7 +941,7 @@ func TestGenerate_PreflightAutoCorrectsBadBinary(t *testing.T) {
 		t.Errorf("expected phaseAction after correction, got %v", m.Phase())
 	}
 	if m.Result().Command != "" {
-		// Result is only set when an action is chosen
+		t.Errorf("no action was chosen, so no result should be set, got %q", m.Result().Command)
 	}
 	output := m.stream.Output()
 	if output != "ls -la" {

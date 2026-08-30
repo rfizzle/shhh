@@ -345,7 +345,7 @@ func (m Model) todoCommitCmd() tea.Cmd {
 		if err != nil {
 			return todoCommitMsg{slug: slug, err: err}
 		}
-		defer os.Remove(f.Name())
+		defer func() { _ = os.Remove(f.Name()) }()
 		if _, err := f.WriteString(message + "\n"); err != nil {
 			f.Close()
 			return todoCommitMsg{slug: slug, err: err}

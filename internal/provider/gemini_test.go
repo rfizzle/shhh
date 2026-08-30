@@ -42,7 +42,9 @@ func TestGemini_CustomModel(t *testing.T) {
 func TestNewGemini_MissingKey(t *testing.T) {
 	t.Setenv("SHHH_API_KEY", "")
 	t.Setenv("GEMINI_API_KEY", "")
-	os.Unsetenv("GEMINI_API_KEY")
+	if err := os.Unsetenv("GEMINI_API_KEY"); err != nil {
+		t.Fatal(err)
+	}
 	_, err := NewGemini(ResolveOpts{})
 	if err == nil {
 		t.Fatal("expected error for missing API key")

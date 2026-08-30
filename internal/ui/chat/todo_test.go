@@ -160,7 +160,9 @@ func TestTodoEditor_ReloadsAndReportsTheFile(t *testing.T) {
 		t.Fatal("the item file must never be removed by the editor path")
 	}
 
-	os.Remove(path)
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
 	updated, _ = m.todoEditorFinished(todoEditorDoneMsg{slug: "d-ready", path: path})
 	next = updated.(Model)
 	if !strings.Contains(next.transcript[len(next.transcript)-1].text, "is gone") {

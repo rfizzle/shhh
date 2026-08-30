@@ -43,8 +43,12 @@ func TestInitZsh_Idempotent(t *testing.T) {
 	cmd1.SetArgs([]string{"init", "zsh"})
 	cmd2.SetArgs([]string{"init", "zsh"})
 
-	cmd1.Execute()
-	cmd2.Execute()
+	if err := cmd1.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if err := cmd2.Execute(); err != nil {
+		t.Fatal(err)
+	}
 
 	if out1.String() != out2.String() {
 		t.Error("expected identical output on repeated calls (idempotent)")
@@ -86,8 +90,12 @@ func TestInitBash_Idempotent(t *testing.T) {
 	cmd1.SetArgs([]string{"init", "bash"})
 	cmd2.SetArgs([]string{"init", "bash"})
 
-	cmd1.Execute()
-	cmd2.Execute()
+	if err := cmd1.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if err := cmd2.Execute(); err != nil {
+		t.Fatal(err)
+	}
 
 	if out1.String() != out2.String() {
 		t.Error("expected identical output on repeated calls (idempotent)")
@@ -126,8 +134,12 @@ func TestInitFish_Idempotent(t *testing.T) {
 	cmd1.SetArgs([]string{"init", "fish"})
 	cmd2.SetArgs([]string{"init", "fish"})
 
-	cmd1.Execute()
-	cmd2.Execute()
+	if err := cmd1.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if err := cmd2.Execute(); err != nil {
+		t.Fatal(err)
+	}
 
 	if out1.String() != out2.String() {
 		t.Error("expected identical output on repeated calls (idempotent)")
@@ -157,8 +169,8 @@ func TestInit_NoArgs(t *testing.T) {
 func TestInitProject_CreatesFile(t *testing.T) {
 	dir := t.TempDir()
 	orig, _ := os.Getwd()
-	os.Chdir(dir)
-	defer os.Chdir(orig)
+	must(t, os.Chdir(dir))
+	defer func() { _ = os.Chdir(orig) }()
 
 	cmd := NewRootCmd()
 	cmd.SetArgs([]string{"init", "--project"})
@@ -179,11 +191,11 @@ func TestInitProject_CreatesFile(t *testing.T) {
 
 func TestInitProject_OldLayoutPointsAtDoctor(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, ".shhh"), []byte("existing"), 0o644)
+	must(t, os.WriteFile(filepath.Join(dir, ".shhh"), []byte("existing"), 0o644))
 
 	orig, _ := os.Getwd()
-	os.Chdir(dir)
-	defer os.Chdir(orig)
+	must(t, os.Chdir(dir))
+	defer func() { _ = os.Chdir(orig) }()
 
 	cmd := NewRootCmd()
 	cmd.SetArgs([]string{"init", "--project"})
@@ -199,12 +211,12 @@ func TestInitProject_OldLayoutPointsAtDoctor(t *testing.T) {
 
 func TestInitProject_AlreadyExists(t *testing.T) {
 	dir := t.TempDir()
-	os.MkdirAll(filepath.Join(dir, ".shhh"), 0o755)
-	os.WriteFile(filepath.Join(dir, ".shhh", "project.md"), []byte("existing"), 0o644)
+	must(t, os.MkdirAll(filepath.Join(dir, ".shhh"), 0o755))
+	must(t, os.WriteFile(filepath.Join(dir, ".shhh", "project.md"), []byte("existing"), 0o644))
 
 	orig, _ := os.Getwd()
-	os.Chdir(dir)
-	defer os.Chdir(orig)
+	must(t, os.Chdir(dir))
+	defer func() { _ = os.Chdir(orig) }()
 
 	cmd := NewRootCmd()
 	cmd.SetArgs([]string{"init", "--project"})

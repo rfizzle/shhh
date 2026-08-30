@@ -32,9 +32,9 @@ func TestRun_PropagatesExitCode(t *testing.T) {
 
 func TestRun_UsesShellEnv(t *testing.T) {
 	original := os.Getenv("SHELL")
-	t.Cleanup(func() { os.Setenv("SHELL", original) })
+	t.Cleanup(func() { _ = os.Setenv("SHELL", original) })
 
-	os.Setenv("SHELL", "/bin/sh")
+	must(t, os.Setenv("SHELL", "/bin/sh"))
 	code := Run("echo hello > /dev/null")
 	if code != 0 {
 		t.Errorf("expected exit code 0 with /bin/sh, got %d", code)
@@ -43,9 +43,9 @@ func TestRun_UsesShellEnv(t *testing.T) {
 
 func TestRun_FallbackShell(t *testing.T) {
 	original := os.Getenv("SHELL")
-	t.Cleanup(func() { os.Setenv("SHELL", original) })
+	t.Cleanup(func() { _ = os.Setenv("SHELL", original) })
 
-	os.Unsetenv("SHELL")
+	must(t, os.Unsetenv("SHELL"))
 	code := Run("true")
 	if code != 0 {
 		t.Errorf("expected exit code 0 with fallback shell, got %d", code)
@@ -190,5 +190,13 @@ func TestSessionEnv_ReachesEveryCapturedCommand(t *testing.T) {
 	SetSessionEnv(nil)
 	if Environ() != nil {
 		t.Fatal("no session pairs must leave the command to inherit")
+	}
+}
+
+// must fails the test on an error from setting it up.
+func must(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatal(err)
 	}
 }

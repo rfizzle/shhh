@@ -57,12 +57,9 @@ func (m *Model) setModelDefault(which string, rest []string) string {
 		current = m.defaults.AgentModel
 	}
 	if len(rest) == 0 {
-		var note string
-		switch {
-		case current == "":
+		note := fmt.Sprintf("%s: %s", label, current)
+		if current == "" {
 			note = fmt.Sprintf("%s: not set (%s).", label, m.defaultFallback(which))
-		default:
-			note = fmt.Sprintf("%s: %s", label, current)
 		}
 		// Reporting a setting that is being overruled without saying so is
 		// the same lie as writing one, told more quietly.
@@ -89,12 +86,9 @@ func (m *Model) setModelDefault(which string, rest []string) string {
 		return fmt.Sprintf("Sub-agents now run on %s. Agents already running keep the model they started on.", name)
 	}
 	m.defaults.Model = name
-	var note string
-	switch {
-	case name == m.modelName:
+	note := fmt.Sprintf("Default model set to %s for new sessions; this session stays on %s (/model %s switches it now).", name, m.modelName, name)
+	if name == m.modelName {
 		note = fmt.Sprintf("Default model set to %s (this session already uses it).", name)
-	default:
-		note = fmt.Sprintf("Default model set to %s for new sessions; this session stays on %s (/model %s switches it now).", name, m.modelName, name)
 	}
 	// A default that something else overrules was written and will still be
 	// ignored, which is the one outcome a success message must not claim.

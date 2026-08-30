@@ -65,7 +65,9 @@ func Run(command string) (exitCode int) {
 	go func() {
 		for sig := range sigCh {
 			if cmd.Process != nil {
-				cmd.Process.Signal(sig)
+				// A process that has already exited cannot be signalled, and
+				// that is the one failure this can have.
+				_ = cmd.Process.Signal(sig)
 			}
 		}
 	}()
@@ -77,7 +79,10 @@ func Run(command string) (exitCode int) {
 		return 1
 	}
 
-	go history.Append(filepath.Base(sh), command)
+	// Best effort: the shell's history file is a convenience, and a command
+	// that ran is not made to fail by a history file that could not be
+	// written.
+	go func() { _ = history.Append(filepath.Base(sh), command) }()
 
 	return 0
 }

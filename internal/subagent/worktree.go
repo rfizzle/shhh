@@ -48,7 +48,9 @@ func addWorktree(root string) (worktree, childRoot, repoTop string, err error) {
 		return "", "", "", err
 	}
 	if _, err = runGit(repoTop, "worktree", "add", "--detach", worktree, "HEAD"); err != nil {
-		os.RemoveAll(worktree)
+		// The git error is the one worth reporting; a directory left behind
+		// by a failed add is cleaned up as far as it can be.
+		_ = os.RemoveAll(worktree)
 		return "", "", "", err
 	}
 

@@ -38,7 +38,7 @@ func TestAppend_Zsh(t *testing.T) {
 func TestAppend_Fish(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
-	os.MkdirAll(filepath.Join(tmp, ".local", "share", "fish"), 0755)
+	must(t, os.MkdirAll(filepath.Join(tmp, ".local", "share", "fish"), 0755))
 
 	if err := Append("fish", "git status"); err != nil {
 		t.Fatalf("unexpected error: %v", err)
@@ -68,8 +68,8 @@ func TestAppend_DeduplicatesBash(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
 
-	Append("bash", "echo hello")
-	Append("bash", "echo hello")
+	mustAppend(t, "bash", "echo hello")
+	mustAppend(t, "bash", "echo hello")
 
 	content := readFile(t, filepath.Join(tmp, ".bash_history"))
 	if strings.Count(content, "echo hello") != 1 {
@@ -81,8 +81,8 @@ func TestAppend_DeduplicatesZsh(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
 
-	Append("zsh", "ls -la")
-	Append("zsh", "ls -la")
+	mustAppend(t, "zsh", "ls -la")
+	mustAppend(t, "zsh", "ls -la")
 
 	content := readFile(t, filepath.Join(tmp, ".zsh_history"))
 	if strings.Count(content, ";ls -la") != 1 {
@@ -93,10 +93,10 @@ func TestAppend_DeduplicatesZsh(t *testing.T) {
 func TestAppend_DeduplicatesFish(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
-	os.MkdirAll(filepath.Join(tmp, ".local", "share", "fish"), 0755)
+	must(t, os.MkdirAll(filepath.Join(tmp, ".local", "share", "fish"), 0755))
 
-	Append("fish", "git status")
-	Append("fish", "git status")
+	mustAppend(t, "fish", "git status")
+	mustAppend(t, "fish", "git status")
 
 	content := readFile(t, filepath.Join(tmp, ".local", "share", "fish", "fish_history"))
 	if strings.Count(content, "- cmd: git status") != 1 {
@@ -108,8 +108,8 @@ func TestAppend_DifferentCommandsNotDeduplicated(t *testing.T) {
 	tmp := t.TempDir()
 	t.Setenv("HOME", tmp)
 
-	Append("bash", "echo hello")
-	Append("bash", "echo world")
+	mustAppend(t, "bash", "echo hello")
+	mustAppend(t, "bash", "echo world")
 
 	content := readFile(t, filepath.Join(tmp, ".bash_history"))
 	if content != "echo hello\necho world\n" {
@@ -138,4 +138,19 @@ func readFile(t *testing.T, path string) string {
 		t.Fatalf("failed to read %s: %v", path, err)
 	}
 	return string(data)
+}
+
+func mustAppend(t *testing.T, shell, command string) {
+	t.Helper()
+	if err := Append(shell, command); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// must fails the test on an error from setting it up.
+func must(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatal(err)
+	}
 }

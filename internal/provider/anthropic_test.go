@@ -272,7 +272,7 @@ func TestAnthropic_ThinkingBudgetOnlyWhenAsked(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	drainAnthropic(t, events)
+	_, _, _, _ = drainAnthropic(t, events)
 	if _, ok := body["thinking"]; ok {
 		t.Fatalf("effort off must send no thinking config, got %v", body["thinking"])
 	}
@@ -282,7 +282,7 @@ func TestAnthropic_ThinkingBudgetOnlyWhenAsked(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	drainAnthropic(t, events)
+	_, _, _, _ = drainAnthropic(t, events)
 	thinking, ok := body["thinking"].(map[string]any)
 	if !ok {
 		t.Fatalf("expected a thinking config, got %v", body["thinking"])
@@ -301,7 +301,7 @@ func TestAnthropic_ThinkingBudgetOnlyWhenAsked(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	drainAnthropic(t, events)
+	_, _, _, _ = drainAnthropic(t, events)
 	thinking = body["thinking"].(map[string]any)
 	if thinking["type"] != "enabled" {
 		t.Errorf("expected enabled thinking on haiku 4.5, got %v", thinking["type"])
@@ -319,7 +319,7 @@ func TestAnthropic_ThinkingBudgetOnlyWhenAsked(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	drainAnthropic(t, events)
+	_, _, _, _ = drainAnthropic(t, events)
 	thinking = body["thinking"].(map[string]any)
 	if got := thinking["budget_tokens"].(float64); got != 8192-anthropicAnswerFloor {
 		t.Errorf("clamped budget = %v, want %d", got, 8192-anthropicAnswerFloor)
@@ -330,7 +330,7 @@ func TestAnthropic_ThinkingBudgetOnlyWhenAsked(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	drainAnthropic(t, events)
+	_, _, _, _ = drainAnthropic(t, events)
 	if _, ok := body["thinking"]; ok {
 		t.Errorf("a model without thinking must be sent none, got %v", body["thinking"])
 	}

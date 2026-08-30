@@ -9,8 +9,8 @@ func clearEnv(t *testing.T) {
 	t.Helper()
 	for _, key := range []string{"SHHH_PROVIDER", "SHHH_MODEL"} {
 		orig := os.Getenv(key)
-		t.Cleanup(func() { os.Setenv(key, orig) })
-		os.Unsetenv(key)
+		t.Cleanup(func() { _ = os.Setenv(key, orig) })
+		must(t, os.Unsetenv(key))
 	}
 }
 
@@ -43,8 +43,8 @@ func TestResolve_ConfigOverridesDefaults(t *testing.T) {
 
 func TestResolve_EnvOverridesConfig(t *testing.T) {
 	clearEnv(t)
-	os.Setenv("SHHH_PROVIDER", "openai-compatible")
-	os.Setenv("SHHH_MODEL", "llama3")
+	must(t, os.Setenv("SHHH_PROVIDER", "openai-compatible"))
+	must(t, os.Setenv("SHHH_MODEL", "llama3"))
 
 	r := Resolve(Opts{
 		ConfigProvider: "gemini",
@@ -60,8 +60,8 @@ func TestResolve_EnvOverridesConfig(t *testing.T) {
 
 func TestResolve_EnvOverridesDefaults(t *testing.T) {
 	clearEnv(t)
-	os.Setenv("SHHH_PROVIDER", "openai-compatible")
-	os.Setenv("SHHH_MODEL", "llama3")
+	must(t, os.Setenv("SHHH_PROVIDER", "openai-compatible"))
+	must(t, os.Setenv("SHHH_MODEL", "llama3"))
 
 	r := Resolve(Opts{})
 	if r.Provider != "openai-compatible" {
@@ -74,8 +74,8 @@ func TestResolve_EnvOverridesDefaults(t *testing.T) {
 
 func TestResolve_FlagsOverrideEnv(t *testing.T) {
 	clearEnv(t)
-	os.Setenv("SHHH_PROVIDER", "openai-compatible")
-	os.Setenv("SHHH_MODEL", "llama3")
+	must(t, os.Setenv("SHHH_PROVIDER", "openai-compatible"))
+	must(t, os.Setenv("SHHH_MODEL", "llama3"))
 
 	r := Resolve(Opts{
 		FlagProvider: "openai",
@@ -108,7 +108,7 @@ func TestResolve_FlagsOverrideConfig(t *testing.T) {
 
 func TestResolve_PartialFlags(t *testing.T) {
 	clearEnv(t)
-	os.Setenv("SHHH_MODEL", "gemini-pro")
+	must(t, os.Setenv("SHHH_MODEL", "gemini-pro"))
 
 	r := Resolve(Opts{FlagProvider: "gemini"})
 	if r.Provider != "gemini" {
@@ -121,7 +121,7 @@ func TestResolve_PartialFlags(t *testing.T) {
 
 func TestResolve_EmptyFlagsFallThrough(t *testing.T) {
 	clearEnv(t)
-	os.Setenv("SHHH_PROVIDER", "openrouter")
+	must(t, os.Setenv("SHHH_PROVIDER", "openrouter"))
 
 	r := Resolve(Opts{FlagProvider: "", FlagModel: ""})
 	if r.Provider != "openrouter" {
@@ -172,5 +172,13 @@ func TestResolve_FlagModelOverridesConfigModel(t *testing.T) {
 	})
 	if r.Model != "gpt-4o-mini" {
 		t.Errorf("expected flag model 'gpt-4o-mini', got %q", r.Model)
+	}
+}
+
+// must fails the test on an error from setting it up.
+func must(t *testing.T, err error) {
+	t.Helper()
+	if err != nil {
+		t.Fatal(err)
 	}
 }
