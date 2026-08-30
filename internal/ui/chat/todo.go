@@ -17,6 +17,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/todo"
+	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -81,13 +82,13 @@ func (m Model) inspectorTodo() *components.InspectorTodo {
 			t.More++
 			continue
 		}
-		t.Rows = append(t.Rows, todoRow(s, it))
+		t.Rows = append(t.Rows, todoRow(s, it, m.todoRun))
 	}
 	return t
 }
 
 // todoRow is one item as the rail draws it.
-func todoRow(s *todo.Store, it todo.Item) components.InspectorTodoRow {
+func todoRow(s *todo.Store, it todo.Item, running *run.State) components.InspectorTodoRow {
 	// Parse never leaves Priority empty — an unset or unknown one reads as
 	// medium — so the first letter is always there to take.
 	row := components.InspectorTodoRow{
@@ -103,6 +104,12 @@ func todoRow(s *todo.Store, it todo.Item) components.InspectorTodoRow {
 		row.State, row.Note = components.TodoBlocked, "blocked"
 	case todo.StatusInProgress:
 		row.State, row.Note = components.TodoRunning, "in progress"
+		if running != nil && running.Slug == it.Slug {
+			row.Note = string(running.Stage)
+			if running.Round > 0 {
+				row.Note += fmt.Sprintf(" %d/%d", running.Round, run.Rounds(running.Size))
+			}
+		}
 	default:
 		if waiting := s.Waiting(it); len(waiting) > 0 {
 			row.State, row.Note = components.TodoWaiting, "needs "+waiting[0]
@@ -130,14 +137,27 @@ func (m Model) todoCommand(parts []string) (tea.Model, tea.Cmd) {
 	// Reading is fine mid-turn; changing a file the model may be editing
 	// at the same moment is not, and neither is suspending the program
 	// under a running turn for the editor.
+	if len(parts) >= 2 && parts[1] == "status" {
+		return m.systemNotice(m.todoRunStatus())
+	}
 	if len(parts) >= 2 && m.working() {
 		switch parts[1] {
-		case "edit", "add", "block", "open", "done", "drop":
+		case "edit", "add", "block", "open", "done", "drop", "run", "stop":
 			return m.systemNotice("Not while the turn is running: /todo " + parts[1] + " changes the backlog files the model may be working from. /todo and /todo show still read.")
 		}
 	}
 	if len(parts) == 2 && parts[1] == "add" {
 		return m.startTodoExtract()
+	}
+	if len(parts) >= 2 && parts[1] == "run" {
+		arg := ""
+		if len(parts) == 3 {
+			arg = parts[2]
+		}
+		return m.startTodoRun(arg)
+	}
+	if len(parts) == 2 && parts[1] == "stop" {
+		return m.stopTodoRun()
 	}
 	if len(parts) >= 2 && parts[1] == "edit" {
 		if len(parts) != 3 {

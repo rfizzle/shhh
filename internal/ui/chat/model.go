@@ -30,6 +30,7 @@ import (
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo"
+	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/caps"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -558,6 +559,16 @@ type Model struct {
 	todoStore *todo.Store
 	// todoPropose is the open proposals card and todoProposals what it is
 	// showing; todoExtractRun numbers readings so a late one is dropped.
+	// todoRun is the backlog run in progress, todoRunItem the item it works
+	// and todoRunMark where in the transcript its current stage began.
+	todoRun     *run.State
+	todoRunItem todo.Item
+	todoRunMark int
+	// todoRunTurn is the session turn the current stage sent, so a turn
+	// that ended without being the stage's is told apart; todoRunCancelled
+	// marks the stage turn ended by esc rather than by an answer.
+	todoRunTurn       int
+	todoRunCancelled  bool
 	todoPropose       *components.MultiSelect
 	todoProposals     []todo.Proposal
 	todoExtracting    bool
@@ -1080,6 +1091,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// to remember to ask for one.
 	if read := mm.summaryCloseCmd(m); read != nil {
 		cmd = tea.Batch(cmd, read)
+	}
+	// And the backlog runner's next stage (todorun.go), for the same
+	// reason again: a stage's turn ending is a transition.
+	if next, step := mm.todoRunAfter(m); step != nil || next.todoRun != mm.todoRun {
+		mm = next
+		cmd = tea.Batch(cmd, step)
 	}
 	return mm, cmd
 }
@@ -1632,8 +1649,10 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if cmd := m.dispatchSteering(); cmd != nil {
 			return m, cmd
 		}
-		// A completed planning response gets the plan-approval prompt.
-		if m.mode == agent.ModePlan && hadText {
+		// A completed planning response gets the plan-approval prompt —
+		// unless a backlog run is what asked for the plan, in which case
+		// the runner reads it and there is nothing to approve by hand.
+		if m.mode == agent.ModePlan && hadText && m.todoRun == nil {
 			m.setTurnState(statePlanApprove)
 			m.armPlan()
 			m.syncViewport()
@@ -1814,6 +1833,12 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case todoProposalsMsg:
 		return m.finishTodoExtract(msg)
+
+	case todoVerifyMsg:
+		return m.finishTodoVerify(msg)
+
+	case todoCommitMsg:
+		return m.finishTodoCommit(msg)
 
 	case attachedFileMsg:
 		return m.handleAttachedFile(msg)
@@ -2542,6 +2567,9 @@ func (m *Model) finishStreaming() {
 func (m *Model) cancelStreaming() {
 	if m.cancel != nil {
 		m.cancel()
+	}
+	if m.todoRun != nil && !m.todoRun.Over() {
+		m.todoRunCancelled = true
 	}
 	// Ctrl+C cancels the whole child tree with the turn.
 	m.cancelSubagents()
@@ -3339,7 +3367,9 @@ func helpText() string {
   /memory        Durable memories: list (default) · add [global] [kind] <text> · forget <id>
   /todo          The project's backlog (.shhh/todo): bare opens a picker · show|edit <slug> ·
                  add (reads this session into proposed items you accept or drop) ·
-                 add <text> · block <slug> [why] · open|done|drop <slug>
+                 add <text> · block <slug> [why] · open|done|drop <slug> ·
+                 run [slug|--next] works an item through to a commit in auto mode ·
+                 status · stop
   /skills        The skills this session loaded (SKILL.md directories), and
                  why any did not
   /skill <name> [task]
@@ -3458,6 +3488,10 @@ Keys:
 // clearConversation drops everything except the system prompt.
 func (m *Model) clearConversation() {
 	m.dropTodoExtract()
+	if m.todoRun != nil && !m.todoRun.Over() {
+		_ = todo.SetStatus(m.todoRunItem.Path, todo.StatusOpen)
+		m.endTodoRun()
+	}
 	msgs := m.agent.Messages()
 	if len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
 		m.agent.SetMessages(msgs[:1:1])

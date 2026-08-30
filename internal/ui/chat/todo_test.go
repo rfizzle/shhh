@@ -214,7 +214,7 @@ func TestTodo_TurnEndReloadsTheStore(t *testing.T) {
 	if m.todoStore.Count(todo.StatusBlocked) != 2 {
 		t.Fatal("a turn ending should re-read the backlog")
 	}
-	if row := todoRow(m.todoStore, todo.Item{Slug: "x", Priority: todo.PriorityLow}); row.Size != "-" || row.Priority != "L" {
+	if row := todoRow(m.todoStore, todo.Item{Slug: "x", Priority: todo.PriorityLow}, nil); row.Size != "-" || row.Priority != "L" {
 		t.Fatalf("ungraded row = %+v", row)
 	}
 }

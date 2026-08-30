@@ -46,6 +46,9 @@ func (m Model) submitInput() (tea.Model, tea.Cmd) {
 	if name := commandName(text); name != "" {
 		return m.runCommand(text, name)
 	}
+	if reason, held := m.todoRunHoldsInput(); held {
+		return m.systemNotice("Not sent: " + reason + ".")
+	}
 	if m.working() || m.decisionUngated() {
 		// Typed while the agent works: the message joins the conversation
 		// before the next model request. A turn paused on a decision

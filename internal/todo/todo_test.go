@@ -283,9 +283,12 @@ func TestCreate_RefusesTheOldLayout(t *testing.T) {
 
 func TestRoot_FindsTheRepository(t *testing.T) {
 	repo := t.TempDir()
-	os.MkdirAll(filepath.Join(repo, ".git"), 0o755)
 	sub := filepath.Join(repo, "a", "b")
-	os.MkdirAll(sub, 0o755)
+	for _, d := range []string{filepath.Join(repo, ".git"), sub} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
 	if got := Root(sub); got != repo {
 		t.Errorf("Root = %q, want %q", got, repo)
 	}

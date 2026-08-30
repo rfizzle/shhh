@@ -114,6 +114,56 @@ file now reads as — including why it no longer loads, if that is what the
 edit did — so a broken header is a sentence on screen, not an item that
 quietly disappeared.
 
+## A run is turns with gates between them
+
+An item can be worked by the session itself: research, implement, verify,
+review, commit, archive. Each stage is one turn of the conversation with a
+prompt that says what the stage is for and the exact shape of the answer
+it wants, and between the turns the decision of what happens next is made
+by code reading that answer — never by the model deciding which stage it
+is in. That is what makes the run deterministic: the same answers produce
+the same path every time, and the gates cannot be talked past.
+
+Research happens in the read-only mode, and its answer is the plan in the
+same shape a plan is always asked for, plus a size and any open question.
+An open question ends the run rather than being guessed at: a runner that
+answers a product question for you is not running your backlog, it is
+writing it. The size is re-graded from what the research found, and the
+number of fix rounds the run gets is set by that size, not by the item.
+
+Verification is the item's own tests and the project's checks, run by
+shhh rather than described by the model. The tests are the ones the item
+listed when the run started: the run tells the model to tick the item's
+boxes as it works, and a command the model wrote into the file during the
+run is not one shhh will run unasked. A failure spends a fix round;
+when the rounds are spent the run stops with the failure as evidence. A
+review reads the change as a critic and answers clean or with findings,
+and findings spend a round the same way.
+
+The run works in the mode that asks only when the classifier cannot
+decide, whatever mode the session was in, and puts the session's mode
+back afterwards. The review and the commit message are written in the
+read-only mode, so nothing can change between the verification that
+passed and the commit. While a run is going the input takes commands
+only: a sentence typed mid-stage would steer the model out of its stage,
+and one typed between stages would start work the run would then commit
+as its own. Stopping the run is a command, and cancelling a stage's turn
+is the same as stopping it. A backlog runner that asked at every edit would be a
+session with extra steps; one that never asked would be one you could not
+steer. The classifier failing closed is the steering.
+
+The commit is shhh's to make, not the model's. Only paths the run itself
+changed are staged, by name, and never a backlog file; a tree that already
+holds staged changes the run did not make stops the run instead of
+committing a stranger. The message is written by the model in the
+repository's own style, read from its history, and the report the model
+writes goes onto the item as it is archived.
+
+A run that stops — a question, spent rounds, a commit that cannot be made
+— leaves the item blocked with the evidence written on it and the work so
+far in the tree, uncommitted and named. Nothing is stashed or reset: the
+work is yours to keep or drop, and the item says exactly where it stopped.
+
 ## Done is archived, not deleted
 
 A finished item moves into an archive beside the active ones, with the

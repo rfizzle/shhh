@@ -205,7 +205,7 @@ var slashCommands = []slashCommand{
 		argSpecs: []argSpec{{dynamic: agentArgs, fuzzy: true}}},
 	{name: "/detach", desc: "Back to the orchestrator (also esc)",
 		enabled: func(m *Model) bool { return m.subagents != nil && m.attachedTo != "" }},
-	{name: "/todo", args: "[show|edit|add|block|open|done|drop]", desc: "The project's backlog (bare /todo picks an item)",
+	{name: "/todo", args: "[show|edit|add|block|open|done|drop|run|status|stop]", desc: "The project's backlog (bare /todo picks an item)",
 		enabled: func(m *Model) bool { return m.todosEnabled() },
 		argSpecs: []argSpec{
 			{options: []argOption{
@@ -216,8 +216,11 @@ var slashCommands = []slashCommand{
 				{"open", "Reopen a blocked item"},
 				{"done", "Archive an item"},
 				{"drop", "Delete an item outright"},
+				{"run", "Work an item through to a commit (bare run takes the next ready one)"},
+				{"status", "Where the run is"},
+				{"stop", "Abandon the run; the item goes back to open"},
 			}},
-			{after: []string{"show", "edit", "block", "open", "done", "drop"}, dynamic: todoSlugArgs, fuzzy: true},
+			{after: []string{"show", "edit", "block", "open", "done", "drop", "run"}, dynamic: todoSlugArgs, fuzzy: true},
 		}},
 	{name: "/plan", args: "[save|drop]", desc: "The approved plan as a checklist, with anything that has departed from it",
 		argSpecs: staticArgs(

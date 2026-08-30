@@ -651,7 +651,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		model = model.WithMutationHook(lspMutationHook(session.lsp))
 	}
 	if gate != nil {
-		model = model.WithGate(chat.Gate{Manage: gateManager(gate)})
+		model = model.WithGate(chat.Gate{Manage: gateManager(gate), Run: gate.Run})
 	}
 	if procSup != nil {
 		model = model.WithProcesses(chat.Processes{Manage: processManager(procSup)})
