@@ -220,9 +220,41 @@ func AgentDirs() []string {
 	return out
 }
 
-// LoadAgents reads every profile under the agent directories.
+// ProjectAgentDir is the project's own profile directory: .shhh/agents
+// under the repository root — the nearest ancestor of dir holding .git, or
+// dir itself outside a repository. It is searched before the config
+// directories, so a project can carry the personas its work needs and
+// shadow a global one of the same name. Nothing assumes the directory is
+// committed. See docs/capabilities/subagents.md#a-profile-is-a-file.
+func ProjectAgentDir(dir string) string {
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		abs = dir
+	}
+	root := abs
+	for probe := abs; ; {
+		if _, err := os.Stat(filepath.Join(probe, ".git")); err == nil {
+			root = probe
+			break
+		}
+		parent := filepath.Dir(probe)
+		if parent == probe {
+			break
+		}
+		probe = parent
+	}
+	return filepath.Join(root, ".shhh", "agents")
+}
+
+// LoadAgents reads every profile under the config agent directories.
 func LoadAgents() (map[string]AgentDefinition, error) {
 	return LoadAgentsFrom(AgentDirs()...)
+}
+
+// LoadAgentsFor reads the project's profiles and then the config
+// directories', the project shadowing.
+func LoadAgentsFor(dir string) (map[string]AgentDefinition, error) {
+	return LoadAgentsFrom(append([]string{ProjectAgentDir(dir)}, AgentDirs()...)...)
 }
 
 // LoadAgentsFrom reads every *.toml under dirs, earlier directories

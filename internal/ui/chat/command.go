@@ -46,6 +46,11 @@ func (m Model) submitInput() (tea.Model, tea.Cmd) {
 	if name := commandName(text); name != "" {
 		return m.runCommand(text, name)
 	}
+	// A profile being drafted owns the next line: the brief, or the
+	// answers to what the drafter asked.
+	if m.personaHoldsInput() {
+		return m.answerPersona(text)
+	}
 	if reason, held := m.todoRunHoldsInput(); held {
 		return m.systemNotice("Not sent: " + reason + ".")
 	}
@@ -104,6 +109,9 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		return m.runPaste(parts)
 
 	case name == "/agents":
+		if len(parts) > 1 && parts[1] == "new" {
+			return m.startPersona(strings.Join(parts[2:], " "))
+		}
 		return m.openAgentList()
 
 	case name == "/attach":

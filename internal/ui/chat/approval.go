@@ -745,6 +745,8 @@ func (m Model) bottomPanelHeight() int {
 		lines = m.pickerLines()
 	case stateTodoPropose:
 		lines = m.todoProposeLines()
+	case statePersona:
+		lines = m.personaLines()
 	case stateTodoPause:
 		lines = m.todoPauseLines()
 	case stateUndoConfirm:

@@ -632,6 +632,28 @@ func New(ctx context.Context, opts Options) *Supervisor {
 // Events is the supervisor's notification stream for the parent front-end.
 func (s *Supervisor) Events() <-chan Event { return s.events }
 
+// AddProfile makes a role spawnable from now on: a profile drafted in the
+// session joins the ones it opened with, replacing one of the same name.
+// The spawn tool's definition is the caller's to refresh; the supervisor
+// only decides what a spawn may name.
+func (s *Supervisor) AddProfile(p Profile) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	next := make(Profiles, len(s.opts.Profiles)+1)
+	for k, v := range s.opts.Profiles {
+		next[k] = v
+	}
+	next[p.Name] = p
+	s.opts.Profiles = next
+}
+
+// Profiles is the set of roles a spawn may name now.
+func (s *Supervisor) Profiles() Profiles {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.opts.Profiles
+}
+
 // BeginBatch opens a new spawn batch and returns its number. The parent
 // front-end calls it once per tool round, so the children one round spawns
 // share a batch and can be rendered as one fan-out block rather than
@@ -1111,7 +1133,7 @@ func (s *Supervisor) Report(name string) (string, error) {
 // spawn validates the arguments, prepares the child's workspace (a git
 // worktree for writers), and starts it in the background.
 func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
-	args, err := parseSpawnArgs(s.opts.Profiles, raw)
+	args, err := parseSpawnArgs(s.Profiles(), raw)
 	if err != nil {
 		return "", err
 	}

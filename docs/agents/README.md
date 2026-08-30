@@ -1,7 +1,10 @@
 # Agent profiles
 
 A profile is one TOML file at `~/.config/shhh/agents/<name>.toml` (or under
-`$XDG_CONFIG_HOME/shhh/agents/`). Its file name is the role a `shhh code`
+`$XDG_CONFIG_HOME/shhh/agents/`), or, for `shhh code` only, at `.shhh/agents/<name>.toml`
+under the repository root for a profile that belongs to one project; the
+project's shadows a global one of the same name. `/agents new` in a session drafts one
+from a sentence. Its file name is the role a `shhh code`
 session spawns it by, so once `reviewer.toml` exists the orchestrator can call
 `spawn_agent` with `role = "reviewer"` — the model is told the profile exists
 and what it is for. Why profiles are files, and what they can and cannot

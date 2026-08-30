@@ -52,35 +52,61 @@ type agentProfiles struct {
 // reasoning names are checked here rather than in the loader because the
 // loader is config plumbing and these are the agent's and provider's
 // vocabularies (docs/capabilities/subagents.md#a-profile-is-a-file).
-func loadAgentProfiles() (*agentProfiles, error) {
-	defs, err := config.LoadAgents()
+//
+// A coding session reads the project's own profiles first; a conversation
+// reads only the global ones, because a persona is the person's and not any
+// project's (docs/capabilities/subagents.md#a-profile-is-drafted-in-conversation).
+func loadAgentProfiles(projectScoped bool) (*agentProfiles, error) {
+	var (
+		defs map[string]config.AgentDefinition
+		err  error
+	)
+	if projectScoped {
+		cwd, wdErr := os.Getwd()
+		if wdErr != nil {
+			cwd = "."
+		}
+		defs, err = config.LoadAgentsFor(cwd)
+	} else {
+		defs, err = config.LoadAgents()
+	}
 	if err != nil {
 		return nil, err
 	}
 	out := &agentProfiles{profiles: subagent.BuiltinProfiles(), definitions: defs}
-	for name, def := range defs {
-		p := subagent.Profile{
-			Name:        subagent.Role(name),
-			Description: def.Description,
-			Writes:      def.Writes(),
-			MaxTokens:   def.MaxTokens,
-			MaxRounds:   def.MaxRounds,
-		}
-		if strings.TrimSpace(def.Mode) != "" {
-			mode, err := agent.ParseMode(def.Mode)
-			if err != nil {
-				return nil, fmt.Errorf("agent profile %s: mode: %w", def.Path, err)
-			}
-			p.Mode, p.HasMode = mode, true
-		}
-		if !def.InheritsReasoning() {
-			if _, err := provider.ParseEffort(def.Reasoning); err != nil {
-				return nil, fmt.Errorf("agent profile %s: reasoning: %w", def.Path, err)
-			}
+	for _, def := range defs {
+		p, err := profileFromDefinition(def)
+		if err != nil {
+			return nil, err
 		}
 		out.profiles[p.Name] = p
 	}
 	return out, nil
+}
+
+// profileFromDefinition is the supervisor's view of a profile file, with
+// the mode and reasoning names checked.
+func profileFromDefinition(def config.AgentDefinition) (subagent.Profile, error) {
+	p := subagent.Profile{
+		Name:        subagent.Role(def.Name),
+		Description: def.Description,
+		Writes:      def.Writes(),
+		MaxTokens:   def.MaxTokens,
+		MaxRounds:   def.MaxRounds,
+	}
+	if strings.TrimSpace(def.Mode) != "" {
+		mode, err := agent.ParseMode(def.Mode)
+		if err != nil {
+			return p, fmt.Errorf("agent profile %s: mode: %w", def.Path, err)
+		}
+		p.Mode, p.HasMode = mode, true
+	}
+	if !def.InheritsReasoning() {
+		if _, err := provider.ParseEffort(def.Reasoning); err != nil {
+			return p, fmt.Errorf("agent profile %s: reasoning: %w", def.Path, err)
+		}
+	}
+	return p, nil
 }
 
 // readers is the subset of profiles that can change nothing: what a

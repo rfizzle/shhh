@@ -111,6 +111,9 @@ const (
 	// stateTodoPropose: the proposals card from a bare /todo add is showing —
 	// the session read into backlog items, checked ones written on enter.
 	stateTodoPropose
+	// statePersona: a drafted agent profile is showing on its card — where
+	// to keep it, a note that revises it, or nothing.
+	statePersona
 	// stateTodoPause: a backlog run is paused on the person — the plan, the
 	// questions and the size are showing, with go ahead / re-plan / stop.
 	stateTodoPause
@@ -781,8 +784,13 @@ type Model struct {
 	// conversation marks `shhh chat`; notebook is its shared notebook.
 	conversation bool
 	notebook     *notebook.Store
-	startFocus   int
-	startSpent   bool
+	// personas is the profile-drafting flow's wiring; persona the one in
+	// progress, personaAsk its card.
+	personas   Personas
+	persona    *personaFlow
+	personaAsk *components.NoteSelect
+	startFocus int
+	startSpent bool
 	// Recovery from a provider failure: the provider the session
 	// resolved to, the two hooks a failure row's keys need, and the masked
 	// key prompt [k] opens. A hook left nil is a key the row does not offer,
@@ -1289,6 +1297,9 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.state == stateTodoPropose {
 			return m.updateTodoPropose(msg)
+		}
+		if m.state == statePersona {
+			return m.updatePersona(msg)
 		}
 		if m.state == stateTodoPause {
 			return m.updateTodoPause(msg)
@@ -1855,6 +1866,9 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case todoEditorDoneMsg:
 		return m.todoEditorFinished(msg)
 
+	case personaDraftMsg:
+		return m.finishPersonaDraft(msg)
+
 	case todoProposalsMsg:
 		return m.finishTodoExtract(msg)
 
@@ -2181,6 +2195,8 @@ func (m Model) takeoverPanel(width int) string {
 		inputView = m.renderPick()
 	case stateTodoPropose:
 		inputView = m.renderTodoPropose()
+	case statePersona:
+		inputView = m.renderPersona()
 	case stateTodoPause:
 		inputView = m.renderTodoPause()
 	case stateFocus:
@@ -3406,6 +3422,10 @@ func helpText() string {
                  your task, as the model would load them itself. /<name>
                  does the same for a skill whose name is not a command
   /agents        Agent manager: attach, steer, cancel, kill sub-agents (also Ctrl+A)
+  /agents new [brief]
+                 Draft an agent profile from a sentence with the model's help:
+                 answer its questions if it has any, then keep, refine or
+                 discard the draft on a card. Bare offers starting points
   /attach [name] Attach to an agent's session and steer it (bare /attach lists)
   /detach        Back to your own session (also Esc while attached)
   /plan          The approved plan as a checklist, with anything that has
@@ -3517,6 +3537,7 @@ Keys:
 // clearConversation drops everything except the system prompt.
 func (m *Model) clearConversation() {
 	m.dropTodoExtract()
+	m.dropPersona()
 	if m.todoRun != nil && !m.todoRun.Over() {
 		_ = todo.SetStatus(m.todoRunItem.Path, todo.StatusOpen)
 		m.endTodoRun()

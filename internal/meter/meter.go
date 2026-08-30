@@ -31,7 +31,9 @@ const (
 	SourceClassifier Source = "classifier"
 	SourceSummary    Source = "summary"
 	// SourceBacklog is the reading that turns a session into backlog items.
-	SourceBacklog  Source = "backlog"
+	SourceBacklog Source = "backlog"
+	// SourcePersona is the drafting of an agent profile from a brief.
+	SourcePersona  Source = "persona"
 	SourceSubagent Source = "sub-agent"
 	SourceOneShot  Source = "one-shot"
 	// SourceUnattributed is where a gated request with no source lands. It

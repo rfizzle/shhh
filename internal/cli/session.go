@@ -184,6 +184,9 @@ type sessionEnv struct {
 	// it a level set with ctrl+r would be true of the session and false of
 	// every child it spawns.
 	reasoning func() provider.Effort
+	// replaceTools edits the toolset the next request carries: a profile
+	// drafted mid-session changes what spawn_agent may name.
+	replaceTools func(func([]provider.Tool) []provider.Tool)
 	// replaceKey and switchProvider are what a provider failure's [k] and
 	// [p] do: both rebuild the provider in place, and both leave the
 	// session untouched when the rebuild fails.
@@ -238,6 +241,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 	// guards the model, the provider and the key it was built with.
 	var sessionMu sync.Mutex
 	currentModel := resolved.Model
+	currentTools := session.toolDefs
 	currentEffort := effort
 	currentProvider := resolved.Provider
 	currentKey := req.APIKey
@@ -289,6 +293,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 		opts := compOpts
 		sessionMu.Lock()
 		opts.Model = currentModel
+		opts.Tools = currentTools
 		opts.Effort = currentEffort
 		active := p
 		sessionMu.Unlock()
@@ -331,6 +336,11 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 			sessionMu.Lock()
 			defer sessionMu.Unlock()
 			return currentEffort
+		},
+		replaceTools: func(edit func([]provider.Tool) []provider.Tool) {
+			sessionMu.Lock()
+			currentTools = edit(currentTools)
+			sessionMu.Unlock()
 		},
 		replaceKey: func(key string) error {
 			sessionMu.Lock()
@@ -404,7 +414,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// startup error naming the file, not a role that quietly went missing.
 	var agents *agentProfiles
 	if session.agents {
-		agents, err = loadAgentProfiles()
+		agents, err = loadAgentProfiles(!session.conversation)
 		if err != nil {
 			return err
 		}
@@ -725,7 +735,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 				{Label: "budget", Value: plan.Budget, Detail: "counted in the session totals"},
 			}}, nil
 		}
-		model = model.WithSubagents(sup)
+		model = model.WithSubagents(sup).WithPersonas(buildPersonas(session, env, agents, sup, ledger))
 	}
 	if len(gatedPreviews) > 0 {
 		model = model.WithGatedTools(gatedPreviews)

@@ -85,6 +85,36 @@ was wrong with it. The alternative — skipping it — is a role that quietly
 went missing, and the model would be told a smaller set of roles than the
 person wrote, with no way for either to notice.
 
+## A profile is drafted in conversation
+
+Writing a profile by hand is fine, and the reference says how. But the
+person who most wants one — "something that checks my claims", "a reviewer
+that only cares about security" — often has a sentence, not a file. So a
+session can draft one: the person says what they want, the model proposes
+the whole file, and the person decides where it lives, asks for changes in
+their own words, or drops it. A brief that is too thin to draft from gets at
+most three questions; a brief that is a full specification gets a draft and
+no questions, because someone who knows what they want should not be
+interviewed about it.
+
+The same mechanism serves both sessions and drafts the same file, but what
+it is told to value is not the same. In a chat, a profile is a colleague: a
+standpoint, a voice, a way of citing, and never a way of acting — the
+drafter is told so and the result is checked, so a chat persona cannot come
+out able to write. In a coding session, a profile is an engineer with one
+job: what it changes, how it verifies, what its patch may contain. A single
+drafter hedging between the two would draft a persona that hedges too.
+
+Where the file lives follows from what it is. A coding agent's profile can
+belong to the work: the project's own `.shhh/agents/`, which travels with
+the repository, is read only by coding sessions, and shadows a global
+profile of the same name — or the config directory's `agents/`, which every
+session has. A chat persona is the person's, not any project's, so chat
+reads and writes only the global directory. A project's directory is never
+assumed to be committed. A drafted profile is spawnable in the session that
+drafted it — a persona you made for this conversation should not need a
+restart to join it.
+
 ## A failed child can be run again
 
 Retry re-runs a child on its original task rather than asking the parent to
