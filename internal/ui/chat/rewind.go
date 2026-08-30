@@ -283,6 +283,7 @@ func (m *Model) switchToBranch(target string) string {
 	}
 	m.loadConversation(msgs)
 	m.sessionName = target
+	m.bindNotebook()
 	m.contextTokens = 0
 	m.resetRounds()
 	return fmt.Sprintf("Switched to branch %q (%d messages).", target, len(msgs))

@@ -103,15 +103,24 @@ func TestBuild_WithEmptyExtra(t *testing.T) {
 	}
 }
 
-func TestBuildChat_WithExtra(t *testing.T) {
+func TestBuildConversation(t *testing.T) {
 	info := shell.Info{Shell: "bash", OS: "linux", Cwd: "/home/user"}
-	got := BuildChat(info, "Prefer explaining with examples")
+	got := BuildConversation(info, "Prefer explaining with examples")
 
 	if !strings.Contains(got, "Prefer explaining with examples") {
-		t.Error("expected extra prompt to be appended to chat prompt")
+		t.Error("expected extra prompt to be appended")
 	}
-	if !strings.Contains(got, "technical assistant") {
-		t.Error("expected base chat prompt to still be present")
+	for _, want := range []string{"Everything you can reach is a read", "cannot run commands or edit files", "Notebook", "Cwd: /home/user"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("conversation prompt missing %q", want)
+		}
+	}
+	// No tool the session lacks is named, and no shell guidance rides
+	// along: there is nothing that could use it.
+	for _, absent := range []string{"execute_command", "write_file", "Shell: bash", "sudo"} {
+		if strings.Contains(got, absent) {
+			t.Errorf("conversation prompt names %q", absent)
+		}
 	}
 }
 

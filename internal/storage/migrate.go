@@ -101,6 +101,17 @@ var migrations = []string{
 	ALTER TABLE agent_sessions ADD COLUMN skills INTEGER NOT NULL DEFAULT 0;
 	ALTER TABLE agent_sessions ADD COLUMN project TEXT NOT NULL DEFAULT '';
 	ALTER TABLE agent_sessions ADD COLUMN chat_session TEXT NOT NULL DEFAULT '';`,
+
+	`CREATE TABLE IF NOT EXISTS notes (
+		id         INTEGER PRIMARY KEY,
+		session    TEXT NOT NULL,
+		author     TEXT NOT NULL,
+		title      TEXT NOT NULL,
+		body       TEXT NOT NULL,
+		written_at TEXT NOT NULL
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_notes_session ON notes(session);`,
 }
 
 func (db *DB) migrate() error {

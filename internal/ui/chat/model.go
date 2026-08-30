@@ -20,6 +20,7 @@ import (
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/project"
@@ -776,9 +777,12 @@ type Model struct {
 	// checkout when it opened, which suggestion the pointer is on, and
 	// whether the screen has been spent — a session that has said something
 	// to the model is not new again just because /clear emptied it.
-	start      *StartInfo
-	startFocus int
-	startSpent bool
+	start *StartInfo
+	// conversation marks `shhh chat`; notebook is its shared notebook.
+	conversation bool
+	notebook     *notebook.Store
+	startFocus   int
+	startSpent   bool
 	// Recovery from a provider failure: the provider the session
 	// resolved to, the two hooks a failure row's keys need, and the masked
 	// key prompt [k] opens. A hook left nil is a key the row does not offer,
@@ -978,6 +982,7 @@ func (m Model) WithResumedMessages(name string, msgs []provider.Message) Model {
 	m.loadConversation(msgs)
 	if name != "" {
 		m.sessionName = name
+		m.bindNotebook()
 	}
 	return m
 }
@@ -3273,6 +3278,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		}
 		// Future rewind branches hang off the named session.
 		m.sessionName = name
+		m.bindNotebook()
 		return true, fmt.Sprintf("Chat saved as %q", name)
 
 	case "/load":
@@ -3324,6 +3330,7 @@ func (m *Model) loadChatByName(name string) string {
 	}
 	m.loadConversation(msgs)
 	m.sessionName = name
+	m.bindNotebook()
 	return fmt.Sprintf("Loaded chat %q (%d messages)", name, len(msgs))
 }
 
@@ -3535,6 +3542,7 @@ func (m *Model) clearConversation() {
 	// A new conversation is a new session with a slot of its own; the one
 	// just left stays in the store as it was, for --resume to find.
 	m.sessionName = newSessionName()
+	m.bindNotebook()
 }
 
 // loadConversation replaces the current conversation and rebuilds the

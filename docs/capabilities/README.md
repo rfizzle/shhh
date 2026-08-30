@@ -6,6 +6,7 @@ none of them names a Go symbol (see [the rules](../README.md#the-four-rules)).
 | Document | What it covers |
 |---|---|
 | [`generation.md`](generation.md) | Turning a sentence into a command, and everything around that decision |
+| [`chat.md`](chat.md) | The conversation: answers, reads, delegates to read-only personas, changes nothing |
 | [`coding-agent.md`](coding-agent.md) | The agent that edits, runs and checks its own work |
 | [`subagents.md`](subagents.md) | Handing part of a job to a child agent |
 | [`skills.md`](skills.md) | Folders of instructions for one kind of task, loaded when a task matches |

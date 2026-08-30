@@ -90,8 +90,14 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 			return m.surfaceNotice(note)
 		}
 	}
+	if m.unavailableCommand(name) {
+		return m.surfaceNotice(name + " is not part of this session.")
+	}
 	parts := strings.Fields(text)
 	switch {
+	case name == "/notes":
+		return m.surfaceNotice(m.notesCommand(parts[1:]))
+
 	case name == "/paste":
 		// Attachments. Not idleOnly: staging bytes for the next
 		// message touches nothing the running turn is using.

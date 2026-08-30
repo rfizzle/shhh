@@ -43,7 +43,7 @@ func (m Model) WithTodos(t Todos) Model {
 }
 
 // todosEnabled reports whether this session has a backlog wired.
-func (m *Model) todosEnabled() bool { return m.todos.Manage != nil }
+func (m *Model) todosEnabled() bool { return m.todos.Manage != nil && m.codingSurfaces() }
 
 // reloadTodos re-reads the backlog from disk. It is cheap — a directory
 // listing and a handful of small files — and it is called only on events,

@@ -19,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
@@ -80,6 +81,19 @@ func loadAgentProfiles() (*agentProfiles, error) {
 		out.profiles[p.Name] = p
 	}
 	return out, nil
+}
+
+// readers is the subset of profiles that can change nothing: what a
+// conversation may spawn. The definitions map is kept whole — a reader's
+// model and prompt still come from its file.
+func (a *agentProfiles) readers() *agentProfiles {
+	out := &agentProfiles{profiles: subagent.Profiles{}, definitions: a.definitions}
+	for name, p := range a.profiles {
+		if !p.Writes {
+			out.profiles[name] = p
+		}
+	}
+	return out
 }
 
 // effortFor is the reasoning level a child runs at: the profile's own when
@@ -172,6 +186,14 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			defs = append(defs, skill.ToolDefinition(session.skills))
 			base = session.skills.WrapExecutor(base)
 			sysPrompt = prompt.CombineExtra(sysPrompt, skill.PromptBlock(session.skills))
+		}
+		// The shared notebook, signed with the child's name, and the
+		// titles already in it so the child starts by reading rather than
+		// re-finding (docs/capabilities/chat.md#what-they-share).
+		if session.notebook != nil {
+			defs = append(defs, notebook.Definitions()...)
+			base = session.notebook.WrapExecutor(spec.Name, base)
+			sysPrompt = prompt.CombineExtra(sysPrompt, notebook.PromptBlock(session.notebook.List()))
 		}
 		// Secrets are read at spawn rather than at session start, so a
 		// child knows what /secret added since.

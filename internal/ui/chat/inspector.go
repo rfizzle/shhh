@@ -180,7 +180,7 @@ func (m Model) inspectorTurn(steps []components.InspectorPlanStep) *components.I
 // the answer to the same question and is retired by the next instruction
 // rather than by the clock.
 func (m Model) inspectorPlan(steps []components.InspectorPlanStep) *components.InspectorPlan {
-	if m.planRun == nil || len(steps) == 0 {
+	if m.planRun == nil || len(steps) == 0 || !m.codingSurfaces() {
 		return nil
 	}
 	return &components.InspectorPlan{
@@ -202,6 +202,9 @@ func (m Model) inspectorPlan(steps []components.InspectorPlanStep) *components.I
 // The rows are read from the changeset store rather than from the transcript,
 // so an undo nets out and a child's applied patch counts.
 func (m Model) inspectorChanges() *components.InspectorChanges {
+	if !m.codingSurfaces() {
+		return nil
+	}
 	var c components.InspectorChanges
 	touched := map[string]bool{}
 	if t, ok := m.changes.Turn(m.turnCount); ok {

@@ -52,13 +52,17 @@ draws almost nothing.
 
 ### Chat — `shhh chat`
 
-A conversation for the questions that are not one command. The assistant can
-read the filesystem and search it without asking, because reads change
-nothing; running anything is a decision you take per command.
+A conversation. The assistant answers, and reads whatever it needs to answer
+— files in the working scope, the web — without asking, because reads change
+nothing. It cannot run or edit anything, and nothing you press will let it.
+It can hand a question to a named colleague: a read-only sub-agent with a
+persona you wrote, and a shared notebook the team keeps across the
+conversation.
 
-Chat is where exploratory work goes — "how would I set this up", "why is this
-failing" — and where the answer is often several commands that only make sense
-in order.
+Chat is where thinking-out-loud goes — "how would I set this up", "what does
+this actually do", "find out whether this is still true" — and it does not
+open by describing your checkout, because it is not about your checkout
+unless you make it so: [`capabilities/chat.md`](capabilities/chat.md).
 
 ### Code — `shhh code`
 
