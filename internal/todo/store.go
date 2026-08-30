@@ -270,22 +270,44 @@ func Archive(root, slug, report string) (string, error) {
 	if err := SetStatus(from, StatusDone); err != nil {
 		return "", err
 	}
-	if strings.TrimSpace(report) != "" {
-		data, err := os.ReadFile(from)
-		if err != nil {
-			return "", err
-		}
-		sep := "\n"
-		if len(data) > 0 && data[len(data)-1] != '\n' {
-			sep = "\n\n"
-		}
-		data = append(data, []byte(sep+strings.TrimRight(report, "\n")+"\n")...)
-		if err := os.WriteFile(from, data, 0o644); err != nil {
-			return "", err
-		}
+	if err := Append(from, report); err != nil {
+		return "", err
 	}
 	if err := os.Rename(from, to); err != nil {
 		return "", err
 	}
 	return to, nil
+}
+
+// Append adds a block of Markdown to the end of an item file — a report, a
+// note on why it is blocked — after a blank line. Empty text appends
+// nothing.
+func Append(path, text string) error {
+	if strings.TrimSpace(text) == "" {
+		return nil
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	sep := "\n"
+	if len(data) > 0 && data[len(data)-1] != '\n' {
+		sep = "\n\n"
+	}
+	data = append(data, []byte(sep+strings.TrimRight(text, "\n")+"\n")...)
+	return os.WriteFile(path, data, 0o644)
+}
+
+// Remove deletes an active item outright. It is the one operation here
+// that loses information, which is why it is a separate verb from archiving
+// and takes an active item only: an archived item is a record.
+func Remove(root, slug string) error {
+	if err := ValidSlug(slug); err != nil {
+		return err
+	}
+	path := filepath.Join(Dir(root), slug+".md")
+	if _, err := os.Stat(path); err != nil {
+		return fmt.Errorf("no active item %q", slug)
+	}
+	return os.Remove(path)
 }

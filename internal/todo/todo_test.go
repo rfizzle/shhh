@@ -350,6 +350,24 @@ func TestArchive_RefusesBeforeTouchingTheItem(t *testing.T) {
 	}
 }
 
+func TestAppend_SeparatesFromAnUnterminatedFile(t *testing.T) {
+	dir := t.TempDir()
+	p := write(t, dir, "x.md", "---\ntitle: t\n---\nbody")
+	if err := Append(p, "## Blocked\nwhy\n\n"); err != nil {
+		t.Fatal(err)
+	}
+	got, _ := os.ReadFile(p)
+	if string(got) != "---\ntitle: t\n---\nbody\n\n## Blocked\nwhy\n" {
+		t.Errorf("appended = %q", got)
+	}
+	if err := Append(p, "  \n"); err != nil {
+		t.Fatal(err)
+	}
+	if again, _ := os.ReadFile(p); string(again) != string(got) {
+		t.Error("blank text appended something")
+	}
+}
+
 func TestLess_UndatedSortsAfterDated(t *testing.T) {
 	dated := Item{Slug: "z", Created: "2026-01-01"}
 	undated := Item{Slug: "a"}

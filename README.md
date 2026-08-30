@@ -915,7 +915,7 @@ shhh chat --secret PIN=1234            # given inline; lands in shell history
 | `shhh doctor` | Check this machine's shhh setup |
 | `shhh init <shell>` | Output shell integration snippet |
 | `shhh init --project` | Create a `.shhh/project.md` project context file |
-| `shhh todo` | List the project's backlog (`.shhh/todo/`) in working order; `shhh todo show <slug>` prints one item |
+| `shhh todo` | List the project's backlog (`.shhh/todo/`) in working order; `shhh todo show <slug>` prints one item. In a session, `/todo` opens a picker over the same list and a `TODO` block in the inspector rail keeps the first few items in view; `/todo add <text>` starts an item, `/todo edit <slug>` opens it in your editor, and `block`, `open`, `done`, `drop` change one item's state |
 | `shhh history` | Browse past prompts and commands |
 | `shhh metrics` | Show provider usage statistics |
 | `shhh rate` | Rate recent commands (feeds accuracy metrics) |

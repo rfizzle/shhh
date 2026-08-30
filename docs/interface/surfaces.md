@@ -183,6 +183,13 @@ otherwise be read as contradicting each other. A file edited in turn 2 is
 still on screen in turn 8: "what has this session done to my machine" does not
 reset when the agent starts a new turn.
 
+One block is scoped wider than the session: the project's backlog. It sits
+under the plan because it is the same question one step further out — the
+plan is what this turn is going through, the backlog is what is queued
+behind it — and it shows the first few items in working order with what each
+one waits on, then counts the rest. The whole list is one command away, and
+the block says which.
+
 Below the threshold the rail is dropped entirely rather than compressed.
 
 ### The session summary

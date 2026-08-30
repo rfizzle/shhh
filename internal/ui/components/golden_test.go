@@ -795,6 +795,16 @@ func TestGolden_InspectorRail(t *testing.T) {
 				},
 				Done: 2, Drift: "1 off plan", Hint: "/plan for the whole list",
 			},
+			Todo: &InspectorTodo{
+				Open: 5, Blocked: 1,
+				Rows: []InspectorTodoRow{
+					{Slug: "rail-todo-block", Priority: "H", Size: "M", State: TodoRunning, Note: "review 1/2"},
+					{Slug: "add-todo-runner", Priority: "H", Size: "L", State: TodoWaiting, Note: "needs rail-todo-block"},
+					{Slug: "todo-add-extraction", Priority: "M", Size: "M", State: TodoReady},
+					{Slug: "headless-todo-run", Priority: "L", Size: "M", State: TodoBlocked, Note: "blocked"},
+				},
+				More: 2, Hint: "/todo for the whole backlog",
+			},
 			Changes: &InspectorChanges{
 				Files: []InspectorFile{
 					{Path: "internal/agent/loop.go", Added: 18, Removed: 3, Turns: 3, ThisTurn: true},

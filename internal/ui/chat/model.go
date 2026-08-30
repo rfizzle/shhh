@@ -29,6 +29,7 @@ import (
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/caps"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -547,7 +548,11 @@ type Model struct {
 	processes Processes
 	// memory backs /memory and the remember-tool confirm flow;
 	// memoryAsk is the open memory prompt while a proposal awaits the user.
-	memory    Memory
+	memory Memory
+	// todos backs /todo and the TODO block; todoStore is the backlog as last
+	// read from disk, reloaded on the events that can change it.
+	todos     Todos
+	todoStore *todo.Store
 	memoryAsk *components.NoteSelect
 	// secrets backs /secret and the scrub on the agent.
 	secrets Secrets
@@ -1790,6 +1795,9 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case editorDoneMsg:
 		return m.editorFinished(msg)
+
+	case todoEditorDoneMsg:
+		return m.todoEditorFinished(msg)
 
 	case attachedFileMsg:
 		return m.handleAttachedFile(msg)
@@ -3311,6 +3319,8 @@ func helpText() string {
   /gate          Quality gate: run [suite] starts the project's checks in the background, result shows the verdict
   /ps            List the long-running processes this session owns (process tool)
   /memory        Durable memories: list (default) · add [global] [kind] <text> · forget <id>
+  /todo          The project's backlog (.shhh/todo): bare opens a picker · show|edit <slug> ·
+                 add <text> · block <slug> [why] · open|done|drop <slug>
   /skills        The skills this session loaded (SKILL.md directories), and
                  why any did not
   /skill <name> [task]

@@ -32,6 +32,7 @@ import (
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/browse"
 	"github.com/rfizzle/shhh/internal/ui/chat"
@@ -657,6 +658,10 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	}
 	if session.skills != nil {
 		model = model.WithSkills(session.skills, skillsListing)
+	}
+	if cwd, err := os.Getwd(); err == nil {
+		root := todo.Root(cwd)
+		model = model.WithTodos(chat.Todos{Root: root, Manage: todoManager(root), Detail: todoDetail})
 	}
 	if mem != nil {
 		model = model.WithMemory(chat.Memory{

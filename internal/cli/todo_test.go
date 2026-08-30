@@ -84,3 +84,64 @@ func TestTodoCommand_ShowUnknownSlug(t *testing.T) {
 		t.Errorf("shhh todo output = %q", out.String())
 	}
 }
+
+func TestTodoManager(t *testing.T) {
+	root := todoFixture(t)
+	manage := todoManager(root)
+
+	if out := manage(nil); !strings.Contains(out, "first   high") {
+		t.Errorf("bare = %q", out)
+	}
+	if out := manage([]string{"show", "first"}); !strings.Contains(out, "slug:       first") {
+		t.Errorf("show = %q", out)
+	}
+	if out := manage([]string{"show", "nope"}); !strings.Contains(out, `No backlog item "nope"`) {
+		t.Errorf("show missing = %q", out)
+	}
+	out := manage([]string{"add", "Fix", "the", "#12", "parser", "crash"})
+	if !strings.Contains(out, "Added fix-the-12-parser-crash") {
+		t.Errorf("add = %q", out)
+	}
+	it, ok := todo.Load(root).Find("fix-the-12-parser-crash")
+	if !ok || it.Title != "Fix the #12 parser crash" || it.Priority != todo.PriorityMedium || it.Created == "" || !strings.Contains(it.Body, "## Acceptance criteria") {
+		t.Errorf("added item = %+v", it)
+	}
+	if out := manage([]string{"add", "Fix the #12 parser crash"}); !strings.HasPrefix(out, "Error:") || !strings.Contains(out, "already exists") {
+		t.Errorf("add collision = %q", out)
+	}
+	if out := manage([]string{"add"}); !strings.HasPrefix(out, "Usage:") {
+		t.Errorf("add without text = %q", out)
+	}
+
+	if out := manage([]string{"block", "first", "needs", "a", "decision"}); out != "Blocked first." {
+		t.Errorf("block = %q", out)
+	}
+	it, _ = todo.Load(root).Find("first")
+	if it.Status != todo.StatusBlocked || !strings.HasSuffix(it.Body, "## Blocked\nneeds a decision\n") {
+		t.Errorf("blocked item = %+v", it)
+	}
+	if out := manage([]string{"open", "first"}); out != "Reopened first." {
+		t.Errorf("open = %q", out)
+	}
+	if out := manage([]string{"block", "gone"}); !strings.Contains(out, "No active backlog item") {
+		t.Errorf("block archived = %q", out)
+	}
+	if out := manage([]string{"done", "first"}); !strings.HasPrefix(out, "Archived first to ") {
+		t.Errorf("done = %q", out)
+	}
+	if out := manage([]string{"done", "first"}); !strings.HasPrefix(out, "Error:") {
+		t.Errorf("done twice = %q", out)
+	}
+	if out := manage([]string{"drop", "second"}); out != "Dropped second; the file is deleted." {
+		t.Errorf("drop = %q", out)
+	}
+	if _, err := os.Stat(filepath.Join(todo.Dir(root), "second.md")); !os.IsNotExist(err) {
+		t.Error("dropped file still there")
+	}
+	if out := manage([]string{"drop", "gone"}); !strings.HasPrefix(out, "Error:") {
+		t.Errorf("drop archived = %q", out)
+	}
+	if out := manage([]string{"wat"}); !strings.HasPrefix(out, "Usage:") {
+		t.Errorf("unknown = %q", out)
+	}
+}

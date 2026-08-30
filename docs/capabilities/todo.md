@@ -76,6 +76,24 @@ the same name beside it. A checkout still holding the old single file is
 reported by `shhh doctor`, which offers to move it
 ([configuration.md](configuration.md#a-migration-is-a-doctor-check)).
 
+## The backlog is in view, and the file is still the item
+
+A session shows the backlog two ways. In the inspector rail, a block lists
+the first few active items in working order with what each waits on, so
+"what is next" is on screen beside "where are we". From the input, one
+command lists everything, picks an item to read, starts a new item from a
+sentence, or changes one item's state — blocked, reopened, archived — and
+says what it did. It can also drop an item outright; that is the one verb
+here that loses information, and it says so when it has.
+
+None of that replaces the file. Editing an item means opening the file,
+and the session hands it to your own editor rather than offering a form:
+the sections are prose, and the place to write prose is an editor. When
+the editor comes back the session re-reads the backlog and says what the
+file now reads as — including why it no longer loads, if that is what the
+edit did — so a broken header is a sentence on screen, not an item that
+quietly disappeared.
+
 ## Done is archived, not deleted
 
 A finished item moves into an archive beside the active ones, with the

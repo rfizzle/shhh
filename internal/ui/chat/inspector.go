@@ -132,6 +132,7 @@ func (m Model) inspectorData() components.InspectorRail {
 		Summary: m.inspectorSummary(),
 		Turn:    m.inspectorTurn(steps),
 		Plan:    m.inspectorPlan(steps),
+		Todo:    m.inspectorTodo(),
 		Changes: m.inspectorChanges(),
 		Agents:  m.inspectorAgents(),
 		Context: m.inspectorContext(),

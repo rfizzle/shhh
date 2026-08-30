@@ -152,6 +152,49 @@ type InspectorPlan struct {
 	Hint string
 }
 
+// TodoRowState is what a backlog row's glyph says about it.
+type TodoRowState int
+
+const (
+	// TodoReady can be started now.
+	TodoReady TodoRowState = iota
+	// TodoWaiting is open but has a dependency still outstanding.
+	TodoWaiting
+	// TodoBlocked needs a person before it can move.
+	TodoBlocked
+	// TodoRunning is being worked on in this session.
+	TodoRunning
+)
+
+// InspectorTodoRow is one backlog item in the TODO block.
+type InspectorTodoRow struct {
+	Slug string
+	// Priority and Size are one letter each — H/M/L and S/M/L — the two
+	// facts that decide the order and the ceremony, and nothing else fits.
+	Priority, Size string
+	State          TodoRowState
+	// Note is the right-hand column: what the row waits on, or the stage a
+	// running one is at. Blank for a ready row, which has nothing to add.
+	Note string
+}
+
+// InspectorTodo is the TODO block: what the project still owes, so "what
+// comes after this" is on screen next to "where are we". PLAN says through
+// what this turn is going; TODO says what is queued behind it. It is the
+// one block scoped wider than the session — the backlog is the project's —
+// and its heading says so in words, like every other block says its scope.
+// See docs/interface/surfaces.md#the-inspector-rail.
+type InspectorTodo struct {
+	// Open and Blocked are the counts the heading states over the whole
+	// backlog, whatever Rows shows of it.
+	Open, Blocked int
+	Rows          []InspectorTodoRow
+	// More is how many active items Rows left out.
+	More int
+	// Hint is the row under the list naming how to see the whole backlog.
+	Hint string
+}
+
 // InspectorFile is one changed path in the CHANGES block: the session's net
 // change to it, however many turns produced that.
 type InspectorFile struct {
@@ -240,6 +283,7 @@ type InspectorRail struct {
 	Summary *InspectorSummary
 	Turn    *InspectorTurn
 	Plan    *InspectorPlan
+	Todo    *InspectorTodo
 	Changes *InspectorChanges
 	Agents  []InspectorAgent
 	Context *InspectorContext
@@ -253,7 +297,7 @@ type InspectorRail struct {
 // Empty reports whether every block is omitted, so the host can skip the
 // split rather than draw an empty column.
 func (r InspectorRail) Empty() bool {
-	return r.Summary == nil && r.Turn == nil && r.Plan == nil && r.Changes == nil &&
+	return r.Summary == nil && r.Turn == nil && r.Plan == nil && r.Todo == nil && r.Changes == nil &&
 		len(r.Agents) == 0 && r.Context == nil && r.Spend == nil
 }
 
@@ -344,7 +388,7 @@ func (r InspectorRail) Lines(width, height int) []string {
 func (r InspectorRail) blocks(width int) []railBlock {
 	var blocks []railBlock
 	for _, b := range []func(int) (railBlock, bool){
-		r.summaryBlock, r.turnBlock, r.planBlock, r.changesBlock,
+		r.summaryBlock, r.turnBlock, r.planBlock, r.todoBlock, r.changesBlock,
 		r.agentsBlock, r.contextBlock, r.spendBlock,
 	} {
 		if blk, ok := b(width); ok {
@@ -541,6 +585,53 @@ func (r InspectorRail) planBlock(width int) (railBlock, bool) {
 		b.add(indentRow(sty.Hint.Render(p.Hint), width))
 	}
 	return b, true
+}
+
+// todoBlock is the TODO block. It sits under PLAN because it is the same
+// question one step further out — PLAN is this turn's list, TODO is the
+// project's — and above CHANGES because it is about work, not about files.
+// A backlog with nothing active is no block at all.
+func (r InspectorRail) todoBlock(width int) (railBlock, bool) {
+	t := r.Todo
+	if t == nil || (t.Open == 0 && t.Blocked == 0 && len(t.Rows) == 0) {
+		return railBlock{}, false
+	}
+	meta := fmt.Sprintf("project · %d open", t.Open)
+	if t.Blocked > 0 {
+		meta += fmt.Sprintf(" · %d blocked", t.Blocked)
+	}
+	b := railBlock{heading: railHeading("TODO", meta, sty.Dim, width)}
+	for _, row := range t.Rows {
+		glyph, style := todoRowTone(row.State)
+		left := glyph + " " + sty.Dim.Render(row.Priority+" "+row.Size) + " " + style.Render(row.Slug)
+		note := ""
+		if row.Note != "" {
+			note = sty.Dim.Render(row.Note)
+		}
+		b.add(railRow(left, note, width, inspectorIndent))
+	}
+	if t.More > 0 {
+		b.add(indentRow(sty.Dim.Render(fmt.Sprintf("… %d more", t.More)), width))
+	}
+	if t.Hint != "" {
+		b.add(indentRow(sty.Hint.Render(t.Hint), width))
+	}
+	return b, true
+}
+
+// todoRowTone is a backlog row's glyph and the weight its slug carries. The
+// running one is bright for the same reason the running plan step is; a
+// blocked one carries the error mark because it is waiting on a person.
+func todoRowTone(s TodoRowState) (string, lipgloss.Style) {
+	switch s {
+	case TodoRunning:
+		return sty.SpinText.Render("▸"), brightStyle()
+	case TodoBlocked:
+		return sty.Err.Render("!"), sty.Body
+	case TodoWaiting:
+		return sty.Dim.Render("·"), sty.Dim
+	}
+	return sty.Dim.Render("·"), sty.Body
 }
 
 // planStepTone is a checklist step's glyph and the weight its title carries.

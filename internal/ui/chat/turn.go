@@ -52,6 +52,9 @@ func (m *Model) setTurnState(s state) {
 	// freezes at what the turn took instead of counting on.
 	if s == stateInput && m.working() && !m.turnStarted.IsZero() {
 		m.turnEnded = time.Now()
+		// A turn can have edited the backlog files; the rail reads the
+		// store, so the store is re-read here rather than per frame.
+		m.reloadTodos()
 		// The turn's usage joins the session's history with its wall time
 		//, which is why the ring is closed here and not on the
 		// last usage report — a turn is more than its final request.

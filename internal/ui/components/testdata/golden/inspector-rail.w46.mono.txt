@@ -28,6 +28,14 @@
   ⚠ 1 off plan                                
   /plan for the whole list                    
 
+  TODO            project · 5 open · 1 blocked
+  ▸ H M rail-todo-block             review 1/2
+  · H L add-todo-runner  needs rail-todo-block
+  · M M todo-add-extraction                   
+  ! L M headless-todo-run              blocked
+  … 2 more                                    
+  /todo for the whole backlog                 
+
   CHANGES                     session · +27 −4
    ✗ go test ./internal/agent/...       turn 7
     exit 1                                    
@@ -58,13 +66,13 @@
   PLAN                             2 of 4 done
   … 6 more                                    
 
+  TODO            project · 5 open · 1 blocked
+  … 6 more                                    
+
   CHANGES                     session · +27 −4
   … 4 more                              +27 −4
 
   AGENTS                             2 running
-  … 4 more                                    
-
-  CONTEXT                          62% of 200k
 
 · blocks with nothing to say are omitted
   THIS TURN                                   
@@ -147,6 +155,14 @@
   ␛[38;5;254m⚠␛[m ␛[38;5;244m1 off plan␛[m                                
   ␛[3;38;5;244m/plan for the whole list␛[m                    
 
+  ␛[1;38;5;254mTODO␛[m            ␛[38;5;244mproject · 5 open · 1 blocked␛[m
+  ␛[38;5;254m▸␛[m ␛[38;5;244mH M␛[m ␛[1;38;5;254mrail-todo-block␛[m             ␛[38;5;244mreview 1/2␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;244mH L␛[m ␛[38;5;244madd-todo-runner␛[m  ␛[38;5;244mneeds rail-todo-block␛[m
+  ␛[38;5;244m·␛[m ␛[38;5;244mM M␛[m ␛[38;5;254mtodo-add-extraction␛[m                   
+  ␛[38;5;254m!␛[m ␛[38;5;244mL M␛[m ␛[38;5;254mheadless-todo-run␛[m              ␛[38;5;244mblocked␛[m
+  ␛[38;5;244m… 2 more␛[m                                    
+  ␛[3;38;5;244m/todo for the whole backlog␛[m                 
+
   ␛[1;38;5;254mCHANGES␛[m                     ␛[38;5;244msession · ␛[m␛[38;5;254m+27␛[m ␛[38;5;254m−4␛[m
    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/...␛[m       ␛[38;5;244mturn 7␛[m
     ␛[38;5;244mexit 1␛[m                                    
@@ -177,13 +193,13 @@
   ␛[1;38;5;254mPLAN␛[m                             ␛[38;5;244m2 of 4 done␛[m
   ␛[3;38;5;244m… 6 more␛[m                                    
 
+  ␛[1;38;5;254mTODO␛[m            ␛[38;5;244mproject · 5 open · 1 blocked␛[m
+  ␛[3;38;5;244m… 6 more␛[m                                    
+
   ␛[1;38;5;254mCHANGES␛[m                     ␛[38;5;244msession · ␛[m␛[38;5;254m+27␛[m ␛[38;5;254m−4␛[m
   ␛[3;38;5;244m… 4 more␛[m                              ␛[38;5;254m+27␛[m ␛[38;5;254m−4␛[m
 
   ␛[1;38;5;254mAGENTS␛[m                             ␛[38;5;244m2 running␛[m
-  ␛[3;38;5;244m… 4 more␛[m                                    
-
-  ␛[1;38;5;254mCONTEXT␛[m                          ␛[38;5;254m62% of 200k␛[m
 
 · blocks with nothing to say are omitted
   ␛[1;38;5;254mTHIS TURN␛[m                                   

@@ -205,6 +205,20 @@ var slashCommands = []slashCommand{
 		argSpecs: []argSpec{{dynamic: agentArgs, fuzzy: true}}},
 	{name: "/detach", desc: "Back to the orchestrator (also esc)",
 		enabled: func(m *Model) bool { return m.subagents != nil && m.attachedTo != "" }},
+	{name: "/todo", args: "[show|edit|add|block|open|done|drop]", desc: "The project's backlog (bare /todo picks an item)",
+		enabled: func(m *Model) bool { return m.todosEnabled() },
+		argSpecs: []argSpec{
+			{options: []argOption{
+				{"show", "Print an item"},
+				{"edit", "Open an item in your editor"},
+				{"add", "Add an item from a sentence"},
+				{"block", "Mark an item blocked, with why"},
+				{"open", "Reopen a blocked item"},
+				{"done", "Archive an item"},
+				{"drop", "Delete an item outright"},
+			}},
+			{after: []string{"show", "edit", "block", "open", "done", "drop"}, dynamic: todoSlugArgs, fuzzy: true},
+		}},
 	{name: "/plan", args: "[save|drop]", desc: "The approved plan as a checklist, with anything that has departed from it",
 		argSpecs: staticArgs(
 			argOption{"save", "Write the last plan/response to .shhh/plans/"},
