@@ -211,7 +211,7 @@ var slashCommands = []slashCommand{
 			{options: []argOption{
 				{"show", "Print an item"},
 				{"edit", "Open an item in your editor"},
-				{"add", "Add an item from a sentence"},
+				{"add", "Read this session into items, or add one from a sentence"},
 				{"block", "Mark an item blocked, with why"},
 				{"open", "Reopen a blocked item"},
 				{"done", "Archive an item"},

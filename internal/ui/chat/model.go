@@ -106,6 +106,9 @@ const (
 	// of what a turn changed, with staging per hunk. A takeover: full width, the
 	// rail hidden, esc returns.
 	stateReview
+	// stateTodoPropose: the proposals card from a bare /todo add is showing —
+	// the session read into backlog items, checked ones written on enter.
+	stateTodoPropose
 	// stateUndoConfirm: the inline confirm an undo asks through (inline
 	// confirm) — what it would restore, what has drifted since, and esc to
 	// decline. It borrows the bottom panel, not the transcript.
@@ -553,7 +556,14 @@ type Model struct {
 	// read from disk, reloaded on the events that can change it.
 	todos     Todos
 	todoStore *todo.Store
-	memoryAsk *components.NoteSelect
+	// todoPropose is the open proposals card and todoProposals what it is
+	// showing; todoExtractRun numbers readings so a late one is dropped.
+	todoPropose       *components.MultiSelect
+	todoProposals     []todo.Proposal
+	todoExtracting    bool
+	todoExtractRun    int
+	todoExtractCancel context.CancelFunc
+	memoryAsk         *components.NoteSelect
 	// secrets backs /secret and the scrub on the agent.
 	secrets Secrets
 	// skills is the session's skill catalog, behind /skills, /skill and
@@ -1242,6 +1252,9 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.state == statePick {
 			return m.updatePick(msg)
 		}
+		if m.state == stateTodoPropose {
+			return m.updateTodoPropose(msg)
+		}
 		if m.state == stateModelList {
 			return m.updateModelList(msg)
 		}
@@ -1799,6 +1812,9 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case todoEditorDoneMsg:
 		return m.todoEditorFinished(msg)
 
+	case todoProposalsMsg:
+		return m.finishTodoExtract(msg)
+
 	case attachedFileMsg:
 		return m.handleAttachedFile(msg)
 
@@ -2114,6 +2130,8 @@ func (m Model) takeoverPanel(width int) string {
 		inputView = m.renderRewindPick()
 	case statePick:
 		inputView = m.renderPick()
+	case stateTodoPropose:
+		inputView = m.renderTodoPropose()
 	case stateFocus:
 		inputView = m.renderFocusHint()
 	case stateDiffFull:
@@ -3320,6 +3338,7 @@ func helpText() string {
   /ps            List the long-running processes this session owns (process tool)
   /memory        Durable memories: list (default) · add [global] [kind] <text> · forget <id>
   /todo          The project's backlog (.shhh/todo): bare opens a picker · show|edit <slug> ·
+                 add (reads this session into proposed items you accept or drop) ·
                  add <text> · block <slug> [why] · open|done|drop <slug>
   /skills        The skills this session loaded (SKILL.md directories), and
                  why any did not
@@ -3438,6 +3457,7 @@ Keys:
 
 // clearConversation drops everything except the system prompt.
 func (m *Model) clearConversation() {
+	m.dropTodoExtract()
 	msgs := m.agent.Messages()
 	if len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
 		m.agent.SetMessages(msgs[:1:1])

@@ -29,6 +29,9 @@ type Todos struct {
 	Manage func(args []string) string
 	// Detail renders one item for the transcript.
 	Detail func(*todo.Store, todo.Item) string
+	// Extractor reads the session into proposed items behind a bare
+	// /todo add. Nil, or disabled, leaves only the by-hand form.
+	Extractor *todo.Extractor
 }
 
 // WithTodos enables /todo and the TODO block.
@@ -132,6 +135,9 @@ func (m Model) todoCommand(parts []string) (tea.Model, tea.Cmd) {
 		case "edit", "add", "block", "open", "done", "drop":
 			return m.systemNotice("Not while the turn is running: /todo " + parts[1] + " changes the backlog files the model may be working from. /todo and /todo show still read.")
 		}
+	}
+	if len(parts) == 2 && parts[1] == "add" {
+		return m.startTodoExtract()
 	}
 	if len(parts) >= 2 && parts[1] == "edit" {
 		if len(parts) != 3 {

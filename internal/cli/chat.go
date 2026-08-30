@@ -661,7 +661,13 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	}
 	if cwd, err := os.Getwd(); err == nil {
 		root := todo.Root(cwd)
-		model = model.WithTodos(chat.Todos{Root: root, Manage: todoManager(root), Detail: todoDetail})
+		model = model.WithTodos(chat.Todos{
+			Root: root, Manage: todoManager(root), Detail: todoDetail,
+			// The session's own model reads the session: extraction is a
+			// judgement about the whole conversation, not a status line, and
+			// the cheap summary model is the wrong price point for it.
+			Extractor: todo.NewExtractor(ledger.For(env.prov, meter.SourceBacklog), todo.ExtractConfig{Model: env.modelName}),
+		})
 	}
 	if mem != nil {
 		model = model.WithMemory(chat.Memory{

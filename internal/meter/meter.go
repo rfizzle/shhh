@@ -30,8 +30,10 @@ const (
 	SourceAgent      Source = "agent"
 	SourceClassifier Source = "classifier"
 	SourceSummary    Source = "summary"
-	SourceSubagent   Source = "sub-agent"
-	SourceOneShot    Source = "one-shot"
+	// SourceBacklog is the reading that turns a session into backlog items.
+	SourceBacklog  Source = "backlog"
+	SourceSubagent Source = "sub-agent"
+	SourceOneShot  Source = "one-shot"
 	// SourceUnattributed is where a gated request with no source lands. It
 	// exists so that a feature wired through the gate without declaring
 	// itself is visible in the total and named in the breakdown, rather than

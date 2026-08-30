@@ -76,6 +76,26 @@ the same name beside it. A checkout still holding the old single file is
 reported by `shhh doctor`, which offers to move it
 ([configuration.md](configuration.md#a-migration-is-a-doctor-check)).
 
+## A session proposes; you accept
+
+The end of a session is where a backlog comes from, so a session can read
+itself into items. It digests the conversation — what was asked, what the
+assistant said, which tools ran, what changed — and a model proposes the
+work that was settled but not done, in the shape an item takes: the story,
+the criteria, the tasks, the tests, the decisions already made, and what
+has to land first.
+
+Nothing is written until you say so. The proposals come back on a card,
+all checked; you uncheck what you do not want, or drop the lot, and only
+then do files appear. The rule is the one memory follows: a session may
+propose, and the person decides. A backlog that filled itself would be a
+backlog nobody trusts.
+
+The digest is the boundary. It carries what the two sides said and what
+tools were called, never a tool's own output, so a page the session
+fetched or a test's stdout cannot write an item into the project's list
+of what to do next.
+
 ## The backlog is in view, and the file is still the item
 
 A session shows the backlog two ways. In the inspector rail, a block lists
