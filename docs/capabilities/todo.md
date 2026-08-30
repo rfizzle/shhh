@@ -126,10 +126,21 @@ the same path every time, and the gates cannot be talked past.
 
 Research happens in the read-only mode, and its answer is the plan in the
 same shape a plan is always asked for, plus a size and any open question.
-An open question ends the run rather than being guessed at: a runner that
-answers a product question for you is not running your backlog, it is
-writing it. The size is re-graded from what the research found, and the
-number of fix rounds the run gets is set by that size, not by the item.
+The size is re-graded from what the research found, and the number of fix
+rounds the run gets is set by that size, not by the item.
+
+Whether the run then pauses is decided by the size. A small item never
+pauses — and an open question on one ends the run rather than being
+guessed at, because a runner that answers a product question for you is
+not running your backlog, it is writing it. A medium item pauses when
+research left a question or graded it up. A large item always pauses
+before anything is built, because that is the moment spend and blast
+radius are decided. The pause shows the plan, the questions and the size,
+and takes one of three answers: go ahead, with a note if there is one to
+give; re-plan with a note that answers or steers, so research runs again
+with it in front; or stop. A note goes onto the item's record either way
+and in front of the model for the stage it was written for. A run never
+silently gets bigger.
 
 Verification is the item's own tests and the project's checks, run by
 shhh rather than described by the model. The tests are the ones the item
@@ -138,7 +149,11 @@ boxes as it works, and a command the model wrote into the file during the
 run is not one shhh will run unasked. A failure spends a fix round;
 when the rounds are spent the run stops with the failure as evidence. A
 review reads the change as a critic and answers clean or with findings,
-and findings spend a round the same way.
+and findings spend a round the same way. A small item reviews itself in
+the session's own turn; anything larger is read by a reviewer child that
+did not write it — a second opinion is only one if it comes from
+somewhere else — and where no child can be had the session reviews and
+the record says so.
 
 The run works in the mode that asks only when the classifier cannot
 decide, whatever mode the session was in, and puts the session's mode
@@ -163,6 +178,9 @@ A run that stops — a question, spent rounds, a commit that cannot be made
 — leaves the item blocked with the evidence written on it and the work so
 far in the tree, uncommitted and named. Nothing is stashed or reset: the
 work is yours to keep or drop, and the item says exactly where it stopped.
+What is left is offered as a follow-up item, after the blocked one, on
+the same card the session's own proposals use; accepting it is what lets
+the blocked item be archived once the rest lands.
 
 ## Done is archived, not deleted
 

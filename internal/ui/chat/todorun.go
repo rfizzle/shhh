@@ -14,6 +14,7 @@ package chat
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -23,10 +24,15 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/runner"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
+	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // todoVerifyMsg is the verify stage's outcome.
@@ -107,6 +113,10 @@ func (m Model) todoRunStep(step run.Step) (tea.Model, tea.Cmd) {
 	case run.ActionVerify:
 		model, _ := m.systemNotice(step.Shown + " — running the item's tests and the project's checks")
 		return model, m.todoVerifyCmd()
+	case run.ActionPause:
+		return m.openTodoPause(step)
+	case run.ActionReview:
+		return m.startTodoReview()
 	case run.ActionCommit:
 		model, _ := m.systemNotice(step.Shown + " — staging the run's files")
 		return model, m.todoCommitCmd()
@@ -258,12 +268,8 @@ func (m Model) todoRunPaths() []string {
 			if !r.Changed() {
 				continue
 			}
-			p := r.Path
-			if !filepath.IsAbs(p) {
-				p = filepath.Join(root, p)
-			}
-			rel, err := filepath.Rel(root, p)
-			if err != nil || strings.HasPrefix(rel, "..") || strings.HasPrefix(rel, filepath.Join(todo.StateDir, todo.Subdir)) {
+			rel := runRelPath(root, r.Path)
+			if rel == "" {
 				continue
 			}
 			if !seen[rel] {
@@ -376,7 +382,242 @@ func (m Model) todoRunBlocked() (tea.Model, tea.Cmd) {
 		note += "\nWork so far stays in the tree, uncommitted: " + strings.Join(paths, ", ")
 	}
 	note += fmt.Sprintf("\nThe evidence is on the item; /todo open %s reopens it when it is settled.", it.Slug)
-	return m.systemNotice(note)
+	model, _ := m.systemNotice(note)
+	// What is left is offered as a follow-up item, after this one; accepting
+	// it is what lets the blocked item be archived once the rest lands.
+	return model.(Model).openTodoProposals([]todo.Proposal{todoFollowUp(it, st)}, "a follow-up for "+it.Slug)
+}
+
+// openTodoPause shows the pause card: why the run stopped, the questions,
+// the size, the plan, and three answers — go ahead, re-plan with a note,
+// or stop. It borrows the bottom panel the way the memory prompt does.
+func (m Model) openTodoPause(step run.Step) (tea.Model, tea.Cmd) {
+	st := m.todoRun
+	m.appendEntry(entry{kind: entrySystem, text: step.Shown + "\n\n" + strings.TrimSpace(st.Plan)})
+	opts := []components.SelectOption{
+		{Label: "Go ahead", Desc: "build the plan as it stands"},
+		{Label: "Re-plan with my note", Desc: "answer the questions or steer; research runs again", RequireNote: true},
+		{Label: "Stop the run", Desc: "the item goes back to open; nothing is built"},
+	}
+	ns := components.NewNoteSelect("Run paused — "+st.Paused, opts)
+	ns.Select.MaxLines = m.maxConfirmPanelHeight() - 1
+	m.todoPause = ns
+	m.enterSurface(stateTodoPause)
+	m.syncViewport()
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoBottom()
+	return m, nil
+}
+
+// todoPauseLines renders the pause card: the questions and the size
+// above the selector, so the choice is made with the facts in view.
+func (m Model) todoPauseLines() []string {
+	if m.todoPause == nil || m.todoRun == nil {
+		return nil
+	}
+	st := m.todoRun
+	var lines []string
+	head := fmt.Sprintf("%s · size %s", st.Slug, orDash(string(st.Size)))
+	if st.SizeBefore != st.Size {
+		head += fmt.Sprintf(" (was %s)", orDash(string(st.SizeBefore)))
+	}
+	if len(st.Steps) > 0 {
+		head += fmt.Sprintf(" · %s", plural(len(st.Steps), "step"))
+	}
+	lines = append(lines, sty.User.Render(head))
+	for _, q := range st.Questions {
+		lines = append(lines, strings.Split(m.wordWrap("? "+q, m.contentWidth()), "\n")...)
+	}
+	return append(lines, strings.Split(m.todoPause.View(m.contentWidth()), "\n")...)
+}
+
+func orDash(s string) string {
+	if s == "" {
+		return "-"
+	}
+	return s
+}
+
+// updateTodoPause routes keys while the pause card shows.
+func (m Model) updateTodoPause(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	if keys.Match(msg, keys.Draft.Quit) {
+		m.quitting = true
+		return m, m.quitCmd()
+	}
+	done, result := m.todoPause.Update(msg)
+	if !done {
+		return m, nil
+	}
+	res := result.(components.NoteSelectResult)
+	m.todoPause = nil
+	m.leaveSurface()
+	m.syncViewport()
+	st, it := m.todoRun, m.todoRunItem
+	if st == nil {
+		return m, nil
+	}
+	switch {
+	case res.Canceled, res.Index == 2:
+		return m.stopTodoRun()
+	case res.Index == 1:
+		note := strings.TrimSpace(res.Note)
+		_ = todo.Append(it.Path, "## Answers\n"+note)
+		m.reloadTodos()
+		return m.todoRunStep(st.Replan(it, note))
+	}
+	if note := strings.TrimSpace(res.Note); note != "" {
+		_ = todo.Append(it.Path, "## Answers\n"+note)
+		st.Answers = append(st.Answers, note)
+		m.reloadTodos()
+	}
+	return m.todoRunStep(st.Resume(it))
+}
+
+// startTodoReview hands the change to a reviewer child. The child cannot
+// run commands, so the diff is read here and put in its task, bounded.
+// With no supervisor, or a spawn the supervisor refuses, the orchestrator
+// reviews in its own turn and the step label says so.
+func (m Model) startTodoReview() (tea.Model, tea.Cmd) {
+	st, it := m.todoRun, m.todoRunItem
+	if len(m.todoRunPaths()) == 0 {
+		return m.todoRunStep(st.Block("the run changed no files under the repository, so there is nothing to review"))
+	}
+	if m.subagents == nil {
+		return m.todoRunStep(st.SelfReview(it))
+	}
+	args, _ := json.Marshal(map[string]any{
+		"role": string(subagent.RoleReviewer),
+		"name": st.Reviewer,
+		"task": st.ReviewTask(it, tail(m.todoRunDiff(), 600)),
+	})
+	if _, err := m.subagents.Spawn(args); err != nil {
+		model, _ := m.systemNotice("No reviewer agent could be spawned — " + err.Error())
+		return model.(Model).todoRunStep(st.SelfReview(it))
+	}
+	_ = st.Save(m.todos.Root)
+	return m.systemNotice(fmt.Sprintf("▸ todo run %s · review by %s", st.Slug, st.Reviewer))
+}
+
+// todoRunDiff is the run's change as the changeset recorded it — before
+// and after for every path, which is what shows a file the run created,
+// where git's own diff of the tree would show nothing for it.
+func (m Model) todoRunDiff() string {
+	root := m.todos.Root
+	var b strings.Builder
+	seen := map[string]bool{}
+	for _, t := range m.changes.Turns() {
+		if int(t.N) < m.todoRun.Turn {
+			continue
+		}
+		for _, r := range t.Records {
+			rel := runRelPath(root, r.Path)
+			if rel == "" || seen[rel] || !r.Changed() {
+				continue
+			}
+			seen[rel] = true
+			b.WriteString(recordDiff(rel, r))
+		}
+	}
+	return b.String()
+}
+
+// recordDiff renders one record as a unified diff.
+func recordDiff(rel string, r changeset.Record) string {
+	var b strings.Builder
+	old, now := "a/"+rel, "b/"+rel
+	if !r.BeforeExists {
+		old = "/dev/null"
+	}
+	if !r.AfterExists {
+		now = "/dev/null"
+	}
+	fmt.Fprintf(&b, "--- %s\n+++ %s\n", old, now)
+	for _, h := range diff.Compute(r.Before, r.After) {
+		b.WriteString(h.Header() + "\n")
+		for _, l := range h.Lines {
+			prefix := " "
+			switch l.Kind {
+			case diff.Add:
+				prefix = "+"
+			case diff.Del:
+				prefix = "-"
+			}
+			b.WriteString(prefix + l.Text + "\n")
+		}
+	}
+	return b.String()
+}
+
+// runRelPath is a record's path relative to the root, or "" when it is
+// outside the root or a backlog file.
+func runRelPath(root, p string) string {
+	if !filepath.IsAbs(p) {
+		p = filepath.Join(root, p)
+	}
+	rel, err := filepath.Rel(root, p)
+	if err != nil || strings.HasPrefix(rel, "..") || strings.HasPrefix(rel, filepath.Join(todo.StateDir, todo.Subdir)) {
+		return ""
+	}
+	return rel
+}
+
+// todoReviewDone is the reviewer child finishing: its own final message is
+// the review's answer. A child that did not finish — killed, failed, out
+// of rounds — has no answer, and the run blocks on that rather than on
+// whatever the placeholder for a failed child happens to say.
+func (m Model) todoReviewDone(status subagent.Status) (tea.Model, tea.Cmd, bool) {
+	st := m.todoRun
+	if st == nil || st.Over() || st.Reviewer == "" || status.Name != st.Reviewer {
+		return m, nil, false
+	}
+	report, state, ok := m.subagents.FinalReport(st.Reviewer)
+	if !ok || state != subagent.StateDone {
+		next, cmd := m.todoRunStep(st.Block(fmt.Sprintf("the reviewer %s did not finish: %s", st.Reviewer, status.Detail)))
+		return next, cmd, true
+	}
+	next, cmd := m.todoRunStep(st.ReviewResult(m.todoRunItem, report))
+	return next, cmd, true
+}
+
+// todoFollowUp is the item proposed when a run blocks: what is left of the
+// blocked item, after it. It is a proposal, not a file — the person
+// accepts it on the same card the session's own proposals use.
+func todoFollowUp(it todo.Item, st *run.State) todo.Proposal {
+	var criteria []string
+	in := false
+	for _, line := range strings.Split(it.Body, "\n") {
+		t := strings.TrimSpace(line)
+		if strings.HasPrefix(t, "## ") {
+			in = strings.EqualFold(strings.TrimSpace(t[3:]), "acceptance criteria")
+			continue
+		}
+		if in && strings.HasPrefix(t, "- [ ] ") {
+			criteria = append(criteria, strings.TrimSpace(t[6:]))
+		}
+	}
+	if len(criteria) == 0 {
+		criteria = []string{"What " + it.Slug + " left undone is done"}
+	}
+	return todo.Proposal{
+		Title:     "Follow up " + it.Slug + ": " + it.Title,
+		Kind:      string(it.Kind),
+		Priority:  string(it.Priority),
+		Size:      string(st.Size),
+		Story:     "Continue " + it.Slug + ", which blocked at " + string(st.Stage) + ".",
+		Criteria:  criteria,
+		Notes:     []string{"Blocked because: " + strings.ReplaceAll(st.Blocked, "\n", " ")},
+		DependsOn: []string{it.Slug},
+	}
+}
+
+// renderTodoPause renders the pause card padded to the bottom panel.
+func (m Model) renderTodoPause() string {
+	lines := m.todoPauseLines()
+	h := m.bottomPanelHeight()
+	for len(lines) < h {
+		lines = append(lines, "")
+	}
+	return strings.Join(lines[:h], "\n")
 }
 
 // endTodoRun restores the session's mode and retires the checkpoint.
@@ -388,9 +629,17 @@ func (m *Model) endTodoRun() {
 	if prev, err := agent.ParseMode(st.PrevMode); err == nil {
 		m.applyMode(prev)
 	}
+	// A reviewer still reading is spending on a run that is over.
+	if st.Reviewer != "" && m.subagents != nil {
+		_ = m.subagents.Kill(st.Reviewer)
+	}
 	run.Discard(m.todos.Root, st.Slug)
 	m.todoRun = nil
 	m.todoRunItem = todo.Item{}
+	if m.todoPause != nil {
+		m.todoPause = nil
+		m.leaveSurface()
+	}
 	m.reloadTodos()
 }
 

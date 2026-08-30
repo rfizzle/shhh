@@ -34,6 +34,11 @@ type Role string
 const (
 	RoleResearcher Role = "researcher"
 	RoleWriter     Role = "writer"
+	// RoleReviewer reads a change and judges it: read-only tools, plan
+	// mode so the restriction is visible to the child itself, no
+	// worktree because it changes nothing. The backlog runner spawns one
+	// for every review it does not do itself.
+	RoleReviewer Role = "reviewer"
 )
 
 // Hard budgets and bounds. Concurrency and per-child budgets are deliberately
@@ -1066,6 +1071,41 @@ func (s *Supervisor) WrapExecutor(next agent.ToolExecutor) agent.ToolExecutor {
 		}
 		return next(name, args)
 	}
+}
+
+// Spawn starts a child from the spawn tool's own arguments, for a caller
+// that is not the model — the backlog runner's review stage. It is the
+// same path the tool takes, limits and all; nothing about being called
+// from code exempts a child from the attention budget.
+func (s *Supervisor) Spawn(raw json.RawMessage) (string, error) { return s.spawn(raw) }
+
+// FinalReport is a child's own final message as it wrote it, with the
+// state it ended in — for a caller that grades the report rather than
+// shows it, and must not mistake the parent-facing placeholder a failed
+// child gets for something the child said.
+func (s *Supervisor) FinalReport(name string) (report string, state State, ok bool) {
+	s.mu.Lock()
+	c, found := s.byName[name]
+	s.mu.Unlock()
+	if !found {
+		return "", 0, false
+	}
+	st := c.status()
+	c.mu.Lock()
+	report = c.report
+	c.mu.Unlock()
+	return report, st.State, true
+}
+
+// Report is a child's report text now, without waiting for it to finish.
+func (s *Supervisor) Report(name string) (string, error) {
+	s.mu.Lock()
+	c, ok := s.byName[name]
+	s.mu.Unlock()
+	if !ok {
+		return "", fmt.Errorf("no agent named %q", name)
+	}
+	return c.reportText(), nil
 }
 
 // spawn validates the arguments, prepares the child's workspace (a git

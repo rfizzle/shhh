@@ -12,7 +12,7 @@ and edit it.
 
 | Example | What it shows |
 |---------|---------------|
-| [`reviewer.toml`](reviewer.toml) | read-only, plan mode, cheap model, low reasoning — a critic that cannot touch anything |
+| [`reviewer.toml`](reviewer.toml) | overriding the built-in reviewer: read-only, plan mode, a cheap model at low reasoning — the built-in uses the session's model |
 | [`test-writer.toml`](test-writer.toml) | write + execute in an isolated worktree, narrowed to the editing tools it needs, high reasoning |
 | [`web-researcher.toml`](web-researcher.toml) | read + web with a tool allowlist, budgets, and a prompt in a separate file |
 | [`researcher.toml`](researcher.toml) | overriding a built-in role: same name, different model |

@@ -75,6 +75,11 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 		// A finished child can no longer act on its asks.
 		m.purgeChildAsks(ev.Status.Name)
 		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("Agent %s: %s", ev.Status.Name, ev.Status.Detail)})
+		// A reviewer the backlog runner spawned answers its review stage.
+		if next, cmd, ok := m.todoReviewDone(ev.Status); ok {
+			nm := next.(Model)
+			return nm, tea.Batch(cmd, listenSubagents(nm.subagents.Events()))
+		}
 	case subagent.EventPatch:
 		m.recordChildPatch(ev.Patch)
 	}

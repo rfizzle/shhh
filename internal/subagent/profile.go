@@ -53,6 +53,13 @@ func BuiltinProfiles() Profiles {
 			Description: "full tools against an isolated copy of the workspace; its file changes come back as a single patch the user reviews before anything touches the real checkout",
 			Writes:      true,
 		},
+		RoleReviewer: {
+			Name:        RoleReviewer,
+			Description: "reviews a change for correctness and clarity; reads only, changes nothing",
+			Mode:        agent.ModePlan,
+			HasMode:     true,
+			MaxTokens:   80000,
+		},
 	}
 }
 
@@ -70,13 +77,13 @@ func (p Profiles) Parse(s string) (Profile, error) {
 func (p Profiles) Names() []string {
 	var custom []string
 	for name := range p {
-		if name != RoleResearcher && name != RoleWriter {
+		if name != RoleResearcher && name != RoleWriter && name != RoleReviewer {
 			custom = append(custom, string(name))
 		}
 	}
 	sort.Strings(custom)
 	var out []string
-	for _, name := range []Role{RoleResearcher, RoleWriter} {
+	for _, name := range []Role{RoleResearcher, RoleWriter, RoleReviewer} {
 		if _, ok := p[name]; ok {
 			out = append(out, string(name))
 		}

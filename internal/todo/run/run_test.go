@@ -163,3 +163,98 @@ func TestCheckpoint_RoundTrips(t *testing.T) {
 		t.Fatal("checkpoint survived Discard")
 	}
 }
+
+func TestRun_PauseGatesBySize(t *testing.T) {
+	plan := func(size string, questions string) string {
+		return "## Plan: x\n\n1. a\n\nsize: " + size + "\nquestions: " + questions + "\n"
+	}
+	cases := []struct {
+		name          string
+		before        todo.Size
+		text          string
+		action        Action
+		pausedContain string
+	}{
+		{"S clean", todo.SizeS, plan("S", "none"), ActionPrompt, ""},
+		{"S question blocks", todo.SizeS, plan("S", "which flag?"), ActionBlocked, ""},
+		{"M clean", todo.SizeM, plan("M", "none"), ActionPrompt, ""},
+		{"M question pauses", todo.SizeM, plan("M", "which flag?"), ActionPause, "questions"},
+		{"M upgraded from S pauses", todo.SizeS, plan("M", "none"), ActionPause, "up from S"},
+		{"M downgraded to S continues", todo.SizeM, plan("S", "none"), ActionPrompt, ""},
+		{"L always pauses", todo.SizeL, plan("L", "none"), ActionPause, "large"},
+		{"ungraded to M continues", "", plan("M", "none"), ActionPrompt, ""},
+	}
+	for _, c := range cases {
+		it := item(c.before)
+		s := Start(it, "", "", 0)
+		s.First(it, "")
+		step := s.Observe(it, c.text)
+		if step.Action != c.action || !strings.Contains(s.Paused, c.pausedContain) {
+			t.Errorf("%s: action=%v paused=%q", c.name, step.Action, s.Paused)
+		}
+		if step.Action == ActionPrompt && step.Stage != StageImplement {
+			t.Errorf("%s: should go to implement", c.name)
+		}
+	}
+}
+
+func TestRun_ResumeAndReplan(t *testing.T) {
+	it := item(todo.SizeL)
+	s := Start(it, "", "", 0)
+	s.First(it, "")
+	large := strings.Replace(planText, "size: S", "size: L", 1)
+	if step := s.Observe(it, large); step.Action != ActionPause {
+		t.Fatalf("L should pause: %+v", step)
+	}
+	step := s.Replan(it, "keep the old flag")
+	if step.Action != ActionPrompt || step.Stage != StageResearch || step.Mode != ModePlan || !strings.Contains(step.Prompt, "ANSWERS AND STEERING") || !strings.Contains(step.Prompt, "keep the old flag") || s.Paused != "" {
+		t.Fatalf("replan = %+v", step)
+	}
+	s.Observe(it, large)
+	step = s.Resume(it)
+	if step.Action != ActionPrompt || step.Stage != StageImplement || s.Paused != "" {
+		t.Fatalf("resume = %+v", step)
+	}
+	if step := s.Resume(it); step.Action != ActionBlocked {
+		t.Fatal("resume without a pause should block")
+	}
+}
+
+func TestRun_ReviewBySize(t *testing.T) {
+	it := item(todo.SizeM)
+	s := Start(it, "", "", 0)
+	s.First(it, "")
+	s.Observe(it, strings.Replace(planText, "size: S", "size: M", 1))
+	s.Observe(it, "done")
+	step := s.VerifyResult(it, true, "")
+	if step.Action != ActionReview || s.Reviewer != "todo-review-x-1" || !strings.Contains(s.ReviewTask(it, ""), "Review this change") {
+		t.Fatalf("M review = %+v reviewer=%q", step, s.Reviewer)
+	}
+	if task := s.ReviewTask(it, "+++ b/a.go"); !strings.Contains(task, "```diff\n+++ b/a.go") {
+		t.Fatalf("task lacks the diff: %q", task)
+	}
+	if step := s.SelfReview(it); step.Action != ActionPrompt || s.Reviewer != "" || !strings.Contains(step.Shown, "no reviewer agent") {
+		t.Fatalf("self review = %+v", step)
+	}
+	if step := s.ReviewResult(it, ""); step.Action != ActionBlocked {
+		t.Fatal("an empty report should block")
+	}
+	s.Stage = StageReview
+	s.Blocked = ""
+	if step := s.ReviewResult(it, "looked\nverdict: findings\n1. bad"); step.Action != ActionPrompt || step.Stage != StageRemediate {
+		t.Fatalf("findings from the child = %+v", step)
+	}
+	s.Observe(it, "fixed")
+	step = s.VerifyResult(it, true, "")
+	if s.Reviewer != "todo-review-x-2" {
+		t.Fatalf("the second review is a new child: %q", s.Reviewer)
+	}
+	small := item(todo.SizeS)
+	ss := Start(small, "", "", 0)
+	ss.First(small, "")
+	ss.Observe(small, planText)
+	ss.Observe(small, "done")
+	if step := ss.VerifyResult(small, true, ""); step.Action != ActionPrompt || ss.Reviewer != "" {
+		t.Fatalf("S reviews itself: %+v", step)
+	}
+}

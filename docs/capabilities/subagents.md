@@ -10,6 +10,10 @@ what is happening.
   they need no isolation and their answers come back as text.
 - **Writers** have the full toolset, pointed at their own isolated copy of the
   repository. What comes back is a patch the parent reviews.
+- **Reviewers** read a change they did not make and judge it. They have the
+  researcher's tools and the read-only mode, so the restriction is visible
+  to the child itself; the change is handed to them as a diff, and what
+  comes back is a report ending in a verdict.
 
 A writer working in the parent's tree would produce changes nobody chose,
 interleaved with changes from other children, in a working directory the user

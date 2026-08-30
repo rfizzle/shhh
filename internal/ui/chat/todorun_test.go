@@ -1,16 +1,22 @@
 package chat
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
 )
@@ -338,5 +344,259 @@ func TestTodoCommitCmd_StagesByNameAndRefusesForeignIndex(t *testing.T) {
 	}
 	if status := gitc("status", "--porcelain"); status != "?? stray.go" {
 		t.Fatalf("the stray file must be left alone, status = %q", status)
+	}
+}
+
+const largePlan = "## Plan: big\n\n1. a\n   files: a.go\n\nsize: L\nquestions:\n- keep the flag?\n"
+
+func TestTodoRun_PauseCardGoAheadReplanStop(t *testing.T) {
+	m, root := runModel(t)
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	m = answer(t, updated.(Model), largePlan)
+	if m.state != stateTodoPause || m.todoPause == nil || m.todoRun.Paused == "" {
+		t.Fatalf("an L plan should pause: state=%d", m.state)
+	}
+	lines := strings.Join(m.todoPauseLines(), "\n")
+	if !strings.Contains(lines, "size L (was M)") || !strings.Contains(lines, "? keep the flag?") || !strings.Contains(lines, "Go ahead") {
+		t.Fatalf("pause card = %q", lines)
+	}
+	if m.inspectorHidden() != true {
+		t.Fatal("the pause takes the panel like the other cards")
+	}
+
+	// Re-plan with a note: research runs again with the answer in front.
+	m = press(t, m, "down")
+	m.todoPause.Note.SetValue("keep it")
+	m = press(t, m, "enter")
+	if m.state == stateTodoPause || m.todoRun.Stage != run.StageResearch || !m.working() || m.mode != agent.ModeManual && m.mode != agent.ModePlan {
+		t.Fatalf("replan should send research again: stage=%s state=%d", m.todoRun.Stage, m.state)
+	}
+	if it, _ := todo.Load(root).Find("do-it"); !strings.Contains(it.Body, "## Answers\nkeep it") {
+		t.Fatalf("the answer should be on the item: %q", it.Body)
+	}
+	if last := m.transcript[len(m.transcript)-1]; !strings.Contains(last.text, "research again") {
+		t.Fatalf("shown = %q", last.text)
+	}
+	m = answer(t, m, largePlan)
+	if m.state != stateTodoPause {
+		t.Fatal("L pauses again after re-plan")
+	}
+	m = press(t, m, "enter")
+	if m.todoRun.Stage != run.StageImplement || !m.working() || m.mode != agent.ModeAuto {
+		t.Fatalf("go ahead should implement in auto: stage=%s mode=%s", m.todoRun.Stage, m.mode)
+	}
+
+	// Stop from the card.
+	m2, root2 := runModel(t)
+	m2.input.SetValue("/todo run do-it")
+	updated, _ = m2.submitInput()
+	m2 = answer(t, updated.(Model), largePlan)
+	m2 = press(t, m2, "esc")
+	if m2.todoRun != nil || m2.state != stateInput {
+		t.Fatal("esc on the pause should stop the run")
+	}
+	if it, _ := todo.Load(root2).Find("do-it"); it.Status != todo.StatusOpen {
+		t.Fatal("stopped item should be open")
+	}
+}
+
+func TestTodoRun_ReviewFallsBackWithoutASupervisor(t *testing.T) {
+	m, _ := runModel(t)
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	m = answer(t, updated.(Model), strings.Replace(runPlan, "size: S", "size: M", 1))
+	m.changes.Add(m.turnCount, changeset.Record{Path: filepath.Join(m.todos.Root, "a.go"), Before: "a", After: "b", BeforeExists: true, AfterExists: true})
+	m = answer(t, m, "done")
+	updated, _ = m.Update(todoVerifyMsg{slug: "do-it", ok: true})
+	m = updated.(Model)
+	if m.todoRun == nil || m.todoRun.Stage != run.StageReview || !m.working() || m.todoRun.Reviewer != "" {
+		t.Fatalf("no supervisor: the session should review itself: %+v", m.todoRun)
+	}
+	if !strings.Contains(m.transcript[len(m.transcript)-1].text, "no reviewer agent") {
+		t.Fatal("the fallback should say so")
+	}
+}
+
+func TestTodoRun_ReviewerChildAnswersTheStage(t *testing.T) {
+	m, _ := runModel(t)
+	sup := subagent.New(context.Background(), subagent.Options{Root: m.todos.Root, NewEnv: reportingEnv("Looked.\nverdict: clean")})
+	t.Cleanup(sup.Close)
+	m = m.WithSubagents(sup)
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	m = answer(t, updated.(Model), strings.Replace(runPlan, "size: S", "size: M", 1))
+	m.changes.Add(m.turnCount, changeset.Record{Path: filepath.Join(m.todos.Root, "a.go"), Before: "a", After: "b", BeforeExists: true, AfterExists: true})
+	m = answer(t, m, "done")
+	updated, _ = m.Update(todoVerifyMsg{slug: "do-it", ok: true})
+	m = updated.(Model)
+	if m.todoRun == nil || m.todoRun.Reviewer != "todo-review-do-it-1" || m.working() {
+		t.Fatalf("a reviewer child should be spawned: %+v", m.todoRun)
+	}
+	if st, ok := sup.Get("todo-review-do-it-1"); !ok || st.Role != subagent.RoleReviewer {
+		t.Fatalf("child = %+v %v", st, ok)
+	}
+	var ev subagent.Event
+	deadline := time.After(5 * time.Second)
+	for ev.Kind != subagent.EventDone {
+		select {
+		case ev = <-sup.Events():
+		case <-deadline:
+			t.Fatal("the child never finished")
+		}
+	}
+	updated, _ = m.handleSubagentEvent(ev)
+	m = updated.(Model)
+	if m.todoRun.Stage != run.StageCommit || !m.working() || m.todoRun.Reviewer != "" {
+		t.Fatalf("a clean verdict from the child should go to the commit turn: %+v", m.todoRun)
+	}
+}
+
+func TestTodoRun_BlockOffersAFollowUp(t *testing.T) {
+	m, root := runModel(t)
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	m = answer(t, updated.(Model), "## Plan: x\n\n1. a\n\nsize: S\nquestions:\n- which?\n")
+	if m.state != stateTodoPropose || len(m.todoProposals) != 1 {
+		t.Fatalf("a block should offer a follow-up: state=%d", m.state)
+	}
+	p := m.todoProposals[0]
+	if !strings.HasPrefix(p.Title, "Follow up do-it") || p.DependsOn[0] != "do-it" || !strings.Contains(p.Notes[0], "which?") {
+		t.Fatalf("follow-up = %+v", p)
+	}
+	m = press(t, m, "enter")
+	s := todo.Load(root)
+	if s.Len() != 2 {
+		t.Fatalf("the follow-up should be written: %d items", s.Len())
+	}
+	if len(s.Ready()) != 0 {
+		t.Fatal("the follow-up waits on the blocked item")
+	}
+}
+
+// reportingEnv is a child that answers every request with text.
+func reportingEnv(text string) subagent.EnvFactory {
+	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
+		stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+			ch := make(chan provider.StreamEvent, 2)
+			ch <- provider.StreamEvent{Token: text}
+			ch <- provider.StreamEvent{Done: true}
+			close(ch)
+			return ch, func() {}, nil
+		}
+		return subagent.Env{SystemPrompt: "sys", Stream: stream,
+			Executor: func(string, json.RawMessage) (string, error) { return "", errors.New("unused") }}, nil
+	}
+}
+
+func reviewReadyModel(t *testing.T, env subagent.EnvFactory) (Model, *subagent.Supervisor) {
+	t.Helper()
+	m, root := runModel(t)
+	sup := subagent.New(context.Background(), subagent.Options{Root: root, NewEnv: env})
+	t.Cleanup(sup.Close)
+	m = m.WithSubagents(sup)
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	m = answer(t, updated.(Model), strings.Replace(runPlan, "size: S", "size: M", 1))
+	// The implement turn "created" a file: the changeset records it.
+	m.changes.Add(m.turnCount, changeset.Record{Path: filepath.Join(root, "new.go"), After: "package new\n", AfterExists: true})
+	m = answer(t, m, "done")
+	updated, _ = m.Update(todoVerifyMsg{slug: "do-it", ok: true})
+	return updated.(Model), sup
+}
+
+func waitDone(t *testing.T, sup *subagent.Supervisor) subagent.Event {
+	t.Helper()
+	deadline := time.After(5 * time.Second)
+	for {
+		select {
+		case ev := <-sup.Events():
+			if ev.Kind == subagent.EventDone {
+				return ev
+			}
+		case <-deadline:
+			t.Fatal("the child never finished")
+		}
+	}
+}
+
+func TestTodoRun_ReviewerTaskCarriesCreatedFiles(t *testing.T) {
+	m, sup := reviewReadyModel(t, reportingEnv("verdict: clean"))
+	st, ok := sup.Get("todo-review-do-it-1")
+	if !ok || !strings.Contains(st.Task, "+++ b/new.go") || !strings.Contains(st.Task, "+package new") {
+		t.Fatalf("the task should carry the created file's content: %q", st.Task)
+	}
+	_ = m
+}
+
+func TestTodoRun_FailedReviewerBlocksInsteadOfGrading(t *testing.T) {
+	m, sup := reviewReadyModel(t, blockingEnv())
+	if err := sup.Kill("todo-review-do-it-1"); err != nil {
+		t.Fatal(err)
+	}
+	ev := waitDone(t, sup)
+	updated, _ := m.handleSubagentEvent(ev)
+	m = updated.(Model)
+	if m.todoRun != nil {
+		t.Fatalf("a killed reviewer should block the run, got stage %s", m.todoRun.Stage)
+	}
+	found := false
+	for _, e := range m.transcript {
+		if strings.Contains(e.text, "did not finish") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatal("the evidence should say the reviewer did not finish")
+	}
+}
+
+func TestTodoRun_StopKillsTheReviewer(t *testing.T) {
+	m, sup := reviewReadyModel(t, blockingEnv())
+	m.input.SetValue("/todo stop")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+	ev := waitDone(t, sup)
+	if ev.Status.Name != "todo-review-do-it-1" || ev.Status.State == subagent.StateDone {
+		t.Fatalf("stop should kill the reviewer: %+v", ev.Status)
+	}
+	if m.todoRun != nil {
+		t.Fatal("run should be over")
+	}
+}
+
+func TestTodoRun_ReviewWithNoChangesBlocks(t *testing.T) {
+	m, _ := runModel(t)
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	m = answer(t, updated.(Model), strings.Replace(runPlan, "size: S", "size: M", 1))
+	m = answer(t, m, "done")
+	updated, _ = m.Update(todoVerifyMsg{slug: "do-it", ok: true})
+	m = updated.(Model)
+	if m.todoRun != nil {
+		t.Fatal("nothing changed: the run should block rather than review the whole tree")
+	}
+}
+
+func TestTodoRun_GoAheadNoteReachesImplement(t *testing.T) {
+	m, _ := runModel(t)
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	m = answer(t, updated.(Model), largePlan)
+	m.todoPause.Note.SetValue("use the old flag")
+	m = press(t, m, "enter")
+	if !m.working() || m.todoRun.Stage != run.StageImplement {
+		t.Fatal("go ahead should implement")
+	}
+	if msgs := m.agent.Messages(); !strings.Contains(msgs[len(msgs)-1].Content, "use the old flag") {
+		t.Fatal("the note should be in front of the implement stage")
+	}
+}
+
+func TestTodoFollowUp_CriteriaOnly(t *testing.T) {
+	it := todo.Item{Slug: "x", Title: "X", Body: "## Acceptance criteria\n- [x] done\n- [ ] left\n\n## Tasks\n- [ ] a task\n"}
+	p := todoFollowUp(it, &run.State{Stage: run.StageVerify, Blocked: "why"})
+	if strings.Join(p.Criteria, "|") != "left" {
+		t.Errorf("criteria = %v", p.Criteria)
 	}
 }

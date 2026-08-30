@@ -47,11 +47,14 @@ If the item cannot be done as written, answer with one line ` + "`blocked: <why>
 	return b.String()
 }
 
-func implementPrompt(it todo.Item, plan string) string {
+func implementPrompt(it todo.Item, plan, answers string) string {
 	var b strings.Builder
 	b.WriteString("IMPLEMENT stage. Carry out the plan below and satisfy the item's acceptance criteria.\n\n")
 	b.WriteString(itemBlock(it))
 	b.WriteString("\nAPPROVED PLAN:\n" + strings.TrimSpace(plan) + "\n\n")
+	if answers != "" {
+		b.WriteString(answers + "\n\n")
+	}
 	b.WriteString(standards + "\n\n")
 	b.WriteString(`Touch only what the plan names plus what it must to work. Write the tests the item lists where they do not exist. As you satisfy each acceptance criterion and finish each task, tick its checkbox in the item file named above — that file is the record. Do not commit; the runner commits. Do not run the whole verification suite yourself; the runner runs it next.
 
@@ -67,6 +70,22 @@ func reviewPrompt(it todo.Item, plan string) string {
 	b.WriteString(`Run ` + "`git diff`" + ` and ` + "`git status`" + ` and read every changed file in full. Check, in this order: bugs — concrete inputs that produce a wrong result; acceptance criteria not actually met; behaviour the item did not ask for; the project's conventions from AGENTS.md broken; tests missing for a case the criteria name. Do not change anything in this stage.
 
 Answer with one line ` + "`verdict: clean`" + ` if there is nothing that must change before this commits, or ` + "`verdict: findings`" + ` followed by the findings ranked by severity with file:line. Style that hides no bug is not a finding.`)
+	return b.String()
+}
+
+// reviewTask is the reviewer child's task: the item, the plan and the
+// diff, since the child has no commands to read the change with itself.
+func reviewTask(it todo.Item, plan, diff string) string {
+	var b strings.Builder
+	b.WriteString("Review this change against the backlog item it implements. You did not write it.\n\n")
+	b.WriteString(itemBlock(it))
+	b.WriteString("\nAPPROVED PLAN:\n" + strings.TrimSpace(plan) + "\n\n")
+	if strings.TrimSpace(diff) != "" {
+		b.WriteString("THE CHANGE (git diff, bounded):\n```diff\n" + strings.TrimSpace(diff) + "\n```\n\n")
+	}
+	b.WriteString(`Read every file the diff touches in full, then the tests that cover them. Check, in this order: bugs — concrete inputs that produce a wrong result; acceptance criteria not actually met; behaviour the item did not ask for; the project's conventions from AGENTS.md broken; tests missing for a case the criteria name.
+
+End your report with one line ` + "`verdict: clean`" + ` if nothing must change before this commits, or ` + "`verdict: findings`" + ` followed by the findings ranked by severity with file:line. Style that hides no bug is not a finding.`)
 	return b.String()
 }
 

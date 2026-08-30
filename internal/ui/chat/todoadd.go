@@ -115,9 +115,14 @@ func (m Model) finishTodoExtract(msg todoProposalsMsg) (tea.Model, tea.Cmd) {
 	if r.Failed {
 		return m.systemNotice("The session could not be read into items — " + r.Err + ". /todo add <text> adds one by hand.")
 	}
-	m.todoProposals = r.Proposals
-	opts := make([]components.SelectOption, len(r.Proposals))
-	for i, p := range r.Proposals {
+	return m.openTodoProposals(r.Proposals, plural(len(r.Proposals), "backlog item")+" proposed")
+}
+
+// openTodoProposals shows proposals on the card, everything checked.
+func (m Model) openTodoProposals(proposals []todo.Proposal, what string) (tea.Model, tea.Cmd) {
+	m.todoProposals = proposals
+	opts := make([]components.SelectOption, len(proposals))
+	for i, p := range proposals {
 		// A multi-select draws the label and the right-hand meta and nothing
 		// else, so the facts the reader decides on go in the meta.
 		opts[i] = components.SelectOption{
@@ -125,8 +130,8 @@ func (m Model) finishTodoExtract(msg todoProposalsMsg) (tea.Model, tea.Cmd) {
 			Meta:  todoProposalMeta(p),
 		}
 	}
-	card := components.NewMultiSelect(fmt.Sprintf("%s proposed — %s toggles, %s all or none, %s writes the checked ones, %s writes nothing",
-		plural(len(opts), "backlog item"), keys.Shown(keys.Select.Toggle), keys.Shown(keys.Select.All), keys.Shown(keys.Select.Take), keys.Shown(keys.Select.Cancel)), opts)
+	card := components.NewMultiSelect(fmt.Sprintf("%s — %s toggles, %s all or none, %s writes the checked ones, %s writes nothing",
+		what, keys.Shown(keys.Select.Toggle), keys.Shown(keys.Select.All), keys.Shown(keys.Select.Take), keys.Shown(keys.Select.Cancel)), opts)
 	for i := range card.Checked {
 		card.Checked[i] = true
 	}

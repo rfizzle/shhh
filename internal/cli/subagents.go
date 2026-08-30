@@ -142,6 +142,9 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			sysPrompt, defs, base = profileEnv(def, spec, info, extra, session.web, gated)
 		} else {
 			switch role {
+			case subagent.RoleReviewer:
+				sysPrompt = prompt.BuildReviewer(info, extra)
+				defs = tools.Definitions()
 			case subagent.RoleWriter:
 				sysPrompt = prompt.BuildWriter(info, extra)
 				sysPrompt += scopeNote(spec.Paths)

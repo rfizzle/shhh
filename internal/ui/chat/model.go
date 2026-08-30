@@ -110,6 +110,9 @@ const (
 	// stateTodoPropose: the proposals card from a bare /todo add is showing —
 	// the session read into backlog items, checked ones written on enter.
 	stateTodoPropose
+	// stateTodoPause: a backlog run is paused on the person — the plan, the
+	// questions and the size are showing, with go ahead / re-plan / stop.
+	stateTodoPause
 	// stateUndoConfirm: the inline confirm an undo asks through (inline
 	// confirm) — what it would restore, what has drifted since, and esc to
 	// decline. It borrows the bottom panel, not the transcript.
@@ -567,8 +570,10 @@ type Model struct {
 	// todoRunTurn is the session turn the current stage sent, so a turn
 	// that ended without being the stage's is told apart; todoRunCancelled
 	// marks the stage turn ended by esc rather than by an answer.
-	todoRunTurn       int
-	todoRunCancelled  bool
+	todoRunTurn      int
+	todoRunCancelled bool
+	// todoPause is the open pause card while a run waits on the person.
+	todoPause         *components.NoteSelect
 	todoPropose       *components.MultiSelect
 	todoProposals     []todo.Proposal
 	todoExtracting    bool
@@ -1094,8 +1099,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	// And the backlog runner's next stage (todorun.go), for the same
 	// reason again: a stage's turn ending is a transition.
-	if next, step := mm.todoRunAfter(m); step != nil || next.todoRun != mm.todoRun {
-		mm = next
+	// The hook hands back the model whether or not it acted — a pause acts
+	// and returns no command — so the model is always taken.
+	after, step := mm.todoRunAfter(m)
+	mm = after
+	if step != nil {
 		cmd = tea.Batch(cmd, step)
 	}
 	return mm, cmd
@@ -1271,6 +1279,9 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.state == stateTodoPropose {
 			return m.updateTodoPropose(msg)
+		}
+		if m.state == stateTodoPause {
+			return m.updateTodoPause(msg)
 		}
 		if m.state == stateModelList {
 			return m.updateModelList(msg)
@@ -2157,6 +2168,8 @@ func (m Model) takeoverPanel(width int) string {
 		inputView = m.renderPick()
 	case stateTodoPropose:
 		inputView = m.renderTodoPropose()
+	case stateTodoPause:
+		inputView = m.renderTodoPause()
 	case stateFocus:
 		inputView = m.renderFocusHint()
 	case stateDiffFull:

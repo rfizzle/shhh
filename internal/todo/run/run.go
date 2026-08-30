@@ -56,6 +56,12 @@ const (
 	// ActionCommit: stage the run's paths and commit with Message; then
 	// archive the item with Report.
 	ActionCommit
+	// ActionPause: show State.Plan, State.Questions and the size to the
+	// person and wait — Resume, Replan or Block is theirs.
+	ActionPause
+	// ActionReview: hand Prompt to a reviewer sub-agent named Reviewer and
+	// report its final text through ReviewResult.
+	ActionReview
 	// ActionBlocked: the run is over with State.Blocked as the evidence.
 	ActionBlocked
 	// ActionDone: the run is over; the item is archived.
@@ -120,6 +126,14 @@ type State struct {
 	// Verified reports the last verify passed; a review only runs on a
 	// verified tree.
 	Verified bool `json:"verified"`
+
+	// Paused is why the run is waiting on the person, empty otherwise.
+	Paused string `json:"paused"`
+	// Reviewer is the name of the review child in flight, empty when the
+	// review is the orchestrator's own turn.
+	Reviewer string `json:"reviewer"`
+	// Answers are the notes the person gave at a pause, for the re-plan.
+	Answers []string `json:"answers"`
 
 	Message string `json:"message"`
 	Report  string `json:"report"`
@@ -217,9 +231,13 @@ func (s *State) Observe(it todo.Item, text string) Step {
 	return s.block("no stage to observe")
 }
 
-// afterResearch reads the plan, the size and the questions. An open
-// question blocks: this front-end has no pause to ask it on yet, and
-// guessing an answer is the one thing a deterministic runner must not do.
+// afterResearch reads the plan, the size and the questions, then applies
+// the pause gate. A small item never pauses — an open question on one
+// blocks, because guessing an answer is the one thing a deterministic
+// runner must not do. A medium one pauses when there is a question or the
+// research graded it up; a large one always pauses, because that is the
+// moment spend and blast radius are decided.
+// See docs/capabilities/todo.md#a-run-is-turns-with-gates-between-them.
 func (s *State) afterResearch(it todo.Item, text string) Step {
 	p := plan.Parse(text)
 	s.Plan = text
@@ -231,15 +249,71 @@ func (s *State) afterResearch(it todo.Item, text string) Step {
 		s.Size = size
 	}
 	s.Questions = questionLines(text)
-	if len(s.Questions) > 0 {
-		return s.block("open questions after research:\n- " + strings.Join(s.Questions, "\n- "))
-	}
 	if !p.Structured() {
 		return s.block("research produced no numbered plan")
 	}
+	// An item with no grade yet is not upgraded by getting one.
+	upgraded := s.SizeBefore != "" && rank(s.Size) > rank(s.SizeBefore)
+	switch {
+	case s.Size == todo.SizeS && len(s.Questions) > 0:
+		return s.block("open questions after research:\n- " + strings.Join(s.Questions, "\n- "))
+	case s.Size == todo.SizeL:
+		return s.pause("a large item pauses before anything is built")
+	case len(s.Questions) > 0:
+		return s.pause("research left questions")
+	case upgraded:
+		return s.pause(fmt.Sprintf("research graded the item %s, up from %s", s.Size, orDash(string(s.SizeBefore))))
+	}
+	return s.implement(it)
+}
+
+func rank(size todo.Size) int {
+	switch size {
+	case todo.SizeS:
+		return 1
+	case todo.SizeM:
+		return 2
+	case todo.SizeL:
+		return 3
+	}
+	return 0
+}
+
+func (s *State) pause(why string) Step {
+	s.Paused = why
+	return Step{Action: ActionPause, Stage: StageResearch, Shown: s.label("paused — " + why)}
+}
+
+func (s *State) implement(it todo.Item) Step {
+	s.Paused = ""
 	s.Stage = StageImplement
 	return Step{Action: ActionPrompt, Stage: StageImplement, Mode: ModeAuto,
-		Prompt: implementPrompt(it, s.Plan), Shown: s.label("implement")}
+		Prompt: implementPrompt(it, s.Plan, answersBlock(s.Answers)), Shown: s.label("implement")}
+}
+
+// Resume is the person taking the plan as it stands.
+func (s *State) Resume(it todo.Item) Step {
+	if s.Paused == "" {
+		return s.block("nothing to resume")
+	}
+	return s.implement(it)
+}
+
+// Replan is the person answering the questions or steering the plan: the
+// note joins the item's record and research runs again with it in front.
+func (s *State) Replan(it todo.Item, note string) Step {
+	s.Paused = ""
+	s.Answers = append(s.Answers, note)
+	s.Stage = StageResearch
+	return Step{Action: ActionPrompt, Stage: StageResearch, Mode: ModePlan,
+		Prompt: researchPrompt(it, answersBlock(s.Answers)), Shown: s.label("research again")}
+}
+
+func answersBlock(answers []string) string {
+	if len(answers) == 0 {
+		return ""
+	}
+	return "ANSWERS AND STEERING FROM THE PERSON (honour these; they settle the questions):\n- " + strings.Join(answers, "\n- ")
 }
 
 // verify is the step after any change to the tree.
@@ -254,14 +328,50 @@ func (s *State) verify() Step {
 func (s *State) VerifyResult(it todo.Item, ok bool, output string) Step {
 	if ok {
 		s.Verified = true
-		s.Stage = StageReview
-		// Review and the commit turn read; they run in the read-only mode
-		// so nothing can change between the verify that passed and the
-		// commit — an edit made while reviewing would land unverified.
+		return s.review(it)
+	}
+	return s.remediate(it, "Verification failed:\n"+output)
+}
+
+// review is the review step. A small item reviews itself in the
+// orchestrator's turn; anything larger is read by a reviewer child that
+// did not write it, which is what makes the second opinion one. The
+// child's task is built by the front-end (ReviewTask), which has the
+// change to hand it; the orchestrator's own turn reads the tree itself.
+// Review and the commit turn read only: they run in the read-only mode so
+// nothing can change between the verify that passed and the commit — an
+// edit made while reviewing would land unverified.
+func (s *State) review(it todo.Item) Step {
+	s.Stage = StageReview
+	if s.Size == todo.SizeS {
+		s.Reviewer = ""
 		return Step{Action: ActionPrompt, Stage: StageReview, Mode: ModePlan,
 			Prompt: reviewPrompt(it, s.Plan), Shown: s.label("review")}
 	}
-	return s.remediate(it, "Verification failed:\n"+output)
+	s.Reviewer = fmt.Sprintf("todo-review-%s-%d", s.Slug, s.Round+1)
+	return Step{Action: ActionReview, Stage: StageReview, Mode: ModePlan, Shown: s.label("review by " + s.Reviewer)}
+}
+
+// ReviewTask is the reviewer child's task: the item, the plan, and the
+// change as the front-end read it, since the child has no commands to
+// read the change with itself.
+func (s *State) ReviewTask(it todo.Item, diff string) string { return reviewTask(it, s.Plan, diff) }
+
+// SelfReview is the fallback when no reviewer child can be had — the
+// orchestrator reviews in its own turn, and the step says so.
+func (s *State) SelfReview(it todo.Item) Step {
+	s.Reviewer = ""
+	return Step{Action: ActionPrompt, Stage: StageReview, Mode: ModePlan,
+		Prompt: reviewPrompt(it, s.Plan), Shown: s.label("review (no reviewer agent; reviewing in this session)")}
+}
+
+// ReviewResult is the reviewer child's final text.
+func (s *State) ReviewResult(it todo.Item, text string) Step {
+	s.Reviewer = ""
+	if strings.TrimSpace(text) == "" {
+		return s.block("the reviewer ended without a report")
+	}
+	return s.afterReview(it, text)
 }
 
 // afterReview reads the verdict line.
