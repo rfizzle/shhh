@@ -184,7 +184,7 @@ func newMemoryCmd() *cobra.Command {
 // withMemoryStore opens storage for one CLI invocation and runs fn against
 // the workspace's memory store.
 func withMemoryStore(fn func(*memory.Store) error) error {
-	db, err := storage.Open()
+	db, err := openStore()
 	if err != nil {
 		return fmt.Errorf("storage unavailable: %w", err)
 	}

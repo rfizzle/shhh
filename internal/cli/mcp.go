@@ -452,7 +452,7 @@ func newMCPCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := ConfigFrom(cmd.Context())
 			cat := loadMCPCatalog(cfg)
-			db, _ := storage.Open()
+			db, _ := openStore()
 			if db != nil {
 				defer db.Close()
 			}
@@ -486,7 +486,7 @@ func newMCPCmd() *cobra.Command {
 			if !ok {
 				return fmt.Errorf("no server named %q; `shhh mcp` lists them", args[0])
 			}
-			db, _ := storage.Open()
+			db, _ := openStore()
 			if db != nil {
 				defer db.Close()
 			}
@@ -536,7 +536,7 @@ func newMCPCmd() *cobra.Command {
 
 func mcpTrustCmd(cmd *cobra.Command, name string, trust bool) error {
 	cfg := ConfigFrom(cmd.Context())
-	db, err := storage.Open()
+	db, err := openStore()
 	if err != nil {
 		return fmt.Errorf("the local store is unavailable, so trust cannot be recorded: %w", err)
 	}

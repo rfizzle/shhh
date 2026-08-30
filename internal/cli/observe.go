@@ -243,7 +243,7 @@ func newObserveCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			db, err := storage.Open()
+			db, err := openStore()
 			if err != nil {
 				return fmt.Errorf("open database: %w", err)
 			}
@@ -265,7 +265,7 @@ func newObserveCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			db, err := storage.Open()
+			db, err := openStore()
 			if err != nil {
 				return fmt.Errorf("open database: %w", err)
 			}
@@ -311,7 +311,7 @@ func newObserveCmd() *cobra.Command {
 			if err != nil || id <= 0 {
 				return fmt.Errorf("invalid session id %q", args[0])
 			}
-			db, err := storage.Open()
+			db, err := openStore()
 			if err != nil {
 				return fmt.Errorf("open database: %w", err)
 			}
@@ -325,7 +325,7 @@ func newObserveCmd() *cobra.Command {
 		Short: "Delete all recorded agent-session metrics",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			db, err := storage.Open()
+			db, err := openStore()
 			if err != nil {
 				return fmt.Errorf("open database: %w", err)
 			}

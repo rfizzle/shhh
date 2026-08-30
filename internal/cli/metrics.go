@@ -55,7 +55,7 @@ func newMetricsCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			db, err := storage.Open()
+			db, err := openStore()
 			if err != nil {
 				return fmt.Errorf("open database: %w", err)
 			}

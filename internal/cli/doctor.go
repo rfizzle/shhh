@@ -566,7 +566,7 @@ func doctorKeyPlaces(survey resolve.Survey) []string {
 func doctorMasked(finding string) string { return finding }
 
 func probeStore(context.Context, config.Config) doctorFinding {
-	db, err := storage.Open()
+	db, err := openStore()
 	if err != nil {
 		return doctorStore("", 0, err)
 	}
@@ -912,7 +912,7 @@ func probeMemory(context.Context, config.Config) doctorFinding {
 	if err != nil {
 		return doctorMemory("", 0, 0, err)
 	}
-	db, err := storage.Open()
+	db, err := openStore()
 	if err != nil {
 		// The store's own row already says this, and saying it twice would be
 		// the report blaming one fault on two checks.

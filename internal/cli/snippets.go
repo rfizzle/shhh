@@ -24,7 +24,7 @@ func newSnippetsCmd() *cobra.Command {
 		Long:  "List, run, copy, or delete saved command snippets.",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			db, err := storage.Open()
+			db, err := openStore()
 			if err != nil {
 				return fmt.Errorf("open database: %w", err)
 			}
@@ -148,7 +148,7 @@ func newSnippetRunCmd() *cobra.Command {
 		Short: "Run a saved snippet",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			db, err := storage.Open()
+			db, err := openStore()
 			if err != nil {
 				return fmt.Errorf("open database: %w", err)
 			}
@@ -172,7 +172,7 @@ func newSnippetCopyCmd() *cobra.Command {
 		Short: "Copy a snippet to clipboard",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			db, err := storage.Open()
+			db, err := openStore()
 			if err != nil {
 				return fmt.Errorf("open database: %w", err)
 			}
@@ -200,7 +200,7 @@ func newSnippetDeleteCmd() *cobra.Command {
 		Short: "Delete a saved snippet",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			db, err := storage.Open()
+			db, err := openStore()
 			if err != nil {
 				return fmt.Errorf("open database: %w", err)
 			}
@@ -221,7 +221,7 @@ func newSnippetShowCmd() *cobra.Command {
 		Short: "Show a snippet's full command",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			db, err := storage.Open()
+			db, err := openStore()
 			if err != nil {
 				return fmt.Errorf("open database: %w", err)
 			}

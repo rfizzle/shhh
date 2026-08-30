@@ -25,7 +25,6 @@ import (
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/stdin"
-	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/web"
@@ -145,7 +144,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 
 	// The local store is opened here rather than with the recorder below
 	// because trust for a project MCP server is read from it.
-	db, _ := storage.Open()
+	db, _ := openStore()
 	if db != nil {
 		defer db.Close()
 	}

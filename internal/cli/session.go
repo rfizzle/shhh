@@ -453,7 +453,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		return err
 	}
 
-	db, err := storage.Open()
+	db, err := openStore()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "warning: chat persistence unavailable: %v\n", err)
 	}

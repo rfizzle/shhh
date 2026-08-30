@@ -84,14 +84,9 @@ func NewRootCmd() *cobra.Command {
 
 			update.BackgroundCheck(version)
 
-			go func() {
-				if db, err := storage.Open(); err == nil {
-					// Best effort: a purge that fails is retried on the next
-					// command, and there is nobody here to tell.
-					_, _ = db.PurgeOldHistory(cfg.EffectiveRetentionDays())
-					db.Close()
-				}
-			}()
+			// The history purge rides the first store a command opens
+			// (store.go) rather than a connection of its own from here.
+			setHistoryRetention(cfg.EffectiveRetentionDays())
 
 			return nil
 		},
@@ -201,7 +196,7 @@ func NewRootCmd() *cobra.Command {
 			}
 			compOpts := provider.CompletionOpts{Model: resolved.Model, Effort: effort}
 
-			db, _ := storage.Open()
+			db, _ := openStore()
 			if db != nil {
 				defer db.Close()
 			}

@@ -60,7 +60,7 @@ func newChatsCmd() *cobra.Command {
 			// The browser comes first and the session after, so browsing
 			// and tidying cost nothing beyond the store — no provider is
 			// resolved until a chat is actually picked.
-			db, err := storage.Open()
+			db, err := openStore()
 			if err != nil {
 				return fmt.Errorf("open database: %w", err)
 			}
@@ -86,7 +86,7 @@ func newChatsCmd() *cobra.Command {
 		Short: "List saved chats: name, title, turns, last written",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			db, err := storage.Open()
+			db, err := openStore()
 			if err != nil {
 				return fmt.Errorf("open database: %w", err)
 			}
@@ -110,7 +110,7 @@ func newChatsCmd() *cobra.Command {
 		Short: "Print a saved chat's transcript",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			db, err := storage.Open()
+			db, err := openStore()
 			if err != nil {
 				return fmt.Errorf("open database: %w", err)
 			}
@@ -134,7 +134,7 @@ func newChatsCmd() *cobra.Command {
 		Short: "Delete a saved chat and its branches, after asking",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			db, err := storage.Open()
+			db, err := openStore()
 			if err != nil {
 				return fmt.Errorf("open database: %w", err)
 			}
@@ -174,7 +174,7 @@ func newChatsCmd() *cobra.Command {
 		Short: "Rename a saved chat, keeping its branches",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			db, err := storage.Open()
+			db, err := openStore()
 			if err != nil {
 				return fmt.Errorf("open database: %w", err)
 			}

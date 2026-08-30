@@ -6,7 +6,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/spf13/cobra"
 )
 
@@ -19,7 +18,7 @@ func newRateCmd() *cobra.Command {
 		Long:  "Walk through recent unrated commands and mark whether they actually worked, so accuracy metrics reflect real outcomes.",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			db, err := storage.Open()
+			db, err := openStore()
 			if err != nil {
 				return fmt.Errorf("open database: %w", err)
 			}
