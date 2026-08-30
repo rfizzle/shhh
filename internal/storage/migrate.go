@@ -1,6 +1,9 @@
 package storage
 
-import "fmt"
+import (
+	"context"
+	"fmt"
+)
 
 var migrations = []string{
 	`CREATE TABLE IF NOT EXISTS chat_sessions (
@@ -128,34 +131,52 @@ var migrations = []string{
 	`ALTER TABLE chat_sessions ADD COLUMN title TEXT NOT NULL DEFAULT '';`,
 }
 
+// migrate brings the store up to the current schema, one step per
+// transaction. Every step is applied under BEGIN IMMEDIATE with the version
+// re-read inside the lock, because two connections can open the same store
+// at once — the root command's background history purge and the command's
+// own open — and a version read outside the lock lets both apply the same
+// ALTER TABLE, which fails the second with a duplicate column. The busy
+// timeout makes the loser wait rather than fail, and the re-read makes it
+// find the step already recorded and move on.
 func (db *DB) migrate() error {
-	_, err := db.sql.Exec(`CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)`)
+	ctx := context.Background()
+	_, err := db.sql.ExecContext(ctx, `CREATE TABLE IF NOT EXISTS schema_version (version INTEGER NOT NULL)`)
 	if err != nil {
 		return fmt.Errorf("create schema_version: %w", err)
 	}
-
-	var current int
-	row := db.sql.QueryRow(`SELECT COALESCE(MAX(version), 0) FROM schema_version`)
-	if err := row.Scan(&current); err != nil {
-		return fmt.Errorf("read schema version: %w", err)
+	// One conn for the whole run: BEGIN IMMEDIATE is a statement rather than
+	// a database/sql option, and it has to run on the same connection the
+	// step and its COMMIT do.
+	conn, err := db.sql.Conn(ctx)
+	if err != nil {
+		return fmt.Errorf("migrate: %w", err)
 	}
+	defer conn.Close()
 
-	for i := current; i < len(migrations); i++ {
-		tx, err := db.sql.Begin()
-		if err != nil {
-			return fmt.Errorf("begin migration %d: %w", i+1, err)
+	for {
+		if _, err := conn.ExecContext(ctx, `BEGIN IMMEDIATE`); err != nil {
+			return fmt.Errorf("begin migration: %w", err)
 		}
-		if _, err := tx.Exec(migrations[i]); err != nil {
-			tx.Rollback()
-			return fmt.Errorf("migration %d: %w", i+1, err)
+		var current int
+		if err := conn.QueryRowContext(ctx, `SELECT COALESCE(MAX(version), 0) FROM schema_version`).Scan(&current); err != nil {
+			_, _ = conn.ExecContext(ctx, `ROLLBACK`)
+			return fmt.Errorf("read schema version: %w", err)
 		}
-		if _, err := tx.Exec(`INSERT INTO schema_version (version) VALUES (?)`, i+1); err != nil {
-			tx.Rollback()
-			return fmt.Errorf("record migration %d: %w", i+1, err)
+		if current >= len(migrations) {
+			_, _ = conn.ExecContext(ctx, `ROLLBACK`)
+			return nil
 		}
-		if err := tx.Commit(); err != nil {
-			return fmt.Errorf("commit migration %d: %w", i+1, err)
+		if _, err := conn.ExecContext(ctx, migrations[current]); err != nil {
+			_, _ = conn.ExecContext(ctx, `ROLLBACK`)
+			return fmt.Errorf("migration %d: %w", current+1, err)
+		}
+		if _, err := conn.ExecContext(ctx, `INSERT INTO schema_version (version) VALUES (?)`, current+1); err != nil {
+			_, _ = conn.ExecContext(ctx, `ROLLBACK`)
+			return fmt.Errorf("record migration %d: %w", current+1, err)
+		}
+		if _, err := conn.ExecContext(ctx, `COMMIT`); err != nil {
+			return fmt.Errorf("commit migration %d: %w", current+1, err)
 		}
 	}
-	return nil
 }

@@ -1143,3 +1143,40 @@ func TestChatTitle_ListedAndUnknown(t *testing.T) {
 		t.Fatalf("an unknown chat has no title and no error, got %q %v", title, err)
 	}
 }
+
+// Two openers on a store neither has seen — the root's background history
+// purge beside the command's own open — must both come up: the loser waits
+// on the lock and finds the step already recorded rather than applying it
+// again.
+func TestOpenPath_ConcurrentOpenersMigrateOnce(t *testing.T) {
+	for round := 0; round < 20; round++ {
+		path := filepath.Join(t.TempDir(), "test.db")
+		errs := make(chan error, 2)
+		for i := 0; i < 2; i++ {
+			go func() {
+				db, err := OpenPath(path)
+				if err == nil {
+					db.Close()
+				}
+				errs <- err
+			}()
+		}
+		for i := 0; i < 2; i++ {
+			if err := <-errs; err != nil {
+				t.Fatalf("round %d: concurrent open failed: %v", round, err)
+			}
+		}
+		check, err := OpenPath(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var versions int
+		if err := check.sql.QueryRow(`SELECT COUNT(*) FROM schema_version`).Scan(&versions); err != nil {
+			t.Fatal(err)
+		}
+		check.Close()
+		if versions != len(migrations) {
+			t.Fatalf("round %d: every step recorded exactly once, got %d rows for %d steps", round, versions, len(migrations))
+		}
+	}
+}

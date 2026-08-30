@@ -39,18 +39,16 @@ func chatsDB(t *testing.T) {
 	}
 }
 
-// runChats runs `shhh chats <args>` and returns what it printed and the
-// error it returned. The command is executed on its own rather than under
-// the root, whose pre-run opens the store in a goroutine that outlives the
-// test and would race the next test's fresh store.
+// runChats runs `shhh chats <args>` under the root command and returns what
+// it printed and the error it returned.
 func runChats(t *testing.T, in string, args ...string) (string, error) {
 	t.Helper()
-	cmd := newChatsCmd()
+	cmd := NewRootCmd()
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetErr(&out)
 	cmd.SetIn(strings.NewReader(in))
-	cmd.SetArgs(args)
+	cmd.SetArgs(append([]string{"chats"}, args...))
 	err := cmd.Execute()
 	return out.String(), err
 }
