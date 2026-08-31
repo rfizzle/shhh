@@ -325,6 +325,16 @@ type DecisionKeys struct {
 	Batch  Binding
 	Diff   Binding
 
+	// Refuse is Deny on a card the reader summoned rather than was handed.
+	// Deny folds esc and ctrl+c into the answer, which is right for a card
+	// that arrived on its own: there is nothing to go back to, so leaving
+	// and declining are the same act. On a summoned card they are not — esc
+	// is the way back to a screen the reader chose to leave — and a decline
+	// that outlives the session is exactly the consequence esc may never
+	// carry (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	// So the answer is the letter alone and the way out is Select.Cancel.
+	Refuse Binding
+
 	// The card's own scroll, for a body taller or wider than the panel
 	// (docs/interface/surfaces.md#the-approval-card). The same chords the
 	// draft scrolls the transcript with, answered by whichever of the two
@@ -343,6 +353,7 @@ var Decision = DecisionKeys{
 	Always: bind("a", "always allow this session", "a"),
 	Batch:  bind("A", "answer the marked", "A"),
 	Diff:   bind("d", "full diff", "d", "D"),
+	Refuse: bind("n", "no, and stop offering", "n", "N"),
 
 	ScrollUp:   bind("shift+↑", "scroll the card up", "shift+up"),
 	ScrollDown: bind("shift+↓", "scroll the card", "shift+down"),

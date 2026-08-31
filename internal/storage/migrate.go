@@ -129,6 +129,18 @@ var migrations = []string{
 	// overwritten by one a model wrote
 	// (docs/capabilities/sessions-and-memory.md#a-title-you-did-not-write).
 	`ALTER TABLE chat_sessions ADD COLUMN title TEXT NOT NULL DEFAULT '';`,
+
+	// An offer the person refused in a checkout. The answer lives here
+	// rather than in the checkout for the reason the MCP trust above does:
+	// an offer to write a file into a checkout cannot be recorded by
+	// writing a file into that checkout
+	// (docs/interface/surfaces.md#the-start-screen).
+	`CREATE TABLE IF NOT EXISTS offers_declined (
+		root        TEXT NOT NULL,
+		offer       TEXT NOT NULL,
+		declined_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+		PRIMARY KEY (root, offer)
+	);`,
 }
 
 // migrate brings the store up to the current schema, one step per

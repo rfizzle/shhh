@@ -813,6 +813,11 @@ func (m Model) bottomPanelHeight() int {
 		lines = m.pasteDropLines()
 	case statePersona:
 		lines = m.personaLines()
+	case stateScaffold:
+		// A decision whose keys were cut off by the panel bound is not one,
+		// so the card gets the plan card's headroom the way the pressure
+		// card does (scaffold.go).
+		lines, bound = m.scaffoldLines(), m.planPanelBound()
 	case stateTodoPause:
 		lines = m.todoPauseLines()
 	case stateUndoConfirm:

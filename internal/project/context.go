@@ -22,6 +22,27 @@ const (
 	ContextFile = ".shhh/project.md"
 )
 
+// Root is the directory a checkout's shhh state belongs to: the enclosing
+// repository root, else the directory itself. Everything keyed on "this
+// project" — the backlog, an offer already refused — is keyed on it, which
+// is what makes those the project's rather than a session's.
+func Root(dir string) string {
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return dir
+	}
+	for probe := abs; ; {
+		if _, err := os.Stat(filepath.Join(probe, ".git")); err == nil {
+			return probe
+		}
+		parent := filepath.Dir(probe)
+		if parent == probe {
+			return abs
+		}
+		probe = parent
+	}
+}
+
 // Find returns the path and contents of the nearest project-context file,
 // walking up from the working directory. The path is what the start screen
 // names: a session that says what it read is a session whose system
@@ -31,7 +52,12 @@ func Find() (path, content string) {
 	if err != nil {
 		return "", ""
 	}
+	return FindFrom(dir)
+}
 
+// FindFrom is Find from a stated directory, for the callers that have one
+// and for the tests that cannot chdir.
+func FindFrom(dir string) (path, content string) {
 	for {
 		for _, name := range contextFilenames {
 			p := filepath.Join(dir, name)

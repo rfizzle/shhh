@@ -329,6 +329,8 @@ func (m Model) routeDecision(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m.updateConfirmRun(msg)
 	case statePlanApprove:
 		return m.updatePlanApprove(msg)
+	case stateScaffold:
+		return m.updateScaffold(msg)
 	}
 	if ask := m.activeChildAsk(); ask != nil {
 		return m.updateChildAsk(msg, ask)
@@ -518,8 +520,10 @@ func (m Model) renderInterrupt(width int) string {
 }
 
 // applyNotYetLive puts a card into the state the keyboard says it is in. It
-// is called from every card builder, so no surface can render its keys as
-// live while the draft is the one being typed into.
+// is called from every card that can arrive unbidden, so none of them can
+// render its keys as live while the draft is the one being typed into. A
+// card the reader summoned does not call it and has nothing to ask: it is a
+// takeover, and the draft is not live behind it (scaffold.go).
 // The card keeps the bound it would have had on its own whether or not it
 // holds the keyboard: a decision the reader cannot read is not one they can
 // decide, so the transcript above gives up the rows instead.

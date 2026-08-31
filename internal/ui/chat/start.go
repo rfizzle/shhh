@@ -162,7 +162,7 @@ func (m Model) startScreen() (components.StartScreen, []string) {
 	if info == nil {
 		return components.StartScreen{}, nil
 	}
-	suggestions, actions := startSuggestions(*info)
+	suggestions, actions := startSuggestions(*info, m.scaffoldOffered())
 	return components.StartScreen{
 		Facts:       startFacts(info.Project),
 		Notes:       startNotes(*info),
@@ -270,7 +270,12 @@ func startNotes(info StartInfo) []components.StartNote {
 // startSuggestions is the three offers, paired with the input line each one
 // stands for. The order is what the working tree suggests: something to pick
 // up first, then a read-only offer, then the one that costs an approval.
-func startSuggestions(info StartInfo) ([]components.StartSuggestion, []string) {
+//
+// scaffold is what the last of those is when the checkout has no `.shhh` of
+// its own: a project that has told the model nothing about itself is worth
+// more than a test run, and it is how `shhh init --project` is found without
+// reading the manual (docs/interface/surfaces.md#the-start-screen).
+func startSuggestions(info StartInfo, scaffold bool) ([]components.StartSuggestion, []string) {
 	var out []components.StartSuggestion
 	var actions []string
 	add := func(glyph, title, detail, action string) {
@@ -298,6 +303,12 @@ func startSuggestions(info StartInfo) ([]components.StartSuggestion, []string) {
 			"summarise the last ten commits and what they were working towards")
 	}
 
+	if scaffold {
+		// The write glyph, because this row is the one that writes: the
+		// read-only offers above it keep ⚙.
+		add("✎", "scaffold "+project.StateDir+"/", "one approval", scaffoldCommandName)
+		return out, actions
+	}
 	verify := verifyPrompt(info)
 	add("⚙", verify, "one approval, then it reports back", verify)
 	return out, actions

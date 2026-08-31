@@ -485,7 +485,39 @@ func TestGolden_StartScreen(t *testing.T) {
 				i.Project.Repo, i.Project.Branch, i.Project.Dirty = false, "", 0
 				i.Project.Partial = true
 			})},
+			{Label: "nothing read · the third offer writes the file that would be", View: func() string {
+				// The offer is only made where nothing was read, so the
+				// context line and the row agree: this is the one screen
+				// where "nothing read" is actionable.
+				info := startFixture()
+				info.Project.ContextFiles = nil
+				m := frameModel(t, width, 40).
+					WithStartScreen(info).
+					WithScaffold(Scaffold{Offer: true, Paths: scaffoldFixturePaths(),
+						Write: func() (string, error) { return project.ContextFile, nil }})
+				return m.renderHistory()
+			}()},
 			{Label: "typing dismissed the list · the facts stay", View: typed()},
+		}
+	})
+}
+
+// TestGolden_ScaffoldCard captures the card the scaffold offer opens: every
+// path it would create before it asks, and the two ways of not writing that
+// differ in what they leave behind.
+//
+// It captures the panel rather than the card, because the panel is what the
+// bound is applied to — a card whose decision run is cut off the bottom of
+// it is not a decision, and rendering the card alone would not show that.
+func TestGolden_ScaffoldCard(t *testing.T) {
+	captureGolden(t, "scaffold-card", "the scaffolding card in the panel", goldenWidths, func(width int) []golden.Panel {
+		m := frameModel(t, width, 40).WithScaffold(Scaffold{
+			Offer: true, Paths: scaffoldFixturePaths(),
+			Write: func() (string, error) { return project.ContextFile, nil },
+		})
+		next, _ := m.scaffoldCommand()
+		return []golden.Panel{
+			{Label: "nothing written yet", View: next.(Model).renderScaffold()},
 		}
 	})
 }

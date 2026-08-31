@@ -324,11 +324,12 @@ func TestAgoLabel_CoarsestUnitThatIsStillTrue(t *testing.T) {
 }
 
 // countOffers counts the suggestion rows in a rendered screen: every row that
-// opens with the pointer or the two-space gutter and then a glyph.
+// opens with the pointer or the two-space gutter and then one of the glyphs
+// an offer can carry — picking something up, a read, or the one that writes.
 func countOffers(view string) int {
 	n := 0
 	for _, line := range strings.Split(view, "\n") {
-		for _, prefix := range []string{"❯ ▸ ", "❯ ⚙ ", "  ▸ ", "  ⚙ "} {
+		for _, prefix := range []string{"❯ ▸ ", "❯ ⚙ ", "❯ ✎ ", "  ▸ ", "  ⚙ ", "  ✎ "} {
 			if strings.HasPrefix(line, prefix) {
 				n++
 				break

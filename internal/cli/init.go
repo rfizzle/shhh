@@ -2,7 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/spf13/cobra"
@@ -57,19 +56,6 @@ end
 bind \ck _shhh_raw
 `
 
-const projectTemplate = `# .shhh/project.md — project-local context for shhh
-# This file is appended to the LLM system prompt when running shhh
-# from this directory (or any subdirectory). Use it to describe your
-# project's tooling, conventions, and common workflows.
-
-# Examples:
-# - This project uses Docker Compose for services (docker compose up -d)
-# - Run tests with: make test
-# - Deployed via Terraform in infra/
-# - Prefer ripgrep (rg) over grep
-# - Database migrations: goose -dir migrations up
-`
-
 func newInitCmd() *cobra.Command {
 	var projectMode bool
 
@@ -104,19 +90,10 @@ func newInitCmd() *cobra.Command {
 	return cmd
 }
 
-// initProject scaffolds the context file inside the state directory. A
-// checkout where .shhh is still the old single file is left alone and
-// pointed at the doctor: writing a directory over it is impossible, and
-// replacing it would lose what it says.
+// initProject scaffolds the context file in the working directory. The
+// write itself belongs to internal/project, because the chat session's
+// start screen offers the same one.
 func initProject() error {
-	if st, err := os.Stat(project.StateDir); err == nil && !st.IsDir() {
-		return fmt.Errorf("%s is a file from an older layout; run `shhh doctor` to move it to %s", project.StateDir, project.ContextFile)
-	}
-	if _, err := os.Stat(project.ContextFile); err == nil {
-		return fmt.Errorf("%s already exists in the current directory", project.ContextFile)
-	}
-	if err := os.MkdirAll(project.StateDir, 0o755); err != nil {
-		return err
-	}
-	return os.WriteFile(project.ContextFile, []byte(projectTemplate), 0o644)
+	_, err := project.Scaffold(".")
+	return err
 }

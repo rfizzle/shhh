@@ -191,6 +191,9 @@ var slashCommands = []slashCommand{
 		)},
 	{name: "/ps", desc: "List session-owned long-running processes",
 		enabled: func(m *Model) bool { return m.processes.Manage != nil }},
+	{name: scaffoldCommandName, desc: "Scaffold this project's .shhh/ context file (asks first)",
+		enabled:  func(m *Model) bool { return m.scaffold.Write != nil },
+		idleOnly: "it writes a file into the checkout"},
 	{name: "/skills", desc: "The skills this session loaded, and why any did not"},
 	{name: "/mcp", args: "[trust <name>|distrust <name>]", desc: "The MCP servers this session connected, and why any did not",
 		argSpecs: staticArgs(

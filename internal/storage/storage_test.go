@@ -1186,3 +1186,28 @@ func TestOpenPath_ConcurrentOpenersMigrateOnce(t *testing.T) {
 		}
 	}
 }
+
+// TestOfferDeclined_IsPerRepositoryAndPerOffer holds the offer flag to what
+// it is for: one checkout's answer to one offer, and answering twice is the
+// same answer.
+func TestOfferDeclined_IsPerRepositoryAndPerOffer(t *testing.T) {
+	db := openTestDB(t)
+	if db.OfferDeclined("/src/shhh", "scaffold") {
+		t.Fatal("an offer was refused before it was made")
+	}
+	if err := db.DeclineOffer("/src/shhh", "scaffold"); err != nil {
+		t.Fatalf("decline: %v", err)
+	}
+	if !db.OfferDeclined("/src/shhh", "scaffold") {
+		t.Fatal("the refusal was not remembered")
+	}
+	if db.OfferDeclined("/src/other", "scaffold") {
+		t.Fatal("one repository's refusal answered for another")
+	}
+	if db.OfferDeclined("/src/shhh", "something-else") {
+		t.Fatal("one offer's refusal answered for another")
+	}
+	if err := db.DeclineOffer("/src/shhh", "scaffold"); err != nil {
+		t.Fatalf("declining twice: %v", err)
+	}
+}

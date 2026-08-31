@@ -370,6 +370,17 @@ card too, not only an edit's diff: the whole command, its warnings and its
 blast radius take the screen the diff already knows how to take, and give it
 back with the decision still waiting.
 
+Almost every card arrives unasked, and the rest of this section is about that
+one. The exception is a card the reader summoned — the offer to write
+something the session proposed, taken up by a command or a suggestion — which
+is a takeover like any other summoned surface: it holds the keyboard from the
+moment it opens, because the reader was looking at it before it was there,
+and there is no draft behind it for a letter to belong to. That also changes
+what its no means. A card that arrived has nowhere to send the reader back
+to, so declining and leaving are one answer on one key; a card that was
+summoned has the screen the reader left, so esc goes back to it and settles
+nothing, and the letter is the answer that does.
+
 A card arrives when the agent needs it, which is not when the reader is ready
 for it. What it may do to a half-typed draft, and when its letters become live
 keys at all, is governed by
@@ -437,6 +448,14 @@ will not load says so, because a broken gate is not an absent one.
 Three suggestions follow, ordered by what the working tree suggests — a
 session to resume, then something read-only, then something needing a single
 approval — and each says what it will cost you in permission.
+
+A checkout with no state directory of its own has told the model nothing
+about itself, and the last of the three becomes the offer to scaffold one.
+Choosing it opens an approval card listing the files, because a suggestion
+that wrote something on being chosen would be the one place on the screen
+where a row is worth more than it says. A refusal is remembered for that
+repository, so the offer is made once and the command behind it stays
+available afterwards: what was refused was being asked, not the file.
 
 Typing anything dismisses the offers and keeps the facts, because the input
 owns every ordinary key the moment there is a draft.

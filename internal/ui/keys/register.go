@@ -133,6 +133,17 @@ func Surfaces() []Surface {
 			},
 		},
 		{
+			// The one approval card the reader asks for rather than is
+			// handed: it writes a file the session offered to write, so it
+			// holds the keyboard from the moment it opens. That is also why
+			// its no is Refuse rather than Deny — see the binding.
+			Name:     "the scaffold card",
+			Section:  "docs/interface/surfaces.md#the-approval-card",
+			Position: Takeover,
+			Reached:  "/init, or the start screen's scaffold offer",
+			Bindings: []Binding{Decision.Allow, Decision.Refuse, Select.Cancel},
+		},
+		{
 			Name:     "the inline confirm and the undo confirm",
 			Section:  "docs/interface/surfaces.md#the-inline-confirm",
 			Position: Takeover,

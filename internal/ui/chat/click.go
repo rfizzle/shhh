@@ -291,6 +291,12 @@ func (m Model) decisionCard() *components.ApprovalCard {
 		}
 		return m.approvalCard()
 	}
+	// The scaffold card draws the same run of keys, and a card that answers
+	// a keystroke has to answer the pointer on the key that stands for it
+	// (scaffold.go).
+	if m.state == stateScaffold {
+		return m.scaffoldCard()
+	}
 	if ask := m.activeChildAsk(); ask != nil {
 		return m.childAskCard(ask)
 	}

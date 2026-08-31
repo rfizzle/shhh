@@ -69,6 +69,20 @@ Some things worth doing first:
 [↑↓] choose · [enter] start · or just type what you want
 [pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+p] palette · [c…
 
+· nothing read · the third offer writes the file that would be
+~/src/shhh · go 1.24 · git main · 3 files changed · 41 packages
+
+context  nothing read — no .shhh/project.md or AGENTS.md up the tree
+gate     default — vet, test · runs without asking
+
+Some things worth doing first:
+❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago
+  ⚙ explain what changed in the working tree — reads only, no writes
+  ✎ scaffold .shhh/ — one approval
+
+[↑↓] choose · [enter] start · or just type what you want
+[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+p] palette · [c…
+
 · typing dismissed the list · the facts stay
 ~/src/shhh · go 1.24 · git main · 3 files changed · 41 packages
 
@@ -134,6 +148,20 @@ gate     default — vet, test · runs without asking
   ␛[38;5;254m⚙␛[m ␛[38;5;254mwalk me through what this project does␛[m␛[38;5;244m — reads only, no writes␛[m
   ␛[38;5;254m⚙␛[m ␛[38;5;254mrun the default quality gate and triage what fails␛[m
     ␛[38;5;244mone approval, then it reports back␛[m
+
+␛[3;38;5;244m[↑↓] choose · [enter] start · or just type what you want␛[m
+␛[3;38;5;244m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+p] palette · [c…␛[m
+
+· nothing read · the third offer writes the file that would be
+␛[1;38;5;254m~/src/shhh␛[m␛[38;5;244m · ␛[m␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254mgit main␛[m␛[38;5;244m · ␛[m␛[38;5;254m3 files changed␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m
+
+␛[38;5;244mcontext␛[m  ␛[38;5;254mnothing read␛[m␛[38;5;244m — no .shhh/project.md or AGENTS.md up the tree␛[m
+␛[38;5;244mgate   ␛[m  ␛[38;5;254mdefault␛[m␛[38;5;244m — vet, test · runs without asking␛[m
+
+␛[38;5;244mSome things worth doing first:␛[m
+␛[1;48;5;237m❯ ▸ pick up (last session) — 7 turns · $0.42 · 4m ago␛[m
+  ␛[38;5;254m⚙␛[m ␛[38;5;254mexplain what changed in the working tree␛[m␛[38;5;244m — reads only, no writes␛[m
+  ␛[38;5;254m✎␛[m ␛[38;5;254mscaffold .shhh/␛[m␛[38;5;244m — one approval␛[m
 
 ␛[3;38;5;244m[↑↓] choose · [enter] start · or just type what you want␛[m
 ␛[3;38;5;244m[pgup] or [shift+↑↓] scroll · [ctrl+o] select rows · [ctrl+p] palette · [c…␛[m

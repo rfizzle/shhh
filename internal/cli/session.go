@@ -690,7 +690,10 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			WithChangeset(changeset.New(changeset.DefaultMaxBytes), changeset.NewTracker(".")).
 			// First contact: the empty session's start screen, surveyed
 			// once here rather than assembled per frame.
-			WithStartScreen(buildStartInfo(db, gate != nil))
+			WithStartScreen(buildStartInfo(db, gate != nil)).
+			// The one thing the screen offers that writes: scaffolding the
+			// checkout's own context file, behind a card.
+			WithScaffold(buildScaffold(db))
 	}
 	if red != nil {
 		model = model.WithEvidence(chat.Evidence{Reduce: red.Process, Manage: evidenceManager(red)})

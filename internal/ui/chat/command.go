@@ -242,6 +242,10 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		// the model, say so in the transcript.
 		return m.systemNotice(m.uiCommand(parts))
 
+	case text == scaffoldCommandName:
+		// The scaffolding card: what it would write, before it writes it.
+		return m.scaffoldCommand()
+
 	case name == "/todo":
 		// Bare /todo opens the backlog picker; the subcommands are textual,
 		// and edit hands the item file to the editor.

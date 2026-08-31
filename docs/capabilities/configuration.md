@@ -82,10 +82,12 @@ session, and that is stated instead.
 
 ## Project context is opt-in and lives with the project
 
-A project can carry its own context file, created deliberately. Repository
-settings layer over user settings, and where a value is overridden the surface
-says so rather than showing the winner alone — otherwise a user reads their
-own configuration and cannot see why it is not what they set.
+A project can carry its own context file, created deliberately — by the
+command that scaffolds one, or by accepting the offer a session makes on
+first contact in a checkout that has none. Neither writes it on the way past.
+Repository settings layer over user settings, and where a value is overridden
+the surface says so rather than showing the winner alone — otherwise a user
+reads their own configuration and cannot see why it is not what they set.
 
 ## Related
 

@@ -43,6 +43,40 @@ func buildStartInfo(db *storage.DB, gateEnabled bool) chat.StartInfo {
 	return info
 }
 
+// scaffoldOffer names the offer in the store. It is a value in a table, so
+// it is a constant rather than a phrase: the wording of the row on screen is
+// free to change without forgetting who already said no.
+const scaffoldOffer = "scaffold"
+
+// buildScaffold wires the start screen's scaffolding offer. The offer is
+// answered here, once: a checkout that can take it, and no refusal already
+// on record for it (docs/interface/surfaces.md#the-start-screen). Without a
+// store the refusal has nowhere to live, so nothing is offered — an offer
+// that cannot be refused for good is a nag.
+func buildScaffold(db *storage.DB) chat.Scaffold {
+	wd, err := os.Getwd()
+	if err != nil {
+		return chat.Scaffold{}
+	}
+	// The repository root, not the working directory: the offer is the
+	// project's and so is the answer, and a session started two directories
+	// down that scaffolded where it stood would put a second context file
+	// nearer than the project's own — which the nearest-first read would
+	// then prefer. `shhh init --project` still writes where it is told,
+	// because a flag that says "the current directory" has to mean it.
+	root := project.Root(wd)
+	s := chat.Scaffold{
+		Paths: project.ScaffoldPaths(root, wd),
+		Write: func() (string, error) { return project.Scaffold(root) },
+	}
+	if db == nil {
+		return s
+	}
+	s.Decline = func() error { return db.DeclineOffer(root, scaffoldOffer) }
+	s.Offer = project.NeedsScaffold(root) && !db.OfferDeclined(root, scaffoldOffer)
+	return s
+}
+
 // startGate reads the workspace's quality config for the screen's gate line.
 // A config that exists but does not load is reported as unreadable rather
 // than as absent — a broken gate is the more urgent of the two.

@@ -151,6 +151,10 @@ const (
 	// is opened by naming a file rather than by a key, because the chip it
 	// belongs to has no key of its own.
 	statePreview
+	// stateScaffold: the card offering to write this project's `.shhh`
+	// context file is up (scaffold.go). It is a takeover because the reader
+	// asked for it — from the start screen's third row or by typing /init.
+	stateScaffold
 	// statePasteDrop: the selector a bare `/paste drop` opens over the
 	// staged chips — checked ones are dropped on enter, esc drops none. The
 	// one-chip case asks through the inline confirm instead.
@@ -898,6 +902,9 @@ type Model struct {
 	personaAsk *components.NoteSelect
 	startFocus int
 	startSpent bool
+	// scaffold is the project-scaffolding offer and the write behind it
+	// (scaffold.go).
+	scaffold Scaffold
 	// Recovery from a provider failure: the provider the session
 	// resolved to, the two hooks a failure row's keys need, and the masked
 	// key prompt [k] opens. A hook left nil is a key the row does not offer,
@@ -1548,6 +1555,9 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.state == statePasteDrop {
 			return m.updatePasteDrop(msg)
+		}
+		if m.state == stateScaffold {
+			return m.updateScaffold(msg)
 		}
 		if m.state == statePersona {
 			return m.updatePersona(msg)
@@ -2562,6 +2572,8 @@ func (m Model) takeoverPanel(width int) string {
 		inputView = m.renderTodoPropose()
 	case statePasteDrop:
 		inputView = m.renderPasteDrop()
+	case stateScaffold:
+		inputView = m.renderScaffold()
 	case statePersona:
 		inputView = m.renderPersona()
 	case stateTodoPause:
@@ -3837,6 +3849,9 @@ func helpText() string {
                  add <text> · block <slug> [why] · open|done|drop <slug> ·
                  run [slug|--next] works an item through to a commit in auto mode ·
                  status · stop
+  /init          Scaffold this project's .shhh/ context file — the card lists
+                 what it would write, and nothing is written until you say so.
+                 The start screen offers it in a checkout that has no .shhh
   /skills        The skills this session loaded (SKILL.md directories), and
                  why any did not
   /skill <name> [task]

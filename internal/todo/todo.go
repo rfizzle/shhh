@@ -7,10 +7,11 @@ package todo
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/rfizzle/shhh/internal/project"
 )
 
 // StateDir is the checkout's shhh directory, and Subdir the backlog inside
@@ -103,22 +104,7 @@ type Field struct {
 // root, else the directory itself. Every session under one checkout shares
 // one backlog, which is what makes it the project's rather than a
 // session's. See docs/capabilities/todo.md#where-the-backlog-lives.
-func Root(dir string) string {
-	abs, err := filepath.Abs(dir)
-	if err != nil {
-		return dir
-	}
-	for probe := abs; ; {
-		if _, err := os.Stat(filepath.Join(probe, ".git")); err == nil {
-			return probe
-		}
-		parent := filepath.Dir(probe)
-		if parent == probe {
-			return abs
-		}
-		probe = parent
-	}
-}
+func Root(dir string) string { return project.Root(dir) }
 
 // Dir is the backlog directory under a root.
 func Dir(root string) string { return filepath.Join(root, StateDir, Subdir) }
