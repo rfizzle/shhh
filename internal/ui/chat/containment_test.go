@@ -93,10 +93,21 @@ func TestConfirmPromptShowsUnconfinedState(t *testing.T) {
 	// An uncontained action promotes ⚠ UNCONTAINED into the title, explains the
 	// missing mechanism, and offers the doctor that expands on it.
 	view := m.View().Content
-	for _, want := range []string{"⚠ UNCONTAINED", "bubblewrap (bwrap) not found on PATH", "/sandbox doctor"} {
+	for _, want := range []string{"⚠ UNCONTAINED", "/sandbox doctor"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("uncontained confirm prompt should contain %q:\n%s", want, view)
 		}
+	}
+	// At this height the blast-radius block runs one row past the panel; the
+	// card counts what the bound swallowed and shift+↓ brings it into view —
+	// nothing is merely clipped (docs/interface/surfaces.md#the-approval-card).
+	if !strings.Contains(view, "more lines · shift+↓") {
+		t.Fatalf("the bounded card should count its scrolled-off rows:\n%s", view)
+	}
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyDown, Mod: tea.ModShift})
+	m = updated.(Model)
+	if view := m.View().Content; !strings.Contains(view, "bubblewrap (bwrap) not found on PATH") {
+		t.Fatalf("shift+↓ should bring the missing-mechanism row into view:\n%s", view)
 	}
 
 	// With no containment runner, approval falls through to the plain runner.

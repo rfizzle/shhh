@@ -127,6 +127,8 @@ func Surfaces() []Surface {
 			Bindings: []Binding{
 				Decision.Allow, Decision.Deny, Decision.Always,
 				Decision.Batch, Decision.Diff,
+				Decision.ScrollUp, Decision.ScrollDown,
+				Decision.PanLeft, Decision.PanRight,
 			},
 		},
 		{
@@ -207,6 +209,16 @@ func Surfaces() []Surface {
 			Reached:  "the key that opens it",
 			Bindings: []Binding{
 				Diff.Scroll, Diff.Hunk, Diff.SideBySide, Diff.Back, Diff.Leave,
+			},
+		},
+		{
+			Name:     "the full-screen output",
+			Section:  "docs/interface/surfaces.md#the-activity-row",
+			Position: Takeover,
+			Reached:  "the key that opens it",
+			Bindings: []Binding{
+				Output.Scroll, Output.PageUp, Output.PageDown,
+				Output.Collapse, Output.Back, Output.Leave,
 			},
 		},
 		{

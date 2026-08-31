@@ -60,9 +60,12 @@ func joinSegs(segs []hintSeg) string {
 }
 
 // readingModeKeys are the mode's own keys in the artboard's order: move,
-// expand, collapse once the row under the cursor is open, and the way back
-// to the prompt. On a transcript with nothing to select, [enter] stays on
-// the bar in grey with its reason beside it rather than disappearing.
+// expand where the row under the cursor opens (with collapse once it is
+// open), copy where the row holds something a clipboard can carry, and the
+// way back to the prompt. With no cursor at all — nothing selectable —
+// [enter] stays on the bar in grey with its reason rather than disappearing;
+// with a cursor on a row that merely does not expand, the row's real offers
+// stand where it would have, the way [-] and the row keys come and go.
 func (m Model) readingModeKeys() []hintSeg {
 	segs := []hintSeg{seg(keys.Reading.Move)}
 	switch {
@@ -70,16 +73,38 @@ func (m Model) readingModeKeys() []hintSeg {
 		expand := seg(keys.Reading.Expand)
 		expand.reason = "nothing on this row expands"
 		segs = append(segs, expand)
-	default:
+	case m.focusedExpands():
 		segs = append(segs, seg(keys.Reading.Expand))
 		if m.focusedRowOpen() {
 			segs = append(segs, seg(keys.Reading.Collapse))
 		}
 	}
+	// Like [-], [y] is offered only while the row under the cursor can
+	// honour it — an offer nothing accepts is worse than no offer at all.
+	if m.focusedCopyable() {
+		segs = append(segs, seg(keys.Reading.Copy))
+	}
 	// The register's own key sits between the row's offers and the way out:
 	// it is the last thing a reader reaches for and the first the bar sheds.
 	segs = append(segs, seg(keys.Reading.List))
 	return append(segs, seg(keys.Reading.Back))
+}
+
+// focusedExpands reports whether [enter] would open anything on the row
+// under the cursor: a step header's fold, a group's, or a row with a body of
+// its own. The bar reads it so the key it offers is one the row will honour.
+func (m Model) focusedExpands() bool {
+	es := *m.entries()
+	if m.focusIdx < 0 || m.focusIdx >= len(es) {
+		return false
+	}
+	if _, ok := m.stepBlockAt(es, m.focusIdx); ok {
+		return true
+	}
+	if m.groupAnchor(es, m.focusIdx) {
+		return true
+	}
+	return expandable(es[m.focusIdx])
 }
 
 // seg is a binding as one segment of the bar: the register's spelling and the
@@ -123,6 +148,12 @@ func withoutSeg(segs []hintSeg, key string) []hintSeg {
 	return out
 }
 
+// dropCopyKey goes after the register's: a row offer the reader can still
+// find in `?`, shed before the mode's own movement and exits.
+func dropCopyKey(segs []hintSeg) []hintSeg {
+	return withoutSeg(segs, keys.Shown(keys.Reading.Copy))
+}
+
 // dropExpandKey is the last: [enter] leaves whole rather than clipping.
 func dropExpandKey(segs []hintSeg) []hintSeg {
 	return withoutSeg(segs, keys.Shown(keys.Reading.Expand))
@@ -130,9 +161,13 @@ func dropExpandKey(segs []hintSeg) []hintSeg {
 
 // readingPositionFields is the right-hand field in its forms, widest first.
 // It is the position of the cursor among the rows — or, once rows are open,
-// how many are, which is the fact the reader is actually holding then. Prose
+// how many are, and just after a [y], what the copy caught (copyrow.go),
+// which is the one moment that fact outranks the position. Prose
 // has no addressable rows to count, so it reports nothing.
 func (m Model) readingPositionFields() []string {
+	if m.readingCopied != "" {
+		return []string{m.readingCopied}
+	}
 	if n := m.expandedRowCount(); n > 0 {
 		return []string{plural(n, "row") + " expanded", fmt.Sprintf("%d expanded", n)}
 	}
@@ -321,10 +356,11 @@ func stackSegs(segs []hintSeg, rail string, width, budget int) []string {
 func (m Model) readingKeyLine(width int) string {
 	full := m.readingModeKeys()
 	// The settled order: [?] goes first, then [q] gives up its words, then
-	// [enter] goes whole.
+	// [y], then [enter] goes whole.
 	noList := dropKeyListKey(full)
 	short := shortenBackKey(noList)
-	forms := [][]hintSeg{full, noList, short, dropExpandKey(short)}
+	noCopy := dropCopyKey(short)
+	forms := [][]hintSeg{full, noList, short, noCopy, dropExpandKey(noCopy)}
 	positions := m.readingPositionFields()
 	for _, form := range forms {
 		left := joinSegs(form)

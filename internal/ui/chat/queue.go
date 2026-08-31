@@ -199,6 +199,8 @@ func (m *Model) takeBatchApproval(req *approvalRequest) bool {
 // queue strip and the batch [A] would answer alongside it.
 func (m *Model) armConfirm(req *approvalRequest) {
 	m.pendingQueue, m.pendingBatch = m.resolveQueue(req)
+	// setTurnState resets the card's scroll along with the keyboard: every
+	// arrival at a decision passes through it, this one included.
 	m.setTurnState(stateConfirmRun)
 	m.syncViewport()
 }

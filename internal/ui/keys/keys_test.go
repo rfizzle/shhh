@@ -64,7 +64,8 @@ func TestShownIsAKeyOrASpellingOfOne(t *testing.T) {
 	// two-letter abbreviation every key row in shhh has always used for the
 	// pager keys.
 	alias := map[string]string{
-		"↑": "up", "↓": "down", "↵": "enter", "space": " ",
+		"↑": "up", "↓": "down", "←": "left", "→": "right",
+		"↵": "enter", "space": " ",
 		"pgdn": "pgdown", "pgup": "pgup",
 	}
 	for _, s := range all() {
@@ -157,7 +158,8 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 		{"Row", []Binding{Row.Review, Row.Undo, Row.Retry, Row.Continue, Row.Key,
 			Row.Provider, Row.Rounds, Row.Uncap}},
 		{"Decision", []Binding{Decision.Allow, Decision.Deny, Decision.Always,
-			Decision.Batch, Decision.Diff}},
+			Decision.Batch, Decision.Diff, Decision.ScrollUp, Decision.ScrollDown,
+			Decision.PanLeft, Decision.PanRight}},
 		{"Confirm", []Binding{Confirm.Yes, Confirm.No, Confirm.Force}},
 		{"Select", []Binding{Select.Move, Select.MoveJK, Select.Take, Select.Alt,
 			Select.Filter, Select.ClearQ, Select.Toggle, Select.All, Select.Note,
@@ -171,6 +173,8 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 		{"Wait", []Binding{Wait.Fallback, Wait.Stop, Wait.Compact, Wait.NewSession,
 			Wait.KeepGoing, Wait.UseKey, Wait.KeepKey}},
 		{"Diff", []Binding{Diff.Scroll, Diff.Hunk, Diff.SideBySide, Diff.Back, Diff.Leave}},
+		{"Output", []Binding{Output.Scroll, Output.PageUp, Output.PageDown,
+			Output.Collapse, Output.Back, Output.Leave}},
 		{"Preview", []Binding{Preview.Back, Preview.Leave}},
 		{"Screen", []Binding{Screen.Move, Screen.Take, Screen.Filter, Screen.ClearQ,
 			Screen.List, Screen.Quit, Screen.Reset, Screen.Write, Screen.Keep,
@@ -229,6 +233,28 @@ func TestRealignedChordsHaveOneHome(t *testing.T) {
 		}
 		if len(homes) != 1 {
 			t.Errorf("%q is bound on %d surfaces (%v), want exactly one", chord, len(homes), homes)
+		}
+	}
+}
+
+// TestReadingRowKeysHaveOneHome pins reading mode's bare letters the way the
+// realigned chords are pinned: the copy and half-page bindings belong to
+// reading mode and to no other surface. The keystrokes themselves have other
+// lives — [y] answers a card, [d] marks a selector's default — but those are
+// other surfaces' bindings; these two may not quietly grow a second home.
+func TestReadingRowKeysHaveOneHome(t *testing.T) {
+	for _, b := range []Binding{Reading.Copy, Reading.Half} {
+		sig := strings.Join(b.Keys(), ",") + "|" + Shown(b) + "|" + Words(b)
+		var homes []string
+		for _, s := range all() {
+			for _, sb := range s.Bindings {
+				if strings.Join(sb.Keys(), ",")+"|"+Shown(sb)+"|"+Words(sb) == sig {
+					homes = append(homes, s.Name)
+				}
+			}
+		}
+		if len(homes) != 1 || homes[0] != "reading mode" {
+			t.Errorf("%q is bound on %v, want reading mode alone", Shown(b), homes)
 		}
 	}
 }

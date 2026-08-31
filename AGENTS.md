@@ -200,6 +200,16 @@ diff view.
 The step outline is a layer over the entry list in `internal/ui/chat/steps.go`
 rather than a component: it groups history instead of rendering a widget.
 
+A tool or command row's output has the same three depths an edit's diff has:
+the bounded body with its counted tail (`components/activityrow.go`), the
+wider in-place window, and the full screen — `internal/ui/chat/outputview.go`
+hosts the last one (`components/outputview.go` renders it), and the cycle
+lives in `toggleRow` (`click.go`) so the key and the pointer open a row
+through one act. Reading mode's copy key is `internal/ui/chat/copyrow.go`;
+the approval card's scroll is the card's own windowing in
+`components/approval.go`, with its offsets on the chat model because the card
+is rebuilt every frame.
+
 Reasoning is a row like any other act: `internal/ui/chat/think.go` owns the
 `think` row — where the round's thinking is collected as it streams, its three
 fold depths, and the verbosity that drops it. The text it shows is not the

@@ -774,7 +774,7 @@ func TestGolden_ReadingMode(t *testing.T) {
 				next, _ := m.updateFocus(tea.KeyPressMsg{Code: '?', Text: "?"})
 				*m = next.(Model)
 			})},
-			{Label: "prose · nothing expandable, so no cursor and no position", View: func() string {
+			{Label: "prose · the cursor on a message: [y] copies its markdown source", View: func() string {
 				m := frameModel(t, width, 40)
 				m.transcript = []entry{
 					{kind: entryUser, text: "why is the round limit fatal"},

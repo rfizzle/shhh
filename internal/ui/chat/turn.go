@@ -23,7 +23,7 @@ import "time"
 // rather than a stage of the session's own turn.
 func (s state) isSurface() bool {
 	switch s {
-	case stateFocus, stateDiffFull, statePreview, stateReview, stateContext, stateRewindPick, statePick, stateTodoPropose, statePasteDrop, statePersona, stateTodoPause, stateModelList, stateUndoConfirm, stateQuitConfirm, stateKeyEntry, statePressure:
+	case stateFocus, stateDiffFull, stateOutputFull, statePreview, stateReview, stateContext, stateRewindPick, statePick, stateTodoPropose, statePasteDrop, statePersona, stateTodoPause, stateModelList, stateUndoConfirm, stateQuitConfirm, stateKeyEntry, statePressure:
 		return true
 	}
 	return false
@@ -48,6 +48,15 @@ func (m *Model) setTurnState(s state) {
 	// arriving on a draft nobody is typing into holds the keyboard itself
 	// rather than charging a handover for a sentence that is not there.
 	m.armDecision(s)
+	// Nor can a card inherit the last one's scroll: the offsets describe a
+	// body that has just been replaced, and a stale pan would blank the new
+	// card's rows outright. Reset on every arrival — /run, a !bang, the
+	// classifier skip and the queue all pass through here
+	// (docs/interface/surfaces.md#the-approval-card). A card's own
+	// full-screen [d] round trip is surface mechanics and never re-arrives.
+	if s == stateConfirmRun {
+		m.cardScroll, m.cardPan = 0, 0
+	}
 	// A turn going idle stamps its end, so the inspector rail's elapsed time
 	// freezes at what the turn took instead of counting on.
 	if s == stateInput && m.working() && !m.turnStarted.IsZero() {

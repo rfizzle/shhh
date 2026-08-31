@@ -54,6 +54,35 @@
 │ [esc] back to your draft — the decision stays waiting, nothing is denied     │
 └──────────────────────────────────────────────────────────────────────────────┘
 
+· bound · a long command card, counted then scrolled
+┌─ Approve command ────────────────────────────────────────────────── ⚠ medium ┐
+│ Assistant wants to run: ./scripts/release.sh --channel beta                  │
+│ ⚠ medium  runs a repository script; shhh cannot see inside it                │
+│                                                                              │
+│ touches   ./dist — the script rewrites the release tree                      │
+│ undo      none — nothing it writes is tracked in git                         │
+│ … 2 more lines · shift+↓                                                     │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Run this command? [y/N]                                                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+┌─ Approve command ────────────────────────────────────────────────── ⚠ medium ┐
+│ … 2 lines above · shift+↑                                                    │
+│                                                                              │
+│ touches   ./dist — the script rewrites the release tree                      │
+│ undo      none — nothing it writes is tracked in git                         │
+│ network   open — it pushes the artefacts it builds                           │
+│ ⛨         bwrap — workspace profile                                          │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Run this command? [y/N]                                                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+
+· bound · a wide body, panned right
+┌─ Approve command ────────────────────────────────────────────────────────────┐
+│ ar -czf dist/shhh-linux-amd64.tar.gz --exclude .git --exclude node_modules › │
+├──────────────────────────────────────────────────────────────────────────────┤
+│ Run this command? [y/N]                                                      │
+└──────────────────────────────────────────────────────────────────────────────┘
+
 · variant · edit, diff body
 ┌─ Approve edit ───────────────────────────────────────────────────── ⚠ medium ┐
 │ Assistant wants to edit: internal/agent/loop.go                              │
@@ -147,6 +176,35 @@
 ␛[38;5;254m│␛[m ␛[38;5;244mcontainment is off for this session · /sandbox doctor explains why␛[m           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[esc] back to your draft — the decision stays waiting, nothing is denied␛[m     ␛[38;5;254m│␛[m
 ␛[38;5;254m└──────────────────────────────────────────────────────────────────────────────┘␛[m
+
+· bound · a long command card, counted then scrolled
+␛[38;5;254m┌─ Approve command ────────────────────────────────────────────────── ⚠ medium ┐␛[m
+␛[38;5;254m│␛[m ␛[1;38;5;254mAssistant wants to run: ./scripts/release.sh --channel beta␛[m                  ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;254m⚠ medium  ␛[m␛[38;5;244mruns a repository script; shhh cannot see inside it␛[m                ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m                                                                              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254m./dist␛[m␛[38;5;244m — the script rewrites the release tree␛[m                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m␛[38;5;244m — nothing it writes is tracked in git␛[m                         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m… 2 more lines · shift+↓␛[m                                                     ␛[38;5;254m│␛[m
+␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[m
+␛[38;5;254m│␛[m ␛[3;38;5;244mRun this command? [y/N]␛[m                                                      ␛[38;5;254m│␛[m
+␛[38;5;254m└──────────────────────────────────────────────────────────────────────────────┘␛[m
+␛[38;5;254m┌─ Approve command ────────────────────────────────────────────────── ⚠ medium ┐␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m… 2 lines above · shift+↑␛[m                                                    ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m                                                                              ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mtouches   ␛[m␛[38;5;254m./dist␛[m␛[38;5;244m — the script rewrites the release tree␛[m                      ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mundo      ␛[m␛[38;5;254mnone␛[m␛[38;5;244m — nothing it writes is tracked in git␛[m                         ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244mnetwork   ␛[m␛[38;5;254mopen␛[m␛[38;5;244m — it pushes the artefacts it builds␛[m                           ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m⛨         ␛[m␛[38;5;254mbwrap␛[m␛[38;5;244m — workspace profile␛[m                                          ␛[38;5;254m│␛[m
+␛[38;5;254m├──────────────────────────────────────────────────────────────────────────────┤␛[m
+␛[38;5;254m│␛[m ␛[3;38;5;244mRun this command? [y/N]␛[m                                                      ␛[38;5;254m│␛[m
+␛[38;5;254m└──────────────────────────────────────────────────────────────────────────────┘␛[m
+
+· bound · a wide body, panned right
+␛[38;5;244m┌─ Approve command ────────────────────────────────────────────────────────────┐␛[m
+␛[38;5;244m│␛[m ␛[1;38;5;254mar -czf dist/shhh-linux-amd64.tar.gz --exclude .git --exclude node_modules ␛[m␛[38;5;244m›␛[m ␛[38;5;244m│␛[m
+␛[38;5;244m├──────────────────────────────────────────────────────────────────────────────┤␛[m
+␛[38;5;244m│␛[m ␛[3;38;5;244mRun this command? [y/N]␛[m                                                      ␛[38;5;244m│␛[m
+␛[38;5;244m└──────────────────────────────────────────────────────────────────────────────┘␛[m
 
 · variant · edit, diff body
 ␛[38;5;254m┌─ Approve edit ───────────────────────────────────────────────────── ⚠ medium ┐␛[m

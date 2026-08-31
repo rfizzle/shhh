@@ -156,6 +156,8 @@ func (m *Model) scrollLines(delta int) {
 	switch {
 	case m.state == stateDiffFull && m.fullDiff != nil:
 		m.fullDiff.Scroll(delta)
+	case m.state == stateOutputFull && m.fullOutput != nil:
+		m.fullOutput.Scroll(delta)
 	case m.state == stateReview && m.review != nil:
 		m.review.Scroll(delta)
 	default:
@@ -173,6 +175,8 @@ func (m *Model) scrollPage(dir int) {
 	switch {
 	case m.state == stateDiffFull && m.fullDiff != nil:
 		m.fullDiff.Scroll(dir * max(m.viewportHeight()-1, 1))
+	case m.state == stateOutputFull && m.fullOutput != nil:
+		m.fullOutput.Scroll(dir * max(m.viewportHeight()-1, 1))
 	case m.state == stateReview && m.review != nil:
 		m.review.Scroll(dir * max(m.viewportHeight()-1, 1))
 	default:

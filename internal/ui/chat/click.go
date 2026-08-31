@@ -90,7 +90,7 @@ func (m Model) clickableTranscript() bool {
 		return false
 	}
 	switch m.state {
-	case stateDiffFull, statePreview, stateReview, stateContext:
+	case stateDiffFull, stateOutputFull, statePreview, stateReview, stateContext:
 		return false
 	}
 	return true
@@ -143,7 +143,7 @@ func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
 	if idx < 0 || idx >= len(es) {
 		return m, nil
 	}
-	claimed, full := m.toggleRow(idx)
+	claimed, full, output := m.toggleRow(idx)
 	if !claimed {
 		if !expandable(es[idx]) {
 			return m, nil
@@ -154,6 +154,10 @@ func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
 		// A diff cycled past its expanded mode wants the screen. It is
 		// opened from wherever the click came from, so esc comes back there.
 		return m.openDiffFull(full, m.state)
+	}
+	if output {
+		// An output body cycled past its window wants it the same way.
+		return m.openOutputFull(m.rowOutputView(es[idx]), idx, m.state)
 	}
 	if m.state == stateFocus {
 		// Inside reading mode the cursor is the reader's place in the rows, so it
@@ -176,47 +180,65 @@ func (m Model) clickRow(line int) (tea.Model, tea.Cmd) {
 
 // toggleRow opens or closes whatever structure the row at idx is — a step
 // header's group, a folded run of read-only calls, a think row's three
-// depths, a diff's three modes — and reports whether it was one of those at
-// all.
+// depths, a diff's three modes, an output body's — and reports whether it
+// was one of those at all. output reports that the row cycled past its
+// in-place window and wants the full screen (outputview.go).
 //
 // The plain case, a row that simply shows its own body, is left to the
 // callers because they disagree about which rows have one: reading mode
 // toggles the flag on every row it can put its cursor on, and a click only on
 // the rows that expand.
-func (m *Model) toggleRow(idx int) (claimed bool, full *components.DiffView) {
+func (m *Model) toggleRow(idx int) (claimed bool, full *components.DiffView, output bool) {
 	es := *m.entries()
 	if idx < 0 || idx >= len(es) {
-		return false, nil
+		return false, nil, false
 	}
 	if _, ok := m.stepBlockAt(es, idx); ok {
 		// A step header folds or unfolds the whole group in place (
 		// step folding).
 		m.toggleStepFold(idx)
-		return true, nil
+		return true, nil, false
 	}
 	if m.groupAnchor(es, idx) {
 		// A folded group restores its rows in place, and folds them back
 		// again.
 		m.toggleGroupFold(idx)
-		return true, nil
+		return true, nil, false
 	}
 	if es[idx].kind == entryThink {
 		// A think row cycles its three depths the way a diff cycles its three
 		// modes (think.go), and for the same reason: the middle one is what a
 		// glance wants and the whole block is what a read does.
 		m.cycleThink(idx)
-		return true, nil
+		return true, nil, false
 	}
 	if d := es[idx].diff; d != nil {
 		// A diff row cycles collapsed → expanded → full screen (
 		// docs/interface/surfaces.md#the-diff-view).
 		d.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 		if d.Mode == components.DiffFull {
-			return true, d
+			return true, d, false
 		}
-		return true, nil
+		return true, nil, false
 	}
-	return false, nil
+	if lines := outputLines(es[idx]); len(lines) > 0 {
+		// A tool or command row with a body cycles the diff's three depths
+		// too (docs/interface/surfaces.md#the-activity-row): closed, the
+		// in-place window, the whole output full screen. The full step is
+		// skipped when the window already shows everything — a press that
+		// changes nothing is a press wasted, the same judgement the think
+		// row's tail makes.
+		switch {
+		case !es[idx].expanded:
+			es[idx].expanded = true
+		case len(lines) > maxExpandedResultLines:
+			return true, nil, true
+		default:
+			es[idx].expanded = false
+		}
+		return true, nil, false
+	}
+	return false, nil, false
 }
 
 // clickKey answers a click on a decision key.

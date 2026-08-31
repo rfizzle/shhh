@@ -1,12 +1,14 @@
 package components
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 func key(s string) tea.KeyPressMsg {
@@ -249,8 +251,146 @@ func TestApprovalCard_EditVariantBoundsHeight(t *testing.T) {
 	if got := len(strings.Split(view, "\n")); got != 12 {
 		t.Fatalf("card should occupy exactly its MaxLines budget, got %d rows", got)
 	}
-	if !strings.Contains(view, "more diff lines") {
-		t.Fatalf("bounded card should note the truncated diff:\n%s", view)
+	if !strings.Contains(view, "more lines · "+keys.Shown(keys.Decision.ScrollDown)) {
+		t.Fatalf("bounded card should count the scrolled-off diff and name the key:\n%s", view)
+	}
+}
+
+// A body taller than the panel scrolls behind counted tails, and the block
+// under the rule never moves (docs/interface/surfaces.md#the-approval-card).
+func TestApprovalCard_BodyScrollsBehindCountedTails(t *testing.T) {
+	var old, new strings.Builder
+	for i := 1; i <= 60; i++ {
+		fmt.Fprintf(&new, "line %d\n", i)
+	}
+	c := &ApprovalCard{
+		Variant:  ApprovalEdit,
+		Title:    "Approve edit",
+		Headline: "Assistant wants to write big.txt",
+		Hunks:    diff.Compute(old.String(), new.String()),
+		Question: "Apply this change?",
+		MaxLines: 12,
+	}
+	plain := ansi.Strip(c.View(80))
+	if !strings.Contains(plain, "more lines · "+keys.Shown(keys.Decision.ScrollDown)) {
+		t.Fatalf("the window should count what it cut:\n%s", plain)
+	}
+	if !strings.Contains(plain, "Apply this change?") {
+		t.Fatalf("the decision block never scrolls off:\n%s", plain)
+	}
+
+	c.BodyOffset = 10
+	scrolled := ansi.Strip(c.View(80))
+	if scrolled == plain {
+		t.Fatal("scrolling should move the body")
+	}
+	if !strings.Contains(scrolled, "lines above · "+keys.Shown(keys.Decision.ScrollUp)) {
+		t.Fatalf("a scrolled window counts what is above it too:\n%s", scrolled)
+	}
+	if !strings.Contains(scrolled, "Apply this change?") {
+		t.Fatalf("the decision block never scrolls off:\n%s", scrolled)
+	}
+
+	maxBody, _ := c.ScrollBounds(80)
+	c.BodyOffset = maxBody
+	bottom := ansi.Strip(c.View(80))
+	if strings.Contains(bottom, "more lines · "+keys.Shown(keys.Decision.ScrollDown)) {
+		t.Fatalf("at the end there is nothing below to count:\n%s", bottom)
+	}
+}
+
+// A bound so tight the hint block eats it still shows one row of body —
+// never an unbounded card, never a body hidden uncounted.
+func TestApprovalCard_TinyBoundKeepsTheDecisionAndOneBodyRow(t *testing.T) {
+	var old, new strings.Builder
+	for i := 1; i <= 60; i++ {
+		fmt.Fprintf(&new, "line %d\n", i)
+	}
+	edit := &ApprovalCard{
+		Variant:  ApprovalEdit,
+		Title:    "Approve edit",
+		Headline: "Assistant wants to write big.txt",
+		Hunks:    diff.Compute(old.String(), new.String()),
+		Question: "Apply this change?",
+		MaxLines: 6,
+	}
+	view := ansi.Strip(edit.View(80))
+	if rows := len(strings.Split(view, "\n")); rows > 7 {
+		t.Fatalf("a MaxLines 6 card must stay near its budget, got %d rows:\n%s", rows, view)
+	}
+	if !strings.Contains(view, "Apply this change?") {
+		t.Fatalf("the decision run never gives way to the body:\n%s", view)
+	}
+	if !strings.Contains(view, "more lines") {
+		t.Fatalf("the one body row counts everything the bound swallowed:\n%s", view)
+	}
+
+	cmd := &ApprovalCard{
+		Variant:  ApprovalCommand,
+		Title:    "Approve command",
+		Headline: "Assistant wants to run: rm -rf ./dist",
+		Question: "Run this command?",
+		Return:   "[esc] back to your draft — the decision stays waiting, nothing is denied",
+		MaxLines: 5,
+	}
+	view = ansi.Strip(cmd.View(80))
+	if !strings.Contains(view, "rm -rf ./dist") {
+		t.Fatalf("the command being approved is never hidden uncounted:\n%s", view)
+	}
+}
+
+// A card whose keys are not yet live counts its fold without naming a chord
+// the draft still owns.
+func TestApprovalCard_NotYetLiveTailNamesNoKey(t *testing.T) {
+	var old, new strings.Builder
+	for i := 1; i <= 60; i++ {
+		fmt.Fprintf(&new, "line %d\n", i)
+	}
+	c := &ApprovalCard{
+		Variant:    ApprovalEdit,
+		Title:      "Approve edit",
+		Headline:   "Assistant wants to write big.txt",
+		Hunks:      diff.Compute(old.String(), new.String()),
+		Question:   "Apply this change?",
+		MaxLines:   12,
+		NotYetLive: true,
+		Handover:   "ctrl+space",
+	}
+	view := ansi.Strip(c.View(80))
+	if !strings.Contains(view, "more lines") {
+		t.Fatalf("the fold is still counted:\n%s", view)
+	}
+	if strings.Contains(view, "more lines · "+keys.Shown(keys.Decision.ScrollDown)) {
+		t.Fatalf("an inert card must not advertise a chord the draft owns:\n%s", view)
+	}
+}
+
+// A body wider than the panel pans by columns, and a row still running past
+// the right edge ends in ›.
+func TestApprovalCard_WideBodyPans(t *testing.T) {
+	wide := "run: " + strings.Repeat("abcdefghij", 30) // 300+ columns
+	c := &ApprovalCard{
+		Variant:  ApprovalCommand,
+		Title:    "Approve command",
+		Headline: wide,
+		Question: "Run this command?",
+	}
+	plain := ansi.Strip(c.View(80))
+	if !strings.Contains(plain, "›") {
+		t.Fatalf("a clipped row should end in the pan marker:\n%s", plain)
+	}
+	c.PanOffset = 5
+	panned := ansi.Strip(c.View(80))
+	if panned == plain {
+		t.Fatal("panning should move the body")
+	}
+	if !strings.Contains(panned, "fghij") || strings.Contains(panned, "run: ") {
+		t.Fatalf("the pan should cut the first five columns:\n%s", panned)
+	}
+	_, maxPan := c.ScrollBounds(80)
+	c.PanOffset = maxPan
+	if end := ansi.Strip(c.View(80)); strings.Contains(end, "›") {
+		t.Fatalf("panned to the end, nothing runs past the edge:\n%s", end)
 	}
 }
 

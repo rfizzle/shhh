@@ -26,7 +26,7 @@ fix the round limit
    ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 ────────────────────────────────────────────────────────────────────────────
-[j/k] move · [enter] expand · [?] keys · [q] back to the prompt   row 5 of 5
+[j/k] move · [?] keys · [q] back to the prompt                    row 5 of 5
 ▎this row · [v] review · [u] undo turn · [esc] nothing
 
 
@@ -69,7 +69,7 @@ fix the round limit
    ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 ────────────────────────────────────────────────────────────────────────────
-[j/k] move · [enter] expand · [?] keys · [q] back to the prompt   row 3 of 5
+[j/k] move · [enter] expand · [y] copy the row · [q] back to the prompt  3/5
 
 
 
@@ -115,6 +115,8 @@ fix the round limit
 [j/k] move
 [enter] expand
 [-] collapse
+[y] copy the row
+[u/d] half page
 [pgup] page up
 [pgdn] page down
 [?] hide the keys
@@ -122,18 +124,18 @@ fix the round limit
 ▎[v] review
 ▎[u] undo turn
 
-· prose · nothing expandable, so no cursor and no position
-──── READING ───────────────────────────────────────────────────────────────
+· prose · the cursor on a message: [y] copies its markdown source
+──── READING 1/1 ───────────────────────────────────────────────────────────
 You
 why is the round limit fatal
 
-Assistant
-  Round exhaustion is fatal in Agent.runRound: the loop returns          
-  ErrRoundLimit, and the chat model treats any error from a round as     
-  terminal.
+❯ Assistant                                                                
+    Round exhaustion is fatal in Agent.runRound: the loop returns        
+    ErrRoundLimit, and the chat model treats any error from a round as   
+    terminal.
 
 ────────────────────────────────────────────────────────────────────────────
-[j/k] move · [enter] expand — nothing on this row expands · [q] prompt
+[j/k] move · [y] copy the row · [?] keys · [q] back to the prompt     1 of 1
 
 
 
@@ -155,7 +157,7 @@ fix the round limit
    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · 21s␛[m
 
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254m[j/k]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m expand␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m back to the prompt␛[m   ␛[38;5;244mrow 5 of 5␛[m
+␛[38;5;254m[j/k]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m back to the prompt␛[m                    ␛[38;5;244mrow 5 of 5␛[m
 ␛[38;5;254m▎␛[m␛[38;5;244mthis row · ␛[m␛[38;5;254m[v]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;254m[u]␛[m␛[38;5;244m undo turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[esc]␛[m␛[38;5;244m nothing␛[m
 
 
@@ -198,7 +200,7 @@ fix the round limit
    ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · 21s␛[m
 
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254m[j/k]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m expand␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m back to the prompt␛[m   ␛[38;5;244mrow 3 of 5␛[m
+␛[38;5;254m[j/k]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[enter]␛[m␛[38;5;244m expand␛[m␛[38;5;244m · ␛[m␛[38;5;254m[y]␛[m␛[38;5;244m copy the row␛[m␛[38;5;244m · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m back to the prompt␛[m  ␛[38;5;244m3/5␛[m
 
 
 
@@ -244,6 +246,8 @@ fix the round limit
 ␛[38;5;254m[j/k]␛[m␛[38;5;244m move␛[m
 ␛[38;5;254m[enter]␛[m␛[38;5;244m expand␛[m
 ␛[38;5;254m[-]␛[m␛[38;5;244m collapse␛[m
+␛[38;5;254m[y]␛[m␛[38;5;244m copy the row␛[m
+␛[38;5;254m[u/d]␛[m␛[38;5;244m half page␛[m
 ␛[38;5;254m[pgup]␛[m␛[38;5;244m page up␛[m
 ␛[38;5;254m[pgdn]␛[m␛[38;5;244m page down␛[m
 ␛[38;5;254m[?]␛[m␛[38;5;244m hide the keys␛[m
@@ -251,17 +255,17 @@ fix the round limit
 ␛[38;5;254m▎␛[m␛[38;5;254m[v]␛[m␛[38;5;244m review␛[m
 ␛[38;5;254m▎␛[m␛[38;5;254m[u]␛[m␛[38;5;244m undo turn␛[m
 
-· prose · nothing expandable, so no cursor and no position
-␛[38;5;244m────␛[m ␛[1;38;5;254mREADING␛[m ␛[38;5;244m───────────────────────────────────────────────────────────────␛[m
+· prose · the cursor on a message: [y] copies its markdown source
+␛[38;5;244m────␛[m ␛[1;38;5;254mREADING 1/1␛[m ␛[38;5;244m───────────────────────────────────────────────────────────␛[m
 ␛[1;38;5;254mYou␛[m
 why is the round limit fatal
 
-␛[1;38;5;254mAssistant␛[m
-  Round exhaustion is fatal in Agent.runRound: the loop returns          
-  ErrRoundLimit, and the chat model treats any error from a round as     
-  terminal.
+␛[38;5;254m❯␛[m ␛[1;38;5;254m␛[m␛[48;5;237m␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mAssistant                                                                ␛[m␛[m
+    Round exhaustion is fatal in Agent.runRound: the loop returns        
+    ErrRoundLimit, and the chat model treats any error from a round as   
+    terminal.
 
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
-␛[38;5;254m[j/k]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;244m[enter] expand — nothing on this row expands␛[m␛[38;5;244m · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m prompt␛[m
+␛[38;5;254m[j/k]␛[m␛[38;5;244m move␛[m␛[38;5;244m · ␛[m␛[38;5;254m[y]␛[m␛[38;5;244m copy the row␛[m␛[38;5;244m · ␛[m␛[38;5;254m[?]␛[m␛[38;5;244m keys␛[m␛[38;5;244m · ␛[m␛[38;5;254m[q]␛[m␛[38;5;244m back to the prompt␛[m     ␛[38;5;244m1 of 1␛[m
 
 

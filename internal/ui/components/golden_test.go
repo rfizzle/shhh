@@ -157,6 +157,19 @@ func TestGolden_ActivityRows(t *testing.T) {
 					"\x1b[2K\x1b[1Gbuilding 40%\rbuilding 100%",
 				}
 			})},
+			{Label: "output · bounded, the cap counts what it swallowed", View: row(func(r *ActivityRow) {
+				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "go vet ./..."
+				r.State, r.Outcome, r.Duration = ActivityFailed, OutcomeExit(1), "8.0s"
+				r.Expanded, r.MaxDetail = true, 4
+				r.Detail = []string{
+					"internal/agent/loop.go:88: unreachable code",
+					"internal/agent/loop.go:104: result of append not used",
+					"internal/agent/title.go:31: self-assignment",
+					"internal/ui/chat/model.go:19: unused import",
+					"internal/ui/chat/turn.go:52: shadowed err",
+					"internal/ui/chat/spin.go:12: unreachable code",
+				}
+			})},
 			{Label: "state · denied by you", View: row(func(r *ActivityRow) {
 				r.Kind, r.Verb, r.Target = ActivityCommand, "run", "rm -rf ./build"
 				r.State, r.Outcome, r.Duration = ActivityDenied, OutcomeBy(OutcomeDenied, "you"), NoDuration
@@ -359,6 +372,33 @@ func TestGolden_ApprovalCard(t *testing.T) {
 				c.SafeDefault = "[n] deny — the safe answer"
 				c.Footnote = "containment is off for this session · /sandbox doctor explains why"
 				c.Return = "[esc] back to your draft — the decision stays waiting, nothing is denied"
+			})},
+			// A body taller than the panel: the last row becomes the counted
+			// tail, the decision block never moves, and one press of shift+↓
+			// walks the window down the same card.
+			{Label: "bound · a long command card, counted then scrolled", View: func() string {
+				overflowing := func(offset int) string {
+					return card(func(c *ApprovalCard) {
+						c.Headline = "Assistant wants to run: ./scripts/release.sh --channel beta"
+						c.Severity = SeverityMedium
+						c.Warnings = []string{"runs a repository script; shhh cannot see inside it"}
+						c.MaxLines, c.BodyOffset = 10, offset
+						c.Fields = []CardField{
+							{Label: "touches", Value: "./dist", Detail: "the script rewrites the release tree", Tone: ToneRisk},
+							{Label: "undo", Value: "none", Detail: "nothing it writes is tracked in git", Tone: ToneRisk},
+							{Label: "network", Value: "open", Detail: "it pushes the artefacts it builds", Tone: ToneOpen},
+							{Label: "⛨", Value: "bwrap", Detail: "workspace profile"},
+						}
+					})
+				}
+				return overflowing(0) + "\n" + overflowing(2)
+			}()},
+			// A body wider than the panel pans: shift+→ pulls it left five
+			// columns at a time, and a row still running past the edge ends
+			// in › rather than the terminal clip's ….
+			{Label: "bound · a wide body, panned right", View: card(func(c *ApprovalCard) {
+				c.Headline = "Assistant wants to run: tar -czf dist/shhh-linux-amd64.tar.gz --exclude .git --exclude node_modules --transform 's,^,shhh/,' ."
+				c.PanOffset = 25
 			})},
 			{Label: "variant · edit, diff body", View: card(func(c *ApprovalCard) {
 				c.Variant, c.Title = ApprovalEdit, "Approve edit"

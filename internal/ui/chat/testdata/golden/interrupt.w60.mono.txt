@@ -16,7 +16,7 @@
 │ @@ -1,1 +1,2 @@                                      │
 │   1  line one                                        │
 │ + 2  line two                                        │
-│ +1 −0 · 1 hunk · undo yes — recorded, and it needs … │
+│ +1 −0 · 1 hunk · undo yes — recorded, and it needs › │
 ├──────────────────────────────────────────────────────┤
 │ Apply this change? [y/n/a]              not live yet │
 │ [ctrl+space] answer it                               │
@@ -36,7 +36,7 @@
 │ @@ -1,1 +1,2 @@                                      │
 │   1  line one                                        │
 │ + 2  line two                                        │
-│ +1 −0 · 1 hunk · undo yes — recorded, and it needs … │
+│ +1 −0 · 1 hunk · undo yes — recorded, and it needs › │
 ├──────────────────────────────────────────────────────┤
 │ Apply this change? [y/n/a]                           │
 │ (a: always allow edits in ./)  (d: full diff)        │
@@ -55,7 +55,7 @@
 │ @@ -1,1 +1,2 @@                                      │
 │   1  line one                                        │
 │ + 2  line two                                        │
-│ +1 −0 · 1 hunk · undo yes — recorded, and it needs … │
+│ +1 −0 · 1 hunk · undo yes — recorded, and it needs › │
 ├──────────────────────────────────────────────────────┤
 │ Apply this change? [y/N]       keys live in a moment │
 │ [ctrl+space] for [a]/[d] · any other key goes to yo… │
@@ -70,7 +70,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m@@ -1,1 +1,2 @@␛[m                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m  1  line one␛[m                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m+ 2  line two␛[m                                        ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m+1 −0 · 1 hunk · undo yes — recorded, and it needs …␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m+1 −0 · 1 hunk · undo yes — recorded, and it needs ␛[m␛[38;5;244m›␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mApply this change? [y/n/a]␛[m              ␛[38;5;244mnot live yet␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m[ctrl+space]␛[m␛[38;5;254m answer it␛[m                               ␛[38;5;254m│␛[m
@@ -90,7 +90,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m@@ -1,1 +1,2 @@␛[m                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m  1  line one␛[m                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m+ 2  line two␛[m                                        ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m+1 −0 · 1 hunk · undo yes — recorded, and it needs …␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m+1 −0 · 1 hunk · undo yes — recorded, and it needs ␛[m␛[38;5;244m›␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[3;38;5;244mApply this change? [y/n/a]␛[m                           ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[3;38;5;244m(a: always allow edits in ./)  (d: full diff)␛[m        ␛[38;5;254m│␛[m
@@ -109,7 +109,7 @@
 ␛[38;5;254m│␛[m ␛[38;5;254m@@ -1,1 +1,2 @@␛[m                                      ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m  1  line one␛[m                                        ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254m+ 2  line two␛[m                                        ␛[38;5;254m│␛[m
-␛[38;5;254m│␛[m ␛[38;5;244m+1 −0 · 1 hunk · undo yes — recorded, and it needs …␛[m ␛[38;5;254m│␛[m
+␛[38;5;254m│␛[m ␛[38;5;244m+1 −0 · 1 hunk · undo yes — recorded, and it needs ␛[m␛[38;5;244m›␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m├──────────────────────────────────────────────────────┤␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244mApply this change? [y/N]␛[m       ␛[38;5;244mkeys live in a moment␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m ␛[38;5;244m[ctrl+space] for [a]/[d] · any other key goes to yo…␛[m ␛[38;5;254m│␛[m

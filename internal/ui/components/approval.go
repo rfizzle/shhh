@@ -193,9 +193,20 @@ type ApprovalCard struct {
 	// key with a stated reason teaches; a missing key without one reads as a
 	// bug.
 	Footnote string
-	// MaxLines bounds the card's total height, frame included; the diff body
-	// shrinks to fit. 0 means unbounded.
+	// FullLabel is what [d] opens, where "full diff" is not it — the command
+	// card's full view. Empty keeps the register's own words.
+	FullLabel string
+	// MaxLines bounds the card's total height, frame included; a body that
+	// does not fit scrolls behind counted tails rather than clipping
+	// (docs/interface/surfaces.md#the-approval-card). 0 means unbounded.
 	MaxLines int
+	// BodyOffset is the first body row the bounded card shows; the decision
+	// run and everything under the rule never scroll. PanOffset shifts every
+	// body row left by that many columns, for a body wider than the panel.
+	// Both are clamped at render; the host stores them, because the card is
+	// rebuilt every frame.
+	BodyOffset int
+	PanOffset  int
 	// Return names what esc does while the card holds the keyboard: it hands
 	// it back to the draft and leaves the decision waiting rather than
 	// answering it. Stated because it is not obvious — invariant 3
@@ -284,49 +295,12 @@ func (c *ApprovalCard) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	return false, nil
 }
 
-// View renders the card at the given width, bounded to MaxLines rows.
+// View renders the card at the given width, bounded to MaxLines rows: a body
+// that does not fit scrolls behind counted tails, and the decision block
+// under the rule never moves.
 func (c *ApprovalCard) View(width int) string {
-	inner := width - cardFrameWidth
-	rows := []string{sty.Headline.Render(c.Headline)}
-	// Severity leads the body, as a word beside the first risk. The border
-	// and the title chip say the same thing again, which is what makes the
-	// card survive mono and a colour-blind reader alike.
-	rows = append(rows, c.severityRows()...)
-	// The generic variant's one-liner belongs with the headline it qualifies,
-	// above the blast-radius block rather than below it.
-	if c.Variant == ApprovalGeneric && c.Summary != "" && c.Summary != c.Headline {
-		rows = append(rows, sty.Dim.Render(clip(c.Summary, inner)))
-	}
-	if len(c.Fields) > 0 {
-		if len(rows) > 1 {
-			rows = append(rows, "")
-		}
-		for _, f := range c.Fields {
-			rows = append(rows, f.render(inner))
-		}
-	}
-
-	hints := c.hintRowsFor(width, inner)
-	// The keys sit below a rule so they never blend into the body.
-	hints = append([]string{cardRule}, hints...)
-
-	if c.Variant == ApprovalEdit {
-		adds, dels := diff.Stats(c.Hunks)
-		line := fmt.Sprintf("+%d −%d · %s", adds, dels, plural(len(c.Hunks), "hunk"))
-		if c.Reversibility != "" {
-			line += " · " + c.Reversibility
-		}
-		stats := sty.Dim.Render(line)
-		// Frame (2) plus the fixed rows bound how much diff fits.
-		budget := 0
-		if c.MaxLines > 0 {
-			budget = max(c.MaxLines-2-len(rows)-len(hints)-1, 1)
-		}
-		rows = append(rows, UnifiedLines(c.Hunks, inner,
-			UnifiedOpts{LineNumbers: true, Emphasis: true, MaxLines: budget, Syntax: c.Syntax})...)
-		rows = append(rows, stats)
-	}
-	rows = append(rows, hints...)
+	body, hints := c.buildRows(width)
+	rows := append(c.windowBody(body, len(hints), width), hints...)
 
 	title := c.Title
 	if c.QueuePos != "" {
@@ -337,6 +311,137 @@ func (c *ApprovalCard) View(width int) string {
 		style = sty.Del
 	}
 	return renderChromeCard(cardChrome{title: title, chips: c.chips(), style: &style}, rows, width)
+}
+
+// buildRows lays the card out as its two halves: the body — headline,
+// severity, blast radius, and the edit variant's whole diff — and the block
+// under the rule, which is pinned. The split is what the scroll works on, so
+// View and ScrollBounds share it rather than agreeing by inspection.
+func (c *ApprovalCard) buildRows(width int) (body, hints []string) {
+	inner := width - cardFrameWidth
+	body = []string{sty.Headline.Render(c.Headline)}
+	// Severity leads the body, as a word beside the first risk. The border
+	// and the title chip say the same thing again, which is what makes the
+	// card survive mono and a colour-blind reader alike.
+	body = append(body, c.severityRows()...)
+	// The generic variant's one-liner belongs with the headline it qualifies,
+	// above the blast-radius block rather than below it.
+	if c.Variant == ApprovalGeneric && c.Summary != "" && c.Summary != c.Headline {
+		body = append(body, sty.Dim.Render(clip(c.Summary, inner)))
+	}
+	if len(c.Fields) > 0 {
+		if len(body) > 1 {
+			body = append(body, "")
+		}
+		for _, f := range c.Fields {
+			body = append(body, f.render(inner))
+		}
+	}
+	if c.Variant == ApprovalEdit {
+		adds, dels := diff.Stats(c.Hunks)
+		line := fmt.Sprintf("+%d −%d · %s", adds, dels, plural(len(c.Hunks), "hunk"))
+		if c.Reversibility != "" {
+			line += " · " + c.Reversibility
+		}
+		// The diff is laid out whole and the window below decides what shows,
+		// so what the cap swallows is counted rather than dropped.
+		body = append(body, UnifiedLines(c.Hunks, inner,
+			UnifiedOpts{LineNumbers: true, Emphasis: true, Syntax: c.Syntax})...)
+		body = append(body, sty.Dim.Render(line))
+	}
+
+	hints = c.hintRowsFor(width, inner)
+	// The keys sit below a rule so they never blend into the body.
+	return body, append([]string{cardRule}, hints...)
+}
+
+// visibleBody is how many body rows fit once the frame and the pinned block
+// have theirs, floored at one: a panel whose hint block leaves no room still
+// shows one row of body — the headline, or the counted tail standing for all
+// of it — because a decision whose subject is entirely off screen is not one
+// (the floor the pre-scroll diff budget always had). -1 means unbounded.
+func (c *ApprovalCard) visibleBody(hintRows int) int {
+	if c.MaxLines <= 0 {
+		return -1
+	}
+	return max(c.MaxLines-2-hintRows, 1)
+}
+
+// windowBody applies the pan and the vertical window to the body rows. What
+// either edge cuts is counted on the row it took
+// (docs/interface/principles.md#fold-never-hide): the last visible row
+// becomes `… N more lines · shift+↓`, the first `… N lines above · shift+↑`
+// once scrolled, and a row running past the right edge ends in ›.
+func (c *ApprovalCard) windowBody(body []string, hintRows int, width int) []string {
+	inner := max(width-cardFrameWidth, 1)
+	body = panRows(body, max(c.PanOffset, 0), inner)
+	visible := c.visibleBody(hintRows)
+	if visible < 0 || len(body) <= visible {
+		return body
+	}
+	off := clampOffset(c.BodyOffset, len(body), visible)
+	win := append([]string(nil), body[off:off+visible]...)
+	if below := len(body) - (off + visible); below > 0 {
+		win[len(win)-1] = sty.Dim.Render(clip(c.tailLabel(countedTail(below+1),
+			keys.Shown(keys.Decision.ScrollDown)), inner))
+	}
+	if off > 0 {
+		label := c.tailLabel(fmt.Sprintf("… %s above", plural(off+1, "line")),
+			keys.Shown(keys.Decision.ScrollUp))
+		win[0] = sty.Dim.Render(clip(label, inner))
+	}
+	return win
+}
+
+// tailLabel is a counted tail with its key — except on a card whose keys are
+// not live yet, where naming the chord would advertise a key the draft still
+// owns. The count stays either way: the fold is a fact, the key an offer.
+func (c *ApprovalCard) tailLabel(count, key string) string {
+	if c.NotYetLive {
+		return count
+	}
+	return count + " · " + key
+}
+
+// panRows shifts body rows left by x columns and marks a row that still runs
+// past the right edge with › — the sign the pan exists, distinct from the …
+// every other clip in the product uses because this one is recoverable in
+// place.
+func panRows(rows []string, x, inner int) []string {
+	out := make([]string, len(rows))
+	for i, r := range rows {
+		w := lipgloss.Width(r)
+		if x == 0 && w <= inner {
+			out[i] = r
+			continue
+		}
+		var cut string
+		if x < w {
+			cut = ansi.Cut(r, x, min(x+inner, w))
+		}
+		if x+inner < w {
+			cut = ansi.Truncate(cut, max(inner-1, 0), "") + sty.Dim.Render("›")
+		}
+		out[i] = cut
+	}
+	return out
+}
+
+// ScrollBounds reports how far the body can move at this width: the highest
+// useful BodyOffset and PanOffset. The host clamps its stored offsets
+// against these, so fifty presses past the end cost one press back.
+func (c *ApprovalCard) ScrollBounds(width int) (maxBody, maxPan int) {
+	body, hints := c.buildRows(width)
+	if visible := c.visibleBody(len(hints)); visible > 0 && len(body) > visible {
+		maxBody = len(body) - visible
+	}
+	inner := max(width-cardFrameWidth, 1)
+	for _, r := range body {
+		if w := lipgloss.Width(r); w > inner {
+			maxPan = max(maxPan, w-inner)
+		}
+	}
+	return maxBody, maxPan
 }
 
 // hintRowsFor is the block under the rule: the decision keys and everything
@@ -370,7 +475,7 @@ func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 			quals = append(quals, "("+c.AlwaysHint+")")
 		}
 		if c.FullDiff {
-			quals = append(quals, "("+keys.Shown(keys.Decision.Diff)+": "+keys.Words(keys.Decision.Diff)+")")
+			quals = append(quals, "("+keys.Shown(keys.Decision.Diff)+": "+c.fullWords()+")")
 		}
 	}
 	qualRow := strings.Join(quals, "  ")
@@ -535,6 +640,15 @@ func (c *ApprovalCard) arrivalRest() string {
 	}
 	return "[" + c.Handover + "] for " + strings.Join(rest, "/") +
 		" · any other key goes to your draft"
+}
+
+// fullWords is what [d] is said to open: the register's own words unless the
+// card means something more specific — the command card's full view.
+func (c *ApprovalCard) fullWords() string {
+	if c.FullLabel != "" {
+		return c.FullLabel
+	}
+	return keys.Words(keys.Decision.Diff)
 }
 
 // severityRows are the ⚠ rows: the severity word leads the first risk, and

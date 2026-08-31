@@ -25,10 +25,13 @@ func expandable(e entry) bool {
 // selectable reports whether focus mode can put its cursor on an entry. It is
 // expandable plus the rows that offer keys without expanding: a turn's close
 // block is passive, but [v] and [u] are handled on it, and so are
-// a provider failure's own keys and a round-limit pause's.
+// a provider failure's own keys and a round-limit pause's — and an assistant
+// message, which expands nothing but is what [y] copies as markdown source
+// (docs/interface/surfaces.md#reading-mode).
 func selectable(e entry) bool {
 	return expandable(e) || e.kind == entryTurnClose || e.kind == entryFailure ||
-		e.kind == entryStreamDrop || e.kind == entryRoundPause
+		e.kind == entryStreamDrop || e.kind == entryRoundPause ||
+		e.kind == entryAssistant
 }
 
 // selectableRow is selectable plus the one thing that depends on the session
@@ -136,6 +139,11 @@ func (m Model) enterFocusMode() (tea.Model, tea.Cmd) {
 // updateFocus handles keys while focus mode is active. Esc never destroys:
 // it only returns to the input, keeping any expansion state.
 func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	// The copy caption stands until the next key: whatever the reader does
+	// next, they have moved on from the copy it describes.
+	if !keys.Match(msg, keys.Reading.Copy) {
+		m.readingCopied = ""
+	}
 	switch pressed := msg.String(); {
 	case keys.Is(pressed, keys.Draft.Quit):
 		m.quitting = true
@@ -192,9 +200,24 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 				return m.undoTurn(e.turn, nil)
 			}
 		}
-		// The row under the cursor does not offer this key, so it is a
-		// character like any other and goes back to the draft.
+		// [u] off a close row is the pager's half page, not an offer nothing
+		// made; the rest go back to the draft as the characters they are.
+		if keys.Is(pressed, keys.Reading.Half) {
+			m.halfPageFocus(pressed)
+			return m, nil
+		}
 		return m.returnToInput(msg)
+	case keys.Is(pressed, keys.Reading.Copy):
+		// [y] copies the row under the cursor, type-aware (copyrow.go). A
+		// row with nothing to copy hands the letter back to the draft, the
+		// way [-] does with nothing open.
+		return m.copyFocusedRow(msg)
+	case keys.Is(pressed, keys.Reading.Half):
+		// Half the viewport at a time, so the reader keeps context while
+		// moving quickly; the cursor follows the pane rather than pinning
+		// the scroll to wherever it was standing.
+		m.halfPageFocus(pressed)
+		return m, nil
 	case keys.Is(pressed, keys.Row.Retry, keys.Row.Continue, keys.Row.Key, keys.Row.Provider):
 		// A provider failure's own offers, and a dropped
 		// stream's. Like the changeset row's, they are handled here
@@ -229,9 +252,13 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// a row through one act rather than two that agree by inspection.
 		// What is left is the plain body flag, which this mode sets on every
 		// row it can put its cursor on.
-		claimed, full := m.toggleRow(m.focusIdx)
+		claimed, full, output := m.toggleRow(m.focusIdx)
 		if full != nil {
 			return m.openDiffFull(full, stateFocus)
+		}
+		if output {
+			es := *m.entries()
+			return m.openOutputFull(m.rowOutputView(es[m.focusIdx]), m.focusIdx, stateFocus)
 		}
 		if !claimed {
 			if es := *m.entries(); m.focusIdx >= 0 && m.focusIdx < len(es) {
@@ -274,12 +301,86 @@ func (m Model) focusedClose() (entry, bool) {
 func (m Model) exitFocusMode() (tea.Model, tea.Cmd) {
 	// The register closes with the mode: it is a reading of this surface, and
 	// the next time reading mode opens the question has not been asked yet.
+	// The copy caption goes with it — it captions a mode that is ending.
 	m.readingKeyList = false
+	m.readingCopied = ""
 	m.leaveSurface()
 	m.invalidateRenderCache()
 	m.syncViewport()
 	m.viewport.SetLines(m.renderHistoryLines())
 	return m, nil
+}
+
+// halfPageFocus scrolls half the viewport — [u] up, [d] down — and brings
+// the cursor along: a cursor left behind a half-page jump would be a lit row
+// nobody can see, which is the thing selectableRow exists to prevent.
+func (m *Model) halfPageFocus(pressed string) {
+	dir := 1
+	if pressed == "u" {
+		dir = -1
+	}
+	m.scrollLines(dir * max(m.viewport.Height()/2, 1))
+	m.snapFocusIntoView(dir)
+}
+
+// snapFocusIntoView moves the cursor to the nearest selectable row the pane
+// now shows, when the scroll left it outside. The offset is kept: the reader
+// asked for half a page, and pulling the pane back to the cursor would give
+// half of it back.
+func (m *Model) snapFocusIntoView(dir int) {
+	idxs := m.expandableIndices()
+	if len(idxs) == 0 || m.focusIdx < 0 {
+		return
+	}
+	starts := m.unitLineStarts()
+	top := m.viewport.YOffset()
+	bottom := top + max(m.viewport.Height()-1, 0)
+	inView := func(idx int) bool {
+		s, ok := starts[idx]
+		return ok && s >= top && s <= bottom
+	}
+	if !inView(m.focusIdx) {
+		if dir > 0 {
+			for _, idx := range idxs {
+				if inView(idx) {
+					m.focusIdx = idx
+					break
+				}
+			}
+		} else {
+			for i := len(idxs) - 1; i >= 0; i-- {
+				if inView(idxs[i]) {
+					m.focusIdx = idxs[i]
+					break
+				}
+			}
+		}
+	}
+	// The cursor moved (or the rows under the highlight did), so the gutter
+	// is re-rendered — without refreshFocusView's scroll-to-cursor, which
+	// would undo the jump for a block taller than what is left of the pane.
+	content, _, _ := m.renderFocusHistory()
+	m.viewport.SetContent(content)
+}
+
+// unitLineStarts is each transcript entry's first rendered line, counted the
+// way the render counts them (renderFocusHistory), so the cursor and the
+// pane cannot disagree about what is in view.
+func (m Model) unitLineStarts() map[int]int {
+	es := *m.entries()
+	starts := map[int]int{}
+	line := 0
+	var prev entry
+	havePrev := false
+	for _, u := range m.transcriptUnits(es, m.transcriptWidth(), true, m.focusIdx) {
+		if havePrev {
+			line += strings.Count(separatorBefore(prev, u.sepBefore), "\n")
+		}
+		starts[u.idx] = line
+		line += strings.Count(u.text, "\n")
+		prev, havePrev = u.sepAfter, true
+	}
+	return starts
 }
 
 // moveFocus selects the next (+1) or previous (-1) expandable row. With

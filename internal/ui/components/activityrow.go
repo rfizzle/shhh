@@ -324,14 +324,34 @@ func (r ActivityRow) View(width int) string {
 	// collapsed until focus mode expands them.
 	if (r.Expanded || r.State == ActivityFailed) && len(r.Detail) > 0 {
 		detail := r.Detail
+		dropped := 0
 		if r.MaxDetail > 0 && len(detail) > r.MaxDetail {
 			detail = detail[:r.MaxDetail]
+			dropped = len(r.Detail) - len(detail)
 		}
 		for _, d := range detail {
 			lines = append(lines, indented(d, detailIndent, width))
 		}
+		if dropped > 0 {
+			// The bound is a fold, so it counts what it swallowed
+			// (docs/interface/principles.md#fold-never-hide); reading mode's
+			// [enter] on the row is how the rest is reached.
+			lines = append(lines, strings.Repeat(" ", detailIndent)+
+				sty.Dim.Render(clip(countedTail(dropped), max(width-detailIndent, 1))))
+		}
 	}
 	return strings.Join(lines, "\n")
+}
+
+// countedTail is the row under a bounded body: what the cap swallowed, in
+// the units the body is made of. (moreLines in attachmentview.go is the
+// preview's own foot; the transcript's tail leads with the ellipsis the
+// folded rows already use.)
+func countedTail(n int) string {
+	if n == 1 {
+		return "… 1 more line"
+	}
+	return "… " + strconv.Itoa(n) + " more lines"
 }
 
 // indented renders one detail line at the given indent in dimmer (245).

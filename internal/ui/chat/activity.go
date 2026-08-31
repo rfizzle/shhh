@@ -286,13 +286,14 @@ func (m Model) activityRowFor(e entry) components.ActivityRow {
 }
 
 // activityRowDetail is the same row told whether the step around it has its
-// detail open. Collapsed rows never show output; focus-mode expansion shows
-// the full stored result (already bounded upstream by the evidence store);
-// failed rows, an opened step and high verbosity show the bounded detail
-// view; and low verbosity hides counts.
+// detail open. Collapsed rows never show output; focus-mode expansion opens
+// the wider in-place window, with the whole result one more press away on
+// the full screen (docs/interface/surfaces.md#the-activity-row); failed
+// rows, an opened step and high verbosity show the bounded detail view; and
+// low verbosity hides counts. Every bounded body counts what it swallowed.
 //
-// A row you opened yourself keeps its unbounded body inside an opened step:
-// the step's answer is the default for its rows, never a ceiling on one you
+// A row you opened yourself keeps its wider body inside an opened step: the
+// step's answer is the default for its rows, never a ceiling on one you
 // asked about by name.
 func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRow {
 	row := components.ActivityRow{
@@ -302,7 +303,7 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 		Frame:     m.spinFrame,
 	}
 	if e.expanded {
-		row.MaxDetail = 0
+		row.MaxDetail = maxExpandedResultLines
 	}
 	result := e.toolResult
 	if e.kind == entryCommand {

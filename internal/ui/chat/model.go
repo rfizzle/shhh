@@ -95,6 +95,10 @@ const (
 	// docs/interface/surfaces.md#the-diff-view) — from a transcript edit
 	// row, an approval's [d], or /diff.
 	stateDiffFull
+	// stateOutputFull: a row's whole output is showing full screen (
+	// docs/interface/surfaces.md#the-activity-row) — the depth past the
+	// in-place body, from reading mode's [enter] or a command card's [d].
+	stateOutputFull
 	// stateRewindPick: the interactive /rewind checkpoint picker is showing.
 	stateRewindPick
 	// statePick: a generic slash-command picker (/model, /permissions) is
@@ -699,6 +703,22 @@ type Model struct {
 	// screen, diffReturn where esc goes back to.
 	fullDiff   *components.DiffView
 	diffReturn state
+	// The full-screen output view (outputview.go): fullOutput is the viewer
+	// while it has the pane, outputIdx the transcript entry it came from
+	// (noOutputEntry for the command card's full view), outputReturn where
+	// esc goes back to.
+	fullOutput   *components.OutputView
+	outputIdx    int
+	outputReturn state
+	// The approval card's scroll (docs/interface/surfaces.md#the-approval-card):
+	// the card is rebuilt every frame, so its offsets live here and are reset
+	// whenever the card changes (armConfirm).
+	cardScroll int
+	cardPan    int
+	// readingCopied is the reading rail's note about the last [y]: what was
+	// copied and how far it ran. It stands until the next key in the mode,
+	// which is the moment the reader has moved on from the copy it captions.
+	readingCopied string
 	// The staged attachment preview: preview is the card while it
 	// has the pane. There is no return state beside it — the surface is
 	// opened from the draft and from nowhere else, so leaveSurface's own
@@ -1428,6 +1448,9 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.state == stateDiffFull {
 			return m.updateDiffFull(msg)
+		}
+		if m.state == stateOutputFull {
+			return m.updateOutputFull(msg)
 		}
 		if m.state == statePreview {
 			return m.updatePreview(msg)
@@ -2360,6 +2383,10 @@ func (m Model) paneView(area uv.Rectangle) string {
 		// The full-screen diff takes over the viewport.
 		m.fullDiff.Height = area.Dy()
 		return m.fullDiff.View(area.Dx())
+	case m.state == stateOutputFull && m.fullOutput != nil:
+		// The full-screen output takes it over the same way.
+		m.fullOutput.Height = area.Dy()
+		return m.fullOutput.View(area.Dx())
 	case m.state == statePreview && m.preview != nil:
 		// The staged attachment takes over the pane.
 		m.preview.Height = area.Dy()
@@ -2485,6 +2512,8 @@ func (m Model) takeoverPanel(width int) string {
 		inputView = m.renderFocusHint()
 	case stateDiffFull:
 		inputView = m.renderDiffFullHint()
+	case stateOutputFull:
+		inputView = m.renderOutputFullHint()
 	case statePreview:
 		inputView = m.renderPreviewHint()
 	case stateReview:
@@ -2554,6 +2583,14 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if m.memoryAsk != nil {
 		return m.updateMemoryAsk(msg)
 	}
+	// The card's own scroll, answered before the decision keys so a held
+	// card cannot read a chord as the start of a sentence. The chords reach
+	// here only while the card holds the keyboard; ungated they still
+	// scroll the transcript, exactly as before.
+	if keys.Match(msg, keys.Decision.ScrollUp, keys.Decision.ScrollDown,
+		keys.Decision.PanLeft, keys.Decision.PanRight) {
+		return m.scrollCard(msg)
+	}
 	done, result := m.approvalCard().Update(msg)
 	if !done {
 		return m, nil
@@ -2577,6 +2614,12 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 				Hunks:  req.hunks,
 				Syntax: diffSyntax(req.path),
 			}, stateConfirmRun)
+		}
+		// A command card's [d] opens its own facts the same way: the whole
+		// command, the warnings and the blast radius, unclipped, with the
+		// decision still pending behind it.
+		if req := m.pendingApproval; req == nil || req.kind == approvalExec {
+			return m.openOutputFull(m.commandCardView(), noOutputEntry, stateConfirmRun)
 		}
 	case components.ApprovalBatch:
 		// [A] answers this decision and every queued decision the session
@@ -2825,6 +2868,12 @@ func terminalMsg(ev provider.StreamEvent) tea.Msg {
 // maxToolResultLines bounds an activity row's detail view when it isn't
 // explicitly expanded (failed-row auto-expansion, high verbosity).
 const maxToolResultLines = 8
+
+// maxExpandedResultLines bounds the row a reader opened by name: the middle
+// of the three depths, wide enough to read a failure whole and bounded so an
+// opened row cannot cost the transcript the screen — the whole output is the
+// full-screen depth past it (docs/interface/surfaces.md#the-activity-row).
+const maxExpandedResultLines = maxToolResultLines * 4
 
 func formatToolArgs(raw string) string {
 	var m map[string]any
@@ -3838,12 +3887,17 @@ func helpKeysText() string {
   shift+↓        the draft keeps the keyboard and every letter it has
                  (ctrl+up and ctrl+down do the same, for terminals that
                   report them)
-  ctrl+o         Reading mode: select tool/command/diff rows (j/k), expand/collapse (enter),
-                 pgup/pgdn page, ? lists every key the mode has, esc or typing
-                 returns to the prompt
-                 (enter on an edit row cycles collapsed → expanded → full-screen diff;
+  ctrl+o         Reading mode: select transcript rows (j/k, u/d half a page),
+                 expand/collapse (enter), y copies the row under the cursor —
+                 a command as $ cmd over its output, an edit as its unified
+                 diff, a message as markdown source, a folded group member by
+                 member — pgup/pgdn page, ? lists every key the mode has,
+                 esc or typing returns to the prompt
+                 (enter on an edit row cycles collapsed → expanded → full-screen
+                  diff, and on a command or read row the same three depths over
+                  its output, the whole of it scrollable at the last one;
                   opens over a running turn, which keeps streaming underneath;
-                  a transcript with nothing expandable opens as a plain pager.
+                  a transcript with nothing selectable opens as a plain pager.
                   /step opens the in-flight step's detail from the prompt)
   ctrl+b         Agent manager: enter attaches to an agent's session, x cancels
                  its turn, X kills it; attached, typing steers the agent,
@@ -3883,7 +3937,10 @@ func helpKeysText() string {
                  under it, the way enter does in reading mode, or answers the
                  key it lands on in an approval card's [y/n/a]. It never takes
                  the keyboard: the draft keeps every character
-  y/n/a          Approval prompts: allow / deny / always allow this session`)
+  y/n/a          Approval prompts: allow / deny / always allow this session.
+                 A card taller than its panel counts what is cut and scrolls
+                 on shift+↑/↓ (shift+←/→ pan a wide body); d opens an edit's
+                 full diff, or a command card's full view`)
 }
 
 // clearConversation drops everything except the system prompt.

@@ -196,6 +196,8 @@ type ReadingKeys struct {
 	Move     Binding
 	Expand   Binding
 	Collapse Binding
+	Copy     Binding
+	Half     Binding
 	PageUp   Binding
 	PageDown Binding
 	List     Binding
@@ -205,13 +207,21 @@ type ReadingKeys struct {
 // All is reading mode's keys in the order it offers them, which is the order
 // `?` lists them in.
 func (k ReadingKeys) All() []Binding {
-	return []Binding{k.Move, k.Expand, k.Collapse, k.PageUp, k.PageDown, k.List, k.Back}
+	return []Binding{k.Move, k.Expand, k.Collapse, k.Copy, k.Half, k.PageUp, k.PageDown, k.List, k.Back}
 }
 
 var Reading = ReadingKeys{
 	Move:     bind("j/k", "move", "j", "k", "down", "up"),
 	Expand:   bind("enter", "expand", "enter"),
 	Collapse: bind("-", "collapse", "-"),
+	// Copy is [y] rather than [c], because c is "continue from here" on a
+	// dropped stream's row (RowKeys) and a key is declared once.
+	Copy: bind("y", "copy the row", "y"),
+	// Half is the pager pair u/d: half the viewport, so the reader keeps
+	// context while moving quickly. Like Move it is one binding both ways,
+	// and the dispatch reads which half was pressed. On a turn-close row
+	// [u] is that row's own undo offer first; everywhere else it pages.
+	Half:     bind("u/d", "half page", "u", "d"),
 	PageUp:   bind("pgup", "page up", "pgup"),
 	PageDown: bind("pgdn", "page down", "pgdown"),
 	// List is the same `?` the supporting TUIs offer: the
@@ -303,6 +313,17 @@ type DecisionKeys struct {
 	Always Binding
 	Batch  Binding
 	Diff   Binding
+
+	// The card's own scroll, for a body taller or wider than the panel
+	// (docs/interface/surfaces.md#the-approval-card). The same chords the
+	// draft scrolls the transcript with, answered by whichever of the two
+	// holds the keyboard: a card that was handed it scrolls itself, and a
+	// card inert beside a live draft leaves the chords to the transcript,
+	// exactly as it leaves every other key.
+	ScrollUp   Binding
+	ScrollDown Binding
+	PanLeft    Binding
+	PanRight   Binding
 }
 
 var Decision = DecisionKeys{
@@ -311,6 +332,11 @@ var Decision = DecisionKeys{
 	Always: bind("a", "always allow this session", "a"),
 	Batch:  bind("A", "answer the marked", "A"),
 	Diff:   bind("d", "full diff", "d", "D"),
+
+	ScrollUp:   bind("shift+↑", "scroll the card up", "shift+up"),
+	ScrollDown: bind("shift+↓", "scroll the card", "shift+down"),
+	PanLeft:    bind("shift+←", "pan a wide body back", "shift+left"),
+	PanRight:   bind("shift+→", "pan a wide body", "shift+right"),
 }
 
 // ConfirmKeys are the inline one-liner's and the undo confirm's. They
@@ -487,6 +513,34 @@ var Diff = DiffKeys{
 	Hunk:       bind("n/p", "hunk", "n", "p"),
 	Back:       bind("esc", "back", "esc"),
 	Leave:      bind("q", "back", "q", "ctrl+c"),
+}
+
+// OutputKeys are the full-screen output viewer's: a command's output, or a
+// read's, opened whole from reading mode when the bounded body was not all
+// of it (docs/interface/surfaces.md#the-activity-row). It is the diff
+// viewer's host with prose-free content, so it scrolls and leaves and does
+// nothing else.
+type OutputKeys struct {
+	Scroll   Binding
+	PageUp   Binding
+	PageDown Binding
+	// Collapse is [enter], mirroring the diff's cycle: the depth past full
+	// screen is closed, so the key that opened the row all the way is the
+	// key that puts it away.
+	Collapse Binding
+	Back     Binding
+	// Leave is separate from Back the way the diff viewer's is: only the
+	// surface holding the whole screen can claim a bare letter.
+	Leave Binding
+}
+
+var Output = OutputKeys{
+	Scroll:   bind("j/k", "scroll", "j", "k", "down", "up"),
+	PageUp:   bind("pgup", "page up", "pgup"),
+	PageDown: bind("pgdn", "page down", "pgdown"),
+	Collapse: bind("enter", "close the row", "enter"),
+	Back:     bind("esc", "back", "esc"),
+	Leave:    bind("q", "back", "q", "ctrl+c"),
 }
 
 // PreviewKeys are the staged attachment preview's. Two keys and no more:

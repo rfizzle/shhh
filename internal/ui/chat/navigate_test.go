@@ -13,6 +13,7 @@ import (
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // wheel builds a wheel notch in dir (-1 up, +1 down).
@@ -305,9 +306,11 @@ func TestUpFromAnEmptyPrompt_KeepsTheHistoryWhereThereIsOne(t *testing.T) {
 	}
 }
 
-// A transcript of prose has nothing to select, and used to be refused. It is
-// still worth reading.
-func TestReadingMode_OpensOnATranscriptWithNothingExpandable(t *testing.T) {
+// A transcript of prose used to open without a cursor. An assistant message
+// is addressable now — [y] copies it as markdown source — so the cursor
+// lands on the last one, [enter] stays on the bar with its reason, and the
+// copy key is offered.
+func TestReadingMode_ProseRowsTakeTheCursor(t *testing.T) {
 	m := proseModel(t)
 	updated, _ := m.Update(readingChord())
 	m = updated.(Model)
@@ -315,26 +318,86 @@ func TestReadingMode_OpensOnATranscriptWithNothingExpandable(t *testing.T) {
 	if m.state != stateFocus {
 		t.Fatalf("ctrl+o should open on prose, got state %d", m.state)
 	}
+	es := *m.entries()
+	if m.focusIdx < 0 || es[m.focusIdx].kind != entryAssistant {
+		t.Fatalf("the cursor should land on the last assistant message, got %d", m.focusIdx)
+	}
+	hint := ansi.Strip(m.renderFocusHint())
+	if strings.Contains(hint, "["+keys.Shown(keys.Reading.Expand)+"]") {
+		t.Fatalf("a message row expands nothing, so [enter] is not an offer, got %q", hint)
+	}
+	if !strings.Contains(hint, "["+keys.Shown(keys.Reading.Copy)+"]") {
+		t.Fatalf("a message row should offer the copy key, got %q", hint)
+	}
+	if strings.Contains(hint, "this row ·") {
+		t.Fatalf("a message row offers no row keys, got %q", hint)
+	}
+}
+
+// A transcript with nothing selectable at all — system notices — still opens
+// without a cursor, and j/k are a line of scroll where they cannot be a
+// selection.
+func TestReadingMode_OpensOnATranscriptWithNothingSelectable(t *testing.T) {
+	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := New(msgs, mockStream)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 20})
+	m = updated.(Model)
+	for i := 0; i < 24; i++ {
+		m.appendEntry(entry{kind: entrySystem, text: "a notice about the session"})
+	}
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoBottom()
+	m.atBottom = true
+
+	updated, _ = m.Update(readingChord())
+	m = updated.(Model)
+	if m.state != stateFocus {
+		t.Fatalf("ctrl+o should open on notices, got state %d", m.state)
+	}
 	if m.focusIdx != -1 {
 		t.Fatalf("there is nothing to select, so there should be no cursor, got %d", m.focusIdx)
 	}
 	if strings.Contains(m.renderHistory(), "❯") {
 		t.Fatal("a reading surface with no cursor should draw no pointer")
 	}
-	hint := ansi.Strip(m.renderFocusHint())
-	if !strings.Contains(hint, "nothing on this row expands") {
-		t.Fatalf("[enter] should stay on the bar with its reason rather than vanishing, got %q", hint)
-	}
-	if strings.Contains(hint, "this row ·") {
-		t.Fatalf("there is no row under the cursor, so nothing should offer row keys, got %q", hint)
-	}
 
-	// j/k are a line of scroll where they cannot be a selection.
 	before := m.viewport.YOffset()
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'k', Text: "k"})
 	next := updated.(Model)
 	if got := next.viewport.YOffset(); got >= before {
 		t.Fatalf("k should scroll a line up, offset %d → %d", before, got)
+	}
+}
+
+// [u] and [d] move half the viewport at a time, and the cursor follows the
+// pane rather than staying lit somewhere off screen.
+func TestReadingMode_HalfPageKeys(t *testing.T) {
+	m := proseModel(t)
+	updated, _ := m.Update(readingChord())
+	m = updated.(Model)
+
+	half := max(m.viewport.Height()/2, 1)
+	m.viewport.SetYOffset(0)
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'd', Text: "d"})
+	m = updated.(Model)
+	if got := m.viewport.YOffset(); got != half {
+		t.Fatalf("d should scroll half the viewport (%d), offset 0 → %d", half, got)
+	}
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'u', Text: "u"})
+	m = updated.(Model)
+	if got := m.viewport.YOffset(); got != 0 {
+		t.Fatalf("u should scroll back up, offset %d", got)
+	}
+
+	// The jump moved the pane away from the cursor's row, so the cursor
+	// snapped to one the pane still shows.
+	m.viewport.SetYOffset(0)
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'u', Text: "u"})
+	m = updated.(Model)
+	starts := m.unitLineStarts()
+	if s, ok := starts[m.focusIdx]; !ok ||
+		s < m.viewport.YOffset() || s > m.viewport.YOffset()+m.viewport.Height()-1 {
+		t.Fatalf("the cursor should stand on a visible row, line %d offset %d", s, m.viewport.YOffset())
 	}
 }
 

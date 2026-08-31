@@ -19,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // GatedPreview describes what an approval-gated tool call is about to do, for
@@ -607,7 +608,13 @@ func (m Model) approvalCard() *components.ApprovalCard {
 }
 
 func (m Model) buildApprovalCard() *components.ApprovalCard {
-	card := &components.ApprovalCard{MaxLines: m.maxConfirmPanelHeight()}
+	card := &components.ApprovalCard{
+		MaxLines: m.maxConfirmPanelHeight(),
+		// The card is rebuilt every frame, so its scroll rides the model
+		// and is reset whenever the card changes (armConfirm).
+		BodyOffset: m.cardScroll,
+		PanOffset:  m.cardPan,
+	}
 	req := m.pendingApproval
 	// Where this decision sits in the round, and the key that answers the
 	// rest of its category along with it.
@@ -624,6 +631,11 @@ func (m Model) buildApprovalCard() *components.ApprovalCard {
 		card.Variant = components.ApprovalCommand
 		card.Title = "Approve command"
 		card.Question = "Run this command?"
+		// [d] opens the command card's own full view — the whole command,
+		// the warnings and the blast radius, unclipped — the way it opens an
+		// edit's diff (docs/interface/surfaces.md#the-approval-card).
+		card.FullDiff = true
+		card.FullLabel = "full view"
 		if req != nil {
 			card.Headline = "Assistant wants to run: " + firstLine(m.pendingRun)
 		} else {
@@ -690,6 +702,58 @@ func (b blastRadius) applyTo(card *components.ApprovalCard) {
 	if len(b.risks) > 0 {
 		card.Warnings = []string{strings.Join(b.risks, "; ")}
 	}
+}
+
+// cardPanStep is how far one press of the card's pan chords moves a wide
+// body. Five columns, the step the horizontal-scroll convention settled on:
+// one column reads as sticking, a screenful loses the reader's place.
+const cardPanStep = 5
+
+// scrollCard answers the card's scroll chords: a row of body per press, five
+// columns of pan, clamped against what the card can actually show so fifty
+// presses past the end cost one press back.
+func (m Model) scrollCard(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	maxBody, maxPan := m.approvalCard().ScrollBounds(m.contentWidth())
+	switch {
+	case keys.Match(msg, keys.Decision.ScrollUp):
+		m.cardScroll = max(m.cardScroll-1, 0)
+	case keys.Match(msg, keys.Decision.ScrollDown):
+		m.cardScroll = min(m.cardScroll+1, maxBody)
+	case keys.Match(msg, keys.Decision.PanLeft):
+		m.cardPan = max(m.cardPan-cardPanStep, 0)
+	case keys.Match(msg, keys.Decision.PanRight):
+		m.cardPan = min(m.cardPan+cardPanStep, maxPan)
+	}
+	return m, nil
+}
+
+// commandCardView is the command card's [d]: the whole command, the warnings
+// and the blast radius as one full-screen page, wrapped rather than clipped
+// — the card's body clips wide lines behind the pan; this view is where the
+// whole of a long command is read before it is answered.
+func (m Model) commandCardView() *components.OutputView {
+	card := m.buildApprovalCard()
+	lines := strings.Split(strings.TrimRight(m.pendingRun, "\n"), "\n")
+	if word := card.Severity.Word(); word != "" || len(card.Warnings) > 0 {
+		lines = append(lines, "")
+		if word != "" {
+			lines = append(lines, word)
+		}
+		for _, w := range card.Warnings {
+			lines = append(lines, "⚠ "+w)
+		}
+	}
+	if len(card.Fields) > 0 {
+		lines = append(lines, "")
+		for _, f := range card.Fields {
+			row := f.Label + "  " + f.Value
+			if f.Detail != "" {
+				row += " — " + f.Detail
+			}
+			lines = append(lines, row)
+		}
+	}
+	return &components.OutputView{Title: card.Title, Lines: lines, Wrap: true}
 }
 
 // confirmLines renders the approval card — or the memory prompt when
@@ -784,7 +848,7 @@ func (m Model) bottomPanelHeight() int {
 	}
 	if lines == nil {
 		switch m.state {
-		case stateDiffFull, statePreview, stateReview, stateContext:
+		case stateDiffFull, stateOutputFull, statePreview, stateReview, stateContext:
 			// The full-screen surfaces replace the input with a one-line
 			// hint; a grown draft comes back with the input, and paying its
 			// rows here would blank most of the panel under the hint.

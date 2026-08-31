@@ -22,6 +22,16 @@ Because it is one shape, a reader learns it once. A provider failure using the
 same row as a file read is the point rather than an accident: a failure is
 part of the turn, not an interruption of it.
 
+A row's output is bounded, and the bound is a fold rather than a loss: a body
+cut at the cap ends by counting what it swallowed. Opening the row widens the
+window in place — enough to read a failed test run whole — and opening it
+again gives the whole output the screen, scrollable, the same three depths an
+edit's diff has always had. A window that already shows everything skips the
+screen, because a press that changes nothing is a press wasted. Command
+output, a read's file contents and a search's matches all open this way, and
+at every depth what a program painted is re-painted into the palette, so
+nothing arrives with colours of its own.
+
 ### The think row
 
 What the model thought before it acted, folded into one row among the acts it
@@ -127,6 +137,20 @@ It is also where rows that offer keys without expanding are answered — a
 turn's changeset, a provider failure. Both are passive renderers; holding
 their keys here is what keeps `v`, `u`, `r`, `c`, `e` and `p` available for
 typing.
+
+One key copies the row under the cursor, shaped by what the row is: a message
+as its markdown source, a command as the command over its output, an edit as
+the unified diff, a read as what the read returned, a folded group member by
+member. What a program painted is stripped on the way — the escape codes are
+this terminal's, not part of what was said — and the copy rides the same
+clipboard path `/copy` and the drag selection use. The mode's rail captions
+what was caught and how far it ran, until the next key says the reader has
+moved on. Copy is why a message is an addressable row here at all: it expands
+nothing, and it holds the one thing most worth carrying away.
+
+Half-page keys move the cursor through a long transcript at a pace that keeps
+context — half the pane per press, with the cursor following the pane rather
+than staying lit on a row nobody can see.
 
 ### The input frame
 
@@ -304,6 +328,18 @@ Severity leads as a word. Resolution is honest about its limits: where the
 blast radius cannot be determined, the card says so rather than reporting a
 confident nothing. What the containment profile allows is reported from what
 is actually in force, not from what was configured.
+
+A card can outgrow the panel it is allowed, and what does not fit is
+never merely clipped. The body scrolls in place behind counted tails — the
+last visible line says how many more rows there are and names the key that
+brings them — and a body wider than the panel pans by columns, a line still
+running past the edge ending in a marker that says the rest is one press
+away. The decision run and the stated way out never move, because a decision
+whose keys can scroll off is not one. The scroll describes one card's body
+and starts over with the next card. The full view is one key on a command
+card too, not only an edit's diff: the whole command, its warnings and its
+blast radius take the screen the diff already knows how to take, and give it
+back with the decision still waiting.
 
 A card arrives when the agent needs it, which is not when the reader is ready
 for it. What it may do to a half-typed draft, and when its letters become live
