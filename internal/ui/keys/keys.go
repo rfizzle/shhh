@@ -146,9 +146,9 @@ var Draft = DraftKeys{
 
 	Answer: bind("ctrl+space", "answer it", "ctrl+space"),
 
-	Clear:  bind("esc", "clear the input", "esc"),
-	Cancel: bind("ctrl+c", "cancel the response, then the input", "ctrl+c"),
-	Quit:   bind("ctrl+d", "quit", "ctrl+d"),
+	Clear:  bind("esc", "clear the input; empty, cancel the turn", "esc"),
+	Cancel: bind("ctrl+c", "cancel the turn (press twice), then the input", "ctrl+c"),
+	Quit:   bind("ctrl+d", "quit (press twice; a live turn asks)", "ctrl+d"),
 }
 
 // ReadingKeys are reading mode's own. It is a takeover, so its letters

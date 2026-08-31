@@ -138,15 +138,13 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		return m, nil
 
 	case name == "/exit" || name == "/quit" || name == "/q":
-		m.quitting = true
-		m.cancelSubagents()
-		if m.cancel != nil {
-			m.cancel()
+		// A typed command is deliberate, so an idle quit goes straight
+		// out; over a live turn even it confirms, because what it costs is
+		// the turn's work, not the reader's time.
+		if m.working() {
+			return m.openQuitConfirm()
 		}
-		if m.runCancel != nil {
-			m.runCancel()
-		}
-		return m, m.quitCmd()
+		return m, m.quitNow()
 
 	case name == "/run":
 		// Bare /run with several code blocks opens the picker; one

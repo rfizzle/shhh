@@ -117,6 +117,10 @@ const (
 	// stateTodoPause: a backlog run is paused on the person — the plan, the
 	// questions and the size are showing, with go ahead / re-plan / stop.
 	stateTodoPause
+	// stateQuitConfirm: the inline confirm quitting over a live turn asks
+	// through (docs/interface/surfaces.md#the-inline-confirm) — a surface,
+	// so the turn keeps running while the question is up.
+	stateQuitConfirm
 	// stateUndoConfirm: the inline confirm an undo asks through (inline
 	// confirm) — what it would restore, what has drifted since, and esc to
 	// decline. It borrows the bottom panel, not the transcript.
@@ -670,6 +674,11 @@ type Model struct {
 	undoAsk    *components.UndoConfirm
 	undoPlan   changeset.UndoPlan
 	undoReturn state
+	// The two-press windows and the quit question (cancel.go): armed is
+	// the open window between a first press and its second, quitAsk the
+	// confirm while quitting over a live turn is being asked about.
+	armed   armedPress
+	quitAsk *components.Confirm
 	// Per-turn changeset store: changes records every applied edit
 	// with the content on both sides, keyed by turn, and is what /diff
 	// renders; tracker answers whether git knew about a file when it was
@@ -1260,12 +1269,28 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// the sequence.
 		return m.updateSelectionScroll(msg)
 
+	case armExpiredMsg:
+		// The window between a first press and its second shut on its own;
+		// repainting is what reverts the rail's hint. A stale expiry — the
+		// window was consumed or re-armed since — matches nothing and
+		// changes nothing.
+		if msg.seq == m.armed.seq {
+			m.disarm()
+		}
+		return m, nil
+
 	case tea.KeyPressMsg:
 		// Every key stamps the clock a decision's arrival reads (
 		// interrupt.go). It is stamped here rather than on the draft's own
 		// path because the question is whether the reader is at the keyboard,
 		// not which surface they were talking to.
 		m.lastKeypress = time.Now()
+		// And every key consumes an armed two-press window (cancel.go),
+		// whichever surface answers it: a reader who went on typing — or
+		// answered a card — was not confirming anything. The draft's own
+		// handlers below read the captured value and re-arm as their answer.
+		armed := m.armed
+		m.disarm()
 		// Mouse reporting is the one setting with a chord of its own (
 		// reading mode), and the only key answered before the surfaces are: what it
 		// costs — the terminal's own click-drag selection — is discovered at
@@ -1334,6 +1359,9 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if m.state == stateUndoConfirm {
 			return m.updateUndoConfirm(msg)
 		}
+		if m.state == stateQuitConfirm {
+			return m.updateQuitConfirm(msg)
+		}
 		if m.state == stateKeyEntry {
 			return m.updateKeyEntry(msg)
 		}
@@ -1365,18 +1393,16 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		switch pressed := msg.String(); {
 		case keys.Is(pressed, keys.Draft.Quit):
-			m.quitting = true
-			m.cancelSubagents()
-			if m.cancel != nil {
-				m.cancel()
+			// Quitting over a live turn is a question, not a chord: the
+			// confirm names what it would cancel and what the autosave
+			// keeps (docs/interface/surfaces.md#the-inline-confirm).
+			if m.working() {
+				return m.openQuitConfirm()
 			}
-			if m.runCancel != nil {
-				m.runCancel()
+			if armed.open(armQuit) {
+				return m, m.quitNow()
 			}
-			if m.classifierCancel != nil {
-				m.classifierCancel()
-			}
-			return m, m.quitCmd()
+			return m, m.armPress(armQuit, keys.Shown(keys.Draft.Quit))
 		case keys.Is(pressed, keys.Draft.Cancel):
 			// While attached, Ctrl+C acts on the child: cancel its turn.
 			if m.attachedTo != "" {
@@ -1400,10 +1426,17 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, nil
 			}
 			if m.state == stateStreaming {
-				m.cancelStreaming()
-				m.viewport.SetLines(m.renderHistoryLines())
-				m.viewport.GotoBottom()
-				return m, m.autosaveCmd()
+				// The first press arms the cancel and the rails say so;
+				// only a second within the window abandons the turn
+				// (docs/interface/surfaces.md#the-input-frame). The
+				// scoped cancels — a child, the classifier, a running
+				// command, and a compaction, which costs one summary
+				// request and keeps the conversation — stay single-press:
+				// those are reversible acts, not minutes of work.
+				if m.compacting || armed.open(armCancel) {
+					return m.cancelTurnNow()
+				}
+				return m, m.armPress(armCancel, keys.Shown(keys.Draft.Cancel))
 			}
 			if m.decisionUngated() {
 				// Ctrl+C keeps the meaning the card has always given it: it
@@ -1418,8 +1451,12 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.historyIdx = len(m.inputHistory)
 				return m, nil
 			}
-			m.quitting = true
-			return m, m.quitCmd()
+			// An empty idle draft: the chord means quit, and quitting is
+			// two presses like every other way of walking away.
+			if armed.open(armQuit) {
+				return m, m.quitNow()
+			}
+			return m, m.armPress(armQuit, keys.Shown(keys.Draft.Cancel))
 		case keys.Is(pressed, keys.Draft.Mode):
 			// Cycle the permission mode; attached, it cycles the
 			// child's mode clamped to the orchestrator's ceiling.
@@ -1553,6 +1590,17 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.attachedTo != "" && strings.TrimSpace(m.input.Value()) == "" {
 				m.detachOne()
 				return m, nil
+			}
+			// Empty draft while the turn streams: esc is the interrupt
+			// every harness shares, feeding the same two-press window as
+			// the cancel chord — either key's second press cancels
+			// (docs/interface/surfaces.md#the-input-frame). With a draft,
+			// esc spent this press clearing it; the next one arms.
+			if strings.TrimSpace(m.input.Value()) == "" && m.state == stateStreaming {
+				if m.compacting || armed.open(armCancel) {
+					return m.cancelTurnNow()
+				}
+				return m, m.armPress(armCancel, keys.Shown(keys.Draft.Clear))
 			}
 			m.input.Reset()
 			m.historyIdx = len(m.inputHistory)
@@ -2233,6 +2281,8 @@ func (m Model) takeoverPanel(width int) string {
 		inputView = m.renderReviewHint()
 	case stateUndoConfirm:
 		inputView = m.renderUndoConfirm()
+	case stateQuitConfirm:
+		inputView = m.renderQuitConfirm()
 	case stateKeyEntry:
 		inputView = m.renderKeyEntry()
 	case statePressure:
@@ -3551,9 +3601,12 @@ Keys:
                  gives them the keyboard, and until then every letter goes
                  into the draft. Esc leaves the decision waiting; n is how
                  you say no
-  Esc            Clear the input
-  Ctrl+C         Cancel response / clear input / quit
-  Ctrl+D         Quit
+  Esc            Clear the input; on an empty draft while a turn runs, press
+                 twice to cancel the turn
+  Ctrl+C         Cancel the turn (press twice) / clear the input / quit
+                 (press twice on an empty idle draft)
+  Ctrl+D         Quit — press twice; with a turn running it asks first,
+                 saying what is cancelled and what the autosave keeps
   PgUp/PgDn      Page the transcript, leaving the keyboard in the prompt.
                  Scrolling away pauses the follow while a turn streams; the
                  notice rail counts what is below and PgDn walks back to it

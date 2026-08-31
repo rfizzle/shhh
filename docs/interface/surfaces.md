@@ -171,6 +171,20 @@ standing. The editor has the terminal while it runs, which is why the key is
 refused rather than queued while a turn is in flight or a decision is waiting
 — neither can be watched from inside somebody else's editor.
 
+Abandoning work is never one keystroke. A turn in flight is minutes of work,
+and the keys that end things are the keys a reflex produces — so the first
+press of an interrupt opens a short window and the rails say what a second
+press will do; only the second press inside the window cancels, and a window
+that expires costs nothing and says nothing. Esc on an empty draft is that
+interrupt, the one key every other harness taught, and the cancel chord feeds
+the same window; interrupting keeps everything the turn already did. Quitting
+from an idle session takes the same two presses. Quitting over a live turn is
+a real question rather than a window: the inline confirm states what will be
+cancelled and what the autosave keeps, and the default is No. Keys that end
+something already scoped — a running command, the permission classifier, a
+decision on its card — keep their single press, because those are reversible
+acts, not abandoned work.
+
 ### The inspector rail
 
 Past a width threshold, a rail on the right answers the standing questions —

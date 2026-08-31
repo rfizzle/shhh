@@ -206,6 +206,34 @@ func TestGolden_PromptFrame(t *testing.T) {
 	})
 }
 
+// TestGolden_PressAgain captures the two-press windows and the quit question
+// (cancel.go): the armed hint at every width — the wide layout says it on the
+// bottom rail, the narrower ones on the notice rail, because the invariant
+// that the surface says what a key will do cannot depend on the terminal
+// being wide — and the inline confirm quitting over a live turn opens.
+func TestGolden_PressAgain(t *testing.T) {
+	captureGolden(t, "press-again", "the two-press windows", goldenWidths, func(width int) []golden.Panel {
+		armed := func(kind armKind, key string, st state) string {
+			m := goldenModel(t, width)
+			m.state = st
+			m.armed = armedPress{kind: kind, key: key, deadline: time.Now().Add(time.Hour), seq: 1}
+			return promptSurface(m)
+		}
+		confirm := func() string {
+			m := goldenModel(t, width)
+			m.state = stateStreaming
+			mm, _ := m.openQuitConfirm()
+			m = mm.(Model)
+			return m.takeoverPanel(m.contentWidth())
+		}
+		return []golden.Panel{
+			{Label: "cancel armed · a second press abandons the turn", View: armed(armCancel, "esc", stateStreaming)},
+			{Label: "quit armed · idle", View: armed(armQuit, "ctrl+d", stateInput)},
+			{Label: "quit confirm · over a live turn", View: confirm()},
+		}
+	})
+}
+
 // TestGolden_StagedRail captures the frame with something waiting to ride
 // : the chips between the notices and the box they will leave
 // with, at every width, so the rail's own ladder and its place in the stack

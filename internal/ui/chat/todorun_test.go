@@ -253,6 +253,8 @@ func TestTodoRun_CancelStopsTheRun(t *testing.T) {
 	m.streaming = "## Plan: half"
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+	m = updated.(Model)
 	if m.todoRun != nil {
 		t.Fatal("a cancelled stage turn should stop the run, not be graded")
 	}

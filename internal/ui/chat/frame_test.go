@@ -135,8 +135,8 @@ func TestFrame_GutterAndHintsSwapWhileWorking(t *testing.T) {
 	if !strings.Contains(view, "│ ▸ ") || !strings.Contains(view, "thinking…") {
 		t.Fatalf("working frame missing the steering gutter and the turn status:\n%s", view)
 	}
-	if !strings.Contains(view, "enter queues steering · / commands · ctrl+c cancel") {
-		t.Fatalf("working frame missing the steering hints:\n%s", view)
+	if !strings.Contains(view, "esc cancels the turn · enter queues steering · / commands") {
+		t.Fatalf("working frame missing the interrupt and steering hints:\n%s", view)
 	}
 	if strings.Contains(view, "enter send") {
 		t.Fatalf("working frame should swap out the idle hints:\n%s", view)

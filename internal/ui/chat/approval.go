@@ -751,6 +751,8 @@ func (m Model) bottomPanelHeight() int {
 		lines = m.todoPauseLines()
 	case stateUndoConfirm:
 		lines = m.undoConfirmLines()
+	case stateQuitConfirm:
+		lines = m.quitConfirmLines()
 	case stateKeyEntry:
 		lines = m.keyEntryLines()
 	case stateFocus:

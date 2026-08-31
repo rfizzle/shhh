@@ -335,10 +335,12 @@ func TestStreaming_CancelPreservesPartial(t *testing.T) {
 	updated, _ = m.Update(streamStartedMsg{events: events, cancel: cancel})
 	m = updated.(Model)
 
-	// Receive one token, then cancel
+	// Receive one token, then cancel: the first press arms, the second acts.
 	updated, _ = m.Update(tokenMsg{text: "partial"})
 	m = updated.(Model)
 
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
 
@@ -384,14 +386,20 @@ func TestExit_CtrlD(t *testing.T) {
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 
+	// The first press arms the quit window; the second quits.
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'd', Mod: tea.ModCtrl})
+	m = updated.(Model)
+	if m.quitting {
+		t.Fatal("a single Ctrl+D should arm, not quit")
+	}
 	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'd', Mod: tea.ModCtrl})
 	m = updated.(Model)
 
 	if !m.quitting {
-		t.Fatal("Ctrl+D should set quitting")
+		t.Fatal("Ctrl+D twice should set quitting")
 	}
 	if cmd == nil {
-		t.Fatal("Ctrl+D should return a quit cmd")
+		t.Fatal("Ctrl+D twice should return a quit cmd")
 	}
 }
 
@@ -470,7 +478,9 @@ func TestExit_CtrlC_DuringStreaming_DoesNotQuit(t *testing.T) {
 	updated, _ = m.Update(tokenMsg{text: "partial"})
 	m = updated.(Model)
 
-	// Ctrl+C during streaming cancels but does not quit
+	// Ctrl+C twice during streaming cancels but does not quit
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
 
@@ -489,14 +499,17 @@ func TestExit_CtrlC_DuringInput_Quits(t *testing.T) {
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 
+	// Two presses: the first arms the quit window, the second quits.
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+	m = updated.(Model)
 	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
 
 	if !m.quitting {
-		t.Fatal("Ctrl+C during input should quit")
+		t.Fatal("Ctrl+C twice during input should quit")
 	}
 	if cmd == nil {
-		t.Fatal("Ctrl+C during input should return quit cmd")
+		t.Fatal("Ctrl+C twice during input should return quit cmd")
 	}
 }
 
@@ -530,7 +543,9 @@ func TestExit_SlashQuit_DuringStreaming_CancelsAndQuits(t *testing.T) {
 
 	// Now type /quit — this won't work mid-stream since input is disabled,
 	// but verify the slash command logic works from input state
-	// First cancel streaming to get back to input
+	// First cancel streaming (two presses) to get back to input
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
 
@@ -981,7 +996,9 @@ func TestCancelDuringToolRun_IgnoresStaleResults(t *testing.T) {
 	}})
 	m = updated.(Model)
 
-	// User cancels while the tool is still running.
+	// User cancels while the tool is still running: arm, then act.
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
 
@@ -1186,11 +1203,16 @@ func TestCtrlC_ClearsNonEmptyInputBeforeQuitting(t *testing.T) {
 	}
 	_ = cmd
 
-	// Second Ctrl+C on the now-empty input quits.
+	// The second press arms the quit window; the third quits.
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+	m = updated.(Model)
+	if m.quitting {
+		t.Fatal("Ctrl+C on empty input should arm, not quit")
+	}
 	updated, cmd = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
 	if !m.quitting || cmd == nil {
-		t.Fatal("Ctrl+C on empty input should quit")
+		t.Fatal("Ctrl+C twice on empty input should quit")
 	}
 }
 
@@ -2013,9 +2035,11 @@ func TestSteering_CtrlCRestoresQueueToInput(t *testing.T) {
 
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
 	m = updated.(Model)
+	updated, _ = m.Update(tea.KeyPressMsg{Code: 'c', Mod: tea.ModCtrl})
+	m = updated.(Model)
 
 	if m.state != stateInput {
-		t.Fatal("Ctrl+C must keep its hard-cancel semantics")
+		t.Fatal("Ctrl+C twice must keep its hard-cancel semantics")
 	}
 	if len(m.steering) != 0 {
 		t.Fatal("cancel should drain the steering queue")
@@ -2057,8 +2081,17 @@ func TestSteering_QuitCommandStillQuits(t *testing.T) {
 	m := steeringModel(t, mockStream)
 	m = sendText(t, m, "/exit")
 
-	if !m.quitting {
-		t.Fatal("/exit should quit even while the agent is working")
+	// The agent is working, so /exit asks before throwing the turn away.
+	if m.quitting {
+		t.Fatal("/exit over a live turn should ask, not quit")
+	}
+	if m.state != stateQuitConfirm {
+		t.Fatalf("/exit over a live turn should open the quit confirm, got state %d", m.state)
+	}
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
+	m = updated.(Model)
+	if !m.quitting || cmd == nil {
+		t.Fatal("[y] on the quit confirm should quit")
 	}
 }
 

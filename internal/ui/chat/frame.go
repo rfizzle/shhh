@@ -242,21 +242,48 @@ func (m Model) frameHints() string {
 			keys.Shown(keys.Draft.Cancel) + " stop the run",
 		}
 	case m.attachedTo != "":
+		// The quit chord acts on the whole session even from a child, so
+		// its armed window is said here too.
+		if note := m.armedNotice(); note != "" {
+			hints = []string{note}
+			break
+		}
 		hints = []string{
 			keys.Shown(keys.Agent.Detach) + " detach",
 			keys.Shown(keys.Draft.Agents) + " agents",
 		}
 	case m.working():
+		// An open two-press window replaces the hints: what the next
+		// press does is the one thing the rail must say (cancel.go).
+		if note := m.armedNotice(); note != "" {
+			hints = []string{note}
+			break
+		}
 		// Commands run mid-turn now, so the working rail says so;
 		// with children in flight the agent manager is the first thing to
-		// reach for.
+		// reach for. While the turn streams, the interrupt leads — esc is
+		// the key the reader's other harnesses taught them.
 		steer := keys.Shown(keys.Draft.Send) + " queues steering"
 		cancel := keys.Shown(keys.Draft.Cancel) + " cancel"
+		if m.turnState() == stateStreaming {
+			interrupt := keys.Shown(keys.Draft.Clear) + " cancels the turn"
+			hints = []string{interrupt, steer, "/ commands"}
+			if active, _ := m.activeAgents(); active > 0 {
+				hints = []string{interrupt, steer, keys.Shown(keys.Draft.Agents) + " agents", "/ commands"}
+			}
+			break
+		}
 		hints = []string{steer, "/ commands", cancel}
 		if active, _ := m.activeAgents(); active > 0 {
 			hints = []string{steer, keys.Shown(keys.Draft.Agents) + " agents", "/ commands", cancel}
 		}
 	default:
+		// The quit window's hint takes the idle rail the same way the
+		// cancel window takes the working one.
+		if note := m.armedNotice(); note != "" {
+			hints = []string{note}
+			break
+		}
 		// Six hints, because at the width the rail first appears the row has
 		// 106 columns for them and these six spend 100 — a seventh is seven
 		// columns more than there is (frame_test.go holds that measurement).
@@ -347,6 +374,15 @@ func (m Model) noticeLine() string {
 		return ""
 	}
 	var parts []string
+	// Below the wide breakpoint the frame has no hint rail, so an open
+	// two-press window says what the next press does here — the invariant
+	// that the surface says what a key will do cannot depend on the
+	// terminal being wide (cancel.go).
+	if m.frameLayout() != frameWide {
+		if note := m.armedNotice(); note != "" {
+			parts = append(parts, sty.Frame.NoticeInfo.Render(note))
+		}
+	}
 	if m.updateNotice != "" {
 		parts = append(parts, sty.UpdateNotice.Render(m.updateNotice))
 	}
