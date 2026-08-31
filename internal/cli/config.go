@@ -10,6 +10,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/attachment"
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -36,7 +37,7 @@ func newConfigCmd() *cobra.Command {
 				return result.err
 			}
 			if result.saved {
-				fmt.Fprintln(cmd.OutOrStderr(), "Configuration saved to "+config.WritePath())
+				_ = report.Fprintln(cmd.OutOrStderr(), report.Done("wrote", config.WritePath()))
 			}
 			return nil
 		},
@@ -63,8 +64,7 @@ func newConfigSetCmd() *cobra.Command {
 			if err := config.Save(cfg); err != nil {
 				return err
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "%s = %s\n", args[0], args[1])
-			return nil
+			return report.Fprintln(cmd.OutOrStdout(), report.Done("set", args[0]+" = "+args[1]))
 		},
 	}
 }

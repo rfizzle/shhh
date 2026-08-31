@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/sandbox"
@@ -191,21 +191,20 @@ func startSandbox(ctx context.Context, cfg config.Config, env []string) (run fun
 // discovery, the isolation-level ladder, image policy, and owned containers.
 func containerReport(cfg config.Config) string {
 	eng := sandbox.DetectEngine(cfg.Sandbox.ContainerEngine)
-	var b strings.Builder
-	b.WriteString("Container sandboxes:\n")
-	if eng.OK {
-		fmt.Fprintf(&b, "  engine:    %s\n", eng.Detail)
-	} else {
-		fmt.Fprintf(&b, "  engine:    unavailable — %s\n", eng.Detail)
+	engine := eng.Detail
+	if !eng.OK {
+		engine = "unavailable — " + eng.Detail
 	}
+	image := cfg.Sandbox.ContainerImage
 	if err := sandbox.ValidateImage(cfg.Sandbox.ContainerImage, cfg.Sandbox.ImageAllowlist); err != nil {
-		fmt.Fprintf(&b, "  image:     %v\n", err)
-	} else {
-		fmt.Fprintf(&b, "  image:     %s\n", cfg.Sandbox.ContainerImage)
+		image = err.Error()
 	}
-	fmt.Fprintf(&b, "  owned:     %s\n", ownedSummary())
-	b.WriteString(sandbox.IsolationReport(sandbox.Detect(), eng))
-	return strings.TrimRight(b.String(), "\n")
+	r := report.Report{Title: "/sandbox status", Sections: []report.Section{{Pairs: []report.Pair{
+		{Key: "engine", Value: engine},
+		{Key: "image", Value: image},
+		{Key: "owned", Value: ownedSummary()},
+	}}}}
+	return r.String() + "\n\n" + sandbox.IsolationReport(sandbox.Detect(), eng)
 }
 
 func ownedSummary() string {
@@ -240,16 +239,21 @@ func sandboxReportNow(cfg config.Config, sc *scope.Scope) string {
 // The session's own /add-dir says the same thing in the session's words; this
 // is the sandbox's answer, next to the mechanism that enforces it.
 func scopeReport(sc *scope.Scope) string {
-	var b strings.Builder
-	b.WriteString("Working scope:\n")
-	fmt.Fprintf(&b, "  root:      %s\n", sc.Root())
+	r := report.Report{Title: "/sandbox scope", Sections: []report.Section{{
+		Pairs: []report.Pair{{Key: "root", Value: sc.Root()}},
+	}}}
 	dirs := sc.Dirs()
 	if len(dirs) == 0 {
-		b.WriteString("  added:     (none) — /add-dir <path> puts a directory in scope\n")
-	} else {
-		fmt.Fprintf(&b, "  added:     %s\n", strings.Join(dirs, "\n             "))
+		r.Sections = append(r.Sections, report.Section{Rows: []report.Row{
+			report.Empty("nothing added to the scope", "/add-dir <path> puts a directory in it")}})
+		return r.String()
 	}
-	return strings.TrimRight(b.String(), "\n")
+	rows := make([]report.Row, 0, len(dirs))
+	for _, dir := range dirs {
+		rows = append(rows, report.Row{State: report.Pass, Subject: dir})
+	}
+	r.Sections = append(r.Sections, report.Section{Header: "ADDED", Rows: rows})
+	return r.String()
 }
 
 // sandboxManage handles the /sandbox subcommands (doctor, scope, list,
@@ -291,28 +295,34 @@ func sandboxList(ctx context.Context) string {
 	if err != nil {
 		return "Error: " + err.Error()
 	}
+	out := report.Report{Title: "/sandbox list", Subject: countOf(len(recs), "container", "containers")}
 	if len(recs) == 0 {
-		return "No sandbox containers."
+		return emptyInto(out, "no sandbox containers", "/sandbox doctor").String()
 	}
-	var b strings.Builder
-	b.WriteString("Sandbox containers:\n")
 	now := time.Now().UTC()
-	for _, r := range recs {
-		state := "unknown"
-		if path, err := exec.LookPath(r.Engine); err != nil {
+	rows := make([]report.Row, 0, len(recs))
+	for _, rec := range recs {
+		state, live := "unknown", report.Skip
+		if path, err := exec.LookPath(rec.Engine); err != nil {
 			state = "engine missing"
-		} else if s, gone, err := sandbox.ContainerState(ctx, path, r.Name); gone {
+			live = report.Fail
+		} else if s, gone, err := sandbox.ContainerState(ctx, path, rec.Name); gone {
 			state = "vanished"
 		} else if err == nil {
-			state = s
+			state, live = s, report.Pass
 		}
-		expiry := "expires " + r.ExpiresAt.Local().Format("Jan 2 15:04")
-		if r.Expired(now) {
-			expiry = "expired"
+		expiry := "expires " + rec.ExpiresAt.Local().Format("Jan 2 15:04")
+		if rec.Expired(now) {
+			expiry, live = "expired", report.Skip
 		}
-		fmt.Fprintf(&b, "  %s  %s  %s  %s  %s\n    %s\n", r.ID, r.Engine, state, expiry, r.Workspace, r.Image)
+		rows = append(rows, report.Row{
+			State: live, Name: rec.ID, Subject: rec.Engine,
+			Detail: joinDetail(rec.Workspace, expiry), Outcome: state,
+			Body: []string{rec.Image},
+		})
 	}
-	return strings.TrimRight(b.String(), "\n")
+	out.Sections = []report.Section{{Rows: rows}}
+	return out.String()
 }
 
 func sandboxDestroy(ctx context.Context, id string) string {
@@ -331,7 +341,8 @@ func sandboxDestroy(ctx context.Context, id string) string {
 	if err := sandbox.DestroyContainer(ctx, path, store, rec); err != nil {
 		return "Error: " + err.Error()
 	}
-	return "Destroyed sandbox " + id + "."
+	return report.Report{Sections: []report.Section{{Rows: []report.Row{
+		report.Done("destroyed sandbox", id)}}}}.String()
 }
 
 func sandboxPrune(ctx context.Context) string {
@@ -340,10 +351,11 @@ func sandboxPrune(ctx context.Context) string {
 		return "Error: " + err.Error()
 	}
 	res := sandbox.Reconcile(ctx, store, time.Now().UTC())
-	out := fmt.Sprintf("Pruned: %d reaped (TTL), %d dropped (vanished), %d kept.",
-		len(res.Reaped), len(res.Dropped), len(res.Kept))
-	if len(res.Errors) > 0 {
-		out += "\nProblems:\n  " + strings.Join(res.Errors, "\n  ")
+	out := report.Report{Sections: []report.Section{{Rows: []report.Row{
+		report.Done("pruned", fmt.Sprintf("%d reaped (TTL) · %d dropped (vanished) · %d kept",
+			len(res.Reaped), len(res.Dropped), len(res.Kept)))}}}}
+	for _, e := range res.Errors {
+		out.Notes = append(out.Notes, report.Note{State: report.Warn, Text: e})
 	}
-	return out
+	return out.String()
 }

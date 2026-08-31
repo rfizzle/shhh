@@ -11,21 +11,24 @@ package cli
 // every share is already a percentage. That is why it can draw `$12.80` and
 // `94% answered` without knowing what a price table or an exit code is.
 //
-// `--table` (and a non-terminal stdout) still prints the old table, because a
-// metrics run is the one thing in this product people pipe.
+// `--text` (and a non-terminal stdout) prints the report, because a metrics
+// run is the one thing in this product people pipe. It is one block per
+// provider and model rather than the fifteen-column table it used to be:
+// fifteen columns soft-wrap into unreadability at eighty, and a figure the
+// store has nothing for is left out rather than dashed
+// (docs/interface/surfaces.md#outside-the-tui).
 
 import (
 	"fmt"
-	"io"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
-	"text/tabwriter"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/term"
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -43,7 +46,9 @@ const metricsTrendDays = 7
 
 func newMetricsCmd() *cobra.Command {
 	var window string
+	var text bool
 	var table bool
+	var asJSON bool
 
 	cmd := &cobra.Command{
 		Use:   "metrics",
@@ -65,17 +70,6 @@ func newMetricsCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("query metrics: %w", err)
 			}
-			if len(summary) == 0 {
-				fmt.Fprintf(cmd.OutOrStdout(),
-					"No usage data for %s. Generate some commands first!\n", label)
-				return nil
-			}
-
-			prices := loadPricing()
-			if table || !term.IsTerminal(os.Stdout.Fd()) {
-				return printMetricsTable(cmd.OutOrStdout(), summary, prices)
-			}
-
 			trend, err := db.MetricsTokensByDay(since)
 			if err != nil {
 				return fmt.Errorf("query token trend: %w", err)
@@ -84,17 +78,29 @@ func newMetricsCmd() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("query action split: %w", err)
 			}
-			screen := newMetricsScreen(metricsData{
+			data := metricsData{
 				Summary: summary, Trend: trend, Actions: actions,
-				Prices: prices, Window: label, Now: time.Now(),
-			})
-			return runMetricsScreen(screen)
+				Prices: loadPricing(), Window: label, Now: time.Now(),
+			}
+			switch {
+			case asJSON:
+				return writeJSON(cmd, metricsJSON(data))
+			case text || table || len(summary) == 0 || !term.IsTerminal(os.Stdout.Fd()):
+				return report.Fprint(cmd.OutOrStdout(), metricsReport(data))
+			}
+			return runMetricsScreen(newMetricsScreen(data))
 		},
 	}
 
 	cmd.Flags().StringVar(&window, "window", "all",
 		`time window: "all", or a number of days (e.g. 7d, 30d)`)
-	cmd.Flags().BoolVar(&table, "table", false, "print the plain table instead of the surface")
+	cmd.Flags().BoolVar(&text, "text", false, "print the report as text instead of the surface")
+	cmd.Flags().BoolVar(&table, "table", false, "")
+	// --table named a fifteen-column table that no longer exists. The flag
+	// stays so a script that passes it keeps working, and is hidden so
+	// nothing new learns it.
+	_ = cmd.Flags().MarkHidden("table")
+	cmd.Flags().BoolVar(&asJSON, "json", false, "emit the metrics as JSON")
 
 	return cmd
 }
@@ -449,34 +455,23 @@ func metricsSpend(cost float64, priced bool) string {
 	return fmt.Sprintf("$%.2f", cost)
 }
 
-// metricsTokens is the token columns, short enough to keep the table's
-// columns narrow: `412`, `318k`, `2.9M`. A count the store never recorded is
-// an em dash rather than a zero.
+// metricsTokens is the surface's token column. A count the store never
+// recorded is an em dash rather than a zero, which is the one thing the
+// surface needs that a report does not; the number itself is the shared one.
 func metricsTokens(v *int64) string {
 	if v == nil {
 		return components.NoDuration
 	}
-	n := *v
-	switch {
-	case n >= 1_000_000:
-		return fmt.Sprintf("%.1fM", float64(n)/1_000_000)
-	case n >= 1_000:
-		return fmt.Sprintf("%dk", n/1_000)
-	}
-	return strconv.FormatInt(n, 10)
+	return tokenCount(*v)
 }
 
-// metricsLatency is the TTFT columns: milliseconds under a second, seconds
-// with one decimal above it, and an em dash where nothing was timed — the
-// same reading every duration field in the product makes.
+// metricsLatency is the surface's TTFT column: the shared reading, with an em
+// dash where nothing was timed.
 func metricsLatency(ms *float64) string {
 	if ms == nil {
 		return components.NoDuration
 	}
-	if *ms < 1000 {
-		return fmt.Sprintf("%.0fms", *ms)
-	}
-	return fmt.Sprintf("%.1fs", *ms/1000)
+	return latencyText(ms)
 }
 
 // metricsModel hosts the surface. It carries no state of its own beyond the
@@ -517,70 +512,138 @@ func runMetricsScreen(screen components.MetricsScreen) error {
 	return err
 }
 
-// printMetricsTable is the plain table, for a pipe or for --table. It states
-// every column the store has, including the ones the surface reads as blocks,
-// because the thing a pipe is for is the columns.
-func printMetricsTable(out io.Writer, summary []storage.ProviderMetrics, prices *pricing.Table) error {
-	w := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(w, "PROVIDER\tMODEL\tCOUNT\tSUCCESS\tEXEC\tEXEC OK\tRATED\tRATED OK\tAVG TTFT\tP95 TTFT\tAVG TOTAL\tP95 TOTAL\tTOKENS IN\tTOKENS OUT\tEST. COST")
-	for _, m := range summary {
-		fmt.Fprintf(w, "%s\t%s\t%d\t%s\t%d\t%s\t%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-			m.Provider,
-			m.Model,
-			m.Count,
-			fmtPct(m.SuccessRate),
-			m.ExecCount,
-			fmtPctPtr(m.ExecSuccessRate),
-			m.RatedCount,
-			fmtPctPtr(m.RatingRate),
-			fmtMs(m.AvgTTFT),
-			fmtMs(m.P95TTFT),
-			fmtMs(m.AvgDuration),
-			fmtMs(m.P95Duration),
-			fmtTokens(m.TotalTokensIn),
-			fmtTokens(m.TotalTokensOut),
-			fmtCost(prices, m.Model, m.TotalTokensIn, m.TotalTokensOut),
-		)
+// metricsReport is the run as text: one block per provider and model, with
+// every figure the store has grouped by the question it answers, and the day
+// and action breakdowns under their own headers.
+func metricsReport(data metricsData) report.Report {
+	names := metricsNames(data.Summary)
+	count := 0
+	for _, m := range data.Summary {
+		count += m.Count
 	}
-	return w.Flush()
+	r := report.Report{
+		Title: "shhh metrics",
+		Subject: fmt.Sprintf("%s · %s · %s", data.Window,
+			countOf(count, "request", "requests"), countOf(len(data.Summary), "model", "models")),
+	}
+	if len(data.Summary) == 0 {
+		return emptyInto(r, "no usage recorded for "+data.Window, "run `shhh <prompt>` to record one")
+	}
+	for _, m := range data.Summary {
+		r.Sections = append(r.Sections, report.Section{
+			Header: metricsBlockHeader(m, names),
+			Pairs:  metricsFigures(m, data.Prices),
+		})
+	}
+	if rows := metricsDayRows(data.Trend); len(rows) > 0 {
+		r.Sections = append(r.Sections, report.Section{Header: "BY DAY", Rows: rows})
+	}
+	if rows := metricsActionRows(data.Actions); len(rows) > 0 {
+		r.Sections = append(r.Sections, report.Section{Header: "BY ACTION", Rows: rows})
+	}
+	return r
 }
 
-func fmtMs(v *float64) string {
-	if v == nil {
-		return "-"
+// metricsBlockHeader names one pair. Two providers serving the same model id
+// is the one case the bare name would be a lie about two blocks being the
+// same thing, and metricsNames has already decided that.
+func metricsBlockHeader(m storage.ProviderMetrics, names map[string]string) string {
+	name := names[metricsKey(m.Provider, m.Model)]
+	if name == m.Provider || m.Provider == "" {
+		return name
 	}
-	return fmt.Sprintf("%.0fms", *v)
+	return m.Provider + " · " + name
 }
 
-func fmtPct(v float64) string {
-	return fmt.Sprintf("%.0f%%", v*100)
+// metricsFigures is one pair's numbers, grouped by the question each answers:
+// how much was asked, how fast it came back, how much of it there was, and
+// what it cost. A figure the store has nothing for is left out — a dash in a
+// column is a reading the interface invented
+// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
+func metricsFigures(m storage.ProviderMetrics, prices *pricing.Table) []report.Pair {
+	var pairs []report.Pair
+	add := func(key, value string) {
+		if value != "" {
+			pairs = append(pairs, report.Pair{Key: key, Value: value})
+		}
+	}
+	add("requests", joinDetail(countOf(m.Count, "request", "requests"),
+		fmt.Sprintf("%d%% answered", int(m.SuccessRate*100+0.5))))
+	if m.ExecCount > 0 {
+		add("ran", joinDetail(countOf(m.ExecCount, "run", "runs"), metricsShare(m.ExecSuccessRate, "exited 0")))
+	}
+	if m.RatedCount > 0 {
+		add("rated", joinDetail(countOf(m.RatedCount, "rating", "ratings"), metricsShare(m.RatingRate, "liked")))
+	}
+	add("first token", metricsPair(m.AvgTTFT, m.P95TTFT))
+	add("total", metricsPair(m.AvgDuration, m.P95Duration))
+	add("tokens", metricsTokenPair(m.TotalTokensIn, m.TotalTokensOut))
+	if cost, priced := metricsCost(prices, m.Model, m.TotalTokensIn, m.TotalTokensOut); priced {
+		add("cost", metricsSpend(cost, true))
+	}
+	return pairs
 }
 
-func fmtPctPtr(v *float64) string {
-	if v == nil {
-		return "-"
+// metricsShare is a rate as a percentage and the word it is a percentage of.
+func metricsShare(rate *float64, word string) string {
+	if rate == nil {
+		return ""
 	}
-	return fmt.Sprintf("%.0f%%", *v*100)
+	return fmt.Sprintf("%d%% %s", int(*rate*100+0.5), word)
 }
 
-func fmtTokens(v *int64) string {
-	if v == nil {
-		return "-"
+// metricsPair is an average and its p95 together, or just the one that was
+// measured.
+func metricsPair(avg, p95 *float64) string {
+	value := latencyText(avg)
+	if tail := latencyText(p95); tail != "" {
+		value = joinDetail(value, "p95 "+tail)
 	}
-	return fmt.Sprintf("%d", *v)
+	return value
 }
 
-func fmtCost(prices *pricing.Table, model string, tokensIn, tokensOut *int64) string {
-	if prices == nil || tokensIn == nil || tokensOut == nil {
-		return "-"
+// metricsTokenPair is the vitals rail's own usage segment: ↑ in and ↓ out,
+// each half present only if it was recorded.
+func metricsTokenPair(in, out *int64) string {
+	var parts []string
+	if in != nil {
+		parts = append(parts, "↑"+tokenCount(*in))
 	}
-	inCost, outCost, found := prices.Cost(model, *tokensIn, *tokensOut)
-	if !found {
-		return "-"
+	if out != nil {
+		parts = append(parts, "↓"+tokenCount(*out))
 	}
-	total := inCost + outCost
-	if total < 0.01 {
-		return fmt.Sprintf("$%.4f", total)
+	return strings.Join(parts, " ")
+}
+
+// metricsDayRows is the token total for each day something was asked, oldest
+// first — the same query the surface's sparklines are drawn from.
+func metricsDayRows(trend []storage.MetricsDayTokens) []report.Row {
+	days := metricsDaysOf(trend)
+	rows := make([]report.Row, 0, len(days))
+	for _, day := range days {
+		rows = append(rows, report.Row{State: report.Pass, Name: day.Day,
+			Subject: metricsTokenPair(&day.TokensIn, &day.TokensOut)})
 	}
-	return fmt.Sprintf("$%.2f", total)
+	return rows
+}
+
+// metricsActionRows is what became of the commands, counted. The categories
+// are the surface's own, so the two readings of a run cannot drift apart.
+func metricsActionRows(actions []storage.MetricsActionUsage) []report.Row {
+	counts := map[string]int{}
+	var order []string
+	for _, a := range actions {
+		category := metricsCategory(a.Action, a.Success)
+		if _, seen := counts[category]; !seen {
+			order = append(order, category)
+		}
+		counts[category] += a.Count
+	}
+	sort.SliceStable(order, func(i, j int) bool { return counts[order[i]] > counts[order[j]] })
+	rows := make([]report.Row, 0, len(order))
+	for _, category := range order {
+		rows = append(rows, report.Row{State: report.Pass, Name: category,
+			Subject: countOf(counts[category], "request", "requests")})
+	}
+	return rows
 }

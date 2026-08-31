@@ -40,6 +40,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/term"
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/lsp"
@@ -102,28 +103,36 @@ func migrateFlag(cmd *cobra.Command) {
 // record rather than a result.
 func runMigrations(out io.Writer) error {
 	pending := migrate.Plan()
+	r := report.Report{Title: "shhh doctor --migrate"}
 	if len(pending) == 0 {
-		fmt.Fprintln(out, "Nothing to migrate: this machine is on the current layout.")
-		return nil
+		return report.Fprint(out, emptyInto(r, "nothing to migrate",
+			"this machine is on the current layout"))
 	}
+	r.Subject = countOf(len(pending), "migration", "migrations")
+	var applyErr error
 	for _, p := range pending {
-		fmt.Fprintf(out, "%s\n", p.Name)
-		for _, step := range p.Steps {
-			fmt.Fprintf(out, "  %s\n", step)
-		}
+		row := report.Row{State: report.Run, Subject: p.Name, Fix: p.Steps}
 		if !p.Auto() {
-			fmt.Fprintf(out, "  shhh cannot make this one for you.\n")
+			row.State, row.Outcome = report.Skip, "by hand"
+			row.Consequence = "shhh cannot make this one for you"
+			r.Sections = append(r.Sections, report.Section{Rows: []report.Row{row}})
 			continue
 		}
 		lines, err := p.Apply()
-		for _, line := range lines {
-			fmt.Fprintf(out, "  %s\n", line)
-		}
+		row.State, row.Outcome = report.Pass, "applied"
+		row.Body = lines
 		if err != nil {
-			return err
+			row.State, row.Outcome, applyErr = report.Fail, "failed", err
+		}
+		r.Sections = append(r.Sections, report.Section{Rows: []report.Row{row}})
+		if applyErr != nil {
+			break
 		}
 	}
-	return nil
+	if err := report.Fprint(out, r); err != nil {
+		return err
+	}
+	return applyErr
 }
 
 // doctorCommand builds a run over some set of the checks. `shhh doctor` takes
@@ -140,8 +149,9 @@ func doctorCommand(use, short, long string, probes []doctorProbe) *cobra.Command
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg := ConfigFrom(cmd.Context())
 			if table || !term.IsTerminal(os.Stdout.Fd()) {
-				fmt.Fprintln(cmd.OutOrStdout(), doctorReport(runDoctorChecks(cmd.Context(), cfg, probes)))
-				return nil
+				return report.Fprint(cmd.OutOrStdout(),
+					doctorReportOf("shhh doctor", "check", "checks",
+						runDoctorChecks(cmd.Context(), cfg, probes)))
 			}
 			return runDoctorScreen(cfg, probes)
 		},
@@ -998,59 +1008,41 @@ func doctorUpdate(current string, latest string) doctorFinding {
 	}
 }
 
-// doctorReport is the run as text: the same rows the surface draws, without
-// the grid. It is what `--table` prints and what `[c]` copies, so a report
-// pasted into an issue carries the consequences and the fixes too — those are
-// the half of the run somebody else needs in order to help.
-func doctorReport(checks []components.DoctorCheck) string {
-	return doctorReportTitled("shhh doctor", "check", "checks", checks)
-}
-
-// doctorReportTitled is the report under another command's name: `shhh
-// mcp` prints the same rows over servers rather than checks.
-func doctorReportTitled(title, one, many string, checks []components.DoctorCheck) string {
-	var b strings.Builder
-	fmt.Fprintf(&b, "%s — %s\n\n", title, countOf(len(checks), one, many))
+// doctorReportOf is the run as a report: the same rows the surface draws,
+// without the grid. It is what `--table` prints and what `[c]` copies, so a
+// report pasted into an issue carries the consequences and the fixes too —
+// those are the half of the run somebody else needs in order to help. `shhh
+// mcp` prints the same rows over servers rather than checks, which is what
+// the title and the nouns are for.
+//
+// The name column is pinned to eight rather than sized to the run, because
+// eight is the discipline: a check named wider than the verb field is the
+// signal that the vocabulary has drifted, and a column that grew to fit it
+// would hide exactly that (docs/interface/principles.md#one-grid).
+func doctorReportOf(title, one, many string, checks []components.DoctorCheck) report.Report {
+	rows := make([]report.Row, 0, len(checks))
 	for _, check := range checks {
-		target := check.Subject
-		if check.Detail != "" {
-			target = joinDetail(target, check.Detail)
-		}
-		fmt.Fprintf(&b, "%s %-8s %s", doctorReportGlyph(check.State), check.Name, target)
-		if check.Outcome != "" {
-			fmt.Fprintf(&b, "  [%s]", check.Outcome)
-		}
-		b.WriteString("\n")
-		if check.Consequence != "" {
-			fmt.Fprintf(&b, "    %s\n", check.Consequence)
-		}
-		for _, line := range check.Fix {
-			fmt.Fprintf(&b, "      %s\n", line)
-		}
+		rows = append(rows, report.Row{
+			State:       report.StateOf(check.State),
+			Name:        check.Name,
+			Subject:     check.Subject,
+			Detail:      check.Detail,
+			Outcome:     check.Outcome,
+			Consequence: check.Consequence,
+			Fix:         check.Fix,
+		})
 	}
-	fmt.Fprintf(&b, "\n%s\n", doctorSummaryLine(checks))
-	return strings.TrimRight(b.String(), "\n")
+	return report.Report{
+		Title:    title,
+		Subject:  countOf(len(checks), one, many),
+		Sections: []report.Section{{Rows: rows, NameWidth: doctorNameWidth}},
+		Tally:    doctorSummaryLine(checks),
+	}
 }
 
-// doctorReportGlyph is the text report's leading glyph. It is the surface's
-// own, because a report pasted somewhere else should still read as this
-// product's — and because the glyph, not the colour, is what carries
-// the state in the first place (invariant 1).
-func doctorReportGlyph(state components.DoctorState) string {
-	switch state {
-	case components.DoctorWarned:
-		return "⚠"
-	case components.DoctorFailed:
-		return "✗"
-	case components.DoctorSkipped:
-		return "⊘"
-	case components.DoctorRunning:
-		return "▸"
-	case components.DoctorQueued:
-		return "·"
-	}
-	return "✓"
-}
+// doctorNameWidth is the verb field the doctor and mcp reports pin their name
+// column to — the same eight columns the transcript's grid gives a verb.
+const doctorNameWidth = 8
 
 // doctorSummaryLine counts every outcome, the same tally the surface's foot
 // row states.
@@ -1331,7 +1323,7 @@ func (m doctorModel) report() string {
 	if m.screen.Title != "" {
 		title, one, many = m.screen.Title, m.nouns[0], m.nouns[1]
 	}
-	return doctorReportTitled(title, one, many, m.screen.Checks)
+	return doctorReportOf(title, one, many, m.screen.Checks).String()
 }
 
 // View is the frame: the doctor screen, on the alt screen it takes over.

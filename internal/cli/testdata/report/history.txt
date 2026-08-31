@@ -1,0 +1,8 @@
+  shhh history — 3 commands
+
+  ✓ run   2h ago · delete every log file older than a week  [exit 0]
+      find . -mtime +7 -delete
+  ✗ run   yesterday · rebuild the index and restart the service  [exit 1]
+      make index && systemctl restart indexer
+  ✓ copy  4m ago · show the ten biggest files  [copied]
+      du -ah . | sort -rh | head -10

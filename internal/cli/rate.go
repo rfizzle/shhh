@@ -4,8 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/spf13/cobra"
 )
 
@@ -29,24 +32,36 @@ func newRateCmd() *cobra.Command {
 				return fmt.Errorf("query unrated commands: %w", err)
 			}
 			if len(entries) == 0 {
-				fmt.Println("Nothing to rate — all recent commands are rated.")
-				return nil
+				return report.Fprint(cmd.OutOrStdout(), emptyInto(
+					report.Report{Title: "shhh rate"},
+					"nothing to rate", "every recent command is rated already"))
 			}
 
-			fmt.Printf("%d unrated command(s). Did each one do what you wanted?\n", len(entries))
-			fmt.Println("  [y] worked  [n] didn't work  [s] skip  [q] quit")
-			fmt.Println()
+			out := cmd.OutOrStdout()
+			_ = report.Fprint(out, report.Report{
+				Title:   "shhh rate",
+				Subject: countOf(len(entries), "unrated command", "unrated commands"),
+				Sections: []report.Section{{Rows: []report.Row{{State: report.Run,
+					Subject: "did each one do what you wanted?",
+					Detail:  "[y] worked · [n] didn't · [s] skip · [q] quit"}}}},
+			})
+			fmt.Fprintln(out)
 
 			reader := bufio.NewReader(os.Stdin)
 			rated := 0
 			for i, e := range entries {
-				fmt.Printf("%d/%d  %s\n", i+1, len(entries), e.CreatedAt.Local().Format("Jan 2 15:04"))
-				fmt.Printf("  prompt:  %s\n", e.Prompt)
-				fmt.Printf("  command: %s\n", e.Command)
-				if e.ExitCode != nil {
-					fmt.Printf("  exit:    %d\n", *e.ExitCode)
+				pairs := []report.Pair{
+					{Key: "prompt", Value: oneLineText(e.Prompt)},
+					{Key: "command", Value: oneLineText(e.Command)},
 				}
-				fmt.Print("  worked? [y/n/s/q] ")
+				if e.ExitCode != nil {
+					pairs = append(pairs, report.Pair{Key: "exit", Value: strconv.FormatInt(*e.ExitCode, 10)})
+				}
+				_ = report.Fprint(out, report.Report{
+					Title:    fmt.Sprintf("%d/%d · %s", i+1, len(entries), historyAgo(e.CreatedAt, time.Now())),
+					Sections: []report.Section{{Pairs: pairs}},
+				})
+				fmt.Fprint(out, "  worked? [y/n/s/q] ")
 
 				input, err := reader.ReadString('\n')
 				if err != nil {
@@ -64,16 +79,13 @@ func newRateCmd() *cobra.Command {
 					}
 					rated++
 				case "q", "quit":
-					fmt.Printf("Rated %d command(s).\n", rated)
-					return nil
+					return report.Fprintln(out, report.Done("rated", countOf(rated, "command", "commands")))
 				default:
 					// skip
 				}
-				fmt.Println()
+				fmt.Fprintln(out)
 			}
-
-			fmt.Printf("Rated %d command(s).\n", rated)
-			return nil
+			return report.Fprintln(out, report.Done("rated", countOf(rated, "command", "commands")))
 		},
 	}
 

@@ -1,0 +1,22 @@
+  shhh metrics — last 7 days · 37 requests · 2 models
+
+  openai · gpt-5.2
+
+  requests:     34 requests · 94% answered
+  ran:          12 runs · 88% exited 0
+  first token:  420ms · p95 1.2s
+  tokens:       ↑41.2k ↓9.8k
+
+  anthropic · claude-sonnet-5
+
+  requests:  3 requests · 100% answered
+
+  BY DAY
+
+  ✓ 2026-08-30  ↑20.0k ↓5.0k
+  ✓ 2026-08-31  ↑21.2k ↓4.8k
+
+  BY ACTION
+
+  ✓ run     22 requests
+  ✓ copied  9 requests

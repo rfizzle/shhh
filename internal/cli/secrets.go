@@ -12,6 +12,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/secret"
 	"github.com/rfizzle/shhh/internal/ui/chat"
@@ -82,8 +83,11 @@ func secretsManager(v *secret.Vault) func(args []string) (note, announce string)
 			if err := v.Add(name, val); err != nil {
 				return "Error: " + err.Error(), ""
 			}
-			return fmt.Sprintf("Secret %s set (%d bytes). Commands see it as $%s; the model sees %s.",
-					name, len(val), name, secret.Placeholder(name)),
+			return report.Report{Sections: []report.Section{{Rows: []report.Row{
+					report.Done("set secret", name),
+					{State: report.Skip, Subject: "commands see $" + name,
+						Detail: "the model sees " + secret.Placeholder(name)},
+				}}}}.String(),
 				fmt.Sprintf("A secret named %s is now available to every command you run as the environment variable $%s. "+
 					"Use the variable, never a value; anywhere the value would appear you will see %s instead.",
 					name, name, secret.Placeholder(name))
@@ -92,9 +96,12 @@ func secretsManager(v *secret.Vault) func(args []string) (note, announce string)
 				return usage, ""
 			}
 			if !v.Remove(args[1]) {
-				return "No secret named " + args[1] + ".", ""
+				return notFound("secret named", args[1], "/secret list"), ""
 			}
-			return "Forgot secret " + args[1] + ". Commands no longer see $" + args[1] + ".",
+			return report.Report{Sections: []report.Section{{Rows: []report.Row{
+					report.Done("forgot secret", args[1]),
+					{State: report.Skip, Subject: "commands no longer see $" + args[1]},
+				}}}}.String(),
 				"The secret " + args[1] + " has been removed; $" + args[1] + " is no longer set for commands."
 		}
 		return usage, ""
@@ -105,15 +112,18 @@ func secretsManager(v *secret.Vault) func(args []string) (note, announce string)
 // prefixes that would narrow a guess.
 func secretsListing(v *secret.Vault) string {
 	names := v.Names()
+	r := report.Report{Title: "/secret", Subject: countOf(len(names), "secret", "secrets")}
 	if len(names) == 0 {
-		return "No secrets in this session. /secret set NAME reads one from the environment; --secret NAME or secrets.env in config sets them at start."
+		return emptyInto(r, "no secrets in this session",
+			"/secret set NAME reads one from the environment").String()
 	}
-	var b strings.Builder
-	fmt.Fprintf(&b, "%d secret(s), each an environment variable in every command the model runs, masked as [secret:NAME] in everything it reads:\n", len(names))
+	rows := make([]report.Row, 0, len(names))
 	for _, n := range names {
-		b.WriteString("  $" + n + "\n")
+		rows = append(rows, report.Row{State: report.Pass, Name: "$" + n,
+			Subject: "in every command", Detail: "masked as " + secret.Placeholder(n)})
 	}
-	return strings.TrimRight(b.String(), "\n")
+	r.Sections = []report.Section{{Rows: rows}}
+	return r.String()
 }
 
 // scrubRunner scrubs a command runner's output. The runner's output is

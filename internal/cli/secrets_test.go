@@ -34,7 +34,7 @@ func TestSecretsManager(t *testing.T) {
 	manage := secretsManager(v)
 
 	note, announce := manage(nil)
-	if !strings.HasPrefix(note, "No secrets") || announce != "" {
+	if !strings.Contains(note, "⊘ no secrets in this session") || announce != "" {
 		t.Fatalf("empty listing: %q / %q", note, announce)
 	}
 	note, announce = manage([]string{"set", "SHHH_TEST_TOKEN"})
@@ -54,7 +54,7 @@ func TestSecretsManager(t *testing.T) {
 	if _, announce = manage([]string{"forget", "SHHH_TEST_TOKEN"}); announce == "" || v.Len() != 0 {
 		t.Fatal("forget must remove and announce")
 	}
-	if note, _ = manage([]string{"forget", "SHHH_TEST_TOKEN"}); !strings.HasPrefix(note, "No secret") {
+	if note, _ = manage([]string{"forget", "SHHH_TEST_TOKEN"}); !strings.Contains(note, "✗ no secret named SHHH_TEST_TOKEN") {
 		t.Fatalf("second forget: %q", note)
 	}
 }

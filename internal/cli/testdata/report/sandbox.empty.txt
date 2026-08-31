@@ -1,0 +1,3 @@
+  /sandbox list — 0 containers
+
+  ⊘ no sandbox containers · /sandbox doctor

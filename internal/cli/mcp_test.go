@@ -104,7 +104,7 @@ func TestMCPToolSourcesReadEachStatus(t *testing.T) {
 }
 
 func TestMCPListingSaysWhatEachServerBecame(t *testing.T) {
-	if got := mcpListing(nil, nil, ""); !strings.Contains(got, "No MCP servers defined") {
+	if got := mcpListing(nil, nil, ""); !strings.Contains(got, "⊘ no MCP servers defined") {
 		t.Errorf("empty listing = %q", got)
 	}
 	ts := &mcp.Toolset{Reports: []mcp.Report{
@@ -112,7 +112,7 @@ func TestMCPListingSaysWhatEachServerBecame(t *testing.T) {
 		{Definition: mcp.Definition{Name: "proj", Scope: mcp.ScopeProject, Transport: mcp.TransportStdio, Command: "npx"}, Status: mcp.StatusUntrusted},
 	}}
 	got := mcpListing(ts, &mcp.Catalog{Diagnostics: []string{"/repo/.mcp.json: server Bad Name: bad"}}, "/repo")
-	for _, want := range []string{"⚠  keyed", "unset: X_TOKEN", "export X_TOKEN=...", "⚠  proj", "shhh mcp trust proj", "Bad Name", "0 servers connected"} {
+	for _, want := range []string{"⚠ keyed", "unset: X_TOKEN", "export X_TOKEN=...", "⚠ proj", "shhh mcp trust proj", "Bad Name", "0 servers connected"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("listing lacks %q:\n%s", want, got)
 		}

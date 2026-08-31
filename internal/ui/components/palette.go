@@ -161,6 +161,15 @@ func detectProfile(out io.Writer, environ []string) colorprofile.Profile {
 // reads it to tell Bubble Tea what it is already drawing for.
 func Profile() colorprofile.Profile { return profile }
 
+// DetectProfile settles the profile for a stream other than the one the
+// palette was built against — the plain-text reports, which are written to
+// whichever stream a command was handed and may be a pipe while stdout is a
+// terminal. It is exported so those reports read NO_COLOR exactly the way the
+// palette does rather than the way colorprofile does on its own.
+func DetectProfile(out io.Writer, environ []string) colorprofile.Profile {
+	return detectProfile(out, environ)
+}
+
 // SetProfile re-resolves every style against a different profile. It is the
 // same door SetMono uses — a token is a colour and a profile together, and
 // changing either means the derived styles are stale.

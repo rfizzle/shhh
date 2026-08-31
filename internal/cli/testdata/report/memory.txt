@@ -1,0 +1,11 @@
+  shhh memory — 2 memories · /repo
+
+  PROJECT
+
+  ✓ m1  preference · user · sat
+      prefers short answers
+
+  GLOBAL
+
+  ✓ m2  convention · agent · 3h ago
+      commit subjects are imperative

@@ -23,26 +23,26 @@ func testMemoryManager(t *testing.T) (func(args []string) string, *memory.Store)
 func TestMemoryManager_ListAddForget(t *testing.T) {
 	manage, _ := testMemoryManager(t)
 
-	if out := manage(nil); !strings.Contains(out, "No memories yet") {
+	if out := manage(nil); !strings.Contains(out, "⊘ nothing remembered yet") {
 		t.Fatalf("empty list: %q", out)
 	}
 
 	out := manage([]string{"add", "prefers", "short", "answers"})
-	if !strings.Contains(out, "[m1]") || !strings.Contains(out, "(project preference)") {
+	if !strings.Contains(out, "✓ remembered m1") || !strings.Contains(out, "project preference") {
 		t.Fatalf("default add should be project preference: %q", out)
 	}
 
 	out = manage([]string{"add", "global", "convention", "commit subjects are imperative"})
-	if !strings.Contains(out, "(global convention)") {
+	if !strings.Contains(out, "global convention") {
 		t.Fatalf("scope and kind tokens should apply: %q", out)
 	}
 
 	out = manage([]string{"list"})
-	if !strings.Contains(out, "[m1]") || !strings.Contains(out, "[m2]") || !strings.Contains(out, "user") {
+	if !strings.Contains(out, "m1") || !strings.Contains(out, "m2") || !strings.Contains(out, "user") {
 		t.Fatalf("list should show both entries with provenance: %q", out)
 	}
 
-	if out := manage([]string{"forget", "m1"}); !strings.Contains(out, "Forgot memory [m1]") {
+	if out := manage([]string{"forget", "m1"}); !strings.Contains(out, "✓ forgot m1") {
 		t.Fatalf("forget: %q", out)
 	}
 	if out := manage([]string{"forget", "m1"}); !strings.Contains(out, "Error") {
@@ -70,7 +70,7 @@ func TestMemorySaver_AgentProvenance(t *testing.T) {
 	if err != nil {
 		t.Fatalf("save: %v", err)
 	}
-	if !strings.Contains(out, "Saved memory [m1]") {
+	if !strings.Contains(out, "✓ remembered m1") {
 		t.Fatalf("save result: %q", out)
 	}
 	entries, err := store.List()

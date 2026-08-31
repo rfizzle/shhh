@@ -5,11 +5,11 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"text/tabwriter"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/term"
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -50,19 +50,12 @@ func newHistoryCmd() *cobra.Command {
 				return fmt.Errorf("query history: %w", err)
 			}
 
-			if len(entries) == 0 {
-				if search != "" {
-					fmt.Printf("No history matching %q.\n", search)
-				} else {
-					fmt.Println("No history yet. Generate some commands first!")
-				}
-				return nil
+			// An empty store has nothing to browse, so it says so as text
+			// whichever way it was reached: a browser drawn over no rows is a
+			// screen the reader has to leave to be told anything.
+			if !interactive || len(entries) == 0 {
+				return report.Fprint(cmd.OutOrStdout(), historyReport(entries, search, time.Now()))
 			}
-
-			if !interactive {
-				return printHistoryTable(entries)
-			}
-
 			return runHistoryBrowser(db, entries, search)
 		},
 	}
@@ -72,6 +65,7 @@ func newHistoryCmd() *cobra.Command {
 	cmd.Flags().BoolVar(&table, "table", false, "show table view instead of interactive browser")
 
 	cmd.AddCommand(newHistoryClearCmd())
+	cmd.AddCommand(newHistoryShowCmd())
 
 	return cmd
 }
@@ -85,14 +79,14 @@ func newHistoryClearCmd() *cobra.Command {
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if !yes {
-				fmt.Print("Delete all history entries? [y/N] ")
+				fmt.Fprint(cmd.OutOrStdout(), "Delete all history entries? [y/N] ")
 				var confirm string
 				// No answer — a closed stdin — reads as an empty line, and an
 				// empty line is No.
 				_, _ = fmt.Scanln(&confirm)
 				if confirm != "y" && confirm != "Y" {
-					fmt.Println("Cancelled.")
-					return nil
+					return report.Fprintln(cmd.OutOrStdout(),
+						report.Row{State: report.Skip, Subject: "cancelled", Detail: "nothing was deleted"})
 				}
 			}
 
@@ -106,8 +100,8 @@ func newHistoryClearCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			fmt.Printf("Deleted %d entries.\n", n)
-			return nil
+			return report.Fprintln(cmd.OutOrStdout(),
+				report.Done("deleted", countOf(int(n), "history entry", "history entries")))
 		},
 	}
 
@@ -116,19 +110,131 @@ func newHistoryClearCmd() *cobra.Command {
 	return cmd
 }
 
-func printHistoryTable(entries []storage.HistoryEntry) error {
-	w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(w, "TIME\tPROMPT\tCOMMAND\tPROVIDER\tACTION")
-	for _, e := range entries {
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\t%s\n",
-			e.CreatedAt.Local().Format("Jan 02 15:04"),
-			truncate(e.Prompt, 40),
-			truncate(e.Command, 40),
-			e.Provider+"/"+e.Model,
-			e.Action,
-		)
+// newHistoryShowCmd is one entry in full — the half of a row the listing drops
+// so its prompts line up. Which model answered is here rather than in the
+// listing because it is the field a reader goes looking for after something
+// went wrong, not one they scan.
+func newHistoryShowCmd() *cobra.Command {
+	return &cobra.Command{
+		Use:   "show <id>",
+		Short: "Show one history entry in full",
+		Args:  cobra.ExactArgs(1),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			db, err := openStore()
+			if err != nil {
+				return fmt.Errorf("open database: %w", err)
+			}
+			defer db.Close()
+
+			entries, err := db.ListHistory(storage.HistoryFilter{})
+			if err != nil {
+				return fmt.Errorf("query history: %w", err)
+			}
+			for _, e := range entries {
+				if strconv.FormatInt(e.ID, 10) != args[0] {
+					continue
+				}
+				return report.Fprint(cmd.OutOrStdout(), historyEntryReport(e, time.Now()))
+			}
+			return fmt.Errorf("no history entry %s; `shhh history --table` lists them", args[0])
+		},
 	}
-	return w.Flush()
+}
+
+// historyReport is the listing as text: one row per entry, the prompt as the
+// target and the command it produced under it.
+func historyReport(entries []storage.HistoryEntry, search string, now time.Time) report.Report {
+	subject := countOf(len(entries), "command", "commands")
+	if search != "" {
+		subject = fmt.Sprintf("%d matching %q", len(entries), search)
+	}
+	r := report.Report{Title: "shhh history", Subject: subject}
+	if len(entries) == 0 {
+		if search != "" {
+			r.Subject = fmt.Sprintf("nothing matching %q", search)
+			return emptyInto(r, "no history matching "+strconv.Quote(search), "shhh history")
+		}
+		return emptyInto(r, "no history yet", "run `shhh <prompt>` to record one")
+	}
+	rows := make([]report.Row, 0, len(entries))
+	for _, e := range entries {
+		rows = append(rows, historyReportRow(e, now))
+	}
+	r.Sections = []report.Section{{Rows: rows}}
+	return r
+}
+
+// historyReportRow is one entry on the grid. The glyph and the outcome are
+// the same reading the browser makes — an exit code outranks what was done
+// with the command — and the action is the row's name, because `run` and
+// `copy` are a closed vocabulary and a name column is what one of those is
+// for.
+func historyReportRow(e storage.HistoryEntry, now time.Time) report.Row {
+	state, outcome := historyOutcome(e)
+	row := report.Row{
+		State:   historyState(state),
+		Name:    historyAction(e),
+		Subject: historyAgo(e.CreatedAt, now),
+		Detail:  oneLineText(e.Prompt),
+		Outcome: outcome,
+	}
+	if command := oneLineText(e.Command); command != "" {
+		row.Body = []string{command}
+	}
+	return row
+}
+
+// historyEntryReport is `shhh history show`: everything the listing has plus
+// the fields it drops.
+func historyEntryReport(e storage.HistoryEntry, now time.Time) report.Report {
+	_, outcome := historyOutcome(e)
+	pairs := []report.Pair{
+		{Key: "when", Value: historyAgo(e.CreatedAt, now)},
+		{Key: "prompt", Value: oneLineText(e.Prompt)},
+		{Key: "command", Value: oneLineText(e.Command)},
+		{Key: "outcome", Value: outcome},
+	}
+	if model := historyModelName(e); model != "" {
+		pairs = append(pairs, report.Pair{Key: "model", Value: model})
+	}
+	if d := historyDuration(e.Duration); d != "" {
+		pairs = append(pairs, report.Pair{Key: "took", Value: d})
+	}
+	if counts := historyTokens(e); counts != "" {
+		pairs = append(pairs, report.Pair{Key: "tokens", Value: counts})
+	}
+	return report.Report{
+		Title:    "shhh history " + strconv.FormatInt(e.ID, 10),
+		Subject:  historyAction(e),
+		Sections: []report.Section{{Pairs: pairs}},
+	}
+}
+
+// historyAction is what was done with the command, in one word. An entry
+// recorded before the column existed says nothing rather than guessing.
+func historyAction(e storage.HistoryEntry) string {
+	switch e.Action {
+	case "run-all", "run-step":
+		return "run"
+	case "":
+		return "—"
+	}
+	return e.Action
+}
+
+// historyState reads the browser's verdict on an entry as the report's. They
+// are the same readings under two names: the grid and the report each own the
+// vocabulary they draw with, and this is the one seam between them.
+func historyState(s components.ActivityState) report.State {
+	switch s {
+	case components.ActivityFailed:
+		return report.Fail
+	case components.ActivityDenied:
+		return report.Skip
+	case components.ActivityQueued:
+		return report.Queue
+	}
+	return report.Pass
 }
 
 // historyModel hosts the history browser (

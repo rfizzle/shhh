@@ -5,9 +5,10 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"text/tabwriter"
+	"time"
 
 	"github.com/charmbracelet/x/term"
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -35,16 +36,13 @@ func newSnippetsCmd() *cobra.Command {
 				return fmt.Errorf("list snippets: %w", err)
 			}
 
-			if len(snippets) == 0 {
-				fmt.Println("No saved snippets. Use \"Save\" from the action bar after generating a command.")
-				return nil
-			}
-
 			isTTY := term.IsTerminal(os.Stdout.Fd())
-			if table || !isTTY {
-				return printSnippetsTable(snippets)
+			// Nothing to browse is said as text whichever way it was reached;
+			// a browser drawn over no rows is a screen the reader has to leave
+			// to be told anything.
+			if table || !isTTY || len(snippets) == 0 {
+				return report.Fprint(cmd.OutOrStdout(), snippetsReport(snippets, time.Now()))
 			}
-
 			return runSnippetsBrowser(db, snippets)
 		},
 	}
@@ -59,18 +57,31 @@ func newSnippetsCmd() *cobra.Command {
 	return cmd
 }
 
-func printSnippetsTable(snippets []storage.Snippet) error {
-	w := tabwriter.NewWriter(os.Stdout, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(w, "NAME\tDESCRIPTION\tCOMMAND\tSAVED")
-	for _, s := range snippets {
-		fmt.Fprintf(w, "%s\t%s\t%s\t%s\n",
-			s.Name,
-			truncate(s.Description, 30),
-			truncate(s.Command, 50),
-			s.UpdatedAt.Local().Format("Jan 02 15:04"),
-		)
+// snippetsReport is the listing as text: the name and what it is for on the
+// row, the command it saves under it. The command is a body line rather than
+// a column because it is the thing itself — a command clipped to a column is
+// a command nobody can run.
+func snippetsReport(snippets []storage.Snippet, now time.Time) report.Report {
+	r := report.Report{Title: "shhh snippets", Subject: countOf(len(snippets), "snippet", "snippets")}
+	if len(snippets) == 0 {
+		return emptyInto(r, "no snippets saved yet",
+			"press [s] on an answer, or `shhh snippets --help`")
 	}
-	return w.Flush()
+	rows := make([]report.Row, 0, len(snippets))
+	for _, s := range snippets {
+		row := report.Row{
+			State:   report.Pass,
+			Name:    s.Name,
+			Subject: s.Description,
+			Detail:  historyAgo(s.UpdatedAt, now),
+		}
+		if command := oneLineText(s.Command); command != "" {
+			row.Body = []string{command}
+		}
+		rows = append(rows, row)
+	}
+	r.Sections = []report.Section{{Rows: rows}}
+	return r
 }
 
 func runSnippetsBrowser(db *storage.DB, snippets []storage.Snippet) error {
@@ -114,9 +125,10 @@ func runSnippetsBrowser(db *storage.DB, snippets []storage.Snippet) error {
 	case "Copy":
 		res := clipboard.Copy(command)
 		if !res.OK {
-			fmt.Fprintf(os.Stderr, "clipboard: %s\n", res.Warning)
+			_ = report.Fprintln(os.Stderr, report.Row{State: report.Fail,
+				Subject: "clipboard", Detail: res.Warning})
 		} else {
-			fmt.Println("Copied to clipboard.")
+			_ = report.Fprintln(os.Stdout, report.Done("copied snippet", name))
 		}
 	case "Run":
 		code := runner.Run(command)
@@ -125,7 +137,7 @@ func runSnippetsBrowser(db *storage.DB, snippets []storage.Snippet) error {
 		if err := db.DeleteSnippet(name); err != nil {
 			return fmt.Errorf("delete snippet: %w", err)
 		}
-		fmt.Printf("Deleted snippet %q.\n", name)
+		_ = report.Fprintln(os.Stdout, report.Done("deleted snippet", name))
 	case "Rename":
 		fmt.Print("New name: ")
 		var newName string
@@ -135,7 +147,7 @@ func runSnippetsBrowser(db *storage.DB, snippets []storage.Snippet) error {
 			if err := db.RenameSnippet(name, newName); err != nil {
 				return fmt.Errorf("rename snippet: %w", err)
 			}
-			fmt.Printf("Renamed %q → %q.\n", name, newName)
+			_ = report.Fprintln(os.Stdout, report.Done("renamed snippet", name+" → "+newName))
 		}
 	}
 
@@ -185,11 +197,10 @@ func newSnippetCopyCmd() *cobra.Command {
 
 			cr := clipboard.Copy(s.Command)
 			if cr.Warning != "" {
-				fmt.Fprintln(os.Stderr, cr.Warning)
-			} else {
-				fmt.Fprintln(os.Stderr, "Copied to clipboard.")
+				return report.Fprintln(os.Stderr, report.Row{State: report.Fail,
+					Subject: "clipboard", Detail: cr.Warning})
 			}
-			return nil
+			return report.Fprintln(os.Stderr, report.Done("copied snippet", s.Name))
 		},
 	}
 }
@@ -209,8 +220,7 @@ func newSnippetDeleteCmd() *cobra.Command {
 			if err := db.DeleteSnippet(args[0]); err != nil {
 				return err
 			}
-			fmt.Fprintf(os.Stderr, "Deleted snippet %q.\n", args[0])
-			return nil
+			return report.Fprintln(os.Stderr, report.Done("deleted snippet", args[0]))
 		},
 	}
 }

@@ -18,6 +18,7 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/lsp"
@@ -826,7 +827,8 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		}
 		if loadErr != nil {
 			if session.continueLast {
-				fmt.Fprintln(os.Stderr, "No previous session found, starting fresh.")
+				_ = report.Fprintln(os.Stderr, report.Row{State: report.Skip,
+					Subject: "no previous session", Detail: "starting fresh"})
 			} else {
 				return loadErr
 			}
@@ -995,7 +997,7 @@ func pickSavedChat(db *storage.DB) (string, error) {
 		return "", err
 	}
 	if len(entries) == 0 {
-		fmt.Fprintln(os.Stderr, "No saved chats yet.")
+		_ = report.Fprintln(os.Stderr, report.Empty("nothing saved yet", "shhh chat"))
 		return "", nil
 	}
 

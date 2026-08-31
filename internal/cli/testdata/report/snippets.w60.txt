@@ -1,0 +1,6 @@
+  shhh snippets — 2 snippets
+
+  ✓ ports    everything listening · 3h ago
+      ss -tulpn
+  ✓ biggest  sat
+      du -ah . | sort -rh | head -10

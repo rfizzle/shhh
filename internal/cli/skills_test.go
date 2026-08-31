@@ -10,7 +10,7 @@ import (
 )
 
 func TestSkillsListing(t *testing.T) {
-	if got := skillsListing(nil); !strings.HasPrefix(got, "No skills found") {
+	if got := skillsListing(nil); !strings.Contains(got, "⊘ no skills found") {
 		t.Errorf("nil catalog: %q", got)
 	}
 	root := t.TempDir()
@@ -29,7 +29,7 @@ func TestSkillsListing(t *testing.T) {
 	}
 	c := skill.Discover([]skill.Root{{Path: root, Scope: skill.ScopeUser}})
 	got := skillsListing(c)
-	if !strings.Contains(got, "pdf") || !strings.Contains(got, "user") || !strings.Contains(got, "1 skill(s)") {
+	if !strings.Contains(got, "pdf") || !strings.Contains(got, "user") || !strings.Contains(got, "1 skill") {
 		t.Errorf("listing = %q", got)
 	}
 	if !strings.Contains(got, "bad") || !strings.Contains(got, "skipped") {
@@ -39,7 +39,7 @@ func TestSkillsListing(t *testing.T) {
 		t.Error("clipping split a multi-byte character")
 	}
 	detail := skillDetail(c.Skills[0])
-	if !strings.Contains(detail, "location:") || !strings.Contains(detail, "scope:         user") {
+	if !strings.Contains(detail, "location:") || !strings.Contains(detail, "shhh skills pdf — user") {
 		t.Errorf("detail = %q", detail)
 	}
 }

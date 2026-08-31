@@ -5,10 +5,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime"
 	"strings"
 
 	"charm.land/fang/v2"
 	"github.com/mattn/go-isatty"
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/meter"
@@ -72,8 +74,15 @@ func NewRootCmd() *cobra.Command {
 			// shows the details.
 			profiles, profileErrs := profile.Load(profile.Dirs(config.Paths()))
 			profile.Register(profiles)
-			for _, perr := range profileErrs {
-				fmt.Fprintf(os.Stderr, "shhh: provider profile: %v\n", perr)
+			// The command that reports these failures itself is told about
+			// them once, in its own report, rather than here and then again
+			// as a row — the same file named twice on one screen reads as two
+			// faults. Registration still runs for it: what loaded is what a
+			// session would resolve either way.
+			if cmd.Annotations[ownsProfileErrors] == "" {
+				for _, perr := range profileErrs {
+					fmt.Fprintf(os.Stderr, "shhh: provider profile: %v\n", perr)
+				}
 			}
 
 			flags.ConfigProvider = cfg.Provider.Default
@@ -445,11 +454,21 @@ func NewRootCmd() *cobra.Command {
 // fetch wrote no cache to stop the next one. update.BackgroundCheck, which
 // PersistentPreRunE already starts, is what keeps the cache warm.
 func versionTemplate() string {
-	base := "shhh version {{.Version}}\n"
-	if r := update.CheckCached(version); r != nil {
-		base += fmt.Sprintf("Update available: %s → %s (brew upgrade shhh)\n", r.Current, r.Latest)
+	// The build is the title line rather than a row: it is what the command
+	// was asked for, not a finding about it, and only the release check below
+	// it has a state worth a glyph.
+	r := report.Report{Title: "shhh {{.Version}} · " + runtime.GOOS + "/" + runtime.GOARCH}
+	switch cached := update.CheckCached(version); {
+	case version == "dev" || version == "":
+		// The doctor's own wording for the same finding, because it is the
+		// same finding: there is nothing to compare a dev build against.
+		r.Sections = []report.Section{{Rows: []report.Row{{State: report.Skip,
+			Subject: "update check", Detail: "a dev build has no released version"}}}}
+	case cached != nil:
+		r.Sections = []report.Section{{Rows: []report.Row{{State: report.Run,
+			Subject: cached.Latest + " available", Detail: update.ReleasesPage}}}}
 	}
-	return base
+	return r.String() + "\n"
 }
 
 // ledgerTokens adapts a ledger total to the nullable column the request

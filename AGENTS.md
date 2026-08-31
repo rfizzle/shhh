@@ -112,6 +112,7 @@ All three rules yield to an explicit instruction to do otherwise.
 cmd/shhh/main.go          Entry point (cobra root command, executed through fang)
 internal/
   cli/                     All cobra commands (root, chat, code, init, doctor, etc.)
+  cli/report/              The shape every non-interactive listing prints in (rows, sections, tallies)
   agent/                   Front-end-agnostic agentic loop (conversation, tool dispatch, approval queue, round cap, repeat detection)
   provider/                LLM provider interface + implementations (anthropic, openai, gemini, openrouter)
   pricing/                 Model data: prices, context windows, reasoning flags — downloaded table over the built-in snapshot (`make model-data`)
@@ -180,6 +181,38 @@ All providers implement `StreamCompletion(ctx, messages, opts) (<-chan StreamEve
 ### TUI State Machine
 
 The chat TUI (`internal/ui/chat/model.go`) distinguishes between **turn states** (what the session's work is doing) and **surface states** (what borrows the screen). A surface can overlay while a turn keeps running underneath. This split is why `turnState()` / `setTurnState()` exist separately from `Model.state`.
+
+### CLI reports
+
+Every non-interactive listing is one shape, built in `internal/cli/report`
+([`docs/interface/surfaces.md#outside-the-tui`](docs/interface/surfaces.md#outside-the-tui)): a
+`Report` is a title, `Section`s of `Row`s (`glyph name  subject · detail
+[outcome]`, with consequence, body and fix lines beneath), `Pair`s aligned on
+the colon, `Note`s for warnings and diagnostics, and a tally. `report.Empty`
+and `report.Done` are the two one-row shapes — every empty state and every
+write confirmation in the CLI is one of them, which is what `voice_test.go`
+asserts as a pattern.
+
+`Render(width)` produces plain bytes and nothing else; `Fprint(w, r)` measures
+the stream with `term.GetSize` (falling back to 80, the exit banner's rule) and
+paints through the palette only when `components.DetectProfile` says the
+destination is above ASCII — so a pipe, `TERM=dumb` and `NO_COLOR` are
+byte-identical and escape-free, and every width calculation happens before any
+styling. A row clips its target and never its outcome. The name column sizes to
+the section's longest name capped at `NameCap`; `Section.NameWidth` pins it,
+which is what the doctor and `shhh mcp` do at eight so their closed
+vocabularies keep the drift signal. `Report.String()` renders at the fallback width, for the
+slash commands whose answers land in the transcript with no stream to measure:
+a row rendered wider than it is displayed soft-wraps instead of clipping, which
+puts the outcome on a line of its own and loses the rule.
+
+`doctorReportOf` in `internal/cli/doctor.go` is the seam from
+`components.DoctorCheck` to a report; `report.StateOf` maps the screen's state
+enum to the report's. `--json` never emits a report: each command has its own
+domain structs (`providers_json.go`, `metrics_json.go`, `memoryJSON`,
+`jsonMessages` for both transcript emitters) through the shared `writeJSON`.
+The fixtures are `internal/cli/testdata/report`, written by
+`go test ./internal/cli -update-golden`.
 
 ### TUI Components
 

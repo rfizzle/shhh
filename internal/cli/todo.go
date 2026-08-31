@@ -8,9 +8,9 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"text/tabwriter"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/spf13/cobra"
 )
@@ -28,41 +28,74 @@ func loadTodos() *todo.Store {
 // order, marked ready or naming what it waits on, then warnings and
 // diagnostics. Ready is stated per row rather than as a separate list so a
 // blocked item and a waiting item are told apart where they sit.
-func todoListing(s *todo.Store) string {
+func todoListing(s *todo.Store) string { return todoReport(s).String() }
+
+// todoReport is the backlog as a report. A file that would not load is a note
+// rather than a line after the listing: it is why an item the reader expected
+// is not on the screen.
+func todoReport(s *todo.Store) report.Report {
+	r := report.Report{Title: "shhh todo"}
 	if s.Len() == 0 && len(s.Diagnostics) == 0 {
-		return fmt.Sprintf("No backlog. Items are Markdown files under %s, one per item, with a --- header naming at least a title.", todo.Dir(s.Root))
+		// The way out is short enough to survive a narrow terminal, and the
+		// directory it resolves to goes on the line under it: a way out that
+		// clips is a way out the reader cannot take.
+		empty := report.Empty("no backlog here", "write .shhh/todo/<name>.md with a --- header")
+		empty.Body = []string{todo.Dir(s.Root)}
+		r.Sections = append(r.Sections, report.Section{Rows: []report.Row{empty}})
+		return r
 	}
-	var b strings.Builder
-	if s.Len() > 0 {
-		tw := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
-		for _, it := range s.Items {
-			size := string(it.Size)
-			if size == "" {
-				size = "-"
-			}
-			fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\t%s\n", it.Slug, it.Priority, size, todoState(s, it), it.Kind, clipRunes(it.Title, 72))
+	tally := []string{fmt.Sprintf("%d ready", len(s.Ready()))}
+	if n := s.Count(todo.StatusBlocked); n > 0 {
+		tally = append(tally, fmt.Sprintf("%d blocked", n))
+	}
+	if n := len(s.Done); n > 0 {
+		tally = append(tally, fmt.Sprintf("%d archived", n))
+	}
+	r.Subject = countOf(s.Len(), "item", "items")
+	r.Tally = strings.Join(tally, " · ")
+
+	rows := make([]report.Row, 0, s.Len())
+	for _, it := range s.Items {
+		rows = append(rows, report.Row{
+			State:   todoRowState(s, it),
+			Name:    it.Slug,
+			Subject: clipRunes(it.Title, 72),
+			Detail:  joinDetail(string(it.Kind), joinDetail(string(it.Priority), todoSize(it))),
+			Outcome: todoState(s, it),
+		})
+		for _, w := range it.Warnings {
+			r.Notes = append(r.Notes, report.Note{State: report.Warn, Text: it.Path + ": " + w})
 		}
-		tw.Flush()
-		ready := len(s.Ready())
-		fmt.Fprintf(&b, "\n%d item(s), %d ready", s.Len(), ready)
-		if n := s.Count(todo.StatusBlocked); n > 0 {
-			fmt.Fprintf(&b, ", %d blocked", n)
-		}
-		if n := len(s.Done); n > 0 {
-			fmt.Fprintf(&b, ", %d archived", n)
-		}
-		b.WriteString(".")
-		for _, it := range s.Items {
-			for _, w := range it.Warnings {
-				fmt.Fprintf(&b, "\nwarning: %s: %s", it.Path, w)
-			}
-		}
+	}
+	if len(rows) > 0 {
+		r.Sections = []report.Section{{Rows: rows}}
 	}
 	for _, d := range s.Diagnostics {
-		fmt.Fprintf(&b, "\n%s", d)
+		r.Notes = append(r.Notes, report.Note{State: report.Fail, Text: d})
 	}
-	return strings.TrimRight(b.String(), "\n")
+	return r
 }
+
+// todoRowState is the glyph an item wears: what it is waiting on is the whole
+// reason to scan this listing, so a blocked item and one waiting on a
+// dependency do not look like one that could be started now.
+func todoRowState(s *todo.Store, it todo.Item) report.State {
+	switch {
+	case it.Status == todo.StatusBlocked:
+		return report.Fail
+	case it.Status == todo.StatusInProgress:
+		return report.Run
+	case it.Status != todo.StatusOpen:
+		return report.Pass
+	case len(s.Waiting(it)) > 0:
+		return report.Skip
+	}
+	return report.Queue
+}
+
+// todoSize is the item's size where it declared one; an item that did not
+// says nothing rather than a dash.
+func todoSize(it todo.Item) string { return string(it.Size) }
 
 // todoState is the row's state column: the status, or for an open item
 // whether it is ready and if not what it waits on.
@@ -79,35 +112,34 @@ func todoState(s *todo.Store, it todo.Item) string {
 // todoDetail is `shhh todo show <slug>`: the header as read, then the body
 // as written.
 func todoDetail(s *todo.Store, it todo.Item) string {
-	var b strings.Builder
-	fmt.Fprintf(&b, "slug:       %s\ntitle:      %s\nstatus:     %s\n", it.Slug, it.Title, todoState(s, it))
-	if it.Kind != "" {
-		fmt.Fprintf(&b, "kind:       %s\n", it.Kind)
+	r := report.Report{
+		Title:   "shhh todo " + it.Slug,
+		Subject: clipRunes(it.Title, 72),
 	}
-	fmt.Fprintf(&b, "priority:   %s\n", it.Priority)
-	if it.Size != "" {
-		fmt.Fprintf(&b, "size:       %s\n", it.Size)
-	}
-	if len(it.DependsOn) > 0 {
-		fmt.Fprintf(&b, "depends on: %s\n", strings.Join(it.DependsOn, ", "))
-	}
-	if it.Created != "" {
-		fmt.Fprintf(&b, "created:    %s\n", it.Created)
-	}
-	if it.Session != "" {
-		fmt.Fprintf(&b, "session:    %s\n", it.Session)
+	pairs := []report.Pair{{Key: "status", Value: todoState(s, it)}, {Key: "priority", Value: string(it.Priority)}}
+	for _, p := range []report.Pair{
+		{Key: "kind", Value: string(it.Kind)},
+		{Key: "size", Value: string(it.Size)},
+		{Key: "depends on", Value: strings.Join(it.DependsOn, ", ")},
+		{Key: "created", Value: it.Created},
+		{Key: "session", Value: it.Session},
+	} {
+		if p.Value != "" {
+			pairs = append(pairs, p)
+		}
 	}
 	for _, f := range it.Extra {
-		fmt.Fprintf(&b, "%s: %s\n", f.Key, f.Value)
+		pairs = append(pairs, report.Pair{Key: f.Key, Value: f.Value})
 	}
-	fmt.Fprintf(&b, "file:       %s\n", it.Path)
-	for _, w := range it.Warnings {
-		fmt.Fprintf(&b, "warning:    %s\n", w)
-	}
+	pairs = append(pairs, report.Pair{Key: "file", Value: it.Path})
+	r.Sections = []report.Section{{Pairs: pairs}}
 	if body := strings.TrimSpace(it.Body); body != "" {
-		b.WriteString("\n" + body + "\n")
+		r.Sections = append(r.Sections, report.Section{Body: body})
 	}
-	return strings.TrimRight(b.String(), "\n")
+	for _, w := range it.Warnings {
+		r.Notes = append(r.Notes, report.Note{State: report.Warn, Text: w})
+	}
+	return r.String()
 }
 
 func newTodoCmd() *cobra.Command {
@@ -117,8 +149,7 @@ func newTodoCmd() *cobra.Command {
 		Long:  "List the backlog items under the checkout's .shhh/todo directory in the order a session would work them, with what each is waiting on and why any file failed to load.",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Fprintln(cmd.OutOrStdout(), todoListing(loadTodos()))
-			return nil
+			return report.Fprint(cmd.OutOrStdout(), todoReport(loadTodos()))
 		},
 	}
 	cmd.AddCommand(&cobra.Command{
@@ -159,7 +190,7 @@ func todoManager(root string) func(args []string) string {
 			}
 			it, ok := s.Find(slug)
 			if !ok {
-				return fmt.Sprintf("No backlog item %q; /todo lists them.", slug)
+				return notFound("backlog item", slug, "/todo")
 			}
 			return todoDetail(s, it)
 		case "add":
@@ -179,14 +210,17 @@ func todoManager(root string) func(args []string) string {
 			if err != nil {
 				return "Error: " + err.Error()
 			}
-			return fmt.Sprintf("Added %s (%s, medium). Fill in the criteria: /todo edit %s — or open %s.", it.Slug, it.Kind, it.Slug, path)
+			return report.Report{Sections: []report.Section{{Rows: []report.Row{
+				report.Done("added", it.Slug+" · "+string(it.Kind)+" · medium"),
+				{State: report.Run, Subject: "fill in the criteria", Detail: "/todo edit " + it.Slug, Body: []string{path}},
+			}}}}.String()
 		case "block":
 			if slug == "" {
 				return usage
 			}
 			it, ok := activeItem(s, slug)
 			if !ok {
-				return fmt.Sprintf("No active backlog item %q; /todo lists them.", slug)
+				return notFound("active backlog item", slug, "/todo")
 			}
 			if err := todo.SetStatus(it.Path, todo.StatusBlocked); err != nil {
 				return "Error: " + err.Error()
@@ -197,19 +231,19 @@ func todoManager(root string) func(args []string) string {
 					return "Error: " + err.Error()
 				}
 			}
-			return fmt.Sprintf("Blocked %s.", slug)
+			return report.Report{Sections: []report.Section{{Rows: []report.Row{report.Done("blocked", slug)}}}}.String()
 		case "open":
 			if slug == "" {
 				return usage
 			}
 			it, ok := activeItem(s, slug)
 			if !ok {
-				return fmt.Sprintf("No active backlog item %q; /todo lists them.", slug)
+				return notFound("active backlog item", slug, "/todo")
 			}
 			if err := todo.SetStatus(it.Path, todo.StatusOpen); err != nil {
 				return "Error: " + err.Error()
 			}
-			return fmt.Sprintf("Reopened %s.", slug)
+			return report.Report{Sections: []report.Section{{Rows: []report.Row{report.Done("reopened", slug)}}}}.String()
 		case "done":
 			if slug == "" {
 				return usage
@@ -218,7 +252,7 @@ func todoManager(root string) func(args []string) string {
 			if err != nil {
 				return "Error: " + err.Error()
 			}
-			return fmt.Sprintf("Archived %s to %s.", slug, to)
+			return report.Report{Sections: []report.Section{{Rows: []report.Row{report.Done("archived", slug+" → "+to)}}}}.String()
 		case "drop":
 			if slug == "" {
 				return usage
@@ -226,7 +260,7 @@ func todoManager(root string) func(args []string) string {
 			if err := todo.Remove(root, slug); err != nil {
 				return "Error: " + err.Error()
 			}
-			return fmt.Sprintf("Dropped %s; the file is deleted.", slug)
+			return report.Report{Sections: []report.Section{{Rows: []report.Row{report.Done("dropped", slug+" · the file is deleted")}}}}.String()
 		}
 		return usage
 	}

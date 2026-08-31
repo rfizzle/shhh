@@ -26,10 +26,11 @@ func TestTodoListing(t *testing.T) {
 	s := todo.Load(todoFixture(t))
 	out := todoListing(s)
 	for _, want := range []string{
-		"first   high    S  ready",
-		"second  medium  -  waits on first",
-		"third   medium  -  blocked",
-		"3 item(s), 1 ready, 1 blocked, 1 archived.",
+		"· first   First thing · high · S  [ready]",
+		"⊘ second  Second · medium  [waits on first]",
+		"✗ third   Third · medium  [blocked]",
+		"shhh todo — 3 items",
+		"1 ready · 1 blocked · 1 archived",
 		"bad.md: skipped: no header",
 	} {
 		if !strings.Contains(out, want) {
@@ -43,7 +44,7 @@ func TestTodoListing(t *testing.T) {
 
 func TestTodoListing_Empty(t *testing.T) {
 	out := todoListing(todo.Load(t.TempDir()))
-	if !strings.HasPrefix(out, "No backlog.") {
+	if !strings.Contains(out, "⊘ no backlog here") {
 		t.Errorf("empty listing = %q", out)
 	}
 }
@@ -52,7 +53,7 @@ func TestTodoDetail(t *testing.T) {
 	s := todo.Load(todoFixture(t))
 	it, _ := s.Find("first")
 	out := todoDetail(s, it)
-	for _, want := range []string{"slug:       first", "status:     ready", "size:       S", "## Notes\nhi"} {
+	for _, want := range []string{"shhh todo first — First thing", "status:    ready", "size:      S", "## Notes", "hi"} {
 		if !strings.Contains(out, want) {
 			t.Errorf("detail lacks %q:\n%s", want, out)
 		}
@@ -80,7 +81,7 @@ func TestTodoCommand_ShowUnknownSlug(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(out.String(), "first   high") {
+	if !strings.Contains(out.String(), "· first   First thing · high") {
 		t.Errorf("shhh todo output = %q", out.String())
 	}
 }
@@ -89,17 +90,17 @@ func TestTodoManager(t *testing.T) {
 	root := todoFixture(t)
 	manage := todoManager(root)
 
-	if out := manage(nil); !strings.Contains(out, "first   high") {
+	if out := manage(nil); !strings.Contains(out, "· first   First thing · high") {
 		t.Errorf("bare = %q", out)
 	}
-	if out := manage([]string{"show", "first"}); !strings.Contains(out, "slug:       first") {
+	if out := manage([]string{"show", "first"}); !strings.Contains(out, "shhh todo first") {
 		t.Errorf("show = %q", out)
 	}
-	if out := manage([]string{"show", "nope"}); !strings.Contains(out, `No backlog item "nope"`) {
+	if out := manage([]string{"show", "nope"}); !strings.Contains(out, "✗ no backlog item nope") {
 		t.Errorf("show missing = %q", out)
 	}
 	out := manage([]string{"add", "Fix", "the", "#12", "parser", "crash"})
-	if !strings.Contains(out, "Added fix-the-12-parser-crash") {
+	if !strings.Contains(out, "✓ added fix-the-12-parser-crash") {
 		t.Errorf("add = %q", out)
 	}
 	it, ok := todo.Load(root).Find("fix-the-12-parser-crash")
@@ -113,26 +114,26 @@ func TestTodoManager(t *testing.T) {
 		t.Errorf("add without text = %q", out)
 	}
 
-	if out := manage([]string{"block", "first", "needs", "a", "decision"}); out != "Blocked first." {
+	if out := manage([]string{"block", "first", "needs", "a", "decision"}); !strings.Contains(out, "✓ blocked first") {
 		t.Errorf("block = %q", out)
 	}
 	it, _ = todo.Load(root).Find("first")
 	if it.Status != todo.StatusBlocked || !strings.HasSuffix(it.Body, "## Blocked\nneeds a decision\n") {
 		t.Errorf("blocked item = %+v", it)
 	}
-	if out := manage([]string{"open", "first"}); out != "Reopened first." {
+	if out := manage([]string{"open", "first"}); !strings.Contains(out, "✓ reopened first") {
 		t.Errorf("open = %q", out)
 	}
-	if out := manage([]string{"block", "gone"}); !strings.Contains(out, "No active backlog item") {
+	if out := manage([]string{"block", "gone"}); !strings.Contains(out, "no active backlog item") {
 		t.Errorf("block archived = %q", out)
 	}
-	if out := manage([]string{"done", "first"}); !strings.HasPrefix(out, "Archived first to ") {
+	if out := manage([]string{"done", "first"}); !strings.Contains(out, "✓ archived first → ") {
 		t.Errorf("done = %q", out)
 	}
 	if out := manage([]string{"done", "first"}); !strings.HasPrefix(out, "Error:") {
 		t.Errorf("done twice = %q", out)
 	}
-	if out := manage([]string{"drop", "second"}); out != "Dropped second; the file is deleted." {
+	if out := manage([]string{"drop", "second"}); !strings.Contains(out, "✓ dropped second · the file is deleted") {
 		t.Errorf("drop = %q", out)
 	}
 	if _, err := os.Stat(filepath.Join(todo.Dir(root), "second.md")); !os.IsNotExist(err) {

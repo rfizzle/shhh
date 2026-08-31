@@ -12,6 +12,7 @@ import (
 	"io"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/update"
 	"github.com/spf13/cobra"
@@ -43,17 +44,25 @@ func newUpdateCmd() *cobra.Command {
 // swapping a running binary out from under the one that owns it is not a
 // thing a command should do without being that package manager.
 func printUpdateCheck(out io.Writer, current string, r *update.Result) {
+	// The doctor's own readings of the same three answers, so the two
+	// commands do not describe one machine in two vocabularies.
 	switch {
 	case current == "dev" || current == "":
-		fmt.Fprintln(out, "shhh: a dev build has no released version to compare")
+		_ = report.Fprintln(out, report.Row{State: report.Skip,
+			Subject: "update check", Detail: "a dev build has no released version"})
 	case r == nil && update.Latest() == "":
-		fmt.Fprintln(out, "shhh: no answer from the release feed; this says nothing about your install")
+		_ = report.Fprintln(out, report.Row{State: report.Skip, Subject: "update check",
+			Detail: "no answer from the release feed; this says nothing about your install"})
 	case r == nil:
-		fmt.Fprintf(out, "shhh %s is the latest release\n", current)
+		_ = report.Fprintln(out, report.Row{State: report.Pass,
+			Subject: "shhh " + current, Detail: "the latest release"})
 	default:
-		fmt.Fprintf(out, "shhh %s is out; this machine is on %s\n", r.Latest, r.Current)
-		fmt.Fprintln(out, "  brew upgrade shhh                       if it came from the tap")
-		fmt.Fprintln(out, "  go install github.com/rfizzle/shhh/cmd/shhh@latest")
+		_ = report.Fprintln(out, report.Row{State: report.Warn,
+			Subject: "shhh " + r.Latest + " is out", Detail: "this machine is on " + r.Current,
+			Fix: []string{
+				"brew upgrade shhh                       if it came from the tap",
+				"go install github.com/rfizzle/shhh/cmd/shhh@latest",
+			}})
 	}
 }
 
@@ -64,14 +73,18 @@ func printUpdateCheck(out io.Writer, current string, r *update.Result) {
 func refreshModelData(out io.Writer) error {
 	table, err := pricing.Refresh()
 	if err != nil {
-		fmt.Fprintf(out, "model data: %v\n", err)
+		still := fmt.Sprintf("the built-in snapshot (%d models) is still in use", pricing.Snapshot().Len())
 		if !pricing.FetchedAt().IsZero() {
-			fmt.Fprintf(out, "  the copy from %s is still in use\n", pricing.FetchedAt().Format(time.RFC1123))
-		} else {
-			fmt.Fprintf(out, "  the built-in snapshot (%d models) is still in use\n", pricing.Snapshot().Len())
+			still = "the copy from " + pricing.FetchedAt().Format(time.RFC1123) + " is still in use"
 		}
+		// The fault goes on the lines beneath rather than into the target: a
+		// download error names a URL and would clip, and the whole point of
+		// the row is what went wrong.
+		_ = report.Fprintln(out, report.Row{State: report.Fail, Name: "model data",
+			Subject: "could not be refreshed", Consequence: still, Fix: []string{err.Error()}})
 		return err
 	}
-	fmt.Fprintf(out, "model data: %d models, fetched %s\n", table.Len(), pricing.FetchedAt().Format(time.RFC1123))
-	return nil
+	return report.Fprintln(out, report.Row{State: report.Pass, Name: "model data",
+		Subject: countOf(table.Len(), "model", "models"),
+		Detail:  "fetched " + pricing.FetchedAt().Format(time.RFC1123)})
 }

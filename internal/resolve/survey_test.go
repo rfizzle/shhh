@@ -194,14 +194,14 @@ func TestKeyVars_PerProvider(t *testing.T) {
 		{"gemini", "GEMINI_API_KEY"},
 		{"openrouter", "OPENROUTER_API_KEY"},
 	} {
-		vars := keyVars(tc.provider)
+		vars := KeyVars(tc.provider)
 		if len(vars) != 2 || vars[0] != "SHHH_API_KEY" || vars[1] != tc.want {
-			t.Errorf("keyVars(%q) = %v, want SHHH_API_KEY then %s", tc.provider, vars, tc.want)
+			t.Errorf("KeyVars(%q) = %v, want SHHH_API_KEY then %s", tc.provider, vars, tc.want)
 		}
 	}
 	// A gateway profile's provider has no built-in variable of its own; the
 	// row says what was read rather than inventing a name.
-	if got := keyVars("litellm"); len(got) != 1 {
+	if got := KeyVars("litellm"); len(got) != 1 {
 		t.Errorf("keyVars for an unknown provider = %v, want just the shared variable", got)
 	}
 }

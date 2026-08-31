@@ -1,0 +1,9 @@
+  shhh doctor — 3 checks
+
+  ✓ binary    shhh 0.9.4 · linux/amd64  [ok]
+  ✗ sandbox   bwrap not found  [UNCONTAINED]
+      commands run with your own permissions, in your own filesystem
+        sudo apt install bubblewrap
+  ⊘ engine    no container engine  [not checked]
+
+  1 failed · 1 passed · 1 not checked

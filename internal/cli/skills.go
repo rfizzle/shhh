@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"text/tabwriter"
 
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/spf13/cobra"
@@ -35,60 +35,85 @@ func loadSkills() *skill.Catalog {
 // skillsListing is the /skills answer and the `shhh skills` output: every
 // skill with its scope and where it was read from, then the diagnostics.
 func skillsListing(c *skill.Catalog) string {
-	if c.Len() == 0 && (c == nil || len(c.Diagnostics) == 0) {
-		return "No skills found. A skill is a directory holding a SKILL.md, under .shhh/skills, .agents/skills or .claude/skills in the project, or under " +
-			strings.Join(config.SkillDirs(), " or ") + ", ~/.agents/skills or ~/.claude/skills."
+	return skillsReport(c).String()
+}
+
+// skillsReport is the catalog as a report. A skill that would not load is a
+// note rather than a line printed after the listing: it is the reason
+// somebody ran this command, and it should read in the same voice as
+// everything else on the screen.
+func skillsReport(c *skill.Catalog) report.Report {
+	r := report.Report{Title: "shhh skills"}
+	if c == nil || (c.Len() == 0 && len(c.Diagnostics) == 0) {
+		// The way out is short enough to survive a narrow terminal and the
+		// places that were looked in go on the lines under it, because a
+		// reader with no skills needs the whole search order and a clipped
+		// row would give them half of it.
+		empty := report.Empty("no skills found", "a skill is a directory holding a SKILL.md")
+		empty.Body = []string{
+			"in the project: .shhh/skills, .agents/skills, .claude/skills",
+			"for you: " + strings.Join(config.SkillDirs(), ", ") + ", ~/.agents/skills, ~/.claude/skills",
+		}
+		r.Sections = append(r.Sections, report.Section{Rows: []report.Row{empty}})
+		return r
 	}
-	var b strings.Builder
-	if c.Len() > 0 {
-		tw := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
-		for _, s := range c.Skills {
-			desc := clipRunes(s.Description, 96)
-			fmt.Fprintf(tw, "%s\t%s\t%s\n", s.Name, s.Scope, desc)
+	r.Subject = countOf(c.Len(), "skill", "skills")
+	rows := make([]report.Row, 0, c.Len())
+	for _, sk := range c.Skills {
+		rows = append(rows, report.Row{
+			State: report.Pass, Name: sk.Name,
+			Subject: clipRunes(sk.Description, 96), Outcome: string(sk.Scope),
+		})
+		for _, w := range sk.Warnings {
+			r.Notes = append(r.Notes, report.Note{State: report.Warn, Text: sk.Location + ": " + w})
 		}
-		tw.Flush()
-		fmt.Fprintf(&b, "\n%d skill(s). /skill <name> [task] activates one now; the model activates them itself when a task matches.", c.Len())
-		for _, s := range c.Skills {
-			for _, w := range s.Warnings {
-				fmt.Fprintf(&b, "\nwarning: %s: %s", s.Location, w)
-			}
-		}
+	}
+	if len(rows) > 0 {
+		r.Sections = []report.Section{{Rows: rows}}
+		r.Tally = "/skill <name> [task] activates one now; the model activates them itself when a task matches"
 	}
 	for _, d := range c.Diagnostics {
-		fmt.Fprintf(&b, "\n%s", d)
+		r.Notes = append(r.Notes, report.Note{State: report.Fail, Text: d})
 	}
-	return strings.TrimRight(b.String(), "\n")
+	return r
 }
 
 // skillDetail is `shhh skills show <name>`: the frontmatter as read, and
 // where the body is.
 func skillDetail(s skill.Skill) string {
-	var b strings.Builder
-	fmt.Fprintf(&b, "name:          %s\nscope:         %s\nlocation:      %s\ndescription:   %s\n", s.Name, s.Scope, s.Location, s.Description)
-	if s.License != "" {
-		fmt.Fprintf(&b, "license:       %s\n", s.License)
+	r := report.Report{Title: "shhh skills " + s.Name, Subject: string(s.Scope)}
+	pairs := []report.Pair{
+		{Key: "location", Value: s.Location},
+		{Key: "description", Value: s.Description},
 	}
-	if s.Compatibility != "" {
-		fmt.Fprintf(&b, "compatibility: %s\n", s.Compatibility)
+	for _, p := range []report.Pair{
+		{Key: "license", Value: s.License},
+		{Key: "compatibility", Value: s.Compatibility},
+		{Key: "allowed-tools", Value: s.AllowedTools},
+	} {
+		if p.Value != "" {
+			pairs = append(pairs, p)
+		}
 	}
 	if s.AllowedTools != "" {
-		fmt.Fprintf(&b, "allowed-tools: %s (informational; shhh grants nothing from it)\n", s.AllowedTools)
+		r.Notes = append(r.Notes, report.Note{State: report.Skip,
+			Text: "allowed-tools is informational; shhh grants nothing from it"})
 	}
 	for k, v := range s.Metadata {
-		fmt.Fprintf(&b, "metadata.%s: %s\n", k, v)
+		pairs = append(pairs, report.Pair{Key: "metadata." + k, Value: v})
 	}
-	files, partial := skill.Resources(s.Dir)
-	if len(files) > 0 {
-		fmt.Fprintf(&b, "resources:     %s", strings.Join(files, ", "))
+	if files, partial := skill.Resources(s.Dir); len(files) > 0 {
+		value := strings.Join(files, ", ")
 		if partial {
-			b.WriteString(", ...")
+			value += ", …"
 		}
-		b.WriteString("\n")
+		pairs = append(pairs, report.Pair{Key: "resources", Value: value})
 	}
 	for _, w := range s.Warnings {
-		fmt.Fprintf(&b, "warning:       %s\n", w)
+		r.Notes = append(r.Notes, report.Note{State: report.Warn, Text: w})
 	}
-	return strings.TrimRight(b.String(), "\n")
+	r.Sections = []report.Section{{Pairs: pairs}}
+	return r.String()
 }
 
 // clipRunes shortens s to at most n runes with an ellipsis — runes, because
@@ -108,8 +133,7 @@ func newSkillsCmd() *cobra.Command {
 		Long:  "List the Agent Skills (SKILL.md directories) visible from the current directory, project and user scope, with why any of them failed to load.",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Fprintln(cmd.OutOrStdout(), skillsListing(loadSkills()))
-			return nil
+			return report.Fprint(cmd.OutOrStdout(), skillsReport(loadSkills()))
 		},
 	}
 	cmd.AddCommand(&cobra.Command{

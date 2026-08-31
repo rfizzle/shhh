@@ -17,10 +17,10 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"text/tabwriter"
 	"time"
 
 	"github.com/charmbracelet/x/term"
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/prompt"
@@ -263,62 +263,70 @@ func mcpDetail(d mcp.Definition) string {
 // back to: every server with what became of it, the tools of the ones that
 // connected, then the diagnostics.
 func mcpListing(ts *mcp.Toolset, cat *mcp.Catalog, root string) string {
-	if ts == nil || len(ts.Reports) == 0 {
-		var b strings.Builder
-		b.WriteString("No MCP servers defined. Add one under [mcp.servers.<name>] in " + config.WritePath() +
-			", or as mcpServers in " + mcp.JSONFileName + " beside it; a project carries its own in .shhh/mcp.json or .mcp.json at the repository root.")
-		if cat != nil {
-			for _, d := range cat.Diagnostics {
-				b.WriteString("\n" + d)
-			}
+	return mcpListingReport(ts, cat, root).String()
+}
+
+// mcpListingReport is that listing as a report. A server that would not start
+// carries its consequence and its fix on the lines under its own row, the way
+// a doctor check does, rather than as a second block after the table.
+func mcpListingReport(ts *mcp.Toolset, cat *mcp.Catalog, root string) report.Report {
+	r := report.Report{Title: "shhh mcp"}
+	if cat != nil {
+		for _, d := range cat.Diagnostics {
+			r.Notes = append(r.Notes, report.Note{State: report.Fail, Text: d})
 		}
-		return b.String()
 	}
-	var b strings.Builder
-	tw := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
-	for _, r := range ts.Reports {
-		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", mcpGlyph(r.Status), r.Definition.Name, mcpDetail(r.Definition), mcpOutcome(r))
+	if ts == nil || len(ts.Reports) == 0 {
+		// The way out is a command rather than a path, so a narrow terminal
+		// cannot clip away the thing the reader came here to be told; the
+		// files it writes to go on the lines under it.
+		empty := report.Empty("no MCP servers defined", "shhh mcp add <name> -- <command>")
+		empty.Body = []string{
+			config.WritePath() + " under [mcp.servers.<name>]",
+			mcp.JSONFileName + " beside it, or .shhh/mcp.json in the project",
+		}
+		r.Sections = append(r.Sections, report.Section{Rows: []report.Row{empty}})
+		return r
 	}
-	tw.Flush()
+
+	servers := report.Section{Header: "SERVERS", NameWidth: doctorNameWidth}
+	tools := report.Section{Header: "TOOLS"}
 	connected := 0
-	for _, r := range ts.Reports {
-		if r.Status != mcp.StatusConnected {
-			if c := mcpConsequence(r); c != "" {
-				fmt.Fprintf(&b, "\n%s: %s", r.Definition.Name, c)
-				for _, line := range mcpFix(r, root) {
-					fmt.Fprintf(&b, "\n    %s", line)
-				}
+	for _, rep := range ts.Reports {
+		row := report.Row{
+			State:   report.StateOf(mcpState(rep.Status)),
+			Name:    rep.Definition.Name,
+			Subject: mcpDetail(rep.Definition),
+			Outcome: mcpOutcome(rep),
+		}
+		if rep.Status != mcp.StatusConnected {
+			row.Consequence = mcpConsequence(rep)
+			row.Fix = mcpFix(rep, root)
+			if rep.Error != "" {
+				row.Fix = append(strings.Split(rep.Error, "\n"), row.Fix...)
 			}
-			if r.Error != "" {
-				for _, line := range strings.Split(r.Error, "\n") {
-					fmt.Fprintf(&b, "\n    %s", line)
-				}
-			}
+			servers.Rows = append(servers.Rows, row)
 			continue
 		}
 		connected++
-		fmt.Fprintf(&b, "\n%s: %s", r.Definition.Name, countOf(len(r.Server.Tools), "tool", "tools"))
-		for _, t := range r.Server.Tools {
-			line := "  " + t.Name
+		row.Detail = countOf(len(rep.Server.Tools), "tool", "tools")
+		servers.Rows = append(servers.Rows, row)
+		for _, t := range rep.Server.Tools {
+			tool := report.Row{State: report.Pass, Name: rep.Definition.Name, Subject: t.Name}
 			if t.ReadOnlyHint {
-				line += "  (says read-only)"
+				tool.Detail = "says read-only"
 			}
-			fmt.Fprintf(&b, "\n%s", line)
+			tools.Rows = append(tools.Rows, tool)
 		}
 	}
-	if cat != nil {
-		for _, d := range cat.Diagnostics {
-			fmt.Fprintf(&b, "\n%s", d)
-		}
+	r.Subject = countOf(len(ts.Reports), "server", "servers")
+	r.Sections = []report.Section{servers}
+	if len(tools.Rows) > 0 {
+		r.Sections = append(r.Sections, tools)
 	}
-	fmt.Fprintf(&b, "\n\n%s connected. Tools of a server marked read-only run without asking; every other server's calls ask, like a command.", countOf(connected, "server", "servers"))
-	return strings.TrimRight(b.String(), "\n")
-}
-
-// mcpGlyph is the state glyph a listing row leads with — doctor's own, so
-// the text and the screen say the same thing with the same mark.
-func mcpGlyph(s mcp.Status) string {
-	return doctorReportGlyph(mcpState(s))
+	r.Tally = countOf(connected, "server", "servers") + " connected; a server marked read-only " +
+		"runs without asking, every other server's calls ask like a command"
+	return r
 }
 
 func mcpState(s mcp.Status) components.DoctorState {
@@ -495,17 +503,19 @@ func newMCPCmd() *cobra.Command {
 			}
 			mcp.SetVersion(version)
 			if cat.Len() == 0 {
-				fmt.Fprintln(cmd.OutOrStdout(), mcpListing(nil, cat, mcpRoot()))
-				return nil
+				return report.Fprint(cmd.OutOrStdout(), mcpListingReport(nil, cat, mcpRoot()))
 			}
 			probes := mcpProbes(cmd.Context(), cat, db, cfg)
 			if table || !term.IsTerminal(os.Stdout.Fd()) {
 				checks := runDoctorChecks(cmd.Context(), cfg, probes)
-				fmt.Fprintln(cmd.OutOrStdout(), doctorReportTitled("shhh mcp", "server", "servers", checks))
+				r := doctorReportOf("shhh mcp", "server", "servers", checks)
+				// A definition that would not load is a note on the report
+				// rather than a line printed after it: the same voice as the
+				// rows, which is the whole point of there being one shape.
 				for _, d := range cat.Diagnostics {
-					fmt.Fprintln(cmd.OutOrStdout(), d)
+					r.Notes = append(r.Notes, report.Note{State: report.Warn, Text: d})
 				}
-				return nil
+				return report.Fprint(cmd.OutOrStdout(), r)
 			}
 			return runDoctorScreenTitled(cfg, probes, "shhh mcp", [2]string{"server", "servers"})
 		},
@@ -564,8 +574,8 @@ func newMCPCmd() *cobra.Command {
 			if err := config.Save(cfg); err != nil {
 				return err
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Removed %s from %s.\n", args[0], config.WritePath())
-			return nil
+			return report.Fprintln(cmd.OutOrStdout(),
+				report.Done("removed", args[0]+" from "+config.WritePath()))
 		},
 	})
 	return cmd
@@ -591,56 +601,49 @@ func mcpTrustCmd(cmd *cobra.Command, name string, trust bool) error {
 // description and its own hints, quoted as hints.
 func mcpShow(r mcp.Report, root string) string {
 	d := r.Definition
-	var b strings.Builder
-	fmt.Fprintf(&b, "name:       %s\nscope:      %s\nsource:     %s\ntransport:  %s\ntarget:     %s\n", d.Name, d.Scope, d.Source, d.Transport, d.Target())
+	out := report.Report{Title: "shhh mcp " + d.Name, Subject: mcpOutcome(r)}
+	pairs := []report.Pair{
+		{Key: "scope", Value: string(d.Scope)},
+		{Key: "source", Value: d.Source},
+		{Key: "transport", Value: string(d.Transport)},
+		{Key: "target", Value: d.Target()},
+	}
 	if names := d.SecretNames(); len(names) > 0 {
-		fmt.Fprintf(&b, "reads env:  %s\n", strings.Join(names, ", "))
+		pairs = append(pairs, report.Pair{Key: "reads env", Value: strings.Join(names, ", ")})
 	}
-	if len(d.Env) > 0 {
-		keys := make([]string, 0, len(d.Env))
-		for k := range d.Env {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		fmt.Fprintf(&b, "sets env:   %s\n", strings.Join(keys, ", "))
+	if keys := sortedKeys(d.Env); len(keys) > 0 {
+		pairs = append(pairs, report.Pair{Key: "sets env", Value: strings.Join(keys, ", ")})
 	}
-	if len(d.Headers) > 0 {
-		keys := make([]string, 0, len(d.Headers))
-		for k := range d.Headers {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		fmt.Fprintf(&b, "headers:    %s\n", strings.Join(keys, ", "))
+	if keys := sortedKeys(d.Headers); len(keys) > 0 {
+		pairs = append(pairs, report.Pair{Key: "headers", Value: strings.Join(keys, ", ")})
 	}
-	fmt.Fprintf(&b, "read-only:  %v\nstatus:     %s\n", d.ReadOnly, mcpOutcome(r))
+	if d.ReadOnly {
+		pairs = append(pairs, report.Pair{Key: "read-only", Value: "yes — its calls run without asking"})
+	}
+	out.Sections = []report.Section{{Pairs: pairs}}
+
 	if r.Status != mcp.StatusConnected {
-		if c := mcpConsequence(r); c != "" {
-			fmt.Fprintf(&b, "\n%s\n", c)
-		}
+		row := report.Row{State: report.StateOf(mcpState(r.Status)), Subject: mcpOutcome(r),
+			Consequence: mcpConsequence(r), Fix: mcpFix(r, root)}
 		if r.Error != "" {
-			fmt.Fprintf(&b, "%s\n", r.Error)
+			row.Fix = append(strings.Split(r.Error, "\n"), row.Fix...)
 		}
-		for _, line := range mcpFix(r, root) {
-			fmt.Fprintf(&b, "    %s\n", line)
-		}
-		return strings.TrimRight(b.String(), "\n")
+		out.Sections = append(out.Sections, report.Section{Rows: []report.Row{row}})
+		return out.String()
 	}
+
 	s := r.Server
-	if s.Info.Name != "" {
-		fmt.Fprintf(&b, "server:     %s %s\n", s.Info.Name, s.Info.Version)
-	}
-	if s.Protocol != "" {
-		fmt.Fprintf(&b, "protocol:   %s\n", s.Protocol)
+	if s.Info.Name != "" || s.Protocol != "" {
+		out.Sections[0].Pairs = append(out.Sections[0].Pairs,
+			report.Pair{Key: "server", Value: joinDetail(strings.TrimSpace(s.Info.Name+" "+s.Info.Version), s.Protocol)})
 	}
 	if s.Instructions != "" {
-		b.WriteString("\ninstructions (sent to the model):\n")
-		for _, line := range strings.Split(s.Instructions, "\n") {
-			b.WriteString("    " + line + "\n")
-		}
+		out.Sections = append(out.Sections, report.Section{
+			Header: "INSTRUCTIONS (SENT TO THE MODEL)", Body: s.Instructions})
 	}
-	fmt.Fprintf(&b, "\n%s:\n", countOf(len(s.Tools), "tool", "tools"))
+	tools := report.Section{Header: "TOOLS"}
 	for _, t := range s.Tools {
-		fmt.Fprintf(&b, "  %s", t.Name)
+		row := report.Row{State: report.Pass, Name: t.Name}
 		var hints []string
 		if t.ReadOnlyHint {
 			hints = append(hints, "says read-only")
@@ -649,14 +652,31 @@ func mcpShow(r mcp.Report, root string) string {
 			hints = append(hints, "says non-destructive")
 		}
 		if len(hints) > 0 {
-			fmt.Fprintf(&b, "  (%s; hints, not grants)", strings.Join(hints, ", "))
+			// The server's own words about itself, which shhh reports and
+			// does not act on (docs/capabilities/mcp.md).
+			row.Outcome = strings.Join(hints, ", ") + "; hints, not grants"
 		}
-		b.WriteString("\n")
 		if t.Description != "" {
-			fmt.Fprintf(&b, "      %s\n", clipRunes(strings.ReplaceAll(t.Description, "\n", " "), 200))
+			row.Body = []string{clipRunes(strings.ReplaceAll(t.Description, "\n", " "), 200)}
 		}
+		tools.Rows = append(tools.Rows, row)
 	}
-	return strings.TrimRight(b.String(), "\n")
+	if len(tools.Rows) > 0 {
+		out.Sections = append(out.Sections, tools)
+		out.Tally = countOf(len(s.Tools), "tool", "tools")
+	}
+	return out.String()
+}
+
+// sortedKeys is a map's keys in a stable order, so a listing of headers or
+// environment names reads the same twice.
+func sortedKeys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 // newMCPAddCmd writes one server to the config file: `shhh mcp add docs
@@ -710,7 +730,10 @@ func newMCPAddCmd() *cobra.Command {
 			if err := config.Save(cfg); err != nil {
 				return err
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Added %s to %s. `shhh mcp` connects it and lists its tools.\n", name, config.WritePath())
+			_ = report.Fprint(cmd.OutOrStdout(), report.Report{Sections: []report.Section{{Rows: []report.Row{
+				report.Done("added", name+" to "+config.WritePath()),
+				{State: report.Run, Subject: "shhh mcp", Detail: "connects it and lists its tools"},
+			}}}})
 			return nil
 		},
 	}
@@ -799,7 +822,7 @@ func (s *chatSession) attachMCP(ctx context.Context, db *storage.DB, readOnlyOnl
 		return func() {}
 	}
 	for _, note := range mcpStartupNotes(s.mcpTools, s.mcpCatalog) {
-		fmt.Fprintln(os.Stderr, "warning: "+note)
+		_ = report.Fprintln(os.Stderr, report.Row{State: report.Warn, Subject: note})
 	}
 	if s.mcpTools.Len() > 0 {
 		s.toolDefs = append(append([]provider.Tool{}, s.toolDefs...), s.mcpTools.Definitions()...)

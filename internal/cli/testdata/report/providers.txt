@@ -1,0 +1,27 @@
+  shhh providers — 2 built in · 1 profile
+
+  PROVIDERS
+
+  ✗ anthropic  no key · SHHH_API_KEY or ANTHROPIC_API_KEY unset
+  ⊘ corp-gw    CORP_GW_KEY unset · https://gw.example.com/v1
+  ✗ openai     no key · SHHH_API_KEY or OPENAI_API_KEY unset
+
+  SOURCES
+
+  ✓ ~/.config/shhh/providers.toml · 1 profile
+  ⊘ ~/.config/shhh/providers · absent
+
+  PROFILE corp-gw
+
+  file:  ~/.config/shhh/providers.toml
+
+  ⊘ default  openai-chat · https://gw.example.com/v1  [CORP_GW_KEY unset]
+
+  MODELS corp-gw
+
+  ✓ gpt-4o  128k ctx · $2.50 / $10 · no thinking  [profile]
+
+  RULES corp-gw
+
+  ▸ request  set · model · all models  [default]
+      the gateway rejects a model id it does not host

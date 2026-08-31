@@ -1,0 +1,39 @@
+  shhh observe — 2 sessions · last 30d · $0.51
+
+  BY DAY
+
+  ✓ 2026-08-31  2 sessions · ↑42.1k ↓9.9k · $0.51
+
+  BY MODEL
+
+  ✓ claude-sonnet-5  1 session · ↑41.2k ↓9.8k · $0.51  [anthropic]
+  ✓ gpt-5.2          1 session · ↑900 ↓120  [openai]
+
+  TOOLS
+
+  ✓ read_file        31 calls · 42ms
+  ⚠ execute_command  8 calls · 2.4s  [25% failed]
+      exit-status 2
+
+  DECISIONS
+
+  ✓ allowed · auto · mode-accept-edits  [14 times]
+  ⊘ denied · you  [2 times]
+  ⊘ denied · auto · plan-mode  [1 time]
+
+  TURNS
+
+  ✓ done        6 turns · 3.2 rounds avg · 9 max · 2.4s
+  ⊘ cap-paused  1 turn · 40.0 rounds avg · 40 max
+
+  SIGNALS
+
+  · summary          5 times · on-target
+  · context-trimmed  1 time · 4
+
+  SESSIONS
+
+  ✓ 12  code · claude-sonnet-5 · Aug 31 18:32 · 6 turns · ↑41.2k ↓9.…  [14m 00s]
+  ▸ 13  chat · gpt-5.2 · Aug 31 18:59 · 1 turn · ↑900 ↓120  [active]
+
+  ▸ `shhh observe session <id>` shows one session turn by turn

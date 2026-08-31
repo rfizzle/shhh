@@ -497,6 +497,13 @@ type jsonUsage struct {
 	CompletionTokens int `json:"completion_tokens"`
 }
 
+// jsonMessage is one message as every JSON transcript emits it: the role and
+// the words, and a tool call's name and arguments where there was one.
+// Attachments are left out — a transcript for a script is text.
+//
+// `shhh chats show --json` and `shhh code --print --json` are two views of the
+// same conversation, so they are one projection: two structs of the same
+// fields built by two loops drift the moment either grows a field.
 type jsonMessage struct {
 	Role       string         `json:"role"`
 	Content    string         `json:"content,omitempty"`
@@ -504,10 +511,27 @@ type jsonMessage struct {
 	ToolCallID string         `json:"tool_call_id,omitempty"`
 }
 
+// jsonToolCall is one call the assistant made, name and arguments apart so a
+// script does not have to split a string. The id is what a tool result refers
+// back to, and is always present — a consumer that keys on it should find an
+// empty string rather than no field where one was never recorded.
 type jsonToolCall struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
 	Arguments string `json:"arguments"`
+}
+
+// jsonMessages is the conversation as data.
+func jsonMessages(msgs []provider.Message) []jsonMessage {
+	out := make([]jsonMessage, 0, len(msgs))
+	for _, m := range msgs {
+		row := jsonMessage{Role: string(m.Role), Content: m.Content, ToolCallID: m.ToolCallID}
+		for _, tc := range m.ToolCalls {
+			row.ToolCalls = append(row.ToolCalls, jsonToolCall{ID: tc.ID, Name: tc.Name, Arguments: tc.Arguments})
+		}
+		out = append(out, row)
+	}
+	return out
 }
 
 func writeJSONTranscript(w io.Writer, msgs []provider.Message, final string, usage provider.Usage, runErr error) error {
@@ -515,21 +539,10 @@ func writeJSONTranscript(w io.Writer, msgs []provider.Message, final string, usa
 		Success:  runErr == nil,
 		Final:    final,
 		Usage:    jsonUsage{PromptTokens: usage.PromptTokens, CompletionTokens: usage.CompletionTokens},
-		Messages: make([]jsonMessage, 0, len(msgs)),
+		Messages: jsonMessages(msgs),
 	}
 	if runErr != nil {
 		t.Error = runErr.Error()
-	}
-	for _, m := range msgs {
-		jm := jsonMessage{
-			Role:       string(m.Role),
-			Content:    m.Content,
-			ToolCallID: m.ToolCallID,
-		}
-		for _, tc := range m.ToolCalls {
-			jm.ToolCalls = append(jm.ToolCalls, jsonToolCall{ID: tc.ID, Name: tc.Name, Arguments: tc.Arguments})
-		}
-		t.Messages = append(t.Messages, jm)
 	}
 	enc := json.NewEncoder(w)
 	enc.SetIndent("", "  ")

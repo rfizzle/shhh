@@ -205,10 +205,13 @@ func TestHistoryModel_DropKeepsThePointerInRange(t *testing.T) {
 	}
 }
 
-// The table view is unchanged and still prints, because a pipe is not a
-// terminal and the browser is a takeover surface.
-func TestPrintHistoryTable(t *testing.T) {
-	if err := printHistoryTable(historyEntries()); err != nil {
-		t.Fatalf("printing the table: %v", err)
+// A pipe gets the listing as a report: the prompt on the row, the command it
+// produced under it, and what became of it as the outcome.
+func TestHistoryReport_CarriesTheCommandUnderThePrompt(t *testing.T) {
+	got := historyReport(historyEntries(), "", time.Now()).Render(80)
+	for _, want := range []string{"shhh history — 2 commands", "✓ run", "delete every log file older than a week", "find . -mtime +7 -delete", "[exit 0]", "✓ copy", "[copied]"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("the report does not carry %q:\n%s", want, got)
+		}
 	}
 }

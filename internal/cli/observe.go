@@ -12,13 +12,14 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"text/tabwriter"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/ui/chat"
+	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/spf13/cobra"
 )
 
@@ -294,8 +295,8 @@ func newObserveCmd() *cobra.Command {
 			if err := os.WriteFile(exportOut, data, 0o600); err != nil {
 				return err
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Exported %d session(s) to %s\n", len(sessions), exportOut)
-			return nil
+			return report.Fprintln(cmd.OutOrStdout(), report.Done("wrote", exportOut+" · "+
+				countOf(len(sessions), "session", "sessions")))
 		},
 	}
 	exportCmd.Flags().StringVarP(&exportOut, "out", "o", "", "write to a file (user-only permissions) instead of stdout")
@@ -320,6 +321,7 @@ func newObserveCmd() *cobra.Command {
 		},
 	}
 
+	var purgeYes bool
 	purgeCmd := &cobra.Command{
 		Use:   "purge",
 		Short: "Delete all recorded agent-session metrics",
@@ -330,14 +332,27 @@ func newObserveCmd() *cobra.Command {
 				return fmt.Errorf("open database: %w", err)
 			}
 			defer db.Close()
+			if !purgeYes {
+				fmt.Fprint(cmd.OutOrStdout(), "Delete every recorded session and its events? [y/N] ")
+				var confirm string
+				// No answer — a closed stdin — reads as an empty line, and an
+				// empty line is No.
+				_, _ = fmt.Scanln(&confirm)
+				if confirm != "y" && confirm != "Y" {
+					return report.Fprintln(cmd.OutOrStdout(),
+						report.Row{State: report.Skip, Subject: "cancelled", Detail: "nothing was deleted"})
+				}
+			}
 			n, err := db.PurgeAgentObservability()
 			if err != nil {
 				return fmt.Errorf("purge: %w", err)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Purged %d recorded session(s) and their events.\n", n)
-			return nil
+			return report.Fprintln(cmd.OutOrStdout(),
+				report.Done("purged", countOf(int(n), "recorded session", "recorded sessions")+" and their events"))
 		},
 	}
+
+	purgeCmd.Flags().BoolVarP(&purgeYes, "yes", "y", false, "skip the confirmation")
 
 	cmd.AddCommand(exportCmd, sessionCmd, purgeCmd)
 	return cmd
@@ -354,138 +369,281 @@ func parseObserveWindow(s string) (time.Time, error) {
 	return time.Now().AddDate(0, 0, -days), nil
 }
 
+// renderObserveDashboard reads the store and prints the dashboard.
 func renderObserveDashboard(cmd *cobra.Command, db *storage.DB, window string, since time.Time) error {
-	out := cmd.OutOrStdout()
-
-	sessions, err := db.AgentSessions(since, 20)
+	data, err := readObserveData(db, window, since)
 	if err != nil {
-		return fmt.Errorf("query sessions: %w", err)
-	}
-	if len(sessions) == 0 {
-		fmt.Fprintf(out, "No agent sessions recorded in the last %s. Run `shhh chat` or `shhh code` first.\n", window)
-		return nil
-	}
-
-	fmt.Fprintf(out, "Agent sessions — last %s\n\n", window)
-
-	byDay, err := db.AgentUsageByDay(since)
-	if err != nil {
-		return fmt.Errorf("query usage by day: %w", err)
-	}
-	fmt.Fprintln(out, "Usage by day:")
-	w := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(w, "  DAY\tSESSIONS\tTOKENS IN\tTOKENS OUT\tEST. COST")
-	for _, u := range byDay {
-		fmt.Fprintf(w, "  %s\t%d\t%d\t%d\t%s\n", u.Day, u.Sessions, u.TokensIn, u.TokensOut, fmtObserveCost(u.Cost))
-	}
-	_ = w.Flush()
-
-	byModel, err := db.AgentUsageByModel(since)
-	if err != nil {
-		return fmt.Errorf("query usage by model: %w", err)
-	}
-	fmt.Fprintln(out, "\nUsage by model:")
-	w = tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(w, "  PROVIDER\tMODEL\tSESSIONS\tTOKENS IN\tTOKENS OUT\tEST. COST")
-	for _, u := range byModel {
-		fmt.Fprintf(w, "  %s\t%s\t%d\t%d\t%d\t%s\n", u.Provider, u.Model, u.Sessions, u.TokensIn, u.TokensOut, fmtObserveCost(u.Cost))
-	}
-	_ = w.Flush()
-
-	toolMix, err := db.AgentToolMix(since)
-	if err != nil {
-		return fmt.Errorf("query tool mix: %w", err)
-	}
-	if len(toolMix) > 0 {
-		fmt.Fprintln(out, "\nTool mix:")
-		w = tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
-		fmt.Fprintln(w, "  TOOL\tCALLS\tAVG TIME\tERRORS")
-		for _, u := range toolMix {
-			fmt.Fprintf(w, "  %s\t%d\t%s\t%.0f%%\n", u.Tool, u.Count, fmtMs(u.AvgDurationMs), u.ErrorRate*100)
-		}
-		_ = w.Flush()
-	}
-
-	decisions, err := db.AgentDecisions(since)
-	if err != nil {
-		return fmt.Errorf("query decisions: %w", err)
-	}
-	if len(decisions) > 0 {
-		fmt.Fprintln(out, "\nApproval decisions:")
-		w = tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
-		fmt.Fprintln(w, "  DECISION\tREASON\tCOUNT")
-		for _, d := range decisions {
-			fmt.Fprintf(w, "  %s\t%s\t%d\n", d.Decision, d.Reason, d.Count)
-		}
-		_ = w.Flush()
-	}
-
-	turns, err := db.AgentTurns(since)
-	if err != nil {
-		return fmt.Errorf("query turns: %w", err)
-	}
-	if len(turns) > 0 {
-		fmt.Fprintln(out, "\nTurns:")
-		w = tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
-		fmt.Fprintln(w, "  ENDED\tCOUNT\tAVG ROUNDS\tMAX ROUNDS\tAVG TIME")
-		for _, t := range turns {
-			fmt.Fprintf(w, "  %s\t%d\t%.1f\t%d\t%s\n", t.Outcome, t.Count, t.AvgRounds, t.MaxRounds, fmtMs(t.AvgDurationMs))
-		}
-		_ = w.Flush()
-	}
-
-	toolErrors, err := db.AgentToolErrors(since)
-	if err != nil {
-		return fmt.Errorf("query tool errors: %w", err)
-	}
-	if len(toolErrors) > 0 {
-		fmt.Fprintln(out, "\nTool errors:")
-		w = tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
-		fmt.Fprintln(w, "  TOOL\tCLASS\tCOUNT")
-		for _, e := range toolErrors {
-			fmt.Fprintf(w, "  %s\t%s\t%d\n", e.Tool, orDash(e.Class), e.Count)
-		}
-		_ = w.Flush()
-	}
-
-	signals, err := db.AgentSignals(since)
-	if err != nil {
-		return fmt.Errorf("query signals: %w", err)
-	}
-	if len(signals) > 0 {
-		fmt.Fprintln(out, "\nSignals:")
-		w = tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
-		fmt.Fprintln(w, "  SIGNAL\tREASON\tCOUNT")
-		for _, s := range signals {
-			fmt.Fprintf(w, "  %s\t%s\t%d\n", s.Signal, orDash(s.Reason), s.Count)
-		}
-		_ = w.Flush()
-	}
-
-	fmt.Fprintln(out, "\nRecent sessions:")
-	w = tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(w, "  ID\tSTARTED\tKIND\tMODEL\tDURATION\tTURNS\tTOKENS IN\tTOKENS OUT\tEST. COST")
-	for _, s := range sessions {
-		duration := "active"
-		if s.EndedAt != nil {
-			duration = s.EndedAt.Sub(s.StartedAt).Round(time.Second).String()
-		}
-		fmt.Fprintf(w, "  %d\t%s\t%s\t%s\t%s\t%d\t%d\t%d\t%s\n",
-			s.ID, s.StartedAt.Local().Format("Jan 2 15:04"), s.Kind, s.Model, duration,
-			s.Turns, s.TokensIn, s.TokensOut, fmtObserveCost(s.Cost))
-	}
-	if err := w.Flush(); err != nil {
 		return err
 	}
-	fmt.Fprintln(out, "\n`shhh observe session <id>` shows one session turn by turn.")
-	return nil
+	return report.Fprint(cmd.OutOrStdout(), observeReport(data))
+}
+
+// observeData is everything one dashboard reads out of the store, so building
+// the report is a pure function of it and testable without a database.
+type observeData struct {
+	Window     string
+	Sessions   []storage.AgentSessionSummary
+	ByDay      []storage.AgentDayUsage
+	ByModel    []storage.AgentModelUsage
+	ToolMix    []storage.AgentToolUsage
+	ToolErrors []storage.AgentToolErrorCount
+	Decisions  []storage.AgentDecisionCount
+	Turns      []storage.AgentTurnOutcome
+	Signals    []storage.AgentSignalCount
+}
+
+// readObserveData runs every aggregate the dashboard draws. Each query is
+// named in its error so a failure says which reading is missing rather than
+// that the dashboard broke.
+func readObserveData(db *storage.DB, window string, since time.Time) (observeData, error) {
+	data := observeData{Window: window}
+	for _, q := range []struct {
+		name string
+		read func() error
+	}{
+		{"sessions", func() (err error) { data.Sessions, err = db.AgentSessions(since, 20); return }},
+		{"usage by day", func() (err error) { data.ByDay, err = db.AgentUsageByDay(since); return }},
+		{"usage by model", func() (err error) { data.ByModel, err = db.AgentUsageByModel(since); return }},
+		{"tool mix", func() (err error) { data.ToolMix, err = db.AgentToolMix(since); return }},
+		{"tool errors", func() (err error) { data.ToolErrors, err = db.AgentToolErrors(since); return }},
+		{"decisions", func() (err error) { data.Decisions, err = db.AgentDecisions(since); return }},
+		{"turns", func() (err error) { data.Turns, err = db.AgentTurns(since); return }},
+		{"signals", func() (err error) { data.Signals, err = db.AgentSignals(since); return }},
+	} {
+		if err := q.read(); err != nil {
+			return observeData{}, fmt.Errorf("query %s: %w", q.name, err)
+		}
+	}
+	return data, nil
+}
+
+// observeReport is the whole dashboard as one report: the sections the store
+// can answer for, in the order a reader asks them — what it cost, what it
+// ran, what it was allowed to do, and which sessions those were
+// (docs/interface/surfaces.md#outside-the-tui). It was seven prose headings
+// over seven tabwriter tables, which is seven shapes for one screen.
+func observeReport(data observeData) report.Report {
+	r := report.Report{Title: "shhh observe"}
+	if len(data.Sessions) == 0 {
+		r.Subject = "last " + data.Window
+		return emptyInto(r, "no agent sessions in the last "+data.Window, "shhh chat")
+	}
+
+	var spend float64
+	for _, s := range data.Sessions {
+		spend += s.Cost
+	}
+	r.Subject = joinDetail(fmt.Sprintf("%s · last %s",
+		countOf(len(data.Sessions), "session", "sessions"), data.Window), observeCost(spend))
+
+	for _, section := range []report.Section{
+		{Header: "BY DAY", Rows: observeDayRows(data.ByDay)},
+		{Header: "BY MODEL", Rows: observeModelRows(data.ByModel)},
+		{Header: "TOOLS", Rows: observeToolRows(data.ToolMix, data.ToolErrors)},
+		{Header: "DECISIONS", Rows: observeDecisionRows(data.Decisions)},
+		{Header: "TURNS", Rows: observeTurnRows(data.Turns)},
+		{Header: "SIGNALS", Rows: observeSignalRows(data.Signals)},
+		{Header: "SESSIONS", Rows: observeSessionRows(data.Sessions)},
+	} {
+		if len(section.Rows) > 0 {
+			r.Sections = append(r.Sections, section)
+		}
+	}
+	r.Notes = append(r.Notes, report.Note{State: report.Run,
+		Text: "`shhh observe session <id>` shows one session turn by turn"})
+	return r
+}
+
+func observeDayRows(days []storage.AgentDayUsage) []report.Row {
+	rows := make([]report.Row, 0, len(days))
+	for _, u := range days {
+		rows = append(rows, report.Row{State: report.Pass, Name: u.Day,
+			Subject: countOf(u.Sessions, "session", "sessions"),
+			Detail:  joinDetail(observeTokens(u.TokensIn, u.TokensOut), observeCost(u.Cost))})
+	}
+	return rows
+}
+
+func observeModelRows(models []storage.AgentModelUsage) []report.Row {
+	rows := make([]report.Row, 0, len(models))
+	for _, u := range models {
+		rows = append(rows, report.Row{State: report.Pass, Name: u.Model,
+			Subject: countOf(u.Sessions, "session", "sessions"),
+			Detail:  joinDetail(observeTokens(u.TokensIn, u.TokensOut), observeCost(u.Cost)),
+			Outcome: u.Provider})
+	}
+	return rows
+}
+
+// observeToolRows is the tool mix with each tool's failures folded in as the
+// consequence line: an error rate is only actionable beside the class it is
+// made of, and the classes were a table of their own before this.
+func observeToolRows(mix []storage.AgentToolUsage, errs []storage.AgentToolErrorCount) []report.Row {
+	classes := map[string][]string{}
+	for _, e := range errs {
+		class := e.Class
+		if class == "" {
+			class = "unclassified"
+		}
+		classes[e.Tool] = append(classes[e.Tool], fmt.Sprintf("%s %d", class, e.Count))
+	}
+	rows := make([]report.Row, 0, len(mix))
+	for _, u := range mix {
+		row := report.Row{State: report.Pass, Name: u.Tool,
+			Subject: countOf(u.Count, "call", "calls"), Detail: latencyText(u.AvgDurationMs)}
+		if u.ErrorRate > 0 {
+			row.State = report.Warn
+			row.Outcome = fmt.Sprintf("%.0f%% failed", u.ErrorRate*100)
+			row.Consequence = strings.Join(classes[u.Tool], " · ")
+		}
+		rows = append(rows, row)
+	}
+	return rows
+}
+
+// observeDecisionRows names who decided, in the transcript's own words: a
+// denial by a person is a preference and a denial by a rule is policy, and
+// the rows say which (docs/interface/principles.md#weight-tracks-risk).
+func observeDecisionRows(decisions []storage.AgentDecisionCount) []report.Row {
+	rows := make([]report.Row, 0, len(decisions))
+	for _, d := range decisions {
+		// The verdict and its decider are one phrase, so they stay one field
+		// rather than being split across the name column.
+		rows = append(rows, report.Row{
+			State:   observeDecisionState(d.Decision),
+			Subject: components.OutcomeBy(observeDecisionWord(d.Decision), observeDecider(d.Reason)),
+			Outcome: countOf(d.Count, "time", "times"),
+		})
+	}
+	return rows
+}
+
+// observeDecisionWord is the verdict in the word the transcript uses for it.
+func observeDecisionWord(decision string) string {
+	switch decision {
+	case "allow":
+		return "allowed"
+	case "deny":
+		return "denied"
+	case "ask":
+		return "asked"
+	}
+	return decision
+}
+
+func observeDecisionState(decision string) report.State {
+	switch decision {
+	case "allow":
+		return report.Pass
+	case "deny":
+		return report.Skip
+	}
+	return report.Warn
+}
+
+// observeDecider is who or what decided. A decision with no recorded reason
+// was the person's, because the rules all record theirs.
+func observeDecider(reason string) string {
+	if reason == "" {
+		return "you"
+	}
+	return "auto · " + reason
+}
+
+func observeTurnRows(turns []storage.AgentTurnOutcome) []report.Row {
+	rows := make([]report.Row, 0, len(turns))
+	for _, t := range turns {
+		rows = append(rows, report.Row{
+			State:   observeTurnState(t.Outcome),
+			Name:    t.Outcome,
+			Subject: countOf(t.Count, "turn", "turns"),
+			Detail: joinDetail(fmt.Sprintf("%.1f rounds avg · %d max", t.AvgRounds, t.MaxRounds),
+				latencyText(t.AvgDurationMs)),
+		})
+	}
+	return rows
+}
+
+func observeTurnState(outcome string) report.State {
+	switch outcome {
+	case "failed":
+		return report.Fail
+	case "cancelled", "cap-paused":
+		return report.Skip
+	}
+	return report.Pass
+}
+
+func observeSignalRows(signals []storage.AgentSignalCount) []report.Row {
+	rows := make([]report.Row, 0, len(signals))
+	for _, s := range signals {
+		rows = append(rows, report.Row{State: report.Queue, Name: s.Signal,
+			Subject: countOf(s.Count, "time", "times"), Detail: s.Reason})
+	}
+	return rows
+}
+
+// observeSessionRows is the recent sessions: what kind of session it was, on
+// what model, for how long, and what it cost. One that has not ended says
+// `active` where the others say how long they took.
+func observeSessionRows(sessions []storage.AgentSessionSummary) []report.Row {
+	rows := make([]report.Row, 0, len(sessions))
+	for _, s := range sessions {
+		// When it ran leads the detail: a month of sessions with no date on
+		// any of them is a list with no order the reader can see.
+		row := report.Row{
+			State:   report.Pass,
+			Name:    strconv.FormatInt(s.ID, 10),
+			Subject: joinDetail(s.Kind, s.Model),
+			Detail: joinDetail(s.StartedAt.Local().Format("Jan 2 15:04"),
+				joinDetail(countOf(int(s.Turns), "turn", "turns"),
+					joinDetail(observeTokens(s.TokensIn, s.TokensOut), observeCost(s.Cost)))),
+			Outcome: observeElapsed(s),
+		}
+		if s.EndedAt == nil {
+			row.State = report.Run
+		}
+		rows = append(rows, row)
+	}
+	return rows
+}
+
+// observeElapsed is how long a session took, or `active` for one that is
+// still going.
+func observeElapsed(s storage.AgentSessionSummary) string {
+	if s.EndedAt == nil {
+		return "active"
+	}
+	return components.FormatElapsed(s.EndedAt.Sub(s.StartedAt).Round(time.Second))
+}
+
+// observeTokens is the vitals rail's usage segment; nothing at all where
+// nothing was counted.
+func observeTokens(in, out int64) string {
+	if in == 0 && out == 0 {
+		return ""
+	}
+	return "↑" + tokenCount(in) + " ↓" + tokenCount(out)
+}
+
+// observeCost is a spend in dollars, and nothing where there is none to
+// report: `$0.0000` says a session was almost free when what it means is that
+// nobody knows what its model costs
+// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
+func observeCost(v float64) string {
+	switch {
+	case v <= 0:
+		return ""
+	case v < 0.01:
+		return "<$0.01"
+	}
+	return fmt.Sprintf("$%.2f", v)
 }
 
 // renderObserveSession prints one session: its provenance, then its events
-// in order with a heading per turn, so a reader can see where the rounds
+// in order under a section per turn, so a reader can see where the rounds
 // went and where the loop's safeguards spoke.
 func renderObserveSession(cmd *cobra.Command, db *storage.DB, id int64) error {
-	out := cmd.OutOrStdout()
 	s, ok, err := db.AgentSession(id)
 	if err != nil {
 		return fmt.Errorf("query session: %w", err)
@@ -493,20 +651,34 @@ func renderObserveSession(cmd *cobra.Command, db *storage.DB, id int64) error {
 	if !ok {
 		return fmt.Errorf("no recorded session %d", id)
 	}
-	duration := "active"
-	if s.EndedAt != nil {
-		duration = s.EndedAt.Sub(s.StartedAt).Round(time.Second).String()
+	pairs := []report.Pair{
+		{Key: "started", Value: s.StartedAt.Local().Format("Jan 2 15:04")},
+		{Key: "model", Value: joinDetail(s.Provider, s.Model)},
+		{Key: "turns", Value: strconv.FormatInt(s.Turns, 10)},
 	}
-	fmt.Fprintf(out, "Session %d — %s %s/%s, started %s, %s\n", s.ID, s.Kind, s.Provider, s.Model,
-		s.StartedAt.Local().Format("Jan 2 15:04"), duration)
-	fmt.Fprintf(out, "  turns %d · tokens ↑%d ↓%d · est. cost %s\n", s.Turns, s.TokensIn, s.TokensOut, fmtObserveCost(s.Cost))
-	fmt.Fprintf(out, "  version %s · prompt %s · skills %d · project %s\n",
-		orDash(s.Version), orDash(s.PromptHash), s.Skills, orDash(s.Project))
-	if s.ChatSession != "" {
-		fmt.Fprintf(out, "  conversation %q (shhh chat --resume, or observe export --transcript)\n", s.ChatSession)
+	for _, p := range []report.Pair{
+		{Key: "tokens", Value: observeTokens(s.TokensIn, s.TokensOut)},
+		{Key: "cost", Value: observeCost(s.Cost)},
+		{Key: "version", Value: s.Version},
+		{Key: "prompt", Value: s.PromptHash},
+		{Key: "project", Value: s.Project},
+		{Key: "conversation", Value: s.ChatSession},
+	} {
+		if p.Value != "" {
+			pairs = append(pairs, p)
+		}
+	}
+	if s.Skills > 0 {
+		pairs = append(pairs, report.Pair{Key: "skills", Value: strconv.Itoa(s.Skills)})
 	}
 	if s.ParentID != nil {
-		fmt.Fprintf(out, "  child of session %d\n", *s.ParentID)
+		pairs = append(pairs, report.Pair{Key: "child of", Value: strconv.FormatInt(*s.ParentID, 10)})
+	}
+
+	r := report.Report{
+		Title:    "shhh observe session " + strconv.FormatInt(id, 10),
+		Subject:  joinDetail(s.Kind, observeElapsed(s)),
+		Sections: []report.Section{{Pairs: pairs}},
 	}
 
 	events, err := db.AgentSessionEvents(id)
@@ -514,64 +686,65 @@ func renderObserveSession(cmd *cobra.Command, db *storage.DB, id int64) error {
 		return fmt.Errorf("query events: %w", err)
 	}
 	if len(events) == 0 {
-		fmt.Fprintln(out, "\nNo events recorded.")
-		return nil
+		return report.Fprint(cmd.OutOrStdout(),
+			emptyInto(r, "no events recorded for this session", "shhh observe"))
 	}
-	w := tabwriter.NewWriter(out, 0, 4, 2, ' ', 0)
 	turn := int64(-1)
 	for _, e := range events {
 		if e.Turn != turn {
-			_ = w.Flush()
 			turn = e.Turn
+			header := fmt.Sprintf("TURN %d", turn)
 			if turn == 0 {
-				fmt.Fprintln(out, "\nBefore the first turn:")
-			} else {
-				fmt.Fprintf(out, "\nTurn %d:\n", turn)
+				header = "BEFORE THE FIRST TURN"
 			}
+			r.Sections = append(r.Sections, report.Section{Header: header})
 		}
-		at := e.CreatedAt
-		if t, err := time.Parse(observeTimeLayout, e.CreatedAt); err == nil {
-			at = t.Local().Format("15:04:05")
-		}
-		switch e.Kind {
-		case storage.AgentEventTool:
-			fmt.Fprintf(w, "  %s\tr%d\ttool\t%s\t%s\t%s\t%s\n", at, e.Round, e.Tool, e.Outcome, orDash(e.Reason), fmtEventMs(e.DurationMs))
-		case storage.AgentEventDecision:
-			fmt.Fprintf(w, "  %s\tr%d\tdecision\t%s\t%s\t\t\n", at, e.Round, e.Outcome, orDash(e.Reason))
-		case storage.AgentEventSignal:
-			fmt.Fprintf(w, "  %s\tr%d\tsignal\t%s\t%s\t\t\n", at, e.Round, e.Outcome, orDash(e.Reason))
-		case storage.AgentEventTurn:
-			fmt.Fprintf(w, "  %s\t\tturn\t%s\t%d rounds\t\t%s\n", at, e.Outcome, e.Round, fmtEventMs(e.DurationMs))
-		default:
-			fmt.Fprintf(w, "  %s\tr%d\t%s\t%s\t%s\t\t\n", at, e.Round, e.Kind, e.Outcome, orDash(e.Reason))
-		}
+		last := &r.Sections[len(r.Sections)-1]
+		last.Rows = append(last.Rows, observeEventRow(e))
 	}
-	return w.Flush()
+	return report.Fprint(cmd.OutOrStdout(), r)
+}
+
+// observeEventRow is one recorded event on the grid: what kind of thing
+// happened, to what, and how it came out.
+func observeEventRow(e storage.AgentExportEvent) report.Row {
+	at := e.CreatedAt
+	if t, err := time.Parse(observeTimeLayout, e.CreatedAt); err == nil {
+		at = t.Local().Format("15:04:05")
+	}
+	row := report.Row{State: report.Pass, Name: at, Outcome: e.Outcome}
+	switch e.Kind {
+	case storage.AgentEventTool:
+		row.Subject, row.Detail = e.Tool, joinDetail(e.Reason, fmtEventMs(e.DurationMs))
+		if e.Outcome == "error" {
+			row.State = report.Fail
+		}
+	case storage.AgentEventDecision:
+		row.State = observeDecisionState(e.Outcome)
+		row.Subject, row.Outcome = "decision", components.OutcomeBy(
+			observeDecisionWord(e.Outcome), observeDecider(e.Reason))
+	case storage.AgentEventSignal:
+		row.State, row.Subject, row.Detail = report.Queue, e.Outcome, e.Reason
+		row.Outcome = "signal"
+	case storage.AgentEventTurn:
+		row.State = observeTurnState(e.Outcome)
+		row.Subject = "turn"
+		row.Detail = joinDetail(fmt.Sprintf("%d rounds", e.Round), fmtEventMs(e.DurationMs))
+	default:
+		row.Subject, row.Detail = e.Kind, e.Reason
+	}
+	if e.Round > 0 && e.Kind != storage.AgentEventTurn {
+		row.Detail = joinDetail(fmt.Sprintf("r%d", e.Round), row.Detail)
+	}
+	return row
 }
 
 // observeTimeLayout is how storage stamps event times.
 const observeTimeLayout = "2006-01-02T15:04:05.000Z"
-
-func orDash(s string) string {
-	if s == "" {
-		return "-"
-	}
-	return s
-}
 
 func fmtEventMs(ms *int64) string {
 	if ms == nil {
 		return ""
 	}
 	return (time.Duration(*ms) * time.Millisecond).String()
-}
-
-func fmtObserveCost(v float64) string {
-	if v == 0 {
-		return "-"
-	}
-	if v < 0.01 {
-		return fmt.Sprintf("$%.4f", v)
-	}
-	return fmt.Sprintf("$%.2f", v)
 }

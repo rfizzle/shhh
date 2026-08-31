@@ -104,9 +104,11 @@ type SurveyOpts struct {
 	HTTPClient *http.Client
 }
 
-// keyVars are the environment variables a provider's key can come from, in
-// the order the dialects read them.
-func keyVars(providerName string) []string {
+// KeyVars are the environment variables a provider's key can come from, in
+// the order the dialects read them. It is exported because `shhh providers`
+// reads them to say whether a built-in provider is ready without starting a
+// session — the same walk this file's survey makes after one has failed.
+func KeyVars(providerName string) []string {
 	vars := []string{"SHHH_API_KEY"}
 	switch providerName {
 	case "anthropic":
@@ -145,7 +147,7 @@ func SurveyPlaces(ctx context.Context, opts SurveyOpts) Survey {
 // four characters of its value — enough to tell one key from another, never
 // enough to be one.
 func surveyEnv(providerName string) Place {
-	vars := keyVars(providerName)
+	vars := KeyVars(providerName)
 	var set, unset []string
 	for _, name := range vars {
 		if value := strings.TrimSpace(os.Getenv(name)); value != "" {

@@ -125,8 +125,9 @@ func TestRenderObserveDashboard_Sections(t *testing.T) {
 	}
 	out := buf.String()
 	for _, want := range []string{
-		"Usage by day:", "Usage by model:", "Tool mix:", "Approval decisions:", "Recent sessions:",
-		"anthropic", "test-model", "read_file", "deny", "classifier", "152000", "8300", "$0.58", "code",
+		"BY DAY", "BY MODEL", "TOOLS", "DECISIONS", "SESSIONS",
+		"anthropic", "test-model", "read_file", "denied", "auto · classifier",
+		"↑152k ↓8.3k", "$0.58", "code",
 	} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("dashboard missing %q:\n%s", want, out)
@@ -177,8 +178,9 @@ func TestObserveSessionTimeline(t *testing.T) {
 	}
 	out := buf.String()
 	for _, want := range []string{
-		"Session 1", "prompt " + fingerprint("the prompt"), "skills 2", "project " + fingerprint("/repo"),
-		"conversation \"2026-01-01 10:00:00\"", "Turn 1:", "search", "empty", "ask", "safety",
+		"shhh observe session 1", "prompt:", fingerprint("the prompt"), "skills:", "2",
+		"project:", fingerprint("/repo"), "conversation:", "2026-01-01 10:00:00",
+		"TURN 1", "search", "empty", "asked", "auto · safety",
 		"summary", "off-target", "cap-paused", "41 rounds",
 	} {
 		if !strings.Contains(out, want) {
@@ -194,7 +196,7 @@ func TestObserveSessionTimeline(t *testing.T) {
 		t.Fatalf("render dashboard: %v", err)
 	}
 	out = buf.String()
-	for _, want := range []string{"Turns:", "cap-paused", "Signals:", "off-target", "observe session"} {
+	for _, want := range []string{"TURNS", "cap-paused", "SIGNALS", "off-target", "observe session"} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("dashboard missing %q:\n%s", want, out)
 		}

@@ -12,9 +12,9 @@ import (
 	"fmt"
 	"os"
 	"strings"
-	"text/tabwriter"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -27,23 +27,6 @@ type chatRow struct {
 	Title     string    `json:"title,omitempty"`
 	Turns     int       `json:"turns"`
 	UpdatedAt time.Time `json:"updated_at"`
-}
-
-// chatMessage is one message as `shhh chats show --json` emits it: the
-// role and the words, and a tool call's name and arguments where there was
-// one. Attachments are left out — a transcript for a script is text.
-type chatMessage struct {
-	Role       string         `json:"role"`
-	Content    string         `json:"content,omitempty"`
-	ToolCalls  []chatToolCall `json:"tool_calls,omitempty"`
-	ToolCallID string         `json:"tool_call_id,omitempty"`
-}
-
-// chatToolCall is one call the assistant made, name and arguments apart so
-// a script does not have to split a string.
-type chatToolCall struct {
-	Name      string `json:"name"`
-	Arguments string `json:"arguments"`
 }
 
 func newChatsCmd() *cobra.Command {
@@ -98,8 +81,7 @@ func newChatsCmd() *cobra.Command {
 			if listJSON {
 				return writeJSON(cmd, chatRows(entries))
 			}
-			fmt.Fprint(cmd.OutOrStdout(), chatListing(entries))
-			return nil
+			return report.Fprint(cmd.OutOrStdout(), chatsReport(entries, time.Now()))
 		},
 	}
 	list.Flags().BoolVar(&listJSON, "json", false, "emit the list as a JSON array")
@@ -120,7 +102,7 @@ func newChatsCmd() *cobra.Command {
 				return chatError(err)
 			}
 			if showJSON {
-				return writeJSON(cmd, chatMessages(msgs))
+				return writeJSON(cmd, jsonMessages(msgs))
 			}
 			fmt.Fprint(cmd.OutOrStdout(), chatTranscript(msgs))
 			return nil
@@ -152,8 +134,8 @@ func newChatsCmd() *cobra.Command {
 					return err
 				}
 				if !ok {
-					fmt.Fprintln(cmd.OutOrStdout(), "Kept.")
-					return nil
+					return report.Fprintln(cmd.OutOrStdout(), report.Row{
+						State: report.Skip, Subject: "kept " + name, Detail: "nothing was deleted"})
 				}
 			}
 			if err := db.DeleteChat(name); err != nil {
@@ -163,8 +145,7 @@ func newChatsCmd() *cobra.Command {
 			if branches > 0 {
 				with = " and its " + branchCount(branches)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Deleted %q%s.\n", name, with)
-			return nil
+			return report.Fprintln(cmd.OutOrStdout(), report.Done("deleted chat", name+with))
 		},
 	}
 	del.Flags().BoolVarP(&yes, "yes", "y", false, "delete without asking")
@@ -186,8 +167,7 @@ func newChatsCmd() *cobra.Command {
 			if err := db.RenameChat(args[0], next); err != nil {
 				return chatError(err)
 			}
-			fmt.Fprintf(cmd.OutOrStdout(), "Renamed %q to %q.\n", args[0], next)
-			return nil
+			return report.Fprintln(cmd.OutOrStdout(), report.Done("renamed chat", args[0]+" → "+next))
 		},
 	}
 
@@ -240,38 +220,24 @@ func chatRows(entries []storage.ChatListEntry) []chatRow {
 	return rows
 }
 
-// chatListing is the listing as text: one row per chat, columns aligned,
-// the title where there is one and a dash where there is not — a column
-// that is sometimes empty is a column the eye cannot find.
-func chatListing(entries []storage.ChatListEntry) string {
+// chatsReport is the listing as text: one row per chat, the title where a
+// session has been given one and the name alone where it has not.
+func chatsReport(entries []storage.ChatListEntry, now time.Time) report.Report {
+	r := report.Report{Title: "shhh chats", Subject: countOf(len(entries), "chat", "chats")}
 	if len(entries) == 0 {
-		return "No saved chats. A session saves itself as it goes; `shhh chat` starts one.\n"
+		return emptyInto(r, "nothing saved yet", "shhh chat")
 	}
-	var b strings.Builder
-	tw := tabwriter.NewWriter(&b, 0, 0, 2, ' ', 0)
-	fmt.Fprintln(tw, "NAME\tTITLE\tTURNS\tUPDATED")
+	rows := make([]report.Row, 0, len(entries))
 	for _, e := range entries {
-		title := e.Title
-		if title == "" {
-			title = "—"
-		}
-		fmt.Fprintf(tw, "%s\t%s\t%d\t%s\n", e.Name, title, e.Turns, e.UpdatedAt.Local().Format("2006-01-02 15:04"))
+		rows = append(rows, report.Row{
+			State:   report.Pass,
+			Name:    e.Name,
+			Subject: e.Title,
+			Detail:  joinDetail(countOf(e.Turns, "turn", "turns"), historyAgo(e.UpdatedAt, now)),
+		})
 	}
-	tw.Flush()
-	return b.String()
-}
-
-// chatMessages is the transcript as data.
-func chatMessages(msgs []provider.Message) []chatMessage {
-	out := make([]chatMessage, 0, len(msgs))
-	for _, m := range msgs {
-		row := chatMessage{Role: string(m.Role), Content: m.Content, ToolCallID: m.ToolCallID}
-		for _, tc := range m.ToolCalls {
-			row.ToolCalls = append(row.ToolCalls, chatToolCall{Name: tc.Name, Arguments: tc.Arguments})
-		}
-		out = append(out, row)
-	}
-	return out
+	r.Sections = []report.Section{{Rows: rows}}
+	return r
 }
 
 // chatTranscript is the transcript as text: each message under its role,

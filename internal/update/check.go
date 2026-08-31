@@ -24,6 +24,10 @@ const (
 	failTTL    = time.Hour
 	cacheFile  = "update_check.json"
 	releaseURL = "https://api.github.com/repos/" + repoOwner + "/" + repoName + "/releases/latest"
+	// ReleasesPage is where a person goes to see what a newer release
+	// changed — the release feed's own address is an API endpoint and is no
+	// use to a reader.
+	ReleasesPage = "https://github.com/" + repoOwner + "/" + repoName + "/releases"
 )
 
 type cacheEntry struct {

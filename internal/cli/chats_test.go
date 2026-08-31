@@ -71,15 +71,12 @@ func TestChats_ListTextAndJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("list: %v", err)
 	}
-	if !strings.Contains(out, "NAME") || !strings.Contains(out, "Flaky retry test") || !strings.Contains(out, "beta") {
+	if !strings.Contains(out, "shhh chats — 3 chats") || !strings.Contains(out, "Flaky retry test") ||
+		!strings.Contains(out, "beta") {
 		t.Fatalf("the listing should carry names and titles, got:\n%s", out)
 	}
-	lines := strings.Split(strings.TrimSpace(out), "\n")
-	if len(lines) != 4 {
-		t.Fatalf("a header and three rows, got %d:\n%s", len(lines), out)
-	}
-	if !strings.Contains(out, "—") {
-		t.Fatal("an untitled chat shows a dash in the title column")
+	if !strings.Contains(out, "✓ beta         1 turn") {
+		t.Fatal("an untitled chat states its turns where a title would be, with no empty column")
 	}
 
 	out, err = runChats(t, "", "list", "--json")
@@ -122,11 +119,11 @@ func TestChats_ShowTextAndJSON(t *testing.T) {
 	if err != nil {
 		t.Fatalf("show --json: %v", err)
 	}
-	var msgs []chatMessage
+	var msgs []jsonMessage
 	if err := json.Unmarshal([]byte(out), &msgs); err != nil {
 		t.Fatalf("the JSON should round-trip: %v\n%s", err, out)
 	}
-	if len(msgs) != 3 || msgs[2].ToolCalls[0] != (chatToolCall{Name: "read_file", Arguments: `{"path":"a.go"}`}) {
+	if len(msgs) != 3 || msgs[2].ToolCalls[0] != (jsonToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"a.go"}`}) {
 		t.Fatalf("messages should carry their tool calls, got %+v", msgs)
 	}
 	if _, err := runChats(t, "", "show", "nope"); err == nil || !strings.Contains(err.Error(), "shhh chats list") {
@@ -137,14 +134,14 @@ func TestChats_ShowTextAndJSON(t *testing.T) {
 func TestChats_DeleteAsksThenRemovesBranches(t *testing.T) {
 	chatsDB(t)
 	out, err := runChats(t, "n\n", "delete", "alpha")
-	if err != nil || !strings.Contains(out, "Kept.") {
+	if err != nil || !strings.Contains(out, "⊘ kept alpha") {
 		t.Fatalf("n keeps the chat, got %q %v", out, err)
 	}
 	if !strings.Contains(out, `Delete "alpha" and its 1 branch?`) {
 		t.Fatalf("the question names the chat and its branches, got %q", out)
 	}
 	out, err = runChats(t, "", "delete", "alpha", "--yes")
-	if err != nil || !strings.Contains(out, `Deleted "alpha" and its 1 branch.`) {
+	if err != nil || !strings.Contains(out, "✓ deleted chat alpha and its 1 branch") {
 		t.Fatalf("--yes deletes without asking, got %q %v", out, err)
 	}
 	out, err = runChats(t, "", "list", "--json")
@@ -166,7 +163,7 @@ func TestChats_BareWithNothingSavedNeedsNoProvider(t *testing.T) {
 func TestChats_Rename(t *testing.T) {
 	chatsDB(t)
 	out, err := runChats(t, "", "rename", "alpha", "retry flake")
-	if err != nil || !strings.Contains(out, `Renamed "alpha" to "retry flake".`) {
+	if err != nil || !strings.Contains(out, "✓ renamed chat alpha → retry flake") {
 		t.Fatalf("rename: %q %v", out, err)
 	}
 	if _, err := runChats(t, "", "rename", "beta", "retry flake"); err == nil || !strings.Contains(err.Error(), "already exists") {

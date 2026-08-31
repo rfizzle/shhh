@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/spf13/cobra"
@@ -30,7 +32,7 @@ func memoryManager(store *memory.Store) func(args []string) string {
 	return func(args []string) string {
 		const usage = "Usage: /memory [list] · /memory add [global] [preference|convention|correction|lesson] <text> · /memory forget <id>"
 		if len(args) == 0 || (len(args) == 1 && args[0] == "list") {
-			return memoryListing(store)
+			return memoryListing(store, "/memory add [global] [kind] <text>")
 		}
 		switch args[0] {
 		case "add":
@@ -42,7 +44,7 @@ func memoryManager(store *memory.Store) func(args []string) string {
 			if err != nil {
 				return "Error: " + err.Error()
 			}
-			return fmt.Sprintf("Saved memory [m%d] (%s %s): %s", e.ID, memory.ScopeLabel(e.Scope), e.Kind, e.Text)
+			return memoryAdded(e).String()
 		case "forget":
 			if len(args) != 2 {
 				return usage
@@ -54,7 +56,8 @@ func memoryManager(store *memory.Store) func(args []string) string {
 			if err := store.Forget(id); err != nil {
 				return "Error: " + err.Error()
 			}
-			return fmt.Sprintf("Forgot memory [m%d].", id)
+			return report.Report{Sections: []report.Section{{Rows: []report.Row{
+				report.Done("forgot", memoryID(id))}}}}.String()
 		}
 		return usage
 	}
@@ -90,28 +93,66 @@ func memorySaver(store *memory.Store) func(scope, kind, text string) (string, er
 		if err != nil {
 			return "", err
 		}
-		return fmt.Sprintf("Saved memory [m%d] (%s %s): %s", e.ID, memory.ScopeLabel(e.Scope), e.Kind, e.Text), nil
+		return memoryAdded(e).String() + "\n" + e.Text, nil
 	}
 }
 
-// memoryListing renders the entries visible to this workspace.
-func memoryListing(store *memory.Store) string {
+// memoryListing renders the entries visible to this workspace. The way out of
+// an empty listing is the form of the command the reader is already using —
+// a shell user told to type a slash command has been told nothing.
+func memoryListing(store *memory.Store, wayOut string) string {
 	entries, err := store.List()
 	if err != nil {
 		return "Error: " + err.Error()
 	}
-	if len(entries) == 0 {
-		return "No memories yet. Add one with /memory add [global] [kind] <text>, or let the agent propose one."
-	}
-	var sb strings.Builder
-	fmt.Fprintf(&sb, "Memories (project: %s):\n", store.Project())
-	for _, e := range entries {
-		fmt.Fprintf(&sb, "  [m%d] (%s %s, %s, %s) %s\n",
-			e.ID, memory.ScopeLabel(e.Scope), e.Kind, e.Provenance, e.UpdatedAt.Local().Format("Jan 2"), e.Text)
-	}
-	sb.WriteString("Remove one with /memory forget <id>.")
-	return sb.String()
+	return memoryReport(store, entries, wayOut, time.Now()).String()
 }
+
+// memoryReport is the entries as a report: project scope and global scope as
+// their own sections, the kind and who said it as fixed columns, and the text
+// itself on the line under them — it is the thing, not a field of it.
+func memoryReport(store *memory.Store, entries []memory.Entry, wayOut string, now time.Time) report.Report {
+	r := report.Report{
+		Title:   "shhh memory",
+		Subject: joinDetail(countOf(len(entries), "memory", "memories"), store.Project()),
+	}
+	if len(entries) == 0 {
+		return emptyInto(r, "nothing remembered yet", wayOut)
+	}
+	project := report.Section{Header: "PROJECT"}
+	global := report.Section{Header: "GLOBAL"}
+	for _, e := range entries {
+		row := report.Row{
+			State:   report.Pass,
+			Name:    memoryID(e.ID),
+			Subject: e.Kind,
+			Detail:  joinDetail(e.Provenance, historyAgo(e.UpdatedAt, now)),
+			Body:    []string{e.Text},
+		}
+		if e.Scope == memory.GlobalScope {
+			global.Rows = append(global.Rows, row)
+			continue
+		}
+		project.Rows = append(project.Rows, row)
+	}
+	for _, section := range []report.Section{project, global} {
+		if len(section.Rows) > 0 {
+			r.Sections = append(r.Sections, section)
+		}
+	}
+	return r
+}
+
+// memoryAdded is the confirmation an entry was saved, in the same shape every
+// other write in the CLI confirms itself.
+func memoryAdded(e memory.Entry) report.Report {
+	return report.Report{Sections: []report.Section{{Rows: []report.Row{
+		report.Done("remembered", memoryID(e.ID)+" · "+memory.ScopeLabel(e.Scope)+" "+e.Kind)}}}}
+}
+
+// memoryID is how an entry is named everywhere: `m12`, the id the forget
+// command takes.
+func memoryID(id int64) string { return fmt.Sprintf("m%d", id) }
 
 // newMemoryCmd is the `shhh memory` CLI, the out-of-session equivalent of
 // /memory: list, add, forget.
@@ -122,17 +163,27 @@ func newMemoryCmd() *cobra.Command {
 		Long:  "List, add, and remove the durable memories agent sessions recall: preferences, project conventions, corrections, and lessons, scoped globally or to the current project.",
 	}
 
-	cmd.AddCommand(&cobra.Command{
+	var listJSON bool
+	listCmd := &cobra.Command{
 		Use:   "list",
 		Short: "List memories visible to this project (project + global)",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return withMemoryStore(func(store *memory.Store) error {
-				fmt.Fprintln(cmd.OutOrStdout(), memoryListing(store))
-				return nil
+				entries, err := store.List()
+				if err != nil {
+					return err
+				}
+				if listJSON {
+					return writeJSON(cmd, memoryJSON(store, entries))
+				}
+				return report.Fprint(cmd.OutOrStdout(),
+					memoryReport(store, entries, memoryWayOut, time.Now()))
 			})
 		},
-	})
+	}
+	listCmd.Flags().BoolVar(&listJSON, "json", false, "emit the memories as JSON")
+	cmd.AddCommand(listCmd)
 
 	var addGlobal bool
 	var addKind string
@@ -150,8 +201,7 @@ func newMemoryCmd() *cobra.Command {
 				if err != nil {
 					return err
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "Saved memory [m%d] (%s %s): %s\n", e.ID, memory.ScopeLabel(e.Scope), e.Kind, e.Text)
-				return nil
+				return report.Fprint(cmd.OutOrStdout(), memoryAdded(e))
 			})
 		},
 	}
@@ -172,13 +222,42 @@ func newMemoryCmd() *cobra.Command {
 				if err := store.Forget(id); err != nil {
 					return err
 				}
-				fmt.Fprintf(cmd.OutOrStdout(), "Forgot memory [m%d].\n", id)
-				return nil
+				return report.Fprintln(cmd.OutOrStdout(), report.Done("forgot", memoryID(id)))
 			})
 		},
 	})
 
 	return cmd
+}
+
+// memoryWayOut is what an empty `shhh memory` points at: the form of the
+// command a reader at a shell prompt can actually type.
+const memoryWayOut = "shhh memory add \"<text>\""
+
+// memoryJSON is the listing as data, in the store's own field names.
+func memoryJSON(store *memory.Store, entries []memory.Entry) memoryDoc {
+	doc := memoryDoc{Project: store.Project(), Memories: []memoryEntryDoc{}}
+	for _, e := range entries {
+		doc.Memories = append(doc.Memories, memoryEntryDoc{
+			ID: memoryID(e.ID), Scope: memory.ScopeLabel(e.Scope), Kind: e.Kind,
+			Provenance: e.Provenance, Text: e.Text, UpdatedAt: e.UpdatedAt,
+		})
+	}
+	return doc
+}
+
+type memoryDoc struct {
+	Project  string           `json:"project"`
+	Memories []memoryEntryDoc `json:"memories"`
+}
+
+type memoryEntryDoc struct {
+	ID         string    `json:"id"`
+	Scope      string    `json:"scope"`
+	Kind       string    `json:"kind"`
+	Provenance string    `json:"provenance"`
+	Text       string    `json:"text"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 // withMemoryStore opens storage for one CLI invocation and runs fn against

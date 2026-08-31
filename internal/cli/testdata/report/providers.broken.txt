@@ -1,0 +1,15 @@
+  shhh providers — 2 built in · 0 profiles
+
+  PROVIDERS
+
+  ✗ anthropic  no key · SHHH_API_KEY or ANTHROPIC_API_KEY unset
+  ✗ openai     no key · SHHH_API_KEY or OPENAI_API_KEY unset
+
+  SOURCES
+
+  ⊘ ~/.config/shhh/providers · absent
+  ✗ ~/.config/shhh/providers.toml  [would not load]
+      provider "corp-gw": base_url is required
+        the other profiles still load; this file is skipped until it parses
+
+  ⊘ no gateway profiles · write ~/.config/shhh/providers.toml to add one
