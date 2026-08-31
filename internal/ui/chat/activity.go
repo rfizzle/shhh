@@ -315,6 +315,11 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 		} else {
 			row.Outcome = components.OutcomeOK
 		}
+		// A `!!` run's output never joined the conversation, and the
+		// outcome is where the row says so (bang.go).
+		if e.localRun {
+			row.Outcome += " · " + components.OutcomeLocal
+		}
 	} else {
 		row.Kind = m.activityKind(e.toolName)
 		row.Verb = activityVerb(e.toolName)

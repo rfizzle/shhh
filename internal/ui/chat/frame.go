@@ -71,6 +71,7 @@ type frameStyles struct {
 	Hint             lipgloss.Style
 	GutterIdle       lipgloss.Style
 	GutterWork       lipgloss.Style
+	GutterBang       lipgloss.Style
 	NoticeInfo       lipgloss.Style
 	NoticeAlert      lipgloss.Style
 	// The undressed draft and the waiting chip a decision puts on the frame
@@ -89,10 +90,13 @@ func newFrameStyles(p components.ColorTokens) frameStyles {
 		Hint:             lipgloss.NewStyle().Foreground(p.Dim.Color()).Italic(true),
 		GutterIdle:       lipgloss.NewStyle().Bold(true).Foreground(p.Info.Color()),
 		GutterWork:       lipgloss.NewStyle().Bold(true).Foreground(p.Spin.Color()),
-		NoticeInfo:       lipgloss.NewStyle().Foreground(p.Info.Color()),
-		NoticeAlert:      lipgloss.NewStyle().Foreground(p.Del.Color()),
-		DraftHeld:        lipgloss.NewStyle().Foreground(p.Body.Color()),
-		WaitingChip:      lipgloss.NewStyle().Bold(true).Foreground(p.Accent.Color()),
+		// The bang draft's glyph carries the gated accent: what enter does
+		// next is ask, on the confirm card.
+		GutterBang:  lipgloss.NewStyle().Bold(true).Foreground(p.Accent.Color()),
+		NoticeInfo:  lipgloss.NewStyle().Foreground(p.Info.Color()),
+		NoticeAlert: lipgloss.NewStyle().Foreground(p.Del.Color()),
+		DraftHeld:   lipgloss.NewStyle().Foreground(p.Body.Color()),
+		WaitingChip: lipgloss.NewStyle().Bold(true).Foreground(p.Accent.Color()),
 	}
 }
 
@@ -306,11 +310,18 @@ func (m Model) frameHints() string {
 }
 
 // promptGutter is the input's leading glyph: ❯ idle, ▸ while the
-// agent works (typed text becomes steering), and the child's name
+// agent works (typed text becomes steering), ! while the draft is in bang
+// form (enter runs a command, through the confirm), and the child's name
 // while attached.
 func (m Model) promptGutter() string {
 	if m.attachedTo != "" {
 		return sty.Frame.GutterIdle.Render(m.attachedTo+" ❯") + " "
+	}
+	// Bang form outranks the working glyph: enter on this draft is a
+	// command either way — confirmed idle, refused mid-turn — never
+	// steering, and the gutter must not claim otherwise (bang.go).
+	if m.bangDraft() {
+		return sty.Frame.GutterBang.Render("!") + " "
 	}
 	if m.frameWorking() {
 		return sty.Frame.GutterWork.Render("▸") + " "
@@ -394,6 +405,11 @@ func (m Model) noticeLine() string {
 	}
 	if n := len(m.steering); n > 0 {
 		parts = append(parts, sty.Frame.NoticeInfo.Render(fmt.Sprintf("%d steering queued", n)))
+	}
+	// Follow-ups count separately from steering: one joins the running
+	// turn, the other waits for it to end (followup.go).
+	if note := m.followUpNotice(); note != "" {
+		parts = append(parts, sty.Frame.NoticeInfo.Render(note))
 	}
 	// Scrolled off the live end, so the transcript has stopped following the
 	// turn (navigate.go). The draft still holds the keyboard, so this

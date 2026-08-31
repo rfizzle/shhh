@@ -7,10 +7,10 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-// The rule is: any modifier on Enter means a line break rather than a
-// send. Under v1 that had to be read out of the raw CSI the terminal sent,
-// because v1 had no name for a modified Enter; v2 names it, so the rule is a
-// rule about a key again.
+// The rule is: a modifier on Enter means a line break rather than a
+// send — except alt alone, which is a key of its own (the follow-up
+// queue, followup.go) and passes through named rather than being folded
+// into the rewrite.
 func TestNewlineKey_RecognisesEveryModifiedEnter(t *testing.T) {
 	cases := []struct {
 		name string
@@ -19,7 +19,8 @@ func TestNewlineKey_RecognisesEveryModifiedEnter(t *testing.T) {
 	}{
 		{"shift+enter", tea.KeyPressMsg{Code: tea.KeyEnter, Mod: tea.ModShift}, true},
 		{"ctrl+enter", tea.KeyPressMsg{Code: tea.KeyEnter, Mod: tea.ModCtrl}, true},
-		{"alt+enter", tea.KeyPressMsg{Code: tea.KeyEnter, Mod: tea.ModAlt}, true},
+		{"alt+enter", tea.KeyPressMsg{Code: tea.KeyEnter, Mod: tea.ModAlt}, false},
+		{"shift+alt+enter", tea.KeyPressMsg{Code: tea.KeyEnter, Mod: tea.ModShift | tea.ModAlt}, true},
 		{"plain enter", tea.KeyPressMsg{Code: tea.KeyEnter}, false},
 		{"another modified key", tea.KeyPressMsg{Code: 'a', Mod: tea.ModShift}, false},
 	}
@@ -27,6 +28,23 @@ func TestNewlineKey_RecognisesEveryModifiedEnter(t *testing.T) {
 		if got := newlineKey(c.msg); got != c.want {
 			t.Errorf("%s: newlineKey = %v, want %v", c.name, got, c.want)
 		}
+	}
+}
+
+// Alt+enter on an idle draft is still the newline it always was: the
+// follow-up case claims it only while a turn is live.
+func TestUpdate_AltEnterIdleInsertsNewline(t *testing.T) {
+	m := frameModel(t, 100, 40)
+	m.input.SetValue("first line")
+
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter, Mod: tea.ModAlt})
+	next := updated.(Model)
+
+	if !strings.Contains(next.input.Value(), "\n") {
+		t.Fatalf("alt+enter idle did not insert a newline: %q", next.input.Value())
+	}
+	if len(next.followUps) != 0 {
+		t.Fatalf("alt+enter idle queued a follow-up: %v", next.followUps)
 	}
 }
 

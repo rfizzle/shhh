@@ -83,7 +83,7 @@ var slashCommands = []slashCommand{
 	{name: "/help", desc: "Show commands, keys, and the approval policy"},
 	{name: "/clear", aliases: []string{"/new"}, desc: "Start a new conversation",
 		idleOnly: "it starts a new conversation"},
-	{name: "/paste", args: "[path|show <name>|drop <name>|clear]", desc: "Attach the clipboard, or a file, to your next message",
+	{name: "/paste", args: "[path|show <name>|drop [name]|clear]", desc: "Attach the clipboard, or a file, to your next message",
 		key: keys.Shown(keys.Draft.Attach),
 		argSpecs: []argSpec{
 			{options: []argOption{
@@ -336,8 +336,9 @@ func (m *Model) syncCompletions() {
 		m.completeDismissedFor = ""
 	}
 	if !m.inputLive() || m.attachedTo != "" || m.agentList != nil || m.activeChildAsk() != nil ||
-		!strings.HasPrefix(val, "/") || strings.ContainsAny(val, "\t\n") || val == m.completeDismissedFor {
+		strings.ContainsAny(val, "\t\n") || val == m.completeDismissedFor {
 		m.clearCompletions()
+		m.mentionCache = nil
 		return
 	}
 
@@ -348,10 +349,35 @@ func (m *Model) syncCompletions() {
 
 	prior, token, start, end := tokenAtCursor(val, m.inputCursor())
 	var matches []completionItem
-	if len(prior) == 0 {
-		matches = m.commandMatches(token)
-	} else {
-		matches = m.argumentMatches(prior, token)
+	files := false
+	switch {
+	case strings.HasPrefix(val, "/"):
+		// A slash line is a command being typed, and the menu is the
+		// registry's.
+		if len(prior) == 0 {
+			matches = m.commandMatches(token)
+		} else {
+			matches = m.argumentMatches(prior, token)
+		}
+	case strings.HasPrefix(token, "@"):
+		// An @ token — at the start of the draft or after whitespace,
+		// because tokens are whitespace-split — is a file mention
+		// (mention.go). A space or a cursor moved off the token closes
+		// the menu the same way it always has: the token under the
+		// cursor is no longer this one.
+		matches = m.mentionMatches(strings.TrimPrefix(token, "@"))
+		files = true
+	default:
+		m.clearCompletions()
+		m.mentionCache = nil
+		return
+	}
+	// The mention cache outlives an empty match list on purpose: the walk
+	// behind it runs once per @ draft, and a token that matches nothing is
+	// still that draft mid-edit. It is dropped above, where the draft stops
+	// being one — never per keystroke.
+	if !files {
+		m.mentionCache = nil
 	}
 	if len(matches) == 0 {
 		m.clearCompletions()
@@ -360,7 +386,8 @@ func (m *Model) syncCompletions() {
 
 	m.completions = matches
 	m.completeFor = val
-	m.completeArg = len(prior) > 0
+	m.completeArg = len(prior) > 0 && !files
+	m.completeFiles = files
 	m.completeStart = start
 	m.completeEnd = end
 	m.completeIdx = 0
@@ -442,6 +469,7 @@ func (m *Model) clearCompletions() {
 	m.completions = nil
 	m.completeFor = ""
 	m.completeArg = false
+	m.completeFiles = false
 	m.argCache = nil
 	m.argCacheFor = ""
 }
@@ -533,6 +561,10 @@ func (m Model) completionMenuLines() []string {
 		return lines
 	}
 	hint := "tab complete · enter run · ↑↓ move · esc dismiss"
+	if m.completeFiles {
+		// A file row is inserted, never run: the sentence goes on.
+		hint = "tab/enter insert · ↑↓ move · esc dismiss"
+	}
 	if len(m.completions) > visible {
 		hint = fmt.Sprintf("%d/%d · %s", m.completeIdx+1, len(m.completions), hint)
 	}

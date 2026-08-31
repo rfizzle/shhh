@@ -42,6 +42,9 @@ const (
 	OutcomeDenied      = "denied"
 	OutcomeApproved    = "approved"
 	OutcomeAutoAllowed = "auto-allowed"
+	// OutcomeLocal marks a command row whose output stayed out of the
+	// conversation — the reader saw it, the model never did.
+	OutcomeLocal = "local"
 )
 
 // OutcomeExit is the terminal outcome of a shell command.

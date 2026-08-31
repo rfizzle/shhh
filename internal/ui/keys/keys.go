@@ -96,14 +96,23 @@ func Words(b Binding) string { return b.Help().Desc }
 // would take a shell user's muscle memory to open a surface they did not
 // ask for.
 type DraftKeys struct {
-	Send      Binding
-	Newline   Binding
-	Editor    Binding
-	Attach    Binding
-	Complete  Binding
-	Palette   Binding
-	Reasoning Binding
-	Mode      Binding
+	Send    Binding
+	Newline Binding
+	// FollowUp queues the draft for after the turn — steering joins the
+	// running conversation, a follow-up waits for it to finish. Idle, the
+	// same chord is a newline: there is no turn to follow, and the chord
+	// has inserted newlines on this surface since before it meant anything
+	// else, so a terminal that cannot report shift+enter loses nothing.
+	FollowUp Binding
+	// PullQueued takes the newest queued message — a follow-up first, else
+	// steering — back into the draft.
+	PullQueued Binding
+	Editor     Binding
+	Attach     Binding
+	Complete   Binding
+	Palette    Binding
+	Reasoning  Binding
+	Mode       Binding
 
 	HistoryPrev   Binding
 	HistoryNext   Binding
@@ -131,14 +140,16 @@ type DraftKeys struct {
 
 // Draft's keys, in the order the input frame and /help name them.
 var Draft = DraftKeys{
-	Send:      bind("enter", "send the message", "enter"),
-	Newline:   bind("shift+enter", "insert a newline", "shift+enter", "alt+enter", "ctrl+j"),
-	Editor:    bind("ctrl+g", "open the draft in $EDITOR", "ctrl+g"),
-	Attach:    bind("ctrl+v", "attach the clipboard", "ctrl+v"),
-	Complete:  bind("tab", "complete a slash command", "tab"),
-	Palette:   bind("ctrl+p", "the command palette", "ctrl+p"),
-	Reasoning: bind("alt+t", "cycle the reasoning level", "alt+t"),
-	Mode:      bind("shift+tab", "cycle the permission mode", "shift+tab"),
+	Send:       bind("enter", "send the message", "enter"),
+	Newline:    bind("shift+enter", "insert a newline", "shift+enter", "ctrl+j"),
+	FollowUp:   bind("alt+enter", "queue a follow-up for after the turn (a newline while idle)", "alt+enter"),
+	PullQueued: bind("alt+↑", "pull the newest queued message back into the draft", "alt+up"),
+	Editor:     bind("ctrl+g", "open the draft in $EDITOR", "ctrl+g"),
+	Attach:     bind("ctrl+v", "attach the clipboard", "ctrl+v"),
+	Complete:   bind("tab", "complete a slash command", "tab"),
+	Palette:    bind("ctrl+p", "the command palette", "ctrl+p"),
+	Reasoning:  bind("alt+t", "cycle the reasoning level", "alt+t"),
+	Mode:       bind("shift+tab", "cycle the permission mode", "shift+tab"),
 
 	HistoryPrev:   bind("↑", "recall the previous input", "up"),
 	HistoryNext:   bind("↓", "the next one", "down"),

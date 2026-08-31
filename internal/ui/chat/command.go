@@ -25,8 +25,12 @@ func (m Model) submitInput() (tea.Model, tea.Cmd) {
 	text := strings.TrimSpace(m.input.Value())
 	// With the completion menu open, enter runs the highlighted command
 	// rather than the raw prefix; on an argument row it completes the
-	// token first and runs the whole line.
+	// token first and runs the whole line. A file-mention row is inserted,
+	// never run — the sentence is still being written (mention.go).
 	if m.completionActive() {
+		if m.completeFiles {
+			return m.insertMention()
+		}
 		if m.completeArg {
 			m.acceptCompletion()
 			text = strings.TrimSpace(m.input.Value())
@@ -53,6 +57,14 @@ func (m Model) submitInput() (tea.Model, tea.Cmd) {
 	}
 	if reason, held := m.todoRunHoldsInput(); held {
 		return m.systemNotice("Not sent: " + reason + ".")
+	}
+	// A draft in bang form is a command for the machine, not a message for
+	// the model: `!cmd` rides the /run confirm, `!!cmd` the same with its
+	// output kept local (bang.go). Checked before the steering branch so a
+	// command typed mid-turn is refused the way /run is, never queued as a
+	// sentence.
+	if cmd, local, ok := bangCommand(text); ok {
+		return m.runBang(cmd, local)
 	}
 	if m.working() || m.decisionUngated() {
 		// Typed while the agent works: the message joins the conversation

@@ -391,9 +391,11 @@ func (m Model) paletteFileEntries() []paletteEntry {
 	return out
 }
 
-// recentProjectFiles walks the checkout for its most recently modified files.
-// The hook is what the tests set, so nothing in the package depends on the
-// directory the suite happens to run in.
+// recentProjectFiles walks the checkout — and whatever directories the
+// session added to its working scope — for the most recently modified
+// files, less what .gitignore ignores. The hook is what the tests set, so
+// nothing in the package depends on the directory the suite happens to
+// run in.
 func (m Model) recentProjectFiles() []project.RecentFile {
 	if m.recentFiles != nil {
 		return m.recentFiles()
@@ -402,7 +404,7 @@ func (m Model) recentProjectFiles() []project.RecentFile {
 	if m.start != nil {
 		dir = m.start.Project.Dir
 	}
-	return project.RecentFiles(dir, paletteFileLimit)
+	return project.RecentFilesIn(append([]string{dir}, m.scopeDirs()...), paletteFileLimit)
 }
 
 // pathMatches is what a file is found by: its whole path, so a directory

@@ -31,6 +31,7 @@ import (
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // clipboardMsg carries the result of one clipboard read back into Update.
@@ -284,6 +285,9 @@ func (m Model) runPaste(parts []string) (tea.Model, tea.Cmd) {
 		return m.surfaceNotice("dropped " + dropped)
 	}
 	if rest, ok := cutFold(arg, "drop"); ok {
+		if rest == "" {
+			return m.openPasteDrop()
+		}
 		return m.dropAttachment(rest)
 	}
 	if rest, ok := cutFold(arg, "show"); ok {
@@ -335,6 +339,119 @@ func (m Model) dropAttachment(name string) (tea.Model, tea.Cmd) {
 		return m.surfaceNotice("dropped " + dropped)
 	}
 	return m.surfaceNotice(name + " is not attached — " + staged)
+}
+
+// openPasteDrop is a bare `/paste drop`: the keyboard path to taking a
+// chip back out without typing its name. Nothing staged says so; exactly
+// one chip asks through the inline confirm, named, defaulting to No;
+// several open the selector — checked chips are dropped on enter, esc
+// drops none (docs/interface/surfaces.md#a-staged-attachment).
+func (m Model) openPasteDrop() (tea.Model, tea.Cmd) {
+	switch len(m.attachments) {
+	case 0:
+		return m.surfaceNotice("nothing is attached")
+	case 1:
+		a := m.attachments[0]
+		m.pasteDropConfirm = &components.Confirm{
+			Prompt: fmt.Sprintf("Drop %s (%s)?", a.Name, attachment.HumanSize(len(a.Data))),
+		}
+	default:
+		opts := make([]components.SelectOption, len(m.attachments))
+		for i, a := range m.attachments {
+			opts[i] = components.SelectOption{Label: a.Name, Meta: attachment.HumanSize(len(a.Data))}
+		}
+		card := components.NewMultiSelect(fmt.Sprintf(
+			"Drop staged attachments — %s toggles, %s drops the checked ones, %s drops none",
+			keys.Shown(keys.Select.Toggle), keys.Shown(keys.Select.Take), keys.Shown(keys.Select.Cancel)), opts)
+		card.MaxLines = m.maxConfirmPanelHeight()
+		m.pasteDrop = card
+	}
+	m.enterSurface(statePasteDrop)
+	m.syncViewport()
+	return m, nil
+}
+
+// updatePasteDrop routes keys while the drop selector or its one-chip
+// confirm is up.
+func (m Model) updatePasteDrop(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	if keys.Match(msg, keys.Draft.Quit) {
+		m.quitting = true
+		return m, m.quitCmd()
+	}
+	if c := m.pasteDropConfirm; c != nil {
+		done, result := c.Update(msg)
+		if !done {
+			return m, nil
+		}
+		m.pasteDropConfirm = nil
+		m.leaveSurface()
+		m.syncViewport()
+		if yes, _ := result.(bool); yes && len(m.attachments) == 1 {
+			return m.dropAttachment(m.attachments[0].Name)
+		}
+		return m.surfaceNotice("nothing dropped")
+	}
+	if m.pasteDrop == nil {
+		m.leaveSurface()
+		return m, nil
+	}
+	done, result := m.pasteDrop.Update(msg)
+	if !done {
+		return m, nil
+	}
+	res := result.(components.MultiSelectResult)
+	m.pasteDrop = nil
+	m.leaveSurface()
+	m.syncViewport()
+	if res.Canceled {
+		return m.surfaceNotice("nothing dropped")
+	}
+	return m.dropAttachments(res.Indices)
+}
+
+// dropAttachments removes the chosen chips and names what went, the way a
+// single drop does.
+func (m Model) dropAttachments(indices []int) (tea.Model, tea.Cmd) {
+	chosen := map[int]bool{}
+	for _, i := range indices {
+		chosen[i] = true
+	}
+	var kept []provider.Attachment
+	var dropped []string
+	for i, a := range m.attachments {
+		if chosen[i] {
+			dropped = append(dropped, fmt.Sprintf("%s (%s)", a.Name, attachment.HumanSize(len(a.Data))))
+		} else {
+			kept = append(kept, a)
+		}
+	}
+	if len(dropped) == 0 {
+		return m.surfaceNotice("nothing dropped")
+	}
+	m.attachments = kept
+	m.syncViewport()
+	return m.surfaceNotice("dropped " + strings.Join(dropped, ", "))
+}
+
+// pasteDropLines renders whichever form the drop question took.
+func (m Model) pasteDropLines() []string {
+	if m.pasteDropConfirm != nil {
+		return []string{m.pasteDropConfirm.View(m.contentWidth())}
+	}
+	if m.pasteDrop == nil {
+		return nil
+	}
+	return strings.Split(m.pasteDrop.View(m.contentWidth()), "\n")
+}
+
+// renderPasteDrop pads the surface to the bottom panel's height.
+func (m Model) renderPasteDrop() string {
+	lines := m.pasteDropLines()
+	h := m.bottomPanelHeight()
+	for len(lines) < h {
+		lines = append(lines, "")
+	}
+	return strings.Join(lines[:h], "\n")
 }
 
 // pastedFileAttachment reports the file a bracketed paste was pointing at,

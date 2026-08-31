@@ -147,6 +147,10 @@ const (
 	// is opened by naming a file rather than by a key, because the chip it
 	// belongs to has no key of its own.
 	statePreview
+	// statePasteDrop: the selector a bare `/paste drop` opens over the
+	// staged chips — checked ones are dropped on enter, esc drops none. The
+	// one-chip case asks through the inline confirm instead.
+	statePasteDrop
 )
 
 const inputHeight = 3
@@ -197,6 +201,9 @@ type cmdDoneMsg struct {
 	output   string
 	exitCode int
 	duration time.Duration
+	// local: a `!!` run — the output lands in the transcript and never in
+	// the conversation (bang.go).
+	local bool
 }
 type initialPromptMsg struct{}
 
@@ -256,6 +263,9 @@ type entry struct {
 	toolArgs   string
 	toolResult string
 	exitCode   int
+	// localRun marks a command row whose output stayed out of the
+	// conversation — a `!!` run — which its outcome says (bang.go).
+	localRun bool
 	// duration is how long the tool call or command ran, shown on its
 	// activity row; zero hides it.
 	duration time.Duration
@@ -397,7 +407,10 @@ type Model struct {
 	state      state
 	turnBack   state
 	pendingRun string
-	runCancel  context.CancelFunc
+	// pendingRunLocal marks a `!!` command (bang.go): it runs like any
+	// /run, and its output stays out of the conversation.
+	pendingRunLocal bool
+	runCancel       context.CancelFunc
 	// pendingBlast is the approval card's blast-radius block for the decision
 	// showing now, resolved once when the confirm is armed because it
 	// reads the filesystem and git.
@@ -704,8 +717,15 @@ type Model struct {
 	completeStart        int
 	completeEnd          int
 	completeArg          bool
-	argCache             map[int][]argOption
-	argCacheFor          string
+	// completeFiles says the menu is the @ file mention's (mention.go):
+	// enter inserts the focused path rather than running anything, and
+	// mentionCache holds the file walk for the life of the @ draft — it
+	// survives a token that matches nothing, so the walk never runs per
+	// keystroke.
+	completeFiles bool
+	mentionCache  []paletteEntry
+	argCache      map[int][]argOption
+	argCacheFor   string
 	// Interactive slash-command pickers: picker is the open select
 	// card, pickerApply consumes the chosen index and returns the transcript
 	// note; modelOptions is the /model picker's model catalog.
@@ -735,6 +755,16 @@ type Model struct {
 	// steering holds messages typed while the agent is working; they
 	// are injected as user messages before the next stream request.
 	steering []string
+	// followUps are drafts queued with alt+enter while a turn was live,
+	// sent one per turn end once the session is idle (followup.go). held
+	// stops the automatic send after a cancel: the queue survives, the rail
+	// says so, and the reader decides what still applies.
+	followUps     []string
+	followUpsHeld bool
+	// pasteDrop is the open `/paste drop` selector and pasteDropConfirm the
+	// inline confirm the one-chip case asks through (attachments.go).
+	pasteDrop        *components.MultiSelect
+	pasteDropConfirm *components.Confirm
 	// attachments are the images and files staged for the next message
 	// (attachments.go). They ride on whichever user message goes out
 	// next — a fresh turn or the first queued steering line — and are never
@@ -867,13 +897,12 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 	ta.SetHeight(inputHeight)
 	ta.ShowLineNumbers = false
 	// Three keys insert a line break, one of which the user can find:
-	// shift+enter is rewritten to alt+enter before the textarea sees it
+	// shift+enter is rewritten to ctrl+j before the textarea sees it
 	// (newline.go), and ctrl+j is the chord that works in a terminal too old
-	// to report either.
-	// The register's newline keys, less shift+enter, which the textarea
-	// cannot see: terminals that report it are handled above, and the other
-	// two are what the ones that cannot get instead.
-	ta.KeyMap.InsertNewline.SetKeys(keys.Draft.Newline.Keys()[1:]...)
+	// to report either. Alt+enter reaches the textarea only when the
+	// follow-up case above it fell through — an idle draft — and inserts
+	// the newline it always has there (followup.go).
+	ta.KeyMap.InsertNewline.SetKeys(append(keys.Draft.Newline.Keys()[1:], keys.Draft.FollowUp.Keys()...)...)
 
 	// One frame set, one cadence, one colour, shared with the one-shot UI.
 	s := components.NewSpinnerModel()
@@ -1162,12 +1191,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	// A modified Enter is a line break, not a send. Every modifier means the
+	// A modified Enter is a line break, not a send. The modifiers mean the
 	// same thing, so they are rewritten here into the one key the textarea's
 	// newline binding listens for — before any surface can mistake a
-	// shift+enter for a send of its own (newline.go).
+	// shift+enter for a send of its own. Alt+enter alone is not rewritten:
+	// it queues a follow-up while a turn is live (newline.go, followup.go).
 	if newlineKey(msg) {
-		msg = altEnter
+		msg = ctrlJ
 	}
 	// What the terminal can do is folded in wherever the reply lands
 	//. The answers come back as five unrelated message types,
@@ -1361,6 +1391,9 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if m.state == stateTodoPropose {
 			return m.updateTodoPropose(msg)
+		}
+		if m.state == statePasteDrop {
+			return m.updatePasteDrop(msg)
 		}
 		if m.state == statePersona {
 			return m.updatePersona(msg)
@@ -1654,8 +1687,13 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.historyIdx = len(m.inputHistory)
 			return m, nil
 		case keys.Is(pressed, keys.Draft.Complete):
-			// Tab writes the focused completion into the input.
+			// Tab writes the focused completion into the input. A file
+			// mention also stages an image, exactly as enter would
+			// (mention.go).
 			if m.completionActive() {
+				if m.completeFiles {
+					return m.insertMention()
+				}
 				m.acceptCompletion()
 				m.syncViewport()
 				return m, nil
@@ -1719,7 +1757,25 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return m, nil
 			}
+		case keys.Is(pressed, keys.Draft.FollowUp):
+			// Alt+enter with a turn live queues the draft for after it
+			// (followup.go); everywhere else — idle, attached, an empty
+			// box — it falls through to the textarea's newline.
+			if next, cmd, claimed := m.queueFollowUp(); claimed {
+				return next, cmd
+			}
+		case keys.Is(pressed, keys.Draft.PullQueued):
+			// Alt+↑ takes the newest queued message — follow-up first,
+			// else steering — back into the draft.
+			if next, cmd, claimed := m.pullQueued(); claimed {
+				return next, cmd
+			}
 		case keys.Is(pressed, keys.Draft.Send):
+			// A trailing backslash turns this enter into a newline, the
+			// shell's own continuation (continuation.go).
+			if m.holdSend() {
+				return m, nil
+			}
 			// While attached, Enter acts on the child: scoped commands and
 			// mid-turn steering.
 			if m.attachedTo != "" {
@@ -1806,6 +1862,13 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.armPlan()
 			m.syncViewport()
 		}
+		// The turn is truly over and nothing took the keyboard: the oldest
+		// queued follow-up goes out as the next user message (followup.go).
+		if m.turnState() == stateInput {
+			if next, cmd, sent := m.dispatchFollowUp(); sent {
+				return next, cmd
+			}
+		}
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m, m.autosaveCmd()
@@ -1890,7 +1953,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.recordToolEvent(tools.ExecCommandName, msg.duration, outcome, class)
 		}
-		m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out, exitCode: msg.exitCode, duration: msg.duration})
+		m.appendEntry(entry{kind: entryCommand, text: msg.command, toolResult: out, exitCode: msg.exitCode, localRun: msg.local, duration: msg.duration})
 		if m.pendingApproval != nil {
 			m.pendingApproval = nil
 			m.agent.ResolveApproval(execToolResult(out, msg.exitCode))
@@ -1899,14 +1962,23 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.advanceApprovalQueue()
 		}
 		m.setTurnState(stateInput)
-		m.agent.Append(provider.Message{
-			Role:    provider.RoleUser,
-			Content: commandContextMessage(msg.command, out, msg.exitCode),
-		})
+		// A local run's output stays out of the conversation: that is the
+		// whole difference `!!` buys, and the row's outcome says so (bang.go).
+		if !msg.local {
+			m.agent.Append(provider.Message{
+				Role:    provider.RoleUser,
+				Content: commandContextMessage(msg.command, out, msg.exitCode),
+			})
+		}
 		// A message typed while the /run command executed is sent now, with
 		// the command context already in the conversation.
 		if cmd := m.dispatchSteering(); cmd != nil {
 			return m, cmd
+		}
+		// And a follow-up queued while it ran goes out the same way: the
+		// session is idle, which is all "after the turn" ever meant.
+		if next, cmd, sent := m.dispatchFollowUp(); sent {
+			return next, cmd
 		}
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
@@ -2315,6 +2387,8 @@ func (m Model) takeoverPanel(width int) string {
 		inputView = m.renderPick()
 	case stateTodoPropose:
 		inputView = m.renderTodoPropose()
+	case statePasteDrop:
+		inputView = m.renderPasteDrop()
 	case statePersona:
 		inputView = m.renderPersona()
 	case stateTodoPause:
@@ -2467,6 +2541,7 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			return m.declineApproval()
 		}
 		m.pendingRun = ""
+		m.pendingRunLocal = false
 		m.setTurnState(stateInput)
 		m.syncViewport()
 		m.appendEntry(entry{kind: entrySystem, text: "Run cancelled."})
@@ -2483,7 +2558,9 @@ func execToolResult(output string, exitCode int) string {
 
 func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	command := m.pendingRun
+	local := m.pendingRunLocal
 	m.pendingRun = ""
+	m.pendingRunLocal = false
 	// An approved command that writes outside the working scope puts those
 	// directories in it — otherwise containment would go on refusing
 	// the write the user has just approved.
@@ -2515,7 +2592,7 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 		} else {
 			out, code = runFn(ctx, command)
 		}
-		return cmdDoneMsg{runID: runID, command: command, output: out, exitCode: code, duration: time.Since(start)}
+		return cmdDoneMsg{runID: runID, command: command, output: out, exitCode: code, duration: time.Since(start), local: local}
 	}
 }
 
@@ -2750,6 +2827,10 @@ func (m *Model) cancelStreaming() {
 	m.turnOutcome = components.TurnCancelled
 	m.finishStreaming()
 	m.restoreSteering()
+	// Follow-ups survive the cancel but are not sent after one: the queue
+	// was written against work that was just abandoned, so the rail marks
+	// it held and the reader decides what still applies (followup.go).
+	m.holdFollowUps()
 	// Restored steering empties the queue: the notice rail may shrink.
 	m.syncViewport()
 }
@@ -3603,8 +3684,26 @@ rewrite or replace the running conversation (/clear, /compact, /rewind,
 func helpKeysText() string {
 	return strings.TrimSpace(`Keys:
   enter          Send message        shift+enter  Insert newline
-                 (alt+enter and ctrl+j do the same, for terminals that cannot
-                  report shift+enter)
+                 (ctrl+j does the same, for terminals that cannot report
+                  shift+enter; so does alt+enter while nothing is running.
+                  A draft ending in \ turns enter into a newline too, the
+                  shell's own continuation — end in \\ to send a literal
+                  backslash)
+  alt+enter      While a turn is live, queue the draft as a follow-up sent
+                 when the turn completes. Steering (enter) joins the running
+                 turn; a follow-up waits for it to end. After a cancel the
+                 queue is held rather than sent — the notice rail says so
+  alt+↑          Pull the newest queued message — a follow-up first, else a
+                 steering line — back into the draft
+  @              At the start of a word, open a file menu over what this
+                 session changed and the checkout's recent files, filtered
+                 by what you type after it. tab or enter inserts the path,
+                 esc keeps what you typed; a mentioned image is staged the
+                 way a pasted one is
+  !              A draft starting with ! runs as a command through the same
+                 confirm card /run uses; !! runs it and keeps the output out
+                 of the conversation (its row says local). A ! anywhere else
+                 is a letter
   ctrl+v         Attach the clipboard: a copied screenshot or file is staged
                  for your next message, ordinary text still pastes into the
                  draft. Dragging an image into the terminal attaches it the
@@ -3706,6 +3805,9 @@ func (m *Model) clearConversation() {
 	}
 	m.resetTranscript()
 	m.checkpoints = nil
+	// Follow-ups were written against the conversation being dropped.
+	m.followUps = nil
+	m.followUpsHeld = false
 	m.contextTokens = 0
 	m.vitals.reset()
 	// The session's spend starts over with its accounting, or the rail would
@@ -3731,6 +3833,10 @@ func (m *Model) loadConversation(msgs []provider.Message) {
 	m.spendStartScreen()
 	m.agent.SetMessages(msgs)
 	m.resetTranscript()
+	// Follow-ups were written against the conversation being replaced, so
+	// none of them may fire into this one.
+	m.followUps = nil
+	m.followUpsHeld = false
 	m.checkpoints = checkpointsFromMessages(msgs)
 	m.appendMessageEntries(msgs)
 	// The prompts that conversation was made of are what ↑ recalls in it

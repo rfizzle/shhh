@@ -12,8 +12,26 @@
 · ? on an empty draft
 Keys:                                                                                       
   enter          Send message        shift+enter  Insert newline                            
-                 (alt+enter and ctrl+j do the same, for terminals that cannot               
-                  report shift+enter)                                                       
+                 (ctrl+j does the same, for terminals that cannot report                    
+                  shift+enter; so does alt+enter while nothing is running.                  
+                  A draft ending in \ turns enter into a newline too, the                   
+                  shell's own continuation — end in \\ to send a literal                    
+                  backslash)                                                                
+  alt+enter      While a turn is live, queue the draft as a follow-up sent                  
+                 when the turn completes. Steering (enter) joins the running                
+                 turn; a follow-up waits for it to end. After a cancel the                  
+                 queue is held rather than sent — the notice rail says so                   
+  alt+↑          Pull the newest queued message — a follow-up first, else a                 
+                 steering line — back into the draft                                        
+  @              At the start of a word, open a file menu over what this                    
+                 session changed and the checkout's recent files, filtered                  
+                 by what you type after it. tab or enter inserts the path,                  
+                 esc keeps what you typed; a mentioned image is staged the                  
+                 way a pasted one is                                                        
+  !              A draft starting with ! runs as a command through the same                 
+                 confirm card /run uses; !! runs it and keeps the output out                
+                 of the conversation (its row says local). A ! anywhere else                
+                 is a letter                                                                
   ctrl+v         Attach the clipboard: a copied screenshot or file is staged                
                  for your next message, ordinary text still pastes into the                 
                  draft. Dragging an image into the terminal attaches it the                 
@@ -103,8 +121,26 @@ Keys:
 · ? on an empty draft
 ␛[3;38;5;241mKeys:␛[m                                                                                       
 ␛[3;38;5;241m  enter          Send message        shift+enter  Insert newline␛[m                            
-␛[3;38;5;241m                 (alt+enter and ctrl+j do the same, for terminals that cannot␛[m               
-␛[3;38;5;241m                  report shift+enter)␛[m                                                       
+␛[3;38;5;241m                 (ctrl+j does the same, for terminals that cannot report␛[m                    
+␛[3;38;5;241m                  shift+enter; so does alt+enter while nothing is running.␛[m                  
+␛[3;38;5;241m                  A draft ending in \ turns enter into a newline too, the␛[m                   
+␛[3;38;5;241m                  shell's own continuation — end in \\ to send a literal␛[m                    
+␛[3;38;5;241m                  backslash)␛[m                                                                
+␛[3;38;5;241m  alt+enter      While a turn is live, queue the draft as a follow-up sent␛[m                  
+␛[3;38;5;241m                 when the turn completes. Steering (enter) joins the running␛[m                
+␛[3;38;5;241m                 turn; a follow-up waits for it to end. After a cancel the␛[m                  
+␛[3;38;5;241m                 queue is held rather than sent — the notice rail says so␛[m                   
+␛[3;38;5;241m  alt+↑          Pull the newest queued message — a follow-up first, else a␛[m                 
+␛[3;38;5;241m                 steering line — back into the draft␛[m                                        
+␛[3;38;5;241m  @              At the start of a word, open a file menu over what this␛[m                    
+␛[3;38;5;241m                 session changed and the checkout's recent files, filtered␛[m                  
+␛[3;38;5;241m                 by what you type after it. tab or enter inserts the path,␛[m                  
+␛[3;38;5;241m                 esc keeps what you typed; a mentioned image is staged the␛[m                  
+␛[3;38;5;241m                 way a pasted one is␛[m                                                        
+␛[3;38;5;241m  !              A draft starting with ! runs as a command through the same␛[m                 
+␛[3;38;5;241m                 confirm card /run uses; !! runs it and keeps the output out␛[m                
+␛[3;38;5;241m                 of the conversation (its row says local). A ! anywhere else␛[m                
+␛[3;38;5;241m                 is a letter␛[m                                                                
 ␛[3;38;5;241m  ctrl+v         Attach the clipboard: a copied screenshot or file is staged␛[m                
 ␛[3;38;5;241m                 for your next message, ordinary text still pastes into the␛[m                 
 ␛[3;38;5;241m                 draft. Dragging an image into the terminal attaches it the␛[m                 

@@ -176,6 +176,9 @@ func (m Model) endBrokenTurn() (tea.Model, tea.Cmd) {
 	m.turnOutcome = components.TurnFailed
 	m.setTurnState(stateInput)
 	m.restoreSteering()
+	// A broken turn holds the follow-up queue the way a cancel does: what
+	// was queued was written against work that did not finish (followup.go).
+	m.holdFollowUps()
 	m.syncViewport()
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
@@ -441,6 +444,8 @@ func (m Model) cancelRetryWait() (tea.Model, tea.Cmd) {
 	m.cancel = nil
 	m.setTurnState(stateInput)
 	m.restoreSteering()
+	// A cancelled wait is a cancelled turn for the follow-up queue too.
+	m.holdFollowUps()
 	m.syncViewport()
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()

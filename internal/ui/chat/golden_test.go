@@ -260,6 +260,47 @@ func TestGolden_HistorySearch(t *testing.T) {
 	})
 }
 
+// TestGolden_DraftGrammar captures what the draft means before it is sent
+// (bang.go, mention.go, followup.go): the gutter swapped for a bang draft,
+// the file-mention menu under the box, and the notice rail counting the
+// follow-up queue apart from steering — held after a cancel.
+func TestGolden_DraftGrammar(t *testing.T) {
+	captureGolden(t, "draft-grammar", "the draft grammar", []int{80}, func(width int) []golden.Panel {
+		bang := func() string {
+			m := goldenModel(t, width)
+			m.input.SetValue("!go test ./internal/agent/...")
+			return promptSurface(m)
+		}
+		mention := func() string {
+			m := goldenModel(t, width)
+			m.recentFiles = func() []project.RecentFile {
+				return []project.RecentFile{
+					{Path: "go.mod", Mod: time.Now().Add(-time.Minute)},
+					{Path: "internal/ui/chat/model.go", Mod: time.Now().Add(-9 * time.Minute)},
+					{Path: "internal/ui/chat/modelutil.go", Mod: time.Now().Add(-26 * time.Minute)},
+				}
+			}
+			m.input.SetValue("@mod")
+			m.syncCompletions()
+			return promptSurface(m)
+		}
+		queues := func(held bool) string {
+			m := goldenModel(t, width)
+			m.state = stateStreaming
+			m.steering = []string{"and check the parser"}
+			m.followUps = []string{"then update the docs"}
+			m.followUpsHeld = held
+			return promptSurface(m)
+		}
+		return []golden.Panel{
+			{Label: "a bang draft · the gutter says it is a command", View: bang()},
+			{Label: "the @ mention menu under the draft", View: mention()},
+			{Label: "both queues counted apart", View: queues(false)},
+			{Label: "the follow-up held after a cancel", View: queues(true)},
+		}
+	})
+}
+
 // TestGolden_HelpKeys pins the key section as `?` prints it — one width,
 // because the row wraps like any system row and the words are what is under
 // test: a rebind that reaches the dispatch without reaching this sheet is

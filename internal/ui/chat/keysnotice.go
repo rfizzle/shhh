@@ -19,6 +19,8 @@ import (
 // row, newest change first, ending with the door to the full list.
 func KeysChangedNotice() string {
 	changes := []string{
+		"@ files",
+		"! run",
 		keys.Shown(keys.Draft.Reading) + " reading",
 		keys.Shown(keys.Draft.Palette) + " palette",
 		keys.Shown(keys.Draft.Agents) + " agents",

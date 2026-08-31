@@ -30,7 +30,7 @@
 ╰─ enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+p palette · shift+tab mode ───────────────────────╯
 
 · the keys-changed notice on the rail
-keys changed: ctrl+o reading · ctrl+p palette · ctrl+b agents · ctrl+r history search · alt+t reasoning — /help keys          
+keys changed: @ files · ! run · ctrl+o reading · ctrl+p palette · ctrl+b agents · ctrl+r history search · alt+t reasoning — /…
 ╭─ shhh chat ───────────────────────────────────────────────────────────────────────────────────────────────────────── idle ─╮
 │ ❯                                                                                                                          │
 │                                                                                                                            │
@@ -60,7 +60,7 @@ keys changed: ctrl+o reading · ctrl+p palette · ctrl+b agents · ctrl+r histor
 ␛[38;5;214m╰─␛[m ␛[38;5;241;3menter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+p palette · shift+tab mode␛[m ␛[38;5;214m───────────────────────╯␛[m
 
 · the keys-changed notice on the rail
-␛[94mkeys changed: ctrl+o reading · ctrl+p palette · ctrl+b agents · ctrl+r history search · alt+t reasoning — /help keys␛[m          
+␛[94mkeys changed: @ files · ! run · ctrl+o reading · ctrl+p palette · ctrl+b agents · ctrl+r history search · alt+t reasoning — /…␛[m
 ␛[38;5;214m╭─␛[m shhh chat ␛[38;5;214m─────────────────────────────────────────────────────────────────────────────────────────────────────────␛[m ␛[38;5;241midle␛[m ␛[38;5;214m─╮␛[m
 ␛[38;5;214m│␛[m ␛[94;1m❯␛[m ␛[40;7m ␛[27m                                                                                                                       ␛[m ␛[38;5;214m│␛[m
 ␛[38;5;214m│␛[m   ␛[30m                                                                                                                        ␛[m ␛[38;5;214m│␛[m

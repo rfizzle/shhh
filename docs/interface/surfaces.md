@@ -161,7 +161,33 @@ after all would put a megabyte in the box that the reader then has to get back
 out, and the bytes are still on the clipboard either way.
 
 Typing while the agent works is steering, not a queued prompt, and the gutter
-says which of the two you are doing.
+says which of the two you are doing. The queued prompt exists too, behind a
+chord of its own: a follow-up waits for the turn to end and goes out as the
+next message, where steering joins the conversation mid-flight. The notice
+rail counts the two queues separately, because "change what you are doing"
+and "when you are done, then" are different promises. A cancel does not send
+what was queued behind it — the follow-up was written against work that was
+just abandoned — so the queue survives, marked held, and one chord takes a
+line back into the draft for the reader to decide what still applies.
+
+Two prefixes turn the draft into something other than a message, because
+every other harness taught the same two. A word starting `@` opens the
+completion menu over files — what this session changed, then what the
+checkout touched most recently, never what its ignore file hides — and
+choosing a row writes the path into the sentence and nothing more: the
+model reads files through its tools, so a mention is a name, not an
+attachment. An image is the exception, staged like a pasted one, because no
+tool reads an image. A draft starting `!` is a command, and it goes through
+the same confirm card `/run` uses — nothing runs unseen, whichever door it
+came in by. Doubling the bang keeps the command's output out of the
+conversation entirely: the transcript shows it, the model never sees it,
+and the row's outcome says so. The gutter swaps its glyph while the draft
+is in bang form, for the same reason it does while typed text is steering.
+
+A draft that ends in a backslash holds its send: enter eats the backslash
+and breaks the line instead, which is what that character has meant at
+every shell prompt the reader has ever typed a continuation into. A
+doubled backslash sends, carrying the one literal character it spells.
 
 The draft edits like the shell's own line. The chords a shell user's hands
 already know — line start and end, kill to end and to start, delete a word,
@@ -435,7 +461,10 @@ and refuses when there are two — guessing which was meant is the mistake this
 surface exists to stop someone making.
 
 Esc hands the pane back and destroys nothing; removing an attachment stays its
-own deliberate act.
+own deliberate act. That act does not require typing a name from memory:
+asked bare, the drop opens a list of what is staged — checked rows go, esc
+drops none — and a lone chip is a one-line question naming it, defaulting to
+No.
 
 A picture that will not decode still opens, onto the reason where the picture
 would be. That it is staged and unreadable is a fact about the message you are

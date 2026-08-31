@@ -29,19 +29,21 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-// newlineKey reports whether a message is Enter with any modifier on it —
-// shift, ctrl or alt.
+// newlineKey reports whether a message is Enter with a modifier on it —
+// shift, ctrl, or any combination that is not alt alone.
 //
-// Every modified Enter means the same thing here: put a line break in the
-// draft, do not send it. Nothing on this surface wants ctrl+enter for
-// anything else, so treating them alike costs nothing and spares the user
-// having to know which encoding their terminal speaks.
+// A modified Enter means the same thing here: put a line break in the
+// draft, do not send it. Alt+enter is the one exception, because it is a
+// key of its own on this surface — while a turn is live it queues the
+// draft as a follow-up (docs/interface/surfaces.md#the-input-frame) — so
+// it passes through named rather than being folded into the rewrite, and
+// falls back to the newline it always was when there is no turn to follow.
 func newlineKey(msg tea.Msg) bool {
 	key, ok := msg.(tea.KeyPressMsg)
-	return ok && key.Code == tea.KeyEnter && key.Mod != 0
+	return ok && key.Code == tea.KeyEnter && key.Mod != 0 && key.Mod != tea.ModAlt
 }
 
-// altEnter is the key the textarea's newline binding listens for. A modified
+// ctrlJ is the key the textarea's newline binding listens for. A modified
 // Enter is rewritten to it rather than handled here, so there is one newline
 // path through the surface instead of two.
-var altEnter = tea.KeyPressMsg{Code: tea.KeyEnter, Mod: tea.ModAlt}
+var ctrlJ = tea.KeyPressMsg{Code: 'j', Mod: tea.ModCtrl}

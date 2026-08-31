@@ -23,7 +23,7 @@ import "time"
 // rather than a stage of the session's own turn.
 func (s state) isSurface() bool {
 	switch s {
-	case stateFocus, stateDiffFull, statePreview, stateReview, stateContext, stateRewindPick, statePick, stateTodoPropose, statePersona, stateTodoPause, stateModelList, stateUndoConfirm, stateQuitConfirm, stateKeyEntry, statePressure:
+	case stateFocus, stateDiffFull, statePreview, stateReview, stateContext, stateRewindPick, statePick, stateTodoPropose, statePasteDrop, statePersona, stateTodoPause, stateModelList, stateUndoConfirm, stateQuitConfirm, stateKeyEntry, statePressure:
 		return true
 	}
 	return false

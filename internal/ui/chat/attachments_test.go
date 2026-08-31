@@ -543,3 +543,92 @@ func TestPreview_BareShowRefusesAnImageBesideAPaste(t *testing.T) {
 		t.Fatalf("and say so: %s", notice)
 	}
 }
+
+// Bare `/paste drop` with several chips opens the selector: checked rows are
+// dropped on enter, esc drops none.
+func TestPasteDrop_BareOpensTheSelector(t *testing.T) {
+	m := stagePNG(t, stagePNG(t, stagePNG(t, frameModel(t, 130, 40), "a.png"), "b.png"), "c.png")
+
+	updated, _ := m.runPaste([]string{"/paste", "drop"})
+	next := updated.(Model)
+	if next.state != statePasteDrop || next.pasteDrop == nil {
+		t.Fatalf("expected the drop selector, got state %d", next.state)
+	}
+	if len(next.pasteDrop.Options) != 3 {
+		t.Fatalf("expected three rows, got %d", len(next.pasteDrop.Options))
+	}
+
+	// Check the first two rows and take them.
+	for _, k := range []tea.KeyPressMsg{
+		{Code: tea.KeySpace, Text: " "},
+		{Code: tea.KeyDown},
+		{Code: tea.KeySpace, Text: " "},
+		{Code: tea.KeyEnter},
+	} {
+		u, _ := next.Update(k)
+		next = u.(Model)
+	}
+	if next.state == statePasteDrop {
+		t.Fatal("enter should close the selector")
+	}
+	if len(next.attachments) != 1 || next.attachments[0].Name != "c.png" {
+		t.Fatalf("expected only c.png left, got %v", attachment.Names(next.attachments))
+	}
+	if note := lastSystemText(next); !strings.Contains(note, "a.png") || !strings.Contains(note, "b.png") {
+		t.Fatalf("the drop should name what went: %q", note)
+	}
+}
+
+// Esc on the selector drops nothing.
+func TestPasteDrop_EscDropsNone(t *testing.T) {
+	m := stagePNG(t, stagePNG(t, frameModel(t, 130, 40), "a.png"), "b.png")
+	updated, _ := m.runPaste([]string{"/paste", "drop"})
+	next := updated.(Model)
+
+	u, _ := next.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	next = u.(Model)
+	if next.state == statePasteDrop || len(next.attachments) != 2 {
+		t.Fatalf("esc must keep everything staged, got %v", attachment.Names(next.attachments))
+	}
+}
+
+// With exactly one chip staged, bare `/paste drop` asks through the inline
+// confirm, named, defaulting to No.
+func TestPasteDrop_OneChipConfirms(t *testing.T) {
+	m := stagePNG(t, frameModel(t, 130, 40), "shot.png")
+	updated, _ := m.runPaste([]string{"/paste", "drop"})
+	next := updated.(Model)
+	if next.state != statePasteDrop || next.pasteDropConfirm == nil {
+		t.Fatalf("expected the inline confirm, got state %d", next.state)
+	}
+	if !strings.Contains(next.pasteDropConfirm.Prompt, "shot.png") {
+		t.Fatalf("the confirm must name the chip: %q", next.pasteDropConfirm.Prompt)
+	}
+
+	u, _ := next.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	kept := u.(Model)
+	if len(kept.attachments) != 1 {
+		t.Fatal("esc must keep the chip staged")
+	}
+
+	updated, _ = kept.runPaste([]string{"/paste", "drop"})
+	next = updated.(Model)
+	u, _ = next.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
+	gone := u.(Model)
+	if len(gone.attachments) != 0 {
+		t.Fatalf("y should drop the chip, got %v", attachment.Names(gone.attachments))
+	}
+}
+
+// Nothing staged: the empty state is a notice, not a surface.
+func TestPasteDrop_NothingStaged(t *testing.T) {
+	m := frameModel(t, 130, 40)
+	updated, _ := m.runPaste([]string{"/paste", "drop"})
+	next := updated.(Model)
+	if next.state == statePasteDrop {
+		t.Fatal("nothing staged should not open a selector")
+	}
+	if !strings.Contains(lastSystemText(next), "nothing is attached") {
+		t.Fatalf("expected the empty-state notice, got %q", lastSystemText(next))
+	}
+}
