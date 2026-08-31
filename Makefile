@@ -4,7 +4,11 @@ GOCMD=go
 GOMOD=$(GOCMD) mod
 GOTEST=$(GOCMD) test
 GOVET=$(GOCMD) vet
-GOFMT=gofmt
+# gofmt ships with the toolchain but is not always on PATH — a Go installed
+# through a version manager leaves it in GOROOT and nowhere else. Falling back
+# to GOROOT is what keeps `make fmt` and the gofmt gate from quietly doing
+# nothing on a machine where the binary is right there.
+GOFMT ?= $(shell command -v gofmt 2>/dev/null || echo "$$(go env GOROOT)/bin/gofmt")
 GOIMPORTS=goimports
 GOLANGCI_LINT=golangci-lint
 PROJECT_GOFILES=$(shell find . -type f -name '*.go' -not -path "./vendor/*")
@@ -110,7 +114,13 @@ ci: ## Run tests and lint for CI
 	@echo "${MAGENTA}Running tests...${RESET}"
 	@$(GOTEST) -v -failfast $(PROJECT_PACKAGES)
 	@echo "${MAGENTA}Running gofmt check...${RESET}"
-	@test -z $($(GOFMT) -e -s -l $(PROJECT_GOFILES))
+	@command -v $(GOFMT) >/dev/null 2>&1 || { echo "${RED}gofmt not found at $(GOFMT) — it ships with the Go toolchain${RESET}"; exit 1; }
+	@unformatted="$$($(GOFMT) -e -s -l $(PROJECT_GOFILES))"; \
+	if [ -n "$$unformatted" ]; then \
+		echo "${RED}Not gofmt-clean. Run make fmt:${RESET}"; \
+		echo "$$unformatted"; \
+		exit 1; \
+	fi
 	@echo "${MAGENTA}Running golangci-lint...${RESET}"
 	@$(GOLANGCI_LINT) run
 
