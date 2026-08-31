@@ -206,6 +206,20 @@ func TestGolden_PromptFrame(t *testing.T) {
 	})
 }
 
+// TestGolden_GrownDraft captures the box grown around a multi-line draft
+// (frame.go, syncInputHeight): one row per line up to the cap, with the
+// transcript paying for the rows above it.
+func TestGolden_GrownDraft(t *testing.T) {
+	captureGolden(t, "grown-draft", "the grown draft box", []int{80}, func(width int) []golden.Panel {
+		m := goldenModel(t, width)
+		m.input.SetValue("first the failing test\nthen the fix in loop.go\nthen the fixture\nthen make ci\nthen stop")
+		m.syncInputHeight()
+		return []golden.Panel{
+			{Label: "draft \u00b7 five lines", View: promptSurface(m)},
+		}
+	})
+}
+
 // TestGolden_PressAgain captures the two-press windows and the quit question
 // (cancel.go): the armed hint at every width — the wide layout says it on the
 // bottom rail, the narrower ones on the notice rail, because the invariant
@@ -605,9 +619,20 @@ func TestGolden_Interrupt(t *testing.T) {
 		ungated.syncInputWidth()
 		ungated.syncViewport()
 		gated := handover(t, ungated)
+		// A card that landed on a warm, empty keyboard: held, with the grace
+		// window open and the run dimmed (interrupt.go).
+		grace := interruptedModel(t, "")
+		grace.width, grace.height = width, 40
+		grace.syncInputWidth()
+		grace.releaseDecision()
+		grace.lastDecisionLeft = time.Time{}
+		grace.lastKeypress = time.Now()
+		grace.armDecision(stateConfirmRun)
+		grace.syncViewport()
 		return []golden.Panel{
 			{Label: "ungated · the draft still has the keyboard", View: interruptSurface(ungated)},
 			{Label: "gated · the handover, and the card has it", View: interruptSurface(gated)},
+			{Label: "grace · held on a warm keyboard, keys a moment away", View: interruptSurface(grace)},
 		}
 	})
 }

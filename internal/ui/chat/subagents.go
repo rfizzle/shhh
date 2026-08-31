@@ -204,8 +204,13 @@ func (m Model) updateChildAsk(msg tea.KeyPressMsg, ask *subagent.Ask) (tea.Model
 			break
 		}
 	}
-	// The keyboard goes straight back to the draft, at the same character.
+	// The keyboard goes straight back to the draft, at the same character —
+	// unless another ask was already queued behind this one: that is the
+	// queue advancing, so the next card arms the way any arrival does, with
+	// releaseDecision's stamp keeping the grace window shut
+	// (docs/interface/surfaces.md#the-approval-card).
 	m.releaseDecision()
+	m.armArrival()
 	approved := result == components.ApprovalApprove
 	ask.Respond(approved)
 	verdict := "Declined"

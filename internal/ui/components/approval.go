@@ -217,6 +217,12 @@ type ApprovalCard struct {
 	// `always` and `always` are not what someone typing `also` meant. Every
 	// other key releases the keyboard and goes into the draft.
 	HeldOnArrival bool
+	// Grace marks a held card whose arrival landed on a keyboard still warm:
+	// the host is discarding its decision keys until the typing has settled
+	// (the chat model owns the window and the routing), and the card says so
+	// by drawing its run dimmed with the phrase. Render-only — Update never
+	// sees the discarded keys.
+	Grace bool
 }
 
 // arrivalKeys are what a HeldOnArrival card answers to. They are the keys a
@@ -340,6 +346,16 @@ func (c *ApprovalCard) View(width int) string {
 func (c *ApprovalCard) hintRowsFor(width, inner int) []string {
 	if c.NotYetLive {
 		return notYetLiveRows(c.Question+" "+c.keys(), c.Handover, width)
+	}
+	if c.HeldOnArrival && c.Grace {
+		rows := graceRows(c.Question+" "+c.keys(), width)
+		if rest := c.arrivalRest(); rest != "" {
+			rows = append(rows, sty.Dim.Render(clip(rest, inner)))
+		}
+		if c.Return != "" {
+			rows = append(rows, sty.Dim.Render(clip(c.Return, inner)))
+		}
+		return rows
 	}
 	hint := c.Question + " " + c.keys()
 	// What [a] and [d] qualify is part of the offer, not decoration: [a] now

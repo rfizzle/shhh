@@ -773,14 +773,27 @@ func (m Model) bottomPanelHeight() int {
 			lines = m.childAskPanelLines(ask)
 		} else if m.historySearching() {
 			// The history search extends the input area the way the menu does.
-			return min(inputHeight+len(m.historySearchLines()), m.maxConfirmPanelHeight())
+			return min(m.input.Height()+len(m.historySearchLines()), m.maxConfirmPanelHeight())
 		} else if m.completionActive() && m.attachedTo == "" {
 			// The completion menu extends the input area.
-			return min(inputHeight+len(m.completionMenuLines()), m.maxConfirmPanelHeight())
+			return min(m.input.Height()+len(m.completionMenuLines()), m.maxConfirmPanelHeight())
 		}
 	}
 	if n := len(lines); n > inputHeight {
 		return min(n, bound)
+	}
+	if lines == nil {
+		switch m.state {
+		case stateDiffFull, statePreview, stateReview, stateContext:
+			// The full-screen surfaces replace the input with a one-line
+			// hint; a grown draft comes back with the input, and paying its
+			// rows here would blank most of the panel under the hint.
+			return inputHeight
+		}
+		// The bare draft box: its height follows its content (frame.go,
+		// syncInputHeight), so the panel reads the box rather than the
+		// three-row constant.
+		return m.input.Height()
 	}
 	return inputHeight
 }

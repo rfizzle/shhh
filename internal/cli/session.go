@@ -883,7 +883,14 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	restoreScroll := chat.SuppressAlternateScroll(os.Stdout)
 	defer restoreScroll()
 
+	// Wheel floods are merged before they enter the update queue, so a key
+	// pressed mid-fling never waits behind one frame per notch (chat/wheel.go).
+	// The filter needs the program's own Send for its flush probe, which the
+	// program cannot hand out before it exists — hence the two steps.
+	wheel := chat.NewWheelFilter()
+	programOpts = append(programOpts, tea.WithFilter(wheel.Filter))
 	program := newProgram(model, programOpts...)
+	wheel.SetSend(program.Send)
 	final, err := program.Run()
 	if err != nil {
 		// os.Exit skips the deferred restore, so the terminal is put back

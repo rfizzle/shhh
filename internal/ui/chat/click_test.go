@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
@@ -325,5 +326,37 @@ func TestClick_RoutedChildApproval(t *testing.T) {
 	m = clickAnswer(t, m, x, y)
 	if len(m.childAsks) != 0 {
 		t.Fatal("clicking [y] should have answered the routed decision")
+	}
+}
+
+// A pointer obeys the grace window the way the keys do: the run is drawn
+// dimmed, and a click on it answers nothing until the quiet arrives.
+func TestClick_TheGraceWindowHoldsTheRun(t *testing.T) {
+	var executed []string
+	m := clickCardModel(t, "", func(name string, args json.RawMessage) (string, error) {
+		executed = append(executed, name)
+		return "wrote 2 lines", nil
+	})
+	// Re-arm the arrival on a keyboard still warm, so the window is open.
+	m.releaseDecision()
+	m.lastDecisionLeft = time.Time{}
+	m.lastKeypress = time.Now()
+	m.armDecision(stateConfirmRun)
+	if !m.graceShowing() {
+		t.Fatal("fixture: the grace window should be open")
+	}
+
+	x, y := cardKeyCell(t, m, "y")
+	m = click(t, m, x, y)
+	if len(executed) != 0 || m.state != stateConfirmRun {
+		t.Fatal("a click inside the grace window must not answer the decision")
+	}
+
+	// Quiet arrived: the same cell answers.
+	m.lastKeypress = time.Now().Add(-2 * graceQuiet)
+	x, y = cardKeyCell(t, m, "y")
+	m = clickAnswer(t, m, x, y)
+	if len(executed) != 1 {
+		t.Fatalf("after the quiet the click should have answered, got %v", executed)
 	}
 }

@@ -252,7 +252,7 @@ func TestHistorySearch_ClosesWhenADecisionTakesTheKeyboard(t *testing.T) {
 	// The keyboard has been quiet and the box is empty, so the arriving
 	// card holds the keyboard (interrupt.go) — and the search must not sit
 	// invisibly on top of it, filtering the card's answer keys.
-	m.lastKeypress = time.Now().Add(-2 * draftQuiet)
+	m.lastKeypress = time.Now().Add(-2 * graceQuiet)
 	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
 		{ID: "c1", Name: "write_file", Arguments: `{"path":"a.go","content":"new\n"}`},
 	}})

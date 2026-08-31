@@ -309,6 +309,21 @@ A card arrives when the agent needs it, which is not when the reader is ready
 for it. What it may do to a half-typed draft, and when its letters become live
 keys at all, is governed by
 [invariant 5](principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+With a sentence in the box the card arrives inert and the letters stay the
+sentence's; over an empty box it takes the keyboard, because there is nothing
+for a letter to belong to.
+
+A keyboard still warm is the one case between: nothing to protect in the box,
+but keys may be in flight — a reflex, the tail of a buffered burst. The card
+still takes the keyboard, and for a grace window its decision keys are
+discarded rather than answered; the run draws dimmed and says the keys are a
+moment away. The window ends when the keyboard has been quiet for a beat, and
+at a hard cap however the typing goes, so the decision is never locked away.
+Three keys stay out of it: the chords no sentence can produce keep denying and
+gating, and esc keeps its way back to the draft, because the safe answer must
+stay reachable to be one. A card replacing one just answered gets no window at
+all — that keystroke was an answer, not typing, and a reader working through a
+queue is never made to wait between questions.
 
 ### Selectors
 

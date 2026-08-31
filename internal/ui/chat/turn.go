@@ -99,14 +99,18 @@ func (m *Model) leaveSurface() {
 	}
 	m.turnBack = stateInput
 	// A decision the turn reached while the surface had the screen is only
-	// arriving now, so it is armed now — which, a keystroke ago, means it
-	// arrives ungated. One that was already holding the keyboard keeps it:
+	// arriving now, so it is armed now, the way every arrival is: holding
+	// the keyboard over an empty draft, with the grace window absorbing the
+	// keystroke that closed the surface and whatever followed it
+	// (interrupt.go). One that was already holding the keyboard keeps it:
 	// the reader took it on purpose, and the surface they just closed was
 	// most likely the card's own full-screen diff.
 	if m.arrivalGates(m.state) && !m.decisionHeld {
 		// (arrivesHeld answers the summoned case too, so a /run confirm
 		// picked from the block picker lands holding the keyboard.)
 		m.decisionHeld = m.arrivesHeld()
+		m.heldOnArrival = m.decisionHeld
+		m.armGrace()
 	}
 }
 

@@ -297,3 +297,119 @@ func TestFrame_ModeGlyphNeverDependsOnColorAlone(t *testing.T) {
 		t.Fatal("permissive mode must keep its textual glyph in the vitals rail")
 	}
 }
+
+// The box grows one row per draft line up to its cap, gives the viewport
+// back what it took, and returns to three rows when the draft empties.
+func TestDraftBoxGrowsAndShrinks(t *testing.T) {
+	m := frameModel(t, 100, 40)
+	if got := m.input.Height(); got != inputHeight {
+		t.Fatalf("idle box height %d, want %d", got, inputHeight)
+	}
+	restRows := m.viewportHeight()
+
+	m.input.SetValue(strings.Repeat("line\n", 8) + "line")
+	updated, _ := m.Update(resizeSettledMsg{seq: m.resizeSeq})
+	m = updated.(Model)
+	if got := m.input.Height(); got != 11 {
+		t.Fatalf("nine-line draft box height %d, want 11", got)
+	}
+	if got := m.viewportHeight(); got != restRows-8 {
+		t.Fatalf("viewport %d rows, want %d — the box must take exactly what it grew", got, restRows-8)
+	}
+
+	m.input.SetValue("")
+	updated, _ = m.Update(resizeSettledMsg{seq: m.resizeSeq})
+	m = updated.(Model)
+	if got := m.input.Height(); got != inputHeight {
+		t.Fatalf("emptied box height %d, want %d", got, inputHeight)
+	}
+	if got := m.viewportHeight(); got != restRows {
+		t.Fatalf("viewport %d rows after shrink, want %d restored", got, restRows)
+	}
+}
+
+// Past the cap the box stops and the textarea scrolls inside it: twelve rows
+// at this height, and never more than the panel's 40% share.
+func TestDraftBoxCapped(t *testing.T) {
+	m := frameModel(t, 100, 40)
+	m.input.SetValue(strings.Repeat("line\n", 30) + "line")
+	updated, _ := m.Update(resizeSettledMsg{seq: m.resizeSeq})
+	m = updated.(Model)
+	if got := m.input.Height(); got != maxDraftRows {
+		t.Fatalf("box height %d, want the %d-row cap", got, maxDraftRows)
+	}
+
+	// A shorter terminal lowers the cap to the panel budget instead.
+	short := frameModel(t, 100, 20)
+	short.input.SetValue(strings.Repeat("line\n", 30) + "line")
+	updated, _ = short.Update(resizeSettledMsg{seq: short.resizeSeq})
+	short = updated.(Model)
+	want := short.maxConfirmPanelHeight() - bottomChromeHeight
+	if got := short.input.Height(); got != want {
+		t.Fatalf("box height %d at 20 rows, want the %d-row budget", got, want)
+	}
+}
+
+// A width change that re-wraps the draft moves the height in the same
+// message — there is no second pass to wait for.
+func TestDraftBoxGrowsOnWidthShrink(t *testing.T) {
+	m := frameModel(t, 110, 40)
+	m.input.SetValue(strings.Repeat("wrap me ", 12)) // ~96 cells, one row at w110
+	updated, _ := m.Update(resizeSettledMsg{seq: m.resizeSeq})
+	m = updated.(Model)
+	before := m.input.Height()
+
+	updated, _ = m.Update(tea.WindowSizeMsg{Width: 60, Height: 40})
+	m = updated.(Model)
+	if got := m.input.Height(); got <= before {
+		t.Fatalf("box height %d after the shrink, want more than %d", got, before)
+	}
+}
+
+// A full-screen surface replaces the input with a one-line hint; a grown
+// draft must not leave its rows behind as blank panel.
+func TestDraftBoxRowsStayWithTheInput(t *testing.T) {
+	m := frameModel(t, 100, 40)
+	m.input.SetValue(strings.Repeat("line\n", 8) + "line")
+	updated, _ := m.Update(resizeSettledMsg{seq: m.resizeSeq})
+	m = updated.(Model)
+	if m.input.Height() <= inputHeight {
+		t.Fatal("fixture: the box should have grown")
+	}
+	m.state = stateDiffFull
+	if got := m.bottomPanelHeight(); got != inputHeight {
+		t.Fatalf("full-screen panel height %d, want the %d-row hint", got, inputHeight)
+	}
+}
+
+// Growing the box moves the pane's rows, never its reading position: a
+// reader scrolled up stays where they were, and a pane pinned to the live
+// end stays pinned.
+func TestDraftBoxGrowthKeepsTheScrollPosition(t *testing.T) {
+	m := frameModel(t, 100, 40)
+	for i := 0; i < 80; i++ {
+		m.appendEntry(entry{kind: entrySystem, text: "row"})
+	}
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoTop()
+
+	m.input.SetValue("one\ntwo\nthree\nfour\nfive")
+	updated, _ := m.Update(resizeSettledMsg{seq: m.resizeSeq})
+	m = updated.(Model)
+	if got := m.viewport.YOffset(); got != 0 {
+		t.Fatalf("a reader scrolled up was snapped to offset %d", got)
+	}
+
+	pinned := frameModel(t, 100, 40)
+	for i := 0; i < 80; i++ {
+		pinned.appendEntry(entry{kind: entrySystem, text: "row"})
+	}
+	pinned.viewport.SetLines(pinned.renderHistoryLines())
+	pinned.viewport.GotoBottom()
+	pinned.input.SetValue("one\ntwo\nthree\nfour\nfive")
+	updated, _ = pinned.Update(resizeSettledMsg{seq: pinned.resizeSeq})
+	pinned = updated.(Model)
+	if !pinned.viewport.AtBottom() {
+		t.Fatal("a pane pinned to the live end must stay pinned through the height change")
+	}
+}

@@ -181,6 +181,25 @@ func notYetLiveRows(keys, handover string, width int) []string {
 	return rows
 }
 
+// graceWords is what the key row says while an arrival's grace window holds
+// its keys: the same dimmed-run grammar as not-yet-live, with a phrase that
+// promises the keys rather than a chord, because nothing needs pressing —
+// the window ends the moment the keyboard has been quiet for a beat.
+const graceWords = "keys live in a moment"
+
+// graceRows renders the key row of a card whose grace window is open. It is
+// the not-yet-live row's shape — dim keys, the state in words in the same
+// glance (invariant 1: the dimming never carries the meaning alone) — with
+// no handover row, because the card already holds the keyboard.
+func graceRows(keys string, width int) []string {
+	inner := max(width-cardFrameWidth, 1)
+	keys = clip(keys, inner)
+	if pad := inner - lipgloss.Width(keys) - lipgloss.Width(graceWords); pad >= 2 {
+		return []string{sty.Dimmer.Render(keys) + strings.Repeat(" ", pad) + sty.Dim.Render(graceWords)}
+	}
+	return []string{sty.Dimmer.Render(keys), sty.Dim.Render(clip(graceWords, inner))}
+}
+
 // handoverRow is the one live key on a not-yet-live surface. Its wording is
 // the card's rather than the caller's, because the mid-sentence rule fixes
 // it: the key, what it does, and where the letters go until it is pressed.

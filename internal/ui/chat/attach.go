@@ -12,6 +12,7 @@ package chat
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
@@ -193,6 +194,7 @@ func (m *Model) purgeChildAsks(name string) {
 	if m.answerAgent == name {
 		m.answerAgent = ""
 	}
+	active := m.activeChildAsk()
 	kept := m.childAsks[:0]
 	for _, a := range m.childAsks {
 		if a.Agent == name {
@@ -202,6 +204,17 @@ func (m *Model) purgeChildAsks(name string) {
 		kept = append(kept, a)
 	}
 	m.childAsks = kept
+	// A hold belonging to a purged ask must not survive it: the next ask
+	// would inherit a keyboard nobody granted it, and a letter meant for a
+	// sentence could answer a card that was never armed in front of the
+	// reader. The next ask, if one is queued, arms on its own terms — this
+	// is not the queue advancing, because nothing here was answered, so no
+	// stamp is left to shut its grace window.
+	if active != nil && active.Agent == name && m.decisionHeld {
+		m.decisionHeld, m.heldOnArrival = false, false
+		m.graceFrom = time.Time{}
+		m.armArrival()
+	}
 }
 
 // --- agent list ---

@@ -249,6 +249,12 @@ func (m Model) clickKey(x, y int) (tea.Model, tea.Cmd) {
 		// said is live.
 		return m.gateDecision()
 	}
+	if m.graceShowing() && m.graceDiscards(key) {
+		// The screen says the keys are a moment from live (interrupt.go);
+		// a click on the dimmed run means no more than the key it stands
+		// for would.
+		return m, nil
+	}
 	return m.routeDecision(clickKeyPress(key))
 }
 

@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
+	"github.com/charmbracelet/x/ansi"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/ultraviolet/layout"
 	"github.com/rfizzle/shhh/internal/agent"
@@ -374,6 +375,63 @@ func (m Model) inputInnerWidth() int {
 // or the gutter (attach/detach) changes.
 func (m *Model) syncInputWidth() {
 	m.input.SetWidth(m.inputInnerWidth())
+}
+
+// maxDraftRows caps how far the draft box grows before the textarea scrolls
+// inside it instead. Twelve rows is where a prompt stops being written and
+// starts being read — past it the box would be a pager, and $EDITOR (ctrl+g)
+// is the surface for that.
+const maxDraftRows = 12
+
+// syncInputHeight grows the box with the draft, one row per wrapped line,
+// and shrinks it back as lines are removed. It runs on the update tail, so a
+// width change that re-wraps a line moves the height in the same message.
+// The viewport pays for every row the box takes and gets it back, through
+// the same split every panel change settles by (layout.go).
+func (m *Model) syncInputHeight() {
+	h := m.draftBoxRows()
+	if h == m.input.Height() {
+		return
+	}
+	m.input.SetHeight(h)
+	if !m.ready {
+		return
+	}
+	// Only the pane's rows move; its lines are wrapped to a width this did
+	// not change, so nothing is re-rendered — a keystroke that grows the box
+	// must not snap a reader scrolled up back to the bottom, and a resize
+	// mid-drag must not spend the render its settle window is deferring.
+	// Follow mode is the exception it always is: a pane pinned to the live
+	// end stays pinned through the height change.
+	if vh := m.viewportHeight(); vh != m.viewport.Height() {
+		follow := m.viewport.AtBottom()
+		m.viewport.SetHeight(vh)
+		if follow {
+			m.viewport.GotoBottom()
+		}
+	}
+}
+
+// draftBoxRows is the height the box wants: its content's wrapped rows plus
+// the two rows of air the one-line box has always kept, bounded by
+// maxDraftRows and by the panel's own ceiling
+// (docs/interface/principles.md#the-grammar: the bottom panel takes at most
+// 40% of the terminal), less the two chrome rows around the box.
+func (m *Model) draftBoxRows() int {
+	width := m.input.Width()
+	if width <= 0 {
+		return inputHeight
+	}
+	rows := 0
+	for _, line := range strings.Split(m.input.Value(), "\n") {
+		// The count mirrors the textarea's own soft wrap: words break at the
+		// width and a word wider than the whole line breaks inside itself.
+		// An exotic line the two disagree on costs one row of air or one row
+		// of the textarea's internal scroll, never a broken frame.
+		rows += strings.Count(ansi.Wrap(line, width, ""), "\n") + 1
+	}
+	bound := min(maxDraftRows, m.maxConfirmPanelHeight()-bottomChromeHeight)
+	return min(max(rows+inputHeight-1, inputHeight), max(bound, inputHeight))
 }
 
 // noticeLine assembles the notice rail: update notice, queued

@@ -157,6 +157,18 @@ const inputHeight = 3
 const headerHeight = 1
 const dividerHeight = 1
 const statusBarHeight = 1
+
+// resizeSettle is how long the terminal size must hold still before the whole
+// history is re-wrapped at it. A drag delivers a size per column crossed, and
+// the full re-render is the only expensive part of answering one; the frame
+// and rectangles move immediately. A constant rather than a setting — it is a
+// property of how terminals report drags, not a preference.
+const resizeSettle = 120 * time.Millisecond
+
+// resizeSettledMsg is the settle window closing. The sequence number keeps a
+// settle scheduled during the drag from rendering at a width the drag has
+// already left.
+type resizeSettledMsg struct{ seq int }
 const horizontalPadding = 2
 
 type tokenMsg struct {
@@ -633,9 +645,10 @@ type Model struct {
 	// decisionHeld is whether the decision on screen holds the keyboard
 	//. A card that arrives on top of a sentence never does:
 	// until the handover chord it renders its keys as not-yet-live and every
-	// letter goes into the draft. One that arrives on a draft nobody is
-	// typing into does, because there is no sentence for the letters to
-	// belong to.
+	// letter goes into the draft. One that arrives on an empty draft does,
+	// because there is no sentence for the letters to belong to — with the
+	// grace window covering the keys a warm keyboard could still have in
+	// flight (interrupt.go).
 	decisionHeld bool
 	// heldOnArrival narrows that: the decision holds the keyboard because it
 	// landed on an idle draft, not because the handover gave it to it. A
@@ -647,6 +660,19 @@ type Model struct {
 	// empty draft is not the same thing as an idle one, and a reader between
 	// two words has an empty draft for as long as the backspace held.
 	lastKeypress time.Time
+	// graceFrom is when the decision now holding the keyboard by arrival
+	// landed on a keyboard still warm — the open grace window (interrupt.go).
+	// Zero when no window is open; graceSeq names the window's current end,
+	// so a repaint tick scheduled for an end a key moved is stale.
+	graceFrom time.Time
+	graceSeq  int
+	// lastDecisionLeft is when a decision last left the screen, which is how
+	// a card replacing another (the queue advancing) is told apart from a
+	// card landing on fresh typing.
+	lastDecisionLeft time.Time
+	// resizeSeq names the latest resize, so the settle scheduled for an
+	// abandoned width recognises itself as stale (resizeSettledMsg).
+	resizeSeq int
 	// Sub-agent management and steering: attachedTo focuses the chat
 	// surface on a child ("" = orchestrator); childViews holds each child's
 	// mirrored transcript and scroll state so attach/detach loses nothing;
@@ -1155,6 +1181,17 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if !ok {
 		return next, cmd
 	}
+	// The draft box's height follows its content (frame.go). It is derived
+	// here for the spinner's reason: a keystroke, a paste, a /clear and a
+	// resize can all re-wrap the draft, and every one of those paths would
+	// otherwise have to remember to re-measure it.
+	mm.syncInputHeight()
+	// The grace window's repaint rides the tail for the same reason: the
+	// window is opened by arrivals and moved by discarded keys, and each of
+	// those is a transition between the model before and the model after.
+	if tick := mm.graceTickCmd(m); tick != nil {
+		cmd = tea.Batch(cmd, tick)
+	}
 	if tick := mm.spinCmd(); tick != nil {
 		cmd = tea.Batch(cmd, tick)
 	}
@@ -1237,16 +1274,34 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.viewport = newViewport(paneWidth, vpHeight)
 			m.viewport.SetLines(m.renderHistoryLines())
 			m.ready = true
-		} else {
-			m.viewport.SetWidth(paneWidth)
-			m.viewport.SetHeight(vpHeight)
-			m.viewport.SetLines(m.renderHistoryLines())
+			return m, m.placePicture()
 		}
+		// The rectangles move on every message: the screen is never the wrong
+		// shape, and the pane clips or pads the lines it already has. What
+		// waits is the re-wrap of the whole history — a drag across the
+		// terminal edge delivers a size per column crossed, and re-rendering
+		// a long session at every intermediate width is the stutter, so the
+		// render runs once, when the size has stopped moving (resizeSettled).
+		m.viewport.SetWidth(paneWidth)
+		m.viewport.SetHeight(vpHeight)
+		m.resizeSeq++
+		seq := m.resizeSeq
+		settle := tea.Tick(resizeSettle, func(time.Time) tea.Msg { return resizeSettledMsg{seq: seq} })
 		// A placement is cells at a size: a pane that changed
 		// shape under a picture the terminal is holding is a picture that no
 		// longer fits the hole left for it, so it is sent again at the new
 		// one. Every other surface reflows from its own View.
-		return m, m.placePicture()
+		return m, tea.Batch(m.placePicture(), settle)
+
+	case resizeSettledMsg:
+		// The size held still for the settle window. A stale settle — the
+		// terminal moved again after this one was scheduled — matches nothing
+		// and changes nothing; its successor carries the render.
+		if msg.seq != m.resizeSeq {
+			return m, nil
+		}
+		m.viewport.SetLines(m.renderHistoryLines())
+		return m, nil
 
 	case tea.MouseMsg:
 		// The wheel scrolls whatever is showing content — the transcript, or
@@ -1259,6 +1314,18 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		return m.updateMouse(msg)
+
+	case coalescedWheelMsg:
+		// A wheel flood merged at the program boundary (wheel.go): one scroll
+		// for the whole run, through the same per-surface switch a single
+		// notch takes, then the message the flush was triggered by.
+		if m.mouseOn {
+			m.scrollLines(msg.lines)
+		}
+		if msg.then != nil {
+			return m.update(msg.then)
+		}
+		return m, nil
 
 	case tea.PasteMsg:
 		// A file dragged into the terminal arrives as a bracketed paste of
@@ -1313,11 +1380,20 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case graceTickMsg:
+		// The grace window expired between keys; arriving here repaints the
+		// card with its keys live. A stale tick repaints a card that already
+		// looks right, which costs nothing.
+		return m, nil
+
 	case tea.KeyPressMsg:
 		// Every key stamps the clock a decision's arrival reads (
-		// interrupt.go). It is stamped here rather than on the draft's own
-		// path because the question is whether the reader is at the keyboard,
-		// not which surface they were talking to.
+		// interrupt.go). The open grace window is settled first, against the
+		// quiet before this key — the key that ends the quiet must not count
+		// as part of it. Stamped here rather than on the draft's own path
+		// because the question is whether the reader is at the keyboard, not
+		// which surface they were talking to.
+		m.settleGrace(time.Now())
 		m.lastKeypress = time.Now()
 		// And every key consumes an armed two-press window (cancel.go),
 		// whichever surface answers it: a reader who went on typing — or
@@ -1364,6 +1440,16 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// alone on purpose ([a], [d], [A]).
 		if m.interruptShowing() && keys.Match(msg, keys.Draft.Answer) && (m.decisionUngated() || m.heldOnArrival) {
 			return m.gateDecision()
+		}
+		// The grace window on a card that took the keyboard by arriving on a
+		// warm keyboard (interrupt.go): the keys that would answer it are
+		// discarded until the keyboard has been quiet for a beat, because a
+		// key this soon after typing was part of the typing. The discard
+		// still moved the window's end, so the repaint is rescheduled off
+		// the bumped sequence (graceTickCmd).
+		if m.graceHolds() && m.graceDiscards(msg.String()) {
+			m.graceSeq++
+			return m, nil
 		}
 		// A decision that arrived on top of a sentence is inert until it holds the
 		// keyboard
@@ -1460,13 +1546,15 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m.attachedCancel()
 			}
 			if m.state == stateClassifying {
-				// Skip the classifier check and ask the user directly.
+				// Skip the classifier check and ask the user directly. The
+				// card arrives through the one door every decision arrives
+				// through, so it takes an empty draft's keyboard like any
+				// other arrival instead of showing keys nobody can press.
 				if m.classifierCancel != nil {
 					m.classifierCancel()
 					m.classifierCancel = nil
 				}
-				m.state = stateConfirmRun
-				m.releaseDecision()
+				m.setTurnState(stateConfirmRun)
 				m.syncViewport()
 				return m, nil
 			}
@@ -3130,6 +3218,12 @@ func (m *Model) renderHistoryLines() []string {
 	return m.applySelectionHighlight(lines)
 }
 
+// testHookRenderHistory, when non-nil, observes every full-history render.
+// It exists for the resize tests: "the burst collapsed to one render" is the
+// property the settle window buys, and nothing else on the surface can see a
+// render that produced the same lines.
+var testHookRenderHistory func()
+
 // renderHistory and renderHistoryRaw are the same two renders as one string.
 // Nothing on the drawing path uses them: they are what the goldens capture
 // and what the tests read, joined back up from the lines above.
@@ -3142,6 +3236,9 @@ func (m *Model) renderHistoryRaw() string {
 }
 
 func (m *Model) renderHistoryRawLines() []string {
+	if testHookRenderHistory != nil {
+		testHookRenderHistory()
+	}
 	if m.state == stateFocus {
 		// Focus mode renders fresh with the selection gutter, bypassing the
 		// incremental cache; it scopes to whichever agent is focused.
