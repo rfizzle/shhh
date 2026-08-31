@@ -352,16 +352,11 @@ func (m Model) summaryAssistant() string {
 // summaryChanges is the session's changeset in words, so the reading can talk
 // about what has been done without being told to count it.
 func (m Model) summaryChanges() string {
-	files := m.changes.SessionFiles()
-	if len(files) == 0 {
+	files, added, removed := m.changes.Totals()
+	if files == 0 {
 		return ""
 	}
-	added, removed := 0, 0
-	for _, f := range files {
-		added += f.Added
-		removed += f.Removed
-	}
-	return fmt.Sprintf("%s · +%d −%d", plural(len(files), "file"), added, removed)
+	return fmt.Sprintf("%s · +%d −%d", plural(files, "file"), added, removed)
 }
 
 // summaryAlerts is the standing bad news the rail already keeps on screen.
@@ -419,12 +414,49 @@ func summaryTone(s agent.SummaryState) components.SummaryTone {
 // statusCommand is `/status`: the SUMMARY block in words, for the terminals
 // that have no rail to draw it in.
 //
-// Below 130 columns the rail is dropped entirely, so the block would
-// otherwise be invisible on a narrow terminal. This is the same answer the
-// rail's rules gives for PLAN — nothing is lost, it just has to be asked for
-// — and asking for it is itself a reason to have a current one, so it forces
-// a reading.
+// Below 130 columns the rail is dropped, and what stands in for it is one
+// row of the reading's verdict (statusrow.go) — the sentence behind that
+// verdict, what it was read against and what the readings have cost are all
+// still the rail's, and on a narrow terminal they have to be asked for. This
+// is the same answer the rail's rules gives for PLAN — nothing is lost, it
+// just has to be asked for — and asking is itself a reason to have a current
+// reading, so the command forces one where the row can only display the last.
+// It says which tool sources the session has for the same reason: the block
+// naming them is the rail's too.
 func (m *Model) statusCommand() (string, tea.Cmd) {
+	text, cmd := m.summaryStatus()
+	if sources := m.toolSourceStatus(); sources != "" {
+		text += "\n\n" + sources
+	}
+	return text, cmd
+}
+
+// toolSourceStatus is the rail's TOOLS block in words: one line per source
+// with the same state word the block draws, and nothing at all when the
+// session has no external source to have lost.
+func (m Model) toolSourceStatus() string {
+	if len(m.mcp.Sources) == 0 {
+		return ""
+	}
+	var sb strings.Builder
+	sb.WriteString("Tools\n")
+	if n := m.builtinToolCount(); n > 0 {
+		fmt.Fprintf(&sb, "built-in — %s · %s\n",
+			components.ToolSourceWord(components.ToolSourceUp), plural(n, "tool"))
+	}
+	for _, s := range m.mcp.Sources {
+		line := s.Name + " — " + components.ToolSourceWord(s.State)
+		if s.Note != "" {
+			line += " · " + s.Note
+		}
+		sb.WriteString(line + "\n")
+	}
+	return strings.TrimRight(sb.String(), "\n")
+}
+
+// summaryStatus is the reading half of `/status`, and the half that forces a
+// fresh one.
+func (m *Model) summaryStatus() (string, tea.Cmd) {
 	if !m.summaryEnabled() {
 		if m.summarizer.Config().Disabled {
 			return "The session summary is off (summary.disabled). Turn it back on in ~/.config/shhh/config.toml.", nil

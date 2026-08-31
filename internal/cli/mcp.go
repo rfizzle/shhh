@@ -159,6 +159,43 @@ func mcpOutcome(r mcp.Report) string {
 	return string(r.Status)
 }
 
+// mcpToolSources is the session's servers as the chat surface names them:
+// the four states the rail draws a glyph for, each with the detail the
+// listing's outcome column already carries. A failure is the one report whose
+// outcome word is the state itself, so its detail is why it failed.
+func mcpToolSources(ts *mcp.Toolset) []components.InspectorToolSource {
+	if ts == nil {
+		return nil
+	}
+	out := make([]components.InspectorToolSource, 0, len(ts.Reports))
+	for _, r := range ts.Reports {
+		src := components.InspectorToolSource{Name: r.Definition.Name, Note: mcpOutcome(r)}
+		switch r.Status {
+		case mcp.StatusConnected:
+			src.State = components.ToolSourceUp
+		case mcp.StatusFailed:
+			src.State, src.Note = components.ToolSourceFailed, firstLine(r.Error)
+		case mcp.StatusDisabled:
+			src.State, src.Note = components.ToolSourceOff, ""
+		case mcp.StatusExcluded:
+			src.State = components.ToolSourceOff
+		default:
+			src.State = components.ToolSourceBlocked
+		}
+		out = append(out, src)
+	}
+	return out
+}
+
+// firstLine bounds a note to the row it will be drawn in: a server's error can
+// be a paragraph, and the rail has one line for it.
+func firstLine(s string) string {
+	if i := strings.IndexByte(s, '\n'); i >= 0 {
+		return strings.TrimSpace(s[:i])
+	}
+	return strings.TrimSpace(s)
+}
+
 // mcpConsequence is what a report that is not a connect costs the reader,
 // in the words of the surface they will meet it on.
 func mcpConsequence(r mcp.Report) string {

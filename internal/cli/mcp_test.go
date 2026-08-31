@@ -72,6 +72,37 @@ func TestMCPFindingReadsEachStatus(t *testing.T) {
 	}
 }
 
+// Every report becomes a source the rail can draw, and a failure carries why
+// rather than the word "failed" the state itself already says.
+func TestMCPToolSourcesReadEachStatus(t *testing.T) {
+	def := mcp.Definition{Name: "gh", Scope: mcp.ScopeProject, Transport: mcp.TransportStdio, Command: "npx"}
+	cases := []struct {
+		report mcp.Report
+		state  components.ToolSourceState
+		note   string
+	}{
+		{mcp.Report{Definition: def, Status: mcp.StatusConnected, Server: &mcp.Server{Tools: []mcp.Tool{{Name: "a"}, {Name: "b"}}}}, components.ToolSourceUp, "2 tools"},
+		{mcp.Report{Definition: def, Status: mcp.StatusFailed, Error: "server gh: connect: boom\n    at line 2"}, components.ToolSourceFailed, "server gh: connect: boom"},
+		{mcp.Report{Definition: def, Status: mcp.StatusUntrusted}, components.ToolSourceBlocked, "untrusted"},
+		{mcp.Report{Definition: def, Status: mcp.StatusChanged}, components.ToolSourceBlocked, "changed"},
+		{mcp.Report{Definition: def, Status: mcp.StatusMissingEnv, Missing: []string{"TOKEN"}}, components.ToolSourceBlocked, "unset: TOKEN"},
+		{mcp.Report{Definition: def, Status: mcp.StatusDisabled}, components.ToolSourceOff, ""},
+		{mcp.Report{Definition: def, Status: mcp.StatusExcluded}, components.ToolSourceOff, "not read-only"},
+	}
+	for _, c := range cases {
+		got := mcpToolSources(&mcp.Toolset{Reports: []mcp.Report{c.report}})
+		if len(got) != 1 || got[0].Name != "gh" {
+			t.Fatalf("%s: sources = %+v", c.report.Status, got)
+		}
+		if got[0].State != c.state || got[0].Note != c.note {
+			t.Errorf("%s: state %d note %q, want %d %q", c.report.Status, got[0].State, got[0].Note, c.state, c.note)
+		}
+	}
+	if got := mcpToolSources(nil); got != nil {
+		t.Errorf("a session with no servers has no sources: %+v", got)
+	}
+}
+
 func TestMCPListingSaysWhatEachServerBecame(t *testing.T) {
 	if got := mcpListing(nil, nil, ""); !strings.Contains(got, "No MCP servers defined") {
 		t.Errorf("empty listing = %q", got)

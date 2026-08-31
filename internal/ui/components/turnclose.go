@@ -193,7 +193,7 @@ func (c TurnClose) View(width int) string {
 		sty.Dim.Render(c.Note), width)}
 
 	if ch := c.Changes; ch != nil {
-		stats := sty.Add.Render(fmt.Sprintf("+%d", ch.Added)) + " " + sty.Del.Render(fmt.Sprintf("−%d", ch.Removed))
+		stats := DiffStat(ch.Added, ch.Removed)
 		stated := sty.Body.Render(plural(ch.Files, "file")+" changed ") + stats
 		lead := closeLead(sty.Accent.Render("▎"), sty.Accent.Render("✎"))
 		text := stated

@@ -48,6 +48,11 @@
   ⚠ runner-2                             $0.01
     ▰▰▰▱▱ step 2 of 3 · go test ./...         
 
+  TOOLS                              2 of 3 up
+  ✓ built-in                     up · 18 tools
+  ✓ docs                          up · 9 tools
+  ✗ linear                     error · timeout
+
   CONTEXT                          62% of 200k
   ▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱                  124k
   ▂▃▄▄▅▆▆█ per round              ↑41.2k ↓9.8k
@@ -135,6 +140,14 @@
   THIS TURN                                   
   0 files this turn · 40 tools · 6m 00s       
 
+· where the tools came from, and which answered
+  TOOLS                              3 of 5 up
+  ✓ built-in                     up · 18 tools
+  ✓ docs                          up · 9 tools
+  ⚠ tracker                blocked · untrusted
+  ✗ linear            error · 401 Unauthorized
+  … 1 more                                    
+
 ── ansi ────────────────────────────────────────────────────
 · every block, unbounded height
   ␛[1;38;5;254mSUMMARY␛[m                       ␛[38;5;244mas of round 24␛[m
@@ -174,6 +187,11 @@
     ␛[38;5;254m⠋ docs/loop.md␛[m␛[38;5;244m · ␛[m␛[38;5;244m4 tools␛[m                  
   ␛[38;5;254m⚠␛[m ␛[38;5;254mrunner-2␛[m                             ␛[38;5;244m$0.01␛[m
     ␛[38;5;254m▰▰▰▱▱ step 2 of 3␛[m␛[38;5;244m · ␛[m␛[38;5;244mgo test ./...␛[m         
+
+  ␛[1;38;5;254mTOOLS␛[m                              ␛[38;5;244m2 of 3 up␛[m
+  ␛[38;5;254m✓␛[m ␛[38;5;254mbuilt-in␛[m                     ␛[38;5;244mup␛[m␛[38;5;244m · 18 tools␛[m
+  ␛[38;5;254m✓␛[m ␛[38;5;254mdocs␛[m                          ␛[38;5;244mup␛[m␛[38;5;244m · 9 tools␛[m
+  ␛[38;5;254m✗␛[m ␛[38;5;254mlinear␛[m                     ␛[38;5;254merror␛[m␛[38;5;244m · timeout␛[m
 
   ␛[1;38;5;254mCONTEXT␛[m                          ␛[38;5;254m62% of 200k␛[m
   ␛[38;5;254m▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱␛[m                  ␛[38;5;254m124k␛[m
@@ -261,3 +279,11 @@
 
   ␛[1;38;5;254mTHIS TURN␛[m                                   
   ␛[38;5;244m0 files this turn␛[m␛[38;5;244m · ␛[m␛[38;5;244m40 tools␛[m␛[38;5;244m · ␛[m␛[38;5;244m6m 00s␛[m       
+
+· where the tools came from, and which answered
+  ␛[1;38;5;254mTOOLS␛[m                              ␛[38;5;244m3 of 5 up␛[m
+  ␛[38;5;254m✓␛[m ␛[38;5;254mbuilt-in␛[m                     ␛[38;5;244mup␛[m␛[38;5;244m · 18 tools␛[m
+  ␛[38;5;254m✓␛[m ␛[38;5;254mdocs␛[m                          ␛[38;5;244mup␛[m␛[38;5;244m · 9 tools␛[m
+  ␛[38;5;254m⚠␛[m ␛[38;5;254mtracker␛[m                ␛[38;5;254mblocked␛[m␛[38;5;244m · untrusted␛[m
+  ␛[38;5;254m✗␛[m ␛[38;5;254mlinear␛[m            ␛[38;5;254merror␛[m␛[38;5;244m · 401 Unauthorized␛[m
+  ␛[38;5;244m… 1 more␛[m                                    

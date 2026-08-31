@@ -467,7 +467,7 @@ func (v *ReviewView) fileRows(width int) []string {
 			lead += stageBox(f.stagedCount(), len(f.Hunks)) + " "
 		}
 		lead += sty.Accent.Render("✎ ")
-		note := sty.Add.Render(fmt.Sprintf("+%d", added)) + " " + sty.Del.Render(fmt.Sprintf("−%d", removed))
+		note := DiffStat(added, removed)
 
 		// A file list is read by its filenames, so a path that does not fit
 		// loses its leading directories rather than its name, and the agent
@@ -585,7 +585,7 @@ func (v *ReviewView) paneRows(width, rows int) []string {
 	added, removed := f.stats()
 	head := brightStyle().Render(f.Path) +
 		sty.Dim.Render("  "+plural(len(f.Hunks), "hunk")+" · ") +
-		sty.Add.Render(fmt.Sprintf("+%d", added)) + " " + sty.Del.Render(fmt.Sprintf("−%d", removed))
+		DiffStat(added, removed)
 	if !v.ReadOnly {
 		head += sty.Dim.Render(" · ") + v.fileStageLabel(*f)
 	}

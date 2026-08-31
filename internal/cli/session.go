@@ -786,6 +786,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			Has:      mcpTools.Has,
 			ReadOnly: mcpTools.ReadOnly,
 			Manage:   mcpManager(mcpTools, session.mcpCatalog, db),
+			Sources:  mcpToolSources(mcpTools),
 		})
 	}
 	if len(gatedPreviews) > 0 {

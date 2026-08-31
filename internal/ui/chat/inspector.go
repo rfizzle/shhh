@@ -135,6 +135,7 @@ func (m Model) inspectorData() components.InspectorRail {
 		Todo:    m.inspectorTodo(),
 		Changes: m.inspectorChanges(),
 		Agents:  m.inspectorAgents(),
+		Tools:   m.inspectorTools(),
 		Context: m.inspectorContext(),
 		Spend:   m.inspectorSpend(),
 		Frame:   m.spinFrame,

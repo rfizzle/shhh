@@ -160,12 +160,13 @@ top rail, the session's counters on the vitals rail, and contextual key hints
 on the bottom rail that change with what the session is doing.
 
 Above it, a notice rail exists only while there is something to say and
-disappears when there is not. Below that, a staged rail carries whatever is
-waiting to ride out with the next message — it sits against the box because
-what is staged leaves with the sentence being typed, and the notices do not.
-Each chip says what the thing is, what it is called and how big it is, and for
-text how far it runs, because a size answers *will this fit* and never *which
-of these is the stack trace*.
+disappears when there is not. Under that, on the terminals too narrow for the
+[inspector rail](#the-inspector-rail), the status row that stands in for it.
+Below both, a staged rail carries whatever is waiting to ride out with the
+next message — it sits against the box because what is staged leaves with the
+sentence being typed, and the notices do not. Each chip says what the thing
+is, what it is called and how big it is, and for text how far it runs, because
+a size answers *will this fit* and never *which of these is the stack trace*.
 
 A paste past a certain size stops being a sentence and becomes one of those
 chips. A log or a stack trace typed into a three-row box buries the sentence
@@ -287,7 +288,24 @@ behind it — and it shows the first few items in working order with what each
 one waits on, then counts the rest. The whole list is one command away, and
 the block says which.
 
-Below the threshold the rail is dropped entirely rather than compressed.
+One block is not about the work at all: where the session's tools came from.
+A server that failed to answer leaves no trace in a transcript — a tool that
+was never registered is indistinguishable from one the model chose not to
+call — so the sources say whether they are up in a glyph and a word, with the
+count of tools each brought or the one thing standing in the way. It is
+present only when something outside shhh was configured, because a session
+with nothing but its own tools has no way to have lost any, and it folds past
+a few rows: whether what was configured is up is the question, and the whole
+listing is a command away.
+
+Below the threshold the rail is dropped rather than compressed — but one row
+stands in for it above the input, in the vitals grammar the frame's own rails
+use: what the last reading of the session said and the round it was taken at,
+and what the running turn or the whole session has changed. It drops its
+clauses from the right as it runs out of columns, and it is absent when there
+is nothing to say, so a narrow terminal is never carrying an empty row. The
+reading in full is still one command away, and asking for it is what forces a
+current one.
 
 ### The session summary
 

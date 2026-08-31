@@ -864,6 +864,11 @@ func TestGolden_InspectorRail(t *testing.T) {
 				Tokens1: "↑41.2k", Tokens2: "↓9.8k",
 				Burn: []float64{1, 2, 3, 3, 4, 5, 5, 6},
 			},
+			Tools: &InspectorTools{Up: 2, Sources: []InspectorToolSource{
+				{Name: "built-in", State: ToolSourceUp, Note: "18 tools"},
+				{Name: "docs", State: ToolSourceUp, Note: "9 tools"},
+				{Name: "linear", State: ToolSourceFailed, Note: "timeout"},
+			}},
 			Spend: &InspectorSpend{Turn: "$0.14", Main: "$0.12", Children: "$0.02",
 				Session: "$1.86", Model: "gpt-5.2"},
 		}
@@ -915,6 +920,21 @@ func TestGolden_InspectorRail(t *testing.T) {
 			},
 			Turn: &InspectorTurn{Tools: 40, Elapsed: 6 * time.Minute, Running: true},
 		}
+		// Every state a source can be in, and one more than the block draws:
+		// what is up, what is waiting on a person, what was left out on
+		// purpose, what was tried and did not answer, and the fold.
+		sources := InspectorRail{
+			Tools: &InspectorTools{
+				Sources: []InspectorToolSource{
+					{Name: "built-in", State: ToolSourceUp, Note: "18 tools"},
+					{Name: "docs", State: ToolSourceUp, Note: "9 tools"},
+					{Name: "tracker", State: ToolSourceBlocked, Note: "untrusted"},
+					{Name: "linear", State: ToolSourceFailed, Note: "401 Unauthorized"},
+				},
+				Up:   3,
+				More: 1,
+			},
+		}
 		return []golden.Panel{
 			{Label: "every block, unbounded height", View: full.View(width, 0)},
 			{Label: "every block, height 16 (truncating)", View: full.View(width, 16)},
@@ -923,6 +943,7 @@ func TestGolden_InspectorRail(t *testing.T) {
 			{Label: "the rail is shorter than the list (height 14)", View: session.View(width, 14)},
 			{Label: "a reading that has left the instruction", View: drifting.View(width, 0)},
 			{Label: "a reading the session has outrun", View: stale.View(width, 0)},
+			{Label: "where the tools came from, and which answered", View: sources.View(width, 0)},
 		}
 	})
 }

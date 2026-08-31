@@ -277,6 +277,50 @@ type InspectorSpend struct {
 	Model    string
 }
 
+// InspectorTools is the TOOLS block: where this session's tools came from
+// and which of those sources answered. A tool that silently failed to
+// register is otherwise indistinguishable from one the model simply did not
+// call, and the difference is the whole reason the block exists.
+// See docs/interface/surfaces.md#the-inspector-rail.
+type InspectorTools struct {
+	Sources []InspectorToolSource
+	// Up is how many sources answered, over every source the session has and
+	// not only the rows that fit — the heading states it against the same
+	// total, and a fold that changed the numerator would make the ratio a lie.
+	Up int
+	// More is how many sources Sources left out.
+	More int
+}
+
+// InspectorToolSource is one place tools came from: the built-in toolset, or
+// a server the session was told to reach.
+type InspectorToolSource struct {
+	Name  string
+	State ToolSourceState
+	// Note is what the state amounts to in the host's own words — a tool
+	// count for a source that answered, the reason for one that did not.
+	Note string
+}
+
+// ToolSourceState is a source's standing, and the block draws it as a glyph
+// and a word so a monochrome terminal reads the same as a colour one. It is
+// four states rather than the transport's own vocabulary because the reader's
+// question is whether the tools are there, and the note beside it says why
+// when they are not.
+type ToolSourceState int
+
+const (
+	// ToolSourceUp: it answered and its tools are in the toolset.
+	ToolSourceUp ToolSourceState = iota
+	// ToolSourceBlocked: it is configured and something is in the way that
+	// only a person can move.
+	ToolSourceBlocked
+	// ToolSourceOff: it was left out on purpose.
+	ToolSourceOff
+	// ToolSourceFailed: it was tried and did not answer.
+	ToolSourceFailed
+)
+
 // InspectorRail is the whole rail. A nil block pointer (or an empty agent
 // list) is a block with nothing to say, and is omitted.
 type InspectorRail struct {
@@ -286,6 +330,7 @@ type InspectorRail struct {
 	Todo    *InspectorTodo
 	Changes *InspectorChanges
 	Agents  []InspectorAgent
+	Tools   *InspectorTools
 	Context *InspectorContext
 	Spend   *InspectorSpend
 	// Frame is the host's spinner frame index, for the lanes of children that
@@ -298,7 +343,7 @@ type InspectorRail struct {
 // split rather than draw an empty column.
 func (r InspectorRail) Empty() bool {
 	return r.Summary == nil && r.Turn == nil && r.Plan == nil && r.Todo == nil && r.Changes == nil &&
-		len(r.Agents) == 0 && r.Context == nil && r.Spend == nil
+		len(r.Agents) == 0 && r.Tools == nil && r.Context == nil && r.Spend == nil
 }
 
 // railLine is one assembled row and what truncation is allowed to do with it.
@@ -389,7 +434,7 @@ func (r InspectorRail) blocks(width int) []railBlock {
 	var blocks []railBlock
 	for _, b := range []func(int) (railBlock, bool){
 		r.summaryBlock, r.turnBlock, r.planBlock, r.todoBlock, r.changesBlock,
-		r.agentsBlock, r.contextBlock, r.spendBlock,
+		r.agentsBlock, r.toolsBlock, r.contextBlock, r.spendBlock,
 	} {
 		if blk, ok := b(width); ok {
 			blocks = append(blocks, blk)
@@ -495,8 +540,7 @@ func (r InspectorRail) summaryBlock(width int) (railBlock, bool) {
 		b.add(row)
 	}
 
-	glyph, label, style := summaryTone(s.State)
-	b.pin(indentRow(glyph+" "+style.Render(label), width))
+	b.pin(indentRow(SummaryLabel(s.State), width))
 	// The reason gets its own rows rather than a suffix on the state row: it
 	// is the whole content of a departure, and at 46 columns a suffix is a
 	// reason clipped mid-word. It follows its state the way an alert's note
@@ -508,6 +552,16 @@ func (r InspectorRail) summaryBlock(width int) (railBlock, bool) {
 		b.pin(railRow(sty.Dim.Render(line), "", width, inspectorIndent+2))
 	}
 	return b, true
+}
+
+// SummaryLabel is a reading's judgement as one clause: the glyph, then the
+// words. The rail draws it as a row of its own and the input frame's status
+// row leads a line with it, so a terminal too narrow for the rail reads the
+// same verdict in the same marks
+// (docs/interface/surfaces.md#the-inspector-rail).
+func SummaryLabel(s SummaryTone) string {
+	glyph, label, style := summaryTone(s)
+	return glyph + " " + style.Render(label)
 }
 
 // summaryTone is the state row's glyph, its words and its weight. The glyph
@@ -546,8 +600,7 @@ func (r InspectorRail) turnBlock(width int) (railBlock, bool) {
 	//. A turn that wrote nothing still says so — that is the fact.
 	files := sty.Dim.Render(plural(t.Files, "file") + " this turn")
 	if t.Files > 0 {
-		files += " " + sty.Add.Render(fmt.Sprintf("+%d", t.Added)) +
-			" " + sty.Del.Render(fmt.Sprintf("−%d", t.Removed))
+		files += " " + DiffStat(t.Added, t.Removed)
 	}
 	b.add(indentRow(strings.Join([]string{
 		files,
@@ -660,9 +713,7 @@ func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 	}
 	meta := ""
 	if len(c.Files) > 0 {
-		meta = sty.Dim.Render("session · ") +
-			sty.Add.Render(fmt.Sprintf("+%d", c.Added)) + " " +
-			sty.Del.Render(fmt.Sprintf("−%d", c.Removed))
+		meta = sty.Dim.Render("session · ") + DiffStat(c.Added, c.Removed)
 	}
 	b := railBlock{heading: railHeading("CHANGES", meta, sty.Dim, width)}
 	// The alerts come first and are pinned: they are what the block exists to
@@ -681,7 +732,7 @@ func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 		// The changed-file row carries the mutation rail and the edit glyph,
 		// so the close of a turn looks like the rows that produced it.
 		lead := sty.Accent.Render("▎") + sty.Accent.Render("✎") + " "
-		stats := sty.Add.Render(fmt.Sprintf("+%d", f.Added)) + " " + sty.Del.Render(fmt.Sprintf("−%d", f.Removed))
+		stats := DiffStat(f.Added, f.Removed)
 		if f.Turns > 1 {
 			// Repeat edits collapsed to one row, so the row says how many
 			// turns are behind its counts.
@@ -717,8 +768,7 @@ func changesFold(hidden []railLine, width int) string {
 	if counted == 0 {
 		return indentRow(left, width)
 	}
-	return railRow(left, sty.Add.Render(fmt.Sprintf("+%d", added))+" "+
-		sty.Del.Render(fmt.Sprintf("−%d", removed)), width, inspectorIndent)
+	return railRow(left, DiffStat(added, removed), width, inspectorIndent)
 }
 
 func (r InspectorRail) agentsBlock(width int) (railBlock, bool) {
@@ -758,6 +808,55 @@ func (r InspectorRail) agentsBlock(width int) (railBlock, bool) {
 		}
 	}
 	return b, true
+}
+
+// toolsBlock is the TOOLS block. It sits under AGENTS because the two answer
+// the same question about the session's machinery — who else is working, and
+// what this session can reach — and above CONTEXT because those are what the
+// work is costing rather than what it is made of.
+func (r InspectorRail) toolsBlock(width int) (railBlock, bool) {
+	t := r.Tools
+	if t == nil || len(t.Sources) == 0 {
+		return railBlock{}, false
+	}
+	b := railBlock{heading: railHeading("TOOLS",
+		fmt.Sprintf("%d of %d up", t.Up, len(t.Sources)+t.More), sty.Dim, width)}
+	for _, s := range t.Sources {
+		glyph, word, style := toolSourceTone(s.State)
+		right := style.Render(word)
+		if s.Note != "" {
+			right += sty.Dim.Render(" · " + s.Note)
+		}
+		b.add(railRow(glyph+" "+sty.Body.Render(s.Name), right, width, inspectorIndent))
+	}
+	if t.More > 0 {
+		b.add(indentRow(sty.Dim.Render(fmt.Sprintf("… %d more", t.More)), width))
+	}
+	return b, true
+}
+
+// ToolSourceWord is a source's state in the one word the block's glyph stands
+// for, so a surface that prints the block in words rather than drawing it says
+// the same thing.
+func ToolSourceWord(s ToolSourceState) string {
+	_, word, _ := toolSourceTone(s)
+	return word
+}
+
+// toolSourceTone is a source's glyph, its word and the weight the word
+// carries. The glyph is the distinction a monochrome terminal reads: the
+// same four marks every other surface uses for done, waiting on a person,
+// left out and failed.
+func toolSourceTone(s ToolSourceState) (string, string, lipgloss.Style) {
+	switch s {
+	case ToolSourceUp:
+		return sty.Add.Render("✓"), "up", sty.Dim
+	case ToolSourceBlocked:
+		return sty.Accent.Render("⚠"), "blocked", sty.Body
+	case ToolSourceOff:
+		return sty.Dim.Render("⊘"), "off", sty.Dim
+	}
+	return sty.Err.Render("✗"), "error", sty.Body
 }
 
 func (r InspectorRail) contextBlock(width int) (railBlock, bool) {
@@ -844,6 +943,15 @@ func railRow(left, right string, width, indent int) string {
 // indentRow is railRow with nothing on the right.
 func indentRow(s string, width int) string {
 	return railRow(s, "", width, inspectorIndent)
+}
+
+// DiffStat is the shared line count: what an edit added and what it removed,
+// in the two registers every surface prints them in. One implementation, so a
+// transcript row, a rail block and a status row cannot state the same edit
+// three ways — and the signs carry the distinction, so a monochrome terminal
+// reads it too.
+func DiffStat(added, removed int) string {
+	return sty.Add.Render(fmt.Sprintf("+%d", added)) + " " + sty.Del.Render(fmt.Sprintf("−%d", removed))
 }
 
 // FormatElapsed is the shared wall-clock format: seconds under a minute,

@@ -281,3 +281,28 @@ func TestSessionFilesCarryTurnAttribution(t *testing.T) {
 		t.Fatalf("Totals reads the same aggregation: %d files, +%d −%d", n, added, removed)
 	}
 }
+
+// The collapsed session diff is held between writes. Every surface that asks
+// is drawn from a render loop rather than from the edit that changed
+// something, so the same answer is handed out many times per edit — and a
+// write is the only thing that can make it wrong.
+func TestSessionFiles_HeldUntilAWriteMakesItWrong(t *testing.T) {
+	s := New(DefaultMaxBytes)
+	s.Add(1, Record{Path: "loop.go", Before: "a\n", After: "a\nb\n", BeforeExists: true, AfterExists: true})
+
+	first := s.SessionFiles()
+	if again := s.SessionFiles(); &again[0].Hunks[0] != &first[0].Hunks[0] {
+		t.Fatal("a second ask without a write recomputed the walk")
+	}
+	// What is handed out is a copy, so a caller cannot edit the held answer.
+	first[0].Path = "scribbled"
+	if s.SessionFiles()[0].Path != "loop.go" {
+		t.Fatal("a caller wrote through to what is held")
+	}
+
+	s.Add(2, Record{Path: "model.go", Before: "x\n", After: "y\n", BeforeExists: true, AfterExists: true})
+	after := s.SessionFiles()
+	if len(after) != 2 {
+		t.Fatalf("a write clears what was held: %+v", after)
+	}
+}

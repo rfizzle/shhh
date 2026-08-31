@@ -193,6 +193,13 @@ type Store struct {
 	order   []int64
 	turns   map[int64]*Turn
 	evicted []int64
+	// session is the last SessionFiles answer, held until a write makes it
+	// wrong. Collapsing the session diffs every path it retains, and the
+	// surfaces that ask are drawn from a render loop rather than from the
+	// edit that changed something — so without this the same diffs are
+	// recomputed several times between one edit and the next.
+	session []SessionFile
+	fresh   bool
 }
 
 // New returns a store bounded by maxBytes of retained content; zero or less
@@ -224,6 +231,7 @@ func (s *Store) Add(turn int64, r Record) (evicted []int64) {
 
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.session, s.fresh = nil, false
 
 	t, ok := s.turns[turn]
 	if !ok {
@@ -408,6 +416,21 @@ func (s *Store) SessionFiles() []SessionFile {
 	if s == nil {
 		return nil
 	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.fresh {
+		s.session, s.fresh = s.sessionFilesLocked(), true
+	}
+	// The rows are handed out as a copy: the walk behind them is held, and a
+	// caller that sorted or appended to what it was given would otherwise be
+	// editing every later caller's answer.
+	return append([]SessionFile(nil), s.session...)
+}
+
+// sessionFilesLocked is the walk itself. It reads the turns directly rather
+// than through Turns(), because the cache it fills has to be filled under the
+// same lock that a write clears it under.
+func (s *Store) sessionFilesLocked() []SessionFile {
 	type acc struct {
 		before, after             string
 		beforeExists, afterExists bool
@@ -416,7 +439,8 @@ func (s *Store) SessionFiles() []SessionFile {
 	}
 	var paths []string
 	at := map[string]*acc{}
-	for _, t := range s.Turns() {
+	for _, n := range s.order {
+		t := s.turns[n]
 		for _, r := range t.Records {
 			p, ok := at[r.Path]
 			if !ok {

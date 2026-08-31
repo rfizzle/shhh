@@ -483,3 +483,61 @@ func TestInspectorSummary_KeepsItsFirstLineAndItsState(t *testing.T) {
 		t.Fatalf("a folded block says what it swallowed:\n%s", view)
 	}
 }
+
+// A session with no tool source outside shhh has no way to have lost one, so
+// the block is omitted rather than drawn with a row saying the obvious.
+func TestInspectorTools_OmittedWithoutASource(t *testing.T) {
+	for _, tools := range []*InspectorTools{nil, {}} {
+		r := InspectorRail{Tools: tools, Turn: &InspectorTurn{Tools: 2, Running: true}}
+		if view := stripANSI(r.View(InspectorWidth, 0)); strings.Contains(view, "TOOLS") {
+			t.Fatalf("no sources draws no block:\n%s", view)
+		}
+	}
+}
+
+// Every state says itself in a glyph and in words, so a source that failed to
+// register reads the same on a monochrome terminal.
+func TestInspectorTools_EveryStateStatesItself(t *testing.T) {
+	cases := []struct {
+		state ToolSourceState
+		want  string
+	}{
+		{ToolSourceUp, "✓ docs"},
+		{ToolSourceBlocked, "⚠ docs"},
+		{ToolSourceOff, "⊘ docs"},
+		{ToolSourceFailed, "✗ docs"},
+	}
+	for _, tc := range cases {
+		r := InspectorRail{Tools: &InspectorTools{
+			Sources: []InspectorToolSource{{Name: "docs", State: tc.state}},
+		}}
+		view := stripANSI(r.View(InspectorWidth, 0))
+		if !strings.Contains(view, tc.want) {
+			t.Fatalf("source row missing %q:\n%s", tc.want, view)
+		}
+		if word := ToolSourceWord(tc.state); !strings.Contains(view, word) {
+			t.Fatalf("source row missing the word %q:\n%s", word, view)
+		}
+	}
+}
+
+// The heading counts every source the session has, not only the rows that fit.
+func TestInspectorTools_HeadingCountsWhatTheFoldTook(t *testing.T) {
+	r := InspectorRail{Tools: &InspectorTools{
+		Sources: []InspectorToolSource{
+			{Name: "built-in", State: ToolSourceUp, Note: "18 tools"},
+			{Name: "docs", State: ToolSourceUp, Note: "9 tools"},
+		},
+		Up:   4,
+		More: 3,
+	}}
+	view := stripANSI(r.View(InspectorWidth, 0))
+	// Two of the three sources the fold took are up too, and the heading
+	// counts them: a ratio that changed with the fold would be a lie.
+	if !strings.Contains(view, "4 of 5 up") {
+		t.Fatalf("the heading counts every source:\n%s", view)
+	}
+	if !strings.Contains(view, "… 3 more") {
+		t.Fatalf("the fold says what it took:\n%s", view)
+	}
+}

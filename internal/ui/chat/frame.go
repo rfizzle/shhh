@@ -5,9 +5,10 @@ package chat
 // rounded-corner frame whose borders carry information: the top rail shows
 // session identity and the live activity state, the vitals rail re-homes the
 // cockpit segments, and the bottom rail carries contextual key hints. A
-// notice rail above the frame appears only while there is something to say,
-// and a staged rail under it while an attachment is waiting to ride. Takeover
-// surfaces (approval cards, pickers, the agent list, routed child asks,
+// notice rail above the frame appears only while there is something to say, a
+// status row under it stands in for the inspector rail the narrow layouts
+// drop, and a staged rail under that while an attachment is waiting to ride.
+// Takeover surfaces (approval cards, pickers, the agent list, routed child asks,
 // focus/diff hints) replace the framed input wholesale and keep the divider +
 // status-bar stack, so their geometry is unchanged.
 
@@ -124,8 +125,19 @@ func (m Model) frameShowing() bool {
 	return false
 }
 
+// framePreRails are the rows the surface draws above the box, in the order
+// they stand in: whatever the session is saying, the status row that stands
+// in for a dropped inspector rail, and what is staged to ride out with the
+// next message. Each is empty when it has nothing to say and takes no row.
+// The order is the rails' scopes, narrowing towards the box: the notices are
+// the session talking, the status row is what the session amounts to, and the
+// staged rail belongs to the sentence being typed.
+func (m Model) framePreRails() []string {
+	return []string{m.noticeLine(), m.statusRow(), m.stagedRail()}
+}
+
 // frameExtraHeight is what the frame adds beyond the standard chrome rows:
-// the notice rail, the staged rail and, in the wide layout, the
+// the rails above the box and, in the wide layout, the
 // dedicated vitals rail. The frame's top and bottom borders take the rows the
 // bottom divider and status bar otherwise use, so the compact and narrow
 // layouts add nothing.
@@ -134,11 +146,10 @@ func (m Model) frameExtraHeight() int {
 		return 0
 	}
 	extra := m.interruptHeight()
-	if m.noticeLine() != "" {
-		extra++
-	}
-	if m.stagedRail() != "" {
-		extra++
+	for _, rail := range m.framePreRails() {
+		if rail != "" {
+			extra++
+		}
 	}
 	if m.frameLayout() == frameWide {
 		extra++
@@ -651,10 +662,10 @@ func (m Model) frameDraftLines() (lines, menu []string) {
 	return lines, menu
 }
 
-// drawPromptFrame paints the whole surface into its rectangle: notice rail,
-// staged rail, then the box — top rail, gutter + input rows (+ completion
+// drawPromptFrame paints the whole surface into its rectangle: the rails
+// above the box, then the box — top rail, gutter + input rows (+ completion
 // menu), vitals rail, bottom rail — each in the rectangle frameBoxFor
-// resolved for it. The two rails above the box are rows of the
+// resolved for it. The rails above the box are rows of the
 // surface rather than rows of the box, which is why they are split off first.
 func (m Model) drawPromptFrame(scr uv.Screen, area uv.Rectangle) {
 	mode := m.frameLayout()
@@ -662,19 +673,16 @@ func (m Model) drawPromptFrame(scr uv.Screen, area uv.Rectangle) {
 	width := area.Dx()
 
 	var above, boxArea uv.Rectangle
-	notice, staged := m.noticeLine(), m.stagedRail()
+	pre := m.framePreRails()
 	rails := 0
-	for _, rail := range []string{notice, staged} {
+	for _, rail := range pre {
 		if rail != "" {
 			rails++
 		}
 	}
 	layout.Vertical(layout.Len(rails), layout.Fill(1)).Split(area).Assign(&above, &boxArea)
 	row := 0
-	// The staged rail sits between the notices and the frame: what is
-	// staged rides with the sentence being typed, so it belongs against the
-	// box it will leave with, under anything transient the session is saying.
-	for _, rail := range []string{notice, staged} {
+	for _, rail := range pre {
 		if rail == "" {
 			continue
 		}

@@ -21,6 +21,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/colorprofile"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/project"
@@ -847,6 +848,40 @@ func TestGolden_Palette(t *testing.T) {
 	})
 }
 
+// TestGolden_StatusRow captures the row that stands in for the inspector rail
+// below the width the surface splits at. All four house widths are below that
+// threshold, so every one of them draws it: the reading's verdict with the
+// round it was taken at, and what the running turn or the idle session
+// changed. The last panel is the row with nowhere left to go — at 60 columns
+// the file count is dropped whole rather than clipped mid-word, and the
+// verdict is what stands.
+func TestGolden_StatusRow(t *testing.T) {
+	captureGolden(t, "status-row", "the status row below the rail threshold", goldenWidths, func(width int) []golden.Panel {
+		build := func(mut func(*Model)) string {
+			m := statusRowModel(t, width)
+			mut(&m)
+			return m.statusRow()
+		}
+		return []golden.Panel{
+			{Label: "working · the reading and what this turn has changed", View: build(func(m *Model) {
+				m.state = stateStreaming
+			})},
+			{Label: "idle · the reading and the session's net change", View: build(func(m *Model) {})},
+			{Label: "working · a reading the session has outrun, and 12 files", View: build(func(m *Model) {
+				m.state = stateStreaming
+				m.summary.last.Round, m.summary.lastRound = 128, 128
+				outrun(m, 128)
+				for i := range 12 {
+					m.changes.Add(1, changeset.Record{
+						Path: "internal/agent/f" + string(rune('a'+i)) + ".go", AfterExists: true, After: "x\n",
+					})
+				}
+			})},
+			{Label: "the row in its slot, between the notices and the box", View: statusRowModel(t, width).renderPromptFrame()},
+		}
+	})
+}
+
 // screenWidths adds a terminal wide enough to split to the four
 // breakpoints: 144 columns is 140 content columns, past the
 // InspectorMinContentWidth rung, so the whole-screen capture carries the
@@ -884,9 +919,10 @@ func TestGolden_Screen(t *testing.T) {
 				m.streaming = ""
 			})},
 			// The session summary leads the rail where there is a rail to
-			// lead; below 130 columns the same panel is the
-			// single-pane surface, which is how the capture shows that
-			// nothing was taken from the narrow terminal but the block.
+			// lead; below 130 columns the same panel is the single-pane
+			// surface with the status row standing in for it above the
+			// input, which is how the capture shows what the narrow terminal
+			// keeps of the block and what it has to ask for.
 			{Label: "working · a reading of the session leads the rail", View: build(func(m *Model) {
 				m.state = stateStreaming
 				m.streaming = ""

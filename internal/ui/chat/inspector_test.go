@@ -123,10 +123,17 @@ func TestView_SplitKeepsTheRowBudget(t *testing.T) {
 			t.Fatalf("width %d: viewport height %d != %d", width, m.viewport.Height(), m.viewportHeight())
 		}
 	}
+	// Below the threshold the surface gains the one row that stands in for
+	// the rail (statusrow.go), and that row is the whole difference — the
+	// split itself still costs nothing.
 	wide := inspectorModel(t, 144, 30)
 	narrow := inspectorModel(t, 120, 30)
-	if wide.viewportHeight() != narrow.viewportHeight() {
-		t.Fatalf("the rail must not cost rows: %d vs %d", wide.viewportHeight(), narrow.viewportHeight())
+	if wide.statusRow() != "" || narrow.statusRow() == "" {
+		t.Fatal("the status row stands in below the threshold and only there")
+	}
+	if wide.viewportHeight() != narrow.viewportHeight()+1 {
+		t.Fatalf("the rail must cost no rows beyond the one standing in for it: %d vs %d",
+			wide.viewportHeight(), narrow.viewportHeight())
 	}
 }
 
