@@ -298,10 +298,10 @@ func TestPasteMsg_AttachesAFileAndTypesEverythingElse(t *testing.T) {
 // used to be — a paste that went straight to the draft would leave reading
 // mode holding a keyboard it no longer has.
 func TestPasteMsg_ReachesTheSurfaceHoldingTheKeyboard(t *testing.T) {
-	updated, _ := focusModel(t).Update(tea.KeyPressMsg{Code: 'e', Mod: tea.ModCtrl})
+	updated, _ := focusModel(t).Update(tea.KeyPressMsg{Code: 'o', Mod: tea.ModCtrl})
 	reading := updated.(Model)
 	if reading.state != stateFocus {
-		t.Fatalf("ctrl+e should hand the keyboard to reading mode, state = %v", reading.state)
+		t.Fatalf("ctrl+o should hand the keyboard to reading mode, state = %v", reading.state)
 	}
 
 	updated, _ = reading.Update(tea.PasteMsg{Content: "prose"})

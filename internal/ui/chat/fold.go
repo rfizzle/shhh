@@ -98,7 +98,7 @@ func (m Model) foldRun(es []entry, i, end int) int {
 // fold, recorded on the entry the run starts at, overrides it.
 //
 // A step whose detail you opened gives its group back too:
-// ctrl+o asks what this step did, and answering it with a counted row that
+// /step asks what this step did, and answering it with a counted row that
 // swallowed six of the calls would be the fold hiding the thing that was
 // asked for rather than the chrome around it.
 func (m Model) groupFolded(e entry, stepDetail bool) bool {

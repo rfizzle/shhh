@@ -1,6 +1,6 @@
 package chat
 
-// Focus mode (docs/interface/surfaces.md#reading-mode): ctrl+e gives
+// Focus mode (docs/interface/surfaces.md#reading-mode): ctrl+o gives
 // the transcript a selection cursor over expandable rows (tool and command
 // output). j/k moves between them, enter expands/collapses the selected row
 // in place, and esc returns to the input. This is the one mechanism behind
@@ -208,13 +208,6 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 			return next, cmd
 		}
 		return m.returnToInput(msg)
-	case keys.Is(pressed, keys.Reading.Detail):
-		// The step around the cursor opens its rows' detail —
-		// the header the cursor is on, or the step the row under it belongs
-		// to. A cursor outside every step has nothing to open, and the hint
-		// bar has already said so with its reason beside it rather than
-		// leaving the chord to fail without a word.
-		return m.detailFromReading()
 	case keys.Is(pressed, keys.Reading.Collapse):
 		// The explicit half of [enter]'s toggle. Where the row under
 		// the cursor has nothing open, [-] is a character like any other and

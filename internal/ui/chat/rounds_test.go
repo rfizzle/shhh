@@ -328,10 +328,10 @@ func TestRoundLimit_ThePauseDefersTheContextCard(t *testing.T) {
 func TestRoundLimit_FocusModeLandsOnThePauseAndTakesTheGrant(t *testing.T) {
 	m, _ := pausedModel(t)
 
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'e', Mod: tea.ModCtrl})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'o', Mod: tea.ModCtrl})
 	focused := updated.(Model)
 	if focused.state != stateFocus {
-		t.Fatalf("ctrl+e should enter focus mode, got state %v", focused.state)
+		t.Fatalf("ctrl+o should enter focus mode, got state %v", focused.state)
 	}
 	if got := focused.transcript[focused.focusIdx].kind; got != entryRoundPause {
 		t.Fatalf("the cursor should land on the row holding the way out, got kind %v", got)

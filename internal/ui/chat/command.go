@@ -183,6 +183,13 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		// The cumulative session diff, full screen.
 		return m.openSessionDiff()
 
+	case text == "/step":
+		// The in-flight step's detail, from the draft — the chord that
+		// answered this went to reading mode, and the question it answered
+		// is still asked mid-turn with a half-written sentence in the box
+		// (detail.go).
+		return m.detailFromDraft()
+
 	case text == "/context":
 		// The occupancy surface, full screen. It reads the conversation
 		// and changes nothing in it, so it is not idleOnly: a window filling

@@ -231,7 +231,7 @@ func (m Model) childAskCard(ask *subagent.Ask) *components.ApprovalCard {
 	if m.attachedTo == ask.Agent {
 		prefix = ""
 	} else {
-		card.ExtraHints = []string{"g: attach to " + ask.Agent, "ctrl+a: agents"}
+		card.ExtraHints = []string{"g: attach to " + ask.Agent, keys.Shown(keys.Draft.Agents) + ": agents"}
 	}
 	switch ask.Kind {
 	case subagent.AskCommand:

@@ -22,6 +22,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // StartGate is the quality-gate configuration in effect, which the screen
@@ -177,9 +178,12 @@ func (m Model) startScreen() (components.StartScreen, []string) {
 		// that setting is the whole difficulty.
 		//
 		// Scrolling and the handover are named apart, because they are two
-		// things now: pgup reads without giving up the keyboard,
-		// ctrl+e is what hands it over when the rows are what you want.
-		Nav: "[pgup] or [shift+↑↓] scroll · [ctrl+e] select rows · [ctrl+k] palette · [ctrl+x] mouse",
+		// things now: pgup reads without giving up the keyboard, the reading
+		// chord is what hands it over when the rows are what you want. The
+		// spellings are the register's, so this line cannot survive a rebind
+		// with the old chord on it.
+		Nav: "[pgup] or [shift+↑↓] scroll · " + keys.Bracket(keys.Draft.Reading) + " select rows · " +
+			keys.Bracket(keys.Draft.Palette) + " palette · " + keys.Bracket(keys.Draft.Mouse) + " mouse",
 	}, actions
 }
 

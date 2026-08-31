@@ -306,7 +306,7 @@ type entry struct {
 	// this entry heads.
 	groupFold foldState
 	// detailFold is the same override again for the detail bodies of the step
-	// this entry titles — what ctrl+o opens and closes. It is a
+	// this entry titles — what /step opens and closes. It is a
 	// third override rather than a level of the first two because it answers
 	// a different question: stepFold and groupFold decide which rows are on
 	// screen, this decides how much of each one is.
@@ -383,6 +383,9 @@ type Model struct {
 	// historyIdx == len(inputHistory) means "not browsing".
 	inputHistory []string
 	historyIdx   int
+	// histSearch is the open reverse search over the ring, or nil
+	// (historysearch.go).
+	histSearch *historySearch
 
 	streaming string
 	events    <-chan provider.StreamEvent
@@ -511,7 +514,7 @@ type Model struct {
 	// mouseOn turns terminal mouse reporting on (ctrl+x, /ui mouse). The
 	// zero value is off, because reporting costs the terminal its own
 	// click-drag selection and a transcript is text people copy out of. The
-	// wheel is the side of the trade with a substitute — pgup/pgdn, ctrl+e,
+	// wheel is the side of the trade with a substitute — pgup/pgdn, ctrl+o,
 	// j/k all read the transcript — so the wheel is the side you ask for.
 	mouseOn bool
 	// caps is what this terminal told shhh it can do — inline images,
@@ -786,6 +789,7 @@ type Model struct {
 	prices        *pricing.Table
 	modelName     string
 	updateNotice  string
+	keysNotice    string
 	// Reasoning effort (reasoning.go): the level this session is on,
 	// the hook that carries a change to the next request, and the persisted
 	// default with whatever outranks it — the model's three, for the setting
@@ -1302,6 +1306,20 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if keys.Match(msg, keys.Draft.Mouse) {
 			return m.toggleMouse()
 		}
+		// The open history search reads every key first: typing filters
+		// rather than edits, which is the whole difference between the search
+		// and the draft it sits under (historysearch.go). Only while the
+		// draft actually holds the keyboard — a surface that arrived on its
+		// own mid-search (an approval that landed on a quiet draft, the retry
+		// countdown) has taken it, and a search left open under one would eat
+		// the surface's keys invisibly. The search closes and gives the draft
+		// back as it was, and the key goes to whatever is really listening.
+		if m.historySearching() {
+			if m.inputLive() {
+				return m.updateHistorySearch(msg)
+			}
+			m.closeHistorySearch(true)
+		}
 		if m.state == stateDiffFull {
 			return m.updateDiffFull(msg)
 		}
@@ -1467,7 +1485,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		case keys.Is(pressed, keys.Draft.Agents):
 			// Agent manager; without a supervisor the key keeps its
-			// textarea meaning (line start).
+			// textarea meaning (character back).
 			if m.subagents != nil {
 				return m.openAgentList()
 			}
@@ -1506,11 +1524,23 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.syncViewport()
 				return m, nil
 			}
+		case keys.Is(pressed, keys.Draft.HistorySearch):
+			// Reverse search over the input ring: the shell's own key,
+			// doing in the draft what it does at the shell. Attached, the
+			// orchestrator's history is not what the keyboard is pointed at,
+			// so the chord is inert there — the textarea claims it for
+			// nothing either.
+			if m.inputLive() && m.attachedTo == "" {
+				return m.openHistorySearch()
+			}
 		case keys.Is(pressed, keys.Draft.Palette):
 			// The command palette: one prompt over the commands, the
 			// saved chats and the files this session has touched. It reads
 			// the session without touching the conversation, so it opens
-			// over a running turn like the rest of the live surfaces.
+			// over a running turn like the rest of the live surfaces — and
+			// over a draft, because tab writes the answer *into* the draft.
+			// The chord costs the textarea's own line-up, which the arrows
+			// still do; input history keeps ↑/↓ and never claimed this key.
 			// Attached, the orchestrator's commands are not what the keyboard
 			// is pointed at, so the key keeps its textarea meaning there.
 			if m.inputLive() && m.attachedTo == "" {
@@ -1524,15 +1554,15 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.inputLive() {
 				return m.enterFocusMode()
 			}
-		case keys.Is(pressed, keys.Draft.Detail):
-			// Step detail: the step in flight opens its rows'
-			// bodies without the keyboard leaving the draft. It reads the
-			// transcript and changes nothing about the conversation, so it
-			// is answered over a running turn like the rest of the live
-			// surfaces — which is the case it exists for, since the step
-			// worth asking about is usually the one still going.
-			if m.inputLive() {
-				return m.detailFromDraft()
+		case keys.Is(pressed, keys.Draft.KeyList):
+			// `?` on an empty draft prints the keys as a system row — the
+			// door Claude Code taught. With any text in the box it is a
+			// letter, because the input owns every ordinary key the moment
+			// there is a draft
+			// (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
+			if m.inputLive() && m.attachedTo == "" && !m.completionActive() &&
+				strings.TrimSpace(m.input.Value()) == "" && !m.browsingHistory() {
+				return m.systemNotice(helpKeysText())
 			}
 		case keys.Is(pressed, keys.Draft.PageUp, keys.Draft.PageDown):
 			// The pager keys read the transcript and leave the keyboard in
@@ -1601,6 +1631,24 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return m.cancelTurnNow()
 				}
 				return m, m.armPress(armCancel, keys.Shown(keys.Draft.Clear))
+			}
+			// Esc esc on an empty idle draft opens the rewind picker — the
+			// gesture three of the five harnesses share, over the surface
+			// /rewind already owns (docs/interface/surfaces.md#the-input-frame).
+			// Idle only: with a turn live the press above was the interrupt,
+			// and attached it was the detach. The window is short because the
+			// two presses are one gesture, not a press and a decision. A
+			// session with nothing to rewind to arms nothing: esc on an empty
+			// idle draft has always meant nothing, no rail advertises the
+			// gesture, and the alternative was a reflexive double-esc
+			// spending the start screen on a notice about a picker that
+			// cannot open.
+			if strings.TrimSpace(m.input.Value()) == "" && m.state == stateInput &&
+				len(m.checkpoints) > 0 {
+				if armed.open(armRewind) {
+					return m.openRewindPick()
+				}
+				return m, m.armPressFor(armRewind, keys.Shown(keys.Draft.Clear), rewindPressWindow)
 			}
 			m.input.Reset()
 			m.historyIdx = len(m.inputHistory)
@@ -3471,12 +3519,15 @@ func helpText() string {
                  allow <commands|edits>   grant a whole category
                  revoke [commands|edits]  take the grants back
   /reasoning     How much thinking the model does before it answers:
-                 off (the default), low, medium or high — Ctrl+R cycles them
+                 off (the default), low, medium or high — alt+t cycles them
                  [level]           set it for this session (also /think)
                  default [level]   show or persist the level new sessions
                                    start on (provider.reasoning)
   /context       The window as a meter, by category, with the tools itemised
   /stats         Context occupancy breakdown and cumulative session spend
+  /step          Open the in-flight step's detail: every row in it shows its
+                 output body, bounded; run it again to close (/ui verbosity
+                 high is the same thing for every step at once)
   /ui            Activity feed density, pane layout, monochrome and mouse:
                  /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>
                  (low hides counts, med collapses rows, high expands rows;
@@ -3507,7 +3558,7 @@ func helpText() string {
                  Activate a skill now: its instructions go to the model with
                  your task, as the model would load them itself. /<name>
                  does the same for a skill whose name is not a command
-  /agents        Agent manager: attach, steer, cancel, kill sub-agents (also Ctrl+A)
+  /agents        Agent manager: attach, steer, cancel, kill sub-agents (also ctrl+b)
   /agents new [brief]
                  Draft an agent profile from a sentence with the model's help:
                  answer its questions if it has any, then keep, refine or
@@ -3541,17 +3592,26 @@ flight, which is the only time they exist. The exceptions are the ones that
 rewrite or replace the running conversation (/clear, /compact, /rewind,
 /branches, /load, /chats, /model, /run); they say so and wait for the turn.
 
-Keys:
-  Enter          Send message        Shift+Enter  Insert newline
-                 (Alt+Enter and Ctrl+J do the same, for terminals that cannot
-                  report Shift+Enter)
-  Ctrl+V         Attach the clipboard: a copied screenshot or file is staged
+`) + "\n\n" + helpKeysText()
+}
+
+// helpKeysText is /help's key section on its own: what `?` on an empty draft
+// prints as a system row, so the door Claude Code taught opens the same list
+// /help holds. Every key the input offers is named here — help_test holds
+// the text to the register, so a rebind that forgets this section fails
+// rather than lying.
+func helpKeysText() string {
+	return strings.TrimSpace(`Keys:
+  enter          Send message        shift+enter  Insert newline
+                 (alt+enter and ctrl+j do the same, for terminals that cannot
+                  report shift+enter)
+  ctrl+v         Attach the clipboard: a copied screenshot or file is staged
                  for your next message, ordinary text still pastes into the
                  draft. Dragging an image into the terminal attaches it the
                  same way. What is staged shows as chips above the input
   Pasting        Text taller than 10 lines or wider than 1000 columns is
                  staged as paste-1.txt rather than typed into the draft — both
-                 through Ctrl+V and through your terminal's own paste — so a
+                 through ctrl+v and through your terminal's own paste — so a
                  stack trace does not bury the sentence it came with. Those
                  two numbers are the defaults for appearance.paste_lines and
                  appearance.paste_columns; shhh config shows this machine's,
@@ -3559,66 +3619,72 @@ Keys:
                  paste-1.txt reads it back before you send it, and a paste
                  over 256 KB is refused rather than staged — it would ride in
                  the prompt itself
-  Tab            Complete a slash command (typing / opens the menu;
-                 ↑↓ move, Enter runs the highlighted command, Esc dismisses)
-  Ctrl+K         Command palette: one prompt over commands, saved chats and
-                 the files this session touched — type to filter, Enter runs,
-                 Tab writes it into the input, Esc dismisses
-  Ctrl+R         Cycle the reasoning level: off → low → medium → high. It
+  tab            Complete a slash command (typing / opens the menu;
+                 ↑↓ move, enter runs the highlighted command, esc dismisses)
+  ctrl+a ctrl+e  The draft is a readline editor: line start and line end,
+  ctrl+k ctrl+u  kill to end and to start of line; ctrl+w deletes the word
+                 before the cursor, alt+b and alt+f move by word
+  ctrl+p         Command palette: one prompt over commands, saved chats and
+                 the files this session touched — type to filter, enter runs,
+                 tab writes it into the input, esc dismisses
+  ctrl+r         Search the input history: an incremental reverse search over
+                 what you typed before. Typing filters, ctrl+r again steps to
+                 an older match, enter keeps the match in the draft, esc puts
+                 the draft back exactly as it was
+  alt+t          Cycle the reasoning level: off → low → medium → high. It
                  changes the next model request, not the one in flight, and
                  the level is stated on the vitals rail beside the model
-  Shift+Tab      Cycle the permission mode
-                 (while the agent is working, Enter queues a steering message
+  shift+tab      Cycle the permission mode
+                 (while the agent is working, enter queues a steering message
                   that joins the conversation before the next model request)
-  Up/Down        Recall previous inputs (when the input is empty)
-  Shift+Up       Scroll the transcript a line, without leaving the prompt —
-  Shift+Down     the draft keeps the keyboard and every letter it has
-                 (Ctrl+Up and Ctrl+Down do the same, for terminals that
+  up/down        Recall previous inputs (when the input is empty)
+  shift+↑        Scroll the transcript a line, without leaving the prompt —
+  shift+↓        the draft keeps the keyboard and every letter it has
+                 (ctrl+up and ctrl+down do the same, for terminals that
                   report them)
-  Ctrl+E         Reading mode: select tool/command/diff rows (j/k), expand/collapse (Enter),
-                 pgup/pgdn page, ? lists every key the mode has, Esc or typing
+  ctrl+o         Reading mode: select tool/command/diff rows (j/k), expand/collapse (enter),
+                 pgup/pgdn page, ? lists every key the mode has, esc or typing
                  returns to the prompt
-                 (Enter on an edit row cycles collapsed → expanded → full-screen diff;
+                 (enter on an edit row cycles collapsed → expanded → full-screen diff;
                   opens over a running turn, which keeps streaming underneath;
-                  a transcript with nothing expandable opens as a plain pager)
-  Ctrl+O         Open one step's detail: every row in it shows its output body,
-                 bounded. From the prompt it opens the step in flight and the
-                 draft keeps the keyboard; in reading mode it opens the step the
-                 cursor is standing in. Press it again to close it
-                 (/ui verbosity high is the same thing for every step at once)
-  Ctrl+A         Agent manager: enter attaches to an agent's session, x cancels
+                  a transcript with nothing expandable opens as a plain pager.
+                  /step opens the in-flight step's detail from the prompt)
+  ctrl+b         Agent manager: enter attaches to an agent's session, x cancels
                  its turn, X kills it; attached, typing steers the agent,
-                 Shift+Tab sets its mode (clamped), Esc detaches
-  Ctrl+G         Open the draft in your editor: $EDITOR (then $VISUAL, then
+                 shift+tab sets its mode (clamped), esc detaches
+  ctrl+g         Open the draft in your editor: $EDITOR (then $VISUAL, then
                  vi) opens a file holding what you have typed, at the line and
                  column the cursor was on, and whatever is in the file when
                  the editor exits becomes the draft. An empty file leaves the
                  draft alone. Not while a turn is running or a decision is
                  waiting — the editor takes the terminal with it
-  Ctrl+Space     Hand the keyboard to a decision waiting on screen. An
+  ctrl+space     Hand the keyboard to a decision waiting on screen. An
                  approval that lands while you are typing does not take your
                  keys with it: its y, n and a are not live until this chord
                  gives them the keyboard, and until then every letter goes
                  into the draft. Esc leaves the decision waiting; n is how
                  you say no
-  Esc            Clear the input; on an empty draft while a turn runs, press
-                 twice to cancel the turn
-  Ctrl+C         Cancel the turn (press twice) / clear the input / quit
+  ?              On an empty draft, print this key list; with any text in the
+                 box it is a letter like any other
+  esc            Clear the input; on an empty draft while a turn runs, press
+                 twice to cancel the turn. On an empty idle draft, esc esc
+                 opens the /rewind picker
+  ctrl+c         Cancel the turn (press twice) / clear the input / quit
                  (press twice on an empty idle draft)
-  Ctrl+D         Quit — press twice; with a turn running it asks first,
+  ctrl+d         Quit — press twice; with a turn running it asks first,
                  saying what is cancelled and what the autosave keeps
-  PgUp/PgDn      Page the transcript, leaving the keyboard in the prompt.
+  pgup/pgdn      Page the transcript, leaving the keyboard in the prompt.
                  Scrolling away pauses the follow while a turn streams; the
-                 notice rail counts what is below and PgDn walks back to it
+                 notice rail counts what is below and pgdn walks back to it
   Wheel          Scroll the transcript (or the full-screen diff / review),
                  leaving the draft and the keyboard where they are
-                 (needs Ctrl+X — off by default, so the terminal keeps its
+                 (needs ctrl+x — off by default, so the terminal keeps its
                   own click-drag selection)
-  Click-drag     With the mouse on (Ctrl+X), select transcript text: the drag
+  Click-drag     With the mouse on (ctrl+x), select transcript text: the drag
                  scrolls the pane when it reaches an edge, so a selection can
-                 run past the screen; releasing copies it, Esc cancels
+                 run past the screen; releasing copies it, esc cancels
   Click          A press and release in the same cell opens the activity row
-                 under it, the way Enter does in reading mode, or answers the
+                 under it, the way enter does in reading mode, or answers the
                  key it lands on in an approval card's [y/n/a]. It never takes
                  the keyboard: the draft keeps every character
   y/n/a          Approval prompts: allow / deny / always allow this session`)

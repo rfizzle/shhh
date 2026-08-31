@@ -163,6 +163,28 @@ out, and the bytes are still on the clipboard either way.
 Typing while the agent works is steering, not a queued prompt, and the gutter
 says which of the two you are doing.
 
+The draft edits like the shell's own line. The chords a shell user's hands
+already know — line start and end, kill to end and to start, delete a word,
+move by word — reach the text rather than opening surfaces, because muscle
+memory that opens something you did not ask for is a key working against its
+owner. The same allegiance gives the shell's reverse search a home here:
+one chord opens an incremental search over what was typed before, typing
+filters it, the chord again steps to an older match, and the search states
+itself on a row under the draft — the same row the completion menu uses,
+because both are the input explaining what the next keystroke will do to it.
+Backing out restores the draft exactly as it was.
+
+An empty draft answers two gestures the other harnesses taught. A double
+Esc, idle, opens the rewind picker — going back is a gesture, not a command
+to remember — and a question mark prints the key list as a transcript row.
+Both keys stay ordinary the moment there is any text in the box: the input
+owns every ordinary key while a sentence is being typed.
+
+When a release moves keys, the first launch after the upgrade says so: one
+row on the notice rail names the new homes, once, and never again. A rebind
+paid for silently is a session of surfaces nobody asked for; a notice
+repeated on every launch is one nobody reads.
+
 A draft too long to compose in three rows leaves for your own editor and comes
 back: shhh writes what you have typed to a file, opens the editor on it where
 the cursor was, and takes whatever the file holds when the editor exits. An

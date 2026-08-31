@@ -182,7 +182,7 @@ func TestFold_EnterRestoresTheRowsInPlace(t *testing.T) {
 	m := foldModel(t)
 	m.viewport.SetLines(m.renderHistoryLines())
 
-	updated, _ := m.Update(ctrlE())
+	updated, _ := m.Update(readingChord())
 	m = updated.(Model)
 	// The folded run offers one target — its group row — not the eight rows
 	// inside it: header 1, the group at 2, the edit, the command.

@@ -21,7 +21,7 @@ fix the round limit
     --- FAIL: TestRoundLimit
 
  ✓ Done · 2 steps · 6 tools · 24.7s · $0.14  round 2/25
-▎✎ 1 file changed +12 −4 · [ctrl+e] read
+▎✎ 1 file changed +12 −4 · [ctrl+o] read
  ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 
@@ -38,11 +38,11 @@ fix the round limit
     --- FAIL: TestRoundLimit
 
  ✓ Done · 2 steps · 6 tools · 24.7s · $0.14  round 2/25
-▎✎ 1 file changed +12 −4 · [ctrl+e] read
+▎✎ 1 file changed +12 −4 · [ctrl+o] read
  ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 
-· ctrl+o · step 1's detail, one step deep
+· /step · step 1's detail, one step deep
 You
 fix the round limit
 
@@ -66,7 +66,7 @@ fix the round limit
     --- FAIL: TestRoundLimit
 
  ✓ Done · 2 steps · 6 tools · 24.7s · $0.14  round 2/25
-▎✎ 1 file changed +12 −4 · [ctrl+e] read
+▎✎ 1 file changed +12 −4 · [ctrl+o] read
  ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 
@@ -83,7 +83,7 @@ fix the round limit
     --- FAIL: TestRoundLimit
 
  ✓ Done · 2 steps · 6 tools · 24.7s · $0.14  round 2/25
-▎✎ 1 file changed +12 −4 · [ctrl+e] read
+▎✎ 1 file changed +12 −4 · [ctrl+o] read
  ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 
@@ -96,7 +96,7 @@ fix the round limit
 ▸ 2  Thread the sentinel through the… ─ ✗ 2 tools   22s
 
  ✓ Done · 2 steps · 6 tools · 24.7s · $0.14  round 2/25
-▎✎ 1 file changed +12 −4 · [ctrl+e] read
+▎✎ 1 file changed +12 −4 · [ctrl+o] read
  ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 
@@ -113,7 +113,7 @@ fix the round limit
     ␛[38;5;244m--- FAIL: TestRoundLimit␛[m
 
  ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m  ␛[38;5;244mround 2/25␛[m
-␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+e]␛[m␛[38;5;254m read␛[m
+␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m read␛[m
  ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · 21s␛[m
 
 
@@ -130,11 +130,11 @@ fix the round limit
     ␛[38;5;244m--- FAIL: TestRoundLimit␛[m
 
  ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m  ␛[38;5;244mround 2/25␛[m
-␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+e]␛[m␛[38;5;254m read␛[m
+␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m read␛[m
  ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · 21s␛[m
 
 
-· ctrl+o · step 1's detail, one step deep
+· /step · step 1's detail, one step deep
 ␛[1;38;5;254mYou␛[m
 fix the round limit
 
@@ -158,7 +158,7 @@ fix the round limit
     ␛[38;5;244m--- FAIL: TestRoundLimit␛[m
 
  ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m  ␛[38;5;244mround 2/25␛[m
-␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+e]␛[m␛[38;5;254m read␛[m
+␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m read␛[m
  ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · 21s␛[m
 
 
@@ -175,7 +175,7 @@ fix the round limit
     ␛[38;5;244m--- FAIL: TestRoundLimit␛[m
 
  ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m  ␛[38;5;244mround 2/25␛[m
-␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+e]␛[m␛[38;5;254m read␛[m
+␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m read␛[m
  ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · 21s␛[m
 
 
@@ -188,6 +188,6 @@ fix the round limit
 ␛[38;5;244m▸␛[m ␛[38;5;254m2 ␛[m ␛[38;5;254mThread the sentinel through the…␛[m ␛[38;5;244m─␛[m ␛[38;5;254m✗␛[m ␛[38;5;244m2 tools␛[m   ␛[38;5;244m22s␛[m
 
  ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 2 steps · 6 tools · 24.7s · $0.14␛[m  ␛[38;5;244mround 2/25␛[m
-␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+e]␛[m␛[38;5;254m read␛[m
+␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m1 file changed ␛[m␛[38;5;254m+12␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m read␛[m
  ␛[38;5;254m✗␛[m ␛[38;5;254mgo test ./internal/agent/... failing␛[m␛[38;5;244m · exit 1 · 21s␛[m
 

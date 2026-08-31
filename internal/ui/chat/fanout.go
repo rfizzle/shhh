@@ -17,6 +17,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 // fanoutBatch is the transcript's handle on one round's fan-out: the batch
@@ -172,7 +173,7 @@ func (m Model) fanoutBlockFor(e entry) components.FanoutBlock {
 	// The manager is where a blocked child is answered, and it opens mid-turn
 	//; the answer happens in the list itself, without a
 	// detour through the child's session.
-	block.Keys = []components.TurnKey{{Key: "[ctrl+a]", Label: "agents"}}
+	block.Keys = []components.TurnKey{{Key: keys.Bracket(keys.Draft.Agents), Label: "agents"}}
 	return block
 }
 

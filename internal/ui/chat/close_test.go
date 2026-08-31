@@ -281,7 +281,7 @@ func TestTurnClose_ReachableFromFocusMode(t *testing.T) {
 	updated, _ := m.enterFocusMode()
 	m = updated.(Model)
 	if m.state != stateFocus {
-		t.Fatalf("ctrl+e should enter focus mode, got %v", m.state)
+		t.Fatalf("ctrl+o should enter focus mode, got %v", m.state)
 	}
 	if _, ok := m.focusedClose(); !ok {
 		t.Fatalf("focus should land on the close rows, but idx %d is kind %v",

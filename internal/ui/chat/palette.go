@@ -1,12 +1,12 @@
 package chat
 
-// The command palette (docs/interface/surfaces.md#the-palette). Ctrl+K opens
+// The command palette (docs/interface/surfaces.md#the-palette). Ctrl+P opens
 // one prompt over everything the session can reach — the commands in the
 // command registry, the saved chats, and the files this session touched or
 // the checkout changed most recently — filtered as you type.
 //
 // It complements the inline `/` menu rather than replacing it: `/` completes
-// a command you are already typing, Ctrl+K finds one you are looking for.
+// a command you are already typing, Ctrl+P finds one you are looking for.
 // That difference is why the two treat an unavailable command differently.
 // The menu drops a command that needs an idle turn, because it is completing
 // something

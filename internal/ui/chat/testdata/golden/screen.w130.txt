@@ -23,7 +23,7 @@
       --- FAIL: TestRoundLimit                                                                                                    
                                                                                                                                   
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                                        round 2/25   
-  ▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+e] to use them                               all tracked in git   
+  ▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+o] to use them                               all tracked in git   
    ✗ go test ./internal/agent/... failing · exit 1 · 21s                                                                          
                                                                                                                                   
                                                                                                                                   
@@ -39,7 +39,7 @@
   │                                                                                                                            │  
   │                                                                                                                            │  
   ├─ ⏸ manual · ctx ▰▰▰▱▱▱▱▱ 39% · ↑41.2k ↓9.8k · $0.51 · gpt-4o ──────────────────────────────────────────────────────────────┤  
-  ╰─ enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+k palette · shift+tab mode ───────────────────────╯  
+  ╰─ enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+p palette · shift+tab mode ───────────────────────╯  
 
 · working · the live tail sits under the pane
    shhh chat                                                                                                                      
@@ -55,7 +55,7 @@
       --- FAIL: TestRoundLimit                                                                                                    
                                                                                                                                   
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                                        round 2/25   
-  ▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+e] to use them                               all tracked in git   
+  ▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+o] to use them                               all tracked in git   
    ✗ go test ./internal/agent/... failing · exit 1 · 21s                                                                          
                                                                                                                                   
                                                                                                                                   
@@ -87,7 +87,7 @@
       --- FAIL: TestRoundLimit                                                                                                    
                                                                                                                                   
    ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                                                                        round 2/25   
-  ▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+e] to use them                               all tracked in git   
+  ▎✎ 1 file changed +12 −4 · [v] review · [u] undo turn · [ctrl+o] to use them                               all tracked in git   
    ✗ go test ./internal/agent/... failing · exit 1 · 21s                                                                          
                                                                                                                                   
                                                                                                                                   
@@ -120,7 +120,7 @@
       ␛[38;5;245m--- FAIL: TestRoundLimit␛[m                                                                                                    
                                                                                                                                   
    ␛[92m✓␛[m ␛[38;5;252mDone␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                                        ␛[38;5;241mround 2/25␛[m   
-  ␛[38;5;214m▎✎␛[m ␛[38;5;252m1 file changed ␛[92m+12␛[m ␛[91m−4␛[38;5;241m · ␛[38;5;245m[v]␛[38;5;241m review · ␛[38;5;245m[u]␛[38;5;241m undo turn · ␛[94m[ctrl+e]␛[38;5;252m to use them␛[m                               ␛[38;5;241mall tracked in git␛[m   
+  ␛[38;5;214m▎✎␛[m ␛[38;5;252m1 file changed ␛[92m+12␛[m ␛[91m−4␛[38;5;241m · ␛[38;5;245m[v]␛[38;5;241m review · ␛[38;5;245m[u]␛[38;5;241m undo turn · ␛[94m[ctrl+o]␛[38;5;252m to use them␛[m                               ␛[38;5;241mall tracked in git␛[m   
    ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;241m · exit 1 · 21s␛[m                                                                          
                                                                                                                                   
                                                                                                                                   
@@ -136,7 +136,7 @@
   ␛[38;5;214m│␛[m   ␛[30m                                                                                                                        ␛[m ␛[38;5;214m│␛[m  
   ␛[38;5;214m│␛[m   ␛[30m                                                                                                                        ␛[m ␛[38;5;214m│␛[m  
   ␛[38;5;214m├─␛[m ␛[38;5;214m⏸ manual␛[38;5;243m · ␛[92mctx ▰▰▰▱▱▱▱▱ 39%␛[38;5;243m · ↑41.2k ↓9.8k · $0.51 · ␛[38;5;252mgpt-4o␛[m ␛[38;5;214m──────────────────────────────────────────────────────────────┤␛[m  
-  ␛[38;5;214m╰─␛[m ␛[38;5;241;3menter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+k palette · shift+tab mode␛[m ␛[38;5;214m───────────────────────╯␛[m  
+  ␛[38;5;214m╰─␛[m ␛[38;5;241;3menter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+p palette · shift+tab mode␛[m ␛[38;5;214m───────────────────────╯␛[m  
 
 · working · the live tail sits under the pane
   ␛[97;1m shhh chat␛[m                                                                                                                      
@@ -152,7 +152,7 @@
       ␛[38;5;245m--- FAIL: TestRoundLimit␛[m                                                                                                    
                                                                                                                                   
    ␛[92m✓␛[m ␛[38;5;252mDone␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                                        ␛[38;5;241mround 2/25␛[m   
-  ␛[38;5;214m▎✎␛[m ␛[38;5;252m1 file changed ␛[92m+12␛[m ␛[91m−4␛[38;5;241m · ␛[38;5;245m[v]␛[38;5;241m review · ␛[38;5;245m[u]␛[38;5;241m undo turn · ␛[94m[ctrl+e]␛[38;5;252m to use them␛[m                               ␛[38;5;241mall tracked in git␛[m   
+  ␛[38;5;214m▎✎␛[m ␛[38;5;252m1 file changed ␛[92m+12␛[m ␛[91m−4␛[38;5;241m · ␛[38;5;245m[v]␛[38;5;241m review · ␛[38;5;245m[u]␛[38;5;241m undo turn · ␛[94m[ctrl+o]␛[38;5;252m to use them␛[m                               ␛[38;5;241mall tracked in git␛[m   
    ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;241m · exit 1 · 21s␛[m                                                                          
                                                                                                                                   
                                                                                                                                   
@@ -184,7 +184,7 @@
       ␛[38;5;245m--- FAIL: TestRoundLimit␛[m                                                                                                    
                                                                                                                                   
    ␛[92m✓␛[m ␛[38;5;252mDone␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                                                                        ␛[38;5;241mround 2/25␛[m   
-  ␛[38;5;214m▎✎␛[m ␛[38;5;252m1 file changed ␛[92m+12␛[m ␛[91m−4␛[38;5;241m · ␛[38;5;245m[v]␛[38;5;241m review · ␛[38;5;245m[u]␛[38;5;241m undo turn · ␛[94m[ctrl+e]␛[38;5;252m to use them␛[m                               ␛[38;5;241mall tracked in git␛[m   
+  ␛[38;5;214m▎✎␛[m ␛[38;5;252m1 file changed ␛[92m+12␛[m ␛[91m−4␛[38;5;241m · ␛[38;5;245m[v]␛[38;5;241m review · ␛[38;5;245m[u]␛[38;5;241m undo turn · ␛[94m[ctrl+o]␛[38;5;252m to use them␛[m                               ␛[38;5;241mall tracked in git␛[m   
    ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[38;5;241m · exit 1 · 21s␛[m                                                                          
                                                                                                                                   
                                                                                                                                   

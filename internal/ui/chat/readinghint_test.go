@@ -338,11 +338,12 @@ func TestReadingKeyListCountsWhatDoesNotFit(t *testing.T) {
 	}
 }
 
-// `?` is live in reading mode and nowhere near the draft, which is invariant
-// 5 read literally: a bare letter is a letter while a sentence is being
-// typed, and reading mode is a takeover where nothing else is listening.
+// `?` is live in reading mode and, from the input, only on an empty draft:
+// invariant 5 read literally — a bare letter is a letter while a sentence is
+// being typed, and reading mode is a takeover where nothing else is
+// listening.
 func TestKeyListIsNotAKeyFromTheDraft(t *testing.T) {
-	m := frameModel(t, 100, 40)
+	m := typeChars(t, frameModel(t, 100, 40), "how do I")
 	next, _ := m.Update(tea.KeyPressMsg{Code: '?', Text: "?"})
 	after := next.(Model)
 	if after.readingKeyList {

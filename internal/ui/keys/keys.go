@@ -86,7 +86,15 @@ func Words(b Binding) string { return b.Help().Desc }
 
 // Draft is the framed input: the keys that are live while the sentence
 // being typed holds the keyboard. Every one of them is a chord or a
-// navigation key, because a bare letter here is a letter (invariant 5).
+// navigation key, because a bare letter here is a letter (invariant 5) —
+// except KeyList, which is live only while the draft is empty and there is
+// no sentence for it to be a letter of.
+//
+// The chords the shell's own line editor uses — ctrl+a, ctrl+e, ctrl+k,
+// ctrl+u, ctrl+w, alt+b, alt+f — are deliberately absent: the draft is a
+// readline-shaped editor and those keys reach it, so declaring one here
+// would take a shell user's muscle memory to open a surface they did not
+// ask for.
 type DraftKeys struct {
 	Send      Binding
 	Newline   Binding
@@ -97,8 +105,9 @@ type DraftKeys struct {
 	Reasoning Binding
 	Mode      Binding
 
-	HistoryPrev Binding
-	HistoryNext Binding
+	HistoryPrev   Binding
+	HistoryNext   Binding
+	HistorySearch Binding
 
 	ScrollUp   Binding
 	ScrollDown Binding
@@ -106,9 +115,9 @@ type DraftKeys struct {
 	PageDown   Binding
 
 	Reading Binding
-	Detail  Binding
 	Agents  Binding
 	Mouse   Binding
+	KeyList Binding
 
 	// Answer is the handover: the one key a decision that arrived on top
 	// of a sentence answers to, and the reason every other letter on the
@@ -127,22 +136,23 @@ var Draft = DraftKeys{
 	Editor:    bind("ctrl+g", "open the draft in $EDITOR", "ctrl+g"),
 	Attach:    bind("ctrl+v", "attach the clipboard", "ctrl+v"),
 	Complete:  bind("tab", "complete a slash command", "tab"),
-	Palette:   bind("ctrl+k", "the command palette", "ctrl+k"),
-	Reasoning: bind("ctrl+r", "cycle the reasoning level", "ctrl+r"),
+	Palette:   bind("ctrl+p", "the command palette", "ctrl+p"),
+	Reasoning: bind("alt+t", "cycle the reasoning level", "alt+t"),
 	Mode:      bind("shift+tab", "cycle the permission mode", "shift+tab"),
 
-	HistoryPrev: bind("↑", "recall the previous input", "up"),
-	HistoryNext: bind("↓", "the next one", "down"),
+	HistoryPrev:   bind("↑", "recall the previous input", "up"),
+	HistoryNext:   bind("↓", "the next one", "down"),
+	HistorySearch: bind("ctrl+r", "search the input history", "ctrl+r"),
 
 	ScrollUp:   bind("shift+↑", "scroll the transcript a line", "shift+up", "ctrl+up"),
 	ScrollDown: bind("shift+↓", "scroll it back", "shift+down", "ctrl+down"),
 	PageUp:     bind("pgup", "page the transcript", "pgup"),
 	PageDown:   bind("pgdn", "page it back", "pgdown"),
 
-	Reading: bind("ctrl+e", "reading mode", "ctrl+e"),
-	Detail:  bind("ctrl+o", "one step's detail", "ctrl+o"),
-	Agents:  bind("ctrl+a", "the agent manager", "ctrl+a"),
+	Reading: bind("ctrl+o", "reading mode", "ctrl+o"),
+	Agents:  bind("ctrl+b", "the agent manager", "ctrl+b"),
 	Mouse:   bind("ctrl+x", "mouse reporting on or off", "ctrl+x"),
+	KeyList: bind("?", "the keys, on an empty draft", "?"),
 
 	Answer: bind("ctrl+space", "answer it", "ctrl+space"),
 
@@ -151,12 +161,29 @@ var Draft = DraftKeys{
 	Quit:   bind("ctrl+d", "quit (press twice; a live turn asks)", "ctrl+d"),
 }
 
+// SearchKeys are the input history search's: the incremental reverse search
+// ctrl+r opens over what was typed before. It is a mode of the draft rather
+// than a panel of its own — typing edits the query, so the only keys it
+// declares are the three that do something other than filter.
+type SearchKeys struct {
+	Older  Binding
+	Keep   Binding
+	Cancel Binding
+}
+
+var Search = SearchKeys{
+	Older: bind("ctrl+r", "an older match", "ctrl+r"),
+	Keep:  bind("enter", "keep it in the draft", "enter"),
+	// The safe answer: the draft comes back exactly as it was
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	Cancel: bind("esc", "put the draft back", "esc", "ctrl+c"),
+}
+
 // ReadingKeys are reading mode's own. It is a takeover, so its letters
 // are live because nothing else is listening.
 type ReadingKeys struct {
 	Move     Binding
 	Expand   Binding
-	Detail   Binding
 	Collapse Binding
 	PageUp   Binding
 	PageDown Binding
@@ -167,13 +194,12 @@ type ReadingKeys struct {
 // All is reading mode's keys in the order it offers them, which is the order
 // `?` lists them in.
 func (k ReadingKeys) All() []Binding {
-	return []Binding{k.Move, k.Expand, k.Detail, k.Collapse, k.PageUp, k.PageDown, k.List, k.Back}
+	return []Binding{k.Move, k.Expand, k.Collapse, k.PageUp, k.PageDown, k.List, k.Back}
 }
 
 var Reading = ReadingKeys{
 	Move:     bind("j/k", "move", "j", "k", "down", "up"),
 	Expand:   bind("enter", "expand", "enter"),
-	Detail:   bind("ctrl+o", "step detail", "ctrl+o"),
 	Collapse: bind("-", "collapse", "-"),
 	PageUp:   bind("pgup", "page up", "pgup"),
 	PageDown: bind("pgdn", "page down", "pgdown"),
@@ -182,7 +208,11 @@ var Reading = ReadingKeys{
 	// by the same key. It is live here and nowhere near the draft, for the
 	// reason every bare letter in this file is.
 	List: bind("?", "keys", "?"),
-	Back: bind("q", "back to the prompt", "q", "esc", "ctrl+e", "ctrl+c"),
+	// Back does not answer the chord that opened the mode: that chord is
+	// declared once, on the input, and typing is the other way out anyway —
+	// a reader who forgot which pane they were in loses a mode, not a
+	// sentence.
+	Back: bind("q", "back to the prompt", "q", "esc", "ctrl+c"),
 }
 
 // ContextKeys are the occupancy surface's own. It is a takeover in the chat

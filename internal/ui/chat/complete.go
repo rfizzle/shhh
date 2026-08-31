@@ -116,7 +116,7 @@ var slashCommands = []slashCommand{
 				{"commands", "Only the command grants"},
 			}},
 		}},
-	{name: "/reasoning", args: "[off|low|medium|high|xhigh|max|default]", desc: "How much the model thinks before it answers (Ctrl+R cycles)",
+	{name: "/reasoning", args: "[off|low|medium|high|xhigh|max|default]", desc: "How much the model thinks before it answers",
 		aliases: []string{"/think"},
 		key:     keys.Shown(keys.Draft.Reasoning),
 		argSpecs: []argSpec{
@@ -125,6 +125,7 @@ var slashCommands = []slashCommand{
 		}},
 	{name: "/context", desc: "The window as a meter, itemised down to the tool"},
 	{name: "/stats", desc: "Context occupancy and session spend"},
+	{name: "/step", desc: "Open the in-flight step's detail (again closes it)"},
 	{name: "/status", desc: "Where the session is, and whether it is still on target"},
 	{name: "/ui", args: "verbosity <low|normal|high> | mono <on|off>", desc: "Activity feed density and monochrome mode",
 		argSpecs: []argSpec{
@@ -214,7 +215,7 @@ var slashCommands = []slashCommand{
 			argOption{"add", "Remember something"},
 			argOption{"forget", "Drop a memory by id"},
 		)},
-	{name: "/agents", args: "[new [brief]]", desc: "Agent manager (Ctrl+A); new drafts a profile from a sentence",
+	{name: "/agents", args: "[new [brief]]", desc: "Agent manager; new drafts a profile from a sentence",
 		key:      keys.Shown(keys.Draft.Agents),
 		enabled:  func(m *Model) bool { return m.subagents != nil },
 		argSpecs: staticArgs(argOption{"new", "Draft an agent profile with the model's help"})},

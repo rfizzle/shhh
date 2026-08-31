@@ -60,14 +60,9 @@ func joinSegs(segs []hintSeg) string {
 }
 
 // readingModeKeys are the mode's own keys in the artboard's order: move,
-// expand, the step's detail, collapse once the row under the cursor is open,
-// and the way back to the prompt. On a transcript with nothing to select,
-// [enter] stays on the bar in grey with its reason beside it rather than
-// disappearing.
-//
-// [ctrl+o] is the one key on the bar with no mnemonic behind it, which
-// is exactly why it is written here: the bar is where a chord is learned, and
-// a chord nobody names is a chord nobody presses.
+// expand, collapse once the row under the cursor is open, and the way back
+// to the prompt. On a transcript with nothing to select, [enter] stays on
+// the bar in grey with its reason beside it rather than disappearing.
 func (m Model) readingModeKeys() []hintSeg {
 	segs := []hintSeg{seg(keys.Reading.Move)}
 	switch {
@@ -77,7 +72,6 @@ func (m Model) readingModeKeys() []hintSeg {
 		segs = append(segs, expand)
 	default:
 		segs = append(segs, seg(keys.Reading.Expand))
-		segs = append(segs, m.detailKeySeg())
 		if m.focusedRowOpen() {
 			segs = append(segs, seg(keys.Reading.Collapse))
 		}
@@ -93,26 +87,6 @@ func (m Model) readingModeKeys() []hintSeg {
 // answer.
 func seg(b keys.Binding) hintSeg {
 	return hintSeg{key: keys.Shown(b), label: keys.Words(b)}
-}
-
-// detailKeySeg is [ctrl+o] in its three readings: the step under the cursor
-// is open and the key closes it, it is closed and the key opens it, or the
-// cursor is not in a step at all — which is said in words on the bar rather
-// than by the key quietly doing nothing.
-func (m Model) detailKeySeg() hintSeg {
-	es := *m.entries()
-	g, ok := m.stepAt(es, m.focusIdx)
-	if !ok {
-		s := seg(keys.Reading.Detail)
-		s.reason = "this row is not in a step"
-		return s
-	}
-	if m.stepDetailOpen(g, es) {
-		s := seg(keys.Reading.Detail)
-		s.label = "close the detail"
-		return s
-	}
-	return seg(keys.Reading.Detail)
 }
 
 // shortenBackKey is the first thing the key line gives up as the terminal
@@ -134,15 +108,6 @@ func shortenBackKey(segs []hintSeg) []hintSeg {
 // keys goes before any key that does something.
 func dropKeyListKey(segs []hintSeg) []hintSeg {
 	return withoutSeg(segs, keys.Shown(keys.Reading.List))
-}
-
-// dropDetailKey is the second thing the key line gives up, before any key
-// shortens its words. It is the only offer on the bar that acts past
-// the row under the cursor, and the only one with a home outside this mode —
-// the draft answers the same chord, and /help and the start screen both name
-// it — so it is the one key here a reader can lose and still find.
-func dropDetailKey(segs []hintSeg) []hintSeg {
-	return withoutSeg(segs, keys.Shown(keys.Reading.Detail))
 }
 
 // withoutSeg is a bar with one key shed. Shedding is whole-segment: nothing
@@ -187,9 +152,9 @@ func (m Model) readingPositionFields() []string {
 }
 
 // readingStepOrdinal is the number of the step the cursor is standing in, or
-// 0 where it is not in one. It asks stepAt, which is the same walk the chord
-// that opens that step makes, so the number on the bar and the step
-// ctrl+o acts on are always the same step.
+// 0 where it is not in one. It asks stepAt, which is the same walk /step
+// makes, so the number on the bar and the step
+// /step acts on are always the same step.
 func (m Model) readingStepOrdinal() int {
 	es := *m.entries()
 	if g, ok := m.stepAt(es, m.focusIdx); ok {
@@ -355,13 +320,11 @@ func stackSegs(segs []hintSeg, rail string, width, budget int) []string {
 // least.
 func (m Model) readingKeyLine(width int) string {
 	full := m.readingModeKeys()
-	// The settled order, with the register key ahead of the detail key
-	// and the detail key ahead of the rest: [?] goes, then [ctrl+o], then [q]
-	// gives up its words, then [enter] goes whole.
+	// The settled order: [?] goes first, then [q] gives up its words, then
+	// [enter] goes whole.
 	noList := dropKeyListKey(full)
-	noDetail := dropDetailKey(noList)
-	short := shortenBackKey(noDetail)
-	forms := [][]hintSeg{full, noList, noDetail, short, dropExpandKey(short)}
+	short := shortenBackKey(noList)
+	forms := [][]hintSeg{full, noList, short, dropExpandKey(short)}
 	positions := m.readingPositionFields()
 	for _, form := range forms {
 		left := joinSegs(form)

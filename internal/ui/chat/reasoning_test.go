@@ -11,7 +11,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
-func ctrlR() tea.KeyPressMsg { return tea.KeyPressMsg{Code: 'r', Mod: tea.ModCtrl} }
+func altT() tea.KeyPressMsg { return tea.KeyPressMsg{Code: 't', Mod: tea.ModAlt} }
 
 // reasoningModel is a ready session wired the way the CLI wires one: a level,
 // and the hook that carries a change to the next request.
@@ -27,7 +27,7 @@ func TestReasoning_ChordCyclesAndReachesTheNextRequest(t *testing.T) {
 	m, applied := reasoningModel(t)
 
 	for _, want := range []provider.Effort{provider.EffortLow, provider.EffortMedium, provider.EffortHigh, provider.EffortXHigh, provider.EffortMax, provider.EffortOff} {
-		updated, _ := m.Update(ctrlR())
+		updated, _ := m.Update(altT())
 		m = updated.(Model)
 		if m.effort != want {
 			t.Fatalf("chord left the session on %v, want %v", m.effort, want)
@@ -42,7 +42,7 @@ func TestReasoning_ChordLeavesTheDraftAlone(t *testing.T) {
 	m, _ := reasoningModel(t)
 	m.input.SetValue("half a sentence")
 
-	updated, _ := m.Update(ctrlR())
+	updated, _ := m.Update(altT())
 	m = updated.(Model)
 	if got := m.input.Value(); got != "half a sentence" {
 		t.Fatalf("the chord touched the draft: %q", got)
@@ -122,7 +122,7 @@ func TestReasoning_CockpitStatesTheLevelBesideTheModel(t *testing.T) {
 		t.Errorf("a session asking for no reasoning has nothing to state, got %q", seg)
 	}
 
-	updated, _ := m.Update(ctrlR())
+	updated, _ := m.Update(altT())
 	m = updated.(Model)
 	c := m.cockpitData(true)
 	if c.Reasoning != "think low" {
@@ -138,7 +138,7 @@ func TestReasoning_CockpitStatesTheLevelBesideTheModel(t *testing.T) {
 // rail to a level the requests will not use.
 func TestReasoning_WithoutAHookTheLevelDoesNotMove(t *testing.T) {
 	m := activityModel(t)
-	updated, _ := m.Update(ctrlR())
+	updated, _ := m.Update(altT())
 	m = updated.(Model)
 	if m.effort != provider.EffortOff {
 		t.Fatalf("level moved without a hook: %v", m.effort)

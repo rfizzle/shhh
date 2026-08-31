@@ -397,7 +397,7 @@ func (m *Model) uiCommand(parts []string) string {
 	switch parts[1] {
 	case "verbosity":
 		if len(parts) == 2 {
-			return fmt.Sprintf("Activity feed verbosity: %s.\nUsage: /ui verbosity <low|normal|high> — low shows step headers only and drops think rows, normal folds read-only groups, high expands every row.\nFor one step rather than all of them, ctrl+o opens the detail of the step in flight.", m.verbosity)
+			return fmt.Sprintf("Activity feed verbosity: %s.\nUsage: /ui verbosity <low|normal|high> — low shows step headers only and drops think rows, normal folds read-only groups, high expands every row.\nFor one step rather than all of them, /step opens the detail of the step in flight.", m.verbosity)
 		}
 		if len(parts) != 3 {
 			return "Usage: /ui verbosity <low|normal|high>"

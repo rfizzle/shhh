@@ -78,11 +78,21 @@ func Surfaces() []Surface {
 			Bindings: []Binding{
 				Draft.Send, Draft.Newline, Draft.Editor, Draft.Attach,
 				Draft.Complete, Draft.Palette, Draft.Reasoning, Draft.Mode,
-				Draft.HistoryPrev, Draft.HistoryNext,
+				Draft.HistoryPrev, Draft.HistoryNext, Draft.HistorySearch,
 				Draft.ScrollUp, Draft.ScrollDown, Draft.PageUp, Draft.PageDown,
-				Draft.Reading, Draft.Detail, Draft.Agents, Draft.Mouse,
+				Draft.Reading, Draft.Agents, Draft.Mouse, Draft.KeyList,
 				Draft.Answer, Draft.Clear, Draft.Cancel, Draft.Quit,
 			},
+		},
+		{
+			// The reverse search over the input ring. It is typed into from
+			// the first keystroke, like the palette: every letter filters, so
+			// the only keys on the row are the three that do not.
+			Name:     "the input history search",
+			Section:  "docs/interface/surfaces.md#the-input-frame",
+			Position: Takeover,
+			Reached:  Shown(Draft.HistorySearch),
+			Bindings: []Binding{Search.Older, Search.Keep, Search.Cancel},
 		},
 		{
 			Name:     "reading mode",

@@ -497,7 +497,7 @@ func (m Model) blockUnits(blk transcriptBlock, es []entry, width int, focus bool
 	}
 
 	if blk.step == nil {
-		// A row outside a step has no step to be opened by, so ctrl+o never
+		// A row outside a step has no step to be opened by, so /step never
 		// reaches it and [enter] is the only thing that opens it.
 		addEntry(blk.start, false)
 		return units

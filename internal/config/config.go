@@ -307,7 +307,7 @@ type AppearanceConfig struct {
 	// Mouse turns terminal mouse reporting on. It is off by default because
 	// reporting costs the terminal its own click-drag selection, and a
 	// transcript is text people copy out of — while scrolling it already has
-	// pgup/pgdn, ctrl+e and j/k. So it is the thing you opt into (ctrl+x, or
+	// pgup/pgdn, ctrl+o and j/k. So it is the thing you opt into (ctrl+x, or
 	// `/ui mouse on`), and what it buys is both halves of what it cost: the
 	// wheel, and a selection shhh owns — one that scrolls past the edge of
 	// the pane and copies on release, which the terminal's own

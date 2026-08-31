@@ -179,15 +179,15 @@ func authFailure() *provider.Failure {
 }
 
 // readingCursorOn hands a transcript row the keyboard the way a reader does:
-// ctrl+e opens reading mode, then the cursor is put on the row of that kind.
+// ctrl+o opens reading mode, then the cursor is put on the row of that kind.
 // This is the only way a transcript row's keys ever go live.
 func readingCursorOn(kind entryKind) func(*testing.T, Model) Model {
 	return func(t *testing.T, m Model) Model {
 		t.Helper()
-		next, _ := m.Update(tea.KeyPressMsg{Code: 'e', Mod: tea.ModCtrl})
+		next, _ := m.Update(tea.KeyPressMsg{Code: 'o', Mod: tea.ModCtrl})
 		rm, ok := next.(Model)
 		if !ok || rm.state != stateFocus {
-			t.Fatalf("ctrl+e should open reading mode, state %v", rm.state)
+			t.Fatalf("ctrl+o should open reading mode, state %v", rm.state)
 		}
 		for _, idx := range rm.expandableIndices() {
 			if rm.transcript[idx].kind == kind {

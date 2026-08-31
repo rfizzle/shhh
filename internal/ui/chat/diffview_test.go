@@ -112,10 +112,10 @@ func TestFocusMode_DiffRowCyclesToFullScreen(t *testing.T) {
 	m := appliedEditModel(t)
 	m.state = stateInput // the resumed stream is irrelevant to focus mode
 
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'e', Mod: tea.ModCtrl})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'o', Mod: tea.ModCtrl})
 	m = updated.(Model)
 	if m.state != stateFocus {
-		t.Fatalf("ctrl+e should enter focus mode, got state %d", m.state)
+		t.Fatalf("ctrl+o should enter focus mode, got state %d", m.state)
 	}
 
 	// Enter expands the collapsed diff row in place.

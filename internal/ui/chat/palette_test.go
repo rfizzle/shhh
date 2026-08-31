@@ -29,10 +29,10 @@ func paletteModel(t *testing.T) Model {
 // openPaletteWith opens the palette and types query into it.
 func openPaletteWith(t *testing.T, m Model, query string) Model {
 	t.Helper()
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'k', Mod: tea.ModCtrl})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'p', Mod: tea.ModCtrl})
 	m = updated.(Model)
 	if m.palette == nil || m.state != statePick {
-		t.Fatal("ctrl+k should open the palette on the picker surface")
+		t.Fatal("ctrl+p should open the palette on the picker surface")
 	}
 	return typeChars(t, m, query)
 }
@@ -251,7 +251,7 @@ func TestPalette_OpensMidTurn(t *testing.T) {
 	m := paletteModel(t)
 	m.setTurnState(stateStreaming)
 
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'k', Mod: tea.ModCtrl})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'p', Mod: tea.ModCtrl})
 	m = updated.(Model)
 
 	if m.palette == nil || m.state != statePick {
@@ -271,7 +271,7 @@ func TestPalette_NotOpenedWhileAttached(t *testing.T) {
 	m := paletteModel(t)
 	m.attachedTo = "researcher-1"
 
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'k', Mod: tea.ModCtrl})
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'p', Mod: tea.ModCtrl})
 	m = updated.(Model)
 
 	if m.palette != nil {

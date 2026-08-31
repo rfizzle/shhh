@@ -65,7 +65,7 @@ type StartScreen struct {
 	Hint string
 	// Nav is the second key line: how to move between the prompt and the
 	// transcript. It outlives the typing dismissal that takes
-	// Hint, because those keys outlive it too — the wheel, pgup and ctrl+e
+	// Hint, because those keys outlive it too — the wheel, pgup and ctrl+o
 	// work with a half-written draft in the box, which is the whole point of
 	// them.
 	Nav string

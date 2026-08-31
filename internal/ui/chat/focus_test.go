@@ -29,15 +29,15 @@ func focusModel(t *testing.T) Model {
 	return m
 }
 
-func ctrlE() tea.KeyPressMsg { return tea.KeyPressMsg{Code: 'e', Mod: tea.ModCtrl} }
+func readingChord() tea.KeyPressMsg { return tea.KeyPressMsg{Code: 'o', Mod: tea.ModCtrl} }
 
 func TestFocusMode_EnterNavigateExpand(t *testing.T) {
 	m := focusModel(t)
 
-	updated, _ := m.Update(ctrlE())
+	updated, _ := m.Update(readingChord())
 	m = updated.(Model)
 	if m.state != stateFocus {
-		t.Fatalf("ctrl+e should enter focus mode, got state %d", m.state)
+		t.Fatalf("ctrl+o should enter focus mode, got state %d", m.state)
 	}
 	// Selection starts on the most recent expandable row (the command).
 	if m.focusIdx != 2 {
@@ -82,7 +82,7 @@ func TestFocusMode_EscReturnsToInputKeepingExpansion(t *testing.T) {
 	m := focusModel(t)
 	m.input.SetValue("draft in progress")
 
-	updated, _ := m.Update(ctrlE())
+	updated, _ := m.Update(readingChord())
 	m = updated.(Model)
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'k', Text: "k"})
 	m = updated.(Model)
@@ -115,10 +115,10 @@ func TestFocusMode_NoExpandableRows(t *testing.T) {
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 
-	updated, _ = m.Update(ctrlE())
+	updated, _ = m.Update(readingChord())
 	m = updated.(Model)
 	if m.state != stateInput {
-		t.Fatalf("without expandable rows ctrl+e should stay in input state, got %d", m.state)
+		t.Fatalf("without expandable rows ctrl+o should stay in input state, got %d", m.state)
 	}
 	last := m.transcript[len(m.transcript)-1]
 	if last.kind != entrySystem || !strings.Contains(last.text, "Nothing to focus") {
@@ -131,10 +131,10 @@ func TestFocusMode_NoExpandableRows(t *testing.T) {
 func TestFocusMode_OpensOverAWorkingTurn(t *testing.T) {
 	m := focusModel(t)
 	m.state = stateStreaming
-	updated, _ := m.Update(ctrlE())
+	updated, _ := m.Update(readingChord())
 	m = updated.(Model)
 	if m.state != stateFocus {
-		t.Fatalf("ctrl+e should open focus mode while the agent works, got state %d", m.state)
+		t.Fatalf("ctrl+o should open focus mode while the agent works, got state %d", m.state)
 	}
 	if m.turnState() != stateStreaming || !m.working() {
 		t.Fatalf("the turn must keep running underneath, got turn state %d", m.turnState())

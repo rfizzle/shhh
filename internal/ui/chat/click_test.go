@@ -167,7 +167,7 @@ func TestClick_ProseDoesNothing(t *testing.T) {
 // click moves it to the row they pointed at rather than leaving it behind.
 func TestClick_ReadingModeMovesTheCursor(t *testing.T) {
 	m := clickModel(t)
-	updated, _ := m.Update(ctrlE())
+	updated, _ := m.Update(readingChord())
 	m = updated.(Model)
 	if m.focusIdx != 2 {
 		t.Fatalf("reading mode should open on the last row, got %d", m.focusIdx)

@@ -32,9 +32,9 @@
 · unpriced · tokens, never a made-up zero
  ✓ Done · 4 steps · 18 tools · 1m 04s · ~48.1k tok                                                                      round 7/25
 
-· keys waiting · the draft has the keyboard, ctrl+e takes it
+· keys waiting · the draft has the keyboard, ctrl+o takes it
  ✓ Done · 4 steps · 18 tools · 1m 04s · $0.14                                                                           round 7/25
-▎✎ 3 files changed +30 −4 · [v] review · [u] undo turn · [ctrl+e] to use them                                   all tracked in git
+▎✎ 3 files changed +30 −4 · [v] review · [u] undo turn · [ctrl+o] to use them                                   all tracked in git
  ✓ go test ./internal/agent/... passing · 41 packages · 12.8s
 
 · keys waiting · reading mode is up, the cursor is elsewhere
@@ -66,9 +66,9 @@
 · unpriced · tokens, never a made-up zero
  ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 4 steps · 18 tools · 1m 04s · ~48.1k tok␛[m                                                                      ␛[38;5;244mround 7/25␛[m
 
-· keys waiting · the draft has the keyboard, ctrl+e takes it
+· keys waiting · the draft has the keyboard, ctrl+o takes it
  ␛[38;5;254m✓␛[m ␛[38;5;254mDone␛[m␛[38;5;244m · 4 steps · 18 tools · 1m 04s · $0.14␛[m                                                                           ␛[38;5;244mround 7/25␛[m
-␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m3 files changed ␛[m␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;244m[v]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;244m[u]␛[m␛[38;5;244m undo turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+e]␛[m␛[38;5;254m to use them␛[m                                   ␛[38;5;244mall tracked in git␛[m
+␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254m3 files changed ␛[m␛[38;5;254m+30␛[m ␛[38;5;254m−4␛[m␛[38;5;244m · ␛[m␛[38;5;244m[v]␛[m␛[38;5;244m review␛[m␛[38;5;244m · ␛[m␛[38;5;244m[u]␛[m␛[38;5;244m undo turn␛[m␛[38;5;244m · ␛[m␛[38;5;254m[ctrl+o]␛[m␛[38;5;254m to use them␛[m                                   ␛[38;5;244mall tracked in git␛[m
  ␛[38;5;254m✓␛[m ␛[38;5;254mgo test ./internal/agent/... passing␛[m␛[38;5;244m · 41 packages · 12.8s␛[m
 
 · keys waiting · reading mode is up, the cursor is elsewhere

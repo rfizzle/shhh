@@ -146,10 +146,11 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 	}{
 		{"Draft", []Binding{Draft.Send, Draft.Newline, Draft.Editor, Draft.Attach,
 			Draft.Complete, Draft.Palette, Draft.Reasoning, Draft.Mode,
-			Draft.HistoryPrev, Draft.HistoryNext,
+			Draft.HistoryPrev, Draft.HistoryNext, Draft.HistorySearch,
 			Draft.ScrollUp, Draft.ScrollDown, Draft.PageUp, Draft.PageDown, Draft.Reading,
-			Draft.Detail, Draft.Agents, Draft.Mouse, Draft.Answer, Draft.Clear,
+			Draft.Agents, Draft.Mouse, Draft.KeyList, Draft.Answer, Draft.Clear,
 			Draft.Cancel, Draft.Quit}},
+		{"Search", []Binding{Search.Older, Search.Keep, Search.Cancel}},
 		{"Reading", Reading.All()},
 		{"Context", Context.All()},
 		{"Row", []Binding{Row.Review, Row.Undo, Row.Retry, Row.Continue, Row.Key,
@@ -188,6 +189,45 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 			if !on[strings.Join(b.Keys(), ",")+"|"+Shown(b)] {
 				t.Errorf("%s: %q (%s) is declared but on no surface", g.group, Shown(b), Words(b))
 			}
+		}
+	}
+}
+
+// TestReadlineChordsStayWithTheTextarea holds the draft to the shell's own
+// line editing: the chords readline spends on the line are declared on no
+// surface, so they reach the textarea, which binds all three by default.
+func TestReadlineChordsStayWithTheTextarea(t *testing.T) {
+	for _, freed := range []string{"ctrl+a", "ctrl+e", "ctrl+k"} {
+		for _, s := range all() {
+			for _, b := range s.Bindings {
+				for _, k := range b.Keys() {
+					if k == freed {
+						t.Errorf("%s: %q is claimed by %q; it belongs to the textarea",
+							s.Name, freed, Shown(b))
+					}
+				}
+			}
+		}
+	}
+}
+
+// TestRealignedChordsHaveOneHome pins the realignment: the editor, reading
+// mode and the decision handover each answer on exactly one surface, so none
+// of them can quietly grow a second meaning the way the freed chords had.
+func TestRealignedChordsHaveOneHome(t *testing.T) {
+	for _, chord := range []string{"ctrl+g", "ctrl+o", "ctrl+space"} {
+		var homes []string
+		for _, s := range all() {
+			for _, b := range s.Bindings {
+				for _, k := range b.Keys() {
+					if k == chord {
+						homes = append(homes, s.Name)
+					}
+				}
+			}
+		}
+		if len(homes) != 1 {
+			t.Errorf("%q is bound on %d surfaces (%v), want exactly one", chord, len(homes), homes)
 		}
 	}
 }

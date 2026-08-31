@@ -15,13 +15,13 @@ package chat
 //
 // The rule both halves follow: while the input owns the keyboard the viewport
 // hears no keys at all, and the only things that move it are the ones a draft
-// cannot produce — the wheel, pgup/pgdn, shift+arrows, ctrl+e.
+// cannot produce — the wheel, pgup/pgdn, shift+arrows, ctrl+o.
 //
 // That list is split in two, because it had been conflating scrolling with
 // giving up the keyboard. Reading is not a decision: the wheel always said so
 // and the pager keys did not, so pgup took the draft off the screen to answer
 // a question about the pane above it. Now every scroll gesture leaves the
-// keyboard where it is, and ctrl+e is the one transfer — the reader who wants
+// keyboard where it is, and ctrl+o is the one transfer — the reader who wants
 // the row cursor, the [enter] expansions and the keys a close row or a
 // failure offers asks for them, and gets focus mode, which is still the
 // one reading surface. This file is how the keyboard gets to it and back.
@@ -391,7 +391,7 @@ func mouseNote(on bool) string {
 	if on {
 		return "Mouse reporting on — the wheel scrolls the transcript, click-drag selects it (the drag scrolls past the edge of the pane, esc cancels, and releasing copies), and a click opens the activity row or answers the approval key under it."
 	}
-	return "Mouse reporting off — the terminal keeps click-drag selection for what is on screen; pgup, ctrl+e and j/k read the transcript."
+	return "Mouse reporting off — the terminal keeps click-drag selection for what is on screen; pgup, ctrl+o and j/k read the transcript."
 }
 
 // readingStyles is the reading rail's own group.

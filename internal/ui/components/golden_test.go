@@ -223,8 +223,8 @@ func TestGolden_TurnClose(t *testing.T) {
 			// The changeset row in the two states invariant 5 puts it in
 			//: its [v] and [u] are handled by reading mode on the row,
 			// so beside a live draft they are letters and the row says so.
-			{Label: "keys waiting · the draft has the keyboard, ctrl+e takes it", View: closed(func(c *TurnClose) {
-				c.KeysWaiting, c.Handover = true, "ctrl+e"
+			{Label: "keys waiting · the draft has the keyboard, ctrl+o takes it", View: closed(func(c *TurnClose) {
+				c.KeysWaiting, c.Handover = true, "ctrl+o"
 			})},
 			{Label: "keys waiting · reading mode is up, the cursor is elsewhere", View: closed(func(c *TurnClose) {
 				c.KeysWaiting = true
@@ -731,7 +731,7 @@ func TestGolden_FanoutBlock(t *testing.T) {
 	captureGolden(t, "fanout-block", "fan-out block", goldenWidths, func(width int) []golden.Panel {
 		flight := FanoutBlock{
 			Elapsed: "1m12s",
-			Keys:    []TurnKey{{Key: "[ctrl+a]", Label: "agents"}},
+			Keys:    []TurnKey{{Key: "[ctrl+b]", Label: "agents"}},
 			Lanes: []FanoutLane{
 				{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md",
 					Step: 2, Steps: 5, Tools: 6, Spend: "$0.02", Elapsed: "12s"},
@@ -1194,11 +1194,11 @@ func TestGolden_RecoveryRows(t *testing.T) {
 			// It is a transcript row, so the draft below usually has the
 			// keyboard and `r` is a letter — the state a reader meets first
 			// is the waiting one.
-			{Label: "keys waiting · the draft has the keyboard, ctrl+e takes it", View: row(func(r *RecoveryRow) {
+			{Label: "keys waiting · the draft has the keyboard, ctrl+o takes it", View: row(func(r *RecoveryRow) {
 				r.State, r.Qualifier, r.Outcome = RecoveryStalled, "429 rate limited", "retry in 38s"
 				r.Detail = []string{"Rate limit reached for gpt-4o. Please try again in 38s."}
 				r.Keys = []KeyOffer{{Key: "[r]", Label: "try again"}, {Key: "[p]", Label: "switch provider"}}
-				r.KeysWaiting, r.Handover = true, "ctrl+e"
+				r.KeysWaiting, r.Handover = true, "ctrl+o"
 			})},
 			{Label: "keys waiting · reading mode is up, the cursor is elsewhere", View: row(func(r *RecoveryRow) {
 				r.State, r.Qualifier, r.Outcome = RecoveryStalled, "429 rate limited", "retry in 38s"

@@ -383,6 +383,12 @@ func (m Model) noticeLine() string {
 			parts = append(parts, sty.Frame.NoticeInfo.Render(note))
 		}
 	}
+	if m.keysNotice != "" {
+		// The rebind notice (keysnotice.go): shown for one session after a
+		// release that moved keys, ahead of the transient notices because it
+		// explains what a reflex just failed to do.
+		parts = append(parts, sty.Frame.NoticeInfo.Render(m.keysNotice))
+	}
 	if m.updateNotice != "" {
 		parts = append(parts, sty.UpdateNotice.Render(m.updateNotice))
 	}
@@ -553,7 +559,13 @@ func (m Model) topRailLabels(mode frameLayout, width int) (identity, right strin
 // and its contents can never be counted differently.
 func (m Model) frameDraftLines() (lines, menu []string) {
 	lines = strings.Split(m.input.View(), "\n")
-	if m.completionActive() && m.attachedTo == "" {
+	switch {
+	case m.historySearching():
+		// The search states itself where the completion menu would: both
+		// are the input explaining what the next keystroke does to it, and
+		// the two cannot be open at once.
+		menu = m.historySearchLines()
+	case m.completionActive() && m.attachedTo == "":
 		menu = m.completionMenuLines()
 	}
 	if maxRows := m.bottomPanelHeight(); len(lines)+len(menu) > maxRows {

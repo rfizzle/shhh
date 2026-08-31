@@ -1,6 +1,6 @@
 package chat
 
-// Reasoning effort in the session: `ctrl+r` walks the four levels,
+// Reasoning effort in the session: `alt+t` walks the four levels,
 // `/reasoning [level]` says or sets one, `/reasoning default [level]` writes
 // it to the config file, and the cockpit states which one is live beside the
 // model.
@@ -19,13 +19,19 @@ import (
 	"fmt"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// keys.Draft.Reasoning cycles the level. Ctrl+R is free of the textarea's own
-// bindings and free of the terminal's, and it is the mnemonic.
+// keys.Draft.Reasoning cycles the level. Alt+T is free of the textarea's own
+// bindings and free of the terminal's, and t is for think — the same home
+// Claude Code gives the toggle. Ctrl+R went back to the shell's own meaning,
+// the input history search.
 
-// reasoningUsage is the one-line usage shown by /reasoning and /help.
-const reasoningUsage = "Usage: /reasoning <off|low|medium|high|xhigh|max> · /reasoning default [level] (Ctrl+R cycles)"
+// reasoningUsage is the one-line usage shown by /reasoning and /help. The
+// cycling key is read off the register, so the usage line cannot keep
+// naming a key the dispatch stopped answering.
+var reasoningUsage = "Usage: /reasoning <off|low|medium|high|xhigh|max> · /reasoning default [level] (" +
+	keys.Shown(keys.Draft.Reasoning) + " cycles)"
 
 // WithReasoning installs the session's reasoning level and the hook that
 // makes a change reach the next request. fn may be nil — the level is then
@@ -45,7 +51,7 @@ func (m Model) WithReasoningDefault(level, outranked string) Model {
 	return m
 }
 
-// cycleReasoning is ctrl+r: the next level, applied and stated. The statement
+// cycleReasoning is alt+t: the next level, applied and stated. The statement
 // is a notice rather than a transcript entry — it is a setting, not something
 // that happened in the conversation, and the cockpit is already showing it.
 func (m Model) cycleReasoning() (Model, string) {

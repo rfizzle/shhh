@@ -148,7 +148,7 @@ func TestGolden_StepOutline(t *testing.T) {
 		return []golden.Panel{
 			{Label: "verbosity · normal (a finished step collapses)", View: normal},
 			{Label: "verbosity · normal, step 1 opened (read-only run folds to a group row)", View: opened},
-			{Label: "ctrl+o · step 1's detail, one step deep", View: detail},
+			{Label: "/step · step 1's detail, one step deep", View: detail},
 			{Label: "verbosity · high (every row, with detail)", View: high},
 			{Label: "verbosity · low (step headers only)", View: low},
 		}
@@ -230,6 +230,47 @@ func TestGolden_PressAgain(t *testing.T) {
 			{Label: "cancel armed · a second press abandons the turn", View: armed(armCancel, "esc", stateStreaming)},
 			{Label: "quit armed · idle", View: armed(armQuit, "ctrl+d", stateInput)},
 			{Label: "quit confirm · over a live turn", View: confirm()},
+		}
+	})
+}
+
+// TestGolden_HistorySearch captures the reverse search stating itself under
+// the draft (historysearch.go): the match in the box with the query and its
+// count on the row below, the no-match reading, and the notice rail carrying
+// the one-time keys-changed row a rebinding release ships with.
+func TestGolden_HistorySearch(t *testing.T) {
+	captureGolden(t, "history-search", "the input history search", goldenWidths, func(width int) []golden.Panel {
+		search := func(query string) string {
+			m := goldenModel(t, width)
+			m.inputHistory = []string{"go test ./internal/agent/...", "go build ./..."}
+			m.historyIdx = len(m.inputHistory)
+			m.histSearch = &historySearch{query: query}
+			m.placeHistoryMatch()
+			return promptSurface(m)
+		}
+		notice := func() string {
+			m := goldenModel(t, width).WithKeysNotice(KeysChangedNotice())
+			return promptSurface(m)
+		}
+		return []golden.Panel{
+			{Label: "search · a match in the box, the query on the row", View: search("bui")},
+			{Label: "search · no match", View: search("zz")},
+			{Label: "the keys-changed notice on the rail", View: notice()},
+		}
+	})
+}
+
+// TestGolden_HelpKeys pins the key section as `?` prints it — one width,
+// because the row wraps like any system row and the words are what is under
+// test: a rebind that reaches the dispatch without reaching this sheet is
+// the drift the register exists to stop.
+func TestGolden_HelpKeys(t *testing.T) {
+	captureGolden(t, "help-keys", "the /help key section as a system row", []int{80}, func(width int) []golden.Panel {
+		m := frameModel(t, width, 40)
+		mm, _ := m.Update(tea.KeyPressMsg{Code: '?', Text: "?"})
+		m = mm.(Model)
+		return []golden.Panel{
+			{Label: "? on an empty draft", View: m.renderHistory()},
 		}
 	})
 }

@@ -769,6 +769,9 @@ func (m Model) bottomPanelHeight() int {
 			lines = m.agentListLines()
 		} else if ask := m.activeChildAsk(); ask != nil && !m.decisionUngated() {
 			lines = m.childAskPanelLines(ask)
+		} else if m.historySearching() {
+			// The history search extends the input area the way the menu does.
+			return min(inputHeight+len(m.historySearchLines()), m.maxConfirmPanelHeight())
 		} else if m.completionActive() && m.attachedTo == "" {
 			// The completion menu extends the input area.
 			return min(inputHeight+len(m.completionMenuLines()), m.maxConfirmPanelHeight())

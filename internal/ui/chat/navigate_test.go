@@ -279,10 +279,10 @@ func TestFollowNotice_SilentInReadingMode(t *testing.T) {
 		t.Fatal("precondition: the notice should be showing")
 	}
 
-	updated, _ = m.Update(ctrlE())
+	updated, _ = m.Update(readingChord())
 	m = updated.(Model)
 	if m.state != stateFocus {
-		t.Fatalf("precondition: ctrl+e should open reading mode, got state %d", m.state)
+		t.Fatalf("precondition: ctrl+o should open reading mode, got state %d", m.state)
 	}
 	if note := m.followNotice(); note != "" {
 		t.Fatalf("reading mode names the keyboard itself, got %q", note)
@@ -309,11 +309,11 @@ func TestUpFromAnEmptyPrompt_KeepsTheHistoryWhereThereIsOne(t *testing.T) {
 // still worth reading.
 func TestReadingMode_OpensOnATranscriptWithNothingExpandable(t *testing.T) {
 	m := proseModel(t)
-	updated, _ := m.Update(ctrlE())
+	updated, _ := m.Update(readingChord())
 	m = updated.(Model)
 
 	if m.state != stateFocus {
-		t.Fatalf("ctrl+e should open on prose, got state %d", m.state)
+		t.Fatalf("ctrl+o should open on prose, got state %d", m.state)
 	}
 	if m.focusIdx != -1 {
 		t.Fatalf("there is nothing to select, so there should be no cursor, got %d", m.focusIdx)
@@ -342,7 +342,7 @@ func TestReadingMode_OpensOnATranscriptWithNothingExpandable(t *testing.T) {
 // says so rather than opening an empty pager.
 func TestReadingMode_StillRefusesAnEmptyTranscript(t *testing.T) {
 	m := readyModel(t)
-	updated, _ := m.Update(ctrlE())
+	updated, _ := m.Update(readingChord())
 	m = updated.(Model)
 	if m.state != stateInput {
 		t.Fatalf("an empty transcript has nothing to read, got state %d", m.state)
@@ -369,7 +369,7 @@ func TestReadingMode_LeavesTheStartScreenAlone(t *testing.T) {
 
 func TestReadingMode_TypingReturnsToThePromptCarryingTheKey(t *testing.T) {
 	m := focusModel(t)
-	updated, _ := m.Update(ctrlE())
+	updated, _ := m.Update(readingChord())
 	m = updated.(Model)
 	if m.state != stateFocus {
 		t.Fatalf("expected focus mode, got state %d", m.state)
@@ -388,7 +388,7 @@ func TestReadingMode_TypingReturnsToThePromptCarryingTheKey(t *testing.T) {
 // Focus mode's own letters stay its own — that is what the surface is for.
 func TestReadingMode_KeepsItsOwnLetters(t *testing.T) {
 	m := focusModel(t)
-	updated, _ := m.Update(ctrlE())
+	updated, _ := m.Update(readingChord())
 	m = updated.(Model)
 
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'k', Text: "k"})
@@ -406,7 +406,7 @@ func TestReadingMode_KeepsItsOwnLetters(t *testing.T) {
 // again and goes back to the draft rather than being swallowed.
 func TestReadingMode_AnUnclaimedOfferKeyReturnsToThePrompt(t *testing.T) {
 	m := focusModel(t)
-	updated, _ := m.Update(ctrlE())
+	updated, _ := m.Update(readingChord())
 	m = updated.(Model)
 
 	updated, _ = m.Update(tea.KeyPressMsg{Code: 'v', Text: "v"})
@@ -427,7 +427,7 @@ func TestReadingRail_NamesThePaneWithTheKeyboard(t *testing.T) {
 		t.Fatal("the rail should be a plain divider while the input has the keyboard")
 	}
 
-	updated, _ := m.Update(ctrlE())
+	updated, _ := m.Update(readingChord())
 	m = updated.(Model)
 	view := m.View().Content
 	if !strings.Contains(view, "READING") {
@@ -503,8 +503,8 @@ func TestStartScreen_NavLineSurvivesTyping(t *testing.T) {
 	}
 	// Scrolling and the handover are two things now, and the line says so
 	// rather than describing them as one.
-	if !strings.Contains(view, "[ctrl+e] select rows") {
-		t.Fatal("the line should name ctrl+e as the handover, apart from the scroll keys")
+	if !strings.Contains(view, "[ctrl+o] select rows") {
+		t.Fatal("the line should name ctrl+o as the handover, apart from the scroll keys")
 	}
 }
 

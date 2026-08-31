@@ -37,11 +37,20 @@ const (
 	armCancel
 	// armQuit: the next quit press ends the session.
 	armQuit
+	// armRewind: the next esc on the empty idle draft opens the rewind
+	// picker.
+	armRewind
 )
 
 // pressAgain is how long the first press waits for its second. A constant
 // rather than a setting: it is a reflex filter, not a preference.
 const pressAgain = 2 * time.Second
+
+// rewindPressWindow is the double-esc gesture's own, much shorter, window:
+// the two presses are one gesture rather than a press and a decision, and a
+// second esc arriving late should cost nothing rather than open a surface
+// the reader had stopped asking for.
+const rewindPressWindow = 500 * time.Millisecond
 
 // armedPress is the open window: what the second press would do, the spelling
 // of the key that armed it (the hint prints it back), when the window shuts,
@@ -65,9 +74,15 @@ type armExpiredMsg struct{ seq int }
 
 // armPress opens the window and schedules its silent expiry.
 func (m *Model) armPress(kind armKind, key string) tea.Cmd {
+	return m.armPressFor(kind, key, pressAgain)
+}
+
+// armPressFor is armPress with the window named, for the one kind whose
+// window is a gesture's rather than a reflex filter's.
+func (m *Model) armPressFor(kind armKind, key string, window time.Duration) tea.Cmd {
 	seq := m.armed.seq + 1
-	m.armed = armedPress{kind: kind, key: key, deadline: time.Now().Add(pressAgain), seq: seq}
-	return tea.Tick(pressAgain, func(time.Time) tea.Msg { return armExpiredMsg{seq: seq} })
+	m.armed = armedPress{kind: kind, key: key, deadline: time.Now().Add(window), seq: seq}
+	return tea.Tick(window, func(time.Time) tea.Msg { return armExpiredMsg{seq: seq} })
 }
 
 // disarm shuts the window, keeping the sequence so a pending expiry for the

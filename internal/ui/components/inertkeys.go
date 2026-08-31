@@ -70,7 +70,7 @@ func handoverOffer(key, words string) string {
 //
 // A waiting run with no handover named is the third state and it is a real
 // one: reading mode holds the keyboard with its cursor on some other row, so
-// these keys are not live and ctrl+e is not the way to them either — the
+// these keys are not live and ctrl+o is not the way to them either — the
 // mode's own bar names that, and it is `j/k`. The keys go grey and the row
 // offers nothing, which is exactly true.
 func keyRun(keys []TurnKey, waiting bool, handover string) string {

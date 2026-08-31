@@ -26,7 +26,7 @@ fix the round limit
    ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 ────────────────────────────────────────────────────────────────────────────
-[j/k] move · [enter] expand · [q] back to the prompt              row 5 of 5
+[j/k] move · [enter] expand · [?] keys · [q] back to the prompt   row 5 of 5
 ▎this row · [v] review · [u] undo turn · [esc] nothing
 
 
@@ -43,7 +43,7 @@ fix the round limit
     --- FAIL: TestRoundLimit
 
  ✓ Done · 2 steps · 6 tools · 24.7s · $0.14                      round 2/25
-▎✎ 1 file changed +12 −4 · [ctrl+e] read                 all tracked in git
+▎✎ 1 file changed +12 −4 · [ctrl+o] read                 all tracked in git
  ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 ╭─ shhh chat ─────────────────────────────────────────────────────── idle ─╮
@@ -69,7 +69,7 @@ fix the round limit
    ✗ go test ./internal/agent/... failing · exit 1 · 21s
 
 ────────────────────────────────────────────────────────────────────────────
-[j/k] move · [enter] expand · [q] back to the prompt     row 3 of 5 · step 2
+[j/k] move · [enter] expand · [?] keys · [q] back to the prompt   row 3 of 5
 
 
 
@@ -114,7 +114,6 @@ fix the round limit
 ────────────────────────────────────────────────────────────────────────────
 [j/k] move
 [enter] expand
-[ctrl+o] step detail
 [-] collapse
 [pgup] page up
 [pgdn] page down
@@ -156,7 +155,7 @@ fix the round limit
    ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
 
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────␛[m
-␛[94m[j/k]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m expand␛[m␛[38;5;241m · ␛[m␛[94m[q]␛[m␛[38;5;241m back to the prompt␛[m              ␛[38;5;241mrow 5 of 5␛[m
+␛[94m[j/k]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m expand␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m␛[38;5;241m keys␛[m␛[38;5;241m · ␛[m␛[94m[q]␛[m␛[38;5;241m back to the prompt␛[m   ␛[38;5;241mrow 5 of 5␛[m
 ␛[38;5;214m▎␛[m␛[38;5;241mthis row · ␛[m␛[94m[v]␛[m␛[38;5;241m review␛[m␛[38;5;241m · ␛[m␛[94m[u]␛[m␛[38;5;241m undo turn␛[m␛[38;5;241m · ␛[m␛[92m[esc]␛[m␛[38;5;241m nothing␛[m
 
 
@@ -173,7 +172,7 @@ fix the round limit
     ␛[38;5;245m--- FAIL: TestRoundLimit␛[m
 
  ␛[92m✓␛[m ␛[38;5;252mDone␛[m␛[38;5;241m · 2 steps · 6 tools · 24.7s · $0.14␛[m                      ␛[38;5;241mround 2/25␛[m
-␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+e]␛[m␛[38;5;252m read␛[m                 ␛[38;5;241mall tracked in git␛[m
+␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252m1 file changed ␛[m␛[92m+12␛[m ␛[91m−4␛[m␛[38;5;241m · ␛[m␛[94m[ctrl+o]␛[m␛[38;5;252m read␛[m                 ␛[38;5;241mall tracked in git␛[m
  ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
 
 ␛[38;5;214m╭─␛[m shhh chat ␛[38;5;214m───────────────────────────────────────────────────────␛[m ␛[38;5;241midle␛[m ␛[38;5;214m─╮␛[m
@@ -199,7 +198,7 @@ fix the round limit
    ␛[91m✗␛[m ␛[38;5;252mgo test ./internal/agent/... failing␛[m␛[38;5;241m · exit 1 · 21s␛[m
 
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────␛[m
-␛[94m[j/k]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m expand␛[m␛[38;5;241m · ␛[m␛[94m[q]␛[m␛[38;5;241m back to the prompt␛[m     ␛[38;5;241mrow 3 of 5 · step 2␛[m
+␛[94m[j/k]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[enter]␛[m␛[38;5;241m expand␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m␛[38;5;241m keys␛[m␛[38;5;241m · ␛[m␛[94m[q]␛[m␛[38;5;241m back to the prompt␛[m   ␛[38;5;241mrow 3 of 5␛[m
 
 
 
@@ -244,7 +243,6 @@ fix the round limit
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────␛[m
 ␛[94m[j/k]␛[m␛[38;5;241m move␛[m
 ␛[94m[enter]␛[m␛[38;5;241m expand␛[m
-␛[94m[ctrl+o]␛[m␛[38;5;241m step detail␛[m
 ␛[94m[-]␛[m␛[38;5;241m collapse␛[m
 ␛[94m[pgup]␛[m␛[38;5;241m page up␛[m
 ␛[94m[pgdn]␛[m␛[38;5;241m page down␛[m

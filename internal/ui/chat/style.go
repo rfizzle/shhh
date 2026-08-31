@@ -45,6 +45,8 @@ type Styles struct {
 	Frame frameStyles
 	// The slash-command menu — complete.go.
 	Complete completeStyles
+	// The input history search's row — historysearch.go.
+	Search searchStyles
 	// The reading-mode hint line and the mutation rail —
 	// readinghint.go.
 	Hint hintStyles
@@ -122,6 +124,7 @@ func newStyles(p components.ColorTokens) Styles {
 		Reading:  newReadingStyles(p),
 		Frame:    newFrameStyles(p),
 		Complete: newCompleteStyles(p),
+		Search:   newSearchStyles(p),
 		Hint:     newHintStyles(p),
 		Pane:     newPaneStyles(p),
 	}

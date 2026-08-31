@@ -228,10 +228,10 @@ func TestSteps_FocusFoldsAndUnfolds(t *testing.T) {
 	m := stepsModel(t)
 	m.viewport.SetLines(m.renderHistoryLines())
 
-	updated, _ := m.Update(ctrlE())
+	updated, _ := m.Update(readingChord())
 	m = updated.(Model)
 	if m.state != stateFocus {
-		t.Fatalf("ctrl+e should enter focus mode, got state %d", m.state)
+		t.Fatalf("ctrl+o should enter focus mode, got state %d", m.state)
 	}
 	// Headers are selection targets alongside rows: header 1 (folded, so no
 	// rows), header 2 and its two rows.

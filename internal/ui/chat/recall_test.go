@@ -212,10 +212,10 @@ func TestRecall_StaysOutOfASurfaceThatHasTheKeyboard(t *testing.T) {
 	m := focusModel(t)
 	m.recordInput("an earlier prompt")
 
-	updated, _ := m.Update(ctrlE())
+	updated, _ := m.Update(readingChord())
 	m = updated.(Model)
 	if m.state != stateFocus {
-		t.Fatalf("ctrl+e should enter reading mode, got state %d", m.state)
+		t.Fatalf("ctrl+o should enter reading mode, got state %d", m.state)
 	}
 	m = pressUp(t, m)
 	if m.input.Value() != "" {
