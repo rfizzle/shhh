@@ -85,6 +85,8 @@ func TestReportGoldens(t *testing.T) {
 		{"observe", observeReport(goldenObserve()).Render(80)},
 		{"observe.w110", observeReport(goldenObserve()).Render(110)},
 		{"observe.empty", observeReport(observeData{Window: "30d"}).Render(80)},
+		{"rate", rateReport(rateEntries(), goldenNow).Render(80)},
+		{"rate.empty", rateReport(nil, goldenNow).Render(80)},
 		{"sandbox.empty", goldenEmptySandbox().Render(80)},
 	} {
 		t.Run(c.name, func(t *testing.T) { assertReportGolden(t, c.name, c.body) })
@@ -102,6 +104,7 @@ func TestReportGoldens_FitTheirWidth(t *testing.T) {
 		{"metrics", 80, metricsReport(goldenMetrics()).Render(80)},
 		{"history", 80, historyReport(goldenHistory(), "", goldenNow).Render(80)},
 		{"history.w60", 60, historyReport(goldenHistory(), "", goldenNow).Render(60)},
+		{"rate", 80, rateReport(rateEntries(), goldenNow).Render(80)},
 	} {
 		for _, line := range strings.Split(c.body, "\n") {
 			if len([]rune(line)) > c.width {

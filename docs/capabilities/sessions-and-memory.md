@@ -19,6 +19,28 @@ person who opened it to *read*.
 Snippets are the deliberate half of the same idea: a command you decided to
 keep, under a name, runnable directly.
 
+### Rating is what the accuracy figures are made of
+
+An exit code says the shell was happy. It does not say the command did what
+you asked for, and the difference between those two is exactly what an
+accuracy figure claims to know. So the only place that answer can come from
+is you, and the whole design problem is that answering has to cost nothing.
+
+It is therefore a question rather than a listing: one command at a time, the
+prompt and what came back on the same card, and an answer that is a single
+key with no confirming keystroke after it. Stopping is a key too, and it is
+the one every other surface stops on, because a screen you can only leave by
+answering every question is a screen you answer carelessly.
+
+What it says at the end is three numbers: what you answered, what you passed
+over, and how much of the list you never reached. The last of those is the
+one that decides whether running it again is worth it, and a tally that
+reported only the answers would be hiding it.
+
+Nothing about this is a terminal's privilege. Piped, scripted, or asked for
+as a plain list, it is the same walk and the same words — a command whose
+only interface is a drawn card is a command nothing can automate.
+
 ## Sessions are conversations you can come back to
 
 Chat and agent sessions persist and can be resumed — the most recent one, or

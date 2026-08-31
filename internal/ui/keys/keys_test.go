@@ -180,7 +180,7 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 		{"Screen", []Binding{Screen.Move, Screen.Take, Screen.Filter, Screen.ClearQ,
 			Screen.List, Screen.Quit, Screen.Reset, Screen.Write, Screen.Keep,
 			Screen.Copy, Screen.Rerun, Screen.Snippet, Screen.Delete, Screen.Fix,
-			Screen.Again}},
+			Screen.Again, Screen.Worked, Screen.Failed, Screen.Skip}},
 		{"OneShot", []Binding{OneShot.Run, OneShot.Confirm,
 			OneShot.Step, OneShot.DryRun, OneShot.Edit, OneShot.Revise, OneShot.Back,
 			OneShot.Alternatives, OneShot.Explain, OneShot.Copy, OneShot.Save,

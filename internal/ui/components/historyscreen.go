@@ -55,6 +55,10 @@ const (
 	// minClosestPrefix is the shortest run of the query that naming a near miss
 	// will stand on.
 	minClosestPrefix = 3
+	// minGridTarget is the shortest run of a command worth putting on the grid
+	// row itself. Below it the row's target column has been eaten by the fixed
+	// fields, and a fragment written there is one the grid clips away.
+	minGridTarget = 8
 )
 
 // HistoryRow is one past generation, already resolved to what the screen
@@ -429,19 +433,29 @@ func (h *HistoryScreen) previewTitle(row HistoryRow, width int) string {
 	return clip(left, width)
 }
 
-// commandRows is the command on the grid: the `$` glyph, the `run` verb, the
-// command itself as the target, the outcome and the duration. A command too
-// long for the pane keeps going on the detail lines under it rather than
-// being clipped away — this is the thing `[enter]` would run, so invariant 4
-// is not negotiable here.
+// commandRows is the entry's command on the grid. It is the thing `[enter]`
+// would run, which is why the preview never clips it.
 func (h *HistoryScreen) commandRows(row HistoryRow, width int) []string {
-	command := strings.Join(strings.Fields(row.Command), " ")
+	return commandGridRows(row.Command, row.Outcome, row.Duration, row.State, width)
+}
+
+// commandGridRows is a recorded shell command drawn on the column grid: the
+// `$` glyph, the `run` verb, the command as the target, its outcome and how
+// long the answer took. A command too long for the pane keeps going on the
+// detail lines under it rather than being clipped away — this is the thing
+// the surface is about, so invariant 4 is not negotiable here.
+//
+// Both surfaces that draw a stored command share it, because a command that
+// wrapped one way in the browser and another way under the rating question
+// would be two grids.
+func commandGridRows(command, outcome, duration string, state ActivityState, width int) []string {
+	command = strings.Join(strings.Fields(command), " ")
 	if command == "" {
 		return []string{sty.Dim.Render(clip("  no command was recorded", width))}
 	}
 	act := ActivityRow{
-		Kind: ActivityCommand, State: row.State, Verb: "run",
-		Outcome: row.Outcome, Duration: row.Duration, Expanded: true,
+		Kind: ActivityCommand, State: state, Verb: "run",
+		Outcome: outcome, Duration: duration, Expanded: true,
 	}
 	// The target column is what is left of the pane once the fixed fields have
 	// taken theirs; the continuation lines only give up the detail indent, so
@@ -449,8 +463,18 @@ func (h *HistoryScreen) commandRows(row HistoryRow, width int) []string {
 	// plain text rather than through wrapSpans because the grid does its own
 	// painting, and a styled run it clipped would leave half an escape sequence
 	// behind.
-	head := max(width-leadWidth-durWidth-lipgloss.Width(row.Outcome)-2, 8)
+	head := width - leadWidth - durWidth - lipgloss.Width(outcome) - 2
 	rest := max(width-detailIndent, 8)
+	// A pane whose fixed fields have taken all of it leaves the row nothing to
+	// wrap into, and a first line written anyway is one the grid clips — which
+	// loses the head of the command rather than folding it, because the
+	// continuation lines carry on from after it. So the row keeps its glyph,
+	// its verb and its outcome, and the whole command goes underneath, where
+	// there is room for it. Nothing is dropped at any width (invariant 4).
+	if head < minGridTarget {
+		act.Detail = wrapPlain(command, rest)
+		return strings.Split(act.View(width), "\n")
+	}
 	lines := wrapPlain(command, min(head, rest))
 	act.Target = lines[0]
 	act.Detail = lines[1:]

@@ -1,0 +1,10 @@
+  shhh rate — 4 unrated commands
+
+  ✓ run   4m ago · delete every log file older than a week  [exit 0]
+      find . -name '*.log' -mtime +7 -delete
+  ✗ run   1h ago · rebase onto main and force push  [exit 128]
+      git rebase main && git push --force-with-lease
+  ✓ copy  2h ago · show the ten biggest files here  [copied]
+      du -ah . | sort -rh | head -10
+  ✓ save  3h ago · count the log lines by level  [saved]
+      awk '{print $3}' app.log | sort | uniq -c

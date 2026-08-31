@@ -38,6 +38,7 @@ func TestEveryEmptyStateSpeaksTheSameWay(t *testing.T) {
 		{"shhh todo", todoReport(todo.Load(t.TempDir())).Render(200)},
 		{"shhh mcp", mcpListingReport(nil, &mcp.Catalog{}, "").Render(200)},
 		{"shhh chats", chatsReport(nil, now).Render(200)},
+		{"shhh rate", rateReport(nil, now).Render(200)},
 		{"/secret", secretsListing(secret.New())},
 		{"/sandbox scope", report.Report{Sections: []report.Section{{Rows: []report.Row{
 			report.Empty("nothing added to the scope", "/add-dir <path> puts a directory in it")}}}}.Render(200)},

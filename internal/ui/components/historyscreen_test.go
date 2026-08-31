@@ -74,6 +74,35 @@ func previewCommand(h *HistoryScreen, width int, row HistoryRow) string {
 	return strings.Join(strings.Fields(text), " ")
 }
 
+// The command on the grid is never partly lost, at any width either surface
+// that draws one can be drawn at. A pane whose fixed fields have eaten the
+// target column used to get a first line written into it anyway, which the
+// grid then clipped — so the head of the command went while the continuation
+// lines carried on from after it, which is a drop rather than a fold
+// (invariant 4).
+func TestCommandGridRows_KeepsTheWholeCommand(t *testing.T) {
+	for _, command := range []string{
+		"find . -name '*.log' -mtime +7 -delete",
+		"git rebase main && git push --force-with-lease",
+		"awk '{print $3}' app.log | sort | uniq -c",
+	} {
+		for width := 22; width <= 130; width++ {
+			for _, outcome := range []string{"exit 0", "exit 128", ""} {
+				rows := commandGridRows(command, outcome, "", ActivityDone, width)
+				// The outcome sits in its own column at the end of the first
+				// line, so it comes out before the lines are read as one command.
+				flat := ansi.Strip(strings.Join(rows, " "))
+				if outcome != "" {
+					flat = strings.Replace(flat, outcome, "", 1)
+				}
+				if flat = strings.Join(strings.Fields(flat), " "); !strings.Contains(flat, command) {
+					t.Fatalf("w%d with %q lost part of the command: %q", width, outcome, flat)
+				}
+			}
+		}
+	}
+}
+
 // The preview follows the pointer and shows the entry's own command — the
 // right pane is what makes this a browser rather than a list of prompts.
 func TestHistoryScreen_PreviewFollowsThePointer(t *testing.T) {

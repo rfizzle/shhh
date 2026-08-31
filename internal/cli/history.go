@@ -171,14 +171,37 @@ func historyReport(entries []storage.HistoryEntry, search string, now time.Time)
 // for.
 func historyReportRow(e storage.HistoryEntry, now time.Time) report.Row {
 	state, outcome := historyOutcome(e)
+	return commandReportRow(storedCommand{
+		Action: e.Action, At: e.CreatedAt, Prompt: e.Prompt, Command: e.Command,
+	}, state, outcome, now)
+}
+
+// storedCommand is the part of a recorded request that a listing draws,
+// separated from the two row types that hold it so one function can list
+// both. It is a struct rather than an interface because the two shapes have
+// these fields already and neither should grow methods to be listable.
+type storedCommand struct {
+	Action  string
+	At      time.Time
+	Prompt  string
+	Command string
+}
+
+// commandReportRow is one stored command on the report grid: what was done
+// with it as the name, how long ago as the subject, what was asked as the
+// detail, what became of it as the outcome, and the command itself on the
+// line beneath. `shhh history` and `shhh rate` both list stored commands, and
+// a row that read one way in the browser's listing and another in the rating
+// table would be two grids over one table.
+func commandReportRow(c storedCommand, state components.ActivityState, outcome string, now time.Time) report.Row {
 	row := report.Row{
 		State:   historyState(state),
-		Name:    historyAction(e),
-		Subject: historyAgo(e.CreatedAt, now),
-		Detail:  oneLineText(e.Prompt),
+		Name:    actionName(c.Action),
+		Subject: historyAgo(c.At, now),
+		Detail:  oneLineText(c.Prompt),
 		Outcome: outcome,
 	}
-	if command := oneLineText(e.Command); command != "" {
+	if command := oneLineText(c.Command); command != "" {
 		row.Body = []string{command}
 	}
 	return row
@@ -205,21 +228,21 @@ func historyEntryReport(e storage.HistoryEntry, now time.Time) report.Report {
 	}
 	return report.Report{
 		Title:    "shhh history " + strconv.FormatInt(e.ID, 10),
-		Subject:  historyAction(e),
+		Subject:  actionName(e.Action),
 		Sections: []report.Section{{Pairs: pairs}},
 	}
 }
 
-// historyAction is what was done with the command, in one word. An entry
+// actionName is what was done with the command, in one word. An entry
 // recorded before the column existed says nothing rather than guessing.
-func historyAction(e storage.HistoryEntry) string {
-	switch e.Action {
+func actionName(action string) string {
+	switch action {
 	case "run-all", "run-step":
 		return "run"
 	case "":
 		return "—"
 	}
-	return e.Action
+	return action
 }
 
 // historyState reads the browser's verdict on an entry as the report's. They
@@ -400,22 +423,31 @@ func historyRow(e storage.HistoryEntry, now time.Time) components.HistoryRow {
 // request that never produced one says what was done with it instead, and a
 // request that broke before it answered says that — never a blank.
 func historyOutcome(e storage.HistoryEntry) (components.ActivityState, string) {
-	if e.ExitCode != nil {
-		if *e.ExitCode == 0 {
-			return components.ActivityDone, components.OutcomeExit(0)
-		}
-		return components.ActivityFailed, components.OutcomeExit(int(*e.ExitCode))
-	}
-	if !e.Success {
+	if e.ExitCode == nil && !e.Success {
 		return components.ActivityFailed, "no answer"
 	}
-	switch e.Action {
+	return commandOutcome(e.ExitCode, e.Action)
+}
+
+// commandOutcome is that reading for a stored command that is known to have
+// answered: the exit code where there is one, and what was done with the
+// command where there is not. The rating screen shares it, because a command
+// that ended `exit 3` in the browser and something else under the rating
+// question would be two readings of one row.
+func commandOutcome(exit *int64, action string) (components.ActivityState, string) {
+	if exit != nil {
+		if *exit == 0 {
+			return components.ActivityDone, components.OutcomeExit(0)
+		}
+		return components.ActivityFailed, components.OutcomeExit(int(*exit))
+	}
+	switch action {
 	case "copy":
 		return components.ActivityDone, "copied"
 	case "save":
 		return components.ActivityDone, "saved"
 	case "edit", "revise":
-		return components.ActivityDone, e.Action + "ed"
+		return components.ActivityDone, action + "ed"
 	case "cancel":
 		return components.ActivityDenied, "dismissed"
 	case "run", "run-all", "run-step":

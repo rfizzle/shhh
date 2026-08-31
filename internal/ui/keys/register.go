@@ -307,6 +307,19 @@ func Programs() []Surface {
 			Bindings: []Binding{Screen.Quit},
 		},
 		{
+			// The one supporting screen that asks rather than reports, which
+			// is why its three answers are its whole register: there is
+			// nothing on it to move between, and the way out is the way out
+			// of every other one.
+			Name:     "shhh rate",
+			Section:  "docs/interface/surfaces.md#the-supporting-screens",
+			Position: Takeover,
+			Reached:  "shhh rate",
+			Bindings: []Binding{
+				Screen.Worked, Screen.Failed, Screen.Skip, Screen.List, Screen.Quit,
+			},
+		},
+		{
 			Name:     "the one-shot's action bar",
 			Section:  "docs/interface/surfaces.md#the-one-shot-result",
 			Position: Takeover,

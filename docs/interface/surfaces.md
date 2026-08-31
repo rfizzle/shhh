@@ -443,17 +443,24 @@ owns every ordinary key the moment there is a draft.
 
 ### The supporting screens
 
-Configuration, history, metrics and doctor are each re-cut from parts that
-already exist — the row, the windowed list, the meter, the card. Nothing new
-is introduced, and the gain is that a reader who knows the session already
+Configuration, history, metrics, doctor and rating are each re-cut from parts
+that already exist — the row, the windowed list, the meter, the card. Nothing
+new is introduced, and the gain is that a reader who knows the session already
 knows these. The MCP server listing is the doctor screen over servers rather
 than checks: a connect is a check, so it is the same row, and a server
 waiting on the person's trust offers it the way a pending migration offers
 the move.
 
-Two rules they share are worth stating: none of them writes to your machine
-without a card, and doctor in particular names fixes rather than applying them
-— the screen that changes settings is the one that asks first.
+Rating is the one of them that asks rather than reports, and it is drawn as
+the thing it is: one card, the answers as keys on it, and no list to walk,
+because the answer is what moves.
+
+Two rules they share are worth stating: none of them changes how your machine
+behaves without a card, and doctor in particular names fixes rather than
+applying them — the screen that changes settings is the one that asks first.
+Rating writes on a keystroke and is not the exception it looks like: what it
+writes is a record of something that already happened, and the card the
+keystroke answers is on the screen while it is pressed.
 
 Doctor has one key that changes the machine, and it is the shape of the
 exception rather than a hole in the rule. A pending migration is not a repair

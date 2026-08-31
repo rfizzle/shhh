@@ -593,6 +593,15 @@ type ScreenKeys struct {
 	Fix     Binding
 	Again   Binding
 	Apply   Binding
+
+	// Worked, Failed and Skip are `shhh rate`'s three answers. They are
+	// bare letters on a takeover, like every other key in this group, and
+	// they are here rather than on the one-shot's action bar because the
+	// question is about a command that already ran rather than about one
+	// waiting to.
+	Worked Binding
+	Failed Binding
+	Skip   Binding
 }
 
 var Screen = ScreenKeys{
@@ -618,6 +627,10 @@ var Screen = ScreenKeys{
 	// of these screens writes without asking first
 	// (docs/interface/surfaces.md#the-supporting-screens).
 	Apply: bind("a", "apply it", "a"),
+
+	Worked: bind("y", "worked", "y"),
+	Failed: bind("n", "did not", "n"),
+	Skip:   bind("s", "skip", "s"),
 }
 
 // OneShotKeys are the action bar's: the row under a generated command,
