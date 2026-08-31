@@ -587,6 +587,21 @@ is a labelled block naming one thing and one way out, with no usage dump —
 the shape a recovery row asks for. Labels are words, so `NO_COLOR` loses the
 tint and keeps every distinction.
 
+Help is sectioned by what a command *is*, not by how it sorts. One
+alphabetical list puts the two commands that are the product between two that
+maintain it, and a reader arrives already knowing which of three things they
+came for: to work, to look something up, or to set the machine up. The groups
+are those three, and the description above them is the product's own first
+sentence, so the list has something to be a list *of*.
+
+A flag appears only on the commands that can act on it. A flag inherited by
+every command in the tree is a promise most of them do not keep — `--model`
+on a command that deletes rows says the deletion can be sent to a model — and
+the reader cannot tell the real ones from the decorative ones without trying.
+The same rule applies to what a flag's help *says*: where the answer is a set
+the program already holds, help states the set rather than a copy of it that
+was accurate once.
+
 The exit banner exists because a session on the alternate screen leaves
 nothing behind. What it drew is gone in one frame, and with it the answer to
 which conversation that was, what it cost, and whether any of it was written

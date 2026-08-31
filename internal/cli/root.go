@@ -46,7 +46,14 @@ var version = "dev"
 // spawned, which is the one place the process is not the thing being asked
 // to stop.
 func Execute(ctx context.Context) error {
-	return fang.Execute(ctx, NewRootCmd(), fang.WithVersion(version))
+	return execute(ctx, NewRootCmd())
+}
+
+// execute is the dressing applied to a tree, split from building the real one
+// so a test can render a page exactly as the binary prints it rather than
+// against cobra's undressed template.
+func execute(ctx context.Context, cmd *cobra.Command) error {
+	return fang.Execute(ctx, cmd, fang.WithVersion(version))
 }
 
 func NewRootCmd() *cobra.Command {
@@ -56,9 +63,13 @@ func NewRootCmd() *cobra.Command {
 	var silentMode bool
 
 	cmd := &cobra.Command{
-		Use:     "shhh [prompt]",
-		Short:   "Natural language to shell commands",
-		Long:    "Turn plain English into executable shell commands.",
+		Use:   "shhh [prompt]",
+		Short: "Natural language to shell commands",
+		// The product's own first sentence, because help is where most
+		// readers meet it, and the sizes it names are what the command groups
+		// below sort the tree into.
+		// See docs/product.md#the-four-sizes.
+		Long:    "shhh turns what you meant into something your machine can run, and it does that at four different sizes.",
 		Version: version,
 		Args:    cobra.ArbitraryArgs,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
@@ -413,36 +424,68 @@ func NewRootCmd() *cobra.Command {
 		},
 	}
 
-	cmd.PersistentFlags().StringVar(&flags.FlagProvider, "provider", "", "provider to use: openai, anthropic, gemini, openrouter, openai-compatible")
-	cmd.PersistentFlags().StringVar(&flags.FlagModel, "model", "", "model name to use")
-	cmd.PersistentFlags().StringVar(&flags.FlagAPIKey, "api-key", "", "key for the provider, overriding the env var")
-	cmd.PersistentFlags().StringVar(&flags.FlagReasoning, "reasoning", "", "reasoning effort: off, low, medium, high, xhigh, max (default medium; fitted to the model)")
-	cmd.Flags().BoolVar(&rawMode, "raw", false, "force pipe mode: raw command output, no TUI")
+	// Declaration order is reading order: the flags that shape the one-shot
+	// first, then the ones that name a model. Sorting would interleave them,
+	// and a `--api-key` above `--explain` says nothing about either.
+	cmd.Flags().SortFlags = false
 	cmd.Flags().BoolVarP(&explainMode, "explain", "e", false, "explain the generated command at length (one line is shown by default)")
 	cmd.Flags().BoolVarP(&silentMode, "silent", "s", false, "suppress explanation output")
+	// fang draws one FLAGS section, so the break between the two kinds is a
+	// blank line hung off the last one-shot flag's description. A list you
+	// scan needs an axis, and this list has two halves.
+	// See docs/interface/surfaces.md#outside-the-tui.
+	cmd.Flags().BoolVar(&rawMode, "raw", false, "force pipe mode: raw command output, no TUI\n")
+	addModelFlags(cmd, &flags)
 
-	cmd.AddCommand(newInitCmd())
-	cmd.AddCommand(newConfigCmd())
-	cmd.AddCommand(newDoctorCmd())
-	cmd.AddCommand(newChatCmd())
-	cmd.AddCommand(newChatsCmd())
-	cmd.AddCommand(newCodeCmd())
-	cmd.AddCommand(newMetricsCmd())
-	cmd.AddCommand(newObserveCmd())
-	cmd.AddCommand(newRateCmd())
-	cmd.AddCommand(newHistoryCmd())
-	cmd.AddCommand(newSnippetsCmd())
-	cmd.AddCommand(newMemoryCmd())
-	cmd.AddCommand(newSkillsCmd())
-	cmd.AddCommand(newMCPCmd())
-	cmd.AddCommand(newTodoCmd())
-	cmd.AddCommand(newProvidersCmd())
-	cmd.AddCommand(newUpdateCmd())
-	cmd.AddCommand(newCompletionCmd(cmd))
+	// Three groups, because a reader arrives knowing which of the three they
+	// want: to work, to look something up, or to set the machine up. The
+	// dressing draws a group's title in the same style as USAGE and FLAGS, so
+	// the grouping reads as part of the same page rather than as a list with
+	// captions in it.
+	// See docs/interface/surfaces.md#outside-the-tui.
+	cmd.AddGroup(
+		&cobra.Group{ID: groupSessions, Title: "Sessions"},
+		&cobra.Group{ID: groupRecords, Title: "Records"},
+		&cobra.Group{ID: groupSetup, Title: "Setup"},
+	)
+	addGrouped(cmd, groupSessions, newChatCmd(), newCodeCmd())
+	addGrouped(cmd, groupRecords, newChatsCmd(), newHistoryCmd(), newSnippetsCmd(),
+		newMemoryCmd(), newMetricsCmd(), newObserveCmd(), newRateCmd(), newTodoCmd())
+	addGrouped(cmd, groupSetup, newInitCmd(), newConfigCmd(), newDoctorCmd(),
+		newProvidersCmd(), newSkillsCmd(), newMCPCmd(), newUpdateCmd(), newCompletionCmd(cmd))
+
+	// `help` is how cobra spells `--help`, and listing it beside the commands
+	// that do something puts the way out among the destinations. Building it
+	// here rather than leaving it to execution is what lets it be hidden:
+	// cobra makes its own only when the tree has none.
+	cmd.InitDefaultHelpCmd()
+	for _, sub := range cmd.Commands() {
+		if sub.Name() == "help" {
+			sub.Hidden = true
+		}
+	}
 
 	cmd.SetVersionTemplate(versionTemplate())
 
 	return cmd
+}
+
+// The three kinds of command shhh has: the sessions that are the product, the
+// records a session leaves behind, and the setup that makes one work.
+const (
+	groupSessions = "sessions"
+	groupRecords  = "records"
+	groupSetup    = "setup"
+)
+
+// addGrouped files each command under a group as it is added, so the whole
+// grouping is one list to read rather than a field set once in every
+// constructor.
+func addGrouped(parent *cobra.Command, group string, cmds ...*cobra.Command) {
+	for _, c := range cmds {
+		c.GroupID = group
+		parent.AddCommand(c)
+	}
 }
 
 // versionTemplate is built while the command tree is, which is before

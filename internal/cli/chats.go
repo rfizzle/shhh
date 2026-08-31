@@ -57,9 +57,7 @@ func newChatsCmd() *cobra.Command {
 			return runChatSession(cmd, args, session)
 		},
 	}
-	cmd.Flags().StringVar(&flags.FlagProvider, "provider", "", "provider to send the resumed session to")
-	cmd.Flags().StringVar(&flags.FlagModel, "model", "", "model name to use")
-	cmd.Flags().StringVar(&flags.FlagAPIKey, "api-key", "", "key for the provider, overriding the env var")
+	addModelFlags(cmd, &flags)
 	addDirFlag(cmd, &addDirs)
 	addSecretFlag(cmd, &secretFlags)
 

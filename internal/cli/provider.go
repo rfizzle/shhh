@@ -16,6 +16,7 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/mattn/go-isatty"
@@ -23,6 +24,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/ui"
+	"github.com/spf13/cobra"
 )
 
 // providerRequest is one attempt to resolve a provider: the names that were
@@ -32,6 +34,36 @@ type providerRequest struct {
 	Model    string
 	APIKey   string
 	BaseURL  string
+}
+
+// providerFlagUsage is what --provider says it takes. It is generated rather
+// than written down because the two drift: the flag named five providers for
+// as long as the registry had six, and a gateway profile — which resolves
+// exactly like a built-in — was never mentioned at all. Profiles are named
+// generically because they are registered by PersistentPreRunE, after the
+// command tree that carries this text was built. The names go on a line of
+// their own: a shell completion menu shows the first line of a description
+// and nothing else, and a sentence is more use there than half a list.
+// See docs/interface/surfaces.md#outside-the-tui.
+func providerFlagUsage() string {
+	names := provider.Available()
+	sort.Strings(names)
+	return "send the request to a built-in provider or to a gateway profile from `shhh providers`:\n" +
+		strings.Join(names, ", ")
+}
+
+// addModelFlags declares the four flags that decide where a request goes and
+// how hard the model thinks about it. They belong to the commands that talk
+// to a model and to no others, so they are declared per command rather than
+// persistently on the root: a flag on a command that cannot use it is a
+// promise the command does not keep.
+// See docs/interface/surfaces.md#outside-the-tui.
+func addModelFlags(cmd *cobra.Command, flags *resolve.Opts) {
+	cmd.Flags().StringVar(&flags.FlagProvider, "provider", "", providerFlagUsage())
+	cmd.Flags().StringVar(&flags.FlagModel, "model", "", "model name to use")
+	cmd.Flags().StringVar(&flags.FlagAPIKey, "api-key", "", "key for the provider, overriding the env var")
+	cmd.Flags().StringVar(&flags.FlagReasoning, "reasoning", "",
+		"reasoning effort: off, low, medium, high, xhigh, max (default medium; fitted to the model)")
 }
 
 // resolveProvider resolves the request, and on failure asks the card. It
