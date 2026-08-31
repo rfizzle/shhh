@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/rfizzle/shhh/internal/logs"
 	openai "github.com/sashabaranov/go-openai"
 	"google.golang.org/genai"
 )
@@ -223,7 +224,30 @@ func (c classifier) classify(err error) error {
 	}
 	f.Class = classOf(err, status, message)
 	f.RetryAfter = retryAfter(message)
+	record(f)
 	return f
+}
+
+// record writes one failure to the diagnostic log. This is the only place
+// that does, because this is the only place a provider failure is named:
+// a dialect that classified its own error would be logged twice, and one
+// that did not would be missed entirely.
+//
+// A cancellation is left out. It is the reader pressing Esc, and a log whose
+// commonest line is something the reader did on purpose is one they stop
+// reading. Everything else is a request that failed, which is what somebody
+// tailing this file came for.
+// See docs/capabilities/configuration.md#a-failure-is-written-down.
+func record(f *Failure) {
+	if f.Class == ClassCancelled {
+		return
+	}
+	// The message is the provider's own, already bounded, and already what
+	// the recovery row on the screen shows — writing it down exposes nothing
+	// the session did not.
+	logs.Logger().Error("provider request refused",
+		"provider", f.Provider, "class", string(f.Class),
+		"status", f.Status, "detail", f.Message)
 }
 
 // classOf is the mapping itself, and the only place it lives. Cancellation

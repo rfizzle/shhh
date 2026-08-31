@@ -89,6 +89,42 @@ Repository settings layer over user settings, and where a value is overridden
 the surface says so rather than showing the winner alone — otherwise a user
 reads their own configuration and cannot see why it is not what they set.
 
+## A failure is written down
+
+A refused request is a row on the screen for as long as the screen lasts.
+The log is where it is still legible in the morning, and in another pane
+while the request is failing — which is the case it exists for: you start a
+tail, you run the thing that breaks, and you watch it break.
+
+It holds what has no other surface. Every request a provider refused, in the
+words the failure taxonomy already reads it in, and whatever a library writes
+to the standard logger while the alternate screen is up — which would
+otherwise be painted over a running session. It does not hold the
+conversation: that is in the state directory too, and a log that repeated it
+would be a second transcript with none of a transcript's structure.
+
+Nothing is written until something goes wrong. A machine where nothing has
+gone wrong therefore has no log file at all, and the reader is told that
+rather than shown an empty file shhh made for itself on the way past. Once
+there is one it is bounded, and the older generation is dropped when it fills:
+a diagnostic that fills a disk is a fault of its own.
+
+Two sessions write to one file, which is what settles how the writing works.
+The bound is checked for each line rather than once when a session starts, or
+an afternoon of being refused by one provider would have no bound at all; and
+a session does not hold the file between lines, or it would go on writing
+into a generation another session had already set aside — the failure you
+opened the tail for being exactly the one that went missing. A line that
+cannot be written is dropped rather than announced, because the only place to
+announce it is the screen the session is drawing on, and the next line tries
+again: a directory that could not be reached a minute ago can be reached
+now.
+
+It is state, so it lives where state lives, and it inherits what that costs
+and what it buys — one layout on every platform, and the containment deny
+mask, which is why an approved command cannot read the log any more than it
+can read the database beside it.
+
 ## Related
 
 - [`providers.md`](providers.md) — provider and gateway settings

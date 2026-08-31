@@ -50,7 +50,7 @@ func TestHelpShowsModelFlagsOnlyWhereTheyAct(t *testing.T) {
 	// Every other command reaches no provider, so none of the four is
 	// listed — and a `--model` on `history clear` was the loudest of them.
 	for _, path := range [][]string{
-		{"history", "clear"}, {"snippets"}, {"memory"}, {"providers"},
+		{"history", "clear"}, {"logs"}, {"snippets"}, {"memory"}, {"providers"},
 		{"completion"}, {"config", "set"}, {"doctor"}, {"todo"}, {"metrics"},
 		{"chats", "list"},
 	} {

@@ -217,6 +217,7 @@ func doctorProbes() []doctorProbe {
 		{name: "migrate", run: probeMigrate},
 		{name: "model", run: probeModel},
 		{name: "store", run: probeStore},
+		{name: "logs", run: probeLogs},
 		{name: "sandbox", run: probeSandbox},
 		{name: "engine", run: probeEngine},
 		{name: "git", run: probeGit},
@@ -641,6 +642,53 @@ func doctorBytes(n int64) string {
 		return fmt.Sprintf("%.0f kB", float64(n)/(1<<10))
 	}
 	return fmt.Sprintf("%.1f MB", float64(n)/(1<<20))
+}
+
+func probeLogs(context.Context, config.Config) doctorFinding {
+	path, err := logPath()
+	if err != nil {
+		return doctorLogs("", 0, err)
+	}
+	// A log that is not there is the ordinary case on a machine where
+	// nothing has gone wrong, so its absence is a size of zero rather than
+	// an error: the row's job is to name the file a failure would be written
+	// to, and it can do that either way.
+	var size int64
+	if info, statErr := os.Stat(path); statErr == nil {
+		size = info.Size()
+	}
+	return doctorLogs(path, size, nil)
+}
+
+// doctorLogs reads the diagnostic log: where it is, and how much is in it.
+// This is the row `shhh logs` is the reader for, so the path it names is the
+// path that command opens — both ask logPath.
+//
+// It does not ask whether the file can be written, and the row above it is
+// why: the store lives in the same directory and opening it is the check
+// that fails, loudly, when that directory cannot be used. Naming the same
+// fault twice on one screen reads as two faults, and the second one here
+// would have to write a file to find out.
+func doctorLogs(path string, size int64, err error) doctorFinding {
+	if err != nil {
+		// There is nowhere for state to go at all: no XDG_DATA_HOME and no
+		// home directory to fall back on.
+		return doctorFinding{
+			Subject: "there is nowhere to write the log", Detail: err.Error(), Outcome: "nowhere",
+			State:       components.DoctorWarned,
+			Consequence: "a refused request will be reported on the screen and nowhere else",
+			FixLabel:    "show where it would go",
+			Fix: []string{
+				"shhh writes its state under $XDG_DATA_HOME, or ~/.local/share when that is unset",
+				"one of the two has to name a directory this user can create",
+			},
+		}
+	}
+	return doctorFinding{
+		Subject: shortPath(path),
+		Detail:  doctorBytes(size),
+		Outcome: "ok",
+	}
 }
 
 func probeSandbox(_ context.Context, cfg config.Config) doctorFinding {
@@ -1160,6 +1208,8 @@ func doctorQueuedSubject(name string) string {
 		return "the provider and where its key comes from"
 	case "store":
 		return "the local store"
+	case "logs":
+		return "where a refused request is written down"
 	case "sandbox":
 		return "what contains an approved command"
 	case "engine":

@@ -15,6 +15,7 @@
            
     chats [command] [--flags]          Browse, resume and tidy saved chats
     history [command] [--flags]        Browse past prompts and generated commands
+    logs [--flags]                     Print what a session wrote down when a request failed
     memory [command]                   Manage durable agent memories
     metrics [--flags]                  Show provider usage metrics
     observe [command] [--flags]        Show agent-session usage dashboards

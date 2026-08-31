@@ -73,6 +73,13 @@ func NewRootCmd() *cobra.Command {
 		Version: version,
 		Args:    cobra.ArbitraryArgs,
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			// First, so that nothing after it can fail before there is
+			// somewhere to write that down, and so that a library reaching
+			// for the standard logger finds the file rather than the screen
+			// a session is about to borrow. It opens nothing: a command that
+			// logs nothing leaves no file behind.
+			openLog()
+
 			cfg, err := config.Load()
 			if err != nil {
 				return err
@@ -449,8 +456,9 @@ func NewRootCmd() *cobra.Command {
 		&cobra.Group{ID: groupSetup, Title: "Setup"},
 	)
 	addGrouped(cmd, groupSessions, newChatCmd(), newCodeCmd())
-	addGrouped(cmd, groupRecords, newChatsCmd(), newHistoryCmd(), newSnippetsCmd(),
-		newMemoryCmd(), newMetricsCmd(), newObserveCmd(), newRateCmd(), newTodoCmd())
+	addGrouped(cmd, groupRecords, newChatsCmd(), newHistoryCmd(), newLogsCmd(),
+		newSnippetsCmd(), newMemoryCmd(), newMetricsCmd(), newObserveCmd(),
+		newRateCmd(), newTodoCmd())
 	addGrouped(cmd, groupSetup, newInitCmd(), newConfigCmd(), newDoctorCmd(),
 		newProvidersCmd(), newSkillsCmd(), newMCPCmd(), newUpdateCmd(), newCompletionCmd(cmd))
 

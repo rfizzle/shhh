@@ -13,11 +13,15 @@ import (
 	"errors"
 	"net"
 	"net/url"
+	"os"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"testing"
 	"time"
 
 	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/rfizzle/shhh/internal/logs"
 	openai "github.com/sashabaranov/go-openai"
 	"google.golang.org/genai"
 )
@@ -240,5 +244,42 @@ func TestFailure_ErrorAndUnwrap(t *testing.T) {
 func TestClassify_NilStaysNil(t *testing.T) {
 	if err := newClassifier("openai", "", "")(nil); err != nil {
 		t.Errorf("classifying nil returned %v", err)
+	}
+}
+
+// Every refused request lands in the diagnostic log, because this is the
+// only place a failure is named — and a cancellation does not, because it is
+// the reader pressing Esc rather than anything going wrong.
+func TestClassify_WritesTheRefusalToTheLog(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "shhh.log")
+	logs.To(path)
+	t.Cleanup(func() { logs.To("") })
+
+	classify := newClassifier("openai", "OPENAI_API_KEY", "sk-live-abcd4f9c")
+	// The classified errors themselves are what other tests here assert; the
+	// question this one asks is what reached the file.
+	_ = classify(&openai.APIError{HTTPStatusCode: 429, Message: "rate limit reached"})
+	_ = classify(context.Canceled)
+
+	body, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("nothing was written to the log: %v", err)
+	}
+	written := string(body)
+	for _, want := range []string{"provider request refused", "provider=openai", `class="rate limited"`, "status=429"} {
+		if !strings.Contains(written, want) {
+			t.Errorf("the refusal does not say %s:\n%s", want, written)
+		}
+	}
+	if strings.Contains(written, "cancelled") {
+		t.Errorf("a cancellation reached the log:\n%s", written)
+	}
+	// What the recovery row needs to make an honest offer — which key was
+	// sent, and where it was looked for — is for the screen. Neither is
+	// worth a line in a file that outlives the session.
+	for _, secret := range []string{"sk-live-abcd4f9c", "4f9c", "OPENAI_API_KEY"} {
+		if strings.Contains(written, secret) {
+			t.Errorf("the log carries %q:\n%s", secret, written)
+		}
 	}
 }

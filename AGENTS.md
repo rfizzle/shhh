@@ -124,6 +124,7 @@ internal/
   tools/                   Tool definitions and execution (read-only, mutating, execute_command)
   config/                  TOML config loading (~/.config/shhh/config.toml)
   storage/                 SQLite persistence (sessions, memories, observations, snippets)
+  logs/                    The diagnostic log: the file a refused request is written to, and the tail `shhh logs` reads
   sandbox/                 OS-level process containment (bubblewrap on Linux, Seatbelt on macOS)
   lsp/                     Language server integration (auto-detected, lazy-started)
   quality/                 Quality-gate runner (configurable check suites)
@@ -213,6 +214,16 @@ domain structs (`providers_json.go`, `metrics_json.go`, `memoryJSON`,
 `jsonMessages` for both transcript emitters) through the shared `writeJSON`.
 The fixtures are `internal/cli/testdata/report`, written by
 `go test ./internal/cli -update-golden`.
+
+### The diagnostic log
+
+`internal/logs` is the file behind `shhh logs` ([`docs/capabilities/configuration.md#a-failure-is-written-down`](docs/capabilities/configuration.md#a-failure-is-written-down)). It is a leaf package — it takes the path rather than asking `storage.Dir()`, because `internal/storage` is in `internal/provider`'s import graph and the provider is what writes to it. `logs.Logger()` is an `*slog.Logger` over a sink that discards until `logs.To(path)` names a file; `To` also calls `slog.SetDefault`, which re-points the `log` package, so a dependency's stray line lands in the file instead of on top of a session.
+
+The sink opens the file per record and closes it again — don't "optimise" that into a held handle. Three things depend on it: `MaxBytes` is a bound rather than a size read once at startup; two sessions share one file, and a held handle goes on writing into the generation the other one renamed, which the next rotation then unlinks; and a directory that was unwritable a minute ago is retried instead of costing the session its whole log. The file is `O_APPEND` at 0600, one generation is set aside at `MaxBytes`, and a record that cannot be written is dropped silently — the store's own doctor row is what fails when that directory is unusable, and duplicating it in the log's row would name one fault twice.
+
+There is exactly one writer: `record` in `internal/provider/failure.go`, on the classifier every dialect's error already passes through — a cancellation is not logged. Adding a second means a call at a seam that is the *only* place its event is named, the way the classifier is; a formatted line sprayed at a call site is how a log stops being worth tailing.
+
+`internal/cli/logs.go` owns the path (`logPath`, beside `doctorStorePath`'s own join), `openLog` in `root.go`'s `PersistentPreRunE`, and `runLogs` — the tail's offset is what the follow resumes from. `probeLogs`/`doctorLogs` in `doctor.go` is the row that names the file, and it asks `logPath` so a check cannot report a path the reader cannot open.
 
 ### TUI Components
 
