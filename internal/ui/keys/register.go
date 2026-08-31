@@ -82,6 +82,7 @@ func Surfaces() []Surface {
 				Draft.HistoryPrev, Draft.HistoryNext, Draft.HistorySearch,
 				Draft.ScrollUp, Draft.ScrollDown, Draft.PageUp, Draft.PageDown,
 				Draft.Reading, Draft.Agents, Draft.Mouse, Draft.KeyList,
+				Draft.Suspend, Draft.Redraw,
 				Draft.Answer, Draft.Clear, Draft.Cancel, Draft.Quit,
 			},
 		},

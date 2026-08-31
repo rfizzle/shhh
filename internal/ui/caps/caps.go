@@ -79,6 +79,14 @@ type Terminal struct {
 	// saying it can raise a desktop notification with a title.
 	Notifications bool
 
+	// Dumb is a terminal that has said in advance that it cannot do any of
+	// this: TERM=dumb is the one answer that arrives without being asked.
+	// It is not a capability that came back false — it is a terminal
+	// promising there is no escape sequence worth sending it, which is why
+	// the two surfaces shhh draws outside its own rectangle (the tab's title
+	// and its progress state) read this rather than a query's silence.
+	Dumb bool
+
 	// Asked is true once the questions have gone out. Until then every
 	// field above is false because nothing has been asked, not because the
 	// terminal said no.
@@ -119,6 +127,7 @@ func (t *Terminal) Query(environ []string) tea.Cmd {
 	}
 	env := uv.Environ(environ)
 	t.Asked = true
+	t.Dumb = env.Getenv("TERM") == "dumb"
 	t.Held = held(env)
 	_, t.tmux = env.LookupEnv("TMUX")
 

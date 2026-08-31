@@ -135,6 +135,7 @@ var slashCommands = []slashCommand{
 				{"mouse", "Whether shhh or the terminal owns the mouse"},
 				{"notify", "Say so when a turn stops and you are elsewhere"},
 				{"title", "Name an unnamed session after its first turn"},
+				{"window", "Name the terminal's own tab after this session"},
 				{"terminal", "What this terminal can do"},
 			}},
 			{after: []string{"verbosity"}, options: []argOption{
@@ -157,6 +158,10 @@ var slashCommands = []slashCommand{
 			{after: []string{"title"}, options: []argOption{
 				{"on", "The summary model names the session after its first turn"},
 				{"off", "Sessions keep the timestamp they were opened at"},
+			}},
+			{after: []string{"window"}, options: []argOption{
+				{"on", "The tab says the command, the directory, and ⏸ while a decision waits"},
+				{"off", "The tab keeps whatever your terminal puts there"},
 			}},
 		}},
 	{name: "/add-dir", args: "[<path>|drop <path>]", desc: "The directories this session may work in",

@@ -573,6 +573,27 @@ func configSettings() []configSetting {
 			return boolOptions("a turn that stops while the window is not in front raises one notification",
 				"a turn that stops while you are elsewhere waits silently")
 		},
+	}, {
+		group: "WORKSPACE", key: "appearance.window_title", label: "window title",
+		// Not flag(), for the reason appearance.notify is not: the default is
+		// on, so an unset file and a file that says true are different facts.
+		read: func(c config.Config) string {
+			if c.Appearance.WindowTitle == nil {
+				return ""
+			}
+			return strconv.FormatBool(*c.Appearance.WindowTitle)
+		},
+		show: func(raw string) (string, components.FieldTone, string) {
+			if raw == "false" {
+				return "off", components.ToneNeutral, "the tab keeps whatever your terminal puts there"
+			}
+			return "on", components.ToneSafe, ""
+		},
+		fallback: "on",
+		options: func(config.Config) []components.SelectOption {
+			return boolOptions("the terminal's tab says the command, the directory and a waiting decision",
+				"the tab keeps whatever your terminal puts there")
+		},
 	}}
 }
 

@@ -90,6 +90,13 @@ Keys:
                  the editor exits becomes the draft. An empty file leaves the   
                  draft alone. Not while a turn is running or a decision is      
                  waiting — the editor takes the terminal with it                
+  ctrl+z         Suspend shhh and go back to the shell; fg brings it back       
+                 with the screen as you left it. Refused while a turn is        
+                 running or a decision is waiting — a stopped shhh is not       
+                 reading the stream it asked for                                
+  ctrl+l         Redraw the screen from what the session already holds, for a   
+                 display something else wrote over. The draft, the history      
+                 and any selection are untouched                                
   ctrl+space     Hand the keyboard to a decision waiting on screen. An          
                  approval that lands while you are typing does not take your    
                  keys with it: its y, n and a are not live until this chord     
@@ -207,6 +214,13 @@ Keys:
 ␛[3;38;5;241m                 the editor exits becomes the draft. An empty file leaves the␛[m   
 ␛[3;38;5;241m                 draft alone. Not while a turn is running or a decision is␛[m      
 ␛[3;38;5;241m                 waiting — the editor takes the terminal with it␛[m                
+␛[3;38;5;241m  ctrl+z         Suspend shhh and go back to the shell; fg brings it back␛[m       
+␛[3;38;5;241m                 with the screen as you left it. Refused while a turn is␛[m        
+␛[3;38;5;241m                 running or a decision is waiting — a stopped shhh is not␛[m       
+␛[3;38;5;241m                 reading the stream it asked for␛[m                                
+␛[3;38;5;241m  ctrl+l         Redraw the screen from what the session already holds, for a␛[m   
+␛[3;38;5;241m                 display something else wrote over. The draft, the history␛[m      
+␛[3;38;5;241m                 and any selection are untouched␛[m                                
 ␛[3;38;5;241m  ctrl+space     Hand the keyboard to a decision waiting on screen. An␛[m          
 ␛[3;38;5;241m                 approval that lands while you are typing does not take your␛[m    
 ␛[3;38;5;241m                 keys with it: its y, n and a are not live until this chord␛[m     

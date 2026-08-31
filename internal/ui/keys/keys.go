@@ -128,6 +128,14 @@ type DraftKeys struct {
 	Mouse   Binding
 	KeyList Binding
 
+	// Suspend hands the terminal back to the shell, and Redraw takes the
+	// screen back. Neither is shhh's own idea: ctrl+z is what the shell does
+	// with a foreground job, and ctrl+l is what every full-screen program
+	// repaints on. A chord the reader's hands already produce is a chord
+	// this surface has to answer, or the reflex lands somewhere worse.
+	Suspend Binding
+	Redraw  Binding
+
 	// Answer is the handover: the one key a decision that arrived on top
 	// of a sentence answers to, and the reason every other letter on the
 	// card stays a letter.
@@ -164,6 +172,9 @@ var Draft = DraftKeys{
 	Agents:  bind("ctrl+b", "the agent manager", "ctrl+b"),
 	Mouse:   bind("ctrl+x", "mouse reporting on or off", "ctrl+x"),
 	KeyList: bind("?", "the keys, on an empty draft", "?"),
+
+	Suspend: bind("ctrl+z", "suspend shhh (idle only)", "ctrl+z"),
+	Redraw:  bind("ctrl+l", "redraw the screen", "ctrl+l"),
 
 	Answer: bind("ctrl+space", "answer it", "ctrl+space"),
 

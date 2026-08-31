@@ -243,6 +243,17 @@ standing. The editor has the terminal while it runs, which is why the key is
 refused rather than queued while a turn is in flight or a decision is waiting
 — neither can be watched from inside somebody else's editor.
 
+Two chords belong to the terminal rather than to the session, and shhh
+answers both because a terminal in raw mode will not. One suspends shhh back
+to the shell, and it is refused while a turn is in flight or a decision is
+waiting, for the reason the editor is: a stopped process is not reading the
+stream it asked for, and a request that times out while nobody is there is
+worse than being told to press the key again in a moment. The other redraws
+the screen from what the session already holds — the way back from a display
+something else wrote over — and it changes nothing: the draft, the history and
+any live selection are the same afterwards, because none of them lived on the
+screen.
+
 Abandoning work is never one keystroke. A turn in flight is minutes of work,
 and the keys that end things are the keys a reflex produces — so the first
 press of an interrupt opens a short window and the rails say what a second
@@ -562,6 +573,35 @@ The exit banner exists because a session on the alternate screen leaves
 nothing behind. What it drew is gone in one frame, and with it the answer to
 which conversation that was, what it cost, and whether any of it was written
 down. The banner is what the terminal keeps.
+
+### What the tab says
+
+A session borrows a window, and the window has a frame shhh does not draw:
+the tab's own name, and the progress state a terminal shows beside it. Both
+are worth something to a reader with eight tabs open, and neither is worth
+guessing at — so both are what the current frame says they are, and both stop
+the moment the session does.
+
+The tab is called after the session: the command that is running and the
+directory it is running in, shortened to the couple of segments that tell one
+checkout from another. A waiting decision moves to the front of that name
+under the same glyph every gated state wears, because it is the one thing
+happening in here that the reader has to come back for, and the tab is where
+they will see it from the next window over. It is a switch of its own, and a
+different one from the switch that names the saved conversation: one is what
+the window manager shows, the other is what the transcript is filed under.
+
+The progress state is indeterminate while a turn runs, red for a moment when
+one breaks, and absent otherwise. There is no percentage and there will not be
+one — a turn does not know how much of itself is left, and a bar that guesses
+is a bar that lies. It rides the notification switch rather than the title's,
+because it makes the notification's promise without words: shhh getting your
+attention while you are looking somewhere else. Someone who turned the summons
+off did not mean *but keep the light on*.
+
+A terminal that said in advance it is a dumb one is told neither. That is a
+different fact from a capability query that came back empty, and it is the
+terminal's own word rather than an inference.
 
 ### When you are not there
 

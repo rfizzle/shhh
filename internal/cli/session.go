@@ -656,6 +656,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithMouse(cfg.Appearance.Mouse).
 		WithPasteThresholds(cfg.Appearance.PasteLines, cfg.Appearance.PasteColumns).
 		WithNotify(cfg.NotifyEnabled()).
+		WithWindowTitle(cfg.WindowTitleEnabled()).
 		WithDefaults(chat.Defaults{
 			Model:      cfg.Provider.Model,
 			AgentModel: cfg.Agents.Model,

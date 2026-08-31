@@ -74,6 +74,24 @@ func TestQuery_AsksTheWholeSetOnAnOrdinaryTerminal(t *testing.T) {
 	}
 }
 
+// A dumb terminal is the one answer that arrives without being asked, and it
+// is read from the environment the probe was handed — over ssh that is the
+// client's terminal rather than this machine's.
+func TestQuery_RecordsADumbTerminal(t *testing.T) {
+	withProfile(t, colorprofile.ANSI256)
+	var term Terminal
+	term.Query([]string{"TERM=dumb"})
+	if !term.Dumb {
+		t.Error("TERM=dumb was not recorded")
+	}
+
+	var ordinary Terminal
+	ordinary.Query([]string{"TERM=xterm-256color"})
+	if ordinary.Dumb {
+		t.Error("an ordinary terminal was called dumb")
+	}
+}
+
 func TestQuery_SaysNothingWithNoTerminalToSayItTo(t *testing.T) {
 	withProfile(t, colorprofile.NoTTY)
 	var term Terminal

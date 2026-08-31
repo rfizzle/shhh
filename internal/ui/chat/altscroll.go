@@ -51,7 +51,11 @@ package chat
 // worst a stray synthetic arrow can now do is walk the draft's cursor or step
 // the input history, never drop the reader into a mode they did not ask for.
 
-import "io"
+import (
+	"io"
+
+	tea "charm.land/bubbletea/v2"
+)
 
 const (
 	// saveAlternateScroll pushes the terminal's current 1007 setting onto its
@@ -76,3 +80,13 @@ func SuppressAlternateScroll(w io.Writer) func() {
 	_, _ = io.WriteString(w, saveAlternateScroll+disableAlternateScroll)
 	return func() { _, _ = io.WriteString(w, restoreAlternateScroll) }
 }
+
+// resumeAlternateScroll asks again, after the terminal has been out of shhh's
+// hands: a ctrl+z, and whatever the shell did with the screen before fg
+// brought this back (terminal.go).
+//
+// It sends the disable alone rather than the save-and-disable pair. The saved
+// slot holds what the reader had before the session started, and saving over
+// it here would save the suppression instead — so the restore on the way out
+// would hand back a terminal with alternate scroll off that had it on.
+func resumeAlternateScroll() tea.Cmd { return tea.Raw(disableAlternateScroll) }

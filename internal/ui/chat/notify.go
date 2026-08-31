@@ -21,6 +21,11 @@ package chat
 // tick is (spin.go). A property of the transition is read off the
 // transition.
 //
+// The tab's progress indicator is gated on this switch rather than on a
+// second one (terminal.go). It is the same promise made without words —
+// shhh getting your attention while you are looking somewhere else — and a
+// reader who turned the summons off did not mean "but keep the light on".
+//
 // **And only when the terminal has said the window is not the one in front.**
 // That rule gates itself. Focus reporting is asked for on the View, and the
 // only way to know the window is away is to have been told so — a terminal

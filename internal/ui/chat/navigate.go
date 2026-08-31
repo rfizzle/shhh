@@ -50,8 +50,9 @@ const keyScrollLines = 1
 // keys.Draft.Mouse flips terminal mouse reporting from anywhere. Ctrl+X
 // because of what is left rather than what it stands for: the textarea
 // underneath claims a, b, d, e, f, k, n, p, t, u, v and w; this surface
-// spends c, d, e, g and j of its own; ctrl+s, ctrl+q and ctrl+z belong to the
-// terminal; and ctrl+o opens a step's detail (detail.go). It is not a
+// spends c, d, e, g and j of its own; ctrl+s and ctrl+q belong to the
+// terminal, and ctrl+z is the suspend the session now answers itself
+// (terminal.go); and ctrl+o opens a step's detail (detail.go). It is not a
 // mnemonic and does not pretend to be one — the start screen and /ui both
 // name it, which is where a chord is actually learned.
 

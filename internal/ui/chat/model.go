@@ -173,6 +173,7 @@ const resizeSettle = 120 * time.Millisecond
 // settle scheduled during the drag from rendering at a width the drag has
 // already left.
 type resizeSettledMsg struct{ seq int }
+
 const horizontalPadding = 2
 
 type tokenMsg struct {
@@ -821,15 +822,23 @@ type Model struct {
 	// (appearance.paste_lines / appearance.paste_columns). They hold the
 	// defaults rather than zero, so a session built without
 	// WithPasteThresholds still stages a log.
-	pasteLines    int
-	pasteColumns  int
-	title         string
-	width         int
-	height        int
-	ready         bool
-	atBottom      bool
-	quitting      bool
-	initialPrompt string
+	pasteLines   int
+	pasteColumns int
+	title        string
+	// The terminal's own window: whether the tab is named after this session
+	// (appearance.window_title), the directory that name carries, and the
+	// brief red the tab wears after a turn breaks with the sequence that
+	// clears it (terminal.go).
+	windowTitleOn  bool
+	windowDir      string
+	progressFailed bool
+	progressSeq    int
+	width          int
+	height         int
+	ready          bool
+	atBottom       bool
+	quitting       bool
+	initialPrompt  string
 
 	// TotalTokensIn and TotalTokensOut are the main agent's own spend — its
 	// turns and nothing else. The session's spend, which includes the
@@ -964,9 +973,15 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 		// On unless the config says otherwise (WithNotify): unlike mouse
 		// reporting, a notification takes nothing away, and it cannot fire
 		// while anyone is looking at the screen.
-		notifyOn:     true,
-		pasteLines:   attachment.DefaultPasteLines,
-		pasteColumns: attachment.DefaultPasteColumns,
+		notifyOn: true,
+		// On unless the config says otherwise (WithWindowTitle), for the same
+		// reason: naming the tab takes nothing away, and the reader with
+		// eight of them cannot ask for it once they are lost among the
+		// others (terminal.go).
+		windowTitleOn: true,
+		windowDir:     sessionDir(),
+		pasteLines:    attachment.DefaultPasteLines,
+		pasteColumns:  attachment.DefaultPasteColumns,
 		// Every session records what it changes; WithChangeset swaps in a
 		// store with a different bound or a git tracker.
 		changes:     changeset.New(changeset.DefaultMaxBytes),
@@ -1224,6 +1239,12 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if call := mm.notifyCmd(m); call != nil {
 		cmd = tea.Batch(cmd, call)
 	}
+	// And the tab's progress light, for the same reason again: a turn
+	// breaking is a transition, and the paths that break one are the same
+	// dozen (terminal.go).
+	if tick := mm.progressCmd(m); tick != nil {
+		cmd = tea.Batch(cmd, tick)
+	}
 	// The turn's closing summary is derived here too (summary.go), and
 	// for the third time for the same reason: "the turn just ended" is a fact
 	// about two models, and every path back to the input would otherwise have
@@ -1400,6 +1421,20 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		return m, nil
 
+	case progressClearedMsg:
+		// The tab's red has been up long enough (terminal.go). A stale tick —
+		// another turn has started or broken since — matches nothing and
+		// leaves the state it would have cleared alone.
+		if msg.seq == m.progressSeq {
+			m.progressFailed = false
+		}
+		return m, nil
+
+	case tea.ResumeMsg:
+		// Back from a suspend, with the terminal in whatever state the shell
+		// left it (terminal.go).
+		return m.resumed()
+
 	case graceTickMsg:
 		// The grace window expired between keys; arriving here repaints the
 		// card with its keys live. A stale tick repaints a card that already
@@ -1431,6 +1466,16 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// Nothing else claims it, so nothing is taken away by that.
 		if keys.Match(msg, keys.Draft.Mouse) {
 			return m.toggleMouse()
+		}
+		// The redraw is answered here for a related reason (terminal.go): a
+		// screen written over by a notification or by whatever ran during a
+		// suspend is a screen the reader wants back wherever they are, and
+		// the surfaces most worth repainting — the full-screen diff, review
+		// mode, a pager — are exactly the ones a key routed below this would
+		// never reach. It takes nothing from them: it repaints from the model
+		// and changes nothing in it, and no sentence can produce the chord.
+		if keys.Match(msg, keys.Draft.Redraw) {
+			return m.redraw()
 		}
 		// The open history search reads every key first: typing filters
 		// rather than edits, which is the whole difference between the search
@@ -1655,6 +1700,12 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// there, and what it selected could only be deleted or replaced
 			// — which is what the editor is for.
 			return m.openEditor()
+		case keys.Is(pressed, keys.Draft.Suspend):
+			// The shell's own chord for a foreground job, answered here
+			// because a terminal in raw mode will not act on it — and
+			// refused while work is in flight, because a stopped process
+			// cannot keep a stream open (terminal.go).
+			return m.suspend()
 		case keys.Is(pressed, keys.Draft.Reasoning):
 			// Reasoning effort: the level the next request asks for.
 			// It changes nothing about the conversation and nothing about the
@@ -2306,6 +2357,13 @@ func (m Model) View() tea.View {
 	if m.mouseOn {
 		v.MouseMode = tea.MouseModeCellMotion
 	}
+	// And the two states outside the rectangle, for the third and fourth
+	// times the same argument: the tab's name and the tab's progress light
+	// are what this frame says they are (terminal.go). Empty and nil mean
+	// "nothing", which is what a terminal that was never asked, a reader who
+	// turned them off, and the frame after the last one all want.
+	v.WindowTitle = m.windowTitle()
+	v.ProgressBar = m.progressBar()
 	return v
 }
 
@@ -2363,7 +2421,7 @@ func (m Model) screen() string {
 func (m Model) headerRow() string {
 	title := m.title
 	if title == "" {
-		title = "shhh chat"
+		title = defaultTitle
 	}
 	header := sty.Header.Render(" " + title)
 	if m.attachedTo != "" && !m.frameShowing() {
@@ -3908,6 +3966,13 @@ func helpKeysText() string {
                  the editor exits becomes the draft. An empty file leaves the
                  draft alone. Not while a turn is running or a decision is
                  waiting — the editor takes the terminal with it
+  ctrl+z         Suspend shhh and go back to the shell; fg brings it back
+                 with the screen as you left it. Refused while a turn is
+                 running or a decision is waiting — a stopped shhh is not
+                 reading the stream it asked for
+  ctrl+l         Redraw the screen from what the session already holds, for a
+                 display something else wrote over. The draft, the history
+                 and any selection are untouched
   ctrl+space     Hand the keyboard to a decision waiting on screen. An
                  approval that lands while you are typing does not take your
                  keys with it: its y, n and a are not live until this chord

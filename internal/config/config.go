@@ -320,6 +320,13 @@ type AppearanceConfig struct {
 	// looking at the screen, and the thing it exists for — a turn that stopped
 	// on an approval four minutes ago — is invisible until it does.
 	Notify *bool `toml:"notify"`
+	// WindowTitle lets a session name the terminal's own tab after itself
+	// (docs/interface/surfaces.md#what-the-tab-says). It is on when unset,
+	// for Notify's reason: it takes nothing away, and the reader it is for —
+	// the one hunting for which of eight tabs is waiting on them — cannot ask
+	// for it from inside a window they cannot find. It is not Title: that one
+	// names the saved conversation, this one names the window.
+	WindowTitle *bool `toml:"window_title"`
 	// PasteLines and PasteColumns are the shape past which a paste is staged
 	// as an attachment instead of typed into the draft
 	// (docs/interface/surfaces.md#the-input-frame). Zero on either means the
@@ -368,6 +375,15 @@ func (c Config) NotifyEnabled() bool {
 		return true
 	}
 	return *c.Appearance.Notify
+}
+
+// WindowTitleEnabled reports whether a session names the terminal's tab:
+// what appearance.window_title says, or — unset — yes.
+func (c Config) WindowTitleEnabled() bool {
+	if c.Appearance.WindowTitle == nil {
+		return true
+	}
+	return *c.Appearance.WindowTitle
 }
 
 func (c Config) SafetyWarningsEnabled() bool {
@@ -465,6 +481,9 @@ func Set(cfg *Config, key, value string) error {
 	case "appearance.notify":
 		v := value == "true"
 		cfg.Appearance.Notify = &v
+	case "appearance.window_title":
+		v := value == "true"
+		cfg.Appearance.WindowTitle = &v
 	case "appearance.paste_lines":
 		n := 0
 		fmt.Sscanf(value, "%d", &n)
