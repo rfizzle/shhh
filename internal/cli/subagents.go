@@ -206,6 +206,11 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		if red != nil {
 			defs = append(defs, evidence.ToolDefinition())
 		}
+		// The report tool is deliberately not here. A report is the
+		// session's answer surface to the user; a child answers its parent,
+		// and a page the user is never handed a link to is spent tokens.
+		// What a child found reaches a page through the parent's own report
+		// call, the same way it reaches the transcript.
 		// Children see the same skills the session does: a writer told to
 		// follow the project's documentation skill has to be able to read
 		// it, and the catalog is a read whatever the child's tier.

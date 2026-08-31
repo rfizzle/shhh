@@ -31,6 +31,7 @@ import (
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/secret"
@@ -450,6 +451,15 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), process.Definition())
 		defer procSup.Close()
 	}
+	// Report pages: the model can publish an answer that is a page rather
+	// than a paragraph as a local graphical view. The tool writes only shhh's
+	// own report store and serves on loopback, so it rides the auto-run path
+	// like evidence and the quality gate; no store means no report tool.
+	pub := openReportsPublisher(ConfigFrom(cmd.Context()), session.kind, true)
+	if pub != nil {
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), reports.ToolDefinition())
+		defer pub.Close()
+	}
 	if err := session.openSecrets(cmd, procSup); err != nil {
 		return err
 	}
@@ -606,6 +616,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	}
 	if procSup != nil {
 		baseExecutor = procSup.WrapExecutor(baseExecutor)
+	}
+	if pub != nil {
+		baseExecutor = pub.WrapExecutor(baseExecutor)
 	}
 	if session.skills.Len() > 0 {
 		baseExecutor = session.skills.WrapExecutor(baseExecutor)

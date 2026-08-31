@@ -112,6 +112,10 @@ func TestGolden_ActivityRows(t *testing.T) {
 				r.Kind, r.Verb, r.Target = ActivitySubagent, "agent", "writer-1 · docs/loop.md"
 				r.Outcome, r.Duration = OutcomeOK, "48.0s"
 			})},
+			{Label: "kind · report page", View: row(func(r *ActivityRow) {
+				r.Kind, r.Verb, r.Target = ActivityReport, "report", "suite timing breakdown"
+				r.Outcome, r.Duration = "→ http://127.0.0.1:52104/r/rp-8f3a11c04b2d9e61", "0.8s"
+			})},
 			{Label: "kind · think, folded", View: row(func(r *ActivityRow) {
 				r.Kind, r.Verb, r.Target = ActivityThink, "think", ""
 				r.Counts, r.Keys = "42 lines", GroupExpandKey

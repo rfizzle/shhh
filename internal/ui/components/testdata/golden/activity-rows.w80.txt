@@ -21,6 +21,9 @@
 · kind · sub-agent
    ◇ agent   writer-1 · docs/loop.md                                    ok 48.0s
 
+· kind · report page
+   ⛁ report  suite timing…  → http://127.0.0.1:52104/r/rp-8f3a11c04b2d9e61  0.8s
+
 · kind · think, folded
    ✻ think                                       42 lines · [enter] expand
 
@@ -84,6 +87,9 @@
 
 · kind · sub-agent
    ␛[94m◇␛[m agent   ␛[38;5;241mwriter-1 · docs/loop.md␛[m                                    ␛[38;5;241mok␛[m ␛[38;5;245m48.0s␛[m
+
+· kind · report page
+   ␛[38;5;214m⛁␛[m report  ␛[38;5;241msuite timing…␛[m  ␛[38;5;241m→ http://127.0.0.1:52104/r/rp-8f3a11c04b2d9e61␛[m  ␛[38;5;245m0.8s␛[m
 
 · kind · think, folded
    ␛[38;5;241m✻␛[m think   ␛[38;5;241m␛[m                                    ␛[38;5;245m42 lines␛[m␛[38;5;241m · ␛[m␛[94m[enter] expand␛[m

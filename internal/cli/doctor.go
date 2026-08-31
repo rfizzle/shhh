@@ -47,6 +47,7 @@ import (
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/migrate"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -218,6 +219,7 @@ func doctorProbes() []doctorProbe {
 		{name: "model", run: probeModel},
 		{name: "store", run: probeStore},
 		{name: "logs", run: probeLogs},
+		{name: "reports", run: probeReports},
 		{name: "sandbox", run: probeSandbox},
 		{name: "engine", run: probeEngine},
 		{name: "git", run: probeGit},
@@ -687,6 +689,46 @@ func doctorLogs(path string, size int64, err error) doctorFinding {
 	return doctorFinding{
 		Subject: shortPath(path),
 		Detail:  doctorBytes(size),
+		Outcome: "ok",
+	}
+}
+
+func probeReports(context.Context, config.Config) doctorFinding {
+	dir, err := reportsDir()
+	if err != nil {
+		// The store row above already failed loudly on the same missing
+		// state directory; this row states its own consequence and stops.
+		return doctorReports("", 0, 0, err)
+	}
+	count, size, err := reports.Census(dir)
+	return doctorReports(dir, count, size, err)
+}
+
+// doctorReports reads the report store: where it is, how many pages it
+// holds, and what they cost in disk. This is the row `shhh reports` is the
+// reader for, so the path it names is the one the listing opens — both ask
+// reportsDir, and retention is the answer to a store that grows
+// (docs/capabilities/reports.md#findable-and-prunable).
+func doctorReports(path string, count int, size int64, err error) doctorFinding {
+	if err != nil {
+		return doctorFinding{
+			Subject: "the report store is not readable", Detail: err.Error(), Outcome: "unreadable",
+			State:       components.DoctorWarned,
+			Consequence: "the report tool is not offered, and pages already made cannot be reopened",
+			FixLabel:    "show the place to check",
+			Fix: []string{
+				"ls -l " + shortPath(path),
+				"the directory must be readable; deleting it starts an empty store",
+			},
+		}
+	}
+	detail := doctorBytes(size)
+	if count > 0 {
+		detail = countOf(count, "report", "reports") + " · " + doctorBytes(size)
+	}
+	return doctorFinding{
+		Subject: shortPath(path),
+		Detail:  detail,
 		Outcome: "ok",
 	}
 }
@@ -1210,6 +1252,8 @@ func doctorQueuedSubject(name string) string {
 		return "the local store"
 	case "logs":
 		return "where a refused request is written down"
+	case "reports":
+		return "the report pages sessions built"
 	case "sandbox":
 		return "what contains an approved command"
 	case "engine":

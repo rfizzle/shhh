@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{.Title}} · shhh</title>
+<style>
+{{.CSS}}
+/* Page chrome. Layout only — every color above, in the token block. */
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--prose);
+  font-family: var(--font-mono);
+  font-size: var(--type-body);
+  line-height: var(--type-line);
+  padding: var(--gap-3) var(--gap-2);
+}
+main { max-width: 960px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--gap-2); }
+header { padding: 0 var(--gap-1); }
+header h1 { color: var(--heading); font-size: var(--type-h1); line-height: 1.4; margin: 0; font-weight: bold; }
+header .meta { color: var(--caption); margin: 4px 0 0; }
+section { background: var(--card); border: 1px solid var(--rule); border-radius: 6px; padding: var(--gap-2); overflow-x: auto; }
+section h2 { color: var(--heading); font-size: var(--type-h2); margin: 0 0 var(--gap-2); font-weight: bold; }
+footer { color: var(--chrome); padding: 0 var(--gap-1) var(--gap-2); }
+footer code { color: var(--caption); }
+
+.stats { display: flex; flex-wrap: wrap; gap: var(--gap-3); }
+.stat .value { color: var(--heading); font-size: var(--type-stat); line-height: 1.2; }
+.stat .label { color: var(--caption); }
+.stat .delta { color: var(--secondary); }
+
+table { width: 100%; border-collapse: collapse; }
+th { color: var(--caption); text-align: left; font-weight: normal; border-bottom: 1px solid var(--track); padding: 4px 12px 4px 0; }
+td { border-bottom: 1px solid var(--rule); padding: 4px 12px 4px 0; }
+tr:last-child td { border-bottom: none; }
+
+pre.diff { margin: 0; overflow-x: auto; }
+pre.diff .add { color: var(--add); }
+pre.diff .del { color: var(--del); }
+pre.diff .hunk { color: var(--hunk); }
+pre.diff .ctx { color: var(--secondary); }
+pre.diff .file { color: var(--heading); }
+
+.tree div { white-space: pre; }
+
+.legend { display: flex; flex-wrap: wrap; gap: var(--gap-2); margin-top: var(--gap-1); color: var(--secondary); }
+.legend .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; }
+.s1 { background: var(--series-1); } .s2 { background: var(--series-2); }
+.s3 { background: var(--series-3); } .s4 { background: var(--series-4); }
+.s5 { background: var(--series-5); } .s6 { background: var(--series-6); }
+.s7 { background: var(--series-7); } .s8 { background: var(--series-8); }
+
+.prose p { margin: 0 0 var(--gap-1); max-width: 72ch; }
+.prose p:last-child { margin-bottom: 0; }
+svg text { font-family: var(--font-mono); }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <h1>{{.Title}}</h1>
+  <p class="meta">{{.Project}} · {{.Origin}} · {{.Created}}</p>
+</header>
+{{range .Blocks}}<section>
+{{if .Heading}}  <h2>{{.Heading}}</h2>
+{{end}}{{if eq .Type "stats"}}  <div class="stats">
+{{range .Stats}}    <div class="stat"><div class="value">{{.Value}}</div><div class="label">{{.Label}}</div>{{if .Delta}}<div class="delta">{{.Delta}}</div>{{end}}</div>
+{{end}}  </div>
+{{else if eq .Type "table"}}  <table>
+    <thead><tr>{{range .Columns}}<th>{{.}}</th>{{end}}</tr></thead>
+    <tbody>
+{{range .Rows}}      <tr>{{range .}}<td>{{.}}</td>{{end}}</tr>
+{{end}}    </tbody>
+  </table>
+{{else if or (eq .Type "bar_chart") (eq .Type "line_chart")}}  {{chart .}}
+{{if gt (len .Series) 1}}  <div class="legend">{{range $i, $s := .Series}}<span><span class="swatch {{seriesClass $i}}"></span>{{if $s.Name}}{{$s.Name}}{{else}}series {{$i}}{{end}}</span>{{end}}</div>
+{{end}}{{else if eq .Type "diff"}}  <pre class="diff">{{range diffLines .Diff}}<span class="{{.Class}}">{{.Text}}</span>
+{{end}}</pre>
+{{else if eq .Type "tree"}}  <div class="tree">
+{{range .Tree}}    <div style="padding-left: {{treeIndent .Depth}}px">{{.Label}}</div>
+{{end}}  </div>
+{{else if eq .Type "prose"}}  <div class="prose">
+{{range paragraphs .Text}}    <p>{{.}}</p>
+{{end}}  </div>
+{{else if eq .Type "freehand"}}  {{freehand .HTML}}
+{{end}}</section>
+{{end}}<footer><code>{{.ID}}</code> · made by shhh · reopen later: <code>shhh reports open {{.ID}}</code></footer>
+</main>
+</body>
+</html>

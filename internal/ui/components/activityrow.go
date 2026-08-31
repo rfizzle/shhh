@@ -82,6 +82,11 @@ const (
 	// bottom of that order — it read nothing, wrote nothing and ran nothing.
 	// See docs/interface/principles.md#weight-tracks-risk.
 	ActivityThink
+	// ActivityReport is a published report page: ⛁, a stack with a page on
+	// top, because the row's outcome is a link into a store. No mutation
+	// rail — the store is shhh's own state, not the workspace
+	// (docs/capabilities/reports.md#a-report-outlives-its-session).
+	ActivityReport
 )
 
 // ActivityState is the row's state. It overrides the kind glyph — but only
@@ -226,6 +231,8 @@ func (r ActivityRow) glyph() string {
 			g = sty.Accent.Render("⇄")
 		case ActivityThink:
 			g = sty.Dim.Render("✻")
+		case ActivityReport:
+			g = sty.Accent.Render("⛁")
 		default:
 			g = sty.Accent.Render("⚙")
 		}

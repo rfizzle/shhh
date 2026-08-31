@@ -80,15 +80,16 @@ func TestActivityRow_ToolNounsAndKinds(t *testing.T) {
 }
 
 // TestActivityVerbs_ClosedVocabulary pins the closed verb table: every tool
-// this session can call maps onto one of the thirteen verbs, and an unmapped
+// this session can call maps onto one of the fourteen verbs, and an unmapped
 // name falls through as itself — the signal that the table is stale.
 func TestActivityVerbs_ClosedVocabulary(t *testing.T) {
 	closed := map[string]bool{"read": true, "search": true, "glob": true, "lsp": true,
 		"web": true, "edit": true, "write": true, "patch": true, "run": true,
-		"memory": true, "spawn": true, "fan-out": true, "agent": true}
+		"memory": true, "spawn": true, "fan-out": true, "agent": true,
+		"report": true}
 	for tool, verb := range activityVerbs {
 		if !closed[verb] {
-			t.Fatalf("%s maps onto %q, which is not one of the thirteen verbs", tool, verb)
+			t.Fatalf("%s maps onto %q, which is not one of the fourteen verbs", tool, verb)
 		}
 	}
 	for tool, want := range map[string]string{
@@ -96,6 +97,7 @@ func TestActivityVerbs_ClosedVocabulary(t *testing.T) {
 		"references": "lsp", "web_fetch": "web", "web_search": "web",
 		"sd": "patch", "quality_gate": "run", "process": "run",
 		"remember": "memory", "spawn_agent": "spawn", "agent_report": "agent",
+		"report": "report",
 	} {
 		if got := activityVerb(tool); got != want {
 			t.Fatalf("%s should render as %q, got %q", tool, want, got)
@@ -119,10 +121,48 @@ func TestActivityKinds_GlyphPerAct(t *testing.T) {
 		"quality_gate": components.ActivityCommand,
 		"spawn_agent":  components.ActivitySubagent,
 		"agent_report": components.ActivitySubagent,
+		"report":       components.ActivityReport,
 	} {
 		if got := (Model{}).activityKind(tool); got != want {
 			t.Fatalf("%s should render as kind %d, got %d", tool, want, got)
 		}
+	}
+}
+
+// TestActivityRow_ReportLinkIsTheOutcome: a published report's row carries
+// the page URL in the outcome field — the one that never clips — and keeps
+// nothing else, because the page is the body.
+func TestActivityRow_ReportLinkIsTheOutcome(t *testing.T) {
+	m := activityModel(t)
+	e := entry{kind: entryTool, toolName: "report",
+		toolArgs:   `{"title":"suite timing breakdown","blocks":[]}`,
+		toolResult: "http://127.0.0.1:52104/r/rp-8f3a11c04b2d9e61\nreport \"suite timing breakdown\" published (id rp-8f3a11c04b2d9e61).",
+		duration:   800 * time.Millisecond}
+
+	view := stripANSI(m.renderEntry(e, 120))
+	for _, want := range []string{"⛁", "report", "suite timing breakdown", "→ http://127.0.0.1:52104/r/rp-8f3a11c04b2d9e61"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("row should contain %q:\n%s", want, view)
+		}
+	}
+	if strings.Contains(view, "published") {
+		t.Fatalf("the result body belongs to the page, not the row:\n%s", view)
+	}
+	if lines := strings.Split(strings.TrimRight(view, "\n"), "\n"); len(lines) != 1 {
+		t.Fatalf("a report row is one line, got %d:\n%s", len(lines), view)
+	}
+
+	// An error result keeps the failure grammar: ✗ and the error outcome,
+	// never a dead link.
+	e.toolResult = "error: block 2 (freehand): freehand rejected: <script> is not allowed"
+	failed := stripANSI(m.renderEntry(e, 120))
+	for _, want := range []string{"✗", "error"} {
+		if !strings.Contains(failed, want) {
+			t.Fatalf("failed report row should contain %q:\n%s", want, failed)
+		}
+	}
+	if strings.Contains(failed, "→ ") {
+		t.Fatalf("a failed report must not offer a link:\n%s", failed)
 	}
 }
 

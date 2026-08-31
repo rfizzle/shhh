@@ -20,6 +20,7 @@ import (
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/quality"
+	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/structural"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -113,9 +114,9 @@ const (
 // activityVerbs is the one table mapping tool names onto the closed verb
 // vocabulary of docs/interface/principles.md#closed-vocabularies — read,
 // search, glob, lsp, web, edit, write, patch, run, memory, spawn, fan-out,
-// agent. A tool that maps onto none of them is a hole in this table, not a
-// fourteenth verb: it renders as itself, clipped to the verb column, which is
-// the signal that the table is stale.
+// agent, report. A tool that maps onto none of them is a hole in this table,
+// not a fifteenth verb: it renders as itself, clipped to the verb column,
+// which is the signal that the table is stale.
 var activityVerbs = map[string]string{
 	"read_file":                "read",
 	"list_directory":           "read",
@@ -140,6 +141,7 @@ var activityVerbs = map[string]string{
 	skill.ToolName:             "read",
 	subagent.SpawnToolName:     "spawn",
 	subagent.ReportToolName:    "agent",
+	reports.ToolName:           "report",
 }
 
 func activityVerb(tool string) string {
@@ -167,6 +169,8 @@ func (m Model) activityKind(tool string) components.ActivityKind {
 		return components.ActivityRemote
 	case tool == subagent.SpawnToolName || tool == subagent.ReportToolName:
 		return components.ActivitySubagent
+	case tool == reports.ToolName:
+		return components.ActivityReport
 	case tool == tools.ExecCommandName || tool == process.ToolName || tool == quality.ToolName:
 		return components.ActivityCommand
 	case tools.IsMutating(tool) || tool == memory.RememberToolName || tool == structural.SdToolName:
@@ -177,7 +181,7 @@ func (m Model) activityKind(tool string) components.ActivityKind {
 
 // activityArgKeys is the priority order for picking a tool call's key
 // argument.
-var activityArgKeys = []string{"path", "pattern", "command", "query", "url", "name", "action", "task", "role"}
+var activityArgKeys = []string{"path", "pattern", "command", "query", "url", "title", "name", "action", "task", "role"}
 
 // activityArg extracts the one argument worth showing beside the tool name,
 // e.g. the path for read_file (with its line range when paged) or the pattern
@@ -361,6 +365,12 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 		case strings.HasPrefix(result, "error:"):
 			row.State = components.ActivityFailed
 			row.Outcome = "error"
+		case e.toolName == reports.ToolName:
+			// The link is the outcome — the one field that never clips —
+			// and the page is the body, so the row keeps nothing else. The
+			// result's first line is the URL by the tool's own contract.
+			row.Outcome = "→ " + firstLine(result)
+			result = ""
 		}
 	}
 	if strings.TrimSpace(result) != "" {

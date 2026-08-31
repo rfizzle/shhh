@@ -20,6 +20,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/radius"
+	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/safety"
 	"github.com/rfizzle/shhh/internal/scope"
@@ -132,6 +133,14 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if procSup != nil {
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), process.Definition())
 		defer procSup.Close()
+	}
+	// Report pages, mirroring the interactive session — except that a
+	// headless run never pops a browser: nobody is guaranteed to be at the
+	// desktop, and the URL reaches the transcript either way.
+	pub := openReportsPublisher(ConfigFrom(cmd.Context()), "print", false)
+	if pub != nil {
+		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), reports.ToolDefinition())
+		defer pub.Close()
 	}
 
 	// Skills, mirroring the interactive session: the catalog in the
@@ -246,6 +255,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	}
 	if procSup != nil {
 		baseExecutor = procSup.WrapExecutor(baseExecutor)
+	}
+	if pub != nil {
+		baseExecutor = pub.WrapExecutor(baseExecutor)
 	}
 	if session.skills.Len() > 0 {
 		baseExecutor = session.skills.WrapExecutor(baseExecutor)

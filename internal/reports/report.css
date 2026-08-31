@@ -1,0 +1,81 @@
+/* tokens/report.css — every color a report page may use, and the type it is set in.
+   The normative home is tokens/report.css in the shhh Design System project
+   (docs/architecture.md#design-lives-outside-the-repository); this file is its
+   transcription, and the one a served page actually embeds. A page is
+   self-contained — no fetches, no webfonts — so each alias carries its value
+   here, with the colors.css token it copies named on the line.
+
+   The invariant is the terminal's: a hue means one thing. del is red on the
+   page for the same reason it is red in the terminal, and the series steps
+   mean nothing at all. Freehand markup names colors only as var(--token) from
+   this file; the validator rejects anything literal. */
+
+:root {
+/* ── Grounds (colors.css surfaces) ──────────────────────────────────────── */
+--page: #08090d;             /* --page        the ground the page sits on */
+--card: #0f1117;             /* --screen      card and panel ground */
+--rule: #1f2530;             /* --rule-faint  rules, table borders, dividers */
+--track: #3a3f4a;            /* --meter-empty meter tracks, empty states */
+
+/* ── Text — the five measured rungs, contrast against --card ────────────── */
+--heading: #eaeaea;          /* --ansi-bright 15.7:1  headings, stat values */
+--prose: #d0d0d0;            /* --ansi-body   12.2:1  ordinary text */
+--secondary: #8a8a8a;        /* --ansi-dimmer  5.5:1  secondary text */
+--caption: #767676;          /* --ansi-status  4.2:1  captions, axis labels */
+--chrome: #626262;           /* --ansi-dim     3.1:1  chrome only — never on a
+                                word someone is expected to read */
+
+/* ── State — the same six meanings as the terminal ──────────────────────── */
+--ok: #5fd75f;               /* --state-ok      success, a passing row */
+--fail: #ff5f5f;             /* --state-fail    failure, a broken thing */
+--risk: #ffaf00;             /* --state-risk    caution, mutation */
+--running: #ff5faf;          /* --state-running anything still in motion */
+--agent: #5f87ff;            /* --agent         sub-agents */
+--link: #5f87ff;             /* --ansi-info     links, offered actions */
+
+/* ── Diff — the register a change is drawn in ───────────────────────────── */
+--add: #5fd75f;              /* --ansi-add    */
+--del: #ff5f5f;              /* --ansi-del    */
+--add-bg: #005f00;           /* --ansi-add-bg intraline addition emphasis */
+--del-bg: #5f0000;           /* --ansi-del-bg intraline deletion emphasis */
+--hunk: #5fd7d7;             /* --ansi-hunk   @@ hunk headers and nothing else */
+
+/* ── The syntax register (DESIGN-TUI.md §3b) ────────────────────────────── */
+--syntax-keyword: #5f87ff;   /* --syntax-keyword */
+--syntax-value: #ffaf00;     /* --syntax-value   */
+--syntax-name: #eaeaea;      /* --syntax-name    */
+--syntax-text: #d0d0d0;      /* --syntax-text    */
+--syntax-glue: #8a8a8a;      /* --syntax-glue    */
+--syntax-comment: #626262;   /* --syntax-comment */
+
+/* ── Categorical series — the one register that carries no meaning ──────── */
+/* Six-to-eight-category data (spend by model, wall time by package) where
+   the categories are just the third one. Deliberately a different register
+   from the state hues: deeper and inkier, so series three never says a bar
+   succeeded. Adapted from a validated categorical set and re-validated
+   against --card #0f1117 (adjacent-pair CVD ΔE ≥ 8.8, adjacent normal-vision
+   ΔE ≥ 18.6, all ≥ 3:1 contrast; worst distance to any state hue 12.0, and
+   that pair is series-1 against --agent). Assign slots in this order, never
+   cycled; a ninth category folds into "other" drawn in --track. */
+--series-1: #0081be;
+--series-2: #ba4e25;
+--series-3: #199e70;
+--series-4: #ba7900;
+--series-5: #b6426c;
+--series-6: #008300;
+--series-7: #945dc0;
+--series-8: #b04144;
+
+/* ── Type — the terminal's ramp, three steps up ─────────────────────────── */
+--font-mono: "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+--type-body: 13px;           /* --term-size; line height --type-line */
+--type-line: 20px;           /* --term-line */
+--type-h1: 20px;             /* the page title, and nothing else */
+--type-h2: 16px;             /* section headings */
+--type-stat: 32px;           /* the large numbers a stat band leads with */
+
+/* ── Space — one unit, multiplied ───────────────────────────────────────── */
+--gap-1: 8px;
+--gap-2: 16px;
+--gap-3: 24px;
+}

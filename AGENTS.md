@@ -125,6 +125,7 @@ internal/
   config/                  TOML config loading (~/.config/shhh/config.toml)
   storage/                 SQLite persistence (sessions, memories, observations, snippets)
   logs/                    The diagnostic log: the file a refused request is written to, and the tail `shhh logs` reads
+  reports/                 Report pages: typed blocks and validated freehand rendered to HTML, stored globally, served on loopback
   sandbox/                 OS-level process containment (bubblewrap on Linux, Seatbelt on macOS)
   lsp/                     Language server integration (auto-detected, lazy-started)
   quality/                 Quality-gate runner (configurable check suites)
@@ -225,7 +226,11 @@ There is exactly one writer: `record` in `internal/provider/failure.go`, on the 
 
 `internal/cli/logs.go` owns the path (`logPath`, beside `doctorStorePath`'s own join), `openLog` in `root.go`'s `PersistentPreRunE`, and `runLogs` — the tail's offset is what the follow resumes from. `probeLogs`/`doctorLogs` in `doctor.go` is the row that names the file, and it asks `logPath` so a check cannot report a path the reader cannot open.
 
-### TUI Components
+### Reports
+
+`internal/reports` is the page behind the `report` tool ([`docs/capabilities/reports.md`](docs/capabilities/reports.md)): typed blocks re-rendered from data on every serve, freehand sections validated once and frozen — the stored markup is the validator's own re-serialization, never the model's raw string, so what was checked is exactly what replays. Every colour is a `var(--token)` from the embedded stylesheet, whose normative home is `tokens/report.css` in the design system; the validator parses its token names from that file at init, so the two cannot disagree. The freehand grammar is an allowlist (no scripts, no event handlers, no `href`/`src`, no literal colours), and the server sends the CSP that makes self-containment the browser's problem too.
+
+The store mirrors `internal/evidence`: opaque `rp-` ids resolved only through the index (an id can never name a path — 64 random bits is also the URL's unguessability), 0700/0600, prune-on-open against `reports.retention_days`. The server is the repo's first and only HTTP listener: loopback, port 0, one route, lazy — a session that makes no report opens no port. `internal/cli/reports.go` owns the path (`reportsDir`, the `logPath` pattern) for the command, the publisher and the doctor row; registration is in `session.go` and `print.go` (headless never pops a browser) and deliberately **not** in `subagents.go` — a child answers its parent, not the user. The activity row lifts the result's first line — the URL, by the tool's contract — into the outcome field, the one that never clips.
 
 Components are **plain state plus two methods** — an update that takes a key
 press and reports whether it is done, and a view that takes an explicit width

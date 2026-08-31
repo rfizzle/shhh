@@ -22,6 +22,7 @@ type Config struct {
 	LSP        LSPConfig        `toml:"lsp"`
 	Appearance AppearanceConfig `toml:"appearance"`
 	History    HistoryConfig    `toml:"history"`
+	Reports    ReportsConfig    `toml:"reports"`
 	Agents     AgentsConfig     `toml:"agents"`
 	Summary    SummaryConfig    `toml:"summary"`
 	Secrets    SecretsConfig    `toml:"secrets"`
@@ -341,6 +342,14 @@ type HistoryConfig struct {
 	RetentionDays int `toml:"retention_days"`
 }
 
+// ReportsConfig governs the report store. Reports share history's default
+// retention because both answer the same question — how long a session's
+// residue stays useful — and a page someone reopens next Tuesday is exactly
+// the residue worth keeping.
+type ReportsConfig struct {
+	RetentionDays int `toml:"retention_days"`
+}
+
 const DefaultRetentionDays = 90
 
 const DefaultContextMaxTokens = 8000
@@ -417,6 +426,13 @@ func (c Config) EffectiveMemoryMaxTokens() int {
 func (c Config) EffectiveRetentionDays() int {
 	if c.History.RetentionDays > 0 {
 		return c.History.RetentionDays
+	}
+	return DefaultRetentionDays
+}
+
+func (c Config) EffectiveReportsRetentionDays() int {
+	if c.Reports.RetentionDays > 0 {
+		return c.Reports.RetentionDays
 	}
 	return DefaultRetentionDays
 }
@@ -643,6 +659,10 @@ func Set(cfg *Config, key, value string) error {
 		n := 0
 		fmt.Sscanf(value, "%d", &n)
 		cfg.History.RetentionDays = n
+	case "reports.retention_days":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Reports.RetentionDays = n
 	default:
 		return fmt.Errorf("unknown config key: %s", key)
 	}

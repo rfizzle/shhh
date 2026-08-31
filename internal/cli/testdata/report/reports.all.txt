@@ -1,0 +1,5 @@
+  shhh reports — 3 reports
+
+  ✓ rp-8f3a11c04b2d9e61  suite timing breakdown · /home/u/proj  [1m ago]
+  ✓ rp-02b7c44d9aa10e5f  token spend by model · /home/u/proj  [yesterday]
+  ✓ rp-77d1e0a2b93c48f6  provider latency · /home/u/other  [fri]

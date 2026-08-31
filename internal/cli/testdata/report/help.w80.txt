@@ -20,6 +20,7 @@
     metrics [--flags]                  Show provider usage metrics
     observe [command] [--flags]        Show agent-session usage dashboards
     rate [--flags]                     Rate past commands
+    reports [command] [--flags]        List the report pages sessions built
     snippets [command] [--flags]       Manage saved command snippets
     todo [command]                     List the project's backlog
          

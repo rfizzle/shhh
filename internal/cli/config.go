@@ -512,6 +512,11 @@ func configSettings() []configSetting {
 		fallback: strconv.Itoa(config.DefaultRetentionDays) + " days",
 		options:  noOptions,
 	}, {
+		group: "WORKSPACE", key: "reports.retention_days", label: "report retention",
+		read:     num(func(c config.Config) int { return c.Reports.RetentionDays }),
+		fallback: strconv.Itoa(config.DefaultRetentionDays) + " days",
+		options:  noOptions,
+	}, {
 		group: "WORKSPACE", key: "appearance.accent_color", label: "accent colour",
 		read:     str(func(c config.Config) string { return c.Appearance.AccentColor }),
 		fallback: "(the palette's own)",

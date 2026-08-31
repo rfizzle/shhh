@@ -17,4 +17,5 @@ none of them names a Go symbol (see [the rules](../README.md#the-four-rules)).
 | [`containment.md`](containment.md) | What an approved command can actually reach |
 | [`providers.md`](providers.md) | The LLM backends, gateways, and how failures are classified |
 | [`sessions-and-memory.md`](sessions-and-memory.md) | History, resumable sessions, durable memory, metrics |
+| [`reports.md`](reports.md) | Answers that are pages: local graphical report views, stored and served |
 | [`configuration.md`](configuration.md) | Settings, resolution order, and diagnostics |

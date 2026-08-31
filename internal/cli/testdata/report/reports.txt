@@ -1,0 +1,4 @@
+  shhh reports — 2 reports
+
+  ✓ rp-8f3a11c04b2d9e61  suite timing breakdown · code  [1m ago]
+  ✓ rp-02b7c44d9aa10e5f  token spend by model · chat  [yesterday]
