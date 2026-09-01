@@ -27,6 +27,28 @@ That reads like padding and is not. A real session spent its entire round
 budget re-running the same searches, and the instructions are what stopped it.
 They are load-bearing and should not be trimmed for brevity.
 
+## A long turn is asked what it has got
+
+A turn has no way to notice it is finished. From inside one, every round looks
+like progress — one more file, one more pattern — and the signal that enough
+is known is a judgement, not a tool result. Nothing in the loop ever asks for
+it.
+
+What that looked like in practice was a hundred and fifty rounds of reading
+and searching that ended only when the person watching asked whether the agent
+had enough yet. It said yes and started work. The question was the entire
+intervention: it already had what it needed and had never been prompted to say
+so.
+
+So the turn asks itself, on an interval well short of the cap. The wording
+asks about the work rather than announcing a budget, because a turn told it is
+running out apologises and stops, where one asked what is left says so and
+carries on — and it is given somewhere to go other than more reading, which is
+what a turn that is quietly already done needs.
+
+The person is not the check-in mechanism. They were doing that job by hand,
+and only when they happened to be looking.
+
 ## The round cap is a checkpoint, not a limit
 
 Hitting the ceiling pauses for input rather than terminating. The work so far

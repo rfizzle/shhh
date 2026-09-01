@@ -1546,22 +1546,13 @@ func (s *Supervisor) awaitSteering(c *child) (string, bool) {
 	}
 }
 
-// checkInPrompt is the turn a child is given when it reaches its round limit
-// . It asks about the work rather than announcing the budget on
-// purpose: a child told it has run out of rounds tends to apologise and stop,
-// where one asked what is left states it and keeps going. The budget is
-// mentioned only as the reason for the interruption, and the last line is
-// there because a check-in is also the moment a child that is quietly
-// finished should say so instead of inventing more to do.
+// checkInPrompt is the turn a child is given when it reaches its round limit.
+// The wording is shared with the session's own check-in (agent.CheckInPrompt)
+// — it is the same intervention, and the reasoning for every line of it lives
+// there. Only the closing differs: a child that is finished has a report to
+// give, where a session has a person to tell.
 func checkInPrompt(used int) string {
-	return fmt.Sprintf(`You have used %d tool rounds. This is a routine check-in, not a stop — nothing has gone wrong and nothing is running out.
-
-Briefly take stock:
-- what you have established or changed so far
-- what is still left to do
-- what you are doing next
-
-Then carry on with the task. If the work is in fact finished, give your final report instead.`, used)
+	return agent.CheckInPrompt(used, agent.FinishedAsSubAgent)
 }
 
 // finalCheckInTimeout bounds the handoff completion. It is short on purpose:
