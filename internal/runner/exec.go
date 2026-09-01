@@ -97,8 +97,7 @@ func RunCapture(ctx context.Context, command string) (output string, exitCode in
 		sh = "/bin/sh"
 	}
 
-	cmd := exec.CommandContext(ctx, filepath.Clean(sh), "-c", command)
-	cmd.Env = Environ()
+	cmd := prepare(exec.CommandContext(ctx, filepath.Clean(sh), "-c", command), "")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		var exitErr *exec.ExitError
@@ -176,9 +175,7 @@ func RunCaptureTail(ctx context.Context, command string, onLine func(string)) (s
 	if sh == "" {
 		sh = "/bin/sh"
 	}
-	cmd := exec.CommandContext(ctx, filepath.Clean(sh), "-c", command)
-	cmd.Env = Environ()
-	return runTail(cmd, onLine)
+	return runTail(prepare(exec.CommandContext(ctx, filepath.Clean(sh), "-c", command), ""), onLine)
 }
 
 // RunCaptureArgvTail is RunCaptureArgv with the same live-line reporting, for
@@ -187,9 +184,7 @@ func RunCaptureArgvTail(ctx context.Context, argv []string, onLine func(string))
 	if len(argv) == 0 {
 		return "error: empty command", -1
 	}
-	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
-	cmd.Env = Environ()
-	return runTail(cmd, onLine)
+	return runTail(prepare(exec.CommandContext(ctx, argv[0], argv[1:]...), ""), onLine)
 }
 
 // RunCaptureArgv executes an explicit argv (no shell) with output captured,
@@ -205,9 +200,7 @@ func RunCaptureIn(ctx context.Context, dir, command string) (output string, exit
 		sh = "/bin/sh"
 	}
 
-	cmd := exec.CommandContext(ctx, filepath.Clean(sh), "-c", command)
-	cmd.Dir = dir
-	cmd.Env = Environ()
+	cmd := prepare(exec.CommandContext(ctx, filepath.Clean(sh), "-c", command), dir)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		var exitErr *exec.ExitError
@@ -230,9 +223,7 @@ func RunCaptureArgvIn(ctx context.Context, dir string, argv []string) (output st
 	if len(argv) == 0 {
 		return "error: empty command", -1
 	}
-	cmd := exec.CommandContext(ctx, argv[0], argv[1:]...)
-	cmd.Dir = dir
-	cmd.Env = Environ()
+	cmd := prepare(exec.CommandContext(ctx, argv[0], argv[1:]...), dir)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		var exitErr *exec.ExitError

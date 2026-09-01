@@ -42,6 +42,50 @@ troubleshooting something unrelated, by a script, by a session that argued
 persuasively. The protection is only worth having if it cannot be turned off,
 so it cannot be.
 
+## A cancelled command takes its children with it
+
+Every captured command is a shell, and the work is that shell's children.
+Cancelling used to signal only the shell, so the build, the watcher or the
+test runner underneath went on running with nothing left watching it. A
+session interrupted a few times left a few of those behind, each still holding
+the port or the lock the next attempt needed.
+
+A command now runs in its own process group and cancelling signals the group.
+Interrupt first — that is what the reader pressed, and it is the signal a
+compiler or a test runner knows how to stop cleanly on — then kill, after a
+short grace, for whatever ignored it.
+
+Underneath both there is a bound on the wait itself. A surviving relative that
+inherited the output pipe keeps it open after its parent is gone, and reading
+that pipe is exactly what the runner is blocked on, so a command that is
+already dead could still hold the turn open.
+
+## A command that will not finish is not waited on forever
+
+There is a ceiling on how long one command the assistant runs may take.
+Reaching it is not the ordinary case and is not meant to be: the number is far
+past a full test suite, a cold dependency install or a release build, so what
+it actually catches is the command that was never going to finish — one
+waiting on a prompt nobody will answer, a watcher started in the foreground, a
+network read with no timeout of its own.
+
+**A command the reader typed is never bounded by it.** They are in front of
+the session and chose to run the thing; the key that cancels it is their
+ceiling, and a limit that cut their build short would be the tool overruling
+them about their own machine.
+
+The ceiling matters most where there is nobody to do that. A headless run and
+a sub-agent both have no reader, and a command that hangs there does not hang
+one command — it holds the whole run until something outside kills it, and the
+parent waits on a report that is never coming.
+
+**Being stopped and having failed are different, and are said differently.**
+What comes back from a killed command is whatever it printed and an exit code
+that says only that it did not exit normally, which reads exactly like a
+broken command — so the reason is appended in words: that it did not fail, it
+did not finish, and what to do about it. Without that the model debugs a
+command that was working.
+
 ## What is reported is what is in force
 
 Every surface that mentions containment reports the mechanism actually

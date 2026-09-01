@@ -488,6 +488,9 @@ type Model struct {
 	mode             agent.Mode
 	modeCycle        []agent.Mode
 	commandAllowlist []string
+	// commandTimeout bounds one assistant-run command; zero means no ceiling
+	// (policy.go).
+	commandTimeout time.Duration
 	// The blanket grants: every edit, every command, until revoked. They are
 	// what /permissions allow sets, and nothing else — [a] used to set them,
 	// which made one keystroke on one `go test` the last time the session asked
@@ -2808,7 +2811,16 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	tail := &commandTail{}
 	m.runTail = tail
 	m.syncViewport()
-	ctx, cancel := context.WithCancel(context.Background())
+	// An assistant command gets a ceiling; a command the reader typed does
+	// not, because they are here and the cancel key is their ceiling.
+	assistant := m.pendingApproval != nil
+	var ctx context.Context
+	var cancel context.CancelFunc
+	if assistant && m.commandTimeout > 0 {
+		ctx, cancel = context.WithTimeout(context.Background(), m.commandTimeout)
+	} else {
+		ctx, cancel = context.WithCancel(context.Background())
+	}
 	m.runCancel = cancel
 	runID := m.agent.RunID()
 	runFn := m.runFn
@@ -2818,6 +2830,10 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 	if m.pendingApproval != nil && m.containment.Run != nil {
 		runFn = m.containment.Run
 		tailFn = m.containment.TailRun
+	}
+	timeout := m.commandTimeout
+	if !assistant {
+		timeout = 0
 	}
 	return m, func() tea.Msg {
 		start := time.Now()
@@ -2829,6 +2845,11 @@ func (m Model) executeRun() (tea.Model, tea.Cmd) {
 		} else {
 			out, code = runFn(ctx, command)
 		}
+		// A killed command reports what it managed to print and an exit code
+		// that says nothing about why it stopped. The model has to be told
+		// which of the two it was, or it reads a timeout as a failing command
+		// and starts debugging the command.
+		out = noteTimeout(out, ctx.Err(), timeout)
 		return cmdDoneMsg{runID: runID, command: command, output: out, exitCode: code, duration: time.Since(start), local: local}
 	}
 }

@@ -438,7 +438,15 @@ func profileEnv(def config.AgentDefinition, spec subagent.Spec, info shell.Info,
 // at dir: contained with the workspace grant moved to dir when a mechanism is
 // available, plain with cwd=dir otherwise (matching the parent session's
 // uncontained fallback).
+//
+// Every form is bounded. A child has nobody in front of it, so a command that
+// never finishes takes the child with it — and the parent is left waiting on
+// a report that is not coming.
 func childCommandRunner(cfg config.Config, dir string, sc *scope.Scope) func(context.Context, string) (string, int) {
+	return boundedRunner(childCommandRunnerUnbounded(cfg, dir, sc), cfg.CommandTimeout())
+}
+
+func childCommandRunnerUnbounded(cfg config.Config, dir string, sc *scope.Scope) func(context.Context, string) (string, int) {
 	if _, err := sandboxPolicy(cfg); err == nil {
 		if avail := sandbox.Detect(); avail.OK {
 			return func(ctx context.Context, command string) (string, int) {

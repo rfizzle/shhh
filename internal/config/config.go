@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/BurntSushi/toml"
 )
@@ -225,9 +226,15 @@ type BehaviorConfig struct {
 	// zero leaves agent.DefaultMaxToolRounds in place, and any negative
 	// removes the cap for every run in scope — the config-file form of
 	// `--max-rounds 0`, for a machine that only ever runs unattended.
-	MaxToolRounds     int    `toml:"max_tool_rounds"`
-	SafetyWarnings    *bool  `toml:"safety_warnings"`
-	SystemPromptExtra string `toml:"system_prompt_extra"`
+	MaxToolRounds int `toml:"max_tool_rounds"`
+	// CommandTimeoutSeconds bounds how long one command the assistant runs
+	// may take before it is cancelled: zero leaves DefaultCommandTimeout in
+	// place, and any negative removes the ceiling. It does not apply to a
+	// command the reader typed themselves — they are there, and they chose
+	// it.
+	CommandTimeoutSeconds int    `toml:"command_timeout_seconds"`
+	SafetyWarnings        *bool  `toml:"safety_warnings"`
+	SystemPromptExtra     string `toml:"system_prompt_extra"`
 	// CommandAllowlist entries auto-approve matching agent commands in chat
 	// sessions ("go test" approves "go test ./..."); safety-flagged commands
 	// always prompt regardless. Empty (the default) means every command asks.
@@ -366,6 +373,36 @@ const (
 	DefaultMemoryMaxEntries = 20
 	DefaultMemoryMaxTokens  = 1200
 )
+
+// DefaultCommandTimeout bounds one assistant-run command.
+//
+// It is a backstop, not a policy, and the number is chosen so it never
+// arrives during real work: a full test suite, a cold dependency install and
+// a release build all finish well inside it, and anything past it is a
+// command that is not going to finish at all — a prompt nobody will answer, a
+// watcher started in the foreground, a network read with no timeout of its
+// own.
+//
+// The cost of the two mistakes is not symmetric. Cutting a command short
+// costs one round and an obvious error the model can act on. Not cutting one
+// short costs the whole run, and costs it in exactly the situation where
+// there is nobody to notice — a session left alone, or a headless run in CI
+// that holds its executor until something outside kills it.
+const DefaultCommandTimeout = 10 * time.Minute
+
+// CommandTimeout is how long an assistant-run command may take. Zero means
+// unset and keeps the default; any negative removes the ceiling, for a
+// machine whose builds really do run for hours.
+func (c Config) CommandTimeout() time.Duration {
+	switch n := c.Behavior.CommandTimeoutSeconds; {
+	case n < 0:
+		return 0
+	case n > 0:
+		return time.Duration(n) * time.Second
+	default:
+		return DefaultCommandTimeout
+	}
+}
 
 // ReadOnlyAutoEnabled reports whether the built-in inspection allowlist
 // auto-runs (the default).
@@ -556,6 +593,10 @@ func Set(cfg *Config, key, value string) error {
 		n := 0
 		fmt.Sscanf(value, "%d", &n)
 		cfg.Behavior.MaxToolRounds = n
+	case "behavior.command_timeout_seconds":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Behavior.CommandTimeoutSeconds = n
 	case "behavior.safety_warnings":
 		v := value == "true"
 		cfg.Behavior.SafetyWarnings = &v

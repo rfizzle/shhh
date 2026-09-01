@@ -231,6 +231,10 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		run = containment.Run
 	}
 	run = scrubRunner(session.vault, run)
+	// The ceiling matters most here. A session has a reader who can cancel a
+	// command that is never going to finish; a headless run has nobody, and
+	// the executor it is holding is held until something outside kills it.
+	run = boundedRunner(run, cfg.CommandTimeout())
 
 	a := agent.New(env.messages, env.stream)
 	a.SetScrub(session.vault.ScrubMessage)

@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"testing"
+	"time"
 )
 
 func TestLoadFrom_MissingFileReturnsZeroValue(t *testing.T) {
@@ -595,5 +596,23 @@ func TestSummarySurfaces_SetByKey(t *testing.T) {
 		if check() {
 			t.Errorf("%s=false did not take", key)
 		}
+	}
+}
+
+func TestCommandTimeoutDefaultsAndOverrides(t *testing.T) {
+	var cfg Config
+	if got := cfg.CommandTimeout(); got != DefaultCommandTimeout {
+		t.Errorf("an unset ceiling keeps the default: want %v got %v", DefaultCommandTimeout, got)
+	}
+
+	cfg.Behavior.CommandTimeoutSeconds = 90
+	if got := cfg.CommandTimeout(); got != 90*time.Second {
+		t.Errorf("a stated ceiling wins: want 90s got %v", got)
+	}
+
+	// The escape for a machine whose builds really do run for hours.
+	cfg.Behavior.CommandTimeoutSeconds = -1
+	if got := cfg.CommandTimeout(); got != 0 {
+		t.Errorf("a negative removes the ceiling: want 0 got %v", got)
 	}
 }

@@ -133,6 +133,7 @@ accent_color = "cyan"
 | `behavior.safety_warnings` | Warn before destructive commands (default: true) |
 | `behavior.context_max_tokens` | Max tokens for stdin context (default: 8000) |
 | `behavior.max_tool_rounds` | Max consecutive tool-call rounds per chat turn (default: 150; any negative removes the cap, for a machine that only runs unattended) |
+| `behavior.command_timeout_seconds` | Ceiling on one command the assistant runs (default: 600). Reaching it cancels the command and everything it started, and the model is told it was stopped rather than that it failed. A command you type yourself is never bounded by it; any negative removes the ceiling |
 | `appearance.mouse` | Terminal mouse reporting (default: true, so the wheel scrolls, shhh's own click-drag selects the transcript, and a click opens the row or answers the approval key under it; set to false to restore your terminal's native click-drag selection). `Ctrl+X` in a session flips and saves it |
 | `appearance.notify` | Desktop notification when a turn stops while your terminal has said the window is not in front (default: true). It never fires while you are looking at the screen, and a terminal that does not report focus never triggers it at all. `/ui notify <on\|off>` flips and saves it |
 | `behavior.command_allowlist` | Command prefixes auto-approved in chat/code sessions (e.g. `["git status", "go test"]`); safety-flagged commands always prompt |

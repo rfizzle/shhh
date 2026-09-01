@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/safety"
@@ -27,6 +28,18 @@ import (
 // safety-flagged.
 func (m Model) WithCommandAllowlist(list []string) Model {
 	m.commandAllowlist = list
+	return m
+}
+
+// WithCommandTimeout bounds how long one assistant-run command may take.
+// Zero or less removes the ceiling.
+//
+// A command the reader typed is never bounded by it, here or anywhere: they
+// are in front of the session and chose to run the thing, so the key that
+// cancels it is the ceiling.
+// See docs/capabilities/containment.md#a-command-that-will-not-finish-is-not-waited-on-forever.
+func (m Model) WithCommandTimeout(d time.Duration) Model {
+	m.commandTimeout = d
 	return m
 }
 
