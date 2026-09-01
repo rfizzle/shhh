@@ -39,7 +39,7 @@ else
 	RESET   := ""
 endif
 
-.PHONY: all build build-all linux darwin clean fmt lint tidy test race ci docs-check help
+.PHONY: all build build-all linux darwin clean fmt lint tidy test race ci docs-check eval help
 
 all: help
 
@@ -98,6 +98,11 @@ model-data: ## Regenerate the built-in model-data snapshot from the public table
 docs-check: ## Verify every docs/ citation in code comments resolves
 	@echo "${MAGENTA}Checking documentation citations...${RESET}"
 	@python3 scripts/check-docs.py
+
+## Evals:
+eval: build ## Run the eval suite against the configured model (costs real requests)
+	@echo "${MAGENTA}Running the eval suite...${RESET}"
+	@./$(APP_NAME) eval $(EVAL_ARGS)
 
 ## Test:
 test: ## Run tests

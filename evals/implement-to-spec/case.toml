@@ -1,0 +1,6 @@
+name = "implement-to-spec"
+prompt = "store.Budget is declared but not implemented. The tests in store/ say exactly what it has to do. Implement it, and wire the --budget flag in cmd/report.go to use it."
+
+requires = ["go", "git"]
+
+check = ["go", "test", "./..."]

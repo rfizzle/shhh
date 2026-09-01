@@ -81,6 +81,7 @@ golden fixture, so this cannot drift back.
 | Tidy modules | `make tidy` |
 | CI suite | `make ci` |
 | Check doc citations | `make docs-check` |
+| Run the eval suite | `make eval` (costs real requests; not part of `make ci`) |
 | Update golden files | `go test ./internal/ui/components ./internal/ui/chat -update-golden` or `SHHH_UPDATE_GOLDEN=1 go test ./...` |
 
 Build produces a `shhh` binary with version injected via `-ldflags`.
@@ -160,6 +161,7 @@ internal/
   todo/                    The project backlog: one Markdown item per file under .shhh/todo, the ready set and its order, the archive
   secret/                  Session secrets: the vault, the scrub every text passes through, and the prompt block naming them
   migrate/                 Layout migrations, detected and offered by `shhh doctor` (never at startup)
+  eval/                    The eval suite: a case, the run that measures it, and the verdict its own check gives
   evidence/                Evidence store for quality-gate output
   plan/                    Plan mode state (step tracking)
   resolve/                 Provider resolution from flags/config/env

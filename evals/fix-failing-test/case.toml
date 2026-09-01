@@ -1,0 +1,6 @@
+name = "fix-failing-test"
+prompt = "The tests in this package fail. Find out why and fix the code so they pass. Do not change the tests."
+
+requires = ["go", "git"]
+
+check = ["go", "test", "./..."]

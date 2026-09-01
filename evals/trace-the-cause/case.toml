@@ -1,0 +1,6 @@
+name = "trace-the-cause"
+prompt = "route.Match returns the wrong handler for paths with a trailing slash, and its test says so. The cause is not in the route package. Track it down and fix it where it actually is, without changing any test."
+
+requires = ["go", "git"]
+
+check = ["go", "test", "./..."]
