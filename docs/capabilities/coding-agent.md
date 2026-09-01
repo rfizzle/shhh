@@ -186,6 +186,36 @@ has joined.
 A prompt that names a tool promises a capability the session may not have, and
 a model that has been promised a tool will try to use it.
 
+## The agent knows where and when it is standing
+
+The session already surveys the checkout before the first keystroke — the
+language and its toolchain, whether this is a repository, which branch is
+out, how many paths are already changed. That survey used to be for the
+person: it drew the start screen and stopped there, while the model was told
+the shell, the operating system and the working directory and left to spend
+rounds asking git for the rest.
+
+It is told now, because each of those facts changes what a good first move
+is. A model that knows the ecosystem reaches for the right build command
+instead of probing for one. A model that knows the branch does not have to
+ask before committing, and does not assume it is on the default one.
+
+The dirty count is the one that prevents a wrong action rather than a wasted
+round. Uncommitted work present when the session opened is not the agent's,
+and an agent that does not know this reads its own diff, finds changes it has
+no memory of making, and starts explaining or reverting them. So the count is
+given with the one thing that has to be said about it: those changes were
+already there.
+
+Where there is no repository the absence is stated too, because it is the
+fact that makes an edit unrecoverable.
+
+The date is environment, so it sits with the shell and the working directory
+in every prompt that has an environment. A model reasons from its own
+training cutoff unless something tells it otherwise, and left to that it
+misdates a changelog entry, assumes the newest release it knows of is still
+the newest, and computes a range from the wrong year.
+
 ## It can check itself
 
 The session can run a named suite of checks defined in the workspace, and

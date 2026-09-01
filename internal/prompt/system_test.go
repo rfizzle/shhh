@@ -3,6 +3,7 @@ package prompt
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/proposal"
 	"github.com/rfizzle/shhh/internal/shell"
@@ -279,5 +280,53 @@ func TestBuildProfileFollowsPermissions(t *testing.T) {
 		if !strings.Contains(fixer, want) {
 			t.Fatalf("writing profile prompt lacks %q:\n%s", want, fixer)
 		}
+	}
+}
+
+// Every prompt with an environment section carries the date. A model left to
+// its training cutoff misdates what it writes and assumes the newest thing it
+// knows of is still the newest.
+func TestEveryPromptStatesTheDate(t *testing.T) {
+	fixed := time.Date(2026, time.September, 1, 12, 0, 0, 0, time.UTC)
+	old := now
+	now = func() time.Time { return fixed }
+	t.Cleanup(func() { now = old })
+
+	// Derived from the fixed clock rather than written out, so this test
+	// cannot be wrong about the calendar; TestTheDateReadsUnambiguously is
+	// where the format itself is pinned.
+	want := fixed.Format("Monday, 2 January 2006")
+	info := shell.Info{Shell: "bash", OS: "linux", Cwd: "/work"}
+	spec := ProfileSpec{Name: "auditor", Tools: []string{"read_file"}}
+
+	for name, got := range map[string]string{
+		"one-shot":     Build(info),
+		"agent":        BuildAgent(info),
+		"researcher":   BuildResearcher(info),
+		"reviewer":     BuildReviewer(info),
+		"writer":       BuildWriter(info),
+		"profile":      BuildProfile(info, spec),
+		"conversation": BuildConversation(info),
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("%s prompt does not state the date (%s)", name, want)
+		}
+	}
+}
+
+// A date and not a timestamp: the prompt is built once, so anything finer
+// would go stale inside the session it was written for. And the month is a
+// word, because 1/9 and 9/1 are the same date to two different readers.
+func TestTheDateReadsUnambiguously(t *testing.T) {
+	old := now
+	now = func() time.Time { return time.Date(2026, time.September, 1, 23, 45, 0, 0, time.UTC) }
+	t.Cleanup(func() { now = old })
+
+	got := BuildAgent(shell.Info{Shell: "bash", OS: "linux", Cwd: "/work"})
+	if !strings.Contains(got, "Date: Tuesday, 1 September 2026") {
+		t.Errorf("the date should name its month and its weekday:\n%s", got)
+	}
+	if strings.Contains(got, "23:45") {
+		t.Errorf("the environment block should carry no clock:\n%s", got)
 	}
 }

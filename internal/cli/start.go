@@ -15,15 +15,16 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/chat"
 )
 
-// buildStartInfo surveys the workspace for the start screen. Every source is
-// optional: a missing gate config, an unavailable database, or a directory
-// that cannot be surveyed each cost their own clause and nothing else.
-func buildStartInfo(db *storage.DB, gateEnabled bool) chat.StartInfo {
-	wd, err := os.Getwd()
-	if err != nil {
-		wd = ""
-	}
-	info := chat.StartInfo{Project: project.Survey(wd)}
+// buildStartInfo assembles the start screen from the survey the session
+// already took. Every source is optional: a missing gate config or an
+// unavailable database costs its own clause and nothing else.
+//
+// The survey is handed in rather than taken here because the model's prompt
+// block is built from the same answer, and the tree walk behind it is not
+// worth doing twice.
+func buildStartInfo(survey project.Info, db *storage.DB, gateEnabled bool) chat.StartInfo {
+	wd := survey.Dir
+	info := chat.StartInfo{Project: survey}
 	if gateEnabled {
 		info.Gate = startGate(wd)
 	}

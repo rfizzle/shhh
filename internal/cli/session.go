@@ -184,9 +184,14 @@ type sessionEnv struct {
 	// injected into the system prompt, which /stats and the inspector rail
 	// name as its own occupancy category.
 	projectTokens int64
-	messages      []provider.Message
-	stream        agent.StreamFunc
-	switchModel   func(string)
+	// survey is the checkout as it stood when the session opened. It is
+	// carried rather than taken again because it costs a tree walk and two
+	// git invocations, and the model's prompt block and the start screen are
+	// two readings of one answer.
+	survey      project.Info
+	messages    []provider.Message
+	stream      agent.StreamFunc
+	switchModel func(string)
 	// effort is the reasoning level the session resolved to, and
 	// switchReasoning is what ctrl+t and /reasoning change it with.
 	// Like the model it is read by the stream closure from another
@@ -230,7 +235,12 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 
 	info := shell.Detect()
 	projectContext := project.FindContext()
-	promptExtra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra, projectContext, session.promptExtra)
+	// One survey per session, read by both the model and the start screen.
+	// It shells out to git and walks the tree, so the two readers share the
+	// answer rather than each asking.
+	survey := project.Survey("")
+	promptExtra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra, projectContext,
+		project.PromptBlock(survey), session.promptExtra)
 	sysPrompt := session.buildPrompt(info, promptExtra)
 
 	messages := []provider.Message{
@@ -332,6 +342,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 		provName:      resolved.Provider,
 		modelName:     resolved.Model,
 		sysPrompt:     sysPrompt,
+		survey:        survey,
 		projectTokens: agent.EstimateTokens(projectContext),
 		messages:      messages,
 		stream:        stream,
@@ -696,7 +707,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			WithChangeset(changeset.New(changeset.DefaultMaxBytes), changeset.NewTracker(".")).
 			// First contact: the empty session's start screen, surveyed
 			// once here rather than assembled per frame.
-			WithStartScreen(buildStartInfo(db, gate != nil)).
+			WithStartScreen(buildStartInfo(env.survey, db, gate != nil)).
 			// The one thing the screen offers that writes: scaffolding the
 			// checkout's own context file, behind a card.
 			WithScaffold(buildScaffold(db))

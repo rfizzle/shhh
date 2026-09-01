@@ -91,7 +91,7 @@ func TestStartGate_BrokenConfigIsReportedRatherThanSwallowed(t *testing.T) {
 
 func TestBuildStartInfo_SurveysWithoutAGateOrADatabase(t *testing.T) {
 	// Neither source is required: the screen still states the project.
-	info := buildStartInfo(nil, false)
+	info := buildStartInfo(project.Survey(""), nil, false)
 	if info.Project.Dir == "" {
 		t.Fatal("the survey should always name the directory it ran in")
 	}
@@ -113,7 +113,7 @@ func TestBuildStartInfo_CarriesTheMostRecentSavedSession(t *testing.T) {
 		t.Fatalf("save: %v", err)
 	}
 
-	info := buildStartInfo(db, false)
+	info := buildStartInfo(project.Survey(""), db, false)
 	if !info.Recent.Present || info.Recent.Name != "loop refactor" {
 		t.Fatalf("recent = %+v", info.Recent)
 	}

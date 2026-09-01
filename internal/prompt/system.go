@@ -3,10 +3,25 @@ package prompt
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/proposal"
 	"github.com/rfizzle/shhh/internal/shell"
 )
+
+// now is the clock every prompt's date is read from. A variable so a test can
+// assert the line without asserting today.
+var now = time.Now
+
+// today is the date the session opened, in the one format that cannot be read
+// two ways round. A model reasons from its training cutoff unless something
+// tells it otherwise, and left to that it misdates what it writes and assumes
+// the newest thing it knows of is still the newest.
+//
+// It is a date and not a time: the prompt is built once, so anything finer
+// would be a claim that goes stale within the session it was written for.
+// See docs/capabilities/coding-agent.md#the-agent-knows-where-and-when-it-is-standing.
+func today() string { return now().Format("Monday, 2 January 2006") }
 
 func Build(info shell.Info, extra ...string) string {
 	return build(info, false, extra...)
@@ -32,7 +47,8 @@ For single-command tasks, output a single line.
 
 Shell: %s
 OS: %s
-Cwd: %s`, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), osRules(info.OS), info.Shell, os, info.Cwd)
+Cwd: %s
+Date: %s`, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), osRules(info.OS), info.Shell, os, info.Cwd, today())
 	if alternatives {
 		base += "\n\n" + proposal.Instructions()
 	}
@@ -89,6 +105,7 @@ func BuildAgent(info shell.Info, extra ...string) string {
 Shell: %s
 OS: %s
 Cwd: %s
+Date: %s
 
 # Tools
 Read-only tools (read_file, list_directory, glob, search) run automatically — use them proactively instead of asking the user to look something up or guessing at file contents.
@@ -114,7 +131,7 @@ Make changes with write_file and edit_file rather than pasting code blocks into 
 - Be concise. Report what you changed and how you verified it, not a narration of every step.
 - Use markdown formatting (headers, lists, code blocks) — the terminal renders it.
 - If a task is ambiguous, make the most reasonable assumption, state it, and proceed rather than stopping to ask.`,
-		info.Shell, os, info.Cwd, findingThings, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), osRules(info.OS))
+		info.Shell, os, info.Cwd, today(), findingThings, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), osRules(info.OS))
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}
@@ -131,6 +148,7 @@ func BuildResearcher(info shell.Info, extra ...string) string {
 # Environment
 OS: %s
 Cwd: %s
+Date: %s
 
 # Tools
 You have read-only access to the workspace (read_file, list_directory, search, glob) and, when registered, web research tools (web_fetch, web_search). You cannot edit files or run commands — do not propose to; gather facts instead.
@@ -143,7 +161,7 @@ You have read-only access to the workspace (read_file, list_directory, search, g
 
 # Final report
 Your last message IS the deliverable. Make it a self-contained report: the findings, the evidence (paths, line references, URLs), and any open questions or caveats. Do not end on a question or a promise of further work.`,
-		os, info.Cwd, findingThingsBrief)
+		os, info.Cwd, today(), findingThingsBrief)
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}
@@ -159,6 +177,7 @@ func BuildReviewer(info shell.Info, extra ...string) string {
 # Environment
 OS: %s
 Cwd: %s
+Date: %s
 
 # Tools
 You have read-only access to the workspace (read_file, list_directory, search, glob). You cannot edit files or run commands: the task hands you the diff or names the files; read those, then the files they touch, then the tests that cover them.
@@ -175,7 +194,7 @@ Rank by severity. Say "no findings" for an empty section rather than inventing o
 
 # Final report
 Your last message IS the deliverable. End it with the verdict line the task asks for.`,
-		os, info.Cwd)
+		os, info.Cwd, today())
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}
@@ -193,6 +212,7 @@ func BuildWriter(info shell.Info, extra ...string) string {
 Shell: %s
 OS: %s
 Cwd: %s
+Date: %s
 
 # Tools
 Read-only tools (read_file, list_directory, search, glob) run automatically. execute_command, write_file, and edit_file may require the human's approval per call; a declined call returns an error result — respect the decline, don't retry the same call.
@@ -212,7 +232,7 @@ Make changes with write_file and edit_file rather than pasting code into your me
 
 # Final report
 Your last message IS the deliverable. Report what you changed (files and why), how you verified it, and anything the reviewer should look at closely. Do not end on a question or a promise of further work.`,
-		info.Shell, os, info.Cwd, findingThingsBrief, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), osRules(info.OS))
+		info.Shell, os, info.Cwd, today(), findingThingsBrief, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), osRules(info.OS))
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}
@@ -384,7 +404,7 @@ func BuildProfile(info shell.Info, spec ProfileSpec, extra ...string) string {
 	if spec.Execute {
 		fmt.Fprintf(&b, "Shell: %s\n", info.Shell)
 	}
-	fmt.Fprintf(&b, "OS: %s\nCwd: %s", os, info.Cwd)
+	fmt.Fprintf(&b, "OS: %s\nCwd: %s\nDate: %s", os, info.Cwd, today())
 
 	b.WriteString("\n\n# Tools\n")
 	if ro := names("read_file", "list_directory", "search", "glob"); ro != "" {
@@ -447,6 +467,7 @@ func BuildConversation(info shell.Info, extra ...string) string {
 # Environment
 OS: %s
 Cwd: %s
+Date: %s
 
 # What you can do
 Everything you can reach is a read. You can read and search files in the working scope, and you may have web search and fetch for what is not on this machine. Use them without being asked whenever the answer would be better for it — check the actual file, the actual page — rather than guessing or asking the user to look. You cannot run commands or edit files, and you must not offer to; if the user wants something done to the machine, say that shhh code is the session for that and answer the question in front of you.
@@ -464,7 +485,7 @@ The session has a shared notebook that you and every delegate can read and write
 - Cite what you read: a path and line for a file, a URL for a page, the delegate's name for a report.
 - Say when you do not know or could not find out. A guess presented as an answer is worse than a gap.
 - If a question is ambiguous, give your best answer and name the assumption rather than stopping to ask.
-- Match the user's level. Someone using the terms correctly does not need the fundamentals.`, os, info.Cwd)
+- Match the user's level. Someone using the terms correctly does not need the fundamentals.`, os, info.Cwd, today())
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}
