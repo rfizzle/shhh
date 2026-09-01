@@ -72,6 +72,11 @@ type Agent struct {
 	rounds    int
 	maxRounds int
 
+	// lastIntervention is the round something last asked the turn to take
+	// stock — a check-in or a steer. The check-in interval is measured from
+	// it (checkin.go).
+	lastIntervention int
+
 	// executing is true while auto-run tool calls run in the background;
 	// pending holds every call of the current round still owed a result, and
 	// queue the subset awaiting user approval.
@@ -207,8 +212,13 @@ func (a *Agent) RunID() int { return a.runID }
 func (a *Agent) Rounds() int { return a.rounds }
 
 // ResetRounds clears the round counter (a fresh user input continues a
-// capped turn).
-func (a *Agent) ResetRounds() { a.rounds = 0 }
+// capped turn). The intervention mark goes with it: the user's own message is
+// the most direct form of taking stock there is, and the counter it is
+// measured against has just gone back to zero.
+func (a *Agent) ResetRounds() {
+	a.rounds = 0
+	a.lastIntervention = 0
+}
 
 // CapReached reports whether this turn has used up its tool rounds. An
 // uncapped agent never reaches it.

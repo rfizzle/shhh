@@ -61,9 +61,26 @@ const (
 	FinishedAsSubAgent = "If the work is in fact finished, give your final report instead."
 )
 
-// DueForCheckIn reports whether the turn has just crossed a check-in
-// boundary. It is asked once per round, between rounds, so each boundary
-// fires exactly once.
-func (a *Agent) DueForCheckIn() bool {
-	return a.rounds > 0 && a.rounds%CheckInInterval == 0
+// TakeCheckIn returns the check-in the turn is due, and marks it taken.
+//
+// It is one call rather than a predicate and a setter because the two must
+// not come apart: a caller that asks and forgets to mark gets a check-in
+// every round for the rest of the turn, which is the opposite of the
+// mechanism. Not due returns ok=false and changes nothing.
+func (a *Agent) TakeCheckIn() (prompt string, ok bool) {
+	if a.rounds <= 0 || a.rounds-a.lastIntervention < CheckInInterval {
+		return "", false
+	}
+	a.NoteIntervention()
+	return CheckInPrompt(a.rounds, FinishedInSession), true
 }
+
+// NoteIntervention records that something has just asked the turn to take
+// stock, so the next check-in is counted from here.
+//
+// The interval is measured from the last intervention rather than from the
+// start of the turn, because a steer is a check-in with better evidence: a
+// turn that has just been asked what it is doing does not need asking again
+// forty rounds after some earlier boundary. It also means a skipped round can
+// never skip a check-in, which a modulo would.
+func (a *Agent) NoteIntervention() { a.lastIntervention = a.rounds }

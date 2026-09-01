@@ -107,6 +107,13 @@ const (
 	// signalSteer: the user sent instructions into a running turn. Reason:
 	// how many messages, as a number.
 	signalSteer = "steered"
+	// signalIntervene: the session interrupted its own turn to ask it to take
+	// stock. Reason: "steer" (a drift verdict was acted on) or "check-in"
+	// (the round interval came round). Separate from signalSteer because the
+	// question a drift rate asks is what the session did on its own, and
+	// folding the two together would put the user's own messages in the
+	// numerator.
+	signalIntervene = "intervened"
 	// signalUndo: the user took a turn's edits back. Reason: "".
 	signalUndo = "undo"
 	// signalMode: the permission mode changed. Reason: the new mode.

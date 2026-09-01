@@ -26,12 +26,17 @@ package chat
 //     was taken at, and the heading states it, because a sentence about
 //     "now" that is forty rounds old is worse than no sentence.
 //
-// What this file does not do is act on the drift verdict. The verdict is
-// rendered and nothing more. Auto-steering is the intended follow-up, and
-// what it needs is here already: the target is anchored at turn start rather
-// than re-derived (a run that drifts must not drag its own yardstick along),
-// the verdict is a closed enum rather than prose, and the digest carries no
-// tool output — so a fetched web page cannot become a steering instruction.
+// The drift verdict is also acted on, in steer.go: an off-target reading
+// interrupts the turn at the next round boundary. Three properties of this
+// file are what make that safe, and none of them may be traded away for
+// convenience. The target is anchored at turn start rather than re-derived,
+// so a run that drifts cannot drag its own yardstick along. The verdict is a
+// closed enum rather than prose, so the policy branches on a value instead of
+// on a sentence written by whatever it is judging. And the digest carries no
+// tool output — which used to be a cost and privacy nicety and is now a
+// prompt-injection boundary: a fetched web page that could reach the digest
+// could write the instruction the agent is steered with.
+// See docs/capabilities/coding-agent.md#the-verdict-is-a-steering-signal-so-the-digest-is-a-boundary.
 
 import (
 	"context"
@@ -229,6 +234,9 @@ func (m *Model) finishSummary(msg summaryDoneMsg) {
 	m.summary.last = &v
 	m.summary.lastRound = v.Round
 	m.summary.lastAt = time.Now()
+	// A drifting reading is the one thing a summary does besides being read.
+	// It only ever queues here; the round boundary delivers it (steer.go).
+	m.considerSteer(v)
 }
 
 // summaryStateCode is the reading's state as the recorder's closed set.
@@ -308,9 +316,11 @@ func summaryStepState(s components.PlanStepState) string {
 // recognise: what was called, what it was pointed at, how it came back.
 //
 // It carries no tool output and no file contents, which is the digest's whole
-// security posture. The summary becomes a steering signal in the next story,
-// and material an outside party can write — a fetched page, a dependency's
-// README, a test's stdout — must not be able to reach the thing that steers.
+// security posture. The summary is a steering signal, so material an outside
+// party can write — a fetched page, a dependency's README, a test's stdout —
+// must not be able to reach the thing that steers. The row is a tool name, an
+// argument, and an outcome word from a closed set; the result text is read
+// only to choose between those words and never travels.
 func (m Model) summaryActivity() []string {
 	var rows []string
 	for _, e := range m.transcript {

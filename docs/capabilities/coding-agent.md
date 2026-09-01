@@ -49,6 +49,56 @@ what a turn that is quietly already done needs.
 The person is not the check-in mechanism. They were doing that job by hand,
 and only when they happened to be looking.
 
+## Two failures, two interruptions
+
+A turn can fail by going somewhere it was not asked to go, and it can fail by
+arriving and not noticing. These are not the same failure, and one question
+does not catch both.
+
+The session summary already reads, every few rounds, whether the run still
+serves the instruction it started from, and that reading is what an off-target
+turn is interrupted by: it arrives with the instruction it was judged against
+and the reason the reading gave, so the interruption names the departure
+instead of asking in general. It fires only on a verdict of off target — an
+intervention on a shrug is worse than no intervention.
+
+That reading cannot catch the other failure. A session that spends a hundred
+rounds reading files in service of the instruction is on target at every one
+of them. So the check-in stays underneath, unconditional and on the clock,
+asking a generic question and costing the round it takes. It has nothing to
+depend on, which is why it is the one that runs where there is no summary to
+read at all.
+
+Both are held to the same three rules. **They arrive at a round boundary**,
+because a message may not join a conversation between an assistant's tool
+calls and their results, and a round now dispatches several at once — so a
+verdict that lands mid-round waits. **They do not lift the round cap.** A
+person typing into a running turn is asking for it to continue, and their
+message resets the counter; an automatic mechanism doing the same would
+quietly postpone the checkpoint the person is there for. **They do not arrive
+together** — a steer is a check-in with better evidence, so it counts as one
+and the interval restarts from it.
+
+The steer is written to ask rather than to accuse. The judge is a cheap model
+reading a digest of tool activity, not the agent's reasoning, so it can be
+wrong; a confident accusation against a session that is in fact on task costs
+more than the steer saves.
+
+## The verdict is a steering signal, so the digest is a boundary
+
+The digest carries tool names, what they were pointed at, and an outcome word
+from a closed set. It has never carried tool output or file contents, and that
+was a cost and privacy property when the reading only had to be rendered.
+
+Acting on the verdict changes what the rule is for. A fetched page, a
+dependency's README, a test's stdout — anything an outside party can write —
+must not be able to reach the thing that writes the instruction the agent is
+then steered with. The same reasoning anchors the target at the turn's start
+rather than re-deriving it, so a run that has drifted cannot drag its own
+yardstick along, and keeps the verdict a closed enum rather than prose, so the
+policy branches on a value instead of on a sentence written by whatever it is
+judging.
+
 ## The round cap is a checkpoint, not a limit
 
 Hitting the ceiling pauses for input rather than terminating. The work so far

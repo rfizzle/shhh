@@ -294,7 +294,8 @@ func TestSummary_TargetIsAnchoredAtTurnStart(t *testing.T) {
 
 // The digest carries what was called and how it came back — never what a tool
 // returned. A page the agent fetched must not be able to write the summary,
-// and once steering exists, to steer.
+// and through it the steer — TestSteer_ToolOutputCannotReachTheDeliveredSteer
+// follows the same invariant through to the delivered message.
 func TestSummaryRequest_CarriesNoToolOutput(t *testing.T) {
 	m := summaryModel(t, &readingProvider{text: "x"})
 	m.appendEntry(entry{
@@ -411,9 +412,14 @@ func TestSummary_ReachesTheRail(t *testing.T) {
 
 // The verdict is rendered and nothing more. Auto-steering is the next story;
 // a reading that has gone off target must not, today, touch the turn.
-func TestSummary_DriftChangesNothingAboutTheTurn(t *testing.T) {
+// A reading is a background command and lands whenever it lands, which may be
+// halfway through a round. Acting on it there would put a user message between
+// an assistant's tool calls and their results, so a drift verdict only ever
+// queues (steer.go); nothing about the turn moves until the boundary.
+func TestSummary_DriftQueuesButMovesNothingAtReadingTime(t *testing.T) {
 	m := summaryModel(t, &readingProvider{text: "Rewriting the README.", state: "off_target"})
 	m.setTurnState(stateStreaming)
+	m.agent.BeginToolRound("", []provider.ToolCall{{Name: "read_file"}}, nil)
 	before := len(m.transcript)
 	m = applyReading(t, m)
 	if m.turnState() != stateStreaming {
@@ -424,6 +430,9 @@ func TestSummary_DriftChangesNothingAboutTheTurn(t *testing.T) {
 	}
 	if m.pendingApproval != nil {
 		t.Fatal("a drift reading asks for nothing")
+	}
+	if m.steer.pending == nil {
+		t.Fatal("it does queue the steer the boundary will deliver")
 	}
 }
 

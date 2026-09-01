@@ -153,11 +153,8 @@ func (h *Headless) Run(prompt string) (string, error) {
 		// The same take-stock check-in the TUI injects. A headless run needs
 		// it more, not less: there is nobody here to ask a turn whether it has
 		// enough yet, so the run itself has to ask.
-		if h.Agent.DueForCheckIn() {
-			h.Agent.Append(provider.Message{
-				Role:    provider.RoleUser,
-				Content: CheckInPrompt(h.Agent.Rounds(), FinishedInSession),
-			})
+		if prompt, ok := h.Agent.TakeCheckIn(); ok {
+			h.Agent.Append(provider.Message{Role: provider.RoleUser, Content: prompt})
 		}
 	}
 }

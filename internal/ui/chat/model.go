@@ -505,8 +505,11 @@ type Model struct {
 	classifierCancel context.CancelFunc
 	// The session summary (summary.go): a cheap model's periodic read
 	// of what the session is doing, drawn as the rail's SUMMARY block.
-	summarizer    *agent.Summarizer
-	summary       summaryState
+	summarizer *agent.Summarizer
+	summary    summaryState
+	// steer is the drift half of the same reading: what the summarizer's
+	// verdict does about a run that has wandered (steer.go).
+	steer         steerState
 	summaryCancel context.CancelFunc
 	// The session titler and what it has written — title.go.
 	titler      *agent.Titler
@@ -2343,6 +2346,7 @@ func (m Model) sendUserMessageAs(text, shown string) (tea.Model, tea.Cmd) {
 	// conversation happens to have ended up.
 	m.summaryTarget = shown
 	m.summary.startTurn()
+	m.steer.startTurn()
 	m.recordCheckpoint(shown)
 	atts := m.takeAttachments()
 	m.agent.StartTurnWith(text, atts)
@@ -2856,12 +2860,12 @@ func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
 	if !m.roundsUnbounded() && m.agent.Rounds() >= m.effectiveMaxToolRounds() {
 		return m.pauseAtRoundLimit()
 	}
-	// A long turn is asked what it has got, long before the cap. Steering
-	// injected above answers the same question, so a turn the reader has just
-	// steered is not asked it twice.
-	if m.agent.DueForCheckIn() {
-		m.injectCheckIn()
-	}
+	// A long turn is asked what it has got, long before the cap — by a drift
+	// verdict where there is one, by the clock otherwise (steer.go). Steering
+	// injected above answers the same question and resets the counter both
+	// are measured against, so a turn the reader has just steered is not
+	// asked it twice.
+	m.injectInterventions()
 	m.setTurnState(stateStreaming)
 	m.streaming = ""
 	m.trimForRequest()
@@ -3061,22 +3065,6 @@ func (m *Model) cancelStreaming() {
 	// it held and the reader decides what still applies (followup.go).
 	m.holdFollowUps()
 	// Restored steering empties the queue: the notice rail may shrink.
-	m.syncViewport()
-}
-
-// injectCheckIn asks the turn to take stock and carries straight on. It is
-// steering the session gives itself: the same message a reader sends when
-// they ask whether it has enough yet, at a point the reader should not have
-// to be watching for.
-//
-// The round counter is deliberately not reset. A check-in is not a fresh
-// turn — the cap still has to arrive on schedule, because that one is the
-// reader's checkpoint and moving it would hide the turn from them.
-func (m *Model) injectCheckIn() {
-	text := agent.CheckInPrompt(m.agent.Rounds(), agent.FinishedInSession)
-	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: text})
-	m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
-		"Check-in — %d rounds used. Taking stock, then carrying on.", m.agent.Rounds())})
 	m.syncViewport()
 }
 
