@@ -341,6 +341,13 @@ root is the same kind of thing.
 A child's approvals route to wherever you are, so detaching does not mean
 missing a decision.
 
+The list ends with the one row that is not an agent: the offer to draft a new
+profile. The manager is where a person goes to find out what this session has,
+which makes it the one place where *and none of these is what I want* is a
+thought somebody is already having, so the answer to it is a row rather than a
+command they have to know. It is offered only where drafting is wired, and the
+keys that act on an agent are silent over it.
+
 ## Cards
 
 ### The approval card
@@ -488,6 +495,49 @@ the move is mechanical, and the alternative to offering it here is a fallback
 that never ends. So the row that found it offers to make it, and puts the same
 confirm in front of it that the settings screen puts in front of a write
 (docs/capabilities/configuration.md#a-migration-is-a-doctor-check).
+
+### The profile drafter
+
+Drafting a profile is a conversation with a shape — a brief, at most three
+questions, a draft — and it runs on a surface of its own rather than through
+the transcript. It ran through the transcript first, and what that cost is the
+argument for this: the starting points were a numbered list in system text you
+answered by typing a digit into the ordinary input, and the drafter's
+questions arrived as a list to be answered *in one line, in order*. Every
+other list in the product is a selector, and there is nowhere else where three
+answers are typed into one line with no way to see which one you are on.
+
+The surface holds the keyboard for as long as the flow lasts, which is what
+lets a step be typed into and picked from at the same time, and a rail across
+the top says which of the three steps you are standing on. The rail is not
+decoration: a flow whose length is not stated is one nobody can decide to
+start. A brief that was already a specification gets a draft and no questions,
+and the rail says the middle step was skipped rather than ticking an exchange
+that never happened.
+
+The first step is a field with the cursor in it and the starting points
+underneath, which is the start screen's arrangement and its reason — someone
+who already has the sentence types it, and the offers are there for someone
+who does not. The drafter's questions are asked one at a time, with the
+answers already given still on screen, and esc unwinds the flow one exchange
+at a time instead of cancelling it: an esc that always meant *cancel the whole
+thing* made a mistyped answer cost the drafting.
+
+The wait while the drafter writes is on the surface too, and that is not only
+so it can be seen. A drafting turn that could not be stopped was a cancel
+nobody had — the session held the cancel and no key reached it.
+
+The last step is the draft over the card that writes it, and the card is the
+one thing on the surface that never gives ground: on a terminal too short for
+both, the profile pane shrinks and then goes, then the drafter's reason, then
+the fields from the bottom — the permission line is the one nobody should
+decide without, and the budget is the one they can look up. The card names the
+profile in its own title, so the question stays answerable on a surface too
+short to keep the name above it.
+
+Nothing on the surface writes anything until that card's own row is taken,
+which is the rule the scaffold card keeps: a decision gets a card, and the
+card is the end of the flow rather than a step in it.
 
 ### The context surface
 

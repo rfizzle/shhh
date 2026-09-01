@@ -3,19 +3,23 @@ package chat
 // /agents new: a profile drafted in conversation
 // (docs/capabilities/subagents.md#a-profile-is-drafted-in-conversation).
 // The flow is three exchanges at most — a brief, perhaps a few questions,
-// then a draft on a card — and the person's words go straight to the
-// drafter each time. The card is the decision: where the file lives, a
-// note that sends the draft back for revision, or nothing.
+// then a draft on a card — and it runs on a surface of its own
+// (docs/interface/surfaces.md#the-profile-drafter) rather than through the
+// transcript. What that buys is the thing the flow was missing: a step you
+// can see yourself standing on, one question at a time with the answers you
+// have already given still on screen, and a way back through them.
 //
-// The drafting is a background command like the backlog reading: nothing
-// on screen waits for it, and a result arriving after /clear is dropped by
-// its run number.
+// The drafting is a background command like the backlog reading: nothing on
+// screen waits for it, and a result arriving after /clear is dropped by its
+// run number. The wait is on the surface rather than in the transcript, which
+// is what gives the person somewhere to press the key that stops it — a
+// cancel function with nothing bound to it was a cancel nobody had.
 
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/persona"
@@ -50,30 +54,30 @@ func (m Model) WithPersonas(p Personas) Model {
 	return m
 }
 
-type personaWait int
-
-const (
-	personaIdle personaWait = iota
-	// personaWaitBrief: the question was asked; the next line is the brief.
-	personaWaitBrief
-	// personaWaitAnswers: questions were asked; the next line answers them.
-	personaWaitAnswers
-)
-
-// personaFlow is one drafting in progress.
+// personaFlow is one drafting in progress. The surface holds what is on
+// screen; this holds what the drafter is being told.
 type personaFlow struct {
-	waiting   personaWait
-	brief     string
+	brief string
+	// questions is the batch the drafter last asked and at which of them the
+	// flow is standing. They are asked one at a time — three questions and
+	// one line to answer them all in was a form with the boxes removed.
 	questions []string
+	at        int
 	exchange  []persona.QA
 	draft     *persona.Draft
 	drafting  bool
 	runID     int
 	cancel    context.CancelFunc
+	// started stamps the drafting turn, for the wait's elapsed.
+	started time.Time
 	// overwrite is set once the person has been told a file exists and
 	// chosen to replace it.
 	overwrite bool
 }
+
+// personaCommandName is the command the flow is opened by, named once so the
+// surface's header and the manager's own row cannot drift apart.
+const personaCommandName = "/agents new"
 
 // personaDraftMsg carries a finished drafting turn back to the model.
 type personaDraftMsg struct {
@@ -81,15 +85,24 @@ type personaDraftMsg struct {
 	outcome persona.Outcome
 }
 
-// personaHoldsInput reports that the next typed line is the flow's, not
-// the model's.
-func (m *Model) personaHoldsInput() bool {
-	return m.persona != nil && m.persona.waiting != personaIdle
+// personaSave is one row of the draft card that writes the file, and where
+// it writes it. The rows and the scopes are declared together so the card
+// cannot offer a place the save does not know how to write to.
+type personaSave struct {
+	option components.SelectOption
+	scope  persona.Scope
 }
 
-// startPersona begins a drafting: with a brief, straight to the drafter;
-// without one, the question and a few starting points worded for this
-// session, for a person who has the wish but not the sentence yet.
+// personaDrafting reports a drafting turn in flight, which is what keeps the
+// tick chain running while the wait is on screen (spin.go).
+func (m Model) personaDrafting() bool {
+	return m.persona != nil && m.persona.drafting
+}
+
+// startPersona opens the surface. With a brief already typed it goes
+// straight to the drafter; without one it asks, and offers a few starting
+// points worded for this session, for a person who has the wish but not the
+// sentence yet.
 func (m Model) startPersona(brief string) (tea.Model, tea.Cmd) {
 	if !m.personas.Enabled {
 		return m.systemNotice("No model is configured to draft a profile. The reference in docs/agents/README.md says how to write one by hand.")
@@ -98,103 +111,141 @@ func (m Model) startPersona(brief string) (tea.Model, tea.Cmd) {
 		return m.systemNotice("Still drafting — the card opens when it is done.")
 	}
 	m.persona = &personaFlow{}
+	m.personaScreen = components.NewProfileScreen(personaCommandName)
+	m.personaScreen.Subject = m.personaSubject()
+	m.enterSurface(statePersona)
 	if brief = strings.TrimSpace(brief); brief != "" {
 		return m.draftPersona(brief)
 	}
-	m.persona.waiting = personaWaitBrief
-	var b strings.Builder
-	if m.personas.Kind == persona.KindChat {
-		b.WriteString("What should this colleague be for? Say it however you like — a standpoint, a job, a voice. Pick a number to start from one of these, or type your own:\n")
-	} else {
-		b.WriteString("What should this agent do? Say the job however you like — what it changes, what it checks, what it must leave alone. Pick a number to start from one of these, or type your own:\n")
-	}
-	for i, s := range persona.Suggestions(m.personas.Kind) {
-		fmt.Fprintf(&b, "  %d. %s\n", i+1, s)
-	}
-	b.WriteString("(an empty line or \"cancel\" stops)")
-	return m.systemNotice(strings.TrimRight(b.String(), "\n"))
-}
-
-// answerPersona takes the line the flow was waiting for.
-func (m Model) answerPersona(text string) (tea.Model, tea.Cmd) {
-	f := m.persona
-	text = strings.TrimSpace(text)
-	if text == "" || strings.EqualFold(text, "cancel") {
-		m.persona = nil
-		return m.systemNotice("No profile drafted.")
-	}
-	switch f.waiting {
-	case personaWaitBrief:
-		if n, err := strconv.Atoi(text); err == nil {
-			if s := persona.Suggestions(m.personas.Kind); n >= 1 && n <= len(s) {
-				text = s[n-1]
-			}
-		}
-		return m.draftPersona(text)
-	case personaWaitAnswers:
-		f.exchange = append(f.exchange, persona.QA{Question: strings.Join(f.questions, " / "), Answer: text})
-		f.questions = nil
-		return m.draftPersona(f.brief)
-	}
+	m.askPersonaBrief("")
+	m.syncViewport()
 	return m, nil
 }
 
-// draftPersona sends the brief — and the exchange and draft so far — to
-// the drafter in the background.
+// personaSubject is the header's dim clause: which kind of profile this is
+// and what the session already has. Someone about to describe a colleague is
+// exactly the person who wants to know which ones already exist.
+func (m Model) personaSubject() string {
+	kind := "a coding agent"
+	if m.personas.Kind == persona.KindChat {
+		kind = "a chat colleague"
+	}
+	if m.personas.Existing == nil {
+		return kind
+	}
+	existing := m.personas.Existing()
+	if len(existing) == 0 {
+		return kind + " · none yet"
+	}
+	return kind + " · " + strings.Join(existing, " ")
+}
+
+// askPersonaBrief puts the flow on its first step, with text already in the
+// field when the person is coming back to it.
+func (m Model) askPersonaBrief(text string) {
+	ask := "What should this agent do? Say the job however you like — what it changes, what it checks, what it must leave alone."
+	lead := "or start from one of these"
+	if m.personas.Kind == persona.KindChat {
+		ask = "What should this colleague be for? Say it however you like — a standpoint, a job, a voice."
+	}
+	m.personaScreen.AskBrief(ask, lead, persona.Suggestions(m.personas.Kind))
+	m.personaScreen.SetText(text)
+}
+
+// draftPersona sends the brief — and the exchange and draft so far — to the
+// drafter in the background, and puts the wait on the surface.
 func (m Model) draftPersona(brief string) (tea.Model, tea.Cmd) {
 	f := m.persona
 	f.brief = brief
-	f.waiting = personaIdle
-	f.drafting = true
-	f.runID++
-	runID := f.runID
-	req := persona.Request{Kind: m.personas.Kind, Brief: brief, Exchange: f.exchange, Models: m.personas.Models}
-	if m.personas.Existing != nil {
-		req.Existing = m.personas.Existing()
-	}
-	draft := m.personas.Draft
-	ctx, cancel := context.WithCancel(context.Background())
-	f.cancel = cancel
-	model, _ := m.systemNotice("Drafting…")
-	return model, func() tea.Msg {
-		defer cancel()
-		return personaDraftMsg{runID: runID, outcome: draft(ctx, req)}
-	}
+	return m.runDrafter(persona.Request{
+		Kind:     m.personas.Kind,
+		Brief:    brief,
+		Exchange: drafterExchange(f.exchange),
+		Models:   m.personas.Models,
+	}, "drafting")
 }
 
 // refinePersona sends the draft back with the person's note.
 func (m Model) refinePersona(feedback string) (tea.Model, tea.Cmd) {
 	f := m.persona
+	return m.runDrafter(persona.Request{
+		Kind:     m.personas.Kind,
+		Brief:    f.brief,
+		Exchange: drafterExchange(f.exchange),
+		Current:  f.draft,
+		Feedback: feedback,
+		Models:   m.personas.Models,
+	}, "revising")
+}
+
+// drafterExchange is the exchange as the drafter is told it. An empty answer
+// is an answer — the person has no preference — and it has to be said, because
+// a blank beside a question reads as a question nobody asked.
+func drafterExchange(qas []persona.QA) []persona.QA {
+	if len(qas) == 0 {
+		return nil
+	}
+	out := make([]persona.QA, len(qas))
+	for i, qa := range qas {
+		if strings.TrimSpace(qa.Answer) == "" {
+			qa.Answer = "no preference"
+		}
+		out[i] = qa
+	}
+	return out
+}
+
+// runDrafter starts one drafting turn behind the wait.
+func (m Model) runDrafter(req persona.Request, doing string) (tea.Model, tea.Cmd) {
+	f := m.persona
 	f.drafting = true
+	f.started = time.Now()
 	f.runID++
 	runID := f.runID
-	req := persona.Request{Kind: m.personas.Kind, Brief: f.brief, Exchange: f.exchange, Current: f.draft, Feedback: feedback, Models: m.personas.Models}
 	if m.personas.Existing != nil {
 		req.Existing = m.personas.Existing()
 	}
 	draft := m.personas.Draft
 	ctx, cancel := context.WithCancel(context.Background())
 	f.cancel = cancel
-	model, _ := m.systemNotice("Revising…")
-	return model, func() tea.Msg {
+	m.personaScreen.Work(doing)
+	m.syncViewport()
+	// No tick is batched with it: Update applies the one-tick rule after
+	// every message, so entering the wait resumes the chain on its own
+	// (spin.go).
+	return m, func() tea.Msg {
 		defer cancel()
 		return personaDraftMsg{runID: runID, outcome: draft(ctx, req)}
 	}
 }
 
-// dropPersona retires a flow: /clear calls it.
+// dropPersona retires a flow and the surface it was running on: /clear calls
+// it, and so does every way out of the flow. A flow dropped with its surface
+// left up would be a takeover holding the keyboard for a drafting that no
+// longer exists.
 func (m *Model) dropPersona() {
-	if m.persona == nil {
+	if m.persona == nil && m.personaScreen == nil {
 		return
 	}
-	if m.persona.cancel != nil {
+	if m.persona != nil && m.persona.cancel != nil {
 		m.persona.cancel()
 	}
 	m.persona = nil
+	m.personaScreen = nil
+	if m.state == statePersona {
+		m.leaveSurface()
+	}
 }
 
-// finishPersonaDraft applies a drafting turn: questions go to the
-// transcript and wait for one line of answers; a draft opens the card.
+// closePersona takes the surface down and says what became of the draft.
+func (m Model) closePersona(note string) (tea.Model, tea.Cmd) {
+	m.dropPersona()
+	m.syncViewport()
+	return m.systemNotice(note)
+}
+
+// finishPersonaDraft applies a drafting turn: questions are asked one at a
+// time, a draft opens the card.
 func (m Model) finishPersonaDraft(msg personaDraftMsg) (tea.Model, tea.Cmd) {
 	f := m.persona
 	if f == nil || !f.drafting || msg.runID != f.runID {
@@ -204,156 +255,248 @@ func (m Model) finishPersonaDraft(msg personaDraftMsg) (tea.Model, tea.Cmd) {
 	f.cancel = nil
 	o := msg.outcome
 	if o.Failed {
-		m.persona = nil
-		return m.systemNotice("The profile could not be drafted — " + o.Err + ".")
+		return m.closePersona("The profile could not be drafted — " + o.Err + ".")
 	}
 	if len(o.Questions) > 0 {
-		f.questions = o.Questions
-		f.waiting = personaWaitAnswers
-		var b strings.Builder
-		b.WriteString("Before drafting, a few questions — answer them in one line, in order (or \"cancel\"):\n")
-		for i, q := range o.Questions {
-			fmt.Fprintf(&b, "  %d. %s\n", i+1, q)
-		}
-		return m.systemNotice(strings.TrimRight(b.String(), "\n"))
+		f.questions, f.at = o.Questions, 0
+		m.askPersonaQuestion("")
+		m.syncViewport()
+		return m, nil
 	}
 	f.draft = o.Draft
-	return m.openPersonaCard()
-}
-
-// openPersonaCard shows the draft above the decision: where it lives, a
-// revision with a note, or nothing.
-func (m Model) openPersonaCard() (tea.Model, tea.Cmd) {
-	project := m.personas.ProjectDir
-	global := m.personas.GlobalDir
-	if project == "" {
-		project = ".shhh/agents"
-	}
-	if global == "" {
-		global = "the config directory's agents/"
-	}
-	// A chat persona is the person's, not the project's: chat offers one
-	// place to keep it. A coding agent's profile can belong to the work
-	// (docs/capabilities/subagents.md#a-profile-is-drafted-in-conversation).
-	opts := []components.SelectOption{{Label: "Save", Desc: global}}
-	if m.personas.Kind == persona.KindCode {
-		opts = []components.SelectOption{
-			{Label: "Save to this project", Desc: project},
-			{Label: "Save globally", Desc: global},
-		}
-	}
-	opts = append(opts,
-		components.SelectOption{Label: "Refine", Desc: "say what to change in the note", RequireNote: true},
-		components.SelectOption{Label: "Discard"},
-	)
-	ns := components.NewNoteSelect("Keep this profile?", opts)
-	ns.Note.Placeholder = "what to change (for Refine)"
-	ns.Select.MaxLines = m.maxConfirmPanelHeight() - 1
-	m.personaAsk = ns
-	m.enterSurface(statePersona)
+	m.openPersonaCard()
 	m.syncViewport()
 	return m, nil
 }
 
-// updatePersona routes the card's keys.
+// askPersonaQuestion puts the question the flow is standing on onto the
+// surface, with text already in the field when the person stepped back to it.
+func (m Model) askPersonaQuestion(text string) {
+	f := m.persona
+	m.personaScreen.AskQuestion(f.questions[f.at], f.at+1, len(f.questions))
+	m.personaScreen.SetText(text)
+}
+
+// openPersonaCard puts the draft on the surface above the decision: where it
+// lives, a revision with a note, or nothing.
+func (m *Model) openPersonaCard() {
+	d := m.persona.draft
+	facts := []components.ProfileFact{{
+		Label: "permissions",
+		Value: d.Tier(),
+		Tone:  personaTierTone(*d),
+		Detail: map[bool]string{
+			true:  "it can change things",
+			false: "it reads and reports",
+		}[d.Writes()],
+	}}
+	model := d.Model
+	if model == "" {
+		model = "inherited from this session"
+	}
+	facts = append(facts, components.ProfileFact{Label: "model", Value: model})
+	if d.Reasoning != "" {
+		facts = append(facts, components.ProfileFact{Label: "reasoning", Value: d.Reasoning})
+	}
+	if d.MaxTokens > 0 {
+		facts = append(facts, components.ProfileFact{
+			Label: "budget", Value: formatTokenCount(d.MaxTokens) + " tokens"})
+	}
+	saves := make([]components.SelectOption, 0, 2)
+	for _, s := range m.personaSaves() {
+		saves = append(saves, s.option)
+	}
+	m.personaScreen.Show(components.ProfileDraftView{
+		Name:        d.Name,
+		Description: d.Description,
+		Facts:       facts,
+		Why:         d.Why,
+		Prompt:      d.Prompt,
+	}, saves)
+}
+
+// personaSaves is the card's writing rows. A chat persona is the person's,
+// not the project's, so chat offers one place to keep it; a coding agent's
+// profile can belong to the work
+// (docs/capabilities/subagents.md#a-profile-is-drafted-in-conversation).
+func (m Model) personaSaves() []personaSave {
+	project := m.personas.ProjectDir
+	if project == "" {
+		project = ".shhh/agents"
+	}
+	global := m.personas.GlobalDir
+	if global == "" {
+		global = "the config directory's agents/"
+	}
+	if m.personas.Kind == persona.KindChat {
+		return []personaSave{{
+			option: components.SelectOption{Label: "Save", Desc: global},
+			scope:  persona.ScopeGlobal,
+		}}
+	}
+	return []personaSave{
+		{
+			option: components.SelectOption{Label: "Save to this project", Desc: project},
+			scope:  persona.ScopeProject,
+		},
+		{
+			option: components.SelectOption{Label: "Save globally", Desc: global},
+			scope:  persona.ScopeGlobal,
+		},
+	}
+}
+
+// personaTierTone reads the permission line the way a card field is read: a
+// profile that can change something is the one the eye should find.
+func personaTierTone(d persona.Draft) components.FieldTone {
+	if d.Writes() {
+		return components.ToneRisk
+	}
+	return components.ToneSafe
+}
+
+// updatePersona routes the surface's keys.
 func (m Model) updatePersona(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
+	if m.personaScreen == nil || m.persona == nil {
+		return m.closePersona("No profile drafted.")
+	}
 	if keys.Match(msg, keys.Draft.Quit) {
 		m.quitting = true
 		return m, m.quitCmd()
 	}
-	done, result := m.personaAsk.Update(msg)
+	done, result := m.personaScreen.Update(msg)
 	if !done {
+		m.syncViewport()
 		return m, nil
 	}
-	res := result.(components.NoteSelectResult)
-	m.personaAsk = nil
-	m.leaveSurface()
-	m.syncViewport()
+	res, ok := result.(components.ProfileResult)
+	if !ok {
+		return m, nil
+	}
+	switch res.Action {
+	case components.ProfileTake:
+		return m.takePersonaAnswer(res.Text)
+	case components.ProfileBack:
+		return m.stepPersonaBack()
+	case components.ProfileAbort:
+		return m.abortPersonaDraft()
+	case components.ProfileSave:
+		return m.savePersona(res.Index)
+	case components.ProfileRefine:
+		return m.refinePersona(res.Text)
+	}
+	return m.closePersona("Profile discarded.")
+}
+
+// takePersonaAnswer applies the line the step was waiting for: the brief
+// starts a drafting, an answer moves to the next question and the last one
+// starts the drafting the questions were asked for.
+func (m Model) takePersonaAnswer(text string) (tea.Model, tea.Cmd) {
 	f := m.persona
-	// The card's rows: the save rows first, then Refine, then Discard.
-	saves := 1
-	if m.personas.Kind == persona.KindCode {
-		saves = 2
+	if m.personaScreen.Step == components.ProfileBrief {
+		return m.draftPersona(text)
 	}
-	if res.Canceled || res.Index > saves || f == nil || f.draft == nil {
-		m.persona = nil
-		return m.systemNotice("Profile discarded.")
+	// The exchange holds what the person actually typed, empty included, so
+	// stepping back onto a question puts their own words back in the field.
+	// Wording an empty answer for the drafter is the request's job
+	// (drafterExchange).
+	f.exchange = append(f.exchange, persona.QA{Question: f.questions[f.at], Answer: text})
+	m.personaScreen.Answered(f.questions[f.at], text)
+	if f.at++; f.at < len(f.questions) {
+		m.askPersonaQuestion("")
+		m.syncViewport()
+		return m, nil
 	}
-	if res.Index == saves {
-		return m.refinePersona(res.Note)
+	return m.draftPersona(f.brief)
+}
+
+// stepPersonaBack unwinds one exchange. From the first question it goes back
+// to the brief, and from the brief it leaves — an esc that always meant
+// "cancel the whole thing" made a mistyped answer cost the flow.
+func (m Model) stepPersonaBack() (tea.Model, tea.Cmd) {
+	f := m.persona
+	if m.personaScreen.Step != components.ProfileQuestions {
+		return m.closePersona("No profile drafted.")
 	}
-	scope := persona.ScopeGlobal
-	if m.personas.Kind == persona.KindCode && res.Index == 0 {
-		scope = persona.ScopeProject
+	if f.at == 0 {
+		// Back to the brief, with what was typed still in the field. The
+		// answers go with it: they were answers to questions asked about a
+		// brief that is now being reconsidered.
+		f.exchange, f.questions, f.at = nil, nil, 0
+		m.askPersonaBrief(f.brief)
+		m.syncViewport()
+		return m, nil
 	}
-	path, err := m.personas.Save(scope, *f.draft, f.overwrite)
+	f.at--
+	last := f.exchange[len(f.exchange)-1]
+	f.exchange = f.exchange[:len(f.exchange)-1]
+	m.personaScreen.Forget()
+	m.askPersonaQuestion(last.Answer)
+	m.syncViewport()
+	return m, nil
+}
+
+// abortPersonaDraft stops a drafting turn and hands the flow back to the
+// brief, which is the step a person who stopped it is reconsidering.
+func (m Model) abortPersonaDraft() (tea.Model, tea.Cmd) {
+	f := m.persona
+	if f.cancel != nil {
+		f.cancel()
+		f.cancel = nil
+	}
+	// The run number moves, so the turn's own result is dropped when it
+	// arrives (finishPersonaDraft).
+	f.drafting = false
+	f.runID++
+	f.exchange, f.questions, f.at = nil, nil, 0
+	m.askPersonaBrief(f.brief)
+	m.syncViewport()
+	return m, nil
+}
+
+// savePersona writes the file the chosen row names.
+func (m Model) savePersona(index int) (tea.Model, tea.Cmd) {
+	f := m.persona
+	saves := m.personaSaves()
+	if f.draft == nil || index < 0 || index >= len(saves) {
+		return m.closePersona("Profile discarded.")
+	}
+	path, err := m.personas.Save(saves[index].scope, *f.draft, f.overwrite)
 	if err != nil {
 		if path != "" && !f.overwrite {
 			// The file exists. The card comes back with the choice made
 			// explicit: saving again replaces it, or a note renames it.
 			f.overwrite = true
-			model, _ := m.systemNotice(err.Error() + " Save again to replace it, or Refine with a new name.")
-			return model.(Model).openPersonaCard()
+			m.openPersonaCard()
+			m.personaScreen.Warn(err.Error() + " Save again to replace it, or Refine with a new name.")
+			m.syncViewport()
+			return m, nil
 		}
-		m.persona = nil
-		return m.systemNotice("Could not save the profile: " + err.Error())
+		return m.closePersona("Could not save the profile: " + err.Error())
 	}
 	name := f.draft.Name
-	m.persona = nil
-	return m.systemNotice(fmt.Sprintf("Saved %s to %s. It is spawnable now as role %q; edit the file any time.", name, path, name))
+	return m.closePersona(fmt.Sprintf(
+		"Saved %s to %s. It is spawnable now as role %q; edit the file any time.", name, path, name))
 }
 
-// personaLines renders the draft above the card: the facts a decision
-// needs, and the prompt as far as the panel allows.
-func (m Model) personaLines() []string {
-	if m.personaAsk == nil || m.persona == nil || m.persona.draft == nil {
-		return nil
+// personaPane renders the surface into the transcript pane it takes over.
+func (m Model) personaPane(width, height int) string {
+	if m.personaScreen == nil {
+		return ""
 	}
-	d := m.persona.draft
-	width := m.contentWidth()
-	var lines []string
-	add := func(text string, style func(...string) string) {
-		for _, l := range strings.Split(m.wordWrap(text, width), "\n") {
-			lines = append(lines, style(l))
-		}
+	m.personaScreen.MaxLines = height
+	m.personaScreen.Frame = m.spinFrame
+	m.personaScreen.Elapsed = ""
+	if m.persona != nil && m.persona.drafting && !m.persona.started.IsZero() {
+		m.personaScreen.Elapsed = components.FormatElapsed(time.Since(m.persona.started))
 	}
-	head := fmt.Sprintf("%s — %s", d.Name, d.Description)
-	add(head, sty.User.Render)
-	facts := "tier: " + d.Tier()
-	if d.Model != "" {
-		facts += " · model: " + d.Model
-	}
-	if d.Reasoning != "" {
-		facts += " · reasoning: " + d.Reasoning
-	}
-	if d.MaxTokens > 0 {
-		facts += fmt.Sprintf(" · budget: %d tokens", d.MaxTokens)
-	}
-	add(facts, sty.Welcome.Render)
-	if d.Why != "" {
-		add("why: "+d.Why, sty.Welcome.Render)
-	}
-	// The prompt is the profile; show what fits and say what did not.
-	budget := m.maxConfirmPanelHeight() - len(lines) - 7
-	if budget < 3 {
-		budget = 3
-	}
-	prompt := strings.Split(m.wordWrap(d.Prompt, width), "\n")
-	if len(prompt) > budget {
-		prompt = append(prompt[:budget-1], fmt.Sprintf("… %d more lines in the file", len(prompt)-budget+1))
-	}
-	for _, l := range prompt {
-		lines = append(lines, sty.Assistant.Render(l))
-	}
-	return append(lines, strings.Split(m.personaAsk.View(width), "\n")...)
+	return m.personaScreen.View(width)
 }
 
-// renderPersona renders the card padded to the bottom panel height.
-func (m Model) renderPersona() string {
-	lines := m.personaLines()
-	h := m.bottomPanelHeight()
-	for len(lines) < h {
-		lines = append(lines, "")
-	}
-	return strings.Join(lines[:h], "\n")
+// renderPersonaHint is the surface's bottom panel: it holds the keyboard, so
+// the panel states what it is and nothing else.
+func (m Model) renderPersonaHint() string {
+	return sty.SystemMsg.Render("drafting a profile · "+
+		keys.Bracket(keys.Profile.Back)+" "+keys.Words(keys.Profile.Back)) +
+		strings.Repeat("\n", inputHeight-1)
 }

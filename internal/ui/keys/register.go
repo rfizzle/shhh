@@ -215,6 +215,20 @@ func Surfaces() []Surface {
 			},
 		},
 		{
+			// The drafting flow, which is a takeover for the reason every
+			// summoned surface is: it asks three things in order and each
+			// answer is typed, so the input it would otherwise borrow is the
+			// input it has to own.
+			Name:     "the profile drafter",
+			Section:  "docs/interface/surfaces.md#the-profile-drafter",
+			Position: Takeover,
+			Reached:  "/agents new, or the manager's own row",
+			Bindings: []Binding{
+				Profile.Move, Profile.Take, Profile.Note,
+				Profile.ScrollUp, Profile.ScrollDown, Profile.Back,
+			},
+		},
+		{
 			Name:     "the full-screen diff",
 			Section:  "docs/interface/surfaces.md#the-diff-view",
 			Position: Takeover,

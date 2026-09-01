@@ -115,6 +115,12 @@ assumed to be committed. A drafted profile is spawnable in the session that
 drafted it — a persona you made for this conversation should not need a
 restart to join it.
 
+The drafting happens on [a surface of its
+own](../interface/surfaces.md#the-profile-drafter), because a conversation
+with three steps in it needs somewhere to say which step it is on. The
+questions are asked one at a time and the way back through them is the same
+key that leaves: a mistyped answer costs an answer, not the drafting.
+
 ## A failed child can be run again
 
 Retry re-runs a child on its original task rather than asking the parent to

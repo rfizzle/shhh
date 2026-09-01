@@ -115,8 +115,11 @@ const (
 	// stateTodoPropose: the proposals card from a bare /todo add is showing —
 	// the session read into backlog items, checked ones written on enter.
 	stateTodoPropose
-	// statePersona: a drafted agent profile is showing on its card — where
-	// to keep it, a note that revises it, or nothing.
+	// statePersona: the profile drafter has the screen — the brief, the
+	// drafter's questions, the wait, and the draft on its card
+	// (docs/interface/surfaces.md#the-profile-drafter). It is a takeover
+	// because every step of it is typed into, so the input it would borrow
+	// is the input it has to own.
 	statePersona
 	// stateTodoPause: a backlog run is paused on the person — the plan, the
 	// questions and the size are showing, with go ahead / re-plan / stop.
@@ -896,12 +899,12 @@ type Model struct {
 	conversation bool
 	notebook     *notebook.Store
 	// personas is the profile-drafting flow's wiring; persona the one in
-	// progress, personaAsk its card.
-	personas   Personas
-	persona    *personaFlow
-	personaAsk *components.NoteSelect
-	startFocus int
-	startSpent bool
+	// progress, personaScreen the surface it runs on.
+	personas      Personas
+	persona       *personaFlow
+	personaScreen *components.ProfileScreen
+	startFocus    int
+	startSpent    bool
 	// scaffold is the project-scaffolding offer and the write behind it
 	// (scaffold.go).
 	scaffold Scaffold
@@ -2467,6 +2470,11 @@ func (m Model) paneView(area uv.Rectangle) string {
 		// The context surface takes over the pane the same way.
 		m.context.MaxLines = area.Dy()
 		return m.context.View(area.Dx())
+	case m.state == statePersona && m.personaScreen != nil:
+		// So does the profile drafter, which is a flow rather than a reading
+		// and needs the room for the same reason: the draft it ends on is a
+		// whole file.
+		return m.personaPane(area.Dx(), area.Dy())
 	}
 	return m.transcriptBody()
 }
@@ -2575,7 +2583,7 @@ func (m Model) takeoverPanel(width int) string {
 	case stateScaffold:
 		inputView = m.renderScaffold()
 	case statePersona:
-		inputView = m.renderPersona()
+		inputView = m.renderPersonaHint()
 	case stateTodoPause:
 		inputView = m.renderTodoPause()
 	case stateFocus:

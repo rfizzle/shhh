@@ -49,6 +49,11 @@ func (m Model) spinnerWanted() bool {
 	if m.state == stateModelList {
 		return true
 	}
+	// The profile drafter's wait, which is the same case: a surface with
+	// nothing on it but the label saying what is being waited for.
+	if m.personaDrafting() {
+		return true
+	}
 	// Attached, the top rail is scoped to the child, so the child's state is
 	// what the rail is animating.
 	if m.frameWorking() {

@@ -488,6 +488,36 @@ var Agent = AgentKeys{
 	Detach: bind("esc", "back to your own session", "esc"),
 }
 
+// ProfileKeys are the profile drafter's. The surface is a flow rather than a
+// list, which is what makes its way out a step back rather than a way out:
+// esc unwinds the flow one exchange at a time and leaves from the first one,
+// so a person who mistyped an answer is not made to start again. It is still
+// the safe answer at every step — nothing on this surface writes until the
+// draft card's own row does (invariant 3).
+type ProfileKeys struct {
+	Move       Binding
+	Take       Binding
+	Note       Binding
+	ScrollUp   Binding
+	ScrollDown Binding
+	Back       Binding
+}
+
+var Profile = ProfileKeys{
+	// The arrows and not j/k: every step of this surface has a text field on
+	// it, and on a surface being typed into a j is a letter — the reading the
+	// palette and the open query line already have.
+	Move: bind("↑↓", "move", "up", "down"),
+	Take: bind("enter", "take it", "enter"),
+	Note: bind("tab", "note or options", "tab"),
+	// The profile is the longest thing on the card and the one the decision
+	// is about, so it scrolls where the options do not. Shift is what every
+	// other card scrolls its body under.
+	ScrollUp:   bind("shift+↑", "scroll the profile up", "shift+up"),
+	ScrollDown: bind("shift+↓", "scroll the profile", "shift+down"),
+	Back:       bind("esc", "back a step", "esc", "ctrl+c"),
+}
+
 // WaitKeys are the surfaces that open on their own and take the keyboard with
 // them: the retry countdown and the context-pressure card, and
 // the masked key prompt an auth failure opens.

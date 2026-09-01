@@ -757,10 +757,14 @@ func TestGolden_AgentList(t *testing.T) {
 				Progress: progress(AgentProgress{State: FanoutFailed, Tools: 1, Spend: "$0.01"}),
 				Note:     "round limit (25) reached"},
 		}
+		offered := append(append([]AgentRow{}, rows...),
+			AgentRow{State: AgentOffer, Name: "draft a new profile", Status: "/agents new"})
 		return []golden.Panel{
 			{Label: "focus · the orchestrator", View: (&AgentList{Rows: rows}).View(width)},
 			{Label: "focus · the blocked child, [a] answers it here", View: (&AgentList{Rows: rows, Focus: 1}).View(width)},
 			{Label: "focus · the failed child, [r] runs it again", View: (&AgentList{Rows: rows, Focus: 4}).View(width)},
+			{Label: "the row that is not an agent · enter drafts a profile instead of attaching",
+				View: (&AgentList{Rows: offered, Focus: len(offered) - 1}).View(width)},
 		}
 	})
 }
@@ -1893,6 +1897,87 @@ func TestGolden_RateScreen(t *testing.T) {
 					r := screen(nil)
 					r.Update(key("?"))
 					return r.View(width)
+				}()},
+		}
+	})
+}
+
+// TestGolden_ProfileScreen captures the drafting flow at each of its steps:
+// the brief with the pointer in the field and then on a starting point, the
+// wait, one question with the last answer still above it, and the draft over
+// its card — the last of those twice, because a short surface is where the
+// card's refusal to give ground is visible.
+func TestGolden_ProfileScreen(t *testing.T) {
+	captureGolden(t, "profile-screen", "the profile drafter", goldenWidths, func(width int) []golden.Panel {
+		starts := []string{
+			"a test writer who adds table-driven tests for a package and runs them",
+			"a reviewer who reads a diff for security problems and reports by severity",
+			"a docs keeper who updates the documentation a change made stale, and nothing else",
+		}
+		brief := func(mut func(*ProfileScreen)) *ProfileScreen {
+			p := NewProfileScreen("/agents new")
+			p.Subject = "a coding agent · reviewer tester"
+			p.MaxLines = 24
+			p.AskBrief("What should this agent do? Say the job however you like — what it changes, what it checks, what it must leave alone.",
+				"or start from one of these", starts)
+			if mut != nil {
+				mut(p)
+			}
+			return p
+		}
+		drafted := func(height int) *ProfileScreen {
+			p := NewProfileScreen("/agents new")
+			p.Subject = "a coding agent · reviewer tester"
+			p.MaxLines = height
+			p.Show(ProfileDraftView{
+				Name:        "test-writer",
+				Description: "adds table-driven tests for a package and runs them",
+				Facts: []ProfileFact{
+					{Label: "permissions", Value: "read + write + execute", Tone: ToneRisk, Detail: "it can change things"},
+					{Label: "model", Value: "inherited from this session"},
+					{Label: "budget", Value: "8.0k tokens"},
+				},
+				Why: "a writer that could not run the tests would be proposing them, not adding them",
+				Prompt: "You add table-driven tests for one package at a time. Read the package first, " +
+					"then the tests it already has, then write the cases the existing table is missing.\n" +
+					"Run the package's tests and fix what you broke. Do not touch any file outside the " +
+					"package's own directory, and never edit a test to make a failure go away.",
+			}, []SelectOption{
+				{Label: "Save to this project", Desc: ".shhh/agents"},
+				{Label: "Save globally", Desc: "~/.config/shhh/agents"},
+			})
+			return p
+		}
+		return []golden.Panel{
+			{Label: "the brief · the field has the keyboard, the starting points are under it",
+				View: brief(nil).View(width)},
+			{Label: "the pointer moved onto a starting point · enter takes that one instead",
+				View: brief(func(p *ProfileScreen) {
+					p.Update(key("down"))
+					p.Update(key("down"))
+				}).View(width)},
+			{Label: "the wait · the step it was started from, and the key that stops it",
+				View: brief(func(p *ProfileScreen) {
+					p.Work("drafting")
+					p.Frame = 3
+					p.Elapsed = "4.2s"
+				}).View(width)},
+			{Label: "one question · the answers already given stay above it",
+				View: func() string {
+					p := brief(nil)
+					p.Answered("Which package should it start from?", "internal/agent")
+					p.AskQuestion("Should it run the tests as well as write them?", 2, 2)
+					return p.View(width)
+				}()},
+			{Label: "the draft · the profile over the decision that writes it",
+				View: drafted(30).View(width)},
+			{Label: "a short surface · the card is the one thing that never gives ground",
+				View: drafted(16).View(width)},
+			{Label: "the file already exists · the card asks again, saying so",
+				View: func() string {
+					p := drafted(30)
+					p.Warn("a profile named test-writer is already in .shhh/agents.")
+					return p.View(width)
 				}()},
 		}
 	})

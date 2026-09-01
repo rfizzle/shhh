@@ -23,6 +23,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/persona"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -623,6 +624,50 @@ func TestGolden_ContextScreen(t *testing.T) {
 		return []golden.Panel{
 			{Label: "as it opens · both groups folded", View: folded},
 			{Label: "the tool definitions opened", View: strings.Join(m.contextLines(), "\n")},
+		}
+	})
+}
+
+// TestGolden_ProfileDrafter captures the drafting flow through the host: the
+// surface is built from a session's own wiring — which kind of profile this
+// is, which roles it already has, where a file could go — so the words on it
+// are checked against what the product actually says rather than a fixture.
+func TestGolden_ProfileDrafter(t *testing.T) {
+	captureGolden(t, "profile-drafter", "the profile drafter in the pane", goldenWidths, func(width int) []golden.Panel {
+		draft := &persona.Draft{
+			Name:        "test-writer",
+			Description: "adds table-driven tests for a package and runs them",
+			Permissions: []string{"write", "execute"},
+			MaxTokens:   8000,
+			Why:         "a writer that could not run the tests would be proposing them, not adding them",
+			Prompt: "You add table-driven tests for one package at a time. Read the package first, " +
+				"then the tests it already has, then write the cases the existing table is missing.\n" +
+				"Run the package's tests and fix what you broke. Do not touch any file outside the " +
+				"package's own directory.",
+		}
+		m, _, _ := personaModel(t, persona.KindCode,
+			persona.Outcome{Questions: []string{"Which package should it start from?", "Should it run the tests as well as write them?"}},
+			persona.Outcome{Draft: draft},
+		)
+		m.width, m.height = width, 40
+		m.syncInputWidth()
+		pane := func(m Model) string { return m.personaPane(width, 26) }
+
+		// Each step is captured as it stands: the surface is one object the
+		// model holds a pointer to, so a view taken after the flow moved on
+		// is a view of where it moved to.
+		m = submitLine(t, m, "/agents new")
+		brief := pane(m)
+		m = submitLine(t, m, "/agents new something for tests")
+		first := pane(m)
+		m = pressOn(t, typeInto(t, m, "internal/agent"), tea.KeyPressMsg{Code: tea.KeyEnter})
+		second := pane(m)
+		m = pressOn(t, typeInto(t, m, "yes"), tea.KeyPressMsg{Code: tea.KeyEnter})
+		return []golden.Panel{
+			{Label: "the brief · the roles this session already has are on the header", View: brief},
+			{Label: "the drafter's first question, asked on its own", View: first},
+			{Label: "the second, with the first answer still above it", View: second},
+			{Label: "the draft · both places a coding agent's profile can live", View: pane(m)},
 		}
 	})
 }

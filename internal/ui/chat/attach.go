@@ -221,7 +221,11 @@ func (m *Model) purgeChildAsks(name string) {
 
 // openAgentList shows the agent manager in the bottom panel.
 func (m Model) openAgentList() (tea.Model, tea.Cmd) {
-	if m.subagents == nil {
+	// A session with no supervisor still has a manager to open as long as it
+	// can draft: the list is where a person goes to find out what this
+	// session has, and "nothing yet, and here is how to make one" is an
+	// answer. It is only unavailable when there is neither.
+	if m.subagents == nil && !m.personas.Enabled {
 		m.appendEntry(entry{kind: entrySystem, text: "Sub-agents are unavailable in this session."})
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
@@ -248,11 +252,13 @@ func (m Model) buildAgentRows() ([]components.AgentRow, []string) {
 	rows := []components.AgentRow{m.orchestratorRow()}
 	names := []string{""}
 	var blocked, rest []subagent.Status
-	for _, st := range m.subagents.Snapshot() {
-		if st.State == subagent.StateBlocked {
-			blocked = append(blocked, st)
-		} else {
-			rest = append(rest, st)
+	if m.subagents != nil {
+		for _, st := range m.subagents.Snapshot() {
+			if st.State == subagent.StateBlocked {
+				blocked = append(blocked, st)
+			} else {
+				rest = append(rest, st)
+			}
 		}
 	}
 	for _, st := range append(blocked, rest...) {
@@ -285,6 +291,19 @@ func (m Model) buildAgentRows() ([]components.AgentRow, []string) {
 		}
 		rows = append(rows, row)
 		names = append(names, st.Name)
+	}
+	// The row that is not an agent: the manager is where a person goes to
+	// see what this session has, so it is where the answer "none of these"
+	// gets somewhere to go (docs/interface/surfaces.md#the-agent-manager).
+	// It is offered only where drafting is wired, because a row that opened
+	// a surface saying no model can draft would be an offer that is not one.
+	if m.personas.Enabled {
+		rows = append(rows, components.AgentRow{
+			State:  components.AgentOffer,
+			Name:   "draft a new profile",
+			Status: personaCommandName,
+		})
+		names = append(names, "")
 	}
 	return rows, names
 }
@@ -420,6 +439,12 @@ func (m Model) updateAgentList(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	res, ok := result.(components.AgentListResult)
 	if !ok {
 		return m, nil
+	}
+	if done && res.Action == components.AgentDraft {
+		m.agentList = nil
+		m.answerAgent = ""
+		m.syncViewport()
+		return m.startPersona("")
 	}
 	if done && res.Action == components.AgentBack {
 		m.agentList = nil

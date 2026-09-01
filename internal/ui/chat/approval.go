@@ -811,8 +811,6 @@ func (m Model) bottomPanelHeight() int {
 		lines = m.todoProposeLines()
 	case statePasteDrop:
 		lines = m.pasteDropLines()
-	case statePersona:
-		lines = m.personaLines()
 	case stateScaffold:
 		// A decision whose keys were cut off by the panel bound is not one,
 		// so the card gets the plan card's headroom the way the pressure
@@ -853,7 +851,7 @@ func (m Model) bottomPanelHeight() int {
 	}
 	if lines == nil {
 		switch m.state {
-		case stateDiffFull, stateOutputFull, statePreview, stateReview, stateContext:
+		case stateDiffFull, stateOutputFull, statePreview, stateReview, stateContext, statePersona:
 			// The full-screen surfaces replace the input with a one-line
 			// hint; a grown draft comes back with the input, and paying its
 			// rows here would blank most of the panel under the hint.

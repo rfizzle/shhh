@@ -29,6 +29,13 @@ const (
 	AgentBlocked                   // ⚠ waiting on the user
 	AgentDone                      // ✓ finished
 	AgentFailed                    // ✗ failed
+	// AgentOffer is not an agent: it is the row at the foot of the list that
+	// opens the profile drafter (docs/interface/surfaces.md#the-agent-manager).
+	// The manager is where a person goes to ask what this session has, which
+	// makes it the one place where "and none of these is what I want" is a
+	// thought somebody is already having. Its glyph is the start screen's ⚙
+	// — starting something new — rather than one of its own.
+	AgentOffer
 )
 
 // AgentRow is one agent in the list: identity, task label, live status, and
@@ -65,6 +72,7 @@ const (
 	AgentKill                      // X — kill the agent
 	AgentAnswer                    // a — answer its pending approval in place
 	AgentRetry                     // r — run a failed agent again on its task
+	AgentDraft                     // enter on the offer row — draft a profile
 	AgentBack                      // esc — dismiss the list
 )
 
@@ -139,6 +147,9 @@ func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result any) {
 			l.Focus++
 		}
 	case keys.Is(pressed, keys.Agent.Attach):
+		if l.focused().State == AgentOffer {
+			return true, AgentListResult{Action: AgentDraft, Index: l.Focus}
+		}
 		return true, AgentListResult{Action: AgentAttach, Index: l.Focus}
 	case keys.Is(pressed, keys.Agent.Answer):
 		if l.focused().Answerable {
@@ -149,8 +160,17 @@ func (l *AgentList) Update(msg tea.KeyPressMsg) (done bool, result any) {
 			return false, AgentListResult{Action: AgentRetry, Index: l.Focus}
 		}
 	case keys.Is(pressed, keys.Agent.Cancel):
+		// The offer row is not an agent, so the keys that act on one are
+		// silent over it the way [a] and [r] are silent over a row that
+		// cannot take them (invariant 5).
+		if l.focused().State == AgentOffer {
+			break
+		}
 		return false, AgentListResult{Action: AgentCancel, Index: l.Focus}
 	case keys.Is(pressed, keys.Agent.Kill):
+		if l.focused().State == AgentOffer {
+			break
+		}
 		return false, AgentListResult{Action: AgentKill, Index: l.Focus}
 	case keys.Is(pressed, keys.Agent.Back):
 		return true, AgentListResult{Action: AgentBack, Index: -1}
@@ -172,6 +192,8 @@ func (r AgentRow) stateGlyph() string {
 		return AgentProgress{State: FanoutDone}.glyph()
 	case AgentFailed:
 		return AgentProgress{State: FanoutFailed}.glyph()
+	case AgentOffer:
+		return sty.Accent.Render("⚙")
 	default:
 		return AgentProgress{State: FanoutRunning}.glyph()
 	}
@@ -180,6 +202,9 @@ func (r AgentRow) stateGlyph() string {
 // rightField is what the row reports: the lane renderer's outcome field for a
 // child, and the plain status and spend for a row that has no child progress.
 func (r AgentRow) rightField() string {
+	if r.State == AgentOffer {
+		return sty.Dimmer.Render(r.Status)
+	}
 	if r.Progress != nil {
 		return r.Progress.outcomeField()
 	}
@@ -227,6 +252,12 @@ func (r AgentRow) render(inner int, focused bool) []string {
 // what the list can do in general.
 func (l *AgentList) hints() []string {
 	focus := l.focused()
+	// The offer row is the one row enter does something else on, so the key
+	// row says which — a hint that read `enter attach` over it would be
+	// naming an action the row does not have.
+	if focus.State == AgentOffer {
+		return []string{words(keys.Agent.Attach, "draft a profile"), offer(keys.Agent.Back)}
+	}
 	segments := []string{offer(keys.Agent.Attach)}
 	if focus.Answerable {
 		segments = append(segments, offer(keys.Agent.Answer))
@@ -243,7 +274,7 @@ func (l *AgentList) hints() []string {
 func (l *AgentList) tally() string {
 	var states []FanoutState
 	for _, r := range l.Rows {
-		if r.Progress != nil {
+		if r.State != AgentOffer && r.Progress != nil {
 			states = append(states, r.Progress.State)
 		}
 	}

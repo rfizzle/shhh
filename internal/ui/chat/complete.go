@@ -224,8 +224,11 @@ var slashCommands = []slashCommand{
 			argOption{"forget", "Drop a memory by id"},
 		)},
 	{name: "/agents", args: "[new [brief]]", desc: "Agent manager; new drafts a profile from a sentence",
-		key:      keys.Shown(keys.Draft.Agents),
-		enabled:  func(m *Model) bool { return m.subagents != nil },
+		key: keys.Shown(keys.Draft.Agents),
+		// The manager opens on a session that can spawn agents or draft a
+		// profile for one. Drafting alone is enough: the list is where the
+		// offer to draft lives (attach.go).
+		enabled:  func(m *Model) bool { return m.subagents != nil || m.personas.Enabled },
 		argSpecs: staticArgs(argOption{"new", "Draft an agent profile with the model's help"})},
 	{name: "/attach", args: "[name]", desc: "Attach to an agent's session and steer it",
 		enabled:  func(m *Model) bool { return m.subagents != nil },

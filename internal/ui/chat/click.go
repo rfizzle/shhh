@@ -90,7 +90,7 @@ func (m Model) clickableTranscript() bool {
 		return false
 	}
 	switch m.state {
-	case stateDiffFull, stateOutputFull, statePreview, stateReview, stateContext:
+	case stateDiffFull, stateOutputFull, statePreview, stateReview, stateContext, statePersona:
 		return false
 	}
 	return true

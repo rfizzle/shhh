@@ -170,6 +170,8 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 		{"Review", []Binding{Review.MoveFile, Review.MoveHunk, Review.StageHunk,
 			Review.StageFile, Review.StageAll, Review.SideBySide, Review.PageUp,
 			Review.PageDown, Review.Apply, Review.Back}},
+		{"Profile", []Binding{Profile.Move, Profile.Take, Profile.Note,
+			Profile.ScrollUp, Profile.ScrollDown, Profile.Back}},
 		{"Agent", []Binding{Agent.Move, Agent.Attach, Agent.Answer, Agent.Retry,
 			Agent.Cancel, Agent.Kill, Agent.Back}},
 		{"Wait", []Binding{Wait.Fallback, Wait.Stop, Wait.Compact, Wait.NewSession,

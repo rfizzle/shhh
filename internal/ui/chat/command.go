@@ -50,11 +50,6 @@ func (m Model) submitInput() (tea.Model, tea.Cmd) {
 	if name := commandName(text); name != "" {
 		return m.runCommand(text, name)
 	}
-	// A profile being drafted owns the next line: the brief, or the
-	// answers to what the drafter asked.
-	if m.personaHoldsInput() {
-		return m.answerPersona(text)
-	}
 	if reason, held := m.todoRunHoldsInput(); held {
 		return m.systemNotice("Not sent: " + reason + ".")
 	}
