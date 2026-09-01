@@ -42,21 +42,41 @@ Cwd: %s`, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), osRules(info.OS)
 	return base
 }
 
+// The investigation rules, in one place because four prompts carry them.
+//
+// They are not padding, and a later edit trimming them for brevity would be
+// undoing a fix. Each answers a way a real session wasted its whole round
+// budget: one call per round when four were independent; a bare search whose
+// every hit needed a second round to read; a file paged through in twenty-line
+// windows against a cap of two thousand lines; and the same search run forty
+// times because nothing in the loop could tell the model it had already asked.
+//
+// Two of them have a half in the harness, for when the rule is not enough:
+// internal/agent/repeat.go answers a turn asking the same question twice, and
+// internal/agent/checkin.go answers a turn that has stopped asking anything
+// new. Neither replaces the rule — a rule is what a model can act on before
+// the harness has anything to notice.
+const findingThings = `# Finding things
+Investigation is where a session is won or wasted. Each round costs the user time and money, so make each one earn its place.
+- Batch independent calls. When the next few searches or reads don't depend on each other, ask for them in a single round instead of one per round — they run at the same time. Only chain calls when a later one genuinely needs an earlier one's answer.
+- Go from shape to detail: glob or list_directory for what exists, search for where it is, read_file for what it says.
+- Make one search answer the question. Matches come with their surrounding lines already, so read the answer in the result instead of searching again for it; files_only tells you which files are involved without quoting any of them; include narrows to one kind of file.
+- Read a file once, and read enough of it. A whole file is a single call; paging through one in twenty-line windows is twenty calls that each tell you less than the first would have. start_line/end_line are for files big enough that the tool says so.
+- Never repeat a call you have already made. Its result is still here in the conversation — look back at it rather than asking again. If two attempts have not answered the question, the question is wrong: change tool, widen the path, or read the file instead of searching it. Repeating a search that already returned is the clearest sign of being stuck, and the way out is a different approach, not another attempt.
+- Know when to stop looking. Once you can name the file and the line you are going to change, start working. More reading is not more progress, and a turn that keeps reading past the point it could act is a turn the user has to interrupt.`
+
+// findingThingsBrief is the same discipline for a sub-agent, whose prompt has
+// room for the rules but not for the reasoning behind them.
+const findingThingsBrief = `- Batch independent searches and reads into one round — they run at the same time — and make each search count: matches come with their surrounding lines, files_only for which files are involved, include to narrow by file type.
+- Never repeat a call you already made; its result is above. If two attempts have not answered the question, change approach rather than asking again.
+- Know when to stop looking: once you can name what you are going to change or report, start. More reading is not more progress.`
+
 // BuildAgent is the system prompt for `shhh code`: unlike BuildConversation, it tells
 // the model to act on the workspace with its tools and keep going until the
 // task is complete, instead of pasting suggestions into the chat.
 //
-// The "Finding things" rules are not padding, and a later edit trimming them
-// for brevity would be undoing a fix. Each answers a way a real
-// session wasted its whole round budget: one call per round when four were
-// independent; a bare search whose every hit needed a second round to read;
-// a file paged through in twenty-line windows against a cap of two thousand
-// lines; and the same search run forty times because nothing in the loop
-// could tell the model it had already asked. The rule against repeating a
-// call is the one that matters most — a model cannot see that it is circling,
-// because from inside a turn every round looks like progress, so it has to be
-// told the rule in advance. internal/agent/repeat.go is the harness half of
-// the same problem, for when the rule is not enough.
+// The "Finding things" rules it carries are findingThings, which says why
+// they are there and why they must not be trimmed.
 //
 // What this prompt must never do is name a tool the session might not have:
 // the optional toolset is assembled from what the machine turned out to have,
@@ -75,14 +95,7 @@ Read-only tools (read_file, list_directory, glob, search) run automatically — 
 Approval-gated tools (execute_command, write_file, edit_file) show the user what is about to happen and require their approval; a declined call returns an error result — respect the decline, don't retry the same call.
 Make changes with write_file and edit_file rather than pasting code blocks into the chat for the user to apply. Only put code in your response to quote a short snippet you are discussing, never as the delivery mechanism for a change.
 
-# Finding things
-Investigation is where a session is won or wasted. Each round costs the user time and money, so make each one earn its place.
-- Batch independent calls. When the next few searches or reads don't depend on each other, ask for them in a single round instead of one per round. Only chain calls when a later one genuinely needs an earlier one's answer.
-- Go from shape to detail: glob or list_directory for what exists, search for where it is, read_file for what it says.
-- Make one search answer the question. files_only tells you which files are involved without quoting any of them; context_lines shows the code around each match, so the answer arrives with the hit instead of in the round after it; include narrows to one kind of file. A bare search that returns lines you then have to go and read is the most expensive way to ask.
-- Read a file once, and read enough of it. A whole file is a single call; paging through one in twenty-line windows is twenty calls that each tell you less than the first would have. start_line/end_line are for files big enough that the tool says so.
-- Never repeat a call you have already made. Its result is still here in the conversation — look back at it rather than asking again. If two attempts have not answered the question, the question is wrong: change tool, widen the path, or read the file instead of searching it. Repeating a search that already returned is the clearest sign of being stuck, and the way out is a different approach, not another attempt.
-- Know when to stop looking. Once you can name the file and the line you are going to change, start working. More reading is not more progress.
+%s
 
 # Working style
 - Work autonomously toward completing the task. Keep going — reading, editing, verifying — until it is done or you are genuinely blocked on input only the user can provide; then report clearly.
@@ -101,7 +114,7 @@ Investigation is where a session is won or wasted. Each round costs the user tim
 - Be concise. Report what you changed and how you verified it, not a narration of every step.
 - Use markdown formatting (headers, lists, code blocks) — the terminal renders it.
 - If a task is ambiguous, make the most reasonable assumption, state it, and proceed rather than stopping to ask.`,
-		info.Shell, os, info.Cwd, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), osRules(info.OS))
+		info.Shell, os, info.Cwd, findingThings, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), osRules(info.OS))
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}
@@ -126,12 +139,11 @@ You have read-only access to the workspace (read_file, list_directory, search, g
 - Work autonomously through the task with your tools; do not ask questions — nobody will answer mid-run.
 - Prefer primary evidence: read the actual files, cite paths (file:line) and URLs.
 - Stay on the delegated task; depth over breadth.
-- Batch independent searches and reads into one round, and make each search count: files_only for which files are involved, context_lines to see the code around a match, include to narrow by file type.
-- Never repeat a call you already made — its result is above. If two attempts have not answered the question, change approach rather than asking again.
+%s
 
 # Final report
 Your last message IS the deliverable. Make it a self-contained report: the findings, the evidence (paths, line references, URLs), and any open questions or caveats. Do not end on a question or a promise of further work.`,
-		os, info.Cwd)
+		os, info.Cwd, findingThingsBrief)
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}
@@ -188,7 +200,7 @@ Make changes with write_file and edit_file rather than pasting code into your me
 
 # Working style
 - Work autonomously until the task is done or you are genuinely blocked; do not ask questions — nobody will answer mid-run.
-- Batch independent searches and reads into one round, and make each search count: files_only for which files are involved, context_lines to see the code around a match, include to narrow by file type. Never repeat a call you already made; if two attempts have not answered the question, change approach.
+%s
 - Read a file before editing it, and match the style and conventions you find there.
 - After editing, verify: re-read the modified section and run the project's build or tests with execute_command when one is available.
 - Never run destructive commands (rm -rf, dropping databases, force-pushing) unless the task explicitly asked for that exact action.
@@ -200,7 +212,7 @@ Make changes with write_file and edit_file rather than pasting code into your me
 
 # Final report
 Your last message IS the deliverable. Report what you changed (files and why), how you verified it, and anything the reviewer should look at closely. Do not end on a question or a promise of further work.`,
-		info.Shell, os, info.Cwd, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), osRules(info.OS))
+		info.Shell, os, info.Cwd, findingThingsBrief, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), osRules(info.OS))
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}
@@ -395,7 +407,7 @@ func BuildProfile(info shell.Info, spec ProfileSpec, extra ...string) string {
 
 	b.WriteString("\n\n# Working style\n")
 	b.WriteString("- Work autonomously until the task is done or you are genuinely blocked; do not ask questions — nobody will answer mid-run.\n")
-	b.WriteString("- Batch independent searches and reads into one round, and make each search count: files_only for which files are involved, context_lines to see the code around a match, include to narrow by file type. Never repeat a call you already made; if two attempts have not answered the question, change approach.\n")
+	b.WriteString(findingThingsBrief + "\n")
 	b.WriteString("- Prefer primary evidence: read the actual files, cite paths (file:line) and URLs.\n")
 	b.WriteString("- Stay on the delegated task; depth over breadth.")
 	if spec.Write {

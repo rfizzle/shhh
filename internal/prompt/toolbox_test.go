@@ -67,9 +67,41 @@ func TestBuildAgent_CarriesTheToolboxAsExtra(t *testing.T) {
 
 func TestBuildAgent_TellsItNotToRepeatCalls(t *testing.T) {
 	got := BuildAgent(testShell())
-	for _, want := range []string{"Never repeat a call", "Batch independent calls", "files_only", "context_lines"} {
+	for _, want := range []string{"Never repeat a call", "Batch independent calls", "files_only", "Know when to stop looking"} {
 		if !strings.Contains(got, want) {
 			t.Errorf("expected the agent prompt to say %q", want)
+		}
+	}
+}
+
+// The rules are load-bearing and were four near-copies that had drifted. Every
+// prompt that investigates has to carry them, and from the one source.
+func TestFindingThings_ReachesEveryInvestigatingPrompt(t *testing.T) {
+	profile := BuildProfile(testShell(), ProfileSpec{
+		Name:  "auditor",
+		Tools: []string{"read_file", "search"},
+	})
+	for _, tc := range []struct {
+		name, prompt, rules string
+	}{
+		{"agent", BuildAgent(testShell()), findingThings},
+		{"researcher", BuildResearcher(testShell()), findingThingsBrief},
+		{"writer", BuildWriter(testShell()), findingThingsBrief},
+		{"profile", profile, findingThingsBrief},
+	} {
+		if !strings.Contains(tc.prompt, tc.rules) {
+			t.Errorf("%s prompt does not carry the shared investigation rules", tc.name)
+		}
+	}
+}
+
+// Both forms have to say the three things the harness cannot say for them.
+func TestFindingThings_KeepsTheThreeRules(t *testing.T) {
+	for name, rules := range map[string]string{"full": findingThings, "brief": findingThingsBrief} {
+		for _, want := range []string{"Batch independent", "Never repeat a call", "stop looking"} {
+			if !strings.Contains(rules, want) {
+				t.Errorf("%s rules dropped %q", name, want)
+			}
 		}
 	}
 }
