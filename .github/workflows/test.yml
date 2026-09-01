@@ -18,11 +18,13 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - uses: golangci/golangci-lint-action@v8
-        with:
-          version: v2.12.2
-          # Install only: `make ci` runs it, so the gate is the same one a
-          # developer runs locally.
-          args: --version
+      # Install only, never run: `make ci` runs golangci-lint itself, so the
+      # gate here is the same one a developer runs locally. golangci-lint-action
+      # has no install-only mode — whatever it is given ends up appended to
+      # `golangci-lint run` — so the install is spelled out instead.
+      - name: Install golangci-lint
+        run: |
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.12.2
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - run: make ci
