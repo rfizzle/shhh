@@ -17,6 +17,7 @@ import (
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/eval"
 	"github.com/rfizzle/shhh/internal/resolve"
+	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/spf13/cobra"
 )
 
@@ -183,16 +184,25 @@ func evalReport(sum eval.Summary) report.Report {
 	if skipped > 0 {
 		parts = append(parts, fmt.Sprintf("%d skipped", skipped))
 	}
-	parts = append(parts, sum.Elapsed().Round(time.Second).String())
+	parts = append(parts, components.FormatElapsed(sum.Elapsed().Round(time.Second)))
 	if cost, priced := sum.Cost(); priced {
-		parts = append(parts, fmt.Sprintf("$%.4f", cost))
+		parts = append(parts, metricsSpend(cost, priced))
 	}
 	r.Tally = strings.Join(parts, " · ")
 	return r
 }
 
+// evalRow is one case's line.
+//
+// The subject is the measurement, not the task. A row clips its target to fit
+// the stream, and a redirected report measures 80 columns — which is exactly
+// what a reader does with a run that takes seven minutes. With the prompt in
+// the subject the numbers were the part clipped away, and they are the only
+// part that is not already somewhere else: what was asked is a property of the
+// suite and can be read there, and what it cost is a property of this run and
+// exists nowhere but this row.
 func evalRow(res eval.Result) report.Row {
-	row := report.Row{Name: res.Case.Name, Subject: firstSentence(res.Case.Prompt)}
+	row := report.Row{Name: res.Case.Name}
 	switch res.Verdict() {
 	case eval.Passed:
 		row.State, row.Outcome = report.Pass, "passed"
@@ -204,32 +214,34 @@ func evalRow(res eval.Result) report.Row {
 		row.State, row.Outcome = report.Fail, "failed"
 	case eval.Skipped:
 		row.State, row.Outcome = report.Skip, "skipped"
-		row.Detail = res.Case.Skip
+		row.Subject = res.Case.Skip
 		return row
 	case eval.Errored:
 		row.State, row.Outcome = report.Fail, "never ran"
 		row.Consequence = "the session did not finish, so nothing was checked — this says nothing about the task"
 	}
 
-	row.Detail = evalDetail(res)
+	row.Subject = evalDetail(res)
 	row.Body = evalBody(res)
 	return row
 }
 
-// evalDetail is the numbers that make two runs comparable.
+// evalDetail is the numbers that make two runs comparable, in the spellings
+// the rest of the CLI already uses for them: a run reported in one vocabulary
+// here and another in `shhh metrics` is two numbers a reader has to reconcile.
 func evalDetail(res eval.Result) string {
 	var parts []string
 	if rounds := res.MedianRounds(); rounds > 0 {
 		parts = append(parts, fmt.Sprintf("%.0f rounds", rounds))
 	}
 	if tokens := res.Median(func(a eval.Attempt) float64 { return float64(a.TokensIn + a.TokensOut) }); tokens > 0 {
-		parts = append(parts, fmt.Sprintf("%.0f tokens", tokens))
+		parts = append(parts, tokenCount(int64(tokens))+" tokens")
 	}
 	if secs := res.Median(func(a eval.Attempt) float64 { return a.Elapsed.Seconds() }); secs > 0 {
-		parts = append(parts, (time.Duration(secs) * time.Second).String())
+		parts = append(parts, components.FormatElapsed(time.Duration(secs)*time.Second))
 	}
 	if cost, priced := res.Cost(); priced {
-		parts = append(parts, fmt.Sprintf("$%.4f", cost))
+		parts = append(parts, metricsSpend(cost, priced))
 	}
 	return strings.Join(parts, " · ")
 }
@@ -266,18 +278,4 @@ func firstLineOf(s string) string {
 		}
 	}
 	return "the check failed and printed nothing"
-}
-
-// firstSentence is as much of the task as a row's subject can hold.
-//
-// The break is a full stop followed by a space, never a bare full stop: a
-// prompt naming what it is about — a package, a function, a file — is full of
-// dots that end nothing, and cutting at the first of them leaves a subject
-// that says "route".
-func firstSentence(prompt string) string {
-	prompt = strings.Join(strings.Fields(prompt), " ")
-	if i := strings.Index(prompt, ". "); i > 0 {
-		return prompt[:i]
-	}
-	return strings.TrimSuffix(prompt, ".")
 }
