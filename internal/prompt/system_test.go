@@ -330,3 +330,92 @@ func TestTheDateReadsUnambiguously(t *testing.T) {
 		t.Errorf("the environment block should carry no clock:\n%s", got)
 	}
 }
+
+// A Windows session must never be told to reach for sudo. IsRoot is false
+// there the way it is false for an ordinary Unix user, and the two mean
+// opposite things: one wants sudo in front of the command, the other has none
+// to put there.
+func TestWindowsIsNeverToldAboutSudo(t *testing.T) {
+	for _, root := range []bool{false, true} {
+		got := sudoRules("windows", root)
+		if strings.Contains(got, "Prefix commands with sudo") {
+			t.Errorf("root=%v: %s", root, got)
+		}
+		if !strings.Contains(got, "no sudo") {
+			t.Errorf("root=%v: the absence has to be stated, not merely omitted: %s", root, got)
+		}
+	}
+}
+
+func TestUnixStillGetsItsSudoRule(t *testing.T) {
+	if !strings.Contains(sudoRules("linux", false), "Prefix commands with sudo") {
+		t.Error("an ordinary Linux user still needs the rule")
+	}
+	if strings.Contains(sudoRules("linux", true), "Prefix commands with sudo") {
+		t.Error("root does not need sudo")
+	}
+}
+
+// The two PowerShells differ on the one thing that costs a whole command:
+// 5.1 has no && or ||, and using them there is a syntax error.
+func TestPowerShellChainingIsToldApartByVersion(t *testing.T) {
+	five := shellSyntaxRules("powershell")
+	seven := shellSyntaxRules("pwsh")
+
+	if !strings.Contains(five, "syntax error in Windows PowerShell 5.1") {
+		t.Errorf("5.1 must be warned off && and ||:\n%s", five)
+	}
+	if !strings.Contains(seven, "&& and || work in this version") {
+		t.Errorf("7 should not be made to write the long form:\n%s", seven)
+	}
+	for _, rules := range []string{five, seven} {
+		if !strings.Contains(rules, "$env:NAME") {
+			t.Error("both take the same environment-variable syntax")
+		}
+	}
+}
+
+func TestCmdGetsItsOwnSyntaxNotAPosixOne(t *testing.T) {
+	got := shellSyntaxRules("cmd")
+	if !strings.Contains(got, "%NAME%") {
+		t.Errorf("cmd variables are %%NAME%%:\n%s", got)
+	}
+	if strings.Contains(got, "${VAR}") {
+		t.Errorf("cmd is not a POSIX shell:\n%s", got)
+	}
+}
+
+// An unknown shell still falls back to POSIX rather than to nothing.
+func TestAnUnknownShellStillGetsRules(t *testing.T) {
+	if got := shellSyntaxRules("nu"); !strings.Contains(got, "POSIX") {
+		t.Errorf("got %q", got)
+	}
+}
+
+// The trap that is worse than absence: the name is there and the flags are
+// not, so the command fails rather than being not found.
+func TestWindowsRulesWarnAboutTheAliasedPosixNames(t *testing.T) {
+	got := osRules("windows")
+	if !strings.Contains(got, "ls -la") {
+		t.Errorf("the aliased-name trap should be named concretely:\n%s", got)
+	}
+	if !strings.Contains(got, "where") {
+		t.Errorf("finding an executable is a different command there:\n%s", got)
+	}
+}
+
+// The whole prompt has to hold together: a Windows session gets Windows rules
+// throughout, and no POSIX ones anywhere in it.
+func TestAWindowsPromptCarriesNoPosixAdvice(t *testing.T) {
+	got := BuildAgent(shell.Info{Shell: "pwsh", OS: "windows", Cwd: `C:\src\app`})
+	for _, wrong := range []string{"Prefix commands with sudo", "GNU coreutils", "BSD command-line tools", "${VAR}"} {
+		if strings.Contains(got, wrong) {
+			t.Errorf("a Windows prompt should not carry %q", wrong)
+		}
+	}
+	for _, want := range []string{"PowerShell syntax only", "no sudo", "This is Windows"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("a Windows prompt should carry %q", want)
+		}
+	}
+}

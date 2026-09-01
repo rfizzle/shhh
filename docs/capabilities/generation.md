@@ -37,6 +37,31 @@ already does; on Windows it has to be asked for. A profile prints banners and
 sets aliases, and both end up in captured output that the model reads back as
 the command's own.
 
+## Platform rules are stated, not left to be inferred
+
+The request carries what this shell and this operating system actually do,
+because a model asked for "a command" writes the most common one, and the most
+common one is Linux with GNU coreutils. On macOS that is a BSD tool given GNU
+flags; on Windows it is a POSIX command the machine has never had.
+
+Windows needs the most saying, and the sharpest of it is not about what is
+missing. PowerShell aliases several POSIX names — `ls`, `cat`, `rm`, `ps` — to
+its own cmdlets, which do not take POSIX flags, so `ls -la` is an error rather
+than a listing. A name that is absent produces a command-not-found the reader
+understands immediately; a name that is present and behaves differently
+produces a failure they have to think about.
+
+The two PowerShells are told apart rather than given the intersection of what
+they can do. PowerShell 7 has `&&` and `||`; the 5.1 that Windows ships treats
+them as a syntax error. Writing for the older one everywhere would make every
+command on the newer one longer than it needs to be, and writing for the newer
+one everywhere would break on the shell most machines have.
+
+Elevation is a platform difference too, and the one most likely to be got
+wrong silently: "not root" and "no such concept" are the same boolean and
+opposite instructions. A Windows session is told there is no sudo, rather than
+merely not being told there is one.
+
 ## The command is the output, and only the command
 
 Whatever the model wraps around it — fences, backticks, prose — is stripped

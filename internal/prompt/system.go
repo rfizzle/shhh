@@ -48,7 +48,7 @@ For single-command tasks, output a single line.
 Shell: %s
 OS: %s
 Cwd: %s
-Date: %s`, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), osRules(info.OS), info.Shell, os, info.Cwd, today())
+Date: %s`, shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS), info.Shell, os, info.Cwd, today())
 	if alternatives {
 		base += "\n\n" + proposal.Instructions()
 	}
@@ -131,7 +131,7 @@ Make changes with write_file and edit_file rather than pasting code blocks into 
 - Be concise. Report what you changed and how you verified it, not a narration of every step.
 - Use markdown formatting (headers, lists, code blocks) — the terminal renders it.
 - If a task is ambiguous, make the most reasonable assumption, state it, and proceed rather than stopping to ask.`,
-		info.Shell, os, info.Cwd, today(), findingThings, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), osRules(info.OS))
+		info.Shell, os, info.Cwd, today(), findingThings, shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS))
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}
@@ -232,7 +232,7 @@ Make changes with write_file and edit_file rather than pasting code into your me
 
 # Final report
 Your last message IS the deliverable. Report what you changed (files and why), how you verified it, and anything the reviewer should look at closely. Do not end on a question or a promise of further work.`,
-		info.Shell, os, info.Cwd, today(), findingThingsBrief, shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), osRules(info.OS))
+		info.Shell, os, info.Cwd, today(), findingThingsBrief, shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS))
 	if len(extra) > 0 && extra[0] != "" {
 		base += "\n\n" + extra[0]
 	}
@@ -287,6 +287,37 @@ func BuildExplain(long bool) string {
 
 func shellSyntaxRules(sh string) string {
 	switch sh {
+	case "pwsh", "powershell":
+		rules := `IMPORTANT: Generate PowerShell syntax only. This is not a POSIX shell.
+- Variables: $name; environment variables are $env:NAME (never $NAME or %NAME%)
+- Assignment: $name = value (no export; $env:NAME = value sets one for this session)
+- Command substitution: $(command); a subexpression's value is an object, not text
+- The pipeline carries objects: filter with Where-Object, pick fields with Select-Object, and do not reach for grep/awk/cut to slice text a property already holds
+- Native tools do work and their output is text; Select-String is the built-in grep
+- Stderr: 2>$null. Everything: *>$null. There is no /dev/null
+- Paths: quote anything with a space, and invoke a quoted path with the call operator: & "C:\Program Files\app\tool.exe"
+- Deleting: Remove-Item -Recurse -Force (never rm -rf, which is an alias that does not take those flags)
+- Exit status of a native command is $LASTEXITCODE, not $?`
+		// PowerShell 7 took the two operators every other shell has; 5.1,
+		// which is the one Windows ships, has neither and fails on them.
+		// Getting this wrong costs the whole command, so the two are told
+		// apart rather than given the safe intersection — the older shell is
+		// the one that needs the longer form, and the newer one should not
+		// be made to write it.
+		if sh == "pwsh" {
+			return rules + "\n- Chaining: && and || work in this version, as does ;"
+		}
+		return rules + "\n- Chaining: use ; and test $LASTEXITCODE. && and || are a syntax error in Windows PowerShell 5.1"
+	case "cmd":
+		return `IMPORTANT: Generate Windows cmd syntax only. This is not a POSIX shell.
+- Variables: %NAME% (never $NAME); set NAME=value assigns one, with no spaces around the =
+- Chaining: && and || and & all work
+- Conditionals: if/else with parentheses, not then/fi
+- No single quotes: quote with double quotes only
+- There are no coreutils: dir not ls, type not cat, copy not cp, del not rm, findstr not grep
+- Stderr: 2>nul. There is no /dev/null
+- Deleting a tree: rmdir /S /Q
+- Prefer a PowerShell one-liner via powershell -NoProfile -Command "..." for anything cmd makes tortuous, rather than writing tortuous cmd`
 	case "fish":
 		return `IMPORTANT: Generate fish shell syntax only.
 - Variables: $VAR (never ${VAR} or ${{VAR}})
@@ -310,7 +341,18 @@ func shellSyntaxRules(sh string) string {
 	}
 }
 
-func sudoRules(isRoot bool) string {
+// sudoRules says how to get elevated privileges, which is a different act on
+// each platform and not an act at all on one of them.
+//
+// It takes the OS as well as the user because IsRoot is false on Windows the
+// way it is false for an ordinary Unix user, and the two mean opposite
+// things: one wants sudo in front of the command, and the other has no sudo
+// to put there. Told to use it anyway, a model writes `sudo` into a
+// PowerShell line that then fails on a command that is not found.
+func sudoRules(goos string, isRoot bool) string {
+	if goos == "windows" {
+		return "Windows has no sudo: do not prefix anything with it. A command needing administrator rights cannot acquire them in place — say that it must be run from an elevated prompt, or use Start-Process -Verb RunAs to launch one."
+	}
 	if isRoot {
 		return "The user is running as root. Do not prefix commands with sudo."
 	}
@@ -331,6 +373,15 @@ func osRules(goos string) string {
 - ls: no --color=auto; color is enabled via -G or CLICOLOR=1.`
 	case "linux":
 		return `This is Linux with GNU coreutils. Use GNU-style flags (long options like --no-headers are supported).`
+	case "windows":
+		return `IMPORTANT: This is Windows. There are no coreutils and no POSIX layer.
+- There is no grep, sed, awk, cut or which. Use the platform's own command or a PowerShell cmdlet.
+- Worse than absent: PowerShell aliases some POSIX names (ls, cat, cp, rm, ps) to its own cmdlets, which do not take POSIX flags. "ls -la" is an error, not a listing. Either use the cmdlet with its real parameters or do not use the name at all.
+- Paths use \ and are case-insensitive. Most tools accept / too; quote any path with a space.
+- Executables carry an extension (.exe, .cmd, .bat, .ps1). "where" finds one, not "which".
+- Line endings are CRLF in files that Windows tools wrote. Do not assume LF when matching.
+- Environment variables are not exported with export; the syntax is the shell's.
+- A tool the user installed through Git for Windows, WSL or a package manager may well be there — but check with "where" before depending on it rather than assuming.`
 	default:
 		return ""
 	}
@@ -436,7 +487,7 @@ func BuildProfile(info shell.Info, spec ProfileSpec, extra ...string) string {
 	if spec.Execute {
 		b.WriteString("\n- After changing anything, verify: run the project's build or tests with execute_command when one is available.")
 		b.WriteString("\n- Never run destructive commands (rm -rf, dropping databases, force-pushing) unless the task explicitly asked for that exact action.")
-		fmt.Fprintf(&b, "\n\n# Shell commands\n%s\n%s\n%s", shellSyntaxRules(info.Shell), sudoRules(info.IsRoot), osRules(info.OS))
+		fmt.Fprintf(&b, "\n\n# Shell commands\n%s\n%s\n%s", shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS))
 	}
 
 	b.WriteString("\n\n# Final report\nYour last message IS the deliverable. Make it a self-contained report: ")
