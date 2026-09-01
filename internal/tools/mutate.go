@@ -79,8 +79,11 @@ func PreviewMutation(name string, raw json.RawMessage) (Mutation, error) {
 		if err != nil {
 			return Mutation{}, err
 		}
-		old, _, err := readIfExists(args.Path)
+		old, existed, err := readIfExists(args.Path)
 		if err != nil {
+			return Mutation{}, err
+		}
+		if err := checkSeen(args.Path, []byte(old), existed, true); err != nil {
 			return Mutation{}, err
 		}
 		return Mutation{Action: "write", Path: args.Path, OldText: old, NewText: args.Content}, nil
@@ -92,6 +95,9 @@ func PreviewMutation(name string, raw json.RawMessage) (Mutation, error) {
 		content, err := os.ReadFile(args.Path)
 		if err != nil {
 			return Mutation{}, fmt.Errorf("cannot read file: %w", err)
+		}
+		if err := checkSeen(args.Path, content, true, false); err != nil {
+			return Mutation{}, err
 		}
 		updated, _, err := applyEdit(string(content), args)
 		if err != nil {
@@ -106,6 +112,7 @@ var writeFile = Definition{
 	Tool: provider.Tool{
 		Name: WriteFileName,
 		Description: "Create or overwrite a file with the given content. content is written verbatim — never include read_file's line-number prefixes. " +
+			"Overwriting an existing file requires having read it in full first, and fails if it has changed since: prefer edit_file for changing part of a file you have already read. " +
 			"Missing parent directories are created automatically. The user reviews a diff and must approve the change before it is applied; a declined call returns an error result.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
@@ -144,14 +151,21 @@ func executeWriteFile(raw json.RawMessage) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	// A full overwrite carries no evidence about what it is overwriting, so
+	// it has to have been read, in full, and not changed since (seen.go).
+	if err := checkSeen(args.Path, []byte(old), existed, true); err != nil {
+		return "", err
+	}
 	if dir := filepath.Dir(args.Path); dir != "." {
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			return "", fmt.Errorf("cannot create parent directories: %w", err)
 		}
 	}
 	if err := os.WriteFile(args.Path, []byte(args.Content), 0o644); err != nil {
+		forget(args.Path)
 		return "", fmt.Errorf("cannot write file: %w", err)
 	}
+	noteShown(args.Path, []byte(args.Content), true)
 	if existed {
 		return fmt.Sprintf("Overwrote %s: wrote %d bytes (%d lines), was %d bytes", args.Path, len(args.Content), countLines(args.Content), len(old)), nil
 	}
@@ -163,6 +177,7 @@ var editFile = Definition{
 		Name: EditFileName,
 		Description: "Replace an exact text snippet in an existing file. old_text must match the file content exactly (including whitespace) and match exactly once, unless replace_all is set. " +
 			"Strip read_file's `<line number>\t` prefix before quoting a line here — the numbers are a reading aid and are not in the file. " +
+			"A file that has changed since you last read it is refused: read it again and rebase the edit on what it says now. " +
 			"The user reviews a diff and must approve the change before it is applied; a declined call returns an error result.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
@@ -211,13 +226,24 @@ func executeEditFile(raw json.RawMessage) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("cannot read file: %w", err)
 	}
+	// An edit needs no prior read — old_text is its own evidence — but a file
+	// that moved since it was read is one this edit was not written against.
+	if err := checkSeen(args.Path, content, true, false); err != nil {
+		return "", err
+	}
 	updated, count, err := applyEdit(string(content), args)
 	if err != nil {
 		return "", err
 	}
 	if err := os.WriteFile(args.Path, []byte(updated), 0o644); err != nil {
+		// The file is now of unknown content, so nothing may be claimed about
+		// it until something reads it again.
+		forget(args.Path)
 		return "", fmt.Errorf("cannot write file: %w", err)
 	}
+	// The model knows exactly what it just wrote, so the next edit is not
+	// asked to read it again.
+	noteShown(args.Path, []byte(updated), true)
 	return fmt.Sprintf("Edited %s: %d replacement(s), file now %d bytes (%d lines)", args.Path, count, len(updated), countLines(updated)), nil
 }
 

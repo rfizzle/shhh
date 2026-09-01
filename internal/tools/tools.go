@@ -149,6 +149,7 @@ func executeReadFile(raw json.RawMessage) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("cannot read file: %w", err)
 	}
+	windowed := args.StartLine > 0 || args.EndLine > 0
 
 	lines := strings.Split(string(data), "\n")
 	total := len(lines)
@@ -194,6 +195,12 @@ func executeReadFile(raw json.RawMessage) (string, error) {
 		lastLine := start + shown - 1
 		content += fmt.Sprintf("\n… (truncated: showing lines %d-%d of %d; call read_file again with start_line=%d to continue)", start, lastLine, total, lastLine+1)
 	}
+
+	// What the model has now been shown, so a later mutation can tell a
+	// change from a clobber (seen.go). The fingerprint is of the whole file
+	// even for a windowed read — the question a mutation asks is whether the
+	// file moved, and a window is still a reading of the file it came from.
+	noteShown(args.Path, data, !windowed && !truncated)
 
 	return content, nil
 }

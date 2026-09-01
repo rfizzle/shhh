@@ -16,7 +16,17 @@ import (
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/tools"
 )
+
+// showFile puts a file through read_file, which is what an overwrite of an
+// existing one requires the session to have done.
+func showFile(t *testing.T, path string) {
+	t.Helper()
+	if _, err := tools.Execute(tools.ReadFileName, []byte(fmt.Sprintf(`{"path":%q}`, path))); err != nil {
+		t.Fatalf("read %s: %v", path, err)
+	}
+}
 
 // applyWrite runs one write_file call to completion, answering the approval
 // prompt with the given key ("" applies without one, for the modes that do
@@ -160,6 +170,7 @@ func TestChangeset_NotesWhetherGitKnewTheFile(t *testing.T) {
 	if out, err := exec.Command("git", "-C", dir, "add", "tracked.go").CombinedOutput(); err != nil {
 		t.Fatalf("git add: %v: %s", err, out)
 	}
+	showFile(t, tracked)
 
 	m := gatedModel(t, nil, nil).WithChangeset(nil, changeset.NewTracker(dir))
 	m.turnCount = 1

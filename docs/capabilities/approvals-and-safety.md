@@ -82,6 +82,41 @@ destroys the only information they needed.
 A denial is recorded as an act, and carries the mutation rail, because the
 point of that rail is finding the moments that mattered.
 
+## A file is changed from what was read
+
+The mutating tools used to take their arguments' word for the file underneath
+them. Replacing a file carries the whole new content and nothing about the
+old, so it overwrote whatever was there — including a file the model had never
+looked at, and a file that something else had changed since it did.
+
+Both failures are silent, and both are worst where nobody is watching. A
+session shows a diff before it applies anything, so a person can see a rewrite
+built on a stale reading. A run with edits auto-approved shows that to nobody,
+and a sub-agent working alongside the session is exactly the thing that
+changes a file between one round and the next.
+
+So a read records what it showed, and a mutation is checked against it. What
+is recorded is a fingerprint of the content rather than a time, because
+modification times are a coarse clock on some filesystems and the changes
+worth catching are the ones that happened close together.
+
+**The two tools are held to different standards, because they carry different
+evidence.** Changing part of a file quotes the text it is replacing, and that
+quote has to match exactly and uniquely — a snippet that does came from
+somewhere, so an edit is not made to read the file first. Replacing a file
+whole quotes nothing, so that one must have read the file, and read all of it:
+replacing a file from a partial reading writes over the part that was never
+seen.
+
+Staleness applies to both, and to a preview as much as to the act, so a
+decision is never put to a person for a change that will be refused after they
+approve it.
+
+Being told the file moved is a good outcome, not an obstacle. The instruction
+that comes back says what to do — read it again and rebase the change on what
+it says now — and one round spent re-reading is the cost of not silently
+discarding somebody's work.
+
 ## Quality gates run what you wrote
 
 A session can run a named suite of checks, and the check commands come from a

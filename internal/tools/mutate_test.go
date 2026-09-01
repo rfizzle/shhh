@@ -93,6 +93,7 @@ func TestWriteFile_Overwrite(t *testing.T) {
 	if err := os.WriteFile(path, []byte("previous content\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	readWholeFile(t, path)
 	args, _ := json.Marshal(writeFileArgs{Path: path, Content: "new\n"})
 
 	result, err := ExecuteMutating(WriteFileName, args)
@@ -232,6 +233,7 @@ func TestPreviewMutation_WriteNewAndExisting(t *testing.T) {
 	if err := os.WriteFile(existing, []byte("before\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	readWholeFile(t, existing)
 	args, _ = json.Marshal(writeFileArgs{Path: existing, Content: "after\n"})
 	mut, err = PreviewMutation(WriteFileName, args)
 	if err != nil {
