@@ -92,6 +92,14 @@ func (m Model) rowCopyText(es []entry, idx int) (text, what string) {
 		return e.text, "response"
 	case entryThink:
 		return e.text, "thinking"
+	case entrySummary:
+		// The reading, not the row: the verdict and the instruction under it
+		// are furniture this transcript drew, and what somebody pastes into a
+		// message is what the summariser wrote.
+		if e.reading == nil {
+			return "", ""
+		}
+		return e.reading.verdict.Text, "summary"
 	case entryCommand:
 		out := ansi.Strip(strings.TrimRight(e.toolResult, "\n"))
 		if out == "" {
@@ -131,6 +139,8 @@ func (m Model) focusedCopyable() bool {
 	switch e.kind {
 	case entryAssistant, entryThink:
 		return strings.TrimSpace(e.text) != ""
+	case entrySummary:
+		return e.reading != nil && strings.TrimSpace(e.reading.verdict.Text) != ""
 	case entryCommand:
 		return true
 	case entryDiff:

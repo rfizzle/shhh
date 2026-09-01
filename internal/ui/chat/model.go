@@ -276,6 +276,11 @@ const (
 	// (think.go). It holds the readable text; the blocks the next
 	// request replays are the agent's, not this row's.
 	entryThink
+	// entrySummary: a session reading, folded into one activity row
+	// (summary.go). The rail draws the latest reading bounded to three lines;
+	// this is where a longer one can be read whole, and where the readings
+	// before it are still on record.
+	entrySummary
 )
 
 // entry is one transcript item, stored raw so the history can be re-rendered
@@ -349,6 +354,12 @@ type entry struct {
 	// reader's own answer to [enter], recorded on the entry so the row
 	// re-renders at any width like every other one.
 	thinkDepth thinkDepth
+	// reading is the session summary behind an entrySummary row (summary.go):
+	// the verdict as it landed, plus the target it was judged against. Both
+	// are stored rather than read back off the model, because the target is
+	// anchored per turn and an old row must keep saying what it was actually
+	// read against once the next instruction has moved it.
+	reading *summaryReading
 	// thinkStreaming says the reasoning is still being written, which is what
 	// spins the row. It is on the entry rather than on the Model for
 	// the reason a pending tool result is: what a row is doing is part of the
@@ -2210,10 +2221,17 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case summaryDoneMsg:
 		// A reading never routes anything: it changes what the rail draws and
-		// nothing else, which is why it has no turn-state guard of its own
-		//. finishSummary decides what to keep.
+		// what the transcript holds, and nothing else, which is why it has no
+		// turn-state guard of its own. finishSummary decides what to keep.
 		m.summaryCancel = nil
-		m.finishSummary(msg)
+		if m.finishSummary(msg) {
+			// The reading landed a row, and it landed out of band: no stream
+			// owed this frame a repaint. Following to the bottom only if the
+			// reader was already there is the same courtesy the stream shows
+			// — a background row must not yank a scrollback anybody is
+			// reading.
+			m.flushStream()
+		}
 		return m, nil
 
 	case modelListMsg:
@@ -3187,6 +3205,11 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 			return ""
 		}
 		return m.thinkRowFor(e, width).View(width) + "\n"
+	case entrySummary:
+		if e.reading == nil {
+			return ""
+		}
+		return m.summaryRowFor(e, width).View(width) + "\n"
 	case entryTurnClose:
 		if e.close == nil {
 			return ""

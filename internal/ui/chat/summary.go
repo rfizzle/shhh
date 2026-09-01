@@ -213,12 +213,16 @@ func (m *Model) forceSummaryCmd() tea.Cmd {
 
 // finishSummary applies a reading. A failed one keeps what was on screen and
 // marks it stale; nothing is ever blanked.
-func (m *Model) finishSummary(msg summaryDoneMsg) {
+//
+// It reports whether the reading landed a transcript row, because a reading
+// arrives with no stream behind it owing a repaint and the caller is the only
+// thing that will draw one.
+func (m *Model) finishSummary(msg summaryDoneMsg) bool {
 	if !m.summary.inFlight || msg.runID != m.summary.runID {
 		// A reading from a run the session has moved past. Its cost still
 		// counts — it was spent — but its words are about a turn that is over.
 		m.countSummarySpend(msg.verdict)
-		return
+		return false
 	}
 	m.summary.inFlight = false
 	m.countSummarySpend(msg.verdict)
@@ -227,7 +231,7 @@ func (m *Model) finishSummary(msg summaryDoneMsg) {
 		// The clock still moves on a failure, so a provider that is down is
 		// retried on the interval rather than on every round.
 		m.summary.lastAt = time.Now()
-		return
+		return false
 	}
 	m.summary.failures = 0
 	v := msg.verdict
@@ -235,10 +239,15 @@ func (m *Model) finishSummary(msg summaryDoneMsg) {
 	m.summary.last = &v
 	m.summary.lastRound = v.Round
 	m.summary.lastAt = time.Now()
+	// The row goes in before the verdict is considered: an off-target reading
+	// queues an interruption, and the row that explains the interruption has
+	// to be above it in the transcript rather than after it.
+	rowed := m.appendSummaryRow(v)
 	// A reading that says the run has drifted, or that it has what it needs,
 	// is the one thing a summary does besides being read. It only ever queues
 	// here; the round boundary delivers it (intervene.go).
 	m.considerVerdict(v)
+	return rowed
 }
 
 // summaryStateCode is the reading's state as the recorder's closed set.
@@ -520,4 +529,134 @@ func truncateRunes(s string, limit int) string {
 		return s
 	}
 	return strings.TrimRight(string(runes[:limit]), " ") + "…"
+}
+
+// The summary row (docs/interface/surfaces.md#the-session-summary).
+//
+// The rail draws the latest reading bounded to three lines, which is right
+// for a rail — it is 46 columns of standing status and a block that grew
+// would push the counts under it off the screen. But a reading that runs past
+// three lines is then a sentence nobody can finish, and the reading before it
+// is gone entirely: the rail holds one, and only the current one.
+//
+// So every landed reading also lands in the transcript as one folded activity
+// row, the way a round's reasoning does (think.go). Folded it is a line: the
+// round it was taken at, its verdict, and how many lines opening it costs.
+// Opened it is the whole reading, the verdict in the rail's own marks, the
+// reason behind a departure, and the instruction it was judged against — the
+// last of which the rail never had room for at all and only `/status` could
+// answer.
+//
+// It is a row rather than a block for the reason everything else is: one
+// grid. And it is every reading rather than the last one because the readings
+// in order are the run's own account of itself — what it thought it was doing
+// at round 6 and again at round 24 is a thing the transcript can now be
+// scrolled for, which is exactly the reconstruction the rail exists to
+// remove and could only ever do for the present moment.
+
+// summaryReading is what an entrySummary row holds: the verdict as it landed
+// and the target it was judged against.
+//
+// The target is copied rather than read back off the model at render time
+// because it is anchored per turn (intervene.go) — the next instruction moves
+// it, and a row that then claimed to have been read against an instruction
+// that did not exist yet would be the one lie this row can tell.
+type summaryReading struct {
+	verdict agent.SummaryVerdict
+	target  string
+}
+
+// summaryVerb is the row's verb, closed like every other
+// (docs/interface/principles.md#closed-vocabularies).
+const summaryVerb = "summary"
+
+// summaryReasonIndent is how far a departure's reason sits under the verdict
+// it qualifies.
+const summaryReasonIndent = 2
+
+// summaryReadAgainstChars bounds the instruction quoted in an opened row. It
+// is `/status`'s bound, for the same reason: the row states what the reading
+// was judged against, and a whole pasted brief restated under every reading
+// would bury the reading.
+const summaryReadAgainstChars = 120
+
+// appendSummaryRow puts a landed reading in the transcript. It reports
+// whether it did, because the caller is the only thing that will repaint the
+// transcript for it — a reading arrives out of band, with no stream behind it
+// owing a frame.
+func (m *Model) appendSummaryRow(v agent.SummaryVerdict) bool {
+	if strings.TrimSpace(v.Text) == "" {
+		// A reading with no words is not a reading. The rail declines to
+		// draw one for the same reason, and a row counting zero lines would
+		// be a fold over nothing.
+		return false
+	}
+	m.appendEntry(entry{kind: entrySummary, reading: &summaryReading{verdict: v, target: m.summaryTarget}})
+	return true
+}
+
+// summaryRowFor builds the row for a reading at the width it will be drawn
+// at, so the body re-wraps on a resize like every other entry.
+func (m Model) summaryRowFor(e entry, width int) components.ActivityRow {
+	r := e.reading
+	tone := summaryTone(r.verdict.State)
+	lines := m.summaryBodyLines(r, width)
+	row := components.ActivityRow{
+		Kind:    components.ActivitySummary,
+		Verb:    summaryVerb,
+		Target:  fmt.Sprintf("round %d", r.verdict.Round),
+		Outcome: components.SummaryGlyph(tone) + " " + components.SummaryWord(tone),
+		Counts:  lineCounts(len(m.summaryTextLines(r.verdict.Text, width))),
+	}
+	if e.expanded {
+		row.Expanded = true
+		// Unbounded, unlike a tool result's body: a reading is a few
+		// sentences by construction, and a fold over a fold would be this
+		// row hiding the thing it exists to show.
+		row.Detail = lines
+	} else {
+		row.Keys = components.GroupExpandKey
+	}
+	return row
+}
+
+// summaryTextLines is the reading wrapped to the detail body's width. It is
+// what the closed row counts, so the number on it is the number of lines
+// opening it costs — the verdict and the instruction under them are the row's
+// own furniture and are not counted, the way a diff's header is not a hunk.
+func (m Model) summaryTextLines(text string, width int) []string {
+	text = strings.TrimSpace(text)
+	if text == "" {
+		return nil
+	}
+	return strings.Split(m.wordWrap(text, max(width-components.GridDetailIndent, 1)), "\n")
+}
+
+// summaryBodyLines is the opened row: the reading, its verdict, the reason
+// behind a departure, and the instruction the verdict was reached against.
+//
+// The verdict is repeated here in the rail's own glyph and words even though
+// the folded row already carries it, because the folded row's copy is in the
+// outcome column at the far right and this one sits under the sentence it
+// judges. Prose is wrapped rather than clipped: a detail body clips, which is
+// right for a log line and wrong for a sentence (think.go).
+func (m Model) summaryBodyLines(r *summaryReading, width int) []string {
+	inner := max(width-components.GridDetailIndent, 1)
+	lines := m.summaryTextLines(r.verdict.Text, width)
+	tone := summaryTone(r.verdict.State)
+	lines = append(lines, components.SummaryGlyph(tone)+" "+components.SummaryWord(tone))
+	if reason := strings.TrimSpace(r.verdict.Reason); reason != "" {
+		// One indent further in, under the verdict it qualifies — the same
+		// place the rail puts it, and the same place an alert's note sits
+		// under its alert. Without it the reason reads as a second paragraph
+		// of the reading rather than as the argument for the verdict.
+		for _, line := range strings.Split(m.wordWrap(reason, max(inner-summaryReasonIndent, 1)), "\n") {
+			lines = append(lines, strings.Repeat(" ", summaryReasonIndent)+line)
+		}
+	}
+	if target := strings.TrimSpace(r.target); target != "" {
+		quoted := truncateRunes(firstLine(target), summaryReadAgainstChars)
+		lines = append(lines, strings.Split(m.wordWrap("read against: "+quoted, inner), "\n")...)
+	}
+	return lines
 }

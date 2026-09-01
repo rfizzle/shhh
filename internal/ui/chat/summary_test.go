@@ -8,6 +8,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -410,12 +411,12 @@ func TestSummary_ReachesTheRail(t *testing.T) {
 	}
 }
 
-// The verdict is rendered and nothing more. Auto-steering is the next story;
-// a reading that has gone off target must not, today, touch the turn.
+// The verdict is recorded and nothing more.
 // A reading is a background command and lands whenever it lands, which may be
 // halfway through a round. Acting on it there would put a user message between
 // an assistant's tool calls and their results, so a drift verdict only ever
-// queues (steer.go); nothing about the turn moves until the boundary.
+// queues (steer.go); nothing about the turn moves until the boundary. Its own
+// row is not "acting on it" — it is the reading being written down.
 func TestSummary_DriftQueuesButMovesNothingAtReadingTime(t *testing.T) {
 	m := summaryModel(t, &readingProvider{text: "Rewriting the README.", state: "off_target"})
 	m.setTurnState(stateStreaming)
@@ -425,8 +426,11 @@ func TestSummary_DriftQueuesButMovesNothingAtReadingTime(t *testing.T) {
 	if m.turnState() != stateStreaming {
 		t.Fatalf("a drift reading does not move the turn, state = %v", m.turnState())
 	}
-	if len(m.transcript) != before {
-		t.Fatal("a drift reading writes nothing to the transcript")
+	if len(m.transcript) != before+1 {
+		t.Fatalf("a drift reading writes its own row and nothing else, %d new entries", len(m.transcript)-before)
+	}
+	if last := m.transcript[len(m.transcript)-1]; last.kind != entrySummary {
+		t.Fatalf("the one new entry is the reading, got kind %v", last.kind)
 	}
 	if m.pendingApproval != nil {
 		t.Fatal("a drift reading asks for nothing")
@@ -512,5 +516,129 @@ func TestStatusCommand_BeforeTheFirstReading(t *testing.T) {
 	}
 	if !strings.Contains(note, "Reading the session") {
 		t.Fatalf("/status says a reading is coming:\n%s", note)
+	}
+}
+
+// summaryRowEntry is a landed reading as the transcript holds it.
+func summaryRowEntry(v agent.SummaryVerdict, target string) entry {
+	return entry{kind: entrySummary, reading: &summaryReading{verdict: v, target: target}}
+}
+
+// Every reading lands in the transcript, so the readings of a long turn are
+// a record that can be scrolled back to rather than one block the next
+// reading overwrites.
+func TestSummaryRow_EveryReadingLandsInTheTranscript(t *testing.T) {
+	m := summaryModel(t, &readingProvider{text: "Reading the loop."})
+	for i := 0; i < 3; i++ {
+		m = applyReading(t, m)
+	}
+	rows := 0
+	for _, e := range m.transcript {
+		if e.kind == entrySummary {
+			rows++
+		}
+	}
+	if rows != 3 {
+		t.Fatalf("three readings, %d rows", rows)
+	}
+}
+
+// A failed reading changes nothing, and a row is something: the rail keeps
+// the last reading and the transcript gains no line saying a request timed
+// out.
+func TestSummaryRow_AFailedReadingLandsNoRow(t *testing.T) {
+	m := summaryModel(t, &readingProvider{err: errors.New("provider down")})
+	before := len(m.transcript)
+	m = applyReading(t, m)
+	if len(m.transcript) != before {
+		t.Fatal("a failed reading writes no row")
+	}
+}
+
+// The row is the whole reading, which is the point of it: the rail clips at
+// three lines and the transcript does not.
+func TestSummaryRow_OpensToTheWholeReading(t *testing.T) {
+	m := gatedModel(t, nil, nil)
+	long := strings.Repeat("the run is still reading the loop and has touched nothing. ", 12)
+	e := summaryRowEntry(agent.SummaryVerdict{Text: long, State: agent.SummaryOnTarget, Round: 18}, "")
+	e.expanded = true
+	got := m.renderEntry(e, 76)
+	if strings.Contains(got, "…") {
+		t.Fatalf("an opened reading is not bounded:\n%s", got)
+	}
+	// Every word of it survived the wrap.
+	flat := strings.Join(strings.Fields(ansi.Strip(got)), " ")
+	if !strings.Contains(flat, strings.TrimSpace(long)) {
+		t.Fatalf("the opened row is missing part of the reading:\n%s", got)
+	}
+}
+
+// Closed, the row states what the fold swallowed and how to open it — a fold
+// nobody knows is a fold reads as a row that had nothing to show.
+func TestSummaryRow_ClosedStatesItsFold(t *testing.T) {
+	m := gatedModel(t, nil, nil)
+	e := summaryRowEntry(agent.SummaryVerdict{
+		Text: strings.Repeat("still reading the loop. ", 10), State: agent.SummaryOffTarget, Round: 18,
+	}, "make the round limit a checkpoint")
+	got := ansi.Strip(m.renderEntry(e, 76))
+	for _, want := range []string{"summary", "round 18", "off target", "lines", "expand"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("a closed row states %q:\n%s", want, got)
+		}
+	}
+	// Closed is one line: the fold is the whole reason the row is tolerable
+	// every interval.
+	if n := len(strings.Split(strings.TrimRight(got, "\n"), "\n")); n != 1 {
+		t.Fatalf("a closed row is one line, got %d:\n%s", n, got)
+	}
+}
+
+// The verdict is on the row and the instruction it was reached against is in
+// the body — the one thing the rail never had room for and only /status could
+// answer.
+func TestSummaryRow_SaysWhatItWasReadAgainst(t *testing.T) {
+	m := gatedModel(t, nil, nil)
+	e := summaryRowEntry(agent.SummaryVerdict{
+		Text: "Rewriting the README.", State: agent.SummaryOffTarget,
+		Reason: "docs were not asked for", Round: 9,
+	}, "make the round limit a checkpoint")
+	e.expanded = true
+	got := ansi.Strip(m.renderEntry(e, 76))
+	for _, want := range []string{"docs were not asked for", "read against: make the round limit a checkpoint"} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("an opened row states %q:\n%s", want, got)
+		}
+	}
+}
+
+// The target is copied onto the row rather than read back off the model,
+// because the next turn moves it and an old row must not claim it was judged
+// against an instruction that did not exist yet.
+func TestSummaryRow_KeepsTheTargetItWasReadAgainst(t *testing.T) {
+	m := summaryModel(t, &readingProvider{text: "Reading the loop."})
+	m = applyReading(t, m)
+	m.summaryTarget = "something else entirely"
+	last := m.transcript[len(m.transcript)-1]
+	if last.reading.target != "make the round limit a checkpoint" {
+		t.Fatalf("the row kept the wrong target: %q", last.reading.target)
+	}
+}
+
+// Reading mode can put its cursor on the row and open it, which is the one
+// mechanism behind "[enter] expand" everywhere in the transcript.
+func TestSummaryRow_IsExpandableAndCopyable(t *testing.T) {
+	e := summaryRowEntry(agent.SummaryVerdict{Text: "Reading the loop.", Round: 4}, "")
+	if !expandable(e) {
+		t.Fatal("reading mode expands the summary row")
+	}
+	m := gatedModel(t, nil, nil)
+	m.transcript = []entry{e}
+	m.focusIdx = 0
+	if !m.focusedCopyable() {
+		t.Fatal("[y] copies the reading")
+	}
+	text, label := m.rowCopyText(m.transcript, 0)
+	if text != "Reading the loop." || label != "summary" {
+		t.Fatalf("[y] copies the reading itself, got %q / %q", text, label)
 	}
 }

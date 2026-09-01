@@ -19,7 +19,7 @@ import (
 // mode can expand.
 func expandable(e entry) bool {
 	return e.kind == entryTool || e.kind == entryCommand || e.kind == entryDiff ||
-		e.kind == entryThink
+		e.kind == entryThink || e.kind == entrySummary
 }
 
 // selectable reports whether focus mode can put its cursor on an entry. It is

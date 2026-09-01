@@ -284,6 +284,16 @@ reasoning the next request replays; that stays with the agent as the
 provider's own signed blocks, and dropping them turns the second round of
 every thinking turn into a 400 (see the Gemini and Anthropic notes below).
 
+So is a session reading. `internal/ui/chat/summary.go` owns both halves: the
+rail's bounded `SUMMARY` block (`inspectorSummary`) and the `summary` row every
+landed reading appends to the transcript (`appendSummaryRow`, `summaryRowFor`,
+kind `components.ActivitySummary`), which is where a reading too long for
+three rail lines can be read whole. `finishSummary` reports whether it wrote a
+row, because the reading arrives with no stream behind it owing a repaint. The
+row stores its own `summaryReading` — the verdict plus `summaryTarget` as it
+stood — rather than reading the target back at render time, since the target is
+anchored per turn and the next instruction moves it.
+
 The attached sub-agent view is not a separate surface — the chat `Model`
 renders whichever agent is focused, and every agent including the orchestrator
 is an `internal/agent` instance with its own transcript, queue and mode.

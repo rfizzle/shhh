@@ -86,8 +86,13 @@ func TestIntervene_AnOnTargetReadingDeliversNothing(t *testing.T) {
 	before := len(m.transcript)
 	m = applyReading(t, m)
 	m.injectInterventions()
-	if len(m.transcript) != before {
-		t.Fatal("a run that is on target is not interrupted")
+	// The reading writes down its own row (summary.go); what it must not
+	// write is the notice that says the turn was steered.
+	if len(m.transcript) != before+1 {
+		t.Fatalf("a run that is on target is not interrupted, %d new entries", len(m.transcript)-before)
+	}
+	if last := m.transcript[len(m.transcript)-1]; last.kind != entrySummary {
+		t.Fatalf("a run that is on target is not interrupted, got kind %v", last.kind)
 	}
 }
 

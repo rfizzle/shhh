@@ -345,7 +345,7 @@ func TestThinkRow_WrapsRatherThanClips(t *testing.T) {
 	// what opening it costs.
 	m.transcript[0].thinkDepth = thinkClosed
 	closed := stripANSI(m.renderEntry(m.transcript[0], width))
-	if !strings.Contains(closed, thinkCounts(len(body))) {
+	if !strings.Contains(closed, lineCounts(len(body))) {
 		t.Fatalf("the folded row should count the %d lines it is holding:\n%s", len(body), closed)
 	}
 }

@@ -79,10 +79,11 @@ func (m Model) thinkLines(text string, width int) []string {
 	return strings.Split(m.wordWrap(text, max(width-components.GridDetailIndent, 1)), "\n")
 }
 
-// thinkCounts is the row's outcome field: what the fold swallowed. Lines
-// rather than tokens, because a line is a thing the reader can count back
-// once the row is open and a token is not.
-func thinkCounts(n int) string {
+// lineCounts is a folded prose row's outcome field: what the fold swallowed.
+// Lines rather than tokens, because a line is a thing the reader can count
+// back once the row is open and a token is not. The think row and the summary
+// row share it, so the two folds over prose count in the same units.
+func lineCounts(n int) string {
 	if n == 1 {
 		return "1 line"
 	}
@@ -139,7 +140,7 @@ func (m Model) thinkRowFor(e entry, width int) components.ActivityRow {
 	row := components.ActivityRow{
 		Kind:   components.ActivityThink,
 		Verb:   thinkVerb,
-		Counts: thinkCounts(len(lines)),
+		Counts: lineCounts(len(lines)),
 		Frame:  m.spinFrame,
 	}
 	if e.thinkStreaming {

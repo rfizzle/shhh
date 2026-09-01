@@ -376,6 +376,25 @@ inverted: the approval classifier
 because a wrong yes is unsafe, and the summariser fails soft because a status
 block that vanishes when one request times out is a block nobody trusts again.
 
+**Every reading is also a transcript row.** The rail holds one reading and
+bounds it to three lines, which is what a rail is for — it is a column of
+standing status, and a block that grew would push the counts under it off the
+screen. But a longer reading is then a sentence nobody can finish, and the
+reading before it is gone entirely. So each reading lands in the activity feed
+as one folded row as well: closed it is the round it was taken at, its verdict
+and how many lines opening it costs; opened it is the reading whole, the
+verdict in the same marks the rail uses, the reason behind a departure, and
+the instruction the verdict was reached against — the last of which the rail
+never had room for at all.
+
+It is every reading rather than the latest one because the readings in order
+are the run's own account of itself. What it believed it was doing at round 6
+and again at round 24 is then a thing the transcript can be scrolled for,
+which is the reconstruction the rail exists to remove and could only ever
+perform for the present moment. A failed reading still writes nothing: the
+rail keeps what it had, and a line reporting that one request timed out is not
+news.
+
 ### The agent manager
 
 Sub-agents are visible and steerable while they run: what each is doing, how

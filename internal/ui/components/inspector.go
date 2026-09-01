@@ -577,15 +577,46 @@ func SummaryLabel(s SummaryTone) string {
 // needs is not a warning, it is news, so it takes the reading weight and the
 // healthy glyph colour.
 func summaryTone(s SummaryTone) (string, string, lipgloss.Style) {
+	glyph, word := SummaryGlyph(s), SummaryWord(s)
 	switch s {
 	case SummaryOnTarget:
-		return sty.SpinText.Render("▸"), "on target", sty.Dim
+		return sty.SpinText.Render(glyph), word, sty.Dim
 	case SummarySufficient:
-		return sty.SpinText.Render("◆"), "has enough", sty.Body
+		return sty.SpinText.Render(glyph), word, sty.Body
 	case SummaryOffTarget:
-		return sty.Accent.Render("⚠"), "off target", sty.Body
+		return sty.Accent.Render(glyph), word, sty.Body
 	}
-	return sty.Dim.Render("·"), "target unclear", sty.Dim
+	return sty.Dim.Render(glyph), word, sty.Dim
+}
+
+// SummaryGlyph and SummaryWord are the same verdict unpainted, for the
+// callers that render it into a field of their own — the transcript's summary
+// row states its verdict in the outcome column, and a colour set there would
+// be a second wrapper around a string the row is about to paint itself
+// (activityrow.go). The glyph goes first wherever both are used: it is what
+// carries the distinction on a terminal with no colour at all.
+func SummaryGlyph(s SummaryTone) string {
+	switch s {
+	case SummaryOnTarget:
+		return "▸"
+	case SummarySufficient:
+		return "◆"
+	case SummaryOffTarget:
+		return "⚠"
+	}
+	return "·"
+}
+
+func SummaryWord(s SummaryTone) string {
+	switch s {
+	case SummaryOnTarget:
+		return "on target"
+	case SummarySufficient:
+		return "has enough"
+	case SummaryOffTarget:
+		return "off target"
+	}
+	return "target unclear"
 }
 
 func (r InspectorRail) turnBlock(width int) (railBlock, bool) {

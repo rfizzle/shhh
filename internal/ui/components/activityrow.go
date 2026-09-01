@@ -87,6 +87,15 @@ const (
 	// rail — the store is shhh's own state, not the workspace
 	// (docs/capabilities/reports.md#a-report-outlives-its-session).
 	ActivityReport
+	// ActivitySummary is a reading of the session by the summariser: ≡, three
+	// stacked lines for the digest it is. Like ActivityThink it is drawn dim
+	// and carries no rail, and for the same reason — it read nothing of the
+	// workspace, wrote nothing and ran nothing. It is the second act that is
+	// not a tool, and it gets a glyph of its own rather than borrowing ✻
+	// because the two say different things: ✻ is the session's own model
+	// working, ≡ is another model reading the session
+	// (docs/interface/surfaces.md#the-session-summary).
+	ActivitySummary
 )
 
 // ActivityState is the row's state. It overrides the kind glyph — but only
@@ -233,6 +242,8 @@ func (r ActivityRow) glyph() string {
 			g = sty.Dim.Render("✻")
 		case ActivityReport:
 			g = sty.Accent.Render("⛁")
+		case ActivitySummary:
+			g = sty.Dim.Render("≡")
 		default:
 			g = sty.Accent.Render("⚙")
 		}
