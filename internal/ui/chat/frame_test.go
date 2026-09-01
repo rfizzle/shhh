@@ -29,6 +29,17 @@ func frameModel(t *testing.T, width, height int) Model {
 	return updated.(Model)
 }
 
+// frameTopRail is the frame's top rail: the line the identity used to sit on
+// the left of, and the live turn status sits on the right of.
+func frameTopRail(view string) string {
+	for _, line := range strings.Split(view, "\n") {
+		if strings.Contains(line, "╭─") {
+			return line
+		}
+	}
+	return ""
+}
+
 func TestFrameLayoutFor(t *testing.T) {
 	cases := []struct {
 		width int
@@ -48,10 +59,17 @@ func TestFrame_WideTwoRails(t *testing.T) {
 	m := frameModel(t, 130, 40) // content 126 ≥ 110
 	view := stripANSI(m.View().Content)
 
-	for _, want := range []string{"╭─ shhh chat", "├─", "╰─", "⏸ manual", "ctx ", "↑41.2k ↓9.8k", "$0.51", "gpt-4o", "enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+p palette · shift+tab mode", "idle"} {
+	for _, want := range []string{"╭─", "├─", "╰─", "⏸ manual", "ctx ", "↑41.2k ↓9.8k", "$0.51", "gpt-4o", "enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+p palette · shift+tab mode", "idle"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("wide frame missing %q:\n%s", want, view)
 		}
+	}
+	// The root session's rail is live status and nothing else. The static
+	// title it used to open with said the same word on every frame of every
+	// session — the header above the transcript already names the surface —
+	// and it was width the phase, the clock and the spend could use.
+	if rail := frameTopRail(view); strings.Contains(rail, "shhh") {
+		t.Fatalf("the root top rail should carry no title:\n%s", rail)
 	}
 }
 
@@ -86,10 +104,13 @@ func TestFrame_CompactSingleRail(t *testing.T) {
 	if strings.Contains(view, "├─") {
 		t.Fatalf("compact frame must not have a dedicated vitals rail:\n%s", view)
 	}
-	for _, want := range []string{"╭─ shhh chat", "╰─", "⏸ manual", "ctx "} {
+	for _, want := range []string{"╭─", "╰─", "⏸ manual", "ctx "} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("compact frame missing %q:\n%s", want, view)
 		}
+	}
+	if rail := frameTopRail(view); strings.Contains(rail, "shhh") {
+		t.Fatalf("the root top rail should carry no title:\n%s", rail)
 	}
 	if strings.Contains(view, "enter send") {
 		t.Fatalf("compact frame should drop the hints rail:\n%s", view)
@@ -188,12 +209,12 @@ func TestFrame_TakeoverKeepsPlainStack(t *testing.T) {
 	// Ungated the card rides above a live frame; it takes the
 	// panel only once the decision holds the keyboard.
 	ungated := stripANSI(m.View().Content)
-	if !strings.Contains(ungated, "╭─ shhh chat") {
+	if !strings.Contains(ungated, "╭─") {
 		t.Fatalf("an ungated decision leaves the draft its frame:\n%s", ungated)
 	}
 	m = handover(t, m)
 	view := stripANSI(m.View().Content)
-	if strings.Contains(view, "╭─ shhh chat") {
+	if strings.Contains(view, "╭─") {
 		t.Fatalf("takeover surfaces must replace the frame:\n%s", view)
 	}
 	if !strings.Contains(view, "⏸ manual") {
@@ -221,7 +242,7 @@ func TestFrame_WideViewportAccounting(t *testing.T) {
 func TestFrame_CompletionMenuInsideFrame(t *testing.T) {
 	m := typeChars(t, readyModel(t), "/mo")
 	view := stripANSI(m.View().Content)
-	if !strings.Contains(view, "╭─ shhh chat") {
+	if !strings.Contains(view, "╭─") {
 		t.Fatalf("the frame should stay up while the completion menu is open:\n%s", view)
 	}
 	if !strings.Contains(view, "/model") || !strings.Contains(view, "tab complete") {
@@ -237,7 +258,9 @@ func TestFrame_AttachedShowsChildGutterAndVitals(t *testing.T) {
 	m.attach("researcher-1")
 
 	view := stripANSI(m.View().Content)
-	if !strings.Contains(view, "orchestrator ▸ researcher-1") {
+	// Attached, the rail is the one place that says which session the
+	// keyboard is in, so the identity it dropped at the root comes back.
+	if rail := frameTopRail(view); !strings.Contains(rail, "orchestrator ▸ researcher-1") {
 		t.Fatalf("attached top rail missing the breadcrumb:\n%s", view)
 	}
 	if !strings.Contains(view, "│ researcher-1 ❯ ") {

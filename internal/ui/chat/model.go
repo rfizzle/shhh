@@ -2488,11 +2488,11 @@ func (m Model) paneView(area uv.Rectangle) string {
 }
 
 // liveTail is the block the turn draws under the transcript while it works:
-// the thinking spinner, the running command's own activity row, the retry
-// countdown. It is the one part of the pane whose height is
-// not fixed, so the layout asks it rather than assuming — the row it takes
-// used to be spent without being budgeted for, which put the bottom of the
-// frame one row past the bottom of the terminal.
+// the running command's own activity row, the retry countdown, the spinner
+// for the housekeeping the status rail does not report. It is the one part
+// of the pane whose height is not fixed, so the layout asks it rather than
+// assuming — the row it takes used to be spent without being budgeted for,
+// which put the bottom of the frame one row past the bottom of the terminal.
 //
 // Attached, the child's session fills the pane and its liveness shows in the
 // child-scoped status bar, not a parent spinner.
@@ -2505,14 +2505,16 @@ func (m Model) liveTail(width int) string {
 		if m.streaming != "" {
 			return ""
 		}
-		label := "Thinking…"
-		switch {
-		case m.compacting:
-			label = "Compacting…"
-		case m.agent.Executing():
-			label = "Running tools…"
+		// What the turn is doing is the status rail's to say, once, above
+		// the prompt (turnstatus.go): a spinner here would name the same
+		// phase a second time, in a second vocabulary, a few rows apart.
+		// Compaction is the exception — it is housekeeping rather than a
+		// phase of a turn, the rail does not report it, and nothing else on
+		// screen would say the history is being rewritten.
+		if m.compacting {
+			return m.spinner.View() + " Compacting…"
 		}
-		return m.spinner.View() + " " + label
+		return ""
 	case stateRunningCmd:
 		if m.pendingApproval != nil && m.pendingApproval.kind != approvalExec {
 			return m.spinner.View() + " Applying changes…"

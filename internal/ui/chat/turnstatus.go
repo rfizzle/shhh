@@ -102,14 +102,32 @@ func (m Model) runningToolLabel() string {
 }
 
 // liveTurnTokens is what the turn has spent so far: the requests it has
-// already been billed for, plus an estimate of the prose still arriving. The
-// estimate is the same len/4 the context accounting uses — the point is that
-// the number moves while the tokens do, and it is replaced by the provider's
-// own count the moment the request reports one.
+// already been billed for, plus an estimate of what the round in flight is
+// adding to them. The estimate is the same len/4 the context accounting
+// uses — the point is that the number moves while the tokens do, and it is
+// replaced by the provider's own count the moment the request reports one.
 func (m Model) liveTurnTokens() (in, out int64) {
 	in, out = m.vitals.current.In, m.vitals.current.Out
+	// A turn whose first request has not reported yet has no billed prompt
+	// to state, and stating zero would be stating something the session
+	// knows is wrong: what was sent is the conversation, which the context
+	// accounting has already measured. Later rounds keep the billed figure
+	// instead — their prompt is the conversation again, so adding the
+	// estimate on top of it would count the same words twice.
+	if in == 0 && m.turnState() == stateStreaming {
+		in = m.estimatedContextTokens()
+	}
 	if m.streaming != "" {
 		out += agent.EstimateTokens(m.streaming)
+	}
+	// Reasoning is billed as output too, and on a thinking model it is most
+	// of what the opening seconds of a round produce — the seconds where the
+	// counters would otherwise sit still. It is counted only while the round
+	// is open, which is what the event channel says: the row settles when the
+	// prose starts (think.go) but stays on screen for the rest of the turn,
+	// and the usage event that closed its round already counted it.
+	if m.events != nil && m.thinkIdx > 0 && m.thinkIdx <= len(m.transcript) {
+		out += agent.EstimateTokens(m.transcript[m.thinkIdx-1].text)
 	}
 	return in, out
 }

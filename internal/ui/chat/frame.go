@@ -196,17 +196,23 @@ func (m Model) frameAccentStyle() lipgloss.Style {
 	}
 }
 
-// frameIdentity is the top rail's left side: the title plus the attached
-// breadcrumb.
+// frameIdentity is the top rail's left side: the attached breadcrumb, or
+// nothing at all in the root session.
+//
+// The rail used to open with the title on every frame of every session,
+// which named the surface a second time — the header above the transcript
+// already does — and spent the width the turn's live account of itself
+// (turnstatus.go) reads best across. Attached, the rail is the one place
+// that says which session the keyboard is in, so the identity stays.
 func (m Model) frameIdentity() string {
+	if m.attachedTo == "" {
+		return ""
+	}
 	title := m.title
 	if title == "" {
-		title = "shhh chat"
+		title = defaultTitle
 	}
-	if m.attachedTo != "" {
-		return title + " · " + m.breadcrumb()
-	}
-	return title
+	return title + " · " + m.breadcrumb()
 }
 
 // frameActivity is the top rail's right side: the running turn's
@@ -617,12 +623,12 @@ func railLabelWidth(leftLabel string, width int) int {
 }
 
 // topRailLabels is the top rail's two labels: the identity on the
-// left, and on the right the running turn's status line — or, attached below
-// the wide layout, the hints rail that has nowhere else to go.
+// left (when attached to a sub-agent), and on the right the running turn's
+// status line — or, attached below the wide layout, the hints rail that has
+// nowhere else to go.
 func (m Model) topRailLabels(mode frameLayout, width int) (identity, right string) {
-	identity = " " + m.frameIdentity() + " "
-	if mode == frameNarrow {
-		identity = ""
+	if m.attachedTo != "" && mode != frameNarrow {
+		identity = " " + m.frameIdentity() + " "
 	}
 	if m.attachedTo != "" && mode != frameWide {
 		// Compact/narrow drop the hints rail; the detach affordance moves to

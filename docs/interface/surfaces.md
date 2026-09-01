@@ -164,9 +164,22 @@ than staying lit on a row nobody can see.
 ### The input frame
 
 Where you type, and where the session's vitals live. Its borders carry
-information rather than being dead lines: identity and live activity on the
-top rail, the session's counters on the vitals rail, and contextual key hints
-on the bottom rail that change with what the session is doing.
+information rather than being dead lines: the running turn's live account of
+itself on the top rail, the session's counters on the vitals rail, and
+contextual key hints on the bottom rail that change with what the session is
+doing.
+
+The top rail states one turn's four facts — which phase it is in, how long it
+has been there, the tokens it has spent and what they cost — and it states
+them while they are still moving: before the provider reports a request's
+usage, the prompt is the context estimate and the output is the reasoning and
+the prose as they arrive, replaced by the reported count the moment there is
+one. Nothing else on screen says the same thing twice: the phase is named
+here, not also under the transcript. The rail opens with no title at the root
+session, because the header above the transcript already names the surface
+and the width reads better spent on the account. Attached to a child agent it
+opens with the breadcrumb instead — there the rail is the one place that says
+which session the keyboard is in.
 
 Above it, a notice rail exists only while there is something to say and
 disappears when there is not. Under that, on the terminals too narrow for the

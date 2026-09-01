@@ -106,6 +106,46 @@ func TestTurnStatus_TokensMoveWhileTheProseArrives(t *testing.T) {
 	}
 }
 
+// The thinking half of the same account: reasoning is billed as output, and
+// on a model that reasons before it answers it is most of what the opening of
+// a round produces — the seconds the rail used to report as a phase with no
+// numbers under it.
+func TestTurnStatus_TokensMoveWhileTheReasoningArrives(t *testing.T) {
+	m := statusModel(t)
+	m.events = make(chan provider.StreamEvent)
+	before, _ := m.turnStatus()
+
+	m.appendThinking(strings.Repeat("weighing it up ", 200))
+	after, _ := m.turnStatus()
+	if after.Down == before.Down {
+		t.Fatalf("output tokens did not move as the reasoning arrived (%q)", after.Down)
+	}
+
+	// The row stays on screen for the rest of the turn, but the usage event
+	// that closed its round has already counted those tokens: the estimate
+	// stops with the round rather than being added to what it was billed.
+	m.events = nil
+	closed, _ := m.turnStatus()
+	if closed.Down != before.Down {
+		t.Fatalf("the estimate should stop when the round does: %q -> %q", before.Down, closed.Down)
+	}
+}
+
+// Until the turn's first request reports, there is no billed prompt to
+// state — and `↑0` would be stating a number the session knows is wrong.
+func TestTurnStatus_PromptEstimatedUntilTheFirstUsageLands(t *testing.T) {
+	m := statusModel(t)
+	m.vitals.startTurn() // a fresh turn: nothing billed yet
+	if got, _ := m.turnStatus(); got.Up == "" || got.Up == "0" {
+		t.Fatalf("an unbilled prompt should state the context estimate, got %q", got.Up)
+	}
+
+	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 100})
+	if got, _ := m.turnStatus(); got.Up != formatTokenCount(41200) {
+		t.Fatalf("a reported prompt replaces the estimate, got %q", got.Up)
+	}
+}
+
 func TestTurnStatus_ResolvesFromTheTurnsOwnCloseBlock(t *testing.T) {
 	m := statusModel(t)
 	m.state = stateInput

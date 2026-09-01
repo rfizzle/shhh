@@ -443,7 +443,11 @@ func (m Model) undressedDraft(width int) []string {
 	scr := uv.NewScreenBuffer(max(width, 0), 3)
 	box := m.frameBoxFor(scr.Bounds())
 	idle := sty.Frame.Idle
-	drawRail(scr, rowAt(box.area, 0), idle, "╭", "╮", " "+idle.Render(m.frameIdentity())+" ", "")
+	var topLabel string
+	if id := m.frameIdentity(); id != "" {
+		topLabel = " " + idle.Render(id) + " "
+	}
+	drawRail(scr, rowAt(box.area, 0), idle, "╭", "╮", topLabel, "")
 	drawIn(scr, idle.Render("│"), rowAt(box.left, 1))
 	drawIn(scr, idle.Render("│"), rowAt(box.right, 1))
 	drawIn(scr, idle.Render("▸ ")+sty.Frame.DraftHeld.Render(strings.ReplaceAll(value, "\n", " ")),
