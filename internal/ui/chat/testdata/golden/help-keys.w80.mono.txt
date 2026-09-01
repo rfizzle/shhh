@@ -58,7 +58,7 @@ Keys:
                  what you typed before. Typing filters, ctrl+r again steps to   
                  an older match, enter keeps the match in the draft, esc puts   
                  the draft back exactly as it was                               
-  alt+t          Cycle the reasoning level: off → low → medium → high. It       
+  ctrl+t         Cycle the reasoning level: off → low → medium → high. It       
                  changes the next model request, not the one in flight, and     
                  the level is stated on the vitals rail beside the model        
   shift+tab      Cycle the permission mode                                      
@@ -182,7 +182,7 @@ Keys:
 ␛[3;38;5;244m                 what you typed before. Typing filters, ctrl+r again steps to␛[m   
 ␛[3;38;5;244m                 an older match, enter keeps the match in the draft, esc puts␛[m   
 ␛[3;38;5;244m                 the draft back exactly as it was␛[m                               
-␛[3;38;5;244m  alt+t          Cycle the reasoning level: off → low → medium → high. It␛[m       
+␛[3;38;5;244m  ctrl+t         Cycle the reasoning level: off → low → medium → high. It␛[m       
 ␛[3;38;5;244m                 changes the next model request, not the one in flight, and␛[m     
 ␛[3;38;5;244m                 the level is stated on the vitals rail beside the model␛[m        
 ␛[3;38;5;244m  shift+tab      Cycle the permission mode␛[m                                      

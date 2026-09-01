@@ -156,7 +156,7 @@ var Draft = DraftKeys{
 	Attach:     bind("ctrl+v", "attach the clipboard", "ctrl+v"),
 	Complete:   bind("tab", "complete a slash command", "tab"),
 	Palette:    bind("ctrl+p", "the command palette", "ctrl+p"),
-	Reasoning:  bind("alt+t", "cycle the reasoning level", "alt+t"),
+	Reasoning:  bind("ctrl+t", "cycle the reasoning level", "ctrl+t", "alt+t"),
 	Mode:       bind("shift+tab", "cycle the permission mode", "shift+tab"),
 
 	HistoryPrev:   bind("↑", "recall the previous input", "up"),

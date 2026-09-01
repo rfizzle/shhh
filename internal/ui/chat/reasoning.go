@@ -1,6 +1,6 @@
 package chat
 
-// Reasoning effort in the session: `alt+t` walks the four levels,
+// Reasoning effort in the session: `ctrl+t` walks the four levels,
 // `/reasoning [level]` says or sets one, `/reasoning default [level]` writes
 // it to the config file, and the cockpit states which one is live beside the
 // model.
@@ -22,10 +22,16 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
-// keys.Draft.Reasoning cycles the level. Alt+T is free of the textarea's own
-// bindings and free of the terminal's, and t is for think — the same home
-// Claude Code gives the toggle. Ctrl+R went back to the shell's own meaning,
-// the input history search.
+// keys.Draft.Reasoning cycles the level. T is for think — the same home
+// Claude Code gives the toggle — but the modifier had to change: on macOS,
+// Terminal and iTerm2 send Option+letter as the character the letter composes
+// (option+t is a dagger), so alt+t typed a † into the draft on the platform
+// most readers are on, and no amount of documenting it makes the key work.
+// Ctrl+T is reported identically by every terminal on every platform. It is
+// still bound to alt+t as well, for the muscle memory of the readers whose
+// terminals do send meta. What it costs is the textarea's own
+// transpose-character-backward, which is the same trade ctrl+g and ctrl+p
+// already made; ctrl+r stayed with the shell's meaning, the history search.
 
 // reasoningUsage is the one-line usage shown by /reasoning and /help. The
 // cycling key is read off the register, so the usage line cannot keep
@@ -51,7 +57,7 @@ func (m Model) WithReasoningDefault(level, outranked string) Model {
 	return m
 }
 
-// cycleReasoning is alt+t: the next level, applied and stated. The statement
+// cycleReasoning is ctrl+t: the next level, applied and stated. The statement
 // is a notice rather than a transcript entry — it is a setting, not something
 // that happened in the conversation, and the cockpit is already showing it.
 func (m Model) cycleReasoning() (Model, string) {

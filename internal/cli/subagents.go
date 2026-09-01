@@ -125,7 +125,7 @@ func (a *agentProfiles) readers() *agentProfiles {
 
 // effortFor is the reasoning level a child runs at: the profile's own when
 // it names one, otherwise the session's live level — a level set with
-// alt+t is true of the session and so of every child it spawns.
+// ctrl+t is true of the session and so of every child it spawns.
 func (a *agentProfiles) effortFor(role subagent.Role, session provider.Effort) provider.Effort {
 	if a == nil {
 		return session

@@ -3819,7 +3819,7 @@ func helpText() string {
                  allow <commands|edits>   grant a whole category
                  revoke [commands|edits]  take the grants back
   /reasoning     How much thinking the model does before it answers:
-                 off (the default), low, medium or high — alt+t cycles them
+                 off (the default), low, medium or high — ctrl+t cycles them
                  [level]           set it for this session (also /think)
                  default [level]   show or persist the level new sessions
                                    start on (provider.reasoning)
@@ -3951,7 +3951,7 @@ func helpKeysText() string {
                  what you typed before. Typing filters, ctrl+r again steps to
                  an older match, enter keeps the match in the draft, esc puts
                  the draft back exactly as it was
-  alt+t          Cycle the reasoning level: off → low → medium → high. It
+  ctrl+t         Cycle the reasoning level: off → low → medium → high. It
                  changes the next model request, not the one in flight, and
                  the level is stated on the vitals rail beside the model
   shift+tab      Cycle the permission mode

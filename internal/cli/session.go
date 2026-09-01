@@ -188,14 +188,14 @@ type sessionEnv struct {
 	stream        agent.StreamFunc
 	switchModel   func(string)
 	// effort is the reasoning level the session resolved to, and
-	// switchReasoning is what alt+t and /reasoning change it with.
+	// switchReasoning is what ctrl+t and /reasoning change it with.
 	// Like the model it is read by the stream closure from another
 	// goroutine, so it lives under the same mutex.
 	effort          provider.Effort
 	switchReasoning func(provider.Effort)
 	// reasoning reads the level that is live now, for the streams built once
 	// at session start and used for the rest of it — a sub-agent's. Without
-	// it a level set with alt+t would be true of the session and false of
+	// it a level set with ctrl+t would be true of the session and false of
 	// every child it spawns.
 	reasoning func() provider.Effort
 	// replaceTools edits the toolset the next request carries: a profile
