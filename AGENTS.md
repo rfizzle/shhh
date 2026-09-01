@@ -83,6 +83,7 @@ golden fixture, so this cannot drift back.
 | Check every released platform compiles | `make cross` (part of `make ci`) |
 | Check doc citations | `make docs-check` |
 | Run the eval suite | `make eval` (costs real requests; not part of `make ci`) |
+| Verify prompt caching against a live endpoint | `SHHH_CACHE_IT_URL=… SHHH_CACHE_IT_KEY=… go test ./internal/provider -run CacheIntegration -v` |
 | Update golden files | `go test ./internal/ui/components ./internal/ui/chat -update-golden` or `SHHH_UPDATE_GOLDEN=1 go test ./...` |
 
 Build produces a `shhh` binary with version injected via `-ldflags`.
