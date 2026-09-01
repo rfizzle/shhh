@@ -54,11 +54,12 @@ func addWorktree(root string) (worktree, childRoot, repoTop string, err error) {
 		return "", "", "", err
 	}
 
-	absRoot, absErr := filepath.Abs(root)
-	if absErr != nil {
-		removeWorktree(repoTop, worktree)
-		return "", "", "", absErr
-	}
+	// Resolved, because the toplevel git just answered with is: a session
+	// standing in a checkout reached through a symlink would otherwise
+	// measure its own position against a repository that looks like it is
+	// somewhere else, fall back to `.`, and hand a child started in a
+	// subdirectory the whole repository instead (rooted.go).
+	absRoot := resolvePath(root)
 	rel, relErr := filepath.Rel(repoTop, absRoot)
 	if relErr != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 		rel = "."

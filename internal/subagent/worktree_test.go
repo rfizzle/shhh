@@ -189,3 +189,39 @@ func TestPatchedFiles_SidesAndSessionRelativePaths(t *testing.T) {
 		t.Fatalf("a path outside the session root stays absolute, got %q", files[2].Path)
 	}
 }
+
+// A session standing in a checkout it reached through a symlink is the
+// ordinary case on macOS, where a TMPDIR lives under /var and /var is a link
+// to /private/var. git answers `rev-parse --show-toplevel` with the link
+// followed and the session's root keeps the name it was given, so the two
+// have to be resolved before they can be compared: unresolved, the child is
+// handed the repository top instead of its own subdirectory, and every file
+// its patch touches is recorded as an absolute path to a repository that
+// looks like somewhere else — which the run then cannot name among its own
+// changes.
+func TestWorktree_RootReachedThroughASymlink(t *testing.T) {
+	repo := initTestRepo(t)
+	link := filepath.Join(t.TempDir(), "workspace")
+	if err := os.Symlink(repo, link); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+	if err := os.MkdirAll(filepath.Join(repo, "sub"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	worktree, childRoot, repoTop, err := addWorktree(filepath.Join(link, "sub"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer removeWorktree(repoTop, worktree)
+	if want := filepath.Join(worktree, "sub"); childRoot != want {
+		t.Fatalf("the child should mirror the session's place in the repo: %q, want %q", childRoot, want)
+	}
+
+	files := patchedFiles(link, repoTop, []string{"main.go"},
+		map[string]fileSide{"main.go": {text: "one\n", exists: true}},
+		map[string]fileSide{"main.go": {text: "two\n", exists: true}})
+	if files[0].Path != "main.go" {
+		t.Fatalf("a patched file should be named relative to the session root, got %q", files[0].Path)
+	}
+}

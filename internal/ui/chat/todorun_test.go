@@ -25,7 +25,13 @@ const runPlan = "## Plan: do it\n\n1. Change a.go\n   files: a.go\n   action: ed
 
 func runModel(t *testing.T) (Model, string) {
 	t.Helper()
-	root := t.TempDir()
+	return runModelAt(t, t.TempDir())
+}
+
+// runModelAt is runModel with the session's root chosen by the caller, so a
+// test can hand it a root that reaches the same directory by another name.
+func runModelAt(t *testing.T, root string) (Model, string) {
+	t.Helper()
 	dir := todo.Dir(root)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
@@ -733,10 +739,21 @@ func TestTodoRun_SameSessionContinueRespawnsAReviewer(t *testing.T) {
 // git repository with a commit, because writers work in worktrees.
 func largeRunModel(t *testing.T, env subagent.EnvFactory) (Model, *subagent.Supervisor) {
 	t.Helper()
-	m, root := runModel(t)
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git not on PATH")
 	}
+	// The session reaches its checkout through a symlink, which is not an
+	// exotic setup to arrange for: it is what every macOS session under a
+	// TMPDIR already does, /var being a link to /private/var. It belongs to
+	// the fan-out in particular because git answers `rev-parse
+	// --show-toplevel` with the link followed, and a lane's patch recorded
+	// against the unresolved root lands on disk and then belongs to no path
+	// the run can name (internal/subagent/rooted.go).
+	link := filepath.Join(t.TempDir(), "workspace")
+	if err := os.Symlink(t.TempDir(), link); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+	m, root := runModelAt(t, link)
 	git := func(args ...string) {
 		t.Helper()
 		cmd := exec.Command("git", append([]string{"-C", root}, args...)...)

@@ -90,18 +90,41 @@ func withinRoot(root, p string) bool {
 }
 
 // displayPath renders a child path workspace-relative for approval cards.
+//
+// Both sides are resolved first because they do not always arrive resolved:
+// git answers `rev-parse --show-toplevel` with the symlinks followed, while
+// the session's root is whatever the reader's shell was standing in. On
+// macOS that is enough on its own — a TMPDIR under /var, which is a link to
+// /private/var — and any checkout reached through a link does it anywhere.
+// Compared as written, the two look like different places, and a file inside
+// the workspace renders as an absolute path to somewhere else.
 func displayPath(root, p string) string {
 	if root == "" {
 		return p
 	}
-	absRoot, err1 := filepath.Abs(root)
-	absPath, err2 := filepath.Abs(p)
-	if err1 != nil || err2 != nil {
-		return p
-	}
+	absRoot, absPath := resolvePath(root), resolvePath(p)
 	rel, err := filepath.Rel(absRoot, absPath)
 	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
 		return p
 	}
 	return rel
+}
+
+// resolvePath is p absolute with its symlinks followed as far as the
+// filesystem can follow them: the whole path when it is there, its directory
+// plus the name when it is not — a file a patch deleted has nothing left to
+// resolve, and the directory it was in still answers.
+func resolvePath(p string) string {
+	abs, err := filepath.Abs(p)
+	if err != nil {
+		return p
+	}
+	if real, err := filepath.EvalSymlinks(abs); err == nil {
+		return real
+	}
+	dir, base := filepath.Split(abs)
+	if real, err := filepath.EvalSymlinks(filepath.Clean(dir)); err == nil {
+		return filepath.Join(real, base)
+	}
+	return abs
 }
