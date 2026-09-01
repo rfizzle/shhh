@@ -539,3 +539,37 @@ func TestSummarize_RejectsAnythingElse(t *testing.T) {
 		}
 	}
 }
+
+// TestRepositoryOwnConfig checks the config this repository ships for itself.
+// The gate is only registered when a workspace has one, so a config that stops
+// loading takes the quality_gate tool out of every session on this tree
+// without failing anything else — the kind of silence a test is for.
+//
+// The config is tracked, so its absence is a deletion rather than a machine
+// that never had one, and this fails instead of skipping.
+func TestRepositoryOwnConfig(t *testing.T) {
+	root := filepath.Join("..", "..")
+	cfg, err := LoadConfig(root)
+	if err != nil {
+		t.Fatalf("the repository's own %s must load: %v", ConfigRelPath, err)
+	}
+	if _, ok := cfg.Suites[DefaultSuite]; !ok {
+		t.Fatalf("suite %q is the one a bare /gate run uses; suites are %v",
+			DefaultSuite, cfg.SuiteNames())
+	}
+	// Every check is named as a bare executable so it resolves wherever the
+	// repository is cloned. An absolute path would be right on one machine
+	// and blocked on the next, and this tree is worked on from two.
+	for _, name := range cfg.SuiteNames() {
+		for _, check := range cfg.Suites[name].Checks {
+			if filepath.IsAbs(check.Exe) || strings.ContainsAny(check.Exe, `/\`) {
+				t.Errorf("suite %q check %q: exe %q is a path, not a bare name",
+					name, check.Name, check.Exe)
+			}
+			if _, err := exec.LookPath(check.Exe); err != nil {
+				t.Logf("suite %q check %q: %q is not on this PATH — the gate "+
+					"reports it blocked, which is not a failure", name, check.Name, check.Exe)
+			}
+		}
+	}
+}

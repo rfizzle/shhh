@@ -1,0 +1,21 @@
+{
+  "max_parallel": 4,
+  "suites": {
+    "default": {
+      "timeout_seconds": 600,
+      "checks": [
+        { "name": "test", "exe": "go", "args": ["test", "./..."] },
+        { "name": "vet", "exe": "go", "args": ["vet", "./..."] },
+        { "name": "lint", "exe": "golangci-lint", "args": ["run"] },
+        { "name": "docs", "exe": "python3", "args": ["scripts/check-docs.py"] }
+      ]
+    },
+    "fast": {
+      "timeout_seconds": 120,
+      "checks": [
+        { "name": "vet", "exe": "go", "args": ["vet", "./..."] },
+        { "name": "docs", "exe": "python3", "args": ["scripts/check-docs.py"] }
+      ]
+    }
+  }
+}
