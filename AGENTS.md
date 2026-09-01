@@ -104,7 +104,25 @@ they have usually already made it by checking something out; branching on
 their behalf moves the commit somewhere they did not ask for and have to go
 looking for.
 
-All three rules yield to an explicit instruction to do otherwise.
+**Write the subject as a Conventional Commit.** `type(scope): summary`, where
+the type is one of `feat`, `fix`, `docs`, `refactor`, `perf`, `test`, `build`,
+`ci`, `chore` or `revert`, the scope is optional and names the surface the
+change lives in (`ui/chat`, `cli`, `todo`, `pricing`), and the summary is
+imperative, lower case, has no trailing period and keeps the whole line under
+72 characters. A change that breaks a command's flags, a config key or an
+on-disk format takes a `!` before the colon and a `BREAKING CHANGE:` footer
+saying what the reader has to do about it. A subject that needs an `and` is
+two commits.
+
+The prefix is the only thing the convention decides. The body is what it
+always was: prose after a blank line, saying what the diff cannot — the
+failure the change is for, the decision behind it, what was deliberately left
+alone. History from before this rule stays as it is; don't rewrite it to match.
+`shhh todo run` writes its own commit message by reading `git log -10` and
+matching the shape it finds there, so it picks the convention up on its own as
+recent history turns over.
+
+All four rules yield to an explicit instruction to do otherwise.
 
 ## Architecture
 
