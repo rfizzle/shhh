@@ -1128,4 +1128,4 @@ go test ./internal/ui/components ./internal/ui/chat -update-golden
 
 ## License
 
-MIT
+MIT — see [`LICENSE`](LICENSE).
