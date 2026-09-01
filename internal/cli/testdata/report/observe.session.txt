@@ -4,6 +4,7 @@
   model:         anthropic · claude-sonnet-5
   turns:         1
   outcome:       completed
+  rated:         worked
   tokens:        ↑41.2k ↓9.8k
   cost:          $0.51
   version:       v1.4.0

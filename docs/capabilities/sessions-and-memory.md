@@ -261,6 +261,43 @@ say" and "nothing was finished" are different answers, and only one of them
 is about the work; folding them together would quietly inflate whichever
 figure a reader was about to trust.
 
+### A rating is how you check the inference
+
+An inferred outcome is worth what the checks on it are worth. `abandoned` is a
+guess about what leaving without finishing means, and a few dozen sessions
+somebody has actually judged is the only way to find out whether the guess is
+any good. So the rating's job is to audit the outcome field rather than to be
+it, and it is priced accordingly: it is one more card on a walk that already
+exists rather than anything new to remember.
+
+The walk asks about sessions beside commands, on the one card and the one set
+of keys, newest first whichever kind each one is. Two lists asked one after
+the other would spend the whole limit on commands whenever there were enough
+of them, and the sessions would only ever be offered to somebody who had
+caught up on everything else — which is nobody. `--commands` and `--sessions`
+narrow it when only one of the two questions is wanted.
+
+**A session is only offered when there is something to be reminded by.** The
+record is content-free by construction: a session's row is token counts,
+durations and codes, and nobody can say whether a fortnight-old row of those
+was any good. What makes the question answerable is the conversation the
+session left behind — its title, or failing that the first thing you said in
+it — so a session with no saved conversation is not asked about at all. That
+reminder is read for the walk and never written back; what the store keeps is
+the answer, which is one bit.
+
+**The accuracy figure stays what it was.** It is a figure about commands, and
+folding a different judgement of a different thing into it would change what
+it means without changing its name. The session answer lives on the session's
+own row: it travels with the export, and the session's own page prints it
+next to the outcome it is checking, which is the only place the two can be
+read against each other one at a time.
+
+There is deliberately no rate over the answers yet. A handful of ratings is
+a sample to read one by one, and a percentage over six of them would lend
+an authority the number has not got — the same reason the record refuses a
+ratio over a cohort too small to divide.
+
 ## Where it all lives
 
 One local embedded database file, on your machine, in the platform's

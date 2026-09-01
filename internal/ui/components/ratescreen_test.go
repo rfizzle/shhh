@@ -16,14 +16,17 @@ import (
 func rateRows() []RateRow {
 	return []RateRow{
 		{ID: "1", Prompt: "delete every log file older than a week",
-			Command: "find . -name '*.log' -mtime +7 -delete",
-			When:    "4m ago", Outcome: "exit 0", State: ActivityDone},
+			Kind: ActivityCommand, Verb: "run",
+			Target: "find . -name '*.log' -mtime +7 -delete",
+			When:   "4m ago", Outcome: "exit 0", State: ActivityDone},
 		{ID: "2", Prompt: "show the ten biggest files here",
-			Command: "du -ah . | sort -rh | head -10",
-			When:    "yesterday", Outcome: "copied", State: ActivityDone},
+			Kind: ActivityCommand, Verb: "run",
+			Target: "du -ah . | sort -rh | head -10",
+			When:   "yesterday", Outcome: "copied", State: ActivityDone},
 		{ID: "3", Prompt: "rebase onto main and force push",
-			Command: "git rebase main && git push --force-with-lease",
-			When:    "tue", Outcome: "exit 128", State: ActivityFailed},
+			Kind: ActivityCommand, Verb: "run",
+			Target: "git rebase main && git push --force-with-lease",
+			When:   "tue", Outcome: "exit 128", State: ActivityFailed},
 	}
 }
 
@@ -188,4 +191,60 @@ func TestRateScreen_NarrowKeepsTheWholeQuestion(t *testing.T) {
 	if !strings.Contains(flat, "rebase onto main and force push") {
 		t.Errorf("the prompt was clipped away at w60:\n%s", got)
 	}
+}
+
+// One card over two kinds. A session is drawn on the same grid a command is,
+// and reads as the agent run it is: the sub-agent glyph, the `agent` verb,
+// and the same three answers underneath.
+func TestRateScreen_ASessionIsTheSameCard(t *testing.T) {
+	r := &RateScreen{MaxLines: 18, Rows: []RateRow{sessionRateRow(nil)}}
+
+	got := rateView(r, 110)
+	for _, want := range []string{
+		"┌─ mon ", "get the observe dashboard to show the gate pass rate",
+		"◇ agent", "2026-09-01T18-02 · chat · claude-opus-5 · 14 turns", "completed",
+		"[y] worked · [n] did not · [s] skip · [esc] stop",
+	} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the session card does not say %q:\n%s", want, got)
+		}
+	}
+}
+
+// The rail follows the outcome, not the kind. A session that came out well
+// is a report of work rather than an act and takes no rail; one that was
+// abandoned or failed keeps the rail every broken row on this grid keeps, so
+// the sessions most worth rating are the ones the gutter marks
+// (docs/interface/principles.md#weight-tracks-risk).
+func TestRateScreen_ASessionsRailFollowsItsOutcome(t *testing.T) {
+	for _, tc := range []struct {
+		outcome string
+		state   ActivityState
+		rail    bool
+	}{
+		{"completed", ActivityDone, false},
+		{"unknown", ActivityQueued, false},
+		{"abandoned", ActivityDenied, true},
+		{"error", ActivityFailed, true},
+	} {
+		r := &RateScreen{MaxLines: 18, Rows: []RateRow{sessionRateRow(func(row *RateRow) {
+			row.Outcome, row.State = tc.outcome, tc.state
+		})}}
+		if got := strings.Contains(rateView(r, 110), "▎"); got != tc.rail {
+			t.Errorf("a %s session draws the rail %v, want %v:\n%s",
+				tc.outcome, got, tc.rail, rateView(r, 110))
+		}
+	}
+}
+
+func sessionRateRow(mut func(*RateRow)) RateRow {
+	row := RateRow{ID: "s5",
+		Prompt: "get the observe dashboard to show the gate pass rate",
+		Kind:   ActivitySubagent, Verb: "agent",
+		Target: "2026-09-01T18-02 · chat · claude-opus-5 · 14 turns",
+		When:   "mon", Outcome: "completed", State: ActivityDone}
+	if mut != nil {
+		mut(&row)
+	}
+	return row
 }

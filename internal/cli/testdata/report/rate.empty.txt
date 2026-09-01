@@ -1,3 +1,3 @@
   shhh rate
 
-  ⊘ nothing to rate · every recent command is rated
+  ⊘ nothing to rate · every recent command and saved session is rated

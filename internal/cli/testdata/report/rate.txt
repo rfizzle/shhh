@@ -1,9 +1,13 @@
-  shhh rate — 4 unrated commands
+  shhh rate — 4 unrated commands · 2 unrated sessions
 
   ✓ run   4m ago · delete every log file older than a week  [exit 0]
       find . -name '*.log' -mtime +7 -delete
+  ✓ chat  30m ago · the gate pass rate  [completed]
+      2026-09-01T18-02 · chat · claude-opus-5 · 14 turns
   ✗ run   1h ago · rebase onto main and force push  [exit 128]
       git rebase main && git push --force-with-lease
+  ⊘ code  1h ago · rename the observer's callbacks  [abandoned]
+      2026-09-01T16-45 · code · claude-opus-5 · 3 turns
   ✓ copy  2h ago · show the ten biggest files here  [copied]
       du -ah . | sort -rh | head -10
   ✓ save  3h ago · count the log lines by level  [saved]

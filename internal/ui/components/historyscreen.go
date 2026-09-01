@@ -441,29 +441,36 @@ func (h *HistoryScreen) commandRows(row HistoryRow, width int) []string {
 
 // commandGridRows is a recorded shell command drawn on the column grid: the
 // `$` glyph, the `run` verb, the command as the target, its outcome and how
-// long the answer took. A command too long for the pane keeps going on the
-// detail lines under it rather than being clipped away — this is the thing
-// the surface is about, so invariant 4 is not negotiable here.
-//
-// Both surfaces that draw a stored command share it, because a command that
-// wrapped one way in the browser and another way under the rating question
-// would be two grids.
+// long the answer took. A command with nothing in it says so rather than
+// drawing a row with an empty target — the target is the whole of what the
+// row is for.
 func commandGridRows(command, outcome, duration string, state ActivityState, width int) []string {
-	command = strings.Join(strings.Fields(command), " ")
-	if command == "" {
+	if strings.TrimSpace(command) == "" {
 		return []string{sty.Dim.Render(clip("  no command was recorded", width))}
 	}
-	act := ActivityRow{
+	return gridRows(ActivityRow{
 		Kind: ActivityCommand, State: state, Verb: "run",
-		Outcome: outcome, Duration: duration, Expanded: true,
-	}
+		Outcome: outcome, Duration: duration,
+	}, command, width)
+}
+
+// gridRows draws one activity row whose target wraps under itself rather than
+// being clipped away — this is the thing those surfaces are about, so
+// invariant 4 is not negotiable here.
+//
+// It is one function because the surfaces that draw a recorded act outside
+// the transcript — the history browser, the rating card — would otherwise be
+// two grids over one vocabulary, wrapping the same command two ways.
+func gridRows(act ActivityRow, target string, width int) []string {
+	act.Expanded = true
+	target = strings.Join(strings.Fields(target), " ")
 	// The target column is what is left of the pane once the fixed fields have
 	// taken theirs; the continuation lines only give up the detail indent, so
 	// the wrap is measured against the narrower of the two. It is wrapped as
 	// plain text rather than through wrapSpans because the grid does its own
 	// painting, and a styled run it clipped would leave half an escape sequence
 	// behind.
-	head := width - leadWidth - durWidth - lipgloss.Width(outcome) - 2
+	head := width - leadWidth - durWidth - lipgloss.Width(act.Outcome) - 2
 	rest := max(width-detailIndent, 8)
 	// A pane whose fixed fields have taken all of it leaves the row nothing to
 	// wrap into, and a first line written anyway is one the grid clips — which
@@ -472,10 +479,10 @@ func commandGridRows(command, outcome, duration string, state ActivityState, wid
 	// its verb and its outcome, and the whole command goes underneath, where
 	// there is room for it. Nothing is dropped at any width (invariant 4).
 	if head < minGridTarget {
-		act.Detail = wrapPlain(command, rest)
+		act.Detail = wrapPlain(target, rest)
 		return strings.Split(act.View(width), "\n")
 	}
-	lines := wrapPlain(command, min(head, rest))
+	lines := wrapPlain(target, min(head, rest))
 	act.Target = lines[0]
 	act.Detail = lines[1:]
 	return strings.Split(act.View(width), "\n")

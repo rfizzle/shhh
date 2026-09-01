@@ -10,7 +10,7 @@
 
 ── layout ──────────────────────────────────────────────────
 · the question · what was asked, what came back, and what it exited
-shhh rate · 1 of 4                       [?] keys · [q] quit
+shhh rate · 1 of 5                       [?] keys · [q] quit
 ────────────────────────────────────────────────────────────
 
 ┌─ 4m ago ─────────────────────────────────────────────────┐
@@ -23,7 +23,7 @@ shhh rate · 1 of 4                       [?] keys · [q] quit
 [y] worked · [n] did not · [s] skip · [esc] stop
 
 · answered · the next card already, and this one never ran at all
-shhh rate · 2 of 4                       [?] keys · [q] quit
+shhh rate · 2 of 5                       [?] keys · [q] quit
 ────────────────────────────────────────────────────────────
 
 ┌─ yesterday ──────────────────────────────────────────────┐
@@ -36,7 +36,7 @@ shhh rate · 2 of 4                       [?] keys · [q] quit
 [y] worked · [n] did not · [s] skip · [esc] stop
 
 · a long command · continued under its own row, never clipped away
-shhh rate · 4 of 4                       [?] keys · [q] quit
+shhh rate · 4 of 5                       [?] keys · [q] quit
 ────────────────────────────────────────────────────────────
 
 ┌─ mon ────────────────────────────────────────────────────┐
@@ -51,8 +51,34 @@ shhh rate · 4 of 4                       [?] keys · [q] quit
 
 [y] worked · [n] did not · [s] skip · [esc] stop
 
+· a session · the same card over an agent run, and no rail on a good one
+shhh rate · 5 of 5                       [?] keys · [q] quit
+────────────────────────────────────────────────────────────
+
+┌─ mon ────────────────────────────────────────────────────┐
+│ get the observe dashboard to show the gate pass rate     │
+│                                                          │
+│    ◇ agent   2026-09-01T18-02 · chat ·   completed       │
+│     claude-opus-5 · 14 turns                             │
+└──────────────────────────────────────────────────────────┘
+
+[y] worked · [n] did not · [s] skip · [esc] stop
+
+· a session that was given up on · the rail and the glyph every broken row takes
+shhh rate · 5 of 5                       [?] keys · [q] quit
+────────────────────────────────────────────────────────────
+
+┌─ mon ────────────────────────────────────────────────────┐
+│ get the observe dashboard to show the gate pass rate     │
+│                                                          │
+│   ▎⊘ agent   2026-09-01T18-02 · chat ·   abandoned       │
+│     claude-opus-5 · 14 turns                             │
+└──────────────────────────────────────────────────────────┘
+
+[y] worked · [n] did not · [s] skip · [esc] stop
+
 · a short terminal · the card folds behind a counted tail
-shhh rate · 4 of 4                       [?] keys · [q] quit
+shhh rate · 4 of 5                       [?] keys · [q] quit
 ────────────────────────────────────────────────────────────
 
 ┌─ mon ────────────────────────────────────────────────────┐
@@ -64,7 +90,7 @@ shhh rate · 4 of 4                       [?] keys · [q] quit
 [y] worked · [n] did not · [s] skip · [esc] stop
 
 · a write that failed · the notice, and the entry left unrated
-shhh rate · 3 of 4                       [?] keys · [q] quit
+shhh rate · 3 of 5                       [?] keys · [q] quit
 ────────────────────────────────────────────────────────────
 
 ┌─ tue ────────────────────────────────────────────────────┐
@@ -78,7 +104,7 @@ shhh rate · 3 of 4                       [?] keys · [q] quit
 rate: database is locked
 
 · nothing left to answer · the three answers are gone from the row
-shhh rate · 4 asked                      [?] keys · [q] quit
+shhh rate · 5 asked                      [?] keys · [q] quit
 ────────────────────────────────────────────────────────────
 
 every one of them has been asked about
@@ -86,7 +112,7 @@ every one of them has been asked about
 [esc] stop
 
 · [?] · every key the screen has
-shhh rate · 1 of 4                       [?] keys · [q] quit
+shhh rate · 1 of 5                       [?] keys · [q] quit
 ────────────────────────────────────────────────────────────
 
 ┌─ 4m ago ─────────────────────────────────────────────────┐
@@ -105,7 +131,7 @@ shhh rate · 1 of 4                       [?] keys · [q] quit
 
 ── ansi ────────────────────────────────────────────────────
 · the question · what was asked, what came back, and what it exited
-␛[1;97mshhh rate␛[m␛[38;5;241m · 1 of 4␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
+␛[1;97mshhh rate␛[m␛[38;5;241m · 1 of 5␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241m┌─ 4m ago ─────────────────────────────────────────────────┐␛[m
@@ -118,7 +144,7 @@ shhh rate · 1 of 4                       [?] keys · [q] quit
 ␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m stop␛[m
 
 · answered · the next card already, and this one never ran at all
-␛[1;97mshhh rate␛[m␛[38;5;241m · 2 of 4␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
+␛[1;97mshhh rate␛[m␛[38;5;241m · 2 of 5␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241m┌─ yesterday ──────────────────────────────────────────────┐␛[m
@@ -131,7 +157,7 @@ shhh rate · 1 of 4                       [?] keys · [q] quit
 ␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m stop␛[m
 
 · a long command · continued under its own row, never clipped away
-␛[1;97mshhh rate␛[m␛[38;5;241m · 4 of 4␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
+␛[1;97mshhh rate␛[m␛[38;5;241m · 4 of 5␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241m┌─ mon ────────────────────────────────────────────────────┐␛[m
@@ -146,8 +172,34 @@ shhh rate · 1 of 4                       [?] keys · [q] quit
 
 ␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m stop␛[m
 
+· a session · the same card over an agent run, and no rail on a good one
+␛[1;97mshhh rate␛[m␛[38;5;241m · 5 of 5␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+
+␛[38;5;241m┌─ mon ────────────────────────────────────────────────────┐␛[m
+␛[38;5;241m│␛[m ␛[38;5;252mget the observe dashboard to show the gate pass rate␛[m     ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m                                                          ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m    ␛[94m◇␛[m agent   ␛[38;5;241m2026-09-01T18-02 · chat ·␛[m   ␛[38;5;241mcompleted␛[m       ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m     ␛[38;5;245mclaude-opus-5 · 14 turns␛[m                             ␛[38;5;241m│␛[m
+␛[38;5;241m└──────────────────────────────────────────────────────────┘␛[m
+
+␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m stop␛[m
+
+· a session that was given up on · the rail and the glyph every broken row takes
+␛[1;97mshhh rate␛[m␛[38;5;241m · 5 of 5␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
+␛[38;5;241m────────────────────────────────────────────────────────────␛[m
+
+␛[38;5;241m┌─ mon ────────────────────────────────────────────────────┐␛[m
+␛[38;5;241m│␛[m ␛[38;5;252mget the observe dashboard to show the gate pass rate␛[m     ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m                                                          ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   ␛[38;5;214m▎␛[m␛[38;5;241m⊘␛[m agent   ␛[38;5;241m2026-09-01T18-02 · chat ·␛[m   ␛[38;5;241mabandoned␛[m       ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m     ␛[38;5;245mclaude-opus-5 · 14 turns␛[m                             ␛[38;5;241m│␛[m
+␛[38;5;241m└──────────────────────────────────────────────────────────┘␛[m
+
+␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m stop␛[m
+
 · a short terminal · the card folds behind a counted tail
-␛[1;97mshhh rate␛[m␛[38;5;241m · 4 of 4␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
+␛[1;97mshhh rate␛[m␛[38;5;241m · 4 of 5␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241m┌─ mon ────────────────────────────────────────────────────┐␛[m
@@ -159,7 +211,7 @@ shhh rate · 1 of 4                       [?] keys · [q] quit
 ␛[94m[y]␛[m␛[38;5;241m worked␛[m␛[38;5;241m · ␛[m␛[94m[n]␛[m␛[38;5;241m did not␛[m␛[38;5;241m · ␛[m␛[94m[s]␛[m␛[38;5;241m skip␛[m␛[38;5;241m · ␛[m␛[94m[esc]␛[m␛[38;5;241m stop␛[m
 
 · a write that failed · the notice, and the entry left unrated
-␛[1;97mshhh rate␛[m␛[38;5;241m · 3 of 4␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
+␛[1;97mshhh rate␛[m␛[38;5;241m · 3 of 5␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241m┌─ tue ────────────────────────────────────────────────────┐␛[m
@@ -173,7 +225,7 @@ shhh rate · 1 of 4                       [?] keys · [q] quit
 ␛[38;5;241mrate: database is locked␛[m
 
 · nothing left to answer · the three answers are gone from the row
-␛[1;97mshhh rate␛[m␛[38;5;241m · 4 asked␛[m                      ␛[38;5;241m[?] keys · [q] quit␛[m
+␛[1;97mshhh rate␛[m␛[38;5;241m · 5 asked␛[m                      ␛[38;5;241m[?] keys · [q] quit␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241mevery one of them has been asked about␛[m
@@ -181,7 +233,7 @@ shhh rate · 1 of 4                       [?] keys · [q] quit
 ␛[94m[esc]␛[m␛[38;5;241m stop␛[m
 
 · [?] · every key the screen has
-␛[1;97mshhh rate␛[m␛[38;5;241m · 1 of 4␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
+␛[1;97mshhh rate␛[m␛[38;5;241m · 1 of 5␛[m                       ␛[38;5;241m[?] keys · [q] quit␛[m
 ␛[38;5;241m────────────────────────────────────────────────────────────␛[m
 
 ␛[38;5;241m┌─ 4m ago ─────────────────────────────────────────────────┐␛[m

@@ -87,8 +87,8 @@ func TestReportGoldens(t *testing.T) {
 		{"observe.empty", observeReport(observeData{Window: "30d"}).Render(80)},
 		{"observe.session", observeSessionReport(goldenObserveSession()).Render(80)},
 		{"observe.session.empty", observeSessionReport(goldenObserveSessionRow(), nil).Render(80)},
-		{"rate", rateReport(rateEntries(), goldenNow).Render(80)},
-		{"rate.empty", rateReport(nil, goldenNow).Render(80)},
+		{"rate", rateReport(rateWalk(), rateScopeOf(false, false), goldenNow).Render(80)},
+		{"rate.empty", rateReport(nil, rateScopeOf(false, false), goldenNow).Render(80)},
 		{"sandbox.empty", goldenEmptySandbox().Render(80)},
 	} {
 		t.Run(c.name, func(t *testing.T) { assertReportGolden(t, c.name, c.body) })
@@ -106,7 +106,7 @@ func TestReportGoldens_FitTheirWidth(t *testing.T) {
 		{"metrics", 80, metricsReport(goldenMetrics()).Render(80)},
 		{"history", 80, historyReport(goldenHistory(), "", goldenNow).Render(80)},
 		{"history.w60", 60, historyReport(goldenHistory(), "", goldenNow).Render(60)},
-		{"rate", 80, rateReport(rateEntries(), goldenNow).Render(80)},
+		{"rate", 80, rateReport(rateWalk(), rateScopeOf(false, false), goldenNow).Render(80)},
 	} {
 		for _, line := range strings.Split(c.body, "\n") {
 			if len([]rune(line)) > c.width {
@@ -257,7 +257,13 @@ func goldenObserve() observeData {
 // what a surface that keeps no turn or round accounting records.
 func goldenObserveSession() (storage.AgentSessionSummary, []storage.AgentExportEvent) {
 	fast, slow, turn := int64(42), int64(2400), int64(94000)
-	return goldenObserveSessionRow(), []storage.AgentExportEvent{
+	// The page's fixture is a session somebody has answered for, so the
+	// rating sits beside the outcome it is there to check. The bare row the
+	// empty page is built from carries none, which is the other case.
+	row := goldenObserveSessionRow()
+	worked := true
+	row.Rating = &worked
+	return row, []storage.AgentExportEvent{
 		// A decision taken before the first turn opened: the round and turn
 		// are zero because nothing was running yet.
 		{CreatedAt: "2026-08-31T11:31:58.000Z", Kind: storage.AgentEventDecision, Outcome: "allow", Reason: "mode-accept-edits"},

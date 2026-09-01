@@ -158,6 +158,13 @@ var migrations = []string{
 	ALTER TABLE agent_sessions ADD COLUMN sandbox_profile TEXT;
 	ALTER TABLE agent_sessions ADD COLUMN config_hash TEXT;`,
 	`ALTER TABLE agent_sessions ADD COLUMN outcome TEXT;`,
+
+	// A person's read on how a session went, beside the outcome the record
+	// infers from how it ended. NULL is unrated, and it has to be
+	// distinguishable from a thumbs-down: a column defaulted to 0 would
+	// report every session anyone never got to as one somebody disliked
+	// (docs/capabilities/sessions-and-memory.md#a-rating-is-how-you-check-the-inference).
+	`ALTER TABLE agent_sessions ADD COLUMN rating INTEGER;`,
 }
 
 // migrate brings the store up to the current schema, one step per

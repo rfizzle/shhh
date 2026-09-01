@@ -30,34 +30,44 @@ import (
 )
 
 // rateMinCardBody is the smallest card the screen is still worth drawing:
-// the prompt, the blank, and the command row it is being asked about. Below
+// the prompt, the blank, and the row it is being asked about. Below
 // it there is no question left on the screen.
 const rateMinCardBody = 3
 
-// RateRow is one unrated command, already resolved to what the screen draws.
+// RateRow is one unrated thing, already resolved to what the screen draws.
 // The host formats every field — how long ago is "4m ago", an exit code is
 // "exit 0" — because those are readings of the store and this is a renderer.
+// It is why the screen has no idea that what it is asking about comes from
+// two tables: a command the model wrote and a session it ran are one card
+// with different words in it.
 type RateRow struct {
 	// ID is the host's own handle on the entry, carried back on an answer and
 	// never drawn.
 	ID string
-	// Prompt is what was asked. It is the card's body and never clips: it is
-	// the half of the question the reader is being asked to judge.
+	// Prompt is what was asked, or what the session was about. It is the
+	// card's body and never clips: it is the half of the question the reader
+	// is being asked to judge.
 	Prompt string
-	// Command is what came back, drawn on the column grid.
-	Command string
+	// Kind and Verb say what the row under the prompt is — a shell command
+	// the model wrote, an agent run it worked through — and pick the glyph
+	// and the word that lead it.
+	Kind ActivityKind
+	Verb string
+	// Target is the thing itself, drawn on the column grid: the command, or
+	// the conversation the session left behind.
+	Target string
 	// When is how long ago, in the row's own words — `4m ago`, `yesterday`. It
 	// is the card's title.
 	When string
-	// Outcome is the closed outcome field the command row ends in: `exit 0`,
-	// `copied`, `not run`.
+	// Outcome is the closed outcome field the row ends in: `exit 0`,
+	// `copied`, `not run`, `completed`, `abandoned`.
 	Outcome string
-	// State picks the glyph the command row leads with and the colour its
-	// outcome takes.
+	// State picks the glyph the row leads with and the colour its outcome
+	// takes.
 	State ActivityState
 }
 
-// RateAct is the answer a key gave for the command on the card.
+// RateAct is the answer a key gave for what is on the card.
 type RateAct int
 
 const (
@@ -83,7 +93,7 @@ type RateResult struct{ Stopped bool }
 // RateScreen is `shhh rate`: a takeover surface, full width, no inspector
 // rail, owning the keyboard for as long as it is up.
 type RateScreen struct {
-	// Rows are the unrated commands newest first, as the host read them.
+	// Rows are the unrated entries newest first, as the host read them.
 	Rows []RateRow
 	// Focus is the card showing. It only ever moves forward: an answer is a
 	// write, and a screen that let the reader walk back onto a card they had
@@ -220,7 +230,9 @@ func (r *RateScreen) cardRows(width, budget int) []string {
 	inner := max(width-cardFrameWidth, 1)
 	body := wrapSpans([]styledSpan{{row.Prompt, sty.Body}}, inner)
 	body = append(body, "")
-	body = append(body, commandGridRows(row.Command, row.Outcome, "", row.State, inner)...)
+	body = append(body, gridRows(ActivityRow{
+		Kind: row.Kind, State: row.State, Verb: row.Verb, Outcome: row.Outcome,
+	}, row.Target, inner)...)
 	// The frame's own two rows come off the budget before the body is bounded,
 	// and a card with no room left for a body is not drawn at all: half a frame
 	// says less than the row that replaces it.

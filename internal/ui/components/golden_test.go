@@ -1841,22 +1841,31 @@ func TestGolden_DoctorScreen(t *testing.T) {
 }
 
 // goldenRateRows is the fixture: a command that ran and worked, one that was
-// copied and never ran at all, one that ran and failed, and a long one — so
-// the outcome vocabulary and the wrap are both captured.
+// copied and never ran at all, one that ran and failed, a long one — so the
+// outcome vocabulary and the wrap are both captured — and a session, which is
+// the other kind of thing the one card asks about.
 func goldenRateRows() []RateRow {
+	command := func(r RateRow) RateRow {
+		r.Kind, r.Verb = ActivityCommand, "run"
+		return r
+	}
 	return []RateRow{
-		{ID: "1", Prompt: "delete every log file older than a week",
-			Command: "find . -name '*.log' -mtime +7 -delete",
-			When:    "4m ago", Outcome: "exit 0", State: ActivityDone},
-		{ID: "2", Prompt: "show the ten biggest files here",
-			Command: "du -ah . | sort -rh | head -10",
-			When:    "yesterday", Outcome: "copied", State: ActivityDone},
-		{ID: "3", Prompt: "rebase onto main and force push",
-			Command: "git rebase main && git push --force-with-lease",
-			When:    "tue", Outcome: "exit 128", State: ActivityFailed},
-		{ID: "4", Prompt: "find every reference to ErrRoundLimit under internal and sort them",
-			Command: "rg --hidden --glob '!.git' --line-number 'ErrRoundLimit' internal/agent internal/ui | sort -u",
-			When:    "mon", Outcome: "exit 0", State: ActivityDone},
+		command(RateRow{ID: "c1", Prompt: "delete every log file older than a week",
+			Target: "find . -name '*.log' -mtime +7 -delete",
+			When:   "4m ago", Outcome: "exit 0", State: ActivityDone}),
+		command(RateRow{ID: "c2", Prompt: "show the ten biggest files here",
+			Target: "du -ah . | sort -rh | head -10",
+			When:   "yesterday", Outcome: "copied", State: ActivityDone}),
+		command(RateRow{ID: "c3", Prompt: "rebase onto main and force push",
+			Target: "git rebase main && git push --force-with-lease",
+			When:   "tue", Outcome: "exit 128", State: ActivityFailed}),
+		command(RateRow{ID: "c4", Prompt: "find every reference to ErrRoundLimit under internal and sort them",
+			Target: "rg --hidden --glob '!.git' --line-number 'ErrRoundLimit' internal/agent internal/ui | sort -u",
+			When:   "mon", Outcome: "exit 0", State: ActivityDone}),
+		{ID: "s5", Prompt: "get the observe dashboard to show the gate pass rate",
+			Kind: ActivitySubagent, Verb: "agent",
+			Target: "2026-09-01T18-02 · chat · claude-opus-5 · 14 turns",
+			When:   "mon", Outcome: "completed", State: ActivityDone},
 	}
 }
 
@@ -1883,6 +1892,13 @@ func TestGolden_RateScreen(t *testing.T) {
 				}()},
 			{Label: "a long command · continued under its own row, never clipped away",
 				View: screen(func(r *RateScreen) { r.Focus = 3 }).View(width)},
+			{Label: "a session · the same card over an agent run, and no rail on a good one",
+				View: screen(func(r *RateScreen) { r.Focus = 4 }).View(width)},
+			{Label: "a session that was given up on · the rail and the glyph every broken row takes",
+				View: screen(func(r *RateScreen) {
+					r.Focus = 4
+					r.Rows[4].Outcome, r.Rows[4].State = "abandoned", ActivityDenied
+				}).View(width)},
 			{Label: "a short terminal · the card folds behind a counted tail",
 				View: screen(func(r *RateScreen) { r.Focus = 3; r.MaxLines = 10 }).View(width)},
 			{Label: "a write that failed · the notice, and the entry left unrated",

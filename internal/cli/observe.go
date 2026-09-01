@@ -816,6 +816,18 @@ func observeOutcomeRows(outcomes []storage.AgentSessionOutcome) []report.Row {
 	return rows
 }
 
+// observeRating is what a person said about the session, in the words the
+// walk asked the question in — it did what was wanted, or it did not.
+func observeRating(rating *bool) string {
+	switch {
+	case rating == nil:
+		return ""
+	case *rating:
+		return "worked"
+	}
+	return "did not work"
+}
+
 // observeOutcomeState reads the outcome words this build's rows are written
 // with, and the words earlier builds wrote theirs with. They are literals
 // for the same reason the decision and turn words are: a case on a string
@@ -925,6 +937,13 @@ func observeSessionReport(s storage.AgentSessionSummary, events []storage.AgentE
 	}
 	for _, p := range []report.Pair{
 		{Key: "outcome", Value: s.Outcome},
+		// The rating sits next to the outcome because that is what it is for:
+		// the outcome is inferred from how the session ended, and the two
+		// side by side is how anyone finds out whether the inference is any
+		// good (docs/capabilities/sessions-and-memory.md#a-rating-is-how-you-check-the-inference).
+		// A session nobody has answered for prints no row at all, which is a
+		// different fact from one somebody disliked.
+		{Key: "rated", Value: observeRating(s.Rating)},
 		{Key: "tokens", Value: observeTokens(s.TokensIn, s.TokensOut)},
 		{Key: "cost", Value: observeCost(s.Cost)},
 		{Key: "version", Value: s.Version},

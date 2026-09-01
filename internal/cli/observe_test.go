@@ -730,3 +730,28 @@ func TestRecordGateVerdicts_Wiring(t *testing.T) {
 	}
 	recordGateVerdicts(nil, rec)
 }
+
+// The rating is drawn beside the outcome it audits, in the words the walk
+// asked the question in, and a session nobody has answered for draws no row
+// at all — an empty rating and a thumbs-down are different facts, and the
+// page would be inventing one of them by filling the field in.
+func TestObserveSessionReport_RatingSitsBesideTheOutcome(t *testing.T) {
+	row := goldenObserveSessionRow()
+	if got := observeSessionReport(row, nil).Render(80); strings.Contains(got, "rated:") {
+		t.Errorf("an unrated session was given a rating:\n%s", got)
+	}
+	for _, tc := range []struct {
+		rating bool
+		want   string
+	}{{true, "rated:         worked"}, {false, "rated:         did not work"}} {
+		row.Rating = &tc.rating
+		got := observeSessionReport(row, nil).Render(80)
+		if !strings.Contains(got, tc.want) {
+			t.Errorf("the page does not say %q:\n%s", tc.want, got)
+		}
+		// It is next to what it is a check on, not filed among the provenance.
+		if strings.Index(got, "outcome:") > strings.Index(got, tc.want) {
+			t.Errorf("the rating is drawn before the outcome it checks:\n%s", got)
+		}
+	}
+}

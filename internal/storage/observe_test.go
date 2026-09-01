@@ -500,3 +500,193 @@ func TestAgentGateVerdicts(t *testing.T) {
 		}
 	}
 }
+
+// The walk's second query: a session is offered once it has a conversation to
+// remind the reader what it was, and never again once it has been answered.
+// The reminder prefers the title a model wrote and falls back to the first
+// thing the person said.
+func TestListUnratedSessions_OffersWhatCanBeRemembered(t *testing.T) {
+	db := openTestDB(t)
+
+	titled := unratedFixture(t, db, "titled", "make the dashboard show the gate rate")
+	if err := db.SetChatTitle("titled", "the gate pass rate"); err != nil {
+		t.Fatalf("set title: %v", err)
+	}
+	untitled := unratedFixture(t, db, "untitled", "rename the observer's callbacks")
+
+	// A session whose conversation was never saved, and one whose saved
+	// conversation holds nothing the reader could be reminded by. Neither can
+	// be judged, so neither is asked about.
+	unlinked, err := db.StartAgentSession("chat", "anthropic", "m")
+	if err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	if err := db.EndAgentSession(unlinked, "completed"); err != nil {
+		t.Fatalf("end session: %v", err)
+	}
+	for chat, msg := range map[string]provider.Message{
+		// Nothing the reader said at all…
+		"silent": {Role: provider.RoleAssistant, Content: "hello"},
+		// …and something they said that is not a reminder of anything.
+		"blank": {Role: provider.RoleUser, Content: "   \n  "},
+	} {
+		if err := db.SaveChat(chat, []provider.Message{msg}); err != nil {
+			t.Fatalf("save chat %q: %v", chat, err)
+		}
+		id, err := db.StartAgentSession("chat", "anthropic", "m")
+		if err != nil {
+			t.Fatalf("start session: %v", err)
+		}
+		if err := db.LinkAgentSession(id, chat); err != nil {
+			t.Fatalf("link session: %v", err)
+		}
+	}
+
+	got, err := db.ListUnratedSessions(10)
+	if err != nil {
+		t.Fatalf("list unrated sessions: %v", err)
+	}
+	if len(got) != 2 {
+		t.Fatalf("the walk offered %d sessions, want the two with a conversation: %+v", len(got), got)
+	}
+	if got[0].ID != untitled || got[1].ID != titled {
+		t.Errorf("the walk offered %d then %d, want the newest first", got[0].ID, got[1].ID)
+	}
+	if got[0].Title != "" || got[0].Opening != "rename the observer's callbacks" {
+		t.Errorf("an untitled conversation reads %+v, want its opening line", got[0])
+	}
+	if got[1].Title != "the gate pass rate" || got[1].Chat != "titled" {
+		t.Errorf("a titled conversation reads %+v", got[1])
+	}
+	if got[1].Kind != "chat" || got[1].Outcome != "completed" {
+		t.Errorf("the session's own fields did not come with it: %+v", got[1])
+	}
+
+	if err := db.RateAgentSession(titled, true); err != nil {
+		t.Fatalf("rate session: %v", err)
+	}
+	got, err = db.ListUnratedSessions(10)
+	if err != nil {
+		t.Fatalf("list unrated sessions: %v", err)
+	}
+	if len(got) != 1 || got[0].ID != untitled {
+		t.Errorf("an answered session was offered again: %+v", got)
+	}
+}
+
+// The answer lands on the session's own row and joins the export, and an
+// unanswered session is nil rather than false — "nobody has said" and "it
+// went badly" are different facts and only one of them is a judgement.
+func TestRateAgentSession_JoinsTheRowAndTheExport(t *testing.T) {
+	db := openTestDB(t)
+
+	liked := unratedFixture(t, db, "liked", "add the retention window")
+	disliked := unratedFixture(t, db, "disliked", "rewrite the trimmer")
+	unrated := unratedFixture(t, db, "unrated", "read the provider layer")
+
+	if err := db.RateAgentSession(liked, true); err != nil {
+		t.Fatalf("rate session: %v", err)
+	}
+	if err := db.RateAgentSession(disliked, false); err != nil {
+		t.Fatalf("rate session: %v", err)
+	}
+
+	want := map[int64]*bool{liked: boolPtr(true), disliked: boolPtr(false), unrated: nil}
+	for id, w := range want {
+		s, ok, err := db.AgentSession(id)
+		if err != nil || !ok {
+			t.Fatalf("read session %d: %v", id, err)
+		}
+		if !sameRating(s.Rating, w) {
+			t.Errorf("session %d reads %v, want %v", id, ratingWord(s.Rating), ratingWord(w))
+		}
+	}
+
+	sessions, err := db.ExportAgentObservability(time.Time{}, false)
+	if err != nil {
+		t.Fatalf("export: %v", err)
+	}
+	if len(sessions) != len(want) {
+		t.Fatalf("the export carries %d sessions, want %d", len(sessions), len(want))
+	}
+	for _, s := range sessions {
+		if !sameRating(s.Rating, want[s.ID]) {
+			t.Errorf("the export gives session %d %v, want %v",
+				s.ID, ratingWord(s.Rating), ratingWord(want[s.ID]))
+		}
+	}
+}
+
+// The two ratings are separate columns on separate tables, so the accuracy
+// figure `shhh metrics` reports keeps meaning what it has always meant: what
+// people made of the commands, and nothing about the sessions.
+func TestRateAgentSession_LeavesTheCommandFiguresAlone(t *testing.T) {
+	db := openTestDB(t)
+
+	id, err := db.RecordRequest(RequestRecord{
+		Provider: "anthropic", Model: "m", Prompt: "p", Command: "ls", Action: "run", Success: true})
+	if err != nil {
+		t.Fatalf("record request: %v", err)
+	}
+	session := unratedFixture(t, db, "session", "read the provider layer")
+	if err := db.RateAgentSession(session, false); err != nil {
+		t.Fatalf("rate session: %v", err)
+	}
+
+	before, err := db.MetricsSummary(time.Time{})
+	if err != nil {
+		t.Fatalf("metrics: %v", err)
+	}
+	if len(before) != 1 || before[0].RatedCount != 0 {
+		t.Fatalf("a rated session moved the command figures: %+v", before)
+	}
+	if err := db.RateRequest(id, true); err != nil {
+		t.Fatalf("rate request: %v", err)
+	}
+	after, err := db.MetricsSummary(time.Time{})
+	if err != nil {
+		t.Fatalf("metrics: %v", err)
+	}
+	if len(after) != 1 || after[0].RatedCount != 1 {
+		t.Fatalf("the command rating did not reach the figures: %+v", after)
+	}
+}
+
+// unratedFixture is one ended session with a saved conversation behind it,
+// which is what the walk requires before it will ask about one.
+func unratedFixture(t *testing.T, db *DB, chat, opening string) int64 {
+	t.Helper()
+	if err := db.SaveChat(chat, []provider.Message{{Role: provider.RoleUser, Content: opening}}); err != nil {
+		t.Fatalf("save chat %q: %v", chat, err)
+	}
+	id, err := db.StartAgentSession("chat", "anthropic", "m")
+	if err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	if err := db.LinkAgentSession(id, chat); err != nil {
+		t.Fatalf("link session: %v", err)
+	}
+	if err := db.EndAgentSession(id, "completed"); err != nil {
+		t.Fatalf("end session: %v", err)
+	}
+	return id
+}
+
+func boolPtr(b bool) *bool { return &b }
+
+func sameRating(a, b *bool) bool {
+	if a == nil || b == nil {
+		return a == b
+	}
+	return *a == *b
+}
+
+func ratingWord(r *bool) string {
+	switch {
+	case r == nil:
+		return "unrated"
+	case *r:
+		return "up"
+	}
+	return "down"
+}
