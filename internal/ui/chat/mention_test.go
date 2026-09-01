@@ -121,9 +121,7 @@ func TestMention_ImageIsStaged(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "shot.png"), png, 0o644); err != nil {
 		t.Fatal(err)
 	}
-	t.Chdir(dir)
-
-	m := mentionModel(t)
+	m := mentionModel(t).WithWorkspace(dir)
 	m.recentFiles = func() []project.RecentFile {
 		return []project.RecentFile{{Path: "shot.png", Mod: time.Now()}}
 	}

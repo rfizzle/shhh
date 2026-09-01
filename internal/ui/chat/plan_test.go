@@ -304,15 +304,15 @@ func TestPlan_InspectionCommandRunsWithoutPrompt(t *testing.T) {
 }
 
 func TestPlan_SlashPlanSave(t *testing.T) {
-	t.Chdir(t.TempDir())
-	m := runCapableModel("1. edit a.go\n2. run tests")
+	dir := t.TempDir()
+	m := runCapableModel("1. edit a.go\n2. run tests").WithWorkspace(dir)
 
 	handled, result := m.handleSlashCommand("/plan save my plan")
 	if !handled || !strings.Contains(result, "Plan saved to") {
 		t.Fatalf("/plan save should save, got %q", result)
 	}
 	path := filepath.Join(".shhh", "plans", "my-plan.md")
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(filepath.Join(dir, path))
 	if err != nil {
 		t.Fatalf("expected %s to exist: %v", path, err)
 	}
@@ -335,9 +335,8 @@ func TestPlan_SlashPlanSave(t *testing.T) {
 }
 
 func TestPlan_SlashPlanSaveWithoutPlan(t *testing.T) {
-	t.Chdir(t.TempDir())
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream).WithWorkspace(t.TempDir())
 	_, result := m.handleSlashCommand("/plan save x")
 	if !strings.Contains(result, "No plan to save yet") {
 		t.Fatalf("saving with no assistant response should refuse, got %q", result)
@@ -431,7 +430,7 @@ func TestPlanCard_SummaryIsComputedFromTheSteps(t *testing.T) {
 }
 
 func TestPlanCard_SummaryReadsTheSameGitCheckAsApprovals(t *testing.T) {
-	dir := chdir(t)
+	dir := t.TempDir()
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git is not installed")
 	}
@@ -473,8 +472,11 @@ func TestPlanCard_SummaryReadsTheSameGitCheckAsApprovals(t *testing.T) {
 }
 
 func TestPlanCard_OutsideARepositoryNothingIsClaimed(t *testing.T) {
-	chdir(t)
+	// A tracker over a directory that is not a work tree, rather than no
+	// tracker at all: the card must say "not reversible" because it looked
+	// and there was no repository, not because nothing was wired.
 	m := plannedModel(t, structuredPlan)
+	m.tracker = changeset.NewTracker(t.TempDir())
 	if view := m.View().Content; !strings.Contains(view, "not reversible") {
 		t.Errorf("outside a work tree the card says so rather than claiming undo:\n%s", view)
 	}
@@ -533,8 +535,8 @@ func TestPlanCard_UnstructuredPlanStillRenders(t *testing.T) {
 }
 
 func TestPlanCard_SaveKeyWritesThePlanAndKeepsTheCard(t *testing.T) {
-	t.Chdir(t.TempDir())
-	m := plannedModel(t, structuredPlan)
+	dir := t.TempDir()
+	m := plannedModel(t, structuredPlan).WithWorkspace(dir)
 
 	updated, _ := m.Update(tea.KeyPressMsg{Code: 's', Text: "s"})
 	m = updated.(Model)
@@ -550,7 +552,7 @@ func TestPlanCard_SaveKeyWritesThePlanAndKeepsTheCard(t *testing.T) {
 	if saved == "" {
 		t.Fatalf("[s] should note where the plan was saved, got transcript %+v", m.transcript)
 	}
-	data, err := os.ReadFile(saved)
+	data, err := os.ReadFile(filepath.Join(dir, saved))
 	if err != nil {
 		t.Fatalf("expected %s to exist: %v", saved, err)
 	}

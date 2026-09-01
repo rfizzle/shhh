@@ -15,6 +15,13 @@ so a reference to it points at something the reader cannot open. Such a referenc
 string it becomes test output, an error message, or — worst — committed
 golden content, which couples a documentation edit to regenerating goldens.
 
+And it fails on an os.Chdir or t.Chdir in a _test.go file. cmd/go records
+every chdir target as one of the test's inputs, and a t.TempDir() path is new
+on every run, so one such call makes its whole package uncacheable — `go test
+./...` re-runs it in full against a tree nothing has touched. The rule is the
+test file rather than the call: a chdir anywhere in production code is a
+different question, and shhh's answer to it is that it never chdirs at all.
+
 Only § is checked, not docs/ paths: a path like docs/loop.md is a perfectly
 ordinary test fixture filename, and internal/ui/keys deliberately stores doc
 paths as data so each keyed surface names what is normative for it.
@@ -69,6 +76,7 @@ def comment_start(line):
 
 REF=re.compile(r"§\d+[a-z]?")
 STORY=re.compile(r"\b[SEBT]-\d{3}\b")
+CHDIR=re.compile(r"\b(?:os|t)\.Chdir\(")
 for f in pathlib.Path(".").rglob("*.go"):
     if ".git" in f.parts: continue
     raw=False
@@ -81,6 +89,8 @@ for f in pathlib.Path(".").rglob("*.go"):
             bad.append(f"{f}:{ln}: spec section reference in a string literal, not a comment")
         if STORY.search(l):
             bad.append(f"{f}:{ln}: story identifier in code — say what it does and cite docs/")
+        if f.name.endswith("_test.go") and CHDIR.search(code):
+            bad.append(f"{f}:{ln}: a test that chdirs makes its package uncacheable — pass the directory to the code under test as an argument")
 for f in pathlib.Path(".").rglob("testdata/golden/*.txt"):
     for ln,l in enumerate(f.read_text().split("\n"),1):
         if REF.search(l) or STORY.search(l):

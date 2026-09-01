@@ -166,17 +166,25 @@ func TestInit_NoArgs(t *testing.T) {
 	}
 }
 
+// `--project` is declared, and declared as a switch. What it writes is the
+// initProject tests below; this is only the name a reader types.
+func TestInitProject_FlagIsDeclared(t *testing.T) {
+	for _, c := range NewRootCmd().Commands() {
+		if c.Name() != "init" {
+			continue
+		}
+		if f := c.Flags().Lookup("project"); f == nil || f.Value.Type() != "bool" {
+			t.Fatalf("init has no --project flag: %v", f)
+		}
+		return
+	}
+	t.Fatal("no init command is registered")
+}
+
 func TestInitProject_CreatesFile(t *testing.T) {
 	dir := t.TempDir()
-	orig, _ := os.Getwd()
-	must(t, os.Chdir(dir))
-	defer func() { _ = os.Chdir(orig) }()
 
-	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"init", "--project"})
-
-	err := cmd.Execute()
-	if err != nil {
+	if err := initProject(dir); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -193,14 +201,7 @@ func TestInitProject_OldLayoutPointsAtDoctor(t *testing.T) {
 	dir := t.TempDir()
 	must(t, os.WriteFile(filepath.Join(dir, ".shhh"), []byte("existing"), 0o644))
 
-	orig, _ := os.Getwd()
-	must(t, os.Chdir(dir))
-	defer func() { _ = os.Chdir(orig) }()
-
-	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"init", "--project"})
-
-	err := cmd.Execute()
+	err := initProject(dir)
 	if err == nil || !strings.Contains(err.Error(), "shhh doctor") {
 		t.Fatalf("err = %v, want a pointer at the doctor", err)
 	}
@@ -214,15 +215,7 @@ func TestInitProject_AlreadyExists(t *testing.T) {
 	must(t, os.MkdirAll(filepath.Join(dir, ".shhh"), 0o755))
 	must(t, os.WriteFile(filepath.Join(dir, ".shhh", "project.md"), []byte("existing"), 0o644))
 
-	orig, _ := os.Getwd()
-	must(t, os.Chdir(dir))
-	defer func() { _ = os.Chdir(orig) }()
-
-	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"init", "--project"})
-
-	err := cmd.Execute()
-	if err == nil {
+	if err := initProject(dir); err == nil {
 		t.Fatal("expected error when .shhh already exists")
 	}
 }

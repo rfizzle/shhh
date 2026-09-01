@@ -3,6 +3,7 @@ package chat
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"sync"
@@ -763,6 +764,13 @@ type Model struct {
 	// confirm while quitting over a live turn is being asked about.
 	armed   armedPress
 	quitAsk *components.Confirm
+	// workspace is the directory the session's relative paths belong to. It
+	// is stated once, for the reason sessionDir is (terminal.go), and it is
+	// also what lets a surface be exercised against a scratch directory
+	// without moving the process — a test that chdirs records the target as
+	// one of its package's cache inputs and makes the package uncacheable.
+	// Empty means the process's own working directory.
+	workspace string
 	// Per-turn changeset store: changes records every applied edit
 	// with the content on both sides, keyed by turn, and is what /diff
 	// renders; tracker answers whether git knew about a file when it was
@@ -1044,6 +1052,26 @@ func (m Model) WithModelSwitcher(fn func(string)) Model {
 func (m Model) WithTitle(title string) Model {
 	m.title = title
 	return m
+}
+
+// WithWorkspace states the directory the session's relative paths are
+// resolved against — where a saved plan lands, what a command's blast radius
+// is measured from, where an attached file is read. A session that is not
+// told stays on the process's working directory.
+func (m Model) WithWorkspace(root string) Model {
+	m.workspace = root
+	return m
+}
+
+// inWorkspace resolves a path the session was handed against the directory it
+// belongs to. An absolute path is already its own answer, and a session with
+// no workspace leaves a relative one as it was — which is the process's
+// directory, the same place it would have read before it was told.
+func (m Model) inWorkspace(path string) string {
+	if m.workspace == "" || path == "" || filepath.IsAbs(path) {
+		return path
+	}
+	return filepath.Join(m.workspace, path)
 }
 
 func (m Model) WithDB(db *storage.DB) Model {
@@ -1415,7 +1443,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// what it saw before.
 		if m.inputLive() && m.attachedTo == "" {
 			if path, ok := pastedFileAttachment(msg.Content); ok {
-				return m, attachFileCmd(path)
+				return m, attachFileCmd(m.inWorkspace(path))
 			}
 			// A stack trace or a log is a file that happens to have arrived
 			// through the clipboard, and typing it into a three-row box hides
@@ -3688,7 +3716,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 			if strings.TrimSpace(planText) == "" {
 				return true, "No plan to save yet — there is no assistant response."
 			}
-			path, err := savePlan(planText, strings.Join(parts[2:], "-"))
+			path, err := savePlan(m.workspace, planText, strings.Join(parts[2:], "-"))
 			if err != nil {
 				return true, "Error saving plan: " + err.Error()
 			}

@@ -38,7 +38,7 @@ func Derive(command string) (string, bool) {
 		// what a dry run of the lines around it needs in order to mean
 		// anything. Anything else — a write shhh has no no-op for, or a line
 		// it could not resolve — ends the offer.
-		res := radius.Resolve(line)
+		res := radius.Outline(line)
 		if len(res.Writes) > 0 || len(res.Risks) > 0 || len(res.Unresolved) > 0 {
 			return "", false
 		}

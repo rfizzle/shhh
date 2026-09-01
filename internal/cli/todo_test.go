@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -60,25 +61,27 @@ func TestTodoDetail(t *testing.T) {
 	}
 }
 
+// `shhh todo show` takes exactly one slug, and cobra answers that before the
+// backlog is read — so the wiring is checked without a checkout to read.
+func TestTodoCommand_ShowNeedsASlug(t *testing.T) {
+	cmd := NewRootCmd()
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs([]string{"todo", "show"})
+	if err := cmd.Execute(); err == nil {
+		t.Fatal("`shhh todo show` with no slug should say so")
+	}
+}
+
 func TestTodoCommand_ShowUnknownSlug(t *testing.T) {
 	root := todoFixture(t)
-	orig, _ := os.Getwd()
-	if err := os.Chdir(root); err != nil {
-		t.Fatal(err)
-	}
-	defer func() { _ = os.Chdir(orig) }()
 
-	cmd := NewRootCmd()
-	cmd.SetArgs([]string{"todo", "show", "nope"})
-	err := cmd.Execute()
+	var out strings.Builder
+	err := todoShow(&out, root, "nope")
 	if err == nil || !strings.Contains(err.Error(), `no backlog item "nope"`) {
 		t.Fatalf("err = %v", err)
 	}
-	var out strings.Builder
-	cmd = NewRootCmd()
-	cmd.SetOut(&out)
-	cmd.SetArgs([]string{"todo"})
-	if err := cmd.Execute(); err != nil {
+	if err := todoList(&out, root); err != nil {
 		t.Fatal(err)
 	}
 	if !strings.Contains(out.String(), "· first   First thing · high") {

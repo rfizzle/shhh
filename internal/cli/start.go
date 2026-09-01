@@ -49,14 +49,14 @@ func buildStartInfo(survey project.Info, db *storage.DB, gateEnabled bool) chat.
 // free to change without forgetting who already said no.
 const scaffoldOffer = "scaffold"
 
-// buildScaffold wires the start screen's scaffolding offer. The offer is
-// answered here, once: a checkout that can take it, and no refusal already
-// on record for it (docs/interface/surfaces.md#the-start-screen). Without a
-// store the refusal has nowhere to live, so nothing is offered — an offer
-// that cannot be refused for good is a nag.
-func buildScaffold(db *storage.DB) chat.Scaffold {
-	wd, err := os.Getwd()
-	if err != nil {
+// buildScaffold wires the start screen's scaffolding offer for a session in
+// wd. The offer is answered here, once: a checkout that can take it, and no
+// refusal already on record for it
+// (docs/interface/surfaces.md#the-start-screen). Without a store the refusal
+// has nowhere to live, so nothing is offered — an offer that cannot be
+// refused for good is a nag.
+func buildScaffold(db *storage.DB, wd string) chat.Scaffold {
+	if wd == "" {
 		return chat.Scaffold{}
 	}
 	// The repository root, not the working directory: the offer is the

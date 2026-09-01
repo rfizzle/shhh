@@ -50,8 +50,8 @@ func TestReach(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := Resolve(tc.command).Reach(); got != tc.want {
-				t.Errorf("Resolve(%q).Reach() = %q, want %q", tc.command, got, tc.want)
+			if got := Outline(tc.command).Reach(); got != tc.want {
+				t.Errorf("Outline(%q).Reach() = %q, want %q", tc.command, got, tc.want)
 			}
 		})
 	}
@@ -60,7 +60,7 @@ func TestReach(t *testing.T) {
 func TestReachKeepsUnknownBesideWhatItResolved(t *testing.T) {
 	// One segment resolves and the other does not; the line has to carry both
 	// rather than letting the resolved half stand for the whole command.
-	got := Resolve("touch notes.txt && npm run build").Reach()
+	got := Outline("touch notes.txt && npm run build").Reach()
 	want := "writes notes.txt, plus unknown · network unknown · no sudo"
 	if got != want {
 		t.Errorf("Reach() = %q, want %q", got, want)

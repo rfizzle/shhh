@@ -66,7 +66,7 @@ func newInitCmd() *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if projectMode {
-				return initProject()
+				return initProject(".")
 			}
 			if len(args) == 0 {
 				return fmt.Errorf("specify a shell (zsh, bash, fish) or use --project")
@@ -90,10 +90,11 @@ func newInitCmd() *cobra.Command {
 	return cmd
 }
 
-// initProject scaffolds the context file in the working directory. The
-// write itself belongs to internal/project, because the chat session's
-// start screen offers the same one.
-func initProject() error {
-	_, err := project.Scaffold(".")
+// initProject scaffolds the context file in dir. The write itself belongs to
+// internal/project, because the chat session's start screen offers the same
+// one. The flag says "the current directory" and has to mean it, so the
+// command hands it "." rather than a resolved root.
+func initProject(dir string) error {
+	_, err := project.Scaffold(dir)
 	return err
 }

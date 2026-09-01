@@ -43,21 +43,22 @@ func Root(dir string) string {
 	}
 }
 
-// Find returns the path and contents of the nearest project-context file,
-// walking up from the working directory. The path is what the start screen
-// names: a session that says what it read is a session whose system
-// prompt is not a secret.
-func Find() (path, content string) {
-	dir, err := os.Getwd()
-	if err != nil {
+// FindFrom returns the path and contents of the nearest project-context
+// file, walking up from dir. The path is what the start screen names: a
+// session that says what it read is a session whose system prompt is not a
+// secret.
+//
+// The directory is the caller's to state. Every caller has one — a session
+// its working directory, a sub-agent its worktree — and reading the process
+// here instead would make the answer depend on where the binary was started
+// rather than on what it was asked about.
+func FindFrom(dir string) (path, content string) {
+	// A caller that could not name its directory has not named the root of
+	// the walk either, and walking up from "" would read the process's
+	// directory while claiming to have read somewhere stated.
+	if dir == "" {
 		return "", ""
 	}
-	return FindFrom(dir)
-}
-
-// FindFrom is Find from a stated directory, for the callers that have one
-// and for the tests that cannot chdir.
-func FindFrom(dir string) (path, content string) {
 	for {
 		for _, name := range contextFilenames {
 			p := filepath.Join(dir, name)
@@ -76,7 +77,8 @@ func FindFrom(dir string) (path, content string) {
 	return "", ""
 }
 
-func FindContext() string {
-	_, content := Find()
+// FindContextFrom is FindFrom for the callers that want only the text.
+func FindContextFrom(dir string) string {
+	_, content := FindFrom(dir)
 	return content
 }

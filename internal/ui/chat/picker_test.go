@@ -577,7 +577,8 @@ func TestRunPick_SelectingEntersConfirm(t *testing.T) {
 }
 
 func TestRunPick_SelectedBlockKeepsSafetyWarnings(t *testing.T) {
-	m := runCapableModel("Safe:\n```bash\necho hi\n```\nNot:\n```bash\nrm -rf /\n```")
+	m := runCapableModel("Safe:\n```bash\necho hi\n```\nNot:\n```bash\nrm -rf ./build\n```").
+		WithWorkspace(t.TempDir())
 	m = sendText(t, m, "/run")
 	m = focusPick(t, m, 1)
 

@@ -49,7 +49,7 @@ func exists(t *testing.T, path string) bool {
 // says so must not cost anything or invent work.
 func TestPlan_CurrentLayoutHasNothingToDo(t *testing.T) {
 	fakeHome(t, ".config/shhh/config.toml", ".local/share/shhh/shhh.db")
-	if pending := Plan(); len(pending) != 0 {
+	if pending := Plan(t.TempDir()); len(pending) != 0 {
 		t.Fatalf("a machine already on the current layout has %d migrations pending: %+v", len(pending), pending)
 	}
 }
@@ -67,7 +67,7 @@ func TestLegacyAppleDirs_SplitsSettingsFromState(t *testing.T) {
 		"Library/Caches/shhh/model_prices.json",
 	)
 
-	pending := Plan()
+	pending := Plan(t.TempDir())
 	if len(pending) != 1 {
 		t.Fatalf("the old layout was not detected: %+v", pending)
 	}
@@ -101,7 +101,7 @@ func TestLegacyAppleDirs_SplitsSettingsFromState(t *testing.T) {
 	if exists(t, filepath.Join(home, "Library", "Caches", "shhh")) {
 		t.Error("the emptied old cache directory was left behind")
 	}
-	if pending := Plan(); len(pending) != 0 {
+	if pending := Plan(t.TempDir()); len(pending) != 0 {
 		t.Fatalf("the migration reports itself as still pending after it ran: %+v", pending)
 	}
 }
@@ -119,7 +119,7 @@ func TestLegacyAppleDirs_NeverOverwritesTheNewLayout(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	pending := Plan()
+	pending := Plan(t.TempDir())
 	if len(pending) != 1 {
 		t.Fatalf("a machine with a conflict reports nothing: %+v", pending)
 	}
@@ -150,7 +150,7 @@ func TestLegacyAppleDirs_KeepsARootThatStillHoldsAConflict(t *testing.T) {
 		".config/shhh/config.toml",
 	)
 
-	pending := Plan()
+	pending := Plan(t.TempDir())
 	if len(pending) != 1 || !pending[0].Auto() {
 		t.Fatalf("a migration with one move and one conflict should still be applicable: %+v", pending)
 	}
@@ -174,7 +174,7 @@ func TestLegacyAppleDirs_HonoursXDG(t *testing.T) {
 	xdg := filepath.Join(home, "elsewhere", "config")
 	t.Setenv("XDG_CONFIG_HOME", xdg)
 
-	pending := Plan()
+	pending := Plan(t.TempDir())
 	if len(pending) != 1 {
 		t.Fatalf("nothing detected: %+v", pending)
 	}
@@ -249,7 +249,7 @@ func TestLegacyAppleDirs_ReplacesAStoreNothingHasBeenRecordedIn(t *testing.T) {
 	}
 	fresh.Close()
 
-	pending := Plan()
+	pending := Plan(t.TempDir())
 	if len(pending) != 1 || !pending[0].Auto() {
 		t.Fatalf("an empty store at the destination was treated as a conflict: %+v", pending)
 	}

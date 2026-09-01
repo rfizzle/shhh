@@ -87,7 +87,10 @@ func Survey(dir string) Info {
 	info.Language, info.Toolchain, info.Unit = detectLanguage(dir)
 	info.Packages, info.Partial = countPackages(dir, info.Language)
 	info.Repo, info.Branch, info.Detached, info.Dirty = surveyGit(dir)
-	if path, _ := Find(); path != "" {
+	// Read from dir, not from the process: a survey of somewhere else that
+	// reported the context file of here would be describing two directories
+	// at once.
+	if path, _ := FindFrom(dir); path != "" {
 		info.ContextFiles = append(info.ContextFiles, relativeTo(dir, path))
 	}
 	return info

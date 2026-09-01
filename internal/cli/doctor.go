@@ -103,7 +103,7 @@ func migrateFlag(cmd *cobra.Command) {
 // before it does it, and names anything it will not do, so the output is a
 // record rather than a result.
 func runMigrations(out io.Writer) error {
-	pending := migrate.Plan()
+	pending := migrate.Plan(migrationDir())
 	r := report.Report{Title: "shhh doctor --migrate"}
 	if len(pending) == 0 {
 		return report.Fprint(out, emptyInto(r, "nothing to migrate",
@@ -365,7 +365,19 @@ func configSettingsSet(cfg config.Config) int {
 }
 
 func probeMigrate(context.Context, config.Config) doctorFinding {
-	return doctorMigrate(migrate.Plan())
+	return doctorMigrate(migrate.Plan(migrationDir()))
+}
+
+// migrationDir is the checkout the project migrations are asked about. A
+// working directory that cannot be read is named as nothing rather than as
+// ".": a detector that walked up from the process would answer about a
+// checkout the reader was never told it looked at.
+func migrationDir() string {
+	dir, err := os.Getwd()
+	if err != nil {
+		return ""
+	}
+	return dir
 }
 
 // doctorMigrate reads whether this machine is still shaped the way an older

@@ -177,25 +177,16 @@ func TestSurvey_RepoReportsBranchAndDirtyCount(t *testing.T) {
 	}
 }
 
-func TestFind_ReportsThePathItRead(t *testing.T) {
+func TestFindFrom_ReportsThePathItRead(t *testing.T) {
 	dir := t.TempDir()
-	// The temp directory may itself be a symlink (macOS /var); resolve it so
-	// the comparison is against the path Getwd will report.
-	if resolved, err := filepath.EvalSymlinks(dir); err == nil {
-		dir = resolved
-	}
 	writeFiles(t, dir, map[string]string{"AGENTS.md": "be helpful\n"})
-	chdir(t, dir)
 
-	path, content := Find()
+	path, content := FindFrom(dir)
 	if content != "be helpful\n" {
 		t.Fatalf("content = %q", content)
 	}
 	if filepath.Base(path) != "AGENTS.md" {
 		t.Fatalf("path = %q, want an AGENTS.md", path)
-	}
-	if FindContext() != content {
-		t.Fatal("FindContext and Find disagree about the same file")
 	}
 
 	info := Survey(dir)
@@ -206,26 +197,9 @@ func TestFind_ReportsThePathItRead(t *testing.T) {
 
 func TestSurvey_DotShhhWinsOverAgentsMd(t *testing.T) {
 	dir := t.TempDir()
-	if resolved, err := filepath.EvalSymlinks(dir); err == nil {
-		dir = resolved
-	}
 	writeFiles(t, dir, map[string]string{".shhh/project.md": "shhh rules\n", "AGENTS.md": "generic\n"})
-	chdir(t, dir)
 
-	if _, content := Find(); content != "shhh rules\n" {
+	if _, content := FindFrom(dir); content != "shhh rules\n" {
 		t.Fatalf("content = %q, want the .shhh/project.md file", content)
 	}
-}
-
-// chdir moves into dir for one test and restores the working directory after.
-func chdir(t *testing.T, dir string) {
-	t.Helper()
-	was, err := os.Getwd()
-	if err != nil {
-		t.Fatalf("getwd: %v", err)
-	}
-	if err := os.Chdir(dir); err != nil {
-		t.Fatalf("chdir: %v", err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(was) })
 }

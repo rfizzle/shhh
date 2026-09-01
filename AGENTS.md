@@ -363,6 +363,23 @@ A `TestMain` in each golden-using package calls `golden.Run(m)` which **deletes 
 - SQLite storage tests use `OpenPath` with a temp file or `:memory:`
 - The LSP package has integration tests that spawn real language servers
 
+**Never change the working directory in a test.** `cmd/go` records every
+chdir target as one of the test's inputs, and a `t.TempDir()` path is new on
+every run, so a single `os.Chdir` or `t.Chdir` makes its whole package
+uncacheable — `go test ./...` re-runs it in full against a tree nothing has
+touched, and the packages around it report `(cached)` so it reads as a slow
+suite rather than a broken one. Give the code under test the directory
+instead: `chat.Model.WithWorkspace`, `radius.Resolve`, `project.FindFrom`,
+`migrate.Plan` and `buildScaffold` all take it as an argument for this reason.
+`make docs-check` fails on a `Chdir` in a `_test.go`, so this cannot drift
+back.
+
+The same reasoning bans a test that reads the machine rather than its own
+scratch directory. A fixture command of `rm -rf /` asks `internal/radius` to
+walk the real filesystem — twenty thousand entries, a different set of
+`/proc` paths each run, and the package is uncacheable again. Point a
+destructive fixture at a `t.TempDir()`.
+
 ## Configuration
 
 Config is TOML at `~/.config/shhh/config.toml` (or `$XDG_CONFIG_HOME/shhh/`), the same on every platform — see [`docs/capabilities/configuration.md#one-layout-everywhere`](docs/capabilities/configuration.md#one-layout-everywhere). Key sections: `[provider]`, `[behavior]`, `[sandbox]`, `[web]`, `[lsp]`, `[appearance]`, `[history]`, `[agents]`, `[secrets]` (names only; values come from the environment), `[mcp]` with one `[mcp.servers.<name>]` table per server (plus `mcp.json` beside the file and the project's `.mcp.json`, read by `mcp.Discover`). Agent profiles are one TOML file each in the `agents/` directory beside it (`config.AgentDirs`), loaded by `config.LoadAgents`. User-scope skills are directories under `skills/` beside it (`config.SkillDirs`); project-scope ones come from the checkout (`skill.ProjectRoots`).

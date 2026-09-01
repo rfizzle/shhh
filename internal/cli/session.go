@@ -234,7 +234,9 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 	resolved.Provider, resolved.Model = req.Provider, req.Model
 
 	info := shell.Detect()
-	projectContext := project.FindContext()
+	// The context file the session's own directory would read, which is the
+	// one the model is being told about.
+	projectContext := project.FindContextFrom(info.Cwd)
 	// One survey per session, read by both the model and the start screen.
 	// It shells out to git and walks the tree, so the two readers share the
 	// answer rather than each asking.
@@ -658,8 +660,18 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// can dispatch and the result the model will actually read.
 	executor = agent.NewRepeatDetector().WrapExecutor(executor)
 
+	// The directory the session's own paths belong to, read once: shhh never
+	// chdirs, so a session that asked again would be re-answering a settled
+	// question. An unreadable working directory leaves it empty, which is
+	// the same relative resolution the surface did before it was told.
+	cwd, cwdErr := os.Getwd()
+	if cwdErr != nil {
+		cwd = ""
+	}
+
 	model := chat.New(env.messages, env.stream).
 		WithTitle(session.title).
+		WithWorkspace(cwd).
 		WithObserver(recorder.observer()).
 		WithToolDefinitions(toolDefTokens(session.toolDefs)).
 		WithProjectContextTokens(env.projectTokens).
@@ -711,7 +723,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			WithStartScreen(buildStartInfo(env.survey, db, gate != nil)).
 			// The one thing the screen offers that writes: scaffolding the
 			// checkout's own context file, behind a card.
-			WithScaffold(buildScaffold(db))
+			WithScaffold(buildScaffold(db, cwd))
 	}
 	if red != nil {
 		model = model.WithEvidence(chat.Evidence{Reduce: red.Process, Manage: evidenceManager(red)})
@@ -728,7 +740,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if session.skills != nil {
 		model = model.WithSkills(session.skills, skillsListing)
 	}
-	if cwd, err := os.Getwd(); err == nil && !session.conversation {
+	if cwd != "" && !session.conversation {
 		root := todo.Root(cwd)
 		model = model.WithTodos(chat.Todos{
 			Root: root, Manage: todoManager(root), Detail: todoDetail,

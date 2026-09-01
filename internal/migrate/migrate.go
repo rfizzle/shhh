@@ -60,17 +60,20 @@ func (p Pending) Auto() bool { return p.Apply != nil }
 
 // detectors is every migration shhh knows about, in the order they are
 // reported. A detector answers false when this machine has nothing to do,
-// which is the ordinary case and the one that must stay cheap.
-var detectors = []func() (Pending, bool){
+// which is the ordinary case and the one that must stay cheap. Each is given
+// the checkout to look at, because a migration about a project is about the
+// one the reader is in rather than wherever the process happens to stand.
+var detectors = []func(string) (Pending, bool){
 	legacyAppleDirs,
 	legacyProjectFile,
 }
 
-// Plan is every migration with work outstanding on this machine.
-func Plan() []Pending {
+// Plan is every migration with work outstanding on this machine, for a
+// session in dir.
+func Plan(dir string) []Pending {
 	var pending []Pending
 	for _, detect := range detectors {
-		if p, ok := detect(); ok {
+		if p, ok := detect(dir); ok {
 			pending = append(pending, p)
 		}
 	}

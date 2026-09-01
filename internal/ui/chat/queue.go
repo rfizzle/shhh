@@ -140,14 +140,14 @@ func queueLabel(req *approvalRequest) (label, detail string) {
 func queueSeverity(req *approvalRequest) components.Severity {
 	switch req.kind {
 	case approvalExec:
-		return severityOf(radius.Resolve(req.command).Level)
+		return severityOf(radius.Outline(req.command).Level)
 	case approvalDiff:
 		return components.SeverityMedium
 	case approvalMemory:
 		return components.SeverityNone
 	}
 	if req.command != "" {
-		return severityOf(radius.Resolve(req.command).Level)
+		return severityOf(radius.Outline(req.command).Level)
 	}
 	for _, f := range req.fields {
 		if f.Open {

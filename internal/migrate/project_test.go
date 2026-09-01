@@ -7,18 +7,8 @@ import (
 	"testing"
 )
 
-func chdir(t *testing.T, dir string) {
-	t.Helper()
-	orig, _ := os.Getwd()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(orig) })
-}
-
 func TestLegacyProjectFile_NothingWithoutTheFile(t *testing.T) {
-	chdir(t, t.TempDir())
-	if _, ok := legacyProjectFile(); ok {
+	if _, ok := legacyProjectFile(t.TempDir()); ok {
 		t.Error("detected a migration in an empty directory")
 	}
 }
@@ -28,8 +18,7 @@ func TestLegacyProjectFile_SeesPastANearerDirectory(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(root, ".shhh"), []byte("old"), 0o644))
 	sub := filepath.Join(root, "child")
 	must(t, os.MkdirAll(filepath.Join(sub, ".shhh"), 0o755))
-	chdir(t, sub)
-	p, ok := legacyProjectFile()
+	p, ok := legacyProjectFile(sub)
 	if !ok || !strings.Contains(p.Steps[0], filepath.Join(root, ".shhh")) {
 		t.Errorf("ancestor's file not reported: %v %+v", ok, p)
 	}
@@ -53,9 +42,8 @@ func TestLegacyProjectFile_MovesTheFileInside(t *testing.T) {
 	must(t, os.WriteFile(filepath.Join(root, ".shhh"), []byte("old context"), 0o644))
 	sub := filepath.Join(root, "src")
 	must(t, os.MkdirAll(sub, 0o755))
-	chdir(t, sub)
 
-	p, ok := legacyProjectFile()
+	p, ok := legacyProjectFile(sub)
 	if !ok {
 		t.Fatal("not detected")
 	}
@@ -73,7 +61,7 @@ func TestLegacyProjectFile_MovesTheFileInside(t *testing.T) {
 	if err != nil || string(data) != "old context" {
 		t.Errorf("project.md = %q, %v", data, err)
 	}
-	if _, ok := legacyProjectFile(); ok {
+	if _, ok := legacyProjectFile(sub); ok {
 		t.Error("still detected after the move")
 	}
 }

@@ -16,7 +16,7 @@ func paths(c Command) []string {
 	return out
 }
 
-func TestResolve_WriteVerbs(t *testing.T) {
+func TestOutline_WriteVerbs(t *testing.T) {
 	cases := []struct {
 		command string
 		want    []string
@@ -37,14 +37,14 @@ func TestResolve_WriteVerbs(t *testing.T) {
 		{"rm dup.txt && touch dup.txt", []string{"dup.txt"}},
 	}
 	for _, tc := range cases {
-		got := paths(Resolve(tc.command))
+		got := paths(Outline(tc.command))
 		if strings.Join(got, ",") != strings.Join(tc.want, ",") {
-			t.Errorf("Resolve(%q) writes = %v, want %v", tc.command, got, tc.want)
+			t.Errorf("Outline(%q) writes = %v, want %v", tc.command, got, tc.want)
 		}
 	}
 }
 
-func TestResolve_Redirection(t *testing.T) {
+func TestOutline_Redirection(t *testing.T) {
 	cases := []struct {
 		command string
 		want    []string
@@ -56,31 +56,31 @@ func TestResolve_Redirection(t *testing.T) {
 		{"wc -l < main.go", nil},
 	}
 	for _, tc := range cases {
-		got := paths(Resolve(tc.command))
+		got := paths(Outline(tc.command))
 		if strings.Join(got, ",") != strings.Join(tc.want, ",") {
-			t.Errorf("Resolve(%q) writes = %v, want %v", tc.command, got, tc.want)
+			t.Errorf("Outline(%q) writes = %v, want %v", tc.command, got, tc.want)
 		}
 	}
 }
 
-func TestResolve_ReadOnlyCommandsTouchNothing(t *testing.T) {
+func TestOutline_ReadOnlyCommandsTouchNothing(t *testing.T) {
 	for _, command := range []string{"ls -la", "git status", "grep -rn foo internal", "cat go.mod", "echo hi"} {
-		c := Resolve(command)
+		c := Outline(command)
 		if len(c.Writes) != 0 || len(c.Unresolved) != 0 {
-			t.Errorf("Resolve(%q) should resolve to reads only, got writes=%v unresolved=%v",
+			t.Errorf("Outline(%q) should resolve to reads only, got writes=%v unresolved=%v",
 				command, paths(c), c.Unresolved)
 		}
 		if c.Level != Low {
-			t.Errorf("Resolve(%q) level = %v, want Low", command, c.Level)
+			t.Errorf("Outline(%q) level = %v, want Low", command, c.Level)
 		}
 		value, _ := c.Touches()
 		if value != "nothing" {
-			t.Errorf("Resolve(%q) touches = %q, want %q", command, value, "nothing")
+			t.Errorf("Outline(%q) touches = %q, want %q", command, value, "nothing")
 		}
 	}
 }
 
-func TestResolve_UnknownIsSaidRatherThanGuessed(t *testing.T) {
+func TestOutline_UnknownIsSaidRatherThanGuessed(t *testing.T) {
 	cases := []struct {
 		command string
 		want    string
@@ -92,15 +92,15 @@ func TestResolve_UnknownIsSaidRatherThanGuessed(t *testing.T) {
 		{"$EDITOR notes.md", "built by the shell"},
 	}
 	for _, tc := range cases {
-		c := Resolve(tc.command)
+		c := Outline(tc.command)
 		if len(c.Unresolved) == 0 {
-			t.Fatalf("Resolve(%q) should report something unresolved", tc.command)
+			t.Fatalf("Outline(%q) should report something unresolved", tc.command)
 		}
 		if !strings.Contains(strings.Join(c.Unresolved, " | "), tc.want) {
-			t.Errorf("Resolve(%q) unresolved = %v, want one containing %q", tc.command, c.Unresolved, tc.want)
+			t.Errorf("Outline(%q) unresolved = %v, want one containing %q", tc.command, c.Unresolved, tc.want)
 		}
 		if c.Level == Low {
-			t.Errorf("Resolve(%q) is unresolved and must not be Low", tc.command)
+			t.Errorf("Outline(%q) is unresolved and must not be Low", tc.command)
 		}
 	}
 }
@@ -108,7 +108,7 @@ func TestResolve_UnknownIsSaidRatherThanGuessed(t *testing.T) {
 // An unresolved command never reports "nothing": that is the claim the block
 // exists to avoid making.
 func TestTouches_UnresolvedIsNeverNothing(t *testing.T) {
-	value, detail := Resolve("npm run build").Touches()
+	value, detail := Outline("npm run build").Touches()
 	if value != "unknown" {
 		t.Fatalf("touches value = %q, want %q", value, "unknown")
 	}
@@ -120,7 +120,7 @@ func TestTouches_UnresolvedIsNeverNothing(t *testing.T) {
 // A resolved command still says what it could not account for, beside what it
 // could.
 func TestTouches_PartialResolutionKeepsBothHalves(t *testing.T) {
-	value, detail := Resolve("rm out.txt && npm run build").Touches()
+	value, detail := Outline("rm out.txt && npm run build").Touches()
 	if value != "out.txt" {
 		t.Fatalf("touches value = %q, want out.txt", value)
 	}
@@ -129,8 +129,8 @@ func TestTouches_PartialResolutionKeepsBothHalves(t *testing.T) {
 	}
 }
 
-func TestResolve_SeverityLeadsWithSafetyFlag(t *testing.T) {
-	c := Resolve("rm -rf ./dist")
+func TestOutline_SeverityLeadsWithSafetyFlag(t *testing.T) {
+	c := Outline("rm -rf ./dist")
 	if c.Level != High {
 		t.Fatalf("a safety-flagged command is High, got %v", c.Level)
 	}
@@ -140,7 +140,7 @@ func TestResolve_SeverityLeadsWithSafetyFlag(t *testing.T) {
 	if got := c.Level.String(); got != "HIGH" {
 		t.Fatalf("Level.String() = %q, want HIGH", got)
 	}
-	if got := Resolve("mkdir out").Level; got != Medium {
+	if got := Outline("mkdir out").Level; got != Medium {
 		t.Fatalf("a resolved write is Medium, got %v", got)
 	}
 }
@@ -157,7 +157,7 @@ func TestDescribe_FileDirectoryAndMissing(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	file := Describe(filepath.Join(dir, "a.txt"))
+	file := Describe("", filepath.Join(dir, "a.txt"))
 	if !file.Exists || file.Dir || file.Bytes != 5 {
 		t.Fatalf("file target = %+v", file)
 	}
@@ -165,7 +165,7 @@ func TestDescribe_FileDirectoryAndMissing(t *testing.T) {
 		t.Fatalf("file describe = %q", got)
 	}
 
-	tree := Describe(dir)
+	tree := Describe("", dir)
 	if !tree.Dir || tree.Files != 2 || tree.Bytes != 11 {
 		t.Fatalf("directory target = %+v", tree)
 	}
@@ -173,7 +173,7 @@ func TestDescribe_FileDirectoryAndMissing(t *testing.T) {
 		t.Fatalf("directory describe = %q", got)
 	}
 
-	missing := Describe(filepath.Join(dir, "nope"))
+	missing := Describe("", filepath.Join(dir, "nope"))
 	if missing.Exists {
 		t.Fatalf("missing target = %+v", missing)
 	}
@@ -230,5 +230,58 @@ func TestTokenize_QuotingAndExpansion(t *testing.T) {
 		if toks[i].text != w.text || toks[i].literal != w.literal {
 			t.Errorf("token %d = %+v, want %+v", i, toks[i], w)
 		}
+	}
+}
+
+// Outline resolves the same paths as Resolve and stats none of them. This is
+// the whole of its contract: a caller that wants the level or the names is
+// the queue strip and the dry-run derivation, and neither should pay for a
+// walk of whatever the command points at — which for `rm -rf /` is the
+// machine.
+func TestOutline_StatsNothing(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "notes.md"), []byte("hello"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	c := Outline("rm " + filepath.Join(dir, "notes.md"))
+	if len(c.Writes) != 1 {
+		t.Fatalf("writes = %+v, want the one path", c.Writes)
+	}
+	if w := c.Writes[0]; w.Exists || w.Bytes != 0 {
+		t.Fatalf("target = %+v, want nothing read off the filesystem", w)
+	}
+}
+
+// Resolve measures a relative path from the root it is handed, not from
+// wherever the process is standing, and reports the path as the command
+// spelled it — the card names what its reader wrote. The empty root it is
+// given by the one-shot means the process's own directory and has no test:
+// asserting it would mean standing somewhere, which is the cost this whole
+// arrangement exists to avoid.
+func TestResolve_MeasuresFromTheRootItIsGiven(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "notes.md"), []byte("hello"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	c := Resolve(dir, "rm notes.md")
+	if len(c.Writes) != 1 || c.Writes[0].Path != "notes.md" {
+		t.Fatalf("writes = %+v, want the path as written", c.Writes)
+	}
+	if w := c.Writes[0]; !w.Exists || w.Bytes != 5 {
+		t.Fatalf("target = %+v, want the file the root holds", w)
+	}
+
+	// The same command against a root that does not hold the file describes
+	// a file the command would create, not the one next door.
+	elsewhere := Resolve(t.TempDir(), "rm notes.md")
+	if len(elsewhere.Writes) != 1 || elsewhere.Writes[0].Exists {
+		t.Fatalf("writes = %+v, want an unmeasured target", elsewhere.Writes)
+	}
+
+	// An absolute path is already its own answer and the root does not move it.
+	abs := Resolve(t.TempDir(), "rm "+filepath.Join(dir, "notes.md"))
+	if len(abs.Writes) != 1 || !abs.Writes[0].Exists {
+		t.Fatalf("writes = %+v, want the absolute path measured where it is", abs.Writes)
 	}
 }

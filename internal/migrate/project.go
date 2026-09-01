@@ -10,15 +10,14 @@ import (
 
 // legacyProjectFile detects a checkout whose `.shhh` is still the single
 // context file rather than the directory the backlog, skills and plans live
-// in, and plans moving it inside as the context file. It looks from the
-// working directory upward, the way the context reader does, so the file it
-// finds is the one a session here would have read.
-func legacyProjectFile() (Pending, bool) {
-	cwd, err := os.Getwd()
-	if err != nil {
+// in, and plans moving it inside as the context file. It looks from dir
+// upward, the way the context reader does, so the file it finds is the one a
+// session there would have read.
+func legacyProjectFile(dir string) (Pending, bool) {
+	if dir == "" {
 		return Pending{}, false
 	}
-	old, ok := findLegacyProjectFile(cwd)
+	old, ok := findLegacyProjectFile(dir)
 	if !ok {
 		return Pending{}, false
 	}

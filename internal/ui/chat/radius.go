@@ -66,7 +66,7 @@ func (m Model) resolveRadius(req *approvalRequest) blastRadius {
 // assistant distinguishes the agent's commands, which run contained, from
 // /run, which is the user's own and never is.
 func (m Model) commandRadius(command string, assistant bool) blastRadius {
-	res := radius.Resolve(command)
+	res := radius.Resolve(m.workspace, command)
 	b := blastRadius{severity: severityOf(res.Level), risks: res.Risks}
 
 	value, detail := res.Touches()

@@ -293,7 +293,7 @@ func (m Model) runPaste(parts []string) (tea.Model, tea.Cmd) {
 	if rest, ok := cutFold(arg, "show"); ok {
 		return m.showAttachment(rest)
 	}
-	return m, attachFileCmd(attachment.Expand(arg))
+	return m, attachFileCmd(m.inWorkspace(attachment.Expand(arg)))
 }
 
 // cutFold splits a leading subcommand word off an argument, matched the way

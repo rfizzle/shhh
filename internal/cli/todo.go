@@ -6,6 +6,7 @@ package cli
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -15,13 +16,38 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// loadTodos reads the backlog of the checkout the working directory is in.
-func loadTodos() *todo.Store {
+// loadTodos reads the backlog of the checkout dir is in.
+func loadTodos(dir string) *todo.Store {
+	return todo.Load(todo.Root(dir))
+}
+
+// todoCwd is the directory `shhh todo` reads the backlog of. An unreadable
+// working directory falls back to ".", which is the same directory under
+// another name.
+func todoCwd() string {
 	cwd, err := os.Getwd()
 	if err != nil {
-		cwd = "."
+		return "."
 	}
-	return todo.Load(todo.Root(cwd))
+	return cwd
+}
+
+// todoShow prints one item, or says which slug it could not find. It is
+// separate from the command so the answer can be asked of a stated checkout
+// rather than of wherever the process is standing.
+func todoShow(w io.Writer, dir, slug string) error {
+	s := loadTodos(dir)
+	it, ok := s.Find(slug)
+	if !ok {
+		return fmt.Errorf("no backlog item %q; `shhh todo` lists them", slug)
+	}
+	fmt.Fprintln(w, todoDetail(s, it))
+	return nil
+}
+
+// todoList prints the backlog of the checkout dir is in.
+func todoList(w io.Writer, dir string) error {
+	return report.Fprint(w, todoReport(loadTodos(dir)))
 }
 
 // todoListing is the `shhh todo` output: one row per active item in backlog
@@ -149,7 +175,7 @@ func newTodoCmd() *cobra.Command {
 		Long:  "List the backlog items under the checkout's .shhh/todo directory in the order a session would work them, with what each is waiting on and why any file failed to load.",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return report.Fprint(cmd.OutOrStdout(), todoReport(loadTodos()))
+			return todoList(cmd.OutOrStdout(), todoCwd())
 		},
 	}
 	cmd.AddCommand(&cobra.Command{
@@ -157,13 +183,7 @@ func newTodoCmd() *cobra.Command {
 		Short: "Show one backlog item, header and body",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			s := loadTodos()
-			it, ok := s.Find(args[0])
-			if !ok {
-				return fmt.Errorf("no backlog item %q; `shhh todo` lists them", args[0])
-			}
-			fmt.Fprintln(cmd.OutOrStdout(), todoDetail(s, it))
-			return nil
+			return todoShow(cmd.OutOrStdout(), todoCwd(), args[0])
 		},
 	})
 	return cmd

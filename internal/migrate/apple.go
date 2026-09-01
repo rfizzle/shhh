@@ -50,8 +50,9 @@ var configNames = map[string]bool{
 
 // legacyAppleDirs detects a machine still holding the retired `~/Library`
 // directories, and plans moving each thing in them to where the new layout
-// looks for it.
-func legacyAppleDirs() (Pending, bool) {
+// looks for it. The checkout is not part of the question: these directories
+// are the user's, and one shhh install has one of them.
+func legacyAppleDirs(string) (Pending, bool) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return Pending{}, false

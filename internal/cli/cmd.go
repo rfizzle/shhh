@@ -134,8 +134,8 @@ func newCmdCmd() *cobra.Command {
 			ledger := meter.New(prices)
 			p = meter.WithFallbackModel(ledger.For(p, meter.SourceOneShot), resolved.Model)
 
-			promptExtra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra, project.FindContext())
 			info := shell.Detect()
+			promptExtra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra, project.FindContextFrom(info.Cwd))
 
 			db, _ := openStore()
 			if db != nil {

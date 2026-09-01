@@ -88,24 +88,38 @@ type Command struct {
 	// Sudo is true when any segment runs under a privilege-escalation prefix.
 	Sudo  bool
 	Level Level
-	// describe is whether a recorded write is stat-ed and walked. WritePaths
+	// describe is whether a recorded write is stat-ed and walked. Outline
 	// leaves it false: it wants the names, not the sizes.
 	describe bool
+	// root is the directory a relative path in the command is measured from.
+	// Empty means the process's own working directory.
+	root string
 }
 
 // Resolve reads a command and reports what it would touch. It never runs
 // anything and never expands anything: every answer comes from the text and
 // from stat-ing paths the text names literally.
-func Resolve(command string) Command {
-	return resolve(command, true)
+//
+// root is where a relative path in the command is stat-ed from; empty means
+// the process's working directory. It decides only what is measured, never
+// what is reported — a target keeps the spelling the command used, because
+// the card names the path its reader wrote.
+func Resolve(root, command string) Command {
+	return resolve(root, command, true)
 }
 
-// WritePaths is Resolve for a caller that needs only the paths — the working
-// scope check, which asks which directories a command reaches and
-// nothing about how big they are. It skips the describe walk, so it can be
-// asked of every queued decision rather than only the one on screen.
+// Outline is Resolve without the filesystem: the same paths, risks and level,
+// read from the text alone. Nothing is stat-ed, so it needs no root, and a
+// caller that wants only the level or the names does not pay for a walk of
+// whatever the command points at.
+func Outline(command string) Command {
+	return resolve("", command, false)
+}
+
+// WritePaths is Outline for the working-scope check, which asks which
+// directories a command reaches and nothing about how big they are.
 func WritePaths(command string) []string {
-	c := resolve(command, false)
+	c := Outline(command)
 	paths := make([]string, 0, len(c.Writes))
 	for _, w := range c.Writes {
 		paths = append(paths, w.Path)
@@ -113,8 +127,8 @@ func WritePaths(command string) []string {
 	return paths
 }
 
-func resolve(command string, describe bool) Command {
-	c := Command{describe: describe}
+func resolve(root, command string, describe bool) Command {
+	c := Command{describe: describe, root: root}
 	for _, w := range safety.Check(command) {
 		c.Risks = append(c.Risks, w.Risk)
 	}
@@ -535,16 +549,22 @@ func (c *Command) add(p string) {
 		c.Writes = append(c.Writes, Target{Path: p})
 		return
 	}
-	c.Writes = append(c.Writes, Describe(p))
+	c.Writes = append(c.Writes, Describe(c.root, p))
 }
 
 // Describe stats a path, walking a directory under a bound so a command
-// pointed at a huge tree still assembles its card promptly. It is exported
-// for the callers that already know the path an action touches — a file
-// edit, whose target was never in doubt.
-func Describe(p string) Target {
+// pointed at a huge tree still assembles its card promptly. root is where a
+// relative p is measured from, on Resolve's terms; the target keeps p as it
+// was written. It is exported for a caller that already knows the path an
+// action touches — a file edit, whose target was never in doubt — and has
+// none in this tree today.
+func Describe(root, p string) Target {
 	t := Target{Path: p, Complete: true}
-	info, err := os.Lstat(p)
+	full := p
+	if root != "" && !filepath.IsAbs(p) {
+		full = filepath.Join(root, p)
+	}
+	info, err := os.Lstat(full)
 	if err != nil {
 		return t
 	}
@@ -555,7 +575,7 @@ func Describe(p string) Target {
 	}
 	t.Dir = true
 	visited := 0
-	_ = filepath.WalkDir(p, func(_ string, d fs.DirEntry, err error) error {
+	_ = filepath.WalkDir(full, func(_ string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil //nolint:nilerr // an unreadable subtree is not a reason to report nothing
 		}

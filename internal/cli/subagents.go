@@ -173,7 +173,10 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		role, croot := spec.Role, spec.Root
 		info := shell.Detect()
 		info.Cwd = croot
-		extra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra, project.FindContext())
+		// The parent's checkout, not the child's worktree: a writer's
+		// worktree is a copy of this one, and the context a child is given
+		// is the context the session it serves was given.
+		extra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra, project.FindContextFrom(root))
 
 		var sysPrompt string
 		var defs []provider.Tool

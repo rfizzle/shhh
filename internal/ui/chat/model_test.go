@@ -1302,7 +1302,11 @@ func TestRun_Declined(t *testing.T) {
 }
 
 func TestRun_ConfirmShowsSafetyWarning(t *testing.T) {
-	m := runCapableModel("```bash\nrm -rf /\n```")
+	// A flagged command pointed inside the test's own scratch directory. The
+	// card measures what a command writes, so a fixture naming the machine's
+	// root would walk the real filesystem — twenty thousand entries, and a
+	// different set of them every run.
+	m := runCapableModel("```bash\nrm -rf ./build\n```").WithWorkspace(t.TempDir())
 	m = sendText(t, m, "/run")
 	if m.state != stateConfirmRun {
 		t.Fatalf("expected confirm state, got %d", m.state)
@@ -1416,16 +1420,17 @@ func TestExecTool_Declined(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "wipe it"},
 	}
-	m := New(msgs, mockStream).WithRunner(func(ctx context.Context, cmd string) (string, int) {
-		t.Fatal("runner must not be called on decline")
-		return "", 0
-	})
+	m := New(msgs, mockStream).WithWorkspace(t.TempDir()).
+		WithRunner(func(ctx context.Context, cmd string) (string, int) {
+			t.Fatal("runner must not be called on decline")
+			return "", 0
+		})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
 	m = updated.(Model)
 	m.state = stateStreaming
 
 	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
-		{ID: "call_1", Name: "execute_command", Arguments: `{"command":"rm -rf /"}`},
+		{ID: "call_1", Name: "execute_command", Arguments: `{"command":"rm -rf ./build"}`},
 	}})
 	m = updated.(Model)
 

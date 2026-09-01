@@ -17,13 +17,14 @@ import (
 
 // radiusModel is a session that runs the assistant's commands and shows their
 // approval cards, wide enough that the block's details are not dropped.
-func radiusModel(t *testing.T, c Containment) Model {
+func radiusModel(t *testing.T, dir string, c Containment) Model {
 	t.Helper()
 	msgs := []provider.Message{
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "do it"},
 	}
 	m := New(msgs, mockStream).
+		WithWorkspace(dir).
 		WithRunner(func(ctx context.Context, cmd string) (string, int) { return "ran", 0 }).
 		WithContainment(c)
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 40})
@@ -51,35 +52,22 @@ func confirmFor(t *testing.T, m Model, command string) string {
 	return ansi.Strip(handover(t, m).View().Content)
 }
 
-// chdir moves into a scratch directory for the test, so path resolution has
-// something real to stat.
-func chdir(t *testing.T) string {
-	t.Helper()
-	was, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	dir := t.TempDir()
-	if err := os.Chdir(dir); err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() { _ = os.Chdir(was) })
-	return dir
-}
-
 func TestBlastRadius_CommandCardStatesTouchesUndoAndNetwork(t *testing.T) {
-	dir := chdir(t)
+	dir := t.TempDir()
 	if err := os.WriteFile(filepath.Join(dir, "notes.md"), []byte("hello\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	m := radiusModel(t, Containment{
+	m := radiusModel(t, dir, Containment{
 		Status: "contained: bwrap (workspace profile)", Mechanism: "bwrap",
 		Profile: "workspace", Network: true,
 	})
 	view := confirmFor(t, m, "rm notes.md")
 
 	for _, want := range []string{
-		"touches   notes.md",
+		// The size is the half that proves the card measured the file
+		// rather than merely repeating the path back: a workspace the
+		// session was never told would report a file it is about to create.
+		"touches   notes.md — 6 B",
 		"undo      ",
 		"network   open",
 		"⛨ bwrap · workspace",
@@ -93,8 +81,8 @@ func TestBlastRadius_CommandCardStatesTouchesUndoAndNetwork(t *testing.T) {
 // A path shhh cannot resolve statically is reported as unknown, never guessed
 // and never reported as nothing.
 func TestBlastRadius_UnresolvedPathIsSaidNotGuessed(t *testing.T) {
-	chdir(t)
-	m := radiusModel(t, Containment{Status: "contained: bwrap (workspace profile)",
+	dir := t.TempDir()
+	m := radiusModel(t, dir, Containment{Status: "contained: bwrap (workspace profile)",
 		Mechanism: "bwrap", Profile: "workspace", Network: true})
 	view := confirmFor(t, m, "npm run build")
 	if !strings.Contains(view, "touches   unknown") {
@@ -107,8 +95,8 @@ func TestBlastRadius_UnresolvedPathIsSaidNotGuessed(t *testing.T) {
 
 // A read-only command resolves, and says so.
 func TestBlastRadius_ReadOnlyCommandTouchesNothing(t *testing.T) {
-	chdir(t)
-	m := radiusModel(t, Containment{Status: "contained: bwrap (workspace-netless profile)",
+	dir := t.TempDir()
+	m := radiusModel(t, dir, Containment{Status: "contained: bwrap (workspace-netless profile)",
 		Mechanism: "bwrap", Profile: "workspace-netless"})
 	// sed without -i is a filter: it resolves, and it writes nothing. (A
 	// command on the inspection allowlist would auto-run and never reach a
@@ -124,8 +112,8 @@ func TestBlastRadius_ReadOnlyCommandTouchesNothing(t *testing.T) {
 // A flagged command leads with the severity word, withholds [a], and says
 // why rather than omitting the key silently.
 func TestBlastRadius_FlaggedCommandSaysWhyAlwaysIsMissing(t *testing.T) {
-	chdir(t)
-	m := radiusModel(t, Containment{Status: "contained: bwrap (workspace profile)",
+	dir := t.TempDir()
+	m := radiusModel(t, dir, Containment{Status: "contained: bwrap (workspace profile)",
 		Mechanism: "bwrap", Profile: "workspace", Network: true})
 	view := confirmFor(t, m, "rm -rf ./build")
 	if !strings.Contains(view, "⚠ HIGH") {
@@ -147,8 +135,8 @@ func TestBlastRadius_FlaggedCommandSaysWhyAlwaysIsMissing(t *testing.T) {
 // With no containment mechanism the card promotes ⚠ UNCONTAINED, explains the
 // missing mechanism and offers the doctor.
 func TestBlastRadius_UncontainedPromotesAndExplains(t *testing.T) {
-	chdir(t)
-	m := radiusModel(t, Containment{
+	dir := t.TempDir()
+	m := radiusModel(t, dir, Containment{
 		Status:  "unconfined — bubblewrap (bwrap) not found on PATH",
 		Detail:  "bubblewrap (bwrap) not found on PATH",
 		Network: true,
@@ -169,8 +157,8 @@ func TestBlastRadius_UncontainedPromotesAndExplains(t *testing.T) {
 // Reversibility for a command is what git could do about the paths it wrote,
 // and it is honest about a directory that was never a repository.
 func TestBlastRadius_UndoTracksGit(t *testing.T) {
-	dir := chdir(t)
-	m := radiusModel(t, Containment{Status: "contained: bwrap (workspace profile)",
+	dir := t.TempDir()
+	m := radiusModel(t, dir, Containment{Status: "contained: bwrap (workspace profile)",
 		Mechanism: "bwrap", Profile: "workspace", Network: true})
 
 	if err := os.WriteFile(filepath.Join(dir, "kept.txt"), []byte("x\n"), 0o644); err != nil {
@@ -202,7 +190,7 @@ func TestBlastRadius_UndoTracksGit(t *testing.T) {
 // An edit's radius is the diff itself; the one fact it adds rides the stats
 // line so the diff loses no rows to it.
 func TestBlastRadius_EditStatesReversibilityOnTheStatsLine(t *testing.T) {
-	dir := chdir(t)
+	dir := t.TempDir()
 	path := filepath.Join(dir, "main.go")
 	if err := os.WriteFile(path, []byte("alpha\nbeta\n"), 0o644); err != nil {
 		t.Fatal(err)
@@ -211,14 +199,20 @@ func TestBlastRadius_EditStatesReversibilityOnTheStatsLine(t *testing.T) {
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "edit it"},
 	}
-	m := New(msgs, mockStream)
+	m := New(msgs, mockStream).WithWorkspace(dir)
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 130, Height: 40})
 	m = updated.(Model)
 	m.state = stateStreaming
 
+	// The mutating tools read the path the call names, so the call names the
+	// file where it actually is rather than relying on where the process
+	// happens to be standing.
+	args, err := json.Marshal(map[string]string{"path": path, "old_text": "beta", "new_text": "delta"})
+	if err != nil {
+		t.Fatal(err)
+	}
 	updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
-		{ID: "call_e", Name: "edit_file",
-			Arguments: `{"path":"main.go","old_text":"beta","new_text":"delta"}`},
+		{ID: "call_e", Name: "edit_file", Arguments: string(args)},
 	}})
 	m = updated.(Model)
 	view := ansi.Strip(m.View().Content)
@@ -232,12 +226,13 @@ func TestBlastRadius_EditStatesReversibilityOnTheStatsLine(t *testing.T) {
 
 // A gated tool that described its own radius carries that block.
 func TestBlastRadius_GenericToolCarriesItsOwnFields(t *testing.T) {
-	chdir(t)
+	dir := t.TempDir()
 	msgs := []provider.Message{
 		{Role: provider.RoleSystem, Content: "sys"},
 		{Role: provider.RoleUser, Content: "look it up"},
 	}
 	m := New(msgs, mockStream).
+		WithWorkspace(dir).
 		WithToolExecutor(func(name string, args json.RawMessage) (string, error) { return "ok", nil }).
 		WithGatedTools(map[string]GatedPreviewFunc{
 			"web_fetch": func(json.RawMessage) (GatedPreview, error) {

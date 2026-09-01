@@ -186,7 +186,7 @@ func (m Model) savePlanFromCard() (tea.Model, tea.Cmd) {
 	}
 	if strings.TrimSpace(text) == "" {
 		m.appendEntry(entry{kind: entrySystem, text: "No plan to save yet."})
-	} else if path, err := savePlan(text, ""); err != nil {
+	} else if path, err := savePlan(m.workspace, text, ""); err != nil {
 		m.appendEntry(entry{kind: entrySystem, text: "Error saving plan: " + err.Error()})
 	} else {
 		m.appendEntry(entry{kind: entrySystem, text: "Plan saved to " + path})
@@ -382,20 +382,23 @@ func (m Model) renderPlanApprove() string {
 	return strings.Join(lines[:h], "\n")
 }
 
-// savePlan writes the plan text to .shhh/plans/<name>.md (an empty name gets
-// a timestamp) and returns the written path. Saving is optional — the
-// approval flow never requires it.
-func savePlan(text, name string) (string, error) {
+// savePlan writes the plan text to .shhh/plans/<name>.md under root (an empty
+// name gets a timestamp) and returns the path relative to root. Saving is
+// optional — the approval flow never requires it. The path is returned
+// relative because it is the one the transcript prints, and a reader who is
+// standing in root writes it that way themselves; handing back the absolute
+// form would put the whole checkout in front of four useful segments.
+func savePlan(root, text, name string) (string, error) {
 	name = sanitizePlanName(strings.TrimSuffix(name, ".md"))
 	dir := filepath.Join(".shhh", "plans")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, dir), 0o755); err != nil {
 		return "", err
 	}
 	path := filepath.Join(dir, name+".md")
 	if !strings.HasSuffix(text, "\n") {
 		text += "\n"
 	}
-	if err := os.WriteFile(path, []byte(text), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(root, path), []byte(text), 0o644); err != nil {
 		return "", err
 	}
 	return path, nil

@@ -394,7 +394,9 @@ func (m GenerateModel) preflightDone(msg preflightDoneMsg) (GenerateModel, tea.C
 // land on the same screen.
 func (m GenerateModel) arm(output string) (GenerateModel, tea.Cmd) {
 	m.gen++
-	m.reach = radius.Resolve(output)
+	// The one-shot measures from where it stands: the command it is about to
+	// hand back runs in the directory the user typed it in.
+	m.reach = radius.Resolve("", output)
 	m.danger = m.reach.Level == radius.High
 	m.dryCommand, m.dryAvailable = dryrun.Derive(output)
 	m.affected = false
@@ -614,7 +616,7 @@ func (m GenerateModel) stepBack() (GenerateModel, tea.Cmd) {
 	}
 	m.choices, m.chosen = last.choices, last.chosen
 	m.stream = m.stream.WithOutput(last.command)
-	m.reach = radius.Resolve(last.command)
+	m.reach = radius.Resolve("", last.command)
 	m.danger = m.reach.Level == radius.High
 	m.dryCommand, m.dryAvailable = dryrun.Derive(last.command)
 	m.affected = false

@@ -68,8 +68,9 @@ func (m Model) insertMention() (tea.Model, tea.Cmd) {
 	m.syncViewport()
 	// The peek reads first bytes only, the way a dragged-in path's does;
 	// the read that attaches the image happens in a command.
-	if kind, err := attachment.PeekKind(item.name); err == nil && kind == provider.AttachmentImage {
-		return m, attachFileCmd(item.name)
+	path := m.inWorkspace(item.name)
+	if kind, err := attachment.PeekKind(path); err == nil && kind == provider.AttachmentImage {
+		return m, attachFileCmd(path)
 	}
 	return m, nil
 }
