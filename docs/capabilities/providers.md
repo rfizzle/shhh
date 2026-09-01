@@ -126,6 +126,39 @@ the floor the day it learns the model. Wrong-by-family costs one refused
 request; wrong-by-silence costs a model asked to think less than it can, on
 every turn, until someone notices.
 
+## The prompt prefix is paid for once
+
+A coding turn sends the same opening over and over. The system prompt, the
+project's context file, the memory block, the skills catalog and every tool
+schema are fixed for the life of the session, and the conversation under them
+only ever grows at the end — a round appends the assistant's request and the
+results that answer it, and touches nothing before that. By the fiftieth round
+the unchanged head of the request is most of what is being sent, and it has
+been read and billed fifty times.
+
+Where a dialect can be told which part is stable, it is told. The marker goes
+in three places: after the fixed head, so the tools and the system prompt are
+one reusable block; and at the end of the last two turns, so each round reads
+back what the round before it left behind and extends it. The two rolling
+marks rather than one are for the round that appends more blocks than the
+provider will search back through on its own — a round that ran eight tool
+calls in parallel — where a single mark at the very end can miss the boundary
+the round before it wrote.
+
+This is a statement about billing, not about meaning. Nothing is added to the
+request, nothing is removed from it, and a provider that ignores the marker
+answers exactly what it would have answered. That is what makes it safe to
+send unconditionally to anything speaking the dialect, including a gateway
+that has never heard of it.
+
+Most dialects need no marker at all, and get none: they cache on their own by
+matching the prefix they were sent last time. A dialect is annotated here only
+when annotating it is the only way to ask.
+
+A saving that is real has to be visible, so what a request served from the
+cache actually cost is what the session's ledger charges for it, at the
+provider's own reduced rate rather than at the price of reading it fresh.
+
 ## Failures are classified before they are surfaced
 
 Every provider error is mapped into a closed set — unauthorised, rate limited,

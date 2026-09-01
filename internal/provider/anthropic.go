@@ -120,6 +120,11 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 		params.Tools = toAnthropicTools(opts.Tools)
 	}
 
+	// Last, so the markers land on the request as it will actually be sent:
+	// the head is only stable once the tools and the system prompt are both
+	// on it (cache.go).
+	markAnthropicCache(&params)
+
 	ch := make(chan StreamEvent)
 	go func() {
 		defer close(ch)
