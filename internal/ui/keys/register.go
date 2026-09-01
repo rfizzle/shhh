@@ -178,7 +178,7 @@ func Surfaces() []Surface {
 			Name:     "a selector being typed into",
 			Section:  "docs/interface/surfaces.md#selectors",
 			Position: Takeover,
-			Reached:  Bracket(Select.Filter) + " on the list",
+			Reached:  "a card that opens over a catalog, or " + Bracket(Select.Filter) + " on one that does not",
 			Bindings: []Binding{
 				Select.Move, Select.Take, Select.ClearQ, Select.Cancel,
 			},

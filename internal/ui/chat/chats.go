@@ -99,6 +99,9 @@ func (m Model) openChatPick() (tea.Model, tea.Cmd, bool) {
 		return m, nil, false
 	}
 	opts, focus := m.chatPickOptions(entries)
+	// The one card in the family that opens as a list rather than as a
+	// search: its rows carry [x] and [r], and a session's saved chats are
+	// short enough to walk. [/] turns it into a search when the list is long.
 	model, cmd := m.openPicker("Load a saved chat", opts, focus, func(m *Model, idx int) string {
 		// The rows are rebuilt after every delete and rename, so the apply
 		// reads the list as it stands rather than the one it was opened

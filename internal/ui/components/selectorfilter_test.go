@@ -128,10 +128,54 @@ func TestSelectFilter_ClearAndLeave(t *testing.T) {
 		t.Fatalf("ctrl+u should clear the query and report it, got %q", s.Query)
 	}
 
+	if !s.Filtering {
+		t.Fatal("clearing a query that had something in it leaves the row open")
+	}
+
 	s = filtered("mini")
 	done, result := s.Update(key("esc"))
 	if !done || !result.(SelectResult).Canceled {
 		t.Fatalf("esc should leave the picker changing nothing, got %v %v", done, result)
+	}
+}
+
+// A card that opens as a search has handed its letters to the query line, so
+// ctrl+u has a second reading on an empty query: it closes the row and gives
+// the card its own keys back, without leaving it. The key row names which of
+// the two readings the key has.
+func TestSelectFilter_ClearingAnEmptyQueryClosesTheRow(t *testing.T) {
+	s := filtered("")
+	s.AltKey, s.AltLabel = "d", "and make it default"
+
+	if view := ansi.Strip(s.View(70)); !strings.Contains(view, "ctrl+u row keys") {
+		t.Fatalf("an empty query offers the way back to the row's keys:\n%s", view)
+	}
+
+	s.Update(key("ctrl+u"))
+	if s.Filtering {
+		t.Fatal("ctrl+u on an empty query should close the row")
+	}
+	if s.QueryChanged() {
+		t.Fatal("closing the row is not a query change: there is nothing to re-filter")
+	}
+	if view := ansi.Strip(s.View(70)); !strings.Contains(view, "d and make it default") {
+		t.Fatalf("the card's own keys are back on the row:\n%s", view)
+	}
+
+	done, result := s.Update(key("d"))
+	if !done || !result.(SelectResult).Alt {
+		t.Fatalf("the letter should be a key again, got %v %v", done, result)
+	}
+}
+
+// A card with nothing behind its query row — no numbers, no keys of its own —
+// offers no way to close it, because closing it would hand back nothing.
+func TestSelectFilter_NoRowKeysNoWayBackOffered(t *testing.T) {
+	s := filtered("")
+	s.Unnumbered = true
+
+	if view := ansi.Strip(s.View(70)); strings.Contains(view, "ctrl+u") {
+		t.Fatalf("a card with no row keys should not offer the key that hands them back:\n%s", view)
 	}
 }
 

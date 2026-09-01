@@ -441,6 +441,25 @@ rather than walked one row at a time.
 An option that cannot be taken here says so on the row, in a glyph and a
 phrase, rather than merely being dimmed.
 
+A card is either a list of answers or a search, and it says which by how it
+arrives. A fixed set of answers — the permission modes, the providers, a
+handful of code blocks — comes up as a list: its rows are numbered, a digit
+takes one outright, and a bare letter can be a key. A card that opens over a
+catalog — the models, the branches, the backlog — comes up as a search, with
+the query row already open, because past a dozen entries walking is the slow
+way and naming what you are after is the fastest way in. Spending that first
+keystroke on opening the row it would have gone into is the card asking to be
+asked. The saved chats are the one catalog that still opens as a list: its
+rows carry the keys that delete and rename, and those keys are what the reader
+came for.
+
+While the query row is open every bare letter is text, so for as long as a
+card is being typed into it has no letter keys of its own. Clearing a filter
+that is already empty closes the row and hands them back — the model card's
+[d], the saved chats' [x] and [r] — without leaving the card, and the key row
+names that reading rather than offering to clear a query that is already
+clear. Esc still leaves outright: a filter you have to escape twice is a mode.
+
 ### The inline confirm
 
 A one-line question for a decision that does not need a card. Anything that

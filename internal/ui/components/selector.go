@@ -94,7 +94,8 @@ type Select struct {
 	// Empty AltKey leaves the card with enter alone.
 	//
 	// Like j/k it is a bare letter, so it acts only while the query line is
-	// closed: a card being typed into keeps every letter as text.
+	// closed: a card being typed into keeps every letter as text. On a card
+	// that opens as a search that is ctrl+u away, and the key row says so.
 	AltKey   string
 	AltLabel string
 	// EnterLabel is what enter buys, for a card where "select" is not the
@@ -129,8 +130,11 @@ type Select struct {
 	Filterable bool
 	// Filtering is whether the query line is open. It is the card's own
 	// state when / opened it, and a caller's when the surface is a query
-	// line with a list under it from the start — which is what the palette
-	// is.
+	// line with a list under it from the start — the palette, and every card
+	// that opens over a catalog rather than over a fixed set of answers
+	// (docs/interface/surfaces.md#selectors). ctrl+u on an empty query closes
+	// it again, which is how a card whose rows carry their own letters gets
+	// them back.
 	Filtering bool
 	// Query is the text that produced Options. The component never filters:
 	// the caller passes the matches and the query that made them, so the
@@ -207,6 +211,14 @@ func (s *Select) Update(msg tea.KeyPressMsg) (done bool, result any) {
 	//, which the filter row is what generalizes. It is also what
 	// stops a model name with a 5 in it from switching the model mid-word.
 	if s.Filtering {
+		// Clearing a filter that is already empty closes the row, which is
+		// how the card's own letters are got back without leaving it — the
+		// history screen's rule, and the only way back for a card that opened
+		// with the row already open.
+		if keys.Is(pressed, keys.Select.ClearQ) && s.Query == "" {
+			s.Filtering = false
+			return false, nil
+		}
 		s.editQuery(msg)
 		return false, nil
 	}
@@ -310,6 +322,14 @@ func (s *Select) enterLabel() string {
 	return "select"
 }
 
+// hasRowKeys reports whether closing the query line would hand anything back:
+// the numbers, the card's second reading of a choice, or a host action. A card
+// with none of them has nothing behind its filter row and never offers a way
+// out of it.
+func (s *Select) hasRowKeys() bool {
+	return !s.Unnumbered || s.AltKey != "" || len(s.Actions) > 0
+}
+
 func (s *Select) hintSegments(width int) []string {
 	if s.Hint != "" {
 		return []string{s.Hint}
@@ -318,8 +338,21 @@ func (s *Select) hintSegments(width int) []string {
 		if s.selectable() == 0 {
 			return []string{offer(keys.Select.ClearQ), offer(keys.Select.Cancel)}
 		}
+		// ctrl+u is one key with two readings, and the row names the one it
+		// has: with something typed it clears; with nothing typed it closes
+		// the row, which is what a card whose rows carry their own keys —
+		// /model's [d], the saved chats' [x] and [r] — needs said, because
+		// those keys are text until it does.
+		back := words(keys.Select.ClearQ, "clear")
+		if s.Query == "" {
+			if !s.hasRowKeys() {
+				return []string{offer(keys.Select.Move), offer(keys.Select.Take),
+					offer(keys.Select.Cancel)}
+			}
+			back = words(keys.Select.ClearQ, "row keys")
+		}
 		return []string{offer(keys.Select.Move), offer(keys.Select.Take),
-			words(keys.Select.ClearQ, "clear"), offer(keys.Select.Cancel)}
+			back, offer(keys.Select.Cancel)}
 	}
 	move := offer(keys.Select.MoveJK)
 	jump, filter := fmt.Sprintf("1–%d jump", s.selectable()), ""

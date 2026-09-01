@@ -508,14 +508,13 @@ func TestGolden_BranchPicker(t *testing.T) {
 		card := *opened.picker
 		filtered := opened
 		filtered.picker = &card
-		filtered = press(t, filtered, "/")
 		for _, r := range "turn2" {
 			filtered = press(t, filtered, string(r))
 		}
 
 		return []golden.Panel{
 			{Label: "the family, focused on the branch the session is on", View: strings.Join(opened.pickerLines(), "\n")},
-			{Label: "[/] narrowed to the tail branch", View: strings.Join(filtered.pickerLines(), "\n")},
+			{Label: "typed straight into the open row, narrowed to the tail branch", View: strings.Join(filtered.pickerLines(), "\n")},
 		}
 	})
 }
@@ -900,9 +899,10 @@ func runes(t *testing.T, m Model, text string) Model {
 	return m
 }
 
-// / opens the query line, typing narrows the list, and the choice still
-// reaches the apply that was written against the whole catalog — a filtered
-// index is mapped back before it is spent.
+// The card opens over a catalog, so it opens as a search: the first keystroke
+// narrows the list, and the choice still reaches the apply that was written
+// against the whole catalog — a filtered index is mapped back before it is
+// spent.
 func TestModelPick_FilterNarrowsAndStillSwitchesTheRightModel(t *testing.T) {
 	var switched string
 	m := readyModel(t).
@@ -916,11 +916,10 @@ func TestModelPick_FilterNarrowsAndStillSwitchesTheRightModel(t *testing.T) {
 	if !m.picker.Filterable {
 		t.Fatal("a picker over a catalog should offer the filter row")
 	}
-
-	m = runes(t, m, "/")
 	if !m.picker.Filtering {
-		t.Fatal("/ should open the query line")
+		t.Fatal("a picker over a catalog should arrive with the query row open")
 	}
+
 	m = runes(t, m, "sonnet")
 	if got := len(m.picker.Options); got != 1 {
 		t.Fatalf("one model matches \"sonnet\", the card is showing %d", got)
@@ -948,7 +947,7 @@ func TestModelPick_DigitsAreTextWhileTheQueryLineIsOpen(t *testing.T) {
 	m.input.SetValue("/model")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
-	m = runes(t, m, "/gpt-5.1")
+	m = runes(t, m, "gpt-5.1")
 
 	if switched != "" {
 		t.Fatalf("nothing should have been chosen while typing, got %q", switched)
@@ -973,16 +972,26 @@ func TestModelPick_ClearAndEscape(t *testing.T) {
 	m.input.SetValue("/model")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
-	m = runes(t, m, "/gemini")
+	m = runes(t, m, "gemini")
 	if len(m.picker.Options) != 1 {
 		t.Fatalf("the filter should have narrowed the list, got %d", len(m.picker.Options))
 	}
 
-	updated, _ = m.Update(tea.KeyPressMsg{Code: 'u', Mod: tea.ModCtrl})
+	updated, _ = m.Update(ctrlU)
 	m = updated.(Model)
 	if len(m.picker.Options) != 3 || m.picker.Query != "" {
 		t.Fatalf("ctrl+u should put the whole catalog back, got %d options and query %q",
 			len(m.picker.Options), m.picker.Query)
+	}
+	if !m.picker.Filtering {
+		t.Fatal("clearing a query that had something in it leaves the row open")
+	}
+	// Again on the empty query closes the row, which is how the card's own
+	// letters are got back without leaving it.
+	updated, _ = m.Update(ctrlU)
+	m = updated.(Model)
+	if m.picker.Filtering {
+		t.Fatal("ctrl+u on an empty query should close the row")
 	}
 
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
@@ -1004,7 +1013,7 @@ func TestModelPick_NoMatchNamesTheClosestModel(t *testing.T) {
 	m.input.SetValue("/model")
 	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
-	m = runes(t, m, "/sonnet-5")
+	m = runes(t, m, "sonnet-5")
 
 	if len(m.picker.Options) != 0 {
 		t.Fatalf("nothing matches \"sonnet-5\", got %d options", len(m.picker.Options))
@@ -1045,7 +1054,8 @@ func TestClosestOption(t *testing.T) {
 
 // The picker is where a model is chosen, so it is where the choice can be
 // made to stick: [d] switches the session and writes provider.model, so the
-// name just read off a list does not have to be typed back.
+// name just read off a list does not have to be typed back. The card opens as
+// a search, so [d] is a letter until ctrl+u closes the query row.
 func TestModelPick_MakeDefaultSwitchesAndPersists(t *testing.T) {
 	var switched string
 	var wrote [][2]string
@@ -1063,6 +1073,16 @@ func TestModelPick_MakeDefaultSwitchesAndPersists(t *testing.T) {
 	m = updated.(Model)
 	if m.picker == nil {
 		t.Fatal("bare /model should open the picker")
+	}
+	// The open query row offers the way back to the card's own keys rather
+	// than a clear that would do nothing.
+	if hint := ansi.Strip(m.picker.View(110)); !strings.Contains(hint, "ctrl+u row keys") {
+		t.Errorf("the searching card should name the way back to its keys:\n%s", hint)
+	}
+	updated, _ = m.Update(ctrlU)
+	m = updated.(Model)
+	if m.picker.Filtering {
+		t.Fatal("ctrl+u on an empty query should close the row")
 	}
 	// Both readings are on the card, and enter's is named once d's is.
 	hint := ansi.Strip(m.picker.View(110))
@@ -1102,6 +1122,8 @@ func TestModelPick_NoWriterNoDefaultOffer(t *testing.T) {
 	if m.picker.AltKey != "" {
 		t.Errorf("no writer means no offer, got %q", m.picker.AltKey)
 	}
+	updated, _ = m.Update(ctrlU)
+	m = updated.(Model)
 	if hint := ansi.Strip(m.picker.View(110)); !strings.Contains(hint, "enter select") {
 		t.Errorf("enter goes back to its plain label when it is the only one:\n%s", hint)
 	}
@@ -1123,5 +1145,50 @@ func TestModelDefault_NamesWhatOutranksIt(t *testing.T) {
 	_, out = m.handleSlashCommand("/model default")
 	if !strings.Contains(out, "Overruled") {
 		t.Fatalf("reporting the setting should say it too, got %q", out)
+	}
+}
+
+// A card that opens over a catalog opens as a search: the first keystroke
+// names what the reader is after rather than being spent opening the row it
+// would have gone into.
+func TestModelPick_OpensReadyToType(t *testing.T) {
+	m := readyModel(t).
+		WithModelSwitcher(func(string) {}).
+		WithConfigWriter(func(string, string) error { return nil }).
+		WithPricing(nil, "gpt-5.2").
+		WithModelOptions([]string{"gpt-5.2", "claude-opus-4.6", "claude-sonnet-4.6"})
+
+	m = sendText(t, m, "/model")
+	if !m.picker.Filtering {
+		t.Fatal("the model card should arrive with its query row open")
+	}
+	// [d] is the card's own key, and a card being typed into keeps every
+	// letter as text — including that one.
+	m = runes(t, m, "claude")
+	if m.picker.Query != "claude" {
+		t.Fatalf("every keystroke should have landed in the query, got %q", m.picker.Query)
+	}
+	if len(m.picker.Options) != 2 {
+		t.Fatalf("two models match \"claude\", the card is showing %d", len(m.picker.Options))
+	}
+}
+
+// A fixed set of answers is a list, not a search: its rows are numbered and a
+// digit takes one outright.
+func TestModePick_OpensAsAListOfAnswers(t *testing.T) {
+	m := sendText(t, readyModel(t), "/permissions")
+
+	if m.picker == nil {
+		t.Fatal("bare /permissions should open the picker")
+	}
+	if m.picker.Filtering {
+		t.Fatal("a fixed set of answers should open as a list, not a query row")
+	}
+	m = press(t, m, "2")
+	if m.picker != nil {
+		t.Fatal("a digit should have taken an answer outright")
+	}
+	if want := agent.DefaultCycle()[1]; m.mode != want {
+		t.Fatalf("the digit should have taken %s, mode is %s", want, m.mode)
 	}
 }

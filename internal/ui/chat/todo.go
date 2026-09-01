@@ -192,7 +192,7 @@ func (m Model) openTodoPick() (tea.Model, tea.Cmd, bool) {
 			Desc:  fmt.Sprintf("%s · %s · %s", it.Priority, size, it.Title),
 		}
 	}
-	model, cmd := m.openPicker("Backlog — enter shows an item; /todo edit <slug> opens it", opts, 0, func(m *Model, idx int) string {
+	model, cmd := m.openSearchPicker("Backlog — enter shows an item; /todo edit <slug> opens it", opts, 0, func(m *Model, idx int) string {
 		return m.todos.Detail(s, items[idx])
 	})
 	return model, cmd, true

@@ -32,7 +32,7 @@
 │    5. o4-mini                                            │
 │    6. claude-opus-4.6    deepest reasoning     $15 / $75 │
 │ ↓ 18 more                                                │
-│ ↑↓ move · enter select · ctrl+u clear · esc cancel       │
+│ ↑↓ move · enter select · ctrl+u row keys · esc cancel    │
 └──────────────────────────────────────────────────────────┘
 
 · mid-list from above · the option sits at the foot of the window
@@ -118,7 +118,7 @@
 ␛[38;5;241m│␛[m    5. o4-mini                                            ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m    6. claude-opus-4.6    ␛[38;5;241mdeepest reasoning␛[m     ␛[38;5;252m$15 / $75␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[38;5;241m↓ 18 more␛[m                                                ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[3;38;5;241m↑↓ move · enter select · ctrl+u clear · esc cancel␛[m       ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[3;38;5;241m↑↓ move · enter select · ctrl+u row keys · esc cancel␛[m    ␛[38;5;241m│␛[m
 ␛[38;5;241m└──────────────────────────────────────────────────────────┘␛[m
 
 · mid-list from above · the option sits at the foot of the window

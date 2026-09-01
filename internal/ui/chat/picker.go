@@ -28,7 +28,9 @@ import (
 
 // keys.Select.Alt is the /model picker's second key: take this option and
 // make it the default, rather than taking it for this session. A bare letter
-// like the card's own j/k, so it is text while the filter row is open.
+// like the card's own j/k, so it is text while the filter row is open — and
+// that card opens with the row open, which is why everything that names the
+// key names the [ctrl+u] that closes the row first.
 
 // WithModelOptions sets the models offered by the bare /model picker,
 // normally the provider's curated catalog (provider.KnownModels). The
@@ -44,8 +46,22 @@ func (m Model) WithModelOptions(names []string) Model {
 //
 // Every picker opened this way carries the filter row: the card
 // offers [/], and the match rule lives here rather than inside the component.
+// The row starts closed, which is the reading a fixed set of answers wants:
+// its rows are numbered, and its letters are keys.
 func (m Model) openPicker(title string, opts []components.SelectOption, focus int, apply func(*Model, int) string) (tea.Model, tea.Cmd) {
-	return m.openPickerWith(title, opts, focus, pickerAlt{}, func(m *Model, idx int, _ bool) string {
+	return m.openPickerWith(title, opts, focus, pickerAlt{}, false, func(m *Model, idx int, _ bool) string {
+		return apply(m, idx)
+	})
+}
+
+// openSearchPicker is openPicker for a card that opens over a catalog — the
+// models, the branches, the backlog — where walking is the slow way and the
+// first thing a reader does is name what they are after. The query row is
+// open when the card arrives, so that first keystroke searches rather than
+// being spent opening the row it would have gone into.
+// See docs/interface/surfaces.md#selectors.
+func (m Model) openSearchPicker(title string, opts []components.SelectOption, focus int, apply func(*Model, int) string) (tea.Model, tea.Cmd) {
+	return m.openPickerWith(title, opts, focus, pickerAlt{}, true, func(m *Model, idx int, _ bool) string {
 		return apply(m, idx)
 	})
 }
@@ -61,14 +77,16 @@ type pickerAlt struct {
 }
 
 // openPickerWith is openPicker for a card whose choice has two readings;
-// apply is told which key took it.
-func (m Model) openPickerWith(title string, opts []components.SelectOption, focus int, alt pickerAlt, apply func(*Model, int, bool) string) (tea.Model, tea.Cmd) {
+// apply is told which key took it. search opens the query row with the card
+// (openSearchPicker).
+func (m Model) openPickerWith(title string, opts []components.SelectOption, focus int, alt pickerAlt, search bool, apply func(*Model, int, bool) string) (tea.Model, tea.Cmd) {
 	m.picker = &components.Select{
 		Title:      title,
 		Options:    opts,
 		Focus:      focus,
 		MaxLines:   m.maxConfirmPanelHeight(),
 		Filterable: true,
+		Filtering:  search,
 		QueryHint:  "type to filter",
 		Total:      selectableOptions(opts),
 		AltKey:     alt.Key,
@@ -368,12 +386,14 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 	// The picker is where a model gets chosen, so it is where the choice has
 	// to be able to stick. Enter switches the session, as it always
 	// did; [d] switches it and writes provider.model, so the name you just
-	// read off a list does not have to be typed back to `/model default`.
+	// read off a list does not have to be typed back to `/model default`. The
+	// card opens as a search, so [d] is a letter until [ctrl+u] closes the
+	// query row — which is what the key row offers while it is open.
 	alt := pickerAlt{Key: keys.Shown(keys.Select.Alt), Label: "and make it default", Enter: "this session"}
 	if m.writeConfig == nil {
 		alt = pickerAlt{}
 	}
-	return m.openPickerWith("Switch model", opts, focus, alt, func(m *Model, idx int, makeDefault bool) string {
+	return m.openPickerWith("Switch model", opts, focus, alt, true, func(m *Model, idx int, makeDefault bool) string {
 		name := choices[idx]
 		switched := name != m.modelName
 		if switched {
@@ -384,7 +404,8 @@ func (m Model) openModelPick() (tea.Model, tea.Cmd) {
 			if !switched {
 				return fmt.Sprintf("Already using %s.", name)
 			}
-			return fmt.Sprintf("Switched to %s for this session. [d] in the picker makes a choice the default.", name)
+			return fmt.Sprintf("Switched to %s for this session. In the picker, [%s] then [%s] makes a choice the default.",
+				name, keys.Shown(keys.Select.ClearQ), keys.Shown(keys.Select.Alt))
 		}
 		// setModelDefault owns the writing and everything true about it —
 		// the failure wording, and the warning when something outranks the
@@ -494,7 +515,7 @@ func (m Model) openBranchPick() (tea.Model, tea.Cmd, bool) {
 		return m, nil, false
 	}
 	opts, focus := m.branchPickOptions(branches)
-	model, cmd := m.openPicker("Switch branch", opts, focus, func(m *Model, idx int) string {
+	model, cmd := m.openSearchPicker("Switch branch", opts, focus, func(m *Model, idx int) string {
 		return m.switchToBranch(branches[idx].Name)
 	})
 	return model, cmd, true
