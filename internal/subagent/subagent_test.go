@@ -959,3 +959,30 @@ func TestPathsOverlap(t *testing.T) {
 		}
 	}
 }
+
+// A child has less watching it than a session: it runs uncapped by default,
+// takes no readings unless asked to, and has nobody in front of it. Its
+// check-in is often the only question it will ever be put, so it comes
+// sooner than a session's.
+func TestChildCheckInInterval_IsShorterThanASession(t *testing.T) {
+	if ChildCheckInInterval >= agent.DefaultCheckInInterval {
+		t.Errorf("a child's interval (%d) should be shorter than a session's (%d)",
+			ChildCheckInInterval, agent.DefaultCheckInInterval)
+	}
+	if DefaultMaxRounds != agent.UnlimitedToolRounds {
+		t.Fatal("this reasoning assumes a child runs uncapped by default")
+	}
+}
+
+// A child is built on two paths — a spawn and a retry — and a setting that
+// reaches only the first leaves a retried child asking nothing for far
+// longer, with no symptom anyone would notice.
+func TestNewChildAgent_BothPathsGetTheChildInterval(t *testing.T) {
+	env := Env{SystemPrompt: "you are a child"}
+	for _, maxRounds := range []int{agent.UnlimitedToolRounds, 25} {
+		a := newChildAgent(env, maxRounds)
+		if got := a.CheckInInterval(); got != ChildCheckInInterval {
+			t.Errorf("maxRounds=%d: interval = %d, want %d", maxRounds, got, ChildCheckInInterval)
+		}
+	}
+}

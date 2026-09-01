@@ -63,6 +63,20 @@ const (
 	// to take stock, so a ceiling could only make it check in more often than
 	// it was told to, for no reason that could be given to whoever set it.
 	DefaultMaxRounds = agent.UnlimitedToolRounds
+	// ChildCheckInInterval is how many rounds pass before a child is asked to
+	// take stock. It is shorter than a session's because a child has less of
+	// everything else watching it: it runs uncapped by the decision above, it
+	// takes no readings unless summary.subagents says so, and there is nobody
+	// in front of it. For a child left on the defaults this check-in is the
+	// only question it will ever be put, and a session's interval — chosen
+	// for a turn that also has a reading, a cap and a reader — would be the
+	// wrong number to inherit.
+	//
+	// Twenty-five is the figure the budget check-in above is already reasoned
+	// against, and for the same reason: often enough early to catch a child
+	// working on the wrong thing, rare enough later to stay out of the way.
+	// The interval widens the same way.
+	ChildCheckInInterval = 25
 	// checkInGrowth multiplies the budget at each check-in, so a long task is
 	// not stopped at the same interval forever — the escalation behind the
 	// parent's grant, applied by a child with nobody to ask. A child
@@ -193,6 +207,24 @@ type Env struct {
 	// way a session is. Nil takes no readings — the default, because a wide
 	// fan-out multiplies the cost by its width (summary.subagents).
 	Summarizer *agent.Summarizer
+}
+
+// newChildAgent builds a child's agent with everything a child's agent needs.
+//
+// It exists because there are two paths to one — a spawn and a retry — and a
+// setting added to the first quietly does not reach the second. That already
+// happened once: a retried child would have inherited a session's check-in
+// interval, and the only symptom would have been a long child nobody asked
+// anything, which is precisely the failure the interval exists to prevent and
+// precisely the one that leaves no trace.
+func newChildAgent(env Env, maxRounds int) *agent.Agent {
+	a := agent.New([]provider.Message{{Role: provider.RoleSystem, Content: env.SystemPrompt}}, env.Stream)
+	a.SetMaxRounds(maxRounds)
+	a.SetCheckInInterval(ChildCheckInInterval)
+	if env.Scrub != nil {
+		a.SetScrub(env.Scrub)
+	}
+	return a
 }
 
 // Spec is everything the CLI needs to build one child's runtime: its role,
@@ -977,12 +1009,8 @@ func (s *Supervisor) Retry(name string) error {
 		}
 		return fmt.Errorf("cannot set up the retry: %w", err)
 	}
-	a := agent.New([]provider.Message{{Role: provider.RoleSystem, Content: env.SystemPrompt}}, env.Stream)
-	a.SetMaxRounds(c.agent.MaxRounds())
+	a := newChildAgent(env, c.agent.MaxRounds())
 	a.SetExecutor(env.Executor)
-	if env.Scrub != nil {
-		a.SetScrub(env.Scrub)
-	}
 
 	c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Retrying — the previous attempt " + detail + "."})
 
@@ -1204,11 +1232,7 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 		return "", fmt.Errorf("cannot set up the agent: %w", err)
 	}
 
-	a := agent.New([]provider.Message{{Role: provider.RoleSystem, Content: env.SystemPrompt}}, env.Stream)
-	a.SetMaxRounds(args.maxRounds)
-	if env.Scrub != nil {
-		a.SetScrub(env.Scrub)
-	}
+	a := newChildAgent(env, args.maxRounds)
 
 	c := &child{
 		name:      name,

@@ -99,7 +99,7 @@ func TestIntervene_ClockStillFiresWithNoSummarizer(t *testing.T) {
 		t.Fatal("setup: expected no summarizer")
 	}
 	m.setTurnState(stateStreaming)
-	m = advanceRounds(m, agent.CheckInInterval)
+	m = advanceRounds(m, agent.DefaultCheckInInterval)
 	m.injectInterventions()
 	if !strings.Contains(lastUserMessage(m), "routine check-in") {
 		t.Fatal("with no reading to go on the interval is what asks")

@@ -24,15 +24,66 @@ package agent
 
 import "fmt"
 
-// CheckInInterval is how many tool rounds pass before a turn is asked to take
-// stock. It sits well under DefaultMaxToolRounds because the cap is the
-// checkpoint for the human and this is the one the turn does for itself; a
-// check-in that only ever arrived with the cap would be the pause the person
-// is already there for.
+// DefaultCheckInInterval is how many tool rounds pass before a session is
+// asked to take stock. It sits well under DefaultMaxToolRounds because the cap
+// is the checkpoint for the human and this is the one the turn does for
+// itself; a check-in that only ever arrived with the cap would be the pause
+// the person is already there for.
 //
-// Forty is about the length of a thorough investigation that is going
-// somewhere. Ordinary work finishes inside one and never sees the question.
-const CheckInInterval = 40
+// It is the interval for a turn that has plenty else watching it — a reading
+// every few rounds that can ask sooner, a round cap, and a person. A surface
+// with less than that sets its own, shorter, because this number is
+// calibrated for the best-supervised case and would be the wrong default for
+// the least: see SetCheckInInterval.
+const DefaultCheckInInterval = 40
+
+// The interval widens as a turn goes on: often enough early to catch a turn
+// working on the wrong thing, rare enough later to stay out of the way of one
+// that is committed and going somewhere. It is the shape the sub-agent's own
+// budget check-ins already escalate in.
+//
+// The growth is bounded so a long run never stops being asked. Doubling
+// without a ceiling means a turn that survives a few check-ins is effectively
+// never questioned again, which is the failure this mechanism exists for
+// wearing a longer timescale.
+//
+// Two doublings is what the sub-agent's own worked example describes — 25,
+// then 50, then 100 — and it is as far as the widening should go: a fourfold
+// interval on a child's 25 is a hundred rounds, which is already the outer
+// edge of "rare enough to stay out of the way".
+const (
+	checkInGrowth       = 2
+	maxCheckInDoublings = 2
+)
+
+// SetCheckInInterval overrides how many rounds pass between check-ins. Zero or
+// less restores the default.
+//
+// It is per-surface because the interval is only ever the last thing watching
+// a turn, and how much else is watching differs enormously. A session has a
+// reading that asks sooner, a round cap, and a person; a sub-agent runs
+// uncapped, takes no readings unless asked to, and has nobody in front of it,
+// so its check-in is the only question it will ever be put.
+// See docs/capabilities/coding-agent.md#the-interval-is-the-last-thing-watching.
+func (a *Agent) SetCheckInInterval(n int) {
+	if n <= 0 {
+		n = DefaultCheckInInterval
+	}
+	a.checkInBase = n
+}
+
+// checkInInterval is the number of rounds owed before the next check-in,
+// widened by how many this turn has already had.
+func (a *Agent) checkInInterval() int {
+	base := a.checkInBase
+	if base <= 0 {
+		base = DefaultCheckInInterval
+	}
+	for i := 0; i < a.checkIns && i < maxCheckInDoublings; i++ {
+		base *= checkInGrowth
+	}
+	return base
+}
 
 // CheckInPrompt is the turn handed to a session that has reached a check-in.
 //
@@ -68,10 +119,14 @@ const (
 // every round for the rest of the turn, which is the opposite of the
 // mechanism. Not due returns ok=false and changes nothing.
 func (a *Agent) TakeCheckIn() (prompt string, ok bool) {
-	if a.rounds <= 0 || a.rounds-a.lastIntervention < CheckInInterval {
+	if a.rounds <= 0 || a.rounds-a.lastIntervention < a.checkInInterval() {
 		return "", false
 	}
 	a.NoteIntervention()
+	// Only the clock's own check-ins widen the interval. A steer is a
+	// different question with a reason behind it, and one turn's worth of
+	// them should not make the generic question rarer.
+	a.checkIns++
 	return CheckInPrompt(a.rounds, FinishedInSession), true
 }
 
@@ -84,6 +139,11 @@ func (a *Agent) ForceCheckIn() string {
 	a.NoteIntervention()
 	return CheckInPrompt(a.rounds, FinishedInSession)
 }
+
+// CheckInInterval is the rounds owed before the next check-in, for a caller
+// that needs to state what it configured — a status line, or a test in the
+// package that set it.
+func (a *Agent) CheckInInterval() int { return a.checkInInterval() }
 
 // NoteIntervention records that something has just asked the turn to take
 // stock, so the next check-in is counted from here.

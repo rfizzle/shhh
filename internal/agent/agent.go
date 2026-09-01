@@ -78,6 +78,11 @@ type Agent struct {
 	// two a round boundary owes (intervene.go).
 	lastIntervention int
 	intervene        interveneState
+	// checkInBase is this surface's round interval between check-ins, and
+	// checkIns how many the turn has had — the interval widens with them
+	// (checkin.go).
+	checkInBase int
+	checkIns    int
 
 	// executing is true while auto-run tool calls run in the background;
 	// pending holds every call of the current round still owed a result, and
@@ -185,6 +190,7 @@ func (a *Agent) StartTurn(text string) { a.StartTurnWith(text, nil) }
 func (a *Agent) StartTurnWith(text string, atts []provider.Attachment) {
 	a.rounds = 0
 	a.lastIntervention = 0
+	a.checkIns = 0
 	a.StartInterveneTurn()
 	a.Append(provider.Message{Role: provider.RoleUser, Content: text, Attachments: atts})
 }
@@ -222,6 +228,7 @@ func (a *Agent) Rounds() int { return a.rounds }
 func (a *Agent) ResetRounds() {
 	a.rounds = 0
 	a.lastIntervention = 0
+	a.checkIns = 0
 }
 
 // CapReached reports whether this turn has used up its tool rounds. An

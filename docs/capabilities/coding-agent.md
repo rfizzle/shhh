@@ -91,6 +91,33 @@ reading a digest of tool activity, not the agent's reasoning, so it can be
 wrong; a confident accusation against a session that is in fact on task costs
 more than the steer saves.
 
+## The interval is the last thing watching
+
+The check-in fires on a clock, and how long that clock should be depends
+entirely on what else is watching the turn — which is not the same on every
+surface.
+
+A session has the most: a reading every few rounds that asks sooner when it
+has a reason to, a round cap that hands control back, and a person who can
+ask at any moment. Its interval is the third line of defence and can afford
+to be long. A sub-agent has the least: it runs uncapped, because a cap used
+to be a hard stop and a child that hit one failed with its work half done; it
+takes no readings unless it is asked to, because a fan-out multiplies that
+cost by its width; and there is nobody in front of it. For a child left on the
+defaults, the check-in is the only question it will ever be put.
+
+So the interval is the surface's, not one number for all three, and a child's
+is shorter. The failure modes are not symmetric either, which is what decides
+the direction: an interval that is too short costs one round of a turn being
+asked a question it can answer in a sentence, and an interval that is too long
+costs the whole investigation nobody interrupted.
+
+**It widens as a turn goes on.** Often enough early to catch a turn working on
+the wrong thing, rare enough later to stay out of the way of one that is
+committed and going somewhere. The widening stops after two doublings, because
+a turn that survives a few check-ins should not become one that is never
+questioned again — that is the same failure on a longer timescale.
+
 ## A reading for a run nobody is watching
 
 The reading began as a status block, which is a thing only a session with a

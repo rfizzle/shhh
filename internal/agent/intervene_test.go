@@ -138,7 +138,7 @@ func TestNextIntervention_OneCooldownAcrossBothKinds(t *testing.T) {
 // still asked, which is the whole reason the check-in exists.
 func TestNextIntervention_ClockFiresWithNoVerdictAtAll(t *testing.T) {
 	a := New(nil, noStream)
-	a.rounds = CheckInInterval
+	a.rounds = DefaultCheckInInterval
 	iv, ok := a.NextIntervention("x")
 	if !ok || iv.Kind != InterveneCheckIn {
 		t.Fatalf("kind = %v ok = %v, want InterveneCheckIn", iv.Kind, ok)
@@ -155,8 +155,8 @@ func TestNextIntervention_ClockFiresWithNoVerdictAtAll(t *testing.T) {
 // and asking both in one round is asking twice.
 func TestNextIntervention_AReadingWinsOverTheClock(t *testing.T) {
 	a := New(nil, noStream)
-	a.rounds = CheckInInterval
-	a.ConsiderVerdict(driftVerdict(CheckInInterval), running)
+	a.rounds = DefaultCheckInInterval
+	a.ConsiderVerdict(driftVerdict(DefaultCheckInInterval), running)
 
 	iv, ok := a.NextIntervention("build the exporter")
 	if !ok || iv.Kind != InterveneSteer {
@@ -166,7 +166,7 @@ func TestNextIntervention_AReadingWinsOverTheClock(t *testing.T) {
 	if _, ok := a.NextIntervention("x"); ok {
 		t.Fatal("both interventions arrived in one round")
 	}
-	a.rounds += CheckInInterval
+	a.rounds += DefaultCheckInInterval
 	if iv, ok := a.NextIntervention("x"); !ok || iv.Kind != InterveneCheckIn {
 		t.Fatal("the check-in should return an interval after the steer")
 	}
