@@ -4,8 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -399,5 +402,93 @@ func TestSetScrub_RewritesEveryDoor(t *testing.T) {
 	}
 	if sent[0].Content != "[secret:PW]" || raw[0].Content != "hunter2" {
 		t.Fatalf("Stream sent %q, caller holds %q", sent[0].Content, raw[0].Content)
+	}
+}
+
+// A batch the model asked for as one question should cost one wait. The
+// results still have to come back in call order: that is the order the
+// conversation records them in, and a tool result that moves is one attached
+// to the wrong call.
+func TestExecuteCalls_RunsConcurrentlyAndKeepsOrder(t *testing.T) {
+	const n = MaxParallelToolCalls
+	var live, peak int64
+	release := make(chan struct{})
+
+	a := New(nil, nil)
+	a.SetExecutor(func(name string, args json.RawMessage) (string, error) {
+		cur := atomic.AddInt64(&live, 1)
+		for {
+			old := atomic.LoadInt64(&peak)
+			if cur <= old || atomic.CompareAndSwapInt64(&peak, old, cur) {
+				break
+			}
+		}
+		if cur == n {
+			close(release) // the last one in frees them all
+		}
+		<-release
+		atomic.AddInt64(&live, -1)
+		return name, nil
+	})
+
+	calls := make([]provider.ToolCall, n)
+	for i := range calls {
+		calls[i] = provider.ToolCall{ID: strconv.Itoa(i), Name: "tool" + strconv.Itoa(i)}
+	}
+
+	done := make(chan []ToolResult, 1)
+	go func() { done <- a.ExecuteCalls(calls) }()
+
+	var results []ToolResult
+	select {
+	case results = <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("batch did not run concurrently: it deadlocked waiting for calls that never started together")
+	}
+
+	if got := atomic.LoadInt64(&peak); got != n {
+		t.Errorf("peak concurrency = %d, want %d", got, n)
+	}
+	for i, r := range results {
+		if want := "tool" + strconv.Itoa(i); r.Result != want || r.Call.Name != want {
+			t.Errorf("result %d = %q (call %q), want %q", i, r.Result, r.Call.Name, want)
+		}
+	}
+}
+
+// The bound is a real ceiling, not a suggestion: a batch larger than it must
+// still finish rather than deadlock.
+func TestExecuteCalls_BoundedByMaxParallel(t *testing.T) {
+	var live, peak int64
+	a := New(nil, nil)
+	a.SetExecutor(func(name string, args json.RawMessage) (string, error) {
+		cur := atomic.AddInt64(&live, 1)
+		for {
+			old := atomic.LoadInt64(&peak)
+			if cur <= old || atomic.CompareAndSwapInt64(&peak, old, cur) {
+				break
+			}
+		}
+		time.Sleep(time.Millisecond)
+		atomic.AddInt64(&live, -1)
+		return name, nil
+	})
+
+	calls := make([]provider.ToolCall, MaxParallelToolCalls*3)
+	for i := range calls {
+		calls[i] = provider.ToolCall{ID: strconv.Itoa(i), Name: strconv.Itoa(i)}
+	}
+	results := a.ExecuteCalls(calls)
+
+	if len(results) != len(calls) {
+		t.Fatalf("got %d results for %d calls", len(results), len(calls))
+	}
+	if got := atomic.LoadInt64(&peak); got > MaxParallelToolCalls {
+		t.Errorf("peak concurrency = %d, exceeds the bound of %d", got, MaxParallelToolCalls)
+	}
+	for i, r := range results {
+		if r.Result != strconv.Itoa(i) {
+			t.Errorf("result %d out of order: %q", i, r.Result)
+		}
 	}
 }

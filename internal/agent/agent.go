@@ -8,6 +8,7 @@ package agent
 import (
 	"context"
 	"encoding/json"
+	"sync"
 	"time"
 
 	"github.com/rfizzle/shhh/internal/provider"
@@ -252,15 +253,42 @@ func (a *Agent) BeginToolRound(text string, calls []provider.ToolCall, gate Appr
 	return auto, gated
 }
 
-// ExecuteCalls dispatches calls through the executor. Safe to run off the
-// UI goroutine: it touches no Agent state besides the executor.
+// MaxParallelToolCalls bounds how many of a round's calls run at once.
+//
+// A batch is worth something only if it is one wait. The prompt tells the
+// model to ask for independent reads and searches together — that is the
+// advice that stops a session spending a round per question — and running
+// what it asks for one at a time makes the batch a queue, so five searches
+// over a large tree cost five searches' wall clock. Every call that reaches
+// here is auto-run, which is to say read-only: BeginToolRound has already
+// taken the mutating and approval-gated ones out.
+//
+// The bound exists because the calls are not free of the machine. Eight
+// concurrent ripgreps or language-server queries saturate an ordinary laptop;
+// past that the batch stops getting faster and starts making everything else
+// on the machine slower.
+const MaxParallelToolCalls = 8
+
+// ExecuteCalls dispatches calls through the executor, concurrently and
+// bounded by MaxParallelToolCalls. Results come back in call order, which is
+// the order the conversation has to record them in. Safe to run off the UI
+// goroutine: it touches no Agent state besides the executor.
 func (a *Agent) ExecuteCalls(calls []provider.ToolCall) []ToolResult {
-	results := make([]ToolResult, 0, len(calls))
-	for _, tc := range calls {
-		start := time.Now()
-		result := a.ExecuteCall(tc)
-		results = append(results, ToolResult{Call: tc, Result: result, Duration: time.Since(start)})
+	results := make([]ToolResult, len(calls))
+	sem := make(chan struct{}, MaxParallelToolCalls)
+	var wg sync.WaitGroup
+	for i, tc := range calls {
+		wg.Add(1)
+		go func(i int, tc provider.ToolCall) {
+			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
+			start := time.Now()
+			result := a.ExecuteCall(tc)
+			results[i] = ToolResult{Call: tc, Result: result, Duration: time.Since(start)}
+		}(i, tc)
 	}
+	wg.Wait()
 	return results
 }
 
