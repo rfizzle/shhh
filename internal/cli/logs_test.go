@@ -13,12 +13,24 @@ import (
 	"github.com/rfizzle/shhh/internal/logs"
 )
 
-// TestMain gives the whole package a state directory of its own. Every test
-// that builds the root command runs its PersistentPreRunE, which points this
-// process's log at whatever state directory the machine resolves — and this
-// process is one test binary shared by every test in the package. Without
-// this, a test that made a provider classify an error would append to the
-// log of whoever is running the suite.
+// TestMain gives the whole package a home of its own. Every test that builds
+// the root command runs its PersistentPreRunE, which resolves this process's
+// log, its config and its provider profiles against whatever home the
+// machine has — and this process is one test binary shared by every test in
+// the package. Without the state directory, a test that made a provider
+// classify an error would append to the log of whoever is running the suite.
+// Without the config directory, the suite reads the settings of whoever is
+// running it: a default provider, a model, an MCP server, a rounds cap
+// someone set for their own sessions all become inputs to tests that never
+// asked for them, and a `[provider]` block that happens to be malformed
+// fails eighteen tests that have nothing to do with configuration.
+//
+// Both paths are set because config.Paths reads both: XDG_CONFIG_HOME when
+// it is set, and ~/.config/shhh either way. It also matters that the config
+// directory is one shhh's own sandbox masks (internal/sandbox) — a suite run
+// inside it cannot read the developer's config even to be tainted by it, so
+// the test that reads it fails only on the machines that sandbox their
+// tests, which is the worst way to find out.
 //
 // It also pins the zone. A report prints a timestamp in local time, so a
 // fixture recorded in one zone reads as a different clock time in another —
@@ -30,8 +42,10 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		panic(err)
 	}
-	if err := os.Setenv("XDG_DATA_HOME", dir); err != nil {
-		panic(err)
+	for _, key := range []string{"HOME", "XDG_DATA_HOME", "XDG_CONFIG_HOME"} {
+		if err := os.Setenv(key, dir); err != nil {
+			panic(err)
+		}
 	}
 	code := m.Run()
 	// Best effort: the run is over and the temp directory is the operating
