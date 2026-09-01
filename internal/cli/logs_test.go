@@ -19,7 +19,13 @@ import (
 // process is one test binary shared by every test in the package. Without
 // this, a test that made a provider classify an error would append to the
 // log of whoever is running the suite.
+//
+// It also pins the zone. A report prints a timestamp in local time, so a
+// fixture recorded in one zone reads as a different clock time in another —
+// the goldens would pass where they were written and fail on CI, which runs
+// in UTC. Pinning makes the checked-in text mean the same thing everywhere.
 func TestMain(m *testing.M) {
+	time.Local = time.UTC
 	dir, err := os.MkdirTemp("", "shhh-cli-test")
 	if err != nil {
 		panic(err)

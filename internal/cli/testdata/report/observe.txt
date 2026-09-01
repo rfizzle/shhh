@@ -33,7 +33,7 @@
 
   SESSIONS
 
-  ✓ 12  code · claude-sonnet-5 · Aug 31 18:32 · 6 turns · ↑41.2k ↓9.…  [14m 00s]
-  ▸ 13  chat · gpt-5.2 · Aug 31 18:59 · 1 turn · ↑900 ↓120  [active]
+  ✓ 12  code · claude-sonnet-5 · Aug 31 11:32 · 6 turns · ↑41.2k ↓9.…  [14m 00s]
+  ▸ 13  chat · gpt-5.2 · Aug 31 11:59 · 1 turn · ↑900 ↓120  [active]
 
   ▸ `shhh observe session <id>` shows one session turn by turn
