@@ -290,6 +290,14 @@ func within(path, dir string) bool {
 	return path == dir || strings.HasPrefix(path, dir+string(filepath.Separator))
 }
 
+// shellPath is the shell that goes inside a bwrap or seatbelt argv.
+//
+// It looks like the resolution internal/shell owns and is a different
+// question: not "what does this platform run a command line with", but "which
+// POSIX shell do I name inside a wrapper that only exists on POSIX". Both
+// callers are Linux-only and macOS-only by construction, so there is no
+// platform here to be wrong about — and routing it through the cross-platform
+// resolver would couple a Unix-only wrapper to an answer it can never take.
 func shellPath() string {
 	sh := os.Getenv("SHELL")
 	if sh == "" {

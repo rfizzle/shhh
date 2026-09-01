@@ -112,3 +112,34 @@ func TestResult_ToolEmpty_OnWarning(t *testing.T) {
 		t.Error("expected OK to be false on warning")
 	}
 }
+
+func TestToolForEachPlatform(t *testing.T) {
+	none := func(string) (string, error) { return "", exec.ErrNotFound }
+	all := func(name string) (string, error) { return "/usr/bin/" + name, nil }
+
+	if got := toolFor("darwin", none); got != "pbcopy" {
+		t.Errorf("darwin = %q", got)
+	}
+	// Windows needs nothing installed, so it must not depend on the PATH.
+	if got := toolFor("windows", none); got != "clip" {
+		t.Errorf("windows = %q, want clip", got)
+	}
+	if got := toolFor("linux", all); got != "wl-copy" {
+		t.Errorf("linux prefers wayland: %q", got)
+	}
+	if got := toolFor("linux", none); got != "" {
+		t.Errorf("linux with nothing installed has no tool: %q", got)
+	}
+}
+
+func TestToolForLinuxFallsThroughToXsel(t *testing.T) {
+	only := func(name string) (string, error) {
+		if name == "xsel" {
+			return "/usr/bin/xsel", nil
+		}
+		return "", exec.ErrNotFound
+	}
+	if got := toolFor("linux", only); got != "xsel" {
+		t.Errorf("got %q", got)
+	}
+}

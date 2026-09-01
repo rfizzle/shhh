@@ -48,6 +48,9 @@ func Read() (Payload, error) {
 	if runtime.GOOS == "darwin" {
 		return readDarwin(), nil
 	}
+	if runtime.GOOS == "windows" {
+		return readWindows(), nil
+	}
 	if _, err := lookPath("wl-paste"); err == nil {
 		return readWayland(), nil
 	}
@@ -62,6 +65,24 @@ func Read() (Payload, error) {
 		return Payload{Text: string(out)}, nil
 	}
 	return Payload{}, fmt.Errorf("no clipboard tool found — install wl-clipboard, xclip, or xsel")
+}
+
+// readWindows asks PowerShell, which is the only reader Windows ships — there
+// is a clip.exe for writing and nothing for reading.
+//
+// Text only. An image on the clipboard would have to be round-tripped through
+// a temporary file by a script long enough to be its own program, and a paste
+// that silently produced a broken image would be worse than one that reports
+// nothing. -Raw keeps the newlines a multi-line paste is made of, which the
+// default would fold.
+func readWindows() Payload {
+	out, err := output("powershell", "-NoProfile", "-Command", "Get-Clipboard -Raw")
+	if err != nil {
+		return Payload{}
+	}
+	// PowerShell writes CRLF; every reader downstream of this expects the
+	// newline it would have got from any other platform's tool.
+	return Payload{Text: strings.ReplaceAll(string(out), "\r\n", "\n")}
 }
 
 // readDarwin asks the pasteboard through AppleScript, which is always there:

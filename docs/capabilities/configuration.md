@@ -32,6 +32,12 @@ departure from it. It is made once, in favour of the property that a user can
 predict where their own settings are — the same property the resolution order
 exists for.
 
+Windows is included in "everywhere", and is the same departure rather than a
+second one: settings sit under the home directory there too, not in AppData.
+It is what git, ssh and half the tools on the machine already do, the XDG
+variables still decide it when they are set, and one answer to "where are my
+settings" is worth more than each platform's own.
+
 ## A migration is a doctor check
 
 Old layouts are not read. A version that changes where something lives stops

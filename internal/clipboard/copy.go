@@ -33,13 +33,24 @@ func Copy(text string) Result {
 	return Result{OK: true, Tool: tool}
 }
 
-func detectTool() string {
-	if runtime.GOOS == "darwin" {
+func detectTool() string { return toolFor(runtime.GOOS, exec.LookPath) }
+
+// toolFor is detectTool with the platform and the PATH passed in, so the
+// answer for a machine that is not this one can still be asserted. A branch
+// tested only on the platform it is for is a branch tested nowhere.
+func toolFor(goos string, look func(string) (string, error)) string {
+	switch goos {
+	case "darwin":
 		return "pbcopy"
+	case "windows":
+		// Built into Windows and takes text on stdin, which is the shape
+		// every other tool here already has. Nothing to install and nothing
+		// to look for, so there is no fallback and no warning to give.
+		return "clip"
 	}
 
 	for _, tool := range []string{"wl-copy", "xclip", "xsel"} {
-		if _, err := exec.LookPath(tool); err == nil {
+		if _, err := look(tool); err == nil {
 			return tool
 		}
 	}

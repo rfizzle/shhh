@@ -31,6 +31,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -161,6 +162,13 @@ func editorCommand() []string {
 				return fields
 			}
 		}
+	}
+	if runtime.GOOS == "windows" {
+		// notepad is Windows' vi: not anyone's choice, but the one editor
+		// that is certainly installed. It also blocks until the window is
+		// closed, which is what this needs and what most windowed editors
+		// do not do.
+		return []string{"notepad"}
 	}
 	return []string{"vi"}
 }
