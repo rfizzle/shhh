@@ -3,7 +3,7 @@
 Natural language to shell commands. Type what you want, get a command you can run.
 
 ```
-$ shhh find all go files changed in the last week
+$ shhh cmd find all go files changed in the last week
 $ find . -name '*.go' -mtime -7
   lists Go files under the current directory modified in the last seven days.
   ⛨ read-only · no network · no sudo
@@ -44,7 +44,7 @@ export SHHH_API_KEY="sk-..."
 2. Generate a command:
 
 ```bash
-shhh list open ports on this machine
+shhh cmd list open ports on this machine
 ```
 
 3. Or start a chat session:
@@ -628,7 +628,7 @@ so without the flag `shhh code -p` still fails at the cap.
 ### Generate a command
 
 ```bash
-shhh compress this directory into a tar.gz
+shhh cmd compress this directory into a tar.gz
 ```
 
 The result is one screen: the command, one line explaining it, a containment line stating what it can reach, and one row of bracketed keys. `[↵]` runs, `[e]` edits, `[r]` revises, `[a]` shows the other commands it considered, `[x]` asks for the long explanation, `[c]` copies, `[s]` saves it as a snippet, `[esc]` quits. For multi-command output `[↵]` runs everything and `[t]` prompts before each command.
@@ -843,20 +843,20 @@ Press Up/Down in an empty input to recall previous messages, Ctrl+K for the comm
 Use in scripts or pipelines — activated when stdin is not a TTY or with `--raw`:
 
 ```bash
-echo "list all docker containers" | shhh
-shhh --raw "find large files" | sh
+echo "list all docker containers" | shhh cmd
+shhh cmd --raw "find large files" | sh
 ```
 
 When both stdin content and arguments are provided, the stdin is injected as context:
 
 ```bash
-cat error.log | shhh "explain this error"
+cat error.log | shhh cmd "explain this error"
 ```
 
 ### Explain a command
 
 ```bash
-shhh -e find files larger than 100mb
+shhh cmd -e find files larger than 100mb
 ```
 
 ### Shell integration
@@ -940,7 +940,7 @@ shhh chat --secret PIN=1234            # given inline; lands in shell history
 
 | Command | Description |
 |---|---|
-| `shhh [prompt]` | Generate a shell command |
+| `shhh cmd [prompt]` | Generate a shell command |
 | `shhh chat [prompt]` | Start an interactive chat session |
 | `shhh chat --continue` | Resume the most recent chat session |
 | `shhh chat --resume` | Pick a saved chat to resume |
@@ -968,6 +968,9 @@ shhh chat --secret PIN=1234            # given inline; lands in shell history
 | `shhh completion <shell>` | Generate shell completion script |
 
 ### Flags
+
+`--provider`, `--model` and `--api-key` are carried by every command that
+reaches a provider; `--raw`, `-e` and `-s` belong to `shhh cmd`.
 
 | Flag | Description |
 |---|---|

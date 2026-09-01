@@ -284,7 +284,7 @@ func keyHintFor(s resolve.Survey) string {
 }
 
 // PlainProviderReport is the same information for a terminal that cannot show
-// a card — a pipe, a CI log, `shhh < prompt`. It says everything the card
+// a card — a pipe, a CI log, `shhh cmd < prompt`. It says everything the card
 // says and offers nothing, because there is nobody there to press a key.
 func PlainProviderReport(s resolve.Survey) string {
 	var b strings.Builder

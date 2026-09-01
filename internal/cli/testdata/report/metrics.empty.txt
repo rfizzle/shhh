@@ -1,3 +1,3 @@
   shhh metrics — last 7 days · 0 requests · 0 models
 
-  ⊘ no usage recorded for last 7 days · run `shhh <prompt>` to record one
+  ⊘ no usage recorded for last 7 days · run `shhh cmd <prompt>` to record one

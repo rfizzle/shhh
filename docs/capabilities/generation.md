@@ -1,7 +1,9 @@
 # Command generation
 
 The original capability and still the most-used one: a sentence in, a command
-out, and a decision in between.
+out, and a decision in between. It is `shhh cmd`, one of the four sizes in
+[`../product.md`](../product.md), and the hotkey in your own shell is the same
+generation with the screen taken away.
 
 ## It writes for your machine, not for a manual
 
@@ -17,9 +19,9 @@ the work rather than done it.
 Whatever the model wraps around it — fences, backticks, prose — is stripped
 before anything is shown. What appears on screen is what would run.
 
-This matters most in the modes with no screen at all. Piped or scripted, shhh
-writes the bare command to stdout and nothing else, because the consumer is
-another program. A tool that only works when a human is looking at it is not
+This matters most in the modes with no screen at all. Piped or scripted,
+`shhh cmd` writes the bare command to stdout and nothing else, because the
+consumer is another program. A tool that only works when a human is looking at it is not
 composable, and this is a shell tool.
 
 ## Explanation is on request, not by default

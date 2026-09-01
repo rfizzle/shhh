@@ -154,7 +154,7 @@ func historyReport(entries []storage.HistoryEntry, search string, now time.Time)
 			r.Subject = fmt.Sprintf("nothing matching %q", search)
 			return emptyInto(r, "no history matching "+strconv.Quote(search), "shhh history")
 		}
-		return emptyInto(r, "no history yet", "run `shhh <prompt>` to record one")
+		return emptyInto(r, "no history yet", "run `shhh cmd <prompt>` to record one")
 	}
 	rows := make([]report.Row, 0, len(entries))
 	for _, e := range entries {

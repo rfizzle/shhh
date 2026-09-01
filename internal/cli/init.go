@@ -13,7 +13,7 @@ const zshSnippet = `# shhh shell integration
 
 _shhh_raw() {
   local result
-  result=$(shhh --raw "$BUFFER" 2>/dev/null)
+  result=$(shhh cmd --raw "$BUFFER" 2>/dev/null)
   if [[ -n "$result" ]]; then
     BUFFER="$result"
     CURSOR=${#BUFFER}
@@ -30,7 +30,7 @@ const bashSnippet = `# shhh shell integration
 
 _shhh_raw() {
   local result
-  result=$(shhh --raw "$READLINE_LINE" 2>/dev/null)
+  result=$(shhh cmd --raw "$READLINE_LINE" 2>/dev/null)
   if [[ -n "$result" ]]; then
     READLINE_LINE="$result"
     READLINE_POINT=${#READLINE_LINE}
@@ -46,7 +46,7 @@ const fishSnippet = `# shhh shell integration
 function _shhh_raw
   set -l buf (commandline)
   if test -n "$buf"
-    set -l result (shhh --raw "$buf" 2>/dev/null)
+    set -l result (shhh cmd --raw "$buf" 2>/dev/null)
     if test -n "$result"
       commandline -r -- "$result"
       commandline -f end-of-line

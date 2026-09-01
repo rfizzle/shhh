@@ -348,7 +348,7 @@ func Programs() []Surface {
 			Name:     "the one-shot's action bar",
 			Section:  "docs/interface/surfaces.md#the-one-shot-result",
 			Position: Takeover,
-			Reached:  "shhh <prompt>",
+			Reached:  "shhh cmd <prompt>",
 			Bindings: []Binding{
 				OneShot.Run, OneShot.Confirm, OneShot.Step, OneShot.DryRun, OneShot.Edit,
 				OneShot.Revise, OneShot.Back, OneShot.Alternatives,

@@ -30,14 +30,16 @@ assumption decides more than it looks like it does:
 
 Each mode is a different answer to "how much do you want to hand over".
 
-### Prefix — `shhh <prompt>`
+### Command — `shhh cmd <prompt>`
 
 One prompt, one command, one decision. You get the command, a line of what it
 does, and a row of keys: run it, edit it, ask for a different one, copy it,
 save it. Nothing runs until you say so, and the safety assessment happens on
 that screen rather than as an afterthought prompt.
 
-This is the mode the product is named for and the one most sessions are.
+This is the mode the product is named for and the one most sessions are. It
+is a named size rather than the bare binary's fallthrough, so every size is
+reached the same way: `shhh` on its own is the map, not a mode.
 
 ### Inline — a hotkey in your own shell
 
@@ -76,10 +78,10 @@ most said about it: [`capabilities/coding-agent.md`](capabilities/coding-agent.m
 
 ### And when nothing is watching
 
-With no terminal on the other end — piped, scripted, in CI — shhh drops every
-piece of chrome and writes the bare command to stdout. `echo "list open
-ports" | shhh | sh` is the whole contract. A tool that only works when a human
-is looking at it is not composable, and this is a shell tool.
+With no terminal on the other end — piped, scripted, in CI — `shhh cmd` drops
+every piece of chrome and writes the bare command to stdout. `echo "list open
+ports" | shhh cmd | sh` is the whole contract. A tool that only works when a
+human is looking at it is not composable, and this is a shell tool.
 
 ## What shhh will not do
 

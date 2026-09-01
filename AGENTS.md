@@ -2,7 +2,7 @@
 
 ## Overview
 
-`shhh` is a Go CLI tool that turns natural language into executable shell commands. It has four interaction modes: prefix (`shhh <prompt>`), inline/hotkey (`Ctrl+K` in shell), a read-only conversation with persona sub-agents and a shared notebook (`shhh chat`), and a coding agent (`shhh code`). The TUI is built with Bubble Tea v2 (charm.land/bubbletea/v2) and the LLM backend supports Anthropic, OpenAI, Gemini, and OpenRouter via a pluggable provider registry.
+`shhh` is a Go CLI tool that turns natural language into executable shell commands. It has four interaction modes: one-shot generation (`shhh cmd <prompt>`), inline/hotkey (`Ctrl+K` in shell), a read-only conversation with persona sub-agents and a shared notebook (`shhh chat`), and a coding agent (`shhh code`). The TUI is built with Bubble Tea v2 (charm.land/bubbletea/v2) and the LLM backend supports Anthropic, OpenAI, Gemini, and OpenRouter via a pluggable provider registry.
 
 ## Documentation
 
@@ -129,7 +129,7 @@ All four rules yield to an explicit instruction to do otherwise.
 ```
 cmd/shhh/main.go          Entry point (cobra root command, executed through fang)
 internal/
-  cli/                     All cobra commands (root, chat, code, init, doctor, etc.)
+  cli/                     All cobra commands (root, cmd, chat, code, init, doctor, etc.)
   cli/report/              The shape every non-interactive listing prints in (rows, sections, tallies)
   agent/                   Front-end-agnostic agentic loop (conversation, tool dispatch, approval queue, round cap, repeat detection)
   provider/                LLM provider interface + implementations (anthropic, openai, gemini, openrouter)

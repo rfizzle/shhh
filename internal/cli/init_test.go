@@ -23,8 +23,8 @@ func TestInitZsh_OutputsSnippet(t *testing.T) {
 	if !strings.Contains(output, "bindkey '^K' _shhh_raw") {
 		t.Error("expected zsh snippet to contain bindkey for Ctrl+K")
 	}
-	if !strings.Contains(output, "shhh --raw") {
-		t.Error("expected zsh snippet to call shhh --raw")
+	if !strings.Contains(output, "shhh cmd --raw") {
+		t.Error("expected zsh snippet to call shhh cmd --raw")
 	}
 	if !strings.Contains(output, "zle -N _shhh_raw") {
 		t.Error("expected zsh snippet to register ZLE widget")
@@ -70,8 +70,8 @@ func TestInitBash_OutputsSnippet(t *testing.T) {
 	if !strings.Contains(output, `bind -x '"\C-k": _shhh_raw'`) {
 		t.Error("expected bash snippet to contain bind -x for Ctrl+K")
 	}
-	if !strings.Contains(output, "shhh --raw") {
-		t.Error("expected bash snippet to call shhh --raw")
+	if !strings.Contains(output, "shhh cmd --raw") {
+		t.Error("expected bash snippet to call shhh cmd --raw")
 	}
 	if !strings.Contains(output, "READLINE_LINE") {
 		t.Error("expected bash snippet to use READLINE_LINE")
@@ -117,8 +117,8 @@ func TestInitFish_OutputsSnippet(t *testing.T) {
 	if !strings.Contains(output, `bind \ck _shhh_raw`) {
 		t.Error("expected fish snippet to contain bind \\ck for Ctrl+K")
 	}
-	if !strings.Contains(output, "shhh --raw") {
-		t.Error("expected fish snippet to call shhh --raw")
+	if !strings.Contains(output, "shhh cmd --raw") {
+		t.Error("expected fish snippet to call shhh cmd --raw")
 	}
 	if !strings.Contains(output, "commandline") {
 		t.Error("expected fish snippet to use commandline builtin")

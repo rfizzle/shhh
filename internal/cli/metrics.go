@@ -527,7 +527,7 @@ func metricsReport(data metricsData) report.Report {
 			countOf(count, "request", "requests"), countOf(len(data.Summary), "model", "models")),
 	}
 	if len(data.Summary) == 0 {
-		return emptyInto(r, "no usage recorded for "+data.Window, "run `shhh <prompt>` to record one")
+		return emptyInto(r, "no usage recorded for "+data.Window, "run `shhh cmd <prompt>` to record one")
 	}
 	for _, m := range data.Summary {
 		r.Sections = append(r.Sections, report.Section{

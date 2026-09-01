@@ -4,11 +4,12 @@
          
   USAGE  
          
-    shhh [command] [prompt] [--flags]  
+    shhh [command] [--flags]  
             
   SESSIONS  
             
     chat [prompt] [--flags]            Start a conversation
+    cmd [prompt] [--flags]             Generate one shell command
     code [command] [prompt] [--flags]  Start a coding agent session
            
   RECORDS  
@@ -37,14 +38,5 @@
          
   FLAGS  
          
-    -e --explain                       Explain the generated command at length (one line is shown by default)
-    -s --silent                        Suppress explanation output
-    --raw                              Force pipe mode: raw command output, no TUI
-                                                                                  
-    --provider                         Send the request to a built-in provider or to a gateway profile from `shhh providers`:
-                                       anthropic, gemini, openai, openai-compatible, openai-responses, openrouter            
-    --model                            Model name to use
-    --api-key                          Key for the provider, overriding the env var
-    --reasoning                        Reasoning effort: off, low, medium, high, xhigh, max (default medium; fitted to the model)
     -h --help                          Help for shhh
     -v --version                       Version for shhh

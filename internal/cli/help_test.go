@@ -39,7 +39,7 @@ func renderHelp(t *testing.T, path ...string) string {
 var modelFlags = []string{"--provider", "--model", "--api-key", "--reasoning"}
 
 func TestHelpShowsModelFlagsOnlyWhereTheyAct(t *testing.T) {
-	for _, path := range [][]string{{}, {"chat"}, {"code"}, {"chats"}} {
+	for _, path := range [][]string{{"cmd"}, {"chat"}, {"code"}, {"chats"}} {
 		help := renderHelp(t, path...)
 		for _, flag := range modelFlags {
 			if !strings.Contains(help, flag) {
@@ -48,9 +48,10 @@ func TestHelpShowsModelFlagsOnlyWhereTheyAct(t *testing.T) {
 		}
 	}
 	// Every other command reaches no provider, so none of the four is
-	// listed — and a `--model` on `history clear` was the loudest of them.
+	// listed — the root among them, now that generating a command is `shhh
+	// cmd` — and a `--model` on `history clear` was the loudest of them.
 	for _, path := range [][]string{
-		{"history", "clear"}, {"logs"}, {"reports"}, {"snippets"}, {"memory"},
+		{}, {"history", "clear"}, {"logs"}, {"reports"}, {"snippets"}, {"memory"},
 		{"providers"}, {"completion"}, {"config", "set"}, {"doctor"}, {"todo"},
 		{"metrics"}, {"chats", "list"},
 	} {

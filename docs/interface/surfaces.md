@@ -672,7 +672,7 @@ chip has not said already.
 
 ### The one-shot result
 
-The prefix mode's whole interface. The command, one line of what it does, and
+`shhh cmd`'s whole interface. The command, one line of what it does, and
 the keys. Where the command is flagged as dangerous, the *default key moves* —
 the safe key states the blast radius and a second key runs it — so the
 decision is taken once, on screen, rather than as an afterthought prompt.

@@ -3,8 +3,8 @@ package ui
 // The one-shot's provider failures (
 // docs/interface/surfaces.md#the-recovery-row).
 //
-// `shhh "find the big files"` is where most people meet the product, and it
-// is where a raw provider error used to land hardest: one line of Go on
+// `shhh cmd "find the big files"` is where most people meet the product, and
+// it is where a raw provider error used to land hardest: one line of Go on
 // stderr, no indication whether the key, the network or the account was the
 // problem. The classification is the same one the session uses — that is the
 // point of it living in internal/provider — and so is the row it renders on.
