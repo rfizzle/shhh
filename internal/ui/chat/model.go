@@ -771,6 +771,12 @@ type Model struct {
 	completeStart        int
 	completeEnd          int
 	completeArg          bool
+	// completeToken is what has been typed of the token being completed, and
+	// completeMoved says ↑↓ has pointed at a row. Together they are how enter
+	// tells a menu that is a list of what could follow from one that is a
+	// choice already narrowed — see completionRunsInput.
+	completeToken string
+	completeMoved bool
 	// completeFiles says the menu is the @ file mention's (mention.go):
 	// enter inserts the focused path rather than running anything, and
 	// mentionCache holds the file walk for the life of the @ draft — it
@@ -1878,6 +1884,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.completeIdx > 0 {
 					m.completeIdx--
 				}
+				m.completeMoved = true
 				return m, nil
 			}
 			// The start screen's suggestion list claims ↑↓ only while it is
@@ -1917,6 +1924,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.completeIdx < len(m.completions)-1 {
 					m.completeIdx++
 				}
+				m.completeMoved = true
 				return m, nil
 			}
 			if next, claimed := m.startKey("down"); claimed {

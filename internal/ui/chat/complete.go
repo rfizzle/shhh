@@ -402,6 +402,11 @@ func (m *Model) syncCompletions() {
 	m.completeStart = start
 	m.completeEnd = end
 	m.completeIdx = 0
+	m.completeToken = token
+	// A keystroke is a new menu, whatever the last one was pointed at: what
+	// ↑↓ said about a list the reader has since retyped is not an answer
+	// about this one.
+	m.completeMoved = false
 	// Keep the arrowed-to row focused across keystrokes — unless the typed
 	// text now names a candidate exactly, which always wins the focus.
 	if !exactlyNamed(m, token) {
@@ -481,8 +486,23 @@ func (m *Model) clearCompletions() {
 	m.completeFor = ""
 	m.completeArg = false
 	m.completeFiles = false
+	m.completeToken = ""
+	m.completeMoved = false
 	m.argCache = nil
 	m.argCacheFor = ""
+}
+
+// completionRunsInput reports whether enter belongs to the line rather than
+// to the focused row. An argument menu that opened on an empty token and has
+// not been arrowed onto is a list of what could follow, not a choice already
+// made: "/mo" then tab leaves "/model " with the whole catalog under it, and
+// the reader who presses enter there means bare /model — the picker — not
+// whichever model happens to sort first. Type a prefix or point at a row and
+// the menu is a choice again, which enter takes.
+//
+// See docs/interface/surfaces.md#the-completion-menu.
+func (m Model) completionRunsInput() bool {
+	return m.completeArg && !m.completeFiles && m.completeToken == "" && !m.completeMoved
 }
 
 // completionActive reports whether the menu applies to the input right now; a
@@ -572,6 +592,13 @@ func (m Model) completionMenuLines() []string {
 		return lines
 	}
 	hint := "tab complete · enter run · ↑↓ move · esc dismiss"
+	if m.completionRunsInput() {
+		// Enter runs the line as it stands here, so the row says which line
+		// that is: a reader who tab-completed "/model" is about to get the
+		// picker, not the first row under the cursor.
+		hint = "tab complete · enter run " + strings.TrimSpace(m.completeFor) +
+			" · ↑↓ pick · esc dismiss"
+	}
 	if m.completeFiles {
 		// A file row is inserted, never run: the sentence goes on.
 		hint = "tab/enter insert · ↑↓ move · esc dismiss"

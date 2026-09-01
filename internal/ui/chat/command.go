@@ -26,15 +26,20 @@ func (m Model) submitInput() (tea.Model, tea.Cmd) {
 	// With the completion menu open, enter runs the highlighted command
 	// rather than the raw prefix; on an argument row it completes the
 	// token first and runs the whole line. A file-mention row is inserted,
-	// never run — the sentence is still being written (mention.go).
+	// never run — the sentence is still being written (mention.go). A menu
+	// the reader has neither filtered nor arrowed onto is showing what could
+	// follow rather than a choice, and enter is the line's
+	// (completionRunsInput).
 	if m.completionActive() {
-		if m.completeFiles {
+		switch {
+		case m.completeFiles:
 			return m.insertMention()
-		}
-		if m.completeArg {
+		case m.completionRunsInput():
+			// The line as typed, untouched by the row under the cursor.
+		case m.completeArg:
 			m.acceptCompletion()
 			text = strings.TrimSpace(m.input.Value())
-		} else {
+		default:
 			text = m.completions[m.completeIdx].name
 		}
 	}

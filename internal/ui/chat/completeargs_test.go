@@ -262,3 +262,98 @@ func TestArgCompletion_MenuInView(t *testing.T) {
 		t.Fatal("the view should render the argument menu and its hint line")
 	}
 }
+
+// Tab-completing a command name leaves the whole argument catalog under the
+// cursor, and enter there means the line — bare /model is the picker. The
+// menu only claims enter once it is a choice: a typed prefix or an arrowed-to
+// row.
+func TestArgCompletion_EnterOnAnUnfilteredMenuRunsTheLine(t *testing.T) {
+	m := readyModel(t).
+		WithModelSwitcher(func(string) {}).
+		WithPricing(nil, "m1").
+		WithModelOptions([]string{"m1", "m2", "m3"})
+	m = typeChars(t, m, "/mo")
+
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyTab})
+	m = updated.(Model)
+	if m.input.Value() != "/model " {
+		t.Fatalf("tab should complete the command name, got %q", m.input.Value())
+	}
+	if !m.completionActive() || !m.completeArg {
+		t.Fatal("the argument menu should be open over the catalog")
+	}
+
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+	if m.state != statePick || m.picker == nil {
+		t.Fatalf("enter on the unfiltered menu should open the picker, state is %v", m.state)
+	}
+	if m.modelName != "m1" {
+		t.Fatalf("enter should not have taken a row, model is %q", m.modelName)
+	}
+}
+
+func TestArgCompletion_ArrowMakesTheMenuTheChoiceAgain(t *testing.T) {
+	var switched string
+	m := readyModel(t).
+		WithModelSwitcher(func(name string) { switched = name }).
+		WithPricing(nil, "m1").
+		WithModelOptions([]string{"m1", "m2", "m3"})
+	m = typeChars(t, m, "/model ")
+
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	m = updated.(Model)
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+
+	if m.picker != nil {
+		t.Fatal("a row that was arrowed onto is a choice, not the bare command")
+	}
+	if switched != "m2" {
+		t.Fatalf("enter should have taken the arrowed-to row, switched to %q", switched)
+	}
+}
+
+func TestArgCompletion_TypedPrefixStillRunsTheRow(t *testing.T) {
+	m := typeChars(t, readyModel(t), "/ui verbosity l")
+
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+	if m.verbosity != verbosityLow {
+		t.Fatalf("a filtered menu keeps enter, verbosity is %s", m.verbosity)
+	}
+}
+
+// Backspacing out of a typed prefix hands enter back to the line: the menu is
+// showing the whole catalog again, so it is a list again.
+func TestArgCompletion_BackspaceToAnEmptyTokenGivesEnterBack(t *testing.T) {
+	m := readyModel(t).
+		WithModelSwitcher(func(string) {}).
+		WithPricing(nil, "m1").
+		WithModelOptions([]string{"m1", "m2", "m3"})
+	m = typeChars(t, m, "/model m")
+
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyBackspace})
+	m = updated.(Model)
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+
+	if m.state != statePick {
+		t.Fatalf("enter should open the picker again, state is %v", m.state)
+	}
+}
+
+// The hint says which line enter runs, so the reader is never guessing which
+// of the two readings the menu is offering.
+func TestArgCompletion_HintNamesTheLineEnterRuns(t *testing.T) {
+	m := readyModel(t).
+		WithModelSwitcher(func(string) {}).
+		WithPricing(nil, "m1").
+		WithModelOptions([]string{"m1", "m2", "m3"})
+	m = typeChars(t, m, "/model ")
+
+	menu := strings.Join(m.completionMenuLines(), "\n")
+	if !strings.Contains(menu, "enter run /model") {
+		t.Fatalf("the hint should name the line enter runs:\n%s", menu)
+	}
+}

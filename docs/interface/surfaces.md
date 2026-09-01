@@ -269,6 +269,29 @@ something already scoped — a running command, the permission classifier, a
 decision on its card — keep their single press, because those are reversible
 acts, not abandoned work.
 
+### The completion menu
+
+A slash at the start of the draft opens the registry of commands under the
+box, and completion does not stop at the command's name: a command whose
+arguments are a known set — the model catalog, the saved chats, the branches,
+a fixed list of subcommands — offers them for the token under the cursor.
+
+Tab writes the focused row into the draft, ↑↓ move, and esc dismisses the menu
+until the draft changes again.
+
+Enter is the one key with two readings, and which it has is decided by what
+the reader has done, never by what the menu happens to be showing. A menu
+narrowed to a choice — a typed prefix, or a row arrowed onto — is a choice,
+and enter takes it. A menu that opened on an empty token is a list of what
+*could* follow, and enter belongs to the line as it stands: completing
+`/model` and pressing enter opens the model picker, because that is the line
+in the box, rather than switching to whichever model sorts first. The hint row
+names the line it would run, so the two readings are never guessed at.
+
+The file mention's menu is the exception that proves the rule: nothing there
+is ever run. Enter writes the path into the sentence, which is still being
+written.
+
 ### The inspector rail
 
 Past a width threshold, a rail on the right answers the standing questions —
