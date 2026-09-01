@@ -18,8 +18,9 @@ import (
 	"sort"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
+
+	"github.com/rfizzle/shhh/internal/shell"
 )
 
 const (
@@ -302,11 +303,8 @@ func (s *Supervisor) start(name, command, cwd string, extraEnv map[string]string
 		return "", fmt.Errorf("too many processes (max %d); stop one first", MaxProcesses)
 	}
 
-	sh := os.Getenv("SHELL")
-	if sh == "" {
-		sh = "/bin/sh"
-	}
-	cmd := exec.Command(filepath.Clean(sh), "-c", command)
+	argv := shell.Current().Argv(command)
+	cmd := exec.Command(argv[0], argv[1:]...)
 	cmd.Dir = dir
 	cmd.Env = append(env, s.env...)
 	cmd.SysProcAttr = sysProcAttr()
@@ -382,11 +380,6 @@ func (s *Supervisor) reap(p *proc, cmd *exec.Cmd) {
 	close(p.exited)
 }
 
-// signalGroup signals a process's whole group (never just the leader).
-func signalGroup(pid int, sig syscall.Signal) {
-	_ = syscall.Kill(-pid, sig)
-}
-
 // stop terminates a process tree: SIGTERM to the group, SIGKILL after the
 // grace period. Stopping an already-exited process just reports its state.
 func (s *Supervisor) stop(name string) (string, error) {
@@ -403,13 +396,13 @@ func (s *Supervisor) terminate(p *proc) {
 	if p.isDone() {
 		return
 	}
-	signalGroup(p.pid, syscall.SIGTERM)
+	signalGroup(p.pid, signalTerm)
 	select {
 	case <-p.exited:
 		return
 	case <-time.After(stopGrace):
 	}
-	signalGroup(p.pid, syscall.SIGKILL)
+	signalGroup(p.pid, signalKill)
 	<-p.exited
 }
 

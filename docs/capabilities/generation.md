@@ -14,6 +14,29 @@ spelling for this platform, the right utility for what is actually installed.
 A tool that emits a generic command and leaves the user to port it has moved
 the work rather than done it.
 
+## The prompt is told which shell it is writing for
+
+There is one resolution of "which shell", and both the prompt and the runner
+read it. That is the whole point of it being one: a prompt that describes bash
+while commands go to PowerShell is worse than either alone, because the model
+writes something correct for a shell that is never going to see it.
+
+Which shell that is differs by more than its name. On Unix it is `$SHELL`, or
+the POSIX floor beneath it, run with `-c`. On Windows there is no `$SHELL` and
+no `-c`: PowerShell is preferred, because that is where Windows development
+happens and a command with a pipeline or a quoted path is ordinary there and a
+fight in cmd — and cmd is the floor, the one shell certainly present, taking
+`/C` instead.
+
+The flags travel with the shell rather than being spelled at each call site,
+because getting them wrong is silent. cmd reads an unknown leading flag as a
+filename.
+
+Neither platform loads the user's profile. On Unix that is what `$SHELL -c`
+already does; on Windows it has to be asked for. A profile prints banners and
+sets aliases, and both end up in captured output that the model reads back as
+the command's own.
+
 ## The command is the output, and only the command
 
 Whatever the model wraps around it — fences, backticks, prose — is stripped

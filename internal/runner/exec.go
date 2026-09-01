@@ -7,13 +7,21 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
 
 	"github.com/rfizzle/shhh/internal/history"
+	"github.com/rfizzle/shhh/internal/shell"
 )
+
+// shellCommand is a command line as an *exec.Cmd through this platform's
+// shell. Every captured form goes through it so that none of them can end up
+// spelling the invocation itself (shell.Shell).
+func shellCommand(ctx context.Context, command string) *exec.Cmd {
+	argv := shell.Current().Argv(command)
+	return exec.CommandContext(ctx, argv[0], argv[1:]...)
+}
 
 // sessionEnv is what every captured command's environment carries beyond
 // the process's own: the session's secrets, as NAME=value. It is
@@ -48,12 +56,10 @@ func Environ() []string {
 }
 
 func Run(command string) (exitCode int) {
-	sh := os.Getenv("SHELL")
-	if sh == "" {
-		sh = "/bin/sh"
-	}
+	sh := shell.Current()
+	argv := sh.Argv(command)
 
-	cmd := exec.Command(filepath.Clean(sh), "-c", command)
+	cmd := exec.Command(argv[0], argv[1:]...)
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -82,7 +88,7 @@ func Run(command string) (exitCode int) {
 	// Best effort: the shell's history file is a convenience, and a command
 	// that ran is not made to fail by a history file that could not be
 	// written.
-	go func() { _ = history.Append(filepath.Base(sh), command) }()
+	go func() { _ = history.Append(sh.Name, command) }()
 
 	return 0
 }
@@ -92,12 +98,7 @@ func Run(command string) (exitCode int) {
 // themselves (e.g. the chat TUI). Cancelling the context kills the command;
 // a non-exit failure (including a kill) reports exit code -1.
 func RunCapture(ctx context.Context, command string) (output string, exitCode int) {
-	sh := os.Getenv("SHELL")
-	if sh == "" {
-		sh = "/bin/sh"
-	}
-
-	cmd := prepare(exec.CommandContext(ctx, filepath.Clean(sh), "-c", command), "")
+	cmd := prepare(shellCommand(ctx, command), "")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		var exitErr *exec.ExitError
@@ -171,11 +172,7 @@ func runTail(cmd *exec.Cmd, onLine func(string)) (string, int) {
 // as it appears, so callers can show a live tail. onLine runs on the
 // command's output goroutines and must be safe to call concurrently.
 func RunCaptureTail(ctx context.Context, command string, onLine func(string)) (string, int) {
-	sh := os.Getenv("SHELL")
-	if sh == "" {
-		sh = "/bin/sh"
-	}
-	return runTail(prepare(exec.CommandContext(ctx, filepath.Clean(sh), "-c", command), ""), onLine)
+	return runTail(prepare(shellCommand(ctx, command), ""), onLine)
 }
 
 // RunCaptureArgvTail is RunCaptureArgv with the same live-line reporting, for
@@ -195,12 +192,7 @@ func RunCaptureArgvTail(ctx context.Context, argv []string, onLine func(string))
 // RunCaptureIn is RunCapture with an explicit working directory, for
 // sub-agent commands that must run inside their own workspace.
 func RunCaptureIn(ctx context.Context, dir, command string) (output string, exitCode int) {
-	sh := os.Getenv("SHELL")
-	if sh == "" {
-		sh = "/bin/sh"
-	}
-
-	cmd := prepare(exec.CommandContext(ctx, filepath.Clean(sh), "-c", command), dir)
+	cmd := prepare(shellCommand(ctx, command), dir)
 	out, err := cmd.CombinedOutput()
 	if err != nil {
 		var exitErr *exec.ExitError

@@ -2,10 +2,13 @@ package shell
 
 import (
 	"os"
-	"path/filepath"
 	"runtime"
 	"strconv"
 )
+
+// lookupEnv is the environment, a variable so a test can hand resolve a
+// machine that is not this one.
+var lookupEnv = os.Getenv
 
 type Info struct {
 	Shell  string
@@ -16,23 +19,26 @@ type Info struct {
 }
 
 func Detect() Info {
-	sh := os.Getenv("SHELL")
-	if sh == "" {
-		sh = "/bin/sh"
-	}
-
 	cwd, _ := os.Getwd()
 
-	uid, _ := strconv.Atoi(os.Getenv("EUID"))
-	if uid != 0 {
-		uid = os.Getuid()
+	// Root is a Unix idea. os.Getuid answers -1 on Windows, which is already
+	// not zero, but the question is asked explicitly here because what hangs
+	// off the answer — whether to tell the model about sudo — has no meaning
+	// there at all.
+	root := false
+	if runtime.GOOS != "windows" {
+		uid, _ := strconv.Atoi(os.Getenv("EUID"))
+		if uid != 0 {
+			uid = os.Getuid()
+		}
+		root = uid == 0
 	}
 
 	return Info{
-		Shell:  filepath.Base(sh),
+		Shell:  Current().Name,
 		OS:     runtime.GOOS,
 		Arch:   runtime.GOARCH,
 		Cwd:    cwd,
-		IsRoot: uid == 0,
+		IsRoot: root,
 	}
 }

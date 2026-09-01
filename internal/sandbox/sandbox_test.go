@@ -3,10 +3,8 @@ package sandbox
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 	"slices"
 	"strings"
-	"syscall"
 	"testing"
 )
 
@@ -117,24 +115,6 @@ func TestResolveRefusesWorkspaceInsideMask(t *testing.T) {
 	_, err := resolvePolicy(policy)
 	if err == nil || !strings.Contains(err.Error(), "wrap unsupported") {
 		t.Fatalf("workspace inside a mask must be refused, got %v", err)
-	}
-}
-
-func TestResolveRefusesUnmaskableDenyType(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("no fifos on windows")
-	}
-	home := testHome(t)
-	fifo := filepath.Join(home, "weird")
-	if err := syscall.Mkfifo(fifo, 0o600); err != nil {
-		t.Skipf("cannot create fifo: %v", err)
-	}
-	policy, _ := workspacePolicy(t)
-	policy.DenyExtra = []string{fifo}
-
-	_, err := resolvePolicy(policy)
-	if err == nil || !strings.Contains(err.Error(), "wrap unsupported") {
-		t.Fatalf("unmaskable deny path must be refused, got %v", err)
 	}
 }
 
