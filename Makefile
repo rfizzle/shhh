@@ -39,7 +39,7 @@ else
 	RESET   := ""
 endif
 
-.PHONY: all build build-all linux darwin clean fmt lint tidy test race ci docs-check eval help
+.PHONY: all build build-all linux darwin windows clean fmt lint tidy test race ci cross docs-check eval help
 
 all: help
 
@@ -48,7 +48,7 @@ build: fmt tidy ## Build binary for current platform
 	@echo "${MAGENTA}Building $(APP_NAME)...${RESET}"
 	@CGO_ENABLED=0 $(GOCMD) build -ldflags "$(LDFLAGS)" -o $(APP_NAME) ./cmd/shhh
 
-build-all: fmt clean tidy darwin linux ## Build for all platforms
+build-all: fmt clean tidy darwin linux windows ## Build for all platforms
 	@echo "${MAGENTA}Finished building all platforms.${RESET}"
 
 darwin: ## Build for macOS (amd64 + arm64)
@@ -62,6 +62,12 @@ linux: ## Build for Linux (amd64 + arm64)
 	@CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GOCMD) build -ldflags "$(LDFLAGS)" -o bin/linux-amd64/$(APP_NAME) ./cmd/shhh
 	@echo "${MAGENTA}Building for Linux arm64...${RESET}"
 	@CGO_ENABLED=0 GOOS=linux GOARCH=arm64 $(GOCMD) build -ldflags "$(LDFLAGS)" -o bin/linux-arm64/$(APP_NAME) ./cmd/shhh
+
+windows: ## Build for Windows (amd64 + arm64)
+	@echo "${MAGENTA}Building for Windows amd64...${RESET}"
+	@CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(GOCMD) build -ldflags "$(LDFLAGS)" -o bin/windows-amd64/$(APP_NAME).exe ./cmd/shhh
+	@echo "${MAGENTA}Building for Windows arm64...${RESET}"
+	@CGO_ENABLED=0 GOOS=windows GOARCH=arm64 $(GOCMD) build -ldflags "$(LDFLAGS)" -o bin/windows-arm64/$(APP_NAME).exe ./cmd/shhh
 
 clean: ## Remove build artifacts
 	@echo "${MAGENTA}Cleaning build artifacts...${RESET}"
@@ -104,6 +110,19 @@ eval: build ## Run the eval suite against the configured model (costs real reque
 	@echo "${MAGENTA}Running the eval suite...${RESET}"
 	@./$(APP_NAME) eval $(EVAL_ARGS)
 
+## Cross:
+# The platforms goreleaser ships. A Unix-only syscall compiles perfectly on the
+# machine that introduced it and breaks a release nobody builds until they tag
+# one — which is how Windows was broken for four months. vet rather than build,
+# because it covers the test files too, and those are where a platform symbol
+# usually gets named first.
+cross: ## Check every released platform still compiles
+	@echo "${MAGENTA}Cross-compiling for every released platform...${RESET}"
+	@for os in darwin linux windows; do \
+		echo "  $$os"; \
+		GOOS=$$os $(GOVET) $(PROJECT_PACKAGES) || exit 1; \
+	done
+
 ## Test:
 test: ## Run tests
 	@echo "${MAGENTA}Running tests...${RESET}"
@@ -113,7 +132,7 @@ race: ## Run tests with race detector
 	@echo "${MAGENTA}Running tests with race detector...${RESET}"
 	@$(GOTEST) -v -race $(PROJECT_PACKAGES)
 
-ci: ## Run tests and lint for CI
+ci: cross ## Run tests and lint for CI
 	@echo "${MAGENTA}Checking documentation citations...${RESET}"
 	@python3 scripts/check-docs.py
 	@echo "${MAGENTA}Running tests...${RESET}"

@@ -10,12 +10,18 @@ builds:
     goos:
       - darwin
       - linux
+      - windows
     goarch:
       - amd64
       - arm64
 
 archives:
   - format: tar.gz
+    # Windows has no tar in the shell most people extract with, and a .zip is
+    # what its own Explorer opens without a second tool.
+    format_overrides:
+      - goos: windows
+        format: zip
     name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
 
 brews:

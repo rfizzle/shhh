@@ -80,6 +80,7 @@ golden fixture, so this cannot drift back.
 | Lint | `make lint` (go vet + golangci-lint) |
 | Tidy modules | `make tidy` |
 | CI suite | `make ci` |
+| Check every released platform compiles | `make cross` (part of `make ci`) |
 | Check doc citations | `make docs-check` |
 | Run the eval suite | `make eval` (costs real requests; not part of `make ci`) |
 | Update golden files | `go test ./internal/ui/components ./internal/ui/chat -update-golden` or `SHHH_UPDATE_GOLDEN=1 go test ./...` |
@@ -166,7 +167,7 @@ internal/
   plan/                    Plan mode state (step tracking)
   resolve/                 Provider resolution from flags/config/env
   project/                 Project context detection (language, framework, recent files)
-  shell/                   Shell detection
+  shell/                   Which shell this platform runs a command line with, and how — the one resolution the prompt and every runner read
   process/                 Background process management (the process tool)
   structural/              Optional external tools integration (ast-grep, fd, jaq, sd, tokei)
   radius/                  Blast-radius analysis for edits

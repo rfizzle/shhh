@@ -11,6 +11,20 @@ $ find . -name '*.go' -mtime -7
 [↵] run  [e] edit  [r] revise  [x] explain  [c] copy  [s] save  [esc] quit
 ```
 
+## Platforms
+
+| | Sessions and tools | Command containment |
+|---|---|---|
+| Linux | yes | bubblewrap |
+| macOS | yes | Seatbelt |
+| Windows | yes, on PowerShell or cmd | none on the host — use `--sandbox` |
+
+Windows has no host containment mechanism, so an approved command there runs
+as you and every approval says so. The container sandbox
+(`shhh code -p --sandbox`, with Docker or Podman) is the way to contain one.
+`shhh doctor` states which mechanism is in force on your machine, and never
+claims one that is not.
+
 ## Install
 
 ### Homebrew
@@ -18,6 +32,13 @@ $ find . -name '*.go' -mtime -7
 ```bash
 brew install rfizzle/tap/shhh
 ```
+
+### Windows
+
+Download the `.zip` for your architecture from
+[releases](https://github.com/rfizzle/shhh/releases) and put `shhh.exe` on your
+`PATH`, or install with Go below. PowerShell is used when it is present and
+`cmd` otherwise; `shhh doctor` says which.
 
 ### Go
 
