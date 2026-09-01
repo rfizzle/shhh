@@ -667,7 +667,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithScope(sc).
 		WithMaxToolRounds(maxRoundsFor(cfg, session.maxRounds, session.maxRoundsSet)).
 		WithConfigWriter(configWriter()).
-		WithMouse(cfg.Appearance.Mouse).
+		WithMouse(cfg.MouseEnabled()).
 		WithPasteThresholds(cfg.Appearance.PasteLines, cfg.Appearance.PasteColumns).
 		WithNotify(cfg.NotifyEnabled()).
 		WithWindowTitle(cfg.WindowTitleEnabled()).

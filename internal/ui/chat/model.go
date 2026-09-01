@@ -548,11 +548,10 @@ type Model struct {
 	// because it is a reading of this surface rather than a preference about
 	// it, and the four supporting TUIs treat their own `[?]` the same way.
 	readingKeyList bool
-	// mouseOn turns terminal mouse reporting on (ctrl+x, /ui mouse). The
-	// zero value is off, because reporting costs the terminal its own
-	// click-drag selection and a transcript is text people copy out of. The
-	// wheel is the side of the trade with a substitute — pgup/pgdn, ctrl+o,
-	// j/k all read the transcript — so the wheel is the side you ask for.
+	// mouseOn turns terminal mouse reporting on (ctrl+x, /ui mouse). It is
+	// on by default so the wheel scrolls the transcript, click-drag selects
+	// text, and clicks open rows or answer cards. Turning it off hands
+	// selection back to the terminal's native selector.
 	mouseOn bool
 	// caps is what this terminal told shhh it can do — inline images,
 	// desktop notifications, focus events. It is asked once,
@@ -986,6 +985,8 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 		verbosity: verbosityNormal,
 		atBottom:  true,
 		copyFn:    clipboard.Copy,
+		// On unless the config says otherwise (WithMouse).
+		mouseOn: true,
 		// On unless the config says otherwise (WithNotify): unlike mouse
 		// reporting, a notification takes nothing away, and it cannot fire
 		// while anyone is looking at the screen.
@@ -2371,10 +2372,9 @@ func (m Model) View() tea.View {
 	// nothing back, and saying nothing is an answer shhh can act on: no blur
 	// ever arrives, so it never concludes the reader has gone.
 	v.ReportFocus = true
-	// Reporting is off for the session by default — the terminal keeps its
-	// own click-drag selection, which is the one thing tracking costs and the
-	// one thing nothing else here can do — and `/ui mouse on` buys the wheel
-	// with it.
+	// Reporting is on for the session by default — the wheel scrolls the
+	// transcript, shhh selects text itself and clicks open rows. `/ui mouse off`
+	// hands selection back to the terminal.
 	if m.mouseOn {
 		v.MouseMode = tea.MouseModeCellMotion
 	}
@@ -2856,6 +2856,12 @@ func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
 	if !m.roundsUnbounded() && m.agent.Rounds() >= m.effectiveMaxToolRounds() {
 		return m.pauseAtRoundLimit()
 	}
+	// A long turn is asked what it has got, long before the cap. Steering
+	// injected above answers the same question, so a turn the reader has just
+	// steered is not asked it twice.
+	if m.agent.DueForCheckIn() {
+		m.injectCheckIn()
+	}
 	m.setTurnState(stateStreaming)
 	m.streaming = ""
 	m.trimForRequest()
@@ -3055,6 +3061,22 @@ func (m *Model) cancelStreaming() {
 	// it held and the reader decides what still applies (followup.go).
 	m.holdFollowUps()
 	// Restored steering empties the queue: the notice rail may shrink.
+	m.syncViewport()
+}
+
+// injectCheckIn asks the turn to take stock and carries straight on. It is
+// steering the session gives itself: the same message a reader sends when
+// they ask whether it has enough yet, at a point the reader should not have
+// to be watching for.
+//
+// The round counter is deliberately not reset. A check-in is not a fresh
+// turn — the cap still has to arrive on schedule, because that one is the
+// reader's checkpoint and moving it would hide the turn from them.
+func (m *Model) injectCheckIn() {
+	text := agent.CheckInPrompt(m.agent.Rounds(), agent.FinishedInSession)
+	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: text})
+	m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
+		"Check-in — %d rounds used. Taking stock, then carrying on.", m.agent.Rounds())})
 	m.syncViewport()
 }
 
@@ -3849,10 +3871,9 @@ func helpText() string {
   /ui            Activity feed density, pane layout, monochrome and mouse:
                  /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off>
                  (low hides counts, med collapses rows, high expands rows;
-                  mouse is off by default so the terminal keeps click-drag
-                  selection — on, shhh selects the transcript itself, the drag
-                  scrolls past the pane, and a click opens the row or answers
-                  the card key under it. Ctrl+X flips it and saves it)
+                  mouse is on by default so the wheel scrolls the transcript,
+                  click-drag selects it, and clicks open rows or answer keys.
+                  Off hands selection back to the terminal. Ctrl+X flips it and saves it)
                  terminal  what this terminal answered when shhh asked what
                            it can do: inline images, desktop notifications,
                            focus events, cell size

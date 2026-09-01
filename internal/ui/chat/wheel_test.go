@@ -60,7 +60,7 @@ func TestWheelDirectionChangeFlushesInOrder(t *testing.T) {
 // With reporting off the filter steps aside: every message, wheel included,
 // passes through unchanged.
 func TestWheelFilterMouseOffIsNoOp(t *testing.T) {
-	m := New(nil, nil)
+	m := New(nil, nil).WithMouse(false)
 	f := NewWheelFilter()
 
 	if out, ok := f.Filter(m, wheelDown()).(tea.MouseWheelMsg); !ok || out.Button != tea.MouseWheelDown {

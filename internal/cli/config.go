@@ -523,9 +523,25 @@ func configSettings() []configSetting {
 		options:  noOptions,
 	}, {
 		group: "WORKSPACE", key: "appearance.mouse", label: "mouse reporting",
-		read:     flag(func(c config.Config) bool { return c.Appearance.Mouse }),
-		fallback: "off — the terminal keeps click-drag selection; on, shhh selects the transcript itself",
-		options:  noOptions,
+		// Not flag(): the default is on, so an unset file and a file that
+		// says true are different facts the screen has to keep apart.
+		read: func(c config.Config) string {
+			if c.Appearance.Mouse == nil {
+				return ""
+			}
+			return strconv.FormatBool(*c.Appearance.Mouse)
+		},
+		show: func(raw string) (string, components.FieldTone, string) {
+			if raw == "false" {
+				return "off", components.ToneNeutral, "the terminal keeps its native click-drag selection"
+			}
+			return "on", components.ToneSafe, ""
+		},
+		fallback: "on",
+		options: func(config.Config) []components.SelectOption {
+			return boolOptions("the wheel scrolls the transcript and shhh selects text itself",
+				"the terminal keeps native click-drag selection; navigation is keyboard only")
+		},
 	}, {
 		group: "WORKSPACE", key: "appearance.paste_lines", label: "paste staged taller than",
 		// Not num(): a negative is the one number that is not a threshold. It

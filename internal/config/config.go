@@ -305,15 +305,12 @@ func (c Config) AgentModel(role, sessionModel string) string {
 
 type AppearanceConfig struct {
 	AccentColor string `toml:"accent_color"`
-	// Mouse turns terminal mouse reporting on. It is off by default because
-	// reporting costs the terminal its own click-drag selection, and a
-	// transcript is text people copy out of — while scrolling it already has
-	// pgup/pgdn, ctrl+o and j/k. So it is the thing you opt into (ctrl+x, or
-	// `/ui mouse on`), and what it buys is both halves of what it cost: the
-	// wheel, and a selection shhh owns — one that scrolls past the edge of
-	// the pane and copies on release, which the terminal's own
-	// cannot do.
-	Mouse bool `toml:"mouse"`
+	// Mouse turns terminal mouse reporting on. It is on by default so the
+	// wheel scrolls the transcript, click-drag selects it (scrolling past the
+	// edge of the pane and copying on release), and clicks open rows or answer
+	// decision cards. When turned off (ctrl+x, or `/ui mouse off`), the
+	// terminal keeps its native click-drag selection.
+	Mouse *bool `toml:"mouse"`
 	// Notify lets a session raise a desktop notification when a turn stops while
 	// the terminal has said the window is not the one in front
 	// (docs/interface/surfaces.md#when-you-are-not-there). It is on when unset,
@@ -366,6 +363,15 @@ func (c Config) ReadOnlyAutoEnabled() bool {
 		return true
 	}
 	return *c.Behavior.ReadOnlyAuto
+}
+
+// MouseEnabled reports whether a session starts with terminal mouse reporting
+// enabled (the default).
+func (c Config) MouseEnabled() bool {
+	if c.Appearance.Mouse == nil {
+		return true
+	}
+	return *c.Appearance.Mouse
 }
 
 // TitlesEnabled reports whether sessions are titled: what summary.title
@@ -493,7 +499,8 @@ func Set(cfg *Config, key, value string) error {
 		fmt.Sscanf(value, "%d", &n)
 		cfg.Behavior.ContextMaxTokens = n
 	case "appearance.mouse":
-		cfg.Appearance.Mouse = value == "true"
+		v := value == "true"
+		cfg.Appearance.Mouse = &v
 	case "appearance.notify":
 		v := value == "true"
 		cfg.Appearance.Notify = &v

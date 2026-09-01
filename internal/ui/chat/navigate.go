@@ -65,8 +65,7 @@ func (m Model) toggleMouse() (tea.Model, tea.Cmd) {
 }
 
 // WithMouse sets whether the session starts with terminal mouse reporting on
-// (appearance.mouse). Off is the default and the zero value, which is what
-// leaves the terminal's own click-drag selection working.
+// (appearance.mouse). On is the default.
 func (m Model) WithMouse(on bool) Model {
 	m.mouseOn = on
 	return m
