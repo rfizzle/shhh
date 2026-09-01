@@ -3,20 +3,24 @@ package cli
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"net/http"
 	"net/http/httptest"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/web"
 )
 
@@ -367,5 +371,60 @@ func TestChatSessionRoundsMatchHeadless(t *testing.T) {
 	a.SetMaxRounds(maxRoundsFor(uncapped, 0, false))
 	if !a.Uncapped() {
 		t.Error("a negative behavior.max_tool_rounds should leave the agent uncapped")
+	}
+}
+
+// A headless run reports the same events an interactive session does, at the
+// same codes and with the same position. A run recorded without its position
+// cannot be told apart from one that circled for forty rounds.
+func TestHeadlessObserver_EventShapes(t *testing.T) {
+	db := fixtureStore(t)
+	rec := startObserveRecorder(db, "print", "anthropic", "test-model", nil)
+	rounds := 0
+	obs := headlessObserver{rec: rec, rounds: func() int { return rounds }}
+
+	rounds = 1
+	obs.toolResult("read_file", 5*time.Millisecond, "the file")
+	rounds = 2
+	obs.toolResult("read_file", time.Millisecond, "error: open x: no such file or directory")
+	obs.decision(observe.DecisionDeny, "headless-default")
+	rounds = 3
+	obs.toolResult("search", time.Millisecond, "[repeat: this exact search call has now run 3 times]")
+	obs.summary(agent.SummaryVerdict{State: agent.SummaryOffTarget})
+	obs.intervene(agent.Intervention{Kind: agent.InterveneSteer})
+	rec.turn(1, 3, time.Second, observe.TurnDone)
+	rec.end()
+
+	assertShapes(t, shapesOf(t, db, rec.sessionID()), []eventShape{
+		{kind: storage.AgentEventTool, tool: "read_file", outcome: observe.OutcomeOK, turn: 1, round: 1, timed: true},
+		{kind: storage.AgentEventTool, tool: "read_file", outcome: observe.OutcomeError,
+			reason: observe.ClassNotFound, turn: 1, round: 2, timed: true},
+		{kind: storage.AgentEventDecision, outcome: observe.DecisionDeny, reason: "headless-default", turn: 1, round: 2},
+		{kind: storage.AgentEventTool, tool: "search", outcome: observe.OutcomeOK, turn: 1, round: 3, timed: true},
+		{kind: storage.AgentEventSignal, outcome: observe.SignalRepeat, reason: "search", turn: 1, round: 3},
+		{kind: storage.AgentEventSignal, outcome: observe.SignalSummary, reason: "off-target", turn: 1, round: 3},
+		{kind: storage.AgentEventSignal, outcome: observe.SignalIntervene, reason: "steer", turn: 1, round: 3},
+		{kind: storage.AgentEventTurn, outcome: observe.TurnDone, turn: 1, round: 3, timed: true},
+	})
+}
+
+// A headless run's turn ends in the same closed set a session's does. The
+// round cap in particular is the same event on both surfaces; spelling it
+// `failed` here would read the whole headless population as having no capped
+// turns at all.
+func TestHeadlessTurnOutcome(t *testing.T) {
+	for _, c := range []struct {
+		name string
+		err  error
+		want string
+	}{
+		{"finished", nil, observe.TurnDone},
+		{"round cap", fmt.Errorf("%w after 60 rounds", agent.ErrRoundCap), observe.TurnCapPaused},
+		{"interrupted", agent.ErrInterrupted, observe.TurnCancelled},
+		{"stream failure", errors.New("connection reset"), observe.TurnFailed},
+	} {
+		if got := headlessTurnOutcome(c.err); got != c.want {
+			t.Errorf("%s: headlessTurnOutcome = %q, want %q", c.name, got, c.want)
+		}
 	}
 }

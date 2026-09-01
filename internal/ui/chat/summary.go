@@ -236,7 +236,7 @@ func (m *Model) finishSummary(msg summaryDoneMsg) bool {
 	}
 	m.summary.failures = 0
 	v := msg.verdict
-	m.signal(observe.SignalSummary, summaryStateCode(v.State))
+	m.signal(observe.SignalSummary, observe.SummaryCode(v.State))
 	m.summary.last = &v
 	m.summary.lastRound = v.Round
 	m.summary.lastAt = time.Now()
@@ -249,19 +249,6 @@ func (m *Model) finishSummary(msg summaryDoneMsg) bool {
 	// here; the round boundary delivers it (intervene.go).
 	m.considerVerdict(v)
 	return rowed
-}
-
-// summaryStateCode is the reading's state as the recorder's closed set.
-func summaryStateCode(s agent.SummaryState) string {
-	switch s {
-	case agent.SummaryOnTarget:
-		return "on-target"
-	case agent.SummaryOffTarget:
-		return "off-target"
-	case agent.SummarySufficient:
-		return "sufficient"
-	}
-	return "unclear"
 }
 
 // countSummarySpend records what a reading cost against the summary's own

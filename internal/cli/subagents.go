@@ -323,7 +323,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 	return subagent.New(ctx, subagent.Options{
 		Root:   root,
 		NewEnv: newEnv,
-		Record: func(spec subagent.Spec) subagent.Recorder {
+		Record: func(spec subagent.Spec, sysPrompt string) subagent.Recorder {
 			// A child is recorded against the model it actually ran on. The
 			// session model is the wrong one to price it at: agents.model and
 			// a per-spawn model both routinely send children somewhere
@@ -333,7 +333,15 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 				model = env.modelName
 			}
 			r := startChildObserveRecorder(db, string(spec.Role), env.prov.Name(), model, prices, recorder.sessionID())
-			return subagent.Recorder{Usage: r.usage, ToolCall: r.toolCallOutcome, End: r.end}
+			// The child's own provenance, not the parent's: it ran under its
+			// own prompt, and a row that borrowed the parent's hash would put
+			// the two on the same side of an edit that only touched one.
+			// The checkout is the parent's, because that is the project the
+			// child is working on — a writer's worktree is a temporary copy
+			// of it, and fingerprinting that would give every writer a
+			// cohort of one.
+			r.stamp(sysPrompt, session.skills.Len(), projectFingerprintRoot())
+			return subagent.Recorder{Observer: r.observer(), End: r.end}
 		},
 		CommandAllowlist: cfg.Behavior.CommandAllowlist,
 		ReadOnlyExtra:    cfg.Behavior.ReadOnlyCommands,

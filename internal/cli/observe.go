@@ -108,15 +108,6 @@ func fingerprint(s string) string {
 	return hex.EncodeToString(sum[:6])
 }
 
-// toolCallOutcome records a tool event without a duration or position, for
-// sub-agent runners that don't time individual calls.
-func (r *observeRecorder) toolCallOutcome(tool, outcome string) {
-	if r == nil {
-		return
-	}
-	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{Kind: storage.AgentEventTool, Tool: tool, Outcome: outcome})
-}
-
 // observer adapts the recorder to the observer contract every surface
 // reports a session through.
 func (r *observeRecorder) observer() observe.Observer {
@@ -166,10 +157,6 @@ func (r *observeRecorder) usagePriced(turns, tokensIn, tokensOut int64, cost flo
 	_ = r.db.UpdateAgentSession(r.id, turns, tokensIn, tokensOut, cost)
 }
 
-func (r *observeRecorder) toolCall(tool string, duration time.Duration, outcome string) {
-	r.toolCallAt(observe.Pos{}, tool, duration, outcome, "")
-}
-
 func (r *observeRecorder) toolCallAt(at observe.Pos, tool string, duration time.Duration, outcome, class string) {
 	if r == nil {
 		return
@@ -179,10 +166,6 @@ func (r *observeRecorder) toolCallAt(at observe.Pos, tool string, duration time.
 		Kind: storage.AgentEventTool, Tool: tool, DurationMs: &ms, Outcome: outcome, Reason: class,
 		Turn: at.Turn, Round: at.Round,
 	})
-}
-
-func (r *observeRecorder) decision(decision, reason string) {
-	r.decisionAt(observe.Pos{}, decision, reason)
 }
 
 func (r *observeRecorder) decisionAt(at observe.Pos, decision, reason string) {

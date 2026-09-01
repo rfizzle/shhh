@@ -110,7 +110,7 @@ func (m Model) updateMemoryAsk(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if res.Note != "" {
 		text += " (" + res.Note + ")"
 	}
-	m.recordDecision(observe.DecisionAllow, "user")
+	m.recordDecision(observe.DecisionAllow, observe.ReasonUser)
 	resultText, err := m.memory.Save(scope, req.memoryDraft.Kind, text)
 	if err != nil {
 		resultText = "error: cannot save memory: " + err.Error()

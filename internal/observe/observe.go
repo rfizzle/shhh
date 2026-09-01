@@ -36,7 +36,9 @@ import (
 // forty searches across forty turns is a session.
 //
 // A surface that keeps no such accounting passes the zero value, which the
-// store already reads as "the recorder had no position".
+// store already reads as "the recorder had no position". Every surface
+// shipping today keeps one: a session and a child count their own turns, and
+// a headless run is one turn by construction.
 type Pos struct {
 	Turn  int64
 	Round int64
@@ -80,6 +82,50 @@ const (
 	DecisionAsk   = "ask"
 )
 
+// Reason codes for Observer.Decision — why a call was allowed, denied or
+// put to the user. Four surfaces now decide (the session, the headless run,
+// every sub-agent, and the classifier under each of them) and they must
+// spell one verdict one way: "safety" on one surface and "safety-flagged" on
+// another is a silent split in every aggregate that groups by reason, and
+// nothing fails when it happens.
+//
+// ReasonCode and AskReason below produce the policy's own subset of these;
+// the rest name a decision a surface made for itself. They are deliberately
+// not the error classes that happen to share a spelling — a decision's
+// reason and a failure's class are separate vocabularies, and pointing one
+// at the other renames a reason the day a class is renamed.
+const (
+	// The static policy's, from ReasonCode.
+	ReasonModeAcceptEdits = "mode-accept-edits"
+	ReasonModeAuto        = "mode-auto"
+	ReasonSessionGrant    = "session-grant"
+	ReasonSessionScope    = "session-scope"
+	ReasonAllowlist       = "allowlist"
+	ReasonPlanMode        = "plan-mode"
+	ReasonPlanInspection  = "plan-inspection"
+	// AskReason's, for a call the policy hands to a person.
+	ReasonSafety         = "safety"
+	ReasonScopeSensitive = "scope-sensitive"
+	ReasonOutOfScope     = "out-of-scope"
+	ReasonPolicy         = "policy"
+	// The person's own answer, and the shapes a session offers it in.
+	ReasonUser       = "user"
+	ReasonUserBatch  = "user-batch"
+	ReasonUserAlways = "user-always"
+	ReasonMemory     = "memory"
+	// The auto-mode classifier's. A classifier that could not decide is its
+	// own code rather than a denial, because failing closed to a prompt is
+	// not the same event as deciding no.
+	ReasonClassifier       = "classifier"
+	ReasonClassifierFailed = "classifier-failed"
+	// A headless run's, which has no person to ask: the flag opted in, or
+	// the default refused.
+	ReasonHeadlessYes     = "headless-yes"
+	ReasonHeadlessDefault = "headless-default"
+	// ReasonOther is a policy reason the map above does not name.
+	ReasonOther = "other"
+)
+
 // Tool outcomes for Observer.ToolCall. They are the digest's words rather
 // than a second pair spelled the same way: the reading a session is steered
 // by and the record it is measured by must agree on what "it failed" means.
@@ -105,9 +151,9 @@ const (
 	// SignalTrim: old tool results were elided to make room. Reason: how
 	// many, as a number.
 	SignalTrim = "context-trimmed"
-	// SignalSummary: the summarizer read the session. Reason: "on-target",
-	// "off-target" or "unclear". Every reading is recorded, not just the
-	// drifting ones — a drift rate needs its denominator.
+	// SignalSummary: the summarizer read the session. Reason is the
+	// reading's state, from SummaryCode. Every reading is recorded, not just
+	// the drifting ones — a drift rate needs its denominator.
 	SignalSummary = "summary"
 	// SignalSteer: the user sent instructions into a running turn. Reason:
 	// how many messages, as a number.
@@ -160,6 +206,24 @@ const (
 	ClassEmpty = "empty"
 )
 
+// SummaryCode is a summarizer reading's state as the closed set
+// SignalSummary's reason is drawn from. It lives here rather than beside the
+// scheduler that happens to take the reading because every unattended
+// surface takes the same one: a chat session, a headless run and every
+// sub-agent all report this signal, and three spellings of "the run has
+// drifted" is three columns nothing can add up.
+func SummaryCode(s agent.SummaryState) string {
+	switch s {
+	case agent.SummaryOnTarget:
+		return "on-target"
+	case agent.SummaryOffTarget:
+		return "off-target"
+	case agent.SummarySufficient:
+		return "sufficient"
+	}
+	return "unclear"
+}
+
 // ToolOutcome reads one tool result into the two words the record keeps of
 // it: whether it worked, and — when it did not — what kind of failure it
 // was. It is the whole of what a surface needs to report a call, so no
@@ -174,36 +238,30 @@ func ToolOutcome(result string) (outcome, class string) {
 func ReasonCode(raw string) string {
 	switch raw {
 	case agent.ModeAcceptEdits.String() + " mode":
-		return "mode-accept-edits"
+		return ReasonModeAcceptEdits
 	case agent.ModeAuto.String() + " mode":
-		return "mode-auto"
+		return ReasonModeAuto
 	case "session policy":
 		// The blanket grants: every edit, every command (/permissions allow).
-		return "session-grant"
+		return ReasonSessionGrant
 	case "session grant":
 		// The scoped ones [a] records — a command's leading words, a file's
 		// directory. They are a different decision and count separately.
-		return "session-scope"
+		return ReasonSessionScope
 	case "allowlist":
-		return "allowlist"
+		return ReasonAllowlist
 	case "plan mode":
-		return "plan-mode"
+		return ReasonPlanMode
 	case "plan mode inspection":
-		return "plan-inspection"
+		return ReasonPlanInspection
 	}
 	// A refusal for what the call reaches carries the directory in
 	// its reason, so it is matched by shape rather than by equality — the
 	// free text still never reaches the metrics.
-	//
-	// This code and the fallthrough beneath it are spelled out rather than
-	// written as the error classes that happen to share their spelling. A
-	// decision's reason and a failure's class are separate vocabularies, and
-	// pointing one at the other renames a reason code the day a class is
-	// renamed.
 	if strings.HasPrefix(raw, "outside the working scope") {
-		return "out-of-scope"
+		return ReasonOutOfScope
 	}
-	return "other"
+	return ReasonOther
 }
 
 // AskReason is the reason code recorded when policy falls through to
@@ -211,13 +269,13 @@ func ReasonCode(raw string) string {
 func AskReason(a agent.Action) string {
 	switch {
 	case a.SafetyFlagged:
-		return "safety"
+		return ReasonSafety
 	case a.ScopeSensitive:
-		return "scope-sensitive"
+		return ReasonScopeSensitive
 	case len(a.OutOfScope) > 0:
-		return "out-of-scope"
+		return ReasonOutOfScope
 	}
-	return "policy"
+	return ReasonPolicy
 }
 
 // ClassFromResult names the class of a failed result, or "empty" for a

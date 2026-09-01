@@ -10,10 +10,12 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/mattn/go-isatty"
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -27,6 +29,21 @@ import (
 	"github.com/rfizzle/shhh/internal/ui"
 	"github.com/spf13/cobra"
 )
+
+// oneShotOutcome is how the one-shot's single turn ended, in the closed set
+// every surface's turns end in. A command the user walked away from is
+// cancelled and not done: the request was answered, and the answer was
+// refused, and an outcome mix that could not tell those apart is the one
+// figure this record exists to make readable.
+func oneShotOutcome(r ui.GenerateResult) string {
+	switch {
+	case r.Err != nil:
+		return observe.TurnFailed
+	case r.Cancelled || r.Action == ui.ActionCancel:
+		return observe.TurnCancelled
+	}
+	return observe.TurnDone
+}
 
 // newCmdCmd is the one-shot: a prompt in, a command on screen, and a row of
 // keys that decide what happens to it. With no terminal on the other end —
@@ -113,12 +130,54 @@ func newCmdCmd() *cobra.Command {
 			// alternative is remembering to instrument each of them, and the
 			// explanation was already being missed.
 			// See docs/architecture.md#spend-is-counted-at-the-provider.
-			ledger := meter.New(loadPricing())
+			prices := loadPricing()
+			ledger := meter.New(prices)
 			p = meter.WithFallbackModel(ledger.For(p, meter.SourceOneShot), resolved.Model)
 
 			promptExtra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra, project.FindContext())
+			info := shell.Detect()
+
+			db, _ := openStore()
+			if db != nil {
+				defer db.Close()
+			}
+
+			// The one-shot is one request, so it is one turn — and recording
+			// it as a single-turn session is what lets it join every
+			// aggregate without any of them learning what a one-shot is. Its
+			// rounds are zero and its tool mix is empty, and both are true
+			// rather than missing. The `requests` row the interactive path
+			// also writes answers a different question (one prompt, one
+			// command, what became of it) and is unchanged.
+			//
+			// The row is opened above the pipe branch on purpose. A piped
+			// one-shot is the composition with nobody in front of it, which
+			// is exactly the one the record is least able to do without —
+			// and it is the one that until now spent money and left nothing
+			// behind at all.
+			// See docs/capabilities/sessions-and-memory.md#every-composition-is-one-population.
+			recorder := startObserveRecorder(db, "cmd", p.Name(), resolved.Model, prices)
+			started := time.Now()
+			outcome := observe.TurnDone
+			// Closing the row is a call and not only a defer: every action
+			// that runs the generated command ends the process, and os.Exit
+			// does not run deferred functions. It is idempotent, so the
+			// deferred call is the ordinary path and the explicit ones are
+			// the exits.
+			finish := func() {
+				if recorder == nil {
+					return
+				}
+				t := ledger.Total()
+				recorder.usagePriced(1, t.In, t.Out, t.Cost, t.Priced)
+				recorder.turn(1, 0, time.Since(started), outcome)
+				recorder.end()
+				recorder = nil
+			}
+			defer finish()
 
 			if pipeMode {
+				recorder.stamp(raw.SystemPrompt(info, promptExtra), 0, projectFingerprintRoot())
 				err := raw.Run(cmd.Context(), raw.Opts{
 					Provider:          p,
 					Model:             resolved.Model,
@@ -135,16 +194,18 @@ func newCmdCmd() *cobra.Command {
 					} else {
 						fmt.Fprintln(os.Stderr, "error:", err)
 					}
+					outcome = observe.TurnFailed
+					finish()
 					os.Exit(1)
 				}
 				return nil
 			}
 
-			info := shell.Detect()
 			// The interactive one-shot asks for the alternatives section as
 			// well; the pipe path above went out through prompt.Build
 			// and its stdout is one command, as it has always been.
 			sysPrompt := prompt.BuildAlternatives(info, promptExtra)
+			recorder.stamp(sysPrompt, 0, projectFingerprintRoot())
 
 			messages := []provider.Message{
 				{Role: provider.RoleSystem, Content: sysPrompt},
@@ -157,16 +218,12 @@ func newCmdCmd() *cobra.Command {
 			}
 			compOpts := provider.CompletionOpts{Model: resolved.Model, Effort: effort}
 
-			db, _ := openStore()
-			if db != nil {
-				defer db.Close()
-			}
-
 			ctx, cancel := context.WithCancel(cmd.Context())
 			defer cancel()
 
 			events, err := p.StreamCompletion(ctx, messages, compOpts)
 			if err != nil {
+				outcome = observe.TurnFailed
 				return reportFailure(err, resolved.Model)
 			}
 
@@ -212,10 +269,12 @@ func newCmdCmd() *cobra.Command {
 			program := newProgram(model)
 			finalModel, err := program.Run()
 			if err != nil {
+				outcome = observe.TurnFailed
 				return err
 			}
 
 			result := finalModel.(ui.GenerateModel).Result()
+			outcome = oneShotOutcome(result)
 
 			var requestID int64
 			if db != nil {
@@ -281,6 +340,12 @@ func newCmdCmd() *cobra.Command {
 						input = strings.TrimSpace(strings.ToLower(input))
 						if input != "y" && input != "yes" {
 							fmt.Fprintln(os.Stderr, "Aborted.")
+							// Refusing the safety prompt is the same act as
+							// pressing esc on the card, so it is the same
+							// outcome — two spellings of "the user refused"
+							// landing in two buckets would make either one
+							// unreadable.
+							outcome = observe.TurnCancelled
 							return nil
 						}
 					}
@@ -293,6 +358,7 @@ func newCmdCmd() *cobra.Command {
 				if db != nil && requestID > 0 {
 					_ = db.RecordExitCode(requestID, code)
 				}
+				finish()
 				os.Exit(code)
 			case ui.ActionRunAll:
 				cmds := ui.SplitCommands(result.Command)
@@ -302,6 +368,7 @@ func newCmdCmd() *cobra.Command {
 						if db != nil && requestID > 0 {
 							_ = db.RecordExitCode(requestID, code)
 						}
+						finish()
 						os.Exit(code)
 					}
 				}
@@ -326,6 +393,7 @@ func newCmdCmd() *cobra.Command {
 						if db != nil && requestID > 0 {
 							_ = db.RecordExitCode(requestID, code)
 						}
+						finish()
 						os.Exit(code)
 					}
 				}

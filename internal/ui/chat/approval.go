@@ -271,7 +271,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	// through. Plan mode falls through to the policy below, which refuses the
 	// write like any other.
 	if req.kind == approvalMemory && m.mode != agent.ModePlan {
-		m.recordDecision(observe.DecisionAsk, "memory")
+		m.recordDecision(observe.DecisionAsk, observe.ReasonMemory)
 		m.openMemoryAsk(req)
 		m.armConfirm(req)
 		return m, nil
@@ -279,7 +279,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	// A decision an earlier [A] already answered runs when its turn
 	// comes, without asking again.
 	if m.takeBatchApproval(req) {
-		m.recordDecision(observe.DecisionAllow, "user-batch")
+		m.recordDecision(observe.DecisionAllow, observe.ReasonUserBatch)
 		req.auto = true
 		m.appendEntry(entry{kind: entrySystem, text: "Approved with the batch: " + req.summary})
 		m.viewport.SetLines(m.renderHistoryLines())
@@ -360,7 +360,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 	elapsed := fmt.Sprintf("%.1fs", v.Elapsed.Seconds())
 	switch decision, reason := agent.ResolveAuto(m.approvalAction(req), v); decision {
 	case agent.Allow:
-		m.recordDecision(observe.DecisionAllow, "classifier")
+		m.recordDecision(observe.DecisionAllow, observe.ReasonClassifier)
 		req.auto = true
 		m.appendEntry(entry{kind: entrySystem, text: "Auto-approved (classifier, " + elapsed + "): " + req.summary})
 		m.viewport.SetLines(m.renderHistoryLines())
@@ -370,7 +370,7 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 		}
 		return m.executeApprovedTool()
 	case agent.Deny:
-		m.recordDecision(observe.DecisionDeny, "classifier")
+		m.recordDecision(observe.DecisionDeny, observe.ReasonClassifier)
 		m.lastDenial = req.summary + " — " + reason
 		// Surfaces on the notice rail until the next user turn.
 		m.denialNotice = req.summary
@@ -386,12 +386,12 @@ func (m Model) finishClassifierCheck(v agent.ClassifierVerdict) (tea.Model, tea.
 	// Ask: the classifier failed closed or the safety backstop fired — the
 	// user decides, never a silent allow.
 	if v.Failed {
-		m.recordDecision(observe.DecisionAsk, "classifier-failed")
+		m.recordDecision(observe.DecisionAsk, observe.ReasonClassifierFailed)
 		m.appendEntry(entry{kind: entrySystem, text: "Classifier unavailable (" + v.Reason + "); asking you instead."})
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 	} else {
-		m.recordDecision(observe.DecisionAsk, "safety")
+		m.recordDecision(observe.DecisionAsk, observe.ReasonSafety)
 	}
 	m.armConfirm(req)
 	return m, nil
@@ -425,7 +425,7 @@ func (m *Model) applyScopeGrant() {
 // declineApproval records an error tool result for the pending call and moves
 // on to the next queued approval.
 func (m Model) declineApproval() (tea.Model, tea.Cmd) {
-	m.recordDecision(observe.DecisionDeny, "user")
+	m.recordDecision(observe.DecisionDeny, observe.ReasonUser)
 	req := m.pendingApproval
 	m.pendingApproval = nil
 	m.pendingRun = ""

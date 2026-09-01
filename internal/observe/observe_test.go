@@ -88,3 +88,24 @@ func TestToolOutcome(t *testing.T) {
 		}
 	}
 }
+
+// Every unattended surface reports a reading with this, so the four states
+// have to keep the four spellings a stored rate is grouped by.
+func TestSummaryCode(t *testing.T) {
+	for _, c := range []struct {
+		state agent.SummaryState
+		want  string
+	}{
+		{agent.SummaryOnTarget, "on-target"},
+		{agent.SummaryOffTarget, "off-target"},
+		{agent.SummarySufficient, "sufficient"},
+		{agent.SummaryUncertain, "unclear"},
+		// A state nothing declared reads as unclear rather than as a fifth
+		// code: the reading is what is uncertain, not the vocabulary.
+		{agent.SummaryState(99), "unclear"},
+	} {
+		if got := SummaryCode(c.state); got != c.want {
+			t.Errorf("SummaryCode(%v) = %q, want %q", c.state, got, c.want)
+		}
+	}
+}

@@ -146,6 +146,31 @@ moment the export stops being content-free and the reader should know it.
 Sessions can be recorded and never read; the record can be exported as JSON
 and purged entirely.
 
+### Every composition is one population
+
+Every composition shhh runs — a session, a headless run, every sub-agent, and
+the one-shot — writes the same rows into the same table. A number drawn from
+one of them is a number about that surface and not about the product: a tool
+error rate taken only where a person was watching says nothing about the runs
+nobody was watching, and those are the ones a guard is built for.
+
+So the one-shot is recorded as what it is — one request, so one turn, with no
+rounds and no tools — rather than given a shape of its own, and it joins every
+aggregate without any of them learning what a one-shot is. It is recorded when
+piped into a script as much as when shown on a card, because the piped one is
+the one nobody watched. A sub-agent is recorded with its own provenance rather
+than its parent's, because a child routinely runs a different model under a
+different prompt, and a row that borrowed its parent's would say it ran under
+something it did not. Nothing that reads the record has to know which surface
+wrote a row.
+
+The words are the same everywhere too. A turn that stopped at its round cap is
+`cap-paused` whether a person could grant it more rounds or not; a call the
+safety prompt refused is `cancelled` on the same footing as one escaped off a
+card. Where two surfaces would otherwise spell one event two ways, the record
+takes the spelling that lets the two be added up, and leaves what actually
+differs between them to the exit code and the screen.
+
 ## Where it all lives
 
 One local embedded database file, on your machine, in the platform's

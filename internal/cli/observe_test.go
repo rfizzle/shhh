@@ -3,10 +3,12 @@ package cli
 import (
 	"bytes"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/storage"
@@ -51,8 +53,8 @@ func TestObserveRecorder_RoundTrip(t *testing.T) {
 	}
 
 	rec.usage(2, 100, 50)
-	rec.toolCall("read_file", 5*time.Millisecond, "ok")
-	rec.decision("deny", "plan-mode")
+	rec.toolCallAt(observe.Pos{Turn: 1, Round: 1}, "read_file", 5*time.Millisecond, "ok", "")
+	rec.decisionAt(observe.Pos{Turn: 1, Round: 1}, "deny", "plan-mode")
 	rec.end()
 
 	since := time.Now().Add(-time.Hour)
@@ -138,8 +140,8 @@ func TestRenderObserveDashboard_Sections(t *testing.T) {
 func TestObserveRecorder_NilSafe(t *testing.T) {
 	var rec *observeRecorder
 	rec.usage(1, 1, 1)
-	rec.toolCall("read_file", time.Millisecond, "ok")
-	rec.decision("allow", "user")
+	rec.toolCallAt(observe.Pos{}, "read_file", time.Millisecond, "ok", "")
+	rec.decisionAt(observe.Pos{}, "allow", "user")
 	rec.stamp("prompt", 1, "/repo")
 	rec.turn(1, 3, time.Second, "done")
 	rec.signal(observe.Pos{}, "summary", "on-target")
@@ -209,5 +211,228 @@ func TestFingerprint(t *testing.T) {
 	}
 	if a, b := fingerprint("x"), fingerprint("y"); a == b || len(a) != 12 {
 		t.Fatalf("fingerprints %q %q", a, b)
+	}
+}
+
+func fixtureStore(t *testing.T) *storage.DB {
+	t.Helper()
+	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open db: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	return db
+}
+
+// eventShape is one recorded event as a test states it.
+type eventShape struct {
+	kind    string
+	tool    string
+	outcome string
+	reason  string
+	turn    int64
+	round   int64
+	timed   bool
+}
+
+func shapesOf(t *testing.T, db *storage.DB, id int64) []eventShape {
+	t.Helper()
+	events, err := db.AgentSessionEvents(id)
+	if err != nil {
+		t.Fatalf("session events: %v", err)
+	}
+	out := make([]eventShape, 0, len(events))
+	for _, e := range events {
+		out = append(out, eventShape{
+			kind: e.Kind, tool: e.Tool, outcome: e.Outcome, reason: e.Reason,
+			turn: e.Turn, round: e.Round, timed: e.DurationMs != nil,
+		})
+	}
+	return out
+}
+
+func assertShapes(t *testing.T, got, want []eventShape) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("recorded %d events, want %d:\ngot  %+v\nwant %+v", len(got), len(want), got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("event %d:\ngot  %+v\nwant %+v", i, got[i], want[i])
+		}
+	}
+}
+
+// recordEverySurface writes one session of each kind shhh ships, with the
+// events that kind produces, and returns them by kind.
+func recordEverySurface(t *testing.T, db *storage.DB) map[string]int64 {
+	t.Helper()
+	ids := map[string]int64{}
+
+	// A session: turns, positioned tool calls, a policy decision, signals.
+	sess := startObserveRecorder(db, "code", "anthropic", "test-model", nil)
+	sess.stamp("the agent prompt", 3, "/repo")
+	sess.link("2026-09-02 09:00:00")
+	emptyOutcome, emptyClass := observe.ToolOutcome("No matches found.")
+	sess.toolCallAt(observe.Pos{Turn: 1, Round: 1}, "search", 4*time.Millisecond, emptyOutcome, emptyClass)
+	sess.decisionAt(observe.Pos{Turn: 1, Round: 2}, observe.DecisionAsk,
+		observe.AskReason(agent.Action{Kind: agent.ActionEdit, OutOfScope: []string{"/etc/passwd"}}))
+	sess.signal(observe.Pos{Turn: 1, Round: 3}, observe.SignalSummary, observe.SummaryCode(agent.SummaryOnTarget))
+	sess.turn(1, 3, time.Second, observe.TurnDone)
+	sess.end()
+	ids["code"] = sess.sessionID()
+
+	// A headless run: the same events through its own adapter.
+	head := startObserveRecorder(db, "print", "anthropic", "test-model", nil)
+	head.stamp("the agent prompt", 3, "/repo")
+	obs := headlessObserver{rec: head, rounds: func() int { return 2 }}
+	obs.toolResult("execute_command", time.Millisecond,
+		"error: command not approved: headless mode denies commands by default")
+	obs.decision(observe.DecisionDeny, "headless-default")
+	obs.intervene(agent.Intervention{Kind: agent.InterveneCheckIn})
+	head.turn(1, 2, time.Second, observe.TurnFailed)
+	head.end()
+	ids["print"] = head.sessionID()
+
+	// A sub-agent: its own provenance, linked to the session that spawned it.
+	child := startChildObserveRecorder(db, "researcher", "anthropic", "cheap-model", nil, ids["code"])
+	child.stamp("the researcher prompt", 3, "/repo")
+	declined, declinedClass := observe.ToolOutcome("error: the user declined this tool call")
+	child.decisionAt(observe.Pos{Turn: 1, Round: 1}, observe.DecisionAsk, observe.ReasonPolicy)
+	child.decisionAt(observe.Pos{Turn: 1, Round: 1}, observe.DecisionDeny, observe.ReasonUser)
+	child.toolCallAt(observe.Pos{Turn: 1, Round: 1}, "read_file", 2*time.Millisecond, declined, declinedClass)
+	child.signal(observe.Pos{Turn: 1, Round: 1}, observe.SignalRepeat, "read_file")
+	child.turn(1, 1, time.Second, observe.TurnCapPaused)
+	child.end()
+	ids["researcher"] = child.sessionID()
+
+	// The one-shot: one request, so one turn.
+	one := startObserveRecorder(db, "cmd", "openai", "gpt-test", nil)
+	one.stamp("the one-shot prompt", 0, "/repo")
+	one.usagePriced(1, 900, 120, 0.004, true)
+	// A one-shot raises neither of these; they ride here so the closed-set
+	// walk below covers the two signals whose reason is a count rather than
+	// a word, which is the shape most likely to smuggle something through.
+	sess.signal(observe.Pos{Turn: 1, Round: 4}, observe.SignalTrim, "12")
+	sess.signal(observe.Pos{Turn: 1, Round: 5}, observe.SignalSteer, "2")
+	one.turn(1, 0, 2*time.Second, observe.TurnCancelled)
+	one.end()
+	ids["cmd"] = one.sessionID()
+
+	return ids
+}
+
+// The export shows the same event shapes for every session kind: a reader
+// gets a tool event, a decision, a turn and a signal from each of them and
+// never a shape that belongs to one surface alone.
+func TestEverySessionKindExportsTheSameShapes(t *testing.T) {
+	db := fixtureStore(t)
+	recordEverySurface(t, db)
+
+	sessions, err := db.ExportAgentObservability(time.Now().Add(-time.Hour), false)
+	if err != nil {
+		t.Fatalf("export: %v", err)
+	}
+	if len(sessions) != 4 {
+		t.Fatalf("exported %d sessions, want one per surface", len(sessions))
+	}
+	for _, s := range sessions {
+		if s.Version == "" || s.PromptHash == "" || s.Project == "" {
+			t.Errorf("%s session is unstamped: %+v", s.Kind, s)
+		}
+		if s.EndedAt == nil {
+			t.Errorf("%s session never ended", s.Kind)
+		}
+		var turns, decisions int
+		for _, e := range s.Events {
+			switch e.Kind {
+			case storage.AgentEventTurn:
+				turns++
+			case storage.AgentEventDecision:
+				decisions++
+			case storage.AgentEventTool:
+				if e.Turn == 0 {
+					t.Errorf("%s session has an unplaced tool event: %+v", s.Kind, e)
+				}
+				if e.DurationMs == nil {
+					t.Errorf("%s session has an untimed tool event: %+v", s.Kind, e)
+				}
+			}
+		}
+		if turns != 1 {
+			t.Errorf("%s session closed with %d turn events, want 1", s.Kind, turns)
+		}
+		// The one-shot gates nothing, so it has nothing to decide. Every
+		// surface that runs tools reports what the policy said about them.
+		if s.Kind != "cmd" && decisions == 0 {
+			t.Errorf("%s session recorded no permission decisions", s.Kind)
+		}
+	}
+}
+
+// The dashboard renders every kind through the same sections: no surface has
+// a special case, so nothing has to be added when the next one is recorded.
+func TestObserveDashboardNeedsNoPerKindCase(t *testing.T) {
+	db := fixtureStore(t)
+	ids := recordEverySurface(t, db)
+
+	var buf bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetOut(&buf)
+	if err := renderObserveDashboard(cmd, db, "30d", time.Now().Add(-time.Hour)); err != nil {
+		t.Fatalf("render dashboard: %v", err)
+	}
+	out := buf.String()
+	for _, want := range []string{"code", "print", "researcher", "cmd"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("dashboard does not name the %s surface:\n%s", want, out)
+		}
+	}
+
+	// And each of them renders as a timeline through the same code.
+	for kind, id := range ids {
+		buf.Reset()
+		if err := renderObserveSession(cmd, db, id); err != nil {
+			t.Fatalf("render %s session: %v", kind, err)
+		}
+		if !strings.Contains(buf.String(), "TURN 1") {
+			t.Errorf("%s session timeline has no turn:\n%s", kind, buf.String())
+		}
+	}
+}
+
+// storedWord is what a stored string is allowed to look like: a fixed
+// identifier or a code from a closed set. A path, a command or a prompt
+// fragment fails it, which is the whole guarantee the record rests on.
+var storedWord = regexp.MustCompile(`^[a-z0-9]+(?:[-_][a-z0-9]+)*$`)
+
+// Every string every surface stores is a fixed identifier or a closed-set
+// code. This walks every session kind rather than living in each surface's
+// own file, because the guarantee is about the table and not about any one
+// writer of it.
+// See docs/capabilities/sessions-and-memory.md#every-composition-is-one-population.
+func TestNoSurfaceStoresAnythingOutsideTheClosedSets(t *testing.T) {
+	db := fixtureStore(t)
+	recordEverySurface(t, db)
+
+	sessions, err := db.ExportAgentObservability(time.Now().Add(-time.Hour), false)
+	if err != nil {
+		t.Fatalf("export: %v", err)
+	}
+	for _, s := range sessions {
+		for _, e := range s.Events {
+			for name, value := range map[string]string{
+				"kind": e.Kind, "tool": e.Tool, "outcome": e.Outcome, "reason": e.Reason,
+			} {
+				if value == "" {
+					continue
+				}
+				// A trim signal's qualifier is a count, which the same shape
+				// admits; nothing else numeric reaches the table.
+				if !storedWord.MatchString(value) {
+					t.Errorf("%s session stored a free string in %s: %q", s.Kind, name, value)
+				}
+			}
+		}
 	}
 }

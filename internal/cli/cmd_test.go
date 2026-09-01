@@ -8,8 +8,14 @@ package cli
 import (
 	"bytes"
 	"context"
+	"errors"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/storage"
+	"github.com/rfizzle/shhh/internal/ui"
 )
 
 func TestBarePromptNamesTheCommandThatGenerates(t *testing.T) {
@@ -50,5 +56,61 @@ func TestPipedPromptNamesTheCommandThatReadsIt(t *testing.T) {
 	}
 	if stdout.Len() != 0 {
 		t.Errorf("nothing may reach the pipe on stdout, got:\n%s", stdout.String())
+	}
+}
+
+// The one-shot's turn ends in that same set. Walking away from a command is
+// cancelled and not done: the request was answered and the answer refused,
+// and an outcome mix that could not tell those apart is the one figure this
+// record exists to make readable.
+func TestOneShotOutcome(t *testing.T) {
+	for _, c := range []struct {
+		name   string
+		result ui.GenerateResult
+		want   string
+	}{
+		{"ran it", ui.GenerateResult{Action: ui.ActionRun}, observe.TurnDone},
+		{"copied it", ui.GenerateResult{Action: ui.ActionCopy}, observe.TurnDone},
+		{"escaped the card", ui.GenerateResult{Action: ui.ActionCancel}, observe.TurnCancelled},
+		{"cancelled the stream", ui.GenerateResult{Cancelled: true}, observe.TurnCancelled},
+		// A failure outranks the action it failed on: a request that never
+		// produced a command is not a command the user declined.
+		{"failed", ui.GenerateResult{Action: ui.ActionCancel, Err: errors.New("no key")}, observe.TurnFailed},
+	} {
+		if got := oneShotOutcome(c.result); got != c.want {
+			t.Errorf("%s: oneShotOutcome = %q, want %q", c.name, got, c.want)
+		}
+	}
+}
+
+// The one-shot joins the record as what it is: one request, so one turn, with
+// no rounds and no tool mix. Both of those are true rather than missing.
+func TestOneShotSessionIsOneTurn(t *testing.T) {
+	db := fixtureStore(t)
+	rec := startObserveRecorder(db, "cmd", "anthropic", "test-model", nil)
+	rec.stamp("the one-shot prompt", 0, "/repo")
+	rec.usagePriced(1, 900, 120, 0.004, true)
+	rec.turn(1, 0, 2*time.Second, observe.TurnDone)
+	rec.end()
+
+	assertShapes(t, shapesOf(t, db, rec.sessionID()), []eventShape{
+		{kind: storage.AgentEventTurn, outcome: observe.TurnDone, turn: 1, timed: true},
+	})
+
+	s, ok, err := db.AgentSession(rec.sessionID())
+	if err != nil || !ok {
+		t.Fatalf("session: %v (found=%v)", err, ok)
+	}
+	if s.Kind != "cmd" {
+		t.Fatalf("kind = %q, want cmd", s.Kind)
+	}
+	if s.Turns != 1 || s.TokensIn != 900 || s.TokensOut != 120 || s.Cost != 0.004 {
+		t.Fatalf("unexpected totals: %+v", s)
+	}
+	if s.PromptHash != fingerprint("the one-shot prompt") || s.Project != fingerprint("/repo") {
+		t.Fatalf("one-shot was not stamped: %+v", s)
+	}
+	if s.EndedAt == nil {
+		t.Fatal("the one-shot's row was never ended")
 	}
 }

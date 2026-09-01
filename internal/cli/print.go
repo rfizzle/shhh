@@ -3,6 +3,7 @@ package cli
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -72,6 +73,63 @@ func maxRoundsFor(cfg config.Config, flag int, set bool) int {
 		return agent.UnlimitedToolRounds
 	}
 	return flag
+}
+
+// headlessObserver is the headless run's adaptation to the observer contract
+// in internal/observe, the way internal/ui/chat/observe.go is the chat
+// model's. The codes live there because every surface reports the same ones;
+// what lives here is where a headless run's own accounting — its single
+// turn, the round the loop has reached — is read off to fill them in.
+//
+// A run recorded without a position cannot be told apart from one that
+// circled for forty rounds, which is the shape the record exists to show.
+// See docs/capabilities/sessions-and-memory.md#every-composition-is-one-population.
+type headlessObserver struct {
+	rec *observeRecorder
+	// rounds is the tool round the loop has reached. It is a function rather
+	// than the agent itself because that is the whole of what a position
+	// needs from it.
+	rounds func() int
+}
+
+// pos is where the run is now. A headless run is one turn by construction —
+// one prompt in, one answer out — so the turn is always 1 rather than a
+// counter nothing would increment.
+func (h headlessObserver) pos() observe.Pos {
+	return observe.Pos{Turn: 1, Round: int64(h.rounds())}
+}
+
+// toolResult records one executed call from its result text: the outcome
+// and, for a failure, its class — and the repeat detector's notice where the
+// result carries one, since being told it is circling is a thing that
+// happened to the run and not a property of the call.
+func (h headlessObserver) toolResult(tool string, duration time.Duration, result string) {
+	outcome, class := observe.ToolOutcome(result)
+	at := h.pos()
+	h.rec.toolCallAt(at, tool, duration, outcome, class)
+	if agent.IsRepeatNotice(result) {
+		h.rec.signal(at, observe.SignalRepeat, tool)
+	}
+}
+
+// decision records what the approver resolved a gated call to. A headless
+// run resolves every one of them from policy rather than from a person, so
+// this is the only place its approval rate can come from.
+func (h headlessObserver) decision(decision, reason string) {
+	h.rec.decisionAt(h.pos(), decision, reason)
+}
+
+// summary records a reading. Every reading lands here and not only the ones
+// that go on to interrupt the turn: a drift rate is a fraction, and this is
+// its denominator.
+func (h headlessObserver) summary(v agent.SummaryVerdict) {
+	h.rec.signal(h.pos(), observe.SignalSummary, observe.SummaryCode(v.State))
+}
+
+// intervene records the run interrupting its own turn to ask it to take
+// stock.
+func (h headlessObserver) intervene(iv agent.Intervention) {
+	h.rec.signal(h.pos(), observe.SignalIntervene, iv.Kind.Signal())
 }
 
 // runPrintSession runs the agent loop to completion without the TUI:
@@ -284,16 +342,13 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	recorder := startObserveRecorder(db, "print", env.prov.Name(), env.modelName, prices)
 	defer recorder.end()
 	recorder.stamp(env.sysPrompt, session.skills.Len(), projectFingerprintRoot())
+	obs := headlessObserver{rec: recorder, rounds: a.Rounds}
 	// A headless run is one turn; it closes here with the rounds it took,
 	// the same event an interactive turn ends with.
 	var runErr error
 	runStart := time.Now()
 	defer func() {
-		outcome := observe.TurnDone
-		if runErr != nil {
-			outcome = observe.TurnFailed
-		}
-		recorder.turn(1, int64(a.Rounds()), time.Since(runStart), outcome)
+		recorder.turn(1, int64(a.Rounds()), time.Since(runStart), headlessTurnOutcome(runErr))
 	}()
 
 	var usage provider.Usage
@@ -325,21 +380,21 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		Summary: summaryRun,
 		OnIntervene: func(iv agent.Intervention) {
 			fmt.Fprintf(os.Stderr, "» %s\n", iv.Notice)
+			obs.intervene(iv)
 		},
-		Gate:    gate,
-		Resolve: headlessApprover(cmd.Context(), opts, allowlist, run, red, recorder.decision, session.web, procSup, lspMutationHook(session.lsp), sc, session.mcpTools),
+		OnSummary: obs.summary,
+		Gate:      gate,
+		Resolve: headlessApprover(cmd.Context(), opts, allowlist, run, red, obs.decision,
+			session.web, procSup, lspMutationHook(session.lsp), sc, session.mcpTools),
 		OnToolCall: func(tc provider.ToolCall) {
 			callStart = time.Now()
 			fmt.Fprintf(os.Stderr, "» %s %s\n", tc.Name, clipActivityLine(tc.Arguments))
 		},
 		OnToolResult: func(tc provider.ToolCall, result string) {
-			// The failure's class is read and dropped: this runner's tool
-			// events carry an outcome and no class yet.
-			outcome, _ := observe.ToolOutcome(result)
-			if outcome == observe.OutcomeError {
+			if outcome, _ := observe.ToolOutcome(result); outcome == observe.OutcomeError {
 				fmt.Fprintf(os.Stderr, "  ↳ %s\n", clipActivityLine(result))
 			}
-			recorder.toolCall(tc.Name, time.Since(callStart), outcome)
+			obs.toolResult(tc.Name, time.Since(callStart), result)
 		},
 		OnUsage: func(*provider.Usage) {
 			// What the run has spent is read back from the ledger rather than
@@ -372,6 +427,25 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	return runErr
 }
 
+// headlessTurnOutcome is how a headless run's single turn ended, in the
+// closed set a session's turns end in. The round cap is `cap-paused` and not
+// a failure even though it ends this run: the event being counted is a turn
+// that stopped at its cap, which is the same event on every surface, and
+// spelling it `failed` here would read the whole headless population as
+// having no capped turns at all. What differs is only that nobody is here to
+// grant more rounds, and that difference is the exit code's to report.
+func headlessTurnOutcome(err error) string {
+	switch {
+	case err == nil:
+		return observe.TurnDone
+	case errors.Is(err, agent.ErrRoundCap):
+		return observe.TurnCapPaused
+	case errors.Is(err, agent.ErrInterrupted):
+		return observe.TurnCancelled
+	}
+	return observe.TurnFailed
+}
+
 // headlessGate mirrors the TUI's requiresApproval: exec and file-modification
 // tools go through approval; read-only tools run directly.
 func headlessGate(name string) bool {
@@ -394,20 +468,20 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 		// in, the default denies.
 		if mcpTools != nil && mcpTools.Has(tc.Name) {
 			if opts.yes {
-				note(observe.DecisionAllow, "headless-yes")
+				note(observe.DecisionAllow, observe.ReasonHeadlessYes)
 				return red.Process(tc.Name, agent.ExecuteWith(mcpTools.Execute, tc))
 			}
-			note(observe.DecisionDeny, "headless-default")
+			note(observe.DecisionDeny, observe.ReasonHeadlessDefault)
 			return "error: " + tc.Name + " not approved: headless mode denies external actions by default (run with --yes)"
 		}
 		// web_fetch is an external action: --yes opts in, the default
 		// denies like every other gated call.
 		if webTools != nil && tc.Name == web.FetchToolName {
 			if opts.yes {
-				note(observe.DecisionAllow, "headless-yes")
+				note(observe.DecisionAllow, observe.ReasonHeadlessYes)
 				return red.Process(tc.Name, agent.ExecuteWith(webTools.Execute, tc))
 			}
-			note(observe.DecisionDeny, "headless-default")
+			note(observe.DecisionDeny, observe.ReasonHeadlessDefault)
 			return "error: web fetch not approved: headless mode denies external actions by default (run with --yes)"
 		}
 		// A process start is approved like a command: safety-flagged
@@ -423,25 +497,25 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 				for _, w := range warnings {
 					risks = append(risks, w.Risk)
 				}
-				note(observe.DecisionDeny, "safety")
+				note(observe.DecisionDeny, observe.ReasonSafety)
 				return "error: process start denied (" + strings.Join(risks, "; ") + "); safety-flagged commands require interactive approval"
 			}
 			if opts.yes || agent.AllowlistMatches(allowlist, command) {
 				// A process start is a command, and the working scope
 				// applies to it as much as to a foreground one.
 				if deny, ok := headlessScopeCheck(sc, opts.yes, radius.WritePaths(command)); !ok {
-					note(observe.DecisionDeny, "out-of-scope")
+					note(observe.DecisionDeny, observe.ReasonOutOfScope)
 					return deny
 				}
 				if opts.yes {
-					note(observe.DecisionAllow, "headless-yes")
+					note(observe.DecisionAllow, observe.ReasonHeadlessYes)
 				} else {
-					note(observe.DecisionAllow, "allowlist")
+					note(observe.DecisionAllow, observe.ReasonAllowlist)
 				}
 				exec := func(_ string, args json.RawMessage) (string, error) { return procSup.Execute(args) }
 				return red.Process(tc.Name, agent.ExecuteWith(exec, tc))
 			}
-			note(observe.DecisionDeny, "headless-default")
+			note(observe.DecisionDeny, observe.ReasonHeadlessDefault)
 			return "error: process start not approved: headless mode denies commands by default (run with --yes or --allow)"
 		}
 		if tc.Name == tools.ExecCommandName {
@@ -456,7 +530,7 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 				for _, w := range warnings {
 					risks = append(risks, w.Risk)
 				}
-				note(observe.DecisionDeny, "safety")
+				note(observe.DecisionDeny, observe.ReasonSafety)
 				return "error: command denied (" + strings.Join(risks, "; ") + "); safety-flagged commands require interactive approval"
 			}
 			if opts.yes || agent.AllowlistMatches(allowlist, args.Command) {
@@ -464,36 +538,36 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 				// spent: an allowlisted command shape is not a licence to
 				// write outside the directories this run was given.
 				if deny, ok := headlessScopeCheck(sc, opts.yes, radius.WritePaths(args.Command)); !ok {
-					note(observe.DecisionDeny, "out-of-scope")
+					note(observe.DecisionDeny, observe.ReasonOutOfScope)
 					return deny
 				}
 				if opts.yes {
-					note(observe.DecisionAllow, "headless-yes")
+					note(observe.DecisionAllow, observe.ReasonHeadlessYes)
 				} else {
-					note(observe.DecisionAllow, "allowlist")
+					note(observe.DecisionAllow, observe.ReasonAllowlist)
 				}
 				out, code := run(ctx, args.Command)
 				return tools.FormatExecResult(red.Process(tools.ExecCommandName, out), code)
 			}
-			note(observe.DecisionDeny, "headless-default")
+			note(observe.DecisionDeny, observe.ReasonHeadlessDefault)
 			return "error: command not approved: headless mode denies commands by default (run with --yes or --allow)"
 		}
 		if tools.IsMutating(tc.Name) {
 			if opts.yes {
 				if mut, err := tools.PreviewMutation(tc.Name, json.RawMessage(tc.Arguments)); err == nil {
 					if deny, ok := headlessScopeCheck(sc, opts.yes, []string{mut.Path}); !ok {
-						note(observe.DecisionDeny, "out-of-scope")
+						note(observe.DecisionDeny, observe.ReasonOutOfScope)
 						return deny
 					}
 				}
-				note(observe.DecisionAllow, "headless-yes")
+				note(observe.DecisionAllow, observe.ReasonHeadlessYes)
 				result := agent.ExecuteWith(tools.ExecuteMutating, tc)
 				if mutationHook != nil {
 					result = mutationHook(tc.Name, json.RawMessage(tc.Arguments), result)
 				}
 				return red.Process(tc.Name, result)
 			}
-			note(observe.DecisionDeny, "headless-default")
+			note(observe.DecisionDeny, observe.ReasonHeadlessDefault)
 			return "error: file modification not approved: headless mode denies edits by default (run with --yes)"
 		}
 		return "error: tool " + tc.Name + " cannot be approved in this session"

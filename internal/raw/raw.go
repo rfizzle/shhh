@@ -21,9 +21,17 @@ type Opts struct {
 	Stderr            io.Writer
 }
 
+// SystemPrompt is the prompt a raw run goes out under. It is exported so a
+// caller can fingerprint what it ran under without rebuilding it: two
+// constructions of one prompt drift apart, and a drifted fingerprint splits
+// a cohort that never changed.
+func SystemPrompt(info shell.Info, extra string) string {
+	return prompt.Build(info, extra)
+}
+
 func Run(ctx context.Context, opts Opts) error {
 	info := shell.Detect()
-	sysPrompt := prompt.Build(info, opts.SystemPromptExtra)
+	sysPrompt := SystemPrompt(info, opts.SystemPromptExtra)
 
 	messages := []provider.Message{
 		{Role: provider.RoleSystem, Content: sysPrompt},

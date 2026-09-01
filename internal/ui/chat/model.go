@@ -2708,7 +2708,7 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch result {
 	case components.ApprovalApprove:
 		if m.pendingApproval != nil {
-			m.recordDecision(observe.DecisionAllow, "user")
+			m.recordDecision(observe.DecisionAllow, observe.ReasonUser)
 		}
 		if m.pendingApproval != nil && m.pendingApproval.kind != approvalExec {
 			return m.executeApprovedTool()
@@ -2737,7 +2737,7 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// before the key applied it, and a flagged action was never in it.
 		if req := m.pendingApproval; req != nil && len(m.pendingBatch) > 0 {
 			m.approveBatch()
-			m.recordDecision(observe.DecisionAllow, "user-batch")
+			m.recordDecision(observe.DecisionAllow, observe.ReasonUserBatch)
 			if req.kind == approvalExec {
 				return m.executeRun()
 			}
@@ -2757,14 +2757,14 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		if req := m.pendingApproval; req != nil {
 			switch req.kind {
 			case approvalExec:
-				m.recordDecision(observe.DecisionAllow, "user-always")
+				m.recordDecision(observe.DecisionAllow, observe.ReasonUserAlways)
 				if prefix := m.grantCommand(req.command); prefix != "" {
 					m.noteGrant("Commands starting " + strconv.Quote(prefix) + " will run without asking. /permissions revoke takes it back.")
 				}
 				m.syncChildGrants()
 				return m.executeRun()
 			case approvalDiff:
-				m.recordDecision(observe.DecisionAllow, "user-always")
+				m.recordDecision(observe.DecisionAllow, observe.ReasonUserAlways)
 				if dir := m.grantEditDir(req.path); dir != "" {
 					m.noteGrant("Edits in " + displayDir(dir) + " will apply without asking. /permissions revoke takes it back.")
 				}

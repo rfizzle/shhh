@@ -294,3 +294,54 @@ func TestHeadlessRun_InterruptCancelsTurn(t *testing.T) {
 		t.Fatalf("Run after Interrupt = %q, %v", final, err)
 	}
 }
+
+// A reading that lands reaches the front-end whatever it says, not only when
+// it goes on to interrupt the turn: the record's drift rate is a fraction,
+// and the readings that changed nothing are its denominator. (This one is
+// on-target, which queues no intervention.)
+func TestHeadlessRun_OnSummaryGetsALandedReading(t *testing.T) {
+	a := New(nil, scriptedStream(t,
+		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
+		doneRound("done")))
+	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+
+	run, _ := testSummaryRun(t, &slowProvider{}, "ship the parser")
+	// A reading is parked rather than taken: how one is scheduled is
+	// summaryrun's business, and this is about what happens to it once it
+	// lands. lastRound holds the interval closed so none goes out.
+	parked := SummaryVerdict{State: SummaryOnTarget, Text: "on it", Round: 1}
+	run.mu.Lock()
+	run.verdict, run.lastRound, run.lastAt = &parked, 1, time.Now()
+	run.mu.Unlock()
+
+	var seen []SummaryState
+	h := &Headless{
+		Agent:     a,
+		Summary:   run,
+		OnSummary: func(v SummaryVerdict) { seen = append(seen, v.State) },
+	}
+	if _, err := h.Run("go"); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	if len(seen) != 1 || seen[0] != SummaryOnTarget {
+		t.Fatalf("OnSummary saw %v, want one on-target reading", seen)
+	}
+}
+
+// A run that takes no readings calls nothing, so a surface can wire the hook
+// unconditionally.
+func TestHeadlessRun_OnSummarySilentWithoutAReading(t *testing.T) {
+	a := New(nil, scriptedStream(t,
+		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
+		doneRound("done")))
+	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+
+	called := 0
+	h := &Headless{Agent: a, OnSummary: func(SummaryVerdict) { called++ }}
+	if _, err := h.Run("go"); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	if called != 0 {
+		t.Fatalf("OnSummary called %d times without a summarizer", called)
+	}
+}

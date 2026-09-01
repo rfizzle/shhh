@@ -58,6 +58,13 @@ type Headless struct {
 	// front-end can show it the way the chat transcript does. It may be nil.
 	OnIntervene func(iv Intervention)
 
+	// OnSummary, when set, is told each reading that lands, before the
+	// policy is offered it. Every reading arrives here and not only the ones
+	// that go on to interrupt the turn, because a drift rate is a fraction
+	// and this is its denominator.
+	// See docs/capabilities/sessions-and-memory.md#observations-are-what-the-session-did.
+	OnSummary func(v SummaryVerdict)
+
 	mu           sync.Mutex
 	streamCancel func()
 	interrupted  bool
@@ -181,6 +188,9 @@ func (h *Headless) Run(prompt string) (string, error) {
 		if h.Summary != nil {
 			h.Agent.SetInterveneCooldown(h.Summary.Cooldown())
 			if v, ok := h.Summary.Tick(h.Agent.Rounds()); ok {
+				if h.OnSummary != nil {
+					h.OnSummary(v)
+				}
 				h.Agent.ConsiderVerdict(v, true)
 			}
 		}

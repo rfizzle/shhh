@@ -249,12 +249,14 @@ type Spec struct {
 // must abort the child's streams).
 type EnvFactory func(ctx context.Context, spec Spec) (Env, error)
 
-// Recorder receives a child's content-free observability events; any
-// callback may be nil.
+// Recorder is how a child reports itself: the observer contract every
+// surface reports through, plus the end of its own session row. End is here
+// and not on the contract because a child's life begins and ends inside the
+// supervisor — there is no caller outside holding a defer that could close
+// the row for it.
 type Recorder struct {
-	Usage    func(turns, tokensIn, tokensOut int64)
-	ToolCall func(tool, outcome string)
-	End      func()
+	observe.Observer
+	End func()
 }
 
 // Options configures a Supervisor.
@@ -266,8 +268,11 @@ type Options struct {
 	// Record opens a child's observability recorder; nil disables recording.
 	// It takes the whole spec because a child's spend has to be recorded
 	// against the model the child actually ran on — which is resolved per
-	// child and is routinely not the session's.
-	Record func(spec Spec) Recorder
+	// child and is routinely not the session's — and the system prompt as
+	// sent, because a child's provenance is its own: it routinely runs a
+	// different model under a different prompt, and a row inheriting the
+	// parent's would say it ran under something it did not.
+	Record func(spec Spec, sysPrompt string) Recorder
 	// CommandAllowlist is the parent's config allowlist, inherited by
 	// children (inheriting it keeps the child at most as permissive).
 	CommandAllowlist []string
@@ -417,13 +422,17 @@ type child struct {
 	// steerWake nudges an idle child that new steering arrived (buffered 1).
 	steerWake chan struct{}
 
-	mu        sync.Mutex
-	mode      agent.Mode
-	state     State
-	detail    string
-	started   time.Time
-	ended     time.Time
-	step      int // announcements made, i.e. steps entered
+	mu      sync.Mutex
+	mode    agent.Mode
+	state   State
+	detail  string
+	started time.Time
+	ended   time.Time
+	step    int // announcements made, i.e. steps entered
+	// turns counts the turns this attempt has run, so a child's events are
+	// placed the way a session's are: a tool call in round 30 of turn 3 is a
+	// different fact from the same call in round 2 of turn 1.
+	turns     int
 	toolCalls int
 	tokensIn  int64
 	tokensOut int64
@@ -556,7 +565,17 @@ func (c *child) beginTurn() {
 	c.mu.Lock()
 	c.intCh = make(chan struct{})
 	c.intClosed = false
+	c.turns++
 	c.mu.Unlock()
+}
+
+// pos is where the child is now: the turn it is on and the tool round within
+// it, read off the same counters its status is.
+func (c *child) pos() observe.Pos {
+	c.mu.Lock()
+	turn, a := int64(c.turns), c.agent
+	c.mu.Unlock()
+	return observe.Pos{Turn: turn, Round: int64(a.Rounds())}
 }
 
 // interruptTurn closes the current turn's interrupt channel (idempotent),
@@ -1028,11 +1047,12 @@ func (s *Supervisor) Retry(name string) error {
 	c.priorIn, c.priorOut = c.priorIn+c.tokensIn, c.priorOut+c.tokensOut
 	c.tokensIn, c.tokensOut, c.budgetHit = 0, 0, false
 	c.checkIns = 0
+	c.turns = 0
 	c.toolCalls, c.step = 0, 0
 	c.report, c.patchNote, c.streaming = "", "", ""
 	c.mu.Unlock()
 	if s.opts.Record != nil {
-		c.rec = s.opts.Record(Spec{Name: c.name, Role: c.role, Root: root, Model: c.model, Paths: c.paths})
+		c.rec = s.opts.Record(Spec{Name: c.name, Role: c.role, Root: root, Model: c.model, Paths: c.paths}, env.SystemPrompt)
 	}
 
 	s.wg.Add(1)
@@ -1262,7 +1282,7 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 	// The auto-run executor is the env's rooted, reduced chain.
 	a.SetExecutor(env.Executor)
 	if s.opts.Record != nil {
-		c.rec = s.opts.Record(Spec{Name: name, Role: args.role, Root: root, Model: model, Paths: args.paths})
+		c.rec = s.opts.Record(Spec{Name: name, Role: args.role, Root: root, Model: model, Paths: args.paths}, env.SystemPrompt)
 	}
 
 	s.mu.Lock()
@@ -1386,7 +1406,15 @@ func (s *Supervisor) run(c *child) {
 
 	// pendingEntry tracks the transcript index of the tool call in flight, so
 	// its result lands on the same row (calls within a child are sequential).
+	// callStart times it, for the same reason: calls within a child are
+	// sequential, so one timestamp is the whole of what a duration needs.
 	pendingEntry := -1
+	var callStart time.Time
+	signal := func(code, reason string) {
+		if c.rec.Signal != nil {
+			c.rec.Signal(c.pos(), code, reason)
+		}
+	}
 	h := &agent.Headless{
 		Agent: c.agent,
 		// A child is as unwatched as a headless run, and its task is the
@@ -1395,7 +1423,11 @@ func (s *Supervisor) run(c *child) {
 		Summary: agent.NewSummaryRun(c.env.Summarizer, agent.NewRecorder(0), c.task),
 		OnIntervene: func(iv agent.Intervention) {
 			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: iv.Notice})
+			signal(observe.SignalIntervene, iv.Kind.Signal())
 			s.emitUpdate(c)
+		},
+		OnSummary: func(v agent.SummaryVerdict) {
+			signal(observe.SignalSummary, observe.SummaryCode(v.State))
 		},
 		Gate: func(tc provider.ToolCall) bool { return c.env.Gated[tc.Name] },
 		Resolve: func(tc provider.ToolCall) string {
@@ -1414,7 +1446,11 @@ func (s *Supervisor) run(c *child) {
 			}
 			if c.rec.Usage != nil {
 				st := c.status()
-				c.rec.Usage(1, st.TokensIn, st.TokensOut)
+				// A child runs its whole life on one model, so its totals go
+				// out unpriced for the recorder to price at that model —
+				// unlike a session's, which are a mixture only the ledger
+				// that billed each request can price.
+				c.rec.Usage(c.pos().Turn, st.TokensIn, st.TokensOut, 0, false)
 			}
 		},
 		OnText: func(text string) {
@@ -1424,6 +1460,7 @@ func (s *Supervisor) run(c *child) {
 			s.emitUpdate(c)
 		},
 		OnToolCall: func(tc provider.ToolCall) {
+			callStart = time.Now()
 			pendingEntry = c.beginToolEntry(tc.Name, tc.Arguments)
 			c.mu.Lock()
 			c.toolCalls++
@@ -1435,10 +1472,11 @@ func (s *Supervisor) run(c *child) {
 		OnToolResult: func(tc provider.ToolCall, result string) {
 			c.settleToolEntry(pendingEntry, result)
 			if c.rec.ToolCall != nil {
-				// A child's recorder takes an outcome and nothing else, so
-				// the failure's class is read here and dropped.
-				outcome, _ := observe.ToolOutcome(result)
-				c.rec.ToolCall(tc.Name, outcome)
+				outcome, class := observe.ToolOutcome(result)
+				c.rec.ToolCall(c.pos(), tc.Name, time.Since(callStart), outcome, class)
+			}
+			if agent.IsRepeatNotice(result) {
+				signal(observe.SignalRepeat, tc.Name)
 			}
 			s.emitUpdate(c)
 		},
@@ -1452,8 +1490,20 @@ func (s *Supervisor) run(c *child) {
 	// the loop from any point.
 	turn := c.task
 	c.appendEntry(TranscriptEntry{Kind: EntryUser, Text: turn})
+	// A child's turn closes with the same event a session's does, so the two
+	// populations answer "how many rounds did that take, and how did it end"
+	// the same way. The rounds ride the position, as they do everywhere else.
+	var turnStart time.Time
+	endTurn := func(outcome string) {
+		if c.rec.Turn == nil {
+			return
+		}
+		at := c.pos()
+		c.rec.Turn(at.Turn, at.Round, time.Since(turnStart), outcome)
+	}
 	for {
 		c.beginTurn()
+		turnStart = time.Now()
 		report, err := h.Run(turn)
 		c.flushStreaming()
 
@@ -1484,6 +1534,7 @@ func (s *Supervisor) run(c *child) {
 			if budgetHit {
 				reason = budgetReason(c)
 			}
+			endTurn(observe.TurnCancelled)
 			c.set(StateFailed, reason)
 			s.emit(Event{Kind: EventDone, Status: c.status()})
 			return
@@ -1499,6 +1550,7 @@ func (s *Supervisor) run(c *child) {
 			// turn instead of being dropped (the TUI's dispatchSteering
 			// semantics).
 			if msgs := c.drainSteering(); len(msgs) > 0 {
+				endTurn(observe.TurnDone)
 				turn = strings.Join(msgs, "\n\n")
 				c.set(StateRunning, "running")
 				s.emitUpdate(c)
@@ -1515,6 +1567,7 @@ func (s *Supervisor) run(c *child) {
 				}
 			}
 
+			endTurn(observe.TurnDone)
 			c.set(StateDone, "done · "+plural(tools, "tool"))
 			s.emit(Event{Kind: EventDone, Status: c.status()})
 			return
@@ -1523,6 +1576,7 @@ func (s *Supervisor) run(c *child) {
 		if errors.Is(err, agent.ErrInterrupted) && c.ctx.Err() == nil {
 			// Turn cancelled by the user: the conversation is already
 			// well-formed (synthetic results); wait for steering or a kill.
+			endTurn(observe.TurnCancelled)
 			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Turn cancelled — send a message to continue."})
 			c.set(StateIdle, "idle · turn cancelled")
 			s.emitUpdate(c)
@@ -1545,6 +1599,10 @@ func (s *Supervisor) run(c *child) {
 			// picks up exactly where it left off, with the check-in as its
 			// next turn and a budget that has grown.
 			used := c.agent.Rounds()
+			// The cap is a check-in and not a stop, which is exactly what a
+			// session's cap-paused turn is: the turn that reached it closed
+			// there, and the check-in it prompts is the next one.
+			endTurn(observe.TurnCapPaused)
 			c.mu.Lock()
 			c.checkIns++
 			n := c.checkIns
@@ -1559,6 +1617,14 @@ func (s *Supervisor) run(c *child) {
 		}
 
 		// Keep the child's conversation well-formed for inspection.
+		outcome := observe.TurnFailed
+		if errors.Is(err, agent.ErrInterrupted) {
+			// A killed child's turn was interrupted, not defeated: the
+			// distinction is the one a session already draws, and folding it
+			// into failure would count every kill as a failing turn.
+			outcome = observe.TurnCancelled
+		}
+		endTurn(outcome)
 		c.agent.CancelTurn()
 		s.finalCheckIn(c)
 		c.set(StateFailed, s.failReason(c, err))
@@ -1691,7 +1757,10 @@ func (s *Supervisor) failReason(c *child, err error) string {
 }
 
 // resolveGated is the child's approval path: the child's clamped mode policy
-// decides, and anything it would ask about routes to the parent user.
+// decides, and anything it would ask about routes to the parent user. Every
+// verdict along the way is recorded at the codes a session records its own
+// at — an approval rate that covered the parent and not its children would
+// be a rate over the half of the work a person was looking at.
 func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 	raw := json.RawMessage(tc.Arguments)
 	rooted, err := RootArgs(c.root, tc.Name, raw)
@@ -1707,28 +1776,52 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 	policy := s.childPolicy(c)
 	title := askTitle(tc.Name, action)
 	decision, reason := policy.Decide(action)
+	// The policy's reason is free text until it goes through ReasonCode,
+	// which is where it stops being able to carry the path it names.
+	record := func(d, code string) {
+		if c.rec.Decision != nil {
+			c.rec.Decision(c.pos(), d, code)
+		}
+	}
 	// The static policy denies in plan mode, which refuses the call with the
 	// result that tells the model why nothing ran, and for a path no grant
 	// can reach, which says which path and why.
 	if decision == agent.Deny {
+		record(observe.DecisionDeny, observe.ReasonCode(reason))
 		if strings.HasPrefix(reason, "outside the working scope") {
 			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Refused: " + title + " — " + reason})
 			return agent.ScopeRefusedResult(reason)
 		}
 		return agent.PlanModeResult
 	}
+	// Whether the classifier is what decided, because from here the reason
+	// is its own label — which carries a duration and so can never be the
+	// code. The policy's reason can; the classifier's is named for it.
+	classified := false
 	if decision == agent.Ask {
 		var denial string
 		decision, reason, denial = s.classify(c, policy.Mode, tc, action)
+		classified = true
 		if decision == agent.Deny {
+			record(observe.DecisionDeny, observe.ReasonClassifier)
 			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Refused (" + reason + "): " + title + " — " + denial})
 			return "error: auto mode denied this tool call: " + denial
 		}
 	}
 	switch decision {
 	case agent.Allow:
+		code := observe.ReasonCode(reason)
+		if classified {
+			code = observe.ReasonClassifier
+		}
+		record(observe.DecisionAllow, code)
 		c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: "Auto-approved (" + reason + "): " + title})
 	case agent.Ask:
+		// Two events, as a session records: what put the call in front of a
+		// person, and what they said. The first is what a prompt-rate is
+		// made of and the second is what an approval-rate is, and one event
+		// carrying both could answer neither.
+		record(observe.DecisionAsk, observe.AskReason(action))
 		ask, askErr := s.buildAsk(c, tc.Name, rooted, action)
 		if askErr != nil {
 			return "error: " + askErr.Error()
@@ -1738,11 +1831,13 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 			return agent.CancelledResult
 		}
 		if !approved {
+			record(observe.DecisionDeny, observe.ReasonUser)
 			if action.Kind == agent.ActionCommand {
 				return "error: the user declined to run this command"
 			}
 			return "error: the user declined this tool call"
 		}
+		record(observe.DecisionAllow, observe.ReasonUser)
 	}
 
 	if tc.Name == tools.ExecCommandName {
@@ -1780,7 +1875,10 @@ func (s *Supervisor) classify(c *child, mode agent.Mode, tc provider.ToolCall, a
 	}
 	if c.rec.Usage != nil {
 		st := c.status()
-		c.rec.Usage(0, st.TokensIn, st.TokensOut)
+		// The turn count goes back with it: the totals are a whole-row
+		// update, so reporting spend without it would blank the column the
+		// last turn wrote.
+		c.rec.Usage(c.pos().Turn, st.TokensIn, st.TokensOut, 0, false)
 	}
 	verdict, reason := agent.ResolveAuto(action, v)
 	elapsed := fmt.Sprintf("classifier, %.1fs", v.Elapsed.Seconds())

@@ -159,9 +159,3 @@ func TestObserver_SignalsFromResultsAndSummary(t *testing.T) {
 		}
 	}
 }
-
-func TestSummaryStateCode(t *testing.T) {
-	if summaryStateCode(agent.SummaryOffTarget) != "off-target" || summaryStateCode(agent.SummaryOnTarget) != "on-target" || summaryStateCode(agent.SummaryUncertain) != "unclear" {
-		t.Fatal("summary state codes drifted")
-	}
-}

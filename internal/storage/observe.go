@@ -35,8 +35,8 @@ const (
 
 // AgentEvent is one content-free event. Turn and Round place it in the
 // session — a tool call in round 40 of turn 3 is a different fact from the
-// same call in round 2 — and are zero where the recorder had no position,
-// as a sub-agent's runner does not.
+// same call in round 2 — and are zero only where the recorder that wrote the
+// row kept no such accounting, which every surface shipping today does.
 type AgentEvent struct {
 	Kind       string
 	Tool       string
