@@ -250,9 +250,11 @@ func (m Model) updateFocus(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// The row's structure — a step's fold, a group's, a diff's three
 		// modes — is toggleRow's (click.go), so the key and the pointer open
 		// a row through one act rather than two that agree by inspection.
+		// The key's own gesture is the cycle: one row under the cursor, one
+		// press to spend, three depths reached by spending it again.
 		// What is left is the plain body flag, which this mode sets on every
 		// row it can put its cursor on.
-		claimed, full, output := m.toggleRow(m.focusIdx)
+		claimed, full, output := m.toggleRow(m.focusIdx, gestureCycle)
 		if full != nil {
 			return m.openDiffFull(full, stateFocus)
 		}

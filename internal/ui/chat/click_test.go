@@ -9,14 +9,17 @@ package chat
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // click is a press and a release in the same cell, delivered the way a
@@ -358,5 +361,162 @@ func TestClick_TheGraceWindowHoldsTheRun(t *testing.T) {
 	m = clickAnswer(t, m, x, y)
 	if len(executed) != 1 {
 		t.Fatalf("after the quiet the click should have answered, got %v", executed)
+	}
+}
+
+// --- the row line and the body under it -----------------------------------
+
+// deepClickModel is clickModel with one more row behind it: a read whose
+// output is longer than the in-place window holds, which is the only kind of
+// row with a depth past that window to reach at all.
+func deepClickModel(t *testing.T) Model {
+	t.Helper()
+	m := focusModel(t)
+	var long strings.Builder
+	for i := range maxExpandedResultLines * 2 {
+		fmt.Fprintf(&long, "deep line %d\n", i)
+	}
+	m.appendEntry(entry{kind: entryTool, toolName: "read_file", toolArgs: `{"path":"main.go"}`,
+		toolResult: strings.TrimRight(long.String(), "\n")})
+	m = m.WithMouse(true)
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoTop()
+	m.atBottom = false
+	return m
+}
+
+// The complaint the split answers: a click that opened a row has to be
+// undoable by the identical click. The keyboard's third depth takes the whole
+// screen, and a pointer that walked the same cycle would have taken it here
+// instead of giving the row back.
+func TestClick_TheRowLineToggles(t *testing.T) {
+	m := deepClickModel(t)
+	x, y := rowCell(t, m, "main.go")
+	m = click(t, m, x, y)
+	if !(*m.entries())[3].expanded {
+		t.Fatal("a click on the row line should open it")
+	}
+	x, y = rowCell(t, m, "main.go")
+	m = click(t, m, x, y)
+	if (*m.entries())[3].expanded {
+		t.Fatal("the same cell pressed twice should give the row back")
+	}
+	if m.state == stateOutputFull {
+		t.Fatal("the row line never takes the screen, however much output is behind it")
+	}
+}
+
+// The other half of the cell: the body is content, and a click on content
+// asks for that content whole.
+func TestClick_TheBodyOpensItWhole(t *testing.T) {
+	m := deepClickModel(t)
+	x, y := rowCell(t, m, "main.go")
+	m = click(t, m, x, y)
+	bx, by := rowCell(t, m, "deep line 2")
+	m = click(t, m, bx, by)
+	if m.state != stateOutputFull || m.fullOutput == nil {
+		t.Fatalf("a click in the body should open the full screen, got state %d", m.state)
+	}
+	if len(m.fullOutput.Lines) != maxExpandedResultLines*2 {
+		t.Fatalf("the full screen holds the whole output, got %d lines", len(m.fullOutput.Lines))
+	}
+	if !(*m.entries())[3].expanded {
+		t.Fatal("the row it came from stays open behind it: esc never destroys")
+	}
+}
+
+// A window already showing everything has no screen past it — the same
+// judgement the key makes when it skips that depth. What matters is the other
+// half: the click must not fall through and close the body being read.
+func TestClick_ABodyWithNothingDeeperStaysPut(t *testing.T) {
+	m := clickModel(t)
+	x, y := rowCell(t, m, "search")
+	m = click(t, m, x, y)
+	before := m.renderHistoryRaw()
+	bx, by := rowCell(t, m, "result line 3")
+	m = click(t, m, bx, by)
+	if m.state == stateOutputFull {
+		t.Fatal("a body that fits its window has nothing deeper to open")
+	}
+	if !(*m.entries())[1].expanded {
+		t.Fatal("a click on the body must not close the row under the pointer")
+	}
+	if m.renderHistoryRaw() != before {
+		t.Fatal("a click on a body with nothing behind it should change nothing")
+	}
+}
+
+// diffClickModel is a session whose last row is an applied edit.
+func diffClickModel(t *testing.T) Model {
+	t.Helper()
+	m := focusModel(t)
+	m.appendEntry(entry{kind: entryDiff, diff: &components.DiffView{
+		Path:  "internal/agent/loop.go",
+		Verb:  "edit",
+		Hunks: diff.Compute("old line\n", "new line\n"),
+	}})
+	m = m.WithMouse(true)
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoTop()
+	m.atBottom = false
+	return m
+}
+
+// A diff's three modes split the same way: the row line is the toggle, and
+// the change itself is what the full screen is for.
+func TestClick_TheDiffRowLineToggles(t *testing.T) {
+	m := diffClickModel(t)
+	x, y := rowCell(t, m, "loop.go")
+	m = click(t, m, x, y)
+	d := (*m.entries())[3].diff
+	if d.Mode != components.DiffExpanded {
+		t.Fatalf("a click on the row line should expand the diff, got mode %d", d.Mode)
+	}
+	x, y = rowCell(t, m, "loop.go")
+	m = click(t, m, x, y)
+	if d.Mode != components.DiffCollapsed {
+		t.Fatalf("the same cell should collapse it again, got mode %d", d.Mode)
+	}
+	if m.state == stateDiffFull {
+		t.Fatal("the row line never takes the screen")
+	}
+}
+
+func TestClick_TheDiffBodyOpensFullScreen(t *testing.T) {
+	m := diffClickModel(t)
+	x, y := rowCell(t, m, "loop.go")
+	m = click(t, m, x, y)
+	bx, by := rowCell(t, m, "new line")
+	m = click(t, m, bx, by)
+	if m.state != stateDiffFull {
+		t.Fatalf("a click on the change should open the full screen, got state %d", m.state)
+	}
+	if d := (*m.entries())[3].diff; d.Mode != components.DiffFull {
+		t.Fatalf("the view should be in its full mode, got %d", d.Mode)
+	}
+}
+
+// The think row's three depths are all in place, so there is no deeper
+// surface a body click could open — and the cycle wraps, so the row line
+// alone still reaches every depth and closes it again.
+func TestClick_TheThinkRowCyclesFromItsRowLine(t *testing.T) {
+	m := focusModel(t)
+	m.appendEntry(entry{kind: entryThink, text: "the cap is a checkpoint, not a wall"})
+	m = m.WithMouse(true)
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoTop()
+	m.atBottom = false
+
+	line := lineOf(t, m, "✻ think")
+	x, y := at(t, m, line, 0)
+	depths := map[thinkDepth]bool{}
+	for range 3 {
+		m = click(t, m, x, y)
+		depths[m.thinkDepthOf((*m.entries())[3])] = true
+		line = lineOf(t, m, "✻ think")
+		x, y = at(t, m, line, 0)
+	}
+	if !depths[thinkClosed] {
+		t.Fatalf("the cycle should come back round to closed, saw %v", depths)
 	}
 }

@@ -32,6 +32,13 @@ output, a read's file contents and a search's matches all open this way, and
 at every depth what a program painted is re-painted into the palette, so
 nothing arrives with colours of its own.
 
+The three depths are three presses of one key, and a pointer reaches them by
+position instead: the row line opens and closes the window, and a click in the
+body under it takes that body whole. A pointer has a cell to spend where the
+key has only another press, and spending it this way is what keeps a click
+undoable by the identical click — a second press that took the screen would
+not be giving the row back.
+
 ### The think row
 
 What the model thought before it acted, folded into one row among the acts it
@@ -72,7 +79,9 @@ and shown as nothing — there is nothing to show.
 ### The diff view
 
 An applied edit is one row until you open it. Opening it shows the change in
-place, bounded; opening it again gives it the whole screen.
+place, bounded; opening it again gives it the whole screen. By pointer, as
+with any row: the row line toggles the in-place view, and a click on the
+change itself is what opens the screen.
 
 Three depths rather than two, because the middle one is the common case:
 enough to see what changed without losing the transcript around it.

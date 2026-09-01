@@ -81,7 +81,16 @@ under-specified.
 
 Every key in the product is declared once, in a single register, so a hint and
 its handler cannot disagree. A pointer is exempt — clicking a row opens it the
-way Enter would, without taking the keyboard from anyone.
+way Enter would, without taking the keyboard from anyone. It opens it by a
+different route, because the two inputs have different things to spend: the
+key has one row under its cursor and reaches a row's depths by being pressed
+again, while a click names a cell and so reads which half of the row it landed
+in — the row line toggles, the body under it opens whole. What a click must
+never do is arrive somewhere the same click cannot leave, which is what a
+pointer walking the key's cycle would do the moment the third press took the
+screen. No modifier stands in for the distinction: shift-click belongs to the
+terminal, which keeps it for its own selection and hands the application
+nothing.
 
 ## The grammar
 
