@@ -13,6 +13,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -112,7 +113,7 @@ func (m Model) estimatedContextTokens() int64 {
 func (m *Model) trimContext() int {
 	elided, _ := m.agent.TrimOldToolResults(m.estimatedContextTokens(), m.trimThreshold())
 	if elided > 0 {
-		m.signal(signalTrim, strconv.Itoa(elided))
+		m.signal(observe.SignalTrim, strconv.Itoa(elided))
 		// What the provider reported described the untrimmed conversation, so
 		// it no longer describes anything: the accounting re-derives the size
 		// from the messages that remain, and says it is estimating.

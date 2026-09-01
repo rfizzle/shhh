@@ -85,6 +85,8 @@ func TestReportGoldens(t *testing.T) {
 		{"observe", observeReport(goldenObserve()).Render(80)},
 		{"observe.w110", observeReport(goldenObserve()).Render(110)},
 		{"observe.empty", observeReport(observeData{Window: "30d"}).Render(80)},
+		{"observe.session", observeSessionReport(goldenObserveSession()).Render(80)},
+		{"observe.session.empty", observeSessionReport(goldenObserveSessionRow(), nil).Render(80)},
 		{"rate", rateReport(rateEntries(), goldenNow).Render(80)},
 		{"rate.empty", rateReport(nil, goldenNow).Render(80)},
 		{"sandbox.empty", goldenEmptySandbox().Render(80)},
@@ -231,6 +233,43 @@ func goldenObserve() observeData {
 			{Signal: "summary", Reason: "on-target", Count: 5},
 			{Signal: "context-trimmed", Reason: "4", Count: 1},
 		},
+	}
+}
+
+// goldenObserveSession is one recorded session carrying an event of every
+// kind the timeline can draw — including one at the zero position, which is
+// what a surface that keeps no turn or round accounting records.
+func goldenObserveSession() (storage.AgentSessionSummary, []storage.AgentExportEvent) {
+	fast, slow, turn := int64(42), int64(2400), int64(94000)
+	return goldenObserveSessionRow(), []storage.AgentExportEvent{
+		// A decision taken before the first turn opened: the round and turn
+		// are zero because nothing was running yet.
+		{CreatedAt: "2026-08-31T11:31:58.000Z", Kind: storage.AgentEventDecision, Outcome: "allow", Reason: "mode-accept-edits"},
+		{CreatedAt: "2026-08-31T11:32:04.000Z", Kind: storage.AgentEventTool, Turn: 1, Round: 1,
+			Tool: "read_file", DurationMs: &fast, Outcome: "ok"},
+		{CreatedAt: "2026-08-31T11:32:19.000Z", Kind: storage.AgentEventTool, Turn: 1, Round: 3,
+			Tool: "execute_command", DurationMs: &slow, Outcome: "error", Reason: "exit-status"},
+		{CreatedAt: "2026-08-31T11:32:21.000Z", Kind: storage.AgentEventDecision, Turn: 1, Round: 3,
+			Outcome: "ask", Reason: "safety"},
+		{CreatedAt: "2026-08-31T11:32:40.000Z", Kind: storage.AgentEventSignal, Turn: 1, Round: 10,
+			Outcome: "summary", Reason: "off-target"},
+		{CreatedAt: "2026-08-31T11:32:41.000Z", Kind: storage.AgentEventSignal, Turn: 1, Round: 10,
+			Outcome: "intervened", Reason: "steer"},
+		{CreatedAt: "2026-08-31T11:33:32.000Z", Kind: storage.AgentEventTurn, Turn: 1, Round: 14,
+			Outcome: "done", DurationMs: &turn},
+	}
+}
+
+// goldenObserveSessionRow is the session those events belong to, alone —
+// which is also the page a session that recorded nothing renders.
+func goldenObserveSessionRow() storage.AgentSessionSummary {
+	ended := goldenNow.Add(-26 * time.Minute)
+	return storage.AgentSessionSummary{
+		ID: 12, Kind: "code", Provider: "anthropic", Model: "claude-sonnet-5",
+		StartedAt: goldenNow.Add(-28 * time.Minute), EndedAt: &ended,
+		Turns: 1, TokensIn: 41200, TokensOut: 9800, Cost: 0.51,
+		Version: "v1.4.0", PromptHash: "9f2a1c04bb7e", Skills: 2,
+		Project: "3d81ee0a5c62", ChatSession: "2026-08-31 11:31:58",
 	}
 }
 

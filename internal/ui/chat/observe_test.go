@@ -2,46 +2,68 @@ package chat
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/storage"
 )
 
-func TestReasonCode_Mapping(t *testing.T) {
-	cases := map[string]string{
-		"accept-edits mode":            "mode-accept-edits",
-		"auto mode":                    "mode-auto",
-		"session policy":               "session-grant",
-		"allowlist":                    "allowlist",
-		"plan mode":                    "plan-mode",
-		"plan mode inspection":         "plan-inspection",
-		"rm -rf / looked really safe!": "other",
-		"":                             "other",
+// Every hook on the contract still has a forwarder in this package that
+// reaches it. The codes and their meanings are internal/observe's to test,
+// and whether each hook site still fires is the four tests below; what this
+// holds is the seam between them — a forwarder that stopped calling its
+// hook, or a hook the adapter never grew one for. Decision and Session have
+// no test below, so for those two this is the only cover.
+func TestObserver_ModelReachesEveryHook(t *testing.T) {
+	db, err := storage.OpenPath(t.TempDir() + "/test.db")
+	if err != nil {
+		t.Fatalf("open db: %v", err)
 	}
-	for raw, want := range cases {
-		if got := reasonCode(raw); got != want {
-			t.Errorf("reasonCode(%q) = %q, want %q", raw, got, want)
-		}
-	}
-}
+	defer db.Close()
 
-func TestAskReason(t *testing.T) {
-	if got := askReason(agent.Action{Kind: agent.ActionCommand, SafetyFlagged: true}); got != "safety" {
-		t.Fatalf("expected safety, got %q", got)
+	var reached []string
+	m := New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "hello"},
+	}, mockStream).
+		WithDB(db).
+		WithObserver(observe.Observer{
+			Usage:    func(int64, int64, int64, float64, bool) { reached = append(reached, "usage") },
+			ToolCall: func(observe.Pos, string, time.Duration, string, string) { reached = append(reached, "tool") },
+			Decision: func(observe.Pos, string, string) { reached = append(reached, "decision") },
+			Turn:     func(int64, int64, time.Duration, string) { reached = append(reached, "turn") },
+			Signal:   func(observe.Pos, string, string) { reached = append(reached, "signal") },
+			Session:  func(string) { reached = append(reached, "session") },
+		})
+	m.notifyUsage()
+	m.recordToolResult("read_file", time.Millisecond, "data")
+	m.recordDecision(observe.DecisionAllow, "user")
+	m.recordTurn(observe.TurnDone)
+	m.signal(observe.SignalMode, "auto")
+	// Session has no recorder of its own — the slot's name is reported from
+	// the autosave that decides it, which needs a store and something past
+	// the system prompt to save.
+	m.autosaveCmd()
+
+	want := []string{"usage", "tool", "decision", "turn", "signal", "session"}
+	if len(reached) != len(want) {
+		t.Fatalf("expected %v, got %v", want, reached)
 	}
-	if got := askReason(agent.Action{Kind: agent.ActionEdit}); got != "policy" {
-		t.Fatalf("expected policy, got %q", got)
+	for i := range want {
+		if reached[i] != want[i] {
+			t.Fatalf("hook %d: expected %q, got %q", i, want[i], reached[i])
+		}
 	}
 }
 
 func TestObserver_UsageReportsTurnsAndTotals(t *testing.T) {
 	var gotTurns, gotIn, gotOut int64
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithObserver(Observer{Usage: func(turns, tokensIn, tokensOut int64, _ float64, _ bool) {
+		WithObserver(observe.Observer{Usage: func(turns, tokensIn, tokensOut int64, _ float64, _ bool) {
 			gotTurns, gotIn, gotOut = turns, tokensIn, tokensOut
 		}})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
@@ -59,7 +81,7 @@ func TestObserver_UsageReportsTurnsAndTotals(t *testing.T) {
 func TestObserver_ToolEventsRecorded(t *testing.T) {
 	var events []string
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithObserver(Observer{ToolCall: func(_ Pos, tool string, duration time.Duration, outcome, class string) {
+		WithObserver(observe.Observer{ToolCall: func(_ observe.Pos, tool string, duration time.Duration, outcome, class string) {
 			events = append(events, tool+":"+outcome)
 		}})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
@@ -83,58 +105,10 @@ func TestObserver_ToolEventsRecorded(t *testing.T) {
 	}
 }
 
-func TestStatsReport_BreakdownAndSpend(t *testing.T) {
-	msgs := []provider.Message{
-		{Role: provider.RoleSystem, Content: strings.Repeat("s", 400)},
-		{Role: provider.RoleUser, Content: strings.Repeat("u", 40)},
-		{Role: provider.RoleAssistant, Content: strings.Repeat("a", 40)},
-		{Role: provider.RoleTool, Content: strings.Repeat("t", 80), ToolCallID: "1"},
-	}
-	m := New(msgs, mockStream).WithToolTokenEstimate(50)
-	m.TotalTokensIn = 1200
-	m.TotalTokensOut = 300
-	m.turnCount = 2
-
-	out := m.statsReport()
-	for _, want := range []string{
-		"Context occupancy",
-		"system prompt", "tool definitions", "messages", "tool results",
-		"Session spend", "Turns: 2",
-	} {
-		if !strings.Contains(out, want) {
-			t.Fatalf("stats report missing %q:\n%s", want, out)
-		}
-	}
-	// 400 chars ≈ 100 tokens for the system prompt.
-	if !strings.Contains(out, "system prompt     ~100") {
-		t.Fatalf("expected system prompt estimate ~100:\n%s", out)
-	}
-	if !strings.Contains(out, "tool definitions  ~50") {
-		t.Fatalf("expected tool definition estimate ~50:\n%s", out)
-	}
-}
-
-func TestSlashStats_Handled(t *testing.T) {
-	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
-	handled, result := m.handleSlashCommand("/stats")
-	if !handled {
-		t.Fatal("/stats should be handled")
-	}
-	if !strings.Contains(result, "Context occupancy") {
-		t.Fatalf("unexpected /stats output: %s", result)
-	}
-}
-
-func TestHelp_ListsStats(t *testing.T) {
-	if !strings.Contains(helpText(), "/stats") {
-		t.Fatal("help should list /stats")
-	}
-}
-
 func TestObserver_TurnRecordedOnClose(t *testing.T) {
 	var turns []string
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithObserver(Observer{Turn: func(turn, rounds int64, _ time.Duration, outcome string) {
+		WithObserver(observe.Observer{Turn: func(turn, rounds int64, _ time.Duration, outcome string) {
 			turns = append(turns, fmt.Sprintf("%d:%d:%s", turn, rounds, outcome))
 		}})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
@@ -159,7 +133,7 @@ func TestObserver_TurnRecordedOnClose(t *testing.T) {
 func TestObserver_SignalsFromResultsAndSummary(t *testing.T) {
 	var signals []string
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
-		WithObserver(Observer{Signal: func(at Pos, code, reason string) {
+		WithObserver(observe.Observer{Signal: func(at observe.Pos, code, reason string) {
 			signals = append(signals, fmt.Sprintf("%d/%s:%s", at.Turn, code, reason))
 		}})
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 100, Height: 40})
@@ -182,28 +156,6 @@ func TestObserver_SignalsFromResultsAndSummary(t *testing.T) {
 	for i := range want {
 		if signals[i] != want[i] {
 			t.Fatalf("signal %d: expected %q, got %q", i, want[i], signals[i])
-		}
-	}
-}
-
-func TestClassFromResult(t *testing.T) {
-	cases := map[string]string{
-		"data":              "",
-		"No matches found.": classEmpty,
-		"error: open x: no such file or directory": classNotFound,
-		"error: the user declined this tool call":  classDeclined,
-		"error: this session is in plan mode":      classPlanMode,
-		"error: this path is outside the session":  classOutOfScope,
-		"error: cancelled by user":                 classCancelled,
-		"error: open x: permission denied":         classDeclined,
-		"error: context deadline exceeded":         classTimeout,
-		"error: unknown tool frobnicate":           classUnknown,
-		"error: invalid arguments: missing 'path'": classBadArgs,
-		"error: boom": classOther,
-	}
-	for in, want := range cases {
-		if got := classFromResult(in); got != want {
-			t.Errorf("classFromResult(%q) = %q, want %q", in, got, want)
 		}
 	}
 }

@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/storage"
-	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/spf13/cobra"
 )
 
@@ -142,7 +142,7 @@ func TestObserveRecorder_NilSafe(t *testing.T) {
 	rec.decision("allow", "user")
 	rec.stamp("prompt", 1, "/repo")
 	rec.turn(1, 3, time.Second, "done")
-	rec.signal(chat.Pos{}, "summary", "on-target")
+	rec.signal(observe.Pos{}, "summary", "on-target")
 	rec.link("name")
 	rec.end()
 	if obs := rec.observer(); obs.Usage != nil || obs.ToolCall != nil || obs.Decision != nil || obs.Turn != nil || obs.Signal != nil || obs.Session != nil {
@@ -164,9 +164,9 @@ func TestObserveSessionTimeline(t *testing.T) {
 	rec.stamp("the prompt", 2, "/repo")
 	rec.link("2026-01-01 10:00:00")
 	rec.link("2026-01-01 10:00:00")
-	rec.toolCallAt(chat.Pos{Turn: 1, Round: 1}, "search", 5*time.Millisecond, "ok", "empty")
-	rec.decisionAt(chat.Pos{Turn: 1, Round: 2}, "ask", "safety")
-	rec.signal(chat.Pos{Turn: 1, Round: 40}, "summary", "off-target")
+	rec.toolCallAt(observe.Pos{Turn: 1, Round: 1}, "search", 5*time.Millisecond, "ok", "empty")
+	rec.decisionAt(observe.Pos{Turn: 1, Round: 2}, "ask", "safety")
+	rec.signal(observe.Pos{Turn: 1, Round: 40}, "summary", "off-target")
 	rec.turn(1, 41, 90*time.Second, "cap-paused")
 	rec.end()
 

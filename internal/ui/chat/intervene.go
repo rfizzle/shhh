@@ -10,6 +10,7 @@ package chat
 
 import (
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -33,6 +34,6 @@ func (m *Model) injectInterventions() {
 	}
 	m.agent.Append(provider.Message{Role: provider.RoleUser, Content: iv.Message})
 	m.appendEntry(entry{kind: entrySystem, text: iv.Notice})
-	m.signal(signalIntervene, iv.Kind.Signal())
+	m.signal(observe.SignalIntervene, iv.Kind.Signal())
 	m.syncViewport()
 }

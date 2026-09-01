@@ -9,6 +9,7 @@ package chat
 import (
 	tea "charm.land/bubbletea/v2"
 
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/skill"
 )
 
@@ -26,7 +27,7 @@ func (m Model) activateSkill(name, task string) (tea.Model, tea.Cmd) {
 	if err != nil {
 		return m.surfaceNotice("Could not read skill " + name + ": " + err.Error())
 	}
-	m.signal(signalSkill, s.Name)
+	m.signal(observe.SignalSkill, s.Name)
 	shown := "/skill " + name
 	if task != "" {
 		shown += " " + task

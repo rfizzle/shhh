@@ -1,0 +1,14 @@
+  shhh observe session 12 — code · 2m 00s
+
+  started:       Aug 31 11:32
+  model:         anthropic · claude-sonnet-5
+  turns:         1
+  tokens:        ↑41.2k ↓9.8k
+  cost:          $0.51
+  version:       v1.4.0
+  prompt:        9f2a1c04bb7e
+  project:       3d81ee0a5c62
+  conversation:  2026-08-31 11:31:58
+  skills:        2
+
+  ⊘ no events recorded for this session · shhh observe

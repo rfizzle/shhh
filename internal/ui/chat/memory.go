@@ -15,6 +15,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/memory"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -109,7 +110,7 @@ func (m Model) updateMemoryAsk(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if res.Note != "" {
 		text += " (" + res.Note + ")"
 	}
-	m.recordDecision(decisionAllow, "user")
+	m.recordDecision(observe.DecisionAllow, "user")
 	resultText, err := m.memory.Save(scope, req.memoryDraft.Kind, text)
 	if err != nil {
 		resultText = "error: cannot save memory: " + err.Error()

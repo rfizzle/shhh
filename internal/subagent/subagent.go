@@ -20,6 +20,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/radius"
 	"github.com/rfizzle/shhh/internal/safety"
@@ -1434,10 +1435,9 @@ func (s *Supervisor) run(c *child) {
 		OnToolResult: func(tc provider.ToolCall, result string) {
 			c.settleToolEntry(pendingEntry, result)
 			if c.rec.ToolCall != nil {
-				outcome := "ok"
-				if strings.HasPrefix(result, "error:") {
-					outcome = "error"
-				}
+				// A child's recorder takes an outcome and nothing else, so
+				// the failure's class is read here and dropped.
+				outcome, _ := observe.ToolOutcome(result)
 				c.rec.ToolCall(tc.Name, outcome)
 			}
 			s.emitUpdate(c)

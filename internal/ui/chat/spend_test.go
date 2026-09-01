@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -135,7 +136,7 @@ func TestSpend_ObserverReportsThePricedSessionTotal(t *testing.T) {
 	var gotCost float64
 	var gotPriced bool
 	m, ledger := spendModel(t)
-	m = m.WithObserver(Observer{Usage: func(_, in, out int64, cost float64, priced bool) {
+	m = m.WithObserver(observe.Observer{Usage: func(_, in, out int64, cost float64, priced bool) {
 		gotIn, gotOut, gotCost, gotPriced = in, out, cost, priced
 	}})
 	m.vitals.startTurn()

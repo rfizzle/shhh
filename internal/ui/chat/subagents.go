@@ -13,6 +13,7 @@ import (
 	"charm.land/lipgloss/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -44,7 +45,7 @@ func (m *Model) syncChildGrants() {
 // ceiling in sync (children are never more permissive than the parent).
 func (m *Model) applyMode(mode agent.Mode) {
 	if mode != m.mode {
-		m.signal(signalMode, mode.String())
+		m.signal(observe.SignalMode, mode.String())
 	}
 	m.mode = mode
 	if m.subagents != nil {
@@ -83,7 +84,7 @@ func (m Model) handleSubagentEvent(ev subagent.Event) (tea.Model, tea.Cmd) {
 	case subagent.EventDone:
 		// A finished child can no longer act on its asks.
 		m.purgeChildAsks(ev.Status.Name)
-		m.signal(signalSubagent, ev.Status.State.String())
+		m.signal(observe.SignalSubagent, ev.Status.State.String())
 		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("Agent %s: %s", ev.Status.Name, ev.Status.Detail)})
 		// A reviewer the backlog runner spawned answers its review stage.
 		if next, cmd, ok := m.todoReviewDone(ev.Status); ok {

@@ -20,6 +20,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -139,7 +140,7 @@ func (m Model) applyUndo(plan changeset.UndoPlan, force bool) (tea.Model, tea.Cm
 	out := plan.Apply(force)
 	if len(out.Records) > 0 {
 		m.turnCount++
-		m.signal(signalUndo, "")
+		m.signal(observe.SignalUndo, "")
 		var evicted []int64
 		for _, r := range out.Records {
 			evicted = append(evicted, m.changes.Add(m.turnCount, r)...)

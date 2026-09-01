@@ -47,6 +47,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -235,7 +236,7 @@ func (m *Model) finishSummary(msg summaryDoneMsg) bool {
 	}
 	m.summary.failures = 0
 	v := msg.verdict
-	m.signal(signalSummary, summaryStateCode(v.State))
+	m.signal(observe.SignalSummary, summaryStateCode(v.State))
 	m.summary.last = &v
 	m.summary.lastRound = v.Round
 	m.summary.lastAt = time.Now()

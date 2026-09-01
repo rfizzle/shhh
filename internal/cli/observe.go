@@ -15,10 +15,10 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/cli/report"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/todo"
-	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/spf13/cobra"
 )
@@ -117,12 +117,13 @@ func (r *observeRecorder) toolCallOutcome(tool, outcome string) {
 	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{Kind: storage.AgentEventTool, Tool: tool, Outcome: outcome})
 }
 
-// observer adapts the recorder to the chat TUI's observability hooks.
-func (r *observeRecorder) observer() chat.Observer {
+// observer adapts the recorder to the observer contract every surface
+// reports a session through.
+func (r *observeRecorder) observer() observe.Observer {
 	if r == nil {
-		return chat.Observer{}
+		return observe.Observer{}
 	}
-	return chat.Observer{
+	return observe.Observer{
 		Usage:    r.usagePriced,
 		ToolCall: r.toolCallAt,
 		Decision: r.decisionAt,
@@ -166,10 +167,10 @@ func (r *observeRecorder) usagePriced(turns, tokensIn, tokensOut int64, cost flo
 }
 
 func (r *observeRecorder) toolCall(tool string, duration time.Duration, outcome string) {
-	r.toolCallAt(chat.Pos{}, tool, duration, outcome, "")
+	r.toolCallAt(observe.Pos{}, tool, duration, outcome, "")
 }
 
-func (r *observeRecorder) toolCallAt(at chat.Pos, tool string, duration time.Duration, outcome, class string) {
+func (r *observeRecorder) toolCallAt(at observe.Pos, tool string, duration time.Duration, outcome, class string) {
 	if r == nil {
 		return
 	}
@@ -181,10 +182,10 @@ func (r *observeRecorder) toolCallAt(at chat.Pos, tool string, duration time.Dur
 }
 
 func (r *observeRecorder) decision(decision, reason string) {
-	r.decisionAt(chat.Pos{}, decision, reason)
+	r.decisionAt(observe.Pos{}, decision, reason)
 }
 
-func (r *observeRecorder) decisionAt(at chat.Pos, decision, reason string) {
+func (r *observeRecorder) decisionAt(at observe.Pos, decision, reason string) {
 	if r == nil {
 		return
 	}
@@ -205,7 +206,7 @@ func (r *observeRecorder) turn(turn, rounds int64, duration time.Duration, outco
 	})
 }
 
-func (r *observeRecorder) signal(at chat.Pos, code, reason string) {
+func (r *observeRecorder) signal(at observe.Pos, code, reason string) {
 	if r == nil {
 		return
 	}
@@ -651,6 +652,18 @@ func renderObserveSession(cmd *cobra.Command, db *storage.DB, id int64) error {
 	if !ok {
 		return fmt.Errorf("no recorded session %d", id)
 	}
+	events, err := db.AgentSessionEvents(id)
+	if err != nil {
+		return fmt.Errorf("query events: %w", err)
+	}
+	return report.Fprint(cmd.OutOrStdout(), observeSessionReport(s, events))
+}
+
+// observeSessionReport builds that page. It is separate from the query so
+// the whole render can be held against a fixture: every event kind this
+// draws is a code some surface reports, and a surface that starts reporting
+// through a different path must still land on the same page.
+func observeSessionReport(s storage.AgentSessionSummary, events []storage.AgentExportEvent) report.Report {
 	pairs := []report.Pair{
 		{Key: "started", Value: s.StartedAt.Local().Format("Jan 2 15:04")},
 		{Key: "model", Value: joinDetail(s.Provider, s.Model)},
@@ -676,18 +689,13 @@ func renderObserveSession(cmd *cobra.Command, db *storage.DB, id int64) error {
 	}
 
 	r := report.Report{
-		Title:    "shhh observe session " + strconv.FormatInt(id, 10),
+		Title:    "shhh observe session " + strconv.FormatInt(s.ID, 10),
 		Subject:  joinDetail(s.Kind, observeElapsed(s)),
 		Sections: []report.Section{{Pairs: pairs}},
 	}
 
-	events, err := db.AgentSessionEvents(id)
-	if err != nil {
-		return fmt.Errorf("query events: %w", err)
-	}
 	if len(events) == 0 {
-		return report.Fprint(cmd.OutOrStdout(),
-			emptyInto(r, "no events recorded for this session", "shhh observe"))
+		return emptyInto(r, "no events recorded for this session", "shhh observe")
 	}
 	turn := int64(-1)
 	for _, e := range events {
@@ -702,7 +710,7 @@ func renderObserveSession(cmd *cobra.Command, db *storage.DB, id int64) error {
 		last := &r.Sections[len(r.Sections)-1]
 		last.Rows = append(last.Rows, observeEventRow(e))
 	}
-	return report.Fprint(cmd.OutOrStdout(), r)
+	return r
 }
 
 // observeEventRow is one recorded event on the grid: what kind of thing

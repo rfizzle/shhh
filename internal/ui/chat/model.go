@@ -21,6 +21,7 @@ import (
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/notebook"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/project"
@@ -658,9 +659,9 @@ type Model struct {
 	// compacting marks an in-flight /compact request: the streamed
 	// response is a summary handled by finishCompact, not conversation text.
 	compacting bool
-	// observer receives content-free session events for observability
-	//; turnCount and toolDefTokens feed it and /stats.
-	observer      Observer
+	// observer receives the session's content-free events; turnCount and
+	// toolDefTokens feed it and /stats.
+	observer      observe.Observer
 	turnCount     int64
 	toolDefTokens int64
 	// subagents supervises spawned child agents; childAsks queues
@@ -2119,7 +2120,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		for _, r := range msg.results {
 			m.recordToolResult(r.Call.Name, r.Duration, r.Result)
 			if agent.IsRepeatNotice(r.Result) {
-				m.signal(signalRepeat, r.Call.Name)
+				m.signal(observe.SignalRepeat, r.Call.Name)
 			}
 			m.appendEntry(entry{kind: entryTool, toolName: r.Call.Name, toolArgs: r.Call.Arguments, toolResult: r.Result, duration: r.Duration})
 		}
@@ -2145,9 +2146,9 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// command — stays unreduced.
 		if m.pendingApproval != nil {
 			out = m.reduceResult(tools.ExecCommandName, out)
-			outcome, class := outcomeOK, ""
+			outcome, class := observe.OutcomeOK, ""
 			if msg.exitCode != 0 {
-				outcome, class = outcomeError, classExitStatus
+				outcome, class = observe.OutcomeError, observe.ClassExitStatus
 			}
 			m.recordToolEvent(tools.ExecCommandName, msg.duration, outcome, class)
 		}
@@ -2707,7 +2708,7 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	switch result {
 	case components.ApprovalApprove:
 		if m.pendingApproval != nil {
-			m.recordDecision(decisionAllow, "user")
+			m.recordDecision(observe.DecisionAllow, "user")
 		}
 		if m.pendingApproval != nil && m.pendingApproval.kind != approvalExec {
 			return m.executeApprovedTool()
@@ -2736,7 +2737,7 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		// before the key applied it, and a flagged action was never in it.
 		if req := m.pendingApproval; req != nil && len(m.pendingBatch) > 0 {
 			m.approveBatch()
-			m.recordDecision(decisionAllow, "user-batch")
+			m.recordDecision(observe.DecisionAllow, "user-batch")
 			if req.kind == approvalExec {
 				return m.executeRun()
 			}
@@ -2756,14 +2757,14 @@ func (m Model) updateConfirmRun(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		if req := m.pendingApproval; req != nil {
 			switch req.kind {
 			case approvalExec:
-				m.recordDecision(decisionAllow, "user-always")
+				m.recordDecision(observe.DecisionAllow, "user-always")
 				if prefix := m.grantCommand(req.command); prefix != "" {
 					m.noteGrant("Commands starting " + strconv.Quote(prefix) + " will run without asking. /permissions revoke takes it back.")
 				}
 				m.syncChildGrants()
 				return m.executeRun()
 			case approvalDiff:
-				m.recordDecision(decisionAllow, "user-always")
+				m.recordDecision(observe.DecisionAllow, "user-always")
 				if dir := m.grantEditDir(req.path); dir != "" {
 					m.noteGrant("Edits in " + displayDir(dir) + " will apply without asking. /permissions revoke takes it back.")
 				}
@@ -3099,7 +3100,7 @@ func (m *Model) injectSteering() bool {
 		atts = nil
 	}
 	m.turnCount += int64(len(m.steering))
-	m.signal(signalSteer, strconv.Itoa(len(m.steering)))
+	m.signal(observe.SignalSteer, strconv.Itoa(len(m.steering)))
 	m.steering = nil
 	m.denialNotice = ""
 	m.resetRounds()

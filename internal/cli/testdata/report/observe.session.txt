@@ -1,0 +1,25 @@
+  shhh observe session 12 — code · 2m 00s
+
+  started:       Aug 31 11:32
+  model:         anthropic · claude-sonnet-5
+  turns:         1
+  tokens:        ↑41.2k ↓9.8k
+  cost:          $0.51
+  version:       v1.4.0
+  prompt:        9f2a1c04bb7e
+  project:       3d81ee0a5c62
+  conversation:  2026-08-31 11:31:58
+  skills:        2
+
+  BEFORE THE FIRST TURN
+
+  ✓ 11:31:58  decision  [allowed · auto · mode-accept-edits]
+
+  TURN 1
+
+  ✓ 11:32:04  read_file · r1 · 42ms  [ok]
+  ✗ 11:32:19  execute_command · r3 · exit-status · 2.4s  [error]
+  ⚠ 11:32:21  decision · r3  [asked · auto · safety]
+  · 11:32:40  summary · r10 · off-target  [signal]
+  · 11:32:41  intervened · r10 · steer  [signal]
+  ✓ 11:33:32  turn · 14 rounds · 1m34s  [done]

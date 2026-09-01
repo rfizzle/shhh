@@ -15,6 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/meter"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -288,9 +289,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	var runErr error
 	runStart := time.Now()
 	defer func() {
-		outcome := "done"
+		outcome := observe.TurnDone
 		if runErr != nil {
-			outcome = "failed"
+			outcome = observe.TurnFailed
 		}
 		recorder.turn(1, int64(a.Rounds()), time.Since(runStart), outcome)
 	}()
@@ -332,9 +333,10 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 			fmt.Fprintf(os.Stderr, "» %s %s\n", tc.Name, clipActivityLine(tc.Arguments))
 		},
 		OnToolResult: func(tc provider.ToolCall, result string) {
-			outcome := "ok"
-			if strings.HasPrefix(result, "error:") {
-				outcome = "error"
+			// The failure's class is read and dropped: this runner's tool
+			// events carry an outcome and no class yet.
+			outcome, _ := observe.ToolOutcome(result)
+			if outcome == observe.OutcomeError {
 				fmt.Fprintf(os.Stderr, "  ↳ %s\n", clipActivityLine(result))
 			}
 			recorder.toolCall(tc.Name, time.Since(callStart), outcome)
@@ -392,20 +394,20 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 		// in, the default denies.
 		if mcpTools != nil && mcpTools.Has(tc.Name) {
 			if opts.yes {
-				note("allow", "headless-yes")
+				note(observe.DecisionAllow, "headless-yes")
 				return red.Process(tc.Name, agent.ExecuteWith(mcpTools.Execute, tc))
 			}
-			note("deny", "headless-default")
+			note(observe.DecisionDeny, "headless-default")
 			return "error: " + tc.Name + " not approved: headless mode denies external actions by default (run with --yes)"
 		}
 		// web_fetch is an external action: --yes opts in, the default
 		// denies like every other gated call.
 		if webTools != nil && tc.Name == web.FetchToolName {
 			if opts.yes {
-				note("allow", "headless-yes")
+				note(observe.DecisionAllow, "headless-yes")
 				return red.Process(tc.Name, agent.ExecuteWith(webTools.Execute, tc))
 			}
-			note("deny", "headless-default")
+			note(observe.DecisionDeny, "headless-default")
 			return "error: web fetch not approved: headless mode denies external actions by default (run with --yes)"
 		}
 		// A process start is approved like a command: safety-flagged
@@ -421,25 +423,25 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 				for _, w := range warnings {
 					risks = append(risks, w.Risk)
 				}
-				note("deny", "safety")
+				note(observe.DecisionDeny, "safety")
 				return "error: process start denied (" + strings.Join(risks, "; ") + "); safety-flagged commands require interactive approval"
 			}
 			if opts.yes || agent.AllowlistMatches(allowlist, command) {
 				// A process start is a command, and the working scope
 				// applies to it as much as to a foreground one.
 				if deny, ok := headlessScopeCheck(sc, opts.yes, radius.WritePaths(command)); !ok {
-					note("deny", "out-of-scope")
+					note(observe.DecisionDeny, "out-of-scope")
 					return deny
 				}
 				if opts.yes {
-					note("allow", "headless-yes")
+					note(observe.DecisionAllow, "headless-yes")
 				} else {
-					note("allow", "allowlist")
+					note(observe.DecisionAllow, "allowlist")
 				}
 				exec := func(_ string, args json.RawMessage) (string, error) { return procSup.Execute(args) }
 				return red.Process(tc.Name, agent.ExecuteWith(exec, tc))
 			}
-			note("deny", "headless-default")
+			note(observe.DecisionDeny, "headless-default")
 			return "error: process start not approved: headless mode denies commands by default (run with --yes or --allow)"
 		}
 		if tc.Name == tools.ExecCommandName {
@@ -454,7 +456,7 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 				for _, w := range warnings {
 					risks = append(risks, w.Risk)
 				}
-				note("deny", "safety")
+				note(observe.DecisionDeny, "safety")
 				return "error: command denied (" + strings.Join(risks, "; ") + "); safety-flagged commands require interactive approval"
 			}
 			if opts.yes || agent.AllowlistMatches(allowlist, args.Command) {
@@ -462,36 +464,36 @@ func headlessApprover(ctx context.Context, opts printOpts, allowlist []string, r
 				// spent: an allowlisted command shape is not a licence to
 				// write outside the directories this run was given.
 				if deny, ok := headlessScopeCheck(sc, opts.yes, radius.WritePaths(args.Command)); !ok {
-					note("deny", "out-of-scope")
+					note(observe.DecisionDeny, "out-of-scope")
 					return deny
 				}
 				if opts.yes {
-					note("allow", "headless-yes")
+					note(observe.DecisionAllow, "headless-yes")
 				} else {
-					note("allow", "allowlist")
+					note(observe.DecisionAllow, "allowlist")
 				}
 				out, code := run(ctx, args.Command)
 				return tools.FormatExecResult(red.Process(tools.ExecCommandName, out), code)
 			}
-			note("deny", "headless-default")
+			note(observe.DecisionDeny, "headless-default")
 			return "error: command not approved: headless mode denies commands by default (run with --yes or --allow)"
 		}
 		if tools.IsMutating(tc.Name) {
 			if opts.yes {
 				if mut, err := tools.PreviewMutation(tc.Name, json.RawMessage(tc.Arguments)); err == nil {
 					if deny, ok := headlessScopeCheck(sc, opts.yes, []string{mut.Path}); !ok {
-						note("deny", "out-of-scope")
+						note(observe.DecisionDeny, "out-of-scope")
 						return deny
 					}
 				}
-				note("allow", "headless-yes")
+				note(observe.DecisionAllow, "headless-yes")
 				result := agent.ExecuteWith(tools.ExecuteMutating, tc)
 				if mutationHook != nil {
 					result = mutationHook(tc.Name, json.RawMessage(tc.Arguments), result)
 				}
 				return red.Process(tc.Name, result)
 			}
-			note("deny", "headless-default")
+			note(observe.DecisionDeny, "headless-default")
 			return "error: file modification not approved: headless mode denies edits by default (run with --yes)"
 		}
 		return "error: tool " + tc.Name + " cannot be approved in this session"

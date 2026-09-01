@@ -20,6 +20,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -312,7 +313,7 @@ func (m Model) grantRounds(p *roundPause) (tea.Model, tea.Cmd) {
 		return m.systemNotice("The turn is already running again.")
 	}
 	m.roundGrant += p.grant()
-	m.signal(signalRounds, "granted")
+	m.signal(observe.SignalRounds, "granted")
 	return m.resumeGrantedTurn(p)
 }
 
@@ -331,7 +332,7 @@ func (m Model) uncapRounds(p *roundPause) (tea.Model, tea.Cmd) {
 		return m.systemNotice("The turn is already running again.")
 	}
 	m.roundsUncapped = true
-	m.signal(signalRounds, "uncapped")
+	m.signal(observe.SignalRounds, "uncapped")
 	return m.resumeGrantedTurn(p)
 }
 
