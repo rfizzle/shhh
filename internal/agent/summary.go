@@ -84,9 +84,19 @@ const (
 	SummaryUncertain SummaryState = iota
 	// SummaryOnTarget: the work is serving the instruction that started it.
 	SummaryOnTarget
-	// SummaryOffTarget: the work has departed from it. Rendered in this
-	// story, acted on in none of it.
+	// SummaryOffTarget: the work has departed from it. A steer acts on this
+	// one (steer.go).
 	SummaryOffTarget
+	// SummarySufficient: the work is still on the instruction, and has
+	// gathered what it needs without starting to act on it. It is a
+	// refinement of SummaryOnTarget, never a departure — Drifting is false
+	// for it, and nothing about the rail's on-target reading is wrong.
+	//
+	// It exists because the clock is a poor judge of when investigation is
+	// finished, and it was the only judge there was: a session reading files
+	// in service of the instruction is on target at every reading, however
+	// long past sufficiency it goes. This is the reading that can say so.
+	SummarySufficient
 )
 
 func (s SummaryState) String() string {
@@ -95,14 +105,27 @@ func (s SummaryState) String() string {
 		return "on target"
 	case SummaryOffTarget:
 		return "off target"
+	case SummarySufficient:
+		return "has enough"
 	}
 	return "unclear"
 }
 
-// Drifting reports whether this state is the one a steering pass would act
-// on. It exists so the future policy asks a question rather than comparing
-// against a constant it might get wrong.
+// Drifting reports whether this state is the one a steering pass acts on. It
+// exists so the policy asks a question rather than comparing against a
+// constant it might get wrong.
 func (s SummaryState) Drifting() bool { return s == SummaryOffTarget }
+
+// Sufficient reports whether the reading says the session has what it needs
+// and has not started acting on it — the state that pulls a check-in forward.
+//
+// It never replaces the check-in's own clock, only arrives ahead of it. The
+// clock is what runs when the summarizer is disabled, unconfigured or
+// failing, and those are exactly the sessions with nothing else watching, so
+// a check-in that could only fire on a reading would go missing precisely
+// where it is the last thing left.
+// See docs/capabilities/coding-agent.md#two-failures-two-interruptions.
+func (s SummaryState) Sufficient() bool { return s == SummarySufficient }
 
 const summaryPrompt = `You are a status reporter for a coding agent session.
 
@@ -114,19 +137,20 @@ Do not restate counts the reader already has — files changed, tokens, elapsed 
 
 Also judge whether the work is still serving the instruction it started from:
 - "on_target": the work advances the instruction, including setup, investigation and fixing what it broke along the way.
+- "sufficient": the work is still on the instruction, but the session has already found what it needs and is still reading and searching rather than acting on it. Use it only when that is plain from the digest — an investigation still turning up new ground is "on_target", and so is one whose last message names the change it is about to make.
 - "off_target": the work has moved to something the instruction did not ask for, or has been repeating an action that is not making progress.
 - "unclear": you cannot tell from the digest. Prefer this over guessing.
 
 When the state is not "on_target", give one short reason of at most 100 characters. Leave the reason empty otherwise.
 
-Call the ` + SummaryToolName + ` tool exactly once. If you cannot call tools, reply with one line of the form "STATE: summary text", where STATE is on_target, off_target, or unclear. Do not return anything else.`
+Call the ` + SummaryToolName + ` tool exactly once. If you cannot call tools, reply with one line of the form "STATE: summary text", where STATE is on_target, sufficient, off_target, or unclear. Do not return anything else.`
 
 // summarySchema is the JSON schema of the summarizer's reading.
 var summarySchema = json.RawMessage(`{
 	"type": "object",
 	"properties": {
 		"summary": {"type": "string"},
-		"state": {"type": "string", "enum": ["on_target", "off_target", "unclear"]},
+		"state": {"type": "string", "enum": ["on_target", "sufficient", "off_target", "unclear"]},
 		"reason": {"type": "string"}
 	},
 	"required": ["summary", "state"]
@@ -443,7 +467,11 @@ func parseSummaryValue(raw json.RawMessage) (string, SummaryState, string, bool)
 	return normalizeSummary(parsed.Summary, parsed.State, parsed.Reason)
 }
 
-var summaryLineRe = regexp.MustCompile(`(?i)^\s*(on[_ -]?target|off[_ -]?target|unclear)\s*(?::|-)?\s*(.*?)\s*$`)
+// summaryLineRe matches the one-line fallback a model that cannot call tools
+// is asked for. It has to admit exactly the states the prompt offers and the
+// schema accepts, or a reading answered in prose loses a state the tool-call
+// path would have kept.
+var summaryLineRe = regexp.MustCompile(`(?i)^\s*(on[_ -]?target|off[_ -]?target|sufficient|unclear)\s*(?::|-)?\s*(.*?)\s*$`)
 
 // ParseSummaryText is the fallback for a model that answered in prose instead
 // of a tool call: a JSON object (optionally fenced), or a single
@@ -495,6 +523,8 @@ func normalizeSummary(summary, state, reason string) (string, SummaryState, stri
 		reason = ""
 	case "off_target":
 		parsed = SummaryOffTarget
+	case "sufficient":
+		parsed = SummarySufficient
 	}
 	return summary, parsed, reason, true
 }

@@ -541,3 +541,24 @@ func TestInspectorTools_HeadingCountsWhatTheFoldTook(t *testing.T) {
 		t.Fatalf("the fold says what it took:\n%s", view)
 	}
 }
+
+// The glyph carries the distinction, so a monochrome terminal reads the same
+// verdict as a colour one — which means no two states may share one.
+func TestSummaryTone_EveryStateHasItsOwnGlyphAndWords(t *testing.T) {
+	glyphs := map[string]SummaryTone{}
+	words := map[string]SummaryTone{}
+	for _, s := range []SummaryTone{SummaryUnclear, SummaryOnTarget, SummaryOffTarget, SummarySufficient} {
+		glyph, label, _ := summaryTone(s)
+		if glyph == "" || label == "" {
+			t.Fatalf("state %v has no rendering", s)
+		}
+		if prev, seen := glyphs[glyph]; seen {
+			t.Errorf("states %v and %v share the glyph %q", prev, s, glyph)
+		}
+		if prev, seen := words[label]; seen {
+			t.Errorf("states %v and %v share the words %q", prev, s, label)
+		}
+		glyphs[glyph] = s
+		words[label] = s
+	}
+}

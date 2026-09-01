@@ -507,9 +507,9 @@ type Model struct {
 	// of what the session is doing, drawn as the rail's SUMMARY block.
 	summarizer *agent.Summarizer
 	summary    summaryState
-	// steer is the drift half of the same reading: what the summarizer's
-	// verdict does about a run that has wandered (steer.go).
-	steer         steerState
+	// intervene is what the summarizer's verdict does to the turn it is
+	// reading: a steer, or a check-in pulled forward (intervene.go).
+	intervene     interveneState
 	summaryCancel context.CancelFunc
 	// The session titler and what it has written — title.go.
 	titler      *agent.Titler
@@ -2346,7 +2346,7 @@ func (m Model) sendUserMessageAs(text, shown string) (tea.Model, tea.Cmd) {
 	// conversation happens to have ended up.
 	m.summaryTarget = shown
 	m.summary.startTurn()
-	m.steer.startTurn()
+	m.intervene.startTurn()
 	m.recordCheckpoint(shown)
 	atts := m.takeAttachments()
 	m.agent.StartTurnWith(text, atts)

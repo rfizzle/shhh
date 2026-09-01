@@ -62,12 +62,19 @@ and the reason the reading gave, so the interruption names the departure
 instead of asking in general. It fires only on a verdict of off target — an
 intervention on a shrug is worse than no intervention.
 
-That reading cannot catch the other failure. A session that spends a hundred
-rounds reading files in service of the instruction is on target at every one
-of them. So the check-in stays underneath, unconditional and on the clock,
-asking a generic question and costing the round it takes. It has nothing to
-depend on, which is why it is the one that runs where there is no summary to
-read at all.
+The reading judges the other failure too — a run still on its instruction
+that has found what it needs and is still looking — and where it says so, the
+check-in arrives then instead of at its interval. The message is the
+check-in's own, unchanged: there is nothing to accuse the turn of, only a
+question worth asking sooner.
+
+**The reading never becomes the only trigger.** A verdict needs a summary that
+is configured, enabled and answering, and a session with none of those is
+exactly a session with nothing else watching it — so a check-in that could
+only fire on a reading would go missing precisely where it is the last thing
+left. The clock stays underneath, unconditional, asking the generic question
+and costing the round it takes. What a reading buys is timing, not the
+mechanism.
 
 Both are held to the same three rules. **They arrive at a round boundary**,
 because a message may not join a conversation between an assistant's tool

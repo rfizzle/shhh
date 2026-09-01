@@ -75,6 +75,16 @@ func (a *Agent) TakeCheckIn() (prompt string, ok bool) {
 	return CheckInPrompt(a.rounds, FinishedInSession), true
 }
 
+// ForceCheckIn returns the check-in unconditionally and marks it taken. It is
+// for a caller holding a reason the interval cannot see — a reading that says
+// the session already has what it needs — and it is additional to the clock,
+// never a replacement for it: TakeCheckIn still fires on schedule for every
+// session that has no reading to go on.
+func (a *Agent) ForceCheckIn() string {
+	a.NoteIntervention()
+	return CheckInPrompt(a.rounds, FinishedInSession)
+}
+
 // NoteIntervention records that something has just asked the turn to take
 // stock, so the next check-in is counted from here.
 //

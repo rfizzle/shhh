@@ -26,7 +26,7 @@ package chat
 //     was taken at, and the heading states it, because a sentence about
 //     "now" that is forty rounds old is worse than no sentence.
 //
-// The drift verdict is also acted on, in steer.go: an off-target reading
+// The verdict is also acted on, in intervene.go: an off-target reading
 // interrupts the turn at the next round boundary. Three properties of this
 // file are what make that safe, and none of them may be traded away for
 // convenience. The target is anchored at turn start rather than re-derived,
@@ -234,9 +234,10 @@ func (m *Model) finishSummary(msg summaryDoneMsg) {
 	m.summary.last = &v
 	m.summary.lastRound = v.Round
 	m.summary.lastAt = time.Now()
-	// A drifting reading is the one thing a summary does besides being read.
-	// It only ever queues here; the round boundary delivers it (steer.go).
-	m.considerSteer(v)
+	// A reading that says the run has drifted, or that it has what it needs,
+	// is the one thing a summary does besides being read. It only ever queues
+	// here; the round boundary delivers it (intervene.go).
+	m.considerIntervention(v)
 }
 
 // summaryStateCode is the reading's state as the recorder's closed set.
@@ -246,6 +247,8 @@ func summaryStateCode(s agent.SummaryState) string {
 		return "on-target"
 	case agent.SummaryOffTarget:
 		return "off-target"
+	case agent.SummarySufficient:
+		return "sufficient"
 	}
 	return "unclear"
 }
@@ -417,6 +420,8 @@ func summaryTone(s agent.SummaryState) components.SummaryTone {
 		return components.SummaryOnTarget
 	case agent.SummaryOffTarget:
 		return components.SummaryOffTarget
+	case agent.SummarySufficient:
+		return components.SummarySufficient
 	}
 	return components.SummaryUnclear
 }

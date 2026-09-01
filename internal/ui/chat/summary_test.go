@@ -294,7 +294,7 @@ func TestSummary_TargetIsAnchoredAtTurnStart(t *testing.T) {
 
 // The digest carries what was called and how it came back — never what a tool
 // returned. A page the agent fetched must not be able to write the summary,
-// and through it the steer — TestSteer_ToolOutputCannotReachTheDeliveredSteer
+// and through it the steer — TestIntervene_ToolOutputCannotReachTheDeliveredSteer
 // follows the same invariant through to the delivered message.
 func TestSummaryRequest_CarriesNoToolOutput(t *testing.T) {
 	m := summaryModel(t, &readingProvider{text: "x"})
@@ -431,7 +431,7 @@ func TestSummary_DriftQueuesButMovesNothingAtReadingTime(t *testing.T) {
 	if m.pendingApproval != nil {
 		t.Fatal("a drift reading asks for nothing")
 	}
-	if m.steer.pending == nil {
+	if m.intervene.pending == nil {
 		t.Fatal("it does queue the steer the boundary will deliver")
 	}
 }

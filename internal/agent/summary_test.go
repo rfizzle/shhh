@@ -338,3 +338,72 @@ func TestSummaryElapsedWords(t *testing.T) {
 		t.Fatalf("got %q", got)
 	}
 }
+
+// The fourth state is what lets a check-in fire on a reason instead of only
+// on the clock, so it has to survive both the tool-call and the text path.
+func TestSummary_SufficientParsesOnBothPaths(t *testing.T) {
+	summary, state, reason, ok := ParseSummaryText(
+		`{"summary":"Has read the parser and the tests.","state":"sufficient","reason":"still reading after finding the change"}`)
+	if !ok || state != SummarySufficient {
+		t.Fatalf("json path: state = %v ok = %v", state, ok)
+	}
+	if summary == "" || reason == "" {
+		t.Fatalf("json path: summary = %q reason = %q", summary, reason)
+	}
+
+	_, state, _, ok = ParseSummaryText("sufficient: Has read the parser and the tests.")
+	if !ok || state != SummarySufficient {
+		t.Fatalf("line path: state = %v ok = %v", state, ok)
+	}
+}
+
+// A reason belongs to a reading that is not plain "on target", and
+// sufficiency is one of those: it is what the transcript row quotes.
+func TestSummary_SufficientKeepsItsReason(t *testing.T) {
+	_, state, reason, ok := ParseSummaryText(
+		`{"summary":"Knows what to change.","state":"sufficient","reason":"has named the file and the line"}`)
+	if !ok || state != SummarySufficient {
+		t.Fatalf("state = %v ok = %v", state, ok)
+	}
+	if reason != "has named the file and the line" {
+		t.Fatalf("reason = %q", reason)
+	}
+}
+
+// The zero value has to stay SummaryUncertain: it is what an unparseable
+// reading falls back to, and steering treats it as "do nothing".
+func TestSummary_ZeroValueIsStillUncertain(t *testing.T) {
+	var s SummaryState
+	if s != SummaryUncertain {
+		t.Fatalf("the zero value moved to %v", s)
+	}
+	if s.Drifting() || s.Sufficient() {
+		t.Fatal("an unparseable reading must not trigger anything")
+	}
+}
+
+func TestSummaryState_Words(t *testing.T) {
+	for state, want := range map[SummaryState]string{
+		SummaryOnTarget:   "on target",
+		SummaryOffTarget:  "off target",
+		SummarySufficient: "has enough",
+		SummaryUncertain:  "unclear",
+	} {
+		if got := state.String(); got != want {
+			t.Errorf("String() = %q, want %q", got, want)
+		}
+	}
+}
+
+// The prompt and the schema have to offer the same closed set, or the model
+// is asked for a value the tool call will reject.
+func TestSummary_PromptAndSchemaAgreeOnTheStates(t *testing.T) {
+	for _, state := range []string{"on_target", "sufficient", "off_target", "unclear"} {
+		if !strings.Contains(summaryPrompt, `"`+state+`"`) {
+			t.Errorf("the prompt does not describe %q", state)
+		}
+		if !strings.Contains(string(summarySchema), `"`+state+`"`) {
+			t.Errorf("the schema does not admit %q", state)
+		}
+	}
+}

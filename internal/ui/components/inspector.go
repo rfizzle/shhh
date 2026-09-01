@@ -86,6 +86,9 @@ const (
 	SummaryOnTarget
 	// SummaryOffTarget is the run that has departed from it.
 	SummaryOffTarget
+	// SummarySufficient is the run still on its instruction that has found
+	// what it needs and has not started acting on it.
+	SummarySufficient
 )
 
 // InspectorTurn is the THIS TURN block: how far through its steps the turn
@@ -566,12 +569,19 @@ func SummaryLabel(s SummaryTone) string {
 
 // summaryTone is the state row's glyph, its words and its weight. The glyph
 // carries the distinction so a monochrome terminal reads the same as a colour
-// one: ▸ for a run still on its instruction, ⚠ for one that has left
-// it, · for a reading that could not tell.
+// one: ▸ for a run still on its instruction, ◆ for one that has what it needs
+// and is still looking, ⚠ for one that has left the instruction, · for a
+// reading that could not tell.
+//
+// Only the departure is drawn in the accent: a run that has found what it
+// needs is not a warning, it is news, so it takes the reading weight and the
+// healthy glyph colour.
 func summaryTone(s SummaryTone) (string, string, lipgloss.Style) {
 	switch s {
 	case SummaryOnTarget:
 		return sty.SpinText.Render("▸"), "on target", sty.Dim
+	case SummarySufficient:
+		return sty.SpinText.Render("◆"), "has enough", sty.Body
 	case SummaryOffTarget:
 		return sty.Accent.Render("⚠"), "off target", sty.Body
 	}
