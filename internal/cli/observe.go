@@ -36,6 +36,9 @@ type observeRecorder struct {
 	// linked is the saved conversation the row was last linked to, so an
 	// autosave that lands in the same slot costs no write.
 	linked string
+	// outcome is the session outcome the last closing turn wrote, so the
+	// end knows whether anything ever said how the session came out.
+	outcome string
 }
 
 // startObserveRecorder opens a session row; any failure disables recording
@@ -228,6 +231,7 @@ func (r *observeRecorder) observer() observe.Observer {
 		Decision: r.decisionAt,
 		Turn:     r.turn,
 		Signal:   r.signal,
+		Gate:     r.gate,
 		Session:  r.link,
 	}
 }
@@ -286,7 +290,10 @@ func (r *observeRecorder) decisionAt(at observe.Pos, decision, reason string) {
 }
 
 // turn records a turn closing: the rounds it took ride in the event's
-// round column, its wall time in the duration.
+// round column, its wall time in the duration. The turn also says how the
+// session has come out so far, which is written now rather than at the exit
+// because the session that most needs an outcome is the one whose exit never
+// runs (docs/capabilities/sessions-and-memory.md#whether-it-worked).
 func (r *observeRecorder) turn(turn, rounds int64, duration time.Duration, outcome string) {
 	if r == nil {
 		return
@@ -295,6 +302,11 @@ func (r *observeRecorder) turn(turn, rounds int64, duration time.Duration, outco
 	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{
 		Kind: storage.AgentEventTurn, Outcome: outcome, DurationMs: &ms, Turn: turn, Round: rounds,
 	})
+	if o := observe.SessionOutcome(outcome); o != "" {
+		if err := r.db.SetAgentSessionOutcome(r.id, o); err == nil {
+			r.outcome = o
+		}
+	}
 }
 
 func (r *observeRecorder) signal(at observe.Pos, code, reason string) {
@@ -303,6 +315,24 @@ func (r *observeRecorder) signal(at observe.Pos, code, reason string) {
 	}
 	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{
 		Kind: storage.AgentEventSignal, Outcome: code, Reason: reason, Turn: at.Turn, Round: at.Round,
+	})
+}
+
+// gate records one quality-gate run. The suite rides in the event's tool
+// column — it is what the verdict is a verdict of, the way a tool event's
+// tool is what the outcome is an outcome of — and the verdict is the
+// signal's qualifier, which is what a pass rate groups by.
+//
+// It carries no position, because a gate run has none: /gate run starts one
+// in the background between turns, and a turn and a round would be real for
+// the runs the model asked for and invented for the rest. The zero position
+// is what the store already reads as "the recorder had no position".
+func (r *observeRecorder) gate(suite, verdict string) {
+	if r == nil {
+		return
+	}
+	_ = r.db.RecordAgentEvent(r.id, storage.AgentEvent{
+		Kind: storage.AgentEventSignal, Tool: suite, Outcome: observe.SignalGate, Reason: verdict,
 	})
 }
 
@@ -316,11 +346,35 @@ func (r *observeRecorder) link(name string) {
 	}
 }
 
+// end closes the session row, correcting the standing outcome only when
+// there is none to stand. A session that reached its own exit having never
+// closed a turn is abandoned: the process survived to say something, and
+// what it says is that nothing was finished. Leaving the field empty is
+// reserved for the session that never got to say anything at all, which
+// reads as unknown — a different fact, and one about the record rather than
+// about the work.
 func (r *observeRecorder) end() {
 	if r == nil {
 		return
 	}
-	_ = r.db.EndAgentSession(r.id)
+	outcome := ""
+	if r.outcome == "" {
+		outcome = observe.SessionAbandoned
+	}
+	_ = r.db.EndAgentSession(r.id, outcome)
+}
+
+// endWith closes the row with an outcome the surface knows better than its
+// turns do. A session whose program failed did not come out the way its last
+// turn did, and the exit that reports the failure leaves no deferred close
+// to run — so without this the row would keep the last turn's reading and a
+// crashed session would be indistinguishable from one that finished well.
+func (r *observeRecorder) endWith(outcome string) {
+	if r == nil {
+		return
+	}
+	r.outcome = outcome
+	_ = r.db.EndAgentSession(r.id, outcome)
 }
 
 func newObserveCmd() *cobra.Command {
@@ -329,7 +383,7 @@ func newObserveCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "observe",
 		Short: "Show agent-session usage dashboards",
-		Long:  "Display local, content-free metrics about agent sessions: usage and cost by day and model, tool mix, approval decisions, and recent sessions.",
+		Long:  "Display local, content-free metrics about agent sessions: usage and cost by day and model, tool mix, approval decisions, quality-gate verdicts, how sessions came out, and recent sessions.",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			since, err := parseObserveWindow(window)
@@ -482,6 +536,8 @@ type observeData struct {
 	Decisions  []storage.AgentDecisionCount
 	Turns      []storage.AgentTurnOutcome
 	Signals    []storage.AgentSignalCount
+	Gates      []storage.AgentGateVerdict
+	Outcomes   []storage.AgentSessionOutcome
 }
 
 // readObserveData runs every aggregate the dashboard draws. Each query is
@@ -501,6 +557,8 @@ func readObserveData(db *storage.DB, window string, since time.Time) (observeDat
 		{"decisions", func() (err error) { data.Decisions, err = db.AgentDecisions(since); return }},
 		{"turns", func() (err error) { data.Turns, err = db.AgentTurns(since); return }},
 		{"signals", func() (err error) { data.Signals, err = db.AgentSignals(since); return }},
+		{"gate verdicts", func() (err error) { data.Gates, err = db.AgentGateVerdicts(since); return }},
+		{"outcomes", func() (err error) { data.Outcomes, err = db.AgentSessionOutcomes(since); return }},
 	} {
 		if err := q.read(); err != nil {
 			return observeData{}, fmt.Errorf("query %s: %w", q.name, err)
@@ -511,7 +569,8 @@ func readObserveData(db *storage.DB, window string, since time.Time) (observeDat
 
 // observeReport is the whole dashboard as one report: the sections the store
 // can answer for, in the order a reader asks them — what it cost, what it
-// ran, what it was allowed to do, and which sessions those were
+// ran, what it was allowed to do, whether it worked, and which sessions
+// those were
 // (docs/interface/surfaces.md#outside-the-tui). It was seven prose headings
 // over seven tabwriter tables, which is seven shapes for one screen.
 func observeReport(data observeData) report.Report {
@@ -535,6 +594,8 @@ func observeReport(data observeData) report.Report {
 		{Header: "DECISIONS", Rows: observeDecisionRows(data.Decisions)},
 		{Header: "TURNS", Rows: observeTurnRows(data.Turns)},
 		{Header: "SIGNALS", Rows: observeSignalRows(data.Signals)},
+		{Header: "GATE", Rows: observeGateRows(data.Gates)},
+		{Header: "OUTCOMES", Rows: observeOutcomeRows(data.Outcomes)},
 		{Header: "SESSIONS", Rows: observeSessionRows(data.Sessions)},
 	} {
 		if len(section.Rows) > 0 {
@@ -666,13 +727,115 @@ func observeTurnState(outcome string) report.State {
 	return report.Pass
 }
 
+// observeSignalRows is the loop's own safeguards, with the gate left out: it
+// has a section of its own below, and one fact counted twice on one screen
+// reads as two.
 func observeSignalRows(signals []storage.AgentSignalCount) []report.Row {
 	rows := make([]report.Row, 0, len(signals))
 	for _, s := range signals {
+		if s.Signal == "gate" {
+			continue
+		}
 		rows = append(rows, report.Row{State: report.Queue, Name: s.Signal,
 			Subject: countOf(s.Count, "time", "times"), Detail: s.Reason})
 	}
 	return rows
+}
+
+// observeGateRows is one row per suite: how many runs, how many passed, and
+// what the rest came out as. The pass rate leads because it is the only
+// figure on this screen that judges the work rather than describing it — the
+// checks are the project's own, and the gate ran them against a fingerprint
+// of the tree.
+//
+// A run that was blocked or cancelled is named beside the failures and left
+// out of the rate on both sides. It is not a failing check — it is no
+// reading of the code at all — and counting it in the denominator is the
+// same mistake as counting it in the numerator: a checkout with no gate
+// config yet would report every suite at 0% passed, which is an
+// infrastructure problem wearing a verdict's clothes. A suite with no
+// verdict either way says so instead of printing a rate over nothing.
+func observeGateRows(gates []storage.AgentGateVerdict) []report.Row {
+	var rows []report.Row
+	// The query returns a suite's verdicts together, so one pass folds each
+	// run of them into a row.
+	for i := 0; i < len(gates); {
+		var runs, judged, passed int
+		var rest []string
+		j := i
+		for ; j < len(gates) && gates[j].Suite == gates[i].Suite; j++ {
+			runs += gates[j].Count
+			switch gates[j].Verdict {
+			case "pass":
+				judged, passed = judged+gates[j].Count, passed+gates[j].Count
+			case "fail":
+				judged += gates[j].Count
+				rest = append(rest, fmt.Sprintf("fail %d", gates[j].Count))
+			default:
+				rest = append(rest, fmt.Sprintf("%s %d", gates[j].Verdict, gates[j].Count))
+			}
+		}
+		row := report.Row{State: report.Pass, Name: gates[i].Suite,
+			Subject: countOf(runs, "run", "runs"), Outcome: "no verdict"}
+		if judged > 0 {
+			row.Outcome = fmt.Sprintf("%.0f%% passed", float64(passed)/float64(judged)*100)
+		}
+		if len(rest) > 0 {
+			row.State = report.Warn
+			row.Detail = strings.Join(rest, " · ")
+		}
+		rows = append(rows, row)
+		i = j
+	}
+	return rows
+}
+
+// observeGateState is one gate verdict's weight. Blocked and cancelled are
+// neither a pass nor a failure: the run produced no reading of the code, and
+// drawing it as a failure is exactly the confusion the gate keeps them apart
+// to avoid.
+func observeGateState(verdict string) report.State {
+	switch verdict {
+	case "pass":
+		return report.Pass
+	case "fail":
+		return report.Fail
+	}
+	return report.Skip
+}
+
+// observeOutcomeRows is the outcome mix: how the sessions in the window came
+// out. Every other number on this screen is a description, and this is the
+// column they are worth correlating against.
+func observeOutcomeRows(outcomes []storage.AgentSessionOutcome) []report.Row {
+	rows := make([]report.Row, 0, len(outcomes))
+	for _, o := range outcomes {
+		rows = append(rows, report.Row{State: observeOutcomeState(o.Outcome), Name: o.Outcome,
+			Subject: countOf(o.Count, "session", "sessions")})
+	}
+	return rows
+}
+
+// observeOutcomeState reads the outcome words this build's rows are written
+// with, and the words earlier builds wrote theirs with. They are literals
+// for the same reason the decision and turn words are: a case on a string
+// constant compiles whatever its value, so pointing these at the constants
+// would buy nothing and would assert that the renderer only ever reads rows
+// this build wrote.
+//
+// Which is exactly why only `completed` draws as a pass. Reading rows this
+// build did not write means a word this build has never seen is a live
+// possibility, and the one thing it must not do is arrive wearing a tick.
+func observeOutcomeState(outcome string) report.State {
+	switch outcome {
+	case "completed":
+		return report.Pass
+	case "error":
+		return report.Fail
+	case "interrupted", "abandoned":
+		return report.Skip
+	}
+	return report.Queue
 }
 
 // observeSessionRows is the recent sessions: what kind of session it was, on
@@ -761,6 +924,7 @@ func observeSessionReport(s storage.AgentSessionSummary, events []storage.AgentE
 		{Key: "turns", Value: strconv.FormatInt(s.Turns, 10)},
 	}
 	for _, p := range []report.Pair{
+		{Key: "outcome", Value: s.Outcome},
 		{Key: "tokens", Value: observeTokens(s.TokensIn, s.TokensOut)},
 		{Key: "cost", Value: observeCost(s.Cost)},
 		{Key: "version", Value: s.Version},
@@ -791,7 +955,16 @@ func observeSessionReport(s storage.AgentSessionSummary, events []storage.AgentE
 	}
 	turn := int64(-1)
 	for _, e := range events {
-		if e.Turn != turn {
+		// An event with no position joins the section it landed in, which
+		// is the turn it arrived during. Only the ones recorded before the
+		// first turn opened get a heading of their own: a gate verdict
+		// takes no position at all, and a section of its own for each would
+		// split the turn it arrived in two and claim the second half
+		// started over. The cost is that a background run landing after the
+		// last turn closed is drawn under that turn, which is where it
+		// arrived rather than where it belongs.
+		unplaced := e.Turn == 0 && turn > 0
+		if e.Turn != turn && !unplaced {
 			turn = e.Turn
 			header := fmt.Sprintf("TURN %d", turn)
 			if turn == 0 {
@@ -858,8 +1031,15 @@ func observeEventRow(e storage.AgentExportEvent) report.Row {
 		row.Subject, row.Outcome = "decision", components.OutcomeBy(
 			observeDecisionWord(e.Outcome), observeDecider(e.Reason))
 	case storage.AgentEventSignal:
-		row.State, row.Subject, row.Detail = report.Queue, e.Outcome, e.Reason
+		// The gate is the one signal with a subject as well as a qualifier,
+		// and the one whose qualifier is a judgement rather than a
+		// description — so its row carries the suite and takes the verdict's
+		// own weight instead of the neutral one every other signal draws at.
+		row.State, row.Subject, row.Detail = report.Queue, e.Outcome, joinDetail(e.Tool, e.Reason)
 		row.Outcome = "signal"
+		if e.Outcome == "gate" {
+			row.State = observeGateState(e.Reason)
+		}
 	case storage.AgentEventTurn:
 		row.State = observeTurnState(e.Outcome)
 		row.Subject = "turn"

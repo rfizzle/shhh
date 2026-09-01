@@ -31,6 +31,18 @@
   · summary          5 times · on-target
   · context-trimmed  1 time · 4
 
+  GATE
+
+  ⚠ default  8 runs · fail 2  [75% passed]
+  ⚠ lint     1 run · blocked 1  [no verdict]
+
+  OUTCOMES
+
+  ✓ completed  5 sessions
+  ⊘ abandoned  2 sessions
+  · unknown    1 session
+  ✗ error      1 session
+
   SESSIONS
 
   ✓ 12  code · claude-sonnet-5 · Aug 31 11:32 · 6 turns · ↑41.2k ↓9.…  [14m 00s]

@@ -117,7 +117,8 @@ the loop's own safeguards spoke — the repeat detector, the round cap, the
 context trim, the summarizer's reading of whether the work was still on
 target. Beside the events, the record says what the session ran under: the
 build, a fingerprint of the system prompt, how many skills loaded, a
-fingerprint of the checkout, and the settings it was configured with.
+fingerprint of the checkout, and the settings it was configured with — and,
+on the row itself, how the session came out.
 
 The record exists so the prompts and the workflow can be improved against
 evidence rather than anecdote. "The agent circles" is a feeling; "the repeat
@@ -204,6 +205,61 @@ to auto halfway through is a different fact from either mode on its own.
 A session recorded before the settings were kept reads as having none. It
 does not read as having today's defaults, because a reader comparing two
 sessions would take the fill for a fact.
+
+### Whether it worked
+
+Everything above describes what a session did. None of it says whether the
+work was any good, and without that the record is a description rather than
+an evaluation: a session that solved the problem and one its user gave up on
+are the same row, and every rate beside them is a rate over both.
+
+Two signals answer it, and they cost very different amounts.
+
+**The quality gate's verdict is the one judgement nobody has to remember to
+give.** The project's own checks run against a fingerprint of the tree, so a
+verdict can never vouch for code it did not see, and a run that was blocked
+by a broken setup or cancelled part-way is kept apart from one that failed
+its checks — an infrastructure problem read as a failing test would move the
+only objective rate the record has, so the pass rate is taken over the runs
+that produced a verdict and the rest are named beside it. Every run that
+finishes while the session is open is recorded with its verdict and the suite
+that ran, whether the model asked for it or a person did.
+
+The suite's name is recorded only when it matched one the project actually
+defines. The model picks a suite by name and the gate runs without asking
+anyone, so a name that matched nothing is text the model wrote, and it is
+replaced with a fixed code rather than stored — otherwise there would be one
+path where the model chooses what goes in a record that is content-free by
+construction.
+
+**A session's outcome is inferred, never asked for.** A card on the way out
+of a session is answered by the people who were pleased and dismissed by the
+people who were not, which is the wrong bias for the one field the whole
+record is correlated against. So the outcome is read off how the session
+actually left: the last turn to close finished its work (`completed`), was
+cancelled (`interrupted`), or failed (`error`). A session that reached its
+own exit with nothing finished is `abandoned` — the process survived to say
+something, and what it says is that nothing came of it.
+
+A turn that stopped at its round cap is not a close and reads as nothing at
+all. A session waits there for a person to grant more rounds and a sub-agent
+grants itself more and runs on, so a pause read as an abandonment would
+describe every child that paused to take stock as one that gave up. If the
+pause turns out to have been the end, the exit calls it abandoned then.
+
+**The outcome is written optimistically and corrected, because the
+interesting case is the one that cannot write.** A run the user gave up on
+and killed is exactly the run whose exit path never executes, so an outcome
+stamped only on the way out would record the sessions that ended well and
+nothing about the rest — the same bias by another route. Instead every
+closing turn stamps how the session has come out so far, and a killed process
+leaves the last turn's reading behind.
+
+That leaves `unknown` for a session that died before its first turn closed,
+and it is a visible category rather than an abandonment. "The record cannot
+say" and "nothing was finished" are different answers, and only one of them
+is about the work; folding them together would quietly inflate whichever
+figure a reader was about to trust.
 
 ## Where it all lives
 

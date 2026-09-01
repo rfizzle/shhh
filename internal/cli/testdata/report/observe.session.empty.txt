@@ -3,6 +3,7 @@
   started:       Aug 31 11:32
   model:         anthropic · claude-sonnet-5
   turns:         1
+  outcome:       completed
   tokens:        ↑41.2k ↓9.8k
   cost:          $0.51
   version:       v1.4.0

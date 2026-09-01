@@ -26,6 +26,7 @@ import (
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/notebook"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
@@ -658,6 +659,11 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		summary:    !cfg.Summary.Disabled,
 		classifier: true,
 	}))
+	// The gate's verdict is the record's one objective reading of whether
+	// the work was right. It is wired here rather than where the runner is
+	// built because the runner has no session to report to until one is
+	// open.
+	recordGateVerdicts(gate, recorder)
 
 	// Sub-agent supervisor: spawn_agent and agent_report short-circuit
 	// on the executor chain; Close cancels the child tree and removes
@@ -946,6 +952,10 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		// os.Exit skips the deferred restore, so the terminal is put back
 		// here rather than left reporting modified keys to the next program.
 		restoreScroll()
+		// And it skips the deferred close, which would leave the row saying
+		// the session came out the way its last turn did. It came out as
+		// this error.
+		recorder.endWith(observe.SessionError)
 		fmt.Fprintln(os.Stderr, "error:", err)
 		os.Exit(1)
 	}

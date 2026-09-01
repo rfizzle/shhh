@@ -12,11 +12,15 @@
 // ClassFromResult, ReasonCode and AskReason are the boundary free text is
 // stopped at. Every string that leaves this package is a fixed identifier or
 // a code from a set declared here, which is what makes the record safe to
-// export without reading it first.
+// export without reading it first. A gate suite's name passes through as an
+// identifier, on the same footing as a skill's: the user wrote it in the
+// project's trusted config, and it names a suite rather than describing
+// anything.
 //
-// Those two read agent's own values, so internal/agent can never import this
-// package — which is deliberate and not a cost. An Observer is wired by
-// whoever runs the loop, never held by it: a runner already knows its
+// Those two read agent's own values, and GateVerdict reads quality's, so
+// neither internal/agent nor internal/quality can ever import this package —
+// which is deliberate and not a cost. An Observer is wired by whoever runs
+// the loop, never held by it: a runner already knows its
 // position, its ledger and how its turn ended, and the loop knows none of
 // the three.
 // See docs/capabilities/sessions-and-memory.md#observations-are-what-the-session-did.
@@ -28,6 +32,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/digest"
+	"github.com/rfizzle/shhh/internal/quality"
 )
 
 // Pos is where in the session an event happened: the turn, and the tool
@@ -70,6 +75,17 @@ type Observer struct {
 	// Signal reports one of the loop's own safeguards or a workflow
 	// transition firing, with a qualifier from a closed set.
 	Signal func(at Pos, code, reason string)
+	// Gate reports one completed quality-gate run: the suite that ran and
+	// the verdict it came out with.
+	//
+	// It is its own callback rather than a Signal for two reasons. A
+	// signal carries one qualifier and a gate run carries two — the
+	// verdict is what a pass rate groups by, the suite is what says which
+	// checks that rate is over. And a gate run takes no position: /gate
+	// run starts one in the background between turns, so a turn and a
+	// round would be real for some runs and invented for the rest.
+	// See docs/capabilities/sessions-and-memory.md#whether-it-worked.
+	Gate func(suite, verdict string)
 	// Session names the saved conversation this session is writing, so
 	// metadata and transcript can be joined by someone who asks to.
 	Session func(name string)
@@ -182,6 +198,61 @@ const (
 	SignalRun = "run"
 	// SignalSkill: the user activated a skill by command. Reason: its name.
 	SignalSkill = "skill"
+	// SignalGate: a quality-gate run finished. Reason: its verdict, from
+	// GateVerdict. It reaches the record through Observer.Gate rather than
+	// Observer.Signal, because it names a subject — the suite — as well as
+	// a qualifier.
+	SignalGate = "gate"
+)
+
+// Gate verdicts for Observer.Gate. The gate's own four, which are already a
+// closed set: blocked and cancelled stay apart from fail so an
+// infrastructure problem or an interrupted run is never counted as the
+// checks having failed, which is the whole reason the gate distinguishes
+// them.
+const (
+	GatePass      = "pass"
+	GateFail      = "fail"
+	GateBlocked   = "blocked"
+	GateCancelled = "cancelled"
+	// GateUnknown is a verdict this build has no word for. A gate that
+	// grows a fifth one records it as unknown rather than as a pass.
+	GateUnknown = "unknown"
+	// GateSuiteUnknown stands in for a run whose suite name matched nothing
+	// in the project's config. The gate tool takes the name from the model,
+	// so an unmatched one is text the model wrote, and it is replaced here
+	// rather than stored: a record that is content-free by construction
+	// cannot have one path where the model chooses the string.
+	GateSuiteUnknown = "unknown-suite"
+)
+
+// Session outcomes: how a whole session came out, as against how one turn
+// did. A turn outcome is about the loop — it ran, it was cancelled, it hit
+// its cap — and the session outcome is about the work, which is the thing
+// every other number in the record wants to be correlated against.
+//
+// It is inferred and never asked for. A card on the way out is answered by
+// the people who were pleased and dismissed by the people who were not,
+// which is the wrong bias for the one field the record correlates by.
+// See docs/capabilities/sessions-and-memory.md#whether-it-worked.
+const (
+	// SessionCompleted: the last turn to close finished its work.
+	SessionCompleted = "completed"
+	// SessionInterrupted: the last turn to close was cancelled.
+	SessionInterrupted = "interrupted"
+	// SessionError: the last turn to close failed.
+	SessionError = "error"
+	// SessionAbandoned: the session reached its own exit with nothing
+	// finished — no turn ever closed, or the only ones that did were
+	// pauses at the round cap that nobody granted more rounds to.
+	SessionAbandoned = "abandoned"
+	// SessionUnknown is the reading of a session that has no outcome
+	// recorded, and it is never written. A session killed before its first
+	// turn closed is the one that leaves the field empty, and it is a
+	// visible category of its own rather than an abandonment: the record
+	// does not know what happened, which is a different fact from knowing
+	// that nothing was finished.
+	SessionUnknown = "unknown"
 )
 
 // Error classes for Observer.ToolCall, from the shape of the result text.
@@ -311,4 +382,71 @@ func ClassFromResult(result string) string {
 		return ClassBadArgs
 	}
 	return ClassOther
+}
+
+// GateVerdict maps a gate run's verdict to the code the record keeps of it,
+// so the gate's enum and the record's vocabulary can be renamed
+// independently of each other. It is the same shape as SummaryCode: one
+// producer's enum, read into the closed set the store is allowed to hold.
+func GateVerdict(v quality.Verdict) string {
+	switch v {
+	case quality.VerdictPass:
+		return GatePass
+	case quality.VerdictFail:
+		return GateFail
+	case quality.VerdictBlocked:
+		return GateBlocked
+	case quality.VerdictCancelled:
+		return GateCancelled
+	}
+	return GateUnknown
+}
+
+// GateHook is what a surface assigns to quality.Runner.Observe so every
+// verdict reaches the record. It returns nil — which the runner reads as
+// "record nothing" — for an observer that takes no gate verdicts, so a
+// surface wires it unconditionally.
+//
+// The adaptation lives here rather than at each surface because there is
+// more than one surface and only one right mapping, and two spellings of a
+// verdict is two columns nothing can add up. It is also the second half of
+// the boundary against free text: the runner hands over no name it did not
+// read out of the trusted config, and the empty string it sends instead
+// becomes a code from the set above rather than a blank.
+func GateHook(o Observer) func(string, quality.Verdict) {
+	if o.Gate == nil {
+		return nil
+	}
+	return func(suite string, v quality.Verdict) {
+		if suite == "" {
+			suite = GateSuiteUnknown
+		}
+		o.Gate(suite, GateVerdict(v))
+	}
+}
+
+// SessionOutcome reads a closing turn's outcome as the session's, which is
+// the whole of how a session's outcome is inferred: the session came out the
+// way the last thing it did came out.
+//
+// A turn that stopped at its round cap reads as nothing at all, and that is
+// deliberate. A cap is a pause and not a close: a session waits for a person
+// to grant more rounds, and a sub-agent's supervisor grants them by itself
+// and runs on, so a pause read as an abandonment would mark every child that
+// took a check-in as abandoned while it was in fact working. Leaving the
+// standing outcome alone says what is true — nothing has finished since the
+// last thing that did — and a session that quits at the pause is called
+// abandoned on the way out, where the pause turns out to have been the end.
+//
+// Any other turn outcome returns the empty string for the same reason.
+func SessionOutcome(turn string) string {
+	switch turn {
+	case TurnDone:
+		return SessionCompleted
+	case TurnCancelled:
+		return SessionInterrupted
+	case TurnFailed:
+		return SessionError
+	}
+	return ""
 }

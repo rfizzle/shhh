@@ -6,6 +6,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/scope"
@@ -36,6 +37,24 @@ func openQualityGate(cfg config.Config, red *evidence.Reducer, sc *scope.Scope) 
 		}
 	}
 	return r
+}
+
+// recordGateVerdicts points a session's gate at its record, so every run the
+// gate completes lands beside the rest of what the session did.
+//
+// It is one function rather than a line at each surface because the gate is
+// wired in two places today and the record is the sort of thing a third
+// would forget: a surface that runs the gate and records nothing produces a
+// pass rate over the surfaces that remembered, which is the shape of number
+// the record exists to avoid.
+// See docs/capabilities/sessions-and-memory.md#whether-it-worked.
+func recordGateVerdicts(gate *quality.Runner, rec *observeRecorder) {
+	if gate == nil {
+		return
+	}
+	// A session that is not recording leaves the hook nil, which the runner
+	// reads as "record nothing".
+	gate.Observe = observe.GateHook(rec.observer())
 }
 
 // gateManager backs the /gate slash command: "run [suite]" starts a suite in

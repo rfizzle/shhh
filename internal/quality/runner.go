@@ -72,6 +72,13 @@ type Result struct {
 	Reason      string // blocked/cancelled: why the run has no trustworthy verdict
 	Checks      []CheckResult
 	Fingerprint Fingerprint
+	// Trusted says the suite name resolved in the project's own config,
+	// which is what makes the name safe to record. The gate tool takes its
+	// suite from the model, and a name that matched nothing is text the
+	// model wrote — it must never reach a store that is content-free by
+	// construction.
+	// See docs/capabilities/sessions-and-memory.md#whether-it-worked.
+	Trusted bool
 	// ChangedDuringRun marks a tree that changed while the checks ran; the
 	// result is stale from birth.
 	ChangedDuringRun bool
@@ -92,6 +99,21 @@ type Runner struct {
 	Mechanism string
 	// Evidence stores full check output; nil keeps only the inline excerpt.
 	Evidence EvidenceFunc
+	// Observe reports one completed run's verdict to the session record,
+	// with the suite when the name resolved in the trusted config and an
+	// empty string when it did not; nil records nothing. It is set before
+	// the first run and never reassigned, which is what makes it safe to
+	// read from the goroutine a background run finishes on.
+	//
+	// It hangs off finish, the one place a run of either kind lands, so a
+	// background run started by hand is recorded on the same footing as one
+	// the model asked for — and no path can produce a verdict the record
+	// does not see.
+	//
+	// The gate is the only reading of whether the work was right that
+	// nobody has to remember to give.
+	// See docs/capabilities/sessions-and-memory.md#whether-it-worked.
+	Observe func(suite string, v Verdict)
 
 	mu      sync.Mutex
 	running string // suite of the in-flight run, "" when idle
@@ -160,6 +182,19 @@ func (r *Runner) finish(res *Result) {
 	r.last = res
 	r.running = ""
 	r.mu.Unlock()
+	// Outside the lock: recording is somebody else's write, and holding the
+	// runner's lock across it would let a slow store block the next run.
+	if r.Observe != nil {
+		// A name that did not resolve in the trusted config is not handed
+		// over at all. The result still carries it, because the caller
+		// asked for it by that name and the message back has to say so;
+		// the record gets nothing rather than the model's own text.
+		suite := res.Suite
+		if !res.Trusted {
+			suite = ""
+		}
+		r.Observe(suite, res.Verdict)
+	}
 }
 
 // execute runs one suite: config loaded fresh, every executable and wrap
@@ -187,6 +222,7 @@ func (r *Runner) execute(ctx context.Context, suiteName string) *Result {
 	if !ok {
 		return blocked(fmt.Sprintf("unknown suite %q (available: %s)", suiteName, strings.Join(cfg.SuiteNames(), ", ")))
 	}
+	res.Trusted = true
 	res.Contained = r.containDescription(suite.AllowWrite)
 
 	timeout := DefaultCheckTimeout

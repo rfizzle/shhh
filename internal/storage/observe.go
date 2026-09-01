@@ -181,10 +181,33 @@ func (db *DB) UpdateAgentSession(id, turns, tokensIn, tokensOut int64, estCost f
 	return err
 }
 
-// EndAgentSession stamps the session's end time.
-func (db *DB) EndAgentSession(id int64) error {
+// SetAgentSessionOutcome records how the session came out so far. It is
+// written at every turn close and overwritten by the next one, because the
+// session the record most needs an outcome for is the one whose exit path
+// never runs: a run the user gave up on and killed writes nothing on the way
+// out, and an outcome stamped only at the end would describe the sessions
+// that ended well and say nothing about the rest. The optimistic write
+// leaves the last turn's reading standing instead.
+// See docs/capabilities/sessions-and-memory.md#whether-it-worked.
+func (db *DB) SetAgentSessionOutcome(id int64, outcome string) error {
+	_, err := db.sql.Exec(`UPDATE agent_sessions SET outcome = ? WHERE id = ?`, outcome, id)
+	return err
+}
+
+// EndAgentSession stamps the session's end time, and its outcome when the
+// caller has one to correct the standing reading with. An empty outcome
+// leaves whatever the turns wrote alone, which is the ordinary case: a
+// session that finished a turn has already said how it came out.
+func (db *DB) EndAgentSession(id int64, outcome string) error {
+	if outcome == "" {
+		_, err := db.sql.Exec(
+			`UPDATE agent_sessions SET ended_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?`, id,
+		)
+		return err
+	}
 	_, err := db.sql.Exec(
-		`UPDATE agent_sessions SET ended_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id = ?`, id,
+		`UPDATE agent_sessions SET ended_at = strftime('%Y-%m-%dT%H:%M:%fZ','now'), outcome = ? WHERE id = ?`,
+		outcome, id,
 	)
 	return err
 }
@@ -194,7 +217,9 @@ func (db *DB) EndAgentSession(id int64) error {
 // class, and durationMs the call's duration when known. For decision events,
 // outcome is allow/deny/ask and reason an enum-like code. For turn events,
 // outcome is how the turn ended and round how many rounds it took. For
-// signals, outcome is the signal code and reason its qualifier.
+// signals, outcome is the signal code and reason its qualifier — and for the
+// one signal that names a subject as well, the gate's verdict, tool carries
+// the suite that ran.
 func (db *DB) RecordAgentEvent(sessionID int64, e AgentEvent) error {
 	_, err := db.sql.Exec(
 		`INSERT INTO agent_events (session_id, kind, tool, duration_ms, outcome, reason, turn, round)
@@ -427,6 +452,77 @@ func (db *DB) AgentSignals(since time.Time) ([]AgentSignalCount, error) {
 	return out, rows.Err()
 }
 
+// AgentGateVerdict is how often one quality-gate suite came out one way.
+type AgentGateVerdict struct {
+	Suite   string
+	Verdict string
+	Count   int
+}
+
+// AgentGateVerdicts aggregates gate runs by suite and verdict since the
+// cutoff. It is the one reading in the record that judges the work rather
+// than describing it: the checks are the project's own, and they were run
+// against a fingerprint of the tree, so a pass cannot vouch for code it did
+// not see.
+//
+// The signal code is spelled here rather than imported, the way the tool
+// events' 'error' outcome is: this reads rows written by every build that
+// ever wrote one, and their spelling is fixed by history rather than by what
+// this build happens to write.
+func (db *DB) AgentGateVerdicts(since time.Time) ([]AgentGateVerdict, error) {
+	rows, err := db.sql.Query(
+		`SELECT tool, reason, COUNT(*)
+		 FROM agent_events WHERE kind = ? AND outcome = 'gate' AND created_at >= ?
+		 GROUP BY tool, reason ORDER BY tool, COUNT(*) DESC`, AgentEventSignal, observeCutoff(since))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []AgentGateVerdict
+	for rows.Next() {
+		var g AgentGateVerdict
+		if err := rows.Scan(&g.Suite, &g.Verdict, &g.Count); err != nil {
+			return nil, err
+		}
+		out = append(out, g)
+	}
+	return out, rows.Err()
+}
+
+// AgentSessionOutcome is how many sessions came out one way.
+type AgentSessionOutcome struct {
+	Outcome string
+	Count   int
+}
+
+// AgentSessionOutcomes counts sessions by outcome since the cutoff,
+// most-frequent first. A session with no outcome recorded counts as
+// unknown — it was killed before its first turn closed, or it is still
+// running — and unknown is a bucket of its own rather than folded into
+// abandoned, because "the record cannot say" and "nothing was finished" are
+// different answers and only one of them is about the work.
+func (db *DB) AgentSessionOutcomes(since time.Time) ([]AgentSessionOutcome, error) {
+	rows, err := db.sql.Query(
+		`SELECT COALESCE(NULLIF(outcome, ''), 'unknown'), COUNT(*)
+		 FROM agent_sessions WHERE started_at >= ?
+		 GROUP BY 1 ORDER BY COUNT(*) DESC`, observeCutoff(since))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var out []AgentSessionOutcome
+	for rows.Next() {
+		var o AgentSessionOutcome
+		if err := rows.Scan(&o.Outcome, &o.Count); err != nil {
+			return nil, err
+		}
+		out = append(out, o)
+	}
+	return out, rows.Err()
+}
+
 type AgentSessionSummary struct {
 	ID          int64
 	StartedAt   time.Time
@@ -444,6 +540,10 @@ type AgentSessionSummary struct {
 	Project     string
 	ChatSession string
 	ParentID    *int64
+	// Outcome is how the session came out, from the closed set in
+	// internal/observe. It is empty for a session that never closed a turn,
+	// which the reader shows as unknown rather than filling in.
+	Outcome string
 	// Settings is nil for a session recorded before settings were, which
 	// is a different answer from a session that ran with every value at
 	// its zero.
@@ -453,7 +553,7 @@ type AgentSessionSummary struct {
 const agentSessionColumns = `id, started_at, ended_at, kind, provider, model, turns, tokens_in, tokens_out, est_cost,
 		        version, prompt_hash, skills, project, chat_session, parent_id,
 		        mode, reasoning, max_rounds, summary_model, summary_interval, summary_enabled,
-		        classifier_model, sandbox_profile, config_hash`
+		        classifier_model, sandbox_profile, config_hash, outcome`
 
 func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary, error) {
 	var (
@@ -465,14 +565,18 @@ func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary
 		mode, reasoning, summaryModel, classifierModel, sandboxProfile, configHash sql.NullString
 		maxRounds, summaryInterval                                                 sql.NullInt64
 		summaryEnabled                                                             sql.NullBool
+		// The outcome column is NULL on a row older than it is and on a
+		// session that never closed a turn; both read as no outcome.
+		outcome sql.NullString
 	)
 	if err := rows.Scan(&s.ID, &startedAt, &endedAt, &s.Kind, &s.Provider, &s.Model,
 		&s.Turns, &s.TokensIn, &s.TokensOut, &s.Cost,
 		&s.Version, &s.PromptHash, &s.Skills, &s.Project, &s.ChatSession, &s.ParentID,
 		&mode, &reasoning, &maxRounds, &summaryModel, &summaryInterval, &summaryEnabled,
-		&classifierModel, &sandboxProfile, &configHash); err != nil {
+		&classifierModel, &sandboxProfile, &configHash, &outcome); err != nil {
 		return s, err
 	}
+	s.Outcome = outcome.String
 	if configHash.Valid {
 		s.Settings = &AgentSettings{
 			Mode: mode.String, Reasoning: reasoning.String, MaxRounds: int(maxRounds.Int64),
@@ -549,6 +653,9 @@ type AgentExportSession struct {
 	Skills      int     `json:"skills,omitempty"`
 	Project     string  `json:"project,omitempty"`
 	ChatSession string  `json:"chat_session,omitempty"`
+	// Outcome is how the session came out; absent on a session that never
+	// closed a turn.
+	Outcome string `json:"outcome,omitempty"`
 	// Settings is what the session ran under; absent on a session recorded
 	// before settings were.
 	Settings *AgentSettings     `json:"settings,omitempty"`
@@ -633,7 +740,8 @@ func exportSession(s AgentSessionSummary) AgentExportSession {
 		Kind: s.Kind, Provider: s.Provider, Model: s.Model,
 		Turns: s.Turns, TokensIn: s.TokensIn, TokensOut: s.TokensOut, EstCost: s.Cost,
 		ParentID: s.ParentID, Version: s.Version, PromptHash: s.PromptHash,
-		Skills: s.Skills, Project: s.Project, ChatSession: s.ChatSession, Settings: s.Settings,
+		Skills: s.Skills, Project: s.Project, ChatSession: s.ChatSession,
+		Outcome: s.Outcome, Settings: s.Settings,
 	}
 	if s.EndedAt != nil {
 		e := s.EndedAt.UTC().Format(observeTimeFormat)

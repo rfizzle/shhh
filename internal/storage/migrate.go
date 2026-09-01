@@ -157,6 +157,7 @@ var migrations = []string{
 	ALTER TABLE agent_sessions ADD COLUMN classifier_model TEXT;
 	ALTER TABLE agent_sessions ADD COLUMN sandbox_profile TEXT;
 	ALTER TABLE agent_sessions ADD COLUMN config_hash TEXT;`,
+	`ALTER TABLE agent_sessions ADD COLUMN outcome TEXT;`,
 }
 
 // migrate brings the store up to the current schema, one step per

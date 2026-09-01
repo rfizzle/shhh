@@ -233,6 +233,22 @@ func goldenObserve() observeData {
 			{Signal: "summary", Reason: "on-target", Count: 5},
 			{Signal: "context-trimmed", Reason: "4", Count: 1},
 		},
+		// A suite that mostly passes, and one whose runs never got a
+		// verdict at all — blocked is named beside the failures and kept
+		// out of the pass rate.
+		Gates: []storage.AgentGateVerdict{
+			{Suite: "default", Verdict: "pass", Count: 6},
+			{Suite: "default", Verdict: "fail", Count: 2},
+			{Suite: "lint", Verdict: "blocked", Count: 1},
+		},
+		Outcomes: []storage.AgentSessionOutcome{
+			{Outcome: "completed", Count: 5},
+			{Outcome: "abandoned", Count: 2},
+			// A session killed before its first turn closed: a category of
+			// its own, never folded into an abandonment.
+			{Outcome: "unknown", Count: 1},
+			{Outcome: "error", Count: 1},
+		},
 	}
 }
 
@@ -255,6 +271,10 @@ func goldenObserveSession() (storage.AgentSessionSummary, []storage.AgentExportE
 			Outcome: "summary", Reason: "off-target"},
 		{CreatedAt: "2026-08-31T11:32:41.000Z", Kind: storage.AgentEventSignal, Turn: 1, Round: 10,
 			Outcome: "intervened", Reason: "steer"},
+		// The gate's verdict: a signal that names a subject as well as a
+		// qualifier, and the only one that takes no position.
+		{CreatedAt: "2026-08-31T11:33:10.000Z", Kind: storage.AgentEventSignal,
+			Tool: "default", Outcome: "gate", Reason: "pass"},
 		{CreatedAt: "2026-08-31T11:33:32.000Z", Kind: storage.AgentEventTurn, Turn: 1, Round: 14,
 			Outcome: "done", DurationMs: &turn},
 	}
@@ -269,7 +289,7 @@ func goldenObserveSessionRow() storage.AgentSessionSummary {
 		StartedAt: goldenNow.Add(-28 * time.Minute), EndedAt: &ended,
 		Turns: 1, TokensIn: 41200, TokensOut: 9800, Cost: 0.51,
 		Version: "v1.4.0", PromptHash: "9f2a1c04bb7e", Skills: 2,
-		Project: "3d81ee0a5c62", ChatSession: "2026-08-31 11:31:58",
+		Project: "3d81ee0a5c62", ChatSession: "2026-08-31 11:31:58", Outcome: "completed",
 		Settings: &storage.AgentSettings{
 			Mode: "accept-edits", Reasoning: "medium", MaxRounds: 150,
 			SummaryModel: "claude-haiku-4-5", SummaryInterval: 10, SummaryEnabled: true,

@@ -34,7 +34,7 @@ func TestAgentObservability_Lifecycle(t *testing.T) {
 			t.Fatalf("record event: %v", err)
 		}
 	}
-	if err := db.EndAgentSession(id); err != nil {
+	if err := db.EndAgentSession(id, ""); err != nil {
 		t.Fatalf("end session: %v", err)
 	}
 
@@ -357,5 +357,146 @@ func TestAgentSession_SettingsAbsentReadAsEmpty(t *testing.T) {
 	}
 	if len(exported) != 1 || exported[0].Settings != nil {
 		t.Fatalf("expected the export to omit absent settings, got %+v", exported)
+	}
+}
+
+// The outcome written at a turn close stands on the row, and a session that
+// ends with one already standing keeps it: the exit corrects an outcome
+// only where there is none to correct.
+func TestAgentSessionOutcome_StandsUntilCorrected(t *testing.T) {
+	db := openTestDB(t)
+
+	id, err := db.StartAgentSession("code", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	if err := db.SetAgentSessionOutcome(id, "abandoned"); err != nil {
+		t.Fatalf("set outcome: %v", err)
+	}
+	if err := db.SetAgentSessionOutcome(id, "completed"); err != nil {
+		t.Fatalf("set outcome: %v", err)
+	}
+	// The killed session: nothing ends the row, and the last turn's reading
+	// is what a reader finds.
+	s, ok, err := db.AgentSession(id)
+	if err != nil || !ok {
+		t.Fatalf("session: ok=%v err=%v", ok, err)
+	}
+	if s.Outcome != "completed" || s.EndedAt != nil {
+		t.Fatalf("expected a standing outcome on an unended session, got %+v", s)
+	}
+
+	if err := db.EndAgentSession(id, ""); err != nil {
+		t.Fatalf("end session: %v", err)
+	}
+	if s, _, _ = db.AgentSession(id); s.Outcome != "completed" || s.EndedAt == nil {
+		t.Fatalf("an empty outcome must leave the standing one alone, got %+v", s)
+	}
+
+	other, err := db.StartAgentSession("chat", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	if err := db.EndAgentSession(other, "abandoned"); err != nil {
+		t.Fatalf("end session: %v", err)
+	}
+	if s, _, _ = db.AgentSession(other); s.Outcome != "abandoned" {
+		t.Fatalf("the exit must be able to write an outcome, got %+v", s)
+	}
+}
+
+// A session with no outcome recorded counts as unknown rather than being
+// dropped or folded into another bucket, and the outcome joins the export.
+func TestAgentSessionOutcomes_UnknownIsItsOwnCategory(t *testing.T) {
+	db := openTestDB(t)
+
+	for _, outcome := range []string{"completed", "completed", "error", ""} {
+		id, err := db.StartAgentSession("code", "openai", "gpt-test")
+		if err != nil {
+			t.Fatalf("start session: %v", err)
+		}
+		if outcome != "" {
+			if err := db.SetAgentSessionOutcome(id, outcome); err != nil {
+				t.Fatalf("set outcome: %v", err)
+			}
+		}
+	}
+
+	got, err := db.AgentSessionOutcomes(time.Now().Add(-time.Hour))
+	if err != nil {
+		t.Fatalf("outcomes: %v", err)
+	}
+	counts := map[string]int{}
+	for _, o := range got {
+		counts[o.Outcome] = o.Count
+	}
+	want := map[string]int{"completed": 2, "error": 1, "unknown": 1}
+	for outcome, n := range want {
+		if counts[outcome] != n {
+			t.Errorf("%s = %d sessions, want %d (got %+v)", outcome, counts[outcome], n, got)
+		}
+	}
+	if len(counts) != len(want) {
+		t.Errorf("outcome mix has %d buckets, want %d: %+v", len(counts), len(want), got)
+	}
+
+	exported, err := db.ExportAgentObservability(time.Now().Add(-time.Hour), false)
+	if err != nil {
+		t.Fatalf("export: %v", err)
+	}
+	var withOutcome int
+	for _, s := range exported {
+		if s.Outcome != "" {
+			withOutcome++
+		}
+	}
+	if withOutcome != 3 {
+		t.Fatalf("the export carried %d outcomes, want 3", withOutcome)
+	}
+}
+
+// Gate verdicts aggregate by suite and verdict, and a blocked run is counted
+// as blocked: an infrastructure problem read as a failing check would move
+// the one rate in the record that judges the work.
+func TestAgentGateVerdicts(t *testing.T) {
+	db := openTestDB(t)
+
+	id, err := db.StartAgentSession("code", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	for _, e := range []struct{ suite, verdict string }{
+		{"default", "pass"}, {"default", "pass"}, {"default", "fail"},
+		{"lint", "blocked"},
+	} {
+		if err := db.RecordAgentEvent(id, AgentEvent{
+			Kind: AgentEventSignal, Tool: e.suite, Outcome: "gate", Reason: e.verdict,
+		}); err != nil {
+			t.Fatalf("record gate event: %v", err)
+		}
+	}
+	// A signal that is not a gate never reaches the gate aggregate.
+	if err := db.RecordAgentEvent(id, AgentEvent{
+		Kind: AgentEventSignal, Outcome: "summary", Reason: "on-target",
+	}); err != nil {
+		t.Fatalf("record signal: %v", err)
+	}
+
+	got, err := db.AgentGateVerdicts(time.Now().Add(-time.Hour))
+	if err != nil {
+		t.Fatalf("gate verdicts: %v", err)
+	}
+	want := []AgentGateVerdict{
+		{Suite: "default", Verdict: "pass", Count: 2},
+		{Suite: "default", Verdict: "fail", Count: 1},
+		{Suite: "lint", Verdict: "blocked", Count: 1},
+	}
+	if len(got) != len(want) {
+		t.Fatalf("got %d rows, want %d: %+v", len(got), len(want), got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("row %d = %+v, want %+v", i, got[i], want[i])
+		}
 	}
 }

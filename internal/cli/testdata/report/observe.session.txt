@@ -3,6 +3,7 @@
   started:       Aug 31 11:32
   model:         anthropic · claude-sonnet-5
   turns:         1
+  outcome:       completed
   tokens:        ↑41.2k ↓9.8k
   cost:          $0.51
   version:       v1.4.0
@@ -29,4 +30,5 @@
   ⚠ 11:32:21  decision · r3  [asked · auto · safety]
   · 11:32:40  summary · r10 · off-target  [signal]
   · 11:32:41  intervened · r10 · steer  [signal]
+  ✓ 11:33:10  gate · default · pass  [signal]
   ✓ 11:33:32  turn · 14 rounds · 1m34s  [done]

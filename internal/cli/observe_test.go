@@ -9,10 +9,12 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/spf13/cobra"
 )
@@ -117,7 +119,7 @@ func TestRenderObserveDashboard_Sections(t *testing.T) {
 	if err := db.RecordAgentEvent(id, storage.AgentEvent{Kind: storage.AgentEventDecision, Outcome: "deny", Reason: "classifier", Turn: 1, Round: 1}); err != nil {
 		t.Fatalf("record decision event: %v", err)
 	}
-	if err := db.EndAgentSession(id); err != nil {
+	if err := db.EndAgentSession(id, ""); err != nil {
 		t.Fatalf("end session: %v", err)
 	}
 
@@ -287,6 +289,13 @@ func recordEverySurface(t *testing.T, db *storage.DB) map[string]int64 {
 	sess.decisionAt(observe.Pos{Turn: 1, Round: 2}, observe.DecisionAsk,
 		observe.AskReason(agent.Action{Kind: agent.ActionEdit, OutOfScope: []string{"/etc/passwd"}}))
 	sess.signal(observe.Pos{Turn: 1, Round: 3}, observe.SignalSummary, observe.SummaryCode(agent.SummaryOnTarget))
+	// Both gate runs go through the real boundary rather than straight at
+	// the recorder: the second is a suite name that resolved against
+	// nothing, which is the one string on any recording path the model
+	// chooses, and the closed-set walk below is what has to see it.
+	gate := observe.GateHook(sess.observer())
+	gate("default", quality.VerdictPass)
+	gate("", quality.VerdictBlocked)
 	sess.turn(1, 3, time.Second, observe.TurnDone)
 	sess.end()
 	ids["code"] = sess.sessionID()
@@ -444,4 +453,280 @@ func TestNoSurfaceStoresAnythingOutsideTheClosedSets(t *testing.T) {
 			}
 		}
 	}
+}
+
+// The session's outcome is the last turn's, and the exit leaves it alone.
+func TestObserveRecorder_OutcomeFollowsTheLastTurn(t *testing.T) {
+	for turn, want := range map[string]string{
+		observe.TurnDone:      "completed",
+		observe.TurnCancelled: "interrupted",
+		observe.TurnFailed:    "error",
+		// A cap is a pause and not a close, so nothing stands when the
+		// session exits there and the exit calls it what it was.
+		observe.TurnCapPaused: "abandoned",
+	} {
+		t.Run(turn, func(t *testing.T) {
+			db := fixtureStore(t)
+			rec := startObserveRecorder(db, "code", "anthropic", "test-model", nil)
+			rec.turn(1, 2, time.Second, turn)
+			rec.end()
+			if got := sessionOutcomeOf(t, db, rec.sessionID()); got != want {
+				t.Fatalf("a %s turn left the session %q, want %q", turn, got, want)
+			}
+		})
+	}
+}
+
+// A pause at the round cap writes no outcome, so a sub-agent that pauses to
+// take stock and is granted more rounds by its own supervisor is never
+// marked as having given up — not even for the moment between the two turns,
+// which is the moment a kill would freeze.
+func TestObserveRecorder_APauseIsNotAnAbandonment(t *testing.T) {
+	db := fixtureStore(t)
+	rec := startObserveRecorder(db, "researcher", "anthropic", "test-model", nil)
+	rec.turn(1, 8, time.Second, observe.TurnDone)
+	rec.turn(2, 40, time.Second, observe.TurnCapPaused)
+	if got := sessionOutcomeOf(t, db, rec.sessionID()); got != "completed" {
+		t.Fatalf("the pause overwrote the standing reading with %q", got)
+	}
+	rec.turn(2, 55, 2*time.Second, observe.TurnDone)
+	rec.end()
+	if got := sessionOutcomeOf(t, db, rec.sessionID()); got != "completed" {
+		t.Fatalf("the resumed turn left the session %q, want completed", got)
+	}
+}
+
+// But a session that only ever paused, and then quit, is abandoned: the exit
+// is where a pause turns out to have been the end.
+func TestObserveRecorder_QuittingAtThePauseIsAnAbandonment(t *testing.T) {
+	db := fixtureStore(t)
+	rec := startObserveRecorder(db, "code", "anthropic", "test-model", nil)
+	rec.turn(1, 40, time.Second, observe.TurnCapPaused)
+	if got := sessionOutcomeOf(t, db, rec.sessionID()); got != "" {
+		t.Fatalf("a pause wrote %q, and a pause is not a close", got)
+	}
+	rec.end()
+	if got := sessionOutcomeOf(t, db, rec.sessionID()); got != "abandoned" {
+		t.Fatalf("the exit left the session %q, want abandoned", got)
+	}
+}
+
+// A surface that knows better than its turns do says so: a session whose
+// program failed did not come out the way its last turn did, and the exit
+// that reports the failure runs no deferred close.
+func TestObserveRecorder_EndWithOverridesTheStandingReading(t *testing.T) {
+	db := fixtureStore(t)
+	rec := startObserveRecorder(db, "code", "anthropic", "test-model", nil)
+	rec.turn(1, 3, time.Second, observe.TurnDone)
+	rec.endWith(observe.SessionError)
+	if got := sessionOutcomeOf(t, db, rec.sessionID()); got != "error" {
+		t.Fatalf("a failed program left the session %q, want error", got)
+	}
+}
+
+// The session the record most needs an outcome for is the one whose exit
+// never runs. A killed process leaves the last turn's reading behind rather
+// than a blank, which is the whole reason the write is optimistic.
+func TestObserveRecorder_KilledSessionKeepsTheLastTurnsOutcome(t *testing.T) {
+	db := fixtureStore(t)
+	rec := startObserveRecorder(db, "code", "anthropic", "test-model", nil)
+	rec.turn(1, 3, time.Second, observe.TurnDone)
+	// No end(): the process died here.
+	s, ok, err := db.AgentSession(rec.sessionID())
+	if err != nil || !ok {
+		t.Fatalf("session: ok=%v err=%v", ok, err)
+	}
+	if s.Outcome != "completed" {
+		t.Fatalf("outcome = %q, want completed", s.Outcome)
+	}
+	if s.EndedAt != nil {
+		t.Fatal("a killed session must not look ended")
+	}
+}
+
+// The two ways a session can finish nothing are different facts. One reached
+// its own exit and is abandoned; the other never got to say anything and
+// reads as unknown.
+func TestObserveRecorder_UnknownIsTheSessionThatNeverSpoke(t *testing.T) {
+	db := fixtureStore(t)
+
+	quit := startObserveRecorder(db, "chat", "anthropic", "test-model", nil)
+	quit.end()
+	if got := sessionOutcomeOf(t, db, quit.sessionID()); got != "abandoned" {
+		t.Fatalf("a session that exited having closed no turn = %q, want abandoned", got)
+	}
+
+	killed := startObserveRecorder(db, "chat", "anthropic", "test-model", nil)
+	if got := sessionOutcomeOf(t, db, killed.sessionID()); got != "" {
+		t.Fatalf("a session that never spoke = %q, want no outcome at all", got)
+	}
+	mix, err := db.AgentSessionOutcomes(time.Now().Add(-time.Hour))
+	if err != nil {
+		t.Fatalf("outcomes: %v", err)
+	}
+	counts := map[string]int{}
+	for _, o := range mix {
+		counts[o.Outcome] = o.Count
+	}
+	if counts["unknown"] != 1 || counts["abandoned"] != 1 {
+		t.Fatalf("the mix folded the two together: %+v", mix)
+	}
+}
+
+func sessionOutcomeOf(t *testing.T, db *storage.DB, id int64) string {
+	t.Helper()
+	s, ok, err := db.AgentSession(id)
+	if err != nil || !ok {
+		t.Fatalf("session %d: ok=%v err=%v", id, ok, err)
+	}
+	return s.Outcome
+}
+
+// A gate verdict reaches the record with the suite it is a verdict of, and
+// it carries no turn or round: /gate run starts a run between turns, so a
+// position would be invented for some runs and real for others.
+func TestObserveRecorder_GateVerdictCarriesTheSuite(t *testing.T) {
+	db := fixtureStore(t)
+	rec := startObserveRecorder(db, "code", "anthropic", "test-model", nil)
+	hook := observe.GateHook(rec.observer())
+	if hook == nil {
+		t.Fatal("a recording session must take gate verdicts")
+	}
+	hook("default", quality.VerdictBlocked)
+	rec.end()
+
+	assertShapes(t, shapesOf(t, db, rec.sessionID()), []eventShape{
+		{kind: storage.AgentEventSignal, tool: "default", outcome: "gate", reason: "blocked"},
+	})
+}
+
+// The gate and the outcome mix are sections of the dashboard, and the gate
+// is drawn once: a verdict counted under SIGNALS as well would read as two
+// facts. A window with no gate runs draws no gate section at all.
+func TestObserveDashboard_GateAndOutcomeSections(t *testing.T) {
+	db := fixtureStore(t)
+	recordEverySurface(t, db)
+
+	var buf bytes.Buffer
+	cmd := &cobra.Command{}
+	cmd.SetOut(&buf)
+	if err := renderObserveDashboard(cmd, db, "30d", time.Now().Add(-time.Hour)); err != nil {
+		t.Fatalf("render dashboard: %v", err)
+	}
+	out := buf.String()
+	for _, want := range []string{"GATE", "default", "100% passed", "OUTCOMES", "completed", "abandoned"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("dashboard missing %q:\n%s", want, out)
+		}
+	}
+	if signals := sectionOf(out, "SIGNALS"); strings.Contains(signals, "gate") {
+		t.Errorf("the gate signal is drawn under SIGNALS as well:\n%s", signals)
+	}
+
+	// A window with sessions but no gate runs: the section is omitted
+	// rather than drawn empty.
+	bare := fixtureStore(t)
+	rec := startObserveRecorder(bare, "code", "anthropic", "test-model", nil)
+	rec.turn(1, 1, time.Second, observe.TurnDone)
+	rec.end()
+	buf.Reset()
+	if err := renderObserveDashboard(cmd, bare, "30d", time.Now().Add(-time.Hour)); err != nil {
+		t.Fatalf("render dashboard: %v", err)
+	}
+	if strings.Contains(buf.String(), "GATE") {
+		t.Errorf("a window with no gate runs still drew the section:\n%s", buf.String())
+	}
+	if !strings.Contains(buf.String(), "OUTCOMES") {
+		t.Errorf("the outcome mix is missing:\n%s", buf.String())
+	}
+}
+
+// A blocked run is drawn as neither a pass nor a failure, on the timeline
+// and in the tally: the run learned nothing about the code, and reading it
+// as a failing check is the confusion the gate keeps the two apart to avoid.
+func TestObserveGate_BlockedIsNotAFailure(t *testing.T) {
+	if got := observeGateState("blocked"); got == report.Fail || got == report.Pass {
+		t.Fatalf("a blocked verdict draws as %v", got)
+	}
+	if got := observeGateState("cancelled"); got == report.Fail || got == report.Pass {
+		t.Fatalf("a cancelled verdict draws as %v", got)
+	}
+	if observeGateState("fail") != report.Fail || observeGateState("pass") != report.Pass {
+		t.Fatal("a pass and a fail must keep their own weight")
+	}
+
+	// A blocked run is named and left out of the rate on both sides: three
+	// passes and one blocked run is a suite that passed everything it
+	// actually judged.
+	rows := observeGateRows([]storage.AgentGateVerdict{
+		{Suite: "default", Verdict: "pass", Count: 3},
+		{Suite: "default", Verdict: "blocked", Count: 1},
+		{Suite: "lint", Verdict: "pass", Count: 1},
+		{Suite: "lint", Verdict: "fail", Count: 1},
+		{Suite: "vet", Verdict: "blocked", Count: 2},
+	})
+	if len(rows) != 3 {
+		t.Fatalf("expected one row per suite, got %+v", rows)
+	}
+	if rows[0].Outcome != "100% passed" || !strings.Contains(rows[0].Detail, "blocked 1") {
+		t.Fatalf("a blocked run must be named and left out of the rate: %+v", rows[0])
+	}
+	if rows[0].Subject != "4 runs" {
+		t.Fatalf("the run count still counts every run: %+v", rows[0])
+	}
+	// A failure is what the rate is against.
+	if rows[1].Outcome != "50% passed" {
+		t.Fatalf("a failing run must move the rate: %+v", rows[1])
+	}
+	// A suite that never produced a verdict says so rather than printing a
+	// rate over nothing — a checkout with no gate config yet must not read
+	// as a project failing every check.
+	if rows[2].Outcome != "no verdict" {
+		t.Fatalf("a suite with no verdict either way printed %q", rows[2].Outcome)
+	}
+}
+
+// sectionOf is one section's rows, from its heading to the next blank-line
+// gap that starts another heading, so an assertion about one part of the
+// dashboard cannot be satisfied by another part of it.
+func sectionOf(report, header string) string {
+	lines := strings.Split(report, "\n")
+	for i, line := range lines {
+		if strings.TrimSpace(line) != header {
+			continue
+		}
+		for j := i + 1; j < len(lines); j++ {
+			body := strings.TrimSpace(lines[j])
+			if body != "" && body == strings.ToUpper(body) && !strings.HasPrefix(body, "\u00b7") {
+				return strings.Join(lines[i:j], "\n")
+			}
+		}
+		return strings.Join(lines[i:], "\n")
+	}
+	return ""
+}
+
+// The wiring itself: a gate handed a recording session reports to it, one
+// handed a session that is not recording reports nowhere, and no gate at
+// all is not a crash. This is the seam every gate test above stops at.
+func TestRecordGateVerdicts_Wiring(t *testing.T) {
+	db := fixtureStore(t)
+	rec := startObserveRecorder(db, "code", "anthropic", "test-model", nil)
+
+	gate := &quality.Runner{Workspace: t.TempDir()}
+	recordGateVerdicts(gate, rec)
+	if gate.Observe == nil {
+		t.Fatal("a recording session must leave the gate reporting to it")
+	}
+	gate.Observe("default", quality.VerdictPass)
+	assertShapes(t, shapesOf(t, db, rec.sessionID()), []eventShape{
+		{kind: storage.AgentEventSignal, tool: "default", outcome: "gate", reason: "pass"},
+	})
+
+	quiet := &quality.Runner{Workspace: t.TempDir()}
+	recordGateVerdicts(quiet, nil)
+	if quiet.Observe != nil {
+		t.Fatal("a session that is not recording must leave the hook nil")
+	}
+	recordGateVerdicts(nil, rec)
 }

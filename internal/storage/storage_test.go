@@ -833,7 +833,7 @@ func TestMostRecentChat_IgnoresASessionThatHadAlreadyEnded(t *testing.T) {
 	if err := db.UpdateAgentSession(id, 2, 1000, 200, 0.99); err != nil {
 		t.Fatalf("update session: %v", err)
 	}
-	if err := db.EndAgentSession(id); err != nil {
+	if err := db.EndAgentSession(id, ""); err != nil {
 		t.Fatalf("end session: %v", err)
 	}
 	// A full second later, so the ended_at written to millisecond precision

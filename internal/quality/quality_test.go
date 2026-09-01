@@ -573,3 +573,131 @@ func TestRepositoryOwnConfig(t *testing.T) {
 		}
 	}
 }
+
+// gateRun is one verdict as the record received it.
+type gateRun struct {
+	suite   string
+	verdict Verdict
+}
+
+// Every verdict the gate can reach reaches the record, and each keeps its own
+// word: blocked and cancelled are never reported as a failure, which is the
+// distinction the gate exists to make.
+func TestRun_ObserveSeesEveryVerdict(t *testing.T) {
+	ws := t.TempDir()
+	writeConfig(t, ws, `{"suites": {
+		"good": {"checks": [{"name": "ok", "exe": "sh", "args": ["-c", "echo fine"]}]},
+		"bad":  {"checks": [{"name": "boom", "exe": "sh", "args": ["-c", "exit 3"]}]}
+	}}`)
+	var seen []gateRun
+	r := &Runner{Workspace: ws, Observe: func(suite string, v Verdict) {
+		seen = append(seen, gateRun{suite, v})
+	}}
+
+	mustRun(t, r, "good")
+	mustRun(t, r, "bad")
+	mustRun(t, r, "nonesuch")
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := r.Run(ctx, "good"); err != nil {
+		t.Fatal(err)
+	}
+
+	want := []gateRun{
+		{"good", VerdictPass},
+		{"bad", VerdictFail},
+		// An unknown suite is a broken setup, not a failing test — and its
+		// name is not handed over at all. The model names the suite on the
+		// tool path and nobody approves the call, so a name that resolved
+		// against nothing is the model's own text.
+		{"", VerdictBlocked},
+		{"good", VerdictCancelled},
+	}
+	if len(seen) != len(want) {
+		t.Fatalf("recorded %d verdicts, want %d: %+v", len(seen), len(want), seen)
+	}
+	for i := range want {
+		if seen[i] != want[i] {
+			t.Errorf("verdict %d = %+v, want %+v", i, seen[i], want[i])
+		}
+	}
+}
+
+// A run nobody is waiting on lands in the record too: /gate run is the one
+// path a person starts by hand, and a gate rate drawn only from the model's
+// own runs would be a rate over half the runs.
+func TestStart_ObserveSeesABackgroundRun(t *testing.T) {
+	ws := t.TempDir()
+	writeConfig(t, ws, shSuite("echo fine"))
+	done := make(chan gateRun, 1)
+	r := &Runner{Workspace: ws, Observe: func(suite string, v Verdict) {
+		done <- gateRun{suite, v}
+	}}
+	r.Start("")
+
+	select {
+	case got := <-done:
+		if got.suite != DefaultSuite || got.verdict != VerdictPass {
+			t.Fatalf("background run recorded %+v", got)
+		}
+	case <-time.After(30 * time.Second):
+		t.Fatal("a background run never reached the record")
+	}
+}
+
+// A runner with nothing wired records nothing and runs anyway: observability
+// is never what a gate run depends on.
+func TestRun_ObserveIsOptional(t *testing.T) {
+	ws := t.TempDir()
+	writeConfig(t, ws, shSuite("echo fine"))
+	if res := mustRun(t, &Runner{Workspace: ws}, "default"); res.Verdict != VerdictPass {
+		t.Fatalf("verdict = %s", res.Verdict)
+	}
+}
+
+// The result still says which suite the caller asked for, because the
+// message going back has to name what it could not find. Only the record is
+// denied it.
+func TestRun_UnknownSuiteIsNamedToTheCallerAndNotToTheRecord(t *testing.T) {
+	ws := t.TempDir()
+	writeConfig(t, ws, shSuite("echo fine"))
+	var recorded string
+	seen := false
+	r := &Runner{Workspace: ws, Observe: func(suite string, _ Verdict) {
+		recorded, seen = suite, true
+	}}
+
+	res := mustRun(t, r, "/Users/someone/private/notes.md")
+	if res.Trusted {
+		t.Fatal("a suite that resolved against nothing must not be trusted")
+	}
+	if !strings.Contains(res.Reason, "notes.md") {
+		t.Fatalf("the caller must be told what it asked for: %q", res.Reason)
+	}
+	if !seen || recorded != "" {
+		t.Fatalf("the record was handed %q", recorded)
+	}
+
+	// A name that does resolve is trusted and does reach the record.
+	if res = mustRun(t, r, "default"); !res.Trusted {
+		t.Fatal("a suite read out of the config must be trusted")
+	}
+	if recorded != DefaultSuite {
+		t.Fatalf("the record was handed %q, want %q", recorded, DefaultSuite)
+	}
+}
+
+// Every blocked path before the suite resolves is untrusted, not only the
+// unknown-suite one: a missing config and an unreadable one carry the
+// caller's name just as much.
+func TestRun_NothingBeforeTheSuiteResolvesIsTrusted(t *testing.T) {
+	bare := t.TempDir()
+	if res := mustRun(t, &Runner{Workspace: bare}, "whatever"); res.Trusted {
+		t.Fatal("a run with no config at all must not be trusted")
+	}
+	broken := t.TempDir()
+	writeConfig(t, broken, "{not json")
+	if res := mustRun(t, &Runner{Workspace: broken}, "whatever"); res.Trusted {
+		t.Fatal("a run over an unreadable config must not be trusted")
+	}
+}

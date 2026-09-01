@@ -365,6 +365,10 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		model:   env.modelName,
 		summary: cfg.HeadlessSummaryEnabled(),
 	}))
+	// The gate's verdict, mirroring the interactive session — and a run
+	// with nobody in front of it is the one whose verdict the record most
+	// needs, because there was no one there to read it on the way past.
+	recordGateVerdicts(qgate, recorder)
 	obs := headlessObserver{rec: recorder, rounds: a.Rounds}
 	// A headless run is one turn; it closes here with the rounds it took,
 	// the same event an interactive turn ends with.
