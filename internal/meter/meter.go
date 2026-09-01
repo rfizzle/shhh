@@ -122,16 +122,22 @@ func (l *Ledger) Record(o Origin, model string, u provider.Usage) {
 		o.Source = SourceUnattributed
 	}
 	in, out := int64(u.PromptTokens), int64(u.CompletionTokens)
+	cached, created := int64(u.CachedTokens), int64(u.CacheCreationTokens)
 
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	e := l.entry(o, model)
 	e.In += in
 	e.Out += out
-	e.Cached += int64(u.CachedTokens)
+	e.Cached += cached
 	e.Requests++
 	if l.prices != nil && model != "" {
-		if inCost, outCost, found := l.prices.Cost(model, in, out); found {
+		// The input is charged in three parts, because that is how it is
+		// billed: what a session saves by caching its prompt has to show up
+		// here or the saving is invisible and the total is wrong.
+		// See docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once.
+		tk := pricing.Tokens{Input: in - cached - created, Cached: cached, Created: created, Output: out}
+		if inCost, outCost, found := l.prices.CostTokens(model, tk); found {
 			e.Cost += inCost + outCost
 			e.Priced = true
 		}

@@ -419,3 +419,51 @@ func TestAnthropicReasoning_DropsUnsignedBlocks(t *testing.T) {
 		t.Errorf("redacted thinking must survive unchanged, got %+v", blocks[0])
 	}
 }
+
+// The Messages API reports the cached parts of the prompt beside input_tokens
+// rather than inside it. Usage promises a prompt count that already contains
+// them, so the sum has to happen in the converter.
+func TestAnthropic_UsageFoldsTheCachedPartsIntoThePromptCount(t *testing.T) {
+	srv := anthropicSSEServer(t, func(w http.ResponseWriter) {
+		sseEvent(w, "message_start", `{"type":"message_start","message":{"id":"msg_1","type":"message","role":"assistant","content":[],"model":"claude-opus-5","stop_reason":null,"usage":{"input_tokens":12,"output_tokens":1,"cache_read_input_tokens":900,"cache_creation_input_tokens":88}}}`)
+		sseEvent(w, "content_block_start", `{"type":"content_block_start","index":0,"content_block":{"type":"text","text":""}}`)
+		sseEvent(w, "content_block_delta", `{"type":"content_block_delta","index":0,"delta":{"type":"text_delta","text":"ok"}}`)
+		sseEvent(w, "content_block_stop", `{"type":"content_block_stop","index":0}`)
+		sseEvent(w, "message_delta", `{"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},"usage":{"output_tokens":5}}`)
+		sseEvent(w, "message_stop", `{"type":"message_stop"}`)
+	})
+	defer srv.Close()
+
+	p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
+	events, err := p.StreamCompletion(context.Background(), []Message{
+		{Role: RoleSystem, Content: "sys"},
+		{Role: RoleUser, Content: "hi"},
+	}, CompletionOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, _, usage, streamErr := drainAnthropic(t, events)
+	if streamErr != nil {
+		t.Fatalf("unexpected stream error: %v", streamErr)
+	}
+	if usage == nil {
+		t.Fatal("no usage reported")
+	}
+	if want := 12 + 900 + 88; usage.PromptTokens != want {
+		t.Errorf("PromptTokens must count every billed input token: want %d got %d", want, usage.PromptTokens)
+	}
+	if usage.CachedTokens != 900 {
+		t.Errorf("CachedTokens: want 900 got %d", usage.CachedTokens)
+	}
+	if usage.CacheCreationTokens != 88 {
+		t.Errorf("CacheCreationTokens: want 88 got %d", usage.CacheCreationTokens)
+	}
+	// The parts are subsets, so what was read fresh is what is left.
+	if fresh := usage.PromptTokens - usage.CachedTokens - usage.CacheCreationTokens; fresh != 12 {
+		t.Errorf("the parts must not overlap: fresh should be 12, got %d", fresh)
+	}
+}

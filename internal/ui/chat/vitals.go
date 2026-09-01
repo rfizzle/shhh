@@ -20,6 +20,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -215,7 +216,15 @@ func (m Model) usageCost(u provider.Usage) (float64, bool) {
 	if m.prices == nil || m.modelName == "" {
 		return 0, false
 	}
-	in, out, found := m.prices.Cost(m.modelName, int64(u.PromptTokens), int64(u.CompletionTokens))
+	// Priced the way the ledger prices it, in the three parts the input is
+	// actually billed in; the two must not disagree about one request.
+	cached, created := int64(u.CachedTokens), int64(u.CacheCreationTokens)
+	in, out, found := m.prices.CostTokens(m.modelName, pricing.Tokens{
+		Input:   int64(u.PromptTokens) - cached - created,
+		Cached:  cached,
+		Created: created,
+		Output:  int64(u.CompletionTokens),
+	})
 	if !found {
 		return 0, false
 	}

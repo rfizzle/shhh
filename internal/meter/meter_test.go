@@ -181,3 +181,75 @@ func TestGate_AbandonedStreamIsStillBilled(t *testing.T) {
 		t.Fatalf("an abandoned stream is spend the session made, got %+v", got)
 	}
 }
+
+// cachedPrices is a model whose cached read is a tenth of a fresh one and
+// whose cache write carries a premium, which is the shape every caching
+// provider charges in.
+func cachedPrices() *pricing.Table {
+	return pricing.NewTable(map[string]pricing.ModelPricing{
+		"cached": {
+			InputCostPerToken:         0.00001,
+			OutputCostPerToken:        0.00002,
+			CacheReadCostPerToken:     0.000001,
+			CacheCreationCostPerToken: 0.0000125,
+		},
+	})
+}
+
+// The ledger has to see the saving, or a session that caches its prompt is
+// billed as though it had not and the feature is invisible.
+func TestRecordChargesACachedReadAtTheCachedRate(t *testing.T) {
+	fresh := New(cachedPrices())
+	fresh.Record(Origin{Source: SourceAgent}, "cached",
+		provider.Usage{PromptTokens: 1000, CompletionTokens: 10})
+
+	warm := New(cachedPrices())
+	warm.Record(Origin{Source: SourceAgent}, "cached",
+		provider.Usage{PromptTokens: 1000, CompletionTokens: 10, CachedTokens: 900})
+
+	freshCost := fresh.Total().Cost
+	warmCost := warm.Total().Cost
+	if !(warmCost < freshCost) {
+		t.Fatalf("a request served from the cache must cost less: fresh %v warm %v", freshCost, warmCost)
+	}
+	// 100 fresh at 1e-5, 900 cached at 1e-6, 10 out at 2e-5.
+	if want := 100*0.00001 + 900*0.000001 + 10*0.00002; !nearly(warmCost, want) {
+		t.Errorf("cached request cost: want %v got %v", want, warmCost)
+	}
+}
+
+// A cache write costs more than a fresh read, and the ledger must say so
+// rather than quietly pricing it as one.
+func TestRecordChargesACacheWriteItsPremium(t *testing.T) {
+	l := New(cachedPrices())
+	l.Record(Origin{Source: SourceAgent}, "cached",
+		provider.Usage{PromptTokens: 1000, CacheCreationTokens: 1000})
+
+	if want := 1000 * 0.0000125; !nearly(l.Total().Cost, want) {
+		t.Errorf("cache write cost: want %v got %v", want, l.Total().Cost)
+	}
+}
+
+// The token totals are unchanged by any of this: the prompt count is every
+// input token, whether it came from the cache or not.
+func TestRecordCountsCachedTokensInThePromptTotal(t *testing.T) {
+	l := New(cachedPrices())
+	l.Record(Origin{Source: SourceAgent}, "cached",
+		provider.Usage{PromptTokens: 1000, CachedTokens: 900, CompletionTokens: 10})
+
+	tot := l.Total()
+	if tot.In != 1000 {
+		t.Errorf("In: want 1000 got %d", tot.In)
+	}
+	if tot.Cached != 900 {
+		t.Errorf("Cached: want 900 got %d", tot.Cached)
+	}
+}
+
+func nearly(a, b float64) bool {
+	d := a - b
+	if d < 0 {
+		d = -d
+	}
+	return d < 1e-12
+}

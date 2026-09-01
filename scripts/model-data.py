@@ -21,6 +21,10 @@ PROVIDERS = {"anthropic", "openai", "gemini", "vertex_ai-language-models", "open
 FIELDS = [
     "input_cost_per_token",
     "output_cost_per_token",
+    # What a cached prefix costs to read back and to write. Without them a
+    # session that caches its prompt is billed as though it had not.
+    "cache_read_input_token_cost",
+    "cache_creation_input_token_cost",
     "max_input_tokens",
     "max_output_tokens",
     "supports_reasoning",

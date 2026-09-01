@@ -176,10 +176,17 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 			return
 		}
 
+		// InputTokens here counts only what was read fresh — this dialect
+		// reports the cached parts beside it rather than inside it. Usage
+		// promises a prompt count that already contains them, so the sum is
+		// made here and not left to every reader of the ledger.
+		cached := int(accumulated.Usage.CacheReadInputTokens)
+		created := int(accumulated.Usage.CacheCreationInputTokens)
 		usage := &Usage{
-			PromptTokens:     int(accumulated.Usage.InputTokens),
-			CompletionTokens: int(accumulated.Usage.OutputTokens),
-			CachedTokens:     int(accumulated.Usage.CacheReadInputTokens),
+			PromptTokens:        int(accumulated.Usage.InputTokens) + cached + created,
+			CompletionTokens:    int(accumulated.Usage.OutputTokens),
+			CachedTokens:        cached,
+			CacheCreationTokens: created,
 		}
 
 		ch <- StreamEvent{

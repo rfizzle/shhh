@@ -50,12 +50,25 @@ type ToolCall struct {
 }
 
 type Usage struct {
+	// PromptTokens is every input token the request is billed for, cached
+	// ones included. The dialects do not agree on that: most report a prompt
+	// count that already contains what they served from cache, while the
+	// Messages API reports the three parts side by side and leaves the sum to
+	// the reader. The converter is where they are made to agree, because a
+	// figure whose meaning depends on which provider answered cannot be
+	// added up, and the session ledger adds it up across all of them.
 	PromptTokens     int
 	CompletionTokens int
 	// CachedTokens is the part of PromptTokens the provider served from its
-	// prompt cache, when it reports one; zero means "not reported", not
-	// "nothing cached".
-	CachedTokens int
+	// prompt cache, and CacheCreationTokens the part it wrote into the cache
+	// for the next request to read. Both are subsets of PromptTokens, they
+	// never overlap, and zero means "not reported", not "nothing cached".
+	//
+	// They are separate because they are priced apart: a read is a fraction
+	// of the input rate and a write is a premium over it.
+	// See docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once.
+	CachedTokens        int
+	CacheCreationTokens int
 }
 
 type StreamEvent struct {

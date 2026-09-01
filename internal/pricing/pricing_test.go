@@ -174,3 +174,108 @@ func must(t *testing.T, err error) {
 		t.Fatal(err)
 	}
 }
+
+// The rates a cached model carries, so the split can be checked against
+// arithmetic rather than against whatever the shipped table happens to say.
+func cachedTable(t *testing.T) *Table {
+	t.Helper()
+	tbl := &Table{models: map[string]ModelPricing{
+		"cached-model": {
+			InputCostPerToken:         10,
+			OutputCostPerToken:        100,
+			CacheReadCostPerToken:     1,
+			CacheCreationCostPerToken: 12,
+		},
+		"uncached-model": {InputCostPerToken: 10, OutputCostPerToken: 100},
+	}}
+	return tbl
+}
+
+func TestCostTokensChargesEachPartAtItsOwnRate(t *testing.T) {
+	in, out, found := cachedTable(t).CostTokens("cached-model",
+		Tokens{Input: 1, Cached: 10, Created: 2, Output: 3})
+	if !found {
+		t.Fatal("priced model not found")
+	}
+	if want := float64(1*10 + 10*1 + 2*12); in != want {
+		t.Errorf("input cost: want %v got %v", want, in)
+	}
+	if want := float64(3 * 100); out != want {
+		t.Errorf("output cost: want %v got %v", want, out)
+	}
+}
+
+// The whole point of the split: the same prompt costs less once it is being
+// read back from the cache instead of fresh.
+func TestCostTokensMakesACachedReadCheaper(t *testing.T) {
+	tbl := cachedTable(t)
+	fresh, _, _ := tbl.CostTokens("cached-model", Tokens{Input: 100})
+	cached, _, _ := tbl.CostTokens("cached-model", Tokens{Cached: 100})
+	if !(cached < fresh) {
+		t.Fatalf("a cached read must cost less than a fresh one, fresh %v cached %v", fresh, cached)
+	}
+}
+
+// A table that has not learned a model's cache rates must not price its
+// cached tokens at zero: free is the one answer that is never right.
+func TestCostTokensChargesFullRateWhenTheCacheRateIsUnknown(t *testing.T) {
+	in, _, found := cachedTable(t).CostTokens("uncached-model",
+		Tokens{Input: 1, Cached: 10, Created: 2})
+	if !found {
+		t.Fatal("priced model not found")
+	}
+	if want := float64(13 * 10); in != want {
+		t.Errorf("unknown cache rates fall back to the input rate: want %v got %v", want, in)
+	}
+}
+
+// Cost is CostTokens with no cache figures, and every existing caller depends
+// on that staying true.
+func TestCostIsCostTokensWithoutTheCacheParts(t *testing.T) {
+	tbl := cachedTable(t)
+	in, out, found := tbl.Cost("cached-model", 7, 3)
+	if !found {
+		t.Fatal("priced model not found")
+	}
+	tin, tout, _ := tbl.CostTokens("cached-model", Tokens{Input: 7, Output: 3})
+	if in != tin || out != tout {
+		t.Errorf("Cost and CostTokens disagree: %v/%v vs %v/%v", in, out, tin, tout)
+	}
+}
+
+func TestOverlayKeepsCacheRatesAnEntryLeavesOut(t *testing.T) {
+	tbl := cachedTable(t)
+	tbl.Overlay(map[string]ModelPricing{
+		"cached-model": {InputCostPerToken: 20, OutputCostPerToken: 200},
+	})
+	p, ok := tbl.lookup("cached-model")
+	if !ok {
+		t.Fatal("model lost in overlay")
+	}
+	if p.InputCostPerToken != 20 {
+		t.Errorf("the overlay's own price must win, got %v", p.InputCostPerToken)
+	}
+	if p.CacheReadCostPerToken != 1 || p.CacheCreationCostPerToken != 12 {
+		t.Errorf("cache rates the overlay did not mention must survive it, got %v/%v",
+			p.CacheReadCostPerToken, p.CacheCreationCostPerToken)
+	}
+}
+
+// The shipped snapshot has to actually carry the rates, or the split prices
+// every model at the fallback and nothing is ever cheaper.
+func TestSnapshotCarriesCacheRatesForTheCachingModels(t *testing.T) {
+	tbl := Snapshot()
+	for _, model := range []string{"claude-opus-5", "claude-sonnet-5"} {
+		p, ok := tbl.lookup(model)
+		if !ok {
+			t.Fatalf("%s missing from the snapshot", model)
+		}
+		if p.CacheReadCostPerToken <= 0 {
+			t.Errorf("%s has no cached-read price", model)
+		}
+		if p.CacheReadCostPerToken >= p.InputCostPerToken {
+			t.Errorf("%s prices a cached read at or above a fresh one: %v vs %v",
+				model, p.CacheReadCostPerToken, p.InputCostPerToken)
+		}
+	}
+}

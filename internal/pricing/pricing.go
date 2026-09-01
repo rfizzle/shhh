@@ -40,6 +40,15 @@ type ModelPricing struct {
 	MaxInputTokens     int64   `json:"max_input_tokens"`
 	MaxOutputTokens    int64   `json:"max_output_tokens"`
 
+	// CacheReadCostPerToken and CacheCreationCostPerToken are what an input
+	// token costs when it was served from the provider's prompt cache and
+	// when it was written into it. Both are absent for a model whose provider
+	// does not cache, and for one whose table entry has not caught up; a zero
+	// read price falls back to the full input price, which is the answer that
+	// can only overstate.
+	CacheReadCostPerToken     float64 `json:"cache_read_input_token_cost"`
+	CacheCreationCostPerToken float64 `json:"cache_creation_input_token_cost"`
+
 	// SupportsReasoning is whether the model has a thinking knob at all. A
 	// model without one is handed no reasoning field, whatever the session
 	// asked for.
@@ -175,6 +184,15 @@ func (t *Table) Overlay(models map[string]ModelPricing) {
 			p.InputCostPerToken = existing.InputCostPerToken
 			p.OutputCostPerToken = existing.OutputCostPerToken
 		}
+		// The cache rates belong to the prices but arrive separately: a
+		// table entry can carry a price and not yet have learned what the
+		// same model's cached read costs.
+		if p.CacheReadCostPerToken == 0 {
+			p.CacheReadCostPerToken = existing.CacheReadCostPerToken
+		}
+		if p.CacheCreationCostPerToken == 0 {
+			p.CacheCreationCostPerToken = existing.CacheCreationCostPerToken
+		}
 		if p.MaxInputTokens == 0 {
 			p.MaxInputTokens = existing.MaxInputTokens
 		}
@@ -208,13 +226,46 @@ func (t *Table) Len() int {
 }
 
 func (t *Table) Cost(model string, tokensIn, tokensOut int64) (inputCost, outputCost float64, found bool) {
+	return t.CostTokens(model, Tokens{Input: tokensIn, Output: tokensOut})
+}
+
+// Tokens is one request's billable tokens, split by the rate each part is
+// charged at. Input is what was read fresh; Cached what the provider served
+// from its prompt cache, and Created what it wrote into it — the three are
+// disjoint and together are every input token the request pays for.
+//
+// A caller that has no cache figures fills in Input and Output and gets
+// exactly what Cost has always answered.
+// See docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once.
+type Tokens struct {
+	Input   int64
+	Cached  int64
+	Created int64
+	Output  int64
+}
+
+// CostTokens prices one request, charging each part of the input at its own
+// rate.
+//
+// A missing cache price is not zero — free is the one answer that is never
+// right — so a part whose rate the table does not carry is charged at the
+// full input price. That overstates a cached read, which is the direction a
+// spend meter is allowed to be wrong in.
+func (t *Table) CostTokens(model string, tk Tokens) (inputCost, outputCost float64, found bool) {
 	p, ok := t.lookup(model)
 	if !ok || (p.InputCostPerToken == 0 && p.OutputCostPerToken == 0) {
 		return 0, 0, false
 	}
-	return float64(tokensIn) * p.InputCostPerToken,
-		float64(tokensOut) * p.OutputCostPerToken,
-		true
+	rate := func(cache float64) float64 {
+		if cache > 0 {
+			return cache
+		}
+		return p.InputCostPerToken
+	}
+	inputCost = float64(tk.Input)*p.InputCostPerToken +
+		float64(tk.Cached)*rate(p.CacheReadCostPerToken) +
+		float64(tk.Created)*rate(p.CacheCreationCostPerToken)
+	return inputCost, float64(tk.Output) * p.OutputCostPerToken, true
 }
 
 // ContextWindow returns the model's context window (max input tokens) when
