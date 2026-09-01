@@ -14,9 +14,12 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/cli/report"
+	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/pricing"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -71,12 +74,13 @@ func (r *observeRecorder) sessionID() int64 {
 }
 
 // stamp records what the session ran under: the build, a fingerprint of the
-// system prompt as sent, how many skills loaded, and a fingerprint of the
-// checkout. Fingerprints rather than the things themselves: the prompt
-// carries the project context and the path names the machine, and neither
-// belongs in a table that is content-free by construction. A hash still
-// splits "before the edit" from "after it", which is all a comparison needs.
-func (r *observeRecorder) stamp(sysPrompt string, skills int, root string) {
+// system prompt as sent, how many skills loaded, a fingerprint of the
+// checkout, and the settings it was configured with. Fingerprints rather
+// than the things themselves: the prompt carries the project context and the
+// path names the machine, and neither belongs in a table that is
+// content-free by construction. A hash still splits "before the edit" from
+// "after it", which is all a comparison needs.
+func (r *observeRecorder) stamp(sysPrompt string, skills int, root string, settings storage.AgentSettings) {
 	if r == nil {
 		return
 	}
@@ -85,7 +89,111 @@ func (r *observeRecorder) stamp(sysPrompt string, skills int, root string) {
 		PromptHash: fingerprint(sysPrompt),
 		Skills:     skills,
 		Project:    fingerprint(root),
+		Settings:   settings,
 	})
+}
+
+// runSettings are the values a surface resolved for itself before it opened
+// its row — the ones the config file alone cannot answer, because a flag, a
+// profile, a clamp to a parent or a mechanism check had the last word.
+type runSettings struct {
+	// mode is the permission mode the surface starts in, or empty where no
+	// permission mode applies: a one-shot has no policy to be in a mode of,
+	// and a headless run answers with --yes and --allow instead.
+	mode string
+	// effort is the reasoning level the surface starts at.
+	effort provider.Effort
+	// rounds is the per-turn tool-round cap in force, 0 for none; a
+	// surface that resolves its cap through maxRoundsFor spells it with
+	// roundCapFor first.
+	rounds int
+	// sandbox is the containment profile in force, or empty when nothing
+	// contains the surface's commands — an unconfined session runs under
+	// no profile, whatever the config asked for.
+	sandbox string
+	// model is the session model, which the summariser and the classifier
+	// default to when their own keys are unset.
+	model string
+	// summary and classifier say whether each mechanism exists on this
+	// surface at all. A one-shot takes no readings and asks no classifier,
+	// and recording the model it would have used is recording a setting
+	// that was not in force.
+	summary, classifier bool
+}
+
+// sessionSettings is the allowlist: every config value the record keeps
+// whole, resolved to what was actually in force, and the hash over the rest.
+//
+// Nothing here is a path, a command or a secret. The scope directories, the
+// sandbox's deny and write lists, the command allowlists and the API keys
+// reach the store only through the hash. A config value joins the stamped
+// set by being read here — or, for the sandbox profile, by the surface that
+// parsed it through the profile's closed set before filling runSettings —
+// and nowhere else, so a field added to the config is excluded until someone
+// decides otherwise. The test beside this fills every config field with a
+// marker and checks that none of them comes through except the ones named
+// here.
+// See docs/capabilities/sessions-and-memory.md#what-a-session-ran-under.
+func sessionSettings(cfg config.Config, run runSettings) storage.AgentSettings {
+	out := storage.AgentSettings{
+		Mode:           run.mode,
+		Reasoning:      run.effort.String(),
+		MaxRounds:      run.rounds,
+		SummaryEnabled: run.summary,
+		SandboxProfile: run.sandbox,
+		ConfigHash:     configHash(cfg),
+	}
+	if run.summary {
+		out.SummaryModel = modelOr(cfg.Summary.Model, run.model)
+		out.SummaryInterval = agent.SummaryConfig{IntervalRounds: cfg.Summary.IntervalRounds}.Interval()
+	}
+	if run.classifier {
+		out.ClassifierModel = modelOr(cfg.Behavior.ClassifierModel, run.model)
+	}
+	return out
+}
+
+// roundCapFor turns maxRoundsFor's three-way answer into the cap in force as
+// the record spells it: the number, or 0 for none.
+func roundCapFor(rounds int) int {
+	switch {
+	case rounds < 0:
+		return 0
+	case rounds == 0:
+		return agent.DefaultMaxToolRounds
+	default:
+		return rounds
+	}
+}
+
+// modelOr is the rule the summariser and the classifier both resolve their
+// model by: the configured one, else the session's.
+func modelOr(configured, session string) string {
+	if configured != "" {
+		return configured
+	}
+	return session
+}
+
+// configHash fingerprints the whole effective config, secrets and paths
+// included, so a change to any field splits sessions on either side of it
+// even when the field is one the allowlist does not keep. Going through a
+// hash is what makes that safe: nothing in the config is recoverable from
+// twelve hex digits of a digest over the whole document.
+//
+// The encoding is JSON rather than TOML for its determinism: struct fields
+// go out in declaration order and map keys sorted, so the same config hashes
+// the same on every run. Marshalling a config cannot fail — every field is a
+// scalar, a slice, a map of strings or a pointer to one — so an error here
+// would be a new field of a shape the encoder refuses, and it is reported
+// as an empty hash rather than hidden, because an empty hash is the one
+// value the store reads as "no settings were taken".
+func configHash(cfg config.Config) string {
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return ""
+	}
+	return fingerprint(string(data))
 }
 
 // projectFingerprintRoot is the checkout the session runs in — its
@@ -670,6 +778,7 @@ func observeSessionReport(s storage.AgentSessionSummary, events []storage.AgentE
 	if s.ParentID != nil {
 		pairs = append(pairs, report.Pair{Key: "child of", Value: strconv.FormatInt(*s.ParentID, 10)})
 	}
+	pairs = append(pairs, observeSettingsPairs(s.Settings)...)
 
 	r := report.Report{
 		Title:    "shhh observe session " + strconv.FormatInt(s.ID, 10),
@@ -694,6 +803,40 @@ func observeSessionReport(s storage.AgentSessionSummary, events []storage.AgentE
 		last.Rows = append(last.Rows, observeEventRow(e))
 	}
 	return r
+}
+
+// observeSettingsPairs is what the session ran under, beside the provenance
+// it already prints: one line per setting that was in force, and nothing at
+// all for a session recorded before settings were — the page must not fill
+// the gap with today's defaults, because a reader comparing two sessions
+// would take the fill for a fact.
+func observeSettingsPairs(c *storage.AgentSettings) []report.Pair {
+	if c == nil {
+		return nil
+	}
+	rounds := "uncapped"
+	if c.MaxRounds > 0 {
+		rounds = strconv.Itoa(c.MaxRounds)
+	}
+	summary := "off"
+	if c.SummaryEnabled {
+		summary = joinDetail(c.SummaryModel, fmt.Sprintf("every %d rounds", c.SummaryInterval))
+	}
+	var pairs []report.Pair
+	for _, p := range []report.Pair{
+		{Key: "mode", Value: c.Mode},
+		{Key: "reasoning", Value: c.Reasoning},
+		{Key: "rounds", Value: rounds},
+		{Key: "summary", Value: summary},
+		{Key: "classifier", Value: c.ClassifierModel},
+		{Key: "sandbox", Value: c.SandboxProfile},
+		{Key: "config", Value: c.ConfigHash},
+	} {
+		if p.Value != "" {
+			pairs = append(pairs, p)
+		}
+	}
+	return pairs
 }
 
 // observeEventRow is one recorded event on the grid: what kind of thing

@@ -210,6 +210,16 @@ type Env struct {
 	Summarizer *agent.Summarizer
 }
 
+// roundCap is the cap a child's agent is running under as the record spells
+// it: the number, or 0 for none. MaxRounds alone cannot say the second,
+// because it answers with the default for an uncapped agent.
+func roundCap(a *agent.Agent) int {
+	if a.Uncapped() {
+		return 0
+	}
+	return a.MaxRounds()
+}
+
 // newChildAgent builds a child's agent with everything a child's agent needs.
 //
 // It exists because there are two paths to one — a spawn and a retry — and a
@@ -243,6 +253,13 @@ type Spec struct {
 	// Paths is the writer's declared write scope, so its prompt can say what
 	// it may touch while other agents work elsewhere; nil means unscoped.
 	Paths []string
+	// Mode is the permission mode the child starts in, after the profile
+	// and the clamp to the parent have had their say, and MaxRounds its
+	// per-turn round cap (0 when it has none). Neither builds the runtime —
+	// the supervisor holds both — but the record of what the child ran
+	// under has to be stamped from somewhere, and the CLI is what stamps it.
+	Mode      agent.Mode
+	MaxRounds int
 }
 
 // EnvFactory builds a child's Env; ctx is the child's context (cancelling it
@@ -1052,7 +1069,8 @@ func (s *Supervisor) Retry(name string) error {
 	c.report, c.patchNote, c.streaming = "", "", ""
 	c.mu.Unlock()
 	if s.opts.Record != nil {
-		c.rec = s.opts.Record(Spec{Name: c.name, Role: c.role, Root: root, Model: c.model, Paths: c.paths}, env.SystemPrompt)
+		c.rec = s.opts.Record(Spec{Name: c.name, Role: c.role, Root: root, Model: c.model, Paths: c.paths,
+			Mode: s.childMode(c), MaxRounds: roundCap(a)}, env.SystemPrompt)
 	}
 
 	s.wg.Add(1)
@@ -1281,8 +1299,11 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 	}
 	// The auto-run executor is the env's rooted, reduced chain.
 	a.SetExecutor(env.Executor)
+	// The mode recorded is the one in force — the profile's or the parent's
+	// after the clamp — not the one asked for; c.mode alone is the request.
 	if s.opts.Record != nil {
-		c.rec = s.opts.Record(Spec{Name: name, Role: args.role, Root: root, Model: model, Paths: args.paths}, env.SystemPrompt)
+		c.rec = s.opts.Record(Spec{Name: name, Role: args.role, Root: root, Model: model, Paths: args.paths,
+			Mode: s.childMode(c), MaxRounds: roundCap(a)}, env.SystemPrompt)
 	}
 
 	s.mu.Lock()

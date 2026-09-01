@@ -644,7 +644,20 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// mode decisions) are recorded to storage; failure just disables recording.
 	recorder := startObserveRecorder(db, session.kind, env.prov.Name(), env.modelName, prices)
 	defer recorder.end()
-	recorder.stamp(env.sysPrompt, session.skills.Len(), projectFingerprintRoot())
+	// The starting mode is stamped here, as a setting, rather than left to
+	// the mode-change signal: that signal fires only on a change, so a
+	// session that ran start to finish in the configured default would
+	// record no mode at all, and absence is also what a session that
+	// recorded nothing looks like.
+	recorder.stamp(env.sysPrompt, session.skills.Len(), projectFingerprintRoot(), sessionSettings(cfg, runSettings{
+		mode:       mode.String(),
+		effort:     env.effort,
+		rounds:     roundCapFor(maxRoundsFor(cfg, session.maxRounds, session.maxRoundsSet)),
+		sandbox:    containment.Profile,
+		model:      env.modelName,
+		summary:    !cfg.Summary.Disabled,
+		classifier: true,
+	}))
 
 	// Sub-agent supervisor: spawn_agent and agent_report short-circuit
 	// on the executor chain; Close cancels the child tree and removes

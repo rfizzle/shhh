@@ -9,8 +9,10 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/pricing"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/spf13/cobra"
 )
@@ -142,7 +144,7 @@ func TestObserveRecorder_NilSafe(t *testing.T) {
 	rec.usage(1, 1, 1)
 	rec.toolCallAt(observe.Pos{}, "read_file", time.Millisecond, "ok", "")
 	rec.decisionAt(observe.Pos{}, "allow", "user")
-	rec.stamp("prompt", 1, "/repo")
+	rec.stamp("prompt", 1, "/repo", storage.AgentSettings{})
 	rec.turn(1, 3, time.Second, "done")
 	rec.signal(observe.Pos{}, "summary", "on-target")
 	rec.link("name")
@@ -163,7 +165,12 @@ func TestObserveSessionTimeline(t *testing.T) {
 	defer db.Close()
 
 	rec := startObserveRecorder(db, "code", "anthropic", "test-model", nil)
-	rec.stamp("the prompt", 2, "/repo")
+	// Stamped in the mode it started in and never left: no mode signal is
+	// recorded below, and the page must still say what mode it ran in.
+	rec.stamp("the prompt", 2, "/repo", sessionSettings(config.Config{}, runSettings{
+		mode: agent.ModeAuto.String(), effort: provider.EffortHigh, rounds: 60,
+		sandbox: "workspace", model: "test-model", summary: true, classifier: true,
+	}))
 	rec.link("2026-01-01 10:00:00")
 	rec.link("2026-01-01 10:00:00")
 	rec.toolCallAt(observe.Pos{Turn: 1, Round: 1}, "search", 5*time.Millisecond, "ok", "empty")
@@ -182,6 +189,8 @@ func TestObserveSessionTimeline(t *testing.T) {
 	for _, want := range []string{
 		"shhh observe session 1", "prompt:", fingerprint("the prompt"), "skills:", "2",
 		"project:", fingerprint("/repo"), "conversation:", "2026-01-01 10:00:00",
+		"mode:", "auto", "reasoning:", "high", "rounds:", "60",
+		"summary:", "test-model · every 10 rounds", "classifier:", "sandbox:", "workspace", "config:",
 		"TURN 1", "search", "empty", "asked", "auto · safety",
 		"summary", "off-target", "cap-paused", "41 rounds",
 	} {
@@ -271,7 +280,7 @@ func recordEverySurface(t *testing.T, db *storage.DB) map[string]int64 {
 
 	// A session: turns, positioned tool calls, a policy decision, signals.
 	sess := startObserveRecorder(db, "code", "anthropic", "test-model", nil)
-	sess.stamp("the agent prompt", 3, "/repo")
+	sess.stamp("the agent prompt", 3, "/repo", storage.AgentSettings{})
 	sess.link("2026-09-02 09:00:00")
 	emptyOutcome, emptyClass := observe.ToolOutcome("No matches found.")
 	sess.toolCallAt(observe.Pos{Turn: 1, Round: 1}, "search", 4*time.Millisecond, emptyOutcome, emptyClass)
@@ -284,7 +293,7 @@ func recordEverySurface(t *testing.T, db *storage.DB) map[string]int64 {
 
 	// A headless run: the same events through its own adapter.
 	head := startObserveRecorder(db, "print", "anthropic", "test-model", nil)
-	head.stamp("the agent prompt", 3, "/repo")
+	head.stamp("the agent prompt", 3, "/repo", storage.AgentSettings{})
 	obs := headlessObserver{rec: head, rounds: func() int { return 2 }}
 	obs.toolResult("execute_command", time.Millisecond,
 		"error: command not approved: headless mode denies commands by default")
@@ -296,7 +305,7 @@ func recordEverySurface(t *testing.T, db *storage.DB) map[string]int64 {
 
 	// A sub-agent: its own provenance, linked to the session that spawned it.
 	child := startChildObserveRecorder(db, "researcher", "anthropic", "cheap-model", nil, ids["code"])
-	child.stamp("the researcher prompt", 3, "/repo")
+	child.stamp("the researcher prompt", 3, "/repo", storage.AgentSettings{})
 	declined, declinedClass := observe.ToolOutcome("error: the user declined this tool call")
 	child.decisionAt(observe.Pos{Turn: 1, Round: 1}, observe.DecisionAsk, observe.ReasonPolicy)
 	child.decisionAt(observe.Pos{Turn: 1, Round: 1}, observe.DecisionDeny, observe.ReasonUser)
@@ -308,7 +317,7 @@ func recordEverySurface(t *testing.T, db *storage.DB) map[string]int64 {
 
 	// The one-shot: one request, so one turn.
 	one := startObserveRecorder(db, "cmd", "openai", "gpt-test", nil)
-	one.stamp("the one-shot prompt", 0, "/repo")
+	one.stamp("the one-shot prompt", 0, "/repo", storage.AgentSettings{})
 	one.usagePriced(1, 900, 120, 0.004, true)
 	// A one-shot raises neither of these; they ride here so the closed-set
 	// walk below covers the two signals whose reason is a count rather than

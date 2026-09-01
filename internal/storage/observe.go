@@ -60,6 +60,53 @@ type AgentProvenance struct {
 	Skills int
 	// Project fingerprints the checkout the session ran in.
 	Project string
+	// Settings is what the session was configured with. It is written only
+	// when its ConfigHash is set: a hash is what says the set was taken, so
+	// a stamp that carries none leaves the columns NULL rather than writing
+	// a row of zero values that would read as "manual, off, uncapped".
+	Settings AgentSettings
+}
+
+// AgentSettings is what a session was configured with: the tuning values a
+// comparison can group and filter by, and one hash over the whole effective
+// config for everything it cannot.
+//
+// The two halves answer different questions and neither replaces the other.
+// A hash tells "before I changed something" from "after", for a setting
+// nobody thought to enumerate — but it has no order and no meaning, so it
+// cannot answer "interval 10 against interval 20", and that is the question
+// a tuning loop actually asks. The scalars can; the hash catches what they
+// miss.
+//
+// The scalars are an allowlist, and that is what keeps the record
+// content-free: every value here is a mode name, a level, a model name, a
+// count or a profile name — a fixed identifier or a code from a closed set,
+// never a path, a command or a secret. A config field is stamped by being
+// named here and nowhere else, so a new field is excluded until someone
+// decides otherwise; it still reaches the hash, so a change to it is never
+// invisible.
+// See docs/capabilities/sessions-and-memory.md#what-a-session-ran-under.
+type AgentSettings struct {
+	// Mode is the permission mode the session started in, empty on a
+	// surface with no permission mode (a one-shot, a headless run).
+	Mode string `json:"mode,omitempty"`
+	// Reasoning is the level the session started thinking at.
+	Reasoning string `json:"reasoning"`
+	// MaxRounds is the per-turn tool-round cap in force; 0 is no cap.
+	MaxRounds int `json:"max_rounds"`
+	// SummaryModel and SummaryInterval are the summariser's model and
+	// reading interval when SummaryEnabled, and empty otherwise.
+	SummaryModel    string `json:"summary_model,omitempty"`
+	SummaryInterval int    `json:"summary_interval,omitempty"`
+	SummaryEnabled  bool   `json:"summary_enabled"`
+	// ClassifierModel is the model auto mode's classifier asks, empty on a
+	// surface that has none.
+	ClassifierModel string `json:"classifier_model,omitempty"`
+	// SandboxProfile is the containment profile in force, empty when
+	// nothing contains the session's commands.
+	SandboxProfile string `json:"sandbox_profile,omitempty"`
+	// ConfigHash fingerprints the whole effective config.
+	ConfigHash string `json:"config_hash"`
 }
 
 // StartAgentSession opens a session row and returns its id. kind is the entry
@@ -92,11 +139,25 @@ func (db *DB) StartChildAgentSession(parentID int64, kind, provider, model strin
 	return res.LastInsertId()
 }
 
-// StampAgentSession records a session's provenance.
+// StampAgentSession records a session's provenance and its settings in one
+// statement, so a row is never left with one half and not the other. A stamp
+// that carries no settings writes NULL to every settings column, which is
+// what an unstamped row holds and what the reader takes for "none".
 func (db *DB) StampAgentSession(id int64, p AgentProvenance) error {
+	c := p.Settings
+	settings := []any{nil, nil, nil, nil, nil, nil, nil, nil, nil}
+	if c.ConfigHash != "" {
+		settings = []any{c.Mode, c.Reasoning, c.MaxRounds, c.SummaryModel, c.SummaryInterval, c.SummaryEnabled,
+			c.ClassifierModel, c.SandboxProfile, c.ConfigHash}
+	}
+	args := append([]any{p.Version, p.PromptHash, p.Skills, p.Project}, settings...)
 	_, err := db.sql.Exec(
-		`UPDATE agent_sessions SET version = ?, prompt_hash = ?, skills = ?, project = ? WHERE id = ?`,
-		p.Version, p.PromptHash, p.Skills, p.Project, id,
+		`UPDATE agent_sessions SET version = ?, prompt_hash = ?, skills = ?, project = ?,
+		        mode = ?, reasoning = ?, max_rounds = ?,
+		        summary_model = ?, summary_interval = ?, summary_enabled = ?,
+		        classifier_model = ?, sandbox_profile = ?, config_hash = ?
+		 WHERE id = ?`,
+		append(args, id)...,
 	)
 	return err
 }
@@ -383,21 +444,42 @@ type AgentSessionSummary struct {
 	Project     string
 	ChatSession string
 	ParentID    *int64
+	// Settings is nil for a session recorded before settings were, which
+	// is a different answer from a session that ran with every value at
+	// its zero.
+	Settings *AgentSettings
 }
 
 const agentSessionColumns = `id, started_at, ended_at, kind, provider, model, turns, tokens_in, tokens_out, est_cost,
-		        version, prompt_hash, skills, project, chat_session, parent_id`
+		        version, prompt_hash, skills, project, chat_session, parent_id,
+		        mode, reasoning, max_rounds, summary_model, summary_interval, summary_enabled,
+		        classifier_model, sandbox_profile, config_hash`
 
 func scanAgentSession(rows interface{ Scan(...any) error }) (AgentSessionSummary, error) {
 	var (
 		s         AgentSessionSummary
 		startedAt string
 		endedAt   *string
+		// The settings columns are NULL on a row older than they are; the
+		// hash is the one that says whether the set was taken at all.
+		mode, reasoning, summaryModel, classifierModel, sandboxProfile, configHash sql.NullString
+		maxRounds, summaryInterval                                                 sql.NullInt64
+		summaryEnabled                                                             sql.NullBool
 	)
 	if err := rows.Scan(&s.ID, &startedAt, &endedAt, &s.Kind, &s.Provider, &s.Model,
 		&s.Turns, &s.TokensIn, &s.TokensOut, &s.Cost,
-		&s.Version, &s.PromptHash, &s.Skills, &s.Project, &s.ChatSession, &s.ParentID); err != nil {
+		&s.Version, &s.PromptHash, &s.Skills, &s.Project, &s.ChatSession, &s.ParentID,
+		&mode, &reasoning, &maxRounds, &summaryModel, &summaryInterval, &summaryEnabled,
+		&classifierModel, &sandboxProfile, &configHash); err != nil {
 		return s, err
+	}
+	if configHash.Valid {
+		s.Settings = &AgentSettings{
+			Mode: mode.String, Reasoning: reasoning.String, MaxRounds: int(maxRounds.Int64),
+			SummaryModel: summaryModel.String, SummaryInterval: int(summaryInterval.Int64),
+			SummaryEnabled: summaryEnabled.Bool, ClassifierModel: classifierModel.String,
+			SandboxProfile: sandboxProfile.String, ConfigHash: configHash.String,
+		}
 	}
 	s.StartedAt, _ = time.Parse(observeTimeFormat, startedAt)
 	if endedAt != nil {
@@ -451,23 +533,26 @@ func (db *DB) AgentSessionEvents(id int64) ([]AgentExportEvent, error) {
 
 // AgentExportSession is one session with its events, for JSON export.
 type AgentExportSession struct {
-	ID          int64              `json:"id"`
-	StartedAt   string             `json:"started_at"`
-	EndedAt     *string            `json:"ended_at,omitempty"`
-	Kind        string             `json:"kind"`
-	Provider    string             `json:"provider"`
-	Model       string             `json:"model"`
-	Turns       int64              `json:"turns"`
-	TokensIn    int64              `json:"tokens_in"`
-	TokensOut   int64              `json:"tokens_out"`
-	EstCost     float64            `json:"est_cost"`
-	ParentID    *int64             `json:"parent_id,omitempty"`
-	Version     string             `json:"version,omitempty"`
-	PromptHash  string             `json:"prompt_hash,omitempty"`
-	Skills      int                `json:"skills,omitempty"`
-	Project     string             `json:"project,omitempty"`
-	ChatSession string             `json:"chat_session,omitempty"`
-	Events      []AgentExportEvent `json:"events,omitempty"`
+	ID          int64   `json:"id"`
+	StartedAt   string  `json:"started_at"`
+	EndedAt     *string `json:"ended_at,omitempty"`
+	Kind        string  `json:"kind"`
+	Provider    string  `json:"provider"`
+	Model       string  `json:"model"`
+	Turns       int64   `json:"turns"`
+	TokensIn    int64   `json:"tokens_in"`
+	TokensOut   int64   `json:"tokens_out"`
+	EstCost     float64 `json:"est_cost"`
+	ParentID    *int64  `json:"parent_id,omitempty"`
+	Version     string  `json:"version,omitempty"`
+	PromptHash  string  `json:"prompt_hash,omitempty"`
+	Skills      int     `json:"skills,omitempty"`
+	Project     string  `json:"project,omitempty"`
+	ChatSession string  `json:"chat_session,omitempty"`
+	// Settings is what the session ran under; absent on a session recorded
+	// before settings were.
+	Settings *AgentSettings     `json:"settings,omitempty"`
+	Events   []AgentExportEvent `json:"events,omitempty"`
 	// Transcript is the saved conversation, present only when the export
 	// asked for it and the session was linked to one.
 	Transcript []AgentExportMessage `json:"transcript,omitempty"`
@@ -548,7 +633,7 @@ func exportSession(s AgentSessionSummary) AgentExportSession {
 		Kind: s.Kind, Provider: s.Provider, Model: s.Model,
 		Turns: s.Turns, TokensIn: s.TokensIn, TokensOut: s.TokensOut, EstCost: s.Cost,
 		ParentID: s.ParentID, Version: s.Version, PromptHash: s.PromptHash,
-		Skills: s.Skills, Project: s.Project, ChatSession: s.ChatSession,
+		Skills: s.Skills, Project: s.Project, ChatSession: s.ChatSession, Settings: s.Settings,
 	}
 	if s.EndedAt != nil {
 		e := s.EndedAt.UTC().Format(observeTimeFormat)

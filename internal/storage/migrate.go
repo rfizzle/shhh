@@ -141,6 +141,22 @@ var migrations = []string{
 		declined_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
 		PRIMARY KEY (root, offer)
 	);`,
+
+	// What a session was configured with, beside the prompt hash it already
+	// carries. The columns have no default on purpose: a session recorded
+	// before they existed reads as NULL — no answer — rather than as
+	// whatever this build's defaults happen to be, which would put every
+	// old session in today's cohort
+	// (docs/capabilities/sessions-and-memory.md#what-a-session-ran-under).
+	`ALTER TABLE agent_sessions ADD COLUMN mode TEXT;
+	ALTER TABLE agent_sessions ADD COLUMN reasoning TEXT;
+	ALTER TABLE agent_sessions ADD COLUMN max_rounds INTEGER;
+	ALTER TABLE agent_sessions ADD COLUMN summary_model TEXT;
+	ALTER TABLE agent_sessions ADD COLUMN summary_interval INTEGER;
+	ALTER TABLE agent_sessions ADD COLUMN summary_enabled INTEGER;
+	ALTER TABLE agent_sessions ADD COLUMN classifier_model TEXT;
+	ALTER TABLE agent_sessions ADD COLUMN sandbox_profile TEXT;
+	ALTER TABLE agent_sessions ADD COLUMN config_hash TEXT;`,
 }
 
 // migrate brings the store up to the current schema, one step per

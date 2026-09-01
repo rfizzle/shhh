@@ -117,7 +117,7 @@ the loop's own safeguards spoke — the repeat detector, the round cap, the
 context trim, the summarizer's reading of whether the work was still on
 target. Beside the events, the record says what the session ran under: the
 build, a fingerprint of the system prompt, how many skills loaded, a
-fingerprint of the checkout.
+fingerprint of the checkout, and the settings it was configured with.
 
 The record exists so the prompts and the workflow can be improved against
 evidence rather than anecdote. "The agent circles" is a feeling; "the repeat
@@ -170,6 +170,40 @@ safety prompt refused is `cancelled` on the same footing as one escaped off a
 card. Where two surfaces would otherwise spell one event two ways, the record
 takes the spelling that lets the two be added up, and leaves what actually
 differs between them to the exit code and the screen.
+
+### What a session ran under
+
+A change to a setting is only worth making if the record can say whether it
+helped, and it can only say so if it knows which sessions ran under which
+value. So every session is stamped with the settings that were in force when
+it started: the permission mode, the reasoning level, the round cap, whether
+the summariser was taking readings and on which model and at what interval,
+the classifier's model, and the containment profile. These are values, not
+merely fingerprints, because the question a tuning loop asks is "sessions at
+interval 10 against sessions at interval 20", and a hash has no order and no
+meaning to group by.
+
+They are an allowlist, and the allowlist is what keeps the record
+content-free: every one of them is a mode name, a level, a model name, a
+count or a profile name — a fixed identifier or a code from a closed set.
+Much of the configuration is paths and several fields are secrets, and none
+of that is stamped whole. It reaches the record only as one hash over the entire
+effective configuration, which is enough to tell "before I changed
+something" from "after" for a setting nobody thought to list, and never
+enough to read the setting back. A field added to the configuration is
+outside the allowlist until someone decides otherwise; it is inside the hash
+from the day it exists, so a change to it is never silently invisible.
+
+The mode is stamped at the start rather than only when it changes. A session
+that runs from beginning to end in the configured default changes mode
+never, and a record that only noted changes would say nothing about it —
+which is also what a session that recorded nothing at all says. The change
+is still recorded when it happens, because a session that went from manual
+to auto halfway through is a different fact from either mode on its own.
+
+A session recorded before the settings were kept reads as having none. It
+does not read as having today's defaults, because a reader comparing two
+sessions would take the fill for a fact.
 
 ## Where it all lives
 

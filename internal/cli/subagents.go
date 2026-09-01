@@ -343,7 +343,24 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			// child is working on — a writer's worktree is a temporary copy
 			// of it, and fingerprinting that would give every writer a
 			// cohort of one.
-			r.stamp(sysPrompt, session.skills.Len(), projectFingerprintRoot())
+			//
+			// The settings are the child's own for the same reason: its
+			// mode after the profile and the clamp, its cap, and the level
+			// its role thinks at. The classifier is the parent's, because
+			// that is the one it asks.
+			effort := env.effort
+			if env.reasoning != nil {
+				effort = env.reasoning()
+			}
+			r.stamp(sysPrompt, session.skills.Len(), projectFingerprintRoot(), sessionSettings(cfg, runSettings{
+				mode:       spec.Mode.String(),
+				effort:     agents.effortFor(spec.Role, effort),
+				rounds:     spec.MaxRounds,
+				sandbox:    childSandboxProfile(cfg),
+				model:      model,
+				summary:    cfg.SubagentSummaryEnabled(),
+				classifier: true,
+			}))
 			return subagent.Recorder{Observer: r.observer(), End: r.end}
 		},
 		CommandAllowlist: cfg.Behavior.CommandAllowlist,
@@ -443,6 +460,17 @@ func profileEnv(def config.AgentDefinition, spec subagent.Spec, info shell.Info,
 		sysPrompt += scopeNote(spec.Paths)
 	}
 	return sysPrompt, defs, base
+}
+
+// childSandboxProfile is the profile a child's commands run under: the
+// configured one when a mechanism is available, which is exactly when
+// childCommandRunner wraps them, and empty otherwise.
+func childSandboxProfile(cfg config.Config) string {
+	p, err := sandboxPolicy(cfg)
+	if err != nil || !sandbox.Detect().OK {
+		return ""
+	}
+	return string(p.Profile)
 }
 
 // childCommandRunner builds the execute_command runner for a sub-agent rooted

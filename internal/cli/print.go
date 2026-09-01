@@ -25,6 +25,7 @@ import (
 	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/safety"
+	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/stdin"
@@ -277,6 +278,9 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// the run and approved commands exec inside it; if the sandbox cannot be
 	// created and verified, the run fails instead of downgrading.
 	run := runner.RunCapture
+	// sandboxProfile is the profile the run's commands are actually under,
+	// for the record: empty when nothing contains them.
+	sandboxProfile := ""
 	if opts.sandbox {
 		srun, cleanup, err := startSandbox(cmd.Context(), cfg, session.vault.Names())
 		if err != nil {
@@ -284,10 +288,20 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		}
 		defer cleanup()
 		run = srun
-	} else if containment, err := buildContainment(cfg, sc); err != nil {
-		return err
-	} else if containment.Run != nil {
-		run = containment.Run
+		// The container took the same profile the spec parsed; a name the
+		// parser refused could not have started it.
+		if profile, err := sandbox.ParseProfile(cfg.Sandbox.Profile); err == nil {
+			sandboxProfile = string(profile)
+		}
+	} else {
+		containment, err := buildContainment(cfg, sc)
+		if err != nil {
+			return err
+		}
+		if containment.Run != nil {
+			run = containment.Run
+			sandboxProfile = containment.Profile
+		}
 	}
 	run = scrubRunner(session.vault, run)
 	// The ceiling matters most here. A session has a reader who can cancel a
@@ -341,7 +355,16 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// timestamp is enough for durations.
 	recorder := startObserveRecorder(db, "print", env.prov.Name(), env.modelName, prices)
 	defer recorder.end()
-	recorder.stamp(env.sysPrompt, session.skills.Len(), projectFingerprintRoot())
+	// No mode and no classifier: a headless run answers approvals with
+	// --yes and --allow, and the record says so by leaving both empty
+	// rather than borrowing the mode a session would have started in.
+	recorder.stamp(env.sysPrompt, session.skills.Len(), projectFingerprintRoot(), sessionSettings(cfg, runSettings{
+		effort:  env.effort,
+		rounds:  roundCapFor(opts.rounds(cfg)),
+		sandbox: sandboxProfile,
+		model:   env.modelName,
+		summary: cfg.HeadlessSummaryEnabled(),
+	}))
 	obs := headlessObserver{rec: recorder, rounds: a.Rounds}
 	// A headless run is one turn; it closes here with the rounds it took,
 	// the same event an interactive turn ends with.

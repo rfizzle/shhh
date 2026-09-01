@@ -270,6 +270,11 @@ func goldenObserveSessionRow() storage.AgentSessionSummary {
 		Turns: 1, TokensIn: 41200, TokensOut: 9800, Cost: 0.51,
 		Version: "v1.4.0", PromptHash: "9f2a1c04bb7e", Skills: 2,
 		Project: "3d81ee0a5c62", ChatSession: "2026-08-31 11:31:58",
+		Settings: &storage.AgentSettings{
+			Mode: "accept-edits", Reasoning: "medium", MaxRounds: 150,
+			SummaryModel: "claude-haiku-4-5", SummaryInterval: 10, SummaryEnabled: true,
+			ClassifierModel: "claude-haiku-4-5", SandboxProfile: "workspace", ConfigHash: "c0ffee0ddba1",
+		},
 	}
 }
 

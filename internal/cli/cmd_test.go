@@ -88,7 +88,7 @@ func TestOneShotOutcome(t *testing.T) {
 func TestOneShotSessionIsOneTurn(t *testing.T) {
 	db := fixtureStore(t)
 	rec := startObserveRecorder(db, "cmd", "anthropic", "test-model", nil)
-	rec.stamp("the one-shot prompt", 0, "/repo")
+	rec.stamp("the one-shot prompt", 0, "/repo", storage.AgentSettings{})
 	rec.usagePriced(1, 900, 120, 0.004, true)
 	rec.turn(1, 0, 2*time.Second, observe.TurnDone)
 	rec.end()

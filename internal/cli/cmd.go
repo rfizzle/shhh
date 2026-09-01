@@ -176,8 +176,14 @@ func newCmdCmd() *cobra.Command {
 			}
 			defer finish()
 
+			// A one-shot runs under a reasoning level and a config, and
+			// nothing else on the list: no mode, no cap, no readings, no
+			// classifier, no containment. The piped run sends no reasoning
+			// field at all, whatever the flag said, so it is stamped off —
+			// the record keeps what was in force, not what was asked for.
 			if pipeMode {
-				recorder.stamp(raw.SystemPrompt(info, promptExtra), 0, projectFingerprintRoot())
+				recorder.stamp(raw.SystemPrompt(info, promptExtra), 0, projectFingerprintRoot(),
+					sessionSettings(cfg, runSettings{effort: provider.EffortOff}))
 				err := raw.Run(cmd.Context(), raw.Opts{
 					Provider:          p,
 					Model:             resolved.Model,
@@ -205,17 +211,17 @@ func newCmdCmd() *cobra.Command {
 			// well; the pipe path above went out through prompt.Build
 			// and its stdout is one command, as it has always been.
 			sysPrompt := prompt.BuildAlternatives(info, promptExtra)
-			recorder.stamp(sysPrompt, 0, projectFingerprintRoot())
+			effort, err := provider.ParseEffort(resolved.Reasoning)
+			if err != nil {
+				return err
+			}
+			recorder.stamp(sysPrompt, 0, projectFingerprintRoot(), sessionSettings(cfg, runSettings{effort: effort}))
 
 			messages := []provider.Message{
 				{Role: provider.RoleSystem, Content: sysPrompt},
 				{Role: provider.RoleUser, Content: userPrompt},
 			}
 
-			effort, err := provider.ParseEffort(resolved.Reasoning)
-			if err != nil {
-				return err
-			}
 			compOpts := provider.CompletionOpts{Model: resolved.Model, Effort: effort}
 
 			ctx, cancel := context.WithCancel(cmd.Context())

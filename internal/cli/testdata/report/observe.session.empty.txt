@@ -10,5 +10,12 @@
   project:       3d81ee0a5c62
   conversation:  2026-08-31 11:31:58
   skills:        2
+  mode:          accept-edits
+  reasoning:     medium
+  rounds:        150
+  summary:       claude-haiku-4-5 · every 10 rounds
+  classifier:    claude-haiku-4-5
+  sandbox:       workspace
+  config:        c0ffee0ddba1
 
   ⊘ no events recorded for this session · shhh observe

@@ -220,7 +220,12 @@ func TestAgentObservability_TurnsSignalsAndProvenance(t *testing.T) {
 	if err != nil {
 		t.Fatalf("start session: %v", err)
 	}
-	if err := db.StampAgentSession(id, AgentProvenance{Version: "1.2.3", PromptHash: "abc123", Skills: 2, Project: "p0"}); err != nil {
+	settings := AgentSettings{
+		Mode: "auto", Reasoning: "high", MaxRounds: 60,
+		SummaryModel: "small-model", SummaryInterval: 10, SummaryEnabled: true,
+		ClassifierModel: "small-model", SandboxProfile: "workspace", ConfigHash: "cfg0",
+	}
+	if err := db.StampAgentSession(id, AgentProvenance{Version: "1.2.3", PromptHash: "abc123", Skills: 2, Project: "p0", Settings: settings}); err != nil {
 		t.Fatalf("stamp: %v", err)
 	}
 	if err := db.LinkAgentSession(id, "2026-01-01 10:00:00"); err != nil {
@@ -285,6 +290,9 @@ func TestAgentObservability_TurnsSignalsAndProvenance(t *testing.T) {
 	if s.Version != "1.2.3" || s.PromptHash != "abc123" || s.Skills != 2 || s.Project != "p0" || s.ChatSession != "2026-01-01 10:00:00" {
 		t.Fatalf("unexpected provenance: %+v", s)
 	}
+	if s.Settings == nil || *s.Settings != settings {
+		t.Fatalf("unexpected settings: %+v", s.Settings)
+	}
 	if _, ok, err := db.AgentSession(id + 100); err != nil || ok {
 		t.Fatalf("expected no session, got ok=%v err=%v", ok, err)
 	}
@@ -296,11 +304,58 @@ func TestAgentObservability_TurnsSignalsAndProvenance(t *testing.T) {
 	if len(plain) != 1 || plain[0].Transcript != nil || plain[0].PromptHash != "abc123" {
 		t.Fatalf("expected a content-free export with provenance, got %+v", plain)
 	}
+	if plain[0].Settings == nil || plain[0].Settings.ConfigHash != "cfg0" {
+		t.Fatalf("expected the settings exported, got %+v", plain[0].Settings)
+	}
 	joined, err := db.ExportAgentObservability(since, true)
 	if err != nil {
 		t.Fatalf("export with transcript: %v", err)
 	}
 	if len(joined) != 1 || len(joined[0].Transcript) != 2 || joined[0].Transcript[1].Content != "fix the build" {
 		t.Fatalf("expected the transcript joined, got %+v", joined)
+	}
+}
+
+// A session recorded before settings were stamped has no settings, not a
+// row of zero values: NULL columns are what the migration leaves on an old
+// row, and what a stamp that carries no hash leaves too, and both read back
+// as nil rather than as "manual, off, uncapped". The second stands in for
+// the first here because the two are the same bytes in the table — the
+// migration adds the columns with no default, so an old row's are NULL —
+// and there is no harness that opens a store at the previous schema.
+func TestAgentSession_SettingsAbsentReadAsEmpty(t *testing.T) {
+	db := openTestDB(t)
+
+	old, err := db.StartAgentSession("code", "openai", "gpt-test")
+	if err != nil {
+		t.Fatalf("start session: %v", err)
+	}
+	if err := db.StampAgentSession(old, AgentProvenance{Version: "1.2.3", PromptHash: "abc123"}); err != nil {
+		t.Fatalf("stamp: %v", err)
+	}
+	s, ok, err := db.AgentSession(old)
+	if err != nil || !ok {
+		t.Fatalf("session: ok=%v err=%v", ok, err)
+	}
+	if s.Settings != nil {
+		t.Fatalf("a stamp without a config hash must leave the settings empty, got %+v", s.Settings)
+	}
+	if s.Version != "1.2.3" {
+		t.Fatalf("the provenance half must still land, got %+v", s)
+	}
+
+	listed, err := db.AgentSessions(time.Now().Add(-time.Hour), 10)
+	if err != nil {
+		t.Fatalf("sessions: %v", err)
+	}
+	if len(listed) != 1 || listed[0].Settings != nil {
+		t.Fatalf("expected one session with no settings, got %+v", listed)
+	}
+	exported, err := db.ExportAgentObservability(time.Now().Add(-time.Hour), false)
+	if err != nil {
+		t.Fatalf("export: %v", err)
+	}
+	if len(exported) != 1 || exported[0].Settings != nil {
+		t.Fatalf("expected the export to omit absent settings, got %+v", exported)
 	}
 }
