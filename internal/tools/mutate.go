@@ -104,8 +104,9 @@ func PreviewMutation(name string, raw json.RawMessage) (Mutation, error) {
 
 var writeFile = Definition{
 	Tool: provider.Tool{
-		Name:        WriteFileName,
-		Description: "Create or overwrite a file with the given content. Missing parent directories are created automatically. The user reviews a diff and must approve the change before it is applied; a declined call returns an error result.",
+		Name: WriteFileName,
+		Description: "Create or overwrite a file with the given content. content is written verbatim — never include read_file's line-number prefixes. " +
+			"Missing parent directories are created automatically. The user reviews a diff and must approve the change before it is applied; a declined call returns an error result.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {
@@ -159,8 +160,10 @@ func executeWriteFile(raw json.RawMessage) (string, error) {
 
 var editFile = Definition{
 	Tool: provider.Tool{
-		Name:        EditFileName,
-		Description: "Replace an exact text snippet in an existing file. old_text must match the file content exactly (including whitespace) and match exactly once, unless replace_all is set. The user reviews a diff and must approve the change before it is applied; a declined call returns an error result.",
+		Name: EditFileName,
+		Description: "Replace an exact text snippet in an existing file. old_text must match the file content exactly (including whitespace) and match exactly once, unless replace_all is set. " +
+			"Strip read_file's `<line number>\t` prefix before quoting a line here — the numbers are a reading aid and are not in the file. " +
+			"The user reviews a diff and must approve the change before it is applied; a declined call returns an error result.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {
@@ -224,6 +227,9 @@ func applyEdit(content string, args editFileArgs) (string, int, error) {
 	count := strings.Count(content, args.OldText)
 	switch {
 	case count == 0:
+		if looksLineNumbered(args.OldText) {
+			return "", 0, fmt.Errorf("old_text not found in %s; it looks like it still carries read_file's line-number prefixes — strip the leading digits and tab from each line and try again", args.Path)
+		}
 		return "", 0, fmt.Errorf("old_text not found in %s; it must match the file content exactly, including whitespace", args.Path)
 	case count > 1 && !args.ReplaceAll:
 		return "", 0, fmt.Errorf("old_text matches %d locations in %s; provide a longer unique snippet or set replace_all", count, args.Path)
@@ -256,4 +262,27 @@ func countLines(s string) int {
 		n++
 	}
 	return n
+}
+
+// looksLineNumbered reports whether every line of s opens with digits and a
+// tab — the shape read_file returns. It is only ever asked after a match has
+// already failed, so a file that genuinely looks like this loses nothing but
+// a more specific error message.
+func looksLineNumbered(s string) bool {
+	lines := strings.Split(strings.TrimSuffix(s, "\n"), "\n")
+	if len(lines) == 0 {
+		return false
+	}
+	for _, line := range lines {
+		tab := strings.IndexByte(line, '\t')
+		if tab <= 0 {
+			return false
+		}
+		for _, r := range line[:tab] {
+			if r < '0' || r > '9' {
+				return false
+			}
+		}
+	}
+	return true
 }

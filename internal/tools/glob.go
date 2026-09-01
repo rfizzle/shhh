@@ -13,7 +13,7 @@ import (
 
 var globFiles = Definition{
 	Tool: provider.Tool{
-		Name:        "glob",
+		Name:        GlobName,
 		Description: "Find files by glob pattern, e.g. **/*.go or cmd/*/main.go. Use ** to match any number of directories. Returns matching file paths relative to the search root, skipping .git, node_modules, and vendor directories.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
@@ -70,7 +70,7 @@ func executeGlob(raw json.RawMessage) (string, error) {
 		}
 		if d.IsDir() {
 			name := d.Name()
-			if p != args.Path && (name == ".git" || name == "node_modules" || name == "vendor") {
+			if p != args.Path && skipWalk(name) {
 				return filepath.SkipDir
 			}
 			return nil

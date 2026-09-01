@@ -434,3 +434,33 @@ func TestSearch_RipgrepArgvPerMode(t *testing.T) {
 		t.Errorf("an over-large context should clamp before reaching rg, got:\n%s", argv)
 	}
 }
+
+// A bare search settles nothing on its own: the round after it is a read of
+// the place it just named. Context comes by default so one call is one
+// answer, and an explicit 0 is still honoured for a reader who wants less.
+func TestSearch_ContextByDefault(t *testing.T) {
+	tmp := t.TempDir()
+	must(t, os.WriteFile(filepath.Join(tmp, "a.go"), []byte(
+		"package a\n\nfunc before() {}\n\nfunc Needle() {}\n\nfunc after() {}\n"), 0o644))
+
+	out, err := executeSearch(json.RawMessage(fmt.Sprintf(`{"pattern": "Needle", "path": %q}`, tmp)))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for _, want := range []string{"func before()", "func Needle()", "func after()"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("expected %q in the default context window, got:\n%s", want, out)
+		}
+	}
+
+	bare, err := executeSearch(json.RawMessage(fmt.Sprintf(`{"pattern": "Needle", "path": %q, "context_lines": 0}`, tmp)))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if strings.Contains(bare, "func before()") {
+		t.Errorf("context_lines=0 should return matching lines alone, got:\n%s", bare)
+	}
+	if !strings.Contains(bare, "func Needle()") {
+		t.Errorf("expected the match itself, got:\n%s", bare)
+	}
+}

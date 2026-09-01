@@ -150,7 +150,10 @@ func TestSearch_ResultCapNotice(t *testing.T) {
 	path := filepath.Join(tmp, "many.txt")
 	must(t, os.WriteFile(path, []byte(strings.Repeat("needle here\n", MaxSearchResults+10)), 0o644))
 
-	out, err := executeSearch(json.RawMessage(fmt.Sprintf(`{"pattern": "needle", "path": %q}`, tmp)))
+	// context_lines is pinned off: the cap counts matches, and context rides
+	// along with the match that earned it, so the default would put a couple
+	// of extra lines past the last one.
+	out, err := executeSearch(json.RawMessage(fmt.Sprintf(`{"pattern": "needle", "path": %q, "context_lines": 0}`, tmp)))
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

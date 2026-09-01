@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/provider"
@@ -15,8 +16,44 @@ type Definition struct {
 	Execute func(args json.RawMessage) (string, error)
 }
 
+// The read-only tool names. They are constants because two other decisions
+// are made by name: the reduction pipeline asks which results are already
+// bounded (SelfBounding), and the mutation rail asks which are not.
+const (
+	ReadFileName      = "read_file"
+	ListDirectoryName = "list_directory"
+	SearchName        = "search"
+	GlobName          = "glob"
+)
+
 func ReadOnly() []Definition {
 	return []Definition{readFile, listDirectory, search, globFiles}
+}
+
+// SelfBounding reports whether a tool already bounds its own output.
+//
+// Every tool named here has a cap in limits.go chosen for the shape of what
+// it returns, and a truncation notice that says how to continue past it. A
+// second, shape-blind reduction on top of that is not a saving: it takes a
+// result the tool sized deliberately and cuts a head and a tail out of it,
+// dropping the middle of a file the model was told to read in one call. The
+// reduction pipeline exists for output nothing else bounds — a command's, a
+// server's, a page's — and that is the only place it earns its cost.
+// See docs/capabilities/evidence.md#reduction-is-for-unbounded-output.
+func SelfBounding(name string) bool {
+	switch name {
+	case ReadFileName, ListDirectoryName, SearchName, GlobName:
+		return true
+	}
+	return false
+}
+
+// skipWalk reports whether a directory is one no tool walks into. glob,
+// search and list_directory all skip the same three, so they say so in one
+// place: a directory missing from one of the three lists is a tool that
+// floods its own cap with objects nobody asked for.
+func skipWalk(name string) bool {
+	return name == ".git" || name == "node_modules" || name == "vendor"
 }
 
 func Definitions() []provider.Tool {
@@ -76,8 +113,8 @@ func Execute(name string, args json.RawMessage) (string, error) {
 // file the tool has already told you it could not finish.
 var readFile = Definition{
 	Tool: provider.Tool{
-		Name: "read_file",
-		Description: "Read the contents of a file. Returns the file content as text. " +
+		Name: ReadFileName,
+		Description: "Read the contents of a file. Each line is returned as `<line number>\t<text>`; the number is a reading aid, not part of the file. " +
 			"Read the whole file by default — it is one call, and reading it in small windows is not cheaper. " +
 			"start_line/end_line are for continuing through a file too large to return at once, which the result says explicitly when it happens.",
 		Parameters: json.RawMessage(`{
@@ -148,8 +185,12 @@ func executeReadFile(raw json.RawMessage) (string, error) {
 		content = cut
 		truncated = true
 	}
+	shown := strings.Count(content, "\n") + 1
+	// Number after the caps, never before: MaxReadFileBytes is a budget for
+	// the file, and spending part of it on the numbering would mean a reader
+	// asking for a whole file got less of one than limits.go promises.
+	content = numberLines(content, start)
 	if truncated {
-		shown := strings.Count(content, "\n") + 1
 		lastLine := start + shown - 1
 		content += fmt.Sprintf("\n… (truncated: showing lines %d-%d of %d; call read_file again with start_line=%d to continue)", start, lastLine, total, lastLine+1)
 	}
@@ -157,10 +198,31 @@ func executeReadFile(raw json.RawMessage) (string, error) {
 	return content, nil
 }
 
+// numberLines prefixes each line with its 1-based number in the file and a
+// tab, so a reader can cite file:line without counting and can point an edit
+// at the right place. The separator is a tab because the prefix has to be
+// unambiguously strippable from a line of source that may start with
+// anything — including spaces.
+func numberLines(content string, start int) string {
+	lines := strings.Split(content, "\n")
+	var b strings.Builder
+	b.Grow(len(content) + len(lines)*6)
+	for i, line := range lines {
+		if i > 0 {
+			b.WriteByte('\n')
+		}
+		b.WriteString(strconv.Itoa(start + i))
+		b.WriteByte('\t')
+		b.WriteString(line)
+	}
+	return b.String()
+}
+
 var listDirectory = Definition{
 	Tool: provider.Tool{
-		Name:        "list_directory",
-		Description: "List files and directories at a given path. Returns one entry per line with type prefix (file: or dir:).",
+		Name: ListDirectoryName,
+		Description: "List files and directories at a given path. Returns one entry per line with type prefix (file: or dir:). " +
+			"Reports .git, node_modules and vendor without descending into them.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {
@@ -217,7 +279,11 @@ func walkDir(base, prefix string, depth int, lines *[]string) error {
 		rel := filepath.Join(prefix, e.Name())
 		if e.IsDir() {
 			*lines = append(*lines, "dir: "+rel)
-			if depth > 1 {
+			// The directory is named but not entered. Descending into .git
+			// spent most of a 500-entry budget on object shards — a listing
+			// the reader then had to narrow by hand, one wasted round for a
+			// question nobody asked.
+			if depth > 1 && !skipWalk(e.Name()) {
 				_ = walkDir(base, rel, depth-1, lines)
 			}
 		} else {

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // Reducer ties the reduction pipeline to one session's evidence store: it
@@ -30,8 +32,19 @@ func (r *Reducer) Store() *Store { return r.store }
 // result is display-consistent: the returned text, notice included, is
 // exactly what both the model and the transcript record. Safe on a nil
 // Reducer, which reduces nothing.
+//
+// A tool that bounds its own output is exempt, because reducing it is a loss
+// with nothing bought back: read_file is told to return a whole file in one
+// call and sized to do it, and a head-and-tail cut through that hands back
+// sixty lines of four hundred with the middle gone. The reader's only way
+// through is then to page the evidence store — which is the paging loop
+// read_file's description was rewritten to stop.
+// See docs/capabilities/evidence.md#reduction-is-for-unbounded-output.
 func (r *Reducer) Process(tool, result string) string {
 	if r == nil || r.store == nil {
+		return result
+	}
+	if tools.SelfBounding(tool) {
 		return result
 	}
 	reduced, ok := reduce(result)

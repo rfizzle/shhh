@@ -27,11 +27,11 @@ import (
 // re-running with a longer pattern.
 var search = Definition{
 	Tool: provider.Tool{
-		Name: "search",
+		Name: SearchName,
 		Description: "Search file contents with a regular expression (RE2 syntax). Case-insensitive by default. " +
 			"Returns matching lines as path:line: text. Skips .git, node_modules, and vendor directories. " +
-			"Use context_lines to see the code around each match instead of searching again for it, " +
-			"files_only to find which files are involved before reading any, " +
+			"Each match comes with two lines of context by default, so the answer arrives with the hit instead of in the round after it; " +
+			"set context_lines to widen or narrow that, files_only to find which files are involved without quoting any, " +
 			"and include to limit the search to one kind of file.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
@@ -40,7 +40,7 @@ var search = Definition{
 				"path": {"type": "string", "description": "Optional directory or file path to search in (defaults to current directory)"},
 				"case_sensitive": {"type": "boolean", "description": "Match case-sensitively (default false)"},
 				"include": {"type": "string", "description": "Optional glob limiting which files are searched, e.g. *.go or internal/**/*_test.go"},
-				"context_lines": {"type": "integer", "description": "Lines of context to show around each match (0-5, default 0). Context lines are shown as path-line- text"},
+				"context_lines": {"type": "integer", "description": "Lines of context to show around each match (0-5, default 2). Pass 0 for matching lines alone. Context lines are shown as path-line- text"},
 				"files_only": {"type": "boolean", "description": "Return one line per matching file with its match count instead of the matching lines. Use it to find where something lives"}
 			},
 			"required": ["pattern"]
@@ -49,13 +49,23 @@ var search = Definition{
 	Execute: executeSearch,
 }
 
+// DefaultSearchContextLines is what a search returns around each match when
+// the caller does not say. It is not zero because a bare matching line is the
+// expensive answer: it settles nothing, so the round after it is a read of
+// the same place. Two lines is what turns one search into one answer.
+const DefaultSearchContextLines = 2
+
 type searchArgs struct {
 	Pattern       string `json:"pattern"`
 	Path          string `json:"path"`
 	CaseSensitive bool   `json:"case_sensitive"`
 	Include       string `json:"include"`
-	ContextLines  int    `json:"context_lines"`
+	ContextLines  *int   `json:"context_lines"`
 	FilesOnly     bool   `json:"files_only"`
+
+	// context is ContextLines resolved against the default, which is what
+	// every backend actually reads.
+	context int
 }
 
 // lookupRg reports where ripgrep lives, if it is on PATH. A variable so tests
@@ -76,11 +86,15 @@ func executeSearch(raw json.RawMessage) (string, error) {
 	if args.Path == "" {
 		args.Path = "."
 	}
-	if args.ContextLines < 0 {
-		args.ContextLines = 0
+	args.context = DefaultSearchContextLines
+	if args.ContextLines != nil {
+		args.context = *args.ContextLines
 	}
-	if args.ContextLines > MaxSearchContextLines {
-		args.ContextLines = MaxSearchContextLines
+	if args.context < 0 {
+		args.context = 0
+	}
+	if args.context > MaxSearchContextLines {
+		args.context = MaxSearchContextLines
 	}
 
 	// Validate the pattern up front so both backends reject the same inputs
@@ -182,8 +196,8 @@ func searchWithRipgrep(rg string, args searchArgs) (results []string, matches in
 		argv = append(argv, "--count-matches")
 		argv = removeArg(argv, "--line-number")
 		limit = MaxSearchFileResults
-	case args.ContextLines > 0:
-		argv = append(argv, "--context", strconv.Itoa(args.ContextLines))
+	case args.context > 0:
+		argv = append(argv, "--context", strconv.Itoa(args.context))
 	}
 	argv = append(argv, "--regexp", args.Pattern, "--", args.Path)
 
@@ -291,7 +305,7 @@ func searchWithWalker(re *regexp.Regexp, include *includeMatcher, args searchArg
 		}
 		if d.IsDir() {
 			name := d.Name()
-			if p != args.Path && (name == ".git" || name == "node_modules" || name == "vendor") {
+			if p != args.Path && skipWalk(name) {
 				return filepath.SkipDir
 			}
 			return nil
@@ -359,18 +373,18 @@ func searchFile(path string, re *regexp.Regexp, args searchArgs, results []strin
 		if matches >= limit {
 			break
 		}
-		start := hit - args.ContextLines
+		start := hit - args.context
 		if start < 0 {
 			start = 0
 		}
-		end := hit + args.ContextLines
+		end := hit + args.context
 		if end >= len(lines) {
 			end = len(lines) - 1
 		}
 		if prevEnd >= 0 {
 			if start <= prevEnd+1 {
 				start = prevEnd + 1
-			} else if args.ContextLines > 0 {
+			} else if args.context > 0 {
 				results = append(results, "--")
 			}
 		}

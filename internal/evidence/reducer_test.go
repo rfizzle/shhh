@@ -29,7 +29,7 @@ func bigOutput() string {
 
 func TestReducer_ProcessSmallUntouched(t *testing.T) {
 	r := testReducer(t)
-	if got := r.Process("read_file", "short output"); got != "short output" {
+	if got := r.Process("execute_command", "short output"); got != "short output" {
 		t.Fatalf("small result must pass through, got %q", got)
 	}
 	if st := r.Store().Stats(); st.Entries != 0 {
@@ -43,7 +43,7 @@ func TestReducer_ProcessSmallUntouched(t *testing.T) {
 func TestReducer_ProcessStoresOriginalVerbatim(t *testing.T) {
 	r := testReducer(t)
 	in := bigOutput()
-	got := r.Process("read_file", in)
+	got := r.Process("execute_command", in)
 	if got == in {
 		t.Fatal("large result should have been reduced")
 	}
@@ -62,7 +62,7 @@ func TestReducer_ProcessStoresOriginalVerbatim(t *testing.T) {
 	if string(data) != in {
 		t.Fatal("stored original must be byte-identical to the tool result")
 	}
-	if meta.Tool != "read_file" {
+	if meta.Tool != "execute_command" {
 		t.Fatalf("meta.Tool = %q", meta.Tool)
 	}
 
@@ -85,7 +85,7 @@ func TestReducer_WrapExecutorReduces(t *testing.T) {
 	exec := r.WrapExecutor(func(name string, args json.RawMessage) (string, error) {
 		return in, nil
 	})
-	out, err := exec("search", nil)
+	out, err := exec("execute_command", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,7 +99,7 @@ func TestReducer_WrapExecutorPassesErrors(t *testing.T) {
 	exec := r.WrapExecutor(func(name string, args json.RawMessage) (string, error) {
 		return "", fmt.Errorf("boom")
 	})
-	if _, err := exec("search", nil); err == nil || err.Error() != "boom" {
+	if _, err := exec("execute_command", nil); err == nil || err.Error() != "boom" {
 		t.Fatalf("errors must pass through unreduced, got %v", err)
 	}
 }
@@ -122,11 +122,37 @@ func TestReducer_WrapExecutorDispatchesEvidenceTool(t *testing.T) {
 
 func TestReducer_StatusReport(t *testing.T) {
 	r := testReducer(t)
-	r.Process("read_file", bigOutput())
+	r.Process("execute_command", bigOutput())
 	report := r.StatusReport()
 	for _, want := range []string{"stored originals: 1", "reductions this session: 1", "/evidence purge"} {
 		if !strings.Contains(report, want) {
 			t.Fatalf("status report missing %q:\n%s", want, report)
 		}
+	}
+}
+
+// read_file is told to return a whole file in one call and is sized to do it.
+// A head-and-tail cut through that result hands back a fragment and sends the
+// reader to the evidence store to page for the rest, which is the loop the
+// tool's description exists to prevent.
+func TestReducer_SelfBoundingToolsAreNotReduced(t *testing.T) {
+	in := bigOutput()
+	for _, tool := range []string{"read_file", "list_directory", "search", "glob"} {
+		r := testReducer(t)
+		if got := r.Process(tool, in); got != in {
+			t.Errorf("%s result must reach the model whole, got %d of %d bytes", tool, len(got), len(in))
+		}
+		if st := r.Store().Stats(); st.Entries != 0 {
+			t.Errorf("%s: an unreduced result has no original to store", tool)
+		}
+		if rs := r.Stats(); rs.Reductions != 0 {
+			t.Errorf("%s: pass-through must not count as a reduction", tool)
+		}
+	}
+
+	// The pipeline still runs for output nothing else bounds.
+	r := testReducer(t)
+	if got := r.Process("execute_command", in); got == in {
+		t.Fatal("command output is what the reduction pipeline is for")
 	}
 }

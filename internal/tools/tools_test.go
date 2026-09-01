@@ -59,8 +59,8 @@ func TestReadFile_LineRange(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if result != "b\nc\nd" {
-		t.Errorf("expected 'b\\nc\\nd', got %q", result)
+	if result != "2\tb\n3\tc\n4\td" {
+		t.Errorf("expected numbered 'b\\nc\\nd', got %q", result)
 	}
 }
 
@@ -74,8 +74,93 @@ func TestReadFile_StartLineOnly(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	if !strings.HasPrefix(result, "b\n") {
+	if !strings.HasPrefix(result, "2\tb\n") {
 		t.Errorf("expected to start at line 2, got %q", result)
+	}
+}
+
+// Line numbers are what let a reader cite file:line without counting, so they
+// carry the file's own numbering — not the window's.
+func TestReadFile_NumbersLinesFromTheirPlaceInTheFile(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "test.txt")
+	must(t, os.WriteFile(path, []byte("a\nb\nc\nd\n"), 0o644))
+
+	args, _ := json.Marshal(readFileArgs{Path: path})
+	whole, err := Execute("read_file", args)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if whole != "1\ta\n2\tb\n3\tc\n4\td\n5\t" {
+		t.Errorf("whole-file numbering: %q", whole)
+	}
+
+	args, _ = json.Marshal(readFileArgs{Path: path, StartLine: 3, EndLine: 3})
+	window, err := Execute("read_file", args)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if window != "3\tc" {
+		t.Errorf("a window keeps the file's numbering, got %q", window)
+	}
+}
+
+// .git under a listed directory is named but never descended into: it used to
+// spend most of the entry budget on object shards.
+func TestListDirectory_NamesButDoesNotEnterSkippedDirs(t *testing.T) {
+	tmp := t.TempDir()
+	for _, skipped := range []string{".git", "node_modules", "vendor"} {
+		must(t, os.MkdirAll(filepath.Join(tmp, skipped, "inner"), 0o755))
+		must(t, os.WriteFile(filepath.Join(tmp, skipped, "inner", "buried.txt"), []byte("x"), 0o644))
+	}
+	must(t, os.MkdirAll(filepath.Join(tmp, "src"), 0o755))
+	must(t, os.WriteFile(filepath.Join(tmp, "src", "main.go"), []byte("x"), 0o644))
+
+	args, _ := json.Marshal(listDirectoryArgs{Path: tmp, Depth: 3})
+	out, err := Execute("list_directory", args)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for _, skipped := range []string{".git", "node_modules", "vendor"} {
+		if !strings.Contains(out, "dir: "+skipped) {
+			t.Errorf("expected %s to be named, got %q", skipped, out)
+		}
+	}
+	if strings.Contains(out, "buried.txt") {
+		t.Errorf("descended into a skipped directory: %q", out)
+	}
+	if !strings.Contains(out, "src/main.go") {
+		t.Errorf("expected the real tree to still be walked, got %q", out)
+	}
+}
+
+// A directory the caller names is the one they asked for, skip list or not.
+func TestListDirectory_ListsASkippedDirWhenAskedForDirectly(t *testing.T) {
+	tmp := t.TempDir()
+	must(t, os.MkdirAll(filepath.Join(tmp, ".git"), 0o755))
+	must(t, os.WriteFile(filepath.Join(tmp, ".git", "HEAD"), []byte("ref"), 0o644))
+
+	args, _ := json.Marshal(listDirectoryArgs{Path: filepath.Join(tmp, ".git")})
+	out, err := Execute("list_directory", args)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(out, "HEAD") {
+		t.Errorf("expected the named directory to be listed, got %q", out)
+	}
+}
+
+// The reduction pipeline must leave results these tools already sized alone.
+func TestSelfBounding(t *testing.T) {
+	for _, name := range []string{ReadFileName, ListDirectoryName, SearchName, GlobName} {
+		if !SelfBounding(name) {
+			t.Errorf("%s bounds its own output and should be exempt from reduction", name)
+		}
+	}
+	for _, name := range []string{ExecCommandName, WriteFileName, "web_fetch", "docs__search"} {
+		if SelfBounding(name) {
+			t.Errorf("%s does not bound its own output", name)
+		}
 	}
 }
 

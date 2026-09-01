@@ -282,3 +282,62 @@ func TestCountLines(t *testing.T) {
 		}
 	}
 }
+
+// The line-number prefix read_file adds is the mistake it invites: a reader
+// quotes a numbered line straight back into old_text. The error has to name
+// that, or "not found" against text visibly present in the file is a puzzle.
+func TestEditFile_NamesTheLineNumberPrefixWhenTheMatchFails(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "a.go")
+	must(t, os.WriteFile(path, []byte("package a\n\nfunc F() {}\n"), 0o644))
+
+	args, _ := json.Marshal(editFileArgs{Path: path, OldText: "3\tfunc F() {}", NewText: "func G() {}"})
+	_, err := ExecuteMutating("edit_file", args)
+	if err == nil {
+		t.Fatal("expected the numbered snippet not to match")
+	}
+	if !strings.Contains(err.Error(), "line-number prefixes") {
+		t.Errorf("error should name the prefix, got: %v", err)
+	}
+
+	// The same edit without the prefix is the one that works.
+	args, _ = json.Marshal(editFileArgs{Path: path, OldText: "func F() {}", NewText: "func G() {}"})
+	if _, err := ExecuteMutating("edit_file", args); err != nil {
+		t.Fatalf("unprefixed snippet should apply: %v", err)
+	}
+}
+
+// Ordinary misses keep the ordinary message: the hint is for text that
+// actually looks numbered.
+func TestEditFile_KeepsThePlainMissMessage(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "a.go")
+	must(t, os.WriteFile(path, []byte("package a\n"), 0o644))
+
+	args, _ := json.Marshal(editFileArgs{Path: path, OldText: "func Missing()", NewText: "x"})
+	_, err := ExecuteMutating("edit_file", args)
+	if err == nil {
+		t.Fatal("expected a miss")
+	}
+	if strings.Contains(err.Error(), "line-number prefixes") {
+		t.Errorf("plain miss should not blame the prefix, got: %v", err)
+	}
+}
+
+func TestLooksLineNumbered(t *testing.T) {
+	for _, tc := range []struct {
+		in   string
+		want bool
+	}{
+		{"3\tfunc F() {}", true},
+		{"10\ta\n11\tb", true},
+		{"func F() {}", false},
+		{"3\ta\nplain", false},
+		{"\tindented", false},
+		{"", false},
+	} {
+		if got := looksLineNumbered(tc.in); got != tc.want {
+			t.Errorf("looksLineNumbered(%q) = %v, want %v", tc.in, got, tc.want)
+		}
+	}
+}
