@@ -2,7 +2,6 @@ package chat
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -19,6 +18,7 @@ import (
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/clipboard"
+	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/notebook"
 	"github.com/rfizzle/shhh/internal/plan"
@@ -505,11 +505,8 @@ type Model struct {
 	classifierCancel context.CancelFunc
 	// The session summary (summary.go): a cheap model's periodic read
 	// of what the session is doing, drawn as the rail's SUMMARY block.
-	summarizer *agent.Summarizer
-	summary    summaryState
-	// intervene is what the summarizer's verdict does to the turn it is
-	// reading: a steer, or a check-in pulled forward (intervene.go).
-	intervene     interveneState
+	summarizer    *agent.Summarizer
+	summary       summaryState
 	summaryCancel context.CancelFunc
 	// The session titler and what it has written — title.go.
 	titler      *agent.Titler
@@ -2183,7 +2180,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// An applied edit lands in the transcript as a collapsed diff row (
 		// docs/interface/surfaces.md#the-diff-view); failures keep the plain tool
 		// block so the error text stays visible.
-		if req.kind == approvalDiff && len(req.hunks) > 0 && outcomeFromResult(msg.result) == outcomeOK {
+		if req.kind == approvalDiff && len(req.hunks) > 0 && digest.Outcome(msg.result) == digest.OutcomeOK {
 			m.appendEntry(entry{kind: entryDiff, diff: &components.DiffView{
 				Path:     req.path,
 				Verb:     req.verb,
@@ -2192,7 +2189,7 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				MaxLines: maxDiffExpandedLines,
 				Syntax:   diffSyntax(req.path),
 			}})
-		} else if req.call.Name == subagent.SpawnToolName && outcomeFromResult(msg.result) == outcomeOK {
+		} else if req.call.Name == subagent.SpawnToolName && digest.Outcome(msg.result) == digest.OutcomeOK {
 			m.appendSpawnEntry(entry{kind: entryTool, toolName: req.call.Name, toolArgs: req.call.Arguments, toolResult: msg.result, duration: msg.duration})
 		} else {
 			m.appendEntry(entry{kind: entryTool, toolName: req.call.Name, toolArgs: req.call.Arguments, toolResult: msg.result, duration: msg.duration})
@@ -2346,7 +2343,6 @@ func (m Model) sendUserMessageAs(text, shown string) (tea.Model, tea.Cmd) {
 	// conversation happens to have ended up.
 	m.summaryTarget = shown
 	m.summary.startTurn()
-	m.intervene.startTurn()
 	m.recordCheckpoint(shown)
 	atts := m.takeAttachments()
 	m.agent.StartTurnWith(text, atts)
@@ -2834,13 +2830,7 @@ func commandContextMessage(command, output string, exitCode int) string {
 	return fmt.Sprintf(commandContextPrefix+"\n```\n%s\n```\nExit code: %d\nOutput:\n```\n%s\n```", command, exitCode, output)
 }
 
-func firstLine(s string) string {
-	s = strings.TrimSpace(s)
-	if i := strings.IndexByte(s, '\n'); i >= 0 {
-		return s[:i] + " …"
-	}
-	return s
-}
+func firstLine(s string) string { return digest.FirstLine(s) }
 
 // resumeToolLoop requests the next model response after a round of tool
 // results — unless this turn has hit the tool-round cap, in which case it
@@ -2970,24 +2960,6 @@ const maxToolResultLines = 8
 // opened row cannot cost the transcript the screen — the whole output is the
 // full-screen depth past it (docs/interface/surfaces.md#the-activity-row).
 const maxExpandedResultLines = maxToolResultLines * 4
-
-func formatToolArgs(raw string) string {
-	var m map[string]any
-	if err := json.Unmarshal([]byte(raw), &m); err != nil {
-		return raw
-	}
-	var parts []string
-	for k, v := range m {
-		switch val := v.(type) {
-		case string:
-			parts = append(parts, k+"="+val)
-		default:
-			b, _ := json.Marshal(val)
-			parts = append(parts, k+"="+string(b))
-		}
-	}
-	return strings.Join(parts, " ")
-}
 
 // accumulateUsage folds one request's usage into the session vitals and
 // reads the running totals back out, so the rail, the cockpit and /stats all

@@ -313,6 +313,10 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			RunCommand:   scrubRunner(session.vault, childCommandRunner(cfg, croot, sc)),
 			Gated:        gated,
 			Scrub:        session.vault.ScrubMessage,
+			// A child is as unwatched as a headless run, but a fan-out
+			// multiplies the cost by its width, so this one is opt-in
+			// (summary.subagents).
+			Summarizer: newSummarizer(cfg, env, ledger, cfg.SubagentSummaryEnabled()),
 		}, nil
 	}
 

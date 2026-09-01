@@ -309,8 +309,18 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		}
 		return headlessGate(tc.Name)
 	}
+	// A non-interactive run has nobody to notice it has drifted or that it
+	// already has what it needs, which is why readings default on here. The
+	// prompt is the instruction every one of them is judged against.
+	summaryRun := agent.NewSummaryRun(
+		newSummarizer(cfg, env, ledger, cfg.HeadlessSummaryEnabled()),
+		agent.NewRecorder(0), initialPrompt)
 	h := &agent.Headless{
 		Agent:   a,
+		Summary: summaryRun,
+		OnIntervene: func(iv agent.Intervention) {
+			fmt.Fprintf(os.Stderr, "» %s\n", iv.Notice)
+		},
 		Gate:    gate,
 		Resolve: headlessApprover(cmd.Context(), opts, allowlist, run, red, recorder.decision, session.web, procSup, lspMutationHook(session.lsp), sc, session.mcpTools),
 		OnToolCall: func(tc provider.ToolCall) {

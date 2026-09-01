@@ -188,6 +188,11 @@ type Env struct {
 	// Scrub, when set, is installed on the child's agent so its
 	// conversation never holds a session secret; nil scrubs nothing.
 	Scrub func(provider.Message) provider.Message
+	// Summarizer, when set, takes periodic readings of the child so a run
+	// that has drifted or that already has what it needs is interrupted the
+	// way a session is. Nil takes no readings — the default, because a wide
+	// fan-out multiplies the cost by its width (summary.subagents).
+	Summarizer *agent.Summarizer
 }
 
 // Spec is everything the CLI needs to build one child's runtime: its role,
@@ -1359,7 +1364,15 @@ func (s *Supervisor) run(c *child) {
 	pendingEntry := -1
 	h := &agent.Headless{
 		Agent: c.agent,
-		Gate:  func(tc provider.ToolCall) bool { return c.env.Gated[tc.Name] },
+		// A child is as unwatched as a headless run, and its task is the
+		// instruction every reading is judged against. Nil unless
+		// summary.subagents is on.
+		Summary: agent.NewSummaryRun(c.env.Summarizer, agent.NewRecorder(0), c.task),
+		OnIntervene: func(iv agent.Intervention) {
+			c.appendEntry(TranscriptEntry{Kind: EntrySystem, Text: iv.Notice})
+			s.emitUpdate(c)
+		},
+		Gate: func(tc provider.ToolCall) bool { return c.env.Gated[tc.Name] },
 		Resolve: func(tc provider.ToolCall) string {
 			return s.resolveGated(c, tc)
 		},

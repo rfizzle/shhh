@@ -431,8 +431,9 @@ func TestSummary_DriftQueuesButMovesNothingAtReadingTime(t *testing.T) {
 	if m.pendingApproval != nil {
 		t.Fatal("a drift reading asks for nothing")
 	}
-	if m.intervene.pending == nil {
-		t.Fatal("it does queue the steer the boundary will deliver")
+	// It does queue the steer the boundary will deliver.
+	if _, ok := m.agent.NextIntervention(m.summaryTarget); !ok {
+		t.Fatal("the boundary should have a steer to deliver")
 	}
 }
 

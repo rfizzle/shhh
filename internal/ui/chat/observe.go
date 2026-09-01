@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
@@ -79,8 +80,8 @@ const (
 
 // Tool outcomes for Observer.ToolCall.
 const (
-	outcomeOK    = "ok"
-	outcomeError = "error"
+	outcomeOK    = digest.OutcomeOK
+	outcomeError = digest.OutcomeError
 )
 
 // Turn outcomes for Observer.Turn.
@@ -201,15 +202,6 @@ func askReason(a agent.Action) string {
 	return "policy"
 }
 
-// outcomeFromResult classifies a tool result by the error convention every
-// executor follows ("error: ..." prefixes).
-func outcomeFromResult(result string) string {
-	if strings.HasPrefix(result, "error:") {
-		return outcomeError
-	}
-	return outcomeOK
-}
-
 // classFromResult names the class of a failed result, or "empty" for a
 // search that found nothing, by matching the shape of the text. The text
 // itself never leaves this function.
@@ -283,7 +275,7 @@ func (m Model) usageTotalCost(in, out int64) (float64, bool) {
 // recordToolResult records a tool call from its result text: the outcome
 // and, for a failure, its class.
 func (m *Model) recordToolResult(tool string, duration time.Duration, result string) {
-	m.recordToolEvent(tool, duration, outcomeFromResult(result), classFromResult(result))
+	m.recordToolEvent(tool, duration, digest.Outcome(result), classFromResult(result))
 }
 
 func (m *Model) recordToolEvent(tool string, duration time.Duration, outcome, class string) {

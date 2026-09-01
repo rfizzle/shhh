@@ -108,6 +108,17 @@ type SummaryConfig struct {
 	// Disabled turns the mechanism off entirely: no requests are made and the
 	// block is never drawn.
 	Disabled bool `toml:"disabled"`
+	// Headless takes readings in a non-interactive run (`shhh code -p`).
+	// Unset means on: a headless run costs one reading per interval, the same
+	// as a session, and it is the surface with nobody in front of it — the
+	// verdict is the only thing that can tell it that it has drifted or that
+	// it already has what it needs.
+	Headless *bool `toml:"headless"`
+	// Subagents takes readings in each spawned sub-agent. Unset means off,
+	// and the reason is arithmetic rather than principle: a fan-out of six
+	// children is six more readings per interval, so this one is opt-in even
+	// though a child is exactly as unwatched as a headless run.
+	Subagents *bool `toml:"subagents"`
 	// Title asks the summary model to name an unnamed session after its
 	// first turn, for the saved-chat listings. Unset means on when Model is
 	// set and off otherwise: on the session model the question is not
@@ -374,6 +385,32 @@ func (c Config) MouseEnabled() bool {
 	return *c.Appearance.Mouse
 }
 
+// HeadlessSummaryEnabled reports whether a non-interactive run takes readings:
+// what summary.headless says, or — unset — yes, because a run with nobody
+// watching it is the one the verdict exists for.
+func (c *Config) HeadlessSummaryEnabled() bool {
+	if c.Summary.Disabled {
+		return false
+	}
+	if c.Summary.Headless == nil {
+		return true
+	}
+	return *c.Summary.Headless
+}
+
+// SubagentSummaryEnabled reports whether each spawned child takes readings:
+// what summary.subagents says, or — unset — no, because a wide fan-out
+// multiplies the cost by its width.
+func (c *Config) SubagentSummaryEnabled() bool {
+	if c.Summary.Disabled {
+		return false
+	}
+	if c.Summary.Subagents == nil {
+		return false
+	}
+	return *c.Summary.Subagents
+}
+
 // TitlesEnabled reports whether sessions are titled: what summary.title
 // says, or — unset — whether a summary model is configured to ask.
 func (c Config) TitlesEnabled() bool {
@@ -587,6 +624,12 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Summary.MaxTokens = n
 	case "summary.disabled":
 		cfg.Summary.Disabled = value == "true"
+	case "summary.headless":
+		v := value == "true"
+		cfg.Summary.Headless = &v
+	case "summary.subagents":
+		v := value == "true"
+		cfg.Summary.Subagents = &v
 	case "summary.title":
 		v := value == "true"
 		cfg.Summary.Title = &v

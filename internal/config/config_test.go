@@ -542,3 +542,58 @@ func TestLoadFrom_PasteThresholds(t *testing.T) {
 			cfg.Appearance.PasteLines, cfg.Appearance.PasteColumns)
 	}
 }
+
+// Which surfaces take readings is the reader's to decide, because the cost is
+// per agent. The defaults differ because the arithmetic does: a headless run
+// is one agent, a fan-out is as many as it is wide.
+func TestSummarySurfaces_Defaults(t *testing.T) {
+	var c Config
+	if !c.HeadlessSummaryEnabled() {
+		t.Error("a headless run has nobody watching it; readings default on")
+	}
+	if c.SubagentSummaryEnabled() {
+		t.Error("a fan-out multiplies the cost by its width; readings default off")
+	}
+}
+
+func TestSummarySurfaces_Overrides(t *testing.T) {
+	off, on := false, true
+	c := Config{Summary: SummaryConfig{Headless: &off, Subagents: &on}}
+	if c.HeadlessSummaryEnabled() {
+		t.Error("summary.headless=false should turn headless readings off")
+	}
+	if !c.SubagentSummaryEnabled() {
+		t.Error("summary.subagents=true should turn child readings on")
+	}
+}
+
+// summary.disabled is the master switch: it turns the mechanism off
+// everywhere, whatever a per-surface key says.
+func TestSummarySurfaces_DisabledBeatsEverySurface(t *testing.T) {
+	on := true
+	c := Config{Summary: SummaryConfig{Disabled: true, Headless: &on, Subagents: &on}}
+	if c.HeadlessSummaryEnabled() || c.SubagentSummaryEnabled() {
+		t.Error("summary.disabled must turn readings off everywhere")
+	}
+}
+
+func TestSummarySurfaces_SetByKey(t *testing.T) {
+	var c Config
+	for key, check := range map[string]func() bool{
+		"summary.headless":  func() bool { return c.HeadlessSummaryEnabled() },
+		"summary.subagents": func() bool { return c.SubagentSummaryEnabled() },
+	} {
+		if err := Set(&c, key, "true"); err != nil {
+			t.Fatalf("Set(%q): %v", key, err)
+		}
+		if !check() {
+			t.Errorf("%s=true did not take", key)
+		}
+		if err := Set(&c, key, "false"); err != nil {
+			t.Fatalf("Set(%q): %v", key, err)
+		}
+		if check() {
+			t.Errorf("%s=false did not take", key)
+		}
+	}
+}

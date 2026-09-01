@@ -74,8 +74,10 @@ type Agent struct {
 
 	// lastIntervention is the round something last asked the turn to take
 	// stock — a check-in or a steer. The check-in interval is measured from
-	// it (checkin.go).
+	// it (checkin.go), and intervene is the policy that decides which of the
+	// two a round boundary owes (intervene.go).
 	lastIntervention int
+	intervene        interveneState
 
 	// executing is true while auto-run tool calls run in the background;
 	// pending holds every call of the current round still owed a result, and
@@ -182,6 +184,8 @@ func (a *Agent) StartTurn(text string) { a.StartTurnWith(text, nil) }
 // save and resume keeps them beside the sentence that was asked about them.
 func (a *Agent) StartTurnWith(text string, atts []provider.Attachment) {
 	a.rounds = 0
+	a.lastIntervention = 0
+	a.StartInterveneTurn()
 	a.Append(provider.Message{Role: provider.RoleUser, Content: text, Attachments: atts})
 }
 

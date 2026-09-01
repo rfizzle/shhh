@@ -9,6 +9,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/colorprofile"
+	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -183,7 +184,7 @@ func TestActivityKinds_ServerCallsDrawByTheUsersWord(t *testing.T) {
 	if got := activityVerb("gh__create_issue"); got != "mcp" {
 		t.Fatalf("verb = %q", got)
 	}
-	if got := activityArg("gh__create_issue", `{"title":"Bug","body":"long\ntext"}`); got != "gh create_issue body=long text title=Bug" {
+	if got := digest.Arg("gh__create_issue", `{"title":"Bug","body":"long\ntext"}`); got != "gh create_issue body=long text title=Bug" {
 		t.Fatalf("target = %q", got)
 	}
 	view := stripANSI(m.renderEntry(entry{kind: entryTool, toolName: "gh__create_issue",
@@ -404,21 +405,6 @@ func TestFormatDuration(t *testing.T) {
 	}
 	if got := formatDuration(42 * time.Second); got != "42s" {
 		t.Fatalf("want 42s, got %q", got)
-	}
-}
-
-func TestActivityArg_Fallbacks(t *testing.T) {
-	if got := activityArg("search", `{"pattern":"needle"}`); got != "needle" {
-		t.Fatalf("pattern should win, got %q", got)
-	}
-	if got := activityArg("mystery", `{"depth":3}`); !strings.Contains(got, "depth=3") {
-		t.Fatalf("unknown shapes fall back to key=value, got %q", got)
-	}
-	if got := activityArg("mystery", "not json"); got != "not json" {
-		t.Fatalf("unparseable args pass through, got %q", got)
-	}
-	if got := activityArg("read_file", `{"path":"a.go"}`); got != "a.go" {
-		t.Fatalf("plain read shows the path, got %q", got)
 	}
 }
 

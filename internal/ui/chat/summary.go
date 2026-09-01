@@ -46,6 +46,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -237,7 +238,7 @@ func (m *Model) finishSummary(msg summaryDoneMsg) {
 	// A reading that says the run has drifted, or that it has what it needs,
 	// is the one thing a summary does besides being read. It only ever queues
 	// here; the round boundary delivers it (intervene.go).
-	m.considerIntervention(v)
+	m.considerVerdict(v)
 }
 
 // summaryStateCode is the reading's state as the recorder's closed set.
@@ -336,7 +337,7 @@ func (m Model) summaryActivity() []string {
 				"command", firstLine(e.text), components.OutcomeExit(e.exitCode)))
 		default:
 			rows = append(rows, agent.SummaryActivity(
-				e.toolName, activityArg(e.toolName, e.toolArgs), outcomeFromResult(e.toolResult)))
+				e.toolName, digest.Arg(e.toolName, e.toolArgs), digest.Outcome(e.toolResult)))
 		}
 	}
 	if len(rows) > summaryActivityRows {

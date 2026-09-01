@@ -8,12 +8,12 @@ package chat
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/mcp"
@@ -179,52 +179,6 @@ func (m Model) activityKind(tool string) components.ActivityKind {
 	return components.ActivityTool
 }
 
-// activityArgKeys is the priority order for picking a tool call's key
-// argument.
-var activityArgKeys = []string{"path", "pattern", "command", "query", "url", "title", "name", "action", "task", "role"}
-
-// activityArg extracts the one argument worth showing beside the tool name,
-// e.g. the path for read_file (with its line range when paged) or the pattern
-// for search; unknown shapes fall back to the flat key=value form.
-func activityArg(tool, rawArgs string) string {
-	if strings.TrimSpace(rawArgs) == "" {
-		return ""
-	}
-	var args map[string]any
-	if err := json.Unmarshal([]byte(rawArgs), &args); err != nil {
-		return firstLine(rawArgs)
-	}
-	if server, ok := mcp.SplitName(tool); ok {
-		// The target names the server and the tool, then the arguments
-		// compacted: `github get_issue number=42`. The verb column already
-		// says `mcp`, so the row reads as where, what, with what.
-		target := server + " " + strings.TrimPrefix(tool, server+mcp.Separator)
-		if compact := mcp.CompactArgs(json.RawMessage(rawArgs)); compact != "" {
-			target += " " + compact
-		}
-		return target
-	}
-	if tool == "read_file" {
-		if p, _ := args["path"].(string); p != "" {
-			start, okS := args["start_line"].(float64)
-			end, okE := args["end_line"].(float64)
-			switch {
-			case okS && okE:
-				return fmt.Sprintf("%s:%d–%d", p, int(start), int(end))
-			case okS:
-				return fmt.Sprintf("%s:%d–", p, int(start))
-			}
-			return p
-		}
-	}
-	for _, key := range activityArgKeys {
-		if v, ok := args[key].(string); ok && v != "" {
-			return firstLine(v)
-		}
-	}
-	return formatToolArgs(rawArgs)
-}
-
 // activityCounts summarizes a result's size with a tool-appropriate noun
 // (matches found, items listed, lines read).
 func activityCounts(tool, result string) string {
@@ -328,7 +282,7 @@ func (m Model) activityRowDetail(e entry, stepDetail bool) components.ActivityRo
 	} else {
 		row.Kind = m.activityKind(e.toolName)
 		row.Verb = activityVerb(e.toolName)
-		row.Target = activityArg(e.toolName, e.toolArgs)
+		row.Target = digest.Arg(e.toolName, e.toolArgs)
 		switch {
 		case e.deniedBy != "":
 			// A refusal is not a failure: ⊘ and the decider's name say the

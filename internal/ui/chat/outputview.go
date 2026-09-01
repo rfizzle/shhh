@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -34,7 +35,7 @@ func (m Model) openOutputFull(v *components.OutputView, idx int, ret state) (tea
 // words as the title, and the whole stored result — already bounded upstream
 // by the evidence store — as the lines.
 func (m Model) rowOutputView(e entry) *components.OutputView {
-	title := activityVerb(e.toolName) + " " + activityArg(e.toolName, e.toolArgs)
+	title := activityVerb(e.toolName) + " " + digest.Arg(e.toolName, e.toolArgs)
 	if e.kind == entryCommand {
 		title = "$ " + firstLine(e.text)
 	}

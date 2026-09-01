@@ -824,46 +824,6 @@ func TestToolCallLoop_NoExecutor(t *testing.T) {
 	}
 }
 
-func TestFormatToolArgs(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		contains []string
-	}{
-		{
-			name:     "single string arg",
-			input:    `{"path":"test.go"}`,
-			contains: []string{"path=test.go"},
-		},
-		{
-			name:     "multiple args",
-			input:    `{"pattern":"TODO","path":"src"}`,
-			contains: []string{"pattern=TODO", "path=src"},
-		},
-		{
-			name:     "numeric arg",
-			input:    `{"path":"file.go","start_line":10}`,
-			contains: []string{"path=file.go", "start_line=10"},
-		},
-		{
-			name:     "invalid json returns raw",
-			input:    `not json`,
-			contains: []string{"not json"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := formatToolArgs(tt.input)
-			for _, want := range tt.contains {
-				if !strings.Contains(result, want) {
-					t.Errorf("formatToolArgs(%q) = %q, want it to contain %q", tt.input, result, want)
-				}
-			}
-		})
-	}
-}
-
 func TestWaitForEvent_ToolCalls(t *testing.T) {
 	ch := make(chan provider.StreamEvent, 1)
 	ch <- provider.StreamEvent{

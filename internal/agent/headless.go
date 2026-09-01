@@ -47,6 +47,17 @@ type Headless struct {
 	// and reset the round counter (steering semantics for headless runs).
 	Steer func() []string
 
+	// Summary, when set, takes periodic readings of the run and hands their
+	// verdicts to the intervention policy — a steer for a run that has left
+	// its instruction, an early check-in for one that has what it needs
+	// (summaryrun.go). Nil takes no readings, and the interval check-in still
+	// fires either way.
+	Summary *SummaryRun
+
+	// OnIntervene, when set, is told what an intervention was and why, so a
+	// front-end can show it the way the chat transcript does. It may be nil.
+	OnIntervene func(iv Intervention)
+
 	mu           sync.Mutex
 	streamCancel func()
 	interrupted  bool
@@ -63,6 +74,15 @@ func (h *Headless) Interrupt() {
 		h.streamCancel()
 	}
 	h.mu.Unlock()
+}
+
+// summaryTarget is the instruction a steer quotes back. It comes from the
+// reading's own anchor, which was captured when the run started.
+func (h *Headless) summaryTarget() string {
+	if h.Summary == nil {
+		return ""
+	}
+	return h.Summary.target
 }
 
 func (h *Headless) wasInterrupted() bool {
@@ -85,6 +105,8 @@ func (h *Headless) Run(prompt string) (string, error) {
 		if err != nil {
 			return "", err
 		}
+		// What the agent believes it is doing is most of what a reading is.
+		h.Summary.Recorder().Assistant(text)
 		if h.wasInterrupted() {
 			// A partial response without tool calls is safe to keep; tool calls
 			// from an aborted stream are dropped whole so no assistant message
@@ -153,8 +175,20 @@ func (h *Headless) Run(prompt string) (string, error) {
 		// The same take-stock check-in the TUI injects. A headless run needs
 		// it more, not less: there is nobody here to ask a turn whether it has
 		// enough yet, so the run itself has to ask.
-		if prompt, ok := h.Agent.TakeCheckIn(); ok {
-			h.Agent.Append(provider.Message{Role: provider.RoleUser, Content: prompt})
+		// A reading due now goes out in the background; whatever an earlier
+		// one returned is offered to the policy here. The reading never
+		// blocks the round, so a run is never slower for having one.
+		if h.Summary != nil {
+			h.Agent.SetInterveneCooldown(h.Summary.Cooldown())
+			if v, ok := h.Summary.Tick(h.Agent.Rounds()); ok {
+				h.Agent.ConsiderVerdict(v, true)
+			}
+		}
+		if iv, ok := h.Agent.NextIntervention(h.summaryTarget()); ok {
+			h.Agent.Append(provider.Message{Role: provider.RoleUser, Content: iv.Message})
+			if h.OnIntervene != nil {
+				h.OnIntervene(iv)
+			}
 		}
 	}
 }
@@ -231,6 +265,11 @@ func (h *Headless) notifyCall(tc provider.ToolCall) {
 }
 
 func (h *Headless) notifyResult(tc provider.ToolCall, result string) {
+	// The digest is fed here rather than by the caller: every surface that
+	// takes readings needs the same rows, and a hook a front-end has to
+	// remember to wire is one that goes missing in the surface added next.
+	// A nil Summary records nothing.
+	h.Summary.Recorder().Tool(tc.Name, tc.Arguments, result)
 	if h.OnToolResult != nil {
 		h.OnToolResult(tc, result)
 	}

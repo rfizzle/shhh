@@ -29,15 +29,6 @@ func TestReasonCode_Mapping(t *testing.T) {
 	}
 }
 
-func TestOutcomeFromResult(t *testing.T) {
-	if got := outcomeFromResult("file contents"); got != outcomeOK {
-		t.Fatalf("expected ok, got %q", got)
-	}
-	if got := outcomeFromResult("error: no such file"); got != outcomeError {
-		t.Fatalf("expected error, got %q", got)
-	}
-}
-
 func TestAskReason(t *testing.T) {
 	if got := askReason(agent.Action{Kind: agent.ActionCommand, SafetyFlagged: true}); got != "safety" {
 		t.Fatalf("expected safety, got %q", got)

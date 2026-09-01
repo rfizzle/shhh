@@ -567,18 +567,11 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// overrides, empty means the session model. It is the one setting in that
 	// section worth changing — the readings are frequent, and the session
 	// model is usually the expensive one.
+	summarizer := newSummarizer(cfg, env, ledger, !cfg.Summary.Disabled)
 	summaryModel := cfg.Summary.Model
 	if summaryModel == "" {
 		summaryModel = env.modelName
 	}
-	summarizer := agent.NewSummarizer(ledger.For(env.prov, meter.SourceSummary), agent.SummaryConfig{
-		Model:          summaryModel,
-		Timeout:        time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
-		MaxTokens:      cfg.Summary.MaxTokens,
-		IntervalRounds: cfg.Summary.IntervalRounds,
-		MinGap:         time.Duration(cfg.Summary.MinGapSeconds) * time.Second,
-		Disabled:       cfg.Summary.Disabled,
-	})
 	// Session titles ask the same model. Off unless a summary model is
 	// configured or the config says so outright; a name the user gives
 	// wins either way.

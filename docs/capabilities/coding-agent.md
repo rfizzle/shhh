@@ -91,6 +91,30 @@ reading a digest of tool activity, not the agent's reasoning, so it can be
 wrong; a confident accusation against a session that is in fact on task costs
 more than the steer saves.
 
+## A reading for a run nobody is watching
+
+The reading began as a status block, which is a thing only a session with a
+person in front of it has. It interrupts a turn now, and that inverts who
+needs it: the surfaces with no rail and nobody watching — a non-interactive
+run, and every sub-agent — are the ones where the verdict is the only thing
+that can say a run has drifted or already has what it needs. A session has a
+reader who can say either by hand.
+
+So the account of a run's activity is assembled in one place every surface can
+reach, and a run that has no transcript to read it from collects the same rows
+from the tool calls as they happen. The rule the session scheduler is built
+around holds there too: **a summary is never the reason a run is slower.** The
+request goes out in the background at a round boundary and whatever has come
+back is collected at a later one, so a run that finishes first simply never
+uses it.
+
+**Which surfaces take readings is the reader's, because the cost is per
+agent.** A non-interactive run is one agent and takes them by default. A
+fan-out is as many agents as it is wide, and six children are six more
+readings every interval, so a child takes them only when asked. Neither
+default is a claim about which run deserves watching — a child is exactly as
+unwatched as a headless run — only about what the arithmetic does.
+
 ## The verdict is a steering signal, so the digest is a boundary
 
 The digest carries tool names, what they were pointed at, and an outcome word

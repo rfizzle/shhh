@@ -14,6 +14,7 @@ import (
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
+	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -225,7 +226,7 @@ func (m Model) buildApprovalRequest(tc provider.ToolCall) (*approvalRequest, err
 	}
 	summary := p.Summary
 	if summary == "" {
-		summary = formatToolArgs(tc.Arguments)
+		summary = digest.FormatArgs(tc.Arguments)
 	}
 	return &approvalRequest{
 		call:    tc,
