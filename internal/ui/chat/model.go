@@ -3682,15 +3682,20 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		return true, m.rewindToTurn(n)
 
 	case "/branches":
-		if m.db == nil {
-			return true, "Chat persistence is unavailable."
-		}
-		branches, err := m.db.ListChatBranches(m.sessionName)
-		if err != nil {
-			return true, "Error: " + err.Error()
-		}
+		branches, why := m.branchFamily()
 		if len(parts) == 1 {
-			return true, m.listBranches(branches)
+			// Only reached when there is nothing to pick; otherwise bare
+			// /branches opens the picker from the enter handler. What is
+			// left to say is why it did not open — never the family itself,
+			// because a list whose rows are read and retyped is the thing
+			// the picker replaced.
+			if why == "" {
+				why = fmt.Sprintf("This session has %d branches — /branches opens the picker over them.", len(branches))
+			}
+			return true, why
+		}
+		if why != "" {
+			return true, why
 		}
 		return true, m.switchBranch(branches, strings.Join(parts[1:], " "))
 

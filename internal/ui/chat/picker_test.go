@@ -6,12 +6,15 @@ import (
 	"fmt"
 	"strings"
 	"testing"
+	"time"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/golden"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
@@ -350,17 +353,25 @@ func TestBranchPick_BareBranchesOpensPickerAndSwitches(t *testing.T) {
 	}
 	root := m.sessionName
 	focused := m.picker.Options[m.picker.Focus]
-	if !strings.HasPrefix(focused.Label, root) || !strings.Contains(focused.Label, "(current)") {
-		t.Fatalf("the current branch should be marked and focused, got %q", focused.Label)
+	if focused.Label != root {
+		t.Fatalf("the label column should be the branch name alone, got %q", focused.Label)
+	}
+	if focused.Meta != currentBranchPhrase {
+		t.Fatalf("the current branch should be marked in the row's short field, got %q", focused.Meta)
 	}
 	target := 1 - m.picker.Focus
 	if !strings.Contains(m.picker.Options[target].Desc, "branch of") {
 		t.Fatalf("the branch row should name its parent, got %q", m.picker.Options[target].Desc)
 	}
-	name := m.picker.Options[target].Label
+	// The row shows the part of the name its parent does not, and acts on
+	// the whole of it.
+	label := m.picker.Options[target].Label
+	if !strings.HasPrefix(label, "…@turn") {
+		t.Fatalf("a cut branch should show the cut, not the ancestry, got %q", label)
+	}
 
 	m = focusPick(t, m, target)
-	if m.sessionName != name {
+	if name := root + strings.TrimPrefix(label, "…"); m.sessionName != name {
 		t.Fatalf("expected a switch to %q, got session %q", name, m.sessionName)
 	}
 	if last := m.transcript[len(m.transcript)-1]; !strings.Contains(last.text, "Switched to branch") {
@@ -392,6 +403,25 @@ func TestBranchPick_SelectingCurrentBranchIsANoOp(t *testing.T) {
 	}
 }
 
+func TestBranchPick_EscDoesNotSwitch(t *testing.T) {
+	m := sendText(t, branchPickModel(t), "/branches")
+	before := m.sessionName
+	messages := len(m.Messages())
+
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = updated.(Model)
+
+	if m.state != stateInput || m.picker != nil {
+		t.Fatal("esc should close the picker")
+	}
+	if m.sessionName != before {
+		t.Fatalf("esc should not switch, session moved to %q", m.sessionName)
+	}
+	if got := len(m.Messages()); got != messages {
+		t.Fatalf("esc should leave the conversation alone, %d messages became %d", messages, got)
+	}
+}
+
 func TestBranchPick_NoBranchFamilyKeepsTextMessage(t *testing.T) {
 	m := sendText(t, newRewindModel(t).WithDB(rewindTestDB(t)), "/branches")
 	if m.picker != nil {
@@ -410,6 +440,84 @@ func TestBranchPick_NoDBKeepsTextMessage(t *testing.T) {
 	if last := m.transcript[len(m.transcript)-1]; !strings.Contains(last.text, "unavailable") {
 		t.Fatalf("expected the persistence-unavailable notice, got %q", last.text)
 	}
+}
+
+// A family's names all start with the session they were cut from, so the row
+// shows the cut and lets the shared run stand as the card's elision mark.
+// A branch saved under a name of its own is not built on its parent's, and
+// keeps all of it.
+func TestBranchPick_LabelShowsTheCutNotTheAncestry(t *testing.T) {
+	const root = "2026-08-31 09:04:11"
+	cut := root + "@turn3-20260831-141002.418"
+	cases := []struct{ name, parent, want string }{
+		{root, "", root},
+		{cut, root, "…@turn3-20260831-141002.418"},
+		{cut + "@turn2-20260831-152245.907", cut, "…@turn2-20260831-152245.907"},
+		{"release notes", root, "release notes"},
+	}
+	for _, c := range cases {
+		if got := branchLabel(c.name, c.parent); got != c.want {
+			t.Errorf("branchLabel(%q, %q) = %q, want %q", c.name, c.parent, got, c.want)
+		}
+	}
+}
+
+// TestGolden_BranchPicker captures the branch picker: one row per branch of
+// the family, the row the session is on marked in the short field, and the
+// filter row a long generated name is narrowed with.
+func TestGolden_BranchPicker(t *testing.T) {
+	captureGolden(t, "branch-picker", "the branch picker over a session's family", goldenWidths, func(width int) []golden.Panel {
+		const (
+			root = "2026-08-31 09:04:11"
+			cut  = root + "@turn3-20260831-141002.418"
+			tail = cut + "@turn2-20260831-152245.907"
+		)
+		db := rewindTestDB(t)
+		msgs := []provider.Message{
+			{Role: provider.RoleUser, Content: "q"},
+			{Role: provider.RoleAssistant, Content: "a"},
+		}
+		if err := db.SaveChat(root, msgs); err != nil {
+			t.Fatal(err)
+		}
+		for _, b := range [][2]string{{root, cut}, {cut, tail}} {
+			if err := db.SaveChatBranch(b[0], b[1], msgs); err != nil {
+				t.Fatal(err)
+			}
+		}
+		m := frameModel(t, width, 40).WithDB(db)
+		m.sessionName = cut
+
+		// A branch is named for the moment it was cut, and the family's turn
+		// counts come out of the rewind that made it; the rows are pinned so
+		// the capture is the same every run.
+		at := time.Date(2026, 8, 31, 9, 4, 0, 0, time.Local)
+		fixed := []storage.ChatBranch{
+			{Name: root, Turns: 4, UpdatedAt: at},
+			{Name: cut, Parent: root, Turns: 6, UpdatedAt: at},
+			{Name: tail, Parent: cut, Turns: 2, UpdatedAt: at},
+		}
+		opened := sendText(t, m, "/branches")
+		opts, focus := opened.branchPickOptions(fixed)
+		opened.pickerAll, opened.picker.Options, opened.picker.Total = opts, opts, len(opts)
+		opened.picker.Focus = focus
+		opened.pickerIndex = identityIndex(len(opts))
+
+		// The card is a pointer on the model, so the filtered panel takes a
+		// copy of it before typing.
+		card := *opened.picker
+		filtered := opened
+		filtered.picker = &card
+		filtered = press(t, filtered, "/")
+		for _, r := range "turn2" {
+			filtered = press(t, filtered, string(r))
+		}
+
+		return []golden.Panel{
+			{Label: "the family, focused on the branch the session is on", View: strings.Join(opened.pickerLines(), "\n")},
+			{Label: "[/] narrowed to the tail branch", View: strings.Join(filtered.pickerLines(), "\n")},
+		}
+	})
 }
 
 // --- run picker ---------------------------------------------------

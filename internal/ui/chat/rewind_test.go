@@ -221,15 +221,17 @@ func TestBranches_ListAndSwitch(t *testing.T) {
 	root := m.sessionName
 	m = sendText(t, m, "/rewind 2")
 
-	handled, listing := m.handleSlashCommand("/branches")
+	// Bare /branches is the picker's; the text path never answers with a
+	// list of rows to read a number off.
+	handled, bare := m.handleSlashCommand("/branches")
 	if !handled {
 		t.Fatal("/branches should be handled")
 	}
-	if !strings.Contains(listing, "* 1. "+root) {
-		t.Fatalf("listing should mark the current session, got %q", listing)
+	if !strings.Contains(bare, "opens the picker") {
+		t.Fatalf("bare /branches should name the picker, got %q", bare)
 	}
-	if !strings.Contains(listing, "(branch of") {
-		t.Fatalf("listing should show the parent relationship, got %q", listing)
+	if strings.Contains(bare, root) || strings.Contains(bare, "1. ") {
+		t.Fatalf("bare /branches should not list the family, got %q", bare)
 	}
 
 	handled, result := m.handleSlashCommand("/branches 2")

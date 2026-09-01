@@ -3,11 +3,11 @@ package chat
 // Session branching and rewind. A checkpoint marks the start of each
 // user turn; /rewind truncates the working conversation back to a chosen
 // checkpoint and preserves the abandoned tail as a branch session in storage,
-// parent-linked to the current session. /branches lists the current session's
-// branch family and switches between branches. Rewind restores conversation
-// state only — files on disk are untouched, and the rewind message says so —
-// and each checkpoint records the git HEAD + dirty status at the time so the
-// message can show what diverged since.
+// parent-linked to the current session. /branches opens a picker over the
+// current session's branch family and switches between branches. Rewind
+// restores conversation state only — files on disk are untouched, and the
+// rewind message says so — and each checkpoint records the git HEAD + dirty
+// status at the time so the message can show what diverged since.
 
 import (
 	"fmt"
@@ -218,31 +218,28 @@ func shortHead(h string) string {
 	return h
 }
 
-// listBranches renders the current session's branch family for /branches.
-func (m Model) listBranches(branches []storage.ChatBranch) string {
+// branchFamily is the session's branch family, or the one line saying why
+// there is none to pick from. The picker and the text answer of /branches
+// both ask it, so what counts as a family, and what is said when there is
+// not one, is defined once.
+func (m Model) branchFamily() ([]storage.ChatBranch, string) {
+	if m.db == nil {
+		return nil, "Chat persistence is unavailable."
+	}
+	branches, err := m.db.ListChatBranches(m.sessionName)
+	if err != nil {
+		return nil, "Error: " + err.Error()
+	}
 	if len(branches) < 2 {
-		return "This session has no branches yet — /rewind creates one."
+		return nil, "This session has no branches yet — /rewind creates one."
 	}
-	var sb strings.Builder
-	sb.WriteString("Branches of this session:\n")
-	for i, b := range branches {
-		marker := " "
-		if b.Name == m.sessionName {
-			marker = "*"
-		}
-		parent := ""
-		if b.Parent != "" {
-			parent = fmt.Sprintf("  (branch of %q)", b.Parent)
-		}
-		fmt.Fprintf(&sb, "%s %d. %s  (%s)%s\n",
-			marker, i+1, b.Name, sessionDesc(b.Turns, b.UpdatedAt), parent)
-	}
-	sb.WriteString("Switch with /branches <n>.")
-	return sb.String()
+	return branches, ""
 }
 
-// switchBranch resolves the /branches argument — a list number or an exact
-// name — to a branch and switches to it.
+// switchBranch resolves the /branches argument — a number or an exact name —
+// to a branch and switches to it. The number addresses the family in the
+// order the picker draws it, so the digit typed at the card and the digit
+// typed after the command mean the same branch.
 func (m *Model) switchBranch(branches []storage.ChatBranch, arg string) string {
 	target := ""
 	if n, err := strconv.Atoi(arg); err == nil {

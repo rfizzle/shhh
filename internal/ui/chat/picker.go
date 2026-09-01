@@ -21,6 +21,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
 )
@@ -429,32 +430,70 @@ func sessionDesc(turns int, updated time.Time) string {
 	return fmt.Sprintf("%d turns, %s", turns, updated.Local().Format("Jan 2 15:04"))
 }
 
+// currentBranchPhrase marks the row the session is already on. It is the
+// right-aligned short field rather than a suffix on the name, so the label
+// column stays the branch name and nothing else, and it is two words rather
+// than a clause so it is still on the row at the narrowest width
+// (docs/interface/surfaces.md#selectors).
+const currentBranchPhrase = "this one"
+
+// branchLabel is a branch's name with the part it shares with its parent
+// elided. A branch is named for the session it was cut from, so a family
+// listed in full repeats the same prefix on every row and pushes what
+// differs — the turn and the moment of the cut — off the end of it, taking
+// the row's description and its marker with it. The card's own elision mark
+// stands in for the shared run; a branch whose name is not built on its
+// parent's, because it was saved under one of its own, keeps all of it.
+func branchLabel(name, parent string) string {
+	if parent == "" || !strings.HasPrefix(name, parent) {
+		return name
+	}
+	return "…" + strings.TrimPrefix(name, parent)
+}
+
+// branchPickOptions builds the branch picker's rows and says which one to
+// focus: the branch the session is on. Each row carries what the family
+// knows about a branch — its turn count, when it was last written, and the
+// branch it was cut from. Rows act on the whole name whatever the label
+// shows.
+func (m Model) branchPickOptions(branches []storage.ChatBranch) ([]components.SelectOption, int) {
+	opts := make([]components.SelectOption, len(branches))
+	focus := 0
+	for i, b := range branches {
+		desc := sessionDesc(b.Turns, b.UpdatedAt)
+		if b.Parent != "" {
+			desc += fmt.Sprintf(" · branch of %s", branchLabel(b.Parent, parentOf(branches, b.Parent)))
+		}
+		opts[i] = components.SelectOption{Label: branchLabel(b.Name, b.Parent), Desc: desc}
+		if b.Name == m.sessionName {
+			opts[i].Meta = currentBranchPhrase
+			focus = i
+		}
+	}
+	return opts, focus
+}
+
+// parentOf is a family member's own parent, for naming a row's parent the
+// same way that parent's own row is named.
+func parentOf(branches []storage.ChatBranch, name string) string {
+	for _, b := range branches {
+		if b.Name == name {
+			return b.Parent
+		}
+	}
+	return ""
+}
+
 // openBranchPick opens the branch picker behind bare /branches, focused on
 // the current branch. Selecting one switches to it with the usual
 // save-the-current-branch-first semantics. It reports false when the session
 // has no branch family to pick from.
 func (m Model) openBranchPick() (tea.Model, tea.Cmd, bool) {
-	if m.db == nil {
+	branches, _ := m.branchFamily()
+	if len(branches) == 0 {
 		return m, nil, false
 	}
-	branches, err := m.db.ListChatBranches(m.sessionName)
-	if err != nil || len(branches) < 2 {
-		return m, nil, false
-	}
-	opts := make([]components.SelectOption, len(branches))
-	focus := 0
-	for i, b := range branches {
-		label := b.Name
-		if b.Name == m.sessionName {
-			label += "  (current)"
-			focus = i
-		}
-		desc := sessionDesc(b.Turns, b.UpdatedAt)
-		if b.Parent != "" {
-			desc += fmt.Sprintf(" · branch of %q", b.Parent)
-		}
-		opts[i] = components.SelectOption{Label: label, Desc: desc}
-	}
+	opts, focus := m.branchPickOptions(branches)
 	model, cmd := m.openPicker("Switch branch", opts, focus, func(m *Model, idx int) string {
 		return m.switchToBranch(branches[idx].Name)
 	})
