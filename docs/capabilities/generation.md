@@ -32,10 +32,37 @@ The flags travel with the shell rather than being spelled at each call site,
 because getting them wrong is silent. cmd reads an unknown leading flag as a
 filename.
 
-Neither platform loads the user's profile. On Unix that is what `$SHELL -c`
-already does; on Windows it has to be asked for. A profile prints banners and
-sets aliases, and both end up in captured output that the model reads back as
-the command's own.
+## But only the generator writes for the user's shell
+
+The rule above is the generator's, and it stops there. `shhh cmd` exists to
+produce a line the user runs and keeps in their own history, so writing that
+line in anything but their own shell's syntax would make it worthless.
+
+Everywhere else — the agent's `execute_command`, a background process, the
+body of a sandbox wrapper — shhh composes the command and shhh reads the
+output back. The user's shell is a liability there, so those go to bash, and
+the prompt for those sessions is told bash (`shell.Execution`,
+`shell.DetectExec`).
+
+Three things say so. A model writes bash by default and the syntax rules only
+move the odds; they cannot conjure a construct the user's shell has not got,
+and fish has no heredoc. Every other coding agent runs bash, so a command that
+works in one of them and fails here is a bug in shhh. And the user's shell is
+not quiet, which is the next section.
+
+## `$SHELL -c` is not a quiet shell
+
+This page used to claim that no profile is loaded on Unix because `$SHELL -c`
+is non-interactive. That is true of `sh` and of `bash`, and false of the two
+shells people actually set: `fish` sources `config.fish` on every invocation
+including this one, and `zsh` sources `.zshenv`.
+
+So on a fish or zsh machine every single agent command paid for the user's
+prompt setup, version-manager hooks and tool inits, and anything they printed
+landed in the captured output the model reads back as the command's own —
+which is the exact failure `-NoProfile` is passed to PowerShell to prevent.
+Picking bash for execution fixes it on Unix for the same reason the flag fixes
+it on Windows.
 
 ## Platform rules are stated, not left to be inferred
 

@@ -3,6 +3,7 @@ package runner
 import (
 	"context"
 	"os"
+	"os/exec"
 	"strings"
 	"sync"
 	"testing"
@@ -198,5 +199,43 @@ func must(t *testing.T, err error) {
 	t.Helper()
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+// A captured command does not go through $SHELL. The pointed version of the
+// test: $SHELL names a binary that is not there, and the command still runs —
+// which it can only do if nothing read $SHELL.
+func TestCapturedCommandsIgnoreTheUsersShell(t *testing.T) {
+	t.Setenv("SHELL", "/definitely/not/a/shell/fish")
+	out, code := RunCapture(context.Background(), "printf ok")
+	if code != 0 || out != "ok" {
+		t.Fatalf("out=%q code=%d", out, code)
+	}
+}
+
+// And it is bash where bash is present, not merely something POSIX: the
+// constructs a model reaches for by default are bash's.
+func TestCapturedCommandsGetBashWhereThereIsOne(t *testing.T) {
+	if _, err := exec.LookPath("bash"); err != nil {
+		t.Skip("no bash on PATH")
+	}
+	t.Setenv("SHELL", "/definitely/not/a/shell/fish")
+	// A heredoc, which is how a model writes a file, and which fish has not
+	// got at all.
+	out, code := RunCapture(context.Background(), "cat <<'EOF'\nheredoc\nEOF")
+	if code != 0 || strings.TrimSpace(out) != "heredoc" {
+		t.Fatalf("heredoc: out=%q code=%d", out, code)
+	}
+	if out, code := RunCapture(context.Background(), `[[ 1 == 1 ]] && printf bash`); code != 0 || out != "bash" {
+		t.Fatalf("[[: out=%q code=%d", out, code)
+	}
+}
+
+// The generator keeps the user's shell, because its command is one the user
+// runs and keeps: Run reads $SHELL where the captured runners do not.
+func TestRunStaysOnTheUsersShell(t *testing.T) {
+	t.Setenv("SHELL", "/definitely/not/a/shell/fish")
+	if code := Run("true"); code == 0 {
+		t.Error("Run succeeded with an unusable $SHELL, so it is no longer reading it")
 	}
 }

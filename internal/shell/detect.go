@@ -42,3 +42,18 @@ func Detect() Info {
 		IsRoot: root,
 	}
 }
+
+// DetectExec is Detect for a session that runs commands itself: the same
+// machine and the same directory, but the shell it names is the one those
+// commands will actually go through (Execution).
+//
+// It exists so the pairing stays impossible to get wrong. A prompt built from
+// Detect while execute_command runs Execution is exactly the drift the
+// package comment says must not happen — the model would write fish for bash
+// to read — so the two prompts that matter each take the Info that matches
+// their runner: the generator takes Detect, an agent takes this.
+func DetectExec() Info {
+	info := Detect()
+	info.Shell = Execution().Name
+	return info
+}

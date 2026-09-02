@@ -15,11 +15,16 @@ import (
 	"github.com/rfizzle/shhh/internal/shell"
 )
 
-// shellCommand is a command line as an *exec.Cmd through this platform's
-// shell. Every captured form goes through it so that none of them can end up
-// spelling the invocation itself (shell.Shell).
+// shellCommand is a command line as an *exec.Cmd through the execution shell
+// (shell.Execution). Every captured form goes through it so that none of them
+// can end up spelling the invocation itself (shell.Shell).
+//
+// Captured means shhh composed it and shhh reads the output back: the agent's
+// execute_command, /run, a sub-agent's command. That is the whole of the
+// execution shell's case, and the reason Run below is the one function here
+// that does not use it.
 func shellCommand(ctx context.Context, command string) *exec.Cmd {
-	argv := shell.Current().Argv(command)
+	argv := shell.Execution().Argv(command)
 	return exec.CommandContext(ctx, argv[0], argv[1:]...)
 }
 
@@ -55,6 +60,10 @@ func Environ() []string {
 	return append(os.Environ(), sessionEnv...)
 }
 
+// Run executes a command with the terminal inherited, and it is the one
+// runner that stays on the user's own shell (shell.Current): its only caller
+// is `shhh cmd`, whose output is a command written for that shell, run in
+// front of the user and appended to that shell's history below.
 func Run(command string) (exitCode int) {
 	sh := shell.Current()
 	argv := sh.Argv(command)

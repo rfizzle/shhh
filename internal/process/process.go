@@ -303,7 +303,7 @@ func (s *Supervisor) start(name, command, cwd string, extraEnv map[string]string
 		return "", fmt.Errorf("too many processes (max %d); stop one first", MaxProcesses)
 	}
 
-	argv := shell.Current().Argv(command)
+	argv := shell.Execution().Argv(command)
 	cmd := exec.Command(argv[0], argv[1:]...)
 	cmd.Dir = dir
 	cmd.Env = append(env, s.env...)

@@ -142,3 +142,50 @@ func TestLookPathErrorsAreNotSwallowed(t *testing.T) {
 		t.Fatalf("name = %q", sh.Name)
 	}
 }
+
+// The execution shell ignores $SHELL entirely. This is the whole point of it
+// being a second resolution: the user is in fish, and the command a model
+// wrote still goes to bash.
+func TestResolveExecIgnoresTheUsersShell(t *testing.T) {
+	for _, user := range []string{"/usr/bin/fish", "/bin/zsh", "/usr/bin/nu"} {
+		sh := resolveExec("darwin", env(map[string]string{"SHELL": user}), has("bash"))
+		if sh.Name != "bash" {
+			t.Errorf("SHELL=%s: name = %q, want bash", user, sh.Name)
+		}
+		if got := sh.Argv("ls"); !slices.Equal(got, []string{`C:\Program Files\bash.exe`, "-c", "ls"}) {
+			t.Errorf("SHELL=%s: argv = %v", user, got)
+		}
+	}
+}
+
+// bash comes off PATH rather than /bin/bash, so a machine carrying a modern
+// bash ahead of an ancient one gets the modern one.
+func TestResolveExecTakesBashFromPath(t *testing.T) {
+	sh := resolveExec("linux", env(nil), func(name string) (string, error) {
+		if name == "bash" {
+			return "/opt/homebrew/bin/bash", nil
+		}
+		return "", exec.ErrNotFound
+	})
+	if sh.Path != "/opt/homebrew/bin/bash" {
+		t.Fatalf("path = %q", sh.Path)
+	}
+}
+
+// The floor is the POSIX floor, not the user's shell: a machine with no bash
+// runs /bin/sh, which is the one thing every non-Windows system has.
+func TestResolveExecFallsBackToPosixSh(t *testing.T) {
+	sh := resolveExec("linux", env(map[string]string{"SHELL": "/usr/bin/fish"}), hasNothing)
+	if sh.Name != "sh" || sh.Path != "/bin/sh" {
+		t.Fatalf("got %+v", sh)
+	}
+}
+
+// Windows has no bash to prefer and no POSIX floor to fall back to, so the
+// execution shell is the platform's own — the same answer Current gives.
+func TestResolveExecOnWindowsIsTheWindowsResolution(t *testing.T) {
+	look := has("pwsh", "powershell")
+	if got, want := resolveExec("windows", env(nil), look), resolve("windows", env(nil), look); !slices.Equal(got.Argv("ls"), want.Argv("ls")) {
+		t.Fatalf("exec = %v, current = %v", got.Argv("ls"), want.Argv("ls"))
+	}
+}

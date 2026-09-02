@@ -238,7 +238,10 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 	}
 	resolved.Provider, resolved.Model = req.Provider, req.Model
 
-	info := shell.Detect()
+	// DetectExec, not Detect: this session's model is told the shell its own
+	// commands will run through, which is the execution shell rather than the
+	// user's (internal/shell).
+	info := shell.DetectExec()
 	// The context file the session's own directory would read, which is the
 	// one the model is being told about.
 	projectContext := project.FindContextFrom(info.Cwd)

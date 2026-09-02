@@ -171,7 +171,9 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 
 	newEnv := func(cctx context.Context, spec subagent.Spec) (subagent.Env, error) {
 		role, croot := spec.Role, spec.Root
-		info := shell.Detect()
+		// A child runs commands through the same runner the parent does, so
+		// it is told the same shell (internal/shell).
+		info := shell.DetectExec()
 		info.Cwd = croot
 		// The parent's checkout, not the child's worktree: a writer's
 		// worktree is a copy of this one, and the context a child is given
