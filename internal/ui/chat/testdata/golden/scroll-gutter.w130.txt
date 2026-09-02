@@ -11,7 +11,7 @@
 ── layout ──────────────────────────────────────────────────
 · nothing to scroll · the column is reserved and empty
 You                                                                                                                          
-read the round accounting                                                                                                    
+  read the round accounting                                                                                                  
                                                                                                                              
    ⚙ read    internal/agent/round01.go                                                                          2 lines      
    ⚙ read    internal/agent/round02.go                                                                          2 lines      
@@ -41,7 +41,7 @@ read the round accounting
 
 · the top of the transcript · the thumb is on the first row
 You                                                                                                                          ┃
-read the round accounting                                                                                                    ┃
+  read the round accounting                                                                                                  ┃
                                                                                                                              │
    ⚙ read    internal/agent/round01.go                                                                          2 lines      │
    ⚙ read    internal/agent/round02.go                                                                          2 lines      │
@@ -52,7 +52,7 @@ read the round accounting                                                       
 ── ansi ────────────────────────────────────────────────────
 · nothing to scroll · the column is reserved and empty
 ␛[1;94mYou␛[m                                                                                                                          
-read the round accounting                                                                                                    
+  ␛[38;5;252mread␛[m␛[38;5;252m ␛[m␛[38;5;252mthe␛[m␛[38;5;252m ␛[m␛[38;5;252mround␛[m␛[38;5;252m ␛[m␛[38;5;252maccounting␛[m                                                                                                  
                                                                                                                              
    ␛[38;5;214m⚙␛[m read    ␛[38;5;241minternal/agent/round01.go␛[m                                                                          ␛[38;5;245m2 lines␛[m      
    ␛[38;5;214m⚙␛[m read    ␛[38;5;241minternal/agent/round02.go␛[m                                                                          ␛[38;5;245m2 lines␛[m      
@@ -82,7 +82,7 @@ read the round accounting
 
 · the top of the transcript · the thumb is on the first row
 ␛[1;94mYou␛[m                                                                                                                          ␛[38;5;245m┃␛[m
-read the round accounting                                                                                                    ␛[38;5;245m┃␛[m
+  ␛[38;5;252mread␛[m␛[38;5;252m ␛[m␛[38;5;252mthe␛[m␛[38;5;252m ␛[m␛[38;5;252mround␛[m␛[38;5;252m ␛[m␛[38;5;252maccounting␛[m                                                                                                  ␛[38;5;245m┃␛[m
                                                                                                                              ␛[38;5;241m│␛[m
    ␛[38;5;214m⚙␛[m read    ␛[38;5;241minternal/agent/round01.go␛[m                                                                          ␛[38;5;245m2 lines␛[m      ␛[38;5;241m│␛[m
    ␛[38;5;214m⚙␛[m read    ␛[38;5;241minternal/agent/round02.go␛[m                                                                          ␛[38;5;245m2 lines␛[m      ␛[38;5;241m│␛[m

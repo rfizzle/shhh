@@ -12,7 +12,7 @@
 · the transcript has the keyboard
 ──── READING 5/5 ───────────────────────────────────────────────────────────
 You
-fix the round limit
+  fix the round limit
 
   ▸ 1  Locate the round accounting ──────────────────────── ✓ 4 tools  1.2s
 
@@ -33,7 +33,7 @@ fix the round limit
 · the input has it · plain rail, no row lit, the frame is accented
 ────────────────────────────────────────────────────────────────────────────
 You
-fix the round limit
+  fix the round limit
 
 ▸ 1  Locate the round accounting ────────────────────────── ✓ 4 tools  1.2s
 
@@ -55,7 +55,7 @@ fix the round limit
 · the cursor on a row that changed the machine
 ──── READING 3/5 ───────────────────────────────────────────────────────────
 You
-fix the round limit
+  fix the round limit
 
   ▸ 1  Locate the round accounting ──────────────────────── ✓ 4 tools  1.2s
 
@@ -76,7 +76,7 @@ fix the round limit
 · expanded under the cursor · [-] joins the bar
 ──── READING 3/5 ───────────────────────────────────────────────────────────
 You
-fix the round limit
+  fix the round limit
 
   ▸ 1  Locate the round accounting ──────────────────────── ✓ 4 tools  1.2s
 
@@ -98,7 +98,7 @@ fix the round limit
 · [?] · the mode's whole key register, where the bar was
 ──── READING 5/5 ───────────────────────────────────────────────────────────
 You
-fix the round limit
+  fix the round limit
 
   ▸ 1  Locate the round accounting ──────────────────────── ✓ 4 tools  1.2s
 
@@ -127,12 +127,12 @@ fix the round limit
 · prose · the cursor on a message: [y] copies its markdown source
 ──── READING 1/1 ───────────────────────────────────────────────────────────
 You
-why is the round limit fatal
+  why is the round limit fatal
 
 ❯ Assistant                                                                
     Round exhaustion is fatal in Agent.runRound: the loop returns        
     ErrRoundLimit, and the chat model treats any error from a round as   
-    terminal.                                                            
+    terminal.
 
 ────────────────────────────────────────────────────────────────────────────
 [j/k] move · [y] copy the row · [?] keys · [q] back to the prompt     1 of 1
@@ -143,7 +143,7 @@ why is the round limit fatal
 · the transcript has the keyboard
 ␛[38;5;241m────␛[m ␛[1;94mREADING 5/5␛[m ␛[38;5;241m───────────────────────────────────────────────────────────␛[m
 ␛[1;94mYou␛[m
-fix the round limit
+  ␛[38;5;252mfix␛[m␛[38;5;252m ␛[m␛[38;5;252mthe␛[m␛[38;5;252m ␛[m␛[38;5;252mround␛[m␛[38;5;252m ␛[m␛[38;5;252mlimit␛[m
 
   ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m
 
@@ -164,7 +164,7 @@ fix the round limit
 · the input has it · plain rail, no row lit, the frame is accented
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────␛[m
 ␛[1;94mYou␛[m
-fix the round limit
+  ␛[38;5;252mfix␛[m␛[38;5;252m ␛[m␛[38;5;252mthe␛[m␛[38;5;252m ␛[m␛[38;5;252mround␛[m␛[38;5;252m ␛[m␛[38;5;252mlimit␛[m
 
 ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m──────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m
 
@@ -186,7 +186,7 @@ fix the round limit
 · the cursor on a row that changed the machine
 ␛[38;5;241m────␛[m ␛[1;94mREADING 3/5␛[m ␛[38;5;241m───────────────────────────────────────────────────────────␛[m
 ␛[1;94mYou␛[m
-fix the round limit
+  ␛[38;5;252mfix␛[m␛[38;5;252m ␛[m␛[38;5;252mthe␛[m␛[38;5;252m ␛[m␛[38;5;252mround␛[m␛[38;5;252m ␛[m␛[38;5;252mlimit␛[m
 
   ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m
 
@@ -207,7 +207,7 @@ fix the round limit
 · expanded under the cursor · [-] joins the bar
 ␛[38;5;241m────␛[m ␛[1;94mREADING 3/5␛[m ␛[38;5;241m───────────────────────────────────────────────────────────␛[m
 ␛[1;94mYou␛[m
-fix the round limit
+  ␛[38;5;252mfix␛[m␛[38;5;252m ␛[m␛[38;5;252mthe␛[m␛[38;5;252m ␛[m␛[38;5;252mround␛[m␛[38;5;252m ␛[m␛[38;5;252mlimit␛[m
 
   ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m
 
@@ -229,7 +229,7 @@ fix the round limit
 · [?] · the mode's whole key register, where the bar was
 ␛[38;5;241m────␛[m ␛[1;94mREADING 5/5␛[m ␛[38;5;241m───────────────────────────────────────────────────────────␛[m
 ␛[1;94mYou␛[m
-fix the round limit
+  ␛[38;5;252mfix␛[m␛[38;5;252m ␛[m␛[38;5;252mthe␛[m␛[38;5;252m ␛[m␛[38;5;252mround␛[m␛[38;5;252m ␛[m␛[38;5;252mlimit␛[m
 
   ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m
 
@@ -258,12 +258,12 @@ fix the round limit
 · prose · the cursor on a message: [y] copies its markdown source
 ␛[38;5;241m────␛[m ␛[1;94mREADING 1/1␛[m ␛[38;5;241m───────────────────────────────────────────────────────────␛[m
 ␛[1;94mYou␛[m
-why is the round limit fatal
+  ␛[38;5;252mwhy␛[m␛[38;5;252m ␛[m␛[38;5;252mis␛[m␛[38;5;252m ␛[m␛[38;5;252mthe␛[m␛[38;5;252m ␛[m␛[38;5;252mround␛[m␛[38;5;252m ␛[m␛[38;5;252mlimit␛[m␛[38;5;252m ␛[m␛[38;5;252mfatal␛[m
 
 ␛[94m❯␛[m ␛[1;92m␛[m␛[48;5;62m␛[1;92m␛[m␛[48;5;62m␛[97;48;5;62mAssistant                                                                ␛[m␛[m
-    ␛[38;5;252mRound exhaustion is fatal in Agent.runRound: the␛[m␛[38;5;252m loop ␛[m␛[38;5;252mreturns␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m
-    ␛[38;5;252mErrRoundLimit, and the chat model treats any␛[m␛[38;5;252m error ␛[m␛[38;5;252mfrom a round as␛[m␛[38;5;252m␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m
-    ␛[38;5;252mterminal.␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m␛[38;5;252m ␛[m
+    ␛[38;5;252mRound␛[m␛[38;5;252m ␛[m␛[38;5;252mexhaustion␛[m␛[38;5;252m ␛[m␛[38;5;252mis␛[m␛[38;5;252m ␛[m␛[38;5;252mfatal␛[m␛[38;5;252m ␛[m␛[38;5;252min␛[m␛[38;5;252m ␛[m␛[38;5;252mAgent.runRound:␛[m␛[38;5;252m ␛[m␛[38;5;252mthe␛[m␛[38;5;252m ␛[m␛[38;5;252mloop␛[m ␛[38;5;252mreturns␛[m␛[38;5;252m ␛[m       
+    ␛[38;5;252mErrRoundLimit,␛[m␛[38;5;252m ␛[m␛[38;5;252mand␛[m␛[38;5;252m ␛[m␛[38;5;252mthe␛[m␛[38;5;252m ␛[m␛[38;5;252mchat␛[m␛[38;5;252m ␛[m␛[38;5;252mmodel␛[m␛[38;5;252m ␛[m␛[38;5;252mtreats␛[m␛[38;5;252m ␛[m␛[38;5;252many␛[m␛[38;5;252m ␛[m␛[38;5;252merror␛[m ␛[38;5;252mfrom␛[m␛[38;5;252m ␛[m␛[38;5;252ma␛[m␛[38;5;252m ␛[m␛[38;5;252mround␛[m␛[38;5;252m ␛[m␛[38;5;252mas␛[m␛[38;5;252m ␛[m  
+    ␛[38;5;252mterminal.␛[m
 
 ␛[38;5;241m────────────────────────────────────────────────────────────────────────────␛[m
 ␛[94m[j/k]␛[m␛[38;5;241m move␛[m␛[38;5;241m · ␛[m␛[94m[y]␛[m␛[38;5;241m copy the row␛[m␛[38;5;241m · ␛[m␛[94m[?]␛[m␛[38;5;241m keys␛[m␛[38;5;241m · ␛[m␛[94m[q]␛[m␛[38;5;241m back to the prompt␛[m     ␛[38;5;241m1 of 1␛[m

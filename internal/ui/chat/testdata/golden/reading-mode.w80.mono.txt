@@ -12,7 +12,7 @@
 · the transcript has the keyboard
 ──── READING 5/5 ───────────────────────────────────────────────────────────
 You
-fix the round limit
+  fix the round limit
 
   ▸ 1  Locate the round accounting ──────────────────────── ✓ 4 tools  1.2s
 
@@ -33,7 +33,7 @@ fix the round limit
 · the input has it · plain rail, no row lit, the frame is accented
 ────────────────────────────────────────────────────────────────────────────
 You
-fix the round limit
+  fix the round limit
 
 ▸ 1  Locate the round accounting ────────────────────────── ✓ 4 tools  1.2s
 
@@ -55,7 +55,7 @@ fix the round limit
 · the cursor on a row that changed the machine
 ──── READING 3/5 ───────────────────────────────────────────────────────────
 You
-fix the round limit
+  fix the round limit
 
   ▸ 1  Locate the round accounting ──────────────────────── ✓ 4 tools  1.2s
 
@@ -76,7 +76,7 @@ fix the round limit
 · expanded under the cursor · [-] joins the bar
 ──── READING 3/5 ───────────────────────────────────────────────────────────
 You
-fix the round limit
+  fix the round limit
 
   ▸ 1  Locate the round accounting ──────────────────────── ✓ 4 tools  1.2s
 
@@ -98,7 +98,7 @@ fix the round limit
 · [?] · the mode's whole key register, where the bar was
 ──── READING 5/5 ───────────────────────────────────────────────────────────
 You
-fix the round limit
+  fix the round limit
 
   ▸ 1  Locate the round accounting ──────────────────────── ✓ 4 tools  1.2s
 
@@ -127,7 +127,7 @@ fix the round limit
 · prose · the cursor on a message: [y] copies its markdown source
 ──── READING 1/1 ───────────────────────────────────────────────────────────
 You
-why is the round limit fatal
+  why is the round limit fatal
 
 ❯ Assistant                                                                
     Round exhaustion is fatal in Agent.runRound: the loop returns        
@@ -143,7 +143,7 @@ why is the round limit fatal
 · the transcript has the keyboard
 ␛[38;5;244m────␛[m ␛[1;38;5;254mREADING 5/5␛[m ␛[38;5;244m───────────────────────────────────────────────────────────␛[m
 ␛[1;38;5;254mYou␛[m
-fix the round limit
+  fix the round limit
 
   ␛[38;5;244m▸␛[m ␛[38;5;254m1 ␛[m ␛[38;5;254mLocate the round accounting␛[m ␛[38;5;244m────────────────────────␛[m ␛[38;5;254m✓␛[m ␛[38;5;244m4 tools␛[m  ␛[38;5;244m1.2s␛[m
 
@@ -164,7 +164,7 @@ fix the round limit
 · the input has it · plain rail, no row lit, the frame is accented
 ␛[38;5;244m────────────────────────────────────────────────────────────────────────────␛[m
 ␛[1;38;5;254mYou␛[m
-fix the round limit
+  fix the round limit
 
 ␛[38;5;244m▸␛[m ␛[38;5;254m1 ␛[m ␛[38;5;254mLocate the round accounting␛[m ␛[38;5;244m──────────────────────────␛[m ␛[38;5;254m✓␛[m ␛[38;5;244m4 tools␛[m  ␛[38;5;244m1.2s␛[m
 
@@ -186,7 +186,7 @@ fix the round limit
 · the cursor on a row that changed the machine
 ␛[38;5;244m────␛[m ␛[1;38;5;254mREADING 3/5␛[m ␛[38;5;244m───────────────────────────────────────────────────────────␛[m
 ␛[1;38;5;254mYou␛[m
-fix the round limit
+  fix the round limit
 
   ␛[38;5;244m▸␛[m ␛[38;5;254m1 ␛[m ␛[38;5;254mLocate the round accounting␛[m ␛[38;5;244m────────────────────────␛[m ␛[38;5;254m✓␛[m ␛[38;5;244m4 tools␛[m  ␛[38;5;244m1.2s␛[m
 
@@ -207,7 +207,7 @@ fix the round limit
 · expanded under the cursor · [-] joins the bar
 ␛[38;5;244m────␛[m ␛[1;38;5;254mREADING 3/5␛[m ␛[38;5;244m───────────────────────────────────────────────────────────␛[m
 ␛[1;38;5;254mYou␛[m
-fix the round limit
+  fix the round limit
 
   ␛[38;5;244m▸␛[m ␛[38;5;254m1 ␛[m ␛[38;5;254mLocate the round accounting␛[m ␛[38;5;244m────────────────────────␛[m ␛[38;5;254m✓␛[m ␛[38;5;244m4 tools␛[m  ␛[38;5;244m1.2s␛[m
 
@@ -229,7 +229,7 @@ fix the round limit
 · [?] · the mode's whole key register, where the bar was
 ␛[38;5;244m────␛[m ␛[1;38;5;254mREADING 5/5␛[m ␛[38;5;244m───────────────────────────────────────────────────────────␛[m
 ␛[1;38;5;254mYou␛[m
-fix the round limit
+  fix the round limit
 
   ␛[38;5;244m▸␛[m ␛[38;5;254m1 ␛[m ␛[38;5;254mLocate the round accounting␛[m ␛[38;5;244m────────────────────────␛[m ␛[38;5;254m✓␛[m ␛[38;5;244m4 tools␛[m  ␛[38;5;244m1.2s␛[m
 
@@ -258,7 +258,7 @@ fix the round limit
 · prose · the cursor on a message: [y] copies its markdown source
 ␛[38;5;244m────␛[m ␛[1;38;5;254mREADING 1/1␛[m ␛[38;5;244m───────────────────────────────────────────────────────────␛[m
 ␛[1;38;5;254mYou␛[m
-why is the round limit fatal
+  why is the round limit fatal
 
 ␛[38;5;254m❯␛[m ␛[1;38;5;254m␛[m␛[48;5;237m␛[1;38;5;254m␛[m␛[48;5;237m␛[38;5;254;48;5;237mAssistant                                                                ␛[m␛[m
     Round exhaustion is fatal in Agent.runRound: the loop returns        

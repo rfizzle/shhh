@@ -9,6 +9,7 @@ import (
 
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -874,10 +875,16 @@ func TestResize_RewrapsHistory(t *testing.T) {
 	}
 }
 
+// lipglossWidth is the widest visible line of s.
+//
+// It counts cells, not runes. Counting runes agreed with the answer only
+// while the rows it measured were unstyled: once a row carries escapes —
+// which every rendered row does — a thirty-column line of prose measures
+// seventy and the check fails on the colour rather than on the width.
 func lipglossWidth(s string) int {
 	w := 0
 	for _, line := range strings.Split(s, "\n") {
-		if l := len([]rune(line)); l > w {
+		if l := ansi.StringWidth(line); l > w {
 			w = l
 		}
 	}

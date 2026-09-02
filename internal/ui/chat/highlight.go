@@ -5,72 +5,37 @@ import (
 	"strings"
 	"sync"
 
-	"charm.land/glamour/v2"
+	"charm.land/lipgloss/v2"
 	"github.com/alecthomas/chroma/v2"
 	"github.com/alecthomas/chroma/v2/lexers"
 	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/markdown"
 )
 
-var (
-	rendererMu     sync.Mutex
-	cachedWidth    int
-	cachedMono     bool
-	cachedRenderer *glamour.TermRenderer
-)
-
-// markdownStyle is the glamour style the transcript renders assistant prose
-// with. Mono mode swaps the coloured "dark" theme for "ascii", which
-// marks emphasis, headings and code with characters instead of colour — the
-// invariant applied to prose: the ** stays when the colour goes.
-func markdownStyle() string {
-	if components.Mono() {
-		return "ascii"
-	}
-	return "dark"
-}
-
-func getRenderer(width int) *glamour.TermRenderer {
-	rendererMu.Lock()
-	defer rendererMu.Unlock()
-	mono := components.Mono()
-	if cachedRenderer != nil && cachedWidth == width && cachedMono == mono {
-		return cachedRenderer
-	}
-	r, err := glamour.NewTermRenderer(
-		glamour.WithStylePath(markdownStyle()),
-		glamour.WithWordWrap(width),
-	)
-	if err != nil {
-		return nil
-	}
-	cachedRenderer = r
-	cachedWidth = width
-	cachedMono = mono
-	return r
+// mdOptions is how the transcript asks for a render: the pane, the palette
+// state, and the fence highlighter that puts a code block in the same syntax
+// register the diff view uses (fenceSyntax).
+func mdOptions(width int) markdown.Options {
+	return markdown.Options{Width: width, Mono: components.Mono(), Syntax: fenceSyntax}
 }
 
 func renderMarkdown(text string, width int) string {
 	return trimBlankLines(renderMarkdownRaw(text, width))
 }
 
-// trimBlankLines finishes a whole document the way renderMarkdown has always
-// finished one: the blank lines glamour puts around it go, and nothing inside
-// it moves.
+// trimBlankLines finishes a whole document: the last row's padding comes off,
+// because a finished document has nothing after it and that padding is not
+// holding anything up.
 //
-// The leading half was a strings.TrimSpace once, and it worked by
-// accident: glamour v1 opened every line with its style escape and put the
-// document's two-column margin *after* it, so a leading TrimSpace stopped at
-// the escape and the margin survived. v2 writes the margin as plain text
-// ahead of the escape, and the same call ate it — which set the opening line
-// of every paragraph two columns left of the rest of it, and told the
-// selection's soft-wrap rule that the first row belonged to a different
-// block (select.go).
-//
-// The trailing half is unchanged, and is still the whole trailing run: a
-// finished document has nothing after it, so its last line's padding is not
-// holding anything up. (renderUnfinished keeps that padding, because there
-// the seam does — streammd.go.)
+// The leading half no longer has anything to do — internal/ui/markdown emits
+// no blank row before the first block or after the last — and it is kept
+// because the streaming cache glues renders and this is the one place that
+// says what a finished one looks like. It is a strings.TrimRight rather than
+// a TrimSpace: TrimSpace would eat the document margin off the opening row,
+// which is what set the first line of every paragraph two columns left of the
+// rest of it and told the selection that the first row was a different block
+// (select.go).
 func trimBlankLines(s string) string {
 	return dropLeadingBlankLines(strings.TrimRight(s, " \t\n"))
 }
@@ -94,18 +59,62 @@ func dropLeadingBlankLines(s string) string {
 // mono has nothing holding it, and the seam between two blocks is exactly
 // where the difference shows (streammd.go).
 func renderMarkdownRaw(text string, width int) string {
-	if width <= 0 {
-		width = 80
+	return strings.Join(markdown.Blocks(text, mdOptions(width)), "\n")
+}
+
+// fenceLexerCache memoizes fenceLexer, for the reason lexerCache exists: the
+// lookup is a scan of the registry, and the transcript re-derives every
+// fence's highlighter on each frame.
+var fenceLexerCache sync.Map // language -> chroma.Lexer, nil when nothing claims it
+
+// fenceLexer is the highlighter for a fence's info string.
+//
+// It is lexers.Get rather than the lexerCache's Match, because the two are
+// asked different questions: a diff hunk has a filename to glob, and a fence
+// has the word the model wrote after the backticks.
+func fenceLexer(lang string) chroma.Lexer {
+	if v, ok := fenceLexerCache.Load(lang); ok {
+		lexer, _ := v.(chroma.Lexer)
+		return lexer
 	}
-	r := getRenderer(width)
-	if r == nil {
-		return text
+	lexer := lexers.Get(lang)
+	if lexer == lexers.Fallback {
+		// The fallback lexer emits one token for the whole line, which is
+		// the same answer as no highlighting and costs a tokenise to say.
+		lexer = nil
 	}
-	out, err := r.Render(text)
+	if lexer != nil {
+		lexer = chroma.Coalesce(lexer)
+	}
+	fenceLexerCache.Store(lang, lexer)
+	return lexer
+}
+
+// fenceSyntax highlights one line of a fenced block through the same palette
+// register the diff bodies use (syntaxTones), so a Go function reads the same
+// colour whether the model quoted it or changed it.
+func fenceSyntax(lang, line string) []markdown.Segment {
+	lexer := fenceLexer(lang)
+	if lexer == nil {
+		return nil
+	}
+	it, err := lexer.Tokenise(nil, line)
 	if err != nil {
-		return text
+		return nil
 	}
-	return out
+	var segs []markdown.Segment
+	for _, tok := range it.Tokens() {
+		text := strings.TrimSuffix(tok.Value, "\n")
+		if text == "" {
+			continue
+		}
+		seg := markdown.Segment{Text: text}
+		if tone, ok := syntaxTone(tok.Type); ok {
+			seg.Style, seg.Styled = lipgloss.NewStyle().Foreground(tone.Color()), true
+		}
+		segs = append(segs, seg)
+	}
+	return segs
 }
 
 // The syntax register (docs/interface/surfaces.md#the-diff-view). Diff

@@ -102,21 +102,25 @@ func TestMonoDeclinesSyntaxAndMarkdownColour(t *testing.T) {
 	if diffSyntax("main.go") == nil {
 		t.Fatal("a Go file should have a highlighter with the full palette")
 	}
-	if markdownStyle() != "dark" {
-		t.Fatalf("markdown should use the dark theme, got %q", markdownStyle())
+	if out := renderMarkdown("a **bold** word", 40); !strings.Contains(out, "\x1b[") {
+		t.Fatalf("markdown in colour should carry escapes, got %q", out)
 	}
 
 	components.SetMono(true)
 	if diffSyntax("main.go") != nil {
 		t.Fatal("mono should decline syntax highlighting outright")
 	}
-	if markdownStyle() != "ascii" {
-		t.Fatalf("mono markdown should use the ascii theme, got %q", markdownStyle())
+	// Mono prose carries no escapes at all, and the marks come back in their
+	// place: the invariant applied to prose is that the ** stays when the
+	// colour goes.
+	out := renderMarkdown("a **bold** word and `a name`", 40)
+	if strings.Contains(out, "\x1b[") {
+		t.Fatalf("mono markdown should carry no escapes, got %q", out)
 	}
-	// The ascii theme is the invariant applied to prose: emphasis survives as
-	// characters once the colour is gone.
-	if out := renderMarkdown("a **bold** word", 40); !strings.Contains(out, "**bold**") {
-		t.Fatalf("mono markdown should mark emphasis with characters, got %q", out)
+	for _, want := range []string{"**bold**", "`a name`"} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("mono markdown should mark %s with characters, got %q", want, out)
+		}
 	}
 }
 

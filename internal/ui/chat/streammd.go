@@ -30,9 +30,9 @@ package chat
 
 import (
 	"strings"
-	"sync"
 
 	"github.com/rfizzle/shhh/internal/ui/components"
+	"github.com/rfizzle/shhh/internal/ui/markdown"
 )
 
 // streamingMarkdown caches the render of a stable prefix of one message.
@@ -112,7 +112,7 @@ func (s *streamingMarkdown) Render(content string, width int) string {
 		// finished the way renderMarkdown finishes a whole document.
 		return trimBlankLines(s.stablePrefixRender)
 	}
-	return trimBlankLines(s.stablePrefixRender + "\n" + renderContinuation(tail, width, false))
+	return trimBlankLines(s.stablePrefixRender + "\n" + renderContinuation(tail, width))
 }
 
 // adopt moves the boundary out to p, folding the chunk that has just become
@@ -125,9 +125,9 @@ func (s *streamingMarkdown) adopt(content string, p, width int) {
 	chunk := content[len(s.stablePrefix):p]
 	if strings.TrimSpace(chunk) == "" {
 		// A run of blank lines longer than one: the boundary walks through it
-		// a line at a time, and glamour draws no more for three blank lines
-		// than for one. The cached render already says everything this chunk
-		// has to say.
+		// a line at a time, and the renderer draws no more for three blank
+		// lines than for one. The cached render already says everything this
+		// chunk has to say.
 		s.stablePrefix = content[:p]
 		return
 	}
@@ -136,7 +136,7 @@ func (s *streamingMarkdown) adopt(content string, p, width int) {
 		// block before it for the seam to separate it from.
 		s.stablePrefixRender = renderUnfinished(chunk, width)
 	} else {
-		s.stablePrefixRender += "\n" + renderContinuation(chunk, width, true)
+		s.stablePrefixRender += "\n" + renderContinuation(chunk, width)
 	}
 	s.baseFences += countFenceLines(chunk)
 	s.baseListMarker = s.baseListMarker || hasListMarker(chunk)
@@ -525,77 +525,38 @@ func isLinkRefDefinition(line string) bool {
 
 // renderContinuation renders a run of markdown as the continuation of a
 // document rather than as a document of its own, and returns it with the seam
-// that separates it from what came before already on the front. `continued`
-// says whether something follows it in turn.
+// that separates it from what came before already on the front.
 //
-// The seam is the crux. Glamour separates two top-level blocks with a *padded*
-// blank line, not a bare one, and which padding it uses depends on both blocks
-// — a paragraph followed by a heading is not spaced like a paragraph followed
-// by a paragraph. Writing "\n\n" between the two renders, or measuring one seam
-// and using it everywhere, gets the common case right and the rest wrong by a
-// byte, which is exactly the cost this cache may not pay.
+// The seam used to be the crux of this file. glamour separated two top-level
+// blocks with a *padded* blank line whose padding depended on both blocks, so
+// the only way to reproduce it was to render a sentinel paragraph in front of
+// the text and throw its own lines away — a whole apparatus (sentinelBlock,
+// sentinelHeight, trimUnfinished) that existed to reverse-engineer a byte
+// this package could not otherwise predict.
 //
-// So the seam is not written down at all: a one-line paragraph is rendered in
-// front of the text, and its own lines are then dropped. What is left begins
-// with the seam glamour itself chose for whatever the text opens with. The
-// paragraph on the near side is not an assumption — the boundary rules refuse
-// a prefix that ends in anything but a closed, paragraph-like block.
-func renderContinuation(text string, width int, continued bool) string {
-	raw := renderMarkdownRaw(sentinelBlock+"\n\n"+text, width)
-	// A continued block keeps the padding on its last line, because the seam
-	// after it needs the line at full width; the block that ends the message
-	// is trimmed the way renderMarkdown trims a finished document.
-	out := trimBlankLines(raw)
-	if continued {
-		out = trimUnfinished(raw)
+// The renderer is shhh's now (internal/ui/markdown), and its seam is one
+// padded blank row between any two top-level blocks, always. So the seam is
+// simply written.
+func renderContinuation(text string, width int) string {
+	rows := markdown.Blocks(text, mdOptions(width))
+	if len(rows) == 0 {
+		return ""
 	}
-	for range sentinelHeight(width) {
-		nl := strings.IndexByte(out, '\n')
-		if nl < 0 {
-			return ""
-		}
-		out = out[nl+1:]
-	}
-	return out
+	return seamRow(width) + "\n" + strings.Join(rows, "\n")
 }
 
-// renderUnfinished renders a document that another block will follow.
+// renderUnfinished renders a document that another block will follow. It is
+// the plain render: the block below it brings its own seam.
 func renderUnfinished(text string, width int) string {
-	return trimUnfinished(renderMarkdownRaw(text, width))
+	return renderMarkdownRaw(text, width)
 }
 
-// trimUnfinished finishes a raw glamour render that another block will follow:
-// the blank lines it opens with and the trailing newline go, and the padding
-// on the last line stays. trimBlankLines takes that padding off, because a
-// finished document has nothing after it; here the seam does, and in mono —
-// where the padding is literal spaces rather than spaces inside an escape —
-// trimming it would lose a byte the whole render has.
-func trimUnfinished(raw string) string {
-	return strings.TrimRight(dropLeadingBlankLines(raw), "\n")
-}
-
-var (
-	sentinelMu    sync.Mutex
-	sentinelWidth int
-	sentinelMono  bool
-	sentinelLines int
-)
-
-// sentinelBlock is a one-line paragraph rendered in front of a block so that
-// glamour draws the block the way it draws it inside a whole document.
-const sentinelBlock = "a"
-
-// sentinelHeight is how many lines the sentinel paragraph renders to on its
-// own — one, for every style and width the product ships, but measured rather
-// than assumed and kept for the width and palette in force (highlight.go).
-func sentinelHeight(width int) int {
-	mono := components.Mono()
-	sentinelMu.Lock()
-	defer sentinelMu.Unlock()
-	if sentinelLines > 0 && sentinelWidth == width && sentinelMono == mono {
-		return sentinelLines
+// seamRow is the blank row between two top-level blocks, padded exactly as
+// the renderer pads one, because the glued render has to be the byte-for-byte
+// render of the whole message.
+func seamRow(width int) string {
+	if width <= 0 {
+		width = 80
 	}
-	sentinelLines = strings.Count(renderUnfinished(sentinelBlock, width), "\n") + 1
-	sentinelWidth, sentinelMono = width, mono
-	return sentinelLines
+	return strings.Repeat(" ", markdown.Options{Width: width}.FillWidth())
 }

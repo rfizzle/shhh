@@ -3235,7 +3235,17 @@ func (m Model) renderEntryKeys(e entry, width int, keysLive bool) string {
 func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) string {
 	switch e.kind {
 	case entryUser:
-		row := sty.User.Render("You") + "\n" + m.wordWrap(e.text, width) + "\n"
+		// The same renderer the model's prose gets. A sent message is not a
+		// draft any more: it is a message in a transcript, and a reader
+		// scrolling back has no way to tell which half of a conversation was
+		// allowed to use a code fence. Someone who writes `--flag` or pastes
+		// a fenced block into the box means it, and rendering it as plain
+		// text is the transcript declining to read what it was given.
+		//
+		// The draft above deliberately does not do this — it stays a plain
+		// editor, because a sentence being typed is bytes and a renderer that
+		// reflowed them under the cursor would be fighting the writer.
+		row := sty.User.Render("You") + "\n" + renderMarkdown(e.text, width) + "\n"
 		if len(e.attached) > 0 {
 			row += sty.SystemMsg.Render(clipRow("attached: "+strings.Join(e.attached, ", "), width)) + "\n"
 		}

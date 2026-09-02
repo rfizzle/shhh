@@ -88,7 +88,7 @@ func (m Model) rowCopyText(es []entry, idx int) (text, what string) {
 	switch e.kind {
 	case entryAssistant:
 		// The markdown source, not the rendered form: what the model said is
-		// the content, the glamour layout is this terminal's.
+		// the content, the layout is this terminal's.
 		return e.text, "response"
 	case entryThink:
 		return e.text, "thinking"
