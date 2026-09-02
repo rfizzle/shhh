@@ -1,901 +1,89 @@
 # shhh
 
-Natural language to shell commands. Type what you want, get a command you can run.
+[![CI](https://github.com/rfizzle/shhh/actions/workflows/test.yml/badge.svg)](https://github.com/rfizzle/shhh/actions/workflows/test.yml)
+[![Release](https://img.shields.io/github/v/release/rfizzle/shhh?display_name=tag&sort=semver)](https://github.com/rfizzle/shhh/releases)
+[![Go Reference](https://pkg.go.dev/badge/github.com/rfizzle/shhh.svg)](https://pkg.go.dev/github.com/rfizzle/shhh)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-```
+Natural language to shell commands, conversations, and supervised coding work —
+without leaving the terminal.
+
+```text
 $ shhh cmd find all go files changed in the last week
-$ find . -name '*.go' -mtime -7
+$ find . -name "*.go" -mtime -7
   lists Go files under the current directory modified in the last seven days.
   ⛨ read-only · no network · no sudo
 
 [↵] run  [e] edit  [r] revise  [x] explain  [c] copy  [s] save  [esc] quit
 ```
 
-## Platforms
-
-| | Sessions and tools | Command containment |
-|---|---|---|
-| Linux | yes | bubblewrap |
-| macOS | yes | Seatbelt |
-| Windows | yes, on PowerShell or cmd | none on the host — use `--sandbox` |
-
-Windows has no host containment mechanism, so an approved command there runs
-as you and every approval says so. The container sandbox
-(`shhh code -p --sandbox`, with Docker or Podman) is the way to contain one.
-`shhh doctor` states which mechanism is in force on your machine, and never
-claims one that is not.
-
 ## Install
 
 ### Homebrew
 
-```bash
+```sh
 brew install rfizzle/tap/shhh
+```
+
+### Go
+
+```sh
+go install github.com/rfizzle/shhh/cmd/shhh@latest
 ```
 
 ### Windows
 
-Download the `.zip` for your architecture from
-[releases](https://github.com/rfizzle/shhh/releases) and put `shhh.exe` on your
-`PATH`, or install with Go below. PowerShell is used when it is present and
-`cmd` otherwise; `shhh doctor` says which.
+Download the release archive for your architecture from
+[GitHub Releases](https://github.com/rfizzle/shhh/releases), put `shhh.exe` on
+`PATH`, or install with Go. PowerShell is used when available and `cmd`
+otherwise.
 
-### Go
+### From source
 
-```bash
-go install github.com/rfizzle/shhh/cmd/shhh@latest
-```
-
-### Build from source
-
-```bash
+```sh
 git clone https://github.com/rfizzle/shhh.git
 cd shhh
 make build
 ```
 
-## Quick Start
+## Quick start
 
-1. Set your API key:
+Set an API key, then ask for a command:
 
-```bash
+```sh
 export SHHH_API_KEY="sk-..."
+shhh cmd "list open ports on this machine"
 ```
 
-2. Generate a command:
+Start a session when the task needs more context:
 
-```bash
-shhh cmd list open ports on this machine
-```
-
-3. Or start a chat session:
-
-```bash
+```sh
 shhh chat
+shhh code "fix the failing tests"
 ```
 
-## Configuration
+## Modes
 
-Run the interactive config editor:
-
-```bash
-shhh config
-```
-
-Every setting is a row grouped under `SESSION`, `MODEL` or `WORKSPACE`, showing
-what it is set to and where that answer came from — `default`, `user`, or
-`unwritten` for an edit this session has staged. `[enter]` opens a picker
-directly under the row being changed (or a field, or a masked entry for an API
-key), `[/]` filters the list, `[r]` puts one setting back to its default, and
-`[?]` lists every key. **Nothing is written until `[w]`**, which asks before it
-writes; `[esc]` leaves and discards the lot.
-
-Or set values directly:
-
-```bash
-shhh config set provider.default openrouter
-shhh config set provider.api_key sk-or-...
-```
-
-Config file location — the same on every platform:
-- `$XDG_CONFIG_HOME/shhh/config.toml` if that variable is set
-- otherwise `~/.config/shhh/config.toml`
-
-macOS used to read `~/Library/Application Support/shhh` instead. It doesn't
-any more; `shhh doctor` detects a machine that still has one and offers to
-move it (see [Doctor](#doctor)).
-
-### Example config
-
-```toml
-[provider]
-default = "openai"
-api_key = "sk-..."
-```
-
-A more complete example:
-
-```toml
-[provider]
-default = "openrouter"
-model = "anthropic/claude-sonnet-4-6"
-api_key = "sk-or-..."
-
-[behavior]
-safety_warnings = true
-system_prompt_extra = "Prefer ripgrep over grep. Use docker compose for services."
-command_allowlist = ["git status", "go test"]
-
-[agents]
-model = "inherit"                     # sub-agents follow the session model
-
-[agents.profiles.researcher]
-model = "anthropic/claude-haiku-4-5"  # cheap and fast for parallel search
-
-[summary]
-model = "anthropic/claude-haiku-4-5"  # reads the session status every 10 rounds
-
-[appearance]
-accent_color = "cyan"
-```
-
-### Config keys
-
-| Key | Description |
+| Command | Use it for |
 |---|---|
-| `provider.default` | Provider name |
-| `provider.model` | Model to use |
-| `provider.api_key` | API key |
-| `provider.base_url` | Base URL override for the built-in providers (each has its own default); gateway profiles carry their own and ignore it |
-| `provider.name` | Custom display name |
-| `provider.reasoning` | Reasoning effort sessions start on: `off` (default), `low`, `medium`, `high` |
-| `behavior.silent_mode` | Suppress explanation output |
-| `behavior.shell` | Override detected shell |
-| `behavior.safety_warnings` | Warn before destructive commands (default: true) |
-| `behavior.context_max_tokens` | Max tokens for stdin context (default: 8000) |
-| `behavior.max_tool_rounds` | Max consecutive tool-call rounds per chat turn (default: 150; any negative removes the cap, for a machine that only runs unattended) |
-| `behavior.command_timeout_seconds` | Ceiling on one command the assistant runs (default: 600). Reaching it cancels the command and everything it started, and the model is told it was stopped rather than that it failed. A command you type yourself is never bounded by it; any negative removes the ceiling |
-| `appearance.mouse` | Terminal mouse reporting (default: true, so the wheel scrolls, shhh's own click-drag selects the transcript, and a click opens the row or answers the approval key under it; set to false to restore your terminal's native click-drag selection). `Ctrl+X` in a session flips and saves it |
-| `appearance.notify` | Desktop notification when a turn stops while your terminal has said the window is not in front (default: true). It never fires while you are looking at the screen, and a terminal that does not report focus never triggers it at all. `/ui notify <on\|off>` flips and saves it |
-| `behavior.command_allowlist` | Command prefixes auto-approved in chat/code sessions (e.g. `["git status", "go test"]`); safety-flagged commands always prompt |
-| `behavior.read_only_commands` | Extra command prefixes treated as read-only inspection (they run without prompting in every mode, alongside the built-in list) |
-| `behavior.read_only_auto` | Whether built-in inspection commands run without prompting (default: true); `false` makes reads prompt like anything else |
-| `behavior.scope_dirs` | Directories added to a session's working scope at start — the config form of `/add-dir` / `--add-dir`. The session is always scoped to the directory it was opened in; these are the ones beside it the work legitimately reaches (a config directory, a sibling checkout) |
-| `behavior.default_mode` | Permission mode sessions start in: `manual` (default), `accept-edits`, `auto`, or `plan` |
-| `behavior.mode_cycle` | Shift+Tab mode order (default: `["manual", "accept-edits", "auto", "plan"]`) |
-| `behavior.classifier_model` | Model auto mode's permission classifier uses (default: the session model) |
-| `behavior.classifier_timeout_seconds` | Timeout per classifier request (default: 30) |
-| `behavior.classifier_max_tokens` | Max tokens for the classifier's response (default: 1024) |
-| `behavior.classifier_retries` | Extra attempts before a failed classifier check falls back to prompting (default: 1) |
-| `behavior.memory_disabled` | Turn off durable memory: no recall injection, no `remember` tool (default: false) |
-| `behavior.memory_max_entries` | Max memories injected into the system prompt per session (default: 20) |
-| `behavior.memory_max_tokens` | Hard token budget for the injected memory block (default: 1200) |
-| `behavior.check_in_interval_rounds` | Tool rounds before a turn is asked to take stock (default: 40). It is the session's and the headless run's; a sub-agent's is shorter and is not this key's to set |
-| `behavior.check_in_max_doublings` | How far that interval widens over one turn (default: 2 doublings); any negative fixes it, so a long turn is asked at the same rate from first round to last |
-| `behavior.system_prompt_extra` | Extra text appended to the system prompt |
-| `agents.model` | Model sub-agents run on (default: the session model); `"inherit"` follows the session model explicitly |
-| `agents.profiles.<role>.model` | Per-role override, `<role>` being `researcher` or `writer` (also settable as `agents.researcher_model` / `agents.writer_model`) |
-| `agents.max_concurrent` | Sub-agents running at once; further spawns queue (default: 3) |
-| `secrets.env` | Environment variables to declare as [secrets](#secrets) in every session — commands get them, the model never sees their values. Names only; an unset one is skipped with a warning |
-| `mcp.disabled` | Start no MCP server and register none of their tools, whatever is defined (default: false) |
-| `mcp.startup_timeout_seconds` | How long each MCP server gets to connect and list its tools before the session starts without it (default: 20) |
-| `mcp.servers.<name>` | One [MCP server](#mcp-servers) per table: `command` + `args` + `env` for a local one, `url` + `headers` (+ `type = "sse"`) for a remote one, `read_only = true` to let its tools run without asking, `disabled`, `timeout_seconds`. `${NAME}` in any value reads the environment |
-| `mcp.json` | The same servers as `mcpServers` JSON beside `config.toml`, the shape every MCP client documents, so a vendor's snippet pastes in unchanged. A project's own live at `.mcp.json` or `.shhh/mcp.json` under the repository root and must be trusted before they start |
-| `skills/<name>/SKILL.md` | User-scope [Agent Skills](https://agentskills.io/specification), one directory each beside `config.toml` (also `~/.agents/skills`, `~/.claude/skills`). Project skills live in the checkout under `.shhh/skills`, `.agents/skills` or `.claude/skills`. `shhh skills` lists what a session here would load |
-| `agents/<name>.toml` | Custom agent profiles, one file each beside `config.toml`: model, reasoning, permissions (`read`/`write`/`execute`/`web`), tool allowlist, starting mode, prompt and budgets. Spawnable by name; a file named `researcher` or `writer` overrides the built-in. See [`docs/agents/`](docs/agents/README.md) |
-| `summary.model` | Model the session summary is read on (default: the session model). The readings are frequent, so this is the one setting in the section worth changing — point it at a fast, cheap model |
-| `summary.interval_rounds` | Tool rounds between readings (default: 10). Higher is cheaper and staler |
-| `summary.min_gap_seconds` | Wall-clock floor between two readings (default: 20), so a burst of fast rounds cannot rewrite the block repeatedly |
-| `summary.timeout_seconds` | Timeout per reading (default: 20) |
-| `summary.max_tokens` | Max tokens for a reading's response (default: 512) |
-| `summary.disabled` | Turn the session summary off: no readings, no requests, no `SUMMARY` block (default: false) |
-| `summary.title` | Name an unnamed session after its first turn, on the summary model, for `/chats`, `shhh chats` and the exit banner (default: on when `summary.model` is set, off otherwise). A name you give with `/save` or a rename always wins |
-| `summary.intervene_cooldown_intervals` | Reading intervals between two verdict-driven interruptions (default: 2), so one steer has time to take effect before another is allowed |
-| `summary.steer_target_chars` | How much of the instruction a steer quotes back to a drifting turn (default: 400); any negative quotes it whole |
-| `prompts.steer` | File whose contents replace the message a drifting turn is given. May name `{{target}}` (the instruction it was judged against) and `{{reason}}` (what the reading noticed). A path that cannot be read, a file that is empty, and one naming a substitution the wording does not take all stop the session rather than falling back silently. A relative path resolves beside `config.toml` |
-| `prompts.check_in` | File replacing the message a turn that reached its interval is given. May name `{{rounds}}` and `{{finished}}` (the closing line, which differs between a session and a sub-agent) |
-| `prompts.summary` | File replacing the instruction the summary model reads under. The digest it judges is appended after it; it takes no substitutions, so any is refused |
-| `prompts.classifier` | File replacing the instruction auto mode's permission classifier decides under. The proposed call is appended after it; it takes no substitutions, so any is refused |
-| `sandbox.profile` | Containment profile for assistant commands: `workspace` (network preserved, default) or `workspace-netless` |
-| `sandbox.deny_extra` | Extra paths masked from contained commands (the built-in mask — `~/.ssh`, `~/.aws`, `~/.config/gh`, shhh's own config/state dirs — cannot be disabled) |
-| `sandbox.write_extra` | Extra writable paths inside containment (beyond the workspace, scratch, and toolchain caches) |
-| `sandbox.container_engine` | Force the container-sandbox engine (`podman` or `docker`); empty auto-detects, preferring a rootless engine |
-| `sandbox.container_image` | Digest-pinned image (`name@sha256:…`) for container sandboxes; required before `--sandbox` works |
-| `sandbox.image_allowlist` | When set, restricts sandbox images to these digest-pinned references |
-| `sandbox.container_memory` | Sandbox memory ceiling (default: `2g`) |
-| `sandbox.container_cpus` | Sandbox CPU ceiling (default: `2`) |
-| `sandbox.container_pids` | Sandbox process-count ceiling (default: 256) |
-| `sandbox.container_ttl_hours` | Hours before an owned sandbox container is reaped at startup (default: 24) |
-| `sandbox.require_isolation` | Minimum verified isolation level for sandbox runs (`process`, `container`, or `vm`); an unverifiable requirement fails creation instead of downgrading |
-| `web.allow_private` | Let `web_fetch` reach private/loopback/link-local/CGNAT addresses and any port (default: false — public addresses on ports 80/443 only); cloud metadata endpoints stay blocked regardless |
-| `web.fetch_max_bytes` | Download ceiling per fetch (default: 2 MiB) |
-| `web.fetch_timeout_seconds` | Time ceiling per fetch, redirects and body read included (default: 30) |
-| `web.cache_ttl_minutes` | How long a cached response stays fresh (default: 60) |
-| `web.search_provider` | `web_search` backend; `brave` is the default and only provider so far |
-| `web.search_api_key` | Enables the `web_search` tool; without it the tool is not registered |
-| `lsp.disabled` | Turn off the language-server integration: no servers started, no `definition`/`references` tools, no after-edit diagnostics (default: false) |
-| `lsp.request_timeout_seconds` | Timeout per language-server request, initialize handshake included (default: 15) |
-| `lsp.diagnostics_timeout_seconds` | How long an applied edit waits for fresh diagnostics before giving up quietly (default: 3) |
-| `appearance.accent_color` | TUI accent color |
-
-## Providers
-
-| Provider | Name | Default Model | Default Base URL |
-|---|---|---|---|
-| OpenAI | `openai` | `gpt-4o` | `https://api.openai.com/v1` |
-| Anthropic | `anthropic` | `claude-opus-5` | Anthropic API |
-| Google Gemini | `gemini` | `gemini-2.5-flash` | Google AI API |
-| OpenRouter | `openrouter` | `anthropic/claude-sonnet-4-6` | `https://openrouter.ai/api/v1` |
-| OpenAI Responses | `openai-responses` | `gpt-4.1` | `https://api.openai.com/v1` |
-| OpenAI-Compatible | `openai-compatible` | `llama3` | `http://localhost:11434/v1` |
-
-Each provider picks a fast, capable default model. Override with `provider.model` in config or the `SHHH_MODEL` env var — and note the order: `--model` beats `SHHH_MODEL`, which beats `provider.model`. A `SHHH_MODEL` left exported in your shell profile will overrule anything `/model default` writes; `shhh doctor` names it on the `model` row when that is happening.
-
-`openai` and `openai-responses` are two dialects of the same API. Chat completions (`openai`) is the older, wider-supported shape; the Responses API (`openai-responses`) is what the reasoning families are served through, and what gateways route them to. The conversation goes up as a flat list of typed items rather than messages with attached tool calls, the system prompt travels as `instructions`, and `store` is off — shhh sends the whole conversation each turn, so there is nothing to gain from server-side retention. If a model 404s or complains about its input shape on one, try the other.
-
-### Reasoning effort
-
-How hard the model thinks before it answers is a session setting of its own. `Ctrl+R` cycles it — off → low → medium → high, wrapping — `/reasoning <level>` sets it outright, and the level is stated on the vitals rail beside the model. It resolves like the model does: `--reasoning` beats `SHHH_REASONING`, which beats `provider.reasoning`; `/reasoning default <level>` persists one and says so when something is overruling it. A change applies from the next model request, not the one in flight.
-
-Each provider is handed the level in its own dialect — a named effort on the OpenAI dialects, a token budget on Anthropic (extended thinking, with the reply's own ceiling respected) and on Gemini. Sub-agents inherit the session's level, so a level you set is true of the work as well as the rail.
-
-What the model thinks is shown, not just spent: a round that reasoned lands a `✻ think    42 lines` row above the work it led to, filling while the model thinks so a long wait reads as work rather than as a spinner. It is folded like everything else — `Enter` under the reading cursor opens it to the end of the thought, again for all of it, again to close it — and the end rather than the start, because four hundred lines of reasoning are read for where they arrived. Providers differ in what they let through: Anthropic and Gemini stream the words as they are written, and a provider that returns only a signature or a redacted block draws no row, since there is nothing to draw.
-
-`off` is the default, and it means the field is not sent at all rather than sent as a zero. That distinction matters: `reasoning_effort` on a model that has no reasoning to spend — `gpt-4o`, `gpt-4.1` — is a 400, so a session that never touches the key sends exactly the requests it sent before the setting existed.
-
-A gateway that wants a level forced regardless, or that needs the sampling temperature reasoning models reject stripped, still does it with rewrite rules:
-
-```toml
-[[rewrite]]
-when  = { model = "gpt-5*" }
-op    = "set"
-path  = "reasoning.effort"
-value = "high"
-
-[[rewrite]]
-when = { model = "gpt-5*" }
-op   = "delete"
-path = "temperature"
-```
-
-The OpenAI-shaped providers (`openai`, `openai-responses`, `openrouter`, `openai-compatible`) can enumerate their endpoint: the first bare `/model` of a session queries `GET {base_url}/models` and offers what actually answers there, filtered to the chat-capable ids. That is the only way to know the catalog of a local runtime or a private gateway — Ollama, vLLM, LiteLLM — where the curated list is necessarily empty. The query is lazy (nothing runs until you ask), bounded at 10 seconds, cached for the session, and cancellable with Esc; an endpoint that refuses falls back to the curated catalog and says why. A gateway profile can turn the query off entirely — see [Turning off model discovery](#turning-off-model-discovery).
-
-## Gateway profiles
-
-A private or self-hosted gateway is OpenAI-compatible in shape but rarely in detail: one rejects a parameter the upstream forbids, another hands back an id that must not be echoed to it, a third publishes its catalog at a path of its own. Those are per-deployment facts that change without warning, and they have no business living in provider code. A **profile** puts them in your config, where fixing one is an edit instead of a release.
-
-Every provider lives in one file: `<config-dir>/providers.toml` — `~/.config/shhh/providers.toml` on every platform — with a `[[provider]]` block each. Every block needs a `name`, and it registers exactly like a built-in: `--provider gateway`, `provider.default = "gateway"`, `SHHH_PROVIDER=gateway`.
-
-```toml
-[[provider]]
-name        = "gateway"
-api         = "openai-chat"            # or "openai-responses" / "anthropic-messages"
-base_url    = "https://llm-gateway.internal/v1"
-api_key_env = "GATEWAY_API_KEY"        # or api_key = "..." for a literal
-models_path = "/v1/models/simple"      # optional: a non-standard catalog endpoint
-
-  [provider.headers]
-  X-Title = "shhh"
-
-  [[provider.models]]
-  id             = "gemini-3.1-pro"
-  context_window = 1048576
-  max_tokens     = 65536
-  cost           = { input = 2.0, output = 12.0, cache_read = 0.2 }
-
-  [[provider.rewrite]]
-  when  = { model = "gemini-*" }
-  op    = "cut-at"
-  path  = "messages[].tool_calls[].id"
-  value = "__thought__"
-  note  = "The gateway appends __thought__<base64> to tool-call ids; the upstream rejects the fabricated ones when they come back."
-
-[[provider]]
-name     = "local"
-base_url = "http://localhost:11434/v1"
-```
-
-The older form — one profile per file in `<config-dir>/providers/`, with the filename as the provider name unless the file sets one — still loads, and `providers.toml` is read first when both declare the same name. `shhh providers migrate` folds the directory into the one file; see [One file](#one-file) below.
-
-A file is one form or the other: settings at the top level *and* `[[provider]]` blocks in the same file is refused, rather than letting the top-level half load as a provider nobody meant. So is the same `name` twice in one file. A bad file is reported and skipped on its own — one profile that will not parse never takes the session down with it.
-
-`shhh providers` lists what resolves on this machine and checks each profile: where it points, whether its key is actually exported, what it declares, and what its rules do — including the `note` on each, because a profile outlives the memory of the incident that caused it.
-
-### Endpoints
-
-One gateway is usually several addresses. The Claude models answer on the Messages dialect at a path of their own, the OpenAI-shaped models at the root, the reasoning families through the Responses API — one deployment, one key, one set of house rules. An `[[provider.endpoint]]` is one of those addresses, and it says only what differs:
-
-```toml
-[[provider]]
-name        = "gateway"
-base_url    = "https://llm-gateway.internal/v1"
-api_key_env = "GATEWAY_API_KEY"
-
-  [[provider.models]]
-  id = "gpt-5.2"
-
-  [[provider.endpoint]]
-  match    = ["claude-*"]                          # globs for the models nobody enumerated
-  api      = "anthropic-messages"
-  base_url = "https://llm-gateway.internal/anthropic"
-
-    [provider.endpoint.headers]
-    anthropic-beta = "context-1m-2025-08-07"
-
-    [[provider.endpoint.models]]
-    id             = "claude-opus-5"
-    context_window = 1000000
-    cost           = { input = 5.0, output = 25.0 }
-```
-
-An endpoint takes the same fields the `[[provider]]` block does, and inherits every one it leaves out:
-
-| Field | Meaning |
-|---|---|
-| `match` | Globs against the requested model (`["claude-*"]`), tried in file order after every endpoint's declared ids |
-| `label` | Name for this endpoint in `shhh providers`; defaults to its base URL |
-| `api` | Wire dialect for this address, when it differs from the provider's |
-| `base_url` | This address |
-| `api_key` / `api_key_env` | A key of its own, for the rare gateway whose paths authenticate separately |
-| `models_path` | A catalog endpoint of its own |
-| `discovery_disabled` | Turn the catalog query off for this address alone, or back on under a provider that turned it off |
-| `headers` | Merged over the provider's; the endpoint wins a collision |
-| `models` | Declared here rather than at the provider level, which is also what routes them here |
-| `rewrite` | Rules for this address; the provider's run first, then these |
-
-An endpoint must declare `models` or `match` — one with neither can never be reached, so it is refused at load rather than sitting there doing nothing.
-
-A request goes to the endpoint that **declares its model**, or failing that to the first whose **`match` glob** claims it. A declared id always wins, including one declared at the provider level: `[[provider.models]] id = "claude-opus-5"` sends that model to the default address even when an endpoint matches `claude-*`. Anything unclaimed goes to the profile's own `base_url`, which is why that stays required even when every model is routed. A profile with no endpoints routes everything there and behaves exactly as it always did. A model declared in two places is refused at load, naming both — either could be the one meant.
-
-Routing happens per request, so `/model claude-opus-5` mid-session crosses from one dialect to the other with nothing rebuilt, and `/model` lists every endpoint's models as one catalog. Each endpoint's client is built the first time something needs it: an endpoint you never touch costs nothing, and one whose key is unset does not fail a session that was never going to use it.
-
-`provider.base_url` and `SHHH_BASE_URL` do not reach a gateway profile — a profile carries its own addresses, and a base URL meant for one provider silently repointing another is the bug that rule exists to prevent. Where a base URL override does reach a profile (the setup card offering a local runtime), it collapses the routing and pins every model to that one address: an override naming one endpoint for everything has already answered the question routing exists to answer.
-
-### One file
-
-```bash
-shhh providers migrate            # write providers.toml, leave the originals
-shhh providers migrate --dry-run  # print the file it would write, change nothing
-shhh providers migrate --prune    # and remove the files it replaces
-```
-
-It reads every profile in load order — `providers.toml` and `providers/*.toml`, across every config directory — and re-emits them as `[[provider]]` blocks. Re-emitting rather than concatenating is the point: TOML nesting means the directory form's top-level keys have to be re-keyed to live under `[[provider]]`, so a concatenation would parse into something else entirely. A file that will not parse stops the write, naming what it could not read, rather than letting a provider silently vanish from the consolidated file.
-
-### Turning off model discovery
-
-`discovery_disabled = true` on a `[[provider]]` stops the `GET {base_url}/models` query the `/model` picker makes, so the declared models are the whole list:
-
-```toml
-[[provider]]
-name               = "gateway"
-base_url           = "https://llm-gateway.internal/v1"
-api_key_env        = "GATEWAY_API_KEY"
-discovery_disabled = true
-
-  [[provider.models]]
-  id = "gpt-5.2"
-```
-
-Bare `/model` then opens straight onto the declared catalog — no query, no ten-second budget, no request to an endpoint you have told shhh not to call. A gateway that publishes hundreds of ids you have no access to, one whose `/models` is slow or absent, or one you would simply rather not have queried is what this is for.
-
-It is inherited like every other endpoint field, and an endpoint can override it either way: `discovery_disabled = false` on one address re-enables the query there under a provider that turned it off. When no endpoint can enumerate — every one either disabled or on the Messages dialect, which has no catalog at all — the provider stops offering discovery entirely rather than running a query that could only return what the picker already has.
-
-This is about the catalog, not about what you can run: `/model <name>`, `--model` and `SHHH_MODEL` still accept any name, whether it is declared or not.
-
-### Model metadata
-
-Declared models seed the `/model` picker before discovery runs, and supply what a catalog endpoint returning bare ids cannot: pricing for the spend meter, `context_window` for the context gauge. Costs are in dollars per million tokens, the unit model cards publish. Anything you leave out falls back to the public pricing table shhh already downloads (LiteLLM's `model_prices_and_context_window.json`, refreshed daily), so a profile only has to declare what that table gets wrong or has never heard of — `shhh providers` marks each model `profile`, `public table`, or `unpriced`. `cache_read` and `cache_write` are accepted and reported but not yet billed: shhh's usage accounting has no cached-token counters. `max_tokens` is metadata only — shhh does not add it to requests; a gateway that needs it set can get it from a `set-default` rule.
-
-`reasoning` says how the model takes a thinking level, for an id the public table has never heard of or gets wrong:
-
-```toml
-  [[provider.models]]
-  id        = "gw-opus"
-  reasoning = { kind = "adaptive", levels = ["xhigh", "max"], always_on = true }
-```
-
-`kind` is `none` (no knob — the model is never sent a level, whatever the session asked), `effort` (a named level, the chat-completions and Responses shape), `budget` (a token budget, the older Anthropic and the Gemini shape) or `adaptive` (a named level under adaptive thinking, the current Anthropic shape). `levels` lists the rungs above high the model accepts — `xhigh`, `max`; low, medium and high are always there. `always_on` marks a model that thinks whether or not it is asked to. A model that declares nothing is answered by the public table, then by a floor by family; `shhh providers` shows which shape each declared model resolved to.
-
-### Rewrite rules
-
-Each rule names a place in the JSON on the wire and an edit to make there. Rules run in file order, so a later rule sees an earlier rule's edit, and they are written against the wire format rather than against shhh's own types — a field shhh doesn't model is still reachable.
-
-| Field | Meaning |
-|---|---|
-| `when.model` | Glob narrowing the rule to some models (`"gemini-*"`); omit to match every request |
-| `direction` | `request` (default) or `response` — response rules run on a JSON body and on each streamed `data:` event |
-| `path` | Dotted keys, with `[]` for "every element of this array": `top_p`, `chat_template_kwargs.enable_thinking`, `messages[].tool_calls[].id` |
-| `op` | The edit (below) |
-| `value` | The operand: what to set, cut at, or trim |
-| `to` | The second operand: the new key for `rename`, the replacement for `replace` |
-| `note` | Why the quirk exists; printed back by `shhh providers` |
-
-| Op | Effect |
-|---|---|
-| `delete` | Remove the field — a parameter the upstream rejects |
-| `set` | Set it, replacing any value; builds the objects on the way to it, so a rule can add a parameter the request has no place for |
-| `set-default` | Set it only when absent or null; also builds missing objects |
-| `rename` | Move it to `to` within the same object |
-| `cut-at` | Truncate a string at the first occurrence of `value` |
-| `trim-prefix` / `trim-suffix` | Remove `value` from either end of a string |
-| `replace` | Replace every `value` in a string with `to` |
-
-A path that matches nothing is not an error — a rule with nothing to do does nothing, which is what lets one profile cover a conversation where only some messages carry tool calls. Only `set` and `set-default` create anything; the ops that edit an existing value never invent one, and none of them invent an array. A rule that can't work at all (an unknown op, a `set` with no value, a malformed glob) is refused at load, naming the file and the rule index, and that profile alone is skipped: one bad file never takes the session down.
-
-## Environment Variables
-
-### Universal
-
-| Variable | Description |
-|---|---|
-| `SHHH_PROVIDER` | Default provider |
-| `SHHH_MODEL` | Default model |
-| `SHHH_API_KEY` | API key (works with any provider) |
-| `SHHH_BASE_URL` | Base URL override for the built-in providers; gateway profiles carry their own and ignore it |
-
-### Provider-Specific Fallbacks
-
-These are checked when `SHHH_API_KEY` is not set:
-
-| Variable | Provider |
-|---|---|
-| `OPENAI_API_KEY` | OpenAI |
-| `ANTHROPIC_API_KEY` | Anthropic |
-| `GEMINI_API_KEY` | Gemini |
-| `OPENROUTER_API_KEY` | OpenRouter |
-
-### Precedence
-
-```
-CLI flag > SHHH_* env var > Provider-specific env var > Config file > Provider default
-```
-
-### When there is no provider
-
-Run shhh with nothing configured and it says where it looked, rather than
-naming one variable out of four:
-
-```
-┌─ No model provider configured ─────────────────────────────────────────┐
-│ shhh looked in four places:                                            │
-│   ✗ env       SHHH_API_KEY, OPENAI_API_KEY — unset                     │
-│   ✗ config    ~/.config/shhh/config.toml — no provider api_key         │
-│   ✗ profiles  no ~/.config/shhh/providers.toml                         │
-│   ✓ local     localhost:11434 — llama3.3, qwen2.5-coder                │
-│                                                                        │
-│ the local runtime is already answering — that is the quickest way in   │
-├────────────────────────────────────────────────────────────────────────┤
-│ [enter] setup wizard   [p] paste a key   [o] use llama3.3 locally      │
-└────────────────────────────────────────────────────────────────────────┘
-```
-
-The four places are the search the resolution actually does, in its own order,
-and a key that was found is named by its last four characters and never by
-more. `[enter]` picks a provider and takes a key, `[p]` takes one for the
-provider already resolved, and `[o]` appears only when a local runtime actually
-answered — each asks afterwards whether to save it, so meeting the card twice
-is a choice. Piped or redirected, the same information prints plainly with no
-offers.
-
-### When a provider fails
-
-Every dialect's failures go through one classifier, so a 401 from Anthropic, a
-429 from a gateway and a dropped connection all arrive named:
-`unauthorized`, `rate limited`, `quota exhausted`, `overloaded`, `context too
-long`, `network`, `malformed response`, `cancelled`, and `unclassified` for
-anything the table has no case for. Each renders as an ordinary activity row
-with the provider's own words in a bounded detail body underneath, and the keys
-for its class under that:
-
-```
-   ✗ model   gpt-4o · 401 unauthorized                key ···4f9c rejected  0.3s
-    Incorrect API key provided
-    [e] enter a new key · [p] switch provider · [ctrl+e] to use them
-    nothing in the turn was lost
-```
-
-The keys are pressed in focus mode (`ctrl+e`, which opens on the failure), so
-the input keeps all four letters for typing — which is why the row draws them
-grey with `[ctrl+e] to use them` beside them until the cursor is standing on
-it, and paints them as pressable keys only then. A key the input is keeping is
-not an offer. `[e]` opens a masked prompt — a
-bullet per rune, the key never echoed — and puts the new key to work for the
-session; `[p]` switches provider; `[r]` asks again; `[c]` compacts when the
-request was too long for the window. A key the session cannot honour is not
-offered. The one-shot prints the same row with the way out stated as a command
-instead of a key, and a pipe gets one classified line and no chrome.
-
-### When a stream drops, or a limit bites
-
-A reply that stopped halfway is not lost. The text already written and the tool
-calls the model had *finished* writing are kept, and a second row under the
-failure offers both ways on:
-
-```
-   ⚠ stream  dropped mid-reply · ~1,204 tokens kept · 2 tool calls  partial  11s
-    …so I'll thread the sentinel through runRound and then
-    [c] continue from here · [r] ask again from scratch · the partial reply stays
-```
-
-`[c]` hands the partial turn back to the model as its own and asks it to carry
-on from where it stopped — with tool calls, it resumes the round they belong to
-rather than re-asking for them. `[r]` throws the partial away and asks the
-question again. Nothing is re-requested on its own: a drop always waits for you.
-A call whose arguments were cut off mid-write is never kept, because running it
-would be worse than losing it.
-
-A request that was never answered has nothing to keep, so it waits instead — on
-a meter, a bounded number of times:
-
-```
-   ⚠ model   gpt-4o · 429 rate limited                        retry in 20s  0.3s
-    Rate limit reached for gpt-4o. Please try again in 20s.
-    ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱ retry in 12s · attempt 1 of 3
-    [m] finish this turn on gpt-4.1 · [esc] stop and keep the 3 edits
-```
-
-The wait is the provider's own when it named one and doubling backoff when it
-did not, capped at a minute. Three attempts, counted across the stall and stated
-on every one of them; any request the provider actually answers resets the
-count. `[esc]` stops at any point and keeps everything the turn already did.
-`[m]` finishes on the closest cheaper model in the same provider's catalog —
-named, never invented, and not offered when the pricing table cannot rank the
-model in hand. Switching mid-turn is recorded in the transcript and splits
-`/stats` per model, so a turn that finished on two models is priced as two
-things.
-
-### When the context window fills
-
-At the alert threshold a turn ends on a card rather than on a grey line about
-a trim that already happened:
-
-```
-┌─ Context is nearly full ──────────────────────── 94% · 188k / 200k ────┐
-│ ▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▱▱                                                 │
-│                                                                        │
-│ 88k  tool output — 6 results                                           │
-│ 54k  the conversation — 14 messages                                    │
-│ 31k  system prompt                                                     │
-│ 15k  project context                                                   │
-│                                                                        │
-│ compacting keeps the plan, 3 changed files and the last 2 turns        │
-│ and drops the older turns and their tool output — recovers about       │
-│ 96k (48%)                                                              │
-│ keeping going asks nothing further — the oldest tool output is elided  │
-│ before each request from here, and what falls out does not come back   │
-├────────────────────────────────────────────────────────────────────────┤
-│ [enter] compact now · [n] new session · [esc] keep going               │
-└────────────────────────────────────────────────────────────────────────┘
-```
-
-This is the only place in shhh that itemises token spend, because it is the
-only place where you can act on it. The categories are the same accounting the
-rails and `/stats` read, so they sum to the number on the title rail, and a
-category shhh cannot characterise loses its clause instead of gaining an
-invented one. The meter is the inspector rail's meter — same cells, same
-thresholds — so the card and the rails never disagree about what colour 84%
-is.
-
-What compacting keeps is named only where it exists, and it is kept: the
-approved plan and its checklist carry across, the changeset (and so `/diff`
-and `/undo`) is untouched, and the most recent turns come through **verbatim**
-rather than as a description of themselves — bounded by two turns and by a
-share of the window, and always cut at a turn boundary so the rebuilt
-conversation is well-formed. `[n]` saves the session to the autosave slot
-(`shhh chat --continue` reopens it) and starts fresh. `[esc]` keeps going, and
-the card says what that costs first: with tool output to trim, the oldest of
-it is elided before every request from there on and nothing asks again; with
-none left, the first request that overruns the window fails rather than
-shrinks.
-
-The card is raised once per crossing, not once per turn, and only as a turn
-closes — it waits rather than interrupting a surface you already have open,
-an attached sub-agent, a steering message you queued for the next turn, or a
-turn that stopped at its round limit. The warning threshold below it stays
-what it was: a colour change in the rails.
-
-### When the agent runs out of rounds
-
-A turn may only trigger so many consecutive tool rounds
-(`behavior.max_tool_rounds`, 150 by default). Reaching that used to end the turn
-on a grey line telling you to send a message. It is a checkpoint now — the one
-row in this section where nothing failed:
-
-```
-   ⚠ rounds  150 of 150 used · the turn's own bound          stopped 4m12s
-    3 files changed +30 −4 · the suite has not been re-run since
-    [v] review what it did · [+50] more rounds · [u] undo the turn
-    [ctrl+e] to use them
-```
-
-The row says what the turn managed before it stopped, and whether anything has
-checked those edits since they landed. It *is* the turn's closing block rather
-than something above one, so nothing offers `[v]` and `[u]` twice; a turn that
-changed nothing says so and offers only the grant, because a key that cannot be
-honoured is not offered.
-
-`[+50]` (pressed as `+`, in focus mode with the rest of the recovery keys)
-gives the turn more rounds and lets it carry straight on: nothing is added to
-the conversation, nothing is re-asked, the counter is not reset, and the
-changeset keeps collecting under the same turn — so the turn is still priced as
-one thing and `[u]` still takes all of it back.
-
-**The grant doubles.** The next one is 100, then 200, then 400 — each grant is
-everything the turn has been given already, plus another block. A stop you have
-already answered with "keep going" is not worth asking again at the same
-interval, so the checkpoint goes quiet on its own instead of collecting a toll
-every few minutes.
-
-**From the second stop, `[!]` ends the question.** It lifts the ceiling for the
-rest of the turn: no further stops, the rail counting up against no bound. It
-is not offered at the first stop, because that one is the checkpoint doing its
-job — the way out of a turn told to run is to interrupt it, and that is a trade
-worth making only once you have seen where the turn got to.
-
-```
-   ⚠ rounds  200 of 200 used · 50 already granted            stopped 7m48s
-    5 files changed +112 −40
-    [v] review · [+100] more rounds · [!] let it run · [u] undo the turn
-```
-
-Both expire with the turn: your next message starts from the configured ceiling
-again. Throughout, the vitals rail carries the decision — `round 150/150 +50`
-while the offer stands, `round 150/200` once it is taken, `round 214/∞` once
-`[!]` has removed the ceiling.
-
-**For a run you are not sitting in front of**, `shhh code --max-rounds 0` starts
-the session with no ceiling and no checkpoint at all, which is the one thing
-`[+]` and `[!]` cannot do for you — they are keys, and nobody is there to press
-them. `--max-rounds N` sets a different ceiling for one run instead, and a
-negative `behavior.max_tool_rounds` says the same thing as `--max-rounds 0` for
-every run on the machine. The flags mean the same on both sides of `--print`;
-only the way out of a runaway differs, being the exit code in a headless run and
-the interrupt key in a session. A headless run has nobody to offer the grant to,
-so without the flag `shhh code -p` still fails at the cap.
-
-## Usage
-
-### Generate a command
-
-```bash
-shhh cmd compress this directory into a tar.gz
-```
-
-The result is one screen: the command, one line explaining it, a containment line stating what it can reach, and one row of bracketed keys. `[↵]` runs, `[e]` edits, `[r]` revises, `[a]` shows the other commands it considered, `[x]` asks for the long explanation, `[c]` copies, `[s]` saves it as a snippet, `[esc]` quits. For multi-command output `[↵]` runs everything and `[t]` prompts before each command.
-
-The explanation is on by default — a command you don't understand is a command you shouldn't run. `-e/--explain` buys the longer form rather than the only form, and `-s/--silent` (or `behavior.silent_mode`) suppresses it.
-
-The containment line comes from the same resolver the agent's approval cards use: what the command writes, whether it leaves the machine, and whether it runs under `sudo`. It is honest about its limits — a verb shhh can't account for reads `writes unknown · network unknown`, never `read-only`.
-
-On a destructive command the safe default moves. `[↵]` stops running and instead states what would be affected — the paths it resolved, described as the filesystem holds them right now — and running takes a deliberate `[y]`. Where the command has a real dry run (`rsync`, `git clean`, `make`, `terraform`, `find … -delete`, `sed -i`), `[d]` performs it and lists what would change; where it doesn't, the key isn't offered rather than being wired to the real thing.
-
-A revise keeps the previous command dimmed above the new one with the feedback that replaced it, counts the revisions, and `[u]` steps back to the one before — command, explanation and conversation together, with no second call to the model.
-
-When there is more than one sensible way to do the job, the generator can say so, and the row gains `[a] 2 others`. It opens a list of every command it offered — the one on screen marked `◆`, each of the rest carrying the one phrase that says why you might take it instead (`faster · no process names`, `tracked files only`). Choosing one makes it the command on screen and hands you back to the key row, explained and with its own containment line and its own default: an alternative is a command like any other, not a shortcut past the screen that vets it. Nothing asks for alternatives that aren't there — most requests have one right answer, and their absence leaves the row exactly as it was.
-
-Piped, none of this applies: `shhh` prints the raw command to stdout and nothing else — and the alternatives are never even asked for on that path.
-
-### Chat mode
-
-Multi-turn conversations with file and directory access:
-
-```bash
-shhh chat
-shhh chat "help me debug this failing test"
-shhh chat --continue     # resume the most recent session
-shhh chat --resume       # pick a saved chat to resume
-shhh chats               # the same browser; x deletes, r renames
-shhh chats list --json   # the saved chats for a script (also show, delete, rename)
-```
-
-Every session is autosaved after each exchange to a slot of its own, named for the moment it began (`2026-08-30 14:05:07`), so `--resume` lists every conversation you have had and `--continue` picks up the most recent one. Use `/save <name>` inside a session to give a conversation a name worth remembering — or let the summary model name it: with `summary.model` set, an unnamed session gets a title of a few words after its first turn, shown beside the slot wherever chats are listed. Housekeeping happens where the chats are listed: `x` deletes the focused chat (after a confirm naming it and its branches), `r` renames it, in the `/chats` picker and the `shhh chats` browser alike; the chat you are in stays out of reach.
-
-Quitting hands the terminal back the way it was found, so the session goes off the screen in one frame. Three lines are left behind in its place — the slot the conversation was autosaved to and how many turns it holds, what the sitting cost, and the command that reopens it (`shhh chat --continue` or `shhh code --continue`, whichever was running). A session that never said anything leaves nothing, and one that could not be saved says so rather than offering a resume that would reopen something older.
-
-An empty session opens on a start screen rather than a blank prompt. It states what shhh already knows about the checkout — the path, the detected language and toolchain, the branch and how many files are dirty, the package count — and names both things that govern what happens next without being asked: the project files it read into the system prompt (`.shhh/project.md` or `AGENTS.md`), and the quality-gate suite in effect with the checks it runs. Under that, three concrete offers, ordered by what the working tree suggests: the most recent saved session to pick up (with its turn count, its cost where an observability record covers it, and how long ago it was), a read-only offer, and one that costs a single approval — each saying so. `↑↓` moves the pointer and `enter` types the offer into the input and submits it, so choosing one and typing it are the same act. Typing anything dismisses the list and keeps the facts; the screen is spent by the first thing you say to the model or by a conversation you load, so `/clear` afterwards does not bring it back. Everything on it is surveyed once when the session opens, never per frame.
-
-You can also pipe context into a chat — it's attached to your first message:
-
-```bash
-cat error.log | shhh chat "why is this failing?"
-```
-
-A message can also carry things that aren't text. **Ctrl+V** reads the clipboard properly rather than pasting it blind: a copied screenshot or a file copied in Finder or a file manager is staged as an **attachment** for your next message, and plain text still lands in the draft the way it always did. Dragging an image or a PDF into the terminal attaches it the same way — the terminal pastes its path, and a path pointing at an image can only have meant one thing. `/paste <path>` attaches a file by name, `/paste drop <name>` takes one back out, `/paste clear` drops what is staged, and `/paste` on its own is the Ctrl+V read. Nothing is drawn on screen: a rail above the input carries one chip per staged file while it waits — `▣ shot.png 412 KB · ≡ notes.md 2 KB`, the mark saying whether it is an image, a document or text — your own transcript row says `attached: shot.png (412 KB)` once it has gone, and the bytes ride on the user message itself — so they go out in the same request, are saved with the turn, and come back with `--continue`. Images and PDFs go to the provider natively where the API takes them (Anthropic, Gemini, and OpenAI's Responses API take both; chat-completions endpoints take images); text files are wrapped and inlined, with a ceiling on each attachment and on the set, and anything shhh can't carry is refused by name rather than dropped quietly. Staging an attachment mid-turn is fine — it goes with the steering line that joins the conversation next.
-
-**Shift+Enter** inserts a newline without sending. Enter has always sent, and terminals don't report Shift+Enter unless asked, so shhh asks: it turns on the terminal's modified-key reporting for the session and puts it back on exit. A terminal that doesn't support the request keeps **Alt+Enter** and **Ctrl+J**, which are bound to the same thing.
-
-Chat mode has read-only tools (`read_file`, `list_directory`, `search`) plus `execute_command`, which lets the assistant propose shell commands: each one is shown to you with safety warnings and only runs after you approve it with `y`.
-
-Every approval card states its blast radius before it offers a key, so the decision doesn't depend on your reading the command carefully twenty times a session. Severity leads as a word (`⚠ HIGH`, `⚠ medium`, `⚠ low`) with the border colour reinforcing it, and three fields follow: `touches` names the paths the command would write and describes them from disk (file count and size for a directory, "does not exist yet" for one it creates), `undo` says what could be done about them afterwards (`git` when every path is tracked, `partial`, `none`, or `n/a` when nothing in the workspace changes), and `network` says what the containment profile actually allows. Path resolution is static and honest about its limits — shhh knows a closed set of verbs whose operands are files, plus shell redirection, and anything else (`npm run build`, a pipe into `sh`, a path the shell expands) is reported as `unknown` with the reason rather than guessed at or quietly called "nothing". The containment state rides the title bar as a chip; when nothing is containing the command, `⚠ UNCONTAINED` is promoted there instead and the card explains the missing mechanism and points at `/sandbox doctor`. Keys sit below a rule so they never blend into the body, a safety-flagged command says why `[a] always` is absent rather than silently dropping it, and where the safe answer isn't obvious the card names it. And the card's keys are inert until the card holds the keyboard — where there is a sentence to protect. An approval arrives when the agent needs it, not when you're ready, so one that lands on top of whatever you were typing renders `[y] [n] [a] [d]` as not-yet-live and offers one live key — `[ctrl+space]` — that hands the keyboard over. Until you press it, `y` is a letter and goes into your sentence; a labelled rail (`DRAFT`, then `DECISION`) says which surface has the keyboard, your draft is held intact with the character its cursor is on stated beneath the card, and answering hands the keyboard straight back to it, mid-word. `[esc]` on a card you've taken the keyboard for returns to the draft and leaves the decision waiting — `[n]` is how you say no. A card that lands on an *empty* draft nobody has touched for a second has no sentence to protect, so it holds the keyboard itself and `[y]` answers it with no chord in front — the common case, since most approvals arrive while you're watching a turn work. It claims less than a card you handed the keyboard to: `[y] [n] [enter] [esc]` and nothing else, with `[a]`, `[d]` and `[A]` still behind `[ctrl+space]` (they're the keys whose consequence outlives the call, and the letters a sentence is likeliest to open with), and any other key hands the keyboard back and lands in your draft, so starting to type a message instead of answering costs you neither the first letter nor the decision. An edit card needs no `touches` row — the diff is the blast radius — so its reversibility rides the `+N −M` stats line instead; a `web_fetch` card shows the domain it leaves for, what goes out with the request, and what comes back.
-
-How much gets approved automatically is governed by a permission mode, cycled with Shift+Tab or set with `/permissions <name>` (`/perms` for short; it was `/mode` until the name sat one letter from `/model` on the same completion menu): **manual** prompts for every consequential tool call (the default), **accept-edits** auto-applies file edits but still prompts for commands, **auto** additionally runs allowlisted commands and sends everything else to an LLM permission classifier, and **plan** is read-only — edits and commands are refused. Read-only tools never prompt in any mode, and safety-flagged commands always ask. The status bar always shows the active mode; `behavior.default_mode` and `behavior.mode_cycle` configure the starting mode and cycle order.
-
-Underneath the mode sits a ladder of session grants. `[a]` on a confirm prompt grants **the shape of the call it is showing** — the command's leading words (`always allow "go test"`, which then covers `go test ./internal/...` but not `go build`) or the edited file's own directory (`always allow edits in internal/ui/chat/`) — and the card writes the scope on the key row, so you approve what you can read rather than a category you infer. The blanket grants are a command of their own: `/permissions allow commands` and `/permissions allow edits` stop the session asking about a whole category, which is a decision worth typing rather than pressing while a card is in front of you. `/permissions grants` lists everything the session has stopped asking about, and `/permissions revoke [commands|edits]` takes it back — grants are consulted before the mode is, so switching back to manual never cleared one, and until this existed the only way out was restarting. Config's own `behavior.command_allowlist` is not the session's to revoke and survives.
-
-A plan is approved as priced steps rather than as a paragraph. In plan mode the model is asked for a numbered step list with the files each step would touch, and the plan card renders it: every step carries its intent on the right (`read only`, `✎ creates 1 file`, `✎ deletes 2 files`, `$ runs`, `network`) and the paths it named beneath it — paths are never guessed, so a step that did not say gets no row rather than an invented one. One computed line prices the whole plan — files touched, whether anything is deleted, whether the network is needed, and whether it can be put back, read from the same git-tracked check the approval cards use. Below a rule, the options: each execution option names the mode the session enters, so accepting a plan is never an unstated mode change, and only the option under the pointer explains itself — five consequences stacked at once is a wall, not a choice. `[s]` saves the plan to `.shhh/plans/` without answering the prompt, `[esc]` keeps planning, and a plan the model wrote without structure still renders, as prose with the same options below it and nothing claimed about a radius that was never parsed.
-
-An approved plan then stays visible while it runs, so "where are we" never needs asking. Its steps become the transcript's steps: each one carries the number and title the plan gave it, in the order the agent actually reached it, and the steps nobody has started yet trail the turn as `· queued` headers. Work the plan never named is marked `+` in the ordinal column rather than renumbered into the list. Past 130 columns a `PLAN` block in the inspector rail draws the whole checklist — `✓ ✗ ▸ ·` per step, the current one emphasised, elapsed on each finished one, and a drift note when the run has departed from the plan — and the `THIS TURN` meter finally has a true denominator to draw against. Below 130 there is no rail, so `/plan` is the checklist: it prints the same list mid-turn, with the drift spelled out (what ran off the plan, what ran out of order, what was skipped past). `/plan save [name]` still writes the plan to `.shhh/plans/`, and `/plan drop` forgets an approved plan when the session has moved on from it.
-
-Inspection commands never prompt either, in any mode. A built-in allowlist of commands that cannot change anything — `ls`, `cat`, `head`, `grep`, `rg`, `find`, `git status`/`log`/`diff`/`show`/`blame`, `go list`/`env`/`doc`, `whoami`, and similar — runs straight through, so reading the repository costs no approvals. The list is conservative by construction: anything that compiles or runs project code (`go build`, `go test`, `make`, `npm run`) is *not* on it, flags that turn a read into a write are excluded per command (`find -delete`, `find -exec`, `sort -o`, `git branch -D`, `env CMD…`), any redirection, pipe, chaining, or command substitution disqualifies the whole command, and a safety-flagged command is never matched against it. `behavior.read_only_commands` adds your own entries; `behavior.read_only_auto = false` turns the built-in list off entirely (plan mode still inspects).
-
-In auto mode the classifier (the session model by default, `behavior.classifier_model` to override) judges each remaining tool call against your recent conversation and either runs it, refuses it with a reason the model sees, or falls back to asking you. Every classifier failure — timeout, invalid response, request error — fails closed to a prompt, never to an allow, and safety-flagged commands prompt you even when the classifier approves. The status bar shows `✦ checking` while a decision is in flight, classifier tokens count toward the session totals, and `/permissions why` shows the latest denial's reason.
-
-A session also has a **working scope**: the directory it was opened in, plus any directory you have added to it. Anything the agent writes inside the scope is judged by the permission mode alone; a path outside it is a second question — is this directory part of the work? — and the card asks it with the directory named, in every mode, however permissive: `scope  ~/.config/nvim/  — outside the working scope; approving adds it for this session`. Approving grants the directory for the rest of the session, so containment's write grants follow it and the command you just approved can actually write there; `[a]` grants it and stops asking about that shape of call as well. Two kinds of directory don't come along: a *sensitive* one (a home directory, a system root, another tool's credential store such as `~/.kube` or `~/.gnupg`) is never granted by a mode or the classifier and always asks a person, and a directory behind the containment deny mask is refused outright with the reason, because approving it would promise something the sandbox would go on refusing. Nothing in the scope is guessed: it is `/add-dir <path>` in a session (`/add-dir` lists it, `/add-dir drop <path>` takes one back), `--add-dir <path>` on `shhh code`/`shhh chat` (repeatable), or `behavior.scope_dirs` in config. `/permissions grants` lists the scope beside the session's other grants, `/sandbox scope` shows it as containment sees it, and the model is told where the boundary is so an out-of-scope path arrives as a request for `/add-dir` rather than as a call you refuse. Headless runs have nobody to ask: `--print` stays inside the scope it was given, `--yes` lets the run add ordinary directories itself, and sensitive ones still need `--add-dir`. The scope shapes process containment and file edits; `shhh code -p --sandbox` is the other model — a disposable container still gets exactly one mount, the workspace, and nothing else comes with it.
-
-Assistant commands additionally run inside OS-level process containment when a mechanism is available — bubblewrap on Linux (unprivileged user namespaces are probed first), Seatbelt on macOS (deprecated by Apple but functional). Contained commands can write only to the working scope (the session directory plus whatever `/add-dir` has added), scratch space, and toolchain caches, and a deny mask that cannot be disabled hides `~/.ssh`, `~/.aws`, `~/.config/gh`, and shhh's own config and state directories (masked paths read as empty and outrank any write grant). The exec confirm prompt carries the containment state as a chip on its title bar (and promotes `⚠ UNCONTAINED` there when there is no mechanism), `shhh doctor` reports the mechanism and resolved policy alongside every other setup check (`shhh code doctor` is the same two containment rows on their own, and `/sandbox` is the in-session equivalent), and a policy that can't be enforced faithfully fails the command rather than running it bare. `/run` — your own command — is never contained.
-
-For long or unsupervised runs, `shhh code -p --sandbox` goes a step further and execs approved commands inside a disposable container: Podman or Docker is auto-detected (rootless preferred and reported), the image must be digest-pinned and pass the configured allowlist, and the container gets exactly one writable mount (the workspace), no host environment or credentials, all capabilities dropped, and memory/CPU/pid ceilings. Isolation reporting is honest — `process < container < vm`, each level verified or explained — and a required level that can't be verified (`sandbox.require_isolation`) fails creation rather than silently downgrading. Every container shhh creates is recorded durably; records are reconciled at session start, containers past their TTL are reaped, and `/sandbox list|status|destroy <id>|prune|doctor` manages them in-session.
-
-`shhh code` sessions can also research the web through a guarded client. `web_fetch` retrieves a public http/https URL — HTML is reduced to bounded readable text (title, description, main content), JSON and plain text pass through bounded, and the result cites the final URL — while an SSRF guard blocks private, loopback, link-local, CGNAT, and cloud-metadata addresses (DNS answers are pinned and the connected address re-verified, so rebinding tricks don't help), redirects are re-validated per hop with credential headers stripped cross-origin, and byte/time ceilings bound every request. Fetching counts as an external action: manual and accept-edits modes prompt for it, auto mode sends it to the classifier. Responses are cached on disk (content-addressed, TTL-pruned, `web.cache_ttl_minutes`), and `web.allow_private = true` opts intranet/local-dev targets in (metadata endpoints stay blocked regardless). `web_search` is registered only when `web.search_api_key` is configured (Brave Search); without a key the model doesn't see the tool.
-
-`shhh code` sessions can also verify their work with the repository's own checks through a quality gate. Named suites of checks live in the workspace's trusted `.shhh/quality.json` — each check is a resolved executable plus an argv array, run as-is with no shell — and the model's `quality_gate` tool can only ever name a suite, never supply command text (`/gate run [suite]` and `/gate result` expose the same path to you, with the run happening in the background). Checks run with time, output, and concurrency ceilings, contained by the same OS-level mechanism as assistant commands with a **read-only workspace** by default (a suite sets `"allow_write": true` to opt out; scratch and toolchain caches stay writable either way), and each check's bounded output lands in the evidence store. Every result is fingerprinted against git HEAD plus the porcelain status: a result over a tree that has since changed reports **stale** instead of silently passing, and the verdicts are exactly `pass`, `fail`, `blocked`, or `cancelled` — blocked and cancelled are never a pass. Example config:
-
-```json
-{
-  "suites": {
-    "default": {
-      "checks": [
-        {"name": "vet", "exe": "go", "args": ["vet", "./..."]},
-        {"name": "test", "exe": "go", "args": ["test", "./..."]}
-      ]
-    }
-  }
-}
-```
-
-A gate is worth running as often as it is cheap, and what makes it cheap is your own toolchain's caching rather than anything shhh does. shhh's checkout is the worked example: its `default` suite is vet, lint, doc citations and `go test ./...` — four checks at `max_parallel: 4` — and it runs in **about 1.3 seconds** over an unchanged tree, because every package's tests are cacheable and only the changed ones re-run. A suite whose slowest check is a second is one a turn can close on; a suite that re-runs everything every time is one you turn off.
-
-Bulky tool results are reduced before the model sees them: output over a size threshold is deterministically cut to a verbatim head and tail plus any flagged lines (errors, panics, test failures) from the elided middle, with terminal control sequences stripped. Small results pass through untouched. Each reduced result carries an opaque evidence id, and the full original is kept under shhh's state dir (user-only permissions, per-session, pruned after a week) where the model can retrieve it with the `evidence` tool — `info`, paged `read`, or literal `search`. The transcript shows exactly the reduced view the model got, and `/evidence` in a session shows store size and reduction stats (`/evidence purge` deletes the stored originals).
-
-`shhh code` sessions also remember across sessions: durable memories — preferences, project conventions, corrections, lessons — live in shhh's local SQLite storage, scoped globally or to the current project (the repository root). A bounded selection (project entries first, hard entry and token caps, no model calls) is injected into the system prompt with each entry cited by id, so a wrong memory is easy to find and delete. The trust rule is absolute: you can add memories directly (`/memory add` or `shhh memory add` — your own words persist as-is), but when the *agent* proposes one through its `remember` tool, a confirm prompt always appears — pick the scope (project or global), optionally amend the entry with a note, or decline — in every permission mode, with no auto-approval and no classifier override, because memory an agent writes to itself is an injection surface. `behavior.memory_disabled`, `behavior.memory_max_entries`, and `behavior.memory_max_tokens` tune it.
-
-A wrong turn costs one command, not the session: a checkpoint is recorded at the start of every user turn, and `/rewind` (interactive picker, or `/rewind <n>` directly) truncates the conversation back to just before a chosen turn. The abandoned tail is never lost — it's kept as a **branch** of the current session, and `/branches` lists the session's branch family and switches between them (the working conversation is saved before every switch, and `/save`/`/load` work on any branch). Rewind is honest about its scope: it restores conversation state only — files on disk are untouched, and the rewind message says so — and each checkpoint records the git HEAD and dirty status at the time, so the message can tell you when the working tree or HEAD has diverged since.
-
-`shhh code` sessions also pick up best-in-class external code tools when they're installed: `fd` (fast, gitignore-aware file finding), `ast_grep` (language-aware structural search, and structural rewrites as **preview diffs**), `sd` (find-and-replace previews across files — always run with `--preview`), `tokei` (per-language codebase composition summary), and `jaq` (jq-style queries over JSON files). Each tool is registered only when its binary is on PATH — no binary, no tool. None of them can write a file: rewrites and replacements come back as previews the agent applies through the normal `edit_file` approval flow, argv construction is injection-safe (model-supplied values ride as `--flag=value` or behind a literal `--`, and jaq's file-reading/in-place flags aren't in the vocabulary at all), every search path is resolved against the workspace root and containment-checked before anything spawns, and every run has a timeout and output cap — a missing binary, timeout, or flood degrades to a clean tool error, with large results reduced through the evidence store like any other output.
-
-`shhh code` sessions can also manage named long-running processes — dev servers, watchers, test runners — through the `process` tool: start one (approved like any command, with safety warnings, allowlist matching, and mode policy applying to the command text), probe it with `status`, page through its captured output with `read`, feed its stdin with `input`, and tear it down with `stop`. Each process runs in its own process group with its working directory contained to the workspace and an environment of exactly `PATH` and `HOME` plus whatever vars the agent passes explicitly (which can never shadow those two). Recent stdout/stderr live in bounded ring buffers for paged reads, the full log (bounded) lands in the evidence store when the process ends, and `/ps` lists everything the session owns. `stop`, session end, cancel, and quit all terminate the full process tree — no orphans.
-
-`shhh code` can delegate scoped work to background **sub-agents**. The model spawns them with `spawn_agent` (you approve each spawn) in one of two roles: a **researcher** gets read-only tools plus the web against the real workspace, and a **writer** gets the full toolset against an *isolated git worktree* — its changes never touch your checkout directly, they come back as a single patch you review and apply. `/agents` (or Ctrl+A) is the agent manager: attach to a child's live session, steer it mid-run, cancel a turn, or kill it; `/attach <name>` jumps straight into one and `/detach` (or Esc) comes back; `agent_report` collects a child's final report.
-
-The manager is also where a blocked child is answered. Children waiting on you sort to the top below the orchestrator and say what they are waiting for, not just that they are waiting; `[a]` renders that child's approval card over the list and hands the list back on either answer, so opening the manager *because* something needs you doesn't then cost you a detour through that child's session. A failed row says why it failed and offers `[r]`, which runs the child again on its original task — the attempt restarts, not the agent: it keeps its name and its transcript, and gets a fresh conversation, a fresh worktree if it writes, and a fresh token budget, because an attempt that inherits the spend that killed it fails again before it has done anything. Every row carries the same live progress its fan-out lane does, from the same renderer. `enter` attaches, `x` cancels a turn, and `X` kills an agent behind a confirm that states what survives as well as what doesn't.
-
-Parallel work looks parallel. A round that spawned two or more children renders as one **fan-out block** in the transcript rather than as their rows interleaved with everything else — one lane per child, carrying its name, its task, its progress, its tool count, its spend and its elapsed, updating in place while they run:
-
-```
- ◇ fan-out   3 agents                              1 needs you · 2 running 1m12s
-   ⚠ agent   scout-3  other ErrRoundLimit …  ⚠ needs you · 3 tools · $0.01   18s
-    waiting approval: read ../shhh-plugins/registry.go
-   ◇ agent   writer-1  docs/loop.md            ▰▰▱▱▱ 2/5 · 6 tools · $0.02   12s
-   ✓ agent   tester-2  internal/agent tests         done · 9 tools · $0.03   41s
-    all four packages pass
-    [ctrl+a] agents
-```
-
-A child waiting on you sorts to the top of the block, says `⚠ needs you` in words, and states what it is waiting for — the only thing a fan-out can need from you is never something you have to scroll for. A lane draws a progress bar only when the spawn declared a step count (`spawn_agent` takes an optional `steps`); without one it spins, because a ratio nobody supplied is not invented. A finished lane stops drawing progress and keeps its outcome and the first line of its report instead. Spawn one child and it keeps its ordinary inline row — the block is for genuine fan-out — and the block itself is a plain transcript entry, so it re-renders on resize like everything else in the feed.
-
-All of that works **while the turn is in flight**, which is the only time sub-agents exist: commands run mid-turn, not just between turns. Type `/agents`, `/attach writer-1`, `/stats`, `/diff`, `/permissions auto`, `/ps` — or open focus mode with Ctrl+E — while the agent works, and the turn keeps streaming underneath; plain text still queues as a steering message. The exceptions are the handful of commands that would rewrite or replace the conversation the agent is working in — `/clear`, `/compact`, `/rewind`, `/branches`, `/load`, `/chats`, `/model`, `/run` — which say what they'd disturb and wait for the turn to end (Ctrl+C ends it now). They drop out of the completion menu for the duration rather than failing when you pick them, and stay in the command palette (Ctrl+K) dimmed with the reason.
-
-Sub-agents inherit the parent session's permission state rather than re-litigating it. A child is clamped to your mode — it can never be more permissive than you are — and it inherits your session grants (`[a]` on a prompt and `/permissions allow`, the scoped ones included), your command allowlist, the read-only inspection list, and, in auto mode, the same permission classifier the parent uses. That last one matters in practice: without it, an auto-mode session still stopped to ask about every command its children ran. Safety-flagged commands still prompt, plan mode still refuses, and every child approval is routed to you labeled with the agent's name.
-
-Which model a child runs on is configurable: `agents.model` sets the default for every sub-agent, `agents.profiles.<role>.model` overrides it per role (a cheap, fast model for wide research fan-out; the session model for writing code), and a `spawn_agent` call may name a `model` explicitly for one child. `"inherit"` at either level means the session model. `/model default <name>` persists the session default to your config file, and `/model agents <name>` persists the sub-agent model — both without leaving the session.
-
-Concurrent writers can't overwrite each other (separate worktrees, reviewed patches), but two patches over the same file still conflict. A writer spawn may declare `paths` — the globs it intends to change — and the supervisor refuses a second writer whose claim overlaps a live one, telling the model to sequence the work or narrow its scope instead. A declared scope is passed into the writer's own prompt, and when a patch touches files another agent's applied patch already changed, the approval card says so before you apply it.
-
-`shhh code` sessions also see their code the way an editor does, through the project's own language server. Common servers are auto-detected on PATH — `gopls`, `rust-analyzer`, `typescript-language-server`, `pyright` — and started lazily the first time a file they own is touched; no server on PATH is simply a no-op. After every applied `write_file`/`edit_file`, fresh diagnostics for the touched file are appended to the tool result (bounded, errors first), so the model sees the type error it just introduced and fixes it in the same round. The model also gets `definition` and `references` tools — point at a symbol occurrence by file, line, and identifier text and get bounded `file:line` answers — steering it away from grep when it needs actual semantics. Servers are owned by the session (shut down when it ends), every request is bounded by a timeout so a hung server can't wedge the agent loop, and `lsp.disabled = true` turns the whole thing off.
-
-Reviewing the agent's edits is a first-class surface, not raw text. Every diff — the approval preview and the transcript row an applied edit leaves behind — renders with syntax highlighting (by file type, with add/remove coloring layered over it), line numbers, and background-tinted intraline emphasis on the changed span of a modified line. An applied edit lands in the transcript as one collapsed row (`✎ edit path  +12 −4 · 2 hunks`); in focus mode (Ctrl+E), Enter expands it in place to a bounded unified view, and Enter again opens it full screen — scroll with `j`/`k`, jump hunks with `n`/`p`, and toggle a side-by-side layout with `s` (automatic on terminals ≥ 120 columns). The approval card offers the same full view with `d`. `/diff` shows the cumulative session diff — every file this session changed, read from its own changeset record rather than from `git diff`, so it works in a directory that was never a repository — on the review surface below, read-only, since a cumulative diff has nothing to stage.
-
-A turn ends with what it did rather than with the last thing it said. A finished turn closes with a summary row — `✓ Done · 4 steps · 18 tools · 1m 04s · $0.14`, with the round counter right-aligned — and, when it wrote anything, a second row carrying the mutation rail: `▎✎ 3 files changed +30 −4 · [v] review · [u] undo turn · [ctrl+e] to use them`, with what git knew about those files (`all tracked in git`, `2 tracked · 1 new`, `no git here`) on the right. If the turn ran the quality gate or a test command, a third row states the verdict and its tally (`✓ go test ./internal/agent/... passing · 41 packages · 12.8s`); several runs collapse into one `2 of 3 passing`. A turn that changed nothing gets the first row alone, and a turn you cancelled or one whose stream broke says `⊘ Cancelled` or `✗ Failed` and still reports what it changed before it stopped. A turn that stopped at its tool-round limit closes on the round-limit checkpoint instead, which says the same three things and offers the way on as well (above). The rows are ordinary transcript entries — they re-render on resize like everything else — and the keys they offer are handled by focus mode on the row, so the input keeps `v` and `u` for typing: Ctrl+E, then `v` opens that turn in review mode. Because the input keeps them, the row draws them grey with `[ctrl+e] to use them` beside them, and they turn into pressable keys only once the reading cursor is on the row — the same rule that keeps an approval card's `[y]` inert until it holds the keyboard, applied to every surface that offers a bare letter. (`u` undoes the turn — see below.) The counts come from the session's own per-turn record, so they are the same numbers `/diff` and the inspector rail quote.
-
-Reviewing a turn is one surface rather than a scroll back through the feed. `/review` — or `[v]` on a turn's changeset row — takes over the screen with the files that turn touched down the left, each with a staging box and its own `+N −M`, and the focused file's hunks down the right. The turn's verdict is pinned under the file list, so the failing test sits beside the hunks that claim to fix it, and which sub-agent wrote which file is on the row it wrote. `space` stages the hunk under the cursor, `s` the whole file, `A` (or `a`) everything at once, `j`/`k` moves between files and `n`/`p` between hunks; `[enter]`'s label counts what is staged as you stage it. The hunks are the same renderer the approval card, the transcript row and `/diff` use — unified by default, paired side by side on terminals ≥ 120 columns or with `\`, and below 60 columns the list and the pane stack rather than truncating each other. Nothing in review is destructive: `⛨ nothing is committed` stays on screen the whole time, `esc` leaves having changed nothing, and for edits already on disk the staged selection is what an undo would restore.
-
-Undoing a turn costs a keystroke rather than a manual cleanup. `/undo` — or `[u]` on a turn's changeset row, or `enter` on a staged selection in review — puts the turn's files back from the session's own records, and deliberately not from git: it works in a directory that was never a repository and never touches your index or your stash. It asks first, as a one-line confirm stating what it would restore and what it would delete (the files the turn created are deleted; the files it deleted come back). A file that has changed since the turn is named on that confirm and left alone by the default answer, because it holds something the record never saw — `[f]` is the deliberate second answer that overwrites it anyway, and even then what it discarded is recorded rather than lost. `esc` declines and writes nothing. The undo is recorded as a changeset of its own, so it closes the way a turn does, `[v]` reviews it, and `[u]` on its row undoes the undo. A turn whose records were dropped to stay inside the changeset store's size limit is refused with exactly that as the reason, and `/undo` waits for a running turn rather than editing files underneath it.
-
-Tool activity renders as a compact feed, not walls of output: every tool call and command lands on one column grid — a gutter, a glyph for the kind of act, an eight-column verb from a closed vocabulary (`read`, `search`, `glob`, `lsp`, `web`, `edit`, `write`, `patch`, `run`, `memory`, `spawn`, `agent`, `think`), the target, then a right-aligned outcome and a six-column duration (`⚙ read    main.go:10–20    81 lines  0.6s`, `▎$ run     go test ./...    exit 0   12s`) — so a long turn is scanned down a column instead of read row by row. Anything that changed your machine — a write, a command, a refusal — carries a mutation rail (`▎`) in the gutter, and a row that broke keeps a red one, so scrolling back finds the moments that mattered without hunting. Calls under half a second omit their duration rather than spending a column on `0.0s`. A refusal is not a failure: a call you declined reads `⊘ … denied · you`, one a rule refused reads `⊘ … denied · auto · plan mode · /permissions why`, and neither is confused with `✗`. Raw output is never shown by default; focus mode (Ctrl+E, then Enter) expands a row in place, failed rows auto-expand to a bounded view with the error first, and a running command shows a live tail of its last output line right in the row while it executes. A turn's calls fold under numbered step headers, and inside a step a run of three or more consecutive read-only calls collapses into one counted row — `▸ ⚙ 6 reads · 2 searches   [enter] expand  3.9s` — that states exactly what it swallowed and what it cost; Enter in focus mode restores those rows in place and folds them back again. Mutations, failures, refusals and sub-agent rows are never folded into a group, so a fold only ever hides chrome. The model's own reasoning is a row of the same shape — `✻ think    42 lines`, folded, opening to the end of the thought and then to all of it — placed above the calls it led to. `/ui verbosity <low|normal|high>` picks the density for the session: `low` shows step headers only and drops the think rows, `normal` folds the read-only runs, `high` expands every row with its bounded detail body. Colour never carries meaning on its own here — every state pairs its colour with a glyph or a word, so `/ui mono on` (and `NO_COLOR`, which turns it on for you) strips every surface to two greys and nothing becomes ambiguous: the mode segment keeps `⏵⏵`/`⏸`, a refusal keeps `⊘ denied · auto`, diff lines keep `+`/`−`, staged files keep `[x]`, and an agent waiting on you keeps its `⚠`. Syntax highlighting and coloured markdown are declined rather than recoloured, so assistant prose marks emphasis with `**` instead.
-
-There are two panes and one keyboard, and the surface always says which one has it. While the prompt has it the transcript hears no keys at all — a viewport handed every keystroke scrolls the history out from under the sentence being written, and the pager letters most terminal UIs bind (`j`, `k`, `u`, `d`, `f`, `b`, the spacebar) are exactly the letters a draft is made of. So the transcript is moved only by things a draft cannot produce: `PgUp`/`PgDn` for a page, `Shift+↑`/`Shift+↓` for a line (`Ctrl+↑`/`Ctrl+↓` where your terminal reports those instead), and the mouse wheel where you have asked for it.
-
-**Scrolling never takes the keyboard.** Every one of those reads the transcript and leaves the draft exactly where it was — still on screen, still accented, still taking the next letter you type — because reading is not a decision, and scrolling back to check a path mid-sentence is not a request to stop writing the sentence. `Ctrl+E` is the one key that hands the keyboard over, and it is the one you press when you want the rows themselves: the cursor, the `[enter]` expansions, the keys a close row or a failure offers. `↑`/`↓` are the input history's in every state. Scrolling away from the live end pauses the follow while a turn streams, and the notice rail says so (`↓ 12 lines below · [pgdn] the live end`) until you walk back to it.
-
-**Mouse reporting is on by default**, so the wheel scrolls the transcript, click-drag selects it (the drag scrolls past the edge of the pane, `Esc` cancels, and releasing copies), and a click opens the activity row or answers the decision card under it. Turning it off (`/ui mouse off` or `Ctrl+X`) hands selection back to your terminal's native selector. Scrolling also has keyboard bindings — `PgUp`/`PgDn`, `Shift+↑↓`, `Ctrl+E`, `j`/`k`. `Ctrl+X` turns reporting on and off from anywhere, including while reading the transcript or inside the full-screen diff, and saves the answer to `appearance.mouse` so it holds for the next session too. `/ui mouse <on|off>` is the same setting said in words.
-
-**With reporting on, shhh selects the transcript itself.** Your terminal's shift-drag can only reach what is on the screen, which is the wrong size for the thing people actually copy out of a chat: an answer three screens long meant scroll, select, paste, repeat. So press inside the transcript to anchor a selection, drag to extend it — including off the top or bottom of the pane, where the transcript scrolls itself and the selection keeps going, and keeps going while you simply hold the pointer there — and release to copy. `Esc` cancels a selection; turning the mouse back off gives the gesture back to your terminal. What lands on the clipboard is the text as it was drawn, with the soft wraps joined back into prose and every real newline, paragraph break, list item and code line kept.
-
-**And a click opens the row or answers the key under it.** A press and a release in the same cell is a click rather than a drag, so the two gestures share the button without either giving ground. Clicking an activity row opens it in place, exactly as `enter` does in reading mode — a step header folds its group, a diff cycles through its views — and clicking a letter in an approval card's `[y/n/a]` answers it, exactly as typing it would. A click never takes the keyboard: your draft keeps every character. And a card that arrived on top of a half-typed sentence is not answered by a click either — the first one hands it the keyboard, the way `Ctrl+Space` does, and the second one answers. The only things clickable are things that already have a key, so nothing here is reachable by mouse alone.
-
-Reading the transcript is the same surface `Ctrl+E` always opened, not a second one: the row cursor, the `[enter]` expansions and the keys a close row or a failure offers all come with it. A transcript of prose — nothing expandable in it — opens without a cursor and `j`/`k` are a line of scroll there, rather than being refused with a notice that leaves you in the input box with nowhere to go. `Esc` and typing are both ways back: any printable character that is not reading mode's own hands the keyboard back **and lands in the draft**, so the keystroke is not spent on the exit. While the transcript has the keyboard, the line under the header says so (`──── READING 4/12 ─`) and the framed input is replaced by its key hints, so the two panes are never both dressed as the active one. That hint line sheds keys as the terminal narrows; `?` swaps it for the whole list — every key the mode has, plus the ones the row under the cursor offers — and `?` again puts it back. It is the same key `shhh config`, `history` and `doctor` have always answered, and all four read the same register, so the keys you are shown are the keys that are handled. (`?` is a letter in the input box, where it belongs; `/help` is that door from the prompt.) The first-run screen introduces all of it on a line under the suggestions, and that line survives the typing that dismisses them — those keys work with a half-written draft in the box, which is the whole point of them.
-
-The status bar is a cockpit rail of session vitals: the active permission mode, the tool-round counter mid-turn (`round 7/150`, `round 150/150 +50` while a round-limit pause offers more, and `round 214/∞` for a turn running without a ceiling), a context occupancy meter (`ctx ▰▰▰▰▰▱▱▱ 62%`) that changes color at the same thresholds that trigger automatic trimming, token usage and estimated cost, the running sub-agent count with a blocked badge, and the active model (dropped first when the terminal narrows). Past the trim threshold, the oldest tool results are automatically elided from the conversation before the next request.
-
-On a wide terminal the transcript stops being the whole screen. Past 130 content columns the surface splits into a transcript pane and a 46-column inspector rail, divided by a single `│` column, so the session stops being interrogated with `/stats` and `/diff` for what it already knows: **SUMMARY** (below), **THIS TURN** (steps so far, tool count, elapsed), **CHANGES** (`+N −M` for the turn, one row per changed file carrying the same mutation rail its edit row did, and the command that came back broken), **AGENTS** (each running child with its current target, tool count and spend), **CONTEXT** (occupancy of the model's window at the same thresholds that trigger trimming, the token counts, and a per-round burn sparkline), and **SPEND** (this turn, split between the orchestrator and its children, plus the session total). A block with nothing to say is omitted rather than drawn empty, and the rail never scrolls — when it runs out of room it truncates its longest block and says how many rows it hid. The split is horizontal only, so the rail costs no rows: the transcript keeps its height and wraps to the narrower pane. Takeover surfaces — a picker, the full-screen diff, the agent manager, an approval card once it has the keyboard — span the full width and hide the rail, restoring it when they are dismissed (a card still waiting for `[ctrl+space]` is not one: it rides above the live frame and leaves the panes alone), and below 130 columns the single-pane layout is exactly what it was. `/ui` reports the layout in force.
-
-The rail leads with a **SUMMARY** block: two sentences from a cheap model saying what the session is doing right now and whether it is still serving the instruction that started the turn — `▸ on target`, `⚠ off target` with the reason under it, or `· target unclear`. It is read every ten tool rounds (the first at round three, never twice inside twenty seconds, and once more when the turn closes), stamped with the round it read — `as of round 24` — and marked `stale` if the session outruns it. A reading that fails changes nothing: the last one stands rather than the block going blank. The reading is a background request and nothing waits on it; it costs about 2k tokens each time because it reads a small digest of the session — the instruction, the plan, recent tool calls as `name · target · outcome`, the changeset, the failing checks — and never raw tool output, so a page the agent fetched cannot write the summary. It runs on the session model by default, which is usually the expensive one: point `summary.model` at something fast. `summary.disabled = true` turns it off entirely, and `/status` prints the block in words for terminals below 130 columns, where there is no rail to draw it in.
-
-Both rails read one accounting. Every turn's usage — tokens in and out, the part the provider served from its prompt cache, cost and wall time — is kept as a bounded per-turn history with running totals, which is what feeds the rail's burn sparkline and the session totals; evicting old turns costs history, never the total. Context occupancy is accounted by category rather than as a single percentage: the system prompt, the project context injected into it, the tool definitions, the transcript, and tool output. `/stats` prints that breakdown, the session's tokens (with the cached share) and cost, and the last turn's spend and duration — the same numbers the rails show, from the same source. Where the provider reports the size of the request it carried, the categories are scaled onto it; where it does not — before the first response, after a trim, after `/compact` or a rewind — the meter falls back to shhh's own estimate and says `estimated` rather than passing a guess off as a measurement.
-
-Typing `/` in the input opens a completion menu over the commands this session actually has wired — ↑↓ moves, Tab completes, Enter runs the highlighted command, Esc dismisses. Completion continues past the command name: subcommands (`/memory add`, `/sandbox prune`, `/ui verbosity high`) and known values (saved chat names for `/load`, branch names for `/branches`, the model catalog for `/model`, turn numbers for `/rewind`) complete the same way, filtered on the token under the cursor.
-
-A picker longer than the bottom panel is a window onto its list rather than the first few rows of it. Moving past the bottom scrolls the window down one option at a time, moving past the top scrolls it up, and inside the window nothing moves at all — a list that re-centred on every keystroke would be unreadable. The edges say what they are hiding rather than only that they are (`↑ 2 more`, `↓ 8 more`), counting options rather than rows. Number keys still count the list and not the window, so option 12 is `12.` whether or not it is the first row showing. Everything pinned to the card comes off the list's budget before the window is drawn — the palette's query line, the key hints, the note field on a `/memory` confirm — so a long list scrolls instead of pushing them off the card, and the card never grows past the 40% of the terminal a bottom panel is allowed. A list that fits is not windowed at all. The checkbox lists window the same way (`/memory forget`, the quality gate's checks), and there the marker also says how many of the rows it is hiding are ticked (`↑ 11 more · 2 checked`) so your own answer never scrolls out of sight — the key row goes on stating the total. So does the agent manager, which pins the orchestrator and every blocked child above the window: opening it because something needs you always shows you the thing that does, and its markers count agents rather than lines. Two surfaces stay whole on purpose — staging, where you are accounting for every hunk, and a plan card's options, which are the thing you are agreeing to.
-
-Ctrl+K opens the **command palette**: one prompt over the commands this session has wired, the saved chats, and the files — the paths this session changed, then the checkout's most recently modified ones — with a result count on the card's title rail. Type to filter; matching is fuzzy (a subsequence) across all three groups, and a command name typed in full always ranks first. Enter runs the highlighted entry, Tab writes it into the input instead, Esc dismisses and keeps your draft; a file has nothing to run, so both keys append its path to what you were typing. Where `/` completes a command you are already typing, Ctrl+K finds one you are looking for — and it opens mid-turn like the rest of the live surfaces. A command that needs the turn to be finished stays in the list, dimmed behind `⊘` with the reason on its row, rather than vanishing the way it does from the completion menu: the palette is where you look when you cannot find a command.
-
-Where a command's argument is really a choice from a known set, the bare command opens a select list instead of printing usage text: `/model` and `/permissions` over the model catalog (live from the provider's endpoint where it has one) and the mode cycle, `/rewind` over the session's checkpoints, and `/load` / `/chats` over the saved chats (turn count and last-written time on each row) and `/branches` over the session's branch family (current branch marked and focused, each row naming its parent). `/run` joins them when the last response holds several code blocks: each row shows the block's first line, its language, and how many lines it holds, with a flattened preview underneath, and picking one drops into the usual confirmation with its safety warnings intact. ↑↓ moves, Enter applies, Esc cancels. With nothing to pick — no saved chats, no branches yet, a single code block — the command keeps its plain text answer or its direct path rather than opening a one-row list.
-
-Slash commands inside a chat session:
-
-| Command | Description |
-|---|---|
-| `/help` | Show commands and keybindings |
-| `/clear` | Start a new conversation (also `/new`) |
-| `/copy [code]` | Copy the last response (or just its code blocks) |
-| `/run [n]` | Run a code block from the last response (asks for confirmation, shows safety warnings; output goes back into the conversation). Bare `/run` opens a picker when the response holds several blocks |
-| `/model [name]` | Show or switch the model mid-session (same provider). Bare `/model` opens the picker, where `enter` switches this session and `d` switches it *and* makes it the default |
-| `/model default [name]` | Show or persist the default model for new sessions (`provider.model`); says so when `--model` or `SHHH_MODEL` is overruling it |
-| `/model agents [name]` | Show or persist the model sub-agents run on (`agents.model`; `inherit` follows the session) |
-| `/reasoning [level]` | How much the model thinks before it answers: `off`, `low`, `medium`, `high`. `Ctrl+R` cycles them; `/think` is an alias |
-| `/reasoning default [level]` | Show or persist the level new sessions start on (`provider.reasoning`); says so when `--reasoning` or `SHHH_REASONING` is overruling it |
-| `/permissions [name]` | The permission mode (`manual`, `accept-edits`, `auto`, `plan`); bare opens a picker. `/perms` is the short form, `/mode` still answers |
-| `/permissions grants` | What this session has stopped asking about, and where each grant came from |
-| `/permissions allow <commands\|edits>` | Grant a whole category for the session — the blanket grant `[a]` used to hand out |
-| `/permissions revoke [commands\|edits]` | Take the session's grants back; config's own allowlist is untouched |
-| `/permissions why` | The latest auto-mode denial's reason |
-| `/add-dir [<path>]` | The working scope: which directories this session may write to. Bare lists it; `<path>` adds one (contained commands can write there, and edits there stop asking about leaving the scope) |
-| `/add-dir drop <path>` | Take a directory back out of the working scope |
-| `/compact` | Summarize the conversation via the model and continue from the summary plus the most recent turns (frees context) |
-| `/stats` | This session's context occupancy by category, token and cost totals (cached share included), and the last turn's spend and duration |
-| `/status` | Where the session is in words, and whether it is still on target — the inspector rail's `SUMMARY` block for terminals too narrow to have a rail. Takes a fresh reading |
-| `/evidence [purge]` | Tool-output evidence store: reduction stats and size; `purge` deletes the stored originals |
-| `/sandbox [doctor\|scope\|list\|status\|destroy <id>\|prune]` | Containment status, the working scope as containment sees it, and container sandboxes |
-| `/gate run [suite]`, `/gate result` | Quality gate (`shhh code`): run a named suite of the project's own checks in the background, then show the verdict (marked stale if the tree changed) |
-| `/diff` | Cumulative session diff, full screen: every file this session changed, from its own per-turn record (works outside git) |
-| `/review [turn]` | Review what a turn changed: file list with per-file `+N −M` and staging, hunk pane beside it, the turn's verdict pinned under the files (bare reviews the last turn that changed anything; also `[v]` on its changeset row). Nothing is applied |
-| `/undo [turn]` | Put back what a turn changed, from the session's own records rather than git (also `[u]` on its changeset row). Confirms first, names anything that changed since and leaves it alone unless you force it, and is recorded as a turn of its own |
-| `/agents` | Agent manager (also Ctrl+A): attach, steer, answer a blocked child, retry a failed one, cancel a turn, kill — live while the parent turn runs |
-| `/attach [name]` | Attach to a sub-agent's session and steer it (bare `/attach` opens the manager); `/detach` returns |
-| `/ui verbosity <v>` | Activity feed density: `low` shows step headers only and drops think rows, `normal` folds read-only runs into a counted row, `high` expands every row (bare `/ui` also reports the pane layout) |
-| `/ui mono <on\|off>` | Strip every surface to two greys; glyphs, words and layout carry the states. `NO_COLOR` turns it on for the session |
-| `/ui mouse <on\|off>` | Terminal mouse reporting (also `Ctrl+X`). On by default, so the wheel scrolls the transcript, click-drag selects it (scrolling past the edge of the pane and copying on release), and a click opens the row or answers the approval key under it; set to off to restore your terminal's native click-drag selection. The answer is saved to `appearance.mouse` |
-| `/ui notify <on\|off>` | Desktop notifications when a turn stops and you are not there — an approval waiting, a plan ready, a sub-agent blocked, a turn done and what it cost. On by default; it only ever fires when your terminal has reported that the window is not the one in front, so nothing arrives while you are watching. Uses OSC 99 where your terminal answered for it and OSC 777 where it did not. The answer is saved to `appearance.notify` |
-| `/ui title <on\|off>` | Name an unnamed session after its first completed turn: one request to the summary model, at most six words, shown beside the slot in `/chats`, `shhh chats` and the exit banner. A name you give with `/save` or a rename always wins. Off unless `summary.model` is set; `summary.title` makes the choice for good |
-| `/ui terminal` | What your terminal answered when shhh asked what it can do: inline images (kitty graphics or sixel), desktop notifications, focus events, and the size of one character cell in pixels. A capability shhh did not ask about says so rather than reading as a no — the graphics questions are held back on Apple Terminal and over `ssh`, where a terminal that does not recognise them prints them instead |
-| `/memory` | Durable memories (`shhh code`): `list` (default), `add [global] [kind] <text>`, `forget <id>` |
-| `/secret` | [Secrets](#secrets) commands can use and the model never sees: `list` (default), `set NAME` (from the environment) or `set NAME=value`, `forget NAME` |
-| `/ps` | List the long-running processes this session owns (`shhh code`): state, pid, uptime, command |
-| `/rewind [n]` | Rewind to before a user turn (bare `/rewind` opens a picker); the abandoned tail is kept as a branch. Conversation only — files are not restored |
-| `/branches [n]` | Switch this session's branches (bare `/branches` opens a picker; current work is saved first) |
-| `/save [name]` | Save this chat |
-| `/load [name]` | Load a saved chat (bare `/load` opens a picker) |
-| `/chats` | Saved chats — the same picker; Enter loads, `x` deletes after a confirm, `r` renames |
-| `/exit` | Quit (also `/quit`, `/q`, Ctrl+D) |
-
-Press Up/Down in an empty input to recall previous messages, Ctrl+K for the command palette, Ctrl+G to write the message in your own editor (`$EDITOR`, opened where the cursor is; what the file holds when you close it becomes the draft, and an empty file leaves it alone), Esc to clear the input, and Ctrl+C to cancel a streaming response (or clear the input / quit when idle). Commands run while the agent is working, except the ones that rewrite the running conversation. Type `/help` in a session for the full list.
-
-### Pipe mode
-
-Use in scripts or pipelines — activated when stdin is not a TTY or with `--raw`:
-
-```bash
+| `shhh cmd <prompt>` | Generate one shell command and review it before running it. |
+| `shhh chat [prompt]` | Explore questions with a read-only assistant and conversation tools. |
+| `shhh code [prompt]` | Have a supervised agent read, edit, run, and verify work. |
+| `shhh init <shell>` | Add inline command generation to Bash, Zsh, or Fish. |
+
+Use `shhh cmd --raw` or pipe a prompt to `shhh cmd` when a script needs only the
+command on standard output:
+
+```sh
 echo "list all docker containers" | shhh cmd
 shhh cmd --raw "find large files" | sh
-```
-
-When both stdin content and arguments are provided, the stdin is injected as context:
-
-```bash
-cat error.log | shhh cmd "explain this error"
-```
-
-### Explain a command
-
-```bash
-shhh cmd -e find files larger than 100mb
 ```
 
 ### Shell integration
 
 Add inline command generation to your shell with Ctrl+K:
 
-```bash
+```sh
 # zsh
 eval "$(shhh init zsh)"
 
@@ -906,258 +94,64 @@ eval "$(shhh init bash)"
 shhh init fish | source
 ```
 
-Type a description on your command line, press Ctrl+K, and it's replaced with the generated command.
+## Safety by default
 
-### Project context
+shhh shows generated commands before it runs them. Coding work is permissioned:
+file edits and commands require approval unless you choose a more permissive
+session mode. It reports known risk and containment limits rather than claiming
+a command is safe when it cannot determine that.
 
-Create a `.shhh/project.md` file in your project root to give shhh context about your project's tooling and conventions:
+On Linux and macOS, assistant-run commands can use OS-level containment. Windows
+has no equivalent host mechanism; use `shhh code --sandbox` with Docker or
+Podman when containment is needed.
 
-```bash
-shhh init --project
-```
+Read about [approvals and safety](docs/capabilities/approvals-and-safety.md) and
+[command containment](docs/capabilities/containment.md).
 
-The contents of `.shhh/project.md` are appended to the system prompt when running shhh from that directory (or any subdirectory). The `.shhh` directory is also where the project's skills, saved plans, quality-gate config and backlog live. A checkout from an older version, where `.shhh` was the context file itself, is reported by `shhh doctor`, which offers to move the file inside.
+## Configuration
 
-### Skills
-
-shhh loads [Agent Skills](https://agentskills.io/specification): a directory holding a `SKILL.md` whose frontmatter names the skill and says when to use it, with the instructions below and any scripts or references beside it. Every session sees the name and description of each skill; the model loads the full instructions with the `skill` tool when a task matches, and reads bundled files with the ordinary file tools only when the instructions point at them.
-
-Project skills live in the checkout under `.shhh/skills/`, `.agents/skills/` or `.claude/skills/` (from the working directory up to the repository root); user skills under `skills/` beside `config.toml`, `~/.agents/skills/` or `~/.claude/skills/`. A project skill shadows a user skill of the same name. Skills written for other harnesses load unchanged; a skill that cannot load is reported, not fatal.
-
-- `shhh skills` lists what a session here would load, with any diagnostics; `shhh skills show <name>` prints one skill's frontmatter and files.
-- In a session, `/skills` lists them and `/skill <name> [task]` (or just `/<name>`) activates one right now, sending its instructions to the model with your task.
-- A skill's `allowed-tools` is shown but never honoured: nothing in a repository can pre-approve a command.
-
-### MCP servers
-
-shhh connects [Model Context Protocol](https://modelcontextprotocol.io) servers and offers their tools to the model beside its own, named `<server>__<tool>`. It speaks the protocol and nothing else: a server is a command to spawn or a URL to reach. A remote server that wants a login gets it from a local forwarder such as [`mcp-remote`](https://github.com/geelen/mcp-remote), which handles the browser flow and token refresh and speaks stdio to shhh — the same way every other client reaches those servers.
-
-```toml
-[mcp.servers.docs]                       # a local server, its tools run as reads
-command = "npx"
-args = ["-y", "@example/docs-mcp"]
-read_only = true
-
-[mcp.servers.github]                     # a remote server behind a forwarder
-command = "npx"
-args = ["-y", "mcp-remote", "https://api.githubcopilot.com/mcp/"]
-
-[mcp.servers.tracker]                    # a remote server with a static token
-url = "https://tracker.example/mcp"
-headers = { Authorization = "Bearer ${TRACKER_TOKEN}" }
-```
-
-Or paste a vendor's `mcpServers` JSON into `mcp.json` beside `config.toml`; `shhh mcp add <name> --url … | -- <command> …` writes one from the command line and refuses a value that looks like a credential — write it as `${NAME}` and export the variable.
-
-- **What a call costs you.** A tool on a server you marked `read_only` runs like a file read. Every other server's call asks first, like a command: the card says where it goes, what leaves with it and what comes back; auto mode asks its classifier, plan mode refuses, and the transcript draws the call as `⇄` with the mutation rail. A server's own "read-only" annotations are shown and grant nothing — the word is yours.
-- **Project servers.** A `.mcp.json` in a checkout is a command somebody else wrote, so it does not start until you trust it: `shhh mcp trust <name>`, or `[a]` on its row in `shhh mcp`. Trust is recorded outside the checkout, at the definition as it is; an edit asks again. `read_only` in a project file is ignored.
-- **`shhh chat`** connects only servers marked `read_only`; `shhh code` connects them all. Sub-agents get the read-only ones. Headless `shhh code -p` denies gated calls unless run with `--yes`.
-- `shhh mcp` connects every server and reports it as a row — what it reaches, how many tools, and for one that did not connect, why and the fix. `shhh mcp show <name>` connects one and prints its instructions and every tool with its description; `remove`, `trust` and `distrust` do what they say. In a session, `/mcp` lists them and `/mcp trust <name>` records trust for the next session.
-
-### Secrets
-
-A secret is a value commands may use and the model never sees — the API key for the service you are debugging, a database password, a token a script needs. Declare one and the model is told its *name* and the one way to use it: as an environment variable in every command it runs (`curl -H "Authorization: Bearer $API_KEY"`, `os.environ["API_KEY"]` in a script it writes and runs, a long-running process it starts, a sub-agent's commands, a sandboxed container). The value never enters the conversation: every tool result, command output line, message and request is scrubbed before it reaches the model, and the value — or its base64/hex/URL-escaped form, or any run of it eight bytes or longer — becomes `[secret:API_KEY]`. That placeholder tells the model the key was there and was used.
+Set `SHHH_API_KEY`, as above, or open the interactive configuration editor:
 
 ```sh
-export STRIPE_KEY=sk_live_...
-shhh code --secret STRIPE_KEY          # read from the environment (preferred)
-shhh chat --secret PIN=1234            # given inline; lands in shell history
+shhh config
 ```
 
-- `secrets.env = ["STRIPE_KEY"]` in config declares them for every session; a name the environment lacks is a warning, not a secret.
-- `/secret` lists the session's secrets by name. `/secret set NAME` reads one from the environment mid-session — the model is told it is now available — and `/secret set NAME=value` types one in (that line is kept out of input recall). `/secret forget NAME` removes one.
-- The scrub is text matching, not a proof: a value transformed some other way is not recognised, and a command that sends the key somewhere new is still a command — it is shown before it runs, and approving it is your call.
+Configuration is stored in `$XDG_CONFIG_HOME/shhh/config.toml`, or
+`~/.config/shhh/config.toml` by default. shhh supports OpenAI, Anthropic,
+Gemini, OpenRouter, OpenAI-compatible endpoints, and configurable gateway
+profiles.
 
-## Commands
+- [Configuration guide](docs/capabilities/configuration.md)
+- [Providers and gateway profiles](docs/capabilities/providers.md)
+- Run `shhh doctor` to check local setup.
 
-| Command | Description |
-|---|---|
-| `shhh cmd [prompt]` | Generate a shell command |
-| `shhh chat [prompt]` | Start an interactive chat session |
-| `shhh chat --continue` | Resume the most recent chat session |
-| `shhh chat --resume` | Pick a saved chat to resume |
-| `shhh chats` | Browse saved chats: pick one to resume, `x` deletes, `r` renames |
-| `shhh chats list\|show\|delete\|rename` | Saved chats from a script; `list`/`show` take `--json`, `delete` asks unless `--yes` |
-| `shhh config` | Interactive configuration editor |
-| `shhh config set <key> <value>` | Set a config value |
-| `shhh doctor` | Check this machine's shhh setup |
-| `shhh init <shell>` | Output shell integration snippet |
-| `shhh init --project` | Create a `.shhh/project.md` project context file |
-| `shhh todo` | List the project's backlog (`.shhh/todo/`) in working order; `shhh todo show <slug>` prints one item. In a session, `/todo` opens a picker over the same list and a `TODO` block in the inspector rail keeps the first few items in view; `/todo add` reads the session into proposed items you accept or drop before anything is written, `/todo add <text>` starts one by hand, `/todo edit <slug>` opens it in your editor, and `block`, `open`, `done`, `drop` change one item's state. `/todo run [slug\|--next]` works an item through research, implement, verify, review, commit and archive in auto mode, one turn per stage with the gates in code; a large item, or a medium one with open questions or graded up, pauses on a card (go ahead / re-plan with a note / stop) before anything is built; medium and large changes are reviewed by a `reviewer` sub-agent; a blocked run offers a follow-up item. `/todo status` says where it is and `/todo stop` abandons it |
-| `shhh history` | Browse past prompts and commands |
-| `shhh metrics` | Show provider usage statistics |
-| `shhh rate` | Walk recent unrated commands and sessions on one card: `[y]`/`[n]`/`[s]`, `[esc]` stops. A command's answer feeds the accuracy metrics; a session's is the human check on the outcome the record inferred, and only sessions with a saved conversation to remind you what they were are offered. `--commands` and `--sessions` narrow the walk, `--table` lists what is waiting without asking about any of it |
-| `shhh snippets` | List saved command snippets |
-| `shhh snippets run <name>` | Execute a saved snippet |
-| `shhh snippets copy <name>` | Copy a snippet to clipboard |
-| `shhh snippets show <name>` | Display a snippet |
-| `shhh snippets delete <name>` | Delete a snippet |
-| `shhh memory list` | List durable memories (current project + global) |
-| `shhh memory add [--global] [--kind k] <text>` | Add a memory (preference, convention, correction, lesson) |
-| `shhh memory forget <id>` | Delete a memory by id |
-| `shhh providers` | List providers and check gateway profiles |
-| `shhh providers migrate` | Fold every gateway profile into one `providers.toml` |
-| `shhh completion <shell>` | Generate shell completion script |
+## More capabilities
 
-### Flags
+- **Project context:** `shhh init --project` creates `.shhh/project.md` for
+  project-specific instructions.
+- **Skills:** load reusable task guidance from project or user skill directories.
+- **MCP:** connect tools supplied by Model Context Protocol servers.
+- **Secrets:** make environment values available to commands without exposing
+  their values to the model.
+- **Sub-agents:** delegate scoped research or isolated implementation work.
+- **Quality gates:** run trusted repository checks and retain their results.
+- **Sessions and memory:** resume conversations, retain local history, and save
+  durable preferences or project conventions.
 
-`--provider`, `--model` and `--api-key` are carried by every command that
-reaches a provider; `--raw`, `-e` and `-s` belong to `shhh cmd`.
-
-| Flag | Description |
-|---|---|
-| `--provider <name>` | LLM provider |
-| `--model <name>` | Model name |
-| `--api-key <key>` | API key |
-| `--raw` | Force pipe mode (no TUI) |
-| `-e, --explain` | Explain the generated command at length (one line is shown by default) |
-| `-s, --silent` | Suppress explanation output |
-| `--version` | Print version |
-
-## Safety Warnings
-
-shhh detects potentially destructive commands (recursive deletes, force pushes, disk writes, etc.). In the one-shot result surface that detection moves the default key — `[↵]` states the blast radius and `[y]` runs — so the decision is taken once, on screen, rather than as a second `[y/N]` prompt after the fact. Anything that reaches execution without having been confirmed there still gets the prompt. Disable with:
-
-```bash
-shhh config set behavior.safety_warnings false
-```
-
-## History
-
-```bash
-shhh history
-```
-
-Two panes: the search on the left and the entry it selects on the right. Every
-row leads with a glyph for what became of the command — `$` generated, `✗` a
-non-zero exit, `⊘` dismissed, `·` never run — and states its outcome and how
-long the model took beside it. The right pane is a preview, not a second list:
-it carries the prompt in full, the command (continued across lines rather than
-clipped, because it is the thing `[enter]` would run), and the token counts.
-
-`[/]` filters by what was asked or by what came back, with the count of what
-the filter hid under the list and `[ctrl+u]` to clear it — clear an already
-empty filter and the query line closes, which is how the row keys come back.
-`[c]` copies the command, `[s]` saves it as a snippet, `[x]` deletes the entry
-after confirming, and `[?]` lists every key. **Nothing is re-run until
-`[enter]`**; `[esc]` leaves and runs nothing.
-
-`--search` seeds the filter row rather than the query, so its counts still
-state how much of the store was hidden. `--table` (or a non-terminal stdout)
-prints the plain table instead.
-
-## Metrics
-
-```bash
-shhh metrics
-shhh metrics --window 30d
-```
-
-A table of one row per model — requests, tokens in and out, spend, time to
-first token and its p95 — with every numeric column right-aligned in a fixed
-width so you read down a column instead of across a row. The last column is a
-sparkline of that model's tokens per day over the last week: it is dimmer and
-never coloured, because it is the shape and the numbers beside it are the
-measurement. Columns give ground whole as the terminal narrows, the sparkline
-first; the model and the spend never go.
-
-Under the table, one block meter per share with its number always stated
-beside the bar: **where the money went** — what became of the commands, with
-the requests that never answered kept as their own `✗` category, because that
-is a cost you did not ask for — and one block per ratio the store can answer:
-how much came back at all, how much of what was run exited clean, and how much
-of what was rated was rated up. A reading the store has nothing for is left
-out rather than drawn as a row of empty bars. Where no model can be priced,
-the split is over tokens and says so.
-
-`[q]` (or `[esc]`) leaves; that is the whole keyboard. `--window` takes `all`
-(the default) or a number of days. `--table`, and any non-terminal stdout,
-prints the full plain table instead — every column the store has, for piping.
-
-## Doctor
-
-```bash
-shhh doctor
-```
-
-One row per check, in the same grammar as a tool call in a session: glyph,
-name, what was found, the outcome, and how long it took. Eleven checks — the
-binary, the config file, any migration this machine still owes, the provider
-and where its key came from, the local store, command containment, container
-sandboxes, the workspace, the tools on PATH, durable memory, and whether a
-newer shhh exists. They run one at a time and the screen fills in as they
-answer, so a run in progress shows what is done, what is going and what is
-still queued.
-
-A check that did not pass says what it will cost you, in the words of the
-surface you will meet it on — `every approval will show ⚠ UNCONTAINED, and an
-approved command runs as you` — and offers `[f]` on that row to show the fix.
-`[↑↓]` moves between the checks that need something, `[r]` runs them all again
-once you have fixed one, `[c]` copies the whole report as text, and `[?]`
-lists every key. `[q]` (or `[esc]`) leaves.
-
-Nothing here writes to your config: a fix is named, never applied, because the
-screen that changes settings is `shhh config` and it asks before it writes.
-
-### Migrations
-
-The one exception is a **migration**. When a release moves where something
-lives, shhh stops reading the old place rather than carrying a fallback
-forever — and the `migrate` row is where you find out. It names the old
-directory, says what you are missing while it sits there (`shhh is not reading
-those settings — every one of them is on its default until they move`), and
-`[f]` lists every path that would move and where it would go.
-
-Where the move is one shhh can make correctly on its own, the row also offers
-`[a]`, which asks `Make the change now?` before it touches anything and
-re-runs every check after it has. Where it is not — a file already at the
-destination, so only you can say which of the pair is the one you meant — the
-row says so, names both copies with their size and date, and leaves them
-alone.
-
-`shhh doctor --migrate` does the same thing without the surface, for a script
-or a machine being set up by something other than a person: it prints what it
-would do, does the automatic ones, and prints what changed.
-
-`shhh code doctor` runs the two containment checks on their own — the same
-rows, scoped the way that command has always been. `--table`, and any
-non-terminal stdout, prints the report as text (the same text `[c]` copies),
-so a doctor run can be piped or pasted into an issue.
-
-## Data Storage
-
-History, snippets, metrics, and chat logs are stored in a local SQLite database:
-
-- `$XDG_DATA_HOME/shhh/shhh.db` if that variable is set
-- otherwise `~/.local/share/shhh/shhh.db`
-
-The same on every platform, and separate from the config directory: settings
-are a file you edit, the store is one you never open.
+Browse the [capability documentation](docs/capabilities/README.md) for the
+complete guide. The [product overview](docs/product.md) explains the intended
+use, and [AGENTS.md](AGENTS.md) describes the repository for contributors and
+coding agents.
 
 ## Development
 
-```bash
-make test       # Run tests
-make race       # Run tests with race detector
-make lint       # Run vet and golangci-lint
-make fmt        # Format code
-make build-all  # Cross-compile for darwin/linux (amd64/arm64)
-```
-
-The TUI surfaces are pinned by golden-file renders under
-`internal/ui/components/testdata/golden` and `internal/ui/chat/testdata/golden`:
-each activity row kind and state, the approval card's variants, the diff
-viewer's three modes, the agent list, the inspector rail, the transcript's step
-outline, and the prompt frame in all four layout modes — captured at 60, 80,
-110 and 130 columns, in colour and in monochrome. Each file holds the render
-twice: once with ANSI stripped, so the columns are readable in a diff, and once
-with the escapes kept (`ESC` written as `␛`), so a changed colour assignment
-shows up too. When a layout change is intended, regenerate them:
-
-```bash
-go test ./internal/ui/components ./internal/ui/chat -update-golden
+```sh
+make build
+go test ./...
+make lint
+make ci
 ```
 
 ## License
 
-MIT — see [`LICENSE`](LICENSE).
+[MIT](LICENSE)
