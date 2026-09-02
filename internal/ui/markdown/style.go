@@ -16,6 +16,16 @@ import (
 // no escapes in it is the honest answer to a terminal that was told not to
 // use colour, it is what the mono goldens already record, and it means the
 // marks the inline renderer puts back are carrying the whole distinction.
+//
+// A link is not underlined, and that is not a taste. lipgloss v2 draws
+// underline and strikethrough one character at a time — `the docs` comes back
+// as eight escape pairs — so an underlined link costs more than the paragraph
+// around it, and links are not rare in what a model writes. Three other
+// things already say it is a link: the info colour, the URL printed beside
+// it, and the OSC 8 hyperlink that makes it clickable.
+//
+// Strikethrough keeps the attribute and pays that cost, because nothing else
+// can say "struck" and `~~text~~` is rare enough for it not to matter.
 type styles struct {
 	mono    bool
 	body    lipgloss.Style
@@ -43,7 +53,7 @@ func newStyles(mono bool) styles {
 		italic:  lipgloss.NewStyle().Italic(true),
 		strike:  lipgloss.NewStyle().Strikethrough(true).Foreground(p.Dim.Color()),
 		code:    lipgloss.NewStyle().Foreground(p.Accent.Color()),
-		link:    lipgloss.NewStyle().Underline(true).Foreground(p.Info.Color()),
+		link:    lipgloss.NewStyle().Foreground(p.Info.Color()),
 		url:     lipgloss.NewStyle().Foreground(p.Dim.Color()),
 		rule:    lipgloss.NewStyle().Foreground(p.Dim.Color()),
 		marker:  lipgloss.NewStyle().Foreground(p.Info.Color()),

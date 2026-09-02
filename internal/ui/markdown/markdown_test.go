@@ -190,3 +190,141 @@ func TestNarrowPaneStillRenders(t *testing.T) {
 		}
 	}
 }
+
+// What the renderer this replaced could do, and this one therefore must.
+//
+// glamour's extension set was GFM plus definition lists plus emoji, and it
+// emitted OSC 8 hyperlinks. Each of these was found missing after the swap by
+// asking the question rather than assuming the answer, so each is pinned.
+
+func TestTaskListKeepsItsBoxes(t *testing.T) {
+	wants(t, plain(t, "- [ ] not done\n- [x] done\n", 40), []string{
+		"  [ ] not done",
+		"  [x] done",
+	})
+}
+
+// A task item's marker is the box. Drawing a bullet as well gives it two.
+func TestTaskItemHasOneMarker(t *testing.T) {
+	rows := plain(t, "- [ ] a task item long enough to wrap at this narrow width\n", 30)
+	if strings.Contains(rows[0], "•") {
+		t.Errorf("task item drew a bullet as well as a box: %q", rows[0])
+	}
+	if len(rows) > 1 && !strings.HasPrefix(rows[1], strings.Repeat(" ", Margin+TaskBoxWidth)) {
+		t.Errorf("continuation should hang under the text, got %q", rows[1])
+	}
+}
+
+func TestEmojiShortcodesResolve(t *testing.T) {
+	if got := plain(t, "ship it :tada: now\n", 40)[0]; !strings.Contains(got, "🎉") {
+		t.Errorf("emoji shortcode not resolved: %q", got)
+	}
+}
+
+// Entities and backslash escapes are syntax, and the reader should see what
+// they stand for. goldmark hands them over raw and expects the renderer to
+// resolve them.
+func TestEntitiesAndEscapesResolve(t *testing.T) {
+	if got := plain(t, "a &amp; b &lt;c&gt;\n", 40)[0]; got != "  a & b <c>" {
+		t.Errorf("entities: got %q", got)
+	}
+	if got := plain(t, `a \*not emphasis\* b`, 40)[0]; got != "  a *not emphasis* b" {
+		t.Errorf("escapes: got %q", got)
+	}
+	// Inside a code span they are characters, not syntax.
+	if got := plain(t, "`a &amp; b`\n", 40)[0]; !strings.Contains(got, "&amp;") {
+		t.Errorf("a code span should keep its entity literal: %q", got)
+	}
+}
+
+func TestDefinitionListIndentsItsDescription(t *testing.T) {
+	wants(t, plain(t, "Term\n: definition\n", 40), []string{
+		"  Term",
+		"    definition",
+	})
+}
+
+// A link is clickable where the terminal supports it, and still prints its
+// URL for the terminals that do not.
+func TestLinksAreClickable(t *testing.T) {
+	out := Render("see [the docs](https://example.com/a)\n", Options{Width: 60})
+	if !strings.Contains(out, "\x1b]8;;https://example.com/a") {
+		t.Errorf("no OSC 8 hyperlink in %q", out)
+	}
+	if !strings.Contains(ansi.Strip(out), "https://example.com/a") {
+		t.Errorf("the URL should still be printed: %q", ansi.Strip(out))
+	}
+	// And it costs nothing to measure: a hyperlink is zero width, so the row
+	// is padded exactly as any other.
+	for _, row := range strings.Split(out, "\n") {
+		if w := ansi.StringWidth(row); w != (Options{Width: 60}).FillWidth() && row != strings.Split(out, "\n")[len(strings.Split(out, "\n"))-1] {
+			t.Errorf("row %q measures %d", row, w)
+		}
+	}
+}
+
+// A cell too wide for its column wraps. Cutting it drops the end of a
+// sentence and says nothing about having done so.
+func TestTableCellsWrapRatherThanTruncate(t *testing.T) {
+	const cell = "a cell whose content is far too wide to fit the pane given"
+	rows := plain(t, "| col |\n|---|\n| "+cell+" |\n", 40)
+	var body strings.Builder
+	for _, row := range rows[2:] {
+		body.WriteString(strings.TrimSpace(row) + " ")
+	}
+	for _, word := range strings.Fields(cell) {
+		if !strings.Contains(body.String(), word) {
+			t.Fatalf("the table dropped %q:\n%s", word, strings.Join(rows, "\n"))
+		}
+	}
+}
+
+// The alignment is the author's: `|---:|` means the column is numbers.
+func TestTableHonoursAlignment(t *testing.T) {
+	rows := plain(t, "| l | c | r |\n|:--|:-:|--:|\n| a | b | c |\n", 46)
+	last := rows[len(rows)-1]
+	if !strings.HasPrefix(last, "  a ") {
+		t.Errorf("left column not left-justified: %q", last)
+	}
+	if !strings.HasSuffix(last, "c") {
+		t.Errorf("right column not right-justified: %q", last)
+	}
+}
+
+// A link is drawn as one run however long it is.
+//
+// This is the trap, not a hypothetical. lipgloss v2 renders Underline and
+// Strikethrough a character at a time, and the wrapper used to draw each word
+// separately, so an underlined eight-letter label came back as eight escape
+// pairs wrapped in eight OSC 8 hyperlinks — which some terminals show as
+// eight separate links. The register carries a link with colour and one
+// hyperlink instead, and the wrapper coalesces a run that spans words.
+//
+// The assertion is that the count does not grow with the label, rather than
+// that it equals a number: whether the label and the URL beside it share a
+// run depends on whether the terminal reported colour, and both answers are
+// correct.
+func TestALinkIsOneRunHoweverLongItIs(t *testing.T) {
+	const url = "https://example.com/a"
+	counts := map[int]bool{}
+	for _, label := range []string{"x", "the docs", "a rather longer label than that one"} {
+		out := Render("see ["+label+"]("+url+") now\n", Options{Width: 90})
+		n := strings.Count(out, ansi.SetHyperlink(url))
+		if n < 1 || n > 2 {
+			t.Errorf("label %q: %d hyperlink runs, want 1 or 2", label, n)
+		}
+		counts[n] = true
+	}
+	if len(counts) != 1 {
+		t.Errorf("the hyperlink run count grew with the label: %v", counts)
+	}
+}
+
+// The same coalescing for ordinary emphasis: a bold phrase is one escape
+// pair, not one per word.
+func TestAStyledPhraseIsOneRun(t *testing.T) {
+	out := Render("a **bold phrase of several words** here\n", Options{Width: 90})
+	if n := strings.Count(out, "\x1b[1m"); n != 1 {
+		t.Errorf("%d bold runs, want 1: %q", n, out)
+	}
+}

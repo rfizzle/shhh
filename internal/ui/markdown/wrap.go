@@ -18,18 +18,69 @@ import (
 // this package was written to stop, and clipping it would have been tidier
 // and would have lost the end of the line.
 
+// row accumulates one output line as runs, so that a treatment spanning three
+// words is drawn once rather than three times.
+//
+// Drawing per word was the first version and it was wrong twice over: every
+// styled phrase cost an escape pair per word, and a link came back as one OSC
+// 8 hyperlink per word — which some terminals render as several separate
+// links.
+type row struct {
+	runs []struct {
+		seg  Segment
+		text strings.Builder
+	}
+	used int
+}
+
+// add appends text drawn in seg, extending the current run where seg is the
+// one already open.
+func (r *row) add(seg Segment, text string, width int) {
+	if n := len(r.runs); n > 0 && sameRun(r.runs[n-1].seg, seg) {
+		r.runs[n-1].text.WriteString(text)
+		r.used += width
+		return
+	}
+	r.runs = append(r.runs, struct {
+		seg  Segment
+		text strings.Builder
+	}{seg: seg})
+	r.runs[len(r.runs)-1].text.WriteString(text)
+	r.used += width
+}
+
+// String draws the row, one escape run per treatment.
+func (r *row) String() string {
+	var b strings.Builder
+	for i := range r.runs {
+		b.WriteString(styled(r.runs[i].seg, r.runs[i].text.String()))
+	}
+	return b.String()
+}
+
+func (r *row) reset() {
+	r.runs, r.used = r.runs[:0], 0
+}
+
+// sameRun reports whether two segments draw identically, which is when their
+// text can share one escape run.
+//
+// It compares what they draw (styleKey) rather than lipgloss.Style.String,
+// which is not an identity — see push.
+func sameRun(a, b Segment) bool {
+	return a.Styled == b.Styled && a.Link == b.Link && styleKey(a.Style, a.Styled) == styleKey(b.Style, b.Styled)
+}
+
 // wrap lays segments out as rows of at most width columns, breaking between
 // words and honouring any hard break the segments carry.
 func wrap(segs []Segment, width int) []string {
 	var (
-		rows []string
-		line strings.Builder
-		used int
+		out  []string
+		line row
 	)
 	flush := func() {
-		rows = append(rows, strings.TrimRight(line.String(), " "))
-		line.Reset()
-		used = 0
+		out = append(out, strings.TrimRight(line.String(), " "))
+		line.reset()
 	}
 	for _, seg := range segs {
 		for i, part := range strings.Split(seg.Text, "\n") {
@@ -43,39 +94,35 @@ func wrap(segs []Segment, width int) []string {
 					// A space that would open a row is the space a wrap just
 					// consumed, and it is dropped rather than indenting the
 					// row by one.
-					if used > 0 && used < width {
-						line.WriteString(styled(seg, word))
-						used++
+					if line.used > 0 && line.used < width {
+						line.add(seg, word, w)
 					}
-				case used+w <= width:
-					line.WriteString(styled(seg, word))
-					used += w
+				case line.used+w <= width:
+					line.add(seg, word, w)
 				case w > width:
 					// A single word wider than the pane cannot be wrapped
 					// anywhere, so it is folded — losing it, or letting it
 					// run past the edge, are both worse.
-					if used > 0 {
+					if line.used > 0 {
 						flush()
 					}
 					for _, piece := range foldText(word, width) {
-						if used > 0 {
+						if line.used > 0 {
 							flush()
 						}
-						line.WriteString(styled(seg, piece))
-						used = ansi.StringWidth(piece)
+						line.add(seg, piece, ansi.StringWidth(piece))
 					}
 				default:
 					flush()
-					line.WriteString(styled(seg, word))
-					used = w
+					line.add(seg, word, w)
 				}
 			}
 		}
 	}
-	if line.Len() > 0 || len(rows) == 0 {
+	if line.used > 0 || len(out) == 0 {
 		flush()
 	}
-	return rows
+	return out
 }
 
 // wrap is the renderer's, so a block gets the trailing-space trim and the
@@ -94,29 +141,27 @@ func (r *renderer) wrap(segs []Segment, width int) []string {
 // fold breaks segments at the column, keeping every character and moving none.
 func fold(segs []Segment, width int) []string {
 	var (
-		rows []string
-		line strings.Builder
-		used int
+		out  []string
+		line row
 	)
 	for _, seg := range segs {
 		for _, piece := range foldText(seg.Text, width) {
 			w := ansi.StringWidth(piece)
-			if used+w > width && used > 0 {
-				rows = append(rows, line.String())
-				line.Reset()
-				used = 0
+			if line.used+w > width && line.used > 0 {
+				out = append(out, line.String())
+				line.reset()
 			}
-			line.WriteString(styled(seg, piece))
-			used += w
+			line.add(seg, piece, w)
 		}
 	}
-	rows = append(rows, line.String())
-	return rows
+	out = append(out, line.String())
+	return out
 }
 
-// styled draws one piece of a segment in that segment's treatment.
+// styled draws one piece of a segment in that segment's treatment, hyperlink
+// included: a link broken across two rows is a link on both of them.
 func styled(seg Segment, text string) string {
-	return Segment{Text: text, Style: seg.Style, Styled: seg.Styled}.Render()
+	return Segment{Text: text, Style: seg.Style, Styled: seg.Styled, Link: seg.Link}.Render()
 }
 
 // splitWords splits on spaces, keeping each space as its own token so the

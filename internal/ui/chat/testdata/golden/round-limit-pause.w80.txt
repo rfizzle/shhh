@@ -51,7 +51,7 @@ You
 ── ansi ────────────────────────────────────────────────────
 · the edits are unchecked · all three ways on
 ␛[1;94mYou␛[m
-  ␛[38;5;252mrename␛[m␛[38;5;252m ␛[m␛[38;5;252mthe␛[m␛[38;5;252m ␛[m␛[38;5;252mround-limit␛[m␛[38;5;252m ␛[m␛[38;5;252msentinel␛[m
+  ␛[38;5;252mrename the round-limit sentinel␛[m
 
    ␛[38;5;214m⚠␛[m rounds  ␛[38;5;252m150 of 150 used␛[m␛[38;5;241m · the turn's own bound␛[m           ␛[38;5;214mstopped␛[m ␛[38;5;245m4m12s␛[m
     ␛[38;5;245m3 files changed +30 −4 · the suite has not been re-run since␛[m
@@ -61,7 +61,7 @@ You
 
 · nothing changed · only the grant can be honoured
 ␛[1;94mYou␛[m
-  ␛[38;5;252mrename␛[m␛[38;5;252m ␛[m␛[38;5;252mthe␛[m␛[38;5;252m ␛[m␛[38;5;252mround-limit␛[m␛[38;5;252m ␛[m␛[38;5;252msentinel␛[m
+  ␛[38;5;252mrename the round-limit sentinel␛[m
 
    ␛[38;5;214m⚠␛[m rounds  ␛[38;5;252m150 of 150 used␛[m␛[38;5;241m · the turn's own bound␛[m           ␛[38;5;214mstopped␛[m ␛[38;5;245m4m12s␛[m
     ␛[38;5;245mnothing changed␛[m
@@ -70,7 +70,7 @@ You
 
 · a second stop · the grant doubles and [!] arrives
 ␛[1;94mYou␛[m
-  ␛[38;5;252mrename␛[m␛[38;5;252m ␛[m␛[38;5;252mthe␛[m␛[38;5;252m ␛[m␛[38;5;252mround-limit␛[m␛[38;5;252m ␛[m␛[38;5;252msentinel␛[m
+  ␛[38;5;252mrename the round-limit sentinel␛[m
 
    ␛[38;5;214m⚠␛[m rounds  ␛[38;5;252m200 of 200 used␛[m␛[38;5;241m · 50 already granted␛[m             ␛[38;5;214mstopped␛[m ␛[38;5;245m4m12s␛[m
     ␛[38;5;245m5 files changed +112 −40␛[m
@@ -81,7 +81,7 @@ You
 
 · the offer is spent · the row keeps its words
 ␛[1;94mYou␛[m
-  ␛[38;5;252mrename␛[m␛[38;5;252m ␛[m␛[38;5;252mthe␛[m␛[38;5;252m ␛[m␛[38;5;252mround-limit␛[m␛[38;5;252m ␛[m␛[38;5;252msentinel␛[m
+  ␛[38;5;252mrename the round-limit sentinel␛[m
 
    ␛[38;5;214m⚠␛[m rounds  ␛[38;5;252m150 of 150 used␛[m␛[38;5;241m · the turn's own bound␛[m           ␛[38;5;214mstopped␛[m ␛[38;5;245m4m12s␛[m
     ␛[38;5;245m3 files changed +30 −4 · the suite has not been re-run since␛[m

@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	gast "github.com/yuin/goldmark/ast"
+	xast "github.com/yuin/goldmark/extension/ast"
 )
 
 // The block glamour got most wrong, and the reason this package exists.
@@ -29,6 +30,12 @@ func (r *renderer) list(n *gast.List, width int) []string {
 		// The hang is the marker's own width, so the text of every line of
 		// the item begins at one column.
 		hang := len([]rune(marker))
+		// A task item's marker is its checkbox, which the inline renderer has
+		// already put at the front of the item's first line. Drawing a bullet
+		// as well gives it two, so the bullet goes and the hang is the box's.
+		if isTask(item) {
+			marker, hang = "", TaskBoxWidth
+		}
 		body := r.itemBody(item, max(width-hang, 1))
 		for i, row := range body {
 			if i == 0 {
@@ -45,6 +52,17 @@ func (r *renderer) list(n *gast.List, width int) []string {
 		}
 	}
 	return rows
+}
+
+// isTask reports whether an item opens with a checkbox, which is how the GFM
+// extension marks `- [ ]`.
+func isTask(item gast.Node) bool {
+	first := item.FirstChild()
+	if first == nil || first.FirstChild() == nil {
+		return false
+	}
+	_, ok := first.FirstChild().(*xast.TaskCheckBox)
+	return ok
 }
 
 // marker is the item's own prefix, ending in the space that sets the hang.

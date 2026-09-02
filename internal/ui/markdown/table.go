@@ -28,7 +28,7 @@ func (r *renderer) table(n gast.Node, width int) []string {
 
 	var out []string
 	for i, row := range rows {
-		out = append(out, r.tableRow(row, widths))
+		out = append(out, r.tableRow(row, widths, t.Alignments)...)
 		// The rule sits under the header, and only there: a rule between
 		// every row is a border, and this table has none.
 		if i == 0 && t.FirstChild() != nil {
@@ -63,20 +63,62 @@ func (r *renderer) tableCells(t *xast.Table) [][]string {
 	return rows
 }
 
-// tableRow draws one row's cells at the settled widths.
-func (r *renderer) tableRow(cells []string, widths []int) string {
-	var parts []string
+// tableRow draws one row, which is as many screen rows as its tallest cell
+// needs.
+//
+// A cell too wide for its column wraps rather than being cut. Cutting is what
+// the first version of this did, and a table that silently drops the end of a
+// sentence is worse than a table that is tall.
+func (r *renderer) tableRow(cells []string, widths []int, align []xast.Alignment) []string {
+	lines := make([][]string, len(widths))
+	height := 1
 	for i, w := range widths {
 		cell := ""
 		if i < len(cells) {
 			cell = cells[i]
 		}
-		if pieces := foldText(cell, w); len(pieces) > 0 {
-			cell = pieces[0]
-		}
-		parts = append(parts, r.sty.body.Render(cell)+strings.Repeat(" ", max(w-ansi.StringWidth(cell), 0)))
+		lines[i] = wrap([]Segment{{Text: cell}}, w)
+		height = max(height, len(lines[i]))
 	}
-	return strings.Join(parts, r.sty.rule.Render(" "+r.sty.vline()+" "))
+	sep := r.sty.rule.Render(" " + r.sty.vline() + " ")
+	out := make([]string, 0, height)
+	for row := range height {
+		var parts []string
+		for i, w := range widths {
+			cell := ""
+			if row < len(lines[i]) {
+				cell = lines[i][row]
+			}
+			parts = append(parts, justify(r.sty.body.Render(cell), ansi.StringWidth(cell), w, alignOf(align, i)))
+		}
+		out = append(out, strings.Join(parts, sep))
+	}
+	return out
+}
+
+// justify places a drawn cell inside its column. The alignment is the
+// author's: `|---:|` means the column is numbers, and left-justifying it
+// throws away the one thing that made the table readable.
+func justify(drawn string, used, width int, a xast.Alignment) string {
+	gap := max(width-used, 0)
+	switch a {
+	case xast.AlignRight:
+		return strings.Repeat(" ", gap) + drawn
+	case xast.AlignCenter:
+		left := gap / 2
+		return strings.Repeat(" ", left) + drawn + strings.Repeat(" ", gap-left)
+	default:
+		return drawn + strings.Repeat(" ", gap)
+	}
+}
+
+// alignOf is the column's declared alignment, or none where the table did not
+// say.
+func alignOf(align []xast.Alignment, col int) xast.Alignment {
+	if col < len(align) {
+		return align[col]
+	}
+	return xast.AlignNone
 }
 
 // columnWidths is what each column needs, squeezed to fit the pane.

@@ -103,7 +103,7 @@ You
 ── ansi ────────────────────────────────────────────────────
 · verbosity · normal (a finished step collapses)
 ␛[1;94mYou␛[m
-  ␛[38;5;252mfix␛[m␛[38;5;252m ␛[m␛[38;5;252mthe␛[m␛[38;5;252m ␛[m␛[38;5;252mround␛[m␛[38;5;252m ␛[m␛[38;5;252mlimit␛[m
+  ␛[38;5;252mfix the round limit␛[m
 
 ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m────────────────────────────────────────────────────────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m
 
@@ -119,7 +119,7 @@ You
 
 · verbosity · normal, step 1 opened (read-only run folds to a group row)
 ␛[1;94mYou␛[m
-  ␛[38;5;252mfix␛[m␛[38;5;252m ␛[m␛[38;5;252mthe␛[m␛[38;5;252m ␛[m␛[38;5;252mround␛[m␛[38;5;252m ␛[m␛[38;5;252mlimit␛[m
+  ␛[38;5;252mfix the round limit␛[m
 
 ␛[38;5;241m▾␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m────────────────────────────────────────────────────────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m
    ␛[38;5;241m▸␛[m ␛[38;5;241m⚙␛[m       ␛[38;5;241m3 reads · 1 search␛[m                                                                          ␛[3;38;5;241m[enter] expand␛[m  ␛[38;5;245m1.2s␛[m
@@ -136,7 +136,7 @@ You
 
 · /step · step 1's detail, one step deep
 ␛[1;94mYou␛[m
-  ␛[38;5;252mfix␛[m␛[38;5;252m ␛[m␛[38;5;252mthe␛[m␛[38;5;252m ␛[m␛[38;5;252mround␛[m␛[38;5;252m ␛[m␛[38;5;252mlimit␛[m
+  ␛[38;5;252mfix the round limit␛[m
 
 ␛[38;5;241m▾␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m───────────────────────────────────────────────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools · detail␛[m  ␛[38;5;241m1.2s␛[m
    ␛[38;5;214m⚙␛[m read    ␛[38;5;241minternal/agent/loop.go␛[m                                                                             ␛[38;5;245m3 lines␛[m
@@ -164,7 +164,7 @@ You
 
 · verbosity · high (every row, with detail)
 ␛[1;94mYou␛[m
-  ␛[38;5;252mfix␛[m␛[38;5;252m ␛[m␛[38;5;252mthe␛[m␛[38;5;252m ␛[m␛[38;5;252mround␛[m␛[38;5;252m ␛[m␛[38;5;252mlimit␛[m
+  ␛[38;5;252mfix the round limit␛[m
 
 ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m────────────────────────────────────────────────────────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m
 
@@ -181,7 +181,7 @@ You
 
 · verbosity · low (step headers only)
 ␛[1;94mYou␛[m
-  ␛[38;5;252mfix␛[m␛[38;5;252m ␛[m␛[38;5;252mthe␛[m␛[38;5;252m ␛[m␛[38;5;252mround␛[m␛[38;5;252m ␛[m␛[38;5;252mlimit␛[m
+  ␛[38;5;252mfix the round limit␛[m
 
 ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m────────────────────────────────────────────────────────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m4 tools␛[m  ␛[38;5;241m1.2s␛[m
 

@@ -47,7 +47,7 @@ You
 ── ansi ────────────────────────────────────────────────────
 · mid-run (the last step is still working)
 ␛[1;94mYou␛[m
-  ␛[38;5;252mThe␛[m␛[38;5;252m ␛[m␛[38;5;252mplan␛[m␛[38;5;252m ␛[m␛[38;5;252mis␛[m␛[38;5;252m ␛[m␛[38;5;252mapproved.␛[m␛[38;5;252m ␛[m␛[38;5;252mLeave␛[m␛[38;5;252m ␛[m␛[38;5;252mplanning␛[m␛[38;5;252m ␛[m␛[38;5;252mand␛[m␛[38;5;252m ␛[m␛[38;5;252mexecute␛[m␛[38;5;252m ␛[m␛[38;5;252mit␛[m␛[38;5;252m ␛[m␛[38;5;252mnow,␛[m␛[38;5;252m ␛[m␛[38;5;252musing␛[m␛[38;5;252m ␛[m␛[38;5;252myour␛[m␛[38;5;252m ␛[m␛[38;5;252mtools.␛[m
+  ␛[38;5;252mThe plan is approved. Leave planning and execute it now, using your tools.␛[m
 
 ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m─────────────────────────────────────────────────────────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m1 tool␛[m  ␛[38;5;241m6.2s␛[m
 
@@ -65,7 +65,7 @@ You
 
 · turn over (every step settled)
 ␛[1;94mYou␛[m
-  ␛[38;5;252mThe␛[m␛[38;5;252m ␛[m␛[38;5;252mplan␛[m␛[38;5;252m ␛[m␛[38;5;252mis␛[m␛[38;5;252m ␛[m␛[38;5;252mapproved.␛[m␛[38;5;252m ␛[m␛[38;5;252mLeave␛[m␛[38;5;252m ␛[m␛[38;5;252mplanning␛[m␛[38;5;252m ␛[m␛[38;5;252mand␛[m␛[38;5;252m ␛[m␛[38;5;252mexecute␛[m␛[38;5;252m ␛[m␛[38;5;252mit␛[m␛[38;5;252m ␛[m␛[38;5;252mnow,␛[m␛[38;5;252m ␛[m␛[38;5;252musing␛[m␛[38;5;252m ␛[m␛[38;5;252myour␛[m␛[38;5;252m ␛[m␛[38;5;252mtools.␛[m
+  ␛[38;5;252mThe plan is approved. Leave planning and execute it now, using your tools.␛[m
 
 ␛[38;5;241m▸␛[m ␛[38;5;252m1 ␛[m ␛[38;5;252mLocate the round accounting␛[m ␛[38;5;241m─────────────────────────────────────────────────────────────────────────────␛[m ␛[92m✓␛[m ␛[38;5;241m1 tool␛[m  ␛[38;5;241m6.2s␛[m
 

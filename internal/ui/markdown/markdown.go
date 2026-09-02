@@ -39,8 +39,10 @@ import (
 
 	"github.com/charmbracelet/x/ansi"
 	"github.com/yuin/goldmark"
+	emoji "github.com/yuin/goldmark-emoji"
 	gast "github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
+	xast "github.com/yuin/goldmark/extension/ast"
 	"github.com/yuin/goldmark/text"
 )
 
@@ -74,7 +76,16 @@ func (o Options) contentWidth() int { return max(o.Width-2*Margin, 1) }
 func (o Options) FillWidth() int { return o.contentWidth() + Margin }
 
 // parser is built once. goldmark's parser holds no per-document state.
-var parser = goldmark.New(goldmark.WithExtensions(extension.GFM))
+//
+// The extension set is glamour's, deliberately: GFM for tables, task lists,
+// strikethrough and bare URLs, definition lists, and the emoji shortcodes a
+// model reaches for. Dropping one of these would not be a simplification, it
+// would be a document shhh renders worse than the thing it replaced.
+var parser = goldmark.New(goldmark.WithExtensions(
+	extension.GFM,
+	extension.DefinitionList,
+	emoji.New(),
+))
 
 // Render lays src out at the given width and returns the rows joined by
 // newlines, with no leading or trailing blank row.
@@ -162,6 +173,12 @@ func (r *renderer) block(n gast.Node, width int) []string {
 		return []string{r.sty.rule.Render(strings.Repeat(r.sty.hline(), width))}
 	case *gast.HTMLBlock:
 		return r.raw(n, width)
+	case *xast.DefinitionList:
+		return r.definitions(n, width)
+	case *xast.DefinitionTerm:
+		return r.wrap(r.inline(n), width)
+	case *xast.DefinitionDescription:
+		return r.indent(r.children(n, max(width-defIndent, 1)), defIndent)
 	}
 	if table := r.table(n, width); table != nil {
 		return table
@@ -223,6 +240,37 @@ func (r *renderer) code(n gast.Node, lang string, width int) []string {
 		for _, row := range fold(segs, inner) {
 			rows = append(rows, strings.Repeat(" ", codeIndent)+row)
 		}
+	}
+	return rows
+}
+
+// defIndent is how far a definition sits under its term. A description that
+// began in the term's own column would read as a second term.
+const defIndent = 2
+
+// definitions renders a definition list: each term on its own row with its
+// descriptions indented under it, and a blank row between one pair and the
+// next rather than between a term and its own description.
+func (r *renderer) definitions(n gast.Node, width int) []string {
+	var rows []string
+	for c := n.FirstChild(); c != nil; c = c.NextSibling() {
+		block := r.block(c, width)
+		if len(block) == 0 {
+			continue
+		}
+		if _, term := c.(*xast.DefinitionTerm); term && len(rows) > 0 {
+			rows = append(rows, "")
+		}
+		rows = append(rows, block...)
+	}
+	return rows
+}
+
+// indent shifts a block's rows right by n columns.
+func (r *renderer) indent(rows []string, n int) []string {
+	pad := strings.Repeat(" ", n)
+	for i, row := range rows {
+		rows[i] = pad + row
 	}
 	return rows
 }
