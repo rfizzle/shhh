@@ -21,6 +21,7 @@ import (
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/memory"
@@ -754,6 +755,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			WithReadOnlyCommands(cfg.Behavior.ReadOnlyCommands, !cfg.ReadOnlyAutoEnabled()).
 			WithGitSnapshots(gitSnapshot).
 			WithChangeset(changeset.New(changeset.DefaultMaxBytes), changeset.NewTracker(".")).
+			WithTreeCheck(treeCheck(cfg)).
 			// First contact: the empty session's start screen, surveyed
 			// once here rather than assembled per frame.
 			WithStartScreen(buildStartInfo(env.survey, db, gate != nil)).
@@ -1034,6 +1036,20 @@ func branchCount(n int) string {
 		return "1 branch"
 	}
 	return fmt.Sprintf("%d branches", n)
+}
+
+// treeCheck is the reading that tells a turn the tree moved under it, or nil
+// when the config turned it off. The subtrahend is the front-end's: a
+// session hands in its changeset, a headless run the paths its calls wrote.
+func treeCheck(cfg config.Config) *agent.TreeCheck {
+	if !cfg.TreeCheckEnabled() {
+		return nil
+	}
+	return &agent.TreeCheck{
+		Dir:       ".",
+		IsCommand: func(name string) bool { return name == tools.ExecCommandName },
+		Log:       func(msg string) { logs.Logger().Warn(msg) },
+	}
 }
 
 // gitSnapshot captures the workspace's git state for rewind checkpoints

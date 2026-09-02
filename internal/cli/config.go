@@ -464,6 +464,21 @@ func configSettings() []configSetting {
 				"no session is asked for a title")
 		},
 	}, {
+		group: "SESSION", key: "behavior.tree_check", label: "tree check",
+		// Not flag(): unset is on, so an unset file and one that says true
+		// read the same and only false is a fact worth showing as set.
+		read: func(c config.Config) string {
+			if c.Behavior.TreeCheck == nil {
+				return ""
+			}
+			return strconv.FormatBool(*c.Behavior.TreeCheck)
+		},
+		fallback: "on",
+		options: func(config.Config) []components.SelectOption {
+			return boolOptions("a turn is told when the tree moved in a way its own edits do not explain",
+				"the tree is surveyed once, at session start, and never again")
+		},
+	}, {
 		group: "STEERING", key: "behavior.check_in_interval_rounds", label: "check-in interval",
 		read:     num(func(c config.Config) int { return c.Behavior.CheckInIntervalRounds }),
 		fallback: strconv.Itoa(agent.DefaultCheckInInterval) + " rounds",

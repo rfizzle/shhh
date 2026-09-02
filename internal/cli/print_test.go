@@ -428,3 +428,21 @@ func TestHeadlessTurnOutcome(t *testing.T) {
 		}
 	}
 }
+
+// A headless run has no changeset, so the paths its calls wrote are the
+// subtrahend the tree reading gets.
+func TestWrittenByCalls_RecordsOnlySuccessfulMutations(t *testing.T) {
+	w := &writtenByCalls{}
+	resolve := w.wrap(func(tc provider.ToolCall) string {
+		if tc.Name == "write_file" {
+			return "written"
+		}
+		return "error: declined"
+	})
+	resolve(provider.ToolCall{Name: "write_file", Arguments: `{"path":"a.go","content":"x"}`})
+	resolve(provider.ToolCall{Name: "edit_file", Arguments: `{"path":"b.go"}`})
+	resolve(provider.ToolCall{Name: "read_file", Arguments: `{"path":"c.go"}`})
+	if got := w.paths(); len(got) != 1 || got[0] != "a.go" {
+		t.Errorf("paths = %v, want [a.go]", got)
+	}
+}

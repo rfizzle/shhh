@@ -419,3 +419,12 @@ func TestAWindowsPromptCarriesNoPosixAdvice(t *testing.T) {
 		}
 	}
 }
+
+// The tree notice is a vocabulary the session prompt has to teach, or the
+// first one arrives unexplained.
+func TestTheAgentPromptExplainsTheTreeNotice(t *testing.T) {
+	got := BuildAgent(shell.Info{Shell: "bash", OS: "linux", Cwd: "/work"})
+	if !strings.Contains(got, `"[tree: …]" message`) || !strings.Contains(got, "never who moved it") {
+		t.Errorf("the agent prompt should explain the tree notice:\n%s", got)
+	}
+}

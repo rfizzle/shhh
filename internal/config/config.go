@@ -265,6 +265,11 @@ type BehaviorConfig struct {
 	// removes the cap for every run in scope — the config-file form of
 	// `--max-rounds 0`, for a machine that only ever runs unattended.
 	MaxToolRounds int `toml:"max_tool_rounds"`
+	// TreeCheck tells a turn when the working tree moved in a way its own
+	// edits do not explain — another session, an editor, a pull. Unset means
+	// on; false turns it off for a checkout where `git status` is too slow to
+	// pay at every round boundary.
+	TreeCheck *bool `toml:"tree_check"`
 	// CommandTimeoutSeconds bounds how long one command the assistant runs
 	// may take before it is cancelled: zero leaves DefaultCommandTimeout in
 	// place, and any negative removes the ceiling. It does not apply to a
@@ -471,6 +476,13 @@ func (c Config) MouseEnabled() bool {
 	return *c.Appearance.Mouse
 }
 
+// TreeCheckEnabled reports whether a turn is told the tree moved under it.
+// Unset is on: the reading costs one status call per boundary and is the
+// only thing that tells a session it is not alone in the checkout.
+func (c *Config) TreeCheckEnabled() bool {
+	return c.Behavior.TreeCheck == nil || *c.Behavior.TreeCheck
+}
+
 // HeadlessSummaryEnabled reports whether a non-interactive run takes readings:
 // what summary.headless says, or — unset — yes, because a run with nobody
 // watching it is the one the verdict exists for.
@@ -642,6 +654,9 @@ func Set(cfg *Config, key, value string) error {
 		n := 0
 		fmt.Sscanf(value, "%d", &n)
 		cfg.Behavior.MaxToolRounds = n
+	case "behavior.tree_check":
+		v := value == "true"
+		cfg.Behavior.TreeCheck = &v
 	case "behavior.command_timeout_seconds":
 		n := 0
 		fmt.Sscanf(value, "%d", &n)

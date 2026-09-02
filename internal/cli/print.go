@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/mattn/go-isatty"
@@ -131,6 +132,48 @@ func (h headlessObserver) summary(v agent.SummaryVerdict) {
 // stock.
 func (h headlessObserver) intervene(iv agent.Intervention) {
 	h.rec.signal(h.pos(), observe.SignalIntervene, iv.Kind.Signal())
+}
+
+// tree records the run being told the tree moved under it.
+func (h headlessObserver) tree(n agent.TreeNotice) {
+	h.rec.signal(h.pos(), observe.SignalTree, n.Signal())
+}
+
+// writtenByCalls is the paths a headless run's mutating calls wrote: the
+// subtrahend the tree reading needs, where a session would hand in its
+// changeset. A call that came back as an error wrote nothing.
+type writtenByCalls struct {
+	mu   sync.Mutex
+	list []string
+}
+
+func (w *writtenByCalls) wrap(resolve func(provider.ToolCall) string) func(provider.ToolCall) string {
+	return func(tc provider.ToolCall) string {
+		result := resolve(tc)
+		w.note(tc, result)
+		return result
+	}
+}
+
+func (w *writtenByCalls) note(tc provider.ToolCall, result string) {
+	if !tools.IsMutating(tc.Name) || strings.HasPrefix(result, "error:") {
+		return
+	}
+	var args struct {
+		Path string `json:"path"`
+	}
+	if json.Unmarshal([]byte(tc.Arguments), &args) != nil || args.Path == "" {
+		return
+	}
+	w.mu.Lock()
+	w.list = append(w.list, args.Path)
+	w.mu.Unlock()
+}
+
+func (w *writtenByCalls) paths() []string {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return append([]string(nil), w.list...)
 }
 
 // runPrintSession runs the agent loop to completion without the TUI:
@@ -403,6 +446,16 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	summaryRun := agent.NewSummaryRun(
 		newSummarizer(cfg, env, ledger, cfg.HeadlessSummaryEnabled()),
 		agent.NewRecorder(0), initialPrompt)
+	resolve := headlessApprover(cmd.Context(), opts, allowlist, run, red, obs.decision,
+		session.web, procSup, lspMutationHook(session.lsp), sc, session.mcpTools)
+	// A headless run has no changeset, so what it wrote is read off the
+	// calls that wrote it.
+	if c := treeCheck(cfg); c != nil {
+		own := &writtenByCalls{}
+		c.Own = own.paths
+		resolve = own.wrap(resolve)
+		a.SetTreeCheck(*c)
+	}
 	h := &agent.Headless{
 		Agent:   a,
 		Summary: summaryRun,
@@ -412,8 +465,11 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		},
 		OnSummary: obs.summary,
 		Gate:      gate,
-		Resolve: headlessApprover(cmd.Context(), opts, allowlist, run, red, obs.decision,
-			session.web, procSup, lspMutationHook(session.lsp), sc, session.mcpTools),
+		Resolve:   resolve,
+		OnTree: func(n agent.TreeNotice) {
+			fmt.Fprintf(os.Stderr, "» %s\n", n.Notice)
+			obs.tree(n)
+		},
 		OnToolCall: func(tc provider.ToolCall) {
 			callStart = time.Now()
 			fmt.Fprintf(os.Stderr, "» %s %s\n", tc.Name, clipActivityLine(tc.Arguments))

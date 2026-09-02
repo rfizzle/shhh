@@ -2393,6 +2393,10 @@ func (m Model) sendUserMessageAs(text, shown string) (tea.Model, tea.Cmd) {
 	// conversation happens to have ended up.
 	m.summaryTarget = shown
 	m.summary.startTurn()
+	// What moved since the last boundary is said before the message it
+	// would otherwise be read against — and before the checkpoint, so the
+	// checkpoint still points at the person's own words.
+	m.injectTreeNotice(true)
 	m.recordCheckpoint(shown)
 	atts := m.takeAttachments()
 	m.agent.StartTurnWith(text, atts)
@@ -2925,6 +2929,9 @@ func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
 	// injected above answers the same question and resets the counter both
 	// are measured against, so a turn the reader has just steered is not
 	// asked it twice.
+	// The tree first, then the question: a check-in asked against a tree the
+	// turn has not been told about is answered against the wrong one.
+	m.injectTreeNotice(false)
 	m.injectInterventions()
 	m.setTurnState(stateStreaming)
 	m.streaming = ""

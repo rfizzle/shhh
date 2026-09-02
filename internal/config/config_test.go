@@ -693,3 +693,22 @@ classifier = "classifier.md"
 		t.Errorf("prompts = %+v, want %+v", cfg.Prompts, want)
 	}
 }
+
+func TestTreeCheckIsOnUnlessTurnedOff(t *testing.T) {
+	var cfg Config
+	if !cfg.TreeCheckEnabled() {
+		t.Fatal("unset is on")
+	}
+	if err := Set(&cfg, "behavior.tree_check", "false"); err != nil {
+		t.Fatal(err)
+	}
+	if cfg.TreeCheckEnabled() {
+		t.Error("behavior.tree_check=false should turn the reading off")
+	}
+	if err := Set(&cfg, "behavior.tree_check", "true"); err != nil {
+		t.Fatal(err)
+	}
+	if !cfg.TreeCheckEnabled() {
+		t.Error("behavior.tree_check=true should turn it back on")
+	}
+}

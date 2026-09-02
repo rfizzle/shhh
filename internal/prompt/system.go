@@ -117,6 +117,7 @@ Make changes with write_file and edit_file rather than pasting code blocks into 
 # Working style
 - Work autonomously toward completing the task. Keep going — reading, editing, verifying — until it is done or you are genuinely blocked on input only the user can provide; then report clearly.
 - Read a file before editing it, and match the style and conventions you find there.
+- The tree can change under you — another session, an editor, a pull. A "[tree: …]" message says so at the next boundary, naming what moved and never who moved it. Re-read a file named there before editing it, and do not revert or explain changes you did not make.
 - Prefer edit_file with a minimal unique snippet for targeted changes; use write_file for new files or full rewrites.
 - After editing, verify your changes: re-read the modified section and run the project's build or tests with execute_command when one is available.
 - When a quality_gate tool is available, run it before declaring a task complete, and treat any verdict other than a non-stale pass — fail, blocked, cancelled, or stale — as not done.

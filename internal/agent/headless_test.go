@@ -345,3 +345,33 @@ func TestHeadlessRun_OnSummarySilentWithoutAReading(t *testing.T) {
 		t.Fatalf("OnSummary called %d times without a summarizer", called)
 	}
 }
+
+// A headless run is told the tree moved the same way a session is: at the
+// round boundary, as a user message, before the next request.
+func TestHeadlessRun_TellsTheTurnTheTreeMoved(t *testing.T) {
+	ws, _ := treeFixture(t)
+	a := New(nil, scriptedStream(t,
+		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"a.txt"}`}),
+		doneRound("done"),
+	))
+	a.SetTreeCheck(TreeCheck{Dir: ws})
+	a.SetExecutor(func(name string, args json.RawMessage) (string, error) {
+		// Somebody else writes while the round runs.
+		write(t, ws, "theirs.txt", "x\n")
+		return "hello", nil
+	})
+	var told []TreeNotice
+	h := &Headless{Agent: a, OnTree: func(n TreeNotice) { told = append(told, n) }}
+	if _, err := h.Run("go"); err != nil {
+		t.Fatal(err)
+	}
+	if len(told) != 1 || told[0].Paths != 1 {
+		t.Fatalf("OnTree should see one notice naming one path, got %+v", told)
+	}
+	msgs := a.Messages()
+	// system-less: user, assistant(tool call), tool result, tree notice, assistant.
+	notice := msgs[len(msgs)-2]
+	if notice.Role != provider.RoleUser || !strings.Contains(notice.Content, "[tree: 1 path changed outside this session: theirs.txt]") {
+		t.Errorf("the notice should sit between the results and the final answer, got %+v", notice)
+	}
+}

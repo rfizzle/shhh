@@ -181,6 +181,10 @@ const (
 	// folding the two together would put the user's own messages in the
 	// numerator.
 	SignalIntervene = "intervened"
+	// SignalTree: the session told its turn the working tree moved in a way
+	// its own edits do not explain. Reason: "head" (the commit or branch
+	// moved), "paths" (the changed set did), or "both".
+	SignalTree = "tree-moved"
 	// SignalUndo: the user took a turn's edits back. Reason: "".
 	SignalUndo = "undo"
 	// SignalMode: the permission mode changed. Reason: the new mode.

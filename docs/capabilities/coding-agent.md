@@ -216,6 +216,38 @@ training cutoff unless something tells it otherwise, and left to that it
 misdates a changelog entry, assumes the newest release it knows of is still
 the newest, and computes a range from the wrong year.
 
+## The tree can move under a session
+
+The survey is taken once, and a session that is alone in its checkout can
+reason from it for as long as it runs. Sessions are not alone. A second one
+is open on the same tree, an editor is beside it, a pull lands in the next
+terminal — and the branch switches, HEAD moves, a path the model has never
+read is rewritten, with nothing in the transcript to say so until an edit is
+refused for touching a file that changed.
+
+So the session is told. At the start of every turn and after every round's
+results are in — the boundaries the loop already takes its other readings at
+— it reads the tree again and compares: the commit, the branch, and the set
+of changed paths. What its own edits account for is subtracted first, so
+what is reported is what the model could not already know from its own
+transcript. Commands are the one thing a subtraction cannot see through,
+because a command may write anything; a change that follows one is reported
+as *since your last command*, and the model, which has the command in front
+of it, is left to reconcile.
+
+**The session is told when the tree moves; it is never told what moved it.**
+Git does not know, and a guess presented as a fact is exactly what the model
+would act on — reverting a colleague's work as an accident, or explaining its
+own as somebody else's.
+
+The reading costs one status call per boundary, and a checkout where that
+call is slow keeps only the turn boundary, where the wait is against a person
+typing rather than a model answering. It can be turned off. What it does not
+see is content: a path that was already changed when a stranger changed it
+again has the same status line before and after, and that case is caught
+where it always was — by the fingerprint a read leaves behind, checked at the
+edit.
+
 ## It can check itself
 
 The session can run a named suite of checks defined in the workspace, and

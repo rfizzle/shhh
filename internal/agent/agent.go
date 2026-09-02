@@ -104,6 +104,10 @@ type Agent struct {
 	// scrub, when set, rewrites every text that joins the conversation or
 	// leaves it for a provider. Nil leaves text alone.
 	scrub func(msg provider.Message) provider.Message
+
+	// tree, when set, is the reading that tells a turn the working tree
+	// moved under it (tree.go). Nil reads nothing.
+	tree *treeState
 }
 
 func New(initial []provider.Message, stream StreamFunc) *Agent {
@@ -257,6 +261,7 @@ func (a *Agent) BeginToolRound(text string, calls []provider.ToolCall, gate Appr
 		Reasoning: a.reasoning,
 	})
 	a.reasoning = nil
+	a.noteTreeCalls(calls)
 	for _, tc := range calls {
 		if gate != nil && gate(tc) {
 			gated = append(gated, tc)

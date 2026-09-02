@@ -199,6 +199,22 @@ The `Execute()` function in `tools/tools.go` deliberately only dispatches read-o
 
 Four modes control approval flow: `manual`, `accept-edits`, `auto`, `plan`. The auto mode uses an LLM classifier that **always fails closed** — classifier errors never approve, they fall back to asking the human. There is no path where "could not decide" becomes yes, and the zero value must stay the one that costs nothing. See [`docs/capabilities/approvals-and-safety.md`](docs/capabilities/approvals-and-safety.md).
 
+### The tree reading
+
+Whether the working tree moved under a turn is decided in
+`internal/agent/tree.go` (`SetTreeCheck`, `NextTreeNotice`) and delivered by
+whichever front-end holds the turn: `internal/ui/chat/tree.go` for a session,
+`Headless.deliverTree` for a headless run. The snapshot is one
+`git status --porcelain=v2 --branch -z` at the repository root; the
+subtrahend is the front-end's — a session hands in its changeset, a headless
+run the paths its mutating calls wrote (`writtenByCalls` in
+`internal/cli/print.go`). `BeginToolRound` counts the command calls of a round
+so the next notice can say a command ran rather than claim the changes are
+somebody else's. A sub-agent is not handed one: a writer stands in its own
+worktree, and a reader's fan-out would multiply the cost. `behavior.tree_check`
+turns it off. Why it exists and what it deliberately does not see:
+[`docs/capabilities/coding-agent.md#the-tree-can-move-under-a-session`](docs/capabilities/coding-agent.md#the-tree-can-move-under-a-session).
+
 ### The interruption machinery
 
 The steer and the check-in are decided in `internal/agent` and delivered by

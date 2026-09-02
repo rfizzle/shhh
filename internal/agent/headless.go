@@ -58,6 +58,10 @@ type Headless struct {
 	// front-end can show it the way the chat transcript does. It may be nil.
 	OnIntervene func(iv Intervention)
 
+	// OnTree, when set, is told each time the run was told the tree moved
+	// (tree.go), for the same reason. It may be nil.
+	OnTree func(n TreeNotice)
+
 	// OnSummary, when set, is told each reading that lands, before the
 	// policy is offered it. Every reading arrives here and not only the ones
 	// that go on to interrupt the turn, because a drift rate is a fraction
@@ -106,6 +110,9 @@ func (h *Headless) Run(prompt string) (string, error) {
 	h.interrupted = false
 	h.mu.Unlock()
 
+	// What moved since the run last looked comes before what is asked of it,
+	// so the instruction is read against the tree as it is.
+	h.deliverTree(true)
 	h.Agent.StartTurn(prompt)
 	for {
 		text, calls, err := h.streamOnce()
@@ -179,6 +186,10 @@ func (h *Headless) Run(prompt string) (string, error) {
 			return "", fmt.Errorf("%w after %d rounds", ErrRoundCap, h.Agent.Rounds())
 		}
 
+		// The tree first, then the question: a check-in asked against a tree
+		// the run has not been told about is answered against the wrong one.
+		h.deliverTree(false)
+
 		// The same take-stock check-in the TUI injects. A headless run needs
 		// it more, not less: there is nobody here to ask a turn whether it has
 		// enough yet, so the run itself has to ask.
@@ -200,6 +211,19 @@ func (h *Headless) Run(prompt string) (string, error) {
 				h.OnIntervene(iv)
 			}
 		}
+	}
+}
+
+// deliverTree appends the tree notice this boundary owes, if any, and shows
+// it. Mirrors the TUI's injectTreeNotice.
+func (h *Headless) deliverTree(turnStart bool) {
+	n, ok := h.Agent.NextTreeNotice(turnStart)
+	if !ok {
+		return
+	}
+	h.Agent.Append(provider.Message{Role: provider.RoleUser, Content: n.Message})
+	if h.OnTree != nil {
+		h.OnTree(n)
 	}
 }
 
