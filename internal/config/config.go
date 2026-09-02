@@ -28,6 +28,34 @@ type Config struct {
 	Summary    SummaryConfig    `toml:"summary"`
 	Secrets    SecretsConfig    `toml:"secrets"`
 	MCP        MCPConfig        `toml:"mcp"`
+	Prompts    PromptsConfig    `toml:"prompts"`
+}
+
+// PromptsConfig names files whose contents replace shhh's own wordings. The
+// mechanism stays in the code and the sentences come out of it, so tuning
+// how a session is steered costs an edit and a restart rather than a build
+// (docs/capabilities/configuration.md#the-mechanism-is-code-its-wording-is-configuration).
+//
+// A path that cannot be read stops the session with the path and the reason.
+// The failure it guards against is a session running the built-in wording
+// while its operator believes it is running theirs, and no later reading of
+// the record recovers from that.
+type PromptsConfig struct {
+	// Steer is the message a drifting turn is given. It may name
+	// `{{target}}`, the instruction the turn was judged against, and
+	// `{{reason}}`, the reading's own account of the departure.
+	Steer string `toml:"steer,omitempty"`
+	// CheckIn is the message a turn that has reached its interval is given.
+	// It may name `{{rounds}}` and `{{finished}}`, the closing line that
+	// differs between a session and a sub-agent.
+	CheckIn string `toml:"check_in,omitempty"`
+	// Summary is the reading instruction the summarizing model is sent. The
+	// digest it judges is appended after it, and takes no placeholders.
+	Summary string `toml:"summary,omitempty"`
+	// Classifier is the instruction auto mode's permission classifier is
+	// sent. The proposed call is appended after it, and takes no
+	// placeholders.
+	Classifier string `toml:"classifier,omitempty"`
 }
 
 // MCPConfig is the user's MCP servers and how they are started. shhh
@@ -120,6 +148,16 @@ type SummaryConfig struct {
 	// children is six more readings per interval, so this one is opt-in even
 	// though a child is exactly as unwatched as a headless run.
 	Subagents *bool `toml:"subagents"`
+	// InterveneCooldownIntervals is how many reading intervals must pass
+	// between two verdict-driven interventions (default 2, which any
+	// non-positive keeps). It is counted in intervals rather than rounds so
+	// it scales with whatever the reading interval is set to.
+	InterveneCooldownIntervals int `toml:"intervene_cooldown_intervals"`
+	// SteerTargetChars bounds the instruction a steer quotes back to a
+	// drifting turn (default 400); any negative quotes it whole. It sits
+	// here rather than under behavior because what a steer is worth is a
+	// question about the reading that produced it.
+	SteerTargetChars int `toml:"steer_target_chars"`
 	// Title asks the summary model to name an unnamed session after its
 	// first turn, for the saved-chat listings. Unset means on when Model is
 	// set and off otherwise: on the session model the question is not
@@ -279,6 +317,17 @@ type BehaviorConfig struct {
 	// MemoryMaxTokens is the hard token budget for the injected memory block
 	// (default 1200).
 	MemoryMaxTokens int `toml:"memory_max_tokens"`
+	// CheckInIntervalRounds is how many tool rounds pass before a turn is
+	// asked to take stock; zero — or any negative, since an interval of none
+	// is not a thing to ask for — keeps the built-in interval. It is the
+	// session's and the headless run's — a sub-agent's is shorter and is not
+	// this key's to set
+	// (docs/capabilities/coding-agent.md#the-interval-is-the-last-thing-watching).
+	CheckInIntervalRounds int `toml:"check_in_interval_rounds"`
+	// CheckInMaxDoublings bounds how far that interval widens over one turn:
+	// zero keeps the built-in bound, and any negative fixes the interval so
+	// a long turn is asked at the same rate throughout.
+	CheckInMaxDoublings int `toml:"check_in_max_doublings"`
 }
 
 // AgentsConfig configures sub-agent defaults: which model children
@@ -674,6 +723,30 @@ func Set(cfg *Config, key, value string) error {
 	case "summary.title":
 		v := value == "true"
 		cfg.Summary.Title = &v
+	case "summary.intervene_cooldown_intervals":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Summary.InterveneCooldownIntervals = n
+	case "summary.steer_target_chars":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Summary.SteerTargetChars = n
+	case "behavior.check_in_interval_rounds":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Behavior.CheckInIntervalRounds = n
+	case "behavior.check_in_max_doublings":
+		n := 0
+		fmt.Sscanf(value, "%d", &n)
+		cfg.Behavior.CheckInMaxDoublings = n
+	case "prompts.steer":
+		cfg.Prompts.Steer = value
+	case "prompts.check_in":
+		cfg.Prompts.CheckIn = value
+	case "prompts.summary":
+		cfg.Prompts.Summary = value
+	case "prompts.classifier":
+		cfg.Prompts.Classifier = value
 	case "behavior.memory_disabled":
 		cfg.Behavior.MemoryDisabled = value == "true"
 	case "behavior.memory_max_entries":

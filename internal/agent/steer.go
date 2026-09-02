@@ -27,19 +27,27 @@ import (
 	"strings"
 )
 
-// maxSteerTarget bounds the instruction quoted back into the steer. The
-// anchor is whatever the user typed, which has no length limit; the steer is
-// a message in a conversation that already contains it.
-const maxSteerTarget = 400
+// DefaultSteerTargetChars bounds the instruction quoted back into the steer.
+// The anchor is whatever the user typed, which has no length limit; the steer
+// is a message in a conversation that already contains it.
+// Steering.SteerTargetChars is the bound a surface can put in its place.
+const DefaultSteerTargetChars = 400
 
-// SteerPrompt is the message a drifting turn is given. Target is the
+// SteerPrompt is the built-in message a drifting turn is given. Target is the
 // instruction the turn was judged against, anchored at turn start; reason is
 // the reading's own short account of the departure, and may be empty.
 func SteerPrompt(target, reason string) string {
+	return buildSteer(clampRunes(strings.TrimSpace(target), DefaultSteerTargetChars), reason)
+}
+
+// buildSteer assembles the built-in wording from a target that has already
+// been bounded, so the bound is the surface's setting and the sentences are
+// this function's.
+func buildSteer(target, reason string) string {
 	var b strings.Builder
 	b.WriteString("A background check on this session's activity suggests the work may have moved away from what was asked.\n\n")
 	if t := strings.TrimSpace(target); t != "" {
-		b.WriteString("What was asked:\n" + clampRunes(t, maxSteerTarget) + "\n\n")
+		b.WriteString("What was asked:\n" + t + "\n\n")
 	}
 	if r := strings.TrimSpace(reason); r != "" {
 		fmt.Fprintf(&b, "What the check noticed: %s\n\n", r)
@@ -59,5 +67,5 @@ func SteerPrompt(target, reason string) string {
 // them.
 func (a *Agent) TakeSteer(target, reason string) string {
 	a.NoteIntervention()
-	return SteerPrompt(target, reason)
+	return a.steering.steerPrompt(target, reason)
 }

@@ -152,13 +152,13 @@ func (a *Agent) NextIntervention(target string) (Intervention, bool) {
 		if kind == InterveneSteer {
 			return Intervention{
 				Kind:    InterveneSteer,
-				Message: SteerPrompt(target, v.Reason),
+				Message: a.steering.steerPrompt(target, v.Reason),
 				Notice:  steerNotice(v.Reason),
 			}, true
 		}
 		return Intervention{
 			Kind:    InterveneEnough,
-			Message: CheckInPrompt(a.rounds, FinishedInSession),
+			Message: a.steering.checkInPrompt(a.rounds, FinishedInSession),
 			Notice:  enoughNotice(v.Reason),
 		}, true
 	}

@@ -172,8 +172,40 @@ type SummaryConfig struct {
 	// thing that decides the cost should carry its own bound.
 	IntervalRounds int
 	MinGap         time.Duration
+	// InterveneCooldownIntervals is how many reading intervals must pass
+	// between two verdict-driven interventions. It lives beside the interval
+	// because it is measured in them; zero takes the built-in count.
+	InterveneCooldownIntervals int
+	// Prompt replaces the built-in reading instruction. Empty keeps it. It
+	// is the whole system prompt: the untrusted digest is appended after it
+	// either way, so a wording that drops the warning about it drops the
+	// warning and nothing else.
+	Prompt string
 	// Disabled turns the whole mechanism off: no requests, no block.
 	Disabled bool
+}
+
+// DefaultCooldownIntervals is how many reading intervals pass between two
+// verdict-driven interventions. Two gives one intervention two readings to
+// take effect before another is allowed.
+const DefaultCooldownIntervals = 2
+
+// CooldownIntervals is the cooldown in reading intervals, defaulted. Callers
+// multiply it by the interval in force, which a surface backing off from a
+// failing summariser has already widened.
+func (c SummaryConfig) CooldownIntervals() int {
+	if c.InterveneCooldownIntervals > 0 {
+		return c.InterveneCooldownIntervals
+	}
+	return DefaultCooldownIntervals
+}
+
+// prompt is the reading instruction in force.
+func (c SummaryConfig) prompt() string {
+	if c.Prompt != "" {
+		return c.Prompt
+	}
+	return summaryPrompt
 }
 
 func (c SummaryConfig) timeout() time.Duration {
@@ -319,7 +351,7 @@ func (s *Summarizer) Summarize(ctx context.Context, req SummaryRequest) SummaryV
 	// One attempt and no retries. A missed reading is answered by the next
 	// interval a few rounds from now, which is cheaper and quieter than
 	// asking twice for a block nobody is blocked on.
-	text, state, reason, usage, err := s.readOnce(ctx, summaryPrompt+"\n\nUNTRUSTED DIGEST:\n"+string(evidence))
+	text, state, reason, usage, err := s.readOnce(ctx, s.cfg.prompt()+"\n\nUNTRUSTED DIGEST:\n"+string(evidence))
 	if usage != nil {
 		v.Usage = *usage
 	}

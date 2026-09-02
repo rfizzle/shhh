@@ -14,16 +14,24 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
-// interveneCooldownIntervals is how many summary intervals must pass between
-// two verdict-driven interventions. Two gives one intervention two readings
-// to take effect before another is allowed.
-const interveneCooldownIntervals = 2
-
 // considerVerdict offers a fresh reading to the agent's policy. It only ever
 // queues; the round boundary delivers.
+//
+// The cooldown is counted in reading intervals rather than rounds, and in the
+// interval in force rather than the configured one: a session backing off
+// from a failing summariser reads half as often, and a cooldown that did not
+// widen with it would let two interventions land on consecutive readings.
 func (m *Model) considerVerdict(v agent.SummaryVerdict) {
-	m.agent.SetInterveneCooldown(interveneCooldownIntervals * m.summaryInterval())
+	m.agent.SetInterveneCooldown(m.summarizer.Config().CooldownIntervals() * m.summaryInterval())
 	m.agent.ConsiderVerdict(v, m.working())
+}
+
+// WithSteering installs the interruption machinery's tuning: the thresholds
+// and the wordings the config file overrode, or a zero value for the
+// built-in set.
+func (m Model) WithSteering(s agent.Steering) Model {
+	m.agent.SetSteering(s)
+	return m
 }
 
 // injectInterventions delivers whatever the round boundary owes, and shows it.

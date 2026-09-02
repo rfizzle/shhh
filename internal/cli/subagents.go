@@ -320,6 +320,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			// multiplies the cost by its width, so this one is opt-in
 			// (summary.subagents).
 			Summarizer: newSummarizer(cfg, env, ledger, cfg.SubagentSummaryEnabled()),
+			Steering:   steering(cfg, env.prompts),
 		}, nil
 	}
 
@@ -352,7 +353,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			if env.reasoning != nil {
 				effort = env.reasoning()
 			}
-			r.stamp(sysPrompt, session.skills.Len(), projectFingerprintRoot(), sessionSettings(cfg, runSettings{
+			r.stamp(env.prompts.fingerprintOf(sysPrompt), session.skills.Len(), projectFingerprintRoot(), sessionSettings(cfg, runSettings{
 				mode:       spec.Mode.String(),
 				effort:     agents.effortFor(spec.Role, effort),
 				rounds:     spec.MaxRounds,

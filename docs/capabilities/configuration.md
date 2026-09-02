@@ -95,6 +95,55 @@ Repository settings layer over user settings, and where a value is overridden
 the surface says so rather than showing the winner alone — otherwise a user
 reads their own configuration and cannot see why it is not what they set.
 
+## The mechanism is code, its wording is configuration
+
+A session interrupts its own turns. It asks a long one what it has got, and
+it tells one that has wandered which instruction it was judged against. What
+those interruptions are for, when each fires, and that a steer asks rather
+than accuses are decisions about the product, and they stay in the program.
+How many rounds pass, how far the interval widens, how much of the
+instruction is quoted back, and the sentences themselves are none of those
+things, and they are exactly what someone tuning a session has to be able to
+change. So they come out: four numbers as keys, and four wordings as files
+the configuration names.
+
+The line is drawn there because of what it costs to be wrong on either side.
+A wording in the program can only be changed by a build, and a change nobody
+can afford to make is a change nobody makes. A mechanism in the file can be
+half-configured into a shape the program was never written for, and the
+failure arrives in a session, in front of a user, rather than in a review.
+
+**A wording that cannot be read stops the session.** Not a warning and not a
+fallback: the path, the reason, and no session. The failure this guards
+against is a session running the built-in steer while the person who wrote
+the path believes it is running theirs — and then a fortnight of comparison
+across two groups of sessions that are in fact one group. Nothing read from
+the record afterwards recovers from that, so it fails at the start, where the
+person who wrote the path is still watching.
+
+An empty file is that failure wearing a disguise, and is refused the same
+way. Nothing has an empty wording to send, so a file a truncated write left
+with nothing in it would silently mean "not configured" — the built-in words
+back in place, and a record that says the session overrode nothing.
+
+**A wording is part of what a session was sent, so it is part of the
+fingerprint.** The record already fingerprints the system prompt as it went
+out, which is what puts sessions on either side of an edit to it. A steer file
+is sent to the same model in the same session by the same mechanism, and an
+override that did not divide the record the same way would be a dial with no
+instrument on it. A session that overrode nothing fingerprints exactly as it
+did before, so turning the ability on divides nothing by itself.
+
+**The substitutions are checked before anything runs on them.** A wording is
+prose with a few values dropped into it — the rounds that have gone, the
+instruction to quote back — and a misspelled one is invisible: it reaches the
+model as literal punctuation, the value it stood for never arrives, and the
+wording still reads like a wording. So a file naming a substitution that does
+not exist is refused the way an unreadable one is, and so is one naming a
+substitution that belongs to a different wording. Two of the four are sent
+exactly as written and take none at all, which makes any of them a mistake
+there.
+
 ## A failure is written down
 
 A refused request is a row on the screen for as long as the screen lasts.

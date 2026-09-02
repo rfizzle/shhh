@@ -204,3 +204,38 @@ func TestConfigRows_PasteThresholdsStateTheirDefault(t *testing.T) {
 		t.Fatalf("a negative paste_lines reads %q, want it stated in words", row.Value)
 	}
 }
+
+// The interruption machinery's keys are on the screen, each stating the
+// built-in value that stands while nothing is set — the screen is where a
+// reader finds out what this machine actually does.
+func TestConfigRows_SteeringKeysStateTheirDefaults(t *testing.T) {
+	rows := configRows(config.Config{}, config.Config{})
+	for key, want := range map[string]string{
+		"behavior.check_in_interval_rounds":    strconv.Itoa(agent.DefaultCheckInInterval) + " rounds",
+		"behavior.check_in_max_doublings":      strconv.Itoa(agent.DefaultCheckInDoublings) + " doublings",
+		"summary.intervene_cooldown_intervals": strconv.Itoa(agent.DefaultCooldownIntervals) + " readings",
+		"summary.steer_target_chars":           strconv.Itoa(agent.DefaultSteerTargetChars) + " characters",
+		"prompts.steer":                        "(the built-in wording)",
+		"prompts.check_in":                     "(the built-in wording)",
+		"prompts.summary":                      "(the built-in wording)",
+		"prompts.classifier":                   "(the built-in wording)",
+	} {
+		row := rowFor(rows, key)
+		if row.Value != want || row.Source != "default" {
+			t.Errorf("%s row = %q/%q, want %q/default", key, row.Value, row.Source, want)
+		}
+	}
+
+	// The two numbers where a negative is not a bound read it as the answer
+	// it is rather than as "-1".
+	var off config.Config
+	off.Behavior.CheckInMaxDoublings = -1
+	off.Summary.SteerTargetChars = -1
+	rows = configRows(off, config.Config{})
+	if got := rowFor(rows, "behavior.check_in_max_doublings").Value; !strings.Contains(got, "never") {
+		t.Errorf("a negative widening reads %q, want it stated in words", got)
+	}
+	if got := rowFor(rows, "summary.steer_target_chars").Value; !strings.Contains(got, "whole") {
+		t.Errorf("a negative bound reads %q, want it stated in words", got)
+	}
+}

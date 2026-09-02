@@ -616,3 +616,80 @@ func TestCommandTimeoutDefaultsAndOverrides(t *testing.T) {
 		t.Errorf("a negative removes the ceiling: want 0 got %v", got)
 	}
 }
+
+// The interruption machinery's thresholds and wordings are reachable from
+// the file, and a negative is kept: it is how the file says the interval
+// never widens and the steer quotes the instruction whole.
+func TestSet_SteeringConfig(t *testing.T) {
+	var cfg Config
+	for key, want := range map[string]int{
+		"behavior.check_in_interval_rounds":    15,
+		"behavior.check_in_max_doublings":      -1,
+		"summary.intervene_cooldown_intervals": 3,
+		"summary.steer_target_chars":           -1,
+	} {
+		if err := Set(&cfg, key, strconv.Itoa(want)); err != nil {
+			t.Fatalf("%s: unexpected error: %v", key, err)
+		}
+	}
+	if cfg.Behavior.CheckInIntervalRounds != 15 || cfg.Behavior.CheckInMaxDoublings != -1 {
+		t.Errorf("check-in keys = %d/%d, want 15/-1",
+			cfg.Behavior.CheckInIntervalRounds, cfg.Behavior.CheckInMaxDoublings)
+	}
+	if cfg.Summary.InterveneCooldownIntervals != 3 || cfg.Summary.SteerTargetChars != -1 {
+		t.Errorf("steer keys = %d/%d, want 3/-1",
+			cfg.Summary.InterveneCooldownIntervals, cfg.Summary.SteerTargetChars)
+	}
+
+	for key, into := range map[string]*string{
+		"prompts.steer":      &cfg.Prompts.Steer,
+		"prompts.check_in":   &cfg.Prompts.CheckIn,
+		"prompts.summary":    &cfg.Prompts.Summary,
+		"prompts.classifier": &cfg.Prompts.Classifier,
+	} {
+		if err := Set(&cfg, key, "/wordings/"+key); err != nil {
+			t.Fatalf("%s: unexpected error: %v", key, err)
+		}
+		if *into != "/wordings/"+key {
+			t.Errorf("%s = %q", key, *into)
+		}
+	}
+}
+
+// The same block read back from a file, so a key that decodes under a
+// different name than it is set by cannot pass the test above.
+func TestLoadFrom_SteeringConfig(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.toml")
+	if err := os.WriteFile(path, []byte(`
+[behavior]
+check_in_interval_rounds = 15
+check_in_max_doublings = -1
+
+[summary]
+intervene_cooldown_intervals = 3
+steer_target_chars = 120
+
+[prompts]
+steer = "steer.md"
+check_in = "checkin.md"
+summary = "summary.md"
+classifier = "classifier.md"
+`), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := LoadFrom(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Behavior.CheckInIntervalRounds != 15 || cfg.Behavior.CheckInMaxDoublings != -1 {
+		t.Errorf("check-in keys = %d/%d", cfg.Behavior.CheckInIntervalRounds, cfg.Behavior.CheckInMaxDoublings)
+	}
+	if cfg.Summary.InterveneCooldownIntervals != 3 || cfg.Summary.SteerTargetChars != 120 {
+		t.Errorf("steer keys = %d/%d", cfg.Summary.InterveneCooldownIntervals, cfg.Summary.SteerTargetChars)
+	}
+	want := PromptsConfig{Steer: "steer.md", CheckIn: "checkin.md", Summary: "summary.md", Classifier: "classifier.md"}
+	if cfg.Prompts != want {
+		t.Errorf("prompts = %+v, want %+v", cfg.Prompts, want)
+	}
+}

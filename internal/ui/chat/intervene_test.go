@@ -139,3 +139,17 @@ func TestIntervene_ToolOutputCannotReachTheDeliveredSteer(t *testing.T) {
 		}
 	}
 }
+
+// The configured wording is what the reader and the model see, so a change
+// to the file is a change to the session rather than to a value nothing
+// reads.
+func TestIntervene_ConfiguredWordingReachesTheConversation(t *testing.T) {
+	m := verdictModel(t, "off_target")
+	m = m.WithSteering(agent.Steering{Steer: "off track: " + agent.PlaceholderTarget})
+	m.summaryTarget = "build the exporter"
+	m.considerVerdict(agent.SummaryVerdict{State: agent.SummaryOffTarget, Round: 4})
+	m.injectInterventions()
+	if got := lastUserMessage(m); got != "off track: build the exporter" {
+		t.Fatalf("the steer the session sent was %q", got)
+	}
+}

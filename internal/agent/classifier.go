@@ -77,6 +77,18 @@ type ClassifierConfig struct {
 	// Retries is how many extra attempts an invalid or failed response gets
 	// before the classifier fails closed.
 	Retries int
+	// Prompt replaces the built-in instruction. Empty keeps it. It is the
+	// whole system prompt: the untrusted evidence is appended after it
+	// either way, and so is the retry's own line.
+	Prompt string
+}
+
+// prompt is the instruction in force.
+func (c ClassifierConfig) prompt() string {
+	if c.Prompt != "" {
+		return c.Prompt
+	}
+	return classifierPrompt
 }
 
 func (c ClassifierConfig) timeout() time.Duration {
@@ -165,7 +177,7 @@ func (c *Classifier) Judge(ctx context.Context, req ClassifierRequest) Classifie
 
 	v.Reason = "the classifier returned an invalid decision"
 	for attempt := 1; attempt <= c.cfg.attempts(); attempt++ {
-		prompt := classifierPrompt
+		prompt := c.cfg.prompt()
 		if attempt > 1 {
 			prompt += "\n\nYour previous reply did not contain a valid " + DecisionToolName + " decision. Return one now."
 		}

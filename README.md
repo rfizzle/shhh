@@ -170,6 +170,8 @@ accent_color = "cyan"
 | `behavior.memory_disabled` | Turn off durable memory: no recall injection, no `remember` tool (default: false) |
 | `behavior.memory_max_entries` | Max memories injected into the system prompt per session (default: 20) |
 | `behavior.memory_max_tokens` | Hard token budget for the injected memory block (default: 1200) |
+| `behavior.check_in_interval_rounds` | Tool rounds before a turn is asked to take stock (default: 40). It is the session's and the headless run's; a sub-agent's is shorter and is not this key's to set |
+| `behavior.check_in_max_doublings` | How far that interval widens over one turn (default: 2 doublings); any negative fixes it, so a long turn is asked at the same rate from first round to last |
 | `behavior.system_prompt_extra` | Extra text appended to the system prompt |
 | `agents.model` | Model sub-agents run on (default: the session model); `"inherit"` follows the session model explicitly |
 | `agents.profiles.<role>.model` | Per-role override, `<role>` being `researcher` or `writer` (also settable as `agents.researcher_model` / `agents.writer_model`) |
@@ -188,6 +190,12 @@ accent_color = "cyan"
 | `summary.max_tokens` | Max tokens for a reading's response (default: 512) |
 | `summary.disabled` | Turn the session summary off: no readings, no requests, no `SUMMARY` block (default: false) |
 | `summary.title` | Name an unnamed session after its first turn, on the summary model, for `/chats`, `shhh chats` and the exit banner (default: on when `summary.model` is set, off otherwise). A name you give with `/save` or a rename always wins |
+| `summary.intervene_cooldown_intervals` | Reading intervals between two verdict-driven interruptions (default: 2), so one steer has time to take effect before another is allowed |
+| `summary.steer_target_chars` | How much of the instruction a steer quotes back to a drifting turn (default: 400); any negative quotes it whole |
+| `prompts.steer` | File whose contents replace the message a drifting turn is given. May name `{{target}}` (the instruction it was judged against) and `{{reason}}` (what the reading noticed). A path that cannot be read, a file that is empty, and one naming a substitution the wording does not take all stop the session rather than falling back silently. A relative path resolves beside `config.toml` |
+| `prompts.check_in` | File replacing the message a turn that reached its interval is given. May name `{{rounds}}` and `{{finished}}` (the closing line, which differs between a session and a sub-agent) |
+| `prompts.summary` | File replacing the instruction the summary model reads under. The digest it judges is appended after it; it takes no substitutions, so any is refused |
+| `prompts.classifier` | File replacing the instruction auto mode's permission classifier decides under. The proposed call is appended after it; it takes no substitutions, so any is refused |
 | `sandbox.profile` | Containment profile for assistant commands: `workspace` (network preserved, default) or `workspace-netless` |
 | `sandbox.deny_extra` | Extra paths masked from contained commands (the built-in mask — `~/.ssh`, `~/.aws`, `~/.config/gh`, shhh's own config/state dirs — cannot be disabled) |
 | `sandbox.write_extra` | Extra writable paths inside containment (beyond the workspace, scratch, and toolchain caches) |

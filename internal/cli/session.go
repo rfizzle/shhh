@@ -181,6 +181,10 @@ type sessionEnv struct {
 	provName  string
 	modelName string
 	sysPrompt string
+	// prompts are the wordings a [prompts] file replaced, read once here so
+	// the session, its children and the stamp all see the same set
+	// (prompts.go). Empty fields are the built-in wordings.
+	prompts sessionPrompts
 	// projectTokens is the estimated context cost of the project context
 	// injected into the system prompt, which /stats and the inspector rail
 	// name as its own occupancy category.
@@ -245,6 +249,13 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 	promptExtra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra, projectContext,
 		project.PromptBlock(survey), session.promptExtra)
 	sysPrompt := session.buildPrompt(info, promptExtra)
+
+	// Before anything is built on them: a named wording that cannot be read
+	// stops the session here rather than letting it run on the built-in one.
+	prompts, err := loadPrompts(cfg.Prompts)
+	if err != nil {
+		return nil, err
+	}
 
 	messages := []provider.Message{
 		{Role: provider.RoleSystem, Content: sysPrompt},
@@ -345,6 +356,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 		provName:      resolved.Provider,
 		modelName:     resolved.Model,
 		sysPrompt:     sysPrompt,
+		prompts:       prompts,
 		survey:        survey,
 		projectTokens: agent.EstimateTokens(projectContext),
 		messages:      messages,
@@ -575,6 +587,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		Timeout:   time.Duration(cfg.Behavior.ClassifierTimeoutSeconds) * time.Second,
 		MaxTokens: cfg.Behavior.ClassifierMaxTokens,
 		Retries:   cfg.Behavior.ClassifierRetries,
+		Prompt:    env.prompts.classifier,
 	})
 
 	// The session summary resolves its model the same way: summary.model
@@ -650,7 +663,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// session that ran start to finish in the configured default would
 	// record no mode at all, and absence is also what a session that
 	// recorded nothing looks like.
-	recorder.stamp(env.sysPrompt, session.skills.Len(), projectFingerprintRoot(), sessionSettings(cfg, runSettings{
+	recorder.stamp(env.prompts.fingerprintOf(env.sysPrompt), session.skills.Len(), projectFingerprintRoot(), sessionSettings(cfg, runSettings{
 		mode:       mode.String(),
 		effort:     env.effort,
 		rounds:     roundCapFor(maxRoundsFor(cfg, session.maxRounds, session.maxRoundsSet)),
@@ -712,6 +725,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			Outranked:  resolve.ModelOutranks(*session.flags),
 		}).
 		WithApprovalMode(mode, cycle).
+		WithSteering(steering(cfg, env.prompts)).
 		WithClassifier(classifier).
 		WithSummarizer(summarizer).
 		WithTitler(titler, cfg.TitlesEnabled()).

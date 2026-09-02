@@ -50,10 +50,14 @@ const DefaultCheckInInterval = 40
 // Two doublings is what the sub-agent's own worked example describes — 25,
 // then 50, then 100 — and it is as far as the widening should go: a fourfold
 // interval on a child's 25 is a hundred rounds, which is already the outer
-// edge of "rare enough to stay out of the way".
+// edge of "rare enough to stay out of the way". Steering.CheckInDoublings is
+// the count a surface can put in its place; the doubling itself is not a
+// setting.
 const (
-	checkInGrowth       = 2
-	maxCheckInDoublings = 2
+	checkInGrowth = 2
+	// DefaultCheckInDoublings is how many times the interval may double
+	// before it stops widening.
+	DefaultCheckInDoublings = 2
 )
 
 // SetCheckInInterval overrides how many rounds pass between check-ins. Zero or
@@ -69,23 +73,24 @@ func (a *Agent) SetCheckInInterval(n int) {
 	if n <= 0 {
 		n = DefaultCheckInInterval
 	}
-	a.checkInBase = n
+	a.steering.CheckInInterval = n
 }
 
 // checkInInterval is the number of rounds owed before the next check-in,
 // widened by how many this turn has already had.
 func (a *Agent) checkInInterval() int {
-	base := a.checkInBase
+	base := a.steering.CheckInInterval
 	if base <= 0 {
 		base = DefaultCheckInInterval
 	}
-	for i := 0; i < a.checkIns && i < maxCheckInDoublings; i++ {
+	for i := 0; i < a.checkIns && i < a.steering.doublings(); i++ {
 		base *= checkInGrowth
 	}
 	return base
 }
 
-// CheckInPrompt is the turn handed to a session that has reached a check-in.
+// CheckInPrompt is the built-in turn handed to a session that has reached a
+// check-in.
 //
 // It asks about the work rather than announcing a budget, on purpose: told it
 // is running out, a model apologises and stops; asked what is left, it says
@@ -127,7 +132,7 @@ func (a *Agent) TakeCheckIn() (prompt string, ok bool) {
 	// different question with a reason behind it, and one turn's worth of
 	// them should not make the generic question rarer.
 	a.checkIns++
-	return CheckInPrompt(a.rounds, FinishedInSession), true
+	return a.steering.checkInPrompt(a.rounds, FinishedInSession), true
 }
 
 // ForceCheckIn returns the check-in unconditionally and marks it taken. It is
@@ -137,13 +142,26 @@ func (a *Agent) TakeCheckIn() (prompt string, ok bool) {
 // session that has no reading to go on.
 func (a *Agent) ForceCheckIn() string {
 	a.NoteIntervention()
-	return CheckInPrompt(a.rounds, FinishedInSession)
+	return a.steering.checkInPrompt(a.rounds, FinishedInSession)
 }
 
 // CheckInInterval is the rounds owed before the next check-in, for a caller
 // that needs to state what it configured — a status line, or a test in the
 // package that set it.
 func (a *Agent) CheckInInterval() int { return a.checkInInterval() }
+
+// CheckInMessage is the check-in this agent would ask at the round it has
+// reached, closing with whenFinished. It is for a caller holding a reason of
+// its own — a sub-agent's round cap, which is a check-in rather than a stop —
+// and it marks nothing: TakeCheckIn and ForceCheckIn are the two that do.
+//
+// It goes through the agent rather than through CheckInPrompt so a caller
+// that has its own reason still asks in the surface's own wording. A second
+// route to the same message is how one of them ends up saying something the
+// operator replaced everywhere else.
+func (a *Agent) CheckInMessage(whenFinished string) string {
+	return a.steering.checkInPrompt(a.rounds, whenFinished)
+}
 
 // NoteIntervention records that something has just asked the turn to take
 // stock, so the next check-in is counted from here.

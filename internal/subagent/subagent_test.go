@@ -986,3 +986,24 @@ func TestNewChildAgent_BothPathsGetTheChildInterval(t *testing.T) {
 		}
 	}
 }
+
+// The configured wording reaches a child and the configured interval does
+// not: a child has none of what makes a session's long interval safe, and
+// the two halves of that are one line apart in newChildAgent.
+func TestNewChildAgent_TakesTheWordingsAndKeepsItsOwnInterval(t *testing.T) {
+	env := Env{
+		SystemPrompt: "you are a child",
+		Steering: agent.Steering{
+			CheckInInterval: 200,
+			CheckIn:         "used " + agent.PlaceholderRounds + ". " + agent.PlaceholderFinished,
+		},
+	}
+	a := newChildAgent(env, 25)
+	if got := a.CheckInInterval(); got != ChildCheckInInterval {
+		t.Errorf("interval = %d, want the child's own %d", got, ChildCheckInInterval)
+	}
+	want := "used 0. " + agent.FinishedAsSubAgent
+	if got := a.CheckInMessage(agent.FinishedAsSubAgent); got != want {
+		t.Errorf("check-in = %q, want the configured wording %q", got, want)
+	}
+}

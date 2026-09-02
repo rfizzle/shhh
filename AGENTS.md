@@ -199,6 +199,28 @@ The `Execute()` function in `tools/tools.go` deliberately only dispatches read-o
 
 Four modes control approval flow: `manual`, `accept-edits`, `auto`, `plan`. The auto mode uses an LLM classifier that **always fails closed** — classifier errors never approve, they fall back to asking the human. There is no path where "could not decide" becomes yes, and the zero value must stay the one that costs nothing. See [`docs/capabilities/approvals-and-safety.md`](docs/capabilities/approvals-and-safety.md).
 
+### The interruption machinery
+
+The steer and the check-in are decided in `internal/agent` and delivered by
+whichever front-end holds the turn. `agent.Steering` (`steering.go`) is the
+tuning every surface carries: the check-in interval, how far it widens, the
+bound on what a steer quotes back, and the two wordings. A zero value is the
+built-in set, so a test and an unconfigured session run the same words.
+`SetCheckInInterval` writes only the interval, because that one is
+per-surface — `newChildAgent` applies the configured set and then puts a
+child's own shorter interval back over it. The summariser's and the
+classifier's own instructions are `SummaryConfig.Prompt` and
+`ClassifierConfig.Prompt`, beside the rest of what each costs.
+
+`internal/cli/prompts.go` is the door: `loadPrompts` reads whatever
+`[prompts]` named, refuses a file it cannot read or one naming a substitution
+that wording does not take, and `steering` assembles the set from the config's
+numbers and those files. It is called from `buildSessionEnv`, so a chat
+session, a headless run and every child of either read one set;
+`sessionPrompts.fingerprintOf` folds it into the `prompt_hash` at every
+`stamp` call site. The reasons are in
+[`docs/capabilities/configuration.md#the-mechanism-is-code-its-wording-is-configuration`](docs/capabilities/configuration.md#the-mechanism-is-code-its-wording-is-configuration).
+
 ### Provider Interface
 
 All providers implement `StreamCompletion(ctx, messages, opts) (<-chan StreamEvent, error)`. Providers register via `provider.Register(name, factory)` with a `Factory func(ResolveOpts) (Provider, error)`. Provider names are normalized (underscores become hyphens). What the interface deliberately does not abstract over: [`docs/capabilities/providers.md`](docs/capabilities/providers.md).
@@ -388,7 +410,7 @@ destructive fixture at a `t.TempDir()`.
 
 ## Configuration
 
-Config is TOML at `~/.config/shhh/config.toml` (or `$XDG_CONFIG_HOME/shhh/`), the same on every platform — see [`docs/capabilities/configuration.md#one-layout-everywhere`](docs/capabilities/configuration.md#one-layout-everywhere). Key sections: `[provider]`, `[behavior]`, `[sandbox]`, `[web]`, `[lsp]`, `[appearance]`, `[history]`, `[agents]`, `[secrets]` (names only; values come from the environment), `[mcp]` with one `[mcp.servers.<name>]` table per server (plus `mcp.json` beside the file and the project's `.mcp.json`, read by `mcp.Discover`). Agent profiles are one TOML file each in the `agents/` directory beside it (`config.AgentDirs`), loaded by `config.LoadAgents`. User-scope skills are directories under `skills/` beside it (`config.SkillDirs`); project-scope ones come from the checkout (`skill.ProjectRoots`).
+Config is TOML at `~/.config/shhh/config.toml` (or `$XDG_CONFIG_HOME/shhh/`), the same on every platform — see [`docs/capabilities/configuration.md#one-layout-everywhere`](docs/capabilities/configuration.md#one-layout-everywhere). Key sections: `[provider]`, `[behavior]`, `[sandbox]`, `[web]`, `[lsp]`, `[appearance]`, `[history]`, `[agents]`, `[secrets]` (names only; values come from the environment), `[prompts]` (paths to wordings that replace the built-in ones, read at session start), `[mcp]` with one `[mcp.servers.<name>]` table per server (plus `mcp.json` beside the file and the project's `.mcp.json`, read by `mcp.Discover`). Agent profiles are one TOML file each in the `agents/` directory beside it (`config.AgentDirs`), loaded by `config.LoadAgents`. User-scope skills are directories under `skills/` beside it (`config.SkillDirs`); project-scope ones come from the checkout (`skill.ProjectRoots`).
 
 ## Gotchas
 

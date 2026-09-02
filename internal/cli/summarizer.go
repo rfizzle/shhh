@@ -32,11 +32,13 @@ func newSummarizer(cfg config.Config, env *sessionEnv, ledger *meter.Ledger, ena
 		model = env.modelName
 	}
 	return agent.NewSummarizer(ledger.For(env.prov, meter.SourceSummary), agent.SummaryConfig{
-		Model:          model,
-		Timeout:        time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
-		MaxTokens:      cfg.Summary.MaxTokens,
-		IntervalRounds: cfg.Summary.IntervalRounds,
-		MinGap:         time.Duration(cfg.Summary.MinGapSeconds) * time.Second,
-		Disabled:       !enabled,
+		Model:                      model,
+		Timeout:                    time.Duration(cfg.Summary.TimeoutSeconds) * time.Second,
+		MaxTokens:                  cfg.Summary.MaxTokens,
+		IntervalRounds:             cfg.Summary.IntervalRounds,
+		MinGap:                     time.Duration(cfg.Summary.MinGapSeconds) * time.Second,
+		InterveneCooldownIntervals: cfg.Summary.InterveneCooldownIntervals,
+		Prompt:                     env.prompts.summary,
+		Disabled:                   !enabled,
 	})
 }

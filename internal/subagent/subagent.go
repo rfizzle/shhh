@@ -208,6 +208,11 @@ type Env struct {
 	// way a session is. Nil takes no readings — the default, because a wide
 	// fan-out multiplies the cost by its width (summary.subagents).
 	Summarizer *agent.Summarizer
+	// Steering is the interruption machinery's tuning as the config file
+	// left it. A child runs the same machinery a session does, so the same
+	// wordings and thresholds reach it — all but the interval, which is the
+	// surface's own.
+	Steering agent.Steering
 }
 
 // roundCap is the cap a child's agent is running under as the record spells
@@ -231,6 +236,11 @@ func roundCap(a *agent.Agent) int {
 func newChildAgent(env Env, maxRounds int) *agent.Agent {
 	a := agent.New([]provider.Message{{Role: provider.RoleSystem, Content: env.SystemPrompt}}, env.Stream)
 	a.SetMaxRounds(maxRounds)
+	a.SetSteering(env.Steering)
+	// After the steering, and deliberately: the configured interval is a
+	// session's, and a child has none of what makes a session's long one
+	// safe. Everything else in the set — the wordings, the widening, what a
+	// steer quotes — is the same question asked of the same machinery.
 	a.SetCheckInInterval(ChildCheckInInterval)
 	if env.Scrub != nil {
 		a.SetScrub(env.Scrub)
@@ -1631,7 +1641,9 @@ func (s *Supervisor) run(c *child) {
 			c.agent.SetMaxRounds(c.agent.MaxRounds() * checkInGrowth)
 			c.appendEntry(TranscriptEntry{Kind: EntrySystem,
 				Text: fmt.Sprintf("Check-in %d — %d rounds used. Taking stock, then carrying on.", n, used)})
-			turn = checkInPrompt(used)
+			// Through the child's own agent, so a configured wording reaches
+			// this check-in as well as the interval's.
+			turn = c.agent.CheckInMessage(agent.FinishedAsSubAgent)
 			c.set(StateRunning, fmt.Sprintf("running · check-in %d", n))
 			s.emitUpdate(c)
 			continue
@@ -1668,15 +1680,6 @@ func (s *Supervisor) awaitSteering(c *child) (string, bool) {
 			return "", false
 		}
 	}
-}
-
-// checkInPrompt is the turn a child is given when it reaches its round limit.
-// The wording is shared with the session's own check-in (agent.CheckInPrompt)
-// — it is the same intervention, and the reasoning for every line of it lives
-// there. Only the closing differs: a child that is finished has a report to
-// give, where a session has a person to tell.
-func checkInPrompt(used int) string {
-	return agent.CheckInPrompt(used, agent.FinishedAsSubAgent)
 }
 
 // finalCheckInTimeout bounds the handoff completion. It is short on purpose:

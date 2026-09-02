@@ -263,8 +263,8 @@ func modeShow(raw string) (string, components.FieldTone, string) {
 	return "⏸ " + name, components.ToneOpen, mode.Describe()
 }
 
-// configSettings is the table the screen is drawn from, in the order and
-// the three rails the artboard gives it.
+// configSettings is the table the screen is drawn from, in the order and the
+// rails the artboard gives it.
 func configSettings() []configSetting {
 	str := func(f func(config.Config) string) func(config.Config) string { return f }
 	num := func(f func(config.Config) int) func(config.Config) string {
@@ -463,6 +463,69 @@ func configSettings() []configSetting {
 			return boolOptions("an unnamed session is titled after its first turn (on the summary model, or the session's own)",
 				"no session is asked for a title")
 		},
+	}, {
+		group: "STEERING", key: "behavior.check_in_interval_rounds", label: "check-in interval",
+		read:     num(func(c config.Config) int { return c.Behavior.CheckInIntervalRounds }),
+		fallback: strconv.Itoa(agent.DefaultCheckInInterval) + " rounds",
+		options:  noOptions,
+	}, {
+		group: "STEERING", key: "behavior.check_in_max_doublings", label: "check-in widening",
+		// Not num(): a negative is the one number that is not a count. It is
+		// how the file says the interval never widens, and the screen has to
+		// read it back as that rather than as "-1".
+		read: func(c config.Config) string {
+			switch n := c.Behavior.CheckInMaxDoublings; {
+			case n < 0:
+				return "never — one interval from first round to last"
+			case n > 0:
+				return strconv.Itoa(n) + " doublings"
+			}
+			return ""
+		},
+		fallback: strconv.Itoa(agent.DefaultCheckInDoublings) + " doublings",
+		options:  noOptions,
+	}, {
+		group: "STEERING", key: "summary.intervene_cooldown_intervals", label: "steer cooldown",
+		read:     num(func(c config.Config) int { return c.Summary.InterveneCooldownIntervals }),
+		fallback: strconv.Itoa(agent.DefaultCooldownIntervals) + " readings",
+		options:  noOptions,
+	}, {
+		group: "STEERING", key: "summary.steer_target_chars", label: "steer quotes at most",
+		read: func(c config.Config) string {
+			switch n := c.Summary.SteerTargetChars; {
+			case n < 0:
+				return "the whole instruction, however long it was"
+			case n > 0:
+				return strconv.Itoa(n) + " characters"
+			}
+			return ""
+		},
+		fallback: strconv.Itoa(agent.DefaultSteerTargetChars) + " characters",
+		options:  noOptions,
+	}, {
+		// The four wordings. They are files rather than values because a
+		// steer is a paragraph, and the file is read at session start: a
+		// path that cannot be read stops the session rather than quietly
+		// leaving the built-in wording in its place.
+		group: "STEERING", key: "prompts.steer", label: "steer wording",
+		read:     str(func(c config.Config) string { return c.Prompts.Steer }),
+		fallback: "(the built-in wording)",
+		options:  noOptions,
+	}, {
+		group: "STEERING", key: "prompts.check_in", label: "check-in wording",
+		read:     str(func(c config.Config) string { return c.Prompts.CheckIn }),
+		fallback: "(the built-in wording)",
+		options:  noOptions,
+	}, {
+		group: "STEERING", key: "prompts.summary", label: "reading wording",
+		read:     str(func(c config.Config) string { return c.Prompts.Summary }),
+		fallback: "(the built-in wording)",
+		options:  noOptions,
+	}, {
+		group: "STEERING", key: "prompts.classifier", label: "classifier wording",
+		read:     str(func(c config.Config) string { return c.Prompts.Classifier }),
+		fallback: "(the built-in wording)",
+		options:  noOptions,
 	}, {
 		group: "WORKSPACE", key: "sandbox.profile", label: "sandbox",
 		read: str(func(c config.Config) string { return c.Sandbox.Profile }),

@@ -32,7 +32,7 @@ func TestTakeCheckIn_TheWideningIsBounded(t *testing.T) {
 		t.Fatalf("a long run should keep being asked, got %v", at)
 	}
 	last := at[len(at)-1] - at[len(at)-2]
-	ceiling := DefaultCheckInInterval << maxCheckInDoublings
+	ceiling := DefaultCheckInInterval << DefaultCheckInDoublings
 	if last > ceiling {
 		t.Errorf("the gap grew to %d rounds, past the ceiling of %d", last, ceiling)
 	}
@@ -175,12 +175,12 @@ func TestSteerPrompt_SurvivesAnEmptyReason(t *testing.T) {
 }
 
 func TestSteerPrompt_BoundsTheInstruction(t *testing.T) {
-	long := strings.Repeat("x", maxSteerTarget*2)
+	long := strings.Repeat("x", DefaultSteerTargetChars*2)
 	p := SteerPrompt(long, "")
 	if strings.Contains(p, long) {
 		t.Error("the anchor went in whole; it has no length limit and the steer does")
 	}
-	if !strings.Contains(p, strings.Repeat("x", maxSteerTarget-1)) {
+	if !strings.Contains(p, strings.Repeat("x", DefaultSteerTargetChars-1)) {
 		t.Error("the anchor was clamped far shorter than the bound")
 	}
 }

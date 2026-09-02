@@ -90,7 +90,11 @@ func (r *SummaryRun) Cooldown() int {
 	if r == nil {
 		return 0
 	}
-	return 2 * r.summarizer.Config().Interval()
+	// The interval in force, not the configured one: a run backing off from
+	// a failing summariser reads half as often, and a cooldown that did not
+	// widen with it would let two interventions land on consecutive
+	// readings.
+	return r.summarizer.Config().CooldownIntervals() * r.interval()
 }
 
 // Tick is called at a round boundary. It starts a reading if one is due and

@@ -310,6 +310,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	run = boundedRunner(run, cfg.CommandTimeout())
 
 	a := agent.New(env.messages, env.stream)
+	a.SetSteering(steering(cfg, env.prompts))
 	a.SetScrub(session.vault.ScrubMessage)
 	if session.skills.Len() > 0 {
 		a.KeepResults(skill.IsContent)
@@ -358,7 +359,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// No mode and no classifier: a headless run answers approvals with
 	// --yes and --allow, and the record says so by leaving both empty
 	// rather than borrowing the mode a session would have started in.
-	recorder.stamp(env.sysPrompt, session.skills.Len(), projectFingerprintRoot(), sessionSettings(cfg, runSettings{
+	recorder.stamp(env.prompts.fingerprintOf(env.sysPrompt), session.skills.Len(), projectFingerprintRoot(), sessionSettings(cfg, runSettings{
 		effort:  env.effort,
 		rounds:  roundCapFor(opts.rounds(cfg)),
 		sandbox: sandboxProfile,

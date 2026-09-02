@@ -78,11 +78,11 @@ type Agent struct {
 	// two a round boundary owes (intervene.go).
 	lastIntervention int
 	intervene        interveneState
-	// checkInBase is this surface's round interval between check-ins, and
-	// checkIns how many the turn has had — the interval widens with them
-	// (checkin.go).
-	checkInBase int
-	checkIns    int
+	// steering is this surface's interruption tuning — the interval between
+	// check-ins, how far it widens, and the wordings (steering.go) — and
+	// checkIns how many the turn has had.
+	steering Steering
+	checkIns int
 
 	// executing is true while auto-run tool calls run in the background;
 	// pending holds every call of the current round still owed a result, and
