@@ -69,9 +69,10 @@ func (m Model) titleEnabled() bool {
 	return m.titles.on && m.titler.Enabled() && m.db != nil
 }
 
-// isAutosaveSlot reports whether a session name is one the session minted
-// for itself rather than one the user typed: the moment it began, with the
-// same-second suffix newSessionName adds. Only such a slot is titled.
+// isAutosaveSlot reports whether a session name is one the session was given
+// rather than one the user typed: the moment it began, with the counted
+// suffix the store's claim adds when that name is taken. Only such a slot is
+// titled.
 func isAutosaveSlot(name string) bool {
 	if len(name) < len(sessionNameLayout) {
 		return false

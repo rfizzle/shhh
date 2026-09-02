@@ -3,6 +3,7 @@ package storage
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -38,17 +39,157 @@ type ChatNotFoundError struct{ Name string }
 
 func (e ChatNotFoundError) Error() string { return fmt.Sprintf("chat %q not found", e.Name) }
 
+// ChatSlotConflictError is what a save returns when the slot no longer holds
+// what this process left in it — another session has the slot and its
+// conversation is in there. It is its own type so the caller can move its own
+// conversation somewhere safe, which is the one useful answer; a store that
+// failed cannot be answered that way.
+type ChatSlotConflictError struct{ Name string }
+
+func (e ChatSlotConflictError) Error() string {
+	return fmt.Sprintf("chat %q holds a conversation this session did not write", e.Name)
+}
+
+// chatSlotAttempts bounds the suffixes a claim will try before giving up.
+// Reaching it means several dozen sessions started in the same second on one
+// store, at which point the honest answer is an error and not a longer loop.
+const chatSlotAttempts = 64
+
+// ClaimChatSlot takes a slot for a session that is starting: it inserts a row
+// under name, or under "name (2)", "name (3)"… when the name is taken, and
+// returns the name it got. The insert is what decides the collision, not a
+// look before it: two processes reading "free" in the same instant would both
+// mint the same name, which is exactly how two sessions started in the same
+// second used to end up autosaving over each other.
+//
+// The row is empty until the first save, and a slot with no messages is not
+// listed, so a claim is invisible until the session writes something.
+// See docs/capabilities/sessions-and-memory.md#a-slot-belongs-to-one-session.
+func (db *DB) ClaimChatSlot(name string) (string, error) {
+	db.chatMu.Lock()
+	defer db.chatMu.Unlock()
+	return db.claimChatSlot(name)
+}
+
+// claimChatSlot is ClaimChatSlot with chatMu already held.
+func (db *DB) claimChatSlot(name string) (string, error) {
+	now := time.Now().UTC().Format(time.RFC3339Nano)
+	for n := 1; n <= chatSlotAttempts; n++ {
+		claimed := name
+		if n > 1 {
+			claimed = fmt.Sprintf("%s (%d)", name, n)
+		}
+		res, err := db.sql.Exec(
+			`INSERT OR IGNORE INTO chat_sessions (name, created_at, updated_at) VALUES (?, ?, ?)`,
+			claimed, now, now,
+		)
+		if err != nil {
+			return "", fmt.Errorf("claim slot: %w", err)
+		}
+		if rows, _ := res.RowsAffected(); rows > 0 {
+			db.chatSeq[claimed] = -1
+			return claimed, nil
+		}
+	}
+	return "", fmt.Errorf("claim slot: %q and %d suffixes are all taken", name, chatSlotAttempts-1)
+}
+
+// ReleaseChatSlot gives back a slot this process claimed and never wrote to,
+// so a session that resumed an older conversation or was closed without a
+// word leaves nothing behind. A slot this process did not claim is left
+// alone whatever it holds: the row is another session's live claim, and
+// deleting it would hand that session's name to the next one to ask for it.
+func (db *DB) ReleaseChatSlot(name string) error {
+	db.chatMu.Lock()
+	defer db.chatMu.Unlock()
+	seq, mine := db.chatSeq[name]
+	if !mine || seq >= 0 {
+		return nil
+	}
+	delete(db.chatSeq, name)
+
+	_, err := db.sql.Exec(
+		`DELETE FROM chat_sessions WHERE name = ?
+		   AND NOT EXISTS (SELECT 1 FROM chat_messages m WHERE m.session_id = chat_sessions.id)
+		   AND NOT EXISTS (SELECT 1 FROM chat_sessions c WHERE c.parent_id = chat_sessions.id)`,
+		name,
+	)
+	return err
+}
+
+// rememberChat records the highest seq this process has in a slot.
+func (db *DB) rememberChat(name string, seq int) {
+	db.chatMu.Lock()
+	defer db.chatMu.Unlock()
+	db.chatSeq[name] = seq
+}
+
+// forgetChat drops what this process knew about a slot, for a name that is
+// no longer the one it was: deleted, or renamed.
+func (db *DB) forgetChat(name string) {
+	db.chatMu.Lock()
+	defer db.chatMu.Unlock()
+	delete(db.chatSeq, name)
+}
+
+// AutosaveChat writes a session's conversation to the slot it holds, or, when
+// that slot no longer holds what this session put there, to one claimed under
+// fresh. It answers with the slot the conversation is now in, which is the
+// one the session has to go on saving to.
+//
+// The move is what a refusal is for: leaving the conversation unsaved would
+// protect the other session's transcript by losing this one. It happens down
+// here rather than in the caller's answer to the refusal so that a save on
+// the way out still lands, and where each lost slot went is remembered, so a
+// second refusal on it follows the first rather than making a second copy.
+// See docs/capabilities/sessions-and-memory.md#a-slot-belongs-to-one-session.
+func (db *DB) AutosaveChat(slot, fresh string, messages []provider.Message) (string, error) {
+	err := db.SaveChat(slot, messages)
+	var taken ChatSlotConflictError
+	if !errors.As(err, &taken) {
+		return slot, err
+	}
+	moved, err := db.movedChatSlot(slot, fresh)
+	if err != nil {
+		return slot, err
+	}
+	return moved, db.SaveChat(moved, messages)
+}
+
+// movedChatSlot is where a slot this process lost has been replaced, claiming
+// one under fresh the first time it is asked.
+func (db *DB) movedChatSlot(from, fresh string) (string, error) {
+	db.chatMu.Lock()
+	defer db.chatMu.Unlock()
+	if to, ok := db.chatMoved[from]; ok {
+		return to, nil
+	}
+	to, err := db.claimChatSlot(fresh)
+	if err != nil {
+		return "", err
+	}
+	db.chatMoved[from] = to
+	return to, nil
+}
+
 func (db *DB) SaveChat(name string, messages []provider.Message) error {
+	db.chatMu.Lock()
+	defer db.chatMu.Unlock()
+
 	tx, err := db.sql.Begin()
 	if err != nil {
 		return err
 	}
 	defer tx.Rollback()
 
-	if _, err := saveChatTx(tx, name, messages); err != nil {
+	if _, err := db.saveChatTx(tx, name, messages); err != nil {
 		return err
 	}
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	db.chatSeq[name] = len(messages) - 1
+	return nil
 }
 
 // SaveChatBranch stores messages as a branch session of parentName: the
@@ -56,6 +197,9 @@ func (db *DB) SaveChat(name string, messages []provider.Message) error {
 // (created as an empty session if it doesn't exist yet, so a never-saved live
 // session can still grow branches).
 func (db *DB) SaveChatBranch(parentName, branchName string, messages []provider.Message) error {
+	db.chatMu.Lock()
+	defer db.chatMu.Unlock()
+
 	tx, err := db.sql.Begin()
 	if err != nil {
 		return err
@@ -70,7 +214,7 @@ func (db *DB) SaveChatBranch(parentName, branchName string, messages []provider.
 		return fmt.Errorf("ensure parent session: %w", err)
 	}
 
-	branchID, err := saveChatTx(tx, branchName, messages)
+	branchID, err := db.saveChatTx(tx, branchName, messages)
 	if err != nil {
 		return err
 	}
@@ -80,12 +224,32 @@ func (db *DB) SaveChatBranch(parentName, branchName string, messages []provider.
 	); err != nil {
 		return fmt.Errorf("link branch to parent: %w", err)
 	}
-	return tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return err
+	}
+	db.chatSeq[branchName] = len(messages) - 1
+	return nil
 }
 
 // saveChatTx upserts one session's messages inside tx, preserving any
 // existing parent link, and returns the session id.
-func saveChatTx(tx *sql.Tx, name string, messages []provider.Message) (int64, error) {
+//
+// The messages already in the slot are replaced, so a slot that has grown
+// past what this process wrote to it is refused instead: those rows are
+// another session's conversation and the delete would be the last anyone saw
+// of it. A slot nothing here has touched is written as it always was — a
+// name the person typed is theirs to overwrite.
+//
+// What was written is remembered by the caller once the commit lands, never
+// here: a seq recorded for a transaction that then rolled back would claim
+// rows nobody wrote, and the next save would take that as licence to replace
+// whatever is really in the slot. The caller holds chatMu across both.
+//
+// The test is that the slot differs from what this process left there, not
+// that it grew: a session that rewound or compacted leaves fewer messages
+// than it once wrote, and a slot judged only by its length would be emptied
+// over the shorter conversation somebody else had just put in it.
+func (db *DB) saveChatTx(tx *sql.Tx, name string, messages []provider.Message) (int64, error) {
 	var sessionID int64
 	now := time.Now().UTC().Format(time.RFC3339Nano)
 
@@ -102,6 +266,13 @@ func saveChatTx(tx *sql.Tx, name string, messages []provider.Message) (int64, er
 	} else if err != nil {
 		return 0, fmt.Errorf("lookup session: %w", err)
 	} else {
+		stored, err := storedChatSeq(tx, sessionID)
+		if err != nil {
+			return 0, err
+		}
+		if mine, seen := db.chatSeq[name]; seen && stored != mine {
+			return 0, ChatSlotConflictError{Name: name}
+		}
 		if _, err := tx.Exec(`UPDATE chat_sessions SET updated_at = ? WHERE id = ?`, now, sessionID); err != nil {
 			return 0, fmt.Errorf("update session: %w", err)
 		}
@@ -143,6 +314,19 @@ func saveChatTx(tx *sql.Tx, name string, messages []provider.Message) (int64, er
 	}
 
 	return sessionID, nil
+}
+
+// storedChatSeq is the highest seq the slot holds, or -1 when it holds no
+// messages at all.
+func storedChatSeq(tx *sql.Tx, sessionID int64) (int, error) {
+	var seq sql.NullInt64
+	if err := tx.QueryRow(`SELECT MAX(seq) FROM chat_messages WHERE session_id = ?`, sessionID).Scan(&seq); err != nil {
+		return 0, fmt.Errorf("read slot seq: %w", err)
+	}
+	if !seq.Valid {
+		return -1, nil
+	}
+	return int(seq.Int64), nil
 }
 
 func (db *DB) LoadChat(name string) ([]provider.Message, error) {
@@ -190,15 +374,26 @@ func (db *DB) LoadChat(name string) ([]provider.Message, error) {
 		}
 		messages = append(messages, msg)
 	}
-	return messages, rows.Err()
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	// What was read is what this process has in the slot: a resumed session
+	// autosaves over the conversation it just loaded, and must be able to
+	// tell that from another session's messages arriving underneath it.
+	db.rememberChat(name, len(messages)-1)
+	return messages, nil
 }
 
+// ListChats is every saved conversation, newest first. A slot holding no
+// messages is not one of them: a session claims its slot when it starts and
+// may never write to it, and a listing that offered those would put an empty
+// conversation at the top of `--continue` for as long as a session sits idle.
 func (db *DB) ListChats() ([]ChatListEntry, error) {
 	rows, err := db.sql.Query(
 		`SELECT s.name, s.title, s.updated_at,
 		        COUNT(CASE WHEN m.role = 'user' THEN 1 END) as turns
 		 FROM chat_sessions s
-		 LEFT JOIN chat_messages m ON m.session_id = s.id
+		 JOIN chat_messages m ON m.session_id = s.id
 		 GROUP BY s.id
 		 ORDER BY s.updated_at DESC`,
 	)
@@ -343,6 +538,7 @@ func (db *DB) DeleteChat(name string) error {
 	if n == 0 {
 		return ChatNotFoundError{Name: name}
 	}
+	db.forgetChat(name)
 	return nil
 }
 
@@ -387,6 +583,14 @@ func (db *DB) RenameChat(oldName, newName string) error {
 	}
 	if n, _ := res.RowsAffected(); n == 0 {
 		return ChatNotFoundError{Name: oldName}
+	}
+	// The slot is the same row under another name, so what this process has
+	// in it goes with it; a save to the new name is still its own.
+	db.chatMu.Lock()
+	defer db.chatMu.Unlock()
+	if seq, mine := db.chatSeq[oldName]; mine {
+		delete(db.chatSeq, oldName)
+		db.chatSeq[newName] = seq
 	}
 	return nil
 }

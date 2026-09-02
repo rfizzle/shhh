@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 
 	"charm.land/bubbles/v2/spinner"
@@ -47,26 +46,14 @@ import (
 // to offer. `--continue` reopens whichever slot was written most recently.
 const sessionNameLayout = "2006-01-02 15:04:05"
 
-// newSessionName mints the slot a fresh conversation autosaves to. Two slots
-// minted in the same second by one process (a /clear pressed twice) are told
-// apart by a suffix, so neither can overwrite the other.
+// newSessionName is what a fresh conversation is called before the store has
+// been asked for it. It is the clock and nothing else: the timestamp is for
+// the person reading a listing, and what makes it unique is the store's
+// claim, which is the only party that can see the other sessions.
+// See docs/capabilities/sessions-and-memory.md#a-slot-belongs-to-one-session.
 func newSessionName() string {
-	sessionNameMu.Lock()
-	defer sessionNameMu.Unlock()
-	name := time.Now().Format(sessionNameLayout)
-	if name == lastSessionStamp {
-		sessionNameDup++
-		return fmt.Sprintf("%s (%d)", name, sessionNameDup+1)
-	}
-	lastSessionStamp, sessionNameDup = name, 0
-	return name
+	return time.Now().Format(sessionNameLayout)
 }
-
-var (
-	sessionNameMu    sync.Mutex
-	lastSessionStamp string
-	sessionNameDup   int
-)
 
 // DefaultMaxToolRounds bounds how many consecutive tool-call rounds one user
 // turn may trigger before the loop pauses for fresh input
@@ -1074,9 +1061,46 @@ func (m Model) inWorkspace(path string) string {
 	return filepath.Join(m.workspace, path)
 }
 
+// WithDB wires the store, which is also where the session's slot comes from:
+// the name it was built with is a timestamp two processes started in the same
+// second would both mint, so the store is asked to turn it into a slot of
+// this session's own before anything is written to it.
 func (m Model) WithDB(db *storage.DB) Model {
 	m.db = db
+	m.adoptSlot(m.claimSlot(m.sessionName))
 	return m
+}
+
+// claimSlot asks the store for a slot under name and answers with the one it
+// gave. A store that cannot say leaves the session on the name it had: the
+// timestamp is still what the person sees, and the save it protects is one
+// this session would otherwise not have made at all.
+func (m Model) claimSlot(name string) string {
+	if m.db == nil {
+		return name
+	}
+	claimed, err := m.db.ClaimChatSlot(name)
+	if err != nil {
+		return name
+	}
+	return claimed
+}
+
+// adoptSlot moves the session's autosave to another slot and gives back the
+// one it is leaving when nothing was ever written there — a session that
+// resumed an older conversation claimed a slot on the way in and never used
+// it, and a listing full of those is a listing of nothing.
+func (m *Model) adoptSlot(name string) {
+	if m.db != nil && m.sessionName != name {
+		_ = m.db.ReleaseChatSlot(m.sessionName)
+	}
+	m.sessionName = name
+	m.bindNotebook()
+}
+
+// mintSlot moves the session to a slot of its own, claimed now.
+func (m *Model) mintSlot() {
+	m.adoptSlot(m.claimSlot(newSessionName()))
 }
 
 func (m Model) WithInitialPrompt(prompt string) Model {
@@ -1161,8 +1185,7 @@ func (m Model) roundsUnbounded() bool {
 func (m Model) WithResumedMessages(name string, msgs []provider.Message) Model {
 	m.loadConversation(msgs)
 	if name != "" {
-		m.sessionName = name
-		m.bindNotebook()
+		m.adoptSlot(name)
 		m.loadTitle()
 	}
 	return m
@@ -1185,22 +1208,66 @@ func (m Model) autosaveCmd() tea.Cmd {
 	}
 	msgs := m.agent.RequestMessages()
 	return func() tea.Msg {
-		if err := db.SaveChat(name, msgs); err != nil {
+		// A slot another session has taken over is not written to; the
+		// store puts the conversation in one of this session's own and
+		// says where, which is the slot every save after this one goes to.
+		slot, err := db.AutosaveChat(name, newSessionName(), msgs)
+		if err != nil {
 			return nil
 		}
 		// The title rides every save, so a slot written after the reading
 		// landed carries it and /save name takes it along.
 		if title != "" {
-			_ = db.SetChatTitle(name, title)
+			_ = db.SetChatTitle(slot, title)
+		}
+		if slot != name {
+			return autosaveMovedMsg{from: name, to: slot}
 		}
 		return nil
 	}
 }
 
-// quitCmd quits, autosaving first when possible.
+// autosaveMovedMsg says an autosave found its slot taken and wrote the
+// conversation somewhere else.
+type autosaveMovedMsg struct{ from, to string }
+
+// noteSlotMove follows the store to the slot it put the conversation in and
+// tells the reader, who is the only one who can see that they have two
+// sessions open. Nothing is saved here: the store already wrote the
+// conversation down, and this is the session catching up with where.
+// See docs/capabilities/sessions-and-memory.md#a-slot-belongs-to-one-session.
+func (m *Model) noteSlotMove(msg autosaveMovedMsg) {
+	if msg.from != m.sessionName {
+		// A second save was in flight when the first moved; both landed in
+		// the same slot and the session is already in it.
+		return
+	}
+	m.adoptSlot(msg.to)
+	// The slot is what joins this session's metrics to its transcript, and
+	// the one it was reported under now holds somebody else's conversation.
+	if m.observer.Session != nil {
+		m.observer.Session(msg.to)
+	}
+	// A title read for the slot that was lost must not be written to it
+	// either: finishTitle stamps the slot the reading was taken for, which
+	// is that session's row now. The reading starts over here.
+	m.resetTitle()
+	m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
+		"Another session has written to %q, so this conversation moved to %q. Nothing there was overwritten.",
+		msg.from, msg.to)})
+	m.syncViewport()
+}
+
+// quitCmd quits, autosaving first when possible. A session with nothing to
+// save gives its slot back on the way out: the claim was made at the start
+// so that no other session could take the name, and a row nothing will ever
+// be written to is one every later rename has to work around.
 func (m Model) quitCmd() tea.Cmd {
 	if save := m.autosaveCmd(); save != nil {
 		return tea.Sequence(save, tea.Quit)
+	}
+	if m.db != nil {
+		_ = m.db.ReleaseChatSlot(m.sessionName)
 	}
 	return tea.Quit
 }
@@ -2250,6 +2317,10 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case titleDoneMsg:
 		return m, m.finishTitle(msg)
+
+	case autosaveMovedMsg:
+		m.noteSlotMove(msg)
+		return m, nil
 
 	case summaryDoneMsg:
 		// A reading never routes anything: it changes what the rail draws and
@@ -3818,8 +3889,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 			_ = m.db.SetChatTitle(name, m.titles.title)
 		}
 		// Future rewind branches hang off the named session.
-		m.sessionName = name
-		m.bindNotebook()
+		m.adoptSlot(name)
 		return true, fmt.Sprintf("Chat saved as %q", name)
 
 	case "/load":
@@ -3870,8 +3940,7 @@ func (m *Model) loadChatByName(name string) string {
 		return "Error: " + err.Error()
 	}
 	m.loadConversation(msgs)
-	m.sessionName = name
-	m.bindNotebook()
+	m.adoptSlot(name)
 	m.loadTitle()
 	return fmt.Sprintf("Loaded chat %q (%d messages)", name, len(msgs))
 }
@@ -4150,8 +4219,7 @@ func (m *Model) clearConversation() {
 	m.turnOpen = false
 	// A new conversation is a new session with a slot of its own; the one
 	// just left stays in the store as it was, for --resume to find.
-	m.sessionName = newSessionName()
-	m.bindNotebook()
+	m.mintSlot()
 	m.resetTitle()
 }
 

@@ -5,12 +5,32 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 
 	_ "modernc.org/sqlite"
 )
 
 type DB struct {
 	sql *sql.DB
+	// chatMu guards the two maps below and the chat writes that read them.
+	// It is held across the whole save — transaction and record together —
+	// because the connection is serialised and nothing else is: with the
+	// record made after the commit and outside the lock, a second save
+	// beginning in that gap reads the first one's rows as a stranger's and
+	// refuses a slot this process owns.
+	chatMu sync.Mutex
+	// chatSeq is the highest message seq this process has written to, or
+	// read from, each chat slot it has touched — the only thing that tells
+	// this session's own messages from a stranger's when two of them are
+	// open on one store. A slot missing from the map is one nothing here
+	// has seen, which is why an autosave to it overwrites rather than
+	// refuses.
+	// See docs/capabilities/sessions-and-memory.md#a-slot-belongs-to-one-session.
+	chatSeq map[string]int
+	// chatMoved is where each slot this process was turned out of went, so
+	// two saves refused one after the other land in one new slot rather
+	// than leaving the conversation in two.
+	chatMoved map[string]string
 }
 
 func Open() (*DB, error) {
@@ -31,7 +51,7 @@ func OpenPath(path string) (*DB, error) {
 	}
 	conn.SetMaxOpenConns(1)
 
-	db := &DB{sql: conn}
+	db := &DB{sql: conn, chatSeq: map[string]int{}, chatMoved: map[string]string{}}
 	if err := db.migrate(); err != nil {
 		conn.Close()
 		return nil, fmt.Errorf("migrate: %w", err)

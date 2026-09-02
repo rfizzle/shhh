@@ -279,8 +279,7 @@ func (m *Model) switchToBranch(target string) string {
 		return "Error: " + err.Error()
 	}
 	m.loadConversation(msgs)
-	m.sessionName = target
-	m.bindNotebook()
+	m.adoptSlot(target)
 	// The title stays: a branch is the same conversation, and the next
 	// autosave stamps it on the branch's row so the listing shows both
 	// members of the family under the same words.

@@ -1611,6 +1611,91 @@ func TestAutosave_EachSessionKeepsItsOwnSlot(t *testing.T) {
 	}
 }
 
+// A slot the session did not write into is not one it may empty: the
+// conversation in there belongs to whichever session got the name first, so
+// this one takes a slot of its own and says so rather than going unsaved.
+func TestAutosave_RefusedSlotMovesTheSessionRatherThanClobbering(t *testing.T) {
+	path := t.TempDir() + "/test.db"
+	db, err := storage.OpenPath(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+	other, err := storage.OpenPath(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer other.Close()
+
+	sys := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
+	m := sendText(t, New(sys, mockStream).WithDB(db), "first question")
+	updated, _ := m.Update(tokenMsg{text: "an answer"})
+	updated, save := updated.(Model).Update(doneMsg{})
+	if save == nil {
+		t.Fatal("doneMsg should return an autosave cmd")
+	}
+	save()
+	m = updated.(Model)
+	taken := m.sessionName
+
+	// Another session takes the slot over and grows it past where this one
+	// left off.
+	if _, err := other.LoadChat(taken); err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	theirs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "theirs"},
+		{Role: provider.RoleAssistant, Content: "answered"},
+		{Role: provider.RoleUser, Content: "and more"},
+	}
+	if err := other.SaveChat(taken, theirs); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+
+	refusal := m.autosaveCmd()()
+	move, ok := refusal.(autosaveMovedMsg)
+	if !ok {
+		t.Fatalf("the autosave should have moved the conversation, got %T", refusal)
+	}
+	if move.from != taken || move.to == taken {
+		t.Fatalf("the move should leave %q for a slot of its own, got %+v", taken, move)
+	}
+	moved, _ := m.Update(refusal)
+	m = moved.(Model)
+	if m.sessionName != move.to {
+		t.Fatalf("the session should have followed the conversation to %q, got %q", move.to, m.sessionName)
+	}
+
+	// The session is in its own slot now, so the saves that follow are
+	// ordinary ones.
+	if second, isMove := m.autosaveCmd()().(autosaveMovedMsg); isMove {
+		t.Fatalf("a save from the new slot should not move again, got %+v", second)
+	}
+
+	var notice string
+	for _, e := range m.transcript {
+		if e.kind == entrySystem && strings.Contains(e.text, taken) {
+			notice = e.text
+		}
+	}
+	if notice == "" {
+		t.Fatal("the move should leave one row naming the slot it left")
+	}
+	if !strings.Contains(notice, move.to) {
+		t.Fatalf("the row should name the slot the conversation moved to: %q", notice)
+	}
+
+	kept, err := other.LoadChat(taken)
+	if err != nil || len(kept) != len(theirs) {
+		t.Fatalf("the other session's conversation should be intact, got %d messages (err=%v)", len(kept), err)
+	}
+	mine, err := db.LoadChat(m.sessionName)
+	if err != nil || len(mine) != 3 {
+		t.Fatalf("this conversation should be in its new slot, got %d messages (err=%v)", len(mine), err)
+	}
+}
+
 func TestAutosave_NilWithoutDBOrContent(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	m := New(msgs, mockStream)

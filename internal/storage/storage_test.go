@@ -1211,3 +1211,242 @@ func TestOfferDeclined_IsPerRepositoryAndPerOffer(t *testing.T) {
 		t.Fatalf("declining twice: %v", err)
 	}
 }
+
+// twoStores opens the same database twice, the way two `shhh code` processes
+// on one machine hold it: separate connections, separate memories of what
+// each has written.
+func twoStores(t *testing.T) (*DB, *DB) {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "shared.db")
+	first, err := OpenPath(path)
+	if err != nil {
+		t.Fatalf("open first store: %v", err)
+	}
+	t.Cleanup(func() { first.Close() })
+	second, err := OpenPath(path)
+	if err != nil {
+		t.Fatalf("open second store: %v", err)
+	}
+	t.Cleanup(func() { second.Close() })
+	return first, second
+}
+
+// Two sessions started in the same second mint the same timestamp, so the
+// name cannot be what tells them apart — the insert has to be.
+func TestClaimChatSlot_SameSecondGetsItsOwnSlot(t *testing.T) {
+	first, second := twoStores(t)
+
+	stamp := "2026-09-02 10:00:00"
+	a, err := first.ClaimChatSlot(stamp)
+	if err != nil {
+		t.Fatalf("claim: %v", err)
+	}
+	b, err := second.ClaimChatSlot(stamp)
+	if err != nil {
+		t.Fatalf("claim: %v", err)
+	}
+	if a != stamp {
+		t.Fatalf("the first session should get the name it asked for, got %q", a)
+	}
+	if b == a {
+		t.Fatalf("two sessions were given the same slot %q", a)
+	}
+
+	if err := first.SaveChat(a, []provider.Message{{Role: provider.RoleUser, Content: "one"}}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	if err := second.SaveChat(b, []provider.Message{{Role: provider.RoleUser, Content: "two"}}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	kept, err := first.LoadChat(a)
+	if err != nil || len(kept) != 1 || kept[0].Content != "one" {
+		t.Fatalf("the first conversation should be whole, got %v (err=%v)", kept, err)
+	}
+}
+
+// A claim nobody wrote to is not a conversation: while a session sits idle,
+// its slot must not be what --continue offers, and giving it back must not
+// take another session's live claim with it.
+func TestClaimChatSlot_UnwrittenSlotIsInvisible(t *testing.T) {
+	first, second := twoStores(t)
+
+	if err := first.SaveChat("yesterday", []provider.Message{{Role: provider.RoleUser, Content: "old"}}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	idle, err := second.ClaimChatSlot("2026-09-02 10:00:00")
+	if err != nil {
+		t.Fatalf("claim: %v", err)
+	}
+
+	recent, ok, err := first.MostRecentChat()
+	if err != nil || !ok || recent.Name != "yesterday" {
+		t.Fatalf("--continue should still find %q, got %q (ok=%v, err=%v)", "yesterday", recent.Name, ok, err)
+	}
+
+	// The claim is another store's; releasing it here must be a no-op.
+	if err := first.ReleaseChatSlot(idle); err != nil {
+		t.Fatalf("release: %v", err)
+	}
+	again, err := first.ClaimChatSlot(idle)
+	if err != nil {
+		t.Fatalf("claim: %v", err)
+	}
+	if again == idle {
+		t.Fatalf("a live claim was handed to a second session as %q", again)
+	}
+	if err := second.ReleaseChatSlot(idle); err != nil {
+		t.Fatalf("release: %v", err)
+	}
+	var rows int
+	if err := first.sql.QueryRow(`SELECT COUNT(*) FROM chat_sessions WHERE name = ?`, idle).Scan(&rows); err != nil {
+		t.Fatal(err)
+	}
+	if rows != 0 {
+		t.Fatalf("the session that claimed %q should have given it back", idle)
+	}
+}
+
+// A save replaces what the slot holds, so a slot that grew under a session
+// is refused rather than emptied: those messages are somebody else's.
+func TestSaveChat_RefusesASlotAnotherSessionWrote(t *testing.T) {
+	first, second := twoStores(t)
+
+	slot, err := first.ClaimChatSlot("2026-09-02 10:00:00")
+	if err != nil {
+		t.Fatalf("claim: %v", err)
+	}
+	if err := first.SaveChat(slot, []provider.Message{
+		{Role: provider.RoleUser, Content: "mine"},
+		{Role: provider.RoleAssistant, Content: "ok"},
+	}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+
+	// The second store resumes the slot and carries it on past where the
+	// first one left it.
+	if _, err := second.LoadChat(slot); err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if err := second.SaveChat(slot, []provider.Message{
+		{Role: provider.RoleUser, Content: "mine"},
+		{Role: provider.RoleAssistant, Content: "ok"},
+		{Role: provider.RoleUser, Content: "and then"},
+		{Role: provider.RoleAssistant, Content: "more"},
+	}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+
+	err = first.SaveChat(slot, []provider.Message{{Role: provider.RoleUser, Content: "clobber"}})
+	var taken ChatSlotConflictError
+	if !errors.As(err, &taken) {
+		t.Fatalf("expected the save to be refused, got %v", err)
+	}
+	if taken.Name != slot {
+		t.Fatalf("the refusal should name the slot %q, got %q", slot, taken.Name)
+	}
+	kept, err := second.LoadChat(slot)
+	if err != nil || len(kept) != 4 {
+		t.Fatalf("the other session's conversation should be intact, got %d messages (err=%v)", len(kept), err)
+	}
+
+	// The conversation still has to go somewhere: the autosave moves it to
+	// a slot of its own, and a second one refused at the same moment lands
+	// in that same slot rather than leaving a copy behind.
+	mine := []provider.Message{{Role: provider.RoleUser, Content: "clobber"}}
+	moved, err := first.AutosaveChat(slot, "2026-09-02 10:04:00", mine)
+	if err != nil {
+		t.Fatalf("autosave: %v", err)
+	}
+	if moved == slot {
+		t.Fatalf("the autosave should have left the taken slot %q", slot)
+	}
+	again, err := first.AutosaveChat(slot, "2026-09-02 10:04:01", mine)
+	if err != nil {
+		t.Fatalf("autosave: %v", err)
+	}
+	if again != moved {
+		t.Fatalf("the second refusal should follow the first to %q, got %q", moved, again)
+	}
+	if held, err := first.LoadChat(moved); err != nil || len(held) != 1 {
+		t.Fatalf("the moved conversation should be in %q, got %d messages (err=%v)", moved, len(held), err)
+	}
+	if theirs, err := second.LoadChat(slot); err != nil || len(theirs) != 4 {
+		t.Fatalf("the other session's conversation should still be intact, got %d (err=%v)", len(theirs), err)
+	}
+
+	// A name this store has never touched is still its own to overwrite:
+	// /save <name> is a decision the person made.
+	if err := first.SaveChat("notes", []provider.Message{{Role: provider.RoleUser, Content: "first"}}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	if err := second.SaveChat("notes", []provider.Message{{Role: provider.RoleUser, Content: "second"}}); err != nil {
+		t.Fatalf("a name nothing here wrote should not be refused: %v", err)
+	}
+}
+
+// One process saves the same conversation from several goroutines at once —
+// a turn ending while a cancel or a follow-up is still writing. None of
+// those is another session, so none of them may be refused: a refusal here
+// would move the conversation to a second slot and tell the reader that
+// somebody else had taken the first.
+func TestSaveChat_ConcurrentSavesFromOneProcessAreItsOwn(t *testing.T) {
+	db := openTestDB(t)
+
+	slot, err := db.ClaimChatSlot("2026-09-02 10:00:00")
+	if err != nil {
+		t.Fatalf("claim: %v", err)
+	}
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "one"},
+		{Role: provider.RoleAssistant, Content: "two"},
+	}
+
+	errs := make(chan error, 8)
+	for range cap(errs) {
+		go func() { errs <- db.SaveChat(slot, msgs) }()
+	}
+	for range cap(errs) {
+		if err := <-errs; err != nil {
+			t.Fatalf("a save from this process was refused: %v", err)
+		}
+	}
+	if held, err := db.LoadChat(slot); err != nil || len(held) != len(msgs) {
+		t.Fatalf("the slot should hold the conversation, got %d messages (err=%v)", len(held), err)
+	}
+}
+
+// A conversation that was rewound or compacted is shorter than what the
+// session last wrote, so a slot judged only by its length would let a save
+// replace the shorter conversation another session had just put there.
+func TestSaveChat_RefusesASlotThatShrankUnderIt(t *testing.T) {
+	first, second := twoStores(t)
+
+	slot, err := first.ClaimChatSlot("2026-09-02 10:00:00")
+	if err != nil {
+		t.Fatalf("claim: %v", err)
+	}
+	long := []provider.Message{
+		{Role: provider.RoleUser, Content: "one"},
+		{Role: provider.RoleAssistant, Content: "two"},
+		{Role: provider.RoleUser, Content: "three"},
+	}
+	if err := first.SaveChat(slot, long); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	if _, err := second.LoadChat(slot); err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if err := second.SaveChat(slot, long[:1]); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+
+	err = first.SaveChat(slot, long)
+	var taken ChatSlotConflictError
+	if !errors.As(err, &taken) {
+		t.Fatalf("expected the save to be refused, got %v", err)
+	}
+	if kept, err := second.LoadChat(slot); err != nil || len(kept) != 1 {
+		t.Fatalf("the other session's conversation should be intact, got %d (err=%v)", len(kept), err)
+	}
+}

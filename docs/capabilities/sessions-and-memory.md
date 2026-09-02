@@ -51,6 +51,31 @@ work that was in flight, what was staged, where the session had got to: a
 resume that restored only the visible text would look right and behave like a
 fresh session, which is worse than not resuming at all.
 
+### A slot belongs to one session
+
+A session that was never named is called by the moment it began, and for a
+while that name was also how the autosave found the place to write. Two
+sessions started in the same second therefore shared one slot, and because a
+save replaces what the slot holds, whichever of them saved last was the only
+one left: the other conversation was gone, and nothing said so.
+
+So the slot is taken from the store rather than read off the clock. A session
+claims its slot when it starts, and the claim is the write that settles the
+collision — the second session in the same second is given the same timestamp
+with a counted suffix, which is a name a person can still read in a listing.
+A claimed slot holds nothing until the first save and is not listed until
+then, so a session sitting idle is never what reopening the last conversation
+offers.
+
+That leaves the other half: a slot can still fill up with somebody else's
+messages, when two sessions resumed the same conversation. A save that finds
+its slot grown past what this session put there is refused, because replacing
+those messages would be the last anyone saw of them. The session takes a slot
+of its own instead and carries on saving there, and says both halves in one
+line — a refusal that left the conversation unsaved would protect one
+transcript by losing another. Two sessions on one project are a thing people
+do on purpose; neither of them may quietly cost the other its work.
+
 ### Housekeeping
 
 A saved chat can be renamed and deleted where it is listed — the picker
