@@ -176,7 +176,21 @@ var Draft = DraftKeys{
 	Suspend: bind("ctrl+z", "suspend shhh (idle only)", "ctrl+z"),
 	Redraw:  bind("ctrl+l", "redraw the screen", "ctrl+l"),
 
-	Answer: bind("ctrl+space", "answer it", "ctrl+space"),
+	// ctrl+y is the same act, and it is here because ctrl+space does not
+	// always arrive. macOS binds it system-wide to "select the previous
+	// input source" and takes it before the terminal ever sees it, which
+	// leaves the one load-bearing chord in the mid-sentence rule dead on the
+	// most common desktop shhh runs on, with no way for the user to move it.
+	//
+	// The spelling stays ctrl+space, because it is the one that works
+	// everywhere else and a hint offering two chords teaches neither. The
+	// alias is in the `?` list and in /help, which is where somebody whose
+	// chord does nothing goes looking.
+	//
+	// ctrl+y is free rather than merely unused: it is not in the bubbles
+	// textarea keymap, and it is not one of the readline chords the draft
+	// deliberately leaves to the line editor (see DraftKeys).
+	Answer: bind("ctrl+space", "answer it", "ctrl+space", "ctrl+y"),
 
 	Clear:  bind("esc", "clear the input; empty, cancel the turn", "esc"),
 	Cancel: bind("ctrl+c", "cancel the turn (press twice), then the input", "ctrl+c"),

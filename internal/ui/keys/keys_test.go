@@ -297,3 +297,36 @@ func TestOnlyTakeoversHoldBareLetters(t *testing.T) {
 		}
 	}
 }
+
+// The handover answers to two chords, not one, because the canonical one is
+// taken by the desktop on macOS. Both must reach the same act, and the hint
+// must still print only the canonical spelling — a hint that offers two
+// chords teaches neither.
+func TestHandoverHasASecondChord(t *testing.T) {
+	if got := Shown(Draft.Answer); got != "ctrl+space" {
+		t.Errorf("hint spelling = %q, want ctrl+space", got)
+	}
+	for _, chord := range []string{"ctrl+space", "ctrl+y"} {
+		if !Is(chord, Draft.Answer) {
+			t.Errorf("%q does not reach the handover", chord)
+		}
+	}
+}
+
+// And the alias is free: nothing in the draft's own register answers to it,
+// so binding it takes no key away from the sentence being typed.
+func TestHandoverAliasIsNotClaimedElsewhere(t *testing.T) {
+	var homes []string
+	for _, s := range all() {
+		for _, b := range s.Bindings {
+			for _, k := range b.Keys() {
+				if k == "ctrl+y" {
+					homes = append(homes, s.Name)
+				}
+			}
+		}
+	}
+	if len(homes) != 1 {
+		t.Errorf("ctrl+y is bound on %d surfaces (%v), want exactly one", len(homes), homes)
+	}
+}

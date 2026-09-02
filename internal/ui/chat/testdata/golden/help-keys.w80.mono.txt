@@ -102,7 +102,9 @@ Keys:
                  keys with it: its y, n and a are not live until this chord     
                  gives them the keyboard, and until then every letter goes      
                  into the draft. Esc leaves the decision waiting; n is how      
-                 you say no                                                     
+                 you say no. ctrl+y does the same thing, for terminals and      
+                 desktops that never deliver ctrl+space — macOS binds it to     
+                 the input-source switcher and takes it first                   
   ?              On an empty draft, print this key list; with any text in the   
                  box it is a letter like any other                              
   esc            Clear the input; on an empty draft while a turn runs, press    
@@ -226,7 +228,9 @@ Keys:
 ␛[3;38;5;244m                 keys with it: its y, n and a are not live until this chord␛[m     
 ␛[3;38;5;244m                 gives them the keyboard, and until then every letter goes␛[m      
 ␛[3;38;5;244m                 into the draft. Esc leaves the decision waiting; n is how␛[m      
-␛[3;38;5;244m                 you say no␛[m                                                     
+␛[3;38;5;244m                 you say no. ctrl+y does the same thing, for terminals and␛[m      
+␛[3;38;5;244m                 desktops that never deliver ctrl+space — macOS binds it to␛[m     
+␛[3;38;5;244m                 the input-source switcher and takes it first␛[m                   
 ␛[3;38;5;244m  ?              On an empty draft, print this key list; with any text in the␛[m   
 ␛[3;38;5;244m                 box it is a letter like any other␛[m                              
 ␛[3;38;5;244m  esc            Clear the input; on an empty draft while a turn runs, press␛[m    

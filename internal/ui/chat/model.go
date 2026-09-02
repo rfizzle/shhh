@@ -4070,7 +4070,9 @@ func helpKeysText() string {
                  keys with it: its y, n and a are not live until this chord
                  gives them the keyboard, and until then every letter goes
                  into the draft. Esc leaves the decision waiting; n is how
-                 you say no
+                 you say no. ctrl+y does the same thing, for terminals and
+                 desktops that never deliver ctrl+space — macOS binds it to
+                 the input-source switcher and takes it first
   ?              On an empty draft, print this key list; with any text in the
                  box it is a letter like any other
   esc            Clear the input; on an empty draft while a turn runs, press
