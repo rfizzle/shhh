@@ -1,8 +1,8 @@
 // Package structural exposes best-in-class external code tools — fd,
-// ast-grep, sd, tokei, and jaq — as first-class agent tools, so the
-// model searches structurally and previews transforms instead of improvising
-// shell pipelines. Each tool is registered only when its binary is found on
-// PATH.
+// ast-grep, sd, tokei, jaq, and git — as first-class agent tools, so the
+// model searches structurally, reads history, and previews transforms instead
+// of improvising shell pipelines. Each tool is registered only when its binary
+// is found on PATH, and git additionally only inside a repository.
 //
 // The safety invariants are ported from pi tool-runtime, several of them
 // empirically load-bearing there:
@@ -15,10 +15,11 @@
 //     and containment-checked before any spawn.
 //   - No tool in this package writes a file, ever: sd always runs with
 //     --preview (it writes in place by default), ast-grep never sees
-//     -U/--update-all, and jaq's file-reading and in-place flags
+//     -U/--update-all, jaq's file-reading and in-place flags
 //     (-L, -f/--from-file, --slurpfile, --rawfile, -i/--in-place) are not in
-//     its vocabulary. Rewrites and replacements return preview diffs the
-//     model applies via edit_file through the approval queue.
+//     its vocabulary, and git reaches five reading verbs with no field a
+//     sixth could arrive in. Rewrites and replacements return preview diffs
+//     the model applies via edit_file through the approval queue.
 //   - Every spawn has a timeout and output bounds; a missing binary, timeout,
 //     or cancellation degrades to a clean tool error, never a hang.
 package structural
@@ -46,6 +47,7 @@ const (
 	SdToolName      = "sd"
 	TokeiToolName   = "tokei"
 	JaqToolName     = "jaq"
+	GitToolName     = "git"
 )
 
 const (
@@ -78,15 +80,22 @@ var binaryNames = map[string]string{
 	SdToolName:      "sd",
 	TokeiToolName:   "tokei",
 	JaqToolName:     "jaq",
+	GitToolName:     "git",
 }
 
-// toolOrder fixes the registration order of the wrapped tools.
+// toolOrder fixes the registration order of the wrapped tools. git is not in
+// it: the five here are optional installs, and git is registered by a
+// different question — whether this is a repository — which is why
+// Definitions and ToolBinaries treat it separately.
 var toolOrder = []string{FdToolName, AstGrepToolName, SdToolName, TokeiToolName, JaqToolName}
 
 // ToolBinaries are the binaries the wrapped tools need, in registration
 // order. `shhh doctor` reads them to say which of the five this machine has
 // ; nothing else needs the list, because every other caller asks a
-// built toolset what it found rather than what it looked for.
+// built toolset what it found rather than what it looked for. git is absent
+// deliberately: doctor already reports the repository, and listing git among
+// the optional installs would report a missing one as an optional tool the
+// user could go and install.
 func ToolBinaries() []string {
 	out := make([]string, 0, len(toolOrder))
 	for _, name := range toolOrder {
@@ -124,13 +133,34 @@ func NewToolset(root string) *Toolset {
 		return nil
 	}
 	t := &Toolset{root: resolved, bins: map[string]string{}, timeout: SpawnTimeout}
-	for tool, bin := range binaryNames {
-		if path, ok := lookPath(bin); ok {
+	for _, tool := range toolOrder {
+		if path, ok := lookPath(binaryNames[tool]); ok {
 			t.bins[tool] = path
 		}
 	}
+	// The history tool needs a history. Outside a repository every verb it
+	// has would answer "not a git repository", so it is not registered at
+	// all rather than registered and useless.
+	if path, ok := lookPath(binaryNames[GitToolName]); ok && insideRepo(resolved) {
+		t.bins[GitToolName] = path
+	}
 	return t
 }
+
+// insideRepo reports whether root is inside a git working tree; a variable so
+// tests can decide without building one.
+var insideRepo = func(root string) bool {
+	ctx, cancel := context.WithTimeout(context.Background(), repoProbeTimeout)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, "git", "-C", root, "rev-parse", "--is-inside-work-tree")
+	out, err := cmd.Output()
+	return err == nil && strings.TrimSpace(string(out)) == "true"
+}
+
+// repoProbeTimeout bounds the one probe NewToolset makes. It is short because
+// the probe runs at session start, where a git hung on a slow network mount
+// would otherwise hold the whole startup.
+const repoProbeTimeout = 5 * time.Second
 
 // Definitions returns the provider tool definitions to register: only the
 // tools whose binaries were found.
@@ -153,6 +183,9 @@ func (t *Toolset) Definitions() []provider.Tool {
 			defs = append(defs, jaqTool)
 		}
 	}
+	if _, ok := t.bins[GitToolName]; ok {
+		defs = append(defs, gitTool)
+	}
 	return defs
 }
 
@@ -165,6 +198,9 @@ func (t *Toolset) Has(name string) bool {
 // Execute dispatches a structural tool call.
 func (t *Toolset) Execute(name string, args json.RawMessage) (string, error) {
 	if _, ok := t.bins[name]; !ok {
+		if name == GitToolName {
+			return "", fmt.Errorf("git is not available: this workspace is not inside a git repository, or the %q binary was not found on PATH", binaryNames[name])
+		}
 		if _, known := binaryNames[name]; known {
 			return "", fmt.Errorf("%s is not available: the %q binary was not found on PATH", name, binaryNames[name])
 		}
@@ -181,6 +217,8 @@ func (t *Toolset) Execute(name string, args json.RawMessage) (string, error) {
 		return t.executeTokei(args)
 	case JaqToolName:
 		return t.executeJaq(args)
+	case GitToolName:
+		return t.executeGit(args)
 	}
 	return "", fmt.Errorf("unknown structural tool: %s", name)
 }
@@ -278,6 +316,7 @@ func (t *Toolset) run(name string, argv []string) (string, error) {
 
 	cmd := exec.CommandContext(ctx, bin, argv...)
 	cmd.Dir = t.root
+	cmd.Env = spawnEnv(name)
 	stdout := &capWriter{limit: MaxOutputBytes, cancel: cancel}
 	stderr := &capWriter{limit: MaxStderrBytes}
 	cmd.Stdout = stdout

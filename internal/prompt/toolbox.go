@@ -33,6 +33,7 @@ var toolboxNotes = []struct{ name, note string }{
 	{"sd", "find-and-replace across many files at once. For a mechanical rename that edit_file would take a call per site to do."},
 	{"jaq", "query JSON without writing a script for it."},
 	{"tokei", "counts of code by language — the shape and size of an unfamiliar repository in one call."},
+	{"git", "read this repository's history: status, log, show, diff, blame. Ask it rather than running git as a command — it is read-only, so it answers without an approval."},
 	{"web_fetch", "read a URL. Approval-gated, since it leaves the machine."},
 	{"web_search", "search the web when the answer is not in the workspace."},
 	{"process", "start and watch a long-running process (a dev server, a watcher) without blocking the session on it."},

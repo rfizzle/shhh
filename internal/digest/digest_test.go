@@ -16,6 +16,9 @@ func TestArg_PicksTheOneWorthShowing(t *testing.T) {
 		{"unparseable args pass through", "mystery", "not json", "not json"},
 		{"no args at all", "mystery", "", ""},
 		{"an mcp call names the server and tool", "gh__create_issue", `{"title":"Bug"}`, "gh create_issue title=Bug"},
+		{"a history call leads with its verb", "git", `{"verb":"blame","paths":["a.go"]}`, "blame a.go"},
+		{"a ref beats a path", "git", `{"verb":"show","ref":"HEAD~2","paths":["a.go"]}`, "show HEAD~2"},
+		{"a bare verb is enough", "git", `{"verb":"status"}`, "status"},
 	} {
 		if got := Arg(tc.tool, tc.args); got != tc.want {
 			t.Errorf("%s: Arg(%q, %q) = %q, want %q", tc.name, tc.tool, tc.args, got, tc.want)

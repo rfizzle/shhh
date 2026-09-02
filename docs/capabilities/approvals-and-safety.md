@@ -117,6 +117,40 @@ that comes back says what to do — read it again and rebase the change on what
 it says now — and one round spent re-reading is the cost of not silently
 discarding somebody's work.
 
+## A closed verb set is what makes a read a read
+
+Reading a repository's history — who last touched this line, when did this
+change, what does this commit look like — used to arrive as a command, because
+that is what `git` is. A command is asked about, so in the two careful modes
+the reader saw a prompt and in the automatic one the classifier spent a round.
+The result is an agent that guesses at history rather than asking, which is
+the expensive failure: guessing is free at the moment it happens and wrong
+much later.
+
+So the reading half of git is its own tool, with five verbs and nothing else:
+status, log, show, diff, blame. It runs like any other read, in every mode,
+plan mode included.
+
+The verb set is the whole security argument, and it has to be a set. A tool
+that took a subcommand as text would be the command tool with a shorter name.
+Because the subcommand can only be one of five, "this cannot commit, check
+out, reset, push or clean" is a fact about how the arguments are built rather
+than a promise about what the model intends. Everything git does that changes
+the repository is still a command, and still asks.
+
+The same reasoning excludes flags, not just subcommands. A read-only tool with
+one flag that writes a file is not read-only, and a diff renderer that runs a
+program named in someone's configuration is not a reader. Those flags have no
+field to arrive in, and refs are restricted to a plain branch, tag or commit
+so a value cannot become an option on its way through.
+
+It also reaches past the arguments, because a repository carries configuration
+and some of that configuration names a program to run. A repository you
+cloned this morning can ask git to run something on every status. The reader
+turns those settings off for its own calls, which matters more here than
+anywhere else in the tool set: this is the one tool that runs unattended, in
+every mode, with nobody asked first.
+
 ## Quality gates run what you wrote
 
 A session can run a named suite of checks, and the check commands come from a

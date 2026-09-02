@@ -12,6 +12,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/structural"
 )
 
 func TestAllowlistMatches(t *testing.T) {
@@ -425,6 +426,23 @@ func TestMode_ReadOnlyToolsBypassApprovalInPlanMode(t *testing.T) {
 	for _, name := range []string{"read_file", "list_directory", "search", "glob"} {
 		if m.requiresApproval(provider.ToolCall{Name: name}) {
 			t.Errorf("read-only tool %s must never be approval-gated", name)
+		}
+	}
+}
+
+// The git tool's read-only classification is the story of the tool: history
+// answered without an approval and without a classifier round. Nothing gates
+// it, in any mode, and this is the test that says so.
+func TestMode_GitToolIsReadOnlyInEveryMode(t *testing.T) {
+	call := provider.ToolCall{
+		Name:      structural.GitToolName,
+		Arguments: `{"verb":"blame","paths":["internal/structural/git.go"]}`,
+	}
+	for _, mode := range []agent.Mode{agent.ModeManual, agent.ModeAcceptEdits, agent.ModeAuto, agent.ModePlan} {
+		m := gatedModel(t, nil, nil)
+		m.mode = mode
+		if m.requiresApproval(call) {
+			t.Errorf("git must never be approval-gated, and is in %s", mode)
 		}
 	}
 }

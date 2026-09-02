@@ -125,6 +125,7 @@ var activityVerbs = map[string]string{
 	structural.AstGrepToolName: "search",
 	structural.JaqToolName:     "search",
 	structural.TokeiToolName:   "search",
+	structural.GitToolName:     "read",
 	"glob":                     "glob",
 	structural.FdToolName:      "glob",
 	lsp.DefinitionToolName:     "lsp",

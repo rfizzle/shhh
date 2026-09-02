@@ -171,7 +171,7 @@ internal/
   project/                 Project context detection (language, framework, recent files)
   shell/                   Which shell this platform runs a command line with, and how — the one resolution the prompt and every runner read
   process/                 Background process management (the process tool)
-  structural/              Optional external tools integration (ast-grep, fd, jaq, sd, tokei)
+  structural/              Optional external tools integration (ast-grep, fd, jaq, sd, tokei) and the read-only git verbs
   radius/                  Blast-radius analysis for edits
   preflight/               Startup checks
   update/                  Release check behind `shhh update` and the startup nudge
@@ -194,6 +194,41 @@ Tools are split into three permission tiers that must never be mixed:
 3. **Mutating** (`Mutating()`): `write_file`, `edit_file` — require approval in manual mode, auto-apply in accept-edits/auto
 
 The `Execute()` function in `tools/tools.go` deliberately only dispatches read-only tools. Mutating calls route through `ExecuteMutating()`. This separation is a security invariant — different functions rather than one function with a branch, for the reason in [`docs/architecture.md#tiers-not-permissions`](docs/architecture.md#tiers-not-permissions). Merging them always looks like a simplification; it isn't.
+
+### The read-only git verbs
+
+`internal/structural/git.go` is the `git` tool: five reading verbs (`status`,
+`log`, `show`, `diff`, `blame`) built by `buildGitArgv`, registered by
+`NewToolset` only when the binary is on PATH **and** `insideRepo` says the
+workspace is inside a working tree. It is not gated anywhere, which is the
+whole point — it auto-runs like `search`, in every mode. Why the verb set is
+the security boundary:
+[`docs/capabilities/approvals-and-safety.md#a-closed-verb-set-is-what-makes-a-read-a-read`](docs/capabilities/approvals-and-safety.md#a-closed-verb-set-is-what-makes-a-read-a-read).
+
+What will bite you: **git's colour flags are not uniform across the five
+verbs.** `status` has no `--no-color` and takes `--porcelain=v1` instead;
+`blame` rejects `--no-color` as ambiguous and needs `--no-color-lines
+--no-color-by-age`; the other three take `--no-color`. A flag added to the
+common prefix rather than the per-verb branch will fail at runtime on one verb
+and pass every builder test that does not spawn. `git diff --staged` likewise
+takes at most one commit, so the builder refuses the pair rather than earning
+a usage dump.
+
+**One git configuration key is shut off from the environment, not by a flag.**
+`core.fsmonitor` names a program git execs on `status`, `diff` and `blame`,
+and there is no flag for it — `spawnEnv` blanks it with the `GIT_CONFIG_*`
+triple, which is why `run` sets `cmd.Env` at all. Doing it with `-c` on the
+command line would put the one flag the closed vocabulary most needs to
+exclude back into the argv. `--no-pager`, `--no-ext-diff`, `--no-textconv` and
+`--no-show-signature` cover the other four keys that name a program.
+
+Pathspecs use `resolveGitPaths`, not the package's `resolvePath`: history
+names files that no longer exist, so containment is lexical and the symlink
+check runs only when the path is on disk. **Containment is a fact about the
+arguments, not about the output** — a call that names no path answers for the
+whole repository, so a session rooted in a subdirectory sees history from
+outside its root. That is what `git status` means and it is not worth
+breaking; know that it is true.
 
 ### Permission Modes
 

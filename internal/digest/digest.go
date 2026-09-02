@@ -88,6 +88,22 @@ func Arg(tool, rawArgs string) string {
 			return p
 		}
 	}
+	if tool == "git" {
+		// The verb is what the row is about, and the ref or the first path is
+		// what it was pointed at: `log internal/agent`. Without this the flat
+		// form leads with the alphabetically first key, which is the limit.
+		if verb, _ := args["verb"].(string); verb != "" {
+			if ref, _ := args["ref"].(string); ref != "" {
+				return verb + " " + ref
+			}
+			if paths, ok := args["paths"].([]any); ok && len(paths) > 0 {
+				if p, _ := paths[0].(string); p != "" {
+					return verb + " " + p
+				}
+			}
+			return verb
+		}
+	}
 	for _, key := range argKeys {
 		if v, ok := args[key].(string); ok && v != "" {
 			return FirstLine(v)
