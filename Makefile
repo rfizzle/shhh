@@ -39,7 +39,7 @@ else
 	RESET   := ""
 endif
 
-.PHONY: all build build-all linux darwin windows clean fmt lint tidy test race ci cross docs-check eval help
+.PHONY: all build build-all linux darwin windows clean fmt lint tidy test race ci cross docs docs-check eval help
 
 all: help
 
@@ -101,9 +101,21 @@ model-data: ## Regenerate the built-in model-data snapshot from the public table
 	@python3 scripts/model-data.py > internal/pricing/models.json
 
 ## Docs:
-docs-check: ## Verify every docs/ citation in code comments resolves
+# The settings reference in docs/capabilities/configuration.md is written from
+# the settings table rather than by hand: a default stated in prose and a
+# default in the code are two places to be wrong, and the prose is the one
+# that goes stale, because nothing fails when it does. The generator is a test
+# so that it lives beside the table; running it without the variable is the
+# staleness check, and `make ci` therefore performs it too.
+docs: ## Rewrite the documentation sections generated from the code
+	@echo "${MAGENTA}Writing the generated documentation sections...${RESET}"
+	@SHHH_UPDATE_DOCS=1 $(GOTEST) -count=1 -run TestReference ./internal/config
+
+docs-check: ## Verify every docs/ citation resolves and every generated section is current
 	@echo "${MAGENTA}Checking documentation citations...${RESET}"
 	@python3 scripts/check-docs.py
+	@echo "${MAGENTA}Checking the generated documentation sections...${RESET}"
+	@$(GOTEST) -count=1 -run TestReference ./internal/config
 
 ## Evals:
 eval: build ## Run the eval suite against the configured model (costs real requests)

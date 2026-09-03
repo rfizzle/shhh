@@ -19,6 +19,7 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/cli/report"
+	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -90,6 +91,9 @@ func TestReportGoldens(t *testing.T) {
 		{"rate", rateReport(rateWalk(), rateScopeOf(false, false), goldenNow).Render(80)},
 		{"rate.empty", rateReport(nil, rateScopeOf(false, false), goldenNow).Render(80)},
 		{"sandbox.empty", goldenEmptySandbox().Render(80)},
+		{"config.list", goldenConfigList().Render(80)},
+		{"config.list.w60", goldenConfigList().Render(60)},
+		{"config.get", goldenConfigGet().Render(80)},
 	} {
 		t.Run(c.name, func(t *testing.T) { assertReportGolden(t, c.name, c.body) })
 	}
@@ -107,6 +111,8 @@ func TestReportGoldens_FitTheirWidth(t *testing.T) {
 		{"history", 80, historyReport(goldenHistory(), "", goldenNow).Render(80)},
 		{"history.w60", 60, historyReport(goldenHistory(), "", goldenNow).Render(60)},
 		{"rate", 80, rateReport(rateWalk(), rateScopeOf(false, false), goldenNow).Render(80)},
+		{"config.list", 80, goldenConfigList().Render(80)},
+		{"config.list.w60", 60, goldenConfigList().Render(60)},
 	} {
 		for _, line := range strings.Split(c.body, "\n") {
 			if len([]rune(line)) > c.width {
@@ -330,4 +336,38 @@ func TestReport_NoColorIsByteIdenticalToAPipe(t *testing.T) {
 	if strings.Contains(buf.String(), "\x1b") {
 		t.Fatal("the output carries an escape code")
 	}
+}
+
+// goldenConfig is one table of the file answered three ways: a key the file
+// set, a key an environment variable outranks it on, and the rest standing at
+// their defaults. Every source the listing can print is therefore in the
+// fixture.
+func goldenConfig() []configReading {
+	var cfg config.Config
+	cfg.Provider.Model = "gpt-4o"
+	var out []configReading
+	for _, s := range configEntries(cfg) {
+		if s.Group() != "provider" {
+			continue
+		}
+		reading := configReadingOf(cfg, s)
+		if s.Key == "provider.reasoning" {
+			reading.Value, reading.Source, reading.Set = "high", s.Env, true
+		}
+		out = append(out, reading)
+	}
+	return out
+}
+
+func goldenConfigList() report.Report {
+	return configListReport(goldenConfig(), "provider", "~/.config/shhh/config.toml")
+}
+
+func goldenConfigGet() report.Report {
+	for _, reading := range goldenConfig() {
+		if reading.Key == "provider.model" {
+			return configGetReport(reading)
+		}
+	}
+	return report.Report{}
 }

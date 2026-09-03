@@ -176,10 +176,11 @@ func TestWrite_FindsADottedKey(t *testing.T) {
 	}
 }
 
-// The three keys `config set` spells one way and the file another.
+// A role's model is a table of its own in the file, and the write puts it
+// there rather than beside the [agents] scalars.
 func TestWrite_RoleModelIsAProfileTable(t *testing.T) {
 	path := writeTemp(t, "")
-	if err := Write(path, Edit{Key: "agents.researcher_model", Value: "claude-haiku-4-5-20251001"}); err != nil {
+	if err := Write(path, Edit{Key: "agents.profiles.researcher.model", Value: "claude-haiku-4-5-20251001"}); err != nil {
 		t.Fatal(err)
 	}
 	if got, want := readBack(t, path), "[agents.profiles.researcher]\nmodel = \"claude-haiku-4-5-20251001\"\n"; got != want {
@@ -561,11 +562,10 @@ func TestWrite_ARefusedEditLeavesTheEarlierOnesUnwritten(t *testing.T) {
 	}
 }
 
-// The reviewer's model goes to its own profile table, the way the other two
-// roles' do.
+// A role nothing has a case for writes its own profile table too.
 func TestWrite_ReviewerModelIsAProfileTable(t *testing.T) {
 	path := writeTemp(t, "")
-	if err := Write(path, Edit{Key: "agents.reviewer_model", Value: "claude-haiku-4-5-20251001"}); err != nil {
+	if err := Write(path, Edit{Key: "agents.profiles.reviewer.model", Value: "claude-haiku-4-5-20251001"}); err != nil {
 		t.Fatal(err)
 	}
 	cfg, err := LoadFrom(path)

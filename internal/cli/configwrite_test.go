@@ -207,11 +207,11 @@ func TestConfigWriter_RefusesAModeOutsideTheFour(t *testing.T) {
 	}
 }
 
-// The reviewer's model is settable from the command line and reads back as
-// the model that role runs.
+// A role's model is settable from the command line and reads back as the
+// model that role runs — any role, not the three somebody wrote a case for.
 func TestConfigSet_ReviewerModelRoundTrips(t *testing.T) {
 	path := pointConfigAt(t, handWrittenConfig)
-	runRoot(t, "config", "set", "agents.reviewer_model", "claude-haiku-4-5")
+	runRoot(t, "config", "set", "agents.profiles.reviewer.model", "claude-haiku-4-5")
 	cfg, err := config.LoadFrom(path)
 	must(t, err)
 	if got := cfg.AgentModel("reviewer", "session-model"); got != "claude-haiku-4-5" {

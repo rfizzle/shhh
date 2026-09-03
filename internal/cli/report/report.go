@@ -217,7 +217,11 @@ func (r Report) render(width int, t theme) string {
 	}
 	var lines []string
 	if r.Title != "" {
-		lines = append(lines, pad(t.title(joinDetail(r.Title, r.Subject, " — "))), "")
+		// The title clips like a row's target does. A command whose name and
+		// tally are longer than the terminal would otherwise soft-wrap its own
+		// first line, which is the thing this shape replaced; the command is at
+		// the head of the line, so what goes is the subject after it.
+		lines = append(lines, pad(t.title(clip(joinDetail(r.Title, r.Subject, " — "), width-indent))), "")
 	}
 	for _, s := range r.Sections {
 		lines = append(lines, s.render(width, t)...)
@@ -229,7 +233,7 @@ func (r Report) render(width int, t theme) string {
 		}
 	}
 	if r.Tally != "" {
-		lines = append(lines, "", pad(t.tally(r.Tally)))
+		lines = append(lines, "", pad(t.tally(clip(r.Tally, width-indent))))
 	}
 	return strings.TrimRight(strings.Join(squeeze(lines), "\n"), "\n ")
 }

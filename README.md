@@ -116,6 +116,11 @@ Set `SHHH_API_KEY`, as above, or open the interactive configuration editor:
 shhh config
 ```
 
+To read a setting without opening the editor, `shhh config list` prints every
+key with the value in force and where it came from — a default, the file, or
+an environment variable that outranks it — and `shhh config get <key>` prints
+one. Both take `--json`.
+
 Configuration is stored in `$XDG_CONFIG_HOME/shhh/config.toml`, or
 `~/.config/shhh/config.toml` by default. shhh supports OpenAI, Anthropic,
 Gemini, OpenRouter, OpenAI-compatible endpoints, and configurable gateway

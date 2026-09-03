@@ -428,7 +428,7 @@ func TestSetAgentAndReadOnlyKeys(t *testing.T) {
 	var cfg Config
 	for _, kv := range [][2]string{
 		{"agents.model", "haiku"},
-		{"agents.researcher_model", "tiny"},
+		{"agents.profiles.researcher.model", "tiny"},
 		{"agents.max_concurrent", "5"},
 		{"behavior.read_only_commands", "make lint, bazel query"},
 		{"behavior.read_only_auto", "false"},
@@ -859,15 +859,38 @@ func TestSet_AnEmptyValueResets(t *testing.T) {
 	}
 }
 
-// The reviewer is a built-in role like the other two, so its model is
-// settable like theirs.
-func TestSet_ReviewerModelRoundTrips(t *testing.T) {
+// A role's model is the key's own segment, so a role nobody wrote a case
+// for is as settable as the three that are built in.
+func TestSet_AnyRoleModelRoundTrips(t *testing.T) {
 	var cfg Config
-	if err := Set(&cfg, "agents.reviewer_model", "claude-haiku-4-5"); err != nil {
-		t.Fatal(err)
+	for _, role := range []string{"reviewer", "archaeologist"} {
+		if err := Set(&cfg, "agents.profiles."+role+".model", "claude-haiku-4-5"); err != nil {
+			t.Fatal(err)
+		}
+		if got := cfg.AgentModel(role, "session-model"); got != "claude-haiku-4-5" {
+			t.Fatalf("%s model = %q", role, got)
+		}
 	}
-	if got := cfg.AgentModel("reviewer", "session-model"); got != "claude-haiku-4-5" {
-		t.Fatalf("reviewer model = %q", got)
+}
+
+// The spelling the role models used to take says what to type instead. It is
+// the one answer a person who has the setting can act on: "unknown key" would
+// send them looking for a feature that is still there.
+func TestSet_TheOldRoleModelSpellingNamesTheNewKey(t *testing.T) {
+	var cfg Config
+	err := Set(&cfg, "agents.reviewer_model", "claude-haiku-4-5")
+	if err == nil || !strings.Contains(err.Error(), "agents.profiles.reviewer.model") {
+		t.Fatalf("the old spelling should name the new key, got %v", err)
+	}
+}
+
+// A key no setting reads is refused with the nearest one, so a slipped
+// letter is a sentence to act on rather than a listing to search.
+func TestSet_AnUnknownKeyNamesTheNearest(t *testing.T) {
+	var cfg Config
+	err := Set(&cfg, "behaviour.shell", "/bin/zsh")
+	if err == nil || !strings.Contains(err.Error(), "behavior.shell") {
+		t.Fatalf("an unknown key should offer the nearest, got %v", err)
 	}
 }
 

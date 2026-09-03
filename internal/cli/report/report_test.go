@@ -190,3 +190,19 @@ func everything() Report {
 		Tally: "1 failed · 2 passed",
 	}
 }
+
+// The title clips like a row's target does. A command whose name and tally
+// run past the terminal would otherwise soft-wrap its own first line, which
+// is the failure the whole shape replaced.
+func TestReport_TitleClipsToTheWidth(t *testing.T) {
+	r := Report{
+		Title:   "shhh config list provider",
+		Subject: "7 settings · /a/very/long/path/that/nobody/asked/for/config.toml",
+		Tally:   "2 set · 5 at their default, and a great deal more said about it besides",
+	}
+	for _, line := range strings.Split(r.Render(60), "\n") {
+		if lipgloss.Width(line) > 60 {
+			t.Errorf("a line is %d columns wide at w60: %q", lipgloss.Width(line), line)
+		}
+	}
+}

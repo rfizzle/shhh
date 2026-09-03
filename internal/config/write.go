@@ -161,7 +161,7 @@ func literalFor(key, value string) ([]string, string, error) {
 	if err := Set(&scratch, key, value); err != nil {
 		return nil, "", err
 	}
-	path := fileKey(key)
+	path := strings.Split(key, ".")
 	v, ok := fieldAt(reflect.ValueOf(scratch), path)
 	if !ok {
 		return nil, "", fmt.Errorf("unknown config key: %s", key)
@@ -182,19 +182,6 @@ func literalFor(key, value string) ([]string, string, error) {
 		return nil, "", fmt.Errorf("config key %s: %w", key, err)
 	}
 	return path, lit, nil
-}
-
-// fileKey is the path the file spells a key by. Two keys are spelled
-// differently at the command line than in the file — the role models are
-// `agents.researcher_model` to `config set` and a `[agents.profiles.<role>]`
-// table on disk — and this is the one place that difference is known.
-func fileKey(key string) []string {
-	if role, ok := strings.CutPrefix(key, "agents."); ok {
-		if role, ok := strings.CutSuffix(role, "_model"); ok && role != "" && !strings.Contains(role, ".") {
-			return []string{"agents", "profiles", role, "model"}
-		}
-	}
-	return strings.Split(key, ".")
 }
 
 // fieldAt walks a struct value along a file path, by the names the toml

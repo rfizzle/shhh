@@ -300,20 +300,33 @@ func TestConfigModel_AModeOutsideTheFourIsRefused(t *testing.T) {
 }
 
 // All three built-in roles have a model row, because a screen that offers
-// one for a role and not its siblings reads as the others not being settable.
+// one for a role and not its siblings reads as the others not being settable
+// — and a role the file names beside them gets one too, because the key
+// exists the moment somebody writes it.
 func TestConfigRows_TheRoleModelsAreListed(t *testing.T) {
 	var cfg config.Config
-	cfg.Agents.Profiles = map[string]config.AgentProfile{"reviewer": {Model: "claude-haiku-4-5"}}
+	cfg.Agents.Profiles = map[string]config.AgentProfile{
+		"reviewer":      {Model: "claude-haiku-4-5"},
+		"archaeologist": {Model: "tiny"},
+	}
 	rows := configRows(cfg, config.Config{})
-	for _, key := range []string{"agents.researcher_model", "agents.writer_model", "agents.reviewer_model"} {
+	for _, key := range []string{
+		"agents.profiles.researcher.model",
+		"agents.profiles.writer.model",
+		"agents.profiles.reviewer.model",
+		"agents.profiles.archaeologist.model",
+	} {
 		if rowFor(rows, key).Key != key {
 			t.Errorf("%s is not on the screen", key)
 		}
 	}
-	if got := rowFor(rows, "agents.reviewer_model").Value; got != "claude-haiku-4-5" {
+	if got := rowFor(rows, "agents.profiles.reviewer.model").Value; got != "claude-haiku-4-5" {
 		t.Errorf("the reviewer's model reads back as %q", got)
 	}
-	if got := rowFor(rows, "agents.writer_model").Source; got != "default" {
+	if got := rowFor(rows, "agents.profiles.reviewer.model").Label; got != "reviewer model" {
+		t.Errorf("a role row is named for its role, got %q", got)
+	}
+	if got := rowFor(rows, "agents.profiles.writer.model").Source; got != "default" {
 		t.Errorf("a role with no profile reads as default, got %q", got)
 	}
 }
@@ -378,5 +391,24 @@ func TestConfigRows_TheRetryBoundStatesItsDefault(t *testing.T) {
 	off.Behavior.ProviderRetries = &none
 	if got := rowFor(configRows(off, config.Config{}), "behavior.provider_retries").Value; !strings.Contains(got, "none") {
 		t.Errorf("a bound of none reads %q, want it stated in words", got)
+	}
+}
+
+// A staged role model is a change the file has not got, and stays one until
+// [w]. The screen holds two configs and compares them to say so, so the two
+// must not share the map the role models live in.
+func TestConfigModel_AStagedRoleModelIsUnwritten(t *testing.T) {
+	var loaded config.Config
+	loaded.Agents.Profiles = map[string]config.AgentProfile{"reviewer": {Model: "haiku"}}
+	m := newConfigModel(loaded)
+	m.apply(components.ConfigChange{Key: "agents.profiles.reviewer.model", Value: "opus"})
+
+	row := rowFor(m.screen.Rows, "agents.profiles.reviewer.model")
+	if row.Value != "opus" || row.Source != "unwritten" {
+		t.Fatalf("the staged role model reads %q/%q", row.Value, row.Source)
+	}
+	edits := m.edits()
+	if len(edits) != 1 || edits[0].Key != "agents.profiles.reviewer.model" || edits[0].Value != "opus" {
+		t.Fatalf("[w] would write %+v", edits)
 	}
 }

@@ -297,6 +297,181 @@ and what it buys — one layout on every platform, and the containment deny
 mask, which is why an approved command cannot read the log any more than it
 can read the database beside it.
 
+## Every setting
+
+Every key is declared once, and this table is that declaration printed. The
+config screen's rows, what `shhh config list` prints and the parser that
+judges a written value all come from the same place, so a key exists nowhere
+it is not also visible and adding one costs one entry rather than three
+edits.
+
+The default column is what stands when nothing sets the key — not a literal
+in the file, which is why some of them are sentences. A key whose name is in
+brackets in that column has no value of its own until something else decides
+it. Unless a row says otherwise, a key is the file or the default: there is
+no flag and no environment variable for it.
+
+Two tables are not here because a key is the wrong shape for them.
+`[mcp.servers]` is a definition per server and `shhh mcp` is the surface that
+knows it; the profiles under `[agents]` are one key per role, which the
+`[agents]` table below states as the shape it is.
+
+<!-- BEGIN generated settings reference — written by `make docs` from the settings table; edit the table, not this. -->
+
+**`[provider]`**
+
+| Key | Takes | Default | What it decides |
+|---|---|---|---|
+| `default` | text | `openai` | Which provider a request goes to: a built-in one, or a gateway profile from `shhh providers`. `--provider` and `SHHH_PROVIDER` are read ahead of the file. |
+| `model` | text | (the provider's own default) | The model a session runs on. `--model` and `SHHH_MODEL` are read ahead of the file. |
+| `api_key` | text | (from the environment) | The provider key, for a machine where it cannot come from the environment. `--api-key` and `SHHH_API_KEY` are read ahead of the file. It is a credential: the listing says whether it is set, never what it is. |
+| `base_url` | text | (the provider's own) | Where the provider's API is, for a gateway or a self-hosted endpoint. `SHHH_BASE_URL` is read ahead of the file. |
+| `name` | text | (the provider's own) | What the provider is called on screen, for a gateway that fronts several. |
+| `reasoning` | word: `off`, `low`, `medium`, `high`, `xhigh`, `max` | `medium` | How hard the model thinks before it answers; the level is fitted to each model, so a rung it lacks lowers to the one it has. `--reasoning` and `SHHH_REASONING` are read ahead of the file. |
+| `cache_ttl` | word: `5m`, `1h` | `1h` | How long the opening a session repeats every round stays cached between rounds. |
+
+**`[behavior]`**
+
+| Key | Takes | Default | What it decides |
+|---|---|---|---|
+| `silent_mode` | true/false | `off` | Print the generated command and nothing else, for a shell that pipes it somewhere. |
+| `shell` | text | (your login shell) | The shell commands are run through. |
+| `context_max_tokens` | number | 8000 tokens | The token budget for the shell context a generated command is written against. |
+| `max_tool_rounds` | number | `150` | How many consecutive tool rounds one turn may take; a negative removes the cap for every run in scope. |
+| `tree_check` | true/false | `on` | Tell a turn when the working tree moved in a way its own edits do not explain. |
+| `command_timeout_seconds` | number | `600` | How long one command the assistant runs may take before it is cancelled; a negative removes the ceiling. |
+| `safety_warnings` | true/false | `on` | Say what a destructive command will do before it is approved. |
+| `system_prompt_extra` | text | (nothing) | Text appended to every system prompt. |
+| `command_allowlist` | list | (empty — every command asks) | Command prefixes that auto-approve in a session; a safety-flagged command always asks anyway. |
+| `read_only_commands` | list | (the built-in inspection list alone) | Commands added to the built-in inspection list that runs without asking; entries skip the built-in flag guards. |
+| `read_only_auto` | true/false | `on` | Run the built-in inspection list without asking; off makes a read prompt like anything else. |
+| `scope_dirs` | list | (the directory the session opened in) | Directories added to a session's working scope at start, beside the one it was opened in. |
+| `default_mode` | word: `manual`, `accept-edits`, `auto`, `plan` | `manual` | The permission mode a session starts in. |
+| `mode_cycle` | list: `manual`, `accept-edits`, `auto`, `plan` | manual, accept-edits, auto, plan | The order the mode key walks the permission modes in. |
+| `classifier_model` | text | (the provider's small model, or the session's own) | The model auto mode's permission classifier runs on. |
+| `classifier_timeout_seconds` | number | `30` | How long one classifier request may take. |
+| `classifier_max_tokens` | number | `8192` | The ceiling on a classifier response, the reasoning it does before answering included. |
+| `classifier_retries` | number | `1` | How many extra attempts an invalid or failed classifier response gets before it fails closed. |
+| `memory_disabled` | true/false | `off` | Turn durable memory off: nothing is injected and the remember tool is not registered. |
+| `memory_max_entries` | number | `20` | How many memories are injected into one session's system prompt. |
+| `memory_max_tokens` | number | `1200` | The token budget for the injected memory block. |
+| `check_in_interval_rounds` | number | 40 rounds | How many tool rounds pass before a turn is asked to take stock. |
+| `check_in_max_doublings` | number | 2 doublings | How far that interval widens over one turn; a negative fixes it, so a long turn is asked at the same rate throughout. |
+| `provider_retries` | number | 3 attempts | How many times one stall — a rate limit, an overloaded provider, a connection that died before a token — is asked again before the failure stands; zero is a machine that would rather see the failure than sit out a wait. |
+
+**`[sandbox]`**
+
+| Key | Takes | Default | What it decides |
+|---|---|---|---|
+| `profile` | word: `workspace`, `workspace-netless` | `workspace` | What a contained command may reach: the workspace with the network untouched, or the same with the network closed. |
+| `deny_extra` | list | (the built-in deny mask alone) | Paths added to the built-in deny mask; a contained command sees them as empty. |
+| `write_extra` | list | (the workspace, scratch and the toolchain caches) | Paths writable inside containment, beside the workspace. |
+| `container_engine` | word: `podman`, `docker` | (auto-detected, a rootless engine first) | Which engine runs a container sandbox. |
+| `container_image` | text | (unset — container sandboxes are unavailable) | The digest-pinned image (name@sha256:…) a sandbox container runs. |
+| `image_allowlist` | list | (any digest-pinned image) | The only sandbox images that may run, as digest-pinned references. |
+| `container_memory` | text | `2g` | The memory ceiling on a sandbox container. |
+| `container_cpus` | text | `2` | The CPU ceiling on a sandbox container. |
+| `container_pids` | number | `256` | The process ceiling inside a sandbox container. |
+| `container_ttl_hours` | number | `24` | How long a sandbox container may live before startup reconciliation reaps it. |
+| `require_isolation` | word: `process`, `container`, `vm` | (none required) | Refuse to create a sandbox below this verified level; a requirement that cannot be verified fails rather than downgrading. |
+
+**`[web]`**
+
+| Key | Takes | Default | What it decides |
+|---|---|---|---|
+| `allow_private` | true/false | `off` | Let a fetch reach private, loopback, link-local and CGNAT addresses, and lift the 80/443 port list; cloud metadata stays blocked either way. |
+| `fetch_max_bytes` | number | 2 MiB | The download ceiling on one fetch. |
+| `fetch_timeout_seconds` | number | `30` | How long one fetch may take, redirects and the body read included. |
+| `cache_ttl_minutes` | number | `60` | How long a cached response stays fresh. |
+| `search_provider` | word: `brave` | `brave` | Which backend the web_search tool asks. |
+| `search_api_key` | text | (unset — web_search is not registered) | The search backend's key; without it the tool does not exist. It is a credential: the listing says whether it is set, never what it is. |
+
+**`[lsp]`**
+
+| Key | Takes | Default | What it decides |
+|---|---|---|---|
+| `disabled` | true/false | `off` | Turn the language-server integration off: no servers, no navigation tools, no diagnostics. |
+| `request_timeout_seconds` | number | `15` | How long one language-server request may take, the initialize handshake included. |
+| `diagnostics_timeout_seconds` | number | `3` | How long an applied edit waits for the server to re-check the file; a check that lands later rides with the next tool result rather than being dropped. |
+
+**`[appearance]`**
+
+| Key | Takes | Default | What it decides |
+|---|---|---|---|
+| `accent_color` | text | (the palette's own) | The accent the surfaces are painted with. |
+| `mouse` | true/false | `on` | Terminal mouse reporting: the wheel scrolls the transcript and shhh selects text itself. Off leaves the terminal its native click-drag selection. |
+| `notify` | true/false | `on` | Raise a desktop notification when a turn stops while the window is not the one in front. |
+| `window_title` | true/false | `on` | Name the terminal's own tab after the session. |
+| `paste_lines` | number | 10 lines | The height past which a paste is staged as an attachment instead of typed into the draft; a negative turns that half of the test off. |
+| `paste_columns` | number | 1000 columns | The width past which a paste is staged as an attachment; a negative turns that half of the test off. |
+| `rail_width` | text | `auto` | How many columns the inspector rail takes: `auto`, which widens the rail with the terminal, or a column count for a pane you chose the size of. |
+
+**`[history]`**
+
+| Key | Takes | Default | What it decides |
+|---|---|---|---|
+| `retention_days` | number | 90 days | How long a recorded session is kept before startup prunes it. |
+
+**`[reports]`**
+
+| Key | Takes | Default | What it decides |
+|---|---|---|---|
+| `retention_days` | number | 90 days | How long a generated report page is kept. |
+
+**`[agents]`**
+
+| Key | Takes | Default | What it decides |
+|---|---|---|---|
+| `model` | text | `inherit` | The model every sub-agent runs, unless its role says otherwise; `inherit` is the session's own. |
+| `profiles.<role>.model` | text | (the sub-agent model) | The model one role runs — the role is the key's own segment, so any role a spawn names can have one. |
+| `max_concurrent` | number | `3` | How many children may run at once; further spawns queue. |
+
+**`[summary]`**
+
+| Key | Takes | Default | What it decides |
+|---|---|---|---|
+| `model` | text | (the provider's small model, or the session's own) | The model that takes the periodic reading of the session. |
+| `interval_rounds` | number | `10` | How many tool rounds pass between two readings; higher is cheaper and staler. |
+| `min_gap_seconds` | number | `20` | The floor on wall-clock time between two readings, so a burst of fast rounds cannot rewrite the block repeatedly. |
+| `timeout_seconds` | number | `20` | How long one reading may take. |
+| `max_tokens` | number | `8192` | The ceiling on a reading's response, the reasoning it does before answering included. |
+| `disabled` | true/false | `off` | Turn the reading off entirely: no requests are made and the rail draws no summary block. |
+| `headless` | true/false | `on` | Take readings in a non-interactive run, which is the surface with nobody in front of it. |
+| `subagents` | true/false | `off` | Take readings in each spawned child; a fan-out of six is six more readings per interval. |
+| `intervene_cooldown_intervals` | number | 2 readings | How many reading intervals pass between two verdict-driven interventions. |
+| `steer_target_chars` | number | 400 characters | How much of the instruction a steer quotes back to a drifting turn; a negative quotes it whole. |
+| `title` | true/false | on when a summary model is set, off otherwise | Ask the summary model to name an unnamed session after its first turn, for the saved-chat listings. |
+
+**`[secrets]`**
+
+| Key | Takes | Default | What it decides |
+|---|---|---|---|
+| `env` | list | (nothing declared) | Environment variables to declare as secrets in every session: the model may use the value and never sees it. |
+
+**`[mcp]`**
+
+| Key | Takes | Default | What it decides |
+|---|---|---|---|
+| `disabled` | true/false | `off` | Start no MCP server and register no MCP tool, whatever the file defines. |
+| `startup_timeout_seconds` | number | `20` | How long each MCP server has to connect and list its tools; one that has not answered is reported and left out. |
+
+**`[prompts]`**
+
+| Key | Takes | Default | What it decides |
+|---|---|---|---|
+| `steer` | path | (the built-in wording) | A file whose contents replace the message a drifting turn is given. |
+| `check_in` | path | (the built-in wording) | A file whose contents replace the message a turn that has reached its interval is given. |
+| `summary` | path | (the built-in wording) | A file whose contents replace the reading instruction the summarizing model is sent. |
+| `classifier` | path | (the built-in wording) | A file whose contents replace the instruction auto mode's permission classifier is sent. |
+
+**`[todo]`**
+
+| Key | Takes | Default | What it decides |
+|---|---|---|---|
+| `commit` | true/false | `on` | End a backlog run in a commit; off leaves the change in the working tree, which is the answer for a directory that is not a repository. |
+
+<!-- END generated settings reference -->
+
 ## Related
 
 - [`providers.md`](providers.md) — provider and gateway settings

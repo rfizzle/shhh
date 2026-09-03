@@ -1,0 +1,13 @@
+  shhh config list provider — 7 settings · ~/.config/shhh/c…
+
+  PROVIDER
+
+  · default    openai  [default]
+  ✓ model      gpt-4o  [file]
+  · api_key    (from the environment)  [default]
+  · base_url   (the provider's own)  [default]
+  · name       (the provider's own)  [default]
+  ✓ reasoning  high  [SHHH_REASONING]
+  · cache_ttl  1h  [default]
+
+  2 set · 5 at their default

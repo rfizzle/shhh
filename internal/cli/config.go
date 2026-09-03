@@ -3,17 +3,18 @@ package cli
 import (
 	"fmt"
 	"os"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
-	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/sandbox"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/spf13/cobra"
 )
@@ -22,7 +23,9 @@ func newConfigCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "config",
 		Short: "View and edit configuration",
-		Long:  "Interactive configuration wizard. Use 'config set <key> <value>' for non-interactive changes.",
+		Long: "Interactive configuration screen. `config list` prints every setting with the value in force " +
+			"and where it came from, `config get <key>` prints one, and `config set <key> <value>` changes one " +
+			"without opening the screen.",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := config.Load()
 			if err != nil {
@@ -44,7 +47,7 @@ func newConfigCmd() *cobra.Command {
 		},
 	}
 
-	cmd.AddCommand(newConfigSetCmd())
+	cmd.AddCommand(newConfigSetCmd(), newConfigListCmd(), newConfigGetCmd())
 	return cmd
 }
 
@@ -77,52 +80,80 @@ func writeConfigEdits(path string, edits ...config.Edit) error {
 	return config.Write(path, edits...)
 }
 
-// checkConfigValue refuses a value that is not one of the words its key
-// takes. The shapes — a number, a boolean — are the config package's to
-// parse; these eight keys are checked here instead because what they may say
-// is a permission mode, a reasoning level, a cache lifetime, a rail width and
-// three containment settings, and those vocabularies belong to the packages
-// that own them, which config must not import. Asking the same parsers the
-// session itself asks is what makes `config set`, the screen and the slash
-// commands refuse the same values, rather than three lists drifting apart.
+// checkConfigValue refuses a key no setting reads and a value that is not
+// one of the words its key takes. The shapes — a number, a boolean, a list —
+// are the config package's to parse; a word is checked here because what a
+// key may say is a permission mode, a reasoning level, a cache lifetime, a
+// rail width or a containment setting, and those vocabularies belong to the
+// packages that own them, which config must not import. Asking the same
+// parsers the session itself asks is what makes `config set`, the screen and
+// the slash commands refuse the same values, rather than three lists drifting
+// apart.
+//
+// Which keys need judging is the table's answer rather than a list kept here:
+// a key that names a vocabulary is judged, and a word key whose vocabulary no
+// other package owns is judged against the table's own list.
 //
 // An empty value is a reset, not an answer, and is left to the write to
 // interpret as the key going out of the file.
 func checkConfigValue(key, value string) error {
+	s, ok := config.Lookup(key)
+	if !ok {
+		return fmt.Errorf("%s", config.UnknownKeyMessage(key))
+	}
 	value = strings.TrimSpace(value)
 	if value == "" {
 		return nil
 	}
-	var err error
-	switch key {
-	case "behavior.default_mode":
-		_, err = agent.ParseMode(value)
-	case "behavior.mode_cycle":
-		for name := range strings.SplitSeq(value, ",") {
-			if name = strings.TrimSpace(name); name == "" {
-				continue
-			}
-			if _, err = agent.ParseMode(name); err != nil {
-				break
-			}
+	judge, ok := configJudges[key]
+	if !ok {
+		if s.Kind != config.KindEnum {
+			return nil
 		}
-	case "provider.reasoning":
-		_, err = provider.ParseEffort(value)
-	case "provider.cache_ttl":
-		_, err = provider.ParseCacheTTL(value)
-	case "appearance.rail_width":
-		_, err = components.ParseRailWidth(value)
-	case "sandbox.profile":
-		_, err = sandbox.ParseProfile(value)
-	case "sandbox.container_engine":
-		_, err = sandbox.ParseEngine(value)
-	case "sandbox.require_isolation":
-		_, err = sandbox.ParseIsolation(value)
+		judge = wordFromTheTable(s)
 	}
-	if err != nil {
+	if err := judge(value); err != nil {
 		return fmt.Errorf("config key %s: %w", key, err)
 	}
 	return nil
+}
+
+// configJudges are the keys whose vocabulary another package owns. Each asks
+// that package's own parser, so a word the session would not accept cannot be
+// saved for it to read later — and an alias the parser takes (`med` for
+// medium, `accept_edits`) is taken here too, which a membership test against
+// the table's list would refuse.
+var configJudges = map[string]func(string) error{
+	"behavior.default_mode": func(v string) error { _, err := agent.ParseMode(v); return err },
+	"behavior.mode_cycle": func(v string) error {
+		for name := range strings.SplitSeq(v, ",") {
+			if name = strings.TrimSpace(name); name == "" {
+				continue
+			}
+			if _, err := agent.ParseMode(name); err != nil {
+				return err
+			}
+		}
+		return nil
+	},
+	"provider.reasoning":        func(v string) error { _, err := provider.ParseEffort(v); return err },
+	"provider.cache_ttl":        func(v string) error { _, err := provider.ParseCacheTTL(v); return err },
+	"appearance.rail_width":     func(v string) error { _, err := components.ParseRailWidth(v); return err },
+	"sandbox.profile":           func(v string) error { _, err := sandbox.ParseProfile(v); return err },
+	"sandbox.container_engine":  func(v string) error { _, err := sandbox.ParseEngine(v); return err },
+	"sandbox.require_isolation": func(v string) error { _, err := sandbox.ParseIsolation(v); return err },
+}
+
+// wordFromTheTable judges a word key whose vocabulary no other package owns:
+// the table's own list is the whole of it, and a key that grows a word grows
+// it in one place.
+func wordFromTheTable(s config.Setting) func(string) error {
+	return func(value string) error {
+		if slices.ContainsFunc(s.Values, func(w string) bool { return strings.EqualFold(w, value) }) {
+			return nil
+		}
+		return fmt.Errorf("unknown value %q (valid: %s)", value, strings.Join(s.Values, ", "))
+	}
 }
 
 // configModel hosts the config screen (
@@ -225,15 +256,17 @@ func (m *configModel) apply(change components.ConfigChange) {
 // among them, so its line in the file is not rewritten either.
 func (m configModel) edits() []config.Edit {
 	var edits []config.Edit
-	for _, s := range configSettings() {
-		if s.read(m.cfg) == s.read(m.base) {
+	for _, s := range configSettings(m.cfg, m.base) {
+		staged, _ := config.Value(m.cfg, s.Key)
+		loaded, _ := config.Value(m.base, s.Key)
+		if staged == loaded {
 			continue
 		}
-		value, ok := m.staged[s.key]
+		value, ok := m.staged[s.Key]
 		if !ok {
 			continue
 		}
-		edits = append(edits, config.Edit{Key: s.key, Value: value})
+		edits = append(edits, config.Edit{Key: s.Key, Value: value})
 	}
 	return edits
 }
@@ -243,33 +276,36 @@ func (m configModel) edits() []config.Edit {
 func (m *configModel) refresh() {
 	m.screen.Rows = configRows(m.cfg, m.base)
 	changed := 0
-	for _, s := range configSettings() {
-		if s.read(m.cfg) != s.read(m.base) {
+	for _, s := range configSettings(m.cfg, m.base) {
+		staged, _ := config.Value(m.cfg, s.Key)
+		if loaded, _ := config.Value(m.base, s.Key); staged != loaded {
 			changed++
 		}
 	}
 	m.screen.Changed = changed
 }
 
-// configSetting is one row's worth of knowledge: where it sits, what it is
-// called, how to read it out of a Config, and what — if anything — [enter]
-// offers instead of a field to type into.
+// configSetting is one row of the settings table with the screen's own
+// additions: what to call it, how to read its value back in words, and what —
+// if anything — [enter] offers instead of a field to type into. Everything
+// else about the key, the value included, comes from the table
+// (docs/capabilities/configuration.md#every-setting).
+//
+// A key that needs none of this gets a row anyway, which is the point: the
+// screen used to be a hand-kept list, and the keys nobody added to it were
+// reachable only by opening the file — over half of them, at the end.
 type configSetting struct {
-	group string
-	key   string
+	config.Setting
 	label string
-	// read is the raw stored value, which is what "is this overridden"
-	// compares and what a picker's options are matched against.
-	read func(config.Config) string
 	// show renders the row: the value as it reads, how it should be toned,
-	// and the dim note that qualifies it. An empty value takes the default
-	// treatment instead.
+	// and the dim note that qualifies it. Nil takes the raw value.
 	show func(string) (value string, tone components.FieldTone, detail string)
-	// options are the answers, or nil for a field.
+	// options are the answers, or nil to take whatever the kind offers.
 	options func(config.Config) []components.SelectOption
-	// fallback is what the row shows when nothing is set.
+	// fallback overrides what the row shows when nothing is set, for the
+	// handful of rows that say the default differently from the reference —
+	// a glyph in front of it, or the feature named rather than the key.
 	fallback string
-	secret   bool
 }
 
 // configRows renders every setting against the staged config, sourcing each
@@ -277,26 +313,27 @@ type configSetting struct {
 // because "why is this on" is the only question a config screen is ever
 // asked.
 func configRows(cfg, base config.Config) []components.ConfigRow {
-	settings := configSettings()
+	settings := configSettings(cfg, base)
 	rows := make([]components.ConfigRow, 0, len(settings))
 	for _, s := range settings {
-		raw := s.read(cfg)
+		raw, _ := config.Value(cfg, s.Key)
 		row := components.ConfigRow{
-			Group: s.group, Key: s.key, Label: s.label,
-			Secret: s.secret, Options: s.options(cfg),
+			Group: strings.ToUpper(s.Group()), Key: s.Key, Label: s.label,
+			Secret: s.Secret, Options: s.answers(cfg),
 		}
 		switch {
-		case s.secret && raw != "":
+		case s.Secret && raw != "":
 			row.Value = components.MaskSecret(raw)
 		case raw == "":
-			row.Value, row.ValueTone = s.fallback, components.ToneNeutral
+			row.Value, row.ValueTone = s.unset(), components.ToneNeutral
 		case s.show != nil:
 			row.Value, row.ValueTone, row.Detail = s.show(raw)
 		default:
 			row.Value = raw
 		}
-		row.Source, row.SourceTone = configSource(raw, s.read(base))
-		if s.key == "provider.model" {
+		loaded, _ := config.Value(base, s.Key)
+		row.Source, row.SourceTone = configSource(raw, loaded)
+		if s.Key == "provider.model" {
 			if n := len(row.Options); n > 0 {
 				row.Source += fmt.Sprintf(" · %d available", n)
 			}
@@ -304,6 +341,35 @@ func configRows(cfg, base config.Config) []components.ConfigRow {
 		rows = append(rows, row)
 	}
 	return rows
+}
+
+// unset is what the row shows when nothing has set the key.
+func (s configSetting) unset() string {
+	if s.fallback != "" {
+		return s.fallback
+	}
+	return s.Default
+}
+
+// answers is what [enter] offers: whatever the row was given, and otherwise
+// whatever its kind implies — the words a word key takes, the pair a flag
+// takes, and a field to type into for everything else. Wiring the picker to
+// the kind is what lets a key gain a row without gaining a case.
+func (s configSetting) answers(cfg config.Config) []components.SelectOption {
+	if s.options != nil {
+		return s.options(cfg)
+	}
+	switch s.Kind {
+	case config.KindEnum:
+		opts := make([]components.SelectOption, 0, len(s.Values))
+		for _, v := range s.Values {
+			opts = append(opts, components.SelectOption{Label: v})
+		}
+		return opts
+	case config.KindBool:
+		return []components.SelectOption{{Label: "true"}, {Label: "false"}}
+	}
+	return nil
 }
 
 // configSource is the right-hand field: where this answer came from. There
@@ -330,8 +396,6 @@ func boolOptions(on, off string) []components.SelectOption {
 	}
 }
 
-func noOptions(config.Config) []components.SelectOption { return nil }
-
 // modeShow renders a permission mode the way the cockpit's own mode segment
 // does: `⏵⏵` and add for the two that let work through, `⏸` and accent
 // for the two that gate it. The glyph carries the distinction, so the colour
@@ -348,11 +412,36 @@ func modeShow(raw string) (string, components.FieldTone, string) {
 	return "⏸ " + name, components.ToneOpen, mode.Describe()
 }
 
-// roleModel reads one built-in role's model override. An absent profile
-// reads as unset, which is what it means: the role runs whatever the
-// [agents] default resolves to.
-func roleModel(role string) func(config.Config) string {
-	return func(c config.Config) string { return c.Agents.Profiles[role].Model }
+// countShow reads a number back in the words the row wants: the unit after
+// the figure, and for the keys where a negative is not a bound, the sentence
+// it stands for. A row that showed `-1` would be showing the reader the one
+// thing they cannot act on.
+func countShow(unit, negative string) func(string) (string, components.FieldTone, string) {
+	return func(raw string) (string, components.FieldTone, string) {
+		if n, err := strconv.Atoi(raw); err == nil && n < 0 {
+			return negative, components.ToneNeutral, ""
+		}
+		return raw + unit, components.ToneNeutral, ""
+	}
+}
+
+// offShow is the reading of a `*_disabled` key: the row is named for the
+// feature, so a key that is set reads as the feature being off.
+func offShow(consequence string) func(string) (string, components.FieldTone, string) {
+	return func(string) (string, components.FieldTone, string) {
+		return "off", components.ToneNeutral, consequence
+	}
+}
+
+// flagShow is the reading of a tri-state whose default is on: only `false` is
+// a fact worth drawing differently, and it says what it costs.
+func flagShow(off string, offTone components.FieldTone) func(string) (string, components.FieldTone, string) {
+	return func(raw string) (string, components.FieldTone, string) {
+		if raw == "false" {
+			return "off", offTone, off
+		}
+		return "on", components.ToneSafe, ""
+	}
 }
 
 // roleModelOptions are the answers a role's model row offers: inherit, which
@@ -368,522 +457,304 @@ func roleModelOptions(c config.Config) []components.SelectOption {
 	return opts
 }
 
-// configSettings is the table the screen is drawn from, in the order and the
-// rails the artboard gives it.
-func configSettings() []configSetting {
-	str := func(f func(config.Config) string) func(config.Config) string { return f }
-	num := func(f func(config.Config) int) func(config.Config) string {
-		return func(c config.Config) string {
-			if n := f(c); n > 0 {
-				return strconv.Itoa(n)
-			}
-			return ""
-		}
+// modelOptions is the provider's own catalog, for the rows that name a model.
+func modelOptions(c config.Config) []components.SelectOption {
+	models := provider.KnownModels(c.Provider.Default)
+	opts := make([]components.SelectOption, 0, len(models))
+	for _, name := range models {
+		opts = append(opts, components.SelectOption{Label: name})
 	}
-	flag := func(f func(config.Config) bool) func(config.Config) string {
-		return func(c config.Config) string {
-			if f(c) {
-				return "true"
-			}
-			return ""
-		}
-	}
+	return opts
+}
 
-	return []configSetting{{
-		group: "SESSION", key: "behavior.default_mode", label: "permission mode",
-		read:     str(func(c config.Config) string { return c.Behavior.DefaultMode }),
-		show:     modeShow,
-		fallback: "⏸ manual",
-		options: func(config.Config) []components.SelectOption {
-			opts := make([]components.SelectOption, 0, 4)
-			for _, mode := range agent.DefaultCycle() {
-				opts = append(opts, components.SelectOption{Label: mode.String(), Desc: mode.Describe()})
+// builtinRoles are the roles a spawn can ask for without the file naming one.
+// They are listed so all three have a row even where the file names none: a
+// screen that offers a model for one role and not its siblings reads as the
+// others not being settable. A role the file names beside them gets a row
+// too, because the key exists the moment somebody writes it.
+func builtinRoles() []string {
+	return []string{
+		string(subagent.RoleResearcher),
+		string(subagent.RoleWriter),
+		string(subagent.RoleReviewer),
+	}
+}
+
+// configEntries is the settings table with the per-role keys resolved. Every
+// other key is one entry; `agents.profiles.<role>.model` is one per role,
+// because the table declares the shape and the roles are the person's.
+func configEntries(cfgs ...config.Config) []config.Setting {
+	roles := builtinRoles()
+	var extra []string
+	for _, c := range cfgs {
+		for role := range c.Agents.Profiles {
+			if !slices.Contains(roles, role) && !slices.Contains(extra, role) {
+				extra = append(extra, role)
 			}
-			return opts
-		},
-	}, {
-		group: "SESSION", key: "behavior.max_tool_rounds", label: "round limit",
-		// Not num(): a negative here is the one number that is not a
-		// ceiling. It is how a config file says what `--max-rounds 0` says
-		// on the command line, and the screen has to read it back as the
-		// absence of a limit rather than as "-1".
-		read: func(c config.Config) string {
-			switch n := c.Behavior.MaxToolRounds; {
-			case n < 0:
-				return "no bound — turns run until they are done"
-			case n > 0:
-				return strconv.Itoa(n)
+		}
+	}
+	sort.Strings(extra)
+	roles = append(roles, extra...)
+
+	out := make([]config.Setting, 0, len(config.Settings())+len(roles))
+	for _, s := range config.Settings() {
+		if !strings.Contains(s.Key, config.RoleWildcard) {
+			out = append(out, s)
+			continue
+		}
+		for _, role := range roles {
+			entry := s
+			entry.Key = strings.Replace(s.Key, config.RoleWildcard, role, 1)
+			out = append(out, entry)
+		}
+	}
+	return out
+}
+
+// configLabel is what a row is called. The curated names below say what the
+// setting is for rather than what the key is spelled; anything else reads its
+// own key with the underscores taken out, which is what makes a key that
+// lands in the table land on the screen without a second edit.
+func configLabel(key string) string {
+	if label, ok := configLabels[key]; ok {
+		return label
+	}
+	if role, ok := strings.CutPrefix(key, "agents.profiles."); ok {
+		if role, ok := strings.CutSuffix(role, ".model"); ok {
+			return role + " model"
+		}
+	}
+	_, tail, _ := strings.Cut(key, ".")
+	return strings.ReplaceAll(tail, "_", " ")
+}
+
+// configLabels are the rows whose name is not their key. A `*_disabled` key
+// is named for the feature it turns off, because a row reading `session
+// summary · off` is read faster than one reading `summary disabled · true`.
+var configLabels = map[string]string{
+	"behavior.default_mode":                "permission mode",
+	"behavior.max_tool_rounds":             "round limit",
+	"behavior.context_max_tokens":          "context budget",
+	"behavior.memory_disabled":             "memory",
+	"behavior.provider_retries":            "retries per stall",
+	"provider.default":                     "provider",
+	"provider.api_key":                     "api key",
+	"provider.base_url":                    "base url",
+	"provider.name":                        "display name",
+	"agents.model":                         "sub-agent model",
+	"summary.model":                        "summary model",
+	"summary.disabled":                     "session summary",
+	"summary.title":                        "session titles",
+	"summary.intervene_cooldown_intervals": "steer cooldown",
+	"summary.steer_target_chars":           "steer quotes at most",
+	"lsp.disabled":                         "language servers",
+	"mcp.disabled":                         "mcp servers",
+	"web.allow_private":                    "network",
+	"sandbox.profile":                      "sandbox",
+	"appearance.accent_color":              "accent colour",
+	"appearance.mouse":                     "mouse reporting",
+	"appearance.notify":                    "desktop notifications",
+	"appearance.paste_lines":               "paste staged taller than",
+	"appearance.paste_columns":             "paste staged wider than",
+	"appearance.rail_width":                "inspector rail width",
+	"history.retention_days":               "history retention",
+	"reports.retention_days":               "report retention",
+	"prompts.steer":                        "steer wording",
+	"prompts.check_in":                     "check-in wording",
+	"prompts.summary":                      "reading wording",
+	"prompts.classifier":                   "classifier wording",
+	"todo.commit":                          "backlog run commits",
+}
+
+// configShows are the rows whose value is read back in words rather than as
+// the file holds it — a mode with its glyph, a negative that is not a bound,
+// a `*_disabled` key named for its feature.
+var configShows = map[string]func(string) (string, components.FieldTone, string){
+	"behavior.default_mode": modeShow,
+	// A negative here is the one number that is not a ceiling: it is how a
+	// config file says what `--max-rounds 0` says on the command line.
+	"behavior.max_tool_rounds": countShow("", "no bound — turns run until they are done"),
+	"behavior.check_in_max_doublings": countShow(" doublings",
+		"never — one interval from first round to last"),
+	"summary.steer_target_chars": countShow(" characters",
+		"the whole instruction, however long it was"),
+	"appearance.paste_lines": countShow(" lines",
+		"never on line count — a paste of any height types"),
+	"appearance.paste_columns": countShow(" columns",
+		"never on width — a line of any length types"),
+	// Unset and zero are different answers on the retry bound, and zero is
+	// the one worth reading back in words: a run that ends on the first rate
+	// limit rather than waiting one out is a choice somebody made.
+	"behavior.provider_retries": func(raw string) (string, components.FieldTone, string) {
+		if raw == "0" {
+			return "none — a request that failed is not asked again", components.ToneNeutral, ""
+		}
+		return raw + " attempts", components.ToneNeutral, ""
+	},
+	"behavior.safety_warnings": flagShow("a destructive command is approved like any other", components.ToneRisk),
+	"appearance.mouse":         flagShow("the terminal keeps its native click-drag selection", components.ToneNeutral),
+	"appearance.notify":        flagShow("a turn that stops while you are elsewhere waits silently", components.ToneNeutral),
+	"appearance.window_title":  flagShow("the tab keeps whatever your terminal puts there", components.ToneNeutral),
+	"behavior.silent_mode":     offShow("generated commands print and nothing else"),
+	"behavior.memory_disabled": offShow("nothing is remembered between sessions"),
+	"summary.disabled":         offShow("no reading is taken and the rail draws no SUMMARY block"),
+	"lsp.disabled":             offShow("no servers are started and the navigation tools are not registered"),
+	"mcp.disabled":             offShow("no server is started and no MCP tool is registered"),
+	"summary.title": func(raw string) (string, components.FieldTone, string) {
+		if raw == "false" {
+			return "off", components.ToneNeutral, "no session is asked for a title"
+		}
+		return "on", components.ToneNeutral, "an unnamed session is titled by the summary model after its first turn"
+	},
+	"web.allow_private": func(string) (string, components.FieldTone, string) {
+		return "private hosts reachable", components.ToneOpen, "intranet and localhost fetches are allowed"
+	},
+	"sandbox.profile": func(raw string) (string, components.FieldTone, string) {
+		if raw == "workspace-netless" {
+			return "⛨ " + raw, components.ToneSafe, "no network inside containment"
+		}
+		return "⛨ " + raw, components.ToneNeutral, ""
+	},
+}
+
+// configFallbacks are the rows that say their default differently from the
+// reference: a glyph in front of it, or the feature named rather than the
+// key, so `session summary · on` is what an unset `summary.disabled` reads as.
+var configFallbacks = map[string]string{
+	"behavior.default_mode":    "⏸ manual",
+	"behavior.silent_mode":     "off",
+	"behavior.memory_disabled": "on",
+	"summary.disabled":         "on",
+	"lsp.disabled":             "on",
+	"mcp.disabled":             "on",
+	"sandbox.profile":          "⛨ workspace",
+	"web.allow_private":        "public hosts only",
+}
+
+// configOptions are the rows whose answers are a catalog or a sentence rather
+// than the bare words the kind implies: a model list the provider knows, a
+// pair of booleans each saying what it costs.
+var configOptions = map[string]func(config.Config) []components.SelectOption{
+	"provider.default": func(config.Config) []components.SelectOption {
+		names := provider.Available()
+		sort.Strings(names)
+		opts := make([]components.SelectOption, 0, len(names))
+		for _, name := range names {
+			opt := components.SelectOption{Label: name}
+			if d := provider.Defaults(name); d.Model != "" {
+				opt.Desc = "default model " + d.Model
 			}
-			return ""
-		},
-		fallback: strconv.Itoa(agent.DefaultMaxToolRounds),
-		options:  noOptions,
-	}, {
-		group: "SESSION", key: "behavior.context_max_tokens", label: "context budget",
-		read:     num(func(c config.Config) int { return c.Behavior.ContextMaxTokens }),
-		fallback: strconv.Itoa(config.DefaultContextMaxTokens) + " tokens",
-		options:  noOptions,
-	}, {
-		group: "SESSION", key: "behavior.safety_warnings", label: "safety warnings",
-		read: func(c config.Config) string {
-			if c.Behavior.SafetyWarnings == nil {
-				return ""
-			}
-			return strconv.FormatBool(*c.Behavior.SafetyWarnings)
-		},
-		show: func(raw string) (string, components.FieldTone, string) {
-			if raw == "false" {
-				return "off", components.ToneRisk, "a destructive command is approved like any other"
-			}
-			return "on", components.ToneSafe, ""
-		},
-		fallback: "on",
-		options: func(config.Config) []components.SelectOption {
-			return boolOptions("a destructive command says so before it is approved",
-				"a destructive command is approved like any other")
-		},
-	}, {
-		group: "SESSION", key: "behavior.silent_mode", label: "silent mode",
-		read: flag(func(c config.Config) bool { return c.Behavior.SilentMode }),
-		show: func(string) (string, components.FieldTone, string) {
-			return "on", components.ToneNeutral, "generated commands print and nothing else"
-		},
-		fallback: "off",
-		options: func(config.Config) []components.SelectOption {
-			return boolOptions("generated commands print and nothing else", "the full UI")
-		},
-	}, {
-		group: "MODEL", key: "provider.default", label: "provider",
-		read:     str(func(c config.Config) string { return c.Provider.Default }),
-		fallback: "(not set)",
-		options: func(config.Config) []components.SelectOption {
-			names := provider.Available()
-			sort.Strings(names)
-			opts := make([]components.SelectOption, 0, len(names))
-			for _, name := range names {
-				opt := components.SelectOption{Label: name}
-				if d := provider.Defaults(name); d.Model != "" {
-					opt.Desc = "default model " + d.Model
-				}
-				opts = append(opts, opt)
-			}
-			return opts
-		},
-	}, {
-		group: "MODEL", key: "provider.model", label: "model",
-		read: str(func(c config.Config) string { return c.Provider.Model }),
-		options: func(c config.Config) []components.SelectOption {
-			models := provider.KnownModels(c.Provider.Default)
-			opts := make([]components.SelectOption, 0, len(models))
-			for _, name := range models {
-				opts = append(opts, components.SelectOption{Label: name})
-			}
-			return opts
-		},
-		fallback: "(the provider's own default)",
-	}, {
-		group: "MODEL", key: "provider.reasoning", label: "reasoning",
-		read:     str(func(c config.Config) string { return c.Provider.Reasoning }),
-		fallback: provider.DefaultEffort.String(),
-		options: func(config.Config) []components.SelectOption {
-			opts := make([]components.SelectOption, 0, len(provider.EffortCycle()))
-			for _, e := range provider.EffortCycle() {
-				opts = append(opts, components.SelectOption{Label: e.String(), Desc: e.Describe()})
-			}
-			return opts
-		},
-	}, {
-		// The lifetime of the opening, on the model group because it is a
-		// property of the request rather than of the session: which dialects
-		// have to be told what to cache is the provider's business, and this
-		// is the one part of that decision a reader gets a say in.
-		group: "MODEL", key: "provider.cache_ttl", label: "cache lifetime",
-		read:     str(func(c config.Config) string { return c.Provider.CacheTTL }),
-		fallback: string(provider.DefaultCacheTTL),
-		options: func(config.Config) []components.SelectOption {
-			opts := make([]components.SelectOption, 0, len(provider.CacheTTLCycle()))
-			for _, ttl := range provider.CacheTTLCycle() {
-				opts = append(opts, components.SelectOption{Label: string(ttl), Desc: ttl.Describe()})
-			}
-			return opts
-		},
-	}, {
-		group: "MODEL", key: "behavior.provider_retries", label: "retries per stall",
-		// Not num(): unset and zero are different answers here, and zero is
-		// the one worth reading back in words — a run that ends on the first
-		// rate limit rather than waiting one out is a choice somebody made.
-		read: func(c config.Config) string {
-			n := c.Behavior.ProviderRetries
-			if n == nil {
-				return ""
-			}
-			if *n > 0 {
-				return strconv.Itoa(*n) + " attempts"
-			}
-			return "none — a request that failed is not asked again"
-		},
-		fallback: strconv.Itoa(agent.MaxRetryAttempts) + " attempts",
-		options:  noOptions,
-	}, {
-		group: "MODEL", key: "provider.api_key", label: "api key",
-		read:     str(func(c config.Config) string { return c.Provider.APIKey }),
-		fallback: "(from the environment)",
-		options:  noOptions,
-		secret:   true,
-	}, {
-		group: "MODEL", key: "provider.base_url", label: "base url",
-		read:     str(func(c config.Config) string { return c.Provider.BaseURL }),
-		fallback: "(the provider's own)",
-		options:  noOptions,
-	}, {
-		group: "MODEL", key: "provider.name", label: "display name",
-		read:     str(func(c config.Config) string { return c.Provider.Name }),
-		fallback: "(the provider's own)",
-		options:  noOptions,
-	}, {
-		group: "MODEL", key: "agents.model", label: "sub-agent model",
-		read:     str(func(c config.Config) string { return c.Agents.Model }),
-		fallback: config.InheritModel,
-		options: func(c config.Config) []components.SelectOption {
-			opts := []components.SelectOption{
-				{Label: config.InheritModel, Desc: "children run the session's own model"},
-			}
-			for _, name := range provider.KnownModels(c.Provider.Default) {
-				opts = append(opts, components.SelectOption{Label: name})
-			}
-			return opts
-		},
-	}, {
-		// The three built-in roles, each of which may run a different model
-		// from the rest: a reviewer reading a diff and a researcher reading
-		// the tree are not the same question, and paying the session's model
-		// for both is the usual reason sub-agents cost more than they should.
-		// All three are listed rather than the one being written, because a
-		// screen that offers a model for one role and not its siblings reads
-		// as the others not being settable.
-		group: "MODEL", key: "agents.researcher_model", label: "researcher model",
-		read:     roleModel("researcher"),
-		fallback: "(the sub-agent model)",
-		options:  roleModelOptions,
-	}, {
-		group: "MODEL", key: "agents.writer_model", label: "writer model",
-		read:     roleModel("writer"),
-		fallback: "(the sub-agent model)",
-		options:  roleModelOptions,
-	}, {
-		group: "MODEL", key: "agents.reviewer_model", label: "reviewer model",
-		read:     roleModel("reviewer"),
-		fallback: "(the sub-agent model)",
-		options:  roleModelOptions,
-	}, {
-		// The session summary's model. It sits under MODEL rather
-		// than SESSION because what it is is a second model the session runs,
-		// and the fallback says the thing worth knowing: unset means the
-		// provider chose it.
-		group: "MODEL", key: "summary.model", label: "summary model",
-		read:     str(func(c config.Config) string { return c.Summary.Model }),
-		fallback: "(the provider's small model, or the session's own)",
-		options: func(c config.Config) []components.SelectOption {
-			opts := make([]components.SelectOption, 0, 8)
-			for _, name := range provider.KnownModels(c.Provider.Default) {
-				opts = append(opts, components.SelectOption{Label: name})
-			}
-			return opts
-		},
-	}, {
-		group: "SESSION", key: "summary.disabled", label: "session summary",
-		read: flag(func(c config.Config) bool { return c.Summary.Disabled }),
-		show: func(string) (string, components.FieldTone, string) {
-			return "off", components.ToneNeutral, "no reading is taken and the rail draws no SUMMARY block"
-		},
-		fallback: "on",
-		options: func(config.Config) []components.SelectOption {
-			return boolOptions("no reading is taken and no requests are made",
-				"a reading every few tool rounds, drawn in the inspector rail")
-		},
-	}, {
-		group: "SESSION", key: "summary.title", label: "session titles",
-		// Not flag(): unset resolves against summary.model, so an unset
-		// file and one that says false are different facts.
-		read: func(c config.Config) string {
-			if c.Summary.Title == nil {
-				return ""
-			}
-			return strconv.FormatBool(*c.Summary.Title)
-		},
-		show: func(raw string) (string, components.FieldTone, string) {
-			if raw == "false" {
-				return "off", components.ToneNeutral, "no session is asked for a title"
-			}
-			return "on", components.ToneNeutral, "an unnamed session is titled by the summary model after its first turn"
-		},
-		fallback: "on when a summary model is set, off otherwise",
-		options: func(config.Config) []components.SelectOption {
-			return boolOptions("an unnamed session is titled after its first turn (on the summary model, or the session's own)",
-				"no session is asked for a title")
-		},
-	}, {
-		group: "SESSION", key: "behavior.tree_check", label: "tree check",
-		// Not flag(): unset is on, so an unset file and one that says true
-		// read the same and only false is a fact worth showing as set.
-		read: func(c config.Config) string {
-			if c.Behavior.TreeCheck == nil {
-				return ""
-			}
-			return strconv.FormatBool(*c.Behavior.TreeCheck)
-		},
-		fallback: "on",
-		options: func(config.Config) []components.SelectOption {
-			return boolOptions("a turn is told when the tree moved in a way its own edits do not explain",
-				"the tree is surveyed once, at session start, and never again")
-		},
-	}, {
-		group: "SESSION", key: "todo.commit", label: "backlog run commits",
-		// Not flag(): unset is a commit, so an unset file and one that says
-		// true read the same and only false is a fact worth showing as set.
-		read: func(c config.Config) string {
-			if c.Todo.Commit == nil {
-				return ""
-			}
-			return strconv.FormatBool(*c.Todo.Commit)
-		},
-		fallback: "on",
-		options: func(config.Config) []components.SelectOption {
-			return boolOptions("a run that verifies and reviews ends in a commit, and a directory with no repository refuses the run",
-				"a run ends after the review and leaves the change in the working tree")
-		},
-	}, {
-		group: "STEERING", key: "behavior.check_in_interval_rounds", label: "check-in interval",
-		read:     num(func(c config.Config) int { return c.Behavior.CheckInIntervalRounds }),
-		fallback: strconv.Itoa(agent.DefaultCheckInInterval) + " rounds",
-		options:  noOptions,
-	}, {
-		group: "STEERING", key: "behavior.check_in_max_doublings", label: "check-in widening",
-		// Not num(): a negative is the one number that is not a count. It is
-		// how the file says the interval never widens, and the screen has to
-		// read it back as that rather than as "-1".
-		read: func(c config.Config) string {
-			switch n := c.Behavior.CheckInMaxDoublings; {
-			case n < 0:
-				return "never — one interval from first round to last"
-			case n > 0:
-				return strconv.Itoa(n) + " doublings"
-			}
-			return ""
-		},
-		fallback: strconv.Itoa(agent.DefaultCheckInDoublings) + " doublings",
-		options:  noOptions,
-	}, {
-		group: "STEERING", key: "summary.intervene_cooldown_intervals", label: "steer cooldown",
-		read:     num(func(c config.Config) int { return c.Summary.InterveneCooldownIntervals }),
-		fallback: strconv.Itoa(agent.DefaultCooldownIntervals) + " readings",
-		options:  noOptions,
-	}, {
-		group: "STEERING", key: "summary.steer_target_chars", label: "steer quotes at most",
-		read: func(c config.Config) string {
-			switch n := c.Summary.SteerTargetChars; {
-			case n < 0:
-				return "the whole instruction, however long it was"
-			case n > 0:
-				return strconv.Itoa(n) + " characters"
-			}
-			return ""
-		},
-		fallback: strconv.Itoa(agent.DefaultSteerTargetChars) + " characters",
-		options:  noOptions,
-	}, {
-		// The four wordings. They are files rather than values because a
-		// steer is a paragraph, and the file is read at session start: a
-		// path that cannot be read stops the session rather than quietly
-		// leaving the built-in wording in its place.
-		group: "STEERING", key: "prompts.steer", label: "steer wording",
-		read:     str(func(c config.Config) string { return c.Prompts.Steer }),
-		fallback: "(the built-in wording)",
-		options:  noOptions,
-	}, {
-		group: "STEERING", key: "prompts.check_in", label: "check-in wording",
-		read:     str(func(c config.Config) string { return c.Prompts.CheckIn }),
-		fallback: "(the built-in wording)",
-		options:  noOptions,
-	}, {
-		group: "STEERING", key: "prompts.summary", label: "reading wording",
-		read:     str(func(c config.Config) string { return c.Prompts.Summary }),
-		fallback: "(the built-in wording)",
-		options:  noOptions,
-	}, {
-		group: "STEERING", key: "prompts.classifier", label: "classifier wording",
-		read:     str(func(c config.Config) string { return c.Prompts.Classifier }),
-		fallback: "(the built-in wording)",
-		options:  noOptions,
-	}, {
-		group: "WORKSPACE", key: "sandbox.profile", label: "sandbox",
-		read: str(func(c config.Config) string { return c.Sandbox.Profile }),
-		show: func(raw string) (string, components.FieldTone, string) {
-			if raw == "workspace-netless" {
-				return "⛨ " + raw, components.ToneSafe, "no network inside containment"
-			}
-			return "⛨ " + raw, components.ToneNeutral, ""
-		},
-		fallback: "⛨ workspace",
-		options: func(config.Config) []components.SelectOption {
-			return []components.SelectOption{
-				{Label: "workspace", Desc: "the workspace is writable, the network is not touched"},
-				{Label: "workspace-netless", Desc: "the same, with the network closed"},
-			}
-		},
-	}, {
-		group: "WORKSPACE", key: "web.allow_private", label: "network",
-		read: flag(func(c config.Config) bool { return c.Web.AllowPrivate }),
-		show: func(string) (string, components.FieldTone, string) {
-			return "private hosts reachable", components.ToneOpen, "intranet and localhost fetches are allowed"
-		},
-		fallback: "public hosts only",
-		options: func(config.Config) []components.SelectOption {
-			return boolOptions("intranet and localhost fetches are allowed",
-				"private, loopback and metadata addresses are refused")
-		},
-	}, {
-		group: "WORKSPACE", key: "behavior.memory_disabled", label: "memory",
-		read: flag(func(c config.Config) bool { return c.Behavior.MemoryDisabled }),
-		show: func(string) (string, components.FieldTone, string) {
-			return "off", components.ToneNeutral, "nothing is remembered between sessions"
-		},
-		fallback: "on",
-		options: func(config.Config) []components.SelectOption {
-			return boolOptions("nothing is remembered between sessions",
-				"memories are injected into the system prompt")
-		},
-	}, {
-		group: "WORKSPACE", key: "behavior.shell", label: "shell",
-		read:     str(func(c config.Config) string { return c.Behavior.Shell }),
-		fallback: "(your login shell)",
-		options:  noOptions,
-	}, {
-		group: "WORKSPACE", key: "history.retention_days", label: "history retention",
-		read:     num(func(c config.Config) int { return c.History.RetentionDays }),
-		fallback: strconv.Itoa(config.DefaultRetentionDays) + " days",
-		options:  noOptions,
-	}, {
-		group: "WORKSPACE", key: "reports.retention_days", label: "report retention",
-		read:     num(func(c config.Config) int { return c.Reports.RetentionDays }),
-		fallback: strconv.Itoa(config.DefaultRetentionDays) + " days",
-		options:  noOptions,
-	}, {
-		group: "WORKSPACE", key: "appearance.accent_color", label: "accent colour",
-		read:     str(func(c config.Config) string { return c.Appearance.AccentColor }),
-		fallback: "(the palette's own)",
-		options:  noOptions,
-	}, {
-		group: "WORKSPACE", key: "appearance.mouse", label: "mouse reporting",
-		// Not flag(): the default is on, so an unset file and a file that
-		// says true are different facts the screen has to keep apart.
-		read: func(c config.Config) string {
-			if c.Appearance.Mouse == nil {
-				return ""
-			}
-			return strconv.FormatBool(*c.Appearance.Mouse)
-		},
-		show: func(raw string) (string, components.FieldTone, string) {
-			if raw == "false" {
-				return "off", components.ToneNeutral, "the terminal keeps its native click-drag selection"
-			}
-			return "on", components.ToneSafe, ""
-		},
-		fallback: "on",
-		options: func(config.Config) []components.SelectOption {
-			return boolOptions("the wheel scrolls the transcript and shhh selects text itself",
-				"the terminal keeps native click-drag selection; navigation is keyboard only")
-		},
-	}, {
-		group: "WORKSPACE", key: "appearance.paste_lines", label: "paste staged taller than",
-		// Not num(): a negative is the one number that is not a threshold. It
-		// is how the file says "never on this count", and the screen has to
-		// read it back as that rather than as "-1" — the same distinction
-		// behavior.max_tool_rounds makes.
-		read: func(c config.Config) string {
-			switch n := c.Appearance.PasteLines; {
-			case n < 0:
-				return "never on line count — a paste of any height types"
-			case n > 0:
-				return strconv.Itoa(n) + " lines"
-			}
-			return ""
-		},
-		fallback: strconv.Itoa(attachment.DefaultPasteLines) + " lines",
-		options:  noOptions,
-	}, {
-		group: "WORKSPACE", key: "appearance.paste_columns", label: "paste staged wider than",
-		read: func(c config.Config) string {
-			switch n := c.Appearance.PasteColumns; {
-			case n < 0:
-				return "never on width — a line of any length types"
-			case n > 0:
-				return strconv.Itoa(n) + " columns"
-			}
-			return ""
-		},
-		fallback: strconv.Itoa(attachment.DefaultPasteColumns) + " columns",
-		options:  noOptions,
-	}, {
-		// The rail's own columns, on the workspace group with the other
-		// settings about what the surface does rather than what the session
-		// does. The offered numbers are the two ends of the range: a rail is
-		// set to fit a pane somebody chose the size of, and the ends are what
-		// they are choosing between.
-		group: "WORKSPACE", key: "appearance.rail_width", label: "inspector rail width",
-		read:     str(func(c config.Config) string { return c.Appearance.RailWidth }),
-		fallback: components.RailWidthAuto,
-		options: func(config.Config) []components.SelectOption {
-			return []components.SelectOption{
-				{Label: components.RailWidthAuto, Desc: "the rail widens with the terminal"},
-				{Label: strconv.Itoa(components.InspectorWidth), Desc: "the narrowest rail — the most transcript"},
-				{Label: strconv.Itoa(components.InspectorMaxWidth), Desc: "the widest rail a terminal has room for"},
-			}
-		},
-	}, {
-		group: "WORKSPACE", key: "appearance.notify", label: "desktop notifications",
-		// Not flag(): the default is on, so an unset file and a file that
-		// says true are different facts the screen has to keep apart — the
-		// same reason behavior.safety_warnings reads its pointer.
-		read: func(c config.Config) string {
-			if c.Appearance.Notify == nil {
-				return ""
-			}
-			return strconv.FormatBool(*c.Appearance.Notify)
-		},
-		show: func(raw string) (string, components.FieldTone, string) {
-			if raw == "false" {
-				return "off", components.ToneNeutral, "a turn that stops while you are elsewhere waits silently"
-			}
-			return "on", components.ToneSafe, ""
-		},
-		fallback: "on",
-		options: func(config.Config) []components.SelectOption {
-			return boolOptions("a turn that stops while the window is not in front raises one notification",
-				"a turn that stops while you are elsewhere waits silently")
-		},
-	}, {
-		group: "WORKSPACE", key: "appearance.window_title", label: "window title",
-		// Not flag(), for the reason appearance.notify is not: the default is
-		// on, so an unset file and a file that says true are different facts.
-		read: func(c config.Config) string {
-			if c.Appearance.WindowTitle == nil {
-				return ""
-			}
-			return strconv.FormatBool(*c.Appearance.WindowTitle)
-		},
-		show: func(raw string) (string, components.FieldTone, string) {
-			if raw == "false" {
-				return "off", components.ToneNeutral, "the tab keeps whatever your terminal puts there"
-			}
-			return "on", components.ToneSafe, ""
-		},
-		fallback: "on",
-		options: func(config.Config) []components.SelectOption {
-			return boolOptions("the terminal's tab says the command, the directory and a waiting decision",
-				"the tab keeps whatever your terminal puts there")
-		},
-	}}
+			opts = append(opts, opt)
+		}
+		return opts
+	},
+	"provider.model":            modelOptions,
+	"summary.model":             modelOptions,
+	"behavior.classifier_model": modelOptions,
+	"provider.reasoning": func(config.Config) []components.SelectOption {
+		opts := make([]components.SelectOption, 0, len(provider.EffortCycle()))
+		for _, e := range provider.EffortCycle() {
+			opts = append(opts, components.SelectOption{Label: e.String(), Desc: e.Describe()})
+		}
+		return opts
+	},
+	"provider.cache_ttl": func(config.Config) []components.SelectOption {
+		opts := make([]components.SelectOption, 0, len(provider.CacheTTLCycle()))
+		for _, ttl := range provider.CacheTTLCycle() {
+			opts = append(opts, components.SelectOption{Label: string(ttl), Desc: ttl.Describe()})
+		}
+		return opts
+	},
+	"behavior.default_mode": func(config.Config) []components.SelectOption {
+		opts := make([]components.SelectOption, 0, 4)
+		for _, mode := range agent.DefaultCycle() {
+			opts = append(opts, components.SelectOption{Label: mode.String(), Desc: mode.Describe()})
+		}
+		return opts
+	},
+	"agents.model": func(c config.Config) []components.SelectOption {
+		opts := []components.SelectOption{
+			{Label: config.InheritModel, Desc: "children run the session's own model"},
+		}
+		return append(opts, modelOptions(c)...)
+	},
+	"behavior.safety_warnings": func(config.Config) []components.SelectOption {
+		return boolOptions("a destructive command says so before it is approved",
+			"a destructive command is approved like any other")
+	},
+	"behavior.silent_mode": func(config.Config) []components.SelectOption {
+		return boolOptions("generated commands print and nothing else", "the full UI")
+	},
+	"summary.disabled": func(config.Config) []components.SelectOption {
+		return boolOptions("no reading is taken and no requests are made",
+			"a reading every few tool rounds, drawn in the inspector rail")
+	},
+	"summary.title": func(config.Config) []components.SelectOption {
+		return boolOptions("an unnamed session is titled after its first turn (on the summary model, or the session's own)",
+			"no session is asked for a title")
+	},
+	"behavior.tree_check": func(config.Config) []components.SelectOption {
+		return boolOptions("a turn is told when the tree moved in a way its own edits do not explain",
+			"the tree is surveyed once, at session start, and never again")
+	},
+	"todo.commit": func(config.Config) []components.SelectOption {
+		return boolOptions("a run that verifies and reviews ends in a commit, and a directory with no repository refuses the run",
+			"a run ends after the review and leaves the change in the working tree")
+	},
+	"web.allow_private": func(config.Config) []components.SelectOption {
+		return boolOptions("intranet and localhost fetches are allowed",
+			"private, loopback and metadata addresses are refused")
+	},
+	"behavior.memory_disabled": func(config.Config) []components.SelectOption {
+		return boolOptions("nothing is remembered between sessions",
+			"memories are injected into the system prompt")
+	},
+	"appearance.mouse": func(config.Config) []components.SelectOption {
+		return boolOptions("the wheel scrolls the transcript and shhh selects text itself",
+			"the terminal keeps native click-drag selection; navigation is keyboard only")
+	},
+	"appearance.notify": func(config.Config) []components.SelectOption {
+		return boolOptions("a turn that stops while the window is not in front raises one notification",
+			"a turn that stops while you are elsewhere waits silently")
+	},
+	"appearance.window_title": func(config.Config) []components.SelectOption {
+		return boolOptions("the terminal's tab says the command, the directory and a waiting decision",
+			"the tab keeps whatever your terminal puts there")
+	},
+	"sandbox.profile": func(config.Config) []components.SelectOption {
+		return []components.SelectOption{
+			{Label: "workspace", Desc: "the workspace is writable, the network is not touched"},
+			{Label: "workspace-netless", Desc: "the same, with the network closed"},
+		}
+	},
+	// The offered numbers are the two ends of the range: a rail is set to fit
+	// a pane somebody chose the size of, and the ends are what they are
+	// choosing between.
+	"appearance.rail_width": func(config.Config) []components.SelectOption {
+		return []components.SelectOption{
+			{Label: components.RailWidthAuto, Desc: "the rail widens with the terminal"},
+			{Label: strconv.Itoa(components.InspectorWidth), Desc: "the narrowest rail — the most transcript"},
+			{Label: strconv.Itoa(components.InspectorMaxWidth), Desc: "the widest rail a terminal has room for"},
+		}
+	},
+}
+
+// configSettings is every row the screen draws, in the order and the groups
+// the file itself uses. It is the settings table with the screen's own
+// wording attached, which is why a key that lands in the table lands here.
+func configSettings(cfgs ...config.Config) []configSetting {
+	entries := configEntries(cfgs...)
+	out := make([]configSetting, 0, len(entries))
+	for _, s := range entries {
+		row := configSetting{Setting: s, label: configLabel(s.Key), fallback: configFallbacks[s.Key]}
+		row.show = configShows[s.Key]
+		row.options = configOptions[s.Key]
+		if row.options == nil && strings.HasPrefix(s.Key, "agents.profiles.") {
+			row.options = roleModelOptions
+		}
+		out = append(out, row)
+	}
+	return out
 }
 
 // shortPath writes a path under the home directory as ~/… , which is how

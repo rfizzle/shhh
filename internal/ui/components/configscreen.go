@@ -44,8 +44,9 @@ const (
 // that answer came from. The host builds these from its config and rebuilds
 // them after every change — the screen never computes a value.
 type ConfigRow struct {
-	// Group is the rail this row sits under — SESSION, MODEL, STEERING,
-	// WORKSPACE. Rails are labels rather than options: the pointer steps over
+	// Group is the rail this row sits under — the file's own tables, PROVIDER
+	// through TODO, so a reader who has scrolled the file has scrolled the
+	// screen. Rails are labels rather than options: the pointer steps over
 	// them and the markers do not count them. A row whose Group differs from
 	// the row before it opens a new rail.
 	Group string
