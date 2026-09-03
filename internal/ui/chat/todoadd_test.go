@@ -182,7 +182,7 @@ func TestTodoAdd_ClearDropsAReadingInFlight(t *testing.T) {
 	m.input.SetValue("/todo add")
 	updated, cmd := m.submitInput()
 	m = updated.(Model)
-	m.clearConversation()
+	m.startNewSession()
 	if m.todoExtracting {
 		t.Fatal("/clear should retire the reading")
 	}

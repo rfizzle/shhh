@@ -145,6 +145,20 @@ func (a *Agent) SetTreeCheck(c TreeCheck) {
 	a.tree = t
 }
 
+// RestartTreeCheck takes the baseline again, for a front-end that ended one
+// session and began another in the same process. What the tree looked like
+// when the old conversation opened is not what the new one should be told
+// about: without this the first reading of the new session would report
+// every change the last one made as somebody else's work, since the
+// changeset that subtracts a session's own edits started over too. A reading
+// that is off stays off.
+func (a *Agent) RestartTreeCheck() {
+	if a.tree == nil {
+		return
+	}
+	a.SetTreeCheck(a.tree.cfg)
+}
+
 // TreeChecking reports whether the reading is on.
 func (a *Agent) TreeChecking() bool { return a.tree != nil }
 

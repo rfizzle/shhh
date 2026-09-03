@@ -3,10 +3,12 @@ package cli
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/shell"
 )
 
 // endpointProvider is a provider whose endpoint reports the context length it
@@ -70,5 +72,36 @@ func TestEndpointWindowsFor_FailureLeavesTheLookupEmpty(t *testing.T) {
 func TestEndpointWindowsFor_ProviderWithoutTheCapability(t *testing.T) {
 	if lookup := endpointWindowsFor(struct{ provider.Provider }{}); lookup != nil {
 		t.Error("a provider whose endpoint cannot answer should get no lookup")
+	}
+}
+
+// The prompt a session opens on is assembled in one place because a session
+// boundary assembles it again: the config's standing addition and everything
+// the session gathered for itself have to reach the second build the way they
+// reached the first, and the second build has to be a build — a cached string
+// would hand the new conversation the checkout as it stood when the process
+// started.
+func TestSessionPrompt_BuiltAgainWithBothExtrasEveryTime(t *testing.T) {
+	var extras []string
+	s := chatSession{
+		promptExtra: "what the session gathered",
+		buildPrompt: func(_ shell.Info, extra ...string) string {
+			extras = append(extras, strings.Join(extra, "\n"))
+			return "system prompt"
+		},
+	}
+
+	if text, _, _ := s.systemPrompt("what the config says"); text != "system prompt" {
+		t.Fatalf("the prompt is the builder's answer, got %q", text)
+	}
+	s.systemPrompt("what the config says")
+
+	if len(extras) != 2 {
+		t.Fatalf("every call should build, got %d builds", len(extras))
+	}
+	for i, got := range extras {
+		if !strings.Contains(got, "what the config says") || !strings.Contains(got, "what the session gathered") {
+			t.Fatalf("build %d lost an extra: %q", i, got)
+		}
 	}
 }

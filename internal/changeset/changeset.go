@@ -220,6 +220,25 @@ func New(maxBytes int64) *Store {
 	return &Store{max: maxBytes, turns: map[int64]*Turn{}}
 }
 
+// Reset empties the store, keeping the bound it was built with. It is what a
+// session boundary does to the records of the conversation it ends: turns are
+// numbered from one again on the other side, so a store that kept them would
+// answer a review or an undo of turn 1 with the previous conversation's
+// edits. The eviction list goes with them — it is the reason a turn is
+// missing, and it is no longer true of any turn the store can be asked about.
+func (s *Store) Reset() {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.bytes = 0
+	s.order = nil
+	s.evicted = nil
+	s.turns = map[int64]*Turn{}
+	s.session, s.fresh = nil, false
+}
+
 // Add records one applied edit against a turn and returns the turns this
 // write evicted, so the caller can say so rather than losing them silently.
 //

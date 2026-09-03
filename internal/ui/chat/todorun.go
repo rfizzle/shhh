@@ -803,6 +803,16 @@ func (m *Model) endTodoRun() {
 // stopTodoRunKeeping ends the run but keeps the checkpoint and the item in
 // progress, so /todo run continues it from the stage it was at.
 func (m Model) stopTodoRunKeeping(why string) (tea.Model, tea.Cmd) {
+	note := m.keepTodoRun(why)
+	return m.systemNotice(note)
+}
+
+// keepTodoRun is that without the row, answering with the sentence instead.
+// The session boundary needs the two apart: the run is let go of while the
+// old conversation is still standing, and the offer to continue it belongs to
+// the new one's transcript rather than to the transcript being dropped
+// (model.go).
+func (m *Model) keepTodoRun(why string) string {
 	st, it := m.todoRun, m.todoRunItem
 	if prev, err := agent.ParseMode(st.PrevMode); err == nil {
 		m.applyMode(prev)
@@ -818,7 +828,13 @@ func (m Model) stopTodoRunKeeping(why string) (tea.Model, tea.Cmd) {
 	m.todoRun = nil
 	m.todoRunItem = todo.Item{}
 	m.reloadTodos()
-	return m.systemNotice(fmt.Sprintf("Paused the run on %s at %s — %s. /todo run %s continues it from there.", it.Slug, st.Stage, why, it.Slug))
+	return todoRunKeptNote(it, st, why)
+}
+
+// todoRunKeptNote is what a run let go of at its checkpoint says: where it
+// stopped, why, and the command that picks it up from there.
+func todoRunKeptNote(it todo.Item, st *run.State, why string) string {
+	return fmt.Sprintf("Paused the run on %s at %s — %s. /todo run %s continues it from there.", it.Slug, st.Stage, why, it.Slug)
 }
 
 // stopTodoRun is /todo stop: the run is abandoned, the item goes back to

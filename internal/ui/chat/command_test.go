@@ -56,17 +56,17 @@ func TestIdleOnlyCommand_RefusedWithReason(t *testing.T) {
 	m := workingModel(t)
 	before := len(m.Messages())
 
-	m = sendText(t, m, "/clear")
+	m = sendText(t, m, "/compact")
 
 	if len(m.Messages()) != before {
-		t.Fatal("/clear must not touch the conversation while the agent works")
+		t.Fatal("/compact must not touch the conversation while the agent works")
 	}
 	if len(m.steering) != 0 {
 		t.Fatalf("a refused command must not queue as steering, got %v", m.steering)
 	}
 	notice := m.transcript[len(m.transcript)-1]
-	if notice.kind != entrySystem || !strings.Contains(notice.text, "/clear") ||
-		!strings.Contains(notice.text, "starts a new conversation") {
+	if notice.kind != entrySystem || !strings.Contains(notice.text, "/compact") ||
+		!strings.Contains(notice.text, "rewrites the conversation") {
 		t.Fatalf("expected a notice naming the command and why it waits, got %+v", notice)
 	}
 }
@@ -77,7 +77,7 @@ func TestIdleOnlyCommand_RunsOnceIdle(t *testing.T) {
 	m = updated.(Model)
 
 	m = sendText(t, m, "/clear")
-	if len(m.transcript) != 1 || !strings.Contains(m.transcript[0].text, "Started a new conversation") {
+	if len(m.transcript) != 1 || !strings.Contains(m.transcript[0].text, "Started a new session") {
 		t.Fatalf("/clear should run once the turn ended, got %+v", m.transcript)
 	}
 }
@@ -100,7 +100,7 @@ func TestCompletionMenu_HidesIdleOnlyCommandsWhileWorking(t *testing.T) {
 	m.input.SetValue("/c")
 	m.syncCompletions()
 	for _, c := range m.completions {
-		if c.name == "/clear" || c.name == "/compact" {
+		if c.name == "/compact" {
 			t.Fatalf("%s cannot run mid-turn, so it should not be offered: %+v", c.name, m.completions)
 		}
 	}
@@ -113,8 +113,8 @@ func TestCompletionMenu_HidesIdleOnlyCommandsWhileWorking(t *testing.T) {
 	for _, c := range m.completions {
 		names = append(names, c.name)
 	}
-	if !containsString(names, "/clear") {
-		t.Fatalf("/clear should be back once the turn ended, got %v", names)
+	if !containsString(names, "/compact") {
+		t.Fatalf("/compact should be back once the turn ended, got %v", names)
 	}
 }
 

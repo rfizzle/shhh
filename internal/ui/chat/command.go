@@ -149,6 +149,18 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		m.detachOne()
 		return m, nil
 
+	case name == "/clear" || name == "/new":
+		// The session boundary (model.go). Over a turn that is not over it
+		// asks first, the way quitting does and for the same reason: what a
+		// yes costs is the work the reader may not have noticed running, and
+		// a boundary is never crossed mid-turn.
+		if m.turnInFlight() {
+			return m.openNewSessionConfirm()
+		}
+		note, save := m.startNewSession()
+		next, cmd := m.systemNotice(note)
+		return next, tea.Batch(cmd, save)
+
 	case name == "/exit" || name == "/quit" || name == "/q":
 		// A typed command is deliberate, so an idle quit goes straight
 		// out; over a live turn even it confirms, because what it costs is

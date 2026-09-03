@@ -216,3 +216,23 @@ func TestStalenessIsItsOwnErrorAndTheOtherRefusalsAreNot(t *testing.T) {
 		t.Errorf("a file read only in part is not stale: %v", err)
 	}
 }
+
+// A session ended and another began in the same process: the new one has been
+// shown nothing, so the overwrite the old session had earned is refused again.
+func TestForgetAllTakesBackWhatAnEarlierSessionWasShown(t *testing.T) {
+	path := seed(t, t.TempDir(), "config.yaml", "port: 8080\n")
+	readWholeFile(t, path)
+	if _, err := ExecuteMutating(WriteFileName, writeArgs(t, path, "port: 9090\n")); err != nil {
+		t.Fatalf("a file this session read may be replaced: %v", err)
+	}
+
+	ForgetAll()
+
+	_, err := ExecuteMutating(WriteFileName, writeArgs(t, path, "port: 9999\n"))
+	if err == nil || !strings.Contains(err.Error(), "read_file") {
+		t.Fatalf("the new session has read nothing, so the overwrite is refused: %v", err)
+	}
+	if data, _ := os.ReadFile(path); string(data) != "port: 9090\n" {
+		t.Errorf("the file must be untouched, got %q", data)
+	}
+}

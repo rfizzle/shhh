@@ -22,7 +22,6 @@ package chat
 // surface and a nag.
 
 import (
-	"fmt"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -265,17 +264,14 @@ func (m Model) closePressure() (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-// pressureNewSession is `[n]`: save what the session has said, then start
-// over with an empty conversation. The save goes to the old session's own
-// slot, which `shhh chat --resume` lists — a new session that lost the old
-// one is not an offer, it is a mistake with a key bound to it.
+// pressureNewSession is `[n]`: the session boundary, offered here because a
+// full window is one of the two things it fixes. It is the same boundary
+// `/new` crosses and not a lighter one — the conversation left whole in its
+// own slot, the record closed and another opened (model.go) — since a
+// recovery that leaves half the session behind is what a card offering it
+// would be trusted not to do.
 func (m Model) pressureNewSession() (tea.Model, tea.Cmd) {
-	save := m.autosaveCmd()
-	note := "Started a new conversation."
-	if save != nil {
-		note = fmt.Sprintf("Saved the conversation as %q and started a new one; `shhh chat --resume` reopens it.", m.sessionName)
-	}
-	m.clearConversation()
+	note, save := m.startNewSession()
 	// The window is empty again, so the next crossing is a new crossing.
 	m.pressureShown = false
 	m.appendEntry(entry{kind: entrySystem, text: note})

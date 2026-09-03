@@ -94,6 +94,36 @@ func TestTree_AForeignWriteIsReported(t *testing.T) {
 	}
 }
 
+// A session boundary takes the baseline again. The changeset that subtracts a
+// session's own edits starts over with it, so a baseline kept would report the
+// last conversation's work to the new one as a stranger's.
+func TestTree_RestartTakesTheBaselineAgain(t *testing.T) {
+	ws, _ := treeFixture(t)
+	a := treeAgent(t, ws, nil)
+	// Everything that happened to the tree before the boundary, reported or
+	// not, is where the next conversation starts from.
+	write(t, ws, "b.txt", "new\n")
+
+	a.RestartTreeCheck()
+
+	if n, ok := a.NextTreeNotice(true); ok {
+		t.Fatalf("the tree as it stands is the new session's starting point, got:\n%s", n.Message)
+	}
+	write(t, ws, "c.txt", "later\n")
+	if _, ok := a.NextTreeNotice(true); !ok {
+		t.Fatal("a change after the new baseline is still reported")
+	}
+}
+
+// A reading that is off has no baseline to take.
+func TestTree_RestartOnASessionWithoutTheReading(t *testing.T) {
+	a := New(nil, nil)
+	a.RestartTreeCheck()
+	if a.TreeChecking() {
+		t.Fatal("restarting must not turn the reading on")
+	}
+}
+
 func TestTree_TheSessionsOwnEditIsSubtracted(t *testing.T) {
 	ws, _ := treeFixture(t)
 	own := write(t, ws, "mine.txt", "mine\n")

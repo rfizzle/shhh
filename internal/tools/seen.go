@@ -160,3 +160,14 @@ func checkSeen(path string, current []byte, existed, replacing bool) error {
 	}
 	return nil
 }
+
+// ForgetAll drops every record. A session ending and another beginning in the
+// same process is the one caller: the records say what the model was shown,
+// and the model that comes back has been shown nothing. Keeping them would
+// let a full overwrite through on the strength of a read the new
+// conversation never made — the one thing the record exists to refuse.
+func ForgetAll() {
+	seenMu.Lock()
+	defer seenMu.Unlock()
+	clear(seen)
+}

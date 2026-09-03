@@ -235,6 +235,30 @@ func TestSession_CollapsesTurnsIntoOneDiffPerFile(t *testing.T) {
 	}
 }
 
+// A session boundary empties the store: the next conversation numbers its
+// turns from one, and turn 1 must not answer with the last one's edits.
+func TestReset_EmptiesTheStoreAndKeepsItUsable(t *testing.T) {
+	s := New(0)
+	s.Add(1, rec("a.go", "one\n", "two\n"))
+
+	s.Reset()
+
+	if _, ok := s.Turn(1); ok {
+		t.Fatal("the turns should be gone")
+	}
+	if files, added, removed := s.Totals(); files != 0 || added != 0 || removed != 0 {
+		t.Fatalf("the totals should be zero, got %d files +%d -%d", files, added, removed)
+	}
+	if s.Bytes() != 0 || s.Session() != nil || s.Evicted() != nil || s.WasEvicted(1) {
+		t.Fatal("an emptied store reads as a new one")
+	}
+	s.Add(1, rec("b.go", "", "new\n"))
+	turn, ok := s.Turn(1)
+	if !ok || len(turn.Records) != 1 || turn.Records[0].Path != "b.go" {
+		t.Fatalf("turn 1 belongs to the new session, got %+v", turn)
+	}
+}
+
 func TestNilStoreIsUsable(t *testing.T) {
 	var s *Store
 	if evicted := s.Add(1, rec("a.go", "", "x\n")); evicted != nil {
@@ -249,6 +273,7 @@ func TestNilStoreIsUsable(t *testing.T) {
 	if s.Session() != nil || s.Evicted() != nil || s.Bytes() != 0 || s.WasEvicted(1) {
 		t.Fatal("a nil store reads as empty")
 	}
+	s.Reset()
 }
 
 func TestLatest(t *testing.T) {

@@ -14,7 +14,7 @@
 │ ▸ █                                                                                                    │
 │ COMMANDS                                                                                               │
 │ ❯ /help                   Show commands, keys, and the approval policy                                 │
-│   /clear                  Start a new conversation                                                     │
+│   /clear                  Start a new session                                                          │
 │   /paste                  Attach the clipboard, or a file, to your next message                 ctrl+v │
 │   /copy                   Copy the last response (or just its code blocks)                             │
 │   /model                  Switch the model (bare /model opens a picker)                                │
@@ -31,7 +31,7 @@
 ┌─ Palette ──────────────────────────────────────────────────────────────────────────────────── 1 result ┐
 │ ▸ cl█                                                                                                  │
 │ COMMANDS                                                                                               │
-│ ❯ ⊘ /clear  needs the turn to be finished — it starts a new conversation                               │
+│ ❯ /clear  Start a new session                                                                          │
 │ enter run · tab complete · ↑↓ move · esc dismiss                                                       │
 └────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
@@ -41,7 +41,7 @@
 ␛[38;5;241m│␛[m ␛[94m▸ ␛[m␛[97m█␛[m                                                                                                    ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[1;94mCOMMANDS␛[m                                                                                               ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[1;48;5;62m❯ /help                   Show commands, keys, and the approval policy␛[m                                 ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m   /clear                  ␛[38;5;241mStart a new conversation␛[m                                                     ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m   /clear                  ␛[38;5;241mStart a new session␛[m                                                          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   /paste                  ␛[38;5;241mAttach the clipboard, or a file, to your next message␛[m                 ␛[38;5;252mctrl+v␛[m ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   /copy                   ␛[38;5;241mCopy the last response (or just its code blocks)␛[m                             ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m   /model                  ␛[38;5;241mSwitch the model (bare /model opens a picker)␛[m                                ␛[38;5;241m│␛[m
@@ -58,6 +58,6 @@
 ␛[38;5;241m┌─ Palette ──────────────────────────────────────────────────────────────────────────────────── 1 result ┐␛[m
 ␛[38;5;241m│␛[m ␛[94m▸ ␛[m␛[97mcl█␛[m                                                                                                  ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[1;94mCOMMANDS␛[m                                                                                               ␛[38;5;241m│␛[m
-␛[38;5;241m│␛[m ␛[1;48;5;62m❯ ⊘ /clear  needs the turn to be finished — it starts a new conversation␛[m                               ␛[38;5;241m│␛[m
+␛[38;5;241m│␛[m ␛[1;48;5;62m❯ /clear  Start a new session␛[m                                                                          ␛[38;5;241m│␛[m
 ␛[38;5;241m│␛[m ␛[3;38;5;241menter run · tab complete · ↑↓ move · esc dismiss␛[m                                                       ␛[38;5;241m│␛[m
 ␛[38;5;241m└────────────────────────────────────────────────────────────────────────────────────────────────────────┘␛[m

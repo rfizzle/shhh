@@ -33,6 +33,11 @@ type observeRecorder struct {
 	id     int64
 	prices *pricing.Table
 	model  string
+	// kind and provider are what the row was opened with, kept so a session
+	// boundary can open the next row the same way rather than being handed
+	// the three of them again by a caller that would then be free to change
+	// one (restart).
+	kind, provider string
 	// linked is the saved conversation the row was last linked to, so an
 	// autosave that lands in the same slot costs no write.
 	linked string
@@ -51,7 +56,7 @@ func startObserveRecorder(db *storage.DB, kind, provider, model string, prices *
 	if err != nil {
 		return nil
 	}
-	return &observeRecorder{db: db, id: id, prices: prices, model: model}
+	return &observeRecorder{db: db, id: id, prices: prices, model: model, kind: kind, provider: provider}
 }
 
 // startChildObserveRecorder opens a sub-agent's session row linked to its
@@ -64,7 +69,7 @@ func startChildObserveRecorder(db *storage.DB, kind, provider, model string, pri
 	if err != nil {
 		return nil
 	}
-	return &observeRecorder{db: db, id: id, prices: prices, model: model}
+	return &observeRecorder{db: db, id: id, prices: prices, model: model, kind: kind, provider: provider}
 }
 
 // sessionID is the recorder's session row id (0 when recording is disabled),
@@ -368,6 +373,29 @@ func (r *observeRecorder) endWith(outcome string) {
 	}
 	r.outcome = outcome
 	_ = r.db.EndAgentSession(r.id, outcome)
+}
+
+// restart closes this row and opens another for the conversation that
+// follows it, reporting whether it could. The recorder itself is not
+// replaced: every surface holding its observer goes on reporting through the
+// same callbacks, which is what keeps "which row does this event belong to"
+// a question with one answer rather than one per front-end.
+//
+// A row that cannot be opened leaves the recorder on the row it just closed.
+// The alternative is a recorder that silently writes nothing for the rest of
+// the process, and a session whose events land on a closed row is a smaller
+// wrong than a session with no record at all.
+func (r *observeRecorder) restart() bool {
+	if r == nil {
+		return false
+	}
+	r.end()
+	id, err := r.db.StartAgentSession(r.kind, r.provider, r.model)
+	if err != nil {
+		return false
+	}
+	r.id, r.linked, r.outcome = id, "", ""
+	return true
 }
 
 func newObserveCmd() *cobra.Command {

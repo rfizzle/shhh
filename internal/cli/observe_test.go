@@ -573,6 +573,54 @@ func TestObserveRecorder_UnknownIsTheSessionThatNeverSpoke(t *testing.T) {
 	}
 }
 
+// A session boundary closes this session's row and opens the next one. One
+// record never spans two conversations: the row left behind is ended and
+// keeps what its last turn said about it, the row that follows starts clean,
+// and each is linked to the slot its own conversation was written to.
+func TestObserveRecorder_RestartEndsOneRowAndOpensAnother(t *testing.T) {
+	db := fixtureStore(t)
+	rec := startObserveRecorder(db, "code", "anthropic", "test-model", nil)
+	first := rec.sessionID()
+	rec.turn(1, 2, time.Second, observe.TurnDone)
+	rec.link("first slot")
+
+	if !rec.restart() {
+		t.Fatal("the boundary should have opened a row")
+	}
+	second := rec.sessionID()
+	if second == first {
+		t.Fatal("the second conversation needs a row of its own")
+	}
+	rec.link("second slot")
+	rec.end()
+
+	left, ok, err := db.AgentSession(first)
+	if err != nil || !ok {
+		t.Fatalf("session %d: ok=%v err=%v", first, ok, err)
+	}
+	if left.EndedAt == nil {
+		t.Fatal("the row left behind should be ended")
+	}
+	if left.Outcome != "completed" || left.ChatSession != "first slot" {
+		t.Fatalf("the row should keep its own turn and slot, got %+v", left)
+	}
+	next, ok, err := db.AgentSession(second)
+	if err != nil || !ok {
+		t.Fatalf("session %d: ok=%v err=%v", second, ok, err)
+	}
+	if next.ChatSession != "second slot" {
+		t.Fatalf("the new row belongs to the new slot, got %q", next.ChatSession)
+	}
+	if next.Kind != left.Kind || next.Provider != left.Provider || next.Model != left.Model {
+		t.Fatalf("the new row is the same session assembled the same way: %+v vs %+v", next, left)
+	}
+	// The last turn of the first conversation is not the outcome of the
+	// second: nothing was finished in it, and the exit says so.
+	if next.Outcome != "abandoned" {
+		t.Fatalf("the new row wrote its own outcome, got %q", next.Outcome)
+	}
+}
+
 func sessionOutcomeOf(t *testing.T, db *storage.DB, id int64) string {
 	t.Helper()
 	s, ok, err := db.AgentSession(id)

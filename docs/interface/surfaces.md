@@ -332,9 +332,11 @@ two presses of a chord no reflex produces, and interrupting keeps everything
 the turn already did. Quitting from an idle session takes the same two
 presses. Quitting over a live turn is a real question rather than a window:
 the inline confirm states what will be cancelled and what the autosave keeps,
-and the default is No. Keys that end something already scoped — a running
-command, the permission classifier, a decision on its card — keep their
-single press, because those are reversible acts, not abandoned work.
+and the default is No. Ending the session without quitting asks the same
+question in the same words, because it costs the same thing. Keys that end
+something already scoped — a running command, the permission classifier, a
+decision on its card — keep their single press, because those are reversible
+acts, not abandoned work.
 
 ### The completion menu
 

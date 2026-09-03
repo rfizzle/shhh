@@ -108,6 +108,19 @@ func (s *summaryState) startTurn() {
 	s.lastAt = time.Time{}
 }
 
+// resetSummary starts the whole mechanism over at a session boundary, where
+// startTurn is not enough: the spend is this session's, the backoff describes
+// a provider that was failing this session, and a reading still out was asked
+// for about a conversation that no longer exists. Its cancel goes with it, so
+// the answer is never paid for twice over.
+func (m *Model) resetSummary() {
+	if m.summaryCancel != nil {
+		m.summaryCancel()
+		m.summaryCancel = nil
+	}
+	m.summary = summaryState{}
+}
+
 // summaryDoneMsg carries a finished reading back to the model.
 type summaryDoneMsg struct {
 	runID   int

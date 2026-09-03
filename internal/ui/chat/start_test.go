@@ -176,7 +176,7 @@ func TestStartScreen_GoesOnTheFirstTurnAndDoesNotComeBackOnClear(t *testing.T) {
 		t.Fatal("the screen survived the first turn")
 	}
 
-	m.clearConversation()
+	m.startNewSession()
 	if len(m.transcript) != 0 {
 		t.Fatal("/clear should empty the transcript")
 	}
@@ -193,7 +193,7 @@ func TestStartScreen_GoesOnTheFirstTurnAndDoesNotComeBackOnClear(t *testing.T) {
 
 func TestStartScreen_ClearOfAGenuinelyEmptySessionKeepsIt(t *testing.T) {
 	m := startModel(t, startFixture())
-	m.clearConversation()
+	m.startNewSession()
 	if !m.startScreenShowing() {
 		t.Fatal("nothing had been said, so the session is still new")
 	}
@@ -205,7 +205,7 @@ func TestStartScreen_LoadedConversationSpendsIt(t *testing.T) {
 		{Role: provider.RoleUser, Content: "hi"},
 		{Role: provider.RoleAssistant, Content: "hello"},
 	})
-	m.clearConversation()
+	m.startNewSession()
 	if m.startScreenShowing() {
 		t.Fatal("a session with a past is not new again once it is cleared")
 	}

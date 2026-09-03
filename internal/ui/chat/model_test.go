@@ -10,6 +10,8 @@ import (
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 	"github.com/charmbracelet/x/ansi"
+	"github.com/rfizzle/shhh/internal/changeset"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -1015,19 +1017,197 @@ func TestSlashClear_ResetsConversation(t *testing.T) {
 	m.appendEntry(entry{kind: entryUser, text: "hi"})
 	m.appendEntry(entry{kind: entryAssistant, text: "hello"})
 	m.contextTokens = 500
+	m.turnCount = 4
 
-	handled, _ := m.handleSlashCommand("/clear")
-	if !handled {
-		t.Fatal("/clear should be handled")
-	}
+	m = sendText(t, m, "/clear")
+
 	if len(m.Messages()) != 1 || m.Messages()[0].Role != provider.RoleSystem {
 		t.Fatalf("expected only system message to survive /clear, got %d messages", len(m.Messages()))
 	}
-	if len(m.transcript) != 0 {
-		t.Fatal("transcript should be empty after /clear")
+	// The row the new session opens on, and nothing of the conversation it
+	// left behind.
+	if len(m.transcript) != 1 || m.transcript[0].kind != entrySystem {
+		t.Fatalf("the new session opens on its own row, got %+v", m.transcript)
 	}
 	if m.contextTokens != 0 {
 		t.Fatal("context estimate should reset after /clear")
+	}
+	if m.turnCount != 0 {
+		t.Fatalf("turns are numbered from one again, got %d", m.turnCount)
+	}
+}
+
+// The session boundary. /new is not the old session with an emptied
+// transcript: the conversation is left whole in the slot it was written to,
+// the host closes one record and opens another, and everything the session
+// had counted starts from nothing.
+func TestNewSession_LeavesTheOldConversationWholeAndStartsAnother(t *testing.T) {
+	db, err := storage.OpenPath(t.TempDir() + "/test.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	var linked []string
+	hostCalls := 0
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
+		WithDB(db).
+		WithObserver(observe.Observer{Session: func(name string) { linked = append(linked, name) }}).
+		WithNewSession(func() SessionStart {
+			hostCalls++
+			return SessionStart{Prompt: "rebuilt", Resume: "shhh code --continue", ProjectTokens: 120}
+		})
+	m = sendText(t, m, "first session")
+	updated, _ := m.Update(tokenMsg{text: "one"})
+	m = updated.(Model)
+	m = finishTurn(t, m)
+	m.changes.Add(m.turnCount, changeset.Record{
+		Path: "a.go", Before: "one\n", After: "two\n", BeforeExists: true, AfterExists: true,
+	})
+	left := m.sessionName
+
+	note, save := m.startNewSession()
+	if save == nil {
+		t.Fatal("the conversation being left behind should be written down")
+	}
+	save()
+
+	kept, err := db.LoadChat(left)
+	if err != nil || len(kept) != 3 {
+		t.Fatalf("the old slot should hold the whole conversation, got %d messages, err=%v", len(kept), err)
+	}
+	if m.sessionName == left {
+		t.Fatal("the new conversation needs a slot of its own")
+	}
+	if hostCalls != 1 {
+		t.Fatalf("the host's half of the boundary should run once, ran %d times", hostCalls)
+	}
+	msgs := m.Messages()
+	if len(msgs) != 1 || msgs[0].Content != "rebuilt" {
+		t.Fatalf("the new session starts on the prompt the host built, got %+v", msgs)
+	}
+	// What the instruction files in that prompt cost is a measurement of it,
+	// so it arrives with it rather than standing from the last build.
+	if m.projectTokens != 120 {
+		t.Fatalf("the occupancy breakdown should describe the prompt just built, got %d", m.projectTokens)
+	}
+	if m.turnCount != 0 {
+		t.Fatalf("turns start from one again, got %d", m.turnCount)
+	}
+	if files, _, _ := m.changes.Totals(); files != 0 {
+		t.Fatalf("the changeset belongs to the conversation that made it, got %d files", files)
+	}
+	if got := m.sessionSpend(); got.In != 0 || got.Out != 0 {
+		t.Fatalf("the rail's spend starts over, got %+v", got)
+	}
+	// The row where the exit banner would have been: what was left, and how
+	// to get back to it.
+	if !strings.Contains(note, left) || !strings.Contains(note, "shhh code --continue") {
+		t.Fatalf("the row should name the slot and the command that reopens it, got %q", note)
+	}
+	// And the new row in the record is linked to the new slot, so neither
+	// conversation is counted under the other's.
+	if len(linked) == 0 || linked[len(linked)-1] != m.sessionName {
+		t.Fatalf("the new slot should be reported to the record, got %v", linked)
+	}
+}
+
+// The slot being left is not given back while a save is on its way to it. A
+// claim is given back by deleting the row nothing has written to, and for a
+// session whose first save is the boundary's own that row is the one the save
+// is about to write into — the store would have to put it back, without the
+// claim that settles a collision, for the length of the write.
+func TestNewSession_KeepsTheSlotItIsStillSavingInto(t *testing.T) {
+	db, err := storage.OpenPath(t.TempDir() + "/test.db")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer db.Close()
+
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).WithDB(db)
+	m = sendText(t, m, "first session")
+	updated, _ := m.Update(tokenMsg{text: "one"})
+	m = updated.(Model)
+	// Nothing has been written to the slot yet: this session's first save is
+	// the one the boundary makes.
+	left := m.sessionName
+
+	_, save := m.startNewSession()
+	if save == nil {
+		t.Fatal("there is a conversation to save")
+	}
+	// Asking for the same name again is how the store reports the claim: a
+	// name that is taken comes back counted.
+	if again, err := db.ClaimChatSlot(left); err != nil || again == left {
+		t.Fatalf("the slot being saved into should still be claimed, got %q (err=%v)", again, err)
+	}
+	save()
+	// The system prompt and the turn that was asked: what the session had
+	// said by the time the boundary took it.
+	if kept, err := db.LoadChat(left); err != nil || len(kept) != 2 {
+		t.Fatalf("the save should land in the slot it named, got %d messages, err=%v", len(kept), err)
+	}
+}
+
+// A boundary is never crossed mid-turn. Both states in which a turn is not
+// over — streaming, and parked at a round boundary — answer with the question
+// quitting asks, because what a yes costs is the same in both.
+func TestNewSession_OverATurnThatIsNotOverAsksFirst(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		build func(*testing.T) Model
+	}{
+		{"streaming", func(t *testing.T) Model { return workingModel(t) }},
+		{"held", heldModel},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m := tc.build(t)
+			before := len(m.Messages())
+			slot := m.sessionName
+
+			m = sendText(t, m, "/new")
+
+			if m.state != stateQuitConfirm || m.quitAsk == nil {
+				t.Fatalf("the boundary should ask before it is crossed, state=%d", m.state)
+			}
+			if !strings.Contains(m.quitAsk.Prompt, "new session") {
+				t.Fatalf("the question should name what it would do, got %q", m.quitAsk.Prompt)
+			}
+			if len(m.Messages()) != before || m.sessionName != slot {
+				t.Fatal("nothing may change while the question is up")
+			}
+
+			// No changes nothing: the turn underneath never stopped.
+			declined, _ := m.Update(tea.KeyPressMsg{Code: 'n', Text: "n"})
+			m = declined.(Model)
+			if m.sessionName != slot || len(m.Messages()) != before {
+				t.Fatal("declining should leave the session exactly as it was")
+			}
+		})
+	}
+}
+
+// And yes crosses it: the turn is cancelled the way the cancel chord cancels
+// one, and the session comes out the other side new.
+func TestNewSession_ConfirmedMidTurnCancelsAndCrosses(t *testing.T) {
+	m := workingModel(t)
+	m = sendText(t, m, "/new")
+
+	updated, _ := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
+	m = updated.(Model)
+
+	if m.state == stateQuitConfirm {
+		t.Fatal("the question should be answered")
+	}
+	if m.turnState() != stateInput {
+		t.Fatalf("the running turn should have been cancelled, state %d", m.turnState())
+	}
+	if len(m.Messages()) != 1 {
+		t.Fatalf("the new conversation is the system prompt and nothing else, got %d", len(m.Messages()))
+	}
+	if last := m.transcript[len(m.transcript)-1]; last.kind != entrySystem ||
+		!strings.Contains(last.text, "new session") {
+		t.Fatalf("the new session opens on its own row, got %+v", last)
 	}
 }
 
@@ -1603,11 +1783,12 @@ func TestAutosave_EachSessionKeepsItsOwnSlot(t *testing.T) {
 		t.Fatalf("resume should keep the slot %q, got %q", first.sessionName, resumed.sessionName)
 	}
 
-	// /clear moves to a fresh slot rather than overwriting the one just left.
+	// The session boundary moves to a fresh slot rather than overwriting the
+	// one just left.
 	cleared := second
-	cleared.handleSlashCommand("/clear")
+	cleared.startNewSession()
 	if cleared.sessionName == second.sessionName {
-		t.Fatal("/clear should start a new slot")
+		t.Fatal("a new session should start a new slot")
 	}
 }
 

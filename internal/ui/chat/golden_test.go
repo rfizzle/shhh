@@ -1152,6 +1152,40 @@ func TestGolden_TodoNoRepository(t *testing.T) {
 	})
 }
 
+// TestGolden_NewSessionRow captures the row a session boundary opens the new
+// conversation on. It is where the exit banner would have been — the slot the
+// last conversation is in and the command that reopens it — plus, when a
+// backlog run was let go of at its checkpoint, the command that continues it.
+//
+// Two widths, at the breakpoints either side of the row. A notice is emitted
+// as the sentence it is and the pane never re-wraps it, so the captures agree
+// — which is the property being pinned: the one thing the boundary says is a
+// sentence that reads the same in a narrow terminal as in a wide one, and a
+// row that grew a layout would show up here as the pair disagreeing.
+func TestGolden_NewSessionRow(t *testing.T) {
+	captureGolden(t, "new-session-row", "the row a new session opens on", []int{80, 110}, func(width int) []golden.Panel {
+		row := func(text string) string {
+			m := frameModel(t, width, 40)
+			m.appendEntry(entry{kind: entrySystem, text: text})
+			return m.renderHistory()
+		}
+		it := todo.Item{
+			Slug: "cache-ttl", Title: "Give the cache a lifetime",
+			Size: todo.SizeS, Priority: todo.PriorityHigh,
+			Path: ".shhh/todo/cache-ttl.md",
+		}
+		st := run.Start(it, "amber-lake", "manual", 1, run.Options{})
+		st.Stage = run.StageImplement
+		const slot, resume = "2026-09-04 11:20:07", "shhh code --continue"
+		return []golden.Panel{
+			{Label: "the slot left behind, and the command that reopens it",
+				View: row(newSessionRow(slot, resume, ""))},
+			{Label: "with a backlog run kept at its checkpoint",
+				View: row(newSessionRow(slot, resume, todoRunKeptNote(it, st, "this session ended")))},
+		}
+	})
+}
+
 // TestGolden_TodoSprint captures the surface the sprint is chosen on: the
 // ready items under a size budget, everything checked, with each row saying
 // in the facts a filter has why it is in the set — its priority, its size,

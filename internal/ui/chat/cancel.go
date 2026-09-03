@@ -139,20 +139,53 @@ func (m *Model) quitNow() tea.Cmd {
 // (docs/interface/surfaces.md#the-inline-confirm). It is a surface, so the
 // turn keeps running underneath while the question is up.
 func (m Model) openQuitConfirm() (tea.Model, tea.Cmd) {
+	return m.openEndConfirm("Quit? ", (*Model).quitNow)
+}
+
+// openNewSessionConfirm is the same question for the session boundary, which
+// is quitting without the exit: the turn is cancelled and the conversation
+// autosaved either way, and the only difference is whether the terminal comes
+// back. Two openers over one surface rather than two surfaces, because a
+// second confirm would be this one drawn twice and free to disagree with it
+// about what a yes costs.
+func (m Model) openNewSessionConfirm() (tea.Model, tea.Cmd) {
+	return m.openEndConfirm("Start a new session? ", (*Model).newSessionNow)
+}
+
+// openEndConfirm puts the question up: what ending the turn here costs, what
+// the autosave keeps, default No, and what a yes carries out.
+func (m Model) openEndConfirm(prompt string, yes func(*Model) tea.Cmd) (tea.Model, tea.Cmd) {
 	lost := "The running turn is cancelled"
 	if active, _ := m.activeAgents(); active > 0 {
 		lost = fmt.Sprintf("The running turn and %s are cancelled", plural(active, "agent"))
 	}
 	kept := "nothing is saved"
 	// The saved/not-saved split is autosaveCmd's condition, so the confirm
-	// cannot promise a save the quit will not take.
+	// cannot promise a save the act will not take.
 	if m.db != nil && len(m.agent.Messages()) > 1 {
 		kept = "the conversation is autosaved to " + m.sessionName
 	}
-	m.quitAsk = &components.Confirm{Prompt: "Quit? " + lost + "; " + kept + "."}
+	m.quitAsk = &components.Confirm{Prompt: prompt + lost + "; " + kept + "."}
+	m.quitAskYes = yes
 	m.enterSurface(stateQuitConfirm)
 	m.syncViewport()
 	return m, nil
+}
+
+// newSessionNow crosses the boundary — the confirm's act. The turn is
+// cancelled the way the cancel chord cancels one, so what streamed so far is
+// in the conversation the autosave writes: ending a session never discards
+// work that was already done.
+func (m *Model) newSessionNow() tea.Cmd {
+	m.cancelStreaming()
+	if m.runCancel != nil {
+		m.runCancel()
+	}
+	note, save := m.startNewSession()
+	m.appendEntry(entry{kind: entrySystem, text: note})
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoBottom()
+	return save
 }
 
 // updateQuitConfirm routes keys while the quit confirm is up. Declining
@@ -166,11 +199,12 @@ func (m Model) updateQuitConfirm(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 	if !done {
 		return m, nil
 	}
-	m.quitAsk = nil
+	act := m.quitAskYes
+	m.quitAsk, m.quitAskYes = nil, nil
 	m.leaveSurface()
 	m.syncViewport()
-	if yes, _ := result.(bool); yes {
-		return m, m.quitNow()
+	if yes, _ := result.(bool); yes && act != nil {
+		return m, act(&m)
 	}
 	return m, nil
 }

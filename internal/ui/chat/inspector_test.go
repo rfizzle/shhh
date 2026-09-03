@@ -460,7 +460,7 @@ func TestInspectorContext_BurnSparkline(t *testing.T) {
 		t.Fatalf("the CONTEXT block should draw the burn sparkline:\n%s", view)
 	}
 	// A cleared conversation has no history to plot.
-	m.clearConversation()
+	m.startNewSession()
 	if len(m.vitals.burn) != 0 {
 		t.Fatalf("/clear resets the burn series: %+v", m.vitals.burn)
 	}

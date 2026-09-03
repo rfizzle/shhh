@@ -138,7 +138,7 @@ func TestCompletion_EnterRunsHighlighted(t *testing.T) {
 		t.Fatalf("enter should consume the input, got %q", m.input.Value())
 	}
 	last := m.transcript[len(m.transcript)-1]
-	if !strings.Contains(last.text, "new conversation") {
+	if !strings.Contains(last.text, "new session") {
 		t.Fatalf("enter on /clear should run it, transcript: %q", last.text)
 	}
 }

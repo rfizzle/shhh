@@ -149,27 +149,57 @@ func TestTodoRun_BlocksWithEvidenceAndKeepsTheTree(t *testing.T) {
 	}
 }
 
-func TestTodoRun_StopAndClearReopenTheItem(t *testing.T) {
-	for _, way := range []string{"stop", "clear"} {
-		m, root := runModel(t)
-		m.input.SetValue("/todo run do-it")
-		updated, _ := m.submitInput()
-		m = updated.(Model)
-		m = answer(t, m, runPlan)
-		m = answer(t, m, "done")
-		if way == "stop" {
-			m.input.SetValue("/todo stop")
-			updated, _ = m.submitInput()
-			m = updated.(Model)
-		} else {
-			m.clearConversation()
-		}
-		if m.todoRun != nil || m.mode != agent.ModeManual {
-			t.Fatalf("%s: run should end and mode restore", way)
-		}
-		if it, _ := todo.Load(root).Find("do-it"); it.Status != todo.StatusOpen {
-			t.Fatalf("%s: item should be open again, is %s", way, it.Status)
-		}
+func TestTodoRun_StopReopensTheItem(t *testing.T) {
+	m, root := runModel(t)
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+	m = answer(t, m, runPlan)
+	m = answer(t, m, "done")
+	m.input.SetValue("/todo stop")
+	updated, _ = m.submitInput()
+	m = updated.(Model)
+
+	if m.todoRun != nil || m.mode != agent.ModeManual {
+		t.Fatal("run should end and mode restore")
+	}
+	if it, _ := todo.Load(root).Find("do-it"); it.Status != todo.StatusOpen {
+		t.Fatalf("item should be open again, is %s", it.Status)
+	}
+	if _, err := run.Load(root, "do-it"); err == nil {
+		t.Fatal("stopping abandons the run, so nothing is left to continue")
+	}
+}
+
+// The session boundary is the other half of that: a run in progress keeps
+// its checkpoint, and the row the new session opens on says how to pick it
+// up. The stages already done are in the tree, so putting the item back to
+// open would throw that work away.
+func TestTodoRun_ANewSessionKeepsTheRunsCheckpoint(t *testing.T) {
+	m, root := runModel(t)
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+	m = answer(t, m, runPlan)
+	m = answer(t, m, "done")
+
+	note, _ := m.startNewSession()
+
+	if m.todoRun != nil || m.mode != agent.ModeManual {
+		t.Fatal("the run should be let go of and the mode restored")
+	}
+	if it, _ := todo.Load(root).Find("do-it"); it.Status != todo.StatusInProgress {
+		t.Fatalf("the item stays in progress with its checkpoint, is %s", it.Status)
+	}
+	st, err := run.Load(root, "do-it")
+	if err != nil {
+		t.Fatalf("the checkpoint should survive the boundary: %v", err)
+	}
+	if st.Over() {
+		t.Fatalf("the checkpoint should be continuable, stage %s", st.Stage)
+	}
+	if !strings.Contains(note, "/todo run do-it") {
+		t.Fatalf("the new session's first row should offer to continue it, got %q", note)
 	}
 }
 

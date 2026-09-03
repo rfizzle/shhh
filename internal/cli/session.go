@@ -290,6 +290,37 @@ func userInstructionsPath() string {
 	return ""
 }
 
+// systemPrompt builds the session's system prompt from the checkout as it
+// stands, and answers with the cost of the instruction files inside it and
+// the survey it was built from — the same reading the start screen draws, so
+// the tree is walked once rather than twice. configExtra is the standing
+// addition from the config file; everything else the session has to say has
+// already been folded into its own extra by the time this is called.
+//
+// It is called at launch and again at a session boundary, which is why it is
+// a function rather than the top of buildSessionEnv: a new conversation opens
+// on the checkout it is in now — a branch switched, an instruction file
+// edited, a tree that has moved — and a second copy of this assembly is how
+// the two would come to disagree about what a session starts from.
+func (s chatSession) systemPrompt(configExtra string) (text string, projectTokens int64, survey project.Info) {
+	// DetectExec, not Detect: this session's model is told the shell its own
+	// commands will run through, which is the execution shell rather than the
+	// user's (internal/shell).
+	info := shell.DetectExec()
+	// The instruction files the session's own directory would read: the
+	// user's own, then the project's from its root down to here. Read here
+	// because the system prompt is built here — a session that re-read them
+	// per turn would be paying for a file nobody edited.
+	instructions := project.Instructions(info.Cwd, userInstructionsPath())
+	// One survey per prompt, read by both the model and the start screen.
+	// It shells out to git and walks the tree, so the two readers share the
+	// answer rather than each asking.
+	survey = project.Survey("")
+	block := project.InstructionBlock(instructions, prompt.InstructionBudget)
+	extra := prompt.CombineExtra(configExtra, block, project.PromptBlock(survey), s.promptExtra)
+	return s.buildPrompt(info, extra), agent.EstimateTokens(block), survey
+}
+
 func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledger) (*sessionEnv, error) {
 	cfg := ConfigFrom(cmd.Context())
 
@@ -310,23 +341,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 	}
 	resolved.Provider, resolved.Model = req.Provider, req.Model
 
-	// DetectExec, not Detect: this session's model is told the shell its own
-	// commands will run through, which is the execution shell rather than the
-	// user's (internal/shell).
-	info := shell.DetectExec()
-	// The instruction files the session's own directory would read: the
-	// user's own, then the project's from its root down to here. Read once,
-	// here, because the system prompt is built once — a session that re-read
-	// them per turn would be paying for a file nobody edited.
-	instructions := project.Instructions(info.Cwd, userInstructionsPath())
-	// One survey per session, read by both the model and the start screen.
-	// It shells out to git and walks the tree, so the two readers share the
-	// answer rather than each asking.
-	survey := project.Survey("")
-	instructionBlock := project.InstructionBlock(instructions, prompt.InstructionBudget)
-	promptExtra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra, instructionBlock,
-		project.PromptBlock(survey), session.promptExtra)
-	sysPrompt := session.buildPrompt(info, promptExtra)
+	sysPrompt, projectTokens, survey := session.systemPrompt(cfg.Behavior.SystemPromptExtra)
 
 	// Before anything is built on them: a named wording that cannot be read
 	// stops the session here rather than letting it run on the built-in one.
@@ -441,7 +456,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 		sysPrompt:     sysPrompt,
 		prompts:       prompts,
 		survey:        survey,
-		projectTokens: agent.EstimateTokens(instructionBlock),
+		projectTokens: projectTokens,
 		messages:      messages,
 		stream:        stream,
 		switchModel: func(name string) {
@@ -745,7 +760,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// session that ran start to finish in the configured default would
 	// record no mode at all, and absence is also what a session that
 	// recorded nothing looks like.
-	recorder.stamp(env.prompts.fingerprintOf(env.sysPrompt), session.skills.Len(), projectFingerprintRoot(), sessionSettings(cfg, runSettings{
+	settings := sessionSettings(cfg, runSettings{
 		mode:       mode.String(),
 		effort:     env.effort,
 		rounds:     roundCapFor(maxRoundsFor(cfg, session.maxRounds, session.maxRoundsSet)),
@@ -753,7 +768,30 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		model:      auxiliaryModel(env.provName, env.modelName),
 		summary:    !cfg.Summary.Disabled,
 		classifier: true,
-	}))
+	})
+	recorder.stamp(env.prompts.fingerprintOf(env.sysPrompt), session.skills.Len(), projectFingerprintRoot(), settings)
+
+	// The session boundary: /new ends this session and begins another without
+	// the process restarting, so the two halves of a launch the front end
+	// cannot do for itself are done here. The record is closed and another
+	// opened — one row per conversation, or every rate computed over the row
+	// is an average of two sittings — and the prompt is built again from the
+	// checkout as it stands now. The settings are the ones this process
+	// resolved and are stamped again as they were: the second row is the same
+	// session assembled the same way, and what changed between the two
+	// conversations is the tree, which is what the prompt hash records.
+	//
+	// The row the new session opens on names the same resume command the exit
+	// banner does, read from one place so the two cannot come to name
+	// different ones.
+	resume := "shhh " + session.kind + " --continue"
+	newSession := func() chat.SessionStart {
+		text, projectTokens, _ := session.systemPrompt(cfg.Behavior.SystemPromptExtra)
+		if recorder.restart() {
+			recorder.stamp(env.prompts.fingerprintOf(text), session.skills.Len(), projectFingerprintRoot(), settings)
+		}
+		return chat.SessionStart{Prompt: text, Resume: resume, ProjectTokens: projectTokens}
+	}
 	// The gate's verdict is the record's one objective reading of whether
 	// the work was right. It is wired here rather than where the runner is
 	// built because the runner has no session to report to until one is
@@ -793,6 +831,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithTitle(session.title).
 		WithWorkspace(cwd).
 		WithObserver(recorder.observer()).
+		WithNewSession(newSession).
 		WithToolDefinitions(toolDefTokens(session.toolDefs)).
 		WithProjectContextTokens(env.projectTokens).
 		WithToolExecutor(executor).
@@ -1088,7 +1127,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// `shhh code` read the same autosave slot but not the same toolset, so the
 	// one that comes back is the one that was running.
 	if m, ok := final.(chat.Model); ok {
-		printExitBanner(m.ExitBanner("shhh " + session.kind + " --continue"))
+		printExitBanner(m.ExitBanner(resume))
 	}
 	return nil
 }

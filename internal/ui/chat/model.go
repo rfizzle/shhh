@@ -371,6 +371,12 @@ type Model struct {
 	copyFn   func(string) clipboard.Result
 	runFn    func(context.Context, string) (string, int)
 	switchFn func(string)
+	// newSession is the half of a session boundary that lives outside this
+	// model: the record closed and reopened, and the system prompt built
+	// again. Nil in a host that has neither, which is every front-end but
+	// the two commands — the conversation still starts over, on the prompt
+	// it already had.
+	newSession NewSession
 
 	viewport viewport
 	input    textarea.Model
@@ -762,11 +768,16 @@ type Model struct {
 	undoAsk    *components.UndoConfirm
 	undoPlan   changeset.UndoPlan
 	undoReturn state
-	// The two-press windows and the quit question (cancel.go): armed is
-	// the open window between a first press and its second, quitAsk the
-	// confirm while quitting over a live turn is being asked about.
-	armed   armedPress
-	quitAsk *components.Confirm
+	// The two-press windows and the question asked before a turn that is
+	// not over is ended (cancel.go): armed is the open window between a
+	// first press and its second, quitAsk the confirm while the question is
+	// up, and quitAskYes what a yes carries out — quitting, or crossing the
+	// session boundary. The act is set with the confirm rather than read off
+	// a flag beside it, because a flag can say one thing while the words on
+	// screen say another.
+	armed      armedPress
+	quitAsk    *components.Confirm
+	quitAskYes func(*Model) tea.Cmd
 	// workspace is the directory the session's relative paths belong to. It
 	// is stated once, for the reason sessionDir is (terminal.go), and it is
 	// also what lets a surface be exercised against a scratch directory
@@ -1065,6 +1076,42 @@ func (m Model) WithModelSwitcher(fn func(string)) Model {
 	return m
 }
 
+// NewSession is the host's half of a session boundary, called once each time
+// the front-end crosses one. It ends the session in the record and opens
+// another, and answers with what a launched session would have started from.
+// Everything the boundary resets inside the conversation is this model's own
+// work; the record and the prompt are the host's, because the recorder and
+// the prompt builder live where the session was assembled.
+// See docs/capabilities/sessions-and-memory.md#a-new-conversation-is-a-new-session.
+type NewSession func() SessionStart
+
+// SessionStart is what the host hands back across the boundary.
+type SessionStart struct {
+	// Prompt is the system prompt built again from the checkout as it stands
+	// now, so the new conversation opens on the tree it is actually in. Empty
+	// leaves the conversation on the prompt it had, which is the honest
+	// answer from a host that cannot rebuild one.
+	Prompt string
+	// Resume is the command that reopens the slot the conversation was left
+	// in — the same one the exit banner names, since crossing the boundary
+	// is quitting without the exit and leaves the same thing behind.
+	Resume string
+	// ProjectTokens is what the instruction files inside that prompt cost,
+	// which the occupancy breakdown names as its own category. It travels
+	// with the prompt because it is a measurement of it: a figure left over
+	// from the last build would describe a prompt the session is no longer
+	// sending the moment an instruction file is edited.
+	ProjectTokens int64
+}
+
+// WithNewSession wires the boundary. Without it /new still starts the
+// conversation over, and the record goes on describing both halves as one
+// session — which is why every host that has a record wires this.
+func (m Model) WithNewSession(fn NewSession) Model {
+	m.newSession = fn
+	return m
+}
+
 // WithTitle overrides the header title (default "shhh chat"), so `shhh code`
 // can reuse the TUI under its own name.
 func (m Model) WithTitle(title string) Model {
@@ -1129,9 +1176,22 @@ func (m *Model) adoptSlot(name string) {
 	m.bindNotebook()
 }
 
-// mintSlot moves the session to a slot of its own, claimed now.
+// mintSlot moves the session to a slot of its own, claimed now, giving back
+// the slot it leaves when nothing was ever written there.
 func (m *Model) mintSlot() {
 	m.adoptSlot(m.claimSlot(newSessionName()))
+}
+
+// mintSlotKeeping is mintSlot for a session with a save already on its way to
+// the slot it is leaving. The claim is not given back: releasing it deletes a
+// row nothing has written to yet, and the row it deletes is the one that save
+// is about to write into — which the store then has to put back under a claim
+// this process no longer holds, with the collision check that rides the claim
+// gone for the length of the write. quitCmd draws the same line from the
+// other side, releasing only when there is no save to make.
+func (m *Model) mintSlotKeeping() {
+	m.sessionName = m.claimSlot(newSessionName())
+	m.bindNotebook()
 }
 
 func (m Model) WithInitialPrompt(prompt string) Model {
@@ -3841,10 +3901,6 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 	case "/help":
 		return true, helpText() + "\n\n" + m.policyHelp()
 
-	case "/clear", "/new":
-		m.clearConversation()
-		return true, "Started a new conversation."
-
 	case "/model":
 		if len(parts) < 2 {
 			if m.modelName != "" {
@@ -4146,7 +4202,7 @@ func (m Model) lastAssistantText() string {
 func helpText() string {
 	return strings.TrimSpace(`Commands:
   /help          Show this help
-  /clear         Start a new conversation (also /new)
+  /clear         End this session and start another (also /new)
   /paste [path]  Attach the clipboard — a screenshot, or files copied in a
                  file manager — to your next message; /paste <path> attaches
                  a file by name, /paste show <name> opens a staged image or
@@ -4240,8 +4296,10 @@ func helpText() string {
 
 Commands run while the agent is working — including while sub-agents are in
 flight, which is the only time they exist. The exceptions are the ones that
-rewrite or replace the running conversation (/clear, /compact, /rewind,
-/branches, /load, /chats, /model, /run); they say so and wait for the turn.
+rewrite or replace the running conversation (/compact, /rewind, /branches,
+/load, /chats, /model, /run); they say so and wait for the turn. /clear asks
+instead: ending the session over a turn that is not over cancels it, which is
+a question rather than a wait.
 
 `) + "\n\n" + helpKeysText()
 }
@@ -4398,19 +4456,69 @@ func helpKeysText() string {
                  full diff, or a command card's full view`)
 }
 
-// clearConversation drops everything except the system prompt.
-func (m *Model) clearConversation() {
+// startNewSession crosses the session boundary: everything quitting and
+// launching again does, without the exit. The conversation is left whole in
+// its own slot, the record of it is closed and another opened, and every
+// reading a launched session takes is taken again — so a new conversation is
+// a new session wherever the old one was counted, rather than the same
+// session wearing an empty transcript.
+// See docs/capabilities/sessions-and-memory.md#a-new-conversation-is-a-new-session.
+//
+// It answers with the row the new session opens on and the save of the one
+// left behind, which the caller runs: the boundary is a keystroke away from
+// the work of a whole sitting, and a row naming the slot is what makes that
+// recoverable rather than merely reversible.
+func (m *Model) startNewSession() (note string, save tea.Cmd) {
+	// The autosave is built first and in quitting's own sequence: it reads
+	// the conversation as it stands and names the slot to the record that is
+	// about to be closed, so the row left behind describes the conversation
+	// it is the record of.
+	save = m.autosaveCmd()
+	// The slot only counts as left behind if something is going into it: the
+	// row must not name a slot this conversation was never written to.
+	left := ""
+	if save != nil {
+		left = m.sessionName
+	}
+
+	// Live work belongs to the session that started it. A child left running
+	// would spend against a closed record and report into a transcript that
+	// no longer exists, which is why quitting kills them and why this does
+	// too (cancel.go).
+	m.cancelSubagents()
+	if m.classifierCancel != nil {
+		m.classifierCancel()
+	}
 	m.dropTodoExtract()
 	m.dropPersona()
+	// A run in progress keeps its checkpoint and the new session is told how
+	// to pick it up. The checkpoint was written to survive exactly this: the
+	// stages already done are in the tree, and putting the item back to open
+	// would throw that work away for the price of one sentence.
+	kept := ""
 	if m.todoRun != nil && !m.todoRun.Over() {
-		_ = todo.SetStatus(m.todoRunItem.Path, todo.StatusOpen)
-		m.endTodoRun()
+		kept = m.keepTodoRun("this session ended")
 	}
-	msgs := m.agent.Messages()
-	if len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
-		m.agent.SetMessages(msgs[:1:1])
-	} else {
-		m.agent.SetMessages(nil)
+	if m.attachedTo != "" {
+		// The keyboard was in a child that has just been killed.
+		m.attach("")
+	}
+	// The mirrored child transcripts go with them. Emptied rather than
+	// dropped: the map is made when the supervisor is wired and written to
+	// whenever a child reports, so a nil one here would panic on the first
+	// child of the new session.
+	clear(m.childViews)
+
+	// The host's half: the record ends here and another begins, and the
+	// system prompt is built again from the checkout as it stands rather than
+	// as it stood when the process started.
+	var start SessionStart
+	if m.newSession != nil {
+		start = m.newSession()
+	}
+	m.setSystemPrompt(start.Prompt)
+	if start.Prompt != "" {
+		m.projectTokens = start.ProjectTokens
 	}
 	m.resetTranscript()
 	m.checkpoints = nil
@@ -4423,14 +4531,92 @@ func (m *Model) clearConversation() {
 	// keep quoting a bill for a conversation that no longer exists.
 	m.ledger.Reset()
 	m.TotalTokensIn, m.TotalTokensOut = 0, 0
+	// And the counters are put back to their zero value rather than aimed at
+	// it: a climb is measured movement, and there is nothing here for a
+	// figure to travel across (turnstatus.go).
+	m.turnUp, m.turnDown = components.Odometer{}, components.Odometer{}
+	m.sessionUp, m.sessionDown = components.Odometer{}, components.Odometer{}
 	m.resetRounds()
 	// The turn's accounting started over, so there is no longer a turn to
 	// close with a summary either.
 	m.turnOpen = false
+	// Turns are numbered from one again, which is what makes the record's
+	// turn column mean the same thing in both rows.
+	m.turnCount = 0
+	// A backlog run's bookkeeping is counted in those turns and indexed into
+	// that transcript, and a cancel mark left standing would end the first
+	// stage turn of the next run before it was read.
+	m.todoRunTurn, m.todoRunMark, m.todoRunCancelled = 0, 0, false
+	m.resetSummary()
+	// The edits belong to the conversation that made them: with the turns
+	// renumbered, a review or an undo would otherwise reach into the
+	// conversation before this one.
+	m.changes.Reset()
+	// What the model has been shown is nothing, because this model has been
+	// shown nothing (tools/seen.go).
+	tools.ForgetAll()
+	// The tree reading compares against a baseline, and the changeset that
+	// subtracts this session's own edits from it has just been emptied — so
+	// the baseline is taken again here, or the first reading of the new
+	// session would report the last one's work as a stranger's.
+	m.agent.RestartTreeCheck()
 	// A new conversation is a new session with a slot of its own; the one
-	// just left stays in the store as it was, for --resume to find.
-	m.mintSlot()
+	// just left stays in the store as it was, for --resume to find — and is
+	// only given back when this session is leaving it empty.
+	if left == "" {
+		m.mintSlot()
+	} else {
+		m.mintSlotKeeping()
+	}
 	m.resetTitle()
+	// The new row is linked to the new slot now rather than at the first
+	// save, so the two halves of the boundary — a record closed and a
+	// conversation started — are one act in the store as well.
+	if m.observer.Session != nil {
+		m.observer.Session(m.sessionName)
+	}
+
+	return newSessionRow(left, start.Resume, kept), save
+}
+
+// newSessionRow is the row the new session opens on. It says where the exit
+// banner would have said it: the slot the conversation was left in and the
+// command that reopens it, because nothing is leaving the alt screen here and
+// a conversation nobody can name is one nobody gets back to. An empty slot is
+// a session that was not written down — there was nothing to save, or nowhere
+// to save it — and the row promises nothing rather than naming a slot that
+// holds something else. kept is the backlog run the boundary let go of, on a
+// line of its own: it is an offer to act, not part of the account.
+func newSessionRow(slot, resume, kept string) string {
+	note := "Started a new session."
+	switch {
+	case slot != "" && resume != "":
+		note += fmt.Sprintf(" The conversation so far is saved as %q; `%s` reopens it.", slot, resume)
+	case slot != "":
+		note += fmt.Sprintf(" The conversation so far is saved as %q.", slot)
+	}
+	if kept != "" {
+		note += "\n\n" + kept
+	}
+	return note
+}
+
+// setSystemPrompt puts the conversation back to one message: the prompt the
+// host built for this session, or the one the conversation already carried
+// where the host had none to give. A session that never had one starts with
+// no messages at all, which is what a front-end wired without a prompt has
+// always had.
+func (m *Model) setSystemPrompt(text string) {
+	if text == "" {
+		if msgs := m.agent.Messages(); len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
+			text = msgs[0].Content
+		}
+	}
+	if text == "" {
+		m.agent.SetMessages(nil)
+		return
+	}
+	m.agent.SetMessages([]provider.Message{{Role: provider.RoleSystem, Content: text}})
 }
 
 // loadConversation replaces the current conversation and rebuilds the

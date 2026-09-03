@@ -64,6 +64,32 @@ shape a person reads as "it is done", and the round it is owed would never be
 asked for. A slot with no mark is every conversation written before there was
 one, and it opens exactly the way it always opened.
 
+### A new conversation is a new session
+
+Starting a new conversation is quitting and launching again without the exit.
+The conversation so far is written to its own slot and left there whole, the
+session's record is closed and another opened, and everything a launch reads
+is read again: the system prompt is built from the checkout as it stands, the
+tree reading takes its baseline, the record of what the model has been shown
+is emptied, and the changed files, the turn count and the spend all start from
+nothing. The row it opens on says which slot the last conversation is in and
+what command reopens it, because there is no exit banner here to say it.
+
+A conversation that kept any of that would be the same session wearing an
+empty transcript, and the record is where that shows: one row would carry one
+prompt fingerprint, one settings stamp and one outcome for work that was done
+twice, and every rate computed over it would be an average of two sittings
+that had nothing to do with each other.
+
+It is never crossed in the middle of a turn. A turn that is still working, or
+parked at a round boundary, is asked about first — the same question quitting
+asks, because a yes costs the same thing either way: the turn is cancelled,
+its children go with it, and what had already been said is in the conversation
+that gets saved. A backlog run is the one thing that survives, because its
+checkpoint was written to survive exactly this: the run is let go of with the
+item still in progress, and the new conversation opens with the command that
+continues it.
+
 ### A slot belongs to one session
 
 A session that was never named is called by the moment it began, and for a

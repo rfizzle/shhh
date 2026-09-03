@@ -160,7 +160,7 @@ func TestSpend_ObserverReportsThePricedSessionTotal(t *testing.T) {
 func TestSpend_ClearResetsTheLedger(t *testing.T) {
 	m, ledger := spendModel(t)
 	ledger.Record(meter.Origin{Source: meter.SourceAgent}, "gpt-4o", provider.Usage{PromptTokens: 1000, CompletionTokens: 100})
-	m.clearConversation()
+	m.startNewSession()
 
 	if got := m.sessionSpend(); got.In != 0 || got.Out != 0 || got.Cost != 0 {
 		t.Fatalf("a cleared session has spent nothing, got %+v", got)

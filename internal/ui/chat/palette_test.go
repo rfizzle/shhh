@@ -247,16 +247,16 @@ func TestPalette_TheOldChordStillMovesInsideTheList(t *testing.T) {
 func TestPalette_IdleOnlyCommandsDimRatherThanDrop(t *testing.T) {
 	m := paletteModel(t)
 	m.setTurnState(stateStreaming)
-	m = openPaletteWith(t, m, "clear")
+	m = openPaletteWith(t, m, "compact")
 
 	row, ok := m.paletteFocus()
-	if !ok || !strings.HasPrefix(row.label, "/clear") {
+	if !ok || !strings.HasPrefix(row.label, "/compact") {
 		t.Fatalf("an idle-only command should still be offered while the agent works, got %q", row.label)
 	}
 	if row.dim == "" {
 		t.Fatal("it should be dimmed rather than offered as runnable")
 	}
-	if !strings.Contains(row.desc, "starts a new conversation") {
+	if !strings.Contains(row.desc, "rewrites the conversation") {
 		t.Fatalf("the reason should be stated, got %q", row.desc)
 	}
 
