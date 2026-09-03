@@ -204,6 +204,11 @@ type State struct {
 	// commands fail, and a prompt that asks for them anyway spends a turn
 	// teaching the model that its instructions are wrong.
 	Repo bool `json:"repo,omitempty"`
+	// Sprint is the goal of the set this item is being worked as part of,
+	// empty when the session has no sprint. It is in the checkpoint rather
+	// than read at each stage so a run continued after the sprint file
+	// changed still says what the work was started for.
+	Sprint string `json:"sprint,omitempty"`
 }
 
 // Options are the answers the person gave when they asked for the run, as
@@ -213,6 +218,8 @@ type Options struct {
 	NoCommit bool
 	// Repo reports a git repository at the root.
 	Repo bool
+	// Sprint is the goal paragraph of the open sprint, empty without one.
+	Sprint string
 }
 
 // Start begins a run on an item.
@@ -223,7 +230,7 @@ func Start(it todo.Item, session, prevMode string, turn int, opt Options) *State
 		Stage: StageResearch, Turn: turn, PrevMode: prevMode,
 		SizeBefore: it.Size, Size: it.Size,
 		Tests:    TestCommands(it.Body),
-		NoCommit: opt.NoCommit, Repo: opt.Repo,
+		NoCommit: opt.NoCommit, Repo: opt.Repo, Sprint: opt.Sprint,
 	}
 }
 
@@ -275,7 +282,7 @@ func (s *State) Continue(it todo.Item) Step {
 			return s.pause(s.Paused)
 		}
 		return Step{Action: ActionPrompt, Stage: StageResearch, Mode: ModePlan,
-			Prompt: researchPrompt(it, answersBlock(s.Answers)), Shown: s.label("research (continued)")}
+			Prompt: researchPrompt(it, s.Sprint, answersBlock(s.Answers)), Shown: s.label("research (continued)")}
 	case StageSplit:
 		return s.split(it)
 	case StageFanOut:
@@ -320,7 +327,7 @@ func (s *State) Over() bool { return s.Stage == StageDone || s.Stage == StageBlo
 func (s *State) First(it todo.Item, context string) Step {
 	s.Stage = StageResearch
 	return Step{Action: ActionPrompt, Stage: StageResearch, Mode: ModePlan,
-		Prompt: researchPrompt(it, context), Shown: s.label("research")}
+		Prompt: researchPrompt(it, s.Sprint, context), Shown: s.label("research")}
 }
 
 // Observe reads the model's answer to the current stage and returns the
@@ -435,7 +442,7 @@ func (s *State) Replan(it todo.Item, note string) Step {
 	s.Answers = append(s.Answers, note)
 	s.Stage = StageResearch
 	return Step{Action: ActionPrompt, Stage: StageResearch, Mode: ModePlan,
-		Prompt: researchPrompt(it, answersBlock(s.Answers)), Shown: s.label("research again")}
+		Prompt: researchPrompt(it, s.Sprint, answersBlock(s.Answers)), Shown: s.label("research again")}
 }
 
 func answersBlock(answers []string) string {

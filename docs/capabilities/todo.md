@@ -57,6 +57,53 @@ reported alongside the list, naming the file and what was wrong with it.
 It is not silently left out, because an item that vanished from the list
 is indistinguishable from one that was finished.
 
+## A sprint is a file that names its items
+
+Priority and dependencies can say what comes first and what has to land
+before what. Neither can say "these eight, in this order, and nothing else
+this week", and neither can state what the set is *for*. A sprint is that
+statement, and it is a file.
+
+It lives beside the items, in their header grammar: a name, a status, when
+it was made and by whom, then a goal paragraph and a list of slugs. The
+same two rules that make an item trustworthy make the sprint trustworthy —
+a field shhh does not know is kept, and shhh changes a line rather than the
+file — so adding an item, dropping one or rewriting the goal leaves
+everything else on disk byte for byte as you left it. There is one sprint at
+a time; planning another while one is open is refused rather than allowed to
+overwrite a set that may be half worked, and so is one whose name a closed
+sprint already occupies — a sprint that could not be filed under its own name
+is a sprint that could never close.
+
+**While a sprint is open it is what "ready" means.** The next item is the
+first slug in the file that can be started, and nothing outside the file is
+offered — that is the boundary a sprint exists to draw. With no sprint file,
+or with a closed one, the rule above is unchanged and the whole backlog is
+the ready list. What a sprint may not do is *declare* an item ready: a slug
+whose dependencies are outstanding is skipped, with what it is waiting on
+stated on the row, rather than started or silently dropped. The order is the
+file's, in full, which keeps the promise that order is nothing the reader
+cannot recompute — here, by reading the file.
+
+The set is proposed and never imposed. Asking for a plan offers the ready
+items in backlog order, under a budget stated by size if you give one, on
+the same card a session's proposed items arrive on: everything checked, you
+uncheck what you do not want, and only then is the file written. Size is the
+budget's unit because size is what a run gates on — three large items is a
+different week from nine small ones.
+
+The goal earns its place by being read. It rides in every item's research
+stage, so a run knows what the set around it is for; a session with no
+sprint sends nothing rather than sending an empty heading.
+
+When the last item is archived — by a run or by hand — the sprint stops
+being a plan and becomes a record: it moves into the archive under its name
+with each item's report copied in under its slug. Closing one early does the
+same and lists what was left undone. An item dropped from the backlog
+outright is accounted for on the sprint's rows rather than quietly forgotten,
+because a set that shrank without saying so is a set nobody can read
+afterwards.
+
 ## Where the backlog lives
 
 The backlog is a directory inside the checkout's shhh directory at the

@@ -137,6 +137,11 @@ func (m Model) openTodoProposals(proposals []todo.Proposal, what string) (tea.Mo
 	}
 	card.MaxLines = m.maxConfirmPanelHeight()
 	m.todoPropose = card
+	// The sprint plan shares this card. Whichever opens it owns both
+	// fields, because the answer is read from whichever is set — a reading
+	// that landed over a sprint plan would otherwise write the sprint's
+	// slugs against this card's rows.
+	m.todoSprintPlan = nil
 	m.enterSurface(stateTodoPropose)
 	m.syncViewport()
 	return m, nil
@@ -163,13 +168,20 @@ func (m Model) updateTodoPropose(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	res := result.(components.MultiSelectResult)
-	proposals := m.todoProposals
+	proposals, sprint := m.todoProposals, m.todoSprintPlan
 	m.todoPropose = nil
 	m.todoProposals = nil
+	m.todoSprintPlan = nil
 	m.leaveSurface()
 	m.syncViewport()
 	if res.Canceled {
+		if sprint != nil {
+			return m.systemNotice("Nothing written; no sprint was planned.")
+		}
 		return m.systemNotice("Nothing written; the proposals are dropped.")
+	}
+	if sprint != nil {
+		return m.systemNotice(m.writeSprintPlan(sprint, res.Indices))
 	}
 	return m.systemNotice(m.writeProposals(proposals, res.Indices))
 }

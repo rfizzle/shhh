@@ -247,7 +247,12 @@ type InspectorTodo struct {
 	// Open and Blocked are the counts the heading states over the whole
 	// backlog, whatever Rows shows of it.
 	Open, Blocked int
-	Rows          []InspectorTodoRow
+	// Sprint is the name of the set being worked, and SprintDone of
+	// SprintTotal how much of it is finished. Empty draws no sprint row:
+	// a backlog worked without one has no set to state.
+	Sprint                  string
+	SprintDone, SprintTotal int
+	Rows                    []InspectorTodoRow
 	// More is how many active items Rows left out.
 	More int
 	// Hint is the row under the list naming how to see the whole backlog.
@@ -840,6 +845,14 @@ func (r InspectorRail) todoBlock(width int) (railBlock, bool) {
 		meta += fmt.Sprintf(" · %d blocked", t.Blocked)
 	}
 	b := railBlock{heading: railHeading("TODO", meta, sty.Dim, width)}
+	// The sprint sits above the items because it is what scopes them: the
+	// rows under it are the set, and n of m is how far through it the
+	// project is. The word "sprint" is on the row because the name alone
+	// would read as one more item.
+	if t.Sprint != "" {
+		b.add(railRow(sty.Dim.Render("sprint")+" "+sty.Body.Render(t.Sprint),
+			sty.Dim.Render(fmt.Sprintf("%d of %d", t.SprintDone, t.SprintTotal)), width, inspectorIndent))
+	}
 	for _, row := range t.Rows {
 		glyph, style := todoRowTone(row.State)
 		left := glyph + " " + sty.Dim.Render(row.Priority+" "+row.Size) + " " + style.Render(row.Slug)

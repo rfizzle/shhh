@@ -149,3 +149,124 @@ func TestTodoManager(t *testing.T) {
 		t.Errorf("unknown = %q", out)
 	}
 }
+
+// sprintFixture is the backlog fixture with a sprint over three of its
+// slugs: one ready, one waiting on a dependency, and one the backlog does
+// not hold at all.
+func sprintFixture(t *testing.T) string {
+	t.Helper()
+	root := todoFixture(t)
+	must(t, os.WriteFile(filepath.Join(todo.Dir(root), todo.SprintFile),
+		[]byte("---\nname: caching\ncrew: two\n---\nMake the cache trustworthy.\n\n## Items\n- first\n- second\n- vanished\n"), 0o644))
+	return root
+}
+
+func TestTodoSprintReport(t *testing.T) {
+	out := todoSprintReport(todo.Load(sprintFixture(t))).String()
+	for _, want := range []string{
+		"shhh todo sprint — caching",
+		"Make the cache trustworthy.",
+		"· first     First thing · high · S  [ready]",
+		"⊘ second    Second · medium  [waits on first]",
+		"⊘ vanished    [dropped from the backlog]",
+		"0 of 2 done · open",
+	} {
+		if !strings.Contains(out, want) {
+			t.Errorf("sprint view lacks %q:\n%s", want, out)
+		}
+	}
+}
+
+func TestTodoSprintReport_Empty(t *testing.T) {
+	out := todoSprintReport(todo.Load(t.TempDir())).String()
+	if !strings.Contains(out, "⊘ no sprint here") {
+		t.Errorf("empty sprint view = %q", out)
+	}
+}
+
+// The sprint scopes the ready set, so the listing's tally has to say which
+// sprint it is counting or the rows and the tally read as a contradiction.
+func TestTodoListing_NamesTheSprintItCountsReadyIn(t *testing.T) {
+	out := todoListing(todo.Load(sprintFixture(t)))
+	if !strings.Contains(out, "1 ready in caching") {
+		t.Errorf("listing tally = %q", out)
+	}
+}
+
+func TestTodoManager_SprintVerbs(t *testing.T) {
+	root := sprintFixture(t)
+	manage := todoManager(root)
+
+	if out := manage([]string{"sprint"}); !strings.Contains(out, "shhh todo sprint — caching") {
+		t.Errorf("bare sprint = %q", out)
+	}
+	if out := manage([]string{"sprint", "drop", "vanished"}); !strings.Contains(out, "✓ dropped from caching vanished") {
+		t.Errorf("drop = %q", out)
+	}
+	if out := manage([]string{"sprint", "add", "third"}); !strings.Contains(out, "✓ added to caching third") {
+		t.Errorf("add = %q", out)
+	}
+	if out := manage([]string{"sprint", "add", "nope"}); !strings.Contains(out, "no active backlog item") {
+		t.Errorf("add unknown = %q", out)
+	}
+	if out := manage([]string{"sprint", "goal", "Make", "it", "provable."}); !strings.Contains(out, "✓ goal of caching rewritten") {
+		t.Errorf("goal = %q", out)
+	}
+	sp, err := todo.LoadSprint(root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if sp.Goal != "Make it provable." || strings.Join(sp.Slugs, ",") != "first,second,third" {
+		t.Fatalf("sprint = %+v", sp)
+	}
+	if len(sp.Extra) != 1 || sp.Extra[0].Key != "crew" {
+		t.Errorf("extra = %v; an unknown field has to survive the verbs", sp.Extra)
+	}
+	if out := manage([]string{"sprint", "wat"}); !strings.HasPrefix(out, "Usage:") {
+		t.Errorf("unknown verb = %q", out)
+	}
+
+	out := manage([]string{"sprint", "close"})
+	if !strings.Contains(out, "closed caching") || !strings.Contains(out, "first   left undone  [ready]") {
+		t.Errorf("close = %q", out)
+	}
+	if _, err := os.Stat(todo.SprintPath(root)); !os.IsNotExist(err) {
+		t.Error("the sprint file is still in place after close")
+	}
+	if out := manage([]string{"sprint", "add", "third"}); !strings.Contains(out, "There is no sprint") {
+		t.Errorf("verb with no sprint = %q", out)
+	}
+}
+
+// Archiving the last of a sprint's slugs by hand closes the sprint, and the
+// row says so where the archive row is.
+func TestTodoManager_DoneClosesAFinishedSprint(t *testing.T) {
+	root := todoFixture(t)
+	must(t, os.WriteFile(filepath.Join(todo.Dir(root), todo.SprintFile),
+		[]byte("---\nname: caching\n---\ngoal\n\n## Items\n- first\n"), 0o644))
+	out := todoManager(root)([]string{"done", "first"})
+	if !strings.Contains(out, "✓ archived first → ") || !strings.Contains(out, "✓ sprint closed") {
+		t.Fatalf("done = %q", out)
+	}
+	if _, err := os.Stat(todo.SprintPath(root)); !os.IsNotExist(err) {
+		t.Error("the sprint file is still in place")
+	}
+}
+
+// A sprint marked closed by hand is a record that was never filed. Its
+// verbs refuse rather than edit it; close still works, because filing it
+// is the way out.
+func TestTodoManager_SprintVerbsRefuseAClosedSprint(t *testing.T) {
+	root := todoFixture(t)
+	must(t, os.WriteFile(filepath.Join(todo.Dir(root), todo.SprintFile),
+		[]byte("---\nname: caching\nstatus: closed\n---\ngoal\n\n## Items\n- first\n"), 0o644))
+	manage := todoManager(root)
+	for _, args := range [][]string{{"sprint", "add", "second"}, {"sprint", "drop", "first"}, {"sprint", "goal", "new"}} {
+		if out := manage(args); !strings.Contains(out, "caching is closed") {
+			t.Errorf("%v = %q", args, out)
+		}
+	}
+	if out := manage([]string{"sprint", "close"}); !strings.Contains(out, "closed caching") {
+		t.Errorf("close = %q", out)
+	}
+}

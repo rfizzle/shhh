@@ -29,6 +29,7 @@
   /plan for the whole list                    
 
   TODO            project · 5 open · 1 blocked
+  sprint rail-and-runner                2 of 6
   ▸ H M rail-todo-block             review 1/2
   · H L add-todo-runner  needs rail-todo-block
   · M M todo-add-extraction                   
@@ -74,7 +75,7 @@
   … 6 more                                    
 
   TODO            project · 5 open · 1 blocked
-  … 6 more                                    
+  … 7 more                                    
 
   CHANGES                     session · +27 −4
   … 4 more                              +27 −4
@@ -206,6 +207,7 @@
   ␛[3;38;5;241m/plan for the whole list␛[m                    
 
   ␛[1;94mTODO␛[m            ␛[38;5;241mproject · 5 open · 1 blocked␛[m
+  ␛[38;5;241msprint␛[m ␛[38;5;252mrail-and-runner␛[m                ␛[38;5;241m2 of 6␛[m
   ␛[38;5;205m▸␛[m ␛[38;5;241mH M␛[m ␛[1;97mrail-todo-block␛[m             ␛[38;5;241mreview 1/2␛[m
   ␛[38;5;241m·␛[m ␛[38;5;241mH L␛[m ␛[38;5;241madd-todo-runner␛[m  ␛[38;5;241mneeds rail-todo-block␛[m
   ␛[38;5;241m·␛[m ␛[38;5;241mM M␛[m ␛[38;5;252mtodo-add-extraction␛[m                   
@@ -251,7 +253,7 @@
   ␛[3;38;5;241m… 6 more␛[m                                    
 
   ␛[1;94mTODO␛[m            ␛[38;5;241mproject · 5 open · 1 blocked␛[m
-  ␛[3;38;5;241m… 6 more␛[m                                    
+  ␛[3;38;5;241m… 7 more␛[m                                    
 
   ␛[1;94mCHANGES␛[m                     ␛[38;5;241msession · ␛[m␛[92m+27␛[m ␛[91m−4␛[m
   ␛[3;38;5;241m… 4 more␛[m                              ␛[92m+27␛[m ␛[91m−4␛[m

@@ -415,3 +415,28 @@ func TestRun_ContinueAtCommitHonoursANoCommitRun(t *testing.T) {
 		t.Errorf("the report should say so and name the path:\n%s", s.Report)
 	}
 }
+
+// TestRun_ResearchCarriesTheSprintGoal pins what an item is told about the
+// set it belongs to: the goal in the research stage, in the continued and
+// re-planned research too, and nothing at all without a sprint.
+func TestRun_ResearchCarriesTheSprintGoal(t *testing.T) {
+	const goal = "Make the provider cache trustworthy end to end."
+	it := item(todo.SizeM)
+	s := Start(it, "sess", "manual", 1, Options{Repo: true, Sprint: goal})
+	for _, step := range []Step{s.First(it, ""), s.Continue(it), s.Replan(it, "answer")} {
+		if !strings.Contains(step.Prompt, "SPRINT") || !strings.Contains(step.Prompt, goal) {
+			t.Fatalf("research prompt lacks the sprint goal:\n%s", step.Prompt)
+		}
+	}
+	// The later stages do not repeat it: what the set is for scopes the
+	// research and nothing after it.
+	s.First(it, "")
+	if implement := s.Observe(it, planText); strings.Contains(implement.Prompt, "SPRINT") {
+		t.Fatalf("the implement prompt repeats the sprint goal:\n%s", implement.Prompt)
+	}
+
+	bare := Start(it, "sess", "manual", 1, Options{Repo: true})
+	if step := bare.First(it, ""); strings.Contains(step.Prompt, "SPRINT") {
+		t.Fatalf("a session with no sprint sent a sprint heading:\n%s", step.Prompt)
+	}
+}

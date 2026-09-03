@@ -19,7 +19,10 @@ type Store struct {
 	// Items are the active items — every status but done — in Less order.
 	Items []Item
 	// Done is the archive, in slug order.
-	Done        []Item
+	Done []Item
+	// Sprint is the set being worked, when the backlog holds a sprint
+	// file. An open one scopes Ready and Next to its slugs, in its order.
+	Sprint      *Sprint
 	Diagnostics []string
 }
 
@@ -29,6 +32,14 @@ func Load(root string) *Store {
 	s := &Store{Root: root, Dir: Dir(root)}
 	s.Items = s.readDir(s.Dir, false)
 	s.Done = s.readDir(filepath.Join(s.Dir, DoneSubdir), true)
+	// A sprint file that will not parse is a diagnostic and no sprint, so
+	// the ready list falls back to the whole backlog rather than to an
+	// empty one: a broken file must not look like a finished sprint.
+	if sp, err := LoadSprint(root); err != nil {
+		s.Diagnostics = append(s.Diagnostics, fmt.Sprintf("%s: skipped: %v", SprintPath(root), err))
+	} else {
+		s.Sprint = sp
+	}
 	for i := range s.Items {
 		it := &s.Items[i]
 		for _, dep := range it.DependsOn {
@@ -50,6 +61,12 @@ func (s *Store) readDir(dir string, archived bool) []Item {
 	var out []Item
 	for _, e := range entries {
 		if e.IsDir() || !strings.HasSuffix(e.Name(), ".md") {
+			continue
+		}
+		// The sprint sits in the same directory and is not an item; read
+		// as one it would fail for want of a title and show up as a file
+		// that could not be loaded.
+		if !archived && e.Name() == SprintFile {
 			continue
 		}
 		path := filepath.Join(dir, e.Name())
@@ -108,11 +125,33 @@ func (s *Store) doneSet() map[string]bool {
 	return done
 }
 
-// Ready is the items that can be started now, in backlog order.
+// Ready is the items that can be started now: the open sprint's slugs in
+// the file's order when there is one, else the whole backlog in its own
+// order. A sprint states which items and in what sequence; it never states
+// that one of them is ready, so a slug whose dependencies are outstanding
+// is left out here exactly as it would be without a sprint.
+// See docs/capabilities/todo.md#a-sprint-is-a-file-that-names-its-items.
 func (s *Store) Ready() []Item {
 	if s == nil {
 		return nil
 	}
+	if !s.Sprint.Open() {
+		return s.readyAll()
+	}
+	done := s.doneSet()
+	var out []Item
+	for _, slug := range s.Sprint.Slugs {
+		it, ok := s.Find(slug)
+		if ok && !it.Archived && it.Ready(done) {
+			out = append(out, it)
+		}
+	}
+	return out
+}
+
+// readyAll is the whole backlog's ready set, in backlog order. It is what
+// Ready answers with no sprint, and what a sprint is proposed from.
+func (s *Store) readyAll() []Item {
 	done := s.doneSet()
 	var out []Item
 	for _, it := range s.Items {
@@ -183,6 +222,12 @@ func Create(root string, it Item) (string, error) {
 	}
 	if strings.TrimSpace(it.Title) == "" {
 		return "", fmt.Errorf("an item needs a title")
+	}
+	// The sprint's file name is taken. An item written there would be
+	// invisible — the loader skips it — and would break the sprint reader
+	// as well, since it has a title where a name should be.
+	if it.Slug+".md" == SprintFile {
+		return "", fmt.Errorf("%q names the sprint file; an item cannot be called that", it.Slug)
 	}
 	dir, err := ensureDir(root)
 	if err != nil {

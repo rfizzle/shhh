@@ -70,7 +70,15 @@ func todoReport(s *todo.Store) report.Report {
 		r.Sections = append(r.Sections, report.Section{Rows: []report.Row{empty}})
 		return r
 	}
-	tally := []string{fmt.Sprintf("%d ready", len(s.Ready()))}
+	ready := fmt.Sprintf("%d ready", len(s.Ready()))
+	// With a sprint open, "ready" is the sprint's ready set and not the
+	// backlog's, and rows outside the sprint still read as ready on their
+	// own terms. Naming the sprint here is what stops the two counts from
+	// looking like a contradiction.
+	if s.Sprint.Open() {
+		ready += " in " + s.Sprint.Name
+	}
+	tally := []string{ready}
 	if n := s.Count(todo.StatusBlocked); n > 0 {
 		tally = append(tally, fmt.Sprintf("%d blocked", n))
 	}
@@ -135,6 +143,74 @@ func todoState(s *todo.Store, it todo.Item) string {
 	return "ready"
 }
 
+// todoSprintReport is the sprint as a report: the goal, then each slug in
+// the file's order with where it stands, then the count. A slug the
+// backlog no longer holds and one waiting on a dependency both say so on
+// their row — the whole reason to read this is which of the set can move.
+func todoSprintReport(s *todo.Store) report.Report {
+	r := report.Report{Title: "shhh todo sprint"}
+	sp := s.Sprint
+	if sp == nil {
+		empty := report.Empty("no sprint here", "/todo sprint plan proposes one from the ready items")
+		empty.Body = []string{todo.SprintPath(s.Root)}
+		r.Sections = append(r.Sections, report.Section{Rows: []report.Row{empty}})
+		return r
+	}
+	r.Subject = sp.Name
+	entries := s.SprintEntries()
+	done, total := s.SprintProgress()
+	if sp.Goal != "" {
+		r.Sections = append(r.Sections, report.Section{Header: "GOAL", Body: sp.Goal})
+	}
+	rows := make([]report.Row, 0, len(entries))
+	for _, e := range entries {
+		rows = append(rows, report.Row{
+			State:   todoSprintRowState(e),
+			Name:    e.Slug,
+			Subject: clipRunes(e.Item.Title, 72),
+			Detail:  joinDetail(string(e.Item.Priority), string(e.Item.Size)),
+			Outcome: todoSprintOutcome(e),
+		})
+	}
+	if len(rows) > 0 {
+		r.Sections = append(r.Sections, report.Section{Rows: rows})
+	}
+	for _, w := range sp.Warnings {
+		r.Notes = append(r.Notes, report.Note{State: report.Warn, Text: sp.Path + ": " + w})
+	}
+	r.Tally = fmt.Sprintf("%d of %d done · %s", done, total, sp.Status)
+	return r
+}
+
+// todoSprintRowState is the glyph a sprint row wears. A slug that is
+// waiting is skipped rather than failed: the run passes over it and comes
+// back, which is not the same as a person having to unblock it.
+func todoSprintRowState(e todo.SprintEntry) report.State {
+	switch e.State {
+	case todo.SprintItemDone:
+		return report.Pass
+	case todo.SprintItemRunning:
+		return report.Run
+	case todo.SprintItemBlocked:
+		return report.Fail
+	case todo.SprintItemWaiting, todo.SprintItemDropped:
+		return report.Skip
+	}
+	return report.Queue
+}
+
+// todoSprintOutcome is the row's last field: where the slug stands, and for
+// a waiting one what it is waiting on.
+func todoSprintOutcome(e todo.SprintEntry) string {
+	if e.State == todo.SprintItemWaiting {
+		return "waits on " + strings.Join(e.Waiting, ", ")
+	}
+	if e.State == todo.SprintItemDropped {
+		return "dropped from the backlog"
+	}
+	return string(e.State)
+}
+
 // todoDetail is `shhh todo show <slug>`: the header as read, then the body
 // as written.
 func todoDetail(s *todo.Store, it todo.Item) string {
@@ -179,6 +255,14 @@ func newTodoCmd() *cobra.Command {
 		},
 	}
 	cmd.AddCommand(&cobra.Command{
+		Use:   "sprint",
+		Short: "Show the sprint: its goal, its items and how many are done",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return report.Fprint(cmd.OutOrStdout(), todoSprintReport(loadTodos(todoCwd())))
+		},
+	})
+	cmd.AddCommand(&cobra.Command{
 		Use:   "show <slug>",
 		Short: "Show one backlog item, header and body",
 		Args:  cobra.ExactArgs(1),
@@ -194,7 +278,7 @@ func newTodoCmd() *cobra.Command {
 // else in the file. See docs/capabilities/todo.md#an-item-is-a-file-you-can-edit.
 func todoManager(root string) func(args []string) string {
 	return func(args []string) string {
-		const usage = "Usage: /todo [list] · /todo show <slug> · /todo add <text> · /todo block <slug> [why] · /todo open <slug> · /todo done <slug> · /todo drop <slug> · /todo edit <slug>"
+		const usage = "Usage: /todo [list] · /todo show <slug> · /todo add <text> · /todo block <slug> [why] · /todo open <slug> · /todo done <slug> · /todo drop <slug> · /todo edit <slug> · /todo sprint"
 		s := todo.Load(root)
 		if len(args) == 0 || (len(args) == 1 && args[0] == "list") {
 			return todoListing(s)
@@ -272,7 +356,18 @@ func todoManager(root string) func(args []string) string {
 			if err != nil {
 				return "Error: " + err.Error()
 			}
-			return report.Report{Sections: []report.Section{{Rows: []report.Row{report.Done("archived", slug+" → "+to)}}}}.String()
+			rows := []report.Row{report.Done("archived", slug+" → "+to)}
+			// Archiving by hand is one of the two ways a sprint's last
+			// slug is accounted for, so the close is checked here as well
+			// as at the end of a run.
+			if closed, err := todo.CloseSprintIfDone(root); err != nil {
+				rows = append(rows, report.Row{State: report.Warn, Subject: "the sprint could not be closed", Detail: err.Error()})
+			} else if closed != "" {
+				rows = append(rows, report.Done("sprint closed", closed))
+			}
+			return report.Report{Sections: []report.Section{{Rows: rows}}}.String()
+		case "sprint":
+			return todoSprintManage(root, s, args[1:])
 		case "drop":
 			if slug == "" {
 				return usage
@@ -284,6 +379,71 @@ func todoManager(root string) func(args []string) string {
 		}
 		return usage
 	}
+}
+
+// todoSprintManage backs `/todo sprint` and its verbs. Every write is a
+// line edit on the sprint file, the way every item write is, so a verb
+// changes the fact it names and leaves the goal and the order alone.
+// See docs/capabilities/todo.md#a-sprint-is-a-file-that-names-its-items.
+func todoSprintManage(root string, s *todo.Store, args []string) string {
+	const usage = "Usage: /todo sprint · /todo sprint add <slug> · /todo sprint drop <slug> · /todo sprint goal <text> · /todo sprint close"
+	if len(args) == 0 {
+		return todoSprintReport(s).String()
+	}
+	sp := s.Sprint
+	if sp == nil {
+		return "There is no sprint. /todo sprint plan proposes one from the ready items."
+	}
+	rest := strings.TrimSpace(strings.Join(args[1:], " "))
+	// A file marked closed by hand is a record that was never filed, and
+	// editing a record is the one thing the archive exists to prevent.
+	// Close is still offered, because filing it is the way out.
+	if !sp.Open() && args[0] != "close" {
+		return fmt.Sprintf("%s is closed; /todo sprint close files it in the archive and /todo sprint plan starts the next one.", sp.Name)
+	}
+	switch args[0] {
+	case "add":
+		if rest == "" {
+			return usage
+		}
+		if _, ok := activeItem(s, rest); !ok {
+			return notFound("active backlog item", rest, "/todo")
+		}
+		if err := todo.SprintAdd(sp.Path, rest); err != nil {
+			return "Error: " + err.Error()
+		}
+		return report.Report{Sections: []report.Section{{Rows: []report.Row{report.Done("added to "+sp.Name, rest)}}}}.String()
+	case "drop":
+		if rest == "" {
+			return usage
+		}
+		if err := todo.SprintDrop(sp.Path, rest); err != nil {
+			return "Error: " + err.Error()
+		}
+		return report.Report{Sections: []report.Section{{Rows: []report.Row{report.Done("dropped from "+sp.Name, rest+" · the item itself is untouched")}}}}.String()
+	case "goal":
+		if rest == "" {
+			return usage
+		}
+		if err := todo.SprintSetGoal(sp.Path, rest); err != nil {
+			return "Error: " + err.Error()
+		}
+		return report.Report{Sections: []report.Section{{Rows: []report.Row{report.Done("goal of "+sp.Name, "rewritten")}}}}.String()
+	case "close":
+		to, err := todo.CloseSprint(root)
+		if err != nil {
+			return "Error: " + err.Error()
+		}
+		rows := []report.Row{report.Done("closed "+sp.Name, to)}
+		for _, e := range s.SprintEntries() {
+			if !e.Done() {
+				rows = append(rows, report.Row{State: report.Skip, Name: e.Slug,
+					Subject: "left undone", Outcome: todoSprintOutcome(e)})
+			}
+		}
+		return report.Report{Sections: []report.Section{{Rows: rows}}}.String()
+	}
+	return usage
 }
 
 // activeItem finds an item that is not archived.

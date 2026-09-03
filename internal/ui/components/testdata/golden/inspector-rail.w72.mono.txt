@@ -28,6 +28,7 @@
   /plan for the whole list                                              
 
   TODO                                      project · 5 open · 1 blocked
+  sprint rail-and-runner                                          2 of 6
   ▸ H M rail-todo-block                                       review 1/2
   · H L add-todo-runner                            needs rail-todo-block
   · M M todo-add-extraction                                             
@@ -73,7 +74,7 @@
   … 6 more                                                              
 
   TODO                                      project · 5 open · 1 blocked
-  … 6 more                                                              
+  … 7 more                                                              
 
   CHANGES                                               session · +27 −4
   … 4 more                                                        +27 −4
@@ -203,6 +204,7 @@
   ␛[3;38;5;244m/plan for the whole list␛[m                                              
 
   ␛[1;38;5;254mTODO␛[m                                      ␛[38;5;244mproject · 5 open · 1 blocked␛[m
+  ␛[38;5;244msprint␛[m ␛[38;5;254mrail-and-runner␛[m                                          ␛[38;5;244m2 of 6␛[m
   ␛[38;5;254m▸␛[m ␛[38;5;244mH M␛[m ␛[1;38;5;254mrail-todo-block␛[m                                       ␛[38;5;244mreview 1/2␛[m
   ␛[38;5;244m·␛[m ␛[38;5;244mH L␛[m ␛[38;5;244madd-todo-runner␛[m                            ␛[38;5;244mneeds rail-todo-block␛[m
   ␛[38;5;244m·␛[m ␛[38;5;244mM M␛[m ␛[38;5;254mtodo-add-extraction␛[m                                             
@@ -248,7 +250,7 @@
   ␛[3;38;5;244m… 6 more␛[m                                                              
 
   ␛[1;38;5;254mTODO␛[m                                      ␛[38;5;244mproject · 5 open · 1 blocked␛[m
-  ␛[3;38;5;244m… 6 more␛[m                                                              
+  ␛[3;38;5;244m… 7 more␛[m                                                              
 
   ␛[1;38;5;254mCHANGES␛[m                                               ␛[38;5;244msession · ␛[m␛[38;5;254m+27␛[m ␛[38;5;254m−4␛[m
   ␛[3;38;5;244m… 4 more␛[m                                                        ␛[38;5;254m+27␛[m ␛[38;5;254m−4␛[m

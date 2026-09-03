@@ -129,7 +129,7 @@ func (m Model) startTodoRun(arg string, noCommit bool) (tea.Model, tea.Cmd) {
 			// same way the session and the mode do: continuing a run is
 			// asking for it again, and the repository may not be the one
 			// the run started in.
-			st.NoCommit, st.Repo = noCommit, repo
+			st.NoCommit, st.Repo, st.Sprint = noCommit, repo, m.sprintGoal()
 			m.todoRun = st
 			m.todoRunItem = it
 			model, _ := m.systemNotice(fmt.Sprintf("Continuing the run on %s from its %s stage (checkpoint from session %s).", it.Slug, st.Stage, orDash(from)))
@@ -141,7 +141,7 @@ func (m Model) startTodoRun(arg string, noCommit bool) (tea.Model, tea.Cmd) {
 		return m.systemNotice("Could not mark the item in progress: " + err.Error())
 	}
 	m.todoRun = run.Start(it, m.sessionName, m.mode.String(), int(m.turnCount)+1,
-		run.Options{NoCommit: noCommit, Repo: repo})
+		run.Options{NoCommit: noCommit, Repo: repo, Sprint: m.sprintGoal()})
 	m.todoRunItem = it
 	m.reloadTodos()
 	return m.todoRunStep(m.todoRun.First(it, ""))
@@ -476,7 +476,7 @@ func (m Model) todoRunDone() (tea.Model, tea.Cmd) {
 		report += "\nCommitted: " + strings.Join(st.Files, ", ") + "\n"
 	}
 	to, err := todo.Archive(m.todos.Root, st.Slug, report)
-	note := todoRunDoneNote(st, to)
+	note := todoRunDoneNote(st, to) + m.closeFinishedSprint()
 	if err != nil {
 		// The work is finished; the item must not stay in progress with its
 		// report only on screen. It goes back to open with the report on

@@ -638,6 +638,7 @@ type Model struct {
 	todoPause         *components.NoteSelect
 	todoPropose       *components.MultiSelect
 	todoProposals     []todo.Proposal
+	todoSprintPlan    []string
 	todoExtracting    bool
 	todoExtractRun    int
 	todoExtractCancel context.CancelFunc

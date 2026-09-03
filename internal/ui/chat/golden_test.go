@@ -1136,6 +1136,47 @@ func TestGolden_TodoNoRepository(t *testing.T) {
 	})
 }
 
+// TestGolden_TodoSprint captures the surface the sprint is chosen on: the
+// ready items under a size budget, everything checked, with each row saying
+// in the facts a filter has why it is in the set — its priority, its size,
+// and how many items are waiting on it.
+//
+// The card is the half of the sprint that is this surface's. The view
+// `/todo sprint` prints is a report, rendered where every other textual
+// answer to a backlog command is rendered and pinned by that package's own
+// tests; what is captured here is what a report cannot be — a card, at the
+// two widths it lays itself out across.
+func TestGolden_TodoSprint(t *testing.T) {
+	captureGolden(t, "todo-sprint", "the sprint plan card", []int{80, 110}, func(width int) []golden.Panel {
+		root := t.TempDir()
+		dir := todo.Dir(root)
+		if err := os.MkdirAll(filepath.Join(dir, todo.DoneSubdir), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		for name, content := range map[string]string{
+			"cache-ttl.md":        "---\ntitle: Give the cache a lifetime\npriority: high\nsize: S\n---\n",
+			"cache-invalidate.md": "---\ntitle: Invalidate on write\npriority: high\nsize: M\n---\n",
+			"cache-metrics.md":    "---\ntitle: Count the hits and the misses\npriority: medium\nsize: S\ndepends_on: [cache-ttl]\n---\n",
+			"cache-warm.md":       "---\ntitle: Warm the cache on start\npriority: low\nsize: M\n---\n",
+		} {
+			if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+				t.Fatal(err)
+			}
+		}
+		m := frameModel(t, width, 40)
+		m = m.WithTodos(Todos{Root: root, Manage: func([]string) string { return "" },
+			Detail: func(*todo.Store, todo.Item) string { return "" }})
+		budgeted, _ := m.startTodoSprintPlan([]string{"--size", "S=1,M=1"})
+		whole, _ := m.startTodoSprintPlan(nil)
+		return []golden.Panel{
+			{Label: "under a budget · one small and one medium, in backlog order",
+				View: budgeted.(Model).renderTodoPropose()},
+			{Label: "with no budget · the whole ready list",
+				View: whole.(Model).renderTodoPropose()},
+		}
+	})
+}
+
 // TestGolden_MultiEditCard pins the card a call that changes three places in
 // one file puts up. The point of the capture is what is not on it: one
 // headline, one diff and one set of keys, where the same three changes as

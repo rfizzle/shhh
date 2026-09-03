@@ -136,3 +136,13 @@ columns from there, at the one edge of the screen nobody is looking at.
 So the two sides trade places: the account opens the rail and the identity —
 the breadcrumb while attached, nothing at the root — closes it. Where the rail
 has room for only one, the account is the one that stays.
+
+## The backlog block opens with a sprint row
+
+The Backlog artboard draws the block as a heading and a list of items. A set
+being worked has a name and a size, and both are what tell the reader whether
+the rows below are the whole backlog or the eight things chosen for this week
+— which is the difference between a list to scan and a list to work. The row
+sits above the items, states the set's name and how many of them are done, and
+is absent altogether where no set is open, so a backlog worked without one
+looks exactly as the artboard draws it.

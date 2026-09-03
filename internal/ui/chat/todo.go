@@ -82,6 +82,7 @@ func (m Model) inspectorTodo() *components.InspectorTodo {
 		Blocked: s.Count(todo.StatusBlocked),
 		Hint:    todoHintRail,
 	}
+	t.Sprint, t.SprintDone, t.SprintTotal = m.inspectorSprint()
 	for _, it := range s.Items {
 		if len(t.Rows) == todoRailRows {
 			t.More++
@@ -139,20 +140,22 @@ func (m Model) todoCommand(parts []string) (tea.Model, tea.Cmd) {
 			return picked, cmd
 		}
 	}
-	// Reading is fine mid-turn; changing a file the model may be editing
-	// at the same moment is not, and neither is suspending the program
-	// under a running turn for the editor.
 	if len(parts) >= 2 && parts[1] == "status" {
 		return m.systemNotice(m.todoRunStatus())
 	}
-	if len(parts) >= 2 && m.working() {
-		switch parts[1] {
-		case "edit", "add", "block", "open", "done", "drop", "run", "stop":
-			return m.systemNotice("Not while the turn is running: /todo " + parts[1] + " changes the backlog files the model may be working from. /todo and /todo show still read.")
-		}
+	if len(parts) >= 2 && m.working() && todoWrites(parts[1:]) {
+		return m.systemNotice("Not while the turn is running: /todo " + strings.Join(todoWriteVerb(parts[1:]), " ") +
+			" changes the backlog files the model may be working from. /todo, /todo show and /todo sprint still read.")
 	}
 	if len(parts) == 2 && parts[1] == "add" {
 		return m.startTodoExtract()
+	}
+	// Planning is the one sprint verb the session takes rather than the
+	// manager: it proposes a set and writes nothing until the card is
+	// accepted. Every other sprint verb is textual and goes through the
+	// manager below, so a script gets the same words.
+	if len(parts) >= 3 && parts[1] == "sprint" && parts[2] == "plan" {
+		return m.startTodoSprintPlan(parts[3:])
 	}
 	if len(parts) >= 2 && parts[1] == "run" {
 		arg, noCommit, ok := parseTodoRunArgs(parts[2:])
@@ -173,6 +176,30 @@ func (m Model) todoCommand(parts []string) (tea.Model, tea.Cmd) {
 	note := m.todos.Manage(parts[1:])
 	m.reloadTodos()
 	return m.systemNotice(note)
+}
+
+// todoWrites reports whether a /todo subcommand changes a file. Reading is
+// fine mid-turn; changing a file the model may be editing at the same
+// moment is not, and neither is suspending the program under a running
+// turn for the editor. Bare `/todo sprint` only reads, so it is the verbs
+// after it that are refused rather than the word itself.
+func todoWrites(args []string) bool {
+	switch args[0] {
+	case "edit", "add", "block", "open", "done", "drop", "run", "stop":
+		return true
+	case "sprint":
+		return len(args) > 1
+	}
+	return false
+}
+
+// todoWriteVerb is what the refusal names: the subcommand, and the verb
+// after it where the subcommand alone would not say what was refused.
+func todoWriteVerb(args []string) []string {
+	if args[0] == "sprint" && len(args) > 1 {
+		return args[:2]
+	}
+	return args[:1]
 }
 
 // parseTodoRunArgs reads what follows `/todo run`: an optional item and the

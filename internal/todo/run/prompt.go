@@ -29,10 +29,25 @@ func itemBlock(it todo.Item) string {
 
 const standards = `Read AGENTS.md (or the project's equivalent) and any skill that applies before you touch anything. Follow the project's standards for how work is documented and tested. Preserve unrelated changes already in the working tree and never edit generated files directly.`
 
-func researchPrompt(it todo.Item, context string) string {
+// sprintBlock is the set's goal, for an item being worked as part of one.
+// It rides in the research stage and nowhere else: what the set is for
+// changes how the work is scoped, which is a research question, and
+// repeating it at every stage would only spend tokens restating it.
+func sprintBlock(goal string) string {
+	goal = strings.TrimSpace(goal)
+	if goal == "" {
+		return ""
+	}
+	return "SPRINT — what the set of items this one belongs to is for:\n" + goal + "\n"
+}
+
+func researchPrompt(it todo.Item, sprint, context string) string {
 	var b strings.Builder
 	b.WriteString("You are working one backlog item through to a commit, in stages. This is the RESEARCH stage: read, do not change anything.\n\n")
 	b.WriteString(itemBlock(it))
+	if block := sprintBlock(sprint); block != "" {
+		b.WriteString("\n" + block)
+	}
 	if context != "" {
 		b.WriteString("\n" + context + "\n")
 	}
