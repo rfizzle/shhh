@@ -197,6 +197,27 @@ Tools are split into three permission tiers that must never be mixed:
 
 The `Execute()` function in `tools/tools.go` deliberately only dispatches read-only tools. Mutating calls route through `ExecuteMutating()`. This separation is a security invariant — different functions rather than one function with a branch, for the reason in [`docs/architecture.md#tiers-not-permissions`](docs/architecture.md#tiers-not-permissions). Merging them always looks like a simplification; it isn't.
 
+### The edits array
+
+`edit_file` takes either the inline `old_text`/`new_text` pair or an `edits`
+array, and refuses a call carrying both. `parseEditFileArgs` folds the pair
+into a one-element list, so everything past it sees a list and there is one
+code path to be right about. `applyEdits` in `tools/mutate.go` is the single
+validator both `PreviewMutation` and `executeEditFile` go through: it matches
+every quote against the file as read, collects the byte ranges each one
+claims, sorts them, refuses an intersection naming both edits, and only then
+splices the result. Moving either caller off it puts a card in front of a
+person for a change the write will refuse.
+
+What will bite you: **the ranges are offsets into the content as it was
+read.** Applying each edit in turn with a plain string replacement looks like
+a simplification, passes most of the tests, and changes the meaning of every
+edit after the first — the offsets it matched against no longer exist. The
+staleness check runs once per call, before any of this, and covers every
+element for the same reason: they are all matched against that one content.
+Why the batch exists and what it deliberately does not cover:
+[`docs/capabilities/coding-agent.md#several-places-in-one-file-are-one-call`](docs/capabilities/coding-agent.md#several-places-in-one-file-are-one-call).
+
 ### The read-only git verbs
 
 `internal/structural/git.go` is the `git` tool: five reading verbs (`status`,

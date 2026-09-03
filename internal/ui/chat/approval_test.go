@@ -7,10 +7,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/tools"
 )
@@ -490,5 +492,124 @@ func TestMutatingTool_HookAppendsDiagnosticsToResult(t *testing.T) {
 	if last.Role != provider.RoleTool || !strings.Contains(last.Content, "Created") ||
 		!strings.Contains(last.Content, "Diagnostics (fake)") {
 		t.Fatalf("tool result should carry write confirmation plus hook diagnostics, got %+v", last)
+	}
+}
+
+// Three changes to one file are one decision, one diff and one record. The
+// call exists to stop the session paying a round and a card per pair, so
+// what is asserted is the count: a second card here would mean the batching
+// bought nothing.
+func TestMutatingTool_SeveralEditsAreOneCardAndOneRecord(t *testing.T) {
+	m := gatedModel(t, nil, nil)
+	m.turnCount = 1
+	path := filepath.Join(t.TempDir(), "loop.go")
+	if err := os.WriteFile(path, []byte("alpha\nbeta\ngamma\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	args, err := json.Marshal(map[string]any{
+		"path": path,
+		"edits": []map[string]string{
+			{"old_text": "alpha", "new_text": "one"},
+			{"old_text": "beta", "new_text": "two"},
+			{"old_text": "gamma", "new_text": "three"},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_e", Name: "edit_file", Arguments: string(args)},
+	}})
+	m = updated.(Model)
+	if m.state != stateConfirmRun || m.pendingApproval == nil || m.pendingApproval.kind != approvalDiff {
+		t.Fatalf("a three-edit call should arm one diff approval, got state=%d", m.state)
+	}
+	// One card, and all three changes in the diff behind it: a decision put
+	// up for one of them would be an approval of something else. The hunks
+	// are read rather than the render, which clips a body taller than the
+	// panel bound and would make this an assertion about terminal height.
+	var changed []string
+	for _, h := range m.pendingApproval.hunks {
+		for _, l := range h.Lines {
+			if l.Kind != diff.Context {
+				changed = append(changed, l.Text)
+			}
+		}
+	}
+	if want := []string{"alpha", "beta", "gamma", "one", "two", "three"}; !slices.Equal(changed, want) {
+		t.Errorf("the card should diff every edit, got %v want %v", changed, want)
+	}
+
+	m = handover(t, m)
+	updated, cmd := m.Update(tea.KeyPressMsg{Code: 'y', Text: "y"})
+	m = updated.(Model)
+	for _, c := range unwrapBatch(cmd) {
+		if msg, ok := c().(approvedToolDoneMsg); ok {
+			updated, _ = m.Update(msg)
+			m = updated.(Model)
+		}
+	}
+	if data, _ := os.ReadFile(path); string(data) != "one\ntwo\nthree\n" {
+		t.Fatalf("the approved call should apply every edit, got %q", data)
+	}
+	if m.pendingApproval != nil {
+		t.Fatal("one call is one decision; nothing should still be pending")
+	}
+	var diffs int
+	for _, e := range m.transcript {
+		if e.kind == entryDiff {
+			diffs++
+		}
+	}
+	if diffs != 1 {
+		t.Fatalf("the applied call should leave one diff row, got %d", diffs)
+	}
+	turn, ok := m.changes.Turn(1)
+	if !ok {
+		t.Fatal("the applied call should be recorded")
+	}
+	if turn.Files() != 1 {
+		t.Fatalf("one file changed, so one record, got %d", turn.Files())
+	}
+	r, _ := turn.Record(path)
+	if r.Before != "alpha\nbeta\ngamma\n" || r.After != "one\ntwo\nthree\n" {
+		t.Fatalf("the record should span the whole call, got before=%q after=%q", r.Before, r.After)
+	}
+}
+
+// A call the shared validator refuses never becomes a card. Preview and act
+// run the same check, so the alternative would be a person approving a change
+// that is then refused — an approval given for nothing.
+func TestMutatingTool_OverlappingEditsNeverReachACard(t *testing.T) {
+	m := gatedModel(t, nil, nil)
+	path := filepath.Join(t.TempDir(), "loop.go")
+	if err := os.WriteFile(path, []byte("func Handle() {}\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	args, err := json.Marshal(map[string]any{
+		"path": path,
+		"edits": []map[string]string{
+			{"old_text": "func Handle() {}", "new_text": "func Serve() {}"},
+			{"old_text": "Handle", "new_text": "Serve"},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_e", Name: "edit_file", Arguments: string(args)},
+	}})
+	m = updated.(Model)
+	if m.pendingApproval != nil {
+		t.Fatal("a call the write would refuse must not be put to the user")
+	}
+	last := m.Messages()[len(m.Messages())-1]
+	if last.Role != provider.RoleTool || !strings.Contains(last.Content, "overlap") {
+		t.Fatalf("the model should be told the edits overlap, got %+v", last)
+	}
+	if data, _ := os.ReadFile(path); string(data) != "func Handle() {}\n" {
+		t.Fatal("a refused call must leave the file untouched")
 	}
 }

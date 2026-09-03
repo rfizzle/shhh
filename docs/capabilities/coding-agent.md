@@ -22,6 +22,35 @@ the agent removed is executable again without anyone reaching for chmod. A
 file that is still there keeps the permissions it has now: an undo puts
 content back and does not touch access somebody set since.
 
+## Several places in one file are one call
+
+Changing three places in one file used to be three calls: three rounds, three
+diffs, and in manual mode three cards for something the person had already
+decided once. The edit tool takes a list of replacements, so one file's worth
+of changes arrives as one decision.
+
+The list describes places, not steps. Every quoted snippet is matched against
+the file as it was read rather than against the result of the replacement
+before it, so the order the model listed them in cannot change the file that
+comes out. That is what makes a batch worth trusting — and it is also why two
+edits that would claim the same text are refused instead of resolved: there is
+no order to resolve them by, so the refusal names both and the model splits
+them or combines them into one.
+
+Nothing is written unless every replacement applies. A single quote that does
+not match refuses the whole call and leaves the file exactly as it was,
+because a file changed halfway is worse than a file not changed at all:
+nothing on screen says which half.
+
+The preview and the write run the same check, so a card never offers a change
+the write would go on to refuse. And the staleness rule is unchanged, covering
+the call rather than each element of it — it is one question about the file,
+and every edit in the call was matched against that one answer.
+
+A second file is a second call. What is batched is one file's several places,
+which is the shape most changes actually have; a list of files would be one
+decision covering changes a person would want to answer separately.
+
 ## Finding things
 
 The agent is told, in its own instructions, to batch independent calls, to

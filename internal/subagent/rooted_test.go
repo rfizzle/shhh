@@ -92,3 +92,38 @@ func TestDisplayPath(t *testing.T) {
 		t.Fatalf("out-of-root path should stay absolute: %q", got)
 	}
 }
+
+// Rooting a child's call rewrites the path and nothing else. It works
+// through a generic map, so a call carrying several edits would lose them to
+// any field the rewrite forgot to carry — and the child's approval card is
+// built from what comes out of here.
+func TestRootArgs_CarriesTheEditsArray(t *testing.T) {
+	root := t.TempDir()
+	raw := `{"path":"loop.go","edits":[` +
+		`{"old_text":"alpha","new_text":"one"},` +
+		`{"old_text":"beta","new_text":"two","replace_all":true}]}`
+	out, err := RootArgs(root, "edit_file", json.RawMessage(raw))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got struct {
+		Path  string `json:"path"`
+		Edits []struct {
+			OldText    string `json:"old_text"`
+			NewText    string `json:"new_text"`
+			ReplaceAll bool   `json:"replace_all"`
+		} `json:"edits"`
+	}
+	if err := json.Unmarshal(out, &got); err != nil {
+		t.Fatalf("unmarshal rooted args: %v", err)
+	}
+	if got.Path != filepath.Join(root, "loop.go") {
+		t.Errorf("path = %q, want it under the worktree", got.Path)
+	}
+	if len(got.Edits) != 2 {
+		t.Fatalf("both edits should survive rooting, got %d", len(got.Edits))
+	}
+	if got.Edits[0].OldText != "alpha" || got.Edits[1].NewText != "two" || !got.Edits[1].ReplaceAll {
+		t.Errorf("the edits should arrive as written, got %+v", got.Edits)
+	}
+}

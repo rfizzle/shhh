@@ -2,9 +2,11 @@ package tools
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -425,5 +427,321 @@ func TestEditFile_KeepsTheFileMode(t *testing.T) {
 	}
 	if info.Mode().Perm() != 0o755 {
 		t.Fatalf("mode after the edit = %v, want 0755", info.Mode().Perm())
+	}
+}
+
+// Three changes to one file are one call, one read and one write. The point
+// of the array is that the model stops paying a round and an approval for
+// each pair, so the assertion is that all three land together.
+func TestEditFile_SeveralEditsInOneCall(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "code.go")
+	must(t, os.WriteFile(path, []byte("alpha\nbeta\ngamma\n"), 0o644))
+
+	result, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, Edits: []fileEdit{
+		{OldText: "alpha", NewText: "one"},
+		{OldText: "beta", NewText: "two"},
+		{OldText: "gamma", NewText: "three"},
+	}}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	data, _ := os.ReadFile(path)
+	if string(data) != "one\ntwo\nthree\n" {
+		t.Fatalf("file content = %q", data)
+	}
+	if !strings.Contains(result, "3 replacement") || !strings.Contains(result, "3 edits") {
+		t.Errorf("result should report the replacements and the edits behind them: %q", result)
+	}
+}
+
+// The list describes places, not steps. Every quote is matched against the
+// file as it was read, so listing the last change first produces the same
+// file — an incremental apply would make the second quote's meaning depend on
+// what the first one wrote.
+func TestEditFile_OrderOfTheEditsDoesNotMatter(t *testing.T) {
+	tmp := t.TempDir()
+	forward := filepath.Join(tmp, "forward.go")
+	backward := filepath.Join(tmp, "backward.go")
+	const before = "func A() {}\nfunc B() {}\nfunc C() {}\n"
+	must(t, os.WriteFile(forward, []byte(before), 0o644))
+	must(t, os.WriteFile(backward, []byte(before), 0o644))
+
+	edits := []fileEdit{
+		{OldText: "func A() {}", NewText: "func X() {}"},
+		{OldText: "func B() {}", NewText: "func Y() {}"},
+		{OldText: "func C() {}", NewText: "func Z() {}"},
+	}
+	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: forward, Edits: edits})); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	reversed := []fileEdit{edits[2], edits[1], edits[0]}
+	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: backward, Edits: reversed})); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	a, _ := os.ReadFile(forward)
+	b, _ := os.ReadFile(backward)
+	if string(a) != string(b) {
+		t.Fatalf("order changed the result:\n%q\n%q", a, b)
+	}
+	if string(a) != "func X() {}\nfunc Y() {}\nfunc Z() {}\n" {
+		t.Fatalf("file content = %q", a)
+	}
+}
+
+// Two edits claiming the same text have no order to be resolved by, so the
+// call is refused — and the refusal names both, because the model cannot fix
+// what it is not told.
+func TestEditFile_OverlappingEditsAreRefusedNamingBoth(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "code.go")
+	must(t, os.WriteFile(path, []byte("func Handle(w, r) {}\n"), 0o644))
+
+	_, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, Edits: []fileEdit{
+		{OldText: "func Handle(w, r) {}", NewText: "func Serve(w, r) {}"},
+		{OldText: "Handle", NewText: "Serve"},
+	}}))
+	if err == nil {
+		t.Fatal("expected the overlapping pair to be refused")
+	}
+	for _, want := range []string{"overlap", "edits 1 and 2", "func Handle(w, r) {}", `"Handle"`} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("refusal should name both edits, missing %q: %v", want, err)
+		}
+	}
+	data, _ := os.ReadFile(path)
+	if string(data) != "func Handle(w, r) {}\n" {
+		t.Fatal("an overlapping call must leave the file untouched")
+	}
+}
+
+// All-or-nothing: one quote that does not match refuses the call, and the two
+// that would have matched are not written. A file half changed is worse than
+// a file not changed, because nothing on screen says which half.
+func TestEditFile_OneBadQuoteWritesNothing(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "code.go")
+	must(t, os.WriteFile(path, []byte("alpha\nbeta\ngamma\n"), 0o644))
+
+	_, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, Edits: []fileEdit{
+		{OldText: "alpha", NewText: "one"},
+		{OldText: "delta", NewText: "four"},
+		{OldText: "gamma", NewText: "three"},
+	}}))
+	if err == nil || !strings.Contains(err.Error(), "not found") {
+		t.Fatalf("expected the unmatched quote to refuse the call, got %v", err)
+	}
+	// The refusal says which of the three it is about; "not found" alone
+	// leaves the model re-reading a call it can already see.
+	if !strings.Contains(err.Error(), "edit 2") {
+		t.Errorf("refusal should name the edit it is about: %v", err)
+	}
+	data, _ := os.ReadFile(path)
+	if string(data) != "alpha\nbeta\ngamma\n" {
+		t.Fatalf("nothing may be written when one edit fails, got %q", data)
+	}
+}
+
+// The line-number diagnosis is per edit, not per call: the model quoted one
+// numbered line out of three and the message has to say which.
+func TestEditFile_NamesTheLineNumberPrefixInsideAnArray(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "a.go")
+	must(t, os.WriteFile(path, []byte("package a\n\nfunc F() {}\n"), 0o644))
+
+	_, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, Edits: []fileEdit{
+		{OldText: "package a", NewText: "package b"},
+		{OldText: "3\tfunc F() {}", NewText: "func G() {}"},
+	}}))
+	if err == nil {
+		t.Fatal("expected the numbered snippet not to match")
+	}
+	if !strings.Contains(err.Error(), "line-number prefixes") || !strings.Contains(err.Error(), "edit 2") {
+		t.Errorf("error should name the prefix and the edit, got: %v", err)
+	}
+}
+
+// The staleness fingerprint is one question about the file, so it covers
+// every edit in the call: a file that moved refuses the whole array.
+func TestEditFile_StaleFileRefusesTheWholeCall(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "code.go")
+	must(t, os.WriteFile(path, []byte("alpha\nbeta\n"), 0o644))
+	readWholeFile(t, path)
+	// Something else writes the file between the read and the call.
+	must(t, os.WriteFile(path, []byte("alpha\nbeta\ngamma\n"), 0o644))
+
+	args := editArgs(t, editFileArgs{Path: path, Edits: []fileEdit{
+		{OldText: "alpha", NewText: "one"},
+		{OldText: "beta", NewText: "two"},
+	}})
+	var stale StaleError
+	if _, err := ExecuteMutating(EditFileName, args); !errors.As(err, &stale) {
+		t.Fatalf("expected a staleness refusal, got %v", err)
+	}
+	if _, err := PreviewMutation(EditFileName, args); !errors.As(err, &stale) {
+		t.Fatalf("the preview refuses it too, got %v", err)
+	}
+	data, _ := os.ReadFile(path)
+	if string(data) != "alpha\nbeta\ngamma\n" {
+		t.Fatal("a stale call must leave the file untouched")
+	}
+}
+
+// The preview and the write share one validator, so a card can never offer a
+// change the write would then refuse.
+func TestPreviewMutation_MultiEditMatchesTheWrite(t *testing.T) {
+	tmp := t.TempDir()
+	preview := filepath.Join(tmp, "preview.go")
+	applied := filepath.Join(tmp, "applied.go")
+	const before = "alpha\nbeta\ngamma\n"
+	must(t, os.WriteFile(preview, []byte(before), 0o644))
+	must(t, os.WriteFile(applied, []byte(before), 0o644))
+
+	edits := []fileEdit{{OldText: "alpha", NewText: "one"}, {OldText: "gamma", NewText: "three"}}
+	mut, err := PreviewMutation(EditFileName, editArgs(t, editFileArgs{Path: preview, Edits: edits}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if mut.OldText != before {
+		t.Errorf("preview should diff against the file as read: %q", mut.OldText)
+	}
+	if _, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: applied, Edits: edits})); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	data, _ := os.ReadFile(applied)
+	if string(data) != mut.NewText {
+		t.Fatalf("the preview promised %q, the write produced %q", mut.NewText, data)
+	}
+	if _, err := os.Stat(filepath.Join(tmp, "preview.go")); err != nil {
+		t.Fatal(err)
+	}
+	if data, _ := os.ReadFile(preview); string(data) != before {
+		t.Fatal("a preview must not write anything")
+	}
+}
+
+// A call carrying both spellings has two possible meanings and the tool picks
+// neither: merging them would pick an order on the model's behalf.
+func TestEditFile_RefusesBothSpellingsAtOnce(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "code.go")
+	must(t, os.WriteFile(path, []byte("alpha\nbeta\n"), 0o644))
+
+	_, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{
+		Path:    path,
+		OldText: "alpha", NewText: "one",
+		Edits: []fileEdit{{OldText: "beta", NewText: "two"}},
+	}))
+	if err == nil || !strings.Contains(err.Error(), "not both") {
+		t.Fatalf("expected the mixed call to be refused, got %v", err)
+	}
+	if data, _ := os.ReadFile(path); string(data) != "alpha\nbeta\n" {
+		t.Fatal("a refused call must leave the file untouched")
+	}
+}
+
+// Neither spelling is a call with nothing to do, and the message has to name
+// the array as well as the pair or the model only ever learns half the tool.
+func TestEditFile_RefusesACallWithNoEdits(t *testing.T) {
+	_, err := ExecuteMutating(EditFileName, json.RawMessage(`{"path":"x"}`))
+	if err == nil || !strings.Contains(err.Error(), "old_text is required") || !strings.Contains(err.Error(), "edits") {
+		t.Fatalf("expected an error naming both spellings, got %v", err)
+	}
+}
+
+// replace_all is per edit, and its occurrences take part in the overlap check
+// like any other match.
+func TestEditFile_ReplaceAllInsideAnArray(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "code.go")
+	must(t, os.WriteFile(path, []byte("x\ny\nx\n"), 0o644))
+
+	result, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, Edits: []fileEdit{
+		{OldText: "x", NewText: "a", ReplaceAll: true},
+		{OldText: "y", NewText: "b"},
+	}}))
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if data, _ := os.ReadFile(path); string(data) != "a\nb\na\n" {
+		t.Fatalf("file content = %q", data)
+	}
+	if !strings.Contains(result, "3 replacement") {
+		t.Errorf("result should count every occurrence: %q", result)
+	}
+}
+
+// The array reaches the model as an array. A schema flattened to its
+// top-level properties describes edits as a free-form value, and the model
+// sends whatever it guesses.
+func TestEditFile_SchemaDescribesTheEditsArray(t *testing.T) {
+	var schema struct {
+		Properties struct {
+			Edits struct {
+				Type  string `json:"type"`
+				Items struct {
+					Type       string                     `json:"type"`
+					Properties map[string]json.RawMessage `json:"properties"`
+					Required   []string                   `json:"required"`
+				} `json:"items"`
+			} `json:"edits"`
+		} `json:"properties"`
+		Required []string `json:"required"`
+	}
+	if err := json.Unmarshal(editFile.Tool.Parameters, &schema); err != nil {
+		t.Fatalf("the edit_file schema must be valid JSON: %v", err)
+	}
+	edits := schema.Properties.Edits
+	if edits.Type != "array" || edits.Items.Type != "object" {
+		t.Fatalf("edits should be an array of objects, got %q of %q", edits.Type, edits.Items.Type)
+	}
+	for _, field := range []string{"old_text", "new_text", "replace_all"} {
+		if _, ok := edits.Items.Properties[field]; !ok {
+			t.Errorf("an edits entry should describe %s", field)
+		}
+	}
+	if !slices.Equal(edits.Items.Required, []string{"old_text", "new_text"}) {
+		t.Errorf("an edits entry requires both texts, got %v", edits.Items.Required)
+	}
+	// Only the path is required now: either spelling of the change is valid,
+	// so requiring old_text would refuse every array call before it is read.
+	if !slices.Equal(schema.Required, []string{"path"}) {
+		t.Errorf("edit_file should require the path alone, got %v", schema.Required)
+	}
+}
+
+func TestSnippet(t *testing.T) {
+	for _, tc := range []struct{ in, want string }{
+		{"beta", `"beta"`},
+		{"\tindented", `"\tindented"`},
+		{"first\nsecond", `"first"…`},
+		{strings.Repeat("a", 41), `"` + strings.Repeat("a", 40) + `"…`},
+	} {
+		if got := snippet(tc.in); got != tc.want {
+			t.Errorf("snippet(%q) = %s, want %s", tc.in, got, tc.want)
+		}
+	}
+}
+
+// The overlap is found by walking the file, so the pair can be met in the
+// opposite order to the one the model wrote. The refusal still names them the
+// way the call listed them: "edits 2 and 1" reads as though the order meant
+// something.
+func TestEditFile_OverlapNamesTheEditsInTheOrderTheyWereGiven(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "code.go")
+	must(t, os.WriteFile(path, []byte("alpha\nbeta\n"), 0o644))
+
+	// The second edit's text starts earlier in the file than the first's.
+	_, err := ExecuteMutating(EditFileName, editArgs(t, editFileArgs{Path: path, Edits: []fileEdit{
+		{OldText: "eta", NewText: "reak"},
+		{OldText: "beta", NewText: "delta"},
+	}}))
+	if err == nil {
+		t.Fatal("expected the overlapping pair to be refused")
+	}
+	if !strings.Contains(err.Error(), "edits 1 and 2") {
+		t.Errorf("the refusal should name them in call order: %v", err)
 	}
 }

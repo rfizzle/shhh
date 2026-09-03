@@ -11,9 +11,11 @@ package chat
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"testing"
@@ -1082,6 +1084,68 @@ func TestGolden_TodoNoRepository(t *testing.T) {
 				View: row(todoNoRepoNotice("~/scratch/notes", it.Slug))},
 			{Label: "a run asked for without a commit, archived",
 				View: row(todoRunDoneNote(st, ".shhh/todo/done/cache-ttl.md") + "\n\n" + st.Report)},
+		}
+	})
+}
+
+// TestGolden_MultiEditCard pins the card a call that changes three places in
+// one file puts up. The point of the capture is what is not on it: one
+// headline, one diff and one set of keys, where the same three changes as
+// three calls would have cost three cards and three answers. One width — the
+// card's own layout is captured across the four in the component catalog, and
+// what this sheet is about is the diff behind a single decision.
+func TestGolden_MultiEditCard(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "loop.go")
+	const source = "package agent\n\n" +
+		"const maxRounds = 40\n\n" +
+		"func (a *Agent) Run() error {\n" +
+		"\tfor a.round < maxRounds {\n" +
+		"\t\ta.round++\n" +
+		"\t}\n" +
+		"\treturn nil\n" +
+		"}\n"
+	if err := os.WriteFile(path, []byte(source), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	args, err := json.Marshal(map[string]any{
+		"path": path,
+		"edits": []map[string]string{
+			{"old_text": "const maxRounds = 40", "new_text": "const maxRounds = 64"},
+			{"old_text": "func (a *Agent) Run() error {", "new_text": "func (a *Agent) Run(ctx context.Context) error {"},
+			{"old_text": "\t\ta.round++", "new_text": "\t\ta.round++\n\t\ta.checkIn()"},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	captureGolden(t, "multi-edit-card", "three edits in one file, one decision", []int{80}, func(width int) []golden.Panel {
+		msgs := []provider.Message{
+			{Role: provider.RoleSystem, Content: "sys"},
+			{Role: provider.RoleUser, Content: "raise the round cap and check in on the way past"},
+		}
+		// A terminal tall enough that the card's own bound does not clip the
+		// third hunk: the sheet is about three changes arriving as one diff,
+		// and a capture that hides one of them shows nothing.
+		m := New(msgs, mockStream).WithWorkspace(dir)
+		updated, _ := m.Update(tea.WindowSizeMsg{Width: width, Height: 64})
+		m = updated.(Model)
+		m.state = stateStreaming
+		updated, _ = m.Update(toolCallsMsg{calls: []provider.ToolCall{
+			{ID: "call_e", Name: "edit_file", Arguments: string(args)},
+		}})
+		m = updated.(Model)
+		if m.pendingApproval == nil {
+			t.Fatal("the three-edit call should arm one decision")
+		}
+		// The diff, the hunks and the card are the real ones; only the name
+		// on them is swapped, because the fixture lives at a temporary path
+		// that would be a different string in the golden on every machine.
+		m.pendingApproval.path = filepath.Join("internal", "agent", "loop.go")
+		m.pendingApproval.title = m.pendingApproval.verb + " " + m.pendingApproval.path
+		return []golden.Panel{
+			{Label: "one card · three places in one file", View: strings.Join(m.confirmLines(), "\n")},
 		}
 	})
 }

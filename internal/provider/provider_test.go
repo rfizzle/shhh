@@ -2,6 +2,7 @@ package provider
 
 import (
 	"encoding/json"
+	"reflect"
 	"testing"
 )
 
@@ -113,5 +114,48 @@ func TestCompletionOpts_Tools(t *testing.T) {
 	}
 	if opts.ToolChoice != "auto" {
 		t.Errorf("expected tool choice 'auto', got %q", opts.ToolChoice)
+	}
+}
+
+// A tool whose arguments are an array of objects has to arrive at the model
+// as that array on every dialect. A converter that rebuilds a schema from the
+// fields its own SDK struct happens to have describes the array as a
+// free-form value, and the model sends whatever it guessed — which the tool
+// then refuses, one round later, for the whole call.
+func TestToolSchema_NestedArraySurvivesEveryDialect(t *testing.T) {
+	raw := `{"type":"object","properties":{` +
+		`"path":{"type":"string"},` +
+		`"edits":{"type":"array","items":{"type":"object","properties":{` +
+		`"old_text":{"type":"string"},"new_text":{"type":"string"},` +
+		`"replace_all":{"type":"boolean"}},"required":["old_text","new_text"]}}},` +
+		`"required":["path"]}`
+	var want map[string]any
+	if err := json.Unmarshal([]byte(raw), &want); err != nil {
+		t.Fatal(err)
+	}
+	tools := []Tool{{Name: "edit_file", Parameters: json.RawMessage(raw)}}
+
+	// One entry per dialect the registry can resolve to. OpenRouter speaks
+	// the chat-completions dialect, so it is the same converter.
+	for _, tc := range []struct {
+		dialect string
+		schema  any
+	}{
+		{"anthropic", toAnthropicTools(tools)[0].OfTool.InputSchema},
+		{"openai", toOpenAITools(tools)[0].Function.Parameters},
+		{"openai responses", toResponsesTools(tools)[0].Parameters},
+		{"gemini", toGeminiTools(tools)[0].FunctionDeclarations[0].ParametersJsonSchema},
+	} {
+		raw, err := json.Marshal(tc.schema)
+		if err != nil {
+			t.Fatalf("%s: marshal: %v", tc.dialect, err)
+		}
+		var got map[string]any
+		if err := json.Unmarshal(raw, &got); err != nil {
+			t.Fatalf("%s: unmarshal: %v", tc.dialect, err)
+		}
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("%s must send the schema as written:\n got %v\nwant %v", tc.dialect, got, want)
+		}
 	}
 }

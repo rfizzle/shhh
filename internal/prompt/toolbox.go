@@ -30,7 +30,7 @@ var toolboxNotes = []struct{ name, note string }{
 	{"references", "every real usage of a symbol, declaration included. Prefer it over search before changing anything shared: it finds usages, not string matches in comments."},
 	{"ast_grep", "structural search by syntax pattern (e.g. `if $A != nil { return $A }`). For shapes a regex cannot describe."},
 	{"fd", "find files by name, fast. Use it instead of `execute_command find`."},
-	{"sd", "find-and-replace across many files at once. For a mechanical rename that edit_file would take a call per site to do."},
+	{"sd", "find-and-replace across many files at once. For a mechanical rename that spans files — several places inside one file are one edit_file call carrying its edits array."},
 	{"jaq", "query JSON without writing a script for it."},
 	{"tokei", "counts of code by language — the shape and size of an unfamiliar repository in one call."},
 	{"git", "read this repository's history: status, log, show, diff, blame. Ask it rather than running git as a command — it is read-only, so it answers without an approval."},
