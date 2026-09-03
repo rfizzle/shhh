@@ -175,11 +175,18 @@ them while they are still moving: before the provider reports a request's
 usage, the prompt is the context estimate and the output is the reasoning and
 the prose as they arrive, replaced by the reported count the moment there is
 one. Nothing else on screen says the same thing twice: the phase is named
-here, not also under the transcript. The rail opens with no title at the root
-session, because the header above the transcript already names the surface
-and the width reads better spent on the account. Attached to a child agent it
-opens with the breadcrumb instead — there the rail is the one place that says
-which session the keyboard is in.
+here, not also under the transcript.
+
+It states them at the rail's near corner, two rows above the prompt glyph,
+because the account is the one thing on the frame that moves and the eye
+watching it is already on the cursor. Against the far edge of a wide terminal
+the same figures sit a hundred columns from anything the reader is looking
+at. The far side carries the identity instead: nothing at the root session,
+where the header above the transcript already names the surface, and attached
+to a child agent the breadcrumb — there the rail is the one place that says
+which session the keyboard is in. A rail with room for only one of the two
+keeps the account, because the breadcrumb answers a question a key can ask
+again and the numbers are why the rail carries labels at all.
 
 Above it, a notice rail exists only while there is something to say and
 disappears when there is not. Under that, on the terminals too narrow for the

@@ -3,11 +3,12 @@ package chat
 // Command-center prompt surface (
 // docs/interface/surfaces.md#the-input-frame). The input sits in a
 // rounded-corner frame whose borders carry information: the top rail shows
-// session identity and the live activity state, the vitals rail re-homes the
-// cockpit segments, and the bottom rail carries contextual key hints. A
-// notice rail above the frame appears only while there is something to say, a
-// status row under it stands in for the inspector rail the narrow layouts
-// drop, and a staged rail under that while an attachment is waiting to ride.
+// the live activity state and, attached, the session identity beside it, the
+// vitals rail re-homes the cockpit segments, and the bottom rail carries
+// contextual key hints. A notice rail above the frame appears only while
+// there is something to say, a status row under it stands in for the
+// inspector rail the narrow layouts drop, and a staged rail under that while
+// an attachment is waiting to ride.
 // Takeover surfaces (approval cards, pickers, the agent list, routed child asks,
 // focus/diff hints) replace the framed input wholesale and keep the divider +
 // status-bar stack, so their geometry is unchanged.
@@ -196,7 +197,7 @@ func (m Model) frameAccentStyle() lipgloss.Style {
 	}
 }
 
-// frameIdentity is the top rail's left side: the attached breadcrumb, or
+// frameIdentity is the top rail's far side: the attached breadcrumb, or
 // nothing at all in the root session.
 //
 // The rail used to open with the title on every frame of every session,
@@ -215,12 +216,12 @@ func (m Model) frameIdentity() string {
 	return title + " · " + m.breadcrumb()
 }
 
-// frameActivity is the top rail's right side: the running turn's
-// status line while the turn works, the summary it resolved into once it is
-// done, `⏸ N waiting` while decisions are queued and ungated, and dim `idle`
-// when there is nothing to report. width is the room the slot has; a slot too
-// small for even the phase says nothing rather than clipping the identity
-// beside it.
+// frameActivity is the top rail's near side, the corner over the prompt
+// glyph: the running turn's status line while the turn works, the summary it
+// resolved into once it is done, `⏸ N waiting` while decisions are queued
+// and ungated, and dim `idle` when there is nothing to report. width is the
+// room the slot has; a slot too small for even the phase says nothing rather
+// than clipping the identity beside it.
 func (m Model) frameActivity(width int) string {
 	if width <= 0 {
 		return ""
@@ -626,26 +627,44 @@ func railLabelWidth(leftLabel string, width int) int {
 	return slot.Dx()
 }
 
-// topRailLabels is the top rail's two labels: the identity on the
-// left (when attached to a sub-agent), and on the right the running turn's
-// status line — or, attached below the wide layout, the hints rail that has
-// nowhere else to go.
-func (m Model) topRailLabels(mode frameLayout, width int) (identity, right string) {
+// topRailLabels is the top rail's two labels: the running turn's account of
+// itself on the left and the identity on the right, except attached below the
+// wide layout, where the identity keeps the left and the right is the hints
+// rail that has nowhere else to go.
+//
+// The account leads because it is the only thing on the rail that moves, and
+// the eye watching it is already on the prompt glyph two rows below the
+// rail's left corner. On a three-thousand-pixel window the same figures sat
+// against the right edge, a hundred and fifty columns from anything the
+// reader was looking at — the divergence from the artboard is recorded in
+// docs/interface/departures.md#the-turns-account-opens-the-top-rail.
+func (m Model) topRailLabels(mode frameLayout, width int) (left, right string) {
+	var identity, identityLabel string
 	if m.attachedTo != "" && mode != frameNarrow {
-		identity = " " + m.frameIdentity() + " "
+		identity = m.frameIdentity()
+		identityLabel = " " + identity + " "
 	}
 	if m.attachedTo != "" && mode != frameWide {
 		// Compact/narrow drop the hints rail; the detach affordance moves to
-		// the top rail.
-		return identity, " " + m.frameHints() + " "
+		// the top rail, and takes the slot the account would have had.
+		return identityLabel, " " + m.frameHints() + " "
 	}
-	// The identity is the rail's left label and keeps its room; the status line
-	// takes the slot that is left and sheds fields in the turn status's order to
-	// fit it.
-	if activity := m.frameActivity(railLabelWidth(identity, width)); activity != "" {
-		right = " " + activity + " "
+	// The account is measured against the whole rail and the identity takes
+	// what is left of it, so a breadcrumb that does not fit is dropped whole
+	// rather than squeezing the account into a fragment. Measuring the other
+	// way round leaves a full-width breadcrumb beside an account clipped to
+	// `⠋W…`, which is the one label on the rail nobody can read and the only
+	// one that changes while a turn runs; which session the keyboard is in is
+	// a fact a key can ask for again.
+	activity := m.frameActivity(railLabelWidth("", width))
+	if activity == "" {
+		return "", ""
 	}
-	return identity, right
+	left = " " + activity + " "
+	if lipgloss.Width(identity) > railLabelWidth(left, width) {
+		return left, ""
+	}
+	return left, identityLabel
 }
 
 // frameDraftLines is what goes inside the box: the textarea's rows and, under
@@ -719,8 +738,8 @@ func (m Model) drawPromptFrame(scr uv.Screen, area uv.Rectangle) {
 		layout.Len(1),
 	).Split(box.area).Assign(&top, &drafts, &vitalsRail, &bottom)
 
-	identity, topRight := m.topRailLabels(mode, width)
-	drawRail(scr, top, accent, "╭", "╮", identity, topRight)
+	topLeft, topRight := m.topRailLabels(mode, width)
+	drawRail(scr, top, accent, "╭", "╮", topLeft, topRight)
 
 	for i := range drafts.Dy() {
 		y := drafts.Min.Y - box.area.Min.Y + i

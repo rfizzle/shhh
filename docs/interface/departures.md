@@ -123,3 +123,16 @@ cannot also be the one that abandons minutes of work, because the hand
 presses it before the eye has read which of them it is about to do. The
 cancel chord stops the turn, and every rail that offered the artboard's Esc
 names the chord instead.
+
+## The turn's account opens the top rail
+
+The frame's artboard hangs the session identity at the rail's left corner and
+the running turn's account against its right. The account is the only thing on
+the frame that changes while a turn runs, and the eye that is watching it is on
+the prompt glyph two rows below the left corner; on a three-thousand-pixel
+window the artboard's arrangement puts the moving figures a hundred and fifty
+columns from there, at the one edge of the screen nobody is looking at.
+
+So the two sides trade places: the account opens the rail and the identity —
+the breadcrumb while attached, nothing at the root — closes it. Where the rail
+has room for only one, the account is the one that stays.

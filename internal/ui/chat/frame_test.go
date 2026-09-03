@@ -29,8 +29,8 @@ func frameModel(t *testing.T, width, height int) Model {
 	return updated.(Model)
 }
 
-// frameTopRail is the frame's top rail: the line the identity used to sit on
-// the left of, and the live turn status sits on the right of.
+// frameTopRail is the frame's top rail: the line the live turn status sits on
+// the left of, and the identity on the right of.
 func frameTopRail(view string) string {
 	for _, line := range strings.Split(view, "\n") {
 		if strings.Contains(line, "╭─") {
@@ -268,6 +268,95 @@ func TestFrame_AttachedShowsChildGutterAndVitals(t *testing.T) {
 	}
 	if !strings.Contains(view, "esc detach · ctrl+b agents") {
 		t.Fatalf("attached frame missing the detach hints:\n%s", view)
+	}
+}
+
+// The account is the only thing on the top rail that moves, so it opens the
+// rail at the corner over the prompt glyph rather than closing it against the
+// far edge — on a wide terminal that edge is a hundred columns from anything
+// the reader is looking at. Asserted at three widths because the slot is
+// measured per layout and a rail that leads correctly at 80 and trails at 130
+// would be the exact bug this replaces.
+func TestFrame_TopRailLeadsWithTheAccount(t *testing.T) {
+	for _, width := range []int{80, 110, 130} {
+		m := frameModel(t, width, 40)
+		rail := strings.TrimSpace(stripANSI(frameTopRail(m.View().Content)))
+		if rail == "" {
+			t.Fatalf("no top rail at width %d", width)
+		}
+		if !strings.HasPrefix(rail, "╭─ idle ─") {
+			t.Fatalf("width %d: the account should open the rail:\n%s", width, rail)
+		}
+		if !strings.HasSuffix(rail, "──╮") {
+			t.Fatalf("width %d: nothing should close the root rail:\n%s", width, rail)
+		}
+	}
+}
+
+// The waiting chip is the account's slot saying what the turn is doing, not a
+// label of its own, so it travels with it.
+func TestFrame_WaitingChipLeadsTheRail(t *testing.T) {
+	m := interruptedModel(t, "also add a --max-rounds flag")
+	rail := strings.TrimSpace(stripANSI(frameTopRail(m.View().Content)))
+	if !strings.HasPrefix(rail, "╭─ ⏸ 1 waiting ─") {
+		t.Fatalf("the waiting chip should open the rail:\n%s", rail)
+	}
+}
+
+// Attached, the rail is the one place that says which session the keyboard is
+// in — so the breadcrumb stays, on the side the account gave up.
+func TestFrame_AttachedBreadcrumbTakesTheFarSide(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnBlockedChild(t, sup)
+	m.attach("researcher-1")
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 140, Height: 40}) // content 136 → wide
+	m = updated.(Model)
+
+	rail := strings.TrimSpace(stripANSI(frameTopRail(m.View().Content)))
+	if !strings.HasSuffix(rail, "orchestrator ▸ researcher-1 ─╮") {
+		t.Fatalf("the breadcrumb should close the attached rail:\n%s", rail)
+	}
+	if !strings.HasPrefix(rail, "╭─ ") {
+		t.Fatalf("the account should open the attached rail:\n%s", rail)
+	}
+}
+
+// A rail with room for one label keeps the account whole. The breadcrumb
+// answers a question a key can ask again; an account clipped to `⠋W…` is a
+// label nobody can read, and it is the only one on the rail that moves.
+// Asserted across the widths where the breadcrumb stops fitting, because the
+// failure this guards against is not a dropped account but a mangled one
+// standing beside a pristine breadcrumb.
+func TestFrame_IdentityDropsBeforeTheAccount(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnBlockedChild(t, sup)
+	m.attach("researcher-1")
+
+	left, right := m.topRailLabels(frameWide, 140)
+	account := strings.TrimSpace(stripANSI(left))
+	if account == "" || !strings.Contains(right, "researcher-1") {
+		t.Fatalf("both labels should stand at 140: left %q right %q", left, right)
+	}
+
+	m.title = strings.Repeat("survey", 12)
+	var dropped bool
+	for width := 140; width >= 40; width-- {
+		left, right = m.topRailLabels(frameWide, width)
+		if got := strings.TrimSpace(stripANSI(left)); got != account {
+			t.Fatalf("width %d: the account should never shed for the identity, got %q want %q", width, got, account)
+		}
+		if right == "" {
+			dropped = true
+		} else if dropped {
+			t.Fatalf("width %d: the identity came back after it was dropped: %q", width, right)
+		}
+	}
+	if !dropped {
+		t.Fatal("the identity should shed once the rail cannot hold both")
 	}
 }
 
