@@ -21,9 +21,8 @@ import (
 	"path/filepath"
 )
 
-// undoFileMode is what a restored file is created with when the workspace has
-// no mode to reuse — the file was deleted by the turn, so there is nothing
-// left to read a mode from.
+// undoFileMode is what a restored file is created with when its record
+// carries no mode of its own.
 const undoFileMode os.FileMode = 0o644
 
 // UndoFile is one file's part in an undo: the record that says what to put
@@ -31,9 +30,12 @@ const undoFileMode os.FileMode = 0o644
 type UndoFile struct {
 	Record Record
 	// Now is the file's current content; NowExists distinguishes an empty
-	// file from a missing one, the same way the record does.
+	// file from a missing one, the same way the record does. NowMode is its
+	// permission bits, so the reverse record carries what a second undo
+	// would have to put back.
 	Now       string
 	NowExists bool
+	NowMode   os.FileMode
 	// Drifted says the workspace no longer holds what the turn left behind,
 	// so restoring would discard a change the record never saw.
 	Drifted bool
@@ -71,6 +73,9 @@ func PlanUndo(t Turn, paths []string) UndoPlan {
 		f := UndoFile{Record: r}
 		if data, err := os.ReadFile(r.Path); err == nil {
 			f.Now, f.NowExists = string(data), true
+			if fi, err := os.Stat(r.Path); err == nil {
+				f.NowMode = fi.Mode().Perm()
+			}
 		}
 		f.Drifted = f.NowExists != r.AfterExists || f.Now != r.After
 		plan.Files = append(plan.Files, f)
@@ -177,6 +182,7 @@ func (f UndoFile) restore() (Record, error) {
 		Before:       f.Now,
 		After:        r.Before,
 		BeforeExists: f.NowExists,
+		BeforeMode:   f.NowMode,
 		AfterExists:  r.BeforeExists,
 		Agent:        MainAgent,
 		Origin:       Approved,
@@ -195,17 +201,47 @@ func (f UndoFile) restore() (Record, error) {
 			return Record{}, err
 		}
 	}
-	if err := os.WriteFile(r.Path, []byte(r.Before), undoMode(r.Path)); err != nil {
+	// The mode argument takes effect only where WriteFile creates the file,
+	// so a file still on disk keeps the permissions it has: an undo restores
+	// content and has no business reversing a chmod it never made. A file
+	// the turn deleted is created right here, and it is created with the
+	// mode the record kept — so a script the turn removed comes back
+	// executable, rather than needing a chmod the model has to be approved
+	// for. See docs/capabilities/coding-agent.md#a-turn-ends-with-what-changed.
+	//
+	// Whether this write is the creation is asked of disk rather than of the
+	// plan: a plan can sit through a long confirmation, and the mode below
+	// would then either be skipped on a file that is being created after all
+	// or forced onto one that came back in the meantime.
+	_, statErr := os.Stat(r.Path)
+	creating := os.IsNotExist(statErr)
+	mode := restoreMode(r)
+	if err := os.WriteFile(r.Path, []byte(r.Before), mode); err != nil {
 		return Record{}, err
+	}
+	if creating && r.BeforeMode != 0 {
+		// WriteFile's mode is masked by the process umask, which would drop
+		// the very bits being restored; Chmod is not masked. A record with no
+		// mode is deliberately left to the umask instead: it gets the default
+		// a new file has always got here, masked the way it always was.
+		//
+		// A failure is ignored on purpose. The content is already back, and
+		// calling the file unrestored would drop the reverse record and say
+		// the wrong thing about what is on disk; the file keeps the mode the
+		// write gave it, which is where it stood before any of this.
+		_ = os.Chmod(r.Path, mode)
 	}
 	return rev, nil
 }
 
-// undoMode keeps the file's own permissions where it still exists — an undo
-// restores content, and has no business making a script unexecutable.
-func undoMode(path string) os.FileMode {
-	if st, err := os.Stat(path); err == nil {
-		return st.Mode().Perm()
+// restoreMode is the mode a file the turn deleted is put back with. A record
+// carrying none — one made before the mode was recorded, or by a path that
+// never read it — takes the default rather than a guess: reading a #! line or
+// an extension would hand out an execute bit nobody granted, and quietly
+// making a file executable is a worse failure than the one being fixed.
+func restoreMode(r Record) os.FileMode {
+	if r.BeforeMode != 0 {
+		return r.BeforeMode.Perm()
 	}
 	return undoFileMode
 }

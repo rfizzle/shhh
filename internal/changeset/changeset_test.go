@@ -108,6 +108,24 @@ func TestAdd_RepeatedEditsCollapseToOneNetRecord(t *testing.T) {
 	}
 }
 
+// The collapsed record's before side has to describe one moment: the mode
+// travels with the content it belongs to, or an undo restores the first edit's
+// text with the second edit's permissions.
+func TestAdd_CollapseKeepsTheEarliestBeforeMode(t *testing.T) {
+	s := New(0)
+	first := rec("a.sh", "one\n", "one\ntwo\n")
+	first.BeforeMode = 0o755
+	second := rec("a.sh", "one\ntwo\n", "one\ntwo\nthree\n")
+	second.BeforeMode = 0o644
+	s.Add(2, first)
+	s.Add(2, second)
+
+	turn, _ := s.Turn(2)
+	if r := turn.Records[0]; r.BeforeMode != 0o755 {
+		t.Fatalf("the net record should carry the mode the turn found, got %v", r.BeforeMode)
+	}
+}
+
 func TestAdd_EditedBackToWhereItStartedDropsTheRecord(t *testing.T) {
 	s := New(0)
 	s.Add(3, rec("a.go", "one\n", "two\n"))

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -341,5 +342,88 @@ func TestLooksLineNumbered(t *testing.T) {
 		if got := looksLineNumbered(tc.in); got != tc.want {
 			t.Errorf("looksLineNumbered(%q) = %v, want %v", tc.in, got, tc.want)
 		}
+	}
+}
+
+// A rewrite is a rewrite, not a re-creation: the mode argument the write
+// carries applies only to a file it brings into existence, so overwriting a
+// script leaves it executable.
+func TestWriteFile_OverwriteKeepsTheFileMode(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix permissions")
+	}
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "script.sh")
+	if err := os.WriteFile(path, []byte("#!/bin/sh\necho one\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// The mode WriteFile is given is masked by the umask; the fixture has to
+	// be exactly 0755 whatever the umask running the suite is.
+	if err := os.Chmod(path, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	readWholeFile(t, path)
+	args, _ := json.Marshal(writeFileArgs{Path: path, Content: "#!/bin/sh\necho two\n"})
+
+	if _, err := ExecuteMutating(WriteFileName, args); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o755 {
+		t.Fatalf("mode after the overwrite = %v, want 0755", info.Mode().Perm())
+	}
+}
+
+// A file the tool creates gets the default mode. The exact bits are the
+// process umask's business; what matters is that nothing here grants execute
+// permission on its own.
+func TestWriteFile_NewFileIsNotExecutable(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix permissions")
+	}
+	path := filepath.Join(t.TempDir(), "new.sh")
+	args, _ := json.Marshal(writeFileArgs{Path: path, Content: "#!/bin/sh\n"})
+
+	if _, err := ExecuteMutating(WriteFileName, args); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm()&0o111 != 0 {
+		t.Fatalf("a created file should not be executable, got %v", info.Mode().Perm())
+	}
+}
+
+// An edit writes the file in place, which is what keeps its mode. Asserted so
+// a future rewrite of the write path does not quietly take it away.
+func TestEditFile_KeepsTheFileMode(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix permissions")
+	}
+	path := filepath.Join(t.TempDir(), "script.sh")
+	if err := os.WriteFile(path, []byte("#!/bin/sh\necho one\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// The mode WriteFile is given is masked by the umask; the fixture has to
+	// be exactly 0755 whatever the umask running the suite is.
+	if err := os.Chmod(path, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	args, _ := json.Marshal(editFileArgs{Path: path, OldText: "one", NewText: "two"})
+
+	if _, err := ExecuteMutating(EditFileName, args); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o755 {
+		t.Fatalf("mode after the edit = %v, want 0755", info.Mode().Perm())
 	}
 }

@@ -8,6 +8,7 @@ package changeset
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -235,5 +236,159 @@ func TestUndo_EvictedTurnIsRefusableApart(t *testing.T) {
 	}
 	if s.WasEvicted(9) {
 		t.Fatal("a turn that never existed was not evicted")
+	}
+}
+
+// A file the turn deleted has no mode left on disk to reuse, so the record is
+// the only place it can come from: an executable script is executable again.
+func TestUndo_RestoresTheModeOfADeletedFile(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix permissions")
+	}
+	dir := t.TempDir()
+	deleted := wrote(t, dir, "gone.sh", "#!/bin/sh\n", "")
+	deleted.BeforeMode = 0o755
+	turn := turnOf(t, deleted)
+
+	out := PlanUndo(turn, nil).Apply(false)
+	if len(out.Failed) != 0 {
+		t.Fatalf("restoring a deleted file should not fail, got %+v", out.Failed)
+	}
+	info, err := os.Stat(filepath.Join(dir, "gone.sh"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o755 {
+		t.Fatalf("the restored script's mode = %v, want 0755", info.Mode().Perm())
+	}
+}
+
+// A record made before the mode was kept carries none, and zero is not a mode
+// a file could have had — so the restore falls back to the default rather
+// than inventing one.
+func TestUndo_RecordWithoutAModeRestoresAtTheDefault(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix permissions")
+	}
+	dir := t.TempDir()
+	turn := turnOf(t, wrote(t, dir, "gone.sh", "#!/bin/sh\n", ""))
+
+	out := PlanUndo(turn, nil).Apply(false)
+	if len(out.Failed) != 0 {
+		t.Fatalf("restoring a deleted file should not fail, got %+v", out.Failed)
+	}
+	// The default is masked by the process umask exactly as it always was, so
+	// a probe written the same way is the honest expectation.
+	probe := filepath.Join(dir, "probe")
+	if err := os.WriteFile(probe, nil, undoFileMode); err != nil {
+		t.Fatal(err)
+	}
+	want, err := os.Stat(probe)
+	if err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Stat(filepath.Join(dir, "gone.sh"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != want.Mode().Perm() {
+		t.Fatalf("the restored file's mode = %v, want the default %v", info.Mode().Perm(), want.Mode().Perm())
+	}
+}
+
+// A file the turn only rewrote is still on disk, and the permissions it has
+// now are the ones it keeps: an undo restores content, and a chmod somebody
+// made since is not the turn's to take back.
+func TestUndo_RewrittenFileKeepsThePermissionsItHasNow(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix permissions")
+	}
+	dir := t.TempDir()
+	rewrite := wrote(t, dir, "script.sh", "#!/bin/sh\necho one\n", "#!/bin/sh\necho two\n")
+	rewrite.BeforeMode = 0o644
+	turn := turnOf(t, rewrite)
+	path := filepath.Join(dir, "script.sh")
+	if err := os.Chmod(path, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	out := PlanUndo(turn, nil).Apply(true)
+	if len(out.Failed) != 0 {
+		t.Fatalf("the rewrite should have been restored, got %+v", out.Failed)
+	}
+	if got, _ := read(t, path); got != "#!/bin/sh\necho one\n" {
+		t.Fatalf("the file should be back to what it was, got %q", got)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o755 {
+		t.Fatalf("mode after the undo = %v, want the 0755 it had", info.Mode().Perm())
+	}
+}
+
+// An undo is a change like any other and can itself be undone, so its own
+// record has to carry the mode of the file it found — otherwise the second
+// undo is the first one's bug all over again.
+func TestUndo_ReverseRecordCarriesTheModeItFound(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix permissions")
+	}
+	dir := t.TempDir()
+	// The turn created the script; someone made it executable afterwards.
+	turn := turnOf(t, wrote(t, dir, "made.sh", "", "#!/bin/sh\n"))
+	path := filepath.Join(dir, "made.sh")
+	if err := os.Chmod(path, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	out := PlanUndo(turn, nil).Apply(true)
+	if len(out.Records) != 1 {
+		t.Fatalf("the undo should have recorded its own edit, got %+v", out)
+	}
+	if _, ok := read(t, path); ok {
+		t.Fatal("undoing a creation removes the file")
+	}
+
+	back := PlanUndo(turnOf(t, out.Records[0]), nil).Apply(false)
+	if len(back.Failed) != 0 {
+		t.Fatalf("undoing the undo should not fail, got %+v", back.Failed)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o755 {
+		t.Fatalf("the file should come back executable, got %v", info.Mode().Perm())
+	}
+}
+
+// A plan is a snapshot and can be answered minutes later. If the file went
+// away in between, the restore is a creation after all, and the mode has to
+// come from the record rather than from what the plan happened to see.
+func TestUndo_FileRemovedAfterThePlanIsRestoredWithItsMode(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix permissions")
+	}
+	dir := t.TempDir()
+	rewrite := wrote(t, dir, "script.sh", "#!/bin/sh\necho one\n", "#!/bin/sh\necho two\n")
+	rewrite.BeforeMode = 0o755
+	plan := PlanUndo(turnOf(t, rewrite), nil)
+	path := filepath.Join(dir, "script.sh")
+	if err := os.Remove(path); err != nil {
+		t.Fatal(err)
+	}
+
+	out := plan.Apply(false)
+	if len(out.Failed) != 0 {
+		t.Fatalf("the restore should have recreated the file, got %+v", out.Failed)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o755 {
+		t.Fatalf("the recreated script's mode = %v, want 0755", info.Mode().Perm())
 	}
 }

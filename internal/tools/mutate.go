@@ -36,6 +36,15 @@ func DefinitionsFull() []provider.Tool {
 	return defs
 }
 
+// newFileMode is what a file one of these tools brings into existence is
+// created with. An existing file keeps the mode it already has: os.WriteFile
+// applies a mode only when it creates the file, which is what stops a rewrite
+// of a 0755 script from leaving it unexecutable. Don't swap either write for
+// a create-truncate that sets the mode unconditionally — nothing here has a
+// reason to change permissions, and putting them back costs the model a
+// chmod, which is a gated command.
+const newFileMode os.FileMode = 0o644
+
 // IsMutating reports whether name is a file-modification tool that must go
 // through the user approval queue before it runs.
 func IsMutating(name string) bool {
@@ -161,7 +170,7 @@ func executeWriteFile(raw json.RawMessage) (string, error) {
 			return "", fmt.Errorf("cannot create parent directories: %w", err)
 		}
 	}
-	if err := os.WriteFile(args.Path, []byte(args.Content), 0o644); err != nil {
+	if err := os.WriteFile(args.Path, []byte(args.Content), newFileMode); err != nil {
 		forget(args.Path)
 		return "", fmt.Errorf("cannot write file: %w", err)
 	}
@@ -235,7 +244,7 @@ func executeEditFile(raw json.RawMessage) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if err := os.WriteFile(args.Path, []byte(updated), 0o644); err != nil {
+	if err := os.WriteFile(args.Path, []byte(updated), newFileMode); err != nil {
 		// The file is now of unknown content, so nothing may be claimed about
 		// it until something reads it again.
 		forget(args.Path)

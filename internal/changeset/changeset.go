@@ -16,6 +16,7 @@
 package changeset
 
 import (
+	"os"
 	"sort"
 	"sync"
 	"time"
@@ -88,6 +89,14 @@ type Record struct {
 	// deletion tellable apart.
 	Before, After             string
 	BeforeExists, AfterExists bool
+	// BeforeMode is the file's permission bits as the turn found them, and
+	// zero where nothing read them: the file was not there, or the record
+	// came by a path that does not stat. Zero reads as "unknown" and takes
+	// the default, which also swallows a file that genuinely was mode 000 —
+	// not worth a second field to tell apart, since nothing the session
+	// writes produces one. Permission bits only: an edit never changed an
+	// owner or a timestamp, so putting one back is not undo's to do.
+	BeforeMode os.FileMode
 	// Agent is MainAgent for the session's own edits, or the child's name.
 	Agent  string
 	Origin Origin
@@ -215,8 +224,10 @@ func New(maxBytes int64) *Store {
 // write evicted, so the caller can say so rather than losing them silently.
 //
 // A file edited several times in one turn collapses to one net record: the
-// earliest Before is kept, the latest everything else wins, and the hunks are
-// recomputed across the pair. A record that changes nothing is dropped.
+// earliest before side is kept — content, existence and mode together, so
+// the three never describe different moments — the latest everything else
+// wins, and the hunks are recomputed across the pair. A record that changes
+// nothing is dropped.
 func (s *Store) Add(turn int64, r Record) (evicted []int64) {
 	if s == nil || !r.Changed() {
 		return nil
@@ -243,7 +254,7 @@ func (s *Store) Add(turn int64, r Record) (evicted []int64) {
 	if i := indexOf(t.Records, r.Path); i >= 0 {
 		prev := t.Records[i]
 		s.bytes -= prev.size()
-		r.Before, r.BeforeExists = prev.Before, prev.BeforeExists
+		r.Before, r.BeforeExists, r.BeforeMode = prev.Before, prev.BeforeExists, prev.BeforeMode
 		r.compute()
 		if !r.Changed() {
 			// The turn edited the file back to where it started.

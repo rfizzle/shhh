@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -82,6 +83,39 @@ func TestChangeset_RecordsAnApprovedWrite(t *testing.T) {
 	}
 	if turn.Files() != 1 || turn.Added != 1 {
 		t.Fatalf("the turn should aggregate to 1 file +1, got %d files +%d", turn.Files(), turn.Added)
+	}
+}
+
+// Undo has nothing on disk to read a mode from once a file is gone, so the
+// record has to carry the one the session found.
+func TestChangeset_RecordCarriesTheModeTheFileHad(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix permissions")
+	}
+	m := gatedModel(t, nil, nil)
+	m.turnCount = 3
+	path := filepath.Join(t.TempDir(), "script.sh")
+	if err := os.WriteFile(path, []byte("#!/bin/sh\necho one\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	// The mode WriteFile is given is masked by the umask; the fixture has to
+	// be exactly 0755 whatever the umask running the suite is.
+	if err := os.Chmod(path, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	showFile(t, path)
+	m = applyWrite(t, m, path, "#!/bin/sh\necho two\n", "y")
+
+	turn, ok := m.changes.Turn(3)
+	if !ok {
+		t.Fatal("the applied write should be recorded against the turn")
+	}
+	r, ok := turn.Record(path)
+	if !ok {
+		t.Fatalf("expected a record for %s, got %+v", path, turn.Records)
+	}
+	if r.BeforeMode != 0o755 {
+		t.Fatalf("the record should carry the mode the file had, got %v", r.BeforeMode)
 	}
 }
 

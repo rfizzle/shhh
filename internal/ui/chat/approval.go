@@ -539,12 +539,16 @@ func (m Model) changeRecorder() changeRecording {
 	}
 }
 
-// fileState is a file as it was at one moment: content, and whether it was
-// there at all.
+// fileState is a file as it was at one moment: content, permissions, and
+// whether it was there at all.
 type fileState struct {
 	text   string
 	exists bool
 	track  changeset.Tracking
+	// mode is zero where there was no file to have permissions. The record
+	// keeps it so undo can put a file the turn deleted back the way it found
+	// it, executable bit included.
+	mode os.FileMode
 }
 
 // before reads the file the approved call is about to modify, along with
@@ -575,6 +579,7 @@ func (c changeRecording) after(before fileState) []int64 {
 		After:        now.text,
 		BeforeExists: before.exists,
 		AfterExists:  now.exists,
+		BeforeMode:   before.mode,
 		Agent:        changeset.MainAgent,
 		Origin:       c.origin,
 		Track:        before.track,
@@ -589,7 +594,13 @@ func readFileState(path string) fileState {
 	if err != nil {
 		return fileState{}
 	}
-	return fileState{text: string(data), exists: true}
+	st := fileState{text: string(data), exists: true}
+	if fi, err := os.Stat(path); err == nil {
+		// Permission bits only. Ownership and times are not the session's to
+		// give back: no edit here ever changed them.
+		st.mode = fi.Mode().Perm()
+	}
+	return st
 }
 
 // approvalCard assembles the components.ApprovalCard
