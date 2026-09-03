@@ -1021,8 +1021,22 @@ func New(initialMessages []provider.Message, stream StreamFunc) Model {
 	ta.Prompt = ""
 	ta.Focus()
 	ta.CharLimit = 0
-	ta.SetHeight(inputHeight)
 	ta.ShowLineNumbers = false
+	// The draft's cursor is the terminal's own: it blinks at the reader's
+	// rate, takes their shape, and is where an input method and a screen
+	// reader look for it (docs/interface/surfaces.md#the-input-frame). What
+	// this surface owes in return is a coordinate on every frame, which
+	// drawPromptFrame reports from the rectangle it draws the draft into.
+	ta.SetVirtualCursor(false)
+	// The box grows and shrinks with what is in it, counted by the textarea
+	// against the same wrap it draws with, so the box and its contents cannot
+	// disagree about how many rows there are. The floor is the three rows the
+	// box has always had; the ceiling moves with the terminal and is set on
+	// every fit (fitDraft).
+	ta.DynamicHeight = true
+	ta.MinHeight = inputHeight
+	ta.MaxHeight = maxDraftRows
+	ta.SetHeight(inputHeight)
 	// Three keys insert a line break, one of which the user can find:
 	// shift+enter is rewritten to ctrl+j before the textarea sees it
 	// (newline.go), and ctrl+j is the chord that works in a terminal too old
@@ -1574,7 +1588,11 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.width = msg.Width
 		m.height = msg.Height
-		m.syncInputWidth()
+		// The horizontal pass first, because nothing above it depends on a
+		// height; the vertical rows are read after it, and read again on the
+		// tail when fitting the draft to the new width re-wrapped it into a
+		// different number of rows (layout.go, syncInputHeight).
+		m.fitDraft()
 		// The transcript wraps to its pane, which is narrower than the content
 		// width while the inspector rail shows.
 		paneWidth := m.transcriptWidth()
@@ -2690,7 +2708,13 @@ func (m Model) sendUserMessageAs(text, shown string) (tea.Model, tea.Cmd) {
 // state the model believed in and the terminal had never been told about. A
 // field cannot drift from what View draws, because it is what View draws.
 func (m Model) View() tea.View {
-	v := tea.NewView(m.screen())
+	var cur cursorSink
+	v := tea.NewView(m.paint(&cur))
+	// The one cursor the terminal draws, reported by whichever block was
+	// painted with the keyboard (layout.go). Nil is a frame nobody is typing
+	// into, and the terminal hides its own rather than parking it wherever
+	// the last write left it.
+	v.Cursor = cur.at
 	v.AltScreen = true
 	// Focus reporting is asked for unconditionally, because it costs the
 	// terminal nothing and it is the only thing that can say whether anyone
@@ -2718,7 +2742,12 @@ func (m Model) View() tea.View {
 // layout.go resolved for it. Nothing here measures anything: a
 // block is handed a rectangle, it fills what it can, and ultraviolet clips
 // the rest at the edge.
-func (m Model) screen() string {
+func (m Model) screen() string { return m.paint(nil) }
+
+// paint is screen() with somewhere to report the cursor to. A caller that
+// holds no terminal — a capture, a measurement — passes nil and gets the
+// same characters.
+func (m Model) paint(cur *cursorSink) string {
 	if m.quitting {
 		return ""
 	}
@@ -2756,7 +2785,7 @@ func (m Model) screen() string {
 		draw(strings.Join(rail, "\n"), s.in(s.body, s.inspector))
 	}
 
-	m.drawBottomPanel(scr, s.bottom)
+	m.drawBottomPanel(scr, s.bottom, cur)
 
 	return renderScreen(scr)
 }
@@ -2879,7 +2908,7 @@ func (m Model) liveTailHeight() int {
 // (docs/interface/surfaces.md#the-input-frame), or the divider +
 // status-bar stack with whichever takeover surface replaced the input under
 // it.
-func (m Model) drawBottomPanel(scr uv.Screen, area uv.Rectangle) {
+func (m Model) drawBottomPanel(scr uv.Screen, area uv.Rectangle, cur *cursorSink) {
 	if m.frameShowing() {
 		// A decision that has not been given the keyboard rides above the
 		// frame, with the rail that names the keyboard's owner between them.
@@ -2887,10 +2916,37 @@ func (m Model) drawBottomPanel(scr uv.Screen, area uv.Rectangle) {
 		layout.Vertical(layout.Len(m.interruptHeight()), layout.Fill(1)).
 			Split(area).Assign(&head, &frame)
 		drawIn(scr, m.renderInterrupt(area.Dx()), head)
-		m.drawPromptFrame(scr, frame)
+		m.drawPromptFrame(scr, frame, cur)
 		return
 	}
 	drawIn(scr, m.takeoverPanel(area.Dx()), area)
+	// The panel opens with the divider and the status bar, so whatever is
+	// being typed into under them starts that far down.
+	body := area
+	body.Min.Y += dividerHeight + statusBarHeight
+	cur.place(m.takeoverCursor(area.Dx()), body)
+}
+
+// takeoverCursor is where the terminal's cursor stands in the takeover panel,
+// in the panel's own cells below the divider and the status bar: the picker's
+// filter row, the rename row under the saved-chat picker, or — on a terminal
+// too narrow for the frame at all — the bare input that stands in for it.
+// Every other takeover surface is read rather than typed into, and the rewind
+// card is a fixed set of answers with no filter row, so all of them place
+// none and the terminal hides its cursor over them.
+func (m Model) takeoverCursor(width int) *tea.Cursor {
+	if m.agentList != nil || m.activeChildAsk() != nil {
+		return nil
+	}
+	switch m.state {
+	case statePick:
+		return m.pickCursor(width)
+	case stateInput, stateStreaming, stateRunningCmd, stateClassifying:
+		// Below minFrameWidth the frame degrades to the bare input
+		// (frame.go), which is still the draft and still owns the keyboard.
+		return m.input.Cursor()
+	}
+	return nil
 }
 
 // takeoverPanel is the bottom panel when the frame is not showing: the

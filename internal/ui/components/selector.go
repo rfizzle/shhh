@@ -65,10 +65,15 @@ type SelectResult struct {
 }
 
 // queryCursor is the block that follows what has been typed into the filter
-// row. It is a character rather than a terminal cursor because the card is
-// drawn into a viewport, where there is only ever one real cursor and the
-// input frame owns it.
+// row when the card is painting its own cursor. A card knows nothing about
+// where on the screen it was drawn, so it cannot place the terminal's; a host
+// that does know turns the painted one off and reads Cursor instead
+// (docs/interface/surfaces.md#selectors).
 const queryCursor = "█"
+
+// queryPrompt leads the filter row. The cursor stands after it and after
+// whatever has been typed, so it is measured rather than written down twice.
+const queryPrompt = "▸ "
 
 // Select is the single-select card (docs/interface/surfaces.md#selectors):
 // ↑↓/jk move, enter selects, number keys select immediately, esc cancels, and
@@ -154,6 +159,14 @@ type Select struct {
 	// queryEdited records that the last Update changed Query, so a host can
 	// re-run its match rule. QueryChanged reads and clears it.
 	queryEdited bool
+
+	// hostCursor says the host places the terminal's own cursor on the filter
+	// row, so the card draws a space where its block would go. It is stored
+	// as the negation of what SetVirtualCursor takes because every card in
+	// the tree is a composite literal: the zero value has to be the painted
+	// cursor, which is the only cursor a card whose host never said otherwise
+	// can have.
+	hostCursor bool
 
 	// window is the slice of Options the card shows when the list is taller
 	// than the card, and the shared one every long list scrolls
@@ -423,7 +436,7 @@ func (s *Select) queryRows(width int) []string {
 		return nil
 	}
 	inner := max(width-cardFrameWidth, 1)
-	typed := sty.Info.Render("▸ ") + sty.QueryText.Render(s.Query+queryCursor)
+	typed := sty.Info.Render(queryPrompt) + sty.QueryText.Render(s.Query+s.cursorCell())
 	if s.Query == "" && s.QueryHint != "" {
 		// A row that has just been opened by a key says what the key was for.
 		// It goes as soon as anything is typed, because from then on the row
@@ -438,6 +451,49 @@ func (s *Select) queryRows(width int) []string {
 		return []string{typed + strings.Repeat(" ", pad) + count}
 	}
 	return []string{clip(typed, inner), clip(count, inner)}
+}
+
+// SetVirtualCursor says whether the card paints its own cursor on the filter
+// row, the way bubbles' own text inputs take the same decision. It is on
+// until a host says otherwise, because a host that has said nothing is not
+// placing the terminal's cursor and a filter row with no cursor at all says
+// nothing about where the next character will go.
+func (s *Select) SetVirtualCursor(v bool) { s.hostCursor = !v }
+
+// cursorCell is what the filter row draws where the cursor stands: the block
+// when the card paints it, and the space the terminal's own cursor sits on
+// when the host places it. The cell is spent either way, so the row is the
+// same width under both.
+func (s *Select) cursorCell() string {
+	if s.hostCursor {
+		return " "
+	}
+	return queryCursor
+}
+
+// Cursor is where the terminal's cursor belongs on the filter row, in the
+// card's own cells — the host adds the corner it drew the card into. It is
+// nil for a card with no filter row open and for one still painting its own,
+// which is the nil bubbles' text inputs return and means the same thing: this
+// block is not asking for the terminal's cursor.
+//
+// A query too long for the row is one the row clipped, and a cursor past the
+// clip would stand on a character that is not there, so it stops at the last
+// cell the row drew.
+func (s *Select) Cursor(width int) *tea.Cursor {
+	if !s.Filtering || !s.hostCursor {
+		return nil
+	}
+	inner := max(width-cardFrameWidth, 1)
+	x := max(min(lipgloss.Width(queryPrompt+s.Query), inner-1), 0)
+	if width < minCardWidth {
+		// Below the frame the rows are drawn bare, so the filter row is the
+		// card's first row and starts at its left edge.
+		return tea.NewCursor(x, 0)
+	}
+	// Inside the frame the row is preceded by the border and its padding
+	// column, and the top border is a row of its own.
+	return tea.NewCursor(x+cardFrameWidth/2, 1)
 }
 
 // chips is the count on the title rail: how big the catalog is, and — when

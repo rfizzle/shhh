@@ -269,6 +269,47 @@ func TestSelectFilter_NarrowRowStacksBothCounts(t *testing.T) {
 	}
 }
 
+// A host that places the terminal's own cursor takes the painted one off the
+// row and reads the coordinate instead. The cell is still spent, so the row is
+// the same width under both and nothing else on the card moves.
+func TestSelectFilter_TheHostCanTakeTheCursor(t *testing.T) {
+	painted := filtered("mini")
+	real := filtered("mini")
+	real.SetVirtualCursor(false)
+
+	if painted.Cursor(60) != nil {
+		t.Fatal("a card painting its own cursor is not asking for the terminal's")
+	}
+	cur := real.Cursor(60)
+	if cur == nil {
+		t.Fatal("a card that gave up its painted cursor should say where the real one goes")
+	}
+	// Two columns for the card's border and its padding, two for the ▸
+	// prompt, and one per character of the query.
+	if want := 2 + 2 + len("mini"); cur.X != want {
+		t.Fatalf("cursor column %d, want %d — after the prompt and the query", cur.X, want)
+	}
+	// The top border is a row of its own, so the filter row is the second.
+	if cur.Y != 1 {
+		t.Fatalf("cursor row %d, want the row under the card's top border", cur.Y)
+	}
+
+	before, after := ansi.Strip(painted.View(60)), ansi.Strip(real.View(60))
+	if strings.Contains(after, "█") {
+		t.Fatalf("the block should be gone where the terminal draws the cursor:\n%s", after)
+	}
+	if strings.ReplaceAll(before, "█", " ") != after {
+		t.Fatalf("only the cursor cell should differ:\n%s\n%s", before, after)
+	}
+
+	// A card with no filter row open has no cursor to offer either way.
+	closed := &Select{Title: "Switch model", Options: catalog(), MaxLines: 10}
+	closed.SetVirtualCursor(false)
+	if closed.Cursor(60) != nil {
+		t.Fatal("a card with no query row open should place no cursor")
+	}
+}
+
 // The title rail carries the catalog's size and, when the card could not show
 // all of it, how much is on screen — and spends nothing on a list that fits.
 func TestSelectWindow_TheRailCountsTheCatalog(t *testing.T) {

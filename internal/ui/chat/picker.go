@@ -93,6 +93,9 @@ func (m Model) openPickerWith(title string, opts []components.SelectOption, focu
 		AltLabel:   alt.Label,
 		EnterLabel: alt.Enter,
 	}
+	// The panel places the terminal's own cursor on the filter row, so the
+	// card stops painting one (docs/interface/surfaces.md#selectors).
+	m.picker.SetVirtualCursor(false)
 	m.pickerAll = opts
 	m.pickerIndex = identityIndex(len(opts))
 	m.pickerApply = apply

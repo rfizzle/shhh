@@ -61,6 +61,23 @@ func TestFormat_MonoSaysSoInTheHeader(t *testing.T) {
 	}
 }
 
+// The cursor is the one thing a capture leaves no character behind for, so
+// the header is the only place it can be read.
+func TestFormat_CursorCoordinateIsInTheHeader(t *testing.T) {
+	placed := Format("prompt.w80", Case{Surface: "prompt frame", Width: 80,
+		Cursor: &Cursor{X: 4, Y: 2}, Panels: []Panel{{View: "\u276f "}}})
+	if !strings.Contains(placed, "# cursor:  column 4, row 2") {
+		t.Fatalf("the header should state where the cursor stood:\n%s", placed)
+	}
+	// A surface that places none says so rather than leaving the line out: a
+	// capture that stopped placing one is then a one-line diff.
+	none := Format("row.w80", Case{Surface: "activity row", Width: 80,
+		Panels: []Panel{{View: "read"}}})
+	if !strings.Contains(none, "# cursor:  none") {
+		t.Fatalf("a capture with no cursor should say so:\n%s", none)
+	}
+}
+
 // A single unlabelled panel renders bare — a one-state surface carries no
 // chrome it did not ask for.
 func TestRenderPanels_UnlabelledPanelIsBare(t *testing.T) {

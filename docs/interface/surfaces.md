@@ -258,6 +258,21 @@ and breaks the line instead, which is what that character has meant at
 every shell prompt the reader has ever typed a continuation into. A
 doubled backslash sends, carrying the one literal character it spells.
 
+The cursor in the box is the terminal's own rather than a block shhh paints.
+It blinks at the rate the reader set, takes the shape they chose, and is where
+an input method puts its candidate window and where a screen reader looks for
+the caret — none of which a drawn glyph can be. What the surface owes in
+return is one coordinate per frame, and only one: a terminal draws a single
+cursor, so the block holding the keyboard says where it is and every other
+block says nothing. That is what puts it on the reverse search's row while the
+match sitting in the box above it goes without.
+
+The box holds three rows while the draft fits in three, and from there grows a
+row per wrapped line to a ceiling of twelve — or to whatever a short
+terminal's bottom panel allows, where that is less. Past the ceiling it
+scrolls inside itself, because a draft long enough to page through is one to
+write somewhere else.
+
 The draft edits like the shell's own line. The chords a shell user's hands
 already know — line start and end, kill to end and to start, delete a word,
 move by word — reach the text rather than opening surfaces, because muscle
@@ -597,6 +612,12 @@ keystroke on opening the row it would have gone into is the card asking to be
 asked. The saved chats are the one catalog that still opens as a list: its
 rows carry the keys that delete and rename, and those keys are what the reader
 came for.
+
+The cursor on that row is the terminal's own wherever the surface holding the
+card places one, and a painted block only where it does not: a card knows
+nothing about where on the screen it was drawn, so it cannot place a real
+cursor itself, and a filter row with no cursor at all would say nothing about
+where the next character goes.
 
 While the query row is open every bare letter is text, so for as long as a
 card is being typed into it has no letter keys of its own. Clearing a filter

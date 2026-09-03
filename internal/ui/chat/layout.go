@@ -28,6 +28,7 @@ package chat
 import (
 	"strings"
 
+	tea "charm.land/bubbletea/v2"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/ultraviolet/layout"
 
@@ -187,6 +188,51 @@ func (m Model) surface() surfaceLayout {
 // fixed, because it is the only one whose content decides its own size.
 func (m Model) bottomRows() int {
 	return m.bottomPanelHeight() + bottomChromeHeight + m.frameExtraHeight()
+}
+
+// cursorSink collects the one cursor a frame has. A terminal draws exactly
+// one, so the block that owns the keyboard reports its own — in its own cells
+// — at the moment it is painted, which is the only moment the rectangle it
+// was painted into is known. A paint with no sink is a measurement or a
+// capture rather than a frame anyone is looking at, and places none.
+type cursorSink struct{ at *tea.Cursor }
+
+// place moves a block's own cursor into the rectangle the block was drawn in.
+//
+// The two edges are not the same kind of edge. A column one past the last
+// cell is the ordinary end-of-line position — a draft filling its width to
+// the last column reports it, and the next character lands on the row below —
+// so it stands on the last cell rather than a column the block does not own.
+// A row outside the rectangle means the block was clipped there (drawIn), and
+// a cursor on a row somebody else drew would point at their text: no cursor is
+// a smaller lie than one in the wrong place, so that one is dropped.
+func (c *cursorSink) place(cur *tea.Cursor, into uv.Rectangle) {
+	if c == nil || cur == nil || into.Empty() {
+		return
+	}
+	at := *cur
+	at.X = min(at.X+into.Min.X, into.Max.X-1)
+	at.Y += into.Min.Y
+	if at.X < into.Min.X || at.Y < into.Min.Y || at.Y >= into.Max.Y {
+		return
+	}
+	c.at = &at
+}
+
+// fitDraft re-fits the draft box to the terminal: its ceiling first, because
+// the ceiling is what the row count is clamped to, then the width, because
+// the width is what the box re-wraps and re-counts its rows against.
+//
+// This is the horizontal pass, and the one place the two halves of the split
+// are not independent: the box counts its own wrapped rows
+// (docs/interface/surfaces.md#the-input-frame), so a narrower terminal can
+// wrap a line that was not wrapped before and make the bottom panel a row
+// taller than the vertical split last budgeted for. So the vertical pass is
+// taken after this one rather than beside it — a second pass, and the last
+// one, because it moves no width and nothing it counts can move under it.
+func (m *Model) fitDraft() {
+	m.input.MaxHeight = m.draftMaxRows()
+	m.syncInputWidth()
 }
 
 // drawIn paints a rendered block into one rectangle. Everything the surface

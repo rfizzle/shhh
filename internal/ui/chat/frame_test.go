@@ -422,11 +422,11 @@ func TestDraftBoxGrowsAndShrinks(t *testing.T) {
 	m.input.SetValue(strings.Repeat("line\n", 8) + "line")
 	updated, _ := m.Update(resizeSettledMsg{seq: m.resizeSeq})
 	m = updated.(Model)
-	if got := m.input.Height(); got != 11 {
-		t.Fatalf("nine-line draft box height %d, want 11", got)
+	if got := m.input.Height(); got != 9 {
+		t.Fatalf("nine-line draft box height %d, want a row per line", got)
 	}
-	if got := m.viewportHeight(); got != restRows-8 {
-		t.Fatalf("viewport %d rows, want %d — the box must take exactly what it grew", got, restRows-8)
+	if got := m.viewportHeight(); got != restRows-(9-inputHeight) {
+		t.Fatalf("viewport %d rows, want %d — the box must take exactly what it grew", got, restRows-(9-inputHeight))
 	}
 
 	m.input.SetValue("")
@@ -463,18 +463,198 @@ func TestDraftBoxCapped(t *testing.T) {
 }
 
 // A width change that re-wraps the draft moves the height in the same
-// message — there is no second pass to wait for.
+// message: the horizontal pass fits the box to the new width and the vertical
+// one is taken after it, over the box as it came back.
 func TestDraftBoxGrowsOnWidthShrink(t *testing.T) {
 	m := frameModel(t, 110, 40)
-	m.input.SetValue(strings.Repeat("wrap me ", 12)) // ~96 cells, one row at w110
+	m.input.SetValue(strings.Repeat("wrap me ", 40)) // ~320 cells: four rows at w110
 	updated, _ := m.Update(resizeSettledMsg{seq: m.resizeSeq})
 	m = updated.(Model)
 	before := m.input.Height()
+	if before <= inputHeight {
+		t.Fatalf("fixture: the draft should already wrap past %d rows, got %d", inputHeight, before)
+	}
 
 	updated, _ = m.Update(tea.WindowSizeMsg{Width: 60, Height: 40})
 	m = updated.(Model)
 	if got := m.input.Height(); got <= before {
 		t.Fatalf("box height %d after the shrink, want more than %d", got, before)
+	}
+}
+
+// And it settles there. The two passes are ordered rather than iterated —
+// the second changes no width, so nothing it counts can move under it — and
+// this is what says so: fitting the surface again at the same size moves
+// neither the box nor the rows the transcript was left with.
+func TestResizeSettlesInOneExtraPass(t *testing.T) {
+	m := frameModel(t, 110, 40)
+	m.input.SetValue(strings.Repeat("wrap me ", 40))
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 60, Height: 40})
+	m = updated.(Model)
+
+	box, rows := m.input.Height(), m.viewport.Height()
+	if box <= inputHeight {
+		t.Fatalf("fixture: the draft should have re-wrapped past %d rows, got %d", inputHeight, box)
+	}
+	// The rows the pane holds are the rows the split hands out over the box
+	// as it now is, not as it was before the width moved.
+	if want := m.viewportHeight(); rows != want {
+		t.Fatalf("viewport %d rows, want the %d the split budgets after the re-wrap", rows, want)
+	}
+	m.fitDraft()
+	m.syncInputHeight()
+	if m.input.Height() != box || m.viewport.Height() != rows {
+		t.Fatalf("a second pass moved the box to %d rows and the pane to %d, want %d and %d",
+			m.input.Height(), m.viewport.Height(), box, rows)
+	}
+}
+
+// The draft's cursor is the terminal's own, so the frame owes it a
+// coordinate on every frame: the cell after what has been typed, inside the
+// box rather than at the box's own corner.
+func TestDraftCursorIsPlacedInTheBox(t *testing.T) {
+	m := frameModel(t, 110, 40)
+	var cur cursorSink
+	m.paint(&cur)
+	empty := cur.at
+	if empty == nil {
+		t.Fatal("an empty draft still has a cursor: it is where the first character goes")
+	}
+	// Nothing is painted there — the cell is a space — so the coordinate is
+	// the only record of it.
+	if empty.X <= 0 || empty.Y <= 0 {
+		t.Fatalf("cursor at %v, want it inside the frame rather than at the screen corner", empty.Position)
+	}
+
+	m.input.SetValue("hello")
+	m.syncInputHeight()
+	cur = cursorSink{}
+	m.paint(&cur)
+	typed := cur.at
+	if typed == nil {
+		t.Fatal("a draft with text in it still owns the cursor")
+	}
+	if got, want := typed.X, empty.X+len("hello"); got != want {
+		t.Fatalf("cursor column %d after five characters, want %d", got, want)
+	}
+	if typed.Y != empty.Y {
+		t.Fatalf("a draft that has not wrapped should not have moved the cursor's row")
+	}
+
+	// A draft long enough to wrap puts it on the row it wrapped onto.
+	m.input.SetValue(strings.Repeat("wrap me ", 40))
+	m.syncInputHeight()
+	cur = cursorSink{}
+	m.paint(&cur)
+	wrapped := cur.at
+	if wrapped == nil {
+		t.Fatal("a wrapped draft still owns the cursor")
+	}
+	if wrapped.Y <= empty.Y {
+		t.Fatalf("cursor row %d on a wrapped draft, want it below the first row %d",
+			wrapped.Y, empty.Y)
+	}
+	// The box grows upward from a bottom rail the panel holds still, so the
+	// row being typed on is where the last row of the smallest box was.
+	if want := empty.Y + inputHeight - 1; wrapped.Y != want {
+		t.Fatalf("cursor row %d on the last of the box's %d rows, want %d",
+			wrapped.Y, m.input.Height(), want)
+	}
+}
+
+// And it does at every width, in every layout the frame has: the box's
+// rectangle is resolved once and both the paint and the cursor read it, so a
+// mode that placed the cursor somewhere the box does not own would be a
+// rectangle the paint had drawn into too. The narrow modes are the ones with
+// no test of their own otherwise — the plain layout below minFrameWidth draws
+// no box at all, and the cursor comes off the bare input under the status bar.
+func TestDraftCursorInEveryLayout(t *testing.T) {
+	for _, width := range append([]int{14}, goldenWidths...) {
+		for _, draft := range []string{"", "abc", strings.Repeat("wrap me ", 12)} {
+			m := frameModel(t, width, 40)
+			for _, r := range draft {
+				updated, _ := m.Update(tea.KeyPressMsg{Code: r, Text: string(r)})
+				m = updated.(Model)
+			}
+			var cur cursorSink
+			rows := strings.Split(m.paint(&cur), "\n")
+			if cur.at == nil {
+				t.Errorf("w%d, %d characters typed: the draft has the keyboard and no cursor", width, len(draft))
+				continue
+			}
+			if cur.at.Y < 0 || cur.at.Y >= len(rows) {
+				t.Errorf("w%d: cursor row %d outside the %d-row screen", width, cur.at.Y, len(rows))
+			}
+			if cur.at.X < horizontalPadding || cur.at.X >= width-horizontalPadding {
+				t.Errorf("w%d: cursor column %d outside the content columns", width, cur.at.X)
+			}
+		}
+	}
+}
+
+// A draft that fills its last column reports the column after it, which is
+// where the next character goes and is one past the cells the box owns. The
+// cursor stands on the last cell rather than on the border beside it — and it
+// stands somewhere, which is the part that matters: a cursor dropped at the
+// wrap boundary would blink out every time a line filled.
+func TestDraftCursorAtTheWrapBoundary(t *testing.T) {
+	m := frameModel(t, 60, 40)
+	for range m.input.Width() {
+		updated, _ := m.Update(tea.KeyPressMsg{Code: 'a', Text: "a"})
+		m = updated.(Model)
+	}
+	var cur cursorSink
+	m.paint(&cur)
+	if cur.at == nil {
+		t.Fatal("a draft filled to its last column still has a cursor")
+	}
+	if cur.at.X >= m.contentWidth()+horizontalPadding {
+		t.Fatalf("cursor column %d, want it inside the content columns", cur.at.X)
+	}
+}
+
+// The reverse search takes the keyboard off the draft, so the cursor goes to
+// the row being typed into rather than staying in the match above it.
+func TestHistorySearchTakesTheCursor(t *testing.T) {
+	m := frameModel(t, 110, 40)
+	m.inputHistory = []string{"go test ./internal/agent"}
+	opened, _ := m.openHistorySearch()
+	m = opened.(Model)
+	m.histSearch.query = "test"
+	m.placeHistoryMatch()
+
+	var cur cursorSink
+	m.paint(&cur)
+	if cur.at == nil {
+		t.Fatal("the search row is what is being typed into, so it owns the cursor")
+	}
+	if got, want := cur.at.X, lipgloss.Width(m.searchRowHead()); got <= want-1 {
+		t.Fatalf("cursor column %d, want it past the %d-cell label and query", got, want)
+	}
+}
+
+// The box's reported height is the rows it draws, at every width the captures
+// cover. The panel budgets the transcript's rows from the number the textarea
+// reports, so a box that drew one more row than it said would be a row
+// nothing paid for — which is the accounting the whole vertical split rests
+// on (layout.go).
+func TestDraftBoxReportsTheRowsItDraws(t *testing.T) {
+	drafts := []string{
+		"",
+		"one line",
+		strings.Repeat("wrap me ", 40),
+		strings.Repeat("line\n", 8) + "line",
+		strings.Repeat("line\n", 30) + "line",
+	}
+	for _, width := range append([]int{14}, goldenWidths...) {
+		for _, draft := range drafts {
+			m := frameModel(t, width, 40)
+			m.input.SetValue(draft)
+			m.syncInputHeight()
+			if got, want := lipgloss.Height(m.input.View()), m.input.Height(); got != want {
+				t.Errorf("w%d: the box draws %d rows and reports %d", width, got, want)
+			}
+		}
 	}
 }
 

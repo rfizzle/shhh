@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/golden"
@@ -100,6 +101,36 @@ func TestChatPick_DeletingTheLastChatClosesThePicker(t *testing.T) {
 	m = press(t, m, "y")
 	if m.state != stateInput || m.picker != nil || m.chats.active {
 		t.Fatal("a picker with no rows left should close")
+	}
+}
+
+// The rename row is typed into, so it takes the terminal's cursor off the
+// card's filter row above it — one keyboard, one cursor.
+func TestChatPick_RenameRowTakesTheCursor(t *testing.T) {
+	m := chatsPicker(t, "alpha", "alpha", "beta")
+	m = press(t, m, "r")
+
+	var cur cursorSink
+	screen := strings.Split(ansi.Strip(m.paint(&cur)), "\n")
+	if cur.at == nil {
+		t.Fatal("the rename row owns the keyboard, so it owns the cursor")
+	}
+	row := -1
+	for i, line := range screen {
+		if strings.Contains(line, "rename ▸") {
+			row = i
+		}
+	}
+	if row < 0 {
+		t.Fatalf("fixture: the rename row should be on screen:\n%s", strings.Join(screen, "\n"))
+	}
+	if cur.at.Y != row {
+		t.Fatalf("cursor on row %d, want the rename row at %d", cur.at.Y, row)
+	}
+	// Prefilled with the name and the cursor left at its end, so a suffix is
+	// one keystroke away.
+	if want := len("rename ▸ ") + len("alpha"); cur.at.X != want {
+		t.Fatalf("cursor column %d, want %d — after the prompt and the name", cur.at.X, want)
 	}
 }
 

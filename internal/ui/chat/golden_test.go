@@ -55,6 +55,26 @@ var goldenWidths = []int{60, 80, 110, 130}
 // be a copy of the layout block.
 func captureGolden(t *testing.T, name, surface string, widths []int, panels func(width int) []golden.Panel) {
 	t.Helper()
+	captureCases(t, name, surface, widths, func(width int) ([]golden.Panel, *golden.Cursor) {
+		return panels(width), nil
+	})
+}
+
+// captureCursorGolden is captureGolden for a surface that owns the terminal's
+// cursor: the coordinate goes in the header, where it is the only record of a
+// cursor the render itself shows nothing for. It takes one panel because the
+// header records one cursor — two states in one file would leave it speaking
+// for whichever of them the fixture built.
+func captureCursorGolden(t *testing.T, name, surface string, widths []int, panel func(width int) (golden.Panel, *golden.Cursor)) {
+	t.Helper()
+	captureCases(t, name, surface, widths, func(width int) ([]golden.Panel, *golden.Cursor) {
+		p, cur := panel(width)
+		return []golden.Panel{p}, cur
+	})
+}
+
+func captureCases(t *testing.T, name, surface string, widths []int, build func(width int) ([]golden.Panel, *golden.Cursor)) {
+	t.Helper()
 	was := components.Profile()
 	components.SetProfile(colorprofile.ANSI256)
 	t.Cleanup(func() { components.SetProfile(was) })
@@ -68,11 +88,13 @@ func captureGolden(t *testing.T, name, surface string, widths []int, panels func
 			monoRestore(t)
 			components.SetMono(mono)
 			for _, width := range widths {
+				panels, cur := build(width)
 				golden.Assert(t, name+".w"+strconv.Itoa(width), golden.Case{
 					Surface: surface,
 					Width:   width,
 					Mono:    mono,
-					Panels:  panels(width),
+					Cursor:  cur,
+					Panels:  panels,
 				})
 			}
 		})
@@ -222,13 +244,12 @@ func TestGolden_PromptFrame(t *testing.T) {
 // (frame.go, syncInputHeight): one row per line up to the cap, with the
 // transcript paying for the rows above it.
 func TestGolden_GrownDraft(t *testing.T) {
-	captureGolden(t, "grown-draft", "the grown draft box", []int{80}, func(width int) []golden.Panel {
+	captureCursorGolden(t, "grown-draft", "the grown draft box", []int{80}, func(width int) (golden.Panel, *golden.Cursor) {
 		m := goldenModel(t, width)
 		m.input.SetValue("first the failing test\nthen the fix in loop.go\nthen the fixture\nthen make ci\nthen stop")
 		m.syncInputHeight()
-		return []golden.Panel{
-			{Label: "draft \u00b7 five lines", View: promptSurface(m)},
-		}
+		view, cur := promptCapture(m)
+		return golden.Panel{Label: "draft \u00b7 five lines", View: view}, cur
 	})
 }
 
@@ -474,6 +495,25 @@ func promptSurface(m Model) string {
 		return m.renderPromptFrame()
 	}
 	return m.input.View()
+}
+
+// promptCapture is promptSurface with the cursor the surface placed inside
+// it, in the render's own cells.
+func promptCapture(m Model) (string, *golden.Cursor) {
+	if !m.frameShowing() {
+		// The bare input is its own render, so its cursor needs no offset.
+		return m.input.View(), goldenCursor(m.input.Cursor())
+	}
+	var cur cursorSink
+	view := m.renderPromptFrameWith(&cur)
+	return view, goldenCursor(cur.at)
+}
+
+func goldenCursor(cur *tea.Cursor) *golden.Cursor {
+	if cur == nil {
+		return nil
+	}
+	return &golden.Cursor{X: cur.X, Y: cur.Y}
 }
 
 // widthsCoverEveryFrameLayout guards the fixture itself: the capture is only

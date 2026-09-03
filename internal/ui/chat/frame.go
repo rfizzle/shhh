@@ -20,7 +20,6 @@ import (
 	"charm.land/lipgloss/v2"
 	uv "github.com/charmbracelet/ultraviolet"
 	"github.com/charmbracelet/ultraviolet/layout"
-	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -418,7 +417,9 @@ func (m Model) inputInnerWidth() int {
 }
 
 // syncInputWidth re-fits the textarea to the frame; call it when the width
-// or the gutter (attach/detach) changes.
+// or the gutter (attach/detach) changes. The box counts its own rows against
+// the width it is given, so this can move its height too — fitDraft is the
+// caller that cares (layout.go).
 func (m *Model) syncInputWidth() {
 	m.input.SetWidth(m.inputInnerWidth())
 }
@@ -429,17 +430,27 @@ func (m *Model) syncInputWidth() {
 // is the surface for that.
 const maxDraftRows = 12
 
-// syncInputHeight grows the box with the draft, one row per wrapped line,
-// and shrinks it back as lines are removed. It runs on the update tail, so a
-// width change that re-wraps a line moves the height in the same message.
-// The viewport pays for every row the box takes and gets it back, through
-// the same split every panel change settles by (layout.go).
+// draftMaxRows is the box's ceiling on this terminal: maxDraftRows, or the
+// panel's own bound where that is lower
+// (docs/interface/principles.md#the-grammar: the bottom panel takes at most
+// 40% of the terminal), less the two chrome rows around the box. It never
+// falls below the three rows the box has always had, because a ceiling under
+// the floor is a box that cannot show the line being typed into it.
+func (m Model) draftMaxRows() int {
+	return max(min(maxDraftRows, m.maxConfirmPanelHeight()-bottomChromeHeight), inputHeight)
+}
+
+// syncInputHeight settles what the draft box costs the transcript. The height
+// itself is no longer counted here: the textarea grows and shrinks with its
+// own content between draftMaxRows and the three rows the box starts at, and
+// it wraps that content with the same rule it draws it by, so the box and its
+// contents can no longer disagree about how many rows there are. What is left
+// is the rows the viewport gives up or gets back, through the same split
+// every panel change settles by (layout.go).
+//
+// It runs on the update tail, so a keystroke, a paste, a recalled message and
+// a resize all settle the same way.
 func (m *Model) syncInputHeight() {
-	h := m.draftBoxRows()
-	if h == m.input.Height() {
-		return
-	}
-	m.input.SetHeight(h)
 	if !m.ready {
 		return
 	}
@@ -456,28 +467,6 @@ func (m *Model) syncInputHeight() {
 			m.viewport.GotoBottom()
 		}
 	}
-}
-
-// draftBoxRows is the height the box wants: its content's wrapped rows plus
-// the two rows of air the one-line box has always kept, bounded by
-// maxDraftRows and by the panel's own ceiling
-// (docs/interface/principles.md#the-grammar: the bottom panel takes at most
-// 40% of the terminal), less the two chrome rows around the box.
-func (m *Model) draftBoxRows() int {
-	width := m.input.Width()
-	if width <= 0 {
-		return inputHeight
-	}
-	rows := 0
-	for _, line := range strings.Split(m.input.Value(), "\n") {
-		// The count mirrors the textarea's own soft wrap: words break at the
-		// width and a word wider than the whole line breaks inside itself.
-		// An exotic line the two disagree on costs one row of air or one row
-		// of the textarea's internal scroll, never a broken frame.
-		rows += strings.Count(ansi.Wrap(line, width, ""), "\n") + 1
-	}
-	bound := min(maxDraftRows, m.maxConfirmPanelHeight()-bottomChromeHeight)
-	return min(max(rows+inputHeight-1, inputHeight), max(bound, inputHeight))
 }
 
 // noticeLine assembles the notice rail: update notice, queued
@@ -715,43 +704,40 @@ func (m Model) frameDraftLines() (lines, menu []string) {
 	return lines, menu
 }
 
-// drawPromptFrame paints the whole surface into its rectangle: the rails
-// above the box, then the box — top rail, gutter + input rows (+ completion
-// menu), vitals rail, bottom rail — each in the rectangle frameBoxFor
-// resolved for it. The rails above the box are rows of the
-// surface rather than rows of the box, which is why they are split off first.
-func (m Model) drawPromptFrame(scr uv.Screen, area uv.Rectangle) {
-	mode := m.frameLayout()
-	accent := m.frameAccentStyle()
-	width := area.Dx()
+// promptRects is the frame's vertical split inside a rectangle: the rails
+// above the box, the box's own columns, and the four bands of it. The paint
+// reads it and so does the cursor, which is what keeps the two from
+// disagreeing about which row the draft is on.
+type promptRects struct {
+	above  uv.Rectangle
+	rails  []string
+	box    frameBox
+	top    uv.Rectangle
+	drafts uv.Rectangle
+	vitals uv.Rectangle
+	bottom uv.Rectangle
+}
 
-	var above, boxArea uv.Rectangle
-	pre := m.framePreRails()
-	rails := 0
-	for _, rail := range pre {
+// promptFrameRects resolves the frame inside a rectangle.
+func (m Model) promptFrameRects(area uv.Rectangle) promptRects {
+	var r promptRects
+	r.rails = m.framePreRails()
+	shown := 0
+	for _, rail := range r.rails {
 		if rail != "" {
-			rails++
+			shown++
 		}
 	}
-	layout.Vertical(layout.Len(rails), layout.Fill(1)).Split(area).Assign(&above, &boxArea)
-	row := 0
-	for _, rail := range pre {
-		if rail == "" {
-			continue
-		}
-		drawIn(scr, rail, rowAt(above, row))
-		row++
-	}
+	var boxArea uv.Rectangle
+	layout.Vertical(layout.Len(shown), layout.Fill(1)).Split(area).Assign(&r.above, &boxArea)
 
-	lines, menu := m.frameDraftLines()
 	// The wide layout gets a rail of its own for the vitals; the others hang
 	// them on the closing rail.
 	vitalsRows := 0
-	if mode == frameWide {
+	if m.frameLayout() == frameWide {
 		vitalsRows = 1
 	}
-	box := m.frameBoxFor(boxArea)
-	var top, drafts, vitalsRail, bottom uv.Rectangle
+	r.box = m.frameBoxFor(boxArea)
 	// The rails are fixed and the draft rows absorb whatever is left, so a
 	// box given more rows than it has content for stays closed rather than
 	// trailing blank rows under its own bottom border.
@@ -760,13 +746,41 @@ func (m Model) drawPromptFrame(scr uv.Screen, area uv.Rectangle) {
 		layout.Fill(1),
 		layout.Len(vitalsRows),
 		layout.Len(1),
-	).Split(box.area).Assign(&top, &drafts, &vitalsRail, &bottom)
+	).Split(r.box.area).Assign(&r.top, &r.drafts, &r.vitals, &r.bottom)
+	return r
+}
 
+// drawPromptFrame paints the whole surface into its rectangle: the rails
+// above the box, then the box — top rail, gutter + input rows (+ completion
+// menu), vitals rail, bottom rail — each in the rectangle promptFrameRects
+// resolved for it. The rails above the box are rows of the
+// surface rather than rows of the box, which is why they are split off first.
+//
+// cur is where the terminal's own cursor is reported from, because this is
+// the one place that knows the screen cell the draft's first character lands
+// in. A caller with no screen to place a cursor on passes nil.
+func (m Model) drawPromptFrame(scr uv.Screen, area uv.Rectangle, cur *cursorSink) {
+	mode := m.frameLayout()
+	accent := m.frameAccentStyle()
+	width := area.Dx()
+
+	r := m.promptFrameRects(area)
+	row := 0
+	for _, rail := range r.rails {
+		if rail == "" {
+			continue
+		}
+		drawIn(scr, rail, rowAt(r.above, row))
+		row++
+	}
+
+	lines, menu := m.frameDraftLines()
+	box := r.box
 	topLeft, topRight := m.topRailLabels(mode, width)
-	drawRail(scr, top, accent, "╭", "╮", topLeft, topRight)
+	drawRail(scr, r.top, accent, "╭", "╮", topLeft, topRight)
 
-	for i := range drafts.Dy() {
-		y := drafts.Min.Y - box.area.Min.Y + i
+	for i := range r.drafts.Dy() {
+		y := r.drafts.Min.Y - box.area.Min.Y + i
 		drawIn(scr, accent.Render("│"), rowAt(box.left, y))
 		drawIn(scr, accent.Render("│"), rowAt(box.right, y))
 		switch {
@@ -783,14 +797,40 @@ func (m Model) drawPromptFrame(scr uv.Screen, area uv.Rectangle) {
 			drawIn(scr, menu[i-len(lines)], rowAt(box.inner, y))
 		}
 	}
+	m.placeFrameCursor(cur, r, len(lines))
 
 	vitals := " " + m.frameVitals(mode, railLabelWidth("", width)) + " "
 	if mode == frameWide {
-		drawRail(scr, vitalsRail, accent, "├", "┤", vitals, "")
-		drawRail(scr, bottom, accent, "╰", "╯", " "+m.frameHints()+" ", "")
+		drawRail(scr, r.vitals, accent, "├", "┤", vitals, "")
+		drawRail(scr, r.bottom, accent, "╰", "╯", " "+m.frameHints()+" ", "")
 		return
 	}
-	drawRail(scr, bottom, accent, "╰", "╯", vitals, "")
+	drawRail(scr, r.bottom, accent, "╰", "╯", vitals, "")
+}
+
+// placeFrameCursor reports where the terminal's cursor stands inside the
+// frame just painted. The draft owns it — it is the surface's editor, and its
+// cursor is the terminal's own rather than a glyph shhh paints
+// (docs/interface/surfaces.md#the-input-frame) — except while the history
+// search is open, where the draft shows the match and the row under it is
+// what is being typed into. A frame nobody is typing into places none, and
+// the terminal hides its cursor.
+func (m Model) placeFrameCursor(cur *cursorSink, r promptRects, drafted int) {
+	if cur == nil {
+		return
+	}
+	if m.historySearching() {
+		// The search states itself on the first menu row, which starts at the
+		// box edge rather than under the draft's text.
+		row := rowAt(r.box.inner, r.drafts.Min.Y-r.box.area.Min.Y+drafted)
+		cur.place(m.searchCursor(), row)
+		return
+	}
+	// The textarea reports its cursor against its own first cell, which is
+	// the first draft row inside the gutter.
+	draft := r.box.draft
+	draft.Min.Y, draft.Max.Y = r.drafts.Min.Y, r.drafts.Max.Y
+	cur.place(m.input.Cursor(), draft)
 }
 
 // renderPromptFrame is the same surface as a string, for the captures and for
@@ -798,8 +838,13 @@ func (m Model) drawPromptFrame(scr uv.Screen, area uv.Rectangle) {
 // the interrupt card riding above it, which is the same accounting the
 // vertical split hands out — the frame cannot be sized one way and budgeted
 // for another.
-func (m Model) renderPromptFrame() string {
+func (m Model) renderPromptFrame() string { return m.renderPromptFrameWith(nil) }
+
+// renderPromptFrameWith is the same render with somewhere to report the
+// cursor to, for a caller holding the frame's own coordinates rather than the
+// screen's.
+func (m Model) renderPromptFrameWith(cur *cursorSink) string {
 	scr := uv.NewScreenBuffer(max(m.contentWidth(), 0), max(m.bottomRows()-m.interruptHeight(), 0))
-	m.drawPromptFrame(scr, scr.Bounds())
+	m.drawPromptFrame(scr, scr.Bounds(), cur)
 	return renderScreen(scr)
 }

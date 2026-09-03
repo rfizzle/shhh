@@ -6,6 +6,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -46,6 +47,35 @@ func paletteLabels(m Model) []string {
 	return out
 }
 
+// The query row is what is being typed into, so the panel puts the
+// terminal's cursor on it rather than on the draft the palette covered.
+func TestPalette_QueryRowTakesTheCursor(t *testing.T) {
+	m := openPaletteWith(t, paletteModel(t), "cl")
+
+	var cur cursorSink
+	screen := strings.Split(ansi.Strip(m.paint(&cur)), "\n")
+	if cur.at == nil {
+		t.Fatal("the query row owns the keyboard, so it owns the cursor")
+	}
+	row := -1
+	for i, line := range screen {
+		if strings.Contains(line, "▸ cl") {
+			row = i
+		}
+	}
+	if row < 0 {
+		t.Fatalf("fixture: the query row should be on screen:\n%s", strings.Join(screen, "\n"))
+	}
+	if cur.at.Y != row {
+		t.Fatalf("cursor on row %d, want the query row at %d", cur.at.Y, row)
+	}
+	// The cell the cursor stands on is the space where the card used to paint
+	// its own block, so the column is the one after the query.
+	if got := []rune(screen[row])[cur.at.X-1]; got != 'l' {
+		t.Fatalf("cursor column %d stands after %q, want the end of the query", cur.at.X, got)
+	}
+}
+
 func TestPalette_CtrlKOpensGroupedResults(t *testing.T) {
 	m := openPaletteWith(t, paletteModel(t), "")
 
@@ -59,8 +89,13 @@ func TestPalette_CtrlKOpensGroupedResults(t *testing.T) {
 	if !m.picker.Filtering {
 		t.Fatal("the palette is the shared filter row always open, so the card should be filtering")
 	}
-	if !strings.Contains(m.picker.View(70), "▸ █") {
+	if !strings.Contains(ansi.Strip(m.picker.View(70)), "▸ ") {
 		t.Fatalf("the palette should carry its query line:\n%s", m.picker.View(70))
+	}
+	// The panel places the terminal's own cursor on that row, so the card
+	// paints no block there and reports the coordinate instead.
+	if m.picker.Cursor(70) == nil {
+		t.Fatal("the query row is where the terminal's cursor goes, so the card should say where")
 	}
 	if got := strings.Join(m.picker.Chips, ""); !strings.Contains(got, "results") {
 		t.Fatalf("the title rail should count the results, got %q", got)

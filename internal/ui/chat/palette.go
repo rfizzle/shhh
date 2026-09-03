@@ -108,6 +108,9 @@ func (m Model) openPalette() (tea.Model, tea.Cmd) {
 		Filtering: true,
 		Hint:      "enter run · tab complete · ↑↓ move · esc dismiss",
 	}
+	// The panel places the terminal's own cursor on the query row, so the
+	// card stops painting one (docs/interface/surfaces.md#selectors).
+	m.picker.SetVirtualCursor(false)
 	m.pickerApply = nil
 	m.refreshPalette()
 	m.enterSurface(statePick)

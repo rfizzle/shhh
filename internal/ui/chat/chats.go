@@ -141,6 +141,28 @@ func (m Model) chatPickLines() []string {
 	return nil
 }
 
+// pickCursor is where the terminal's cursor stands inside the picker panel,
+// in the panel's own cells: the rename row when one is open under the card,
+// and otherwise the card's own filter row. Only one of the two is ever being
+// typed into — opening the rename row is what takes the keyboard off the
+// filter.
+func (m Model) pickCursor(width int) *tea.Cursor {
+	if m.picker == nil {
+		return nil
+	}
+	if row := m.chats.rename; row != nil {
+		cur := row.Cursor()
+		if cur == nil {
+			return nil
+		}
+		// The rename row is drawn under the card, so it starts where the
+		// card's rows end.
+		cur.Y += len(strings.Split(m.picker.View(width), "\n"))
+		return cur
+	}
+	return m.picker.Cursor(width)
+}
+
 // focusedChat is the entry under the picker's pointer, mapped back through
 // the filter to the list it was built from.
 func (m Model) focusedChat() (storage.ChatListEntry, bool) {
@@ -248,6 +270,10 @@ func newRenameRow(name string, width int) *textinput.Model {
 	ti.SetValue(name)
 	ti.CursorEnd()
 	ti.SetWidth(max(width-len(ti.Prompt)-1, 8))
+	// Like the draft above it, the row hands the terminal its own cursor
+	// back (docs/interface/surfaces.md#the-input-frame); the panel reports
+	// the coordinate from the row it drew it on.
+	ti.SetVirtualCursor(false)
 	ti.Focus()
 	return &ti
 }

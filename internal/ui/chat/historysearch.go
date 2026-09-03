@@ -150,6 +150,26 @@ func (m *Model) placeHistoryMatch() {
 	m.input.SetValue(matches[hs.idx])
 }
 
+// searchRowHead is the row up to the end of the query — the label and what
+// has been typed. The cursor stands at the end of it, so it is measured here
+// rather than being written down a second time.
+func (m Model) searchRowHead() string {
+	return sty.Search.Label.Render("history search") +
+		sty.Search.State.Render(": ") + sty.Search.Query.Render(m.histSearch.query)
+}
+
+// searchCursor is where the terminal's cursor stands on the search row, in
+// that row's own cells: after the query, which is what the next keystroke
+// extends. It is not in the draft above, even though the draft is where the
+// match shows — a cursor sitting in the match would say the match was what
+// was being edited, and the next character would go somewhere else.
+func (m Model) searchCursor() *tea.Cursor {
+	if m.histSearch == nil {
+		return nil
+	}
+	return tea.NewCursor(lipgloss.Width(m.searchRowHead()), 0)
+}
+
 // historySearchLines is the search stating itself under the draft: the query
 // and where it stands, then the keys. It rides the completion menu's rows
 // because it is the same kind of thing — the input explaining itself.
@@ -167,9 +187,7 @@ func (m Model) historySearchLines() []string {
 			state = fmt.Sprintf("%d of %d", hs.idx+1, n)
 		}
 	}
-	row := sty.Search.Label.Render("history search") +
-		sty.Search.State.Render(": ") + sty.Search.Query.Render(hs.query) +
-		sty.Search.State.Render(" · "+state)
+	row := m.searchRowHead() + sty.Search.State.Render(" · "+state)
 	// The bar's words are shorter than the register's: the box clips at its
 	// border rather than shedding, so the row has to fit the narrow layouts
 	// whole. The keys are still the register's.
