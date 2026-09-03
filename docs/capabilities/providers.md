@@ -119,12 +119,42 @@ table the way a declared price does — including a declaration of none, which
 is a statement about a model, not the absence of one. A private gateway's ids
 are exactly the ones the public table will never learn.
 
+An endpoint can answer for itself, and about the context window it does. A
+runtime that serves the weights is asked what length it loaded them at, in
+the same request the model picker already makes of it, and that answer
+outranks the table. Not because the table is unreliable, but because for a
+self-hosted model it is silent: the public table keys those under a gateway's
+id, and a local runtime reports the name the weights are installed under,
+which no public table has ever seen. Most runtimes report no length at all,
+and they cost nothing for being asked — the question is asked once, in the
+background, and everything reads the table as before until an answer lands.
+
 Below the table there is a floor by family for the models the table has not
 caught up with. A brand-new Claude is sent the shape the current Claudes
 take, a brand-new GPT the shape the current GPTs take; the table overrides
 the floor the day it learns the model. Wrong-by-family costs one refused
 request; wrong-by-silence costs a model asked to think less than it can, on
 every turn, until someone notices.
+
+The floor carries the context window as well as the thinking shape, and it
+names the self-hosted families beside the hosted ones for the same reason the
+endpoint is asked first: a bare weight name is precisely what the table
+cannot key. Here the two ways to be wrong are not symmetric either. A window
+guessed low is a session throwing away findings it had the room to keep and
+rediscovering them the next turn, quietly, for as long as the session lasts;
+a window guessed high is one request the endpoint refuses or truncates, once,
+visibly.
+
+Which way each family leans follows from what an unrecognised name in it
+means. A hosted model the table cannot describe was announced this morning
+and is the largest thing its family has, so the family's figure is the
+current generation's. A self-hosted one is whatever somebody chose to pull,
+the tags an older and much smaller build answers to are still in every
+library, and no endpoint is behind the floor to correct it — the runtime
+most people run locally reports no window at all. So a self-hosted family
+carries a row for an older generation wherever that generation is both still
+widely served and much smaller than the current one, and a version written
+the way weights are packaged is read as the version it is.
 
 ## The prompt prefix is paid for once
 

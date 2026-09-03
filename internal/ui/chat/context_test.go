@@ -317,20 +317,21 @@ func TestCompact_ToolCallsAbort(t *testing.T) {
 	}
 }
 
-// Where the context window comes from when the pricing table is silent
-// . The window sets the trim threshold, so assuming 32k against a
-// model with far more was throwing away findings the session had room to
-// keep.
+// Where the context window comes from when the pricing table is silent. The
+// window sets the trim threshold, so assuming 32k against a model with far
+// more was throwing away findings the session had room to keep.
 func TestContextWindow_FallsBackToTheModelFamily(t *testing.T) {
 	for _, tc := range []struct {
 		model string
 		want  int64
 	}{
 		{"gpt-4o", 128_000},
-		{"claude-opus-5", 200_000},
+		{"claude-opus-5", 1_000_000},
+		{"claude-3-5-sonnet", 200_000},
 		{"gemini-3.7-flash", 1_000_000},
 		{"google/gemini-2.5-pro", 1_000_000},
 		{"claude-opus-5[1m]", 1_000_000},
+		{"llama3.1:70b", 128_000},
 		{"some-local-llama-build", DefaultContextWindow},
 		{"", DefaultContextWindow},
 	} {
@@ -338,5 +339,27 @@ func TestContextWindow_FallsBackToTheModelFamily(t *testing.T) {
 		if got := m.contextWindow(); got != tc.want {
 			t.Errorf("%q: context window = %d, want %d", tc.model, got, tc.want)
 		}
+	}
+}
+
+// The endpoint outranks the table: a runtime reporting the length it loaded
+// the weights at knows something no public table can.
+func TestContextWindow_EndpointOutranksTheTable(t *testing.T) {
+	windows := map[string]int64{"qwen3:8b": 262_144}
+	lookup := func(model string) (int64, bool) {
+		w, ok := windows[model]
+		return w, ok
+	}
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
+		WithPricing(nil, "qwen3:8b").
+		WithEndpointWindows(lookup)
+	if got := m.contextWindow(); got != 262_144 {
+		t.Errorf("endpoint window = %d, want 262144", got)
+	}
+
+	// A model the endpoint has not described falls through to the family.
+	m = m.WithPricing(nil, "claude-opus-5")
+	if got := m.contextWindow(); got != 1_000_000 {
+		t.Errorf("unanswered model = %d, want the family floor 1000000", got)
 	}
 }

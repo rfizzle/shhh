@@ -92,3 +92,108 @@ func TestChatModels_Filters(t *testing.T) {
 		t.Fatalf("expected only the chat models, got %v", got)
 	}
 }
+
+// The family floor for a model the fetched table has no key for. Wrong-low is
+// the failure that matters here: it trims a conversation the model had room
+// to keep.
+func TestContextWindowFor(t *testing.T) {
+	for _, tc := range []struct {
+		model string
+		want  int64
+		known bool
+	}{
+		{"claude-opus-5", 1_000_000, true},
+		{"claude-sonnet-5-20260101", 1_000_000, true},
+		{"claude-3-5-sonnet", 200_000, true},
+		{"claude-opus-4-5", 200_000, true},
+		{"claude-opus-4-7", 1_000_000, true},
+		{"claude-haiku-4-5", 200_000, true},
+		{"anthropic/claude-opus-5-thinking", 1_000_000, true},
+		{"llama3.1:70b", 128_000, true},
+		{"llama3", 8_192, true},
+		{"llama2:13b", 4_096, true},
+		{"llama4:scout", 128_000, true},
+		{"meta-llama/Meta-Llama-3.3-70B-Instruct", 128_000, true},
+		{"qwen2.5-coder:7b", 32_768, true},
+		{"deepseek-chat", 65_536, true},
+		{"mistral-nemo", 32_768, true},
+		{"mixtral:8x7b", 32_768, true},
+		{"gemma3:27b", 128_000, true},
+		{"gemma2:9b", 8_192, true},
+		{"phi4", 16_384, true},
+		{"phi3:medium", 4_096, true},
+		// The spellings that must not move: a digit that is already
+		// separated, and one that never was.
+		{"gpt-4o-mini", 128_000, true},
+		{"o3-mini", 200_000, true},
+		{"my-own-finetune", 0, false},
+		{"", 0, false},
+	} {
+		got, ok := ContextWindowFor(tc.model)
+		if ok != tc.known || got != tc.want {
+			t.Errorf("ContextWindowFor(%q) = %d, %v; want %d, %v", tc.model, got, ok, tc.want, tc.known)
+		}
+	}
+}
+
+func TestOpenAICompat_ModelWindows(t *testing.T) {
+	srv := modelsServer(t, `{"object":"list","data":[
+		{"id":"Qwen/Qwen3-8B","max_model_len":262144},
+		{"id":"local.gguf","meta":{"n_ctx":8192,"n_ctx_train":131072}},
+		{"id":"lmstudio-model","max_context_length":32768},
+		{"id":"llama3"}]}`)
+
+	p, err := NewOpenAICompat(ResolveOpts{BaseURL: srv.URL + "/v1"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	windows, err := p.ModelWindows(context.Background())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for id, want := range map[string]int64{
+		"qwen/qwen3-8b":  262_144,
+		"local.gguf":     8_192,
+		"lmstudio-model": 32_768,
+	} {
+		if got := windows[id]; got != want {
+			t.Errorf("window for %q = %d, want %d", id, got, want)
+		}
+	}
+	// A runtime that reports no length is not an answer, and the table and
+	// the family floor take it from there.
+	if _, ok := windows["llama3"]; ok {
+		t.Errorf("a model with no reported length should be absent, got %v", windows)
+	}
+}
+
+// A provider built over somebody else's client has no transport of its own to
+// ask with, and says so rather than guessing.
+func TestOpenAICompat_ModelWindowsWithoutATransport(t *testing.T) {
+	windows, err := newTestCompat("http://unused", "llama3").ModelWindows(context.Background())
+	if err != nil || windows != nil {
+		t.Fatalf("expected no answer and no error, got %v, %v", windows, err)
+	}
+}
+
+func TestOpenAICompat_ModelWindowsError(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	}))
+	defer srv.Close()
+
+	p, err := NewOpenAICompat(ResolveOpts{BaseURL: srv.URL + "/v1"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if _, err := p.ModelWindows(context.Background()); err == nil {
+		t.Fatal("expected an error from an endpoint with no catalog")
+	}
+}
+
+func TestOpenAICompatIsAModelWindower(t *testing.T) {
+	var p Provider = &OpenAICompat{}
+	if _, ok := p.(ModelWindower); !ok {
+		t.Fatal("the compat provider should answer for its endpoint's windows")
+	}
+}

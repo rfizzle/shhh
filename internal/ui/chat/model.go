@@ -894,9 +894,13 @@ type Model struct {
 	vitals        vitals
 	projectTokens int64
 	prices        *pricing.Table
-	modelName     string
-	updateNotice  string
-	keysNotice    string
+	// endpointWindows answers what the endpoint serving the session's model
+	// says its context length is, for the runtimes that report one. Nil for
+	// every provider whose models the public table already describes.
+	endpointWindows func(string) (int64, bool)
+	modelName       string
+	updateNotice    string
+	keysNotice      string
 	// Reasoning effort (reasoning.go): the level this session is on,
 	// the hook that carries a change to the next request, and the persisted
 	// default with whatever outranks it — the model's three, for the setting
@@ -1111,6 +1115,16 @@ func (m Model) WithInitialPrompt(prompt string) Model {
 func (m Model) WithPricing(prices *pricing.Table, modelName string) Model {
 	m.prices = prices
 	m.modelName = modelName
+	return m
+}
+
+// WithEndpointWindows wires the endpoint's own answer for a model's context
+// length (provider.ModelWindower), which outranks the pricing table: a local
+// runtime reports the window it loaded the weights with, under an id the
+// public table has never seen. A nil lookup, or one that does not know the
+// model, leaves the session on the table and the family floor.
+func (m Model) WithEndpointWindows(fn func(string) (int64, bool)) Model {
+	m.endpointWindows = fn
 	return m
 }
 

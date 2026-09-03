@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -157,8 +158,9 @@ func (s *chatSession) openSecrets(cmd *cobra.Command, procSup *process.Superviso
 // sessionEnv is the provider-and-prompt setup shared by the interactive chat
 // TUI and headless print mode: resolved model, initial messages, and a stream
 // closure over the session's provider.
-// modelListTimeout bounds the /model picker's live catalog query; a
-// gateway that is slow or down should cost the user a beat, not the session.
+// modelListTimeout bounds a query to the endpoint's own catalog — the
+// /model picker's, and the window probe below it; a gateway that is slow or
+// down should cost the user a beat, not the session.
 const modelListTimeout = 10 * time.Second
 
 // modelListerFor adapts a provider that can enumerate its endpoint into the
@@ -173,6 +175,45 @@ func modelListerFor(p provider.Provider) func(context.Context) ([]string, error)
 		ctx, cancel := context.WithTimeout(ctx, modelListTimeout)
 		defer cancel()
 		return lister.ListModels(ctx)
+	}
+}
+
+// endpointWindowsFor asks an endpoint that can report the context length it
+// serves each model at, and hands the session a lookup over the answer.
+// Providers without the capability return nil and the session reads the
+// table.
+//
+// The query runs once, in the background, and the lookup answers "not known"
+// until it lands: the session asks for the window on every frame, so it
+// cannot be a question that waits on a network — and nothing goes wrong while
+// the answer is missing, because the table and the family floor are behind it
+// and the first trim is many turns away in any case. A failure is dropped for
+// the same reason it is not logged: nobody asked for this.
+func endpointWindowsFor(p provider.Provider) func(string) (int64, bool) {
+	endpoint, ok := p.(provider.ModelWindower)
+	if !ok {
+		return nil
+	}
+	var (
+		mu      sync.RWMutex
+		windows map[string]int64
+	)
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), modelListTimeout)
+		defer cancel()
+		got, err := endpoint.ModelWindows(ctx)
+		if err != nil || len(got) == 0 {
+			return
+		}
+		mu.Lock()
+		windows = got
+		mu.Unlock()
+	}()
+	return func(model string) (int64, bool) {
+		mu.RLock()
+		defer mu.RUnlock()
+		w, ok := windows[strings.ToLower(model)]
+		return w, ok
 	}
 }
 
@@ -294,10 +335,12 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 	// that cannot be resolved leaves the session exactly as it was.
 	//
 	// What it swaps is the stream — the turn's own requests. The permission
-	// classifier, the observability recorder and the /model lister were
-	// wired to the provider this session opened on and keep it; a classifier
-	// that fails on a dead key falls back to asking, which is the right
-	// answer anyway.
+	// classifier, the observability recorder, the /model lister and the
+	// endpoint's context windows were wired to the provider this session
+	// opened on and keep it; a classifier that fails on a dead key falls
+	// back to asking, which is the right answer anyway, and a window read
+	// off an endpoint nobody is talking to any more is a model name the new
+	// provider does not use.
 	rebuild := func(name, key string) error {
 		sessionMu.Lock()
 		baseURL, model := currentBaseURL, currentModel
@@ -738,7 +781,8 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithReasoningDefault(cfg.Provider.Reasoning, resolve.ReasoningOutranks(*session.flags)).
 		WithProvider(env.provName, env.replaceKey, env.switchProvider).
 		WithModelOptions(provider.KnownModels(env.prov.Name())).
-		WithModelLister(modelListerFor(env.prov))
+		WithModelLister(modelListerFor(env.prov)).
+		WithEndpointWindows(endpointWindowsFor(env.prov))
 	if session.conversation {
 		model = model.WithConversation().WithNotebook(session.notebook)
 	} else {

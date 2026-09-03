@@ -17,8 +17,11 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
-// DefaultContextWindow is the conservative context size (in tokens) assumed
-// when the pricing table doesn't know the model's real window.
+// DefaultContextWindow is the floor: the context size (in tokens) assumed for
+// a model no endpoint, no table and no family could describe. That is a much
+// smaller set than a name the table has not caught up with — the families
+// cover the hosted generations and the ones a local runtime serves — so this
+// is what is left for a private fine-tune under a name of its own.
 const DefaultContextWindow = 32768
 
 const (
@@ -60,12 +63,23 @@ func estimateMessageTokens(msgs []provider.Message) int64 {
 	return agent.EstimateMessageTokens(msgs)
 }
 
-// contextWindow is the model's context size: the pricing table's figure when
-// it has one, the model family's published window when it doesn't,
-// and DefaultContextWindow only for a model nothing recognises.
+// contextWindow is the model's context size: what the endpoint serving the
+// model says, then the pricing table's figure, then the model family's
+// published window, and DefaultContextWindow only for a model nothing
+// recognises.
+//
+// The endpoint comes first because it is answering about the weights it
+// loaded, under the id it loaded them as, which is a fact no public table can
+// hold.
+// See docs/capabilities/providers.md#model-data-is-fetched-and-a-snapshot-ships.
 func (m Model) contextWindow() int64 {
 	if m.modelName == "" {
 		return DefaultContextWindow
+	}
+	if m.endpointWindows != nil {
+		if w, ok := m.endpointWindows(m.modelName); ok {
+			return w
+		}
 	}
 	if m.prices != nil {
 		if w, ok := m.prices.ContextWindow(m.modelName); ok {
