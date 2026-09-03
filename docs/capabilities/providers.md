@@ -231,9 +231,36 @@ answers exactly what it would have answered. That is what makes it safe to
 send unconditionally to anything speaking the dialect, including a gateway
 that has never heard of it.
 
-Most dialects need no marker at all, and get none: they cache on their own by
-matching the prefix they were sent last time. A dialect is annotated here only
-when annotating it is the only way to ask.
+The dialects do not agree about this, and which is which is worth stating
+rather than leaving to be discovered. OpenAI's two — chat completions and the
+Responses API — cache the prefix they recognise from the last request without
+being asked, and so does Gemini. They are annotated nowhere and need not be:
+asking would change nothing. Anthropic's Messages API caches only what the
+request asked it to, and a request that asked for nothing caches nothing, so
+every request to it is annotated.
+
+A gateway is neither, and it is the case that was wrong for longest. The
+request leaves in the OpenAI shape and arrives wherever the model name routes
+it, so what decides is the model and not the dialect the request was written
+in: a gateway request naming a model on the Messages API carries the same
+three markers, written in the shape that gateway takes them in, and one naming
+any other model is sent exactly as it would have been. The model shhh's own
+gateway provider defaults to is an Anthropic one, so for as long as this was
+decided by dialect a session there re-read its entire opening at full price on
+every round of every turn.
+
+A marked prefix does not live forever, and the head is worth a longer life
+than the rest of the request. The rolling marks are replaced every round, so
+five minutes is all they can use and five minutes is what they take. The head
+is the other extreme: it is the tools, the system prompt, the project's
+context and the skills catalog, it does not change for the life of the
+session, and an interactive session idles past five minutes constantly,
+because the person is reading a diff or answering someone. So the head is
+written to live an hour by default and the rolling marks keep their five
+minutes. Writing for the hour costs more than writing for the five minutes,
+which is why the head's lifetime is a setting rather than a constant: a
+session that is never idle, or one that is short, can turn it down and pay
+the lower write.
 
 A saving that is real has to be visible, so what a request served from the
 cache actually cost is what the session's ledger charges for it, at the

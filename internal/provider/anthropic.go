@@ -29,8 +29,10 @@ const defaultAnthropicMaxTokens = 64000
 const anthropicAnswerFloor = 4096
 
 type Anthropic struct {
-	client   anthropic.Client
-	model    string
+	client anthropic.Client
+	model  string
+	// cacheTTL is how long the request's fixed head is cached for (cache.go).
+	cacheTTL CacheTTL
 	classify func(error) error
 }
 
@@ -48,6 +50,7 @@ func NewAnthropic(opts ResolveOpts) (*Anthropic, error) {
 	return &Anthropic{
 		client:   anthropic.NewClient(clientOpts...),
 		model:    first(opts.Model, defaultAnthropicModel),
+		cacheTTL: cacheTTLOrDefault(opts.CacheTTL),
 		classify: newClassifier("anthropic", "SHHH_API_KEY or ANTHROPIC_API_KEY", key),
 	}, nil
 }
@@ -67,6 +70,7 @@ func NewAnthropicNamed(client anthropic.Client, model, name string) *Anthropic {
 	return &Anthropic{
 		client:   client,
 		model:    first(model, defaultAnthropicModel),
+		cacheTTL: DefaultCacheTTL,
 		classify: newClassifier(name, "SHHH_API_KEY or ANTHROPIC_API_KEY", ""),
 	}
 }
@@ -141,7 +145,7 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 	// Last, so the markers land on the request as it will actually be sent:
 	// the head is only stable once the tools and the system prompt are both
 	// on it (cache.go).
-	markAnthropicCache(&params)
+	markAnthropicCache(&params, a.cacheTTL)
 
 	ch := make(chan StreamEvent)
 	go func() {

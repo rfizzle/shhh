@@ -8,6 +8,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -248,6 +249,7 @@ func TestCheckConfigValue_RefusesAWordOutsideItsKeysVocabulary(t *testing.T) {
 		{"behavior.default_mode", "yolo"},
 		{"behavior.mode_cycle", "manual, sometimes"},
 		{"provider.reasoning", "sometimes"},
+		{"provider.cache_ttl", "10m"},
 		{"sandbox.profile", "wide-open"},
 		{"sandbox.container_engine", "containerd"},
 		{"sandbox.require_isolation", "some"},
@@ -265,6 +267,7 @@ func TestCheckConfigValue_RefusesAWordOutsideItsKeysVocabulary(t *testing.T) {
 		{"behavior.default_mode", "accept-edits"},
 		{"behavior.mode_cycle", "manual, auto, plan"},
 		{"provider.reasoning", "xhigh"},
+		{"provider.cache_ttl", "1h"},
 		{"sandbox.profile", "workspace-netless"},
 		{"sandbox.container_engine", "podman"},
 		{"sandbox.require_isolation", "container"},
@@ -307,5 +310,21 @@ func TestConfigRows_TheRoleModelsAreListed(t *testing.T) {
 	}
 	if got := rowFor(rows, "agents.writer_model").Source; got != "default" {
 		t.Errorf("a role with no profile reads as default, got %q", got)
+	}
+}
+
+// The lifetime of the repeated opening is on the screen, stating the default
+// that stands while nothing is set — the screen is where a reader finds out
+// what this machine actually does.
+func TestConfigRows_TheCacheLifetimeStatesItsDefault(t *testing.T) {
+	row := rowFor(configRows(config.Config{}, config.Config{}), "provider.cache_ttl")
+	if row.Value != string(provider.DefaultCacheTTL) || row.Source != "default" {
+		t.Fatalf("unset cache_ttl row = %q/%q, want the default", row.Value, row.Source)
+	}
+
+	var set config.Config
+	set.Provider.CacheTTL = "5m"
+	if got := rowFor(configRows(set, config.Config{}), "provider.cache_ttl").Value; got != "5m" {
+		t.Errorf("a set cache_ttl reads back as %q", got)
 	}
 }

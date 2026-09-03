@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"strings"
 	"testing"
 
 	openai "github.com/sashabaranov/go-openai"
@@ -249,5 +250,97 @@ func TestOpenRouter_StreamCompletion_CeilingIsCompletionTokens(t *testing.T) {
 		if got, ok := body["max_tokens"]; ok {
 			t.Errorf("%s: request carries the deprecated max_tokens = %v", model, got)
 		}
+	}
+}
+
+// reMarshal puts a captured body back into the bytes it arrived as, so the
+// markers can be read with the same helper the offline tests use.
+func reMarshal(t *testing.T, body map[string]any) []byte {
+	t.Helper()
+	raw, err := json.Marshal(body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return raw
+}
+
+// The gateway forwards an Anthropic-family request to the Messages API, which
+// caches only what the request asked it to. So the breakpoints have to be on
+// the wire — and the wire is the only place they can be, because the OpenAI
+// client has no field for them.
+func TestOpenRouter_StreamCompletion_MarksTheCacheForAnAnthropicModel(t *testing.T) {
+	body := captureChatRequest(t, func(baseURL string) (<-chan StreamEvent, error) {
+		return newTestOpenRouter(baseURL, "anthropic/claude-sonnet-4-6").StreamCompletion(
+			context.Background(),
+			[]Message{
+				{Role: RoleSystem, Content: "be helpful"},
+				{Role: RoleUser, Content: "one"},
+				{Role: RoleAssistant, Content: "two"},
+				{Role: RoleUser, Content: "three"},
+			},
+			CompletionOpts{},
+		)
+	})
+
+	got := bodyMarks(t, reMarshal(t, body))
+	want := map[int]string{0: string(CacheTTL1h), 2: string(CacheTTL5m), 3: string(CacheTTL5m)}
+	if len(got) != len(want) {
+		t.Fatalf("markers = %v, want %v", got, want)
+	}
+	for i, ttl := range want {
+		if got[i] != ttl {
+			t.Errorf("message %d's marker = %q, want %q", i, got[i], ttl)
+		}
+	}
+}
+
+// A model the gateway routes elsewhere is sent what it has always been sent.
+func TestOpenRouter_StreamCompletion_MarksNothingForAnotherVendor(t *testing.T) {
+	body := captureChatRequest(t, func(baseURL string) (<-chan StreamEvent, error) {
+		return newTestOpenRouter(baseURL, "openai/gpt-5.2").StreamCompletion(
+			context.Background(),
+			[]Message{
+				{Role: RoleSystem, Content: "be helpful"},
+				{Role: RoleUser, Content: "one"},
+			},
+			CompletionOpts{},
+		)
+	})
+
+	if raw := reMarshal(t, body); strings.Contains(string(raw), "cache_control") {
+		t.Errorf("a request routed away from the Messages API carries breakpoints: %s", raw)
+	}
+}
+
+// The configured lifetime reaches the head marker, and the rolling ones keep
+// their own — which is the whole of what the setting decides.
+func TestOpenRouter_StreamCompletion_HonoursTheConfiguredCacheLifetime(t *testing.T) {
+	t.Setenv("SHHH_BASE_URL", "")
+	body := captureChatRequest(t, func(baseURL string) (<-chan StreamEvent, error) {
+		p, err := NewOpenRouter(ResolveOpts{
+			APIKey:   "test-key",
+			BaseURL:  baseURL,
+			Model:    "anthropic/claude-sonnet-4-6",
+			CacheTTL: "5m",
+		})
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		return p.StreamCompletion(
+			context.Background(),
+			[]Message{
+				{Role: RoleSystem, Content: "be helpful"},
+				{Role: RoleUser, Content: "one"},
+			},
+			CompletionOpts{},
+		)
+	})
+
+	got := bodyMarks(t, reMarshal(t, body))
+	if got[0] != string(CacheTTL5m) {
+		t.Errorf("the head's marker = %q, want the lifetime that was configured", got[0])
+	}
+	if got[1] != string(CacheTTL5m) {
+		t.Errorf("the rolling marker = %q, want its own five minutes", got[1])
 	}
 }

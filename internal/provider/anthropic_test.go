@@ -602,3 +602,48 @@ func TestAnthropic_UsageFoldsTheCachedPartsIntoThePromptCount(t *testing.T) {
 		t.Errorf("the parts must not overlap: fresh should be 12, got %d", fresh)
 	}
 }
+
+// The lifetime the session was resolved with is the one the head marker
+// carries on the wire, and a hand-edited value the parser cannot read leaves
+// the default standing rather than failing the session.
+func TestAnthropic_CacheLifetimeOnTheRequest(t *testing.T) {
+	var body map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		raw, _ := io.ReadAll(r.Body)
+		body = nil
+		_ = json.Unmarshal(raw, &body)
+		w.Header().Set("Content-Type", "text/event-stream")
+		sseEvent(w, "message_start", `{"type":"message_start","message":{"id":"m","type":"message","role":"assistant","content":[],"model":"claude-opus-5","usage":{"input_tokens":1,"output_tokens":1}}}`)
+		sseEvent(w, "message_stop", `{"type":"message_stop"}`)
+	}))
+	defer srv.Close()
+
+	for _, tc := range []struct{ configured, want string }{
+		{configured: "", want: string(DefaultCacheTTL)},
+		{configured: "5m", want: string(CacheTTL5m)},
+		{configured: "a fortnight", want: string(DefaultCacheTTL)},
+	} {
+		p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL, CacheTTL: tc.configured})
+		if err != nil {
+			t.Fatal(err)
+		}
+		events, err := p.StreamCompletion(context.Background(), []Message{
+			{Role: RoleSystem, Content: "be helpful"},
+			{Role: RoleUser, Content: "hi"},
+		}, CompletionOpts{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, _, _, _ = drainAnthropic(t, events)
+
+		system, _ := body["system"].([]any)
+		if len(system) != 1 {
+			t.Fatalf("%q: the request has no head to mark: %v", tc.configured, body["system"])
+		}
+		block, _ := system[0].(map[string]any)
+		control, _ := block["cache_control"].(map[string]any)
+		if control["ttl"] != tc.want {
+			t.Errorf("%q: the head's marker is %v, want %q", tc.configured, control["ttl"], tc.want)
+		}
+	}
+}

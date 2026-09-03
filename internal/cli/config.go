@@ -79,12 +79,12 @@ func writeConfigEdits(path string, edits ...config.Edit) error {
 
 // checkConfigValue refuses a value that is not one of the words its key
 // takes. The shapes — a number, a boolean — are the config package's to
-// parse; these six keys are checked here instead because what they may say
-// is a permission mode, a reasoning level and three containment settings,
-// and those vocabularies belong to the packages that own them, which config
-// must not import. Asking the same parsers the session itself asks is what
-// makes `config set`, the screen and the slash commands refuse the same
-// values, rather than three lists drifting apart.
+// parse; these seven keys are checked here instead because what they may say
+// is a permission mode, a reasoning level, a cache lifetime and three
+// containment settings, and those vocabularies belong to the packages that
+// own them, which config must not import. Asking the same parsers the session
+// itself asks is what makes `config set`, the screen and the slash commands
+// refuse the same values, rather than three lists drifting apart.
 //
 // An empty value is a reset, not an answer, and is left to the write to
 // interpret as the key going out of the file.
@@ -108,6 +108,8 @@ func checkConfigValue(key, value string) error {
 		}
 	case "provider.reasoning":
 		_, err = provider.ParseEffort(value)
+	case "provider.cache_ttl":
+		_, err = provider.ParseCacheTTL(value)
 	case "sandbox.profile":
 		_, err = sandbox.ParseProfile(value)
 	case "sandbox.container_engine":
@@ -485,6 +487,21 @@ func configSettings() []configSetting {
 			opts := make([]components.SelectOption, 0, len(provider.EffortCycle()))
 			for _, e := range provider.EffortCycle() {
 				opts = append(opts, components.SelectOption{Label: e.String(), Desc: e.Describe()})
+			}
+			return opts
+		},
+	}, {
+		// The lifetime of the opening, on the model group because it is a
+		// property of the request rather than of the session: which dialects
+		// have to be told what to cache is the provider's business, and this
+		// is the one part of that decision a reader gets a say in.
+		group: "MODEL", key: "provider.cache_ttl", label: "cache lifetime",
+		read:     str(func(c config.Config) string { return c.Provider.CacheTTL }),
+		fallback: string(provider.DefaultCacheTTL),
+		options: func(config.Config) []components.SelectOption {
+			opts := make([]components.SelectOption, 0, len(provider.CacheTTLCycle()))
+			for _, ttl := range provider.CacheTTLCycle() {
+				opts = append(opts, components.SelectOption{Label: string(ttl), Desc: ttl.Describe()})
 			}
 			return opts
 		},

@@ -126,7 +126,8 @@ is visible until the thing they turned off is missed.
 
 The words a value may be are judged by the same code the running session
 judges them with — one list of permission modes, one of reasoning levels, one
-of containment profiles — so `config set`, the editor and the slash commands
+of cache lifetimes, one of containment profiles — so `config set`, the editor
+and the slash commands
 that save their answer all refuse the same value for the same reason. A
 second list, written beside the writer for convenience, is a list that
 eventually disagrees with the first, and the disagreement shows up as a value

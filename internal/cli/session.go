@@ -361,6 +361,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 			ConfigAPIKey:  cfg.ProviderAPIKey(),
 			ConfigBaseURL: cfg.ProviderBaseURL(),
 			ConfigName:    cfg.ProviderDisplayName(),
+			CacheTTL:      cfg.ProviderCacheTTL(),
 		})
 		if rErr != nil {
 			return rErr

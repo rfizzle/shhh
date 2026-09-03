@@ -14,6 +14,11 @@ type ResolveOpts struct {
 	ConfigAPIKey  string
 	ConfigBaseURL string
 	ConfigName    string
+	// CacheTTL is the configured lifetime of the request's fixed head, as
+	// the file spells it. A dialect that caches on its own ignores it; one
+	// that has to be told reads it through cacheTTLOrDefault, so an empty or
+	// unreadable value is the default rather than a refusal (cache.go).
+	CacheTTL string
 }
 
 type ProviderDefaults struct {

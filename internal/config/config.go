@@ -255,6 +255,14 @@ type ProviderConfig struct {
 	// model lacks lowers to the one it has and a model with no reasoning
 	// knob is not handed one.
 	Reasoning string `toml:"reasoning"`
+	// CacheTTL is how long the opening a session repeats every round — the
+	// tool schemas, the system prompt, the project context and the skills
+	// catalog — stays cached between rounds: "5m" or "1h". Empty means an
+	// hour, because an interactive session idles past five minutes
+	// constantly. It reaches only the dialects that have to be told what to
+	// cache; the ones that cache by themselves ignore it
+	// (docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once).
+	CacheTTL string `toml:"cache_ttl"`
 }
 
 type BehaviorConfig struct {
@@ -598,6 +606,11 @@ func (c Config) ProviderDisplayName() string {
 	return c.Provider.Name
 }
 
+// ProviderCacheTTL returns the configured lifetime of the repeated opening.
+func (c Config) ProviderCacheTTL() string {
+	return c.Provider.CacheTTL
+}
+
 func Load() (Config, error) {
 	return LoadFrom(Paths()...)
 }
@@ -673,6 +686,8 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Provider.Name = value
 	case "provider.reasoning":
 		cfg.Provider.Reasoning = value
+	case "provider.cache_ttl":
+		cfg.Provider.CacheTTL = value
 	case "behavior.shell":
 		cfg.Behavior.Shell = value
 	case "behavior.system_prompt_extra":

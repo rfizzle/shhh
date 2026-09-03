@@ -78,6 +78,18 @@ func KnownModels(name string) []string {
 	return append([]string(nil), models...)
 }
 
+// anthropicRouted reports whether a gateway model id names a model the
+// gateway hands to the Messages API.
+//
+// The vendor segment is the whole test. A gateway id is `vendor/model` and
+// the vendor is what it routes on, so an id under any other vendor reaches an
+// endpoint that is not that API however the model is named; and a bare name
+// with no vendor at all is a request the gateway itself will not route.
+func anthropicRouted(model string) bool {
+	vendor, _, ok := strings.Cut(strings.ToLower(strings.TrimSpace(model)), "/")
+	return ok && vendor == "anthropic"
+}
+
 // ModelLister is implemented by providers whose endpoint can enumerate the
 // models it actually hosts — the OpenAI GET /v1/models shape. It backs the
 // interactive /model picker for endpoints the curated catalog can't know:

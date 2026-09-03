@@ -78,6 +78,7 @@ func resolveProvider(ctx context.Context, cfg config.Config, req providerRequest
 		ConfigAPIKey:  cfg.ProviderAPIKey(),
 		ConfigBaseURL: cfg.ProviderBaseURL(),
 		ConfigName:    cfg.ProviderDisplayName(),
+		CacheTTL:      cfg.ProviderCacheTTL(),
 	})
 	if err == nil {
 		return p, req, nil
@@ -116,6 +117,7 @@ func resolveProvider(ctx context.Context, cfg config.Config, req providerRequest
 		ConfigAPIKey:  cfg.ProviderAPIKey(),
 		ConfigBaseURL: cfg.ProviderBaseURL(),
 		ConfigName:    cfg.ProviderDisplayName(),
+		CacheTTL:      cfg.ProviderCacheTTL(),
 	})
 	if err != nil {
 		return nil, req, err

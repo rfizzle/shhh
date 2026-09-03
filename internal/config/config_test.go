@@ -815,3 +815,31 @@ func TestSet_ReviewerModelRoundTrips(t *testing.T) {
 		t.Fatalf("reviewer model = %q", got)
 	}
 }
+
+// The lifetime of the repeated opening reads back off the file and through
+// the write door, which is the pair every key needs: a file that no setting
+// reads is refused, and a write nothing reads back is a key that saves and
+// does nothing.
+func TestProviderCacheTTL_LoadsAndWrites(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	if err := os.WriteFile(path, []byte("[provider]\ncache_ttl = \"5m\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := LoadFrom(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.ProviderCacheTTL() != "5m" {
+		t.Errorf("provider.cache_ttl = %q, want %q", cfg.ProviderCacheTTL(), "5m")
+	}
+
+	if err := Write(path, Edit{Key: "provider.cache_ttl", Value: "1h"}); err != nil {
+		t.Fatal(err)
+	}
+	if cfg, err = LoadFrom(path); err != nil {
+		t.Fatal(err)
+	}
+	if cfg.ProviderCacheTTL() != "1h" {
+		t.Errorf("after the write, provider.cache_ttl = %q", cfg.ProviderCacheTTL())
+	}
+}
