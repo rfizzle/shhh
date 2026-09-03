@@ -14,6 +14,26 @@ const (
 	MaxReadFileLines = 2000
 	MaxReadFileBytes = 65536
 
+	// MaxReadFileSize is the largest file read_file will open at all. It is
+	// checked against the file's stat before anything is read, because the
+	// cost it bounds is the read itself: the caps above are applied to bytes
+	// already in memory, so a path that lands on a database or a packed
+	// archive spends the machine before either of them says no.
+	//
+	// It is far above anything a reader pages through — the largest source
+	// file in this repository is under 200 KB and the largest generated file
+	// in the Go toolchain is under 3 MB — and far below the sizes this is
+	// for. A file over it is not one to read in windows; it is one to search,
+	// or to take a part of with a command.
+	MaxReadFileSize = 10 << 20
+
+	// SniffBytes is how much of a file is read to decide whether it is text.
+	// It is git's number: git calls a file binary on a NUL byte in its first
+	// 8000, and a reader that disagreed with git about what is text would be
+	// describing files one way while search and the diffs describe them
+	// another.
+	SniffBytes = 8 << 10
+
 	// MaxSearchResults caps how many matching lines search returns.
 	MaxSearchResults = 50
 	// MaxSearchLineBytes caps a single matched line, so one minified file

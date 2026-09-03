@@ -62,7 +62,7 @@ func RecentFilesIn(dirs []string, limit int) []RecentFile {
 			continue
 		}
 		seen[dir] = true
-		w.walk(dir, 0, parseIgnoreFile(dir))
+		w.walk(dir, 0, LoadIgnore(dir))
 	}
 
 	// Newest first, ties broken by path so the list is stable between two
@@ -92,7 +92,7 @@ type recentWalk struct {
 // the directories above it. It is recursive rather than filepath.WalkDir
 // because the rules are a property of the path down, and a stack the
 // language maintains is simpler than one maintained beside a flat walk.
-func (w *recentWalk) walk(dir string, depth int, rules []ignoreRule) {
+func (w *recentWalk) walk(dir string, depth int, rules Ignore) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		return
@@ -107,16 +107,16 @@ func (w *recentWalk) walk(dir string, depth int, rules []ignoreRule) {
 			if skipDirs[name] || strings.HasPrefix(name, ".") || depth+1 > maxWalkDepth {
 				continue
 			}
-			if ignored(rules, full, true) {
+			if rules.Ignored(full, true) {
 				continue
 			}
-			w.walk(full, depth+1, append(rules, parseIgnoreFile(full)...))
+			w.walk(full, depth+1, rules.Descend(full))
 			continue
 		}
 		if !d.Type().IsRegular() {
 			continue
 		}
-		if ignored(rules, full, false) {
+		if rules.Ignored(full, false) {
 			continue
 		}
 		info, err := d.Info()

@@ -126,6 +126,47 @@ truncation said out loud, and a hover's markdown flattened rather than passed
 through with its fences — markup the model did not write is markup it can
 mistake for its own.
 
+## The readers refuse before they spend
+
+A reader that cannot help is cheapest when it says so in a line.
+
+Asking to read a file says nothing about what the file is, and the two ways
+that goes wrong both cost the whole window. A path that lands on a database,
+an archive or a compiled binary returns a screenful of mojibake, priced as
+text and worth nothing. A path that lands on a large log returns the first
+part of it and an invitation to page through the rest, which is a plan for
+spending the rest of the turn.
+
+So the reader looks before it reads. A file past the size ceiling is refused
+outright, with its size and the ceiling named, and the refusal says that a
+narrower line range will not help — otherwise the next call is the same call,
+scoped smaller. A file whose opening bytes are not text comes back as one line
+saying what it is: a type, a size, and nothing else. Naming the type is the
+part that matters, because "this is a PNG" tells the model to stop reaching
+for this tool, where "not text" invites another attempt.
+
+An image is the case where the answer is not text but the file is still worth
+seeing, so it rides back on the result as a picture wherever the model can
+take one. Where it cannot, the line stands on its own — the same answer, one
+sentence shorter.
+
+## What git will not look at, the agent does not offer
+
+The file walks skip what `.gitignore` names, for the reason the completion
+menus do: a build directory git refuses to see is not the answer to "where
+does this live", and listing it buries the file that is.
+
+This started as a difference between two machines. Search shells out to
+ripgrep when it is installed, and ripgrep skips ignored files on its own — so
+the same search over the same tree returned different answers depending on
+whether ripgrep happened to be there. Every walk asks one matcher now, so
+finding a file, listing a directory and searching a tree all agree about which
+files exist.
+
+A directory named directly is still listed. Ignoring is about what a walk
+offers unasked; a path the caller typed is one they have already decided to
+look at.
+
 ## A long turn is asked what it has got
 
 A turn has no way to notice it is finished. From inside one, every round looks

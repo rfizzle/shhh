@@ -4,7 +4,8 @@ package project
 // group and the draft's file-mention menu are offers of files a person
 // might name in a sentence, and a build artefact git itself refuses to see
 // is never that file — offering node_modules in a completion menu buries
-// the source file the reader was reaching for.
+// the source file the reader was reaching for. The agent's own walks ask
+// the same question for the same reason, through Ignore.
 //
 // This is a deliberate subset of git's rules, read from the .gitignore
 // files the walk passes: comments and blanks, `!` negation with last-match
@@ -20,6 +21,51 @@ import (
 	"path/filepath"
 	"strings"
 )
+
+// Ignore is the .gitignore rules in force at one point in a walk: those read
+// from the directory being walked and from every directory above it, in the
+// order they were read.
+//
+// It is a value rather than a walker of its own because the walkers that need
+// it are shaped differently — one recurses, the others run under
+// filepath.WalkDir — and the only thing they have to share is the answer. The
+// zero value is a walk with no rules, which is what a tree with no .gitignore
+// is.
+type Ignore struct {
+	rules []ignoreRule
+}
+
+// LoadIgnore reads the rules that apply inside dir.
+//
+// Rules above dir are deliberately not consulted. A walk answers for the tree
+// it was pointed at, and a directory the caller named is one they have
+// already decided to look in — a tool asked to list an ignored directory
+// still lists it.
+func LoadIgnore(dir string) Ignore {
+	return Ignore{rules: parseIgnoreFile(dir)}
+}
+
+// Descend returns the rules in force inside dir: these, plus dir's own.
+//
+// The copy is deliberate. Appending in place lets two sibling directories
+// write into the same spare capacity, and the second to descend would be
+// matching against the first one's rules with nothing on screen to say so.
+func (ig Ignore) Descend(dir string) Ignore {
+	own := parseIgnoreFile(dir)
+	if len(own) == 0 {
+		return ig
+	}
+	out := make([]ignoreRule, 0, len(ig.rules)+len(own))
+	out = append(out, ig.rules...)
+	out = append(out, own...)
+	return Ignore{rules: out}
+}
+
+// Ignored reports whether the entry at the absolute path is one git would not
+// see.
+func (ig Ignore) Ignored(abs string, isDir bool) bool {
+	return ignored(ig.rules, abs, isDir)
+}
 
 // ignoreRule is one .gitignore line: the pattern's segments, the directory
 // the file lived in (absolute, which anchors what the pattern is matched

@@ -647,3 +647,45 @@ func TestAnthropic_CacheLifetimeOnTheRequest(t *testing.T) {
 		}
 	}
 }
+
+func TestToAnthropicMessages_ToolResultCarriesAnImage(t *testing.T) {
+	_, msgs := toAnthropicMessages([]Message{
+		{Role: RoleUser, Content: "read the logo"},
+		{Role: RoleAssistant, ToolCalls: []ToolCall{{ID: "t1", Name: "read_file", Arguments: `{"path":"logo.png"}`}}},
+		{Role: RoleTool, Content: "logo.png is an image", ToolCallID: "t1", Attachments: []Attachment{
+			{Kind: AttachmentImage, Name: "logo.png", MediaType: "image/png", Data: []byte{1, 2, 3}},
+			{Kind: AttachmentText, Name: "notes.txt", MediaType: "text/plain", Data: []byte("hi")},
+		}},
+	})
+	result := msgs[len(msgs)-1].Content[0].OfToolResult
+	if result == nil {
+		t.Fatal("expected a tool_result block")
+	}
+	if len(result.Content) != 2 {
+		t.Fatalf("expected the text and the image and nothing else, got %d blocks", len(result.Content))
+	}
+	if result.Content[0].OfText == nil || result.Content[0].OfText.Text != "logo.png is an image" {
+		t.Error("the notice should lead the block")
+	}
+	img := result.Content[1].OfImage
+	if img == nil || img.Source.OfBase64 == nil {
+		t.Fatal("expected the image as an inline base64 source")
+	}
+	if got := string(img.Source.OfBase64.MediaType); got != "image/png" {
+		t.Errorf("expected image/png, got %q", got)
+	}
+}
+
+func TestToAnthropicMessages_ToolResultWithoutAnImageIsTextAlone(t *testing.T) {
+	_, msgs := toAnthropicMessages([]Message{
+		{Role: RoleAssistant, ToolCalls: []ToolCall{{ID: "t1", Name: "read_file"}}},
+		{Role: RoleTool, Content: "error: no such file", ToolCallID: "t1"},
+	})
+	result := msgs[len(msgs)-1].Content[0].OfToolResult
+	if result == nil || len(result.Content) != 1 {
+		t.Fatalf("expected one text block, got %+v", result)
+	}
+	if result.IsError.Value != true {
+		t.Error("an error result should still be marked as one")
+	}
+}

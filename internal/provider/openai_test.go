@@ -540,3 +540,17 @@ func TestOpenAI_StreamCompletion_CeilingIsCompletionTokens(t *testing.T) {
 		}
 	}
 }
+
+func TestToOpenAIMessages_ToolResultStaysAString(t *testing.T) {
+	msgs := toOpenAIMessages([]Message{
+		{Role: RoleTool, Content: "logo.png is an image", ToolCallID: "t1", Attachments: []Attachment{
+			{Kind: AttachmentImage, Name: "logo.png", MediaType: "image/png", Data: []byte{1, 2, 3}},
+		}},
+	})
+	if len(msgs[0].MultiContent) != 0 {
+		t.Fatalf("a tool result must not become a parts array here, got %d parts", len(msgs[0].MultiContent))
+	}
+	if msgs[0].Content != "logo.png is an image" {
+		t.Errorf("expected the notice as the content, got %q", msgs[0].Content)
+	}
+}

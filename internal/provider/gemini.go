@@ -295,6 +295,11 @@ func toGeminiContents(messages []Message) ([]*genai.Content, *genai.Content) {
 				FunctionResponse: &genai.FunctionResponse{
 					Name:     name,
 					Response: map[string]any{"result": msg.Content},
+					// A function response may carry media of its own, which
+					// is how a reader that landed on an image shows it rather
+					// than describing it. Anything else the result carried is
+					// left off: the text already says what the file was.
+					Parts: geminiResponseParts(msg.Attachments),
 				},
 			})
 		}
@@ -320,6 +325,21 @@ func matchGeminiCall(calls []ToolCall, id string, answered int) (int, bool) {
 		return answered, true
 	}
 	return 0, false
+}
+
+// geminiResponseParts carries the images on a tool result as inline media on
+// the function response.
+func geminiResponseParts(atts []Attachment) []*genai.FunctionResponsePart {
+	var parts []*genai.FunctionResponsePart
+	for _, a := range atts {
+		if a.Kind != AttachmentImage {
+			continue
+		}
+		parts = append(parts, &genai.FunctionResponsePart{
+			InlineData: &genai.FunctionResponseBlob{Data: a.Data, MIMEType: a.MediaType},
+		})
+	}
+	return parts
 }
 
 // geminiAttachmentParts carries a user message's attachments as inline data.

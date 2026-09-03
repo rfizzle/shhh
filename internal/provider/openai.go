@@ -159,8 +159,13 @@ func toOpenAIMessages(msgs []Message) []openai.ChatCompletionMessage {
 // to attach, which is what keeps ordinary messages on the plain string form.
 // Chat completions can take an image but not a document, so a PDF degrades to
 // the shared text note rather than disappearing.
+//
+// A tool result is text here whatever it carries. This dialect's tool message
+// is a string and rejects a parts array, so a reader that found an image
+// leaves this provider the notice it wrote — the whole request would fail
+// otherwise, over a picture nobody asked for.
 func openAIAttachmentParts(m Message) []openai.ChatMessagePart {
-	if len(m.Attachments) == 0 {
+	if len(m.Attachments) == 0 || m.Role == RoleTool {
 		return nil
 	}
 	var parts []openai.ChatMessagePart

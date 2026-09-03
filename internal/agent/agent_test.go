@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -553,6 +554,93 @@ func TestExecuteCalls_BoundedByMaxParallel(t *testing.T) {
 	for i, r := range results {
 		if r.Result != strconv.Itoa(i) {
 			t.Errorf("result %d out of order: %q", i, r.Result)
+		}
+	}
+}
+
+func TestExecuteCalls_ResultCarriesWhatTheToolAttached(t *testing.T) {
+	a := newTestAgent()
+	img := provider.Attachment{
+		Kind:      provider.AttachmentImage,
+		Name:      "logo.png",
+		MediaType: "image/png",
+		Data:      []byte{0x89, 'P', 'N', 'G'},
+	}
+	a.SetExecutor(func(name string, args json.RawMessage) (string, error) {
+		notice := "logo.png is an image"
+		attachment.NoteResult(notice, img)
+		return notice, nil
+	})
+
+	results := a.ExecuteCalls([]provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{}`}})
+	if len(results[0].Attachments) != 1 {
+		t.Fatalf("expected the image on the result, got %d attachments", len(results[0].Attachments))
+	}
+
+	a.BeginToolRound("", []provider.ToolCall{{ID: "c1", Name: "read_file"}}, nil)
+	a.RecordAutoResults(results)
+	last := a.Messages()[len(a.Messages())-1]
+	if len(last.Attachments) != 1 || last.Attachments[0].MediaType != "image/png" {
+		t.Fatalf("the tool result message should carry the image, got %+v", last.Attachments)
+	}
+}
+
+func TestExecuteCalls_ResultWithNothingAttachedCarriesNothing(t *testing.T) {
+	a := newTestAgent()
+	a.SetExecutor(func(name string, args json.RawMessage) (string, error) { return "plain text", nil })
+
+	results := a.ExecuteCalls([]provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{}`}})
+	if results[0].Attachments != nil {
+		t.Fatalf("expected no attachments, got %+v", results[0].Attachments)
+	}
+}
+
+func TestTrimOldToolResults_ElidingDropsWhatRodeOnTheResult(t *testing.T) {
+	a := New([]provider.Message{
+		{Role: provider.RoleUser, Content: "q1"},
+		{Role: provider.RoleTool, Content: strings.Repeat("x", 40000), ToolCallID: "c1", Attachments: []provider.Attachment{
+			{Kind: provider.AttachmentImage, Name: "logo.png", MediaType: "image/png", Data: []byte{1, 2, 3}},
+		}},
+		{Role: provider.RoleUser, Content: "q2"},
+	}, noStream)
+
+	if elided, _ := a.TrimOldToolResults(30000, 26000, 26000); elided != 1 {
+		t.Fatalf("want 1 elided result, got %d", elided)
+	}
+	if got := a.Messages()[1].Attachments; got != nil {
+		t.Errorf("an elided result must not keep its image, got %+v", got)
+	}
+}
+
+func TestExecuteCalls_ImagesSurviveAWholeRoundOfReaders(t *testing.T) {
+	a := newTestAgent()
+	// The repeat detector rewrites a result it has seen before, which is the
+	// wrapper an image has to survive: reading the same picture twice is what
+	// a person asks for when they did not believe the first answer.
+	a.SetExecutor(NewRepeatDetector().WrapExecutor(func(name string, args json.RawMessage) (string, error) {
+		notice := string(args) + " is an image"
+		attachment.NoteResult(notice, provider.Attachment{
+			Kind: provider.AttachmentImage, Name: "x.png", MediaType: "image/png", Data: []byte{1},
+		})
+		return notice, nil
+	}))
+
+	var calls []provider.ToolCall
+	for i := range MaxParallelToolCalls {
+		calls = append(calls, provider.ToolCall{
+			ID:        strconv.Itoa(i),
+			Name:      "read_file",
+			Arguments: `{"path":"` + strconv.Itoa(i) + `"}`,
+		})
+	}
+	// Twice: the second round is where every result carries the detector's
+	// notice above the text the tool wrote.
+	for round := range 2 {
+		for _, r := range a.ExecuteCalls(calls) {
+			if len(r.Attachments) != 1 {
+				t.Fatalf("round %d, call %s: expected the image on the result, got %d",
+					round, r.Call.ID, len(r.Attachments))
+			}
 		}
 	}
 }

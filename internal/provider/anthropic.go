@@ -351,12 +351,42 @@ func toAnthropicMessages(messages []Message) (system string, out []anthropic.Mes
 		case RoleTool:
 			isError := strings.HasPrefix(msg.Content, "error:")
 			pendingToolResults = append(pendingToolResults,
-				anthropic.NewToolResultBlock(msg.ToolCallID, msg.Content, isError))
+				anthropicToolResult(msg.ToolCallID, msg.Content, isError, msg.Attachments))
 		}
 	}
 	flushToolResults()
 
 	return strings.Join(systemParts, "\n\n"), out
+}
+
+// anthropicToolResult builds one tool_result block. A result that found an
+// image carries it inside the block, after the text: the Messages API lets a
+// tool answer with a picture, and a reader that landed on a PNG has nothing
+// else worth saying. Attachments this dialect cannot take are dropped rather
+// than described — the tool's own text already says what the file was, and
+// repeating it as a note would say it twice.
+func anthropicToolResult(id, content string, isError bool, atts []Attachment) anthropic.ContentBlockParamUnion {
+	block := anthropic.ToolResultBlockParam{
+		ToolUseID: id,
+		Content:   []anthropic.ToolResultBlockParamContentUnion{{OfText: &anthropic.TextBlockParam{Text: content}}},
+		IsError:   anthropic.Bool(isError),
+	}
+	for _, a := range atts {
+		if a.Kind != AttachmentImage {
+			continue
+		}
+		block.Content = append(block.Content, anthropic.ToolResultBlockParamContentUnion{
+			OfImage: &anthropic.ImageBlockParam{
+				Source: anthropic.ImageBlockParamSourceUnion{
+					OfBase64: &anthropic.Base64ImageSourceParam{
+						Data:      a.Base64(),
+						MediaType: anthropic.Base64ImageSourceMediaType(a.MediaType),
+					},
+				},
+			},
+		})
+	}
+	return anthropic.ContentBlockParamUnion{OfToolResult: &block}
 }
 
 // anthropicAttachmentBlocks carries a user message's attachments as native

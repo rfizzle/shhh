@@ -14,7 +14,7 @@ import (
 var globFiles = Definition{
 	Tool: provider.Tool{
 		Name:        GlobName,
-		Description: "Find files by glob pattern, e.g. **/*.go or cmd/*/main.go. Use ** to match any number of directories. Returns matching file paths relative to the search root, skipping .git, node_modules, and vendor directories.",
+		Description: "Find files by glob pattern, e.g. **/*.go or cmd/*/main.go. Use ** to match any number of directories. Returns matching file paths relative to the search root, skipping .git, node_modules, vendor and anything .gitignore names.",
 		Parameters: json.RawMessage(`{
 			"type": "object",
 			"properties": {
@@ -64,6 +64,7 @@ func executeGlob(raw json.RawMessage) (string, error) {
 
 	var results []string
 	truncated := false
+	ignore := newWalkIgnore(args.Path)
 	err = filepath.WalkDir(args.Path, func(p string, d os.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return nil
@@ -73,6 +74,12 @@ func executeGlob(raw json.RawMessage) (string, error) {
 			if p != args.Path && skipWalk(name) {
 				return filepath.SkipDir
 			}
+			if ignore.dir(p) {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if ignore.file(p) {
 			return nil
 		}
 		rel, err := filepath.Rel(args.Path, p)

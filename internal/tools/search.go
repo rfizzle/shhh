@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -29,7 +30,7 @@ var search = Definition{
 	Tool: provider.Tool{
 		Name: SearchName,
 		Description: "Search file contents with a regular expression (RE2 syntax). Case-insensitive by default. " +
-			"Returns matching lines as path:line: text. Skips .git, node_modules, and vendor directories. " +
+			"Returns matching lines as path:line: text. Skips .git, node_modules, vendor and anything .gitignore names. " +
 			"Each match comes with two lines of context by default, so the answer arrives with the hit instead of in the round after it; " +
 			"set context_lines to widen or narrow that, files_only to find which files are involved without quoting any, " +
 			"and include to limit the search to one kind of file.",
@@ -284,7 +285,8 @@ func removeArg(argv []string, drop string) []string {
 }
 
 // searchWithWalker is the pure-Go fallback: walk the tree, skipping the
-// standard directories plus binary and oversized files.
+// standard directories, the paths .gitignore names, and binary or oversized
+// files.
 func searchWithWalker(re *regexp.Regexp, include *includeMatcher, args searchArgs) (results []string, matches int, err error) {
 	info, err := os.Stat(args.Path)
 	if err != nil {
@@ -299,6 +301,10 @@ func searchWithWalker(re *regexp.Regexp, include *includeMatcher, args searchArg
 		return results, matches, nil
 	}
 
+	// Ripgrep honours .gitignore of its own accord, so the walker does too:
+	// otherwise the same search answers differently depending on whether rg
+	// happens to be installed on the machine.
+	ignore := newWalkIgnore(args.Path)
 	err = filepath.WalkDir(args.Path, func(p string, d os.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return nil
@@ -308,10 +314,16 @@ func searchWithWalker(re *regexp.Regexp, include *includeMatcher, args searchArg
 			if p != args.Path && skipWalk(name) {
 				return filepath.SkipDir
 			}
+			if ignore.dir(p) {
+				return filepath.SkipDir
+			}
 			return nil
 		}
 		if matches >= limit {
 			return filepath.SkipAll
+		}
+		if ignore.file(p) {
+			return nil
 		}
 		if include != nil {
 			rel, relErr := filepath.Rel(args.Path, p)
@@ -439,21 +451,25 @@ func formatSearchResults(results []string, matches int, args searchArgs) string 
 	return out
 }
 
+// isBinary reports whether a file is one search has nothing to quote from.
+// It asks read_file's question, over the same window, so the two readers
+// cannot disagree about which files are text — a file search skipped and
+// read_file then returned as lines would be one the model was told twice
+// about, differently.
+//
+// A file that cannot be opened or is empty counts as binary: there is nothing
+// in it to match, and the walk has better uses for the round.
 func isBinary(path string) bool {
 	f, err := os.Open(path)
 	if err != nil {
 		return true
 	}
 	defer f.Close()
-	buf := make([]byte, 512)
-	n, err := f.Read(buf)
-	if err != nil || n == 0 {
+	buf := make([]byte, SniffBytes)
+	n, err := io.ReadFull(f, buf)
+	if n == 0 || (err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF)) {
 		return true
 	}
-	for _, b := range buf[:n] {
-		if b == 0 {
-			return true
-		}
-	}
-	return false
+	_, text := sniffText(buf[:n])
+	return !text
 }

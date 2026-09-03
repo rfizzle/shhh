@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -34,9 +35,14 @@ type ApprovalGate func(tc provider.ToolCall) bool
 // ToolResult pairs an executed tool call with its result text and how long
 // the call took (zero when the call never ran, e.g. a cancellation).
 type ToolResult struct {
-	Call     provider.ToolCall
-	Result   string
-	Duration time.Duration
+	Call   provider.ToolCall
+	Result string
+	// Attachments are the parts of the result that are not text — the image
+	// a reader found where it was asked for a file. They ride on the result
+	// message, so the providers that can show the model a picture do, and the
+	// ones that cannot are left with the notice the tool wrote.
+	Attachments []provider.Attachment
+	Duration    time.Duration
 }
 
 // DefaultMaxToolRounds bounds how many consecutive tool-call rounds one user
@@ -310,6 +316,11 @@ const MaxParallelToolCalls = 8
 // bounded by MaxParallelToolCalls. Results come back in call order, which is
 // the order the conversation has to record them in. Safe to run off the UI
 // goroutine: it touches no Agent state besides the executor.
+//
+// A result's non-text parts are collected here, in the goroutine that
+// produced it, because this is the only point where the tool that wrote them
+// and the result they belong to are both in hand: an executor returns a
+// string, and every wrapper on the chain in between passes one.
 func (a *Agent) ExecuteCalls(calls []provider.ToolCall) []ToolResult {
 	results := make([]ToolResult, len(calls))
 	sem := make(chan struct{}, MaxParallelToolCalls)
@@ -322,7 +333,12 @@ func (a *Agent) ExecuteCalls(calls []provider.ToolCall) []ToolResult {
 			defer func() { <-sem }()
 			start := time.Now()
 			result := a.ExecuteCall(tc)
-			results[i] = ToolResult{Call: tc, Result: result, Duration: time.Since(start)}
+			results[i] = ToolResult{
+				Call:        tc,
+				Result:      result,
+				Attachments: attachment.TakeResult(result),
+				Duration:    time.Since(start),
+			}
 		}(i, tc)
 	}
 	wg.Wait()
@@ -352,9 +368,10 @@ func ExecuteWith(executor ToolExecutor, tc provider.ToolCall) string {
 func (a *Agent) RecordAutoResults(results []ToolResult) {
 	for _, r := range results {
 		a.Append(provider.Message{
-			Role:       provider.RoleTool,
-			Content:    r.Result,
-			ToolCallID: r.Call.ID,
+			Role:        provider.RoleTool,
+			Content:     r.Result,
+			ToolCallID:  r.Call.ID,
+			Attachments: r.Attachments,
 		})
 	}
 	a.executing = false

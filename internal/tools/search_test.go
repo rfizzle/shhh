@@ -464,3 +464,42 @@ func TestSearch_ContextByDefault(t *testing.T) {
 		t.Errorf("expected the match itself, got:\n%s", bare)
 	}
 }
+
+// gitignoredTree is a tree with one ignored directory and one ignored file,
+// plus a .git directory: ripgrep applies .gitignore only inside a repository,
+// and the two backends have to agree about the same tree.
+func gitignoredTree(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	must(t, os.MkdirAll(filepath.Join(dir, ".git"), 0o755))
+	must(t, os.MkdirAll(filepath.Join(dir, "dist"), 0o755))
+	mustWrite(t, filepath.Join(dir, ".gitignore"), "dist/\n*.log\n")
+	mustWrite(t, filepath.Join(dir, "main.go"), "package main // Target\n")
+	mustWrite(t, filepath.Join(dir, "trace.log"), "Target\n")
+	mustWrite(t, filepath.Join(dir, "dist", "bundle.js"), "Target\n")
+	return dir
+}
+
+func assertGitignoreHonoured(t *testing.T, result string) {
+	t.Helper()
+	if !strings.Contains(result, "main.go") {
+		t.Errorf("expected the match in main.go, got: %q", result)
+	}
+	for _, banned := range []string{"trace.log", "bundle.js"} {
+		if strings.Contains(result, banned) {
+			t.Errorf("%s is gitignored and must not be searched, got: %q", banned, result)
+		}
+	}
+}
+
+func TestSearch_WalkerLeavesOutWhatGitignoreNames(t *testing.T) {
+	forceWalker(t)
+	args, _ := json.Marshal(searchArgs{Pattern: "Target", Path: gitignoredTree(t)})
+	assertGitignoreHonoured(t, runSearch(t, string(args)))
+}
+
+func TestSearch_RipgrepLeavesOutWhatGitignoreNames(t *testing.T) {
+	requireRg(t)
+	args, _ := json.Marshal(searchArgs{Pattern: "Target", Path: gitignoredTree(t)})
+	assertGitignoreHonoured(t, runSearch(t, string(args)))
+}

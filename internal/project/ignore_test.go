@@ -113,3 +113,57 @@ func TestRecentFilesIn_WalksAddedRootsRelativeToTheFirst(t *testing.T) {
 		}
 	}
 }
+
+func TestIgnore_DescendKeepsSiblingsApart(t *testing.T) {
+	root := t.TempDir()
+	writeTree(t, root, map[string]string{
+		".gitignore":     "*.log\n",
+		"a/.gitignore":   "only-a.go\n",
+		"a/only-a.go":    "x",
+		"a/keep.go":      "x",
+		"b/only-a.go":    "x",
+		"b/trace.log":    "x",
+		"b/sub/keep.go":  "x",
+		"b/sub/skip.log": "x",
+	})
+
+	rules := LoadIgnore(root)
+	a := rules.Descend(filepath.Join(root, "a"))
+	b := rules.Descend(filepath.Join(root, "b"))
+
+	if !a.Ignored(filepath.Join(root, "a", "only-a.go"), false) {
+		t.Error("a/.gitignore should apply inside a")
+	}
+	if b.Ignored(filepath.Join(root, "b", "only-a.go"), false) {
+		t.Error("a/.gitignore must not follow the walk into b")
+	}
+	if !b.Ignored(filepath.Join(root, "b", "trace.log"), false) {
+		t.Error("the root rule should still apply in b")
+	}
+	if a.Ignored(filepath.Join(root, "a", "keep.go"), false) {
+		t.Error("keep.go is named by nothing")
+	}
+}
+
+func TestIgnore_RootItselfIsNeverIgnored(t *testing.T) {
+	root := t.TempDir()
+	writeTree(t, root, map[string]string{
+		"dist/.gitignore": "*\n",
+		"dist/out.js":     "x",
+	})
+
+	rules := LoadIgnore(filepath.Join(root, "dist"))
+	if rules.Ignored(filepath.Join(root, "dist"), true) {
+		t.Error("a directory the caller named is one they decided to look in")
+	}
+	if !rules.Ignored(filepath.Join(root, "dist", "out.js"), false) {
+		t.Error("its own rules still apply inside it")
+	}
+}
+
+func TestIgnore_ZeroValueIgnoresNothing(t *testing.T) {
+	var rules Ignore
+	if rules.Ignored(filepath.Join(t.TempDir(), "anything.log"), false) {
+		t.Error("a walk with no rules ignores nothing")
+	}
+}

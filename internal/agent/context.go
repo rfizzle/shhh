@@ -100,8 +100,14 @@ func (a *Agent) TrimOldToolResults(est, threshold, mark int64) (elided int, newE
 		if a.keep != nil && a.keep(msg.Content) {
 			continue
 		}
+		// What rode on the result goes with it. An image a reader attached
+		// is the largest thing in the message and the reason the trim was
+		// called for; leaving it behind a placeholder that no longer
+		// describes it would elide the sentence and keep the megabytes.
 		est -= EstimateTokens(msg.Content) - EstimateTokens(ElidedResult)
+		est -= EstimateAttachmentTokens(msg.Attachments)
 		msg.Content = ElidedResult
+		msg.Attachments = nil
 		elided++
 	}
 	return elided, est

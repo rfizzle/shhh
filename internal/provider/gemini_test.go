@@ -468,3 +468,37 @@ func TestNextGeminiCallID_Unique(t *testing.T) {
 		t.Error("a call with an invented id should survive a dropped stream")
 	}
 }
+
+func TestToGeminiContents_ToolResultCarriesAnImage(t *testing.T) {
+	contents, _ := toGeminiContents([]Message{
+		{Role: RoleAssistant, ToolCalls: []ToolCall{{ID: "t1", Name: "read_file"}}},
+		{Role: RoleTool, Content: "logo.png is an image", ToolCallID: "t1", Attachments: []Attachment{
+			{Kind: AttachmentImage, Name: "logo.png", MediaType: "image/png", Data: []byte{1, 2, 3}},
+			{Kind: AttachmentText, Name: "notes.txt", MediaType: "text/plain", Data: []byte("hi")},
+		}},
+	})
+	resp := contents[len(contents)-1].Parts[0].FunctionResponse
+	if resp == nil {
+		t.Fatal("expected a function response")
+	}
+	if len(resp.Parts) != 1 {
+		t.Fatalf("expected the image and nothing else on the response, got %d parts", len(resp.Parts))
+	}
+	blob := resp.Parts[0].InlineData
+	if blob == nil || blob.MIMEType != "image/png" || len(blob.Data) != 3 {
+		t.Errorf("expected the image inline, got %+v", blob)
+	}
+	if resp.Response["result"] != "logo.png is an image" {
+		t.Errorf("the notice should still be the response text, got %v", resp.Response["result"])
+	}
+}
+
+func TestToGeminiContents_ToolResultWithoutAnImageCarriesNoParts(t *testing.T) {
+	contents, _ := toGeminiContents([]Message{
+		{Role: RoleAssistant, ToolCalls: []ToolCall{{ID: "t1", Name: "read_file"}}},
+		{Role: RoleTool, Content: "contents", ToolCallID: "t1"},
+	})
+	if resp := contents[len(contents)-1].Parts[0].FunctionResponse; resp.Parts != nil {
+		t.Errorf("expected no media parts, got %+v", resp.Parts)
+	}
+}

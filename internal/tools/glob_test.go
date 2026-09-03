@@ -173,3 +173,43 @@ func TestMatchGlob(t *testing.T) {
 		}
 	}
 }
+
+func TestGlob_LeavesOutWhatGitignoreNames(t *testing.T) {
+	tmp := t.TempDir()
+	must(t, os.WriteFile(filepath.Join(tmp, ".gitignore"), []byte("dist/\ngenerated.go\n"), 0o644))
+	must(t, os.WriteFile(filepath.Join(tmp, "main.go"), []byte("x"), 0o644))
+	must(t, os.WriteFile(filepath.Join(tmp, "generated.go"), []byte("x"), 0o644))
+	must(t, os.MkdirAll(filepath.Join(tmp, "dist"), 0o755))
+	must(t, os.WriteFile(filepath.Join(tmp, "dist", "bundle.go"), []byte("x"), 0o644))
+
+	args, _ := json.Marshal(globArgs{Pattern: "**/*.go", Path: tmp})
+	result, err := Execute("glob", args)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "main.go") {
+		t.Errorf("expected main.go, got: %q", result)
+	}
+	for _, banned := range []string{"generated.go", "bundle.go"} {
+		if strings.Contains(result, banned) {
+			t.Errorf("%s is gitignored and must not match, got: %q", banned, result)
+		}
+	}
+}
+
+func TestGlob_NestedGitignoreAppliesOnlyInsideItsOwnDirectory(t *testing.T) {
+	tmp := t.TempDir()
+	must(t, os.MkdirAll(filepath.Join(tmp, "sub"), 0o755))
+	must(t, os.WriteFile(filepath.Join(tmp, "sub", ".gitignore"), []byte("gen.go\n"), 0o644))
+	must(t, os.WriteFile(filepath.Join(tmp, "sub", "gen.go"), []byte("x"), 0o644))
+	must(t, os.WriteFile(filepath.Join(tmp, "gen.go"), []byte("x"), 0o644))
+
+	args, _ := json.Marshal(globArgs{Pattern: "**/*.go", Path: tmp})
+	result, err := Execute("glob", args)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "gen.go") || strings.Contains(result, "sub/gen.go") {
+		t.Errorf("only sub/gen.go is ignored, got: %q", result)
+	}
+}

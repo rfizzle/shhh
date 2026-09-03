@@ -1,11 +1,17 @@
 package tools
 
 import (
+	"bytes"
 	"encoding/json"
+	"image"
+	"image/png"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/rfizzle/shhh/internal/attachment"
+	"github.com/rfizzle/shhh/internal/provider"
 )
 
 func TestDefinitions(t *testing.T) {
@@ -375,5 +381,187 @@ func must(t *testing.T, err error) {
 	t.Helper()
 	if err != nil {
 		t.Fatal(err)
+	}
+}
+
+// tinyPNG is a real, valid PNG: the sniff is a content sniff, so a file
+// named .png that is not one must not pass it.
+func tinyPNG(t *testing.T) []byte {
+	t.Helper()
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, image.NewRGBA(image.Rect(0, 0, 2, 2))); err != nil {
+		t.Fatal(err)
+	}
+	return buf.Bytes()
+}
+
+func TestReadFile_RefusesOverTheCeilingBeforeOpeningTheFile(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "huge.log")
+	f, err := os.Create(path)
+	must(t, err)
+	// Sparse: the point is the size in the stat, not 200 MiB of bytes.
+	must(t, f.Truncate(200<<20))
+	must(t, f.Close())
+	// Unreadable, so a refusal that named permission rather than size would
+	// mean the file had been opened before the ceiling was consulted.
+	must(t, os.Chmod(path, 0))
+
+	args, _ := json.Marshal(readFileArgs{Path: path})
+	_, err = Execute("read_file", args)
+	if err == nil {
+		t.Fatal("expected a file over the ceiling to be refused")
+	}
+	if !strings.Contains(err.Error(), "200.0 MB") || !strings.Contains(err.Error(), "10.0 MB") {
+		t.Errorf("the refusal should name both sizes, got: %v", err)
+	}
+}
+
+func TestReadFile_BinaryIsANoticeNamingWhatItIs(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "index.db")
+	must(t, os.WriteFile(path, append([]byte("SQLite format 3\x00"), make([]byte, 300)...), 0o644))
+
+	args, _ := json.Marshal(readFileArgs{Path: path})
+	result, err := Execute("read_file", args)
+	if err != nil {
+		t.Fatalf("a binary file is an answer, not an error: %v", err)
+	}
+	if strings.Contains(strings.TrimSuffix(result, "\n"), "\n") {
+		t.Errorf("the notice should be one line, got: %q", result)
+	}
+	if !strings.Contains(result, "application/octet-stream") {
+		t.Errorf("the notice should name the detected type, got: %q", result)
+	}
+	if _, ok := lookupSeen(path); ok {
+		t.Error("a file that was never shown must not be recorded as read")
+	}
+}
+
+func TestReadFile_TextWithNULPastTheSnifferIsStillBinary(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "mixed.bin")
+	body := append([]byte(strings.Repeat("prose and more prose\n", 40)), 0x00, 0x01)
+	must(t, os.WriteFile(path, body, 0o644))
+
+	args, _ := json.Marshal(readFileArgs{Path: path})
+	result, err := Execute("read_file", args)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "binary file") {
+		t.Errorf("a NUL inside the sniffed window makes a file binary, got: %q", result)
+	}
+}
+
+func TestReadFile_ImageComesBackAsANoticeAndAnAttachment(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "logo.png")
+	want := tinyPNG(t)
+	must(t, os.WriteFile(path, want, 0o644))
+
+	args, _ := json.Marshal(readFileArgs{Path: path})
+	result, err := Execute("read_file", args)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "image/png") {
+		t.Errorf("the notice should name the detected type, got: %q", result)
+	}
+	atts := attachment.TakeResult(result)
+	if len(atts) != 1 {
+		t.Fatalf("expected the image to ride on the result, got %d attachments", len(atts))
+	}
+	if atts[0].Kind != provider.AttachmentImage || atts[0].MediaType != "image/png" {
+		t.Errorf("unexpected attachment: %+v", provider.Attachment{Kind: atts[0].Kind, Name: atts[0].Name, MediaType: atts[0].MediaType})
+	}
+	if !bytes.Equal(atts[0].Data, want) {
+		t.Errorf("the attachment should carry the whole file: %d bytes of %d", len(atts[0].Data), len(want))
+	}
+	if attachment.TakeResult(result) != nil {
+		t.Error("a collected result should not be collectable twice")
+	}
+}
+
+func TestReadFile_ImageTooLargeToAttachIsStillANotice(t *testing.T) {
+	tmp := t.TempDir()
+	path := filepath.Join(tmp, "big.png")
+	// A real PNG header, padded past the attachment ceiling.
+	must(t, os.WriteFile(path, append(tinyPNG(t), make([]byte, attachment.MaxBytes)...), 0o644))
+
+	args, _ := json.Marshal(readFileArgs{Path: path})
+	result, err := Execute("read_file", args)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "binary file") {
+		t.Errorf("an image nothing can carry is described as bytes, got: %q", result)
+	}
+	if atts := attachment.TakeResult(result); atts != nil {
+		t.Errorf("expected no attachment, got %d", len(atts))
+	}
+}
+
+func TestListDirectory_LeavesOutWhatGitignoreNames(t *testing.T) {
+	tmp := t.TempDir()
+	must(t, os.WriteFile(filepath.Join(tmp, ".gitignore"), []byte("dist/\n*.log\n"), 0o644))
+	must(t, os.MkdirAll(filepath.Join(tmp, "dist"), 0o755))
+	must(t, os.WriteFile(filepath.Join(tmp, "dist", "app.js"), []byte("x"), 0o644))
+	must(t, os.WriteFile(filepath.Join(tmp, "main.go"), []byte("x"), 0o644))
+	must(t, os.WriteFile(filepath.Join(tmp, "trace.log"), []byte("x"), 0o644))
+
+	args, _ := json.Marshal(listDirectoryArgs{Path: tmp, Depth: 3})
+	result, err := Execute("list_directory", args)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "main.go") {
+		t.Errorf("expected main.go in the listing, got: %q", result)
+	}
+	for _, banned := range []string{"dist", "trace.log"} {
+		if strings.Contains(result, banned) {
+			t.Errorf("%s is gitignored and must not be listed, got: %q", banned, result)
+		}
+	}
+}
+
+func TestListDirectory_ListsAnIgnoredDirectoryWhenAskedForItByName(t *testing.T) {
+	tmp := t.TempDir()
+	must(t, os.WriteFile(filepath.Join(tmp, ".gitignore"), []byte("dist/\n"), 0o644))
+	must(t, os.MkdirAll(filepath.Join(tmp, "dist"), 0o755))
+	must(t, os.WriteFile(filepath.Join(tmp, "dist", "app.js"), []byte("x"), 0o644))
+
+	args, _ := json.Marshal(listDirectoryArgs{Path: filepath.Join(tmp, "dist")})
+	result, err := Execute("list_directory", args)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !strings.Contains(result, "app.js") {
+		t.Errorf("a directory named directly is one the caller chose to look in, got: %q", result)
+	}
+}
+
+func TestSniffText(t *testing.T) {
+	cases := []struct {
+		name      string
+		head      []byte
+		mediaType string
+		text      bool
+	}{
+		{"source", []byte("package main\n\nfunc main() {}\n"), "text/plain", true},
+		{"empty", nil, "text/plain", true},
+		{"utf8 prose", []byte("héllo — em dash and all\n"), "text/plain", true},
+		{"html", []byte("<!DOCTYPE html><html></html>"), "text/html", true},
+		{"nul early", []byte("SQLite format 3\x00"), "application/octet-stream", false},
+		{"nul late", append([]byte(strings.Repeat("x", 1000)), 0x00), "text/plain", false},
+		{"png", tinyPNG(t), "image/png", false},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			mediaType, text := sniffText(tc.head)
+			if mediaType != tc.mediaType || text != tc.text {
+				t.Errorf("got (%q, %v), want (%q, %v)", mediaType, text, tc.mediaType, tc.text)
+			}
+		})
 	}
 }
