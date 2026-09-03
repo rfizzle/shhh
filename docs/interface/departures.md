@@ -100,3 +100,14 @@ The gutter is the one column on the screen that reports a position rather than
 bounding a region, so it is the one that changes: a dashed track under a block
 thumb, told from the divider by shape and not by shade
 ([invariant 1](principles.md#colour-never-carries-meaning-alone)).
+
+## Stopping a run is the cancel chord, not Esc
+
+The design offers Esc on the rail as the key that stops the run. Esc here
+means [go back](principles.md#esc-is-always-the-safe-answer) and nothing else:
+it clears the draft, drops a selection, dismisses a menu, detaches a level,
+leaves a waiting decision waiting. A key that backs out of that many surfaces
+cannot also be the one that abandons minutes of work, because the hand
+presses it before the eye has read which of them it is about to do. The
+cancel chord stops the turn, and every rail that offered the artboard's Esc
+names the chord instead.

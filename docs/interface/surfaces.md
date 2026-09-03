@@ -281,15 +281,17 @@ Abandoning work is never one keystroke. A turn in flight is minutes of work,
 and the keys that end things are the keys a reflex produces — so the first
 press of an interrupt opens a short window and the rails say what a second
 press will do; only the second press inside the window cancels, and a window
-that expires costs nothing and says nothing. Esc on an empty draft is that
-interrupt, the one key every other harness taught, and the cancel chord feeds
-the same window; interrupting keeps everything the turn already did. Quitting
-from an idle session takes the same two presses. Quitting over a live turn is
-a real question rather than a window: the inline confirm states what will be
-cancelled and what the autosave keeps, and the default is No. Keys that end
-something already scoped — a running command, the permission classifier, a
-decision on its card — keep their single press, because those are reversible
-acts, not abandoned work.
+that expires costs nothing and says nothing. The cancel chord is that
+interrupt and the only key that is: Esc means go back, and a key that backs
+out of a diff, a menu and a selection cannot also be the one that abandons a
+turn on the press where the draft happened to be empty. So an interrupt costs
+two presses of a chord no reflex produces, and interrupting keeps everything
+the turn already did. Quitting from an idle session takes the same two
+presses. Quitting over a live turn is a real question rather than a window:
+the inline confirm states what will be cancelled and what the autosave keeps,
+and the default is No. Keys that end something already scoped — a running
+command, the permission classifier, a decision on its card — keep their
+single press, because those are reversible acts, not abandoned work.
 
 ### The completion menu
 

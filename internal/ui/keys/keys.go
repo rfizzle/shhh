@@ -192,7 +192,14 @@ var Draft = DraftKeys{
 	// deliberately leaves to the line editor (see DraftKeys).
 	Answer: bind("ctrl+space", "answer it", "ctrl+space", "ctrl+y"),
 
-	Clear:  bind("esc", "clear the input; empty, cancel the turn", "esc"),
+	// Esc goes back and never stops anything. It clears the draft, drops a
+	// selection, dismisses the completion menu, detaches a level, leaves a
+	// waiting decision waiting — and on an empty draft under a running turn
+	// it does nothing at all, because the reflex that closes a diff must not
+	// abandon minutes of work when the box happens to be empty. Interrupting
+	// is the cancel chord's alone
+	// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+	Clear:  bind("esc", "clear the input", "esc"),
 	Cancel: bind("ctrl+c", "cancel the turn (press twice), then the input", "ctrl+c"),
 	Quit:   bind("ctrl+d", "quit (press twice; a live turn asks)", "ctrl+d"),
 }

@@ -223,8 +223,8 @@ func (m Model) todoRunAfter(prev Model) (Model, tea.Cmd) {
 		return next.(Model), cmd
 	}
 	if m.todoRunCancelled {
-		// esc ended the stage turn with a partial answer. A cancel is the
-		// reader stopping the run, not evidence to grade.
+		// The cancel chord ended the stage turn with a partial answer. A
+		// cancel is the reader stopping the run, not evidence to grade.
 		m.todoRunCancelled = false
 		next, cmd := m.stopTodoRun()
 		return next.(Model), cmd

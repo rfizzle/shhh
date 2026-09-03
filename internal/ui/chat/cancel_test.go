@@ -72,20 +72,36 @@ func TestCancel_ExpiredWindowArmsAgain(t *testing.T) {
 	}
 }
 
-func TestCancel_EscArmsAndCancelsOnEmptyDraft(t *testing.T) {
+// Esc is the key that leaves whatever is open, so it never stops a turn: on
+// an empty draft under a streaming one it does nothing at all, including to
+// a window the cancel chord opened
+// (docs/interface/principles.md#esc-is-always-the-safe-answer).
+func TestCancel_EscOnAnEmptyStreamingDraftIsInert(t *testing.T) {
 	m := streamingCancelModel(t)
 
 	m, _ = pressKey(t, m, escK)
 	if m.state != stateStreaming {
-		t.Fatal("a single esc must leave the stream live")
+		t.Fatal("esc must leave the stream live")
 	}
-	if note := m.armedNotice(); note != "esc again cancels the turn" {
-		t.Fatalf("the rail must name the key that armed, got %q", note)
+	if note := m.armedNotice(); note != "" {
+		t.Fatalf("esc must arm nothing, the rail says %q", note)
+	}
+	m, _ = pressKey(t, m, escK)
+	if m.state != stateStreaming {
+		t.Fatal("a second esc must not cancel the turn either")
 	}
 
+	m, _ = pressKey(t, m, ctrlC)
+	if note := m.armedNotice(); note != "ctrl+c again cancels the turn" {
+		t.Fatalf("only the cancel chord arms, and the rail names it: %q", note)
+	}
 	m, _ = pressKey(t, m, escK)
+	if note := m.armedNotice(); note != "ctrl+c again cancels the turn" {
+		t.Fatalf("esc must leave an open window as it found it, got %q", note)
+	}
+	m, _ = pressKey(t, m, ctrlC)
 	if m.state != stateInput {
-		t.Fatal("the second esc must cancel the turn")
+		t.Fatal("the cancel chord's second press must still cancel the turn")
 	}
 }
 
@@ -102,16 +118,6 @@ func TestCancel_EscWithDraftClearsItFirst(t *testing.T) {
 	}
 	if m.armedNotice() != "" {
 		t.Fatal("clearing the draft must not arm the cancel")
-	}
-}
-
-func TestCancel_TheTwoKeysShareOneWindow(t *testing.T) {
-	m := streamingCancelModel(t)
-
-	m, _ = pressKey(t, m, escK)
-	m, _ = pressKey(t, m, ctrlC)
-	if m.state != stateInput {
-		t.Fatal("esc arms and ctrl+c confirms: one window, either key")
 	}
 }
 

@@ -107,11 +107,14 @@ Keys:
                  the input-source switcher and takes it first                   
   ?              On an empty draft, print this key list; with any text in the   
                  box it is a letter like any other                              
-  esc            Clear the input; on an empty draft while a turn runs, press    
-                 twice to cancel the turn. On an empty idle draft, esc esc      
-                 opens the /rewind picker                                       
-  ctrl+c         Cancel the turn (press twice) / clear the input / quit         
-                 (press twice on an empty idle draft)                           
+  esc            Go back: clear the input, dismiss the completion menu, drop    
+                 a selection, detach one level, leave a waiting decision        
+                 waiting. It never stops a running turn — on an empty draft     
+                 under one it does nothing, so ctrl+c is what you want there.   
+                 On an empty idle draft, esc esc opens the /rewind picker       
+  ctrl+c         Cancel the running turn — press twice, and what the turn       
+                 already did is kept. Also clears the input, and quits from     
+                 an empty idle draft (twice again)                              
   ctrl+d         Quit — press twice; with a turn running it asks first,         
                  saying what is cancelled and what the autosave keeps           
   pgup/pgdn      Page the transcript, leaving the keyboard in the prompt.       
@@ -233,11 +236,14 @@ Keys:
 ␛[3;38;5;244m                 the input-source switcher and takes it first␛[m                   
 ␛[3;38;5;244m  ?              On an empty draft, print this key list; with any text in the␛[m   
 ␛[3;38;5;244m                 box it is a letter like any other␛[m                              
-␛[3;38;5;244m  esc            Clear the input; on an empty draft while a turn runs, press␛[m    
-␛[3;38;5;244m                 twice to cancel the turn. On an empty idle draft, esc esc␛[m      
-␛[3;38;5;244m                 opens the /rewind picker␛[m                                       
-␛[3;38;5;244m  ctrl+c         Cancel the turn (press twice) / clear the input / quit␛[m         
-␛[3;38;5;244m                 (press twice on an empty idle draft)␛[m                           
+␛[3;38;5;244m  esc            Go back: clear the input, dismiss the completion menu, drop␛[m    
+␛[3;38;5;244m                 a selection, detach one level, leave a waiting decision␛[m        
+␛[3;38;5;244m                 waiting. It never stops a running turn — on an empty draft␛[m     
+␛[3;38;5;244m                 under one it does nothing, so ctrl+c is what you want there.␛[m   
+␛[3;38;5;244m                 On an empty idle draft, esc esc opens the /rewind picker␛[m       
+␛[3;38;5;244m  ctrl+c         Cancel the running turn — press twice, and what the turn␛[m       
+␛[3;38;5;244m                 already did is kept. Also clears the input, and quits from␛[m     
+␛[3;38;5;244m                 an empty idle draft (twice again)␛[m                              
 ␛[3;38;5;244m  ctrl+d         Quit — press twice; with a turn running it asks first,␛[m         
 ␛[3;38;5;244m                 saying what is cancelled and what the autosave keeps␛[m           
 ␛[3;38;5;244m  pgup/pgdn      Page the transcript, leaving the keyboard in the prompt.␛[m       

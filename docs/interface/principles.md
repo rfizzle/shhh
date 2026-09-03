@@ -54,6 +54,12 @@ always backs out without consequence will try things; one who has to read
 carefully before every keystroke will not, and will eventually approve
 something they did not read because reading everything is exhausting.
 
+It is checkable in one sentence: Escape never abandons work. Find a screen
+where a single Esc ends a running turn, throws away what was typed without
+putting it back, or destroys something that cannot be got again, and the
+invariant is broken there whatever the rail beside it promises. Ending a turn
+belongs to a chord no reflex produces, and takes two presses of it.
+
 ### Fold, never hide
 
 A collapsed group still counts what it swallowed — `▸ 6 reads · 2 searches`.

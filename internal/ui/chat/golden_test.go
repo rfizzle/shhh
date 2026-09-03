@@ -33,6 +33,7 @@ import (
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/golden"
+	"github.com/rfizzle/shhh/internal/ui/keys"
 )
 
 func TestMain(m *testing.M) { os.Exit(golden.Run(m)) }
@@ -247,8 +248,11 @@ func TestGolden_PressAgain(t *testing.T) {
 			return m.takeoverPanel(m.contentWidth())
 		}
 		return []golden.Panel{
-			{Label: "cancel armed · a second press abandons the turn", View: armed(armCancel, "esc", stateStreaming)},
-			{Label: "quit armed · idle", View: armed(armQuit, "ctrl+d", stateInput)},
+			// The key is read from the register rather than written down:
+			// only the cancel chord can arm the interrupt, and a literal
+			// here would go on printing whatever it was written as.
+			{Label: "cancel armed · a second press abandons the turn", View: armed(armCancel, keys.Shown(keys.Draft.Cancel), stateStreaming)},
+			{Label: "quit armed · idle", View: armed(armQuit, keys.Shown(keys.Draft.Quit), stateInput)},
 			{Label: "quit confirm · over a live turn", View: confirm()},
 		}
 	})

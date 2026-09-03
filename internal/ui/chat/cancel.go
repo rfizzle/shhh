@@ -11,11 +11,15 @@ package chat
 // judgement the esc invariant makes about exploration
 // (docs/interface/principles.md#esc-is-always-the-safe-answer).
 //
-// There is one window, not one per key. The interrupt arms it from ctrl+c and
-// from esc alike and either second press cancels, so a reader who arms with
-// one and confirms with the other is not asked a third time. Quitting arms
-// the same machine under its own kind — and quitting over a live turn is not
-// a window at all but a real question, the inline confirm
+// There is one window, not one per key, and the interrupt's is fed by the
+// cancel chord alone. Esc used to arm it too, which put the one key that
+// leaves every surface in the product — a diff, a menu, a selection — in
+// charge of abandoning a turn whenever the draft happened to be empty. So
+// the key that arms is always the same one now, and the notice always names
+// it.
+//
+// Quitting arms the same machine under its own kind — and quitting over a
+// live turn is not a window at all but a real question, the inline confirm
 // (docs/interface/surfaces.md#the-inline-confirm), because there the second
 // press would destroy the very work the reader may not have noticed running.
 

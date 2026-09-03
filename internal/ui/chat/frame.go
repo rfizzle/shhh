@@ -254,10 +254,11 @@ func (m Model) frameHints() string {
 	var hints []string
 	switch {
 	case m.decisionUngated():
-		// The three keys that matter while a decision waits. Stopping the run is
-		// ctrl+c here rather than the artboard's esc, because esc clears the draft
-		// on this surface and always has — see the departure recorded in
-		// docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard.
+		// The three keys that matter while a decision waits. Stopping the run
+		// is ctrl+c here rather than the artboard's esc, because esc on this
+		// surface goes back rather than stopping anything — the divergence is
+		// recorded in
+		// docs/interface/departures.md#stopping-a-run-is-the-cancel-chord-not-esc.
 		hints = []string{
 			keys.Shown(keys.Draft.Answer) + " " + keys.Words(keys.Draft.Answer),
 			keys.Shown(keys.Draft.Send) + " queues steering",
@@ -283,12 +284,15 @@ func (m Model) frameHints() string {
 		}
 		// Commands run mid-turn now, so the working rail says so;
 		// with children in flight the agent manager is the first thing to
-		// reach for. While the turn streams, the interrupt leads — esc is
-		// the key the reader's other harnesses taught them.
+		// reach for. While the turn streams, the interrupt leads — and it
+		// is the cancel chord, the only key that stops a turn
+		// (docs/interface/principles.md#esc-is-always-the-safe-answer). The
+		// rail is the one place that says so, because esc doing nothing
+		// looks exactly like esc being unread.
 		steer := keys.Shown(keys.Draft.Send) + " queues steering"
 		cancel := keys.Shown(keys.Draft.Cancel) + " cancel"
 		if m.turnState() == stateStreaming {
-			interrupt := keys.Shown(keys.Draft.Clear) + " cancels the turn"
+			interrupt := keys.Shown(keys.Draft.Cancel) + " cancels the turn"
 			hints = []string{interrupt, steer, "/ commands"}
 			if active, _ := m.activeAgents(); active > 0 {
 				hints = []string{interrupt, steer, keys.Shown(keys.Draft.Agents) + " agents", "/ commands"}

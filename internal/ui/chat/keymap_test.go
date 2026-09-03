@@ -156,7 +156,7 @@ func TestRewind_NeverWhileATurnStreams(t *testing.T) {
 	m, _ = pressKey(t, m, escK)
 	m, _ = pressKey(t, m, escK)
 	if m.state == stateRewindPick {
-		t.Fatal("esc esc while streaming opened rewind; it is the interrupt there")
+		t.Fatal("esc esc while streaming opened rewind; rewinding is idle-only")
 	}
 }
 

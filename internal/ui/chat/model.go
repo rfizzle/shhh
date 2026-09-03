@@ -623,7 +623,8 @@ type Model struct {
 	todoRunMark int
 	// todoRunTurn is the session turn the current stage sent, so a turn
 	// that ended without being the stage's is told apart; todoRunCancelled
-	// marks the stage turn ended by esc rather than by an answer.
+	// marks the stage turn ended by the cancel chord rather than by an
+	// answer.
 	todoRunTurn      int
 	todoRunCancelled bool
 	// todoPause is the open pause card while a run waits on the person.
@@ -1960,23 +1961,30 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				m.detachOne()
 				return m, nil
 			}
-			// Empty draft while the turn streams: esc is the interrupt
-			// every harness shares, feeding the same two-press window as
-			// the cancel chord — either key's second press cancels
-			// (docs/interface/surfaces.md#the-input-frame). With a draft,
-			// esc spent this press clearing it; the next one arms.
+			// Empty draft while the turn streams: nothing at all. Esc is
+			// the key that leaves whatever is open, and the reflex that
+			// closes a diff or drops a selection arrives at a draft that
+			// happens to be empty often enough that letting it interrupt
+			// costs a turn nobody meant to stop. The two-press window is fed
+			// by the cancel chord alone
+			// (docs/interface/surfaces.md#the-input-frame).
+			//
+			// Inert here means inert: whatever two-press window was open is
+			// put back, because every key consumes one on the way in
+			// (cancel.go) and a key that does nothing must not be the thing
+			// that changes what the next press means.
 			if strings.TrimSpace(m.input.Value()) == "" && m.state == stateStreaming {
-				if m.compacting || armed.open(armCancel) {
-					return m.cancelTurnNow()
-				}
-				return m, m.armPress(armCancel, keys.Shown(keys.Draft.Clear))
+				m.armed = armed
+				return m, nil
 			}
 			// Esc esc on an empty idle draft opens the rewind picker — the
 			// gesture three of the five harnesses share, over the surface
 			// /rewind already owns (docs/interface/surfaces.md#the-input-frame).
-			// Idle only: with a turn live the press above was the interrupt,
-			// and attached it was the detach. The window is short because the
-			// two presses are one gesture, not a press and a decision. A
+			// Idle only: attached, the press above was the detach, and while
+			// a turn is live it was nothing — a picker offering to unwind a
+			// conversation the model is still writing into would be asking
+			// about a shape that has not settled. The window is short because
+			// the two presses are one gesture, not a press and a decision. A
 			// session with nothing to rewind to arms nothing: esc on an empty
 			// idle draft has always meant nothing, no rail advertises the
 			// gesture, and the alternative was a reflexive double-esc
@@ -4207,11 +4215,14 @@ func helpKeysText() string {
                  the input-source switcher and takes it first
   ?              On an empty draft, print this key list; with any text in the
                  box it is a letter like any other
-  esc            Clear the input; on an empty draft while a turn runs, press
-                 twice to cancel the turn. On an empty idle draft, esc esc
-                 opens the /rewind picker
-  ctrl+c         Cancel the turn (press twice) / clear the input / quit
-                 (press twice on an empty idle draft)
+  esc            Go back: clear the input, dismiss the completion menu, drop
+                 a selection, detach one level, leave a waiting decision
+                 waiting. It never stops a running turn — on an empty draft
+                 under one it does nothing, so ctrl+c is what you want there.
+                 On an empty idle draft, esc esc opens the /rewind picker
+  ctrl+c         Cancel the running turn — press twice, and what the turn
+                 already did is kept. Also clears the input, and quits from
+                 an empty idle draft (twice again)
   ctrl+d         Quit — press twice; with a turn running it asks first,
                  saying what is cancelled and what the autosave keeps
   pgup/pgdn      Page the transcript, leaving the keyboard in the prompt.
