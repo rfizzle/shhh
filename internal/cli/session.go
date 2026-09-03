@@ -777,6 +777,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		WithConfigWriter(configWriter()).
 		WithMouse(cfg.MouseEnabled()).
 		WithPasteThresholds(cfg.Appearance.PasteLines, cfg.Appearance.PasteColumns).
+		WithRailWidth(components.RailWidthOrAuto(cfg.Appearance.RailWidth)).
 		WithNotify(cfg.NotifyEnabled()).
 		WithWindowTitle(cfg.WindowTitleEnabled()).
 		WithDefaults(chat.Defaults{

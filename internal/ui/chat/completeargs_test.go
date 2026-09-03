@@ -32,7 +32,7 @@ func TestArgCompletion_StaticSubcommands(t *testing.T) {
 	if !m.completionActive() {
 		t.Fatal("the menu should stay open past the command name")
 	}
-	if got := strings.Join(completionNames(m), " "); got != "verbosity mono mouse notify title window terminal" {
+	if got := strings.Join(completionNames(m), " "); got != "verbosity mono mouse notify title window rail terminal" {
 		t.Fatalf("expected every /ui subcommand in registry order, got %q", got)
 	}
 
@@ -355,5 +355,23 @@ func TestArgCompletion_HintNamesTheLineEnterRuns(t *testing.T) {
 	menu := strings.Join(m.completionMenuLines(), "\n")
 	if !strings.Contains(menu, "enter run /model") {
 		t.Fatalf("the hint should name the line enter runs:\n%s", menu)
+	}
+}
+
+// TestArgCompletion_RailOffersWhatThisTerminalAllows: the useful third offer
+// is the ladder's own width here, so the menu never proposes a number the
+// layout is about to narrow. On a terminal too narrow to split there is no
+// such number, and the menu is the word and the floor.
+func TestArgCompletion_RailOffersWhatThisTerminalAllows(t *testing.T) {
+	narrow := typeChars(t, readyModel(t), "/ui rail ")
+	if got := strings.Join(completionNames(narrow), " "); got != "auto 46" {
+		t.Errorf("a narrow terminal offers the word and the floor, got %q", got)
+	}
+
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 200, Height: 40})
+	wide := typeChars(t, updated.(Model), "/ui rail ")
+	if got := strings.Join(completionNames(wide), " "); got != "auto 62 46" {
+		t.Errorf("a 200-column terminal offers its own 62 between them, got %q", got)
 	}
 }

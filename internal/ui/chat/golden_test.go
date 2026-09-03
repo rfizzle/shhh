@@ -969,11 +969,13 @@ func TestGolden_StatusRow(t *testing.T) {
 	})
 }
 
-// screenWidths adds a terminal wide enough to split to the four
-// breakpoints: 144 columns is 140 content columns, past the
+// screenWidths adds two terminals wide enough to split to the four
+// breakpoints. 144 columns is 140 content columns, just past the
 // InspectorMinContentWidth rung, so the whole-screen capture carries the
-// two-pane arrangement as well as the single-pane one.
-var screenWidths = append(append([]int{}, goldenWidths...), 144)
+// two-pane arrangement as well as the single-pane one; 200 is the wide
+// terminal the rail grows on, and the pair is what shows that the growth goes
+// to the rail's blocks rather than to the gap beside them.
+var screenWidths = append(append([]int{}, goldenWidths...), 144, 200)
 
 // screenHeight is the row count every whole-screen panel is captured at. It
 // is fixed because the capture's subject is the vertical arrangement: the

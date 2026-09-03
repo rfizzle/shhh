@@ -88,7 +88,7 @@ func (m Model) columns() paneColumns {
 		layout.Horizontal(
 			layout.Fill(1),
 			layout.Len(paneDividerWidth),
-			layout.Len(components.InspectorWidth),
+			layout.Len(m.railWidth(cols.content.Dx())),
 		).Split(cols.content).Assign(&cols.pane, &cols.divider, &cols.inspector)
 	}
 
@@ -98,6 +98,28 @@ func (m Model) columns() paneColumns {
 	).Split(cols.pane).Assign(&cols.feed, &cols.gutter)
 
 	return cols
+}
+
+// railWidth is how many columns the rail gets at a content width, and the one
+// place that answers it: the split reads it, and so does every surface that
+// reports the arrangement or renders the rail on its own. It takes the
+// content width rather than reading it off columns(), because columns() is
+// what calls it.
+//
+// The ladder is the answer unless the session was given a number, and a given
+// number is held to the rail's own floor and to what the ladder allows here —
+// two limits and not three, because the ladder is already capped at the
+// rail's ceiling, so the one min holds both. The ladder's limit is the one
+// that matters: without it `/ui rail 72` on a terminal that has just crossed
+// the rung leaves the transcript narrower than the rail, which is the
+// arrangement the ladder exists to prevent
+// (docs/interface/surfaces.md#the-inspector-rail).
+func (m Model) railWidth(content int) int {
+	ladder := components.InspectorWidthFor(content)
+	if m.railCols <= 0 {
+		return ladder
+	}
+	return min(max(m.railCols, components.InspectorWidth), ladder)
 }
 
 // surfaceLayout is every rectangle View() paints into, in terminal

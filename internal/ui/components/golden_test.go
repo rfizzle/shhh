@@ -819,14 +819,15 @@ func TestGolden_FanoutBlock(t *testing.T) {
 	})
 }
 
-// TestGolden_InspectorRail captures the rail. Its width is fixed at
-// InspectorWidth — it exists only in the two-pane layout and never renders at
-// another size — so the axis worth capturing is which blocks are present and
-// what a height too short to hold them all drops. The full rail carries an
-// approved plan's PLAN checklist, which is also what gives THIS
-// TURN's meter a denominator.
+// TestGolden_InspectorRail captures the rail at both ends of its range: the
+// floor it takes at the width ladder's rung and the ceiling a wide terminal
+// gives it. The axes worth capturing are which blocks are present, what a
+// height too short to hold them all drops, and — across the two widths —
+// that every block spends the extra columns on itself rather than leaving
+// them as gap. The full rail carries an approved plan's PLAN checklist,
+// which is also what gives THIS TURN's meter a denominator.
 func TestGolden_InspectorRail(t *testing.T) {
-	captureGolden(t, "inspector-rail", "inspector rail", []int{InspectorWidth}, func(width int) []golden.Panel {
+	captureGolden(t, "inspector-rail", "inspector rail", []int{InspectorWidth, InspectorMaxWidth}, func(width int) []golden.Panel {
 		full := InspectorRail{
 			Summary: &InspectorSummary{
 				Text:  "Wiring the round-limit pause into the chat model; the sentinel is in and the tests have not been run yet.",

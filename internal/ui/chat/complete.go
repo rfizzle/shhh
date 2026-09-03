@@ -136,6 +136,7 @@ var slashCommands = []slashCommand{
 				{"notify", "Say so when a turn stops and you are elsewhere"},
 				{"title", "Name an unnamed session after its first turn"},
 				{"window", "Name the terminal's own tab after this session"},
+				{"rail", "How many columns the inspector rail takes"},
 				{"terminal", "What this terminal can do"},
 			}},
 			{after: []string{"verbosity"}, options: []argOption{
@@ -163,6 +164,7 @@ var slashCommands = []slashCommand{
 				{"on", "The tab says the command, the directory, and ⏸ while a decision waits"},
 				{"off", "The tab keeps whatever your terminal puts there"},
 			}},
+			{after: []string{"rail"}, dynamic: railArgs},
 		}},
 	{name: "/add-dir", args: "[<path>|drop <path>]", desc: "The directories this session may work in",
 		enabled: func(m *Model) bool { return m.scope != nil },

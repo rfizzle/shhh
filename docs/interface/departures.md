@@ -81,6 +81,18 @@ children's names clip to the same eight columns. The verb says what kind of
 row it is; the name leads the target, which is the only field allowed to grow,
 and the lane still lines up with the rows around it.
 
+## The inspector rail is drawn at one width and rendered at several
+
+The rail's artboard is drawn at its narrowest, which is the width the surface
+splits at and the one most terminals show. It is not the only width the binary
+draws: past the threshold the rail grows with the terminal to a ceiling, and
+the reader can fix it anywhere in that range
+([the rule](surfaces.md#the-inspector-rail)). Column widths are the design
+system's to settle, so the range and its ends are the artboard's business as
+soon as there is a wide variant of it to state them; until then the artboard
+is the narrow end of a range rather than the whole of it, which is a gap and
+not a disagreement.
+
 ## The agent manager kills on a capital
 
 The design offers a lower-case key. That key is move-up on every list in the

@@ -140,8 +140,9 @@ func TestLayout_ColumnsMatchTheWidthLadder(t *testing.T) {
 		}
 		wantPane := c.content.Dx()
 		if split {
-			wantPane -= components.InspectorWidth + paneDividerWidth
-			if c.inspector.Dx() != components.InspectorWidth || c.divider.Dx() != paneDividerWidth {
+			rail := m.railWidth(c.content.Dx())
+			wantPane -= rail + paneDividerWidth
+			if c.inspector.Dx() != rail || c.divider.Dx() != paneDividerWidth {
 				t.Errorf("width %d: rail %d + divider %d columns", width, c.inspector.Dx(), c.divider.Dx())
 			}
 		}
@@ -208,6 +209,51 @@ func TestLayout_TranscriptOriginIsThePanesCorner(t *testing.T) {
 		if at.X != s.pane.Min.X || at.Y != s.view.Min.Y {
 			t.Errorf("width %d: origin %v, pane starts at x=%d and the view at y=%d",
 				width, at, s.pane.Min.X, s.view.Min.Y)
+		}
+	}
+}
+
+// TestLayout_RailWidensWithTheContent walks the ladder the rail's own width
+// hangs on. The numbers are the rule, not a rendering: 46 at the rung, one
+// column for every four the content has above it, and a ceiling the rail
+// stops at because its blocks have nothing left to do with the room.
+func TestLayout_RailWidensWithTheContent(t *testing.T) {
+	for _, c := range []struct{ content, rail int }{
+		{130, 46},
+		{144, 49},
+		{160, 53},
+		{200, 63},
+		{260, 72},
+	} {
+		var m Model
+		if got := m.railWidth(c.content); got != c.rail {
+			t.Errorf("content %d: rail is %d columns, want %d", c.content, got, c.rail)
+		}
+		if c.rail >= c.content-c.rail {
+			t.Errorf("content %d: a %d-column rail leaves the transcript the smaller share", c.content, c.rail)
+		}
+	}
+}
+
+// TestLayout_RailSettingIsHeldToTheLadder: a number is a request, and the
+// two limits on it are the rail's own floor and what the terminal has room
+// for. Neither is an error — a person who typed 40 gets the narrowest rail
+// there is, and one who typed 72 on a terminal that cannot seat it gets the
+// widest that fits, because a refused number leaves them with no rail change
+// and no idea which of the two they hit.
+func TestLayout_RailSettingIsHeldToTheLadder(t *testing.T) {
+	for _, c := range []struct{ set, content, want int }{
+		{40, 200, 46},  // under the floor
+		{60, 200, 60},  // inside the range the ladder allows here
+		{72, 144, 49},  // past what this terminal allows
+		{100, 400, 72}, // past the ceiling
+		{0, 200, 63},   // auto is the ladder
+		{-5, 200, 63},  // so is a number that is not one
+	} {
+		m := Model{railCols: c.set}
+		if got := m.railWidth(c.content); got != c.want {
+			t.Errorf("set %d at content %d: rail is %d columns, want %d",
+				c.set, c.content, got, c.want)
 		}
 	}
 }

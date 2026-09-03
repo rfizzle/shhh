@@ -390,6 +390,8 @@ func (m *Model) uiCommand(parts []string) string {
 		return m.titleCommand(parts)
 	case "window":
 		return m.windowCommand(parts)
+	case "rail":
+		return m.railCommand(parts)
 	case "terminal":
 		return m.terminalReport()
 	}
@@ -399,7 +401,7 @@ func (m *Model) uiCommand(parts []string) string {
 // uiUsage is the one line naming everything /ui answers for. It is a constant
 // because the bare readout and the unknown-subcommand reply are the same
 // list, and a list written twice is a list that drifts.
-const uiUsage = "Usage: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off> · /ui notify <on|off> · /ui title <on|off> · /ui window <on|off> · /ui terminal"
+const uiUsage = "Usage: /ui verbosity <low|normal|high> · /ui mono <on|off> · /ui mouse <on|off> · /ui notify <on|off> · /ui title <on|off> · /ui window <on|off> · /ui rail <auto|columns> · /ui terminal"
 
 // terminalName is the one-line answer the bare /ui gives: what the terminal
 // called itself when shhh asked. A terminal that was asked

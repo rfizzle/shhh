@@ -844,6 +844,34 @@ func TestProviderCacheTTL_LoadsAndWrites(t *testing.T) {
 	}
 }
 
+// The inspector rail's width reads back off the file and through the write
+// door, which is the pair every key needs. It is a string because its value
+// is a word or a number and the surface that owns the rail decides which;
+// what config holds is the line, unread.
+func TestAppearanceRailWidth_LoadsAndWrites(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	if err := os.WriteFile(path, []byte("[appearance]\nrail_width = \"60\"\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := LoadFrom(path)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if cfg.Appearance.RailWidth != "60" {
+		t.Errorf("appearance.rail_width = %q, want %q", cfg.Appearance.RailWidth, "60")
+	}
+
+	if err := Write(path, Edit{Key: "appearance.rail_width", Value: "auto"}); err != nil {
+		t.Fatal(err)
+	}
+	if cfg, err = LoadFrom(path); err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Appearance.RailWidth != "auto" {
+		t.Errorf("after the write, appearance.rail_width = %q", cfg.Appearance.RailWidth)
+	}
+}
+
 // A backlog run commits unless the file says otherwise, so an unset key and
 // one that says true read the same and only false turns it off. The key
 // reads back off the file and through the write door, which is the pair

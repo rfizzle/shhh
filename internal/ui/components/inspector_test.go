@@ -587,3 +587,156 @@ func TestSummaryTone_EveryStateHasItsOwnGlyphAndWords(t *testing.T) {
 		words[label] = s
 	}
 }
+
+// TestInspectorWidthFor_IsTheLadder pins the rule the layout reads: the floor
+// at the rung and below it, one column for every four the content has above
+// it, and a ceiling.
+func TestInspectorWidthFor_IsTheLadder(t *testing.T) {
+	for _, c := range []struct{ content, want int }{
+		{80, InspectorWidth},
+		{InspectorMinContentWidth, InspectorWidth},
+		{144, 49},
+		{160, 53},
+		{200, 63},
+		{260, InspectorMaxWidth},
+		{999, InspectorMaxWidth},
+	} {
+		if got := InspectorWidthFor(c.content); got != c.want {
+			t.Errorf("content %d: rail is %d columns, want %d", c.content, got, c.want)
+		}
+	}
+}
+
+func TestParseRailWidth(t *testing.T) {
+	for _, c := range []struct {
+		in      string
+		want    int
+		refused bool
+	}{
+		{"", 0, false},
+		{RailWidthAuto, 0, false},
+		{" AUTO ", 0, false},
+		{"60", 60, false},
+		{"40", 40, false}, // held to the floor by the layout, not refused here
+		{"wide", 0, true},
+		{"0", 0, true},
+		{"-3", 0, true},
+	} {
+		got, err := ParseRailWidth(c.in)
+		if (err != nil) != c.refused {
+			t.Errorf("%q: err = %v, refused = %v", c.in, err, c.refused)
+		}
+		if got != c.want {
+			t.Errorf("%q: got %d, want %d", c.in, got, c.want)
+		}
+	}
+}
+
+// TestInspectorRail_EveryWidthInTheRangeFits: the rail is rendered against
+// whatever width it is handed, so no row may be wider than the rail and no
+// block may stop short of its right edge — a heading that ends at column 46
+// inside a 62-column rail is the shape a constant read in the wrong place
+// leaves behind.
+func TestInspectorRail_EveryWidthInTheRangeFits(t *testing.T) {
+	r := fullRail()
+	r.Summary = &InspectorSummary{Text: "Wiring the round-limit pause into the chat model.", State: SummaryOnTarget, Round: 24}
+	for width := InspectorWidth; width <= InspectorMaxWidth; width++ {
+		for _, line := range r.Lines(width, 0) {
+			if w := lipgloss.Width(line); w > width {
+				t.Fatalf("width %d: line %q is %d columns", width, stripANSI(line), w)
+			}
+		}
+		for _, line := range r.Lines(width, 0) {
+			plain := stripANSI(line)
+			if !strings.HasPrefix(plain, "  CONTEXT") {
+				continue
+			}
+			if lipgloss.Width(line) != width {
+				t.Fatalf("width %d: the CONTEXT heading ends at column %d", width, lipgloss.Width(line))
+			}
+		}
+	}
+}
+
+// TestInspectorRail_FoldMarkerSpansTheRail: the row a truncated block leaves
+// behind is a row of the rail like any other, and read the rail's floor once
+// instead of the width it was given.
+func TestInspectorRail_FoldMarkerSpansTheRail(t *testing.T) {
+	r := InspectorRail{Todo: &InspectorTodo{Open: 9, Rows: []InspectorTodoRow{
+		{Slug: "rail-width", Priority: "H", Size: "M", State: TodoReady},
+		{Slug: "rail-setting", Priority: "M", Size: "S", State: TodoReady},
+		{Slug: "rail-goldens", Priority: "L", Size: "S", State: TodoReady},
+	}}}
+	const width = InspectorMaxWidth
+	lines := r.Lines(width, 3)
+	last := lines[len(lines)-1]
+	if !strings.Contains(stripANSI(last), "more") {
+		t.Fatalf("the last row should be the fold marker, got %q", stripANSI(last))
+	}
+	if got := lipgloss.Width(last); got != width {
+		t.Fatalf("the fold marker is %d columns in a %d-column rail", got, width)
+	}
+}
+
+// TestInspectorRail_MetersScaleWithTheRail: the extra columns go to the runs
+// rather than to the gap beside them, which is the whole of what a wider rail
+// is for. The count is the meter's own, so this reads the bar rather than the
+// row it sits on.
+func TestInspectorRail_MetersScaleWithTheRail(t *testing.T) {
+	r := fullRail()
+	// The series is as long as the widest rail can draw, which is what the
+	// host that feeds it keeps: a run that is short because the samples ran
+	// out would say nothing about the cells.
+	r.Context.Burn = make([]float64, SparkCellsRailMax)
+	for i := range r.Context.Burn {
+		r.Context.Burn[i] = float64(i + 1)
+	}
+	runLen := func(width int, glyphs string) int {
+		var longest int
+		for _, line := range r.Lines(width, 0) {
+			n := 0
+			for _, ch := range stripANSI(line) {
+				if strings.ContainsRune(glyphs, ch) {
+					n++
+					continue
+				}
+				longest, n = max(longest, n), 0
+			}
+			longest = max(longest, n)
+		}
+		return longest
+	}
+	for _, glyphs := range []string{"▰▱", "▁▂▃▄▅▆▇█"} {
+		narrow, wide := runLen(InspectorWidth, glyphs), runLen(InspectorMaxWidth, glyphs)
+		if wide-narrow != InspectorMaxWidth-InspectorWidth {
+			t.Errorf("%q run is %d cells at %d columns and %d at %d",
+				glyphs, narrow, InspectorWidth, wide, InspectorMaxWidth)
+		}
+	}
+}
+
+// TestInspectorRail_WideRailKeepsThePathAndTheStats: the extra columns reach
+// the path before anything clips, and the counts are never what gives way.
+func TestInspectorRail_WideRailKeepsThePathAndTheStats(t *testing.T) {
+	const path = "internal/ui/components/inspector.go"
+	r := InspectorRail{Changes: &InspectorChanges{
+		Files: []InspectorFile{{Path: path, Added: 120, Removed: 99}}, Added: 120, Removed: 99}}
+	narrow := stripANSI(r.View(InspectorWidth, 0))
+	if strings.Contains(narrow, path) {
+		t.Fatalf("the narrow rail is supposed to clip this path:\n%s", narrow)
+	}
+	wide := stripANSI(r.View(InspectorMaxWidth, 0))
+	for _, want := range []string{path, "+120", "−99"} {
+		if !strings.Contains(wide, want) {
+			t.Fatalf("a wide rail keeps %q:\n%s", want, wide)
+		}
+	}
+}
+
+// TestSparkCellsRailMax_IsTheRunAtTheCeiling keeps the constant a host bounds
+// its series by and the run the widest rail draws from drifting apart.
+func TestSparkCellsRailMax_IsTheRunAtTheCeiling(t *testing.T) {
+	if got := railCells(SparkCells, InspectorMaxWidth); got != SparkCellsRailMax {
+		t.Fatalf("the widest run is %d cells, SparkCellsRailMax is %d", got, SparkCellsRailMax)
+	}
+}

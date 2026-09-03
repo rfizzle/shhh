@@ -79,12 +79,12 @@ func writeConfigEdits(path string, edits ...config.Edit) error {
 
 // checkConfigValue refuses a value that is not one of the words its key
 // takes. The shapes — a number, a boolean — are the config package's to
-// parse; these seven keys are checked here instead because what they may say
-// is a permission mode, a reasoning level, a cache lifetime and three
-// containment settings, and those vocabularies belong to the packages that
-// own them, which config must not import. Asking the same parsers the session
-// itself asks is what makes `config set`, the screen and the slash commands
-// refuse the same values, rather than three lists drifting apart.
+// parse; these eight keys are checked here instead because what they may say
+// is a permission mode, a reasoning level, a cache lifetime, a rail width and
+// three containment settings, and those vocabularies belong to the packages
+// that own them, which config must not import. Asking the same parsers the
+// session itself asks is what makes `config set`, the screen and the slash
+// commands refuse the same values, rather than three lists drifting apart.
 //
 // An empty value is a reset, not an answer, and is left to the write to
 // interpret as the key going out of the file.
@@ -110,6 +110,8 @@ func checkConfigValue(key, value string) error {
 		_, err = provider.ParseEffort(value)
 	case "provider.cache_ttl":
 		_, err = provider.ParseCacheTTL(value)
+	case "appearance.rail_width":
+		_, err = components.ParseRailWidth(value)
 	case "sandbox.profile":
 		_, err = sandbox.ParseProfile(value)
 	case "sandbox.container_engine":
@@ -805,6 +807,22 @@ func configSettings() []configSetting {
 		},
 		fallback: strconv.Itoa(attachment.DefaultPasteColumns) + " columns",
 		options:  noOptions,
+	}, {
+		// The rail's own columns, on the workspace group with the other
+		// settings about what the surface does rather than what the session
+		// does. The offered numbers are the two ends of the range: a rail is
+		// set to fit a pane somebody chose the size of, and the ends are what
+		// they are choosing between.
+		group: "WORKSPACE", key: "appearance.rail_width", label: "inspector rail width",
+		read:     str(func(c config.Config) string { return c.Appearance.RailWidth }),
+		fallback: components.RailWidthAuto,
+		options: func(config.Config) []components.SelectOption {
+			return []components.SelectOption{
+				{Label: components.RailWidthAuto, Desc: "the rail widens with the terminal"},
+				{Label: strconv.Itoa(components.InspectorWidth), Desc: "the narrowest rail — the most transcript"},
+				{Label: strconv.Itoa(components.InspectorMaxWidth), Desc: "the widest rail a terminal has room for"},
+			}
+		},
 	}, {
 		group: "WORKSPACE", key: "appearance.notify", label: "desktop notifications",
 		// Not flag(): the default is on, so an unset file and a file that

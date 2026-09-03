@@ -23,13 +23,28 @@ import (
 )
 
 // Meter cell counts by role. The only supported widths: a meter that
-// wants some other count is a meter that is drifting.
+// wants some other count is a meter that is drifting. The rail's is the count
+// at the rail's own floor — a rail with more columns asks railCells for them.
 const (
 	MeterCellsVitals    = 8  // the context meter in the vitals rail
 	MeterCellsRail      = 22 // context and step progress in the inspector rail
 	MeterCellsAgent     = 5  // an agent lane's progress
 	MeterCellsCountdown = 20 // a retry countdown
 )
+
+// railCells is a rail run's cell count at a rail width: the role's count at
+// the narrowest rail, and one more cell for each column the rail has above
+// it. The extra columns go to the run rather than to the gap beside it,
+// because the gap is what a wider rail would otherwise be
+// (docs/interface/surfaces.md#the-inspector-rail).
+func railCells(base, width int) int {
+	return base + max(width-InspectorWidth, 0)
+}
+
+// SparkCellsRailMax is the longest burn run the rail can ask for — railCells
+// at the rail's ceiling. A host feeding the series keeps this many samples,
+// so the widest rail is never a run with cells nobody gave it a value for.
+const SparkCellsRailMax = SparkCells + InspectorMaxWidth - InspectorWidth
 
 // Context-meter warning thresholds, matching the window trim's warnings.
 // Hosts with their own thresholds override them per meter.

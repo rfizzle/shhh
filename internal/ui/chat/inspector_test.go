@@ -69,20 +69,20 @@ func TestTwoPane_WidthThreshold(t *testing.T) {
 }
 
 func TestTranscriptWidth_ReducedByTheRail(t *testing.T) {
-	wide := inspectorModel(t, 144, 40) // content 140 → 93-column pane
+	wide := inspectorModel(t, 144, 40) // content 140 → 48-column rail, 91-column pane
 	if wide.contentWidth() != 140 {
 		t.Fatalf("content width = %d, want 140", wide.contentWidth())
 	}
-	if got := wide.paneWidth(); got != 93 {
-		t.Fatalf("transcript pane = %d columns, want 93", got)
+	if got := wide.paneWidth(); got != 91 {
+		t.Fatalf("transcript pane = %d columns, want 91", got)
 	}
 	// The pane holds one column back for the scroll gutter, so
 	// the transcript wraps one column inside it — and so does the viewport,
 	// which is the selection's coordinate space.
-	if got := wide.transcriptWidth(); got != 92 {
-		t.Fatalf("transcript wraps to %d columns, want 92", got)
+	if got := wide.transcriptWidth(); got != 90 {
+		t.Fatalf("transcript wraps to %d columns, want 90", got)
 	}
-	if wide.viewport.Width() != 92 {
+	if wide.viewport.Width() != 90 {
 		t.Fatalf("viewport width = %d, want the wrap width", wide.viewport.Width())
 	}
 	narrow := inspectorModel(t, 120, 40)
@@ -293,12 +293,86 @@ func TestTurnClockAndSpend(t *testing.T) {
 
 func TestUICommand_ReportsTheLayout(t *testing.T) {
 	m := inspectorModel(t, 144, 40)
-	if got := m.uiCommand([]string{"/ui"}); !strings.Contains(got, "two panes") || !strings.Contains(got, "93-column transcript") {
+	if got := m.uiCommand([]string{"/ui"}); !strings.Contains(got, "two panes") || !strings.Contains(got, "91-column transcript") {
 		t.Fatalf("/ui reports the split layout: %q", got)
 	}
 	narrow := inspectorModel(t, 120, 40)
 	if got := narrow.uiCommand([]string{"/ui"}); !strings.Contains(got, "one pane") {
 		t.Fatalf("/ui reports the single-pane layout: %q", got)
+	}
+}
+
+// TestUICommand_RailSetsTheSplit: the command is the keyboard equal of the
+// config key, so what it changes is the next frame's columns and not a field
+// only the readout can see.
+func TestUICommand_RailSetsTheSplit(t *testing.T) {
+	m := inspectorModel(t, 200, 40) // content 196 → a 62-column rail on the ladder
+	if got := m.columns().inspector.Dx(); got != 62 {
+		t.Fatalf("the ladder gives a 200-column terminal a %d-column rail, want 62", got)
+	}
+	if reply := m.uiCommand([]string{"/ui", "rail", "60"}); !strings.Contains(reply, "set to 60 columns") {
+		t.Fatalf("/ui rail 60 should say what it set: %q", reply)
+	}
+	if got := m.columns().inspector.Dx(); got != 60 {
+		t.Fatalf("the rail is %d columns after /ui rail 60, want 60", got)
+	}
+	if got := m.paneWidth(); got != 196-60-paneDividerWidth {
+		t.Fatalf("the transcript pane is %d columns, want %d", got, 196-60-paneDividerWidth)
+	}
+	// A number the terminal cannot seat is cut to what it can, and the
+	// readout says so rather than reporting the number back.
+	if reply := m.uiCommand([]string{"/ui", "rail", "72"}); !strings.Contains(reply, "as wide as this terminal allows") {
+		t.Fatalf("a rail wider than the ladder allows should say so: %q", reply)
+	}
+	if got := m.columns().inspector.Dx(); got != 62 {
+		t.Fatalf("the rail is %d columns after /ui rail 72, want the ladder's 62", got)
+	}
+	// And a number under the rail's own floor is widened to it, which is the
+	// other limit and says so in different words.
+	if reply := m.uiCommand([]string{"/ui", "rail", "40"}); !strings.Contains(reply, "narrowest rail there is") {
+		t.Fatalf("a rail narrower than the floor should say so: %q", reply)
+	}
+	if got := m.columns().inspector.Dx(); got != 46 {
+		t.Fatalf("the rail is %d columns after /ui rail 40, want the floor's 46", got)
+	}
+	if reply := m.uiCommand([]string{"/ui", "rail", "auto"}); !strings.Contains(reply, "width ladder") {
+		t.Fatalf("/ui rail auto should hand the width back: %q", reply)
+	}
+	if m.railCols != 0 {
+		t.Fatalf("auto leaves no setting behind, got %d", m.railCols)
+	}
+	if reply := m.uiCommand([]string{"/ui", "rail", "wide"}); !strings.Contains(reply, "Error") {
+		t.Fatalf("a value that is neither auto nor a count is refused: %q", reply)
+	}
+}
+
+// TestUICommand_RailReflowsTheTranscript: a rail that changed width is a
+// transcript that changed width. Nothing on the command's path resizes the
+// viewport for it, so a feed left wrapped to the old pane is what a missing
+// sync looks like — the rail moves and the text beside it does not.
+func TestUICommand_RailReflowsTheTranscript(t *testing.T) {
+	m := inspectorModel(t, 200, 40)
+	next, _ := m.runCommand("/ui rail 60", "/ui")
+	after := next.(Model)
+	if after.railCols != 60 {
+		t.Fatalf("the setting did not survive the dispatch: %d", after.railCols)
+	}
+	if got, want := after.viewport.Width(), after.transcriptWidth(); got != want {
+		t.Fatalf("the viewport wraps to %d columns beside a %d-column transcript", got, want)
+	}
+}
+
+// TestUICommand_RailBelowTheRungSaysWhyNothingMoved: the setting takes at
+// any width, so a terminal too narrow to split has to be told that what it
+// is looking at is the rung and not a command that failed.
+func TestUICommand_RailBelowTheRungSaysWhyNothingMoved(t *testing.T) {
+	m := inspectorModel(t, 120, 40)
+	reply := m.uiCommand([]string{"/ui", "rail", "60"})
+	if !strings.Contains(reply, "too narrow to split") {
+		t.Fatalf("a narrow terminal should say why nothing moved: %q", reply)
+	}
+	if m.railCols != 60 {
+		t.Fatalf("the setting still takes: %d", m.railCols)
 	}
 }
 
@@ -322,7 +396,7 @@ func TestInspector_AgentsBlockFromRunningChildren(t *testing.T) {
 
 func TestInspectorContext_BurnSparkline(t *testing.T) {
 	m := inspectorModel(t, 144, 40)
-	for i := 0; i < 12; i++ {
+	for i := 0; i < contextBurnSamples+4; i++ {
 		m.accumulateUsage(&provider.Usage{PromptTokens: 1000 * (i + 1), CompletionTokens: 100})
 	}
 	if got := len(m.vitals.burn); got != contextBurnSamples {

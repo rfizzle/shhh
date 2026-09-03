@@ -432,6 +432,14 @@ type AppearanceConfig struct {
 	// session does with the answer.
 	PasteLines   int `toml:"paste_lines"`
 	PasteColumns int `toml:"paste_columns"`
+	// RailWidth is how many columns the chat surface's inspector rail takes
+	// on a terminal wide enough to show one
+	// (docs/interface/surfaces.md#the-inspector-rail): "auto", which widens
+	// the rail with the terminal, or a column count for a person whose rail
+	// has to fit a pane they chose the size of. It is a word or a number, so
+	// it is a string here and the surface that owns the rail reads it; an
+	// empty value is auto, the way an unset key is everywhere else.
+	RailWidth string `toml:"rail_width"`
 }
 
 type HistoryConfig struct {
@@ -776,6 +784,8 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Web.SearchAPIKey = value
 	case "appearance.accent_color":
 		cfg.Appearance.AccentColor = value
+	case "appearance.rail_width":
+		cfg.Appearance.RailWidth = value
 	default:
 		return fmt.Errorf("unknown config key: %s", key)
 	}

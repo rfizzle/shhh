@@ -19,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // argOption is one candidate for an argument position: the value written
@@ -269,6 +270,22 @@ func attachmentShowArgs(m *Model) []argOption {
 			desc: what + attachment.HumanSize(len(a.Data))})
 	}
 	return out
+}
+
+// railArgs offers the inspector rail's widths: the ladder, and the two ends
+// of the range a number is held to. It is dynamic rather than a static list
+// because the useful third offer is what this terminal allows right now — a
+// person on a 144-column screen who is offered 72 has been offered a number
+// the layout will cut down.
+func railArgs(m *Model) []argOption {
+	out := []argOption{{value: components.RailWidthAuto, desc: "Widen the rail with the terminal"}}
+	here := components.InspectorWidthFor(m.contentWidth())
+	if here > components.InspectorWidth {
+		out = append(out, argOption{value: strconv.Itoa(here),
+			desc: "As wide as this terminal allows"})
+	}
+	return append(out, argOption{value: strconv.Itoa(components.InspectorWidth),
+		desc: "The narrowest rail — the most transcript"})
 }
 
 // modeArgs offers the session's mode cycle plus /permissions' own

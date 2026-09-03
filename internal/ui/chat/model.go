@@ -847,7 +847,12 @@ type Model struct {
 	// WithPasteThresholds still stages a log.
 	pasteLines   int
 	pasteColumns int
-	title        string
+	// railCols is the inspector rail's column count when the session was
+	// given one (appearance.rail_width, /ui rail), and zero when it is the
+	// width ladder's to decide. Both go through railWidth, which holds a
+	// given number to the same limits it holds the ladder to (layout.go).
+	railCols int
+	title    string
 	// The terminal's own window: whether the tab is named after this session
 	// (appearance.window_title), the directory that name carries, and the
 	// brief red the tab wears after a turn breaks with the sequence that

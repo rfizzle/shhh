@@ -345,6 +345,26 @@ with nothing but its own tools has no way to have lost any, and it folds past
 a few rows: whether what was configured is up is the question, and the whole
 listing is a command away.
 
+The rail takes the room a wide terminal gives it. Its width is a rule rather
+than a number: it is at its narrowest at the threshold, and above that it
+grows by about one column for every four the surface gains, up to a ceiling.
+Both ends of that are deliberate. The transcript keeps the larger share at
+every width, because it is what is being read; and the ceiling is where the
+blocks stop having anything to do with the columns — past it a path is already
+whole and a meter is already a bar rather than a shape, so more room would be
+gap. What the rail gains goes to the blocks: the meters and the burn run get
+longer, and a file path spends the columns before its counts are clipped,
+because the counts are the number and a clipped number is a wrong one.
+
+The width can also be set, for the person whose rail has to fit a pane they
+chose the size of. A number is held to the same two limits the rule is —
+the rail's own floor, and what the surface has room for at this width — and
+the readout names which of the two moved it, because they are different
+answers to "why is this not the number I typed": one goes away on a wider
+terminal and the other never does. Setting it is a session command and a
+configuration key, and both go through the same rule, so a terminal that is
+resized still lands somewhere the rule allows.
+
 Below the threshold the rail is dropped rather than compressed — but one row
 stands in for it above the input, in the vitals grammar the frame's own rails
 use: what the last reading of the session said and the round it was taken at,

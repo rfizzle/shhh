@@ -1,10 +1,12 @@
 package components
 
 // Inspector rail (docs/interface/surfaces.md#the-inspector-rail). Past
-// 130 content columns the transcript stops being the whole screen: a
-// 46-column rail on the right answers the three standing questions — what is
-// it doing, what has it changed, what is it costing — so the session stops
-// being interrogated with /stats and /diff for what it already knows.
+// 130 content columns the transcript stops being the whole screen: a rail on
+// the right answers the three standing questions — what is it doing, what has
+// it changed, what is it costing — so the session stops being interrogated
+// with /stats and /diff for what it already knows. It starts at 46 columns
+// and widens with the terminal to a ceiling; every block is rendered against
+// the width it is handed rather than against that floor.
 //
 // The rail is passive, like Cockpit: the host feeds it the session's numbers
 // and renders View every frame. It owns no keys, no state and no goroutines,
@@ -22,6 +24,7 @@ package components
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -29,23 +32,76 @@ import (
 )
 
 const (
-	// InspectorWidth is the rail's column count — the only supported value at
-	// ≥ InspectorMinContentWidth.
+	// InspectorWidth is the rail at its narrowest — what it takes on the
+	// first rung of the width ladder, and the floor every wider rail is
+	// measured up from.
 	InspectorWidth = 46
+	// InspectorMaxWidth is the rail's ceiling. The blocks run out of things
+	// to say with the columns long before the terminal runs out of columns:
+	// past this a file path is already whole, a meter is already a bar rather
+	// than a shape, and the rest is gap.
+	InspectorMaxWidth = 72
 	// InspectorMinContentWidth is the top rung of the width ladder: at
 	// or above it the surface splits into transcript pane + rail, below it the
 	// rail is dropped entirely.
 	InspectorMinContentWidth = 130
+	// inspectorGrowthColumns is how many content columns buy the rail one:
+	// about one in four, so the transcript keeps the larger share of
+	// everything the terminal gains
+	// (docs/interface/surfaces.md#the-inspector-rail).
+	inspectorGrowthColumns = 4
 
 	// inspectorIndent is the two columns every block heading and row starts
 	// at; a changed-file row spends the third on the mutation rail.
 	inspectorIndent = 2
-	// Meter and sparkline cell counts — the shared meter roles,
-	// so the rail's runs are the same runs every other surface draws.
-	inspectorTurnCells = MeterCellsRail
-	inspectorCtxCells  = MeterCellsRail
-	inspectorSparkCell = SparkCells
 )
+
+// RailWidthAuto is the value that hands the rail's width back to the ladder:
+// what an unset setting reads as, and what the word means.
+const RailWidthAuto = "auto"
+
+// ParseRailWidth reads the rail's width setting: `auto` — or nothing — for
+// the ladder, otherwise a column count. The count is not judged against the
+// rail's floor and ceiling here, because it is not refused by them: a number
+// outside the range is held to it when the layout is resolved, and a person
+// who asked for 40 on a terminal that allows 62 is better served by the
+// narrowest rail there is than by an error
+// (docs/interface/surfaces.md#the-inspector-rail).
+func ParseRailWidth(s string) (int, error) {
+	s = strings.ToLower(strings.TrimSpace(s))
+	if s == "" || s == RailWidthAuto {
+		return 0, nil
+	}
+	n, err := strconv.Atoi(s)
+	if err != nil || n <= 0 {
+		return 0, fmt.Errorf("unknown rail width %q (valid: auto, or a column count)", s)
+	}
+	return n, nil
+}
+
+// RailWidthOrAuto is the column count a stored setting names, or the ladder's
+// own where the value is not one this rail can read. Nothing unreadable
+// reaches the layout: every surface that writes the key refuses anything else
+// first, so a value that arrives anyway was hand-edited into the file, and a
+// session that widens its own rail is a better answer than one that will not
+// open.
+func RailWidthOrAuto(s string) int {
+	n, err := ParseRailWidth(s)
+	if err != nil {
+		return 0
+	}
+	return n
+}
+
+// InspectorWidthFor is the rail's column count at a content width — the
+// ladder itself, and the only place it is written down. Below the rung it is
+// the floor rather than nothing: whether there is a rail at all is the
+// caller's question, and answering it here as a zero width would make every
+// caller check for one.
+func InspectorWidthFor(content int) int {
+	grown := InspectorWidth + max(content-InspectorMinContentWidth, 0)/inspectorGrowthColumns
+	return min(grown, InspectorMaxWidth)
+}
 
 // InspectorSummary is the SUMMARY block: a cheap model's read of what
 // the session is doing and whether it is still doing what was asked. It is
@@ -393,7 +449,10 @@ func (b railBlock) height() int {
 	return h
 }
 
-func (b railBlock) lines() []string {
+// lines renders the block at the rail's width. The width is a parameter and
+// not the rail's floor: a fold marker drawn at 46 columns inside a 62-column
+// rail is a row that ends where nothing else on the rail ends.
+func (b railBlock) lines(width int) []string {
 	out := make([]string, 0, b.height())
 	out = append(out, b.heading)
 	for _, r := range b.rows {
@@ -404,7 +463,7 @@ func (b railBlock) lines() []string {
 	case b.fold != nil:
 		out = append(out, b.fold(b.hidden))
 	default:
-		out = append(out, indentRow(sty.Hint.Render(fmt.Sprintf("… %d more", len(b.hidden))), InspectorWidth))
+		out = append(out, indentRow(sty.Hint.Render(fmt.Sprintf("… %d more", len(b.hidden))), width))
 	}
 	return out
 }
@@ -430,7 +489,7 @@ func (r InspectorRail) Lines(width, height int) []string {
 		if i > 0 {
 			out = append(out, "")
 		}
-		out = append(out, b.lines()...)
+		out = append(out, b.lines(width)...)
 	}
 	if height > 0 && len(out) > height {
 		out = out[:height]
@@ -637,7 +696,7 @@ func (r InspectorRail) turnBlock(width int) (railBlock, bool) {
 		meta = fmt.Sprintf("step %d", t.Step)
 	}
 	b := railBlock{heading: railHeading("THIS TURN", meta, sty.Dim, width)}
-	if m, ok := StepMeter(t.Step, t.Steps, inspectorTurnCells, t.Running); ok {
+	if m, ok := StepMeter(t.Step, t.Steps, railCells(MeterCellsRail, width), t.Running); ok {
 		// The count sits beside the bar rather than in the heading, because a
 		// bar is never the only carrier of its value.
 		b.add(indentRow(m.View(), width))
@@ -928,7 +987,7 @@ func (r InspectorRail) contextBlock(width int) (railBlock, bool) {
 		return railBlock{}, false
 	}
 	pct := min(max(c.Pct, 0), 100)
-	meter := Meter{Pct: pct, Cells: inspectorCtxCells, Tone: MeterPressure,
+	meter := Meter{Pct: pct, Cells: railCells(MeterCellsRail, width), Tone: MeterPressure,
 		Warn: c.WarnPct, Alert: c.AlertPct}
 	style := meter.Style()
 	b := railBlock{heading: railHeading("CONTEXT",
@@ -944,7 +1003,7 @@ func (r InspectorRail) contextBlock(width int) (railBlock, bool) {
 	lead := ""
 	switch {
 	case len(c.Burn) > 0:
-		lead = Sparkline{Values: c.Burn, Cells: inspectorSparkCell}.View() + " " + sty.Dim.Render("per round")
+		lead = Sparkline{Values: c.Burn, Cells: railCells(SparkCells, width)}.View() + " " + sty.Dim.Render("per round")
 	case c.Estimated:
 		// No series yet and no reported size: the block still has to say
 		// where its number came from.

@@ -250,6 +250,7 @@ func TestCheckConfigValue_RefusesAWordOutsideItsKeysVocabulary(t *testing.T) {
 		{"behavior.mode_cycle", "manual, sometimes"},
 		{"provider.reasoning", "sometimes"},
 		{"provider.cache_ttl", "10m"},
+		{"appearance.rail_width", "wide"},
 		{"sandbox.profile", "wide-open"},
 		{"sandbox.container_engine", "containerd"},
 		{"sandbox.require_isolation", "some"},
@@ -268,6 +269,10 @@ func TestCheckConfigValue_RefusesAWordOutsideItsKeysVocabulary(t *testing.T) {
 		{"behavior.mode_cycle", "manual, auto, plan"},
 		{"provider.reasoning", "xhigh"},
 		{"provider.cache_ttl", "1h"},
+		{"appearance.rail_width", "auto"},
+		// A number outside the rail's range is held to it when the layout is
+		// resolved rather than refused here, so the write takes it.
+		{"appearance.rail_width", "40"},
 		{"sandbox.profile", "workspace-netless"},
 		{"sandbox.container_engine", "podman"},
 		{"sandbox.require_isolation", "container"},
@@ -326,6 +331,22 @@ func TestConfigRows_TheCacheLifetimeStatesItsDefault(t *testing.T) {
 	set.Provider.CacheTTL = "5m"
 	if got := rowFor(configRows(set, config.Config{}), "provider.cache_ttl").Value; got != "5m" {
 		t.Errorf("a set cache_ttl reads back as %q", got)
+	}
+}
+
+// The rail's width is on the screen, stating auto while nothing is set —
+// the reader who wants a narrower rail has to be able to see that the wider
+// one they are looking at was nobody's choice.
+func TestConfigRows_TheRailWidthStatesTheLadder(t *testing.T) {
+	row := rowFor(configRows(config.Config{}, config.Config{}), "appearance.rail_width")
+	if row.Value != components.RailWidthAuto || row.Source != "default" {
+		t.Fatalf("unset rail_width row = %q/%q, want the ladder", row.Value, row.Source)
+	}
+
+	var set config.Config
+	set.Appearance.RailWidth = "60"
+	if got := rowFor(configRows(set, config.Config{}), "appearance.rail_width").Value; got != "60" {
+		t.Errorf("a set rail_width reads back as %q", got)
 	}
 }
 

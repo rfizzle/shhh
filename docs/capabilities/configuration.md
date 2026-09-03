@@ -139,6 +139,16 @@ everywhere else. Elsewhere a minus sign is a slipped finger, and what it
 writes is a ceiling nothing can satisfy: a setting that reads as present and
 turns its feature off.
 
+A range is not a shape, and a number outside one is held to it rather than
+refused. The inspector rail's width is the case: it takes `auto` or a column
+count, and a count outside what the surface has room for is a request the
+layout narrows, not a mistake — the answer to "72 columns of rail" on a
+terminal that cannot seat one is the widest that fits, and the surface says
+so where it reports the layout. Refusing it would leave the reader with the
+width they already had and no way to tell which limit they hit. What is
+refused is a value that is neither the word nor a count, because that is a
+setting with no meaning at any width.
+
 ## A failed check says what it will cost you
 
 Diagnostics report in the words of the surface where the consequence will

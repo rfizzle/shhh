@@ -2,10 +2,9 @@ package chat
 
 // Two-pane cockpit (docs/interface/surfaces.md#the-inspector-rail). At
 // or above 130 content columns the surface splits: the transcript keeps the
-// left pane, a
-// 46-column inspector rail takes the right, and one dim │ column divides
-// them. Below 130 the rail is dropped entirely and the single-pane layout is
-// exactly what it was.
+// left pane, the inspector rail takes the right — 46 columns at the rung and
+// wider with the terminal — and one dim │ column divides them. Below 130 the
+// rail is dropped entirely and the single-pane layout is exactly what it was.
 //
 // The split is horizontal only — it is one of the two constraints the
 // column half of the layout model resolves (layout.go), and the row
@@ -36,8 +35,11 @@ const (
 	// paneDividerWidth is the single │ column between the panes.
 	paneDividerWidth = 1
 	// contextBurnSamples bounds the per-round context series to what the
-	// rail's sparkline can draw.
-	contextBurnSamples = 8
+	// widest rail's sparkline can draw. It is the ceiling rather than the
+	// current width because the series outlives any one terminal size: a
+	// window dragged wider must not find that the rounds it could now show
+	// were thrown away while it was narrow.
+	contextBurnSamples = components.SparkCellsRailMax
 )
 
 // paneStyles is the two-pane cockpit's own group.
@@ -377,12 +379,82 @@ func (m Model) totalsLabel(t meter.Totals) string {
 	return m.spendLabel(t.In, t.Out)
 }
 
+// WithRailWidth fixes the inspector rail's column count for this session.
+// Zero — an unset key, or `/ui rail auto` — leaves it to the width ladder.
+func (m Model) WithRailWidth(cols int) Model {
+	m.railCols = cols
+	return m
+}
+
 // inspectorStatus is the /stats-adjacent line describing the split, used by
-// /ui to say what the current layout is.
+// /ui to say what the current layout is. It names the rail's width as it
+// resolved, not as it was asked for: a number the ladder would not allow at
+// this terminal is the whole reason a person reads this line.
 func (m Model) inspectorStatus() string {
 	if m.twoPane() {
-		return fmt.Sprintf("two panes — %d-column transcript + %d-column inspector rail",
-			m.paneWidth(), components.InspectorWidth)
+		return fmt.Sprintf("two panes — %d-column transcript + %d-column inspector rail (%s)",
+			m.paneWidth(), m.columns().inspector.Dx(), m.railSource())
 	}
 	return fmt.Sprintf("one pane — %d columns", m.contentWidth())
 }
+
+// railSource says where the rail's width came from, in the parenthesis the
+// readout ends with: the ladder, the session's own setting, or a setting one
+// of the two limits moved. The limits are named apart because they are
+// different answers to "why is this not the number I typed" — one of them
+// goes away on a wider terminal and the other never does — and a reader who
+// typed a number and got a different one is owed which.
+func (m Model) railSource() string {
+	if m.railCols <= 0 {
+		return "auto"
+	}
+	switch got := m.columns().inspector.Dx(); {
+	case got > m.railCols:
+		return fmt.Sprintf("set to %d, widened to the narrowest rail there is", m.railCols)
+	case got < m.railCols:
+		return fmt.Sprintf("set to %d, as wide as this terminal allows", m.railCols)
+	}
+	return "set"
+}
+
+// railCommand handles /ui rail: how many columns the inspector rail takes.
+// `auto` hands it back to the width ladder.
+func (m *Model) railCommand(parts []string) string {
+	if len(parts) == 2 {
+		return fmt.Sprintf("Layout: %s.\n%s", m.inspectorStatus(), railUsage)
+	}
+	if len(parts) != 3 {
+		return railUsage
+	}
+	cols, err := components.ParseRailWidth(parts[2])
+	if err != nil {
+		return "Error: " + err.Error()
+	}
+	m.railCols = cols
+	m.invalidateRenderCache()
+	// A rail that changed width is a transcript that changed width, and
+	// nothing else on this path resizes the viewport: without this the feed
+	// stays wrapped to the old pane until the next terminal resize, which
+	// reads as a command that half worked.
+	m.syncViewport()
+	if m.contentWidth() < components.InspectorMinContentWidth {
+		// Nothing on screen changes at this width, so the reply has to carry
+		// the whole answer: the setting took, and the rung is why it is not
+		// visible.
+		return fmt.Sprintf("Inspector rail %s — this terminal is too narrow to split, so nothing changes until it is %d columns wide.",
+			railSetting(cols), components.InspectorMinContentWidth+horizontalPadding*2)
+	}
+	return fmt.Sprintf("Inspector rail %s — %s.", railSetting(cols), m.inspectorStatus())
+}
+
+// railSetting is the setting in the words the reply leads with.
+func railSetting(cols int) string {
+	if cols <= 0 {
+		return "back on the width ladder"
+	}
+	return fmt.Sprintf("set to %d columns", cols)
+}
+
+// railUsage is the one line /ui rail answers with, on its own and when the
+// value is not one it takes.
+const railUsage = "Usage: /ui rail <auto|columns> — auto widens the rail with the terminal; a number fixes it, held to what the terminal has room for."
