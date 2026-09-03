@@ -297,6 +297,12 @@ func newStyles(p ColorTokens) Styles {
 		QueryText: lipgloss.NewStyle().Foreground(p.Bright.Color()),
 		Match:     lipgloss.NewStyle().Bold(true),
 
+		// The names read backwards and the pair is right: Dimmer is the
+		// lighter rung, Dim the darker one, so the thumb is the brighter of
+		// the two. Swap them to "fix" the naming and the thumb sinks into its
+		// own track — the gutter still draws, and stops saying where in the
+		// transcript the reader is. Only the stroke survives mono, where both
+		// rungs are one grey.
 		ScrollTrack: lipgloss.NewStyle().Foreground(p.Dim.Color()),
 		ScrollThumb: lipgloss.NewStyle().Foreground(p.Dimmer.Color()),
 

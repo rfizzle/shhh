@@ -472,12 +472,18 @@ func monoFixtures() []monoSurface {
 			{"staged", staged(true)},
 		}},
 		// The scroll gutter has two states and one column to say them in, so
-		// the stroke is all it has: dim and dimmer are the same grey here.
+		// the stroke is all it has: dim and dimmer are the same grey here. The
+		// divider the next column over is the third thing that stroke has to
+		// carry it away from, and it is in the walk for the same reason — all
+		// three are dim rules a column apart once the shades collapse.
 		{"scroll gutter cell", []monoState{
 			// The top row of a gutter scrolled to its end, and of the same
 			// gutter at its top.
 			{"track", Scrollbar(4, 40, 1, 39)[0]},
 			{"thumb", Scrollbar(4, 40, 1, 0)[0]},
+			// The pane divider's cell as the split draws it: the frame's rule
+			// on the chrome token.
+			{"pane divider", sty.Dim.Render(paneDivider)},
 		}},
 		{"fan-out lane state", []monoState{
 			{"queued", lane(func(l *FanoutLane) { l.State = FanoutQueued })},

@@ -28,14 +28,17 @@ package components
 // until there is something below.
 const ScrollGutterWidth = 1
 
-// The gutter's two glyphs: the track is the light rule the interface
-// draws every other rule with, the thumb its heavy twin. What separates them
-// is the stroke and not the hue — they sit one dim/dimmer step apart in
-// colour and collapse onto the same grey in mono, where the glyph carries all
-// of it (invariant 1).
+// The gutter's two glyphs: a dashed track under a block thumb. Neither is
+// the `│` the frame and the pane divider draw, and that is the point. The
+// gutter sits one column from the divider, so a track drawn with the
+// divider's own rule reads as a double border, and the rows the thumb covers
+// read as a third. The dim/dimmer step between track and thumb is a shade,
+// and a shade is gone in mono and in sixteen colours, so the stroke is what
+// tells all three columns apart: dashed, block, rule.
+// See docs/interface/principles.md#colour-never-carries-meaning-alone.
 const (
-	scrollTrack = "│"
-	scrollThumb = "┃"
+	scrollTrack = "╎"
+	scrollThumb = "▐"
 )
 
 // Scrollbar renders the gutter as one styled string per row: height rows of

@@ -87,3 +87,16 @@ The design offers a lower-case key. That key is move-up on every list in the
 product, including this one, and a movement key that also kills a process is
 the worst kind of false offer. Cancelling and killing are the same letter in
 two cases, and the pair reads as one escalation.
+
+## The scroll gutter is a dashed track under a block thumb
+
+The design gives the gutter the same rule the frame and the pane divider draw,
+one shade apart. The gutter sits one column from that divider, so two rules a
+column apart read as a double border, and the rows the thumb covers read as a
+third. The shade that was meant to separate them is the first thing a
+monochrome terminal spends, and a sixteen-colour one spends it too.
+
+The gutter is the one column on the screen that reports a position rather than
+bounding a region, so it is the one that changes: a dashed track under a block
+thumb, told from the divider by shape and not by shade
+([invariant 1](principles.md#colour-never-carries-meaning-alone)).

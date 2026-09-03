@@ -18,6 +18,33 @@ func plainGutter(rows []string) string {
 	return b.String()
 }
 
+// paneDivider is the rule the frame and the column between the panes draw.
+// The gutter is one column from it, so the glyph that says "position" has to
+// be a different glyph from the one that says "border" — the shade between
+// them is gone on a monochrome terminal, and gone again in sixteen colours.
+//
+// It is a copy rather than a reference: the chat package draws that column
+// and imports this one, so this package cannot read it back without
+// inverting the dependency. Change the divider's glyph there and this
+// assertion goes quiet instead of failing, which is the one way it can be
+// wrong.
+const paneDivider = "│"
+
+// Three columns land side by side on a two-pane screen — track, thumb and
+// divider — and only the stroke separates them once colour is off
+// (invariant 1).
+func TestScrollbar_GlyphsAreNotTheDividersRule(t *testing.T) {
+	for _, c := range []struct{ name, a, b string }{
+		{"track and thumb", scrollTrack, scrollThumb},
+		{"track and the divider", scrollTrack, paneDivider},
+		{"thumb and the divider", scrollThumb, paneDivider},
+	} {
+		if c.a == c.b {
+			t.Errorf("%s draw the same glyph %q", c.name, c.a)
+		}
+	}
+}
+
 func TestScrollbar_NothingToScrollDrawsNothing(t *testing.T) {
 	for _, c := range []struct {
 		name                              string
@@ -40,12 +67,12 @@ func TestScrollbar_ThumbIsTheVisibleShare(t *testing.T) {
 		height, content, viewport, offset int
 		want                              string
 	}{
-		{"half the transcript fits", 10, 20, 10, 0, "┃┃┃┃┃│││││"},
-		{"half, scrolled to the end", 10, 20, 10, 10, "│││││┃┃┃┃┃"},
-		{"half, one line in", 10, 20, 10, 1, "│┃┃┃┃┃││││"},
-		{"a fifth fits", 10, 50, 10, 0, "┃┃││││││││"},
-		{"a transcript far longer than the pane", 8, 4000, 8, 0, "┃│││││││"},
-		{"and at its end", 8, 4000, 8, 3992, "│││││││┃"},
+		{"half the transcript fits", 10, 20, 10, 0, "▐▐▐▐▐╎╎╎╎╎"},
+		{"half, scrolled to the end", 10, 20, 10, 10, "╎╎╎╎╎▐▐▐▐▐"},
+		{"half, one line in", 10, 20, 10, 1, "╎▐▐▐▐▐╎╎╎╎"},
+		{"a fifth fits", 10, 50, 10, 0, "▐▐╎╎╎╎╎╎╎╎"},
+		{"a transcript far longer than the pane", 8, 4000, 8, 0, "▐╎╎╎╎╎╎╎"},
+		{"and at its end", 8, 4000, 8, 3992, "╎╎╎╎╎╎╎▐"},
 	} {
 		got := plainGutter(Scrollbar(c.height, c.content, c.viewport, c.offset))
 		if got != c.want {
@@ -85,9 +112,9 @@ func TestScrollbar_ClampsAnImpossibleOffset(t *testing.T) {
 		offset int
 		want   string
 	}{
-		{11, "│││││┃┃┃┃┃"},
-		{400, "│││││┃┃┃┃┃"},
-		{-3, "┃┃┃┃┃│││││"},
+		{11, "╎╎╎╎╎▐▐▐▐▐"},
+		{400, "╎╎╎╎╎▐▐▐▐▐"},
+		{-3, "▐▐▐▐▐╎╎╎╎╎"},
 	} {
 		if got := plainGutter(Scrollbar(10, 20, 10, c.offset)); got != c.want {
 			t.Fatalf("offset %d: gutter = %q, want %q", c.offset, got, c.want)
