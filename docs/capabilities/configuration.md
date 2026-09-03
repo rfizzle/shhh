@@ -16,6 +16,16 @@ No setting reverses this order. That uniformity is worth more than the
 flexibility of special-casing, because it is what makes a wrong value
 *findable*: a user who can predict where a value came from can fix it.
 
+Two keys name a value rather than holding one. `provider.api_key_env` and
+`web.search_api_key_env` are the name of an environment variable, read at
+start and read ahead of the `api_key` and `search_api_key` beside them —
+the same shape MCP headers, `secrets.env` and gateway profiles already take,
+and for their reason: a file that holds a credential is a credential in
+every backup, sync and pasted issue of that file. The two that hold one stay
+for a release and the doctor warns on them. This is not a fifth rank; the
+variable is the answer the file gave, and everything above the file still
+outranks it.
+
 The same reason decides what happens to a key the file names that no setting
 reads. It is refused, with the file, the key and the nearest key it might have
 been, and nothing starts until it is fixed. A file that loaded past it would
@@ -324,7 +334,8 @@ knows it; the profiles under `[agents]` are one key per role, which the
 |---|---|---|---|
 | `default` | text | `openai` | Which provider a request goes to: a built-in one, or a gateway profile from `shhh providers`. `--provider` and `SHHH_PROVIDER` are read ahead of the file. |
 | `model` | text | (the provider's own default) | The model a session runs on. `--model` and `SHHH_MODEL` are read ahead of the file. |
-| `api_key` | text | (from the environment) | The provider key, for a machine where it cannot come from the environment. `--api-key` and `SHHH_API_KEY` are read ahead of the file. It is a credential: the listing says whether it is set, never what it is. |
+| `api_key` | text | (from the environment) | The provider key itself, which puts a copy of it in every copy of this file; `api_key_env` is the form to prefer. `--api-key` and `SHHH_API_KEY` are read ahead of the file. It is a credential: the listing says whether it is set, never what it is. |
+| `api_key_env` | variable | (the provider's own variable) | The environment variable the provider key is read from at start, so the file names the key instead of holding it. It is read ahead of `api_key`. |
 | `base_url` | text | (the provider's own) | Where the provider's API is, for a gateway or a self-hosted endpoint. `SHHH_BASE_URL` is read ahead of the file. |
 | `name` | text | (the provider's own) | What the provider is called on screen, for a gateway that fronts several. |
 | `reasoning` | word: `off`, `low`, `medium`, `high`, `xhigh`, `max` | `medium` | How hard the model thinks before it answers; the level is fitted to each model, so a rung it lacks lowers to the one it has. `--reasoning` and `SHHH_REASONING` are read ahead of the file. |
@@ -384,7 +395,8 @@ knows it; the profiles under `[agents]` are one key per role, which the
 | `fetch_timeout_seconds` | number | `30` | How long one fetch may take, redirects and the body read included. |
 | `cache_ttl_minutes` | number | `60` | How long a cached response stays fresh. |
 | `search_provider` | word: `brave` | `brave` | Which backend the web_search tool asks. |
-| `search_api_key` | text | (unset — web_search is not registered) | The search backend's key; without it the tool does not exist. It is a credential: the listing says whether it is set, never what it is. |
+| `search_api_key` | text | (unset — web_search is not registered) | The search backend's key itself, which puts a copy of it in every copy of this file; `search_api_key_env` is the form to prefer. It is a credential: the listing says whether it is set, never what it is. |
+| `search_api_key_env` | variable | (unset — web_search is not registered) | The environment variable the search backend's key is read from at start, so the file names the key instead of holding it. It is read ahead of `search_api_key`. |
 
 **`[lsp]`**
 

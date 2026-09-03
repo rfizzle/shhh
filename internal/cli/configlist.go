@@ -38,6 +38,11 @@ type configReading struct {
 	// none.
 	Env  string `json:"env,omitempty"`
 	Flag string `json:"flag,omitempty"`
+	// EnvSet says whether the variable a variable-naming key names is
+	// exported on this machine. It is absent rather than false for every key
+	// that names none, because a false there would read as a variable that is
+	// missing.
+	EnvSet *bool `json:"env_set,omitempty"`
 }
 
 func newConfigListCmd() *cobra.Command {
@@ -152,6 +157,14 @@ func configReadingOf(cfg config.Config, s config.Setting) configReading {
 	if s.Secret && reading.Set {
 		reading.Value = components.MaskSecret(reading.Value)
 	}
+	// A key that names a variable answers only half the question by itself.
+	// The name is what the file decided; whether this machine's shell exports
+	// it is what decides whether a session starts, and a listing that printed
+	// the name alone would read the same on both machines.
+	if s.Kind == config.KindEnvVar && reading.Set {
+		set := config.EnvVarSet(reading.Value)
+		reading.EnvSet = &set
+	}
 	return reading
 }
 
@@ -199,9 +212,13 @@ func configRow(reading configReading) report.Row {
 		state = report.Pass
 	}
 	_, tail, _ := strings.Cut(reading.Key, ".")
-	return report.Row{
+	row := report.Row{
 		State: state, Name: tail, Subject: reading.Value, Outcome: reading.Source,
 	}
+	if reading.EnvSet != nil {
+		row.Detail = envVarStateOf(*reading.EnvSet)
+	}
+	return row
 }
 
 // configGetReport is one setting at length: the row the listing would print,

@@ -19,6 +19,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"os"
 	"reflect"
 	"strconv"
 	"strings"
@@ -46,6 +47,12 @@ const (
 	KindEnum
 	// KindPath names a file on disk.
 	KindPath
+	// KindEnvVar names an environment variable whose value is read at start.
+	// It is a string in the file exactly as a path is, and it is a kind of its
+	// own for what the surfaces do with it: what they show is the name and
+	// whether the environment has it, never the value, and a picker offered
+	// for it would be offering to mask a variable name.
+	KindEnvVar
 )
 
 // String is the shape in the words a reader reads it in, which is what the
@@ -62,6 +69,8 @@ func (k Kind) String() string {
 		return "word"
 	case KindPath:
 		return "path"
+	case KindEnvVar:
+		return "variable"
 	}
 	return "text"
 }
@@ -115,6 +124,32 @@ func (s Setting) Group() string {
 	return group
 }
 
+// EnvKey is the key that names the environment variable a credential's value
+// is read from, for the credentials the file offers that spelling for. The
+// companion is the key's own name with `_env` after it — the convention every
+// variable-naming key in the file follows — so a credential that gains one
+// gains it by being written down and not by being listed a second time here.
+// Empty for a setting with no companion.
+func (s Setting) EnvKey() string {
+	if !s.Secret {
+		return ""
+	}
+	key := s.Key + "_env"
+	if _, ok := Lookup(key); !ok {
+		return ""
+	}
+	return key
+}
+
+// EnvVarSet reports whether a named environment variable holds anything. It
+// lives here so that "set" means the same thing on the config screen, in the
+// listing and in the doctor's row: a variable exported empty is not a key,
+// and a surface that called it set would be promising a session that will
+// fail to start.
+func EnvVarSet(name string) bool {
+	return strings.TrimSpace(os.Getenv(strings.TrimSpace(name))) != ""
+}
+
 // RoleWildcard is the segment a per-role key leaves to the person: any role
 // name may take it, so the table declares the shape once instead of naming
 // the built-in roles and going stale when a fourth one lands.
@@ -135,7 +170,10 @@ var settings = []Setting{
 	}, {
 		Key: "provider.api_key", Kind: KindString, Default: "(from the environment)", Secret: true,
 		Env: "SHHH_API_KEY", Flag: "--api-key",
-		Desc: "The provider key, for a machine where it cannot come from the environment.",
+		Desc: "The provider key itself, which puts a copy of it in every copy of this file; `api_key_env` is the form to prefer.",
+	}, {
+		Key: "provider.api_key_env", Kind: KindEnvVar, Default: "(the provider's own variable)",
+		Desc: "The environment variable the provider key is read from at start, so the file names the key instead of holding it. It is read ahead of `api_key`.",
 	}, {
 		Key: "provider.base_url", Kind: KindString, Default: "(the provider's own)",
 		Env:  "SHHH_BASE_URL",
@@ -286,7 +324,10 @@ var settings = []Setting{
 		Desc:   "Which backend the web_search tool asks.",
 	}, {
 		Key: "web.search_api_key", Kind: KindString, Default: "(unset — web_search is not registered)", Secret: true,
-		Desc: "The search backend's key; without it the tool does not exist.",
+		Desc: "The search backend's key itself, which puts a copy of it in every copy of this file; `search_api_key_env` is the form to prefer.",
+	}, {
+		Key: "web.search_api_key_env", Kind: KindEnvVar, Default: "(unset — web_search is not registered)",
+		Desc: "The environment variable the search backend's key is read from at start, so the file names the key instead of holding it. It is read ahead of `search_api_key`.",
 	},
 
 	{

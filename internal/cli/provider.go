@@ -85,9 +85,10 @@ func resolveProvider(ctx context.Context, cfg config.Config, req providerRequest
 	}
 
 	survey := resolve.SurveyPlaces(ctx, resolve.SurveyOpts{
-		Provider:     req.Provider,
-		ConfigAPIKey: cfg.ProviderAPIKey(),
-		ConfigPaths:  config.Paths(),
+		Provider:        req.Provider,
+		ConfigAPIKey:    cfg.ProviderAPIKey(),
+		ConfigAPIKeyEnv: cfg.Provider.APIKeyEnv,
+		ConfigPaths:     config.Paths(),
 	})
 	choice, ok := askProvider(survey)
 	if !ok {
@@ -160,8 +161,22 @@ func askProvider(survey resolve.Survey) (ui.ProviderChoice, bool) {
 // would be the wrong trade.
 func saveProviderChoice(req providerRequest) {
 	edits := []config.Edit{{Key: "provider.default", Value: req.Provider}}
+	// The name is written where the key is already exported under one, and
+	// the key itself only where it is not: the file that names a variable is
+	// safe to commit, and the file that holds a key is what this says out
+	// loud rather than leaving to be discovered in a backup.
+	// See docs/capabilities/secrets.md#where-a-value-comes-from.
+	suggest := ""
 	if req.APIKey != "" {
-		edits = append(edits, config.Edit{Key: "provider.api_key", Value: req.APIKey})
+		vars := resolve.KeyVars(req.Provider)
+		if name := exportedAs(req.APIKey, vars); name != "" {
+			edits = append(edits, config.Edit{Key: "provider.api_key_env", Value: name})
+		} else {
+			edits = append(edits, config.Edit{Key: "provider.api_key", Value: req.APIKey})
+			// The provider's own variable where it has one, and the generic
+			// one otherwise, which is the order KeyVars lists them in.
+			suggest = vars[len(vars)-1]
+		}
 	}
 	if req.BaseURL != "" {
 		edits = append(edits, config.Edit{Key: "provider.base_url", Value: req.BaseURL})
@@ -174,6 +189,34 @@ func saveProviderChoice(req providerRequest) {
 		return
 	}
 	fmt.Fprintf(os.Stderr, "shhh: saved the provider to %s\n", config.WritePath())
+	if suggest != "" {
+		// One line, and it says where the key went before it says what to do
+		// instead: the person pasted a key thirty seconds ago, and the fact
+		// they need first is that a copy of it is now on disk.
+		fmt.Fprintf(os.Stderr, "shhh: %s now holds the key itself — export %s and set provider.api_key_env to %s to keep it out of the file\n",
+			config.WritePath(), suggest, suggest)
+	}
+}
+
+// exportedAs is the variable, of the ones the dialects read, that already
+// holds this key. It is what lets the card write a name rather than a key on
+// the common path: somebody who exported the variable and then pasted the
+// same key into the card meant one credential, not two.
+//
+// The comparison is on the value because that is the only question worth
+// asking — a variable holding a different key is a different credential, and
+// naming it would save the wrong one.
+func exportedAs(key string, vars []string) string {
+	key = strings.TrimSpace(key)
+	if key == "" {
+		return ""
+	}
+	for _, name := range vars {
+		if strings.TrimSpace(os.Getenv(name)) == key {
+			return name
+		}
+	}
+	return ""
 }
 
 // reportFailure prints a classified provider failure the way the surface it

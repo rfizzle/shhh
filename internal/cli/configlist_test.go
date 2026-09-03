@@ -229,3 +229,40 @@ func TestConfigGet_NamesWhatOutranksTheFile(t *testing.T) {
 		t.Errorf("the source rank should not also be listed as outranking:\n%s", out)
 	}
 }
+
+// The listing says the same as the screen about a variable: the name, and
+// whether the environment has it. The state rides in the JSON as well, so a
+// script checking a machine's setup reads what the row printed.
+func TestConfigReading_AVariableCarriesItsStateIntoTheListing(t *testing.T) {
+	t.Setenv("SHHH_TEST_LIST_VAR", "sk-exported")
+	var cfg config.Config
+	cfg.Provider.APIKeyEnv = "SHHH_TEST_LIST_VAR"
+	s, ok := config.Lookup("provider.api_key_env")
+	if !ok {
+		t.Fatal("provider.api_key_env is not a setting")
+	}
+	reading := configReadingOf(cfg, s)
+	if reading.Value != "SHHH_TEST_LIST_VAR" || reading.Source != "file" {
+		t.Fatalf("the reading does not name the variable the file set: %+v", reading)
+	}
+	if reading.EnvSet == nil || !*reading.EnvSet {
+		t.Fatalf("the reading does not say the variable is exported: %+v", reading)
+	}
+	if got := configRow(reading).Detail; got != "set in the environment" {
+		t.Fatalf("the row does not print the state, got %q", got)
+	}
+
+	unnamed := configReadingOf(cfg, mustLookup(t, "provider.model"))
+	if unnamed.EnvSet != nil {
+		t.Fatalf("a key naming no variable claims one is missing: %+v", unnamed)
+	}
+}
+
+func mustLookup(t *testing.T, key string) config.Setting {
+	t.Helper()
+	s, ok := config.Lookup(key)
+	if !ok {
+		t.Fatalf("%s is not a setting", key)
+	}
+	return s
+}

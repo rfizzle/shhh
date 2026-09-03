@@ -94,8 +94,14 @@ type Survey struct {
 type SurveyOpts struct {
 	// Provider is the resolved provider name; empty falls back to the default.
 	Provider string
-	// ConfigAPIKey is the key the loaded config supplied, if any.
+	// ConfigAPIKey is the key the loaded config supplied, if any — already
+	// resolved, so a file that names a variable supplies that variable's
+	// value here and supplies nothing when it is unset.
 	ConfigAPIKey string
+	// ConfigAPIKeyEnv is the variable the file named, where it named one. It
+	// is what lets the row say which of the two spellings answered, and it is
+	// the whole of the finding when the variable turned out to be unset.
+	ConfigAPIKeyEnv string
 	// ConfigPaths are the config files in search order (config.Paths()).
 	ConfigPaths []string
 	// LocalBaseURL overrides the endpoint probed for a local runtime.
@@ -166,19 +172,30 @@ func surveyEnv(providerName string) Place {
 	return Place{Kind: PlaceEnv, Detail: strings.Join(unset, ", ") + " — unset"}
 }
 
-// surveyConfig reports the config file that supplied a key, or every path
-// that was checked and what was wrong with each: absent, or present with no
-// provider key in it.
+// surveyConfig reports the config file that supplied a key and which of the
+// two spellings it used, or every path that was checked and what was wrong
+// with each: absent, or present with no provider key in it.
+//
+// A file naming a variable that nobody exported is the finding that most
+// looks like no config key at all — the file is right, the shell is not — so
+// it is reported as itself rather than falling in with the missing files.
 func surveyConfig(opts SurveyOpts) Place {
+	name := strings.TrimSpace(opts.ConfigAPIKeyEnv)
 	if key := strings.TrimSpace(opts.ConfigAPIKey); key != "" {
+		if name != "" {
+			return Place{Kind: PlaceConfig, Found: true, Finding: "provider.api_key_env → " + name + " ···" + tail(key)}
+		}
 		return Place{Kind: PlaceConfig, Found: true, Finding: "provider.api_key ···" + tail(key)}
+	}
+	if name != "" {
+		return Place{Kind: PlaceConfig, Detail: "provider.api_key_env names " + name + ", which is unset"}
 	}
 	if len(opts.ConfigPaths) == 0 {
 		return Place{Kind: PlaceConfig, Detail: "no config directory on this machine"}
 	}
 	for _, path := range opts.ConfigPaths {
 		if _, err := os.Stat(path); err == nil {
-			return Place{Kind: PlaceConfig, Detail: display(path) + " — no provider api_key"}
+			return Place{Kind: PlaceConfig, Detail: display(path) + " — no provider key"}
 		}
 	}
 	return Place{Kind: PlaceConfig, Detail: display(opts.ConfigPaths[0]) + " — no such file"}

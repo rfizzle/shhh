@@ -383,11 +383,101 @@ func doctorConfig(read string, paths []string, cfg config.Config, err error) doc
 		}
 		return f
 	}
-	return doctorFinding{
+	f := doctorFinding{
 		Subject: shortPath(read),
 		Detail:  countOf(configSettingsSet(cfg), "setting set", "settings set"),
 		Outcome: "ok",
 	}
+	return withLiteralKeyWarning(f, cfg)
+}
+
+// withLiteralKeyWarning turns the config row into a warning when the file
+// holds a credential rather than the name of one. It says what that costs
+// rather than that the key is deprecated: a person who reads "api_key is
+// deprecated" goes looking for the replacement, and a person who reads that
+// the file is a copy of their key already knows why it matters and what a
+// backup of it is.
+//
+// It is a warning and not a failure. The key works, the session starts, and
+// the fix is two commands the reader chooses when to run — refusing to start
+// over a file that has been fine for a year would be shhh deciding a security
+// posture on someone's behalf.
+// See docs/capabilities/secrets.md#where-a-value-comes-from.
+func withLiteralKeyWarning(f doctorFinding, cfg config.Config) doctorFinding {
+	held := literalKeys(cfg)
+	if len(held) == 0 {
+		return f
+	}
+	f.Outcome = "key in the file"
+	f.State = components.DoctorWarned
+	f.Detail = joinDetail(f.Detail, heldPhrase(held))
+	f.Consequence = "this file is a copy of your key — so is every backup and every clone of it"
+	f.FixLabel = "name the variable instead"
+	for _, k := range held {
+		f.Fix = append(f.Fix,
+			"export "+k.envVar+"=… in your shell profile",
+			"shhh config set "+k.envKey+" "+k.envVar,
+			"then remove "+k.key+" from the file",
+		)
+	}
+	return f
+}
+
+// literalKey is one credential the file holds as a value: the key holding it,
+// the key that would name a variable instead, and the variable to name. The
+// provider's own variable is the suggestion where the resolved provider has
+// one, because a person exporting a key for anthropic already has somewhere
+// the dialect will look for it.
+type literalKey struct {
+	key    string
+	envKey string
+	envVar string
+}
+
+// heldPhrase names the keys holding a value, agreeing with how many there
+// are. A row reading `provider.api_key hold the key itself` is a row the
+// reader stops trusting about the rest of the sentence.
+func heldPhrase(held []literalKey) string {
+	names := make([]string, len(held))
+	for i, k := range held {
+		names[i] = k.key
+	}
+	if len(names) == 1 {
+		return names[0] + " holds the key itself"
+	}
+	return strings.Join(names, " and ") + " hold the key itself"
+}
+
+// literalKeys are the credentials this file holds as values rather than as
+// names. It walks the settings table rather than naming the two keys, so a
+// credential that gains the second spelling is warned about by existing
+// rather than by being remembered here.
+func literalKeys(cfg config.Config) []literalKey {
+	var held []literalKey
+	for _, s := range config.Settings() {
+		envKey := s.EnvKey()
+		if envKey == "" {
+			continue
+		}
+		if value, set := config.Value(cfg, s.Key); !set || value == "" {
+			continue
+		}
+		held = append(held, literalKey{key: s.Key, envKey: envKey, envVar: suggestedKeyVar(s.Key, cfg)})
+	}
+	return held
+}
+
+// suggestedKeyVar is the variable the fix names: for the provider key, the
+// one the resolved provider's dialect already reads, and otherwise a variable
+// spelled from the key, which is the shape every other credential in the
+// documentation uses.
+func suggestedKeyVar(key string, cfg config.Config) string {
+	if key == "provider.api_key" {
+		vars := resolve.KeyVars(resolve.Resolve(resolve.Opts{ConfigProvider: cfg.Provider.Default}).Provider)
+		return vars[len(vars)-1]
+	}
+	_, tail, _ := strings.Cut(key, ".")
+	return "SHHH_" + strings.ToUpper(tail)
 }
 
 // configSettingsSet counts the settings standing against the defaults. It is
@@ -397,6 +487,7 @@ func configSettingsSet(cfg config.Config) int {
 	n := 0
 	for _, set := range []bool{
 		cfg.Provider.Default != "", cfg.Provider.Model != "", cfg.Provider.APIKey != "",
+		cfg.Provider.APIKeyEnv != "", cfg.Web.SearchAPIKeyEnv != "",
 		cfg.Provider.BaseURL != "", cfg.Provider.Name != "",
 		cfg.Behavior.SilentMode, cfg.Behavior.Shell != "", cfg.Behavior.ContextMaxTokens > 0,
 		cfg.Behavior.MaxToolRounds != 0, cfg.Behavior.SafetyWarnings != nil,
@@ -547,9 +638,10 @@ func probeModel(ctx context.Context, cfg config.Config) doctorFinding {
 		ConfigReasoning: cfg.Provider.Reasoning,
 	})
 	survey := resolve.SurveyPlaces(ctx, resolve.SurveyOpts{
-		Provider:     resolved.Provider,
-		ConfigAPIKey: cfg.Provider.APIKey,
-		ConfigPaths:  config.Paths(),
+		Provider:        resolved.Provider,
+		ConfigAPIKey:    cfg.ProviderAPIKey(),
+		ConfigAPIKeyEnv: cfg.Provider.APIKeyEnv,
+		ConfigPaths:     config.Paths(),
 	})
 	f := doctorModelFinding(resolved.Provider, resolved.Model, survey)
 	// A model decided by an env var or a flag looks exactly like one decided

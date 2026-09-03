@@ -25,6 +25,10 @@ code will have the symptom, not the explanation.
 Which provider and model answer is decided most-specific-first: an explicit
 flag, then the environment, then configuration, then a default. Keys resolve
 the same way, with the vendor's conventional variable in the environment slot.
+Configuration's own answer for a key is the name of a variable to read it
+from rather than the key itself, so the file names the credential and the
+environment carries it; a key a file still holds directly is read after that
+name and is warned about.
 
 Uniformity is the feature. A user who can predict where a value came from can
 fix it; one who must know which of four mechanisms wins for this particular

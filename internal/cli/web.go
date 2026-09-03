@@ -36,7 +36,7 @@ func openWebTools(cfg config.Config) *web.Toolset {
 	}
 
 	var searcher *web.Searcher
-	if key := cfg.Web.SearchAPIKey; key != "" {
+	if key := cfg.WebSearchAPIKey(); key != "" {
 		switch cfg.Web.SearchProvider {
 		case "", "brave":
 			searcher = &web.Searcher{APIKey: key}

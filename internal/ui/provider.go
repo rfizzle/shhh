@@ -306,7 +306,12 @@ func PlainProviderReport(s resolve.Survey) string {
 	if s.Likely != "" {
 		b.WriteString("\n" + s.Likely + "\n")
 	}
-	b.WriteString("\nRun shhh in a terminal for the setup wizard, or set provider.api_key with `shhh config set`.\n")
+	// The variable is the offer and the file key is not: a report read in a
+	// CI log is read by the person who is about to write the setup down
+	// somewhere it will be committed.
+	// See docs/capabilities/secrets.md#where-a-value-comes-from.
+	b.WriteString("\nRun shhh in a terminal for the setup wizard, or export SHHH_API_KEY — " +
+		"`shhh config set provider.api_key_env SHHH_API_KEY` makes the file read it.\n")
 	return b.String()
 }
 

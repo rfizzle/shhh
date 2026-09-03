@@ -881,3 +881,62 @@ func TestDoctorModel_AppliedSaysWhatChangedAndRerunsTheChecks(t *testing.T) {
 		t.Fatalf("a partial run does not say how far it got: %q", notice)
 	}
 }
+
+// A file holding a key rather than naming one is a warning worded as what it
+// costs. "api_key is deprecated" sends the reader looking for the
+// replacement; "this file is a copy of your key" is the fact that makes them
+// want one, and the fix under it is the two commands.
+func TestDoctorConfig_WarnsOnAKeyTheFileHolds(t *testing.T) {
+	t.Setenv("SHHH_PROVIDER", "")
+	held := doctorConfig("/home/u/.config/shhh/config.toml", nil, config.Config{
+		Provider: config.ProviderConfig{Default: "anthropic", APIKey: "sk-ant-in-the-file"},
+	}, nil)
+	if held.State != components.DoctorWarned || held.Outcome != "key in the file" {
+		t.Fatalf("a file holding a key passed: %+v", held)
+	}
+	if !strings.Contains(held.Consequence, "this file is a copy of your key") {
+		t.Fatalf("the row does not say what it costs: %+v", held)
+	}
+	if !strings.Contains(held.Detail, "provider.api_key holds the key itself") {
+		t.Fatalf("the row does not name the key: %+v", held)
+	}
+	fix := strings.Join(held.Fix, "\n")
+	if !strings.Contains(fix, "ANTHROPIC_API_KEY") || !strings.Contains(fix, "provider.api_key_env") {
+		t.Fatalf("the fix is not the two commands: %+v", held)
+	}
+	if strings.Contains(held.Detail+held.Consequence+fix, "sk-ant-in-the-file") {
+		t.Fatalf("the row echoed the key: %+v", held)
+	}
+
+	named := doctorConfig("/home/u/.config/shhh/config.toml", nil, config.Config{
+		Provider: config.ProviderConfig{Default: "anthropic", APIKeyEnv: "ANTHROPIC_API_KEY"},
+	}, nil)
+	if named.State != components.DoctorPassed || named.Outcome != "ok" {
+		t.Fatalf("a file that names a variable was warned about: %+v", named)
+	}
+
+	search := doctorConfig("/home/u/.config/shhh/config.toml", nil, config.Config{
+		Web: config.WebConfig{SearchAPIKey: "brave-in-the-file"},
+	}, nil)
+	if search.State != components.DoctorWarned || !strings.Contains(search.Detail, "web.search_api_key") {
+		t.Fatalf("the second credential is not warned about the same way: %+v", search)
+	}
+}
+
+// Two credentials held at once are one row, and the sentence agrees with how
+// many there are: a row reading "provider.api_key hold the key itself" is a
+// row the reader stops trusting about the rest of what it says.
+func TestDoctorConfig_TwoHeldKeysAreOneRowThatReads(t *testing.T) {
+	t.Setenv("SHHH_PROVIDER", "")
+	both := doctorConfig("/home/u/.config/shhh/config.toml", nil, config.Config{
+		Provider: config.ProviderConfig{Default: "anthropic", APIKey: "sk-ant-one"},
+		Web:      config.WebConfig{SearchAPIKey: "brave-two"},
+	}, nil)
+	if !strings.Contains(both.Detail, "provider.api_key and web.search_api_key hold the key itself") {
+		t.Fatalf("two keys do not read as two: %+v", both)
+	}
+	fix := strings.Join(both.Fix, "\n")
+	if !strings.Contains(fix, "shhh config set web.search_api_key_env ") {
+		t.Fatalf("the fix does not name the second key's companion: %+v", both)
+	}
+}

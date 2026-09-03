@@ -216,8 +216,14 @@ type WebConfig struct {
 	// the only provider so far.
 	SearchProvider string `toml:"search_provider"`
 	// SearchAPIKey enables the web_search tool; without it the tool is not
-	// registered.
+	// registered. It holds the key itself, so every copy of this file is a
+	// copy of the key — SearchAPIKeyEnv is the form to prefer, and this one
+	// is here for the machines that were set up before it existed.
 	SearchAPIKey string `toml:"search_api_key"`
+	// SearchAPIKeyEnv names the environment variable the search key is read
+	// from at start. It is read ahead of SearchAPIKey.
+	// See docs/capabilities/secrets.md#where-a-value-comes-from.
+	SearchAPIKeyEnv string `toml:"search_api_key_env"`
 }
 
 // SandboxConfig tunes process containment for agent-executed commands
@@ -260,9 +266,19 @@ type SandboxConfig struct {
 type ProviderConfig struct {
 	Default string `toml:"default"`
 	Model   string `toml:"model"`
-	APIKey  string `toml:"api_key"`
-	BaseURL string `toml:"base_url"`
-	Name    string `toml:"name"`
+	// APIKey holds the key itself, so every copy of this file — a backup, a
+	// dotfiles commit, a screen share — is a copy of the key. APIKeyEnv is
+	// the form to prefer, and this one is here for the machines that were
+	// set up before it existed.
+	APIKey string `toml:"api_key"`
+	// APIKeyEnv names the environment variable the provider key is read from
+	// at start, which is how every other credential shhh takes is written:
+	// the file carries the name and the environment carries the value. It is
+	// read ahead of APIKey.
+	// See docs/capabilities/secrets.md#where-a-value-comes-from.
+	APIKeyEnv string `toml:"api_key_env"`
+	BaseURL   string `toml:"base_url"`
+	Name      string `toml:"name"`
 	// Reasoning is the level of thinking sessions start on: "off", "low",
 	// "medium", "high", "xhigh" or "max". Empty means medium — a session
 	// never starts without thinking unless it was told to
@@ -627,9 +643,40 @@ func (c Config) EffectiveReportsRetentionDays() int {
 	return DefaultRetentionDays
 }
 
-// ProviderAPIKey returns the configured API key.
+// ProviderAPIKey returns the configured API key: the value of the variable
+// api_key_env names, and otherwise the literal api_key.
 func (c Config) ProviderAPIKey() string {
-	return c.Provider.APIKey
+	return keyFromEnvOrFile(c.Provider.APIKeyEnv, c.Provider.APIKey)
+}
+
+// WebSearchAPIKey returns the search backend's key on the same terms as the
+// provider's: the named variable first, the literal second.
+func (c Config) WebSearchAPIKey() string {
+	return keyFromEnvOrFile(c.Web.SearchAPIKeyEnv, c.Web.SearchAPIKey)
+}
+
+// keyFromEnvOrFile resolves a credential the config file may hold either way
+// round. The name wins because reading it is an environment read, and the
+// environment outranks the file for every other setting; a file carrying both
+// is one part-way through the move, and honouring the name is what makes
+// writing the name the thing that changes what is in force.
+//
+// A named variable that is not exported resolves to nothing rather than
+// falling through to the literal. Falling through would mean a session that
+// silently kept working off the copy the person had just stopped meaning to
+// use, which is the state this whole shape exists to make visible.
+//
+// A gateway profile spells the same pair and refuses a file that sets both,
+// which is the stricter rule and the right one there: nobody is mid-move in a
+// profile, because profiles have taken a name since they existed. Here both
+// together is the ordinary state of a file being moved over, so the two are
+// ranked instead of refused, and the doctor's row is what keeps the older
+// spelling from becoming permanent.
+func keyFromEnvOrFile(name, literal string) string {
+	if name = strings.TrimSpace(name); name != "" {
+		return os.Getenv(name)
+	}
+	return literal
 }
 
 // ProviderBaseURL returns the configured base URL.

@@ -101,6 +101,31 @@ it is a token in a backup. A variable the config names and the environment
 lacks is a warning and not a secret: config is standing policy, and a
 laptop without the variable set should still open a session.
 
+The provider's own key and the search backend's key are written the same
+way. `provider.api_key_env` and `web.search_api_key_env` name a variable and
+the value is read from the environment at start, which is what makes the
+file safe to keep in a dotfiles repository and safe to hand to somebody
+debugging a setup. The named variable is read ahead of the older
+`provider.api_key` and `web.search_api_key`, which hold the key itself and
+stay for one release; a variable that is named and not exported resolves to
+nothing rather than falling back to the key beside it, because a session
+that quietly kept working off the copy is a session that never tells you the
+move did not take.
+
+`shhh doctor` warns on a file that holds a key, in the words of what that
+costs — the file is a copy of the key, and so is every backup and clone of
+it — with the export and the `config set` under it. `shhh config` and `shhh
+config list` show a variable-naming key as the name and whether this machine
+exports it, which is the half of the answer the file cannot give.
+
+The first-run card keeps first run one paste long and still prefers the
+name. A key pasted into it that is already exported under one of the
+variables the dialects read is saved as that variable's name, because
+somebody who exported a key and then pasted the same key meant one
+credential and not two. A key that is nowhere else is written as itself —
+refusing would be turning a first run into an errand — and the card says on
+one line that the file now holds it and which variable to move it to.
+
 `--secret NAME` on `shhh chat` and `shhh code` declares one for this run,
 reading it from the environment; unlike config, a name the environment
 lacks is an error, because the user asked for it here and now. `--secret

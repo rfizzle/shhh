@@ -987,3 +987,84 @@ func TestTodoCommitIsOnUnlessTurnedOff(t *testing.T) {
 		t.Error("a reset should put the key back to its default, which is a commit")
 	}
 }
+
+// A file that names a variable is read through that variable, ahead of a
+// literal key the same file still holds. The two spellings overlap only while
+// somebody is moving between them, and the move has to change what is in
+// force the moment the name is written — otherwise the way to find out which
+// one answered is to change the key and see whether anything breaks.
+func TestProviderAPIKey_TheNamedVariableOutranksTheLiteral(t *testing.T) {
+	t.Setenv("SHHH_TEST_PROVIDER_KEY", "sk-from-the-environment")
+	cfg := Config{Provider: ProviderConfig{
+		APIKey:    "sk-from-the-file",
+		APIKeyEnv: "SHHH_TEST_PROVIDER_KEY",
+	}}
+	if got := cfg.ProviderAPIKey(); got != "sk-from-the-environment" {
+		t.Fatalf("the named variable did not outrank the literal, got %q", got)
+	}
+
+	cfg.Provider.APIKeyEnv = "SHHH_TEST_PROVIDER_KEY_NOBODY_EXPORTED"
+	if got := cfg.ProviderAPIKey(); got != "" {
+		t.Fatalf("a variable nobody exported fell through to the literal, got %q", got)
+	}
+
+	cfg.Provider.APIKeyEnv = ""
+	if got := cfg.ProviderAPIKey(); got != "sk-from-the-file" {
+		t.Fatalf("a file naming no variable did not answer with its literal, got %q", got)
+	}
+}
+
+// The search key resolves on the same terms, because a second rule for the
+// second credential is a second thing to be wrong about.
+func TestWebSearchAPIKey_TheNamedVariableOutranksTheLiteral(t *testing.T) {
+	t.Setenv("SHHH_TEST_SEARCH_KEY", "brave-from-the-environment")
+	cfg := Config{Web: WebConfig{
+		SearchAPIKey:    "brave-from-the-file",
+		SearchAPIKeyEnv: "SHHH_TEST_SEARCH_KEY",
+	}}
+	if got := cfg.WebSearchAPIKey(); got != "brave-from-the-environment" {
+		t.Fatalf("the named variable did not outrank the literal, got %q", got)
+	}
+	cfg.Web.SearchAPIKeyEnv = ""
+	if got := cfg.WebSearchAPIKey(); got != "brave-from-the-file" {
+		t.Fatalf("a file naming no variable did not answer with its literal, got %q", got)
+	}
+}
+
+// A credential's companion is found by the convention rather than by a list,
+// which is what stops a credential added later from being one the surfaces
+// silently have nothing to say about. A key that is not a credential has
+// none, and neither does a credential the file offers no name for.
+func TestSetting_EnvKeyIsTheCompanionKey(t *testing.T) {
+	for key, want := range map[string]string{
+		"provider.api_key":     "provider.api_key_env",
+		"web.search_api_key":   "web.search_api_key_env",
+		"provider.model":       "",
+		"provider.api_key_env": "",
+	} {
+		s, ok := Lookup(key)
+		if !ok {
+			t.Fatalf("%s is not a setting", key)
+		}
+		if got := s.EnvKey(); got != want {
+			t.Errorf("%s companion is %q, want %q", key, got, want)
+		}
+	}
+}
+
+// "Set" means the same thing everywhere it is said, and a variable exported
+// empty is not a key: a surface that called it set would be promising a
+// session that will fail to start.
+func TestEnvVarSet_AnEmptyExportIsNotAKey(t *testing.T) {
+	t.Setenv("SHHH_TEST_EMPTY_VAR", "   ")
+	t.Setenv("SHHH_TEST_FULL_VAR", "sk-something")
+	if EnvVarSet("SHHH_TEST_EMPTY_VAR") {
+		t.Error("a variable exported empty reads as set")
+	}
+	if !EnvVarSet("SHHH_TEST_FULL_VAR") {
+		t.Error("a variable holding a key reads as unset")
+	}
+	if EnvVarSet("") {
+		t.Error("naming no variable reads as set")
+	}
+}

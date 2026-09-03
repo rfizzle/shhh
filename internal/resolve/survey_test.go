@@ -121,7 +121,7 @@ func TestSurvey_ConfigSaysWhichFileItRead(t *testing.T) {
 	present := placeOf(t, SurveyPlaces(context.Background(), SurveyOpts{
 		ConfigPaths: []string{path}, LocalBaseURL: deadEnd,
 	}), PlaceConfig)
-	if !strings.Contains(present.Detail, "no provider api_key") {
+	if !strings.Contains(present.Detail, "no provider key") {
 		t.Errorf("a config file with no key should say so, got %q", present.Detail)
 	}
 
@@ -215,5 +215,40 @@ func TestHostOf(t *testing.T) {
 		if got := hostOf(tc.url); got != tc.want {
 			t.Errorf("hostOf(%q) = %q, want %q", tc.url, got, tc.want)
 		}
+	}
+}
+
+// The config row says which of the two spellings answered. They are the same
+// key from the reader's side and not from the file's, and "the config file
+// had one" leaves the person who is mid-move unable to tell whether the line
+// they just wrote is the one being read.
+func TestSurvey_ConfigSaysWhichSpellingSuppliedTheKey(t *testing.T) {
+	named := surveyConfig(SurveyOpts{
+		ConfigAPIKey:    "sk-abcd1234",
+		ConfigAPIKeyEnv: "ANTHROPIC_API_KEY",
+	})
+	if !named.Found || !strings.Contains(named.Finding, "provider.api_key_env → ANTHROPIC_API_KEY") {
+		t.Fatalf("a key from a named variable does not say so: %+v", named)
+	}
+
+	literal := surveyConfig(SurveyOpts{ConfigAPIKey: "sk-abcd1234"})
+	if !literal.Found || !strings.Contains(literal.Finding, "provider.api_key ") {
+		t.Fatalf("a key the file holds does not say so: %+v", literal)
+	}
+}
+
+// A file naming a variable nobody exported is the failure that most looks
+// like a file with no key in it — the file is right and the shell is not —
+// so it is reported as itself and names the variable to export.
+func TestSurvey_ConfigNamesAVariableNobodyExported(t *testing.T) {
+	place := surveyConfig(SurveyOpts{
+		ConfigAPIKeyEnv: "NOBODY_EXPORTED_THIS",
+		ConfigPaths:     []string{filepath.Join(t.TempDir(), "config.toml")},
+	})
+	if place.Found {
+		t.Fatalf("an unexported variable read as a key that was found: %+v", place)
+	}
+	if !strings.Contains(place.Detail, "NOBODY_EXPORTED_THIS") || !strings.Contains(place.Detail, "unset") {
+		t.Fatalf("the row does not name the variable that is missing: %+v", place)
 	}
 }

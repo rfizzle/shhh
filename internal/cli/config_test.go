@@ -412,3 +412,49 @@ func TestConfigModel_AStagedRoleModelIsUnwritten(t *testing.T) {
 		t.Fatalf("[w] would write %+v", edits)
 	}
 }
+
+// A key that names a variable shows the name and whether this machine's shell
+// has it. The name alone reads identically on the machine where a session
+// starts and the machine where it does not, which is the one failure the
+// spelling introduces.
+func TestConfigRows_AVariableRowShowsTheNameAndItsState(t *testing.T) {
+	t.Setenv("SHHH_TEST_ROW_VAR", "sk-exported")
+	var cfg config.Config
+	cfg.Provider.APIKeyEnv = "SHHH_TEST_ROW_VAR"
+	row := rowFor(configRows(cfg, cfg), "provider.api_key_env")
+	if row.Value != "SHHH_TEST_ROW_VAR" {
+		t.Fatalf("the row does not show the variable name, got %q", row.Value)
+	}
+	if row.Detail != "set in the environment" {
+		t.Fatalf("the row does not say the variable is there, got %q", row.Detail)
+	}
+	if row.Secret {
+		t.Fatal("a variable name opened the masked entry, which would mask a name")
+	}
+
+	cfg.Provider.APIKeyEnv = "SHHH_TEST_ROW_VAR_NOBODY_EXPORTED"
+	row = rowFor(configRows(cfg, cfg), "provider.api_key_env")
+	if row.Detail != "not set in the environment" {
+		t.Fatalf("a variable nobody exported reads as present, got %q", row.Detail)
+	}
+}
+
+// The row for a key the file holds still never shows it, and now says what
+// holding it costs — the row beside it is the one that does not.
+func TestConfigRows_AHeldKeySaysWhatHoldingItCosts(t *testing.T) {
+	var cfg config.Config
+	cfg.Provider.APIKey = "sk-in-the-file-1234"
+	row := rowFor(configRows(cfg, cfg), "provider.api_key")
+	if row.Value != components.MaskSecret("sk-in-the-file-1234") {
+		t.Fatalf("the row is not the mask and only the mask, got %q", row.Value)
+	}
+	if strings.Contains(row.Value, "in-the-file") {
+		t.Fatalf("the row showed the key, got %q", row.Value)
+	}
+	if row.Detail != "the file holds the key itself" {
+		t.Fatalf("the row does not say what it costs, got %q", row.Detail)
+	}
+	if row.ValueTone != components.ToneOpen {
+		t.Fatalf("a key in the file is not drawn as a door left open, got %v", row.ValueTone)
+	}
+}

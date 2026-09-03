@@ -322,8 +322,10 @@ func configRows(cfg, base config.Config) []components.ConfigRow {
 			Secret: s.Secret, Options: s.answers(cfg),
 		}
 		switch {
-		case s.Secret && raw != "":
-			row.Value = components.MaskSecret(raw)
+		case s.Secret:
+			row.Value, row.ValueTone, row.Detail = s.credential(raw)
+		case s.Kind == config.KindEnvVar && raw != "":
+			row.Value, row.Detail = raw, envVarState(raw)
 		case raw == "":
 			row.Value, row.ValueTone = s.unset(), components.ToneNeutral
 		case s.show != nil:
@@ -341,6 +343,41 @@ func configRows(cfg, base config.Config) []components.ConfigRow {
 		rows = append(rows, row)
 	}
 	return rows
+}
+
+// credential reads a credential row: the masked value, and the note saying
+// what holding it costs. It is drawn as a door left open rather than as a
+// plain fact, because a key in the file is a key in every copy of the file,
+// and the row beside it — the variable this credential could name instead —
+// is the one that is not.
+//
+// The mask stays rather than becoming the variable's name, because this row
+// is about a key the file is holding and there is no variable to name for it:
+// a row that borrowed the name from the key beside it would say the value
+// came from somewhere it did not, while the source field went on reading
+// `user`. The name and its state belong to the row that has them.
+// See docs/capabilities/secrets.md#where-a-value-comes-from.
+func (s configSetting) credential(raw string) (string, components.FieldTone, string) {
+	if raw == "" {
+		return s.unset(), components.ToneNeutral, ""
+	}
+	return components.MaskSecret(raw), components.ToneOpen, "the file holds the key itself"
+}
+
+// envVarState is the half of a variable-naming row that the file cannot say:
+// whether the environment has the variable. Without it the row reads the same
+// on the machine whose shell exports it and the machine whose shell does not,
+// which is the one failure the spelling introduces.
+func envVarState(name string) string { return envVarStateOf(config.EnvVarSet(name)) }
+
+// envVarStateOf is the same sentence from an answer already taken, which is
+// what the listing has: it read the environment once, into its JSON, and the
+// row it prints must not say something different from the field beside it.
+func envVarStateOf(set bool) string {
+	if set {
+		return "set in the environment"
+	}
+	return "not set in the environment"
 }
 
 // unset is what the row shows when nothing has set the key.
@@ -539,6 +576,8 @@ var configLabels = map[string]string{
 	"behavior.provider_retries":            "retries per stall",
 	"provider.default":                     "provider",
 	"provider.api_key":                     "api key",
+	"provider.api_key_env":                 "api key variable",
+	"web.search_api_key_env":               "search api key variable",
 	"provider.base_url":                    "base url",
 	"provider.name":                        "display name",
 	"agents.model":                         "sub-agent model",
