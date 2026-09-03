@@ -467,10 +467,10 @@ func TestResult_AnExplanationForALastCommandIsDropped(t *testing.T) {
 	}
 }
 
-// Checking a command spawns a shell and walks PATH. Inline in Update that was
-// the loop stopped for however long this machine takes to do both, with the
-// command on screen and nothing able to paint over it.
-func TestResult_TheCommandIsCheckedOffTheLoop(t *testing.T) {
+// Checking a command spawns a shell and walks PATH, and the reader has no
+// reason to sit through either: the command is written, so it is on screen
+// with its keys live while the check runs beside it.
+func TestResult_TheCommandIsUsableWhileItIsChecked(t *testing.T) {
 	m := NewGenerateModel(makeEvents("ls -la"), noopCancel, nil,
 		mockNewStream("ls"), nil, "bash")
 	m = drainStreamPending(m, 2)
@@ -478,11 +478,15 @@ func TestResult_TheCommandIsCheckedOffTheLoop(t *testing.T) {
 	if !m.checking {
 		t.Fatal("the surface is not waiting on a check it asked for")
 	}
-	if m.Phase() != phaseStreaming {
-		t.Errorf("the surface left the streaming phase before the check answered: %v", m.Phase())
+	if m.Phase() != phaseAction {
+		t.Errorf("the check held the screen: phase %v", m.Phase())
 	}
-	if !strings.Contains(m.View().Content, "ls -la") {
-		t.Errorf("the command is not on screen while it is being checked:\n%s", m.View().Content)
+	view := m.View().Content
+	if !strings.Contains(view, "ls -la") {
+		t.Errorf("the command is not on screen while it is being checked:\n%s", view)
+	}
+	if !strings.Contains(view, "[↵] run") {
+		t.Errorf("the keys are not live while the command is being checked:\n%s", view)
 	}
 }
 

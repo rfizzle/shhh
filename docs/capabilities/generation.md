@@ -114,6 +114,42 @@ time at all. Where an answer arrives without one — a model that ignored the
 format, a reply cut short — it is asked for separately, which is the request
 the full breakdown makes anyway.
 
+## The first token waits for the request and nothing else
+
+Nothing local sits between typing the prompt and the request going out. The
+history store is the one that used to: opening it is a database connection, a
+schema check and a sweep of old rows, and none of that is needed until there
+is something to write down. It is opened beside the request instead, and every
+path that writes anything waits for it there. The record does not move — the
+run still opens a row, stamps what it went out under and closes it, the piped
+run included, because a run that spent money and left nothing behind is the
+one thing this cannot be traded for.
+
+The model data table is the exception that stays in front, and it says why:
+the request's own shape is read out of it — how this model spells a level of
+thinking, how many tokens it will answer with — so it is read alongside the
+prompt rather than after it, and the request waits for that and for nothing
+else.
+
+## The command is on screen while it is being checked
+
+A generated command is checked: the syntax is parsed and the binary is looked
+for on `PATH`, and one that fails goes back to the model to be fixed. That
+check spawns a shell on this machine, which is a startup file on a machine
+that has one and a `PATH` walk on a crowded one.
+
+It runs beside the surface rather than in front of it. The command appears
+with its keys live and its sentence under it the moment it arrives, and the
+check answers into a screen that is already usable. Almost every check finds
+nothing, so blocking on one buys nothing almost every time; and one that does
+find something buys its round trip then, by which point the reader has had the
+command for as long as the check took.
+
+What a check cannot do is take a screen somebody is working on. A correction
+arriving while a revision is half typed, or a snippet half named, is dropped —
+the half-written line is worth more than the round trip, and a command that
+will not parse is one the shell refuses rather than one it half runs.
+
 ## Revision is a conversation, not a retry
 
 "Make it recursive", "use fd instead" — the follow-up carries the history, so

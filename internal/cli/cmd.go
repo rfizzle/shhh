@@ -16,6 +16,7 @@ import (
 	"github.com/rfizzle/shhh/internal/clipboard"
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
@@ -45,6 +46,40 @@ func oneShotOutcome(r ui.GenerateResult) string {
 	return observe.TurnDone
 }
 
+// pendingRecord is the store and the session row, opened away from the path
+// to the first token. Opening the store is a SQLite connection, a schema
+// check and a history purge, and none of that is needed until there is
+// something to write down — while the token is needed the moment the process
+// starts. What does not move is the record itself: the row is still opened
+// and stamped for every run, the piped one included, because every path that
+// writes anything goes through wait first.
+// See docs/capabilities/sessions-and-memory.md#every-composition-is-one-population.
+type pendingRecord struct {
+	done chan struct{}
+	db   *storage.DB
+	rec  *observeRecorder
+}
+
+// startRecord runs open on a goroutine of its own. open is everything the
+// record costs: the store, the row and the stamp on it.
+func startRecord(open func() (*storage.DB, *observeRecorder)) *pendingRecord {
+	p := &pendingRecord{done: make(chan struct{})}
+	go func() {
+		defer close(p.done)
+		p.db, p.rec = open()
+	}()
+	return p
+}
+
+// wait blocks until the store has answered and hands back what it opened.
+// Closing done is what publishes the two fields to the caller's goroutine,
+// so every reader has to come through here — reading a field beside it is a
+// race, and the race detector is the only thing that would ever say so.
+func (p *pendingRecord) wait() (*storage.DB, *observeRecorder) {
+	<-p.done
+	return p.db, p.rec
+}
+
 // newCmdCmd is the one-shot: a prompt in, a command on screen, and a row of
 // keys that decide what happens to it. With no terminal on the other end —
 // piped, scripted, in CI — it drops every piece of chrome and writes the bare
@@ -62,6 +97,18 @@ func newCmdCmd() *cobra.Command {
 		Long:  "Turn a prompt into a single shell command, shown with what it does and a row of keys — run it, edit it, ask for another, copy it, save it. Nothing runs until you say so.",
 		Args:  cobra.ArbitraryArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// The model-data table is a file read, a parse of it, and once a
+			// day a download, and none of it depends on anything the user
+			// typed. It is asked for here and collected below, so it runs
+			// beside the piped stdin, the flag resolution and the provider's
+			// own rather than in front of them. It cannot be moved past the
+			// request: the table is where a model's reasoning ladder and its
+			// output cap come from, so the shape of what goes out depends on
+			// it.
+			// See docs/capabilities/generation.md#the-first-token-waits-for-the-request-and-nothing-else.
+			priced := make(chan *pricing.Table, 1)
+			go func() { priced <- loadPricing() }()
+
 			stdinIsTTY := isatty.IsTerminal(os.Stdin.Fd()) || isatty.IsCygwinTerminal(os.Stdin.Fd())
 
 			cfg := ConfigFrom(cmd.Context())
@@ -123,6 +170,42 @@ func newCmdCmd() *cobra.Command {
 			}
 			resolved.Provider, resolved.Model = req.Provider, req.Model
 
+			info := shell.Detect()
+			promptExtra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra,
+				project.InstructionBlock(project.Instructions(info.Cwd, userInstructionsPath()), prompt.InstructionBudget))
+
+			// The prompt is settled ahead of the branch below because the row
+			// is stamped with the one that actually went out, and the row is
+			// now opened beside the request rather than in front of it.
+			//
+			// A one-shot runs under a reasoning level and a config, and
+			// nothing else on the list: no mode, no cap, no readings, no
+			// classifier, no containment. The piped run sends no reasoning
+			// field at all, whatever the flag said, so it is stamped off —
+			// the record keeps what was in force, not what was asked for.
+			var sysPrompt string
+			var effort provider.Effort
+			if pipeMode {
+				sysPrompt = raw.SystemPrompt(info, promptExtra)
+			} else {
+				// The interactive one-shot asks for what its surface shows
+				// beside the command — the sentence saying what it does and
+				// the alternatives it was picked over. The pipe path goes out
+				// through prompt.Build and asks for neither, so its stdout is
+				// one command, as it has always been.
+				sysPrompt = prompt.BuildAlternatives(info, promptExtra)
+				// A refused level is a refused flag, and it lands here rather
+				// than at the record below on purpose: nothing was asked of
+				// anybody and nothing was spent, so there is no run to write
+				// down. The row this used to leave said a one-shot completed
+				// when what happened was that a word on the command line was
+				// not one of six.
+				if effort, err = provider.ParseEffort(resolved.Reasoning); err != nil {
+					return err
+				}
+			}
+			settings := sessionSettings(cfg, runSettings{effort: effort})
+
 			// The one-shot spends on more than the command it prints: a
 			// revision, an explanation and the description written for a
 			// saved snippet are all requests too. Gating the provider once,
@@ -130,18 +213,9 @@ func newCmdCmd() *cobra.Command {
 			// alternative is remembering to instrument each of them, and the
 			// explanation was already being missed.
 			// See docs/architecture.md#spend-is-counted-at-the-provider.
-			prices := loadPricing()
+			prices := <-priced
 			ledger := meter.New(prices)
 			p = meter.WithFallbackModel(ledger.For(p, meter.SourceOneShot), resolved.Model)
-
-			info := shell.Detect()
-			promptExtra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra,
-				project.InstructionBlock(project.Instructions(info.Cwd, userInstructionsPath()), prompt.InstructionBudget))
-
-			db, _ := openStore()
-			if db != nil {
-				defer db.Close()
-			}
 
 			// The one-shot is one request, so it is one turn — and recording
 			// it as a single-turn session is what lets it join every
@@ -157,15 +231,36 @@ func newCmdCmd() *cobra.Command {
 			// and it is the one that until now spent money and left nothing
 			// behind at all.
 			// See docs/capabilities/sessions-and-memory.md#every-composition-is-one-population.
-			recorder := startObserveRecorder(db, "cmd", p.Name(), resolved.Model, prices)
+			pending := startRecord(func() (*storage.DB, *observeRecorder) {
+				db, _ := openStore()
+				rec := startObserveRecorder(db, "cmd", p.Name(), resolved.Model, prices)
+				rec.stamp(sysPrompt, 0, projectFingerprintRoot(), settings)
+				return db, rec
+			})
+			// The store is let go of after the row in it has been closed, so
+			// it is deferred first: defers run in reverse.
+			defer func() {
+				if db, _ := pending.wait(); db != nil {
+					db.Close()
+				}
+			}()
+
 			started := time.Now()
 			outcome := observe.TurnDone
 			// Closing the row is a call and not only a defer: every action
 			// that runs the generated command ends the process, and os.Exit
 			// does not run deferred functions. It is idempotent, so the
 			// deferred call is the ordinary path and the explicit ones are
-			// the exits.
+			// the exits. Waiting for the store is the first thing it does —
+			// the row has to exist before it can be closed, and a run that
+			// ends before the store answered is still a run that happened.
+			closed := false
 			finish := func() {
+				if closed {
+					return
+				}
+				closed = true
+				_, recorder := pending.wait()
 				if recorder == nil {
 					return
 				}
@@ -173,18 +268,10 @@ func newCmdCmd() *cobra.Command {
 				recorder.usagePriced(1, t.In, t.Out, t.Cost, t.Priced)
 				recorder.turn(1, 0, time.Since(started), outcome)
 				recorder.end()
-				recorder = nil
 			}
 			defer finish()
 
-			// A one-shot runs under a reasoning level and a config, and
-			// nothing else on the list: no mode, no cap, no readings, no
-			// classifier, no containment. The piped run sends no reasoning
-			// field at all, whatever the flag said, so it is stamped off —
-			// the record keeps what was in force, not what was asked for.
 			if pipeMode {
-				recorder.stamp(raw.SystemPrompt(info, promptExtra), 0, projectFingerprintRoot(),
-					sessionSettings(cfg, runSettings{effort: provider.EffortOff}))
 				err := raw.Run(cmd.Context(), raw.Opts{
 					Provider:          p,
 					Model:             resolved.Model,
@@ -207,18 +294,6 @@ func newCmdCmd() *cobra.Command {
 				}
 				return nil
 			}
-
-			// The interactive one-shot asks for what its surface shows
-			// beside the command — the sentence saying what it does and the
-			// alternatives it was picked over. The pipe path above went out
-			// through prompt.Build and asks for neither, so its stdout is
-			// one command, as it has always been.
-			sysPrompt := prompt.BuildAlternatives(info, promptExtra)
-			effort, err := provider.ParseEffort(resolved.Reasoning)
-			if err != nil {
-				return err
-			}
-			recorder.stamp(sysPrompt, 0, projectFingerprintRoot(), sessionSettings(cfg, runSettings{effort: effort}))
 
 			messages := []provider.Message{
 				{Role: provider.RoleSystem, Content: sysPrompt},
@@ -288,6 +363,10 @@ func newCmdCmd() *cobra.Command {
 
 			result := finalModel.(ui.GenerateModel).Result()
 			outcome = oneShotOutcome(result)
+
+			// Everything below writes, so this is where the store is caught
+			// up with. It has had the whole interaction to open.
+			db, _ := pending.wait()
 
 			var requestID int64
 			if db != nil {

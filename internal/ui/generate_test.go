@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/preflight"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -946,6 +947,119 @@ func TestGenerate_PreflightAutoCorrectsBadBinary(t *testing.T) {
 	output := m.stream.Output()
 	if output != "ls -la" {
 		t.Errorf("expected corrected command 'ls -la', got %q", output)
+	}
+}
+
+// The response the check had doubts about is already in the conversation:
+// accepting it put it there on the way to the screen. Appending it a second
+// time would send the model its own answer twice, and pay for both.
+func TestGenerate_ACorrectionDoesNotSendTheAnswerTwice(t *testing.T) {
+	var sent []provider.Message
+	corrected := func(messages []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		sent = append(sent[:0], messages...)
+		return makeEvents("ls -la"), noopCancel, nil
+	}
+
+	m := NewGenerateModel(makeEvents("nonexistentbinary123 --foo"), noopCancel, nil, corrected, nil, "bash")
+	m = drainStream(m, 2)
+	if m.Phase() != phaseStreaming {
+		t.Fatalf("the failed check never bought its correction: phase %v", m.Phase())
+	}
+
+	answers := 0
+	for _, msg := range sent {
+		if msg.Role == provider.RoleAssistant {
+			answers++
+		}
+	}
+	if answers != 1 {
+		t.Fatalf("the correction carried the answer it complains about %d times, want 1:\n%+v", answers, sent)
+	}
+}
+
+// A correction is a stream, and the surface waits on it the way it waits on a
+// revise: with the spinner, not with a row of keys over an empty command.
+func TestGenerate_ACorrectionLeavesNoKeysOverAnEmptyCommand(t *testing.T) {
+	held := func([]provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		return makeEvents("ls -la"), noopCancel, nil
+	}
+	m := NewGenerateModel(makeEvents("nonexistentbinary123 --foo"), noopCancel, nil, held, nil, "bash")
+	m = drainStreamPending(m, 2)
+
+	failed := preflightDoneMsg{
+		gen:    m.gen,
+		result: preflight.Result{Errors: []string{"command not found: nonexistentbinary123"}},
+	}
+	model, _ := m.Update(failed)
+	m = model.(GenerateModel)
+
+	if m.Phase() != phaseStreaming {
+		t.Fatalf("the surface kept the action phase while the correction opened: %v", m.Phase())
+	}
+	if strings.Contains(m.View().Content, "[↵] run") {
+		t.Errorf("the keys were offered over a command that is not there yet:\n%s", m.View().Content)
+	}
+}
+
+// A clean check is the usual answer, and by the time it lands the command has
+// been on screen for as long as the check took. There is nothing left for it
+// to install.
+func TestGenerate_ACleanCheckLeavesTheScreenAlone(t *testing.T) {
+	m := NewGenerateModel(makeEvents("ls -la"), noopCancel, nil, mockNewStream("ls"), nil, "bash")
+	m = drainStreamPending(m, 2)
+
+	before, messages := m.View().Content, len(m.messages)
+	model, cmd := m.Update(preflightDoneMsg{gen: m.gen, result: preflight.Result{OK: true}})
+	m = model.(GenerateModel)
+
+	if cmd != nil {
+		t.Error("a clean check asked for something")
+	}
+	if m.checking {
+		t.Error("the check was left outstanding after it answered")
+	}
+	if len(m.messages) != messages {
+		t.Errorf("a clean check added %d messages to the conversation", len(m.messages)-messages)
+	}
+	if m.View().Content != before {
+		t.Errorf("a clean check redrew the screen:\n%s", m.View().Content)
+	}
+}
+
+// A correction takes the screen, and somebody part-way through typing a
+// revision is not who to take it from.
+func TestGenerate_ACheckDoesNotInterruptWhatIsBeingTyped(t *testing.T) {
+	m := NewGenerateModel(makeEvents("nonexistentbinary123 --foo"), noopCancel, nil,
+		mockNewStream("ls -la"), nil, "bash")
+	m = drainStreamPending(m, 2)
+
+	// Straight into Update rather than through press: the keystrokes here
+	// are answered with a cursor blink, and settling one waits out the blink
+	// interval before it can say there was no answer in it.
+	send := func(m GenerateModel, key string) GenerateModel {
+		model, _ := m.Update(keyMsg(key))
+		return model.(GenerateModel)
+	}
+	m = send(m, "r")
+	for _, r := range "use fd" {
+		m = send(m, string(r))
+	}
+	if m.Phase() != phaseRevise {
+		t.Fatalf("the revise line never opened: phase %v", m.Phase())
+	}
+
+	failed := preflightDoneMsg{
+		gen:    m.gen,
+		result: preflight.Result{Errors: []string{"command not found: nonexistentbinary123"}},
+	}
+	model, _ := m.Update(failed)
+	m = model.(GenerateModel)
+
+	if m.Phase() != phaseRevise {
+		t.Errorf("the check took the screen from a half-typed revision: phase %v", m.Phase())
+	}
+	if m.reviseInput.Value() != "use fd" {
+		t.Errorf("the typed revision came back as %q", m.reviseInput.Value())
 	}
 }
 

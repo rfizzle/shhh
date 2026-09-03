@@ -116,9 +116,9 @@ type GenerateModel struct {
 	// The keys stay live while it does — the bar is not worth blocking for
 	// one sentence.
 	explaining bool
-	// checking is a preflight check that is out. The stream it is a check of
-	// stays done while it runs, so without this the surface would ask again
-	// on every message that arrives.
+	// checking is a preflight check that is out. The command it is a check
+	// of is already on screen with its keys live, so this is what tells an
+	// answer this surface is still waiting for from one it has no use for.
 	checking bool
 	// opening is a stream that has been asked for and has not come back. The
 	// spinner turns on it: it is the surface saying it is waiting on a round
@@ -323,12 +323,6 @@ func (m GenerateModel) updateStreaming(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, tea.Quit
 		}
 
-		// The check is already out; the stream stays done and there is
-		// nothing to do again until it answers.
-		if m.checking {
-			return m, cmd
-		}
-
 		// What arrived is a proposal, not a bare command: everything before
 		// the first sentinel is the command, and what follows is the
 		// sentence about it and the offers. A response without the sections
@@ -338,18 +332,22 @@ func (m GenerateModel) updateStreaming(msg tea.Msg) (tea.Model, tea.Cmd) {
 		answer := proposal.Parse(raw)
 		output := answer.Choices[0].Command
 
-		if m.shell != "" && m.preflightRetries < maxPreflightRetries && m.newStream != nil {
-			// Checking the command spawns a shell and walks PATH, and both
-			// happen on whatever machine this is: a crowded PATH, a shell
-			// with a startup file, a home directory over a network mount.
-			// Inline in Update that is the loop stopped again, so
-			// the check goes where the requests went.
-			m.gen++
-			m.checking = true
-			return m, runPreflight(output, raw, answer, m.shell, m.gen)
+		// The command is shown the moment it arrives, whether or not it is
+		// about to be checked. Checking it spawns a shell and walks PATH,
+		// and both happen on whatever machine this is: a crowded PATH, a
+		// shell with a startup file, a home directory over a network mount.
+		// Holding the screen for that leaves the reader looking at a command
+		// they cannot act on, and holds back the second request an
+		// explanation sometimes needs — for a check that finds nothing
+		// almost every time. So it runs beside the surface it used to block,
+		// and buys its round trip only when it does find something.
+		// See docs/capabilities/generation.md#the-command-is-on-screen-while-it-is-being-checked.
+		shown, cmds := m.accept(raw, answer)
+		if shown.shell == "" || shown.preflightRetries >= maxPreflightRetries || shown.newStream == nil {
+			return shown, cmds
 		}
-
-		return m.accept(raw, answer)
+		shown.checking = true
+		return shown, tea.Batch(cmds, runPreflight(output, shown.shell, shown.gen))
 	}
 	return m, cmd
 }
@@ -368,28 +366,49 @@ func (m GenerateModel) accept(raw string, answer proposal.Proposal) (GenerateMod
 	return m.arm(answer.Choices[0].Command, answer.Explanation)
 }
 
-// preflightDone carries a check that has finished, along with the response it
-// was a check of — the surface moved on from Update while it ran and the
-// answer has to bring its own subject.
+// preflightDone carries a check that has finished. It arrives into whatever
+// the surface has become since it was asked for, which is why almost all of
+// this is deciding whether the answer is still about anything.
 func (m GenerateModel) preflightDone(msg preflightDoneMsg) (GenerateModel, tea.Cmd) {
-	if msg.gen != m.gen {
+	// A different command is on screen now, or no check of this surface's is
+	// out at all. Either way this is an answer about something nobody is
+	// looking at.
+	if !m.checking || msg.gen != m.gen {
 		return m, nil
 	}
 	m.checking = false
 	if msg.result.OK {
-		return m.accept(msg.raw, msg.answer)
+		// The command was accepted when it arrived, so a clean check has
+		// nothing to add to a screen that is already showing it.
+		return m, nil
 	}
+	// A correction takes the screen, and the reader may be part-way through
+	// something on it — a revision they are typing, a name for a snippet, an
+	// edit of the very command the check has doubts about. Their half-written
+	// line is worth more than the round trip, and a command that will not
+	// parse is one the shell refuses rather than one it half runs.
+	if m.phase != phaseAction {
+		return m, nil
+	}
+	// The sentence under the command is about to be replaced along with it,
+	// so a request still out for one is a request to describe something that
+	// is going away.
+	m = m.hushExplain()
 	m.preflightRetries++
 	correction := fmt.Sprintf(
 		"That command has errors:\n%s\n\nPlease fix and output only the corrected command(s).",
 		strings.Join(msg.result.Errors, "\n"),
 	)
-	m.messages = append(m.messages,
-		provider.Message{Role: provider.RoleAssistant, Content: msg.raw},
-		provider.Message{Role: provider.RoleUser, Content: correction},
-	)
+	// The response is already in the conversation: accepting it put it there
+	// on the way to the screen. Only the complaint about it is new.
+	m.messages = append(m.messages, provider.Message{Role: provider.RoleUser, Content: correction})
 	m.gen++
 	m.stream = pendingStream()
+	// The phase moves with the stream and not with its answer, the way a
+	// revise does. Leaving the action bar up over a stream that has not
+	// started yet offers keys against an empty command, and enter on that
+	// hands the caller nothing to run.
+	m.phase = phaseStreaming
 	m.opening = true
 	return m, tea.Batch(m.stream.spinner.Tick, openStream(m.newStream, m.messages, m.gen))
 }
@@ -413,6 +432,10 @@ func (m GenerateModel) arm(output, explanation string) (GenerateModel, tea.Cmd) 
 	m.affected = false
 	m.dryOutput, m.dryFailed = "", false
 	m.explaining = false
+	// A check still out belongs to the command being replaced here, not to
+	// this one. The gen above already stops its answer landing; clearing it
+	// is what keeps the flag meaning what it says it means.
+	m.checking = false
 	m.shown = ExplainNone
 	m.explainStream = StreamModel{}
 	m.actionBar = m.actionBar.
@@ -792,28 +815,24 @@ func openExplain(f ExplainStreamFunc, command string, long bool, gen int) tea.Cm
 	}
 }
 
-// openStream copies the conversation because the model that asked keeps
-// mutating its own copy — a revise appends to it the moment this returns.
+// preflightDoneMsg is a finished check. It carries the generation it was
+// asked under and nothing else about its subject: the response it checked
+// went into the conversation and onto the screen before the check was even
+// started, so an answer that still matches has nothing left to install.
 type preflightDoneMsg struct {
 	gen    int
-	raw    string
-	answer proposal.Proposal
 	result preflight.Result
 }
 
-// runPreflight checks a command off the event loop. It carries the response
-// it checked so the answer needs nothing from the model it left behind.
-func runPreflight(command, raw string, answer proposal.Proposal, shell string, gen int) tea.Cmd {
+// runPreflight checks a command off the event loop.
+func runPreflight(command, shell string, gen int) tea.Cmd {
 	return func() tea.Msg {
-		return preflightDoneMsg{
-			gen:    gen,
-			raw:    raw,
-			answer: answer,
-			result: preflight.Check(command, shell),
-		}
+		return preflightDoneMsg{gen: gen, result: preflight.Check(command, shell)}
 	}
 }
 
+// openStream copies the conversation because the model that asked keeps
+// mutating its own copy — a revise appends to it the moment this returns.
 func openStream(f NewStreamFunc, messages []provider.Message, gen int) tea.Cmd {
 	msgs := make([]provider.Message, len(messages))
 	copy(msgs, messages)
