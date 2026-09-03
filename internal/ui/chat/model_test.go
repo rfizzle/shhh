@@ -1904,11 +1904,16 @@ func TestWithResumedMessages_RebuildsTranscript(t *testing.T) {
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).
 		WithResumedMessages("", saved)
 
-	if len(m.Messages()) != 3 {
-		t.Fatalf("expected 3 resumed messages, got %d", len(m.Messages()))
+	// The three saved messages, plus the reading of the checkout that goes in
+	// front of every restored transcript.
+	if len(m.Messages()) != 4 {
+		t.Fatalf("expected 4 resumed messages, got %d", len(m.Messages()))
 	}
-	if len(m.transcript) != 2 {
-		t.Fatalf("expected 2 transcript entries (user+assistant), got %d", len(m.transcript))
+	if !strings.HasPrefix(m.Messages()[1].Content, resumeMessagePrefix) {
+		t.Fatalf("the reading belongs after the system prompt, got %q", m.Messages()[1].Content)
+	}
+	if len(m.transcript) != 3 {
+		t.Fatalf("expected 3 transcript entries (user, assistant, resumed row), got %d", len(m.transcript))
 	}
 	m.width = 100
 	history := stripANSI(m.renderHistory())

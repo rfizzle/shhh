@@ -203,3 +203,52 @@ func TestSurvey_DotShhhWinsOverAgentsMd(t *testing.T) {
 		t.Fatalf("content = %q, want the .shhh/project.md file", content)
 	}
 }
+
+func TestHead_NamesTheCommitAndMovesWithIt(t *testing.T) {
+	git, err := exec.LookPath("git")
+	if err != nil {
+		t.Skip("git is not on PATH")
+	}
+	dir := t.TempDir()
+	run := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command(git, append([]string{"-C", dir}, args...)...)
+		cmd.Env = append(os.Environ(), "GIT_CONFIG_GLOBAL=/dev/null", "GIT_CONFIG_SYSTEM=/dev/null")
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %s: %v\n%s", strings.Join(args, " "), err, out)
+		}
+	}
+	run("init", "--initial-branch=trunk")
+	run("config", "user.email", "t@example.com")
+	run("config", "user.name", "t")
+
+	// A repository with no commit yet has no head, and saying so is the
+	// point: an empty answer is what stops a comparison from being made
+	// against nothing.
+	if head := Head(dir); head != "" {
+		t.Fatalf("head = %q before the first commit, want empty", head)
+	}
+
+	writeFiles(t, dir, map[string]string{"a.txt": "one\n"})
+	run("add", "a.txt")
+	run("commit", "-m", "first")
+	first := Head(dir)
+	if len(first) != 40 {
+		t.Fatalf("head = %q, want a full commit id", first)
+	}
+	if info := Survey(dir); info.Head != first {
+		t.Fatalf("survey head = %q, want %q", info.Head, first)
+	}
+
+	writeFiles(t, dir, map[string]string{"a.txt": "two\n"})
+	run("commit", "-am", "second")
+	if second := Head(dir); second == first {
+		t.Fatal("head should move with a commit")
+	}
+}
+
+func TestHead_EmptyOutsideARepository(t *testing.T) {
+	if head := Head(t.TempDir()); head != "" {
+		t.Fatalf("head = %q outside a repository, want empty", head)
+	}
+}

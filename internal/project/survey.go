@@ -59,6 +59,12 @@ type Info struct {
 	Branch   string
 	Detached bool
 	Dirty    int
+	// Head is the commit HEAD points at — empty outside a repository and in
+	// one with no commit yet. It is here because a conversation that comes
+	// back has to be able to tell the commit it is looking at now from the
+	// one it was written down on
+	// (docs/capabilities/sessions-and-memory.md#a-resumed-session-sees-the-tree-as-it-is).
+	Head string
 	// Packages counts the language's own unit of packaging — Go package
 	// directories, Cargo crates, package.json manifests, Python packages —
 	// and Unit names it. Partial marks a count the walk's bound cut short.
@@ -96,6 +102,9 @@ func Survey(dir string) Info {
 	info.Language, info.Toolchain, info.Unit = detectLanguage(dir)
 	info.Packages, info.Partial = countPackages(dir, info.Language)
 	info.Repo, info.Branch, info.Detached, info.Dirty = surveyGit(dir)
+	if info.Repo {
+		info.Head = Head(dir)
+	}
 	// Read from dir, not from the process: a survey of somewhere else that
 	// reported the context files of here would be describing two directories
 	// at once. The user's own instructions file is not this project's, so it
@@ -270,6 +279,20 @@ func surveyGit(dir string) (repo bool, branch string, detached bool, dirty int) 
 		dirty = strings.Count(s, "\n") + 1
 	}
 	return true, head, detached, dirty
+}
+
+// Head is the commit HEAD points at in dir, or empty where there is no
+// answer: outside a repository, without a git binary, or before the first
+// commit. It is its own call rather than part of the survey because the
+// answer is wanted at moments a whole survey is too much to pay for — a
+// conversation records the commit it was written down on with every save,
+// and only reads the rest of the checkout when it is opened again.
+func Head(dir string) string {
+	out, err := gitOutput(dir, "rev-parse", "HEAD")
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(out)
 }
 
 func gitOutput(dir string, args ...string) (string, error) {

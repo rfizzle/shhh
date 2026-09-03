@@ -172,6 +172,16 @@ var migrations = []string{
 	// turn at all — and a default would open every one of them parked
 	// (docs/capabilities/sessions-and-memory.md#a-held-turn-comes-back-held).
 	`ALTER TABLE chat_sessions ADD COLUMN held TEXT;`,
+
+	// What a conversation is opened again on: the summary its last
+	// compaction wrote, and the commit the checkout was on when it was last
+	// saved. Empty is the honest answer for both — a conversation that never
+	// compacted has no summary, and one saved outside a repository was on no
+	// commit — so unlike the mid-turn mark above these default rather than
+	// being nullable
+	// (docs/capabilities/sessions-and-memory.md#a-resumed-session-sees-the-tree-as-it-is).
+	`ALTER TABLE chat_sessions ADD COLUMN summary TEXT NOT NULL DEFAULT '';
+	ALTER TABLE chat_sessions ADD COLUMN head TEXT NOT NULL DEFAULT '';`,
 }
 
 // migrate brings the store up to the current schema, one step per

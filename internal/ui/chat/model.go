@@ -669,6 +669,11 @@ type Model struct {
 	// compacting marks an in-flight /compact request: the streamed
 	// response is a summary handled by finishCompact, not conversation text.
 	compacting bool
+	// compactSummary is the last summary a compaction produced, carried so
+	// every save can put it on the slot for the next opening (reopen.go).
+	// Empty is a conversation that never compacted, and nothing here ever
+	// writes one that a compaction did not.
+	compactSummary string
 	// observer receives the session's content-free events; turnCount and
 	// toolDefTokens feed it and /stats.
 	observer      observe.Observer
@@ -1283,12 +1288,12 @@ func (m Model) roundsUnbounded() bool {
 // is the slot the session keeps autosaving to: a resumed conversation grows
 // in place rather than forking into a second copy. An empty name keeps the
 // fresh slot the model was built with.
+//
+// The conversation is told what the checkout looks like now on its way back,
+// which is the one thing a restored transcript cannot say for itself
+// (reopen.go).
 func (m Model) WithResumedMessages(name string, msgs []provider.Message) Model {
-	m.loadConversation(msgs)
-	if name != "" {
-		m.adoptSlot(name)
-		m.loadTitle()
-	}
+	m.resumeConversation(name, msgs)
 	return m
 }
 
@@ -1315,6 +1320,11 @@ func (m Model) autosaveCmd() tea.Cmd {
 		return nil
 	}
 	db, name, title := m.db, m.sessionName, m.titles.title
+	// What the next opening of this conversation starts from: the summary its
+	// last compaction wrote, and the commit the checkout is on now (reopen.go).
+	// The commit is asked for in the command rather than here, because this
+	// runs on the way to a frame and that one does not.
+	summary, dir := m.compactSummary, m.workspace
 	// And the mark saying the conversation is mid-turn, which is what makes
 	// quitting while held and starting again the same place (hold.go). It
 	// rides the save itself rather than a write beside it: the conversation
@@ -1326,7 +1336,10 @@ func (m Model) autosaveCmd() tea.Cmd {
 	if m.observer.Session != nil {
 		m.observer.Session(name)
 	}
-	msgs := m.agent.RequestMessages()
+	// The reading this opening put in front of the conversation is left out
+	// of what the slot keeps: it is rebuilt from the checkout every time the
+	// conversation is opened (reopen.go).
+	msgs := stripResumeContext(m.agent.RequestMessages())
 	return func() tea.Msg {
 		// A slot another session has taken over is not written to; the
 		// store puts the conversation in one of this session's own and
@@ -1340,6 +1353,11 @@ func (m Model) autosaveCmd() tea.Cmd {
 		if title != "" {
 			_ = db.SetChatTitle(slot, title)
 		}
+		// And so does what the conversation is opened again on. The commit is
+		// read here, at the save, so the slot says where the tree was when
+		// this conversation was last written down rather than where it was
+		// when the process started.
+		_ = db.SetChatResume(slot, storage.ChatResume{Summary: summary, Head: project.Head(dir)})
 		if slot != name {
 			return autosaveMovedMsg{from: name, to: slot}
 		}
@@ -4122,7 +4140,7 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		if len(parts) > 1 {
 			name = strings.Join(parts[1:], " ")
 		}
-		if err := m.db.SaveChat(name, m.agent.Messages()); err != nil {
+		if err := m.db.SaveChat(name, stripResumeContext(m.agent.Messages())); err != nil {
 			return true, "Error saving: " + err.Error()
 		}
 		// The generated title goes with the conversation into its named
@@ -4130,6 +4148,12 @@ func (m *Model) handleSlashCommand(text string) (handled bool, result string) {
 		if m.titles.title != "" {
 			_ = m.db.SetChatTitle(name, m.titles.title)
 		}
+		// So does what the conversation is opened again on, for the same
+		// reason: a copy under a name of the person's choosing is the
+		// conversation, and one that came back unable to say which commit it
+		// was written on would be the one copy that could not (reopen.go).
+		_ = m.db.SetChatResume(name, storage.ChatResume{
+			Summary: m.compactSummary, Head: project.Head(m.workspace)})
 		// Future rewind branches hang off the named session.
 		m.adoptSlot(name)
 		return true, fmt.Sprintf("Chat saved as %q", name)
@@ -4181,9 +4205,7 @@ func (m *Model) loadChatByName(name string) string {
 	if err != nil {
 		return "Error: " + err.Error()
 	}
-	m.loadConversation(msgs)
-	m.adoptSlot(name)
-	m.loadTitle()
+	m.resumeConversation(name, msgs)
 	return fmt.Sprintf("Loaded chat %q (%d messages)", name, len(msgs))
 }
 
@@ -4548,6 +4570,10 @@ func (m *Model) startNewSession() (note string, save tea.Cmd) {
 	// stage turn of the next run before it was read.
 	m.todoRunTurn, m.todoRunMark, m.todoRunCancelled = 0, 0, false
 	m.resetSummary()
+	// The handoff belongs to the conversation that was compacted, and this is
+	// a different one: carried across, the new slot would open on a summary of
+	// work its transcript never mentions (reopen.go).
+	m.compactSummary = ""
 	// The edits belong to the conversation that made them: with the turns
 	// renumbered, a review or an undo would otherwise reach into the
 	// conversation before this one.

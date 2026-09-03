@@ -31,6 +31,7 @@ import (
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
@@ -1182,6 +1183,40 @@ func TestGolden_NewSessionRow(t *testing.T) {
 				View: row(newSessionRow(slot, resume, ""))},
 			{Label: "with a backlog run kept at its checkpoint",
 				View: row(newSessionRow(slot, resume, todoRunKeptNote(it, st, "this session ended")))},
+		}
+	})
+}
+
+// TestGolden_ResumedRow captures the row a conversation comes back on: the
+// branch it is looking at and how much is changed, folded, and the reading
+// the conversation was actually given underneath it.
+//
+// Two widths either side of the narrow breakpoint, because the body is the
+// part that has to survive one. The line is a sentence the pane never
+// re-wraps; the body is wrapped rather than clipped, which is what a
+// narrow capture pins — a body that clipped would promise a reading and show
+// half a sentence.
+func TestGolden_ResumedRow(t *testing.T) {
+	captureGolden(t, "resumed-row", "the row a resumed conversation opens on", []int{60, 80}, func(width int) []golden.Panel {
+		row := func(n ResumeNotice, expanded bool) string {
+			m := frameModel(t, width, 40)
+			m.appendEntry(entry{kind: entrySystem, text: n.Notice, toolResult: n.Text, expanded: expanded})
+			return m.renderHistory()
+		}
+		const (
+			was = "a1b2c3d4e5f60718293a4b5c6d7e8f9012345678"
+			now = "e4f5a6b7c8d9e0f1a2b3c4d5e6f708192a3b4c5d"
+		)
+		here := project.Info{Dir: "/w", Repo: true, Branch: "master", Dirty: 3, Head: now}
+		still := resumeNotice(here, storage.ChatResume{Head: now})
+		moved := resumeNotice(here, storage.ChatResume{Head: was,
+			Summary: "The cache work is half done: the lifetime is read from config and honoured on get, " +
+				"and the eviction pass is written but not yet called from anywhere."})
+		return []golden.Panel{
+			{Label: "folded, which is how it opens", View: row(still, false)},
+			{Label: "opened, on a checkout that has not moved", View: row(still, true)},
+			{Label: "opened, on one that moved and with a summary from its last compaction",
+				View: row(moved, true)},
 		}
 	})
 }

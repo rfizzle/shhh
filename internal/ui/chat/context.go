@@ -219,6 +219,13 @@ func (m Model) finishCompact() (tea.Model, tea.Cmd) {
 		m.viewport.GotoBottom()
 		return m, nil
 	}
+	// The handoff a compaction writes is what a later opening of this
+	// conversation is given, so it is kept beside the conversation and put on
+	// the slot by the save at the end of this function (reopen.go). It is
+	// stored rather than written again later: this is the summary the model
+	// was actually asked for, and asking for a second one at quit would be a
+	// request nobody made.
+	m.compactSummary = summary
 	// What survives is decided before the conversation is replaced: the turns
 	// kept verbatim, and the plan's checklist, which is read off a transcript
 	// that is about to be discarded.

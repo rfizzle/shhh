@@ -267,7 +267,9 @@ func TestBranches_ListAndSwitch(t *testing.T) {
 	if handled, res := m.handleSlashCommand("/load " + root); !handled || !strings.Contains(res, "Loaded chat") {
 		t.Fatalf("/load on a branch failed: %q", res)
 	}
-	if len(m.Messages()) != 3 {
+	// The branch's three messages, plus the reading /load puts in front of
+	// any conversation it opens.
+	if len(m.Messages()) != 4 {
 		t.Fatal("/load should replace the conversation with the loaded branch")
 	}
 }
@@ -301,7 +303,10 @@ func TestLoadConversation_RebuildsCheckpoints(t *testing.T) {
 	if len(m.checkpoints) != 2 {
 		t.Fatalf("resumed sessions should have rewind checkpoints, got %d", len(m.checkpoints))
 	}
-	if m.checkpoints[1].index != 3 || m.checkpoints[1].preview != "follow-up" {
+	// Index 3 in the saved conversation, one further along in the one that
+	// was restored: the reading of the checkout went in ahead of it, and a
+	// checkpoint that did not move with it would rewind to the wrong turn.
+	if m.checkpoints[1].index != 4 || m.checkpoints[1].preview != "follow-up" {
 		t.Fatalf("unexpected rebuilt checkpoint: %+v", m.checkpoints[1])
 	}
 }

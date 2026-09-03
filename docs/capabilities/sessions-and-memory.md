@@ -51,6 +51,36 @@ work that was in flight, what was staged, where the session had got to: a
 resume that restored only the visible text would look right and behave like a
 fresh session, which is worse than not resuming at all.
 
+### A resumed session sees the tree as it is
+
+What comes back is a conversation, and a conversation describes the
+repository as it was. That is fine an hour later and dangerous the next
+morning: a pull landed, a branch was switched, another session committed, and
+the transcript now names paths, line numbers and states that were true and are
+not. Nothing in it says so, so the first turn edits a file that moved or
+re-fixes what is already fixed.
+
+So a reopened conversation is handed the checkout as it stands now, in front
+of everything it remembers: the branch, how much is changed, and the commit in
+front of it. Where that commit is not the one the conversation was written
+down on, one line says so and names both — the case where the transcript
+actively misleads is the whole reason the reading exists. The same reading is
+what `/load` gives a conversation opened mid-session, because a conversation
+opened is a conversation opened however it got there.
+
+The reading is not part of the conversation. It is built from the checkout
+every time, the way the system prompt is, so opening the same conversation
+three times tells it about the tree once rather than three times about three
+commits. One folded row accounts for it — the branch and the count on the
+line, what the conversation was actually told underneath.
+
+Where a conversation was compacted, the summary that compaction wrote is kept
+beside it and comes back with it, after the reading. Nothing is summarized to
+fill that in: `/compact` already asks for the goals, the decisions, the work
+done and what is open, and a summarizer run at quit would be a request nobody
+made and nobody waited for. A conversation that never compacted comes back
+with no summary and no placeholder saying there is none.
+
 ### A held turn comes back held
 
 A conversation can be quit with a turn parked at a round boundary rather than

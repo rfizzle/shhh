@@ -1197,6 +1197,61 @@ func TestChatHold_MarkedClearedAndAbsent(t *testing.T) {
 	}
 }
 
+func TestChatResume_RoundTripsAndFollowsTheSlot(t *testing.T) {
+	db := openTestDB(t)
+	msgs := []provider.Message{{Role: provider.RoleUser, Content: "hi"}}
+	if err := db.SaveChat("r", msgs); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+
+	// A slot nothing has written one to answers with both halves empty,
+	// which is every slot written before the columns existed.
+	if got, err := db.ChatResume("r"); err != nil || got != (ChatResume{}) {
+		t.Fatalf("a fresh slot has nothing to resume on, got %+v %v", got, err)
+	}
+
+	want := ChatResume{Summary: "what was decided and what is open", Head: "0123456789abcdef0123456789abcdef01234567"}
+	if err := db.SetChatResume("r", want); err != nil {
+		t.Fatalf("set: %v", err)
+	}
+	if got, err := db.ChatResume("r"); err != nil || got != want {
+		t.Fatalf("resume state = %+v %v, want %+v", got, err, want)
+	}
+
+	// A rename is the same row under another name, so what it is opened on
+	// goes with it.
+	if err := db.RenameChat("r", "renamed"); err != nil {
+		t.Fatalf("rename: %v", err)
+	}
+	if got, err := db.ChatResume("renamed"); err != nil || got != want {
+		t.Fatalf("a rename should carry the resume state, got %+v %v", got, err)
+	}
+
+	// And a branch is a tail of the conversation it forked from, so the
+	// summary and the commit are its own past too.
+	if err := db.SaveChatBranch("renamed", "renamed (branch 1)", msgs); err != nil {
+		t.Fatalf("branch: %v", err)
+	}
+	if got, err := db.ChatResume("renamed (branch 1)"); err != nil || got != want {
+		t.Fatalf("a branch should carry the resume state, got %+v %v", got, err)
+	}
+
+	if err := db.DeleteChat("renamed"); err != nil {
+		t.Fatalf("delete: %v", err)
+	}
+	if got, err := db.ChatResume("renamed"); err != nil || got != (ChatResume{}) {
+		t.Fatalf("a deleted chat has no resume state, got %+v %v", got, err)
+	}
+	if got, err := db.ChatResume("renamed (branch 1)"); err != nil || got != (ChatResume{}) {
+		t.Fatalf("the branch goes with it, got %+v %v", got, err)
+	}
+
+	var missing ChatNotFoundError
+	if err := db.SetChatResume("nobody", want); !errors.As(err, &missing) {
+		t.Fatalf("writing to an unknown slot should say so, got %v", err)
+	}
+}
+
 // Two openers on a store neither has seen — the root's background history
 // purge beside the command's own open — must both come up: the loser waits
 // on the lock and finds the step already recorded rather than applying it

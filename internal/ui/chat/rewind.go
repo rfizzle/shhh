@@ -142,7 +142,7 @@ func (m *Model) rewindToTurn(n int) string {
 	branchNote := "Chat persistence is unavailable, so the abandoned tail was discarded."
 	if m.db != nil {
 		branch := branchName(m.sessionName, n)
-		if err := m.db.SaveChatBranch(m.sessionName, branch, full); err != nil {
+		if err := m.db.SaveChatBranch(m.sessionName, branch, stripResumeContext(full)); err != nil {
 			branchNote = "Failed to preserve the abandoned tail as a branch: " + err.Error()
 		} else {
 			branchNote = fmt.Sprintf("The abandoned tail (%d message(s)) is kept as branch %q — /branches to switch back.", dropped, branch)
@@ -270,7 +270,7 @@ func (m *Model) switchToBranch(target string) string {
 		return fmt.Sprintf("Already on %q.", target)
 	}
 	if len(m.agent.Messages()) > 1 {
-		if err := m.db.SaveChat(m.sessionName, m.agent.Messages()); err != nil {
+		if err := m.db.SaveChat(m.sessionName, stripResumeContext(m.agent.Messages())); err != nil {
 			return "Error saving the current branch before switching: " + err.Error()
 		}
 	}
@@ -283,6 +283,14 @@ func (m *Model) switchToBranch(target string) string {
 	// The title stays: a branch is the same conversation, and the next
 	// autosave stamps it on the branch's row so the listing shows both
 	// members of the family under the same words.
+	//
+	// The handoff does not: it is the summary of one branch's past, and the
+	// next save would otherwise stamp the branch just left onto the branch
+	// just opened, over the one the fork carried there (reopen.go). No
+	// reading of the checkout is taken either, unlike opening a conversation
+	// by name — this is a move inside one sitting, on the tree that sitting
+	// already surveyed, so there is nothing new to say about it.
+	m.compactSummary = storedChatSummary(m.db, target)
 	m.contextTokens = 0
 	m.resetRounds()
 	return fmt.Sprintf("Switched to branch %q (%d messages).", target, len(msgs))

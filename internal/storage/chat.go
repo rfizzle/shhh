@@ -247,6 +247,21 @@ func (db *DB) SaveChatBranch(parentName, branchName string, messages []provider.
 	); err != nil {
 		return fmt.Errorf("link branch to parent: %w", err)
 	}
+	// What the parent is opened again on goes to the branch as well. A branch
+	// is a tail of the conversation it forked from, so the compaction that
+	// wrote that summary is in its own past too, and the commit the fork was
+	// taken at is the commit its transcript describes. Without this a branch
+	// would be the one conversation that comes back with no idea when it was
+	// written down.
+	if _, err := tx.Exec(
+		`UPDATE chat_sessions
+		    SET summary = (SELECT summary FROM chat_sessions WHERE name = ?),
+		        head    = (SELECT head    FROM chat_sessions WHERE name = ?)
+		  WHERE id = ?`,
+		parentName, parentName, branchID,
+	); err != nil {
+		return fmt.Errorf("carry resume state to branch: %w", err)
+	}
 	if err := tx.Commit(); err != nil {
 		return err
 	}
@@ -704,4 +719,47 @@ func (db *DB) ChatTitle(name string) (string, error) {
 		return "", nil
 	}
 	return title, err
+}
+
+// ChatResume is what a slot says about the sitting that left it, beside the
+// conversation itself: the summary the last compaction wrote, and the commit
+// the checkout was on when the slot was last written.
+//
+// Both are for the conversation's next opening rather than for this one.
+// Summary is what a compaction already produced — nothing is summarized to
+// fill it — and Head is what makes the difference between the tree the
+// transcript describes and the tree in front of the reader something the
+// session can state instead of something it has to be told.
+// See docs/capabilities/sessions-and-memory.md#a-resumed-session-sees-the-tree-as-it-is.
+type ChatResume struct {
+	Summary string
+	Head    string
+}
+
+// SetChatResume stores what the slot is opened again on. It is the title's
+// shape and rides beside it on the same save: one write, both halves, so a
+// slot can never carry a summary from one sitting and a commit from another.
+func (db *DB) SetChatResume(name string, r ChatResume) error {
+	res, err := db.sql.Exec(
+		`UPDATE chat_sessions SET summary = ?, head = ? WHERE name = ?`, r.Summary, r.Head, name)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ChatNotFoundError{Name: name}
+	}
+	return nil
+}
+
+// ChatResume reads it back. A slot that never wrote one — every slot written
+// before the columns existed included — answers with both halves empty, which
+// is the answer that opens the conversation the way it always opened.
+func (db *DB) ChatResume(name string) (ChatResume, error) {
+	var r ChatResume
+	err := db.sql.QueryRow(
+		`SELECT summary, head FROM chat_sessions WHERE name = ?`, name).Scan(&r.Summary, &r.Head)
+	if err == sql.ErrNoRows {
+		return ChatResume{}, nil
+	}
+	return r, err
 }

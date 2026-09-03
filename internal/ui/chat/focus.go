@@ -17,9 +17,16 @@ import (
 
 // expandable reports whether a transcript entry has bounded output that focus
 // mode can expand.
+//
+// A notice counts when it carries a body: the resumed row's line is the
+// account of what the conversation was told and its body is what was actually
+// said (reopen.go). A notice that is only its own sentence does not, which is
+// every other notice — a cursor stopping on a row with nothing under it is a
+// press that does nothing.
 func expandable(e entry) bool {
 	return e.kind == entryTool || e.kind == entryCommand || e.kind == entryDiff ||
-		e.kind == entryThink || e.kind == entrySummary
+		e.kind == entryThink || e.kind == entrySummary ||
+		(e.kind == entrySystem && len(outputLines(e)) > 0)
 }
 
 // selectable reports whether focus mode can put its cursor on an entry. It is

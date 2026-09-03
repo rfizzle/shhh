@@ -1041,6 +1041,13 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			if len(resumed) > 0 && resumed[0].Role == provider.RoleSystem {
 				resumed[0].Content = env.sysPrompt
 			}
+			// The conversation is also told what the checkout looks like now,
+			// ahead of everything it remembers: the transcript describes the
+			// tree as it was, and after a pull or a rebase that is not a
+			// stale picture but a misleading one
+			// (docs/capabilities/sessions-and-memory.md#a-resumed-session-sees-the-tree-as-it-is).
+			// A front-end with no model to hang it on asks chat.ResumeContext
+			// for the same reading.
 			model = model.WithResumedMessages(name, resumed)
 			// A conversation the slot says was saved mid-turn comes back
 			// mid-turn. Without this it would open idle with an unanswered
