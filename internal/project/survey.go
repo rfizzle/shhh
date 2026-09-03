@@ -65,9 +65,10 @@ type Info struct {
 	Packages int
 	Unit     string
 	Partial  bool
-	// ContextFiles are the project files read into the system prompt, as
-	// paths relative to Dir where they sit inside it. Empty means the model
-	// was told nothing about this project, which is worth saying out loud.
+	// ContextFiles are the project files read into the system prompt, in the
+	// order the prompt states them — outermost first — as paths relative to
+	// Root where they sit inside it. Empty means the model was told nothing
+	// about this project, which is worth saying out loud.
 	ContextFiles []string
 	// Root is the directory this project's own state is keyed on and
 	// RootDisplay the same path home-abbreviated. It is Dir in the ordinary
@@ -96,10 +97,11 @@ func Survey(dir string) Info {
 	info.Packages, info.Partial = countPackages(dir, info.Language)
 	info.Repo, info.Branch, info.Detached, info.Dirty = surveyGit(dir)
 	// Read from dir, not from the process: a survey of somewhere else that
-	// reported the context file of here would be describing two directories
-	// at once.
-	if path, _ := FindFrom(dir); path != "" {
-		info.ContextFiles = append(info.ContextFiles, relativeTo(dir, path))
+	// reported the context files of here would be describing two directories
+	// at once. The user's own instructions file is not this project's, so it
+	// is not counted among what the project said about itself.
+	for _, ins := range Instructions(dir, "") {
+		info.ContextFiles = append(info.ContextFiles, ins.Display)
 	}
 	info.Root = Root(dir)
 	info.RootDisplay = Abbreviate(info.Root)

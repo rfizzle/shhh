@@ -257,9 +257,15 @@ func startNotes(info StartInfo) []components.StartNote {
 		notes = append(notes, components.StartNote{Label: "root", Value: root,
 			Detail: "the backlog and this project's state are kept here"})
 	}
+	// The names are spelled out because a checkout that has told the model
+	// nothing looks exactly like one that has, and the reader's next move is
+	// to write one of these three files.
 	context := components.StartNote{Label: "context", Value: "nothing read",
-		Detail: "no .shhh/project.md or AGENTS.md up the tree"}
+		Detail: "no " + project.InstructionNames()}
 	if files := info.Project.ContextFiles; len(files) > 0 {
+		// Outermost first, the order the prompt states them in: the last one
+		// named is the one nearest this directory and the one with the last
+		// word.
 		context.Value = strings.Join(files, " · ")
 		context.Detail = "in the system prompt"
 	}

@@ -157,3 +157,28 @@ func splitLines(s string) []string {
 	}
 	return append(out, s[start:])
 }
+
+// A checkout the rest of the field has already instructed has said what it
+// is, so the offer is not made over the top of it.
+func TestNeedsScaffold_ClaudeMdCounts(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "CLAUDE.md"), []byte("build with make\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if NeedsScaffold(dir) {
+		t.Error("a checkout with a CLAUDE.md is offered a template that would say less than the file it has")
+	}
+}
+
+// An offer that cannot be accepted is not made: a context file nobody filled
+// in is no longer read into the prompt, but Scaffold will not write over it.
+func TestNeedsScaffold_ABlankContextFileIsStillAFile(t *testing.T) {
+	dir := t.TempDir()
+	writeContext(t, dir, "")
+	if NeedsScaffold(dir) {
+		t.Fatal("the offer was made over a file Scaffold refuses to replace")
+	}
+	if _, err := Scaffold(dir); err == nil {
+		t.Fatal("Scaffold wrote over an existing file")
+	}
+}

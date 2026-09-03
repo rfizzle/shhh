@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -238,9 +239,9 @@ type sessionEnv struct {
 	// the session, its children and the stamp all see the same set
 	// (prompts.go). Empty fields are the built-in wordings.
 	prompts sessionPrompts
-	// projectTokens is the estimated context cost of the project context
-	// injected into the system prompt, which /stats and the inspector rail
-	// name as its own occupancy category.
+	// projectTokens is the estimated context cost of the project instruction
+	// files injected into the system prompt, which /stats and the inspector
+	// rail name as its own occupancy category.
 	projectTokens int64
 	// survey is the checkout as it stood when the session opened. It is
 	// carried rather than taken again because it costs a tree walk and two
@@ -271,6 +272,24 @@ type sessionEnv struct {
 	switchProvider func(string) error
 }
 
+// userInstructionsPath is the user's own instructions file: instructions.md
+// beside the config file, taken from the first config directory that has
+// one. It is beside the config rather than inside a checkout because it is
+// the user's own writing — what they want of every session, everywhere —
+// so it is read wherever shhh runs and asks nothing of the project.
+//
+// Empty when there is none, which is the ordinary case: this file exists
+// only if someone wrote it.
+func userInstructionsPath() string {
+	for _, p := range config.Paths() {
+		candidate := filepath.Join(filepath.Dir(p), "instructions.md")
+		if st, err := os.Stat(candidate); err == nil && !st.IsDir() {
+			return candidate
+		}
+	}
+	return ""
+}
+
 func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledger) (*sessionEnv, error) {
 	cfg := ConfigFrom(cmd.Context())
 
@@ -295,14 +314,17 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 	// commands will run through, which is the execution shell rather than the
 	// user's (internal/shell).
 	info := shell.DetectExec()
-	// The context file the session's own directory would read, which is the
-	// one the model is being told about.
-	projectContext := project.FindContextFrom(info.Cwd)
+	// The instruction files the session's own directory would read: the
+	// user's own, then the project's from its root down to here. Read once,
+	// here, because the system prompt is built once — a session that re-read
+	// them per turn would be paying for a file nobody edited.
+	instructions := project.Instructions(info.Cwd, userInstructionsPath())
 	// One survey per session, read by both the model and the start screen.
 	// It shells out to git and walks the tree, so the two readers share the
 	// answer rather than each asking.
 	survey := project.Survey("")
-	promptExtra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra, projectContext,
+	instructionBlock := project.InstructionBlock(instructions, prompt.InstructionBudget)
+	promptExtra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra, instructionBlock,
 		project.PromptBlock(survey), session.promptExtra)
 	sysPrompt := session.buildPrompt(info, promptExtra)
 
@@ -419,7 +441,7 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 		sysPrompt:     sysPrompt,
 		prompts:       prompts,
 		survey:        survey,
-		projectTokens: agent.EstimateTokens(projectContext),
+		projectTokens: agent.EstimateTokens(instructionBlock),
 		messages:      messages,
 		stream:        stream,
 		switchModel: func(name string) {

@@ -168,7 +168,7 @@ internal/
   evidence/                Evidence store for quality-gate output
   plan/                    Plan mode state (step tracking)
   resolve/                 Provider resolution from flags/config/env
-  project/                 Project context detection (language, framework, recent files)
+  project/                 The checkout as the session finds it: the survey, and the instruction files it reads root-down
   shell/                   Which shell this platform runs a command line with, and how — the one resolution the prompt and every runner read
   process/                 Background process management (the process tool)
   structural/              Optional external tools integration (ast-grep, fd, jaq, sd, tokei) and the read-only git verbs
@@ -463,6 +463,12 @@ and then `Snapshot()` in spawn order, and `components.InspectorAgent.Focused`
 marks whichever row `attachedTo` names. `Model.sessionMap` is that same order
 as names and `cycleAgent` (`keys.Draft.NextAgent` / `PrevAgent`) steps through
 it via `attach`, so the per-session scroll is kept.
+
+### Project instructions
+
+`internal/project` is what the model is told about the checkout before the first keystroke ([`docs/capabilities/configuration.md#project-context-is-opt-in-and-lives-with-the-project`](docs/capabilities/configuration.md#project-context-is-opt-in-and-lives-with-the-project)). `project.Instructions(dir, user)` collects the set: the user's own file first (`userInstructionsPath` in `internal/cli/session.go` — `instructions.md` beside the config file), then one file per directory from `project.Root(dir)` down to `dir`, the first of `contextFilenames` (`.shhh/project.md`, `AGENTS.md`, `CLAUDE.md`) that exists and is not blank in each. `project.InstructionBlock(files, prompt.InstructionBudget)` renders them under `## <path>` headings and applies the cap, cutting the outermost file first and saying in its heading that it did. `project.FindFrom` still exists and still answers a different question — the nearest single file — which is what `NeedsScaffold` and the fallback for a directory with no root above it use.
+
+Three traps. **The walk is `project.Root`'s, not a second one**: the set stops at the repository root, or with no `.git` at the nearest ancestor holding a `.shhh` directory, and only where there is neither does it fall back to the nearest single file above. **Display paths are stated from the root, never from cwd** — otherwise the same file is named `AGENTS.md` in one session and `../../AGENTS.md` in another opened two directories deeper, and the survey's `ContextFiles`, the start screen's context note and `shhh doctor`'s project row all print that. **The set is read once, at session start**, in `buildSessionEnv`; the system prompt is built once per session and `env.projectTokens` is the estimate of this block, so a per-turn re-read would both cost a syscall and invalidate a cached prefix for a file nobody edited. `@path` imports are not followed: such a line is text.
 
 ### Skills
 

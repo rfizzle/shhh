@@ -165,9 +165,48 @@ A project can carry its own context file, created deliberately — by the
 command that scaffolds one, or by accepting the offer a session makes on
 first contact in a checkout that has none. Neither writes it on the way past.
 
+Most checkouts already carry one, written for something else. A directory's
+instruction file is the first of `.shhh/project.md`, `AGENTS.md` and
+`CLAUDE.md` that is there and says something — one file per directory, so a
+project that keeps the same instructions under two names is not told them
+twice, and shhh's own file wins where a project wants to say something only
+to shhh. Reading only the first of those was the single thing that made a
+repository the rest of the field had already instructed open as if nobody
+had ever written anything down for it.
+
+A session reads them all, from the project root down to the working
+directory, and the user's own `instructions.md` beside the config file ahead
+of all of them. The root is the checkout's, or with no checkout the nearest
+directory above that already keeps shhh's own state; where nothing marks
+where the project begins the nearest single file above is read instead, and
+a boundary something did mark is never climbed past — a sibling checkout's
+instructions are not this one's. Order is the whole of it: outermost first, so the file
+nearest the working directory comes last and has the last word wherever two
+of them disagree. That is the order a model reading top to bottom takes them
+in, and it is what lets a monorepo say how the build works at the root and
+how one service differs inside it, instead of forcing a choice between the
+two. Each file sits under a heading naming its path, so the model can tell
+which instruction came from where, and every surface that names them — the
+start screen's context line, `shhh doctor`'s project row — lists them in the
+same order.
+
+They come with a bound. The set is capped in bytes, and over the cap the
+files farthest from the working directory are cut first, because the nearest
+one describes the directory the session was actually opened in. A cut is
+stated in the heading above the file it happened to: a model following half
+an instruction should be able to see that the other half existed. Nothing
+here follows an `@path` import — a line like that is read as the text it is,
+not as a pointer to another file.
+
+A checkout's instruction files carry exactly the trust its context file
+already carried, and nothing more: they are prose that can only instruct,
+read from the checkout the same way and behind the same gate. The user's
+`instructions.md` is the user's own writing rather than a checkout's, so it
+asks nothing of the project and is read wherever shhh runs.
+
 What a checkout carries layers over what the user has: its agent profiles, its
-MCP servers and its skills, each shadowing the user's by name, and that
-context file. Settings are not yet among them — the settings file is the
+MCP servers and its skills, each shadowing the user's by name, and those
+instruction files. Settings are not yet among them — the settings file is the
 user's alone, and a checkout's copy is not read. When they are, a value the
 checkout overrides will be said so by the surface rather than shown as the
 winner alone — otherwise a user reads their own configuration and cannot see

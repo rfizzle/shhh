@@ -18,6 +18,7 @@ import (
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/migrate"
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/resolve"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -496,6 +497,37 @@ func TestDoctorMemory(t *testing.T) {
 	broken := doctorMemory("/src/shhh", 0, 0, errors.New("no such table"))
 	if broken.State != components.DoctorWarned || broken.Consequence == "" {
 		t.Fatalf("an unreadable memory store says nothing: %+v", broken)
+	}
+}
+
+// The project row lists every instruction file a session here would read, in
+// the order the prompt states them, and names the three it looked for when
+// it found none.
+func TestDoctorProject(t *testing.T) {
+	empty := doctorProject(nil)
+	if empty.State != components.DoctorSkipped || empty.Outcome != "empty" {
+		t.Fatalf("a checkout that has said nothing is reported as a fault: %+v", empty)
+	}
+	for _, name := range []string{".shhh/project.md", "AGENTS.md", "CLAUDE.md"} {
+		if !strings.Contains(empty.Detail, name) {
+			t.Fatalf("the empty row does not name %q: %q", name, empty.Detail)
+		}
+	}
+
+	loaded := doctorProject([]project.Instruction{
+		{Path: "/src/shhh/AGENTS.md"},
+		{Path: "/src/shhh/svc/CLAUDE.md"},
+	})
+	if loaded.State != components.DoctorPassed {
+		t.Fatalf("a checkout with instruction files did not pass: %+v", loaded)
+	}
+	if !strings.Contains(loaded.Subject, "2 instruction files") {
+		t.Fatalf("the row does not count what loaded: %q", loaded.Subject)
+	}
+	root := strings.Index(loaded.Detail, "AGENTS.md")
+	nested := strings.Index(loaded.Detail, "CLAUDE.md")
+	if root < 0 || nested < 0 || root > nested {
+		t.Fatalf("the row does not list both files root first: %q", loaded.Detail)
 	}
 }
 

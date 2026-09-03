@@ -47,6 +47,7 @@ import (
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/migrate"
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/resolve"
@@ -231,6 +232,7 @@ func doctorProbes() []doctorProbe {
 		{name: "sandbox", run: probeSandbox},
 		{name: "engine", run: probeEngine},
 		{name: "git", run: probeGit},
+		{name: "project", run: probeProject},
 		{name: "tools", run: probeTools},
 		{name: "memory", run: probeMemory},
 		{name: "update", run: probeUpdate},
@@ -1068,6 +1070,37 @@ func doctorTools(found, missing, servers []string) doctorFinding {
 	return f
 }
 
+func probeProject(context.Context, config.Config) doctorFinding {
+	dir, err := os.Getwd()
+	if err != nil {
+		dir = ""
+	}
+	return doctorProject(project.Instructions(dir, userInstructionsPath()))
+}
+
+// doctorProject lists the instruction files a session started here would put
+// in its system prompt, in the order it states them. A checkout that has
+// told the model nothing is the ordinary state of a new one rather than a
+// fault, so it is `⊘` with the names it would have read, which is also the
+// only place those names are written down for someone who has not read the
+// manual.
+func doctorProject(files []project.Instruction) doctorFinding {
+	if len(files) == 0 {
+		return doctorFinding{
+			Subject: "nothing read", Detail: "no " + project.InstructionNames(),
+			Outcome: "empty", State: components.DoctorSkipped,
+		}
+	}
+	paths := make([]string, 0, len(files))
+	for _, f := range files {
+		paths = append(paths, shortPath(f.Path))
+	}
+	return doctorFinding{
+		Subject: countOf(len(files), "instruction file", "instruction files"),
+		Detail:  strings.Join(paths, " · "), Outcome: "ok",
+	}
+}
+
 func probeMemory(context.Context, config.Config) doctorFinding {
 	dir, err := os.Getwd()
 	if err != nil {
@@ -1081,19 +1114,19 @@ func probeMemory(context.Context, config.Config) doctorFinding {
 	}
 	defer db.Close()
 	entries, listErr := memory.NewStore(db, memory.ProjectScope(dir)).List()
-	project := 0
+	scoped := 0
 	for _, e := range entries {
 		if e.Scope != memory.GlobalScope {
-			project++
+			scoped++
 		}
 	}
-	return doctorMemory(memory.ProjectScope(dir), project, len(entries)-project, listErr)
+	return doctorMemory(memory.ProjectScope(dir), scoped, len(entries)-scoped, listErr)
 }
 
 // doctorMemory reads durable memory for this project. An empty store
 // is the ordinary state of a new project rather than a fault, so it is `⊘`
 // with the words for it, not a warning.
-func doctorMemory(project string, forProject, global int, err error) doctorFinding {
+func doctorMemory(scope string, forProject, global int, err error) doctorFinding {
 	if err != nil {
 		return doctorFinding{
 			Subject: "memory did not load", Detail: err.Error(),
@@ -1103,7 +1136,7 @@ func doctorMemory(project string, forProject, global int, err error) doctorFindi
 	}
 	if forProject+global == 0 {
 		return doctorFinding{
-			Subject: "nothing remembered yet", Detail: shortPath(project),
+			Subject: "nothing remembered yet", Detail: shortPath(scope),
 			Outcome: "empty", State: components.DoctorSkipped,
 		}
 	}
@@ -1111,7 +1144,7 @@ func doctorMemory(project string, forProject, global int, err error) doctorFindi
 	if global > 0 {
 		detail += " · " + strconv.Itoa(global) + " global"
 	}
-	return doctorFinding{Subject: shortPath(project), Detail: detail, Outcome: "ok"}
+	return doctorFinding{Subject: shortPath(scope), Detail: detail, Outcome: "ok"}
 }
 
 func probeUpdate(context.Context, config.Config) doctorFinding {
@@ -1321,6 +1354,8 @@ func doctorQueuedSubject(name string) string {
 		return "container sandboxes"
 	case "git":
 		return "the workspace, and whether an edit can be undone"
+	case "project":
+		return "the instruction files a session here reads"
 	case "tools":
 		return "the tools and language servers on PATH"
 	case "memory":

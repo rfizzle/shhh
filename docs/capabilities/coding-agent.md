@@ -416,6 +416,27 @@ training cutoff unless something tells it otherwise, and left to that it
 misdates a changelog entry, assumes the newest release it knows of is still
 the newest, and computes a range from the wrong year.
 
+## The agent reads what the project already wrote down
+
+The survey is what shhh worked out about the checkout. The instruction files
+are what someone wrote for whoever works in it, and they are the more
+valuable of the two: they say the things a walk cannot see, and in most
+checkouts they were written before shhh ever ran there. So they are read as
+they are found, whatever tool they were addressed to, rather than only the
+one file shhh names itself.
+
+A session collects them at the root and at every directory down to the one
+it opened in, states them outermost first under headings naming their paths,
+and caps the set in bytes with the outermost cut first. The file list, the
+precedence within a directory, the order, the cap, the trust they carry and
+what a session does with an `@path` line are all one question, answered in
+[`configuration.md#project-context-is-opt-in-and-lives-with-the-project`](configuration.md#project-context-is-opt-in-and-lives-with-the-project).
+
+The reading happens once, at session start, with the rest of the prompt. It
+is a set of files on disk that nobody is editing mid-turn, and re-reading
+them each round would spend a syscall and a cache invalidation on an answer
+that has not changed.
+
 ## The tree can move under a session
 
 The survey is taken once, and a session that is alone in its checkout can

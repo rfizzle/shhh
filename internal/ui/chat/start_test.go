@@ -64,6 +64,27 @@ func TestStartScreen_StatesTheProjectItOpenedIn(t *testing.T) {
 	}
 }
 
+// The context note names every file the prompt was given, in the order it
+// states them, and names the three it looked for when it was given none.
+func TestStartScreen_NamesEveryInstructionFileRead(t *testing.T) {
+	info := startFixture()
+	info.Project.ContextFiles = []string{"AGENTS.md", "svc/CLAUDE.md"}
+	view := startText(startModel(t, info))
+	root := strings.Index(view, "AGENTS.md")
+	nested := strings.Index(view, "svc/CLAUDE.md")
+	if root < 0 || nested < 0 || root > nested {
+		t.Fatalf("the screen does not name both files root first:\n%s", view)
+	}
+
+	info.Project.ContextFiles = nil
+	view = startText(startModel(t, info))
+	for _, want := range []string{"nothing read", ".shhh/project.md", "AGENTS.md", "CLAUDE.md"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("a checkout that said nothing does not say %q:\n%s", want, view)
+		}
+	}
+}
+
 func TestStartScreen_NamesTheGateInEffect(t *testing.T) {
 	view := startText(startModel(t, startFixture()))
 	// The gate governs what runs without an approval, which is why it is on

@@ -50,11 +50,19 @@ func ScaffoldPaths(root, from string) []string {
 // in the state directory's place.
 //
 // It is deliberately the whole question rather than "is there a project.md":
-// a checkout carrying an AGENTS.md has already said what it is, and shhh's
-// own file wins inside a directory, so offering there would replace what the
-// model is reading with a template that says nothing.
+// a checkout carrying an AGENTS.md or a CLAUDE.md has already said what it
+// is, and shhh's own file wins inside a directory, so offering there would
+// replace what the model is reading with a template that says nothing.
 func NeedsScaffold(dir string) bool {
 	if st, err := os.Stat(filepath.Join(dir, StateDir)); err == nil && !st.IsDir() {
+		return false
+	}
+	// A context file that exists and says nothing is not read into the
+	// prompt, but it is still a file, and Scaffold will not write over one.
+	// Without this the offer appears and then refuses itself with "already
+	// exists", which reads as a bug in the offer rather than as the file
+	// nobody filled in.
+	if _, err := os.Stat(filepath.Join(dir, filepath.FromSlash(ContextFile))); err == nil {
 		return false
 	}
 	path, _ := FindFrom(dir)

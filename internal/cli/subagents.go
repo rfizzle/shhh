@@ -182,7 +182,8 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		// The parent's checkout, not the child's worktree: a writer's
 		// worktree is a copy of this one, and the context a child is given
 		// is the context the session it serves was given.
-		extra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra, project.FindContextFrom(root))
+		extra := prompt.CombineExtra(cfg.Behavior.SystemPromptExtra,
+			project.InstructionBlock(project.Instructions(root, userInstructionsPath()), prompt.InstructionBudget))
 
 		var sysPrompt string
 		var defs []provider.Tool

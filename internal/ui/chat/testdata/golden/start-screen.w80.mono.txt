@@ -42,7 +42,7 @@ Some things worth doing first:
 · clean tree · nothing saved, no gate, no project context
 ~/src/shhh · go 1.24 · git main · clean tree · 41 packages
 
-context  nothing read — no .shhh/project.md or AGENTS.md up the tree
+context  nothing read — no .shhh/project.md, AGENTS.md or CLAUDE.md
 gate     not configured — .shhh/quality.json
 
 Some things worth doing first:
@@ -72,7 +72,7 @@ Some things worth doing first:
 · nothing read · the third offer writes the file that would be
 ~/src/shhh · go 1.24 · git main · 3 files changed · 41 packages
 
-context  nothing read — no .shhh/project.md or AGENTS.md up the tree
+context  nothing read — no .shhh/project.md, AGENTS.md or CLAUDE.md
 gate     default — vet, test · runs without asking
 
 Some things worth doing first:
@@ -125,7 +125,7 @@ gate     default — vet, test · runs without asking
 · clean tree · nothing saved, no gate, no project context
 ␛[1;38;5;254m~/src/shhh␛[m␛[38;5;244m · ␛[m␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254mgit main␛[m␛[38;5;244m · ␛[m␛[38;5;254mclean tree␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m
 
-␛[38;5;244mcontext␛[m  ␛[38;5;254mnothing read␛[m␛[38;5;244m — no .shhh/project.md or AGENTS.md up the tree␛[m
+␛[38;5;244mcontext␛[m  ␛[38;5;254mnothing read␛[m␛[38;5;244m — no .shhh/project.md, AGENTS.md or CLAUDE.md␛[m
 ␛[38;5;244mgate   ␛[m  ␛[38;5;254mnot configured␛[m␛[38;5;244m — .shhh/quality.json␛[m
 
 ␛[38;5;244mSome things worth doing first:␛[m
@@ -155,7 +155,7 @@ gate     default — vet, test · runs without asking
 · nothing read · the third offer writes the file that would be
 ␛[1;38;5;254m~/src/shhh␛[m␛[38;5;244m · ␛[m␛[38;5;254mgo 1.24␛[m␛[38;5;244m · ␛[m␛[38;5;254mgit main␛[m␛[38;5;244m · ␛[m␛[38;5;254m3 files changed␛[m␛[38;5;244m · ␛[m␛[38;5;254m41 packages␛[m
 
-␛[38;5;244mcontext␛[m  ␛[38;5;254mnothing read␛[m␛[38;5;244m — no .shhh/project.md or AGENTS.md up the tree␛[m
+␛[38;5;244mcontext␛[m  ␛[38;5;254mnothing read␛[m␛[38;5;244m — no .shhh/project.md, AGENTS.md or CLAUDE.md␛[m
 ␛[38;5;244mgate   ␛[m  ␛[38;5;254mdefault␛[m␛[38;5;244m — vet, test · runs without asking␛[m
 
 ␛[38;5;244mSome things worth doing first:␛[m

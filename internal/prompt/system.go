@@ -23,6 +23,20 @@ var now = time.Now
 // See docs/capabilities/coding-agent.md#the-agent-knows-where-and-when-it-is-standing.
 func today() string { return now().Format("Monday, 2 January 2006") }
 
+// InstructionBudget bounds the bytes of project instruction files one
+// session injects. It is a bound on a runaway set — a deep tree where every
+// directory writes its own file — rather than an editor of any single one:
+// the largest instruction file in this repository is a little under 80KB,
+// and a cap below that would cut the end off the very file the reader was
+// pointed at. At 128KB a project has to write more than a book's chapter
+// before anything is dropped, and when something is, the prompt says which
+// file and how much.
+//
+// The number is bytes rather than tokens because the files are read from
+// disk and never re-read: a session pays for this once, at the head of a
+// prompt the provider caches, so the cheap measurement is the honest one.
+const InstructionBudget = 128 << 10
+
 func Build(info shell.Info, extra ...string) string {
 	return build(info, false, extra...)
 }
