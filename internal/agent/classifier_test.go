@@ -1,7 +1,9 @@
 package agent
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -342,5 +344,47 @@ func TestClassifier_RequestShape(t *testing.T) {
 	}
 	if seen.MaxTokens != DefaultClassifierMaxTokens {
 		t.Errorf("max tokens = %d", seen.MaxTokens)
+	}
+}
+
+// The verdict is asked for twice on one request: as a schema the answer must
+// match, and as the tool a model that takes no schema is offered. The
+// provider picks, so both have to be there — and either way the classifier
+// fails closed when the request itself fails.
+func TestClassifier_OffersASchemaAndTheToolTogether(t *testing.T) {
+	var seen provider.CompletionOpts
+	p := &fakeClassifierProvider{fn: func(_ int, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		seen = opts
+		// What a model answering to a schema sends back: the object alone,
+		// with no tool call under it.
+		return eventsOf(provider.StreamEvent{Token: `{"decision":"deny","reason":"unrelated"}`, Done: true}), nil
+	}}
+	v := NewClassifier(p, ClassifierConfig{Model: "m"}).Judge(context.Background(), testRequest())
+	if v.Failed || v.Decision != Deny || v.Reason != "unrelated" {
+		t.Fatalf("a schema-shaped answer should be read, got %+v", v)
+	}
+	if seen.ResponseSchema == nil || seen.ResponseSchema.Name != DecisionToolName {
+		t.Fatalf("response schema = %+v", seen.ResponseSchema)
+	}
+	if !bytes.Equal(seen.ResponseSchema.Schema, decisionSchema) {
+		t.Errorf("the schema and the tool describe one shape, got %s", seen.ResponseSchema.Schema)
+	}
+	if len(seen.Tools) != 1 || seen.Tools[0].Name != DecisionToolName {
+		t.Errorf("the tool must still be offered, got %+v", seen.Tools)
+	}
+	// Strict validation is refused on a schema that leaves an object open.
+	var shape map[string]any
+	if err := json.Unmarshal(decisionSchema, &shape); err != nil {
+		t.Fatal(err)
+	}
+	if shape["additionalProperties"] != false {
+		t.Errorf("the schema must close, got %v", shape)
+	}
+
+	failing := &fakeClassifierProvider{fn: func(int, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		return nil, errors.New("503 overloaded")
+	}}
+	if v := NewClassifier(failing, ClassifierConfig{Model: "m"}).Judge(context.Background(), testRequest()); v.Decision != Ask || !v.Failed {
+		t.Fatalf("a provider error still fails closed, got %+v", v)
 	}
 }

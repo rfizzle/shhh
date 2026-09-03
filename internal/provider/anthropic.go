@@ -93,7 +93,10 @@ func applyAnthropicThinking(params *anthropic.MessageNewParams, effort Effort, m
 	}
 	if caps.Adaptive || !caps.Known {
 		params.Thinking = anthropic.ThinkingConfigParamUnion{OfAdaptive: &anthropic.ThinkingConfigAdaptiveParam{}}
-		params.OutputConfig = anthropic.OutputConfigParam{Effort: anthropic.OutputConfigEffort(effort.String())}
+		// The one field, not the whole object: the output configuration
+		// also carries the schema an answer is asked to match, and
+		// assigning over it would drop whichever of the two was set first.
+		params.OutputConfig.Effort = anthropic.OutputConfigEffort(effort.String())
 		return
 	}
 	// A ceiling with no room left under the answer floor asks for no
@@ -135,7 +138,11 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 	}
 	params.Messages = converted
 
-	if len(opts.Tools) > 0 {
+	// One or the other, never both (provider.go). Here the schema joins the
+	// effort in the output configuration rather than displacing it.
+	if schema := opts.SchemaFor(model); schema != nil {
+		params.OutputConfig.Format = anthropicOutputFormat(schema.Schema)
+	} else if len(opts.Tools) > 0 {
 		params.Tools = toAnthropicTools(opts.Tools)
 		if choice, ok := toAnthropicToolChoice(opts.ToolChoice); ok {
 			params.ToolChoice = choice
@@ -443,6 +450,21 @@ func anthropicInputSchema(raw json.RawMessage) anthropic.ToolInputSchemaParam {
 		return anthropic.ToolInputSchemaParam{}
 	}
 	return anthropic.ToolInputSchemaParam{ExtraFields: fields}
+}
+
+// anthropicOutputFormat puts the schema an answer must match on the request
+// as it was written, for the same reason anthropicInputSchema does it for a
+// tool: rebuilding a schema from the keys a struct has fields for drops the
+// rest of it, and the model is then promised a shape looser than the one it
+// will be validated against. Anything that is not an object is refused
+// before it gets here (provider.go), and the empty format this would send
+// is the safer answer if it ever does.
+func anthropicOutputFormat(raw json.RawMessage) anthropic.JSONOutputFormatParam {
+	var fields map[string]any
+	if err := json.Unmarshal(raw, &fields); err != nil {
+		return anthropic.JSONOutputFormatParam{}
+	}
+	return anthropic.JSONOutputFormatParam{Schema: fields}
 }
 
 // toAnthropicToolChoice renders what the request says about calling a tool,

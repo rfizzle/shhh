@@ -554,3 +554,60 @@ func TestToOpenAIMessages_ToolResultStaysAString(t *testing.T) {
 		t.Errorf("expected the notice as the content, got %q", msgs[0].Content)
 	}
 }
+
+// A model that takes a schema is sent the schema and no tools; one that does
+// not is sent the tools it was always sent. Both requests come from the same
+// caller, which offers both and knows nothing about either model.
+func TestOpenAI_SchemaReplacesTheToolsWhereTheModelTakesOne(t *testing.T) {
+	var body map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body = nil
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "data: [DONE]\n\n")
+	}))
+	defer srv.Close()
+
+	opts := CompletionOpts{
+		Tools:          []Tool{{Name: "decide", Parameters: json.RawMessage(`{"type":"object"}`)}},
+		ToolChoice:     ToolChoiceAuto,
+		ResponseSchema: &ResponseSchema{Name: "verdict", Schema: json.RawMessage(`{"type":"object","additionalProperties":false}`)},
+	}
+
+	ch, err := newTestOpenAI(srv.URL+"/v1", "gpt-4o").StreamCompletion(context.Background(),
+		[]Message{{Role: RoleUser, Content: "hi"}}, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range ch {
+	}
+	format, _ := body["response_format"].(map[string]any)
+	if format == nil || format["type"] != "json_schema" {
+		t.Fatalf("expected a json_schema response format, got %v", body["response_format"])
+	}
+	schema, _ := format["json_schema"].(map[string]any)
+	if schema["name"] != "verdict" || schema["strict"] != true {
+		t.Errorf("schema must be named and strict, got %v", schema)
+	}
+	if _, ok := schema["schema"].(map[string]any); !ok {
+		t.Errorf("the schema itself must travel, got %v", schema["schema"])
+	}
+	if _, ok := body["tools"]; ok {
+		t.Error("a request carrying a schema must not also offer tools")
+	}
+
+	// gpt-3.5 predates the field; the tools are what it gets.
+	ch, err = newTestOpenAI(srv.URL+"/v1", "gpt-3.5-turbo").StreamCompletion(context.Background(),
+		[]Message{{Role: RoleUser, Content: "hi"}}, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for range ch {
+	}
+	if _, ok := body["response_format"]; ok {
+		t.Errorf("a model without structured output must be sent no format, got %v", body["response_format"])
+	}
+	if tools, _ := body["tools"].([]any); len(tools) != 1 || body["tool_choice"] != "auto" {
+		t.Errorf("the tool path must be untouched, got tools=%v choice=%v", body["tools"], body["tool_choice"])
+	}
+}

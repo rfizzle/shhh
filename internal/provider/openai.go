@@ -91,7 +91,20 @@ func (o *OpenAI) StreamCompletion(ctx context.Context, messages []Message, opts 
 	if effort := opts.Effort.Fit(CapabilitiesFor(req.Model)).OpenAIEffort(); effort != "" {
 		req.ReasoningEffort = effort
 	}
-	if len(opts.Tools) > 0 {
+	// One or the other, never both (provider.go). Strict is on because that
+	// is the whole point of asking here — the answer is validated against
+	// the schema before it is sent — and it is why the schemas callers
+	// declare close every object and require every key they name.
+	if schema := opts.SchemaFor(req.Model); schema != nil {
+		req.ResponseFormat = &openai.ChatCompletionResponseFormat{
+			Type: openai.ChatCompletionResponseFormatTypeJSONSchema,
+			JSONSchema: &openai.ChatCompletionResponseFormatJSONSchema{
+				Name:   schema.Name,
+				Schema: schema.Schema,
+				Strict: true,
+			},
+		}
+	} else if len(opts.Tools) > 0 {
 		req.Tools = toOpenAITools(opts.Tools)
 		if opts.ToolChoice != "" {
 			req.ToolChoice = opts.ToolChoice

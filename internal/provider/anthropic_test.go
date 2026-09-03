@@ -689,3 +689,64 @@ func TestToAnthropicMessages_ToolResultWithoutAnImageIsTextAlone(t *testing.T) {
 		t.Error("an error result should still be marked as one")
 	}
 }
+
+// The Messages API carries the schema under the output configuration that
+// already carries the thinking effort, so the two have to survive each other.
+func TestAnthropic_SchemaRidesTheOutputConfigBesideTheEffort(t *testing.T) {
+	var body map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		raw, _ := io.ReadAll(r.Body)
+		body = nil
+		_ = json.Unmarshal(raw, &body)
+		w.Header().Set("Content-Type", "text/event-stream")
+		sseEvent(w, "message_start", `{"type":"message_start","message":{"id":"m","type":"message","role":"assistant","content":[],"model":"claude-opus-5","usage":{"input_tokens":1,"output_tokens":1}}}`)
+		sseEvent(w, "message_stop", `{"type":"message_stop"}`)
+	}))
+	defer srv.Close()
+
+	p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
+	msgs := []Message{{Role: RoleUser, Content: "hi"}}
+	opts := CompletionOpts{
+		Effort:         EffortLow,
+		Tools:          []Tool{{Name: "decide", Parameters: json.RawMessage(`{"type":"object","properties":{}}`)}},
+		ToolChoice:     ToolChoiceAuto,
+		ResponseSchema: &ResponseSchema{Name: "verdict", Schema: json.RawMessage(`{"type":"object","additionalProperties":false}`)},
+	}
+
+	events, err := p.StreamCompletion(context.Background(), msgs, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _, _, _ = drainAnthropic(t, events)
+	config, _ := body["output_config"].(map[string]any)
+	if config == nil || config["effort"] != "low" {
+		t.Fatalf("the effort must survive the schema, got %v", body["output_config"])
+	}
+	format, _ := config["format"].(map[string]any)
+	if format == nil || format["type"] != "json_schema" {
+		t.Fatalf("format = %v", config["format"])
+	}
+	if schema, _ := format["schema"].(map[string]any); schema["additionalProperties"] != false {
+		t.Errorf("the schema must travel whole, got %v", format["schema"])
+	}
+	if _, ok := body["tools"]; ok {
+		t.Error("a request carrying a schema must not also offer tools")
+	}
+
+	// A generation that predates the field keeps the tools and the choice.
+	opts.Model = "claude-3-5-sonnet-20241022"
+	events, err = p.StreamCompletion(context.Background(), msgs, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _, _, _ = drainAnthropic(t, events)
+	if config, _ := body["output_config"].(map[string]any); config["format"] != nil {
+		t.Errorf("a model without structured output must be sent no format, got %v", body["output_config"])
+	}
+	if _, ok := body["tools"]; !ok {
+		t.Error("the tool path must be untouched")
+	}
+}

@@ -45,3 +45,43 @@ func TestFamilyCapabilities(t *testing.T) {
 		}
 	}
 }
+
+// The table has no column for structured output, so the family floor answers
+// that one even for a model the table describes. Without this a table entry
+// would read as "takes no schema" for nearly every model there is.
+func TestCapabilitiesFor_TheFloorAnswersStructuredOutput(t *testing.T) {
+	SetCapabilityLookup(func(model string) (Capabilities, bool) {
+		return Capabilities{Reasoning: true, Adaptive: true}, true
+	})
+	defer SetCapabilityLookup(nil)
+
+	if c := CapabilitiesFor("claude-opus-5"); !c.StructuredOutputs {
+		t.Errorf("a described model still takes a schema, got %+v", c)
+	}
+	if c := CapabilitiesFor("claude-3-5-sonnet"); c.StructuredOutputs {
+		t.Errorf("a generation that predates the field takes none, got %+v", c)
+	}
+}
+
+func TestFamilyCapabilities_StructuredOutput(t *testing.T) {
+	takes := []string{
+		"claude-opus-5", "claude-fable-5", "claude-opus-4-6", "claude-haiku-4-5",
+		"gpt-4o-mini", "gpt-4.1", "gpt-5", "gpt-5.2", "o4-mini", "gemini-2.5-pro",
+		"gemini-3-pro",
+	}
+	for _, model := range takes {
+		if !familyCapabilities(model).StructuredOutputs {
+			t.Errorf("%s should take a schema", model)
+		}
+	}
+	// The generations under the field, and everything nothing describes:
+	// an endpoint serving a name no table has seen is sent the tools.
+	refuses := []string{"claude-3-5-sonnet", "claude-sonnet-4-20250514", "claude-3-7-sonnet",
+		"gpt-4-turbo", "gpt-3.5-turbo", "chatgpt-4o-latest", "gemini-2.0-flash",
+		"gemini-1.0-pro", "llama3"}
+	for _, model := range refuses {
+		if familyCapabilities(model).StructuredOutputs {
+			t.Errorf("%s should be sent no schema", model)
+		}
+	}
+}

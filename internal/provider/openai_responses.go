@@ -98,6 +98,25 @@ type responsesRequest struct {
 	// Reasoning is sent only when the session asked for a level:
 	// the Responses API serves non-reasoning models too, and they reject it.
 	Reasoning *responsesReasoning `json:"reasoning,omitempty"`
+	// Text carries the structured-output format. This API keeps it beside
+	// the answer's other text settings rather than in a `response_format`
+	// of its own, which is where chat completions puts the same thing.
+	Text *responsesText `json:"text,omitempty"`
+}
+
+// responsesText and responsesTextFormat are the schema an answer is asked to
+// match. Strict is the reason to ask at all: the answer is validated before
+// it is sent, and a schema that does not close every object and require
+// every key is refused rather than validated loosely.
+type responsesText struct {
+	Format responsesTextFormat `json:"format"`
+}
+
+type responsesTextFormat struct {
+	Type   string          `json:"type"`
+	Name   string          `json:"name"`
+	Schema json.RawMessage `json:"schema"`
+	Strict bool            `json:"strict"`
 }
 
 // responsesReasoning is the reasoning object: a named effort, which is the
@@ -154,10 +173,22 @@ func (o *OpenAIResponses) StreamCompletion(ctx context.Context, messages []Messa
 		// shhh sends the whole conversation every turn, so there is nothing
 		// to gain from server-side retention.
 		Store:       false,
-		Tools:       toResponsesTools(opts.Tools),
-		ToolChoice:  opts.ToolChoice,
 		Temperature: opts.Temperature,
 		MaxOutput:   opts.MaxTokens,
+	}
+	// One or the other, never both (provider.go). The tool choice goes with
+	// the tools: it is a sentence about calling one, and there is nothing
+	// to call on a request that asked for an object instead.
+	if schema := opts.SchemaFor(model); schema != nil {
+		req.Text = &responsesText{Format: responsesTextFormat{
+			Type:   "json_schema",
+			Name:   schema.Name,
+			Schema: schema.Schema,
+			Strict: true,
+		}}
+	} else {
+		req.Tools = toResponsesTools(opts.Tools)
+		req.ToolChoice = opts.ToolChoice
 	}
 	// Fitted to the model: a rung it lacks becomes the highest it has, and
 	// a model with no reasoning gets no field.

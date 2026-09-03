@@ -360,3 +360,50 @@ func TestOpenAIResponses_SendsReasoningOnlyWhenAsked(t *testing.T) {
 		t.Fatalf("expected reasoning effort high, got %+v", high.Reasoning)
 	}
 }
+
+// This API puts the schema under the answer's text settings, and the tool
+// choice goes with the tools it is a sentence about.
+func TestOpenAIResponses_SchemaGoesUnderTheTextFormat(t *testing.T) {
+	events := []string{`data: {"type":"response.completed","response":{"status":"completed","output":[]}}`}
+	opts := CompletionOpts{
+		Tools:          []Tool{{Name: "decide", Parameters: json.RawMessage(`{"type":"object"}`)}},
+		ToolChoice:     ToolChoiceAuto,
+		ResponseSchema: &ResponseSchema{Name: "verdict", Schema: json.RawMessage(`{"type":"object","additionalProperties":false}`)},
+	}
+
+	var withSchema responsesRequest
+	p := newTestResponses(responsesServer(t, events, &withSchema).URL, "gpt-5.6-terra")
+	ch, err := p.StreamCompletion(context.Background(), []Message{{Role: RoleUser, Content: "hi"}}, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, err := collect(t, ch); err != nil {
+		t.Fatal(err)
+	}
+	if withSchema.Text == nil {
+		t.Fatal("expected a text format on the request")
+	}
+	f := withSchema.Text.Format
+	if f.Type != "json_schema" || f.Name != "verdict" || !f.Strict || len(f.Schema) == 0 {
+		t.Errorf("format = %+v", f)
+	}
+	if len(withSchema.Tools) != 0 || withSchema.ToolChoice != "" {
+		t.Errorf("a schema request carries no tools and no choice, got %+v / %q", withSchema.Tools, withSchema.ToolChoice)
+	}
+
+	var withTools responsesRequest
+	p = newTestResponses(responsesServer(t, events, &withTools).URL, "gpt-3.5-turbo")
+	ch, err = p.StreamCompletion(context.Background(), []Message{{Role: RoleUser, Content: "hi"}}, opts)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, _, _, err := collect(t, ch); err != nil {
+		t.Fatal(err)
+	}
+	if withTools.Text != nil {
+		t.Errorf("a model without structured output must be sent no format, got %+v", withTools.Text)
+	}
+	if len(withTools.Tools) != 1 || withTools.ToolChoice != ToolChoiceAuto {
+		t.Errorf("the tool path must be untouched, got %+v / %q", withTools.Tools, withTools.ToolChoice)
+	}
+}

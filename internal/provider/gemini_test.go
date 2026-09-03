@@ -502,3 +502,51 @@ func TestToGeminiContents_ToolResultWithoutAnImageCarriesNoParts(t *testing.T) {
 		t.Errorf("expected no media parts, got %+v", resp.Parts)
 	}
 }
+
+// The schema goes in the JSON Schema field with the mime type beside it —
+// the older schema field is an OpenAPI subset that drops the keys a strict
+// schema is made of, and the schema is ignored without the mime type. This
+// is the dialect that refuses a schema and function declarations together,
+// so the request carries one or the other and never the pair.
+func TestApplyGeminiRequestShape(t *testing.T) {
+	opts := CompletionOpts{
+		Tools:      []Tool{{Name: "decide", Parameters: json.RawMessage(`{"type":"object"}`)}},
+		ToolChoice: ToolChoiceAuto,
+		ResponseSchema: &ResponseSchema{
+			Name:   "verdict",
+			Schema: json.RawMessage(`{"type":"object","properties":{"decision":{"type":"string"}},"required":["decision"],"additionalProperties":false}`),
+		},
+	}
+
+	config := &genai.GenerateContentConfig{}
+	applyGeminiRequestShape(config, opts, "gemini-3-pro")
+	if config.ResponseMIMEType != "application/json" {
+		t.Errorf("mime type = %q", config.ResponseMIMEType)
+	}
+	if config.ResponseSchema != nil {
+		t.Error("the OpenAPI-subset field must stay empty; the API refuses both at once")
+	}
+	schema, ok := config.ResponseJsonSchema.(map[string]any)
+	if !ok {
+		t.Fatalf("schema = %#v", config.ResponseJsonSchema)
+	}
+	if schema["additionalProperties"] != false {
+		t.Errorf("the schema must travel whole, got %v", schema)
+	}
+	if len(config.Tools) != 0 || config.ToolConfig != nil {
+		t.Errorf("a schema request carries no declarations, got %+v / %+v", config.Tools, config.ToolConfig)
+	}
+
+	// A generation that takes no schema is sent the tools it always was.
+	config = &genai.GenerateContentConfig{}
+	applyGeminiRequestShape(config, opts, "gemini-2.0-flash")
+	if config.ResponseMIMEType != "" || config.ResponseJsonSchema != nil {
+		t.Errorf("no schema should go out, got %q / %#v", config.ResponseMIMEType, config.ResponseJsonSchema)
+	}
+	if len(config.Tools) != 1 || config.ToolConfig == nil {
+		t.Fatalf("the tool path must be untouched, got %+v / %+v", config.Tools, config.ToolConfig)
+	}
+	if config.ToolConfig.FunctionCallingConfig.Mode != genai.FunctionCallingConfigModeAuto {
+		t.Errorf("mode = %v", config.ToolConfig.FunctionCallingConfig.Mode)
+	}
+}

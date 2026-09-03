@@ -76,12 +76,7 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 		b := int32(budget)
 		config.ThinkingConfig = &genai.ThinkingConfig{ThinkingBudget: &b}
 	}
-	if len(opts.Tools) > 0 {
-		config.Tools = toGeminiTools(opts.Tools)
-		if opts.ToolChoice != "" {
-			config.ToolConfig = toGeminiToolConfig(opts.ToolChoice)
-		}
-	}
+	applyGeminiRequestShape(config, opts, model)
 
 	ch := make(chan StreamEvent)
 	go func() {
@@ -369,6 +364,32 @@ func toGeminiTools(tools []Tool) []*genai.Tool {
 		}
 	}
 	return []*genai.Tool{{FunctionDeclarations: decls}}
+}
+
+// applyGeminiRequestShape puts either the answer's schema or the tools on
+// the config — never both. This is the dialect that decides that for all of
+// them: it refuses a request carrying function declarations and a response
+// schema together, so the pair cannot be something a caller is allowed to
+// send anywhere.
+//
+// The schema goes in the JSON Schema field rather than the older one beside
+// it: that one is an OpenAPI subset and drops the keys a strict schema is
+// made of. The mime type is not optional decoration — the schema is ignored
+// without it — and the schema's name has nowhere to go here, which is why
+// the neutral form carries a name this dialect never sends.
+func applyGeminiRequestShape(config *genai.GenerateContentConfig, opts CompletionOpts, model string) {
+	if schema := opts.SchemaFor(model); schema != nil {
+		config.ResponseMIMEType = "application/json"
+		config.ResponseJsonSchema = jsonSchemaToAny(schema.Schema)
+		return
+	}
+	if len(opts.Tools) == 0 {
+		return
+	}
+	config.Tools = toGeminiTools(opts.Tools)
+	if opts.ToolChoice != "" {
+		config.ToolConfig = toGeminiToolConfig(opts.ToolChoice)
+	}
 }
 
 func toGeminiToolConfig(choice string) *genai.ToolConfig {

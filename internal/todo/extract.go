@@ -5,12 +5,13 @@ package todo
 // they go back to the front-end, which shows them and writes only what the
 // person accepts. See docs/capabilities/todo.md#a-session-proposes-you-accept.
 //
-// It is the session summarizer's shape: one request, a tool the model is
-// asked to call with structured output, a text fallback for a provider that
-// cannot call tools, and a digest that is treated as untrusted DATA. What
-// the digest carries is what the person and the model said and what tools
-// were called — never a tool's own output, so a fetched page or a test's
-// stdout cannot write an item into the project's backlog.
+// It is the session summarizer's shape: one request that asks for the items
+// in a fixed shape — as a schema the answer must match where the model takes
+// one, as a tool to call where it does not — a parser that reads either, and
+// a digest that is treated as untrusted DATA. What the digest carries is
+// what the person and the model said and what tools were called — never a
+// tool's own output, so a fetched page or a test's stdout cannot write an
+// item into the project's backlog.
 
 import (
 	"context"
@@ -146,9 +147,15 @@ For each item give:
 - notes: decisions already made in the session that the implementer must honour, and open questions.
 - depends_on: titles of other items in this same list that must land first, or slugs from the existing backlog. Empty when none.
 
-Call the ` + ExtractToolName + ` tool exactly once with every item. If you cannot call tools, reply with only a JSON object of the same shape: {"items": [...]}.`
+Call the ` + ExtractToolName + ` tool exactly once with every item. If no tool is offered, reply with only a JSON object of the same shape: {"items": [...]}.`
 
-// extractSchema is the JSON schema of the proposals.
+// extractSchema is the shape of a reading: the proposal tool's arguments,
+// and the object the answer itself is validated against where the model can
+// be told to match one. Every object closes and names every key it has,
+// because the strict validation two dialects offer is refused on a schema
+// that leaves either open — so a section a reading has nothing to put in
+// comes back as an empty list rather than as a missing key, which is the
+// same thing to a parser that clamps every section anyway.
 var extractSchema = json.RawMessage(`{
 	"type": "object",
 	"properties": {
@@ -168,11 +175,14 @@ var extractSchema = json.RawMessage(`{
 					"notes": {"type": "array", "items": {"type": "string"}},
 					"depends_on": {"type": "array", "items": {"type": "string"}}
 				},
-				"required": ["title", "kind", "priority", "size", "acceptance_criteria"]
+				"required": ["title", "kind", "priority", "size", "story",
+					"acceptance_criteria", "tasks", "tests", "notes", "depends_on"],
+				"additionalProperties": false
 			}
 		}
 	},
-	"required": ["items"]
+	"required": ["items"],
+	"additionalProperties": false
 }`)
 
 // Extract takes one reading. Anything short of at least one parsed proposal
@@ -230,6 +240,15 @@ func (e *Extractor) readOnce(ctx context.Context, instructions, digest string) (
 		// off would leave the depth to the model, and the ceiling is shared
 		// with the answer.
 		Effort: provider.EffortLow,
+		// The proposals are asked for twice and sent once: a model that can
+		// be told to answer in a shape is sent the schema and no tools, and
+		// what comes back is read by the same parser that reads a model's
+		// prose; any other model is offered the tool, as before. Which of
+		// the two goes out is the provider's judgement, so a reading taken
+		// through an endpoint that has never heard of a schema is the
+		// reading that was always taken there.
+		// See docs/capabilities/providers.md#a-bounded-call-asks-for-the-shape-of-its-answer.
+		ResponseSchema: &provider.ResponseSchema{Name: ExtractToolName, Schema: extractSchema},
 		Tools: []provider.Tool{{
 			Name:        ExtractToolName,
 			Description: "Propose the backlog items a session leaves behind.",

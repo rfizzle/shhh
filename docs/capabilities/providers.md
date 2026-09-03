@@ -120,6 +120,71 @@ Naming the model explicitly still wins. A session that puts a model in the
 classifier or summary setting gets that model, which is what a person reaches
 for when the small one is judging badly.
 
+## A bounded call asks for the shape of its answer
+
+The permission classifier and the reading that turns a session into backlog
+items do not want prose. Each wants one object with named fields, and each
+has always asked for it the same way: describe a tool, offer it, and read the
+arguments the model wrote into the call. Where the model answered in text
+instead, a parser looks for the object in what it said.
+
+Describing a tool was a way of spelling a schema, not a request to do
+anything. Every dialect now has a field that spells one outright, and the
+answer is checked against it before it is sent — so a missing key, an
+invented one or a truncated brace is not something the reader has to handle
+at all. Where that field exists it is the better ask.
+
+So a bounded call offers both, on the same request, and the provider chooses:
+a model that takes a schema is sent the schema and no tools, and every other
+model is sent the tools, exactly as before. The caller never has to know
+which kind of model it drew. That is what makes the fallback free — nothing
+is switched off where a schema cannot be used, because the path that was
+there is still the path, down to the parser that reads the reply.
+
+**A schema and tools are alternatives, never a pair.** One dialect refuses
+the two together outright, and on the ones that accept them the model may
+answer with a call the schema does not describe, which is the failure the
+schema was asked for in order to prevent. So a request carries one or the
+other, and the schema wins where it can be used, because it is the more
+specific of the two.
+
+What goes out is worth saying per dialect, since they agree on nothing but
+the idea. Chat completions and the Responses API each take a named schema
+with strict validation switched on, in differently-placed fields. Gemini
+takes the schema beside a declaration that the answer is JSON, and ignores
+the schema without it; it has nowhere to put a name, so the name it is given
+is not sent. The Messages API takes it under the same output configuration
+that carries the thinking effort, so the schema and the level have to be able
+to arrive on one request without displacing each other.
+
+Strict is why the schemas a bounded call declares close every object and
+require every key: strict validation is refused on a schema that leaves
+either open, and a section a reading has nothing to put in comes back as an
+empty list rather than as an absent key. The tool path is just as happy with
+a closed schema, so there is one schema per call and not two.
+
+The providers that point at somebody else's endpoint — a local runtime, a
+gateway speaking one of the OpenAI shapes — are sent no schema, for the
+reason they are sent no reasoning effort either: what answers there is
+whatever the operator installed, and a field it has never heard of is a
+refused request rather than a looser answer. They keep the tool.
+
+Which models take a schema is decided where the thinking level and the output
+ceiling are decided, from the same description of the model. The one
+difference is that the downloaded table has no column for it, so that answer
+comes from the by-family floor even for a model the table otherwise
+describes — a field nobody fills reads as "no", and "no" for every model the
+table knows would be the feature switched off by silence.
+
+What "takes a schema" means is narrower than it sounds: it is a claim about
+the request that actually goes out, not about the vendor's feature list. A
+generation that constrains an answer only through a field shhh does not
+write is a generation that takes no schema here, and it gets the tools. So a
+model nothing recognises gets the tools too, and that is the right way
+round — the tools are what every model takes, while a schema sent to a model
+that cannot take one is a refused request, and one of those two mistakes is
+free.
+
 ## Model data is fetched, and a snapshot ships
 
 One public table carries what shhh needs to know about a model: what it

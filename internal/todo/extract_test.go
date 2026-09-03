@@ -1,7 +1,9 @@
 package todo
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
@@ -145,4 +147,56 @@ func TestParseProposals_Bounds(t *testing.T) {
 	if _, ok := ParseProposals("not json"); ok {
 		t.Error("garbage parsed")
 	}
+}
+
+// The reading is asked for twice on one request — as a schema the answer
+// must match and as the tool a model that takes no schema is offered — and
+// the two describe one shape. A model answering to the schema sends the
+// object alone, which the same parser reads.
+func TestExtract_OffersASchemaAndTheToolTogether(t *testing.T) {
+	fp := &fakeProvider{events: []provider.StreamEvent{{Token: proposalsJSON}}}
+	r := NewExtractor(fp, ExtractConfig{Model: "m"}).Extract(context.Background(), ExtractRequest{})
+	if r.Failed || len(r.Proposals) != 2 {
+		t.Fatalf("result = %+v", r)
+	}
+	if fp.got.ResponseSchema == nil || fp.got.ResponseSchema.Name != ExtractToolName {
+		t.Fatalf("response schema = %+v", fp.got.ResponseSchema)
+	}
+	if !bytes.Equal(fp.got.ResponseSchema.Schema, extractSchema) {
+		t.Errorf("the schema and the tool describe one shape, got %s", fp.got.ResponseSchema.Schema)
+	}
+	if len(fp.got.Tools) != 1 || fp.got.Tools[0].Name != ExtractToolName {
+		t.Errorf("the tool must still be offered, got %+v", fp.got.Tools)
+	}
+}
+
+// Strict validation is refused on a schema that leaves an object open or
+// names a key it does not require, so every object in this one does both.
+func TestExtractSchema_ClosesAndRequiresEverything(t *testing.T) {
+	var shape map[string]any
+	if err := json.Unmarshal(extractSchema, &shape); err != nil {
+		t.Fatal(err)
+	}
+	var walk func(node map[string]any, path string)
+	walk = func(node map[string]any, path string) {
+		if node["type"] == "object" {
+			props, _ := node["properties"].(map[string]any)
+			required, _ := node["required"].([]any)
+			if node["additionalProperties"] != false {
+				t.Errorf("%s: the object must close", path)
+			}
+			if len(required) != len(props) {
+				t.Errorf("%s: %d of %d keys are required", path, len(required), len(props))
+			}
+			for name, child := range props {
+				if c, ok := child.(map[string]any); ok {
+					walk(c, path+"."+name)
+				}
+			}
+		}
+		if items, ok := node["items"].(map[string]any); ok {
+			walk(items, path+"[]")
+		}
+	}
+	walk(shape, "")
 }

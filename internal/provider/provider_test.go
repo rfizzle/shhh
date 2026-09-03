@@ -159,3 +159,30 @@ func TestToolSchema_NestedArraySurvivesEveryDialect(t *testing.T) {
 		}
 	}
 }
+
+// The judge lives on the request, so every dialect asks the same question
+// and a caller can offer a schema without knowing which model answered.
+func TestCompletionOpts_SchemaFor(t *testing.T) {
+	schema := json.RawMessage(`{"type":"object"}`)
+	full := CompletionOpts{ResponseSchema: &ResponseSchema{Name: "verdict", Schema: schema}}
+
+	if full.SchemaFor("gpt-4o") == nil {
+		t.Error("a model that takes a schema should be sent one")
+	}
+	if full.SchemaFor("llama3") != nil {
+		t.Error("a model nothing describes should be sent none")
+	}
+	if (CompletionOpts{}).SchemaFor("gpt-4o") != nil {
+		t.Error("a request that asked for no schema carries none")
+	}
+	// Anything that is not a JSON object is left off. A converter handed
+	// one would send a format with no shape under it having already dropped
+	// the tools, which is worse than either path on its own — and an array
+	// or a bare string is valid JSON, so validity alone is not the test.
+	for _, raw := range []string{`{`, `[{"type":"object"}]`, `"object"`, `null`, ``} {
+		opts := CompletionOpts{ResponseSchema: &ResponseSchema{Name: "verdict", Schema: json.RawMessage(raw)}}
+		if opts.SchemaFor("gpt-4o") != nil {
+			t.Errorf("%q is not a schema and should be left off", raw)
+		}
+	}
+}

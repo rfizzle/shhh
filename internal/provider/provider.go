@@ -137,6 +137,68 @@ type CompletionOpts struct {
 	// Effort is the reasoning level asked of the model (
 	// reasoning.go). EffortOff — the zero value — sends nothing.
 	Effort Effort
+	// ResponseSchema is the shape the answer is asked to take, for a caller
+	// that wants an object rather than prose. It is an offer and not an
+	// instruction: a model that cannot be told to match a schema is sent
+	// none, and the request falls back to whatever else it carried.
+	//
+	// A request may carry a schema or offer tools, never both — see
+	// SchemaFor for what happens when a caller sends both, and why.
+	// See docs/capabilities/providers.md#a-bounded-call-asks-for-the-shape-of-its-answer.
+	ResponseSchema *ResponseSchema
+}
+
+// ResponseSchema is a JSON Schema the answer is validated against before it
+// is sent, so a missing key or an invented one never reaches the caller.
+type ResponseSchema struct {
+	// Name is what the schema is called on the two dialects that require a
+	// name for it. It must be a word — letters, digits, underscores and
+	// hyphens — because that is all one of them accepts.
+	Name string
+	// Schema is the JSON Schema itself, put on the request as it was
+	// written. Two dialects validate it strictly, which means every object
+	// in it has to close (additionalProperties: false) and require every
+	// key it names; a schema that leaves either open is a refused request
+	// rather than a looser answer.
+	Schema json.RawMessage
+}
+
+// SchemaFor is the schema this request may ask the named model to match, or
+// nil when it may not and the tools it also carries are what goes out.
+//
+// The judge is the same one that decides the thinking level and the output
+// ceiling, so a caller offers the schema unconditionally and gets the older
+// path back wherever the newer one cannot be used.
+//
+// A schema and tools are alternatives and not a pair: Gemini refuses the two
+// together outright, and where they are accepted the model may answer with a
+// tool call the schema does not describe — which is the failure a schema is
+// asked for in order to prevent. The schema wins, because it is the more
+// specific of the two.
+//
+// It has to be an object and not merely valid JSON. Every dialect names the
+// schema's keys in its own request, and one that is an array or a bare
+// string describes nothing they can carry — so a converter handed one would
+// send a format with no shape under it while having already dropped the
+// tools, which is the one combination that is worse than either path.
+// See docs/capabilities/providers.md#a-bounded-call-asks-for-the-shape-of-its-answer.
+func (o CompletionOpts) SchemaFor(model string) *ResponseSchema {
+	s := o.ResponseSchema
+	if s == nil || !isJSONObject(s.Schema) {
+		return nil
+	}
+	if !CapabilitiesFor(model).StructuredOutputs {
+		return nil
+	}
+	return s
+}
+
+// isJSONObject reports whether raw is a JSON object. Unmarshalling into a map
+// is the check: it rejects the scalars and the array that json.Valid accepts,
+// and it is the same decode every converter then does for itself.
+func isJSONObject(raw json.RawMessage) bool {
+	var fields map[string]any
+	return json.Unmarshal(raw, &fields) == nil && fields != nil
 }
 
 // The two values ToolChoice may carry. Naming a specific tool is
