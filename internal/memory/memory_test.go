@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/storage"
 )
 
@@ -82,12 +83,15 @@ func TestRecall_ScopedProjectFirstAndBounded(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := s.Recall(10, 10_000)
+	got, omitted, err := s.Recall(10, 10_000)
 	if err != nil {
 		t.Fatalf("recall: %v", err)
 	}
 	if len(got) != 3 {
 		t.Fatalf("expected 3 in-scope entries, got %d", len(got))
+	}
+	if omitted != 0 {
+		t.Fatalf("nothing was left out, got %d omitted", omitted)
 	}
 	if got[0].Text != "project two" || got[1].Text != "project one" {
 		t.Fatalf("project entries should come first, newest first: %q, %q", got[0].Text, got[1].Text)
@@ -97,21 +101,121 @@ func TestRecall_ScopedProjectFirstAndBounded(t *testing.T) {
 	}
 
 	// Entry cap.
-	got, err = s.Recall(1, 10_000)
+	got, omitted, err = s.Recall(1, 10_000)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(got) != 1 || got[0].Text != "project two" {
 		t.Fatalf("maxEntries=1 should keep only the top project entry, got %+v", got)
 	}
+	if omitted != 2 {
+		t.Fatalf("the two entries the cap left out should be counted, got %d", omitted)
+	}
 
 	// Token budget: too small for any entry after the header.
-	got, err = s.Recall(10, 25)
+	got, omitted, err = s.Recall(10, 25)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(got) != 0 {
 		t.Fatalf("a tiny token budget should recall nothing, got %d", len(got))
+	}
+	if omitted != 3 {
+		t.Fatalf("every entry that did not fit should be counted, got %d", omitted)
+	}
+}
+
+// TestRecall_StepsOverAnOversizeEntry is the defect this loop was written
+// against: the entries are ordered by scope and age, never by size, so one
+// long project note sat in front of every short global preference. Stopping
+// at it kept all ten of them out of a prompt with room for all ten.
+func TestRecall_StepsOverAnOversizeEntry(t *testing.T) {
+	s := testStore(t, "/proj")
+	if _, err := s.Add("/proj", KindConvention, strings.Repeat("x", 500), ProvenanceUser); err != nil {
+		t.Fatal(err)
+	}
+	for i := range 10 {
+		if _, err := s.Add(GlobalScope, KindPreference, "short preference "+strconv.Itoa(i), ProvenanceUser); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// A budget with room for the header and every short entry, but not for
+	// the 500-character note that sorts ahead of them.
+	var short int64
+	for _, e := range mustList(t, s) {
+		if e.Scope == GlobalScope {
+			short += int64(agent.EstimateTokens(EntryLine(e)))
+		}
+	}
+	budget := short + int64(agent.EstimateTokens(promptBlockHeader))
+
+	got, omitted, err := s.Recall(100, budget)
+	if err != nil {
+		t.Fatalf("recall: %v", err)
+	}
+	if len(got) != 10 {
+		t.Fatalf("expected the ten globals to be recalled, got %d", len(got))
+	}
+	for _, e := range got {
+		if e.Scope != GlobalScope {
+			t.Fatalf("the oversize project note should have been stepped over, got %q", e.Text)
+		}
+	}
+	if omitted != 1 {
+		t.Fatalf("the entry that did not fit should be counted once, got %d", omitted)
+	}
+}
+
+func mustList(t *testing.T, s *Store) []Entry {
+	t.Helper()
+	entries, err := s.List()
+	if err != nil {
+		t.Fatalf("list: %v", err)
+	}
+	return entries
+}
+
+func TestUpdate_RoundTripsAndBumpsUpdatedAt(t *testing.T) {
+	s := testStore(t, "/proj")
+	e, err := s.Add("/proj", KindConvention, strings.Repeat("x", 400), ProvenanceUser)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	edited, err := s.Update(e.ID, "  keep the note short  ")
+	if err != nil {
+		t.Fatalf("update: %v", err)
+	}
+	if edited.Text != "keep the note short" {
+		t.Fatalf("text should be trimmed and replaced, got %q", edited.Text)
+	}
+	if edited.Scope != e.Scope || edited.Kind != e.Kind || edited.Provenance != e.Provenance {
+		t.Fatalf("rewording an entry restates none of its other fields, got %+v", edited)
+	}
+	if !edited.UpdatedAt.After(e.UpdatedAt) {
+		t.Fatalf("updated_at should be bumped: %s not after %s", edited.UpdatedAt, e.UpdatedAt)
+	}
+	if edited.CreatedAt != e.CreatedAt {
+		t.Fatalf("created_at should be left alone, got %s want %s", edited.CreatedAt, e.CreatedAt)
+	}
+
+	got, err := s.Get(e.ID)
+	if err != nil {
+		t.Fatalf("get: %v", err)
+	}
+	if got.Text != "keep the note short" {
+		t.Fatalf("the edit should be durable, got %q", got.Text)
+	}
+
+	if _, err := s.Update(e.ID, "   "); err == nil {
+		t.Fatal("an empty rewrite should be refused")
+	}
+	if _, err := s.Update(e.ID, strings.Repeat("y", MaxTextLen+1)); err == nil {
+		t.Fatal("a rewrite past the text bound should be refused")
+	}
+	if _, err := s.Update(e.ID+999, "nothing here"); err == nil {
+		t.Fatal("rewriting an entry that does not exist should be refused")
 	}
 }
 

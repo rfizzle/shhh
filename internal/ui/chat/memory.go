@@ -10,6 +10,8 @@ package chat
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"os/exec"
 	"strings"
 	"time"
 
@@ -33,6 +35,16 @@ type Memory struct {
 	// ProjectScope is the per-project scope key behind the "Save (project)"
 	// option.
 	ProjectScope string
+	// EntryText is one entry's stored text, which /memory edit opens the
+	// editor on.
+	EntryText func(id int64) (string, error)
+	// Rewrite replaces one entry's text and returns the line confirming it.
+	Rewrite func(id int64, text string) (string, error)
+	// Omitted is how many of this session's memories the recall budget left
+	// out of the system prompt. It is a value rather than a call because
+	// nothing in a session changes it: recall runs once, before the first
+	// turn, and an entry edited now is carried by the next session.
+	Omitted int
 }
 
 // WithMemory enables the /memory command and the remember-tool confirm flow.
@@ -135,4 +147,74 @@ func (m Model) memoryAskLines() []string {
 		}
 	}
 	return append(lines, strings.Split(m.memoryAsk.View(m.contentWidth()), "\n")...)
+}
+
+// memoryEditorDoneMsg is the editor's exit from a memory's text. Like the
+// draft's, the file is shhh's own and is removed when it comes back; unlike
+// the backlog's, the editor never saw the record itself, so an editor that
+// crashed halfway leaves the stored entry exactly as it was.
+type memoryEditorDoneMsg struct {
+	id   int64
+	path string
+	err  error
+}
+
+// openMemoryEditor hands one entry's text to the reader's editor. It is the
+// answer to a memory the recall budget would not carry: a memory is already
+// saved with a scope and a kind the user chose, so shortening it has to be an
+// edit and not a delete and a re-add.
+//
+// The same refusals as the draft's editor apply — it takes the terminal, and
+// a turn or a decision in flight would be lost behind it (editor.go).
+func (m Model) openMemoryEditor(arg string) (tea.Model, tea.Cmd) {
+	if m.memory.EntryText == nil || m.memory.Rewrite == nil {
+		return m.systemNotice("Durable memory is unavailable in this session.")
+	}
+	if reason, refused := m.editorRefusal(); refused {
+		return m.surfaceNotice(reason)
+	}
+	id, err := memory.ParseID(arg)
+	if err != nil {
+		return m.systemNotice("Error: " + err.Error())
+	}
+	text, err := m.memory.EntryText(id)
+	if err != nil {
+		return m.systemNotice("Error: " + err.Error())
+	}
+	path, err := writeDraftFile(text)
+	if err != nil {
+		return m.surfaceNotice("could not write the memory out — " + err.Error())
+	}
+	argv := editorArgv(editorCommand(), path, 1, 1)
+	proc := exec.Command(argv[0], argv[1:]...)
+	return m, tea.ExecProcess(proc, func(err error) tea.Msg {
+		return memoryEditorDoneMsg{id: id, path: path, err: err}
+	})
+}
+
+// memoryEditorFinished saves what came back. Every exit the editor can make
+// arrives here, which is what makes this the one place the temp file is
+// removed.
+func (m Model) memoryEditorFinished(msg memoryEditorDoneMsg) (tea.Model, tea.Cmd) {
+	defer func() { _ = os.Remove(msg.path) }()
+	if msg.err != nil {
+		return m.surfaceNotice("the editor exited with an error, so the memory is as it was — " + msg.err.Error())
+	}
+	edited, err := os.ReadFile(msg.path)
+	if err != nil {
+		return m.surfaceNotice("could not read the memory back, so it is as it was — " + err.Error())
+	}
+	text := strings.TrimSpace(string(edited))
+	if text == "" {
+		// An emptied file is how an editor says the edit was abandoned, and
+		// it is also what a quit on a file the editor never wrote looks like
+		// from here. Neither is a request to delete the memory, and there is
+		// a command that is.
+		return m.systemNotice(fmt.Sprintf("The editor came back empty, so the memory is as it was; /memory forget m%d drops one.", msg.id))
+	}
+	note, err := m.memory.Rewrite(msg.id, text)
+	if err != nil {
+		return m.systemNotice("Error: " + err.Error())
+	}
+	return m.systemNotice(note)
 }

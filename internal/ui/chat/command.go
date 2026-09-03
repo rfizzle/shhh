@@ -251,6 +251,14 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		// and edit hands the item file to the editor.
 		return m.todoCommand(parts)
 
+	case name == "/memory" && len(parts) > 1 && parts[1] == "edit":
+		// /memory edit hands the entry's text to the editor; every other
+		// /memory subcommand is textual and goes through handleSlashCommand.
+		if len(parts) != 3 {
+			return m.systemNotice("Usage: /memory edit <id>")
+		}
+		return m.openMemoryEditor(parts[2])
+
 	case text == "/branches":
 		// Bare /branches opens the branch picker; a session with no
 		// branch family falls through.

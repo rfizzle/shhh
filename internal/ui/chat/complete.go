@@ -216,11 +216,12 @@ var slashCommands = []slashCommand{
 			argOption{"drop", "Remove one note by number"},
 			argOption{"clear", "Empty the notebook"},
 		)},
-	{name: "/memory", args: "[list|add|forget]", desc: "Durable memories",
+	{name: "/memory", args: "[list|add|edit|forget]", desc: "Durable memories",
 		enabled: func(m *Model) bool { return m.memory.Manage != nil },
 		argSpecs: staticArgs(
 			argOption{"list", "Show stored memories"},
 			argOption{"add", "Remember something"},
+			argOption{"edit", "Reword a memory by id, in your editor"},
 			argOption{"forget", "Drop a memory by id"},
 		)},
 	{name: "/agents", args: "[new [brief]]", desc: "Agent manager; new drafts a profile from a sentence",

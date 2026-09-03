@@ -78,3 +78,33 @@ func TestGetAndDeleteMemory(t *testing.T) {
 		t.Fatal("expected deleting a missing memory to fail")
 	}
 }
+
+// TestUpdateMemory covers the column the listing and recall are both ordered
+// by: an edited entry has to sort as freshly stated, or the memory the user
+// just fixed sinks below the ones they left alone.
+func TestUpdateMemory(t *testing.T) {
+	db := openTestDB(t)
+
+	m, err := db.AddMemory("global", "convention", "wrap errors", "user")
+	if err != nil {
+		t.Fatalf("add: %v", err)
+	}
+
+	updated, err := db.UpdateMemory(m.ID, "wrap errors with %w")
+	if err != nil {
+		t.Fatalf("update: %v", err)
+	}
+	if updated.Text != "wrap errors with %w" {
+		t.Fatalf("text mismatch: %+v", updated)
+	}
+	if !updated.UpdatedAt.After(m.UpdatedAt) {
+		t.Fatalf("updated_at should be bumped: %s not after %s", updated.UpdatedAt, m.UpdatedAt)
+	}
+	if !updated.CreatedAt.Equal(m.CreatedAt) {
+		t.Fatalf("created_at should be left alone: %s want %s", updated.CreatedAt, m.CreatedAt)
+	}
+
+	if _, err := db.UpdateMemory(m.ID+999, "nothing here"); err == nil {
+		t.Fatal("expected updating a missing memory to fail")
+	}
+}

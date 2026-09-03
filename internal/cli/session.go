@@ -108,6 +108,10 @@ type chatSession struct {
 	// promptExtra is appended to the system prompt after config and project
 	// context (e.g. the recalled-memory block).
 	promptExtra string
+	// memoryOmitted is how many memories the recall budget left out of
+	// promptExtra, carried here because recall runs before the chat model is
+	// built and the rail is the only party that says so.
+	memoryOmitted int
 	// maxRounds overrides behavior.max_tool_rounds for this session, where 0
 	// means no cap at all — the unattended `shhh code --max-rounds 0`, where
 	// the round checkpoint has nobody to stop for. maxRoundsSet tells the two
@@ -565,8 +569,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		mem = openMemoryStore(db)
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), memory.ToolDefinition())
 		memCfg := ConfigFrom(cmd.Context())
-		if entries, recallErr := mem.Recall(memCfg.EffectiveMemoryMaxEntries(), int64(memCfg.EffectiveMemoryMaxTokens())); recallErr == nil {
+		if entries, omitted, recallErr := mem.Recall(memCfg.EffectiveMemoryMaxEntries(), int64(memCfg.EffectiveMemoryMaxTokens())); recallErr == nil {
 			session.promptExtra = prompt.CombineExtra(session.promptExtra, memory.PromptBlock(entries))
+			session.memoryOmitted = omitted
 		}
 	}
 
@@ -834,6 +839,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			Manage:       memoryManager(mem),
 			Save:         memorySaver(mem),
 			ProjectScope: mem.Project(),
+			EntryText:    memoryText(mem),
+			Rewrite:      memoryRewriter(mem),
+			Omitted:      session.memoryOmitted,
 		})
 	}
 	// web_fetch and spawn_agent go through the approval queue as generic

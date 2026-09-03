@@ -943,6 +943,18 @@ func TestGolden_InspectorRail(t *testing.T) {
 				More: 1,
 			},
 		}
+		// The recall budget left memories out of the prompt, and this is the
+		// only place that says so. The session has no external source, so the
+		// block is here for that row alone.
+		omitted := InspectorRail{
+			Tools: &InspectorTools{
+				Sources: []InspectorToolSource{
+					{Name: "built-in", State: ToolSourceUp, Note: "18 tools"},
+				},
+				Up:            1,
+				MemoryOmitted: 3,
+			},
+		}
 		return []golden.Panel{
 			{Label: "every block, unbounded height", View: full.View(width, 0)},
 			{Label: "every block, height 16 (truncating)", View: full.View(width, 16)},
@@ -952,6 +964,7 @@ func TestGolden_InspectorRail(t *testing.T) {
 			{Label: "a reading that has left the instruction", View: drifting.View(width, 0)},
 			{Label: "a reading the session has outrun", View: stale.View(width, 0)},
 			{Label: "where the tools came from, and which answered", View: sources.View(width, 0)},
+			{Label: "memories the recall budget could not carry", View: omitted.View(width, 0)},
 		}
 	})
 }

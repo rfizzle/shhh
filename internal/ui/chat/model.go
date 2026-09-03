@@ -2377,6 +2377,9 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case todoEditorDoneMsg:
 		return m.todoEditorFinished(msg)
 
+	case memoryEditorDoneMsg:
+		return m.memoryEditorFinished(msg)
+
 	case personaDraftMsg:
 		return m.finishPersonaDraft(msg)
 
@@ -4048,7 +4051,8 @@ func helpText() string {
   /evidence      Tool-output evidence store: reduction stats and size (purge to clear)
   /gate          Quality gate: run [suite] starts the project's checks in the background, result shows the verdict
   /ps            List the long-running processes this session owns (process tool)
-  /memory        Durable memories: list (default) · add [global] [kind] <text> · forget <id>
+  /memory        Durable memories: list (default) · add [global] [kind] <text> ·
+                 edit <id> (opens the entry in your editor) · forget <id>
   /todo          The project's backlog (.shhh/todo): bare opens a picker · show|edit <slug> ·
                  add (reads this session into proposed items you accept or drop) ·
                  add <text> · block <slug> [why] · open|done|drop <slug> ·

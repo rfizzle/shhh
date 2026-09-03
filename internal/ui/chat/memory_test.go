@@ -2,6 +2,9 @@ package chat
 
 import (
 	"encoding/json"
+	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -209,5 +212,130 @@ func TestMemorySlashCommand(t *testing.T) {
 	handled, out = bare.handleSlashCommand("/memory")
 	if !handled || !strings.Contains(out, "unavailable") {
 		t.Fatalf("without wiring, /memory should report unavailable, got %q", out)
+	}
+}
+
+// editableMemoryModel wires the two halves /memory edit needs — the text the
+// editor opens on, and the write that takes it back — over one entry.
+func editableMemoryModel(t *testing.T) (Model, *string) {
+	t.Helper()
+	stored := "a note far too long to be recalled"
+	m := New([]provider.Message{{Role: provider.RoleUser, Content: "hi"}}, mockStream).
+		WithMemory(Memory{
+			Manage:       func(args []string) string { return "managed:" + strings.Join(args, ",") },
+			ProjectScope: "/proj",
+			EntryText: func(id int64) (string, error) {
+				if id != 1 {
+					return "", fmt.Errorf("memory %d not found", id)
+				}
+				return stored, nil
+			},
+			Rewrite: func(id int64, text string) (string, error) {
+				stored = text
+				return "✓ rewrote m1 · project convention", nil
+			},
+		})
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	return updated.(Model), &stored
+}
+
+func TestMemoryEdit_RefusesWhatItCannotOpen(t *testing.T) {
+	m, stored := editableMemoryModel(t)
+	before := *stored
+
+	for _, tc := range []struct{ input, want string }{
+		{"/memory edit", "Usage: /memory edit <id>"},
+		{"/memory edit m1 and more", "Usage: /memory edit <id>"},
+		{"/memory edit banana", "invalid memory id"},
+		{"/memory edit m9", "not found"},
+	} {
+		next, _ := m.runCommand(tc.input, "/memory")
+		if got := lastSystemText(next.(Model)); !strings.Contains(got, tc.want) {
+			t.Errorf("%q should say %q, got %q", tc.input, tc.want, got)
+		}
+	}
+	if *stored != before {
+		t.Fatalf("a refused edit must not write, got %q", *stored)
+	}
+
+	// The editor takes the terminal with it, so a turn in flight refuses it
+	// exactly as the draft's does.
+	busy := m
+	busy.state = stateStreaming
+	next, _ := busy.runCommand("/memory edit m1", "/memory")
+	if got := lastSystemText(next.(Model)); !strings.Contains(got, "not while the turn is running") {
+		t.Fatalf("a running turn should refuse the editor, got %q", got)
+	}
+
+	// A session with no memory store cannot reach the store through this.
+	bare, _ := New([]provider.Message{{Role: provider.RoleUser, Content: "hi"}}, mockStream).
+		Update(tea.WindowSizeMsg{Width: 80, Height: 30})
+	next, _ = bare.(Model).runCommand("/memory edit m1", "/memory")
+	if got := lastSystemText(next.(Model)); !strings.Contains(got, "unavailable in this session") {
+		t.Fatalf("an unwired session should say so rather than panic, got %q", got)
+	}
+}
+
+func TestMemoryEditorFinished_SavesWhatCameBack(t *testing.T) {
+	m, stored := editableMemoryModel(t)
+
+	path := filepath.Join(t.TempDir(), "entry.md")
+	if err := os.WriteFile(path, []byte("  keep the note short  \n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	next, _ := m.memoryEditorFinished(memoryEditorDoneMsg{id: 1, path: path})
+	if got := lastSystemText(next.(Model)); !strings.Contains(got, "rewrote m1") {
+		t.Fatalf("a saved edit should say so: %q", got)
+	}
+	if *stored != "keep the note short" {
+		t.Fatalf("the edit should be trimmed and saved, got %q", *stored)
+	}
+	if _, err := os.Stat(path); err == nil {
+		t.Fatal("the temp file should be removed however the editor exited")
+	}
+
+	// An editor that exited non-zero leaves the entry alone and says so.
+	broken := filepath.Join(t.TempDir(), "broken.md")
+	if err := os.WriteFile(broken, []byte("something else entirely"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	next, _ = m.memoryEditorFinished(memoryEditorDoneMsg{id: 1, path: broken, err: fmt.Errorf("exit status 1")})
+	if got := lastSystemText(next.(Model)); !strings.Contains(got, "the memory is as it was") {
+		t.Fatalf("an editor error should leave the memory alone and say so: %q", got)
+	}
+	if *stored != "keep the note short" {
+		t.Fatalf("an editor error must not write, got %q", *stored)
+	}
+	if _, err := os.Stat(broken); err == nil {
+		t.Fatal("the temp file should be removed after an editor error too")
+	}
+
+	// An emptied file is an abandoned edit, not a delete.
+	empty := filepath.Join(t.TempDir(), "empty.md")
+	if err := os.WriteFile(empty, []byte("   \n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	next, _ = m.memoryEditorFinished(memoryEditorDoneMsg{id: 1, path: empty})
+	if got := lastSystemText(next.(Model)); !strings.Contains(got, "/memory forget m1") {
+		t.Fatalf("an empty file should leave the memory alone and point at the command that drops one: %q", got)
+	}
+	if *stored != "keep the note short" {
+		t.Fatalf("an empty file must not write, got %q", *stored)
+	}
+}
+
+// TestInspectorTools_CountsOmittedMemories covers the rail's side of the
+// recall budget: a memory that was left out of the prompt is otherwise
+// indistinguishable from one that was never written.
+func TestInspectorTools_CountsOmittedMemories(t *testing.T) {
+	m, _ := editableMemoryModel(t)
+	if m.inspectorTools() != nil {
+		t.Fatal("a session with no external source and nothing omitted draws no block")
+	}
+
+	m.memory.Omitted = 2
+	tools := m.inspectorTools()
+	if tools == nil || tools.MemoryOmitted != 2 {
+		t.Fatalf("the omitted count should reach the rail, got %+v", tools)
 	}
 }

@@ -148,6 +148,11 @@
   ✗ linear            error · 401 Unauthorized
   … 1 more                                    
 
+· memories the recall budget could not carry
+  TOOLS                              1 of 1 up
+  ✓ built-in                     up · 18 tools
+  ⚠ memory                       3 did not fit
+
 ── ansi ────────────────────────────────────────────────────
 · every block, unbounded height
   ␛[1;38;5;254mSUMMARY␛[m                       ␛[38;5;244mas of round 24␛[m
@@ -287,3 +292,8 @@
   ␛[38;5;254m⚠␛[m ␛[38;5;254mtracker␛[m                ␛[38;5;254mblocked␛[m␛[38;5;244m · untrusted␛[m
   ␛[38;5;254m✗␛[m ␛[38;5;254mlinear␛[m            ␛[38;5;254merror␛[m␛[38;5;244m · 401 Unauthorized␛[m
   ␛[38;5;244m… 1 more␛[m                                    
+
+· memories the recall budget could not carry
+  ␛[1;38;5;254mTOOLS␛[m                              ␛[38;5;244m1 of 1 up␛[m
+  ␛[38;5;254m✓␛[m ␛[38;5;254mbuilt-in␛[m                     ␛[38;5;244mup␛[m␛[38;5;244m · 18 tools␛[m
+  ␛[38;5;254m⚠␛[m ␛[38;5;254mmemory␛[m                       ␛[38;5;244m3 did not fit␛[m

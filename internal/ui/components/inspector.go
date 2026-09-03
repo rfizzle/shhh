@@ -293,6 +293,12 @@ type InspectorTools struct {
 	Up int
 	// More is how many sources Sources left out.
 	More int
+	// MemoryOmitted is how many durable memories the recall budget kept out
+	// of the system prompt. It is on this block because it is the same
+	// question the block already answers — what did this session actually get
+	// — and a memory the session never saw is otherwise indistinguishable
+	// from one that was never written.
+	MemoryOmitted int
 }
 
 // InspectorToolSource is one place tools came from: the built-in toolset, or
@@ -857,11 +863,17 @@ func (r InspectorRail) agentsBlock(width int) (railBlock, bool) {
 // work is costing rather than what it is made of.
 func (r InspectorRail) toolsBlock(width int) (railBlock, bool) {
 	t := r.Tools
-	if t == nil || len(t.Sources) == 0 {
+	if t == nil || (len(t.Sources) == 0 && t.MemoryOmitted == 0) {
 		return railBlock{}, false
 	}
-	b := railBlock{heading: railHeading("TOOLS",
-		fmt.Sprintf("%d of %d up", t.Up, len(t.Sources)+t.More), sty.Dim, width)}
+	// The ratio is over every source the session has, and a session with none
+	// gets no ratio at all: "0 of 0 up" is a fabricated zero, and the block is
+	// on screen for the memory row underneath.
+	meta := ""
+	if total := len(t.Sources) + t.More; total > 0 {
+		meta = fmt.Sprintf("%d of %d up", t.Up, total)
+	}
+	b := railBlock{heading: railHeading("TOOLS", meta, sty.Dim, width)}
 	for _, s := range t.Sources {
 		glyph, word, style := toolSourceTone(s.State)
 		right := style.Render(word)
@@ -872,6 +884,16 @@ func (r InspectorRail) toolsBlock(width int) (railBlock, bool) {
 	}
 	if t.More > 0 {
 		b.add(indentRow(sty.Dim.Render(fmt.Sprintf("… %d more", t.More)), width))
+	}
+	if t.MemoryOmitted > 0 {
+		// A source row in everything but name: the memory the prompt carries
+		// is a place this session's knowledge came from, and this says how
+		// much of it did not arrive. The mark is the one the rail already
+		// uses for something only a person can move — the way out is to
+		// shorten an entry.
+		b.add(railRow(sty.Accent.Render("⚠")+" "+sty.Body.Render("memory"),
+			sty.Dim.Render(fmt.Sprintf("%d did not fit", t.MemoryOmitted)),
+			width, inspectorIndent))
 	}
 	return b, true
 }

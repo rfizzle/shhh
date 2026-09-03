@@ -27,10 +27,13 @@ func openMemoryStore(db *storage.DB) *memory.Store {
 
 // memoryManager backs the /memory slash command: list (default), add, forget.
 // Entries added here are user-stated, so they persist directly — the confirm
-// flow exists for agent proposals, not for the user's own words.
+// flow exists for agent proposals, not for the user's own words. `edit` is
+// not here: it opens the reader's editor, which only the chat surface can do,
+// and it is named in the usage line because that is where a reader looks for
+// it.
 func memoryManager(store *memory.Store) func(args []string) string {
 	return func(args []string) string {
-		const usage = "Usage: /memory [list] · /memory add [global] [preference|convention|correction|lesson] <text> · /memory forget <id>"
+		const usage = "Usage: /memory [list] · /memory add [global] [preference|convention|correction|lesson] <text> · /memory edit <id> · /memory forget <id>"
 		if len(args) == 0 || (len(args) == 1 && args[0] == "list") {
 			return memoryListing(store, "/memory add [global] [kind] <text>")
 		}
@@ -97,6 +100,32 @@ func memorySaver(store *memory.Store) func(scope, kind, text string) (string, er
 	}
 }
 
+// memoryText is an entry's stored text, which /memory edit opens the editor
+// on: the reader edits what is there rather than retyping it.
+func memoryText(store *memory.Store) func(id int64) (string, error) {
+	return func(id int64) (string, error) {
+		e, err := store.Get(id)
+		if err != nil {
+			return "", err
+		}
+		return e.Text, nil
+	}
+}
+
+// memoryRewriter replaces an entry's text and formats the line confirming it.
+// A memory too long to be recalled has no other way out: it is already saved,
+// and forgetting it and adding it back would lose the scope and kind the user
+// chose.
+func memoryRewriter(store *memory.Store) func(id int64, text string) (string, error) {
+	return func(id int64, text string) (string, error) {
+		e, err := store.Update(id, text)
+		if err != nil {
+			return "", err
+		}
+		return memoryRewritten(e).String(), nil
+	}
+}
+
 // memoryListing renders the entries visible to this workspace. The way out of
 // an empty listing is the form of the command the reader is already using —
 // a shell user told to type a slash command has been told nothing.
@@ -150,12 +179,22 @@ func memoryAdded(e memory.Entry) report.Report {
 		report.Done("remembered", memoryID(e.ID)+" · "+memory.ScopeLabel(e.Scope)+" "+e.Kind)}}}}
 }
 
+// memoryRewritten is the confirmation an entry's text was replaced, in the
+// same shape every other write in the CLI confirms itself.
+func memoryRewritten(e memory.Entry) report.Report {
+	return report.Report{Sections: []report.Section{{Rows: []report.Row{
+		report.Done("rewrote", memoryID(e.ID)+" · "+memory.ScopeLabel(e.Scope)+" "+e.Kind)}}}}
+}
+
 // memoryID is how an entry is named everywhere: `m12`, the id the forget
 // command takes.
 func memoryID(id int64) string { return fmt.Sprintf("m%d", id) }
 
 // newMemoryCmd is the `shhh memory` CLI, the out-of-session equivalent of
-// /memory: list, add, forget.
+// /memory: list, add, edit, forget. `edit` takes the replacement text as
+// arguments rather than opening an editor — there is no session here to
+// suspend, and a shell already has the reader's own tools for building a
+// string.
 func newMemoryCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "memory",
@@ -208,6 +247,25 @@ func newMemoryCmd() *cobra.Command {
 	addCmd.Flags().BoolVar(&addGlobal, "global", false, "save with global scope instead of this project")
 	addCmd.Flags().StringVar(&addKind, "kind", memory.KindPreference, "entry kind: preference, convention, correction, or lesson")
 	cmd.AddCommand(addCmd)
+
+	cmd.AddCommand(&cobra.Command{
+		Use:   "edit <id> <text>",
+		Short: "Replace a memory's text (e.g. m12)",
+		Args:  cobra.MinimumNArgs(2),
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return withMemoryStore(func(store *memory.Store) error {
+				id, err := memory.ParseID(args[0])
+				if err != nil {
+					return err
+				}
+				e, err := store.Update(id, strings.Join(args[1:], " "))
+				if err != nil {
+					return err
+				}
+				return report.Fprint(cmd.OutOrStdout(), memoryRewritten(e))
+			})
+		},
+	})
 
 	cmd.AddCommand(&cobra.Command{
 		Use:   "forget <id>",

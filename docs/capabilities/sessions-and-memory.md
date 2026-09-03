@@ -117,8 +117,26 @@ Three constraints define the feature:
 - **A memory is short, general and durable.** Not a file's contents, not a
   session-specific fact, and never a secret. Something that is only true today
   is noise by next week.
-- **You can see and delete all of it.** A tool that accumulates opinions about
-  your project without showing you the list is a tool you cannot correct.
+- **You can see, reword and delete all of it.** A tool that accumulates
+  opinions about your project without showing you the list is a tool you
+  cannot correct.
+
+Recall is bounded, and the bound is visible. A session carries only so many
+entries, and only so many tokens of them, into its prompt. An entry too long
+for what is left is stepped over rather than ending the list. The entries are
+ordered by scope and then by age, never by size, so one paragraph-length
+project note would otherwise sit in front of ten short preferences and keep
+every one of them out of a prompt with room for all ten. Whatever did not fit
+is counted, and the inspector rail's tool block says how many: a memory the
+session never saw is otherwise indistinguishable from one nobody ever wrote.
+
+The way out of that count is to shorten an entry, which is why a memory can be
+reworded rather than only dropped. `/memory edit <id>` opens the entry in your
+own editor and saves what comes back; `shhh memory edit <id> <text>` does the
+same from a shell. Both keep the scope, the kind and the provenance you
+already confirmed — rewording a memory is not restating it — and both mark it
+as freshly stated, so the entry you have just fixed sorts to the top of the
+list rather than below the ones you left alone.
 
 ## Metrics are what it cost
 

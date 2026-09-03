@@ -46,14 +46,16 @@ func (m Model) WithMCP(servers MCP) Model {
 const toolRailRows = 4
 
 // inspectorTools is the TOOLS block: the built-in toolset first, then every
-// server the session was told to reach. It is present only when there is an
-// external source — a session with nothing but its own tools has no way to
-// have lost any, so the block would be a row saying the obvious.
+// server the session was told to reach, and what the recall budget left out
+// of the prompt. It is present only when something could have gone missing —
+// an external source, or a memory that did not fit — because a session with
+// nothing but its own tools has no way to have lost any, and the block would
+// be a row saying the obvious.
 func (m Model) inspectorTools() *components.InspectorTools {
-	if len(m.mcp.Sources) == 0 {
+	if len(m.mcp.Sources) == 0 && m.memory.Omitted == 0 {
 		return nil
 	}
-	t := &components.InspectorTools{}
+	t := &components.InspectorTools{MemoryOmitted: m.memory.Omitted}
 	if n := m.builtinToolCount(); n > 0 {
 		t.Up++
 		t.Sources = append(t.Sources, components.InspectorToolSource{

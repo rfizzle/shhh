@@ -542,6 +542,31 @@ func TestInspectorTools_HeadingCountsWhatTheFoldTook(t *testing.T) {
 	}
 }
 
+// A memory the recall budget left out of the prompt is otherwise
+// indistinguishable from one that was never written, so the block says how
+// many — and says it even in a session whose only tools are shhh's own.
+func TestInspectorTools_SaysWhatRecallLeftOut(t *testing.T) {
+	r := InspectorRail{Tools: &InspectorTools{MemoryOmitted: 3}}
+	view := stripANSI(r.View(InspectorWidth, 0))
+	if !strings.Contains(view, "TOOLS") || !strings.Contains(view, "⚠ memory") {
+		t.Fatalf("the omission earns the block on its own:\n%s", view)
+	}
+	if !strings.Contains(view, "3 did not fit") {
+		t.Fatalf("the row carries the count:\n%s", view)
+	}
+	if strings.Contains(view, "0 of 0 up") {
+		t.Fatalf("a session with no source gets no ratio, not a zero one:\n%s", view)
+	}
+
+	// Nothing left out, nothing said.
+	quiet := InspectorRail{Tools: &InspectorTools{
+		Sources: []InspectorToolSource{{Name: "docs", State: ToolSourceUp}},
+	}}
+	if view := stripANSI(quiet.View(InspectorWidth, 0)); strings.Contains(view, "memory") {
+		t.Fatalf("a session that recalled everything draws no row:\n%s", view)
+	}
+}
+
 // The glyph carries the distinction, so a monochrome terminal reads the same
 // verdict as a colour one — which means no two states may share one.
 func TestSummaryTone_EveryStateHasItsOwnGlyphAndWords(t *testing.T) {

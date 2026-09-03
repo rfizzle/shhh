@@ -96,12 +96,11 @@ func (s *Store) Project() string { return s.project }
 // Add validates and persists one entry. Callers own the trust rule: only
 // user-confirmed content may arrive here with ProvenanceAgent.
 func (s *Store) Add(scope, kind, text, provenance string) (Entry, error) {
-	text = strings.TrimSpace(text)
+	text, err := validText(text)
+	if err != nil {
+		return Entry{}, err
+	}
 	switch {
-	case text == "":
-		return Entry{}, fmt.Errorf("memory text is required")
-	case len(text) > MaxTextLen:
-		return Entry{}, fmt.Errorf("memory text is too long (%d chars, max %d) — memories are short, durable statements", len(text), MaxTextLen)
 	case !ValidKind(kind):
 		return Entry{}, fmt.Errorf("unknown memory kind %q (valid: %s)", kind, strings.Join(Kinds(), ", "))
 	case provenance != ProvenanceUser && provenance != ProvenanceAgent:
@@ -126,11 +125,13 @@ func (s *Store) Forget(id int64) error {
 // Recall returns the entries to inject into the system prompt: project-scoped
 // first (they are the most relevant to this session), then global, newest
 // first within each — hard-bounded by maxEntries and by maxTokens of
-// estimated prompt cost. No model is ever called.
-func (s *Store) Recall(maxEntries int, maxTokens int64) ([]Entry, error) {
+// estimated prompt cost. No model is ever called. The second return is how
+// many in-scope entries the two bounds left out, which is the number the
+// session shows so the omission is visible rather than silent.
+func (s *Store) Recall(maxEntries int, maxTokens int64) ([]Entry, int, error) {
 	all, err := s.List()
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	ordered := make([]Entry, 0, len(all))
 	for _, e := range all {
@@ -145,19 +146,56 @@ func (s *Store) Recall(maxEntries int, maxTokens int64) ([]Entry, error) {
 	}
 
 	var picked []Entry
+	skipped := 0
 	budget := maxTokens - agent.EstimateTokens(promptBlockHeader)
 	for _, e := range ordered {
-		if len(picked) >= maxEntries {
-			break
-		}
 		cost := agent.EstimateTokens(EntryLine(e))
-		if cost > budget {
-			break
+		// An entry that either bound turns away is stepped over, never a stop.
+		// The order is by scope and then age, never by size, so a stop here
+		// lets one paragraph-length project note keep every short global
+		// preference behind it out of the prompt — and a session handed the
+		// note and none of the preferences has nothing that says so, which
+		// is what the skipped count is for.
+		// See docs/capabilities/sessions-and-memory.md#memory-is-what-shhh-knows-about-your-project.
+		if len(picked) >= maxEntries || cost > budget {
+			skipped++
+			continue
 		}
 		budget -= cost
 		picked = append(picked, e)
 	}
-	return picked, nil
+	return picked, skipped, nil
+}
+
+// Get returns one entry by id.
+func (s *Store) Get(id int64) (Entry, error) {
+	return s.db.GetMemory(id)
+}
+
+// Update replaces one entry's text, holding the same bound every write holds:
+// a memory edited into a document is the shape recall cannot carry. The
+// entry's other fields — scope, kind, provenance — are what the user already
+// confirmed, and rewording it does not restate any of them.
+func (s *Store) Update(id int64, text string) (Entry, error) {
+	text, err := validText(text)
+	if err != nil {
+		return Entry{}, err
+	}
+	return s.db.UpdateMemory(id, text)
+}
+
+// validText is the text bound both writes hold, in one place so the two
+// cannot drift: a rewrite that accepted what an add refuses would let a
+// memory grow past what recall can carry, one edit at a time.
+func validText(text string) (string, error) {
+	text = strings.TrimSpace(text)
+	switch {
+	case text == "":
+		return "", fmt.Errorf("memory text is required")
+	case len(text) > MaxTextLen:
+		return "", fmt.Errorf("memory text is too long (%d chars, max %d) — memories are short, durable statements", len(text), MaxTextLen)
+	}
+	return text, nil
 }
 
 // ScopeLabel renders an entry's scope for display: "global" or "project".

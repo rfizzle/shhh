@@ -96,6 +96,25 @@ func (db *DB) GetMemory(id int64) (Memory, error) {
 	return m, nil
 }
 
+// UpdateMemory replaces one entry's text and stamps updated_at, so an edited
+// memory is as recent as one just stated: the listing and recall are both
+// ordered by that column, and a rewrite that left it alone would sink the
+// entry the user just fixed below the ones they did not. Validation (text
+// bounds) belongs to internal/memory; the storage layer only persists.
+func (db *DB) UpdateMemory(id int64, text string) (Memory, error) {
+	res, err := db.sql.Exec(
+		`UPDATE memories SET text = ?, updated_at = ? WHERE id = ?`,
+		text, time.Now().UTC().Format(time.RFC3339Nano), id,
+	)
+	if err != nil {
+		return Memory{}, err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return Memory{}, fmt.Errorf("memory %d not found", id)
+	}
+	return db.GetMemory(id)
+}
+
 // DeleteMemory removes one entry by id.
 func (db *DB) DeleteMemory(id int64) error {
 	res, err := db.sql.Exec(`DELETE FROM memories WHERE id = ?`, id)
