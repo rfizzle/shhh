@@ -133,3 +133,64 @@ func must(t *testing.T, err error) {
 		t.Fatal(err)
 	}
 }
+
+// Without a repository the root is the nearest directory that already holds
+// a shhh directory, so two terminals opened at different depths of one
+// project key their backlog and their refused offers on one directory.
+func TestRoot_WithoutARepositoryFindsTheStateDirectory(t *testing.T) {
+	base := t.TempDir()
+	proj := filepath.Join(base, "proj")
+	sub := filepath.Join(proj, "a", "b")
+	mustMkdir(t, filepath.Join(proj, StateDir))
+	mustMkdir(t, sub)
+
+	if got := Root(sub); got != proj {
+		t.Errorf("Root(%s) = %s, want %s", sub, got, proj)
+	}
+	if got := Root(proj); got != proj {
+		t.Errorf("Root at the state directory itself = %s, want %s", got, proj)
+	}
+	if InRepo(sub) {
+		t.Error("a directory with no .git anywhere above it is not in a repository")
+	}
+}
+
+// A repository still wins: the state directory is the answer only when the
+// walk finds no .git at all, so nothing about an existing checkout moves.
+func TestRoot_ARepositoryBeatsAStateDirectory(t *testing.T) {
+	base := t.TempDir()
+	repo := filepath.Join(base, "repo")
+	sub := filepath.Join(repo, "pkg")
+	mustMkdir(t, filepath.Join(repo, ".git"))
+	mustMkdir(t, filepath.Join(sub, StateDir))
+
+	if got := Root(sub); got != repo {
+		t.Errorf("Root(%s) = %s, want the repository %s", sub, got, repo)
+	}
+	if !InRepo(sub) {
+		t.Error("a directory under a .git is in a repository")
+	}
+}
+
+// The old layout's single .shhh file is not a root: a checkout still holding
+// one has a doctor migration waiting, and reading it as a root would key the
+// project on it for as long as the migration is unmade.
+func TestRoot_AStateFileIsNotARoot(t *testing.T) {
+	base := t.TempDir()
+	proj := filepath.Join(base, "proj")
+	sub := filepath.Join(proj, "a")
+	mustMkdir(t, sub)
+	if err := os.WriteFile(filepath.Join(proj, StateDir), []byte("notes\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := Root(sub); got != sub {
+		t.Errorf("Root(%s) = %s, want the directory itself", sub, got)
+	}
+}
+
+func mustMkdir(t *testing.T, dir string) {
+	t.Helper()
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+}

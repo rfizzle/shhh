@@ -28,6 +28,8 @@ import (
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/todo"
+	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/golden"
@@ -1041,6 +1043,41 @@ func TestGolden_StaleEditRow(t *testing.T) {
 		return []golden.Panel{
 			{Label: "the row · a file that moved, and a call that was malformed", View: build(false)},
 			{Label: "the row opened · the sentence the model was given", View: build(true)},
+		}
+	})
+}
+
+// TestGolden_TodoNoRepository captures the two rows a backlog run draws in
+// a directory that is not a repository: the refusal, which arrives before
+// the first stage has spent a turn, and the close of a run asked for
+// without a commit, whose report has to say where the change is because
+// there is no history to find it in.
+//
+// The pair is on one sheet because they are the two halves of one answer —
+// what the run will not do, and what it does instead. One width: a notice
+// is rendered as the sentence it is and does not reflow, so the other three
+// captures would be copies of this one.
+func TestGolden_TodoNoRepository(t *testing.T) {
+	captureGolden(t, "todo-no-repo", "a backlog run without a repository", []int{80}, func(width int) []golden.Panel {
+		row := func(text string) string {
+			m := frameModel(t, width, 40)
+			m.appendEntry(entry{kind: entrySystem, text: text})
+			return m.renderHistory()
+		}
+		it := todo.Item{
+			Slug: "cache-ttl", Title: "Give the cache a lifetime",
+			Size: todo.SizeS, Priority: todo.PriorityHigh,
+			Path: ".shhh/todo/cache-ttl.md",
+		}
+		st := run.Start(it, "amber-lake", "manual", 1, run.Options{NoCommit: true})
+		st.Paths = []string{"internal/provider/cache.go", "internal/provider/cache_test.go"}
+		st.Stage = run.StageReview
+		st.Observe(it, "verdict: clean")
+		return []golden.Panel{
+			{Label: "the refusal, before any stage has spent a turn",
+				View: row(todoNoRepoNotice("~/scratch/notes", it.Slug))},
+			{Label: "a run asked for without a commit, archived",
+				View: row(todoRunDoneNote(st, ".shhh/todo/done/cache-ttl.md") + "\n\n" + st.Report)},
 		}
 	})
 }

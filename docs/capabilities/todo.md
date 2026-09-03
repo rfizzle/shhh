@@ -63,6 +63,13 @@ The backlog is a directory inside the checkout's shhh directory at the
 repository root. Every session opened anywhere under that root sees the
 same list.
 
+Where there is no repository the backlog belongs to the nearest directory
+above that already holds a shhh directory, and to the working directory
+only when there is none. Otherwise two terminals opened at different depths
+of one project would key on two directories and see two different backlogs,
+with nothing on screen to say why; a session names the root it chose
+whenever it is not the directory it was started in.
+
 Whether the directory is committed is the project's decision, not shhh's.
 Some teams want the backlog in history beside the code it describes; some
 want it private to one machine. shhh reads it either way and never assumes
@@ -173,6 +180,25 @@ holds staged changes the run did not make stops the run instead of
 committing a stranger. The message is written by the model in the
 repository's own style, read from its history, and the report the model
 writes goes onto the item as it is archived.
+
+**A run assumes a repository, and says so before it starts.** Done is a
+commit, and three of the stages read the change out of git, so a directory
+with no repository is checked for before the research stage rather than
+discovered at the end. The refusal is one sentence naming what is missing
+and the two ways of asking for the run anyway, because a run that did every
+stage's work and only then found it had nowhere to put the result has spent
+those turns for an item it leaves half-finished — and what it said at that
+point was about an index the directory does not have.
+
+**A run without a commit is the other definition of done.** Asked for with
+a flag, or set as the project's answer, a run ends after the verification
+and the review: the item is archived with a report that says the work was
+not committed and names the paths it is in, and the row that closes the run
+says the same. That is what a directory with no repository takes, and what
+a project whose commits are made elsewhere takes everywhere. It is never
+the fallback for a run that asked for a commit and could not have one:
+becoming a no-commit run on its own would change what done means without
+being asked, and leave an item marked done that did not land.
 
 A run that stops — a question, spent rounds, a commit that cannot be made
 — leaves the item blocked with the evidence written on it and the work so

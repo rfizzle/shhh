@@ -833,6 +833,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			// judgement about the whole conversation, not a status line, and
 			// the cheap summary model is the wrong price point for it.
 			Extractor: todo.NewExtractor(ledger.For(env.prov, meter.SourceBacklog), todo.ExtractConfig{Model: env.modelName}),
+			NoCommit:  !cfg.TodoCommitEnabled(),
 		})
 	}
 	if mem != nil {

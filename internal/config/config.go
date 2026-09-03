@@ -30,6 +30,20 @@ type Config struct {
 	Secrets    SecretsConfig    `toml:"secrets"`
 	MCP        MCPConfig        `toml:"mcp"`
 	Prompts    PromptsConfig    `toml:"prompts"`
+	Todo       TodoConfig       `toml:"todo"`
+}
+
+// TodoConfig is what a backlog run does when it is not told otherwise.
+type TodoConfig struct {
+	// Commit says whether a run ends in a commit. Unset is a commit,
+	// because a commit is what the runner treats as done and an item
+	// archived beside an uncommitted tree is an item that says it landed
+	// and did not. False ends the run after the review and leaves the
+	// change in the working tree, which is the answer for a directory that
+	// is not a repository and for a project whose commits are made
+	// elsewhere. See
+	// docs/capabilities/todo.md#a-run-is-turns-with-gates-between-them.
+	Commit *bool `toml:"commit"`
 }
 
 // PromptsConfig names files whose contents replace shhh's own wordings. The
@@ -606,6 +620,12 @@ func (c Config) ProviderDisplayName() string {
 	return c.Provider.Name
 }
 
+// TodoCommitEnabled reports whether a backlog run ends in a commit. Unset is
+// a commit, so only a file that says false turns it off.
+func (c *Config) TodoCommitEnabled() bool {
+	return c.Todo.Commit == nil || *c.Todo.Commit
+}
+
 // ProviderCacheTTL returns the configured lifetime of the repeated opening.
 func (c Config) ProviderCacheTTL() string {
 	return c.Provider.CacheTTL
@@ -901,6 +921,8 @@ func triStateField(cfg *Config, key string) **bool {
 		return &cfg.Summary.Subagents
 	case "summary.title":
 		return &cfg.Summary.Title
+	case "todo.commit":
+		return &cfg.Todo.Commit
 	}
 	return nil
 }

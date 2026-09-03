@@ -23,21 +23,67 @@ const (
 )
 
 // Root is the directory a checkout's shhh state belongs to: the enclosing
-// repository root, else the directory itself. Everything keyed on "this
-// project" — the backlog, an offer already refused — is keyed on it, which
-// is what makes those the project's rather than a session's.
+// repository root; without one, the nearest ancestor that already holds a
+// shhh directory; and the directory itself when there is neither. Everything
+// keyed on "this project" — the backlog, an offer already refused — is
+// keyed on it, which is what makes those the project's rather than a
+// session's.
+//
+// The middle answer is what a project with no repository needs. Falling
+// straight to the directory means two terminals opened two levels apart in
+// one project key their state on two different directories, and the symptom
+// is a backlog that is empty in one of them and full in the other, with
+// nothing on screen to say why.
 func Root(dir string) string {
 	abs, err := filepath.Abs(dir)
 	if err != nil {
 		return dir
 	}
+	repo, state := nearest(abs)
+	switch {
+	case repo != "":
+		return repo
+	case state != "":
+		return state
+	}
+	return abs
+}
+
+// InRepo reports whether dir is inside a git working tree. It is the same
+// walk Root makes, asked for the half of the answer a caller that must have
+// a repository needs — a run that ends in a commit, and nothing else.
+func InRepo(dir string) bool {
+	abs, err := filepath.Abs(dir)
+	if err != nil {
+		return false
+	}
+	repo, _ := nearest(abs)
+	return repo != ""
+}
+
+// nearest walks up from abs, itself included, for the closest ancestor
+// holding .git and the closest holding the shhh state directory. A .git
+// entry ends the walk, so a repository is never overruled by a state
+// directory nearer the leaf: the two are found together only because the
+// second answer is worth nothing until the first has come back empty.
+//
+// The state directory must be a directory. A checkout still holding the old
+// single-file .shhh is a doctor migration, and reading it as a root would
+// key a project on a file's parent for as long as the migration is unmade
+// (docs/capabilities/configuration.md#a-migration-is-a-doctor-check).
+func nearest(abs string) (repo, state string) {
 	for probe := abs; ; {
 		if _, err := os.Stat(filepath.Join(probe, ".git")); err == nil {
-			return probe
+			return probe, state
+		}
+		if state == "" {
+			if info, err := os.Stat(filepath.Join(probe, StateDir)); err == nil && info.IsDir() {
+				state = probe
+			}
 		}
 		parent := filepath.Dir(probe)
 		if parent == probe {
-			return abs
+			return "", state
 		}
 		probe = parent
 	}

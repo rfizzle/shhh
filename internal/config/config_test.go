@@ -843,3 +843,41 @@ func TestProviderCacheTTL_LoadsAndWrites(t *testing.T) {
 		t.Errorf("after the write, provider.cache_ttl = %q", cfg.ProviderCacheTTL())
 	}
 }
+
+// A backlog run commits unless the file says otherwise, so an unset key and
+// one that says true read the same and only false turns it off. The key
+// reads back off the file and through the write door, which is the pair
+// every key needs.
+func TestTodoCommitIsOnUnlessTurnedOff(t *testing.T) {
+	var cfg Config
+	if !cfg.TodoCommitEnabled() {
+		t.Fatal("an unset todo.commit should be a commit")
+	}
+	if err := Set(&cfg, "todo.commit", "false"); err != nil {
+		t.Fatal(err)
+	}
+	if cfg.TodoCommitEnabled() {
+		t.Error("todo.commit=false should end a run without one")
+	}
+
+	path := filepath.Join(t.TempDir(), "config.toml")
+	if err := Write(path, Edit{Key: "todo.commit", Value: "false"}); err != nil {
+		t.Fatal(err)
+	}
+	loaded, err := LoadFrom(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loaded.TodoCommitEnabled() {
+		t.Errorf("after the write, todo.commit reads back on: %+v", loaded.Todo)
+	}
+	if err := Write(path, Edit{Key: "todo.commit", Value: ""}); err != nil {
+		t.Fatal(err)
+	}
+	if loaded, err = LoadFrom(path); err != nil {
+		t.Fatal(err)
+	}
+	if !loaded.TodoCommitEnabled() {
+		t.Error("a reset should put the key back to its default, which is a commit")
+	}
+}

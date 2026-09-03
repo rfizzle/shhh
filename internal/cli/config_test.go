@@ -328,3 +328,18 @@ func TestConfigRows_TheCacheLifetimeStatesItsDefault(t *testing.T) {
 		t.Errorf("a set cache_ttl reads back as %q", got)
 	}
 }
+
+// The backlog run's commit row states its default rather than reading as
+// unset, because unset is on and only false is a fact worth showing as set.
+func TestConfigRows_TheBacklogCommitStatesItsDefault(t *testing.T) {
+	row := rowFor(configRows(config.Config{}, config.Config{}), "todo.commit")
+	if row.Value != "on" || row.Source != "default" {
+		t.Fatalf("unset todo.commit row = %q/%q, want the default", row.Value, row.Source)
+	}
+	var off config.Config
+	no := false
+	off.Todo.Commit = &no
+	if got := rowFor(configRows(off, config.Config{}), "todo.commit").Value; got != "false" {
+		t.Errorf("todo.commit = false reads back as %q", got)
+	}
+}

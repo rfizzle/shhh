@@ -619,6 +619,21 @@ func configSettings() []configSetting {
 				"the tree is surveyed once, at session start, and never again")
 		},
 	}, {
+		group: "SESSION", key: "todo.commit", label: "backlog run commits",
+		// Not flag(): unset is a commit, so an unset file and one that says
+		// true read the same and only false is a fact worth showing as set.
+		read: func(c config.Config) string {
+			if c.Todo.Commit == nil {
+				return ""
+			}
+			return strconv.FormatBool(*c.Todo.Commit)
+		},
+		fallback: "on",
+		options: func(config.Config) []components.SelectOption {
+			return boolOptions("a run that verifies and reviews ends in a commit, and a directory with no repository refuses the run",
+				"a run ends after the review and leaves the change in the working tree")
+		},
+	}, {
 		group: "STEERING", key: "behavior.check_in_interval_rounds", label: "check-in interval",
 		read:     num(func(c config.Config) int { return c.Behavior.CheckInIntervalRounds }),
 		fallback: strconv.Itoa(agent.DefaultCheckInInterval) + " rounds",

@@ -62,12 +62,22 @@ When you are done, answer with a short summary of what you changed and anything 
 	return b.String()
 }
 
-func reviewPrompt(it todo.Item, plan string) string {
+// readTheChange is how a review stage is told to find what changed. Outside
+// a repository the two git commands return nothing and the model spends its
+// turn discovering that; the plan names the files, so it is what stands in.
+func readTheChange(repo bool) string {
+	if repo {
+		return "Run `git diff` and `git status` and read every changed file in full."
+	}
+	return "This is not a git repository, so there is no diff to read: read in full every file the plan below names, and any file it led you to."
+}
+
+func reviewPrompt(it todo.Item, plan string, repo bool) string {
 	var b strings.Builder
 	b.WriteString("REVIEW stage. Verification passed. Now read the change as a reviewer who did not write it.\n\n")
 	b.WriteString(itemBlock(it))
 	b.WriteString("\nAPPROVED PLAN:\n" + strings.TrimSpace(plan) + "\n\n")
-	b.WriteString(`Run ` + "`git diff`" + ` and ` + "`git status`" + ` and read every changed file in full. Check, in this order: bugs — concrete inputs that produce a wrong result; acceptance criteria not actually met; behaviour the item did not ask for; the project's conventions from AGENTS.md broken; tests missing for a case the criteria name. Do not change anything in this stage.
+	b.WriteString(readTheChange(repo) + ` Check, in this order: bugs — concrete inputs that produce a wrong result; acceptance criteria not actually met; behaviour the item did not ask for; the project's conventions from AGENTS.md broken; tests missing for a case the criteria name. Do not change anything in this stage.
 
 Answer with one line ` + "`verdict: clean`" + ` if there is nothing that must change before this commits, or ` + "`verdict: findings`" + ` followed by the findings ranked by severity with file:line. Style that hides no bug is not a finding.`)
 	return b.String()
@@ -75,13 +85,20 @@ Answer with one line ` + "`verdict: clean`" + ` if there is nothing that must ch
 
 // reviewTask is the reviewer child's task: the item, the plan and the
 // diff, since the child has no commands to read the change with itself.
-func reviewTask(it todo.Item, plan, diff string) string {
+func reviewTask(it todo.Item, plan, diff string, repo bool) string {
 	var b strings.Builder
 	b.WriteString("Review this change against the backlog item it implements. You did not write it.\n\n")
 	b.WriteString(itemBlock(it))
 	b.WriteString("\nAPPROVED PLAN:\n" + strings.TrimSpace(plan) + "\n\n")
 	if strings.TrimSpace(diff) != "" {
 		b.WriteString("THE CHANGE (git diff, bounded):\n```diff\n" + strings.TrimSpace(diff) + "\n```\n\n")
+	}
+	// The child has no commands, so it cannot go and check. Outside a
+	// repository there is no history behind the diff either, and a
+	// reviewer that believes there is will report a file as unchanged
+	// when what it actually found was no repository to ask.
+	if !repo {
+		b.WriteString("This is not a git repository. The change above is shhh's own record of every edit the run made, and it is the whole of what changed; there is no history to compare it against.\n\n")
 	}
 	b.WriteString(`Read every file the diff touches in full, then the tests that cover them. Check, in this order: bugs — concrete inputs that produce a wrong result; acceptance criteria not actually met; behaviour the item did not ask for; the project's conventions from AGENTS.md broken; tests missing for a case the criteria name.
 
@@ -99,12 +116,23 @@ func remediatePrompt(it todo.Item, findings string) string {
 	return b.String()
 }
 
-func commitPrompt(it todo.Item, plan string) string {
+// commitStyle is how the commit stage is told to find the repository's own
+// wording. repo is read here rather than assumed because every git
+// instruction in a stage prompt reads the same fact, and a prompt builder
+// that took the repository for granted is how the run came to tell the
+// model to read a history that does not exist.
+func commitStyle(repo bool) string {
+	if repo {
+		return "Write the commit message in this repository's own style: read `git log -10 --format='%s%n%n%b'` first and match the shape of its subjects and bodies exactly — its case, its length, whether it uses a type prefix, how it argues."
+	}
+	return "Write the commit message as a conventional commit — a `type(scope): summary` subject in the imperative under 72 characters, then a blank line and a body in prose saying why — since there is no history here to read a house style out of."
+}
+
+func commitPrompt(it todo.Item, plan string, repo bool) string {
 	var b strings.Builder
 	b.WriteString("COMMIT stage. The change is verified and reviewed. Do not change any file now.\n\n")
 	b.WriteString(itemBlock(it))
-	b.WriteString(`
-Write the commit message in this repository's own style: read ` + "`git log -10 --format='%s%n%n%b'`" + ` first and match the shape of its subjects and bodies exactly — its case, its length, whether it uses a type prefix, how it argues. Then write the report for the item's archive.
+	b.WriteString("\n" + commitStyle(repo) + ` Then write the report for the item's archive.
 
 Answer in exactly this shape, and nothing else:
 

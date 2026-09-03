@@ -242,9 +242,21 @@ func startFacts(p project.Info) []components.StartFact {
 	return facts
 }
 
-// startNotes are the two labelled lines: what the model was told about this
-// project, and what will run without asking.
+// startNotes are the labelled lines: which directory this session's project
+// state belongs to where that is not the one in the header, what the model
+// was told about this project, and what will run without asking.
 func startNotes(info StartInfo) []components.StartNote {
+	var notes []components.StartNote
+	// The backlog, the refused offers and the run's checkpoints are keyed
+	// on the root, not on the working directory, and outside a repository
+	// the root is wherever a shhh directory was found up the tree. Two
+	// terminals in one project that key on two roots see two different
+	// backlogs, so the root is named wherever it is not the path the header
+	// already prints — and where it is, the header has named it.
+	if root := info.Project.RootDisplay; root != "" && root != info.Project.Display {
+		notes = append(notes, components.StartNote{Label: "root", Value: root,
+			Detail: "the backlog and this project's state are kept here"})
+	}
 	context := components.StartNote{Label: "context", Value: "nothing read",
 		Detail: "no .shhh/project.md or AGENTS.md up the tree"}
 	if files := info.Project.ContextFiles; len(files) > 0 {
@@ -264,7 +276,7 @@ func startNotes(info StartInfo) []components.StartNote {
 		}
 		gate.Detail = detail + " · runs without asking"
 	}
-	return []components.StartNote{context, gate}
+	return append(notes, context, gate)
 }
 
 // startSuggestions is the three offers, paired with the input line each one

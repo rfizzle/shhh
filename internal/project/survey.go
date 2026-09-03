@@ -69,6 +69,14 @@ type Info struct {
 	// paths relative to Dir where they sit inside it. Empty means the model
 	// was told nothing about this project, which is worth saying out loud.
 	ContextFiles []string
+	// Root is the directory this project's own state is keyed on and
+	// RootDisplay the same path home-abbreviated. It is Dir in the ordinary
+	// case and something above it in a subdirectory, and it is stated
+	// because a session that does not say which directory its backlog and
+	// its refused offers belong to gives the reader no way to tell one
+	// project from two.
+	Root        string
+	RootDisplay string
 }
 
 // Survey gathers everything the start screen states about dir. It never
@@ -83,7 +91,7 @@ func Survey(dir string) Info {
 	if abs, err := filepath.Abs(dir); err == nil {
 		dir = abs
 	}
-	info := Info{Dir: dir, Display: abbreviate(dir)}
+	info := Info{Dir: dir, Display: Abbreviate(dir)}
 	info.Language, info.Toolchain, info.Unit = detectLanguage(dir)
 	info.Packages, info.Partial = countPackages(dir, info.Language)
 	info.Repo, info.Branch, info.Detached, info.Dirty = surveyGit(dir)
@@ -93,12 +101,14 @@ func Survey(dir string) Info {
 	if path, _ := FindFrom(dir); path != "" {
 		info.ContextFiles = append(info.ContextFiles, relativeTo(dir, path))
 	}
+	info.Root = Root(dir)
+	info.RootDisplay = Abbreviate(info.Root)
 	return info
 }
 
-// abbreviate replaces the home directory prefix with ~, which is how every
+// Abbreviate replaces the home directory prefix with ~, which is how every
 // path in the product is printed once it leaves the filesystem.
-func abbreviate(dir string) string {
+func Abbreviate(dir string) string {
 	home, err := os.UserHomeDir()
 	if err != nil || home == "" || dir == "" {
 		return dir
@@ -119,7 +129,7 @@ func relativeTo(dir, path string) string {
 	if rel, err := filepath.Rel(dir, path); err == nil && !strings.HasPrefix(rel, "..") {
 		return filepath.ToSlash(rel)
 	}
-	return abbreviate(path)
+	return Abbreviate(path)
 }
 
 // goDirective and rustChannel pull the toolchain out of the marker files that

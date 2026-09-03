@@ -15,6 +15,7 @@ package chat
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -27,6 +28,7 @@ import (
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/subagent"
@@ -54,10 +56,32 @@ type todoCommitMsg struct {
 // plus the project's checks.
 const verifyTimeout = 15 * time.Minute
 
+// todoNoRepoNotice is what a run that would end in a commit is refused with
+// outside a repository. It names the directory, what is missing and the two
+// ways of asking for the run anyway, in one sentence, because the refusal
+// has to arrive before the research turn and a reader stopped at the start
+// of something they wanted is owed the way through it.
+func todoNoRepoNotice(root, slug string) string {
+	return fmt.Sprintf("%s is not in a git repository and a run ends in a commit — /todo run %s --no-commit runs it without one, or todo.commit = false makes that the default.", root, slug)
+}
+
 // startTodoRun begins a run on an item. It refuses a second run, an item
-// that is not ready, and a session without the changeset tracking the
-// commit stage needs to know what it may stage.
-func (m Model) startTodoRun(arg string) (tea.Model, tea.Cmd) {
+// that is not ready, a session without the changeset tracking the commit
+// stage needs to know what it may stage, and a run that would commit in a
+// directory with no repository.
+//
+// noCommit is `--no-commit` on the command or the setting behind it. It is
+// answered here, before anything is written, rather than at the commit
+// stage: every stage before that one spends turns, and a run that did all
+// of them and then found it had nowhere to put the result has spent them
+// for an item it leaves in progress.
+func (m Model) startTodoRun(arg string, noCommit bool) (tea.Model, tea.Cmd) {
+	// The flag is one run's answer and the setting is the standing one, so
+	// either is enough. There is no flag the other way: a person who set
+	// the project to make no commits and wants one on this item can make
+	// it themselves, and the run that made one against the setting would
+	// be the surprise worth avoiding.
+	noCommit = noCommit || m.todos.NoCommit
 	if m.todoRun != nil && !m.todoRun.Over() {
 		return m.systemNotice(fmt.Sprintf("A run is already going: %s. /todo status shows it; /todo stop ends it.", m.todoRun.Summary()))
 	}
@@ -86,6 +110,10 @@ func (m Model) startTodoRun(arg string) (tea.Model, tea.Cmd) {
 	if m.turnState() != stateInput {
 		return m.systemNotice("Answer the open decision first; a run starts from an idle session.")
 	}
+	repo := project.InRepo(m.todos.Root)
+	if !noCommit && !repo {
+		return m.systemNotice(todoNoRepoNotice(project.Abbreviate(m.todos.Root), it.Slug))
+	}
 	// An item left in progress with a checkpoint is a run that died with
 	// its session. It continues from the stage it was at rather than
 	// starting over: the plan and the rounds spent are in the checkpoint,
@@ -97,6 +125,11 @@ func (m Model) startTodoRun(arg string) (tea.Model, tea.Cmd) {
 			st.PrevMode = m.mode.String()
 			st.Turn = int(m.turnCount) + 1
 			st.Reviewer = ""
+			// The invocation's answer stands over the checkpoint's, the
+			// same way the session and the mode do: continuing a run is
+			// asking for it again, and the repository may not be the one
+			// the run started in.
+			st.NoCommit, st.Repo = noCommit, repo
 			m.todoRun = st
 			m.todoRunItem = it
 			model, _ := m.systemNotice(fmt.Sprintf("Continuing the run on %s from its %s stage (checkpoint from session %s).", it.Slug, st.Stage, orDash(from)))
@@ -107,7 +140,8 @@ func (m Model) startTodoRun(arg string) (tea.Model, tea.Cmd) {
 	if err := todo.SetStatus(it.Path, todo.StatusInProgress); err != nil {
 		return m.systemNotice("Could not mark the item in progress: " + err.Error())
 	}
-	m.todoRun = run.Start(it, m.sessionName, m.mode.String(), int(m.turnCount)+1)
+	m.todoRun = run.Start(it, m.sessionName, m.mode.String(), int(m.turnCount)+1,
+		run.Options{NoCommit: noCommit, Repo: repo})
 	m.todoRunItem = it
 	m.reloadTodos()
 	return m.todoRunStep(m.todoRun.First(it, ""))
@@ -336,8 +370,30 @@ func (m Model) todoCommitCmd() tea.Cmd {
 		if len(paths) == 0 {
 			return todoCommitMsg{slug: slug, err: fmt.Errorf("the run changed no files under the repository")}
 		}
-		if out, code := git(root, "diff", "--cached", "--quiet"); code != 0 {
+		// Four different failures came back as one sentence about the
+		// person's index, and three of them were not about it. `--quiet`
+		// exits 1 for a difference, and that is the only exit this check
+		// may read as staged changes: telling someone outside a repository
+		// that their index holds changes sends them looking for an index
+		// that does not exist.
+		//
+		// The repository itself is read off the filesystem rather than out
+		// of an exit code, because git's own code for it moves: it was 128,
+		// the refusal, and is 129 on git 2.51, where `--cached` is a usage
+		// error against the `--no-index` fallback the missing repository
+		// leaves behind. The directory either holds a repository or it does
+		// not, and that answer is the same on every version.
+		out, code := git(root, "diff", "--cached", "--quiet")
+		switch {
+		case code == 0:
+		case code == 1:
 			return todoCommitMsg{slug: slug, err: fmt.Errorf("the index already holds staged changes this run did not make; commit or unstage them first\n%s", out)}
+		case code == gitNotInstalled:
+			return todoCommitMsg{slug: slug, err: fmt.Errorf("git is not on the path, so no commit can be made; install it, or run the item with /todo run --no-commit")}
+		case !project.InRepo(root):
+			return todoCommitMsg{slug: slug, err: fmt.Errorf("%s is not a git repository, so there is nothing to commit into; /todo run --no-commit, or todo.commit = false, runs an item without one", root)}
+		default:
+			return todoCommitMsg{slug: slug, err: fmt.Errorf("git diff --cached exited %d: %s", code, out)}
 		}
 		if out, code := git(root, append([]string{"add", "--"}, paths...)...); code != 0 {
 			return todoCommitMsg{slug: slug, err: fmt.Errorf("git add: %s", out)}
@@ -359,15 +415,27 @@ func (m Model) todoCommitCmd() tea.Cmd {
 	}
 }
 
+// gitNotInstalled is the shell's exit code for a command that could not be
+// run, which is what this package reports for a git that is not there.
+const gitNotInstalled = 127
+
+// git runs one git command in root and reports its output and its exit code.
+// A command that never started is 127, the shell's own answer for it: the
+// alternative is reporting some real exit code for a git that was never
+// there, and every caller that reads a code by name would then read the
+// wrong sentence out of it.
 func git(root string, args ...string) (string, int) {
 	cmd := exec.Command("git", append([]string{"-C", root}, args...)...)
 	cmd.Env = runner.Environ()
 	out, err := cmd.CombinedOutput()
 	code := 0
 	if err != nil {
-		code = 1
-		if ee, ok := err.(*exec.ExitError); ok {
+		var ee *exec.ExitError
+		if errors.As(err, &ee) {
 			code = ee.ExitCode()
+		} else {
+			code = gitNotInstalled
+			out = append(out, err.Error()...)
 		}
 	}
 	return strings.TrimSpace(string(out)), code
@@ -385,23 +453,42 @@ func (m Model) finishTodoCommit(msg todoCommitMsg) (tea.Model, tea.Cmd) {
 	return m.todoRunStep(st.Committed(msg.files))
 }
 
+// todoRunDoneNote is the row a finished run closes with: what happened to
+// the work, and where the item went.
+//
+// A run that made no commit says so rather than saying nothing about it.
+// "done" beside an uncommitted tree reads as a commit that was made, and
+// the reader's next act is to go looking for one — so the row names the
+// files instead, which is the only place the change now is.
+func todoRunDoneNote(st *run.State, to string) string {
+	files := plural(len(st.Files), "file")
+	if st.NoCommit {
+		return fmt.Sprintf("✓ todo run %s done — not committed; %s in the working tree, and the item is archived to %s.", st.Slug, files, to)
+	}
+	return fmt.Sprintf("✓ todo run %s done — committed %s and archived the item to %s.", st.Slug, files, to)
+}
+
 // todoRunDone archives the item with its report and ends the run.
 func (m Model) todoRunDone() (tea.Model, tea.Cmd) {
 	st := m.todoRun
 	report := st.Report
-	if len(st.Files) > 0 {
+	if len(st.Files) > 0 && !st.NoCommit {
 		report += "\nCommitted: " + strings.Join(st.Files, ", ") + "\n"
 	}
 	to, err := todo.Archive(m.todos.Root, st.Slug, report)
-	note := fmt.Sprintf("✓ todo run %s done — committed %s and archived the item to %s.", st.Slug, plural(len(st.Files), "file"), to)
+	note := todoRunDoneNote(st, to)
 	if err != nil {
-		// The commit landed; the item must not stay in progress with its
+		// The work is finished; the item must not stay in progress with its
 		// report only on screen. It goes back to open with the report on
 		// it, and the note says what to do.
 		it := m.todoRunItem
 		_ = todo.SetStatus(it.Path, todo.StatusOpen)
 		_ = todo.Append(it.Path, report)
-		note = fmt.Sprintf("✓ todo run %s committed %s, but the item could not be archived — %v. The report is on the item and it is open; /todo done %s archives it once that is settled.", st.Slug, plural(len(st.Files), "file"), err, st.Slug)
+		did := "committed " + plural(len(st.Files), "file")
+		if st.NoCommit {
+			did = fmt.Sprintf("made no commit and left %s in the working tree", plural(len(st.Files), "file"))
+		}
+		note = fmt.Sprintf("✓ todo run %s %s, but the item could not be archived — %v. The report is on the item and it is open; /todo done %s archives it once that is settled.", st.Slug, did, err, st.Slug)
 	}
 	m.endTodoRun()
 	return m.systemNotice(note + "\n\n" + st.Report)

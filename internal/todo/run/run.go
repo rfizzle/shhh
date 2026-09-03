@@ -193,16 +193,37 @@ type State struct {
 	// started — before any model turn could have edited the file. The
 	// verify stage runs these and only these.
 	Tests []string `json:"tests"`
+
+	// NoCommit is a run the person asked for without one. It ends after
+	// the review instead, and its report says the change was not
+	// committed, because an archived item beside an uncommitted tree is
+	// the one record nothing later can recover from.
+	NoCommit bool `json:"no_commit,omitempty"`
+	// Repo reports a git repository at the root. Every stage that tells
+	// the model to run a git command reads it: outside a repository those
+	// commands fail, and a prompt that asks for them anyway spends a turn
+	// teaching the model that its instructions are wrong.
+	Repo bool `json:"repo,omitempty"`
+}
+
+// Options are the answers the person gave when they asked for the run, as
+// opposed to the ones the machine works out for itself.
+type Options struct {
+	// NoCommit ends the run after the review with the change in the tree.
+	NoCommit bool
+	// Repo reports a git repository at the root.
+	Repo bool
 }
 
 // Start begins a run on an item.
-func Start(it todo.Item, session, prevMode string, turn int) *State {
+func Start(it todo.Item, session, prevMode string, turn int, opt Options) *State {
 	now := time.Now()
 	return &State{
 		Slug: it.Slug, Session: session, Started: now, Updated: now,
 		Stage: StageResearch, Turn: turn, PrevMode: prevMode,
 		SizeBefore: it.Size, Size: it.Size,
-		Tests: TestCommands(it.Body),
+		Tests:    TestCommands(it.Body),
+		NoCommit: opt.NoCommit, Repo: opt.Repo,
 	}
 }
 
@@ -278,9 +299,16 @@ func (s *State) Continue(it todo.Item) Step {
 	case StageReview:
 		return s.review(it)
 	case StageCommit:
+		// A run picked up without a commit has no commit turn left to
+		// take. The checkpoint was parked before the answer came back, so
+		// re-sending the prompt here would produce exactly the commit the
+		// person just asked for the run without.
+		if s.NoCommit {
+			return s.archive()
+		}
 		s.Message, s.Report = "", ""
 		return Step{Action: ActionPrompt, Stage: StageCommit, Mode: ModePlan,
-			Prompt: commitPrompt(it, s.Plan), Shown: s.label("commit (continued)")}
+			Prompt: commitPrompt(it, s.Plan, s.Repo), Shown: s.label("commit (continued)")}
 	}
 	return s.block("the checkpoint names a stage that cannot be continued: " + string(s.Stage))
 }
@@ -447,7 +475,7 @@ func (s *State) review(it todo.Item) Step {
 	if s.Size == todo.SizeS {
 		s.Reviewer = ""
 		return Step{Action: ActionPrompt, Stage: StageReview, Mode: ModePlan,
-			Prompt: reviewPrompt(it, s.Plan), Shown: s.label("review")}
+			Prompt: reviewPrompt(it, s.Plan, s.Repo), Shown: s.label("review")}
 	}
 	s.Reviews++
 	s.Reviewer = fmt.Sprintf("todo-review-%s-%d", s.Slug, s.Reviews)
@@ -457,14 +485,16 @@ func (s *State) review(it todo.Item) Step {
 // ReviewTask is the reviewer child's task: the item, the plan, and the
 // change as the front-end read it, since the child has no commands to
 // read the change with itself.
-func (s *State) ReviewTask(it todo.Item, diff string) string { return reviewTask(it, s.Plan, diff) }
+func (s *State) ReviewTask(it todo.Item, diff string) string {
+	return reviewTask(it, s.Plan, diff, s.Repo)
+}
 
 // SelfReview is the fallback when no reviewer child can be had — the
 // orchestrator reviews in its own turn, and the step says so.
 func (s *State) SelfReview(it todo.Item) Step {
 	s.Reviewer = ""
 	return Step{Action: ActionPrompt, Stage: StageReview, Mode: ModePlan,
-		Prompt: reviewPrompt(it, s.Plan), Shown: s.label("review (no reviewer agent; reviewing in this session)")}
+		Prompt: reviewPrompt(it, s.Plan, s.Repo), Shown: s.label("review (no reviewer agent; reviewing in this session)")}
 }
 
 // ReviewResult is the reviewer child's final text.
@@ -481,9 +511,12 @@ func (s *State) afterReview(it todo.Item, text string) Step {
 	verdict, findings := verdictLine(text)
 	switch verdict {
 	case "clean":
+		if s.NoCommit {
+			return s.archive()
+		}
 		s.Stage = StageCommit
 		return Step{Action: ActionPrompt, Stage: StageCommit, Mode: ModePlan,
-			Prompt: commitPrompt(it, s.Plan), Shown: s.label("commit")}
+			Prompt: commitPrompt(it, s.Plan, s.Repo), Shown: s.label("commit")}
 	case "findings":
 		return s.remediate(it, "Review findings:\n"+findings)
 	}
@@ -510,6 +543,41 @@ func (s *State) afterCommit(text string) Step {
 	}
 	s.Message, s.Report = message, report
 	return Step{Action: ActionCommit, Stage: StageCommit, Shown: s.label("commit")}
+}
+
+// archive ends a run that was asked for without a commit: verified,
+// reviewed, and finished with the change in the working tree. It is an end
+// state and not a stage the run skipped — the item is archived and the
+// report is written here rather than by a commit turn that has nothing to
+// write a commit message for.
+//
+// Paths is the run's changed set as of the review step, which is current:
+// review reads and does not write, so nothing can have changed the tree
+// between the step that snapshotted them and this one.
+func (s *State) archive() Step {
+	s.Files = append([]string(nil), s.Paths...)
+	s.Report = notCommittedReport(s.Files)
+	s.Stage = StageDone
+	return Step{Action: ActionDone, Stage: StageDone, Shown: s.label("done — not committed")}
+}
+
+// notCommittedReport is what goes on the archived item when the run made no
+// commit. It names the paths because they are the only place the change can
+// be found afterwards: with no commit there is no history to read it out of,
+// and a report that said "done" without them would send the next reader
+// looking for a commit that was never made.
+func notCommittedReport(paths []string) string {
+	var b strings.Builder
+	b.WriteString("## Report\nSummary: the change was verified and reviewed. It was not committed — the run was asked for without one — so the work is in the working tree.\n")
+	if len(paths) == 0 {
+		b.WriteString("Not committed: the run changed no files.\n")
+		return b.String()
+	}
+	b.WriteString("Not committed, in the working tree:\n")
+	for _, p := range paths {
+		b.WriteString("- " + p + "\n")
+	}
+	return b.String()
 }
 
 // Committed is the front-end reporting the commit landed; the run is done.
@@ -542,6 +610,9 @@ func (s *State) Summary() string {
 		if s.SizeBefore != s.Size {
 			fmt.Fprintf(&b, " (was %s)", orDash(string(s.SizeBefore)))
 		}
+	}
+	if s.NoCommit {
+		b.WriteString(" · not committed")
 	}
 	if s.Round > 0 {
 		fmt.Fprintf(&b, " · remediation %d/%d", s.Round, Rounds(s.Size))

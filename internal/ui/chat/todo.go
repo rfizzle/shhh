@@ -33,6 +33,11 @@ type Todos struct {
 	// Extractor reads the session into proposed items behind a bare
 	// /todo add. Nil, or disabled, leaves only the by-hand form.
 	Extractor *todo.Extractor
+	// NoCommit is the project's standing answer to whether a run ends in a
+	// commit, from the config. The zero value is a commit, which is what
+	// the setting's own default is: a host that says nothing gets the
+	// runner's definition of done rather than the quieter one.
+	NoCommit bool
 }
 
 // WithTodos enables /todo and the TODO block.
@@ -150,11 +155,11 @@ func (m Model) todoCommand(parts []string) (tea.Model, tea.Cmd) {
 		return m.startTodoExtract()
 	}
 	if len(parts) >= 2 && parts[1] == "run" {
-		arg := ""
-		if len(parts) == 3 {
-			arg = parts[2]
+		arg, noCommit, ok := parseTodoRunArgs(parts[2:])
+		if !ok {
+			return m.systemNotice("Usage: /todo run [<slug>|--next] [--no-commit]")
 		}
-		return m.startTodoRun(arg)
+		return m.startTodoRun(arg, noCommit)
 	}
 	if len(parts) == 2 && parts[1] == "stop" {
 		return m.stopTodoRun()
@@ -168,6 +173,27 @@ func (m Model) todoCommand(parts []string) (tea.Model, tea.Cmd) {
 	note := m.todos.Manage(parts[1:])
 	m.reloadTodos()
 	return m.systemNotice(note)
+}
+
+// parseTodoRunArgs reads what follows `/todo run`: an optional item and the
+// one flag the command takes. A word it does not know is refused rather
+// than taken as the slug, because `/todo run --no-commmit` would otherwise
+// start a committing run on an item named after the typo — which is the
+// answer the person was trying to avoid.
+func parseTodoRunArgs(args []string) (arg string, noCommit, ok bool) {
+	for _, a := range args {
+		switch {
+		case a == "--no-commit":
+			noCommit = true
+		case strings.HasPrefix(a, "-") && a != "--next":
+			return "", false, false
+		case arg == "":
+			arg = a
+		default:
+			return "", false, false
+		}
+	}
+	return arg, noCommit, true
 }
 
 // openTodoPick opens the backlog picker: every active item in working order,

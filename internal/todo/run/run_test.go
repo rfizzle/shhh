@@ -15,7 +15,7 @@ const planText = "## Plan: do x\n\n1. Read the thing\n   files: a.go\n   action:
 
 func TestRun_HappyPathSmall(t *testing.T) {
 	it := item(todo.SizeM)
-	s := Start(it, "sess", "manual", 3)
+	s := Start(it, "sess", "manual", 3, Options{Repo: true})
 	first := s.First(it, "")
 	if first.Action != ActionPrompt || first.Mode != ModePlan || !strings.Contains(first.Prompt, "RESEARCH") || !strings.Contains(first.Prompt, "BACKLOG ITEM x") {
 		t.Fatalf("first = %+v", first)
@@ -55,7 +55,7 @@ func TestRun_RemediationRoundsBySize(t *testing.T) {
 		rounds int
 	}{{todo.SizeS, 1}, {todo.SizeM, 2}, {todo.SizeL, 2}, {"", 2}} {
 		it := item(c.size)
-		s := Start(it, "", "", 0)
+		s := Start(it, "", "", 0, Options{Repo: true})
 		s.First(it, "")
 		s.Observe(it, strings.Replace(planText, "size: S", "size: "+string(c.size), 1))
 		s.Observe(it, "done")
@@ -79,7 +79,7 @@ func TestRun_RemediationRoundsBySize(t *testing.T) {
 
 func TestRun_ReviewFindingsThenClean(t *testing.T) {
 	it := item(todo.SizeM)
-	s := Start(it, "", "", 0)
+	s := Start(it, "", "", 0, Options{Repo: true})
 	s.First(it, "")
 	s.Observe(it, strings.Replace(planText, "size: S", "size: M", 1))
 	s.Observe(it, "done")
@@ -104,14 +104,14 @@ func TestRun_ResearchGates(t *testing.T) {
 	}
 	for name, text := range cases {
 		it := item(todo.SizeS)
-		s := Start(it, "", "", 0)
+		s := Start(it, "", "", 0, Options{Repo: true})
 		s.First(it, "")
 		if step := s.Observe(it, text); step.Action != ActionBlocked || s.Blocked == "" {
 			t.Errorf("%s: %+v", name, step)
 		}
 	}
 	it := item(todo.SizeS)
-	s := Start(it, "", "", 0)
+	s := Start(it, "", "", 0, Options{Repo: true})
 	s.First(it, "")
 	s.Observe(it, "## Plan: x\n\n1. a\n\nsize: L\nquestions: none\n")
 	if s.Size != todo.SizeL || s.SizeBefore != todo.SizeS || !strings.Contains(s.Summary(), "size L (was S)") {
@@ -140,7 +140,7 @@ func TestParsers(t *testing.T) {
 func TestTestCommands_SnapshotAtStart(t *testing.T) {
 	it := item(todo.SizeS)
 	it.Body = "## Tests\n- `go test ./a`\n- go vet ./...\n-\n\n## Notes\n- not a test"
-	s := Start(it, "", "", 0)
+	s := Start(it, "", "", 0, Options{Repo: true})
 	if got := strings.Join(s.Tests, "|"); got != "go test ./a|go vet ./..." {
 		t.Errorf("tests = %q", got)
 	}
@@ -148,7 +148,7 @@ func TestTestCommands_SnapshotAtStart(t *testing.T) {
 
 func TestCheckpoint_RoundTrips(t *testing.T) {
 	root := t.TempDir()
-	s := Start(item(todo.SizeS), "sess", "manual", 2)
+	s := Start(item(todo.SizeS), "sess", "manual", 2, Options{Repo: true})
 	s.Stage = StageVerify
 	s.Round = 1
 	if err := s.Save(root); err != nil {
@@ -186,7 +186,7 @@ func TestRun_PauseGatesBySize(t *testing.T) {
 	}
 	for _, c := range cases {
 		it := item(c.before)
-		s := Start(it, "", "", 0)
+		s := Start(it, "", "", 0, Options{Repo: true})
 		s.First(it, "")
 		step := s.Observe(it, c.text)
 		if step.Action != c.action || !strings.Contains(s.Paused, c.pausedContain) {
@@ -200,7 +200,7 @@ func TestRun_PauseGatesBySize(t *testing.T) {
 
 func TestRun_ResumeAndReplan(t *testing.T) {
 	it := item(todo.SizeL)
-	s := Start(it, "", "", 0)
+	s := Start(it, "", "", 0, Options{Repo: true})
 	s.First(it, "")
 	large := strings.Replace(planText, "size: S", "size: L", 1)
 	if step := s.Observe(it, large); step.Action != ActionPause {
@@ -224,7 +224,7 @@ func TestRun_ResumeAndReplan(t *testing.T) {
 
 func TestRun_ReviewBySize(t *testing.T) {
 	it := item(todo.SizeM)
-	s := Start(it, "", "", 0)
+	s := Start(it, "", "", 0, Options{Repo: true})
 	s.First(it, "")
 	s.Observe(it, strings.Replace(planText, "size: S", "size: M", 1))
 	s.Observe(it, "done")
@@ -252,7 +252,7 @@ func TestRun_ReviewBySize(t *testing.T) {
 		t.Fatalf("the second review is a new child: %q", s.Reviewer)
 	}
 	small := item(todo.SizeS)
-	ss := Start(small, "", "", 0)
+	ss := Start(small, "", "", 0, Options{Repo: true})
 	ss.First(small, "")
 	ss.Observe(small, planText)
 	ss.Observe(small, "done")
@@ -264,7 +264,7 @@ func TestRun_ReviewBySize(t *testing.T) {
 func TestContinue_ReentersEachStage(t *testing.T) {
 	it := item(todo.SizeM)
 	for stage, want := range map[Stage]Action{StageResearch: ActionPrompt, StageImplement: ActionPrompt, StageRemediate: ActionPrompt, StageVerify: ActionVerify, StageReview: ActionReview, StageCommit: ActionPrompt, StageDone: ActionBlocked, StageBlocked: ActionBlocked} {
-		s := Start(it, "", "", 0)
+		s := Start(it, "", "", 0, Options{Repo: true})
 		s.Stage, s.Plan, s.Size, s.Message = stage, "## Plan: x\n\n1. a", todo.SizeM, "stale"
 		step := s.Continue(it)
 		if step.Action != want {
@@ -278,7 +278,7 @@ func TestContinue_ReentersEachStage(t *testing.T) {
 
 func TestContinue_AtAPauseReshowsTheCard(t *testing.T) {
 	it := item(todo.SizeL)
-	s := Start(it, "", "", 0)
+	s := Start(it, "", "", 0, Options{Repo: true})
 	s.Stage, s.Paused, s.Plan = StageResearch, "a large item pauses", "## Plan: x\n\n1. a"
 	if step := s.Continue(it); step.Action != ActionPause || s.Paused == "" {
 		t.Fatalf("continue at a pause = %+v", step)
@@ -287,12 +287,131 @@ func TestContinue_AtAPauseReshowsTheCard(t *testing.T) {
 
 func TestReview_NamesAreNeverReused(t *testing.T) {
 	it := item(todo.SizeM)
-	s := Start(it, "", "", 0)
+	s := Start(it, "", "", 0, Options{Repo: true})
 	s.Size = todo.SizeM
 	first := s.review(it).Shown
 	s.Reviewer = ""
 	second := s.review(it).Shown
 	if first == second || !strings.HasSuffix(first, "-1") || !strings.HasSuffix(second, "-2") {
 		t.Fatalf("names = %q %q", first, second)
+	}
+}
+
+// A run asked for without a commit ends at the review: it archives with a
+// report that names the paths the work is in and says it was not committed,
+// rather than going on to a commit turn with nothing to commit into.
+func TestRun_WithoutACommitEndsAfterTheReview(t *testing.T) {
+	it := item(todo.SizeM)
+	s := Start(it, "sess", "manual", 1, Options{NoCommit: true})
+	s.First(it, "")
+	s.Observe(it, planText)
+	s.Observe(it, "Changed a.go.")
+	s.VerifyResult(it, true, "")
+	s.Paths = []string{"a.go", "a_test.go"}
+
+	step := s.Observe(it, "verdict: clean")
+	if step.Action != ActionDone || step.Stage != StageDone || !s.Over() {
+		t.Fatalf("a clean review without a commit should archive: %+v", step)
+	}
+	if !strings.Contains(step.Shown, "not committed") {
+		t.Errorf("the run row should say so: %q", step.Shown)
+	}
+	if strings.Join(s.Files, ",") != "a.go,a_test.go" {
+		t.Errorf("the archived files = %v, want the run's paths", s.Files)
+	}
+	for _, want := range []string{"## Report", "not committed", "a.go", "a_test.go"} {
+		if !strings.Contains(s.Report, want) {
+			t.Errorf("the report does not carry %q:\n%s", want, s.Report)
+		}
+	}
+	if !strings.Contains(s.Summary(), "not committed") {
+		t.Errorf("the summary should say a run makes no commit: %q", s.Summary())
+	}
+}
+
+// The default is unchanged: nothing asked for means a commit turn follows a
+// clean review, as it always did.
+func TestRun_ACommitIsStillTheDefaultEnd(t *testing.T) {
+	it := item(todo.SizeM)
+	s := Start(it, "", "", 0, Options{Repo: true})
+	s.First(it, "")
+	s.Observe(it, planText)
+	s.Observe(it, "Changed a.go.")
+	s.VerifyResult(it, true, "")
+	if step := s.Observe(it, "verdict: clean"); step.Stage != StageCommit || step.Action != ActionPrompt {
+		t.Fatalf("a clean review should ask for a commit message: %+v", step)
+	}
+}
+
+// Every stage prompt that names a git command reads one fact, so outside a
+// repository none of them tells the model to run something that will fail.
+func TestPrompts_GitStepsAreConditionalOnARepository(t *testing.T) {
+	it := item(todo.SizeM)
+	for _, c := range []struct {
+		name  string
+		build func(repo bool) string
+		want  string
+	}{
+		{"review", func(repo bool) string { return reviewPrompt(it, planText, repo) }, "`git diff`"},
+		{"commit", func(repo bool) string { return commitPrompt(it, planText, repo) }, "git log -10"},
+	} {
+		if got := c.build(true); !strings.Contains(got, c.want) {
+			t.Errorf("%s in a repository should still ask for %s:\n%s", c.name, c.want, got)
+		}
+		got := c.build(false)
+		if strings.Contains(got, c.want) {
+			t.Errorf("%s outside a repository asks for %s anyway:\n%s", c.name, c.want, got)
+		}
+		if !strings.Contains(got, "not a git repository") && !strings.Contains(got, "no history here") {
+			t.Errorf("%s outside a repository does not say why:\n%s", c.name, got)
+		}
+	}
+}
+
+// The reviewer child cannot run commands, so outside a repository the diff
+// in its task is the whole of what changed and the task says so — a
+// reviewer that believes there is history behind it reports a file as
+// unchanged when what it found was no repository to ask.
+func TestReviewTask_WithoutARepositorySaysTheDiffIsAllThereIs(t *testing.T) {
+	it := item(todo.SizeM)
+	const patch = "diff --git a/a.go b/a.go\n+++ b/a.go\n+x\n"
+
+	s := Start(it, "", "", 0, Options{NoCommit: true})
+	task := s.ReviewTask(it, patch)
+	if !strings.Contains(task, patch) {
+		t.Errorf("the task should carry the changeset diff:\n%s", task)
+	}
+	if !strings.Contains(task, "not a git repository") {
+		t.Errorf("the task should say there is no history behind it:\n%s", task)
+	}
+
+	inRepo := Start(it, "", "", 0, Options{Repo: true})
+	if got := inRepo.ReviewTask(it, patch); strings.Contains(got, "not a git repository") {
+		t.Errorf("a task inside a repository should not carry the note:\n%s", got)
+	}
+}
+
+// A checkpoint parked at the commit stage, continued after the run was
+// asked for without a commit, archives instead of taking the commit turn.
+// Re-sending the prompt there would make exactly the commit the person had
+// just said not to make.
+func TestRun_ContinueAtCommitHonoursANoCommitRun(t *testing.T) {
+	it := item(todo.SizeM)
+	s := Start(it, "sess", "manual", 1, Options{Repo: true})
+	s.Stage = StageCommit
+	s.Paths = []string{"a.go"}
+
+	if step := s.Continue(it); step.Action != ActionPrompt || step.Stage != StageCommit {
+		t.Fatalf("a committing run should still ask for its message: %+v", step)
+	}
+
+	s.Stage = StageCommit
+	s.NoCommit = true
+	step := s.Continue(it)
+	if step.Action != ActionDone || step.Stage != StageDone || !s.Over() {
+		t.Fatalf("a continued run without a commit should archive: %+v", step)
+	}
+	if !strings.Contains(s.Report, "not committed") || !strings.Contains(s.Report, "a.go") {
+		t.Errorf("the report should say so and name the path:\n%s", s.Report)
 	}
 }

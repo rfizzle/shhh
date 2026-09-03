@@ -30,8 +30,16 @@ func runModel(t *testing.T) (Model, string) {
 
 // runModelAt is runModel with the session's root chosen by the caller, so a
 // test can hand it a root that reaches the same directory by another name.
+//
+// The root is made to look like a repository. A run ends in a commit and
+// refuses a directory with none, and the .git entry is what that refusal
+// reads — an empty directory is enough for it, so the fixture costs no git
+// binary and no seeded history.
 func runModelAt(t *testing.T, root string) (Model, string) {
 	t.Helper()
+	if err := os.MkdirAll(filepath.Join(root, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
 	dir := todo.Dir(root)
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
@@ -933,5 +941,143 @@ func TestTodoRun_FanOutWithoutASupervisorBuildsWhole(t *testing.T) {
 	m = answer(t, updated.(Model), "LANE: alpha\npaths: a.go\ntask: change a\n\nLANE: beta\npaths: b.go\ntask: create b\n")
 	if m.todoRun == nil || m.todoRun.Stage != run.StageImplement || !m.working() || len(m.todoRun.Lanes) != 0 {
 		t.Fatalf("no supervisor should build the item in this session: %+v", m.todoRun)
+	}
+}
+
+// runModelNoRepo is runModel in a directory that is not a repository, which
+// is the case the run used to discover only at the commit stage.
+func runModelNoRepo(t *testing.T) (Model, string) {
+	t.Helper()
+	m, root := runModel(t)
+	must(t, os.Remove(filepath.Join(root, ".git")))
+	return m, root
+}
+
+// A run that would end in a commit is refused before the research turn, in
+// one sentence naming the directory and both ways of asking for it anyway.
+// Nothing is written: the item is not marked in progress and no checkpoint
+// is left behind, so the backlog reads as it did before the command.
+func TestTodoRun_OutsideARepositoryRefusesBeforeResearch(t *testing.T) {
+	m, root := runModelNoRepo(t)
+	m.input.SetValue("/todo run do-it")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+
+	if m.todoRun != nil || m.working() {
+		t.Fatalf("no run should have started: run=%+v working=%v", m.todoRun, m.working())
+	}
+	if it, _ := todo.Load(root).Find("do-it"); it.Status != todo.StatusOpen {
+		t.Errorf("the item should be left open, got %s", it.Status)
+	}
+	if _, err := run.Load(root, "do-it"); err == nil {
+		t.Error("a refused run should leave no checkpoint")
+	}
+	notice := m.transcript[len(m.transcript)-1].text
+	for _, want := range []string{"not in a git repository", "--no-commit", "todo.commit = false"} {
+		if !strings.Contains(notice, want) {
+			t.Errorf("the refusal does not carry %q: %q", want, notice)
+		}
+	}
+	if strings.Contains(notice, ". ") {
+		t.Errorf("the refusal is more than one sentence: %q", notice)
+	}
+}
+
+// The same run asked for without a commit works the item through and
+// archives it, with the row and the report both saying it was not
+// committed and naming where the change is.
+func TestTodoRun_NoCommitArchivesAndSaysSo(t *testing.T) {
+	m, root := runModelNoRepo(t)
+	m.input.SetValue("/todo run do-it --no-commit")
+	updated, _ := m.submitInput()
+	m = updated.(Model)
+	if m.todoRun == nil || !m.todoRun.NoCommit || m.todoRun.Repo {
+		t.Fatalf("the run should have started without a commit: %+v", m.todoRun)
+	}
+
+	m = answer(t, m, runPlan)
+	m.changes.Add(int64(m.todoRun.Turn), changeset.Record{
+		Path: filepath.Join(root, "a.go"), Before: "a", After: "b", BeforeExists: true, AfterExists: true,
+	})
+	m = answer(t, m, "Changed a.go.")
+	updated, _ = m.Update(todoVerifyMsg{slug: "do-it", ok: true, output: "$ true → exit 0"})
+	m = updated.(Model)
+	if m.todoRun.Stage != run.StageReview {
+		t.Fatalf("review should follow a passing verify: %s", m.todoRun.Stage)
+	}
+	m = answer(t, m, "verdict: clean")
+	if m.todoRun != nil || m.mode != agent.ModeManual {
+		t.Fatalf("a clean review should end the run and restore the mode: %+v", m.todoRun)
+	}
+
+	done, ok := todo.Load(root).Find("do-it")
+	if !ok || !done.Archived {
+		t.Fatalf("the item should be archived: %+v", done)
+	}
+	for _, want := range []string{"not committed", "a.go"} {
+		if !strings.Contains(done.Body, want) {
+			t.Errorf("the archived report does not carry %q:\n%s", want, done.Body)
+		}
+	}
+	if strings.Contains(done.Body, "Committed:") {
+		t.Errorf("a run that made no commit must not claim one:\n%s", done.Body)
+	}
+	row := m.transcript[len(m.transcript)-1].text
+	if !strings.Contains(row, "✓ todo run do-it done") || !strings.Contains(row, "not committed") {
+		t.Errorf("the run row does not say the work was not committed: %q", row)
+	}
+}
+
+// A word the command does not know is refused rather than taken as a slug:
+// a mistyped flag would otherwise start a committing run on an item named
+// after the typo, which is the answer the flag was there to avoid.
+func TestParseTodoRunArgs(t *testing.T) {
+	for _, c := range []struct {
+		args     []string
+		arg      string
+		noCommit bool
+		ok       bool
+	}{
+		{nil, "", false, true},
+		{[]string{"do-it"}, "do-it", false, true},
+		{[]string{"--next"}, "--next", false, true},
+		{[]string{"--no-commit"}, "", true, true},
+		{[]string{"do-it", "--no-commit"}, "do-it", true, true},
+		{[]string{"--no-commit", "do-it"}, "do-it", true, true},
+		{[]string{"--no-commmit"}, "", false, false},
+		{[]string{"do-it", "and-this"}, "", false, false},
+	} {
+		arg, noCommit, ok := parseTodoRunArgs(c.args)
+		if arg != c.arg || noCommit != c.noCommit || ok != c.ok {
+			t.Errorf("parseTodoRunArgs(%v) = %q/%v/%v, want %q/%v/%v", c.args, arg, noCommit, ok, c.arg, c.noCommit, c.ok)
+		}
+	}
+}
+
+// The staged-changes check reads three different failures out of git, and
+// the sentence a wrong reading produced — one about an index that does not
+// exist — is the defect.
+func TestTodoCommitCmd_EachGitExitDrawsItsOwnSentence(t *testing.T) {
+	root := t.TempDir()
+	m := frameModel(t, 130, 40)
+	m.changes = changeset.New(1 << 20)
+	m = m.WithTodos(Todos{Root: root, Manage: func([]string) string { return "" }, Detail: func(*todo.Store, todo.Item) string { return "" }})
+	m.todoRun = &run.State{Slug: "x", Turn: 1, Message: "Change a\n\nBecause."}
+	m.changes.Add(1, changeset.Record{Path: filepath.Join(root, "a.go"), Before: "a", After: "b", BeforeExists: true, AfterExists: true})
+
+	if _, err := exec.LookPath("git"); err == nil {
+		msg := m.todoCommitCmd()().(todoCommitMsg)
+		if msg.err == nil || !strings.Contains(msg.err.Error(), "not a git repository") {
+			t.Errorf("outside a repository the commit should say so: %v", msg.err)
+		}
+		if msg.err != nil && strings.Contains(msg.err.Error(), "staged changes") {
+			t.Errorf("outside a repository there is no index to blame: %v", msg.err)
+		}
+	}
+
+	t.Setenv("PATH", "")
+	msg := m.todoCommitCmd()().(todoCommitMsg)
+	if msg.err == nil || !strings.Contains(msg.err.Error(), "git is not on the path") {
+		t.Errorf("without git the commit should say so: %v", msg.err)
 	}
 }
