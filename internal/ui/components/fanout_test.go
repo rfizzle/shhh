@@ -206,3 +206,32 @@ func TestFanoutHeaderSettles(t *testing.T) {
 		t.Fatalf("the header should name the size of the fan-out: %q", header)
 	}
 }
+
+// TestFanoutLaneSaysWhatItStartedFrom is the seeded-worktree criterion on a
+// lane: a writer working from your uncommitted files says how many, while it
+// is working and there is nothing else under the lane to say. A lane that has
+// stopped, or one waiting on you, has something better to put there, and a
+// child that started from the last commit has nothing to explain.
+func TestFanoutLaneSaysWhatItStartedFrom(t *testing.T) {
+	running := FanoutLane{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md", Seeded: 5}
+	if view := ansi.Strip(running.View(110)); !strings.Contains(view, "started from 5 uncommitted files in your tree") {
+		t.Fatalf("a seeded lane should say what it started from: %q", view)
+	}
+	one := FanoutLane{State: FanoutRunning, Name: "writer-1", Seeded: 1}
+	if view := ansi.Strip(one.View(110)); !strings.Contains(view, "started from 1 uncommitted file in your tree") {
+		t.Fatalf("one file is one file: %q", view)
+	}
+
+	none := FanoutLane{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md"}
+	if view := ansi.Strip(none.View(110)); strings.Contains(view, "started from") {
+		t.Fatalf("a child started from the last commit should say nothing: %q", view)
+	}
+	done := FanoutLane{State: FanoutDone, Name: "writer-1", Seeded: 5, Summary: "documented the sentinel"}
+	if view := ansi.Strip(done.View(110)); !strings.Contains(view, "documented the sentinel") || strings.Contains(view, "started from") {
+		t.Fatalf("a finished lane should keep its result and drop the seed line: %q", view)
+	}
+	blocked := FanoutLane{State: FanoutBlocked, Name: "writer-1", Seeded: 5, Waiting: "waiting approval: apply patch"}
+	if view := ansi.Strip(blocked.View(110)); !strings.Contains(view, "waiting approval") || strings.Contains(view, "started from") {
+		t.Fatalf("a blocked lane should say what it needs and nothing else: %q", view)
+	}
+}

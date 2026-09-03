@@ -80,6 +80,10 @@ type FanoutLane struct {
 	// Waiting names what a blocked child is waiting for, stated under the
 	// lane: "needs you" without saying what for sends you looking.
 	Waiting string
+	// Seeded is how many of your uncommitted files the child's own copy of
+	// the repository was started from. Zero says nothing — a child that
+	// started from the last commit has nothing to explain.
+	Seeded int
 	// Frame is the spinner frame for a lane with no declared step count; the
 	// host ticks it.
 	Frame int
@@ -231,15 +235,20 @@ func (l FanoutLane) View(width int) string {
 	return strings.Join(lines, "\n")
 }
 
-// note is the line under the lane: a blocked child's reason, or a finished
-// child's result. A running child has nothing to add that the lane does not
-// already say.
+// note is the line under the lane: a blocked child's reason, a finished
+// child's result, or — for a child still working, which has nothing else to
+// add — what its copy of the repository was started from. Which of your
+// uncommitted files a writer can see is a question you have while it runs and
+// not after it has answered, so the line gives way to the outcome.
 func (l FanoutLane) note() string {
 	if l.State == FanoutBlocked {
 		return l.Waiting
 	}
 	if l.State.settled() {
 		return l.Summary
+	}
+	if l.Seeded > 0 {
+		return "started from " + plural(l.Seeded, "uncommitted file") + " in your tree"
 	}
 	return ""
 }

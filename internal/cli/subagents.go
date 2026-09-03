@@ -16,6 +16,7 @@ import (
 	"strings"
 
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/mcp"
@@ -157,10 +158,13 @@ func (a *agentProfiles) modelFor(cfg config.Config, role subagent.Role, requeste
 	return cfg.AgentModel(string(role), sessionModel)
 }
 
-// buildSupervisor assembles the session's sub-agent supervisor.
+// buildSupervisor assembles the session's sub-agent supervisor. The session's
+// changeset comes in because a writer starts from the parent's tree, and the
+// files git has never heard of are the half of that tree only the session
+// itself can name.
 func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession, env *sessionEnv, agents *agentProfiles,
 	red *evidence.Reducer, recorder *observeRecorder, db *storage.DB, prices *pricing.Table,
-	classifier *agent.Classifier, sc *scope.Scope, ledger *meter.Ledger) *subagent.Supervisor {
+	classifier *agent.Classifier, sc *scope.Scope, ledger *meter.Ledger, changes *changeset.Store) *subagent.Supervisor {
 	root, err := os.Getwd()
 	if err != nil {
 		root = "."
@@ -382,7 +386,37 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		// pinned (RootArgs). This is what stops a child *command* writing
 		// somewhere the parent never put in scope.
 		ScopeDirs: sc.All,
+		Untracked: func() []string { return sessionUntracked(changes) },
 	})
+}
+
+// sessionUntracked lists the files the session itself created that git does
+// not know about, so a writer's worktree can start from them the way it
+// starts from everything `git diff HEAD` reports.
+//
+// The list is the session's own record and deliberately not `git status`:
+// a checkout has untracked files nobody in this conversation put there — a
+// scratch note, a core dump, a directory of build output — and carrying them
+// into every writer's worktree would copy the person's desk rather than their
+// work (docs/capabilities/subagents.md#a-writer-starts-from-your-tree).
+//
+// The paths are named the way the session named them, relative to where it is
+// standing or absolute; the worktree resolves them against the repository.
+func sessionUntracked(changes *changeset.Store) []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, turn := range changes.Turns() {
+		for _, r := range turn.Records {
+			// AfterExists, because a file the session created and then
+			// deleted has nothing to carry, and the record still holds it.
+			if r.Track != changeset.TrackUntracked || !r.AfterExists || seen[r.Path] {
+				continue
+			}
+			seen[r.Path] = true
+			out = append(out, r.Path)
+		}
+	}
+	return out
 }
 
 // scopeNote tells a child that declared a write scope about it: other

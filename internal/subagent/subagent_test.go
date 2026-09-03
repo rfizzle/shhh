@@ -1100,3 +1100,86 @@ func TestKillWakesAChildWaitingOutAProvider(t *testing.T) {
 	// waitState gives up well inside the minute the wait would otherwise run.
 	waitState(t, sup, "researcher-1", StateFailed)
 }
+
+// A lane can only say what its child started from if the count travels with
+// the status. A reader has no copy of the repository and starts from nothing,
+// so it is never asked what the parent has not committed.
+func TestWriterStatusCountsWhatItStartedFrom(t *testing.T) {
+	repo := initTestRepo(t)
+	if err := os.WriteFile(filepath.Join(repo, "main.go"), []byte("package main\n\nvar edited = true\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(repo, "notes.md"), []byte("the session wrote this\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	asked := 0
+	env := &scriptedEnv{steps: []streamStep{{text: "done"}, {text: "done"}}}
+	sup := New(context.Background(), Options{
+		Root:   repo,
+		NewEnv: env.factory(),
+		Untracked: func() []string {
+			asked++
+			return []string{"notes.md"}
+		},
+	})
+	t.Cleanup(sup.Close)
+
+	if _, err := spawnRaw(sup, `{"role":"writer","task":"carry on"}`); err != nil {
+		t.Fatalf("the writer should spawn: %v", err)
+	}
+	if _, err := spawnRaw(sup, `{"role":"researcher","task":"look around"}`); err != nil {
+		t.Fatalf("the researcher should spawn: %v", err)
+	}
+	if st, ok := sup.Get("writer-1"); !ok || st.Seeded != 2 {
+		t.Fatalf("the writer's status should say it started from 2 parent paths, got %+v", st)
+	}
+	if st, ok := sup.Get("researcher-1"); !ok || st.Seeded != 0 {
+		t.Fatalf("a reader starts from nothing, got %+v", st)
+	}
+	if asked != 1 {
+		t.Fatalf("the parent's untracked files were asked for %d times, want once — only the writer has a worktree", asked)
+	}
+}
+
+// A retry is a second attempt against the tree as it is now, not as it was
+// when the first attempt started: minutes have passed, and the session has
+// usually gone on working in them. A child handed the old tree would write
+// its patch against text the session has already moved past — the very thing
+// starting from the parent's tree exists to avoid.
+func TestRetryStartsFromTheTreeAsItIsNow(t *testing.T) {
+	repo := initTestRepo(t)
+	untracked := []string{}
+	env := &scriptedEnv{}
+	sup := New(context.Background(), Options{
+		Root:      repo,
+		NewEnv:    env.factory(),
+		Untracked: func() []string { return untracked },
+	})
+	t.Cleanup(sup.Close)
+
+	// No scripted steps: the first stream fails, which fails the child.
+	if _, err := spawnRaw(sup, `{"role":"writer","task":"carry on"}`); err != nil {
+		t.Fatalf("the writer should spawn: %v", err)
+	}
+	waitState(t, sup, "writer-1", StateFailed)
+	if st, _ := sup.Get("writer-1"); st.Seeded != 0 {
+		t.Fatalf("a clean parent seeded %d paths, want none", st.Seeded)
+	}
+
+	// The session keeps working while the child is down.
+	if err := os.WriteFile(filepath.Join(repo, "notes.md"), []byte("written since\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	untracked = []string{"notes.md"}
+
+	env.mu.Lock()
+	env.steps = []streamStep{{text: "done"}}
+	env.mu.Unlock()
+	if err := sup.Retry("writer-1"); err != nil {
+		t.Fatalf("retry: %v", err)
+	}
+	waitState(t, sup, "writer-1", StateDone)
+	if st, _ := sup.Get("writer-1"); st.Seeded != 1 {
+		t.Fatalf("the retry started from %d parent paths, want the one written since", st.Seeded)
+	}
+}

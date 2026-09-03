@@ -96,10 +96,11 @@ func initTestRepo(t *testing.T) string {
 func TestWorktreeLifecycle(t *testing.T) {
 	repo := initTestRepo(t)
 
-	worktree, childRoot, repoTop, err := addWorktree(repo)
+	wt, err := addWorktree(repo, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
+	worktree, childRoot, repoTop := wt.dir, wt.root, wt.repoTop
 	defer removeWorktree(repoTop, worktree)
 
 	// Edit a tracked file and add a new one inside the worktree.
@@ -144,7 +145,7 @@ func TestAddWorktreeNeedsGitRepo(t *testing.T) {
 	if _, err := exec.LookPath("git"); err != nil {
 		t.Skip("git not on PATH")
 	}
-	if _, _, _, err := addWorktree(t.TempDir()); err == nil {
+	if _, err := addWorktree(t.TempDir(), nil); err == nil {
 		t.Fatal("expected an error outside a git repository")
 	}
 }
@@ -209,19 +210,244 @@ func TestWorktree_RootReachedThroughASymlink(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	worktree, childRoot, repoTop, err := addWorktree(filepath.Join(link, "sub"))
+	wt, err := addWorktree(filepath.Join(link, "sub"), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer removeWorktree(repoTop, worktree)
-	if want := filepath.Join(worktree, "sub"); childRoot != want {
-		t.Fatalf("the child should mirror the session's place in the repo: %q, want %q", childRoot, want)
+	defer removeWorktree(wt.repoTop, wt.dir)
+	if want := filepath.Join(wt.dir, "sub"); wt.root != want {
+		t.Fatalf("the child should mirror the session's place in the repo: %q, want %q", wt.root, want)
 	}
 
-	files := patchedFiles(link, repoTop, []string{"main.go"},
+	files := patchedFiles(link, wt.repoTop, []string{"main.go"},
 		map[string]fileSide{"main.go": {text: "one\n", exists: true}},
 		map[string]fileSide{"main.go": {text: "two\n", exists: true}})
 	if files[0].Path != "main.go" {
 		t.Fatalf("a patched file should be named relative to the session root, got %q", files[0].Path)
+	}
+}
+
+// writeInto writes one file under dir, creating the directories above it.
+func writeInto(t *testing.T, dir, rel, body string) {
+	t.Helper()
+	path := filepath.Join(dir, rel)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// readFrom reads one file under dir, failing the test when it is not there.
+func readFrom(t *testing.T, dir, rel string) string {
+	t.Helper()
+	data, err := os.ReadFile(filepath.Join(dir, rel))
+	if err != nil {
+		t.Fatalf("reading %s: %v", rel, err)
+	}
+	return string(data)
+}
+
+// A session that has been working for an hour has an hour of changes that no
+// commit holds. A child branched from HEAD alone would read the code as it
+// was before any of them, and every hunk it wrote over a file the session had
+// already edited would clash on the way back. So the worktree starts from the
+// parent's tree: the tracked edit is there to read, the untracked file the
+// session created is there, and the patch that comes back is the child's own
+// work applying cleanly on top of the parent's.
+func TestWorktree_SeededFromTheParentsUncommittedWork(t *testing.T) {
+	repo := initTestRepo(t)
+	writeInto(t, repo, "main.go", "package main\n\nvar edited = true\n")
+	writeInto(t, repo, "docs/notes.md", "the session wrote this\n")
+
+	wt, err := addWorktree(repo, []string{"docs/notes.md"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer removeWorktree(wt.repoTop, wt.dir)
+
+	if wt.seeded != 2 {
+		t.Fatalf("the child started from %d parent paths, want 2", wt.seeded)
+	}
+	if got := readFrom(t, wt.root, "main.go"); !strings.Contains(got, "var edited = true") {
+		t.Fatalf("the parent's uncommitted edit is not in the worktree:\n%s", got)
+	}
+	if got := readFrom(t, wt.root, "docs/notes.md"); got != "the session wrote this\n" {
+		t.Fatalf("the parent's untracked file is not in the worktree: %q", got)
+	}
+
+	writeInto(t, wt.root, "main.go", "package main\n\nvar edited = true\nvar byTheChild = true\n")
+	patch, err := worktreePatch(wt.dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(patch, "byTheChild") {
+		t.Fatalf("the child's own work is missing from its patch:\n%s", patch)
+	}
+	// The seed is the base, so nothing the parent had already done comes
+	// back as if the child had done it.
+	for _, unwanted := range []string{"docs/notes.md", "+var edited = true"} {
+		if strings.Contains(patch, unwanted) {
+			t.Fatalf("the patch hands back the parent's own work (%q):\n%s", unwanted, patch)
+		}
+	}
+
+	if err := applyPatch(wt.repoTop, patch); err != nil {
+		t.Fatalf("the child's patch should apply to the tree it was written against: %v", err)
+	}
+	main := readFrom(t, repo, "main.go")
+	if !strings.Contains(main, "var edited = true") || !strings.Contains(main, "var byTheChild = true") {
+		t.Fatalf("the apply should leave both the parent's edit and the child's:\n%s", main)
+	}
+}
+
+// A parent with nothing uncommitted is seeded by doing nothing at all: the
+// child stands on the parent's own commit, with a clean tree behind it and
+// the same empty patch it would have produced before any of this existed.
+func TestWorktree_CleanParentIsUntouched(t *testing.T) {
+	repo := initTestRepo(t)
+	head, err := gitOutput(repo, "rev-parse", "HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wt, err := addWorktree(repo, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer removeWorktree(wt.repoTop, wt.dir)
+
+	if wt.seeded != 0 {
+		t.Fatalf("a clean parent seeded %d paths, want none", wt.seeded)
+	}
+	childHead, err := gitOutput(wt.dir, "rev-parse", "HEAD")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if childHead != head {
+		t.Fatalf("the child should stand on the parent's commit: %q, want %q", childHead, head)
+	}
+	status, err := gitOutput(wt.dir, "status", "--porcelain")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if status != "" {
+		t.Fatalf("a clean parent should leave a clean worktree, got:\n%s", status)
+	}
+	patch, err := worktreePatch(wt.dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if patch != "" {
+		t.Fatalf("a child that changed nothing should produce no patch:\n%s", patch)
+	}
+}
+
+// The falsifiable half of the same claim: with nothing to carry, the seed
+// runs no git in the worktree — so it can be pointed at a directory that does
+// not exist and still succeed. Anything it ran there would fail instead.
+func TestSeedWorktree_CleanParentRunsNothing(t *testing.T) {
+	repo := initTestRepo(t)
+	n, err := seedWorktree(repo, filepath.Join(t.TempDir(), "not-a-worktree"), nil)
+	if err != nil {
+		t.Fatalf("a clean parent should seed without touching the worktree: %v", err)
+	}
+	if n != 0 {
+		t.Fatalf("seeded %d paths from a clean parent, want none", n)
+	}
+}
+
+// An untracked path the session recorded and the person then deleted is not
+// an error: there is simply nothing left to carry, and a spawn that failed
+// over it would be a writer lost to a file nobody wanted.
+func TestSeedWorktree_UntrackedFileThatHasSinceGone(t *testing.T) {
+	repo := initTestRepo(t)
+	wt, err := addWorktree(repo, []string{"deleted-since.md"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer removeWorktree(wt.repoTop, wt.dir)
+	if wt.seeded != 0 {
+		t.Fatalf("a path that is not there seeded %d, want none", wt.seeded)
+	}
+}
+
+// The session names its files from where it is standing; a worktree is a copy
+// of the repository and can only hold what is under the top.
+func TestRepoRelative(t *testing.T) {
+	repoTop := t.TempDir()
+	root := filepath.Join(repoTop, "sub")
+	if err := os.MkdirAll(root, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	got := repoRelative(root, repoTop, []string{
+		"notes.md",
+		"notes.md",
+		filepath.Join(root, "notes.md"),
+		filepath.Join(repoTop, "top.md"),
+		filepath.Join(t.TempDir(), "elsewhere.md"),
+		"",
+	})
+	want := []string{"sub/notes.md", "top.md"}
+	if len(got) != len(want) {
+		t.Fatalf("repoRelative = %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("repoRelative = %v, want %v", got, want)
+		}
+	}
+}
+
+// A file the session created and the person has since staged is in both
+// halves of the seed: git reports it in the diff, and the session's record
+// still remembers it as one git had never heard of. It is carried once and
+// counted once, because the count is a number on screen that somebody may
+// check against their own tree.
+func TestSeedWorktree_AFileAddedSinceIsCountedOnce(t *testing.T) {
+	repo := initTestRepo(t)
+	writeInto(t, repo, "added.go", "package main\n")
+	cmd := exec.Command("git", "-C", repo, "add", "added.go")
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("git add: %v\n%s", err, out)
+	}
+
+	wt, err := addWorktree(repo, []string{"added.go"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer removeWorktree(wt.repoTop, wt.dir)
+	if wt.seeded != 1 {
+		t.Fatalf("a file in both halves of the seed counted %d, want 1", wt.seeded)
+	}
+	if got := readFrom(t, wt.root, "added.go"); got != "package main\n" {
+		t.Fatalf("the file should still be carried once, got %q", got)
+	}
+}
+
+// A symlink is left where it is rather than flattened into a copy of what it
+// points at: following one out of the repository would carry in a file nobody
+// named, and a dangling one has nothing to carry at all.
+func TestSeedWorktree_SymlinkIsNotFollowed(t *testing.T) {
+	repo := initTestRepo(t)
+	target := filepath.Join(t.TempDir(), "outside.txt")
+	if err := os.WriteFile(target, []byte("not yours\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(target, filepath.Join(repo, "link.txt")); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+
+	wt, err := addWorktree(repo, []string{"link.txt"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer removeWorktree(wt.repoTop, wt.dir)
+	if wt.seeded != 0 {
+		t.Fatalf("a symlink was carried: seeded %d, want 0", wt.seeded)
+	}
+	if _, err := os.Lstat(filepath.Join(wt.root, "link.txt")); !os.IsNotExist(err) {
+		t.Fatalf("the worktree should not have the link: %v", err)
 	}
 }

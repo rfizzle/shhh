@@ -738,12 +738,18 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// open.
 	recordGateVerdicts(gate, recorder)
 
+	// The changeset store is opened here rather than where the chat model
+	// takes it below, because a writer child starts from the parent's
+	// uncommitted work and the supervisor is built first. A conversation
+	// never wires it up and leaves it empty.
+	changes := changeset.New(changeset.DefaultMaxBytes)
+
 	// Sub-agent supervisor: spawn_agent and agent_report short-circuit
 	// on the executor chain; Close cancels the child tree and removes
 	// leftover worktrees when the session ends.
 	var sup *subagent.Supervisor
 	if session.agents {
-		sup = buildSupervisor(cmd.Context(), cfg, session, env, agents, red, recorder, db, prices, classifier, sc, ledger)
+		sup = buildSupervisor(cmd.Context(), cfg, session, env, agents, red, recorder, db, prices, classifier, sc, ledger, changes)
 		executor = sup.WrapExecutor(executor)
 		defer sup.Close()
 	}
@@ -812,7 +818,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			WithCommandTimeout(cfg.CommandTimeout()).
 			WithReadOnlyCommands(cfg.Behavior.ReadOnlyCommands, !cfg.ReadOnlyAutoEnabled()).
 			WithGitSnapshots(gitSnapshot).
-			WithChangeset(changeset.New(changeset.DefaultMaxBytes), changeset.NewTracker(".")).
+			WithChangeset(changes, changeset.NewTracker(".")).
 			WithTreeCheck(treeCheck(cfg)).
 			// First contact: the empty session's start screen, surveyed
 			// once here rather than assembled per frame.

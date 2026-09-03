@@ -155,6 +155,10 @@ type Status struct {
 	// and never reaches one; a lane showing several is a task outgrowing the
 	// interval its spawn chose, which is worth being able to see.
 	CheckIns int
+	// Seeded is how many of the parent's uncommitted paths the child's
+	// worktree was started from. Zero is a reader, or a writer spawned from
+	// a checkout with nothing uncommitted in it.
+	Seeded int
 }
 
 // EntryKind tags one child transcript entry: the attached view
@@ -331,6 +335,12 @@ type Options struct {
 	// MaxConcurrent bounds simultaneously running children; <= 0 uses
 	// DefaultMaxConcurrent.
 	MaxConcurrent int
+	// Untracked reports the files the parent session created that git does
+	// not know about, so a writer's worktree can start from them alongside
+	// everything `git diff HEAD` already reports. It is asked at each spawn,
+	// because a session goes on writing while its children run. Nil carries
+	// none, which is a writer starting from the last commit.
+	Untracked func() []string
 }
 
 // EventKind tags a supervisor event.
@@ -439,6 +449,7 @@ type child struct {
 	root      string   // working directory (worktree subdir for writers)
 	worktree  string   // worktree top dir; "" for researchers
 	repoTop   string   // parent repo toplevel; "" for researchers
+	seeded    int      // parent paths the worktree was started from
 	maxTokens int64
 
 	ctx      context.Context
@@ -531,6 +542,7 @@ func (c *child) status() Status {
 		Steps:     c.steps,
 		Summary:   summary,
 		CheckIns:  c.checkIns,
+		Seeded:    c.seeded,
 	}
 }
 
@@ -635,6 +647,17 @@ func (c *child) stop() {
 	if h != nil {
 		h.Interrupt()
 	}
+}
+
+// parentUntracked is what the session says it has created and git does not
+// know about, asked fresh for each worktree. A supervisor that was never told
+// carries nothing, which is what every writer did before it could start from
+// the parent's tree at all.
+func (s *Supervisor) parentUntracked() []string {
+	if s.opts.Untracked == nil {
+		return nil
+	}
+	return s.opts.Untracked()
 }
 
 // workspace is the attempt's isolated worktree and its parent repo top, read
@@ -1050,19 +1073,22 @@ func (s *Supervisor) Retry(name string) error {
 	}
 
 	root := s.opts.Root
-	worktree, repoTop := "", ""
+	var wt worktreeHandle
 	if c.profile.Writes {
-		worktree, root, repoTop, err = addWorktree(s.opts.Root)
-		if err != nil {
+		// The parent's tree is read again rather than reused: a retry
+		// happens minutes after the first attempt, and the session has
+		// usually gone on working in between.
+		if wt, err = addWorktree(s.opts.Root, s.parentUntracked()); err != nil {
 			return fmt.Errorf("cannot create an isolated worktree for the retry: %w", err)
 		}
+		root = wt.root
 	}
 	cctx, cancel := context.WithCancel(s.ctx)
 	env, err := s.opts.NewEnv(cctx, Spec{Name: c.name, Role: c.role, Root: root, Model: c.model, Paths: c.paths})
 	if err != nil {
 		cancel()
-		if worktree != "" {
-			removeWorktree(repoTop, worktree)
+		if wt.dir != "" {
+			removeWorktree(wt.repoTop, wt.dir)
 		}
 		return fmt.Errorf("cannot set up the retry: %w", err)
 	}
@@ -1074,7 +1100,7 @@ func (s *Supervisor) Retry(name string) error {
 	c.mu.Lock()
 	c.ctx, c.cancel = cctx, cancel
 	c.agent, c.env, c.headless = a, env, nil
-	c.root, c.worktree, c.repoTop = root, worktree, repoTop
+	c.root, c.worktree, c.repoTop, c.seeded = root, wt.dir, wt.repoTop, wt.seeded
 	c.done = make(chan struct{})
 	c.state, c.detail = StateQueued, "queued · retry"
 	c.started, c.ended = time.Now(), time.Time{}
@@ -1273,20 +1299,20 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 	}
 
 	root := s.opts.Root
-	worktree, repoTop := "", ""
+	var wt worktreeHandle
 	if args.profile.Writes {
-		worktree, root, repoTop, err = addWorktree(s.opts.Root)
-		if err != nil {
+		if wt, err = addWorktree(s.opts.Root, s.parentUntracked()); err != nil {
 			return "", fmt.Errorf("cannot create an isolated worktree for a writer agent: %w", err)
 		}
+		root = wt.root
 	}
 
 	cctx, cancel := context.WithCancel(s.ctx)
 	env, err := s.opts.NewEnv(cctx, Spec{Name: name, Role: args.role, Root: root, Model: model, Paths: args.paths})
 	if err != nil {
 		cancel()
-		if worktree != "" {
-			removeWorktree(repoTop, worktree)
+		if wt.dir != "" {
+			removeWorktree(wt.repoTop, wt.dir)
 		}
 		return "", fmt.Errorf("cannot set up the agent: %w", err)
 	}
@@ -1303,8 +1329,9 @@ func (s *Supervisor) spawn(raw json.RawMessage) (string, error) {
 		batch:     batch,
 		steps:     args.steps,
 		root:      root,
-		worktree:  worktree,
-		repoTop:   repoTop,
+		worktree:  wt.dir,
+		repoTop:   wt.repoTop,
+		seeded:    wt.seeded,
 		mode:      mode,
 		maxTokens: args.maxTokens,
 		ctx:       cctx,

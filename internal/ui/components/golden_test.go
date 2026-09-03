@@ -774,7 +774,8 @@ func TestGolden_AgentList(t *testing.T) {
 // answer, a batch where every child has stopped, and a batch nobody declared
 // a step count for, where every lane spins instead of drawing a ratio. The
 // spinner frame is fixed so the capture is about layout rather than about
-// when the test ran.
+// when the test ran. The mid-flight writer started from the parent's
+// uncommitted files, which is the one lane note a child still working has.
 func TestGolden_FanoutBlock(t *testing.T) {
 	captureGolden(t, "fanout-block", "fan-out block", goldenWidths, func(width int) []golden.Panel {
 		flight := FanoutBlock{
@@ -782,7 +783,7 @@ func TestGolden_FanoutBlock(t *testing.T) {
 			Keys:    []TurnKey{{Key: "[ctrl+b]", Label: "agents"}},
 			Lanes: []FanoutLane{
 				{State: FanoutRunning, Name: "writer-1", Task: "docs/loop.md",
-					Step: 2, Steps: 5, Tools: 6, Spend: "$0.02", Elapsed: "12s"},
+					Step: 2, Steps: 5, Tools: 6, Spend: "$0.02", Elapsed: "12s", Seeded: 5},
 				{State: FanoutDone, Name: "tester-2", Task: "internal/agent tests",
 					Tools: 9, Spend: "$0.03", Elapsed: "41s", Summary: "all four packages pass"},
 				{State: FanoutBlocked, Name: "scout-3", Task: "other ErrRoundLimit callers",

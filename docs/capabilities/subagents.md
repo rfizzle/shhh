@@ -20,6 +20,35 @@ interleaved with changes from other children, in a working directory the user
 is also using. Isolation is what makes the parent's approval meaningful:
 nothing a child did reaches your tree until you take it.
 
+## A writer starts from your tree
+
+An isolated copy of the repository is not the same thing as a copy of the last
+commit. A session an hour old has an hour of work in it that no commit holds,
+and a child that started from the commit would be reading code you no longer
+have: it explains a function you already rewrote, it re-solves a problem you
+already solved, and every hunk it writes over a file you had edited collides
+when its patch lands — leaving you to reconcile your own work against work you
+asked for.
+
+So a writer's copy starts from your tree rather than from your history:
+everything git reports as changed and not yet committed, and the files the
+session itself created that git has never heard of. That state becomes the
+child's own starting point, which is what keeps the two apart on the way back
+— what returns for your approval is the child's work alone, never your
+uncommitted changes handed back to you as if a child had made them.
+
+The new files are the ones this session wrote, not every file git does not
+recognise. A working checkout is full of untracked things nobody in the
+conversation put there — a scratch note, a core dump, a directory of build
+output — and carrying those into every child would copy your desk rather than
+your work. The session already records each file it creates, so it can name
+the difference; git cannot.
+
+This changes what a child starts from and nothing about what comes back.
+Approval is still the only way anything reaches your checkout, the lane says
+how many of your files the child started from, and a checkout with nothing
+uncommitted in it starts a child exactly where it always did.
+
 ## A child inherits its scope, not more
 
 A writer sees its own working copy plus whatever the parent has already been

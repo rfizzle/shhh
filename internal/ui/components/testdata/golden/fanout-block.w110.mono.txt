@@ -14,6 +14,7 @@
    ⚠ agent   scout-3  other ErrRoundLimit callers                          ⚠ needs you · 3 tools · $0.01   18s
     waiting approval: read ../shhh-plugins/registry.go
    ◇ agent   writer-1  docs/loop.md                                          ▰▰▱▱▱ 2/5 · 6 tools · $0.02   12s
+    started from 5 uncommitted files in your tree
    ✓ agent   tester-2  internal/agent tests                                       done · 9 tools · $0.03   41s
     all four packages pass
    · agent   reader-4  survey internal/ui                                                         queued  1.0s
@@ -39,6 +40,7 @@
    ␛[38;5;254m⚠␛[m agent   ␛[38;5;254mscout-3␛[m␛[38;5;244m  other ErrRoundLimit callers␛[m                          ␛[38;5;254m⚠ needs you␛[m␛[38;5;244m · ␛[m␛[38;5;244m3 tools · $0.01␛[m   ␛[38;5;244m18s␛[m
     ␛[38;5;244mwaiting approval: read ../shhh-plugins/registry.go␛[m
    ␛[38;5;254m◇␛[m agent   ␛[38;5;254mwriter-1␛[m␛[38;5;244m  docs/loop.md␛[m                                          ␛[38;5;254m▰▰▱▱▱ 2/5␛[m␛[38;5;244m · ␛[m␛[38;5;244m6 tools · $0.02␛[m   ␛[38;5;244m12s␛[m
+    ␛[38;5;244mstarted from 5 uncommitted files in your tree␛[m
    ␛[38;5;254m✓␛[m agent   ␛[38;5;254mtester-2␛[m␛[38;5;244m  internal/agent tests␛[m                                       ␛[38;5;254mdone␛[m␛[38;5;244m · ␛[m␛[38;5;244m9 tools · $0.03␛[m   ␛[38;5;244m41s␛[m
     ␛[38;5;244mall four packages pass␛[m
    ␛[38;5;244m·␛[m agent   ␛[38;5;254mreader-4␛[m␛[38;5;244m  survey internal/ui␛[m                                                         ␛[38;5;244mqueued␛[m  ␛[38;5;244m1.0s␛[m
