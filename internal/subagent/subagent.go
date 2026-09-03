@@ -500,11 +500,13 @@ type child struct {
 	toolCalls int
 	tokensIn  int64
 	tokensOut int64
-	// priorIn/priorOut carry the spend of earlier attempts across a retry
-	//. The live counters are what the token budget is measured
-	// against, so each attempt gets the budget it was spawned with; the
-	// status adds the carried spend back, because money already spent does
-	// not stop being spent when the child runs again.
+	// priorIn/priorOut carry the spend of earlier attempts across a retry.
+	// The live counters are what the token budget is measured against, so
+	// each attempt gets the budget it was spawned with, and they are what
+	// that attempt's own session row is told. The status adds the carried
+	// spend back, because money already spent does not stop being spent when
+	// the child runs again and a lane shows one child rather than one
+	// attempt.
 	priorIn   int64
 	priorOut  int64
 	attempt   int
@@ -612,6 +614,21 @@ func (c *child) status() Status {
 		Seeded:    c.seeded,
 		Held:      c.heldOn != nil,
 	}
+}
+
+// attemptSpend is what the attempt now running has cost, which is what that
+// attempt's own session row is told — deliberately not the carried pair the
+// status reports. A retry opens a second row for the same child and leaves
+// the first one holding the failed attempt's spend; a row update sets
+// absolute totals, so handing the new row the carried figure would write
+// that spend onto both rows and count it twice. A writer that burns 50k,
+// fails, is retried and burns 30k would leave two rows summing to 130k for
+// 80k of real work, and the cost derived from those tokens inflates with
+// them.
+func (c *child) attemptSpend() (in, out int64) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.tokensIn, c.tokensOut
 }
 
 // appendEntry adds one transcript entry.
@@ -1649,12 +1666,12 @@ func (s *Supervisor) run(c *child) {
 				c.cancel()
 			}
 			if c.rec.Usage != nil {
-				st := c.status()
+				in, out := c.attemptSpend()
 				// A child runs its whole life on one model, so its totals go
 				// out unpriced for the recorder to price at that model —
 				// unlike a session's, which are a mixture only the ledger
 				// that billed each request can price.
-				c.rec.Usage(c.pos().Turn, st.TokensIn, st.TokensOut, 0, false)
+				c.rec.Usage(c.pos().Turn, in, out, 0, false)
 			}
 		},
 		OnText: func(text string) {
@@ -2108,11 +2125,11 @@ func (s *Supervisor) classify(c *child, mode agent.Mode, tc provider.ToolCall, a
 		c.cancel()
 	}
 	if c.rec.Usage != nil {
-		st := c.status()
+		in, out := c.attemptSpend()
 		// The turn count goes back with it: the totals are a whole-row
 		// update, so reporting spend without it would blank the column the
 		// last turn wrote.
-		c.rec.Usage(c.pos().Turn, st.TokensIn, st.TokensOut, 0, false)
+		c.rec.Usage(c.pos().Turn, in, out, 0, false)
 	}
 	verdict, reason := agent.ResolveAuto(action, v)
 	elapsed := fmt.Sprintf("classifier, %.1fs", v.Elapsed.Seconds())

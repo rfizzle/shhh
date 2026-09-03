@@ -1,14 +1,17 @@
 package subagent
 
 import (
+	"context"
 	"regexp"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // recordedEvent is one thing a child reported, flattened so a test can state
@@ -336,3 +339,183 @@ func TestChildRecordsARetryAndSaysSoOnItsLane(t *testing.T) {
 	}
 	t.Errorf("no lane update said the child was waiting, got %v", details)
 }
+
+// rowRecorder is the store as a child's record reaches it: one row per
+// recorder opened, each holding the totals its last usage report set, because
+// a session-row update writes absolute totals rather than adding to them. A
+// retried child has one row per attempt, which is why the rows are kept
+// apart instead of collapsed the way testRecorder collapses them.
+type rowRecorder struct {
+	mu   sync.Mutex
+	rows []*attemptRow
+}
+
+type attemptRow struct{ in, out int64 }
+
+func (r *rowRecorder) open() Recorder {
+	row := &attemptRow{}
+	r.mu.Lock()
+	r.rows = append(r.rows, row)
+	r.mu.Unlock()
+	return Recorder{Observer: observe.Observer{
+		Usage: func(_, in, out int64, _ float64, _ bool) {
+			r.mu.Lock()
+			defer r.mu.Unlock()
+			row.in, row.out = in, out
+		},
+	}}
+}
+
+func (r *rowRecorder) snapshot() []attemptRow {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	out := make([]attemptRow, len(r.rows))
+	for i, row := range r.rows {
+		out[i] = *row
+	}
+	return out
+}
+
+func (r *rowRecorder) sum() (in, out int64) {
+	for _, row := range r.snapshot() {
+		in, out = in+row.in, out+row.out
+	}
+	return in, out
+}
+
+// supervisorRecordingRows is a supervisor that opens a fresh row for every
+// attempt, with the classifier wired when one is given so both roads a
+// child's spend travels can be driven.
+func supervisorRecordingRows(t *testing.T, env *scriptedEnv, rows *rowRecorder, judge provider.Provider) *Supervisor {
+	t.Helper()
+	opts := Options{
+		Root:   t.TempDir(),
+		NewEnv: env.factory(),
+		Record: func(Spec, string) Recorder { return rows.open() },
+	}
+	if judge != nil {
+		opts.Classifier = agent.NewClassifier(judge, agent.ClassifierConfig{Model: "judge"})
+	}
+	sup := New(t.Context(), opts)
+	t.Cleanup(sup.Close)
+	return sup
+}
+
+// retryWhenReady retries a failed child once its previous run has finished
+// letting go. Retry refuses a child whose goroutine still owns the worktree
+// and the done channel — "try again in a moment" is the contract, and the
+// manager's key press is a person who does — so a test that reads the failed
+// state and retries in the same breath is racing the shutdown rather than
+// testing anything.
+func retryWhenReady(t *testing.T, sup *Supervisor, name string) {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		err := sup.Retry(name)
+		if err == nil {
+			return
+		}
+		if !strings.Contains(err.Error(), "shutting down") || time.Now().After(deadline) {
+			t.Fatalf("retry %s: %v", name, err)
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+}
+
+// A retry opens a second row for the same child, and the first row still
+// holds what the failed attempt spent. Reporting the child's carried totals
+// to the new row would bill the first attempt on both, so a child that read
+// 4000 tokens, failed and read 100 more would be recorded as having read
+// 8100 — spend that never happened, on a row a retry is the only way to
+// reach.
+func TestARetriedChildsRowsSumToWhatItSpent(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{
+		{text: "over budget", usage: &provider.Usage{PromptTokens: 4000, CompletionTokens: 200}},
+	}}
+	rows := &rowRecorder{}
+	sup := supervisorRecordingRows(t, env, rows, nil)
+
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey","max_tokens":2000}`)
+	waitState(t, sup, "researcher-1", StateFailed)
+
+	env.mu.Lock()
+	env.steps = []streamStep{{text: "done", usage: &provider.Usage{PromptTokens: 100, CompletionTokens: 20}}}
+	env.mu.Unlock()
+	retryWhenReady(t, sup, "researcher-1")
+	waitState(t, sup, "researcher-1", StateDone)
+
+	got := rows.snapshot()
+	if len(got) != 2 {
+		t.Fatalf("expected a row per attempt, got %+v", got)
+	}
+	if got[0].in != 4000 || got[0].out != 200 {
+		t.Errorf("the first attempt's row = %+v, want the 4000/200 it spent", got[0])
+	}
+	if got[1].in != 100 || got[1].out != 20 {
+		t.Errorf("the retry's row = %+v, want the 100/20 that attempt spent", got[1])
+	}
+	in, out := rows.sum()
+	st, _ := sup.Get("researcher-1")
+	if in != st.TokensIn || out != st.TokensOut {
+		t.Errorf("the rows sum to %d/%d, but the child cost %d/%d", in, out, st.TokensIn, st.TokensOut)
+	}
+}
+
+// The classifier's spend is the child's spend and travels the same road, so
+// it is double-counted by the same defect and has to be fixed by the same
+// accessor.
+func TestARetriedChildsClassifierSpendIsCountedOnce(t *testing.T) {
+	call := []streamStep{{calls: []provider.ToolCall{{ID: "c1", Name: tools.ExecCommandName, Arguments: `{"command":"go test ./..."}`}}}}
+	env := &scriptedEnv{
+		// One scripted step and no answer after the tool result: the stream
+		// runs out, which fails the child with the classifier's spend on its
+		// row.
+		steps:   call,
+		gated:   map[string]bool{tools.ExecCommandName: true},
+		execOut: "PASS",
+	}
+	rows := &rowRecorder{}
+	sup := supervisorRecordingRows(t, env, rows, &judgeSpending{prompt: 600, completion: 40})
+	sup.SetParentMode(agent.ModeAuto)
+
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"run the tests"}`)
+	waitState(t, sup, "researcher-1", StateFailed)
+
+	env.mu.Lock()
+	env.steps = append(append([]streamStep(nil), call...), streamStep{text: "done"})
+	env.mu.Unlock()
+	retryWhenReady(t, sup, "researcher-1")
+	waitState(t, sup, "researcher-1", StateDone)
+
+	got := rows.snapshot()
+	if len(got) != 2 {
+		t.Fatalf("expected a row per attempt, got %+v", got)
+	}
+	for i, row := range got {
+		if row.in != 600 || row.out != 40 {
+			t.Errorf("attempt %d's row = %+v, want the one judgement it paid for", i+1, row)
+		}
+	}
+	in, out := rows.sum()
+	st, _ := sup.Get("researcher-1")
+	if in != st.TokensIn || out != st.TokensOut {
+		t.Errorf("the rows sum to %d/%d, but the child cost %d/%d", in, out, st.TokensIn, st.TokensOut)
+	}
+}
+
+// judgeSpending allows every call and bills a fixed amount for it, so the
+// classifier's contribution to a child's spend is a number a test can add up.
+type judgeSpending struct{ prompt, completion int }
+
+func (p *judgeSpending) StreamCompletion(context.Context, []provider.Message, provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	ch := make(chan provider.StreamEvent, 1)
+	ch <- provider.StreamEvent{
+		ToolCalls: []provider.ToolCall{{ID: "d1", Name: agent.DecisionToolName, Arguments: `{"decision":"allow","reason":"runs the requested tests"}`}},
+		Usage:     &provider.Usage{PromptTokens: p.prompt, CompletionTokens: p.completion},
+		Done:      true,
+	}
+	close(ch)
+	return ch, nil
+}
+
+func (p *judgeSpending) Name() string { return "judge" }
