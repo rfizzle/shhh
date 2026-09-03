@@ -41,10 +41,11 @@ func Build(info shell.Info, extra ...string) string {
 	return build(info, false, extra...)
 }
 
-// BuildAlternatives is Build plus the invitation to say what else it
-// considered. Only the interactive one-shot asks: a pipe prints one
-// command to stdout and has nowhere to put the others, so the ask stays off
-// the path whose output is a contract.
+// BuildAlternatives is Build plus the two things the result surface shows
+// beside the command: one sentence saying what it does, and the invitation to
+// say what else was considered. Only the interactive one-shot asks. A pipe
+// prints one command to stdout and has nowhere to put either, so the ask
+// stays off the path whose output is a contract.
 func BuildAlternatives(info shell.Info, extra ...string) string {
 	return build(info, true, extra...)
 }
@@ -64,6 +65,13 @@ OS: %s
 Cwd: %s
 Date: %s`, shellSyntaxRules(info.Shell), sudoRules(info.OS, info.IsRoot), osRules(info.OS), info.Shell, os, info.Cwd, today())
 	if alternatives {
+		// The rule at the top of this prompt is "no explanation", and one of
+		// the sections below asks for a sentence of exactly that. Which wins
+		// is settled here rather than left to whichever model is reading,
+		// because the reconciliation it would otherwise reach for is prose
+		// wrapped around the command — the one thing this prompt exists to
+		// prevent.
+		base += "\n\nThe command still comes first and alone. What follows it is not part of the command: the labelled sections below, which the interface reads and never runs."
 		base += "\n\n" + proposal.Instructions()
 	}
 	if len(extra) > 0 && extra[0] != "" {

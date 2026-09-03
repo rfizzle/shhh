@@ -843,6 +843,13 @@ replaced. Parsing is total, so asking costs nothing — a response with no
 alternatives section is simply one choice, which is every provider that cannot
 produce one.
 
+The line of what the command does arrives the same way, in its own labelled
+section after the command and ahead of the alternatives, so the surface is
+complete when the stream ends rather than one round trip later. Neither
+section is ever drawn as command text: a label still being typed is held back
+until it is clear which it is, so what is on screen mid-stream is the command
+and only the command.
+
 ## Outside the TUI
 
 Help, the line a mistyped flag prints, the man page, and what is left in the

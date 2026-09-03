@@ -14,6 +14,10 @@ import (
 	"time"
 
 	"github.com/rfizzle/shhh/internal/observe"
+	"github.com/rfizzle/shhh/internal/prompt"
+	"github.com/rfizzle/shhh/internal/proposal"
+	"github.com/rfizzle/shhh/internal/raw"
+	"github.com/rfizzle/shhh/internal/shell"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui"
 )
@@ -56,6 +60,27 @@ func TestPipedPromptNamesTheCommandThatReadsIt(t *testing.T) {
 	}
 	if stdout.Len() != 0 {
 		t.Errorf("nothing may reach the pipe on stdout, got:\n%s", stdout.String())
+	}
+}
+
+// The one-shot sends two different prompts, and which one a run gets is the
+// whole of the pipe contract. The interactive prompt asks for the sentence
+// under the command and the alternatives beside it; the piped one asks for
+// neither, because its stdout is read by another program and a section it
+// cannot see would be a command that program would run.
+func TestPipedPromptAsksForNothingItCannotPrint(t *testing.T) {
+	info := shell.Info{Shell: "zsh", OS: "darwin", Cwd: "/tmp"}
+	piped := raw.SystemPrompt(info, "")
+	for _, sentinel := range []string{proposal.Sentinel, proposal.ExplainSentinel} {
+		if strings.Contains(piped, sentinel) {
+			t.Errorf("the piped one-shot invited a section its stdout cannot carry:\n%s", piped)
+		}
+	}
+	interactive := prompt.BuildAlternatives(info, "")
+	for _, sentinel := range []string{proposal.Sentinel, proposal.ExplainSentinel} {
+		if !strings.Contains(interactive, sentinel) {
+			t.Errorf("the interactive one-shot stopped asking for what its surface shows:\n%s", interactive)
+		}
 	}
 }
 

@@ -208,9 +208,11 @@ func newCmdCmd() *cobra.Command {
 				return nil
 			}
 
-			// The interactive one-shot asks for the alternatives section as
-			// well; the pipe path above went out through prompt.Build
-			// and its stdout is one command, as it has always been.
+			// The interactive one-shot asks for what its surface shows
+			// beside the command — the sentence saying what it does and the
+			// alternatives it was picked over. The pipe path above went out
+			// through prompt.Build and asks for neither, so its stdout is
+			// one command, as it has always been.
 			sysPrompt := prompt.BuildAlternatives(info, promptExtra)
 			effort, err := provider.ParseEffort(resolved.Reasoning)
 			if err != nil {
@@ -261,10 +263,14 @@ func newCmdCmd() *cobra.Command {
 				return ev, eCancel, nil
 			}
 
-			// The explanation is on by default now: a command you do
-			// not understand is a command you should not run. `-e` buys the
-			// long form rather than the only form, and silent mode still
+			// The explanation is on by default: a command you do not
+			// understand is a command you should not run. `-e` buys the long
+			// form rather than the only form, and silent mode still
 			// suppresses both.
+			//
+			// The brief form usually arrives inside the generation itself,
+			// so this stream is what answers `-e`, `[x]`, and a response
+			// that came back without one.
 			explain := ui.ExplainBrief
 			switch {
 			case silentMode || cfg.Behavior.SilentMode:

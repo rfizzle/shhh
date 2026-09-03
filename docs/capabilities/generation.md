@@ -105,6 +105,15 @@ One line of what the command does is shown; the full breakdown takes a key or
 a flag. Explaining at length by default trains the user to skip the region of
 the screen where the explanation lives — which is also where the warnings are.
 
+That line comes back with the command, in the same answer. Asked for on its
+own it was a second request that could not start until the first had
+finished, so a screen that is one sentence and a row of keys waited out two
+round trips to fill in. The generator has already decided what the command
+does by the time it writes it, and saying so costs a few tokens there and no
+time at all. Where an answer arrives without one — a model that ignored the
+format, a reply cut short — it is asked for separately, which is the request
+the full breakdown makes anyway.
+
 ## Revision is a conversation, not a retry
 
 "Make it recursive", "use fd instead" — the follow-up carries the history, so

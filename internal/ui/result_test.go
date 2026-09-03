@@ -34,6 +34,9 @@ func press(t *testing.T, m GenerateModel, key string) GenerateModel {
 	return settle(model.(GenerateModel), cmd)
 }
 
+// A response carrying no sentence of its own is what falls back to asking for
+// one on a second request: a model that cannot produce the section, or a
+// reply cut short before it reached it.
 func TestResult_ExplainsBrieflyByDefault(t *testing.T) {
 	var asked int
 	var askedLong bool
@@ -497,5 +500,203 @@ func TestResult_AnOutstandingCheckIsAskedForOnce(t *testing.T) {
 	}
 	if m.gen != gen {
 		t.Errorf("the check was asked for again %d times while it was out", m.gen-gen)
+	}
+}
+
+// bundled is a response answered the way the generator is asked to answer:
+// the sentence about the command comes back with it, so the surface has
+// everything it shows the moment the stream ends.
+const bundled = `ls -la
+--- explanation
+Lists every entry in the working directory, hidden ones included, one per line.`
+
+const bundledSentence = "Lists every entry in the working directory, hidden ones included, one per line."
+
+// refuseExplain answers a request for an explanation that should never be
+// made, and counts the ones that are.
+func refuseExplain(asked *int) ExplainStreamFunc {
+	return func(command string, long bool) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		*asked++
+		return makeEvents("asked for on its own"), noopCancel, nil
+	}
+}
+
+func TestResult_TheBundledExplanationNeedsNoSecondRequest(t *testing.T) {
+	asked := 0
+	m := NewGenerateModel(makeEvents(bundled), noopCancel, nil, nil, refuseExplain(&asked), "")
+	m = drainStream(m, 2)
+
+	if asked != 0 {
+		t.Errorf("the sentence came with the command and was asked for %d times anyway", asked)
+	}
+	if m.Phase() != phaseAction {
+		t.Errorf("the surface is waiting for something: phase %v", m.Phase())
+	}
+	view := m.View().Content
+	if !strings.Contains(view, bundledSentence) {
+		t.Errorf("the sentence that came with the command is not under it:\n%s", view)
+	}
+	// It is read, not shown: the command is the command.
+	if m.stream.Output() != "ls -la" {
+		t.Errorf("the section leaked into the command: %q", m.stream.Output())
+	}
+	if strings.Contains(view, "--- explanation") {
+		t.Errorf("the sentinel reached the screen:\n%s", view)
+	}
+	if strings.Contains(view, "Explanation:") {
+		t.Errorf("the one-liner rendered as the long form's block:\n%s", view)
+	}
+	if !strings.Contains(view, "[↵] run") {
+		t.Errorf("the keys are not on screen with it:\n%s", view)
+	}
+}
+
+func TestResult_TheLongFormIsStillARequestOfItsOwn(t *testing.T) {
+	asked, askedLong := 0, false
+	explain := func(command string, long bool) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		asked++
+		askedLong = long
+		return makeEvents("lists the directory, breaking down each flag"), noopCancel, nil
+	}
+	m := NewGenerateModel(makeEvents(bundled), noopCancel, nil, nil, explain, "").
+		WithExplain(ExplainLong)
+	m = drainStream(m, 2)
+
+	if asked != 1 || !askedLong {
+		t.Errorf("the flag asked for %d explanations, long=%v", asked, askedLong)
+	}
+	if m.Phase() != phaseExplain {
+		t.Errorf("the long form did not take the screen: phase %v", m.Phase())
+	}
+}
+
+func TestResult_TheLongFormOnDemandStillOpensAStream(t *testing.T) {
+	asked, askedLong := 0, false
+	explain := func(command string, long bool) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		asked++
+		askedLong = long
+		return makeEvents("lists the directory, breaking down each flag"), noopCancel, nil
+	}
+	m := NewGenerateModel(makeEvents(bundled), noopCancel, nil, nil, explain, "")
+	m = drainStream(m, 2)
+	m = press(t, m, "x")
+
+	if asked != 1 || !askedLong {
+		t.Errorf("`x` asked for %d explanations, long=%v", asked, askedLong)
+	}
+	if m.Phase() != phaseExplain {
+		t.Errorf("`x` did not open the long form: phase %v", m.Phase())
+	}
+}
+
+func TestResult_SilentModeIgnoresASentenceItDidNotAskFor(t *testing.T) {
+	m := NewGenerateModel(makeEvents(bundled), noopCancel, nil, nil, nil, "").
+		WithExplain(ExplainNone)
+	m = drainStream(m, 2)
+
+	if strings.Contains(m.View().Content, bundledSentence) {
+		t.Errorf("silent mode showed the sentence anyway:\n%s", m.View().Content)
+	}
+	if got := press(t, m, "enter").Result().Explanation; got != "" {
+		t.Errorf("silent mode handed the caller %q", got)
+	}
+}
+
+func TestResult_TheStreamNeverShowsTheSentence(t *testing.T) {
+	// The response arrives token by token and the sentence is in the middle
+	// of it, ahead of the alternatives — the first thing that could be shown
+	// as something to run.
+	m := NewGenerateModel(
+		makeEvents("ls -la", "\n--- expla", "nation\nLists the directory."),
+		noopCancel, nil, nil, nil, "")
+	for i := 0; i < 3; i++ {
+		m = drainStream(m, 1)
+		view := m.View().Content
+		if strings.Contains(view, "expla") || strings.Contains(view, "Lists the directory") {
+			t.Errorf("the explanation rendered as command text mid-stream:\n%s", view)
+		}
+	}
+
+	m = drainStream(m, 1)
+	if !strings.Contains(m.View().Content, "Lists the directory.") {
+		t.Errorf("the sentence that never showed did not become the explanation:\n%s", m.View().Content)
+	}
+}
+
+func TestResult_TheSentenceReachesTheCaller(t *testing.T) {
+	m := drainStream(NewGenerateModel(makeEvents(bundled), noopCancel, nil, nil, nil, ""), 2)
+	if got := press(t, m, "enter").Result().Explanation; got != bundledSentence {
+		t.Errorf("the result carries %q", got)
+	}
+
+	// One that was asked for separately is the same sentence and reaches the
+	// caller the same way.
+	streamed := drainExplainStream(armed(t, "ls -la", mockExplainStream("lists the directory")), 2)
+	if got := press(t, streamed, "enter").Result().Explanation; got != "lists the directory" {
+		t.Errorf("a streamed sentence reached the caller as %q", got)
+	}
+
+	// The long form is a block and not a sentence, so nothing is handed on.
+	long := NewGenerateModel(makeEvents(bundled), noopCancel, nil, nil,
+		mockExplainStream("lists the directory, breaking down each flag"), "").WithExplain(ExplainLong)
+	long = drainExplainStream(drainStream(long, 2), 2)
+	if got := press(t, long, "enter").Result().Explanation; got != "" {
+		t.Errorf("the long form was handed on as a sentence: %q", got)
+	}
+}
+
+func TestResult_ChoosingAnAlternativeDropsTheSentenceAboutTheOther(t *testing.T) {
+	asked := 0
+	explain := func(command string, long bool) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		asked++
+		return makeEvents("counts the entries instead"), noopCancel, nil
+	}
+	m := NewGenerateModel(makeEvents(bundled+"\n--- alternatives\nls -la | wc -l"),
+		noopCancel, nil, nil, explain, "")
+	m = drainStream(m, 2)
+	m = press(t, press(t, press(t, m, "a"), "down"), "enter")
+
+	if strings.Contains(m.View().Content, bundledSentence) {
+		t.Errorf("the sentence about the command it replaced is still on screen:\n%s", m.View().Content)
+	}
+	if asked != 1 {
+		t.Fatalf("the chosen command was explained %d times", asked)
+	}
+	m = drainExplainStream(m, 2)
+	if !strings.Contains(m.View().Content, "counts the entries instead") {
+		t.Errorf("the chosen command did not get its own sentence:\n%s", m.View().Content)
+	}
+}
+
+func TestResult_AnEditDropsTheSentenceAboutWhatItReplaced(t *testing.T) {
+	m := drainStream(NewGenerateModel(makeEvents(bundled), noopCancel, nil, nil, nil, ""), 2)
+	m = press(t, m, "e")
+	m.editInput.SetValue("ls -lah")
+	m = press(t, m, "enter")
+
+	if strings.Contains(m.View().Content, bundledSentence) {
+		t.Errorf("a sentence said about the command before the edit survived it:\n%s", m.View().Content)
+	}
+}
+
+func TestResult_SteppingBackRestoresTheSentenceWithTheCommand(t *testing.T) {
+	newStream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		return makeEvents("ls\n--- explanation\nLists names only."), noopCancel, nil
+	}
+	m := NewGenerateModel(makeEvents(bundled), noopCancel, nil, newStream, nil, "")
+	m = drainStream(m, 2)
+	m = press(t, m, "r")
+	for _, r := range "shorter" {
+		m = press(t, m, string(r))
+	}
+	m = press(t, m, "enter")
+	m = drainStream(m, 2)
+
+	if !strings.Contains(m.View().Content, "Lists names only.") {
+		t.Fatalf("the revised command did not bring its own sentence:\n%s", m.View().Content)
+	}
+	m = press(t, m, "u")
+	if !strings.Contains(m.View().Content, bundledSentence) {
+		t.Errorf("stepping back did not bring the sentence back with the command:\n%s", m.View().Content)
 	}
 }

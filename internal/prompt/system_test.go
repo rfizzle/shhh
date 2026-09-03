@@ -224,15 +224,26 @@ func TestBuildWriter_Instructions(t *testing.T) {
 	}
 }
 
-// The alternatives section is asked for on the interactive one-shot
-// and nowhere else. A pipe's stdout is one command by contract, so the prompt
-// behind it must not invite a second one.
+// The sections are asked for on the interactive one-shot and nowhere else. A
+// pipe's stdout is one command by contract, so the prompt behind it must not
+// invite anything to follow it.
 func TestBuildAlternatives_AsksForTheSection(t *testing.T) {
 	info := shell.Info{Shell: "zsh", OS: "darwin", Cwd: "/tmp"}
 	got := BuildAlternatives(info)
 
 	if !strings.Contains(got, proposal.Sentinel) {
 		t.Errorf("the interactive prompt does not ask for the section:\n%s", got)
+	}
+	// The sentence under the command comes back with the command, so the
+	// surface does not spend a second request on it.
+	if !strings.Contains(got, proposal.ExplainSentinel) {
+		t.Errorf("the interactive prompt does not ask for the explanation:\n%s", got)
+	}
+	// The generator's own rule is "no explanation", and one of the sections
+	// is one. A prompt that leaves the two to be reconciled gets prose
+	// wrapped around the command.
+	if !strings.Contains(got, "The command still comes first and alone") {
+		t.Errorf("the prompt does not say which of its two rules wins:\n%s", got)
 	}
 	// Everything Build says is still said: the section is an addition, not a
 	// different prompt.
@@ -241,10 +252,15 @@ func TestBuildAlternatives_AsksForTheSection(t *testing.T) {
 	}
 }
 
-func TestBuild_DoesNotAskForAlternatives(t *testing.T) {
+func TestBuild_DoesNotAskForTheSections(t *testing.T) {
 	got := Build(shell.Info{Shell: "zsh", OS: "darwin", Cwd: "/tmp"})
-	if strings.Contains(got, proposal.Sentinel) {
-		t.Errorf("the piped prompt invited a section its stdout cannot carry:\n%s", got)
+	for _, sentinel := range []string{proposal.Sentinel, proposal.ExplainSentinel} {
+		if strings.Contains(got, sentinel) {
+			t.Errorf("the piped prompt invited a section its stdout cannot carry:\n%s", got)
+		}
+	}
+	if !strings.Contains(got, "No explanation") {
+		t.Errorf("the piped prompt stopped saying its output is the command alone:\n%s", got)
 	}
 }
 

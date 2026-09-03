@@ -180,6 +180,10 @@ type GenerateResult struct {
 	Action   Action
 	Feedback string
 	SaveName string
+	// Explanation is the finished one-liner the surface showed under the
+	// command, for a caller with somewhere else to put it, and empty when
+	// that is not what was on screen.
+	Explanation string
 	// Confirmed is set when the surface already took a deliberate `y` for a
 	// destructive command, so the caller does not ask the same question a
 	// second time.
@@ -284,9 +288,10 @@ func (m GenerateModel) updateSave(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.phase = phaseDone
 			m.result = GenerateResult{
-				Command:  m.stream.Output(),
-				Action:   ActionSave,
-				SaveName: name,
+				Command:     m.stream.Output(),
+				Action:      ActionSave,
+				SaveName:    name,
+				Explanation: m.brief(),
 			}
 			return m, tea.Quit
 		case tea.KeyEscape:
@@ -325,12 +330,13 @@ func (m GenerateModel) updateStreaming(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		// What arrived is a proposal, not a bare command: everything before
-		// the sentinel is the command, and what follows is the offers. A
-		// response without the section parses to one choice, which is the
+		// the first sentinel is the command, and what follows is the
+		// sentence about it and the offers. A response without the sections
+		// parses to one choice and no explanation, which is the
 		// fence-stripping path this always was.
 		raw := m.stream.Output()
-		choices := proposal.Parse(raw)
-		output := choices[0].Command
+		answer := proposal.Parse(raw)
+		output := answer.Choices[0].Command
 
 		if m.shell != "" && m.preflightRetries < maxPreflightRetries && m.newStream != nil {
 			// Checking the command spawns a shell and walks PATH, and both
@@ -340,10 +346,10 @@ func (m GenerateModel) updateStreaming(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// the check goes where the requests went.
 			m.gen++
 			m.checking = true
-			return m, runPreflight(output, raw, choices, m.shell, m.gen)
+			return m, runPreflight(output, raw, answer, m.shell, m.gen)
 		}
 
-		return m.accept(raw, choices)
+		return m.accept(raw, answer)
 	}
 	return m, cmd
 }
@@ -352,14 +358,14 @@ func (m GenerateModel) updateStreaming(msg tea.Msg) (tea.Model, tea.Cmd) {
 // keeps the raw response, alternatives and all, because a revise is a reply
 // to what the model actually said and the format it answered in is part of
 // that.
-func (m GenerateModel) accept(raw string, choices []proposal.Choice) (GenerateModel, tea.Cmd) {
+func (m GenerateModel) accept(raw string, answer proposal.Proposal) (GenerateModel, tea.Cmd) {
 	m.messages = append(m.messages, provider.Message{
 		Role:    provider.RoleAssistant,
 		Content: raw,
 	})
-	m.choices, m.chosen = choices, 0
-	m.stream = m.stream.WithOutput(choices[0].Command)
-	return m.arm(choices[0].Command)
+	m.choices, m.chosen = answer.Choices, 0
+	m.stream = m.stream.WithOutput(answer.Choices[0].Command)
+	return m.arm(answer.Choices[0].Command, answer.Explanation)
 }
 
 // preflightDone carries a check that has finished, along with the response it
@@ -371,7 +377,7 @@ func (m GenerateModel) preflightDone(msg preflightDoneMsg) (GenerateModel, tea.C
 	}
 	m.checking = false
 	if msg.result.OK {
-		return m.accept(msg.raw, msg.choices)
+		return m.accept(msg.raw, msg.answer)
 	}
 	m.preflightRetries++
 	correction := fmt.Sprintf(
@@ -389,10 +395,15 @@ func (m GenerateModel) preflightDone(msg preflightDoneMsg) (GenerateModel, tea.C
 }
 
 // arm resolves everything the result surface states about a freshly generated
-// command and starts whichever explanation this run asked for. It is the one
+// command and settles whichever explanation this run asked for. It is the one
 // place the surface is built, so a revise, an edit and a first generation all
 // land on the same screen.
-func (m GenerateModel) arm(output string) (GenerateModel, tea.Cmd) {
+//
+// explanation is the sentence the generation came with, and is empty for a
+// command that is not the one the model answered with — an edit and a chosen
+// alternative are both different commands, and a phrase said about the one
+// they replaced would be a description of something else.
+func (m GenerateModel) arm(output, explanation string) (GenerateModel, tea.Cmd) {
 	m.gen++
 	// The one-shot measures from where it stands: the command it is about to
 	// hand back runs in the directory the user typed it in.
@@ -415,7 +426,22 @@ func (m GenerateModel) arm(output string) (GenerateModel, tea.Cmd) {
 	m.phase = phaseAction
 	m.pick = nil
 
-	if m.newExplain == nil || m.explainMode == ExplainNone {
+	if m.explainMode == ExplainNone {
+		return m, nil
+	}
+	// The sentence usually arrived with the command: it was asked for in the
+	// same response, so there is nothing to wait for and nothing more to
+	// spend. Only a response that did not carry one — a model that ignored
+	// the format, a reply cut short — pays for the second request, which is
+	// the path this always took.
+	// See docs/capabilities/generation.md#explanation-is-on-request-not-by-default.
+	if m.explainMode == ExplainBrief && explanation != "" {
+		m.shown = ExplainBrief
+		m.explainStream = StreamModel{}.WithOutput(explanation)
+		m.explainStream.done = true
+		return m, nil
+	}
+	if m.newExplain == nil {
 		return m, nil
 	}
 	long := m.explainMode == ExplainLong
@@ -577,8 +603,9 @@ func (m GenerateModel) updateAction(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m = m.hushExplain()
 		m.phase = phaseDone
 		m.result = GenerateResult{
-			Command: m.stream.Output(),
-			Action:  sel,
+			Command:     m.stream.Output(),
+			Action:      sel,
+			Explanation: m.brief(),
 			// In danger mode enter is spent on the radius, so a run is a run
 			// only because `y` was pressed. Step-by-step comes from `[t]`,
 			// which asked nothing, and keeps the caller's own prompt.
@@ -587,6 +614,17 @@ func (m GenerateModel) updateAction(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, tea.Quit
 	}
 	return m, cmd
+}
+
+// brief is the one line on screen about the command on screen, for a caller
+// that wants to reuse it. It is empty unless the brief form is what is
+// showing and it has finished: the long form is a block rather than a
+// sentence, and a sentence still arriving is half of one.
+func (m GenerateModel) brief() string {
+	if m.shown != ExplainBrief || !m.explainStream.Done() {
+		return ""
+	}
+	return strings.TrimSpace(m.explainStream.Output())
 }
 
 // hushExplain stops a brief explanation that is still arriving. Two live
@@ -715,7 +753,7 @@ func (m GenerateModel) updatePick(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if len(m.messages) > 0 && m.messages[len(m.messages)-1].Role == provider.RoleAssistant {
 		m.messages[len(m.messages)-1].Content = command
 	}
-	return m.arm(command)
+	return m.arm(command, "")
 }
 
 // oneLine folds a multi-command answer onto the single row a picker has for
@@ -757,21 +795,21 @@ func openExplain(f ExplainStreamFunc, command string, long bool, gen int) tea.Cm
 // openStream copies the conversation because the model that asked keeps
 // mutating its own copy — a revise appends to it the moment this returns.
 type preflightDoneMsg struct {
-	gen     int
-	raw     string
-	choices []proposal.Choice
-	result  preflight.Result
+	gen    int
+	raw    string
+	answer proposal.Proposal
+	result preflight.Result
 }
 
 // runPreflight checks a command off the event loop. It carries the response
 // it checked so the answer needs nothing from the model it left behind.
-func runPreflight(command, raw string, choices []proposal.Choice, shell string, gen int) tea.Cmd {
+func runPreflight(command, raw string, answer proposal.Proposal, shell string, gen int) tea.Cmd {
 	return func() tea.Msg {
 		return preflightDoneMsg{
-			gen:     gen,
-			raw:     raw,
-			choices: choices,
-			result:  preflight.Check(command, shell),
+			gen:    gen,
+			raw:    raw,
+			answer: answer,
+			result: preflight.Check(command, shell),
 		}
 	}
 }
@@ -904,7 +942,7 @@ func (m GenerateModel) updateEdit(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// An edited command is a different command: its radius, its dry
 			// run and its explanation are all re-read rather than carried
 			// over from the one it replaced.
-			return m.arm(edited)
+			return m.arm(edited, "")
 		case tea.KeyEscape:
 			m.editInput.Blur()
 			m.phase = phaseAction
