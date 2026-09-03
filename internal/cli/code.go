@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/resolve"
@@ -10,13 +11,30 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// resumeFromPicker is what --resume carries when it was given no chat to
+// open: show the browser and let the person choose. Naming one instead is
+// how the same request is made where there is nobody to choose — a run
+// behind --print, which can draw no picker and would otherwise have to
+// refuse the flag outright.
+const resumeFromPicker = "-"
+
+// resumeNamed is the conversation --resume named, or empty when it named
+// none. The picker's stand-in is not a chat anybody saved, so it must not
+// reach the store as one.
+func resumeNamed(value string) string {
+	if value == resumeFromPicker {
+		return ""
+	}
+	return value
+}
+
 // newCodeCmd is the coding-agent entry point: the same chat TUI as `shhh
 // chat` but with the agent system prompt and the full toolset (read-only +
 // exec + write/edit). Agent-only flags belong here, not on `shhh chat`.
 func newCodeCmd() *cobra.Command {
 	var flags resolve.Opts
 	var continueLast bool
-	var resumePick bool
+	var resumeChat string
 	var printMode bool
 	var popts printOpts
 	var addDirs []string
@@ -37,6 +55,9 @@ func newCodeCmd() *cobra.Command {
 			if popts.maxRoundsSet && popts.maxRounds < 0 {
 				return fmt.Errorf("--max-rounds cannot be negative (0 removes the cap)")
 			}
+			if cmd.Flags().Changed("resume") && strings.TrimSpace(resumeChat) == "" {
+				return fmt.Errorf("--resume needs a chat to open: pass --resume=<name>, or --resume on its own to pick one")
+			}
 			session := chatSession{
 				title:        "shhh code",
 				kind:         "code",
@@ -44,7 +65,8 @@ func newCodeCmd() *cobra.Command {
 				toolDefs:     tools.DefinitionsFull(),
 				flags:        &flags,
 				continueLast: continueLast,
-				resumePick:   resumePick,
+				resumePick:   resumeChat == resumeFromPicker,
+				resumeName:   resumeNamed(resumeChat),
 				web:          openWebTools(ConfigFrom(cmd.Context())),
 				lsp:          openLSP(ConfigFrom(cmd.Context())),
 				structural:   structural.Detect(),
@@ -70,7 +92,11 @@ func newCodeCmd() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVarP(&continueLast, "continue", "c", false, "resume the most recent chat session")
-	cmd.Flags().BoolVarP(&resumePick, "resume", "r", false, "pick a saved chat to resume")
+	cmd.Flags().StringVarP(&resumeChat, "resume", "r", "", "resume a saved chat: on its own it opens the picker, --resume=<name> opens the one it names")
+	// The value is optional, and pflag needs a stand-in for "given, unvalued"
+	// to say so. A lone dash is the one spelling nothing in the store will
+	// collide with: a slot is a timestamp or a name somebody typed.
+	cmd.Flags().Lookup("resume").NoOptDefVal = resumeFromPicker
 	addModelFlags(cmd, &flags)
 	cmd.Flags().BoolVarP(&printMode, "print", "p", false, "run headless: stream the response to stdout and exit (no TUI)")
 	cmd.Flags().BoolVar(&popts.json, "json", false, "with --print, emit a structured JSON transcript instead of streaming text (implies --print)")

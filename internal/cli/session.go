@@ -67,10 +67,11 @@ type chatSession struct {
 	flags        *resolve.Opts
 	continueLast bool
 	resumePick   bool
-	// resumeName is a chat already chosen — `shhh chats` runs the browser
-	// before it builds a session, so a reader with no provider configured
-	// can still tidy the store, and nobody pays a provider resolve to
-	// browse.
+	// resumeName is a chat already chosen, by whoever could choose one:
+	// `shhh chats` runs the browser before it builds a session, so a reader
+	// with no provider configured can still tidy the store and nobody pays a
+	// provider resolve to browse, and `--resume=<name>` names one outright,
+	// which is the only way to say it to a run with no browser to draw.
 	resumeName string
 	// web is the guarded web toolset; nil leaves the web tools
 	// unregistered (`shhh chat` today).
@@ -998,48 +999,18 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		model = model.WithGatedTools(gatedPreviews)
 	}
 
-	if session.continueLast || session.resumePick || session.resumeName != "" {
-		if db == nil {
-			return fmt.Errorf("chat persistence is unavailable, cannot resume")
-		}
-		// --continue is the newest slot, whatever it was called: every
-		// session autosaves to a slot of its own, so "the last session" is
-		// a query rather than a name.
-		name := session.resumeName
-		if session.resumePick {
-			picked, err := pickSavedChat(db)
-			if err != nil {
-				return err
-			}
-			if picked == "" {
-				return nil
-			}
-			name = picked
-		} else if recent, ok, err := db.MostRecentChat(); err != nil {
+	if session.wantsResume() {
+		reopened, err := session.resumeChat(db)
+		if err != nil {
 			return err
-		} else if ok {
-			name = recent.Name
 		}
-		var (
-			resumed []provider.Message
-			loadErr error
-		)
-		if name == "" {
-			loadErr = fmt.Errorf("no saved chats")
-		} else {
-			resumed, loadErr = db.LoadChat(name)
+		if reopened.cancelled {
+			return nil
 		}
-		if loadErr != nil {
-			if session.continueLast {
-				_ = report.Fprintln(os.Stderr, report.Row{State: report.Skip,
-					Subject: "no previous session", Detail: "starting fresh"})
-			} else {
-				return loadErr
-			}
-		} else {
+		if reopened.slot != "" {
 			// Refresh the system prompt so shell/cwd context is current.
-			if len(resumed) > 0 && resumed[0].Role == provider.RoleSystem {
-				resumed[0].Content = env.sysPrompt
+			if len(reopened.messages) > 0 && reopened.messages[0].Role == provider.RoleSystem {
+				reopened.messages[0].Content = env.sysPrompt
 			}
 			// The conversation is also told what the checkout looks like now,
 			// ahead of everything it remembers: the transcript describes the
@@ -1048,13 +1019,13 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 			// (docs/capabilities/sessions-and-memory.md#a-resumed-session-sees-the-tree-as-it-is).
 			// A front-end with no model to hang it on asks chat.ResumeContext
 			// for the same reading.
-			model = model.WithResumedMessages(name, resumed)
+			model = model.WithResumedMessages(reopened.slot, reopened.messages)
 			// A conversation the slot says was saved mid-turn comes back
 			// mid-turn. Without this it would open idle with an unanswered
 			// round in front of it, which is the shape a person reads as
 			// "it finished" — and the round it is owed would never be asked
 			// for (docs/capabilities/sessions-and-memory.md#a-held-turn-comes-back-held).
-			if h, ok, err := db.ChatHold(name); err == nil && ok {
+			if h, ok, err := db.ChatHold(reopened.slot); err == nil && ok {
 				model = model.WithHeldTurn(h.Rounds, h.Granted)
 			}
 		}
@@ -1224,6 +1195,89 @@ func toolDefTokens(defs []provider.Tool) []chat.ToolTokens {
 		out = append(out, chat.ToolTokens{Name: def.Name, Tokens: agent.EstimateTokens(string(b))})
 	}
 	return out
+}
+
+// wantsResume reports whether the session was told to open a stored
+// conversation rather than start one.
+func (s chatSession) wantsResume() bool {
+	return s.continueLast || s.resumePick || s.resumeName != ""
+}
+
+// reopenedChat is a conversation taken back out of the store: the slot it
+// lives in and the messages it holds. An empty slot is a resume that did not
+// happen — nothing has ever been saved — and the front-end opens a fresh
+// conversation instead.
+type reopenedChat struct {
+	slot     string
+	messages []provider.Message
+	// cancelled is the picker closed without a choice. It is neither a
+	// failure nor a session: the person asked to see the list and then said
+	// no, and there is nothing left for the command to do.
+	cancelled bool
+}
+
+// resumeChat resolves --continue, --resume and a conversation `shhh chats`
+// has already picked into the one to open on.
+//
+// It is one function over the store rather than a step inside the session
+// runner because both front-ends resume: an interactive session hands what
+// comes back to the chat model, and an unattended run puts it in front of
+// its prompt. A run told to continue that started from nothing instead is
+// the failure this prevents, and unattended is exactly where nobody is
+// there to notice it.
+// See docs/capabilities/sessions-and-memory.md#an-unattended-run-comes-back-too.
+func (s chatSession) resumeChat(db *storage.DB) (reopenedChat, error) {
+	if db == nil {
+		return reopenedChat{}, fmt.Errorf("chat persistence is unavailable, cannot resume")
+	}
+	// A conversation that has already been named is the one that opens. The
+	// newest slot is the answer to a different question, and answering this
+	// one with it opens somebody else's conversation under the name the
+	// person typed.
+	name := s.resumeName
+	switch {
+	case s.resumePick:
+		picked, err := pickSavedChat(db)
+		if err != nil {
+			return reopenedChat{}, err
+		}
+		if picked == "" {
+			return reopenedChat{cancelled: true}, nil
+		}
+		name = picked
+	case name == "":
+		// --continue is the newest slot, whatever it was called: every
+		// session autosaves to a slot of its own, so "the last session" is
+		// a query rather than a name.
+		recent, ok, err := db.MostRecentChat()
+		if err != nil {
+			return reopenedChat{}, err
+		}
+		if ok {
+			name = recent.Name
+		}
+	}
+	var (
+		messages []provider.Message
+		loadErr  error
+	)
+	if name == "" {
+		loadErr = fmt.Errorf("no saved chats")
+	} else {
+		messages, loadErr = db.LoadChat(name)
+	}
+	if loadErr != nil {
+		// A name that is not there is worth stopping for; "the most recent"
+		// on a machine with no history is a first run, and starting is the
+		// answer it wanted.
+		if !s.continueLast {
+			return reopenedChat{}, loadErr
+		}
+		_ = report.Fprintln(os.Stderr, report.Row{State: report.Skip,
+			Subject: "no previous session", Detail: "starting fresh"})
+		return reopenedChat{}, nil
+	}
+	return reopenedChat{slot: name, messages: messages}, nil
 }
 
 // pickSavedChat shows the saved-chat picker and returns the chosen session

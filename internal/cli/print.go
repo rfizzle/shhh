@@ -19,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/meter"
 	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/process"
+	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/prompt"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
@@ -30,6 +31,7 @@ import (
 	"github.com/rfizzle/shhh/internal/scope"
 	"github.com/rfizzle/shhh/internal/skill"
 	"github.com/rfizzle/shhh/internal/stdin"
+	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/chat"
 	"github.com/rfizzle/shhh/internal/web"
@@ -183,11 +185,159 @@ func (w *writtenByCalls) paths() []string {
 	return append([]string(nil), w.list...)
 }
 
+// headlessSlotLayout is how an unattended run's slot is named: the moment it
+// began, to the second, which is what a session's own unnamed slot is called.
+// The two spellings have to be the same one — a name in this shape is read
+// as a slot the machine chose rather than one a person typed, and a listing
+// of them sorts by it — so a run named some other way would show up in the
+// saved chats as a conversation somebody deliberately named after a date.
+// See docs/capabilities/sessions-and-memory.md#a-slot-belongs-to-one-session.
+const headlessSlotLayout = "2006-01-02 15:04:05"
+
+// headlessChat is where an unattended run's conversation lives and what is
+// done to it: the slot it was reopened from or claimed, and the save that
+// leaves it somewhere `shhh chat --continue` can find it.
+//
+// It is one value with one save rather than a name here and a write there,
+// because everything that has to agree about the slot has to agree in one
+// place: the run that failed is the one worth reopening, and it fails at
+// several different points.
+type headlessChat struct {
+	db   *storage.DB
+	slot string
+	// at and head are where the reopening's reading sits in the conversation
+	// and how long it is. Every save leaves it out: the reading is built from
+	// the checkout each time a conversation is opened, so a slot that kept
+	// one would hand the next opening a picture of a tree that has since
+	// moved, drawn as a message the person never typed.
+	at, head int
+	// summary is the handoff the slot already carried. Nothing here compacts
+	// — a run has no /compact and nobody to ask for one — so a save that
+	// wrote an empty summary would take away the one a session left.
+	summary string
+}
+
+// openHeadlessChat resolves what this run carries on from and where it will
+// be saved, and answers with the conversation it should open on.
+//
+// A run told to continue is handed the stored conversation and then the
+// checkout as it stands now, in that order and in front of the prompt: the
+// transcript describes the tree as it was, and a run that acts on a path
+// which has since moved is the one nobody is watching.
+// See docs/capabilities/sessions-and-memory.md#an-unattended-run-comes-back-too.
+func openHeadlessChat(db *storage.DB, session chatSession, initial []provider.Message, sysPrompt string) (*headlessChat, []provider.Message, error) {
+	c := &headlessChat{db: db}
+	msgs := initial
+	if session.wantsResume() {
+		reopened, err := session.resumeChat(db)
+		if err != nil {
+			return nil, nil, err
+		}
+		if reopened.slot != "" {
+			c.slot = reopened.slot
+			msgs = reopened.messages
+			// The system prompt is this run's and not the one the
+			// conversation was stored under: the shell, the directory and the
+			// project's instruction files are read now, not last week.
+			if len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
+				msgs[0].Content = sysPrompt
+			} else {
+				msgs = append(append([]provider.Message{}, initial...), msgs...)
+			}
+			notice := chat.ResumeContext(db, c.slot, "")
+			c.summary = notice.Summary
+			msgs, c.at, c.head = spliceAfterSystem(msgs, notice.Messages)
+		}
+	}
+	if c.slot == "" && db != nil {
+		// A slot of this run's own, minted by the store rather than read off
+		// the clock: two runs started in the same second would otherwise both
+		// pick the same name, and the one that saved second would be the only
+		// one left.
+		c.slot = time.Now().Format(headlessSlotLayout)
+		// A store that cannot say leaves the run on the name it had. That is
+		// the collision back, for one run in a pair started in the same
+		// second; dropping the slot instead would lose the conversation of
+		// both, and this run has one turn to lose.
+		if claimed, err := db.ClaimChatSlot(c.slot); err == nil {
+			c.slot = claimed
+		}
+	}
+	return c, msgs, nil
+}
+
+// spliceAfterSystem puts add in front of everything the conversation
+// remembers but behind the system prompt, which is where a conversation
+// states the facts it is to reason from. It answers with where they went and
+// how many there were, which is what taking them out again needs.
+func spliceAfterSystem(msgs, add []provider.Message) ([]provider.Message, int, int) {
+	at := 0
+	if len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
+		at = 1
+	}
+	joined := make([]provider.Message, 0, len(msgs)+len(add))
+	joined = append(joined, msgs[:at]...)
+	joined = append(joined, add...)
+	joined = append(joined, msgs[at:]...)
+	return joined, at, len(add)
+}
+
+// withoutReading is the conversation without the reading this opening put in
+// front of it.
+//
+// It cuts by position rather than recognising the block by its shape, which
+// is safe here and would not be in a session: an unattended conversation only
+// ever grows at its tail — nothing compacts it and no rewind rebuilds it
+// around the head — so the reading is still exactly where it was put.
+func (c *headlessChat) withoutReading(msgs []provider.Message) []provider.Message {
+	if c.head == 0 || len(msgs) < c.at+c.head {
+		return msgs
+	}
+	kept := make([]provider.Message, 0, len(msgs)-c.head)
+	kept = append(kept, msgs[:c.at]...)
+	return append(kept, msgs[c.at+c.head:]...)
+}
+
+// save writes the conversation to this run's slot, however the run ended: a
+// finished turn, a round cap, a provider that stopped answering. The reason
+// to keep it at all is the run that failed — "open it in a session and look"
+// needs the conversation to be somewhere — so the failures are the saves
+// that matter most.
+//
+// The mid-turn mark a session leaves is never written here. It says a person
+// quit with a turn parked and means the conversation comes back parked, and
+// a run with no keyboard parks nothing.
+// See docs/capabilities/sessions-and-memory.md#a-held-turn-comes-back-held.
+func (c *headlessChat) save(msgs []provider.Message) {
+	if c == nil || c.db == nil || c.slot == "" {
+		return
+	}
+	// A slot another run has taken over is not written to; the store puts the
+	// conversation in one of this run's own and says where.
+	slot, err := c.db.AutosaveChat(c.slot, time.Now().Format(headlessSlotLayout), c.withoutReading(msgs), nil)
+	if err != nil {
+		// The failure goes to stderr beside the run's other activity rather
+		// than being swallowed: the whole point of the slot is the run
+		// somebody comes back to, and a run that cannot be come back to has
+		// to say so while there is still an operator reading.
+		fmt.Fprintf(os.Stderr, "» this run could not be saved for `--continue`: %v\n", err)
+		return
+	}
+	c.slot = slot
+	// And what the conversation is opened again on. The commit is read here,
+	// at the save, so the slot says where the tree was when the conversation
+	// was last written down rather than where it was when the run started.
+	_ = c.db.SetChatResume(slot, storage.ChatResume{Summary: c.summary, Head: project.Head("")})
+}
+
 // runPrintSession runs the agent loop to completion without the TUI:
 // assistant text streams to stdout, tool activity to stderr, and --json
 // replaces the streamed text with a structured transcript on stdout. The
 // returned error drives the process exit code.
 func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opts printOpts) error {
+	if err := headlessFlagCheck(session); err != nil {
+		return err
+	}
 	// The working scope, mirroring the interactive session: the
 	// directory the run was started in, plus config's scope_dirs and any
 	// --add-dir. Nobody is here to grant a directory mid-run, so what the
@@ -375,7 +525,25 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	// the executor it is holding is held until something outside kills it.
 	run = boundedRunner(run, cfg.CommandTimeout())
 
-	a := agent.New(env.messages, env.stream)
+	// The conversation this run carries on, and the slot it will be left in.
+	// The claim happens here rather than at the save so that two runs started
+	// in the same second settle which of them owns the name before either
+	// writes a word to it.
+	saved, messages, err := openHeadlessChat(db, session, env.messages, env.sysPrompt)
+	if err != nil {
+		return err
+	}
+	// A slot this run claimed and never wrote to is given back on the way
+	// out, so a run whose save never landed leaves no name behind for the
+	// next one to be given a suffix around. A slot it resumed belongs to
+	// whoever made it and is left alone.
+	defer func() {
+		if db != nil {
+			_ = db.ReleaseChatSlot(saved.slot)
+		}
+	}()
+
+	a := agent.New(messages, env.stream)
 	a.SetSteering(steering(cfg, env.prompts))
 	a.SetScrub(session.vault.ScrubMessage)
 	if session.skills.Len() > 0 {
@@ -542,6 +710,12 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 
 	final, err := h.Run(initialPrompt)
 	runErr = err
+	// Whatever ended it, the conversation is left where the next `shhh chat
+	// --continue` will find it, and the record is told which slot that is —
+	// the name is the only thing joining what the run cost to what it said,
+	// and it is not known until the save has settled where the words went.
+	saved.save(a.Messages())
+	recorder.link(saved.slot)
 	if !opts.json && final != "" && !strings.HasSuffix(final, "\n") {
 		fmt.Fprintln(os.Stdout)
 	}
@@ -570,6 +744,22 @@ func headlessTurnOutcome(err error) string {
 		return observe.TurnCancelled
 	}
 	return observe.TurnFailed
+}
+
+// headlessFlagCheck refuses a flag this run cannot honour, before anything
+// is built on it. Only the picker is one: --resume with no chat named is a
+// full-screen program and a person choosing, and a run with nobody in front
+// of it can neither draw it nor be answered.
+//
+// Refusing is the point. A flag that is parsed, accepted and never read
+// leaves a run that says it resumed and started from nothing, and the script
+// chaining runs on the strength of it works from nothing too, silently.
+func headlessFlagCheck(session chatSession) error {
+	if session.resumePick {
+		return fmt.Errorf("--resume opens the saved-chat picker and this run has nobody to pick with: " +
+			"name the conversation with --resume=<name>, or pass --continue for the most recent")
+	}
+	return nil
 }
 
 // headlessGate mirrors the TUI's requiresApproval: exec and file-modification

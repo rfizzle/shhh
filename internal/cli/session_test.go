@@ -3,12 +3,14 @@ package cli
 import (
 	"context"
 	"errors"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/shell"
+	"github.com/rfizzle/shhh/internal/storage"
 )
 
 // endpointProvider is a provider whose endpoint reports the context length it
@@ -103,5 +105,94 @@ func TestSessionPrompt_BuiltAgainWithBothExtrasEveryTime(t *testing.T) {
 		if !strings.Contains(got, "what the config says") || !strings.Contains(got, "what the session gathered") {
 			t.Fatalf("build %d lost an extra: %q", i, got)
 		}
+	}
+}
+
+// resumeStore is a store of this test's own, on a path nothing else writes.
+func resumeStore(t *testing.T) *storage.DB {
+	t.Helper()
+	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	return db
+}
+
+// A conversation that was named is the one that opens. "The newest slot" is
+// the answer to --continue's question, and answering this one with it opens
+// somebody else's conversation under the name the person typed.
+func TestResumeChat_ANamedChatIsNotTheMostRecent(t *testing.T) {
+	db := resumeStore(t)
+	if err := db.SaveChat("the one I want", []provider.Message{
+		{Role: provider.RoleUser, Content: "the widget"}}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	if err := db.SaveChat("something else", []provider.Message{
+		{Role: provider.RoleUser, Content: "the other thing"}}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+
+	got, err := chatSession{resumeName: "the one I want"}.resumeChat(db)
+	if err != nil {
+		t.Fatalf("resume: %v", err)
+	}
+	if got.slot != "the one I want" {
+		t.Fatalf("slot = %q, want the one that was named", got.slot)
+	}
+	if len(got.messages) != 1 || got.messages[0].Content != "the widget" {
+		t.Fatalf("messages = %+v, want that conversation's", got.messages)
+	}
+}
+
+// --continue asks the store which slot is newest, because every session
+// autosaves to one of its own and "the last session" is a query.
+func TestResumeChat_ContinueTakesTheNewestSlot(t *testing.T) {
+	db := resumeStore(t)
+	if err := db.SaveChat("older", []provider.Message{
+		{Role: provider.RoleUser, Content: "then"}}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	if err := db.SaveChat("newer", []provider.Message{
+		{Role: provider.RoleUser, Content: "now"}}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+
+	got, err := chatSession{continueLast: true}.resumeChat(db)
+	if err != nil {
+		t.Fatalf("resume: %v", err)
+	}
+	if got.slot != "newer" {
+		t.Fatalf("slot = %q, want the newest", got.slot)
+	}
+}
+
+// --continue on a machine with no history is a first run, not a mistake: it
+// starts, and says it started.
+func TestResumeChat_ContinueWithNothingSavedStartsFresh(t *testing.T) {
+	got, err := chatSession{continueLast: true}.resumeChat(resumeStore(t))
+	if err != nil {
+		t.Fatalf("resume: %v", err)
+	}
+	if got.slot != "" || got.cancelled {
+		t.Fatalf("got %+v, want a fresh conversation", got)
+	}
+}
+
+// A conversation named and not found is worth stopping for: carrying on would
+// run the prompt against nothing under a name the person chose.
+func TestResumeChat_ANameThatIsNotThereStops(t *testing.T) {
+	_, err := chatSession{resumeName: "never saved"}.resumeChat(resumeStore(t))
+	if err == nil {
+		t.Fatal("a named conversation that is missing must stop the run")
+	}
+}
+
+// Without a store there is nothing to resume, and saying so beats starting a
+// conversation the flag said would be continued.
+func TestResumeChat_WithoutAStore(t *testing.T) {
+	_, err := chatSession{continueLast: true}.resumeChat(nil)
+	if err == nil || !strings.Contains(err.Error(), "cannot resume") {
+		t.Fatalf("err = %v, want one naming what is unavailable", err)
 	}
 }

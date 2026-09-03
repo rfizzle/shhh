@@ -469,3 +469,389 @@ func TestWrittenByCalls_RecordsOnlySuccessfulMutations(t *testing.T) {
 		t.Errorf("paths = %v, want [a.go]", got)
 	}
 }
+
+// A flag the run cannot honour stops it. --resume opens a picker, and a run
+// with nobody in front of it can neither draw one nor be answered; accepting
+// it and starting from nothing is the shape this refuses.
+func TestHeadlessFlagCheck_PickerIsAUsageError(t *testing.T) {
+	err := headlessFlagCheck(chatSession{resumePick: true})
+	if err == nil || !strings.Contains(err.Error(), "--resume=<name>") {
+		t.Fatalf("err = %v, want one naming the way to say it without a picker", err)
+	}
+	if err := headlessFlagCheck(chatSession{continueLast: true}); err != nil {
+		t.Fatalf("--continue is honoured, got %v", err)
+	}
+	if err := headlessFlagCheck(chatSession{resumeName: "yesterday"}); err != nil {
+		t.Fatalf("a named chat is honoured, got %v", err)
+	}
+}
+
+// The picker reaches the refusal through the command, so the flag a person
+// types is the one that is refused.
+func TestCodeCmdPrintRefusesThePicker(t *testing.T) {
+	cmd := newCodeCmd()
+	cmd.SetArgs([]string{"--print", "--resume", "do a thing"})
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "nobody to pick with") {
+		t.Fatalf("err = %v, want the picker refusal", err)
+	}
+}
+
+// --resume with an empty value is neither a name nor a request for the
+// picker, and starting fresh on it would be the silent no-op this story
+// exists to remove.
+func TestCodeCmdResumeNeedsAChat(t *testing.T) {
+	cmd := newCodeCmd()
+	cmd.SetArgs([]string{"--print", "--resume=", "do a thing"})
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	err := cmd.Execute()
+	if err == nil || !strings.Contains(err.Error(), "--resume needs a chat") {
+		t.Fatalf("err = %v, want one asking for a chat", err)
+	}
+}
+
+// printStore is a store of this test's own, on a path nothing else writes.
+func printStore(t *testing.T) *storage.DB {
+	t.Helper()
+	db, err := storage.OpenPath(filepath.Join(t.TempDir(), "test.db"))
+	if err != nil {
+		t.Fatalf("open store: %v", err)
+	}
+	t.Cleanup(func() { db.Close() })
+	return db
+}
+
+// headlessSystem is the one message a run that continues nothing opens on.
+func headlessSystem() []provider.Message {
+	return []provider.Message{{Role: provider.RoleSystem, Content: "this run's prompt"}}
+}
+
+// What --continue was documented to do and did not: the stored conversation
+// reaches the request, in front of the prompt, with the reading of the
+// checkout between the two.
+func TestOpenHeadlessChat_ContinueSendsTheStoredTranscript(t *testing.T) {
+	db := printStore(t)
+	stored := []provider.Message{
+		{Role: provider.RoleSystem, Content: "the prompt it was saved under"},
+		{Role: provider.RoleUser, Content: "rename the widget"},
+		{Role: provider.RoleAssistant, Content: "renamed it"},
+	}
+	if err := db.SaveChat("yesterday", stored); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+
+	saved, msgs, err := openHeadlessChat(db, chatSession{continueLast: true}, headlessSystem(), "this run's prompt")
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	if saved.slot != "yesterday" {
+		t.Fatalf("slot = %q, want the conversation it continued", saved.slot)
+	}
+	if msgs[0].Role != provider.RoleSystem || msgs[0].Content != "this run's prompt" {
+		t.Fatalf("the system prompt is this run's, got %+v", msgs[0])
+	}
+	if saved.head == 0 {
+		t.Fatal("a reopened conversation is told what the checkout looks like now")
+	}
+	// The reading sits between the prompt and everything the conversation
+	// remembers, and the transcript follows it whole and in order.
+	want := []string{"rename the widget", "renamed it"}
+	got := msgs[1+saved.head:]
+	if len(got) != len(want) {
+		t.Fatalf("after the reading: %d messages, want %d", len(got), len(want))
+	}
+	for i, w := range want {
+		if got[i].Content != w {
+			t.Fatalf("message %d = %q, want %q", i, got[i].Content, w)
+		}
+	}
+
+	// And that is what the provider is actually asked, which is the half the
+	// flag never reached.
+	var sent []provider.Message
+	a := agent.New(msgs, func(m []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		sent = append([]provider.Message{}, m...)
+		ch := make(chan provider.StreamEvent, 2)
+		ch <- provider.StreamEvent{Token: "done"}
+		ch <- provider.StreamEvent{Done: true}
+		close(ch)
+		return ch, func() {}, nil
+	})
+	if _, err := (&agent.Headless{Agent: a}).Run("carry on"); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	if len(sent) == 0 || sent[len(sent)-1].Content != "carry on" {
+		t.Fatalf("the new prompt is last, got %d messages", len(sent))
+	}
+	var carried bool
+	for _, m := range sent {
+		if m.Content == "rename the widget" {
+			carried = true
+		}
+	}
+	if !carried {
+		t.Fatal("the stored transcript must reach the request")
+	}
+}
+
+// A run that was told to continue nothing carries nothing: the prompt is the
+// whole of what the model is shown.
+func TestOpenHeadlessChat_FreshRunCarriesNoConversation(t *testing.T) {
+	db := printStore(t)
+	if err := db.SaveChat("yesterday", []provider.Message{
+		{Role: provider.RoleUser, Content: "rename the widget"}}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+
+	saved, msgs, err := openHeadlessChat(db, chatSession{}, headlessSystem(), "this run's prompt")
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	if len(msgs) != 1 || msgs[0].Role != provider.RoleSystem {
+		t.Fatalf("a fresh run opens on the system prompt alone, got %d messages", len(msgs))
+	}
+	if saved.slot == "" || saved.slot == "yesterday" {
+		t.Fatalf("slot = %q, want one of this run's own", saved.slot)
+	}
+}
+
+// Two runs started in the same second are two conversations. The slot is the
+// store's to hand out for exactly this reason: read off the clock, both would
+// mint the same name and the second save would be the only one left.
+func TestOpenHeadlessChat_SameSecondRunsGetTheirOwnSlots(t *testing.T) {
+	db := printStore(t)
+	first, _, err := openHeadlessChat(db, chatSession{}, headlessSystem(), "p")
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	second, _, err := openHeadlessChat(db, chatSession{}, headlessSystem(), "p")
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	if first.slot == second.slot {
+		t.Fatalf("both runs took %q", first.slot)
+	}
+}
+
+// A run leaves its conversation where reopening the most recent one finds it,
+// without the reading it was opened with — that is built from the checkout
+// each time, and a slot that kept one would show it as something the person
+// said.
+func TestHeadlessChat_SaveLeavesASlotToContinue(t *testing.T) {
+	db := printStore(t)
+	saved, msgs, err := openHeadlessChat(db, chatSession{}, headlessSystem(), "this run's prompt")
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	msgs = append(msgs,
+		provider.Message{Role: provider.RoleUser, Content: "fix the parser"},
+		provider.Message{Role: provider.RoleAssistant, Content: "fixed"})
+	saved.save(msgs)
+
+	// The path a session takes when it is told to continue the last one.
+	reopened, err := chatSession{continueLast: true}.resumeChat(db)
+	if err != nil {
+		t.Fatalf("continue: %v", err)
+	}
+	if reopened.slot != saved.slot {
+		t.Fatalf("continued %q, want the run's slot %q", reopened.slot, saved.slot)
+	}
+	if len(reopened.messages) != len(msgs) {
+		t.Fatalf("stored %d messages, want %d", len(reopened.messages), len(msgs))
+	}
+	if reopened.messages[len(reopened.messages)-1].Content != "fixed" {
+		t.Fatalf("last message = %q, want the run's answer", reopened.messages[len(reopened.messages)-1].Content)
+	}
+	// A run parks nothing: the mark that brings a session back mid-turn must
+	// not be written by one.
+	if _, held, err := db.ChatHold(saved.slot); err != nil || held {
+		t.Fatalf("hold = %v, %v; a run leaves none", held, err)
+	}
+}
+
+// The reading a resume put in front of the conversation is left out of what
+// the slot keeps, so opening it again is told about the tree once.
+func TestHeadlessChat_SaveDropsTheReading(t *testing.T) {
+	db := printStore(t)
+	if err := db.SaveChat("yesterday", []provider.Message{
+		{Role: provider.RoleSystem, Content: "old prompt"},
+		{Role: provider.RoleUser, Content: "rename the widget"},
+	}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	saved, msgs, err := openHeadlessChat(db, chatSession{continueLast: true}, headlessSystem(), "this run's prompt")
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	msgs = append(msgs, provider.Message{Role: provider.RoleUser, Content: "carry on"})
+	saved.save(msgs)
+
+	back, err := db.LoadChat("yesterday")
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if len(back) != 3 {
+		t.Fatalf("stored %d messages, want the prompt, the turn and the new one", len(back))
+	}
+	for _, m := range back {
+		if strings.HasPrefix(m.Content, "[resume:") {
+			t.Fatalf("the reading reached the slot: %q", m.Content)
+		}
+	}
+}
+
+// The run worth reopening is the one that failed, so the save is not the
+// success path's. A turn that used up its rounds is written down whole.
+func TestHeadlessChat_SaveOnTheRoundCapExit(t *testing.T) {
+	db := printStore(t)
+	saved, msgs, err := openHeadlessChat(db, chatSession{}, headlessSystem(), "this run's prompt")
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	round := func() (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		ch := make(chan provider.StreamEvent, 1)
+		ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{{ID: "c1", Name: "search"}}}
+		close(ch)
+		return ch, func() {}, nil
+	}
+	a := agent.New(msgs, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		return round()
+	})
+	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "nothing found", nil })
+	a.SetMaxRounds(1)
+
+	if _, err := (&agent.Headless{Agent: a}).Run("look for it"); !errors.Is(err, agent.ErrRoundCap) {
+		t.Fatalf("err = %v, want the round cap", err)
+	}
+	saved.save(a.Messages())
+
+	back, err := db.LoadChat(saved.slot)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	var asked, answered bool
+	for _, m := range back {
+		if m.Content == "look for it" {
+			asked = true
+		}
+		if m.Role == provider.RoleTool {
+			answered = true
+		}
+	}
+	if !asked || !answered {
+		t.Fatalf("a capped run's conversation must be stored whole, got %d messages", len(back))
+	}
+}
+
+// A run with no store keeps running. Persistence is not a precondition for
+// answering a prompt, and a save that cannot happen is not a failure.
+func TestHeadlessChat_NoStoreIsAQuietNoOp(t *testing.T) {
+	saved, msgs, err := openHeadlessChat(nil, chatSession{}, headlessSystem(), "this run's prompt")
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	if len(msgs) != 1 {
+		t.Fatalf("got %d messages, want the system prompt alone", len(msgs))
+	}
+	saved.save(msgs)
+}
+
+// --resume carries either a conversation or the request for the picker, and
+// the two have to stay tellable apart: a run behind --print can honour the
+// first and not the second.
+func TestCodeCmdResumeCarriesAChatOrThePicker(t *testing.T) {
+	named := newCodeCmd()
+	if err := named.Flags().Parse([]string{"--resume=yesterday"}); err != nil {
+		t.Fatalf("parse: %v", err)
+	}
+	got, _ := named.Flags().GetString("resume")
+	if resumeNamed(got) != "yesterday" {
+		t.Fatalf("--resume=<name> gave %q", resumeNamed(got))
+	}
+
+	for _, spelling := range [][]string{{"--resume"}, {"-r"}} {
+		picker := newCodeCmd()
+		if err := picker.Flags().Parse(spelling); err != nil {
+			t.Fatalf("parse %v: %v", spelling, err)
+		}
+		got, _ := picker.Flags().GetString("resume")
+		if got != resumeFromPicker || resumeNamed(got) != "" {
+			t.Fatalf("%v gave %q, want the picker and no chat", spelling, got)
+		}
+	}
+}
+
+// A conversation named on the command line reaches the request the same way
+// the most recent one does. It is the spelling a script has — there is no
+// browser to pick from — so it is the one that must not quietly open
+// something else.
+func TestOpenHeadlessChat_ANamedChatIsWhatTheRunCarriesOn(t *testing.T) {
+	db := printStore(t)
+	if err := db.SaveChat("the one I want", []provider.Message{
+		{Role: provider.RoleSystem, Content: "old prompt"},
+		{Role: provider.RoleUser, Content: "the widget"},
+	}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	// Saved after it, so "the most recent" is the wrong answer here.
+	if err := db.SaveChat("something else", []provider.Message{
+		{Role: provider.RoleUser, Content: "the other thing"}}); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+
+	saved, msgs, err := openHeadlessChat(db,
+		chatSession{resumeName: "the one I want"}, headlessSystem(), "this run's prompt")
+	if err != nil {
+		t.Fatalf("open: %v", err)
+	}
+	if saved.slot != "the one I want" {
+		t.Fatalf("slot = %q, want the chat that was named", saved.slot)
+	}
+	if msgs[len(msgs)-1].Content != "the widget" {
+		t.Fatalf("last message = %q, want the named conversation's", msgs[len(msgs)-1].Content)
+	}
+}
+
+// The spellings --resume answers to, through the parser a person's typing
+// actually reaches. A value on its own token is not one of them: pflag reads
+// the flag as unvalued and leaves the word where it lies, which on this
+// command is the prompt — the same thing it meant before the flag could name
+// a chat at all.
+func TestCodeCmdResumeSpellings(t *testing.T) {
+	cases := []struct {
+		args   []string
+		resume string
+		rest   []string
+	}{
+		{[]string{"--resume=yesterday"}, "yesterday", nil},
+		{[]string{"-r=yesterday"}, "yesterday", nil},
+		{[]string{"--resume"}, resumeFromPicker, nil},
+		{[]string{"-r"}, resumeFromPicker, nil},
+		{[]string{"-r", "fix the bug"}, resumeFromPicker, []string{"fix the bug"}},
+		{[]string{"--resume", "fix the bug"}, resumeFromPicker, []string{"fix the bug"}},
+	}
+	for _, tc := range cases {
+		t.Run(strings.Join(tc.args, " "), func(t *testing.T) {
+			cmd := newCodeCmd()
+			if err := cmd.Flags().Parse(tc.args); err != nil {
+				t.Fatalf("parse: %v", err)
+			}
+			got, _ := cmd.Flags().GetString("resume")
+			if got != tc.resume {
+				t.Errorf("resume = %q, want %q", got, tc.resume)
+			}
+			rest := cmd.Flags().Args()
+			if len(rest) != len(tc.rest) {
+				t.Fatalf("left %v as arguments, want %v", rest, tc.rest)
+			}
+			for i := range rest {
+				if rest[i] != tc.rest[i] {
+					t.Errorf("argument %d = %q, want %q", i, rest[i], tc.rest[i])
+				}
+			}
+		})
+	}
+}

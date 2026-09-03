@@ -81,6 +81,28 @@ done and what is open, and a summarizer run at quit would be a request nobody
 made and nobody waited for. A conversation that never compacted comes back
 with no summary and no placeholder saying there is none.
 
+### An unattended run comes back too
+
+A run started with `--print` is a conversation like any other. It can be told
+to carry one on — the most recent, or the one it names — and what it does
+with it is what a session does: the stored conversation goes in front of the
+prompt, and the checkout as it stands now goes in front of that. A run is
+where that reading earns the most, because a run acting on a path the
+transcript describes has nobody to notice the path moved.
+
+What the run leaves behind is a conversation in a slot of its own, written
+when the turn ends and equally when it does not: a round cap reached, a
+provider that stopped answering, a turn cut short. Reopening the most recent
+conversation opens it, which is the only way to see what a run that failed
+overnight was actually doing. The mark that says a turn was parked is never
+written by one — parking is something a person does with a keyboard, and
+there was none.
+
+The saved-chat browser is the one thing a run cannot be asked for: it is a
+full-screen program and a person choosing, and there is neither. Asking for
+it is refused and says so, rather than accepting the flag and starting from
+nothing under the word "resume".
+
 ### A held turn comes back held
 
 A conversation can be quit with a turn parked at a round boundary rather than
