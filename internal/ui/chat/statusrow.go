@@ -90,5 +90,12 @@ func (m Model) statusChanges() string {
 	if files == 0 {
 		return ""
 	}
+	if added == 0 && removed == 0 {
+		// Every file the session changed changed only its permissions, so
+		// there is nothing to count and the row states what it touched
+		// instead of a pair of zeros
+		// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
+		return sty.StatusBar.Render("session · " + plural(files, "file"))
+	}
 	return sty.StatusBar.Render("session · ") + components.DiffStat(added, removed)
 }

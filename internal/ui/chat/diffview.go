@@ -46,7 +46,7 @@ func (m Model) systemNotice(text string) (tea.Model, tea.Cmd) {
 // to hold. There is nothing to stage in a cumulative diff, so the surface
 // opens read-only: the same file list and hunk pane, without the boxes.
 func (m Model) openSessionDiff() (tea.Model, tea.Cmd) {
-	files := m.changes.Session()
+	files := m.changes.SessionFiles()
 	if len(files) == 0 {
 		return m.systemNotice(sessionDiffEmptyNotice(m.changes))
 	}
@@ -60,9 +60,13 @@ func (m Model) openSessionDiff() (tea.Model, tea.Cmd) {
 	if dropped := m.changes.Evicted(); len(dropped) > 0 {
 		review.Note = fmt.Sprintf("%d turn(s) dropped", len(dropped))
 	}
+	// The rows are read from the session's own files rather than from the
+	// diff it collapses to, because a file whose whole change is its mode has
+	// no hunks and the wording for it travels beside them.
 	for _, f := range files {
 		review.Files = append(review.Files, components.ReviewFile{
 			Path: f.Path, Hunks: f.Hunks, Syntax: diffSyntax(f.Path),
+			Mode: f.ModeChange,
 		})
 	}
 	return m.showReview(review, 0)
@@ -102,17 +106,21 @@ func (m *Model) noteEvictedTurns(evicted []int64) {
 // The hunks are the session's net change to that file — where the session
 // found it against where it has left it — which is the same reading the rail
 // row's own +N −M is taken from. A path this session has not changed has no
-// such reading, and saying so is more use than an empty viewer.
+// such reading, and saying so is more use than an empty viewer. A file the
+// session changed the permissions of and nothing else does have a reading:
+// it opens with no hunks and its header says the two modes, because the
+// answer to "what happened to this file" is the mode, not a refusal.
 func (m Model) openFileDiff(path string) (tea.Model, tea.Cmd) {
 	for _, f := range m.changes.SessionFiles() {
 		if f.Path != path {
 			continue
 		}
 		return m.openDiffFull(&components.DiffView{
-			Path:   f.Path,
-			Verb:   "edit",
-			Hunks:  f.Hunks,
-			Syntax: diffSyntax(f.Path),
+			Path:       f.Path,
+			Verb:       "edit",
+			Hunks:      f.Hunks,
+			Syntax:     diffSyntax(f.Path),
+			ModeChange: f.ModeChange,
 		}, m.state)
 	}
 	// Nothing opened, so nothing is holding the cell a rail click was

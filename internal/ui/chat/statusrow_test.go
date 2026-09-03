@@ -95,6 +95,28 @@ func TestStatusRow_ConversationHasNoChanges(t *testing.T) {
 	}
 }
 
+// A session whose only change is a file's permissions has a file to name and
+// no lines to count, so the row says what it touched. `session · +0 −0` would
+// report a measurement of nothing over a real change.
+func TestStatusRow_ChangesWithNothingToCount(t *testing.T) {
+	m := frameModel(t, 80, 40)
+	m.turnCount = 1
+	m.changes.Add(1, changeset.Record{
+		Path: "scripts/build.sh", BeforeExists: true, AfterExists: true,
+		Before: "one\n", After: "one\n", BeforeMode: 0o644, AfterMode: 0o755,
+	})
+	row := stripANSI(m.statusRow())
+	if !strings.Contains(row, "session · 1 file") {
+		t.Fatalf("the row names what the session changed: %q", row)
+	}
+	if strings.Contains(row, "+0 −0") {
+		t.Fatalf("nothing counted this change: %q", row)
+	}
+	if got := m.summaryChanges(); got != "1 file" {
+		t.Fatalf("the reading is told the same thing, got %q", got)
+	}
+}
+
 // The first minute of a session has changes and no reading yet. The row is
 // what there is to say, not everything it can say.
 func TestStatusRow_ChangesWithoutAReading(t *testing.T) {

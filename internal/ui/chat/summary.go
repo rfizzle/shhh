@@ -380,6 +380,12 @@ func (m Model) summaryChanges() string {
 	if files == 0 {
 		return ""
 	}
+	if added == 0 && removed == 0 {
+		// Nothing was counted, because the whole of what the session did to
+		// these files was their permissions. Saying `+0 −0` would tell the
+		// reading the session changed nothing.
+		return plural(files, "file")
+	}
 	return fmt.Sprintf("%s · +%d −%d", plural(files, "file"), added, removed)
 }
 

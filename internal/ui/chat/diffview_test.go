@@ -308,6 +308,56 @@ func TestFileDiff_OpensOnePathFullScreen(t *testing.T) {
 	}
 }
 
+// A writer's patch that made a script executable and moved not a byte is one
+// of the session's changes, so /diff lists it and states the two modes where
+// it would state the counts.
+func TestSessionDiff_ListsAModeOnlyChange(t *testing.T) {
+	m := gatedModel(t, nil, nil)
+	m.changes.Add(1, changeset.Record{Path: "scripts/build.sh",
+		Before: "one\n", After: "one\n", BeforeExists: true, AfterExists: true,
+		BeforeMode: 0o644, AfterMode: 0o755})
+	m.state = stateInput
+	m.input.SetValue("/diff")
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+	if m.state != stateReview || m.review == nil {
+		t.Fatalf("/diff should open on the file the session changed, got state %d", m.state)
+	}
+	view := ansi.Strip(m.View().Content)
+	for _, want := range []string{"scripts/build.sh", "mode 0644 → 0755"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the session diff should contain %q:\n%s", want, view)
+		}
+	}
+	if strings.Contains(view, "+0 −0") {
+		t.Fatalf("there are no lines to count for a change of permissions:\n%s", view)
+	}
+}
+
+// The same file by name: the answer is the mode, not that the file has not
+// been changed, which is what a fold keyed on hunks alone used to say.
+func TestFileDiff_OpensAModeOnlyChange(t *testing.T) {
+	m := gatedModel(t, nil, nil)
+	m.changes.Add(1, changeset.Record{Path: "scripts/build.sh",
+		Before: "one\n", After: "one\n", BeforeExists: true, AfterExists: true,
+		BeforeMode: 0o644, AfterMode: 0o755})
+	m.state = stateInput
+	m.input.SetValue("/diff scripts/build.sh")
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+
+	if m.state != stateDiffFull || m.fullDiff == nil {
+		t.Fatalf("/diff <path> should open the file, got state %d", m.state)
+	}
+	view := ansi.Strip(m.View().Content)
+	if !strings.Contains(view, "mode 0644 → 0755") {
+		t.Fatalf("the header should state what changed:\n%s", view)
+	}
+	if strings.Contains(view, "has not been changed") {
+		t.Fatalf("the file was changed:\n%s", view)
+	}
+}
+
 // A path the session never changed has no reading to show, and saying so is
 // more use than an empty viewer.
 func TestFileDiff_UnchangedPathSaysSo(t *testing.T) {

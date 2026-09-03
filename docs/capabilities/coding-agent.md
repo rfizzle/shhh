@@ -32,6 +32,14 @@ old mode back. A mode somebody changed by hand since counts as drift the
 same way edited content does, and is left alone without a deliberate second
 answer.
 
+The session's own account of what it has changed says it too. A file the
+session changed the permissions of and nothing else is on the list of what it
+has touched, with the two modes where the row would put the lines it counted,
+and opening that file shows the same thing rather than answering that the file
+has not been changed. Leaving it off the list was the older reading: it kept
+the list from claiming a file had changed by nothing, at the price of the one
+thing that had.
+
 ## Several places in one file are one call
 
 Changing three places in one file used to be three calls: three rounds, three

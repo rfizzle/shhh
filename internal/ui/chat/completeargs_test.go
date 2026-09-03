@@ -402,3 +402,25 @@ func TestArgCompletion_SessionFiles(t *testing.T) {
 		t.Fatalf("expected a path to match on its own name, got %v", got)
 	}
 }
+
+// A file the session made executable and left otherwise alone is one of the
+// files /diff can be given, and its description says the change it has rather
+// than the lines it did not move.
+func TestArgCompletion_SessionFilesOfferAModeOnlyChange(t *testing.T) {
+	m := readyModel(t)
+	m.changes.Add(1, changeset.Record{Path: "scripts/build.sh",
+		Before: "a\n", After: "a\n", BeforeExists: true, AfterExists: true,
+		BeforeMode: 0o644, AfterMode: 0o755})
+
+	menu := typeChars(t, m, "/diff ")
+	got := completionNames(menu)
+	if len(got) != 1 || got[0] != "scripts/build.sh" {
+		t.Fatalf("expected the file the session chmod'd, got %v", got)
+	}
+	if desc := menu.completions[0].desc; !strings.Contains(desc, "mode 0644 → 0755") {
+		t.Fatalf("expected the mode as the description, got %q", desc)
+	}
+	if desc := menu.completions[0].desc; strings.Contains(desc, "+0 −0") {
+		t.Fatalf("nothing counted this change, got %q", desc)
+	}
+}

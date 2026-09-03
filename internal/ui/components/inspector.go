@@ -272,6 +272,17 @@ type InspectorFile struct {
 	// the fold takes, so the turn in front of you keeps its rows while the
 	// session's older ones go behind `… N more`.
 	ThisTurn bool
+	// Mode states a change of permissions the session made to this file,
+	// already worded by whoever knows the two modes. A file whose whole
+	// change is its mode has no lines to count, so this stands where the
+	// counts would: the row would otherwise say `+0 −0` about a real change,
+	// which is a zero nothing measured
+	// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out).
+	// A file that changed lines as well states its counts and nothing else
+	// here — there is one field's room on the rail and the counts are what
+	// it is for; the mode is on that file's review row and in its diff
+	// header, both of which have the columns to say both.
+	Mode string
 }
 
 // InspectorAlert is one thing the workspace is still wrong about: a command
@@ -913,6 +924,14 @@ func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 	meta := ""
 	if len(c.Files) > 0 {
 		meta = sty.Dim.Render("session · ") + DiffStat(c.Added, c.Removed)
+		if c.Added == 0 && c.Removed == 0 {
+			// Every file below changed its permissions and nothing else, so
+			// there are no lines to total. The heading keeps its scope and
+			// drops the pair of zeros nothing measured
+			// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out);
+			// the rows say what did change.
+			meta = sty.Dim.Render("session")
+		}
 	}
 	b := railBlock{heading: railHeading("CHANGES", meta, sty.Dim, width)}
 	// The alerts come first and are pinned: they are what the block exists to
@@ -932,6 +951,13 @@ func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 		// so the close of a turn looks like the rows that produced it.
 		lead := sty.Accent.Render("▎") + sty.Accent.Render("✎") + " "
 		stats := DiffStat(f.Added, f.Removed)
+		counted := true
+		if f.Mode != "" && f.Added == 0 && f.Removed == 0 {
+			// Nothing counted this row, so it states the change it does have
+			// rather than the zero it does not, and it brings no counts to
+			// the fold's total.
+			stats, counted = sty.Dim.Render(f.Mode), false
+		}
 		if f.Turns > 1 {
 			// Repeat edits collapsed to one row, so the row says how many
 			// turns are behind its counts.
@@ -940,7 +966,7 @@ func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 		b.rows = append(b.rows, railLine{
 			text:    railRow(lead+sty.Body.Render(f.Path), stats, width, inspectorIndent),
 			pinned:  f.ThisTurn,
-			counted: true,
+			counted: counted,
 			added:   f.Added,
 			removed: f.Removed,
 			// The row already knows the path it is about, so a host answering

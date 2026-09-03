@@ -51,6 +51,15 @@ type DiffView struct {
 	Mode  DiffMode
 	// Syntax highlights this file's lines; nil renders plain diff colors.
 	Syntax Syntax
+	// ModeChange states a change of permissions the file carries, already
+	// worded by whoever knows the two modes. A file whose whole change is
+	// its mode has no hunks to count, so this stands where the counts would
+	// — a header reading `+0 −0 · 0 hunks` over a real change is a zero
+	// nothing measured
+	// (docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out)
+	// — and a file that changed lines as well states it after them, because
+	// putting that file back puts the permissions back too.
+	ModeChange string
 	// Files renders a multi-file patch in the full-screen view (the /diff
 	// session diff); when set, Path is just the header label and
 	// Hunks is ignored.
@@ -139,6 +148,12 @@ func (d *DiffView) statsLabel() string {
 		return fmt.Sprintf("+%d −%d · %s", adds, dels, plural(len(d.Files), "file"))
 	}
 	adds, dels := diff.Stats(d.Hunks)
+	if d.ModeChange != "" {
+		if len(d.Hunks) == 0 {
+			return d.ModeChange
+		}
+		return fmt.Sprintf("+%d −%d · %s · %s", adds, dels, plural(len(d.Hunks), "hunk"), d.ModeChange)
+	}
 	return fmt.Sprintf("+%d −%d · %s", adds, dels, plural(len(d.Hunks), "hunk"))
 }
 

@@ -135,9 +135,15 @@ func (r Record) Changed() bool {
 // have to be known: zero means nothing read one, so a record missing one says
 // nothing about permissions rather than reporting a file stripped to 000.
 func (r Record) ModeChanged() bool {
-	return r.BeforeExists && r.AfterExists &&
-		r.BeforeMode != 0 && r.AfterMode != 0 &&
-		r.BeforeMode.Perm() != r.AfterMode.Perm()
+	return r.BeforeExists && r.AfterExists && modeChanged(r.BeforeMode, r.AfterMode)
+}
+
+// modeChanged is the comparison itself, shared by one record and by the fold
+// of every record a session holds for a path, so a turn's change of
+// permissions and the session's net change of them cannot disagree about what
+// counts as one.
+func modeChanged(before, after os.FileMode) bool {
+	return before != 0 && after != 0 && before.Perm() != after.Perm()
 }
 
 // ModeOnly reports a record whose whole change is the permission bits. There
@@ -155,7 +161,16 @@ func (r Record) ModeChange() string {
 	if !r.ModeChanged() {
 		return ""
 	}
-	return fmt.Sprintf("mode %04o → %04o", r.BeforeMode.Perm(), r.AfterMode.Perm())
+	return modeChange(r.BeforeMode, r.AfterMode)
+}
+
+// modeChange is where that wording is spelled, once, so a record and the fold
+// of several of them cannot word one change two ways.
+func modeChange(before, after os.FileMode) string {
+	if !modeChanged(before, after) {
+		return ""
+	}
+	return fmt.Sprintf("mode %04o → %04o", before.Perm(), after.Perm())
 }
 
 func (r *Record) compute() {
@@ -469,10 +484,22 @@ type SessionFile struct {
 	// counting records counts turns.
 	Turns int
 	Last  int64
+	// ModeChange states the session's net change of permissions, in the same
+	// wording a single record states one in, and is empty where the session
+	// left the mode where it found it. It is the whole reason a file can be
+	// here with no hunks: a patch that made a script executable and moved not
+	// a byte is a change of the workspace, and a row answering `+0 −0` about
+	// it would report a measurement of nothing — which is what dropping the
+	// file was avoiding, at the cost of not mentioning the file at all.
+	// See docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out.
+	ModeChange string
 }
 
 // Totals aggregates every retained turn: how many distinct files the session
-// changed and its net +N −M. A file changed by two turns counts once.
+// changed and its net +N −M. A file changed by two turns counts once, and a
+// file whose whole change is its permissions counts as a file with no lines
+// to count — so a caller with both numbers at zero and a file in hand has
+// something to state other than a pair of zeros.
 func (s *Store) Totals() (files, added, removed int) {
 	for _, f := range s.SessionFiles() {
 		files++
@@ -499,8 +526,9 @@ func (s *Store) Session() []diff.File {
 
 // SessionFiles is Session with the attribution the rail needs: one net change
 // per path, in first-edit order, each carrying how many turns produced it and
-// which turn touched it last. A path a turn edited back to where it started
-// nets to nothing and is left out — the session's state, not its history.
+// which turn touched it last. A path a turn edited back to where it started —
+// content and permissions both — nets to nothing and is left out: the
+// session's state, not its history.
 func (s *Store) SessionFiles() []SessionFile {
 	if s == nil {
 		return nil
@@ -523,6 +551,7 @@ func (s *Store) sessionFilesLocked() []SessionFile {
 	type acc struct {
 		before, after             string
 		beforeExists, afterExists bool
+		beforeMode, afterMode     os.FileMode
 		turns                     int
 		last                      int64
 	}
@@ -533,11 +562,18 @@ func (s *Store) sessionFilesLocked() []SessionFile {
 		for _, r := range t.Records {
 			p, ok := at[r.Path]
 			if !ok {
-				p = &acc{before: r.Before, beforeExists: r.BeforeExists}
+				p = &acc{before: r.Before, beforeExists: r.BeforeExists, beforeMode: r.BeforeMode}
 				at[r.Path] = p
 				paths = append(paths, r.Path)
 			}
 			p.after, p.afterExists = r.After, r.AfterExists
+			if r.AfterMode != 0 || !r.AfterExists {
+				// A later turn that did not read the mode did not change one
+				// either, so the mode an earlier turn left is still the one on
+				// disk and carrying it forward is what keeps that change
+				// visible. A turn that removed the file leaves no mode at all.
+				p.afterMode = r.AfterMode
+			}
 			p.turns++
 			p.last = t.N
 		}
@@ -546,7 +582,14 @@ func (s *Store) sessionFilesLocked() []SessionFile {
 	for _, path := range paths {
 		p := at[path]
 		hunks := diff.Compute(p.before, p.after)
-		if len(hunks) == 0 {
+		// The two modes are compared only where the file is there on both
+		// sides, for the reason one record's are: a file the session created
+		// or removed is that, and has no pair of readings to tell apart.
+		mode := ""
+		if p.beforeExists && p.afterExists {
+			mode = modeChange(p.beforeMode, p.afterMode)
+		}
+		if len(hunks) == 0 && mode == "" {
 			continue
 		}
 		added, removed := diff.Stats(hunks)
@@ -554,6 +597,7 @@ func (s *Store) sessionFilesLocked() []SessionFile {
 			Path: path, Hunks: hunks,
 			Added: added, Removed: removed,
 			Turns: p.turns, Last: p.last,
+			ModeChange: mode,
 		})
 	}
 	return files

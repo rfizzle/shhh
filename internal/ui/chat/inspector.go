@@ -237,6 +237,7 @@ func (m Model) inspectorChanges() *components.InspectorChanges {
 			Removed:  f.Removed,
 			Turns:    f.Turns,
 			ThisTurn: touched[f.Path],
+			Mode:     f.ModeChange,
 		})
 	}
 	c.Alerts = m.inspectorAlerts()

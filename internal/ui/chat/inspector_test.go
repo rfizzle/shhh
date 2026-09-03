@@ -485,6 +485,39 @@ func TestFocusMode_KeepsTheRail(t *testing.T) {
 	}
 }
 
+// A file the session changed the permissions of and nothing else has a row on
+// the rail, and the row says the two modes: the block is what the session did
+// to the workspace, and leaving the file out to avoid printing `+0 −0` left
+// the one thing that happened off the screen entirely.
+func TestInspectorChanges_ModeOnlyFileIsOnTheRail(t *testing.T) {
+	m := inspectorModel(t, 144, 40)
+	m.changes.Add(m.turnCount, changeset.Record{
+		Path: "scripts/build.sh", BeforeExists: true, AfterExists: true,
+		Before: "one\n", After: "one\n", BeforeMode: 0o644, AfterMode: 0o755,
+	})
+
+	c := m.inspectorChanges()
+	var row components.InspectorFile
+	for _, f := range c.Files {
+		if f.Path == "scripts/build.sh" {
+			row = f
+		}
+	}
+	if row.Path == "" {
+		t.Fatalf("CHANGES should hold the file: %+v", c)
+	}
+	if row.Mode != "mode 0644 → 0755" {
+		t.Fatalf("the row carries the mode the session set: %+v", row)
+	}
+	view := stripANSI(m.View().Content)
+	if !strings.Contains(view, "mode 0644 → 0755") {
+		t.Fatalf("the rail states the mode:\n%s", view)
+	}
+	if strings.Contains(view, "+0 −0") {
+		t.Fatalf("the rail counts nothing it did not measure:\n%s", view)
+	}
+}
+
 // The rail is the session's overview, not a second copy of the turn: a file
 // edited in an earlier turn is still on screen turns later, and a path edited
 // twice is one row with the net counts and the turns behind it.

@@ -931,6 +931,19 @@ func TestGolden_InspectorRail(t *testing.T) {
 				},
 			},
 		}
+		// A writer's patch made two scripts executable and moved not a byte.
+		// There are no lines to count for that, so each row states the two
+		// modes where it would state its counts and the heading has no total
+		// to give — the block is what the session did to the workspace, and
+		// a pair of zeros would say it did nothing.
+		permissions := InspectorRail{
+			Changes: &InspectorChanges{
+				Files: []InspectorFile{
+					{Path: "scripts/build.sh", Mode: "mode 0644 → 0755", ThisTurn: true},
+					{Path: "scripts/release.sh", Mode: "mode 0600 → 0700", Turns: 2},
+				},
+			},
+		}
 		// A reading that has gone off the instruction, and one the session has
 		// outrun. The drifting one is what auto-steering will
 		// act on; here it is a row and nothing more.
@@ -1010,6 +1023,7 @@ func TestGolden_InspectorRail(t *testing.T) {
 			{Label: "blocks with nothing to say are omitted", View: quiet.View(width, 0)},
 			{Label: "eight files, four turns deep", View: session.View(width, 0)},
 			{Label: "the rail is shorter than the list (height 14)", View: session.View(width, 14)},
+			{Label: "a change of permissions has no lines to count", View: permissions.View(width, 0)},
 			{Label: "a reading that has left the instruction", View: drifting.View(width, 0)},
 			{Label: "a reading the session has outrun", View: stale.View(width, 0)},
 			{Label: "where the tools came from, and which answered", View: sources.View(width, 0)},

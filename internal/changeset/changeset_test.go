@@ -338,6 +338,113 @@ func TestSession_CollapsesTurnsIntoOneDiffPerFile(t *testing.T) {
 	}
 }
 
+// A file whose whole change is its permissions has no hunks, and the fold
+// that keeps one net change per path used to drop anything with none of
+// those. The session then had no row for a file the turn had a row for.
+func TestSessionFiles_KeepsAFileWhoseOnlyChangeIsItsMode(t *testing.T) {
+	s := New(0)
+	chmod := rec("a.sh", "one\n", "one\n")
+	chmod.BeforeMode, chmod.AfterMode = 0o644, 0o755
+	s.Add(1, chmod)
+
+	files := s.SessionFiles()
+	if len(files) != 1 || files[0].Path != "a.sh" {
+		t.Fatalf("the session should still hold the file, got %+v", files)
+	}
+	if got := files[0].ModeChange; got != "mode 0644 → 0755" {
+		t.Fatalf("the row should state the mode the session left, got %q", got)
+	}
+	if files[0].Added != 0 || files[0].Removed != 0 || len(files[0].Hunks) != 0 {
+		t.Fatalf("a change of permissions moves no lines, got %+v", files[0])
+	}
+	if n, added, removed := s.Totals(); n != 1 || added != 0 || removed != 0 {
+		t.Fatalf("the file counts and its lines do not, got %d files +%d −%d", n, added, removed)
+	}
+}
+
+// The session's row is its state, not its history: a mode set and set back
+// is where the file started, and a row for it would be a row about nothing.
+func TestSessionFiles_AModeChangedBackIsNoChange(t *testing.T) {
+	s := New(0)
+	chmod := rec("a.sh", "one\n", "one\n")
+	chmod.BeforeMode, chmod.AfterMode = 0o644, 0o755
+	s.Add(1, chmod)
+	back := rec("a.sh", "one\n", "one\n")
+	back.BeforeMode, back.AfterMode = 0o755, 0o644
+	s.Add(2, back)
+
+	if files := s.SessionFiles(); len(files) != 0 {
+		t.Fatalf("the file is where the session found it, got %+v", files)
+	}
+}
+
+// A turn that did not read the mode did not change one either, so the mode an
+// earlier turn set is still on disk and the session's net row has to keep it
+// — with the lines the later turn moved counted first, because those are what
+// the row is for.
+func TestSessionFiles_ModeAndContentAcrossTurns(t *testing.T) {
+	s := New(0)
+	chmod := rec("a.sh", "one\n", "one\n")
+	chmod.BeforeMode, chmod.AfterMode = 0o644, 0o755
+	s.Add(1, chmod)
+	s.Add(2, rec("a.sh", "one\n", "one\ntwo\n"))
+
+	files := s.SessionFiles()
+	if len(files) != 1 {
+		t.Fatalf("expected one row for the file, got %+v", files)
+	}
+	f := files[0]
+	if f.Added != 1 || f.Removed != 0 || len(f.Hunks) == 0 {
+		t.Fatalf("the lines the session moved are the row's counts, got %+v", f)
+	}
+	if f.ModeChange != "mode 0644 → 0755" {
+		t.Fatalf("the row should still carry the mode, got %q", f.ModeChange)
+	}
+	if f.Turns != 2 {
+		t.Fatalf("two turns are behind the row, got %d", f.Turns)
+	}
+}
+
+// A file the session created or removed has one side and no pair of readings
+// to tell apart, so its row says it was created rather than claiming its
+// permissions changed.
+func TestSessionFiles_ACreatedFileStatesNoModeChange(t *testing.T) {
+	s := New(0)
+	created := rec("a.sh", "", "one\n")
+	created.BeforeExists, created.AfterMode = false, 0o755
+	s.Add(1, created)
+
+	files := s.SessionFiles()
+	if len(files) != 1 || files[0].ModeChange != "" {
+		t.Fatalf("a creation states no change of permissions, got %+v", files)
+	}
+}
+
+// A file the session removed has one side and no pair of readings to tell
+// apart, and a mode set before the removal is not a change to carry past it:
+// a row claiming permissions changed on a file that is gone is a chmod
+// nothing could apply.
+func TestSessionFiles_ARemovedFileStatesNoModeChange(t *testing.T) {
+	s := New(0)
+	chmod := rec("a.sh", "one\n", "one\n")
+	chmod.BeforeMode, chmod.AfterMode = 0o644, 0o755
+	s.Add(1, chmod)
+	removal := rec("a.sh", "one\n", "")
+	removal.AfterExists = false
+	s.Add(2, removal)
+
+	files := s.SessionFiles()
+	if len(files) != 1 || files[0].Path != "a.sh" {
+		t.Fatalf("the removal is still the session's change to the path, got %+v", files)
+	}
+	if files[0].ModeChange != "" {
+		t.Fatalf("a file that is gone has no permissions to have changed, got %q", files[0].ModeChange)
+	}
+	if files[0].Removed == 0 {
+		t.Fatalf("the row should count the lines the removal took, got %+v", files[0])
+	}
+}
+
 // A session boundary empties the store: the next conversation numbers its
 // turns from one, and turn 1 must not answer with the last one's edits.
 func TestReset_EmptiesTheStoreAndKeepsItUsable(t *testing.T) {

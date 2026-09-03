@@ -125,6 +125,11 @@
   ▎✎ internal/agent/errors.go            +3 −0
   … 4 more                              +45 −6
 
+· a change of permissions has no lines to count
+  CHANGES                              session
+  ▎✎ scripts/build.sh         mode 0644 → 0755
+  ▎✎ scripts/release.sh    mode 0600 → 0700 2t
+
 · a reading that has left the instruction
   SUMMARY                       as of round 31
   Rewriting the README's install section.     
@@ -302,6 +307,11 @@
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252minternal/ui/chat/model.go␛[m           ␛[92m+9␛[m ␛[91m−1␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252minternal/agent/errors.go␛[m            ␛[92m+3␛[m ␛[91m−0␛[m
   ␛[3;38;5;241m… 4 more␛[m                              ␛[92m+45␛[m ␛[91m−6␛[m
+
+· a change of permissions has no lines to count
+  ␛[1;94mCHANGES␛[m                              ␛[38;5;241msession␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252mscripts/build.sh␛[m         ␛[38;5;241mmode 0644 → 0755␛[m
+  ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252mscripts/release.sh␛[m    ␛[38;5;241mmode 0600 → 0700␛[m ␛[38;5;241m2t␛[m
 
 · a reading that has left the instruction
   ␛[1;94mSUMMARY␛[m                       ␛[38;5;241mas of round 31␛[m

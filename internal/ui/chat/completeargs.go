@@ -343,9 +343,19 @@ func sessionFileArgs(m *Model) []argOption {
 	files := m.changes.SessionFiles()
 	out := make([]argOption, 0, len(files))
 	for _, f := range files {
+		// A file whose whole change is its permissions has no lines to count,
+		// so the description says the change it has where it would say the
+		// counts — the same substitution the rail's row makes, and for the
+		// same reason: `+0 −0` beside a real change is a zero nothing
+		// measured.
+		// See docs/interface/principles.md#a-stat-that-cannot-be-reported-is-left-out.
+		change := fmt.Sprintf("+%d −%d", f.Added, f.Removed)
+		if f.ModeChange != "" && f.Added == 0 && f.Removed == 0 {
+			change = f.ModeChange
+		}
 		out = append(out, argOption{
 			value: f.Path,
-			desc:  fmt.Sprintf("+%d −%d · %s", f.Added, f.Removed, plural(f.Turns, "turn")),
+			desc:  fmt.Sprintf("%s · %s", change, plural(f.Turns, "turn")),
 		})
 	}
 	return out

@@ -62,6 +62,32 @@ func TestDiffView_RowView(t *testing.T) {
 	}
 }
 
+// A file whose whole change is its permissions has nothing to count and no
+// hunks to show. The header says what did change, because `+0 −0 · 0 hunks`
+// over a real change reads as a viewer opened on the wrong file.
+func TestDiffView_ModeChangeStandsWhereTheCountsWould(t *testing.T) {
+	v := &DiffView{Path: "build.sh", Verb: "edit", ModeChange: "mode 0644 → 0755", Height: 6}
+	row := v.RowView(80)
+	if !strings.Contains(row, "mode 0644 → 0755") {
+		t.Fatalf("the row should state the mode, got %q", row)
+	}
+	if strings.Contains(row, "+0 −0") {
+		t.Fatalf("nothing counted this change, got %q", row)
+	}
+	v.Mode = DiffFull
+	full := v.View(80)
+	if !strings.Contains(full, "mode 0644 → 0755") || !strings.Contains(full, "no textual changes") {
+		t.Fatalf("the full view should state the mode over an empty body, got:\n%s", full)
+	}
+
+	// With lines as well, the counts are the header and the mode follows
+	// them: putting the file back puts both back.
+	both := &DiffView{Path: "build.sh", Hunks: sampleHunks(t), ModeChange: "mode 0644 → 0755"}
+	if got := both.RowView(80); !strings.Contains(got, "+1 −1 · 1 hunk · mode 0644 → 0755") {
+		t.Fatalf("the row should state both, got %q", got)
+	}
+}
+
 func TestDiffView_ModeCycleAndEsc(t *testing.T) {
 	v := &DiffView{Path: "main.go", Hunks: sampleHunks(t), Height: 10}
 	if done, _ := v.Update(key("enter")); done || v.Mode != DiffExpanded {

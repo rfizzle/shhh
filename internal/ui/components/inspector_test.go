@@ -450,6 +450,61 @@ func TestInspectorChanges_AlertsOutliveTheirTurn(t *testing.T) {
 	}
 }
 
+// A file whose whole change is its permissions has no lines to count. The row
+// states the change it has where it would state them, and the heading drops
+// the total rather than printing a pair of zeros over a real change.
+func TestInspectorChanges_AModeOnlyRowStatesTheModeNotZeros(t *testing.T) {
+	r := InspectorRail{Changes: &InspectorChanges{
+		Files: []InspectorFile{{Path: "scripts/build.sh", Mode: "mode 0644 → 0755"}},
+	}}
+	view := stripANSI(r.View(InspectorWidth, 0))
+	if !strings.Contains(view, "mode 0644 → 0755") {
+		t.Fatalf("the row states the mode it changed:\n%s", view)
+	}
+	if strings.Contains(view, "+0 −0") {
+		t.Fatalf("no row on the rail counts a change it did not measure:\n%s", view)
+	}
+	if !strings.Contains(view, "session") {
+		t.Fatalf("the block still says what it is scoped to:\n%s", view)
+	}
+}
+
+// A file that moved lines as well has counts, and the counts are what the
+// one field on the rail is for: the mode is stated where there is room for
+// both, which is that file's review row and its diff header.
+func TestInspectorChanges_AFileWithCountsStatesThem(t *testing.T) {
+	r := InspectorRail{Changes: &InspectorChanges{
+		Files: []InspectorFile{{Path: "scripts/build.sh", Added: 3, Removed: 1, Mode: "mode 0644 → 0755"}},
+		Added: 3, Removed: 1,
+	}}
+	view := stripANSI(r.View(InspectorWidth, 0))
+	if !strings.Contains(view, "+3 −1") {
+		t.Fatalf("the row states the lines it counted:\n%s", view)
+	}
+	if strings.Contains(view, "mode 0644") {
+		t.Fatalf("the rail's one field belongs to the counts:\n%s", view)
+	}
+}
+
+// Rows with no counts of their own fold behind a bare marker: a fold that
+// totalled them would print the zero the rows themselves refused to.
+func TestInspectorChanges_ModeOnlyRowsFoldWithoutATotal(t *testing.T) {
+	r := InspectorRail{Changes: &InspectorChanges{
+		Files: []InspectorFile{
+			{Path: "scripts/one.sh", Mode: "mode 0644 → 0755"},
+			{Path: "scripts/two.sh", Mode: "mode 0644 → 0755"},
+			{Path: "scripts/three.sh", Mode: "mode 0600 → 0700"},
+		},
+	}}
+	view := stripANSI(r.View(InspectorWidth, 3))
+	if !strings.Contains(view, "… 2 more") {
+		t.Fatalf("the rows it could not fit go behind a marker:\n%s", view)
+	}
+	if strings.Contains(view, "+0 −0") {
+		t.Fatalf("the marker carries no total it did not measure:\n%s", view)
+	}
+}
+
 // A block with nothing but alerts is still a block: the session changed
 // nothing this time and something is still broken.
 func TestInspectorChanges_AlertsAloneStillRender(t *testing.T) {
