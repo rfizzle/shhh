@@ -8,15 +8,16 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
-// The five questions a language server is asked. All of them are read-only
+// The six questions a language server is asked. All of them are read-only
 // and auto-run like the other read-only tools.
-// See docs/capabilities/coding-agent.md#five-questions-for-the-language-server.
+// See docs/capabilities/coding-agent.md#six-questions-for-the-language-server.
 const (
 	DefinitionToolName      = "definition"
 	ReferencesToolName      = "references"
 	WorkspaceSymbolToolName = "workspace_symbol"
 	DocumentSymbolToolName  = "document_symbol"
 	HoverToolName           = "hover"
+	DiagnosticsToolName     = "diagnostics"
 )
 
 // Toolset exposes a Manager as agent tools. It is only registered when at
@@ -95,13 +96,25 @@ func (t *Toolset) Definitions() []provider.Tool {
 				"required": ["path", "line", "symbol"]
 			}`),
 		},
+		{
+			Name: DiagnosticsToolName,
+			Description: "Ask the language server what is currently wrong with a file, or with everything it has checked this session. " +
+				"Give a path for one file, or omit it for the workspace; errors come first. " +
+				"Use it to confirm a change compiles before moving on, or to pick up a check that had not finished when an edit was applied.",
+			Parameters: json.RawMessage(`{
+				"type": "object",
+				"properties": {
+					"path": {"type": "string", "description": "File to report on (absolute or workspace-relative); omit for every file checked this session"}
+				}
+			}`),
+		},
 	}
 }
 
 // Has reports whether name is an LSP tool this session registered.
 func (t *Toolset) Has(name string) bool {
 	switch name {
-	case DefinitionToolName, ReferencesToolName, WorkspaceSymbolToolName, DocumentSymbolToolName, HoverToolName:
+	case DefinitionToolName, ReferencesToolName, WorkspaceSymbolToolName, DocumentSymbolToolName, HoverToolName, DiagnosticsToolName:
 		return true
 	}
 	return false
@@ -157,6 +170,16 @@ func (t *Toolset) Execute(name string, args json.RawMessage) (string, error) {
 			return "", fmt.Errorf("path is required")
 		}
 		return t.Manager.DocumentSymbol(a.Path)
+	case DiagnosticsToolName:
+		var a struct {
+			Path string `json:"path"`
+		}
+		// An absent path is the workspace, so an empty argument object is a
+		// question rather than a mistake and the field is not required.
+		if err := json.Unmarshal(args, &a); err != nil {
+			return "", fmt.Errorf("invalid arguments: %w", err)
+		}
+		return t.Manager.Diagnostics(strings.TrimSpace(a.Path))
 	case DefinitionToolName:
 		a, err := parseNavigateArgs(args)
 		if err != nil {
@@ -181,12 +204,34 @@ func (t *Toolset) Execute(name string, args json.RawMessage) (string, error) {
 
 // WrapExecutor returns an executor that dispatches LSP tools and hands
 // everything else to next.
+//
+// It is also where a late answer catches up with the session. Diagnostics an
+// edit stopped waiting for ride in front of whatever result the model reads
+// next, because there is no other message going its way: the round that made
+// the edit is over, and a language server publishing on its own schedule has
+// nobody to publish to. An errored call is left alone — its result is the
+// error the model is about to read, and a block in front of that reads as
+// part of the failure.
+// See docs/capabilities/coding-agent.md#diagnostics-that-arrive-late-still-arrive.
 func (t *Toolset) WrapExecutor(next func(name string, args json.RawMessage) (string, error)) func(string, json.RawMessage) (string, error) {
 	return func(name string, args json.RawMessage) (string, error) {
+		var result string
+		var err error
 		if t.Has(name) {
-			return t.Execute(name, args)
+			result, err = t.Execute(name, args)
+		} else {
+			result, err = next(name, args)
 		}
-		return next(name, args)
+		// The diagnostics tool has just reported the current set itself;
+		// prefixing its own answer with a held copy of part of it would say
+		// the same thing twice.
+		if err != nil || name == DiagnosticsToolName {
+			return result, err
+		}
+		if held := t.Manager.TakeHeldDiagnostics(); held != "" {
+			return held + "\n\n" + result, nil
+		}
+		return result, nil
 	}
 }
 

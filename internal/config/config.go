@@ -181,19 +181,23 @@ type SummaryConfig struct {
 	Title *bool `toml:"title"`
 }
 
-// LSPConfig tunes the language-server integration `shhh code` uses
-// for after-edit diagnostics and the definition/references tools. Servers are
-// auto-detected on PATH (gopls, rust-analyzer, typescript-language-server,
-// pyright); none found means the integration is a clean no-op.
+// LSPConfig tunes the language-server integration `shhh code` uses for
+// diagnostics and the navigation tools. Servers are auto-detected on PATH
+// (gopls, rust-analyzer, typescript-language-server, pyright); none found
+// means the integration is a clean no-op.
 type LSPConfig struct {
 	// Disabled turns the LSP integration off entirely: no servers started, no
-	// navigation tools registered, no after-edit diagnostics.
+	// navigation tools registered, no diagnostics.
 	Disabled bool `toml:"disabled"`
 	// RequestTimeoutSeconds bounds each server request, including the
 	// initialize handshake (default 15).
 	RequestTimeoutSeconds int `toml:"request_timeout_seconds"`
-	// DiagnosticsTimeoutSeconds is how long an applied edit waits for fresh
-	// diagnostics before giving up quietly (default 3).
+	// DiagnosticsTimeoutSeconds is how long an applied edit waits for the
+	// server to re-check the file before moving on (default 3). Raising it
+	// buys nothing that waiting does not: a check that lands after it is held
+	// and delivered with the next tool result rather than dropped, which is
+	// why the default stays short enough not to be felt.
+	// See docs/capabilities/coding-agent.md#diagnostics-that-arrive-late-still-arrive.
 	DiagnosticsTimeoutSeconds int `toml:"diagnostics_timeout_seconds"`
 }
 

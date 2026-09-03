@@ -136,6 +136,7 @@ var activityVerbs = map[string]string{
 	lsp.WorkspaceSymbolToolName: "lsp",
 	lsp.DocumentSymbolToolName:  "lsp",
 	lsp.HoverToolName:           "lsp",
+	lsp.DiagnosticsToolName:     "lsp",
 	web.FetchToolName:           "web",
 	web.SearchToolName:          "web",
 	"edit_file":                 "edit",

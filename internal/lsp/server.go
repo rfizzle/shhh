@@ -85,8 +85,9 @@ type publishedDiags struct {
 // and are asked unconditionally; these three are not, and a request a server
 // never advertised is answered by nothing at all — the call waits out the
 // request timeout and the model is handed a broken-looking tool where it
-// should have been handed a "no".
-// See docs/capabilities/coding-agent.md#five-questions-for-the-language-server.
+// should have been handed a "no". Diagnostics need no entry here: the server
+// publishes them unasked, so there is no request to gate.
+// See docs/capabilities/coding-agent.md#six-questions-for-the-language-server.
 type serverCapabilities struct {
 	workspaceSymbol bool
 	documentSymbol  bool
@@ -248,6 +249,50 @@ func (s *server) waitDiagnostics(path string, afterSeq int64, timeout time.Durat
 			return nil, false
 		}
 	}
+}
+
+// diagnosticsSince returns the diagnostics published for path after afterSeq
+// and whether any publication has landed since. It never blocks: it is the
+// same question waitDiagnostics asks, put later, once the edit's wait has
+// already run out and the answer either arrived on its own or did not.
+func (s *server) diagnosticsSince(path string, afterSeq int64) ([]Diagnostic, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	d, have := s.diags[path]
+	if !have || d.seq <= afterSeq {
+		return nil, false
+	}
+	return d.items, true
+}
+
+// latestDiagnostics returns the last thing the server said about path, when
+// it said it, and whether it has ever said anything. The sequence is what
+// tells the caller whether this answers a question an edit is still waiting
+// on or predates it; the final return keeps "checked and clean" apart from
+// "never checked", which read the same as an empty slice and mean opposite
+// things to a reader.
+func (s *server) latestDiagnostics(path string) ([]Diagnostic, int64, bool) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	d, have := s.diags[path]
+	if !have {
+		return nil, 0, false
+	}
+	return d.items, d.seq, true
+}
+
+// publishedDiagnostics is every file this server has published for, each with
+// the sequence it was published at. The map is a copy so the caller can walk
+// it while the server keeps publishing; the slices in it are safe to share
+// because a publication replaces a file's entry rather than appending to it.
+func (s *server) publishedDiagnostics() map[string]publishedDiags {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := make(map[string]publishedDiags, len(s.diags))
+	for path, d := range s.diags {
+		out[path] = d
+	}
+	return out
 }
 
 // locationRequest runs a definition/references-shaped request at a position.

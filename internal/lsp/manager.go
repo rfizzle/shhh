@@ -59,6 +59,14 @@ type managedServer struct {
 	err  error
 }
 
+// heldQuestion is an edit whose diagnostics had not arrived when its wait ran
+// out: the server that owns the file, and the publish sequence any answer has
+// to be newer than for it to be about that edit rather than an earlier one.
+type heldQuestion struct {
+	srv      *server
+	afterSeq int64
+}
+
 // Manager owns the session's language servers: lazy start on first use, one
 // instance per server, bounded requests, and shutdown with the session.
 type Manager struct {
@@ -68,6 +76,15 @@ type Manager struct {
 	mu      sync.Mutex
 	servers map[string]*managedServer // spec name → instance
 	byExt   map[string]*managedServer
+	// running is every server that came up, in start order, so a question
+	// with no file to route on can be put to the servers that exist without
+	// racing the sync.Once that started them.
+	running []startedServer
+	// held is the file → open question left by an edit whose wait ran out.
+	// One entry per file: a file edited again replaces its question, because
+	// diagnostics for the file as it was are not a report on the file as it
+	// is. See docs/capabilities/coding-agent.md#diagnostics-that-arrive-late-still-arrive.
+	held map[string]heldQuestion
 }
 
 // NewManager builds a manager over the detected specs, rooted at the
@@ -87,6 +104,7 @@ func NewManager(root string, specs []ServerSpec, opts Options) *Manager {
 		opts:    opts,
 		servers: make(map[string]*managedServer),
 		byExt:   make(map[string]*managedServer),
+		held:    make(map[string]heldQuestion),
 	}
 	for _, spec := range specs {
 		ms := &managedServer{spec: spec}
@@ -127,11 +145,30 @@ func (m *Manager) serverFor(path string) (*server, string) {
 func (m *Manager) start(ms *managedServer) *server {
 	ms.once.Do(func() {
 		ms.srv, ms.err = startServer(ms.spec, m.root, m.opts.connect, m.opts.RequestTimeout)
+		if ms.err != nil {
+			return
+		}
+		// Recorded here rather than read off the map later: ms.srv is only
+		// safe to read once this Once has run, and a caller asking "which
+		// servers are up" has no way to know that of a spec it is not
+		// starting itself.
+		m.mu.Lock()
+		m.running = append(m.running, startedServer{name: ms.spec.Name, srv: ms.srv})
+		m.mu.Unlock()
 	})
 	if ms.err != nil {
 		return nil
 	}
 	return ms.srv
+}
+
+// runningServers is every server that has started, by name.
+func (m *Manager) runningServers() []startedServer {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := append([]startedServer(nil), m.running...)
+	sort.Slice(out, func(i, j int) bool { return out[i].name < out[j].name })
+	return out
 }
 
 // startedServer pairs a running server with the spec name errors are reported
@@ -189,6 +226,12 @@ func (m *Manager) rel(path string) string {
 // no server covers the file, the server is broken, or it does not publish
 // within the diagnostics timeout. It never blocks longer than the configured
 // bounds, so a hung server costs one bounded wait, not a wedged loop.
+//
+// The wait is a deadline for this result, not for the question. A server that
+// has just started routinely takes longer than it, and an edit checked by
+// nothing is worse when nothing says so, so a wait that runs out leaves the
+// question open for TakeHeldDiagnostics to collect.
+// See docs/capabilities/coding-agent.md#diagnostics-that-arrive-late-still-arrive.
 func (m *Manager) DiagnosticsAfterChange(path string) string {
 	path = m.abs(path)
 	srv, name := m.serverFor(path)
@@ -197,24 +240,210 @@ func (m *Manager) DiagnosticsAfterChange(path string) string {
 	}
 	before := srv.publishSeq()
 	if err := srv.syncFile(path); err != nil {
+		m.dropHeld(path)
 		return ""
 	}
 	items, ok := srv.waitDiagnostics(path, before, m.opts.DiagnosticsTimeout)
-	if !ok || len(items) == 0 {
+	if !ok {
+		m.hold(path, heldQuestion{srv: srv, afterSeq: before})
+		return ""
+	}
+	m.dropHeld(path)
+	if len(items) == 0 {
 		return ""
 	}
 	return m.formatDiagnostics(name, path, items)
 }
 
+// hold records — or replaces — the open question for path.
+func (m *Manager) hold(path string, q heldQuestion) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.held[path] = q
+}
+
+// dropHeld forgets path's open question, which is what an answer delivered by
+// any other route means.
+func (m *Manager) dropHeld(path string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	delete(m.held, path)
+}
+
+// settleHeld forgets path's open question when seq — the sequence of the
+// publication just reported through some other route — is newer than what
+// that question is waiting for. A report built from an older publication
+// answers nothing about the edit still outstanding, and closing the question
+// on the strength of it would lose the answer on its way.
+func (m *Manager) settleHeld(path string, seq int64) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if q, ok := m.held[path]; ok && seq > q.afterSeq {
+		delete(m.held, path)
+	}
+}
+
+// TakeHeldDiagnostics returns the answers that landed after their edit's wait
+// had run out, one bracketed block per file, and forgets them — so they reach
+// the model exactly once, in front of the next result it reads. "" when
+// nothing is outstanding or nothing has arrived yet.
+//
+// A question whose answer is a clean file is dropped without a block: the
+// point is to say what is wrong, and a paragraph saying an edit two rounds ago
+// turned out fine is the noise that gets the useful ones skimmed past.
+// See docs/capabilities/coding-agent.md#diagnostics-that-arrive-late-still-arrive.
+func (m *Manager) TakeHeldDiagnostics() string {
+	type arrival struct {
+		path  string
+		items []Diagnostic
+	}
+	m.mu.Lock()
+	paths := make([]string, 0, len(m.held))
+	for path := range m.held {
+		paths = append(paths, path)
+	}
+	sort.Strings(paths)
+	arrived := make([]arrival, 0, len(paths))
+	for _, path := range paths {
+		q := m.held[path]
+		items, ok := q.srv.diagnosticsSince(path, q.afterSeq)
+		if !ok {
+			continue
+		}
+		delete(m.held, path)
+		if len(items) == 0 {
+			continue
+		}
+		arrived = append(arrived, arrival{path: path, items: items})
+	}
+	m.mu.Unlock()
+
+	blocks := make([]string, 0, len(arrived))
+	for _, a := range arrived {
+		blocks = append(blocks, m.heldBlock(a.path, a.items))
+	}
+	return strings.Join(blocks, "\n\n")
+}
+
+// Diagnostics reports what a language server currently says about one file,
+// or about every file this session has had checked when path is empty. It is
+// the question the model asks outright rather than reading off an edit it
+// made several rounds ago.
+func (m *Manager) Diagnostics(path string) (string, error) {
+	if strings.TrimSpace(path) == "" {
+		return m.workspaceDiagnostics()
+	}
+	abs := m.abs(path)
+	srv, name := m.serverFor(abs)
+	if srv == nil {
+		return "", fmt.Errorf("no language server available for %s", filepath.Ext(abs))
+	}
+	before := srv.publishSeq()
+	if err := srv.syncFile(abs); err != nil {
+		return "", fmt.Errorf("cannot read %s: %w", m.rel(abs), err)
+	}
+	items, ok := srv.waitDiagnostics(abs, before, m.opts.DiagnosticsTimeout)
+	if ok {
+		// This publication is newer than the sequence any question about this
+		// file is waiting on, so answering here answers that too.
+		m.dropHeld(abs)
+	} else {
+		// The re-check did not land inside the wait, so the answer is the
+		// last one the server gave for this file — including one that arrived
+		// too late for the edit that asked for it. Reporting nothing here
+		// would say the file is clean on the strength of never having been
+		// told otherwise. An older publication settles nothing, so a question
+		// this answer predates stays open.
+		var seq int64
+		items, seq, ok = srv.latestDiagnostics(abs)
+		m.settleHeld(abs, seq)
+	}
+	switch {
+	case !ok:
+		return fmt.Sprintf("%s has not checked %s yet.", name, m.rel(abs)), nil
+	case len(items) == 0:
+		return fmt.Sprintf("No diagnostics for %s.", m.rel(abs)), nil
+	}
+	return m.formatDiagnostics(name, abs, items), nil
+}
+
+// workspaceDiagnostics gathers what every started server has published, over
+// the files it published about. Nothing is started to answer this: a server
+// brought up for the question would have read no files and so have nothing to
+// say, and the honest answer to "what is wrong" is about the files this
+// session has actually touched.
+func (m *Manager) workspaceDiagnostics() (string, error) {
+	m.mu.Lock()
+	detected := len(m.servers)
+	m.mu.Unlock()
+	if detected == 0 {
+		return "", fmt.Errorf("no language server is available in this workspace")
+	}
+	running := m.runningServers()
+	if len(running) == 0 {
+		return "No file has been checked by a language server in this session yet.", nil
+	}
+
+	// One flat list rather than a section per file, because the ordering the
+	// reader needs runs across files: an error three files down matters more
+	// than a hint in the first one, and grouping by path buries it.
+	type located struct {
+		path string
+		diag Diagnostic
+	}
+	var all []located
+	files := make(map[string]bool)
+	for _, entry := range running {
+		for path, d := range entry.srv.publishedDiagnostics() {
+			// Reporting a file's current set answers whatever question an
+			// edit to it left open — including one whose answer is that it is
+			// clean. Leaving those open would hand the same diagnostics to
+			// the next tool result a second time, through the other door,
+			// while closing one this listing predates would lose an answer
+			// that has not arrived.
+			m.settleHeld(path, d.seq)
+			if len(d.items) == 0 {
+				continue
+			}
+			files[path] = true
+			for _, item := range d.items {
+				all = append(all, located{path: path, diag: item})
+			}
+		}
+	}
+	if len(all) == 0 {
+		return "No diagnostics in the files this session has had checked.", nil
+	}
+	sort.SliceStable(all, func(i, j int) bool {
+		ri, rj := severityRank(all[i].diag.Severity), severityRank(all[j].diag.Severity)
+		if ri != rj {
+			return ri < rj
+		}
+		if all[i].path != all[j].path {
+			return all[i].path < all[j].path
+		}
+		return all[i].diag.Range.Start.Line < all[j].diag.Range.Start.Line
+	})
+
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "%d %s across %d %s:", len(all), diagnosticNoun(len(all)), len(files), fileNoun(len(files)))
+	shown := all
+	if len(shown) > MaxDiagnostics {
+		shown = shown[:MaxDiagnostics]
+	}
+	for _, e := range shown {
+		sb.WriteString("\n" + m.diagnosticLine(e.path, e.diag))
+	}
+	if len(all) > len(shown) {
+		fmt.Fprintf(&sb, "\n… and %d more (truncated at %d)", len(all)-len(shown), MaxDiagnostics)
+	}
+	return sb.String(), nil
+}
+
 // formatDiagnostics renders diagnostics errors-first, capped at
 // MaxDiagnostics with an elision note.
 func (m *Manager) formatDiagnostics(serverName, path string, items []Diagnostic) string {
-	sorted := make([]Diagnostic, len(items))
-	copy(sorted, items)
-	sort.SliceStable(sorted, func(i, j int) bool {
-		return severityRank(sorted[i].Severity) < severityRank(sorted[j].Severity)
-	})
-
+	sorted := sortedBySeverity(items)
 	var sb strings.Builder
 	fmt.Fprintf(&sb, "Diagnostics (%s) for %s:", serverName, m.rel(path))
 	shown := sorted
@@ -222,16 +451,108 @@ func (m *Manager) formatDiagnostics(serverName, path string, items []Diagnostic)
 		shown = shown[:MaxDiagnostics]
 	}
 	for _, d := range shown {
-		msg := strings.Join(strings.Fields(d.Message), " ")
-		fmt.Fprintf(&sb, "\n%s:%d:%d %s: %s", m.rel(path), d.Range.Start.Line+1, d.Range.Start.Character+1, severityLabel(d.Severity), msg)
-		if d.Source != "" {
-			fmt.Fprintf(&sb, " (%s)", d.Source)
-		}
+		sb.WriteString("\n" + m.diagnosticLine(path, d))
 	}
 	if len(sorted) > len(shown) {
 		fmt.Fprintf(&sb, "\n… and %d more", len(sorted)-len(shown))
 	}
 	return sb.String()
+}
+
+// heldBlock renders a late answer. Its header is bracketed and tallied rather
+// than prosed, because this block sits in front of a result about something
+// else entirely: the reader has to be able to see at a glance which file it is
+// about and whether it needs reading now.
+func (m *Manager) heldBlock(path string, items []Diagnostic) string {
+	sorted := sortedBySeverity(items)
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "[diagnostics: %s — %s]", m.rel(path), severityTally(sorted))
+	shown := sorted
+	if len(shown) > MaxDiagnostics {
+		shown = shown[:MaxDiagnostics]
+	}
+	for _, d := range shown {
+		sb.WriteString("\n" + m.diagnosticLine(path, d))
+	}
+	if len(sorted) > len(shown) {
+		fmt.Fprintf(&sb, "\n… and %d more", len(sorted)-len(shown))
+	}
+	return sb.String()
+}
+
+// diagnosticLine renders one diagnostic as a file:line:column reference. The
+// message is collapsed onto one line: servers wrap long ones, and a wrapped
+// message reads as several diagnostics.
+func (m *Manager) diagnosticLine(path string, d Diagnostic) string {
+	msg := strings.Join(strings.Fields(d.Message), " ")
+	line := fmt.Sprintf("%s:%d:%d %s: %s", m.rel(path), d.Range.Start.Line+1, d.Range.Start.Character+1, severityLabel(d.Severity), msg)
+	if d.Source != "" {
+		line += fmt.Sprintf(" (%s)", d.Source)
+	}
+	return line
+}
+
+// sortedBySeverity copies items into errors-first order, keeping the server's
+// own order within a severity.
+func sortedBySeverity(items []Diagnostic) []Diagnostic {
+	sorted := make([]Diagnostic, len(items))
+	copy(sorted, items)
+	sort.SliceStable(sorted, func(i, j int) bool {
+		return severityRank(sorted[i].Severity) < severityRank(sorted[j].Severity)
+	})
+	return sorted
+}
+
+// severityTally counts diagnostics by severity, worst first — "2 errors, 1
+// warning" — for a header that has to say how bad it is in a few words.
+func severityTally(items []Diagnostic) string {
+	counts := make(map[int]int, 4)
+	for _, d := range items {
+		rank := severityRank(d.Severity)
+		// A severity outside the spec's range is labelled an error on its own
+		// line, so the tally above those lines has to call it one too.
+		if rank > 4 {
+			rank = 1
+		}
+		counts[rank]++
+	}
+	var parts []string
+	for rank := 1; rank <= 4; rank++ {
+		n := counts[rank]
+		if n == 0 {
+			continue
+		}
+		parts = append(parts, fmt.Sprintf("%d %s", n, severityNoun(rank, n)))
+	}
+	if len(parts) == 0 {
+		return "nothing"
+	}
+	return strings.Join(parts, ", ")
+}
+
+// severityNoun agrees a severity's label with its count. "info" is the one
+// that does not take an s: it is already a mass noun, and "3 infos" reads as
+// a typo in a header meant to be taken at a glance.
+func severityNoun(rank, n int) string {
+	label := severityLabel(rank)
+	if n == 1 || rank == 3 {
+		return label
+	}
+	return label + "s"
+}
+
+func diagnosticNoun(n int) string {
+	if n == 1 {
+		return "diagnostic"
+	}
+	return "diagnostics"
+}
+
+func fileNoun(n int) string {
+	if n == 1 {
+		return "file"
+	}
+	return "files"
 }
 
 // severityRank orders errors before warnings before the rest; an absent
@@ -498,4 +819,11 @@ func (m *Manager) Shutdown() {
 		}(ms.srv)
 	}
 	wg.Wait()
+	// Cleared after the servers are down rather than before: an open question
+	// can never be answered once they are gone, and one dropped while a start
+	// was still in flight would leave the answer to it in place.
+	m.mu.Lock()
+	clear(m.held)
+	m.running = nil
+	m.mu.Unlock()
 }

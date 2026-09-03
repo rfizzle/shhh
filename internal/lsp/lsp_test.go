@@ -23,6 +23,12 @@ type fakeLS struct {
 	ignoreShutdown bool
 	// noPublish suppresses publishDiagnostics entirely.
 	noPublish bool
+	// publishDelay holds each publishDiagnostics back, standing in for a
+	// server whose first load outlasts the wait an edit gives it. A delayed
+	// publication waits on its own goroutine so the serve loop keeps reading:
+	// the pipes are unbuffered, and a loop asleep mid-publish would block the
+	// client's next sync rather than merely delay the answer to it.
+	publishDelay time.Duration
 	// diagsFor decides what didOpen/didChange publishes for a file's content.
 	diagsFor func(content string) []Diagnostic
 	// definitionResult / referencesResult are returned verbatim.
@@ -73,6 +79,13 @@ func (f *fakeLS) send(msg rpcMessage) {
 	}
 	fmt.Fprintf(f.w, "Content-Length: %d\r\n\r\n", len(body))
 	_, _ = f.w.Write(body)
+}
+
+// slowDown makes every publication from here on arrive after d.
+func (f *fakeLS) slowDown(d time.Duration) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.publishDelay = d
 }
 
 func (f *fakeLS) serve(r io.Reader, w io.WriteCloser) {
@@ -157,7 +170,18 @@ func (f *fakeLS) publishFor(msg rpcMessage) {
 		"uri":         p.TextDocument.URI,
 		"diagnostics": diags,
 	})
-	f.send(rpcMessage{Method: "textDocument/publishDiagnostics", Params: body})
+	f.mu.Lock()
+	delay := f.publishDelay
+	f.mu.Unlock()
+	notice := rpcMessage{Method: "textDocument/publishDiagnostics", Params: body}
+	if delay <= 0 {
+		f.send(notice)
+		return
+	}
+	go func() {
+		time.Sleep(delay)
+		f.send(notice)
+	}()
 }
 
 // testManager builds a manager over a temp workspace with the fake server
@@ -184,6 +208,40 @@ func writeWorkspaceFile(t *testing.T, root, name, content string) string {
 		t.Fatal(err)
 	}
 	return path
+}
+
+// waitForPublishes blocks until the client has taken in at least n
+// publications for path. Waiting on what the server sent would order a test
+// against the wrong side of the pipe: the notification is on its way, and the
+// sequence a held question is measured against has not moved yet.
+func waitForPublishes(t *testing.T, m *Manager, path string, n int64) {
+	t.Helper()
+	srv, _ := m.serverFor(m.abs(path))
+	if srv == nil {
+		t.Fatalf("no server covers %s", path)
+	}
+	deadline := time.Now().Add(10 * time.Second)
+	for time.Now().Before(deadline) {
+		if srv.publishSeq() >= n {
+			return
+		}
+		time.Sleep(2 * time.Millisecond)
+	}
+	t.Fatalf("client never saw %d publications (saw %d)", n, srv.publishSeq())
+}
+
+// waitForHeld polls until a late answer has been collected, and returns it.
+func waitForHeld(t *testing.T, m *Manager) string {
+	t.Helper()
+	deadline := time.Now().Add(10 * time.Second)
+	for time.Now().Before(deadline) {
+		if held := m.TakeHeldDiagnostics(); held != "" {
+			return held
+		}
+		time.Sleep(2 * time.Millisecond)
+	}
+	t.Fatal("a late answer never reached the held set")
+	return ""
 }
 
 func TestDiagnosticsAfterChange_ErrorsFirstAndBounded(t *testing.T) {
@@ -792,8 +850,8 @@ func TestToolset_UnrecognisedResponseShapesAreEmptyAnswers(t *testing.T) {
 func TestToolset_DefinitionsMatchWhatItDispatches(t *testing.T) {
 	ts := NewToolset(NewManager(t.TempDir(), nil, Options{}))
 	defs := ts.Definitions()
-	if len(defs) != 5 {
-		t.Fatalf("expected five language-server tools, got %d", len(defs))
+	if len(defs) != 6 {
+		t.Fatalf("expected six language-server tools, got %d", len(defs))
 	}
 	for _, def := range defs {
 		if !ts.Has(def.Name) {
@@ -825,6 +883,8 @@ func TestToolset_NoServerDetectedRefusesEveryTool(t *testing.T) {
 		{HoverToolName, fmt.Sprintf(`{"path":%q,"line":1,"symbol":"main"}`, path)},
 		{DocumentSymbolToolName, fmt.Sprintf(`{"path":%q}`, path)},
 		{WorkspaceSymbolToolName, `{"query":"main"}`},
+		{DiagnosticsToolName, fmt.Sprintf(`{"path":%q}`, path)},
+		{DiagnosticsToolName, `{}`},
 	} {
 		if _, err := ts.Execute(tc.tool, json.RawMessage(tc.args)); err == nil {
 			t.Fatalf("%s should refuse when no server was detected", tc.tool)
@@ -840,6 +900,7 @@ func TestToolset_NewToolArgumentValidation(t *testing.T) {
 		{DocumentSymbolToolName, `{}`},
 		{HoverToolName, `{"path":"a.go","line":0,"symbol":"x"}`},
 		{HoverToolName, `{"path":"a.go","line":1,"symbol":" "}`},
+		{DiagnosticsToolName, `{"path":42}`},
 		{"symbols", `{"query":"x"}`},
 	} {
 		if _, err := ts.Execute(tc.tool, json.RawMessage(tc.args)); err == nil {
@@ -905,5 +966,306 @@ func TestFlattenMarkup_LeavesFencedCodeExactlyAsItIs(t *testing.T) {
 	want := code + "\n\nNotes\n\nDeprecated: use next instead."
 	if got != want {
 		t.Fatalf("fenced code should survive verbatim and prose should lose its marks:\ngot  %q\nwant %q", got, want)
+	}
+}
+
+// lateDiagnostics is a server whose checks always outlast the wait an edit
+// gives them, reporting one error naming whatever marker the content carries.
+func lateDiagnostics(delay time.Duration) *fakeLS {
+	return &fakeLS{
+		publishDelay: delay,
+		diagsFor: func(content string) []Diagnostic {
+			marker := strings.TrimSpace(strings.TrimPrefix(content, "package main //"))
+			return []Diagnostic{{
+				Range:    Range{Start: Position{Line: 0, Character: 0}},
+				Severity: 1,
+				Message:  "undefined: " + marker,
+				Source:   "gopls",
+			}}
+		},
+	}
+}
+
+// The wait is a deadline for the edit's own result and not for the question:
+// what the server says afterwards is held, tallied, and handed over once.
+func TestHeldDiagnostics_LateAnswerReachesTheNextResult(t *testing.T) {
+	fake := &fakeLS{
+		publishDelay: 100 * time.Millisecond,
+		diagsFor: func(string) []Diagnostic {
+			return []Diagnostic{
+				{Range: Range{Start: Position{Line: 1, Character: 2}}, Severity: 2, Message: "unused variable", Source: "gopls"},
+				{Range: Range{Start: Position{Line: 4, Character: 0}}, Severity: 1, Message: "undefined:  broken\nsymbol", Source: "gopls"},
+				{Range: Range{Start: Position{Line: 6, Character: 0}}, Severity: 1, Message: "missing return", Source: "gopls"},
+			}
+		},
+	}
+	m, root := testManager(t, fake, Options{DiagnosticsTimeout: 10 * time.Millisecond})
+	path := writeWorkspaceFile(t, root, "main.go", "package main\n")
+
+	if out := m.DiagnosticsAfterChange(path); out != "" {
+		t.Fatalf("the edit's own result must still end quietly, got %q", out)
+	}
+
+	held := waitForHeld(t, m)
+	wantHeader := "[diagnostics: main.go — 2 errors, 1 warning]"
+	if !strings.HasPrefix(held, wantHeader) {
+		t.Fatalf("held block should open with %q, got %q", wantHeader, held)
+	}
+	lines := strings.Split(held, "\n")
+	if len(lines) != 4 {
+		t.Fatalf("expected a header and three diagnostics, got %q", held)
+	}
+	if !strings.Contains(lines[1], "error") || !strings.Contains(lines[2], "error") || !strings.Contains(lines[3], "warning") {
+		t.Fatalf("errors must come first, got %q", held)
+	}
+	if !strings.Contains(lines[1], "main.go:5:1 error: undefined: broken symbol (gopls)") {
+		t.Fatalf("a wrapped message should collapse onto one line, got %q", lines[1])
+	}
+	if again := m.TakeHeldDiagnostics(); again != "" {
+		t.Fatalf("a held answer is handed over once, got %q", again)
+	}
+}
+
+// The block rides in front of whatever result the model reads next, because
+// the round that made the edit is over and nothing else is going its way.
+func TestHeldDiagnostics_RideInFrontOfTheNextToolResult(t *testing.T) {
+	fake := lateDiagnostics(50 * time.Millisecond)
+	m, root := testManager(t, fake, Options{DiagnosticsTimeout: 10 * time.Millisecond})
+	path := writeWorkspaceFile(t, root, "main.go", "package main // broken\n")
+	m.DiagnosticsAfterChange(path)
+	waitForPublishes(t, m, path, 1)
+
+	exec := NewToolset(m).WrapExecutor(func(string, json.RawMessage) (string, error) {
+		return "3 matches", nil
+	})
+	out, err := exec("search", json.RawMessage(`{}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(out, "[diagnostics: main.go — 1 error]") {
+		t.Fatalf("the held block should open the result, got %q", out)
+	}
+	if !strings.HasSuffix(out, "3 matches") {
+		t.Fatalf("the result itself must survive intact, got %q", out)
+	}
+	again, err := exec("search", json.RawMessage(`{}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if again != "3 matches" {
+		t.Fatalf("the next result should carry nothing more, got %q", again)
+	}
+}
+
+// A failed call is left alone: its result is the error the model is about to
+// read, and a block in front of it reads as part of the failure.
+func TestHeldDiagnostics_LeaveAFailedCallAlone(t *testing.T) {
+	fake := lateDiagnostics(50 * time.Millisecond)
+	m, root := testManager(t, fake, Options{DiagnosticsTimeout: 10 * time.Millisecond})
+	path := writeWorkspaceFile(t, root, "main.go", "package main // broken\n")
+	m.DiagnosticsAfterChange(path)
+	waitForPublishes(t, m, path, 1)
+
+	exec := NewToolset(m).WrapExecutor(func(string, json.RawMessage) (string, error) {
+		return "", fmt.Errorf("no such file")
+	})
+	if _, err := exec("read_file", json.RawMessage(`{}`)); err == nil {
+		t.Fatal("the wrapped error must be returned")
+	}
+	if held := m.TakeHeldDiagnostics(); held == "" {
+		t.Fatal("a failed call must not consume the held answer")
+	}
+}
+
+// A file edited again replaces its own open question, so the model is never
+// handed two blocks about the same lines — nor the older of the two answers.
+func TestHeldDiagnostics_ReEditReplacesTheOpenQuestion(t *testing.T) {
+	fake := lateDiagnostics(50 * time.Millisecond)
+	m, root := testManager(t, fake, Options{DiagnosticsTimeout: 10 * time.Millisecond})
+
+	writeWorkspaceFile(t, root, "main.go", "package main // first\n")
+	path := filepath.Join(root, "main.go")
+	if out := m.DiagnosticsAfterChange(path); out != "" {
+		t.Fatalf("expected a quiet timeout, got %q", out)
+	}
+	// The first answer is on the server before the second edit, so only the
+	// second edit's answer can satisfy the question it leaves behind.
+	waitForPublishes(t, m, path, 1)
+
+	writeWorkspaceFile(t, root, "main.go", "package main // second\n")
+	if out := m.DiagnosticsAfterChange(path); out != "" {
+		t.Fatalf("expected a quiet timeout, got %q", out)
+	}
+
+	held := waitForHeld(t, m)
+	if strings.Count(held, "[diagnostics:") != 1 {
+		t.Fatalf("one block per file, got %q", held)
+	}
+	if !strings.Contains(held, "undefined: second") || strings.Contains(held, "undefined: first") {
+		t.Fatalf("the held answer should be about the file as it is now, got %q", held)
+	}
+}
+
+// An answer that turns out to be clean is dropped rather than announced.
+func TestHeldDiagnostics_CleanLateAnswerSaysNothing(t *testing.T) {
+	fake := &fakeLS{publishDelay: 50 * time.Millisecond}
+	m, root := testManager(t, fake, Options{DiagnosticsTimeout: 10 * time.Millisecond})
+	path := writeWorkspaceFile(t, root, "main.go", "package main\n")
+	m.DiagnosticsAfterChange(path)
+	waitForPublishes(t, m, path, 1)
+	if held := m.TakeHeldDiagnostics(); held != "" {
+		t.Fatalf("a clean late answer should say nothing, got %q", held)
+	}
+}
+
+// A server that never publishes still produces nothing, held or otherwise.
+func TestHeldDiagnostics_SilentServerHoldsNothing(t *testing.T) {
+	fake := &fakeLS{noPublish: true}
+	m, root := testManager(t, fake, Options{DiagnosticsTimeout: 20 * time.Millisecond})
+	path := writeWorkspaceFile(t, root, "main.go", "package main\n")
+	if out := m.DiagnosticsAfterChange(path); out != "" {
+		t.Fatalf("expected a quiet timeout, got %q", out)
+	}
+	time.Sleep(50 * time.Millisecond)
+	if held := m.TakeHeldDiagnostics(); held != "" {
+		t.Fatalf("a silent server has nothing to hold, got %q", held)
+	}
+}
+
+// The set can be asked for outright, per file and for the workspace, and
+// asking settles the question an edit left open.
+func TestToolset_DiagnosticsReportsFileAndWorkspace(t *testing.T) {
+	fake := lateDiagnostics(50 * time.Millisecond)
+	m, root := testManager(t, fake, Options{DiagnosticsTimeout: 10 * time.Millisecond})
+	path := writeWorkspaceFile(t, root, "main.go", "package main // broken\n")
+	m.DiagnosticsAfterChange(path)
+	waitForPublishes(t, m, path, 1)
+	ts := NewToolset(m)
+
+	out, err := ts.Execute(DiagnosticsToolName, json.RawMessage(fmt.Sprintf(`{"path":%q}`, path)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "Diagnostics (gopls) for main.go:") || !strings.Contains(out, "undefined: broken") {
+		t.Fatalf("the tool should report the set the server has published, got %q", out)
+	}
+	if held := m.TakeHeldDiagnostics(); held != "" {
+		t.Fatalf("asking outright settles the open question, got %q", held)
+	}
+
+	// No path is the workspace: every file this session has had checked.
+	out, err = ts.Execute(DiagnosticsToolName, json.RawMessage(`{}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(out, "1 diagnostic across 1 file:") || !strings.Contains(out, "main.go:1:1 error:") {
+		t.Fatalf("the workspace answer should tally the files it has, got %q", out)
+	}
+	if held := m.TakeHeldDiagnostics(); held != "" {
+		t.Fatalf("the workspace answer settles the questions it reports, got %q", held)
+	}
+}
+
+// The reader's question runs across files: an error three files down matters
+// more than a warning in the first, whatever the filenames sort like.
+func TestToolset_WorkspaceDiagnosticsPutErrorsFirstAcrossFiles(t *testing.T) {
+	fake := &fakeLS{diagsFor: func(content string) []Diagnostic {
+		if strings.Contains(content, "WARN") {
+			return []Diagnostic{{Range: Range{Start: Position{Line: 2}}, Severity: 2, Message: "unused variable", Source: "gopls"}}
+		}
+		return []Diagnostic{{Range: Range{Start: Position{Line: 5}}, Severity: 1, Message: "undefined: boom", Source: "gopls"}}
+	}}
+	m, root := testManager(t, fake, Options{})
+	m.DiagnosticsAfterChange(writeWorkspaceFile(t, root, "aaa.go", "package main // WARN\n"))
+	m.DiagnosticsAfterChange(writeWorkspaceFile(t, root, "zzz.go", "package main\n"))
+
+	out, err := NewToolset(m).Execute(DiagnosticsToolName, json.RawMessage(`{}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(out, "2 diagnostics across 2 files:") {
+		t.Fatalf("expected a two-file tally, got %q", out)
+	}
+	lines := strings.Split(out, "\n")
+	if len(lines) != 3 || !strings.HasPrefix(lines[1], "zzz.go:6:1 error") || !strings.HasPrefix(lines[2], "aaa.go:3:1 warning") {
+		t.Fatalf("the error should come first whatever the filenames, got %q", out)
+	}
+}
+
+// A file the servers have never looked at is reported as unchecked rather
+// than as clean, which are opposite things that read the same.
+func TestToolset_DiagnosticsSeparatesUncheckedFromClean(t *testing.T) {
+	fake := &fakeLS{noPublish: true}
+	m, root := testManager(t, fake, Options{DiagnosticsTimeout: 10 * time.Millisecond})
+	path := writeWorkspaceFile(t, root, "main.go", "package main\n")
+	ts := NewToolset(m)
+
+	out, err := ts.Execute(DiagnosticsToolName, json.RawMessage(fmt.Sprintf(`{"path":%q}`, path)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "has not checked main.go yet") {
+		t.Fatalf("an unchecked file should say so, got %q", out)
+	}
+	out, err = ts.Execute(DiagnosticsToolName, json.RawMessage(`{}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "No diagnostics in the files this session has had checked.") {
+		t.Fatalf("a workspace with nothing to report should say so, got %q", out)
+	}
+}
+
+// The workspace answer and the held block are two doors onto the same
+// diagnostics, so reporting a file through one has to close the other.
+func TestToolset_WorkspaceDiagnosticsSettleAHeldQuestion(t *testing.T) {
+	fake := lateDiagnostics(50 * time.Millisecond)
+	m, root := testManager(t, fake, Options{DiagnosticsTimeout: 10 * time.Millisecond})
+	path := writeWorkspaceFile(t, root, "main.go", "package main // broken\n")
+	m.DiagnosticsAfterChange(path)
+	waitForPublishes(t, m, path, 1)
+
+	out, err := NewToolset(m).Execute(DiagnosticsToolName, json.RawMessage(`{}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "undefined: broken") {
+		t.Fatalf("the workspace answer should carry the late set, got %q", out)
+	}
+	if held := m.TakeHeldDiagnostics(); held != "" {
+		t.Fatalf("what the workspace answer reported must not arrive again, got %q", held)
+	}
+}
+
+// Answering from the last thing the server said settles nothing about an edit
+// it predates, so that question has to stay open — otherwise the answer still
+// on its way is dropped and the edit is checked by nothing after all.
+func TestToolset_DiagnosticsKeepsAQuestionItCannotAnswerOpen(t *testing.T) {
+	fake := lateDiagnostics(0)
+	m, root := testManager(t, fake, Options{DiagnosticsTimeout: 50 * time.Millisecond})
+	path := writeWorkspaceFile(t, root, "main.go", "package main // first\n")
+	if out := m.DiagnosticsAfterChange(path); !strings.Contains(out, "undefined: first") {
+		t.Fatalf("the first check should answer inside its wait, got %q", out)
+	}
+
+	// From here the server is slower than two waits, so the second edit's
+	// answer is still outstanding when the tool's own wait for it runs out.
+	fake.slowDown(300 * time.Millisecond)
+	writeWorkspaceFile(t, root, "main.go", "package main // second\n")
+	if out := m.DiagnosticsAfterChange(path); out != "" {
+		t.Fatalf("expected a quiet timeout, got %q", out)
+	}
+
+	out, err := NewToolset(m).Execute(DiagnosticsToolName, json.RawMessage(fmt.Sprintf(`{"path":%q}`, path)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "undefined: first") {
+		t.Fatalf("the tool answers with the last thing the server said, got %q", out)
+	}
+
+	held := waitForHeld(t, m)
+	if !strings.Contains(held, "undefined: second") {
+		t.Fatalf("the outstanding answer must still arrive, got %q", held)
 	}
 }

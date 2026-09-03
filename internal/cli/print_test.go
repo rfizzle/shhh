@@ -258,6 +258,27 @@ func TestHeadlessApprover_MutationHookAppendsDiagnostics(t *testing.T) {
 	}
 }
 
+// A hook may put text in front of the result as well as after it: diagnostics
+// an earlier edit stopped waiting for arrive with the next result the model
+// reads, and the approved edit's own result has to survive underneath them.
+func TestHeadlessApprover_MutationHookMayPrependToTheResult(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "f.go")
+	args, _ := json.Marshal(map[string]string{"path": path, "content": "package main\n"})
+	tc := provider.ToolCall{ID: "c1", Name: "write_file", Arguments: string(args)}
+
+	hook := func(name string, raw json.RawMessage, result string) string {
+		return "[diagnostics: other.go — 1 error]\nother.go:3:1 error: boom\n\n" + result
+	}
+	resolve := headlessApprover(context.Background(), printOpts{yes: true}, nil, fakeRun(&[]string{}), nil, nil, nil, nil, hook, nil, nil)
+	result := resolve(tc)
+	if !strings.HasPrefix(result, "[diagnostics: other.go — 1 error]") {
+		t.Fatalf("a held block should open the result, got %q", result)
+	}
+	if !strings.Contains(result, path) {
+		t.Fatalf("the write's own result should survive under it, got %q", result)
+	}
+}
+
 // processStartCall builds a process-tool start call for approver tests.
 func processStartCall(name, command string) provider.ToolCall {
 	args, _ := json.Marshal(map[string]string{"action": "start", "name": name, "command": command})

@@ -98,33 +98,67 @@ That reads like padding and is not. A real session spent its entire round
 budget re-running the same searches, and the instructions are what stopped it.
 They are load-bearing and should not be trimmed for brevity.
 
-## Five questions for the language server
+## Six questions for the language server
 
 Where a language server was detected, the agent asks it rather than guessing
 at a spelling. It can jump to a declaration, list every real usage, search the
-project's symbol index by name, outline a file, and read a symbol's type and
-documentation without opening the file it is declared in.
+project's symbol index by name, outline a file, read a symbol's type and
+documentation without opening the file it is declared in, and ask what is
+currently wrong with a file or with everything it has checked.
 
-The last three are the ones that change how a session looks for things. A
-pattern has to anticipate how a declaration was written — the receiver, the
-keyword, the spacing — and one that guesses wrong returns either nothing or
-every mention of the word. The index has the answer exactly and is asked by
-name. And a nine-hundred-line file read to learn its shape costs most of what
-the reduction exists to save, where the same file as an outline is a screen
-and usually settles which part to read.
+Symbol search, the outline and hover are the ones that change how a session
+looks for things. A pattern has to anticipate how a declaration was written —
+the receiver, the keyword, the spacing — and one that guesses wrong returns
+either nothing or every mention of the word. The index has the answer exactly
+and is asked by name. And a nine-hundred-line file read to learn its shape
+costs most of what the reduction exists to save, where the same file as an
+outline is a screen and usually settles which part to read.
 
-Every server answers the first two; support for the other three is uneven, so
-each of those is asked only of a server that advertised it. One that indexes a
-file but not the workspace refuses that question by name and answers the
-rest. This is the difference between an
+Every server answers definition and references; support for symbol search,
+outlines and hover is uneven, so each of those is asked only of a server that
+advertised it. One that indexes a file but not the workspace refuses that
+question by name and answers the rest. This is the difference between an
 answer and a wait: a request a server never advertised is answered by nothing
 at all, and a call that ends at its timeout reads to the model as a broken
-tool rather than as a no.
+tool rather than as a no. Diagnostics need no such gate, because they are not
+asked for on the wire at all — the server publishes them when it has them.
 
 What comes back is plain text, bounded like every other result with the
 truncation said out loud, and a hover's markdown flattened rather than passed
 through with its fences — markup the model did not write is markup it can
 mistake for its own.
+
+### Diagnostics that arrive late still arrive
+
+An applied edit waits a few seconds for the server to re-check the file and
+carries what it says back with the result, so the model reads its own mistake
+in the round that made it. A server that has just started rarely answers that
+fast. The first load of a large module is tens of seconds, and it falls
+exactly on the opening edits of a session — the ones with the most left to go
+wrong, checked by nothing, with nothing saying so.
+
+So the wait is a deadline for that result, not for the question. When it
+passes, the question stays open, and the answer — whenever it lands — rides in
+front of the next tool result the model reads, as a short bracketed block
+naming the file and tallying what was found. There is no other message going
+its way: the round that made the edit is over, and a server publishing on its
+own schedule has nobody to publish to. The wait itself is unchanged, and a
+server that never publishes still produces nothing, which is the shape of
+every language-server feature here — present when the machine has it, silent
+when it does not.
+
+One open question per file. A file edited again replaces its own, because
+diagnostics for the file as it was are not a report on the file as it is, and
+two blocks about the same lines is how a reader learns to skim past both. An
+answer that turns out to be a clean file is dropped rather than announced: the
+block exists to say what is wrong, and a paragraph reporting that an edit two
+rounds ago was fine is what gets the useful ones skipped.
+
+The set can also be asked for outright — one file, or every file the session
+has had checked. That is the question the model has when it wants to know
+whether what it has been doing still compiles, and it is the same answer, so
+it is one tool rather than a habit of making a trivial edit to provoke a
+re-check.
 
 ## The readers refuse before they spend
 
