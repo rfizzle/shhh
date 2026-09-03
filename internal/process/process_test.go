@@ -4,10 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/rfizzle/shhh/internal/sandbox"
 )
 
 func newTestSupervisor(t *testing.T, store StoreFunc) *Supervisor {
@@ -471,4 +474,182 @@ func TestStreamBuf_SpoolCatchesAValueSplitAcrossWrites(t *testing.T) {
 	if string(spool) != "head [secret:S] tail" {
 		t.Fatalf("the stored copy must be scrubbed whole, got %q", spool)
 	}
+}
+
+// A start spawns exactly what execute_command would have spawned, so it goes
+// through the same wrap — and the directory the supervisor resolved travels
+// with the argv, because a mechanism that chdirs is the one deciding where
+// the process lands.
+func TestSetContainment_StartRunsUnderTheWrap(t *testing.T) {
+	s := newTestSupervisor(t, nil)
+	var (
+		mu       sync.Mutex
+		sawDir   string
+		sawArgv  []string
+		wrapRuns int
+	)
+	s.SetContainment(Containment{
+		Mechanism: "testwrap",
+		Wrap: func(dir string, argv []string) ([]string, error) {
+			mu.Lock()
+			defer mu.Unlock()
+			sawDir, sawArgv, wrapRuns = dir, argv, wrapRuns+1
+			return []string{"/bin/sh", "-c", "echo wrapped-by-the-mechanism"}, nil
+		},
+	})
+
+	execute(t, s, `{"action":"start","name":"srv","command":"echo bare"}`)
+	waitFor(t, "the wrapped argv to run", func() bool {
+		return strings.Contains(
+			execute(t, s, `{"action":"read","name":"srv","stream":"stdout","offset":0}`),
+			"wrapped-by-the-mechanism")
+	})
+
+	mu.Lock()
+	defer mu.Unlock()
+	if wrapRuns != 1 {
+		t.Fatalf("the wrap should run once per start, ran %d times", wrapRuns)
+	}
+	if sawDir != s.root {
+		t.Errorf("the wrap must be handed the start's directory, got %q want %q", sawDir, s.root)
+	}
+	if len(sawArgv) == 0 || !strings.Contains(strings.Join(sawArgv, " "), "echo bare") {
+		t.Errorf("the wrap must be handed the command's own argv, got %v", sawArgv)
+	}
+	if got := s.Contained(); got != "testwrap" {
+		t.Errorf("Contained() = %q, want the mechanism in force", got)
+	}
+}
+
+// The card, the report and the doctor all say what is containing this
+// session's processes, and a supervisor nothing wraps has to say so rather
+// than let a caller assume the ordinary command path's answer.
+func TestContained_EmptyUntilAMechanismIsInForce(t *testing.T) {
+	s := newTestSupervisor(t, nil)
+	if got := s.Contained(); got != "" {
+		t.Fatalf("a supervisor with no wrap is uncontained, got %q", got)
+	}
+	// A mechanism named with nothing behind it would be a supervisor that
+	// reports containment and spawns bare; the pair decides together.
+	s.SetContainment(Containment{Mechanism: "testwrap"})
+	if got := s.Contained(); got != "" {
+		t.Fatalf("a mechanism with no wrap is not in force, got %q", got)
+	}
+}
+
+// Refused, never started bare: a process outlives the call that made it, so
+// one running outside the mechanism would make every surface that reports
+// this session wrong for as long as it lived.
+func TestSetContainment_WrapFailureRefusesTheStart(t *testing.T) {
+	s := newTestSupervisor(t, nil)
+	s.SetContainment(Containment{
+		Mechanism: "testwrap",
+		Wrap: func(string, []string) ([]string, error) {
+			return nil, fmt.Errorf("writable path /w is inside masked path /w/m")
+		},
+	})
+
+	err := executeErr(t, s, `{"action":"start","name":"srv","command":"sleep 30"}`)
+	for _, want := range []string{"testwrap", "writable path", "not started"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Errorf("refusal %q should name %q", err, want)
+		}
+	}
+	if list := s.List(); strings.Contains(list, "srv") {
+		t.Fatalf("a refused start must leave nothing behind:\n%s", list)
+	}
+	if s.Running() != 0 {
+		t.Fatalf("a refused start must not count as running")
+	}
+
+	// A refusal must not consume the record of a process that already ran
+	// under that name: restarting it is exactly when the wrap is most
+	// likely to be broken, and losing the last run's evidence with it would
+	// take the reader's only account of what happened.
+	s.SetContainment(Containment{})
+	execute(t, s, `{"action":"start","name":"srv","command":"true"}`)
+	waitFor(t, "the first run to exit", func() bool {
+		return strings.Contains(execute(t, s, `{"action":"status","name":"srv"}`), "exited")
+	})
+	s.SetContainment(Containment{
+		Mechanism: "testwrap",
+		Wrap:      func(string, []string) ([]string, error) { return nil, fmt.Errorf("no") },
+	})
+	_ = executeErr(t, s, `{"action":"start","name":"srv","command":"sleep 30"}`)
+	if !strings.Contains(execute(t, s, `{"action":"status","name":"srv"}`), "exited") {
+		t.Fatal("a refused restart must leave the earlier run's record in place")
+	}
+}
+
+// Running is what the containment report counts: the part of the session
+// still going when the report is asked for.
+func TestRunning_CountsWhatIsStillAlive(t *testing.T) {
+	s := newTestSupervisor(t, nil)
+	if s.Running() != 0 {
+		t.Fatalf("a fresh supervisor runs nothing")
+	}
+	execute(t, s, `{"action":"start","name":"up","command":"sleep 30"}`)
+	execute(t, s, `{"action":"start","name":"gone","command":"true"}`)
+	waitFor(t, "the short process to exit", func() bool { return s.Running() == 1 })
+	execute(t, s, `{"action":"stop","name":"up"}`)
+	if got := s.Running(); got != 0 {
+		t.Fatalf("Running() = %d after stopping the last one", got)
+	}
+}
+
+// The claim this whole seam makes, against the real mechanism: the deny mask
+// that keeps a command out of the user's keys keeps a started process out of
+// them too. It skips where bubblewrap is unavailable — most machines are not
+// Linux with unprivileged user namespaces — and the uncontained supervisor
+// beside it is the control that would catch a wrap that quietly did nothing.
+func TestStart_ContainedProcessCannotReadTheDenyMask(t *testing.T) {
+	avail := sandbox.Detect()
+	if !avail.OK || avail.Mechanism != "bwrap" {
+		t.Skipf("no bubblewrap containment here: %s", avail.Detail)
+	}
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	if err := os.MkdirAll(filepath.Join(home, ".ssh"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(home, ".ssh", "id_ed25519"), []byte("PRIVATE-KEY-BYTES"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	const peek = `{"action":"start","name":"peek","command":"cat \"$HOME/.ssh/id_ed25519\""}`
+
+	bare := newTestSupervisor(t, nil)
+	execute(t, bare, peek)
+	if out := streams(t, bare, "peek"); !strings.Contains(out, "PRIVATE-KEY-BYTES") {
+		t.Fatalf("the control must read the key, or this test proves nothing:\n%s", out)
+	}
+
+	s := newTestSupervisor(t, nil)
+	s.SetContainment(Containment{
+		Mechanism: avail.Mechanism,
+		Wrap: func(dir string, argv []string) ([]string, error) {
+			return sandbox.WrapArgv(avail, sandbox.Policy{Workspace: s.root, Cwd: dir}, argv)
+		},
+	})
+	execute(t, s, peek)
+	out := streams(t, s, "peek")
+	if strings.Contains(out, "PRIVATE-KEY-BYTES") {
+		t.Fatalf("a contained process read the deny mask:\n%s", out)
+	}
+	// It has to have failed on the mask rather than come back empty for some
+	// other reason — an empty capture would pass the check above whatever
+	// went wrong.
+	if st := execute(t, s, `{"action":"status","name":"peek"}`); strings.Contains(st, "exited (code 0)") {
+		t.Fatalf("the contained read should have failed on the masked path:\n%s\n%s", st, out)
+	}
+}
+
+// streams is both of a finished process's captured streams, for the tests
+// that care what it printed rather than where.
+func streams(t *testing.T, s *Supervisor, name string) string {
+	t.Helper()
+	waitFor(t, "process "+name+" to exit", func() bool {
+		return strings.Contains(execute(t, s, `{"action":"status","name":"`+name+`"}`), "exited")
+	})
+	return execute(t, s, `{"action":"read","name":"`+name+`","stream":"stdout","offset":0}`) +
+		execute(t, s, `{"action":"read","name":"`+name+`","stream":"stderr","offset":0}`)
 }

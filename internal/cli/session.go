@@ -669,7 +669,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// mechanism is available; the confirm prompt shows the state either way.
 	var containment chat.Containment
 	if !session.conversation {
-		containment, err = buildContainment(cfg, sc)
+		containment, err = buildContainment(cfg, sc, procSup)
 		if err != nil {
 			return err
 		}
@@ -831,7 +831,10 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		model = model.WithGate(chat.Gate{Manage: gateManager(gate), Run: gate.Run})
 	}
 	if procSup != nil {
-		model = model.WithProcesses(chat.Processes{Manage: processManager(procSup)})
+		model = model.WithProcesses(chat.Processes{
+			Manage:    processManager(procSup),
+			Contained: procSup.Contained,
+		})
 	}
 	if session.skills != nil {
 		model = model.WithSkills(session.skills, skillsListing)

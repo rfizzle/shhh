@@ -260,3 +260,61 @@ func TestBlastRadius_GenericToolCarriesItsOwnFields(t *testing.T) {
 		}
 	}
 }
+
+// confirmForStart arms the approval for one process start and returns the
+// card's render.
+func confirmForStart(t *testing.T, m Model, name, command string) string {
+	t.Helper()
+	args, err := json.Marshal(map[string]string{"action": "start", "name": name, "command": command})
+	if err != nil {
+		t.Fatal(err)
+	}
+	updated, _ := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_s", Name: "process", Arguments: string(args)},
+	}})
+	m = updated.(Model)
+	if m.state != stateConfirmRun {
+		t.Fatalf("a process start should have armed a confirm, got state %d", m.state)
+	}
+	return ansi.Strip(handover(t, m).View().Content)
+}
+
+// A start's card names what the supervisor is contained by, not what the
+// runner is. The two are wired from one policy, so they normally agree — and
+// where they do not, the card that a person answers has to be about the
+// process that is going to run.
+func TestBlastRadius_ProcessStartChipReadsTheSupervisor(t *testing.T) {
+	dir := t.TempDir()
+	base := radiusModel(t, dir, Containment{
+		Status:    "contained: bwrap (workspace profile)",
+		Mechanism: "bwrap",
+		Profile:   "workspace",
+		Network:   true,
+	})
+	withSupervisor := func(mechanism string) Model {
+		return base.WithProcesses(Processes{
+			Manage:    func([]string) string { return "process list" },
+			Contained: func() string { return mechanism },
+		})
+	}
+
+	view := confirmForStart(t, withSupervisor("bwrap"), "web", "npm run dev")
+	for _, want := range []string{"start process web", "⛨ bwrap · workspace", "the workspace profile allows network access"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("a contained start's card should contain %q:\n%s", want, view)
+		}
+	}
+
+	// Nothing wraps a start: the card says so even though the runner beside
+	// it is contained, because a chip reading "bwrap" over a bare process is
+	// the defect this seam exists to close.
+	view = confirmForStart(t, withSupervisor(""), "web", "npm run dev")
+	if strings.Contains(view, "⛨ bwrap") {
+		t.Fatalf("an unwrapped start must not claim the runner's mechanism:\n%s", view)
+	}
+	for _, want := range []string{"⚠ UNCONTAINED", "no sandbox", "/sandbox doctor"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("an unwrapped start's card should contain %q:\n%s", want, view)
+		}
+	}
+}

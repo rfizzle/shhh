@@ -44,15 +44,25 @@ type blastRadius struct {
 	reversibility string
 }
 
+// cardContainment is the containment one card reports: whether the action is
+// the assistant's — /run is never contained and never claims to be — and the
+// mechanism in force on the path that will actually run it. The two command
+// paths are wired from one policy but are not the same code, so a card names
+// the one it is about rather than the one it is beside.
+type cardContainment struct {
+	assistant bool
+	mechanism string
+}
+
 // resolveRadius builds the block for the approval about to be shown. A nil
 // request is /run — the user's own command, uncontained by design.
 func (m Model) resolveRadius(req *approvalRequest) blastRadius {
 	if req == nil {
-		return m.commandRadius(m.pendingRun, false)
+		return m.commandRadius(m.pendingRun, cardContainment{})
 	}
 	switch req.kind {
 	case approvalExec:
-		return m.commandRadius(req.command, true)
+		return m.commandRadius(req.command, cardContainment{assistant: true, mechanism: m.containment.Mechanism})
 	case approvalDiff:
 		return m.editRadius(req)
 	case approvalMemory:
@@ -63,9 +73,9 @@ func (m Model) resolveRadius(req *approvalRequest) blastRadius {
 
 // commandRadius resolves a shell command: what it writes, whether git could
 // put those paths back, and what the containment profile allows it to reach.
-// assistant distinguishes the agent's commands, which run contained, from
-// /run, which is the user's own and never is.
-func (m Model) commandRadius(command string, assistant bool) blastRadius {
+// The containment it is handed distinguishes the agent's commands, which run
+// contained, from /run, which is the user's own and never is.
+func (m Model) commandRadius(command string, contain cardContainment) blastRadius {
 	res := radius.Resolve(m.workspace, command)
 	b := blastRadius{severity: severityOf(res.Level), risks: res.Risks}
 
@@ -80,9 +90,9 @@ func (m Model) commandRadius(command string, assistant bool) blastRadius {
 			b.severity = components.SeverityMedium
 		}
 	}
-	if assistant {
-		b.chip, b.uncontained = m.containmentChip()
-		b.fields = append(b.fields, m.networkField())
+	if contain.assistant {
+		b.chip, b.uncontained = m.containmentChip(contain.mechanism)
+		b.fields = append(b.fields, m.networkField(contain.mechanism))
 	}
 	if len(res.Risks) > 0 {
 		b.footnote = "[a] always — not offered: a safety-flagged command is never pre-approved"
@@ -151,10 +161,10 @@ func (m Model) undoField(res radius.Command) components.CardField {
 
 // networkField reports what the containment profile allows, not what the
 // command appears to want: the profile is the thing actually in force.
-func (m Model) networkField() components.CardField {
+func (m Model) networkField(mechanism string) components.CardField {
 	f := components.CardField{Label: "network"}
 	switch {
-	case m.containment.Mechanism == "":
+	case mechanism == "":
 		f.Value, f.Detail = "open", "nothing contains this command, so nothing limits what it reaches"
 		f.Tone = components.ToneOpen
 	case m.containment.Network:
@@ -170,16 +180,16 @@ func (m Model) networkField() components.CardField {
 // containmentChip folds the containment state into the title rail. An
 // uncontained session gets the promoted ⚠ UNCONTAINED chip instead, which the
 // card colours the border to match.
-func (m Model) containmentChip() (chip string, uncontained bool) {
+func (m Model) containmentChip(mechanism string) (chip string, uncontained bool) {
 	if m.containment.Status == "" {
 		// /run and sessions with no containment wiring say nothing rather
 		// than claiming either state.
 		return "", false
 	}
-	if m.containment.Mechanism == "" {
+	if mechanism == "" {
 		return "", true
 	}
-	chip = "⛨ " + m.containment.Mechanism
+	chip = "⛨ " + mechanism
 	if m.containment.Profile != "" {
 		chip += " · " + m.containment.Profile
 	}
@@ -235,7 +245,9 @@ func (m Model) editRadius(req *approvalRequest) blastRadius {
 // resolved as the command it is.
 func (m Model) genericRadius(req *approvalRequest) blastRadius {
 	if req.command != "" {
-		return m.commandRadius(req.command, true)
+		return m.commandRadius(req.command, cardContainment{
+			assistant: true, mechanism: m.processContainment(),
+		})
 	}
 	b := blastRadius{severity: components.SeverityLow}
 	for _, f := range req.fields {
@@ -249,6 +261,19 @@ func (m Model) genericRadius(req *approvalRequest) blastRadius {
 		})
 	}
 	return b
+}
+
+// processContainment is the mechanism a process start would run under. The
+// supervisor answers rather than the runner: a start the supervisor is not
+// wrapping must not draw a card naming the mechanism the ordinary command
+// path uses, which is the whole of what "what is reported is what is in
+// force" means here.
+// See docs/capabilities/containment.md#a-started-process-is-contained-too.
+func (m Model) processContainment() string {
+	if m.processes.Contained == nil {
+		return ""
+	}
+	return m.processes.Contained()
 }
 
 // scopeField is the `scope` row: which directory the action reaches that the

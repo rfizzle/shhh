@@ -343,8 +343,24 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		if profile, err := sandbox.ParseProfile(cfg.Sandbox.Profile); err == nil {
 			sandboxProfile = string(profile)
 		}
+		if procSup != nil {
+			// Approved commands exec inside the disposable container and a
+			// started process cannot follow them in: what the supervisor
+			// would hold is the exec client, not the process, so stopping
+			// it would leave something running in a container nothing is
+			// watching. Starting on the host instead would put the one
+			// thing that keeps running outside the strongest containment
+			// this run has, so a start is refused and says why.
+			// See docs/capabilities/containment.md#a-started-process-is-contained-too.
+			procSup.SetContainment(process.Containment{
+				Mechanism: "container sandbox",
+				Wrap: func(string, []string) ([]string, error) {
+					return nil, fmt.Errorf("a long-running process cannot be started inside this run's disposable container; use execute_command, or run without --sandbox")
+				},
+			})
+		}
 	} else {
-		containment, err := buildContainment(cfg, sc)
+		containment, err := buildContainment(cfg, sc, procSup)
 		if err != nil {
 			return err
 		}

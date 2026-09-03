@@ -86,11 +86,35 @@ broken command — so the reason is appended in words: that it did not fail, it
 did not finish, and what to do about it. Without that the model debugs a
 command that was working.
 
+## A started process is contained too
+
+There are two ways for the assistant to run something: a command that returns
+when it is done, and a named process that keeps running while the work goes
+on around it. They spawn the same shell and reach the same filesystem, so the
+mechanism wraps both. A process is the one that outlives the call that
+started it, which makes it the part of a session still running when you ask
+what is contained — and the containment report counts it there.
+
+Where the mechanism cannot wrap a start, the start is refused and the
+refusal names the mechanism. This is the same rule the ordinary path has:
+a command that was going to be contained never quietly runs bare instead.
+Falling back would be worse here than anywhere else, because a process
+lasts — every surface would go on saying the session is contained for as
+long as the one thing outside it kept running.
+
+The exception is a run whose commands go inside a disposable container. A
+process cannot follow them in: what would be left holding it is the client
+that started the exec rather than the process itself, so stopping it would
+leave something running in a container nobody is watching. Such a run
+refuses a start rather than spawning it on the host, which is the same
+answer for the same reason — outside the container is bare.
+
 ## What is reported is what is in force
 
 Every surface that mentions containment reports the mechanism actually
-containing the process, not the one that was requested. Where nothing is
-containing it, the surface says so in those words and does not soften it.
+containing the process, not the one that was requested, and asks the path
+that will run it rather than the one beside it. Where nothing is containing
+it, the surface says so in those words and does not soften it.
 
 A tool that reports its intended security posture rather than its actual one
 is worse than a tool with none, because it is believed. Where containment is

@@ -6,6 +6,13 @@ package chat
 // actions through the approval queue while status/read/input/stop auto-run.
 type Processes struct {
 	Manage func(args []string) string
+	// Contained names the containment mechanism a start actually runs
+	// under, empty when nothing contains one. It is the supervisor's own
+	// answer and not the runner's: the two command paths are wired from one
+	// policy, but a card that read the ordinary path's state would be
+	// describing something other than the process about to start. Nil says
+	// nothing rather than guessing.
+	Contained func() string
 }
 
 // WithProcesses enables the /ps command and process-start approval gating.

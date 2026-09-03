@@ -1,11 +1,11 @@
 // Package process implements the long-running process supervisor:
 // the agent manages named processes (dev servers, watchers, test runners)
-// through one `process` tool — start (approval-gated like any command),
-// status, read, input, and stop. Output is captured into bounded per-stream
-// ring buffers for paged reads, with the full log (bounded) stored in the
-// evidence store when the process ends. Every process runs in its own
-// process group so stop, session end, cancel, and quit terminate the full
-// tree — no orphans.
+// through one `process` tool — start (approval-gated like any command, and
+// contained by the same mechanism), status, read, input, and stop. Output is
+// captured into bounded per-stream ring buffers for paged reads, with the
+// full log (bounded) stored in the evidence store when the process ends.
+// Every process runs in its own process group so stop, session end, cancel,
+// and quit terminate the full tree — no orphans.
 package process
 
 import (
@@ -81,7 +81,31 @@ type Supervisor struct {
 	// Each stream takes a copy at start, so changing it affects processes
 	// started afterwards.
 	scrub func(string) string
+	// contain is the mechanism a start runs under; the zero value is a
+	// session where nothing contains commands either.
+	contain Containment
 }
+
+// Containment is the session's containment mechanism as the supervisor needs
+// it: the name a refusal states, and the wrap that turns a command's argv
+// into the argv that runs it contained.
+type Containment struct {
+	// Mechanism names what is doing the containing — the word every surface
+	// reporting this session says, and the word a refusal has to name so the
+	// reader knows which thing said no.
+	Mechanism string
+	// Wrap returns argv wrapped to run in dir under the mechanism. The
+	// directory travels with the argv rather than being left to the spawn's
+	// own: a mechanism that chdirs would otherwise put the process in
+	// shhh's working directory, and the cwd the start asked for — already
+	// contained to the workspace — would be silently dropped.
+	Wrap func(dir string, argv []string) ([]string, error)
+}
+
+// inForce reports whether this containment can actually wrap a start. A
+// mechanism named with no wrap behind it would be a session that reports
+// containment and does not have it, so the pair decides together.
+func (c Containment) inForce() bool { return c.Mechanism != "" && c.Wrap != nil }
 
 // SetEnv sets the session pairs every started process carries beyond
 // PATH, HOME and the model's own extras. The process tool builds a
@@ -111,6 +135,65 @@ func (s *Supervisor) SetScrub(scrub func(string) string) {
 	s.mu.Lock()
 	s.scrub = scrub
 	s.mu.Unlock()
+}
+
+// SetContainment installs the mechanism every process started afterwards
+// runs under. A start is a second command path — it spawns exactly what
+// execute_command would have spawned, and then outlives the call that made
+// it — so it takes the session's wrap for the same reasons the ordinary path
+// does, and a start the wrap refuses is refused rather than run bare.
+//
+// It is a wrap and not a policy so this package needs to know nothing about
+// mechanisms, profiles or masks; the zero value is a session where nothing
+// contains a command either.
+// See docs/capabilities/containment.md#a-started-process-is-contained-too.
+func (s *Supervisor) SetContainment(c Containment) {
+	s.mu.Lock()
+	s.contain = c
+	s.mu.Unlock()
+}
+
+// Contained names the mechanism started processes run under, empty when none
+// is in force. The surfaces that report containment ask the supervisor
+// rather than the runner: the two paths are wired from one policy but are
+// not the same code, and a card reading the other one would be describing a
+// process that is not the one about to run.
+// containment copies the wrap out from under the lock, so a start can
+// resolve a policy against the filesystem without holding the one mutex
+// every status, read and stop in the session goes through.
+func (s *Supervisor) containment() Containment {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.contain
+}
+
+func (s *Supervisor) Contained() string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if !s.contain.inForce() {
+		return ""
+	}
+	return s.contain.Mechanism
+}
+
+// Running counts the processes this session started that are still alive. A
+// command is over by the time its result is read; a started process is what
+// is still running when a report is asked for, so it is what a report of
+// what containment holds has to count.
+func (s *Supervisor) Running() int {
+	s.mu.Lock()
+	procs := make([]*proc, 0, len(s.procs))
+	for _, p := range s.procs {
+		procs = append(procs, p)
+	}
+	s.mu.Unlock()
+	n := 0
+	for _, p := range procs {
+		if !p.isDone() {
+			n++
+		}
+	}
+	return n
 }
 
 // New builds a supervisor whose processes are contained to root (cwd-wise).
@@ -333,6 +416,27 @@ func (s *Supervisor) start(name, command, cwd string, extraEnv map[string]string
 		return "", err
 	}
 
+	// The wrap runs outside the lock, because resolving a policy stats the
+	// filesystem and the supervisor's one mutex is what every status, read
+	// and stop in the session waits on. It also runs before anything is
+	// mutated, so a refused start leaves the supervisor exactly as it found
+	// it — including the exited entry a restart under the same name is
+	// about to replace.
+	argv := shell.Execution().Argv(command)
+	if contain := s.containment(); contain.inForce() {
+		wrapped, err := contain.Wrap(dir, argv)
+		if err != nil {
+			// Refused, never started bare. Every surface in this session
+			// says the mechanism is containing what the assistant runs, and
+			// one process quietly outside it makes all of them wrong for as
+			// long as it lives.
+			// See docs/capabilities/containment.md#what-is-reported-is-what-is-in-force.
+			return "", fmt.Errorf("cannot start %q under %s containment: %w (it was not started)",
+				name, contain.Mechanism, err)
+		}
+		argv = wrapped
+	}
+
 	s.mu.Lock()
 	if s.closed {
 		s.mu.Unlock()
@@ -350,7 +454,6 @@ func (s *Supervisor) start(name, command, cwd string, extraEnv map[string]string
 		return "", fmt.Errorf("too many processes (max %d); stop one first", MaxProcesses)
 	}
 
-	argv := shell.Execution().Argv(command)
 	cmd := exec.Command(argv[0], argv[1:]...)
 	cmd.Dir = dir
 	cmd.Env = append(env, s.env...)

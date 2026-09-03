@@ -7,9 +7,15 @@ import (
 
 // Report describes the containment mechanism and resolved policy for `shhh
 // code doctor` and the /sandbox slash command: which mechanism (and why not,
-// when unavailable), the profile, and the resolved write grants and deny
+// when unavailable), the profile, how many of the session's long-running
+// processes are running under it, and the resolved write grants and deny
 // mask.
-func Report(avail Availability, p Policy) string {
+//
+// running is counted because a command is over by the time its result is
+// read and a started process is not: it is the part of the session still
+// running when the report is asked for, so a report that named only the
+// mechanism would describe what nothing is doing.
+func Report(avail Availability, p Policy, running int) string {
 	var b strings.Builder
 	b.WriteString("Command containment:\n")
 	if avail.OK {
@@ -28,6 +34,7 @@ func Report(avail Availability, p Policy) string {
 		network = "disabled"
 	}
 	fmt.Fprintf(&b, "  profile:   %s (network %s)\n", profile, network)
+	fmt.Fprintf(&b, "  processes: %s\n", processLine(avail.OK, running))
 
 	s, err := resolvePolicy(p)
 	if err != nil {
@@ -46,6 +53,26 @@ func Report(avail Availability, p Policy) string {
 		fmt.Fprintf(&b, "  masked:    %s\n", pathList(masked))
 	}
 	return strings.TrimRight(b.String(), "\n")
+}
+
+// processLine says what the session's long-running processes are running
+// under, in the mechanism's own terms: contained where one is in force,
+// unconfined where none is, and neither claim when none are running.
+func processLine(contained bool, running int) string {
+	switch {
+	case running == 0:
+		return "none running"
+	case contained:
+		return fmt.Sprintf("%s running under it", plural(running))
+	}
+	return fmt.Sprintf("%s running unconfined", plural(running))
+}
+
+func plural(n int) string {
+	if n == 1 {
+		return "1 process"
+	}
+	return fmt.Sprintf("%d processes", n)
 }
 
 func pathList(paths []string) string {

@@ -257,7 +257,7 @@ func TestWrapBuildsContainedArgv(t *testing.T) {
 func TestReportUnavailable(t *testing.T) {
 	testHome(t)
 	policy, _ := workspacePolicy(t)
-	r := Report(Availability{Detail: "no containment mechanism for plan9"}, policy)
+	r := Report(Availability{Detail: "no containment mechanism for plan9"}, policy, 0)
 	if !strings.Contains(r, "unavailable") || !strings.Contains(r, "plan9") {
 		t.Fatalf("report should state unavailability honestly:\n%s", r)
 	}
@@ -272,7 +272,7 @@ func TestReportShowsPolicy(t *testing.T) {
 	policy, ws := workspacePolicy(t)
 	policy.Profile = ProfileWorkspaceNetless
 
-	r := Report(Availability{Mechanism: "bwrap", OK: true, Detail: "ok"}, policy)
+	r := Report(Availability{Mechanism: "bwrap", OK: true, Detail: "ok"}, policy, 0)
 	resolvedWS, _ := filepath.EvalSymlinks(ws)
 	if !strings.Contains(r, resolvedWS) {
 		t.Fatalf("report should list the workspace grant:\n%s", r)
@@ -292,7 +292,7 @@ func TestReportRefusedPolicy(t *testing.T) {
 	policy.DenyExtra = []string{secrets}
 	policy.WriteExtra = []string{mkdir(t, filepath.Join(secrets, "inside"))}
 
-	r := Report(Availability{Mechanism: "bwrap", OK: true, Detail: "ok"}, policy)
+	r := Report(Availability{Mechanism: "bwrap", OK: true, Detail: "ok"}, policy, 0)
 	if !strings.Contains(r, "wrap unsupported") || !strings.Contains(r, "never run bare") {
 		t.Fatalf("report should surface the refused policy:\n%s", r)
 	}

@@ -9,6 +9,7 @@ import (
 
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
+	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/runner"
 	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/scope"
@@ -44,7 +45,13 @@ func sandboxPolicy(cfg config.Config, scopeDirs ...string) (sandbox.Policy, erro
 // as the command's error result — a contained command never falls back to
 // running bare. Session start also reconciles container-sandbox ownership
 // records so crashed sessions' containers get reaped.
-func buildContainment(cfg config.Config, sc *scope.Scope) (chat.Containment, error) {
+//
+// The process supervisor is handed the same mechanism here rather than
+// wiring its own: a start is the session's other way of spawning a command,
+// and one command path deciding containment separately from the other is how
+// they come to disagree. sup may be nil — a session without the process
+// tool.
+func buildContainment(cfg config.Config, sc *scope.Scope, sup *process.Supervisor) (chat.Containment, error) {
 	// The policy is rebuilt per command rather than captured once: the
 	// working scope grows mid-session, and a closure holding the
 	// policy it was built with would keep refusing writes to a directory the
@@ -56,10 +63,9 @@ func buildContainment(cfg config.Config, sc *scope.Scope) (chat.Containment, err
 	}
 	reconcileOwnedSandboxes()
 	avail := sandbox.Detect()
-	procReport := sandbox.Report(avail, policy)
 	c := chat.Containment{
-		Report: procReport,
-		Manage: sandboxManage(cfg, sc),
+		Report: sandbox.Report(avail, policy, runningProcesses(sup)),
+		Manage: sandboxManage(cfg, sc, sup),
 	}
 	if !avail.OK {
 		c.Status = "unconfined — " + avail.Detail
@@ -79,6 +85,24 @@ func buildContainment(cfg config.Config, sc *scope.Scope) (chat.Containment, err
 			return nil, err
 		}
 		return sandbox.Wrap(avail, p, command)
+	}
+	// A start runs the same argv the runner would have run, in a directory
+	// the supervisor has already contained to the workspace, so the wrap is
+	// WrapArgv with that directory as the policy's cwd — a mechanism that
+	// chdirs uses it, and a policy resolved against shhh's own working
+	// directory would put the process somewhere the model did not ask for.
+	if sup != nil {
+		sup.SetContainment(process.Containment{
+			Mechanism: avail.Mechanism,
+			Wrap: func(dir string, argv []string) ([]string, error) {
+				p, err := policyNow()
+				if err != nil {
+					return nil, err
+				}
+				p.Cwd = dir
+				return sandbox.WrapArgv(avail, p, argv)
+			},
+		})
 	}
 	c.Run = func(ctx context.Context, command string) (string, int) {
 		argv, err := wrap(command)
@@ -225,14 +249,25 @@ func ownedSummary() string {
 // sandboxReportNow re-resolves the containment report against the working
 // scope as it stands now, so `/sandbox doctor` names the directories a
 // command may write to at the moment it is asked rather than at session
-// start.
-func sandboxReportNow(cfg config.Config, sc *scope.Scope) string {
+// start — and counts the processes running at that moment for the same
+// reason: at session start there are none, and the interesting number is the
+// one the reader is asking about.
+func sandboxReportNow(cfg config.Config, sc *scope.Scope, sup *process.Supervisor) string {
 	avail := sandbox.Detect()
 	policy, err := sandboxPolicy(cfg, sc.Dirs()...)
 	if err != nil {
 		return "Command containment: policy unreadable — " + err.Error()
 	}
-	return sandbox.Report(avail, policy)
+	return sandbox.Report(avail, policy, runningProcesses(sup))
+}
+
+// runningProcesses is the supervisor's count for the surfaces that report
+// containment; a session without the process tool has none to report.
+func runningProcesses(sup *process.Supervisor) int {
+	if sup == nil {
+		return 0
+	}
+	return sup.Running()
 }
 
 // scopeReport is `/sandbox scope`: the working scope as containment sees it.
@@ -259,7 +294,7 @@ func scopeReport(sc *scope.Scope) string {
 // sandboxManage handles the /sandbox subcommands (doctor, scope, list,
 // status, destroy, prune) against the durable ownership records. Engine
 // probes run on demand here, never eagerly at session start.
-func sandboxManage(cfg config.Config, sc *scope.Scope) func(args []string) string {
+func sandboxManage(cfg config.Config, sc *scope.Scope, sup *process.Supervisor) func(args []string) string {
 	return func(args []string) string {
 		if len(args) == 0 {
 			return "Usage: /sandbox [doctor|scope|list|status|destroy <id>|prune]"
@@ -267,7 +302,7 @@ func sandboxManage(cfg config.Config, sc *scope.Scope) func(args []string) strin
 		ctx := context.Background()
 		switch args[0] {
 		case "doctor":
-			return sandboxReportNow(cfg, sc) + "\n\n" + containerReport(cfg)
+			return sandboxReportNow(cfg, sc, sup) + "\n\n" + containerReport(cfg)
 		case "status":
 			return containerReport(cfg)
 		case "scope":
