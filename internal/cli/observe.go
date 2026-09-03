@@ -114,8 +114,10 @@ type runSettings struct {
 	// contains the surface's commands — an unconfined session runs under
 	// no profile, whatever the config asked for.
 	sandbox string
-	// model is the session model, which the summariser and the classifier
-	// default to when their own keys are unset.
+	// model is what the summariser and the classifier fall back to when
+	// their own keys are unset — the provider's small model where it names
+	// one, else the session's own. It is resolved by the surface rather than
+	// here so the record states the model that was actually asked.
 	model string
 	// summary and classifier say whether each mechanism exists on this
 	// surface at all. A one-shot takes no readings and asks no classifier,
@@ -167,15 +169,6 @@ func roundCapFor(rounds int) int {
 	default:
 		return rounds
 	}
-}
-
-// modelOr is the rule the summariser and the classifier both resolve their
-// model by: the configured one, else the session's.
-func modelOr(configured, session string) string {
-	if configured != "" {
-		return configured
-	}
-	return session
 }
 
 // configHash fingerprints the whole effective config, secrets and paths

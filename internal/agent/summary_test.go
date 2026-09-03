@@ -305,6 +305,42 @@ func TestSummarizer_RequestCarriesTheSummaryTool(t *testing.T) {
 	if seen.MaxTokens != DefaultSummaryMaxTokens {
 		t.Fatalf("max tokens = %d", seen.MaxTokens)
 	}
+	// A shallow thought, asked for outright: off is the model's own depth,
+	// and the ceiling has to hold the thought and the reading together.
+	if seen.Effort != provider.EffortLow {
+		t.Fatalf("effort = %v", seen.Effort)
+	}
+	if DefaultSummaryMaxTokens <= lowBudget() {
+		t.Fatalf("the default ceiling %d does not clear a low thought", DefaultSummaryMaxTokens)
+	}
+	if len(p.msgs) != 2 || p.msgs[0].Role != provider.RoleSystem || p.msgs[1].Role != provider.RoleUser {
+		t.Fatalf("messages = %+v", p.msgs)
+	}
+	if !strings.Contains(p.msgs[0].Content, "status reporter") || strings.Contains(p.msgs[0].Content, "UNTRUSTED DIGEST") {
+		t.Errorf("the instruction should be the system message alone, got %q", p.msgs[0].Content)
+	}
+	if !strings.Contains(p.msgs[1].Content, "UNTRUSTED DIGEST") || strings.Contains(p.msgs[1].Content, "status reporter") {
+		t.Errorf("the digest should be the user turn alone, got %q", p.msgs[1].Content)
+	}
+}
+
+// A ceiling sized for two sentences never reaches them on a model that
+// thinks first: the reading comes back empty, the rail's block goes stale
+// and steering never fires.
+func TestSummarizer_CeilingLeavesRoomForTheThought(t *testing.T) {
+	answer := summaryCall(`{"summary":"ok","state":"on_target"}`)
+
+	cramped := &thinkingProvider{spend: lowBudget(), answer: answer}
+	v := NewSummarizer(cramped, SummaryConfig{Model: "fast", MaxTokens: 512}).Summarize(context.Background(), testSummaryRequest())
+	if !v.Failed {
+		t.Fatalf("a ceiling under the thought should read nothing, got %+v", v)
+	}
+
+	roomy := &thinkingProvider{spend: lowBudget(), answer: answer}
+	v = NewSummarizer(roomy, SummaryConfig{Model: "fast"}).Summarize(context.Background(), testSummaryRequest())
+	if v.Failed || v.State != SummaryOnTarget {
+		t.Fatalf("the default ceiling should produce a reading, got %+v", v)
+	}
 }
 
 // One attempt and no retries: a missed reading is answered by the next

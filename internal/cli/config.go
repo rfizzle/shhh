@@ -542,11 +542,11 @@ func configSettings() []configSetting {
 	}, {
 		// The session summary's model. It sits under MODEL rather
 		// than SESSION because what it is is a second model the session runs,
-		// and the fallback says the thing worth knowing: unset means it runs
-		// on the expensive one.
+		// and the fallback says the thing worth knowing: unset means the
+		// provider chose it.
 		group: "MODEL", key: "summary.model", label: "summary model",
 		read:     str(func(c config.Config) string { return c.Summary.Model }),
-		fallback: "(the session's own — a faster one costs less)",
+		fallback: "(the provider's small model, or the session's own)",
 		options: func(c config.Config) []components.SelectOption {
 			opts := make([]components.SelectOption, 0, 8)
 			for _, name := range provider.KnownModels(c.Provider.Default) {

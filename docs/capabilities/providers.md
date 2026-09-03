@@ -97,6 +97,29 @@ survives a `/model` switch to a family that spells it differently.
 The rungs a model has are what the cycle key walks and what `/reasoning`
 offers. A level that fit would only lower is not a level worth landing on.
 
+Off is not the same as no thinking. It means no field goes out, and a model
+whose own default is to think then thinks at whatever depth it likes. On a
+turn that costs nothing, because a turn's output is not capped. On a bounded
+call it is the whole failure: every dialect spends the thought and the answer
+from one ceiling, so a call sized for its answer alone runs out mid-thought
+and comes back with nothing in it. That is why the calls around the turn ask
+for a level outright rather than leaving it unsaid, and why their ceilings are
+sized for a thought and an answer together.
+
+## A bounded call runs on the small model
+
+The permission classifier, the session summary and the title it shares are
+judgements over evidence the session has already assembled, and they run
+often — the classifier on every gated call, carrying the recent conversation
+with it. So they default to the small model the provider names beside its
+default one, and only fall back to the session's own where the provider has
+none to name: a local endpoint serves whatever weights were pulled, and
+guessing a name there is a request that 404s.
+
+Naming the model explicitly still wins. A session that puts a model in the
+classifier or summary setting gets that model, which is what a person reaches
+for when the small one is judging badly.
+
 ## Model data is fetched, and a snapshot ships
 
 One public table carries what shhh needs to know about a model: what it

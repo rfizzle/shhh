@@ -33,6 +33,43 @@ func TestTitler_ToolCallReading(t *testing.T) {
 	if v.Usage.PromptTokens != 300 || v.Model != "small" {
 		t.Fatalf("usage and model should be captured, got %+v", v)
 	}
+	// The instruction is the system message and the exchange the user turn,
+	// so a conversation that tries to name itself is not sitting in the
+	// same message as the instruction that names it.
+	if len(p.msgs) != 2 || p.msgs[0].Role != provider.RoleSystem || p.msgs[1].Role != provider.RoleUser {
+		t.Fatalf("messages = %+v", p.msgs)
+	}
+	if !strings.Contains(p.msgs[0].Content, "You name conversations") || strings.Contains(p.msgs[0].Content, "UNTRUSTED EXCHANGE") {
+		t.Errorf("the instruction should be the system message alone, got %q", p.msgs[0].Content)
+	}
+	if !strings.Contains(p.msgs[1].Content, "why does the retry test flake") || strings.Contains(p.msgs[1].Content, "You name conversations") {
+		t.Errorf("the exchange should be the user turn alone, got %q", p.msgs[1].Content)
+	}
+}
+
+// Sixty-four tokens does not reach the end of a thought, which is why titles
+// stopped appearing: the reading came back empty and the slot stayed
+// untitled with nothing anywhere saying why.
+func TestTitler_CeilingLeavesRoomForTheThought(t *testing.T) {
+	answer := titleCall(`{"title":"Flaky retry test"}`)
+
+	cramped := &thinkingProvider{spend: lowBudget(), answer: answer}
+	v := NewTitler(cramped, TitleConfig{Model: "small", MaxTokens: 64}).Title(context.Background(), TitleRequest{User: "why", Assistant: "because"})
+	if !v.Failed {
+		t.Fatalf("a ceiling under the thought should name nothing, got %+v", v)
+	}
+
+	roomy := &thinkingProvider{spend: lowBudget(), answer: answer}
+	v = NewTitler(roomy, TitleConfig{Model: "small"}).Title(context.Background(), TitleRequest{User: "why", Assistant: "because"})
+	if v.Failed || v.Title != "Flaky retry test" {
+		t.Fatalf("the default ceiling should produce a title, got %+v", v)
+	}
+	if roomy.seen.Effort != provider.EffortLow {
+		t.Errorf("effort = %v", roomy.seen.Effort)
+	}
+	if DefaultTitleMaxTokens <= lowBudget() {
+		t.Fatalf("the default ceiling %d does not clear a low thought", DefaultTitleMaxTokens)
+	}
 }
 
 func TestTitler_ProseFallbackAndBounds(t *testing.T) {

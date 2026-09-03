@@ -406,7 +406,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 		effort:  env.effort,
 		rounds:  roundCapFor(opts.rounds(cfg)),
 		sandbox: sandboxProfile,
-		model:   env.modelName,
+		model:   auxiliaryModel(env.provName, env.modelName),
 		summary: cfg.HeadlessSummaryEnabled(),
 	}))
 	// The gate's verdict, mirroring the interactive session — and a run

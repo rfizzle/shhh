@@ -14,6 +14,11 @@ import (
 
 const defaultAnthropicModel = "claude-opus-5"
 
+// cheapAnthropicModel is the small model the session's bounded calls run
+// on. Haiku is the family's judgement-sized model: it reads the same
+// evidence the frontier model would and costs a fraction of it.
+const cheapAnthropicModel = "claude-haiku-4-5-20251001"
+
 // Streaming requests can afford a generous output ceiling — billing is by
 // actual usage and streaming avoids HTTP timeouts.
 const defaultAnthropicMaxTokens = 64000
@@ -87,7 +92,17 @@ func applyAnthropicThinking(params *anthropic.MessageNewParams, effort Effort, m
 		params.OutputConfig = anthropic.OutputConfigParam{Effort: anthropic.OutputConfigEffort(effort.String())}
 		return
 	}
-	if budget := effort.ThinkingBudget(maxTokens - anthropicAnswerFloor); budget > 0 {
+	// A ceiling with no room left under the answer floor asks for no
+	// thinking at all. The subtraction has to be guarded rather than handed
+	// to the budget: a ceiling of zero means "no ceiling" there, which is
+	// what Gemini passes, so a negative or exactly-zero remainder would sail
+	// through as an unbounded budget and go out larger than max_tokens — a
+	// request the Messages API refuses outright.
+	room := maxTokens - anthropicAnswerFloor
+	if room <= 0 {
+		return
+	}
+	if budget := effort.ThinkingBudget(room); budget > 0 {
 		params.Thinking = anthropic.ThinkingConfigParamOfEnabled(int64(budget))
 	}
 }
@@ -361,6 +376,7 @@ func init() {
 		return NewAnthropic(opts)
 	})
 	RegisterDefaults("anthropic", ProviderDefaults{
-		Model: defaultAnthropicModel,
+		Model:      defaultAnthropicModel,
+		CheapModel: cheapAnthropicModel,
 	})
 }

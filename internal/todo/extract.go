@@ -28,8 +28,14 @@ const ExtractToolName = "backlog_proposals"
 // Extraction bounds. They are enforced here, not asked for in the prompt: a
 // bound the file format depends on is not one a model gets to decide.
 const (
-	DefaultExtractTimeout   = 90 * time.Second
-	DefaultExtractMaxTokens = 4096
+	DefaultExtractTimeout = 90 * time.Second
+	// DefaultExtractMaxTokens caps the whole response, the reasoning
+	// included: every dialect spends the thought and the answer from one
+	// ceiling. Twelve structured items are most of this and the thought that
+	// chose them is the rest — the smallest budget any dialect asks for at
+	// low is four thousand tokens, so a ceiling sized for the items alone
+	// returns half a proposal or none.
+	DefaultExtractMaxTokens = 8192
 	// MaxProposals is how many items one reading may propose. A session that
 	// produced more than this has produced a plan, not a backlog.
 	MaxProposals = 12
@@ -191,7 +197,7 @@ func (e *Extractor) Extract(ctx context.Context, req ExtractRequest) ExtractResu
 		r.Err = "could not build the session digest: " + err.Error()
 		return finish(r)
 	}
-	proposals, usage, err := e.readOnce(ctx, extractPrompt+"\n\nUNTRUSTED DIGEST:\n"+string(evidence))
+	proposals, usage, err := e.readOnce(ctx, extractPrompt, "UNTRUSTED DIGEST:\n"+string(evidence))
 	if usage != nil {
 		r.Usage = *usage
 	}
@@ -207,14 +213,23 @@ func (e *Extractor) Extract(ctx context.Context, req ExtractRequest) ExtractResu
 	return finish(r)
 }
 
-func (e *Extractor) readOnce(ctx context.Context, prompt string) ([]Proposal, *provider.Usage, error) {
+// readOnce runs the one reading. The instruction and the digest travel in
+// separate messages, so the dialect's own instruction channel is what keeps
+// the untrusted half out of the instructions rather than the sentence in the
+// prompt that says so.
+func (e *Extractor) readOnce(ctx context.Context, instructions, digest string) ([]Proposal, *provider.Usage, error) {
 	attemptCtx, cancel := context.WithTimeout(ctx, e.cfg.timeout())
 	defer cancel()
 	events, err := e.provider.StreamCompletion(attemptCtx, []provider.Message{
-		{Role: provider.RoleUser, Content: prompt},
+		{Role: provider.RoleSystem, Content: instructions},
+		{Role: provider.RoleUser, Content: digest},
 	}, provider.CompletionOpts{
 		Model:     e.cfg.Model,
 		MaxTokens: e.cfg.maxTokens(),
+		// A shallow thought over evidence the session already assembled;
+		// off would leave the depth to the model, and the ceiling is shared
+		// with the answer.
+		Effort: provider.EffortLow,
 		Tools: []provider.Tool{{
 			Name:        ExtractToolName,
 			Description: "Propose the backlog items a session leaves behind.",

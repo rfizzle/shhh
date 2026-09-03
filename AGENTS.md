@@ -263,6 +263,16 @@ child's own shorter interval back over it. The summariser's and the
 classifier's own instructions are `SummaryConfig.Prompt` and
 `ClassifierConfig.Prompt`, beside the rest of what each costs.
 
+**Which model the bounded calls answer on is `auxiliaryModel`**
+(`internal/cli/summarizer.go`): the provider's `CheapModel` where it names
+one, the session's own where it does not, with `modelOr` putting
+`behavior.classifier_model` or `summary.model` ahead of both. Every surface
+fills the record's `runSettings.model` from the same call, so the stamp names
+the model that was actually asked rather than the one the session runs on.
+Each of these calls sends `EffortLow` outright and carries a ceiling with
+room for the thought and the answer together — off is the model's own depth,
+and the four ceilings are spent by the reasoning first.
+
 `internal/cli/prompts.go` is the door: `loadPrompts` reads whatever
 `[prompts]` named, refuses a file it cannot read or one naming a substitution
 that wording does not take, and `steering` assembles the set from the config's

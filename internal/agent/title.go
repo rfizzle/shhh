@@ -35,8 +35,14 @@ const (
 	// maxTitleEvidence bounds each side of the exchange the titler reads.
 	maxTitleEvidence = 1200
 
-	DefaultTitleTimeout   = 15 * time.Second
-	DefaultTitleMaxTokens = 64
+	DefaultTitleTimeout = 15 * time.Second
+	// DefaultTitleMaxTokens caps the whole response, the reasoning
+	// included: every dialect spends the thought and the answer from one
+	// ceiling. Six words is a dozen tokens, so nearly all of this is room
+	// for the thought — the smallest budget any dialect asks for at low is
+	// four thousand tokens, and a ceiling under that ends mid-thought and
+	// names nothing, which is why titles stopped appearing at all.
+	DefaultTitleMaxTokens = 8192
 )
 
 // TitleConfig bounds the titler. Model is the model that answers; empty
@@ -131,11 +137,19 @@ func (t *Titler) Title(ctx context.Context, req TitleRequest) TitleVerdict {
 
 	attemptCtx, cancel := context.WithTimeout(ctx, t.cfg.timeout())
 	defer cancel()
+	// The instruction and the exchange travel in separate messages, so the
+	// dialect's own instruction channel is what keeps them apart
+	// (classifier.go).
 	events, err := t.provider.StreamCompletion(attemptCtx, []provider.Message{
-		{Role: provider.RoleUser, Content: titlePrompt + "\n\nUNTRUSTED EXCHANGE:\n" + string(evidence)},
+		{Role: provider.RoleSystem, Content: titlePrompt},
+		{Role: provider.RoleUser, Content: "UNTRUSTED EXCHANGE:\n" + string(evidence)},
 	}, provider.CompletionOpts{
 		Model:     t.cfg.Model,
 		MaxTokens: t.cfg.maxTokens(),
+		// A shallow thought is the right amount for naming an exchange, and
+		// asking for it is the only way to bound one on a model that thinks
+		// whether or not it was asked.
+		Effort: provider.EffortLow,
 		Tools: []provider.Tool{{
 			Name:        TitleToolName,
 			Description: "Name the conversation.",

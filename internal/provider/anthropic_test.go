@@ -325,6 +325,19 @@ func TestAnthropic_ThinkingBudgetOnlyWhenAsked(t *testing.T) {
 		t.Errorf("clamped budget = %v, want %d", got, 8192-anthropicAnswerFloor)
 	}
 
+	// A ceiling with nothing left under the answer floor asks for no
+	// thinking at all. Without the guard the subtraction goes negative, the
+	// budget reads that as "no ceiling", and a budget larger than max_tokens
+	// goes out — which the Messages API refuses outright.
+	events, err = p.StreamCompletion(context.Background(), legacy, CompletionOpts{Model: "claude-haiku-4-5", Effort: EffortLow, MaxTokens: 2048})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _, _, _ = drainAnthropic(t, events)
+	if _, ok := body["thinking"]; ok {
+		t.Errorf("a ceiling under the answer floor must send no thinking, got %v", body["thinking"])
+	}
+
 	// A model that has no thinking is sent none, whatever was asked.
 	events, err = p.StreamCompletion(context.Background(), legacy, CompletionOpts{Model: "claude-3-5-sonnet-latest", Effort: EffortHigh})
 	if err != nil {

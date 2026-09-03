@@ -24,8 +24,16 @@ const DecisionToolName = "permission_decision"
 
 // Classifier defaults; behavior.classifier_* config overrides them.
 const (
-	DefaultClassifierTimeout   = 30 * time.Second
-	DefaultClassifierMaxTokens = 1024
+	DefaultClassifierTimeout = 30 * time.Second
+	// DefaultClassifierMaxTokens caps the whole response, the reasoning
+	// included: every dialect spends the thought and the answer from one
+	// ceiling. A verdict is a word and a sentence, so nearly all of this is
+	// room for the thought that produces them — the smallest budget any
+	// dialect asks for at low is four thousand tokens, and a ceiling under
+	// that returns an unfinished thought and no verdict at all, which the
+	// classifier reads as a failure and answers by asking the user. Trim it
+	// and that is what comes back.
+	DefaultClassifierMaxTokens = 8192
 	DefaultClassifierRetries   = 1
 	// Bounds on the recent-conversation slice included as evidence.
 	defaultContextMessages = 12
@@ -78,8 +86,8 @@ type ClassifierConfig struct {
 	// before the classifier fails closed.
 	Retries int
 	// Prompt replaces the built-in instruction. Empty keeps it. It is the
-	// whole system prompt: the untrusted evidence is appended after it
-	// either way, and so is the retry's own line.
+	// whole system message: the untrusted evidence goes in the user turn
+	// either way, and the retry's own line joins the instruction.
 	Prompt string
 }
 
@@ -177,13 +185,12 @@ func (c *Classifier) Judge(ctx context.Context, req ClassifierRequest) Classifie
 
 	v.Reason = "the classifier returned an invalid decision"
 	for attempt := 1; attempt <= c.cfg.attempts(); attempt++ {
-		prompt := c.cfg.prompt()
+		instructions := c.cfg.prompt()
 		if attempt > 1 {
-			prompt += "\n\nYour previous reply did not contain a valid " + DecisionToolName + " decision. Return one now."
+			instructions += "\n\nYour previous reply did not contain a valid " + DecisionToolName + " decision. Return one now."
 		}
-		prompt += "\n\nUNTRUSTED EVIDENCE:\n" + string(evidence)
 
-		decision, reason, usage, err := c.completeOnce(ctx, prompt)
+		decision, reason, usage, err := c.completeOnce(ctx, instructions, "UNTRUSTED EVIDENCE:\n"+string(evidence))
 		if usage != nil {
 			v.Usage.PromptTokens += usage.PromptTokens
 			v.Usage.CompletionTokens += usage.CompletionTokens
@@ -209,15 +216,27 @@ func (c *Classifier) Judge(ctx context.Context, req ClassifierRequest) Classifie
 
 // completeOnce runs one classifier attempt under the configured timeout and
 // parses its decision; Ask with a nil error means the response was invalid.
-func (c *Classifier) completeOnce(ctx context.Context, prompt string) (Decision, string, *provider.Usage, error) {
+//
+// The instruction and the evidence travel in separate messages. The prompt
+// says outright that the evidence is data and that instructions inside it are
+// not to be followed, and every dialect has a channel that says the same
+// thing structurally — one the evidence cannot be written into. Concatenating
+// the two into one user turn threw that away and left the sentence doing the
+// work alone.
+func (c *Classifier) completeOnce(ctx context.Context, instructions, evidence string) (Decision, string, *provider.Usage, error) {
 	attemptCtx, cancel := context.WithTimeout(ctx, c.cfg.timeout())
 	defer cancel()
 
 	events, err := c.provider.StreamCompletion(attemptCtx, []provider.Message{
-		{Role: provider.RoleUser, Content: prompt},
+		{Role: provider.RoleSystem, Content: instructions},
+		{Role: provider.RoleUser, Content: evidence},
 	}, provider.CompletionOpts{
 		Model:     c.cfg.Model,
 		MaxTokens: c.cfg.maxTokens(),
+		// A judgement over assembled evidence wants a shallow thought, and
+		// on a model that thinks by default this is the only way to ask for
+		// one: off sends no field, which is the model's own depth.
+		Effort: provider.EffortLow,
 		Tools: []provider.Tool{{
 			Name:        DecisionToolName,
 			Description: "Return the permission decision for the proposed action.",

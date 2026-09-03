@@ -624,11 +624,9 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	}
 
 	// Auto mode's permission classifier reuses the session provider;
-	// behavior.classifier_model overrides the model (default: session model).
-	classifierModel := cfg.Behavior.ClassifierModel
-	if classifierModel == "" {
-		classifierModel = env.modelName
-	}
+	// behavior.classifier_model overrides the model, and unset means the
+	// provider's small model (summarizer.go).
+	classifierModel := modelOr(cfg.Behavior.ClassifierModel, auxiliaryModel(env.provName, env.modelName))
 	classifier := agent.NewClassifier(ledger.For(env.prov, meter.SourceClassifier), agent.ClassifierConfig{
 		Model:     classifierModel,
 		Timeout:   time.Duration(cfg.Behavior.ClassifierTimeoutSeconds) * time.Second,
@@ -638,14 +636,11 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	})
 
 	// The session summary resolves its model the same way: summary.model
-	// overrides, empty means the session model. It is the one setting in that
-	// section worth changing — the readings are frequent, and the session
-	// model is usually the expensive one.
+	// overrides, and empty takes the provider's small model. It is still the
+	// setting in that section worth changing, because a provider that names
+	// no small model leaves the readings on the session's own.
 	summarizer := newSummarizer(cfg, env, ledger, !cfg.Summary.Disabled)
-	summaryModel := cfg.Summary.Model
-	if summaryModel == "" {
-		summaryModel = env.modelName
-	}
+	summaryModel := modelOr(cfg.Summary.Model, auxiliaryModel(env.provName, env.modelName))
 	// Session titles ask the same model. Off unless a summary model is
 	// configured or the config says so outright; a name the user gives
 	// wins either way.
@@ -715,7 +710,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		effort:     env.effort,
 		rounds:     roundCapFor(maxRoundsFor(cfg, session.maxRounds, session.maxRoundsSet)),
 		sandbox:    containment.Profile,
-		model:      env.modelName,
+		model:      auxiliaryModel(env.provName, env.modelName),
 		summary:    !cfg.Summary.Disabled,
 		classifier: true,
 	}))

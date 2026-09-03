@@ -15,9 +15,10 @@ package chat
 //     asked a third time.
 //   - The reading is a background command like the summary's: nothing on
 //     screen waits for it, and the turn under it is untouched either way.
-//   - It is off unless a summary model is configured, because on the
-//     session model the cheapest question is still not cheap; `/ui title`
-//     flips it for the session and `summary.title` in the config for good.
+//   - It is off unless a summary model is configured, because a provider
+//     that names no small model of its own reads the title on the session's,
+//     where the cheapest question is still not cheap; `/ui title` flips it
+//     for the session and `summary.title` in the config for good.
 
 import (
 	"context"

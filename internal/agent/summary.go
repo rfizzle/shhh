@@ -37,8 +37,15 @@ const SummaryToolName = "session_summary"
 
 // Summarizer defaults; the [summary] config section overrides them.
 const (
-	DefaultSummaryTimeout   = 20 * time.Second
-	DefaultSummaryMaxTokens = 512
+	DefaultSummaryTimeout = 20 * time.Second
+	// DefaultSummaryMaxTokens caps the whole response, the reasoning
+	// included: every dialect spends the thought and the answer from one
+	// ceiling. The reading itself is two sentences, bounded again below at
+	// maxSummaryText, so almost all of this is room for the thought that
+	// produces them — the smallest budget any dialect asks for at low is
+	// four thousand tokens, and a ceiling under that comes back empty, which
+	// is a rail block that goes stale and steering that never fires.
+	DefaultSummaryMaxTokens = 8192
 	// DefaultSummaryInterval is how many tool rounds pass between readings.
 	//
 	// A round is one model request plus its tool calls, and the default round
@@ -177,9 +184,9 @@ type SummaryConfig struct {
 	// because it is measured in them; zero takes the built-in count.
 	InterveneCooldownIntervals int
 	// Prompt replaces the built-in reading instruction. Empty keeps it. It
-	// is the whole system prompt: the untrusted digest is appended after it
-	// either way, so a wording that drops the warning about it drops the
-	// warning and nothing else.
+	// is the whole system message: the untrusted digest goes in the user
+	// turn either way, so a wording that drops the warning about it drops
+	// the warning and nothing else.
 	Prompt string
 	// Disabled turns the whole mechanism off: no requests, no block.
 	Disabled bool
@@ -351,7 +358,7 @@ func (s *Summarizer) Summarize(ctx context.Context, req SummaryRequest) SummaryV
 	// One attempt and no retries. A missed reading is answered by the next
 	// interval a few rounds from now, which is cheaper and quieter than
 	// asking twice for a block nobody is blocked on.
-	text, state, reason, usage, err := s.readOnce(ctx, s.cfg.prompt()+"\n\nUNTRUSTED DIGEST:\n"+string(evidence))
+	text, state, reason, usage, err := s.readOnce(ctx, s.cfg.prompt(), "UNTRUSTED DIGEST:\n"+string(evidence))
 	if usage != nil {
 		v.Usage = *usage
 	}
@@ -367,16 +374,23 @@ func (s *Summarizer) Summarize(ctx context.Context, req SummaryRequest) SummaryV
 	return finish(v)
 }
 
-// readOnce runs one reading under the configured timeout and parses it.
-func (s *Summarizer) readOnce(ctx context.Context, prompt string) (string, SummaryState, string, *provider.Usage, error) {
+// readOnce runs one reading under the configured timeout and parses it. The
+// instruction and the digest travel in separate messages, so the dialect's
+// own instruction channel keeps them apart rather than the sentence in the
+// prompt that says the digest is data (classifier.go).
+func (s *Summarizer) readOnce(ctx context.Context, instructions, digest string) (string, SummaryState, string, *provider.Usage, error) {
 	attemptCtx, cancel := context.WithTimeout(ctx, s.cfg.timeout())
 	defer cancel()
 
 	events, err := s.provider.StreamCompletion(attemptCtx, []provider.Message{
-		{Role: provider.RoleUser, Content: prompt},
+		{Role: provider.RoleSystem, Content: instructions},
+		{Role: provider.RoleUser, Content: digest},
 	}, provider.CompletionOpts{
 		Model:     s.cfg.Model,
 		MaxTokens: s.cfg.maxTokens(),
+		// A shallow thought over a digest that is already assembled. Off
+		// would be the model's own depth, which is what emptied the block.
+		Effort: provider.EffortLow,
 		Tools: []provider.Tool{{
 			Name:        SummaryToolName,
 			Description: "Report the session's current state and whether it is still on target.",

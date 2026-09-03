@@ -60,3 +60,30 @@ func TestAvailable(t *testing.T) {
 		t.Errorf("expected at least 2 providers, got %d", len(names))
 	}
 }
+
+// Every provider whose catalog can be known ahead of time names a small
+// model for the bounded calls, and the one whose catalog cannot does not:
+// openai-compatible points at whatever endpoint the user runs, and a name
+// guessed for it is a request that 404s.
+func TestDefaults_CheapModel(t *testing.T) {
+	for _, name := range []string{"anthropic", "openai", "openai-responses", "gemini", "openrouter"} {
+		d := Defaults(name)
+		if d.CheapModel == "" {
+			t.Errorf("%s names no cheap model", name)
+			continue
+		}
+		if d.CheapModel == d.Model {
+			t.Errorf("%s: the cheap model is the default model", name)
+		}
+		if !CapabilitiesFor(d.CheapModel).Known {
+			t.Errorf("%s: nothing describes %q", name, d.CheapModel)
+		}
+	}
+	if got := Defaults("openai-compatible").CheapModel; got != "" {
+		t.Errorf("openai-compatible should name none, got %q", got)
+	}
+	// The underscore spelling reaches the same entry the model does.
+	if Defaults("openai_responses").CheapModel != Defaults("openai-responses").CheapModel {
+		t.Error("the name should normalise the same way for both fields")
+	}
+}

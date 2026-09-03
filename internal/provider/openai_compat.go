@@ -229,6 +229,10 @@ func init() {
 	Register("openai-compatible", func(opts ResolveOpts) (Provider, error) {
 		return NewOpenAICompat(opts)
 	})
+	// No cheap model: this provider points at whatever endpoint the user
+	// runs, and the models it serves are the ones they pulled. Naming one
+	// here would send the bounded calls to a model the endpoint answers 404
+	// for, so they stay on the session model.
 	RegisterDefaults("openai-compatible", ProviderDefaults{
 		Model:   defaultCompatModel,
 		BaseURL: defaultCompatBaseURL,

@@ -15,10 +15,14 @@ import (
 type fakeClassifierProvider struct {
 	fn    func(attempt int, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error)
 	calls int
+	// msgs is the last request's messages, for the tests that assert which
+	// half of the prompt went in which channel.
+	msgs []provider.Message
 }
 
 func (f *fakeClassifierProvider) StreamCompletion(ctx context.Context, msgs []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
 	f.calls++
+	f.msgs = msgs
 	return f.fn(f.calls, opts)
 }
 
@@ -251,5 +255,92 @@ func TestRecentContext_Bounds(t *testing.T) {
 	}, 10, 100)
 	if len(long) > 100 || !strings.HasSuffix(long, "TAIL") || !strings.HasPrefix(long, "[earlier context omitted]") {
 		t.Fatalf("oversized context must keep the tail under the cap, got %d chars: %q", len(long), long)
+	}
+}
+
+// thinkingProvider models what every current frontier model does: it spends
+// part of the output ceiling on a thought before it says anything, and a
+// ceiling that does not reach the end of the thought ends the response with
+// nothing in it — no tool call, no text, no error.
+type thinkingProvider struct {
+	spend  int
+	answer provider.StreamEvent
+	seen   provider.CompletionOpts
+}
+
+func (t *thinkingProvider) Name() string { return "thinking" }
+
+func (t *thinkingProvider) StreamCompletion(_ context.Context, _ []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+	t.seen = opts
+	if opts.MaxTokens <= t.spend {
+		return eventsOf(provider.StreamEvent{Done: true}), nil
+	}
+	return eventsOf(t.answer), nil
+}
+
+// lowBudget is what a shallow thought costs on the dialects whose knob is a
+// number rather than a name — the floor the ceilings here have to clear.
+func lowBudget() int { return provider.EffortLow.ThinkingBudget(0) }
+
+// A ceiling sized for the verdict alone never reaches one on a model that
+// thinks first: the classifier reads the empty response as an invalid answer
+// and fails closed to Ask, which is auto mode silently behaving as though it
+// were switched off.
+func TestClassifier_CeilingLeavesRoomForTheThought(t *testing.T) {
+	answer := decisionCall(`{"decision":"allow","reason":"runs the requested tests"}`)
+
+	cramped := &thinkingProvider{spend: lowBudget(), answer: answer}
+	v := NewClassifier(cramped, ClassifierConfig{Model: "m", MaxTokens: 1024}).Judge(context.Background(), testRequest())
+	if v.Decision != Ask || !v.Failed {
+		t.Fatalf("a ceiling under the thought should fail closed, got %+v", v)
+	}
+
+	roomy := &thinkingProvider{spend: lowBudget(), answer: answer}
+	v = NewClassifier(roomy, ClassifierConfig{Model: "m"}).Judge(context.Background(), testRequest())
+	if v.Failed || v.Decision != Allow {
+		t.Fatalf("the default ceiling should reach a verdict, got %+v", v)
+	}
+	if DefaultClassifierMaxTokens <= lowBudget() {
+		t.Fatalf("the default ceiling %d does not clear a low thought", DefaultClassifierMaxTokens)
+	}
+}
+
+// The instruction goes in the dialect's own instruction channel and the
+// evidence in the user turn, so the prompt's warning that the evidence is
+// data is backed by the structure and not only by the sentence. The retry's
+// line is an instruction and joins the instructions.
+func TestClassifier_RequestShape(t *testing.T) {
+	var seen provider.CompletionOpts
+	p := &fakeClassifierProvider{fn: func(attempt int, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
+		seen = opts
+		if attempt == 1 {
+			return eventsOf(provider.StreamEvent{Token: "nonsense", Done: true}), nil
+		}
+		return eventsOf(decisionCall(`{"decision":"deny","reason":"unrelated"}`)), nil
+	}}
+	v := NewClassifier(p, ClassifierConfig{Model: "m"}).Judge(context.Background(), testRequest())
+	if v.Failed || v.Decision != Deny {
+		t.Fatalf("verdict = %+v", v)
+	}
+	if len(p.msgs) != 2 || p.msgs[0].Role != provider.RoleSystem || p.msgs[1].Role != provider.RoleUser {
+		t.Fatalf("messages = %+v", p.msgs)
+	}
+	if !strings.Contains(p.msgs[0].Content, "security permission classifier") {
+		t.Errorf("the instruction should be the system message, got %q", p.msgs[0].Content)
+	}
+	if !strings.Contains(p.msgs[0].Content, "did not contain a valid") {
+		t.Error("the retry's line is an instruction and belongs with the instructions")
+	}
+	if strings.Contains(p.msgs[0].Content, "UNTRUSTED EVIDENCE") || strings.Contains(p.msgs[1].Content, "security permission classifier") {
+		t.Error("the evidence and the instruction must not share a message")
+	}
+	if !strings.Contains(p.msgs[1].Content, "run the tests") {
+		t.Errorf("the evidence should be the user turn, got %q", p.msgs[1].Content)
+	}
+	if seen.Effort != provider.EffortLow {
+		t.Errorf("effort = %v", seen.Effort)
+	}
+	if seen.MaxTokens != DefaultClassifierMaxTokens {
+		t.Errorf("max tokens = %d", seen.MaxTokens)
 	}
 }

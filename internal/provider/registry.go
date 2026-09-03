@@ -19,6 +19,16 @@ type ResolveOpts struct {
 type ProviderDefaults struct {
 	Model   string
 	BaseURL string
+	// CheapModel is the small, fast model this provider's bounded calls run
+	// on: the permission classifier, the session summary and the title it
+	// shares. They are judgements over evidence the session has already
+	// assembled, and the classifier alone fires on every gated call, so
+	// running them on whatever the session picked is the harness's largest
+	// avoidable cost. Empty means the provider has no small model anyone can
+	// name ahead of time — a local endpoint serves whatever was loaded — and
+	// those calls fall back to the session model.
+	// See docs/capabilities/providers.md#a-bounded-call-runs-on-the-small-model.
+	CheapModel string
 }
 
 type Factory func(ResolveOpts) (Provider, error)

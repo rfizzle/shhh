@@ -13,6 +13,11 @@ import (
 
 const defaultGeminiModel = "gemini-2.5-flash"
 
+// cheapGeminiModel is the small model the bounded calls run on: the
+// current flash, which is the tier below every pro model a session is
+// likely to be on.
+const cheapGeminiModel = "gemini-3.7-flash"
+
 type Gemini struct {
 	client   *genai.Client
 	model    string
@@ -368,6 +373,7 @@ func init() {
 		return NewGemini(opts)
 	})
 	RegisterDefaults("gemini", ProviderDefaults{
-		Model: defaultGeminiModel,
+		Model:      defaultGeminiModel,
+		CheapModel: cheapGeminiModel,
 	})
 }

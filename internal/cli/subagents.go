@@ -360,7 +360,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 				effort:     agents.effortFor(spec.Role, effort),
 				rounds:     spec.MaxRounds,
 				sandbox:    childSandboxProfile(cfg),
-				model:      model,
+				model:      auxiliaryModel(env.provName, env.modelName),
 				summary:    cfg.SubagentSummaryEnabled(),
 				classifier: true,
 			}))

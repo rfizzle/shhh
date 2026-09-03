@@ -25,6 +25,9 @@ import (
 const (
 	defaultResponsesModel   = "gpt-4.1"
 	defaultResponsesBaseURL = "https://api.openai.com/v1"
+	// cheapResponsesModel is the same nano rung the chat-completions
+	// provider names; this API serves it too.
+	cheapResponsesModel = "gpt-5.4-nano"
 )
 
 // OpenAIResponses speaks the Responses API over a plain HTTP client, so a
@@ -302,7 +305,8 @@ func init() {
 		return NewOpenAIResponses(opts)
 	})
 	RegisterDefaults("openai-responses", ProviderDefaults{
-		Model:   defaultResponsesModel,
-		BaseURL: defaultResponsesBaseURL,
+		Model:      defaultResponsesModel,
+		BaseURL:    defaultResponsesBaseURL,
+		CheapModel: cheapResponsesModel,
 	})
 }

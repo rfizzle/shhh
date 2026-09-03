@@ -10,6 +10,10 @@ import (
 
 const (
 	defaultOpenAIModel = "gpt-4o"
+	// cheapOpenAIModel is the small model the bounded calls run on: the
+	// nano rung of the current generation, the smallest thing the catalog
+	// offers that still reasons and still calls a tool.
+	cheapOpenAIModel = "gpt-5.4-nano"
 )
 
 type OpenAI struct {
@@ -182,7 +186,8 @@ func init() {
 		return NewOpenAI(opts)
 	})
 	RegisterDefaults("openai", ProviderDefaults{
-		Model:   defaultOpenAIModel,
-		BaseURL: defaultOpenAIBaseURL,
+		Model:      defaultOpenAIModel,
+		BaseURL:    defaultOpenAIBaseURL,
+		CheapModel: cheapOpenAIModel,
 	})
 }

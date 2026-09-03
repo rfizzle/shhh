@@ -21,7 +21,8 @@ type scriptedProvider struct {
 func (p *scriptedProvider) Name() string { return "scripted" }
 
 func (p *scriptedProvider) StreamCompletion(_ context.Context, msgs []provider.Message, _ provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
-	p.prompt = msgs[0].Content
+	// The digest is the user turn; the instructions are the system message.
+	p.prompt = msgs[len(msgs)-1].Content
 	ch := make(chan provider.StreamEvent, 2)
 	ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{{Name: todo.ExtractToolName, Arguments: p.args}}}
 	ch <- provider.StreamEvent{Done: true}

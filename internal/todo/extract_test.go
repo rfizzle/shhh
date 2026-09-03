@@ -14,6 +14,9 @@ type fakeProvider struct {
 	events []provider.StreamEvent
 	err    error
 	got    provider.CompletionOpts
+	// system is the instruction message and prompt the user turn that
+	// carries the untrusted digest; the split is what the test asserts.
+	system string
 	prompt string
 }
 
@@ -21,7 +24,8 @@ func (f *fakeProvider) Name() string { return "fake" }
 
 func (f *fakeProvider) StreamCompletion(_ context.Context, msgs []provider.Message, opts provider.CompletionOpts) (<-chan provider.StreamEvent, error) {
 	f.got = opts
-	f.prompt = msgs[0].Content
+	f.system = msgs[0].Content
+	f.prompt = msgs[len(msgs)-1].Content
 	if f.err != nil {
 		return nil, f.err
 	}
@@ -59,6 +63,29 @@ func TestExtract_ToolCallIsRead(t *testing.T) {
 	}
 	if fp.got.Tools[0].Name != ExtractToolName || !strings.Contains(fp.prompt, "UNTRUSTED DIGEST") || !strings.Contains(fp.prompt, "old — Old one") {
 		t.Errorf("request = %+v / %q", fp.got, fp.prompt)
+	}
+}
+
+// The instructions go in the dialect's own instruction channel and only the
+// untrusted digest is in the user turn, so a digest that tries to give
+// orders is not sitting in the same message as the orders that count. The
+// reading also asks for a shallow thought outright and leaves it room under
+// the ceiling: off means the model's own depth, which on a model that thinks
+// by default is the whole ceiling and no proposals.
+func TestExtract_InstructionsAreSeparateFromTheDigest(t *testing.T) {
+	fp := &fakeProvider{events: []provider.StreamEvent{{ToolCalls: []provider.ToolCall{{Name: ExtractToolName, Arguments: proposalsJSON}}}}}
+	NewExtractor(fp, ExtractConfig{Model: "m"}).Extract(context.Background(), ExtractRequest{Instructions: []string{"do the thing"}})
+	if !strings.Contains(fp.system, "You turn a coding session into backlog items") {
+		t.Errorf("system message = %q", fp.system)
+	}
+	if strings.Contains(fp.system, "UNTRUSTED DIGEST") || strings.Contains(fp.prompt, "You turn a coding session") {
+		t.Errorf("the halves are mixed: system=%q user=%q", fp.system, fp.prompt)
+	}
+	if fp.got.Effort != provider.EffortLow {
+		t.Errorf("effort = %v", fp.got.Effort)
+	}
+	if fp.got.MaxTokens != DefaultExtractMaxTokens {
+		t.Errorf("max tokens = %d", fp.got.MaxTokens)
 	}
 }
 

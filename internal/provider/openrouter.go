@@ -12,6 +12,11 @@ import (
 const (
 	defaultOpenRouterBaseURL = "https://openrouter.ai/api/v1"
 	defaultOpenRouterModel   = "anthropic/claude-sonnet-4-6"
+	// cheapOpenRouterModel is the gateway's spelling of the same Haiku the
+	// Anthropic provider names, because the gateway's own default is an
+	// Anthropic model and the two should not disagree about which small
+	// model that family has. OpenRouter writes the generation with a dot.
+	cheapOpenRouterModel = "anthropic/claude-haiku-4.5"
 )
 
 type OpenRouter struct {
@@ -117,7 +122,8 @@ func init() {
 		return NewOpenRouter(opts)
 	})
 	RegisterDefaults("openrouter", ProviderDefaults{
-		Model:   defaultOpenRouterModel,
-		BaseURL: defaultOpenRouterBaseURL,
+		Model:      defaultOpenRouterModel,
+		BaseURL:    defaultOpenRouterBaseURL,
+		CheapModel: cheapOpenRouterModel,
 	})
 }

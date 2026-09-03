@@ -120,10 +120,9 @@ type SecretsConfig struct {
 // block. It is its own section rather than more `behavior.summary_*` keys
 // because auto-steering's knobs land beside these ones.
 type SummaryConfig struct {
-	// Model is the summarizing model. Empty means the session model, the same
-	// rule behavior.classifier_model follows — which is also why setting a
-	// fast model here is the one tuning worth doing: the readings are
-	// frequent, and the session model is usually the expensive one.
+	// Model is the summarizing model. Empty means the provider's own small
+	// model, and the session model where the provider names none — the same
+	// rule behavior.classifier_model follows.
 	Model string `toml:"model"`
 	// IntervalRounds is how many tool rounds pass between readings (default
 	// 10). Higher is cheaper and staler.
@@ -133,7 +132,8 @@ type SummaryConfig struct {
 	MinGapSeconds int `toml:"min_gap_seconds"`
 	// TimeoutSeconds bounds one reading (default 20).
 	TimeoutSeconds int `toml:"timeout_seconds,omitempty"`
-	// MaxTokens caps a reading's response (default 512).
+	// MaxTokens caps a reading's response, the reasoning it does before
+	// answering included (default 8192).
 	MaxTokens int `toml:"max_tokens"`
 	// Disabled turns the mechanism off entirely: no requests are made and the
 	// block is never drawn.
@@ -161,9 +161,9 @@ type SummaryConfig struct {
 	SteerTargetChars int `toml:"steer_target_chars"`
 	// Title asks the summary model to name an unnamed session after its
 	// first turn, for the saved-chat listings. Unset means on when Model is
-	// set and off otherwise: on the session model the question is not
-	// cheap, and a title nobody asked for should not cost anything. A name
-	// the user gives a session always wins over it.
+	// set and off otherwise: a provider that names no small model of its own
+	// reads titles on the session's, and a title nobody asked for should not
+	// cost that. A name the user gives a session always wins over it.
 	Title *bool `toml:"title"`
 }
 
@@ -304,12 +304,14 @@ type BehaviorConfig struct {
 	// ModeCycle overrides the Shift+Tab mode order (same names as
 	// DefaultMode). Empty means manual → accept-edits → auto → plan.
 	ModeCycle []string `toml:"mode_cycle"`
-	// ClassifierModel is the model auto mode's permission classifier uses
-	//. Empty means the session model.
+	// ClassifierModel is the model auto mode's permission classifier uses.
+	// Empty means the provider's own small model, and the session model
+	// where the provider names none.
 	ClassifierModel string `toml:"classifier_model"`
 	// ClassifierTimeoutSeconds bounds each classifier request (default 30).
 	ClassifierTimeoutSeconds int `toml:"classifier_timeout_seconds"`
-	// ClassifierMaxTokens caps the classifier's response (default 1024).
+	// ClassifierMaxTokens caps the classifier's response, the reasoning it
+	// does before answering included (default 8192).
 	ClassifierMaxTokens int `toml:"classifier_max_tokens"`
 	// ClassifierRetries is how many extra attempts an invalid or failed
 	// classifier response gets before failing closed (default 1).
