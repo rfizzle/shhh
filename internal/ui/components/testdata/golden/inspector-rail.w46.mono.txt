@@ -42,7 +42,9 @@
   ▎✎ internal/agent/loop.go          +18 −3 3t
   ▎✎ internal/ui/chat/model.go           +9 −1
 
-  AGENTS                             2 running
+  AGENTS               1 needs you · 1 running
+▸ ◇ orchestrator                         $0.12
+    ⠋ round 3 · streaming…                    
   ◇ writer-1                             $0.02
     ⠋ docs/loop.md · 4 tools                  
   ⚠ runner-2                             $0.01
@@ -77,7 +79,7 @@
   CHANGES                     session · +27 −4
   … 4 more                              +27 −4
 
-  AGENTS                             2 running
+  AGENTS               1 needs you · 1 running
 
 · blocks with nothing to say are omitted
   THIS TURN                                   
@@ -153,6 +155,36 @@
   ✓ built-in                     up · 18 tools
   ⚠ memory                       3 did not fit
 
+· the session map · the keyboard is in writer-2
+  AGENTS               1 needs you · 2 running
+  ⚠ orchestrator                         $0.12
+    round 3 · waiting on you                  
+▸ ◇ writer-2                             $0.04
+    ⠹ internal/ui/chat/model.go · 11 tools    
+  ◇ runner-4                             $0.02
+    ▰▰▰▱▱ step 2 of 3 · go build ./...        
+  ⚠ reviewer-5                           $0.03
+    waiting approval: apply patch             
+  ✓ reader-6                       done  $0.01
+    read 9 files                              
+  ✓ reader-7                       done  $0.01
+    nothing under that path                   
+  … 2 more                                    
+
+· the map with the rail shorter than it (height 12)
+  AGENTS               1 needs you · 2 running
+  ⚠ orchestrator                         $0.12
+    round 3 · waiting on you                  
+▸ ◇ writer-2                             $0.04
+    ⠹ internal/ui/chat/model.go · 11 tools    
+  ◇ runner-4                             $0.02
+    ▰▰▰▱▱ step 2 of 3 · go build ./...        
+  ⚠ reviewer-5                           $0.03
+    waiting approval: apply patch             
+  ✓ reader-6                       done  $0.01
+    read 9 files                              
+  … 3 more                                    
+
 ── ansi ────────────────────────────────────────────────────
 · every block, unbounded height
   ␛[1;38;5;254mSUMMARY␛[m                       ␛[38;5;244mas of round 24␛[m
@@ -187,7 +219,9 @@
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254minternal/agent/loop.go␛[m          ␛[38;5;254m+18␛[m ␛[38;5;254m−3␛[m ␛[38;5;244m3t␛[m
   ␛[38;5;254m▎␛[m␛[38;5;254m✎␛[m ␛[38;5;254minternal/ui/chat/model.go␛[m           ␛[38;5;254m+9␛[m ␛[38;5;254m−1␛[m
 
-  ␛[1;38;5;254mAGENTS␛[m                             ␛[38;5;244m2 running␛[m
+  ␛[1;38;5;254mAGENTS␛[m               ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 running␛[m
+␛[1;48;5;237m▸␛[m ␛[38;5;254m◇␛[m ␛[38;5;254morchestrator␛[m                         ␛[38;5;244m$0.12␛[m
+    ␛[38;5;254m⠋ round 3 · streaming…␛[m                    
   ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-1␛[m                             ␛[38;5;244m$0.02␛[m
     ␛[38;5;254m⠋ docs/loop.md␛[m␛[38;5;244m · ␛[m␛[38;5;244m4 tools␛[m                  
   ␛[38;5;254m⚠␛[m ␛[38;5;254mrunner-2␛[m                             ␛[38;5;244m$0.01␛[m
@@ -222,7 +256,7 @@
   ␛[1;38;5;254mCHANGES␛[m                     ␛[38;5;244msession · ␛[m␛[38;5;254m+27␛[m ␛[38;5;254m−4␛[m
   ␛[3;38;5;244m… 4 more␛[m                              ␛[38;5;254m+27␛[m ␛[38;5;254m−4␛[m
 
-  ␛[1;38;5;254mAGENTS␛[m                             ␛[38;5;244m2 running␛[m
+  ␛[1;38;5;254mAGENTS␛[m               ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m1 running␛[m
 
 · blocks with nothing to say are omitted
   ␛[1;38;5;254mTHIS TURN␛[m                                   
@@ -297,3 +331,33 @@
   ␛[1;38;5;254mTOOLS␛[m                              ␛[38;5;244m1 of 1 up␛[m
   ␛[38;5;254m✓␛[m ␛[38;5;254mbuilt-in␛[m                     ␛[38;5;244mup␛[m␛[38;5;244m · 18 tools␛[m
   ␛[38;5;254m⚠␛[m ␛[38;5;254mmemory␛[m                       ␛[38;5;244m3 did not fit␛[m
+
+· the session map · the keyboard is in writer-2
+  ␛[1;38;5;254mAGENTS␛[m               ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 running␛[m
+  ␛[38;5;254m⚠␛[m ␛[38;5;254morchestrator␛[m                         ␛[38;5;244m$0.12␛[m
+    ␛[38;5;244mround 3 · waiting on you␛[m                  
+␛[1;48;5;237m▸␛[m ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-2␛[m                             ␛[38;5;244m$0.04␛[m
+    ␛[38;5;254m⠹ internal/ui/chat/model.go␛[m␛[38;5;244m · ␛[m␛[38;5;244m11 tools␛[m    
+  ␛[38;5;254m◇␛[m ␛[38;5;254mrunner-4␛[m                             ␛[38;5;244m$0.02␛[m
+    ␛[38;5;254m▰▰▰▱▱ step 2 of 3␛[m␛[38;5;244m · ␛[m␛[38;5;244mgo build ./...␛[m        
+  ␛[38;5;254m⚠␛[m ␛[38;5;254mreviewer-5␛[m                           ␛[38;5;244m$0.03␛[m
+    ␛[38;5;244mwaiting approval: apply patch␛[m             
+  ␛[38;5;254m✓␛[m ␛[38;5;254mreader-6␛[m                       ␛[38;5;254mdone␛[m  ␛[38;5;244m$0.01␛[m
+    ␛[38;5;244mread 9 files␛[m                              
+  ␛[38;5;254m✓␛[m ␛[38;5;254mreader-7␛[m                       ␛[38;5;254mdone␛[m  ␛[38;5;244m$0.01␛[m
+    ␛[38;5;244mnothing under that path␛[m                   
+  ␛[3;38;5;244m… 2 more␛[m                                    
+
+· the map with the rail shorter than it (height 12)
+  ␛[1;38;5;254mAGENTS␛[m               ␛[38;5;254m1 needs you␛[m␛[38;5;244m · ␛[m␛[38;5;254m2 running␛[m
+  ␛[38;5;254m⚠␛[m ␛[38;5;254morchestrator␛[m                         ␛[38;5;244m$0.12␛[m
+    ␛[38;5;244mround 3 · waiting on you␛[m                  
+␛[1;48;5;237m▸␛[m ␛[38;5;254m◇␛[m ␛[38;5;254mwriter-2␛[m                             ␛[38;5;244m$0.04␛[m
+    ␛[38;5;254m⠹ internal/ui/chat/model.go␛[m␛[38;5;244m · ␛[m␛[38;5;244m11 tools␛[m    
+  ␛[38;5;254m◇␛[m ␛[38;5;254mrunner-4␛[m                             ␛[38;5;244m$0.02␛[m
+    ␛[38;5;254m▰▰▰▱▱ step 2 of 3␛[m␛[38;5;244m · ␛[m␛[38;5;244mgo build ./...␛[m        
+  ␛[38;5;254m⚠␛[m ␛[38;5;254mreviewer-5␛[m                           ␛[38;5;244m$0.03␛[m
+    ␛[38;5;244mwaiting approval: apply patch␛[m             
+  ␛[38;5;254m✓␛[m ␛[38;5;254mreader-6␛[m                       ␛[38;5;254mdone␛[m  ␛[38;5;244m$0.01␛[m
+    ␛[38;5;244mread 9 files␛[m                              
+  ␛[3;38;5;244m… 3 more␛[m                                    

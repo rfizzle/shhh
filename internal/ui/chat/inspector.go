@@ -11,7 +11,9 @@ package chat
 // budget it hands out is unchanged — and the prompt frame spans both panes,
 // because steering is a session-level act. Takeover surfaces
 // (approval cards, pickers, the full-screen diff, the agent list) span the
-// full width and hide the rail, restoring it when they are dismissed.
+// full width and hide the rail, restoring it when they are dismissed. An
+// attached child's session is not a takeover: the rail stays, and its AGENTS
+// block marks the row the keyboard is in.
 //
 // Everything the rail shows is already known to the session; the rail is a
 // passive renderer fed from here, like components.Cockpit.
@@ -52,15 +54,23 @@ func newPaneStyles(p components.ColorTokens) paneStyles {
 }
 
 // twoPane reports whether the surface is split. Width is the first condition;
-// a takeover surface (or an attached child's session, which is a different
-// session's transcript) is the second.
+// a takeover surface is the second.
 func (m Model) twoPane() bool { return m.columns().inspector.Dx() > 0 }
 
 // inspectorHidden reports whether something is covering the rail. Takeover
-// surfaces span both panes; the attached view is a child's session, so
-// the orchestrator's rail is answering for the wrong session beside it.
+// surfaces span both panes.
+//
+// An attached child is not one of them, and the obvious argument that it
+// should be — the rail's numbers are the parent's — is the reason it is not.
+// The changeset, the context and the bill are the session's whichever session
+// the keyboard is in, so hiding all three to read one child's transcript
+// costs every standing question the rail exists to answer and settles none.
+// What keeps that honest is the map: it marks the row holding the keyboard,
+// so the transcript on the left is visibly one child's and the numbers on the
+// right are visibly the session's
+// (docs/interface/surfaces.md#the-inspector-rail).
 func (m Model) inspectorHidden() bool {
-	if m.attachedTo != "" || m.agentList != nil {
+	if m.agentList != nil {
 		return true
 	}
 	// A decision still waiting for the keyboard is not a takeover (the
@@ -274,28 +284,78 @@ func (m Model) inspectorAlerts() []components.InspectorAlert {
 	return alerts
 }
 
-// inspectorAgents lists the children still in flight; finished ones belong to
-// the agent manager, not to a block about what is running now.
+// inspectorAgents is the session map: this session first, then every child in
+// spawn order — running, waiting or finished. Listing only what is in flight
+// answers "what is running now" and leaves "what has this run done" to a
+// surface somebody has to open, which is the interrogation the rail exists to
+// end. Carrying every session is also what makes the rail usable while the
+// keyboard is in a child: the row it is in is marked, so the blocks under it
+// are visibly the session's rather than that child's.
+//
+// The order is the supervisor's own, which is spawn order, and it is the same
+// order the cycle walks (attach.go), so moving one row on the keyboard moves
+// one row on screen.
 func (m Model) inspectorAgents() []components.InspectorAgent {
 	if m.subagents == nil {
 		return nil
 	}
-	var agents []components.InspectorAgent
-	for _, st := range m.subagents.Snapshot() {
-		switch st.State {
-		case subagent.StateRunning, subagent.StateBlocked:
-		default:
-			continue
-		}
-		agents = append(agents, components.InspectorAgent{
+	snapshot := m.subagents.Snapshot()
+	if len(snapshot) == 0 {
+		return nil
+	}
+	agents := []components.InspectorAgent{m.orchestratorAgent()}
+	for _, st := range snapshot {
+		// Every surface that draws a child reads it through the same
+		// progress struct — the fan-out lane, the manager's row and this —
+		// so what the rail says about a child cannot drift from what the
+		// transcript beside it says about the same child.
+		p := m.childProgress(st)
+		a := components.InspectorAgent{
 			Name:    st.Name,
 			Detail:  st.Detail,
-			Spend:   m.spendLabel(st.TokensIn, st.TokensOut),
-			Tools:   st.ToolCalls,
-			Blocked: st.State == subagent.StateBlocked,
-		})
+			Spend:   p.Spend,
+			Tools:   p.Tools,
+			Step:    p.Step,
+			Steps:   p.Steps,
+			State:   p.State,
+			Focused: st.Name == m.attachedTo,
+		}
+		switch st.State {
+		case subagent.StateDone, subagent.StateFailed:
+			// The supervisor's own word for how it ended, because the
+			// supervisor is the only thing that knows; the line under it
+			// says what it found or why it broke, rather than repeating the
+			// word with a tool count on it.
+			a.Outcome, a.Detail = st.State.String(), childNote(st)
+		}
+		agents = append(agents, a)
 	}
 	return agents
+}
+
+// orchestratorAgent is the map's first row: this session itself. Its state is
+// what the session is doing rather than a lifecycle — nothing spawned the
+// orchestrator and nothing collects it — so it is running while a turn is,
+// waiting while a decision stands in front of you, and idle otherwise. That
+// is the same three answers the manager's row gives in words, and it is built
+// from that row so the two cannot come to disagree.
+func (m Model) orchestratorAgent() components.InspectorAgent {
+	row := m.orchestratorRow()
+	a := components.InspectorAgent{
+		Name:    row.Name,
+		Detail:  row.Status,
+		Spend:   row.Spend,
+		Self:    true,
+		Focused: m.attachedTo == "",
+		State:   components.FanoutIdle,
+	}
+	switch {
+	case m.working():
+		a.State = components.FanoutRunning
+	case m.state == stateConfirmRun || m.state == statePlanApprove:
+		a.State = components.FanoutBlocked
+	}
+	return a
 }
 
 // inspectorContext reports occupancy against the model's window, with the

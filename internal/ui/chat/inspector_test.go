@@ -198,10 +198,11 @@ func TestTwoPane_HiddenByTakeoverSurfaces(t *testing.T) {
 	if !waiting.twoPane() {
 		t.Fatal("a decision still waiting for the keyboard must not reflow the panes")
 	}
-	// Attached, the surface is a child's session, not this turn's rail.
+	// Attached is not a takeover: the child's transcript takes the pane, and
+	// the rail — whose blocks are the session's either way — stays beside it.
 	m.attachedTo = "writer-1"
-	if m.twoPane() {
-		t.Fatal("the attached view hides the rail")
+	if !m.twoPane() {
+		t.Fatal("an attached child's session must not take the rail with it")
 	}
 }
 
@@ -376,21 +377,69 @@ func TestUICommand_RailBelowTheRungSaysWhyNothingMoved(t *testing.T) {
 	}
 }
 
-func TestInspector_AgentsBlockFromRunningChildren(t *testing.T) {
+// TestInspector_AgentsMapsEverySession: AGENTS is the whole run, not the part
+// of it still moving. The orchestrator leads, the children follow in spawn
+// order, and a child that has stopped keeps its row with the word it ended on
+// rather than being left to a surface you have to open.
+func TestInspector_AgentsMapsEverySession(t *testing.T) {
 	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).WithSubagents(sup)
 	updated, _ := m.Update(tea.WindowSizeMsg{Width: 144, Height: 40})
 	m = updated.(Model)
-	spawnBlockedChild(t, sup)
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
+	spawnChild(t, sup, subagent.RoleReviewer, "reviewer-1")
+	killChild(t, sup, "reviewer-1")
 
 	agents := m.inspectorAgents()
-	if len(agents) != 1 || agents[0].Name != "researcher-1" {
-		t.Fatalf("AGENTS should list the running child: %+v", agents)
+	if len(agents) != 3 {
+		t.Fatalf("the map is the orchestrator and both children: %+v", agents)
+	}
+	if !agents[0].Self || agents[0].Name != "orchestrator" || !agents[0].Focused {
+		t.Fatalf("the orchestrator leads the map and holds the keyboard: %+v", agents[0])
+	}
+	if agents[1].Name != "researcher-1" || agents[1].State != components.FanoutRunning {
+		t.Fatalf("a running child keeps its state: %+v", agents[1])
+	}
+	if agents[2].Name != "reviewer-1" || agents[2].Outcome != "failed" {
+		t.Fatalf("a finished child states the supervisor's own word: %+v", agents[2])
 	}
 	view := stripANSI(m.View().Content)
-	if !strings.Contains(view, "AGENTS") || !strings.Contains(view, "1 running") || !strings.Contains(view, "◇ researcher-1") {
-		t.Fatalf("two-pane view missing the AGENTS block:\n%s", view)
+	for _, want := range []string{"AGENTS", "1 running", "\u25c7 researcher-1", "\u2717 reviewer-1", "failed"} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the two-pane view is missing %q:\n%s", want, view)
+		}
+	}
+}
+
+// TestInspector_RailStaysMarkedWhileAttached is the pair of facts that have
+// to hold together: the rail is still there beside a child's transcript, and
+// the row the keyboard is in is the one marked, so the session-wide numbers
+// under it cannot be read as that child's.
+func TestInspector_RailStaysMarkedWhileAttached(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream).WithSubagents(sup)
+	updated, _ := m.Update(tea.WindowSizeMsg{Width: 144, Height: 40})
+	m = updated.(Model)
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
+	m.attach("researcher-1")
+
+	if !m.twoPane() {
+		t.Fatal("the rail stays up while attached")
+	}
+	agents := m.inspectorAgents()
+	if agents[0].Focused || !agents[1].Focused {
+		t.Fatalf("the mark is on the session the keyboard is in: %+v", agents)
+	}
+	marked := ""
+	for _, line := range strings.Split(stripANSI(m.View().Content), "\n") {
+		if strings.Contains(line, "\u25b8 ") && strings.Contains(line, "-1") {
+			marked = line
+		}
+	}
+	if !strings.Contains(marked, "researcher-1") {
+		t.Fatalf("the attached child's row carries the mark:\n%s", stripANSI(m.View().Content))
 	}
 }
 

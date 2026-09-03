@@ -342,6 +342,23 @@ behind it — and it shows the first few items in working order with what each
 one waits on, then counts the rest. The whole list is one command away, and
 the block says which.
 
+One block is a map rather than a measurement: every session this run has,
+the root and each agent it started, in the order they were started. Each row
+carries the state it is in, what it has spent, and — once it has stopped —
+the word it ended on, because a run whose finished half is only recoverable
+by scrolling is a run you have to reconstruct to see. Finished agents fold
+past a count rather than disappearing and the marker says how many went
+behind it; what needs an answer from you never folds.
+
+One row of the map is marked, and the mark is where the keyboard is. That is
+what lets the rail stay up while the keyboard is in an agent's session: the
+changeset, the window and the bill are the whole session's whichever agent is
+on screen, and the mark is what stops them being read as that agent's. A
+chord walks the map, in both directions and wrapping at both ends, so moving
+between sessions is a keystroke rather than a surface to open and close.
+Everything you do *to* an agent — answer it, retry it, cancel it, kill it —
+is still the manager's; the map is for seeing and moving.
+
 One block is not about the work at all: where the session's tools came from.
 A server that failed to answer leaves no trace in a transcript — a tool that
 was never registered is indistinguishable from one the model chose not to
@@ -433,6 +450,13 @@ root is the same kind of thing.
 
 A child's approvals route to wherever you are, so detaching does not mean
 missing a decision.
+
+Attaching does not take the inspector rail with it. What you are looking at
+is one agent's transcript; what the rail reports — what this run has changed,
+how full the window is, what it has all cost — is the whole session's, and it
+is the same whichever agent has the keyboard. Its map is what says which
+agent that is, by marking the row, so nothing on screen has to be read twice
+to work out whose numbers are whose.
 
 The list ends with the one row that is not an agent: the offer to draft a new
 profile. The manager is where a person goes to find out what this session has,

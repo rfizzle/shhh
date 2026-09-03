@@ -125,8 +125,15 @@ type DraftKeys struct {
 
 	Reading Binding
 	Agents  Binding
-	Mouse   Binding
-	KeyList Binding
+	// NextAgent and PrevAgent walk the rail's session map — the orchestrator
+	// and every child, in spawn order — moving the keyboard one session along
+	// without opening the manager. The manager is where a child is answered,
+	// retried, cancelled or killed; this pair is for seeing and moving
+	// (docs/interface/surfaces.md#the-inspector-rail).
+	NextAgent Binding
+	PrevAgent Binding
+	Mouse     Binding
+	KeyList   Binding
 
 	// Suspend hands the terminal back to the shell, and Redraw takes the
 	// screen back. Neither is shhh's own idea: ctrl+z is what the shell does
@@ -170,6 +177,18 @@ var Draft = DraftKeys{
 
 	Reading: bind("ctrl+o", "reading mode", "ctrl+o"),
 	Agents:  bind("ctrl+b", "the agent manager", "ctrl+b"),
+
+	// The brackets are next and previous in the shape the key caps already
+	// have, and they are free twice over: nothing else in the register
+	// answers them, and neither does the textarea, which spends its own alt
+	// chords on words, case and the ends of the input. They are also the two
+	// alt chords that have to be checked rather than assumed — esc-[ and
+	// esc-] are the introducers for the terminal's own control sequences —
+	// and the input decoder resolves both, reading a bare pair as the key
+	// rather than as the start of something longer.
+	NextAgent: bind("alt+]", "the next session in the rail's map", "alt+]"),
+	PrevAgent: bind("alt+[", "the previous one", "alt+["),
+
 	Mouse:   bind("ctrl+x", "mouse reporting on or off", "ctrl+x"),
 	KeyList: bind("?", "the keys, on an empty draft", "?"),
 

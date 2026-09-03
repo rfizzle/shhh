@@ -41,7 +41,9 @@
   ▎✎ internal/agent/loop.go                                    +18 −3 3t
   ▎✎ internal/ui/chat/model.go                                     +9 −1
 
-  AGENTS                                                       2 running
+  AGENTS                                         1 needs you · 1 running
+▸ ◇ orchestrator                                                   $0.12
+    ⠋ round 3 · streaming…                                              
   ◇ writer-1                                                       $0.02
     ⠋ docs/loop.md · 4 tools                                            
   ⚠ runner-2                                                       $0.01
@@ -76,7 +78,7 @@
   CHANGES                                               session · +27 −4
   … 4 more                                                        +27 −4
 
-  AGENTS                                                       2 running
+  AGENTS                                         1 needs you · 1 running
 
 · blocks with nothing to say are omitted
   THIS TURN                                                             
@@ -151,6 +153,36 @@
   ✓ built-in                                               up · 18 tools
   ⚠ memory                                                 3 did not fit
 
+· the session map · the keyboard is in writer-2
+  AGENTS                                         1 needs you · 2 running
+  ⚠ orchestrator                                                   $0.12
+    round 3 · waiting on you                                            
+▸ ◇ writer-2                                                       $0.04
+    ⠹ internal/ui/chat/model.go · 11 tools                              
+  ◇ runner-4                                                       $0.02
+    ▰▰▰▱▱ step 2 of 3 · go build ./...                                  
+  ⚠ reviewer-5                                                     $0.03
+    waiting approval: apply patch                                       
+  ✓ reader-6                                                 done  $0.01
+    read 9 files                                                        
+  ✓ reader-7                                                 done  $0.01
+    nothing under that path                                             
+  … 2 more                                                              
+
+· the map with the rail shorter than it (height 12)
+  AGENTS                                         1 needs you · 2 running
+  ⚠ orchestrator                                                   $0.12
+    round 3 · waiting on you                                            
+▸ ◇ writer-2                                                       $0.04
+    ⠹ internal/ui/chat/model.go · 11 tools                              
+  ◇ runner-4                                                       $0.02
+    ▰▰▰▱▱ step 2 of 3 · go build ./...                                  
+  ⚠ reviewer-5                                                     $0.03
+    waiting approval: apply patch                                       
+  ✓ reader-6                                                 done  $0.01
+    read 9 files                                                        
+  … 3 more                                                              
+
 ── ansi ────────────────────────────────────────────────────
 · every block, unbounded height
   ␛[1;94mSUMMARY␛[m                                                 ␛[38;5;241mas of round 24␛[m
@@ -184,7 +216,9 @@
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252minternal/agent/loop.go␛[m                                    ␛[92m+18␛[m ␛[91m−3␛[m ␛[38;5;241m3t␛[m
   ␛[38;5;214m▎␛[m␛[38;5;214m✎␛[m ␛[38;5;252minternal/ui/chat/model.go␛[m                                     ␛[92m+9␛[m ␛[91m−1␛[m
 
-  ␛[1;94mAGENTS␛[m                                                       ␛[38;5;241m2 running␛[m
+  ␛[1;94mAGENTS␛[m                                         ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m1 running␛[m
+␛[1;48;5;62m▸␛[m ␛[94m◇␛[m ␛[38;5;252morchestrator␛[m                                                   ␛[38;5;241m$0.12␛[m
+    ␛[38;5;205m⠋ round 3 · streaming…␛[m                                              
   ␛[94m◇␛[m ␛[38;5;252mwriter-1␛[m                                                       ␛[38;5;241m$0.02␛[m
     ␛[38;5;205m⠋ docs/loop.md␛[m␛[38;5;245m · ␛[m␛[38;5;245m4 tools␛[m                                            
   ␛[91m⚠␛[m ␛[38;5;252mrunner-2␛[m                                                       ␛[38;5;241m$0.01␛[m
@@ -219,7 +253,7 @@
   ␛[1;94mCHANGES␛[m                                               ␛[38;5;241msession · ␛[m␛[92m+27␛[m ␛[91m−4␛[m
   ␛[3;38;5;241m… 4 more␛[m                                                        ␛[92m+27␛[m ␛[91m−4␛[m
 
-  ␛[1;94mAGENTS␛[m                                                       ␛[38;5;241m2 running␛[m
+  ␛[1;94mAGENTS␛[m                                         ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m1 running␛[m
 
 · blocks with nothing to say are omitted
   ␛[1;94mTHIS TURN␛[m                                                             
@@ -293,3 +327,33 @@
   ␛[1;94mTOOLS␛[m                                                        ␛[38;5;241m1 of 1 up␛[m
   ␛[92m✓␛[m ␛[38;5;252mbuilt-in␛[m                                               ␛[38;5;241mup␛[m␛[38;5;241m · 18 tools␛[m
   ␛[38;5;214m⚠␛[m ␛[38;5;252mmemory␛[m                                                 ␛[38;5;241m3 did not fit␛[m
+
+· the session map · the keyboard is in writer-2
+  ␛[1;94mAGENTS␛[m                                         ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m2 running␛[m
+  ␛[91m⚠␛[m ␛[38;5;252morchestrator␛[m                                                   ␛[38;5;241m$0.12␛[m
+    ␛[38;5;245mround 3 · waiting on you␛[m                                            
+␛[1;48;5;62m▸␛[m ␛[94m◇␛[m ␛[38;5;252mwriter-2␛[m                                                       ␛[38;5;241m$0.04␛[m
+    ␛[38;5;205m⠹ internal/ui/chat/model.go␛[m␛[38;5;245m · ␛[m␛[38;5;245m11 tools␛[m                              
+  ␛[94m◇␛[m ␛[38;5;252mrunner-4␛[m                                                       ␛[38;5;241m$0.02␛[m
+    ␛[94m▰▰▰▱▱ step 2 of 3␛[m␛[38;5;245m · ␛[m␛[38;5;245mgo build ./...␛[m                                  
+  ␛[91m⚠␛[m ␛[38;5;252mreviewer-5␛[m                                                     ␛[38;5;241m$0.03␛[m
+    ␛[38;5;245mwaiting approval: apply patch␛[m                                       
+  ␛[92m✓␛[m ␛[38;5;252mreader-6␛[m                                                 ␛[92mdone␛[m  ␛[38;5;241m$0.01␛[m
+    ␛[38;5;245mread 9 files␛[m                                                        
+  ␛[92m✓␛[m ␛[38;5;252mreader-7␛[m                                                 ␛[92mdone␛[m  ␛[38;5;241m$0.01␛[m
+    ␛[38;5;245mnothing under that path␛[m                                             
+  ␛[3;38;5;241m… 2 more␛[m                                                              
+
+· the map with the rail shorter than it (height 12)
+  ␛[1;94mAGENTS␛[m                                         ␛[91m1 needs you␛[m␛[38;5;241m · ␛[m␛[38;5;205m2 running␛[m
+  ␛[91m⚠␛[m ␛[38;5;252morchestrator␛[m                                                   ␛[38;5;241m$0.12␛[m
+    ␛[38;5;245mround 3 · waiting on you␛[m                                            
+␛[1;48;5;62m▸␛[m ␛[94m◇␛[m ␛[38;5;252mwriter-2␛[m                                                       ␛[38;5;241m$0.04␛[m
+    ␛[38;5;205m⠹ internal/ui/chat/model.go␛[m␛[38;5;245m · ␛[m␛[38;5;245m11 tools␛[m                              
+  ␛[94m◇␛[m ␛[38;5;252mrunner-4␛[m                                                       ␛[38;5;241m$0.02␛[m
+    ␛[94m▰▰▰▱▱ step 2 of 3␛[m␛[38;5;245m · ␛[m␛[38;5;245mgo build ./...␛[m                                  
+  ␛[91m⚠␛[m ␛[38;5;252mreviewer-5␛[m                                                     ␛[38;5;241m$0.03␛[m
+    ␛[38;5;245mwaiting approval: apply patch␛[m                                       
+  ␛[92m✓␛[m ␛[38;5;252mreader-6␛[m                                                 ␛[92mdone␛[m  ␛[38;5;241m$0.01␛[m
+    ␛[38;5;245mread 9 files␛[m                                                        
+  ␛[3;38;5;241m… 3 more␛[m                                                              

@@ -11,6 +11,7 @@ package chat
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -30,6 +31,7 @@ import (
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/todo"
 	"github.com/rfizzle/shhh/internal/todo/run"
 	"github.com/rfizzle/shhh/internal/tools"
@@ -1026,6 +1028,39 @@ func TestGolden_Screen(t *testing.T) {
 			})},
 		}
 	})
+}
+
+// TestGolden_ScreenAttached captures the arrangement this surface had no
+// picture of: the keyboard in a child's session, with the rail still up
+// beside it. One width, because the rail's presence is what the sheet is
+// about and a terminal too narrow to split has no rail to keep — and the
+// whole screen rather than the rail alone, because the fact being pinned is
+// that the child's transcript on the left and the session's numbers on the
+// right can be told apart at a glance, which only the two together show.
+func TestGolden_ScreenAttached(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
+	spawnChild(t, sup, subagent.RoleReviewer, "reviewer-1")
+	killChild(t, sup, "reviewer-1")
+	captureGolden(t, "screen-attached", "the surface with the keyboard in a child",
+		[]int{144}, func(width int) []golden.Panel {
+			build := func(name string) string {
+				m := frameModel(t, width, screenHeight)
+				m.transcript = goldenTranscript()
+				m = m.WithSubagents(sup)
+				m.attach(name)
+				m.invalidateRenderCache()
+				m.syncViewport()
+				m.viewport.SetLines(m.renderHistoryLines())
+				m.viewport.GotoBottom()
+				return m.View().Content
+			}
+			return []golden.Panel{
+				{Label: "the keyboard in this session · the map marks its first row", View: build("")},
+				{Label: "the keyboard in a child · the rail stays, marked", View: build("researcher-1")},
+			}
+		})
 }
 
 // TestGolden_StaleEditRow pins the row an edit refused for staleness leaves

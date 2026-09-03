@@ -150,7 +150,8 @@ func TestEveryDeclaredBindingIsOnASurface(t *testing.T) {
 			Draft.Complete, Draft.Palette, Draft.Reasoning, Draft.Mode,
 			Draft.HistoryPrev, Draft.HistoryNext, Draft.HistorySearch,
 			Draft.ScrollUp, Draft.ScrollDown, Draft.PageUp, Draft.PageDown, Draft.Reading,
-			Draft.Agents, Draft.Mouse, Draft.KeyList, Draft.Suspend, Draft.Redraw,
+			Draft.Agents, Draft.NextAgent, Draft.PrevAgent,
+			Draft.Mouse, Draft.KeyList, Draft.Suspend, Draft.Redraw,
 			Draft.Answer, Draft.Clear,
 			Draft.Cancel, Draft.Quit}},
 		{"Search", []Binding{Search.Older, Search.Keep, Search.Cancel}},
@@ -237,6 +238,30 @@ func TestRealignedChordsHaveOneHome(t *testing.T) {
 		}
 		if len(homes) != 1 {
 			t.Errorf("%q is bound on %d surfaces (%v), want exactly one", chord, len(homes), homes)
+		}
+	}
+}
+
+// TestMapCycleChordsHaveOneHome pins the pair the rail's session map is
+// walked with, the way the realigned chords are pinned. A chord taken from
+// the draft is only free if it is free everywhere: a second home for either
+// bracket is a surface that answers the keyboard's own movement key with
+// something else, on a keystroke no sentence can produce and nobody would
+// think to check.
+func TestMapCycleChordsHaveOneHome(t *testing.T) {
+	for _, chord := range []string{"alt+[", "alt+]"} {
+		var homes []string
+		for _, s := range all() {
+			for _, b := range s.Bindings {
+				for _, k := range b.Keys() {
+					if k == chord {
+						homes = append(homes, s.Name)
+					}
+				}
+			}
+		}
+		if len(homes) != 1 || homes[0] != "the input" {
+			t.Errorf("%q is bound on %v, want the input alone", chord, homes)
 		}
 	}
 }

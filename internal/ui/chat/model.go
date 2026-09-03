@@ -1828,6 +1828,14 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.subagents != nil {
 				return m.openAgentList()
 			}
+		case keys.Is(pressed, keys.Draft.NextAgent):
+			// One step along the rail's session map, which is where the map
+			// is walked from: opening the manager to move between two
+			// sessions is a surface in the way of a look, and the rail is
+			// already showing the row being moved to (attach.go).
+			return m.cycleAgent(1)
+		case keys.Is(pressed, keys.Draft.PrevAgent):
+			return m.cycleAgent(-1)
 		case keys.Is(pressed, keys.Draft.Attach):
 			// Ctrl+V used to be the textarea's own text paste. It reads the
 			// clipboard properly now: a screenshot or a copied file is
@@ -4197,6 +4205,12 @@ func helpKeysText() string {
   ctrl+b         Agent manager: enter attaches to an agent's session, x cancels
                  its turn, X kills it; attached, typing steers the agent,
                  shift+tab sets its mode (clamped), esc detaches
+  alt+] alt+[    Move the keyboard one session along the inspector rail's
+                 AGENTS map — the orchestrator and every agent it started, in
+                 the order they were started, wrapping at both ends. The rail
+                 stays up while you are in an agent's session and marks the
+                 row you are in; everything you do *to* an agent is still in
+                 the manager
   ctrl+g         Open the draft in your editor: $EDITOR (then $VISUAL, then
                  vi) opens a file holding what you have typed, at the line and
                  column the cursor was on, and whatever is in the file when

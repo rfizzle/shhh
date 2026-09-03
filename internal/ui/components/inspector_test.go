@@ -1,6 +1,7 @@
 package components
 
 import (
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -21,7 +22,9 @@ func fullRail() InspectorRail {
 			Added: 27, Removed: 4,
 			Alerts: []InspectorAlert{{Label: "go test ./...", Note: OutcomeExit(1), Turn: 7}},
 		},
-		Agents: []InspectorAgent{{Name: "writer-1", Detail: "docs/loop.md", Spend: "$0.02", Tools: 4}},
+		Agents: []InspectorAgent{
+			{Name: "writer-1", Detail: "docs/loop.md", Spend: "$0.02", Tools: 4, State: FanoutRunning},
+		},
 		Context: &InspectorContext{Pct: 62, Tokens: 124000, Window: 200000,
 			Tokens1: "↑41.2k", Tokens2: "↓9.8k", Burn: []float64{1, 2, 3, 3, 4, 5, 5, 6}},
 		Spend: &InspectorSpend{Turn: "$0.14", Main: "$0.12", Children: "$0.02",
@@ -105,8 +108,10 @@ func TestInspectorRail_AgentLaneOnlyMetersDeclaredSteps(t *testing.T) {
 	// No declared step count: the lane moves rather than drawing a ratio
 	// nobody supplied.
 	r := InspectorRail{
-		Agents: []InspectorAgent{{Name: "writer-1", Detail: "editing docs/loop.md", Tools: 4}},
-		Frame:  2,
+		Agents: []InspectorAgent{
+			{Name: "writer-1", Detail: "editing docs/loop.md", Tools: 4, State: FanoutRunning},
+		},
+		Frame: 2,
 	}
 	view := stripANSI(r.View(InspectorWidth, 0))
 	if strings.Contains(view, "▰") {
@@ -127,13 +132,124 @@ func TestInspectorRail_AgentLaneOnlyMetersDeclaredSteps(t *testing.T) {
 	}
 	// A child waiting on the user is not running, so it gets neither.
 	r.Agents[0].Step, r.Agents[0].Steps = 0, 0
-	r.Agents[0].Blocked = true
+	r.Agents[0].State = FanoutBlocked
 	view = stripANSI(r.View(InspectorWidth, 0))
 	if strings.Contains(view, "⠹") || strings.Contains(view, "▰") {
 		t.Fatalf("a blocked lane shows no motion and no bar:\n%s", view)
 	}
 	if !strings.Contains(view, "⚠ writer-1") {
 		t.Fatalf("a blocked lane says so:\n%s", view)
+	}
+}
+
+// mapRail is the block the map's own tests read: the orchestrator, two
+// children still working and two that have stopped, one each way.
+func mapRail() InspectorRail {
+	return InspectorRail{
+		Agents: []InspectorAgent{
+			{Name: "orchestrator", Detail: "ready", Spend: "$0.12", Self: true, State: FanoutIdle},
+			{Name: "writer-1", Detail: "docs/loop.md", Spend: "$0.02", Tools: 4, State: FanoutRunning},
+			{Name: "writer-2", Detail: "wrote 2 files", Spend: "$0.03", Outcome: "done", State: FanoutDone},
+			{Name: "runner-3", Detail: "go test ./...", Spend: "$0.01", State: FanoutRunning},
+			{Name: "reader-4", Detail: "no such path", Spend: "$0.01", Outcome: "failed", State: FanoutFailed},
+		},
+		Frame: 2,
+	}
+}
+
+// TestInspectorRail_AgentsMapEveryStateInSpawnOrder is the map as a whole:
+// the orchestrator leads it, every child follows in the order it was spawned,
+// each carries the glyph for its state, and the two that have stopped say how
+// rather than disappearing into the manager.
+func TestInspectorRail_AgentsMapEveryStateInSpawnOrder(t *testing.T) {
+	view := stripANSI(mapRail().View(InspectorMaxWidth, 0))
+	for _, want := range []string{
+		"\u2298 orchestrator", "\u25c7 writer-1", "\u2713 writer-2", "\u25c7 runner-3", "\u2717 reader-4",
+	} {
+		if !strings.Contains(view, want) {
+			t.Fatalf("the map is missing %q:\n%s", want, view)
+		}
+	}
+	if strings.Index(view, "orchestrator") > strings.Index(view, "writer-1") {
+		t.Fatalf("the orchestrator leads the map:\n%s", view)
+	}
+	if strings.Index(view, "writer-1") > strings.Index(view, "runner-3") {
+		t.Fatalf("children follow in spawn order:\n%s", view)
+	}
+	// A finished child states its own outcome, and nothing under a row that
+	// has stopped moving pretends it still is.
+	if !strings.Contains(view, "done") || !strings.Contains(view, "failed") {
+		t.Fatalf("a finished child states its outcome:\n%s", view)
+	}
+	if strings.Contains(view, "\u2839 wrote 2 files") {
+		t.Fatalf("a finished child does not spin:\n%s", view)
+	}
+	// The heading tallies the children and leaves the orchestrator out of it:
+	// two are running, and the finished ones are left to the rows.
+	if !strings.Contains(view, "2 running") {
+		t.Fatalf("the heading tallies the children alone:\n%s", view)
+	}
+}
+
+// TestInspectorRail_AgentsMapMarksTheFocusedRow is what makes the rail safe
+// to leave up beside a child's transcript: one row is marked, and the mark
+// moves with the keyboard rather than staying on the orchestrator.
+func TestInspectorRail_AgentsMapMarksTheFocusedRow(t *testing.T) {
+	r := mapRail()
+	r.Agents[0].Focused = true
+	marked := func(name string) bool {
+		for _, l := range r.Lines(InspectorMaxWidth, 0) {
+			if l := stripANSI(l); strings.Contains(l, name) && strings.HasPrefix(l, "\u25b8 ") {
+				return true
+			}
+		}
+		return false
+	}
+	if !marked("orchestrator") {
+		t.Fatal("the focused row is marked")
+	}
+	r.Agents[0].Focused, r.Agents[1].Focused = false, true
+	if marked("orchestrator") || !marked("writer-1") {
+		t.Fatal("the mark follows the keyboard")
+	}
+	// The mark sits in the indent, so an unmarked row starts where it did.
+	for _, l := range r.Lines(InspectorMaxWidth, 0) {
+		if l := stripANSI(l); strings.Contains(l, "runner-3") && !strings.HasPrefix(l, "  \u25c7") {
+			t.Fatalf("an unmarked row keeps the block's indent: %q", l)
+		}
+	}
+}
+
+// TestInspectorRail_AgentsMapFoldsFinishedChildren pins the fold: the map
+// keeps the last few outcomes and counts the rest, and it counts sessions
+// rather than the rows they take. The orchestrator and the focused row are
+// never what folds, whatever state they are in.
+func TestInspectorRail_AgentsMapFoldsFinishedChildren(t *testing.T) {
+	r := mapRail()
+	if view := stripANSI(r.View(InspectorMaxWidth, 0)); strings.Contains(view, "\u2026 ") {
+		t.Fatalf("two finished children are inside the budget:\n%s", view)
+	}
+	for i := range 3 {
+		r.Agents = append(r.Agents, InspectorAgent{
+			Name: fmt.Sprintf("reader-%d", 5+i), Detail: "read 3 files",
+			Spend: "$0.01", Outcome: "done", State: FanoutDone,
+		})
+	}
+	view := stripANSI(r.View(InspectorMaxWidth, 0))
+	// Three past a budget of two: the three earliest finished children fold,
+	// and the marker counts children rather than the six rows they were
+	// taking.
+	if !strings.Contains(view, "\u2026 3 more") {
+		t.Fatalf("the fold counts the sessions it took:\n%s", view)
+	}
+	if !strings.Contains(view, "reader-7") {
+		t.Fatalf("the newest outcomes are the ones kept:\n%s", view)
+	}
+	// A finished child the keyboard is in stays on screen whatever the budget
+	// says: it is the row the rest of the rail is read against.
+	r.Agents[2].Focused = true
+	if view := stripANSI(r.View(InspectorMaxWidth, 0)); !strings.Contains(view, "writer-2") {
+		t.Fatalf("the focused row never folds:\n%s", view)
 	}
 }
 

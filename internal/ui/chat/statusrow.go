@@ -24,8 +24,11 @@ import (
 // neither half has anything to say.
 func (m Model) statusRow() string {
 	if m.attachedTo != "" || m.twoPane() {
-		// Attached, the rail is hidden because it answers for the wrong
-		// session (inspector.go); the row would answer for it too.
+		// Attached, the rail is still up wherever there is room for one and
+		// it marks the session the keyboard is in (inspector.go). This row
+		// is what a terminal with no room for the rail gets, and it has none
+		// to spare for that mark either: an unmarked session-wide reading
+		// beside an agent's own status bar would read as that agent's.
 		return ""
 	}
 	var segs []components.RailSegment

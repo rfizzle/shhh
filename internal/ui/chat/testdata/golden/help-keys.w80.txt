@@ -84,6 +84,12 @@ Keys:
   ctrl+b         Agent manager: enter attaches to an agent's session, x cancels 
                  its turn, X kills it; attached, typing steers the agent,       
                  shift+tab sets its mode (clamped), esc detaches                
+  alt+] alt+[    Move the keyboard one session along the inspector rail's       
+                 AGENTS map — the orchestrator and every agent it started, in   
+                 the order they were started, wrapping at both ends. The rail   
+                 stays up while you are in an agent's session and marks the     
+                 row you are in; everything you do *to* an agent is still in    
+                 the manager                                                    
   ctrl+g         Open the draft in your editor: $EDITOR (then $VISUAL, then     
                  vi) opens a file holding what you have typed, at the line and  
                  column the cursor was on, and whatever is in the file when     
@@ -213,6 +219,12 @@ Keys:
 ␛[3;38;5;241m  ctrl+b         Agent manager: enter attaches to an agent's session, x cancels␛[m 
 ␛[3;38;5;241m                 its turn, X kills it; attached, typing steers the agent,␛[m       
 ␛[3;38;5;241m                 shift+tab sets its mode (clamped), esc detaches␛[m                
+␛[3;38;5;241m  alt+] alt+[    Move the keyboard one session along the inspector rail's␛[m       
+␛[3;38;5;241m                 AGENTS map — the orchestrator and every agent it started, in␛[m   
+␛[3;38;5;241m                 the order they were started, wrapping at both ends. The rail␛[m   
+␛[3;38;5;241m                 stays up while you are in an agent's session and marks the␛[m     
+␛[3;38;5;241m                 row you are in; everything you do *to* an agent is still in␛[m    
+␛[3;38;5;241m                 the manager␛[m                                                    
 ␛[3;38;5;241m  ctrl+g         Open the draft in your editor: $EDITOR (then $VISUAL, then␛[m     
 ␛[3;38;5;241m                 vi) opens a file holding what you have typed, at the line and␛[m  
 ␛[3;38;5;241m                 column the cursor was on, and whatever is in the file when␛[m     

@@ -7,6 +7,7 @@ package chat
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"testing"
 	"time"
@@ -32,6 +33,111 @@ func spawnBlockedChild(t *testing.T, sup *subagent.Supervisor) {
 		st, ok := sup.Get("researcher-1")
 		return ok && st.State == subagent.StateRunning
 	})
+}
+
+// spawnChild spawns one child of a role and waits for it to reach the
+// running state blockingEnv holds it at, so a test can build a map of several
+// sessions without racing the supervisor.
+func spawnChild(t *testing.T, sup *subagent.Supervisor, role subagent.Role, name string) {
+	t.Helper()
+	exec := sup.WrapExecutor(nil)
+	args := json.RawMessage(fmt.Sprintf(`{"role":%q,"task":"long survey"}`, role))
+	if _, err := exec(subagent.SpawnToolName, args); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, func() bool {
+		st, ok := sup.Get(name)
+		return ok && st.State == subagent.StateRunning
+	})
+}
+
+// killChild stops one child and waits for the supervisor to settle it, which
+// is the deterministic way to get a session that has finished.
+func killChild(t *testing.T, sup *subagent.Supervisor, name string) {
+	t.Helper()
+	if err := sup.Kill(name); err != nil {
+		t.Fatal(err)
+	}
+	waitFor(t, func() bool {
+		st, ok := sup.Get(name)
+		return ok && st.State == subagent.StateFailed
+	})
+}
+
+// TestCycleAgentWalksTheMap: the chord moves the keyboard one row along the
+// rail's map from wherever it is — the orchestrator included — and wraps at
+// both ends, so a session is never more than a few presses away and there is
+// no end of the list to get stuck at.
+func TestCycleAgentWalksTheMap(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
+	spawnChild(t, sup, subagent.RoleReviewer, "reviewer-1")
+
+	next := func(m Model) Model {
+		t.Helper()
+		updated, _ := m.Update(tea.KeyPressMsg{Code: ']', Mod: tea.ModAlt})
+		return updated.(Model)
+	}
+	for _, want := range []string{"researcher-1", "reviewer-1", "", "researcher-1"} {
+		m = next(m)
+		if m.attachedTo != want {
+			t.Fatalf("the cycle should have reached %q, got %q", want, m.attachedTo)
+		}
+	}
+	// And back the other way, from wherever it left the keyboard.
+	for _, want := range []string{"", "reviewer-1", "researcher-1"} {
+		updated, _ := m.Update(tea.KeyPressMsg{Code: '[', Mod: tea.ModAlt})
+		m = updated.(Model)
+		if m.attachedTo != want {
+			t.Fatalf("the reverse cycle should have reached %q, got %q", want, m.attachedTo)
+		}
+	}
+}
+
+// TestCycleAgentKeepsEachSessionsScroll: moving through the map is a focus
+// switch and nothing more, so every session comes back to the row it was
+// left on rather than to the bottom of a transcript nobody asked to be at.
+func TestCycleAgentKeepsEachSessionsScroll(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
+	for i := range 60 {
+		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf("row %d", i)})
+	}
+	m.viewport.SetLines(m.renderHistoryLines())
+	m.viewport.GotoBottom()
+	m.viewport.SetYOffset(7)
+	m.atBottom = false
+
+	updated, _ := m.Update(tea.KeyPressMsg{Code: ']', Mod: tea.ModAlt})
+	m = updated.(Model)
+	if m.attachedTo != "researcher-1" {
+		t.Fatalf("the cycle should have attached to the child, got %q", m.attachedTo)
+	}
+	if m.parentView.yoffset != 7 || m.parentView.atBottom {
+		t.Fatalf("the orchestrator's scroll should have been saved: %+v", m.parentView)
+	}
+	updated, _ = m.Update(tea.KeyPressMsg{Code: '[', Mod: tea.ModAlt})
+	m = updated.(Model)
+	if m.attachedTo != "" || m.viewport.YOffset() != 7 {
+		t.Fatalf("coming back restores the row it was left on: %q at %d",
+			m.attachedTo, m.viewport.YOffset())
+	}
+}
+
+// A session on its own is not a map: the chord has nowhere to go and does
+// nothing, rather than wrapping the orchestrator onto itself.
+func TestCycleAgentIsInertWithoutChildren(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	updated, _ := m.Update(tea.KeyPressMsg{Code: ']', Mod: tea.ModAlt})
+	if got := updated.(Model).attachedTo; got != "" {
+		t.Fatalf("the keyboard should not have moved, got %q", got)
+	}
 }
 
 func TestAgentListOpensAttachesAndDetaches(t *testing.T) {

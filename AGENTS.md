@@ -429,7 +429,14 @@ anchored per turn and the next instruction moves it.
 The attached sub-agent view is not a separate surface — the chat `Model`
 renders whichever agent is focused, and every agent including the orchestrator
 is an `internal/agent` instance with its own transcript, queue and mode.
-Attaching switches the focused agent.
+Attaching switches the focused agent. It does not hide the inspector rail:
+`inspectorHidden` lists the takeovers and an attached child is not one, since
+the rail's blocks answer for the session either way. The rail's `AGENTS` block
+is the map of the run — `Model.inspectorAgents` puts `orchestratorAgent` first
+and then `Snapshot()` in spawn order, and `components.InspectorAgent.Focused`
+marks whichever row `attachedTo` names. `Model.sessionMap` is that same order
+as names and `cycleAgent` (`keys.Draft.NextAgent` / `PrevAgent`) steps through
+it via `attach`, so the per-session scroll is kept.
 
 ### Skills
 

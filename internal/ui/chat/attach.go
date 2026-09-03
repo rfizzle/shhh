@@ -169,6 +169,47 @@ func (m *Model) attach(name string) {
 	m.restoreScroll()
 }
 
+// sessionMap is every session the keyboard can be in, in row order: the
+// orchestrator ("") first, then every child in the supervisor's own spawn
+// order. It is the order the rail's AGENTS block draws them in
+// (inspector.go), so one step on the keyboard is one row on screen.
+func (m Model) sessionMap() []string {
+	names := []string{""}
+	if m.subagents != nil {
+		for _, st := range m.subagents.Snapshot() {
+			names = append(names, st.Name)
+		}
+	}
+	return names
+}
+
+// cycleAgent moves the keyboard one step along the session map, wrapping at
+// both ends, from wherever it is. It goes through attach, so each session
+// keeps its own scroll exactly as it does when the manager's enter attaches
+// — the map is for seeing and moving, and everything that acts on a child
+// stays in the manager.
+//
+// It walks every session, the ones the rail has folded away included: a
+// folded row is what the block does when it runs out of room, and a session
+// the keyboard is in is marked, which is never folded.
+func (m Model) cycleAgent(step int) (tea.Model, tea.Cmd) {
+	names := m.sessionMap()
+	if len(names) < 2 {
+		// One session is not a map, and wrapping around it would be a key
+		// that redraws the screen and changes nothing.
+		return m, nil
+	}
+	at := 0
+	for i, name := range names {
+		if name == m.attachedTo {
+			at = i
+			break
+		}
+	}
+	m.attach(names[(at+step+len(names))%len(names)])
+	return m, nil
+}
+
 // detachOne pops one breadcrumb level: back to the child's spawner, or the
 // orchestrator at the top.
 func (m *Model) detachOne() {
@@ -332,6 +373,11 @@ func (m Model) orchestratorRow() components.AgentRow {
 		status = "running…"
 	case stateClassifying:
 		status = "checking permission…"
+	case stateRetryWait:
+		// A turn waiting out a retry is still a turn in flight, so the map
+		// draws this row as running. Without a word of its own it would be a
+		// spinner beside "ready", which is the one reading that is wrong.
+		status = "waiting to retry…"
 	case stateConfirmRun, statePlanApprove:
 		status = "waiting on you"
 	}

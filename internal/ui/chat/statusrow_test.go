@@ -145,8 +145,10 @@ func TestStatusRow_AbsentBesideTheRail(t *testing.T) {
 	}
 }
 
-// Attached, the rail is hidden because it answers for the orchestrator while
-// a child's session is on screen. The row would answer for it too.
+// The rail keeps its session-wide blocks beside an agent's transcript because
+// it has room to mark which session the keyboard is in. This row does not:
+// at these widths it is one line beside the agent's own status bar, and an
+// unmarked session-wide reading there would read as the agent's.
 func TestStatusRow_HiddenWhileAttached(t *testing.T) {
 	m := statusRowModel(t, 80)
 	m.attachedTo = "researcher-1"

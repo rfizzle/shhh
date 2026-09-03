@@ -826,7 +826,11 @@ func TestGolden_FanoutBlock(t *testing.T) {
 // height too short to hold them all drops, and — across the two widths —
 // that every block spends the extra columns on itself rather than leaving
 // them as gap. The full rail carries an approved plan's PLAN checklist,
-// which is also what gives THIS TURN's meter a denominator.
+// which is also what gives THIS TURN's meter a denominator. The last two
+// panels are the AGENTS block on its own as the session map, because it is
+// the one block whose rows are not all the same kind of thing: the
+// orchestrator, children in five states, the marked row, and the fold the
+// finished ones go behind.
 func TestGolden_InspectorRail(t *testing.T) {
 	captureGolden(t, "inspector-rail", "inspector rail", []int{InspectorWidth, InspectorMaxWidth}, func(width int) []golden.Panel {
 		full := InspectorRail{
@@ -866,8 +870,11 @@ func TestGolden_InspectorRail(t *testing.T) {
 				},
 			},
 			Agents: []InspectorAgent{
-				{Name: "writer-1", Detail: "docs/loop.md", Spend: "$0.02", Tools: 4},
-				{Name: "runner-2", Detail: "go test ./...", Spend: "$0.01", Step: 2, Steps: 3, Blocked: true},
+				{Name: "orchestrator", Detail: "round 3 · streaming…", Spend: "$0.12",
+					Self: true, Focused: true, State: FanoutRunning},
+				{Name: "writer-1", Detail: "docs/loop.md", Spend: "$0.02", Tools: 4, State: FanoutRunning},
+				{Name: "runner-2", Detail: "go test ./...", Spend: "$0.01", Step: 2, Steps: 3,
+					State: FanoutBlocked},
 			},
 			Context: &InspectorContext{
 				Pct: 62, Tokens: 124000, Window: 200000,
@@ -957,6 +964,33 @@ func TestGolden_InspectorRail(t *testing.T) {
 				MemoryOmitted: 3,
 			},
 		}
+		// The whole run as a map: the orchestrator, two children still
+		// working, one waiting on an answer, and four that have stopped —
+		// two kept for their outcomes and two folded behind the count. The
+		// keyboard is in the second writer, so its row carries the mark, and
+		// the mark is the only thing on the rail saying which session the
+		// other blocks are about.
+		mapped := InspectorRail{
+			Agents: []InspectorAgent{
+				{Name: "orchestrator", Detail: "round 3 · waiting on you", Spend: "$0.12",
+					Self: true, State: FanoutBlocked},
+				{Name: "writer-1", Detail: "wrote the loop's two files", Spend: "$0.06",
+					Outcome: "done", State: FanoutDone},
+				{Name: "writer-2", Detail: "internal/ui/chat/model.go", Spend: "$0.04",
+					Tools: 11, Focused: true, State: FanoutRunning},
+				{Name: "writer-3", Detail: "its worktree was dirty", Spend: "$0.01",
+					Outcome: "failed", State: FanoutFailed},
+				{Name: "runner-4", Detail: "go build ./...", Spend: "$0.02",
+					Step: 2, Steps: 3, State: FanoutRunning},
+				{Name: "reviewer-5", Detail: "waiting approval: apply patch", Spend: "$0.03",
+					State: FanoutBlocked},
+				{Name: "reader-6", Detail: "read 9 files", Spend: "$0.01",
+					Outcome: "done", State: FanoutDone},
+				{Name: "reader-7", Detail: "nothing under that path", Spend: "$0.01",
+					Outcome: "done", State: FanoutDone},
+			},
+			Frame: 2,
+		}
 		return []golden.Panel{
 			{Label: "every block, unbounded height", View: full.View(width, 0)},
 			{Label: "every block, height 16 (truncating)", View: full.View(width, 16)},
@@ -967,6 +1001,8 @@ func TestGolden_InspectorRail(t *testing.T) {
 			{Label: "a reading the session has outrun", View: stale.View(width, 0)},
 			{Label: "where the tools came from, and which answered", View: sources.View(width, 0)},
 			{Label: "memories the recall budget could not carry", View: omitted.View(width, 0)},
+			{Label: "the session map · the keyboard is in writer-2", View: mapped.View(width, 0)},
+			{Label: "the map with the rail shorter than it (height 12)", View: mapped.View(width, 12)},
 		}
 	})
 }
