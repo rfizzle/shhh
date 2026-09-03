@@ -1,8 +1,10 @@
 // Package structural exposes best-in-class external code tools — fd,
-// ast-grep, sd, tokei, jaq, and git — as first-class agent tools, so the
+// ast-grep, sd, tokei, jaq, yq, and git — as first-class agent tools, so the
 // model searches structurally, reads history, and previews transforms instead
 // of improvising shell pipelines. Each tool is registered only when its binary
-// is found on PATH, and git additionally only inside a repository.
+// is found on PATH; git additionally only inside a repository, and yq
+// additionally only when the binary answering to that name is the one whose
+// flags this package relies on.
 //
 // The safety invariants are ported from pi tool-runtime, several of them
 // empirically load-bearing there:
@@ -17,7 +19,8 @@
 //     --preview (it writes in place by default), ast-grep never sees
 //     -U/--update-all, jaq's file-reading and in-place flags
 //     (-L, -f/--from-file, --slurpfile, --rawfile, -i/--in-place) are not in
-//     its vocabulary, and git reaches five reading verbs with no field a
+//     its vocabulary, yq never sees -i/--inplace and always runs with both of
+//     its security flags, and git reaches five reading verbs with no field a
 //     sixth could arrive in. Rewrites and replacements return preview diffs
 //     the model applies via edit_file through the approval queue.
 //   - Every spawn has a timeout and output bounds; a missing binary, timeout,
@@ -47,6 +50,7 @@ const (
 	SdToolName      = "sd"
 	TokeiToolName   = "tokei"
 	JaqToolName     = "jaq"
+	YqToolName      = "yq"
 	GitToolName     = "git"
 )
 
@@ -80,17 +84,18 @@ var binaryNames = map[string]string{
 	SdToolName:      "sd",
 	TokeiToolName:   "tokei",
 	JaqToolName:     "jaq",
+	YqToolName:      "yq",
 	GitToolName:     "git",
 }
 
 // toolOrder fixes the registration order of the wrapped tools. git is not in
-// it: the five here are optional installs, and git is registered by a
+// it: the six here are optional installs, and git is registered by a
 // different question — whether this is a repository — which is why
 // Definitions and ToolBinaries treat it separately.
-var toolOrder = []string{FdToolName, AstGrepToolName, SdToolName, TokeiToolName, JaqToolName}
+var toolOrder = []string{FdToolName, AstGrepToolName, SdToolName, TokeiToolName, JaqToolName, YqToolName}
 
 // ToolBinaries are the binaries the wrapped tools need, in registration
-// order. `shhh doctor` reads them to say which of the five this machine has
+// order. `shhh doctor` reads them to say which of the six this machine has
 // ; nothing else needs the list, because every other caller asks a
 // built toolset what it found rather than what it looked for. git is absent
 // deliberately: doctor already reports the repository, and listing git among
@@ -134,9 +139,18 @@ func NewToolset(root string) *Toolset {
 	}
 	t := &Toolset{root: resolved, bins: map[string]string{}, timeout: SpawnTimeout}
 	for _, tool := range toolOrder {
-		if path, ok := lookPath(binaryNames[tool]); ok {
-			t.bins[tool] = path
+		path, ok := lookPath(binaryNames[tool])
+		if !ok {
+			continue
 		}
+		// Every tool here but one is usable the moment its name resolves on
+		// PATH. yq is the exception, because the name resolves to either of
+		// two unrelated programs and only one of them takes the flags this
+		// package's containment argument rests on.
+		if UnsupportedBinary(tool, path) != "" {
+			continue
+		}
+		t.bins[tool] = path
 	}
 	// The history tool needs a history. Outside a repository every verb it
 	// has would answer "not a git repository", so it is not registered at
@@ -181,6 +195,8 @@ func (t *Toolset) Definitions() []provider.Tool {
 			defs = append(defs, tokeiTool)
 		case JaqToolName:
 			defs = append(defs, jaqTool)
+		case YqToolName:
+			defs = append(defs, yqTool)
 		}
 	}
 	if _, ok := t.bins[GitToolName]; ok {
@@ -217,6 +233,8 @@ func (t *Toolset) Execute(name string, args json.RawMessage) (string, error) {
 		return t.executeTokei(args)
 	case JaqToolName:
 		return t.executeJaq(args)
+	case YqToolName:
+		return t.executeYq(args)
 	case GitToolName:
 		return t.executeGit(args)
 	}

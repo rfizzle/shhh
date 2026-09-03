@@ -36,6 +36,7 @@ var toolboxNotes = []struct{ name, note string }{
 	{"fd", "find files by name, fast. Use it instead of `execute_command find`."},
 	{"sd", "find-and-replace across many files at once. For a mechanical rename that spans files — several places inside one file are one edit_file call carrying its edits array."},
 	{"jaq", "query JSON without writing a script for it."},
+	{"yq", "query YAML and XML without writing a script for it — a CI workflow, a manifest, a linter config. It answers at the nesting level you asked about, where search returns whichever indentation matched."},
 	{"tokei", "counts of code by language — the shape and size of an unfamiliar repository in one call."},
 	{"git", "read this repository's history: status, log, show, diff, blame. Ask it rather than running git as a command — it is read-only, so it answers without an approval."},
 	{"web_fetch", "read a URL. Approval-gated, since it leaves the machine."},

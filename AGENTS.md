@@ -171,7 +171,7 @@ internal/
   project/                 The checkout as the session finds it: the survey, and the instruction files it reads root-down
   shell/                   Which shell this platform runs a command line with, and how — the one resolution the prompt and every runner read
   process/                 Background process management (the process tool)
-  structural/              Optional external tools integration (ast-grep, fd, jaq, sd, tokei) and the read-only git verbs
+  structural/              Optional external tools integration (ast-grep, fd, jaq, sd, tokei, yq) and the read-only git verbs
   radius/                  Blast-radius analysis for edits
   preflight/               Startup checks
   update/                  Release check behind `shhh update` and the startup nudge

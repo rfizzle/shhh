@@ -22,6 +22,15 @@ func stubLookPath(t *testing.T, found map[string]string) {
 	t.Cleanup(func() { lookPath = orig })
 }
 
+// stubYqFlavor answers the yq version probe without either yq installed:
+// "" registers the tool, anything else is the reason it stays absent.
+func stubYqFlavor(t *testing.T, reason string) {
+	t.Helper()
+	orig := yqFlavor
+	yqFlavor = func(string) string { return reason }
+	t.Cleanup(func() { yqFlavor = orig })
+}
+
 func newTestToolset(t *testing.T, bins map[string]string) *Toolset {
 	t.Helper()
 	root, err := filepath.EvalSymlinks(t.TempDir())
@@ -89,6 +98,9 @@ func TestExecuteUnavailableToolIsCleanError(t *testing.T) {
 	ts := newTestToolset(t, nil)
 
 	if _, err := ts.Execute(SdToolName, json.RawMessage(`{}`)); err == nil || !strings.Contains(err.Error(), "not found on PATH") {
+		t.Fatalf("expected a missing-binary error, got %v", err)
+	}
+	if _, err := ts.Execute(YqToolName, json.RawMessage(`{"expression": ".", "paths": ["a.yaml"]}`)); err == nil || !strings.Contains(err.Error(), "not found on PATH") {
 		t.Fatalf("expected a missing-binary error, got %v", err)
 	}
 	if _, err := ts.Execute("nonsense", json.RawMessage(`{}`)); err == nil || !strings.Contains(err.Error(), "unknown structural tool") {
@@ -312,6 +324,131 @@ func TestBuildJaqArgvInvariants(t *testing.T) {
 	}
 }
 
+// The two security flags are the containment argument for this tool, not
+// defense in depth: yq's expression language opens files and reads the
+// environment from inside the expression, where the check on paths cannot see
+// it. So they are asserted on every argv the builder can produce, the
+// minimal call included.
+func TestBuildYqArgvInvariants(t *testing.T) {
+	cases := []struct {
+		name string
+		args yqArgs
+		want []string
+	}{
+		{"minimal", yqArgs{Expression: "."}, nil},
+		{"formats", yqArgs{Expression: ".", InputFormat: "xml", OutputFormat: "json", Indent: 4}, []string{"--input-format=xml", "--output-format=json", "--indent=4"}},
+		{"shape", yqArgs{Expression: ".", PrettyPrint: true, NoDocumentSeparators: true}, []string{"--prettyPrint", "--no-doc"}},
+		{"all documents", yqArgs{Expression: ".", AllDocuments: true}, []string{"eval-all"}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			argv, err := buildYqArgv(c.args, []string{"/ws/ci.yml"})
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, flag := range []string{yqDisableFileOps, yqDisableEnvOps} {
+				if !contains(argv, flag) {
+					t.Fatalf("missing %s in %v", flag, argv)
+				}
+			}
+			for _, want := range c.want {
+				if !contains(argv, want) {
+					t.Fatalf("missing %s in %v", want, argv)
+				}
+			}
+			// The in-place flags are not in the vocabulary, so no argument
+			// can put one there.
+			for _, forbidden := range []string{"-i", "--inplace", "-f", "--from-file"} {
+				if contains(argv, forbidden) {
+					t.Fatalf("forbidden flag %s in %v", forbidden, argv)
+				}
+			}
+		})
+	}
+
+	// A dash-prefixed expression lands after the delimiter rather than being
+	// parsed as an unknown flag, and the paths follow it.
+	argv, err := buildYqArgv(yqArgs{Expression: "--inplace"}, []string{"/ws/ci.yml"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	sep := indexOf(argv, "--")
+	if sep < 0 {
+		t.Fatalf("missing -- delimiter: %v", argv)
+	}
+	if tail := argv[sep+1:]; len(tail) != 2 || tail[0] != "--inplace" || tail[1] != "/ws/ci.yml" {
+		t.Fatalf("expression and paths must follow --: %v", argv)
+	}
+	if argv[0] != "eval" {
+		t.Fatalf("the subcommand leads the argv: %v", argv)
+	}
+
+	if _, err := buildYqArgv(yqArgs{Expression: ".", InputFormat: "yamlish"}, nil); err == nil {
+		t.Fatal("expected an unknown input_format to be rejected")
+	}
+	if _, err := buildYqArgv(yqArgs{Expression: ".", OutputFormat: "--evil"}, nil); err == nil {
+		t.Fatal("expected an unknown output_format to be rejected")
+	}
+}
+
+// Two unrelated programs install as `yq` and only one of them takes the
+// security flags, so the name on PATH is not enough: a binary that does not
+// identify itself as mikefarah's Go yq is treated as absent, and the reason
+// is the one `shhh doctor` prints.
+func TestNewToolsetRequiresTheGoYq(t *testing.T) {
+	stubLookPath(t, map[string]string{"yq": "/usr/bin/yq"})
+
+	stubYqFlavor(t, "not mikefarah's Go yq")
+	ts := NewToolset(t.TempDir())
+	if ts == nil {
+		t.Fatal("expected a toolset")
+	}
+	if ts.Has(YqToolName) {
+		t.Fatal("a foreign yq must not be registered")
+	}
+	if len(ts.Definitions()) != 0 {
+		t.Fatalf("a foreign yq must not reach the model: %+v", ts.Definitions())
+	}
+	if reason := UnsupportedBinary("yq", "/usr/bin/yq"); reason == "" {
+		t.Fatal("doctor has no reason to report")
+	}
+
+	stubYqFlavor(t, "")
+	ts = NewToolset(t.TempDir())
+	if ts == nil || !ts.Has(YqToolName) {
+		t.Fatal("mikefarah's yq should register")
+	}
+	if reason := UnsupportedBinary("yq", "/usr/bin/yq"); reason != "" {
+		t.Fatalf("a usable yq should give doctor nothing to report, got %q", reason)
+	}
+	// Every other tool is usable the moment its name resolves.
+	if reason := UnsupportedBinary("fd", "/usr/bin/fd"); reason != "" {
+		t.Fatalf("fd should need no probe, got %q", reason)
+	}
+}
+
+// Containment is checked before anything spawns: the script would report its
+// own failure if it ran.
+func TestExecuteYqRefusesAPathOutsideTheWorkspace(t *testing.T) {
+	script := writeScript(t, `echo spawned >&2; exit 3`)
+	ts := newTestToolset(t, map[string]string{YqToolName: script})
+	outside := filepath.Join(t.TempDir(), "secrets.yml")
+	if err := os.WriteFile(outside, []byte("key: value\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	args, err := json.Marshal(map[string]any{"expression": ".", "paths": []string{outside}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ts.Execute(YqToolName, args); err == nil || !strings.Contains(err.Error(), "outside the workspace") {
+		t.Fatalf("expected containment rejection, got %v", err)
+	}
+	if _, err := ts.Execute(YqToolName, json.RawMessage(`{"expression": "."}`)); err == nil || !strings.Contains(err.Error(), "paths is required") {
+		t.Fatalf("expected paths to be required, got %v", err)
+	}
+}
+
 func TestRunCapturesOutput(t *testing.T) {
 	script := writeScript(t, `printf 'hello\nworld\n'`)
 	ts := newTestToolset(t, map[string]string{FdToolName: script})
@@ -401,9 +538,13 @@ func TestExecuteEmptyResultsMessages(t *testing.T) {
 		AstGrepToolName: script,
 		SdToolName:      script,
 		JaqToolName:     script,
+		YqToolName:      script,
 	})
 	file := filepath.Join(ts.root, "a.json")
 	if err := os.WriteFile(file, []byte("{}"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ts.root, "a.yaml"), []byte("{}\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -416,6 +557,7 @@ func TestExecuteEmptyResultsMessages(t *testing.T) {
 		{AstGrepToolName, `{"pattern": "foo"}`, "No matches."},
 		{SdToolName, `{"pattern": "a", "replacement": "b", "paths": ["a.json"]}`, "No replacements: the pattern did not match."},
 		{JaqToolName, `{"expression": ".", "paths": ["a.json"]}`, "(no output)"},
+		{YqToolName, `{"expression": ".", "paths": ["a.yaml"]}`, "(no output)"},
 	}
 	for _, c := range cases {
 		out, err := ts.Execute(c.tool, json.RawMessage(c.args))

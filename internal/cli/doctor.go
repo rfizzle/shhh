@@ -1029,11 +1029,19 @@ func doctorGit(state doctorGitState) doctorFinding {
 func probeTools(context.Context, config.Config) doctorFinding {
 	var found, missing []string
 	for _, tool := range structural.ToolBinaries() {
-		if _, err := exec.LookPath(tool); err == nil {
-			found = append(found, tool)
+		path, err := exec.LookPath(tool)
+		if err != nil {
+			missing = append(missing, tool)
 			continue
 		}
-		missing = append(missing, tool)
+		// A name on PATH that resolves to a program the agent cannot use is
+		// reported as an absence carrying its reason, because "it is
+		// installed and shhh says it is not" is otherwise a dead end.
+		if reason := structural.UnsupportedBinary(tool, path); reason != "" {
+			missing = append(missing, tool+" ("+reason+")")
+			continue
+		}
+		found = append(found, tool)
 	}
 	servers := make([]string, 0, 4)
 	for _, spec := range lsp.DetectServers() {

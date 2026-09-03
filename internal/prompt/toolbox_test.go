@@ -120,6 +120,20 @@ func TestToolbox_SplitsSdFromABatchedEdit(t *testing.T) {
 	}
 }
 
+// The two structured-query tools cover disjoint formats, and a model told
+// about only one of them reaches for it with the wrong file. Each note names
+// the formats it answers, so "what does the CI workflow run" lands on the
+// tool that can parse a workflow.
+func TestToolbox_SplitsTheStructuredQueryToolsByFormat(t *testing.T) {
+	got := Toolbox(toolList("jaq", "yq"))
+	if !strings.Contains(got, "- jaq — query JSON") {
+		t.Errorf("the jaq note should claim JSON, got:\n%s", got)
+	}
+	if !strings.Contains(got, "- yq — query YAML and XML") {
+		t.Errorf("the yq note should claim YAML and XML, got:\n%s", got)
+	}
+}
+
 // The three questions beyond definition and references exist to replace a
 // search and a whole-file read, so the notes have to say so: a model that is
 // not told which tool is better than the one it already reaches for keeps

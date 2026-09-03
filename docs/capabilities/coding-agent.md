@@ -421,6 +421,31 @@ has joined.
 A prompt that names a tool promises a capability the session may not have, and
 a model that has been promised a tool will try to use it.
 
+### Two programs answer to `yq`
+
+Structured queries are split by format. One tool answers JSON, another answers
+YAML and XML — the query engines are separate programs with separate flags,
+and this project's own surface is on the second side: the linter
+configuration, the release workflow, the CI job matrix. Without the second
+tool a question about any of them is a text search, which returns whichever
+indentation happened to match rather than the value that was asked for.
+
+The YAML one is also the only optional tool where being on PATH is the wrong
+question. Two unrelated programs install under the name `yq` — one written in
+Go, one in Python — sharing the name, most of the purpose, and almost none of
+the flags. Only one takes the two flags that shut off reading files and
+environment variables from inside an expression, and those flags are the whole
+containment argument here: the expression language reaches a file directly, so
+without them the path check in front of the tool is decorative and the most
+permissive field of the schema is an arbitrary file read.
+
+So this tool's registration asks a second question, and the binary has to say
+which program it is. One that does not is treated as absent — a silent success
+under the other program would mean nothing was ever disabled, which is worse
+than not having the tool. `shhh doctor` reports it in those words rather than
+as a plain absence, because "it is installed and shhh says it is not" is a
+question that needs an answer.
+
 ## The agent knows where and when it is standing
 
 The session already surveys the checkout before the first keystroke — the

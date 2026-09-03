@@ -12,6 +12,7 @@ import (
 var jaqTool = provider.Tool{
 	Name: JaqToolName,
 	Description: "Query JSON files with jaq, a fast jq-compatible engine. Give a jq-style filter expression and the files to run it over. " +
+		"This is the structured tool for JSON. Use yq for YAML and XML. " +
 		"Prefer this over improvising shell pipelines for structured-data questions. Read-only: it cannot modify files.",
 	Parameters: json.RawMessage(`{
 		"type": "object",
