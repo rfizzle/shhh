@@ -661,3 +661,95 @@ func TestHeadlessRun_EachTurnGetsItsOwnBound(t *testing.T) {
 		t.Errorf("attempt = %d, want a fresh bound for the new turn", h.retry.Attempt())
 	}
 }
+
+// A hold parks the run at the round tail: the round's results are already in
+// the conversation, nothing has been asked of the model yet, and the next
+// request goes out only once the hold is released.
+func TestHeadlessRun_HoldsAtTheRoundTail(t *testing.T) {
+	t.Parallel()
+	a := New(nil, scriptedStream(t,
+		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
+		doneRound("carried on"),
+	))
+	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+
+	release := make(chan struct{})
+	asked := make(chan int, 4)
+	h := &Headless{Agent: a}
+	h.Hold = func() <-chan struct{} {
+		asked <- len(a.Messages())
+		return release
+	}
+
+	done := make(chan string, 1)
+	go func() {
+		final, err := h.Run("go")
+		if err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+		done <- final
+	}()
+
+	select {
+	case n := <-asked:
+		// The tool result is in the conversation, so nothing is re-asked
+		// when the hold lets go: the request the run was about to make is
+		// the request it makes.
+		if n < 3 {
+			t.Errorf("the round's results should be recorded before the park, %d messages", n)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the run never reached its round tail")
+	}
+	select {
+	case final := <-done:
+		t.Fatalf("the run went on through a standing hold, ending %q", final)
+	case <-time.After(50 * time.Millisecond):
+	}
+
+	close(release)
+	select {
+	case final := <-done:
+		if final != "carried on" {
+			t.Errorf("final = %q, want %q", final, "carried on")
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("the release never let the run go")
+	}
+}
+
+// And a held run is still killable: the wait registers its cancel where the
+// stream's goes, so a run nobody is coming back to does not sit on a release
+// that is never sent.
+func TestHeadlessRun_InterruptEndsAHold(t *testing.T) {
+	t.Parallel()
+	a := New(nil, scriptedStream(t,
+		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
+	))
+	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+
+	h := &Headless{Agent: a}
+	h.Hold = func() <-chan struct{} {
+		go h.Interrupt()
+		return make(chan struct{})
+	}
+	if _, err := h.Run("go"); !errors.Is(err, ErrInterrupted) {
+		t.Fatalf("err = %v, want ErrInterrupted", err)
+	}
+}
+
+// A run nothing holds never waits: the hook is the child loop's, and a
+// scripted run has no keyboard to ask for one.
+func TestHeadlessRun_NoHoldNoWait(t *testing.T) {
+	t.Parallel()
+	a := New(nil, scriptedStream(t,
+		toolCallRound(provider.ToolCall{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}),
+		doneRound("done"),
+	))
+	a.SetExecutor(func(string, json.RawMessage) (string, error) { return "contents", nil })
+
+	h := &Headless{Agent: a, Hold: func() <-chan struct{} { return nil }}
+	if final, err := h.Run("go"); err != nil || final != "done" {
+		t.Fatalf("run = %q, %v", final, err)
+	}
+}

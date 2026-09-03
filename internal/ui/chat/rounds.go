@@ -95,7 +95,9 @@ func (m Model) pauseAtRoundLimit() (tea.Model, tea.Cmd) {
 	m.appendEntry(entry{kind: entryRoundPause, turn: m.turnCount, pause: p, duration: m.turnElapsed()})
 	// The turn is over as far as every other path is concerned — this is the
 	// one transition back to the input, and the close it would append is the
-	// row above (appendTurnClose).
+	// row above (appendTurnClose). It is also what answers a hold asked on
+	// the way here: the turn has stopped and is waiting on the reader, which
+	// is what the hold was for, and this row's offers are the way back.
 	m.setTurnState(stateInput)
 	m.syncViewport()
 	m.viewport.SetLines(m.renderHistoryLines())
@@ -368,6 +370,10 @@ func (m *Model) resetRounds() {
 	m.agent.ResetRounds()
 	m.roundGrant = 0
 	m.roundsUncapped = false
+	// A held turn the session has moved past cannot be let go of either, and
+	// a child still parked at its boundary has nothing else that ever would
+	// (hold.go).
+	m.dropHold()
 	if m.roundPause != nil {
 		m.roundPause.spent = true
 		m.roundPause = nil

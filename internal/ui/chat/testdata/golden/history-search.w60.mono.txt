@@ -28,7 +28,7 @@
 ╰─ ⏸ manual · ctx ▰▰▰▱▱▱▱▱ 39% · $0.51 ────────────────╯
 
 · the keys-changed notice on the rail
-keys changed: @ files · ! run · ctrl+o reading · ctrl+p…
+keys changed: ctrl+/ palette · ctrl+p hold · ctrl+o rea…
 ╭─ idle ───────────────────────────────────────────────╮
 │ ❯                                                    │
 │                                                      │
@@ -55,7 +55,7 @@ keys changed: @ files · ! run · ctrl+o reading · ctrl+p…
 ␛[38;5;254m╰─␛[m ␛[38;5;254m⏸ manual␛[38;5;244m · ␛[38;5;254mctx ▰▰▰▱▱▱▱▱ 39%␛[38;5;244m · $0.51␛[m ␛[38;5;254m────────────────╯␛[m
 
 · the keys-changed notice on the rail
-␛[38;5;254mkeys changed: @ files · ! run · ctrl+o reading · ctrl+p…␛[m
+␛[38;5;254mkeys changed: ctrl+/ palette · ctrl+p hold · ctrl+o rea…␛[m
 ␛[38;5;254m╭─␛[m ␛[38;5;244midle␛[m ␛[38;5;254m───────────────────────────────────────────────╮␛[m
 ␛[38;5;254m│␛[m ␛[38;5;254;1m❯␛[m ␛[40;7m ␛[27m                                                 ␛[m ␛[38;5;254m│␛[m
 ␛[38;5;254m│␛[m   ␛[30m                                                  ␛[m ␛[38;5;254m│␛[m

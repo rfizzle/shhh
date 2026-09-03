@@ -105,6 +105,17 @@ func (m Model) childProgress(st subagent.Status) components.AgentProgress {
 		Spend: m.childSpendLabel(st),
 		Frame: m.spinFrame,
 	}
+	// A held child is parked at its own round boundary waiting for the
+	// session to let it go, which is the shape idle already draws: stopped,
+	// with nothing to do until you do something. It is derived here rather
+	// than given a state of its own because the lifecycle it is held in the
+	// middle of is still `running` — the child keeps its slot, its worktree
+	// and its conversation — and the detail beside the glyph is what says
+	// which of the two stopped things this one is.
+	if st.Held {
+		p.State = components.FanoutIdle
+		return p
+	}
 	switch st.State {
 	case subagent.StateQueued:
 		p.State = components.FanoutQueued

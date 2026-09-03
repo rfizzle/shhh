@@ -99,7 +99,7 @@ func (m *Model) disarm() { m.armed = armedPress{kind: armNone, seq: m.armed.seq}
 // rather than promising a cancel with nothing to cancel.
 func (m Model) armedNotice() string {
 	switch {
-	case m.armed.open(armCancel) && m.turnState() == stateStreaming:
+	case m.armed.open(armCancel) && (m.turnState() == stateStreaming || m.heldAtBoundary()):
 		return m.armed.key + " again cancels the turn"
 	case m.armed.open(armQuit) && !m.working():
 		return "press again to quit"

@@ -39,6 +39,26 @@ func TestHelpNamesEveryDraftKey(t *testing.T) {
 	}
 }
 
+// The palette's chord is a single byte, and a terminal that sends nothing for
+// it would leave the surface unreachable with no way to find that out. So the
+// key list names the other door beside it, which is the place a reader whose
+// chord did nothing goes looking.
+func TestHelpNamesThePalettesOtherDoor(t *testing.T) {
+	keysText := helpKeysText()
+	i := strings.Index(keysText, keys.Shown(keys.Draft.Palette))
+	if i < 0 {
+		t.Fatalf("the key list never names %q", keys.Shown(keys.Draft.Palette))
+	}
+	// The paragraph the chord opens, up to the next key's row.
+	para := keysText[i:]
+	if j := strings.Index(para, "\n  "+keys.Shown(keys.Draft.Pause)); j > 0 {
+		para = para[:j]
+	}
+	if !strings.Contains(para, "/ on an empty draft") || !strings.Contains(para, "tab") {
+		t.Errorf("the palette's row does not name its other door:\n%s", para)
+	}
+}
+
 // The reading-mode register is reachable from the draft too, because `?` is a
 // letter there and /help is the door a reader with a live draft has.
 func TestHelpNamesTheKeyRegister(t *testing.T) {

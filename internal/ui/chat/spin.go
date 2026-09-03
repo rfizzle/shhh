@@ -65,13 +65,16 @@ func (m Model) spinnerWanted() bool {
 }
 
 // childrenRunning reports whether any sub-agent is still working. A queued or
-// blocked child is not: its lane draws a state, not a spinner.
+// blocked child is not: its lane draws a state, not a spinner. Neither is one
+// parked at its round boundary — a fan-out held to the last child has nothing
+// moving to animate, and a spinner over it would be the screen claiming
+// progress that has been deliberately stopped (hold.go).
 func (m Model) childrenRunning() bool {
 	if m.subagents == nil {
 		return false
 	}
 	for _, st := range m.subagents.Snapshot() {
-		if st.State == subagent.StateRunning {
+		if st.State == subagent.StateRunning && !st.Held {
 			return true
 		}
 	}

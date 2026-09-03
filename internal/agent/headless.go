@@ -61,6 +61,18 @@ type Headless struct {
 	// and reset the round counter (steering semantics for headless runs).
 	Steer func() []string
 
+	// Hold, when set, is asked at each round tail whether the run should park
+	// before it asks for the next round. It returns nil to go on, or a
+	// channel the run waits on until whatever is holding it closes that
+	// channel. It is a channel and not a boolean because the wait has to be
+	// interruptible: a held run that is then killed must not sit in a poll
+	// loop waiting for a release nobody is going to send.
+	//
+	// The seam exists for the child loop, where a supervisor holds a whole
+	// fan-out at once. A `-p` run has no keyboard and nothing sets it.
+	// See docs/capabilities/coding-agent.md#a-turn-can-be-held-between-rounds.
+	Hold func() <-chan struct{}
+
 	// Summary, when set, takes periodic readings of the run and hands their
 	// verdicts to the intervention policy — a steer for a run that has left
 	// its instruction, an early check-in for one that has what it needs
@@ -254,6 +266,18 @@ func (h *Headless) Run(prompt string) (string, error) {
 			return "", fmt.Errorf("%w after %d rounds", ErrRoundCap, h.Agent.Rounds())
 		}
 
+		// A hold parks the run here and nowhere else. The round's results
+		// are in the conversation and nothing has been asked of the model
+		// yet, so the wait holds no stream, owes no results and leaves the
+		// conversation exactly as the round left it. An open stream cannot
+		// be paused — a reader that stops reading backs the socket up until
+		// the provider gives up on the request — which is why a hold waits
+		// for the boundary rather than taking effect where it is asked for.
+		if !h.waitOnHold() {
+			h.Agent.CancelTurn()
+			return "", ErrInterrupted
+		}
+
 		// The tree first, then the question: a check-in asked against a tree
 		// the run has not been told about is answered against the wrong one.
 		h.deliverTree(false)
@@ -379,6 +403,39 @@ func (h *Headless) notifyResult(r ToolResult) {
 	if h.OnToolResult != nil {
 		h.OnToolResult(r)
 	}
+}
+
+// waitOnHold parks the run while a hold stands and reports whether it may go
+// on. Like the retry wait it registers its cancel where the stream's goes, so
+// an Interrupt wakes it rather than leaving a killed run parked on a release
+// that is never coming.
+func (h *Headless) waitOnHold() bool {
+	if h.Hold == nil {
+		return true
+	}
+	release := h.Hold()
+	if release == nil {
+		return true
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	h.mu.Lock()
+	if h.interrupted {
+		h.mu.Unlock()
+		return false
+	}
+	h.streamCancel = cancel
+	h.mu.Unlock()
+	defer func() {
+		h.mu.Lock()
+		h.streamCancel = nil
+		h.mu.Unlock()
+	}()
+	select {
+	case <-release:
+	case <-ctx.Done():
+	}
+	return !h.wasInterrupted()
 }
 
 // waitToRetry sits out one wait and reports whether the run may go on. It is

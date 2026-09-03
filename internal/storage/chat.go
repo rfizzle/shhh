@@ -143,8 +143,13 @@ func (db *DB) forgetChat(name string) {
 // the way out still lands, and where each lost slot went is remembered, so a
 // second refusal on it follows the first rather than making a second copy.
 // See docs/capabilities/sessions-and-memory.md#a-slot-belongs-to-one-session.
-func (db *DB) AutosaveChat(slot, fresh string, messages []provider.Message) (string, error) {
-	err := db.SaveChat(slot, messages)
+// hold is what the slot should say about the conversation being mid-turn, and
+// it is written here rather than beside the save because the two are one fact:
+// two autosaves overlapping, each with its own answer, could otherwise land
+// their halves in either order and leave a slot claiming a hold for a
+// conversation that no longer has one.
+func (db *DB) AutosaveChat(slot, fresh string, messages []provider.Message, hold *ChatHold) (string, error) {
+	err := db.saveChatMarked(slot, messages, hold)
 	var taken ChatSlotConflictError
 	if !errors.As(err, &taken) {
 		return slot, err
@@ -153,7 +158,7 @@ func (db *DB) AutosaveChat(slot, fresh string, messages []provider.Message) (str
 	if err != nil {
 		return slot, err
 	}
-	return moved, db.SaveChat(moved, messages)
+	return moved, db.saveChatMarked(moved, messages, hold)
 }
 
 // movedChatSlot is where a slot this process lost has been replaced, claiming
@@ -172,7 +177,20 @@ func (db *DB) movedChatSlot(from, fresh string) (string, error) {
 	return to, nil
 }
 
+// SaveChat writes a conversation to a named slot. It leaves the mid-turn mark
+// alone: the name a person typed is a copy of the conversation, and whether
+// the live session is holding a turn is not a fact about the copy.
 func (db *DB) SaveChat(name string, messages []provider.Message) error {
+	return db.saveChat(name, messages, false, nil)
+}
+
+// saveChatMarked is SaveChat plus the mid-turn mark, written in the same
+// transaction so the two can never disagree.
+func (db *DB) saveChatMarked(name string, messages []provider.Message, hold *ChatHold) error {
+	return db.saveChat(name, messages, true, hold)
+}
+
+func (db *DB) saveChat(name string, messages []provider.Message, mark bool, hold *ChatHold) error {
 	db.chatMu.Lock()
 	defer db.chatMu.Unlock()
 
@@ -184,6 +202,11 @@ func (db *DB) SaveChat(name string, messages []provider.Message) error {
 
 	if _, err := db.saveChatTx(tx, name, messages); err != nil {
 		return err
+	}
+	if mark {
+		if err := setChatHoldTx(tx, name, hold); err != nil {
+			return err
+		}
 	}
 	if err := tx.Commit(); err != nil {
 		return err
@@ -593,6 +616,62 @@ func (db *DB) RenameChat(oldName, newName string) error {
 		db.chatSeq[newName] = seq
 	}
 	return nil
+}
+
+// ChatHold is the mark a conversation saved mid-turn carries beside itself:
+// the turn was parked at a round boundary rather than finished, and this is
+// where it had got to. Both counts belong to the turn and not to the process
+// that wrote them — a new session's own round counter starts at nothing, and
+// the grant has to come back with the turn or the round it resumes into stops
+// again at a ceiling the person had already lifted.
+// See docs/capabilities/sessions-and-memory.md#a-held-turn-comes-back-held.
+type ChatHold struct {
+	Rounds  int `json:"rounds"`
+	Granted int `json:"granted"`
+}
+
+// setChatHoldTx writes the mark inside tx, or clears it when h is nil. Every
+// autosave carries an answer — nil included — so a slot never goes on claiming
+// a hold the turn has already been let go of.
+func setChatHoldTx(tx *sql.Tx, name string, h *ChatHold) error {
+	var held any
+	if h != nil {
+		b, err := json.Marshal(h)
+		if err != nil {
+			return err
+		}
+		held = string(b)
+	}
+	res, err := tx.Exec(`UPDATE chat_sessions SET held = ? WHERE name = ?`, held, name)
+	if err != nil {
+		return err
+	}
+	if n, _ := res.RowsAffected(); n == 0 {
+		return ChatNotFoundError{Name: name}
+	}
+	return nil
+}
+
+// ChatHold reads the mark and whether there is one. A slot nothing ever held
+// — including every slot written before the column existed — reports false,
+// which is the answer that opens it the way it always opened.
+func (db *DB) ChatHold(name string) (ChatHold, bool, error) {
+	var held sql.NullString
+	err := db.sql.QueryRow(`SELECT held FROM chat_sessions WHERE name = ?`, name).Scan(&held)
+	if err == sql.ErrNoRows {
+		return ChatHold{}, false, nil
+	}
+	if err != nil || !held.Valid || held.String == "" {
+		return ChatHold{}, false, err
+	}
+	var h ChatHold
+	if err := json.Unmarshal([]byte(held.String), &h); err != nil {
+		// A mark nobody can read is a mark nobody can act on. Opening the
+		// conversation idle is the honest answer and costs one keystroke;
+		// refusing to open it at all would cost the whole conversation.
+		return ChatHold{}, false, nil
+	}
+	return h, true, nil
 }
 
 // SetChatTitle stores the generated title on a session. It is the one write

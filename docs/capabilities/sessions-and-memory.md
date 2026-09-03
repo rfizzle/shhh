@@ -51,6 +51,19 @@ work that was in flight, what was staged, where the session had got to: a
 resume that restored only the visible text would look right and behave like a
 fresh session, which is worse than not resuming at all.
 
+### A held turn comes back held
+
+A conversation can be quit with a turn parked at a round boundary rather than
+finished, and the slot remembers it: the mark says the turn was held and where
+it had got to. Reopening it opens it held, with the same words on the rail
+that were there when it was left.
+
+Without the mark the conversation would come back looking finished, with an
+unanswered round at the end of it and an idle prompt underneath — which is the
+shape a person reads as "it is done", and the round it is owed would never be
+asked for. A slot with no mark is every conversation written before there was
+one, and it opens exactly the way it always opened.
+
 ### A slot belongs to one session
 
 A session that was never named is called by the moment it began, and for a

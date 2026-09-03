@@ -22,8 +22,14 @@ var (
 	ctrlK = tea.KeyPressMsg{Code: 'k', Mod: tea.ModCtrl}
 	ctrlU = tea.KeyPressMsg{Code: 'u', Mod: tea.ModCtrl}
 	ctrlP = tea.KeyPressMsg{Code: 'p', Mod: tea.ModCtrl}
-	ctrlR = tea.KeyPressMsg{Code: 'r', Mod: tea.ModCtrl}
-	enter = tea.KeyPressMsg{Code: tea.KeyEnter}
+	// The palette's chord, in the two spellings a terminal delivers it in:
+	// the enhanced keyboard protocol reports the slash with a ctrl modifier,
+	// and everything else sends the single byte the decoder resolves to
+	// ctrl+_.
+	ctrlSlash = tea.KeyPressMsg{Code: '/', Mod: tea.ModCtrl}
+	ctrlUnder = tea.KeyPressMsg{Code: '_', Mod: tea.ModCtrl}
+	ctrlR     = tea.KeyPressMsg{Code: 'r', Mod: tea.ModCtrl}
+	enter     = tea.KeyPressMsg{Code: tea.KeyEnter}
 )
 
 func TestDraft_ReadlineChordsReachTheTextarea(t *testing.T) {
@@ -71,10 +77,29 @@ func TestDraft_ReadlineChordsReachTheTextarea(t *testing.T) {
 	}
 }
 
-func TestPalette_OpensOnItsChordAndTheOldOneIsTheTextareas(t *testing.T) {
+// The palette answers the slash chord in both of the spellings a terminal
+// can deliver it in, and the chord it used to answer belongs to the hold now.
+// A person whose terminal sends neither is not stranded: the `?` list names
+// the other door, and that is asserted beside the text (help_test.go).
+func TestPalette_OpensOnBothSpellingsOfItsChord(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		key  tea.KeyPressMsg
+	}{
+		{"the enhanced keyboard's", ctrlSlash},
+		{"the legacy byte's", ctrlUnder},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			m, _ := pressKey(t, readyModel(t), tc.key)
+			if m.palette == nil {
+				t.Fatalf("%s spelling did not open the palette", tc.name)
+			}
+		})
+	}
+
 	m, _ := pressKey(t, readyModel(t), ctrlP)
-	if m.palette == nil {
-		t.Fatal("ctrl+p did not open the palette")
+	if m.palette != nil {
+		t.Fatal("the old chord still opens the palette; it holds the turn now")
 	}
 
 	m2, _ := pressKey(t, readyModel(t), ctrlK)

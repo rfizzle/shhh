@@ -59,7 +59,13 @@ func (m *Model) setTurnState(s state) {
 	}
 	// A turn going idle stamps its end, so the inspector rail's elapsed time
 	// freezes at what the turn took instead of counting on.
-	if s == stateInput && m.working() && !m.turnStarted.IsZero() {
+	//
+	// A turn parked at a round boundary is the exception, and the only one:
+	// it has not ended, its next round is what continues it, and everything
+	// below would say otherwise — the close row, the record of how the turn
+	// came out, the ring the spend sparkline is drawn from. All of it is
+	// owed to the round that finishes the turn instead (hold.go).
+	if s == stateInput && m.working() && !m.turnStarted.IsZero() && !m.heldAtBoundary() {
 		m.turnEnded = time.Now()
 		// A turn can have edited the backlog files; the rail reads the
 		// store, so the store is re-read here rather than per frame.
@@ -72,6 +78,12 @@ func (m *Model) setTurnState(s state) {
 		// the same reason: every path back to the input passes through this
 		// one transition, so no turn can end without a summary.
 		m.appendTurnClose()
+		// A hold the turn outran goes with it, and so does the hold on
+		// every child. A turn that answered without asking for another
+		// round never reaches the boundary the mark would have been acted
+		// on at, and a fan-out left parked on a request its parent has
+		// finished with has nothing that would ever let it go (hold.go).
+		m.dropHold()
 		// A turn that ends at the alert threshold ends with the decision
 		// surface, not with a notice about a trim that already happened
 		//. Every path back to the input passes through here, which

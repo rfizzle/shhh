@@ -159,6 +159,12 @@ type Status struct {
 	// worktree was started from. Zero is a reader, or a writer spawned from
 	// a checkout with nothing uncommitted in it.
 	Seeded int
+	// Held is whether the child has reached its own round boundary while the
+	// parent's hold stands. It rides beside the state rather than replacing
+	// it because a held child is still a running one — it keeps its slot,
+	// its worktree and its conversation, and one release puts it back to
+	// work with the round it was about to ask for.
+	Held bool
 }
 
 // EntryKind tags one child transcript entry: the attached view
@@ -500,12 +506,30 @@ type child struct {
 	steering   []string
 	intCh      chan struct{}
 	intClosed  bool
+	// heldOn is the hold this child is parked on, and nil when it is not
+	// parked. It is separate from state and detail rather than a state of its
+	// own, because a held child is still running in every sense the lifecycle
+	// cares about — it holds its slot, its worktree and its conversation, and
+	// one release puts it straight back to work.
+	//
+	// It is the channel and not a flag so that a release can tell its own
+	// hold from a later one: a hold taken again while a release is still
+	// working through the children would otherwise have its freshly parked
+	// child un-marked by the release before it, and the rail would report a
+	// child as running that is going nowhere.
+	heldOn chan struct{}
 }
 
 func (c *child) set(state State, detail string) {
 	c.mu.Lock()
 	c.state = state
 	c.detail = detail
+	// Any transition ends a hold. A child sits in its wait between two of
+	// these, so nothing that is still parked passes through here — but a
+	// killed one comes out of the wait by a route the release never took,
+	// and a finished lane still reading "held · waiting for release" would
+	// be offering a release that can no longer do anything.
+	c.heldOn = nil
 	// A finished child's elapsed stops moving: its lane reports what the work
 	// took, not how long ago it happened.
 	switch state {
@@ -515,6 +539,27 @@ func (c *child) set(state State, detail string) {
 		}
 	}
 	c.mu.Unlock()
+}
+
+// park marks the child as waiting on hold.
+func (c *child) park(hold chan struct{}) {
+	c.mu.Lock()
+	c.heldOn = hold
+	c.mu.Unlock()
+}
+
+// unpark takes the child off hold, but only off the one being released, and
+// reports whether that changed anything — so a release neither emits an
+// update for every child that never reached its boundary nor un-marks one
+// that has since parked on a hold taken after this release began.
+func (c *child) unpark(hold chan struct{}) bool {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.heldOn != hold {
+		return false
+	}
+	c.heldOn = nil
+	return true
 }
 
 func (c *child) status() Status {
@@ -528,6 +573,10 @@ func (c *child) status() Status {
 	if c.state == StateDone {
 		summary = firstLine(c.report)
 	}
+	detail := c.detail
+	if c.heldOn != nil {
+		detail = "held · waiting for release"
+	}
 	return Status{
 		Name:      c.name,
 		Role:      c.role,
@@ -535,7 +584,7 @@ func (c *child) status() Status {
 		Model:     c.model,
 		Paths:     c.paths,
 		State:     c.state,
-		Detail:    c.detail,
+		Detail:    detail,
 		ToolCalls: c.toolCalls,
 		TokensIn:  c.priorIn + c.tokensIn,
 		TokensOut: c.priorOut + c.tokensOut,
@@ -547,6 +596,7 @@ func (c *child) status() Status {
 		Summary:   summary,
 		CheckIns:  c.checkIns,
 		Seeded:    c.seeded,
+		Held:      c.heldOn != nil,
 	}
 }
 
@@ -722,6 +772,12 @@ type Supervisor struct {
 	// does, and says so with BeginBatch — so children spawned by a host that
 	// never opens one all share batch zero.
 	batch int
+	// held is the hold as the children see it: nil when nothing is held, and
+	// an open channel otherwise, which Release closes. It is replaced rather
+	// than reopened because a closed channel cannot be un-closed and a hold
+	// has to be able to come back — every hold after the first would
+	// otherwise let the fan-out straight through.
+	held chan struct{}
 
 	wg        sync.WaitGroup
 	closeOnce sync.Once
@@ -997,6 +1053,66 @@ func (s *Supervisor) QueuedSteering(name string) int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return len(c.steering)
+}
+
+// Hold parks every child at its own round boundary. Nothing stops where it
+// is: a child in the middle of a round finishes it, and only then waits — an
+// open provider stream cannot be paused, and a reader that stops reading
+// backs the socket up until the provider gives up on the request. So a hold
+// asked of a fan-out of four arrives four times, once per child, at four
+// different moments. Idempotent: asking twice is one hold.
+// See docs/capabilities/subagents.md#a-hold-reaches-the-whole-fan-out.
+func (s *Supervisor) Hold() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.held == nil {
+		s.held = make(chan struct{})
+	}
+}
+
+// Release lets every held child go on, in one act. The hold was asked of the
+// session rather than of a child, and letting them out one at a time would be
+// a list nobody could be expected to keep. Releasing an unheld supervisor
+// does nothing.
+func (s *Supervisor) Release() {
+	s.mu.Lock()
+	ch, kids := s.held, append([]*child(nil), s.children...)
+	s.held = nil
+	s.mu.Unlock()
+	if ch == nil {
+		return
+	}
+	close(ch)
+	for _, c := range kids {
+		if c.unpark(ch) {
+			s.emitUpdate(c)
+		}
+	}
+}
+
+// Holding reports whether a hold stands.
+func (s *Supervisor) Holding() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.held != nil
+}
+
+// holdFor is what a child's round tail asks: nil to run on, or the channel to
+// wait on, with the child marked parked as it arrives. The read and the mark
+// are one locked step so a release that lands between them cannot leave a
+// child marked held with nothing left to un-mark it — the release either sees
+// the mark and clears it, or has already emptied the hold and hands back nil.
+func (s *Supervisor) holdFor(c *child) <-chan struct{} {
+	s.mu.Lock()
+	ch := s.held
+	if ch != nil {
+		c.park(ch)
+	}
+	s.mu.Unlock()
+	if ch != nil {
+		s.emitUpdate(c)
+	}
+	return ch
 }
 
 // CancelTurn interrupts a child's current turn: the in-flight stream
@@ -1513,6 +1629,7 @@ func (s *Supervisor) run(c *child) {
 			}
 			return msgs
 		},
+		Hold: func() <-chan struct{} { return s.holdFor(c) },
 		OnUsage: func(u *provider.Usage) {
 			if c.addUsage(u) {
 				c.cancel()

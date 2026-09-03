@@ -66,7 +66,7 @@ func (m Model) submitInput() (tea.Model, tea.Cmd) {
 	if cmd, local, ok := bangCommand(text); ok {
 		return m.runBang(cmd, local)
 	}
-	if m.working() || m.decisionUngated() {
+	if m.turnInFlight() {
 		// Typed while the agent works: the message joins the conversation
 		// before the next model request. A turn paused on a decision
 		// is a turn in flight for this purpose — enter queues the sentence

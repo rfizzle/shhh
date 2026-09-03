@@ -10,11 +10,14 @@ package chat
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"strings"
+	"sync"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
 	"github.com/rfizzle/shhh/internal/ui/caps"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -330,6 +333,29 @@ func TestSuspend_RefusedWhileWorking(t *testing.T) {
 	}
 }
 
+// A held turn accepts it. The refusal is about an open stream — a stopped
+// process is not reading the socket it asked for — and a turn parked at a
+// round boundary has none: it has asked for nothing and is owed nothing
+// until the reader lets it go (hold.go).
+func TestSuspend_AcceptedWhileTheTurnIsHeld(t *testing.T) {
+	m := windowModel(t)
+	m.setTurnState(stateStreaming)
+	m.turnCount = 1
+	m.hold = &turnHold{turn: 1, rounds: 3}
+	m.setTurnState(stateInput)
+
+	next, cmd := pressKey(t, m, ctrlZ)
+	if cmd == nil {
+		t.Fatal("ctrl+z on a held turn did nothing")
+	}
+	if _, ok := cmd().(tea.SuspendMsg); !ok {
+		t.Fatalf("ctrl+z on a held turn produced a %T", cmd())
+	}
+	if got := transcriptText(next); strings.Contains(got, "not while the turn is running") {
+		t.Errorf("a held turn was refused the suspend:\n%s", got)
+	}
+}
+
 // A card that holds the keyboard swallows the chord instead: the fifth
 // invariant is not suspended for a chord
 // (docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
@@ -375,6 +401,67 @@ func TestSuspend_RefusedWhileTheAttachedChildWorks(t *testing.T) {
 	}
 	if strings.Contains(transcriptText(next), "not while the turn") {
 		t.Error("the refusal landed on the orchestrator's transcript instead")
+	}
+}
+
+// And a held child does not refuse it either, for the reason the parent's own
+// held turn does not: it is parked between rounds with no stream open. The
+// child is still `running` as a lifecycle — it keeps its slot and its
+// worktree — so the frame has to read the hold rather than the state.
+func TestSuspend_AcceptedWhileTheAttachedChildIsHeld(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: heldChildEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	m.caps = caps.Terminal{Asked: true}
+	sup.Hold()
+	spawnBlockedChild(t, sup)
+	waitFor(t, func() bool {
+		st, ok := sup.Get("researcher-1")
+		return ok && st.Held
+	})
+	m.attachedTo = "researcher-1"
+
+	if m.frameWorking() {
+		t.Fatal("a child parked at its boundary is not working")
+	}
+	_, cmd := pressKey(t, m, ctrlZ)
+	if cmd == nil {
+		t.Fatal("ctrl+z with the attached child held did nothing")
+	}
+	if _, ok := cmd().(tea.SuspendMsg); !ok {
+		t.Fatalf("ctrl+z with the attached child held produced a %T", cmd())
+	}
+}
+
+// heldChildEnv gives a child one tool round and then a stream that never
+// answers, so a hold taken before the spawn parks it at a real boundary.
+func heldChildEnv() subagent.EnvFactory {
+	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
+		var mu sync.Mutex
+		first := true
+		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+			mu.Lock()
+			opening := first
+			first = false
+			mu.Unlock()
+			ch := make(chan provider.StreamEvent, 1)
+			if opening {
+				ch <- provider.StreamEvent{ToolCalls: []provider.ToolCall{
+					{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}}
+				close(ch)
+				return ch, func() {}, nil
+			}
+			go func() {
+				<-ctx.Done()
+				close(ch)
+			}()
+			return ch, func() {}, nil
+		}
+		return subagent.Env{
+			SystemPrompt: "sys",
+			Stream:       stream,
+			Executor:     func(string, json.RawMessage) (string, error) { return "contents", nil },
+		}, nil
 	}
 }
 

@@ -981,6 +981,12 @@ type Model struct {
 	roundPause     *roundPause
 	roundGrant     int
 	roundsUncapped bool
+	// The hold: the turn parked at a round boundary, and whether one has
+	// been asked for and not yet reached (hold.go). Like the pause above
+	// them both belong to the turn — a turn the session has moved past
+	// cannot be let go of, and dropHold is what says so.
+	hold      *turnHold
+	holdAsked bool
 }
 
 func New(initialMessages []provider.Message, stream StreamFunc) Model {
@@ -1218,6 +1224,19 @@ func (m Model) WithResumedMessages(name string, msgs []provider.Message) Model {
 	return m
 }
 
+// WithHeldTurn reopens a resumed conversation held rather than idle: the turn
+// in it was parked at a round boundary and the round it was about to ask for
+// is still owed. Without it the conversation would come back with an
+// unanswered round in front of it and an idle prompt, which is the shape a
+// person reads as "it finished" (hold.go).
+func (m Model) WithHeldTurn(rounds, granted int) Model {
+	m.hold = &turnHold{turn: m.turnCount, rounds: rounds, granted: granted}
+	m.roundGrant = granted
+	m.appendEntry(entry{kind: entrySystem, text: m.heldNotice()})
+	m.syncViewport()
+	return m
+}
+
 // autosaveCmd persists the conversation to the session's own slot in the
 // background. Returns nil when there is no DB or nothing beyond the system
 // prompt to save. The slot is captured here, not when the command runs, so
@@ -1228,6 +1247,12 @@ func (m Model) autosaveCmd() tea.Cmd {
 		return nil
 	}
 	db, name, title := m.db, m.sessionName, m.titles.title
+	// And the mark saying the conversation is mid-turn, which is what makes
+	// quitting while held and starting again the same place (hold.go). It
+	// rides the save itself rather than a write beside it: the conversation
+	// and what the slot says about it are one fact, and two autosaves
+	// overlapping could otherwise land their halves in either order.
+	hold := m.holdMarker()
 	// The slot's name is what joins this session's metrics to its
 	// transcript, so the recorder learns it here, where the slot is decided.
 	if m.observer.Session != nil {
@@ -1238,7 +1263,7 @@ func (m Model) autosaveCmd() tea.Cmd {
 		// A slot another session has taken over is not written to; the
 		// store puts the conversation in one of this session's own and
 		// says where, which is the slot every save after this one goes to.
-		slot, err := db.AutosaveChat(name, newSessionName(), msgs)
+		slot, err := db.AutosaveChat(name, newSessionName(), msgs, hold)
 		if err != nil {
 			return nil
 		}
@@ -1802,6 +1827,18 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 				return m, m.armPress(armCancel, keys.Shown(keys.Draft.Cancel))
 			}
+			if m.heldAtBoundary() {
+				// A held turn is what the chord has to reach next: the turn
+				// is parked rather than finished, and without this the two
+				// presses fall through to the empty idle draft below and
+				// quit the session instead of giving the turn up (hold.go).
+				if armed.open(armCancel) {
+					m.dropHold()
+					m.setTurnState(stateStreaming)
+					return m.cancelTurnNow()
+				}
+				return m, m.armPress(armCancel, keys.Shown(keys.Draft.Cancel))
+			}
 			if m.decisionUngated() {
 				// Ctrl+C keeps the meaning the card has always given it: it
 				// answers the decision no. No draft can produce the chord, so
@@ -1905,6 +1942,14 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			// is pointed at, so the key keeps its textarea meaning there.
 			if m.inputLive() && m.attachedTo == "" {
 				return m.openPalette()
+			}
+		case keys.Is(pressed, keys.Draft.Pause):
+			// Hold the turn at its next round boundary, or let a held one go
+			// (hold.go). Attached, the keyboard is pointed at a child and
+			// the parent's turn is not what the chord is about, so it keeps
+			// its textarea meaning there — as it did when the palette had it.
+			if m.inputLive() && m.attachedTo == "" {
+				return m.toggleHold()
 			}
 		case keys.Is(pressed, keys.Draft.Reading):
 			// Focus mode: navigate and expand transcript rows; scoped
@@ -3058,6 +3103,14 @@ func (m Model) resumeToolLoop() (tea.Model, tea.Cmd) {
 	if !m.roundsUnbounded() && m.agent.Rounds() >= m.effectiveMaxToolRounds() {
 		return m.pauseAtRoundLimit()
 	}
+	// And a hold asked mid-turn is honoured beside it, for the same reason
+	// the ceiling is checked here: this is the one moment the turn is between
+	// rounds, with the round's results already in the conversation and
+	// nothing yet asked of the model, so parking costs nothing and owes
+	// nothing (hold.go).
+	if m.holdAsked {
+		return m.holdTurn()
+	}
 	// A long turn is asked what it has got, long before the cap — by a drift
 	// verdict where there is one, by the clock otherwise (steer.go). Steering
 	// injected above answers the same question and resets the counter both
@@ -3550,7 +3603,7 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 	// through a round-limit pause, where the ceiling is the thing being
 	// decided. The grant on offer is stated beside it, so the counter says
 	// both what the bound is and what taking the offer would make it.
-	if m.agent.Rounds() > 0 && (m.turnState() != stateInput || m.pausedAtRoundLimit()) {
+	if m.agent.Rounds() > 0 && (m.turnState() != stateInput || m.pausedAtRoundLimit() || m.heldAtBoundary()) {
 		c.Round = m.roundCounter()
 	}
 	if m.TotalTokensIn != 0 || m.TotalTokensOut != 0 {
@@ -4212,9 +4265,22 @@ func helpKeysText() string {
   ctrl+a ctrl+e  The draft is a readline editor: line start and line end,
   ctrl+k ctrl+u  kill to end and to start of line; ctrl+w deletes the word
                  before the cursor, alt+b and alt+f move by word
-  ctrl+p         Command palette: one prompt over commands, saved chats and
+  ctrl+/         Command palette: one prompt over commands, saved chats and
                  the files this session touched — type to filter, enter runs,
-                 tab writes it into the input, esc dismisses
+                 tab writes it into the input, esc dismisses. A terminal that
+                 cannot send this chord — it is a single byte and Windows
+                 conhost sends nothing for it — reaches the same list through
+                 the other door: / on an empty draft, then tab
+  ctrl+p         Hold the turn between rounds, and press it again to let the
+                 turn go on. The hold waits for the round in flight to finish,
+                 because a stream nobody is reading backs up until the
+                 provider gives up on it — so the rail says "holding after
+                 this round" and then "held". Nothing is re-asked and nothing
+                 is lost: what you type while it is held rides out with the
+                 round it resumes into, ctrl+z is accepted, and quitting and
+                 coming back with --continue opens the conversation held. It
+                 reaches every agent this session started, each at its own
+                 boundary, and one press lets them all go
   ctrl+r         Search the input history: an incremental reverse search over
                  what you typed before. Typing filters, ctrl+r again steps to
                  an older match, enter keeps the match in the draft, esc puts

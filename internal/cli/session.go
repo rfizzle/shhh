@@ -981,6 +981,14 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 				resumed[0].Content = env.sysPrompt
 			}
 			model = model.WithResumedMessages(name, resumed)
+			// A conversation the slot says was saved mid-turn comes back
+			// mid-turn. Without this it would open idle with an unanswered
+			// round in front of it, which is the shape a person reads as
+			// "it finished" — and the round it is owed would never be asked
+			// for (docs/capabilities/sessions-and-memory.md#a-held-turn-comes-back-held).
+			if h, ok, err := db.ChatHold(name); err == nil && ok {
+				model = model.WithHeldTurn(h.Rounds, h.Granted)
+			}
 		}
 	}
 	if r := update.CheckCached(version); r != nil {

@@ -1183,3 +1183,142 @@ func TestRetryStartsFromTheTreeAsItIsNow(t *testing.T) {
 		t.Fatalf("the retry started from %d parent paths, want the one written since", st.Seeded)
 	}
 }
+
+// waitHeld polls until the named child has parked at its own round boundary.
+func waitHeld(t *testing.T, sup *Supervisor, name string, want bool) {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		if st, ok := sup.Get(name); ok && st.Held == want {
+			return
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+	st, _ := sup.Get(name)
+	t.Fatalf("agent %s held = %v, want %v (state %s)", name, st.Held, want, st.State)
+}
+
+// A hold reaches the whole fan-out and one release lets it all go. Nothing
+// stops where it stands: each child finishes the round it is in and waits at
+// its own boundary, which is the only place a turn can be stopped without
+// abandoning a request the provider is still answering.
+func TestHoldParksEveryChildAndOneReleaseLetsThemGo(t *testing.T) {
+	// Both children take a tool round first, whichever order they get to the
+	// scripted stream in, so each one has a boundary of its own to park at.
+	env := &scriptedEnv{steps: []streamStep{
+		{calls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
+		{calls: []provider.ToolCall{{ID: "c2", Name: "read_file", Arguments: `{"path":"y"}`}}},
+		{text: "first done"},
+		{text: "second done"},
+	}}
+	sup := newTestSupervisor(t, env)
+	sup.Hold()
+	if !sup.Holding() {
+		t.Fatal("the hold did not stand")
+	}
+
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey one"}`)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey two"}`)
+	waitHeld(t, sup, "researcher-1", true)
+	waitHeld(t, sup, "researcher-2", true)
+
+	for _, name := range []string{"researcher-1", "researcher-2"} {
+		st, _ := sup.Get(name)
+		if st.State != StateRunning {
+			t.Errorf("%s should still be running while held, got %s", name, st.State)
+		}
+		if !strings.Contains(st.Detail, "held") {
+			t.Errorf("%s should say it is held, got %q", name, st.Detail)
+		}
+	}
+
+	sup.Release()
+	if sup.Holding() {
+		t.Fatal("the release did not clear the hold")
+	}
+	waitState(t, sup, "researcher-1", StateDone)
+	waitState(t, sup, "researcher-2", StateDone)
+	waitHeld(t, sup, "researcher-1", false)
+}
+
+// A hold has to be able to come back, which is why the channel is replaced
+// rather than reopened: a closed one would let every later fan-out straight
+// through.
+func TestHoldCanBeTakenAgainAfterARelease(t *testing.T) {
+	sup := newTestSupervisor(t, &scriptedEnv{})
+	sup.Hold()
+	sup.Release()
+	sup.Hold()
+	if !sup.Holding() {
+		t.Fatal("a hold taken after a release did not stand")
+	}
+	sup.Release()
+	// And releasing what nothing holds is not an error, so a session that
+	// lets go twice does not have to remember which time was the real one.
+	sup.Release()
+}
+
+// A held child is still killable: it must not sit in its worktree waiting for
+// a release nobody is going to send.
+func TestHoldDoesNotOutlastAKill(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{
+		{calls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
+		{text: "done"},
+	}}
+	sup := newTestSupervisor(t, env)
+	sup.Hold()
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey"}`)
+	waitHeld(t, sup, "researcher-1", true)
+
+	if err := sup.Kill("researcher-1"); err != nil {
+		t.Fatal(err)
+	}
+	waitState(t, sup, "researcher-1", StateFailed)
+	// And it stops reading as held: a finished lane offering a release that
+	// can no longer do anything is a lie about what is left to do.
+	waitHeld(t, sup, "researcher-1", false)
+}
+
+// A release un-marks only the hold it is releasing. A hold taken again while
+// a release is still walking the children would otherwise have its freshly
+// parked child un-marked by the release before it, and the rail would report
+// a child as running that is going nowhere.
+func TestReleaseDoesNotUnparkAChildHeldByALaterHold(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{
+		{calls: []provider.ToolCall{{ID: "c1", Name: "read_file", Arguments: `{"path":"x"}`}}},
+		{text: "done"},
+	}}
+	sup := newTestSupervisor(t, env)
+	sup.Hold()
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey"}`)
+	waitHeld(t, sup, "researcher-1", true)
+
+	// The first hold's channel, and a second hold taken over the top of it —
+	// the order a release racing a child's own arrival would produce.
+	first := currentHold(sup)
+	sup.Release()
+	sup.Hold()
+	c, err := sup.lookup("researcher-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.park(currentHold(sup))
+
+	// The stale release finds a child parked on a hold it does not own.
+	if c.unpark(first) {
+		t.Fatal("a release un-parked a child held by a later hold")
+	}
+	if st, _ := sup.Get("researcher-1"); !st.Held {
+		t.Fatal("the child should still read as held")
+	}
+	sup.Release()
+	waitState(t, sup, "researcher-1", StateDone)
+}
+
+// currentHold is the hold as it stands, read the way everything else in the
+// supervisor reads it.
+func currentHold(sup *Supervisor) chan struct{} {
+	sup.mu.Lock()
+	defer sup.mu.Unlock()
+	return sup.held
+}

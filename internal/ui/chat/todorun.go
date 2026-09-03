@@ -193,14 +193,14 @@ func (m Model) todoRunStep(step run.Step) (tea.Model, tea.Cmd) {
 // todoRunAfter is the turn-end hook, derived from the model before against
 // the model after the way the summary's close is: a stage's turn ending is
 // a transition, not a message any one handler could be trusted to send.
-// It waits out a round-limit pause and a decision card — those are the
-// reader's — and reads the answer only when the turn is truly over.
+// It waits out a round-limit pause, a hold and a decision card — those are
+// the reader's — and reads the answer only when the turn is truly over.
 func (m Model) todoRunAfter(prev Model) (Model, tea.Cmd) {
 	st := m.todoRun
 	if st == nil || st.Over() || !prev.working() || m.working() {
 		return m, nil
 	}
-	if m.turnState() != stateInput || m.pausedAtRoundLimit() {
+	if m.turnState() != stateInput || m.pausedAtRoundLimit() || m.heldAtBoundary() {
 		return m, nil
 	}
 	switch st.Stage {

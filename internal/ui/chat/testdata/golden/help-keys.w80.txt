@@ -51,9 +51,22 @@ Keys:
   ctrl+a ctrl+e  The draft is a readline editor: line start and line end,       
   ctrl+k ctrl+u  kill to end and to start of line; ctrl+w deletes the word      
                  before the cursor, alt+b and alt+f move by word                
-  ctrl+p         Command palette: one prompt over commands, saved chats and     
+  ctrl+/         Command palette: one prompt over commands, saved chats and     
                  the files this session touched — type to filter, enter runs,   
-                 tab writes it into the input, esc dismisses                    
+                 tab writes it into the input, esc dismisses. A terminal that   
+                 cannot send this chord — it is a single byte and Windows       
+                 conhost sends nothing for it — reaches the same list through   
+                 the other door: / on an empty draft, then tab                  
+  ctrl+p         Hold the turn between rounds, and press it again to let the    
+                 turn go on. The hold waits for the round in flight to finish,  
+                 because a stream nobody is reading backs up until the          
+                 provider gives up on it — so the rail says "holding after      
+                 this round" and then "held". Nothing is re-asked and nothing   
+                 is lost: what you type while it is held rides out with the     
+                 round it resumes into, ctrl+z is accepted, and quitting and    
+                 coming back with --continue opens the conversation held. It    
+                 reaches every agent this session started, each at its own      
+                 boundary, and one press lets them all go                       
   ctrl+r         Search the input history: an incremental reverse search over   
                  what you typed before. Typing filters, ctrl+r again steps to   
                  an older match, enter keeps the match in the draft, esc puts   
@@ -186,9 +199,22 @@ Keys:
 ␛[3;38;5;241m  ctrl+a ctrl+e  The draft is a readline editor: line start and line end,␛[m       
 ␛[3;38;5;241m  ctrl+k ctrl+u  kill to end and to start of line; ctrl+w deletes the word␛[m      
 ␛[3;38;5;241m                 before the cursor, alt+b and alt+f move by word␛[m                
-␛[3;38;5;241m  ctrl+p         Command palette: one prompt over commands, saved chats and␛[m     
+␛[3;38;5;241m  ctrl+/         Command palette: one prompt over commands, saved chats and␛[m     
 ␛[3;38;5;241m                 the files this session touched — type to filter, enter runs,␛[m   
-␛[3;38;5;241m                 tab writes it into the input, esc dismisses␛[m                    
+␛[3;38;5;241m                 tab writes it into the input, esc dismisses. A terminal that␛[m   
+␛[3;38;5;241m                 cannot send this chord — it is a single byte and Windows␛[m       
+␛[3;38;5;241m                 conhost sends nothing for it — reaches the same list through␛[m   
+␛[3;38;5;241m                 the other door: / on an empty draft, then tab␛[m                  
+␛[3;38;5;241m  ctrl+p         Hold the turn between rounds, and press it again to let the␛[m    
+␛[3;38;5;241m                 turn go on. The hold waits for the round in flight to finish,␛[m  
+␛[3;38;5;241m                 because a stream nobody is reading backs up until the␛[m          
+␛[3;38;5;241m                 provider gives up on it — so the rail says "holding after␛[m      
+␛[3;38;5;241m                 this round" and then "held". Nothing is re-asked and nothing␛[m   
+␛[3;38;5;241m                 is lost: what you type while it is held rides out with the␛[m     
+␛[3;38;5;241m                 round it resumes into, ctrl+z is accepted, and quitting and␛[m    
+␛[3;38;5;241m                 coming back with --continue opens the conversation held. It␛[m    
+␛[3;38;5;241m                 reaches every agent this session started, each at its own␛[m      
+␛[3;38;5;241m                 boundary, and one press lets them all go␛[m                       
 ␛[3;38;5;241m  ctrl+r         Search the input history: an incremental reverse search over␛[m   
 ␛[3;38;5;241m                 what you typed before. Typing filters, ctrl+r again steps to␛[m   
 ␛[3;38;5;241m                 an older match, enter keeps the match in the draft, esc puts␛[m   

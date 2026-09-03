@@ -59,7 +59,7 @@ func TestFrame_WideTwoRails(t *testing.T) {
 	m := frameModel(t, 130, 40) // content 126 ≥ 110
 	view := stripANSI(m.View().Content)
 
-	for _, want := range []string{"╭─", "├─", "╰─", "⏸ manual", "ctx ", "↑41.2k ↓9.8k", "$0.51", "gpt-4o", "enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+p palette · shift+tab mode", "idle"} {
+	for _, want := range []string{"╭─", "├─", "╰─", "⏸ manual", "ctx ", "↑41.2k ↓9.8k", "$0.51", "gpt-4o", "enter send · shift+enter newline · ctrl+g editor · ctrl+v attach · ctrl+/ palette · shift+tab mode", "idle"} {
 		if !strings.Contains(view, want) {
 			t.Fatalf("wide frame missing %q:\n%s", want, view)
 		}

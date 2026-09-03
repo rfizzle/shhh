@@ -80,6 +80,22 @@ session is looking at, and every agent — the root included — is the same kin
 of thing. That equivalence is why the interactive surfaces did not need a
 second implementation for children.
 
+## A hold reaches the whole fan-out
+
+Holding the session's own turn holds every child with it. Nothing stops where
+it stands: each child finishes the round it is in and waits at its own
+boundary, which is the only place a turn can be stopped without abandoning a
+request the provider is still answering — so a fan-out of four parks four
+times, at four different moments, and the rail says which of them have got
+there.
+
+One press lets them all go. The hold was asked of the session rather than of
+a child, and letting them out one at a time would be a list nobody could be
+expected to keep. A held child is still a running one — it keeps its slot, its
+worktree and its conversation — and killing it still works, because a child
+nobody is coming back to must not sit in its worktree waiting for a release
+that is never sent.
+
 ## A profile is a file
 
 The two kinds above are the profiles every session has. A profile is one

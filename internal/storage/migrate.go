@@ -165,6 +165,13 @@ var migrations = []string{
 	// report every session anyone never got to as one somebody disliked
 	// (docs/capabilities/sessions-and-memory.md#a-rating-is-how-you-check-the-inference).
 	`ALTER TABLE agent_sessions ADD COLUMN rating INTEGER;`,
+
+	// Whether the conversation in a slot was saved mid-turn, and where that
+	// turn had got to. Nullable, because a slot written before the column
+	// existed was not held — it was saved by a build that could not hold a
+	// turn at all — and a default would open every one of them parked
+	// (docs/capabilities/sessions-and-memory.md#a-held-turn-comes-back-held).
+	`ALTER TABLE chat_sessions ADD COLUMN held TEXT;`,
 }
 
 // migrate brings the store up to the current schema, one step per

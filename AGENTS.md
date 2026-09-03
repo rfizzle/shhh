@@ -296,6 +296,32 @@ Each of these calls sends `EffortLow` outright and carries a ceiling with
 room for the thought and the answer together — off is the model's own depth,
 and the four ceilings are spent by the reasoning first.
 
+**The hold is a state the driver enters, never a flag the loop reads.** It
+generalises the round-limit pause: `holdTurn` in `internal/ui/chat/hold.go`
+parks the session's turn at the boundary `resumeToolLoop` checks the ceiling
+at, with `Model.turnOpen` and the vitals ring left open — `setTurnState`
+skips the whole working-to-idle close for a held turn, because a close row
+and a turn record would both say a turn ended that is about to carry on.
+`releaseHold` goes back through `resumeToolLoop` rather than straight to
+`requestStream`, so the steering typed while parked, the tree notice and the
+ceiling are all owed again. `agent.Headless.Hold` is the same park for a
+child: a hook returning nil to run on or a channel to wait on, selected on at
+the round tail beside the retry's wait and registering its cancel in the same
+place so `Interrupt` wakes it. `Supervisor.Hold`/`Release` back it with a
+channel that is replaced rather than reopened (a closed one lets every later
+fan-out through), and **the child records the channel it is parked on, not a
+flag**: `holdFor` reads the hold and parks the child under one lock, and
+`unpark` clears the mark only for the hold being released, so a hold taken
+again mid-release cannot have its freshly parked child un-marked by the
+release before it. A held child is still `StateRunning` — it keeps its slot
+and its worktree — so `Status.Held` rides beside the state, and everything
+that reads the state for "is anything moving" has to read `Held` too:
+`childProgress` for the rail's glyph, `frameWorking` for the suspend refusal,
+`childrenRunning` for the spinner. The mid-turn marker is `storage.ChatHold`,
+written inside the autosave's own transaction (`saveChatMarked`) rather than
+beside it, because the conversation and what the slot says about it are one
+fact; `SaveChat` leaves it alone, and `--continue` reads it.
+
 `internal/cli/prompts.go` is the door: `loadPrompts` reads whatever
 `[prompts]` named, refuses a file it cannot read or one naming a substitution
 that wording does not take, and `steering` assembles the set from the config's

@@ -284,6 +284,27 @@ something else wrote over — and it changes nothing: the draft, the history and
 any live selection are the same afterwards, because none of them lived on the
 screen.
 
+Stopping is not the same act as abandoning, and the frame offers both. A turn
+can be held between rounds: the key marks it, the round in flight finishes,
+and the turn parks with everything that round put in the conversation still
+in it — so leaving and coming back costs one keystroke rather than a cancel
+and the whole question asked again. What cannot be paused is the round itself.
+An open stream is a socket somebody has to keep reading, and a reader that
+stops backs it up until the provider gives up on the request, which is the
+same reason suspending is refused while a turn works. So the rail says
+"holding after this round" first and "held" after, because those are different
+promises, and it wears the mark a waiting decision wears: both mean the
+session has stopped and is waiting on you. A held turn is idle in every other
+way — suspending is accepted, because there is no stream to abandon — and what
+is typed while it waits rides out with the round it resumes into, the way
+anything typed mid-turn does. The hold reaches every agent the session
+started, each parking at its own boundary rather than where it stands, and one
+press lets them all go.
+
+A conversation quit while held comes back held. The slot remembers that the
+turn was parked and where it had got to, so reopening it is the same place
+rather than an idle prompt with an unanswered round in front of it.
+
 Abandoning work is never one keystroke. A turn in flight is minutes of work,
 and the keys that end things are the keys a reflex produces — so the first
 press of an interrupt opens a short window and the rails say what a second
@@ -579,7 +600,11 @@ the default answer is the one that loses nothing.
 
 One prompt over everything the session can reach: commands, sessions,
 anything else addressable. The slash prefix is for a command you are already
-typing; the palette is for one you are looking for.
+typing; the palette is for one you are looking for. Its chord is the slash key
+for that reason — the list a chord opens is the list the prefix completes —
+and it is declared in both the spellings a terminal delivers that keystroke
+in. A terminal that sends neither is not stranded: the key list names the
+other door beside it, which is the prefix on an empty draft.
 
 It is the ordinary selector with its filter always open, not a fourth kind of
 list. Its count is of matches against the whole reach rather than of rows

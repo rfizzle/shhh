@@ -114,6 +114,12 @@ type DraftKeys struct {
 	Reasoning  Binding
 	Mode       Binding
 
+	// Pause holds a working turn at its next round boundary and lets a held
+	// one go on. It is one key for both halves because it is one act read
+	// twice — the turn is either running or parked, and the chip on the rail
+	// says which (docs/interface/surfaces.md#the-input-frame).
+	Pause Binding
+
 	HistoryPrev   Binding
 	HistoryNext   Binding
 	HistorySearch Binding
@@ -162,9 +168,24 @@ var Draft = DraftKeys{
 	Editor:     bind("ctrl+g", "open the draft in $EDITOR", "ctrl+g"),
 	Attach:     bind("ctrl+v", "attach the clipboard", "ctrl+v"),
 	Complete:   bind("tab", "complete a slash command", "tab"),
-	Palette:    bind("ctrl+p", "the command palette", "ctrl+p"),
-	Reasoning:  bind("ctrl+t", "cycle the reasoning level", "ctrl+t", "alt+t"),
-	Mode:       bind("shift+tab", "cycle the permission mode", "shift+tab"),
+	// The palette moved off ctrl+p to make room for the hold, and it went to
+	// the slash key because `/` is already the command prefix: a chord that
+	// opens the list of commands reads as the key the commands start with.
+	// Both spellings are declared because they are the same keystroke seen
+	// two ways — a terminal in the enhanced keyboard protocol reports the
+	// slash with a ctrl modifier, and every other one sends the single byte
+	// the decoder resolves to ctrl+_. A terminal that sends neither (Windows
+	// conhost is the known one) still reaches the palette through `/` on an
+	// empty draft and tab, which is what the `?` list says beside it.
+	Palette:   bind("ctrl+/", "the command palette", "ctrl+/", "ctrl+_"),
+	Reasoning: bind("ctrl+t", "cycle the reasoning level", "ctrl+t", "alt+t"),
+	Mode:      bind("shift+tab", "cycle the permission mode", "shift+tab"),
+
+	// The chord the palette had. It is spent here because holding is the act
+	// that has to be reachable without looking — the person reaching for it
+	// is about to lose the network — and `p` is the letter both halves of it
+	// are named after.
+	Pause: bind("ctrl+p", "hold the turn between rounds, or let a held one go", "ctrl+p"),
 
 	HistoryPrev:   bind("↑", "recall the previous input", "up"),
 	HistoryNext:   bind("↓", "the next one", "down"),

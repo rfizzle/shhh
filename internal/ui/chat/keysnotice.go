@@ -17,12 +17,17 @@ import (
 
 // KeysChangedNotice is the notice-rail row for this release's rebinds. One
 // row, newest change first, ending with the door to the full list.
+//
+// One row is the whole budget, and it is what decides the length of this
+// list: a row that runs past the terminal's edge loses the newest change,
+// which is the one entry it exists for. So the oldest entries go as new ones
+// arrive — the two prefixes that gained a meaning rather than keys that moved
+// were the first to, being the two nobody has had to relearn in releases.
 func KeysChangedNotice() string {
 	changes := []string{
-		"@ files",
-		"! run",
-		keys.Shown(keys.Draft.Reading) + " reading",
 		keys.Shown(keys.Draft.Palette) + " palette",
+		keys.Shown(keys.Draft.Pause) + " hold",
+		keys.Shown(keys.Draft.Reading) + " reading",
 		keys.Shown(keys.Draft.Agents) + " agents",
 		keys.Shown(keys.Draft.HistorySearch) + " history search",
 		keys.Shown(keys.Draft.Reasoning) + " reasoning",

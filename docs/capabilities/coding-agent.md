@@ -306,6 +306,29 @@ that stopped it.
 A hard limit would throw away a mostly-finished turn to enforce a number that
 was a guess. Children default to uncapped, because they have nobody to ask.
 
+## A turn can be held between rounds
+
+Stopping a turn used to mean cancelling it, which made "I am about to lose
+this network" and "you are doing the wrong thing" the same act with the same
+cost: the work kept, the instruction gone, the question to ask again. A hold
+is the other answer. The turn stops at the next round boundary, the
+conversation keeps everything that round put in it, and letting it go asks
+for the request the loop was about to make rather than starting a turn.
+
+The boundary is not a compromise, it is the only place a turn can stop. A
+round in flight is an open stream, and a stream nobody is reading backs up
+until the provider gives up on the request — so a hold that took effect where
+it was asked for would be a cancellation wearing another word. A network that
+flips while a stream is still open is a different failure with an answer of
+its own: the request is waited out and retried, and a reply that stopped
+halfway is offered back rather than thrown away.
+
+The hold reaches whatever the session started. A parent holding its own turn
+parks every child at that child's own boundary, in its own time, and one
+release lets the whole fan-out go. The loop's own seam is a hook the child
+runner sets and nothing else does: a scripted run has no keyboard to ask for
+a hold with, and nothing in it would ever release one.
+
 ## An unattended run runs the same loop
 
 A run with nobody in front of it — `-p`, an eval, every sub-agent — drives the

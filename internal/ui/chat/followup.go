@@ -27,7 +27,7 @@ import (
 // false when the chord is not its to claim — idle, attached, or an empty
 // box — and the key falls through to the textarea's newline.
 func (m Model) queueFollowUp() (tea.Model, tea.Cmd, bool) {
-	if !m.inputLive() || m.attachedTo != "" || (!m.working() && !m.decisionUngated()) {
+	if !m.inputLive() || m.attachedTo != "" || !m.turnInFlight() {
 		return m, nil, false
 	}
 	text := strings.TrimSpace(m.input.Value())

@@ -1150,6 +1150,53 @@ func TestChatTitle_ListedAndUnknown(t *testing.T) {
 	}
 }
 
+// The mark a conversation saved mid-turn carries. It rides the autosave
+// itself, so the slot and the conversation in it cannot come to disagree; a
+// slot nothing ever held reads as unheld, which is what opens every
+// conversation written before the column existed the way it always opened.
+func TestChatHold_MarkedClearedAndAbsent(t *testing.T) {
+	db := openTestDB(t)
+	msgs := []provider.Message{{Role: provider.RoleUser, Content: "hi"}}
+	if _, err := db.AutosaveChat("h", "fresh", msgs, nil); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	if _, held, err := db.ChatHold("h"); err != nil || held {
+		t.Fatalf("a fresh chat is not held, got %v %v", held, err)
+	}
+
+	msgs = append(msgs, provider.Message{Role: provider.RoleAssistant, Content: "ok"})
+	if _, err := db.AutosaveChat("h", "fresh", msgs, &ChatHold{Rounds: 12, Granted: 100}); err != nil {
+		t.Fatalf("save held: %v", err)
+	}
+	got, held, err := db.ChatHold("h")
+	if err != nil || !held {
+		t.Fatalf("the mark should be readable back, got %v %v", held, err)
+	}
+	if got.Rounds != 12 || got.Granted != 100 {
+		t.Fatalf("the mark should carry both counts, got %+v", got)
+	}
+
+	// A named save is a copy of the conversation, and whether the live
+	// session is holding a turn is not a fact about the copy.
+	if err := db.SaveChat("h", msgs); err != nil {
+		t.Fatalf("save: %v", err)
+	}
+	if _, held, _ := db.ChatHold("h"); !held {
+		t.Fatal("a named save should leave the mark alone")
+	}
+
+	if _, err := db.AutosaveChat("h", "fresh", msgs, nil); err != nil {
+		t.Fatalf("save unheld: %v", err)
+	}
+	if _, held, _ := db.ChatHold("h"); held {
+		t.Fatal("a turn let go of leaves no mark")
+	}
+
+	if _, held, err := db.ChatHold("missing"); err != nil || held {
+		t.Fatalf("an unknown chat is not held and is not an error, got %v %v", held, err)
+	}
+}
+
 // Two openers on a store neither has seen — the root's background history
 // purge beside the command's own open — must both come up: the loser waits
 // on the lock and finds the step already recorded rather than applying it
@@ -1353,14 +1400,14 @@ func TestSaveChat_RefusesASlotAnotherSessionWrote(t *testing.T) {
 	// a slot of its own, and a second one refused at the same moment lands
 	// in that same slot rather than leaving a copy behind.
 	mine := []provider.Message{{Role: provider.RoleUser, Content: "clobber"}}
-	moved, err := first.AutosaveChat(slot, "2026-09-02 10:04:00", mine)
+	moved, err := first.AutosaveChat(slot, "2026-09-02 10:04:00", mine, nil)
 	if err != nil {
 		t.Fatalf("autosave: %v", err)
 	}
 	if moved == slot {
 		t.Fatalf("the autosave should have left the taken slot %q", slot)
 	}
-	again, err := first.AutosaveChat(slot, "2026-09-02 10:04:01", mine)
+	again, err := first.AutosaveChat(slot, "2026-09-02 10:04:01", mine, nil)
 	if err != nil {
 		t.Fatalf("autosave: %v", err)
 	}

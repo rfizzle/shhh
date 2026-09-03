@@ -429,6 +429,17 @@ func TestGolden_TurnStatus(t *testing.T) {
 					close: &components.TurnClose{State: components.TurnDone,
 						Tools: 18, Elapsed: "1m 04s", Spend: "$0.14"}})
 			})},
+			// The two halves of a hold. Neither is a phase — the first is
+			// still in one and the second is in none — so both take the slot
+			// whole, in the chip a waiting decision wears (hold.go).
+			{Label: "held · asked, the round still running", View: frame(func(m *Model) {
+				m.holdAsked = true
+			})},
+			{Label: "held · parked at the boundary", View: frame(func(m *Model) {
+				m.state = stateInput
+				m.turnOpen = true
+				m.hold = &turnHold{turn: 1, rounds: 12}
+			})},
 		}
 	})
 }

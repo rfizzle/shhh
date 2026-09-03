@@ -29,10 +29,10 @@ func paletteModel(t *testing.T) Model {
 // openPaletteWith opens the palette and types query into it.
 func openPaletteWith(t *testing.T, m Model, query string) Model {
 	t.Helper()
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'p', Mod: tea.ModCtrl})
+	updated, _ := m.Update(ctrlSlash)
 	m = updated.(Model)
 	if m.palette == nil || m.state != statePick {
-		t.Fatal("ctrl+p should open the palette on the picker surface")
+		t.Fatal("the palette chord should open the palette on the picker surface")
 	}
 	return typeChars(t, m, query)
 }
@@ -222,6 +222,28 @@ func TestPalette_DigitsAndJKAreQueryText(t *testing.T) {
 	}
 }
 
+// The chord the palette gave up to the hold still moves inside the list. The
+// two are not in competition: the palette is a takeover, so its keys are
+// routed before the draft's are ever consulted.
+func TestPalette_TheOldChordStillMovesInsideTheList(t *testing.T) {
+	m := openPaletteWith(t, paletteModel(t), "")
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyDown})
+	m = updated.(Model)
+	moved := m.picker.Focus
+
+	updated, _ = m.Update(ctrlP)
+	m = updated.(Model)
+	if m.palette == nil || m.state != statePick {
+		t.Fatal("the old chord closed the palette instead of moving in it")
+	}
+	if m.picker.Focus >= moved {
+		t.Errorf("the old chord did not move the cursor back: %d, was %d", m.picker.Focus, moved)
+	}
+	if m.palette.query != "" {
+		t.Errorf("the chord typed into the query: %q", m.palette.query)
+	}
+}
+
 func TestPalette_IdleOnlyCommandsDimRatherThanDrop(t *testing.T) {
 	m := paletteModel(t)
 	m.setTurnState(stateStreaming)
@@ -251,7 +273,7 @@ func TestPalette_OpensMidTurn(t *testing.T) {
 	m := paletteModel(t)
 	m.setTurnState(stateStreaming)
 
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'p', Mod: tea.ModCtrl})
+	updated, _ := m.Update(ctrlSlash)
 	m = updated.(Model)
 
 	if m.palette == nil || m.state != statePick {
@@ -271,7 +293,7 @@ func TestPalette_NotOpenedWhileAttached(t *testing.T) {
 	m := paletteModel(t)
 	m.attachedTo = "researcher-1"
 
-	updated, _ := m.Update(tea.KeyPressMsg{Code: 'p', Mod: tea.ModCtrl})
+	updated, _ := m.Update(ctrlSlash)
 	m = updated.(Model)
 
 	if m.palette != nil {

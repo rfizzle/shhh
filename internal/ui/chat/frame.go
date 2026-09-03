@@ -166,7 +166,11 @@ func (m Model) frameWorking() bool {
 			return false
 		}
 		st, ok := m.subagents.Get(m.attachedTo)
-		return ok && st.State == subagent.StateRunning
+		// A held child is still `running` as far as its lifecycle goes — it
+		// keeps its slot and its worktree — but it holds no stream, which is
+		// the only thing this answer is used for: whether the frame may say
+		// WORKING, and whether the suspend chord is refused (hold.go).
+		return ok && st.State == subagent.StateRunning && !st.Held
 	}
 	switch m.turnState() {
 	case stateStreaming, stateRunningCmd, stateClassifying:
@@ -231,6 +235,12 @@ func (m Model) frameActivity(width int) string {
 	if n := m.waitingCount(); n > 0 {
 		return sty.Frame.WaitingChip.Render(clipRow(fmt.Sprintf("⏸ %d waiting", n), width))
 	}
+	// A turn asked to hold, and a turn parked at the boundary, are the next
+	// thing the slot says: a phase would be the wrong answer to both, since
+	// the first is still in one and the second is in none (hold.go).
+	if chip := m.holdChip(); chip != "" {
+		return sty.Frame.WaitingChip.Render(clipRow(chip, width))
+	}
 	// Attached, the frame is scoped to the child and the child's phase is not
 	// something the supervisor reports — a subagent is running, blocked or done.
 	// Naming one of the turn status's four for it would be inventing the fact,
@@ -275,6 +285,20 @@ func (m Model) frameHints() string {
 		hints = []string{
 			keys.Shown(keys.Agent.Detach) + " detach",
 			keys.Shown(keys.Draft.Agents) + " agents",
+		}
+	case m.heldAtBoundary():
+		// A held turn is idle in every way the frame can see, so its rail
+		// has to say the three things only it knows: the key that lets the
+		// turn go, that what is typed now rides out with it, and that the
+		// turn can still be given up on (hold.go).
+		if note := m.armedNotice(); note != "" {
+			hints = []string{note}
+			break
+		}
+		hints = []string{
+			keys.Shown(keys.Draft.Pause) + " resumes the turn",
+			keys.Shown(keys.Draft.Send) + " queues steering",
+			keys.Shown(keys.Draft.Cancel) + " cancels it",
 		}
 	case m.working():
 		// An open two-press window replaces the hints: what the next
