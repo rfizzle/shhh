@@ -2,6 +2,7 @@ package diff
 
 import (
 	"fmt"
+	"math/rand"
 	"strings"
 	"testing"
 )
@@ -201,5 +202,200 @@ func TestCompute_NoTrailingNewline(t *testing.T) {
 	want := []string{"@@ -1,1 +1,2 @@", " a", "+b"}
 	if strings.Join(got, "|") != strings.Join(want, "|") {
 		t.Fatalf("got %v, want %v", got, want)
+	}
+}
+
+// numbered builds n lines of the form "line 1".
+func numbered(n int) []string {
+	out := make([]string, n)
+	for i := range out {
+		out[i] = fmt.Sprintf("line %d", i+1)
+	}
+	return out
+}
+
+func joined(lines []string) string {
+	if len(lines) == 0 {
+		return ""
+	}
+	return strings.Join(lines, "\n") + "\n"
+}
+
+// A ten-line append to a five-thousand-line file is one hunk at the end, not
+// a whole-file replacement: the search only ever sees the ten lines that
+// differ, because the five thousand common ones are trimmed before it runs.
+func TestCompute_AppendToLargeFileIsOneHunk(t *testing.T) {
+	old := numbered(5000)
+	added := make([]string, 10)
+	for i := range added {
+		added[i] = fmt.Sprintf("appended %d", i+1)
+	}
+	h := Compute(joined(old), joined(append(append([]string{}, old...), added...)))
+
+	if len(h) != 1 {
+		t.Fatalf("an append should produce one hunk, got %d", len(h))
+	}
+	want := []string{
+		"@@ -4998,3 +4998,13 @@",
+		" line 4998", " line 4999", " line 5000",
+	}
+	for _, l := range added {
+		want = append(want, "+"+l)
+	}
+	if got := flatten(t, h); strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+	if adds, dels := Stats(h); adds != 10 || dels != 0 {
+		t.Fatalf("expected +10 -0, got +%d -%d", adds, dels)
+	}
+}
+
+// One changed line in the middle of a five-thousand-line file is one small
+// hunk with its context and its intraline emphasis intact.
+func TestCompute_LocalisedEditInLargeFileIsOneHunk(t *testing.T) {
+	old := numbered(5000)
+	edited := append([]string{}, old...)
+	edited[2499] = "code 2500"
+	h := Compute(joined(old), joined(edited))
+
+	if len(h) != 1 {
+		t.Fatalf("a localised edit should produce one hunk, got %d", len(h))
+	}
+	want := []string{
+		"@@ -2497,7 +2497,7 @@",
+		" line 2497", " line 2498", " line 2499",
+		"-line 2500", "+code 2500",
+		" line 2501", " line 2502", " line 2503",
+	}
+	if got := flatten(t, h); strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+	if adds, dels := Stats(h); adds != 1 || dels != 1 {
+		t.Fatalf("expected +1 -1, got +%d -%d", adds, dels)
+	}
+	// "line"/"code" differ up to the shared "e 2500" tail.
+	del, add := h[0].Lines[3], h[0].Lines[4]
+	if len(del.Emph) != 1 || del.Emph[0] != (Span{Start: 0, End: 3}) {
+		t.Fatalf("unexpected del emphasis span: %+v", del.Emph)
+	}
+	if len(add.Emph) != 1 || add.Emph[0] != (Span{Start: 0, End: 3}) {
+		t.Fatalf("unexpected add emphasis span: %+v", add.Emph)
+	}
+}
+
+// A reversed file has an edit distance near twice its length, far past
+// maxEdits. The result is coarser than the minimum, but it is still a
+// correct script and it still arrives.
+func TestCompute_PastTheEditBoundDegradesToReplacement(t *testing.T) {
+	const n = 5000
+	old := numbered(n)
+	reversed := make([]string, n)
+	for i, l := range old {
+		reversed[n-1-i] = l
+	}
+	h := Compute(joined(old), joined(reversed))
+
+	if len(h) != 1 {
+		t.Fatalf("a wholesale replacement should be one hunk, got %d", len(h))
+	}
+	if adds, dels := Stats(h); adds != n || dels != n {
+		t.Fatalf("expected +%d -%d, got +%d -%d", n, n, adds, dels)
+	}
+	for i, l := range h[0].Lines {
+		want := Del
+		if i >= n {
+			want = Add
+		}
+		if l.Kind != want {
+			t.Fatalf("line %d: deletions should all precede additions, got %+v", i, l)
+		}
+	}
+}
+
+// applyOps replays an edit script into the two texts it claims to describe.
+// A script that does not reproduce both is wrong however few edits it uses,
+// and a wrong diff is worse than a coarse one.
+func applyOps(ops []op) (oldLines, newLines []string) {
+	for _, o := range ops {
+		switch o.kind {
+		case Context:
+			oldLines = append(oldLines, o.text)
+			newLines = append(newLines, o.text)
+		case Del:
+			oldLines = append(oldLines, o.text)
+		case Add:
+			newLines = append(newLines, o.text)
+		}
+	}
+	return oldLines, newLines
+}
+
+// lcsLen is the quadratic reference the production code no longer keeps: the
+// length of the longest common subsequence, which fixes the fewest edits any
+// correct script can use.
+func lcsLen(a, b []string) int {
+	prev := make([]int, len(b)+1)
+	cur := make([]int, len(b)+1)
+	for i := len(a) - 1; i >= 0; i-- {
+		for j := len(b) - 1; j >= 0; j-- {
+			if a[i] == b[j] {
+				cur[j] = prev[j+1] + 1
+			} else {
+				cur[j] = max(prev[j], cur[j+1])
+			}
+		}
+		prev, cur = cur, prev
+		clear(cur)
+	}
+	return prev[0]
+}
+
+// Random line sequences over a tiny alphabet, so common lines repeat and the
+// search has real choices to make. Every script must replay into its inputs,
+// use the fewest possible edits, and keep each change's deletions ahead of
+// its additions, which is the shape the hunk and intraline passes read.
+func TestDiffOps_ScriptsAreCorrectMinimalAndGrouped(t *testing.T) {
+	rng := rand.New(rand.NewSource(1))
+	alphabet := []string{"a", "b", "c", "d", "e"}
+	gen := func(maxLen int) []string {
+		out := make([]string, rng.Intn(maxLen))
+		for i := range out {
+			out[i] = alphabet[rng.Intn(len(alphabet))]
+		}
+		return out
+	}
+
+	for i := 0; i < 5000; i++ {
+		a, b := gen(16), gen(16)
+		ops := diffOps(a, b)
+
+		gotOld, gotNew := applyOps(ops)
+		if strings.Join(gotOld, ",") != strings.Join(a, ",") || strings.Join(gotNew, ",") != strings.Join(b, ",") {
+			t.Fatalf("script does not replay into its inputs\nold %v -> %v\nnew %v -> %v", a, gotOld, b, gotNew)
+		}
+
+		edits := 0
+		for _, o := range ops {
+			if o.kind != Context {
+				edits++
+			}
+		}
+		if want := len(a) + len(b) - 2*lcsLen(a, b); edits != want {
+			t.Fatalf("script uses %d edits, the minimum is %d\nold %v\nnew %v", edits, want, a, b)
+		}
+
+		seenAdd := false
+		for _, o := range ops {
+			switch o.kind {
+			case Context:
+				seenAdd = false
+			case Add:
+				seenAdd = true
+			case Del:
+				if seenAdd {
+					t.Fatalf("a deletion follows an addition within one change\nold %v\nnew %v", a, b)
+				}
+			}
+		}
 	}
 }

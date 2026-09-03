@@ -420,7 +420,13 @@ them, so a grid change is a one-line change.
 
 Diffs are computed in `internal/diff` from the old and new content the edit
 tools already hold — no shelling out to `git diff` except for the session-wide
-diff view.
+diff view. Lines are aligned by Myers' difference algorithm in its
+linear-space form, with the common head and tail trimmed off first, so the
+cost follows the size of the change and not the size of the file. One trap
+survives that: a region whose edit distance passes the `maxEdits` bound in
+`diff.go` still degrades to deleting every line and adding every line, which
+on screen is a whole-file replacement with no hunks and no intraline
+emphasis. If a diff looks like that, the bound is the first thing to check.
 
 The step outline is a layer over the entry list in `internal/ui/chat/steps.go`
 rather than a component: it groups history instead of rendering a widget.
