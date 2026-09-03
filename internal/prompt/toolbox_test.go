@@ -119,3 +119,20 @@ func TestToolbox_SplitsSdFromABatchedEdit(t *testing.T) {
 		}
 	}
 }
+
+// The three questions beyond definition and references exist to replace a
+// search and a whole-file read, so the notes have to say so: a model that is
+// not told which tool is better than the one it already reaches for keeps
+// reaching for the one it already has.
+func TestToolbox_SteersTheLanguageServerAheadOfSearchAndRead(t *testing.T) {
+	got := Toolbox(toolList("fd", "hover", "document_symbol", "workspace_symbol"))
+	for _, want := range []string{"where is X declared", "read_file", "without opening the file"} {
+		if !strings.Contains(got, want) {
+			t.Errorf("the language-server notes should steer with %q, got:\n%s", want, got)
+		}
+	}
+	// Navigation still leads, whatever order they were registered in.
+	if strings.Index(got, "- workspace_symbol") >= strings.Index(got, "- fd") {
+		t.Errorf("symbol search should be described before fd, got:\n%s", got)
+	}
+}

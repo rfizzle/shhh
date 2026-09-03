@@ -8,11 +8,15 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
-// DefinitionToolName and ReferencesToolName are the navigation tools.
-// Both are read-only and auto-run like the other read-only tools.
+// The five questions a language server is asked. All of them are read-only
+// and auto-run like the other read-only tools.
+// See docs/capabilities/coding-agent.md#five-questions-for-the-language-server.
 const (
-	DefinitionToolName = "definition"
-	ReferencesToolName = "references"
+	DefinitionToolName      = "definition"
+	ReferencesToolName      = "references"
+	WorkspaceSymbolToolName = "workspace_symbol"
+	DocumentSymbolToolName  = "document_symbol"
+	HoverToolName           = "hover"
 )
 
 // Toolset exposes a Manager as agent tools. It is only registered when at
@@ -55,12 +59,52 @@ func (t *Toolset) Definitions() []provider.Tool {
 				"required": ["path", "line", "symbol"]
 			}`),
 		},
+		{
+			Name: WorkspaceSymbolToolName,
+			Description: "Search the project's symbol index by name using the language server. " +
+				"Give a name or part of one and get the matching declarations as file:line references with their kind. " +
+				"Prefer this over search for \"where is X declared\": search finds the word wherever it is written, this finds the declaration exactly.",
+			Parameters: json.RawMessage(`{
+				"type": "object",
+				"properties": {
+					"query": {"type": "string", "description": "Symbol name, or part of one, to look for across the project"}
+				},
+				"required": ["query"]
+			}`),
+		},
+		{
+			Name: DocumentSymbolToolName,
+			Description: "Outline a file with the language server: every declaration in it, with its kind and line, nested as it is nested. " +
+				"Prefer this over read_file when the question is what is in a file — the outline is a fraction of the file and usually settles which part to read.",
+			Parameters: json.RawMessage(`{
+				"type": "object",
+				"properties": {
+					"path": {"type": "string", "description": "File to outline (absolute or workspace-relative)"}
+				},
+				"required": ["path"]
+			}`),
+		},
+		{
+			Name: HoverToolName,
+			Description: "Get a symbol's type, signature and documentation from the language server. " +
+				"Point at any occurrence of the symbol (path + line + its text). " +
+				"Use it instead of opening the file a symbol is declared in when what you need is what it is.",
+			Parameters: json.RawMessage(`{
+				"type": "object",
+				"properties": ` + positionProps + `,
+				"required": ["path", "line", "symbol"]
+			}`),
+		},
 	}
 }
 
 // Has reports whether name is an LSP tool this session registered.
 func (t *Toolset) Has(name string) bool {
-	return name == DefinitionToolName || name == ReferencesToolName
+	switch name {
+	case DefinitionToolName, ReferencesToolName, WorkspaceSymbolToolName, DocumentSymbolToolName, HoverToolName:
+		return true
+	}
+	return false
 }
 
 type navigateArgs struct {
@@ -69,26 +113,68 @@ type navigateArgs struct {
 	Symbol string `json:"symbol"`
 }
 
-// Execute dispatches an LSP tool call.
-func (t *Toolset) Execute(name string, args json.RawMessage) (string, error) {
+// parseNavigateArgs validates the path+line+symbol triple the three
+// position-addressed tools share.
+func parseNavigateArgs(args json.RawMessage) (navigateArgs, error) {
 	var a navigateArgs
 	if err := json.Unmarshal(args, &a); err != nil {
-		return "", fmt.Errorf("invalid arguments: %w", err)
+		return a, fmt.Errorf("invalid arguments: %w", err)
 	}
 	if a.Path == "" {
-		return "", fmt.Errorf("path is required")
+		return a, fmt.Errorf("path is required")
 	}
 	if a.Line < 1 {
-		return "", fmt.Errorf("line must be a 1-based line number")
+		return a, fmt.Errorf("line must be a 1-based line number")
 	}
 	if strings.TrimSpace(a.Symbol) == "" {
-		return "", fmt.Errorf("symbol is required")
+		return a, fmt.Errorf("symbol is required")
 	}
+	return a, nil
+}
+
+// Execute dispatches an LSP tool call.
+func (t *Toolset) Execute(name string, args json.RawMessage) (string, error) {
 	switch name {
+	case WorkspaceSymbolToolName:
+		var a struct {
+			Query string `json:"query"`
+		}
+		if err := json.Unmarshal(args, &a); err != nil {
+			return "", fmt.Errorf("invalid arguments: %w", err)
+		}
+		if strings.TrimSpace(a.Query) == "" {
+			return "", fmt.Errorf("query is required")
+		}
+		return t.Manager.WorkspaceSymbol(strings.TrimSpace(a.Query))
+	case DocumentSymbolToolName:
+		var a struct {
+			Path string `json:"path"`
+		}
+		if err := json.Unmarshal(args, &a); err != nil {
+			return "", fmt.Errorf("invalid arguments: %w", err)
+		}
+		if a.Path == "" {
+			return "", fmt.Errorf("path is required")
+		}
+		return t.Manager.DocumentSymbol(a.Path)
 	case DefinitionToolName:
+		a, err := parseNavigateArgs(args)
+		if err != nil {
+			return "", err
+		}
 		return t.Manager.Definition(a.Path, a.Line, a.Symbol)
 	case ReferencesToolName:
+		a, err := parseNavigateArgs(args)
+		if err != nil {
+			return "", err
+		}
 		return t.Manager.References(a.Path, a.Line, a.Symbol)
+	case HoverToolName:
+		a, err := parseNavigateArgs(args)
+		if err != nil {
+			return "", err
+		}
+		return t.Manager.Hover(a.Path, a.Line, a.Symbol)
 	}
 	return "", fmt.Errorf("unknown lsp tool: %s", name)
 }

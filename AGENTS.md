@@ -148,7 +148,7 @@ internal/
   logs/                    The diagnostic log: the file a refused request is written to, and the tail `shhh logs` reads
   reports/                 Report pages: typed blocks and validated freehand rendered to HTML, stored globally, served on loopback
   sandbox/                 OS-level process containment (bubblewrap on Linux, Seatbelt on macOS)
-  lsp/                     Language server integration (auto-detected, lazy-started)
+  lsp/                     Language server integration (auto-detected, lazy-started): definitions, references, symbol search, file outlines, hover, and the capability gate on the last three
   quality/                 Quality-gate runner (configurable check suites)
   changeset/               Per-turn edit tracking (before/after content, undo support)
   scope/                   Working-scope management (directory grants, deny mask)

@@ -1,8 +1,10 @@
 // Package lsp is a minimal Language Server Protocol client: it
 // manages auto-detected language servers over stdio JSON-RPC, feeds file
-// changes to them, and surfaces diagnostics, definitions, and references to
-// the agent. Every request is bounded by a timeout so a hung server can never
-// wedge the agent loop; a missing or broken server degrades to a clean no-op.
+// changes to them, and surfaces diagnostics, definitions, references, symbol
+// search, file outlines and hover text to the agent. Every request is bounded
+// by a timeout so a hung server can never wedge the agent loop; a missing or
+// broken server degrades to a clean no-op, and a question a server never
+// advertised is refused rather than sent.
 package lsp
 
 import (

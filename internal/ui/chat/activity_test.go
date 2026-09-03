@@ -95,7 +95,8 @@ func TestActivityVerbs_ClosedVocabulary(t *testing.T) {
 	}
 	for tool, want := range map[string]string{
 		"list_directory": "read", "ast_grep": "search", "fd": "glob",
-		"references": "lsp", "web_fetch": "web", "web_search": "web",
+		"references": "lsp", "workspace_symbol": "lsp", "document_symbol": "lsp",
+		"hover": "lsp", "web_fetch": "web", "web_search": "web",
 		"sd": "patch", "quality_gate": "run", "process": "run",
 		"remember": "memory", "spawn_agent": "spawn", "agent_report": "agent",
 		"report": "report",

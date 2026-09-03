@@ -98,6 +98,34 @@ That reads like padding and is not. A real session spent its entire round
 budget re-running the same searches, and the instructions are what stopped it.
 They are load-bearing and should not be trimmed for brevity.
 
+## Five questions for the language server
+
+Where a language server was detected, the agent asks it rather than guessing
+at a spelling. It can jump to a declaration, list every real usage, search the
+project's symbol index by name, outline a file, and read a symbol's type and
+documentation without opening the file it is declared in.
+
+The last three are the ones that change how a session looks for things. A
+pattern has to anticipate how a declaration was written — the receiver, the
+keyword, the spacing — and one that guesses wrong returns either nothing or
+every mention of the word. The index has the answer exactly and is asked by
+name. And a nine-hundred-line file read to learn its shape costs most of what
+the reduction exists to save, where the same file as an outline is a screen
+and usually settles which part to read.
+
+Every server answers the first two; support for the other three is uneven, so
+each of those is asked only of a server that advertised it. One that indexes a
+file but not the workspace refuses that question by name and answers the
+rest. This is the difference between an
+answer and a wait: a request a server never advertised is answered by nothing
+at all, and a call that ends at its timeout reads to the model as a broken
+tool rather than as a no.
+
+What comes back is plain text, bounded like every other result with the
+truncation said out loud, and a hover's markdown flattened rather than passed
+through with its fences — markup the model did not write is markup it can
+mistake for its own.
+
 ## A long turn is asked what it has got
 
 A turn has no way to notice it is finished. From inside one, every round looks

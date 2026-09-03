@@ -28,10 +28,23 @@ type fakeLS struct {
 	// definitionResult / referencesResult are returned verbatim.
 	definitionResult json.RawMessage
 	referencesResult json.RawMessage
+	// The three capability-gated results, also returned verbatim.
+	workspaceSymbolResult json.RawMessage
+	documentSymbolResult  json.RawMessage
+	hoverResult           json.RawMessage
+	// caps is the capabilities object of the initialize result; the zero
+	// value advertises nothing, which is what a server that answers only
+	// definition and references looks like on the wire.
+	caps string
 
 	connects int
 	synced   []string // methods received for file sync, in order
+	asked    []string // request methods received, in order
 }
+
+// allCapabilities advertises every gated provider, in the three spellings the
+// spec allows for "yes".
+const allCapabilities = `{"workspaceSymbolProvider":true,"documentSymbolProvider":{"label":"gopls"},"hoverProvider":{"workDoneProgress":true}}`
 
 func (f *fakeLS) connect(spec ServerSpec, root string) (*transport, error) {
 	f.mu.Lock()
@@ -73,9 +86,18 @@ func (f *fakeLS) serve(r io.Reader, w io.WriteCloser) {
 			_ = w.Close()
 			return
 		}
+		if msg.ID != nil {
+			f.mu.Lock()
+			f.asked = append(f.asked, msg.Method)
+			f.mu.Unlock()
+		}
 		switch msg.Method {
 		case "initialize":
-			f.send(rpcMessage{ID: msg.ID, Result: json.RawMessage(`{"capabilities":{}}`)})
+			caps := f.caps
+			if caps == "" {
+				caps = "{}"
+			}
+			f.send(rpcMessage{ID: msg.ID, Result: json.RawMessage(`{"capabilities":` + caps + `}`)})
 		case "initialized", "exit":
 		case "textDocument/didOpen", "textDocument/didChange":
 			f.mu.Lock()
@@ -86,6 +108,12 @@ func (f *fakeLS) serve(r io.Reader, w io.WriteCloser) {
 			f.send(rpcMessage{ID: msg.ID, Result: f.definitionResult})
 		case "textDocument/references":
 			f.send(rpcMessage{ID: msg.ID, Result: f.referencesResult})
+		case "workspace/symbol":
+			f.send(rpcMessage{ID: msg.ID, Result: f.workspaceSymbolResult})
+		case "textDocument/documentSymbol":
+			f.send(rpcMessage{ID: msg.ID, Result: f.documentSymbolResult})
+		case "textDocument/hover":
+			f.send(rpcMessage{ID: msg.ID, Result: f.hoverResult})
 		case "shutdown":
 			if !f.ignoreShutdown {
 				f.send(rpcMessage{ID: msg.ID, Result: json.RawMessage("null")})
@@ -521,5 +549,361 @@ func TestParseLocations_AllShapes(t *testing.T) {
 	links := parseLocations(json.RawMessage(`[{"targetUri":"file:///b.go","targetSelectionRange":{"start":{"line":3,"character":0},"end":{"line":3,"character":0}}}]`))
 	if len(links) != 1 || links[0].URI != "file:///b.go" || links[0].Range.Start.Line != 3 {
 		t.Fatalf("location links: %+v", links)
+	}
+}
+
+// symbolJSON renders a flat SymbolInformation entry, the shape both symbol
+// requests are allowed to answer in.
+func symbolJSON(name, container string, kind int, uri string, line int) string {
+	return fmt.Sprintf(`{"name":%q,"containerName":%q,"kind":%d,"location":{"uri":%q,"range":{"start":{"line":%d,"character":0},"end":{"line":%d,"character":0}}}}`,
+		name, container, kind, uri, line, line)
+}
+
+func TestToolset_WorkspaceSymbolFormatsMatches(t *testing.T) {
+	fake := &fakeLS{caps: allCapabilities}
+	m, root := testManager(t, fake, Options{})
+	target := pathToURI(filepath.Join(root, "target.go"))
+	fake.workspaceSymbolResult = json.RawMessage("[" +
+		symbolJSON("Toolset", "", 23, target, 19) + "," +
+		symbolJSON("Execute", "Toolset", 6, target, 41) + "]")
+
+	ts := NewToolset(m)
+	args, _ := json.Marshal(map[string]any{"query": "Toolset"})
+	out, err := ts.Execute(WorkspaceSymbolToolName, args)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "2 symbols matching \"Toolset\":\ntarget.go:20 struct Toolset\ntarget.go:42 method Toolset.Execute"
+	if out != want {
+		t.Fatalf("workspace symbols should be kinded file:line references:\ngot  %q\nwant %q", out, want)
+	}
+}
+
+func TestManager_WorkspaceSymbolMergesEveryIndexingServer(t *testing.T) {
+	root := t.TempDir()
+	goServer := &fakeLS{caps: allCapabilities}
+	// The Python server indexes nothing: it must be asked for nothing and
+	// must not take the whole search down with it.
+	pyServer := &fakeLS{caps: `{"hoverProvider":true}`}
+	goServer.workspaceSymbolResult = json.RawMessage("[" + symbolJSON("Handle", "", 12, pathToURI(filepath.Join(root, "a.go")), 4) + "]")
+	pyServer.workspaceSymbolResult = json.RawMessage("[" + symbolJSON("handle", "", 12, pathToURI(filepath.Join(root, "b.py")), 8) + "]")
+
+	fakes := map[string]*fakeLS{"gopls": goServer, "pyright": pyServer}
+	m := NewManager(root, []ServerSpec{
+		{Name: "gopls", Command: "gopls", Extensions: []string{".go"}},
+		{Name: "pyright", Command: "pyright", Extensions: []string{".py"}},
+	}, Options{
+		RequestTimeout:     5 * time.Second,
+		DiagnosticsTimeout: 5 * time.Second,
+		connect: func(spec ServerSpec, root string) (*transport, error) {
+			return fakes[spec.Name].connect(spec, root)
+		},
+	})
+	t.Cleanup(m.Shutdown)
+
+	out, err := m.WorkspaceSymbol("handle")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, "1 symbol matching") || !strings.Contains(out, "a.go:5 function Handle") {
+		t.Fatalf("the indexing server's hit should be the whole answer, got %q", out)
+	}
+	if strings.Contains(out, "b.py") {
+		t.Fatalf("a server that does not advertise the search must not be asked, got %q", out)
+	}
+	pyServer.mu.Lock()
+	asked := append([]string{}, pyServer.asked...)
+	pyServer.mu.Unlock()
+	for _, method := range asked {
+		if method == "workspace/symbol" {
+			t.Fatal("an unadvertised request was sent anyway")
+		}
+	}
+}
+
+func TestToolset_DocumentSymbolOutlinesHierarchy(t *testing.T) {
+	fake := &fakeLS{caps: allCapabilities}
+	m, root := testManager(t, fake, Options{})
+	path := writeWorkspaceFile(t, root, "outline.go", "package main\n\ntype Toolset struct{}\n")
+	fake.documentSymbolResult = json.RawMessage(`[
+		{"name":"Toolset","kind":23,
+		 "range":{"start":{"line":2,"character":0},"end":{"line":4,"character":1}},
+		 "selectionRange":{"start":{"line":2,"character":5},"end":{"line":2,"character":12}},
+		 "children":[
+			{"name":"Manager","kind":8,
+			 "range":{"start":{"line":3,"character":1},"end":{"line":3,"character":18}},
+			 "selectionRange":{"start":{"line":3,"character":1},"end":{"line":3,"character":8}}}
+		 ]},
+		{"name":"NewToolset","kind":12,
+		 "range":{"start":{"line":6,"character":0},"end":{"line":8,"character":1}},
+		 "selectionRange":{"start":{"line":6,"character":5},"end":{"line":6,"character":15}}}
+	]`)
+
+	ts := NewToolset(m)
+	args, _ := json.Marshal(map[string]any{"path": path})
+	out, err := ts.Execute(DocumentSymbolToolName, args)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "Outline of outline.go (3 symbols):\n3 struct Toolset\n4   field Manager\n7 function NewToolset"
+	if out != want {
+		t.Fatalf("outline should nest and carry kinds:\ngot  %q\nwant %q", out, want)
+	}
+	// The outline is asked about what is on disk, so the file is synced first.
+	fake.mu.Lock()
+	synced := len(fake.synced)
+	fake.mu.Unlock()
+	if synced == 0 {
+		t.Fatal("a document request should sync the file first")
+	}
+}
+
+func TestToolset_HoverFlattensMarkdown(t *testing.T) {
+	fake := &fakeLS{caps: allCapabilities}
+	m, root := testManager(t, fake, Options{})
+	path := writeWorkspaceFile(t, root, "main.go", "package main\nfunc target() {}\n")
+	fake.hoverResult = json.RawMessage(`{"contents":{"kind":"markdown","value":"` +
+		"```go\\nfunc target()\\n```\\n\\n---\\n\\n### Target\\n\\ntarget calls `run` twice.\\n\\n\\nSecond paragraph." +
+		`"}}`)
+
+	ts := NewToolset(m)
+	args, _ := json.Marshal(map[string]any{"path": path, "line": 2, "symbol": "target"})
+	out, err := ts.Execute(HoverToolName, args)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "main.go:2 target\nfunc target()\n\nTarget\n\ntarget calls run twice.\n\nSecond paragraph."
+	if out != want {
+		t.Fatalf("hover should reach the model as prose:\ngot  %q\nwant %q", out, want)
+	}
+}
+
+func TestToolset_HoverBoundedByLines(t *testing.T) {
+	fake := &fakeLS{caps: allCapabilities}
+	m, root := testManager(t, fake, Options{})
+	path := writeWorkspaceFile(t, root, "main.go", "package main\nfunc target() {}\n")
+	lines := make([]string, MaxHoverLines+4)
+	for i := range lines {
+		lines[i] = fmt.Sprintf("line %d", i)
+	}
+	body, _ := json.Marshal(map[string]any{"contents": strings.Join(lines, "\n")})
+	fake.hoverResult = body
+
+	ts := NewToolset(m)
+	args, _ := json.Marshal(map[string]any{"path": path, "line": 2, "symbol": "target"})
+	out, err := ts.Execute(HoverToolName, args)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, fmt.Sprintf("… and 4 more lines (truncated at %d)", MaxHoverLines)) {
+		t.Fatalf("hover should be bounded with a notice, got %q", out)
+	}
+}
+
+func TestToolset_SymbolResultsBounded(t *testing.T) {
+	fake := &fakeLS{caps: allCapabilities}
+	m, root := testManager(t, fake, Options{})
+	uri := pathToURI(filepath.Join(root, "big.go"))
+	entries := make([]string, MaxSymbols+7)
+	for i := range entries {
+		entries[i] = symbolJSON(fmt.Sprintf("Sym%d", i), "", 12, uri, i)
+	}
+	fake.workspaceSymbolResult = json.RawMessage("[" + strings.Join(entries, ",") + "]")
+
+	out, err := m.WorkspaceSymbol("Sym")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(out, fmt.Sprintf("%d symbols matching", MaxSymbols+7)) {
+		t.Fatalf("the header should carry the total, got %q", strings.SplitN(out, "\n", 2)[0])
+	}
+	if !strings.Contains(out, fmt.Sprintf("… and 7 more (truncated at %d)", MaxSymbols)) {
+		t.Fatalf("symbols should be bounded with a notice, got tail %q", out[len(out)-60:])
+	}
+}
+
+// A server that advertises two of the three refuses the third by name and
+// keeps answering the two — the tool stays registered either way, because
+// which questions a server takes is not known until it has started.
+func TestManager_UnadvertisedQuestionIsRefusedByName(t *testing.T) {
+	fake := &fakeLS{caps: `{"documentSymbolProvider":true,"hoverProvider":true}`}
+	m, root := testManager(t, fake, Options{})
+	path := writeWorkspaceFile(t, root, "main.go", "package main\nfunc target() {}\n")
+	fake.documentSymbolResult = json.RawMessage("[" + symbolJSON("target", "", 12, pathToURI(path), 1) + "]")
+	fake.hoverResult = json.RawMessage(`{"contents":"func target()"}`)
+	ts := NewToolset(m)
+
+	query, _ := json.Marshal(map[string]any{"query": "target"})
+	_, err := ts.Execute(WorkspaceSymbolToolName, query)
+	if err == nil || !strings.Contains(err.Error(), WorkspaceSymbolToolName) {
+		t.Fatalf("an unsupported question should be refused by name, got %v", err)
+	}
+
+	outline, _ := json.Marshal(map[string]any{"path": path})
+	if _, err := ts.Execute(DocumentSymbolToolName, outline); err != nil {
+		t.Fatalf("the supported questions must still be answered: %v", err)
+	}
+	position, _ := json.Marshal(map[string]any{"path": path, "line": 2, "symbol": "target"})
+	if _, err := ts.Execute(HoverToolName, position); err != nil {
+		t.Fatalf("the supported questions must still be answered: %v", err)
+	}
+
+	fake.mu.Lock()
+	asked := append([]string{}, fake.asked...)
+	fake.mu.Unlock()
+	for _, method := range asked {
+		if method == "workspace/symbol" {
+			t.Fatal("a refused question must never reach the wire")
+		}
+	}
+}
+
+// A response the parsers do not recognise is an empty answer, not an error:
+// the server said something, it just said nothing useful.
+func TestToolset_UnrecognisedResponseShapesAreEmptyAnswers(t *testing.T) {
+	unknown := json.RawMessage(`{"unexpected":true}`)
+	fake := &fakeLS{
+		caps:                  allCapabilities,
+		workspaceSymbolResult: unknown,
+		documentSymbolResult:  unknown,
+		hoverResult:           unknown,
+	}
+	m, root := testManager(t, fake, Options{})
+	path := writeWorkspaceFile(t, root, "main.go", "package main\nfunc target() {}\n")
+	ts := NewToolset(m)
+
+	for _, tc := range []struct {
+		tool, args, want string
+	}{
+		{WorkspaceSymbolToolName, `{"query":"target"}`, "No symbols matching"},
+		{DocumentSymbolToolName, fmt.Sprintf(`{"path":%q}`, path), "No symbols in"},
+		{HoverToolName, fmt.Sprintf(`{"path":%q,"line":2,"symbol":"target"}`, path), "No hover information"},
+	} {
+		out, err := ts.Execute(tc.tool, json.RawMessage(tc.args))
+		if err != nil {
+			t.Fatalf("%s: %v", tc.tool, err)
+		}
+		if !strings.Contains(out, tc.want) {
+			t.Fatalf("%s should say it found nothing, got %q", tc.tool, out)
+		}
+	}
+}
+
+func TestToolset_DefinitionsMatchWhatItDispatches(t *testing.T) {
+	ts := NewToolset(NewManager(t.TempDir(), nil, Options{}))
+	defs := ts.Definitions()
+	if len(defs) != 5 {
+		t.Fatalf("expected five language-server tools, got %d", len(defs))
+	}
+	for _, def := range defs {
+		if !ts.Has(def.Name) {
+			t.Fatalf("%s is offered but not dispatched", def.Name)
+		}
+		if !json.Valid(def.Parameters) {
+			t.Fatalf("%s has an invalid schema", def.Name)
+		}
+	}
+	if ts.Has("read_file") {
+		t.Fatal("the toolset should claim only its own tools")
+	}
+}
+
+// Nothing is registered when no server was detected, so this is the manager
+// the toolset would be built over if that no-op ever slipped: every tool has
+// to refuse cleanly rather than hang or panic.
+func TestToolset_NoServerDetectedRefusesEveryTool(t *testing.T) {
+	m := NewManager(t.TempDir(), nil, Options{})
+	t.Cleanup(m.Shutdown)
+	path := filepath.Join(m.root, "main.go")
+	if err := os.WriteFile(path, []byte("package main\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	ts := NewToolset(m)
+	for _, tc := range []struct{ tool, args string }{
+		{DefinitionToolName, fmt.Sprintf(`{"path":%q,"line":1,"symbol":"main"}`, path)},
+		{ReferencesToolName, fmt.Sprintf(`{"path":%q,"line":1,"symbol":"main"}`, path)},
+		{HoverToolName, fmt.Sprintf(`{"path":%q,"line":1,"symbol":"main"}`, path)},
+		{DocumentSymbolToolName, fmt.Sprintf(`{"path":%q}`, path)},
+		{WorkspaceSymbolToolName, `{"query":"main"}`},
+	} {
+		if _, err := ts.Execute(tc.tool, json.RawMessage(tc.args)); err == nil {
+			t.Fatalf("%s should refuse when no server was detected", tc.tool)
+		}
+	}
+}
+
+func TestToolset_NewToolArgumentValidation(t *testing.T) {
+	ts := NewToolset(NewManager(t.TempDir(), nil, Options{}))
+	for _, tc := range []struct{ tool, args string }{
+		{WorkspaceSymbolToolName, `{}`},
+		{WorkspaceSymbolToolName, `{"query":"  "}`},
+		{DocumentSymbolToolName, `{}`},
+		{HoverToolName, `{"path":"a.go","line":0,"symbol":"x"}`},
+		{HoverToolName, `{"path":"a.go","line":1,"symbol":" "}`},
+		{"symbols", `{"query":"x"}`},
+	} {
+		if _, err := ts.Execute(tc.tool, json.RawMessage(tc.args)); err == nil {
+			t.Fatalf("%s with %s should be rejected", tc.tool, tc.args)
+		}
+	}
+}
+
+func TestParseCapabilities_EverySpellingOfYesAndNo(t *testing.T) {
+	caps := parseCapabilities(json.RawMessage(`{"capabilities":{"workspaceSymbolProvider":true,"documentSymbolProvider":{"label":"x"},"hoverProvider":false}}`))
+	if !caps.workspaceSymbol || !caps.documentSymbol || caps.hover {
+		t.Fatalf("true and an options object are yes, false is no: %+v", caps)
+	}
+	none := parseCapabilities(json.RawMessage(`{"capabilities":{}}`))
+	if none.workspaceSymbol || none.documentSymbol || none.hover {
+		t.Fatalf("an absent provider is not advertised: %+v", none)
+	}
+	if garbage := parseCapabilities(json.RawMessage(`nonsense`)); garbage.hover {
+		t.Fatal("an unreadable initialize result advertises nothing")
+	}
+}
+
+func TestParseSymbols_BothShapes(t *testing.T) {
+	flat := parseSymbols(json.RawMessage("["+symbolJSON("Run", "Server", 6, "file:///a.go", 7)+"]"), "")
+	if len(flat) != 1 || flat[0].Path != filepath.FromSlash("/a.go") || flat[0].Line != 8 || flat[0].display() != "Server.Run" {
+		t.Fatalf("flat symbol: %+v", flat)
+	}
+	nested := parseSymbols(json.RawMessage(`[{"name":"A","kind":5,"range":{"start":{"line":0,"character":0},"end":{"line":9,"character":0}},"children":[{"name":"b","kind":6,"selectionRange":{"start":{"line":3,"character":1},"end":{"line":3,"character":2}}}]}]`), "/x.go")
+	if len(nested) != 2 || nested[1].Depth != 1 || nested[1].Line != 4 || nested[0].Path != "/x.go" {
+		t.Fatalf("nested symbols: %+v", nested)
+	}
+	if got := parseSymbols(json.RawMessage("null"), ""); got != nil {
+		t.Fatalf("null is no symbols, got %+v", got)
+	}
+}
+
+func TestParseHover_AllShapes(t *testing.T) {
+	for name, raw := range map[string]string{
+		"plain string":    `{"contents":"func run()"}`,
+		"marked string":   `{"contents":{"language":"go","value":"func run()"}}`,
+		"markup content":  `{"contents":{"kind":"markdown","value":"` + "```go\\nfunc run()\\n```" + `"}}`,
+		"array of marked": `{"contents":[{"language":"go","value":"func run()"},"ignored"]}`,
+	} {
+		if got := parseHover(json.RawMessage(raw)); !strings.HasPrefix(got, "func run()") {
+			t.Fatalf("%s should flatten to the signature, got %q", name, got)
+		}
+	}
+	if got := parseHover(json.RawMessage("null")); got != "" {
+		t.Fatalf("a null hover is empty, got %q", got)
+	}
+	if got := parseHover(json.RawMessage(`{"contents":[]}`)); got != "" {
+		t.Fatalf("an empty contents array is empty, got %q", got)
+	}
+}
+
+// What a server puts inside a fence is code, and the flattening must not read
+// it as markup: a comment is not a heading, a divider is not a rule, and a
+// backtick is part of a raw string. Getting this wrong hands the model an
+// altered signature, which is worse than any markup left in.
+func TestFlattenMarkup_LeavesFencedCodeExactlyAsItIs(t *testing.T) {
+	code := "#define MAX 10\nvar q = `SELECT *`\n-----"
+	got := flattenMarkup("```c\n" + code + "\n```\n\n---\n\n## Notes\n\n**Deprecated**: use `next` instead.")
+	want := code + "\n\nNotes\n\nDeprecated: use next instead."
+	if got != want {
+		t.Fatalf("fenced code should survive verbatim and prose should lose its marks:\ngot  %q\nwant %q", got, want)
 	}
 }

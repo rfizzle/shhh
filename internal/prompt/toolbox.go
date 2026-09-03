@@ -28,6 +28,9 @@ import (
 var toolboxNotes = []struct{ name, note string }{
 	{"definition", "where a symbol is defined, answered by the language server. Prefer it over search for any symbol — search finds the word, this finds the declaration."},
 	{"references", "every real usage of a symbol, declaration included. Prefer it over search before changing anything shared: it finds usages, not string matches in comments."},
+	{"workspace_symbol", "find a declaration anywhere in the project by name, from the language server's index. Ask it \"where is X declared\" instead of guessing at how the declaration was spelled."},
+	{"document_symbol", "the outline of one file — every declaration, its kind and its line. Ask it before read_file when the question is what is in a file; the outline is a fraction of the file and usually says which part to read."},
+	{"hover", "the type, signature and documentation of a symbol where it appears. It answers what something is without opening the file it is declared in."},
 	{"ast_grep", "structural search by syntax pattern (e.g. `if $A != nil { return $A }`). For shapes a regex cannot describe."},
 	{"fd", "find files by name, fast. Use it instead of `execute_command find`."},
 	{"sd", "find-and-replace across many files at once. For a mechanical rename that spans files — several places inside one file are one edit_file call carrying its edits array."},
