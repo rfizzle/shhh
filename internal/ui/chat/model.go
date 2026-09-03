@@ -3033,15 +3033,16 @@ func (m Model) requestStream() tea.Cmd {
 	if m.mode == agent.ModePlan && len(msgs) > 0 && msgs[0].Role == provider.RoleSystem {
 		msgs[0].Content += "\n\n" + prompt.PlanModeInstructions
 	}
-	return m.requestStreamFor(msgs)
+	return m.requestStreamFor(msgs, provider.ToolChoiceAuto)
 }
 
 // requestStreamFor starts a stream over an explicit message list (callers
-// pass a copy so in-flight requests are immune to later mutation).
-func (m Model) requestStreamFor(msgs []provider.Message) tea.Cmd {
+// pass a copy so in-flight requests are immune to later mutation) under an
+// explicit tool choice.
+func (m Model) requestStreamFor(msgs []provider.Message, choice string) tea.Cmd {
 	a := m.agent
 	return func() tea.Msg {
-		events, cancel, err := a.Stream(msgs)
+		events, cancel, err := a.StreamWithChoice(msgs, choice)
 		if err != nil {
 			return streamErrMsg{err: err}
 		}

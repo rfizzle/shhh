@@ -15,7 +15,7 @@ import (
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
-func mockStream(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+func mockStream(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 	ch := make(chan provider.StreamEvent, 1)
 	ch <- provider.StreamEvent{Token: "hello", Done: false}
 	close(ch)
@@ -24,7 +24,7 @@ func mockStream(msgs []provider.Message) (<-chan provider.StreamEvent, context.C
 }
 
 func multiTokenStream(tokens ...string) StreamFunc {
-	return func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	return func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 		ch := make(chan provider.StreamEvent, len(tokens)+1)
 		for _, t := range tokens {
 			ch <- provider.StreamEvent{Token: t}
@@ -169,7 +169,7 @@ func TestMultiTurn_MessageAccumulation(t *testing.T) {
 	}
 
 	// Simulate stream started
-	events, cancel, _ := stream(m.Messages())
+	events, cancel, _ := stream(m.Messages(), provider.ToolChoiceAuto)
 	updated, _ = m.Update(streamStartedMsg{events: events, cancel: cancel})
 	m = updated.(Model)
 
@@ -201,7 +201,7 @@ func TestMultiTurn_MessageAccumulation(t *testing.T) {
 
 func TestMultiTurn_SecondExchange(t *testing.T) {
 	callCount := 0
-	stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 		callCount++
 		var token string
 		if callCount == 1 {
@@ -228,7 +228,7 @@ func TestMultiTurn_SecondExchange(t *testing.T) {
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	events, cancel, _ := stream(m.Messages())
+	events, cancel, _ := stream(m.Messages(), provider.ToolChoiceAuto)
 	updated, _ = m.Update(streamStartedMsg{events: events, cancel: cancel})
 	m = updated.(Model)
 
@@ -246,7 +246,7 @@ func TestMultiTurn_SecondExchange(t *testing.T) {
 		t.Fatalf("expected 4 messages before second stream, got %d", len(m.Messages()))
 	}
 
-	events, cancel, _ = stream(m.Messages())
+	events, cancel, _ = stream(m.Messages(), provider.ToolChoiceAuto)
 	updated, _ = m.Update(streamStartedMsg{events: events, cancel: cancel})
 	m = updated.(Model)
 
@@ -289,7 +289,7 @@ func TestStreaming_TokenByToken(t *testing.T) {
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	events, cancel, _ := stream(m.Messages())
+	events, cancel, _ := stream(m.Messages(), provider.ToolChoiceAuto)
 	updated, _ = m.Update(streamStartedMsg{events: events, cancel: cancel})
 	m = updated.(Model)
 
@@ -332,7 +332,7 @@ func TestStreaming_CancelPreservesPartial(t *testing.T) {
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	events, cancel, _ := stream(m.Messages())
+	events, cancel, _ := stream(m.Messages(), provider.ToolChoiceAuto)
 	updated, _ = m.Update(streamStartedMsg{events: events, cancel: cancel})
 	m = updated.(Model)
 
@@ -472,7 +472,7 @@ func TestExit_CtrlC_DuringStreaming_DoesNotQuit(t *testing.T) {
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	events, cancel, _ := mockStream(m.Messages())
+	events, cancel, _ := mockStream(m.Messages(), provider.ToolChoiceAuto)
 	updated, _ = m.Update(streamStartedMsg{events: events, cancel: cancel})
 	m = updated.(Model)
 
@@ -517,7 +517,7 @@ func TestExit_CtrlC_DuringInput_Quits(t *testing.T) {
 func TestExit_SlashQuit_DuringStreaming_CancelsAndQuits(t *testing.T) {
 	msgs := []provider.Message{{Role: provider.RoleSystem, Content: "sys"}}
 	cancelled := false
-	stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 		ch := make(chan provider.StreamEvent, 2)
 		ch <- provider.StreamEvent{Token: "data"}
 		ch <- provider.StreamEvent{Done: true}
@@ -538,7 +538,7 @@ func TestExit_SlashQuit_DuringStreaming_CancelsAndQuits(t *testing.T) {
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
 
-	events, cancel, _ := stream(m.Messages())
+	events, cancel, _ := stream(m.Messages(), provider.ToolChoiceAuto)
 	updated, _ = m.Update(streamStartedMsg{events: events, cancel: cancel})
 	m = updated.(Model)
 
@@ -566,7 +566,7 @@ func TestExit_SlashQuit_DuringStreaming_CancelsAndQuits(t *testing.T) {
 
 func TestRequestStream_SendsFullConversation(t *testing.T) {
 	var receivedMsgs []provider.Message
-	stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 		receivedMsgs = make([]provider.Message, len(msgs))
 		copy(receivedMsgs, msgs)
 		ch := make(chan provider.StreamEvent, 1)
@@ -629,7 +629,7 @@ func execToolLoop(t *testing.T, m Model, msg toolCallsMsg) (Model, tea.Cmd) {
 
 func TestToolCallLoop_SingleToolCall(t *testing.T) {
 	callCount := 0
-	stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 		callCount++
 		ch := make(chan provider.StreamEvent, 2)
 		if callCount == 1 {
@@ -666,7 +666,7 @@ func TestToolCallLoop_SingleToolCall(t *testing.T) {
 	m = updated.(Model)
 
 	// Stream starts, returns tool call
-	events, cancel, _ := stream(m.Messages())
+	events, cancel, _ := stream(m.Messages(), provider.ToolChoiceAuto)
 	_ = cancel
 	updated, _ = m.Update(streamStartedMsg{events: events, cancel: cancel})
 	m = updated.(Model)

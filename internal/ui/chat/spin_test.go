@@ -60,7 +60,7 @@ func spinModel(t *testing.T) Model {
 
 func blockingStream(t *testing.T) StreamFunc {
 	t.Helper()
-	return func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	return func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 		ch := make(chan provider.StreamEvent)
 		return ch, func() { close(ch) }, nil
 	}

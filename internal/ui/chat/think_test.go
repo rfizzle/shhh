@@ -14,7 +14,7 @@ import (
 // thinkingStream is a provider that thinks out loud, then answers, then asks
 // for a tool — the order every reasoning model streams in.
 func thinkingStream(think, answer string, calls []provider.ToolCall) StreamFunc {
-	return func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	return func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 		ch := make(chan provider.StreamEvent, 3)
 		ch <- provider.StreamEvent{Thinking: think}
 		ch <- provider.StreamEvent{Token: answer}
@@ -515,7 +515,7 @@ func TestThinkRow_MonoTellsItFromATool(t *testing.T) {
 // the session uses, so the batching and the ordering are asserted together.
 func TestThinkRow_StreamOrder(t *testing.T) {
 	events, cancel, err := thinkingStream("thought one\nthought two", "Answering.",
-		[]provider.ToolCall{{ID: "c1", Name: "search", Arguments: `{"pattern":"x"}`}})(nil)
+		[]provider.ToolCall{{ID: "c1", Name: "search", Arguments: `{"pattern":"x"}`}})(nil, provider.ToolChoiceAuto)
 	if err != nil {
 		t.Fatal(err)
 	}

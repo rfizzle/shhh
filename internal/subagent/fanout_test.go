@@ -15,7 +15,7 @@ import (
 // batch rather than at a race to finish.
 func hangingEnv() EnvFactory {
 	return func(ctx context.Context, spec Spec) (Env, error) {
-		stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			ch := make(chan provider.StreamEvent)
 			go func() {
 				<-ctx.Done()

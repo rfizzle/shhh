@@ -13,7 +13,7 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
-func noStream([]provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+func noStream([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 	ch := make(chan provider.StreamEvent)
 	close(ch)
 	_, cancel := context.WithCancel(context.Background())
@@ -436,9 +436,9 @@ func TestTrimOldToolResults_KeepsClaimedResults(t *testing.T) {
 
 func TestSetScrub_RewritesEveryDoor(t *testing.T) {
 	var sent []provider.Message
-	stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 		sent = msgs
-		return noStream(msgs)
+		return noStream(msgs, provider.ToolChoiceAuto)
 	}
 	a := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, stream)
 	a.SetScrub(func(m provider.Message) provider.Message {

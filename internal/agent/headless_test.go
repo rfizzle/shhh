@@ -16,7 +16,7 @@ import (
 func scriptedStream(t *testing.T, rounds ...[]provider.StreamEvent) StreamFunc {
 	t.Helper()
 	i := 0
-	return func([]provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	return func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 		if i >= len(rounds) {
 			t.Fatalf("unexpected stream request #%d", i+1)
 		}
@@ -253,7 +253,7 @@ func TestHeadlessRun_SteerInjectedBetweenRounds(t *testing.T) {
 
 func TestHeadlessRun_InterruptCancelsTurn(t *testing.T) {
 	// The stream blocks until its cancel func fires, like a real provider.
-	stream := func([]provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 		ch := make(chan provider.StreamEvent)
 		ctx, cancel := context.WithCancel(context.Background())
 		go func() {

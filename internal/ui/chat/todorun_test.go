@@ -486,7 +486,7 @@ func TestTodoRun_BlockOffersAFollowUp(t *testing.T) {
 // reportingEnv is a child that answers every request with text.
 func reportingEnv(text string) subagent.EnvFactory {
 	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
-		stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			ch := make(chan provider.StreamEvent, 2)
 			ch <- provider.StreamEvent{Token: text}
 			ch <- provider.StreamEvent{Done: true}
@@ -796,7 +796,7 @@ func largeRunModel(t *testing.T, env subagent.EnvFactory) (Model, *subagent.Supe
 func writingEnv(content string) subagent.EnvFactory {
 	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
 		calls := 0
-		stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			ch := make(chan provider.StreamEvent, 2)
 			calls++
 			if calls == 1 {

@@ -40,7 +40,7 @@ type scriptedEnv struct {
 
 func (s *scriptedEnv) factory() EnvFactory {
 	return func(ctx context.Context, spec Spec) (Env, error) {
-		stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			if ctx.Err() != nil {
 				return nil, nil, ctx.Err()
 			}
@@ -495,7 +495,7 @@ func resumableEnv(finals ...string) EnvFactory {
 	var mu sync.Mutex
 	first := true
 	return func(ctx context.Context, spec Spec) (Env, error) {
-		stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			mu.Lock()
 			if first {
 				first = false
@@ -693,7 +693,7 @@ func TestSteerDuringFinalStreamStartsNextTurn(t *testing.T) {
 	release := make(chan struct{})
 	var turnCount atomic.Int32
 	factory := func(ctx context.Context, spec Spec) (Env, error) {
-		stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			n := turnCount.Add(1)
 			ch := make(chan provider.StreamEvent, 2)
 			if n == 1 {

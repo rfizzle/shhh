@@ -108,7 +108,7 @@ func TestRetryCarriesSpendAndResetsTheBudget(t *testing.T) {
 // to finish.
 func blockedForeverEnv() EnvFactory {
 	return func(ctx context.Context, spec Spec) (Env, error) {
-		stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			ch := make(chan provider.StreamEvent)
 			go func() {
 				<-ctx.Done()

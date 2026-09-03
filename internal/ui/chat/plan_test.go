@@ -33,7 +33,7 @@ func planModel(t *testing.T, stream StreamFunc) Model {
 
 // recordingStream captures the message list of each stream request.
 func recordingStream(captured *[]provider.Message) StreamFunc {
-	return func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	return func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 		*captured = msgs
 		ch := make(chan provider.StreamEvent)
 		close(ch)

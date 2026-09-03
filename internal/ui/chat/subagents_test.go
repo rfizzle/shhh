@@ -17,7 +17,7 @@ import (
 // cancelled, so tests can observe a "running" child deterministically.
 func blockingEnv() subagent.EnvFactory {
 	return func(ctx context.Context, spec subagent.Spec) (subagent.Env, error) {
-		stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			ch := make(chan provider.StreamEvent)
 			go func() {
 				<-ctx.Done()

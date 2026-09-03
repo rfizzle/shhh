@@ -179,6 +179,33 @@ carries a row for an older generation wherever that generation is both still
 widely served and much smaller than the current one, and a version written
 the way weights are packaged is read as the version it is.
 
+## A request says whether a tool may be called
+
+A request that offers tools also says what may be done with them, and the
+answer is one of exactly two things: the model chooses, or the model may not
+call one at all. Both are honoured by every provider, because a caller that
+cannot rely on the second has to carry its own recovery for a model that
+ignored it — and where the second was not honoured, that recovery is what a
+reader saw instead of the answer they asked for.
+
+Forcing a *particular* tool is not the third option, and deliberately so. The
+newest models refuse a forced choice outright, so a harness leaning on one
+would be built on something being withdrawn. Where a specific tool is wanted,
+the prompt asks for it.
+
+Where the difference is load-bearing is a request for prose from a session
+whose whole shape says work: a summary of a conversation that ends in tool
+results, a handoff from a child that has just run out of budget. The
+instruction is the newest turn in a transcript of rounds, and a model reading
+it as one more round answers with the call the round was about to make.
+Saying so on the request costs nothing and removes the retry.
+
+Saying so is also not the same as taking the tools away. The tools lead the
+part of the request a provider caches, so a request without them shares
+nothing with the session's other requests and is read from scratch — paying
+for the whole opening again to avoid one retry. The tools stay; only the
+permission changes.
+
 ## The prompt prefix is paid for once
 
 A coding turn sends the same opening over and over. The system prompt, the

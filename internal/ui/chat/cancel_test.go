@@ -20,7 +20,7 @@ func streamingCancelModel(t *testing.T) Model {
 	m.input.SetValue("go")
 	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
 	m = updated.(Model)
-	events, cancel, _ := multiTokenStream("partial")(m.Messages())
+	events, cancel, _ := multiTokenStream("partial")(m.Messages(), provider.ToolChoiceAuto)
 	updated, _ = m.Update(streamStartedMsg{events: events, cancel: cancel})
 	m = updated.(Model)
 	updated, _ = m.Update(tokenMsg{text: "partial"})

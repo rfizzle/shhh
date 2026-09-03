@@ -14,8 +14,12 @@ import (
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
-// StreamFunc opens a completion stream over a message list.
-type StreamFunc func([]provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error)
+// StreamFunc opens a completion stream over a message list. The choice is
+// what the request says about calling a tool (provider.ToolChoiceAuto or
+// provider.ToolChoiceNone); a front-end's closure puts it on the request
+// rather than deciding for itself, because only the caller knows whether it
+// is asking for work or for prose.
+type StreamFunc func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error)
 
 // ToolExecutor runs one tool call and returns its result text.
 type ToolExecutor func(name string, args json.RawMessage) (string, error)
@@ -207,15 +211,22 @@ func (a *Agent) RequestMessages() []provider.Message {
 	return msgs
 }
 
-// Stream opens a completion stream over msgs.
+// Stream opens a completion stream over msgs with the tools open to the
+// model, which is what a turn wants.
 func (a *Agent) Stream(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	return a.StreamWithChoice(msgs, provider.ToolChoiceAuto)
+}
+
+// StreamWithChoice is Stream under an explicit tool choice, for a request
+// that wants prose out of a session whose tools are still on the wire.
+func (a *Agent) StreamWithChoice(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 	if a.scrub != nil {
 		msgs = append([]provider.Message(nil), msgs...)
 		for i := range msgs {
 			msgs[i] = a.scrub(msgs[i])
 		}
 	}
-	return a.stream(msgs)
+	return a.stream(msgs, choice)
 }
 
 // RunID identifies the current turn's asynchronous work; results stamped

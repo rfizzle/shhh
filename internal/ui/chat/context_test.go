@@ -291,7 +291,7 @@ func driveCompact(t *testing.T, m Model) Model {
 
 func TestCompact_RestartsFromSummary(t *testing.T) {
 	var gotReq []provider.Message
-	stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 		gotReq = msgs
 		ch := make(chan provider.StreamEvent, 2)
 		ch <- provider.StreamEvent{Token: "the summary"}
@@ -336,6 +336,51 @@ func TestCompact_RestartsFromSummary(t *testing.T) {
 	}
 }
 
+// A summary is prose, and the request says so. The instruction sits under a
+// whole session of tool results, and a model that reads it as one more turn
+// answers with the call the turn was about to make — which the abort path
+// can only turn into a failed compaction.
+func TestCompact_ForbidsAToolCall(t *testing.T) {
+	var choices []string
+	stream := func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		choices = append(choices, choice)
+		ch := make(chan provider.StreamEvent, 2)
+		ch <- provider.StreamEvent{Token: "the summary"}
+		ch <- provider.StreamEvent{Done: true}
+		close(ch)
+		_, cancel := context.WithCancel(context.Background())
+		return ch, cancel, nil
+	}
+	conversation := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "question"},
+		{Role: provider.RoleAssistant, Content: "answer"},
+	}
+
+	turn := New(conversation, stream)
+	turn.input.SetValue("ordinary turn")
+	_, cmd := turn.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	batch, ok := cmd().(tea.BatchMsg)
+	if !ok {
+		t.Fatal("expected a batched spinner+stream cmd")
+	}
+	for _, c := range batch {
+		c()
+	}
+
+	_ = driveCompact(t, New(conversation, stream))
+
+	if len(choices) != 2 {
+		t.Fatalf("expected a turn request and a compaction request, got %v", choices)
+	}
+	if choices[0] != provider.ToolChoiceAuto {
+		t.Errorf("a turn must leave the tools open, got %q", choices[0])
+	}
+	if choices[1] != provider.ToolChoiceNone {
+		t.Errorf("a compaction must forbid a tool call, got %q", choices[1])
+	}
+}
+
 func TestCompact_NothingToCompact(t *testing.T) {
 	m := New([]provider.Message{{Role: provider.RoleSystem, Content: "sys"}}, mockStream)
 	m.input.SetValue("/compact")
@@ -352,7 +397,7 @@ func TestCompact_NothingToCompact(t *testing.T) {
 }
 
 func TestCompact_EmptySummaryKeepsConversation(t *testing.T) {
-	stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 		ch := make(chan provider.StreamEvent, 1)
 		ch <- provider.StreamEvent{Done: true}
 		close(ch)
@@ -426,7 +471,7 @@ func TestCompact_ToolCallsAbort(t *testing.T) {
 		t.Fatalf("aborted compaction must leave the conversation unchanged, got %+v", m.Messages())
 	}
 	last := m.transcript[len(m.transcript)-1]
-	if last.kind != entryError || !strings.Contains(last.text, "compaction failed") {
+	if last.kind != entryError || !strings.Contains(last.text, "forbade one") {
 		t.Fatalf("expected a compaction-failed entry, got %+v", last)
 	}
 }

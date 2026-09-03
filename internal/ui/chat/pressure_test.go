@@ -312,7 +312,7 @@ func TestCompact_CarriesThePlanChecklistAcross(t *testing.T) {
 
 // summaryStream answers one compaction request with a summary.
 func summaryStream(summary string) StreamFunc {
-	return func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	return func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 		ch := make(chan provider.StreamEvent, 2)
 		ch <- provider.StreamEvent{Token: summary}
 		ch <- provider.StreamEvent{Done: true, Usage: &provider.Usage{PromptTokens: 100, CompletionTokens: 10}}

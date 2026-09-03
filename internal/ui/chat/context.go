@@ -189,7 +189,18 @@ func (m Model) startCompact() (tea.Model, tea.Cmd) {
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	msgs := append(m.agent.RequestMessages(), provider.Message{Role: provider.RoleUser, Content: compactInstruction})
-	return m, m.requestStreamFor(msgs)
+	// A summary is prose, and the request says so rather than asking nicely
+	// and hoping: the instruction just appended sits under a whole session's
+	// worth of tool results, and a model reading it as one more turn answers
+	// with the tool call the turn was about to make.
+	//
+	// The tools stay on the request. They are the head of the prefix the
+	// provider caches — in front of the system prompt, in the one dialect
+	// that is told about the prefix at all — so a request that dropped them
+	// to prevent a tool call would rebuild the whole head to save a retry,
+	// and the marks that name that head would have nothing to point at.
+	// See docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once.
+	return m, m.requestStreamFor(msgs, provider.ToolChoiceNone)
 }
 
 // finishCompact restarts the message list from the streamed summary: system
@@ -311,15 +322,19 @@ func (m Model) keptTurnCount(kept []provider.Message) int {
 	return n
 }
 
-// abortCompact abandons a compaction that didn't produce a plain text
-// summary (the model answered with tool calls), leaving the conversation
-// unchanged.
+// abortCompact abandons a compaction that answered with tool calls, leaving
+// the conversation unchanged.
+//
+// It is a backstop, not the way a compaction usually ends: the request
+// forbids a tool call outright (startCompact), so reaching here means a
+// provider that did not honour that, and the wording says so rather than
+// describing a model doing something reasonable.
 func (m Model) abortCompact() (tea.Model, tea.Cmd) {
 	m.compacting = false
 	m.streaming = ""
 	m.events = nil
 	m.cancel = nil
-	m.appendEntry(entry{kind: entryError, text: "compaction failed: the model responded with tool calls; conversation unchanged"})
+	m.appendEntry(entry{kind: entryError, text: "compaction failed: the model called a tool on a request that forbade one; conversation unchanged"})
 	m.setTurnState(stateInput)
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()

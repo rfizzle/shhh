@@ -198,7 +198,7 @@ func gatedEnv() subagent.EnvFactory {
 		// is an infinite generator that only ever stopped because the round
 		// cap stopped it, and a child with no cap would spin past
 		// Close.
-		stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := func(msgs []provider.Message, _ string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			if err := ctx.Err(); err != nil {
 				return nil, nil, err
 			}

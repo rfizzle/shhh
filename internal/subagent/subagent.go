@@ -1728,7 +1728,11 @@ func (s *Supervisor) finalCheckIn(c *child) {
 	}
 	msgs := append(c.agent.RequestMessages(),
 		provider.Message{Role: provider.RoleUser, Content: finalCheckInPrompt})
-	events, stop, err := env.Stream(msgs)
+	// The prompt tells the child not to call a tool and the request enforces
+	// it, because nothing here reads a tool call: a handoff that arrived as
+	// one leaves the builder below empty and the parent with no report at
+	// all, which is the failure this whole call exists to prevent.
+	events, stop, err := env.Stream(msgs, provider.ToolChoiceNone)
 	if err != nil {
 		return
 	}

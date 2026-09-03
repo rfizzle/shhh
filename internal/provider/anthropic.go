@@ -133,6 +133,9 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 
 	if len(opts.Tools) > 0 {
 		params.Tools = toAnthropicTools(opts.Tools)
+		if choice, ok := toAnthropicToolChoice(opts.ToolChoice); ok {
+			params.ToolChoice = choice
+		}
 	}
 
 	// Last, so the markers land on the request as it will actually be sent:
@@ -187,7 +190,7 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 		}
 
 		if accumulated.StopReason == anthropic.StopReasonRefusal {
-			ch <- StreamEvent{Err: a.classify(errors.New("request was declined by the model's safety system")), Done: true}
+			ch <- StreamEvent{Err: a.classify(errors.New(anthropicRefusal(accumulated.StopDetails))), Done: true}
 			return
 		}
 
@@ -352,23 +355,73 @@ func anthropicAttachmentBlocks(atts []Attachment) []anthropic.ContentBlockParamU
 func toAnthropicTools(tools []Tool) []anthropic.ToolUnionParam {
 	out := make([]anthropic.ToolUnionParam, 0, len(tools))
 	for _, t := range tools {
-		var schema struct {
-			Properties map[string]any `json:"properties"`
-			Required   []string       `json:"required"`
-		}
-		_ = json.Unmarshal(t.Parameters, &schema)
 		out = append(out, anthropic.ToolUnionParam{
 			OfTool: &anthropic.ToolParam{
 				Name:        t.Name,
 				Description: anthropic.String(t.Description),
-				InputSchema: anthropic.ToolInputSchemaParam{
-					Properties: schema.Properties,
-					Required:   schema.Required,
-				},
+				InputSchema: anthropicInputSchema(t.Parameters),
 			},
 		})
 	}
 	return out
+}
+
+// anthropicInputSchema puts a tool's schema on the request as it was
+// written.
+//
+// Rebuilding it from properties and required — the two keys the SDK's struct
+// has fields for — drops everything else a schema can carry: the $defs a
+// nested shape is factored into and the $ref that reaches them, enums,
+// additionalProperties, a description on the schema itself. The model is
+// then described a tool whose arguments are looser than the ones that will
+// be validated, and the failure is arguments that do not fit, from a model
+// that was told they would.
+//
+// Every key travels as an extra field, which the SDK writes over its own
+// rendering of the struct — so a schema naming its type keeps it, and one
+// that does not gets the "object" the struct spells by default.
+func anthropicInputSchema(raw json.RawMessage) anthropic.ToolInputSchemaParam {
+	var fields map[string]any
+	if err := json.Unmarshal(raw, &fields); err != nil {
+		return anthropic.ToolInputSchemaParam{}
+	}
+	return anthropic.ToolInputSchemaParam{ExtraFields: fields}
+}
+
+// toAnthropicToolChoice renders what the request says about calling a tool,
+// and reports whether there is anything to send. Anything else — the empty
+// string most of all — sends no field, which is this dialect's own auto.
+//
+// Sending none rather than dropping the tools is what keeps a request that
+// wants prose from costing the cached prefix: the tools sit in front of the
+// system prompt in what the API hashes, so a request without them shares no
+// prefix with the session's other requests and rebuilds the whole head. The
+// choice itself is not part of that prefix (cache.go).
+// See docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once.
+func toAnthropicToolChoice(choice string) (anthropic.ToolChoiceUnionParam, bool) {
+	switch choice {
+	case ToolChoiceAuto:
+		return anthropic.ToolChoiceUnionParam{OfAuto: &anthropic.ToolChoiceAutoParam{}}, true
+	case ToolChoiceNone:
+		return anthropic.ToolChoiceUnionParam{OfNone: &anthropic.ToolChoiceNoneParam{}}, true
+	}
+	return anthropic.ToolChoiceUnionParam{}, false
+}
+
+// anthropicRefusal is what a declined request says. The dialect carries a
+// policy category and a human-readable explanation beside the stop reason,
+// and a fixed sentence in their place tells the reader only that something
+// was refused — which is the one thing the failure already told them. Either
+// part can be absent, and on a refusal from an older model both are.
+func anthropicRefusal(details anthropic.RefusalStopDetails) string {
+	msg := "request was declined by the model's safety system"
+	if details.Category != "" {
+		msg += " (" + string(details.Category) + ")"
+	}
+	if details.Explanation != "" {
+		msg += ": " + details.Explanation
+	}
+	return msg
 }
 
 func init() {

@@ -285,7 +285,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 		// enough answer to which of them spent it.
 		childProvider := ledger.ForOrigin(env.prov, meter.Origin{Source: meter.SourceSubagent, Label: spec.Name})
 
-		stream := agent.StreamFunc(func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		stream := agent.StreamFunc(func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 			sctx, cancel := context.WithCancel(cctx)
 			// Children think as hard as the session does unless their
 			// profile says otherwise: the level is a session setting, and
@@ -300,7 +300,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			ev, sErr := childProvider.StreamCompletion(sctx, msgs, provider.CompletionOpts{
 				Model:      childModel,
 				Tools:      streamDefs,
-				ToolChoice: "auto",
+				ToolChoice: choice,
 				Effort:     effort,
 			})
 			if sErr != nil {

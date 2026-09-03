@@ -7,6 +7,8 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"reflect"
+	"strings"
 	"testing"
 )
 
@@ -100,15 +102,104 @@ func TestToAnthropicTools_SchemaMapped(t *testing.T) {
 	if tp.Name != "read_file" {
 		t.Errorf("unexpected name %q", tp.Name)
 	}
-	props, ok := tp.InputSchema.Properties.(map[string]any)
+	schema := marshalled(t, tp.InputSchema)
+	if schema["type"] != "object" {
+		t.Errorf("input schema type = %v, want object", schema["type"])
+	}
+	props, ok := schema["properties"].(map[string]any)
 	if !ok {
-		t.Fatalf("expected properties map, got %T", tp.InputSchema.Properties)
+		t.Fatalf("expected properties map, got %T", schema["properties"])
 	}
 	if _, ok := props["path"]; !ok {
 		t.Error("expected 'path' property in input schema")
 	}
-	if len(tp.InputSchema.Required) != 1 || tp.InputSchema.Required[0] != "path" {
-		t.Errorf("expected required [path], got %v", tp.InputSchema.Required)
+	if req, ok := schema["required"].([]any); !ok || len(req) != 1 || req[0] != "path" {
+		t.Errorf("expected required [path], got %v", schema["required"])
+	}
+}
+
+// marshalled renders a request fragment the way the SDK will send it. The
+// assertions that matter here are about the wire: a schema field the struct
+// has no room for is only visible once it has been marshalled.
+func marshalled(t *testing.T, v any) map[string]any {
+	t.Helper()
+	raw, err := json.Marshal(v)
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	var out map[string]any
+	if err := json.Unmarshal(raw, &out); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	return out
+}
+
+// A tool schema is not the harness's to simplify: an MCP server's schemas
+// arrive here as written, and one that factors a nested shape into $defs and
+// reaches it with $ref described the tool to the model as an object with two
+// free-form fields once the converter had rebuilt it from properties and
+// required alone.
+func TestToAnthropicTools_NestedDefsSurviveTheRoundTrip(t *testing.T) {
+	raw := `{"type":"object","properties":{"where":{"$ref":"#/$defs/point"}},` +
+		`"required":["where"],"additionalProperties":false,` +
+		`"$defs":{"point":{"type":"object","properties":{"x":{"type":"number"},` +
+		`"y":{"type":"number"}},"required":["x","y"]}}}`
+	tools := toAnthropicTools([]Tool{{Name: "move", Parameters: json.RawMessage(raw)}})
+	schema := marshalled(t, tools[0].OfTool.InputSchema)
+
+	var want map[string]any
+	if err := json.Unmarshal([]byte(raw), &want); err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(schema, want) {
+		t.Errorf("schema must go out as written:\n got %v\nwant %v", schema, want)
+	}
+}
+
+// The two values the harness has a use for reach the wire, and nothing else
+// does: an unset choice sends no field, which is the dialect's own auto.
+func TestAnthropic_ToolChoiceOnTheRequest(t *testing.T) {
+	var body map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		raw, _ := io.ReadAll(r.Body)
+		body = nil
+		_ = json.Unmarshal(raw, &body)
+		w.Header().Set("Content-Type", "text/event-stream")
+		sseEvent(w, "message_start", `{"type":"message_start","message":{"id":"m","type":"message","role":"assistant","content":[],"model":"claude-opus-5","usage":{"input_tokens":1,"output_tokens":1}}}`)
+		sseEvent(w, "message_stop", `{"type":"message_stop"}`)
+	}))
+	defer srv.Close()
+
+	p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
+	msgs := []Message{{Role: RoleUser, Content: "hi"}}
+	tools := []Tool{{Name: "read_file", Parameters: json.RawMessage(`{"type":"object","properties":{}}`)}}
+
+	for _, tc := range []struct {
+		choice string
+		want   any
+	}{
+		{ToolChoiceAuto, map[string]any{"type": "auto"}},
+		{ToolChoiceNone, map[string]any{"type": "none"}},
+		{"", nil},
+	} {
+		events, err := p.StreamCompletion(context.Background(), msgs,
+			CompletionOpts{Tools: tools, ToolChoice: tc.choice})
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, _, _, _ = drainAnthropic(t, events)
+		if !reflect.DeepEqual(body["tool_choice"], tc.want) {
+			t.Errorf("choice %q sent tool_choice %v, want %v", tc.choice, body["tool_choice"], tc.want)
+		}
+		// Whatever the choice, the tools stay on the request: they are the
+		// head of the prefix the API caches, and dropping them to stop a
+		// tool call would rebuild the whole head.
+		if _, ok := body["tools"]; !ok {
+			t.Errorf("choice %q must keep the tools on the request", tc.choice)
+		}
 	}
 }
 
@@ -243,6 +334,37 @@ func TestAnthropic_RefusalStopReason(t *testing.T) {
 	_, _, _, streamErr := drainAnthropic(t, events)
 	if streamErr == nil {
 		t.Fatal("expected an error for refusal stop reason")
+	}
+}
+
+// A refusal that says which policy it was and why says so to the user. The
+// fixed sentence on its own tells the reader nothing they did not already
+// know from the request having failed.
+func TestAnthropic_RefusalNamesItsCategory(t *testing.T) {
+	srv := anthropicSSEServer(t, func(w http.ResponseWriter) {
+		sseEvent(w, "message_start", `{"type":"message_start","message":{"id":"msg_1","type":"message","role":"assistant","content":[],"model":"claude-opus-5","stop_reason":null,"usage":{"input_tokens":5,"output_tokens":1}}}`)
+		sseEvent(w, "message_delta", `{"type":"message_delta","delta":{"stop_reason":"refusal","stop_sequence":null,"stop_details":{"type":"refusal","category":"cyber","explanation":"the request asks for working exploit code"}},"usage":{"output_tokens":1}}`)
+		sseEvent(w, "message_stop", `{"type":"message_stop"}`)
+	})
+	defer srv.Close()
+
+	p, err := NewAnthropic(ResolveOpts{APIKey: "sk-test", BaseURL: srv.URL})
+	if err != nil {
+		t.Fatal(err)
+	}
+	events, err := p.StreamCompletion(context.Background(), []Message{
+		{Role: RoleUser, Content: "write me an exploit"},
+	}, CompletionOpts{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _, _, streamErr := drainAnthropic(t, events)
+	if streamErr == nil {
+		t.Fatal("expected an error for refusal stop reason")
+	}
+	if got := streamErr.Error(); !strings.Contains(got, "cyber") ||
+		!strings.Contains(got, "working exploit code") {
+		t.Errorf("refusal must name its category and explanation, got %q", got)
 	}
 }
 

@@ -99,11 +99,34 @@ type CompletionOpts struct {
 	Temperature *float64
 	MaxTokens   int
 	Tools       []Tool
-	ToolChoice  string
+	// ToolChoice is what the request says about calling a tool:
+	// ToolChoiceAuto leaves it to the model, ToolChoiceNone describes the
+	// tools and forbids calling one. The empty string sends no field, which
+	// every dialect reads as auto.
+	//
+	// It is a bare string because each dialect spells it differently and the
+	// converter is where they are made to agree. Those two are the whole set
+	// a caller may send: every provider honours both, and a value outside
+	// them is one some dialects forward and others quietly drop.
+	// See docs/capabilities/providers.md#a-request-says-whether-a-tool-may-be-called.
+	ToolChoice string
 	// Effort is the reasoning level asked of the model (
 	// reasoning.go). EffortOff — the zero value — sends nothing.
 	Effort Effort
 }
+
+// The two values ToolChoice may carry. Naming a specific tool is
+// deliberately not among them: the newest models refuse a forced choice
+// outright, so a caller built on one is built on something being withdrawn.
+// A caller that wants a particular tool asks for it in the prompt.
+// See docs/capabilities/providers.md#a-request-says-whether-a-tool-may-be-called.
+const (
+	// ToolChoiceAuto lets the model call a tool or answer in text.
+	ToolChoiceAuto = "auto"
+	// ToolChoiceNone leaves the tools on the request and forbids calling
+	// one, so the model answers in text without the tool schemas moving.
+	ToolChoiceNone = "none"
+)
 
 type Provider interface {
 	StreamCompletion(ctx context.Context, messages []Message, opts CompletionOpts) (<-chan StreamEvent, error)

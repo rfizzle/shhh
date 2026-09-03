@@ -312,10 +312,9 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 	}
 
 	compOpts := provider.CompletionOpts{
-		Model:      resolved.Model,
-		Tools:      session.toolDefs,
-		ToolChoice: "auto",
-		Effort:     effort,
+		Model:  resolved.Model,
+		Tools:  session.toolDefs,
+		Effort: effort,
 	}
 
 	// /model switches the model mid-session, and a provider failure's [k] and
@@ -373,9 +372,12 @@ func buildSessionEnv(cmd *cobra.Command, session chatSession, ledger *meter.Ledg
 		return nil
 	}
 
-	stream := func(msgs []provider.Message) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+	stream := func(msgs []provider.Message, choice string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
 		ctx, cancel := context.WithCancel(cmd.Context())
 		opts := compOpts
+		// The caller's, not the session's: a turn wants the tools open and a
+		// compaction wants prose, and only the caller knows which it is.
+		opts.ToolChoice = choice
 		sessionMu.Lock()
 		opts.Model = currentModel
 		opts.Tools = currentTools
