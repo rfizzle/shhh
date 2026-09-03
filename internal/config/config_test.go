@@ -3,7 +3,9 @@ package config
 import (
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 )
@@ -710,5 +712,106 @@ func TestTreeCheckIsOnUnlessTurnedOff(t *testing.T) {
 	}
 	if !cfg.TreeCheckEnabled() {
 		t.Error("behavior.tree_check=true should turn it back on")
+	}
+}
+
+// A value that is not the shape its key takes is refused, naming the key and
+// what it wanted, and the setting is left as it was. Every one of these
+// wrote a plausible wrong answer once: `abc` on a retention key wrote zero,
+// which at the next startup is "keep nothing".
+func TestSet_RefusesAValueThatIsNotTheKeysShape(t *testing.T) {
+	for _, tc := range []struct{ key, value, want string }{
+		{"history.retention_days", "abc", "a whole number"},
+		{"web.fetch_max_bytes", "2mb", "a whole number"},
+		{"agents.max_concurrent", "-1", "a whole number, zero or above"},
+		{"behavior.silent_mode", "yes", "true or false"},
+		{"summary.disabled", "on", "true or false"},
+		{"appearance.mouse", "yes", "true or false"},
+		{"behavior.tree_check", "off", "true or false"},
+	} {
+		cfg := Config{}
+		err := Set(&cfg, tc.key, tc.value)
+		if err == nil {
+			t.Fatalf("Set(%q, %q) should be refused", tc.key, tc.value)
+		}
+		if msg := err.Error(); !strings.Contains(msg, tc.key) || !strings.Contains(msg, tc.want) {
+			t.Errorf("Set(%q, %q) = %q, want the key and %q", tc.key, tc.value, msg, tc.want)
+		}
+		if !reflect.DeepEqual(cfg, Config{}) {
+			t.Errorf("Set(%q, %q) wrote something: %+v", tc.key, tc.value, cfg)
+		}
+	}
+}
+
+// A boolean takes the spellings Go reads and no others, so a key set to a
+// word the parser does not know is a refusal rather than a silent false.
+func TestSet_BooleansTakeGosSpellings(t *testing.T) {
+	for _, tc := range []struct {
+		value string
+		want  bool
+	}{{"true", true}, {"True", true}, {"TRUE", true}, {"t", true}, {"1", true},
+		{"false", false}, {"False", false}, {"f", false}, {"0", false}} {
+		var cfg Config
+		if err := Set(&cfg, "summary.disabled", tc.value); err != nil {
+			t.Fatalf("Set(summary.disabled, %q): %v", tc.value, err)
+		}
+		if cfg.Summary.Disabled != tc.want {
+			t.Errorf("summary.disabled = %v for %q, want %v", cfg.Summary.Disabled, tc.value, tc.want)
+		}
+	}
+}
+
+// A negative is a value on the keys whose own comment says what it means and
+// a refusal on the rest, where it would write a ceiling nothing satisfies.
+func TestSet_ANegativeIsAValueOnlyWhereItMeansSomething(t *testing.T) {
+	for _, key := range []string{
+		"behavior.max_tool_rounds", "behavior.command_timeout_seconds",
+		"behavior.check_in_max_doublings", "summary.steer_target_chars",
+		"appearance.paste_lines", "appearance.paste_columns",
+	} {
+		var cfg Config
+		if err := Set(&cfg, key, "-1"); err != nil {
+			t.Errorf("Set(%q, -1): %v", key, err)
+		}
+	}
+	for _, key := range []string{
+		"history.retention_days", "reports.retention_days",
+		"behavior.context_max_tokens", "summary.max_tokens",
+		"lsp.request_timeout_seconds", "sandbox.container_pids",
+	} {
+		var cfg Config
+		if err := Set(&cfg, key, "-1"); err == nil {
+			t.Errorf("Set(%q, -1) should be refused", key)
+		}
+	}
+}
+
+// An empty value is a reset rather than an answer: the setting goes back to
+// its zero, and for a tri-state key that is unset rather than false.
+func TestSet_AnEmptyValueResets(t *testing.T) {
+	cfg := Config{}
+	cfg.History.RetentionDays = 30
+	on := true
+	cfg.Appearance.Mouse = &on
+	cfg.Summary.Disabled = true
+	for _, key := range []string{"history.retention_days", "appearance.mouse", "summary.disabled"} {
+		if err := Set(&cfg, key, ""); err != nil {
+			t.Fatalf("Set(%q, \"\"): %v", key, err)
+		}
+	}
+	if !reflect.DeepEqual(cfg, Config{}) {
+		t.Fatalf("a reset leaves the zero value: %+v", cfg)
+	}
+}
+
+// The reviewer is a built-in role like the other two, so its model is
+// settable like theirs.
+func TestSet_ReviewerModelRoundTrips(t *testing.T) {
+	var cfg Config
+	if err := Set(&cfg, "agents.reviewer_model", "claude-haiku-4-5"); err != nil {
+		t.Fatal(err)
+	}
+	if got := cfg.AgentModel("reviewer", "session-model"); got != "claude-haiku-4-5" {
+		t.Fatalf("reviewer model = %q", got)
 	}
 }

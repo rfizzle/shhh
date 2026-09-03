@@ -239,3 +239,73 @@ func TestConfigRows_SteeringKeysStateTheirDefaults(t *testing.T) {
 		t.Errorf("a negative bound reads %q, want it stated in words", got)
 	}
 }
+
+// The keys whose value is a word rather than a shape are judged by the
+// parsers the running session judges them with, so a name the session would
+// not accept cannot be saved for it to read later.
+func TestCheckConfigValue_RefusesAWordOutsideItsKeysVocabulary(t *testing.T) {
+	for _, tc := range []struct{ key, value string }{
+		{"behavior.default_mode", "yolo"},
+		{"behavior.mode_cycle", "manual, sometimes"},
+		{"provider.reasoning", "sometimes"},
+		{"sandbox.profile", "wide-open"},
+		{"sandbox.container_engine", "containerd"},
+		{"sandbox.require_isolation", "some"},
+	} {
+		err := checkConfigValue(tc.key, tc.value)
+		if err == nil {
+			t.Errorf("%s = %q should be refused", tc.key, tc.value)
+			continue
+		}
+		if !strings.Contains(err.Error(), tc.key) {
+			t.Errorf("%s = %q: %q does not name the key", tc.key, tc.value, err)
+		}
+	}
+	for _, tc := range []struct{ key, value string }{
+		{"behavior.default_mode", "accept-edits"},
+		{"behavior.mode_cycle", "manual, auto, plan"},
+		{"provider.reasoning", "xhigh"},
+		{"sandbox.profile", "workspace-netless"},
+		{"sandbox.container_engine", "podman"},
+		{"sandbox.require_isolation", "container"},
+		// An empty value is a reset, which every one of these keys takes.
+		{"behavior.default_mode", ""},
+		{"sandbox.require_isolation", ""},
+	} {
+		if err := checkConfigValue(tc.key, tc.value); err != nil {
+			t.Errorf("%s = %q: %v", tc.key, tc.value, err)
+		}
+	}
+}
+
+// The screen refuses the same word `config set` does, on the row rather than
+// after the write, so nothing is staged that the file would not take.
+func TestConfigModel_AModeOutsideTheFourIsRefused(t *testing.T) {
+	m := newConfigModel(config.Config{})
+	m.apply(components.ConfigChange{Key: "behavior.default_mode", Value: "yolo"})
+	if !strings.Contains(m.screen.Notice, "yolo") {
+		t.Fatalf("the screen says what was wrong: %q", m.screen.Notice)
+	}
+	if m.cfg.Behavior.DefaultMode != "" || len(m.staged) != 0 {
+		t.Fatalf("nothing is staged: %q %v", m.cfg.Behavior.DefaultMode, m.staged)
+	}
+}
+
+// All three built-in roles have a model row, because a screen that offers
+// one for a role and not its siblings reads as the others not being settable.
+func TestConfigRows_TheRoleModelsAreListed(t *testing.T) {
+	var cfg config.Config
+	cfg.Agents.Profiles = map[string]config.AgentProfile{"reviewer": {Model: "claude-haiku-4-5"}}
+	rows := configRows(cfg, config.Config{})
+	for _, key := range []string{"agents.researcher_model", "agents.writer_model", "agents.reviewer_model"} {
+		if rowFor(rows, key).Key != key {
+			t.Errorf("%s is not on the screen", key)
+		}
+	}
+	if got := rowFor(rows, "agents.reviewer_model").Value; got != "claude-haiku-4-5" {
+		t.Errorf("the reviewer's model reads back as %q", got)
+	}
+	if got := rowFor(rows, "agents.writer_model").Source; got != "default" {
+		t.Errorf("a role with no profile reads as default, got %q", got)
+	}
+}

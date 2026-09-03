@@ -110,6 +110,34 @@ A file that does not exist is created holding only what was written, under
 its section header. A file that does not parse is refused untouched: the
 person is told, and the write is theirs to make once the file reads.
 
+## A value is refused before it is written
+
+A setting takes a shape — a number, a boolean, one of a few words — and a
+value that is not that shape is refused, naming the key and what it wanted.
+Nothing is written and the file is left exactly as it was.
+
+The alternative is worse than it sounds, because the natural failure of a
+loose parser is not an error but a *plausible* value. A retention measured in
+days, given a word, becomes zero; zero is not "no bound" here but "keep
+nothing", and the next startup prunes the history the setting was meant to
+protect. A flag given `yes` becomes false, which is the opposite of what was
+asked for and looks in the file like a decision. Both report success. Neither
+is visible until the thing they turned off is missed.
+
+The words a value may be are judged by the same code the running session
+judges them with — one list of permission modes, one of reasoning levels, one
+of containment profiles — so `config set`, the editor and the slash commands
+that save their answer all refuse the same value for the same reason. A
+second list, written beside the writer for convenience, is a list that
+eventually disagrees with the first, and the disagreement shows up as a value
+that saved cleanly and does nothing.
+
+A negative is a value where a key says what a negative means — no round
+limit, no command timeout, an interval that never widens — and a refusal
+everywhere else. Elsewhere a minus sign is a slipped finger, and what it
+writes is a ceiling nothing can satisfy: a setting that reads as present and
+turns its feature off.
+
 ## A failed check says what it will cost you
 
 Diagnostics report in the words of the surface where the consequence will

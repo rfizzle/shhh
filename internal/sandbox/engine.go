@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os/exec"
+	"slices"
 	"strings"
 	"time"
 )
@@ -26,6 +27,19 @@ const engineProbeTimeout = 10 * time.Second
 // first: it is rootless by default, which is the preferred posture.
 var engineCandidates = []string{"podman", "docker"}
 
+// ParseEngine maps a config value to the engine it names; empty is no forced
+// engine and leaves detection to its own order. It is the one place the two
+// names are checked, so that a config file naming a third one is refused
+// where it is written rather than reported as "no container engine" at the
+// moment a command needed one.
+func ParseEngine(s string) (string, error) {
+	name := strings.ToLower(strings.TrimSpace(s))
+	if name == "" || slices.Contains(engineCandidates, name) {
+		return name, nil
+	}
+	return "", fmt.Errorf("unknown container engine %q (valid: podman, docker)", name)
+}
+
 // DetectEngine probes for a working container engine. With forced set, only
 // that engine is considered; otherwise Podman then Docker are probed and a
 // rootless engine is preferred over a rootful one. The failure Detail names
@@ -33,8 +47,8 @@ var engineCandidates = []string{"podman", "docker"}
 func DetectEngine(forced string) Engine {
 	candidates := engineCandidates
 	if f := strings.ToLower(strings.TrimSpace(forced)); f != "" {
-		if f != "podman" && f != "docker" {
-			return Engine{Name: f, Detail: fmt.Sprintf("unknown container engine %q (valid: podman, docker)", f)}
+		if _, err := ParseEngine(f); err != nil {
+			return Engine{Name: f, Detail: err.Error()}
 		}
 		candidates = []string{f}
 	}

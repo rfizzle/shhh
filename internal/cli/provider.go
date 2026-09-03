@@ -167,7 +167,7 @@ func saveProviderChoice(req providerRequest) {
 	if req.Model != "" {
 		edits = append(edits, config.Edit{Key: "provider.model", Value: req.Model})
 	}
-	if err := config.Write(config.WritePath(), edits...); err != nil {
+	if err := writeConfigEdits(config.WritePath(), edits...); err != nil {
 		fmt.Fprintf(os.Stderr, "shhh: could not save the provider to %s: %v\n", config.WritePath(), err)
 		return
 	}

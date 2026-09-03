@@ -401,9 +401,11 @@ type AppearanceConfig struct {
 	// PasteLines and PasteColumns are the shape past which a paste is staged
 	// as an attachment instead of typed into the draft
 	// (docs/interface/surfaces.md#the-input-frame). Zero on either means the
-	// default. They are here rather than under behavior for the reason Mouse
-	// and Notify are: what they set is how the input surface treats what the
-	// reader does at it, not what the session does with the answer.
+	// default and any negative turns that half of the test off, which is how
+	// a person who wants every paste typed says so. They are here rather than
+	// under behavior for the reason Mouse and Notify are: what they set is
+	// how the input surface treats what the reader does at it, not what the
+	// session does with the answer.
 	PasteLines   int `toml:"paste_lines"`
 	PasteColumns int `toml:"paste_columns"`
 }
@@ -620,13 +622,40 @@ func LoadFrom(paths ...string) (Config, error) {
 	return Config{}, nil
 }
 
+// Set applies one value, as a person typed it, to the setting a key names.
+// The value is parsed for the type the setting has and nothing is written
+// when the parse fails: the alternative is a key that reports success and
+// holds a number nobody chose, which for a retention key means the next
+// startup prunes everything
+// (docs/capabilities/configuration.md#a-value-is-refused-before-it-is-written).
+//
+// The words a value may be — a permission mode, a reasoning level, a
+// containment profile — are not judged here. Those vocabularies belong to
+// the packages that own them, and this one imports none of them; the surface
+// that writes a config value checks them before it calls this.
 func Set(cfg *Config, key, value string) error {
-	if p := intField(cfg, key); p != nil {
-		n, err := intValue(value)
+	if p, signed := intField(cfg, key); p != nil {
+		n, err := intValue(key, value, signed)
 		if err != nil {
 			return err
 		}
 		*p = n
+		return nil
+	}
+	if p := boolField(cfg, key); p != nil {
+		b, err := boolValue(key, value)
+		if err != nil {
+			return err
+		}
+		*p = b
+		return nil
+	}
+	if p := triStateField(cfg, key); p != nil {
+		b, err := triState(key, value)
+		if err != nil {
+			return err
+		}
+		*p = b
 		return nil
 	}
 	switch key {
@@ -642,33 +671,19 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Provider.Name = value
 	case "provider.reasoning":
 		cfg.Provider.Reasoning = value
-	case "behavior.silent_mode":
-		cfg.Behavior.SilentMode = value == "true"
 	case "behavior.shell":
 		cfg.Behavior.Shell = value
-	case "appearance.mouse":
-		cfg.Appearance.Mouse = boolPtr(value)
-	case "appearance.notify":
-		cfg.Appearance.Notify = boolPtr(value)
-	case "appearance.window_title":
-		cfg.Appearance.WindowTitle = boolPtr(value)
-	case "behavior.tree_check":
-		cfg.Behavior.TreeCheck = boolPtr(value)
-	case "behavior.safety_warnings":
-		cfg.Behavior.SafetyWarnings = boolPtr(value)
 	case "behavior.system_prompt_extra":
 		cfg.Behavior.SystemPromptExtra = value
 	case "behavior.command_allowlist":
 		cfg.Behavior.CommandAllowlist = splitList(value)
 	case "behavior.read_only_commands":
 		cfg.Behavior.ReadOnlyCommands = splitList(value)
-	case "behavior.read_only_auto":
-		cfg.Behavior.ReadOnlyAuto = boolPtr(value)
 	case "secrets.env":
 		cfg.Secrets.Env = splitList(value)
 	case "agents.model":
 		cfg.Agents.Model = value
-	case "agents.researcher_model", "agents.writer_model":
+	case "agents.researcher_model", "agents.writer_model", "agents.reviewer_model":
 		role := strings.TrimSuffix(strings.TrimPrefix(key, "agents."), "_model")
 		if cfg.Agents.Profiles == nil {
 			cfg.Agents.Profiles = map[string]AgentProfile{}
@@ -686,14 +701,6 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Behavior.ClassifierModel = value
 	case "summary.model":
 		cfg.Summary.Model = value
-	case "summary.disabled":
-		cfg.Summary.Disabled = value == "true"
-	case "summary.headless":
-		cfg.Summary.Headless = boolPtr(value)
-	case "summary.subagents":
-		cfg.Summary.Subagents = boolPtr(value)
-	case "summary.title":
-		cfg.Summary.Title = boolPtr(value)
 	case "prompts.steer":
 		cfg.Prompts.Steer = value
 	case "prompts.check_in":
@@ -702,8 +709,6 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Prompts.Summary = value
 	case "prompts.classifier":
 		cfg.Prompts.Classifier = value
-	case "behavior.memory_disabled":
-		cfg.Behavior.MemoryDisabled = value == "true"
 	case "sandbox.profile":
 		cfg.Sandbox.Profile = value
 	case "sandbox.deny_extra":
@@ -722,10 +727,8 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Sandbox.ContainerCPUs = value
 	case "sandbox.require_isolation":
 		cfg.Sandbox.RequireIsolation = value
-	case "web.allow_private":
-		cfg.Web.AllowPrivate = value == "true"
 	case "web.fetch_max_bytes":
-		n, err := intValue(value)
+		n, err := intValue(key, value, false)
 		if err != nil {
 			return err
 		}
@@ -734,10 +737,6 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Web.SearchProvider = value
 	case "web.search_api_key":
 		cfg.Web.SearchAPIKey = value
-	case "lsp.disabled":
-		cfg.LSP.Disabled = value == "true"
-	case "mcp.disabled":
-		cfg.MCP.Disabled = value == "true"
 	case "appearance.accent_color":
 		cfg.Appearance.AccentColor = value
 	default:
@@ -746,96 +745,197 @@ func Set(cfg *Config, key, value string) error {
 	return nil
 }
 
+// ValueError is a value that is not the shape the key it was given to takes.
+// It names both, because the two questions a refused write raises are which
+// key was refused and what it wanted instead, and an error that answers
+// neither leaves the person guessing at a file they cannot see the effect of
+// (docs/capabilities/configuration.md#a-value-is-refused-before-it-is-written).
+type ValueError struct {
+	Key   string
+	Value string
+	// Want is the shape, phrased to follow "is not": "a whole number",
+	// "true or false".
+	Want string
+}
+
+func (e *ValueError) Error() string {
+	return fmt.Sprintf("config key %s: %q is not %s", e.Key, e.Value, e.Want)
+}
+
 // intField is the integer setting a key names, or nil when the key is not
-// one. The integer keys are parsed in one place rather than one case each
-// so that they are parsed strictly: a value that is not a number is refused,
-// because a zero is the line coming out of the file, and a typo must not
-// delete a setting the person had.
-func intField(cfg *Config, key string) *int {
+// one, and whether a negative is a value that key has a meaning for.
+//
+// The integer keys are parsed in one place rather than one case each so that
+// they are parsed strictly: a value that is not a number is refused, because
+// a zero is the line coming out of the file, and a typo must not delete a
+// setting the person had.
+//
+// The second answer is the difference between `-1` as a decision and `-1` as
+// a slipped finger. A handful of keys say in their own comment what a
+// negative means — no round cap, no command timeout, an interval that never
+// widens, a paste that is never staged on that count — and everywhere else a
+// negative is a ceiling nothing can satisfy, which is a setting that looks
+// present and turns its feature off.
+func intField(cfg *Config, key string) (*int, bool) {
 	switch key {
 	case "behavior.context_max_tokens":
-		return &cfg.Behavior.ContextMaxTokens
+		return &cfg.Behavior.ContextMaxTokens, false
 	case "appearance.paste_lines":
-		return &cfg.Appearance.PasteLines
+		return &cfg.Appearance.PasteLines, true
 	case "appearance.paste_columns":
-		return &cfg.Appearance.PasteColumns
+		return &cfg.Appearance.PasteColumns, true
 	case "behavior.max_tool_rounds":
-		return &cfg.Behavior.MaxToolRounds
+		return &cfg.Behavior.MaxToolRounds, true
 	case "behavior.command_timeout_seconds":
-		return &cfg.Behavior.CommandTimeoutSeconds
+		return &cfg.Behavior.CommandTimeoutSeconds, true
 	case "agents.max_concurrent":
-		return &cfg.Agents.MaxConcurrent
+		return &cfg.Agents.MaxConcurrent, false
 	case "behavior.classifier_timeout_seconds":
-		return &cfg.Behavior.ClassifierTimeoutSeconds
+		return &cfg.Behavior.ClassifierTimeoutSeconds, false
 	case "behavior.classifier_max_tokens":
-		return &cfg.Behavior.ClassifierMaxTokens
+		return &cfg.Behavior.ClassifierMaxTokens, false
 	case "behavior.classifier_retries":
-		return &cfg.Behavior.ClassifierRetries
+		return &cfg.Behavior.ClassifierRetries, false
 	case "summary.interval_rounds":
-		return &cfg.Summary.IntervalRounds
+		return &cfg.Summary.IntervalRounds, false
 	case "summary.min_gap_seconds":
-		return &cfg.Summary.MinGapSeconds
+		return &cfg.Summary.MinGapSeconds, false
 	case "summary.timeout_seconds":
-		return &cfg.Summary.TimeoutSeconds
+		return &cfg.Summary.TimeoutSeconds, false
 	case "summary.max_tokens":
-		return &cfg.Summary.MaxTokens
+		return &cfg.Summary.MaxTokens, false
 	case "summary.intervene_cooldown_intervals":
-		return &cfg.Summary.InterveneCooldownIntervals
+		return &cfg.Summary.InterveneCooldownIntervals, true
 	case "summary.steer_target_chars":
-		return &cfg.Summary.SteerTargetChars
+		return &cfg.Summary.SteerTargetChars, true
 	case "behavior.check_in_interval_rounds":
-		return &cfg.Behavior.CheckInIntervalRounds
+		return &cfg.Behavior.CheckInIntervalRounds, true
 	case "behavior.check_in_max_doublings":
-		return &cfg.Behavior.CheckInMaxDoublings
+		return &cfg.Behavior.CheckInMaxDoublings, true
 	case "behavior.memory_max_entries":
-		return &cfg.Behavior.MemoryMaxEntries
+		return &cfg.Behavior.MemoryMaxEntries, false
 	case "behavior.memory_max_tokens":
-		return &cfg.Behavior.MemoryMaxTokens
+		return &cfg.Behavior.MemoryMaxTokens, false
 	case "sandbox.container_pids":
-		return &cfg.Sandbox.ContainerPids
+		return &cfg.Sandbox.ContainerPids, false
 	case "sandbox.container_ttl_hours":
-		return &cfg.Sandbox.ContainerTTLHours
+		return &cfg.Sandbox.ContainerTTLHours, false
 	case "web.fetch_timeout_seconds":
-		return &cfg.Web.FetchTimeoutSeconds
+		return &cfg.Web.FetchTimeoutSeconds, false
 	case "web.cache_ttl_minutes":
-		return &cfg.Web.CacheTTLMinutes
+		return &cfg.Web.CacheTTLMinutes, false
 	case "mcp.startup_timeout_seconds":
-		return &cfg.MCP.StartupTimeoutSeconds
+		return &cfg.MCP.StartupTimeoutSeconds, false
 	case "lsp.request_timeout_seconds":
-		return &cfg.LSP.RequestTimeoutSeconds
+		return &cfg.LSP.RequestTimeoutSeconds, false
 	case "lsp.diagnostics_timeout_seconds":
-		return &cfg.LSP.DiagnosticsTimeoutSeconds
+		return &cfg.LSP.DiagnosticsTimeoutSeconds, false
 	case "history.retention_days":
-		return &cfg.History.RetentionDays
+		return &cfg.History.RetentionDays, false
 	case "reports.retention_days":
-		return &cfg.Reports.RetentionDays
+		return &cfg.Reports.RetentionDays, false
+	}
+	return nil, false
+}
+
+// boolField is the plain boolean setting a key names, or nil when the key is
+// not one. Like the integers they are parsed together so that they are
+// parsed strictly: every one of these was `value == "true"` once, which
+// turned `yes`, `on` and `True` into a silent false.
+func boolField(cfg *Config, key string) *bool {
+	switch key {
+	case "behavior.silent_mode":
+		return &cfg.Behavior.SilentMode
+	case "behavior.memory_disabled":
+		return &cfg.Behavior.MemoryDisabled
+	case "summary.disabled":
+		return &cfg.Summary.Disabled
+	case "web.allow_private":
+		return &cfg.Web.AllowPrivate
+	case "lsp.disabled":
+		return &cfg.LSP.Disabled
+	case "mcp.disabled":
+		return &cfg.MCP.Disabled
 	}
 	return nil
 }
 
-// intValue parses a number as a person types it; empty is unset.
-func intValue(value string) (int, error) {
+// triStateField is the tri-state boolean setting a key names, or nil when
+// the key is not one. These keys keep unset apart from false because unset
+// is a default that is not always false — mouse reporting, notifications and
+// the tree check are all on when nothing says otherwise.
+func triStateField(cfg *Config, key string) **bool {
+	switch key {
+	case "appearance.mouse":
+		return &cfg.Appearance.Mouse
+	case "appearance.notify":
+		return &cfg.Appearance.Notify
+	case "appearance.window_title":
+		return &cfg.Appearance.WindowTitle
+	case "behavior.tree_check":
+		return &cfg.Behavior.TreeCheck
+	case "behavior.safety_warnings":
+		return &cfg.Behavior.SafetyWarnings
+	case "behavior.read_only_auto":
+		return &cfg.Behavior.ReadOnlyAuto
+	case "summary.headless":
+		return &cfg.Summary.Headless
+	case "summary.subagents":
+		return &cfg.Summary.Subagents
+	case "summary.title":
+		return &cfg.Summary.Title
+	}
+	return nil
+}
+
+// intValue parses a number as a person types it; empty is unset. signed says
+// the key has a meaning for a negative, and without it one is refused rather
+// than stored.
+func intValue(key, value string, signed bool) (int, error) {
 	value = strings.TrimSpace(value)
 	if value == "" {
 		return 0, nil
 	}
 	n, err := strconv.Atoi(value)
 	if err != nil {
-		return 0, fmt.Errorf("%q is not a number", value)
+		return 0, &ValueError{Key: key, Value: value, Want: "a whole number"}
+	}
+	if n < 0 && !signed {
+		return 0, &ValueError{Key: key, Value: value, Want: "a whole number, zero or above"}
 	}
 	return n, nil
 }
 
-// boolPtr is a tri-state key's value: nil for an empty value, so that a
+// boolValue parses a boolean the way Go reads one — true/false, t/f, 1/0 and
+// their capitalisations — and refuses everything else. `yes` and `on` are
+// among the everything else on purpose: they are words a person reasonably
+// types, and a parser that quietly answered false for them is how a key
+// nobody could see turned itself off.
+func boolValue(key, value string) (bool, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return false, nil
+	}
+	b, err := strconv.ParseBool(value)
+	if err != nil {
+		return false, &ValueError{Key: key, Value: value, Want: "true or false"}
+	}
+	return b, nil
+}
+
+// triState is a tri-state key's value: nil for an empty value, so that a
 // reset puts the key back to unset — the default, whatever it is — rather
 // than to false, which for a key that is on when unset would be the opposite
 // of what a reset means.
-func boolPtr(value string) *bool {
-	if value == "" {
-		return nil
+func triState(key, value string) (*bool, error) {
+	if strings.TrimSpace(value) == "" {
+		return nil, nil
 	}
-	v := value == "true"
-	return &v
+	b, err := boolValue(key, value)
+	if err != nil {
+		return nil, err
+	}
+	return &b, nil
 }
 
 // splitList parses a comma-separated config value into its non-empty,

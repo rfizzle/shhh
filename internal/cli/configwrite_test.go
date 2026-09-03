@@ -151,3 +151,70 @@ func TestMCPAddThenRemove_LeavesTheFileAsItWas(t *testing.T) {
 		t.Fatalf("--- want\n%s--- got\n%s", handWrittenConfig, got)
 	}
 }
+
+// runRootErr runs a command that is expected to fail and returns the error.
+func runRootErr(t *testing.T, args ...string) error {
+	t.Helper()
+	var out bytes.Buffer
+	cmd := NewRootCmd()
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs(args)
+	err := cmd.Execute()
+	if err == nil {
+		t.Fatalf("shhh %s should have failed\n%s", strings.Join(args, " "), out.String())
+	}
+	return err
+}
+
+// `config set` refuses a value the key cannot hold and leaves the file as it
+// was. A retention key given a word wrote zero once, which at the next
+// startup is "prune everything".
+func TestConfigSet_RefusesAValueTheKeyCannotHold(t *testing.T) {
+	for _, tc := range []struct{ key, value, want string }{
+		{"history.retention_days", "abc", "a whole number"},
+		{"appearance.mouse", "yes", "true or false"},
+		{"behavior.default_mode", "yolo", "unknown mode"},
+		{"provider.reasoning", "sometimes", "unknown reasoning level"},
+		{"sandbox.profile", "wide-open", "unknown sandbox profile"},
+		{"sandbox.container_engine", "containerd", "unknown container engine"},
+		{"sandbox.require_isolation", "some", "unknown isolation level"},
+	} {
+		path := pointConfigAt(t, handWrittenConfig)
+		err := runRootErr(t, "config", "set", tc.key, tc.value)
+		if msg := err.Error(); !strings.Contains(msg, tc.key) || !strings.Contains(msg, tc.want) {
+			t.Errorf("%s = %q: %q, want the key and %q", tc.key, tc.value, msg, tc.want)
+		}
+		got, readErr := os.ReadFile(path)
+		must(t, readErr)
+		if string(got) != handWrittenConfig {
+			t.Errorf("%s = %q touched the file:\n%s", tc.key, tc.value, got)
+		}
+	}
+}
+
+// The writer a session's slash commands share refuses the same words, so a
+// mode saved from inside a session is one the next session can read.
+func TestConfigWriter_RefusesAModeOutsideTheFour(t *testing.T) {
+	path := pointConfigAt(t, handWrittenConfig)
+	if err := configWriter()("behavior.default_mode", "yolo"); err == nil {
+		t.Fatal("the writer refuses a mode that is not one")
+	}
+	got, err := os.ReadFile(path)
+	must(t, err)
+	if string(got) != handWrittenConfig {
+		t.Fatalf("touched:\n%s", got)
+	}
+}
+
+// The reviewer's model is settable from the command line and reads back as
+// the model that role runs.
+func TestConfigSet_ReviewerModelRoundTrips(t *testing.T) {
+	path := pointConfigAt(t, handWrittenConfig)
+	runRoot(t, "config", "set", "agents.reviewer_model", "claude-haiku-4-5")
+	cfg, err := config.LoadFrom(path)
+	must(t, err)
+	if got := cfg.AgentModel("reviewer", "session-model"); got != "claude-haiku-4-5" {
+		t.Fatalf("reviewer model = %q", got)
+	}
+}

@@ -176,7 +176,7 @@ func TestWrite_FindsADottedKey(t *testing.T) {
 	}
 }
 
-// The two keys `config set` spells one way and the file another.
+// The three keys `config set` spells one way and the file another.
 func TestWrite_RoleModelIsAProfileTable(t *testing.T) {
 	path := writeTemp(t, "")
 	if err := Write(path, Edit{Key: "agents.researcher_model", Value: "claude-haiku-4-5-20251001"}); err != nil {
@@ -443,7 +443,7 @@ func TestWrite_RefusesANonNumber(t *testing.T) {
 	text := "[behavior]\nmax_tool_rounds = 40\n"
 	path := writeTemp(t, text)
 	err := Write(path, Edit{Key: "behavior.max_tool_rounds", Value: "abc"})
-	if err == nil || !strings.Contains(err.Error(), "not a number") {
+	if err == nil || !strings.Contains(err.Error(), "is not a whole number") {
 		t.Fatalf("err = %v", err)
 	}
 	if got := readBack(t, path); got != text {
@@ -507,5 +507,52 @@ func TestSet_EmptyUnsetsATriStateKey(t *testing.T) {
 	}
 	if c.Appearance.Mouse != nil {
 		t.Fatal("an empty value should unset the key, not write false")
+	}
+}
+
+// A boolean the parser cannot read leaves the file alone. Under the rule
+// that a zero takes the line out, `yes` would have deleted the setting the
+// person had — and reported success doing it.
+func TestWrite_RefusesABooleanThatIsNotOne(t *testing.T) {
+	text := "[appearance]\nmouse = false\n"
+	path := writeTemp(t, text)
+	err := Write(path, Edit{Key: "appearance.mouse", Value: "yes"})
+	if err == nil || !strings.Contains(err.Error(), "is not true or false") {
+		t.Fatalf("err = %v", err)
+	}
+	if got := readBack(t, path); got != text {
+		t.Fatalf("touched:\n%s", got)
+	}
+}
+
+// A refusal on the second of two edits leaves the file holding neither: a
+// write is one act, and half of it applied is a file nobody asked for.
+func TestWrite_ARefusedEditLeavesTheEarlierOnesUnwritten(t *testing.T) {
+	text := "[provider]\ndefault = \"anthropic\"\n"
+	path := writeTemp(t, text)
+	err := Write(path,
+		Edit{Key: "provider.model", Value: "claude-opus-5"},
+		Edit{Key: "history.retention_days", Value: "abc"})
+	if err == nil {
+		t.Fatal("the bad value is refused")
+	}
+	if got := readBack(t, path); got != text {
+		t.Fatalf("the first edit landed anyway:\n%s", got)
+	}
+}
+
+// The reviewer's model goes to its own profile table, the way the other two
+// roles' do.
+func TestWrite_ReviewerModelIsAProfileTable(t *testing.T) {
+	path := writeTemp(t, "")
+	if err := Write(path, Edit{Key: "agents.reviewer_model", Value: "claude-haiku-4-5-20251001"}); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := LoadFrom(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Agents.Profiles["reviewer"].Model != "claude-haiku-4-5-20251001" {
+		t.Fatalf("profile not read back: %+v", cfg.Agents.Profiles)
 	}
 }

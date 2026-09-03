@@ -13,6 +13,7 @@ import (
 	"github.com/rfizzle/shhh/internal/cli/report"
 	"github.com/rfizzle/shhh/internal/config"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/sandbox"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/spf13/cobra"
 )
@@ -54,12 +55,70 @@ func newConfigSetCmd() *cobra.Command {
 		Long:  "Set a configuration key. Example: shhh config set provider.default openai",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := config.Write(config.WritePath(), config.Edit{Key: args[0], Value: args[1]}); err != nil {
+			if err := writeConfigEdits(config.WritePath(), config.Edit{Key: args[0], Value: args[1]}); err != nil {
 				return err
 			}
 			return report.Fprintln(cmd.OutOrStdout(), report.Done("set", args[0]+" = "+args[1]))
 		},
 	}
+}
+
+// writeConfigEdits is the one door onto the config file from this command
+// and every surface it wires: each value is judged before any of it is
+// written, so a file is never left holding half an edit that the next key
+// turned out to fail on
+// (docs/capabilities/configuration.md#a-value-is-refused-before-it-is-written).
+func writeConfigEdits(path string, edits ...config.Edit) error {
+	for _, e := range edits {
+		if err := checkConfigValue(e.Key, e.Value); err != nil {
+			return err
+		}
+	}
+	return config.Write(path, edits...)
+}
+
+// checkConfigValue refuses a value that is not one of the words its key
+// takes. The shapes — a number, a boolean — are the config package's to
+// parse; these six keys are checked here instead because what they may say
+// is a permission mode, a reasoning level and three containment settings,
+// and those vocabularies belong to the packages that own them, which config
+// must not import. Asking the same parsers the session itself asks is what
+// makes `config set`, the screen and the slash commands refuse the same
+// values, rather than three lists drifting apart.
+//
+// An empty value is a reset, not an answer, and is left to the write to
+// interpret as the key going out of the file.
+func checkConfigValue(key, value string) error {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+	var err error
+	switch key {
+	case "behavior.default_mode":
+		_, err = agent.ParseMode(value)
+	case "behavior.mode_cycle":
+		for name := range strings.SplitSeq(value, ",") {
+			if name = strings.TrimSpace(name); name == "" {
+				continue
+			}
+			if _, err = agent.ParseMode(name); err != nil {
+				break
+			}
+		}
+	case "provider.reasoning":
+		_, err = provider.ParseEffort(value)
+	case "sandbox.profile":
+		_, err = sandbox.ParseProfile(value)
+	case "sandbox.container_engine":
+		_, err = sandbox.ParseEngine(value)
+	case "sandbox.require_isolation":
+		_, err = sandbox.ParseIsolation(value)
+	}
+	if err != nil {
+		return fmt.Errorf("config key %s: %w", key, err)
+	}
+	return nil
 }
 
 // configModel hosts the config screen (
@@ -115,7 +174,7 @@ func (m configModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if r, ok := result.(components.ConfigResult); ok && r.Write {
-			if err := config.Write(config.WritePath(), m.edits()...); err != nil {
+			if err := writeConfigEdits(config.WritePath(), m.edits()...); err != nil {
 				m.err = err
 			} else {
 				m.saved = true
@@ -141,6 +200,10 @@ func (m *configModel) apply(change components.ConfigChange) {
 	value := change.Value
 	if change.Reset {
 		value = ""
+	}
+	if err := checkConfigValue(change.Key, value); err != nil {
+		m.screen.Notice = err.Error()
+		return
 	}
 	if err := config.Set(&m.cfg, change.Key, value); err != nil {
 		m.screen.Notice = err.Error()
@@ -279,6 +342,26 @@ func modeShow(raw string) (string, components.FieldTone, string) {
 		return "⏵⏵ " + name, components.ToneSafe, mode.Describe()
 	}
 	return "⏸ " + name, components.ToneOpen, mode.Describe()
+}
+
+// roleModel reads one built-in role's model override. An absent profile
+// reads as unset, which is what it means: the role runs whatever the
+// [agents] default resolves to.
+func roleModel(role string) func(config.Config) string {
+	return func(c config.Config) string { return c.Agents.Profiles[role].Model }
+}
+
+// roleModelOptions are the answers a role's model row offers: inherit, which
+// for a role means the sub-agent default rather than the session model
+// directly, then whatever models the configured provider is known to have.
+func roleModelOptions(c config.Config) []components.SelectOption {
+	opts := []components.SelectOption{
+		{Label: config.InheritModel, Desc: "this role runs whatever the sub-agent model resolves to"},
+	}
+	for _, name := range provider.KnownModels(c.Provider.Default) {
+		opts = append(opts, components.SelectOption{Label: name})
+	}
+	return opts
 }
 
 // configSettings is the table the screen is drawn from, in the order and the
@@ -434,6 +517,28 @@ func configSettings() []configSetting {
 			}
 			return opts
 		},
+	}, {
+		// The three built-in roles, each of which may run a different model
+		// from the rest: a reviewer reading a diff and a researcher reading
+		// the tree are not the same question, and paying the session's model
+		// for both is the usual reason sub-agents cost more than they should.
+		// All three are listed rather than the one being written, because a
+		// screen that offers a model for one role and not its siblings reads
+		// as the others not being settable.
+		group: "MODEL", key: "agents.researcher_model", label: "researcher model",
+		read:     roleModel("researcher"),
+		fallback: "(the sub-agent model)",
+		options:  roleModelOptions,
+	}, {
+		group: "MODEL", key: "agents.writer_model", label: "writer model",
+		read:     roleModel("writer"),
+		fallback: "(the sub-agent model)",
+		options:  roleModelOptions,
+	}, {
+		group: "MODEL", key: "agents.reviewer_model", label: "reviewer model",
+		read:     roleModel("reviewer"),
+		fallback: "(the sub-agent model)",
+		options:  roleModelOptions,
 	}, {
 		// The session summary's model. It sits under MODEL rather
 		// than SESSION because what it is is a second model the session runs,
@@ -730,6 +835,6 @@ func shortPath(path string) string {
 // started is not clobbered by this session's stale copy.
 func configWriter() func(key, value string) error {
 	return func(key, value string) error {
-		return config.Write(config.WritePath(), config.Edit{Key: key, Value: value})
+		return writeConfigEdits(config.WritePath(), config.Edit{Key: key, Value: value})
 	}
 }
