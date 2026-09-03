@@ -15,7 +15,8 @@ import (
 // openQualityGate builds the session's quality-gate runner: suites
 // come from the workspace's trusted .shhh/quality.json, checks run contained
 // with a read-only workspace when a mechanism is available, and full
-// check output lands in the evidence store when one is open.
+// check output lands in the evidence store when one is open, scrubbed of
+// the session's secrets on the way in.
 func openQualityGate(cfg config.Config, red *evidence.Reducer, sc *scope.Scope) *quality.Runner {
 	ws, err := os.Getwd()
 	if err != nil {
@@ -26,6 +27,17 @@ func openQualityGate(cfg config.Config, red *evidence.Reducer, sc *scope.Scope) 
 	if red != nil {
 		r.Evidence = red.Store().Put
 	}
+	// The gate is the third writer into the evidence store, and the only
+	// one that reaches it without a tool result going by: a check's whole
+	// output is stored under an id of its own, and the excerpt of it that
+	// /gate result prints never passes the executor chain either. It takes
+	// the scrub the reducer was given rather than a copy of the vault's,
+	// because the toolset has to be complete before the session opens its
+	// secrets — there is no vault yet at this point in the build, and this
+	// method value reads the scrub at the moment a check's output is kept.
+	// A session whose store would not open has no reducer to read it from
+	// and keeps no durable copy either; the method is safe on the nil one.
+	r.SetScrub(red.Scrub)
 	if avail := sandbox.Detect(); avail.OK {
 		if policy, err := sandboxPolicy(cfg, sc.Dirs()...); err == nil {
 			r.Mechanism = avail.Mechanism

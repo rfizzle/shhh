@@ -49,6 +49,26 @@ func (r *Reducer) SetScrub(scrub func(string) string) {
 	r.mu.Unlock()
 }
 
+// Scrub applies whatever SetScrub installed to text a caller is about to
+// put in the store itself, rather than hand to Process. The quality gate is
+// that caller: it stores a check's whole output under an id of its own, and
+// it is built before the session opens its secrets, so it holds this method
+// value and reads the scrub through it at the moment it writes. Text goes
+// back unchanged when no scrub is installed, and on a nil Reducer.
+// See docs/capabilities/secrets.md#the-value-is-scrubbed-at-every-door.
+func (r *Reducer) Scrub(s string) string {
+	if r == nil {
+		return s
+	}
+	r.mu.Lock()
+	scrub := r.scrub
+	r.mu.Unlock()
+	if scrub == nil {
+		return s
+	}
+	return scrub(s)
+}
+
 // Store exposes the underlying session store (for /evidence management).
 func (r *Reducer) Store() *Store { return r.store }
 
@@ -78,12 +98,7 @@ func (r *Reducer) Process(tool, result string) string {
 	// kept and the notice's counts describe the file on disk. Cutting first
 	// and scrubbing the two copies separately would let an offset the model
 	// works out from the notice land somewhere else in the original.
-	r.mu.Lock()
-	scrub := r.scrub
-	r.mu.Unlock()
-	if scrub != nil {
-		result = scrub(result)
-	}
+	result = r.Scrub(result)
 	reduced, ok := reduce(result)
 	if !ok {
 		return result

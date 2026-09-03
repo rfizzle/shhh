@@ -292,6 +292,77 @@ func TestRun_EvidenceStoredAndCited(t *testing.T) {
 	}
 }
 
+// A check runs with shhh's own environment — that is how it finds its
+// toolchain — so a linter that echoes its configuration prints the session's
+// secrets with it, and the gate hands that straight to the evidence hook
+// without a tool result going past the executor chain on the way.
+func TestRun_ScrubRunsBeforeTheEvidenceHookAndTheExcerpt(t *testing.T) {
+	// The value reaches the check the way a real one does: it is in the
+	// environment the run inherits, never in the argv the trusted config
+	// wrote.
+	t.Setenv("GATE_FIXTURE_PW", "hunter2")
+	ws := t.TempDir()
+	writeConfig(t, ws, shSuite(`i=0; while [ $i -lt 200 ]; do echo "line $i says $GATE_FIXTURE_PW"; i=$((i+1)); done; exit 1`))
+	var stored string
+	r := &Runner{
+		Workspace: ws,
+		Evidence: func(_ string, content []byte) (string, error) {
+			stored = string(content)
+			return "ev-0011223344556677", nil
+		},
+	}
+	r.SetScrub(func(s string) string { return strings.ReplaceAll(s, "hunter2", "[secret:PW]") })
+
+	res := mustRun(t, r, "default")
+	if strings.Contains(stored, "hunter2") || !strings.Contains(stored, "[secret:PW]") {
+		t.Fatalf("the stored capture must have passed the scrub: %.80q", stored)
+	}
+	out := res.Checks[0].Output
+	if strings.Contains(out, "hunter2") || !strings.Contains(out, "[secret:PW]") {
+		t.Fatalf("the inline excerpt must have passed the scrub: %.80q", out)
+	}
+	// The excerpt is a cut of the same text the store kept, so a reader
+	// cannot tell the two apart and page the store expecting the value.
+	if len(out) >= len(stored) {
+		t.Fatal("the output must be long enough that the excerpt is a cut of it")
+	}
+	if !strings.HasSuffix(stored, out) {
+		t.Fatalf("excerpt %.40q is not the tail of the stored capture", out)
+	}
+	if status := r.Status(); strings.Contains(status, "hunter2") {
+		t.Fatal("/gate result must not print the value")
+	}
+}
+
+func TestRun_NoScrubStoresWhatTheCheckPrinted(t *testing.T) {
+	t.Setenv("GATE_FIXTURE_PW", "hunter2")
+	ws := t.TempDir()
+	writeConfig(t, ws, shSuite(`echo "line says $GATE_FIXTURE_PW"; exit 1`))
+	var stored string
+	r := &Runner{
+		Workspace: ws,
+		Evidence: func(_ string, content []byte) (string, error) {
+			stored = string(content)
+			return "ev-0011223344556677", nil
+		},
+	}
+	res := mustRun(t, r, "default")
+	if stored != "line says hunter2\n" {
+		t.Fatalf("a session with no vault stores what the check printed, got %q", stored)
+	}
+	if !strings.Contains(res.Checks[0].Output, "hunter2") {
+		t.Fatal("and shows it inline as before")
+	}
+}
+
+// A workspace that would not resolve leaves the session holding no runner
+// at all, so the setter is nil-safe like the reducer's: a caller that hands
+// the scrub over without asking first must not panic.
+func TestSetScrub_NilRunnerIsSafe(t *testing.T) {
+	var r *Runner
+	r.SetScrub(strings.ToUpper)
+}
+
 func TestRun_InlineOutputBounded(t *testing.T) {
 	ws := t.TempDir()
 	writeConfig(t, ws, shSuite(`i=0; while [ $i -lt 2000 ]; do echo "line $i is filler"; i=$((i+1)); done; exit 1`))

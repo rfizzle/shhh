@@ -214,6 +214,24 @@ func TestReducer_NoScrubStoresWhatTheToolReturned(t *testing.T) {
 	}
 }
 
+// The gate stores a check's output in this store without a tool result
+// going by, so it holds this method rather than the vault and reads the
+// scrub through it when it writes.
+func TestReducer_ScrubAppliesWhatIsInstalled(t *testing.T) {
+	r := testReducer(t)
+	if got := r.Scrub("hunter2"); got != "hunter2" {
+		t.Fatalf("no scrub installed must return the text: %q", got)
+	}
+	r.SetScrub(func(s string) string { return strings.ReplaceAll(s, "hunter2", "[secret:PW]") })
+	if got := r.Scrub("say hunter2"); got != "say [secret:PW]" {
+		t.Fatalf("Scrub = %q", got)
+	}
+	var nilR *Reducer
+	if got := nilR.Scrub("hunter2"); got != "hunter2" {
+		t.Fatalf("a nil reducer must stay a no-op: %q", got)
+	}
+}
+
 func TestReducer_SetScrubNilSafe(t *testing.T) {
 	var r *Reducer
 	r.SetScrub(strings.ToUpper)

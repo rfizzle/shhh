@@ -115,9 +115,38 @@ type Runner struct {
 	// See docs/capabilities/sessions-and-memory.md#whether-it-worked.
 	Observe func(suite string, v Verdict)
 
-	mu      sync.Mutex
+	mu sync.Mutex
+	// scrub rewrites a check's captured output before any of it is kept;
+	// nil keeps what the check printed. Guarded because a suite runs its
+	// checks on several goroutines at once and this is installed on the
+	// one that builds the session.
+	scrub   func(string) string
 	running string // suite of the in-flight run, "" when idle
 	last    *Result
+}
+
+// SetScrub installs the rewrite a check's captured output goes through
+// before either copy of it is taken: before the evidence hook stores the
+// whole capture as a file that outlives the session by a week, and before
+// the inline excerpt a failing check contributes to the formatted result.
+// Checks run with this process's own environment — that is how a check
+// finds its toolchain — so a linter that echoes its configuration or a test
+// that dumps the environment prints the session's secrets with it. Nothing
+// between the check and the store scrubs them on its behalf: the evidence
+// hook writes the store directly, and the excerpt reaches the screen
+// without a tool result going past the executor chain.
+//
+// It is a function and not a vault so this package needs to know nothing
+// about what a secret is. Nil is a session with no secrets and keeps what
+// the check printed. Safe on a nil Runner.
+// See docs/capabilities/secrets.md#the-value-is-scrubbed-at-every-door.
+func (r *Runner) SetScrub(scrub func(string) string) {
+	if r == nil {
+		return
+	}
+	r.mu.Lock()
+	r.scrub = scrub
+	r.mu.Unlock()
 }
 
 // Run executes a suite to completion and returns its result. Only the
@@ -316,6 +345,18 @@ func (r *Runner) runCheck(ctx context.Context, suite string, check Check, argv [
 	}
 
 	captured := out.String()
+	// One pass over the whole capture, before either copy is taken, so the
+	// file in the store and the excerpt /gate result prints say the same
+	// thing. It runs here rather than on each of the check's writes
+	// because the capture is read once at the end: a value split across two
+	// writes is caught whole here, where a per-write scrub would leave it
+	// to the fragment rule.
+	r.mu.Lock()
+	scrub := r.scrub
+	r.mu.Unlock()
+	if scrub != nil {
+		captured = scrub(captured)
+	}
 	if r.Evidence != nil && captured != "" {
 		if id, err := r.Evidence(ToolName+":"+suite+":"+check.Name, []byte(captured)); err == nil {
 			cr.EvidenceID = id

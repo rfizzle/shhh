@@ -2,6 +2,7 @@ package secret
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -18,6 +19,7 @@ import (
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/quality"
 )
 
 func TestAdd_ValidatesNameAndValue(t *testing.T) {
@@ -283,6 +285,86 @@ func TestScrub_NothingUnderTheEvidenceDirectoryHoldsAValue(t *testing.T) {
 	// found no entries at all would pass for the wrong reason.
 	if stored != 3 {
 		t.Fatalf("walked %d stored entries, expected 3", stored)
+	}
+}
+
+// The quality gate is the third writer into the evidence store and the one
+// nothing scrubs on the way past: a check's whole output is stored under an
+// id of its own, and the excerpt of it that /gate result prints never goes
+// through the executor chain. Checks run with shhh's own environment, which
+// is where the values were loaded from, so a check that echoes what it was
+// configured with prints one.
+func TestScrub_AQualityCheckStoresNoValue(t *testing.T) {
+	const value = "sk-live-0f1e2d3c4b5a69788796a5b4c3d2e1f0"
+	t.Setenv("API_KEY", value)
+	v := New()
+	if err := v.Add("API_KEY", value); err != nil {
+		t.Fatal(err)
+	}
+
+	ws := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(ws, ".shhh"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	suite := `{"suites": {"default": {"checks": [{"name": "leaky", "exe": "sh",
+		"args": ["-c", "printf 'configured with %s\\n' \"$API_KEY\"; exit 1"]}]}}}`
+	if err := os.WriteFile(filepath.Join(ws, ".shhh", "quality.json"), []byte(suite), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	dir := filepath.Join(t.TempDir(), "evidence")
+	store, err := evidence.Open(dir, evidence.NewSessionID())
+	if err != nil {
+		t.Fatalf("evidence.Open: %v", err)
+	}
+	// Wired in the order a session wires it: the gate is built while the
+	// toolset is, before the secrets are opened, so it takes the scrub
+	// late — a copy taken here would be the nil one.
+	gate := &quality.Runner{Workspace: ws, Evidence: store.Put}
+	red := evidence.NewReducer(store)
+	gate.SetScrub(red.Scrub)
+	red.SetScrub(v.Scrub)
+
+	res, err := gate.Run(context.Background(), "")
+	if err != nil {
+		t.Fatalf("gate run: %v", err)
+	}
+	if res.Verdict != quality.VerdictFail {
+		t.Fatalf("verdict = %s (%s)", res.Verdict, res.Reason)
+	}
+	for what, text := range map[string]string{"the result": res.Format(res.Fingerprint), "/gate result": gate.Status()} {
+		if strings.Contains(text, value) {
+			t.Fatalf("%s handed the value back", what)
+		}
+		if !strings.Contains(text, Placeholder("API_KEY")) {
+			t.Fatalf("%s must name the secret it held:\n%s", what, text)
+		}
+	}
+
+	stored := 0
+	err = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if filepath.Ext(path) == ".dat" {
+			stored++
+		}
+		if bytes.Contains(data, []byte(value)) {
+			t.Errorf("%s holds the value", filepath.Base(path))
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The check's capture, and only it. A walk that found nothing at all
+	// would pass for the wrong reason.
+	if stored != 1 {
+		t.Fatalf("walked %d stored entries, expected 1", stored)
 	}
 }
 
