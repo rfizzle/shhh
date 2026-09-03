@@ -56,6 +56,14 @@ that prints the key is the obvious case; `read_file` on the `.env` it lives
 in, a web fetch that returns the page it was posted to, and a process
 tool's log are the same leak through a different tool.
 
+The copies that outlive the turn are scrubbed where they are written rather
+than where they are read. The evidence store keeps the full original of a
+reduced result as a file for a week, and a long-running process spools its
+output into the same store; both pass the scrub on the way in, so the spool
+and the buffer the model pages back hold the same clean text. A value the
+model never saw but the disk kept is the leak that lasts longest, and it is
+the one nothing on screen would report.
+
 What is scrubbed is more than the value. The base64, hex and URL-escaped
 forms of it are replaced too, because `echo $KEY | base64` is the first
 thing a model tries when told it cannot see something, and a fragment of the

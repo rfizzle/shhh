@@ -397,3 +397,78 @@ func TestSetEnv_ProcessesCarrySessionPairsOverExtras(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 	}
 }
+
+// A process is handed the session's secrets as environment variables, so its
+// output is where one is most likely to be printed — and the spool it goes
+// into is a copy that reaches the evidence store and outlives it.
+func TestSetScrub_SpoolAndRingHoldNoValue(t *testing.T) {
+	var mu sync.Mutex
+	stored := map[string]string{}
+	store := func(tool string, content []byte) (string, error) {
+		mu.Lock()
+		defer mu.Unlock()
+		stored[tool] = string(content)
+		return "ev-" + tool, nil
+	}
+	s := newTestSupervisor(t, store)
+	s.SetScrub(func(out string) string { return strings.ReplaceAll(out, "hunter2", "[secret:PW]") })
+
+	execute(t, s, `{"action":"start","name":"leaky","command":"printf 'token hunter2 here'; printf 'err hunter2' 1>&2"}`)
+	waitFor(t, "evidence stored", func() bool {
+		return strings.Contains(execute(t, s, `{"action":"status","name":"leaky"}`), "evidence ev-")
+	})
+
+	// The ring the model pages and the spool on its way to the store are the
+	// same bytes: a value in one and not the other would mean the read and
+	// the stored log disagree about what the process printed.
+	page := execute(t, s, `{"action":"read","name":"leaky","stream":"stdout","offset":0}`)
+	if strings.Contains(page, "hunter2") || !strings.Contains(page, "token [secret:PW] here") {
+		t.Fatalf("the ring must be scrubbed: %q", page)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if got := stored["process:leaky:stdout"]; got != "token [secret:PW] here" {
+		t.Errorf("stdout spool = %q", got)
+	}
+	if got := stored["process:leaky:stderr"]; got != "err [secret:PW]" {
+		t.Errorf("stderr spool = %q", got)
+	}
+}
+
+// os/exec reads a short write as a failed one and tears the pipe down, so a
+// scrub that changes the length must still report the caller's own count —
+// scrubbing can never be why a process stops being captured.
+func TestStreamBuf_WriteReportsTheCallersCount(t *testing.T) {
+	b := newStreamBuf(64, 64, func(string) string { return "" })
+	n, err := b.Write([]byte("hunter2"))
+	if n != 7 || err != nil {
+		t.Fatalf("Write = %d, %v; want 7, nil", n, err)
+	}
+	if b.size() != 0 {
+		t.Fatalf("the buffers hold what the scrub returned, got %d bytes", b.size())
+	}
+}
+
+// A pipe delivers whatever the OS hands over, so a value can arrive in two
+// writes. The ring is scrubbed per write and keeps the offsets a read was
+// told; the spool is the copy that becomes a file, and gets the whole-text
+// pass that catches the split.
+func TestStreamBuf_SpoolCatchesAValueSplitAcrossWrites(t *testing.T) {
+	b := newStreamBuf(1024, 1024, func(s string) string {
+		return strings.ReplaceAll(s, "supersecret", "[secret:S]")
+	})
+	for _, chunk := range []string{"head super", "secret tail"} {
+		if _, err := b.Write([]byte(chunk)); err != nil {
+			t.Fatalf("Write(%q): %v", chunk, err)
+		}
+	}
+
+	page, _, _, _ := b.readAt(0, 1024)
+	if !strings.Contains(string(page), "supersecret") {
+		t.Fatalf("the per-write scrub cannot see across the split: %q", page)
+	}
+	spool, _ := b.spoolCopy()
+	if string(spool) != "head [secret:S] tail" {
+		t.Fatalf("the stored copy must be scrubbed whole, got %q", spool)
+	}
+}

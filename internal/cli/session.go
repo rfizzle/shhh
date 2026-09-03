@@ -141,19 +141,26 @@ type chatSession struct {
 }
 
 // openSecrets resolves the session's vault and hands its values to every
-// path a command runs through. It must run before the first command and
-// before the prompt is built, and it is the one place the values are put
-// anywhere; everything after it works with the vault's name list and scrub.
+// path a command runs through, and its scrub to everything that writes a
+// copy of what came back. It must run before the first command and before
+// the prompt is built, and it is the one place the values are put anywhere;
+// everything after it works with the vault's name list and scrub.
 // See docs/capabilities/secrets.md#a-secret-is-an-environment-variable.
-func (s *chatSession) openSecrets(cmd *cobra.Command, procSup *process.Supervisor) error {
+func (s *chatSession) openSecrets(cmd *cobra.Command, red *evidence.Reducer, procSup *process.Supervisor) error {
 	v, err := loadSecrets(ConfigFrom(cmd.Context()), s.secretFlags, cmd.ErrOrStderr())
 	if err != nil {
 		return err
 	}
 	s.vault = v
 	runner.SetSessionEnv(v.Environ())
+	// The executor chain scrubs what the model reads; these two write the
+	// copies that stay on disk after the turn — the evidence store's full
+	// original, and a process's spool on its way there — and a wrap around
+	// either of them sees the text only once it is already written.
+	red.SetScrub(v.Scrub)
 	if procSup != nil {
 		procSup.SetEnv(v.Environ())
+		procSup.SetScrub(v.Scrub)
 	}
 	s.promptExtra = prompt.CombineExtra(s.promptExtra, secret.PromptBlock(v))
 	return nil
@@ -540,7 +547,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		session.toolDefs = append(append([]provider.Tool{}, session.toolDefs...), reports.ToolDefinition())
 		defer pub.Close()
 	}
-	if err := session.openSecrets(cmd, procSup); err != nil {
+	if err := session.openSecrets(cmd, red, procSup); err != nil {
 		return err
 	}
 
@@ -700,8 +707,11 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	if red != nil {
 		executor = red.WrapExecutor(baseExecutor)
 	}
-	// Secrets are scrubbed from every result after reduction, so what the
-	// evidence store keeps and what the model reads are the same text.
+	// Secrets are scrubbed inside the reducer, before it stores anything, so
+	// what the evidence store keeps and what the model reads are the same
+	// text. This wrap stays outside it as the second door rather than the
+	// mechanism: it is what catches a tool's error, a result the reducer
+	// exempts from reduction, and the evidence tool's own paged output.
 	executor = session.vault.WrapExecutor(executor)
 
 	// Session observability: content-free events (usage, tool calls,

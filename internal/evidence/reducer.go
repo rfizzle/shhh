@@ -15,13 +15,39 @@ import (
 type Reducer struct {
 	store *Store
 
-	mu            sync.Mutex
+	mu sync.Mutex
+	// scrub rewrites a result before any of it is stored or returned; nil
+	// leaves it alone. Guarded because a round dispatches its tool calls at
+	// once, so Process runs on several goroutines while /secret can add a
+	// secret on the UI's.
+	scrub         func(string) string
 	reductions    int
 	originalBytes int64
 	reducedBytes  int64
 }
 
 func NewReducer(store *Store) *Reducer { return &Reducer{store: store} }
+
+// SetScrub installs the rewrite a result goes through before the store
+// keeps a copy of it. That copy is the one that outlives the turn — a file
+// under the state dir for a week — so a value reaching it has leaked in the
+// way that lasts longest, whatever the model was shown. Handing the scrub
+// in here rather than wrapping the reducer from outside is what makes the
+// stored bytes and the model's bytes the same text: a wrap around the
+// reducer sees the result only after the store has already written it.
+//
+// It is a function and not a vault so this package needs to know nothing
+// about what a secret is. Nil is a session with no secrets and stores what
+// the tool returned. Safe on a nil Reducer.
+// See docs/capabilities/secrets.md#the-value-is-scrubbed-at-every-door.
+func (r *Reducer) SetScrub(scrub func(string) string) {
+	if r == nil {
+		return
+	}
+	r.mu.Lock()
+	r.scrub = scrub
+	r.mu.Unlock()
+}
 
 // Store exposes the underlying session store (for /evidence management).
 func (r *Reducer) Store() *Store { return r.store }
@@ -46,6 +72,17 @@ func (r *Reducer) Process(tool, result string) string {
 	}
 	if tools.SelfBounding(tool) {
 		return result
+	}
+	// Scrubbed before the reduction rather than around the store call, so
+	// the head and tail the model reads are cut from the bytes the store
+	// kept and the notice's counts describe the file on disk. Cutting first
+	// and scrubbing the two copies separately would let an offset the model
+	// works out from the notice land somewhere else in the original.
+	r.mu.Lock()
+	scrub := r.scrub
+	r.mu.Unlock()
+	if scrub != nil {
+		result = scrub(result)
 	}
 	reduced, ok := reduce(result)
 	if !ok {

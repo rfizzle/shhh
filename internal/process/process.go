@@ -77,6 +77,10 @@ type Supervisor struct {
 	// env is the session's NAME=value pairs every process gets after the
 	// caller's own, so the model's `env` argument cannot shadow a secret.
 	env []string
+	// scrub rewrites captured output as it arrives; nil captures it raw.
+	// Each stream takes a copy at start, so changing it affects processes
+	// started afterwards.
+	scrub func(string) string
 }
 
 // SetEnv sets the session pairs every started process carries beyond
@@ -87,6 +91,25 @@ type Supervisor struct {
 func (s *Supervisor) SetEnv(env []string) {
 	s.mu.Lock()
 	s.env = append([]string(nil), env...)
+	s.mu.Unlock()
+}
+
+// SetScrub installs the rewrite every byte of captured output goes through
+// on its way into the buffers. A process is handed the session's secrets as
+// environment variables, so its output is where one is most likely to be
+// printed, and the spool is a copy that reaches the evidence store and
+// outlives the process by a week. Scrubbing on the way in rather than on
+// the way out is what keeps the two agreeing: a read pages the ring by
+// absolute stream offset, and a scrub applied at read time would return
+// bytes that are not the ones the offsets count.
+//
+// It is a function and not a vault so this package needs to know nothing
+// about what a secret is; nil captures raw, which is a session with no
+// secrets.
+// See docs/capabilities/secrets.md#the-value-is-scrubbed-at-every-door.
+func (s *Supervisor) SetScrub(scrub func(string) string) {
+	s.mu.Lock()
+	s.scrub = scrub
 	s.mu.Unlock()
 }
 
@@ -139,10 +162,12 @@ func (p *proc) isDone() bool {
 
 // streamBuf captures one output stream: a ring of the most recent ringMax
 // bytes for paged reads (offsets are absolute stream offsets), plus a spool
-// of the first spoolMax bytes kept for the evidence store.
+// of the first spoolMax bytes kept for the evidence store. Both hold what
+// scrub returned, so the two never disagree about what the process printed.
 type streamBuf struct {
 	ringMax  int
 	spoolMax int
+	scrub    func(string) string
 
 	mu             sync.Mutex
 	ring           []byte
@@ -152,11 +177,22 @@ type streamBuf struct {
 	spoolTruncated bool
 }
 
-func newStreamBuf(ringMax, spoolMax int) *streamBuf {
-	return &streamBuf{ringMax: ringMax, spoolMax: spoolMax}
+func newStreamBuf(ringMax, spoolMax int, scrub func(string) string) *streamBuf {
+	return &streamBuf{ringMax: ringMax, spoolMax: spoolMax, scrub: scrub}
 }
 
 func (b *streamBuf) Write(p []byte) (int, error) {
+	// What the caller is told it wrote is always what it handed over: this
+	// is os/exec's copier, which reads a short count as a failed write and
+	// tears the pipe down, and a session with secrets would then be one
+	// that captures no process output at all.
+	wrote := len(p)
+	if b.scrub != nil {
+		// One chunk at a time, so a value straddling two writes is left to
+		// the fragment rule rather than the whole-value one — the same
+		// trade the live command tail on screen already makes.
+		p = []byte(b.scrub(string(p)))
+	}
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	b.total += int64(len(p))
@@ -173,7 +209,7 @@ func (b *streamBuf) Write(p []byte) (int, error) {
 		b.ring = append(b.ring[:0], b.ring[over:]...)
 		b.ringStart += int64(over)
 	}
-	return len(p), nil
+	return wrote, nil
 }
 
 // readAt returns the ring bytes at absolute offset (clamped into the ring
@@ -220,9 +256,20 @@ func (b *streamBuf) size() int64 {
 	return b.total
 }
 
+// spoolCopy is the full log on its way to the evidence store, and the last
+// point before it becomes a file that outlives the session by a week. The
+// scrub runs over it once more here because the writes it arrived in were
+// whatever the pipe delivered: a value split across two of them is only
+// caught by the fragment rule, and this is the one copy where the seven
+// bytes that rule can leave behind are worth a second pass. The ring gets
+// no second pass — its offsets are the stream's, and rewriting it after the
+// fact would move bytes a read has already been told the position of.
 func (b *streamBuf) spoolCopy() ([]byte, bool) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
+	if b.scrub != nil {
+		return []byte(b.scrub(string(b.spool))), b.spoolTruncated
+	}
 	out := make([]byte, len(b.spool))
 	copy(out, b.spool)
 	return out, b.spoolTruncated
@@ -313,8 +360,8 @@ func (s *Supervisor) start(name, command, cwd string, extraEnv map[string]string
 		name:     name,
 		command:  command,
 		started:  time.Now(),
-		stdout:   newStreamBuf(s.ringBytes, s.spoolBytes),
-		stderr:   newStreamBuf(s.ringBytes, s.spoolBytes),
+		stdout:   newStreamBuf(s.ringBytes, s.spoolBytes, s.scrub),
+		stderr:   newStreamBuf(s.ringBytes, s.spoolBytes, s.scrub),
 		exited:   make(chan struct{}),
 		evidence: map[string]string{},
 	}

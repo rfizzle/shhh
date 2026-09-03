@@ -2,7 +2,8 @@
 // see: API keys, tokens, passphrases. A secret is declared by name, handed
 // to every command the model runs as an environment variable of that name,
 // and scrubbed from everything that comes back — tool results, command
-// output, the user's own typing — before any of it reaches a provider.
+// output, the user's own typing — before any of it reaches a provider or a
+// file that outlives the session.
 // See docs/capabilities/secrets.md.
 package secret
 
@@ -188,6 +189,12 @@ func (v *Vault) Environ() []string {
 // with the secret's placeholder. It is the whole guarantee, so it is the
 // one function every path to the model goes through; a nil vault scrubs
 // nothing.
+//
+// It is also what the components that write a copy to disk are handed —
+// the evidence store's reducer and the process supervisor take this method
+// as a plain func(string) string, so neither of them imports this package
+// and neither can be given a vault to read values out of. A caller holding
+// one of those hands over the method rather than the vault.
 func (v *Vault) Scrub(s string) string {
 	if v == nil || s == "" {
 		return s

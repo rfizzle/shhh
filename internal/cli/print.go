@@ -237,7 +237,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if session.processes {
 		procSup = openProcessSupervisor(red)
 	}
-	if err := session.openSecrets(cmd, procSup); err != nil {
+	if err := session.openSecrets(cmd, red, procSup); err != nil {
 		return err
 	}
 	if procSup != nil {
@@ -394,6 +394,8 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	if red != nil {
 		executor = red.WrapExecutor(baseExecutor)
 	}
+	// The reducer scrubs before it stores; this wrap is the second door on
+	// what the model reads, not the one that keeps the store clean.
 	executor = session.vault.WrapExecutor(executor)
 	// Repeat detection. A headless run needs it most: there is nobody
 	// watching to notice the same search going round for the third time.

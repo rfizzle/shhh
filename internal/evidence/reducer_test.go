@@ -156,3 +156,68 @@ func TestReducer_SelfBoundingToolsAreNotReduced(t *testing.T) {
 		t.Fatal("command output is what the reduction pipeline is for")
 	}
 }
+
+// The store's copy is the one that outlives the turn, so a scrub that runs
+// around the reducer instead of inside it protects the model and nothing
+// else: the file is written first and read back clean afterwards.
+func TestReducer_ScrubRunsBeforeTheStore(t *testing.T) {
+	r := testReducer(t)
+	r.SetScrub(func(s string) string { return strings.ReplaceAll(s, "hunter2", "[secret:PW]") })
+
+	in := bigOutput() + "\nthe password is hunter2\n"
+	got := r.Process("execute_command", in)
+	if strings.Contains(got, "hunter2") {
+		t.Fatal("the reduced view must not carry the value")
+	}
+	m := noticeIDRe.FindStringSubmatch(got)
+	if m == nil {
+		t.Fatalf("reduced result must carry an evidence id notice:\n%s", got[:200])
+	}
+	data, meta, err := r.Store().Read(m[1], 0, MaxStoredBytes)
+	if err != nil {
+		t.Fatalf("stored original unreadable: %v", err)
+	}
+	if strings.Contains(string(data), "hunter2") {
+		t.Fatal("the stored original must have passed the scrub")
+	}
+	if !strings.Contains(string(data), "[secret:PW]") {
+		t.Fatal("the stored original must name the secret it held")
+	}
+	// The notice tells the model how many bytes it can retrieve, so it has
+	// to count the file that exists rather than the text before the scrub.
+	scrubbed := strings.ReplaceAll(in, "hunter2", "[secret:PW]")
+	if meta.Stored != int64(len(scrubbed)) {
+		t.Fatalf("meta.Stored = %d, want the scrubbed length %d", meta.Stored, len(scrubbed))
+	}
+	if !strings.HasPrefix(got, fmt.Sprintf("[output reduced: %d → ", len(scrubbed))) {
+		t.Fatalf("notice must describe the stored copy: %q", strings.SplitN(got, "\n", 2)[0])
+	}
+	if rs := r.Stats(); rs.OriginalBytes != int64(len(scrubbed)) {
+		t.Fatalf("stats count the stored bytes: %+v", rs)
+	}
+}
+
+func TestReducer_NoScrubStoresWhatTheToolReturned(t *testing.T) {
+	r := testReducer(t)
+	in := bigOutput() + "\nthe password is hunter2\n"
+	got := r.Process("execute_command", in)
+	m := noticeIDRe.FindStringSubmatch(got)
+	if m == nil {
+		t.Fatalf("reduced result must carry an evidence id notice:\n%s", got[:200])
+	}
+	data, _, err := r.Store().Read(m[1], 0, MaxStoredBytes)
+	if err != nil {
+		t.Fatalf("stored original unreadable: %v", err)
+	}
+	if string(data) != in {
+		t.Fatal("a session with no vault stores the original verbatim")
+	}
+}
+
+func TestReducer_SetScrubNilSafe(t *testing.T) {
+	var r *Reducer
+	r.SetScrub(strings.ToUpper)
+	if got := r.Process("execute_command", "anything"); got != "anything" {
+		t.Fatal("a nil reducer must stay a no-op")
+	}
+}

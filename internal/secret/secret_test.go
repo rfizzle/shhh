@@ -1,13 +1,22 @@
 package secret
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/rfizzle/shhh/internal/evidence"
+	"github.com/rfizzle/shhh/internal/process"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
@@ -170,5 +179,171 @@ func TestPromptBlock(t *testing.T) {
 	}
 	if strings.Contains(block, "value-value-value") {
 		t.Fatal("the prompt block must never carry a value")
+	}
+}
+
+// The executor chain a session builds: the reducer inside, this package's
+// wrap outside. What the chain returns has always been clean; what the
+// evidence store writes to disk is the copy that outlives the turn, and
+// these are the two tools that fill it.
+func evidenceChain(t *testing.T, v *Vault, dir string, result string) (*evidence.Store, func(string) string) {
+	t.Helper()
+	store, err := evidence.Open(filepath.Join(dir, "evidence"), evidence.NewSessionID())
+	if err != nil {
+		t.Fatalf("evidence.Open: %v", err)
+	}
+	red := evidence.NewReducer(store)
+	red.SetScrub(v.Scrub)
+	exec := v.WrapExecutor(red.WrapExecutor(func(string, json.RawMessage) (string, error) {
+		return result, nil
+	}))
+	return store, func(tool string) string {
+		out, err := exec(tool, nil)
+		if err != nil {
+			t.Fatalf("%s: %v", tool, err)
+		}
+		return out
+	}
+}
+
+// The store's files sit at 0600 for a week. A scrub that runs only on the
+// way to the model leaves the value in every one of them, which is the
+// leak that lasts longest and the one nothing on screen reports.
+func TestScrub_NothingUnderTheEvidenceDirectoryHoldsAValue(t *testing.T) {
+	t.Setenv("SHELL", "/bin/sh")
+	const value = "sk-live-0f1e2d3c4b5a69788796a5b4c3d2e1f0"
+	v := New()
+	if err := v.Add("API_KEY", value); err != nil {
+		t.Fatal(err)
+	}
+
+	root := t.TempDir()
+	dotenv := "API_KEY=" + value + "\n" + strings.Repeat("PADDING=xxxxxxxxxxxxxxxxxxxx\n", 300)
+	store, call := evidenceChain(t, v, root, dotenv)
+
+	// read_file on the .env the key lives in, and a command that prints it:
+	// one is exempt from reduction and one is exactly what reduction is for.
+	for _, tool := range []string{"read_file", "execute_command"} {
+		if out := call(tool); strings.Contains(out, value) {
+			t.Fatalf("%s handed the value back", tool)
+		}
+	}
+
+	// A spooled process: it is given the key as an environment variable, so
+	// printing it is a command doing what it was told.
+	sup, err := process.New(root, store.Put)
+	if err != nil {
+		t.Fatalf("process.New: %v", err)
+	}
+	t.Cleanup(sup.Close)
+	sup.SetEnv([]string{"API_KEY=" + value})
+	sup.SetScrub(v.Scrub)
+	if _, err := sup.Execute(json.RawMessage(`{"action":"start","name":"printer","command":"printf 'key=%s' \"$API_KEY\"; printf 'key=%s' \"$API_KEY\" 1>&2"}`)); err != nil {
+		t.Fatalf("start: %v", err)
+	}
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		out, err := sup.Execute(json.RawMessage(`{"action":"status","name":"printer"}`))
+		if err != nil {
+			t.Fatalf("status: %v", err)
+		}
+		if strings.Contains(out, "full log: evidence ev-") {
+			if strings.Contains(out, value) {
+				t.Fatal("the status block handed the value back")
+			}
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("timed out waiting for the spool to be stored: %s", out)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+
+	stored := 0
+	err = filepath.WalkDir(filepath.Join(root, "evidence"), func(path string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		if filepath.Ext(path) == ".dat" {
+			stored++
+		}
+		if bytes.Contains(data, []byte(value)) {
+			t.Errorf("%s holds the value", filepath.Base(path))
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// The command's stored original and one spool per stream. A walk that
+	// found no entries at all would pass for the wrong reason.
+	if stored != 3 {
+		t.Fatalf("walked %d stored entries, expected 3", stored)
+	}
+}
+
+// The on-read scrub stays, so the change is invisible to the model: what it
+// pages back is the same text, produced now by the file rather than by the
+// wrap around the read.
+func TestScrub_EvidenceToolPagesTheSameTextEitherWay(t *testing.T) {
+	const value = "sk-live-0f1e2d3c4b5a69788796a5b4c3d2e1f0"
+	v := New()
+	if err := v.Add("API_KEY", value); err != nil {
+		t.Fatal(err)
+	}
+	idRe := regexp.MustCompile(`ev-[0-9a-f]{16}`)
+
+	page := func(scrubBeforeStore bool, result string) (header, body string) {
+		t.Helper()
+		store, err := evidence.Open(t.TempDir(), evidence.NewSessionID())
+		if err != nil {
+			t.Fatal(err)
+		}
+		red := evidence.NewReducer(store)
+		if scrubBeforeStore {
+			red.SetScrub(v.Scrub)
+		}
+		exec := v.WrapExecutor(red.WrapExecutor(func(string, json.RawMessage) (string, error) {
+			return result, nil
+		}))
+		out, err := exec("execute_command", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		id := idRe.FindString(out)
+		if id == "" {
+			t.Fatalf("no evidence id in %q", out)
+		}
+		read, err := exec("evidence", json.RawMessage(`{"action":"read","id":"`+id+`","limit":16384}`))
+		if err != nil {
+			t.Fatal(err)
+		}
+		h, b, _ := strings.Cut(read, "\n")
+		return idRe.ReplaceAllString(h, "ev-x"), b
+	}
+
+	clean := strings.Repeat("nothing secret on this line at all\n", 200)
+	beforeH, beforeB := page(false, clean)
+	afterH, afterB := page(true, clean)
+	if beforeH != afterH || beforeB != afterB {
+		t.Fatalf("output with no secret in it must not change:\n%s\n%s", beforeH, afterH)
+	}
+
+	leaky := "API_KEY=" + value + "\n" + clean
+	_, beforeB = page(false, leaky)
+	afterH, afterB = page(true, leaky)
+	if beforeB != afterB {
+		t.Fatal("the paged text must be what the on-read scrub produced before")
+	}
+	if strings.Contains(afterB, value) || !strings.Contains(afterB, Placeholder("API_KEY")) {
+		t.Fatalf("paged text = %q", afterB[:80])
+	}
+	// The header counts the file, and the file is now the scrubbed copy.
+	if !strings.HasSuffix(afterH, fmt.Sprintf("of %d:", len(v.Scrub(leaky)))) {
+		t.Fatalf("header must count the stored copy: %q", afterH)
 	}
 }
