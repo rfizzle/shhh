@@ -171,6 +171,43 @@ that stopped it.
 A hard limit would throw away a mostly-finished turn to enforce a number that
 was a guess. Children default to uncapped, because they have nobody to ask.
 
+## An unattended run runs the same loop
+
+A run with nobody in front of it — `-p`, an eval, every sub-agent — drives the
+same agent the session does, and the two used to diverge in the two places
+that decide how long a turn takes.
+
+**A round's independent reads go out together.** The agent is told it can ask
+for several at once, and that advice is what stops a turn spending a round per
+question. Running them one at a time made it false everywhere the session was
+not watching, which is exactly where fan-out lives: four writers each reading
+four files paid for sixteen waits instead of four. The bound on how many run
+at once is the machine's, not the loop's, and it is the same bound on every
+surface. Calls that change something are still resolved one at a time, because
+each is a decision and a decision may depend on the one before it.
+
+**A request the provider never answered is waited out.** A rate limit or an
+overloaded provider is a stall, not an ending: the request never reached the
+conversation, so asking again is the same question. The wait is bounded — a
+few attempts, doubling, believing the provider when it names its own wait —
+and the bound is across the stall, so a request that is actually answered is
+what clears it. Every surface waits on the same schedule and says so in its
+own way: a meter you can press out of in the session, a line on stderr in a
+scripted run, a lane that says *waiting* in a fan-out. A run that has gone
+quiet for a minute and one that has hung are otherwise the same thing to
+watch, and each wait is on the record, so what a population of runs spent
+waiting for a provider can be told apart from what it spent working.
+
+What does **not** cross over is resuming a reply that stopped halfway. A
+session can offer to keep the words already on the wire and let the model
+carry on from its own last sentence, because whether half a sentence is worth
+having is a judgement someone has to make. The loop cannot make one, and in an
+unattended run there is nobody to ask — so it asks again from the top, which
+is the honest version of the same recovery. What the broken stream had already
+written is handed back with the wait rather than dropped quietly, because a
+run that has already printed half a sentence has to close it off before the
+answer that replaces it starts.
+
 ## Steps are a reading of the turn, not a protocol
 
 A forty-tool turn is unreadable as forty rows, so consecutive calls group

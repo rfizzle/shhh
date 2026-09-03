@@ -23,6 +23,9 @@ type streamStep struct {
 	text  string
 	calls []provider.ToolCall
 	usage *provider.Usage
+	// fail, when set, is returned instead of a stream, so a test can put a
+	// child in front of a provider that never answered.
+	fail *provider.Failure
 }
 
 // scriptedEnv builds an EnvFactory whose children replay steps in order. The
@@ -53,6 +56,9 @@ func (s *scriptedEnv) factory() EnvFactory {
 			s.steps = s.steps[1:]
 			s.mu.Unlock()
 
+			if step.fail != nil {
+				return nil, nil, step.fail
+			}
 			ch := make(chan provider.StreamEvent, 3)
 			if step.text != "" {
 				ch <- provider.StreamEvent{Token: step.text}
@@ -1062,4 +1068,35 @@ func TestStaleChildEditIsItsOwnRow(t *testing.T) {
 		}
 	default:
 	}
+}
+
+// A child waiting out a provider is holding no stream, so cancelling its
+// context alone would leave it asleep for the rest of a countdown it has no
+// reason to finish — worktree still on disk, lane still on screen. Kill has
+// to reach the wait itself.
+func TestKillWakesAChildWaitingOutAProvider(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{
+		// Longer than the cap, so the wait is the full minute and nothing but
+		// the kill can end it inside this test.
+		{fail: &provider.Failure{Class: provider.ClassOverloaded, RetryAfter: 2 * time.Minute}},
+	}}
+	sup := newTestSupervisor(t, env)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the code"}`)
+
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if st, ok := sup.Get("researcher-1"); ok && strings.Contains(st.Detail, "retry") {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("the child never reached its retry wait")
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+
+	if err := sup.Kill("researcher-1"); err != nil {
+		t.Fatal(err)
+	}
+	// waitState gives up well inside the minute the wait would otherwise run.
+	waitState(t, sup, "researcher-1", StateFailed)
 }

@@ -10,6 +10,8 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -292,7 +294,7 @@ func TestRetryWait_EscStopsWithoutLosingTheTurn(t *testing.T) {
 
 func TestRetryWait_BoundIsHonoured(t *testing.T) {
 	m := streamed(resumeModel(t), "")
-	for i := 1; i <= maxRetryAttempts; i++ {
+	for i := 1; i <= agent.MaxRetryAttempts; i++ {
 		updated, _ := m.Update(streamErrMsg{err: rateLimit(time.Second)})
 		m = updated.(Model)
 		if m.turnState() != stateRetryWait {
@@ -323,11 +325,12 @@ func TestRetryChain_ResetByARequestThatWasAnswered(t *testing.T) {
 	m := streamed(resumeModel(t), "")
 	updated, _ := m.Update(streamErrMsg{err: rateLimit(time.Second)})
 	next := updated.(Model)
-	if next.retryAttempt != 1 {
-		t.Fatalf("attempt = %d, want 1", next.retryAttempt)
+	if next.backoff.Attempt() != 1 {
+		t.Fatalf("attempt = %d, want 1", next.backoff.Attempt())
 	}
 	answered, _ := next.Update(tokenMsg{text: "hello"})
-	if answered.(Model).retryAttempt != 0 {
+	done := answered.(Model)
+	if done.backoff.Attempt() != 0 {
 		t.Error("a provider that answered ends the stall; the next one gets its own bound")
 	}
 }
@@ -409,23 +412,6 @@ func TestRetryWait_NoFallbackOfferedWhenThereIsNone(t *testing.T) {
 	}
 }
 
-func TestRetryDelay_BelievesTheProviderThenBacksOff(t *testing.T) {
-	named := rateLimit(45 * time.Second)
-	if got := retryDelay(named, 1); got != 45*time.Second {
-		t.Errorf("a named wait should be believed, got %v", got)
-	}
-	named.RetryAfter = 2 * time.Hour
-	if got := retryDelay(named, 1); got != maxRetryWait {
-		t.Errorf("an implausible wait is capped, got %v", got)
-	}
-	silent := rateLimit(0)
-	for attempt, want := range map[int]time.Duration{1: 2 * time.Second, 2: 4 * time.Second, 3: 8 * time.Second} {
-		if got := retryDelay(silent, attempt); got != want {
-			t.Errorf("attempt %d backs off to %v, got %v", attempt, want, got)
-		}
-	}
-}
-
 func TestCountdownText_WholeSeconds(t *testing.T) {
 	for _, tc := range []struct {
 		in   time.Duration
@@ -467,4 +453,24 @@ func indexOfKind(t *testing.T, m Model, kind entryKind) int {
 	}
 	t.Fatalf("no entry of kind %v in %d entries", kind, len(m.transcript))
 	return -1
+}
+
+// The session records the wait it draws. The meter is what the person sees;
+// the signal is what the count of "which surface is being throttled" is made
+// of, and a surface that only drew the wait would be missing from it.
+func TestRetryWait_IsOnTheRecord(t *testing.T) {
+	type signal struct{ code, reason string }
+	var signals []signal
+	m := resumeModel(t).WithObserver(observe.Observer{
+		Signal: func(_ observe.Pos, code, reason string) {
+			signals = append(signals, signal{code, reason})
+		},
+	})
+	updated, _ := streamed(m, "").Update(streamErrMsg{err: rateLimit(time.Second)})
+	if updated.(Model).turnState() != stateRetryWait {
+		t.Fatal("a rate limit should put the turn on a wait")
+	}
+	if len(signals) != 1 || signals[0].code != observe.SignalRetry || signals[0].reason != "rate-limit" {
+		t.Fatalf("expected one retry signal naming its class, got %+v", signals)
+	}
 }

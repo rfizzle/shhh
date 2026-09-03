@@ -2,6 +2,7 @@ package subagent
 
 import (
 	"regexp"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -283,3 +284,55 @@ func TestChildRecordsNothingOutsideTheClosedSets(t *testing.T) {
 // identifier or a code from a closed set. A path, a command or a prompt
 // fragment fails it, which is the whole guarantee the record rests on.
 var storedWord = regexp.MustCompile(`^[a-z0-9]+(?:[-_][a-z0-9]+)*$`)
+
+// A child waiting out a provider says so twice: on its lane, because a writer
+// waiting for a rate limit and one that has hung look identical on a progress
+// row otherwise, and in the record, because that is where a fan-out's wall
+// clock is accounted for afterwards.
+func TestChildRecordsARetryAndSaysSoOnItsLane(t *testing.T) {
+	env := &scriptedEnv{steps: []streamStep{
+		{fail: &provider.Failure{Class: provider.ClassRateLimit, Status: 429, RetryAfter: time.Millisecond}},
+		{text: "done"},
+	}}
+	rec := &testRecorder{}
+	sup := supervisorRecording(t, env, rec)
+
+	// The lane's detail is a live snapshot that the next tool call overwrites,
+	// so it is collected as it is emitted rather than read at the end.
+	ctx := t.Context()
+	var mu sync.Mutex
+	var details []string
+	go func() {
+		for {
+			select {
+			case ev := <-sup.Events():
+				if ev.Kind == EventUpdate {
+					mu.Lock()
+					details = append(details, ev.Status.Detail)
+					mu.Unlock()
+				}
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"survey the code"}`)
+	execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`)
+
+	sigs := rec.of("signal")
+	if len(sigs) != 1 || sigs[0].outcome != observe.SignalRetry || sigs[0].reason != "rate-limit" {
+		t.Fatalf("expected one retry signal naming its class, got %+v", sigs)
+	}
+	if sigs[0].pos.Turn != 1 {
+		t.Errorf("the retry is unplaced: %+v", sigs[0].pos)
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	for _, d := range details {
+		if strings.Contains(d, "retry 1 of 3") {
+			return
+		}
+	}
+	t.Errorf("no lane update said the child was waiting, got %v", details)
+}

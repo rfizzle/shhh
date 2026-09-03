@@ -29,6 +29,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/keys"
@@ -47,20 +48,16 @@ import (
 // but the wait owns the keyboard outright (nothing is streaming and the input
 // is not live), so there is no draft for it to steal a character from.
 
-// The retry bound and its cadence. Three attempts is the bound the countdown
-// states out loud: a limit you cannot see is indistinguishable from a hang.
-const (
-	maxRetryAttempts = 3
-	// minRetryWait floors a provider that asks for an implausibly short wait;
-	// maxRetryWait caps one that asks for an hour, because a wait longer than
-	// this is a decision for the user, not a countdown.
-	minRetryWait = time.Second
-	maxRetryWait = 60 * time.Second
-	// retryTickInterval is how often the meter redraws. The countdown is read
-	// in seconds, so twice a second is enough to look continuous and cheap
-	// enough to cost nothing.
-	retryTickInterval = 500 * time.Millisecond
-)
+// The bound and the schedule are internal/agent's, because an unattended run
+// waits out the same failures on the same terms and a second copy of "how
+// long, and how many times" is a second answer. What is the session's alone
+// is everything below: that the wait is drawn, that it drains on a meter, and
+// that a key ends it.
+//
+// retryTickInterval is how often the meter redraws. The countdown is read in
+// seconds, so twice a second is enough to look continuous and cheap enough to
+// cost nothing.
+const retryTickInterval = 500 * time.Millisecond
 
 // maxDropDetail bounds the tail of the partial reply shown on the drop row.
 const maxDropDetail = 2
@@ -355,25 +352,29 @@ func (m Model) startRetryWait(f *provider.Failure) (tea.Model, tea.Cmd) {
 	// The count lives on the model rather than on the wait: the wait is over
 	// the moment the retry is sent, and a counter that died with it would
 	// grant every attempt a fresh bound and retry forever.
-	m.retryAttempt++
-	attempt := m.retryAttempt
+	n, ok := m.backoff.Next(f)
 	m.appendFailureRecord(f)
 	m.streaming = ""
 	m.events = nil
 	m.cancel = nil
-	if attempt > maxRetryAttempts {
+	if !ok {
 		// The bound was reached, and the row that reports it keeps its own
 		// Recovery keys: from here retrying is a decision, not a policy.
 		return m.endBrokenTurn()
 	}
 	m.retrySeq++
-	wait := retryDelay(f, attempt)
+	// The wait is on the record here as it is on every other surface. A
+	// session is the one place a wait is visible while it happens, which is
+	// exactly why it would go unrecorded: the count is read afterwards, and a
+	// rate of retries that silently omitted the interactive surface would
+	// answer "which surface is being throttled" with the two that are left.
+	m.signal(observe.SignalRetry, n.Signal())
 	m.retry = &retryWait{
 		fail:     f,
-		attempt:  attempt,
-		max:      maxRetryAttempts,
-		wait:     wait,
-		deadline: time.Now().Add(wait),
+		attempt:  n.Attempt,
+		max:      n.Max,
+		wait:     n.Wait,
+		deadline: time.Now().Add(n.Wait),
 		fallback: m.cheaperModel(),
 		seq:      m.retrySeq,
 	}
@@ -382,16 +383,6 @@ func (m Model) startRetryWait(f *provider.Failure) (tea.Model, tea.Cmd) {
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
 	return m, tea.Batch(m.retryTickCmd(), m.autosaveCmd())
-}
-
-// retryDelay is how long to wait before attempt n. A provider that named its
-// own wait is believed — it knows when its window rolls over — and one that
-// did not gets doubling backoff.
-func retryDelay(f *provider.Failure, attempt int) time.Duration {
-	if d := f.RetryAfter; d > 0 {
-		return min(max(d, minRetryWait), maxRetryWait)
-	}
-	return min(time.Duration(1<<attempt)*time.Second, maxRetryWait)
 }
 
 // retryTickCmd schedules the next redraw of the countdown, fenced by seq.
@@ -415,7 +406,7 @@ func (m Model) retryTick(msg retryTickMsg) (tea.Model, tea.Cmd) {
 // actually answered ends the stall, whatever happens next — so does starting,
 // retrying or continuing a turn, each of which is a decision the user made
 // and not the automatic policy the bound exists to limit.
-func (m *Model) clearRetryChain() { m.retryAttempt = 0 }
+func (m *Model) clearRetryChain() { m.backoff.Reset() }
 
 // resumeAfterWait asks again with the conversation exactly as the failed
 // request left it. The request that broke never reached the conversation, so

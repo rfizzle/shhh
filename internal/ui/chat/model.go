@@ -939,11 +939,11 @@ type Model struct {
 	//; retrySeq fences its timer, so a cancelled or superseded wait
 	// is never advanced by a tick that outlived it.
 	retry *retryWait
-	// retryAttempt counts the automatic retries this stall has used, against
-	// maxRetryAttempts. It outlives each individual wait, which is what makes
-	// the bound a bound.
-	retryAttempt int
-	retrySeq     int
+	// backoff is the shared bound and schedule this stall is being retried
+	// on (internal/agent). It outlives each individual wait, which is what
+	// makes the bound a bound.
+	backoff  agent.Backoff
+	retrySeq int
 	// The context-pressure card: the card while it is up, and
 	// whether this crossing of the alert threshold has already been
 	// answered. The flag is cleared by falling back under the threshold, so

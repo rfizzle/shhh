@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -80,7 +81,7 @@ func TestHeadlessRun_AutoToolRound(t *testing.T) {
 	h := &Headless{
 		Agent:        a,
 		OnToolCall:   func(tc provider.ToolCall) { calls = append(calls, tc.Name) },
-		OnToolResult: func(tc provider.ToolCall, r string) { results = append(results, r) },
+		OnToolResult: func(r ToolResult) { results = append(results, r.Result) },
 	}
 
 	final, err := h.Run("go")
@@ -373,5 +374,270 @@ func TestHeadlessRun_TellsTheTurnTheTreeMoved(t *testing.T) {
 	notice := msgs[len(msgs)-2]
 	if notice.Role != provider.RoleUser || !strings.Contains(notice.Content, "[tree: 1 path changed outside this session: theirs.txt]") {
 		t.Errorf("the notice should sit between the results and the final answer, got %+v", notice)
+	}
+}
+
+// A round's read-only calls go out together. The prompt tells the model its
+// independent reads can be asked for in one round, and a runner that then ran
+// them one at a time made that advice false on every surface but the TUI.
+func TestHeadlessRun_ARoundsReadsOverlap(t *testing.T) {
+	a := New(nil, scriptedStream(t,
+		toolCallRound(
+			provider.ToolCall{ID: "slow", Name: "search", Arguments: `{"q":"slow"}`},
+			provider.ToolCall{ID: "fast", Name: "search", Arguments: `{"q":"fast"}`},
+		),
+		doneRound("done"),
+	))
+	// Neither call can finish until both have started, so a dispatcher that
+	// runs them in sequence leaves the first one waiting out the deadline —
+	// which is the failure, rather than a hang.
+	var inFlight sync.WaitGroup
+	inFlight.Add(2)
+	overlapped := make(chan struct{})
+	go func() { inFlight.Wait(); close(overlapped) }()
+	a.SetExecutor(func(name string, args json.RawMessage) (string, error) {
+		inFlight.Done()
+		select {
+		case <-overlapped:
+		case <-time.After(5 * time.Second):
+			return "", errors.New("the round's other call never started")
+		}
+		var q struct{ Q string }
+		if err := json.Unmarshal(args, &q); err != nil {
+			return "", err
+		}
+		if q.Q == "slow" {
+			// Come back last, so what is recorded below is the call order and
+			// not the order the results happened to arrive in.
+			time.Sleep(20 * time.Millisecond)
+		}
+		return q.Q, nil
+	})
+
+	var results []ToolResult
+	h := &Headless{Agent: a, OnToolResult: func(r ToolResult) { results = append(results, r) }}
+	if _, err := h.Run("go"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(results) != 2 || results[0].Call.ID != "slow" || results[1].Call.ID != "fast" {
+		t.Fatalf("results should arrive in call order, got %+v", results)
+	}
+	// The conversation has to record them in call order too: a tool result
+	// addressed out of order is a result addressed to the wrong call.
+	var recorded []string
+	for _, msg := range a.Messages() {
+		if msg.Role == provider.RoleTool {
+			recorded = append(recorded, msg.ToolCallID+"="+msg.Content)
+		}
+	}
+	if len(recorded) != 2 || recorded[0] != "slow=slow" || recorded[1] != "fast=fast" {
+		t.Fatalf("tool results recorded as %v, want the call order", recorded)
+	}
+}
+
+// A gated call is still resolved one at a time: each is a decision, and in an
+// unattended run the decision is policy's, which may depend on the calls
+// before it.
+func TestHeadlessRun_GatedCallsStaySequential(t *testing.T) {
+	a := New(nil, scriptedStream(t,
+		toolCallRound(
+			provider.ToolCall{ID: "w1", Name: "write_file", Arguments: `{"path":"a"}`},
+			provider.ToolCall{ID: "w2", Name: "write_file", Arguments: `{"path":"b"}`},
+		),
+		doneRound("done"),
+	))
+	var asked []string
+	h := &Headless{
+		Agent: a,
+		Gate:  func(provider.ToolCall) bool { return true },
+		Resolve: func(tc provider.ToolCall) string {
+			// The queue is what makes this sequential: a second call is only
+			// offered once this one has been resolved.
+			if a.QueuedApprovals() != 2-len(asked) {
+				t.Errorf("%s was resolved with %d still queued", tc.ID, a.QueuedApprovals())
+			}
+			asked = append(asked, tc.ID)
+			return "written " + tc.ID
+		},
+	}
+	if _, err := h.Run("go"); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(asked) != 2 || asked[0] != "w1" || asked[1] != "w2" {
+		t.Fatalf("gated calls resolved as %v, want the call order", asked)
+	}
+	var recorded []string
+	for _, msg := range a.Messages() {
+		if msg.Role == provider.RoleTool {
+			recorded = append(recorded, msg.Content)
+		}
+	}
+	if len(recorded) != 2 || recorded[0] != "written w1" || recorded[1] != "written w2" {
+		t.Fatalf("gated results recorded as %v, want the call order", recorded)
+	}
+}
+
+// A request the provider never answered is waited out and asked again, the
+// same bound the session waits on. The conversation is where the failed
+// request left it, so the retry is the same question and not a second one.
+func TestHeadlessRun_WaitsOutAnUnansweredRequest(t *testing.T) {
+	t.Parallel()
+	requests := 0
+	stream := func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		requests++
+		if requests <= 2 {
+			// The floor is a second, so the two waits are the whole of this
+			// test's wall clock.
+			return nil, nil, &provider.Failure{
+				Class: provider.ClassOverloaded, Status: 529, RetryAfter: time.Millisecond,
+			}
+		}
+		ch := make(chan provider.StreamEvent, 2)
+		ch <- provider.StreamEvent{Token: "done"}
+		ch <- provider.StreamEvent{Done: true}
+		close(ch)
+		_, cancel := context.WithCancel(context.Background())
+		return ch, cancel, nil
+	}
+	a := New(nil, stream)
+
+	var waits []RetryNotice
+	h := &Headless{Agent: a, OnRetry: func(n RetryNotice) { waits = append(waits, n) }}
+	final, err := h.Run("go")
+	if err != nil {
+		t.Fatalf("two 529s then an answer should finish the turn, got %v", err)
+	}
+	if final != "done" {
+		t.Fatalf("final = %q, want %q", final, "done")
+	}
+	if len(waits) != 2 || waits[0].Attempt != 1 || waits[1].Attempt != 2 {
+		t.Fatalf("every wait is reported, got %+v", waits)
+	}
+	if got := waits[0].Signal(); got != "overloaded" {
+		t.Errorf("signal = %q, want overloaded", got)
+	}
+	// The turn is one user message and one answer: nothing the failures did
+	// reached the conversation.
+	msgs := a.Messages()
+	if len(msgs) != 2 || msgs[0].Role != provider.RoleUser || msgs[1].Content != "done" {
+		t.Fatalf("a retried request leaves the conversation alone, got %+v", msgs)
+	}
+}
+
+// A failure waiting cannot fix is returned rather than slept on, so a run
+// with a rejected key fails at once instead of a minute later.
+func TestHeadlessRun_DoesNotWaitOutAFailureItCannotFix(t *testing.T) {
+	fail := &provider.Failure{Class: provider.ClassAuth, Status: 401}
+	requests := 0
+	a := New(nil, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		requests++
+		return nil, nil, fail
+	})
+	h := &Headless{Agent: a, OnRetry: func(RetryNotice) { t.Error("a rejected key is not waited out") }}
+	if _, err := h.Run("go"); !errors.Is(err, provider.ErrAuth) {
+		t.Fatalf("err = %v, want the auth failure", err)
+	}
+	if requests != 1 {
+		t.Errorf("requests = %d, want the one that failed", requests)
+	}
+}
+
+// Interrupt is honoured during a wait: it holds no stream and owes no
+// results, so the turn ends there rather than after the countdown.
+func TestHeadlessRun_InterruptEndsAWait(t *testing.T) {
+	t.Parallel()
+	a := New(nil, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		return nil, nil, &provider.Failure{Class: provider.ClassOverloaded, RetryAfter: maxRetryWait}
+	})
+	h := &Headless{Agent: a}
+	h.OnRetry = func(RetryNotice) { go h.Interrupt() }
+	start := time.Now()
+	if _, err := h.Run("go"); !errors.Is(err, ErrInterrupted) {
+		t.Fatalf("err = %v, want ErrInterrupted", err)
+	}
+	if elapsed := time.Since(start); elapsed > 10*time.Second {
+		t.Errorf("the wait ran for %v; esc should end it where it stands", elapsed)
+	}
+}
+
+// A reply that stopped halfway is asked again from the top, and what the
+// broken stream had already written comes back with the wait: a surface that
+// showed those words is the only thing that can take them back.
+func TestHeadlessRun_RetryHandsBackWhatItThrewAway(t *testing.T) {
+	t.Parallel()
+	requests := 0
+	a := New(nil, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		requests++
+		ch := make(chan provider.StreamEvent, 2)
+		if requests == 1 {
+			ch <- provider.StreamEvent{Token: "half a sen"}
+			ch <- provider.StreamEvent{Err: &provider.Failure{
+				Class: provider.ClassNetwork, RetryAfter: time.Millisecond,
+			}}
+		} else {
+			ch <- provider.StreamEvent{Token: "the whole answer"}
+			ch <- provider.StreamEvent{Done: true}
+		}
+		close(ch)
+		_, cancel := context.WithCancel(context.Background())
+		return ch, cancel, nil
+	})
+
+	var waits []RetryNotice
+	h := &Headless{Agent: a, OnRetry: func(n RetryNotice) { waits = append(waits, n) }}
+	final, err := h.Run("go")
+	if err != nil {
+		t.Fatalf("a dropped reply should be asked again, got %v", err)
+	}
+	if final != "the whole answer" {
+		t.Fatalf("final = %q, want the reply that finished", final)
+	}
+	if len(waits) != 1 || waits[0].Partial != "half a sen" {
+		t.Fatalf("the wait should carry the discarded partial, got %+v", waits)
+	}
+	// The conversation holds one answer and not one and a half: nothing the
+	// broken stream wrote was ever appended.
+	msgs := a.Messages()
+	if len(msgs) != 2 || msgs[1].Content != "the whole answer" {
+		t.Fatalf("the partial reached the conversation, got %+v", msgs)
+	}
+}
+
+// The bound belongs to one stall, not to the runner's whole life. A child
+// reuses its Headless across turns, so a turn that ended mid-backoff must not
+// hand the next one whatever was left of the three attempts.
+func TestHeadlessRun_EachTurnGetsItsOwnBound(t *testing.T) {
+	t.Parallel()
+	fail := &provider.Failure{Class: provider.ClassOverloaded, RetryAfter: maxRetryWait}
+	requests := 0
+	a := New(nil, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		requests++
+		if requests == 1 {
+			return nil, nil, fail
+		}
+		ch := make(chan provider.StreamEvent, 2)
+		ch <- provider.StreamEvent{Token: "done"}
+		ch <- provider.StreamEvent{Done: true}
+		close(ch)
+		_, cancel := context.WithCancel(context.Background())
+		return ch, cancel, nil
+	})
+
+	h := &Headless{Agent: a}
+	// The first turn is interrupted while it waits, spending an attempt it
+	// never got to use.
+	h.OnRetry = func(RetryNotice) { go h.Interrupt() }
+	if _, err := h.Run("go"); !errors.Is(err, ErrInterrupted) {
+		t.Fatalf("err = %v, want ErrInterrupted", err)
+	}
+	if h.retry.Attempt() == 0 {
+		t.Fatal("the interrupted turn should have spent an attempt")
+	}
+	h.OnRetry = nil
+	if _, err := h.Run("carry on"); err != nil {
+		t.Fatalf("the next turn should start clean, got %v", err)
+	}
+	if h.retry.Attempt() != 0 {
+		t.Errorf("attempt = %d, want a fresh bound for the new turn", h.retry.Attempt())
 	}
 }

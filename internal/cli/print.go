@@ -139,6 +139,13 @@ func (h headlessObserver) tree(n agent.TreeNotice) {
 	h.rec.signal(h.pos(), observe.SignalTree, n.Signal())
 }
 
+// retry records one wait the run sat out after a request the provider never
+// answered. It is recorded per attempt, so a population of unattended runs
+// can be asked how much of its wall clock was a provider's and not its own.
+func (h headlessObserver) retry(n agent.RetryNotice) {
+	h.rec.signal(h.pos(), observe.SignalRetry, n.Signal())
+}
+
 // writtenByCalls is the paths a headless run's mutating calls wrote: the
 // subtrahend the tree reading needs, where a session would hand in its
 // changeset. A call that came back as an error wrote nothing.
@@ -423,7 +430,6 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 	}()
 
 	var usage provider.Usage
-	var callStart time.Time
 	webTools := session.web
 	mcpTools := session.mcpTools
 	gate := func(tc provider.ToolCall) bool {
@@ -471,14 +477,31 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 			obs.tree(n)
 		},
 		OnToolCall: func(tc provider.ToolCall) {
-			callStart = time.Now()
 			fmt.Fprintf(os.Stderr, "» %s %s\n", tc.Name, clipActivityLine(tc.Arguments))
 		},
-		OnToolResult: func(tc provider.ToolCall, result string) {
-			if outcome, _ := observe.ToolOutcome(result); outcome == observe.OutcomeError {
-				fmt.Fprintf(os.Stderr, "  ↳ %s\n", clipActivityLine(result))
+		OnToolResult: func(r agent.ToolResult) {
+			if outcome, _ := observe.ToolOutcome(r.Result); outcome == observe.OutcomeError {
+				// The call is named on the failure line as well as on its own
+				// line above, because a round's reads go out together: the
+				// line the indent used to point at is no longer the line
+				// directly above it.
+				fmt.Fprintf(os.Stderr, "  ↳ %s: %s\n", r.Call.Name, clipActivityLine(r.Result))
 			}
-			obs.toolResult(tc.Name, time.Since(callStart), result)
+			obs.toolResult(r.Call.Name, r.Duration, r.Result)
+		},
+		// The wait goes to stderr beside the run's other activity, because a
+		// script that reads stdout for the answer is not the reader this line
+		// is for: a run that has gone quiet for a minute is otherwise
+		// indistinguishable from one that has hung.
+		OnRetry: func(n agent.RetryNotice) {
+			if n.Partial != "" && !strings.HasSuffix(n.Partial, "\n") {
+				// Half a sentence is already on stdout and the retry asks the
+				// whole question again, so it is closed off here rather than
+				// left for the reply that replaces it to run on from.
+				fmt.Fprintln(os.Stdout)
+			}
+			fmt.Fprintf(os.Stderr, "» %s\n", n.Notice)
+			obs.retry(n)
 		},
 		OnUsage: func(*provider.Usage) {
 			// What the run has spent is read back from the ledger rather than

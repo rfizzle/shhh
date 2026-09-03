@@ -187,6 +187,15 @@ const (
 	// its own edits do not explain. Reason: "head" (the commit or branch
 	// moved), "paths" (the changed set did), or "both".
 	SignalTree = "tree-moved"
+	// SignalRetry: a request the provider never answered was waited out and
+	// asked again. Reason: "rate-limit", "overloaded", "network", or "other"
+	// for a wait this build has no word for — which is what separates a
+	// surface being throttled from one losing its connection. One per attempt
+	// rather than one per stall, so a count over a population is a count of
+	// waits and comparable between surfaces that bound them alike. The
+	// session reports it too: it is the one surface where a wait is visible
+	// while it happens, which is exactly why it would go unrecorded.
+	SignalRetry = "retry"
 	// SignalUndo: the user took a turn's edits back. Reason: "".
 	SignalUndo = "undo"
 	// SignalMode: the permission mode changed. Reason: the new mode.

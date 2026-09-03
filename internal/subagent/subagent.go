@@ -620,12 +620,20 @@ func (c *child) interruptTurn() {
 
 // stop cancels the current attempt. A retry replaces cancel, so it is read
 // under the lock rather than off the struct.
+//
+// The runner is interrupted as well as the context, because a child waiting
+// out a provider holds no stream for a cancelled context to abort: cancelling
+// alone leaves a killed child sitting in its backoff — worktree and all —
+// until a countdown it no longer has any reason to finish runs out.
 func (c *child) stop() {
 	c.mu.Lock()
-	cancel := c.cancel
+	cancel, h := c.cancel, c.headless
 	c.mu.Unlock()
 	if cancel != nil {
 		cancel()
+	}
+	if h != nil {
+		h.Interrupt()
 	}
 }
 
@@ -1437,12 +1445,13 @@ func (s *Supervisor) run(c *child) {
 	c.set(StateRunning, "running")
 	s.emitUpdate(c)
 
-	// pendingEntry tracks the transcript index of the tool call in flight, so
-	// its result lands on the same row (calls within a child are sequential).
-	// callStart times it, for the same reason: calls within a child are
-	// sequential, so one timestamp is the whole of what a duration needs.
-	pendingEntry := -1
-	var callStart time.Time
+	// pendingEntry maps a call to the transcript row opened for it, so its
+	// result settles that row and not another. A round's reads run
+	// concurrently, so several rows are open at once and the call's own id —
+	// the same one the conversation routes its result by — is what tells them
+	// apart. A result whose row is missing settles nothing rather than the
+	// first row it finds.
+	pendingEntry := map[string]int{}
 	signal := func(code, reason string) {
 		if c.rec.Signal != nil {
 			c.rec.Signal(c.pos(), code, reason)
@@ -1493,8 +1502,7 @@ func (s *Supervisor) run(c *child) {
 			s.emitUpdate(c)
 		},
 		OnToolCall: func(tc provider.ToolCall) {
-			callStart = time.Now()
-			pendingEntry = c.beginToolEntry(tc.Name, tc.Arguments)
+			pendingEntry[tc.ID] = c.beginToolEntry(tc.Name, tc.Arguments)
 			c.mu.Lock()
 			c.toolCalls++
 			n := c.toolCalls
@@ -1502,15 +1510,37 @@ func (s *Supervisor) run(c *child) {
 			c.set(StateRunning, "running · "+plural(n, "tool"))
 			s.emitUpdate(c)
 		},
-		OnToolResult: func(tc provider.ToolCall, result string) {
-			c.settleToolEntry(pendingEntry, result)
+		OnToolResult: func(r agent.ToolResult) {
+			idx, ok := pendingEntry[r.Call.ID]
+			if !ok {
+				idx = -1
+			}
+			delete(pendingEntry, r.Call.ID)
+			c.settleToolEntry(idx, r.Result)
 			if c.rec.ToolCall != nil {
-				outcome, class := observe.ToolOutcome(result)
-				c.rec.ToolCall(c.pos(), tc.Name, time.Since(callStart), outcome, class)
+				outcome, class := observe.ToolOutcome(r.Result)
+				c.rec.ToolCall(c.pos(), r.Call.Name, r.Duration, outcome, class)
 			}
-			if agent.IsRepeatNotice(result) {
-				signal(observe.SignalRepeat, tc.Name)
+			if agent.IsRepeatNotice(r.Result) {
+				signal(observe.SignalRepeat, r.Call.Name)
 			}
+			s.emitUpdate(c)
+		},
+		// A child's retry is a status update on its lane: the one place a
+		// parent watching a fan-out can see that a writer is waiting out a
+		// limit rather than thinking.
+		OnRetry: func(n agent.RetryNotice) {
+			if n.Partial != "" {
+				// What the broken stream wrote is dropped rather than
+				// flushed: the retry asks the whole question again, and a
+				// transcript holding both would show the child answering
+				// twice with the first answer cut off mid-sentence.
+				c.mu.Lock()
+				c.streaming = ""
+				c.mu.Unlock()
+			}
+			c.set(StateRunning, fmt.Sprintf("waiting · retry %d of %d", n.Attempt, n.Max))
+			signal(observe.SignalRetry, n.Signal())
 			s.emitUpdate(c)
 		},
 	}

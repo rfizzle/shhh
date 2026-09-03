@@ -392,6 +392,7 @@ func TestHeadlessObserver_EventShapes(t *testing.T) {
 	obs.toolResult("search", time.Millisecond, "[repeat: this exact search call has now run 3 times]")
 	obs.summary(agent.SummaryVerdict{State: agent.SummaryOffTarget})
 	obs.intervene(agent.Intervention{Kind: agent.InterveneSteer})
+	obs.retry(agent.RetryNotice{Failure: &provider.Failure{Class: provider.ClassOverloaded}, Attempt: 1, Max: agent.MaxRetryAttempts})
 	rec.turn(1, 3, time.Second, observe.TurnDone)
 	rec.end()
 
@@ -404,6 +405,7 @@ func TestHeadlessObserver_EventShapes(t *testing.T) {
 		{kind: storage.AgentEventSignal, outcome: observe.SignalRepeat, reason: "search", turn: 1, round: 3},
 		{kind: storage.AgentEventSignal, outcome: observe.SignalSummary, reason: "off-target", turn: 1, round: 3},
 		{kind: storage.AgentEventSignal, outcome: observe.SignalIntervene, reason: "steer", turn: 1, round: 3},
+		{kind: storage.AgentEventSignal, outcome: observe.SignalRetry, reason: "overloaded", turn: 1, round: 3},
 		{kind: storage.AgentEventTurn, outcome: observe.TurnDone, turn: 1, round: 3, timed: true},
 	})
 }

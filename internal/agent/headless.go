@@ -4,15 +4,23 @@ package agent
 // user turn, stream events consumed inline, tool rounds dispatched until the
 // model produces a final message or the per-turn round cap is hit. The chat
 // TUI drives the same Agent asynchronously through Bubble Tea messages; this
-// runner is the scriptable front-end behind `shhh code -p` and each sub-agent
-//. Steering and interruption let a supervisor redirect or
+// runner is the scriptable front-end behind `shhh code -p` and each
+// sub-agent. Steering and interruption let a supervisor redirect or
 // cancel a running turn the way the TUI's steering mechanics do.
+//
+// It is the session's loop and not a simpler one: a round's auto calls are
+// dispatched together through the same bounded concurrency, and a request the
+// provider never answered is waited out on the same bound. The two surfaces
+// differ in how the wait looks, never in whether it happens.
+// See docs/capabilities/coding-agent.md#an-unattended-run-runs-the-same-loop.
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -37,10 +45,16 @@ type Headless struct {
 	Gate    ApprovalGate
 	Resolve func(tc provider.ToolCall) string
 
-	OnText       func(text string)                         // streamed assistant tokens
-	OnToolCall   func(tc provider.ToolCall)                // before a call runs or is resolved
-	OnToolResult func(tc provider.ToolCall, result string) // after its result is recorded
-	OnUsage      func(u *provider.Usage)                   // per-request usage, when reported
+	OnText     func(text string)          // streamed assistant tokens
+	OnToolCall func(tc provider.ToolCall) // before a call runs or is resolved
+	// OnToolResult is told each result as it is recorded. It carries the
+	// whole ToolResult rather than the text alone because a round's auto
+	// calls run concurrently: the call is how a front-end matches a result to
+	// the row it opened, and the duration is measured around the call itself,
+	// which is the only place it can still be measured once several are in
+	// flight at once.
+	OnToolResult func(r ToolResult)
+	OnUsage      func(u *provider.Usage) // per-request usage, when reported
 
 	// Steer, when set, is drained after each tool round: returned messages
 	// join the conversation as user messages before the next stream request
@@ -69,7 +83,22 @@ type Headless struct {
 	// See docs/capabilities/sessions-and-memory.md#observations-are-what-the-session-did.
 	OnSummary func(v SummaryVerdict)
 
-	mu           sync.Mutex
+	// OnRetry, when set, is told before each wait the run puts itself on
+	// after a request the provider never answered. An unattended run that
+	// goes quiet for a minute and a hung one look identical from outside, so
+	// every surface says which of the two this is.
+	// See docs/capabilities/coding-agent.md#an-unattended-run-runs-the-same-loop.
+	OnRetry func(n RetryNotice)
+
+	// retry is the bound across the whole turn, not across one request: three
+	// rate limits in a row are three attempts and not three fresh chances
+	// (retry.go).
+	retry Backoff
+
+	mu sync.Mutex
+	// streamCancel aborts whatever the run is currently waiting on — the
+	// in-flight stream, or the timer of a retry wait, which registers itself
+	// here so Interrupt wakes it the same way it aborts a stream.
 	streamCancel func()
 	interrupted  bool
 }
@@ -109,6 +138,11 @@ func (h *Headless) Run(prompt string) (string, error) {
 	h.mu.Lock()
 	h.interrupted = false
 	h.mu.Unlock()
+	// Starting a turn ends whatever stall the last one was in, the same way
+	// the session's own start does. A Headless is reused across a child's
+	// turns, so a budget carried over from a turn interrupted mid-backoff
+	// would hand the next, unrelated one whatever was left of three attempts.
+	h.retry.Reset()
 
 	// What moved since the run last looked comes before what is asked of it,
 	// so the instruction is read against the tree as it is.
@@ -117,8 +151,29 @@ func (h *Headless) Run(prompt string) (string, error) {
 	for {
 		text, calls, err := h.streamOnce()
 		if err != nil {
-			return "", err
+			notice, ok := h.retry.Next(err)
+			if !ok {
+				return "", err
+			}
+			notice.Partial = text
+			if !h.waitToRetry(notice) {
+				h.Agent.CancelTurn()
+				return "", ErrInterrupted
+			}
+			// The request that failed never reached the conversation, so
+			// asking again is the same question rather than a second one —
+			// which is the whole of what an unattended run can do here. A
+			// session offers to keep a reply that stopped halfway and let the
+			// model carry on from its own last sentence, because deciding
+			// whether half a sentence is worth having is a judgement, and the
+			// loop is passive: it cannot make one, and here there is nobody
+			// to ask.
+			// See docs/architecture.md#one-agent-several-front-ends.
+			continue
 		}
+		// A request the provider answered ends the stall, whatever the answer
+		// was: the bound is on consecutive failures.
+		h.retry.Reset()
 		// What the agent believes it is doing is most of what a reading is.
 		h.Summary.Recorder().Assistant(text)
 		if h.wasInterrupted() {
@@ -139,24 +194,33 @@ func (h *Headless) Run(prompt string) (string, error) {
 		}
 
 		auto, _ := h.Agent.BeginToolRound(text, calls, h.Gate)
-		results := make([]ToolResult, 0, len(auto))
+		// The round's auto calls go out together, through the same bounded
+		// dispatcher the session uses. The prompt tells the model its
+		// independent reads and searches can be asked for in one round; a
+		// runner that then ran them one at a time made that advice a lie
+		// wherever nobody was watching, which is every fan-out.
 		for _, tc := range auto {
 			h.notifyCall(tc)
-			r := ToolResult{Call: tc, Result: h.Agent.ExecuteCall(tc)}
-			results = append(results, r)
-			h.notifyResult(tc, r.Result)
+		}
+		results := h.Agent.ExecuteCalls(auto)
+		for _, r := range results {
+			h.notifyResult(r)
 		}
 		h.Agent.RecordAutoResults(results)
 
+		// Gated calls stay one at a time: each is a decision, and in a run
+		// with nobody in front of it the decision is policy's, which is
+		// allowed to depend on what the calls before it did.
 		for {
 			tc, ok := h.Agent.NextApproval()
 			if !ok {
 				break
 			}
 			h.notifyCall(tc)
+			start := time.Now()
 			result := h.resolveGated(tc)
 			h.Agent.ResolveApproval(result)
-			h.notifyResult(tc, result)
+			h.notifyResult(ToolResult{Call: tc, Result: result, Duration: time.Since(start)})
 		}
 
 		if h.wasInterrupted() {
@@ -257,7 +321,11 @@ func (h *Headless) streamOnce() (string, []provider.ToolCall, error) {
 				// The abort we caused is not a real stream failure.
 				return text.String(), nil, nil
 			}
-			return "", nil, ev.Err
+			// The words written before the wire broke come back with the
+			// error. Nothing appends them to the conversation — a partial
+			// reply is not an answer — but a caller that has already shown
+			// them needs to know they were shown.
+			return text.String(), nil, ev.Err
 		}
 		if ev.Token != "" {
 			text.WriteString(ev.Token)
@@ -298,13 +366,44 @@ func (h *Headless) notifyCall(tc provider.ToolCall) {
 	}
 }
 
-func (h *Headless) notifyResult(tc provider.ToolCall, result string) {
+func (h *Headless) notifyResult(r ToolResult) {
 	// The digest is fed here rather than by the caller: every surface that
 	// takes readings needs the same rows, and a hook a front-end has to
 	// remember to wire is one that goes missing in the surface added next.
 	// A nil Summary records nothing.
-	h.Summary.Recorder().Tool(tc.Name, tc.Arguments, result)
+	h.Summary.Recorder().Tool(r.Call.Name, r.Call.Arguments, r.Result)
 	if h.OnToolResult != nil {
-		h.OnToolResult(tc, result)
+		h.OnToolResult(r)
 	}
+}
+
+// waitToRetry sits out one wait and reports whether the run may go on. It is
+// false when the run was interrupted while waiting, which is the one thing
+// that can happen during it: a wait holds no stream, owes no results, and
+// leaves the conversation exactly as the failed request found it.
+func (h *Headless) waitToRetry(n RetryNotice) bool {
+	if h.OnRetry != nil {
+		h.OnRetry(n)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	h.mu.Lock()
+	if h.interrupted {
+		h.mu.Unlock()
+		return false
+	}
+	h.streamCancel = cancel
+	h.mu.Unlock()
+	defer func() {
+		h.mu.Lock()
+		h.streamCancel = nil
+		h.mu.Unlock()
+	}()
+	timer := time.NewTimer(n.Wait)
+	defer timer.Stop()
+	select {
+	case <-timer.C:
+	case <-ctx.Done():
+	}
+	return !h.wasInterrupted()
 }
