@@ -106,6 +106,7 @@ func reviewFiles(t changeset.Turn) []components.ReviewFile {
 			Hunks:  r.Hunks,
 			Staged: staged,
 			Syntax: diffSyntax(r.Path),
+			Mode:   r.ModeChange(),
 		}
 		// The session's own edits need no attribution; a child's do.
 		if r.Agent != changeset.MainAgent {

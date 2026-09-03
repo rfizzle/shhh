@@ -12,9 +12,11 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/charmbracelet/x/ansi"
 	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
 // blockingEnv builds children whose stream blocks until the child context is
@@ -218,14 +220,20 @@ func TestRecordChildPatch_UndoRestoresADeletedScriptsMode(t *testing.T) {
 	}
 }
 
-// Where the mode stops. A patch that only made a script executable carries
-// its whole change in the two modes, and they reach the parent — but the
-// session's history records content and existence, so a change that moved
-// neither is not a turn to undo and no entry appears. Anything that teaches
-// the history about modes has to come back through here.
-func TestRecordChildPatch_AModeOnlyPatchIsNotATurnToUndo(t *testing.T) {
+// A patch that only made a script executable carries its whole change in the
+// two modes: git writes one as a header with no hunk, so the bytes are
+// identical on both sides and nothing but the modes says anything happened.
+// The turn is one to undo like any other, and its row states the modes where
+// a file with a diff states its counts.
+func TestRecordChildPatch_AModeOnlyPatchIsATurnToUndo(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix permissions")
+	}
 	dir := t.TempDir()
 	script := filepath.Join(dir, "script.sh")
+	if err := os.WriteFile(script, []byte("#!/bin/sh\necho hi\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
 	sup := subagent.New(context.Background(), subagent.Options{Root: dir, NewEnv: blockingEnv()})
 	t.Cleanup(sup.Close)
 	m := newSubagentModel(t, sup)
@@ -244,8 +252,105 @@ func TestRecordChildPatch_AModeOnlyPatchIsNotATurnToUndo(t *testing.T) {
 	}}})
 	m = updated.(Model)
 
-	if turn, ok := m.changes.Latest(); ok {
-		t.Fatalf("a patch that changed no content should leave the history alone, got %+v", turn)
+	turn, ok := m.changes.Latest()
+	if !ok || len(turn.Records) != 1 {
+		t.Fatalf("a patch that changed a mode should be one record in the turn, got %+v", turn)
+	}
+	if got := turn.Records[0].ModeChange(); got != "mode 0644 → 0755" {
+		t.Fatalf("the record should carry both modes, got %q", got)
+	}
+
+	row := m.turnChangesRow()
+	if row == nil || row.Mode != "mode 0644 → 0755" {
+		t.Fatalf("the changeset row should state the mode, got %+v", row)
+	}
+	view := plainView(&components.TurnClose{Changes: row}, 100)
+	if !strings.Contains(view, "1 file changed") || !strings.Contains(view, "mode 0644 → 0755") {
+		t.Fatalf("the row should state the mode where its counts would be, got:\n%s", view)
+	}
+
+	// The review of the turn has no hunks to show for the file, so it says
+	// the same thing the row does rather than a bare `+0 −0`.
+	rv := &components.ReviewView{Files: reviewFiles(turn), Height: 12}
+	if !strings.Contains(ansi.Strip(rv.View(100)), "mode 0644 → 0755") {
+		t.Fatalf("the review should state the mode change, got:\n%s", ansi.Strip(rv.View(100)))
+	}
+
+	out := changeset.PlanUndo(turn, nil).Apply(false)
+	if len(out.Failed) != 0 || len(out.Skipped) != 0 {
+		t.Fatalf("taking the chmod back should not fail: %+v", out)
+	}
+	fi, err := os.Stat(script)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fi.Mode().Perm() != 0o644 {
+		t.Fatalf("the undo should have put 0644 back, got %o", fi.Mode().Perm())
+	}
+}
+
+// A patch that changed the lines and the mode restores both, so the review
+// says both: the counts it has, and the permissions an undo would put back
+// alongside them. Stating only the counts hides half of what taking the turn
+// back would do.
+func TestRecordChildPatch_AModeChangedWithContentIsStatedBesideTheCounts(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix permissions")
+	}
+	dir := t.TempDir()
+	script := filepath.Join(dir, "script.sh")
+	if err := os.WriteFile(script, []byte("#!/bin/sh\necho two\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	sup := subagent.New(context.Background(), subagent.Options{Root: dir, NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+
+	updated, _ := m.Update(subagentEventMsg{ev: subagent.Event{Kind: subagent.EventPatch, Patch: &subagent.PatchApplied{
+		Agent: "writer-1",
+		Files: []subagent.PatchedFile{{
+			Path:         script,
+			Before:       "#!/bin/sh\necho one\n",
+			After:        "#!/bin/sh\necho two\n",
+			BeforeExists: true,
+			AfterExists:  true,
+			BeforeMode:   0o644,
+			AfterMode:    0o755,
+		}},
+	}}})
+	m = updated.(Model)
+
+	turn, ok := m.changes.Latest()
+	if !ok || len(turn.Records) != 1 {
+		t.Fatalf("the patch should be one record in the turn, got %+v", turn)
+	}
+	if turn.Records[0].ModeOnly() {
+		t.Fatal("a record with a diff changed more than its mode")
+	}
+	rv := &components.ReviewView{Files: reviewFiles(turn), Height: 12}
+	view := ansi.Strip(rv.View(100))
+	if !strings.Contains(view, "mode 0644 → 0755") || !strings.Contains(view, "+1") {
+		t.Fatalf("the review should state the counts and the mode, got:\n%s", view)
+	}
+
+	// The turn's own row keeps its counts: the mode stands in for them only
+	// where there are none.
+	if row := m.turnChangesRow(); row == nil || row.Mode != "" {
+		t.Fatalf("a turn with lines to count states them, got %+v", row)
+	}
+
+	if out := changeset.PlanUndo(turn, nil).Apply(false); len(out.Failed) != 0 || len(out.Skipped) != 0 {
+		t.Fatalf("the undo should have put both back: %+v", out)
+	}
+	fi, err := os.Stat(script)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if fi.Mode().Perm() != 0o644 {
+		t.Fatalf("the undo should have put 0644 back, got %o", fi.Mode().Perm())
+	}
+	if data, err := os.ReadFile(script); err != nil || string(data) != "#!/bin/sh\necho one\n" {
+		t.Fatalf("the undo should have put the lines back, got %q %v", data, err)
 	}
 }
 

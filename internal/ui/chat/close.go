@@ -103,6 +103,7 @@ func (m Model) turnChangesRow() *components.TurnChanges {
 		Files:   t.Files(),
 		Added:   t.Added,
 		Removed: t.Removed,
+		Mode:    t.ModeChange(),
 		Keys: []components.TurnKey{
 			{Key: keys.Bracket(keys.Row.Review), Label: keys.Words(keys.Row.Review)},
 			{Key: keys.Bracket(keys.Row.Undo), Label: keys.Words(keys.Row.Undo)},

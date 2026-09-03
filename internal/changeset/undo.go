@@ -3,7 +3,9 @@ package changeset
 // Undo. Taking a turn back is reading the store's before-content and
 // putting it on disk — deliberately not a git operation, so it works in a
 // directory that was never a repository and never touches the user's index
-// or stash.
+// or stash. Where the record holds both of a file's modes and they differ,
+// the permissions come back too: that mode is the turn's own doing, and for
+// a file the turn chmod'd and nothing else it is the whole of the change.
 //
 // Planning and applying are separate because the interesting part happens
 // between them. The plan reads each file as it is now and compares it with
@@ -78,6 +80,14 @@ func PlanUndo(t Turn, paths []string) UndoPlan {
 			}
 		}
 		f.Drifted = f.NowExists != r.AfterExists || f.Now != r.After
+		// A record that changed the mode is the one case where the undo will
+		// write permissions, so permissions are the one case where a mode
+		// nobody here set counts as drift: without this a chmod somebody made
+		// since would be silently reversed, which is exactly what the content
+		// check exists to stop.
+		if r.ModeChanged() && f.NowExists && f.NowMode != 0 && f.NowMode.Perm() != r.AfterMode.Perm() {
+			f.Drifted = true
+		}
 		plan.Files = append(plan.Files, f)
 	}
 	return plan
@@ -188,6 +198,13 @@ func (f UndoFile) restore() (Record, error) {
 		Origin:       Approved,
 		Track:        r.Track,
 	}
+	// The reverse record's after side is the mode this restore leaves on
+	// disk, which is the mode found unless the restore is about to change
+	// it. Without it a mode-only undo reads as a record with no change in
+	// it at all, and the undo of the undo has nothing to put back.
+	if f.NowExists {
+		rev.AfterMode = f.NowMode
+	}
 	if !r.BeforeExists {
 		// The turn created the file; taking the turn back removes it. A file
 		// already gone is the state undo wanted, not an error.
@@ -203,11 +220,12 @@ func (f UndoFile) restore() (Record, error) {
 	}
 	// The mode argument takes effect only where WriteFile creates the file,
 	// so a file still on disk keeps the permissions it has: an undo restores
-	// content and has no business reversing a chmod it never made. A file
-	// the turn deleted is created right here, and it is created with the
-	// mode the record kept — so a script the turn removed comes back
-	// executable, rather than needing a chmod the model has to be approved
-	// for. See docs/capabilities/coding-agent.md#a-turn-ends-with-what-changed.
+	// content and has no business reversing a chmod it never made — the
+	// chmod the record itself holds being the exception below. A file the
+	// turn deleted is created right here, and it is created with the mode
+	// the record kept — so a script the turn removed comes back executable,
+	// rather than needing a chmod the model has to be approved for.
+	// See docs/capabilities/coding-agent.md#a-turn-ends-with-what-changed.
 	//
 	// Whether this write is the creation is asked of disk rather than of the
 	// plan: a plan can sit through a long confirmation, and the mode below
@@ -219,17 +237,42 @@ func (f UndoFile) restore() (Record, error) {
 	if err := os.WriteFile(r.Path, []byte(r.Before), mode); err != nil {
 		return Record{}, err
 	}
+	if !creating && r.ModeChanged() {
+		// The turn changed this file's permissions, so taking it back puts
+		// them back. This is the one time an undo touches access somebody
+		// could have set by hand, and it is allowed because the turn is what
+		// set it — a mode the person changed since is drift, and the plan
+		// has already refused to come here without being told to.
+		//
+		// Where the mode was the whole of the change, a chmod that failed
+		// restored nothing, and returning the file as restored would put a
+		// record in the history for work that did not happen. Where there
+		// was content too, the content is back and the file is restored —
+		// but the mode on it is still the one found, so the reverse record
+		// is left saying that rather than what the chmod meant to write.
+		if err := os.Chmod(r.Path, mode); err != nil {
+			if r.ModeOnly() {
+				return Record{}, err
+			}
+		} else {
+			rev.AfterMode = mode
+		}
+	}
 	if creating && r.BeforeMode != 0 {
 		// WriteFile's mode is masked by the process umask, which would drop
 		// the very bits being restored; Chmod is not masked. A record with no
 		// mode is deliberately left to the umask instead: it gets the default
 		// a new file has always got here, masked the way it always was.
 		//
-		// A failure is ignored on purpose. The content is already back, and
-		// calling the file unrestored would drop the reverse record and say
-		// the wrong thing about what is on disk; the file keeps the mode the
-		// write gave it, which is where it stood before any of this.
-		_ = os.Chmod(r.Path, mode)
+		// A failure does not fail the restore. The content is already back,
+		// and calling the file unrestored would drop the reverse record and
+		// say the wrong thing about what is on disk; the file keeps the mode
+		// the write gave it, which is where it stood before any of this. The
+		// reverse record's after side is left unknown in that case, because
+		// what the umask allowed through is not what was asked for.
+		if err := os.Chmod(r.Path, mode); err == nil {
+			rev.AfterMode = mode
+		}
 	}
 	return rev, nil
 }

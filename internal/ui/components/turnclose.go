@@ -40,6 +40,11 @@ const closeMinNoteGap = 2
 type TurnChanges struct {
 	Files          int
 	Added, Removed int
+	// Mode states a turn whose whole change is one file's permissions,
+	// already worded by the host. There are no lines to count for one, so it
+	// stands where the +N −M would: a row saying `1 file changed +0 −0` is
+	// a row that hides the only thing that happened.
+	Mode string
 	// Keys are the offers the row makes, in order.
 	Keys []TurnKey
 	// Note is the right-aligned reversibility note.
@@ -128,7 +133,11 @@ func (c TurnClose) Summary() string {
 		parts = append(parts, stats)
 	}
 	if ch := c.Changes; ch != nil {
-		parts = append(parts, fmt.Sprintf("%s changed · +%d −%d", plural(ch.Files, "file"), ch.Added, ch.Removed))
+		changed := fmt.Sprintf("%s changed · +%d −%d", plural(ch.Files, "file"), ch.Added, ch.Removed)
+		if ch.Mode != "" {
+			changed = plural(ch.Files, "file") + " changed · " + ch.Mode
+		}
+		parts = append(parts, changed)
 	}
 	if ck := c.Checks; ck != nil {
 		verdict := " passing"
@@ -194,6 +203,9 @@ func (c TurnClose) View(width int) string {
 
 	if ch := c.Changes; ch != nil {
 		stats := DiffStat(ch.Added, ch.Removed)
+		if ch.Mode != "" {
+			stats = sty.Dim.Render(ch.Mode)
+		}
 		stated := sty.Body.Render(plural(ch.Files, "file")+" changed ") + stats
 		lead := closeLead(sty.Accent.Render("▎"), sty.Accent.Render("✎"))
 		text := stated

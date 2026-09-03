@@ -23,6 +23,15 @@ executable again without anyone reaching for chmod. A file that is still there
 keeps the permissions it has now: an undo puts content back and does not touch
 access somebody set since.
 
+A change of permissions and nothing else is still a change, so a writer's patch
+that made a script executable and moved not a byte is a turn with something in
+it. There are no lines to count for one, so the turn's row and its review state
+the two modes where they would state the counts — a patch that changed the
+lines as well states them beside its counts — and taking the turn back puts the
+old mode back. A mode somebody changed by hand since counts as drift the
+same way edited content does, and is left alone without a deliberate second
+answer.
+
 ## Several places in one file are one call
 
 Changing three places in one file used to be three calls: three rounds, three

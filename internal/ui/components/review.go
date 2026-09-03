@@ -61,6 +61,13 @@ type ReviewFile struct {
 	// Syntax highlights this file's lines in the hunk pane; nil renders the
 	// plain diff colors.
 	Syntax Syntax
+	// Mode states a change of permissions the file carries, already worded
+	// by whoever knows the two modes. A file whose whole change is its mode
+	// has no hunks and no counts, so this stands where they would be — a
+	// row saying `+0 −0` about a real change is the reading being fixed —
+	// and a file that changed content as well states it after them, because
+	// an undo of that file puts the permissions back too.
+	Mode string
 }
 
 // stats is the file's +N −M.
@@ -468,6 +475,12 @@ func (v *ReviewView) fileRows(width int) []string {
 		}
 		lead += sty.Accent.Render("✎ ")
 		note := DiffStat(added, removed)
+		switch {
+		case f.Mode != "" && len(f.Hunks) == 0:
+			note = sty.Dim.Render(f.Mode)
+		case f.Mode != "":
+			note += sty.Dim.Render(" · " + f.Mode)
+		}
 
 		// A file list is read by its filenames, so a path that does not fit
 		// loses its leading directories rather than its name, and the agent
@@ -583,9 +596,14 @@ func (v *ReviewView) paneRows(width, rows int) []string {
 		return []string{sty.Hint.Render("(no file selected)")}
 	}
 	added, removed := f.stats()
-	head := brightStyle().Render(f.Path) +
-		sty.Dim.Render("  "+plural(len(f.Hunks), "hunk")+" · ") +
-		DiffStat(added, removed)
+	detail := sty.Dim.Render("  "+plural(len(f.Hunks), "hunk")+" · ") + DiffStat(added, removed)
+	switch {
+	case f.Mode != "" && len(f.Hunks) == 0:
+		detail = sty.Dim.Render("  " + f.Mode)
+	case f.Mode != "":
+		detail += sty.Dim.Render(" · " + f.Mode)
+	}
+	head := brightStyle().Render(f.Path) + detail
 	if !v.ReadOnly {
 		head += sty.Dim.Render(" · ") + v.fileStageLabel(*f)
 	}

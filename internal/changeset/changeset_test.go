@@ -126,6 +126,109 @@ func TestAdd_CollapseKeepsTheEarliestBeforeMode(t *testing.T) {
 	}
 }
 
+// A patch can carry a change of permissions and nothing else — git writes one
+// as a header with no hunk — and the two modes are then the whole of what
+// happened. A store keyed on bytes and existence alone drops that record, and
+// the turn goes on to say it changed nothing.
+func TestAdd_AModeAloneIsAChange(t *testing.T) {
+	s := New(0)
+	r := rec("a.sh", "one\n", "one\n")
+	r.BeforeMode, r.AfterMode = 0o644, 0o755
+
+	s.Add(3, r)
+	turn, ok := s.Turn(3)
+	if !ok || turn.Files() != 1 {
+		t.Fatalf("a change of mode should be a record, got %+v", turn)
+	}
+	if got := turn.Records[0].ModeChange(); got != "mode 0644 → 0755" {
+		t.Fatalf("the record should state its mode change, got %q", got)
+	}
+	if !turn.Records[0].ModeOnly() {
+		t.Fatal("a record with the same bytes on both sides changed nothing else")
+	}
+	if got := turn.ModeChange(); got != "mode 0644 → 0755" {
+		t.Fatalf("the turn's row should state the mode where its counts would be, got %q", got)
+	}
+}
+
+// Zero is "nobody read this", not mode 000. Every record made by a path that
+// never stats carries it, so reading it as a mode would turn every one of
+// them into a change of permissions.
+func TestAdd_AnUnknownModeIsNotAChange(t *testing.T) {
+	s := New(0)
+	unknownAfter := rec("a.sh", "one\n", "one\n")
+	unknownAfter.BeforeMode = 0o755
+	s.Add(1, unknownAfter)
+	unknownBefore := rec("b.sh", "one\n", "one\n")
+	unknownBefore.AfterMode = 0o755
+	s.Add(1, unknownBefore)
+
+	if turn, ok := s.Turn(1); ok {
+		t.Fatalf("a record with a mode on one side only says nothing about permissions, got %+v", turn)
+	}
+}
+
+// A turn that also moved bytes has counts of its own to state, and a turn
+// with two mode changes in it has two things to say where the row says one.
+func TestTurn_ModeChangeOnlyStatesASingleFilesPermissions(t *testing.T) {
+	s := New(0)
+	withContent := rec("a.sh", "one\n", "one\ntwo\n")
+	withContent.BeforeMode, withContent.AfterMode = 0o644, 0o755
+	s.Add(1, withContent)
+	if turn, _ := s.Turn(1); turn.ModeChange() != "" {
+		t.Fatalf("a turn with lines to count states them, got %q", turn.ModeChange())
+	}
+
+	second := rec("b.sh", "one\n", "one\n")
+	second.BeforeMode, second.AfterMode = 0o644, 0o755
+	s.Add(2, second)
+	third := rec("c.sh", "one\n", "one\n")
+	third.BeforeMode, third.AfterMode = 0o600, 0o700
+	s.Add(2, third)
+	if turn, _ := s.Turn(2); turn.ModeChange() != "" {
+		t.Fatalf("two changes are not one row's worth, got %q", turn.ModeChange())
+	}
+}
+
+// The second edit of a file does not read modes — the tools that write files
+// do not change them — so the mode the first edit left is still the one on
+// disk, and the net record has to keep it or the change disappears.
+func TestAdd_CollapseKeepsTheLatestKnownAfterMode(t *testing.T) {
+	s := New(0)
+	chmod := rec("a.sh", "one\n", "one\n")
+	chmod.BeforeMode, chmod.AfterMode = 0o644, 0o755
+	s.Add(2, chmod)
+	s.Add(2, rec("a.sh", "one\n", "one\ntwo\n"))
+
+	turn, _ := s.Turn(2)
+	if r := turn.Records[0]; r.AfterMode != 0o755 || !r.ModeChanged() {
+		t.Fatalf("the net record lost the mode the turn set, got %+v", r)
+	}
+}
+
+// A turn that chmod'd a file and then deleted it has one net change and it is
+// the deletion. Carrying the mode forward onto the gone side would leave the
+// record claiming permissions changed on a file that is not there, which is
+// a chmod undo would go looking for somewhere to apply.
+func TestAdd_AFileDeletedAfterAChmodIsADeletion(t *testing.T) {
+	s := New(0)
+	chmod := rec("a.sh", "one\n", "one\n")
+	chmod.BeforeMode, chmod.AfterMode = 0o644, 0o755
+	s.Add(4, chmod)
+	removal := rec("a.sh", "one\n", "")
+	removal.AfterExists = false
+	s.Add(4, removal)
+
+	turn, _ := s.Turn(4)
+	r := turn.Records[0]
+	if !r.Deleted() {
+		t.Fatalf("the net record should be the deletion, got %+v", r)
+	}
+	if r.ModeChanged() || r.ModeChange() != "" {
+		t.Fatalf("a file that is gone has no permissions to have changed, got %q", r.ModeChange())
+	}
+}
+
 func TestAdd_EditedBackToWhereItStartedDropsTheRecord(t *testing.T) {
 	s := New(0)
 	s.Add(3, rec("a.go", "one\n", "two\n"))

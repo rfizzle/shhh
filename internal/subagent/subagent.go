@@ -403,10 +403,9 @@ type PatchedFile struct {
 	// is the whole of a patch that changed a mode and not a byte: git
 	// carries one as an `old mode`/`new mode` header with no hunk, so both
 	// sides hold identical content and this pair is the only thing that
-	// tells them apart. Nothing downstream reads it yet — the session
-	// changeset is keyed on content and existence, so a patch that moved
-	// neither leaves no entry there — and it is read here because this is
-	// the one moment the mode can still be seen at all.
+	// tells them apart. It is read here because this is the one moment the
+	// mode can still be seen at all; the session changeset takes both sides
+	// and undo puts the old one back.
 	AfterMode os.FileMode
 }
 

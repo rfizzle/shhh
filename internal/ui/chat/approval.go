@@ -580,9 +580,15 @@ func (c changeRecording) after(before fileState) []int64 {
 		BeforeExists: before.exists,
 		AfterExists:  now.exists,
 		BeforeMode:   before.mode,
-		Agent:        changeset.MainAgent,
-		Origin:       c.origin,
-		Track:        before.track,
+		// The after side is read for the same reason the before side is: a
+		// change of permissions and nothing else is still a change. The
+		// tools here do not make one — an existing file keeps the mode it
+		// has — so this records nothing today and records it the day one
+		// does, rather than being the seam where a mode is lost again.
+		AfterMode: now.mode,
+		Agent:     changeset.MainAgent,
+		Origin:    c.origin,
+		Track:     before.track,
 	})
 }
 

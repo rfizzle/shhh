@@ -392,3 +392,82 @@ func TestUndo_FileRemovedAfterThePlanIsRestoredWithItsMode(t *testing.T) {
 		t.Fatalf("the recreated script's mode = %v, want 0755", info.Mode().Perm())
 	}
 }
+
+// A change of permissions and nothing else is the one time an undo touches
+// access: the turn is what set it, so taking the turn back takes the chmod
+// back with it.
+func TestUndo_RestoresAModeChangedOnItsOwn(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix permissions")
+	}
+	dir := t.TempDir()
+	script := wrote(t, dir, "script.sh", "#!/bin/sh\n", "#!/bin/sh\n")
+	script.BeforeMode, script.AfterMode = 0o644, 0o755
+	path := filepath.Join(dir, "script.sh")
+	if err := os.Chmod(path, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	turn := turnOf(t, script)
+
+	plan := PlanUndo(turn, nil)
+	if plan.Empty() {
+		t.Fatal("a turn that chmod'd a file has something to undo")
+	}
+	if d := plan.Drifted(); len(d) != 0 {
+		t.Fatalf("the file is exactly as the turn left it, got %v", d)
+	}
+	out := plan.Apply(false)
+	if len(out.Failed) != 0 || len(out.Skipped) != 0 {
+		t.Fatalf("the chmod should have been taken back, got %+v", out)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o644 {
+		t.Fatalf("mode after the undo = %v, want the 0644 it had", info.Mode().Perm())
+	}
+	// The undo is a change of its own, and undoing it puts the bit back.
+	back := PlanUndo(turnOf(t, out.Records[0]), nil).Apply(false)
+	if len(back.Failed) != 0 {
+		t.Fatalf("undoing the undo should not fail, got %+v", back.Failed)
+	}
+	if info, err = os.Stat(path); err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o755 {
+		t.Fatalf("the second undo should have put 0755 back, got %v", info.Mode().Perm())
+	}
+}
+
+// Permissions somebody set by hand since are drift, the same as content
+// edited since: the undo would be discarding a change no record ever saw, so
+// it says so and leaves the file alone until it is told twice.
+func TestUndo_AModeChangedSinceIsDrift(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix permissions")
+	}
+	dir := t.TempDir()
+	script := wrote(t, dir, "script.sh", "#!/bin/sh\n", "#!/bin/sh\n")
+	script.BeforeMode, script.AfterMode = 0o644, 0o755
+	path := filepath.Join(dir, "script.sh")
+	if err := os.Chmod(path, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	turn := turnOf(t, script)
+
+	plan := PlanUndo(turn, nil)
+	if d := plan.Drifted(); len(d) != 1 || d[0] != path {
+		t.Fatalf("a mode nobody recorded should read as drift, got %v", d)
+	}
+	if out := plan.Apply(false); len(out.Skipped) != 1 {
+		t.Fatalf("the drifted file should have been left alone, got %+v", out)
+	}
+	info, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if info.Mode().Perm() != 0o700 {
+		t.Fatalf("the mode set by hand should still be there, got %v", info.Mode().Perm())
+	}
+}

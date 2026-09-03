@@ -16,6 +16,7 @@
 package changeset
 
 import (
+	"fmt"
 	"os"
 	"sort"
 	"sync"
@@ -97,6 +98,14 @@ type Record struct {
 	// writes produces one. Permission bits only: an edit never changed an
 	// owner or a timestamp, so putting one back is not undo's to do.
 	BeforeMode os.FileMode
+	// AfterMode is the same reading taken once the edit had landed, and it
+	// is what makes a change of permissions visible at all: a patch that
+	// made a script executable and moved not a byte has identical content
+	// on both sides, and this pair is the only thing that tells them apart.
+	// Zero reads as unknown, the way BeforeMode does — the tools that write
+	// files do not change modes, so their records leave it alone and say
+	// nothing about permissions rather than claiming they were cleared.
+	AfterMode os.FileMode
 	// Agent is MainAgent for the session's own edits, or the child's name.
 	Agent  string
 	Origin Origin
@@ -114,9 +123,39 @@ func (r Record) Created() bool { return !r.BeforeExists && r.AfterExists }
 func (r Record) Deleted() bool { return r.BeforeExists && !r.AfterExists }
 
 // Changed reports whether the record says anything at all — a call that left
-// the file byte-identical is not a change, however it was applied.
+// the file byte-identical, and its permissions alone, is not a change,
+// however it was applied.
 func (r Record) Changed() bool {
-	return r.Before != r.After || r.BeforeExists != r.AfterExists
+	return r.Before != r.After || r.BeforeExists != r.AfterExists || r.ModeChanged()
+}
+
+// ModeChanged reports a record whose permission bits differ across the edit.
+// The file has to be there on both sides — a creation and a deletion are
+// changes of their own and neither has two modes to compare — and both modes
+// have to be known: zero means nothing read one, so a record missing one says
+// nothing about permissions rather than reporting a file stripped to 000.
+func (r Record) ModeChanged() bool {
+	return r.BeforeExists && r.AfterExists &&
+		r.BeforeMode != 0 && r.AfterMode != 0 &&
+		r.BeforeMode.Perm() != r.AfterMode.Perm()
+}
+
+// ModeOnly reports a record whose whole change is the permission bits. There
+// is no diff to draw for one, so the surfaces state the mode where a file
+// with hunks states its counts.
+func (r Record) ModeOnly() bool {
+	return r.ModeChanged() && r.Before == r.After
+}
+
+// ModeChange states the permission change in the one wording every surface
+// prints it in, and is empty where there is none to state. The arrow reads
+// the way a diff does, and the four digits are the octal a person types back
+// into chmod.
+func (r Record) ModeChange() string {
+	if !r.ModeChanged() {
+		return ""
+	}
+	return fmt.Sprintf("mode %04o → %04o", r.BeforeMode.Perm(), r.AfterMode.Perm())
 }
 
 func (r *Record) compute() {
@@ -160,6 +199,17 @@ func (t Turn) Record(path string) (Record, bool) {
 		}
 	}
 	return Record{}, false
+}
+
+// ModeChange is the turn's change stated as permissions, for a turn whose
+// whole change is one file's mode. Anything else is empty: two such files
+// are two changes and a row states one thing, and a turn that also moved
+// bytes has counts of its own to state.
+func (t Turn) ModeChange() string {
+	if len(t.Records) != 1 || !t.Records[0].ModeOnly() {
+		return ""
+	}
+	return t.Records[0].ModeChange()
 }
 
 // snapshot copies the turn so a reader cannot see a later Add mutate it.
@@ -246,7 +296,8 @@ func (s *Store) Reset() {
 // earliest before side is kept — content, existence and mode together, so
 // the three never describe different moments — the latest everything else
 // wins, and the hunks are recomputed across the pair. A record that changes
-// nothing is dropped.
+// nothing — the same bytes, the same existence and the same permissions —
+// is dropped.
 func (s *Store) Add(turn int64, r Record) (evicted []int64) {
 	if s == nil || !r.Changed() {
 		return nil
@@ -274,6 +325,14 @@ func (s *Store) Add(turn int64, r Record) (evicted []int64) {
 		prev := t.Records[i]
 		s.bytes -= prev.size()
 		r.Before, r.BeforeExists, r.BeforeMode = prev.Before, prev.BeforeExists, prev.BeforeMode
+		if r.AfterMode == 0 && r.AfterExists {
+			// The later edit did not read the mode, which for the tools that
+			// write files means it did not change one either — so the mode
+			// the earlier edit left is still what is on disk, and dropping it
+			// here would lose a change the turn really made. A file the later
+			// edit removed has no mode to carry forward.
+			r.AfterMode = prev.AfterMode
+		}
 		r.compute()
 		if !r.Changed() {
 			// The turn edited the file back to where it started.

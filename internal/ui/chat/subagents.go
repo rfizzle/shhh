@@ -125,6 +125,7 @@ func (m *Model) recordChildPatch(p *subagent.PatchApplied) {
 			BeforeExists: f.BeforeExists,
 			AfterExists:  f.AfterExists,
 			BeforeMode:   f.BeforeMode,
+			AfterMode:    f.AfterMode,
 			Agent:        p.Agent,
 			Origin:       changeset.ChildPatch,
 			Track:        m.tracker.Track(f.Path),
