@@ -55,13 +55,27 @@ func EstimateAttachmentTokens(atts []provider.Attachment) int64 {
 }
 
 // TrimOldToolResults elides the oldest tool results until the context
-// estimate est is back at or under threshold, returning how many were elided
-// and the updated estimate. Messages at or after the last user message (the
-// current turn) are never touched, user/assistant text is always kept, and
-// so is any result the KeepResults predicate claims.
-func (a *Agent) TrimOldToolResults(est, threshold int64) (elided int, newEst int64) {
+// estimate est is at or under mark, returning how many were elided and the
+// updated estimate. Nothing is elided at all until est is over threshold, so
+// the two figures together decide how often a trim happens as well as how
+// deep it goes: a trim that stopped at the threshold it was triggered by
+// would leave the conversation a few hundred tokens under the line and run
+// again next round, and each run costs the caller its whole cached prefix.
+// A mark well below the threshold spends that once and buys the gap.
+//
+// Messages at or after the last user message (the current turn) are never
+// touched, user/assistant text is always kept, and so is any result the
+// KeepResults predicate claims.
+//
+// A mark above the threshold would ask the loop to stop before it has
+// started, so it is read as the threshold itself — which is exactly the
+// behaviour of trimming against one figure.
+func (a *Agent) TrimOldToolResults(est, threshold, mark int64) (elided int, newEst int64) {
 	if est <= threshold {
 		return 0, est
+	}
+	if mark > threshold {
+		mark = threshold
 	}
 	lastUser := 0
 	for i := len(a.messages) - 1; i >= 0; i-- {
@@ -70,7 +84,15 @@ func (a *Agent) TrimOldToolResults(est, threshold int64) (elided int, newEst int
 			break
 		}
 	}
-	for i := 0; i < lastUser && est > threshold; i++ {
+	// Oldest first, and the prompt cache is why that costs nothing extra.
+	// Every dialect bills a repeat request against the longest prefix it
+	// matches, and the markers are placed so that everything before the
+	// current turn is inside that prefix — so rewriting the oldest result
+	// invalidates no more of the cache than rewriting a later one would,
+	// while leaving the recent context, which is what the model is actually
+	// working from, whole.
+	// See docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once.
+	for i := 0; i < lastUser && est > mark; i++ {
 		msg := &a.messages[i]
 		if msg.Role != provider.RoleTool || msg.Content == ElidedResult {
 			continue

@@ -53,6 +53,13 @@ type vitals struct {
 	// cells — the rail labels it "per round" because that is what it is.
 	burn        []float64
 	lastContext int64
+	// lastIn and lastCached are the most recent request's input and the part
+	// of it the provider served from its prompt cache. They are the latest
+	// request's rather than the turn's because the cache is answered per
+	// request: a turn that trimmed halfway through reads as half-cached when
+	// summed, which is the average of a hit and a miss and describes
+	// neither.
+	lastIn, lastCached int64
 
 	totalIn, totalOut, totalCached int64
 	totalCost                      float64
@@ -145,6 +152,7 @@ func (v *vitals) record(model string, u provider.Usage, cost float64, priced boo
 	// The latest request's prompt plus its completion is what the next
 	// request will roughly carry as context.
 	v.lastContext = in + out
+	v.lastIn, v.lastCached = in, cached
 	v.current.Context = v.lastContext
 	v.burn = append(v.burn, float64(v.lastContext))
 	if n := len(v.burn); n > contextBurnSamples {

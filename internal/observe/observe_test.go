@@ -90,6 +90,25 @@ func TestToolOutcome(t *testing.T) {
 	}
 }
 
+// The dashboard counts signal events by their qualifier, so a trim's
+// qualifier has to be something two trims can share. Two sessions on windows
+// an order of magnitude apart that trimmed from the same place to the same
+// place are one row and one count, not two rows saying "1 time" — which is
+// what a raw token figure in here would make of every trim ever recorded.
+func TestTrimReason_CountsTrimsOfTheSameShapeTogether(t *testing.T) {
+	small := TrimReason(3, 82, 58)
+	large := TrimReason(3, 82, 58)
+	if small != large {
+		t.Errorf("two trims of the same shape report %q and %q", small, large)
+	}
+	if want := "3 82%→58%"; small != want {
+		t.Errorf("TrimReason(3, 82, 58) = %q, want %q", small, want)
+	}
+	if shallow := TrimReason(1, 81, 79); shallow == small {
+		t.Errorf("a shallow trim reports %q, the same as a deep one", shallow)
+	}
+}
+
 // Every unattended surface reports a reading with this, so the four states
 // have to keep the four spellings a stored rate is grouped by.
 func TestSummaryCode(t *testing.T) {

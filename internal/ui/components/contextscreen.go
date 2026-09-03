@@ -196,6 +196,19 @@ type ContextScreen struct {
 	// `estimated`. It is stated rather than implied because a guess and a
 	// measurement are different facts about the same number.
 	Source string
+	// CacheRead, CacheInput and CachePct are the last request's prompt
+	// cache: how much of the input the provider served from it, what the
+	// input was, and the share. It belongs on this screen because it is the
+	// other half of what the window costs — the same tokens are billed at
+	// two very different rates depending on whether the prefix still
+	// matched, and this is the surface a reader comes to when the window is
+	// the thing on their mind.
+	//
+	// An empty CacheRead leaves the row out. Before the first reply there is
+	// no request to report on, and a row of zeroes would read as a cache
+	// that missed rather than as one that has not been asked yet.
+	CacheRead, CacheInput string
+	CachePct              int
 	// Categories are the legend, in the host's order, with the free-space
 	// row last.
 	Categories []ContextCategory
@@ -472,10 +485,10 @@ func (c *ContextScreen) pctStyle() lipgloss.Style {
 	return ctxStyle(c.Pct, c.Warn, c.Alert)
 }
 
-// legendRows is the panel beside the grid: the model, the occupancy, then a
-// row per category. The blank rows in it are deliberate — they are what puts
-// the category heading level with the fifth row of the grid rather than
-// crowding the model lines above it.
+// legendRows is the panel beside the grid: the model, the occupancy, what the
+// last request read from cache, then a row per category. The blank row in it
+// is deliberate — it is what holds the category heading off the model lines
+// above it rather than letting the two blocks run together.
 func (c *ContextScreen) legendRows() []string {
 	var rows []string
 	if c.Model != "" {
@@ -484,7 +497,11 @@ func (c *ContextScreen) legendRows() []string {
 	if c.Provider != "" {
 		rows = append(rows, sty.Dim.Render(c.Provider))
 	}
-	rows = append(rows, c.occupancyRow(), "", sty.Info.Bold(true).Render("OCCUPANCY BY CATEGORY"))
+	rows = append(rows, c.occupancyRow())
+	if c.CacheRead != "" {
+		rows = append(rows, c.cacheRow())
+	}
+	rows = append(rows, "", sty.Info.Bold(true).Render("OCCUPANCY BY CATEGORY"))
 	for _, cat := range c.Categories {
 		rows = append(rows, c.categoryRow(cat))
 	}
@@ -502,6 +519,17 @@ func (c *ContextScreen) occupancyRow() string {
 		row += sty.Dim.Render(" · " + c.Source)
 	}
 	return row
+}
+
+// cacheRow is what the last request did not have to be read again: the part
+// of its input the provider answered from its prompt cache. It sits under
+// the occupancy because it is a reading of the same window from the other
+// side — the occupancy is how much is in there, this is how much of it was
+// paid for at the cheap rate.
+func (c *ContextScreen) cacheRow() string {
+	return sty.Dim.Render("cache reads · ") + sty.Body.Render(c.CacheRead) +
+		sty.Dim.Render(" of "+c.CacheInput+" input · ") +
+		sty.Body.Render(fmt.Sprintf("%d%%", min(max(c.CachePct, 0), 100)))
 }
 
 // categoryRow is one legend row: the swatch that keys the grid, the label,

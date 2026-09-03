@@ -272,6 +272,27 @@ session, a headless run and every child of either read one set;
 `stamp` call site. The reasons are in
 [`docs/capabilities/configuration.md#the-mechanism-is-code-its-wording-is-configuration`](docs/capabilities/configuration.md#the-mechanism-is-code-its-wording-is-configuration).
 
+### Context management
+
+Two mechanisms in two places. The message surgery is
+`agent.TrimOldToolResults` (`internal/agent/context.go`): it elides the oldest
+tool results between index 0 and the last user message, and never the current
+turn, user or assistant text, or a result the `KeepResults` predicate claims.
+The figures are the chat model's, because the window belongs to whichever
+model the session is on — `trimThresholdPercent` (80) is where a trim starts
+and `trimLowWaterPercent` (60, the same line the ctx indicator warns at) is
+where it stops, both in `internal/ui/chat/context.go` beside the `/compact`
+flow.
+
+The gap between those two numbers is the design, not slack. Rewriting any
+message invalidates the provider's cached prefix from that message on
+([`docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once`](docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once)),
+so a trim costs a full recompute of the conversation however few bytes it
+recovered. Trimming only to the threshold clears the line by a handful of
+tokens and pays that price again a round later; closing the gap would put the
+defect back. What a request actually read from cache is on `/context`, which
+is where the effect is visible.
+
 ### Provider Interface
 
 All providers implement `StreamCompletion(ctx, messages, opts) (<-chan StreamEvent, error)`. Providers register via `provider.Register(name, factory)` with a `Factory func(ResolveOpts) (Provider, error)`. Provider names are normalized (underscores become hyphens). What the interface deliberately does not abstract over: [`docs/capabilities/providers.md`](docs/capabilities/providers.md).

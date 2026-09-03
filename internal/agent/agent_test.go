@@ -252,7 +252,7 @@ func TestTrimOldToolResults_ProtectsCurrentTurn(t *testing.T) {
 		{Role: provider.RoleTool, Content: "recent result", ToolCallID: "c2"},
 	}, noStream)
 
-	elided, newEst := a.TrimOldToolResults(30000, 26000)
+	elided, newEst := a.TrimOldToolResults(30000, 26000, 26000)
 	if elided != 1 {
 		t.Fatalf("want 1 elided result, got %d", elided)
 	}
@@ -279,7 +279,7 @@ func TestTrimOldToolResults_NoopUnderThreshold(t *testing.T) {
 		{Role: provider.RoleUser, Content: "q2"},
 	}, noStream)
 
-	elided, newEst := a.TrimOldToolResults(1000, 26000)
+	elided, newEst := a.TrimOldToolResults(1000, 26000, 26000)
 	if elided != 0 || newEst != 1000 {
 		t.Fatalf("under the threshold nothing should change, got elided=%d est=%d", elided, newEst)
 	}
@@ -345,6 +345,70 @@ func TestCarryReasoning_LandsOnTheRoundAndIsConsumed(t *testing.T) {
 	}
 }
 
+// TestTrimOldToolResults_RunsDownToTheMark is the whole point of the second
+// figure: the loop keeps going past the threshold that started it, so one
+// trim buys headroom for many rounds instead of clearing the line by a
+// handful of tokens and being called again next round.
+func TestTrimOldToolResults_RunsDownToTheMark(t *testing.T) {
+	big := strings.Repeat("x", 40000) // ~10k estimated tokens each
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "q1"},
+	}
+	for range 6 {
+		msgs = append(msgs, provider.Message{Role: provider.RoleTool, Content: big, ToolCallID: "c"})
+	}
+	msgs = append(msgs,
+		provider.Message{Role: provider.RoleAssistant, Content: "answer 1"},
+		provider.Message{Role: provider.RoleUser, Content: "q2"})
+
+	deep := New(append([]provider.Message(nil), msgs...), noStream)
+	elided, newEst := deep.TrimOldToolResults(70000, 60000, 40000)
+	if newEst > 40000 {
+		t.Fatalf("the trim stopped at %d, above the mark of 40000", newEst)
+	}
+	if elided != 4 {
+		t.Fatalf("want 4 elided results to reach the mark, got %d", elided)
+	}
+
+	// Nothing left to do on a conversation already under the mark: the
+	// second request of a session that just trimmed pays for no surgery at
+	// all, which is the cost this exists to remove.
+	again, sameEst := deep.TrimOldToolResults(newEst, 60000, 40000)
+	if again != 0 || sameEst != newEst {
+		t.Fatalf("a second trim over the same messages elided %d, est %d", again, sameEst)
+	}
+
+	// The same conversation with the mark at the threshold elides the
+	// minimum that clears the line, which is what a single-figure trim did
+	// and what leaves the next round to do it again.
+	shallow := New(append([]provider.Message(nil), msgs...), noStream)
+	if elided, _ := shallow.TrimOldToolResults(70000, 60000, 60000); elided != 2 {
+		t.Fatalf("a mark at the threshold elided %d, want the 2 that clear it", elided)
+	}
+}
+
+// TestTrimOldToolResults_MarkAboveThresholdTrimsToTheThreshold: a mark that
+// asks the loop to stop before it has started is read as the threshold, so a
+// caller that got the two the wrong way round still trims rather than
+// looping on a conversation it never shortens.
+func TestTrimOldToolResults_MarkAboveThresholdTrimsToTheThreshold(t *testing.T) {
+	big := strings.Repeat("x", 40000)
+	a := New([]provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "q1"},
+		{Role: provider.RoleTool, Content: big, ToolCallID: "c1"},
+		{Role: provider.RoleTool, Content: big, ToolCallID: "c2"},
+		{Role: provider.RoleAssistant, Content: "answer 1"},
+		{Role: provider.RoleUser, Content: "q2"},
+	}, noStream)
+
+	elided, newEst := a.TrimOldToolResults(70000, 60000, 90000)
+	if elided != 2 || newEst > 60000 {
+		t.Fatalf("want the conversation trimmed to the threshold, got %d elided est %d", elided, newEst)
+	}
+}
+
 func TestTrimOldToolResults_KeepsClaimedResults(t *testing.T) {
 	big := strings.Repeat("x", 40000)
 	a := New([]provider.Message{
@@ -357,7 +421,7 @@ func TestTrimOldToolResults_KeepsClaimedResults(t *testing.T) {
 	}, noStream)
 	a.KeepResults(func(content string) bool { return strings.HasPrefix(content, "<keep>") })
 
-	elided, _ := a.TrimOldToolResults(30000, 26000)
+	elided, _ := a.TrimOldToolResults(30000, 26000, 26000)
 	if elided != 1 {
 		t.Fatalf("want 1 elided result, got %d", elided)
 	}

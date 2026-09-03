@@ -27,6 +27,7 @@
 package observe
 
 import (
+	"strconv"
 	"strings"
 	"time"
 
@@ -164,8 +165,9 @@ const (
 	// SignalRepeat: the repeat detector told the model it was circling.
 	// Reason: the tool name.
 	SignalRepeat = "repeat-notice"
-	// SignalTrim: old tool results were elided to make room. Reason: how
-	// many, as a number.
+	// SignalTrim: old tool results were elided to make room. Reason: what
+	// TrimReason builds — how many, and where the context estimate stood
+	// either side of the elision.
 	SignalTrim = "context-trimmed"
 	// SignalSummary: the summarizer read the session. Reason is the
 	// reading's state, from SummaryCode. Every reading is recorded, not just
@@ -305,6 +307,33 @@ func SummaryCode(s agent.SummaryState) string {
 // surface has a reason to read a result for itself.
 func ToolOutcome(result string) (outcome, class string) {
 	return digest.Outcome(result), ClassFromResult(result)
+}
+
+// TrimReason is the qualifier a context trim reports: how many old tool
+// results were elided, and where the context estimate stood before and after
+// the elision, each as a share of the window.
+//
+// The two estimates are what make a run of trims readable. A count on its
+// own cannot tell a session that trimmed once and bought real headroom from
+// one that shaved itself back to just under its trigger and will do it again
+// next round, which is the shape that costs money: every trim throws away
+// the prompt prefix the provider was caching.
+// See docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once.
+//
+// A share and not a token count, for two reasons, and both of them are about
+// what the record is for. Sessions here run on models whose windows differ
+// by more than an order of magnitude, so 143002 tokens is a full window on
+// one and a seventh of one on the next, and the share is the only figure two
+// of them can be read side by side on. And the dashboard counts events by
+// their qualifier: raw estimates repeat approximately never, so a qualifier
+// built out of them would draw one row per trim that ever happened instead
+// of one row per shape of trim. Grouping the ones that look alike is exactly
+// what is wanted — a session trimming to just under its own trigger reports
+// the same qualifier every round, so the run arrives as one row with a
+// count on it rather than as a hundred rows saying "1 time".
+func TrimReason(elided, beforePct, afterPct int) string {
+	return strconv.Itoa(elided) + " " +
+		strconv.Itoa(beforePct) + "%→" + strconv.Itoa(afterPct) + "%"
 }
 
 // ReasonCode maps a mode-policy reason string (a closed set produced by

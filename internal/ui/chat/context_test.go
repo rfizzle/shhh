@@ -2,10 +2,12 @@ package chat
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/observe"
 	"github.com/rfizzle/shhh/internal/pricing"
 	"github.com/rfizzle/shhh/internal/provider"
 )
@@ -103,6 +105,118 @@ func TestTrimContext_NoopUnderThreshold(t *testing.T) {
 	if m.Messages()[2].Content != "small result" {
 		t.Fatal("tool result should be untouched under the threshold")
 	}
+}
+
+// trimFixture is a conversation four large tool results deep, all of them in
+// closed turns and so all of them eligible. The default window puts the
+// threshold at 26214 and the mark at 19660, which the fixture is comfortably
+// over.
+func trimFixture(t *testing.T) Model {
+	t.Helper()
+	big := strings.Repeat("x", 40000) // ~10k estimated tokens each
+	msgs := []provider.Message{
+		{Role: provider.RoleSystem, Content: "sys"},
+		{Role: provider.RoleUser, Content: "q1"},
+	}
+	for _, id := range []string{"c1", "c2", "c3", "c4"} {
+		msgs = append(msgs,
+			provider.Message{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: id, Name: "read_file"}}},
+			provider.Message{Role: provider.RoleTool, Content: big, ToolCallID: id})
+	}
+	msgs = append(msgs,
+		provider.Message{Role: provider.RoleAssistant, Content: "answer 1"},
+		provider.Message{Role: provider.RoleUser, Content: "q2"})
+	return New(msgs, mockStream)
+}
+
+// TestTrimContext_TrimsOnceAcrossTwoRequests is the behaviour the low-water
+// mark buys. The first trim runs well past the threshold that triggered it,
+// so the next round can add another large result and still be sent without
+// surgery. A trim that stopped on the threshold would clear it by a few
+// hundred tokens and be called again here — and each call costs the whole
+// prompt prefix the provider was caching.
+func TestTrimContext_TrimsOnceAcrossTwoRequests(t *testing.T) {
+	m := trimFixture(t)
+	if before := m.estimatedContextTokens(); before <= m.trimThreshold() {
+		t.Fatalf("the fixture starts at %d, under the threshold %d", before, m.trimThreshold())
+	}
+
+	n := m.trimContext()
+	if n == 0 {
+		t.Fatal("the first request should have trimmed")
+	}
+	if got := m.estimatedContextTokens(); got > m.trimLowWater() {
+		t.Fatalf("the trim stopped at %d, above the mark %d", got, m.trimLowWater())
+	}
+
+	// The next round: another large result and the turn that closes over it.
+	m.agent.SetMessages(append(m.Messages(),
+		provider.Message{Role: provider.RoleAssistant, ToolCalls: []provider.ToolCall{{ID: "c5", Name: "read_file"}}},
+		provider.Message{Role: provider.RoleTool, Content: strings.Repeat("x", 40000), ToolCallID: "c5"},
+		provider.Message{Role: provider.RoleUser, Content: "q3"}))
+
+	if n := m.trimContext(); n != 0 {
+		t.Fatalf("the second request trimmed %d more results; one deep trim should have covered it", n)
+	}
+}
+
+// TestTrimContext_SignalCarriesTheEstimateEitherSide: the count alone cannot
+// tell a deep trim from a shallow one, and telling them apart is the whole
+// question a reader of the record is asking.
+//
+// The estimates go in as shares of the window, which is also what keeps the
+// qualifier countable — a raw token figure repeats approximately never, and
+// the dashboard groups these events by their qualifier. Reading the numbers
+// back as percentages is the guard against a regression to raw estimates.
+func TestTrimContext_SignalCarriesTheEstimateEitherSide(t *testing.T) {
+	m := trimFixture(t)
+	var reasons []string
+	m = m.WithObserver(observe.Observer{Signal: func(_ observe.Pos, code, reason string) {
+		if code == observe.SignalTrim {
+			reasons = append(reasons, reason)
+		}
+	}})
+
+	n := m.trimContext()
+	if len(reasons) != 1 {
+		t.Fatalf("want one trim signal, got %v", reasons)
+	}
+	count, rest, ok := strings.Cut(reasons[0], " ")
+	if !ok {
+		t.Fatalf("the trim signal carries no estimates: %q", reasons[0])
+	}
+	if count != strconv.Itoa(n) {
+		t.Errorf("the signal counts %s results, the trim elided %d", count, n)
+	}
+	from, to, ok := strings.Cut(rest, "→")
+	if !ok {
+		t.Fatalf("the trim signal carries one estimate, not two: %q", reasons[0])
+	}
+	before, after := pct(t, from), pct(t, to)
+	if before < trimThresholdPercent {
+		t.Errorf("the signal reports %d%% before the trim, under the %d%% that triggers one",
+			before, trimThresholdPercent)
+	}
+	if after > trimLowWaterPercent || after >= before {
+		t.Errorf("the signal reports %d%% after the trim, want under both %d%% and the %d%% mark",
+			after, before, trimLowWaterPercent)
+	}
+}
+
+// pct reads one of the shares out of a trim qualifier. A figure that lost
+// its sign, or one over 100, is the record having gone back to raw token
+// counts — which is what makes every trim a row of its own on the dashboard.
+func pct(t *testing.T, s string) int {
+	t.Helper()
+	trimmed, ok := strings.CutSuffix(s, "%")
+	if !ok {
+		t.Fatalf("the trim signal carries %q, which is not a share of the window", s)
+	}
+	n, err := strconv.Atoi(trimmed)
+	if err != nil || n < 0 || n > 100 {
+		t.Fatalf("the trim signal carries %q, which is not a percentage", s)
+	}
+	return n
 }
 
 func TestSendUserMessage_TrimsAndNotes(t *testing.T) {

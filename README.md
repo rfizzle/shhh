@@ -135,6 +135,10 @@ profiles.
   their values to the model.
 - **Sub-agents:** delegate scoped research or isolated implementation work.
 - **Quality gates:** run trusted repository checks and retain their results.
+- **Context window:** `/context` shows where the window went and how much of
+  the last request came back from the provider's cache. Past 80% full a
+  session elides its oldest tool results down to 60%, and `/compact` replaces
+  the conversation with a summary when that is no longer enough.
 - **Sessions and memory:** resume conversations, retain local history, and save
   durable preferences or project conventions.
 

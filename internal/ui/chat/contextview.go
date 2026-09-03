@@ -113,7 +113,7 @@ func (m Model) contextScreenData() components.ContextScreen {
 	if b.Reported {
 		source = "provider-reported"
 	}
-	return components.ContextScreen{
+	screen := components.ContextScreen{
 		Model:      m.modelName,
 		Provider:   m.providerName,
 		Window:     formatWindowSize(window),
@@ -125,6 +125,18 @@ func (m Model) contextScreenData() components.ContextScreen {
 		Categories: m.contextCategories(b, window),
 		Groups:     m.contextGroups(b),
 	}
+	// What the last request read from cache is already in the vitals; this
+	// is where it is worth stating, because it is the price of the window
+	// this screen is otherwise a picture of. A session whose prefix keeps
+	// matching pays a fraction for the same occupancy, and a run of low
+	// figures is what a conversation being rewritten under the provider
+	// looks like from the outside.
+	if in := m.vitals.lastIn; in > 0 {
+		screen.CacheRead = formatTokenCount(m.vitals.lastCached)
+		screen.CacheInput = formatTokenCount(in)
+		screen.CachePct = percentOf(m.vitals.lastCached, in)
+	}
+	return screen
 }
 
 // contextCategories is the legend: the accounting's categories in the

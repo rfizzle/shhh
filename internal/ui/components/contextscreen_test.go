@@ -17,6 +17,11 @@ func goldenContextScreen() ContextScreen {
 		Warn:     60,
 		Alert:    80,
 		Source:   "provider-reported",
+		// A session whose prefix is still matching: nearly all of the last
+		// request came back from the provider's cache.
+		CacheRead:  "298.1k",
+		CacheInput: "312.4k",
+		CachePct:   95,
 		Categories: []ContextCategory{
 			{Label: "system prompt", Tokens: "3.8k", Pct: "0.4%", Share: 0.38, Tone: ContextPrompt},
 			{Label: "project context", Tokens: "61", Pct: "0.0%", Share: 0.006, Tone: ContextProject},
@@ -38,6 +43,31 @@ func goldenContextScreen() ContextScreen {
 			},
 			{Label: "tool results", Summary: "9 tools · 2.9k"},
 		},
+	}
+}
+
+// TestContextStatesWhatTheLastRequestReadFromCache: the window's occupancy
+// and what it cost to send are the same reading from two sides, and a
+// session paying full price for a prefix it thought was cached has nowhere
+// else to find that out.
+func TestContextStatesWhatTheLastRequestReadFromCache(t *testing.T) {
+	screen := goldenContextScreen()
+	out := stripANSI(screen.View(130))
+	for _, want := range []string{"cache reads", "298.1k", "312.4k", "95%"} {
+		if !strings.Contains(out, want) {
+			t.Errorf("the cache reading is missing %q:\n%s", want, out)
+		}
+	}
+}
+
+// TestContextOmitsTheCacheRowBeforeAnyRequest is the other half: a row of
+// zeroes would read as a cache that missed, and a session that has not sent
+// anything yet has not missed anything.
+func TestContextOmitsTheCacheRowBeforeAnyRequest(t *testing.T) {
+	screen := goldenContextScreen()
+	screen.CacheRead, screen.CacheInput, screen.CachePct = "", "", 0
+	if out := stripANSI(screen.View(130)); strings.Contains(out, "cache reads") {
+		t.Errorf("a session with no request drew a cache reading:\n%s", out)
 	}
 }
 

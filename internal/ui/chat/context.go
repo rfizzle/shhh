@@ -8,7 +8,6 @@ package chat
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 
 	tea "charm.land/bubbletea/v2"
@@ -30,6 +29,20 @@ const (
 	trimThresholdPercent = 80
 	// warnThresholdPercent is where the ctx indicator turns warning-colored.
 	warnThresholdPercent = 60
+	// trimLowWaterPercent is where a trim stops. It is the warn line rather
+	// than a figure of its own because that is already the place this
+	// interface calls "filling up but not yet a problem", and a trim has no
+	// reason to invent a second one.
+	//
+	// It is far below the trigger on purpose. A trim that stopped as soon as
+	// it was under the threshold would clear the line by a few hundred
+	// tokens, cross it again a round later, and pay the price of a trim
+	// again — and that price is the whole prompt prefix the provider was
+	// caching, because eliding a message invalidates the cache from that
+	// message on. Stopping here spends one invalidation on a fifth of the
+	// window of headroom.
+	// See docs/capabilities/providers.md#the-prompt-prefix-is-paid-for-once.
+	trimLowWaterPercent = warnThresholdPercent
 )
 
 // elidedResult replaces trimmed tool results in the conversation.
@@ -100,6 +113,12 @@ func (m Model) warnThreshold() int64 {
 	return m.contextWindow() * warnThresholdPercent / 100
 }
 
+// trimLowWater is the estimate a trim runs down to once the threshold has
+// been crossed.
+func (m Model) trimLowWater() int64 {
+	return m.contextWindow() * trimLowWaterPercent / 100
+}
+
 // contextSeverity classifies how close the context estimate is to the trim
 // threshold: 0 normal, 1 approaching (warn), 2 at or over the threshold.
 func (m Model) contextSeverity() int {
@@ -121,13 +140,17 @@ func (m Model) estimatedContextTokens() int64 {
 	return m.contextAccounting().total()
 }
 
-// trimContext elides the oldest tool results until the context estimate is
-// back under the trim threshold, returning how many were elided. The message
-// surgery itself lives with the agent's message list.
+// trimContext elides the oldest tool results, once the estimate has crossed
+// the trim threshold, until it is back down to the low-water mark; it
+// returns how many were elided. The message surgery itself lives with the
+// agent's message list.
 func (m *Model) trimContext() int {
-	elided, _ := m.agent.TrimOldToolResults(m.estimatedContextTokens(), m.trimThreshold())
+	before := m.estimatedContextTokens()
+	elided, after := m.agent.TrimOldToolResults(before, m.trimThreshold(), m.trimLowWater())
 	if elided > 0 {
-		m.signal(observe.SignalTrim, strconv.Itoa(elided))
+		window := m.contextWindow()
+		m.signal(observe.SignalTrim, observe.TrimReason(elided,
+			percentOf(before, window), percentOf(after, window)))
 		// What the provider reported described the untrimmed conversation, so
 		// it no longer describes anything: the accounting re-derives the size
 		// from the messages that remain, and says it is estimating.

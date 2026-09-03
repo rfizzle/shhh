@@ -59,6 +59,31 @@ func TestContext_QuotesTheSameTotalAsTheRails(t *testing.T) {
 	}
 }
 
+// TestContext_ReportsTheLastRequestsCacheReads: the same occupancy costs
+// wildly different money depending on whether the provider's prefix still
+// matched, and this is the surface a reader comes to with the window on
+// their mind.
+func TestContext_ReportsTheLastRequestsCacheReads(t *testing.T) {
+	m := contextModel(t, 110)
+	if screen := m.contextScreenData(); screen.CacheRead != "" {
+		t.Errorf("a session with no request reported a cache reading of %q", screen.CacheRead)
+	}
+
+	m.vitals.record("claude", provider.Usage{PromptTokens: 1000, CompletionTokens: 10}, 0, false)
+	m.vitals.record("claude", provider.Usage{PromptTokens: 2000, CompletionTokens: 20, CachedTokens: 1500}, 0, false)
+
+	// The latest request, not the turn: summing a hit and a miss reports an
+	// average that describes neither request.
+	screen := m.contextScreenData()
+	if screen.CacheRead != formatTokenCount(1500) || screen.CacheInput != formatTokenCount(2000) {
+		t.Errorf("the surface reports %q of %q, want the last request's 1500 of 2000",
+			screen.CacheRead, screen.CacheInput)
+	}
+	if screen.CachePct != 75 {
+		t.Errorf("the surface draws %d%%, want 75%%", screen.CachePct)
+	}
+}
+
 // TestContext_ItemisesTheToolDefinitions is the thing the category total alone
 // cannot answer: which tool is costing the window what.
 func TestContext_ItemisesTheToolDefinitions(t *testing.T) {

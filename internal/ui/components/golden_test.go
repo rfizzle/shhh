@@ -1336,8 +1336,9 @@ func TestGolden_ContextScreen(t *testing.T) {
 			{Label: "the tool definitions opened", View: screen(func(c *ContextScreen) {
 				c.Groups[0].Open = true
 			})},
-			{Label: "94% · an estimated total, nothing itemised yet", View: screen(func(c *ContextScreen) {
+			{Label: "94% · an estimated total, nothing sent yet", View: screen(func(c *ContextScreen) {
 				c.Pct, c.Tokens, c.Source = 94, "~940.0k", "estimated"
+				c.CacheRead, c.CacheInput, c.CachePct = "", "", 0
 				c.Categories = []ContextCategory{
 					{Label: "system prompt", Tokens: "3.8k", Pct: "0.4%", Share: 0.38, Tone: ContextPrompt},
 					{Label: "tool definitions", Tokens: "22.3k", Pct: "2.2%", Share: 2.23, Tone: ContextTools},
