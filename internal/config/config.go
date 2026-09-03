@@ -597,13 +597,21 @@ func Load() (Config, error) {
 	return LoadFrom(Paths()...)
 }
 
+// LoadFrom reads the first of paths that exists. A file naming a key no
+// setting reads is refused as an UnknownKeyError rather than loaded past:
+// the agent profiles and the quality suite a clone brings already refuse one,
+// and the loosest file must not be the one the user wrote by hand.
 func LoadFrom(paths ...string) (Config, error) {
 	var cfg Config
 	for _, p := range paths {
-		if _, err := toml.DecodeFile(p, &cfg); err != nil {
+		meta, err := toml.DecodeFile(p, &cfg)
+		if err != nil {
 			if os.IsNotExist(err) {
 				continue
 			}
+			return Config{}, err
+		}
+		if err := unknownKeys(p, meta.Undecoded()); err != nil {
 			return Config{}, err
 		}
 		return cfg, nil

@@ -72,8 +72,13 @@ func NewRootCmd() *cobra.Command {
 			// logs nothing leaves no file behind.
 			openLog()
 
+			// A file that will not load stops every command here, the way
+			// an unreadable prompt file stops a session: a setting the
+			// person wrote and believes is in force is not something the
+			// record can recover afterwards. The doctor is the one exception,
+			// because it is where the refusal is read.
 			cfg, err := config.Load()
-			if err != nil {
+			if err != nil && cmd.Annotations[ownsConfigError] == "" {
 				return err
 			}
 

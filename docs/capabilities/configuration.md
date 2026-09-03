@@ -6,10 +6,24 @@ Settings live in a TOML file in the platform's conventional configuration
 directory. Every value resolves most-specific-first: an explicit flag, then
 the environment, then the file, then a default.
 
-No setting reverses this order and none can be set in only one place. That
-uniformity is worth more than the flexibility of special-casing, because it is
-what makes a wrong value *findable*: a user who can predict where a value came
-from can fix it.
+Four keys have all four ranks, and they are the ones a single run is most
+often started with a different answer to: which provider, which model, its
+key and its reasoning level, all under `[provider]`. The provider's base URL
+has the environment rank and no flag. Every other key is the file or the
+default — there is no flag and no environment variable for it.
+
+No setting reverses this order. That uniformity is worth more than the
+flexibility of special-casing, because it is what makes a wrong value
+*findable*: a user who can predict where a value came from can fix it.
+
+The same reason decides what happens to a key the file names that no setting
+reads. It is refused, with the file, the key and the nearest key it might have
+been, and nothing starts until it is fixed. A file that loaded past it would
+leave the default in force while the person reads their own file and cannot
+see why — the one failure this arrangement exists to prevent — and a warning
+is not enough, because a warning on the alternate screen is painted over and
+one on stderr before a headless run lands in a log nobody tails. The doctor's
+config row carries the same refusal, so that is where to read it.
 
 ## One layout everywhere
 
@@ -91,9 +105,14 @@ session, and that is stated instead.
 A project can carry its own context file, created deliberately — by the
 command that scaffolds one, or by accepting the offer a session makes on
 first contact in a checkout that has none. Neither writes it on the way past.
-Repository settings layer over user settings, and where a value is overridden
-the surface says so rather than showing the winner alone — otherwise a user
-reads their own configuration and cannot see why it is not what they set.
+
+What a checkout carries layers over what the user has: its agent profiles, its
+MCP servers and its skills, each shadowing the user's by name, and that
+context file. Settings are not yet among them — the settings file is the
+user's alone, and a checkout's copy is not read. When they are, a value the
+checkout overrides will be said so by the surface rather than shown as the
+winner alone — otherwise a user reads their own configuration and cannot see
+why it is not what they set.
 
 ## The mechanism is code, its wording is configuration
 

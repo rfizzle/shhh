@@ -28,6 +28,7 @@ package cli
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -66,6 +67,12 @@ const defaultDoctorWidth = 110
 // waiting longer would not have helped either.
 const doctorGitTimeout = 3 * time.Second
 
+// ownsConfigError marks the one command that runs when the config file will
+// not load. Every other command is refused at startup with the reason; this
+// one reports the same reason as its config row, which is where the person
+// who was just refused comes to read why.
+const ownsConfigError = "owns-config-error"
+
 func newDoctorCmd() *cobra.Command {
 	cmd := doctorCommand("doctor", "Check this machine's shhh setup",
 		"Run every setup check — the binary, the config file, any migration this machine still owes, the "+
@@ -73,6 +80,7 @@ func newDoctorCmd() *cobra.Command {
 			"the tools on PATH, durable memory, and whether a newer shhh exists — and report each as a "+
 			"pass/fail row with the fix on the row that failed.",
 		doctorProbes())
+	cmd.Annotations = map[string]string{ownsConfigError: "yes"}
 	// `--migrate` is the same offer the surface makes with `[a]`, for a
 	// terminal that is not one: a script, a pipe, a machine being set up by
 	// something other than a person. It is a flag rather than a `shhh
@@ -301,23 +309,64 @@ func doctorBinary(version, goos, goarch, path string) doctorFinding {
 	return f
 }
 
-func probeConfig(_ context.Context, cfg config.Config) doctorFinding {
+// probeConfig reads the file again rather than taking the config it was
+// handed: this is the one command that runs when the load failed (root.go
+// lets it through on ownsConfigError), and the config in hand is then the
+// zero value with the reason left behind in the startup path.
+func probeConfig(_ context.Context, _ config.Config) doctorFinding {
 	paths := config.Paths()
 	read := ""
 	for _, p := range paths {
-		if _, err := os.Stat(p); err == nil {
+		// The same test the load makes: a file that is there but cannot be
+		// read is the file the row is about, not a missing one.
+		if _, err := os.Stat(p); !os.IsNotExist(err) {
 			read = p
 			break
 		}
 	}
-	return doctorConfig(read, paths, cfg)
+	cfg, err := config.LoadFrom(paths...)
+	return doctorConfig(read, paths, cfg, err)
 }
 
 // doctorConfig says which file was read and what it set. No file at all is
 // not a failure — shhh runs on its defaults — but the row says so plainly
 // rather than being left out, because "why is this on" is the question a
-// setup check gets asked.
-func doctorConfig(read string, paths []string, cfg config.Config) doctorFinding {
+// setup check gets asked. A file that would not load is the row's failure,
+// worded as the refusal every other command gave, so the doctor is where the
+// person who was just refused reads why.
+func doctorConfig(read string, paths []string, cfg config.Config, err error) doctorFinding {
+	if err != nil {
+		f := doctorFinding{
+			Subject: shortPath(read), Detail: err.Error(),
+			Outcome: "refused", State: components.DoctorFailed,
+			Consequence: "no command starts until the file loads",
+			FixLabel:    "fix the file",
+			Fix:         []string{"edit " + shortPath(read)},
+		}
+		// The offer goes on a fix line of its own rather than in the
+		// detail, which clips at the column's width: a row that reads
+		// `unknown key "behaviour" (did you …` has cut off the one word
+		// the reader came for.
+		var unknown *config.UnknownKeyError
+		if errors.As(err, &unknown) {
+			names := make([]string, len(unknown.Keys))
+			f.Fix = f.Fix[:0]
+			for i, k := range unknown.Keys {
+				names[i] = fmt.Sprintf("%q", k.Key)
+				if k.Nearest != "" {
+					f.Fix = append(f.Fix, "rename "+k.Key+" to "+k.Nearest)
+				} else {
+					f.Fix = append(f.Fix, "remove "+k.Key+": no setting reads it")
+				}
+			}
+			noun := "unknown key "
+			if len(names) > 1 {
+				noun = "unknown keys "
+			}
+			f.Detail = noun + strings.Join(names, ", ")
+		}
+		return f
+	}
 	if read == "" {
 		f := doctorFinding{
 			Subject: "no config file", Detail: "every setting is on its default",

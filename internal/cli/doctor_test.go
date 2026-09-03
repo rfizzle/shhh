@@ -7,7 +7,10 @@ package cli
 // without needing any of them.
 
 import (
+	"bytes"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -74,17 +77,89 @@ func TestDoctorBinary(t *testing.T) {
 func TestDoctorConfig(t *testing.T) {
 	read := doctorConfig("/home/u/.config/shhh/config.toml", nil, config.Config{
 		Provider: config.ProviderConfig{Default: "anthropic", Model: "claude-opus-5"},
-	})
+	}, nil)
 	if read.State != components.DoctorPassed || !strings.Contains(read.Detail, "2 settings set") {
 		t.Fatalf("a config file that was read does not say what it set: %+v", read)
 	}
 
-	none := doctorConfig("", []string{"/home/u/.config/shhh/config.toml"}, config.Config{})
+	none := doctorConfig("", []string{"/home/u/.config/shhh/config.toml"}, config.Config{}, nil)
 	if none.State != components.DoctorSkipped {
 		t.Fatalf("no config file was reported as a fault: %+v", none)
 	}
 	if len(none.Fix) == 0 || !strings.Contains(strings.Join(none.Fix, "\n"), "config.toml") {
 		t.Fatalf("no config file does not say where one would go: %+v", none)
+	}
+}
+
+// A file that would not load is the row's failure, in the words every other
+// command refused with, and the fix names the file.
+func TestDoctorConfig_RefusedFile(t *testing.T) {
+	err := &config.UnknownKeyError{
+		Path: "/home/u/.config/shhh/config.toml",
+		Keys: []config.UnknownKey{{Key: "behaviour", Nearest: "behavior"}},
+	}
+	f := doctorConfig("/home/u/.config/shhh/config.toml", nil, config.Config{}, err)
+	if f.State != components.DoctorFailed || f.Outcome != "refused" {
+		t.Fatalf("a file that would not load passed: %+v", f)
+	}
+	if f.Detail != `unknown key "behaviour"` {
+		t.Fatalf("the detail is not the key alone, short enough to survive the column: %+v", f)
+	}
+	if len(f.Fix) != 1 || f.Fix[0] != "rename behaviour to behavior" {
+		t.Fatalf("the fix does not offer the nearest key: %+v", f)
+	}
+
+	two := doctorConfig("/home/u/.config/shhh/config.toml", nil, config.Config{}, &config.UnknownKeyError{
+		Path: "/home/u/.config/shhh/config.toml",
+		Keys: []config.UnknownKey{{Key: "behaviour", Nearest: "behavior"}, {Key: "top"}},
+	})
+	if two.Detail != `unknown keys "behaviour", "top"` || len(two.Fix) != 2 || !strings.HasPrefix(two.Fix[1], "remove top") {
+		t.Fatalf("two keys are not two fix lines under one detail: %+v", two)
+	}
+
+	parse := doctorConfig("/home/u/.config/shhh/config.toml", nil, config.Config{},
+		errors.New("toml: line 1: expected '.' or ']'"))
+	if parse.State != components.DoctorFailed || !strings.Contains(parse.Detail, "line 1") {
+		t.Fatalf("a parse failure is not carried on the row: %+v", parse)
+	}
+	if len(parse.Fix) == 0 || !strings.Contains(parse.Fix[0], "config.toml") {
+		t.Fatalf("the fix does not name the file: %+v", parse)
+	}
+}
+
+// The refusal every other command gives at startup is the doctor's config
+// row: `shhh doctor` runs on a file that would not load and says why, while
+// any other command stops with the same sentence.
+func TestDoctor_RunsOnRefusedConfig(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", dir)
+	t.Setenv("HOME", dir)
+	t.Setenv("XDG_DATA_HOME", t.TempDir())
+	must(t, os.MkdirAll(filepath.Join(dir, "shhh"), 0o755))
+	must(t, os.WriteFile(filepath.Join(dir, "shhh", "config.toml"),
+		[]byte("[behaviour]\nsilent_mode = true\n"), 0o644))
+
+	var out bytes.Buffer
+	cmd := NewRootCmd()
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"doctor", "--table"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("shhh doctor on a refused config: %v", err)
+	}
+	if !strings.Contains(out.String(), `"behaviour"`) || !strings.Contains(out.String(), "rename behaviour to behavior") {
+		t.Fatalf("the config row does not carry the refusal:\n%s", out.String())
+	}
+
+	var quiet bytes.Buffer
+	other := NewRootCmd()
+	other.SetOut(&quiet)
+	other.SetErr(&quiet)
+	other.SetArgs([]string{"memory", "list"})
+	err := other.Execute()
+	var unknown *config.UnknownKeyError
+	if !errors.As(err, &unknown) {
+		t.Fatalf("another command ran on a config that would not load: %v", err)
 	}
 }
 
