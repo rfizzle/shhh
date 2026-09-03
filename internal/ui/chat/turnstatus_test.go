@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 
 	"github.com/rfizzle/shhh/internal/provider"
@@ -21,6 +22,19 @@ func statusModel(t *testing.T) Model {
 	m.turnStarted = time.Now()
 	m.state = stateStreaming
 	return m
+}
+
+// settleCounts runs the counters to their targets, so a test can assert the
+// figures the session measured rather than whichever frame of the climb it
+// happened to stop on.
+func settleCounts(m *Model) {
+	for range 20 {
+		m.easeCounts()
+		if !m.countsEasing() {
+			return
+		}
+		m.spinFrame++
+	}
 }
 
 func TestTurnStatus_PhaseFollowsWhatTheTurnIsDoing(t *testing.T) {
@@ -141,7 +155,7 @@ func TestTurnStatus_PromptEstimatedUntilTheFirstUsageLands(t *testing.T) {
 	}
 
 	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 100})
-	if got, _ := m.turnStatus(); got.Up != formatTokenCount(41200) {
+	if got, _ := m.turnStatus(); got.Up != components.FormatLiveCount(41200) {
 		t.Fatalf("a reported prompt replaces the estimate, got %q", got.Up)
 	}
 }
@@ -275,5 +289,63 @@ func TestTurnStatus_ARealTurnResolvesOnTheRail(t *testing.T) {
 	}
 	if view := stripANSI(m.View().Content); !strings.Contains(view, "✓ done") {
 		t.Fatalf("the top rail should carry the resolved summary:\n%s", view)
+	}
+}
+
+// The rule the counters are held to while a round works: nothing on screen
+// moves that the session has not measured. A tool round bills nothing and
+// streams nothing, so the account it is spending stands still for it.
+func TestTurnStatus_CountsHoldThroughAToolRound(t *testing.T) {
+	m := statusModel(t)
+	m.vitals.startTurn()
+	m.accumulateUsage(&provider.Usage{PromptTokens: 2000, CompletionTokens: 700})
+	settleCounts(&m)
+	before, _ := m.turnStatus()
+
+	for range 10 {
+		m.spinFrame++
+		m.easeCounts()
+	}
+	after, _ := m.turnStatus()
+	if after.Up != before.Up || after.Down != before.Down {
+		t.Fatalf("a round that billed nothing moved the counts: ↑%s ↓%s -> ↑%s ↓%s",
+			before.Up, before.Down, after.Up, after.Down)
+	}
+}
+
+// The wiring rather than the arithmetic: the update's tail is what aims the
+// counters, so a count climbs without any of the handlers that move it having
+// to remember to.
+func TestTurnStatus_TheUpdateTailAimsTheCounters(t *testing.T) {
+	m := spinModel(t)
+	m.input.SetValue("do the thing")
+	next, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = next.(Model)
+	if m.turnState() != stateStreaming {
+		t.Fatalf("expected a turn in flight, got state %d", m.turnState())
+	}
+
+	// Prose arriving is the output growing, and the account has to follow it
+	// without any of the stream's own handlers saying so.
+	m.streaming = strings.Repeat("token ", 400)
+	_, want := m.liveTurnTokens()
+	if want == 0 {
+		t.Fatal("prose arriving should give the output something to climb to")
+	}
+	m, _ = tick(t, m)
+	if !m.countsEasing() {
+		t.Fatal("the tail should have set the output counter climbing")
+	}
+	if _, got := m.easedTurnTokens(); got >= want {
+		t.Fatalf("the first frame should be short of %d, got %d", want, got)
+	}
+	for range 20 {
+		if !m.countsEasing() {
+			break
+		}
+		m, _ = tick(t, m)
+	}
+	if _, got := m.easedTurnTokens(); got != want {
+		t.Fatalf("the climb should land on the measured figure %d, got %d", want, got)
 	}
 }

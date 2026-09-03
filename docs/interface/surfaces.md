@@ -188,6 +188,21 @@ which session the keyboard is in. A rail with room for only one of the two
 keeps the account, because the breadcrumb answers a question a key can ask
 again and the numbers are why the rail carries labels at all.
 
+A figure that changes climbs to its new value over about half a second rather
+than cutting to it, on the same tick that draws everything else moving on the
+frame. A cut says that a number changed and never by how much, and by how much
+is the whole question at the token scale. Nothing climbs that the session has
+not measured: through a tool round with nothing streaming, the counts hold.
+While a turn is spending them they print every digit, because a hundred tokens
+of movement vanish inside the rounding that makes `41.2k` the right shape to
+carry a finished session in; once nothing is moving them they go back to it.
+
+The session's counters on the vitals rail carry the running turn's estimate
+the same way, so the two rails are one account rather than two: what the
+session has spent is what the earlier turns cost plus what this one is costing,
+and a request's report replaces that turn's estimate instead of being added to
+it.
+
 Above it, a notice rail exists only while there is something to say and
 disappears when there is not. Under that, on the terminals too narrow for the
 [inspector rail](#the-inspector-rail), the status row that stands in for it.

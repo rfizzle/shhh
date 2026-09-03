@@ -24,6 +24,9 @@
 · unpriced · tokens, never a made-up zero
 ⠋ running 12.4s · ↑41.2k ↓2.1k · ~43.3k tok
 
+· counts · mid-climb
+⠋ running 12.4s · ↑6,514 ↓1,198 · $0.06
+
 · resolved · done
 ✓ done · 1m 04s · 18 tools · $0.14
 
@@ -48,6 +51,9 @@
 
 · unpriced · tokens, never a made-up zero
 ␛[38;5;205m⠋ running␛[m␛[38;5;241m 12.4s␛[m␛[38;5;241m · ↑41.2k ↓2.1k␛[m␛[38;5;252m · ~43.3k tok␛[m
+
+· counts · mid-climb
+␛[38;5;205m⠋ running␛[m␛[38;5;241m 12.4s␛[m␛[38;5;241m · ↑6,514 ↓1,198␛[m␛[38;5;252m · $0.06␛[m
 
 · resolved · done
 ␛[92m✓ done␛[m␛[38;5;241m · 1m 04s␛[m␛[38;5;241m · 18 tools␛[m␛[38;5;252m · $0.14␛[m

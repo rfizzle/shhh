@@ -393,7 +393,8 @@ func TestStatusBar_CockpitSegments(t *testing.T) {
 
 	bar := stripANSI(m.renderStatusBar(160))
 	round := fmt.Sprintf("round 1/%d", DefaultMaxToolRounds)
-	for _, want := range []string{"⏸ manual", round, "ctx ", "%", "↑41.2k ↓9.8k", "$0.51", "queued 1", "gpt-4o"} {
+	// The counts are the turn's own while it runs, so they print every digit.
+	for _, want := range []string{"⏸ manual", round, "ctx ", "%", "↑41,200 ↓9,800", "$0.51", "queued 1", "gpt-4o"} {
 		if !strings.Contains(bar, want) {
 			t.Fatalf("cockpit rail should contain %q, got %q", want, bar)
 		}

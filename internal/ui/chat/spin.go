@@ -61,7 +61,16 @@ func (m Model) spinnerWanted() bool {
 	}
 	// A child still working keeps the lanes and the rail's agent block moving
 	// even while the parent waits on an approval.
-	return m.childrenRunning()
+	if m.childrenRunning() {
+		return true
+	}
+	// A counter still climbing to the figure a round reported. It is the one
+	// entry here that outlives the turn it belongs to: the last usage of a
+	// round can land as the turn stops for an approval, and the chain has to
+	// stay up for the few frames the climb takes. It stops keeping it up on
+	// the frame the climb lands (turnstatus.go), which is what keeps an ease
+	// from animating an idle session.
+	return m.countsEasing()
 }
 
 // childrenRunning reports whether any sub-agent is still working. A queued or
@@ -110,6 +119,10 @@ func (m Model) spinTick(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	m.spinFrame++
+	// The counters climb on this frame too — here rather than only in the
+	// update's tail so that the frame a climb lands on is the frame the check
+	// below can end the chain on (turnstatus.go).
+	m.easeCounts()
 	// The tick is also what the streaming transcript is repainted on (
 	// the streaming render) — the one clock, spent on the one other thing that
 	// wants one.

@@ -43,9 +43,14 @@ func (m Model) turnStatus() (components.TurnStatus, bool) {
 		// the one tick source's.
 		s.Arriving = components.AnimArriving(age)
 	}
-	in, out := m.liveTurnTokens()
+	// The eased figures rather than the raw ones: what the counts are is
+	// liveTurnTokens' answer, and how they get there is the odometer's. Full
+	// resolution while the turn works, because the rounding that makes
+	// `41.2k` the right shape for a finished session is exactly what hides a
+	// round of movement.
+	in, out := m.easedTurnTokens()
 	if in > 0 || out > 0 {
-		s.Up, s.Down = formatTokenCount(in), formatTokenCount(out)
+		s.Up, s.Down = components.FormatLiveCount(in), components.FormatLiveCount(out)
 	}
 	// Derived from the live counts, not from the last thing a response
 	// reported — which is also why an unpriced model states tokens here
@@ -130,6 +135,75 @@ func (m Model) liveTurnTokens() (in, out int64) {
 		out += agent.EstimateTokens(m.transcript[m.thinkIdx-1].text)
 	}
 	return in, out
+}
+
+// easeCounts re-aims the counters — the turn's and the session's — at what
+// has actually been spent, and advances them one step per frame of the one
+// tick source. It is called
+// from the tail of every update rather than from the paths that change a
+// count, for the reason the spinner's own rule is applied there: a usage
+// report, a chunk of prose, the turn opening and the turn closing all move
+// these numbers, and a rule fifteen handlers have to remember is a rule three
+// of them will not.
+//
+// Calling it twice on one frame — once as the tick lands, once as the update
+// carrying the tick finishes — is deliberate and free: the odometer steps on
+// a frame it has not seen and re-aims on every call, so the tick's own call
+// is what lets the chain end on the frame a climb arrives rather than one
+// frame later.
+func (m *Model) easeCounts() {
+	in, out := m.liveTurnTokens()
+	// The turn's counters are aimed only while a turn is in a phase, and
+	// settled where they stand the rest of the time. Nothing reads them
+	// between turns — the slot has resolved into the summary — and re-aiming
+	// them at the closed turn's nothing is what would make a turn later put
+	// back on the books climb from zero to a figure the rail had already
+	// shown and the session never re-measured. That happens: a turn stopped
+	// at its round ceiling is closed, and granting it more rounds reopens it
+	// with everything it spent still on it (rounds.go).
+	if _, _, running := m.turnPhase(); running {
+		m.turnUp.Toward(in, m.spinFrame)
+		m.turnDown.Toward(out, m.spinFrame)
+	} else {
+		m.turnUp.Settle()
+		m.turnDown.Settle()
+	}
+	// The session's are aimed always, because the rail states them at rest
+	// too. Their own target already survives that reopening: what the turn
+	// spent moves between the two halves of the sum and never leaves it
+	// (vitals.go).
+	sin, sout := m.sessionTokensFrom(in, out)
+	m.sessionUp.Toward(sin, m.spinFrame)
+	m.sessionDown.Toward(sout, m.spinFrame)
+}
+
+// easedTurnTokens is the turn's account as the rails print it: the odometers'
+// intermediate figures while a count is still climbing, and the measured
+// count itself once it has arrived. The measured figures are read again here
+// rather than trusted to the odometers, so a figure the update tail has not
+// aimed them at is stated rather than withheld — the ease may lag the truth
+// and may not contradict it.
+func (m Model) easedTurnTokens() (in, out int64) {
+	tin, tout := m.liveTurnTokens()
+	return m.turnUp.Reading(tin), m.turnDown.Reading(tout)
+}
+
+// countsEasing reports whether any of the counters is still climbing. The spinner
+// asks it, because a climb is something moving on screen and the one tick
+// source is what moves it (spin.go) — and because it goes false on the frame
+// the last count lands, the chain it keeps alive ends there rather than
+// running on over an idle session.
+func (m Model) countsEasing() bool {
+	return m.turnUp.Easing() || m.turnDown.Easing() ||
+		m.sessionUp.Easing() || m.sessionDown.Easing()
+}
+
+// countsLive reports whether the counters are a turn's live account rather
+// than the session's settled totals, which is what decides the resolution
+// they print at.
+func (m Model) countsLive() bool {
+	_, _, running := m.turnPhase()
+	return running || m.countsEasing()
 }
 
 // resolvedTurnStatus is the summary the live line becomes when the turn ends

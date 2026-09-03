@@ -210,3 +210,112 @@ func TestVitals_TurnLifecycleThroughTheModel(t *testing.T) {
 		t.Fatalf("the closed turn should carry its usage and wall time, got %+v", turn)
 	}
 }
+
+// The two rails are one account: what the session has spent is what the
+// earlier turns cost plus what the running one is costing, composed rather
+// than counted twice.
+func TestVitals_SessionTotalIsTheTurnsAccountPlusTheEarlierTurns(t *testing.T) {
+	m := statusModel(t)
+	m.vitals.startTurn()
+	m.accumulateUsage(&provider.Usage{PromptTokens: 1000, CompletionTokens: 400})
+	m.vitals.endTurn(time.Second)
+	earlierIn, earlierOut := m.TotalTokensIn, m.TotalTokensOut
+
+	m.vitals.startTurn()
+	m.accumulateUsage(&provider.Usage{PromptTokens: 2000, CompletionTokens: 700})
+	m.streaming = strings.Repeat("token ", 400)
+	settleCounts(&m)
+
+	turnIn, turnOut := m.easedTurnTokens()
+	sessionIn, sessionOut := m.liveSessionTokens()
+	if sessionIn != earlierIn+turnIn || sessionOut != earlierOut+turnOut {
+		t.Fatalf("the rail's total ↑%d ↓%d is not the turn's ↑%d ↓%d plus the earlier ↑%d ↓%d",
+			sessionIn, sessionOut, turnIn, turnOut, earlierIn, earlierOut)
+	}
+	// The round's own report is in the turn's figure already: adding the
+	// estimate on top of it would count this round's prompt twice.
+	if sessionIn != earlierIn+2000 {
+		t.Fatalf("the reported prompt should replace the estimate, got ↑%d", sessionIn)
+	}
+}
+
+// Closing a turn moves what it spent out of the estimate and into the totals
+// in the same update, so the session figure does not jump at the boundary.
+func TestVitals_SessionTotalHoldsAcrossTheTurnBoundary(t *testing.T) {
+	m := statusModel(t)
+	m.vitals.startTurn()
+	m.accumulateUsage(&provider.Usage{PromptTokens: 2000, CompletionTokens: 700})
+	settleCounts(&m)
+	beforeIn, beforeOut := m.liveSessionTokens()
+
+	m.state = stateInput
+	m.vitals.endTurn(time.Second)
+	settleCounts(&m)
+	afterIn, afterOut := m.liveSessionTokens()
+	if afterIn != beforeIn || afterOut != beforeOut {
+		t.Fatalf("the session figure moved at the boundary: ↑%d ↓%d -> ↑%d ↓%d",
+			beforeIn, beforeOut, afterIn, afterOut)
+	}
+	if m.countsEasing() {
+		t.Fatal("a turn closing is a reset, not a climb, and must not keep the tick alive")
+	}
+}
+
+// The resolution follows the moment: every digit while a turn is spending
+// them, and the shape a finished total is read in once nothing is moving.
+func TestVitals_RailCountsChangeResolutionWithTheTurn(t *testing.T) {
+	m := statusModel(t)
+	// A session whose only spend is this turn's, so the rail's figure is one
+	// the assertion can name.
+	m.vitals.reset()
+	m.vitals.startTurn()
+	m.accumulateUsage(&provider.Usage{PromptTokens: 41200, CompletionTokens: 9800})
+	settleCounts(&m)
+	if bar := stripANSI(m.renderStatusBar(160)); !strings.Contains(bar, "↑41,200 ↓9,800") {
+		t.Fatalf("a working turn should print every digit, got %q", bar)
+	}
+
+	m.state = stateInput
+	m.vitals.endTurn(time.Second)
+	settleCounts(&m)
+	if bar := stripANSI(m.renderStatusBar(160)); !strings.Contains(bar, "↑41.2k ↓9.8k") {
+		t.Fatalf("a rested total keeps its own shape, got %q", bar)
+	}
+}
+
+// A turn granted more rounds after a round-limit pause is put back on the
+// books with nothing spent: what it cost moves out of the closed totals and
+// into the open turn again. Neither rail has anything to move — a session
+// total that falls would be a lie about what has been spent, and a turn's
+// account that climbs back to a figure it was already showing is movement
+// nothing measured.
+func TestVitals_NeitherRailMovesWhenATurnGoesBackOnTheBooks(t *testing.T) {
+	m := statusModel(t)
+	m.vitals.startTurn()
+	m.accumulateUsage(&provider.Usage{PromptTokens: 2000, CompletionTokens: 700})
+	settleCounts(&m)
+	turnIn, turnOut := m.easedTurnTokens()
+
+	// The ceiling: the turn is closed with everything it spent.
+	m.state = stateInput
+	m.vitals.endTurn(time.Second)
+	settleCounts(&m)
+	sessionIn, sessionOut := m.liveSessionTokens()
+
+	// The grant: the closed turn becomes the open one again.
+	m.vitals.reopenTurn()
+	m.state = stateStreaming
+	m.spinFrame++
+	m.easeCounts()
+	if in, out := m.liveSessionTokens(); in != sessionIn || out != sessionOut {
+		t.Fatalf("the session's total moved on a turn that spent nothing: ↑%d ↓%d -> ↑%d ↓%d",
+			sessionIn, sessionOut, in, out)
+	}
+	if in, out := m.easedTurnTokens(); in != turnIn || out != turnOut {
+		t.Fatalf("the turn's account climbed again on a grant that spent nothing: ↑%d ↓%d -> ↑%d ↓%d",
+			turnIn, turnOut, in, out)
+	}
+	if m.countsEasing() {
+		t.Fatal("a grant that spent nothing has nothing to animate")
+	}
+}

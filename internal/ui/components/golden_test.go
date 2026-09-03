@@ -285,6 +285,18 @@ func TestGolden_TurnStatus(t *testing.T) {
 			{Label: "unpriced · tokens, never a made-up zero", View: live(func(s *TurnStatus) {
 				s.Cost = "~43.3k tok"
 			})},
+			// One frame of a count on its way to the figure a round reported,
+			// at the resolution a working turn prints: the shape the rail
+			// wears between the number it was showing and the number it is
+			// about to show (odometer.go).
+			{Label: "counts · mid-climb", View: live(func(s *TurnStatus) {
+				var up, down Odometer
+				up.Toward(4096, 0)
+				down.Toward(512, 0)
+				up.Toward(9834, 1)
+				down.Toward(2140, 1)
+				s.Up, s.Down = FormatLiveCount(up.Value()), FormatLiveCount(down.Value())
+			})},
 			{Label: "resolved · done", View: done(func(s *TurnStatus) {})},
 			{Label: "resolved · cancelled", View: done(func(s *TurnStatus) {
 				s.Outcome, s.Tools, s.Duration = TurnCancelled, 5, "8.1s"

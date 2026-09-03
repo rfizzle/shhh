@@ -399,6 +399,13 @@ type Model struct {
 	// "one tick source, never three" a property rather than a habit:
 	// spinCmd starts a chain only when this is false (spin.go).
 	spinning bool
+	// turnUp and turnDown carry the turn's token counts, and sessionUp and
+	// sessionDown the session's, from the figure on screen to the figure the
+	// session has measured — a step per frame of the counter above. The
+	// session's are separate counters rather than the turn's plus what came
+	// before, for the reason the rail's own accounting gives (vitals.go).
+	turnUp, turnDown       components.Odometer
+	sessionUp, sessionDown components.Odometer
 	// streamDirty reports whether a chunk has landed that the transcript has
 	// not been repainted for. It rides the tick above rather than adding a
 	// clock of its own — the session is allowed one, and the streaming render
@@ -1407,6 +1414,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if tick := mm.graceTickCmd(m); tick != nil {
 		cmd = tea.Batch(cmd, tick)
 	}
+	// The counters are eased here for the spinner's reason as well: a usage
+	// report, a chunk of prose and a turn opening or closing all move them,
+	// and every one of those is a transition rather than a message one
+	// handler could be trusted to own (turnstatus.go). It runs before the
+	// spinner's rule because a climb still running is one of the things that
+	// keeps the chain alive.
+	mm.easeCounts()
 	if tick := mm.spinCmd(); tick != nil {
 		cmd = tea.Batch(cmd, tick)
 	}
@@ -3607,9 +3621,14 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 	if m.agent.Rounds() > 0 && (m.turnState() != stateInput || m.pausedAtRoundLimit() || m.heldAtBoundary()) {
 		c.Round = m.roundCounter()
 	}
-	if m.TotalTokensIn != 0 || m.TotalTokensOut != 0 {
-		c.Tokens = fmt.Sprintf("↑%s ↓%s", formatTokenCount(m.TotalTokensIn), formatTokenCount(m.TotalTokensOut))
-		if label := m.spendLabel(m.TotalTokensIn, m.TotalTokensOut); strings.HasPrefix(label, "$") {
+	// The session's account with the running turn's live estimate in it, so
+	// the rail's counters and its spend move with the round instead of
+	// standing still until it reports. While they are moving they print every
+	// digit; at rest they go back to the shape a total is read in.
+	sessionIn, sessionOut := m.liveSessionTokens()
+	if sessionIn != 0 || sessionOut != 0 {
+		c.Tokens = fmt.Sprintf("↑%s ↓%s", m.countLabel(sessionIn), m.countLabel(sessionOut))
+		if label := m.spendLabel(sessionIn, sessionOut); strings.HasPrefix(label, "$") {
 			c.Spend = label
 		}
 		if tokens := m.estimatedContextTokens(); tokens > 0 {
@@ -3632,11 +3651,18 @@ func (m Model) cockpitData(includeQueued bool) components.Cockpit {
 	return c
 }
 
-func formatTokenCount(n int64) string {
-	if n < 1000 {
-		return fmt.Sprintf("%d", n)
+// formatTokenCount is a settled count's shape, `412` or `41.2k`, which every
+// listing and every rail at rest prints a total in.
+func formatTokenCount(n int64) string { return components.FormatCount(n) }
+
+// countLabel is the same count at the resolution the moment calls for: every
+// digit while a turn is producing it, the rested shape once nothing is moving
+// it (turnstatus.go).
+func (m Model) countLabel(n int64) string {
+	if m.countsLive() {
+		return components.FormatLiveCount(n)
 	}
-	return fmt.Sprintf("%.1fk", float64(n)/1000)
+	return formatTokenCount(n)
 }
 
 // renderHistoryLines is the transcript the pane shows: the history, with any

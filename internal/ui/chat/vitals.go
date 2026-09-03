@@ -218,6 +218,41 @@ func (v vitals) lastTurn() (turnVitals, bool) {
 	return v.turns[len(v.turns)-1], true
 }
 
+// sessionTokensFrom composes the session's account out of the turn figures it
+// is given: the turns already closed, plus what this one has spent so far.
+//
+// The open turn's billed figure is taken back out before the live one goes
+// in, because the live figure already contains it: the report replaces the
+// estimate and never adds to it, the rule the turn status states. When the
+// turn closes, the estimate falls to nothing in the same update that folds
+// the closed turn into the totals, so the session figure does not move at the
+// boundary and nothing is counted twice on the way past it.
+func (m Model) sessionTokensFrom(turnIn, turnOut int64) (in, out int64) {
+	return m.TotalTokensIn - m.vitals.current.In + turnIn,
+		m.TotalTokensOut - m.vitals.current.Out + turnOut
+}
+
+// liveSessionTokens is that account as the vitals rail prints it, climbing on
+// counters of its own rather than on the turn's.
+//
+// Its own, because the two are not the same quantity even though one is
+// composed from the other. A turn granted more rounds after a round-limit
+// pause is put back on the books with nothing spent: what it cost moves out
+// of the closed totals and back into the open turn, and the turn's counter
+// climbs from nothing to the whole of it. Composed from that climb, the
+// session's total would fall by a turn's spend and walk back up — and a
+// session total that falls is a lie about what has been spent. Aimed at its
+// own figure it does not move at all, because its own figure did not.
+//
+// What keeps the two rails one account is that a round reporting moves both
+// targets by the same amount on the same frame, so both counters cross the
+// same distance on the same step, and the difference between them stays what
+// it has to be: the turns that came before.
+func (m Model) liveSessionTokens() (in, out int64) {
+	tin, tout := m.sessionTokensFrom(m.liveTurnTokens())
+	return m.sessionUp.Reading(tin), m.sessionDown.Reading(tout)
+}
+
 // usageCost prices one request against the session's model, reporting
 // whether the table knew it.
 func (m Model) usageCost(u provider.Usage) (float64, bool) {

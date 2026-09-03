@@ -81,9 +81,13 @@ type TurnStatus struct {
 	// Elapsed is the turn's wall time so far, pre-formatted by FormatElapsed:
 	// tenths under ten seconds, whole seconds above.
 	Elapsed string
-	// Up and Down are the turn's live token counts ("41.2k", "2.1k"); both
-	// are needed for either to render, because one arrow alone is half a
-	// fact. Cost is what they have cost, and it never drops.
+	// Up and Down are the turn's live token counts, at whatever resolution
+	// the host is printing them at — every digit while the turn is spending
+	// them ("9,834"), the settled shape ("41.2k") once nothing is, and a
+	// figure part-way between two rounds while a count is still climbing to
+	// the second (odometer.go). Both are needed for either to render, because
+	// one arrow alone is half a fact. Cost is what they have cost, and it
+	// never drops.
 	Up, Down string
 	Cost     string
 

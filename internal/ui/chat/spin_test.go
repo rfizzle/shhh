@@ -246,3 +246,38 @@ func TestSpin_StillRowKeepsTheRunningGlyph(t *testing.T) {
 		t.Fatalf("a still running row should read ▸, got %q", got)
 	}
 }
+
+// The counters are consumers of the one tick source and, briefly, a reason
+// for it: a round's usage can land as the turn stops for an approval, and the
+// chain has to stay up for the few frames the climb takes — and come down on
+// the frame the last one lands, rather than animating an idle session.
+func TestSpin_AClimbingCountKeepsTheChainAndThenLetsItGo(t *testing.T) {
+	m := spinModel(t)
+	m.easeCounts()
+	if m.spinnerWanted() {
+		t.Fatal("an idle session with nothing to climb animates nothing")
+	}
+
+	// The round's report, arriving with nothing else on screen moving.
+	m.TotalTokensIn = 9834
+	m.easeCounts()
+	if !m.countsEasing() || !m.spinnerWanted() {
+		t.Fatal("a count still climbing is something moving, and the chain has to carry it")
+	}
+
+	frames := 0
+	for m.countsEasing() {
+		frames++
+		if frames > 20 {
+			t.Fatal("a climb that only approaches its target never lets the chain end")
+		}
+		m.spinFrame++
+		m.easeCounts()
+	}
+	if in, _ := m.liveSessionTokens(); in != 9834 {
+		t.Fatalf("the climb should land on the measured figure, got %d", in)
+	}
+	if m.spinnerWanted() {
+		t.Fatal("the frame a climb lands on must not keep the tick alive")
+	}
+}

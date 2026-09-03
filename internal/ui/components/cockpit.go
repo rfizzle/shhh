@@ -31,7 +31,11 @@ type Cockpit struct {
 	// the defaults), so the host can match its own trim warnings.
 	WarnPct  int
 	AlertPct int
-	// Tokens is the usage segment ("↑41.2k ↓9.8k"); Spend the cost ("$0.14").
+	// Tokens is the usage segment ("↑41.2k ↓9.8k", and every digit of it
+	// while a turn is still spending them — odometer.go); Spend the cost
+	// ("$0.14"). Both arrive already formatted, because which resolution the
+	// moment calls for is a fact about the session rather than about this
+	// rail.
 	Tokens string
 	Spend  string
 	// Agents is the running sub-agent count; AgentsBlocked adds the ⚠ badge
