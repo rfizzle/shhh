@@ -16,7 +16,10 @@ package chat
 // block marks the row the keyboard is in.
 //
 // Everything the rail shows is already known to the session; the rail is a
-// passive renderer fed from here, like components.Cockpit.
+// passive renderer fed from here, like components.Cockpit. It is also
+// somewhere to go from: its rows carry what they name, so a click on a
+// changed file opens that file's diff and a click on a session attaches to it
+// (railclick.go).
 //
 // THIS TURN is the turn; CHANGES, AGENTS, CONTEXT and SPEND are the session
 //. The chat transcript is the turn-by-turn feed, so the rail is

@@ -191,8 +191,15 @@ func (m Model) runCommand(text, name string) (tea.Model, tea.Cmd) {
 		// goes through handleSlashCommand.
 		return m.openRewindPick()
 
-	case text == "/diff":
-		// The cumulative session diff, full screen.
+	case name == "/diff":
+		// Bare, the cumulative session diff; with a path, that one file's,
+		// which is the keyboard's way to the door a click on a CHANGES row
+		// opens (railclick.go). The argument is a path and not a turn
+		// number, because the rail's rows are paths and the two surfaces
+		// answer the same question.
+		if len(parts) > 1 {
+			return m.openFileDiff(strings.Join(parts[1:], " "))
+		}
 		return m.openSessionDiff()
 
 	case text == "/step":

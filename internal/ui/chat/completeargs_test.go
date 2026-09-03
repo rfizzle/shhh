@@ -6,6 +6,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
+	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 )
@@ -373,5 +374,31 @@ func TestArgCompletion_RailOffersWhatThisTerminalAllows(t *testing.T) {
 	wide := typeChars(t, updated.(Model), "/ui rail ")
 	if got := strings.Join(completionNames(wide), " "); got != "auto 62 46" {
 		t.Errorf("a 200-column terminal offers its own 62 between them, got %q", got)
+	}
+}
+
+// /diff's argument is a path, so the menu offers the files this session has
+// changed — the rail's CHANGES block as a list, in the order the rail draws
+// it — and matches on any part of a path, because the part that tells two
+// files apart is at the end of it.
+func TestArgCompletion_SessionFiles(t *testing.T) {
+	m := readyModel(t)
+	m.changes.Add(1, changeset.Record{Path: "internal/agent/loop.go",
+		Before: "a\n", After: "a\nb\n", BeforeExists: true, AfterExists: true})
+	m.changes.Add(2, changeset.Record{Path: "internal/ui/chat/model.go",
+		Before: "x\n", After: "y\n", BeforeExists: true, AfterExists: true})
+
+	menu := typeChars(t, m, "/diff ")
+	got := completionNames(menu)
+	if len(got) != 2 || got[0] != "internal/agent/loop.go" || got[1] != "internal/ui/chat/model.go" {
+		t.Fatalf("expected the session's files in the rail's order, got %v", got)
+	}
+	if desc := menu.completions[0].desc; !strings.Contains(desc, "+1 −0") {
+		t.Fatalf("expected what the file cost as the description, got %q", desc)
+	}
+
+	menu = typeChars(t, m, "/diff model.go")
+	if got := completionNames(menu); len(got) != 1 || got[0] != "internal/ui/chat/model.go" {
+		t.Fatalf("expected a path to match on its own name, got %v", got)
 	}
 }

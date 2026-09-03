@@ -272,3 +272,56 @@ func TestSessionDiff_EvictedSaysSo(t *testing.T) {
 		t.Fatalf("the session diff should say earlier turns were dropped:\n%s", ansi.Strip(m.View().Content))
 	}
 }
+
+// A path names one file's session diff, which is the door a click on the
+// rail's CHANGES row opens. It is the cumulative change to that file, so it
+// spans every turn that touched it, the way the bare command does.
+func TestFileDiff_OpensOnePathFullScreen(t *testing.T) {
+	m := gatedModel(t, nil, nil)
+	m.changes.Add(1, changeset.Record{Path: "a.go", Before: "one\n", After: "one\ntwo\n",
+		BeforeExists: true, AfterExists: true})
+	m.changes.Add(2, changeset.Record{Path: "b.go", Before: "x\n", After: "y\n",
+		BeforeExists: true, AfterExists: true})
+	m.state = stateInput
+	m.input.SetValue("/diff a.go")
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+
+	if m.state != stateDiffFull || m.fullDiff == nil {
+		t.Fatalf("/diff <path> should open that file full screen, got state %d", m.state)
+	}
+	if m.fullDiff.Path != "a.go" {
+		t.Fatalf("the viewer should be a.go's, got %q", m.fullDiff.Path)
+	}
+	view := ansi.Strip(m.View().Content)
+	if !strings.Contains(view, "two") {
+		t.Fatalf("the file's own change should be on screen:\n%s", view)
+	}
+	if strings.Contains(view, "b.go") {
+		t.Fatalf("only the named file is shown:\n%s", view)
+	}
+
+	updated, _ = m.Update(tea.KeyPressMsg{Code: tea.KeyEscape})
+	m = updated.(Model)
+	if m.state == stateDiffFull {
+		t.Fatal("esc should come back from the file diff")
+	}
+}
+
+// A path the session never changed has no reading to show, and saying so is
+// more use than an empty viewer.
+func TestFileDiff_UnchangedPathSaysSo(t *testing.T) {
+	m := gatedModel(t, nil, nil)
+	m.changes.Add(1, changeset.Record{Path: "a.go", Before: "one\n", After: "two\n",
+		BeforeExists: true, AfterExists: true})
+	m.state = stateInput
+	m.input.SetValue("/diff never.go")
+	updated, _ := m.Update(tea.KeyPressMsg{Code: tea.KeyEnter})
+	m = updated.(Model)
+	if m.state == stateDiffFull {
+		t.Fatal("a path with nothing to show should not open a viewer")
+	}
+	if view := ansi.Strip(m.View().Content); !strings.Contains(view, "never.go has not been changed") {
+		t.Fatalf("the notice should name the path:\n%s", view)
+	}
+}

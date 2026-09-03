@@ -2,12 +2,14 @@ package chat
 
 // Click targets (
 // docs/interface/principles.md#a-key-is-inert-until-its-surface-holds-the-keyboard).
-// The two things a click can mean, the gesture it is told apart from, and the
-// two properties that keep it from undoing what the selection and the
+// The four things a click can mean — a transcript row, a decision key, and
+// the rail's two lists — the gesture they are told apart from, and the two
+// properties that keep them from undoing what the selection and the
 // mid-sentence rule settled: a drag is never a click, and a click is never a
 // handover.
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -518,5 +520,135 @@ func TestClick_TheThinkRowCyclesFromItsRowLine(t *testing.T) {
 	}
 	if !depths[thinkClosed] {
 		t.Fatalf("the cycle should come back round to closed, saw %v", depths)
+	}
+}
+
+// railClickModel is a two-pane session with a changed file on the rail and a
+// map of three sessions, so both kinds of rail row are on screen at once.
+func railClickModel(t *testing.T) Model {
+	t.Helper()
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := inspectorModel(t, 144, 40).WithSubagents(sup).WithMouse(true)
+	spawnChild(t, sup, subagent.RoleResearcher, "researcher-1")
+	spawnChild(t, sup, subagent.RoleReviewer, "reviewer-1")
+	m.viewport.SetLines(m.renderHistoryLines())
+	return m
+}
+
+// railCell is the first column of the rail row whose drawn text reads want.
+func railCell(t *testing.T, m Model, want string) (x, y int) {
+	t.Helper()
+	area := m.railArea()
+	rows := m.inspectorData().Rows(area.Dx(), area.Dy())
+	for i, row := range rows {
+		if strings.Contains(stripANSI(row.Text), want) {
+			return area.Min.X, area.Min.Y + i
+		}
+	}
+	t.Fatalf("no rail row reads %q:\n%s", want, stripANSI(m.View().Content))
+	return 0, 0
+}
+
+// A file on the rail is a door to its diff, and the same cell shuts it: the
+// diff takes the whole surface, so the row is not there for the second click
+// to land on and the cell is what carries it.
+func TestClick_RailFileOpensItsDiff(t *testing.T) {
+	m := railClickModel(t)
+	x, y := railCell(t, m, "loop.go")
+	m = click(t, m, x, y)
+	if m.state != stateDiffFull {
+		t.Fatalf("a click on a changed file should open its diff full screen, got state %d", m.state)
+	}
+	if m.fullDiff == nil || m.fullDiff.Path != "internal/agent/loop.go" {
+		t.Fatalf("the diff should be that path's, got %+v", m.fullDiff)
+	}
+	m = click(t, m, x, y)
+	if m.state == stateDiffFull {
+		t.Fatal("the same cell should close the diff again")
+	}
+	if m.fullDiff != nil || m.railDiff.live {
+		t.Fatal("closing the diff should leave nothing holding the cell")
+	}
+}
+
+// The map moves the keyboard between sessions, and the row already marked
+// takes it back — a click that opened a thing closes it.
+func TestClick_RailSessionAttachesAndTheMarkedRowDetaches(t *testing.T) {
+	m := railClickModel(t)
+	m.input.SetValue("half a sentence")
+
+	x, y := railCell(t, m, "researcher-1")
+	m = click(t, m, x, y)
+	if m.attachedTo != "researcher-1" {
+		t.Fatalf("a click on a child's row should attach to it, got %q", m.attachedTo)
+	}
+	if got := m.input.Value(); got != "half a sentence" {
+		t.Fatalf("the draft should be untouched, got %q", got)
+	}
+	if m.state == stateFocus {
+		t.Fatal("a rail click must not open reading mode")
+	}
+
+	x, y = railCell(t, m, "researcher-1")
+	m = click(t, m, x, y)
+	if m.attachedTo != "" {
+		t.Fatalf("a click on the marked row should come back to the orchestrator, got %q", m.attachedTo)
+	}
+}
+
+// The detail line under a session is the same target as the name above it:
+// one thing drawn on two rows.
+func TestClick_RailSessionDetailRowIsTheSameTarget(t *testing.T) {
+	m := railClickModel(t)
+	area := m.railArea()
+	rows := m.inspectorData().Rows(area.Dx(), area.Dy())
+	name := -1
+	for i, row := range rows {
+		if strings.Contains(stripANSI(row.Text), "researcher-1") {
+			name = i
+			break
+		}
+	}
+	if name < 0 || name+1 >= len(rows) {
+		t.Fatalf("the map did not draw a detail row under the child:\n%s", stripANSI(m.View().Content))
+	}
+	m = click(t, m, area.Min.X, area.Min.Y+name+1)
+	if m.attachedTo != "researcher-1" {
+		t.Fatalf("the detail row should attach like the name above it, got %q", m.attachedTo)
+	}
+}
+
+// Everything else on the rail is a reading. A heading names a block rather
+// than anything in it, and a meter has nothing to open.
+func TestClick_RailHeadingsAndMetersAreInert(t *testing.T) {
+	m := railClickModel(t)
+	for _, row := range []string{"CHANGES", "AGENTS", "CONTEXT", "SPEND", "THIS TURN"} {
+		x, y := railCell(t, m, row)
+		next := click(t, m, x, y)
+		if next.state != m.state || next.attachedTo != m.attachedTo || next.fullDiff != nil {
+			t.Fatalf("a click on the %s row should do nothing, got state %d attached %q", row, next.state, next.attachedTo)
+		}
+	}
+	// And the rail's empty rows are the rail's too. The pane's own targets
+	// are answered against the same coordinates, so a blank cell that fell
+	// through would do whatever happened to be behind the rail.
+	area := m.railArea()
+	for _, y := range []int{area.Min.Y + 1, area.Max.Y - 1} {
+		next := click(t, m, area.Min.X, y)
+		if next.state != m.state || next.attachedTo != m.attachedTo || next.fullDiff != nil {
+			t.Fatalf("a click on rail row %d should do nothing, got state %d attached %q", y, next.state, next.attachedTo)
+		}
+	}
+}
+
+// The orchestrator's own row while the keyboard is already there is where the
+// keyboard already is: the click changes nothing rather than cycling.
+func TestClick_RailOwnSessionRowWhileFocusedChangesNothing(t *testing.T) {
+	m := railClickModel(t)
+	x, y := railCell(t, m, "orchestrator")
+	next := click(t, m, x, y)
+	if next.attachedTo != "" || next.state != m.state {
+		t.Fatalf("the marked orchestrator row should change nothing, got state %d attached %q", next.state, next.attachedTo)
 	}
 }

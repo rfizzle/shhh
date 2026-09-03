@@ -429,18 +429,53 @@ func (r InspectorRail) Empty() bool {
 		len(r.Agents) == 0 && r.Tools == nil && r.Context == nil && r.Spend == nil
 }
 
-// railLine is one assembled row and what truncation is allowed to do with it.
-// A pinned row is the last one taken — an alert, or a file the running turn
-// wrote — and a counted row is one the fold marker counts, carrying its
-// numbers where it has any, so a marker states what it swallowed rather than
-// only how many rows went behind it (invariant 4). Two rows of one thing are
-// one counted row: the map's sessions take two each, and a marker counting
-// rows would report three folded children as six.
+// RailTargetKind says what a row on the rail points at. Most of the rail
+// points at nothing, and that is the default on purpose: a heading, a meter,
+// a sentence and a fold marker are readings rather than doors, and a row that
+// answered a click by opening a whole surface would be a target the same
+// click could not leave.
+type RailTargetKind int
+
+const (
+	// RailTargetNone: the row is something to read.
+	RailTargetNone RailTargetKind = iota
+	// RailTargetFile: the row names a path the session has changed.
+	RailTargetFile
+	// RailTargetSession: the row names a session in the map.
+	RailTargetSession
+)
+
+// RailTarget is what a row points at: the kind of thing it names and the name
+// itself — a workspace path for a file, and a session's name for a session,
+// which is empty for the session the rail belongs to.
+type RailTarget struct {
+	Kind RailTargetKind
+	Name string
+}
+
+// RailRow is one rendered row of the rail beside what it points at. The rail
+// assembles its rows from the session's own values, so a row already knows
+// what it is; handing that out with the text is what lets a host resolve a
+// cell to a target instead of parsing back the styled string it drew
+// (docs/interface/surfaces.md#the-inspector-rail).
+type RailRow struct {
+	Text   string
+	Target RailTarget
+}
+
+// railLine is one assembled row, what truncation is allowed to do with it,
+// and what it points at. A pinned row is the last one taken — an alert, or a
+// file the running turn wrote — and a counted row is one the fold marker
+// counts, carrying its numbers where it has any, so a marker states what it
+// swallowed rather than only how many rows went behind it (invariant 4). Two
+// rows of one thing are one counted row: the map's sessions take two each,
+// and a marker counting rows would report three folded children as six.
 type railLine struct {
 	text           string
 	pinned         bool
 	counted        bool
 	added, removed int
+	target         RailTarget
 }
 
 // railBlock is one headed block under assembly: its heading line, its rows,
@@ -470,21 +505,27 @@ func (b railBlock) height() int {
 	return h
 }
 
-// lines renders the block at the rail's width. The width is a parameter and
-// not the rail's floor: a fold marker drawn at 46 columns inside a 62-column
-// rail is a row that ends where nothing else on the rail ends.
-func (b railBlock) lines(width int) []string {
-	out := make([]string, 0, b.height())
-	out = append(out, b.heading)
+// render draws the block at the rail's width, each row beside what it points
+// at. The width is a parameter and not the rail's floor: a fold marker drawn
+// at 46 columns inside a 62-column rail is a row that ends where nothing else
+// on the rail ends.
+//
+// The heading and the fold marker point at nothing. The heading names a block
+// rather than a thing in it, and the marker stands for rows that are not on
+// screen — a click on either would have to guess which of several things the
+// reader meant.
+func (b railBlock) render(width int) []RailRow {
+	out := make([]RailRow, 0, b.height())
+	out = append(out, RailRow{Text: b.heading})
 	for _, r := range b.rows {
-		out = append(out, r.text)
+		out = append(out, RailRow{Text: r.text, Target: r.target})
 	}
 	switch {
 	case len(b.hidden) == 0:
 	case b.fold != nil:
-		out = append(out, b.fold(b.hidden))
+		out = append(out, RailRow{Text: b.fold(b.hidden)})
 	default:
-		out = append(out, indentRow(sty.Hint.Render(fmt.Sprintf("… %d more", len(b.hidden))), width))
+		out = append(out, RailRow{Text: indentRow(sty.Hint.Render(fmt.Sprintf("… %d more", len(b.hidden))), width)})
 	}
 	return out
 }
@@ -496,8 +537,26 @@ func (r InspectorRail) View(width, height int) string {
 }
 
 // Lines is View split into rows, for hosts joining the rail beside a
-// transcript pane line by line.
+// transcript pane line by line. It is Rows without the targets, for the draw,
+// which has no use for them.
 func (r InspectorRail) Lines(width, height int) []string {
+	rows := r.Rows(width, height)
+	if len(rows) == 0 {
+		return nil
+	}
+	out := make([]string, len(rows))
+	for i, row := range rows {
+		out[i] = row.Text
+	}
+	return out
+}
+
+// Rows is the rail as it will be drawn — every row in order, including the
+// blank ones between blocks — each beside what it points at. A host that
+// answers a pointer asks for these and indexes the row the pointer is on: the
+// rail is laid out from the top of its rectangle, so the row is the offset
+// and nothing has to be measured or re-read.
+func (r InspectorRail) Rows(width, height int) []RailRow {
 	blocks := r.blocks(width)
 	if len(blocks) == 0 {
 		return nil
@@ -505,12 +564,12 @@ func (r InspectorRail) Lines(width, height int) []string {
 	if height > 0 {
 		blocks = fitBlocks(blocks, height)
 	}
-	var out []string
+	var out []RailRow
 	for i, b := range blocks {
 		if i > 0 {
-			out = append(out, "")
+			out = append(out, RailRow{})
 		}
-		out = append(out, b.lines(width)...)
+		out = append(out, b.render(width)...)
 	}
 	if height > 0 && len(out) > height {
 		out = out[:height]
@@ -871,6 +930,10 @@ func (r InspectorRail) changesBlock(width int) (railBlock, bool) {
 			counted: true,
 			added:   f.Added,
 			removed: f.Removed,
+			// The row already knows the path it is about, so a host answering
+			// a pointer never has to read it back out of the styled text —
+			// which carries a clipped path and a stats field besides.
+			target: RailTarget{Kind: RailTargetFile, Name: f.Path},
 		})
 	}
 	b.fold = func(hidden []railLine) string { return changesFold(hidden, width) }
@@ -1010,6 +1073,16 @@ func (a InspectorAgent) railLines(frame, width int) []railLine {
 	if a.Focused {
 		lead = sty.FocusRow.Render("▸") + " "
 	}
+	// Both of a session's rows point at that session. They are one thing
+	// drawn on two lines — the name and what it is doing — and a pointer that
+	// answered on the first and not the second would make the target half a
+	// row tall for no reason the reader can see.
+	target := RailTarget{Kind: RailTargetSession, Name: a.Name}
+	if a.Self {
+		// The rail's own session has no name to attach to: it is where the
+		// keyboard goes back to, which every host spells as no name at all.
+		target.Name = ""
+	}
 	rows := []railLine{{
 		text: railRow(lead+AgentProgress{State: a.State}.glyph()+" "+sty.Body.Render(a.Name),
 			a.rightField(), width, 0),
@@ -1019,9 +1092,10 @@ func (a InspectorAgent) railLines(frame, width int) []railLine {
 		pinned: a.Self || a.Focused || a.State == FanoutBlocked,
 		// The fold counts sessions, and this is the row that is one.
 		counted: true,
+		target:  target,
 	}}
 	if detail := a.detailRow(frame, width); detail != "" {
-		rows = append(rows, railLine{text: detail})
+		rows = append(rows, railLine{text: detail, target: target})
 	}
 	return rows
 }

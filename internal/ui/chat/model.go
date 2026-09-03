@@ -595,6 +595,8 @@ type Model struct {
 	// click.go). A click is a press and a release in the same cell, which is
 	// what lets one button carry both the selection drag and the targets.
 	press pointerPress
+	// railDiff is the rail cell a file's diff was opened from (railclick.go).
+	railDiff pointerPress
 	// writeConfig persists one config key to the user's file. The CLI
 	// installs it; a session without one cannot make a setting stick and
 	// says so rather than pretending it did.

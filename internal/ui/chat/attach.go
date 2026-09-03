@@ -187,7 +187,8 @@ func (m Model) sessionMap() []string {
 // both ends, from wherever it is. It goes through attach, so each session
 // keeps its own scroll exactly as it does when the manager's enter attaches
 // — the map is for seeing and moving, and everything that acts on a child
-// stays in the manager.
+// stays in the manager. A click on a row of the map is the pointer's way to
+// the same act (railclick.go).
 //
 // It walks every session, the ones the rail has folded away included: a
 // folded row is what the block does when it runs out of room, and a session

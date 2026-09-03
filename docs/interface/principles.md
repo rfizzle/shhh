@@ -98,6 +98,16 @@ screen. No modifier stands in for the distinction: shift-click belongs to the
 terminal, which keeps it for its own selection and hands the application
 nothing.
 
+A row is a target only where the pointer names exactly one thing and that
+thing already has a key. That is what makes the rail's list of changed files
+and its map of sessions clickable — each row names one path, one session, and
+the keyboard reaches both by name — and it is what leaves the rest of the rail
+inert. A heading names a block rather than anything in it; a summary, a plan,
+a backlog and a list of tool sources are readings whose rows have no act of
+their own; a meter has nothing to open. Each of those does have a surface a
+command opens, and that is the point: a row that took the whole screen would
+be somewhere the same click could not leave.
+
 ## The grammar
 
 What follows from the invariants, as mechanics.

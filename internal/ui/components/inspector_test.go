@@ -856,3 +856,116 @@ func TestSparkCellsRailMax_IsTheRunAtTheCeiling(t *testing.T) {
 		t.Fatalf("the widest run is %d cells, SparkCellsRailMax is %d", got, SparkCellsRailMax)
 	}
 }
+
+// The rail's rows carry what they name. A hit test that had to read a target
+// back out of the drawn text would be parsing a clipped path out of a styled
+// string with a stats field on the end of it — and would be wrong the first
+// time a path was long enough to clip.
+func TestInspectorRail_RowsCarryTheirTargets(t *testing.T) {
+	r := fullRail()
+	r.Agents = []InspectorAgent{
+		{Name: "orchestrator", Detail: "idle", Self: true, Focused: true, State: FanoutIdle},
+		{Name: "writer-1", Detail: "docs/loop.md", Spend: "$0.02", State: FanoutRunning},
+	}
+	rows := r.Rows(InspectorWidth, 0)
+
+	// The headings name blocks rather than anything in them, and a session
+	// takes two rows that both name that session.
+	for _, c := range []struct {
+		reads string
+		want  RailTarget
+	}{
+		{"THIS TURN", RailTarget{}},
+		{"CHANGES", RailTarget{}},
+		{"AGENTS", RailTarget{}},
+		{"CONTEXT", RailTarget{}},
+		{"SPEND", RailTarget{}},
+		{"go test ./...", RailTarget{}},
+		{"writer-1", RailTarget{Kind: RailTargetSession, Name: "writer-1"}},
+		{"docs/loop.md", RailTarget{Kind: RailTargetSession, Name: "writer-1"}},
+	} {
+		found := false
+		for _, row := range rows {
+			if !strings.Contains(stripANSI(row.Text), c.reads) {
+				continue
+			}
+			found = true
+			if row.Target != c.want {
+				t.Fatalf("the row reading %q points at %+v, want %+v", c.reads, row.Target, c.want)
+			}
+		}
+		if !found {
+			t.Fatalf("no row reads %q:\n%s", c.reads, stripANSI(r.View(InspectorWidth, 0)))
+		}
+	}
+
+	// A file row names its path whole, whatever the drawn row did to it.
+	var files []RailTarget
+	for _, row := range rows {
+		if row.Target.Kind == RailTargetFile {
+			files = append(files, row.Target)
+		}
+	}
+	if len(files) != 2 || files[0].Name != "agent/loop.go" || files[1].Name != "ui/chat/model.go" {
+		t.Fatalf("CHANGES should point at both paths in order, got %+v", files)
+	}
+
+}
+
+// The rail's own session has no name to attach to, so its row's target is the
+// empty one every host spells the orchestrator as.
+func TestInspectorRail_TheOwnSessionRowNamesNoSession(t *testing.T) {
+	r := InspectorRail{Agents: []InspectorAgent{
+		{Name: "orchestrator", Self: true, Focused: true, State: FanoutRunning},
+		{Name: "writer-1", State: FanoutRunning},
+	}}
+	for _, row := range r.Rows(InspectorWidth, 0) {
+		if !strings.Contains(stripANSI(row.Text), "orchestrator") {
+			continue
+		}
+		if want := (RailTarget{Kind: RailTargetSession}); row.Target != want {
+			t.Fatalf("the orchestrator's row points at %+v, want %+v", row.Target, want)
+		}
+		return
+	}
+	t.Fatal("the map did not draw the orchestrator")
+}
+
+// A fold marker stands for rows that are not on screen, so it names none of
+// them: a click on it would have to guess which.
+func TestInspectorRail_FoldMarkersPointAtNothing(t *testing.T) {
+	r := fullRail()
+	rows := r.Rows(InspectorWidth, 12)
+	marked := false
+	for _, row := range rows {
+		if !strings.Contains(stripANSI(row.Text), "more") {
+			continue
+		}
+		marked = true
+		if row.Target.Kind != RailTargetNone {
+			t.Fatalf("a fold marker points at %+v, want nothing", row.Target)
+		}
+	}
+	if !marked {
+		t.Fatalf("nothing folded at 12 rows:\n%s", stripANSI(r.View(InspectorWidth, 12)))
+	}
+}
+
+// Lines is Rows without the targets, and the two have to stay one rendering:
+// a host that draws one and hit-tests the other would answer clicks against
+// rows nobody is looking at.
+func TestInspectorRail_LinesAreTheRowsText(t *testing.T) {
+	for _, height := range []int{0, 14, 30} {
+		r := fullRail()
+		lines := r.Lines(InspectorWidth, height)
+		rows := r.Rows(InspectorWidth, height)
+		if len(lines) != len(rows) {
+			t.Fatalf("height %d: %d lines against %d rows", height, len(lines), len(rows))
+		}
+		for i := range lines {
+			if lines[i] != rows[i].Text {
+				t.Fatalf("height %d row %d: %q against %q", height, i, lines[i], rows[i].Text)
+			}
+		}
+	}
+}

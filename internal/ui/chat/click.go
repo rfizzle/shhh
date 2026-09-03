@@ -12,8 +12,8 @@ package chat
 // the button is down, so a drag that starts on a target still selects, and
 // the one button carries both gestures without either having to give ground.
 //
-// Two things are targets, and the test they pass is the same one twice: the
-// pointer names exactly one of them, and the thing it names already has a
+// Four things are targets, and the test they pass is the same one four times:
+// the pointer names exactly one of them, and the thing it names already has a
 // key.
 //
 //   - An activity row. Its whole width is one row, and [enter] under reading
@@ -21,10 +21,16 @@ package chat
 //     body under the row opens that body whole (clickRow).
 //   - The approval card's decision run. Each key owns its own cells inside
 //     `[y/N/a]`, and the click is delivered as the keystroke.
+//   - A file on the rail. It names one path, and `/diff <path>` opens that
+//     path's diff by name (railclick.go).
+//   - A session on the rail. It names one session, and the chord that walks
+//     the map and the manager's [enter] both attach to it.
 //
 // Everything else on the screen fails that test. Prose under the pointer is a
 // selection surface first and has no single act behind it; the scroll gutter
-// is a shape rather than a control; a chip's `✕` would be a
+// is a shape rather than a control; the rail's headings and its readings —
+// the summary, the plan, the todo list, the tool sources and the two meters —
+// name blocks and numbers rather than things to go to; a chip's `✕` would be a
 // button with no keyboard equal, and a target only the mouse can reach is a
 // target half the readers do not have.
 //
@@ -72,10 +78,14 @@ func (m *Model) endClick(x, y int) bool {
 	return p.live && p.x == x && p.y == y
 }
 
-// clickAt resolves a click to the one thing under it. The pane is asked
-// first, because that is the half of the screen a coordinate can be checked
-// against without rendering anything.
+// clickAt resolves a click to the one thing under it. The rail is asked
+// first and the pane second, because those are the halves of the screen a
+// coordinate can be checked against without rendering anything; the card is
+// what is left, and it is the one that has to be drawn to be found.
 func (m Model) clickAt(x, y int) (tea.Model, tea.Cmd) {
+	if next, cmd, ok := m.clickRail(x, y); ok {
+		return next, cmd
+	}
 	if pt, ok := m.transcriptPoint(x, y); ok {
 		if !m.clickableTranscript() {
 			return m, nil

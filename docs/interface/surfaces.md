@@ -359,6 +359,19 @@ between sessions is a keystroke rather than a surface to open and close.
 Everything you do *to* an agent — answer it, retry it, cancel it, kill it —
 is still the manager's; the map is for seeing and moving.
 
+Two of the rail's lists are places to go from rather than only to read. A
+click on a changed file opens that file's diff full screen, and the same
+click closes it again; a click on a session moves the keyboard into it, and a
+click on the row already marked comes back. Both have the key that reaches
+them by name already — the file's diff is a command with a path, and the map
+is walked by a chord and by the manager — which is the test a target has to
+pass here: the pointer names exactly one thing, and the thing it names is
+reachable without a pointer. Everything else on the rail is inert, including
+the headings and the blocks that do have a surface behind them, because a row
+that opened a whole surface would be somewhere the same click could not
+leave. Nothing on the rail takes the keyboard: the draft keeps every
+character it had.
+
 One block is not about the work at all: where the session's tools came from.
 A server that failed to answer leaves no trace in a transcript — a tool that
 was never registered is indistinguishable from one the model chose not to

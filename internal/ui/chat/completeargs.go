@@ -332,6 +332,25 @@ func agentArgs(m *Model) []argOption {
 	return out
 }
 
+// sessionFileArgs offers the paths this session has changed, each described
+// by what it cost the file. It is the rail's CHANGES block as a list, in the
+// same order the rail draws it, so the row a reader is looking at is the row
+// the menu offers them.
+//
+// The spec is fuzzy because a path is long and its distinguishing part is at
+// the end: nobody types the directories to reach the file they mean.
+func sessionFileArgs(m *Model) []argOption {
+	files := m.changes.SessionFiles()
+	out := make([]argOption, 0, len(files))
+	for _, f := range files {
+		out = append(out, argOption{
+			value: f.Path,
+			desc:  fmt.Sprintf("+%d −%d · %s", f.Added, f.Removed, plural(f.Turns, "turn")),
+		})
+	}
+	return out
+}
+
 // reviewTurnArgs offers the turns the changeset store still holds, latest
 // first, described by what each of them changed.
 func reviewTurnArgs(m *Model) []argOption {

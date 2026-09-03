@@ -93,6 +93,34 @@ func (m *Model) noteEvictedTurns(evicted []int64) {
 		strings.Join(labels, ", "))})
 }
 
+// openFileDiff opens one path's session diff full screen: the same door
+// openDiffFull is, keyed by path instead of by a viewer somebody already
+// built. It is what a click on a CHANGES row and `/diff <path>` both go
+// through, and it returns to the surface it was opened from, so esc comes
+// back to the rail rather than to the input.
+//
+// The hunks are the session's net change to that file — where the session
+// found it against where it has left it — which is the same reading the rail
+// row's own +N −M is taken from. A path this session has not changed has no
+// such reading, and saying so is more use than an empty viewer.
+func (m Model) openFileDiff(path string) (tea.Model, tea.Cmd) {
+	for _, f := range m.changes.SessionFiles() {
+		if f.Path != path {
+			continue
+		}
+		return m.openDiffFull(&components.DiffView{
+			Path:   f.Path,
+			Verb:   "edit",
+			Hunks:  f.Hunks,
+			Syntax: diffSyntax(f.Path),
+		}, m.state)
+	}
+	// Nothing opened, so nothing is holding the cell a rail click was
+	// answered from.
+	m.railDiff = pointerPress{}
+	return m.systemNotice(fmt.Sprintf("%s has not been changed by this session. /diff shows every file that has.", path))
+}
+
 // openDiffFull takes the given viewer full screen; esc returns to ret.
 func (m Model) openDiffFull(d *components.DiffView, ret state) (tea.Model, tea.Cmd) {
 	d.Mode = components.DiffFull
@@ -130,6 +158,10 @@ func (m Model) updateDiffFull(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 // from — the confirm prompt, focus mode, or the input.
 func (m Model) closeDiffFull() (tea.Model, tea.Cmd) {
 	m.fullDiff = nil
+	// Whatever door this was opened by, it is shut: the rail is about to be
+	// back on screen, and the cell that opened the diff is a row again
+	// (railclick.go).
+	m.railDiff = pointerPress{}
 	// A diff opened from focus mode goes back to it; anything else hands the
 	// screen back to the turn, which may have moved on while it was up.
 	if m.diffReturn.isSurface() {
