@@ -168,8 +168,14 @@ file in the workspace that *you* author. The model can ask for a suite by
 name; it can never supply an executable or arguments.
 
 Every result is fingerprinted against the tree it ran over, so a passing
-verdict can never silently vouch for code it did not see. A gate that reports
-on stale state is worse than no gate.
+verdict can never silently vouch for code it did not see. The fingerprint
+covers the content of every changed file and not merely the list of their
+names: the file being worked on is almost always changed already, so a
+verdict that tracked only which paths were dirty would keep reading as
+current across exactly the edit that invalidated it. A tree holding more
+changed content than the fingerprint will read is reported stale on
+principle rather than guessed at. A gate that reports on stale state is worse
+than no gate.
 
 ## Related
 

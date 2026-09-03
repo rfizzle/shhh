@@ -412,6 +412,172 @@ func TestResult_TreeChangedDuringRunIsStale(t *testing.T) {
 	}
 }
 
+func TestFingerprint_ContentOfAnAlreadyDirtyPath(t *testing.T) {
+	ws := gitFixture(t)
+	a := filepath.Join(ws, "a.txt")
+	if err := os.WriteFile(a, []byte("first edit\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	dirty := TakeFingerprint(ws)
+	if dirty.DirtyPaths != 1 || dirty.Unhashed {
+		t.Fatalf("one edited file = %+v", dirty)
+	}
+	if again := TakeFingerprint(ws); again != dirty {
+		t.Fatalf("an untouched tree must fingerprint the same: %+v vs %+v", again, dirty)
+	}
+	if err := os.WriteFile(a, []byte("second edit\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	edited := TakeFingerprint(ws)
+	if edited == dirty {
+		t.Fatal("editing a path that was already dirty must change the fingerprint")
+	}
+	if edited.DirtyPaths != 1 {
+		t.Fatalf("the path set did not move, only its content = %+v", edited)
+	}
+}
+
+func TestFingerprint_DeletedPathIsAbsentNotAnError(t *testing.T) {
+	ws := gitFixture(t)
+	clean := TakeFingerprint(ws)
+	if err := os.Remove(filepath.Join(ws, "a.txt")); err != nil {
+		t.Fatal(err)
+	}
+	deleted := TakeFingerprint(ws)
+	if !deleted.Repo || deleted.Unhashed {
+		t.Fatalf("a deleted path is a state, not a failure to hash: %+v", deleted)
+	}
+	if deleted.DirtyPaths != 1 || deleted == clean {
+		t.Fatalf("deleted fingerprint = %+v", deleted)
+	}
+}
+
+func TestFingerprint_WorkspaceBelowTheRepoRoot(t *testing.T) {
+	ws := gitFixture(t)
+	sub := filepath.Join(ws, "sub")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	a := filepath.Join(ws, "a.txt")
+	if err := os.WriteFile(a, []byte("first edit\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Porcelain reports "a.txt" from the repository root even when git is
+	// run inside sub, so a fingerprint taken here must still find the file.
+	dirty := TakeFingerprint(sub)
+	if !dirty.Repo || dirty.Unhashed {
+		t.Fatalf("fingerprint from a subdirectory = %+v", dirty)
+	}
+	if err := os.WriteFile(a, []byte("second edit\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if TakeFingerprint(sub) == dirty {
+		t.Fatal("a session rooted below the repo root must still see content change")
+	}
+}
+
+func TestFingerprint_SymlinkTargetIsItsContent(t *testing.T) {
+	ws := gitFixture(t)
+	link := filepath.Join(ws, "link")
+	if err := os.Symlink("a.txt", link); err != nil {
+		t.Skipf("symlinks unavailable: %v", err)
+	}
+	before := TakeFingerprint(ws)
+	if before.DirtyPaths != 1 || before.Unhashed {
+		t.Fatalf("an untracked symlink = %+v", before)
+	}
+	if err := os.Remove(link); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink("elsewhere.txt", link); err != nil {
+		t.Fatal(err)
+	}
+	// git stores the target text as the link's content, so a relink is a
+	// content change even though the path list did not move.
+	if after := TakeFingerprint(ws); after == before {
+		t.Fatal("retargeting a symlink must change the fingerprint")
+	}
+}
+
+func TestFingerprint_UnhashedPastTheByteBound(t *testing.T) {
+	ws := gitFixture(t)
+	// Sparse files: the bound is checked against the reported size before
+	// anything is read, so this costs no disk and still crosses it.
+	for i := 0; i < 4; i++ {
+		name := filepath.Join(ws, fmt.Sprintf("big%d.bin", i))
+		f, err := os.Create(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := f.Truncate(maxHashedBytes/3 + 1); err != nil {
+			t.Fatal(err)
+		}
+		if err := f.Close(); err != nil {
+			t.Fatal(err)
+		}
+	}
+	fp := TakeFingerprint(ws)
+	if fp.DirtyPaths != 4 {
+		t.Fatalf("four dirty paths expected, got %+v", fp)
+	}
+	if !fp.Unhashed {
+		t.Fatal("more content than the byte bound must go unhashed")
+	}
+	if !strings.Contains(fp.Describe(), "unhashed") {
+		t.Fatalf("Describe = %q", fp.Describe())
+	}
+}
+
+func TestResult_StaleAfterEditingAnAlreadyDirtyFile(t *testing.T) {
+	ws := gitFixture(t)
+	writeConfig(t, ws, shSuite("true"))
+	a := filepath.Join(ws, "a.txt")
+	if err := os.WriteFile(a, []byte("what the gate saw\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	r := &Runner{Workspace: ws}
+	res := mustRun(t, r, "default")
+	if res.Verdict != VerdictPass {
+		t.Fatalf("verdict = %s", res.Verdict)
+	}
+	if strings.Contains(r.Status(), "STALE") {
+		t.Fatalf("no edit since the run must read current, got: %s", r.Status())
+	}
+	if err := os.WriteFile(a, []byte("what the gate never saw\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	out := r.Status()
+	if !strings.Contains(out, "PASS") || !strings.Contains(out, "STALE") {
+		t.Fatalf("editing an already-dirty file must report stale, got: %s", out)
+	}
+}
+
+func TestResult_UnhashablyLargeTreeIsStaleWithTheReason(t *testing.T) {
+	ws := gitFixture(t)
+	writeConfig(t, ws, shSuite("true"))
+	for i := 0; i < 1000; i++ {
+		name := filepath.Join(ws, fmt.Sprintf("f%04d.txt", i))
+		if err := os.WriteFile(name, []byte("x\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	r := &Runner{Workspace: ws}
+	res := mustRun(t, r, "default")
+	if !res.Fingerprint.Unhashed {
+		t.Fatalf("a thousand dirty paths must go past the bound: %+v", res.Fingerprint)
+	}
+	if !strings.Contains(res.Fingerprint.Describe(), "unhashed") {
+		t.Fatalf("Describe = %q", res.Fingerprint.Describe())
+	}
+	out := res.Format(res.Fingerprint)
+	if !strings.Contains(out, "PASS") || !strings.Contains(out, "STALE") {
+		t.Fatalf("an unhashed tree must report stale even against itself, got: %s", out)
+	}
+	if !strings.Contains(out, "too many changed paths to hash their content") {
+		t.Fatalf("the stale line must say why it could not vouch, got: %s", out)
+	}
+}
+
 func TestTool_RunAndResult(t *testing.T) {
 	ws := t.TempDir()
 	writeConfig(t, ws, shSuite("echo fine"))

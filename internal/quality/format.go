@@ -10,8 +10,9 @@ import (
 
 // Format renders the result against the tree's current fingerprint. A result
 // whose fingerprint no longer matches — or whose tree changed while the
-// checks ran — leads with a stale warning, so a pass over old code is never
-// presented silently as current.
+// checks ran, or held more changed content than the fingerprint would hash —
+// leads with a stale warning, so a pass over old code is never presented
+// silently as current.
 func (r *Result) Format(current Fingerprint) string {
 	var b strings.Builder
 	fmt.Fprintf(&b, "Quality gate %q: %s", r.Suite, strings.ToUpper(string(r.Verdict)))
@@ -36,6 +37,11 @@ func (r *Result) Format(current Fingerprint) string {
 	switch {
 	case r.ChangedDuringRun:
 		b.WriteString("STALE: the tree changed while the checks ran — this verdict (even a pass) does not apply to the current tree; run the gate again.\n")
+	// An unhashed fingerprint has to be caught before the equality test: two
+	// of them can compare equal while the content underneath differs, which
+	// is exactly the silent pass the fingerprint exists to prevent.
+	case r.Fingerprint.Repo && current.Repo && (r.Fingerprint.Unhashed || current.Unhashed):
+		b.WriteString("STALE: too many changed paths to hash their content, so an edit to one of them cannot be detected — this verdict (even a pass) does not apply to the current tree; commit or clean up, then run the gate again.\n")
 	case r.Fingerprint.Repo && current.Repo && r.Fingerprint != current:
 		b.WriteString("STALE: the tree has changed since this run — this verdict (even a pass) does not apply to the current tree; run the gate again.\n")
 	}
