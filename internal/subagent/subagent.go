@@ -393,6 +393,21 @@ type PatchedFile struct {
 	Path                      string
 	Before, After             string
 	BeforeExists, AfterExists bool
+	// BeforeMode is the permission bits the file had when the patch found
+	// it, zero where there was no file to have any. It is what puts a script
+	// the patch deleted back executable rather than at the default: once the
+	// file is gone, nothing else on disk remembers that it was one.
+	// See docs/capabilities/coding-agent.md#a-turn-ends-with-what-changed.
+	BeforeMode os.FileMode
+	// AfterMode is the same reading taken once the patch has landed, and it
+	// is the whole of a patch that changed a mode and not a byte: git
+	// carries one as an `old mode`/`new mode` header with no hunk, so both
+	// sides hold identical content and this pair is the only thing that
+	// tells them apart. Nothing downstream reads it yet — the session
+	// changeset is keyed on content and existence, so a patch that moved
+	// neither leaves no entry there — and it is read here because this is
+	// the one moment the mode can still be seen at all.
+	AfterMode os.FileMode
 }
 
 // AskKind selects the approval card a routed request renders with.

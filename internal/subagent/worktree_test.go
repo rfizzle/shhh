@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -450,4 +451,117 @@ func TestSeedWorktree_SymlinkIsNotFollowed(t *testing.T) {
 	if _, err := os.Lstat(filepath.Join(wt.root, "link.txt")); !os.IsNotExist(err) {
 		t.Fatalf("the worktree should not have the link: %v", err)
 	}
+}
+
+// The parent's changeset is the only thing that will remember what a file
+// was once a child's patch has deleted it, so the read taken either side of
+// the apply carries the mode along with the content. Without it, taking the
+// turn back writes the script out at the default mode and the next
+// `./script.sh` fails with permission denied.
+func TestPatchedFiles_ADeletedScriptKeepsItsExecuteBit(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix permissions")
+	}
+	repo := initTestRepo(t)
+	writeInto(t, repo, "script.sh", "#!/bin/sh\necho hi\n")
+	script := filepath.Join(repo, "script.sh")
+	if !chmodCarried(t, script, 0o755) {
+		t.Skip("this filesystem does not carry the execute bit")
+	}
+
+	wt, err := addWorktree(repo, []string{"script.sh"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer removeWorktree(wt.repoTop, wt.dir)
+	if err := os.Remove(filepath.Join(wt.root, "script.sh")); err != nil {
+		t.Fatal(err)
+	}
+	patch, err := worktreePatch(wt.dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	touched := PatchFiles(patch)
+	before := readSides(repo, touched)
+	if err := applyPatch(repo, patch); err != nil {
+		t.Fatalf("the child's deletion should apply to the parent: %v", err)
+	}
+	files := patchedFiles(repo, repo, touched, before, readSides(repo, touched))
+	if len(files) != 1 {
+		t.Fatalf("expected one patched file, got %+v", files)
+	}
+	if files[0].BeforeMode != 0o755 {
+		t.Fatalf("the deleted script's mode is the record's only copy, got %o", files[0].BeforeMode)
+	}
+	if !files[0].BeforeExists || files[0].AfterExists {
+		t.Fatalf("the file should read as deleted, got %+v", files[0])
+	}
+	if files[0].AfterMode != 0 {
+		t.Fatalf("a file that is gone has no mode, got %o", files[0].AfterMode)
+	}
+}
+
+// git carries a mode change as a header and no hunk at all, so a child that
+// only made a script executable produces a patch whose two sides hold the
+// same bytes. Reading the after side's mode is what keeps that from being
+// indistinguishable from a file nothing touched.
+func TestPatchedFiles_AModeOnlyPatchIsStillRead(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix permissions")
+	}
+	repo := initTestRepo(t)
+	writeInto(t, repo, "script.sh", "#!/bin/sh\necho hi\n")
+	if !chmodCarried(t, filepath.Join(repo, "script.sh"), 0o644) {
+		t.Skip("this filesystem does not carry the execute bit")
+	}
+
+	wt, err := addWorktree(repo, []string{"script.sh"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer removeWorktree(wt.repoTop, wt.dir)
+	if !chmodCarried(t, filepath.Join(wt.root, "script.sh"), 0o755) {
+		t.Skip("this filesystem does not carry the execute bit")
+	}
+	patch, err := worktreePatch(wt.dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(patch, "new mode 100755") {
+		t.Fatalf("git should carry the mode change:\n%s", patch)
+	}
+
+	touched := PatchFiles(patch)
+	before := readSides(repo, touched)
+	if err := applyPatch(repo, patch); err != nil {
+		t.Fatalf("a mode-only patch should apply: %v", err)
+	}
+	files := patchedFiles(repo, repo, touched, before, readSides(repo, touched))
+	if len(files) != 1 {
+		t.Fatalf("a mode-only patch should still produce a record, got %+v", files)
+	}
+	if files[0].Before != files[0].After {
+		t.Fatalf("a mode-only patch changed the content: %+v", files[0])
+	}
+	if files[0].BeforeMode != 0o644 || files[0].AfterMode != 0o755 {
+		t.Fatalf("the mode change is the whole of the patch, got %o -> %o",
+			files[0].BeforeMode, files[0].AfterMode)
+	}
+}
+
+// chmodCarried sets a file's permissions and reports whether the filesystem
+// kept them: a checkout on a mount that reports one mode for everything can
+// say nothing about execute bits, and a test that asserted them there would
+// fail for a reason that is not the code's.
+func chmodCarried(t *testing.T, path string, mode os.FileMode) bool {
+	t.Helper()
+	if err := os.Chmod(path, mode); err != nil {
+		t.Fatal(err)
+	}
+	fi, err := os.Stat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return fi.Mode().Perm() == mode
 }

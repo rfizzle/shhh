@@ -17,10 +17,11 @@ leaves alone anything that has changed since — overwriting that takes a
 deliberate second answer. The undo is itself recorded as a change, so it can
 be reviewed and undone in turn.
 
-A file the turn deleted comes back with the permissions it had, so a script
-the agent removed is executable again without anyone reaching for chmod. A
-file that is still there keeps the permissions it has now: an undo puts
-content back and does not touch access somebody set since.
+A file the turn deleted comes back with the permissions it had — whether the
+session deleted it or a writer's patch did — so a script the agent removed is
+executable again without anyone reaching for chmod. A file that is still there
+keeps the permissions it has now: an undo puts content back and does not touch
+access somebody set since.
 
 ## Several places in one file are one call
 

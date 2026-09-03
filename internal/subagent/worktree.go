@@ -292,25 +292,40 @@ func applyPatch(repoTop, patch string) error {
 	return nil
 }
 
-// fileSide is a file as it was at one moment: content, and whether it was
-// there at all.
+// fileSide is a file as it was at one moment: content, whether it was there
+// at all, and the permission bits it had.
 type fileSide struct {
 	text   string
 	exists bool
+	mode   os.FileMode
 }
 
 // readSides reads the given repo-relative paths from the real checkout,
 // reporting a missing file as absent rather than as an error — a patch that
 // creates a file has no before-content, and that is the fact the changeset
 // record needs.
+//
+// The mode is read beside the content, by the same stat the session takes
+// around its own edits. A patch is free to delete an executable script, and
+// once it has there is nowhere else left to learn that it was one: taking the
+// turn back would write the file out at the default mode and the next
+// `./script.sh` would fail with permission denied.
 func readSides(repoTop string, paths []string) map[string]fileSide {
 	out := make(map[string]fileSide, len(paths))
 	for _, p := range paths {
-		if data, err := os.ReadFile(filepath.Join(repoTop, p)); err == nil {
-			out[p] = fileSide{text: string(data), exists: true}
-		} else {
+		full := filepath.Join(repoTop, p)
+		data, err := os.ReadFile(full)
+		if err != nil {
 			out[p] = fileSide{}
+			continue
 		}
+		side := fileSide{text: string(data), exists: true}
+		if fi, statErr := os.Stat(full); statErr == nil {
+			// Permission bits only: applying a patch never changed an owner
+			// or a timestamp, so putting one back is not undo's to do.
+			side.mode = fi.Mode().Perm()
+		}
+		out[p] = side
 	}
 	return out
 }
@@ -329,8 +344,10 @@ func patchedFiles(root, repoTop string, paths []string, before, after map[string
 			Path:         displayPath(root, filepath.Join(repoTop, p)),
 			Before:       b.text,
 			BeforeExists: b.exists,
+			BeforeMode:   b.mode,
 			After:        a.text,
 			AfterExists:  a.exists,
+			AfterMode:    a.mode,
 		})
 	}
 	return out
