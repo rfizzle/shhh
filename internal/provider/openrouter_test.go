@@ -230,3 +230,24 @@ func TestOpenRouter_Registration(t *testing.T) {
 		t.Error("expected 'openrouter' to be registered")
 	}
 }
+
+func TestOpenRouter_StreamCompletion_CeilingIsCompletionTokens(t *testing.T) {
+	// The gateway speaks OpenAI's chat-completions dialect and passes the
+	// request through, so the deprecated field is refused here for the same
+	// reason it is refused upstream.
+	for _, model := range []string{"openai/o3", "openai/gpt-4o"} {
+		body := captureChatRequest(t, func(baseURL string) (<-chan StreamEvent, error) {
+			return newTestOpenRouter(baseURL, model).StreamCompletion(
+				context.Background(),
+				[]Message{{Role: RoleUser, Content: "hi"}},
+				CompletionOpts{MaxTokens: 8192},
+			)
+		})
+		if got := body["max_completion_tokens"]; got != float64(8192) {
+			t.Errorf("%s: max_completion_tokens = %v, want 8192", model, got)
+		}
+		if got, ok := body["max_tokens"]; ok {
+			t.Errorf("%s: request carries the deprecated max_tokens = %v", model, got)
+		}
+	}
+}

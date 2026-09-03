@@ -495,3 +495,48 @@ func TestOpenAI_Registration(t *testing.T) {
 		t.Error("expected 'openai' to be registered")
 	}
 }
+
+// captureChatRequest runs one completion against a server that decodes the
+// request body and answers with an empty stream, and hands back what went
+// out on the wire. Decoding into a map rather than the SDK's request type is
+// the point: a field the struct would fill in with its zero value has to be
+// distinguishable from one that was never sent.
+func captureChatRequest(t *testing.T, run func(baseURL string) (<-chan StreamEvent, error)) map[string]any {
+	t.Helper()
+	var body map[string]any
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_ = json.NewDecoder(r.Body).Decode(&body)
+		w.Header().Set("Content-Type", "text/event-stream")
+		fmt.Fprint(w, "data: [DONE]\n\n")
+	}))
+	defer srv.Close()
+
+	ch, err := run(srv.URL + "/v1")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	for range ch {
+	}
+	return body
+}
+
+func TestOpenAI_StreamCompletion_CeilingIsCompletionTokens(t *testing.T) {
+	// Both models, because the field is OpenAI's own current spelling and
+	// not a reasoning-only accommodation: a reasoning model refuses the old
+	// one outright, and the rest have deprecated it.
+	for _, model := range []string{"o3", "gpt-4o"} {
+		body := captureChatRequest(t, func(baseURL string) (<-chan StreamEvent, error) {
+			return newTestOpenAI(baseURL, model).StreamCompletion(
+				context.Background(),
+				[]Message{{Role: RoleUser, Content: "hi"}},
+				CompletionOpts{MaxTokens: 8192},
+			)
+		})
+		if got := body["max_completion_tokens"]; got != float64(8192) {
+			t.Errorf("%s: max_completion_tokens = %v, want 8192", model, got)
+		}
+		if got, ok := body["max_tokens"]; ok {
+			t.Errorf("%s: request carries the deprecated max_tokens = %v", model, got)
+		}
+	}
+}

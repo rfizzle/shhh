@@ -213,3 +213,38 @@ func TestOpenAICompat_Registration(t *testing.T) {
 		t.Error("expected 'openai-compatible' to be registered")
 	}
 }
+
+func TestOpenAICompat_CeilingFieldFollowsCapabilities(t *testing.T) {
+	cases := []struct {
+		model string
+		want  string
+	}{
+		// Nothing describes what a local runtime is serving, so the ceiling
+		// keeps the field every one of them has always taken.
+		{"llama3", "max_tokens"},
+		// A model with no thinking has no quarrel with the old field, and an
+		// endpoint old enough to serve it may not know the new one.
+		{"gpt-4o", "max_tokens"},
+		// A reasoning model is the one case the old field is refused.
+		{"o3", "max_completion_tokens"},
+	}
+	for _, tc := range cases {
+		body := captureChatRequest(t, func(baseURL string) (<-chan StreamEvent, error) {
+			return newTestCompat(baseURL, tc.model).StreamCompletion(
+				context.Background(),
+				[]Message{{Role: RoleUser, Content: "hi"}},
+				CompletionOpts{MaxTokens: 8192},
+			)
+		})
+		if got := body[tc.want]; got != float64(8192) {
+			t.Errorf("%s: %s = %v, want 8192", tc.model, tc.want, got)
+		}
+		other := "max_tokens"
+		if tc.want == other {
+			other = "max_completion_tokens"
+		}
+		if got, ok := body[other]; ok {
+			t.Errorf("%s: request also carries %s = %v", tc.model, other, got)
+		}
+	}
+}

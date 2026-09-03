@@ -94,7 +94,12 @@ func (o *OpenRouter) StreamCompletion(ctx context.Context, messages []Message, o
 		req.Temperature = float32(*opts.Temperature)
 	}
 	if opts.MaxTokens > 0 {
-		req.MaxTokens = opts.MaxTokens
+		// The ceiling goes in `max_completion_tokens`: chat completions
+		// deprecated `max_tokens` and the reasoning families refuse it
+		// outright, answering a 400 that names the field. Only a bounded
+		// auxiliary call ever sets a ceiling here — a turn sends none — so
+		// the old field failed exactly where nobody was watching.
+		req.MaxCompletionTokens = opts.MaxTokens
 	}
 	// Reasoning effort, fitted to the model: a rung it lacks becomes the
 	// highest it has, and a model with no reasoning gets no field, because

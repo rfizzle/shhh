@@ -198,14 +198,30 @@ func (o *OpenAICompat) StreamCompletion(ctx context.Context, messages []Message,
 	if opts.Temperature != nil {
 		req.Temperature = float32(*opts.Temperature)
 	}
+	// An openai-compatible endpoint hosts whatever it hosts, so what is
+	// known about the model is the only judge of the two fields below; the
+	// table answers where it has an entry and the family floor where it
+	// does not.
+	caps := CapabilitiesFor(req.Model)
 	if opts.MaxTokens > 0 {
-		req.MaxTokens = opts.MaxTokens
+		// The ceiling goes in whichever field this endpoint will take.
+		// OpenAI deprecated `max_tokens` and its reasoning families refuse
+		// it with a 400 that names the field — but Ollama, vLLM and LiteLLM
+		// do not agree on whether they know `max_completion_tokens` at all,
+		// and the default endpoint here is a local Ollama. So the new field
+		// goes out only for a model something describes as reasoning, which
+		// is the one case the old field is known to fail; everything else
+		// keeps the field every one of those runtimes has always taken.
+		if caps.Reasoning {
+			req.MaxCompletionTokens = opts.MaxTokens
+		} else {
+			req.MaxTokens = opts.MaxTokens
+		}
 	}
 	// Reasoning effort is sent only when the model is known to take one.
-	// An openai-compatible endpoint hosts whatever it hosts, and a level
-	// fitted to a model nobody could describe is a field a local runtime
-	// may refuse; the table and the family floor are the only judges here.
-	if caps := CapabilitiesFor(req.Model); caps.Known {
+	// A level fitted to a model nobody could describe is a field a local
+	// runtime may refuse.
+	if caps.Known {
 		if effort := opts.Effort.Fit(caps).OpenAIEffort(); effort != "" {
 			req.ReasoningEffort = effort
 		}
