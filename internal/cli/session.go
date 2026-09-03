@@ -793,6 +793,7 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 		}).
 		WithApprovalMode(mode, cycle).
 		WithSteering(steering(cfg, env.prompts)).
+		WithRetryLimit(cfg.Behavior.ProviderRetries).
 		WithClassifier(classifier).
 		WithSummarizer(summarizer).
 		WithTitler(titler, cfg.TitlesEnabled()).

@@ -223,7 +223,11 @@ func TestRateLimit_WaitsOnACountdownWithItsBound(t *testing.T) {
 	if next.turnState() != stateRetryWait || next.retry == nil {
 		t.Fatalf("a rate limit with nothing to keep should wait, state = %v", next.turnState())
 	}
-	if next.retry.wait != 20*time.Second {
+	// The wait the provider named, plus the spread that keeps a fan-out from
+	// coming back in step. The spread only ever adds: asking again before
+	// the window the provider named has rolled over is the one thing a wait
+	// must not do.
+	if next.retry.wait < 20*time.Second || next.retry.wait > 25*time.Second {
 		t.Errorf("the provider's own wait should be believed, got %v", next.retry.wait)
 	}
 	block := stripANSI(next.retryWaitBlock(110))

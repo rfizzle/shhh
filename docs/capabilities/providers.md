@@ -307,6 +307,44 @@ The catch-all class is deliberate. A message that could not be named still
 gets shown, so an unrecognised failure is a row with the vendor's own words on
 it rather than a dead session.
 
+## A stall is waited out on one schedule
+
+Three of those classes describe a request that never reached the model at all
+— rate limited, overloaded, a connection that died before a token. Nothing
+was answered, nothing entered the conversation, and asking again is the same
+question rather than a second one, so those three are waited out and the rest
+are not. A rejected key and a request that did not fit the window are the same
+failure however long you wait.
+
+The schedule is one schedule. A wait doubles off a second, floored at a
+second so an implausibly short one still gives the window time to roll over
+and capped at a minute because a longer wait is a decision for a person
+rather than a countdown; a provider that names its own wait is believed over
+any of it, since it knows when its own window turns. Onto that goes a small
+random spread. Without it a fan-out whose children were all refused in the
+same second are handed the same wait and come back in the same second, which
+re-creates the limit they just sat out. The spread is only ever added, never
+taken off, because a wait the provider named must not be cut short — and it
+is bounded by the same cap, so the number a countdown shows is a number it
+keeps.
+
+The bound is on the whole stall and not on each request: three attempts by
+default, and it is a request that is actually answered that clears the count,
+not the passing of time. `behavior.provider_retries` sets it. Unset is the
+built-in three; a larger number suits an unattended machine on a flaky link;
+zero is a run that would rather see the failure than sit out a wait, which is
+a different answer from leaving the key alone and is stored as one. The
+setting reaches every surface that drives the loop, children included.
+
+There is one schedule and not one per surface because three copies of "how
+long, how many times" is three answers, and nothing fails when they drift
+apart — a session and the children it spawned would simply start behaving
+differently under the same limit. What differs is only how each surface says
+it is waiting: a countdown you can press out of, a line on stderr, a lane
+that reads *waiting*. Every attempt is also written to the diagnostic log
+with its class and its wait, so a run that went quiet can be told from a run
+that hung after the fact, when the screen it was said on is gone.
+
 ## Related
 
 - [`../architecture.md`](../architecture.md) — why the boundary is here

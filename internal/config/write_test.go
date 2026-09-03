@@ -209,6 +209,26 @@ func TestWrite_KeepsANegativeAndDropsAZero(t *testing.T) {
 	}
 }
 
+// A count whose unset is not its zero is written as the zero it was given.
+// The general rule takes a zero out of the file; this key's zero is the
+// answer "do not wait one out", and a file it vanished from would say the
+// opposite of what the person asked for.
+func TestWrite_KeepsAZeroWhereZeroIsTheAnswer(t *testing.T) {
+	path := writeTemp(t, "[behavior]\nprovider_retries = 3\n")
+	if err := Write(path, Edit{Key: "behavior.provider_retries", Value: "0"}); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := readBack(t, path), "[behavior]\nprovider_retries = 0\n"; got != want {
+		t.Fatalf("got:\n%s", got)
+	}
+	if err := Write(path, Edit{Key: "behavior.provider_retries", Value: ""}); err != nil {
+		t.Fatal(err)
+	}
+	if got, want := readBack(t, path), "[behavior]\n"; got != want {
+		t.Fatalf("clearing the key should take the line out, got:\n%s", got)
+	}
+}
+
 // The six slash commands that persist an answer, each through the writer
 // they share, each read back as what was written.
 func TestWrite_SlashWritersRoundTrip(t *testing.T) {

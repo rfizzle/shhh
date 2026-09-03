@@ -364,3 +364,19 @@ func TestConfigRows_TheBacklogCommitStatesItsDefault(t *testing.T) {
 		t.Errorf("todo.commit = false reads back as %q", got)
 	}
 }
+
+// The retry bound states the built-in number while nothing is set, and reads
+// a bound of none back in words: zero is an answer on this key, and a row
+// that showed it as "0 attempts" would read as an empty field.
+func TestConfigRows_TheRetryBoundStatesItsDefault(t *testing.T) {
+	row := rowFor(configRows(config.Config{}, config.Config{}), "behavior.provider_retries")
+	if want := strconv.Itoa(agent.MaxRetryAttempts) + " attempts"; row.Value != want || row.Source != "default" {
+		t.Fatalf("unset provider_retries row = %q/%q, want %q/default", row.Value, row.Source, want)
+	}
+	var off config.Config
+	none := 0
+	off.Behavior.ProviderRetries = &none
+	if got := rowFor(configRows(off, config.Config{}), "behavior.provider_retries").Value; !strings.Contains(got, "none") {
+		t.Errorf("a bound of none reads %q, want it stated in words", got)
+	}
+}

@@ -327,6 +327,7 @@ func buildSupervisor(ctx context.Context, cfg config.Config, session chatSession
 			// (summary.subagents).
 			Summarizer: newSummarizer(cfg, env, ledger, cfg.SubagentSummaryEnabled()),
 			Steering:   steering(cfg, env.prompts),
+			Retries:    cfg.Behavior.ProviderRetries,
 		}, nil
 	}
 

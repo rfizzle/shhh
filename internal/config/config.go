@@ -358,6 +358,18 @@ type BehaviorConfig struct {
 	// zero keeps the built-in bound, and any negative fixes the interval so
 	// a long turn is asked at the same rate throughout.
 	CheckInMaxDoublings int `toml:"check_in_max_doublings"`
+	// ProviderRetries bounds how many times one stall — a rate limit, an
+	// overloaded provider, a connection that died before a token — is asked
+	// again before the failure stands. Unset keeps the built-in bound; zero
+	// is a machine that would rather see the failure than sit out a wait.
+	//
+	// Those two are different answers, which is why this is a pointer and
+	// not one of the counts whose zero means unset: a key whose absence read
+	// as zero would take the waiting away from everyone who never wrote it,
+	// and the symptom — an unattended run ending on its first rate limit —
+	// looks like the provider rather than like a default.
+	// See docs/capabilities/providers.md#a-stall-is-waited-out-on-one-schedule.
+	ProviderRetries *int `toml:"provider_retries"`
 }
 
 // AgentsConfig configures sub-agent defaults: which model children
@@ -744,6 +756,12 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Behavior.ModeCycle = splitList(value)
 	case "behavior.classifier_model":
 		cfg.Behavior.ClassifierModel = value
+	case "behavior.provider_retries":
+		n, err := optionalCount(key, value)
+		if err != nil {
+			return err
+		}
+		cfg.Behavior.ProviderRetries = n
 	case "summary.model":
 		cfg.Summary.Model = value
 	case "prompts.steer":
@@ -985,6 +1003,21 @@ func triState(key, value string) (*bool, error) {
 		return nil, err
 	}
 	return &b, nil
+}
+
+// optionalCount parses a count whose unset is not its zero: empty is a key
+// the file does not hold, and a written zero is the number nought. It is
+// triState's integer, for a setting where turning the feature off and
+// leaving it alone are two different requests.
+func optionalCount(key, value string) (*int, error) {
+	if strings.TrimSpace(value) == "" {
+		return nil, nil
+	}
+	n, err := intValue(key, value, false)
+	if err != nil {
+		return nil, err
+	}
+	return &n, nil
 }
 
 // splitList parses a comma-separated config value into its non-empty,

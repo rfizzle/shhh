@@ -402,6 +402,13 @@ func (m Model) retryTick(msg retryTickMsg) (tea.Model, tea.Cmd) {
 	return m.resumeAfterWait()
 }
 
+// WithRetryLimit bounds this session's stalls at the attempts a setting
+// names; nil is a file that named none and keeps the built-in bound.
+func (m Model) WithRetryLimit(n *int) Model {
+	m.backoff.SetLimit(n)
+	return m
+}
+
 // clearRetryChain forgets the attempts so far. A request the provider
 // actually answered ends the stall, whatever happens next — so does starting,
 // retrying or continuing a turn, each of which is a decision the user made

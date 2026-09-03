@@ -17,15 +17,32 @@ package agent
 
 import (
 	"fmt"
+	"math/rand/v2"
 	"time"
 
+	"github.com/rfizzle/shhh/internal/logs"
 	"github.com/rfizzle/shhh/internal/provider"
 )
 
-// MaxRetryAttempts bounds one stall. Three is the number the session's
-// countdown states out loud, because a limit you cannot see is
-// indistinguishable from a hang.
+// MaxRetryAttempts bounds one stall when nothing has said otherwise. Three
+// is the number the session's countdown states out loud, because a limit you
+// cannot see is indistinguishable from a hang. A setting may raise it, lower
+// it, or take the waiting away altogether — see SetLimit.
 const MaxRetryAttempts = 3
+
+// retrySpread is the fraction of a wait that is decided at random. It is
+// added and never subtracted, because a provider that named its own window
+// must not be asked again before that window has rolled over.
+//
+// The number it has to beat is a request's round trip. A fan-out whose
+// children were all refused in the same second are handed the same wait and
+// come back in the same second, which re-creates the limit they just sat
+// out; only a spread wider than the time a request takes actually pulls them
+// apart. A quarter of the two-second first wait is half a second, which is
+// several round trips, and it grows with the wait — up to the cap, which
+// the spread is not allowed to carry a wait past.
+// See docs/capabilities/providers.md#a-stall-is-waited-out-on-one-schedule.
+const retrySpread = 0.25
 
 const (
 	// minRetryWait floors a provider that asks for an implausibly short wait;
@@ -33,6 +50,9 @@ const (
 	// this is a decision for the user, not a countdown.
 	minRetryWait = time.Second
 	maxRetryWait = 60 * time.Second
+	// capReachedAt is the attempt whose doubling already exceeds maxRetryWait
+	// — 1<<6 seconds is 64 — and so the last one worth computing.
+	capReachedAt = 6
 )
 
 // RetryNotice is one attempt a driver is about to make: what failed, how long
@@ -81,8 +101,55 @@ func (n RetryNotice) Signal() string {
 //
 // The count outlives each individual wait, which is what makes the bound a
 // bound — a counter that died with the wait it belonged to would grant every
-// attempt a fresh three and retry forever. The zero value is ready to use.
-type Backoff struct{ attempt int }
+// attempt a fresh three and retry forever. The zero value is ready to use and
+// bounded at MaxRetryAttempts.
+type Backoff struct {
+	attempt int
+	// limit and limited are the configured bound and whether there is one.
+	// Two fields rather than one, because zero is an answer a setting can
+	// give — no attempt at all — and a single count could not tell that
+	// apart from a Backoff nobody has configured.
+	limit   int
+	limited bool
+	// jitter is where the spread comes from; nil is the process's own source
+	// of randomness. It is a field so that a test can pin it: a schedule
+	// whose waits are partly random is otherwise a schedule nothing can
+	// assert an exact number about.
+	jitter func() float64
+}
+
+// SetLimit bounds one stall at the attempts a setting names. A nil limit is
+// a file that named none and keeps MaxRetryAttempts — which is deliberately
+// what a driver that never calls this gets, because the opposite default
+// fails silently: an unattended run that stopped on its first rate limit
+// would read as a provider outage rather than as a bound nobody set. Zero is
+// a real answer, for a machine that would rather see the failure than sit
+// out a wait, and a negative is that same answer since fewer than none is
+// not a thing to ask for.
+// See docs/capabilities/providers.md#a-stall-is-waited-out-on-one-schedule.
+func (b *Backoff) SetLimit(n *int) {
+	if n == nil {
+		b.limit, b.limited = 0, false
+		return
+	}
+	b.limit, b.limited = max(*n, 0), true
+}
+
+// bound is how many attempts this stall may make.
+func (b *Backoff) bound() int {
+	if !b.limited {
+		return MaxRetryAttempts
+	}
+	return b.limit
+}
+
+// spread is this attempt's share of the jitter, in [0, 1).
+func (b *Backoff) spread() float64 {
+	if b.jitter == nil {
+		return rand.Float64()
+	}
+	return b.jitter()
+}
 
 // Next reports whether err earns another attempt and what that attempt is.
 // It is false for a failure waiting cannot fix — a rejected key, a request
@@ -93,18 +160,29 @@ func (b *Backoff) Next(err error) (RetryNotice, bool) {
 	if !ok || !f.Recoverable() {
 		return RetryNotice{}, false
 	}
-	b.attempt++
-	if b.attempt > MaxRetryAttempts {
+	limit := b.bound()
+	if limit <= 0 {
 		return RetryNotice{}, false
 	}
-	wait := retryDelay(f, b.attempt)
+	b.attempt++
+	if b.attempt > limit {
+		return RetryNotice{}, false
+	}
+	wait := retryDelay(f, b.attempt, b.spread())
+	// Written down here and nowhere else, so that the record of a wait does
+	// not depend on which driver was running: a run that went quiet is read
+	// back from the log afterwards, and stderr, a lane and a transcript are
+	// all gone by then.
+	logs.Logger().Info("provider request retried",
+		"provider", f.Provider, "class", string(f.Class),
+		"wait", wait, "attempt", b.attempt, "of", limit)
 	return RetryNotice{
 		Failure: f,
 		Wait:    wait,
 		Attempt: b.attempt,
-		Max:     MaxRetryAttempts,
+		Max:     limit,
 		Notice: fmt.Sprintf("%s — asking again in %s (attempt %d of %d)",
-			f.Headline(), wait.Round(time.Second), b.attempt, MaxRetryAttempts),
+			f.Headline(), wait.Round(time.Second), b.attempt, limit),
 	}, true
 }
 
@@ -118,13 +196,27 @@ func (b *Backoff) Attempt() int { return b.attempt }
 // the bound exists to limit.
 func (b *Backoff) Reset() { b.attempt = 0 }
 
-// retryDelay is how long to wait before attempt n. A provider that named its
-// own wait is believed — it knows when its window rolls over — and one that
-// did not gets backoff doubling off a one-second base, so the first wait is
-// two seconds and the third is eight.
-func retryDelay(f *provider.Failure, attempt int) time.Duration {
+// retryDelay is how long to wait before attempt n, given that attempt's
+// share of the spread. A provider that named its own wait is believed — it
+// knows when its window rolls over — and one that did not gets backoff
+// doubling off a one-second base, so the first wait is two seconds and the
+// third is eight. The spread is added last and to both, because the schedule
+// two children that failed together follow is the same schedule.
+func retryDelay(f *provider.Failure, attempt int, spread float64) time.Duration {
+	// The doubling stops doubling at the cap rather than shifting past it.
+	// The bound is a setting, so the attempt number is one a person picked:
+	// left to run, the shift walks off the top of the integer and comes back
+	// as a wait of no time at all, which is a retry storm rather than a
+	// backoff and would read as the provider being hammered.
+	wait := min(time.Duration(1<<min(attempt, capReachedAt))*time.Second, maxRetryWait)
 	if d := f.RetryAfter; d > 0 {
-		return min(max(d, minRetryWait), maxRetryWait)
+		wait = min(max(d, minRetryWait), maxRetryWait)
 	}
-	return min(time.Duration(1<<attempt)*time.Second, maxRetryWait)
+	// The cap is on the wait that actually happens, so the spread cannot
+	// carry one past it: a countdown that says a minute and runs for
+	// seventy-five seconds is a countdown nobody trusts twice. A wait
+	// already at the cap therefore gets no spread, which is the one place a
+	// fan-out can still come back in step — and the cheaper of the two
+	// mistakes, since the alternative is a bound that is not one.
+	return min(wait+time.Duration(spread*retrySpread*float64(wait)), maxRetryWait)
 }

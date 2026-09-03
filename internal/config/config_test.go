@@ -696,6 +696,61 @@ classifier = "classifier.md"
 	}
 }
 
+// The retry bound is a count whose unset is not its zero: a file that says
+// nothing keeps the built-in bound, and a file that says nought is asking
+// for a failure to stand rather than be waited out.
+func TestSet_ProviderRetriesKeepsUnsetApartFromNone(t *testing.T) {
+	var cfg Config
+	if cfg.Behavior.ProviderRetries != nil {
+		t.Fatalf("a config nobody has written to names no bound, got %v", *cfg.Behavior.ProviderRetries)
+	}
+	for _, tc := range []struct {
+		value string
+		want  *int
+	}{
+		{"5", intp(5)},
+		{"0", intp(0)},
+		{"", nil},
+	} {
+		if err := Set(&cfg, "behavior.provider_retries", tc.value); err != nil {
+			t.Fatalf("Set(behavior.provider_retries, %q): %v", tc.value, err)
+		}
+		got := cfg.Behavior.ProviderRetries
+		switch {
+		case tc.want == nil && got != nil:
+			t.Errorf("%q left %d set, want unset", tc.value, *got)
+		case tc.want != nil && got == nil:
+			t.Errorf("%q left the key unset, want %d", tc.value, *tc.want)
+		case tc.want != nil && *got != *tc.want:
+			t.Errorf("%q = %d, want %d", tc.value, *got, *tc.want)
+		}
+	}
+	// Fewer than none is not a bound, and neither is a word.
+	for _, value := range []string{"-1", "twice"} {
+		if err := Set(&cfg, "behavior.provider_retries", value); err == nil {
+			t.Errorf("Set(behavior.provider_retries, %q) should be refused", value)
+		}
+	}
+}
+
+// The same key read back from a file, so a bound of none survives the round
+// trip that a count whose zero meant unset would lose.
+func TestLoadFrom_ProviderRetriesOfNone(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	if err := os.WriteFile(path, []byte("[behavior]\nprovider_retries = 0\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	cfg, err := LoadFrom(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Behavior.ProviderRetries == nil || *cfg.Behavior.ProviderRetries != 0 {
+		t.Errorf("provider_retries = %v, want a bound of none", cfg.Behavior.ProviderRetries)
+	}
+}
+
+func intp(n int) *int { return &n }
+
 func TestTreeCheckIsOnUnlessTurnedOff(t *testing.T) {
 	var cfg Config
 	if !cfg.TreeCheckEnabled() {

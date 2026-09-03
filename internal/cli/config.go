@@ -508,6 +508,23 @@ func configSettings() []configSetting {
 			return opts
 		},
 	}, {
+		group: "MODEL", key: "behavior.provider_retries", label: "retries per stall",
+		// Not num(): unset and zero are different answers here, and zero is
+		// the one worth reading back in words — a run that ends on the first
+		// rate limit rather than waiting one out is a choice somebody made.
+		read: func(c config.Config) string {
+			n := c.Behavior.ProviderRetries
+			if n == nil {
+				return ""
+			}
+			if *n > 0 {
+				return strconv.Itoa(*n) + " attempts"
+			}
+			return "none — a request that failed is not asked again"
+		},
+		fallback: strconv.Itoa(agent.MaxRetryAttempts) + " attempts",
+		options:  noOptions,
+	}, {
 		group: "MODEL", key: "provider.api_key", label: "api key",
 		read:     str(func(c config.Config) string { return c.Provider.APIKey }),
 		fallback: "(from the environment)",

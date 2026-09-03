@@ -535,6 +535,7 @@ func runPrintSession(cmd *cobra.Command, args []string, session chatSession, opt
 			recorder.usagePriced(1, t.In, t.Out, t.Cost, t.Priced)
 		},
 	}
+	h.SetRetryLimit(cfg.Behavior.ProviderRetries)
 	if !opts.json {
 		h.OnText = func(text string) { fmt.Fprint(os.Stdout, text) }
 	}

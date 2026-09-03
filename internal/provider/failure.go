@@ -228,10 +228,13 @@ func (c classifier) classify(err error) error {
 	return f
 }
 
-// record writes one failure to the diagnostic log. This is the only place
-// that does, because this is the only place a provider failure is named:
-// a dialect that classified its own error would be logged twice, and one
-// that did not would be missed entirely.
+// record writes one failure to the diagnostic log. Every refusal is written
+// from here and from nowhere else, because this is the only place a provider
+// failure is named: a dialect that classified its own error would be logged
+// twice, and one that did not would be missed entirely. A refusal that is
+// then waited out is written down a second time by whatever puts the wait
+// on, which is a different event — how long, and how many more — and not a
+// second account of this one.
 //
 // A cancellation is left out. It is the reader pressing Esc, and a log whose
 // commonest line is something the reader did on purpose is one they stop

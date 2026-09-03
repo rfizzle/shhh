@@ -542,6 +542,26 @@ func TestHeadlessRun_DoesNotWaitOutAFailureItCannotFix(t *testing.T) {
 	}
 }
 
+// A bound of none is the setting's way of asking for the failure instead of
+// the wait, and it has to reach the driver: a run configured that way that
+// still slept would be the whole point of the setting missed.
+func TestHeadlessRun_ABoundOfNoneWaitsOutNothing(t *testing.T) {
+	requests := 0
+	a := New(nil, func([]provider.Message, string) (<-chan provider.StreamEvent, context.CancelFunc, error) {
+		requests++
+		return nil, nil, &provider.Failure{Class: provider.ClassOverloaded, Status: 529}
+	})
+	h := &Headless{Agent: a, OnRetry: func(RetryNotice) { t.Error("a bound of none makes no attempt") }}
+	none := 0
+	h.SetRetryLimit(&none)
+	if _, err := h.Run("go"); err == nil {
+		t.Fatal("the failure should stand")
+	}
+	if requests != 1 {
+		t.Errorf("requests = %d, want the one that failed", requests)
+	}
+}
+
 // Interrupt is honoured during a wait: it holds no stream and owes no
 // results, so the turn ends there rather than after the countdown.
 func TestHeadlessRun_InterruptEndsAWait(t *testing.T) {

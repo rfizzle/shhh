@@ -219,6 +219,10 @@ type Env struct {
 	// wordings and thresholds reach it — all but the interval, which is the
 	// surface's own.
 	Steering agent.Steering
+	// Retries bounds a child's stalls as the config file left it; nil keeps
+	// the built-in bound. A fan-out is where waiting one out matters most,
+	// because a limit refuses every child at once.
+	Retries *int
 }
 
 // roundCap is the cap a child's agent is running under as the record spells
@@ -1571,6 +1575,7 @@ func (s *Supervisor) run(c *child) {
 			s.emitUpdate(c)
 		},
 	}
+	h.SetRetryLimit(c.env.Retries)
 	c.mu.Lock()
 	c.headless = h
 	c.mu.Unlock()

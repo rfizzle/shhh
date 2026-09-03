@@ -103,6 +103,10 @@ type Headless struct {
 	interrupted  bool
 }
 
+// SetRetryLimit bounds this run's stalls at the attempts a setting names;
+// nil is a file that named none and keeps the built-in bound (retry.go).
+func (h *Headless) SetRetryLimit(n *int) { h.retry.SetLimit(n) }
+
 // Interrupt cancels the current turn from another goroutine: the in-flight
 // stream is aborted and Run returns ErrInterrupted at the next checkpoint,
 // after Agent.CancelTurn has kept the conversation well-formed. The Headless
