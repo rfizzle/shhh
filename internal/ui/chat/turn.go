@@ -123,6 +123,13 @@ func (m *Model) leaveSurface() {
 	}
 }
 
+// answerIsArriving reports whether the round has prose on the way that has
+// not become an entry yet — the one thing the transcript draws whose last
+// line is still open, which is what anything drawn under it has to know.
+func (m Model) answerIsArriving() bool {
+	return m.turnState() == stateStreaming && m.streaming != ""
+}
+
 // working reports whether the session's own turn is in flight — streaming,
 // running a command, or waiting on the permission classifier. The input is
 // live in all three, and so are the commands that leave the running

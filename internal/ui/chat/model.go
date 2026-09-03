@@ -384,6 +384,11 @@ type Model struct {
 	// rather than the block's, so reasoning that arrives in three pieces
 	// around two tool calls still lands on one row.
 	thinkIdx int
+	// composed is how many bytes of tool-call arguments the round in flight
+	// has written. It is a count and not a buffer: what the round asked for
+	// arrives whole on the terminal event, and the half-written JSON on the
+	// way there is worth a number and nothing else (activity.go).
+	composed int
 	// spinFrame counts spinner ticks for the passive surfaces that draw a
 	// frame themselves rather than animating one (the inspector rail's agent
 	// lanes). It is the session's one frame counter: every surface
@@ -2134,9 +2139,11 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.events = msg.events
 		m.cancel = msg.cancel
 		// A round is a request: the row the last one's reasoning landed on is
-		// not the row this one's belongs to (think.go).
+		// not the row this one's belongs to (think.go), and the call the last
+		// one was writing is not this one's either (activity.go).
 		m.settleThink()
 		m.thinkIdx = 0
+		m.composed = 0
 		return m, waitForEvent(m.events)
 
 	case tokenMsg:
@@ -2156,13 +2163,29 @@ func (m Model) update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		// records that one is owed; one that arrives with nothing ticking — the
 		// last of a stream, or a state that draws no spinner — repaints itself,
 		// because nothing else is going to.
-		if m.spinning && msg.final == nil {
+		// A batch that ended on an argument fragment waits for the tick like
+		// a plain one does (activity.go).
+		if m.spinning && repaintsOnTick(msg.final) {
 			m.streamDirty = true
 		} else {
 			m.flushStream()
 		}
 		if msg.final != nil {
 			return m.update(msg.final)
+		}
+		return m, waitForEvent(m.events)
+
+	case toolDeltaMsg:
+		m.appendCompose(msg.delta)
+		// A round writing a call sends fragments with nothing between them,
+		// so most arrive as a message of their own rather than at the end of
+		// a token batch. The repaint rule is the batch's either way: ride the
+		// tick where one is running, and take the repaint here where none is,
+		// because nothing else is going to.
+		if m.spinning {
+			m.streamDirty = true
+		} else {
+			m.flushStream()
 		}
 		return m, waitForEvent(m.events)
 
@@ -3124,6 +3147,18 @@ func waitForEvent(events <-chan provider.StreamEvent) tea.Cmd {
 // terminalMsg converts a non-token stream event into its message, or returns
 // nil for a plain token event.
 func terminalMsg(ev provider.StreamEvent) tea.Msg {
+	if ev.ToolCallDelta != nil {
+		// A fragment of a tool call's arguments. It ends the token batch
+		// rather than draining into it: what it feeds is a row of its own,
+		// and the two never have to be told apart after the fact because
+		// they never share a field (activity.go).
+		//
+		// It is read before the terminal signals below because every parser
+		// sends a fragment on an event of its own and puts nothing else on
+		// it. A dialect that ever rode a fragment on the event that ended
+		// its round would lose the end of the round here, not the fragment.
+		return toolDeltaMsg{delta: *ev.ToolCallDelta}
+	}
 	if ev.Err != nil {
 		// The completed tool calls ride the failure: a stream that
 		// broke after the model finished writing a call kept that call.
@@ -3645,7 +3680,7 @@ func (m *Model) renderHistoryRawLines() []string {
 		block, prev, havePrev = joinUnits(m.blockUnits(blk, m.transcript, w, false, -1), prev, havePrev)
 		m.cached.write(block)
 	}
-	if m.turnState() == stateStreaming && m.streaming != "" {
+	if m.answerIsArriving() {
 		if havePrev {
 			m.cached.write(separatorBefore(prev, entry{kind: entryAssistant}))
 		}
@@ -3655,6 +3690,9 @@ func (m *Model) renderHistoryRawLines() []string {
 		// either cached whole or rendered once (streammd.go).
 		m.cached.write(m.streamMD.Render(m.streaming, w))
 	}
+	// The call the round is writing, counted, under whatever the round has
+	// said so far — which is where the reader is looking (activity.go).
+	m.cached.write(m.composeRowLine(w, prev, havePrev))
 	return m.cached.lines
 }
 

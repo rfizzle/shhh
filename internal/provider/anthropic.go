@@ -170,6 +170,14 @@ func (a *Anthropic) StreamCompletion(ctx context.Context, messages []Message, op
 					if d.Text != "" {
 						ch <- StreamEvent{Token: d.Text}
 					}
+				case anthropic.InputJSONDelta:
+					// A tool call's arguments as the model writes them. The
+					// id is read off the accumulation rather than the delta:
+					// this dialect names a block once, when it starts, and
+					// every fragment after that carries only the JSON.
+					if id := anthropicBlockID(accumulated, delta.Index); id != "" && d.PartialJSON != "" {
+						ch <- StreamEvent{ToolCallDelta: &ToolCallDelta{ID: id, Arguments: d.PartialJSON}}
+					}
 				case anthropic.ThinkingDelta:
 					// The thinking as it is written. The signed block the next
 					// request needs is read off the accumulation below — this
@@ -238,6 +246,21 @@ func anthropicToolCalls(accumulated anthropic.Message) []ToolCall {
 		}
 	}
 	return calls
+}
+
+// anthropicBlockID is the tool-use id of the accumulated content block at
+// index i, and empty where that index holds something else or has not been
+// accumulated yet. An argument fragment with no id to address it is dropped
+// rather than guessed at: it would count toward a call nobody made.
+func anthropicBlockID(accumulated anthropic.Message, i int64) string {
+	if i < 0 || i >= int64(len(accumulated.Content)) {
+		return ""
+	}
+	tu, ok := accumulated.Content[i].AsAny().(anthropic.ToolUseBlock)
+	if !ok {
+		return ""
+	}
+	return tu.ID
 }
 
 // anthropicReasoning reads the thinking blocks out of the accumulated

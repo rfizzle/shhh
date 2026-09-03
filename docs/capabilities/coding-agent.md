@@ -51,6 +51,43 @@ A second file is a second call. What is batched is one file's several places,
 which is the shape most changes actually have; a list of files would be one
 decision covering changes a person would want to answer separately.
 
+## A long call is counted while it is written
+
+A round that rewrites two hundred lines spends most of itself writing the call
+that does it, and until the call is finished there is nothing to put on a row:
+no target, no outcome, no duration. The transcript's last act is whatever the
+model said before it started, and the longer the file, the longer the screen
+sits on it. Nothing is wrong, and the interface has no way to say so.
+
+So the round counts what it is writing. The arguments stream in as fragments,
+and one row says how many bytes of them have arrived, growing while they do.
+It is drawn as the model's own work, like the reasoning above it — this row
+read nothing, wrote nothing and ran nothing yet — and it sits under whatever
+the round has said so far, which is where a reader watching a turn is looking.
+
+It is a reading of the round in flight and not a line of history. When the
+calls land they take its place, saying what each one touched and what came of
+it; a compose row left behind them would be a second row about one act, and
+the grid gives an act one row.
+
+**A counter, not the arguments.** What is arriving is half-written JSON with
+the file's new contents escaped inside it, and putting that on screen would
+be an unreadable block that reflows on every frame, in a transcript whose
+whole grammar is one row per act. The bytes are the part a reader can use:
+they say the thing is moving and roughly how far it has to go. The contents
+arrive properly a moment later, as the diff of the change, which is where a
+person reads what was written.
+
+**It appears once it is worth appearing.** A fragment says which call it
+belongs to and nothing more — the tool's name arrives with the finished call,
+because that is the first moment it is true — so the row cannot say whether it
+is watching a file being written or a search being spelled. What it can use is
+size. Below a kilobyte the row stays off, and a kilobyte is well past every
+call that reads, searches or globs: those are a path and a pattern, a couple
+of hundred bytes at the outside. What passes it is a file being written or a
+batch of edits being described, which are the calls long enough to be worth
+watching in the first place.
+
 ## Finding things
 
 The agent is told, in its own instructions, to batch independent calls, to

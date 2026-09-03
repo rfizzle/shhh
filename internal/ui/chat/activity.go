@@ -13,12 +13,15 @@ import (
 	"sync"
 	"time"
 
+	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/attachment"
 	"github.com/rfizzle/shhh/internal/digest"
 	"github.com/rfizzle/shhh/internal/evidence"
 	"github.com/rfizzle/shhh/internal/lsp"
 	"github.com/rfizzle/shhh/internal/mcp"
 	"github.com/rfizzle/shhh/internal/memory"
 	"github.com/rfizzle/shhh/internal/process"
+	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/quality"
 	"github.com/rfizzle/shhh/internal/reports"
 	"github.com/rfizzle/shhh/internal/skill"
@@ -530,4 +533,108 @@ func (m *Model) monoCommand(parts []string) string {
 		return "Monochrome on — every surface renders in two greys."
 	}
 	return "Monochrome off — the full palette is back."
+}
+
+// The compose row
+// (docs/capabilities/coding-agent.md#a-long-call-is-counted-while-it-is-written):
+// how much of a tool call the model has written, while it is writing it.
+//
+// A round that ends in a large edit spends most of itself inside one JSON
+// blob, and nothing about the call is true until the blob closes — no target,
+// no outcome, no duration — so the transcript's last act stays whatever the
+// model said before it started, for as long as the write takes. The fragments
+// the stream reports (internal/provider) are counted here and stated as a
+// size on one row.
+//
+// It is a reading of the round in flight and not an entry in the history: it
+// is drawn under the answer as it arrives, the way the answer itself is drawn
+// before it becomes an entry, and it goes when the round's calls land. What
+// replaces it is those calls' own rows, which say what was written and what
+// came of it — a compose row left behind them would be a second row about one
+// act, and the grid gives an act one row
+// (docs/interface/principles.md#one-grid).
+//
+// It states a size and never a target, because a fragment carries the call's
+// id and its bytes: the tool's name arrives with the finished call, which is
+// the first moment it is true.
+
+// composeVerb is the row's verb, closed like every other
+// (docs/interface/principles.md#closed-vocabularies).
+const composeVerb = "compose"
+
+// composeFloor is how much a round has to have written before the row is
+// drawn at all. It is measured against the calls not worth watching: a read,
+// a search or a glob is a path and a pattern, a couple of hundred bytes at
+// the outside, while a file being written or a batch of edits runs to
+// kilobytes. A kilobyte sits clear of the first group and well under the
+// second, so the row appears for the calls a reader is waiting on and for no
+// others.
+const composeFloor = 1 << 10
+
+// toolDeltaMsg is one fragment of a tool call's arguments, off the stream.
+type toolDeltaMsg struct{ delta provider.ToolCallDelta }
+
+// repaintsOnTick reports whether a token batch that ended on this message can
+// leave its repaint to the spinner's tick. Nothing terminal can — a round
+// that has ended has to draw what it ended with — but a fragment is not the
+// end of anything, and the row it feeds restates a size that only moves every
+// kilobyte. A stream that sends its arguments in twenty-byte chunks would
+// otherwise re-render the transcript twenty bytes at a time, which is the
+// cost this row exists to make visible rather than to pay.
+func repaintsOnTick(final tea.Msg) bool {
+	if final == nil {
+		return true
+	}
+	_, ok := final.(toolDeltaMsg)
+	return ok
+}
+
+// appendCompose counts an arriving fragment into the round's total. The
+// reading is the round's and not the call's, the way the think row is
+// (think.go): a round writing three calls at once is one wait to the person
+// watching it, and three numbers counting interleaved fragments are three
+// numbers nobody can add up.
+func (m *Model) appendCompose(d provider.ToolCallDelta) {
+	if m.compacting {
+		// A compaction is housekeeping, not a turn, and it calls no tools; a
+		// reading of one would be a reading of something that never happened
+		// (context.go).
+		return
+	}
+	m.composed += len(d.Arguments)
+}
+
+// showCompose reports whether the compose row is drawn at all. Low verbosity
+// is step headers only, and this row reports no act either — the act it was
+// counting is the row that lands in its place a moment later.
+func (m Model) showCompose() bool { return m.verbosity != verbosityLow }
+
+// composeRowLine is the round's compose row as its rendered line, and nothing
+// where the row has not earned its place: no round in flight, nothing written
+// worth waiting for, or a verbosity that draws no such row. prev is whatever
+// the transcript rendered last, which is what decides the spacing above it.
+//
+// The row does not spin. What moves on it is the count, which is the reading
+// itself; the frame's own status line is where the turn says it is running.
+func (m Model) composeRowLine(width int, prev entry, havePrev bool) string {
+	if m.events == nil || m.composed < composeFloor || !m.showCompose() {
+		return ""
+	}
+	row := components.ActivityRow{
+		Kind:   components.ActivityThink,
+		Verb:   composeVerb,
+		Counts: attachment.HumanSize(m.composed),
+	}
+	// The spacing above the row is the transcript's own, so it is asked for
+	// rather than chosen here. The answer arriving is the one thing above it
+	// whose last line is still open — every finished entry ends its own — so
+	// that case closes the line first and the separator follows.
+	lead := ""
+	switch {
+	case m.answerIsArriving():
+		lead = "\n" + separatorBefore(entry{kind: entryAssistant}, entry{kind: entryTool})
+	case havePrev:
+		lead = separatorBefore(prev, entry{kind: entryTool})
+	}
+	return lead + row.View(width) + "\n"
 }

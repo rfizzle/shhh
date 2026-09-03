@@ -49,6 +49,18 @@ type ToolCall struct {
 	Signature string
 }
 
+// ToolCallDelta is one fragment of a tool call's arguments, as the model
+// writes them. It carries the call's id and the fragment and nothing else:
+// the name, the finished arguments and the order the calls were made in are
+// all on the terminal event, which is the only place any of them is complete.
+// A reader that treated a fragment as a call would be reading half-written
+// JSON — the failure partial.go exists to prevent.
+// See docs/capabilities/providers.md#tool-arguments-arrive-as-fragments.
+type ToolCallDelta struct {
+	ID        string
+	Arguments string
+}
+
 type Usage struct {
 	// PromptTokens is every input token the request is billed for, cached
 	// ones included. The dialects do not agree on that: most report a prompt
@@ -92,6 +104,18 @@ type StreamEvent struct {
 	// the screen can show of them. A provider that has one and not the other
 	// is normal in both directions.
 	Thinking string
+	// ToolCallDelta is a tool call's arguments as they are written, the way
+	// Token is answer text as it arrives. A model rewriting two hundred lines
+	// spends most of a round inside one JSON blob, and nothing about that
+	// round is reportable until the blob closes — which is a surface that
+	// looks stopped at the moment the model is busiest.
+	//
+	// It is progress and never content. What a round acts on is ToolCalls on
+	// the terminal event, unchanged; a fragment is never dispatched, stored
+	// or replayed, and a stream that breaks mid-fragment still hands back
+	// only the calls that are whole (partial.go).
+	// See docs/capabilities/providers.md#tool-arguments-arrive-as-fragments.
+	ToolCallDelta *ToolCallDelta
 }
 
 type CompletionOpts struct {

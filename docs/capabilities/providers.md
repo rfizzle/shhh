@@ -206,6 +206,33 @@ nothing with the session's other requests and is read from scratch — paying
 for the whole opening again to avoid one retry. The tools stay; only the
 permission changes.
 
+## Tool arguments arrive as fragments
+
+A round that ends in a tool call spends most of itself writing that call. The
+arguments are JSON and they stream in like everything else, but until the last
+brace closes there is no call — so a round rewriting two hundred lines reports
+nothing for as long as it takes to write two hundred lines, and every surface
+above it has the same nothing to draw.
+
+The fragments are reported as they arrive. Each one names the call it belongs
+to and carries the bytes, and nothing else: the tool's name, the finished
+arguments and the order the calls were made in are all on the terminal event,
+which is the only place any of them is complete. A fragment is never
+dispatched, stored or replayed, and a stream that breaks in the middle of one
+still hands back only the calls that are whole — the fragment is a reading of
+progress, not a claim about what the model asked for.
+
+The four dialects write them differently and the reading is the same in all
+four. Two send a call in pieces and name it once, when it starts, so the
+fragments after that are addressed from what has already been accumulated.
+One sends the pieces under the id of the output item rather than the id a
+result is answered with, so the two ids are paired when the item opens, and an
+endpoint that never opens the item reports no progress rather than progress
+under an id that would address the wrong call. The fourth never breaks a call
+up at all: its arguments arrive whole, and the whole is reported as one
+fragment, in its place in the stream, so a reader that follows fragments does
+not have to know which dialect it is following.
+
 ## The prompt prefix is paid for once
 
 A coding turn sends the same opening over and over. The system prompt, the

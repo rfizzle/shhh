@@ -118,7 +118,7 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 						switch {
 						case part.FunctionCall != nil:
 							args, _ := json.Marshal(part.FunctionCall.Args)
-							toolCalls = append(toolCalls, ToolCall{
+							call := ToolCall{
 								// The Gemini API leaves functionCall.id
 								// empty, and a call with no id is
 								// one a dropped stream discards (partial.go)
@@ -128,7 +128,16 @@ func (g *Gemini) StreamCompletion(ctx context.Context, messages []Message, opts 
 								Name:      part.FunctionCall.Name,
 								Arguments: string(args),
 								Signature: encodeSignature(part.ThoughtSignature),
-							})
+							}
+							toolCalls = append(toolCalls, call)
+							// This dialect never sends a call in pieces: the
+							// whole functionCall part arrives at once, so
+							// the fragment is the arguments entire. It is
+							// reported anyway, and in the order the parts
+							// came in, so a surface reading fragments sees
+							// the same progress here as anywhere else —
+							// arriving in one step rather than in a hundred.
+							ch <- StreamEvent{ToolCallDelta: &ToolCallDelta{ID: call.ID, Arguments: call.Arguments}}
 						case part.Thought:
 							// Thinking is not the answer: it goes back on
 							// the next request as a thought part, and it

@@ -77,6 +77,16 @@ func streamOpenAIToolCalls(stream *openai.ChatCompletionStream, classify func(er
 					acc.name = tc.Function.Name
 				}
 				acc.args += tc.Function.Arguments
+				// The arguments as they are written. This dialect puts the
+				// id on the first chunk of a call and omits it from the
+				// rest, so the fragment is addressed from the accumulator
+				// rather than from the chunk. A chunk that somehow arrives
+				// before any id does still accumulates into the call and is
+				// simply not reported: a fragment addressed to nothing would
+				// count toward a call nobody made.
+				if acc.id != "" && tc.Function.Arguments != "" {
+					ch <- StreamEvent{ToolCallDelta: &ToolCallDelta{ID: acc.id, Arguments: tc.Function.Arguments}}
+				}
 			}
 
 			if choice.FinishReason == "tool_calls" {

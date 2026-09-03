@@ -6,6 +6,11 @@ package provider
 // usage. Tool calls are read from that terminal event's output list rather
 // than accumulated from argument deltas — the same values, without the
 // bookkeeping, and it stays correct if a gateway drops the delta events.
+//
+// The argument deltas are still read, for progress alone: they say how much
+// of a call the model has written while it is writing it. They are addressed
+// by the item they belong to, and the id a tool result is answered with is on
+// the item event that opened it, so the two are paired here.
 
 import (
 	"bufio"
@@ -24,15 +29,20 @@ const (
 	eventFailed       = "response.failed"
 	eventError        = "error"
 	eventArgsDone     = "response.function_call_arguments.done"
+	eventArgsDelta    = "response.function_call_arguments.delta"
 	eventItemDone     = "response.output_item.done"
+	eventItemAdded    = "response.output_item.added"
 )
 
 // responseEvent is the union of the event payloads shhh reads. Everything
-// else on the stream — created, in_progress, per-item added/delta, content
-// part boundaries — is ignored.
+// else on the stream — created, in_progress, per-item content part
+// boundaries — is ignored.
 type responseEvent struct {
-	Type     string `json:"type"`
-	Delta    string `json:"delta"`
+	Type  string `json:"type"`
+	Delta string `json:"delta"`
+	// ItemID addresses an argument delta to the item it is part of. It is
+	// not the call id: the call id is on the item itself.
+	ItemID   string `json:"item_id"`
 	Response struct {
 		Output []responseOutputItem `json:"output"`
 		Usage  *responseUsage       `json:"usage"`
@@ -45,7 +55,11 @@ type responseEvent struct {
 }
 
 type responseOutputItem struct {
-	Type      string `json:"type"`
+	Type string `json:"type"`
+	// ID is the item's own id, which the argument deltas are addressed to;
+	// CallID is what a tool result is answered with. They are different
+	// strings and this dialect is the only one that has both.
+	ID        string `json:"id"`
 	CallID    string `json:"call_id"`
 	Name      string `json:"name"`
 	Arguments string `json:"arguments"`
@@ -81,6 +95,11 @@ func streamResponses(body io.ReadCloser, classify func(error) error) <-chan Stre
 		seen := map[string]ToolCall{}
 		var order []string
 		var usage *Usage
+		// Item id to call id, so an argument fragment can be reported under
+		// the id the rest of the session addresses that call by. An endpoint
+		// that never opens the item sends no fragments anybody can place,
+		// and reports no progress rather than progress under a wrong id.
+		itemCalls := map[string]string{}
 
 		for scanner.Scan() {
 			payload, ok := sseData(scanner.Text())
@@ -97,6 +116,16 @@ func streamResponses(body io.ReadCloser, classify func(error) error) <-chan Stre
 			case eventTextDelta, eventRefusalDelta:
 				if ev.Delta != "" {
 					ch <- StreamEvent{Token: ev.Delta}
+				}
+
+			case eventItemAdded:
+				if ev.Item != nil && ev.Item.Type == "function_call" && ev.Item.ID != "" && ev.Item.CallID != "" {
+					itemCalls[ev.Item.ID] = ev.Item.CallID
+				}
+
+			case eventArgsDelta:
+				if id := itemCalls[ev.ItemID]; id != "" && ev.Delta != "" {
+					ch <- StreamEvent{ToolCallDelta: &ToolCallDelta{ID: id, Arguments: ev.Delta}}
 				}
 
 			case eventItemDone, eventArgsDone:
