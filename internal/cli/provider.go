@@ -121,7 +121,7 @@ func resolveProvider(ctx context.Context, cfg config.Config, req providerRequest
 		return nil, req, err
 	}
 	if choice.Save {
-		saveProviderChoice(cfg, next)
+		saveProviderChoice(next)
 	}
 	return p, next, nil
 }
@@ -156,24 +156,18 @@ func askProvider(survey resolve.Survey) (ui.ProviderChoice, bool) {
 // that fails is reported and nothing else: the session was already started on
 // the choice, and refusing to run because the preference could not be saved
 // would be the wrong trade.
-func saveProviderChoice(cfg config.Config, req providerRequest) {
-	updates := [][2]string{{"provider.default", req.Provider}}
+func saveProviderChoice(req providerRequest) {
+	edits := []config.Edit{{Key: "provider.default", Value: req.Provider}}
 	if req.APIKey != "" {
-		updates = append(updates, [2]string{"provider.api_key", req.APIKey})
+		edits = append(edits, config.Edit{Key: "provider.api_key", Value: req.APIKey})
 	}
 	if req.BaseURL != "" {
-		updates = append(updates, [2]string{"provider.base_url", req.BaseURL})
+		edits = append(edits, config.Edit{Key: "provider.base_url", Value: req.BaseURL})
 	}
 	if req.Model != "" {
-		updates = append(updates, [2]string{"provider.model", req.Model})
+		edits = append(edits, config.Edit{Key: "provider.model", Value: req.Model})
 	}
-	for _, kv := range updates {
-		if err := config.Set(&cfg, kv[0], kv[1]); err != nil {
-			fmt.Fprintf(os.Stderr, "shhh: could not set %s: %v\n", kv[0], err)
-			return
-		}
-	}
-	if err := config.Save(cfg); err != nil {
+	if err := config.Write(config.WritePath(), edits...); err != nil {
 		fmt.Fprintf(os.Stderr, "shhh: could not save the provider to %s: %v\n", config.WritePath(), err)
 		return
 	}

@@ -90,6 +90,26 @@ offered rather than made — the same confirm the editor uses, on the row that
 found it — so the rule that holds is the one about asking, not the one about
 diagnostics being read-only.
 
+## A write changes one line
+
+A write from any surface — `config set`, the editor's `[w]`, a slash command
+that saves its answer, `shhh mcp add` — changes the key it was asked to
+change and leaves every other byte of the file as the person wrote it: the
+order of the sections, the blank lines, and above all the comments. The file
+is theirs. A three-line file with a comment saying why is a record of a
+decision, and a write that hands back eighty lines with the comment gone has
+destroyed the record to save one value.
+
+A key set to its zero value is taken out of the file rather than written as
+zero. Unset means the default, and for a few keys zero and unset are not the
+same fact — a negative round limit is a limit removed, and a written zero
+beside a comment saying "unset means the default" is a value nobody chose.
+The file never holds a zero the person did not type.
+
+A file that does not exist is created holding only what was written, under
+its section header. A file that does not parse is refused untouched: the
+person is told, and the write is theirs to make once the file reads.
+
 ## A failed check says what it will cost you
 
 Diagnostics report in the words of the surface where the consequence will

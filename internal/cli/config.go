@@ -54,14 +54,7 @@ func newConfigSetCmd() *cobra.Command {
 		Long:  "Set a configuration key. Example: shhh config set provider.default openai",
 		Args:  cobra.ExactArgs(2),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := config.Load()
-			if err != nil {
-				return err
-			}
-			if err := config.Set(&cfg, args[0], args[1]); err != nil {
-				return err
-			}
-			if err := config.Save(cfg); err != nil {
+			if err := config.Write(config.WritePath(), config.Edit{Key: args[0], Value: args[1]}); err != nil {
 				return err
 			}
 			return report.Fprintln(cmd.OutOrStdout(), report.Done("set", args[0]+" = "+args[1]))
@@ -77,13 +70,19 @@ func newConfigSetCmd() *cobra.Command {
 // Two copies of the config are held. base is what was loaded and is what a
 // row is compared against to say where its value came from; cfg is what the
 // staged edits have made of it. Nothing is written until [w] — which is the
-// rule the old wizard broke by saving on every keystroke.
+// rule the old wizard broke by saving on every keystroke — and what [w]
+// writes is the staged keys alone, each as the value it was staged with, so
+// the file keeps every line the screen did not touch.
 type configModel struct {
 	base  config.Config
 	cfg   config.Config
 	saved bool
 	err   error
 	width int
+	// staged is the value each edited key was given, as typed or picked,
+	// which is what the write needs: a row's read is the screen's rendering
+	// of the value and is not what goes in the file.
+	staged map[string]string
 
 	screen components.ConfigScreen
 }
@@ -93,7 +92,7 @@ type configModel struct {
 const defaultConfigWidth = 110
 
 func newConfigModel(cfg config.Config) configModel {
-	m := configModel{base: cfg, cfg: cfg, width: defaultConfigWidth}
+	m := configModel{base: cfg, cfg: cfg, width: defaultConfigWidth, staged: map[string]string{}}
 	m.screen.Path = shortPath(config.WritePath())
 	m.refresh()
 	return m
@@ -116,7 +115,7 @@ func (m configModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m, nil
 		}
 		if r, ok := result.(components.ConfigResult); ok && r.Write {
-			if err := config.Save(m.cfg); err != nil {
+			if err := config.Write(config.WritePath(), m.edits()...); err != nil {
 				m.err = err
 			} else {
 				m.saved = true
@@ -147,10 +146,29 @@ func (m *configModel) apply(change components.ConfigChange) {
 		m.screen.Notice = err.Error()
 		return
 	}
+	m.staged[change.Key] = value
 	if change.Reset {
 		m.screen.Notice = change.Key + " is back to its default"
 	}
 	m.refresh()
+}
+
+// edits is what [w] writes: every key whose staged value differs from the
+// loaded one, in the screen's order. A key edited and then put back is not
+// among them, so its line in the file is not rewritten either.
+func (m configModel) edits() []config.Edit {
+	var edits []config.Edit
+	for _, s := range configSettings() {
+		if s.read(m.cfg) == s.read(m.base) {
+			continue
+		}
+		value, ok := m.staged[s.key]
+		if !ok {
+			continue
+		}
+		edits = append(edits, config.Edit{Key: s.key, Value: value})
+	}
+	return edits
 }
 
 // refresh rebuilds every row from the staged config and recounts what is
@@ -707,17 +725,11 @@ func shortPath(path string) string {
 }
 
 // configWriter persists one config key from an interactive session (/model
-// default, /model agents). It re-reads the file first so a concurrent edit
-// elsewhere is not clobbered by this session's stale copy.
+// default, /model agents, /reasoning, the /ui toggles). It edits the file's
+// text for that key alone, so an edit made elsewhere since the session
+// started is not clobbered by this session's stale copy.
 func configWriter() func(key, value string) error {
 	return func(key, value string) error {
-		cfg, err := config.Load()
-		if err != nil {
-			return err
-		}
-		if err := config.Set(&cfg, key, value); err != nil {
-			return err
-		}
-		return config.Save(cfg)
+		return config.Write(config.WritePath(), config.Edit{Key: key, Value: value})
 	}
 }

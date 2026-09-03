@@ -570,8 +570,7 @@ func newMCPCmd() *cobra.Command {
 				}
 				return fmt.Errorf("no server named %q in %s", args[0], config.WritePath())
 			}
-			delete(cfg.MCP.Servers, args[0])
-			if err := config.Save(cfg); err != nil {
+			if err := config.RemoveServer(config.WritePath(), args[0]); err != nil {
 				return err
 			}
 			return report.Fprintln(cmd.OutOrStdout(),
@@ -720,14 +719,10 @@ func newMCPAddCmd() *cobra.Command {
 			if err := mcpDefinitions(probe)[0].Validate(); err != nil {
 				return err
 			}
-			if cfg.MCP.Servers == nil {
-				cfg.MCP.Servers = map[string]config.MCPServer{}
-			}
 			if _, exists := cfg.MCP.Servers[name]; exists {
 				return fmt.Errorf("%s is already defined in %s; `shhh mcp remove %s` first", name, config.WritePath(), name)
 			}
-			cfg.MCP.Servers[name] = s
-			if err := config.Save(cfg); err != nil {
+			if err := config.WriteServer(config.WritePath(), name, s); err != nil {
 				return err
 			}
 			_ = report.Fprint(cmd.OutOrStdout(), report.Report{Sections: []report.Section{{Rows: []report.Row{

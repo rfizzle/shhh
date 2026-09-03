@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -620,6 +621,14 @@ func LoadFrom(paths ...string) (Config, error) {
 }
 
 func Set(cfg *Config, key, value string) error {
+	if p := intField(cfg, key); p != nil {
+		n, err := intValue(value)
+		if err != nil {
+			return err
+		}
+		*p = n
+		return nil
+	}
 	switch key {
 	case "provider.default":
 		cfg.Provider.Default = value
@@ -637,41 +646,16 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Behavior.SilentMode = value == "true"
 	case "behavior.shell":
 		cfg.Behavior.Shell = value
-	case "behavior.context_max_tokens":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Behavior.ContextMaxTokens = n
 	case "appearance.mouse":
-		v := value == "true"
-		cfg.Appearance.Mouse = &v
+		cfg.Appearance.Mouse = boolPtr(value)
 	case "appearance.notify":
-		v := value == "true"
-		cfg.Appearance.Notify = &v
+		cfg.Appearance.Notify = boolPtr(value)
 	case "appearance.window_title":
-		v := value == "true"
-		cfg.Appearance.WindowTitle = &v
-	case "appearance.paste_lines":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Appearance.PasteLines = n
-	case "appearance.paste_columns":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Appearance.PasteColumns = n
-	case "behavior.max_tool_rounds":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Behavior.MaxToolRounds = n
+		cfg.Appearance.WindowTitle = boolPtr(value)
 	case "behavior.tree_check":
-		v := value == "true"
-		cfg.Behavior.TreeCheck = &v
-	case "behavior.command_timeout_seconds":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Behavior.CommandTimeoutSeconds = n
+		cfg.Behavior.TreeCheck = boolPtr(value)
 	case "behavior.safety_warnings":
-		v := value == "true"
-		cfg.Behavior.SafetyWarnings = &v
+		cfg.Behavior.SafetyWarnings = boolPtr(value)
 	case "behavior.system_prompt_extra":
 		cfg.Behavior.SystemPromptExtra = value
 	case "behavior.command_allowlist":
@@ -679,16 +663,11 @@ func Set(cfg *Config, key, value string) error {
 	case "behavior.read_only_commands":
 		cfg.Behavior.ReadOnlyCommands = splitList(value)
 	case "behavior.read_only_auto":
-		v := value == "true"
-		cfg.Behavior.ReadOnlyAuto = &v
+		cfg.Behavior.ReadOnlyAuto = boolPtr(value)
 	case "secrets.env":
 		cfg.Secrets.Env = splitList(value)
 	case "agents.model":
 		cfg.Agents.Model = value
-	case "agents.max_concurrent":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Agents.MaxConcurrent = n
 	case "agents.researcher_model", "agents.writer_model":
 		role := strings.TrimSuffix(strings.TrimPrefix(key, "agents."), "_model")
 		if cfg.Agents.Profiles == nil {
@@ -705,63 +684,16 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Behavior.ModeCycle = splitList(value)
 	case "behavior.classifier_model":
 		cfg.Behavior.ClassifierModel = value
-	case "behavior.classifier_timeout_seconds":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Behavior.ClassifierTimeoutSeconds = n
-	case "behavior.classifier_max_tokens":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Behavior.ClassifierMaxTokens = n
-	case "behavior.classifier_retries":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Behavior.ClassifierRetries = n
 	case "summary.model":
 		cfg.Summary.Model = value
-	case "summary.interval_rounds":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Summary.IntervalRounds = n
-	case "summary.min_gap_seconds":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Summary.MinGapSeconds = n
-	case "summary.timeout_seconds":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Summary.TimeoutSeconds = n
-	case "summary.max_tokens":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Summary.MaxTokens = n
 	case "summary.disabled":
 		cfg.Summary.Disabled = value == "true"
 	case "summary.headless":
-		v := value == "true"
-		cfg.Summary.Headless = &v
+		cfg.Summary.Headless = boolPtr(value)
 	case "summary.subagents":
-		v := value == "true"
-		cfg.Summary.Subagents = &v
+		cfg.Summary.Subagents = boolPtr(value)
 	case "summary.title":
-		v := value == "true"
-		cfg.Summary.Title = &v
-	case "summary.intervene_cooldown_intervals":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Summary.InterveneCooldownIntervals = n
-	case "summary.steer_target_chars":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Summary.SteerTargetChars = n
-	case "behavior.check_in_interval_rounds":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Behavior.CheckInIntervalRounds = n
-	case "behavior.check_in_max_doublings":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Behavior.CheckInMaxDoublings = n
+		cfg.Summary.Title = boolPtr(value)
 	case "prompts.steer":
 		cfg.Prompts.Steer = value
 	case "prompts.check_in":
@@ -772,14 +704,6 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Prompts.Classifier = value
 	case "behavior.memory_disabled":
 		cfg.Behavior.MemoryDisabled = value == "true"
-	case "behavior.memory_max_entries":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Behavior.MemoryMaxEntries = n
-	case "behavior.memory_max_tokens":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Behavior.MemoryMaxTokens = n
 	case "sandbox.profile":
 		cfg.Sandbox.Profile = value
 	case "sandbox.deny_extra":
@@ -796,30 +720,16 @@ func Set(cfg *Config, key, value string) error {
 		cfg.Sandbox.ContainerMemory = value
 	case "sandbox.container_cpus":
 		cfg.Sandbox.ContainerCPUs = value
-	case "sandbox.container_pids":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Sandbox.ContainerPids = n
-	case "sandbox.container_ttl_hours":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Sandbox.ContainerTTLHours = n
 	case "sandbox.require_isolation":
 		cfg.Sandbox.RequireIsolation = value
 	case "web.allow_private":
 		cfg.Web.AllowPrivate = value == "true"
 	case "web.fetch_max_bytes":
-		var n int64
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Web.FetchMaxBytes = n
-	case "web.fetch_timeout_seconds":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Web.FetchTimeoutSeconds = n
-	case "web.cache_ttl_minutes":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Web.CacheTTLMinutes = n
+		n, err := intValue(value)
+		if err != nil {
+			return err
+		}
+		cfg.Web.FetchMaxBytes = int64(n)
 	case "web.search_provider":
 		cfg.Web.SearchProvider = value
 	case "web.search_api_key":
@@ -828,32 +738,104 @@ func Set(cfg *Config, key, value string) error {
 		cfg.LSP.Disabled = value == "true"
 	case "mcp.disabled":
 		cfg.MCP.Disabled = value == "true"
-	case "mcp.startup_timeout_seconds":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.MCP.StartupTimeoutSeconds = n
-	case "lsp.request_timeout_seconds":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.LSP.RequestTimeoutSeconds = n
-	case "lsp.diagnostics_timeout_seconds":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.LSP.DiagnosticsTimeoutSeconds = n
 	case "appearance.accent_color":
 		cfg.Appearance.AccentColor = value
-	case "history.retention_days":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.History.RetentionDays = n
-	case "reports.retention_days":
-		n := 0
-		fmt.Sscanf(value, "%d", &n)
-		cfg.Reports.RetentionDays = n
 	default:
 		return fmt.Errorf("unknown config key: %s", key)
 	}
 	return nil
+}
+
+// intField is the integer setting a key names, or nil when the key is not
+// one. The integer keys are parsed in one place rather than one case each
+// so that they are parsed strictly: a value that is not a number is refused,
+// because a zero is the line coming out of the file, and a typo must not
+// delete a setting the person had.
+func intField(cfg *Config, key string) *int {
+	switch key {
+	case "behavior.context_max_tokens":
+		return &cfg.Behavior.ContextMaxTokens
+	case "appearance.paste_lines":
+		return &cfg.Appearance.PasteLines
+	case "appearance.paste_columns":
+		return &cfg.Appearance.PasteColumns
+	case "behavior.max_tool_rounds":
+		return &cfg.Behavior.MaxToolRounds
+	case "behavior.command_timeout_seconds":
+		return &cfg.Behavior.CommandTimeoutSeconds
+	case "agents.max_concurrent":
+		return &cfg.Agents.MaxConcurrent
+	case "behavior.classifier_timeout_seconds":
+		return &cfg.Behavior.ClassifierTimeoutSeconds
+	case "behavior.classifier_max_tokens":
+		return &cfg.Behavior.ClassifierMaxTokens
+	case "behavior.classifier_retries":
+		return &cfg.Behavior.ClassifierRetries
+	case "summary.interval_rounds":
+		return &cfg.Summary.IntervalRounds
+	case "summary.min_gap_seconds":
+		return &cfg.Summary.MinGapSeconds
+	case "summary.timeout_seconds":
+		return &cfg.Summary.TimeoutSeconds
+	case "summary.max_tokens":
+		return &cfg.Summary.MaxTokens
+	case "summary.intervene_cooldown_intervals":
+		return &cfg.Summary.InterveneCooldownIntervals
+	case "summary.steer_target_chars":
+		return &cfg.Summary.SteerTargetChars
+	case "behavior.check_in_interval_rounds":
+		return &cfg.Behavior.CheckInIntervalRounds
+	case "behavior.check_in_max_doublings":
+		return &cfg.Behavior.CheckInMaxDoublings
+	case "behavior.memory_max_entries":
+		return &cfg.Behavior.MemoryMaxEntries
+	case "behavior.memory_max_tokens":
+		return &cfg.Behavior.MemoryMaxTokens
+	case "sandbox.container_pids":
+		return &cfg.Sandbox.ContainerPids
+	case "sandbox.container_ttl_hours":
+		return &cfg.Sandbox.ContainerTTLHours
+	case "web.fetch_timeout_seconds":
+		return &cfg.Web.FetchTimeoutSeconds
+	case "web.cache_ttl_minutes":
+		return &cfg.Web.CacheTTLMinutes
+	case "mcp.startup_timeout_seconds":
+		return &cfg.MCP.StartupTimeoutSeconds
+	case "lsp.request_timeout_seconds":
+		return &cfg.LSP.RequestTimeoutSeconds
+	case "lsp.diagnostics_timeout_seconds":
+		return &cfg.LSP.DiagnosticsTimeoutSeconds
+	case "history.retention_days":
+		return &cfg.History.RetentionDays
+	case "reports.retention_days":
+		return &cfg.Reports.RetentionDays
+	}
+	return nil
+}
+
+// intValue parses a number as a person types it; empty is unset.
+func intValue(value string) (int, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return 0, nil
+	}
+	n, err := strconv.Atoi(value)
+	if err != nil {
+		return 0, fmt.Errorf("%q is not a number", value)
+	}
+	return n, nil
+}
+
+// boolPtr is a tri-state key's value: nil for an empty value, so that a
+// reset puts the key back to unset — the default, whatever it is — rather
+// than to false, which for a key that is on when unset would be the opposite
+// of what a reset means.
+func boolPtr(value string) *bool {
+	if value == "" {
+		return nil
+	}
+	v := value == "true"
+	return &v
 }
 
 // splitList parses a comma-separated config value into its non-empty,
@@ -868,19 +850,8 @@ func splitList(value string) []string {
 	return list
 }
 
-func Save(cfg Config) error {
-	p := WritePath()
-	if err := os.MkdirAll(filepath.Dir(p), 0o700); err != nil {
-		return err
-	}
-	f, err := os.Create(p)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	return toml.NewEncoder(f).Encode(cfg)
-}
-
+// WritePath is the file a write goes to: the first of Paths that exists, or
+// the first of them when none does.
 func WritePath() string {
 	paths := Paths()
 	for _, p := range paths {
