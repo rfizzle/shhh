@@ -82,7 +82,7 @@ func convertChildEntry(te subagent.TranscriptEntry) entry {
 		}
 		return entry{kind: entryTool, toolName: te.Tool, toolArgs: te.Args, toolResult: result}
 	default:
-		return entry{kind: entrySystem, text: te.Text}
+		return entry{kind: entrySystem, text: te.Text, toolResult: te.Result}
 	}
 }
 

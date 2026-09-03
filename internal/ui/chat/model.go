@@ -3392,11 +3392,38 @@ func (m Model) renderEntryDetail(e entry, width int, keysLive, stepDetail bool) 
 		}
 		return e.diff.View(width) + "\n"
 	case entrySystem:
-		return sty.SystemMsg.Render(e.text) + "\n"
+		return m.systemRow(e, width) + "\n"
 	case entryError:
 		return sty.Error.Render("Error: "+e.text) + "\n"
 	}
 	return ""
+}
+
+// systemRow renders a notice: its one line, and — for the notices that carry
+// one — the body a reader opened it for, indented under the line the way
+// every other detail body is indented rather than re-gridded.
+//
+// Most notices have no body and render exactly as they always did. The ones
+// that do are the refusals whose short form is the useful one to scan and
+// whose long form is the one to act on
+// (docs/interface/principles.md#fold-never-hide).
+func (m Model) systemRow(e entry, width int) string {
+	row := sty.SystemMsg.Render(e.text)
+	if !e.expanded {
+		return row
+	}
+	lines := outputLines(e)
+	if len(lines) == 0 {
+		return row
+	}
+	indent := strings.Repeat(" ", components.GridDetailIndent)
+	inner := max(width-components.GridDetailIndent, 1)
+	// Wrapped rather than clipped: this body is a sentence, and half a
+	// sentence is worse than a row that costs two lines.
+	for _, l := range strings.Split(m.wordWrap(strings.Join(lines, "\n"), inner), "\n") {
+		row += "\n" + indent + sty.SystemMsg.Render(l)
+	}
+	return row
 }
 
 // entryIsBlock reports whether an entry reads as a standalone block — a

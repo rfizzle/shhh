@@ -117,6 +117,16 @@ that comes back says what to do — read it again and rebase the change on what
 it says now — and one round spent re-reading is the cost of not silently
 discarding somebody's work.
 
+**The person is told too, and told which file.** The model gets the
+instruction; the person gets a row naming the file and saying it changed since
+it was read, with the model's own sentence folded under it. They are the only
+party who can say *why* it changed — a second session, an editor, a build —
+and a refusal reported as a malformed call takes that question away from them
+before they know there was one. A call the model genuinely malformed keeps the
+generic line, because the two failures are answered differently: one is
+somebody else's work arriving, the other is a round the model will spend
+again on its own.
+
 ## A closed verb set is what makes a read a read
 
 Reading a repository's history — who last touched this line, when did this

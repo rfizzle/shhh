@@ -6,6 +6,7 @@ package chat
 // set, and a safety-flagged action is in neither.
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -14,6 +15,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // keyA presses the batch key.
@@ -359,4 +361,48 @@ func driveApprovedTool(t *testing.T, cmd tea.Cmd) approvedToolDoneMsg {
 	}
 	t.Fatal("expected approvedToolDoneMsg from the approval cmd")
 	return approvedToolDoneMsg{}
+}
+
+// A refusal a person can act on and one they cannot are two rows, not one.
+// The stale row names the file, shortens it against the workspace, and keeps
+// the model's own sentence as the body opening the row shows.
+func TestSkippedCallEntryTellsStalenessFromBadArguments(t *testing.T) {
+	root := t.TempDir()
+	m := New(nil, mockStream).WithWorkspace(root)
+
+	stale := m.skippedCallEntry(fmt.Errorf("invalid arguments: %w",
+		tools.StaleError{Path: filepath.Join(root, "internal", "agent", "loop.go")}))
+	if want := "skipped · internal/agent/loop.go changed since it was read"; stale.text != want {
+		t.Errorf("stale row:\n got %q\nwant %q", stale.text, want)
+	}
+	if !strings.Contains(stale.toolResult, "read_file it again") {
+		t.Errorf("the model's sentence should be the row's expansion, got %q", stale.toolResult)
+	}
+	if stale.kind != entrySystem {
+		t.Errorf("a refused call is a system row, got kind %d", stale.kind)
+	}
+	// The expansion has to be reachable, or the sentence is hidden rather
+	// than folded.
+	if len(outputLines(stale)) == 0 {
+		t.Error("the row must offer its body to the reader")
+	}
+
+	bad := m.skippedCallEntry(fmt.Errorf("invalid arguments: %w", errors.New("path is required")))
+	if bad.text != skippedArgsNotice {
+		t.Errorf("a malformed call keeps its line, got %q", bad.text)
+	}
+	if bad.toolResult != "" {
+		t.Errorf("a malformed call has nothing to expand, got %q", bad.toolResult)
+	}
+}
+
+// A file outside the workspace keeps its absolute path: that it is somewhere
+// else is the fact worth seeing.
+func TestSkippedCallEntryKeepsAPathOutsideTheWorkspace(t *testing.T) {
+	m := New(nil, mockStream).WithWorkspace(filepath.Join(t.TempDir(), "checkout"))
+	outside := filepath.Join(t.TempDir(), "elsewhere", "notes.md")
+	e := m.skippedCallEntry(tools.StaleError{Path: outside})
+	if !strings.Contains(e.text, outside) {
+		t.Errorf("row should keep the absolute path, got %q", e.text)
+	}
 }

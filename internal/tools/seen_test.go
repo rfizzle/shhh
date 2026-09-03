@@ -2,6 +2,7 @@ package tools
 
 import (
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -170,5 +171,48 @@ func TestTheRecordFollowsTheFileNotThePathSpelling(t *testing.T) {
 	indirect := filepath.Join(dir, ".", "code.go")
 	if _, err := ExecuteMutating(WriteFileName, writeArgs(t, indirect, "beta\n")); err != nil {
 		t.Fatalf("a differently spelled path is the same file: %v", err)
+	}
+}
+
+// A staleness refusal is the one a surface has to be able to pick out: the
+// person can act on "somebody else changed this file" and cannot act on a
+// schema violation, so the two must not arrive as one kind of error.
+func TestStalenessIsItsOwnErrorAndTheOtherRefusalsAreNot(t *testing.T) {
+	dir := t.TempDir()
+	path := seed(t, dir, "shared.txt", "one\n")
+	readWholeFile(t, path)
+	seed(t, dir, "shared.txt", "somebody else's work\n")
+
+	_, err := PreviewMutation(WriteFileName, writeArgs(t, path, "mine\n"))
+	var stale StaleError
+	if !errors.As(err, &stale) {
+		t.Fatalf("a file that moved should be a StaleError, got %T: %v", err, err)
+	}
+	if stale.Path != path {
+		t.Errorf("the refusal must name the file: got %q, want %q", stale.Path, path)
+	}
+	if want := path + " has changed since it was read; read_file it again and rebase this change on what it says now"; stale.Error() != want {
+		t.Errorf("the sentence the model reads changed:\n got %q\nwant %q", stale.Error(), want)
+	}
+	if got, want := stale.Skipped("shared.txt"), "skipped · shared.txt changed since it was read"; got != want {
+		t.Errorf("the row a person reads:\n got %q\nwant %q", got, want)
+	}
+	if got := stale.Skipped(""); got != stale.Skipped(path) {
+		t.Errorf("without a display path the row falls back to the one recorded, got %q", got)
+	}
+
+	// The other two refusals in this file are the model's own to fix, and a
+	// surface must not report either of them as somebody else's work.
+	unread := seed(t, dir, "unread.txt", "x\n")
+	if _, err := PreviewMutation(WriteFileName, writeArgs(t, unread, "y\n")); errors.As(err, &stale) {
+		t.Errorf("a file never read is not stale: %v", err)
+	}
+	partial := seed(t, dir, "partial.txt", "a\nb\nc\n")
+	window, _ := json.Marshal(readFileArgs{Path: partial, StartLine: 1, EndLine: 2})
+	if _, err := Execute(ReadFileName, window); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := PreviewMutation(WriteFileName, writeArgs(t, partial, "z\n")); errors.As(err, &stale) {
+		t.Errorf("a file read only in part is not stale: %v", err)
 	}
 }

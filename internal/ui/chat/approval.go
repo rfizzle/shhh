@@ -249,7 +249,7 @@ func (m Model) advanceApprovalQueue() (tea.Model, tea.Cmd) {
 	req, err := m.buildApprovalRequest(tc)
 	if err != nil {
 		m.agent.ResolveApproval("error: " + err.Error())
-		m.appendEntry(entry{kind: entrySystem, text: "Skipped a tool call with invalid arguments."})
+		m.appendEntry(m.skippedCallEntry(err))
 		m.viewport.SetLines(m.renderHistoryLines())
 		m.viewport.GotoBottom()
 		return m.advanceApprovalQueue()

@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -1005,5 +1007,59 @@ func TestNewChildAgent_TakesTheWordingsAndKeepsItsOwnInterval(t *testing.T) {
 	want := "used 0. " + agent.FinishedAsSubAgent
 	if got := a.CheckInMessage(agent.FinishedAsSubAgent); got != want {
 		t.Errorf("check-in = %q, want the configured wording %q", got, want)
+	}
+}
+
+// A child's edit refused because the file moved reads the way the session's
+// does: a row naming the file, with the sentence the model was given folded
+// under it. A parent that mirrors the child's transcript then shows one row
+// for the two paths rather than two accounts of the same refusal.
+func TestStaleChildEditIsItsOwnRow(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "loop.go")
+	if err := os.WriteFile(path, []byte("alpha\nbeta\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	read, _ := json.Marshal(map[string]string{"path": path})
+	if _, err := tools.Execute(tools.ReadFileName, read); err != nil {
+		t.Fatal(err)
+	}
+	// Somebody else — an editor, a sibling session — gets there first.
+	if err := os.WriteFile(path, []byte("alpha\ndelta\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	env := &scriptedEnv{
+		steps: []streamStep{
+			{calls: []provider.ToolCall{{ID: "e1", Name: tools.EditFileName,
+				Arguments: `{"path":"loop.go","old_text":"alpha","new_text":"omega"}`}}},
+			{text: "task complete"},
+		},
+		gated: map[string]bool{tools.EditFileName: true},
+	}
+	sup := New(context.Background(), Options{Root: root, NewEnv: env.factory()})
+	t.Cleanup(sup.Close)
+	execTool(t, sup, SpawnToolName, `{"role":"researcher","task":"change the loop"}`)
+
+	if report := execTool(t, sup, ReportToolName, `{"name":"researcher-1"}`); !strings.Contains(report, "task complete") {
+		t.Fatalf("child should continue after the refusal: %s", report)
+	}
+	if !transcriptHas(sup.Transcript("researcher-1"), EntrySystem, "skipped · loop.go changed since it was read") {
+		t.Fatalf("no named staleness row in the child transcript: %+v", sup.Transcript("researcher-1"))
+	}
+	for _, e := range sup.Transcript("researcher-1") {
+		if e.Kind == EntrySystem && strings.HasPrefix(e.Text, "skipped · ") {
+			if !strings.Contains(e.Result, "read_file it again") {
+				t.Errorf("the row should fold the model's own sentence, got %q", e.Result)
+			}
+		}
+	}
+	// A call nobody can approve is never put to the parent.
+	select {
+	case ev := <-sup.Events():
+		if ev.Kind == EventAsk {
+			t.Fatal("a refused preview must not reach the user as a decision")
+		}
+	default:
 	}
 }

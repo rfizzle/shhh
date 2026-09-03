@@ -173,12 +173,14 @@ const (
 // completed in place when its result lands, so indices stay stable for the
 // front-end's expansion state.
 type TranscriptEntry struct {
-	Kind    EntryKind
-	Text    string // user / assistant / system entries
-	Tool    string // EntryTool: tool name
-	Args    string // EntryTool: raw arguments
-	Result  string // EntryTool: result text
-	Pending bool   // EntryTool: still executing or awaiting approval
+	Kind EntryKind
+	Text string // user / assistant / system entries
+	Tool string // EntryTool: tool name
+	Args string // EntryTool: raw arguments
+	// Result is a tool entry's result text, and a system entry's fold
+	// expansion — the long form of a notice whose row is the short one.
+	Result  string
+	Pending bool // EntryTool: still executing or awaiting approval
 }
 
 // Env is everything a child needs to run, assembled by the CLI so this
@@ -1848,6 +1850,17 @@ func (s *Supervisor) resolveGated(c *child, tc provider.ToolCall) string {
 		record(observe.DecisionAsk, observe.AskReason(action))
 		ask, askErr := s.buildAsk(c, tc.Name, rooted, action)
 		if askErr != nil {
+			// A child's refusals are rows in its own transcript, which the
+			// parent mirrors when it attaches — so a file that moved under
+			// the child reads exactly as one that moved under the session.
+			var stale tools.StaleError
+			if errors.As(askErr, &stale) {
+				c.appendEntry(TranscriptEntry{
+					Kind:   EntrySystem,
+					Text:   stale.Skipped(displayPath(c.root, stale.Path)),
+					Result: stale.Error(),
+				})
+			}
 			return "error: " + askErr.Error()
 		}
 		approved, ok := s.await(c, ask)

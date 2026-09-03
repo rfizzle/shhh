@@ -12,6 +12,7 @@ import (
 
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/tools"
 )
 
 // writeFilePreview mimics a future write_file tool: diff of oldText against
@@ -237,6 +238,39 @@ func TestGatedTool_InvalidPreviewSkipped(t *testing.T) {
 	}
 	if m.state != stateStreaming || restream == nil {
 		t.Fatal("stream should resume after skipping the invalid call")
+	}
+}
+
+// A call refused because the file moved is the one the person can explain,
+// so it gets a row that names the file instead of the line every malformed
+// call gets. The model still receives its own sentence, unchanged.
+func TestGatedTool_StalePreviewNamesTheFile(t *testing.T) {
+	executor := func(name string, args json.RawMessage) (string, error) { return "ok", nil }
+	path := filepath.Join(t.TempDir(), "loop.go")
+	m := gatedModel(t, executor, map[string]GatedPreviewFunc{
+		"write_file": func(raw json.RawMessage) (GatedPreview, error) {
+			return GatedPreview{}, tools.StaleError{Path: path}
+		},
+	})
+
+	updated, restream := m.Update(toolCallsMsg{calls: []provider.ToolCall{
+		{ID: "call_w", Name: "write_file", Arguments: `{"path":"loop.go"}`},
+	}})
+	m = updated.(Model)
+
+	last := m.Messages()[len(m.Messages())-1]
+	if last.Role != provider.RoleTool || !strings.Contains(last.Content, "read_file it again") {
+		t.Fatalf("the model must still get its own sentence, got %+v", last)
+	}
+	if m.state != stateStreaming || restream == nil {
+		t.Fatal("stream should resume after skipping the stale call")
+	}
+	row := m.transcript[len(m.transcript)-1]
+	if want := "skipped · " + path + " changed since it was read"; row.text != want {
+		t.Errorf("transcript row:\n got %q\nwant %q", row.text, want)
+	}
+	if row.text == skippedArgsNotice {
+		t.Error("a stale refusal must not read as a malformed call")
 	}
 }
 

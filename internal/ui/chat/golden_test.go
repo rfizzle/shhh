@@ -11,6 +11,7 @@ package chat
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"strconv"
@@ -27,6 +28,7 @@ import (
 	"github.com/rfizzle/shhh/internal/plan"
 	"github.com/rfizzle/shhh/internal/project"
 	"github.com/rfizzle/shhh/internal/provider"
+	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 	"github.com/rfizzle/shhh/internal/ui/golden"
 )
@@ -1012,6 +1014,33 @@ func TestGolden_Screen(t *testing.T) {
 				}
 				m.summary.lastRound = 24
 			})},
+		}
+	})
+}
+
+// TestGolden_StaleEditRow pins the row an edit refused for staleness leaves
+// behind: the file and what happened to it on one line, the sentence the
+// model was given under it once the row is opened, and — beside them — the
+// line a call the model simply malformed still gets.
+func TestGolden_StaleEditRow(t *testing.T) {
+	captureGolden(t, "stale-edit-row", "the refused stale edit", []int{80}, func(width int) []golden.Panel {
+		build := func(open bool) string {
+			m := frameModel(t, width, 40)
+			m = m.WithWorkspace("/work/shhh")
+			stale := m.skippedCallEntry(fmt.Errorf("invalid arguments: %w",
+				tools.StaleError{Path: "/work/shhh/internal/agent/loop.go"}))
+			stale.expanded = open
+			m.transcript = []entry{
+				{kind: entryUser, text: "rebase the round cap on what loop.go says now"},
+				stale,
+				m.skippedCallEntry(errors.New("invalid arguments: path is required")),
+			}
+			m.invalidateRenderCache()
+			return m.renderHistory()
+		}
+		return []golden.Panel{
+			{Label: "the row · a file that moved, and a call that was malformed", View: build(false)},
+			{Label: "the row opened · the sentence the model was given", View: build(true)},
 		}
 	})
 }

@@ -17,12 +17,16 @@ package chat
 // the edits would change, and View runs on every frame.
 
 import (
+	"errors"
 	"fmt"
+	"path/filepath"
+	"strings"
 
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/diff"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/radius"
+	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -97,6 +101,51 @@ func (m Model) previewQueued(tc provider.ToolCall) *approvalRequest {
 		}
 	}
 	return req
+}
+
+// skippedArgsNotice is the row for a call the queue could not build a
+// decision from: the model wrote arguments the tool cannot read, and there is
+// nothing for a person to do about it but read the model's next attempt.
+const skippedArgsNotice = "Skipped a tool call with invalid arguments."
+
+// skippedCallEntry is the transcript's account of a call the queue refused
+// before it could reach a card.
+//
+// A file that changed since it was read is not a malformed call, and saying
+// so cost the reader the one fact only they have: which editor, sibling
+// session or background build touched the file. So that refusal gets its own
+// row, naming the file and what happened to it, and folds the model's own
+// sentence underneath rather than dropping it — the row is dense, not
+// shorter (docs/interface/principles.md#fold-never-hide).
+func (m Model) skippedCallEntry(err error) entry {
+	var stale tools.StaleError
+	if !errors.As(err, &stale) {
+		return entry{kind: entrySystem, text: skippedArgsNotice}
+	}
+	return entry{
+		kind: entrySystem,
+		text: stale.Skipped(m.rowPath(stale.Path)),
+		// The expansion is the sentence the model was given, verbatim: a
+		// reader deciding whether the model can recover needs to see what it
+		// was actually told, not this row's paraphrase of it.
+		toolResult: stale.Error(),
+	}
+}
+
+// rowPath is a path as a transcript row writes it: relative to the session's
+// workspace when it is inside it, and as it arrived when it is not — that a
+// file is somewhere else is the fact worth seeing, and a relative path to it
+// would hide that behind a run of "..".
+func (m Model) rowPath(p string) string {
+	root := m.workspace
+	if root == "" || p == "" {
+		return p
+	}
+	rel, err := filepath.Rel(root, m.inWorkspace(p))
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return p
+	}
+	return rel
 }
 
 // batchCategory is the class a session grant ([a]) would cover, which is

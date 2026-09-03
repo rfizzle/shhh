@@ -14,6 +14,7 @@ import (
 	tea "charm.land/bubbletea/v2"
 	"github.com/rfizzle/shhh/internal/agent"
 	"github.com/rfizzle/shhh/internal/subagent"
+	"github.com/rfizzle/shhh/internal/tools"
 	"github.com/rfizzle/shhh/internal/ui/components"
 )
 
@@ -525,4 +526,43 @@ func childTranscriptContains(sup *subagent.Supervisor, name, substr string) bool
 		}
 	}
 	return false
+}
+
+// A child's refusal is drawn by the parent as the parent's own is: the row
+// mirrors across whole, expansion and all, so a person reading the attached
+// view sees the same two lines the session would have shown them.
+func TestAttachedChildNoticeCarriesItsExpansion(t *testing.T) {
+	sup := subagent.New(context.Background(), subagent.Options{Root: t.TempDir(), NewEnv: blockingEnv()})
+	t.Cleanup(sup.Close)
+	m := newSubagentModel(t, sup)
+	spawnBlockedChild(t, sup)
+	stale := tools.StaleError{Path: "/work/shhh/internal/agent/loop.go"}
+	if err := sup.Note("researcher-1", subagent.TranscriptEntry{
+		Kind: subagent.EntrySystem, Text: stale.Skipped("internal/agent/loop.go"), Result: stale.Error(),
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	m.attach("researcher-1")
+	cv := m.syncChildView("researcher-1")
+	idx := -1
+	for i, e := range cv.entries {
+		if e.kind == entrySystem && strings.HasPrefix(e.text, "skipped · ") {
+			idx = i
+		}
+	}
+	if idx == -1 {
+		t.Fatalf("mirrored transcript missing the refusal row: %+v", cv.entries)
+	}
+	if !strings.Contains(cv.entries[idx].toolResult, "read_file it again") {
+		t.Fatalf("the row lost its expansion in the mirror: %q", cv.entries[idx].toolResult)
+	}
+	// Folded it is one line; opened it is the sentence the model was given.
+	if strings.Contains(m.renderAttachedHistory(), "read_file it again") {
+		t.Error("a folded row must not already show its body")
+	}
+	cv.entries[idx].expanded = true
+	if !strings.Contains(m.renderAttachedHistory(), "read_file it again") {
+		t.Error("opening the row should show the sentence the model was given")
+	}
 }

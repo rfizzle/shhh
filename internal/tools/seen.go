@@ -91,6 +91,35 @@ func lookupSeen(path string) (seenFile, bool) {
 	return rec, ok
 }
 
+// StaleError is the refusal for a file that changed between the read that
+// showed it and the mutation built on that read. It is its own type because
+// it is the one refusal here that is not the model's fault: another session,
+// an editor or a background build moved the file, and the person watching is
+// the only one who can say which. A surface that cannot tell it from a
+// malformed call reports the wrong thing to the only party able to act.
+type StaleError struct{ Path string }
+
+// Error is the sentence the model is given: what happened, and the one move
+// that fixes it. Anything less specific and the model retries the same edit.
+func (e StaleError) Error() string {
+	return e.Path + " has changed since it was read; read_file it again and rebase this change on what it says now"
+}
+
+// Skipped is the same refusal as a transcript row, with the path written the
+// way the surface asking for it writes paths — workspace-relative, usually,
+// rather than as the model spelled it. It lives beside the model's sentence
+// because the session and a sub-agent both draw this row and they must draw
+// the same one; two packages spelling it separately is how they stop
+// agreeing. Weight is a system row rather than a card: nothing happened, and
+// a refused call is not a decision anyone has to make.
+// See docs/interface/principles.md#weight-tracks-risk.
+func (e StaleError) Skipped(display string) string {
+	if display == "" {
+		display = e.Path
+	}
+	return "skipped · " + display + " changed since it was read"
+}
+
 // checkSeen reports whether a mutation may proceed against the file's current
 // content. A file that does not exist yet is nobody's to be stale about, so
 // existed=false always passes.
@@ -124,7 +153,7 @@ func checkSeen(path string, current []byte, existed, replacing bool) error {
 		return fmt.Errorf("%s has not been read in this session; read_file it first — this call would overwrite content that was never looked at", path)
 	}
 	if rec.sum != fingerprint(current) {
-		return fmt.Errorf("%s has changed since it was read; read_file it again and rebase this change on what it says now", path)
+		return StaleError{Path: path}
 	}
 	if replacing && !rec.whole {
 		return fmt.Errorf("%s was only read in part; read_file it in full before replacing it, or use edit_file to change the part you have read", path)
