@@ -6,8 +6,9 @@ package chat
 // then what the checkout touched most recently — filtered by what follows
 // the @. Choosing a row inserts the path into the sentence and nothing
 // more: the model reads files through its tools, so a mention is a name,
-// not an attachment. An image is the exception — no tool reads one, so a
-// mentioned image is staged the way a pasted one is.
+// not an attachment. An image is the exception — reading it through a tool
+// costs a round to arrive at the same picture, so a mentioned image is
+// staged the way a pasted one is.
 
 import (
 	"strings"

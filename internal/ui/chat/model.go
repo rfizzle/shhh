@@ -4191,8 +4191,9 @@ func helpText() string {
   /plan          The approved plan as a checklist, with anything that has
                  departed from it · save [name] writes the last plan/response
                  to .shhh/plans/ · drop forgets an approved plan
-  /diff          Show what this session changed, full screen — read from the
-                 session's own changeset, so it works outside a git repository
+  /diff [path]   Show what this session changed, full screen, or one file's —
+                 read from the session's own changeset, so it works outside a
+                 git repository
   /review [turn] Review what a turn changed: file list, hunks, staging per
                  hunk (bare reviews the last turn that changed anything).
                  Also [v] on a turn's changeset row. Nothing is applied.
