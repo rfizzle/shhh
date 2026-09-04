@@ -26,13 +26,24 @@ const maxDiffExpandedLines = 20
 func (m Model) WithChangeset(store *changeset.Store, tracker *changeset.Tracker) Model {
 	if store != nil {
 		m.changes = store
+		// The slot was claimed before this store arrived, so the store is
+		// pointed at it here as well as every time the slot moves
+		// (options.go). Without this the session would write its records
+		// under no name and lose them at the end of the sitting.
+		m.bindSlot()
 	}
 	m.tracker = tracker
 	return m
 }
 
-// systemNotice appends a system line and scrolls to it.
+// systemNotice appends a system line and scrolls to it. A notice with no
+// words in it is not one, and appending it would put a blank row in the
+// transcript: a command that handed the session to a card rather than to a
+// sentence — the rewind offer is one — has nothing to say here.
 func (m Model) systemNotice(text string) (tea.Model, tea.Cmd) {
+	if text == "" {
+		return m, nil
+	}
 	m.appendEntry(entry{kind: entrySystem, text: text})
 	m.viewport.SetLines(m.renderHistoryLines())
 	m.viewport.GotoBottom()
@@ -82,8 +93,11 @@ func sessionDiffEmptyNotice(store *changeset.Store) string {
 }
 
 // noteEvictedTurns says which turns the changeset store dropped to stay
-// inside its bound. Eviction costs the session its ability to review or undo
-// those turns, so it is a line in the transcript rather than a silent drop.
+// inside its bound. It is a line in the transcript rather than a silent drop,
+// and what the line says depends on whether the records were written down:
+// with a store behind them the bound is only on what this process holds at
+// once and the turns are still there to review and undo, and telling somebody
+// their work is gone when it is not is the worse of the two mistakes.
 func (m *Model) noteEvictedTurns(evicted []int64) {
 	if len(evicted) == 0 {
 		return
@@ -92,9 +106,13 @@ func (m *Model) noteEvictedTurns(evicted []int64) {
 	for i, n := range evicted {
 		labels[i] = fmt.Sprintf("%d", n)
 	}
+	fate := "Those turns can no longer be reviewed or undone."
+	if m.changes.Persists() {
+		fate = "They are still on record, so they can still be reviewed and undone."
+	}
 	m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
-		"The changeset store is full: turn %s dropped. Those turns can no longer be reviewed or undone.",
-		strings.Join(labels, ", "))})
+		"The changeset store is full: turn %s dropped from memory. %s",
+		strings.Join(labels, ", "), fate)})
 }
 
 // openFileDiff opens one path's session diff full screen: the same door

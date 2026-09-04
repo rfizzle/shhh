@@ -68,6 +68,12 @@ func pruneStoreOnce(db *storage.DB) {
 			}
 			if chatDays > 0 {
 				_, _ = db.PruneOldChats(chatDays)
+				// The record of what a turn changed is part of the
+				// conversation it belongs to, so it keeps the conversation's
+				// window rather than one of its own. A conversation the line
+				// above deleted took its records with it; this is for the
+				// records under conversations still here.
+				_, _ = db.PruneOldChanges(chatDays)
 			}
 			if observeDays > 0 {
 				_, _ = db.PruneAgentObservability(observeDays)

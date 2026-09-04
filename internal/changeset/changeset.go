@@ -320,6 +320,219 @@ type Store struct {
 	// recomputed several times between one edit and the next.
 	session []SessionFile
 	fresh   bool
+	// records is where the turns are written down so they outlive the
+	// process, and slot names the conversation they are written under. Both
+	// empty is a store that only ever remembers, which is what a session
+	// without persistence — and every test that does not ask for it — gets.
+	records Records
+	slot    string
+}
+
+// TurnRecords is one turn's records as a store holds them: the number the
+// close row shows and what that turn changed.
+type TurnRecords struct {
+	Turn    int64
+	Records []Record
+}
+
+// Records is where a store writes what it recorded, so a turn survives the
+// terminal being closed. Without one the session's memory of its own edits
+// ends with the sitting, which makes shutting the window the same act as
+// accepting every edit the session made.
+//
+// It is an interface here rather than a dependency on the store, because
+// nothing about recording a change is about SQLite: the same three questions
+// — write this turn, read these turns back, how far did the numbering get —
+// are answerable by anything that can keep bytes.
+type Records interface {
+	// SaveChange writes one file's record for a turn, replacing what that
+	// path held there. seq is the record's place in the turn, which is the
+	// order it is read back in.
+	SaveChange(slot string, turn int64, seq int, r Record) error
+	// DropChange removes a path's record from a turn — the turn edited the
+	// file back to where it found it, so it has no change of it left.
+	DropChange(slot string, turn int64, path string) error
+	// LoadChanges reads back the turns from `from` onwards, oldest first; a
+	// `to` of zero or less has no upper bound.
+	LoadChanges(slot string, from, to int64) ([]TurnRecords, error)
+	// LastChangeTurn is the highest turn number the slot holds, or zero.
+	LastChangeTurn(slot string) (int64, error)
+}
+
+// Persist wires where the store writes what it records. Nothing already in
+// memory is written by this call: it is made before the session's first edit,
+// and a store that back-filled here would write another conversation's turns
+// under this one's name.
+func (s *Store) Persist(rec Records) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.records = rec
+}
+
+// SetSlot names the conversation the records are kept under, and is called
+// again every time the session's slot moves. It redirects what is written
+// from here on and leaves what is already written where it is — the turns
+// under the old name belong to the conversation that was in it.
+func (s *Store) SetSlot(name string) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.slot = name
+}
+
+// Persists reports whether the store writes what it records down. The
+// surfaces that speak about a turn being dropped need it: with a record
+// behind them, eviction costs this process its copy and costs the person
+// nothing, and a line saying the turn can no longer be undone would be
+// telling them to give up on work they can still have back.
+func (s *Store) Persists() bool {
+	rec, slot := s.sink()
+	return rec != nil && slot != ""
+}
+
+// LastTurn is the highest turn number the slot's written-down records carry,
+// and zero when there are none or nothing was wired. A resumed conversation
+// numbers its next turn past it, so the number on a close row addresses the
+// same turn in the sitting that wrote it and in every sitting after.
+func (s *Store) LastTurn() int64 {
+	rec, slot := s.sink()
+	if rec == nil || slot == "" {
+		return 0
+	}
+	last, err := rec.LastChangeTurn(slot)
+	if err != nil {
+		return 0
+	}
+	return last
+}
+
+// Recall is Turn reaching past what the store still holds in memory into what
+// it wrote down: a turn evicted to stay inside the byte bound, and a turn from
+// a sitting that has already ended, both come back here. The byte bound is
+// about how much this process keeps at once, and it stopped being the bound on
+// what can be undone the moment the records were written down.
+func (s *Store) Recall(n int64) (Turn, bool) {
+	if t, ok := s.Turn(n); ok {
+		return t, true
+	}
+	rec, slot := s.sink()
+	if rec == nil || slot == "" {
+		return Turn{}, false
+	}
+	stored, err := rec.LoadChanges(slot, n, n)
+	if err != nil || len(stored) == 0 {
+		return Turn{}, false
+	}
+	return turnFrom(stored[0]), true
+}
+
+// Since is every turn from n onwards, oldest first — what a rewind has to put
+// back to take the workspace to where it stood before turn n. Memory answers
+// for the turns it still holds and the written record for the rest, so a
+// rewind reaches turns this process has evicted and turns it never made.
+func (s *Store) Since(n int64) []Turn {
+	if s == nil {
+		return nil
+	}
+	held := map[int64]bool{}
+	var turns []Turn
+	for _, t := range s.Turns() {
+		if t.N >= n {
+			held[t.N] = true
+			turns = append(turns, t)
+		}
+	}
+	rec, slot := s.sink()
+	if rec != nil && slot != "" {
+		if stored, err := rec.LoadChanges(slot, n, 0); err == nil {
+			for _, tr := range stored {
+				if !held[tr.Turn] {
+					turns = append(turns, turnFrom(tr))
+				}
+			}
+		}
+	}
+	sort.Slice(turns, func(i, j int) bool { return turns[i].N < turns[j].N })
+	return turns
+}
+
+// sink reads the two fields a written record needs, under the lock, so a
+// caller can do the reading and writing outside it.
+func (s *Store) sink() (Records, string) {
+	if s == nil {
+		return nil, ""
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.records, s.slot
+}
+
+// turnFrom rebuilds a turn from records that were read back. The hunks and
+// the counts are computed here rather than stored, so what a restored turn
+// says about itself cannot disagree with the content it holds.
+func turnFrom(tr TurnRecords) Turn {
+	t := Turn{N: tr.Turn}
+	for _, r := range tr.Records {
+		r.compute()
+		if t.At.IsZero() || r.At.Before(t.At) {
+			t.At = r.At
+		}
+		t.Records = append(t.Records, r)
+	}
+	t.recount()
+	return t
+}
+
+// Fold collapses a run of turns, oldest first, into one turn's worth of net
+// records: the earliest before side of each path and the latest after side,
+// which together are what putting the whole run back has to restore. A path a
+// later turn edited back to where an earlier one found it nets to nothing and
+// is dropped — the run's state, not its history.
+//
+// It is the same merge Add makes within one turn, made across several, so a
+// rewind's restore and an undo's are one plan built one way and reviewed
+// through one confirm.
+func Fold(turns []Turn) Turn {
+	out := Turn{}
+	if len(turns) == 0 {
+		return out
+	}
+	out.N, out.At = turns[0].N, turns[0].At
+	at := map[string]int{}
+	for _, t := range turns {
+		for _, r := range t.Records {
+			i, held := at[r.Path]
+			if !held {
+				at[r.Path] = len(out.Records)
+				r.compute()
+				out.Records = append(out.Records, r)
+				continue
+			}
+			prev := out.Records[i]
+			r.Before, r.BeforeExists, r.BeforeMode = prev.Before, prev.BeforeExists, prev.BeforeMode
+			if r.AfterMode == 0 && r.AfterExists {
+				// The later turn did not read the mode, so the mode the
+				// earlier one left is still what is on disk (Add).
+				r.AfterMode = prev.AfterMode
+			}
+			r.compute()
+			out.Records[i] = r
+		}
+	}
+	kept := out.Records[:0]
+	for _, r := range out.Records {
+		if r.Changed() {
+			kept = append(kept, r)
+		}
+	}
+	out.Records = kept
+	out.recount()
+	return out
 }
 
 // New returns a store bounded by maxBytes of retained content; zero or less
@@ -399,6 +612,7 @@ func (s *Store) Add(turn int64, r Record) (evicted []int64) {
 			// The turn edited the file back to where it started.
 			t.Records = append(t.Records[:i], t.Records[i+1:]...)
 			t.recount()
+			s.dropLocked(t.N, r.Path)
 			return s.evict()
 		}
 		t.Records[i] = r
@@ -407,7 +621,40 @@ func (s *Store) Add(turn int64, r Record) (evicted []int64) {
 	}
 	s.bytes += r.size()
 	t.recount()
+	s.writeLocked(t.N, indexOf(t.Records, r.Path), r)
 	return s.evict()
+}
+
+// writeLocked puts one record where it will outlive the process, and
+// dropLocked takes one away again. One record and not the whole turn: the
+// store is written to as each edit lands, so rewriting every row on every
+// edit would cost a turn the square of the files it touched.
+//
+// Both run under the store's own lock, which is what keeps the written turn
+// and the held one from disagreeing: two edits landing at once take the lock
+// in some order, and whichever wrote second is the one both sides end up
+// holding. Released first, they could invert and leave a stale record with a
+// newer one in memory. The price is that a frame reading the store waits on
+// one small statement, which is the cheaper of the two mistakes.
+//
+// A failure is swallowed on purpose, and it is the one place in this package
+// that swallows one. The edit has already landed on disk and the record is
+// already in memory, where every surface this sitting draws reads it — so
+// refusing here would cost the session its account of what just happened to
+// buy back nothing, and the cost of the failure is the narrower one it
+// already is: the turn cannot be undone from a later sitting.
+func (s *Store) writeLocked(turn int64, seq int, r Record) {
+	if s.records == nil || s.slot == "" || seq < 0 {
+		return
+	}
+	_ = s.records.SaveChange(s.slot, turn, seq, r)
+}
+
+func (s *Store) dropLocked(turn int64, path string) {
+	if s.records == nil || s.slot == "" {
+		return
+	}
+	_ = s.records.DropChange(s.slot, turn, path)
 }
 
 func indexOf(records []Record, path string) int {

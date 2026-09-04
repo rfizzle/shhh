@@ -2,6 +2,7 @@ package changeset
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -595,5 +596,232 @@ func TestAnyCheckable(t *testing.T) {
 		if got := AnyCheckable(tc.paths); got != tc.want {
 			t.Errorf("%s: AnyCheckable(%v) = %v, want %v", tc.name, tc.paths, got, tc.want)
 		}
+	}
+}
+
+// memoryRecords is a Records the tests can read back, standing in for the
+// store: the persistence contract is three methods and none of them is about
+// SQLite.
+type memoryRecords struct {
+	turns map[string]map[int64][]Record
+	fail  bool
+}
+
+func newMemoryRecords() *memoryRecords {
+	return &memoryRecords{turns: map[string]map[int64][]Record{}}
+}
+
+func (r *memoryRecords) SaveChange(slot string, turn int64, seq int, rec Record) error {
+	if r.fail {
+		return fmt.Errorf("no")
+	}
+	if r.turns[slot] == nil {
+		r.turns[slot] = map[int64][]Record{}
+	}
+	held := r.turns[slot][turn]
+	for i, prev := range held {
+		if prev.Path == rec.Path {
+			held[i] = rec
+			return nil
+		}
+	}
+	// seq is the record's place in the turn, and the store reads records
+	// back in it; appending in call order is that order here.
+	if seq != len(held) {
+		return fmt.Errorf("record for %s arrived at seq %d with %d already held", rec.Path, seq, len(held))
+	}
+	r.turns[slot][turn] = append(held, rec)
+	return nil
+}
+
+func (r *memoryRecords) DropChange(slot string, turn int64, path string) error {
+	if r.fail {
+		return fmt.Errorf("no")
+	}
+	held := r.turns[slot][turn]
+	for i, rec := range held {
+		if rec.Path == path {
+			r.turns[slot][turn] = append(held[:i], held[i+1:]...)
+			return nil
+		}
+	}
+	return nil
+}
+
+func (r *memoryRecords) LoadChanges(slot string, from, to int64) ([]TurnRecords, error) {
+	if r.fail {
+		return nil, fmt.Errorf("no")
+	}
+	var out []TurnRecords
+	for n, records := range r.turns[slot] {
+		if n < from || (to > 0 && n > to) {
+			continue
+		}
+		out = append(out, TurnRecords{Turn: n, Records: records})
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].Turn < out[j].Turn })
+	return out, nil
+}
+
+func (r *memoryRecords) LastChangeTurn(slot string) (int64, error) {
+	if r.fail {
+		return 0, fmt.Errorf("no")
+	}
+	var last int64
+	for n := range r.turns[slot] {
+		if n > last {
+			last = n
+		}
+	}
+	return last, nil
+}
+
+func persisted(t *testing.T) (*Store, *memoryRecords) {
+	t.Helper()
+	sink := newMemoryRecords()
+	s := New(0)
+	s.Persist(sink)
+	s.SetSlot("work")
+	return s, sink
+}
+
+func TestPersist_WritesEachTurnAsItIsRecorded(t *testing.T) {
+	s, sink := persisted(t)
+	s.Add(1, rec("a.go", "one\n", "two\n"))
+	s.Add(1, rec("b.go", "", "new\n"))
+	s.Add(2, rec("a.go", "two\n", "three\n"))
+
+	if len(sink.turns["work"]) != 2 {
+		t.Fatalf("both turns should be on record, got %d", len(sink.turns["work"]))
+	}
+	if got := len(sink.turns["work"][1]); got != 2 {
+		t.Fatalf("turn 1 should hold both files, got %d", got)
+	}
+	if got := sink.turns["work"][2][0].After; got != "three\n" {
+		t.Fatalf("turn 2's record should be what it wrote, got %q", got)
+	}
+}
+
+// A turn that edits a file back to where it started drops the record, and the
+// written-down turn has to drop it too or an undo would put back a change
+// nobody made.
+func TestPersist_ATurnEditedBackIsWrittenBackToo(t *testing.T) {
+	s, sink := persisted(t)
+	s.Add(1, rec("a.go", "one\n", "two\n"))
+	s.Add(1, rec("a.go", "two\n", "one\n"))
+
+	if got := len(sink.turns["work"][1]); got != 0 {
+		t.Fatalf("the turn's records should be empty on record too, got %d", got)
+	}
+}
+
+// The byte bound is what this process holds at once. It stopped being the
+// bound on what can be undone the moment the records were written down.
+func TestRecall_ReachesPastEviction(t *testing.T) {
+	sink := newMemoryRecords()
+	s := New(64)
+	s.Persist(sink)
+	s.SetSlot("work")
+	s.Add(1, rec("a.go", strings.Repeat("x", 200), strings.Repeat("y", 200)))
+	s.Add(2, rec("b.go", "", "small\n"))
+
+	if _, ok := s.Turn(1); ok {
+		t.Fatal("turn 1 should have been evicted from memory")
+	}
+	if !s.WasEvicted(1) {
+		t.Fatal("the store should say why turn 1 is missing")
+	}
+	turn, ok := s.Recall(1)
+	if !ok {
+		t.Fatal("an evicted turn is still on record and still undoable")
+	}
+	if turn.Files() != 1 || turn.Records[0].Path != "a.go" {
+		t.Fatalf("the recalled turn should be the one that was evicted, got %+v", turn)
+	}
+	if len(turn.Records[0].Hunks) == 0 {
+		t.Fatal("a recalled record should carry its computed hunks")
+	}
+}
+
+// A store with nothing behind it answers exactly as it did before there was
+// anything to answer with.
+func TestRecall_WithoutARecordIsMemoryAlone(t *testing.T) {
+	s := New(0)
+	s.Add(1, rec("a.go", "one\n", "two\n"))
+	if _, ok := s.Recall(1); !ok {
+		t.Fatal("a retained turn comes from memory")
+	}
+	if _, ok := s.Recall(2); ok {
+		t.Fatal("a turn nothing recorded is not there")
+	}
+}
+
+func TestSince_MergesMemoryAndRecord(t *testing.T) {
+	sink := newMemoryRecords()
+	sink.turns["work"] = map[int64][]Record{
+		1: {rec("a.go", "one\n", "two\n")},
+		2: {rec("b.go", "", "new\n")},
+	}
+	s := New(0)
+	s.Persist(sink)
+	s.SetSlot("work")
+	s.Add(3, rec("c.go", "", "third\n"))
+
+	turns := s.Since(2)
+	if len(turns) != 2 || turns[0].N != 2 || turns[1].N != 3 {
+		t.Fatalf("expected turns 2 and 3 oldest first, got %+v", turns)
+	}
+	if turns[0].Records[0].Path != "b.go" || turns[1].Records[0].Path != "c.go" {
+		t.Fatalf("the written record and the held one should both be there, got %+v", turns)
+	}
+}
+
+func TestLastTurn_IsWhereTheNumberingGotTo(t *testing.T) {
+	s, sink := persisted(t)
+	if got := s.LastTurn(); got != 0 {
+		t.Fatalf("a fresh slot is at zero, got %d", got)
+	}
+	s.Add(4, rec("a.go", "one\n", "two\n"))
+	if got := s.LastTurn(); got != 4 {
+		t.Fatalf("expected 4, got %d", got)
+	}
+	sink.fail = true
+	if got := s.LastTurn(); got != 0 {
+		t.Fatalf("a store that cannot say answers with nothing, got %d", got)
+	}
+}
+
+func TestFold_CollapsesARunOfTurns(t *testing.T) {
+	turns := []Turn{
+		{N: 1, Records: []Record{rec("a.go", "one\n", "two\n"), rec("gone.go", "old\n", "kept\n")}},
+		{N: 2, Records: []Record{rec("a.go", "two\n", "three\n")}},
+		{N: 3, Records: []Record{rec("gone.go", "kept\n", "old\n"), rec("b.go", "", "new\n")}},
+	}
+	folded := Fold(turns)
+
+	if folded.N != 1 {
+		t.Fatalf("the fold is the run, and the run starts where the first turn does, got %d", folded.N)
+	}
+	if folded.Files() != 2 {
+		t.Fatalf("a path put back where it started nets to nothing, got %d files", folded.Files())
+	}
+	a, ok := folded.Record("a.go")
+	if !ok {
+		t.Fatal("the file every turn edited should be in the fold")
+	}
+	if a.Before != "one\n" || a.After != "three\n" {
+		t.Fatalf("the fold should hold the earliest before and the latest after, got %q → %q", a.Before, a.After)
+	}
+	if _, ok := folded.Record("gone.go"); ok {
+		t.Fatal("a file the run left where it found it is not part of the run's change")
+	}
+	if b, ok := folded.Record("b.go"); !ok || !b.Created() {
+		t.Fatal("a file created late in the run is a creation in the fold")
+	}
+}
+
+func TestFold_OfNothing(t *testing.T) {
+	if folded := Fold(nil); folded.Files() != 0 || folded.N != 0 {
+		t.Fatalf("folding nothing is nothing, got %+v", folded)
 	}
 }

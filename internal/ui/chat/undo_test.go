@@ -266,3 +266,106 @@ func TestUndo_WaitsForARunningTurn(t *testing.T) {
 		t.Fatalf("nothing should have been written: %v", err)
 	}
 }
+
+// The records outlive the process that made them, so shutting the terminal is
+// no longer the same act as accepting every edit the session made.
+func TestUndo_AResumedSessionUndoesAPreRestartTurn(t *testing.T) {
+	db := rewindTestDB(t)
+	path := filepath.Join(t.TempDir(), "main.go")
+	if err := os.WriteFile(path, []byte("before\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	first := rewindChangeModel(t, db, changeset.New(0), "the work")
+	slot := first.sessionName
+	first = sendText(t, first, "change it")
+	recordEdit(t, first, path, "before\n", "after\n")
+	first = completeReply(t, first, "done")
+
+	// A second process opening the same slot: a fresh changeset store, and
+	// the conversation's own name.
+	next := rewindChangeModel(t, db, changeset.New(0), "second sitting")
+	next.adoptSlot(slot)
+	if next.turnCount != 1 {
+		t.Fatalf("the resumed session should carry on numbering past what the slot holds, got %d", next.turnCount)
+	}
+	if _, ok := next.changes.Turn(1); ok {
+		t.Fatal("a fresh store holds nothing in memory; the record is what answers here")
+	}
+
+	updated, _ := next.undoTurn(1, nil)
+	next = updated.(Model)
+	if next.state != stateUndoConfirm || next.undoAsk == nil {
+		t.Fatalf("a turn from before the restart should still be undoable, got state %v", next.state)
+	}
+	next = press(t, next, "y")
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(content) != "before\n" {
+		t.Fatalf("the pre-restart turn should have been put back, got %q", content)
+	}
+}
+
+// The byte bound is what one process holds at once, not what can be taken
+// back.
+func TestUndo_ATurnEvictedFromMemoryIsStillOnRecord(t *testing.T) {
+	db := rewindTestDB(t)
+	path := filepath.Join(t.TempDir(), "main.go")
+	if err := os.WriteFile(path, []byte("before\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// A bound too small to hold the first turn beside the second.
+	m := rewindChangeModel(t, db, changeset.New(64), "the work")
+	m = sendText(t, m, "change it")
+	recordEdit(t, m, path, "before\n", strings.Repeat("x", 200))
+	m = completeReply(t, m, "done")
+	m = sendText(t, m, "again")
+	recordEdit(t, m, path, strings.Repeat("x", 200), "after\n")
+	m = completeReply(t, m, "done")
+
+	if !m.changes.WasEvicted(1) {
+		t.Fatal("turn 1 should have been evicted to stay inside the bound")
+	}
+	updated, _ := m.undoTurn(1, nil)
+	m = updated.(Model)
+	if m.state != stateUndoConfirm {
+		t.Fatalf("an evicted turn is still on record and still undoable, got %q", lastSystem(t, m))
+	}
+}
+
+// A turn that changed no files leaves no record, so the records alone would
+// tell a resumed sitting the numbering got less far than it did — and the
+// next turn would take a number an earlier one already has.
+func TestUndo_ResumeNumbersPastATurnThatChangedNothing(t *testing.T) {
+	db := rewindTestDB(t)
+	path := filepath.Join(t.TempDir(), "main.go")
+	if err := os.WriteFile(path, []byte("before\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	first := rewindChangeModel(t, db, changeset.New(0), "the work")
+	slot := first.sessionName
+	first = sendText(t, first, "change it")
+	recordEdit(t, first, path, "before\n", "after\n")
+	first = completeReply(t, first, "done")
+	// A second turn that only talked: no record, and the numbering still
+	// moved.
+	first = completeExchange(t, first, "and what does it do", "it does this")
+	if first.turnCount != 2 {
+		t.Fatalf("the sitting reached turn 2, got %d", first.turnCount)
+	}
+
+	next := rewindChangeModel(t, db, changeset.New(0), "second sitting")
+	next.resumeConversation(slot, first.Messages())
+	if next.turnCount < 2 {
+		t.Fatalf("the resumed sitting must not re-use a number, got %d", next.turnCount)
+	}
+	// And the turn that did change something is still addressable by its own
+	// number.
+	updated, _ := next.undoTurn(1, nil)
+	if updated.(Model).state != stateUndoConfirm {
+		t.Fatal("turn 1 should still be the turn that changed the file")
+	}
+}

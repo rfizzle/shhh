@@ -4,10 +4,20 @@ package chat
 // user turn; /rewind truncates the working conversation back to a chosen
 // checkpoint and preserves the abandoned tail as a branch session in storage,
 // parent-linked to the current session. /branches opens a picker over the
-// current session's branch family and switches between branches. Rewind
-// restores conversation state only — files on disk are untouched, and the
-// rewind message says so — and each checkpoint records the git HEAD + dirty
-// status at the time so the message can show what diverged since.
+// current session's branch family and switches between branches. Each
+// checkpoint records the git HEAD + dirty status at the time so the message
+// can show what diverged since.
+//
+// A rewind offers the files as well as the conversation. Going back to before
+// a turn and leaving on disk everything that turn wrote is a state neither the
+// person nor the model asked for, so the card asks which of the two — or both
+// — is meant, and the file half is the session's own records put back through
+// the confirm an undo goes through: the same drift check, and the same
+// deliberate second answer for a file that changed since. What a command
+// changed is not in those records and is not put back; the card says so,
+// because a restore that quietly missed half of a turn's work would be worse
+// than one that never offered.
+// See docs/capabilities/coding-agent.md#a-rewind-can-put-the-files-back.
 
 import (
 	"fmt"
@@ -16,6 +26,7 @@ import (
 	"time"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 	"github.com/rfizzle/shhh/internal/ui/components"
@@ -36,6 +47,12 @@ type checkpoint struct {
 	preview string // first line of the user text
 	git     GitSnapshot
 	hasGit  bool // a snapshot function was wired when this was recorded
+	// turn is the changeset turn this checkpoint opens, and is what says
+	// which records a file restore would put back. Zero for a checkpoint
+	// derived from a stored conversation: the messages say where a turn
+	// began and not what it was numbered, and guessing would offer to put
+	// back somebody else's edits.
+	turn int64
 }
 
 // WithGitSnapshots wires the git-state capture recorded on each rewind
@@ -48,7 +65,7 @@ func (m Model) WithGitSnapshots(fn func() GitSnapshot) Model {
 // recordCheckpoint marks the start of a user turn. Call it before the user
 // message joins the conversation, so the checkpoint index points at it.
 func (m *Model) recordCheckpoint(text string) {
-	cp := checkpoint{index: len(m.agent.Messages()), preview: firstLine(text)}
+	cp := checkpoint{index: len(m.agent.Messages()), preview: firstLine(text), turn: m.turnCount}
 	if m.gitSnapshot != nil {
 		cp.git = m.gitSnapshot()
 		cp.hasGit = true
@@ -99,17 +116,139 @@ func (m Model) openRewindPick() (tea.Model, tea.Cmd) {
 			// The options are latest-first, so the row is counted back from
 			// the end rather than into it.
 			turn := len(m.checkpoints) - idx
-			// The conversation this session would be reopened on has just
-			// changed shape, so the slot is written before anything else can
-			// be added to it.
+			// The autosave rides along whether or not the conversation moved:
+			// where it did, the slot has to be written before anything else
+			// can be added to it, and where the card opened instead there is
+			// nothing new to write and the save appends nothing.
 			return m.rewindToTurn(turn), m.autosaveCmd()
 		})
 }
 
-// rewindToTurn truncates the conversation back to just before turn n
-// (1-based), preserving the abandoned tail as a branch, and returns the
-// message for the transcript.
+// rewindToTurn asks what a rewind to before turn n (1-based) should put back,
+// and answers it directly when there is only one thing it could mean. Nothing
+// is written here where the offer opens: the card is the question, and for the
+// files the confirm behind it is a second one.
 func (m *Model) rewindToTurn(n int) string {
+	if n < 1 || n > len(m.checkpoints) {
+		return fmt.Sprintf("Usage: /rewind [1-%d]", len(m.checkpoints))
+	}
+	turns := m.rewindTurns(m.checkpoints[n-1])
+	if len(turns) == 0 {
+		// Nothing on record was written after this checkpoint, so the
+		// conversation is the whole of what a rewind can mean and offering a
+		// choice between it and nothing would be a card that asks a question
+		// with one answer.
+		return m.rewindConversation(n, conversationOnlyNote)
+	}
+	m.openRewindOffer(n, turns)
+	return ""
+}
+
+// rewindTurns is what the session recorded from the checkpoint onwards —
+// the turns a file restore would put back, oldest first. A checkpoint with no
+// turn number of its own answers with none: it came from a stored
+// conversation, whose messages say where a turn began and not what it was
+// numbered.
+func (m *Model) rewindTurns(cp checkpoint) []changeset.Turn {
+	if cp.turn == 0 {
+		return nil
+	}
+	var turns []changeset.Turn
+	for _, t := range m.changes.Since(cp.turn) {
+		if t.Files() > 0 {
+			turns = append(turns, t)
+		}
+	}
+	return turns
+}
+
+// openRewindOffer puts the three readings of a rewind to the user. The
+// conversation and the files are separable and the person is the only one who
+// knows which they meant — going back to before a turn and leaving what it
+// wrote on disk is a real answer, and so is putting the files back while
+// keeping the conversation that produced them.
+func (m *Model) openRewindOffer(n int, turns []changeset.Turn) {
+	folded := changeset.Fold(turns)
+	files := fmt.Sprintf("put back the %s %s changed",
+		plural(folded.Files(), "file"), plural(len(turns), "turn"))
+	opts := []components.SelectOption{
+		{Label: "conversation", Desc: "the transcript only; the files on disk stay as they are"},
+		// The shell is the hole in the offer and the card is where it has to
+		// be said: the records hold what the file tools wrote, so a command
+		// that moved, generated or deleted something is not in them and does
+		// not come back with the rest.
+		{Label: "files", Desc: files + "; what a command changed is not recorded and stays"},
+		{Label: "both", Desc: "rewind the transcript and put those files back"},
+	}
+	title := fmt.Sprintf("Rewind to before turn %d (%q) — what should be put back?", n, m.checkpoints[n-1].preview)
+	updated, _ := m.openPickerWith(title, opts, 0, pickerAlt{}, false,
+		func(m *Model, idx int, _ bool) (string, tea.Cmd) {
+			switch idx {
+			case rewindFiles:
+				m.armRewindRestore(n, turns)
+				return "", nil
+			case rewindBoth:
+				note := m.rewindConversation(n, "")
+				m.armRewindRestore(n, turns)
+				return note, m.autosaveCmd()
+			default:
+				// The conversation this session would be reopened on has just
+				// changed shape, so the slot is written before anything else
+				// can be added to it.
+				return m.rewindConversation(n, filesKeptNote), m.autosaveCmd()
+			}
+		})
+	*m = updated.(Model)
+}
+
+// The rows of the rewind offer. Row zero is the conversation, which is what
+// the default arm of the card's answer means.
+const (
+	rewindFiles = iota + 1
+	rewindBoth
+)
+
+// What a rewind that moved no files says about them. The first is for a
+// session with nothing on record after the checkpoint; the second for one
+// where there was something and the person chose to keep it.
+const (
+	conversationOnlyNote = "Only the conversation was rewound — files on disk were not restored."
+	filesKeptNote        = "Only the conversation was rewound — the files those turns changed were left as they are."
+)
+
+// armRewindRestore puts the file half of a rewind to the undo confirm. The
+// turns from the checkpoint on are folded into one net change per path —
+// the earliest before side and the latest after side — so the workspace is
+// answered for once rather than a turn at a time, and the drift the confirm
+// reports is measured against where the run of turns actually left each file.
+func (m *Model) armRewindRestore(n int, turns []changeset.Turn) {
+	folded := changeset.Fold(turns)
+	plan := changeset.PlanUndo(folded, nil)
+	if plan.Empty() {
+		m.appendEntry(entry{kind: entrySystem, text: fmt.Sprintf(
+			"Nothing on record was written after turn %d, so there are no files to put back.", n)})
+		return
+	}
+	// The confirm names the turn the workspace is being returned to the far
+	// side of, which for a run of several is the first of them. It reads as
+	// an understatement where the run is long — the card that offered this
+	// has just said how many turns it covers, and the close row names the
+	// rewind rather than a turn — and it is where a wording for a run of
+	// turns would go if the confirm ever grew one.
+	m.armUndo(plan, undoSubject{
+		since: "the rewind point",
+		note:  fmt.Sprintf("rewind to before turn %d", n),
+		again: fmt.Sprintf("/rewind %d", n),
+	}, folded.N, stateInput)
+}
+
+// rewindConversation truncates the conversation back to just before turn n
+// (1-based), preserving the abandoned tail as a branch, and returns the
+// message for the transcript. filesNote is what the message says about the
+// files, and is empty where a restore of them is about to be put to the user:
+// the card asks the question and a flat statement under it would answer it
+// first.
+func (m *Model) rewindConversation(n int, filesNote string) string {
 	if n < 1 || n > len(m.checkpoints) {
 		return fmt.Sprintf("Usage: /rewind [1-%d]", len(m.checkpoints))
 	}
@@ -144,7 +283,9 @@ func (m *Model) rewindToTurn(n int) string {
 	lines := []string{
 		fmt.Sprintf("Rewound to before turn %d (%q).", n, cp.preview),
 		branchNote,
-		"Only the conversation was rewound — files on disk were not restored.",
+	}
+	if filesNote != "" {
+		lines = append(lines, filesNote)
 	}
 	if g := m.gitDivergence(cp); g != "" {
 		lines = append(lines, g)

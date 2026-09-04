@@ -1,10 +1,13 @@
 package chat
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
 	tea "charm.land/bubbletea/v2"
+	"github.com/rfizzle/shhh/internal/changeset"
 	"github.com/rfizzle/shhh/internal/provider"
 	"github.com/rfizzle/shhh/internal/storage"
 )
@@ -321,5 +324,218 @@ func TestSteering_RecordsCheckpoint(t *testing.T) {
 	}
 	if len(m.checkpoints) != 2 {
 		t.Fatalf("steering messages are user turns and should checkpoint, got %d", len(m.checkpoints))
+	}
+}
+
+// rewindChangeModel is a rewind model wired to a store and a changeset that
+// persists into it, which is what a coding session has. The slot is named
+// rather than minted: two models in one test share one handle to the store,
+// and the timestamp every session is named after has a second's resolution —
+// so two of them would claim one name and the second would give back the
+// first's row, which two real processes never do because neither has the
+// other's writes in its own map.
+func rewindChangeModel(t *testing.T, db *storage.DB, store *changeset.Store, name string) Model {
+	t.Helper()
+	store.Persist(db)
+	m := newRewindModel(t)
+	m.sessionName = name
+	return m.WithDB(db).WithChangeset(store, nil)
+}
+
+// recordEdit writes content and records the edit against the turn in flight,
+// the way an approved write does.
+func recordEdit(t *testing.T, m Model, path, before, after string) {
+	t.Helper()
+	if after == "" {
+		if err := os.Remove(path); err != nil {
+			t.Fatal(err)
+		}
+	} else if err := os.WriteFile(path, []byte(after), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	m.changes.Add(m.turnCount, changeset.Record{
+		Path: path, Before: before, After: after,
+		BeforeExists: before != "", AfterExists: after != "",
+	})
+}
+
+// rewindOfferModel: two turns, each editing one file, ready for /rewind.
+func rewindOfferModel(t *testing.T) (Model, string, string) {
+	t.Helper()
+	db := rewindTestDB(t)
+	m := rewindChangeModel(t, db, changeset.New(0), "offer")
+	dir := t.TempDir()
+	kept, added := filepath.Join(dir, "kept.go"), filepath.Join(dir, "added.go")
+	if err := os.WriteFile(kept, []byte("one\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	m = sendText(t, m, "first")
+	recordEdit(t, m, kept, "one\n", "two\n")
+	m = completeReply(t, m, "did it")
+
+	m = sendText(t, m, "second")
+	recordEdit(t, m, kept, "two\n", "three\n")
+	recordEdit(t, m, added, "", "new\n")
+	m = completeReply(t, m, "did it again")
+	return m, kept, added
+}
+
+// completeReply streams a reply and closes the turn.
+func completeReply(t *testing.T, m Model, reply string) Model {
+	t.Helper()
+	updated, _ := m.Update(tokenMsg{text: reply})
+	m = updated.(Model)
+	updated, _ = m.Update(doneMsg{})
+	return updated.(Model)
+}
+
+// The offer is the whole point: going back to before a turn and leaving what
+// it wrote on disk is one answer of three, not the only one there is.
+func TestRewind_OffersConversationFilesOrBoth(t *testing.T) {
+	m, _, _ := rewindOfferModel(t)
+
+	m = sendText(t, m, "/rewind 1")
+	if m.state != statePick || m.picker == nil {
+		t.Fatalf("a rewind with records after it should ask what to put back, got state %v", m.state)
+	}
+	if len(m.picker.Options) != 3 {
+		t.Fatalf("expected three readings of a rewind, got %d", len(m.picker.Options))
+	}
+	labels := []string{m.picker.Options[0].Label, m.picker.Options[1].Label, m.picker.Options[2].Label}
+	if labels[0] != "conversation" || labels[1] != "files" || labels[2] != "both" {
+		t.Fatalf("unexpected offer: %v", labels)
+	}
+	if !strings.Contains(m.picker.Options[1].Desc, "2 files") ||
+		!strings.Contains(m.picker.Options[1].Desc, "2 turns") {
+		t.Fatalf("the files row should say what it would put back, got %q", m.picker.Options[1].Desc)
+	}
+	// The hole in the offer is named on the row that would write.
+	if !strings.Contains(m.picker.Options[1].Desc, "command") {
+		t.Fatalf("the card should say a command's changes are not recorded, got %q", m.picker.Options[1].Desc)
+	}
+	// Nothing was written by opening the card.
+	if len(m.Messages()) != 5 {
+		t.Fatalf("the offer must not rewind anything on its own, got %d messages", len(m.Messages()))
+	}
+}
+
+// A session with nothing on record after the checkpoint has one answer, so it
+// is given rather than asked for.
+func TestRewind_WithNothingRecordedGoesStraightBack(t *testing.T) {
+	db := rewindTestDB(t)
+	m := rewindChangeModel(t, db, changeset.New(0), "nothing recorded")
+	m = completeExchange(t, m, "only turn", "reply")
+
+	m = sendText(t, m, "/rewind 1")
+	if m.state != stateInput {
+		t.Fatalf("no records means no question to ask, got state %v", m.state)
+	}
+	if !strings.Contains(lastSystem(t, m), "files on disk were not restored") {
+		t.Fatalf("the message should still say the files were left, got %q", lastSystem(t, m))
+	}
+}
+
+// The files answer: every turn from the checkpoint on, folded into one net
+// change per file, put back through the undo confirm — with a file that has
+// changed since left alone and named.
+func TestRewind_FilesRestoresTheRunAndLeavesDrift(t *testing.T) {
+	m, kept, added := rewindOfferModel(t)
+	// Somebody edited the file the second turn created, after the turn.
+	if err := os.WriteFile(added, []byte("mine\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	m = sendText(t, m, "/rewind 1")
+	m = press(t, m, "j") // conversation → files
+	m = press(t, m, "enter")
+
+	if m.state != stateUndoConfirm || m.undoAsk == nil {
+		t.Fatalf("the files answer should ask before it writes, got state %v", m.state)
+	}
+	if got := m.undoAsk.Drifted; len(got) != 1 || got[0] != added {
+		t.Fatalf("the file changed since should be the drifted one, got %v", got)
+	}
+	if m.undoAsk.Restores != 1 {
+		t.Fatalf("expected the one file [y] would write back, got %d", m.undoAsk.Restores)
+	}
+
+	m = press(t, m, "y")
+	content, err := os.ReadFile(kept)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(content) != "one\n" {
+		t.Fatalf("both turns should have been put back, got %q", content)
+	}
+	if drifted, err := os.ReadFile(added); err != nil || string(drifted) != "mine\n" {
+		t.Fatalf("a file changed since must be left alone, got %q (%v)", drifted, err)
+	}
+	notice := lastSystem(t, m)
+	if !strings.Contains(notice, added) || !strings.Contains(notice, "/rewind 1 again") {
+		t.Fatalf("the notice should name the file it left and how to force it, got %q", notice)
+	}
+	// The conversation was not touched: this answer was about the files.
+	if len(m.Messages()) < 5 {
+		t.Fatalf("the files answer must leave the conversation alone, got %d messages", len(m.Messages()))
+	}
+	// And the restore is a turn of its own, so it can be undone in turn.
+	if note := lastClose(t, m).Note; !strings.Contains(note, "rewind to before turn 1") {
+		t.Fatalf("the restore should close with a row naming what it took back, got %q", note)
+	}
+}
+
+// Both: the conversation goes back and the confirm for the files comes up
+// behind it.
+func TestRewind_BothRewindsAndThenAsksAboutTheFiles(t *testing.T) {
+	m, kept, _ := rewindOfferModel(t)
+
+	m = sendText(t, m, "/rewind 1")
+	m = press(t, m, "j")
+	m = press(t, m, "j") // conversation → files → both
+	m = press(t, m, "enter")
+
+	if got := len(m.Messages()); got != 1 {
+		t.Fatalf("both should have rewound the conversation, got %d messages", got)
+	}
+	if m.state != stateUndoConfirm {
+		t.Fatalf("both should then ask about the files, got state %v", m.state)
+	}
+	m = press(t, m, "y")
+	if content, err := os.ReadFile(kept); err != nil || string(content) != "one\n" {
+		t.Fatalf("both should have put the files back, got %q (%v)", content, err)
+	}
+}
+
+// Conversation: today's behaviour, and the message says the files were left.
+func TestRewind_ConversationLeavesTheFiles(t *testing.T) {
+	m, kept, _ := rewindOfferModel(t)
+
+	m = sendText(t, m, "/rewind 1")
+	m = press(t, m, "enter")
+
+	if m.state == stateUndoConfirm {
+		t.Fatal("the conversation answer writes no files and asks nothing")
+	}
+	if content, err := os.ReadFile(kept); err != nil || string(content) != "three\n" {
+		t.Fatalf("the files should be exactly as the turns left them, got %q (%v)", content, err)
+	}
+	if !strings.Contains(lastSystem(t, m), "left as they are") {
+		t.Fatalf("the message should say the files were kept, got %q", lastSystem(t, m))
+	}
+}
+
+// A conversation rebuilt from a saved transcript knows where its turns began
+// and not what they were numbered, so it offers the conversation alone rather
+// than guessing whose edits to put back.
+func TestRewind_ARebuiltCheckpointOffersNoFiles(t *testing.T) {
+	db := rewindTestDB(t)
+	m := rewindChangeModel(t, db, changeset.New(0), "rebuilt")
+	m = completeExchange(t, m, "first", "one")
+	m.loadConversation(m.Messages())
+
+	m = sendText(t, m, "/rewind 1")
+	if m.state != stateInput {
+		t.Fatalf("a rebuilt checkpoint has no turn to restore, got state %v", m.state)
 	}
 }

@@ -44,15 +44,41 @@ func (m Model) undoCommand(parts []string) (tea.Model, tea.Cmd) {
 	return m.undoTurn(t.N, nil)
 }
 
+// undoSubject is what an armed undo is taking back, in the wordings the
+// surfaces around the confirm need: the noun the drift is measured against,
+// the note the close row carries, and the command that offers the same undo a
+// second time — which is the only way back to [f] once it has been declined.
+// A rewind's file restore comes through the same confirm as a turn's undo and
+// is none of those things, so the words travel with the plan rather than
+// being derived from a turn number at each of the three places.
+type undoSubject struct {
+	since string
+	note  string
+	again string
+}
+
+// undoOf is the subject for taking one turn back.
+func undoOf(n int64) undoSubject {
+	return undoSubject{
+		since: fmt.Sprintf("turn %d", n),
+		note:  fmt.Sprintf("undo of turn %d", n),
+		again: fmt.Sprintf("/undo %d", n),
+	}
+}
+
 // undoTurn arms the confirm for turn n, restricted to files when review
 // staged a selection and covering the whole turn otherwise. Nothing is
 // written here: this reads the workspace and asks.
 func (m Model) undoTurn(n int64, files []string) (tea.Model, tea.Cmd) {
-	if m.changes.WasEvicted(n) {
+	// Recall and not Turn: a turn evicted to stay inside the byte bound, and
+	// a turn from a sitting that has already ended, are both still on record
+	// and both still undoable. The size limit is a bound on what this process
+	// holds at once, not on what can be put back.
+	t, ok := m.changes.Recall(n)
+	if !ok && m.changes.WasEvicted(n) {
 		return m.systemNotice(fmt.Sprintf(
 			"Turn %d's records were dropped to stay inside the changeset store's size limit; it can no longer be undone.", n))
 	}
-	t, ok := m.changes.Turn(n)
 	if !ok {
 		return m.systemNotice(fmt.Sprintf("Turn %d changed no files; there is nothing to undo.", n))
 	}
@@ -60,20 +86,29 @@ func (m Model) undoTurn(n int64, files []string) (tea.Model, tea.Cmd) {
 	if plan.Empty() {
 		return m.systemNotice(fmt.Sprintf("Nothing in turn %d matched what was selected; nothing to undo.", n))
 	}
+	ret := m.state
+	if ret.isSurface() && ret != stateFocus {
+		ret = stateInput
+	}
+	m.armUndo(plan, undoOf(n), n, ret)
+	return m, nil
+}
+
+// armUndo puts the confirm up for a plan already built. confirmTurn is the
+// turn the question names, which for a rewind is the earliest turn being taken
+// back — the one the workspace is being returned to the far side of.
+func (m *Model) armUndo(plan changeset.UndoPlan, of undoSubject, confirmTurn int64, ret state) {
 	m.undoPlan = plan
+	m.undoSubject = of
 	m.undoAsk = &components.UndoConfirm{
-		Turn:     n,
+		Turn:     confirmTurn,
 		Restores: plan.Restores() - driftedIn(plan, false),
 		Removes:  plan.Removes() - driftedIn(plan, true),
 		Drifted:  plan.Drifted(),
 	}
-	m.undoReturn = m.state
-	if m.undoReturn.isSurface() && m.undoReturn != stateFocus {
-		m.undoReturn = stateInput
-	}
+	m.undoReturn = ret
 	m.enterSurface(stateUndoConfirm)
 	m.syncViewport()
-	return m, nil
 }
 
 // driftedIn counts the drifted files of one kind — the ones the plan would
@@ -100,13 +135,13 @@ func (m Model) updateUndoConfirm(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	decision, _ := result.(components.UndoDecision)
-	plan := m.undoPlan
+	plan, of := m.undoPlan, m.undoSubject
 	updated, cmd := m.closeUndoConfirm()
 	next := updated.(Model)
 	if decision == components.UndoCancel {
 		return next, cmd
 	}
-	return next.applyUndo(plan, decision == components.UndoForce)
+	return next.applyUndo(plan, of, decision == components.UndoForce)
 }
 
 // closeUndoConfirm takes the prompt down and gives the screen back to where
@@ -114,6 +149,7 @@ func (m Model) updateUndoConfirm(msg tea.KeyPressMsg) (tea.Model, tea.Cmd) {
 func (m Model) closeUndoConfirm() (tea.Model, tea.Cmd) {
 	m.undoAsk = nil
 	m.undoPlan = changeset.UndoPlan{}
+	m.undoSubject = undoSubject{}
 	if m.undoReturn.isSurface() {
 		m.state = m.undoReturn
 	} else {
@@ -131,7 +167,7 @@ func (m Model) closeUndoConfirm() (tea.Model, tea.Cmd) {
 // edits become a changeset of their own under a fresh turn number, which is
 // what puts the undo in the transcript and makes it reviewable — and, since
 // the records describe an ordinary edit, undoable in turn.
-func (m Model) applyUndo(plan changeset.UndoPlan, force bool) (tea.Model, tea.Cmd) {
+func (m Model) applyUndo(plan changeset.UndoPlan, of undoSubject, force bool) (tea.Model, tea.Cmd) {
 	out := plan.Apply(force)
 	if len(out.Records) > 0 {
 		m.turnCount++
@@ -143,11 +179,11 @@ func (m Model) applyUndo(plan changeset.UndoPlan, force bool) (tea.Model, tea.Cm
 		m.appendEntry(entry{
 			kind:  entryTurnClose,
 			turn:  m.turnCount,
-			close: m.undoCloseData(plan.Turn),
+			close: m.undoCloseData(of.note),
 		})
 		m.noteEvictedTurns(evicted)
 	}
-	if note := undoOutcomeNotice(plan.Turn, out); note != "" {
+	if note := undoOutcomeNotice(of, out); note != "" {
 		m.appendEntry(entry{kind: entrySystem, text: note})
 	}
 	m.invalidateRenderCache()
@@ -163,11 +199,11 @@ func (m Model) applyUndo(plan changeset.UndoPlan, force bool) (tea.Model, tea.Cm
 
 // undoCloseData is the close block the undo appends: the same rows a turn
 // ends with, so `[v]` and `[u]` work on it exactly as they do on the turn it
-// took back. The note says which turn that was.
-func (m Model) undoCloseData(of int64) *components.TurnClose {
+// took back. The note says what that was.
+func (m Model) undoCloseData(note string) *components.TurnClose {
 	return &components.TurnClose{
 		State:   components.TurnDone,
-		Note:    fmt.Sprintf("undo of turn %d", of),
+		Note:    note,
 		Changes: m.turnChangesRow(),
 	}
 }
@@ -175,19 +211,19 @@ func (m Model) undoCloseData(of int64) *components.TurnClose {
 // undoOutcomeNotice reports what the undo did not do: the drifted files it
 // left alone, and any it could not write. An undo that did everything asked
 // of it says nothing here — the close row already said what changed.
-func undoOutcomeNotice(turn int64, out changeset.UndoOutcome) string {
+func undoOutcomeNotice(of undoSubject, out changeset.UndoOutcome) string {
 	var parts []string
 	if len(out.Skipped) > 0 {
 		parts = append(parts, fmt.Sprintf(
-			"%s changed since turn %d and %s left alone: %s. /undo %d again and answer [f] to overwrite.",
-			plural(len(out.Skipped), "file"), turn, wasWere(len(out.Skipped)),
-			strings.Join(out.Skipped, ", "), turn))
+			"%s changed since %s and %s left alone: %s. %s again and answer [f] to overwrite.",
+			plural(len(out.Skipped), "file"), of.since, wasWere(len(out.Skipped)),
+			strings.Join(out.Skipped, ", "), of.again))
 	}
 	for _, f := range out.Failed {
 		parts = append(parts, fmt.Sprintf("%s could not be restored: %v.", f.Path, f.Err))
 	}
 	if len(out.Records) == 0 && len(parts) > 0 {
-		parts = append([]string{fmt.Sprintf("Nothing of turn %d was undone.", turn)}, parts...)
+		parts = append([]string{"Nothing was put back."}, parts...)
 	}
 	return strings.Join(parts, " ")
 }

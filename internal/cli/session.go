@@ -784,6 +784,13 @@ func runChatSession(cmd *cobra.Command, args []string, session chatSession) erro
 	// uncommitted work and the supervisor is built first. A conversation
 	// never wires it up and leaves it empty.
 	changes := changeset.New(changeset.DefaultMaxBytes)
+	if db != nil {
+		// The store is where those records outlive the sitting, so a
+		// conversation opened again can still take one of its turns back.
+		// Without one they end with the process, which makes closing the
+		// terminal the same act as accepting every edit the session made.
+		changes.Persist(db)
+	}
 
 	// Sub-agent supervisor: spawn_agent and agent_report short-circuit
 	// on the executor chain; Close cancels the child tree and removes

@@ -296,6 +296,50 @@ var migrations = []string{
 		INSERT INTO request_search (rowid, prompt, command) VALUES (new.id, new.prompt, new.command);
 	END;
 	INSERT INTO request_search (request_search) VALUES ('rebuild');`,
+
+	// What a turn changed, kept past the sitting that changed it. The
+	// changeset holds a turn's records in memory so the turn can be reviewed
+	// and put back, and in memory is where they ended: closing the terminal
+	// was the same act as accepting every edit the session had made
+	// (docs/capabilities/coding-agent.md#a-turn-ends-with-what-changed).
+	//
+	// The rows hang off the slot the conversation is autosaved to, so a
+	// conversation deleted or pruned takes its records with it and a resumed
+	// one finds its own. The turn number is the one on the close row, which is
+	// what a person types at /undo, so the pair is unique per slot.
+	//
+	// The bytes live apart from the rows that name them, addressed by their
+	// digest: one file edited ten times in an afternoon is ten records over a
+	// handful of distinct contents, and the before side of a turn is nearly
+	// always the after side of the turn before it. A blob is left out of the
+	// cascade deliberately — several rows point at one, and there is no
+	// reference count for a foreign key to follow, so unreachable content is
+	// collected when rows are deleted instead.
+	`CREATE TABLE IF NOT EXISTS change_blobs (
+		hash    TEXT PRIMARY KEY,
+		content BLOB NOT NULL
+	);
+
+	CREATE TABLE IF NOT EXISTS changes (
+		id            INTEGER PRIMARY KEY,
+		session_id    INTEGER NOT NULL REFERENCES chat_sessions(id) ON DELETE CASCADE,
+		turn          INTEGER NOT NULL,
+		seq           INTEGER NOT NULL,
+		path          TEXT NOT NULL,
+		before_hash   TEXT NOT NULL DEFAULT '',
+		after_hash    TEXT NOT NULL DEFAULT '',
+		before_exists INTEGER NOT NULL DEFAULT 0,
+		after_exists  INTEGER NOT NULL DEFAULT 0,
+		before_mode   INTEGER NOT NULL DEFAULT 0,
+		after_mode    INTEGER NOT NULL DEFAULT 0,
+		agent         TEXT NOT NULL DEFAULT '',
+		origin        INTEGER NOT NULL DEFAULT 0,
+		track         INTEGER NOT NULL DEFAULT 0,
+		at            TEXT NOT NULL,
+		UNIQUE(session_id, turn, path)
+	);
+
+	CREATE INDEX IF NOT EXISTS idx_changes_session_turn ON changes(session_id, turn);`,
 }
 
 // migrate brings the store up to the current schema, one step per

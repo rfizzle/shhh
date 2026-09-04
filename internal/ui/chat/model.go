@@ -765,6 +765,9 @@ type Model struct {
 	undoAsk    *components.UndoConfirm
 	undoPlan   changeset.UndoPlan
 	undoReturn state
+	// undoSubject is what the armed plan is taking back, in words: a turn,
+	// or the run of turns a rewind puts back (undo.go).
+	undoSubject undoSubject
 	// The two-press windows and the question asked before a turn that is
 	// not over is ended (cancel.go): armed is the open window between a
 	// first press and its second, quitAsk the confirm while the question is

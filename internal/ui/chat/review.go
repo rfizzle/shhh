@@ -54,7 +54,11 @@ func (m Model) reviewCommand(parts []string) (tea.Model, tea.Cmd) {
 // recorded says which of the two reasons it has — it changed nothing, or its
 // records were evicted — rather than opening an empty surface.
 func (m Model) openReview(n int64) (tea.Model, tea.Cmd) {
-	t, ok := m.changes.Turn(n)
+	// Recall and not Turn: a turn this process evicted, and a turn from a
+	// sitting that has already ended, are both still on record. Review is
+	// where an undo's selection is staged, so a turn that can be undone and
+	// not looked at first would be the wrong half of the pair to offer.
+	t, ok := m.changes.Recall(n)
 	if !ok {
 		if m.changes.WasEvicted(n) {
 			return m.systemNotice(fmt.Sprintf(

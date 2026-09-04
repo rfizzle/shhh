@@ -40,6 +40,44 @@ has not been changed. Leaving it off the list was the older reading: it kept
 the list from claiming a file had changed by nothing, at the price of the one
 thing that had.
 
+## A rewind can put the files back
+
+Going back to before a turn used to mean the conversation and nothing else,
+and the message said so: the transcript was rewound and the files on disk were
+left exactly as the abandoned turns had made them. That is a state neither the
+person nor the model asked for — a conversation that never mentions the edits
+in front of it — and the sentence explaining it was the product describing a
+gap rather than filling one.
+
+So a rewind asks which of the two is meant: the conversation, the files, or
+both. The conversation half is what it always was, tail and all, kept as a
+branch. The file half is every turn from the chosen point onwards, folded into
+one net change per file — where the run of turns found each file, and where it
+left it — and put back through the same question an undo asks: what it would
+restore, what it would delete, and which files have changed since and are
+therefore left alone unless a deliberate second answer says otherwise. Putting
+them back is itself a change, recorded like any other, so a rewind's restore
+can be reviewed and undone in turn.
+
+**What a command changed is not in the records, and the card says so.** The
+session records what the file tools wrote, both sides of every edit; a shell
+command that moved, generated or deleted something wrote nothing through them
+and is invisible here. A restore that quietly missed half of a turn's work
+would be worse than one that never offered, so the row that would write files
+names the hole before it is chosen.
+
+A conversation opened again from an earlier sitting can still take its turns
+back: the records are kept with the conversation rather than in the process
+that made them, so closing the terminal is no longer the same act as
+accepting every edit the session made. They are kept
+for as long as the conversation is — the same window, and the same default of
+keeping everything until one is set — and the size of what one sitting can
+hold in memory is no longer what decides whether a turn can be taken back. A
+conversation restored from a saved transcript is the one exception on the file
+half: its messages say where each turn began and not what it was numbered, so
+the offer there is the conversation alone rather than a guess at whose edits to
+put back.
+
 ## Several places in one file are one call
 
 Changing three places in one file used to be three calls: three rounds, three

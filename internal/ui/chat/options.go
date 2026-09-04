@@ -186,7 +186,27 @@ func (m *Model) adoptSlot(name string) {
 		_ = m.db.ReleaseChatSlot(m.sessionName)
 	}
 	m.sessionName = name
+	m.bindSlot()
+}
+
+// bindSlot points the session's per-slot state at the slot it is now in: the
+// notebook it writes notes into, and the changeset records it keeps past this
+// sitting. The turn counter is carried past what the slot has already been
+// through, because a turn number is how a person addresses one — a resumed
+// conversation that started counting from one again would hand its first turn
+// a number an earlier turn already has.
+//
+// Two lower bounds, and the higher of them wins. The records say where the
+// numbering got to, but a turn that changed no files leaves no record, so a
+// sitting that ended on one would be undercounted; the conversation's own
+// user messages are the other reading and cover exactly that case.
+// Overshooting only skips a number, which costs nothing.
+func (m *Model) bindSlot() {
 	m.bindNotebook()
+	m.changes.SetSlot(m.sessionName)
+	if last := max(m.changes.LastTurn(), int64(m.conversationTurns())); last > m.turnCount {
+		m.turnCount = last
+	}
 }
 
 // mintSlot moves the session to a slot of its own, claimed now, giving back
@@ -204,7 +224,7 @@ func (m *Model) mintSlot() {
 // other side, releasing only when there is no save to make.
 func (m *Model) mintSlotKeeping() {
 	m.sessionName = m.claimSlot(newSessionName())
-	m.bindNotebook()
+	m.bindSlot()
 }
 
 func (m Model) WithInitialPrompt(prompt string) Model {
